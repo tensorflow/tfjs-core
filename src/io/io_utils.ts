@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {tensor} from '../index';
+import {ArrayOps} from '../ops/array_ops';
 import {Tensor} from '../tensor';
 import {NamedTensorMap, TypedArray} from '../types';
 import {sizeFromShape} from '../util';
@@ -25,6 +25,10 @@ import {WeightsManifestEntry} from './types';
 /**
  * Encode a map from names to weight values as an ArrayBuffer, along with an
  * `Array` of `WeightsManifestEntry` as specification of the encoded weights.
+ *
+ * This function does not perform sharding.
+ *
+ * This function is the reverse of `decodeWeights`.
  *
  * @param tensors A map ("dict") from names to tensors.
  * @returns A `Promise` of
@@ -55,6 +59,10 @@ export async function encodeWeights(tensors: NamedTensorMap):
 /**
  * Decode flat ArrayBuffer as weights.
  *
+ * This function does not handle sharding.
+ *
+ * This function is the reverse of `encodeWeights`.
+ *
  * @param buffer A flat ArrayBuffer carrying the binary values of the tensors
  *   concatenated in the order specified in `specs`.
  * @param specs Specifications of the names, dtypes and shapes of the tensors
@@ -73,18 +81,21 @@ export function decodeWeights(
     const dtype = spec.dtype;
     const shape = spec.shape;
 
-    const numel = sizeFromShape(shape);
+    const size = sizeFromShape(shape);
     let bytes: number;
     let value: Tensor;
     if (dtype === 'float32') {
-      bytes = numel * 4;
-      value = tensor(new Float32Array(buffer, offset, numel), shape, 'float32');
+      bytes = size * 4;
+      value = ArrayOps.tensor(
+          new Float32Array(buffer, offset, size), shape, 'float32');
     } else if (dtype === 'int32') {
-      bytes = numel * 4;
-      value = tensor(new Int32Array(buffer, offset, numel), shape, 'int32');
+      bytes = size * 4;
+      value =
+          ArrayOps.tensor(new Int32Array(buffer, offset, size), shape, 'int32');
     } else if (dtype === 'bool') {
-      bytes = numel;
-      value = tensor(new Uint8Array(buffer, offset, numel), shape, 'bool');
+      bytes = size;
+      value =
+          ArrayOps.tensor(new Uint8Array(buffer, offset, size), shape, 'bool');
     } else {
       throw new Error(`Unsupported dtype in weight '${name}': ${dtype}`);
     }
@@ -104,9 +115,9 @@ export function concatenateTypedArrays(xs: TypedArray[]): ArrayBuffer {
   }
 
   let totalByteLength = 0;
-  for (const x of xs) {
+  xs.forEach(x => {
     // tslint:disable-next-line:no-any
-    if (x as any instanceof Float32Array || x instanceof Int32Array) {
+    if (x as any instanceof Float32Array || x as any instanceof Int32Array) {
       totalByteLength += x.length * 4;
       // tslint:disable-next-line:no-any
     } else if (x as any instanceof Uint8Array) {
@@ -114,18 +125,18 @@ export function concatenateTypedArrays(xs: TypedArray[]): ArrayBuffer {
     } else {
       throw new Error(`Unsupported TypedArray subtype: ${x.constructor.name}`);
     }
-  }
+  });
 
   const y = new Uint8Array(totalByteLength);
   let offset = 0;
-  for (const x of xs) {
+  xs.forEach(x => {
     y.set(new Uint8Array(x.buffer), offset);
     if (x instanceof Float32Array || x instanceof Int32Array) {
       offset += x.length * 4;
     } else {
       offset += x.length;
     }
-  }
+  });
 
   return y.buffer;
 }

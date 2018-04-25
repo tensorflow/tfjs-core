@@ -23,8 +23,6 @@ import {NamedTensorMap} from '../types';
 
 import {concatenateTypedArrays} from './io_utils';
 
-// import {WeightsManifestEntry} from './types';
-
 describe('concatenateTypedArrays', () => {
   it('Single float arrays', () => {
     const x = new Float32Array([1.1, 2.2, 3.3]);

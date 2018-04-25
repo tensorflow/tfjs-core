@@ -18,6 +18,14 @@
 /* Type definitions for exporting and importing of models. */
 
 /**
+ * A map from Tensor dtype to number of bytes per element of the Tensor.
+ */
+export const DTYPE_VALUE_SIZE_MAP: {[dtype: string]: number} = {
+  'float32': 4,
+  'int32': 4
+};
+
+/**
  * A weight manifest.
  *
  * The weight manifest consists of an ordered list of weight-manifest groups.

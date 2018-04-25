@@ -15,15 +15,12 @@
  * =============================================================================
  */
 
+// tslint:disable:max-line-length
 import {tensor} from '../ops/ops';
 import {NamedTensorMap} from '../types';
 import * as util from '../util';
-import {WeightsManifestConfig, WeightsManifestEntry} from './types';
-
-const DTYPE_VALUE_SIZE_MAP: {[dtype: string]: number} = {
-  'float32': 4,
-  'int32': 4
-};
+import {DTYPE_VALUE_SIZE_MAP, WeightsManifestConfig, WeightsManifestEntry} from './types';
+// tslint:enable:max-line-length
 
 /**
  * Reads a weights manifest JSON configuration, fetches the weights and
