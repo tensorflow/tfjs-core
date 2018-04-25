@@ -17,7 +17,8 @@
 
 import * as tf from '../index';
 // tslint:disable-next-line:max-line-length
-import {ALL_ENVS, describeWithFlags, expectArraysClose, expectNumbersClose} from '../test_util';
+import {ALL_ENVS, CPU_ENVS, expectArraysClose, expectNumbersClose} from '../test_util';
+import {describeWithFlags} from '../jasmine_util';
 import {Rank} from '../types';
 
 describeWithFlags('slice1d', ALL_ENVS, () => {
@@ -150,5 +151,47 @@ describeWithFlags('slice4d', ALL_ENVS, () => {
 
     expect(result.shape).toEqual([2, 1, 1, 1]);
     expectArraysClose(result, [8, 88]);
+  });
+});
+
+describeWithFlags('slice ergonomics', CPU_ENVS, () => {
+  it('slices 2x2x2 array into 2x1x1 no size', () => {
+    const a = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2]);
+    const result = a.slice([0, 1, 1]);
+    expect(result.shape).toEqual([2, 1, 1]);
+    expectArraysClose(result, [4, 8]);
+  });
+
+  it('slices 2x2x2 array into 1x2x2 with scalar begin no size', () => {
+    const a = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2]);
+    const result = a.slice(1);
+    expect(result.shape).toEqual([1, 2, 2]);
+    expectArraysClose(result, [5, 6, 7, 8]);
+  });
+
+  it('slices 2x2x2 array using 2d size and 2d size', () => {
+    const a = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2]);
+    const result = a.slice([0, 1]);
+    expect(result.shape).toEqual([2, 1, 2]);
+    expectArraysClose(result, [3, 4, 7, 8]);
+  });
+
+  it('slices 2x2x2 array using negative size', () => {
+    const a = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2]);
+    const result = a.slice([0, 1], [-1, 1]);
+    expect(result.shape).toEqual([2, 1, 2]);
+    expectArraysClose(result, [3, 4, 7, 8]);
+  });
+
+  it('slices 2x2x2 array using 1d size', () => {
+    const a = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2]);
+    const result = a.slice(0, 1);
+    expect(result.shape).toEqual([1, 2, 2]);
+    expectArraysClose(result, [1, 2, 3, 4]);
+  });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.slice({} as tf.Tensor, 0, 0))
+        .toThrowError(/Argument 'x' passed to 'slice' must be a Tensor/);
   });
 });

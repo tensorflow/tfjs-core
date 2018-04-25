@@ -16,9 +16,10 @@
  */
 
 import * as tf from './index';
+import {describeWithFlags} from './jasmine_util';
 import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
 // tslint:disable-next-line:max-line-length
-import {ALL_ENVS, describeWithFlags, expectArraysClose, expectArraysEqual, expectNumbersClose} from './test_util';
+import {ALL_ENVS, expectArraysClose, expectArraysEqual, expectNumbersClose} from './test_util';
 import {DType, Rank} from './types';
 
 describeWithFlags('tensor', ALL_ENVS, () => {
@@ -37,7 +38,7 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     expect(t.size).toBe(3);
     expectArraysClose(t, [1, 2, 3]);
     // Out of bounds indexing.
-    expect(t.get(4)).toBeUndefined();
+    expect(t.get(0, 4)).toBeUndefined();
 
     // [[1, 2, 3],
     //  [4, 5, 6]]
@@ -285,6 +286,10 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     expect(() => tf.tensor2d([[1, 2, 3], [4, 5, 6]], [3, 2])).toThrowError();
   });
 
+  it('tf.tensor2d() from number[], but no shape throws error', () => {
+    expect(() => tf.tensor2d([1, 2, 3, 4])).toThrowError();
+  });
+
   it('tensor3d() from number[][][]', () => {
     const a = tf.tensor3d([[[1], [2], [3]], [[4], [5], [6]]], [2, 3, 1]);
     expectArraysClose(a, [1, 2, 3, 4, 5, 6]);
@@ -294,6 +299,10 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     const values = [[[1], [2], [3]], [[4], [5], [6]]];
     // Actual shape is [2, 3, 1].
     expect(() => tf.tensor3d(values, [3, 2, 1])).toThrowError();
+  });
+
+  it('tf.tensor3d() from number[], but no shape throws error', () => {
+    expect(() => tf.tensor3d([1, 2, 3, 4])).toThrowError();
   });
 
   it('tensor4d() from number[][][][]', () => {
@@ -307,6 +316,10 @@ describeWithFlags('tensor', ALL_ENVS, () => {
       tf.tensor4d([[[[1]], [[2]]], [[[4]], [[5]]]], [2, 1, 2, 1]);
     };
     expect(f).toThrowError();
+  });
+
+  it('tf.tensor4d() from number[], but no shape throws error', () => {
+    expect(() => tf.tensor4d([1, 2, 3, 4])).toThrowError();
   });
 
   it('default dtype', () => {
@@ -714,6 +727,12 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     expectArraysClose(a, [2.4]);
   });
 
+  it('reshape throws when passed a non-tensor', () => {
+    // tslint:disable-next-line:no-any
+    expect(() => tf.reshape({} as any, []))
+        .toThrowError(/Argument 'x' passed to 'reshape' must be a Tensor/);
+  });
+
   it('cast bool -> bool', () => {
     const a = tf.tensor1d([1, 0], 'bool');
     expect(a.cast('bool').dtype).toEqual('bool');
@@ -757,6 +776,11 @@ describeWithFlags('tensor', ALL_ENVS, () => {
   it('cast float32 -> float32', () => {
     const a = tf.tensor1d([1.0, 2.0]);
     expect(a.cast('float32').dtype).toEqual('float32');
+  });
+
+  it('cast throws when passed a non-tensor', () => {
+    expect(() => tf.cast({} as tf.Tensor, 'float32'))
+        .toThrowError(/Argument 'x' passed to 'cast' must be a Tensor/);
   });
 
   it('scalar bool -> int32', () => {
@@ -829,6 +853,11 @@ describeWithFlags('tensor', ALL_ENVS, () => {
   it('squeeze wrong axis', () => {
     const a = tf.tensor3d([4, 2, 1], [3, 1, 1], 'bool');
     expect(() => a.squeeze([0, 1])).toThrowError();
+  });
+
+  it('squeeze throws when passed a non-tensor', () => {
+    expect(() => tf.squeeze({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'squeeze' must be a Tensor/);
   });
 
   it('scalar -> 2d', () => {

@@ -16,8 +16,9 @@
  */
 
 import * as tf from '../index';
+import {describeWithFlags} from '../jasmine_util';
 // tslint:disable-next-line:max-line-length
-import {ALL_ENVS, CPU_ENVS, describeWithFlags, expectArraysClose} from '../test_util';
+import {ALL_ENVS, CPU_ENVS, expectArraysClose} from '../test_util';
 
 describeWithFlags('resizeBilinear', ALL_ENVS, () => {
   it('simple alignCorners=false', () => {

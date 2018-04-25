@@ -17,7 +17,8 @@
 
 import * as tf from '../index';
 // tslint:disable-next-line:max-line-length
-import {ALL_ENVS, describeWithFlags, expectArraysClose} from '../test_util';
+import {ALL_ENVS, expectArraysClose} from '../test_util';
+import {describeWithFlags} from '../jasmine_util';
 
 describeWithFlags('maxPool', ALL_ENVS, () => {
   it('x=[1,1,1] f=[1,1] s=1 [0] => [0]', () => {
@@ -105,6 +106,11 @@ describeWithFlags('maxPool', ALL_ENVS, () => {
     const dimRoundingMode = 'round';
 
     expect(() => tf.maxPool(x, 2, 1, pad, dimRoundingMode)).toThrowError();
+  });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.maxPool({} as tf.Tensor3D, 2, 1, 'valid'))
+        .toThrowError(/Argument 'x' passed to 'maxPool' must be a Tensor/);
   });
 });
 
@@ -447,5 +453,10 @@ describeWithFlags('avgPool', ALL_ENVS, () => {
     const dimRoundingMode = 'round';
 
     expect(() => tf.avgPool(x, 2, 1, pad, dimRoundingMode)).toThrowError();
+  });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.avgPool({} as tf.Tensor3D, 2, 1, 'valid'))
+        .toThrowError(/Argument 'x' passed to 'avgPool' must be a Tensor/);
   });
 });

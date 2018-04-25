@@ -16,8 +16,9 @@
  */
 
 import * as tf from '../index';
+import {describeWithFlags} from '../jasmine_util';
 // tslint:disable-next-line:max-line-length
-import {ALL_ENVS, describeWithFlags, expectArraysClose} from '../test_util';
+import {ALL_ENVS, expectArraysClose} from '../test_util';
 
 describeWithFlags('batchNormalization4D', ALL_ENVS, () => {
   it('simple batchnorm4D, no offset or scale, 2x1x1x2', () => {
@@ -127,28 +128,28 @@ describeWithFlags('batchNormalization4D', ALL_ENVS, () => {
 
     const varianceEpsilon = .001;
 
-    const dy = tf.tensor4d([1, 1, 1, 1], [2, 1, 1, 2]);
+    const dy = tf.tensor4d([-1, -1, -1, -1], [2, 1, 1, 2]);
     const gradX = tf.grad(
         (x: tf.Tensor4D) => tf.batchNormalization4d(
             x, mean, variance, varianceEpsilon, scale, offset))(x, dy);
     expectArraysClose(
-        gradX, tf.tensor4d([1.414, 2.887, 1.414, 2.887], [2, 1, 1, 2]));
+        gradX, tf.tensor4d([-1.414, -2.887, -1.414, -2.887], [2, 1, 1, 2]));
     const gradMean = tf.grad(
         (mean: tf.Tensor1D) => tf.batchNormalization4d(
             x, mean, variance, varianceEpsilon, scale, offset))(mean, dy);
-    expectArraysClose(gradMean, tf.tensor1d([-2.828, -5.773]));
+    expectArraysClose(gradMean, tf.tensor1d([2.828, 5.773]));
     const gradVariance = tf.grad(
         (variance: tf.Tensor1D) => tf.batchNormalization4d(
             x, mean, variance, varianceEpsilon, scale, offset))(variance, dy);
-    expectArraysClose(gradVariance, tf.tensor1d([-1.413, -238.519]));
+    expectArraysClose(gradVariance, tf.tensor1d([1.413, 238.519]));
     const gradOffset = tf.grad(
         (offset: tf.Tensor1D) => tf.batchNormalization4d(
             x, mean, variance, varianceEpsilon, scale, offset))(offset, dy);
-    expectArraysClose(gradOffset, tf.onesLike(offset).mul(tf.scalar(2)));
+    expectArraysClose(gradOffset, dy.sum([0, 1, 2]));
     const gradScale = tf.grad(
         (scale: tf.Tensor1D) => tf.batchNormalization4d(
             x, mean, variance, varianceEpsilon, scale, offset))(scale, dy);
-    expectArraysClose(gradScale, tf.tensor1d([2.828, 286.318]));
+    expectArraysClose(gradScale, tf.tensor1d([-2.828, -286.318]));
   });
 
   it('batchnorm4D gradients, same shapes in x, mean and variance', () => {
@@ -160,32 +161,31 @@ describeWithFlags('batchNormalization4D', ALL_ENVS, () => {
 
     const varianceEpsilon = .001;
 
-    const dy = tf.tensor4d([1, 1, 1, 1], [2, 1, 1, 2]);
+    const dy = tf.tensor4d([-1, -1, -1, -1], [2, 1, 1, 2]);
     const gradX = tf.grad(
         (x: tf.Tensor4D) => tf.batchNormalization4d(
             x, mean, variance, varianceEpsilon, scale, offset))(x, dy);
     expectArraysClose(
-        gradX, tf.tensor4d([1.414, 2.500, 0.816, 1.768], [2, 1, 1, 2]));
+        gradX, tf.tensor4d([-1.414, -2.500, -0.816, -1.768], [2, 1, 1, 2]));
     const gradMean = tf.grad(
         (mean: tf.Tensor4D) => tf.batchNormalization4d(
             x, mean, variance, varianceEpsilon, scale, offset))(mean, dy);
     expectArraysClose(
-        gradMean, tf.tensor4d([-1.414, -2.500, -0.816, -1.768], [2, 1, 1, 2]));
+        gradMean, tf.tensor4d([1.414, 2.500, 0.816, 1.768], [2, 1, 1, 2]));
     const gradVariance = tf.grad(
         (variance: tf.Tensor4D) => tf.batchNormalization4d(
             x, mean, variance, varianceEpsilon, scale, offset))(variance, dy);
     expectArraysClose(
-        gradVariance,
-        tf.tensor4d([-3.533, -4.686, -1.360, -2.762], [2, 1, 1, 2]));
+        gradVariance, tf.tensor4d([3.533, 4.686, 1.360, 2.762], [2, 1, 1, 2]));
     const gradOffset = tf.grad(
         (offset: tf.Tensor4D) => tf.batchNormalization4d(
             x, mean, variance, varianceEpsilon, scale, offset))(offset, dy);
-    expectArraysClose(gradOffset, tf.onesLike(offset));
+    expectArraysClose(gradOffset, dy);
     const gradScale = tf.grad(
         (scale: tf.Tensor4D) => tf.batchNormalization4d(
             x, mean, variance, varianceEpsilon, scale, offset))(scale, dy);
     expectArraysClose(
-        gradScale, tf.tensor4d([7.069, 7.499, 8.164, 8.838], [2, 1, 1, 2]));
+        gradScale, tf.tensor4d([-7.069, -7.499, -8.164, -8.838], [2, 1, 1, 2]));
   });
 });
 
@@ -285,6 +285,35 @@ describeWithFlags('batchNormalization3D', ALL_ENVS, () => {
       offset.get(1) +
           (x.get(1, 0, 1) - mean.get(1)) * scale.get(1) /
               Math.sqrt(variance.get(1) + varianceEpsilon)
+    ]);
+  });
+
+  it('batchnorm3D, x,mean,var,offset,scale are all 3D', () => {
+    const shape: [number, number, number] = [2, 1, 2];
+    const x = tf.tensor3d([2, 100, 4, 400], shape);
+    const mean = tf.tensor3d([1, 2, 3, 4], shape);
+    const variance = tf.tensor3d([2, 3, 4, 5], shape);
+    const offset = tf.tensor3d([3, 4, 5, 6], shape);
+    const scale = tf.tensor3d([4, 5, 6, 7], shape);
+
+    const varianceEpsilon = .001;
+
+    const result = tf.batchNormalization3d(
+        x, mean, variance, varianceEpsilon, scale, offset);
+
+    expectArraysClose(result, [
+      offset.get(0, 0, 0) +
+          (x.get(0, 0, 0) - mean.get(0, 0, 0)) * scale.get(0, 0, 0) /
+              Math.sqrt(variance.get(0, 0, 0) + varianceEpsilon),
+      offset.get(0, 0, 1) +
+          (x.get(0, 0, 1) - mean.get(0, 0, 1)) * scale.get(0, 0, 1) /
+              Math.sqrt(variance.get(0, 0, 1) + varianceEpsilon),
+      offset.get(1, 0, 0) +
+          (x.get(1, 0, 0) - mean.get(1, 0, 0)) * scale.get(1, 0, 0) /
+              Math.sqrt(variance.get(1, 0, 0) + varianceEpsilon),
+      offset.get(1, 0, 1) +
+          (x.get(1, 0, 1) - mean.get(1, 0, 1)) * scale.get(1, 0, 1) /
+              Math.sqrt(variance.get(1, 0, 1) + varianceEpsilon)
     ]);
   });
 
@@ -568,5 +597,57 @@ describeWithFlags('batchNormalization2D', ALL_ENVS, () => {
       0.58433646, 0.96846228, 0.51936529, 0.24315402, 0.69732157, 0.61608542,
       0.35007446, 1.01304821, 0.60119441
     ]);
+  });
+
+  it('throws when passed x as a non-tensor', () => {
+    const mean = tf.tensor1d([1, 2]);
+    const variance = tf.tensor1d([2, 3]);
+
+    expect(() => tf.batchNormalization({} as tf.Tensor, mean, variance))
+        .toThrowError(
+            /Argument 'x' passed to 'batchNormalization' must be a Tensor/);
+  });
+  it('throws when passed mean as a non-tensor', () => {
+    const x = tf.tensor4d([2, 100, 4, 400], [2, 1, 1, 2]);
+    const variance = tf.tensor1d([2, 3]);
+
+    expect(() => tf.batchNormalization(x, {} as tf.Tensor, variance))
+        .toThrowError(
+            /Argument 'mean' passed to 'batchNormalization' must be a Tensor/);
+  });
+  it('throws when passed variance as a non-tensor', () => {
+    const x = tf.tensor4d([2, 100, 4, 400], [2, 1, 1, 2]);
+    const mean = tf.tensor1d([1, 2]);
+
+    const e =
+        /Argument 'variance' passed to 'batchNormalization' must be a Tensor/;
+    expect(() => tf.batchNormalization(x, mean, {} as tf.Tensor))
+        .toThrowError(e);
+  });
+  it('throws when passed scale as a non-tensor', () => {
+    const x = tf.tensor4d([2, 100, 4, 400], [2, 1, 1, 2]);
+    const mean = tf.tensor1d([1, 2]);
+    const variance = tf.tensor1d([2, 3]);
+    const epsilon = .001;
+
+    expect(
+        () =>
+            tf.batchNormalization(x, mean, variance, epsilon, {} as tf.Tensor))
+        .toThrowError(
+            /Argument 'scale' passed to 'batchNormalization' must be a Tensor/);
+  });
+  it('throws when passed offset as a non-tensor', () => {
+    const x = tf.tensor4d([2, 100, 4, 400], [2, 1, 1, 2]);
+    const mean = tf.tensor1d([1, 2]);
+    const variance = tf.tensor1d([2, 3]);
+    const epsilon = .001;
+    const scale = tf.tensor1d([0.62186907, 0.85673736, 0.19201061]);
+
+    const e =
+        /Argument 'offset' passed to 'batchNormalization' must be a Tensor/;
+    expect(
+        () => tf.batchNormalization(
+            x, mean, variance, epsilon, scale, {} as tf.Tensor))
+        .toThrowError(e);
   });
 });

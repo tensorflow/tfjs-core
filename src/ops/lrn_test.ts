@@ -17,7 +17,8 @@
 
 // tslint:disable-next-line:max-line-length
 import * as tf from '../index';
-import {ALL_ENVS, describeWithFlags, expectArraysClose} from '../test_util';
+import {ALL_ENVS, expectArraysClose} from '../test_util';
+import {describeWithFlags} from '../jasmine_util';
 
 const sqArr = (arr: number[]) => arr.map(d => d * d);
 const sumArr = (arr: number[]) => arr.reduce((prev, curr) => prev + curr, 0);
@@ -513,5 +514,12 @@ describeWithFlags('localResponseNormalization with Tensor4D', ALL_ENVS, () => {
     const result = x.localResponseNormalization(radius);
 
     expectArraysClose(result, flatten(expected));
+  });
+
+  it('throws when passed a non-tensor', () => {
+    const e =
+        /Argument 'x' passed to 'localResponseNormalization' must be a Tensor/;
+    expect(() => tf.localResponseNormalization({} as tf.Tensor3D))
+        .toThrowError(e);
   });
 });

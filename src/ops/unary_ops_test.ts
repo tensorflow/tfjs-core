@@ -16,8 +16,9 @@
  */
 
 import * as tf from '../index';
+import {describeWithFlags} from '../jasmine_util';
 // tslint:disable-next-line:max-line-length
-import {ALL_ENVS, describeWithFlags, expectArraysClose, expectNumbersClose} from '../test_util';
+import {ALL_ENVS, expectArraysClose, expectNumbersClose} from '../test_util';
 import * as util from '../util';
 
 import * as selu_util from './selu_util';
@@ -89,6 +90,11 @@ describeWithFlags('relu', ALL_ENVS, () => {
     expect(da.dtype).toEqual('float32');
     expectArraysClose(da, [1, 0, 0, 4]);
   });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.relu({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'relu' must be a Tensor/);
+  });
 });
 
 describeWithFlags('abs', ALL_ENVS, () => {
@@ -135,6 +141,11 @@ describeWithFlags('abs', ALL_ENVS, () => {
     expect(da.shape).toEqual(a.shape);
     expect(da.dtype).toEqual('float32');
     expectArraysClose(da, [1 * 1, 2 * -1, 3 * -1, 4 * 1]);
+  });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.abs({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'abs' must be a Tensor/);
   });
 });
 
@@ -196,6 +207,11 @@ describeWithFlags('step', ALL_ENVS, () => {
     expect(gradients.dtype).toEqual('float32');
     expectArraysClose(gradients, [0, 0, 0, 0]);
   });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.step({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'step' must be a Tensor/);
+  });
 });
 
 describeWithFlags('neg', ALL_ENVS, () => {
@@ -244,6 +260,11 @@ describeWithFlags('neg', ALL_ENVS, () => {
     expect(da.dtype).toEqual('float32');
     expectArraysClose(da, [1 * -1, 2 * -1, 3 * -1, 4 * -1]);
   });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.neg({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'neg' must be a Tensor/);
+  });
 });
 
 describeWithFlags('sigmoid', ALL_ENVS, () => {
@@ -279,6 +300,11 @@ describeWithFlags('sigmoid', ALL_ENVS, () => {
     }
 
     expectArraysClose(da, expected);
+  });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.sigmoid({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'sigmoid' must be a Tensor/);
   });
 });
 
@@ -350,15 +376,9 @@ describeWithFlags('logSigmoid', ALL_ENVS, () => {
     const a = tf.scalar(3);
     const dy = tf.scalar(4);
 
-    const da = tf.grad(a => tf.logSigmoid(a))(a, dy);
-
-    const expected = [];
-    for (let i = 0; i < a.size; i++) {
-      const y = 1 / (1 + Math.exp(a.get(i)));
-      expected[i] = dy.get(i) * y;
-    }
-
-    expectArraysClose(da, expected);
+    const da = tf.grad(a => tf.logSigmoid(a))(a, dy).get();
+    const y = 1 / (1 + Math.exp(a.get()));
+    expectNumbersClose(da, dy.get() * y);
   });
 
   it('gradients: Tensor1D', () => {
@@ -383,12 +403,19 @@ describeWithFlags('logSigmoid', ALL_ENVS, () => {
     const da = tf.grad(a => tf.logSigmoid(a))(a, dy);
 
     const expected = [];
+    const aVals = a.dataSync();
+    const dyVals = dy.dataSync();
     for (let i = 0; i < a.size; i++) {
-      const y = 1 / (1 + Math.exp(a.get(i)));
-      expected[i] = dy.get(i) * y;
+      const y = 1 / (1 + Math.exp(aVals[i]));
+      expected[i] = dyVals[i] * y;
     }
 
     expectArraysClose(da, expected);
+  });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.logSigmoid({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'logSigmoid' must be a Tensor/);
   });
 });
 
@@ -461,14 +488,9 @@ describeWithFlags('softplus', ALL_ENVS, () => {
     const dy = tf.scalar(4);
 
     const da = tf.grad(a => tf.softplus(a))(a, dy);
+    const y = 1 / (1 + Math.exp(-a.get()));
 
-    const expected = [];
-    for (let i = 0; i < a.size; i++) {
-      const y = 1 / (1 + Math.exp(-a.get(i)));
-      expected[i] = dy.get(i) * y;
-    }
-
-    expectArraysClose(da, expected);
+    expectNumbersClose(da.get(), dy.get() * y);
   });
 
   it('gradients: Tensor1D', () => {
@@ -493,12 +515,20 @@ describeWithFlags('softplus', ALL_ENVS, () => {
     const da = tf.grad(a => tf.softplus(a))(a, dy);
 
     const expected = [];
+    const aVals = a.dataSync();
+    const dyVals = dy.dataSync();
+
     for (let i = 0; i < a.size; i++) {
-      const y = 1 / (1 + Math.exp(-a.get(i)));
-      expected[i] = dy.get(i) * y;
+      const y = 1 / (1 + Math.exp(-aVals[i]));
+      expected[i] = dyVals[i] * y;
     }
 
     expectArraysClose(da, expected);
+  });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.softplus({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'softplus' must be a Tensor/);
   });
 });
 
@@ -560,6 +590,11 @@ describeWithFlags('sqrt', ALL_ENVS, () => {
         ],
         1e-1);
   });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.sqrt({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'sqrt' must be a Tensor/);
+  });
 });
 
 describeWithFlags('rsqrt', ALL_ENVS, () => {
@@ -620,6 +655,11 @@ describeWithFlags('rsqrt', ALL_ENVS, () => {
         ],
         1e-1);
   });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.rsqrt({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'rsqrt' must be a Tensor/);
+  });
 });
 
 describeWithFlags('square', ALL_ENVS, () => {
@@ -673,6 +713,11 @@ describeWithFlags('square', ALL_ENVS, () => {
     expect(gradients.shape).toEqual(a.shape);
     expect(gradients.dtype).toEqual('float32');
     expectArraysClose(gradients, [-6 * 1, 2 * 2, 4 * 3, 6 * 4]);
+  });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.square({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'square' must be a Tensor/);
   });
 });
 
@@ -734,6 +779,11 @@ describeWithFlags('reciprocal', ALL_ENVS, () => {
       -1 * 4 * (1 / (-5 * -5))
     ]);
   });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.reciprocal({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'reciprocal' must be a Tensor/);
+  });
 });
 
 describeWithFlags('log', ALL_ENVS, () => {
@@ -781,6 +831,11 @@ describeWithFlags('log', ALL_ENVS, () => {
     expect(gradients.shape).toEqual(a.shape);
     expect(gradients.dtype).toEqual('float32');
     expectArraysClose(gradients, [1 / -3, 2 / 1, 3 / 2, 4 / 3]);
+  });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.log({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'log' must be a Tensor/);
   });
 });
 
@@ -832,6 +887,11 @@ describeWithFlags('log1p', ALL_ENVS, () => {
     expectArraysClose(
         gradients, [1 / (1 + -3), 2 / (1 + 1), 3 / (1 + 2), 4 / (1 + 3)]);
   });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.log1p({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'log1p' must be a Tensor/);
+  });
 });
 
 describeWithFlags('ceil', ALL_ENVS, () => {
@@ -880,6 +940,11 @@ describeWithFlags('ceil', ALL_ENVS, () => {
     expect(gradients.shape).toEqual(a.shape);
     expect(gradients.dtype).toEqual('float32');
     expectArraysClose(gradients, [0, 0, 0, 0]);
+  });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.ceil({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'ceil' must be a Tensor/);
   });
 });
 
@@ -931,6 +996,11 @@ describeWithFlags('floor', ALL_ENVS, () => {
     expect(gradients.dtype).toEqual('float32');
     expectArraysClose(gradients, [0, 0, 0, 0]);
   });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.floor({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'floor' must be a Tensor/);
+  });
 });
 
 describeWithFlags('sign', ALL_ENVS, () => {
@@ -980,6 +1050,11 @@ describeWithFlags('sign', ALL_ENVS, () => {
     expect(gradients.shape).toEqual(a.shape);
     expect(gradients.dtype).toEqual('float32');
     expectArraysClose(gradients, [0, 0, 0, 0]);
+  });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.sign({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'sign' must be a Tensor/);
   });
 });
 
@@ -1037,6 +1112,11 @@ describeWithFlags('exp', ALL_ENVS, () => {
         [1 * Math.exp(-3), 2 * Math.exp(1), 3 * Math.exp(2), 4 * Math.exp(3)],
         1e-1);
   });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.exp({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'exp' must be a Tensor/);
+  });
 });
 
 describeWithFlags('expm1', ALL_ENVS, () => {
@@ -1092,6 +1172,11 @@ describeWithFlags('expm1', ALL_ENVS, () => {
         gradients,
         [1 * Math.exp(-3), 2 * Math.exp(1), 3 * Math.exp(2), 4 * Math.exp(3)],
         1e-1);
+  });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.expm1({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'expm1' must be a Tensor/);
   });
 });
 
@@ -1151,6 +1236,11 @@ describeWithFlags('sin', ALL_ENVS, () => {
         gradients,
         [1 * Math.cos(-3), 2 * Math.cos(1), 3 * Math.cos(2), 4 * Math.cos(3)],
         1e-1);
+  });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.sin({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'sin' must be a Tensor/);
   });
 });
 
@@ -1216,6 +1306,11 @@ describeWithFlags('cos', ALL_ENVS, () => {
           4 * Math.sin(3) * -1
         ],
         1e-1);
+  });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.cos({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'cos' must be a Tensor/);
   });
 });
 
@@ -1284,6 +1379,11 @@ describeWithFlags('tan', ALL_ENVS, () => {
     expect(gradients.dtype).toEqual('float32');
     expectArraysClose(gradients, expected);
   });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.tan({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'tan' must be a Tensor/);
+  });
 });
 
 describeWithFlags('asin', ALL_ENVS, () => {
@@ -1350,6 +1450,11 @@ describeWithFlags('asin', ALL_ENVS, () => {
     expect(gradients.shape).toEqual(a.shape);
     expect(gradients.dtype).toEqual('float32');
     expectArraysClose(gradients, expected);
+  });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.asin({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'asin' must be a Tensor/);
   });
 });
 
@@ -1420,6 +1525,11 @@ describeWithFlags('acos', ALL_ENVS, () => {
     expect(gradients.dtype).toEqual('float32');
     expectArraysClose(gradients, expected);
   });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.acos({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'acos' must be a Tensor/);
+  });
 });
 
 describeWithFlags('atan', ALL_ENVS, () => {
@@ -1487,6 +1597,11 @@ describeWithFlags('atan', ALL_ENVS, () => {
     expect(gradients.dtype).toEqual('float32');
     expectArraysClose(gradients, expected);
   });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.atan({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'atan' must be a Tensor/);
+  });
 });
 
 describeWithFlags('sinh', ALL_ENVS, () => {
@@ -1553,6 +1668,11 @@ describeWithFlags('sinh', ALL_ENVS, () => {
     expect(gradients.shape).toEqual(a.shape);
     expect(gradients.dtype).toEqual('float32');
     expectArraysClose(gradients, expected);
+  });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.sinh({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'sinh' must be a Tensor/);
   });
 });
 
@@ -1623,6 +1743,11 @@ describeWithFlags('cosh', ALL_ENVS, () => {
     expect(gradients.dtype).toEqual('float32');
     expectArraysClose(gradients, expected);
   });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.cosh({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'cosh' must be a Tensor/);
+  });
 });
 
 describeWithFlags('tanh', ALL_ENVS, () => {
@@ -1692,6 +1817,11 @@ describeWithFlags('tanh', ALL_ENVS, () => {
     expect(gradients.dtype).toEqual('float32');
     expectArraysClose(gradients, expected);
   });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.tanh({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'tanh' must be a Tensor/);
+  });
 });
 
 describeWithFlags('leakyRelu', ALL_ENVS, () => {
@@ -1754,6 +1884,11 @@ describeWithFlags('leakyRelu', ALL_ENVS, () => {
 
     expectArraysClose(gradients, [1, 2 * alpha, 3, 4]);
   });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.leakyRelu({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'leakyRelu' must be a Tensor/);
+  });
 });
 
 describeWithFlags('elu', ALL_ENVS, () => {
@@ -1780,6 +1915,11 @@ describeWithFlags('elu', ALL_ENVS, () => {
     expect(gradients.shape).toEqual(x.shape);
     expect(gradients.dtype).toEqual('float32');
     expectArraysClose(gradients, [5, 50, 500 * Math.exp(-2)]);
+  });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.elu({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'elu' must be a Tensor/);
   });
 });
 
@@ -1869,6 +2009,11 @@ describeWithFlags('selu', ALL_ENVS, () => {
     expect(gradients.dtype).toEqual('float32');
     expectArraysClose(gradients, expected);
   });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.selu({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'selu' must be a Tensor/);
+  });
 });
 
 describeWithFlags('clip', ALL_ENVS, () => {
@@ -1926,6 +2071,11 @@ describeWithFlags('clip', ALL_ENVS, () => {
     expect(gradients.dtype).toEqual('float32');
     expectArraysClose(gradients, [0]);
   });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.clipByValue({} as tf.Tensor, 0, 1))
+        .toThrowError(/Argument 'x' passed to 'clipByValue' must be a Tensor/);
+  });
 });
 
 describeWithFlags('round', ALL_ENVS, () => {
@@ -1977,6 +2127,11 @@ describeWithFlags('round', ALL_ENVS, () => {
     expect(gradients.shape).toEqual(a.shape);
     expect(gradients.dtype).toEqual('float32');
     expectArraysClose(gradients, [0, 0, 0, 0]);
+  });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.round({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'round' must be a Tensor/);
   });
 });
 
@@ -2064,6 +2219,11 @@ describeWithFlags('asinh', ALL_ENVS, () => {
     expect(gradients.shape).toEqual(a.shape);
     expect(gradients.dtype).toEqual('float32');
     expectArraysClose(gradients, expected);
+  });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.asinh({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'asinh' must be a Tensor/);
   });
 });
 
@@ -2159,6 +2319,11 @@ describeWithFlags('acosh', ALL_ENVS, () => {
     expect(gradients.dtype).toEqual('float32');
     expectArraysClose(gradients, expected);
   });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.acosh({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'acosh' must be a Tensor/);
+  });
 });
 
 describeWithFlags('atanh', ALL_ENVS, () => {
@@ -2249,6 +2414,91 @@ describeWithFlags('atanh', ALL_ENVS, () => {
       expected[i] = dyValues[i] / (1 - Math.pow(aValues[i], 2));
     }
 
+    expect(gradients.shape).toEqual(a.shape);
+    expect(gradients.dtype).toEqual('float32');
+    expectArraysClose(gradients, expected);
+  });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.atanh({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'atanh' must be a Tensor/);
+  });
+});
+
+describeWithFlags('erf', ALL_ENVS, () => {
+  it('basic', () => {
+    const values = [-0.25, 0.25, 0.5, .75, -0.4];
+    const a = tf.tensor1d(values);
+    const result = tf.erf(a);
+    const expected = [-0.2763264, 0.2763264, 0.5204999, 0.7111556, -0.4283924];
+    expectArraysClose(result, expected);
+  });
+
+  it('scalar', () => {
+    const a = tf.scalar(1);
+    const result = tf.erf(a);
+    const expected = [0.8427008];
+    expectArraysClose(result, expected);
+  });
+
+  it('scalar in int32', () => {
+    const a = tf.scalar(1, 'int32');
+    const result = tf.erf(a);
+    const expected = [0.8427008];
+    expectArraysClose(result, expected);
+  });
+
+  it('tensor2d', () => {
+    const values = [0.2, 0.3, 0.4, 0.5];
+    const a = tf.tensor2d(values, [2, 2]);
+    const result = tf.erf(a);
+    const expected = [0.2227026, 0.32862678, 0.42839235, 0.5204999];
+    expectArraysClose(result, expected);
+  });
+
+  it('propagates NaNs', () => {
+    const a = tf.tensor1d([0.5, NaN, 0]);
+    const res = tf.erf(a);
+    expectArraysClose(res, [0.5204999, NaN, 0.0]);
+  });
+
+  it('gradients: Scalar', () => {
+    const a = tf.scalar(0.5);
+    const dy = tf.scalar(8);
+    const gradients = tf.grad(a => tf.erf(a))(a, dy);
+    expect(gradients.shape).toEqual(a.shape);
+    expect(gradients.dtype).toEqual('float32');
+    expectArraysClose(
+        gradients, [8 * 2 * Math.exp(-0.5 * 0.5) / Math.sqrt(Math.PI)]);
+  });
+
+  it('gradients: Tensor1D', () => {
+    const aValues = [-0.1, 0.2, 0.3, -0.5];
+    const dyValues = [1, 2, 3, 4];
+    const a = tf.tensor1d(aValues);
+    const dy = tf.tensor1d(dyValues);
+    const gradients = tf.grad(a => tf.erf(a))(a, dy);
+    const expected = [];
+    for (let i = 0; i < a.size; i++) {
+      expected[i] = dyValues[i] * 2 * Math.exp(-aValues[i] * aValues[i]) /
+          Math.sqrt(Math.PI);
+    }
+    expect(gradients.shape).toEqual(a.shape);
+    expect(gradients.dtype).toEqual('float32');
+    expectArraysClose(gradients, expected);
+  });
+
+  it('gradients: Tensor2D', () => {
+    const aValues = [-0.3, 0.1, 0.2, 0.3];
+    const dyValues = [1, 2, 3, 4];
+    const a = tf.tensor2d(aValues, [2, 2]);
+    const dy = tf.tensor2d(dyValues, [2, 2]);
+    const gradients = tf.grad(a => tf.erf(a))(a, dy);
+    const expected = [];
+    for (let i = 0; i < a.size; i++) {
+      expected[i] = dyValues[i] * 2 * Math.exp(-aValues[i] * aValues[i]) /
+          Math.sqrt(Math.PI);
+    }
     expect(gradients.shape).toEqual(a.shape);
     expect(gradients.dtype).toEqual('float32');
     expectArraysClose(gradients, expected);

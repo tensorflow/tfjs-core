@@ -39,6 +39,7 @@ export class ImageOps {
   @operation
   static resizeBilinear<T extends Tensor3D|Tensor4D>(
       images: T, size: [number, number], alignCorners = false): T {
+    util.assertArgumentsAreTensors({images}, 'resizeBilinear');
     util.assert(
         images.rank === 3 || images.rank === 4,
         `Error in resizeBilinear: x must be rank 3 or 4, but got ` +
@@ -93,6 +94,7 @@ export class ImageOps {
   @operation
   static resizeNearestNeighbor<T extends Tensor3D|Tensor4D>(
       images: T, size: [number, number], alignCorners = false): T {
+    util.assertArgumentsAreTensors({images}, 'resizeNearestNeighbor');
     util.assert(
         images.rank === 3 || images.rank === 4,
         `Error in resizeNearestNeighbor: x must be rank 3 or 4, but got ` +
@@ -104,6 +106,7 @@ export class ImageOps {
     util.assert(
         images.dtype === 'float32' || images.dtype === 'int32',
         '`images` must have `int32` or `float32` as dtype');
+
     let batchImages = images as Tensor4D;
     let reshapedTo4D = false;
     if (images.rank === 3) {

@@ -16,7 +16,8 @@
  */
 
 import * as tf from '../index';
-import {ALL_ENVS, describeWithFlags, expectArraysClose} from '../test_util';
+import {ALL_ENVS, expectArraysClose} from '../test_util';
+import {describeWithFlags} from '../jasmine_util';
 
 describeWithFlags('concat1d', ALL_ENVS, () => {
   it('3 + 5', () => {
@@ -283,5 +284,13 @@ describeWithFlags('concat3d', ALL_ENVS, () => {
 
     expect(dx2.shape).toEqual(x2.shape);
     expectArraysClose(dx2, [40, 400, 30, 300, 20, 200, 10, 100]);
+  });
+});
+
+describeWithFlags('concat throws for non-tensors', ALL_ENVS, () => {
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.concat([{} as tf.Tensor1D]))
+        .toThrowError(
+            /Argument 'tensors\[0\]' passed to 'concat' must be a Tensor/);
   });
 });

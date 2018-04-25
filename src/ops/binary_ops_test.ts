@@ -17,7 +17,8 @@
 
 import * as tf from '../index';
 // tslint:disable-next-line:max-line-length
-import {ALL_ENVS, describeWithFlags, expectArraysClose, expectArraysEqual} from '../test_util';
+import {ALL_ENVS, expectArraysClose, expectArraysEqual} from '../test_util';
+import {describeWithFlags} from '../jasmine_util';
 
 describeWithFlags('prelu', ALL_ENVS, () => {
   it('basic', () => {
@@ -39,6 +40,15 @@ describeWithFlags('prelu', ALL_ENVS, () => {
     expect(dx.shape).toEqual(x.shape);
     expect(dx.dtype).toEqual('float32');
     expectArraysClose(dx, [1, 1, 0.25, 0.15]);
+  });
+
+  it('throws when passed x as a non-tensor', () => {
+    expect(() => tf.prelu({} as tf.Tensor, tf.scalar(1)))
+        .toThrowError(/Argument 'x' passed to 'prelu' must be a Tensor/);
+  });
+  it('throws when passed alpha as a non-tensor', () => {
+    expect(() => tf.prelu(tf.scalar(1), {} as tf.Tensor))
+        .toThrowError(/Argument 'alpha' passed to 'prelu' must be a Tensor/);
   });
 });
 
@@ -173,6 +183,15 @@ describeWithFlags('maximum', ALL_ENVS, () => {
 
     expectArraysClose(da, [1 * 1, 2 * 0, 3 * 1, 4 * 1]);
     expectArraysClose(db, [1 * 0, 2 * 1, 3 * 0, 4 * 0]);
+  });
+
+  it('throws when passed a as a non-tensor', () => {
+    expect(() => tf.maximum({} as tf.Tensor, tf.scalar(1)))
+        .toThrowError(/Argument 'a' passed to 'maximum' must be a Tensor/);
+  });
+  it('throws when passed b as a non-tensor', () => {
+    expect(() => tf.maximum(tf.scalar(1), {} as tf.Tensor))
+        .toThrowError(/Argument 'b' passed to 'maximum' must be a Tensor/);
   });
 });
 
@@ -329,6 +348,17 @@ describeWithFlags('squaredDifference', ALL_ENVS, () => {
       4 * 2 * (0.15 - 0.9)
     ]);
   });
+
+  it('throws when passed a as a non-tensor', () => {
+    expect(() => tf.squaredDifference({} as tf.Tensor, tf.scalar(1)))
+        .toThrowError(
+            /Argument 'a' passed to 'squaredDifference' must be a Tensor/);
+  });
+  it('throws when passed b as a non-tensor', () => {
+    expect(() => tf.squaredDifference(tf.scalar(1), {} as tf.Tensor))
+        .toThrowError(
+            /Argument 'b' passed to 'squaredDifference' must be a Tensor/);
+  });
 });
 
 describeWithFlags('minimum', ALL_ENVS, () => {
@@ -462,6 +492,15 @@ describeWithFlags('minimum', ALL_ENVS, () => {
 
     expectArraysClose(da, [1 * 0, 2 * 1, 3 * 1, 4 * 0]);
     expectArraysClose(db, [1 * 1, 2 * 0, 3 * 0, 4 * 1]);
+  });
+
+  it('throws when passed a as a non-tensor', () => {
+    expect(() => tf.minimum({} as tf.Tensor, tf.scalar(1)))
+        .toThrowError(/Argument 'a' passed to 'minimum' must be a Tensor/);
+  });
+  it('throws when passed b as a non-tensor', () => {
+    expect(() => tf.minimum(tf.scalar(1), {} as tf.Tensor))
+        .toThrowError(/Argument 'b' passed to 'minimum' must be a Tensor/);
   });
 });
 
@@ -634,7 +673,17 @@ describeWithFlags('mod', ALL_ENVS, () => {
       3 * -1 * Math.floor(0.5 / 0.7), 4 * -1 * Math.floor(0.3 / 0.15)
     ]);
   });
+
+  it('throws when passed a as a non-tensor', () => {
+    expect(() => tf.mod({} as tf.Tensor, tf.scalar(1)))
+        .toThrowError(/Argument 'a' passed to 'mod' must be a Tensor/);
+  });
+  it('throws when passed b as a non-tensor', () => {
+    expect(() => tf.mod(tf.scalar(1), {} as tf.Tensor))
+        .toThrowError(/Argument 'b' passed to 'mod' must be a Tensor/);
+  });
 });
+
 describeWithFlags('atan2', ALL_ENVS, () => {
   it('same shape', () => {
     const aValues = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
@@ -820,5 +869,14 @@ describeWithFlags('atan2', ALL_ENVS, () => {
     expect(db.shape).toEqual(b.shape);
     expect(db.dtype).toEqual('float32');
     expectArraysClose(db, [-6 * 3 / 13, -7 * 3 / 18, -8 * 4 / 32, -9 * 4 / 41]);
+  });
+
+  it('throws when passed a as a non-tensor', () => {
+    expect(() => tf.atan2({} as tf.Tensor, tf.scalar(1)))
+        .toThrowError(/Argument 'a' passed to 'atan2' must be a Tensor/);
+  });
+  it('throws when passed b as a non-tensor', () => {
+    expect(() => tf.atan2(tf.scalar(1), {} as tf.Tensor))
+        .toThrowError(/Argument 'b' passed to 'atan2' must be a Tensor/);
   });
 });
