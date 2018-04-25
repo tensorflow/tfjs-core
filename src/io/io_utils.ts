@@ -20,7 +20,7 @@ import {Tensor} from '../tensor';
 import {NamedTensorMap, TypedArray} from '../types';
 import {sizeFromShape} from '../util';
 
-import {WeightsManifestEntry} from './types';
+import {DTYPE_VALUE_SIZE_MAP, WeightsManifestEntry} from './types';
 
 /**
  * Encode a map from names to weight values as an ArrayBuffer, along with an
@@ -84,16 +84,14 @@ export function decodeWeights(
     const size = sizeFromShape(shape);
     let bytes: number;
     let value: Tensor;
+    bytes = size * DTYPE_VALUE_SIZE_MAP[dtype];
     if (dtype === 'float32') {
-      bytes = size * 4;
       value = ArrayOps.tensor(
           new Float32Array(buffer, offset, size), shape, 'float32');
     } else if (dtype === 'int32') {
-      bytes = size * 4;
       value =
           ArrayOps.tensor(new Int32Array(buffer, offset, size), shape, 'int32');
     } else if (dtype === 'bool') {
-      bytes = size;
       value =
           ArrayOps.tensor(new Uint8Array(buffer, offset, size), shape, 'bool');
     } else {

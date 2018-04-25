@@ -22,7 +22,9 @@
  */
 export const DTYPE_VALUE_SIZE_MAP: {[dtype: string]: number} = {
   'float32': 4,
-  'int32': 4
+  'int32': 4,
+  'uint16': 2,
+  'uint8': 1
 };
 
 /**
@@ -76,6 +78,15 @@ export interface WeightsManifestEntry {
    * Data type of the weight.
    */
   dtype: 'float32'|'int32'|'bool';
+
+  /**
+   * Information for dequantizatio of the weight.
+   */
+  quantization?: {
+    scale: number,           // The scaling constant to multiply by.
+    min: number,             // The (possibly nudged) minimum weight to add.
+    dtype: 'uint16'|'uint8'  // The dtype of the quantized weights.
+  };
 }
 
 /**
