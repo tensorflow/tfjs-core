@@ -27,8 +27,13 @@ export interface WeightsManifestGroupConfig {
 export interface WeightsManifestEntry {
   name: string;
   shape: number[];
-  dtype: 'float32'|'int32';
-  quantization?: {min: number, scale: number, dtype: 'uint16'|'uint8'};
+  dtype: 'float32'|'int32';  // Dtype of the (unquantized) weights.
+  quantization?: {
+    // Information to dequantize the weights.
+    scale: number,           // The scaling constant to multiply by.
+    min: number,             // The (possibly nudged) minimum weight to add.
+    dtype: 'uint16'|'uint8'  // The dtype of the quantized weights.
+  };
 }
 
 const DTYPE_VALUE_SIZE_MAP: {[dtype: string]: number} = {
@@ -191,8 +196,8 @@ export async function loadWeights(
           typedArray = new Int32Array(quantizedArray.length);
         } else {
           throw new Error(
-              `Weight ${weightsEntry.manifestEntry.name} has unknown dtype ` +
-              `${dtype}.`);
+              `Weight ${weightsEntry.manifestEntry.name} has a dtype not ` +
+              `supported by quantization: ${dtype}`);
         }
         for (let i = 0; i < typedArray.length; ++i) {
           typedArray[i] = dequantize(quantizedArray[i]);

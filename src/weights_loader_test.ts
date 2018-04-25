@@ -523,4 +523,59 @@ describeWithFlags('loadWeights', CPU_ENVS, () => {
   it('quantized weights (uint16)', done => {
     quantizationTest('uint16', done);
   });
+
+  it('2 groups, 1 quantized, 1 unquantized', done => {
+    setupFakeWeightFiles({
+      './weightfile0': new Uint8Array([0, 48, 255, 0, 48, 255]),
+      './weightfile1': new Float32Array([6, 7, 8, 9])
+    });
+
+    const manifest: WeightsManifestConfig = [
+      {
+        'paths': ['weightfile0'],
+        'weights': [
+          {
+            'name': 'weight0',
+            'dtype': 'float32',
+            'shape': [3],
+            'quantization': {'min': -1, 'scale': 0.1, 'dtype': 'uint8'}
+          },
+          {
+            'name': 'weight1',
+            'dtype': 'int32',
+            'shape': [3],
+            'quantization': {'min': -1, 'scale': 0.1, 'dtype': 'uint8'}
+          }
+        ]
+      },
+      {
+        'paths': ['weightfile1'],
+        'weights': [
+          {'name': 'weight2', 'dtype': 'float32', 'shape': [3, 1]},
+          {'name': 'weight3', 'dtype': 'float32', 'shape': []}
+        ]
+      }
+    ];
+
+    tf.loadWeights(manifest, './', ['weight0', 'weight2'])
+        .then(weights => {
+          // Both groups need to be fetched.
+          expect((window.fetch as jasmine.Spy).calls.count()).toBe(2);
+
+          const weightNames = Object.keys(weights);
+          expect(weightNames.length).toEqual(2);
+
+          const weight0 = weights['weight0'];
+          expectArraysClose(weight0, [-1, 3.8, 24.5]);
+          expect(weight0.shape).toEqual([3]);
+          expect(weight0.dtype).toEqual('float32');
+
+          const weight2 = weights['weight2'];
+          expectArraysClose(weight2, [6, 7, 8]);
+          expect(weight2.shape).toEqual([3, 1]);
+          expect(weight2.dtype).toEqual('float32');
+        })
+        .then(done)
+        .catch(done.fail);
+  });
 });
