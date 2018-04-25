@@ -33,7 +33,7 @@ import {version} from './version';
 // Serialization.
 export {decodeWeights, encodeWeights} from './io/io_utils';
 // tslint:disable-next-line:max-line-length
-export {IOHandler, LoadHandler, ModelArtifacts, SaveHandler, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './io/types';
+export {IOHandler, LoadHandler, ModelArtifacts, SaveConfig, SaveHandler, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './io/types';
 export {loadWeights} from './io/weights_loader';
 
 // Optimizers.
