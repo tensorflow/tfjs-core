@@ -81,6 +81,12 @@ export function decodeWeights(
     const dtype = spec.dtype;
     const shape = spec.shape;
 
+    if (spec.quantization != null) {
+      throw new Error(
+          `decodeWeights does not support quantization yet, but encountered ` +
+          `weight '${name} wit quantization.'`);
+    }
+
     const size = sizeFromShape(shape);
     let bytes: number;
     let value: Tensor;
