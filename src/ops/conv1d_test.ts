@@ -215,4 +215,31 @@ describeWithFlags('conv1d', ALL_ENVS, () => {
             tf.conv1d(x, {} as tf.Tensor3D, stride, pad, dataFormat, dilation))
         .toThrowError(/Argument 'filter' passed to 'conv1d' must be a Tensor/);
   });
+
+  it('conv1d gradients, input=2x2x1,d2=1,f=1,s=1,d=1,p=same', () => {
+    const inputDepth = 1;
+    const inputShape: [number, number, number] = [2, 2, inputDepth];
+    const outputDepth = 1;
+    const fSize = 1;
+    const filterShape: [number, number, number] =
+      [fSize, inputDepth, outputDepth];
+    const pad = 'same';
+    const stride = 1;
+    const dataFormat = 'NWC';
+    const dilation = 1;
+
+    const x = tf.tensor3d([1, 2, 3, 4], inputShape);
+    const w = tf.tensor3d([3], filterShape);
+
+    const dy = tf.tensor3d([1, 1, 1, 1], inputShape);
+    const gradX = tf.grad(
+        (x: tf.Tensor3D) => tf.conv1d(
+          x, w, stride, pad, dataFormat, dilation))(x, dy);
+    expectArraysClose(gradX, tf.tensor3d([3, 3, 3, 3], inputShape));
+
+    const gradW = tf.grad(
+        (w: tf.Tensor3D) => tf.conv1d(
+          x, w, stride, pad, dataFormat, dilation))(w, dy);
+    expectArraysClose(gradW, tf.tensor3d([10], filterShape));
+  });
 });
