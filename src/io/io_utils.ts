@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2018 Google Inc. All Rights Reserved.
+ * Copyright 2018 Google LLC. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,11 +17,14 @@
 
 import {tensor} from '../index';
 import {Tensor} from '../tensor';
-import {NamedTensorMap} from '../types';
+import {NamedTensorMap, TypedArray} from '../types';
+import {sizeFromShape} from '../util';
+
 import {WeightsManifestEntry} from './types';
 
 /**
- * Encode a map from names to Tensors as an ArrayBuffer.
+ * Encode a map from names to weight values as an ArrayBuffer, along with an
+ * `Array` of `WeightsManifestEntry` as specification of the encoded weights.
  *
  * @param tensors A map ("dict") from names to tensors.
  * @returns A `Promise` of
@@ -31,26 +34,26 @@ import {WeightsManifestEntry} from './types';
  *     tensor names, `dtype`s and shapes.
  * @throws Error: on unsupported tensor `dtype`.
  */
-export async function encodeTensors(tensors: NamedTensorMap):
-    Promise<[ArrayBuffer, WeightsManifestEntry[]]> {
+export async function encodeWeights(tensors: NamedTensorMap):
+    Promise<{data: ArrayBuffer, specs: WeightsManifestEntry[]}> {
+  // TODO(adarob, cais): Support quantization.
   const specs: WeightsManifestEntry[] = [];
-  const dataPromises: Array<Promise<Float32Array|Int32Array|Uint8Array>> = [];
+  const dataPromises: Array<Promise<TypedArray>> = [];
   for (const name in tensors) {
-    const tensor = tensors[name];
+    const t = tensors[name];
 
-    if (tensor.dtype !== 'float32' && tensor.dtype !== 'int32' &&
-        tensor.dtype !== 'bool') {
-      throw new Error(`Unsupported dtype: ${tensor.dtype}`);
+    if (t.dtype !== 'float32' && t.dtype !== 'int32' && t.dtype !== 'bool') {
+      throw new Error(`Unsupported dtype in weight '${name}': ${t.dtype}`);
     }
-    specs.push({name, shape: tensor.shape, dtype: tensor.dtype});
-    dataPromises.push(tensor.data());
+    specs.push({name, shape: t.shape, dtype: t.dtype});
+    dataPromises.push(t.data());
   }
   const tensorValues = await Promise.all(dataPromises);
-  return [concatenateTypedArrays(tensorValues), specs];
+  return {data: concatenateTypedArrays(tensorValues), specs};
 }
 
 /**
- * Decode flat ArrayBuffer as named Tensors.
+ * Decode flat ArrayBuffer as weights.
  *
  * @param buffer A flat ArrayBuffer carrying the binary values of the tensors
  *   concatenated in the order specified in `specs`.
@@ -60,8 +63,9 @@ export async function encodeTensors(tensors: NamedTensorMap):
  *   to names in `specs`.
  * @throws Error, if any of the tensors has unsupported dtype.
  */
-export function decodeTensors(
+export function decodeWeights(
     buffer: ArrayBuffer, specs: WeightsManifestEntry[]): NamedTensorMap {
+  // TODO(adarob, cais): Support quantization.
   const out: NamedTensorMap = {};
   let offset = 0;
   for (const spec of specs) {
@@ -69,10 +73,7 @@ export function decodeTensors(
     const dtype = spec.dtype;
     const shape = spec.shape;
 
-    let numel = 1;
-    for (const dim of shape) {
-      numel *= dim;
-    }
+    const numel = sizeFromShape(shape);
     let bytes: number;
     let value: Tensor;
     if (dtype === 'float32') {
@@ -85,7 +86,7 @@ export function decodeTensors(
       bytes = numel;
       value = tensor(new Uint8Array(buffer, offset, numel), shape, 'bool');
     } else {
-      throw new Error(`Unsupported dtype: ${dtype}`);
+      throw new Error(`Unsupported dtype in weight '${name}': ${dtype}`);
     }
     out[name] = value;
     offset += bytes;
@@ -96,16 +97,10 @@ export function decodeTensors(
 /**
  * Concatenate TypedArrays into an ArrayBuffer.
  */
-export function concatenateTypedArrays(
-    xs: Array<Float32Array|Int32Array|Uint8Array>): ArrayBuffer {
+export function concatenateTypedArrays(xs: TypedArray[]): ArrayBuffer {
+  // TODO(adarob, cais): Support quantization.
   if (xs === null) {
-    return null;
-  }
-  if (xs === undefined) {
-    return undefined;
-  }
-  if (xs.length === 0) {
-    return new ArrayBuffer(0);
+    throw new Error(`Invalid input value: ${JSON.stringify(xs)}`);
   }
 
   let totalByteLength = 0;

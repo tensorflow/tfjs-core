@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2018 Google Inc. All Rights Reserved.
+ * Copyright 2018 Google LLC. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,11 +15,13 @@
  * =============================================================================
  */
 
-import {scalar, tensor1d, tensor2d} from '../index';
+import {decodeWeights, encodeWeights} from '../index';
+
+import {scalar, tensor1d, tensor2d} from '../ops/ops';
 import {expectArraysEqual} from '../test_util';
 import {NamedTensorMap} from '../types';
 
-import {concatenateTypedArrays, decodeTensors, encodeTensors} from './io_utils';
+import {concatenateTypedArrays} from './io_utils';
 
 // import {WeightsManifestEntry} from './types';
 
@@ -83,8 +85,8 @@ describe('concatenateTypedArrays', () => {
   });
 
   it('null and undefined inputs', () => {
-    expect(concatenateTypedArrays(null)).toEqual(null);
-    expect(concatenateTypedArrays(undefined)).toEqual(undefined);
+    expect(() => concatenateTypedArrays(null)).toThrow();
+    expect(() => concatenateTypedArrays(undefined)).toThrow();
   });
 
   it('empty input array', () => {
@@ -99,17 +101,17 @@ describe('concatenateTypedArrays', () => {
   });
 });
 
-describe('encodeTensors', () => {
+describe('encodeWeights', () => {
   it('Float32 tensors', async done => {
     const tensors: NamedTensorMap = {
       x1: tensor2d([[10, 20], [30, 40]]),
       x2: scalar(42),
       x3: tensor1d([-1.3, -3.7, 1.3, 3.7]),
     };
-    encodeTensors(tensors)
+    encodeWeights(tensors)
         .then(dataAndSpecs => {
-          const data = dataAndSpecs[0];
-          const specs = dataAndSpecs[1];
+          const data = dataAndSpecs.data;
+          const specs = dataAndSpecs.specs;
           expect(data.byteLength).toEqual(4 * (4 + 1 + 4));
           expect(new Float32Array(data, 0, 4)).toEqual(new Float32Array([
             10, 20, 30, 40
@@ -148,10 +150,10 @@ describe('encodeTensors', () => {
       x2: scalar(42, 'int32'),
       x3: tensor1d([-1, -3, -3, -7], 'int32'),
     };
-    encodeTensors(tensors)
+    encodeWeights(tensors)
         .then(dataAndSpecs => {
-          const data = dataAndSpecs[0];
-          const specs = dataAndSpecs[1];
+          const data = dataAndSpecs.data;
+          const specs = dataAndSpecs.specs;
           expect(data.byteLength).toEqual(4 * (4 + 1 + 4));
           expect(new Int32Array(data, 0, 4)).toEqual(new Int32Array([
             10, 20, 30, 40
@@ -190,10 +192,10 @@ describe('encodeTensors', () => {
       x2: scalar(false, 'bool'),
       x3: tensor1d([false, true, true, false], 'bool'),
     };
-    encodeTensors(tensors)
+    encodeWeights(tensors)
         .then(dataAndSpecs => {
-          const data = dataAndSpecs[0];
-          const specs = dataAndSpecs[1];
+          const data = dataAndSpecs.data;
+          const specs = dataAndSpecs.specs;
           expect(data.byteLength).toEqual(4 + 1 + 4);
           expect(new Uint8Array(data, 0, 4)).toEqual(new Uint8Array([
             1, 0, 0, 1
@@ -232,10 +234,10 @@ describe('encodeTensors', () => {
       x2: scalar(13.37, 'float32'),
       x3: tensor1d([true, false, false, true], 'bool'),
     };
-    encodeTensors(tensors)
+    encodeWeights(tensors)
         .then(dataAndSpecs => {
-          const data = dataAndSpecs[0];
-          const specs = dataAndSpecs[1];
+          const data = dataAndSpecs.data;
+          const specs = dataAndSpecs.specs;
           expect(data.byteLength).toEqual(4 * 4 + 4 * 1 + 1 * 4);
           expect(new Int32Array(data, 0, 4)).toEqual(new Int32Array([
             10, 20, 30, 40
@@ -270,7 +272,7 @@ describe('encodeTensors', () => {
   });
 });
 
-describe('decodeTensors', () => {
+describe('decodeWeights', () => {
   it('Mixed dtype tensors', async done => {
     const tensors: NamedTensorMap = {
       x1: tensor2d([[10, 20], [30, 40]], [2, 2], 'int32'),
@@ -278,12 +280,12 @@ describe('decodeTensors', () => {
       x3: tensor1d([true, false, false, true], 'bool'),
       y1: tensor2d([-10, -20, -30], [3, 1], 'float32'),
     };
-    encodeTensors(tensors)
+    encodeWeights(tensors)
         .then(dataAndSpecs => {
-          const data = dataAndSpecs[0];
-          const specs = dataAndSpecs[1];
+          const data = dataAndSpecs.data;
+          const specs = dataAndSpecs.specs;
           expect(data.byteLength).toEqual(4 * 4 + 4 * 1 + 1 * 4 + 4 * 3);
-          const decoded = decodeTensors(data, specs);
+          const decoded = decodeWeights(data, specs);
           expect(Object.keys(decoded).length).toEqual(4);
           expectArraysEqual(decoded['x1'], tensors['x1']);
           expectArraysEqual(decoded['x2'], tensors['x2']);
@@ -307,7 +309,7 @@ describe('decodeTensors', () => {
       },
       {name: 'y', dtype: 'int16', shape: []}
     ];
-    expect(() => decodeTensors(buffer, specs))
-        .toThrowError(/Unsupported dtype: int16/);
+    expect(() => decodeWeights(buffer, specs))
+        .toThrowError(/Unsupported dtype in weight \'x\': int16/);
   });
 });

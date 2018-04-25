@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2018 Google Inc. All Rights Reserved.
+ * Copyright 2018 Google LLC. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -42,6 +42,7 @@ export async function loadWeights(
   // single weight from a group, the whole group will be fetched. At a future
   // date, we should support fetching only the individual shards within a
   // group that are needed to reconstruct the requested weight.
+  // TODO(cais): Use `decodeWeights` for implementation.
 
   // Collect all the groups, weights, and their relative offsets to be
   // fetched.
