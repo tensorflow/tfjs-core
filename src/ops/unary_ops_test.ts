@@ -1009,7 +1009,7 @@ describeWithFlags('sign', ALL_ENVS, () => {
     const r = tf.sign(a);
     expectNumbersClose(r.get(0), 1);
     expectNumbersClose(r.get(1), 0);
-    expectNumbersClose(r.get(3), -1);
+    expectNumbersClose(r.get(2), -1);
   });
 
   it('gradients: Scalar', () => {
