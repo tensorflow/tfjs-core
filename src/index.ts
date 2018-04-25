@@ -24,17 +24,13 @@ import './kernels/backend_cpu';
 import {BrowserUtil} from './browser_util';
 import * as environment from './environment';
 import {Environment} from './environment';
+// Serialization.
+import * as io from './io/io';
 import * as gpgpu_util from './kernels/webgl/gpgpu_util';
 import * as webgl_util from './kernels/webgl/webgl_util';
 import * as test_util from './test_util';
 import * as util from './util';
 import {version} from './version';
-
-// Serialization.
-export {decodeWeights, encodeWeights} from './io/io_utils';
-// tslint:disable-next-line:max-line-length
-export {IOHandler, LoadHandler, ModelArtifacts, SaveConfig, SaveHandler, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './io/types';
-export {loadWeights} from './io/weights_loader';
 
 // Optimizers.
 export {AdadeltaOptimizer} from './optimizers/adadelta_optimizer';
@@ -48,6 +44,7 @@ export {SGDOptimizer} from './optimizers/sgd_optimizer';
 // tslint:disable-next-line:max-line-length
 export {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer, variable, Variable} from './tensor';
 export {DataType, Rank, ShapeMap} from './types';
+export {io};
 
 export * from './ops/ops';
 export {LSTMCellFunc} from './ops/lstm';

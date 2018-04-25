@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {decodeWeights, encodeWeights} from '../index';
+import * as tf from '../index';
 
 import {scalar, tensor1d, tensor2d} from '../ops/ops';
 import {expectArraysEqual} from '../test_util';
@@ -106,7 +106,7 @@ describe('encodeWeights', () => {
       x2: scalar(42),
       x3: tensor1d([-1.3, -3.7, 1.3, 3.7]),
     };
-    encodeWeights(tensors)
+    tf.io.encodeWeights(tensors)
         .then(dataAndSpecs => {
           const data = dataAndSpecs.data;
           const specs = dataAndSpecs.specs;
@@ -148,7 +148,7 @@ describe('encodeWeights', () => {
       x2: scalar(42, 'int32'),
       x3: tensor1d([-1, -3, -3, -7], 'int32'),
     };
-    encodeWeights(tensors)
+    tf.io.encodeWeights(tensors)
         .then(dataAndSpecs => {
           const data = dataAndSpecs.data;
           const specs = dataAndSpecs.specs;
@@ -190,7 +190,7 @@ describe('encodeWeights', () => {
       x2: scalar(false, 'bool'),
       x3: tensor1d([false, true, true, false], 'bool'),
     };
-    encodeWeights(tensors)
+    tf.io.encodeWeights(tensors)
         .then(dataAndSpecs => {
           const data = dataAndSpecs.data;
           const specs = dataAndSpecs.specs;
@@ -232,7 +232,7 @@ describe('encodeWeights', () => {
       x2: scalar(13.37, 'float32'),
       x3: tensor1d([true, false, false, true], 'bool'),
     };
-    encodeWeights(tensors)
+    tf.io.encodeWeights(tensors)
         .then(dataAndSpecs => {
           const data = dataAndSpecs.data;
           const specs = dataAndSpecs.specs;
@@ -278,12 +278,12 @@ describe('decodeWeights', () => {
       x3: tensor1d([true, false, false, true], 'bool'),
       y1: tensor2d([-10, -20, -30], [3, 1], 'float32'),
     };
-    encodeWeights(tensors)
+    tf.io.encodeWeights(tensors)
         .then(dataAndSpecs => {
           const data = dataAndSpecs.data;
           const specs = dataAndSpecs.specs;
           expect(data.byteLength).toEqual(4 * 4 + 4 * 1 + 1 * 4 + 4 * 3);
-          const decoded = decodeWeights(data, specs);
+          const decoded = tf.io.decodeWeights(data, specs);
           expect(Object.keys(decoded).length).toEqual(4);
           expectArraysEqual(decoded['x1'], tensors['x1']);
           expectArraysEqual(decoded['x2'], tensors['x2']);
@@ -307,7 +307,7 @@ describe('decodeWeights', () => {
       },
       {name: 'y', dtype: 'int16', shape: []}
     ];
-    expect(() => decodeWeights(buffer, specs))
+    expect(() => tf.io.decodeWeights(buffer, specs))
         .toThrowError(/Unsupported dtype in weight \'x\': int16/);
   });
 });
