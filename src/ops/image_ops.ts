@@ -16,8 +16,9 @@
  */
 
 import {doc} from '../doc';
+import {ForwardFunc} from '../engine';
 import {ENV} from '../environment';
-import {Tensor3D, Tensor4D} from '../tensor';
+import {Tensor, Tensor3D, Tensor4D} from '../tensor';
 import * as util from '../util';
 import {operation} from './operation';
 
@@ -46,6 +47,7 @@ export class ImageOps {
         size.length === 2,
         `Error in resizeBilinear: new shape must 2D, but got shape ` +
             `${size}.`);
+
     let batchImages = images as Tensor4D;
     let reshapedTo4D = false;
     if (images.rank === 3) {
@@ -53,11 +55,22 @@ export class ImageOps {
       batchImages =
           images.as4D(1, images.shape[0], images.shape[1], images.shape[2]);
     }
+
     const [newHeight, newWidth] = size;
-    const res = ENV.engine.runKernel(
-        backend => backend.resizeBilinear(
-            batchImages, newHeight, newWidth, alignCorners),
-        {batchImages});
+    const forward: ForwardFunc<Tensor4D> = (backend, save) => save(
+        backend.resizeBilinear(batchImages, newHeight, newWidth, alignCorners));
+
+    const backward = (dy: Tensor4D, saved: Tensor[]) => {
+      const y = saved[0] as Tensor4D;
+
+      const result = ENV.engine.runKernel(
+          backend =>
+              backend.resizeBilinearGrad(dy, batchImages, y, alignCorners),
+          {});
+      return {batchImages: () => result};
+    };
+
+    const res = ENV.engine.runKernel(forward, {batchImages}, backward);
     if (reshapedTo4D) {
       return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as T;
     }
@@ -83,12 +96,13 @@ export class ImageOps {
     util.assert(
         images.rank === 3 || images.rank === 4,
         `Error in resizeNearestNeighbor: x must be rank 3 or 4, but got ` +
-        `rank ${images.rank}.`);
+            `rank ${images.rank}.`);
     util.assert(
         size.length === 2,
         `Error in resizeNearestNeighbor: new shape must 2D, but got shape ` +
-        `${size}.`);
-    util.assert(images.dtype === 'float32' || images.dtype === 'int32',
+            `${size}.`);
+    util.assert(
+        images.dtype === 'float32' || images.dtype === 'int32',
         '`images` must have `int32` or `float32` as dtype');
     let batchImages = images as Tensor4D;
     let reshapedTo4D = false;
@@ -107,5 +121,4 @@ export class ImageOps {
     }
     return res as T;
   }
-
 }

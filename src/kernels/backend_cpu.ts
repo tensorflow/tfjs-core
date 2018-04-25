@@ -225,9 +225,9 @@ export class MathBackendCPU implements KernelBackend {
     const bValues = b.dataSync();
 
     const [aOuterStep, aInnerStep] =
-      transposeA ? [1, a.strides[0]] : [a.strides[0], 1];
+        transposeA ? [1, a.strides[0]] : [a.strides[0], 1];
     const [bOuterStep, bInnerStep] =
-      transposeB ? [b.strides[0], 1] : [1, b.strides[0]];
+        transposeB ? [b.strides[0], 1] : [1, b.strides[0]];
 
     const aOuterEnd = leftDim * aOuterStep;
     const bOuterEnd = rightDim * bOuterStep;
@@ -1392,10 +1392,16 @@ export class MathBackendCPU implements KernelBackend {
     const output =
         ops.buffer<Rank.R4>([batch, newHeight, newWidth, numChannels], x.dtype);
 
-    const effectiveInputSize: [number, number] =
-        alignCorners ? [oldHeight - 1, oldWidth - 1] : [oldHeight, oldWidth];
-    const effectiveOutputSize: [number, number] =
-        alignCorners ? [newHeight - 1, newWidth - 1] : [newHeight, newWidth];
+    const effectiveInputSize: [number, number] = [
+      (alignCorners && newHeight > 1) ? oldHeight - 1 : oldHeight,
+      (alignCorners && newWidth > 1) ? oldWidth - 1 : oldWidth
+    ];
+
+    const effectiveOutputSize: [number, number] = [
+      (alignCorners && newHeight > 1) ? newHeight - 1 : newHeight,
+      (alignCorners && newWidth > 1) ? newWidth - 1 : newWidth
+    ];
+
     for (let b = 0; b < batch; b++) {
       for (let r = 0; r < newHeight; r++) {
         for (let c = 0; c < newWidth; c++) {
@@ -1432,13 +1438,76 @@ export class MathBackendCPU implements KernelBackend {
         }
       }
     }
+    return output.toTensor();
+  }
+
+  resizeBilinearGrad(
+      dy: Tensor4D, x: Tensor4D, y: Tensor4D, alignCorners: boolean) {
+    const [batch, xHeight, xWidth, depth] = x.shape;
+    const [, yHeight, yWidth] = y.shape;
+
+    const output =
+        ops.buffer<Rank.R4>([batch, xHeight, xWidth, depth], x.dtype);
+
+    // In the backwards pass, we want to find the pixels that were generated for
+    // each pixel in the input image the forward pass and add the corresponding
+    // coefficient from dy to the gradient (with some interpolation).
+
+    const effectiveXSize: [number, number] = [
+      (alignCorners && yHeight > 1) ? xHeight - 1 : xHeight,
+      (alignCorners && yWidth > 1) ? xWidth - 1 : xWidth
+    ];
+
+    const effectiveYSize: [number, number] = [
+      (alignCorners && yHeight > 1) ? yHeight - 1 : yHeight,
+      (alignCorners && yWidth > 1) ? yWidth - 1 : yWidth
+    ];
+
+    const heightScale = effectiveXSize[0] / effectiveYSize[0];
+    const widthScale = effectiveXSize[1] / effectiveYSize[1];
+
+    for (let b = 0; b < batch; b++) {
+      for (let r = 0; r < yHeight; r++) {
+        const inY = r * heightScale;
+        const topYIndex = Math.floor(inY);
+        const bottomYIndex = Math.min(Math.ceil(inY), xHeight - 1);
+        const yLerp = inY - topYIndex;
+        const inverseYLerp = 1.0 - yLerp;
+
+        for (let c = 0; c < yWidth; c++) {
+          const inX = c * widthScale;
+          const leftXIndex = Math.floor(inX);
+          const rightXIndex = Math.min(Math.ceil(inX), xWidth - 1);
+          const xLerp = inX - leftXIndex;
+          const inverseXLerp = 1.0 - xLerp;
+
+          for (let d = 0; d < depth; d++) {
+            let topLeft = output.get(b, topYIndex, leftXIndex, d);
+            topLeft += dy.get(b, r, c, d) * inverseYLerp * inverseXLerp;
+            output.set(topLeft, b, topYIndex, leftXIndex, d);
+
+            let topRight = output.get(b, topYIndex, rightXIndex, d);
+            topRight += dy.get(b, r, c, d) * inverseYLerp * xLerp;
+            output.set(topRight, b, topYIndex, rightXIndex, d);
+
+            let bottomLeft = output.get(b, bottomYIndex, leftXIndex, d);
+            bottomLeft += dy.get(b, r, c, d) * yLerp * inverseXLerp;
+            output.set(bottomLeft, b, bottomYIndex, leftXIndex, d);
+
+            let bottomRight = output.get(b, bottomYIndex, rightXIndex, d);
+            bottomRight += dy.get(b, r, c, d) * yLerp * xLerp;
+            output.set(bottomRight, b, bottomYIndex, rightXIndex, d);
+          }
+        }
+      }
+    }
 
     return output.toTensor();
   }
 
   resizeNearestNeighbor(
-    x: Tensor4D, newHeight: number, newWidth: number,
-    alignCorners: boolean): Tensor4D {
+      x: Tensor4D, newHeight: number, newWidth: number,
+      alignCorners: boolean): Tensor4D {
     const [batch, oldHeight, oldWidth, numChannels] = x.shape;
     const output =
         ops.buffer<Rank.R4>([batch, newHeight, newWidth, numChannels], x.dtype);
