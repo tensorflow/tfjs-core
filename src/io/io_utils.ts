@@ -88,9 +88,7 @@ export function decodeWeights(
     }
 
     const size = sizeFromShape(shape);
-    let bytes: number;
     let value: Tensor;
-    bytes = size * DTYPE_VALUE_SIZE_MAP[dtype];
     if (dtype === 'float32') {
       value = ArrayOps.tensor(
           new Float32Array(buffer, offset, size), shape, 'float32');
@@ -104,7 +102,8 @@ export function decodeWeights(
       throw new Error(`Unsupported dtype in weight '${name}': ${dtype}`);
     }
     out[name] = value;
-    offset += bytes;
+
+    offset += size * DTYPE_VALUE_SIZE_MAP[dtype];
   }
   return out;
 }

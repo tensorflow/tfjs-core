@@ -24,7 +24,8 @@ export const DTYPE_VALUE_SIZE_MAP: {[dtype: string]: number} = {
   'float32': 4,
   'int32': 4,
   'uint16': 2,
-  'uint8': 1
+  'uint8': 1,
+  'bool': 1,
 };
 
 /**
