@@ -186,21 +186,17 @@ export async function loadWeights(
         const quantizedArray = (quantization.dtype === 'uint8') ?
             new Uint8Array(byteBuffer) :
             new Uint16Array(byteBuffer);
-        let dequantize: (v: number) => number;
         if (dtype === 'float32') {
-          dequantize = v => v * quantization.scale + quantization.min;
-          typedArray = new Float32Array(quantizedArray.length);
+          typedArray = Float32Array.from(
+              quantizedArray, v => v * quantization.scale + quantization.min);
         } else if (dtype === 'int32') {
-          dequantize = v =>
-              Math.round(v * quantization.scale + quantization.min);
-          typedArray = new Int32Array(quantizedArray.length);
+          typedArray = Int32Array.from(
+              quantizedArray,
+              v => Math.round(v * quantization.scale + quantization.min));
         } else {
           throw new Error(
               `Weight ${weightsEntry.manifestEntry.name} has a dtype not ` +
               `supported by quantization: ${dtype}`);
-        }
-        for (let i = 0; i < typedArray.length; ++i) {
-          typedArray[i] = dequantize(quantizedArray[i]);
         }
       } else {
         if (dtype === 'float32') {
