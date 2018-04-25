@@ -18,6 +18,7 @@
 import {ENV} from '../environment';
 import {keep, tidy} from '../globals';
 import {scalar} from '../ops/ops';
+import {ConfigDict, Constructor, JsonDict, Serializable, SerializationMap} from '../serialization';
 import {Scalar} from '../tensor';
 import {NamedTensorMap} from '../types';
 
@@ -25,6 +26,7 @@ import {Optimizer} from './optimizer';
 
 /** @doclink Optimizer */
 export class SGDOptimizer extends Optimizer {
+  static className = 'SGDOptimizer';
   protected c: Scalar;
 
   constructor(protected learningRate: number) {
@@ -59,4 +61,13 @@ export class SGDOptimizer extends Optimizer {
   dispose() {
     this.c.dispose();
   }
+
+  getConfig(): ConfigDict {
+    return {learningRate: this.learningRate};
+  }
+  static fromConfig<T extends Serializable>(
+      cls: Constructor<T>, config: JsonDict): T {
+    return new cls(config.learningRate);
+  }
 }
+SerializationMap.register(SGDOptimizer);
