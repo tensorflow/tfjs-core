@@ -1005,11 +1005,17 @@ describeWithFlags('floor', ALL_ENVS, () => {
 
 describeWithFlags('sign', ALL_ENVS, () => {
   it('basic', () => {
-    const a = tf.tensor1d([1.5, 0, -1.4]);
+    const a = tf.tensor1d([1.5, 0, NaN, -1.4]);
     const r = tf.sign(a);
     expectNumbersClose(r.get(0), 1);
     expectNumbersClose(r.get(1), 0);
-    expectNumbersClose(r.get(2), -1);
+    expectNumbersClose(r.get(2), 0);
+    expectNumbersClose(r.get(3), -1);
+  });
+    it('propagates NaNs', () => {
+    const a = tf.tensor1d([1.5, NaN, -1.4]);
+    const r = tf.sign(a);
+    expectArraysClose(r, [1, 0, -1]);
   });
 
   it('gradients: Scalar', () => {
