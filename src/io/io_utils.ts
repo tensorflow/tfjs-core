@@ -84,7 +84,7 @@ export function decodeWeights(
     if (spec.quantization != null) {
       throw new Error(
           `decodeWeights does not support quantization yet, but encountered ` +
-          `weight '${name} wit quantization.'`);
+          `weight '${name} with quantization.'`);
     }
 
     const size = sizeFromShape(shape);
