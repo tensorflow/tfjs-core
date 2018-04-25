@@ -16,19 +16,6 @@
  */
 
 /**
- * Types to support JSON.
- *
- * Serialization/deserialization uses stringified-JSON as the storage
- * representation. Typically this should be used for materialized JSON
- * stored on disk/received over the wire.  Internally this is normally
- * converted to a ConfigDict that has renamed fields (TS naming conventions)
- * and support for Enums.
- */
-export type JsonValue = boolean|number|string|null|JsonArray|JsonDict;
-export interface JsonDict { [key: string]: JsonValue; }
-export interface JsonArray extends Array<JsonValue> {}
-
-/**
  * Types to support JSON-esque data structures internally.
  *
  * Internally ConfigDict's use camelCase keys and values where the
@@ -61,7 +48,7 @@ export type Constructor<T extends Serializable> = {
   new (...args: any[]): T; className: string; fromConfig: FromConfigMethod<T>;
 };
 export type FromConfigMethod<T extends Serializable> =
-    (cls: Constructor<T>, config: JsonDict) => T;
+    (cls: Constructor<T>, config: ConfigDict) => T;
 
 /**
  * Serializable defines the serialization contract.

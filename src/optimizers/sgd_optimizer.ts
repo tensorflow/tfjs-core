@@ -18,7 +18,7 @@
 import {ENV} from '../environment';
 import {keep, tidy} from '../globals';
 import {scalar} from '../ops/ops';
-import {ConfigDict, Constructor, JsonDict, Serializable, SerializationMap} from '../serialization';
+import {ConfigDict, Constructor, Serializable, SerializationMap} from '../serialization';
 import {Scalar} from '../tensor';
 import {NamedTensorMap} from '../types';
 
@@ -66,7 +66,7 @@ export class SGDOptimizer extends Optimizer {
     return {learningRate: this.learningRate};
   }
   static fromConfig<T extends Serializable>(
-      cls: Constructor<T>, config: JsonDict): T {
+      cls: Constructor<T>, config: ConfigDict): T {
     return new cls(config.learningRate);
   }
 }
