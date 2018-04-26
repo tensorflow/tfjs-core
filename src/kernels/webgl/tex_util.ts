@@ -87,10 +87,10 @@ export function encodeFloatArray(floatArray: Float32Array): Uint8Array {
     value = floatArray[i / 4];
 
     if (isNaN(value)) {
-      uintArray[i] = BYTE_NAN_VALUE
-      uintArray[i + 1] = BYTE_NAN_VALUE
-      uintArray[i + 2] = BYTE_NAN_VALUE
-      uintArray[i + 3] = BYTE_NAN_VALUE
+      uintArray[i] = BYTE_NAN_VALUE;
+      uintArray[i + 1] = BYTE_NAN_VALUE;
+      uintArray[i + 2] = BYTE_NAN_VALUE;
+      uintArray[i + 3] = BYTE_NAN_VALUE;
       continue ;
     }
 
