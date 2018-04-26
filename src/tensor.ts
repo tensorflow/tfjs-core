@@ -38,9 +38,8 @@ export interface TensorData {
 export class TensorBuffer<R extends Rank> {
   size: number;
   shape: ShapeMap[R];
+  strides: number[];
   values: TypedArray;
-
-  private strides: number[];
 
   constructor(shape: ShapeMap[R], public dtype: DataType, values: TypedArray) {
     if (values != null) {
@@ -826,6 +825,10 @@ export class Tensor<R extends Rank = Rank> {
   erf<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.erf(this);
+  }
+  round<T extends Tensor>(this: T): T {
+    this.throwIfDisposed();
+    return ops.round(this);
   }
   step<T extends Tensor>(this: T, alpha = 0.0): T {
     this.throwIfDisposed();
