@@ -1778,44 +1778,34 @@ describeWithFlags('gather', ALL_ENVS, () => {
     const indices = tf.tensor1d([0, 2, 0, 1], 'int32');
     const dy = tf.tensor([3, 4, 5, 6]);
 
-    const grads = tf.grads(
-        (t, indices) => tf.gather(t, indices as tf.Tensor<tf.Rank.R1>, 0));
-    const [dt, dIndices] = grads([t, indices], dy);
+    const gradients = tf.grad(t => tf.gather(t, indices))(t, dy);
 
-    expect(dt.shape).toEqual(t.shape);
-    expectArraysClose(dt, [8, 6, 4]);
-
-    expect(dIndices.shape).toEqual(indices.shape);
+    expect(gradients.shape).toEqual(t.shape);
+    expectArraysClose(gradients, [8, 6, 4]);
   });
 
   it('gradient 2D (gather) axis=0', () => {
     const t = tf.tensor2d([1, 11, 2, 22], [2, 2]);
     const indices = tf.tensor1d([1, 0, 0, 1], 'int32');
     const dy = tf.tensor([3, 4, 5, 6, 7, 8, 9, 10], [4, 2]);
+    const axis = 0;
 
-    const grads = tf.grads(
-        (t, indices) => tf.gather(t, indices as tf.Tensor<tf.Rank.R1>, 0));
-    const [dt, dIndices] = grads([t, indices], dy);
+    const gradients = tf.grad(t => tf.gather(t, indices, axis))(t, dy);
 
-    expect(dt.shape).toEqual(t.shape);
-    expectArraysClose(dt, [12, 14, 12, 14]);
-
-    expect(dIndices.shape).toEqual(indices.shape);
+    expect(gradients.shape).toEqual(t.shape);
+    expectArraysClose(gradients, [12, 14, 12, 14]);
   });
 
   it('gradient 2D (gather) axis=1', () => {
     const t = tf.tensor2d([1, 11, 2, 22], [2, 2]);
     const indices = tf.tensor1d([1, 0, 0, 1], 'int32');
     const dy = tf.tensor([3, 4, 5, 6, 7, 8, 9, 10], [2, 4]);
+    const axis = 1;
 
-    const grads = tf.grads(
-        (t, indices) => tf.gather(t, indices as tf.Tensor<tf.Rank.R1>, 1));
-    const [dt, dIndices] = grads([t, indices], dy);
+    const gradients = tf.grad(t => tf.gather(t, indices, axis))(t, dy);
 
-    expect(dt.shape).toEqual(t.shape);
-    expectArraysClose(dt, [9, 9, 17, 17]);
-
-    expect(dIndices.shape).toEqual(indices.shape);
+    expect(gradients.shape).toEqual(t.shape);
+    expectArraysClose(gradients, [9, 9, 17, 17]);
   });
 
   it('gradient 3D (gather) axis=0', () => {
@@ -1827,15 +1817,13 @@ describeWithFlags('gather', ALL_ENVS, () => {
           4, 15, 12, -7, 18, 19,  2, 21, 6,    23, 24, 25
         ],
         [4, 3, 2]);
+    const axis = 0;
 
-    const grads = tf.grads(
-        (t, indices) => tf.gather(t, indices as tf.Tensor<tf.Rank.R1>, 0));
-    const [dt, dIndices] = grads([t, indices], dy);
+    const gradients = tf.grad(t => tf.gather(t, indices, axis))(t, dy);
 
-    expect(dt.shape).toEqual(t.shape);
-    expectArraysClose(dt, [5, 33, 12.01, -7, 30, 32, 4, 18, 10, 38, 30, 25.7]);
-
-    expect(dIndices.shape).toEqual(indices.shape);
+    expect(gradients.shape).toEqual(t.shape);
+    expectArraysClose(
+        gradients, [5, 33, 12.01, -7, 30, 32, 4, 18, 10, 38, 30, 25.7]);
   });
 
   it('gradient 3D (gather) axis=1', () => {
@@ -1844,15 +1832,13 @@ describeWithFlags('gather', ALL_ENVS, () => {
     const dy = tf.tensor(
         [2, -3, 4, 15, 6, 0.7, 1, 18, 0.01, 0, 12, 13, 4, 15, 12, -7],
         [2, 4, 2]);
+    const axis = 1;
 
-    const grads = tf.grads(
-        (t, indices) => tf.gather(t, indices as tf.Tensor<tf.Rank.R1>, 1));
-    const [dt, dIndices] = grads([t, indices], dy);
+    const gradients = tf.grad(t => tf.gather(t, indices, axis))(t, dy);
 
-    expect(dt.shape).toEqual(t.shape);
-    expectArraysClose(dt, [0, 0, 3, 15, 10, 15.7, 0, 0, 12.01, -7, 16, 28]);
-
-    expect(dIndices.shape).toEqual(indices.shape);
+    expect(gradients.shape).toEqual(t.shape);
+    expectArraysClose(
+        gradients, [0, 0, 3, 15, 10, 15.7, 0, 0, 12.01, -7, 16, 28]);
   });
 
   it('gradient 3D (gather) axis=2', () => {
@@ -1864,15 +1850,13 @@ describeWithFlags('gather', ALL_ENVS, () => {
           4, 15, 12, -7, 18, 19,  2, 21, 6,    23, 24, 25
         ],
         [2, 3, 4]);
+    const axis = 2;
 
-    const grads = tf.grads(
-        (t, indices) => tf.gather(t, indices as tf.Tensor<tf.Rank.R1>, 2));
-    const [dt, dIndices] = grads([t, indices], dy);
+    const gradients = tf.grad(t => tf.gather(t, indices, axis))(t, dy);
 
-    expect(dt.shape).toEqual(t.shape);
-    expectArraysClose(dt, [12, 6, 18.7, 7, 13, 12.01, 8, 16, 40, 20, 48, 30]);
-
-    expect(dIndices.shape).toEqual(indices.shape);
+    expect(gradients.shape).toEqual(t.shape);
+    expectArraysClose(
+        gradients, [12, 6, 18.7, 7, 13, 12.01, 8, 16, 40, 20, 48, 30]);
   });
 });
 
@@ -2300,5 +2284,71 @@ describeWithFlags('expandDims', ALL_ENVS, () => {
   it('throws when passed a non-tensor', () => {
     expect(() => tf.expandDims({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'expandDims' must be a Tensor/);
+  });
+});
+
+describeWithFlags('unsortedSegmentSum', ALL_ENVS, () => {
+  it('tensor1D', () => {
+    const t = tf.tensor1d([1, 2, 3, 4]);
+    const segmentIds = tf.tensor1d([0, 2, 0, 1], 'int32');
+    const numSegments = 3;
+    const res = tf.unsortedSegmentSum(t, segmentIds, numSegments);
+
+    expect(res.shape).toEqual([3]);
+    expectArraysClose(res, [4, 4, 2]);
+  });
+
+  it('tensor2D axis=0', () => {
+    const t = tf.tensor2d([1, 2, 3, 4], [2, 2]);
+    const segmentIds = tf.tensor1d([0, 0], 'int32');
+    const numSegments = 2;
+    const res = tf.unsortedSegmentSum(t, segmentIds, numSegments);
+
+    expect(res.shape).toEqual([2, 2]);
+    expectArraysClose(res, [4, 6, 0, 0]);
+  });
+
+  it('tensor2D axis=11', () => {
+    const t = tf.tensor2d([1, 2, 3, 4], [2, 2]);
+    const segmentIds = tf.tensor1d([0, 0], 'int32');
+    const numSegments = 2;
+    const axis = 1;
+    const res = tf.unsortedSegmentSum(t, segmentIds, numSegments, axis);
+
+    expect(res.shape).toEqual([2, 2]);
+    expectArraysClose(res, [3, 0, 7, 0]);
+  });
+
+  it('tensor3D axis=0', () => {
+    const t = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [3, 2, 2]);
+    const segmentIds = tf.tensor1d([2, 1, 2], 'int32');
+    const numSegments = 3;
+    const axis = 0;
+    const res = tf.unsortedSegmentSum(t, segmentIds, numSegments, axis);
+
+    expect(res.shape).toEqual([3, 2, 2]);
+    expectArraysClose(res, [0, 0, 0, 0, 5, 6, 7, 8, 10, 12, 14, 16]);
+  });
+
+  it('tensor3D axis=1', () => {
+    const t = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [2, 3, 2]);
+    const segmentIds = tf.tensor1d([2, 2, 2], 'int32');
+    const numSegments = 3;
+    const axis = 1;
+    const res = tf.unsortedSegmentSum(t, segmentIds, numSegments, axis);
+
+    expect(res.shape).toEqual([2, 3, 2]);
+    expectArraysClose(res, [0, 0, 0, 0, 9, 12, 0, 0, 0, 0, 27, 30]);
+  });
+
+  it('tensor3D axis=2', () => {
+    const t = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [2, 3, 2]);
+    const segmentIds = tf.tensor1d([0, 0], 'int32');
+    const numSegments = 2;
+    const axis = 2;
+    const res = tf.unsortedSegmentSum(t, segmentIds, numSegments, axis);
+
+    expect(res.shape).toEqual([2, 3, 2]);
+    expectArraysClose(res, [3, 0, 7, 0, 11, 0, 15, 0, 19, 0, 23, 0]);
   });
 });

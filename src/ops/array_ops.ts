@@ -880,18 +880,15 @@ export class ArrayOps {
     util.assertArgumentsAreTensors({x, indices}, 'gather');
 
     util.assert(indices.dtype === 'int32', 'Indices must be of dtype `int32`');
-    const axes = parseAxisParam(axis, x.shape);
+    axis = parseAxisParam(axis, x.shape)[0];
     const grad = (dy: T) => {
       const derX = () => {
-        return unsortedSegmentSum(dy, indices, x.shape[axes[0]], axes[0]);
+        return ArrayOps.unsortedSegmentSum(dy, indices, x.shape[axis], axis);
       };
-      const derIndices = () => {
-        return ArrayOps.zerosLike(indices);
-      };
-      return {x: derX, indices: derIndices};
+      return {x: derX};
     };
     return ENV.engine.runKernel(
-        backend => backend.gather(x, indices, axes[0]), {x, indices}, grad);
+        backend => backend.gather(x, indices, axis), {x}, grad);
   }
 
   /**
@@ -1243,6 +1240,61 @@ export class ArrayOps {
   static print<T extends Tensor>(x: T, verbose = false): void {
     console.log(tensor_util.tensorToString(x, verbose));
   }
+
+  /**
+   * Computes the sum along segments of a `Tensor`.
+   *
+   * ```js
+   * const x = tf.tensor1d([1, 2, 3, 4]);
+   * const indices = tf.tensor1d([1, 2, 0, 1]);
+   * comst numSegments = 3;
+   * const axis = 0;
+   *
+   * x.unsortedSegmentSum(indices, numSegments, axis).print() //or
+   * tf.unsortedSegmentSum(x, indices, numSegments, axis)
+   * ```
+   * @param x The `Tensor` that will be summed along its segments
+   * @param segmentIds A `Tensor1D` whose rank is equal to the rank of `x`'s
+   * dimension akong the `axis`.  Maps each element of `x` to a segment.
+   * @param numSegments The number of distinct `segmentIds`
+   * @param axis The dimension along which the sums will be
+   * calculated. Defaults to 0.
+   */
+  @doc({heading: 'Operations', subheading: 'Reduction'})
+  static unsortedSegmentSum<T extends Tensor>(
+      x: T, segmentIds: Tensor1D, numSegments: number, axis = 0): T {
+    util.assertArgumentsAreTensors({x, segmentIds}, 'unsortedSegmentSum');
+
+    util.assert(
+        segmentIds.dtype === 'int32', 'Segment Ids must be of dtype `int32`');
+
+    axis = parseAxisParam(axis, x.shape)[0];
+    const res = [];
+    const [dim] = segmentIds.shape;
+
+    // Reshape the segment id's so that they can be broadcast with
+    // x. The new shape should be [1, 1, ... 1, dim, 1, ..., 1] where
+    // dim is at index = axis.
+    const newShape = [];
+    for (let i = 0; i < x.shape.length; i++) {
+      if (i === axis) {
+        newShape.push(dim);
+      } else {
+        newShape.push(1);
+      }
+    }
+
+    const reshapedSegmentIds = ArrayOps.reshape(segmentIds, newShape);
+    for (let i = 0; i < numSegments; i++) {
+      const segmentId = ArrayOps.scalar(i, 'int32');
+      const mask =
+          CompareOps.equal(segmentId, reshapedSegmentIds).asType('float32');
+      const sum = mask.mul(x).sum(axis);
+      res.push(sum);
+    }
+
+    return ArrayOps.stack(res, axis) as T;
+  }
 }
 
 function makeZerosTypedArray<D extends DataType>(
@@ -1283,38 +1335,4 @@ function noConversionNeeded<D extends DataType>(
   return (a instanceof Float32Array && dtype === 'float32') ||
       (a instanceof Int32Array && dtype === 'int32') ||
       (a instanceof Uint8Array && dtype === 'bool');
-}
-
-function unsortedSegmentSum<T extends Tensor>(
-    x: T, segmentIds: Tensor1D, numSegments: number, axis = 0): T {
-  util.assertArgumentsAreTensors({x, segmentIds}, 'unsortedSegmentSum');
-
-  util.assert(
-      segmentIds.dtype === 'int32', 'Segment Ids must be of dtype `int32`');
-
-  const axes = parseAxisParam(axis, x.shape);
-  const res = [];
-  const [dim] = segmentIds.shape;
-
-  // Reshape the segment id's so that they can be broadcast with
-  // x. The new shape should be [1, 1, ... 1, dim, 1, ..., 1] where
-  // dim is at index = axis.
-  const newShape = [];
-  for (let i = 0; i < x.shape.length; i++) {
-    if (i === axes[0]) {
-      newShape.push(dim);
-    } else {
-      newShape.push(1);
-    }
-  }
-
-  const reshapedSegmentIds = ArrayOps.reshape(segmentIds, newShape);
-  for (let i = 0; i < numSegments; i++) {
-    const f = ArrayOps.fill(x.shape, i, 'int32');
-    const mask = CompareOps.equal(f, reshapedSegmentIds).asType('float32');
-    const sum = mask.mul(x).sum(axes[0]);
-    res.push(sum);
-  }
-
-  return ArrayOps.stack(res, axes[0]) as T;
 }
