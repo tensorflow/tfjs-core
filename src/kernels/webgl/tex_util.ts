@@ -82,50 +82,46 @@ const FLOAT_RANGE = (FLOAT_MAX - FLOAT_MIN) / 255;
 export const BYTE_NAN_VALUE = 0;
 export function encodeFloatArray(floatArray: Float32Array): Uint8Array {
   const uintArray = new Uint8Array(floatArray.length * 4);
-  for (let i = 0, normalised; i < uintArray.length; i += 4) {
-    var value = floatArray[i / 4];
+  const pow1 = 255.0, pow2 = pow1 * 255.0;
+  for (let i = 0, normalised, value; i < uintArray.length; i += 4) {
+    value = floatArray[i / 4];
+
     if (isNaN(value)) {
-        uintArray[i] = BYTE_NAN_VALUE;
-        uintArray[i + 1] = BYTE_NAN_VALUE;
-        uintArray[i + 2] = BYTE_NAN_VALUE;
-        uintArray[i + 3] = BYTE_NAN_VALUE;
-        continue ;
+      uintArray[i] = BYTE_NAN_VALUE
+      uintArray[i + 1] = BYTE_NAN_VALUE
+      uintArray[i + 2] = BYTE_NAN_VALUE
+      uintArray[i + 3] = BYTE_NAN_VALUE
+      continue ;
     }
 
-    normalised = (value - FLOAT_MIN) / FLOAT_RANGE
+    normalised = (value - FLOAT_MIN) / FLOAT_RANGE;
 
-    uintArray[i] = Math.floor(normalised)
-
-    normalised = (normalised % 1) * 255.0
-    uintArray[i + 1] = Math.floor(normalised)
-
-    normalised = (normalised % 1) * 255.0
-    uintArray[i + 2] = Math.floor(normalised)
-
-    normalised = (normalised % 1) * 255.0
-    uintArray[i + 3] = Math.floor(normalised)
+    uintArray[i] = Math.floor(normalised);
+    uintArray[i + 1] = Math.floor((normalised % 1) * 255.0);
+    uintArray[i + 2] = Math.floor(((normalised * pow1) % 1) * 255.0);
+    uintArray[i + 3] = Math.floor(((normalised * pow2) % 1) * 255.0);
   }
   return uintArray;
 }
 
 export function decodeToFloatArray(uintArray: Uint8Array): Float32Array {
   const floatArray = new Float32Array(uintArray.length / 4);
-  const div1 = 255.0, div2 = 255.0 * div1, div3 = 255.0 * div2
+  const div1 = 255.0, div2 = 255.0 * div1, div3 = 255.0 * div2;
 
   for (let i = 0, dot = 0; i < uintArray.length; i += 4) {
     if (uintArray[i] === BYTE_NAN_VALUE &&
         uintArray[i + 1] === BYTE_NAN_VALUE &&
         uintArray[i + 2] === BYTE_NAN_VALUE &&
         uintArray[i + 3] === BYTE_NAN_VALUE) {
-        floatArray[i / 4] = NaN;
-        continue ;
+      floatArray[i / 4] = NaN;
+      continue ;
     }
 
-    dot = 0
-    dot += uintArray[i]
-    dot += uintArray[i + 1] / div1
-    dot += uintArray[i + 2] / div2
-    dot += uintArray[i + 3] / div3
+    dot = 0;
+    dot += uintArray[i];
+    dot += uintArray[i + 1] / div1;
+    dot += uintArray[i + 2] / div2;
+    dot += uintArray[i + 3] / div3;
 
     floatArray[i / 4] = dot * FLOAT_RANGE + FLOAT_MIN;
   }
