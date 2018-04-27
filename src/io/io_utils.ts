@@ -168,7 +168,7 @@ export function arrayBufferToBase64String(buffer: ArrayBuffer) {
 }
 
 /**
- * Decode an base64 string as an ArrayBuffer.
+ * Decode a base64 string as an ArrayBuffer.
  *
  * @param str Base64 string.
  * @returns Decoded `ArrayBuffer`.
