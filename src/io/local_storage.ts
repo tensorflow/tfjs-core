@@ -66,17 +66,17 @@ export class BrowserLocalStorage implements IOHandler {
 
   constructor(modelPath: string) {
     if (!(window && window.localStorage)) {
+      // TODO(cais): Add more info about what IOHandler subtypes are available.
+      //   Maybe point to a doc page on the web and/or automatically determine
+      //   the available IOHandlers and print them in the error message.
       throw new Error(
           'The current environment does not support local storage.');
     }
     this.LS = window.localStorage;
 
-    if (modelPath == null) {
+    if (modelPath == null || !modelPath) {
       throw new Error(
-          'For local storage, modelPath must not be null or undefined.');
-    }
-    if (!modelPath) {
-      throw new Error('For local storage, modelPath must not be empty.');
+          'For local storage, modelPath must not be null, undefined or empty.');
     }
     this.modelPath = modelPath;
     const modelRoot = [PATH_PREFIX, this.modelPath].join(PATH_SEPARATOR);
@@ -136,6 +136,7 @@ export class BrowserLocalStorage implements IOHandler {
 
         throw new Error(
             `Failed to save model '${this.modelPath}' to local storage: ` +
+            `size quota being exceeded is a possible cause of this failure: ` +
             `modelTopologyBytes=${modelArtifactsInfo.modelTopologyBytes}, ` +
             `weightSpecsBytes=${modelArtifactsInfo.weightSpecsBytes}, ` +
             `weightDataBytes=${modelArtifactsInfo.weightDataBytes}.`);

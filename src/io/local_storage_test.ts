@@ -298,11 +298,12 @@ describe('LocalStorage', () => {
   it('Null, undefined or empty modelPath throws Error', () => {
     expect(() => tf.io.browserLocalStorage(null))
         .toThrowError(
-            /For local storage, modelPath must not be null or undefined/);
+            /local storage, modelPath must not be null, undefined or empty/);
     expect(() => tf.io.browserLocalStorage(undefined))
         .toThrowError(
-            /For local storage, modelPath must not be null or undefined/);
+            /local storage, modelPath must not be null, undefined or empty/);
     expect(() => tf.io.browserLocalStorage(''))
-        .toThrowError(/For local storage, modelPath must not be empty/);
+        .toThrowError(
+            /local storage, modelPath must not be null, undefined or empty./);
   });
 });
