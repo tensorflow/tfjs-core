@@ -219,6 +219,8 @@ export class BrowserLocalStorage implements IOHandler {
  *
  * @param modelPath A unique identifier for the model to be saved. Must be a
  *   non-empty string.
+ * @returns An instance of `BrowserLocalStorage` (sublcass of `IOHandler`),
+ *   which can be used with, e.g., `tf.Model.save`.
  */
 export function browserLocalStorage(modelPath: string) {
   return new BrowserLocalStorage(modelPath);
