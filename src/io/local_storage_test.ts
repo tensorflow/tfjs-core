@@ -220,7 +220,7 @@ describe('LocalStorage', () => {
     const handler1 = tf.io.browserLocalStorage('FooModel');
     handler1.save(artifacts1)
         .then(saveResult => {
-          // Manually remove the topology item from local storage.
+          // Manually remove the weight specs item from local storage.
           window.localStorage.removeItem(
               'tensorflowjs_models/FooModel/weight_specs');
 
@@ -248,7 +248,7 @@ describe('LocalStorage', () => {
     const handler1 = tf.io.browserLocalStorage('FooModel');
     handler1.save(artifacts1)
         .then(saveResult => {
-          // Manually remove the topology item from local storage.
+          // Manually remove the weight data item from local storage.
           window.localStorage.removeItem(
               'tensorflowjs_models/FooModel/weight_data');
 
