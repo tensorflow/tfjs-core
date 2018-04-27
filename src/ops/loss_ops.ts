@@ -130,7 +130,6 @@ export class LossOps {
 
     const one = ops.scalar(1);
     const losses = one.sub(labels.mul(predictions).sum(axis, true));
-    console.log(losses.dataSync());
     return LossOps.computeWeightedLoss(losses, weights, reduction);
   }
 }
