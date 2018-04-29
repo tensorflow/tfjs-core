@@ -38,9 +38,8 @@ export interface TensorData {
 export class TensorBuffer<R extends Rank> {
   size: number;
   shape: ShapeMap[R];
+  strides: number[];
   values: TypedArray;
-
-  private strides: number[];
 
   constructor(shape: ShapeMap[R], public dtype: DataType, values: TypedArray) {
     if (values != null) {
@@ -294,6 +293,9 @@ export class Tensor<R extends Rank = Rank> {
    * @param locs The location indices.
    */
   get(...locs: number[]) {
+    util.assert(
+        locs.length === this.rank,
+        'Number of coordinates in get() must match the rank of the tensor');
     this.throwIfDisposed();
     if (locs.length === 0) {
       locs = [0];
@@ -465,7 +467,7 @@ export class Tensor<R extends Rank = Rank> {
     return ops.norm(this, ord, axis, keepDims);
   }
   slice<T extends Tensor<R>>(
-      this: T, begin: number | number[], size?: number | number[]): T {
+      this: T, begin: number|number[], size?: number|number[]): T {
     this.throwIfDisposed();
     return ops.slice(this, begin, size);
   }
@@ -819,6 +821,14 @@ export class Tensor<R extends Rank = Rank> {
   atanh<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return ops.atanh(this);
+  }
+  erf<T extends Tensor>(this: T): T {
+    this.throwIfDisposed();
+    return ops.erf(this);
+  }
+  round<T extends Tensor>(this: T): T {
+    this.throwIfDisposed();
+    return ops.round(this);
   }
   step<T extends Tensor>(this: T, alpha = 0.0): T {
     this.throwIfDisposed();

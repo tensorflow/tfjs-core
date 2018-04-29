@@ -17,7 +17,8 @@
 
 import * as tf from '../index';
 // tslint:disable-next-line:max-line-length
-import {ALL_ENVS, describeWithFlags, expectArraysClose} from '../test_util';
+import {ALL_ENVS, expectArraysClose} from '../test_util';
+import {describeWithFlags} from '../jasmine_util';
 
 describeWithFlags('transpose', ALL_ENVS, () => {
   it('2D (no change)', () => {
@@ -60,5 +61,10 @@ describeWithFlags('transpose', ALL_ENVS, () => {
     expect(dt.shape).toEqual(t.shape);
     expect(dt.dtype).toEqual('float32');
     expectArraysClose(dt, [111, 112, 121, 122, 211, 212, 221, 222]);
+  });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.transpose({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'transpose' must be a Tensor/);
   });
 });

@@ -17,7 +17,8 @@
 
 import * as tf from './index';
 // tslint:disable-next-line:max-line-length
-import {ALL_ENVS, describeWithFlags, expectArraysClose, expectArraysEqual, expectNumbersClose, WEBGL_ENVS} from './test_util';
+import {ALL_ENVS, expectArraysClose, expectArraysEqual, expectNumbersClose, WEBGL_ENVS} from './test_util';
+import {describeWithFlags} from './jasmine_util';
 
 describeWithFlags('tidy', ALL_ENVS, () => {
   it('returns Tensor', () => {
@@ -526,5 +527,18 @@ describeWithFlags('memory', ALL_ENVS, () => {
     expect(tf.memory().numBytes).toBe(4);
     expect(sum.dtype).toBe('int32');
     expectArraysClose(sum, [1 + 1 + 0 + 1]);
+  });
+});
+
+describeWithFlags('disposeVariables', ALL_ENVS, () => {
+  it('reuse same name variable', () => {
+    tf.tensor1d([1,2,3]).variable(true, 'v1');
+    tf.tensor1d([1,2,3]).variable(true, 'v2');
+    expect(() => {
+      tf.tensor1d([1, 2, 3]).variable(true, 'v1');
+    }).toThrowError();
+    tf.disposeVariables();
+    tf.tensor1d([1,2,3]).variable(true, 'v1');
+    tf.tensor1d([1,2,3]).variable(true, 'v2');
   });
 });

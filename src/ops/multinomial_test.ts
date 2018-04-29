@@ -17,7 +17,8 @@
 
 import * as tf from '../index';
 import {Tensor1D} from '../tensor';
-import {ALL_ENVS, describeWithFlags, expectArraysClose} from '../test_util';
+import {ALL_ENVS, expectArraysClose} from '../test_util';
+import {describeWithFlags} from '../jasmine_util';
 
 describeWithFlags('multinomial', ALL_ENVS, () => {
   const NUM_SAMPLES = 10000;
@@ -102,6 +103,14 @@ describeWithFlags('multinomial', ALL_ENVS, () => {
     const normalized = true;
     expect(() => tf.multinomial(probs as Tensor1D, 3, seed, normalized))
         .toThrowError();
+  });
+
+  it('throws when passed a non-tensor', () => {
+    const seed: number = null;
+    // tslint:disable-next-line:no-any
+    expect(() => tf.multinomial({} as any, NUM_SAMPLES, seed))
+        .toThrowError(
+            /Argument 'logits' passed to 'multinomial' must be a Tensor/);
   });
 
   function computeProbs(

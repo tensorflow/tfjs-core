@@ -25,6 +25,7 @@ import {Conv2DInfo} from '../ops/conv_util';
 import * as ops from '../ops/ops';
 import {buffer, tensor3d, tensor4d} from '../ops/ops';
 import * as selu_util from '../ops/selu_util';
+import * as erf_util from '../ops/erf_util';
 // tslint:disable-next-line:max-line-length
 import {DataId, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import * as types from '../types';
@@ -903,6 +904,24 @@ export class MathBackendCPU implements KernelBackend {
     return Tensor.make(x.shape, {values: resultValues}) as T;
   }
 
+  erf<T extends Tensor>(x: T): T {
+    const resultValues = new Float32Array(x.size);
+    const values = x.dataSync();
+    const p = erf_util.ERF_P;
+    const a1 = erf_util.ERF_A1;
+    const a2 = erf_util.ERF_A2;
+    const a3 = erf_util.ERF_A3;
+    const a4 = erf_util.ERF_A4;
+    const a5 = erf_util.ERF_A5;
+    for (let i = 0; i < values.length; ++i) {
+      const v = values[i];
+      const t = 1.0 / (1.0 + p * v);
+      resultValues[i]
+          = 1.0 - (((((a5*t + a4)*t) + a3)*t + a2)*t + a1)*t*Math.exp(-v*v);
+    }
+    return Tensor.make(x.shape, {values: resultValues}) as T;
+  }
+
   step<T extends Tensor>(x: T, alpha = 0): T {
     const resultValues = new Float32Array(x.size);
     const values = x.dataSync();
@@ -965,27 +984,33 @@ export class MathBackendCPU implements KernelBackend {
 
   conv2dDerInput(dy: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
       Tensor4D {
-    const filterHeight = convInfo.filterHeight;
-    const filterWidth = convInfo.filterWidth;
+    const dx = ops.buffer<Rank.R4>(convInfo.inShape, 'float32');
+    const dxValues = dx.values;
+    const [dxS0, dxS1, dxS2] = dx.strides;
+    const dyValues = dy.dataSync();
+    const [dyS0, dyS1, dyS2] = dy.strides;
+    const fltValues = filter.dataSync();
+    const [fltS0, fltS1, fltS2] = filter.strides;
+    const {batchSize, filterHeight, filterWidth,
+           inChannels, inHeight, inWidth,
+           outChannels, outHeight, outWidth,
+           strideHeight, strideWidth} = convInfo;
     const topPad = filterHeight - 1 - convInfo.padInfo.top;
     const leftPad = filterWidth - 1 - convInfo.padInfo.left;
-    const strideHeight = convInfo.strideHeight;
-    const strideWidth = convInfo.strideWidth;
-    const dx = ops.buffer<Rank.R4>(convInfo.inShape, 'float32');
 
-    for (let b = 0; b < convInfo.batchSize; ++b) {
-      for (let d1 = 0; d1 < convInfo.inChannels; ++d1) {
-        for (let xR = 0; xR < convInfo.inHeight; ++xR) {
+    for (let b = 0; b < batchSize; ++b) {
+      for (let d1 = 0; d1 < inChannels; ++d1) {
+        for (let xR = 0; xR < inHeight; ++xR) {
           const xRCorner = xR - leftPad;
           const xRMin = Math.max(0, Math.ceil(xRCorner / strideHeight));
           const yRMax = Math.min(
-              convInfo.outHeight, (filterHeight + xRCorner) / strideHeight);
+              outHeight, (filterHeight + xRCorner) / strideHeight);
 
-          for (let xC = 0; xC < convInfo.inWidth; ++xC) {
+          for (let xC = 0; xC < inWidth; ++xC) {
             const xCCorner = xC - topPad;
             const xCMin = Math.max(0, Math.ceil(xCCorner / strideWidth));
             const yCMax = Math.min(
-                convInfo.outWidth, (filterWidth + xCCorner) / strideWidth);
+                outWidth, (filterWidth + xCCorner) / strideWidth);
 
             let dotProd = 0;
             for (let yR = xRMin; yR < yRMax; ++yR) {
@@ -993,16 +1018,19 @@ export class MathBackendCPU implements KernelBackend {
 
               for (let yC = xCMin; yC < yCMax; ++yC) {
                 const wC = yC * strideWidth - xCCorner;
+                const dyOffset = dyS0 * b + dyS1 * yR + dyS2 * yC;
+                const fltOffset = fltS0 * (filterHeight - 1 - wR) +
+                                  fltS1 * (filterWidth - 1 - wC) +
+                                  fltS2 * d1;
 
-                for (let d2 = 0; d2 < convInfo.outChannels; ++d2) {
-                  const pixel = dy.get(b, yR, yC, d2);
-                  const weight = filter.get(
-                      filterHeight - 1 - wR, filterWidth - 1 - wC, d1, d2);
+                for (let d2 = 0; d2 < outChannels; ++d2) {
+                  const pixel = dyValues[dyOffset + d2];
+                  const weight = fltValues[fltOffset + d2];
                   dotProd += pixel * weight;
                 }
               }
             }
-            dx.set(dotProd, b, xR, xC, d1);
+            dxValues[dxS0 * b + dxS1 * xR + dxS2 * xC + d1] = dotProd;
           }
         }
       }
@@ -1457,9 +1485,13 @@ export class MathBackendCPU implements KernelBackend {
             const sourceFracCol =
                 (effectiveInputSize[1]) * c / (effectiveOutputSize[1]);
             const sourceNearestRow =
-                Math.min(oldHeight - 1, Math.round(sourceFracRow));
+              Math.min(oldHeight - 1,
+                alignCorners
+                    ? Math.round(sourceFracRow) : Math.floor(sourceFracRow));
             const sourceNearestCol =
-                Math.min(oldWidth - 1, Math.round(sourceFracCol));
+              Math.min(oldWidth - 1,
+                alignCorners
+                    ? Math.round(sourceFracCol) : Math.floor(sourceFracCol));
             const newValue = x.get(b, sourceNearestRow, sourceNearestCol, d);
             output.set(newValue, b, r, c, d);
           }
