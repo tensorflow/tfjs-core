@@ -111,43 +111,76 @@ export class DownloadTrigger implements IOHandler {
 }
 
 export class Files implements IOHandler {
-  private readonly files: File[]
+  private readonly files: File[];
 
   constructor(files?: File[]) {
     console.log('In Files constructor.');  // DEBUG
     this.files = files;
-    console.log('this.load =', this.load);  // DEBUG
+    console.log('this.load =', this.load);    // DEBUG
     console.log('this.files =', this.files);  // DEBUG
   }
 
   async load(): Promise<ModelArtifacts> {
-    // console.log(`this.files = ${this.files}`);  // DEBUG
-    // const reader = new FileReader();
-    // reader.onload = (event) => {
-    //   console.log('Read content:');  // DEBUG
-    //   console.log((event.target as any).result);  // DEBUG
-    // };
-    // reader.readAsText(this.files[0]);
-    // return null;
+    if (this.files.length !== 2) {
+      throw new Error(
+          `Files.load() currently support only loading from 2 files ` +
+          `(a JSON file and a binary weights file), but ` +
+          `received ${files.length} file(s).`);
+    }
+
     return new Promise<ModelArtifacts>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (event: any) => {
+      const jsonReader = new FileReader();
+      // tslint:disable-next-line:no-any
+      jsonReader.onload = (event: any) => {
         const modelJSON = JSON.parse(event.target.result);
-        console.log('Read model JSON:');  // DEBUG
-        console.log(modelJSON);  // DEBUG
-        resolve({
-          modelTopology: modelJSON,
-          weightSpecs: null,  // TODO(cais):
-          weightData: null,  // TODO(cais):
-        });
+        const modelTopology = modelJSON.modelTopology as {};
+        if (modelTopology == null) {
+          reject(new Error(
+              `modelTopology field is missing from file ${this.files[0]}`));
+        }
+        const weightsManifest =
+            modelJSON.weightsManifest as WeightsManifestConfig;
+        if (weightsManifest == null) {
+          reject(new Error(
+              `weightManifest field is missing from file ${this.files[0]}`));
+        }
+        console.log('Read modelJSON:');       // DEBUG
+        console.log(modelJSON);               // DEBUG
+        console.log(`Read weightManifest:`);  // DEBUG
+        console.log(weightsManifest);
+        if (weightsManifest.length !== 1) {
+          reject(new Error(
+              `When uploading user-selected files, we current support only ` +
+              `a single weight group, but the weights manifest indicates ` +
+              `there are ${weightsManifest.length} weight groups`));
+        }
+        const weightGroup = weightsManifest[0];
+        if (weightGroup.paths.length !== 1) {
+          reject(new Error(
+              `When uploading user-selected files, we current support only ` +
+              `a single weight file, but the weights manifest indicates ` +
+              `there are ${weightGroup.paths.length} weight groups`));
+        }
+        const weightSpecs = weightGroup.weights;
+        console.log(`Read weightSpecs:`);  // DEBUG
+        console.log(weightSpecs);
+
+        const weightsReader = new FileReader();
+        weightsReader.onload = (event: any) => {
+          const weightData = event.target.result;
+          console.log('Read weightData:');  // DEBUG
+          console.log(weightData);  // DEBUG
+          resolve({modelTopology, weightSpecs, weightData});
+        };
+
+        weightsReader.readAsArrayBuffer(this.files[1]);
       };
-      reader.readAsText(this.files[0]);
+      jsonReader.readAsText(this.files[0]);
     });
   }
 }
 
-export function triggerDownloads(fileNames?: string|
-                                  string[]): DownloadTrigger {
+export function triggerDownloads(fileNames?: string|string[]): DownloadTrigger {
   return new DownloadTrigger(fileNames);
 }
 
