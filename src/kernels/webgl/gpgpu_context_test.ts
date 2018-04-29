@@ -106,8 +106,7 @@ describeWithFlags(
         texture = gpgpu.createFloat32MatrixTexture(1, 1);
 
         gpgpu.setOutputMatrixTexture(texture, 1, 1);
-        const uintArray =
-            tex_util.encodeFloatArrayAsUint16Array(new Float32Array([0.123]));
+        const uintArray = tex_util.encodeFloatArray2(new Float32Array([0.123]));
         gpgpu.gl.clearColor(
             uintArray[0] / 255, uintArray[1] / 255, uintArray[2] / 255,
             uintArray[3] / 255);
