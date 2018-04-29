@@ -15,8 +15,9 @@
  * =============================================================================
  */
 
+import {ENV} from '../../environment';
 import {GPGPUContext} from './gpgpu_context';
-import {TextureType} from './tex_util';
+import {LogicalTextureType, PhysicalTextureType} from './tex_util';
 
 export class TextureManager {
   private numUsedTextures = 0;
@@ -28,9 +29,11 @@ export class TextureManager {
 
   constructor(private gpgpu: GPGPUContext) {}
 
-  acquireTexture(shapeRC: [number, number], texType: TextureType):
+  acquireTexture(shapeRC: [number, number], logicalTexType: LogicalTextureType):
       WebGLTexture {
-    const shapeKey = getKeyFromTextureShape(shapeRC, texType);
+    const physicalTexType = getPhysicalFromLogicalTextureType(logicalTexType);
+
+    const shapeKey = getKeyFromTextureShape(shapeRC, physicalTexType);
     if (!(shapeKey in this.freeTextures)) {
       this.freeTextures[shapeKey] = [];
     }
@@ -49,17 +52,16 @@ export class TextureManager {
     this.log();
 
     let newTexture: WebGLTexture;
-    if (texType === TextureType.FLOAT_UPLOAD) {
-      // console.log('new upload texture');
-      newTexture = this.gpgpu.createUploadMatrixTexture(shapeRC[0], shapeRC[1]);
-    } else if (texType === TextureType.FLOAT_RENDER) {
-      // console.log('new render texture!');
-      // newTexture =
-      //     this.gpgpu.createHalfFloatMatrixTexture(shapeRC[0], shapeRC[1]);
-      newTexture = this.gpgpu.createRenderMatrixTexture(shapeRC[0], shapeRC[1]);
+    if (physicalTexType === PhysicalTextureType.FLOAT32) {
+      newTexture =
+          this.gpgpu.createFloat32MatrixTexture(shapeRC[0], shapeRC[1]);
+    } else if (physicalTexType === PhysicalTextureType.FLOAT16) {
+      newTexture =
+          this.gpgpu.createFloat16MatrixTexture(shapeRC[0], shapeRC[1]);
 
-    } else if (texType === TextureType.UNSIGNED_BYTE) {
-      newTexture = this.gpgpu.createColorMatrixTexture(shapeRC[0], shapeRC[1]);
+    } else if (physicalTexType === PhysicalTextureType.UNSIGNED_BYTE) {
+      newTexture =
+          this.gpgpu.createUnsignedBytesMatrixTexture(shapeRC[0], shapeRC[1]);
     }
     this.allocatedTextures.push(newTexture);
     return newTexture;
@@ -67,8 +69,9 @@ export class TextureManager {
 
   releaseTexture(
       texture: WebGLTexture, shape: [number, number],
-      texType: TextureType): void {
-    const shapeKey = getKeyFromTextureShape(shape, texType);
+      logicalTexType: LogicalTextureType): void {
+    const physicalTexType = getPhysicalFromLogicalTextureType(logicalTexType);
+    const shapeKey = getKeyFromTextureShape(shape, physicalTexType);
     if (!(shapeKey in this.freeTextures)) {
       this.freeTextures[shapeKey] = [];
     }
@@ -113,7 +116,22 @@ export class TextureManager {
   }
 }
 
+function getPhysicalFromLogicalTextureType(logicalTexType: LogicalTextureType):
+    PhysicalTextureType {
+  if (logicalTexType === LogicalTextureType.UNSIGNED_BYTE) {
+    return PhysicalTextureType.UNSIGNED_BYTE;
+  } else if (logicalTexType === LogicalTextureType.FLOAT_UPLOAD) {
+    return PhysicalTextureType.FLOAT32;
+  } else if (logicalTexType === LogicalTextureType.FLOAT_RENDER) {
+    return ENV.get('WEBGL_RENDER_FLOAT32_ENABLED') ?
+        PhysicalTextureType.FLOAT32 :
+        PhysicalTextureType.FLOAT16;
+  }
+  throw new Error(`Unknown logical texture type ${logicalTexType}`);
+}
+
 function getKeyFromTextureShape(
-    shapeRowsCol: [number, number], texType: TextureType): string {
-  return `${shapeRowsCol[0]}_${shapeRowsCol[1]}_${texType}`;
+    shapeRowsCol: [number, number],
+    physicalTexType: PhysicalTextureType): string {
+  return `${shapeRowsCol[0]}_${shapeRowsCol[1]}_${physicalTexType}`;
 }

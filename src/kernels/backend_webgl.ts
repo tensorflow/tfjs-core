@@ -60,7 +60,7 @@ import {ResizeBilinearProgram} from './webgl/resize_bilinear_gpu';
 import {ResizeNearestNeighborProgram} from './webgl/resize_nearest_neighbor_gpu';
 import {ReverseProgram} from './webgl/reverse_gpu';
 import {SliceProgram} from './webgl/slice_gpu';
-import {TextureData, TextureType} from './webgl/tex_util';
+import {LogicalTextureType, TextureData} from './webgl/tex_util';
 import {TextureManager} from './webgl/texture_manager';
 import {TileProgram} from './webgl/tile_gpu';
 import {TransposeProgram} from './webgl/transpose_gpu';
@@ -101,7 +101,7 @@ export class MathBackendWebGL implements KernelBackend {
       values: null,
       texture: null,
       texShape: null,
-      texType: TextureType.FLOAT_RENDER
+      texType: LogicalTextureType.FLOAT_RENDER
     });
   }
   fromPixels(
@@ -128,7 +128,8 @@ export class MathBackendWebGL implements KernelBackend {
     const tempPixelArray = Tensor.make(texShape, {}, 'int32');
 
     // This is a byte texture with pixels.
-    this.texData.get(tempPixelArray.dataId).texType = TextureType.UNSIGNED_BYTE;
+    this.texData.get(tempPixelArray.dataId).texType =
+        LogicalTextureType.UNSIGNED_BYTE;
     this.gpgpu.uploadPixelDataToTexture(
         this.getTexture(tempPixelArray.dataId), pixels);
     const program = new FromPixelsProgram(outShape);
@@ -152,7 +153,7 @@ export class MathBackendWebGL implements KernelBackend {
       texData.texture = null;
       texData.texShape = null;
     }
-    texData.texType = TextureType.FLOAT_UPLOAD;
+    texData.texType = LogicalTextureType.FLOAT_UPLOAD;
     texData.values = values;
 
     if (!this.delayedStorage) {
@@ -175,21 +176,22 @@ export class MathBackendWebGL implements KernelBackend {
 
     let float32Values;
     if (ENV.get('WEBGL_DOWNLOAD_FLOAT_ENABLED')) {
-      float32Values = this.gpgpu.downloadMatrixFromTexture(
+      float32Values = this.gpgpu.downloadFloat32MatrixFromOutputTexture(
           texture, texShape[0], texShape[1]);
     } else {
       const tmpInput = Tensor.make(shape, {dataId}, dtype);
 
-      // Pass through to a float16 texture for downloading.
-      const tmpTarget = Tensor.make(shape, {}, 'float32');
-      this.texData.get(tmpTarget.dataId).texType = TextureType.UNSIGNED_BYTE;
+      const tmpTarget = Tensor.make(shape, {});
+      this.texData.get(tmpTarget.dataId).texType =
+          LogicalTextureType.UNSIGNED_BYTE;
 
       const program = new EncodeFloatProgram(shape);
       const res = this.compileAndRun(program, [tmpInput], tmpTarget);
 
       const tmpData = this.texData.get(tmpTarget.dataId);
-      float32Values = this.gpgpu.downloadMatrixFromTexture(
-          tmpData.texture, tmpData.texShape[0], tmpData.texShape[1]);
+      float32Values =
+          this.gpgpu.downloadByteEncodedFloatMatrixFromOutputTexture(
+              tmpData.texture, tmpData.texShape[0], tmpData.texShape[1]);
 
       res.dispose();
       tmpInput.dispose();

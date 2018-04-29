@@ -33,19 +33,14 @@ export function getWebGLContextAttributes(): WebGLContextAttributes {
 }
 
 export interface TextureConfig {
-  internalFormat: number;
-  textureFormat: number;
+  internalFormatFloat: number;
+  textureFormatFloat: number;
   internalFormatHalfFloat: number;
 
   // The format to use during a gl.readPixels call.
   downloadTextureFormat: number;
   // How many channels need to be unpacked after a gl.readPixels call.
   downloadUnpackNumChannels: number;
-  downloadTextureType: number;
-
-  defaultTextureType: number;
-  textureTypeUpload: number;
-  textureTypeRender: number;
 
   defaultNumChannels: number;
   textureTypeHalfFloat: number;
@@ -131,127 +126,57 @@ export function getTextureConfig(
     LOOKUP[textureHalfFloatExtension.HALF_FLOAT_OES] = 'HALF_FLOAT_OES';
   }
 
-  let internalFormat: number;
+  let internalFormatFloat: number;
   let internalFormatHalfFloat: number;
-  let textureFormat: number;
+  let textureFormatFloat: number;
 
   let downloadTextureFormat: number;
   let downloadUnpackNumChannels: number;
-  let downloadTextureType: number;
-
-  let defaultTextureType: number;
-  let textureTypeUpload: number;
-  let textureTypeRender: number;
 
   let defaultNumChannels: number;
   let textureTypeHalfFloat: number;
 
-  ENV.get('WEBGL_RENDER_FLOAT_ENABLED');
+  ENV.get('WEBGL_RENDER_FLOAT32_ENABLED');
   ENV.get('WEBGL_DOWNLOAD_FLOAT_ENABLED');
 
-  textureTypeUpload = gl.FLOAT;
-
-  // if (ENV.get('WEBGL_FLOAT_TEXTURE_ENABLED')) {
   if (ENV.get('WEBGL_VERSION') === 2) {
-    internalFormat = glany.R32F;
+    internalFormatFloat = glany.R32F;
     internalFormatHalfFloat = glany.R16F;
-    textureFormat = glany.RED;
+    textureFormatFloat = glany.RED;
     // downloadTextureFormat = gl.RGBA;
     downloadUnpackNumChannels = 4;
-    defaultTextureType = gl.FLOAT;
     defaultNumChannels = 1;
     textureTypeHalfFloat = glany.HALF_FLOAT;
   } else {
-    internalFormat = gl.RGBA;
+    internalFormatFloat = gl.RGBA;
     internalFormatHalfFloat = gl.RGBA;
-    textureFormat = gl.RGBA;
+    textureFormatFloat = gl.RGBA;
     // downloadTextureFormat = gl.RGBA;
     downloadUnpackNumChannels = 4;
     defaultNumChannels = 4;
-
-    if (!ENV.get('WEBGL_RENDER_FLOAT_ENABLED')) {
-      textureTypeHalfFloat = textureHalfFloatExtension.HALF_FLOAT_OES;
-      defaultTextureType =
-          textureHalfFloatExtension.HALF_FLOAT_OES;  // glany.HALF_FLOAT;
-    } else {
-      defaultTextureType = gl.FLOAT;
-    }
+    textureTypeHalfFloat = textureHalfFloatExtension.HALF_FLOAT_OES;
   }
   downloadTextureFormat = gl.RGBA;
 
-  if (ENV.get('WEBGL_DOWNLOAD_FLOAT_ENABLED')) {
-    // downloadTextureType = defaultTextureType;
-    // downloadTextureFormat = gl.RGBA;
-    downloadTextureType = gl.FLOAT;
-  } else {
-    // console.log('half float, red');
-    downloadTextureType = gl.UNSIGNED_BYTE;  // textureTypeHalfFloat;
-    // downloadTextureFormat = glany.RGBA;
-    // downloadTextureFormat = textureFormat;
-  }
-
-  if (ENV.get('WEBGL_RENDER_FLOAT_ENABLED')) {
-    textureTypeRender = gl.FLOAT;
-  } else {
-    textureTypeRender = textureHalfFloatExtension.HALF_FLOAT_OES;
-  }
-
-  // console.log('RENDER, UPLOAD', textureTypeRender, textureTypeUpload);
-
-  //}  // else {
-  //   if (ENV.get('WEBGL_VERSION') === 2) {
-  //     internalFormat = glany.R16F;
-  //     textureFormat = glany.RED;
-  //     downloadTextureFormat = glany.RED;
-  //     downloadUnpackNumChannels = 1;
-  //     defaultTextureType = glany.HALF_FLOAT;
-  //     defaultNumChannels = 1;
-  //   } else {
-  //     internalFormat = gl.RGBA;
-  //     textureFormat = gl.RGBA;
-  //     downloadTextureFormat = glany.RGBA;
-  //     downloadUnpackNumChannels = 4;
-  //     defaultTextureType = textureFloatExtension.HALF_FLOAT_OES;
-  //     defaultNumChannels = 4;
-  //   }
-  // }
   return {
-    internalFormat,
+    internalFormatFloat,
     internalFormatHalfFloat,
-    textureFormat,
+    textureFormatFloat,
     downloadTextureFormat,
     downloadUnpackNumChannels,
-    downloadTextureType,
-    defaultTextureType,
     defaultNumChannels,
-    textureTypeHalfFloat,
-    textureTypeUpload,
-    textureTypeRender
+    textureTypeHalfFloat
   };
 }
-
-// textureConfig.internalFormat,
-// textureConfig.textureFormat, textureConfig.defaultTextureType);
-
-// textureConfig.internalFormatHalfFloat,
-//       textureConfig.textureFormat, textureConfig.textureTypeHalfFloat);
 
 function createAndConfigureTexture(
     gl: WebGLRenderingContext, width: number, height: number,
     numChannels: number, internalFormat: number, textureFormat: number,
     textureType: number): WebGLTexture {
-  // console.log('w,h,c', width, height, numChannels);
   webgl_util.validateTextureSize(gl, width, height);
   const texture = webgl_util.createTexture(gl);
 
-  // console.log('...............createAndConfigureTexture.............');
-  // console.log('internalFormat:', LOOKUP[internalFormat]);
-  // console.log('textureFormat:', LOOKUP[textureFormat]);
-  // console.log('textureType:', LOOKUP[textureType]);
-
   const tex2d = gl.TEXTURE_2D;
-  // const internalFormat = getTextureInternalFormat(gl, numChannels);
-  // const format = getTextureFormat(gl, numChannels);
   webgl_util.callAndCheck(gl, () => gl.bindTexture(tex2d, texture));
   webgl_util.callAndCheck(
       gl, () => gl.texParameteri(tex2d, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE));
@@ -270,29 +195,29 @@ function createAndConfigureTexture(
   return texture;
 }
 
-export function createUploadMatrixTexture(
+export function createFloat32MatrixTexture(
     gl: WebGLRenderingContext, rows: number, columns: number,
     textureConfig: TextureConfig): WebGLTexture {
   const [width, height] =
       tex_util.getUnpackedMatrixTextureShapeWidthHeight(rows, columns);
   const numChannels = 1;
   return createAndConfigureTexture(
-      gl, width, height, numChannels, textureConfig.internalFormat,
-      textureConfig.textureFormat, textureConfig.textureTypeUpload);
+      gl, width, height, numChannels, textureConfig.internalFormatFloat,
+      textureConfig.textureFormatFloat, gl.FLOAT);
 }
 
-export function createRenderMatrixTexture(
+export function createFloat16MatrixTexture(
     gl: WebGLRenderingContext, rows: number, columns: number,
     textureConfig: TextureConfig): WebGLTexture {
   const [width, height] =
       tex_util.getUnpackedMatrixTextureShapeWidthHeight(rows, columns);
   const numChannels = 1;
   return createAndConfigureTexture(
-      gl, width, height, numChannels, textureConfig.internalFormat,
-      textureConfig.textureFormat, textureConfig.textureTypeRender);
+      gl, width, height, numChannels, textureConfig.internalFormatFloat,
+      textureConfig.textureFormatFloat, textureConfig.textureTypeHalfFloat);
 }
 
-export function createPixelDataTexture(
+export function createUnsignedBytesMatrixTexture(
     gl: WebGLRenderingContext, rows: number, columns: number,
     textureConfig: TextureConfig): WebGLTexture {
   const [width, height] =
@@ -309,8 +234,7 @@ export function createPackedMatrixTexture(
       tex_util.getPackedMatrixTextureShapeWidthHeight(rows, columns);
   const numChannels = 4;
   return createAndConfigureTexture(
-      gl, width, height, numChannels, textureConfig.internalFormat,
-      textureConfig.textureFormat, textureConfig.defaultTextureType);
+      gl, width, height, numChannels, gl.RGBA, gl.RGBA, gl.FLOAT);
 }
 
 export function bindVertexProgramAttributeStreams(
@@ -351,8 +275,8 @@ function uploadDataToTexture(
   webgl_util.callAndCheck(
       gl,
       () => gl.texSubImage2D(
-          gl.TEXTURE_2D, 0, 0, 0, width, height, textureConfig.textureFormat,
-          textureConfig.textureTypeUpload, data));
+          gl.TEXTURE_2D, 0, 0, 0, width, height,
+          textureConfig.textureFormatFloat, gl.FLOAT, data));
 
   webgl_util.callAndCheck(gl, () => gl.bindTexture(gl.TEXTURE_2D, null));
 }
@@ -366,7 +290,6 @@ export function uploadMatrixToTexture(
 
   let unpackedArray: Float32Array|Uint16Array;
 
-  // if (ENV.get('WEBGL_RENDER_FLOAT_ENABLED')) {
   if (textureConfig.defaultNumChannels === 1) {
     // No need to allocate a temporary array.
     unpackedArray = matrix;
@@ -377,20 +300,6 @@ export function uploadMatrixToTexture(
             matrix.length, numChannels));
     tex_util.encodeMatrixToUnpackedArray(matrix, unpackedArray, numChannels);
   }
-  // } else {
-  //   const encoded = tex_util.encodeFloatArrayAsUint16Array(matrix);
-  //   // console.log('channels = 4', textureConfig.defaultNumChannels);
-
-  //   if (textureConfig.defaultNumChannels === 1) {
-  //     unpackedArray = encoded;
-  //   } else {
-  //     unpackedArray =
-  //         new Uint16Array(tex_util.getUnpackedArraySizeFromMatrixSize(
-  //             matrix.length, textureConfig.defaultNumChannels));
-  //     tex_util.encodeMatrixToUnpackedArray(
-  //         encoded, unpackedArray, textureConfig.defaultNumChannels);
-  //   }
-  // }
 
   uploadDataToTexture(
       gl, texture, w, h, unpackedArray, numChannels, textureConfig);
@@ -408,49 +317,6 @@ export function uploadMatrixToPackedTexture(
       gl, texture, w, h, packedRGBA, numChannels, textureConfig);
 }
 
-function getDownloadTargetArrayBuffer(
-    rows: number, columns: number, numChannels: number): Float32Array|
-    Uint8Array {
-  const isFloatTexture = ENV.get('WEBGL_DOWNLOAD_FLOAT_ENABLED');
-
-  let downloadTarget: Float32Array|Uint8Array;
-  if (isFloatTexture) {
-    downloadTarget =
-        new Float32Array(tex_util.getUnpackedArraySizeFromMatrixSize(
-            rows * columns, numChannels));
-    // console.log('downlaod target len', downloadTarget.length);
-  } else {
-    // downloadTarget = new Uint16Array(rows * columns * numChannels);
-    downloadTarget = new Uint8Array(rows * columns * 4);
-  }
-  return downloadTarget;
-}
-
-function decodeDownloadTargetArrayBuffer(
-    downloadTarget: Float32Array|Uint16Array|Uint8Array, rows: number,
-    columns: number, channelsPerPixel: number): Float32Array {
-  const isFloatTexture = ENV.get('WEBGL_DOWNLOAD_FLOAT_ENABLED');
-  if (isFloatTexture) {
-    const matrix = new Float32Array(rows * columns);
-    tex_util.decodeMatrixFromUnpackedArray(
-        downloadTarget as Float32Array, matrix, channelsPerPixel);
-    return matrix;
-  } else {
-    // console.log('DOWNLOADED:', downloadTarget);
-    // console.log('dl target', downloadTarget);
-    return new Float32Array(downloadTarget.buffer);
-    // const decoded =
-    //     tex_util.decodeUint16ArrayAsFloatArray(downloadTarget as
-    //     Uint16Array);
-    // if (channelsPerPixel === 1) {
-    //   return decoded;
-    // }
-    // const matrix = new Float32Array(rows * columns);
-    // tex_util.decodeMatrixFromUnpackedArray(decoded, matrix,
-    // channelsPerPixel); return matrix;
-  }
-}
-
 export async function downloadMatrixFromOutputTextureAsync(
     // tslint:disable-next-line:no-any
     gl: WebGLRenderingContext, getBufferSubDataAsyncExtension: any,
@@ -459,10 +325,9 @@ export async function downloadMatrixFromOutputTextureAsync(
   // tslint:disable-next-line:no-any
   const gl2 = gl as any;
 
-  const channelsPerPixel = 4;
-
   const downloadTarget =
-      getDownloadTargetArrayBuffer(rows, columns, channelsPerPixel);
+      new Float32Array(tex_util.getUnpackedArraySizeFromMatrixSize(
+          rows * columns, textureConfig.downloadUnpackNumChannels));
 
   // Allocate a pixel pack buffer so we can copy the texture to it.
   const bufferSizeBytes = downloadTarget instanceof Float32Array ?
@@ -478,77 +343,60 @@ export async function downloadMatrixFromOutputTextureAsync(
           gl2.PIXEL_PACK_BUFFER, bufferSizeBytes, gl.STATIC_DRAW));
 
   webgl_util.callAndCheck(
-      gl,
-      () => gl2.readPixels(
-          0, 0, columns, rows, gl.RGBA, textureConfig.defaultTextureType, 0));
+      gl, () => gl2.readPixels(0, 0, columns, rows, gl.RGBA, gl.FLOAT, 0));
 
   await getBufferSubDataAsyncExtension.getBufferSubDataAsync(
       gl2.PIXEL_PACK_BUFFER, 0, downloadTarget);
 
-  return decodeDownloadTargetArrayBuffer(
-      downloadTarget, rows, columns, channelsPerPixel);
+  const matrix = new Float32Array(rows * columns);
+  tex_util.decodeMatrixFromUnpackedArray(
+      downloadTarget as Float32Array, matrix,
+      textureConfig.downloadUnpackNumChannels);
+  return matrix;
 }
 
-export function downloadMatrixFromOutputTexture(
+export function downloadFloat32MatrixFromOutputTexture(
     gl: WebGLRenderingContext, rows: number, columns: number,
-    textureConfig: TextureConfig,
-    // tslint:disable-next-line:no-any
-    textureHalfFloatExtension: any): Float32Array {
+    textureConfig: TextureConfig): Float32Array {
   const [w, h] =
       tex_util.getUnpackedMatrixTextureShapeWidthHeight(rows, columns);
 
-  const downloadTarget = getDownloadTargetArrayBuffer(
-      rows, columns, textureConfig.downloadUnpackNumChannels);
-
-  // const format = getTextureFormat(gl, channelsPerPixel);
-
-  // console.log('******DOWNLOADING******');
-  // console.log(
-  //     'downloadTextureFormat:', LOOKUP[textureConfig.downloadTextureFormat]);
-  // console.log(
-  //     'downloadTextureType:', LOOKUP[textureConfig.downloadTextureType]);
-  // const textureHalfFloatExtension =
-  // tslint:disable-next-line:no-any
-  //    webgl_util.getExtensionOrThrow(gl, 'OES_texture_half_float') as any;
-  // const colorBufferHalfFloatExtension =
-  //    gl.getExtension('EXT_color_buffer_half_float');
-  // tslint:disable-next-line:no-unused-expression
-  //[textureHalfFloatExtension, colorBufferHalfFloatExtension];
-  // textureConfig.downloadTextureType =
-  // textureHalfFloatExtension.HALF_FLOAT_OES;
+  const downloadTarget =
+      new Float32Array(tex_util.getUnpackedArraySizeFromMatrixSize(
+          rows * columns, textureConfig.downloadUnpackNumChannels));
 
   webgl_util.callAndCheck(
       gl,
       () => gl.readPixels(
-          0, 0, w, h, textureConfig.downloadTextureFormat,
-          textureConfig.downloadTextureType, downloadTarget));
+          0, 0, w, h, textureConfig.downloadTextureFormat, gl.FLOAT,
+          downloadTarget));
 
-  return decodeDownloadTargetArrayBuffer(
-      downloadTarget, rows, columns, textureConfig.downloadUnpackNumChannels);
+  const matrix = new Float32Array(rows * columns);
+  tex_util.decodeMatrixFromUnpackedArray(
+      downloadTarget as Float32Array, matrix,
+      textureConfig.downloadUnpackNumChannels);
+  return matrix;
 }
 
-export function downloadMatrixFromRGBAColorTexture(
+export function downloadByteEncodedFloatMatrixFromOutputTexture(
     gl: WebGLRenderingContext, rows: number, columns: number,
-    channels: number): Float32Array {
-  const size = rows * columns * 4;
+    textureConfig: TextureConfig) {
+  const [w, h] =
+      tex_util.getUnpackedMatrixTextureShapeWidthHeight(rows, columns);
 
-  const downloadTarget = new Uint8Array(size);
+  const numChannels = 4;
+  const downloadTarget = new Uint8Array(
+      tex_util.getUnpackedArraySizeFromMatrixSize(rows * columns, numChannels));
 
   webgl_util.callAndCheck(
       gl,
       () => gl.readPixels(
-          0, 0, columns, rows, gl.RGBA, gl.UNSIGNED_BYTE, downloadTarget));
+          0, 0, w, h, textureConfig.downloadTextureFormat, gl.UNSIGNED_BYTE,
+          downloadTarget));
 
-  const packedRGBA = new Float32Array(size);
-  for (let i = 0; i < downloadTarget.length; i++) {
-    packedRGBA[i] = downloadTarget[i];
-  }
-
-  const matrix = new Float32Array(rows * columns * channels);
-
-  tex_util.decodeMatrixFromUnpackedColorRGBAArray(packedRGBA, matrix, channels);
-
-  return matrix;
+  // By wrapping the buffer in a Float32Array, we use native browser IEEE 754
+  // decoding of the 4 bytes that back each 32 bit float.
+  return new Float32Array(downloadTarget.buffer);
 }
 
 export function downloadMatrixFromPackedOutputTexture(
@@ -558,9 +406,7 @@ export function downloadMatrixFromPackedOutputTexture(
   const packedRGBA = new Float32Array(
       tex_util.getPackedRGBAArraySizeFromMatrixShape(rows, columns));
   webgl_util.callAndCheck(
-      gl,
-      () => gl.readPixels(
-          0, 0, w, h, gl.RGBA, textureConfig.defaultTextureType, packedRGBA));
+      gl, () => gl.readPixels(0, 0, w, h, gl.RGBA, gl.FLOAT, packedRGBA));
   const matrix = new Float32Array(rows * columns);
   return tex_util.decodeMatrixFromPackedRGBA(packedRGBA, rows, columns, matrix);
 }

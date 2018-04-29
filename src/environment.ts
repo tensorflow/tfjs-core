@@ -46,7 +46,7 @@ export interface Features {
   // false, fall back to using unsigned byte textures.
   'WEBGL_FLOAT_TEXTURE_ENABLED'?: boolean;
 
-  'WEBGL_RENDER_FLOAT_ENABLED'?: boolean;
+  'WEBGL_RENDER_FLOAT32_ENABLED'?: boolean;
   'WEBGL_DOWNLOAD_FLOAT_ENABLED'?: boolean;
 
   // Whether WEBGL_get_buffer_sub_data_async is enabled.
@@ -60,7 +60,7 @@ export const URL_PROPERTIES: URLProperty[] = [
   {name: 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE', type: Type.BOOLEAN},
   {name: 'WEBGL_VERSION', type: Type.NUMBER},
   {name: 'WEBGL_FLOAT_TEXTURE_ENABLED', type: Type.BOOLEAN},
-  {name: 'WEBGL_RENDER_FLOAT_ENABLED', type: Type.BOOLEAN},
+  {name: 'WEBGL_RENDER_FLOAT32_ENABLED', type: Type.BOOLEAN},
   {name: 'WEBGL_DOWNLOAD_FLOAT_ENABLED', type: Type.BOOLEAN}, {
     name: 'WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED',
     type: Type.BOOLEAN
@@ -405,7 +405,7 @@ export class Environment {
       return isFloatTextureReadPixelsEnabled(
           this.get('WEBGL_VERSION'));  // &&
                                        // false;
-    } else if (feature === 'WEBGL_RENDER_FLOAT_ENABLED') {
+    } else if (feature === 'WEBGL_RENDER_FLOAT32_ENABLED') {
       return isRenderToFloatTextureEnabled(this.get('WEBGL_VERSION'));
     } else if (feature === 'WEBGL_DOWNLOAD_FLOAT_ENABLED') {
       return isDownloadFloatTextureEnabled(this.get('WEBGL_VERSION'));
