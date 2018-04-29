@@ -121,14 +121,28 @@ export class Files implements IOHandler {
   }
 
   async load(): Promise<ModelArtifacts> {
-    console.log(`this.files = ${this.files}`);  // DEBUG
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      console.log('Read content:');  // DEBUG
-      console.log((event.target as any).result);  // DEBUG
-    };
-    reader.readAsText(this.files[0]);
-    return null;
+    // console.log(`this.files = ${this.files}`);  // DEBUG
+    // const reader = new FileReader();
+    // reader.onload = (event) => {
+    //   console.log('Read content:');  // DEBUG
+    //   console.log((event.target as any).result);  // DEBUG
+    // };
+    // reader.readAsText(this.files[0]);
+    // return null;
+    return new Promise<ModelArtifacts>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (event: any) => {
+        const modelJSON = JSON.parse(event.target.result);
+        console.log('Read model JSON:');  // DEBUG
+        console.log(modelJSON);  // DEBUG
+        resolve({
+          modelTopology: modelJSON,
+          weightSpecs: null,  // TODO(cais):
+          weightData: null,  // TODO(cais):
+        });
+      };
+      reader.readAsText(this.files[0]);
+    });
   }
 }
 
