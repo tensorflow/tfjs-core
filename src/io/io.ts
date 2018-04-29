@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {triggerDownloads} from './files';
+import {files, triggerDownloads} from './files';
 import {decodeWeights, encodeWeights} from './io_utils';
 import {browserLocalStorage} from './local_storage';
 // tslint:disable-next-line:max-line-length
@@ -26,6 +26,7 @@ export {
   browserLocalStorage,
   decodeWeights,
   encodeWeights,
+  files,
   IOHandler,
   LoadHandler,
   loadWeights,

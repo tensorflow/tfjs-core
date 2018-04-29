@@ -111,9 +111,32 @@ export class DownloadTrigger implements IOHandler {
 }
 
 export class Files implements IOHandler {
-  constructor(files?: Files[]) {}
+  private readonly files: File[]
+
+  constructor(files?: File[]) {
+    console.log('In Files constructor.');  // DEBUG
+    this.files = files;
+    console.log('this.load =', this.load);  // DEBUG
+    console.log('this.files =', this.files);  // DEBUG
+  }
+
+  async load(): Promise<ModelArtifacts> {
+    console.log(`this.files = ${this.files}`);  // DEBUG
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      console.log('Read content:');  // DEBUG
+      console.log((event.target as any).result);  // DEBUG
+    };
+    reader.readAsText(this.files[0]);
+    return null;
+  }
 }
 
-export function triggerDownloads(fileNames?: string|string[]): DownloadTrigger {
+export function triggerDownloads(fileNames?: string|
+                                  string[]): DownloadTrigger {
   return new DownloadTrigger(fileNames);
+}
+
+export function files(files?: File[]) {
+  return new Files(files);
 }
