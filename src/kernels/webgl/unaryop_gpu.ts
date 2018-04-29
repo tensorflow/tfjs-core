@@ -41,6 +41,8 @@ export class UnaryOpProgram implements GPGPUProgram {
   }
 }
 
+export const PASS_THROUGH = `return x;`;
+
 const CHECK_NAN_SNIPPET = `if (isNaN(x)) return x;`;
 
 export const ABS = `return abs(x);`;

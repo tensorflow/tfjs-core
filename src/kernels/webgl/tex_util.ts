@@ -18,7 +18,8 @@
 import {DataType, DataTypeMap} from '../../types';
 
 export enum TextureType {
-  FLOAT,
+  FLOAT_RENDER,
+  FLOAT_UPLOAD,
   UNSIGNED_BYTE
 }
 

@@ -45,6 +45,10 @@ export interface Features {
   // Whether writing & reading floating point textures is enabled. When
   // false, fall back to using unsigned byte textures.
   'WEBGL_FLOAT_TEXTURE_ENABLED'?: boolean;
+
+  'WEBGL_RENDER_FLOAT_ENABLED'?: boolean;
+  'WEBGL_DOWNLOAD_FLOAT_ENABLED'?: boolean;
+
   // Whether WEBGL_get_buffer_sub_data_async is enabled.
   'WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED'?: boolean;
   'BACKEND'?: string;
@@ -55,7 +59,9 @@ export const URL_PROPERTIES: URLProperty[] = [
   {name: 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION', type: Type.NUMBER},
   {name: 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE', type: Type.BOOLEAN},
   {name: 'WEBGL_VERSION', type: Type.NUMBER},
-  {name: 'WEBGL_FLOAT_TEXTURE_ENABLED', type: Type.BOOLEAN}, {
+  {name: 'WEBGL_FLOAT_TEXTURE_ENABLED', type: Type.BOOLEAN},
+  {name: 'WEBGL_RENDER_FLOAT_ENABLED', type: Type.BOOLEAN},
+  {name: 'WEBGL_DOWNLOAD_FLOAT_ENABLED', type: Type.BOOLEAN}, {
     name: 'WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED',
     type: Type.BOOLEAN
   },
@@ -130,6 +136,75 @@ function getWebGLDisjointQueryTimerVersion(webGLVersion: number): number {
   return queryTimerVersion;
 }
 
+function createFloatTexture(gl: WebGLRenderingContext, webGLVersion: number) {
+  const frameBuffer = gl.createFramebuffer();
+  const texture = gl.createTexture();
+
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+
+  // tslint:disable-next-line:no-any
+  const internalFormat = webGLVersion === 2 ? (gl as any).RGBA32F : gl.RGBA;
+  gl.texImage2D(
+      gl.TEXTURE_2D, 0, internalFormat, 1, 1, 0, gl.RGBA, gl.FLOAT, null);
+
+  gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
+  gl.framebufferTexture2D(
+      gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+}
+
+function isRenderToFloatTextureEnabled(webGLVersion: number): boolean {
+  if (webGLVersion === 0) {
+    return false;
+  }
+
+  const gl = getWebGLRenderingContext(webGLVersion);
+
+  if (webGLVersion === 1) {
+    if (!hasExtension(gl, 'OES_texture_float')) {
+      return false;
+    }
+  } else {
+    if (!hasExtension(gl, 'EXT_color_buffer_float')) {
+      return false;
+    }
+  }
+
+  createFloatTexture(gl, webGLVersion);
+
+  const isFrameBufferComplete =
+      gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
+
+  loseContext(gl);
+  return isFrameBufferComplete;
+}
+
+function isDownloadFloatTextureEnabled(webGLVersion: number): boolean {
+  if (webGLVersion === 0) {
+    return false;
+  }
+
+  const gl = getWebGLRenderingContext(webGLVersion);
+
+  if (webGLVersion === 1) {
+    if (!hasExtension(gl, 'OES_texture_float')) {
+      return false;
+    }
+  } else {
+    if (!hasExtension(gl, 'EXT_color_buffer_float')) {
+      return false;
+    }
+  }
+
+  createFloatTexture(gl, webGLVersion);
+  gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.FLOAT, new Float32Array(4));
+
+  const readPixelsNoError = gl.getError() === gl.NO_ERROR;
+
+  loseContext(gl);
+
+  return readPixelsNoError;
+}
+
 function isFloatTextureReadPixelsEnabled(webGLVersion: number): boolean {
   if (webGLVersion === 0) {
     return false;
@@ -147,19 +222,21 @@ function isFloatTextureReadPixelsEnabled(webGLVersion: number): boolean {
     }
   }
 
-  const frameBuffer = gl.createFramebuffer();
-  const texture = gl.createTexture();
+  createFloatTexture(gl, webGLVersion);
 
-  gl.bindTexture(gl.TEXTURE_2D, texture);
+  // const frameBuffer = gl.createFramebuffer();
+  // const texture = gl.createTexture();
 
-  // tslint:disable-next-line:no-any
-  const internalFormat = webGLVersion === 2 ? (gl as any).RGBA32F : gl.RGBA;
-  gl.texImage2D(
-      gl.TEXTURE_2D, 0, internalFormat, 1, 1, 0, gl.RGBA, gl.FLOAT, null);
+  // gl.bindTexture(gl.TEXTURE_2D, texture);
 
-  gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
-  gl.framebufferTexture2D(
-      gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+  // // tslint:disable-next-line:no-any
+  // const internalFormat = webGLVersion === 2 ? (gl as any).RGBA32F : gl.RGBA;
+  // gl.texImage2D(
+  //     gl.TEXTURE_2D, 0, internalFormat, 1, 1, 0, gl.RGBA, gl.FLOAT, null);
+
+  // gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
+  // gl.framebufferTexture2D(
+  //     gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
 
   const frameBufferComplete =
       (gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE);
@@ -170,8 +247,12 @@ function isFloatTextureReadPixelsEnabled(webGLVersion: number): boolean {
 
   loseContext(gl);
 
+  console.log('FLOAT TEST:', [frameBufferComplete, readPixelsNoError]);
+
   return frameBufferComplete && readPixelsNoError;
 }
+
+console.log(isFloatTextureReadPixelsEnabled(1));
 
 function isWebGLGetBufferSubDataAsyncExtensionEnabled(webGLVersion: number) {
   // TODO(nsthorat): Remove this once we fix
@@ -312,9 +393,14 @@ export class Environment {
       return 0;
     } else if (feature === 'WEBGL_FLOAT_TEXTURE_ENABLED') {
       // return false;
+
       return isFloatTextureReadPixelsEnabled(
           this.get('WEBGL_VERSION'));  // &&
                                        // false;
+    } else if (feature === 'WEBGL_RENDER_FLOAT_ENABLED') {
+      return isRenderToFloatTextureEnabled(this.get('WEBGL_VERSION'));
+    } else if (feature === 'WEBGL_DOWNLOAD_FLOAT_ENABLED') {
+      return isDownloadFloatTextureEnabled(this.get('WEBGL_VERSION'));
     } else if (
         feature === 'WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED') {
       return isWebGLGetBufferSubDataAsyncExtensionEnabled(

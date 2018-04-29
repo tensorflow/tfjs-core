@@ -27,7 +27,7 @@ describeWithFlags('GPGPUContext downloadMatrixFromTexture', WEBGL_ENVS, () => {
   beforeEach(() => {
     gpgpu = new GPGPUContext();
     gpgpu.enableAutomaticDebugValidation(true);
-    texture = gpgpu.createMatrixTexture(1, 1);
+    texture = gpgpu.createUploadMatrixTexture(1, 1);
   });
 
   afterEach(() => {
@@ -42,7 +42,7 @@ describeWithFlags('GPGPUContext downloadMatrixFromTexture', WEBGL_ENVS, () => {
   });
 
   it('returns 2x2 matrix that was uploaded', () => {
-    const texture2 = gpgpu.createMatrixTexture(2, 2);
+    const texture2 = gpgpu.createUploadMatrixTexture(2, 2);
     gpgpu.uploadMatrixToTexture(
         texture2, 2, 2, new Float32Array([1.234, 2, 3, 4]));
     const result = gpgpu.downloadMatrixFromTexture(texture2, 2, 2);
@@ -51,7 +51,7 @@ describeWithFlags('GPGPUContext downloadMatrixFromTexture', WEBGL_ENVS, () => {
   });
 
   it('uses texture parameter', () => {
-    const texture2: WebGLTexture = gpgpu.createMatrixTexture(1, 1);
+    const texture2: WebGLTexture = gpgpu.createUploadMatrixTexture(1, 1);
     gpgpu.uploadMatrixToTexture(texture, 1, 1, new Float32Array([1]));
     gpgpu.uploadMatrixToTexture(texture2, 1, 1, new Float32Array([2]));
     const read1 = gpgpu.downloadMatrixFromTexture(texture, 1, 1);
@@ -76,7 +76,7 @@ describeWithFlags('GPGPUContext color texture with float', WEBGL_ENVS, () => {
   it('basic', () => {
     gpgpu = new GPGPUContext();
     gpgpu.enableAutomaticDebugValidation(true);
-    texture = gpgpu.createMatrixTexture(1, 1);
+    texture = gpgpu.createUploadMatrixTexture(1, 1);
 
     gpgpu.setOutputMatrixTexture(texture, 1, 1);
     gpgpu.gl.clearColor(0.123, 0, 0, 0);
@@ -100,7 +100,7 @@ describeWithFlags(
       it('basic', () => {
         gpgpu = new GPGPUContext();
         gpgpu.enableAutomaticDebugValidation(true);
-        texture = gpgpu.createMatrixTexture(1, 1);
+        texture = gpgpu.createUploadMatrixTexture(1, 1);
 
         gpgpu.setOutputMatrixTexture(texture, 1, 1);
         const uintArray =
@@ -121,7 +121,7 @@ describeWithFlags('GPGPUContext setOutputMatrixTexture', WEBGL_ENVS, () => {
   beforeEach(() => {
     gpgpu = new GPGPUContext();
     gpgpu.enableAutomaticDebugValidation(true);
-    texture = gpgpu.createMatrixTexture(1, 1);
+    texture = gpgpu.createUploadMatrixTexture(1, 1);
   });
 
   afterEach(() => {
@@ -135,7 +135,7 @@ describeWithFlags('GPGPUContext setOutputMatrixTexture', WEBGL_ENVS, () => {
   });
 
   it('rebinds the output texture to the color buffer target', () => {
-    const output: WebGLTexture = gpgpu.createMatrixTexture(1, 1);
+    const output: WebGLTexture = gpgpu.createUploadMatrixTexture(1, 1);
     gpgpu.uploadMatrixToTexture(texture, 1, 1, new Float32Array([10]));
     gpgpu.setOutputMatrixTexture(output, 1, 1);
     const tBeforeClear = gpgpu.downloadMatrixFromTexture(texture, 1, 1);
@@ -156,7 +156,7 @@ describeWithFlags('GPGPUContext setOutputMatrixTexture', WEBGL_ENVS, () => {
   it('sets the gl viewport to the output texture dimensions', () => {
     const columns = 456;
     const rows = 123;
-    const output = gpgpu.createMatrixTexture(rows, columns);
+    const output = gpgpu.createUploadMatrixTexture(rows, columns);
     gpgpu.setOutputMatrixTexture(output, rows, columns);
     const expected = new Int32Array([0, 0, columns, rows]);
     expect(gpgpu.gl.getParameter(gpgpu.gl.VIEWPORT)).toEqual(expected);
@@ -164,7 +164,7 @@ describeWithFlags('GPGPUContext setOutputMatrixTexture', WEBGL_ENVS, () => {
   });
 
   it('doesn\'t change gl viewport when downloading a non-output tex', () => {
-    const output = gpgpu.createMatrixTexture(128, 128);
+    const output = gpgpu.createUploadMatrixTexture(128, 128);
     gpgpu.setOutputMatrixTexture(output, 128, 128);
     gpgpu.downloadMatrixFromTexture(texture, 1, 1);
     const expected = new Int32Array([0, 0, 128, 128]);
@@ -219,7 +219,7 @@ describeWithFlags('GPGPUContext setOutputMatrixWriteRegion', WEBGL_ENVS, () => {
     const src =
         'precision highp float; void main() { gl_FragColor = vec4(2,0,0,0); }';
     program = gpgpu.createProgram(src);
-    output = gpgpu.createMatrixTexture(4, 4);
+    output = gpgpu.createUploadMatrixTexture(4, 4);
     gpgpu.uploadMatrixToTexture(output, 4, 4, new Float32Array(16));
     gpgpu.setOutputMatrixTexture(output, 4, 4);
     gpgpu.setProgram(program);
@@ -303,7 +303,7 @@ describeWithFlags('GPGPUContext', WEBGL_ENVS, () => {
   it('throws an error if validation is on and framebuffer incomplete', () => {
     const src = `precision highp float; void main() {}`;
     const program = gpgpu.createProgram(src);
-    const result = gpgpu.createMatrixTexture(1, 1);
+    const result = gpgpu.createUploadMatrixTexture(1, 1);
     gpgpu.setOutputMatrixTexture(result, 1, 1);
     gpgpu.setProgram(program);
     gpgpu.deleteMatrixTexture(result);

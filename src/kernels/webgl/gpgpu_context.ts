@@ -28,7 +28,9 @@ import * as webgl_util from './webgl_util';
 export class GPGPUContext {
   gl: WebGLRenderingContext;
   textureFloatExtension: {};
+  textureHalfFloatExtension: {};
   colorBufferFloatExtension: {};
+  colorBufferHalfFloatExtension: {};
   getBufferSubDataAsyncExtension: {};
   loseContextExtension: WebGLLoseContextExtension;
   disjointQueryTimerExtension: WebGL2DisjointQueryTimerExtension|
@@ -51,20 +53,17 @@ export class GPGPUContext {
     }
     // WebGL 2.0 enables texture floats without an extension.
     if (ENV.get('WEBGL_VERSION') === 1) {
-      let floatExtension: string;
-      let colorBufferFloatExtensionName: string;
-      if (ENV.get('WEBGL_FLOAT_TEXTURE_ENABLED')) {
-        floatExtension = 'OES_texture_float';
-        colorBufferFloatExtensionName = 'WEBGL_color_buffer_float';
-      } else {
-        floatExtension = 'OES_texture_half_float';
-        colorBufferFloatExtensionName = 'EXT_color_buffer_half_float';
-      }
-
       this.textureFloatExtension =
-          webgl_util.getExtensionOrThrow(this.gl, floatExtension);
+          webgl_util.getExtensionOrThrow(this.gl, 'OES_texture_float');
       this.colorBufferFloatExtension =
-          this.gl.getExtension(colorBufferFloatExtensionName);
+          this.gl.getExtension('WEBGL_color_buffer_float');
+
+      if (!ENV.get('WEBGL_RENDER_FLOAT_ENABLED')) {
+        this.textureHalfFloatExtension =
+            webgl_util.getExtensionOrThrow(this.gl, 'OES_texture_half_float');
+        this.colorBufferHalfFloatExtension =
+            this.gl.getExtension('EXT_color_buffer_half_float');
+      }
     } else {
       this.colorBufferFloatExtension =
           webgl_util.getExtensionOrThrow(this.gl, 'EXT_color_buffer_float');
@@ -84,7 +83,7 @@ export class GPGPUContext {
     this.framebuffer = webgl_util.createFramebuffer(this.gl);
 
     this.textureConfig =
-        gpgpu_util.getTextureConfig(this.gl, this.textureFloatExtension);
+        gpgpu_util.getTextureConfig(this.gl, this.textureHalfFloatExtension);
   }
 
   public dispose() {
@@ -122,9 +121,17 @@ export class GPGPUContext {
     webgl_util.enableDebugWebGLErrorChecking(enabled);
   }
 
-  public createMatrixTexture(rows: number, columns: number): WebGLTexture {
+  public createUploadMatrixTexture(rows: number, columns: number):
+      WebGLTexture {
     this.throwIfDisposed();
-    return gpgpu_util.createMatrixTexture(
+    return gpgpu_util.createUploadMatrixTexture(
+        this.gl, rows, columns, this.textureConfig);
+  }
+
+  public createRenderMatrixTexture(rows: number, columns: number):
+      WebGLTexture {
+    this.throwIfDisposed();
+    return gpgpu_util.createRenderMatrixTexture(
         this.gl, rows, columns, this.textureConfig);
   }
 
@@ -180,7 +187,8 @@ export class GPGPUContext {
     return this.downloadMatrixDriver(
         texture,
         () => gpgpu_util.downloadMatrixFromOutputTexture(
-            this.gl, rows, columns, this.textureConfig));
+            this.gl, rows, columns, this.textureConfig,
+            this.textureHalfFloatExtension));
   }
 
   public async downloadMatrixFromTextureAsync(

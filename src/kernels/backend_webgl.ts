@@ -26,6 +26,7 @@ import {DataId, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor'
 import * as types from '../types';
 import {DataType, DataTypeMap, RecursiveArray, TypedArray} from '../types';
 import * as util from '../util';
+
 import {KernelBackend} from './backend';
 import * as backend_util from './backend_util';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
@@ -39,6 +40,7 @@ import {ConcatProgram} from './webgl/concat_gpu';
 import {Conv2DDerFilterProgram, Conv2DDerInputProgram} from './webgl/conv_backprop_gpu';
 import {Conv2DProgram} from './webgl/conv_gpu';
 import {DepthwiseConv2DProgram} from './webgl/conv_gpu_depthwise';
+import {EncodeFloatProgram} from './webgl/encode_float_gpu';
 import {FromPixelsProgram} from './webgl/from_pixels_gpu';
 import {GatherProgram} from './webgl/gather_gpu';
 import {GPGPUContext} from './webgl/gpgpu_context';
@@ -99,7 +101,7 @@ export class MathBackendWebGL implements KernelBackend {
       values: null,
       texture: null,
       texShape: null,
-      texType: TextureType.FLOAT
+      texType: TextureType.FLOAT_RENDER
     });
   }
   fromPixels(
@@ -150,6 +152,7 @@ export class MathBackendWebGL implements KernelBackend {
       texData.texture = null;
       texData.texShape = null;
     }
+    texData.texType = TextureType.FLOAT_UPLOAD;
     texData.values = values;
 
     if (!this.delayedStorage) {
@@ -159,7 +162,7 @@ export class MathBackendWebGL implements KernelBackend {
   readSync(dataId: DataId): TypedArray {
     this.throwIfNoData(dataId);
     const texData = this.texData.get(dataId);
-    const {texture, values, texShape} = texData;
+    const {shape, texture, values, texShape, dtype} = texData;
     if (values != null) {
       this.cacheOnCPU(dataId);
       return values;
@@ -169,8 +172,29 @@ export class MathBackendWebGL implements KernelBackend {
     if (shouldTimeProgram) {
       start = performance.now();
     }
-    const float32Values =
-        this.gpgpu.downloadMatrixFromTexture(texture, texShape[0], texShape[1]);
+
+    let float32Values;
+    if (ENV.get('WEBGL_DOWNLOAD_FLOAT_ENABLED')) {
+      float32Values = this.gpgpu.downloadMatrixFromTexture(
+          texture, texShape[0], texShape[1]);
+    } else {
+      const tmpInput = Tensor.make(shape, {dataId}, dtype);
+
+      // Pass through to a float16 texture for downloading.
+      const tmpTarget = Tensor.make(shape, {}, 'float32');
+      this.texData.get(tmpTarget.dataId).texType = TextureType.UNSIGNED_BYTE;
+
+      const program = new EncodeFloatProgram(shape);
+      const res = this.compileAndRun(program, [tmpInput], tmpTarget);
+
+      const tmpData = this.texData.get(tmpTarget.dataId);
+      float32Values = this.gpgpu.downloadMatrixFromTexture(
+          tmpData.texture, tmpData.texShape[0], tmpData.texShape[1]);
+
+      res.dispose();
+      tmpInput.dispose();
+    }
+
     if (shouldTimeProgram) {
       this.downloadWaitMs += performance.now() - start;
     }
@@ -292,7 +316,7 @@ export class MathBackendWebGL implements KernelBackend {
   private binaryCache: {[key: string]: GPGPUBinary} = {};
   private gpgpuCreatedLocally: boolean;
 
-  constructor(private gpgpu?: GPGPUContext, private delayedStorage = true) {
+  constructor(private gpgpu?: GPGPUContext, private delayedStorage = false) {
     if (ENV.get('WEBGL_VERSION') < 1) {
       throw new Error('WebGL is not supported on this device');
     }

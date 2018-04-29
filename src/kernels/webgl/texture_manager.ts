@@ -28,7 +28,7 @@ export class TextureManager {
 
   constructor(private gpgpu: GPGPUContext) {}
 
-  acquireTexture(shapeRC: [number, number], texType = TextureType.FLOAT):
+  acquireTexture(shapeRC: [number, number], texType: TextureType):
       WebGLTexture {
     const shapeKey = getKeyFromTextureShape(shapeRC, texType);
     if (!(shapeKey in this.freeTextures)) {
@@ -49,9 +49,16 @@ export class TextureManager {
     this.log();
 
     let newTexture: WebGLTexture;
-    if (texType === TextureType.FLOAT) {
-      newTexture = this.gpgpu.createMatrixTexture(shapeRC[0], shapeRC[1]);
-    } else {
+    if (texType === TextureType.FLOAT_UPLOAD) {
+      // console.log('new upload texture');
+      newTexture = this.gpgpu.createUploadMatrixTexture(shapeRC[0], shapeRC[1]);
+    } else if (texType === TextureType.FLOAT_RENDER) {
+      // console.log('new render texture!');
+      // newTexture =
+      //     this.gpgpu.createHalfFloatMatrixTexture(shapeRC[0], shapeRC[1]);
+      newTexture = this.gpgpu.createRenderMatrixTexture(shapeRC[0], shapeRC[1]);
+
+    } else if (texType === TextureType.UNSIGNED_BYTE) {
       newTexture = this.gpgpu.createColorMatrixTexture(shapeRC[0], shapeRC[1]);
     }
     this.allocatedTextures.push(newTexture);
@@ -60,7 +67,7 @@ export class TextureManager {
 
   releaseTexture(
       texture: WebGLTexture, shape: [number, number],
-      texType = TextureType.FLOAT): void {
+      texType: TextureType): void {
     const shapeKey = getKeyFromTextureShape(shape, texType);
     if (!(shapeKey in this.freeTextures)) {
       this.freeTextures[shapeKey] = [];
