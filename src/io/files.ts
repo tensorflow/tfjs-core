@@ -239,12 +239,18 @@ export class Files implements IOHandler {
  * ```
  *
  * @param fileNames Name(s) of the files to be downloaded. For use with
- *   `tf.Model`, `fileNames` should follow either of the following two formats:
- *   1. A single string or an Array of a single string, as the file name prefix.
+ *   `tf.Model`, `fileNames` should follow one of the following three formats:
+ *   1. `fileNames` being `null` or `undefined`, in which case the default file
+ *      names will be used:
+ *      - 'model.json' for the JSON file containing the model topology and
+ *        weights manifest.
+ *      - 'model.weights.bin' for the binary file containing the binary weight
+ *        values.
+ *   2. A single string or an Array of a single string, as the file name prefix.
  *      For example, if `'foo'` or `['foo']` is provided, the downloaded JSON
  *      file and binary weights file will be named 'foo.json' and
  *      'foo.weights.bin', respectively.
- *   2. An `Array` of two file names, as full names of the JSON and binary
+ *   3. An `Array` of two file names, as full names of the JSON and binary
  *      weight files, in that order.
  * @param config Additional configuration for triggering downloads.
  * @returns An instance of `DownloadTrigger` `IOHandler`.
