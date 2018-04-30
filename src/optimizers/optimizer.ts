@@ -15,9 +15,9 @@
  * =============================================================================
  */
 
-import {Serializable} from '..';
 import {doc} from '../doc';
 import {variableGrads} from '../globals';
+import {Serializable} from '../serialization';
 import {Scalar, Variable} from '../tensor';
 import {NamedTensorMap} from '../types';
 

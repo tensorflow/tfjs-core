@@ -18,12 +18,16 @@
 import {ENV} from '../environment';
 import {keep, tidy} from '../globals';
 import {scalar, zerosLike} from '../ops/ops';
+// tslint:disable-next-line:max-line-length
+import {ConfigDict, Constructor, Serializable, SerializationMap} from '../serialization';
 import {Scalar} from '../tensor';
 import {NamedVariableMap} from '../types';
+
 import {Optimizer} from './optimizer';
 
 /** @doclink Optimizer */
 export class AdadeltaOptimizer extends Optimizer {
+  static className = 'AdadeltaOptimizer';
   private c: Scalar;
   private epsilon: Scalar;
   private rho: Scalar;
@@ -97,4 +101,16 @@ export class AdadeltaOptimizer extends Optimizer {
           .forEach(name => this.accumulatedGrads[name].dispose());
     }
   }
+  getConfig(): ConfigDict {
+    return {
+      learningRate: -1 * this.c.dataSync().values().next().value,
+      rho: this.rho.dataSync().values().next().value,
+      epsilon: this.epsilon.dataSync().values().next().value
+    };
+  }
+  static fromConfig<T extends Serializable>(
+      cls: Constructor<T>, config: ConfigDict): T {
+    return new cls(config.learningRate, config.rho, config.epsilon);
+  }
 }
+SerializationMap.register(AdadeltaOptimizer);

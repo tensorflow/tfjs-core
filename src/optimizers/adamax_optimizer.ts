@@ -18,11 +18,15 @@
 import {ENV} from '../environment';
 import {keep, tidy} from '../globals';
 import {scalar, zerosLike} from '../ops/ops';
+// tslint:disable-next-line:max-line-length
+import {ConfigDict, Constructor, Serializable, SerializationMap} from '../serialization';
 import {Scalar, Variable} from '../tensor';
 import {NamedVariableMap} from '../types';
+
 import {Optimizer} from './optimizer';
 
 export class AdamaxOptimizer extends Optimizer {
+  static className = 'AdamaxOptimizer';
   private c: Scalar;
   private eps: Scalar;
   private accBeta1: Variable;
@@ -127,4 +131,20 @@ export class AdamaxOptimizer extends Optimizer {
           .forEach(name => this.accumulatedWeightedInfNorm[name].dispose());
     }
   }
+  getConfig(): ConfigDict {
+    return {
+      learningRate: this.learningRate,
+      beta1: this.beta1.dataSync().values().next().value,
+      beta2: this.beta2.dataSync().values().next().value,
+      epsilon: this.eps.dataSync().values().next().value,
+      decay: this.decay.dataSync().values().next().value,
+    };
+  }
+  static fromConfig<T extends Serializable>(
+      cls: Constructor<T>, config: ConfigDict): T {
+    return new cls(
+        config.learningRate, config.beta1, config.beta2, config.epsilon,
+        config.decay);
+  }
 }
+SerializationMap.register(AdamaxOptimizer);

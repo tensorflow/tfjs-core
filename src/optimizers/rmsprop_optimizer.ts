@@ -18,12 +18,16 @@
 import {ENV} from '../environment';
 import {keep, tidy} from '../globals';
 import {scalar, zerosLike} from '../ops/ops';
+// tslint:disable-next-line:max-line-length
+import {ConfigDict, Constructor, Serializable, SerializationMap} from '../serialization';
 import {Scalar} from '../tensor';
 import {NamedVariableMap} from '../types';
+
 import {Optimizer} from './optimizer';
 
 /** @doclink Optimizer */
 export class RMSPropOptimizer extends Optimizer {
+  static className = 'RMSPropOptimizer';
   private c: Scalar;
   private epsilon: Scalar;
   private decay: Scalar;
@@ -92,9 +96,10 @@ export class RMSPropOptimizer extends Optimizer {
           const newAccumulatedMoments =
               this.momentum.mul(accumulatedMoments)
                   .add(this.c.mul(gradient).div(
-                      newAccumulatedMeanSquare.sub(
-                        newAccumulatedMeanGrad.square().add(
-                          this.epsilon)).sqrt()));
+                      newAccumulatedMeanSquare
+                          .sub(
+                              newAccumulatedMeanGrad.square().add(this.epsilon))
+                          .sqrt()));
 
           this.accumulatedMeanSquares[variableName].assign(
               newAccumulatedMeanSquare);
@@ -145,4 +150,21 @@ export class RMSPropOptimizer extends Optimizer {
           .forEach(name => this.accumulatedMoments[name].dispose());
     }
   }
+
+  getConfig(): ConfigDict {
+    return {
+      learningRate: this.learningRate,
+      decay: this.decay.dataSync().values().next().value,
+      momentum: this.momentum.dataSync().values().next().value,
+      epsilon: this.epsilon.dataSync().values().next().value,
+      centered: this.centered
+    };
+  }
+  static fromConfig<T extends Serializable>(
+      cls: Constructor<T>, config: ConfigDict): T {
+    return new cls(
+        config.learningRate, config.decay, config.momentum, config.epsilon,
+        config.centered);
+  }
 }
+SerializationMap.register(RMSPropOptimizer);
