@@ -174,27 +174,29 @@ export class Files implements IOHandler {
         const modelJSON = JSON.parse(event.target.result);
         const modelTopology = modelJSON.modelTopology as {};
         if (modelTopology == null) {
-          reject(new Error(
-              `modelTopology field is missing from file ${this.files[0]}`));
+          reject(new Error(`modelTopology field is missing from file ${
+              this.files[0].name}`));
         }
         const weightsManifest =
             modelJSON.weightsManifest as WeightsManifestConfig;
         if (weightsManifest == null) {
-          reject(new Error(
-              `weightManifest field is missing from file ${this.files[0]}`));
+          reject(new Error(`weightManifest field is missing from file ${
+              this.files[0].name}`));
         }
         if (weightsManifest.length !== 1) {
           reject(new Error(
               `When uploading user-selected files, we current support only ` +
-              `a single weight group, but the weights manifest indicates ` +
-              `there are ${weightsManifest.length} weight groups`));
+              `a single weight group, but the weights manifest in ` +
+              `${this.files[0].name} indicates there are ` +
+              `${weightsManifest.length} weight groups.`));
         }
         const weightGroup = weightsManifest[0];
         if (weightGroup.paths.length !== 1) {
           reject(new Error(
               `When uploading user-selected files, we current support only ` +
-              `a single weight file, but the weights manifest indicates ` +
-              `there are ${weightGroup.paths.length} weight groups`));
+              `a single weight file, but the weights manifest in ` +
+              `${this.files[0].name} indicates there are ` +
+              `${weightGroup.paths.length} weight files.`));
         }
         const weightSpecs = weightGroup.weights;
 
@@ -213,12 +215,12 @@ export class Files implements IOHandler {
 }
 
 /**
- * Factory method for IOHandler for triggering file downloads.
+ * Factory method for IOHandler that triggers file downloads.
  *
  * The returned `IOHandler` instance can be used as model exporting methods such
  * as `tf.Model.save` and supports only saving.
  *
- * ```
+ * ```js
  * const model = tf.sequential();
  * model.add(tf.layers.dense(
  *     {units: 1, inputShape: [10], activation: 'sigmoid'}));
@@ -228,12 +230,13 @@ export class Files implements IOHandler {
  * ```
  *
  * @param fileNames Name(s) of the files to be downloaded. For use with
- *   `tf.Model`, `fileNames` should follow one of the following two formats:
+ *   `tf.Model`, `fileNames` should follow either of the following two formats:
  *   1. A single string or an Array of a single string, as the file name prefix.
- *      For example, if 'foo' is provided, the downloaded JSON file and binary
- * weights file will be named as 'foo.json' and 'foo.weights.bin', respectively.
- *   2. An Array of two file names, as full names of the JSON and binary weights
- *      files, in that order.
+ *      For example, if `'foo'` or `['foo']` is provided, the downloaded JSON
+ *      file and binary weights file will be named 'foo.json' and
+ *      'foo.weights.bin', respectively.
+ *   2. An `Array` of two file names, as full names of the JSON and binary
+ *      weight files, in that order.
  * @param config Additional configuration for triggering downloads.
  * @returns An instance of `DownloadTrigger` `IOHandler`.
  */
@@ -246,15 +249,16 @@ export function triggerDownloads(
 /**
  * Factory method for IOHandler that loads model artifacts from files.
  *
- * This method can be used for files such as user-selected files in the browser.
+ * This method can be used for loading from files such as user-selected files
+ * in the browser.
  * When used in conjunction with `tf.loadModel`, an instance of `tf.Model`
- * (Keras-style)
+ * (Keras-style) can be constructed from the loaded artifacts.
  *
  * ```js
  * // Note: This code snippet won't run properly without the actual file input
  * //   elements in the HTML DOM.
  *
- * // Suppose there are two HTML file input ('<input type="file" ...>')
+ * // Suppose there are two HTML file input (`<input type="file" ...>`)
  * // elements.
  * const uploadJSONInput = document.getElementById('upload-json');
  * const uploadWeightsInput = document.getElementById('upload-weights');
