@@ -23,11 +23,39 @@ import {IOHandler, ModelArtifacts, SaveResult, WeightsManifestConfig} from './ty
 const JSON_EXTENSION_NAME = '.json';
 const WEIHGT_DATA_EXTENSION_NAME = '.weights.bin';
 
+export interface DownloadTriggerConfig {
+  /**
+   * The HTML anchor ('<a>') element to bind the downloading of the model
+   * architecture + weights manifest JSON file to.
+   *
+   * Optional. If not specified, a temporary, orphan anchor element will be
+   * create to bind the download to.
+   */
+  jsonAnchor?: HTMLAnchorElement;
+
+  /**
+   * The HTML anchor ('<a>') element to bind the downloading of the binary
+   * weights file to.
+   *
+   * Optional. If not specified, a temporary, orphan anchor element will be
+   * create to bind the download to.
+   */
+  weightDataAnchor?: HTMLAnchorElement;
+
+  /**
+   * Whether the download(s) should be triggered immediately (default: `true`).
+   */
+  trigger?: boolean;
+}
+
 export class DownloadTrigger implements IOHandler {
   private readonly modelTopologyFileName: string;
   private readonly weightDataFileName: string;
+  private readonly jsonAnchor: HTMLAnchorElement;
+  private readonly weightDataAnchor: HTMLAnchorElement;
+  private readonly trigger: boolean;
 
-  constructor(fileNames?: string|string[]) {
+  constructor(fileNames?: string|string[], config?: DownloadTriggerConfig) {
     if (!window) {
       // TODO(cais): Provide info on what IOHandlers are available under the
       //   current environment.
@@ -57,6 +85,14 @@ export class DownloadTrigger implements IOHandler {
           `string, an Array of a single string or an Array of two strings, ` +
           `but received an Array of ${fileNames.length} strings.`);
     }
+
+    if (config != null) {
+      this.jsonAnchor = config.jsonAnchor;
+      this.weightDataAnchor = config.weightDataAnchor;
+      this.trigger = config.trigger == null ? true : config.trigger;
+    } else {
+      this.trigger = true;
+    }
   }
 
   async save(modelArtifacts: ModelArtifacts): Promise<SaveResult> {
@@ -83,17 +119,23 @@ export class DownloadTrigger implements IOHandler {
 
       // Create new anchor elements, without attaching them to parents, so that
       // the downloaded file names can be controlled.
-      const jsonAnchor = document.createElement('a');
+      const jsonAnchor = this.jsonAnchor == null ?
+          document.createElement('a') as HTMLAnchorElement :
+          this.jsonAnchor;
       jsonAnchor.download = this.modelTopologyFileName;
       jsonAnchor.href = modelTopologyAndWeightManifestURL;
-      const weightDataAnchor = document.createElement('a');
+      const weightDataAnchor = this.weightDataAnchor == null ?
+          document.createElement('a') as HTMLAnchorElement :
+          this.weightDataAnchor;
       weightDataAnchor.download = this.weightDataFileName;
       weightDataAnchor.href = weightsURL;
 
       // Trigger downloads by calling the `click` methods on the download
       // anchors.
-      jsonAnchor.click();
-      weightDataAnchor.click();
+      if (this.trigger) {
+        jsonAnchor.click();
+        weightDataAnchor.click();
+      }
 
       return {
         modelArtifactsInfo: {
@@ -114,18 +156,15 @@ export class Files implements IOHandler {
   private readonly files: File[];
 
   constructor(files?: File[]) {
-    console.log('In Files constructor.');  // DEBUG
     this.files = files;
-    console.log('this.load =', this.load);    // DEBUG
-    console.log('this.files =', this.files);  // DEBUG
   }
 
   async load(): Promise<ModelArtifacts> {
     if (this.files.length !== 2) {
       throw new Error(
-          `Files.load() currently support only loading from 2 files ` +
+          `Files.load() currently supports only loading from 2 files ` +
           `(a JSON file and a binary weights file), but ` +
-          `received ${files.length} file(s).`);
+          `received ${this.files.length} file(s).`);
     }
 
     return new Promise<ModelArtifacts>((resolve, reject) => {
@@ -144,10 +183,6 @@ export class Files implements IOHandler {
           reject(new Error(
               `weightManifest field is missing from file ${this.files[0]}`));
         }
-        console.log('Read modelJSON:');       // DEBUG
-        console.log(modelJSON);               // DEBUG
-        console.log(`Read weightManifest:`);  // DEBUG
-        console.log(weightsManifest);
         if (weightsManifest.length !== 1) {
           reject(new Error(
               `When uploading user-selected files, we current support only ` +
@@ -162,14 +197,11 @@ export class Files implements IOHandler {
               `there are ${weightGroup.paths.length} weight groups`));
         }
         const weightSpecs = weightGroup.weights;
-        console.log(`Read weightSpecs:`);  // DEBUG
-        console.log(weightSpecs);
 
         const weightsReader = new FileReader();
+        // tslint:disable-next-line:no-any
         weightsReader.onload = (event: any) => {
           const weightData = event.target.result;
-          console.log('Read weightData:');  // DEBUG
-          console.log(weightData);  // DEBUG
           resolve({modelTopology, weightSpecs, weightData});
         };
 
@@ -180,10 +212,63 @@ export class Files implements IOHandler {
   }
 }
 
-export function triggerDownloads(fileNames?: string|string[]): DownloadTrigger {
-  return new DownloadTrigger(fileNames);
+/**
+ * Factory method for IOHandler for triggering file downloads.
+ *
+ * The returned `IOHandler` instance can be used as model exporting methods such
+ * as `tf.Model.save` and supports only saving.
+ *
+ * ```
+ * const model = tf.sequential();
+ * model.add(tf.layers.dense(
+ *     {units: 1, inputShape: [10], activation: 'sigmoid'}));
+ * const artifactsInfo = await model.save(tf.io.triggerDownloads(
+ *     ['mymodel.json', 'mymodel.weights.bin'])):
+ * console.log(artifactsInfo);
+ * ```
+ *
+ * @param fileNames Name(s) of the files to be downloaded. For use with
+ *   `tf.Model`, `fileNames` should follow one of the following two formats:
+ *   1. A single string or an Array of a single string, as the file name prefix.
+ *      For example, if 'foo' is provided, the downloaded JSON file and binary
+ * weights file will be named as 'foo.json' and 'foo.weights.bin', respectively.
+ *   2. An Array of two file names, as full names of the JSON and binary weights
+ *      files, in that order.
+ * @param config Additional configuration for triggering downloads.
+ * @returns An instance of `DownloadTrigger` `IOHandler`.
+ */
+export function triggerDownloads(
+    fileNames?: string|string[],
+    config?: DownloadTriggerConfig): DownloadTrigger {
+  return new DownloadTrigger(fileNames, config);
 }
 
-export function files(files?: File[]) {
+/**
+ * Factory method for IOHandler that loads model artifacts from files.
+ *
+ * This method can be used for files such as user-selected files in the browser.
+ * When used in conjunction with `tf.loadModel`, an instance of `tf.Model`
+ * (Keras-style)
+ *
+ * ```js
+ * // Note: This code snippet won't run properly without the actual file input
+ * //   elements in the HTML DOM.
+ *
+ * // Suppose there are two HTML file input ('<input type="file" ...>')
+ * // elements.
+ * const uploadJSONInput = document.getElementById('upload-json');
+ * const uploadWeightsInput = document.getElementById('upload-weights');
+ * const model = await tfl.loadModel(
+ *     tfc.io.files([uploadJSONInput.files[0], uploadWeightsInput.files[0]]));
+ * ```
+ *
+ * @param files `File`s to load from. Currently, this function supports only
+ *   loading from files that contain Keras-style models (i.e., `tf.Model`s), for
+ *   which an `Array` of two `File`s is expected (in that order):
+ *   - A JSON file containing the model topology and weight manifest.
+ *   - A binary file containing the binary weights.
+ * @returns An instance of `Files` `IOHandler`.
+ */
+export function files(files?: File[]): Files {
   return new Files(files);
 }
