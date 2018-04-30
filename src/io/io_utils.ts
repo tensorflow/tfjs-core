@@ -163,7 +163,7 @@ export function stringByteLength(str: string): number {
  * @param buffer `ArrayBuffer` to be converted.
  * @returns A string that base64-encodes `buffer`.
  */
-export function arrayBufferToBase64String(buffer: ArrayBuffer) {
+export function arrayBufferToBase64String(buffer: ArrayBuffer): string {
   return btoa(String.fromCharCode.apply(null, new Uint8Array(buffer)));
 }
 
@@ -173,7 +173,7 @@ export function arrayBufferToBase64String(buffer: ArrayBuffer) {
  * @param str Base64 string.
  * @returns Decoded `ArrayBuffer`.
  */
-export function base64StringToArrayBuffer(str: string) {
+export function base64StringToArrayBuffer(str: string): ArrayBuffer {
   const s = atob(str);
   const buffer = new Uint8Array(s.length);
   for (let i = 0; i < s.length; ++i) {
