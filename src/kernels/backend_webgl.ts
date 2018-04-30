@@ -179,12 +179,11 @@ export class MathBackendWebGL implements KernelBackend {
       float32Values = this.gpgpu.downloadFloat32MatrixFromOutputTexture(
           texture, texShape[0], texShape[1]);
     } else {
-      const tmpInput = Tensor.make(shape, {dataId}, dtype);
-
       const tmpTarget = Tensor.make(shape, {});
       this.texData.get(tmpTarget.dataId).texType =
           LogicalTextureType.UNSIGNED_BYTE;
 
+      const tmpInput = Tensor.make(shape, {dataId}, dtype);
       const program = new EncodeFloatProgram(shape);
       const res = this.compileAndRun(program, [tmpInput], tmpTarget);
 
@@ -195,6 +194,7 @@ export class MathBackendWebGL implements KernelBackend {
 
       res.dispose();
       tmpInput.dispose();
+      tmpTarget.dispose();
     }
 
     if (shouldTimeProgram) {

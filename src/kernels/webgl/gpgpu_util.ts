@@ -154,7 +154,9 @@ export function getTextureConfig(
     // downloadTextureFormat = gl.RGBA;
     downloadUnpackNumChannels = 4;
     defaultNumChannels = 4;
-    textureTypeHalfFloat = textureHalfFloatExtension.HALF_FLOAT_OES;
+    textureTypeHalfFloat = textureHalfFloatExtension != null ?
+        textureHalfFloatExtension.HALF_FLOAT_OES :
+        null;
   }
   downloadTextureFormat = gl.RGBA;
 
