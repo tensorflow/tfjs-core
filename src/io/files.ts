@@ -20,8 +20,9 @@ import {stringByteLength} from './io_utils';
 import {IOHandler, ModelArtifacts, SaveResult, WeightsManifestConfig} from './types';
 // tslint:enable:max-line-length
 
-const JSON_EXTENSION_NAME = '.json';
-const WEIHGT_DATA_EXTENSION_NAME = '.weights.bin';
+const DEFAULT_FILE_NAME_PREFIX = 'model';
+const DEFAULT_JSON_EXTENSION_NAME = '.json';
+const DEFAULT_WEIHGT_DATA_EXTENSION_NAME = '.weights.bin';
 
 export interface DownloadTriggerConfig {
   /**
@@ -64,15 +65,16 @@ export class DownloadTrigger implements IOHandler {
           'is not a browser.');
     }
 
-    // TODO(cais): In case fileNames is null or undefined, use default prefixes.
-
-    if (!Array.isArray(fileNames)) {
+    if (fileNames == null) {
+      fileNames = [DEFAULT_FILE_NAME_PREFIX];
+    } else if (!Array.isArray(fileNames)) {
       fileNames = [fileNames];
     }
 
     if (fileNames.length === 1) {
-      this.modelTopologyFileName = fileNames[0] + JSON_EXTENSION_NAME;
-      this.weightDataFileName = fileNames[0] + WEIHGT_DATA_EXTENSION_NAME;
+      this.modelTopologyFileName = fileNames[0] + DEFAULT_JSON_EXTENSION_NAME;
+      this.weightDataFileName =
+          fileNames[0] + DEFAULT_WEIHGT_DATA_EXTENSION_NAME;
     } else if (fileNames.length === 2) {
       this.modelTopologyFileName = fileNames[0];
       this.weightDataFileName = fileNames[1];
@@ -117,8 +119,8 @@ export class DownloadTrigger implements IOHandler {
               [JSON.stringify(modelTopologyAndWeightManifest)],
               {type: 'application/json'}));
 
-      // Create new anchor elements, without attaching them to parents, so that
-      // the downloaded file names can be controlled.
+      // If anchor elements are not provided, create them without attaching them
+      // to parents, so that the downloaded file names can be controlled.
       const jsonAnchor = this.jsonAnchor == null ?
           document.createElement('a') as HTMLAnchorElement :
           this.jsonAnchor;

@@ -184,6 +184,57 @@ describe('triggerDownload', () => {
     });
   }
 
+  it('No file name provided, with existing anchors', async done => {
+    const testStartDate = new Date();
+    const jsonAnchor = document.createElement('a') as HTMLAnchorElement;
+    const weightDataAnchor = document.createElement('a') as HTMLAnchorElement;
+    const downloadTrigger = tf.io.triggerDownloads(
+        null, {jsonAnchor, weightDataAnchor, trigger: false});
+    downloadTrigger.save(artifacts1)
+        .then(async saveResult => {
+          expect(saveResult.errors).toEqual(undefined);
+          const artifactsInfo = saveResult.modelArtifactsInfo;
+          expect(artifactsInfo.dateSaved.getTime())
+              .toBeGreaterThanOrEqual(testStartDate.getTime());
+          expect(saveResult.modelArtifactsInfo.modelTopologyBytes)
+              .toEqual(JSON.stringify(modelTopology1).length);
+          expect(saveResult.modelArtifactsInfo.weightSpecsBytes)
+              .toEqual(JSON.stringify(weightSpecs1).length);
+          expect(saveResult.modelArtifactsInfo.weightDataBytes).toEqual(16);
+
+          // Verify that the default file names are used.
+          expect(jsonAnchor.download).toEqual('model.json');
+          expect(weightDataAnchor.download).toEqual('model.weights.bin');
+
+          // Verify the content of the JSON file.
+          const jsonContent = await fetch(jsonAnchor.href);
+          const modelTopologyAndWeightsManifest =
+              JSON.parse(await jsonContent.text());
+          expect(modelTopologyAndWeightsManifest.modelTopology)
+              .toEqual(modelTopology1);
+          const weightsManifest =
+              modelTopologyAndWeightsManifest.weightsManifest as
+              WeightsManifestConfig;
+          expect(weightsManifest.length).toEqual(1);
+          expect(weightsManifest[0].paths).toEqual(['./model.weights.bin']);
+          expect(weightsManifest[0].weights).toEqual(weightSpecs1);
+
+          // Verify the content of the binary weights file.
+          const weightsContent = await fetch(weightDataAnchor.href);
+          const fileReader = new FileReader();
+          // tslint:disable-next-line:no-any
+          fileReader.onload = (event: any) => {
+            const buffer = event.target.result as ArrayBuffer;
+            expect(buffer).toEqual(weightData1);
+            done();
+          };
+          fileReader.readAsArrayBuffer(await weightsContent.blob());
+        })
+        .catch(err => {
+          done.fail(err.stack);
+        });
+  });
+
   it('Missing file name throws error', () => {
     expect(() => tf.io.triggerDownloads([])).toThrowError(/File names/);
     expect(() => tf.io.triggerDownloads([
