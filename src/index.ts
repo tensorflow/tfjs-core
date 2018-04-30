@@ -46,7 +46,6 @@ export {DataType, Rank, ShapeMap} from './types';
 
 export * from './ops/ops';
 export {LSTMCellFunc} from './ops/lstm';
-export {Reduction} from './ops/loss_ops';
 
 export * from './train';
 export * from './globals';

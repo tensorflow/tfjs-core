@@ -16,9 +16,9 @@
  */
 
 import * as tf from '../index';
+import {describeWithFlags} from '../jasmine_util';
 // tslint:disable-next-line:max-line-length
 import {ALL_ENVS, expectArraysClose, expectNumbersClose} from '../test_util';
-import {describeWithFlags} from '../jasmine_util';
 
 describeWithFlags('computeWeightedLoss', ALL_ENVS, () => {
   it('1D - no weights', () => {
@@ -30,31 +30,31 @@ describeWithFlags('computeWeightedLoss', ALL_ENVS, () => {
     expectNumbersClose(y.get(), (1 + 2 + 3) / 3);
   });
 
-  it('1D - no weights - Reduction.NONE', () => {
+  it('1D - no weights - losses.Reduction.NONE', () => {
     const losses = tf.tensor1d([1, 2, 3]);
 
-    const y =
-        tf.losses.computeWeightedLoss(losses, undefined, tf.Reduction.NONE);
+    const y = tf.losses.computeWeightedLoss(
+        losses, undefined, tf.losses.Reduction.NONE);
 
     expect(y.shape).toEqual([3]);
     expectArraysClose(y, [1, 2, 3]);
   });
 
-  it('1D - no weights - Reduction.MEAN', () => {
+  it('1D - no weights - losses.Reduction.MEAN', () => {
     const losses = tf.tensor1d([1, 2, 3]);
 
-    const y =
-        tf.losses.computeWeightedLoss(losses, undefined, tf.Reduction.MEAN);
+    const y = tf.losses.computeWeightedLoss(
+        losses, undefined, tf.losses.Reduction.MEAN);
 
     expect(y.shape).toEqual([]);
     expectNumbersClose(y.get(), (1 + 2 + 3) / 3);
   });
 
-  it('1D - no weights - Reduction.SUM', () => {
+  it('1D - no weights - losses.Reduction.SUM', () => {
     const losses = tf.tensor1d([1, 2, 3]);
 
-    const y =
-        tf.losses.computeWeightedLoss(losses, undefined, tf.Reduction.SUM);
+    const y = tf.losses.computeWeightedLoss(
+        losses, undefined, tf.losses.Reduction.SUM);
 
     expect(y.shape).toEqual([]);
     expectNumbersClose(y.get(), (1 + 2 + 3));
@@ -70,31 +70,34 @@ describeWithFlags('computeWeightedLoss', ALL_ENVS, () => {
     expectNumbersClose(y.get(), (1 * 0.1 + 2 * 0 + 3 * 0.3) / 2);
   });
 
-  it('1D - weights - Reduction.NONE', () => {
+  it('1D - weights - losses.Reduction.NONE', () => {
     const losses = tf.tensor1d([1, 2, 3]);
     const weights = tf.tensor1d([0.1, 0.2, 0.3]);
 
-    const y = tf.losses.computeWeightedLoss(losses, weights, tf.Reduction.NONE);
+    const y = tf.losses.computeWeightedLoss(
+        losses, weights, tf.losses.Reduction.NONE);
 
     expect(y.shape).toEqual([3]);
     expectArraysClose(y, [1 * 0.1, 2 * 0.2, 3 * 0.3]);
   });
 
-  it('1D - weights - Reduction.MEAN', () => {
+  it('1D - weights - losses.Reduction.MEAN', () => {
     const losses = tf.tensor1d([1, 2, 3]);
     const weights = tf.tensor1d([0.1, 0.2, 0.3]);
 
-    const y = tf.losses.computeWeightedLoss(losses, weights, tf.Reduction.MEAN);
+    const y = tf.losses.computeWeightedLoss(
+        losses, weights, tf.losses.Reduction.MEAN);
 
     expect(y.shape).toEqual([]);
     expectNumbersClose(y.get(), (1 * 0.1 + 2 * 0.2 + 3 * 0.3) / 0.6);
   });
 
-  it('1D - weights - Reduction.SUM', () => {
+  it('1D - weights - losses.Reduction.SUM', () => {
     const losses = tf.tensor1d([1, 2, 3]);
     const weights = tf.tensor1d([0.1, 0.2, 0.3]);
 
-    const y = tf.losses.computeWeightedLoss(losses, weights, tf.Reduction.SUM);
+    const y =
+        tf.losses.computeWeightedLoss(losses, weights, tf.losses.Reduction.SUM);
 
     expect(y.shape).toEqual([]);
     expectNumbersClose(y.get(), (1 * 0.1 + 2 * 0.2 + 3 * 0.3));
@@ -120,63 +123,66 @@ describeWithFlags('computeWeightedLoss', ALL_ENVS, () => {
         y.get(), (4 * 1 + 8 * 0 + 12 * 2 + (8 * -5) + 1 * 0 + 3 * 6) / 4);
   });
 
-  it('2D - no weights - Reduction.MEAN', () => {
+  it('2D - no weights - losses.Reduction.MEAN', () => {
     const losses = tf.tensor2d([4, 8, 12, 8, 1, 3], [2, 3]);
 
-    const y =
-        tf.losses.computeWeightedLoss(losses, undefined, tf.Reduction.MEAN);
+    const y = tf.losses.computeWeightedLoss(
+        losses, undefined, tf.losses.Reduction.MEAN);
 
     expect(y.shape).toEqual([]);
     expectNumbersClose(y.get(), (4 + 8 + 12 + 8 + 1 + 3) / 6);
   });
 
-  it('2D - weights - Reduction.MEAN', () => {
+  it('2D - weights - losses.Reduction.MEAN', () => {
     const losses = tf.tensor2d([4, 8, 12, 8, 1, 3], [2, 3]);
     const weights = tf.tensor2d([1, 0, 2, -5, 0, 6], [2, 3]);
 
-    const y = tf.losses.computeWeightedLoss(losses, weights, tf.Reduction.MEAN);
+    const y = tf.losses.computeWeightedLoss(
+        losses, weights, tf.losses.Reduction.MEAN);
 
     expect(y.shape).toEqual([]);
     expectNumbersClose(
         y.get(), (4 * 1 + 8 * 0 + 12 * 2 + (8 * -5) + 1 * 0 + 3 * 6) / 4);
   });
 
-  it('2D - no weights - Reduction.SUM', () => {
+  it('2D - no weights - losses.Reduction.SUM', () => {
     const losses = tf.tensor2d([4, 8, 12, 8, 1, 3], [2, 3]);
 
-    const y =
-        tf.losses.computeWeightedLoss(losses, undefined, tf.Reduction.SUM);
+    const y = tf.losses.computeWeightedLoss(
+        losses, undefined, tf.losses.Reduction.SUM);
 
     expect(y.shape).toEqual([]);
     expectNumbersClose(y.get(), (4 + 8 + 12 + 8 + 1 + 3));
   });
 
-  it('2D - weights - Reduction.SUM', () => {
+  it('2D - weights - losses.Reduction.SUM', () => {
     const losses = tf.tensor2d([4, 8, 12, 8, 1, 3], [2, 3]);
     const weights = tf.tensor2d([1, 0, 2, -5, 0, 6], [2, 3]);
 
-    const y = tf.losses.computeWeightedLoss(losses, weights, tf.Reduction.SUM);
+    const y =
+        tf.losses.computeWeightedLoss(losses, weights, tf.losses.Reduction.SUM);
 
     expect(y.shape).toEqual([]);
     expectNumbersClose(
         y.get(), (4 * 1 + 8 * 0 + 12 * 2 + (8 * -5) + 1 * 0 + 3 * 6));
   });
 
-  it('2D - no weights - Reduction.NONE', () => {
+  it('2D - no weights - losses.Reduction.NONE', () => {
     const losses = tf.tensor2d([4, 8, 12, 8, 1, 3], [2, 3]);
 
-    const y =
-        tf.losses.computeWeightedLoss(losses, undefined, tf.Reduction.NONE);
+    const y = tf.losses.computeWeightedLoss(
+        losses, undefined, tf.losses.Reduction.NONE);
 
     expect(y.shape).toEqual([2, 3]);
     expectArraysClose(y, [4, 8, 12, 8, 1, 3]);
   });
 
-  it('2D - weights - Reduction.NONE', () => {
+  it('2D - weights - losses.Reduction.NONE', () => {
     const losses = tf.tensor2d([4, 8, 12, 8, 1, 3], [2, 3]);
     const weights = tf.tensor2d([1, 0, 2, -5, 0, 6], [2, 3]);
 
-    const y = tf.losses.computeWeightedLoss(losses, weights, tf.Reduction.NONE);
+    const y = tf.losses.computeWeightedLoss(
+        losses, weights, tf.losses.Reduction.NONE);
 
     expect(y.shape).toEqual([2, 3]);
     expectArraysClose(y, [4 * 1, 8 * 0, 12 * 2, (8 * -5), 1 * 0, 3 * 6]);
@@ -189,7 +195,7 @@ describeWithFlags('computeWeightedLoss', ALL_ENVS, () => {
         /Argument 'losses' passed to 'computeWeightedLoss' must be a Tensor/;
     expect(
         () => tf.losses.computeWeightedLoss(
-            {} as tf.Tensor, weights, tf.Reduction.NONE))
+            {} as tf.Tensor, weights, tf.losses.Reduction.NONE))
         .toThrowError(e);
   });
 
@@ -200,7 +206,7 @@ describeWithFlags('computeWeightedLoss', ALL_ENVS, () => {
         /Argument 'weights' passed to 'computeWeightedLoss' must be a Tensor/;
     expect(
         () => tf.losses.computeWeightedLoss(
-            losses, {} as tf.Tensor, tf.Reduction.NONE))
+            losses, {} as tf.Tensor, tf.losses.Reduction.NONE))
         .toThrowError(e);
   });
 });
@@ -218,7 +224,7 @@ describeWithFlags('absoluteDifference', ALL_ENVS, () => {
         (Math.abs(1 - 0.3) + Math.abs(2 - (-0.6)) + Math.abs(3 - (-0.1))) / 3);
   });
 
-  it('1D - weighted - Reduction.SUM_BY_NONZERO_WEIGHTS', () => {
+  it('1D - weighted - losses.Reduction.SUM_BY_NONZERO_WEIGHTS', () => {
     const predictions = tf.tensor1d([1, 2, 3]);
     const label = tf.tensor1d([0.3, -0.6, -0.1]);
     const weights = tf.tensor1d([0.1, 0.2, 0.3]);
@@ -233,13 +239,13 @@ describeWithFlags('absoluteDifference', ALL_ENVS, () => {
             3);
   });
 
-  it('1D - weighted - Reduction.NONE', () => {
+  it('1D - weighted - losses.Reduction.NONE', () => {
     const predictions = tf.tensor1d([1, 2, 3]);
     const label = tf.tensor1d([0.3, -0.6, -0.1]);
     const weights = tf.tensor1d([0.1, 0.2, 0.3]);
 
     const y = tf.losses.absoluteDifference(
-        label, predictions, weights, tf.Reduction.NONE);
+        label, predictions, weights, tf.losses.Reduction.NONE);
 
     expect(y.shape).toEqual([3]);
     expectArraysClose(y, [
@@ -248,12 +254,12 @@ describeWithFlags('absoluteDifference', ALL_ENVS, () => {
     ]);
   });
 
-  it('1D - Reduction.MEAN', () => {
+  it('1D - losses.Reduction.MEAN', () => {
     const predictions = tf.tensor1d([1, 2, 3]);
     const label = tf.tensor1d([0.3, -0.6, -0.1]);
 
     const y = tf.losses.absoluteDifference(
-        label, predictions, undefined, tf.Reduction.MEAN);
+        label, predictions, undefined, tf.losses.Reduction.MEAN);
 
     expect(y.shape).toEqual([]);
     expectNumbersClose(
@@ -261,13 +267,13 @@ describeWithFlags('absoluteDifference', ALL_ENVS, () => {
         (Math.abs(1 - 0.3) + Math.abs(2 - (-0.6)) + Math.abs(3 - (-0.1))) / 3);
   });
 
-  it('1D - weighted - Reduction.MEAN', () => {
+  it('1D - weighted - losses.Reduction.MEAN', () => {
     const predictions = tf.tensor1d([1, 2, 3]);
     const label = tf.tensor1d([0.3, -0.6, -0.1]);
     const weights = tf.tensor1d([0.1, 0.2, 0.3]);
 
     const y = tf.losses.absoluteDifference(
-        label, predictions, weights, tf.Reduction.MEAN);
+        label, predictions, weights, tf.losses.Reduction.MEAN);
 
     expect(y.shape).toEqual([]);
     expectNumbersClose(
@@ -291,7 +297,7 @@ describeWithFlags('absoluteDifference', ALL_ENVS, () => {
             6);
   });
 
-  it('2D - weighted - Reduction.SUM_BY_NONZERO_WEIGHTS', () => {
+  it('2D - weighted - losses.Reduction.SUM_BY_NONZERO_WEIGHTS', () => {
     const predictions = tf.tensor2d([4, 8, 12, 8, 1, 3], [2, 3]);
     const label = tf.tensor2d([1, 9, 2, -5, -2, 6], [2, 3]);
     const weights = tf.tensor2d([3, 0, 5, 0, 4, 2], [2, 3]);
@@ -307,13 +313,13 @@ describeWithFlags('absoluteDifference', ALL_ENVS, () => {
             4);
   });
 
-  it('2D - weighted - Reduction.NONE', () => {
+  it('2D - weighted - losses.Reduction.NONE', () => {
     const predictions = tf.tensor2d([4, 8, 12, 8, 1, 3], [2, 3]);
     const label = tf.tensor2d([1, 9, 2, -5, -2, 6], [2, 3]);
     const weights = tf.tensor2d([3, 6, 5, 0, 4, 2], [2, 3]);
 
     const y = tf.losses.absoluteDifference(
-        label, predictions, weights, tf.Reduction.NONE);
+        label, predictions, weights, tf.losses.Reduction.NONE);
 
     expect(y.shape).toEqual([2, 3]);
     expectArraysClose(y, [
@@ -322,12 +328,12 @@ describeWithFlags('absoluteDifference', ALL_ENVS, () => {
     ]);
   });
 
-  it('2D - Reduction.MEAN', () => {
+  it('2D - losses.Reduction.MEAN', () => {
     const predictions = tf.tensor2d([4, 8, 12, 8, 1, 3], [2, 3]);
     const label = tf.tensor2d([1, 9, 2, -5, -2, 6], [2, 3]);
 
     const y = tf.losses.absoluteDifference(
-        label, predictions, undefined, tf.Reduction.MEAN);
+        label, predictions, undefined, tf.losses.Reduction.MEAN);
 
     expect(y.shape).toEqual([]);
     expectNumbersClose(
@@ -337,13 +343,13 @@ describeWithFlags('absoluteDifference', ALL_ENVS, () => {
             6);
   });
 
-  it('2D - weighted - Reduction.MEAN', () => {
+  it('2D - weighted - losses.Reduction.MEAN', () => {
     const predictions = tf.tensor2d([4, 8, 12, 8, 1, 3], [2, 3]);
     const label = tf.tensor2d([1, 9, 2, -5, -2, 6], [2, 3]);
     const weights = tf.tensor2d([3, 6, 5, 0, 4, 2], [2, 3]);
 
     const y = tf.losses.absoluteDifference(
-        label, predictions, weights, tf.Reduction.MEAN);
+        label, predictions, weights, tf.losses.Reduction.MEAN);
 
     expect(y.shape).toEqual([]);
     expectNumbersClose(
@@ -362,7 +368,7 @@ describeWithFlags('absoluteDifference', ALL_ENVS, () => {
         /Argument 'labels' passed to 'absoluteDifference' must be a Tensor/;
     expect(
         () => tf.losses.absoluteDifference(
-            {} as tf.Tensor, predictions, weights, tf.Reduction.MEAN))
+            {} as tf.Tensor, predictions, weights, tf.losses.Reduction.MEAN))
         .toThrowError(e);
   });
 
@@ -375,7 +381,7 @@ describeWithFlags('absoluteDifference', ALL_ENVS, () => {
         'must be a Tensor');
     expect(
         () => tf.losses.absoluteDifference(
-            label, {} as tf.Tensor, weights, tf.Reduction.MEAN))
+            label, {} as tf.Tensor, weights, tf.losses.Reduction.MEAN))
         .toThrowError(e);
   });
 
@@ -387,7 +393,7 @@ describeWithFlags('absoluteDifference', ALL_ENVS, () => {
         /Argument 'weights' passed to 'absoluteDifference' must be a Tensor/;
     expect(
         () => tf.losses.absoluteDifference(
-            label, predictions, {} as tf.Tensor, tf.Reduction.MEAN))
+            label, predictions, {} as tf.Tensor, tf.losses.Reduction.MEAN))
         .toThrowError(e);
   });
 });

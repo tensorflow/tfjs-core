@@ -219,13 +219,11 @@ import {Rank} from '../types';
 // tslint:disable-next-line:no-unused-expression
 [Tensor, Rank];
 
-// tslint:disable-next-line:no-unused-expression
-[Reduction];
-
 export const losses = {
   softmaxCrossEntropy: SoftmaxOps.softmaxCrossEntropy,
   absoluteDifference: LossOps.absoluteDifference,
-  computeWeightedLoss: LossOps.computeWeightedLoss
+  computeWeightedLoss: LossOps.computeWeightedLoss,
+  Reduction
 };
 
 export const image = {
