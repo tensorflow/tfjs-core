@@ -33,9 +33,6 @@ export class Normal {
   /**
    * The Normal distribution with location loc and scale parameters.
    *
-   * ```js
-   * TODO: Add code exemple here
-   * ```
    * @param loc  Floating point tensor|number; the means of the
    * distribution(s).
    * @param scale Floating point tensor|number; the stddevs of the
