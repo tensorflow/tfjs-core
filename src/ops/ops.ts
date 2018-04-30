@@ -29,6 +29,7 @@ import {LSTMOps} from './lstm';
 import {MatmulOps} from './matmul';
 import {MovingAverageOps} from './moving_average';
 import {NormOps} from './norm';
+import {Normal} from './normal';
 import {PoolOps} from './pool';
 import {ReductionOps} from './reduction_ops';
 import {ReverseOps} from './reverse';
@@ -58,6 +59,10 @@ export const matMul = MatmulOps.matMul;
 export const matrixTimesVector = MatmulOps.matrixTimesVector;
 export const outerProduct = MatmulOps.outerProduct;
 export const vectorTimesMatrix = MatmulOps.vectorTimesMatrix;
+
+export const distributions = {
+  normal: Normal
+};
 
 export const avgPool = PoolOps.avgPool;
 export const maxPool = PoolOps.maxPool;
