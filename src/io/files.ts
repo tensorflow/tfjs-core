@@ -15,6 +15,13 @@
  * =============================================================================
  */
 
+/**
+ * IOHandlers related to files
+ *
+ * such as browser-triggered file downloads, user-selected files in browser and
+ * native files (node.js).
+ */
+
 // tslint:disable:max-line-length
 import {stringByteLength} from './io_utils';
 import {IOHandler, ModelArtifacts, SaveResult, WeightsManifestConfig} from './types';
