@@ -16,7 +16,7 @@
  */
 
 /**
- * IOHandlers related to files
+ * IOHandlers related to files.
  *
  * such as browser-triggered file downloads, user-selected files in browser and
  * native files (node.js).
