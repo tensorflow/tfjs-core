@@ -27,7 +27,7 @@
  * toConfig returns the TS-friendly representation. model.toJSON() returns
  * the pythonic version as that's the portable format.  If you need to
  * python-ify a non-model level toConfig output, you'll need to use a
- * to-be-written-helper doing the inverse of models::convertPythonicToTs.
+ * convertTsToPythonic from serialization_utils in -Layers.
  *
  */
 export type ConfigDictValue =
