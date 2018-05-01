@@ -43,12 +43,12 @@ export interface ConfigDictArray extends Array<ConfigDictValue> {}
  *
  * Source for this idea: https://stackoverflow.com/a/43607255
  */
-export type Constructor<T extends Serializable> = {
+export type SerializableConstructor<T extends Serializable> = {
   // tslint:disable-next-line:no-any
   new (...args: any[]): T; className: string; fromConfig: FromConfigMethod<T>;
 };
 export type FromConfigMethod<T extends Serializable> =
-    (cls: Constructor<T>, config: ConfigDict) => T;
+    (cls: SerializableConstructor<T>, config: ConfigDict) => T;
 
 /**
  * Serializable defines the serialization contract.
@@ -58,7 +58,7 @@ export type FromConfigMethod<T extends Serializable> =
  */
 export abstract class Serializable {
   /**
-   * Return the class name for this class ot use in serialization contexts.
+   * Return the class name for this class to use in serialization contexts.
    *
    * Generally speaking this will be the same thing that constructor.name
    * would have returned.  However, the class name needs to be robust
@@ -69,7 +69,8 @@ export abstract class Serializable {
    * class hierarchies and a non-leaf node is used for serialization purposes.
    */
   getClassName(): string {
-    return (this.constructor as Constructor<Serializable>).className;
+    return (this.constructor as SerializableConstructor<Serializable>)
+        .className;
   }
 
   /**
@@ -86,30 +87,45 @@ export abstract class Serializable {
    * @param config The Configuration for the object.
    */
   static fromConfig<T extends Serializable>(
-      cls: Constructor<T>, config: ConfigDict): T {
+      cls: SerializableConstructor<T>, config: ConfigDict): T {
     return new cls(config);
   }
 }
 
+/**
+ * Maps string keys to class constructors.
+ *
+ * Used during (de)serialization from the cross-language JSON format, which
+ * requires the class name in the serialization format matches the class
+ * names as used in Python, should it exist.
+ */
 export class SerializationMap {
   private static instance: SerializationMap;
-  pythonClassNameMap: {
+  classNameMap: {
     [className: string]:
-        [Constructor<Serializable>, FromConfigMethod<Serializable>]
+        [
+          SerializableConstructor<Serializable>, FromConfigMethod<Serializable>
+        ]
   };
 
   private constructor() {
-    this.pythonClassNameMap = {};
+    this.classNameMap = {};
   }
 
-  static getMap() {
+  /**
+   * Returns the singleton instance of the map.
+   */
+  static getMap(): SerializationMap {
     if (SerializationMap.instance == null) {
       SerializationMap.instance = new SerializationMap();
     }
     return SerializationMap.instance;
   }
 
-  static register<T extends Serializable>(cls: Constructor<T>) {
-    this.getMap().pythonClassNameMap[cls.className] = [cls, cls.fromConfig];
+  /**
+   * Registers the class as serializable.
+   */
+  static register<T extends Serializable>(cls: SerializableConstructor<T>) {
+    this.getMap().classNameMap[cls.className] = [cls, cls.fromConfig];
   }
 }

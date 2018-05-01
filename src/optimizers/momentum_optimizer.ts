@@ -19,7 +19,7 @@ import {ENV} from '../environment';
 import {tidy} from '../globals';
 import {scalar, zerosLike} from '../ops/ops';
 // tslint:disable-next-line:max-line-length
-import {ConfigDict, Constructor, Serializable, SerializationMap} from '../serialization';
+import {ConfigDict, Serializable, SerializableConstructor, SerializationMap} from '../serialization';
 import {Scalar, Tensor} from '../tensor';
 import {NamedVariableMap} from '../types';
 
@@ -95,7 +95,7 @@ export class MomentumOptimizer extends SGDOptimizer {
     };
   }
   static fromConfig<T extends Serializable>(
-      cls: Constructor<T>, config: ConfigDict): T {
+      cls: SerializableConstructor<T>, config: ConfigDict): T {
     return new cls(config.learningRate, config.momentum, config.useNesterov);
   }
 }

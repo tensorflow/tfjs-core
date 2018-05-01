@@ -19,7 +19,7 @@ import {ENV} from '../environment';
 import {keep, tidy} from '../globals';
 import {scalar, zerosLike} from '../ops/ops';
 // tslint:disable-next-line:max-line-length
-import {ConfigDict, Constructor, Serializable, SerializationMap} from '../serialization';
+import {ConfigDict, Serializable, SerializableConstructor, SerializationMap} from '../serialization';
 import {Scalar, Variable} from '../tensor';
 import {NamedVariableMap} from '../types';
 
@@ -135,7 +135,7 @@ export class AdamOptimizer extends Optimizer {
     };
   }
   static fromConfig<T extends Serializable>(
-      cls: Constructor<T>, config: ConfigDict): T {
+      cls: SerializableConstructor<T>, config: ConfigDict): T {
     return new cls(
         config.learningRate, config.beta1, config.beta2, config.epsilon);
   }

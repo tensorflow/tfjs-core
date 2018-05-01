@@ -19,7 +19,7 @@ import {ENV} from '../environment';
 import {keep, tidy} from '../globals';
 import {fill, scalar} from '../ops/ops';
 // tslint:disable-next-line:max-line-length
-import {ConfigDict, Constructor, Serializable, SerializationMap} from '../serialization';
+import {ConfigDict, Serializable, SerializableConstructor, SerializationMap} from '../serialization';
 import {Scalar} from '../tensor';
 import {NamedVariableMap} from '../types';
 
@@ -83,7 +83,7 @@ export class AdagradOptimizer extends Optimizer {
     };
   }
   static fromConfig<T extends Serializable>(
-      cls: Constructor<T>, config: ConfigDict): T {
+      cls: SerializableConstructor<T>, config: ConfigDict): T {
     return new cls(config.learningRate, config.initialAccumulatorValue);
   }
 }
