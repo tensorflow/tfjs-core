@@ -46,8 +46,6 @@ export class ResizeBilinearBackpropProgram implements GPGPUProgram {
     const heightScale = effectiveXSize[0] / effectiveYSize[0];
     const widthScale = effectiveXSize[1] / effectiveYSize[1];
 
-    console.log('constructing gpu program obj');
-
     this.userCode = `
       void main() {
         ivec4 coords = getOutputCoords();
@@ -61,13 +59,13 @@ export class ResizeBilinearBackpropProgram implements GPGPUProgram {
         // Loop over dy
         for (int ry = 0; ry < ${yHeight}; ry++) {
           for (int cy = 0; cy < ${yWidth}; cy++) {
-            float inY = float(ry) * ${heightScale};
+            float inY = float(ry) * float(${heightScale});
             int topYIndex = int(floor(inY));
             int bottomYIndex = int(min(ceil(inY), ${xHeight - 1}.0));
             float yLerp = inY - float(topYIndex);
             float inverseYLerp = 1.0 - yLerp;
 
-            float inX = float(cy) * ${widthScale};
+            float inX = float(cy) * float(${widthScale});
             int leftXIndex = int(floor(inX));
             int rightXIndex = int(min(ceil(inX), ${xWidth - 1}.0));
             float xLerp = inX - float(leftXIndex);
