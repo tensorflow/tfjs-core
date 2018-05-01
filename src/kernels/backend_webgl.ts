@@ -53,6 +53,8 @@ import {OneHotProgram} from './webgl/onehot_gpu';
 import {PadProgram} from './webgl/pad_gpu';
 import {Pool2DProgram} from './webgl/pool_gpu';
 import {ReduceProgram} from './webgl/reduce_gpu';
+// tslint:disable-next-line:max-line-length
+import {ResizeBilinearBackpropProgram} from './webgl/resize_bilinear_backprop_gpu';
 import {ResizeBilinearProgram} from './webgl/resize_bilinear_gpu';
 // tslint:disable-next-line:max-line-length
 import {ResizeNearestNeighborProgram} from './webgl/resize_nearest_neighbor_gpu';
@@ -885,7 +887,9 @@ export class MathBackendWebGL implements KernelBackend {
 
   resizeBilinearGrad(
       dy: Tensor4D, x: Tensor4D, y: Tensor4D, alignCorners: boolean): Tensor4D {
-    throw Error('Not Yet Implemented');
+    const program = new ResizeBilinearBackpropProgram(dy, x, y, alignCorners);
+
+    return this.compileAndRun(program, [dy]);
   }
 
   resizeNearestNeighbor(
