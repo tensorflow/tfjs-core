@@ -29,18 +29,20 @@ import {Optimizer} from './optimizer';
 export class AdadeltaOptimizer extends Optimizer {
   static className = 'AdadeltaOptimizer';
   private c: Scalar;
-  private epsilon: Scalar;
-  private rho: Scalar;
+  private epsilonScalar: Scalar;
+  private rhoScalar: Scalar;
   private oneMinusRho: Scalar;
 
   private accumulatedGrads: NamedVariableMap = {};
   private accumulatedUpdates: NamedVariableMap = {};
 
-  constructor(learningRate: number, rho: number, epsilon = 1e-8) {
+  constructor(
+      protected learningRate: number, protected rho: number,
+      protected epsilon = 1e-8) {
     super();
     this.c = keep(scalar(-learningRate));
-    this.epsilon = keep(scalar(epsilon));
-    this.rho = keep(scalar(rho));
+    this.epsilonScalar = keep(scalar(epsilon));
+    this.rhoScalar = keep(scalar(rho));
     this.oneMinusRho = keep(scalar(1 - rho));
   }
 
@@ -68,16 +70,16 @@ export class AdadeltaOptimizer extends Optimizer {
 
       tidy(() => {
         const newAccumulatedGrad =
-            this.rho.mul(accumulatedGrad)
+            this.rhoScalar.mul(accumulatedGrad)
                 .add(this.oneMinusRho.mul(gradient.square()));
 
-        const updates = accumulatedUpdate.add(this.epsilon)
+        const updates = accumulatedUpdate.add(this.epsilonScalar)
                             .sqrt()
-                            .div(accumulatedGrad.add(this.epsilon).sqrt())
+                            .div(accumulatedGrad.add(this.epsilonScalar).sqrt())
                             .mul(gradient);
 
         const newAccumulatedUpdate =
-            this.rho.mul(accumulatedUpdate)
+            this.rhoScalar.mul(accumulatedUpdate)
                 .add(this.oneMinusRho.mul(updates.square()));
 
         this.accumulatedGrads[variableName].assign(newAccumulatedGrad);
@@ -91,8 +93,8 @@ export class AdadeltaOptimizer extends Optimizer {
 
   dispose() {
     this.c.dispose();
-    this.epsilon.dispose();
-    this.rho.dispose();
+    this.epsilonScalar.dispose();
+    this.rhoScalar.dispose();
     this.oneMinusRho.dispose();
     if (this.accumulatedUpdates != null) {
       Object.keys(this.accumulatedUpdates)
@@ -103,9 +105,9 @@ export class AdadeltaOptimizer extends Optimizer {
   }
   getConfig(): ConfigDict {
     return {
-      learningRate: -1 * this.c.dataSync().values().next().value,
-      rho: this.rho.dataSync().values().next().value,
-      epsilon: this.epsilon.dataSync().values().next().value
+      learningRate: this.learningRate,
+      rho: this.rho,
+      epsilon: this.epsilon
     };
   }
   static fromConfig<T extends Serializable>(

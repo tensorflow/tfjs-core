@@ -90,7 +90,7 @@ export class MomentumOptimizer extends SGDOptimizer {
   getConfig(): ConfigDict {
     return {
       learningRate: this.learningRate,
-      momentum: this.m.dataSync().values().next().value,
+      momentum: this.momentum,
       useNesterov: this.useNesterov
     };
   }
