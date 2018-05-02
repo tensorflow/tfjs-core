@@ -18,7 +18,7 @@
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
 // tslint:disable-next-line:max-line-length
-import {ALL_ENVS, CPU_ENVS, expectArraysClose} from '../test_util';
+import {ALL_ENVS, expectArraysClose} from '../test_util';
 
 describeWithFlags('resizeBilinear', ALL_ENVS, () => {
   it('simple alignCorners=false', () => {
@@ -164,7 +164,7 @@ describeWithFlags('resizeBilinear', ALL_ENVS, () => {
   });
 });
 
-describeWithFlags('resizeBilinear gradients', CPU_ENVS, () => {
+describeWithFlags('resizeBilinear gradients', ALL_ENVS, () => {
   function resize<T extends tf.Tensor3D|tf.Tensor4D>(
       size: [number, number], alignCorners: boolean, image: T) {
     return tf.image.resizeBilinear(image, size, alignCorners);
