@@ -46,6 +46,14 @@ export class ResizeBilinearBackpropProgram implements GPGPUProgram {
     const heightScale = effectiveXSize[0] / effectiveYSize[0];
     const widthScale = effectiveXSize[1] / effectiveYSize[1];
 
+    const invHeightScale = 1 / heightScale;
+    const invWidthScale = 1 / widthScale;
+
+    // This defines the size of the window of values around a particular
+    // index in dy that we want to search for contributions to dx.
+    const winHeight = (Math.ceil(invHeightScale) * 2) + 2;
+    const winWidth = (Math.ceil(invWidthScale) * 2) + 2;
+
     this.userCode = `
       void main() {
         ivec4 coords = getOutputCoords();
@@ -56,9 +64,31 @@ export class ResizeBilinearBackpropProgram implements GPGPUProgram {
 
         float accumulator = 0.0;
 
+        float invHeightScale = float(${invHeightScale});
+        float invWidthScale = float(${invWidthScale});
+
+        // Compute bounds for where in dy we will look
+        float startRLerp = floor(float(r) * invHeightScale);
+        int startRY = int(startRLerp - float(${winHeight} / 2));
+
+        float startCLerp = floor(float(c) * invWidthScale);
+        int startCY = int(startCLerp - float(${winWidth} / 2));
+
         // Loop over dy
-        for (int ry = 0; ry < ${yHeight}; ry++) {
-          for (int cy = 0; cy < ${yWidth}; cy++) {
+        for (int dry = 0; dry < int(${winHeight}); dry++) {
+          int ry = dry + startRY;
+
+          if (ry < 0 || ry >= ${yHeight}) {
+            continue;
+          }
+
+          for (int dcy = 0; dcy < int(${winWidth}); dcy++) {
+            int cy = dcy + startCY;
+
+            if (cy < 0 || cy >= ${yWidth}) {
+              continue;
+            }
+
             float inY = float(ry) * float(${heightScale});
             int topYIndex = int(floor(inY));
             int bottomYIndex = int(min(ceil(inY), ${xHeight - 1}.0));
@@ -89,7 +119,6 @@ export class ResizeBilinearBackpropProgram implements GPGPUProgram {
             if (r == bottomYIndex && c == rightXIndex) {
               // bottomRight
               accumulator += getDy(b, ry, cy, d) * yLerp * xLerp;
-
             }
           }
         }
