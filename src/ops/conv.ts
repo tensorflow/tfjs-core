@@ -94,26 +94,15 @@ export class ConvOps {
 
     const filter4D =
         filter.as4D(1, filter.shape[0], filter.shape[1], filter.shape[2]);
-    const x4D = x3D.as4D(x3D.shape[0], 1, x3D.shape[1], x3D.shape[2]);
+    const input4D = x3D.as4D(x3D.shape[0], 1, x3D.shape[1], x3D.shape[2]);
     const strides: [number, number] = [1, stride];
     const dilations: [number, number] = [1, dilation];
 
     const conv2dDataFormat = 'NHWC';
 
-    const grad = (dy: Tensor4D) => {
-      return {
-        x: () => ConvOps.conv2dDerInput(x4D.shape, dy, filter4D,
-                                        strides, pad).reshape(x.shape) as T,
-        filter: () =>
-            ConvOps.conv2dDerFilter(x4D, dy, filter4D.shape, strides, pad)
-                   .as3D(filter.shape[0], filter.shape[1], filter.shape[2])
-      };
-    };
-
-    const res = ENV.engine.runKernel(
-        backend => ConvOps.conv2d(x4D, filter4D, strides, pad,
-          conv2dDataFormat, dilations, dimRoundingMode), {x, filter},
-        grad);
+    const res = ConvOps.conv2d(
+        input4D, filter4D, strides, pad, conv2dDataFormat, dilations,
+        dimRoundingMode);
 
     if (reshapedTo3D) {
       return res.as2D(res.shape[2], res.shape[3]) as T;
