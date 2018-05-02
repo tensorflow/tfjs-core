@@ -73,14 +73,35 @@ const artifacts1: tf.io.ModelArtifacts = {
   weightData: weightData1,
 };
 
-describe('triggerDownload', () => {
-  it('Two file names, with existing anchors', async done => {
+describe('browserDownloads', () => {
+  class FakeHTMLAnchorElement {
+    download: string;
+    href: string;
+    clicked: number;
+
+    constructor() {
+      this.clicked = 0;
+    }
+
+    click() {
+      this.clicked++;
+    }
+  }
+
+  let fakeAnchors: FakeHTMLAnchorElement[] = [];
+  let fakeAnchorCount = 0;
+
+  beforeEach(() => {
+    fakeAnchorCount = 0;
+    fakeAnchors = [new FakeHTMLAnchorElement(), new FakeHTMLAnchorElement()];
+    spyOn(document, 'createElement').and.callFake((tag: string) => {
+      return fakeAnchors[fakeAnchorCount++];
+    });
+  });
+
+  it('Explicit file name prefix, with existing anchors', async done => {
     const testStartDate = new Date();
-    const jsonAnchor = document.createElement('a') as HTMLAnchorElement;
-    const weightDataAnchor = document.createElement('a') as HTMLAnchorElement;
-    const downloadTrigger = tf.io.triggerDownloads(
-        ['test-model.json', 'test-model-weights.bin'],
-        {jsonAnchor, weightDataAnchor, trigger: false});
+    const downloadTrigger = tf.io.browserDownoads('test-model');
     downloadTrigger.save(artifacts1)
         .then(async saveResult => {
           expect(saveResult.errors).toEqual(undefined);
@@ -93,8 +114,10 @@ describe('triggerDownload', () => {
               .toEqual(JSON.stringify(weightSpecs1).length);
           expect(saveResult.modelArtifactsInfo.weightDataBytes).toEqual(16);
 
+          const jsonAnchor = fakeAnchors[0];
+          const weightDataAnchor = fakeAnchors[1];
           expect(jsonAnchor.download).toEqual('test-model.json');
-          expect(weightDataAnchor.download).toEqual('test-model-weights.bin');
+          expect(weightDataAnchor.download).toEqual('test-model.weights.bin');
 
           // Verify the content of the JSON file.
           const jsonContent = await fetch(jsonAnchor.href);
@@ -107,7 +130,7 @@ describe('triggerDownload', () => {
               WeightsManifestConfig;
           expect(weightsManifest.length).toEqual(1);
           expect(weightsManifest[0].paths).toEqual([
-            './test-model-weights.bin'
+            './test-model.weights.bin'
           ]);
           expect(weightsManifest[0].weights).toEqual(weightSpecs1);
 
@@ -121,75 +144,19 @@ describe('triggerDownload', () => {
             done();
           };
           fileReader.readAsArrayBuffer(await weightsContent.blob());
+
+          // Verify that the downloads are triggered through clicks.
+          expect(jsonAnchor.clicked).toEqual(1);
+          expect(weightDataAnchor.clicked).toEqual(1);
         })
         .catch(err => {
           done.fail(err.stack);
         });
   });
 
-  const singleFileNames: Array<string|string[]> =
-      ['test-model-2', ['test-model-2']];
-  for (const singleFileName of singleFileNames) {
-    it(`One file name, with existing anchors`, async done => {
-      const testStartDate = new Date();
-      const jsonAnchor = document.createElement('a') as HTMLAnchorElement;
-      const weightDataAnchor = document.createElement('a') as HTMLAnchorElement;
-      const downloadTrigger = tf.io.triggerDownloads(
-          singleFileName, {jsonAnchor, weightDataAnchor, trigger: false});
-      downloadTrigger.save(artifacts1)
-          .then(async saveResult => {
-            expect(saveResult.errors).toEqual(undefined);
-            const artifactsInfo = saveResult.modelArtifactsInfo;
-            expect(artifactsInfo.dateSaved.getTime())
-                .toBeGreaterThanOrEqual(testStartDate.getTime());
-            expect(saveResult.modelArtifactsInfo.modelTopologyBytes)
-                .toEqual(JSON.stringify(modelTopology1).length);
-            expect(saveResult.modelArtifactsInfo.weightSpecsBytes)
-                .toEqual(JSON.stringify(weightSpecs1).length);
-            expect(saveResult.modelArtifactsInfo.weightDataBytes).toEqual(16);
-
-            expect(jsonAnchor.download).toEqual('test-model-2.json');
-            expect(weightDataAnchor.download)
-                .toEqual('test-model-2.weights.bin');
-
-            // Verify the content of the JSON file.
-            const jsonContent = await fetch(jsonAnchor.href);
-            const modelTopologyAndWeightsManifest =
-                JSON.parse(await jsonContent.text());
-            expect(modelTopologyAndWeightsManifest.modelTopology)
-                .toEqual(modelTopology1);
-            const weightsManifest =
-                modelTopologyAndWeightsManifest.weightsManifest as
-                WeightsManifestConfig;
-            expect(weightsManifest.length).toEqual(1);
-            expect(weightsManifest[0].paths).toEqual([
-              './test-model-2.weights.bin'
-            ]);
-            expect(weightsManifest[0].weights).toEqual(weightSpecs1);
-
-            // Verify the content of the binary weights file.
-            const weightsContent = await fetch(weightDataAnchor.href);
-            const fileReader = new FileReader();
-            // tslint:disable-next-line:no-any
-            fileReader.onload = (event: any) => {
-              const buffer = event.target.result as ArrayBuffer;
-              expect(buffer).toEqual(weightData1);
-              done();
-            };
-            fileReader.readAsArrayBuffer(await weightsContent.blob());
-          })
-          .catch(err => {
-            done.fail(err.stack);
-          });
-    });
-  }
-
   it('No file name provided, with existing anchors', async done => {
     const testStartDate = new Date();
-    const jsonAnchor = document.createElement('a') as HTMLAnchorElement;
-    const weightDataAnchor = document.createElement('a') as HTMLAnchorElement;
-    const downloadTrigger = tf.io.triggerDownloads(
-        null, {jsonAnchor, weightDataAnchor, trigger: false});
+    const downloadTrigger = tf.io.browserDownoads();
     downloadTrigger.save(artifacts1)
         .then(async saveResult => {
           expect(saveResult.errors).toEqual(undefined);
@@ -201,6 +168,9 @@ describe('triggerDownload', () => {
           expect(saveResult.modelArtifactsInfo.weightSpecsBytes)
               .toEqual(JSON.stringify(weightSpecs1).length);
           expect(saveResult.modelArtifactsInfo.weightDataBytes).toEqual(16);
+
+          const jsonAnchor = fakeAnchors[0];
+          const weightDataAnchor = fakeAnchors[1];
 
           // Verify that the default file names are used.
           expect(jsonAnchor.download).toEqual('model.json');
@@ -234,16 +204,9 @@ describe('triggerDownload', () => {
           done.fail(err.stack);
         });
   });
-
-  it('Missing file name throws error', () => {
-    expect(() => tf.io.triggerDownloads([])).toThrowError(/File names/);
-    expect(() => tf.io.triggerDownloads([
-      'name1', 'name2', 'name3'
-    ])).toThrowError(/File names/);
-  });
 });
 
-describe('files', () => {
+describe('browserFiles', () => {
   const weightsBlob =
       new Blob([weightData1], {type: 'application/octet-stream'});
   const weightsFile = new File(
@@ -264,7 +227,7 @@ describe('files', () => {
     const jsonFile =
         new File([jsonBlob], 'model.json', {type: 'application/json'});
 
-    const filesHandler = tf.io.files([jsonFile, weightsFile]);
+    const filesHandler = tf.io.browserFiles([jsonFile, weightsFile]);
     filesHandler.load()
         .then(modelArtifacts => {
           expect(modelArtifacts.modelTopology).toEqual(modelTopology1);
@@ -291,7 +254,7 @@ describe('files', () => {
     const jsonFile =
         new File([jsonBlob], 'model.json', {type: 'application/json'});
 
-    const filesHandler = tf.io.files([jsonFile, weightsFile]);
+    const filesHandler = tf.io.browserFiles([jsonFile, weightsFile]);
     filesHandler.load()
         .then(modelArtifacts => {
           done.fail(
@@ -305,24 +268,17 @@ describe('files', () => {
         });
   });
 
-  it('Incorrect number of files leads to Error', async done => {
+  // TODO(cais): Test mismatch in file count and weight manifest.
+  // TODO(cais): Test duplicate base file names.
+
+  it('Incorrect number of files leads to Error', () => {
     const weightsBlob =
         new Blob([weightData1], {type: 'application/octet-stream'});
     const file = new File(
         [weightsBlob], 'model.weights.bin', {type: 'application/octet-stream'});
 
-    const filesHandler = tf.io.files([file, file, file]);
-    filesHandler.load()
-        .then(modelArtifacts => {
-          done.fail(
-              'Loading with Files IOHandler with incorrect number of files ' +
-              'succeeded unexpectedly.');
-        })
-        .catch(err => {
-          expect(err.message)
-              .toMatch(/currently supports only loading from 2 files/);
-          expect(err.message).toMatch(/but received 3 file\(s\)/);
-          done();
-        });
+    expect(() => tf.io.browserFiles(null)).toThrowError(/at least 2 files/);
+    expect(() => tf.io.browserFiles([])).toThrowError(/at least 2 files/);
+    expect(() => tf.io.browserFiles([file])).toThrowError(/at least 2 files/);
   });
 });

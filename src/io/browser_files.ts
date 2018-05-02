@@ -24,47 +24,21 @@
 
 // tslint:disable:max-line-length
 import {stringByteLength} from './io_utils';
-import {IOHandler, ModelArtifacts, SaveResult, WeightsManifestConfig} from './types';
+import {IOHandler, ModelArtifacts, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
 // tslint:enable:max-line-length
 
 const DEFAULT_FILE_NAME_PREFIX = 'model';
 const DEFAULT_JSON_EXTENSION_NAME = '.json';
-const DEFAULT_WEIHGT_DATA_EXTENSION_NAME = '.weights.bin';
+const DEFAULT_WEIGHT_DATA_EXTENSION_NAME = '.weights.bin';
 
-export interface DownloadTriggerConfig {
-  /**
-   * The HTML anchor ('<a>') element to bind the downloading of the model
-   * architecture + weights manifest JSON file to.
-   *
-   * Optional. If not specified, a temporary, orphan anchor element will be
-   * create to bind the download to.
-   */
-  jsonAnchor?: HTMLAnchorElement;
-
-  /**
-   * The HTML anchor ('<a>') element to bind the downloading of the binary
-   * weights file to.
-   *
-   * Optional. If not specified, a temporary, orphan anchor element will be
-   * create to bind the download to.
-   */
-  weightDataAnchor?: HTMLAnchorElement;
-
-  /**
-   * Whether the download(s) should be triggered immediately (default: `true`).
-   */
-  trigger?: boolean;
-}
-
-export class DownloadTrigger implements IOHandler {
+export class BrowserDownloads implements IOHandler {
   private readonly modelTopologyFileName: string;
   private readonly weightDataFileName: string;
   private readonly jsonAnchor: HTMLAnchorElement;
   private readonly weightDataAnchor: HTMLAnchorElement;
-  private readonly trigger: boolean;
 
-  constructor(fileNames?: string|string[], config?: DownloadTriggerConfig) {
-    if (!window) {
+  constructor(fileNamePrefix?: string) {
+    if (window == null) {
       // TODO(cais): Provide info on what IOHandlers are available under the
       //   current environment.
       throw new Error(
@@ -72,36 +46,13 @@ export class DownloadTrigger implements IOHandler {
           'is not a browser.');
     }
 
-    if (fileNames == null) {
-      fileNames = [DEFAULT_FILE_NAME_PREFIX];
-    } else if (!Array.isArray(fileNames)) {
-      fileNames = [fileNames];
+    if (fileNamePrefix == null) {
+      fileNamePrefix = DEFAULT_FILE_NAME_PREFIX;
     }
 
-    if (fileNames.length === 1) {
-      this.modelTopologyFileName = fileNames[0] + DEFAULT_JSON_EXTENSION_NAME;
-      this.weightDataFileName =
-          fileNames[0] + DEFAULT_WEIHGT_DATA_EXTENSION_NAME;
-    } else if (fileNames.length === 2) {
-      this.modelTopologyFileName = fileNames[0];
-      this.weightDataFileName = fileNames[1];
-    } else {
-      // TODO(cais): Support length === 3, for the case of GraphDef models, in
-      //   which case there will be three files: GraphDef (binary), weight
-      //   manifest (text), weight data (binary).
-      throw new Error(
-          `File names supplied to tf.io.triggerDownload() must be a single ` +
-          `string, an Array of a single string or an Array of two strings, ` +
-          `but received an Array of ${fileNames.length} strings.`);
-    }
-
-    if (config != null) {
-      this.jsonAnchor = config.jsonAnchor;
-      this.weightDataAnchor = config.weightDataAnchor;
-      this.trigger = config.trigger == null ? true : config.trigger;
-    } else {
-      this.trigger = true;
-    }
+    this.modelTopologyFileName = fileNamePrefix + DEFAULT_JSON_EXTENSION_NAME;
+    this.weightDataFileName =
+        fileNamePrefix + DEFAULT_WEIGHT_DATA_EXTENSION_NAME;
   }
 
   async save(modelArtifacts: ModelArtifacts): Promise<SaveResult> {
@@ -141,10 +92,8 @@ export class DownloadTrigger implements IOHandler {
 
       // Trigger downloads by calling the `click` methods on the download
       // anchors.
-      if (this.trigger) {
-        jsonAnchor.click();
-        weightDataAnchor.click();
-      }
+      jsonAnchor.click();
+      weightDataAnchor.click();
 
       return {
         modelArtifactsInfo: {
@@ -161,65 +110,121 @@ export class DownloadTrigger implements IOHandler {
   }
 }
 
-export class Files implements IOHandler {
+export class BrowserFiles implements IOHandler {
   private readonly files: File[];
 
-  constructor(files?: File[]) {
+  constructor(files: File[]) {
+    if (files == null || files.length < 2) {
+      throw new Error(
+          `When calling browserFiles, at least 2 files are required, ` +
+          `but received ${files}`);
+    }
     this.files = files;
   }
 
   async load(): Promise<ModelArtifacts> {
-    if (this.files.length !== 2) {
-      throw new Error(
-          `Files.load() currently supports only loading from 2 files ` +
-          `(a JSON file and a binary weights file), but ` +
-          `received ${this.files.length} file(s).`);
-    }
+    const jsonFile = this.files[0];
+    const weightFiles = this.files.slice(1);
 
     return new Promise<ModelArtifacts>((resolve, reject) => {
       const jsonReader = new FileReader();
-      // tslint:disable-next-line:no-any
-      jsonReader.onload = (event: any) => {
-        const modelJSON = JSON.parse(event.target.result);
+      jsonReader.onload = (event: Event) => {
+        console.log('jsonReader.onload');  // DEBUG
+        // tslint:disable-next-line:no-any
+        const modelJSON = JSON.parse((event.target as any).result);
         const modelTopology = modelJSON.modelTopology as {};
         if (modelTopology == null) {
-          reject(new Error(`modelTopology field is missing from file ${
-              this.files[0].name}`));
+          reject(new Error(
+              `modelTopology field is missing from file ${jsonFile.name}`));
         }
         const weightsManifest =
             modelJSON.weightsManifest as WeightsManifestConfig;
         if (weightsManifest == null) {
-          reject(new Error(`weightManifest field is missing from file ${
-              this.files[0].name}`));
-        }
-        if (weightsManifest.length !== 1) {
           reject(new Error(
-              `When uploading user-selected files, we current support only ` +
-              `a single weight group, but the weights manifest in ` +
-              `${this.files[0].name} indicates there are ` +
-              `${weightsManifest.length} weight groups.`));
+              `weightManifest field is missing from file ${jsonFile.name}`));
         }
-        const weightGroup = weightsManifest[0];
-        if (weightGroup.paths.length !== 1) {
-          reject(new Error(
-              `When uploading user-selected files, we current support only ` +
-              `a single weight file, but the weights manifest in ` +
-              `${this.files[0].name} indicates there are ` +
-              `${weightGroup.paths.length} weight files.`));
+
+        try {
+          this.checkManifestAndWeightFiles(weightsManifest, weightFiles);
+        } catch (err) {
+          reject(err);
         }
-        const weightSpecs = weightGroup.weights;
 
-        const weightsReader = new FileReader();
-        // tslint:disable-next-line:no-any
-        weightsReader.onload = (event: any) => {
-          const weightData = event.target.result;
-          resolve({modelTopology, weightSpecs, weightData});
-        };
+        // const weightSpecs: Weigh
+        // TODO(cais): Remove. DO NOT SUBMIT.
+        // if (weightsManifest.length !== 1) {
+        //   reject(new Error(
+        //       `When uploading user-selected files, we current support only `
+        //       + `a single weight group, but the weights manifest in ` +
+        //       `${jsonFile.name} indicates there are ` +
+        //       `${weightsManifest.length} weight groups.`));
+        // }
+        // const weightGroup = weightsManifest[0];
+        // if (weightGroup.paths.length !== 1) {
+        //   reject(new Error(
+        //       `When uploading user-selected files, we current support only `
+        //       + `a single weight file, but the weights manifest in ` +
+        //       `${jsonFile.name} indicates there are ` +
+        //       `${weightGroup.paths.length} weight files.`));
+        // }
+        const weightSpecs: WeightsManifestEntry[] = [];
 
-        weightsReader.readAsArrayBuffer(this.files[1]);
+        weightFiles.forEach(weightFile => {
+          const weightsReader = new FileReader();
+          weightsReader.onload = (event: Event) => {
+            // tslint:disable-next-line:no-any
+            const weightData = (event.target as any).result;
+            resolve({modelTopology, weightSpecs, weightData});
+          };
+          weightsReader.readAsArrayBuffer(weightFile);
+        });
+      };
+      jsonReader.onerror = (error: ErrorEvent) => {
+        console.log('jsonReader.onerror');  // DEBUG
+        reject(
+            `Failed to read model topology and weights manifest JSON ` +
+            `from file '${jsonFile.name}'. BrowserFiles supports loading ` +
+            `Keras-style tf.Model artifacts only.`);
       };
       jsonReader.readAsText(this.files[0]);
     });
+  }
+
+  /**
+   * Check the compatibility between weights manifest and weight files.
+   * @param manifest
+   */
+  private checkManifestAndWeightFiles(
+      manifest: WeightsManifestConfig, files: File[]): {[path: string]: File} {
+    const basenames: string[] = [];
+    const fileNames = files.map(file => file.name);
+    const pathToFile: {[path: string]: File} = {};
+    for (const group of manifest) {
+      group.paths.forEach(path => {
+        const pathItems = path.split('/');
+        const basename = pathItems[pathItems.length - 1];
+        if (basenames.indexOf(basename) !== -1) {
+          throw new Error(
+              `Duplicate file basename found in weights manifest: ${basename}`);
+        }
+        basenames.push(basename);
+        if (fileNames.indexOf(basename) === -1) {
+          throw new Error(
+              `Weight file with basename '${basename}' is not provided.`);
+        } else {
+          pathToFile[path] = files[fileNames.indexOf(basename)];
+        }
+      });
+    }
+
+    if (basenames.length !== files.length) {
+      throw new Error(
+          `Mismatch in the number of files in weights manifest ` +
+          `(${basenames.length}) and the number of weight files provided ` +
+          `(${files.length}).`);
+    }
+
+    return pathToFile:
   }
 }
 
@@ -233,32 +238,30 @@ export class Files implements IOHandler {
  * const model = tf.sequential();
  * model.add(tf.layers.dense(
  *     {units: 1, inputShape: [10], activation: 'sigmoid'}));
- * const artifactsInfo = await model.save(tf.io.triggerDownloads(
- *     ['mymodel.json', 'mymodel.weights.bin'])):
+ * const artifactsInfo = await model.save(tf.io.triggerDownloads('mymodel'));
+ * // This will trigger downloading of two files:
+ * //   'mymodel.json' and 'mymodel.weights.bin'.
  * console.log(artifactsInfo);
  * ```
  *
- * @param fileNames Name(s) of the files to be downloaded. For use with
- *   `tf.Model`, `fileNames` should follow one of the following three formats:
- *   1. `fileNames` being `null` or `undefined`, in which case the default file
+ * @param fileNamePrefix Prefix name of the files to be downloaded. For use with
+ *   `tf.Model`, `fileNamePrefix` should follow either of the following two
+ *   formats:
+ *   1. `null` or `undefined`, in which case the default file
  *      names will be used:
  *      - 'model.json' for the JSON file containing the model topology and
  *        weights manifest.
  *      - 'model.weights.bin' for the binary file containing the binary weight
  *        values.
  *   2. A single string or an Array of a single string, as the file name prefix.
- *      For example, if `'foo'` or `['foo']` is provided, the downloaded JSON
+ *      For example, if `'foo'` is provided, the downloaded JSON
  *      file and binary weights file will be named 'foo.json' and
  *      'foo.weights.bin', respectively.
- *   3. An `Array` of two file names, as full names of the JSON and binary
- *      weight files, in that order.
  * @param config Additional configuration for triggering downloads.
  * @returns An instance of `DownloadTrigger` `IOHandler`.
  */
-export function triggerDownloads(
-    fileNames?: string|string[],
-    config?: DownloadTriggerConfig): DownloadTrigger {
-  return new DownloadTrigger(fileNames, config);
+export function browserDownoads(fileNamePrefix = 'model'): BrowserDownloads {
+  return new BrowserDownloads(fileNamePrefix);
 }
 
 /**
@@ -283,11 +286,11 @@ export function triggerDownloads(
  *
  * @param files `File`s to load from. Currently, this function supports only
  *   loading from files that contain Keras-style models (i.e., `tf.Model`s), for
- *   which an `Array` of two `File`s is expected (in that order):
+ *   which an `Array` of `File`s is expected (in that order):
  *   - A JSON file containing the model topology and weight manifest.
- *   - A binary file containing the binary weights.
+ *   - One or more binary files containing the binary weights.
  * @returns An instance of `Files` `IOHandler`.
  */
-export function files(files?: File[]): Files {
-  return new Files(files);
+export function browserFiles(files: File[]): BrowserFiles {
+  return new BrowserFiles(files);
 }
