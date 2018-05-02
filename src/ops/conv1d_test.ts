@@ -231,15 +231,46 @@ describeWithFlags('conv1d', ALL_ENVS, () => {
     const x = tf.tensor3d([1, 2, 3, 4], inputShape);
     const w = tf.tensor3d([3], filterShape);
 
-    const dy = tf.tensor3d([1, 1, 1, 1], inputShape);
-    const gradX = tf.grad(
-        (x: tf.Tensor3D) => tf.conv1d(
-          x, w, stride, pad, dataFormat, dilation))(x, dy);
-    expectArraysClose(gradX, tf.tensor3d([3, 3, 3, 3], inputShape));
+    const dy = tf.tensor3d([3, 2, 1, 0], inputShape);
 
-    const gradW = tf.grad(
-        (w: tf.Tensor3D) => tf.conv1d(
-          x, w, stride, pad, dataFormat, dilation))(w, dy);
-    expectArraysClose(gradW, tf.tensor3d([10], filterShape));
+    const grads = tf.grads((x: tf.Tensor3D, w: tf.Tensor3D) => tf.conv1d(
+          x, w, stride, pad, dataFormat, dilation));
+    const [dx, dw] = grads([x, w], dy);
+
+    expect(dx.shape).toEqual(x.shape);
+    expectArraysClose(dx, [9, 6, 3, 0]);
+
+    expect(dw.shape).toEqual(w.shape);
+    expectArraysClose(dw, [10]);
   });
+
+  it('conv1d gradients input=14x1,d2=1,f=3x1x1,s=1,p=valid', () => {
+    const inputDepth = 1;
+    const inputShape: [number, number] = [14, inputDepth];
+
+    const outputDepth = 1;
+    const fSize = 3;
+    const pad = 'valid';
+    const stride = 1;
+    const dataFormat = 'NWC';
+
+    const x = tf.tensor2d(
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14], inputShape);
+    const w = tf.tensor3d([3, 2, 1], [fSize, inputDepth, outputDepth]);
+
+    const dy = tf.tensor2d(
+      [3, 2, 1, 0, 3, 2, 1, 0, 3, 2, 1, 0], [12, inputDepth]);
+
+    const grads = tf.grads((x: tf.Tensor2D, w: tf.Tensor3D) => tf.conv1d(
+          x, w, stride, pad, dataFormat));
+    const [dx, dw] = grads([x, w], dy);
+
+    expect(dx.shape).toEqual(x.shape);
+    expectArraysClose(dx,
+      [9, 12, 10, 4, 10, 12, 10, 4, 10, 12, 10, 4, 1, 0]);
+
+    expect(dw.shape).toEqual(w.shape);
+    expectArraysClose(dw, [102, 120, 138]);
+  });
+
 });
