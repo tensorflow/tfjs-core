@@ -165,10 +165,6 @@ describeWithFlags('resizeBilinear', ALL_ENVS, () => {
 });
 
 describeWithFlags('resizeBilinear gradients', ALL_ENVS, () => {
-  function resize<T extends tf.Tensor3D|tf.Tensor4D>(
-      size: [number, number], alignCorners: boolean, image: T) {
-    return tf.image.resizeBilinear(image, size, alignCorners);
-  }
 
   it('greyscale: upscale, same aspect ratio', () => {
     const input = tf.tensor3d([[[100.0], [50.0]], [[60.0], [20.0]]]);
@@ -176,7 +172,12 @@ describeWithFlags('resizeBilinear gradients', ALL_ENVS, () => {
       [[1.0], [2.0], [3.0], [4.0]], [[5.0], [6.0], [7.0], [8.0]],
       [[9.0], [10.0], [11.0], [12.0]], [[13.0], [14.0], [15.0], [16.0]]
     ]);
-    const g = tf.grad(resize.bind(null, [4, 4], false));
+
+    const size: [number, number] = [4, 4];
+    const alignCorners = false;
+    const g = tf.grad(
+        (i: tf.Tensor3D) => tf.image.resizeBilinear(i, size, alignCorners));
+
     const output = g(input, dy);
     const expected = tf.tensor3d([[[6.0], [17.0]], [[38.0], [75.0]]]);
 
@@ -189,7 +190,12 @@ describeWithFlags('resizeBilinear gradients', ALL_ENVS, () => {
       [[1.0], [2.0], [3.0], [4.0]], [[5.0], [6.0], [7.0], [8.0]],
       [[9.0], [10.0], [11.0], [12.0]], [[13.0], [14.0], [15.0], [16.0]]
     ]);
-    const g = tf.grad(resize.bind(null, [4, 4], true));
+
+    const size: [number, number] = [4, 4];
+    const alignCorners = true;
+    const g = tf.grad(
+        (i: tf.Tensor3D) => tf.image.resizeBilinear(i, size, alignCorners));
+
     const output = g(input, dy);
     const expected = tf.tensor3d([
       [[17.333330154418945], [23.999998092651367]],
@@ -208,7 +214,12 @@ describeWithFlags('resizeBilinear gradients', ALL_ENVS, () => {
       [[25.0], [26.0], [27.0], [28.0]], [[29.0], [30.0], [31.0], [32.0]],
       [[33.0], [34.0], [35.0], [36.0]]
     ]);
-    const g = tf.grad(resize.bind(null, [9, 4], false));
+
+    const size: [number, number] = [9, 4];
+    const alignCorners = false;
+    const g = tf.grad(
+        (i: tf.Tensor3D) => tf.image.resizeBilinear(i, size, alignCorners));
+
     const output = g(input, dy);
     const expected = tf.tensor3d([
       [[25.55555534362793], [55.5555534362793]],
@@ -227,7 +238,13 @@ describeWithFlags('resizeBilinear gradients', ALL_ENVS, () => {
       [[25.0], [26.0], [27.0], [28.0]], [[29.0], [30.0], [31.0], [32.0]],
       [[33.0], [34.0], [35.0], [36.0]]
     ]);
-    const g = tf.grad(resize.bind(null, [9, 4], true));
+
+    const size: [number, number] = [9, 4];
+    const alignCorners = true;
+    const g =
+      tf.grad((i: tf.Tensor3D) =>
+        tf.image.resizeBilinear(i, size, alignCorners));
+
     const output = g(input, dy);
     const expected = tf.tensor3d(
         [[[99.0], [114.0]], [[219.00001525878906], [233.99998474121094]]]);
@@ -243,7 +260,12 @@ describeWithFlags('resizeBilinear gradients', ALL_ENVS, () => {
       [[15.0], [16.0], [17.0], [18.0], [19.0], [20.0], [21.0]],
       [[22.0], [23.0], [24.0], [25.0], [26.0], [27.0], [28.0]]
     ]);
-    const g = tf.grad(resize.bind(null, [4, 7], false));
+
+    const size: [number, number] = [4, 7];
+    const alignCorners = false;
+    const g = tf.grad(
+        (i: tf.Tensor3D) => tf.image.resizeBilinear(i, size, alignCorners));
+
     const output = g(input, dy);
     const expected = tf.tensor3d([
       [[14.428570747375488], [52.07142639160156]],
@@ -261,7 +283,12 @@ describeWithFlags('resizeBilinear gradients', ALL_ENVS, () => {
       [[15.0], [16.0], [17.0], [18.0], [19.0], [20.0], [21.0]],
       [[22.0], [23.0], [24.0], [25.0], [26.0], [27.0], [28.0]]
     ]);
-    const g = tf.grad(resize.bind(null, [4, 7], true));
+
+    const size: [number, number] = [4, 7];
+    const alignCorners = true;
+    const g = tf.grad(
+        (i: tf.Tensor3D) => tf.image.resizeBilinear(i, size, alignCorners));
+
     const output = g(input, dy);
     const expected = tf.tensor3d(
         [[[51.33332824707031], [70.0]], [[133.0], [151.66668701171875]]]);
@@ -279,7 +306,11 @@ describeWithFlags('resizeBilinear gradients', ALL_ENVS, () => {
 
     const dy = tf.tensor3d([[[1.0], [2.0]], [[3.0], [4.0]]]);
 
-    const g = tf.grad(resize.bind(null, [2, 2], false));
+    const size: [number, number] = [2, 2];
+    const alignCorners = false;
+    const g = tf.grad(
+        (i: tf.Tensor3D) => tf.image.resizeBilinear(i, size, alignCorners));
+
     const output = g(input, dy);
     const expected = tf.tensor3d([
       [[1.0], [0.0], [2.0], [0.0]], [[0.0], [0.0], [0.0], [0.0]],
@@ -297,7 +328,11 @@ describeWithFlags('resizeBilinear gradients', ALL_ENVS, () => {
 
     const dy = tf.tensor3d([[[1.0], [2.0]], [[3.0], [4.0]]]);
 
-    const g = tf.grad(resize.bind(null, [2, 2], true));
+    const size: [number, number] = [2, 2];
+    const alignCorners = true;
+    const g = tf.grad(
+        (i: tf.Tensor3D) => tf.image.resizeBilinear(i, size, alignCorners));
+
     const output = g(input, dy);
     const expected = tf.tensor3d([
       [[1.0], [0.0], [0.0], [2.0]], [[0.0], [0.0], [0.0], [0.0]],
@@ -315,7 +350,12 @@ describeWithFlags('resizeBilinear gradients', ALL_ENVS, () => {
 
     const dy = tf.tensor3d([[[1.0], [2.0]], [[3.0], [4.0]], [[5.0], [6.0]]]);
 
-    const g = tf.grad(resize.bind(null, [3, 2], false));
+    const size: [number, number] = [3, 2];
+    const alignCorners = false;
+    const g =
+      tf.grad((i: tf.Tensor3D) =>
+        tf.image.resizeBilinear(i, size, alignCorners));
+
     const output = g(input, dy);
     const expected = tf.tensor3d([
       [[1.0], [0.0], [2.0], [0.0]],
@@ -335,7 +375,12 @@ describeWithFlags('resizeBilinear gradients', ALL_ENVS, () => {
 
     const dy = tf.tensor3d([[[1.0], [2.0]], [[3.0], [4.0]], [[5.0], [6.0]]]);
 
-    const g = tf.grad(resize.bind(null, [3, 2], true));
+    const size: [number, number] = [3, 2];
+    const alignCorners = true;
+    const g =
+      tf.grad((i: tf.Tensor3D) =>
+        tf.image.resizeBilinear(i, size, alignCorners));
+
     const output = g(input, dy);
     const expected = tf.tensor3d([
       [[1.0], [0.0], [0.0], [2.0]], [[1.5], [0.0], [0.0], [2.0]],
@@ -353,7 +398,12 @@ describeWithFlags('resizeBilinear gradients', ALL_ENVS, () => {
 
     const dy = tf.tensor3d([[[1.0], [2.0], [3.0]], [[4.0], [5.0], [6.0]]]);
 
-    const g = tf.grad(resize.bind(null, [2, 3], false));
+    const size: [number, number] = [2, 3];
+    const alignCorners = false;
+    const g =
+      tf.grad((i: tf.Tensor3D) =>
+        tf.image.resizeBilinear(i, size, alignCorners));
+
     const output = g(input, dy);
     const expected = tf.tensor3d([
       [[1.0], [1.3333332538604736], [1.6666665077209473], [2.000000238418579]],
@@ -373,7 +423,11 @@ describeWithFlags('resizeBilinear gradients', ALL_ENVS, () => {
 
     const dy = tf.tensor3d([[[1.0], [2.0], [3.0]], [[4.0], [5.0], [6.0]]]);
 
-    const g = tf.grad(resize.bind(null, [2, 3], true));
+    const size: [number, number] = [2, 3];
+    const alignCorners = true;
+    const g = tf.grad(
+        (i: tf.Tensor3D) => tf.image.resizeBilinear(i, size, alignCorners));
+
     const output = g(input, dy);
     const expected = tf.tensor3d([
       [[1.0], [1.0], [1.0], [3.0]], [[0.0], [0.0], [0.0], [0.0]],
@@ -390,7 +444,11 @@ describeWithFlags('resizeBilinear gradients', ALL_ENVS, () => {
 
     const dy = tf.tensor3d([[[1.0], [2.0]], [[3.0], [4.0]]]);
 
-    const g = tf.grad(resize.bind(null, [2, 2], false));
+    const size: [number, number] = [2, 2];
+    const alignCorners = false;
+    const g = tf.grad(
+        (i: tf.Tensor3D) => tf.image.resizeBilinear(i, size, alignCorners));
+
     const output = g(input, dy);
     const expected = tf.tensor3d([[[1.0], [2.0]], [[3.0], [4.0]]]);
 
@@ -402,7 +460,12 @@ describeWithFlags('resizeBilinear gradients', ALL_ENVS, () => {
 
     const dy = tf.tensor3d([[[1.0], [2.0]], [[3.0], [4.0]]]);
 
-    const g = tf.grad(resize.bind(null, [2, 2], true));
+    const size: [number, number] = [2, 2];
+    const alignCorners = true;
+    const g =
+      tf.grad((i: tf.Tensor3D) =>
+        tf.image.resizeBilinear(i, size, alignCorners));
+
     const output = g(input, dy);
     const expected = tf.tensor3d([[[1.0], [2.0]], [[3.0], [4.0]]]);
 
@@ -437,7 +500,12 @@ describeWithFlags('resizeBilinear gradients', ALL_ENVS, () => {
       ]
     ]);
 
-    const g = tf.grad(resize.bind(null, [3, 5], false));
+    const size: [number, number] = [3, 5];
+    const alignCorners = false;
+    const g =
+      tf.grad((i: tf.Tensor3D) =>
+        tf.image.resizeBilinear(i, size, alignCorners));
+
     const output = g(input, dy);
     const expected = tf.tensor3d([
       [
@@ -480,7 +548,12 @@ describeWithFlags('resizeBilinear gradients', ALL_ENVS, () => {
       ]
     ]);
 
-    const g = tf.grad(resize.bind(null, [3, 5], true));
+    const size: [number, number] = [3, 5];
+    const alignCorners = true;
+    const g =
+      tf.grad((i: tf.Tensor3D) =>
+        tf.image.resizeBilinear(i, size, alignCorners));
+
     const output = g(input, dy);
     const expected = tf.tensor3d([
       [[33.75, 37.5, 41.25], [56.25, 60.0, 63.75]],
@@ -523,7 +596,12 @@ describeWithFlags('resizeBilinear gradients', ALL_ENVS, () => {
     const dy =
         tf.tensor3d([[[1.0, 2.0, 3.0]], [[4.0, 5.0, 6.0]], [[7.0, 8.0, 9.0]]]);
 
-    const g = tf.grad(resize.bind(null, [3, 1], false));
+    const size: [number, number] = [3, 1];
+    const alignCorners = false;
+    const g =
+      tf.grad((i: tf.Tensor3D) =>
+        tf.image.resizeBilinear(i, size, alignCorners));
+
     const output = g(input, dy);
     const expected = tf.tensor3d([
       [[1.0, 2.0, 3.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
@@ -575,7 +653,11 @@ describeWithFlags('resizeBilinear gradients', ALL_ENVS, () => {
     const dy =
         tf.tensor3d([[[1.0, 2.0, 3.0]], [[4.0, 5.0, 6.0]], [[7.0, 8.0, 9.0]]]);
 
-    const g = tf.grad(resize.bind(null, [3, 1], true));
+    const size: [number, number] = [3, 1];
+    const alignCorners = true;
+    const g = tf.grad(
+        (i: tf.Tensor3D) => tf.image.resizeBilinear(i, size, alignCorners));
+
     const output = g(input, dy);
     const expected = tf.tensor3d([
       [[1.0, 2.0, 3.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
@@ -617,7 +699,11 @@ describeWithFlags('resizeBilinear gradients', ALL_ENVS, () => {
 
     const dy = tf.tensor3d([[[1., 2., 3.], [4., 5., 6.], [7., 8., 9.]]]);
 
-    const g = tf.grad(resize.bind(null, [1, 3], true));
+    const size: [number, number] = [1, 3];
+    const alignCorners = true;
+    const g = tf.grad(
+        (i: tf.Tensor3D) => tf.image.resizeBilinear(i, size, alignCorners));
+
     const output = g(input, dy);
     const expected = tf.tensor3d([
       [[1., 2., 3.], [2., 2.5, 3.], [2., 2.5, 3.], [7., 8., 9.]],
@@ -662,7 +748,11 @@ describeWithFlags('resizeBilinear gradients', ALL_ENVS, () => {
       [[13.0, 14.0, 15.0], [16.0, 17.0, 18.0]]
     ]);
 
-    const g = tf.grad(resize.bind(null, [3, 2], true));
+    const size: [number, number] = [3, 2];
+    const alignCorners = true;
+    const g = tf.grad(
+        (i: tf.Tensor3D) => tf.image.resizeBilinear(i, size, alignCorners));
+
     const output = g(input, dy);
     const expected = tf.tensor3d([
       [[1.0, 2.0, 3.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [4.0, 5.0, 6.0]],
@@ -696,7 +786,12 @@ describeWithFlags('resizeBilinear gradients', ALL_ENVS, () => {
       [[7.0, 8.0, 9.0], [10.0, 11.0, 12.0]]
     ]);
 
-    const g = tf.grad(resize.bind(null, [2, 2], false));
+    const size: [number, number] = [2, 2];
+    const alignCorners = false;
+    const g =
+      tf.grad((i: tf.Tensor3D) =>
+        tf.image.resizeBilinear(i, size, alignCorners));
+
     const output = g(input, dy);
     const expected = tf.tensor3d([
       [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]],
@@ -723,7 +818,12 @@ describeWithFlags('resizeBilinear gradients', ALL_ENVS, () => {
       [[7.0, 8.0, 9.0], [10.0, 11.0, 12.0]]
     ]);
 
-    const g = tf.grad(resize.bind(null, [2, 2], true));
+    const size: [number, number] = [2, 2];
+    const alignCorners = true;
+    const g =
+      tf.grad((i: tf.Tensor3D) =>
+        tf.image.resizeBilinear(i, size, alignCorners));
+
     const output = g(input, dy);
     const expected = tf.tensor3d([
       [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]],
