@@ -16,10 +16,8 @@
  */
 
 /**
- * IOHandlers related to files.
- *
- * such as browser-triggered file downloads, user-selected files in browser and
- * native files (node.js).
+ * IOHandlers related to files, such as browser-triggered file downloads,
+ * user-selected files in browser.
  */
 
 // tslint:disable:max-line-length
@@ -38,7 +36,7 @@ export class BrowserDownloads implements IOHandler {
   private readonly weightDataAnchor: HTMLAnchorElement;
 
   constructor(fileNamePrefix?: string) {
-    if (window == null) {
+    if (typeof window === 'undefined') {
       // TODO(cais): Provide info on what IOHandlers are available under the
       //   current environment.
       throw new Error(
@@ -79,9 +77,8 @@ export class BrowserDownloads implements IOHandler {
 
       // If anchor elements are not provided, create them without attaching them
       // to parents, so that the downloaded file names can be controlled.
-      const jsonAnchor = this.jsonAnchor == null ?
-          document.createElement('a') as HTMLAnchorElement :
-          this.jsonAnchor;
+      const jsonAnchor = this.jsonAnchor == null ? document.createElement('a') :
+                                                   this.jsonAnchor;
       jsonAnchor.download = this.modelTopologyFileName;
       jsonAnchor.href = modelTopologyAndWeightManifestURL;
       // Trigger downloads by calling the `click` methods on the download
@@ -90,7 +87,7 @@ export class BrowserDownloads implements IOHandler {
 
       if (modelArtifacts.weightData != null) {
         const weightDataAnchor = this.weightDataAnchor == null ?
-            document.createElement('a') as HTMLAnchorElement :
+            document.createElement('a') :
             this.weightDataAnchor;
         weightDataAnchor.download = this.weightDataFileName;
         weightDataAnchor.href = weightsURL;
@@ -247,7 +244,7 @@ export class BrowserFiles implements IOHandler {
 }
 
 /**
- * Factory method for IOHandler that triggers file downloads.
+ * Creates an IOHandler that triggers file downloads from the browser.
  *
  * The returned `IOHandler` instance can be used as model exporting methods such
  * as `tf.Model.save` and supports only saving.
@@ -256,7 +253,7 @@ export class BrowserFiles implements IOHandler {
  * const model = tf.sequential();
  * model.add(tf.layers.dense(
  *     {units: 1, inputShape: [10], activation: 'sigmoid'}));
- * const artifactsInfo = await model.save(tf.io.triggerDownloads('mymodel'));
+ * const artifactsInfo = await model.save(tf.io.browserDownloads('mymodel'));
  * // This will trigger downloading of two files:
  * //   'mymodel.json' and 'mymodel.weights.bin'.
  * console.log(artifactsInfo);
@@ -283,7 +280,7 @@ export function browserDownloads(fileNamePrefix = 'model'): BrowserDownloads {
 }
 
 /**
- * Factory method for IOHandler that loads model artifacts from files.
+ * Creates an IOHandler that loads model artifacts from user-selected files.
  *
  * This method can be used for loading from files such as user-selected files
  * in the browser.
@@ -298,8 +295,8 @@ export function browserDownloads(fileNamePrefix = 'model'): BrowserDownloads {
  * // elements.
  * const uploadJSONInput = document.getElementById('upload-json');
  * const uploadWeightsInput = document.getElementById('upload-weights');
- * const model = await tfl.loadModel(
- *     tfc.io.files([uploadJSONInput.files[0], uploadWeightsInput.files[0]]));
+ * const model = await tfl.loadModel(tf.io.browserFiles(
+ *     [uploadJSONInput.files[0], uploadWeightsInput.files[0]]));
  * ```
  *
  * @param files `File`s to load from. Currently, this function supports only

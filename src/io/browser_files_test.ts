@@ -282,161 +282,234 @@ describe('browserFiles', () => {
         });
   });
 
-  const reverseOrderValues: boolean[] = [false, true];
-  for (const reverseOrder of reverseOrderValues) {
-    const testTitle = `One group, two paths, reverseOrder=${reverseOrder}`;
-    it(testTitle, async done => {
-      const weightSpecs: WeightsManifestEntry[] = [
-        {
-          name: 'foo',
-          shape: [1, 1],
-          dtype: 'float32',
-        },
-        {
-          name: 'bar',
-          shape: [1, 1],
-          dtype: 'float32',
-        }
-      ];
-      const weightsManifest: WeightsManifestConfig = [{
-        paths: ['./dir1/model.weights.1.bin', './dir2/model.weights.2.bin'],
-        weights: weightSpecs,
-      }];
-      const weightsTopologyAndManifest = {
-        modelTopology: modelTopology1,
-        weightsManifest,
-      };
-      const weightsBlob1 = new Blob(
-          [new Uint8Array([1, 2, 3, 4]).buffer],
-          {type: 'application/octet-stream'});
-      const weightsFile1 = new File(
-          [weightsBlob1], 'model.weights.1.bin',
-          {type: 'application/octet-stream'});
-      const weightsBlob2 = new Blob(
-          [new Uint8Array([10, 20, 30, 40]).buffer],
-          {type: 'application/octet-stream'});
-      const weightsFile2 = new File(
-          [weightsBlob2], 'model.weights.2.bin',
-          {type: 'application/octet-stream'});
+  it(`One group, two paths`, async done => {
+    const weightSpecs: WeightsManifestEntry[] = [
+      {
+        name: 'foo',
+        shape: [1, 1],
+        dtype: 'float32',
+      },
+      {
+        name: 'bar',
+        shape: [1, 1],
+        dtype: 'float32',
+      }
+    ];
+    const weightsManifest: WeightsManifestConfig = [{
+      paths: ['./dir1/model.weights.1.bin', './dir2/model.weights.2.bin'],
+      weights: weightSpecs,
+    }];
+    const weightsTopologyAndManifest = {
+      modelTopology: modelTopology1,
+      weightsManifest,
+    };
+    const weightsBlob1 = new Blob(
+        [new Uint8Array([1, 2, 3, 4]).buffer],
+        {type: 'application/octet-stream'});
+    const weightsFile1 = new File(
+        [weightsBlob1], 'model.weights.1.bin',
+        {type: 'application/octet-stream'});
+    const weightsBlob2 = new Blob(
+        [new Uint8Array([10, 20, 30, 40]).buffer],
+        {type: 'application/octet-stream'});
+    const weightsFile2 = new File(
+        [weightsBlob2], 'model.weights.2.bin',
+        {type: 'application/octet-stream'});
 
-      const jsonBlob = new Blob(
-          [JSON.stringify(weightsTopologyAndManifest)],
-          {type: 'application/json'});
-      const jsonFile =
-          new File([jsonBlob], 'model.json', {type: 'application/json'});
+    const jsonBlob = new Blob(
+        [JSON.stringify(weightsTopologyAndManifest)],
+        {type: 'application/json'});
+    const jsonFile =
+        new File([jsonBlob], 'model.json', {type: 'application/json'});
 
-      const filesHandler = tf.io.browserFiles(
-          reverseOrder ? [jsonFile, weightsFile2, weightsFile1] :
-                         [jsonFile, weightsFile1, weightsFile2]);
-      filesHandler.load()
-          .then(modelArtifacts => {
-            expect(modelArtifacts.modelTopology).toEqual(modelTopology1);
-            expect(modelArtifacts.weightSpecs).toEqual(weightSpecs);
-            expect(new Uint8Array(modelArtifacts.weightData))
-                .toEqual(new Uint8Array([1, 2, 3, 4, 10, 20, 30, 40]));
-            done();
-          })
-          .catch(err => {
-            done.fail(err.stack);
-          });
-    });
-  }
+    const filesHandler =
+        tf.io.browserFiles([jsonFile, weightsFile1, weightsFile2]);
+    filesHandler.load()
+        .then(modelArtifacts => {
+          expect(modelArtifacts.modelTopology).toEqual(modelTopology1);
+          expect(modelArtifacts.weightSpecs).toEqual(weightSpecs);
+          expect(new Uint8Array(modelArtifacts.weightData))
+              .toEqual(new Uint8Array([1, 2, 3, 4, 10, 20, 30, 40]));
+          done();
+        })
+        .catch(err => {
+          done.fail(err.stack);
+        });
+  });
 
-  for (const reverseOrder of reverseOrderValues) {
-    const testTitle = `Two groups, four paths, reverseOrder=${reverseOrder}`;
-    it(testTitle, async done => {
-      const weightSpecs1: WeightsManifestEntry[] = [
-        {
-          name: 'foo',
-          shape: [1, 1],
-          dtype: 'float32',
-        },
-        {
-          name: 'bar',
-          shape: [1, 1],
-          dtype: 'float32',
-        }
-      ];
-      const weightSpecs2: WeightsManifestEntry[] = [
-        {
-          name: 'baz',
-          shape: [1, 1],
-          dtype: 'float32',
-        },
-        {
-          name: 'qux',
-          shape: [1, 1],
-          dtype: 'float32',
-        }
-      ];
-      const weightsManifest: WeightsManifestConfig = [
-        {
-          paths: ['./model.weights.1.bin', './model.weights.2.bin'],
-          weights: weightSpecs1,
-        },
-        {
-          paths: ['./model.weights.3.bin', './model.weights.4.bin'],
-          weights: weightSpecs2,
-        }
-      ];
-      const weightsTopologyAndManifest = {
-        modelTopology: modelTopology1,
-        weightsManifest,
-      };
-      const weightsBlob1 = new Blob(
-          [new Uint8Array([1, 3, 5, 7]).buffer],
-          {type: 'application/octet-stream'});
-      const weightsFile1 = new File(
-          [weightsBlob1], 'model.weights.1.bin',
-          {type: 'application/octet-stream'});
-      const weightsBlob2 = new Blob(
-          [new Uint8Array([10, 30, 50, 70]).buffer],
-          {type: 'application/octet-stream'});
-      const weightsFile2 = new File(
-          [weightsBlob2], 'model.weights.2.bin',
-          {type: 'application/octet-stream'});
-      const weightsBlob3 = new Blob(
-          [new Uint8Array([2, 4, 6, 8]).buffer],
-          {type: 'application/octet-stream'});
-      const weightsFile3 = new File(
-          [weightsBlob3], 'model.weights.3.bin',
-          {type: 'application/octet-stream'});
-      const weightsBlob4 = new Blob(
-          [new Uint8Array([20, 40, 60, 80]).buffer],
-          {type: 'application/octet-stream'});
-      const weightsFile4 = new File(
-          [weightsBlob4], 'model.weights.4.bin',
-          {type: 'application/octet-stream'});
+  it(`Two groups, four paths, reverseOrder=false`, async done => {
+    const weightSpecs1: WeightsManifestEntry[] = [
+      {
+        name: 'foo',
+        shape: [1, 1],
+        dtype: 'float32',
+      },
+      {
+        name: 'bar',
+        shape: [1, 1],
+        dtype: 'float32',
+      }
+    ];
+    const weightSpecs2: WeightsManifestEntry[] = [
+      {
+        name: 'baz',
+        shape: [1, 1],
+        dtype: 'float32',
+      },
+      {
+        name: 'qux',
+        shape: [1, 1],
+        dtype: 'float32',
+      }
+    ];
+    const weightsManifest: WeightsManifestConfig = [
+      {
+        paths: ['./model.weights.1.bin', './model.weights.2.bin'],
+        weights: weightSpecs1,
+      },
+      {
+        paths: ['./model.weights.3.bin', './model.weights.4.bin'],
+        weights: weightSpecs2,
+      }
+    ];
+    const weightsTopologyAndManifest = {
+      modelTopology: modelTopology1,
+      weightsManifest,
+    };
+    const weightsBlob1 = new Blob(
+        [new Uint8Array([1, 3, 5, 7]).buffer],
+        {type: 'application/octet-stream'});
+    const weightsFile1 = new File(
+        [weightsBlob1], 'model.weights.1.bin',
+        {type: 'application/octet-stream'});
+    const weightsBlob2 = new Blob(
+        [new Uint8Array([10, 30, 50, 70]).buffer],
+        {type: 'application/octet-stream'});
+    const weightsFile2 = new File(
+        [weightsBlob2], 'model.weights.2.bin',
+        {type: 'application/octet-stream'});
+    const weightsBlob3 = new Blob(
+        [new Uint8Array([2, 4, 6, 8]).buffer],
+        {type: 'application/octet-stream'});
+    const weightsFile3 = new File(
+        [weightsBlob3], 'model.weights.3.bin',
+        {type: 'application/octet-stream'});
+    const weightsBlob4 = new Blob(
+        [new Uint8Array([20, 40, 60, 80]).buffer],
+        {type: 'application/octet-stream'});
+    const weightsFile4 = new File(
+        [weightsBlob4], 'model.weights.4.bin',
+        {type: 'application/octet-stream'});
 
-      const jsonBlob = new Blob(
-          [JSON.stringify(weightsTopologyAndManifest)],
-          {type: 'application/json'});
-      const jsonFile =
-          new File([jsonBlob], 'model.json', {type: 'application/json'});
+    const jsonBlob = new Blob(
+        [JSON.stringify(weightsTopologyAndManifest)],
+        {type: 'application/json'});
+    const jsonFile =
+        new File([jsonBlob], 'model.json', {type: 'application/json'});
 
-      const filesHandler = tf.io.browserFiles(
-          reverseOrder ?
-              [
-                jsonFile, weightsFile4, weightsFile3, weightsFile2, weightsFile1
-              ] :
-              [
-                jsonFile, weightsFile1, weightsFile2, weightsFile3, weightsFile4
-              ]);
-      filesHandler.load()
-          .then(modelArtifacts => {
-            expect(modelArtifacts.modelTopology).toEqual(modelTopology1);
-            expect(modelArtifacts.weightSpecs)
-                .toEqual(weightSpecs1.concat(weightSpecs2));
-            expect(new Uint8Array(modelArtifacts.weightData))
-                .toEqual(new Uint8Array(
-                    [1, 3, 5, 7, 10, 30, 50, 70, 2, 4, 6, 8, 20, 40, 60, 80]));
-            done();
-          })
-          .catch(err => {
-            done.fail(err.stack);
-          });
-    });
-  }
+    const filesHandler = tf.io.browserFiles(
+        [jsonFile, weightsFile1, weightsFile2, weightsFile3, weightsFile4]);
+    filesHandler.load()
+        .then(modelArtifacts => {
+          expect(modelArtifacts.modelTopology).toEqual(modelTopology1);
+          expect(modelArtifacts.weightSpecs)
+              .toEqual(weightSpecs1.concat(weightSpecs2));
+          expect(new Uint8Array(modelArtifacts.weightData))
+              .toEqual(new Uint8Array(
+                  [1, 3, 5, 7, 10, 30, 50, 70, 2, 4, 6, 8, 20, 40, 60, 80]));
+          done();
+        })
+        .catch(err => {
+          done.fail(err.stack);
+        });
+  });
+
+  it(`Two groups, four paths, reverseOrder=true`, async done => {
+    const weightSpecs1: WeightsManifestEntry[] = [
+      {
+        name: 'foo',
+        shape: [1, 1],
+        dtype: 'float32',
+      },
+      {
+        name: 'bar',
+        shape: [1, 1],
+        dtype: 'float32',
+      }
+    ];
+    const weightSpecs2: WeightsManifestEntry[] = [
+      {
+        name: 'baz',
+        shape: [1, 1],
+        dtype: 'float32',
+      },
+      {
+        name: 'qux',
+        shape: [1, 1],
+        dtype: 'float32',
+      }
+    ];
+    const weightsManifest: WeightsManifestConfig = [
+      {
+        paths: ['./model.weights.1.bin', './model.weights.2.bin'],
+        weights: weightSpecs1,
+      },
+      {
+        paths: ['./model.weights.3.bin', './model.weights.4.bin'],
+        weights: weightSpecs2,
+      }
+    ];
+    const weightsTopologyAndManifest = {
+      modelTopology: modelTopology1,
+      weightsManifest,
+    };
+    const weightsBlob1 = new Blob(
+        [new Uint8Array([1, 3, 5, 7]).buffer],
+        {type: 'application/octet-stream'});
+    const weightsFile1 = new File(
+        [weightsBlob1], 'model.weights.1.bin',
+        {type: 'application/octet-stream'});
+    const weightsBlob2 = new Blob(
+        [new Uint8Array([10, 30, 50, 70]).buffer],
+        {type: 'application/octet-stream'});
+    const weightsFile2 = new File(
+        [weightsBlob2], 'model.weights.2.bin',
+        {type: 'application/octet-stream'});
+    const weightsBlob3 = new Blob(
+        [new Uint8Array([2, 4, 6, 8]).buffer],
+        {type: 'application/octet-stream'});
+    const weightsFile3 = new File(
+        [weightsBlob3], 'model.weights.3.bin',
+        {type: 'application/octet-stream'});
+    const weightsBlob4 = new Blob(
+        [new Uint8Array([20, 40, 60, 80]).buffer],
+        {type: 'application/octet-stream'});
+    const weightsFile4 = new File(
+        [weightsBlob4], 'model.weights.4.bin',
+        {type: 'application/octet-stream'});
+
+    const jsonBlob = new Blob(
+        [JSON.stringify(weightsTopologyAndManifest)],
+        {type: 'application/json'});
+    const jsonFile =
+        new File([jsonBlob], 'model.json', {type: 'application/json'});
+
+    const filesHandler = tf.io.browserFiles(
+        [jsonFile, weightsFile4, weightsFile3, weightsFile2, weightsFile1]);
+    filesHandler.load()
+        .then(modelArtifacts => {
+          expect(modelArtifacts.modelTopology).toEqual(modelTopology1);
+          expect(modelArtifacts.weightSpecs)
+              .toEqual(weightSpecs1.concat(weightSpecs2));
+          expect(new Uint8Array(modelArtifacts.weightData))
+              .toEqual(new Uint8Array(
+                  [1, 3, 5, 7, 10, 30, 50, 70, 2, 4, 6, 8, 20, 40, 60, 80]));
+          done();
+        })
+        .catch(err => {
+          done.fail(err.stack);
+        });
+  });
 
   it('Upload model topology only', async done => {
     const weightsManifest: WeightsManifestConfig = [{
