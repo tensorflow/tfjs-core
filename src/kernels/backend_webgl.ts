@@ -46,6 +46,7 @@ import {GatherProgram} from './webgl/gather_gpu';
 import {GPGPUContext} from './webgl/gpgpu_context';
 import * as gpgpu_math from './webgl/gpgpu_math';
 import {GPGPUBinary, GPGPUProgram, TensorData} from './webgl/gpgpu_math';
+import * as gpgpu_util from './webgl/gpgpu_util';
 import {WhereProgram} from './webgl/logical_gpu';
 import {LRNProgram} from './webgl/lrn_gpu';
 import {MaxPool2DBackpropProgram} from './webgl/max_pool_backprop_gpu';
@@ -322,20 +323,24 @@ export class MathBackendWebGL implements KernelBackend {
     if (ENV.get('WEBGL_VERSION') < 1) {
       throw new Error('WebGL is not supported on this device');
     }
+    if (typeof document !== 'undefined') {
+      this.canvas = document.createElement('canvas');
+    }
     if (gpgpu == null) {
-      this.gpgpu = new GPGPUContext();
+      this.gpgpu = new GPGPUContext(gpgpu_util.createWebGLContext(this.canvas));
       this.gpgpuCreatedLocally = true;
     } else {
       this.gpgpuCreatedLocally = false;
     }
-    if (typeof document !== 'undefined') {
-      this.canvas = document.createElement('canvas');
-    }
+
     this.textureManager = new TextureManager(this.gpgpu);
   }
 
   getGPGPUContext(): GPGPUContext {
     return this.gpgpu;
+  }
+  getCanvas(): HTMLCanvasElement {
+    return this.canvas;
   }
 
   slice<T extends Tensor>(x: T, begin: number[], size: number[]): T {
