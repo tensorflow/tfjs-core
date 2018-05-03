@@ -33,8 +33,6 @@ export type InputInfo = {
 export function makeShader(
     inputsInfo: InputInfo[], outputShape: ShapeInfo, userCode: string,
     broadcast: boolean): string {
-  const sampleSnippet = getSampleSnippet();
-  const setOutputSnippet = getSetOutputSnippet();
   const inputPrefixSnippet =
       inputsInfo.map(x => `uniform sampler2D ${x.name};`).join('\n');
   const inputSamplingSnippet =
@@ -44,24 +42,11 @@ export function makeShader(
   const outputSamplingSnippet =
       getOutputSamplingSnippet(outputShape.logicalShape, outTexShape);
   const source = [
-    SHADER_PREFIX, sampleSnippet, setOutputSnippet, inputPrefixSnippet,
-    outputSamplingSnippet, inputSamplingSnippet, userCode
+    SHADER_PREFIX, FLOAT_TEXTURE_SAMPLE_SNIPPET,
+    FLOAT_TEXTURE_SETOUTPUT_SNIPPET, inputPrefixSnippet, outputSamplingSnippet,
+    inputSamplingSnippet, userCode
   ].join('\n');
   return source;
-}
-
-function getSampleSnippet() {
-  return FLOAT_TEXTURE_SAMPLE_SNIPPET;
-  // return ENV.get('WEBGL_FLOAT_TEXTURE_ENABLED') ?
-  //    FLOAT_TEXTURE_SAMPLE_SNIPPET :
-  //    UNSIGNED_BYTE_TEXTURE_SAMPLE_SNIPPET;
-}
-
-function getSetOutputSnippet() {
-  return FLOAT_TEXTURE_SETOUTPUT_SNIPPET;
-  // return ENV.get('WEBGL_FLOAT_TEXTURE_ENABLED') ?
-  //    FLOAT_TEXTURE_SETOUTPUT_SNIPPET :
-  //    UNSIGNED_BYTE_TEXTURE_SETOUTPUT_SNIPPET;
 }
 
 function getSamplerFromInInfo(inInfo: InputInfo): string {

@@ -42,11 +42,11 @@ export interface Features {
   'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE'?: boolean;
   // 0: No WebGL, 1: WebGL 1.0, 2: WebGL 2.0.
   'WEBGL_VERSION'?: number;
-  // Whether writing & reading floating point textures is enabled. When
-  // false, fall back to using unsigned byte textures.
-  'WEBGL_FLOAT_TEXTURE_ENABLED'?: boolean;
-
+  // Whether rendering to float32 textures is enabled. If disabled, renders to
+  // float16 textures.
   'WEBGL_RENDER_FLOAT32_ENABLED'?: boolean;
+  // Whether downloading float textures is enabled. If disabled, uses IEEE 754
+  // encoding of the float32 values to 4 uint8 when downloading.
   'WEBGL_DOWNLOAD_FLOAT_ENABLED'?: boolean;
 
   // Whether WEBGL_get_buffer_sub_data_async is enabled.
@@ -59,7 +59,6 @@ export const URL_PROPERTIES: URLProperty[] = [
   {name: 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION', type: Type.NUMBER},
   {name: 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE', type: Type.BOOLEAN},
   {name: 'WEBGL_VERSION', type: Type.NUMBER},
-  {name: 'WEBGL_FLOAT_TEXTURE_ENABLED', type: Type.BOOLEAN},
   {name: 'WEBGL_RENDER_FLOAT32_ENABLED', type: Type.BOOLEAN},
   {name: 'WEBGL_DOWNLOAD_FLOAT_ENABLED', type: Type.BOOLEAN}, {
     name: 'WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED',
@@ -399,12 +398,6 @@ export class Environment {
         return 1;
       }
       return 0;
-    } else if (feature === 'WEBGL_FLOAT_TEXTURE_ENABLED') {
-      // return false;
-
-      return isFloatTextureReadPixelsEnabled(
-          this.get('WEBGL_VERSION'));  // &&
-                                       // false;
     } else if (feature === 'WEBGL_RENDER_FLOAT32_ENABLED') {
       return isRenderToFloatTextureEnabled(this.get('WEBGL_VERSION'));
     } else if (feature === 'WEBGL_DOWNLOAD_FLOAT_ENABLED') {
