@@ -81,7 +81,7 @@ export interface WeightsManifestEntry {
   dtype: 'float32'|'int32'|'bool';
 
   /**
-   * Information for dequantizatio of the weight.
+   * Information for dequantization of the weight.
    */
   quantization?: {
     scale: number,           // The scaling constant to multiply by.
@@ -106,9 +106,9 @@ export interface SaveConfig {
  */
 export interface SaveResult {
   /**
-   * Whether the saving succeeded.
+   * Information about the model artifacts saved.
    */
-  success: boolean;
+  modelArtifactsInfo: ModelArtifactsInfo;
 
   /**
    * HTTP responses from the server that handled the model-saving request (if
@@ -120,6 +120,39 @@ export interface SaveResult {
    * Error messages and related data (if any).
    */
   errors?: Array<{}|string>;
+}
+
+export interface ModelArtifactsInfo {
+  /**
+   * Timestamp for when the model is saved.
+   */
+  dateSaved: Date;
+
+  /**
+   * Type of the model topology
+   *
+   * Possible values:
+   *   - KerasJSON: Keras-style JSON config (human-readable string).
+   *   - GraphDef: TensorFlow
+   *     [GraphDef](https://www.tensorflow.org/extend/tool_developers/#graphdef)
+   *     protocal buffer (binary).
+   */
+  modelTopologyType: 'KerasJSON'|'GraphDef';
+
+  /**
+   * Size of model topology (Keras JSON or GraphDef), in bytes.
+   */
+  modelTopologyBytes?: number;
+
+  /**
+   * Size of weight specification or manifest, in bytes.
+   */
+  weightSpecsBytes?: number;
+
+  /**
+   * Size of weight value data, in bytes.
+   */
+  weightDataBytes?: number;
 }
 
 /**
@@ -154,12 +187,12 @@ export interface ModelArtifacts {
 }
 
 /**
- * Type definition for handlers of loading opertaions.
+ * Type definition for handlers of loading operations.
  */
 export type LoadHandler = () => Promise<ModelArtifacts>;
 
 /**
- * Type definition for handlers of saving opertaions.
+ * Type definition for handlers of saving operations.
  */
 export type SaveHandler = (modelArtifact: ModelArtifacts) =>
     Promise<SaveResult>;

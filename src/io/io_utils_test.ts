@@ -16,12 +16,12 @@
  */
 
 import * as tf from '../index';
-
 import {scalar, tensor1d, tensor2d} from '../ops/ops';
 import {expectArraysEqual} from '../test_util';
 import {NamedTensorMap} from '../types';
 
-import {concatenateTypedArrays} from './io_utils';
+// tslint:disable-next-line:max-line-length
+import {arrayBufferToBase64String, base64StringToArrayBuffer, basename, concatenateArrayBuffers, concatenateTypedArrays, stringByteLength} from './io_utils';
 
 describe('concatenateTypedArrays', () => {
   it('Single float arrays', () => {
@@ -309,5 +309,92 @@ describe('decodeWeights', () => {
     ];
     expect(() => tf.io.decodeWeights(buffer, specs))
         .toThrowError(/Unsupported dtype in weight \'x\': int16/);
+  });
+});
+
+describe('stringByteLength', () => {
+  it('ASCII only', () => {
+    const str = '_Lorem ipsum 1337!';
+    expect(stringByteLength(str)).toEqual(str.length);
+  });
+
+  it('Mixed narrow and wide chars', () => {
+    const str = 'aЖ文1';
+    expect(stringByteLength(str.slice(0, 1))).toEqual(1);
+    expect(stringByteLength(str.slice(0, 2))).toEqual(3);
+    expect(stringByteLength(str.slice(0, 3))).toEqual(6);
+    expect(stringByteLength(str.slice(0, 4))).toEqual(7);
+  });
+});
+
+describe('arrayBufferToBase64String-base64StringToArrayBuffer', () => {
+  it('Round trip', () => {
+    // Generate some semi-random binary data.
+    const x = [];
+    for (let k = 0; k < 2; ++k) {
+      for (let i = 0; i < 254; ++i) {
+        x.push(i + k);
+      }
+      for (let i = 254; i >= 0; --i) {
+        x.push(i + k);
+      }
+    }
+    const buffer = Uint8Array.from(x).buffer;
+    const base64Str = arrayBufferToBase64String(buffer);
+    const decoded =
+        Array.from(new Uint8Array(base64StringToArrayBuffer(base64Str)));
+    expect(decoded).toEqual(x);
+  });
+});
+
+describe('concatenateArrayBuffers', () => {
+  it('Concatenate 3 non-empty ArrayBuffers', () => {
+    const buffer1 = new Uint8Array([1, 2, 3]);
+    const buffer2 = new Uint8Array([11, 22, 33, 44]);
+    const buffer3 = new Uint8Array([111, 222, 100]);
+    const out = concatenateArrayBuffers(
+        [buffer1.buffer, buffer2.buffer, buffer3.buffer]);
+    expect(new Uint8Array(out)).toEqual(new Uint8Array([
+      1, 2, 3, 11, 22, 33, 44, 111, 222, 100
+    ]));
+  });
+
+  it('Concatenate non-empty and empty ArrayBuffers', () => {
+    const buffer1 = new Uint8Array([1, 2, 3]);
+    const buffer2 = new Uint8Array([11, 22, 33, 44]);
+    const buffer3 = new Uint8Array([]);
+    const buffer4 = new Uint8Array([150, 100, 50]);
+    const out = concatenateArrayBuffers(
+        [buffer1.buffer, buffer2.buffer, buffer3.buffer, buffer4.buffer]);
+    expect(new Uint8Array(out)).toEqual(new Uint8Array([
+      1, 2, 3, 11, 22, 33, 44, 150, 100, 50
+    ]));
+  });
+
+  it('A single ArrayBuffer', () => {
+    const buffer1 = new Uint8Array([1, 3, 3, 7]);
+    const out = concatenateArrayBuffers([buffer1.buffer]);
+    expect(new Uint8Array(out)).toEqual(buffer1);
+  });
+
+  it('Zero ArrayBuffers', () => {
+    expect(new Uint8Array(concatenateArrayBuffers([])))
+        .toEqual(new Uint8Array([]));
+  });
+});
+
+describe('basename', () => {
+  it('Paths without slashes', () => {
+    expect(basename('foo.txt')).toEqual('foo.txt');
+    expect(basename('bar')).toEqual('bar');
+  });
+
+  it('Paths with slashes', () => {
+    expect(basename('qux/foo.txt')).toEqual('foo.txt');
+    expect(basename('qux/My Model.json')).toEqual('My Model.json');
+    expect(basename('foo/bar/baz')).toEqual('baz');
+    expect(basename('/foo/bar/baz')).toEqual('baz');
+    expect(basename('foo/bar/baz/')).toEqual('baz');
+    expect(basename('foo/bar/baz//')).toEqual('baz');
   });
 });
