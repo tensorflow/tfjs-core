@@ -21,7 +21,7 @@ import {expectArraysEqual} from '../test_util';
 import {NamedTensorMap} from '../types';
 
 // tslint:disable-next-line:max-line-length
-import {arrayBufferToBase64String, base64StringToArrayBuffer, concatenateArrayBuffers, concatenateTypedArrays, stringByteLength} from './io_utils';
+import {arrayBufferToBase64String, base64StringToArrayBuffer, basename, concatenateArrayBuffers, concatenateTypedArrays, stringByteLength} from './io_utils';
 
 describe('concatenateTypedArrays', () => {
   it('Single float arrays', () => {
@@ -380,5 +380,21 @@ describe('concatenateArrayBuffers', () => {
   it('Zero ArrayBuffers', () => {
     expect(new Uint8Array(concatenateArrayBuffers([])))
         .toEqual(new Uint8Array([]));
+  });
+});
+
+describe('basename', () => {
+  it('Paths without slashes', () => {
+    expect(basename('foo.txt')).toEqual('foo.txt');
+    expect(basename('bar')).toEqual('bar');
+  });
+
+  it('Paths with slashes', () => {
+    expect(basename('qux/foo.txt')).toEqual('foo.txt');
+    expect(basename('qux/My Model.json')).toEqual('My Model.json');
+    expect(basename('foo/bar/baz')).toEqual('baz');
+    expect(basename('/foo/bar/baz')).toEqual('baz');
+    expect(basename('foo/bar/baz/')).toEqual('baz');
+    expect(basename('foo/bar/baz//')).toEqual('baz');
   });
 });

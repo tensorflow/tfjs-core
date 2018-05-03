@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {browserDownoads, browserFiles} from './browser_files';
+import {browserDownloads, browserFiles} from './browser_files';
 import {decodeWeights, encodeWeights} from './io_utils';
 import {browserLocalStorage} from './local_storage';
 // tslint:disable-next-line:max-line-length
@@ -23,7 +23,7 @@ import {IOHandler, LoadHandler, ModelArtifacts, SaveConfig, SaveHandler, SaveRes
 import {loadWeights} from './weights_loader';
 
 export {
-  browserDownoads,
+  browserDownloads,
   browserFiles,
   browserLocalStorage,
   decodeWeights,

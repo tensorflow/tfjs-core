@@ -202,3 +202,20 @@ export function concatenateArrayBuffers(buffers: ArrayBuffer[]): ArrayBuffer {
   });
   return temp.buffer;
 }
+
+/**
+ * Get the basename of a path.
+ *
+ * Behaves in a way analogous to Linux's basename command.
+ *
+ * @param path
+ */
+export function basename(path: string): string {
+  const SEPARATOR = '/';
+  path = path.trim();
+  while (path.endsWith(SEPARATOR)) {
+    path = path.slice(0, path.length - 1);
+  }
+  const items = path.split(SEPARATOR);
+  return items[items.length - 1];
+}
