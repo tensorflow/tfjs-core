@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2017 Google Inc. All Rights Reserved.
+ * Copyright 2018 Google Inc. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,6 @@
  */
 
 import {Tensor4D} from '../../tensor';
-
 import {GPGPUProgram} from './gpgpu_math';
 
 export class ResizeBilinearBackpropProgram implements GPGPUProgram {
@@ -24,10 +23,10 @@ export class ResizeBilinearBackpropProgram implements GPGPUProgram {
   outputShape: number[] = [];
   userCode: string;
 
-  constructor(dy: Tensor4D, x: Tensor4D, y: Tensor4D, alignCorners: boolean) {
+  constructor(dy: Tensor4D, x: Tensor4D, alignCorners: boolean) {
     this.outputShape = x.shape;
     const [, xHeight, xWidth, ] = x.shape;
-    const [, yHeight, yWidth] = y.shape;
+    const [, yHeight, yWidth] = dy.shape;
 
     // In the backwards pass, we want to find the pixels that were generated for
     // each pixel in the input image the forward pass and add the corresponding
@@ -64,61 +63,70 @@ export class ResizeBilinearBackpropProgram implements GPGPUProgram {
 
         float accumulator = 0.0;
 
-        float invHeightScale = float(${invHeightScale});
-        float invWidthScale = float(${invWidthScale});
+        const float heightScale = float(${heightScale});
+        const float widthScale = float(${widthScale});
+
+        const float invHeightScale = float(${invHeightScale});
+        const float invWidthScale = float(${invWidthScale});
+
+        const int winHeight = int(${winHeight});
+        const int winWidth = int(${winWidth});
 
         // Compute bounds for where in dy we will look
         float startRLerp = floor(float(r) * invHeightScale);
-        int startRY = int(startRLerp - float(${winHeight} / 2));
+        int startDyR = int(startRLerp - float(winHeight / 2));
 
         float startCLerp = floor(float(c) * invWidthScale);
-        int startCY = int(startCLerp - float(${winWidth} / 2));
+        int startDyC = int(startCLerp - float(winWidth / 2));
 
         // Loop over dy
-        for (int dry = 0; dry < int(${winHeight}); dry++) {
-          int ry = dry + startRY;
+        for (int dyROffset = 0; dyROffset < winHeight; dyROffset++) {
+          int dyR = dyROffset + startDyR;
 
-          if (ry < 0 || ry >= ${yHeight}) {
+          // Guard against the window exceeding the bounds of dy
+          if (dyR < 0 || dyR >= ${yHeight}) {
             continue;
           }
 
-          for (int dcy = 0; dcy < int(${winWidth}); dcy++) {
-            int cy = dcy + startCY;
+          for (int dyCOffset = 0; dyCOffset < winWidth; dyCOffset++) {
+            int dyC = dyCOffset + startDyC;
 
-            if (cy < 0 || cy >= ${yWidth}) {
+            // Guard against the window exceeding the bounds of dy
+            if (dyC < 0 || dyC >= ${yWidth}) {
               continue;
             }
 
-            float inY = float(ry) * float(${heightScale});
-            int topYIndex = int(floor(inY));
-            int bottomYIndex = int(min(ceil(inY), ${xHeight - 1}.0));
-            float yLerp = inY - float(topYIndex);
-            float inverseYLerp = 1.0 - yLerp;
+            float dxR = float(dyR) * heightScale;
+            int topDxRIndex = int(floor(dxR));
+            int bottomDxRIndex = int(min(ceil(dxR), ${xHeight - 1}.0));
+            float dxRLerp = dxR - float(topDxRIndex);
+            float inverseDxRLerp = 1.0 - dxRLerp;
 
-            float inX = float(cy) * float(${widthScale});
-            int leftXIndex = int(floor(inX));
-            int rightXIndex = int(min(ceil(inX), ${xWidth - 1}.0));
-            float xLerp = inX - float(leftXIndex);
-            float inverseXLerp = 1.0 - xLerp;
+            float dxC = float(dyC) * widthScale;
+            int leftDxCIndex = int(floor(dxC));
+            int rightDxCIndex = int(min(ceil(dxC), ${xWidth - 1}.0));
+            float dxCLerp = dxC - float(leftDxCIndex);
+            float inverseDxCLerp = 1.0 - dxCLerp;
 
-            if (r == topYIndex && c == leftXIndex) {
+            if (r == topDxRIndex && c == leftDxCIndex) {
               // topLeft
-              accumulator += getDy(b, ry, cy, d) * inverseYLerp * inverseXLerp;
+              accumulator +=
+                getDy(b, dyR, dyC, d) * inverseDxRLerp * inverseDxCLerp;
             }
 
-            if (r == topYIndex && c == rightXIndex) {
+            if (r == topDxRIndex && c == rightDxCIndex) {
               // topRight
-              accumulator += getDy(b, ry, cy, d) * inverseYLerp * xLerp;
+              accumulator += getDy(b, dyR, dyC, d) * inverseDxRLerp * dxCLerp;
             }
 
-            if (r == bottomYIndex && c == leftXIndex) {
+            if (r == bottomDxRIndex && c == leftDxCIndex) {
               // bottomLeft
-              accumulator += getDy(b, ry, cy, d) * yLerp * inverseXLerp;
+              accumulator += getDy(b, dyR, dyC, d) * dxRLerp * inverseDxCLerp;
             }
 
-            if (r == bottomYIndex && c == rightXIndex) {
+            if (r == bottomDxRIndex && c == rightDxCIndex) {
               // bottomRight
-              accumulator += getDy(b, ry, cy, d) * yLerp * xLerp;
+              accumulator += getDy(b, dyR, dyC, d) * dxRLerp * dxCLerp;
             }
           }
         }

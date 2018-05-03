@@ -22,10 +22,10 @@ import * as axis_util from '../ops/axis_util';
 import * as broadcast_util from '../ops/broadcast_util';
 import * as concat_util from '../ops/concat_util';
 import {Conv2DInfo} from '../ops/conv_util';
+import * as erf_util from '../ops/erf_util';
 import * as ops from '../ops/ops';
 import {buffer, tensor3d, tensor4d} from '../ops/ops';
 import * as selu_util from '../ops/selu_util';
-import * as erf_util from '../ops/erf_util';
 // tslint:disable-next-line:max-line-length
 import {DataId, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import * as types from '../types';
@@ -916,8 +916,9 @@ export class MathBackendCPU implements KernelBackend {
     for (let i = 0; i < values.length; ++i) {
       const v = values[i];
       const t = 1.0 / (1.0 + p * v);
-      resultValues[i]
-          = 1.0 - (((((a5*t + a4)*t) + a3)*t + a2)*t + a1)*t*Math.exp(-v*v);
+      resultValues[i] = 1.0 -
+          (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t *
+              Math.exp(-v * v);
     }
     return Tensor.make(x.shape, {values: resultValues}) as T;
   }
@@ -991,10 +992,19 @@ export class MathBackendCPU implements KernelBackend {
     const [dyS0, dyS1, dyS2] = dy.strides;
     const fltValues = filter.dataSync();
     const [fltS0, fltS1, fltS2] = filter.strides;
-    const {batchSize, filterHeight, filterWidth,
-           inChannels, inHeight, inWidth,
-           outChannels, outHeight, outWidth,
-           strideHeight, strideWidth} = convInfo;
+    const {
+      batchSize,
+      filterHeight,
+      filterWidth,
+      inChannels,
+      inHeight,
+      inWidth,
+      outChannels,
+      outHeight,
+      outWidth,
+      strideHeight,
+      strideWidth
+    } = convInfo;
     const topPad = filterHeight - 1 - convInfo.padInfo.top;
     const leftPad = filterWidth - 1 - convInfo.padInfo.left;
 
@@ -1003,14 +1013,14 @@ export class MathBackendCPU implements KernelBackend {
         for (let xR = 0; xR < inHeight; ++xR) {
           const xRCorner = xR - leftPad;
           const xRMin = Math.max(0, Math.ceil(xRCorner / strideHeight));
-          const yRMax = Math.min(
-              outHeight, (filterHeight + xRCorner) / strideHeight);
+          const yRMax =
+              Math.min(outHeight, (filterHeight + xRCorner) / strideHeight);
 
           for (let xC = 0; xC < inWidth; ++xC) {
             const xCCorner = xC - topPad;
             const xCMin = Math.max(0, Math.ceil(xCCorner / strideWidth));
-            const yCMax = Math.min(
-                outWidth, (filterWidth + xCCorner) / strideWidth);
+            const yCMax =
+                Math.min(outWidth, (filterWidth + xCCorner) / strideWidth);
 
             let dotProd = 0;
             for (let yR = xRMin; yR < yRMax; ++yR) {
@@ -1020,8 +1030,7 @@ export class MathBackendCPU implements KernelBackend {
                 const wC = yC * strideWidth - xCCorner;
                 const dyOffset = dyS0 * b + dyS1 * yR + dyS2 * yC;
                 const fltOffset = fltS0 * (filterHeight - 1 - wR) +
-                                  fltS1 * (filterWidth - 1 - wC) +
-                                  fltS2 * d1;
+                    fltS1 * (filterWidth - 1 - wC) + fltS2 * d1;
 
                 for (let d2 = 0; d2 < outChannels; ++d2) {
                   const pixel = dyValues[dyOffset + d2];
@@ -1469,10 +1478,9 @@ export class MathBackendCPU implements KernelBackend {
     return output.toTensor();
   }
 
-  resizeBilinearGrad(
-      dy: Tensor4D, x: Tensor4D, y: Tensor4D, alignCorners: boolean) {
+  resizeBilinearBackprop(dy: Tensor4D, x: Tensor4D, alignCorners: boolean) {
     const [batch, xHeight, xWidth, depth] = x.shape;
-    const [, yHeight, yWidth] = y.shape;
+    const [, yHeight, yWidth] = dy.shape;
 
     const output =
         ops.buffer<Rank.R4>([batch, xHeight, xWidth, depth], x.dtype);
@@ -1494,37 +1502,43 @@ export class MathBackendCPU implements KernelBackend {
     const heightScale = effectiveXSize[0] / effectiveYSize[0];
     const widthScale = effectiveXSize[1] / effectiveYSize[1];
 
+    // Reference implementation
+    // tslint:disable-next-line:max-line-length
+    // https://github.com/tensorflow/tensorflow/blob/3039375c86a5bbc9610c7725dcaa95d635f87ba2/tensorflow/core/kernels/resize_bilinear_op.cc#L275
+
     for (let b = 0; b < batch; b++) {
       for (let r = 0; r < yHeight; r++) {
-        const inY = r * heightScale;
-        const topYIndex = Math.floor(inY);
-        const bottomYIndex = Math.min(Math.ceil(inY), xHeight - 1);
-        const yLerp = inY - topYIndex;
-        const inverseYLerp = 1.0 - yLerp;
+        const dxR = r * heightScale;
+        const topDxRIndex = Math.floor(dxR);
+        const bottomDxRIndex = Math.min(Math.ceil(dxR), xHeight - 1);
+        const dxRLerp = dxR - topDxRIndex;
+        const inverseDxRLerp = 1.0 - dxRLerp;
 
         for (let c = 0; c < yWidth; c++) {
-          const inX = c * widthScale;
-          const leftXIndex = Math.floor(inX);
-          const rightXIndex = Math.min(Math.ceil(inX), xWidth - 1);
-          const xLerp = inX - leftXIndex;
-          const inverseXLerp = 1.0 - xLerp;
+          const dxC = c * widthScale;
+          const leftDxCIndex = Math.floor(dxC);
+          const rightDxCIndex = Math.min(Math.ceil(dxC), xWidth - 1);
+          const dxCLerp = dxC - leftDxCIndex;
+          const inverseDxCLerp = 1.0 - dxCLerp;
 
           for (let d = 0; d < depth; d++) {
-            let topLeft = output.get(b, topYIndex, leftXIndex, d);
-            topLeft += dy.get(b, r, c, d) * inverseYLerp * inverseXLerp;
-            output.set(topLeft, b, topYIndex, leftXIndex, d);
+            const dyVal = dy.get(b, r, c, d);
 
-            let topRight = output.get(b, topYIndex, rightXIndex, d);
-            topRight += dy.get(b, r, c, d) * inverseYLerp * xLerp;
-            output.set(topRight, b, topYIndex, rightXIndex, d);
+            let topLeft = output.get(b, topDxRIndex, leftDxCIndex, d);
+            topLeft += dyVal * inverseDxRLerp * inverseDxCLerp;
+            output.set(topLeft, b, topDxRIndex, leftDxCIndex, d);
 
-            let bottomLeft = output.get(b, bottomYIndex, leftXIndex, d);
-            bottomLeft += dy.get(b, r, c, d) * yLerp * inverseXLerp;
-            output.set(bottomLeft, b, bottomYIndex, leftXIndex, d);
+            let topRight = output.get(b, topDxRIndex, rightDxCIndex, d);
+            topRight += dyVal * inverseDxRLerp * dxCLerp;
+            output.set(topRight, b, topDxRIndex, rightDxCIndex, d);
 
-            let bottomRight = output.get(b, bottomYIndex, rightXIndex, d);
-            bottomRight += dy.get(b, r, c, d) * yLerp * xLerp;
-            output.set(bottomRight, b, bottomYIndex, rightXIndex, d);
+            let bottomLeft = output.get(b, bottomDxRIndex, leftDxCIndex, d);
+            bottomLeft += dyVal * dxRLerp * inverseDxCLerp;
+            output.set(bottomLeft, b, bottomDxRIndex, leftDxCIndex, d);
+
+            let bottomRight = output.get(b, bottomDxRIndex, rightDxCIndex, d);
+            bottomRight += dyVal * dxRLerp * dxCLerp;
+            output.set(bottomRight, b, bottomDxRIndex, rightDxCIndex, d);
           }
         }
       }
@@ -1553,14 +1567,14 @@ export class MathBackendCPU implements KernelBackend {
                 (effectiveInputSize[0]) * r / (effectiveOutputSize[0]);
             const sourceFracCol =
                 (effectiveInputSize[1]) * c / (effectiveOutputSize[1]);
-            const sourceNearestRow =
-              Math.min(oldHeight - 1,
-                alignCorners
-                    ? Math.round(sourceFracRow) : Math.floor(sourceFracRow));
-            const sourceNearestCol =
-              Math.min(oldWidth - 1,
-                alignCorners
-                    ? Math.round(sourceFracCol) : Math.floor(sourceFracCol));
+            const sourceNearestRow = Math.min(
+                oldHeight - 1,
+                alignCorners ? Math.round(sourceFracRow) :
+                               Math.floor(sourceFracRow));
+            const sourceNearestCol = Math.min(
+                oldWidth - 1,
+                alignCorners ? Math.round(sourceFracCol) :
+                               Math.floor(sourceFracCol));
             const newValue = x.get(b, sourceNearestRow, sourceNearestCol, d);
             output.set(newValue, b, r, c, d);
           }

@@ -58,17 +58,16 @@ export class ImageOps {
     }
 
     const [newHeight, newWidth] = size;
-    const forward: ForwardFunc<Tensor4D> = (backend, save) => save(
-        backend.resizeBilinear(batchImages, newHeight, newWidth, alignCorners));
+    const forward: ForwardFunc<Tensor4D> = (backend, save) =>
+        backend.resizeBilinear(batchImages, newHeight, newWidth, alignCorners);
 
     const backward = (dy: Tensor4D, saved: Tensor[]) => {
-      const y = saved[0] as Tensor4D;
-
-      const result = ENV.engine.runKernel(
-          backend =>
-              backend.resizeBilinearGrad(dy, batchImages, y, alignCorners),
-          {});
-      return {batchImages: () => result};
+      return {
+        batchImages: () => ENV.engine.runKernel(
+            backend =>
+                backend.resizeBilinearBackprop(dy, batchImages, alignCorners),
+            {})
+      };
     };
 
     const res = ENV.engine.runKernel(forward, {batchImages}, backward);

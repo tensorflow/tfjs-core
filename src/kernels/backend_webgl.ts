@@ -891,9 +891,9 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [x]);
   }
 
-  resizeBilinearGrad(
-      dy: Tensor4D, x: Tensor4D, y: Tensor4D, alignCorners: boolean): Tensor4D {
-    const program = new ResizeBilinearBackpropProgram(dy, x, y, alignCorners);
+  resizeBilinearBackprop(dy: Tensor4D, x: Tensor4D, alignCorners: boolean):
+      Tensor4D {
+    const program = new ResizeBilinearBackpropProgram(dy, x, alignCorners);
 
     return this.compileAndRun(program, [dy]);
   }
