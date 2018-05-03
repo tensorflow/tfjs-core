@@ -187,10 +187,10 @@ export class LossOps {
     util.assertShapesMatch(
         labels.shape, predictions.shape, 'Error in hingeLoss: ');
 
-    const ones = ops.onesLike(labels);
+    const one = ops.scalar(1);
     // Convert binary labels to (-1, 1)
-    labels = ops.scalar(2).mul(labels).sub(ones);
-    const losses = ones.sub(labels.mul(predictions)).relu();
+    labels = ops.scalar(2).mul(labels).sub(one);
+    const losses = one.sub(labels.mul(predictions)).relu();
     return LossOps.computeWeightedLoss(losses, weights, reduction);
   }
 }
