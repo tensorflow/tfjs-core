@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2018 Google LLC. All Rights Reserved.
+ * Copyright 2017 Google Inc. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,23 +15,10 @@
  * =============================================================================
  */
 
-import {decodeWeights, encodeWeights} from './io_utils';
-import {browserLocalStorage} from './local_storage';
-// tslint:disable-next-line:max-line-length
-import {IOHandler, LoadHandler, ModelArtifacts, SaveConfig, SaveHandler, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
-import {loadWeights} from './weights_loader';
+import * as webgl_util from './kernels/webgl/webgl_util';
+import * as gpgpu_util from './kernels/webgl/gpgpu_util';
 
-export {
-  browserLocalStorage,
-  decodeWeights,
-  encodeWeights,
-  IOHandler,
-  LoadHandler,
-  loadWeights,
-  ModelArtifacts,
-  SaveConfig,
-  SaveHandler,
-  SaveResult,
-  WeightsManifestConfig,
-  WeightsManifestEntry
-};
+export {MathBackendWebGL, WebGLTimingInfo} from './kernels/backend_webgl';
+export {GPGPUContext} from './kernels/webgl/gpgpu_context';
+// WebGL specific utils.
+export {gpgpu_util, webgl_util};
