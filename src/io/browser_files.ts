@@ -23,7 +23,7 @@
  */
 
 // tslint:disable:max-line-length
-import {stringByteLength} from './io_utils';
+import {concatenateArrayBuffers, stringByteLength} from './io_utils';
 import {IOHandler, ModelArtifacts, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
 // tslint:enable:max-line-length
 
@@ -139,45 +139,65 @@ export class BrowserFiles implements IOHandler {
         }
         const weightsManifest =
             modelJSON.weightsManifest as WeightsManifestConfig;
+        // DEBUG
+        console.log(`weightsManifest = ${JSON.stringify(weightsManifest)}`);
         if (weightsManifest == null) {
           reject(new Error(
               `weightManifest field is missing from file ${jsonFile.name}`));
         }
 
+        let pathToFile: {[path: string]: File};
         try {
-          this.checkManifestAndWeightFiles(weightsManifest, weightFiles);
+          pathToFile =
+              this.checkManifestAndWeightFiles(weightsManifest, weightFiles);
         } catch (err) {
+          console.log('Caught error:', err.message);  // DEBUG
           reject(err);
         }
+        console.log(`pathToFile = ${JSON.stringify(pathToFile)}`);  // DEBUG
 
-        // const weightSpecs: Weigh
-        // TODO(cais): Remove. DO NOT SUBMIT.
-        // if (weightsManifest.length !== 1) {
-        //   reject(new Error(
-        //       `When uploading user-selected files, we current support only `
-        //       + `a single weight group, but the weights manifest in ` +
-        //       `${jsonFile.name} indicates there are ` +
-        //       `${weightsManifest.length} weight groups.`));
-        // }
-        // const weightGroup = weightsManifest[0];
-        // if (weightGroup.paths.length !== 1) {
-        //   reject(new Error(
-        //       `When uploading user-selected files, we current support only `
-        //       + `a single weight file, but the weights manifest in ` +
-        //       `${jsonFile.name} indicates there are ` +
-        //       `${weightGroup.paths.length} weight files.`));
-        // }
         const weightSpecs: WeightsManifestEntry[] = [];
+        const paths: string[] = [];
+        const perFileBuffers: ArrayBuffer[] = [];
+        // TODO(cais): Use forEach.
+        for (let i = 0; i < weightsManifest.length; ++i) {
+          const weightsGroup = weightsManifest[i];
+          for (let j = 0; j < weightsGroup.paths.length; ++j) {
+            paths.push(weightsGroup.paths[j]);
+            perFileBuffers.push(null);
+          }
+          weightSpecs.push(...weightsManifest[i].weights);
+        }
 
-        weightFiles.forEach(weightFile => {
-          const weightsReader = new FileReader();
-          weightsReader.onload = (event: Event) => {
-            // tslint:disable-next-line:no-any
-            const weightData = (event.target as any).result;
-            resolve({modelTopology, weightSpecs, weightData});
-          };
-          weightsReader.readAsArrayBuffer(weightFile);
-        });
+        for (let i = 0; i < weightsManifest.length; ++i) {
+          const weightsGroup = weightsManifest[i];
+          // DEBUG
+          console.log(`weightsGroup = ${JSON.stringify(weightsGroup)}`);
+          for (let j = 0; j < weightsGroup.paths.length; ++j) {
+            const path = weightsGroup.paths[j];
+            const weightFileReader = new FileReader();
+            weightFileReader.onload = (event: Event) => {
+              // tslint:disable-next-line:no-any
+              const weightData = (event.target as any).result as ArrayBuffer;
+              const index = paths.indexOf(path);
+              console.log(`Filling in perFileBuffers: ${index}`);  // DEBUG
+              perFileBuffers[index] = weightData;
+              console.log(perFileBuffers);  // DEBUG
+              if (perFileBuffers.indexOf(null) === -1) {
+                resolve({
+                  modelTopology,
+                  weightSpecs,
+                  weightData: concatenateArrayBuffers(perFileBuffers),
+                });
+              }
+            };
+            weightFileReader.onerror = (error: ErrorEvent) => {
+              console.log('weightFileReader.onerror');  // DEBUG
+              reject(`Failed to weights data from file of path '${path}'.`);
+            };
+            weightFileReader.readAsArrayBuffer(pathToFile[path]);
+          }
+        }
       };
       jsonReader.onerror = (error: ErrorEvent) => {
         console.log('jsonReader.onerror');  // DEBUG
@@ -192,12 +212,12 @@ export class BrowserFiles implements IOHandler {
 
   /**
    * Check the compatibility between weights manifest and weight files.
-   * @param manifest
    */
   private checkManifestAndWeightFiles(
       manifest: WeightsManifestConfig, files: File[]): {[path: string]: File} {
     const basenames: string[] = [];
     const fileNames = files.map(file => file.name);
+    console.log(`fileNames = ${JSON.stringify(fileNames)}`);  // DEBUG
     const pathToFile: {[path: string]: File} = {};
     for (const group of manifest) {
       group.paths.forEach(path => {
@@ -208,6 +228,7 @@ export class BrowserFiles implements IOHandler {
               `Duplicate file basename found in weights manifest: ${basename}`);
         }
         basenames.push(basename);
+        console.log('basename =', basename);  // DEBUG
         if (fileNames.indexOf(basename) === -1) {
           throw new Error(
               `Weight file with basename '${basename}' is not provided.`);
@@ -223,8 +244,8 @@ export class BrowserFiles implements IOHandler {
           `(${basenames.length}) and the number of weight files provided ` +
           `(${files.length}).`);
     }
-
-    return pathToFile:
+    console.log(`Returning ${JSON.stringify(pathToFile)}`);
+    return pathToFile;
   }
 }
 

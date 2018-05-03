@@ -20,7 +20,8 @@
  */
 
 import * as tf from '../index';
-import {WeightsManifestConfig} from './types';
+
+import {WeightsManifestConfig, WeightsManifestEntry} from './types';
 
 const modelTopology1: {} = {
   'class_name': 'Sequential',
@@ -212,9 +213,9 @@ describe('browserFiles', () => {
   const weightsFile = new File(
       [weightsBlob], 'model.weights.bin', {type: 'application/octet-stream'});
 
-  it('Load from uploaded JSON and weights files', async done => {
+  it('One group, one path', async done => {
     const weightsManifest: WeightsManifestConfig = [{
-      paths: ['./models.weights.bin'],
+      paths: ['./model.weights.bin'],
       weights: weightSpecs1,
     }];
     const weightsTopologyAndManifest = {
@@ -232,7 +233,8 @@ describe('browserFiles', () => {
         .then(modelArtifacts => {
           expect(modelArtifacts.modelTopology).toEqual(modelTopology1);
           expect(modelArtifacts.weightSpecs).toEqual(weightSpecs1);
-          expect(modelArtifacts.weightData).toEqual(weightData1);
+          expect(new Uint8Array(modelArtifacts.weightData))
+              .toEqual(new Uint8Array(weightData1));
           done();
         })
         .catch(err => {
@@ -240,33 +242,93 @@ describe('browserFiles', () => {
         });
   });
 
-  it('Missing modelTopology from JSON leads to Error', async done => {
-    const weightsManifest: WeightsManifestConfig = [{
-      paths: ['./models.weights.bin'],
-      weights: weightSpecs1,
-    }];
-    const weightsTopologyAndManifest = {
-      weightsManifest,
-    };
-    const jsonBlob = new Blob(
-        [JSON.stringify(weightsTopologyAndManifest)],
-        {type: 'application/json'});
-    const jsonFile =
-        new File([jsonBlob], 'model.json', {type: 'application/json'});
+  const reverseOrderValues: boolean[] = [false, true];
+  for (const reverseOrder of reverseOrderValues) {
+    const testTitle = `One group, two paths, reverseOrder=${reverseOrder}`;
+    it(testTitle, async done => {
+      const weightSpecs: WeightsManifestEntry[] = [
+        {
+          name: 'foo',
+          shape: [1, 1],
+          dtype: 'float32',
+        },
+        {
+          name: 'bar',
+          shape: [1, 1],
+          dtype: 'float32',
+        }
+      ];
+      const weightsManifest: WeightsManifestConfig = [{
+        paths: ['./model.weights.1.bin', './model.weights.2.bin'],
+        weights: weightSpecs,
+      }];
+      const weightsTopologyAndManifest = {
+        modelTopology: modelTopology1,
+        weightsManifest,
+      };
+      const weightsBlob1 = new Blob(
+          [new Uint8Array([1, 2, 3, 4]).buffer],
+          {type: 'application/octet-stream'});
+      const weightsFile1 = new File(
+          [weightsBlob1], 'model.weights.1.bin',
+          {type: 'application/octet-stream'});
+      const weightsBlob2 = new Blob(
+          [new Uint8Array([10, 20, 30, 40]).buffer],
+          {type: 'application/octet-stream'});
+      const weightsFile2 = new File(
+          [weightsBlob2], 'model.weights.2.bin',
+          {type: 'application/octet-stream'});
 
-    const filesHandler = tf.io.browserFiles([jsonFile, weightsFile]);
-    filesHandler.load()
-        .then(modelArtifacts => {
-          done.fail(
-              'Loading with Files IOHandler with missing modelTopology ' +
-              'succeeded unexpectedly.');
-        })
-        .catch(err => {
-          expect(err.message)
-              .toMatch(/modelTopology field is missing from file model\.json/);
-          done();
-        });
-  });
+      const jsonBlob = new Blob(
+          [JSON.stringify(weightsTopologyAndManifest)],
+          {type: 'application/json'});
+      const jsonFile =
+          new File([jsonBlob], 'model.json', {type: 'application/json'});
+
+      const filesHandler = tf.io.browserFiles(
+          reverseOrder ? [jsonFile, weightsFile2, weightsFile1] :
+                         [jsonFile, weightsFile1, weightsFile2]);
+      filesHandler.load()
+          .then(modelArtifacts => {
+            expect(modelArtifacts.modelTopology).toEqual(modelTopology1);
+            expect(modelArtifacts.weightSpecs).toEqual(weightSpecs);
+            expect(new Uint8Array(modelArtifacts.weightData))
+                .toEqual(new Uint8Array([1, 2, 3, 4, 10, 20, 30, 40]));
+            done();
+          })
+          .catch(err => {
+            done.fail(err.stack);
+          });
+    });
+  }
+  // it('Missing modelTopology from JSON leads to Error', async done => {
+  //   const weightsManifest: WeightsManifestConfig = [{
+  //     paths: ['./model.weights.bin'],
+  //     weights: weightSpecs1,
+  //   }];
+  //   const weightsTopologyAndManifest = {
+  //     weightsManifest,
+  //   };
+  //   const jsonBlob = new Blob(
+  //       [JSON.stringify(weightsTopologyAndManifest)],
+  //       {type: 'application/json'});
+  //   const jsonFile =
+  //       new File([jsonBlob], 'model.json', {type: 'application/json'});
+
+  //   const filesHandler = tf.io.browserFiles([jsonFile, weightsFile]);
+  //   filesHandler.load()
+  //       .then(modelArtifacts => {
+  //         done.fail(
+  //             'Loading with Files IOHandler with missing modelTopology ' +
+  //             'succeeded unexpectedly.');
+  //       })
+  //       .catch(err => {
+  //         expect(err.message)
+  //             .toMatch(/modelTopology field is missing from file
+  //             model\.json/);
+  //         done();
+  //       });
+  // });
 
   // TODO(cais): Test mismatch in file count and weight manifest.
   // TODO(cais): Test duplicate base file names.
