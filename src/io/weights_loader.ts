@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2018 Google Inc. All Rights Reserved.
+ * Copyright 2018 Google LLC. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,25 +15,12 @@
  * =============================================================================
  */
 
-import {tensor} from './ops/ops';
-import {NamedTensorMap} from './types';
-import * as util from './util';
-
-export type WeightsManifestConfig = WeightsManifestGroupConfig[];
-export interface WeightsManifestGroupConfig {
-  paths: string[];
-  weights: WeightsManifestEntry[];
-}
-export interface WeightsManifestEntry {
-  name: string;
-  shape: number[];
-  dtype: 'float32'|'int32';
-}
-
-const DTYPE_VALUE_SIZE_MAP: {[dtype: string]: number} = {
-  'float32': 4,
-  'int32': 4
-};
+// tslint:disable:max-line-length
+import {tensor} from '../ops/ops';
+import {NamedTensorMap} from '../types';
+import * as util from '../util';
+import {DTYPE_VALUE_SIZE_MAP, WeightsManifestConfig, WeightsManifestEntry} from './types';
+// tslint:enable:max-line-length
 
 /**
  * Reads a weights manifest JSON configuration, fetches the weights and
@@ -52,14 +39,14 @@ export async function loadWeights(
   // single weight from a group, the whole group will be fetched. At a future
   // date, we should support fetching only the individual shards within a
   // group that are needed to reconstruct the requested weight.
+  // TODO(cais): Use `decodeWeights` for implementation.
 
   // Collect all the groups, weights, and their relative offsets to be
   // fetched.
   const groupIndicesToFetchMap = manifest.map(() => false);
   const groupWeightsToFetch: {
     [group: number]: Array<{
-      manifestEntry: WeightsManifestEntry;
-      groupOffset: number;
+      manifestEntry: WeightsManifestEntry; groupOffset: number;
       sizeBytes: number;
     }>
   } = {};
@@ -68,7 +55,11 @@ export async function loadWeights(
   manifest.forEach((manifestGroupConfig, groupIndex) => {
     let groupOffset = 0;
     manifestGroupConfig.weights.forEach(weightsEntry => {
-      const weightsBytes = DTYPE_VALUE_SIZE_MAP[weightsEntry.dtype] *
+      const rawDtype = ('quantization' in weightsEntry) ?
+          weightsEntry.quantization.dtype :
+          weightsEntry.dtype;
+
+      const weightsBytes = DTYPE_VALUE_SIZE_MAP[rawDtype] *
           util.sizeFromShape(weightsEntry.shape);
 
       const enqueueWeightsForFetchingFn = () => {
@@ -161,14 +152,41 @@ export async function loadWeights(
           weightsEntry.groupOffset + weightsEntry.sizeBytes);
 
       let typedArray: Float32Array|Int32Array;
-      if (weightsEntry.manifestEntry.dtype === 'float32') {
-        typedArray = new Float32Array(byteBuffer);
-      } else if (weightsEntry.manifestEntry.dtype === 'int32') {
-        typedArray = new Int32Array(byteBuffer);
+
+      const dtype = weightsEntry.manifestEntry.dtype;
+
+      if ('quantization' in weightsEntry.manifestEntry) {
+        const quantization = weightsEntry.manifestEntry.quantization;
+        if (quantization.dtype !== 'uint8' && quantization.dtype !== 'uint16') {
+          throw new Error(
+              `Weight ${weightsEntry.manifestEntry.name} has unknown ` +
+              `quantization dtype ${quantization.dtype}.`);
+        }
+        const quantizedArray = (quantization.dtype === 'uint8') ?
+            new Uint8Array(byteBuffer) :
+            new Uint16Array(byteBuffer);
+        if (dtype === 'float32') {
+          typedArray = Float32Array.from(
+              quantizedArray, v => v * quantization.scale + quantization.min);
+        } else if (dtype === 'int32') {
+          typedArray = Int32Array.from(
+              quantizedArray,
+              v => Math.round(v * quantization.scale + quantization.min));
+        } else {
+          throw new Error(
+              `Weight ${weightsEntry.manifestEntry.name} has a dtype not ` +
+              `supported by quantization: ${dtype}`);
+        }
       } else {
-        throw new Error(
-            `Weight ${weightsEntry.manifestEntry.name} has unknown dtype ` +
-            `${weightsEntry.manifestEntry.dtype}.`);
+        if (dtype === 'float32') {
+          typedArray = new Float32Array(byteBuffer);
+        } else if (dtype === 'int32') {
+          typedArray = new Int32Array(byteBuffer);
+        } else {
+          throw new Error(
+              `Weight ${weightsEntry.manifestEntry.name} has unknown dtype ` +
+              `${dtype}.`);
+        }
       }
 
       const weightName = weightsEntry.manifestEntry.name;

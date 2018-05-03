@@ -238,6 +238,14 @@ export class Environment {
   }
 
   /**
+   * Dispose all variables kept in backend engine.
+   */
+  @doc({heading: 'Environment'})
+  static disposeVariables(): void {
+    ENV.engine.disposeVariables();
+  }
+
+  /**
    * Returns memory info at the current time in the program. The result is an
    * object with the following properties:
    *
@@ -351,7 +359,7 @@ export class Environment {
   /**
    * Registers a global backend. The registration should happen when importing
    * a module file (e.g. when importing `backend_webgl.ts`), and is used for
-   * modular builds (e.g. custom deeplearn.js bundle with only webgl support).
+   * modular builds (e.g. custom tfjs bundle with only webgl support).
    *
    * @param factory: The backend factory function. When called, it should
    * return an instance of the backend.
@@ -400,7 +408,7 @@ const TENSORFLOWJS_FLAGS_PREFIX = 'tfjsflags';
 function getFeaturesFromURL(): Features {
   const features: Features = {};
 
-  if (typeof window === 'undefined') {
+  if (typeof window === 'undefined' || typeof window.location === 'undefined') {
     return features;
   }
 
