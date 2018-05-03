@@ -203,7 +203,7 @@ export class BrowserFiles implements IOHandler {
             `Keras-style tf.Model artifacts only.`);
         return;
       };
-      jsonReader.readAsText(this.files[0]);
+      jsonReader.readAsText(jsonFile);
     });
   }
 
