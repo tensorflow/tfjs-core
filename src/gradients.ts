@@ -91,7 +91,6 @@ export class Gradients {
             'The shape of dy passed in grad(f)(x, dy) must match the shape ' +
                 'returned by f(x)');
       }
-      value.dispose();
       checkGrads(grads);
       return grads[0] as I;
     };
@@ -143,7 +142,6 @@ export class Gradients {
             'The shape of dy passed in grads(f)([x1,...], dy) must match the ' +
                 'shape returned by f([x1,...])');
       }
-      value.dispose();
       checkGrads(grads);
       return grads;
     };
