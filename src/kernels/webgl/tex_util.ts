@@ -79,51 +79,51 @@ export const FLOAT_MAX = 20000;
 export const FLOAT_MIN = -FLOAT_MAX;
 const FLOAT_RANGE = (FLOAT_MAX - FLOAT_MIN) / 255;
 
-const FLOAT_DELTAS = [1, 1 / 255, 1 / (255 * 255), 1 / (255 * 255 * 255)];
-const FLOAT_POWERS = [1, 255, 255 * 255];
-
 export const BYTE_NAN_VALUE = 0;
 export function encodeFloatArray(floatArray: Float32Array): Uint8Array {
   const uintArray = new Uint8Array(floatArray.length * 4);
-  for (let i = 0; i < uintArray.length; i += 4) {
-    const value = floatArray[i / 4];
+  const pow1 = 255.0, pow2 = pow1 * 255.0;
+  for (let i = 0, normalised, value; i < uintArray.length; i += 4) {
+    value = floatArray[i / 4];
+
     if (isNaN(value)) {
       uintArray[i] = BYTE_NAN_VALUE;
       uintArray[i + 1] = BYTE_NAN_VALUE;
       uintArray[i + 2] = BYTE_NAN_VALUE;
       uintArray[i + 3] = BYTE_NAN_VALUE;
-      continue;
+      continue ;
     }
 
-    const normalizedValue = (value - FLOAT_MIN) / FLOAT_RANGE;
-    const enc = FLOAT_POWERS.map(pow => pow * normalizedValue);
-    const buckets = enc.map(value => Math.floor((value % 1) * 255));
+    normalised = (value - FLOAT_MIN) / FLOAT_RANGE;
 
-    uintArray[i] = Math.floor(normalizedValue);
-    uintArray[i + 1] = buckets[0];
-    uintArray[i + 2] = buckets[1];
-    uintArray[i + 3] = buckets[2];
+    uintArray[i] = Math.floor(normalised);
+    uintArray[i + 1] = Math.floor((normalised % 1) * 255.0);
+    uintArray[i + 2] = Math.floor(((normalised * pow1) % 1) * 255.0);
+    uintArray[i + 3] = Math.floor(((normalised * pow2) % 1) * 255.0);
   }
   return uintArray;
 }
 
 export function decodeToFloatArray(uintArray: Uint8Array): Float32Array {
   const floatArray = new Float32Array(uintArray.length / 4);
-  for (let i = 0; i < uintArray.length; i += 4) {
+  const div1 = 255.0, div2 = 255.0 * div1, div3 = 255.0 * div2;
+
+  for (let i = 0, dot = 0; i < uintArray.length; i += 4) {
     if (uintArray[i] === BYTE_NAN_VALUE &&
         uintArray[i + 1] === BYTE_NAN_VALUE &&
         uintArray[i + 2] === BYTE_NAN_VALUE &&
         uintArray[i + 3] === BYTE_NAN_VALUE) {
       floatArray[i / 4] = NaN;
-      continue;
+      continue ;
     }
 
-    let dot = 0;
-    FLOAT_DELTAS.forEach((delta, j) => {
-      dot += delta * uintArray[i + j];
-    });
-    const value = dot * FLOAT_RANGE + FLOAT_MIN;
-    floatArray[i / 4] = value;
+    dot = 0;
+    dot += uintArray[i];
+    dot += uintArray[i + 1] / div1;
+    dot += uintArray[i + 2] / div2;
+    dot += uintArray[i + 3] / div3;
+
+    floatArray[i / 4] = dot * FLOAT_RANGE + FLOAT_MIN;
   }
   return floatArray;
 }
