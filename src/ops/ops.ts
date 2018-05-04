@@ -84,6 +84,7 @@ export const mean = ReductionOps.mean;
 export const min = ReductionOps.min;
 export const moments = ReductionOps.moments;
 export const sum = ReductionOps.sum;
+export const unsortedSegmentSum = ReductionOps.unsortedSegmentSum;
 
 export const equal = CompareOps.equal;
 export const equalStrict = CompareOps.equalStrict;
@@ -197,7 +198,6 @@ export const print = ArrayOps.print;
 export const expandDims = ArrayOps.expandDims;
 export const stack = ArrayOps.stack;
 export const split = ArrayOps.split;
-export const unsortedSegmentSum = ArrayOps.unsortedSegmentSum;
 
 export const pad = ArrayOps.pad;
 export const pad1d = ArrayOps.pad1d;
