@@ -1098,9 +1098,8 @@ describe('tensor.toString', () => {
     // f''(x) = 6x
     const gg = tf.grad(g);
     const x = tf.tensor1d([2, 3]);
-    const data = gg(x).dataSync();
+    const data = gg(x);
 
-    expect(data[0]).toEqual(12);
-    expectNumbersClose(data[1], 18);
+    expectArraysClose(data, [12, 18]);
   });
 });
