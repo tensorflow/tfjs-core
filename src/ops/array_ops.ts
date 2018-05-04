@@ -1088,6 +1088,38 @@ export class ArrayOps {
     return ConcatOps.concat(expandedTensors, axis);
   }
 
+  static unstack<T extends Tensor>(
+      value: T, num: number = null, axis = 0): Tensor[] {
+    if (num === null) {
+      // Default num is the length of dimension axis.
+      num = value.shape[axis];
+    }
+    util.assert(
+        value.shape[axis] === num,
+        'Number of splits must be equal to the axis.');
+
+    const outputShape: number[]
+        = Array(value.rank - 1).fill(0);
+    let outIndex = 0;
+    for (let i = 0; i < value.rank; i++) {
+      if (i !== axis) {
+        outputShape[outIndex] = value.shape[i];
+        outIndex++;
+      }
+    }
+
+    let splitSizes: number[];
+    splitSizes = Array(num).fill(1);
+    const begin = Array(value.rank).fill(0);
+    const size = value.shape.slice();
+    return splitSizes.map(s => {
+      size[axis] = s;
+      const slice = value.slice(begin, size);
+      begin[axis] += s;
+      return slice.reshape(outputShape);
+    });
+  }
+
   /**
    * Splits a `Tensor` into sub tensors.
    *
