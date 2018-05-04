@@ -84,15 +84,17 @@ export class Gradients {
       util.assert(
           dy == null || dy instanceof Tensor,
           'The dy passed in grad(f)(x, dy) must be a tensor');
-      const {value, grads} = ENV.engine.gradients(() => f(x), [x], dy);
-      if (dy != null) {
-        util.assertShapesMatch(
-            value.shape, dy.shape,
-            'The shape of dy passed in grad(f)(x, dy) must match the shape ' +
-                'returned by f(x)');
-      }
-      checkGrads(grads);
-      return grads[0] as I;
+      return tidy(() => {
+        const {value, grads} = ENV.engine.gradients(() => f(x), [x], dy);
+        if (dy != null) {
+          util.assertShapesMatch(
+              value.shape, dy.shape,
+              'The shape of dy passed in grad(f)(x, dy) must match the shape ' +
+              'returned by f(x)');
+        }
+        checkGrads(grads);
+        return grads[0] as I;
+      });
     };
   }
 
@@ -135,15 +137,17 @@ export class Gradients {
       util.assert(
           dy == null || dy instanceof Tensor,
           'The dy passed in grads(f)(args, dy) must be a tensor');
-      const {value, grads} = ENV.engine.gradients(() => f(...args), args, dy);
-      if (dy != null) {
-        util.assertShapesMatch(
-            value.shape, dy.shape,
-            'The shape of dy passed in grads(f)([x1,...], dy) must match the ' +
-                'shape returned by f([x1,...])');
-      }
-      checkGrads(grads);
-      return grads;
+      return tidy(() => {
+        const {value, grads} = ENV.engine.gradients(() => f(...args), args, dy);
+        if (dy != null) {
+          util.assertShapesMatch(
+              value.shape, dy.shape,
+              'The shape of dy passed in grads(f)([x1,...], dy) must ' +
+              'match the shape returned by f([x1,...])');
+        }
+        checkGrads(grads);
+        return grads;
+      });
     };
   }
 
