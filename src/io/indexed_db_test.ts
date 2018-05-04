@@ -88,12 +88,16 @@ describe('IndexedDB', () => {
     }
   ];
 
-  beforeEach(() => {
-    deleteDatabase();
+  beforeEach(done => {
+    deleteDatabase().then(() => {
+      done();
+    });
   });
 
-  afterEach(() => {
-    deleteDatabase();
+  afterEach(done => {
+    deleteDatabase().then(() => {
+      done();
+    });
   });
 
   it('Save-load round trip', async done => {
