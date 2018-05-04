@@ -148,6 +148,9 @@ export class ArrayOps {
   static tensor2d(
       values: TensorLike2D, shape?: [number, number],
       dtype: DataType = 'float32'): Tensor2D {
+    if (shape != null && shape.length !== 2) {
+      throw new Error('tensor2d() requires shape to have two numbers');
+    }
     const inferredShape = util.inferShape(values);
     if (inferredShape.length !== 2 && inferredShape.length !== 1) {
       throw new Error(
@@ -187,6 +190,9 @@ export class ArrayOps {
   static tensor3d(
       values: TensorLike3D, shape?: [number, number, number],
       dtype: DataType = 'float32'): Tensor3D {
+    if (shape != null && shape.length !== 3) {
+      throw new Error('tensor3d() requires shape to have three numbers');
+    }
     const inferredShape = util.inferShape(values);
     if (inferredShape.length !== 3 && inferredShape.length !== 1) {
       throw new Error(
@@ -226,6 +232,9 @@ export class ArrayOps {
   static tensor4d(
       values: TensorLike4D, shape?: [number, number, number, number],
       dtype: DataType = 'float32'): Tensor4D {
+    if (shape != null && shape.length !== 4) {
+      throw new Error('tensor4d() requires shape to have four numbers');
+    }
     const inferredShape = util.inferShape(values);
     if (inferredShape.length !== 4 && inferredShape.length !== 1) {
       throw new Error(
@@ -538,7 +547,7 @@ export class ArrayOps {
    * `offValue` (defaults to 0).
    *
    * ```js
-   * tf.oneHot(tf.tensor1d([0, 1]), 3).print();
+   * tf.oneHot(tf.tensor1d([0, 1], 'int32'), 3).print();
    * ```
    *
    * @param indices `Tensor1D` of indices with dtype `int32`.
@@ -859,14 +868,14 @@ export class ArrayOps {
    *
    * ```js
    * const x = tf.tensor1d([1, 2, 3, 4]);
-   * const indices = tf.tensor1d([1, 3, 3]);
+   * const indices = tf.tensor1d([1, 3, 3], 'int32');
    *
    * x.gather(indices).print();
    * ```
    *
    * ```js
    * const x = tf.tensor2d([1, 2, 3, 4], [2, 2]);
-   * const indices = tf.tensor1d([1, 1, 0]);
+   * const indices = tf.tensor1d([1, 1, 0], 'int32');
    *
    * x.gather(indices).print();
    * ```

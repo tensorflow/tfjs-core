@@ -224,9 +224,11 @@ import {Rank} from '../types';
 [Reduction];
 
 export const losses = {
-  softmaxCrossEntropy: SoftmaxOps.softmaxCrossEntropy,
   absoluteDifference: LossOps.absoluteDifference,
-  computeWeightedLoss: LossOps.computeWeightedLoss
+  computeWeightedLoss: LossOps.computeWeightedLoss,
+  cosineDistance: LossOps.cosineDistance,
+  meanSquaredError: LossOps.meanSquaredError,
+  softmaxCrossEntropy: SoftmaxOps.softmaxCrossEntropy
 };
 
 export const image = {
