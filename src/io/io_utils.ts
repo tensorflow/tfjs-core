@@ -143,3 +143,79 @@ export function concatenateTypedArrays(xs: TypedArray[]): ArrayBuffer {
 
   return y.buffer;
 }
+
+/**
+ * Calculate the byte length of a JavaScript string.
+ *
+ * Note that a JavaScript string can contain wide characters, therefore the
+ * length of the string is not necessarily equal to the byte length.
+ *
+ * @param str Input string.
+ * @returns Byte length.
+ */
+export function stringByteLength(str: string): number {
+  return new Blob([str]).size;
+}
+
+/**
+ * Encode an ArrayBuffer as a base64 encoded string.
+ *
+ * @param buffer `ArrayBuffer` to be converted.
+ * @returns A string that base64-encodes `buffer`.
+ */
+export function arrayBufferToBase64String(buffer: ArrayBuffer): string {
+  return btoa(String.fromCharCode.apply(null, new Uint8Array(buffer)));
+}
+
+/**
+ * Decode a base64 string as an ArrayBuffer.
+ *
+ * @param str Base64 string.
+ * @returns Decoded `ArrayBuffer`.
+ */
+export function base64StringToArrayBuffer(str: string): ArrayBuffer {
+  const s = atob(str);
+  const buffer = new Uint8Array(s.length);
+  for (let i = 0; i < s.length; ++i) {
+    buffer.set([s.charCodeAt(i)], i);
+  }
+  return buffer.buffer;
+}
+
+/**
+ * Concatenate a number of ArrayBuffers into one.
+ *
+ * @param buffers A number of array buffers to concatenate.
+ * @returns Result of concatenating `buffers` in order.
+ */
+export function concatenateArrayBuffers(buffers: ArrayBuffer[]): ArrayBuffer {
+  let totalByteLength = 0;
+  buffers.forEach(buffer => {
+    totalByteLength += buffer.byteLength;
+  });
+
+  const temp = new Uint8Array(totalByteLength);
+  let offset = 0;
+  buffers.forEach(buffer => {
+    temp.set(new Uint8Array(buffer), offset);
+    offset += buffer.byteLength;
+  });
+  return temp.buffer;
+}
+
+/**
+ * Get the basename of a path.
+ *
+ * Behaves in a way analogous to Linux's basename command.
+ *
+ * @param path
+ */
+export function basename(path: string): string {
+  const SEPARATOR = '/';
+  path = path.trim();
+  while (path.endsWith(SEPARATOR)) {
+    path = path.slice(0, path.length - 1);
+  }
+  const items = path.split(SEPARATOR);
+  return items[items.length - 1];
+}
