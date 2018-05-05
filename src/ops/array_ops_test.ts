@@ -2262,6 +2262,21 @@ describeWithFlags('unstack', ALL_ENVS, () => {
     expectArraysClose(res[1], [5, 6, 7, 8]);
   });
 
+  it('unstack into 3 tensors', () => {
+    const x = tf.tensor2d([1, 2, 3, 4, 5, 6], [3, 2]);
+    const res = tf.unstack(x, 3, 0);
+    expect(res.length).toEqual(3);
+    expect(res[0].rank).toEqual(1);
+    expect(res[0].shape).toEqual([2]);
+    expectArraysClose(res[0], [1, 2]);
+    expect(res[1].rank).toEqual(1);
+    expect(res[1].shape).toEqual([2]);
+    expectArraysClose(res[1], [3, 4]);
+    expect(res[2].rank).toEqual(1);
+    expect(res[2].shape).toEqual([2]);
+    expectArraysClose(res[2], [5, 6]);
+  });
+
   it('unstack by axis=1', () => {
     const x = tf.tensor2d([1, 2, 3, 4, 5, 6, 7, 8], [2, 4]);
     const res = tf.unstack(x, 4, 1);
@@ -2269,8 +2284,14 @@ describeWithFlags('unstack', ALL_ENVS, () => {
     expect(res[0].rank).toEqual(1);
     expect(res[0].shape).toEqual([2]);
     expectArraysClose(res[0], [1, 5]);
+    expect(res[1].rank).toEqual(1);
+    expect(res[1].shape).toEqual([2]);
     expectArraysClose(res[1], [2, 6]);
+    expect(res[2].rank).toEqual(1);
+    expect(res[2].shape).toEqual([2]);
     expectArraysClose(res[2], [3, 7]);
+    expect(res[3].rank).toEqual(1);
+    expect(res[3].shape).toEqual([2]);
     expectArraysClose(res[3], [4, 8]);
   });
 
@@ -2281,6 +2302,8 @@ describeWithFlags('unstack', ALL_ENVS, () => {
     expect(res[0].rank).toEqual(2);
     expect(res[0].shape).toEqual([2, 2]);
     expectArraysClose(res[0], [1, 2, 3, 4]);
+    expect(res[1].rank).toEqual(2);
+    expect(res[1].shape).toEqual([2, 2]);
     expectArraysClose(res[1], [5, 6, 7, 8]);
   });
 
@@ -2291,6 +2314,8 @@ describeWithFlags('unstack', ALL_ENVS, () => {
     expect(res[0].rank).toEqual(2);
     expect(res[0].shape).toEqual([2, 2]);
     expectArraysClose(res[0], [1, 2, 5, 6]);
+    expect(res[1].rank).toEqual(2);
+    expect(res[1].shape).toEqual([2, 2]);
     expectArraysClose(res[1], [3, 4, 7, 8]);
   });
 
@@ -2301,6 +2326,8 @@ describeWithFlags('unstack', ALL_ENVS, () => {
     expect(res[0].rank).toEqual(2);
     expect(res[0].shape).toEqual([2, 2]);
     expectArraysClose(res[0], [1, 3, 5, 7]);
+    expect(res[1].rank).toEqual(2);
+    expect(res[1].shape).toEqual([2, 2]);
     expectArraysClose(res[1], [2, 4, 6, 8]);
   });
 
@@ -2311,6 +2338,8 @@ describeWithFlags('unstack', ALL_ENVS, () => {
     expect(res[0].rank).toEqual(3);
     expect(res[0].shape).toEqual([2, 2, 1]);
     expectArraysClose(res[0], [1, 2, 3, 4]);
+    expect(res[1].rank).toEqual(3);
+    expect(res[1].shape).toEqual([2, 2, 1]);
     expectArraysClose(res[1], [5, 6, 7, 8]);
   });
 
@@ -2321,6 +2350,8 @@ describeWithFlags('unstack', ALL_ENVS, () => {
     expect(res[0].rank).toEqual(3);
     expect(res[0].shape).toEqual([2, 2, 1]);
     expectArraysClose(res[0], [1, 2, 5, 6]);
+    expect(res[1].rank).toEqual(3);
+    expect(res[1].shape).toEqual([2, 2, 1]);
     expectArraysClose(res[1], [3, 4, 7, 8]);
   });
 
@@ -2331,6 +2362,8 @@ describeWithFlags('unstack', ALL_ENVS, () => {
     expect(res[0].rank).toEqual(3);
     expect(res[0].shape).toEqual([2, 2, 1]);
     expectArraysClose(res[0], [1, 3, 5, 7]);
+    expect(res[1].rank).toEqual(3);
+    expect(res[1].shape).toEqual([2, 2, 1]);
     expectArraysClose(res[1], [2, 4, 6, 8]);
   });
 
