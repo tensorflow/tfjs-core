@@ -16,10 +16,11 @@
  */
 
 import * as tf from '../index';
+import {describeWithFlags} from '../jasmine_util';
 // tslint:disable-next-line:max-line-length
 import {ALL_ENVS, expectArraysClose, expectArraysEqual, expectPromiseToFail, expectValuesInRange, WEBGL_ENVS} from '../test_util';
-import {describeWithFlags} from '../jasmine_util';
 import * as util from '../util';
+
 import {expectArrayInMeanStdRange, jarqueBeraNormalityTest} from './rand_util';
 
 describeWithFlags('zeros', ALL_ENVS, () => {
@@ -677,6 +678,24 @@ describeWithFlags('randomNormal', ALL_ENVS, () => {
     expectArrayInMeanStdRange(result, 0, 3.5, EPSILON);
   });
 
+  it('should return a float32 2D of values from differents normal distribution',
+     () => {
+       const SAMPLE = 10000;
+       const SAMPLES_SHAPE = [SAMPLE];
+       const means = tf.tensor1d([0., 10.]);
+       const stds = tf.tensor1d([1.5, 0.5]);
+
+       const result = tf.randomNormal(SAMPLES_SHAPE, means, stds, null, SEED);
+       expect(result.dtype).toBe('float32');
+       expect(result.shape).toEqual(SAMPLES_SHAPE.concat(means.shape));
+       const firstDistribution = result.slice([0, 0], [SAMPLE, 1]);
+       const secondDistribution = result.slice([0, 1], [SAMPLE, 1]);
+       jarqueBeraNormalityTest(firstDistribution);
+       jarqueBeraNormalityTest(secondDistribution);
+       expectArrayInMeanStdRange(firstDistribution, 0, 1.5, EPSILON);
+       expectArrayInMeanStdRange(secondDistribution, 10, 0.5, EPSILON);
+     });
+
   it('should return a int32 2D of random normal values', () => {
     const SAMPLES = 100;
     const result = tf.randomNormal([SAMPLES, SAMPLES], 0, 2, 'int32', SEED);
@@ -685,6 +704,26 @@ describeWithFlags('randomNormal', ALL_ENVS, () => {
     jarqueBeraNormalityTest(result);
     expectArrayInMeanStdRange(result, 0, 2, EPSILON);
   });
+
+  it('should return a int32 2D of values from differents normal distribution',
+     () => {
+       const SAMPLE = 10000;
+       const SAMPLES_SHAPE = [SAMPLE];
+       const means = tf.tensor1d([0., 1.]);
+       const stds = tf.tensor1d([1., 2.]);
+
+       // Ensure defaults to float32.
+       const result =
+           tf.randomNormal(SAMPLES_SHAPE, means, stds, 'float32', SEED);
+       expect(result.dtype).toBe('float32');
+       expect(result.shape).toEqual(SAMPLES_SHAPE.concat(means.shape));
+       const firstDistribution = result.slice([0, 0], [SAMPLE, 1]);
+       const secondDistribution = result.slice([0, 1], [SAMPLE, 1]);
+       jarqueBeraNormalityTest(firstDistribution);
+       jarqueBeraNormalityTest(secondDistribution);
+       expectArrayInMeanStdRange(firstDistribution, 0, 1, EPSILON);
+       expectArrayInMeanStdRange(secondDistribution, 1, 2, EPSILON);
+     });
 
   it('should return a float32 3D of random normal values', () => {
     const SAMPLES_SHAPE = [20, 20, 20];
@@ -702,6 +741,30 @@ describeWithFlags('randomNormal', ALL_ENVS, () => {
     jarqueBeraNormalityTest(result);
     expectArrayInMeanStdRange(result, 0, 1.5, EPSILON);
   });
+
+  it('should return a float32 3D of values from differents normal distribution',
+     () => {
+       const SAMPLE = 1000;
+       const SAMPLES_SHAPE = [SAMPLE];
+       const means = tf.tensor2d([[0., 10.], [-5, -10]]);
+       const stds = tf.tensor2d(([[0.5, 0.5], [0.5, 0.5]]));
+
+       const result = tf.randomNormal(SAMPLES_SHAPE, means, stds, null, SEED);
+       expect(result.dtype).toBe('float32');
+       expect(result.shape).toEqual(SAMPLES_SHAPE.concat(means.shape));
+       const firstDistribution = result.slice([0, 0, 0], [SAMPLE, 1, 1]);
+       const secondDistribution = result.slice([0, 0, 1], [SAMPLE, 1, 1]);
+       const thirdDistribution = result.slice([0, 1, 0], [SAMPLE, 1, 1]);
+       const fourthDistribution = result.slice([0, 1, 1], [SAMPLE, 1, 1]);
+       jarqueBeraNormalityTest(firstDistribution);
+       jarqueBeraNormalityTest(secondDistribution);
+       jarqueBeraNormalityTest(thirdDistribution);
+       jarqueBeraNormalityTest(fourthDistribution);
+       expectArrayInMeanStdRange(firstDistribution, 0, 0.5, EPSILON);
+       expectArrayInMeanStdRange(secondDistribution, 10, 0.5, EPSILON);
+       expectArrayInMeanStdRange(thirdDistribution, -5, 0.5, EPSILON);
+       expectArrayInMeanStdRange(fourthDistribution, -10, 0.5, EPSILON);
+     });
 
   it('should return a int32 3D of random normal values', () => {
     const SAMPLES_SHAPE = [20, 20, 20];
@@ -791,6 +854,25 @@ describeWithFlags('truncatedNormal', ALL_ENVS, () => {
     expectArrayInMeanStdRange(result, 0, 4.5, EPSILON);
   });
 
+  it('should return a 2D float32 array with differents truncated distribution',
+     () => {
+       const SAMPLE = 1000;
+       const SAMPLES_SHAPE = [SAMPLE];
+       const means = tf.tensor1d([0., 10.]);
+       const stds = tf.tensor1d([1., 0.5]);
+
+       const result =
+           tf.truncatedNormal(SAMPLES_SHAPE, means, stds, null, SEED);
+       expect(result.dtype).toBe('float32');
+       expect(result.shape).toEqual(SAMPLES_SHAPE.concat(means.shape));
+       const firstDistribution = result.slice([0, 0], [SAMPLE, 1]);
+       const secondDistribution = result.slice([0, 1], [SAMPLE, 1]);
+       assertTruncatedValues(firstDistribution, 0, 1.0);
+       assertTruncatedValues(secondDistribution, 10, 0.5);
+       expectArrayInMeanStdRange(firstDistribution, 0, 1.0, EPSILON);
+       expectArrayInMeanStdRange(secondDistribution, 10, 0.5, EPSILON);
+     });
+
   it('should return a 2D int32 array', () => {
     const shape: [number, number] = [50, 50];
     const result = tf.truncatedNormal(shape, 0, 5, 'int32', SEED);
@@ -813,6 +895,31 @@ describeWithFlags('truncatedNormal', ALL_ENVS, () => {
     assertTruncatedValues(result, 0, 4.5);
     expectArrayInMeanStdRange(result, 0, 4.5, EPSILON);
   });
+
+  it('should return a 3D float32 array with differents truncated distribution',
+     () => {
+       const SAMPLE = 1000;
+       const SAMPLES_SHAPE = [SAMPLE];
+       const means = tf.tensor2d([[0., 10.], [5, 15]]);
+       const stds = tf.tensor2d(([[0.5, 0.5], [0.5, 0.5]]));
+
+       const result =
+           tf.truncatedNormal(SAMPLES_SHAPE, means, stds, null, SEED);
+       expect(result.dtype).toBe('float32');
+       expect(result.shape).toEqual(SAMPLES_SHAPE.concat(means.shape));
+       const firstDistribution = result.slice([0, 0, 0], [SAMPLE, 1, 1]);
+       const secondDistribution = result.slice([0, 0, 1], [SAMPLE, 1, 1]);
+       const thirdDistribution = result.slice([0, 1, 0], [SAMPLE, 1, 1]);
+       const fourthDistribution = result.slice([0, 1, 1], [SAMPLE, 1, 1]);
+       assertTruncatedValues(firstDistribution, 0, 0.5);
+       assertTruncatedValues(secondDistribution, 10, 0.5);
+       assertTruncatedValues(thirdDistribution, 5, 0.5);
+       assertTruncatedValues(fourthDistribution, 15, 0.5);
+       expectArrayInMeanStdRange(firstDistribution, 0, 0.5, EPSILON);
+       expectArrayInMeanStdRange(secondDistribution, 10, 0.5, EPSILON);
+       expectArrayInMeanStdRange(thirdDistribution, 5, 0.5, EPSILON);
+       expectArrayInMeanStdRange(fourthDistribution, 15, 0.5, EPSILON);
+     });
 
   it('should return a 3D int32 array', () => {
     const shape: [number, number, number] = [10, 10, 10];

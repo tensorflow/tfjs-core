@@ -59,8 +59,8 @@ export class MPRandGauss<R extends Rank> {
     }
     this.mean = mean;
     this.stdDev = stdDeviation;
-    this.meanValues = mean.buffer().values;
-    this.stdDevValues = stdDeviation.buffer().values;
+    this.meanValues = mean.dataSync();
+    this.stdDevValues = stdDeviation.dataSync();
     this.shape = mean.shape;
     this.dtype = dtype;
     this.nextVal = null;
@@ -125,7 +125,7 @@ export class MPRandGauss<R extends Rank> {
     if (this.dtype == null || this.dtype === 'float32') {
       return value;
     }
-    return value.toInt();
+    return value.round().toInt();
   }
 
   /** Returns true if less than 2-standard-deviations from the mean. */

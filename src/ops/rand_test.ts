@@ -15,46 +15,39 @@
  * =============================================================================
  */
 
+import {describeWithFlags} from '../jasmine_util';
+import {ALL_ENVS} from '../test_util';
 import {MPRandGauss} from './rand';
 import {expectArrayInMeanStdRange, jarqueBeraNormalityTest} from './rand_util';
 
-function isFloat(n: number): boolean {
-  return Number(n) === n && n % 1 !== 0;
-}
-
-describe('MPRandGauss', () => {
+describeWithFlags('MPRandGauss', ALL_ENVS, () => {
   const EPSILON = 0.05;
   const SEED = 2002;
 
   it('should default to float32 numbers', () => {
     const rand = new MPRandGauss(0, 1.5);
-    expect(isFloat(rand.nextValue())).toBe(true);
+    const rel = rand.sample([1]);
+    expect(rel.dtype).toBe('float32');
   });
 
   it('should handle create a mean/stdv of float32 numbers', () => {
     const rand =
-        new MPRandGauss(0, 1.5, 'float32', false /* truncated */, SEED);
-    const values = [];
-    const size = 10000;
-    for (let i = 0; i < size; i++) {
-      values.push(rand.nextValue());
-    }
-    expectArrayInMeanStdRange(values, 0, 1.5, EPSILON);
+        new MPRandGauss(0, 0.5, 'float32', false /* truncated */, SEED);
+    const size = 1000;
+    const values = rand.sample([size]);
+    expectArrayInMeanStdRange(values, 0, 0.5, EPSILON);
     jarqueBeraNormalityTest(values);
   });
 
   it('should handle int32 numbers', () => {
     const rand = new MPRandGauss(0, 1, 'int32');
-    expect(isFloat(rand.nextValue())).toBe(false);
+    expect(rand.sample([1]).dtype).toBe('int32');
   });
 
   it('should handle create a mean/stdv of int32 numbers', () => {
     const rand = new MPRandGauss(0, 2, 'int32', false /* truncated */, SEED);
-    const values = [];
     const size = 10000;
-    for (let i = 0; i < size; i++) {
-      values.push(rand.nextValue());
-    }
+    const values = rand.sample([size]);
     expectArrayInMeanStdRange(values, 0, 2, EPSILON);
     jarqueBeraNormalityTest(values);
   });
@@ -63,8 +56,9 @@ describe('MPRandGauss', () => {
      () => {
        const stdv = 1.5;
        const rand = new MPRandGauss(0, stdv, 'float32', true /* truncated */);
-       for (let i = 0; i < 1000; i++) {
-         expect(Math.abs(rand.nextValue())).toBeLessThan(stdv * 2);
+       const values = rand.sample([1000]).dataSync();
+       for (let i = 0; i < values.length; i++) {
+         expect(Math.abs(values[i])).toBeLessThan(stdv * 2);
        }
      });
 });

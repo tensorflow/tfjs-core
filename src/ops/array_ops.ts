@@ -381,17 +381,16 @@ export class ArrayOps {
    * ```
    *
    * @param shape An array of integers defining the output tensor shape.
-   * @param mean The mean of the normal distribution.
-   * @param stdDev The standard deviation of the normal distribution.
+   * @param mean The mean(s) of the normal distribution.
+   * @param stdDev The standard(s) deviation of the normal distribution.
    * @param dtype The data type of the output.
    * @param seed The seed for the random number generator.
    */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   @operation
   static randomNormal<R extends Rank>(
-      shape: ShapeMap[R], mean: number|Tensor<R> = 0,
-      stdDev: number|Tensor<R> = 1, dtype?: 'float32'|'int32',
-      seed?: number): Tensor<R> {
+      shape: number[], mean: Tensor<R>|number = 0, stdDev: Tensor<R>|number = 1,
+      dtype?: 'float32'|'int32', seed?: number): Tensor<R> {
     if (dtype != null && (dtype as DataType) === 'bool') {
       throw new Error(`Unsupported data type ${dtype}`);
     }
@@ -417,17 +416,16 @@ export class ArrayOps {
    * standard deviations from the mean are dropped and re-picked.
    *
    * @param shape An array of integers defining the output tensor shape.
-   * @param mean The mean of the normal distribution.
-   * @param stdDev The standard deviation of the normal distribution.
+   * @param mean The mean(s) of the normal distribution.
+   * @param stdDev The standard deviation(s) of the normal distribution.
    * @param dtype The data type of the output tensor.
    * @param seed The seed for the random number generator.
    */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   @operation
   static truncatedNormal<R extends Rank>(
-      shape: ShapeMap[R], mean: number|Tensor<R> = 0,
-      stdDev: number|Tensor<R> = 1, dtype?: 'float32'|'int32',
-      seed?: number): Tensor<R> {
+      shape: number[], mean: number|Tensor<R> = 0, stdDev: number|Tensor<R> = 1,
+      dtype?: 'float32'|'int32', seed?: number): Tensor<R> {
     if (dtype != null && (dtype as DataType) === 'bool') {
       throw new Error(`Unsupported data type ${dtype}`);
     }
