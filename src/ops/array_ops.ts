@@ -1028,6 +1028,20 @@ export class ArrayOps {
     return ConcatOps.concat(expandedTensors, axis);
   }
 
+  /**
+   * Unstacks a `Tensor` of rank-`R` into a list of rank-`(R-1)` `Tensor`s.
+   *
+   * ```js
+   * const a = tf.tensor2d([1, 2, 3, 4], [2, 2]);
+   * tf.unstack(a).print();
+   * ```
+   *
+   * @param value A tensor object.
+   * @param num The number of unstacked tensors.
+   * @param axis The axis to unstack along. Defaults to 0 (the first dim).
+   */
+  @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
+  @operation
   static unstack<T extends Tensor>(
       value: T, num: number = null, axis = 0): Tensor[] {
     if (num === null) {
