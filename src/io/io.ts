@@ -25,8 +25,8 @@ import {loadWeights} from './weights_loader';
 
 export {
   browserDownloads,
-  browserIndexedDB,
   browserFiles,
+  browserIndexedDB,
   browserLocalStorage,
   decodeWeights,
   encodeWeights,

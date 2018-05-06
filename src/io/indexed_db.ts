@@ -32,12 +32,8 @@ export async function deleteDatabase(): Promise<void> {
 
   return new Promise<void>((resolve, reject) => {
     const deleteRequest = idbFactory.deleteDatabase(DATABASE_NAME);
-    deleteRequest.onsuccess = () => {
-      resolve();
-    };
-    deleteRequest.onerror = (error) => {
-      reject();
-    };
+    deleteRequest.onsuccess = () => resolve();
+    deleteRequest.onerror = (error) => reject(error);
   });
 }
 
@@ -52,11 +48,21 @@ function getIndexedDBFactory(): IDBFactory {
   }
   // tslint:disable-next-line:no-any
   const theWindow: any = window;
-  return theWindow.indexedDB || theWindow.mozIndexedDB ||
+  const factory = theWindow.indexedDB || theWindow.mozIndexedDB ||
       theWindow.webkitIndexedDB || theWindow.msIndexedDB ||
       theWindow.shimIndexedDB;
+  if (factory == null) {
+    throw new Error(
+        'The current browser does not appear to support IndexedDB.');
+  }
+  return factory;
 }
 
+/**
+ * IOHandler subclass: Browser IndexedDB.
+ *
+ * See the doc string of `browserIndexedDB` for more details.
+ */
 export class BrowserIndexedDB implements IOHandler {
   protected readonly indexedDB: IDBFactory;
   protected readonly modelPath: string;
