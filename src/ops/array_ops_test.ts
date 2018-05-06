@@ -514,6 +514,46 @@ describeWithFlags('onesLike', ALL_ENVS, () => {
     expectArraysEqual(b, [1, 1, 1, 1]);
   });
 
+  it('4D default dtype', () => {
+    const a = tf.tensor4d([1, 2, 3, 4], [2, 2, 1, 1]);
+    const b = tf.onesLike(a);
+    expect(b.dtype).toBe('float32');
+    expect(b.shape).toEqual([2, 2, 1, 1]);
+    expectArraysClose(b, [1, 1, 1, 1]);
+  });
+
+  it('5D float32 dtype', () => {
+    const a = tf.tensor5d([1, 2, 3, 4], [1, 2, 2, 1, 1], 'float32');
+    const b = tf.onesLike(a);
+    expect(b.dtype).toBe('float32');
+    expect(b.shape).toEqual([1, 2, 2, 1, 1]);
+    expectArraysClose(b, [1, 1, 1, 1]);
+  });
+
+  it('5D int32 dtype', () => {
+    const a = tf.tensor5d([1, 2, 3, 4], [1, 2, 2, 1, 1], 'int32');
+    const b = tf.onesLike(a);
+    expect(b.dtype).toBe('int32');
+    expect(b.shape).toEqual([1, 2, 2, 1, 1]);
+    expectArraysEqual(b, [1, 1, 1, 1]);
+  });
+
+  it('5D bool dtype', () => {
+    const a = tf.tensor5d([1, 2, 3, 4], [1, 2, 2, 1, 1], 'bool');
+    const b = tf.onesLike(a);
+    expect(b.dtype).toBe('bool');
+    expect(b.shape).toEqual([1, 2, 2, 1, 1]);
+    expectArraysEqual(b, [1, 1, 1, 1]);
+  });
+
+  it('5D default dtype', () => {
+    const a = tf.tensor5d([1, 2, 3, 4], [1, 2, 2, 1, 1]);
+    const b = tf.onesLike(a);
+    expect(b.dtype).toBe('float32');
+    expect(b.shape).toEqual([1, 2, 2, 1, 1]);
+    expectArraysClose(b, [1, 1, 1, 1]);
+  });
+
   it('throws when passed a non-tensor', () => {
     expect(() => tf.onesLike({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'onesLike' must be a Tensor/);
@@ -1558,6 +1598,22 @@ describeWithFlags('tile', ALL_ENVS, () => {
     expectArraysClose(t2, [1, 2, 3, 4, 1, 2, 3, 4, 5, 6, 7, 8, 5, 6, 7, 8]);
   });
 
+  it('4D (tile)', () => {
+    const t = tf.tensor4d([1, 2, 3, 4, 5, 6, 7, 8], [1, 2, 2, 2]);
+    const t2 = tf.tile(t, [1, 2, 1, 1]);
+
+    expect(t2.shape).toEqual([1, 4, 2, 2]);
+    expectArraysClose(t2, [1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8]);
+  });
+
+  it('5D (tile)', () => {
+    const t = tf.tensor5d([1, 2, 3, 4, 5, 6, 7, 8], [1, 1, 2, 2, 2]);
+    const t2 = tf.tile(t, [1, 2, 1, 1, 1]);
+
+    expect(t2.shape).toEqual([1, 2, 2, 2, 2]);
+    expectArraysClose(t2, [1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8]);
+  });
+
   it('propagates NaNs', () => {
     const t = tf.tensor1d([1, 2, NaN]);
 
@@ -2021,6 +2077,13 @@ describeWithFlags('fill', ALL_ENVS, () => {
     expect(a.shape).toEqual([3, 2, 1, 2]);
     expectArraysClose(a, [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]);
   });
+
+  it('5D fill', () => {
+    const a = tf.fill([2, 1, 2, 1, 2], 2);
+    expect(a.dtype).toBe('float32');
+    expect(a.shape).toEqual([2, 1, 2, 1, 2]);
+    expectArraysClose(a, [2, 2, 2, 2, 2, 2, 2, 2]);
+  });
 });
 
 describeWithFlags('stack', ALL_ENVS, () => {
@@ -2194,7 +2257,7 @@ describeWithFlags('expandDims', ALL_ENVS, () => {
     expectArraysClose(res, [1, 2, 3, 4, 5, 6]);
   });
 
-  it('5d, axis=0', () => {
+  it('4d, axis=0', () => {
     const res = tf.tensor4d([[[[4]]]]).expandDims();
     expect(res.shape).toEqual([1, 1, 1, 1, 1]);
     expectArraysClose(res, [4]);

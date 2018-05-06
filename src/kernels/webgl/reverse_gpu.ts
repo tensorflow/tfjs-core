@@ -25,7 +25,7 @@ export class ReverseProgram implements GPGPUProgram {
 
   constructor(xShape: number[], axis: number[]) {
     const rank = xShape.length;
-    if (rank > 4) {
+    if (rank > 5) {
       throw new Error(
           `WebGL backend: Reverse of rank-${rank} tensor is not yet supported`);
     }

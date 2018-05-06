@@ -994,6 +994,25 @@ export class ArrayOps {
   }
 
   /**
+   * Pads a `Tensor5D` with a given value and paddings. See `pad` for details.
+   */
+  static pad5d(
+      x: Tensor5D,
+      paddings:
+          [
+            [number, number], [number, number], [number, number],
+            [number, number]
+          ],
+      constantValue = 0): Tensor5D {
+    util.assert(
+        paddings.length === 4 && paddings[0].length === 2 &&
+            paddings[1].length === 2 && paddings[2].length === 2 &&
+            paddings[3].length === 2,
+        'Invalid number of paddings. Must be length of 2 each.');
+    return ArrayOps.pad(x, paddings, constantValue);
+  }
+
+  /**
    * Pads a `Tensor` with a given value and paddings.
    *
    * This operation currently only implements the `CONSTANT` mode.
