@@ -2194,6 +2194,12 @@ describeWithFlags('expandDims', ALL_ENVS, () => {
     expectArraysClose(res, [1, 2, 3, 4, 5, 6]);
   });
 
+  it('5d, axis=0', () => {
+    const res = tf.tensor4d([[[[4]]]]).expandDims();
+    expect(res.shape).toEqual([1, 1, 1, 1, 1]);
+    expectArraysClose(res, [4]);
+  });
+
   it('throws when passed a non-tensor', () => {
     expect(() => tf.expandDims({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'expandDims' must be a Tensor/);
