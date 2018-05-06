@@ -235,10 +235,14 @@ export function getModelArtifactsInfoForKerasJSON(
   return {
     dateSaved: new Date(),
     modelTopologyType: 'KerasJSON',
-    modelTopologyBytes:
+    modelTopologyBytes: modelArtifacts.modelTopology == null ?
+        0 :
         stringByteLength(JSON.stringify(modelArtifacts.modelTopology)),
-    weightSpecsBytes:
+    weightSpecsBytes: modelArtifacts.weightSpecs == null ?
+        0 :
         stringByteLength(JSON.stringify(modelArtifacts.weightSpecs)),
-    weightDataBytes: modelArtifacts.weightData.byteLength,
+    weightDataBytes: modelArtifacts.weightData == null ?
+        0 :
+        modelArtifacts.weightData.byteLength,
   };
 }
