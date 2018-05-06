@@ -36,6 +36,7 @@ export class BrowserDownloads implements IOHandler {
   private readonly weightDataAnchor: HTMLAnchorElement;
 
   constructor(fileNamePrefix?: string) {
+    // TODO(cais): Use central environment flag when it's available.
     if (typeof window === 'undefined') {
       // TODO(cais): Provide info on what IOHandlers are available under the
       //   current environment.

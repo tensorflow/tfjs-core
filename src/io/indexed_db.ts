@@ -39,6 +39,7 @@ export async function deleteDatabase(): Promise<void> {
 }
 
 function getIndexedDBFactory(): IDBFactory {
+  // TODO(cais): Use central environment flag when it's available.
   if (typeof window === 'undefined') {
     // TODO(cais): Add more info about what IOHandler subtypes are available.
     //   Maybe point to a doc page on the web and/or automatically determine

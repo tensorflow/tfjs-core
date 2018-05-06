@@ -34,6 +34,7 @@ const WEIGHT_DATA_SUFFIX = 'weight_data';
  * @returns Paths of the models purged.
  */
 export function purgeLocalStorageArtifacts(): string[] {
+  // TODO(cais): Use central environment flag when it's available.
   if (!(window && window.localStorage)) {
     throw new Error(
         'purgeLocalStorageModels() cannot proceed because local storage is ' +
