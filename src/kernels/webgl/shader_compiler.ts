@@ -164,6 +164,19 @@ vec2 UVfrom4D(int texNumR, int texNumC, int stride0,
 }
 `;
 
+const SAMPLE_5D_SNIPPET = `
+vec2 UVfrom5D(int texNumR, int texNumC, int stride0,
+    int stride1, int stride2, int stride3, int row, int col, int depth,
+    int depth2, int depth3) {
+  // Explicitly use integer operations as dot() only works on floats.
+  int index = row * stride0 + col * stride1 + 
+              depth * stride2 + depth2 * stride3 + depth3;
+  int texR = index / texNumC;
+  int texC = index - texR * texNumC;
+  return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
+}
+`;
+
 const UNSIGNED_BYTE_TEXTURE_SAMPLE_SNIPPET = `
   uniform float NaN;
 
@@ -287,6 +300,7 @@ const SHADER_PREFIX = `
   ${SAMPLE_2D_SNIPPET}
   ${SAMPLE_3D_SNIPPET}
   ${SAMPLE_4D_SNIPPET}
+  ${SAMPLE_5D_SNIPPET}
 `;
 
 function getOutputScalarCoords() {
