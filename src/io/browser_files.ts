@@ -21,7 +21,7 @@
  */
 
 // tslint:disable:max-line-length
-import {basename, concatenateArrayBuffers, stringByteLength} from './io_utils';
+import {basename, concatenateArrayBuffers, getModelArtifactsInfoForKerasJSON} from './io_utils';
 import {IOHandler, ModelArtifacts, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
 // tslint:enable:max-line-length
 
@@ -95,18 +95,7 @@ export class BrowserDownloads implements IOHandler {
       }
 
       return {
-        modelArtifactsInfo: {
-          dateSaved: new Date(),
-          modelTopologyType: 'KerasJSON',
-          modelTopologyBytes:
-              stringByteLength(JSON.stringify(modelArtifacts.modelTopology)),
-          weightSpecsBytes: modelArtifacts.weightSpecs == null ?
-              0 :
-              stringByteLength(JSON.stringify(modelArtifacts.weightSpecs)),
-          weightDataBytes: modelArtifacts.weightData == null ?
-              0 :
-              modelArtifacts.weightData.byteLength,
-        }
+        modelArtifactsInfo: getModelArtifactsInfoForKerasJSON(modelArtifacts)
       };
     }
   }

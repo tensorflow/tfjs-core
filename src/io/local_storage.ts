@@ -16,7 +16,7 @@
  */
 
 // tslint:disable:max-line-length
-import {arrayBufferToBase64String, base64StringToArrayBuffer, stringByteLength} from './io_utils';
+import {arrayBufferToBase64String, base64StringToArrayBuffer, getModelArtifactsInfoForKerasJSON} from './io_utils';
 import {IOHandler, ModelArtifacts, ModelArtifactsInfo, SaveResult} from './types';
 
 // tslint:enable:max-line-length
@@ -111,13 +111,8 @@ export class BrowserLocalStorage implements IOHandler {
       const topology = JSON.stringify(modelArtifacts.modelTopology);
       const weightSpecs = JSON.stringify(modelArtifacts.weightSpecs);
 
-      const modelArtifactsInfo: ModelArtifactsInfo = {
-        dateSaved: new Date(),
-        modelTopologyType: 'KerasJSON',
-        modelTopologyBytes: stringByteLength(topology),
-        weightSpecsBytes: stringByteLength(weightSpecs),
-        weightDataBytes: modelArtifacts.weightData.byteLength,
-      };
+      const modelArtifactsInfo: ModelArtifactsInfo =
+          getModelArtifactsInfoForKerasJSON(modelArtifacts);
 
       try {
         this.LS.setItem(this.paths.info, JSON.stringify(modelArtifactsInfo));

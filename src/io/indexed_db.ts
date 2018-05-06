@@ -16,8 +16,9 @@
  */
 
 // tslint:disable:max-line-length
-import {stringByteLength} from './io_utils';
+import {getModelArtifactsInfoForKerasJSON} from './io_utils';
 import {IOHandler, ModelArtifacts, ModelArtifactsInfo, SaveResult} from './types';
+
 // tslint:enable:max-line-length
 
 const DATABASE_NAME = 'tensorflowjs';
@@ -86,22 +87,13 @@ export class BrowserIndexedDB implements IOHandler {
     }
 
     return new Promise<SaveResult>((resolve, reject) => {
-      const modelArtifactsInfo: ModelArtifactsInfo = {
-        dateSaved: new Date(),
-        modelTopologyType: 'KerasJSON',
-        modelTopologyBytes:
-            stringByteLength(JSON.stringify(modelArtifacts.modelTopology)),
-        weightSpecsBytes:
-            stringByteLength(JSON.stringify(modelArtifacts.weightSpecs)),
-        weightDataBytes: modelArtifacts.weightData.byteLength,
-      };
+      const modelArtifactsInfo: ModelArtifactsInfo =
+          getModelArtifactsInfoForKerasJSON(modelArtifacts);
 
       const openRequest = this.indexedDB.open(DATABASE_NAME, DATABASE_VERSION);
 
       // Create the schema.
-      openRequest.onupgradeneeded = () => {
-        this.setUpDatabase(openRequest);
-      };
+      openRequest.onupgradeneeded = () => this.setUpDatabase(openRequest);
 
       openRequest.onsuccess = () => {
         const db = openRequest.result as IDBDatabase;
@@ -110,19 +102,11 @@ export class BrowserIndexedDB implements IOHandler {
 
         const putRequest = store.put(
             {modelPath: this.modelPath, modelArtifacts, modelArtifactsInfo});
-        putRequest.onsuccess = () => {
-          resolve({modelArtifactsInfo});
-        };
-        putRequest.onerror = (error) => {
-          reject(putRequest.error);
-        };
-        tx.oncomplete = () => {
-          db.close();
-        };
+        putRequest.onsuccess = () => resolve({modelArtifactsInfo});
+        putRequest.onerror = (error) => reject(putRequest.error);
+        tx.oncomplete = () => db.close();
       };
-      openRequest.onerror = (error) => {
-        reject(openRequest.error);
-      };
+      openRequest.onerror = (error) => reject(openRequest.error);
     });
   }
 
@@ -130,9 +114,7 @@ export class BrowserIndexedDB implements IOHandler {
     return new Promise<ModelArtifacts>((resolve, reject) => {
       const openRequest = this.indexedDB.open(DATABASE_NAME, DATABASE_VERSION);
 
-      openRequest.onupgradeneeded = () => {
-        this.setUpDatabase(openRequest);
-      };
+      openRequest.onupgradeneeded = () => this.setUpDatabase(openRequest);
 
       openRequest.onsuccess = () => {
         const db = openRequest.result as IDBDatabase;
@@ -141,7 +123,7 @@ export class BrowserIndexedDB implements IOHandler {
 
         const getRequest = store.get(this.modelPath);
         getRequest.onsuccess = () => {
-          if (getRequest.result === undefined) {
+          if (getRequest.result == null) {
             reject(new Error(
                 `Cannot find model with path '${this.modelPath}' ` +
                 `in IndexedDB.`));
@@ -149,12 +131,8 @@ export class BrowserIndexedDB implements IOHandler {
             resolve(getRequest.result.modelArtifacts);
           }
         };
-        getRequest.onerror = (error) => {
-          reject(getRequest.error);
-        };
-        tx.oncomplete = () => {
-          db.close();
-        };
+        getRequest.onerror = (error) => reject(getRequest.error);
+        tx.oncomplete = () => db.close();
       };
       openRequest.onerror = (error) => {
         reject(openRequest.error);
@@ -169,7 +147,7 @@ export class BrowserIndexedDB implements IOHandler {
 }
 
 /**
- * Factory function for browser IndexedDB IOHandler.
+ * Creates a browser IndexedDB IOHandler for saving and loading models.
  *
  * ```js
  * const model = tf.sequential();
