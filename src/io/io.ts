@@ -16,6 +16,7 @@
  */
 
 import {browserDownloads, browserFiles} from './browser_files';
+import {browserHTTPRequest} from './browser_http';
 import {browserIndexedDB} from './indexed_db';
 import {decodeWeights, encodeWeights} from './io_utils';
 import {browserLocalStorage} from './local_storage';
@@ -30,6 +31,7 @@ export {
   browserLocalStorage,
   decodeWeights,
   encodeWeights,
+  browserHTTPRequest,
   IOHandler,
   LoadHandler,
   loadWeights,
