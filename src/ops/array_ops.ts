@@ -546,7 +546,7 @@ export class ArrayOps {
    * `offValue` (defaults to 0).
    *
    * ```js
-   * tf.oneHot(tf.tensor1d([0, 1]), 3).print();
+   * tf.oneHot(tf.tensor1d([0, 1], 'int32'), 3).print();
    * ```
    *
    * @param indices `Tensor1D` of indices with dtype `int32`.
@@ -867,14 +867,14 @@ export class ArrayOps {
    *
    * ```js
    * const x = tf.tensor1d([1, 2, 3, 4]);
-   * const indices = tf.tensor1d([1, 3, 3]);
+   * const indices = tf.tensor1d([1, 3, 3], 'int32');
    *
    * x.gather(indices).print();
    * ```
    *
    * ```js
    * const x = tf.tensor2d([1, 2, 3, 4], [2, 2]);
-   * const indices = tf.tensor1d([1, 1, 0]);
+   * const indices = tf.tensor1d([1, 1, 0], 'int32');
    *
    * x.gather(indices).print();
    * ```
