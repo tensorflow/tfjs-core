@@ -324,7 +324,7 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [x], null, customSetup);
   }
 
-  strideSlice<T extends Tensor>(
+  stridedSlice<T extends Tensor>(
       x: T, begin: number[], end: number[], strides: number[],
       size: number[]): T {
     throw new Error('not implemented');

@@ -153,7 +153,7 @@ export class MathBackendCPU implements KernelBackend {
     return buffer.toTensor() as T;
   }
 
-  strideSlice<T extends Tensor>(
+  stridedSlice<T extends Tensor>(
       x: T, begin: number[], end: number[], strides: number[],
       size: number[]): T {
     const buffer = ops.buffer(size, x.dtype);
@@ -167,16 +167,17 @@ export class MathBackendCPU implements KernelBackend {
   private expand<T extends Tensor>(
       x: T, xloc: number[], loc: number[], end: number[], strides: number[],
       index: number, size: number[], output: TensorBuffer<Rank>) {
-    if (index > size.length) {
+    if (index >= size.length) {
       return;
     }
     for (let i = 0; i < size[index]; i++) {
-      this.expand(x, xloc, loc, end, strides, index + 1, size, output);
-      if (index === size.length) {
+      this.expand(
+          x, [...xloc], [...loc], end, strides, index + 1, size, output);
+      if (index === size.length - 1) {
         output.set(x.get(...loc), ...xloc);
       }
       loc[index] += strides[index];
-      xloc[index] = i;
+      xloc[index] += 1;
     }
   }
 

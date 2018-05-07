@@ -55,6 +55,8 @@ export class StridedSliceOps {
   static stridedSlice<T extends Tensor>(
       x: T, begin: number[], end: number[], strides: number[], beginMask = 0,
       endMask = 0): T {
+    util.assertArgumentsAreTensors({x}, 'stridedSlice');
+
     // Note that the axis orders are reversed for runtime ops, so the indices,
     // strides and masks must be as well too.
     const rank = x.shape.length;
@@ -66,26 +68,24 @@ export class StridedSliceOps {
       endIndex[i] =
           StridedSliceOps.stopForAxis(endMask, end, strides, x.shape, i);
     }
-    let size = new Array(x.rank);
-    console.log(startIndex);
-    console.log(endIndex);
+
+    let size = new Array(x.rank).fill(0);
     size = size.map((d, i) => {
       let count = 0;
       for (let start = startIndex[i];
-           StridedSliceOps.loopCondition(start, endIndex[i], strides[i]);
+           !StridedSliceOps.loopCondition(start, endIndex[i], strides[i]);
            start += strides[i]) {
         count += 1;
       }
       return count;
     });
 
-    console.log(size);
     const grad = (dy: T) => {
       return {x: () => dy};
     };
     return ENV.engine.runKernel(
                backend =>
-                   backend.strideSlice(x, startIndex, endIndex, strides, size),
+                   backend.stridedSlice(x, startIndex, endIndex, strides, size),
                {x}, grad) as T;
   }
 
