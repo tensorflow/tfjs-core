@@ -59,7 +59,6 @@ export class LinalgOps {
       xs = split(xs, xs.shape[0], 0).map(x => squeeze(x, [0]));
     }
 
-    xs = xs as Tensor1D[];
     assert(
         xs.length <= xs[0].shape[0],
         `Gram-Schmidt: Number of vectors (${xs.length}) exceeds ` +
