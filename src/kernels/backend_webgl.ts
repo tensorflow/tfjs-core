@@ -324,6 +324,12 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [x], null, customSetup);
   }
 
+  strideSlice<T extends Tensor>(
+      x: T, begin: number[], end: number[], strides: number[],
+      size: number[]): T {
+    throw new Error('not implemented');
+  }
+
   reverse<T extends Tensor>(x: T, axis: number[]): T {
     const program = new ReverseProgram(x.shape, axis);
     return this.compileAndRun(program, [x]);
