@@ -630,6 +630,33 @@ describeWithFlags('rand', ALL_ENVS, () => {
   });
 });
 
+describeWithFlags('eye', ALL_ENVS, () => {
+  it('1x1', () => {
+    expectArraysClose(tf.eye(1), tf.tensor2d([[1]]));
+  });
+
+  it('2x2', () => {
+    expectArraysClose(tf.eye(2), tf.tensor2d([[1, 0], [0, 1]]));
+  });
+
+  it('3x3', () => {
+    expectArraysClose(
+        tf.eye(3), tf.tensor2d([[1, 0, 0], [0, 1, 0], [0, 0, 1]]));
+  });
+
+  it('3x3, int32', () => {
+    expectArraysClose(
+        tf.eye(3, 'int32'),
+        tf.tensor2d([[1, 0, 0], [0, 1, 0], [0, 0, 1]], [3, 3], 'int32'));
+  });
+
+  it('3x3, bool', () => {
+    expectArraysClose(
+        tf.eye(3, 'bool'),
+        tf.tensor2d([[1, 0, 0], [0, 1, 0], [0, 0, 1]], [3, 3], 'bool'));
+  });
+});
+
 describeWithFlags('randomNormal', ALL_ENVS, () => {
   const SEED = 2002;
   const EPSILON = 0.05;

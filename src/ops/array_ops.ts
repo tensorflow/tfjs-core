@@ -371,6 +371,22 @@ export class ArrayOps {
   }
 
   /**
+   * Create an identity matrix.
+   *
+   * @param n Nnumber of rows, or equivalently, number of columns.
+   * @param dtype Data type.
+   * @returns Identity matrix of the specified size and data type.
+   */
+  @operation
+  static eye(n: number, dtype: DataType = 'float32'): Tensor2D {
+    const buffer = ArrayOps.buffer([n, n], dtype);
+    for (let i = 0; i < n; ++i) {
+      buffer.set(1, i, i);
+    }
+    return buffer.toTensor() as Tensor2D;
+  }
+
+  /**
    * Creates a `Tensor` with values sampled from a normal distribution.
    *
    * ```js
