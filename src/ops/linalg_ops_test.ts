@@ -79,11 +79,11 @@ describeWithFlags('gramSchmidt-tiny', ALL_ENVS, () => {
 // For operations on non-trivial matrix sizes, we skip the CPU-only ENV and use
 // only WebGL ENVs.
 describeWithFlags('gramSchmidt-non-tiny', WEBGL_ENVS, () => {
-  it('100x512', () => {
+  it('64x512', () => {
     // Part of this test's point is that operation on a matrix of this size
     // can complete in the timeout limit of the unit test.
-    const xs = tf.randomUniform([100, 512]) as Tensor2D;
+    const xs = tf.randomUniform([64, 512]) as Tensor2D;
     const y = tf.linalg.gramSchmidt(xs) as Tensor2D;
-    expectArraysClose(y.matMul(y.transpose()), tf.eye(100));
+    expectArraysClose(y.matMul(y.transpose()), tf.eye(64));
   });
 });
