@@ -1123,8 +1123,6 @@ export class ArrayOps {
    * @param start The start value of the sequence.
    * @param stop The end value of the sequence.
    * @param num The number of values to generate.
-   * @param endpoint Determines whether stop is included in the
-   * sequence. Defaults to true.
    */
   @operation
   @doc({heading: 'Tensors', subheading: 'Creation'})
@@ -1199,8 +1197,7 @@ export class ArrayOps {
    * Creates an empty `TensorBuffer` with the specified `shape` and `dtype`.
    *
    * The values are stored in cpu as `TypedArray`. Fill the buffer using
-   * `buffer.set()`, or by modifying directly `buffer.values`. When done,
-   * call `buffer.toTensor()` to get an immutable `Tensor` with those values.
+   * `buffer.set()`, or by modifying directly `buffer.values`.
    *
    * When done, call `buffer.toTensor()` to get an immutable `Tensor` with
    * those values.
