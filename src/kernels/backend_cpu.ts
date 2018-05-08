@@ -1011,13 +1011,13 @@ export class MathBackendCPU implements KernelBackend {
     for (let b = 0; b < batchSize; ++b) {
       for (let d1 = 0; d1 < inChannels; ++d1) {
         for (let xR = 0; xR < inHeight; ++xR) {
-          const xRCorner = xR - leftPad;
+          const xRCorner = xR - topPad;
           const xRMin = Math.max(0, Math.ceil(xRCorner / strideHeight));
           const yRMax =
               Math.min(outHeight, (filterHeight + xRCorner) / strideHeight);
 
           for (let xC = 0; xC < inWidth; ++xC) {
-            const xCCorner = xC - topPad;
+            const xCCorner = xC - leftPad;
             const xCMin = Math.max(0, Math.ceil(xCCorner / strideWidth));
             const yCMax =
                 Math.min(outWidth, (filterWidth + xCCorner) / strideWidth);
