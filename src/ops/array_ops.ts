@@ -409,9 +409,11 @@ export class ArrayOps {
             ArrayOps.expandDims(ArrayOps.expandDims(out, 0), 0),
             [batchShape[0], batchShape[1], 1, 1]);
       } else {
+        // TODO(cais): Add support for length-3 once Tensor5D is available.
         throw new Error(
-            'eye() currently supports only length-1 and length-2 ' +
-            'batchShapes.');
+            `eye() currently supports only 1D and 2D ` +
+            // tslint:disable-next-line:no-any
+            `batchShapes, but received ${(batchShape as any).length}D.`);
       }
     }
   }
