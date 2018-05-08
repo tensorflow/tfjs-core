@@ -374,7 +374,7 @@ export class ArrayOps {
   /**
    * Create an identity matrix.
    *
-   * @param numRows Number of rows, or equivalently, number of columns.
+   * @param numRows Number of rows.
    * @param numColumns Number of columns. Defaults to `numRows`.
    * @param batchShape If provided, will add the batch shape to the beginning
    *   of the shape of the returned `Tensor` by repeating the identity
