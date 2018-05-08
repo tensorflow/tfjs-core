@@ -373,7 +373,7 @@ export class ArrayOps {
   /**
    * Create an identity matrix.
    *
-   * @param n Nnumber of rows, or equivalently, number of columns.
+   * @param n Number of rows, or equivalently, number of columns.
    * @param dtype Data type.
    * @returns Identity matrix of the specified size and data type.
    */
