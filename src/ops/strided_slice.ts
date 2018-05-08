@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+import {tensor} from '..';
 import {doc} from '../doc';
 import {ENV} from '../environment';
 import {Tensor} from '../tensor';
@@ -78,13 +79,15 @@ export class StridedSliceOps {
       }
       return count;
     });
-
+    // TODO(piyu): Add grad function for strided slice.
     const grad = (dy: T) => {
       return {x: () => dy};
     };
     return ENV.engine.runKernel(
-               backend =>
-                   backend.stridedSlice(x, startIndex, endIndex, strides, size),
+               size.some(axis => axis === 0) ?
+                   backend => tensor([], size) :
+                   backend =>
+                       backend.stridedSlice(x, startIndex, strides, size),
                {x}, grad) as T;
   }
 
@@ -127,11 +130,6 @@ export class StridedSliceOps {
     return start;
   }
 
-  // Return the "real" index for the end of iteration along that axis. This is
-  // an "end" in the traditional C sense, in that it points to one past the last
-  // element. ie. So if you were iterating through all elements of a 1D array of
-  // size 4, this function would return 4 as the stop, because it is one past
-  // the "real" indices of 0, 1, 2 & 3.
   private static stopForAxis(
       endMask: number, stopIndices: number[], strides: number[],
       inputShape: number[], axis: number): number {

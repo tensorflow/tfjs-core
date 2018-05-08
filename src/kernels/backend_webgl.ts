@@ -60,6 +60,7 @@ import {ResizeBilinearProgram} from './webgl/resize_bilinear_gpu';
 import {ResizeNearestNeighborProgram} from './webgl/resize_nearest_neighbor_gpu';
 import {ReverseProgram} from './webgl/reverse_gpu';
 import {SliceProgram} from './webgl/slice_gpu';
+import {StridedSliceProgram} from './webgl/strided_slice_gpu';
 import {TextureData, TextureType} from './webgl/tex_util';
 import {TextureManager} from './webgl/texture_manager';
 import {TileProgram} from './webgl/tile_gpu';
@@ -325,9 +326,9 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   stridedSlice<T extends Tensor>(
-      x: T, begin: number[], end: number[], strides: number[],
-      size: number[]): T {
-    throw new Error('not implemented');
+      x: T, begin: number[], strides: number[], size: number[]): T {
+    const program = new StridedSliceProgram(begin, strides, size);
+    return this.compileAndRun(program, [x]);
   }
 
   reverse<T extends Tensor>(x: T, axis: number[]): T {

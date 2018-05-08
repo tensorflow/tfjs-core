@@ -18,9 +18,9 @@
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
 // tslint:disable-next-line:max-line-length
-import {CPU_ENVS, expectArraysClose} from '../test_util';
+import {ALL_ENVS, expectArraysClose} from '../test_util';
 
-describeWithFlags('stridedSlice', CPU_ENVS, () => {
+describeWithFlags('stridedSlice', ALL_ENVS, () => {
   it('stridedSlice should suport 1d tensor', () => {
     const tensor = tf.tensor1d([0, 1, 2, 3]);
     const output = tf.stridedSlice(tensor, [0], [3], [2]);

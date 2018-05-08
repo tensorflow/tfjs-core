@@ -27,7 +27,7 @@ import * as ops from '../ops/ops';
 import {buffer, tensor3d, tensor4d} from '../ops/ops';
 import * as selu_util from '../ops/selu_util';
 // tslint:disable-next-line:max-line-length
-import {DataId, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
+import {DataId, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import * as types from '../types';
 import {DataType, DataTypeMap, Rank, TypedArray} from '../types';
 import * as util from '../util';
@@ -154,31 +154,21 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   stridedSlice<T extends Tensor>(
-      x: T, begin: number[], end: number[], strides: number[],
-      size: number[]): T {
+      x: T, begin: number[], strides: number[], size: number[]): T {
     const buffer = ops.buffer(size, x.dtype);
 
-    const xloc = new Array(size.length).fill(0);
-    this.expand(x, xloc, [...begin], end, strides, 0, size, buffer);
+    for (let i = 0; i < buffer.size; i++) {
+      const loc = buffer.indexToLoc(i);
+
+      // Permute location.
+      const newLoc: number[] = new Array(loc.length);
+      for (let j = 0; j < newLoc.length; j++) {
+        newLoc[j] = loc[j] * strides[j] + begin[j];
+      }
+      buffer.set(x.get(...newLoc), ...loc);
+    }
 
     return buffer.toTensor() as T;
-  }
-
-  private expand<T extends Tensor>(
-      x: T, xloc: number[], loc: number[], end: number[], strides: number[],
-      index: number, size: number[], output: TensorBuffer<Rank>) {
-    if (index >= size.length) {
-      return;
-    }
-    for (let i = 0; i < size[index]; i++) {
-      this.expand(
-          x, [...xloc], [...loc], end, strides, index + 1, size, output);
-      if (index === size.length - 1) {
-        output.set(x.get(...loc), ...xloc);
-      }
-      loc[index] += strides[index];
-      xloc[index] += 1;
-    }
   }
 
   reverse<T extends Tensor>(x: T, axis: number[]): T {

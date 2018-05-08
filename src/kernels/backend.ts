@@ -51,8 +51,7 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
 
   slice<T extends Tensor>(x: T, begin: number[], size: number[]): T;
   stridedSlice<T extends Tensor>(
-      x: T, begin: number[], end: number[], strides: number[],
-      size: number[]): T;
+      x: T, begin: number[], strides: number[], size: number[]): T;
   reverse<T extends Tensor>(a: T, axis: number[]): T;
 
   // Any concat of n-dimensional tensors across any axis can be reduced to
