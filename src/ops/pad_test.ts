@@ -161,7 +161,7 @@ describeWithFlags('pad4d', ALL_ENVS, () => {
 
   it('does not leak memory', () => {
     const a = tf.tensor4d([[[[9]]]], [1, 1, 1, 1], 'int32');
-    // The first call to pad creates and keeps internal singleton tensors.
+    // The first call to pad may create and keeps internal singleton tensors.
     // Subsequent calls should always create exactly one new tensor.
     tf.pad4d(a, [[0, 0], [1, 1], [1, 1], [0, 0]]);
     // Count before real call.
