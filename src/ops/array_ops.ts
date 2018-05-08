@@ -383,7 +383,7 @@ export class ArrayOps {
     for (let i = 0; i < n; ++i) {
       buffer.set(1, i, i);
     }
-    return buffer.toTensor() as Tensor2D;
+    return buffer.toTensor().as2D(n, n);
   }
 
   /**

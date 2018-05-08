@@ -37,7 +37,10 @@ export class LinalgOps {
    *     of `xs`.
    *   In each case, all the vectors must have the same length and the length
    *   must be greater than or equal to the number of vectors.
-   * @returns The orthogonalized vectors or matrix.
+   * @returns The orthogonalized and normalized vectors or matrix.
+   *   Orthogonalization means that the vectors or the rows of the matrix
+   *   are orthogonal (zero inner products). Normalization means that each
+   *   vector or each row of the matrix has an L2 norm that equals `1`.
    */
   @operation
   static gramSchmidt(xs: Tensor1D[]|Tensor2D): Tensor1D[]|Tensor2D {
@@ -65,9 +68,10 @@ export class LinalgOps {
             `number of dimensions (${xs[0].shape[0]}).`);
 
     const ys: Tensor1D[] = [];
+    const xs1d = xs as Tensor1D[];
     for (let i = 0; i < xs.length; ++i) {
       ys.push(Tracking.tidy(() => {
-        let x = (xs as Tensor1D[])[i];
+        let x = xs1d[i];
         if (i > 0) {
           for (let j = 0; j < i; ++j) {
             const proj = sum(ys[j].mulStrict(x)).mul(ys[j]);
