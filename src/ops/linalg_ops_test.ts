@@ -21,7 +21,6 @@ import {Tensor1D, Tensor2D} from '../tensor';
 import {ALL_ENVS, expectArraysClose, WEBGL_ENVS} from '../test_util';
 
 describeWithFlags('gramSchmidt-tiny', ALL_ENVS, () => {
-  // TODO(cais): Small things should get tested on ALL_ENVS.
   it('2x2, Array of Tensor1D', () => {
     const xs: Tensor1D[] = [tf.randomNormal([2]), tf.randomNormal([2])];
     const ys = tf.linalg.gramSchmidt(xs) as Tensor1D[];

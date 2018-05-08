@@ -19,6 +19,7 @@
  * Linear algebra ops.
  */
 
+import {doc} from '../doc';
 import {Tensor1D, Tensor2D} from '../tensor';
 import {Tracking} from '../tracking';
 import {assert} from '../util';
@@ -32,7 +33,7 @@ export class LinalgOps {
    *
    * @param xs The vectors to be orthogonalized, in one of the two following
    *   formats:
-   *   - A non-empty `Array` of `Tensor1D`.
+   *   - An Array of `Tensor1D`.
    *   - A `Tensor2D`, i.e., a matrix, in which case the vectors are the rows
    *     of `xs`.
    *   In each case, all the vectors must have the same length and the length
@@ -42,6 +43,7 @@ export class LinalgOps {
    *   are orthogonal (zero inner products). Normalization means that each
    *   vector or each row of the matrix has an L2 norm that equals `1`.
    */
+  @doc({heading: 'Operations', subheading: 'Linear Algebra'})
   @operation
   static gramSchmidt(xs: Tensor1D[]|Tensor2D): Tensor1D[]|Tensor2D {
     let inputIsTensor2D: boolean;
