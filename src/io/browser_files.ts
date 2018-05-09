@@ -265,7 +265,7 @@ export class BrowserFiles implements IOHandler {
  * @param config Additional configuration for triggering downloads.
  * @returns An instance of `DownloadTrigger` `IOHandler`.
  */
-export function browserDownloads(fileNamePrefix = 'model'): BrowserDownloads {
+export function browserDownloads(fileNamePrefix = 'model'): IOHandler {
   return new BrowserDownloads(fileNamePrefix);
 }
 
@@ -302,6 +302,6 @@ export function browserDownloads(fileNamePrefix = 'model'): BrowserDownloads {
  *     topology will be loaded from the JSON file above.
  * @returns An instance of `Files` `IOHandler`.
  */
-export function browserFiles(files: File[]): BrowserFiles {
+export function browserFiles(files: File[]): IOHandler {
   return new BrowserFiles(files);
 }

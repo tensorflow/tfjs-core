@@ -35,7 +35,8 @@ const WEIGHT_DATA_SUFFIX = 'weight_data';
  */
 export function purgeLocalStorageArtifacts(): string[] {
   // TODO(cais): Use central environment flag when it's available.
-  if (!(window && window.localStorage)) {
+  if (typeof window === 'undefined' ||
+      typeof window.localStorage === 'undefined') {
     throw new Error(
         'purgeLocalStorageModels() cannot proceed because local storage is ' +
         'unavailable in the current environment.');
@@ -219,6 +220,6 @@ export class BrowserLocalStorage implements IOHandler {
  * @returns An instance of `BrowserLocalStorage` (sublcass of `IOHandler`),
  *   which can be used with, e.g., `tf.Model.save`.
  */
-export function browserLocalStorage(modelPath: string) {
+export function browserLocalStorage(modelPath: string): IOHandler {
   return new BrowserLocalStorage(modelPath);
 }

@@ -18,7 +18,6 @@
 // tslint:disable:max-line-length
 import {getModelArtifactsInfoForKerasJSON} from './io_utils';
 import {IOHandler, ModelArtifacts, ModelArtifactsInfo, SaveResult} from './types';
-
 // tslint:enable:max-line-length
 
 const DATABASE_NAME = 'tensorflowjs';
@@ -40,6 +39,7 @@ export async function deleteDatabase(): Promise<void> {
 
 function getIndexedDBFactory(): IDBFactory {
   // TODO(cais): Use central environment flag when it's available.
+  //   See: https://github.com/tensorflow/tfjs/issues/282.
   if (typeof window === 'undefined') {
     // TODO(cais): Add more info about what IOHandler subtypes are available.
     //   Maybe point to a doc page on the web and/or automatically determine
@@ -175,6 +175,6 @@ export class BrowserIndexedDB implements IOHandler {
  * @returns An instance of `BrowserIndexedDB` (sublcass of `IOHandler`),
  *   which can be used with, e.g., `tf.Model.save`.
  */
-export function browserIndexedDB(modelPath: string): BrowserIndexedDB {
+export function browserIndexedDB(modelPath: string): IOHandler {
   return new BrowserIndexedDB(modelPath);
 }
