@@ -100,7 +100,7 @@ describe('IndexedDB', () => {
     });
   });
 
-  it('Save-load round trip', async done => {
+  it('Save-load round trip', done => {
     const testStartDate = new Date();
     const handler = tf.io.browserIndexedDB('FooModel');
     handler.save(artifacts1)
@@ -132,7 +132,7 @@ describe('IndexedDB', () => {
         });
   });
 
-  it('Save two models and load one', async done => {
+  it('Save two models and load one', done => {
     const weightData2 = new ArrayBuffer(24);
     const artifacts2: tf.io.ModelArtifacts = {
       modelTopology: modelTopology1,
@@ -188,7 +188,7 @@ describe('IndexedDB', () => {
         });
   });
 
-  it('Loading nonexistent model fails', async done => {
+  it('Loading nonexistent model fails', done => {
     const handler = tf.io.browserIndexedDB('NonexistentModel');
     handler.load()
         .then(modelArtifacts => {

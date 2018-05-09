@@ -34,7 +34,7 @@ export async function deleteDatabase(): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     const deleteRequest = idbFactory.deleteDatabase(DATABASE_NAME);
     deleteRequest.onsuccess = () => resolve();
-    deleteRequest.onerror = (error) => reject(error);
+    deleteRequest.onerror = error => reject(error);
   });
 }
 
@@ -87,57 +87,68 @@ export class BrowserIndexedDB implements IOHandler {
           'in binary formats yet.');
     }
 
-    return new Promise<SaveResult>((resolve, reject) => {
-      const modelArtifactsInfo: ModelArtifactsInfo =
-          getModelArtifactsInfoForKerasJSON(modelArtifacts);
-
-      const openRequest = this.indexedDB.open(DATABASE_NAME, DATABASE_VERSION);
-
-      // Create the schema.
-      openRequest.onupgradeneeded = () => this.setUpDatabase(openRequest);
-
-      openRequest.onsuccess = () => {
-        const db = openRequest.result as IDBDatabase;
-        const tx = db.transaction(OBJECT_STORE_NAME, 'readwrite');
-        const store = tx.objectStore(OBJECT_STORE_NAME);
-
-        const putRequest = store.put(
-            {modelPath: this.modelPath, modelArtifacts, modelArtifactsInfo});
-        putRequest.onsuccess = () => resolve({modelArtifactsInfo});
-        putRequest.onerror = (error) => reject(putRequest.error);
-        tx.oncomplete = () => db.close();
-      };
-      openRequest.onerror = (error) => reject(openRequest.error);
-    });
+    return this.databaseAction(this.modelPath, modelArtifacts) as
+        Promise<SaveResult>;
   }
 
   async load(): Promise<ModelArtifacts> {
-    return new Promise<ModelArtifacts>((resolve, reject) => {
+    return this.databaseAction(this.modelPath) as Promise<ModelArtifacts>;
+  }
+
+  /**
+   * Perform database action to put model artifacts into or read model artifacts
+   * from IndexedDB object store.
+   *
+   * Whether the action is put or get depends on whether `modelArtifacts` is
+   * specified. If it is specified, the action will be put; otherwise the action
+   * will be get.
+   *
+   * @param modelPath A unique string path for the model.
+   * @param modelArtifacts If specified, it will be the model artifacts to be
+   *   stored in IndexedDB.
+   * @returns A `Promise` of `SaveResult`, if the action is put, or a `Promise`
+   *   of `ModelArtifacts`, if the action is get.
+   */
+  private databaseAction(modelPath: string, modelArtifacts?: ModelArtifacts):
+      Promise<ModelArtifacts|SaveResult> {
+    return new Promise<ModelArtifacts|SaveResult>((resolve, reject) => {
       const openRequest = this.indexedDB.open(DATABASE_NAME, DATABASE_VERSION);
 
       openRequest.onupgradeneeded = () => this.setUpDatabase(openRequest);
 
       openRequest.onsuccess = () => {
         const db = openRequest.result as IDBDatabase;
-        const tx = db.transaction(OBJECT_STORE_NAME, 'readwrite');
+        const tx = db.transaction(
+            OBJECT_STORE_NAME,
+            modelArtifacts == null ? 'readonly' : 'readwrite');
         const store = tx.objectStore(OBJECT_STORE_NAME);
 
-        const getRequest = store.get(this.modelPath);
-        getRequest.onsuccess = () => {
-          if (getRequest.result == null) {
-            reject(new Error(
-                `Cannot find model with path '${this.modelPath}' ` +
-                `in IndexedDB.`));
-          } else {
-            resolve(getRequest.result.modelArtifacts);
-          }
-        };
-        getRequest.onerror = (error) => reject(getRequest.error);
+        if (modelArtifacts == null) {
+          // Read model out from object store.
+          const getRequest = store.get(this.modelPath);
+          getRequest.onsuccess = () => {
+            if (getRequest.result === undefined) {
+              reject(new Error(
+                  `Cannot find model with path '${this.modelPath}' ` +
+                  `in IndexedDB.`));
+            } else {
+              resolve(getRequest.result.modelArtifacts);
+            }
+          };
+          getRequest.onerror = error => reject(getRequest.error);
+        } else {
+          // Put model into object store.
+          const modelArtifactsInfo: ModelArtifactsInfo =
+              getModelArtifactsInfoForKerasJSON(modelArtifacts);
+          const putRequest = store.put(
+              {modelPath: this.modelPath, modelArtifacts, modelArtifactsInfo});
+          putRequest.onsuccess = () => resolve({modelArtifactsInfo});
+          putRequest.onerror = error => reject(putRequest.error);
+          tx.oncomplete = () => db.close();
+        }
         tx.oncomplete = () => db.close();
       };
-      openRequest.onerror = (error) => {
-        reject(openRequest.error);
-      };
+      openRequest.onerror = error => reject(openRequest.error);
     });
   }
 
