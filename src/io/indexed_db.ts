@@ -26,7 +26,7 @@ const DATABASE_VERSION = 1;
 const OBJECT_STORE_NAME = 'models_store';
 
 /**
- * Delete the entire database for tensorfowjs, including the models store.
+ * Delete the entire database for tensorflow.js, including the models store.
  */
 export async function deleteDatabase(): Promise<void> {
   const idbFactory = getIndexedDBFactory();
