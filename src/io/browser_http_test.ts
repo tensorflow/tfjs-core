@@ -246,7 +246,7 @@ describe('browserHTTPRequest', () => {
         });
   });
 
-  it('Save topology and weights, POST with extra data', async done => {
+  it('Save topology and weights, POST with extra FormData', async done => {
     const testStartDate = new Date();
     const key1Data = '1337';
     const key2Data = '42';

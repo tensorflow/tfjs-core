@@ -133,7 +133,8 @@ export class BrowserHTTPRequest implements IOHandler {
  * The following Python code snippet based on the
  * [flask](https://github.com/pallets/flask) server framework implements a
  * server that can receive the request. Upon receiving the model artifacrts
- * via the requst, this particular server writes them to files.
+ * via the requst, this particular server reconsistutes instancecs of
+ * [Keras Models](https://keras.io/models/model/) in memory.
  *
  * ```python
  * # pip install -U flask flask-cors tensorflowjs
