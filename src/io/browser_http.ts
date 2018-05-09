@@ -136,7 +136,7 @@ export class BrowserHTTPRequest implements IOHandler {
  * [Keras Models](https://keras.io/models/model/) in memory.
  *
  * ```python
- * # pip install -U flask flask-cors tensorflowjs
+ * # pip install -U flask flask-cors keras tensorflow tensorflowjs
  *
  * from __future__ import absolute_import
  * from __future__ import division
@@ -146,6 +146,7 @@ export class BrowserHTTPRequest implements IOHandler {
  *
  * from flask import Flask, Response, request
  * from flask_cors import CORS, cross_origin
+ * import tensorflow as tf
  * import tensorflowjs as tfjs
  * import werkzeug.formparser
  *
@@ -203,7 +204,11 @@ export class BrowserHTTPRequest implements IOHandler {
  *     werkzeug.formparser.parse_form_data(
  *         request.environ, stream_factory=model_receiver.stream_factory)
  *     print('Received model:')
- *     model_receiver.model.summary()
+ *     with tf.Graph().as_default(), tf.Session():
+ *       model = model_receiver.model
+ *       model.summary()
+ *       # You can perform `model.predict()`, `model.fit()`,
+ *       # `model.evaluate()` etc. here.
  *     return Response(status=200)
  *
  *   app.run('localhost', 5000)
