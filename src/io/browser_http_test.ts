@@ -90,7 +90,7 @@ describeWithFlags('browserHTTPRequest', CPU_ENVS, () => {
     });
   });
 
-  it('Save topology and weights, default POST method', async done => {
+  it('Save topology and weights, default POST method', done => {
     const testStartDate = new Date();
     const handler = tf.io.browserHTTPRequest('model-upload-test');
     handler.save(artifacts1)
@@ -143,7 +143,7 @@ describeWithFlags('browserHTTPRequest', CPU_ENVS, () => {
         });
   });
 
-  it('Save topology only, default POST method', async done => {
+  it('Save topology only, default POST method', done => {
     const testStartDate = new Date();
     const handler = tf.io.browserHTTPRequest('model-upload-test');
     const topologyOnlyArtifacts = {modelTopology: modelTopology1};
@@ -182,7 +182,7 @@ describeWithFlags('browserHTTPRequest', CPU_ENVS, () => {
         });
   });
 
-  it('Save topology and weights, PUT method, extra headers', async done => {
+  it('Save topology and weights, PUT method, extra headers', done => {
     const testStartDate = new Date();
     const handler = tf.io.browserHTTPRequest('model-upload-test', {
       method: 'PUT',
@@ -248,7 +248,7 @@ describeWithFlags('browserHTTPRequest', CPU_ENVS, () => {
         });
   });
 
-  it('Save topology and weights, POST with extra FormData', async done => {
+  it('Save topology and weights, POST with extra FormData', done => {
     const testStartDate = new Date();
     const key1Data = '1337';
     const key2Data = '42';
@@ -309,7 +309,7 @@ describeWithFlags('browserHTTPRequest', CPU_ENVS, () => {
         });
   });
 
-  it('404 response causes Error', async done => {
+  it('404 response causes Error', done => {
     const handler = tf.io.browserHTTPRequest('invalid/path');
     handler.save(artifacts1)
         .then(saveResult => {
