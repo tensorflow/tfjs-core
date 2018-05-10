@@ -2251,3 +2251,57 @@ describeWithFlags('expandDims', ALL_ENVS, () => {
         .toThrowError(/Argument 'x' passed to 'expandDims' must be a Tensor/);
   });
 });
+
+describeWithFlags('cumsum', ALL_ENVS, () => {
+  console.log('pre1');
+  it('1D standard', () => {
+    console.log('1');
+    const res = tf.tensor1d([1, 2, 3, 4]).cumsum();
+    expect(res.shape).toEqual([4]);
+    expectArraysClose(res, [1, 3, 6, 10]);
+  });
+  console.log('pre2');
+
+  it('1D reverse', () => {
+    console.log('2');
+    const res = tf.tensor1d([1, 2, 3, 4]).cumsum(0, false, true);
+    expect(res.shape).toEqual([4]);
+    expectArraysClose(res, [10, 9, 7, 4]);
+  });
+  console.log('pre3');
+
+  it('1D exclusive', () => {
+    console.log('3');
+    const res = tf.tensor1d([1, 2, 3, 4]).cumsum(0, true);
+    expect(res.shape).toEqual([4]);
+    expectArraysClose(res, [0, 1, 3, 6]);
+  });
+
+
+  it('1D exclusive reverse', () => {
+    const res = tf.tensor1d([1, 2, 3, 4]).cumsum(0, true, true);
+    expect(res.shape).toEqual([4]);
+    expectArraysClose(res, [9, 7, 4, 0]);
+  });
+
+  it('gradient: 1D', () => {
+    const a = tf.tensor1d([1, 2, 3]);
+    const dy = tf.tensor1d([4, 5, 6]);
+    const da = tf.grad(x => tf.cumsum(x))(a, dy);
+
+    expect(da.shape).toEqual([3]);
+    expectArraysClose(da, [15, 11, 6]);
+  });
+
+  it('2D standard', () => {
+    const res = tf.tensor2d([[1, 2], [3, 4]]).cumsum(1);
+    expect(res.shape).toEqual([2, 2]);
+    expectArraysClose(res, [1, 3, 3, 7]);
+  });
+
+  it('2D reverse exclusive', () => {
+    const res = tf.tensor2d([[1, 2], [3, 4]]).cumsum(1, true, true);
+    expect(res.shape).toEqual([2, 2]);
+    expectArraysClose(res, [2, 0, 4, 0]);
+  });
+});

@@ -482,6 +482,13 @@ export class MathBackendWebGL implements KernelBackend {
     return this.argReduce(a2D, 'max').reshape(outShape);
   }
 
+  cumsum(x: Tensor, axis: number, exclusive: boolean, reverse: boolean):
+      Tensor {
+    axis_util.assertAxesAreInnerMostDims('cumsum', [axis], x.rank);
+    // TODO
+    return x;
+  }
+
   equal(a: Tensor, b: Tensor): Tensor {
     const program = new BinaryOpProgram(binaryop_gpu.EQUAL, a.shape, b.shape);
     const output = this.makeOutputArray(program.outputShape, 'bool');

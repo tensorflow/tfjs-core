@@ -1138,6 +1138,34 @@ export class ArrayOps {
   }
 
   /**
+   * Computes the cumulative sum of a `Tensor` along `axis`.
+   *
+   * ```js
+   * const x = tf.tensor([1, 2, 3, 4]);
+   * x.cumsum().print();
+   * ```
+   *
+   * @param x The input tensor to be summed.
+   * @param axis The axis on which to perform the sum. Optional. Defaults to 0.
+   * @param exclusive Whether to perform exclusive cumulative sum. Optional.
+   *     Defaults to false.
+   * @param reverse Whether to sum in the opposite direction. Optional.
+   *     Defaults to false.
+   */
+  @doc({heading: 'Operations', subheading: 'Scan'})
+  static cumsum<T extends Tensor>(
+      x: Tensor, axis = 0, exclusive = false, reverse = false): T {
+    util.assertArgumentsAreTensors({x}, 'cumsum');
+    const grad = (dy: T) => {
+      return {x: () => dy.cumsum(axis, exclusive, !reverse)};
+    };
+
+    return ENV.engine.runKernel(
+               backend => backend.cumsum(x, axis, exclusive, reverse), {x},
+               grad) as T;
+  }
+
+  /**
    * Returns a `Tensor` that has expanded rank, by inserting a dimension
    * into the tensor's shape.
    *

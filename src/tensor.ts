@@ -417,6 +417,23 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   /**
+   * Returns a `Tensor` that has expanded rank, by inserting a dimension
+   * into the tensor's shape. See `expandDims` for details.
+   *
+   * @param axis The dimension index at which to insert shape of 1. Defaults to
+   *    0 (the first dimension).
+   * @param exclusive Whether to perform exclusive cumulative sum. Defaults to
+   *    false.
+   * @param reverse Whether to sum in the opposite direction. Defaults to
+   *    false.
+   */
+  @doc({ heading: 'Tensors', subheading: 'Classes' })
+  cumsum<T extends Tensor>(axis = 0, exclusive = false, reverse = false):
+    T {
+    return ops.cumsum(this, axis, exclusive, reverse);
+  }
+
+  /**
    * Returns a `Tensor` with dimensions of size 1 removed from the shape.
    * See `squeeze` for more details.
    *
