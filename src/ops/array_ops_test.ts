@@ -2253,25 +2253,19 @@ describeWithFlags('expandDims', ALL_ENVS, () => {
 });
 
 describeWithFlags('cumsum', ALL_ENVS, () => {
-  console.log('pre1');
   it('1D standard', () => {
-    console.log('1');
     const res = tf.tensor1d([1, 2, 3, 4]).cumsum();
     expect(res.shape).toEqual([4]);
     expectArraysClose(res, [1, 3, 6, 10]);
   });
-  console.log('pre2');
 
   it('1D reverse', () => {
-    console.log('2');
     const res = tf.tensor1d([1, 2, 3, 4]).cumsum(0, false, true);
     expect(res.shape).toEqual([4]);
     expectArraysClose(res, [10, 9, 7, 4]);
   });
-  console.log('pre3');
 
   it('1D exclusive', () => {
-    console.log('3');
     const res = tf.tensor1d([1, 2, 3, 4]).cumsum(0, true);
     expect(res.shape).toEqual([4]);
     expectArraysClose(res, [0, 1, 3, 6]);
