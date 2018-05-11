@@ -2271,7 +2271,6 @@ describeWithFlags('cumsum', ALL_ENVS, () => {
     expectArraysClose(res, [0, 1, 3, 6]);
   });
 
-
   it('1D exclusive reverse', () => {
     const res = tf.tensor1d([1, 2, 3, 4]).cumsum(0, true, true);
     expect(res.shape).toEqual([4]);

@@ -65,7 +65,6 @@ export class CumSumProgram implements GPGPUProgram {
   }
 }
 
-
 function getCoords(rank: number, name: string): string {
   if (rank === 1) {
     return `${name}`;
@@ -93,4 +92,3 @@ function getFinalCoord(rank: number, name: string): string {
     throw Error(`Cumulative sum for rank ${rank} is not yet supported`);
   }
 }
-
