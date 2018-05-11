@@ -50,7 +50,7 @@ class BrowserHTTPRequest implements IOHandler {
   async save(modelArtifacts: ModelArtifacts): Promise<SaveResult> {
     if (modelArtifacts.modelTopology instanceof ArrayBuffer) {
       throw new Error(
-          'HTTPReqwuests.save() does not support saving model topology ' +
+          'BrowserHTTPRequest.save() does not support saving model topology ' +
           'in binary formats yet.');
     }
 
@@ -91,12 +91,13 @@ class BrowserHTTPRequest implements IOHandler {
     } else {
       throw new Error(
           `BrowserHTTPRequest.save() failed due to HTTP response status ` +
-          `${response.status}`);
+          `${response.status}.`);
     }
   }
 
-  // TODO(cais): Maybe add load to unify this IOHandler type and the mechanism
+  // TODO(cais): Add load to unify this IOHandler type and the mechanism
   //   that currently underlies `tf.loadModel('path')` in tfjs-layers.
+  //   See: https://github.com/tensorflow/tfjs/issues/290
 }
 
 // tslint:disable:max-line-length
@@ -121,7 +122,7 @@ class BrowserHTTPRequest implements IOHandler {
  *     tf.layers.dense({units: 1, inputShape: [100], activation: 'sigmoid'}));
  *
  * const saveResult = await model.save(tf.io.browserHTTPRequest(
- *     'http://model-server.domain:5000/upload', {method: 'PUT'}));
+ *     'http://model-server:5000/upload', {method: 'PUT'}));
  * console.log(saveResult);
  * ```
  *
@@ -226,7 +227,7 @@ class BrowserHTTPRequest implements IOHandler {
  *    the model topology (filename: 'model.json') and the weights of the
  *    model (filename: 'model.weights.bin') will be appended to the body.
  *    If `requestInit` has a `body`, an Error will be thrown.
- * @returns An instance of `BrowserHTTPRequest`.
+ * @returns An instance of `IOHandler`.
  */
 // tslint:enable:max-line-length
 export function browserHTTPRequest(
