@@ -328,8 +328,10 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   stridedSlice<T extends Tensor>(
-      x: T, begin: number[], strides: number[], size: number[]): T {
-    const program = new StridedSliceProgram(begin, strides, size);
+      x: T, begin: number[], end: number[], strides: number[],
+      beginMask: number, endMask: number, beginIndex: number[],
+      size: number[]): T {
+    const program = new StridedSliceProgram(beginIndex, strides, size);
     return this.compileAndRun(program, [x]);
   }
 

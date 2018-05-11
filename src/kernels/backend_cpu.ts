@@ -154,16 +154,17 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   stridedSlice<T extends Tensor>(
-      x: T, begin: number[], strides: number[], size: number[]): T {
+      x: T, begin: number[], end: number[], strides: number[],
+      beginMask: number, endMask: number, beginIndex: number[],
+      size: number[]): T {
     const buffer = ops.buffer(size, x.dtype);
 
     for (let i = 0; i < buffer.size; i++) {
       const loc = buffer.indexToLoc(i);
 
-      // Permute location.
       const newLoc: number[] = new Array(loc.length);
       for (let j = 0; j < newLoc.length; j++) {
-        newLoc[j] = loc[j] * strides[j] + begin[j];
+        newLoc[j] = loc[j] * strides[j] + beginIndex[j];
       }
       buffer.set(x.get(...newLoc), ...loc);
     }

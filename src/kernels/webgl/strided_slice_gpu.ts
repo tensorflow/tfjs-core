@@ -28,7 +28,6 @@ export class StridedSliceProgram implements GPGPUProgram {
     this.outputShape = shape;
     this.rank = shape.length;
     const dtype = getCoordsDataType(this.rank);
-    console.log(shape);
 
     let newCoords = '';
     if (this.rank === 1) {
@@ -45,7 +44,7 @@ export class StridedSliceProgram implements GPGPUProgram {
 
       void main() {
         ${dtype} coords = getOutputCoords();
-          setOutput(getX(${newCoords}));
+        setOutput(getX(${newCoords}));
       }
     `;
   }

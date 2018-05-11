@@ -15,9 +15,9 @@
  * =============================================================================
  */
 
-import {tensor} from '..';
 import {doc} from '../doc';
 import {ENV} from '../environment';
+import {tensor} from '../index';
 import {Tensor} from '../tensor';
 import * as util from '../util';
 
@@ -44,11 +44,13 @@ export class StridedSliceOps {
    * ```
    *
    * @param x The tensor to stride slice.
-   * @param begin An int32 Tensor.
-   * @param end: An int32 Tensor.
-   * @param strides: An int32 Tensor.
-   * @param beginMask: An int32 mask.
-   * @param endMask: An int32 mask.
+   * @param begin The coordinates to start the slice from.
+   * @param end: The coordinates to end the slice at.
+   * @param strides: The size of the slice.
+   * @param beginMask: If the ith bit of begin_mask is set, begin[i] is ignored
+   *      and the fullest possible range in that dimension is used instead.
+   * @param endMask: If the ith bit of end_mask is set, end[i] is ignored
+   *      and the fullest possible range in that dimension is used instead.
    */
   @doc({heading: 'Operations', subheading: 'Slicing and Joining'})
   @operation
@@ -73,27 +75,19 @@ export class StridedSliceOps {
     size = size.map((d, i) => {
       let count = 0;
       for (let start = startIndex[i];
-           !StridedSliceOps.loopCondition(start, endIndex[i], strides[i]);
+           !(strides[i] > 0 ? start >= endIndex[i] : start <= endIndex[i]);
            start += strides[i]) {
         count += 1;
       }
       return count;
     });
-    // TODO(piyu): Add grad function for strided slice.
-    const grad = (dy: T) => {
-      return {x: () => dy};
-    };
     return ENV.engine.runKernel(
                size.some(axis => axis === 0) ?
                    backend => tensor([], size) :
-                   backend =>
-                       backend.stridedSlice(x, startIndex, strides, size),
-               {x}, grad) as T;
-  }
-
-  private static clamp(value: number, low: number, high: number) {
-    util.assert(!(high < low), `${high} needs to be greater than ${low}`);
-    return high < value ? high : (value < low ? low : value);
+                   backend => backend.stridedSlice(
+                       x, begin, end, strides, beginMask, endMask, startIndex,
+                       size),
+               {x}) as T;
   }
 
   // Return the index for the first element along that axis. This index will be
@@ -105,7 +99,7 @@ export class StridedSliceOps {
     // Begin with the specified index
     let start = startIndices[axis];
 
-    // beginMask override
+    // Check the axis bit from right of beginMask
     if (beginMask & 1 << axis) {
       if (strides[axis] > 0) {
         // Forward iteration - use the first element. These values will get
@@ -125,7 +119,7 @@ export class StridedSliceOps {
     }
 
     // Clamping
-    start = StridedSliceOps.clamp(start, 0, axisSize - 1);
+    start = util.clamp(0, start, axisSize - 1);
 
     return start;
   }
@@ -136,7 +130,7 @@ export class StridedSliceOps {
     // Begin with the specified index
     let stop = stopIndices[axis];
 
-    // endMask override
+    // Check the axis bit from right of endMask
     if (endMask & (1 << axis)) {
       if (strides[axis] > 0) {
         // Forward iteration - use the last element. These values will get
@@ -159,18 +153,12 @@ export class StridedSliceOps {
     // different clamping ranges depending on the direction.
     if (strides[axis] > 0) {
       // Forward iteration
-      stop = StridedSliceOps.clamp(stop, 0, axisSize);
+      stop = util.clamp(0, stop, axisSize);
     } else {
       // Backward iteration
-      stop = StridedSliceOps.clamp(stop, -1, axisSize - 1);
+      stop = util.clamp(-1, stop, axisSize - 1);
     }
 
     return stop;
-  }
-
-  private static loopCondition(index: number, stop: number, stride: number):
-      boolean {
-    // True when we have reached the end of an axis and should loop.
-    return stride > 0 ? index >= stop : index <= stop;
   }
 }
