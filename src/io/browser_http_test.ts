@@ -248,67 +248,6 @@ describeWithFlags('browserHTTPRequest', CPU_ENVS, () => {
         });
   });
 
-  it('Save topology and weights, POST with extra FormData', done => {
-    const testStartDate = new Date();
-    const key1Data = '1337';
-    const key2Data = '42';
-    const extraFormData = new FormData();
-    extraFormData.set('key1', key1Data);
-    extraFormData.set('key2', key2Data);
-    const handler =
-        tf.io.browserHTTPRequest('model-upload-test', {body: extraFormData});
-    handler.save(artifacts1)
-        .then(saveResult => {
-          expect(saveResult.modelArtifactsInfo.dateSaved.getTime())
-              .toBeGreaterThanOrEqual(testStartDate.getTime());
-          // Note: The following two assertions work only because there is no
-          //   non-ASCII characters in `modelTopology1` and `weightSpecs1`.
-          expect(saveResult.modelArtifactsInfo.modelTopologyBytes)
-              .toEqual(JSON.stringify(modelTopology1).length);
-          expect(saveResult.modelArtifactsInfo.weightSpecsBytes)
-              .toEqual(JSON.stringify(weightSpecs1).length);
-          expect(saveResult.modelArtifactsInfo.weightDataBytes)
-              .toEqual(weightData1.byteLength);
-
-          expect(requestInits.length).toEqual(1);
-          const init = requestInits[0];
-          expect(init.method).toEqual('POST');
-          const body = init.body as FormData;
-          expect(body.get('key1')).toEqual(key1Data);
-          expect(body.get('key2')).toEqual(key2Data);
-          const jsonFile = body.get('model.json') as File;
-          const jsonFileReader = new FileReader();
-          jsonFileReader.onload = (event: Event) => {
-            // tslint:disable-next-line:no-any
-            const modelJSON = JSON.parse((event.target as any).result);
-            expect(modelJSON.modelTopology).toEqual(modelTopology1);
-            expect(modelJSON.weightsManifest.length).toEqual(1);
-            expect(modelJSON.weightsManifest[0].weights).toEqual(weightSpecs1);
-
-            const weightsFile = body.get('model.weights.bin') as File;
-            const weightsFileReader = new FileReader();
-            weightsFileReader.onload = (event: Event) => {
-              // tslint:disable-next-line:no-any
-              const weightData = (event.target as any).result as ArrayBuffer;
-              expect(new Uint8Array(weightData))
-                  .toEqual(new Uint8Array(weightData1));
-              done();
-            };
-            weightsFileReader.onerror = (error: ErrorEvent) => {
-              done.fail(error.message);
-            };
-            weightsFileReader.readAsArrayBuffer(weightsFile);
-          };
-          jsonFileReader.onerror = (error: ErrorEvent) => {
-            done.fail(error.message);
-          };
-          jsonFileReader.readAsText(jsonFile);
-        })
-        .catch(err => {
-          done.fail(err.stack);
-        });
-  });
-
   it('404 response causes Error', done => {
     const handler = tf.io.browserHTTPRequest('invalid/path');
     handler.save(artifacts1)
@@ -322,10 +261,15 @@ describeWithFlags('browserHTTPRequest', CPU_ENVS, () => {
         });
   });
 
-  it('Non-FormData body in requestInit leads to Error', () => {
-    const body = new Uint8Array([1, 3, 3, 7]);
-    expect(() => tf.io.browserHTTPRequest('/foo/bar', {body}))
-        .toThrowError(/The body of requestInit is expected to be a FormData/);
+  it('Existing body leads to Error', () => {
+    const key1Data = '1337';
+    const key2Data = '42';
+    const extraFormData = new FormData();
+    extraFormData.set('key1', key1Data);
+    extraFormData.set('key2', key2Data);
+    expect(() => tf.io.browserHTTPRequest('model-upload-test', {
+      body: extraFormData
+    })).toThrowError(/requestInit is expected to have no pre-existing body/);
   });
 
   it('Empty, null or undefined URL paths lead to Error', () => {

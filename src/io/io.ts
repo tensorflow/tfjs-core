@@ -27,11 +27,11 @@ import {loadWeights} from './weights_loader';
 export {
   browserDownloads,
   browserFiles,
+  browserHTTPRequest,
   browserIndexedDB,
   browserLocalStorage,
   decodeWeights,
   encodeWeights,
-  browserHTTPRequest,
   IOHandler,
   LoadHandler,
   loadWeights,

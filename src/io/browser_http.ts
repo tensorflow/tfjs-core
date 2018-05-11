@@ -27,7 +27,7 @@ import {getModelArtifactsInfoForKerasJSON} from './io_utils';
 // tslint:disable-next-line:max-line-length
 import {IOHandler, ModelArtifacts, SaveResult, WeightsManifestConfig} from './types';
 
-export class BrowserHTTPRequest implements IOHandler {
+class BrowserHTTPRequest implements IOHandler {
   protected readonly path: string;
   protected readonly requestInit: RequestInit;
 
@@ -40,9 +40,9 @@ export class BrowserHTTPRequest implements IOHandler {
             'empty.');
     this.path = path;
 
-    if (requestInit != null && requestInit.body != null &&
-        !(requestInit.body instanceof FormData)) {
-      throw new Error('The body of requestInit is expected to be a FormData.');
+    if (requestInit != null && requestInit.body != null) {
+      throw new Error(
+          'requestInit is expected to have no pre-existing body, but has one.');
     }
     this.requestInit = requestInit || {};
   }
@@ -54,49 +54,45 @@ export class BrowserHTTPRequest implements IOHandler {
           'in binary formats yet.');
     }
 
-    return new Promise<SaveResult>(async (resolve, reject) => {
-      const requestInit =
-          Object.assign({method: this.DEFAULT_METHOD}, this.requestInit);
-      if (requestInit.body == null) {
-        requestInit.body = new FormData();
-      }
+    const init = Object.assign({method: this.DEFAULT_METHOD}, this.requestInit);
+    init.body = new FormData();
 
-      const weightsManifest: WeightsManifestConfig = [{
-        paths: ['./model.weights.bin'],
-        weights: modelArtifacts.weightSpecs,
-      }];
-      const modelTopologyAndWeightManifest = {
-        modelTopology: modelArtifacts.modelTopology,
-        weightsManifest
-      };
+    const weightsManifest: WeightsManifestConfig = [{
+      paths: ['./model.weights.bin'],
+      weights: modelArtifacts.weightSpecs,
+    }];
+    const modelTopologyAndWeightManifest = {
+      modelTopology: modelArtifacts.modelTopology,
+      weightsManifest
+    };
 
-      const formData = requestInit.body as FormData;
-      formData.append(
-          'model.json',
+    init.body.append(
+        'model.json',
+        new Blob(
+            [JSON.stringify(modelTopologyAndWeightManifest)],
+            {type: 'application/json'}),
+        'model.json');
+
+    if (modelArtifacts.weightData != null) {
+      init.body.append(
+          'model.weights.bin',
           new Blob(
-              [JSON.stringify(modelTopologyAndWeightManifest)],
-              {type: 'application/json'}),
-          'model.json');
+              [modelArtifacts.weightData], {type: 'application/octet-stream'}),
+          'model.weights.bin');
+    }
 
-      if (modelArtifacts.weightData != null) {
-        formData.append(
-            'model.weights.bin', new Blob([modelArtifacts.weightData], {
-              type: 'application/octet-stream'
-            }),
-            'model.weights.bin');
-      }
+    const response = await fetch(this.path, init);
 
-      const response = await fetch(this.path, requestInit);
-
-      if (response.status === 200) {
-        resolve({
-          modelArtifactsInfo: getModelArtifactsInfoForKerasJSON(modelArtifacts),
-          responses: [response],
-        });
-      } else {
-        reject(response);
-      }
-    });
+    if (response.status === 200) {
+      return {
+        modelArtifactsInfo: getModelArtifactsInfoForKerasJSON(modelArtifacts),
+        responses: [response],
+      };
+    } else {
+      throw new Error(
+          `BrowserHTTPRequest.save() failed due to HTTP response status ` +
+          `${response.status}`);
+    }
   }
 
   // TODO(cais): Maybe add load to unify this IOHandler type and the mechanism
@@ -125,13 +121,13 @@ export class BrowserHTTPRequest implements IOHandler {
  *     tf.layers.dense({units: 1, inputShape: [100], activation: 'sigmoid'}));
  *
  * const saveResult = await model.save(tf.io.browserHTTPRequest(
- *     'http://model-server.domain:5000/upload'));
+ *     'http://model-server.domain:5000/upload', {method: 'PUT'}));
  * console.log(saveResult);
  * ```
  *
  * The following Python code snippet based on the
  * [flask](https://github.com/pallets/flask) server framework implements a
- * server that can receive the request. Upon receiving the model artifacrts
+ * server that can receive the request. Upon receiving the model artifacts
  * via the requst, this particular server reconsistutes instances of
  * [Keras Models](https://keras.io/models/model/) in memory.
  *
@@ -225,11 +221,11 @@ export class BrowserHTTPRequest implements IOHandler {
  *    HTTP request to server using `fetch`. It can contain fields such as
  *    `method`, `credentials`, `headers`, `mode`, etc. See
  *    https://developer.mozilla.org/en-US/docs/Web/API/Request/Request
- *    for more information. If `requestInit` has a `body`, it must
- *    be a `FormData`, or an Error will be thrown. File blobs representing
+ *    for more information. `requestInit` must not have a body, because the body
+ *    will be set by TensorFlow.js. File blobs representing
  *    the model topology (filename: 'model.json') and the weights of the
- *    model (filename: 'model.weights.bin') will be appended to any existing
- *    `FormData` body of `extraRequestInit`.
+ *    model (filename: 'model.weights.bin') will be appended to the body.
+ *    If `requestInit` has a `body`, an Error will be thrown.
  * @returns An instance of `BrowserHTTPRequest`.
  */
 // tslint:enable:max-line-length
