@@ -39,6 +39,7 @@ import {ConcatProgram} from './webgl/concat_gpu';
 // tslint:disable-next-line:max-line-length
 import {Conv2DDerFilterProgram, Conv2DDerInputProgram} from './webgl/conv_backprop_gpu';
 import {Conv2DProgram} from './webgl/conv_gpu';
+import {CumSumProgram} from './webgl/cumsum_gpu';
 import {DepthwiseConv2DProgram} from './webgl/conv_gpu_depthwise';
 import {FromPixelsProgram} from './webgl/from_pixels_gpu';
 import {GatherProgram} from './webgl/gather_gpu';
@@ -485,8 +486,8 @@ export class MathBackendWebGL implements KernelBackend {
   cumsum(x: Tensor, axis: number, exclusive: boolean, reverse: boolean):
       Tensor {
     axis_util.assertAxesAreInnerMostDims('cumsum', [axis], x.rank);
-    // TODO
-    return x;
+    const program = new CumSumProgram(x.shape, exclusive, reverse);
+    return this.compileAndRun(program, [x]);
   }
 
   equal(a: Tensor, b: Tensor): Tensor {
