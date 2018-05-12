@@ -22,6 +22,7 @@ import {CompareOps} from './compare';
 import {ConcatOps} from './concat';
 import {ConvOps} from './conv';
 import {ImageOps} from './image_ops';
+import {LinalgOps} from './linalg_ops';
 import {LogicalOps} from './logical_ops';
 import {LossOps, Reduction} from './loss_ops';
 import {LRNOps} from './lrn';
@@ -87,6 +88,7 @@ export const mean = ReductionOps.mean;
 export const min = ReductionOps.min;
 export const moments = ReductionOps.moments;
 export const sum = ReductionOps.sum;
+export const unsortedSegmentSum = ReductionOps.unsortedSegmentSum;
 
 export const equal = CompareOps.equal;
 export const equalStrict = CompareOps.equalStrict;
@@ -176,6 +178,7 @@ export const ones = ArrayOps.ones;
 export const onesLike = ArrayOps.onesLike;
 export const zeros = ArrayOps.zeros;
 export const zerosLike = ArrayOps.zerosLike;
+export const eye = ArrayOps.eye;
 export const rand = ArrayOps.rand;
 export const randomNormal = ArrayOps.randomNormal;
 export const truncatedNormal = ArrayOps.truncatedNormal;
@@ -216,6 +219,10 @@ export const softmax = SoftmaxOps.softmax;
 
 export const localResponseNormalization = LRNOps.localResponseNormalization;
 
+export const linalg = LinalgOps;
+
+export {operation} from './operation';
+
 // So typings can propagate.
 import {Tensor} from '../tensor';
 import {Rank} from '../types';
@@ -229,6 +236,7 @@ export const losses = {
   absoluteDifference: LossOps.absoluteDifference,
   computeWeightedLoss: LossOps.computeWeightedLoss,
   cosineDistance: LossOps.cosineDistance,
+  hingeLoss: LossOps.hingeLoss,
   meanSquaredError: LossOps.meanSquaredError,
   softmaxCrossEntropy: SoftmaxOps.softmaxCrossEntropy
 };
