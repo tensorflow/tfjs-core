@@ -16,6 +16,8 @@
  */
 
 import {browserDownloads, browserFiles} from './browser_files';
+import {browserHTTPRequest} from './browser_http';
+import {browserIndexedDB} from './indexed_db';
 import {decodeWeights, encodeWeights} from './io_utils';
 import {browserLocalStorage} from './local_storage';
 // tslint:disable-next-line:max-line-length
@@ -25,6 +27,8 @@ import {loadWeights} from './weights_loader';
 export {
   browserDownloads,
   browserFiles,
+  browserHTTPRequest,
+  browserIndexedDB,
   browserLocalStorage,
   decodeWeights,
   encodeWeights,

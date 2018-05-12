@@ -21,7 +21,7 @@
  */
 
 // tslint:disable:max-line-length
-import {basename, concatenateArrayBuffers, stringByteLength} from './io_utils';
+import {basename, concatenateArrayBuffers, getModelArtifactsInfoForKerasJSON} from './io_utils';
 import {IOHandler, ModelArtifacts, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
 // tslint:enable:max-line-length
 
@@ -29,13 +29,14 @@ const DEFAULT_FILE_NAME_PREFIX = 'model';
 const DEFAULT_JSON_EXTENSION_NAME = '.json';
 const DEFAULT_WEIGHT_DATA_EXTENSION_NAME = '.weights.bin';
 
-export class BrowserDownloads implements IOHandler {
+class BrowserDownloads implements IOHandler {
   private readonly modelTopologyFileName: string;
   private readonly weightDataFileName: string;
   private readonly jsonAnchor: HTMLAnchorElement;
   private readonly weightDataAnchor: HTMLAnchorElement;
 
   constructor(fileNamePrefix?: string) {
+    // TODO(cais): Use central environment flag when it's available.
     if (typeof window === 'undefined') {
       // TODO(cais): Provide info on what IOHandlers are available under the
       //   current environment.
@@ -95,24 +96,13 @@ export class BrowserDownloads implements IOHandler {
       }
 
       return {
-        modelArtifactsInfo: {
-          dateSaved: new Date(),
-          modelTopologyType: 'KerasJSON',
-          modelTopologyBytes:
-              stringByteLength(JSON.stringify(modelArtifacts.modelTopology)),
-          weightSpecsBytes: modelArtifacts.weightSpecs == null ?
-              0 :
-              stringByteLength(JSON.stringify(modelArtifacts.weightSpecs)),
-          weightDataBytes: modelArtifacts.weightData == null ?
-              0 :
-              modelArtifacts.weightData.byteLength,
-        }
+        modelArtifactsInfo: getModelArtifactsInfoForKerasJSON(modelArtifacts)
       };
     }
   }
 }
 
-export class BrowserFiles implements IOHandler {
+class BrowserFiles implements IOHandler {
   private readonly files: File[];
 
   constructor(files: File[]) {
@@ -275,7 +265,7 @@ export class BrowserFiles implements IOHandler {
  * @param config Additional configuration for triggering downloads.
  * @returns An instance of `DownloadTrigger` `IOHandler`.
  */
-export function browserDownloads(fileNamePrefix = 'model'): BrowserDownloads {
+export function browserDownloads(fileNamePrefix = 'model'): IOHandler {
   return new BrowserDownloads(fileNamePrefix);
 }
 
@@ -312,6 +302,6 @@ export function browserDownloads(fileNamePrefix = 'model'): BrowserDownloads {
  *     topology will be loaded from the JSON file above.
  * @returns An instance of `Files` `IOHandler`.
  */
-export function browserFiles(files: File[]): BrowserFiles {
+export function browserFiles(files: File[]): IOHandler {
   return new BrowserFiles(files);
 }
