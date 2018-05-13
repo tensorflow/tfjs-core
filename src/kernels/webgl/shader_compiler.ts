@@ -404,7 +404,7 @@ function getOutput5DCoords(
       index -= d * ${stride2};
 
       int d2 = index  / ${stride3};
-      int d3 = index - d2*${stride3};
+      int d3 = index - d2 * ${stride3};
 
       ivec5 outShape = ivec5(r, c, d, d2, d3);
       return outShape;

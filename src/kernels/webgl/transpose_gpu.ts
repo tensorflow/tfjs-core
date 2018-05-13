@@ -45,10 +45,10 @@ export class TransposeProgram implements GPGPUProgram {
 
 function getSwitchedCoords(newDim: number[]): string {
   const rank = newDim.length;
-  if (rank > 5) {
+  if (rank > 4) {
     throw Error(`Transpose for rank ${rank} is not yet supported`);
   }
-  const originalOrder = ['resRC.x', 'resRC.y', 'resRC.z', 'resRC.w', 'resRC.u'];
+  const originalOrder = ['resRC.x', 'resRC.y', 'resRC.z', 'resRC.w'];
   const switchedCoords = new Array(rank);
   for (let i = 0; i < newDim.length; i++) {
     switchedCoords[newDim[i]] = originalOrder[i];

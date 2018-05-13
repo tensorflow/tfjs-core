@@ -260,7 +260,7 @@ export class ArrayOps {
    * ```
    * ```js
    * // Pass a flat array and specify a shape.
-   * tf.tensor4d([1, 2, 3, 4, 5, 6], [1, 2, 2, 2, 1]).print();
+   * tf.tensor5d([1, 2, 3, 4, 5, 6], [1, 2, 2, 2, 1]).print();
    * ```
    *
    * @param values The values of the tensor. Can be nested array of numbers,
@@ -274,7 +274,7 @@ export class ArrayOps {
       values: TensorLike5D, shape?: [number, number, number, number, number],
       dtype: DataType = 'float32'): Tensor5D {
     if (shape != null && shape.length !== 5) {
-      throw new Error('tensor5d() requires shape to have four numbers');
+      throw new Error('tensor5d() requires shape to have five numbers');
     }
     const inferredShape = util.inferShape(values);
     if (inferredShape.length !== 5 && inferredShape.length !== 1) {
@@ -985,25 +985,6 @@ export class ArrayOps {
             [number, number]
           ],
       constantValue = 0): Tensor4D {
-    util.assert(
-        paddings.length === 4 && paddings[0].length === 2 &&
-            paddings[1].length === 2 && paddings[2].length === 2 &&
-            paddings[3].length === 2,
-        'Invalid number of paddings. Must be length of 2 each.');
-    return ArrayOps.pad(x, paddings, constantValue);
-  }
-
-  /**
-   * Pads a `Tensor5D` with a given value and paddings. See `pad` for details.
-   */
-  static pad5d(
-      x: Tensor5D,
-      paddings:
-          [
-            [number, number], [number, number], [number, number],
-            [number, number]
-          ],
-      constantValue = 0): Tensor5D {
     util.assert(
         paddings.length === 4 && paddings[0].length === 2 &&
             paddings[1].length === 2 && paddings[2].length === 2 &&
