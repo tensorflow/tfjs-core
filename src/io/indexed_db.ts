@@ -16,8 +16,12 @@
  */
 
 // tslint:disable:max-line-length
+import {ENV} from '../environment';
+
 import {getModelArtifactsInfoForKerasJSON} from './io_utils';
+import {IORouter, IORouterRegistry} from './router_registry';
 import {IOHandler, ModelArtifacts, ModelArtifactsInfo, SaveResult} from './types';
+
 // tslint:enable:max-line-length
 
 const DATABASE_NAME = 'tensorflowjs';
@@ -40,7 +44,7 @@ export async function deleteDatabase(): Promise<void> {
 function getIndexedDBFactory(): IDBFactory {
   // TODO(cais): Use central environment flag when it's available.
   //   See: https://github.com/tensorflow/tfjs/issues/282.
-  if (typeof window === 'undefined') {
+  if (ENV.get('IS_NODE')) {
     // TODO(cais): Add more info about what IOHandler subtypes are available.
     //   Maybe point to a doc page on the web and/or automatically determine
     //   the available IOHandlers and print them in the error message.
@@ -65,7 +69,7 @@ function getIndexedDBFactory(): IDBFactory {
  *
  * See the doc string of `browserIndexedDB` for more details.
  */
-class BrowserIndexedDB implements IOHandler {
+export class BrowserIndexedDB implements IOHandler {
   protected readonly indexedDB: IDBFactory;
   protected readonly modelPath: string;
 
@@ -157,6 +161,21 @@ class BrowserIndexedDB implements IOHandler {
     db.createObjectStore(OBJECT_STORE_NAME, {keyPath: 'modelPath'});
   }
 }
+
+const URL_SCHEME = 'indexeddb://';
+export const indexedDBRouter: IORouter = (url: string) => {
+  if (ENV.get('IS_NODE')) {
+    return null;
+  } else {
+    if (url.startsWith(URL_SCHEME)) {
+      return browserIndexedDB(url.slice(URL_SCHEME.length));
+    } else {
+      return null;
+    }
+  }
+};
+IORouterRegistry.registerSaveRouter(indexedDBRouter);
+IORouterRegistry.registerLoadRouter(indexedDBRouter);
 
 /**
  * Creates a browser IndexedDB IOHandler for saving and loading models.

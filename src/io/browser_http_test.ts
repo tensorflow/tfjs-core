@@ -22,6 +22,7 @@
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
 import {CPU_ENVS} from '../test_util';
+import {BrowserHTTPRequest, httpRequestRouter} from './browser_http';
 
 describeWithFlags('browserHTTPRequest', CPU_ENVS, () => {
   // Test data.
@@ -279,5 +280,16 @@ describeWithFlags('browserHTTPRequest', CPU_ENVS, () => {
         .toThrowError(/must not be null, undefined or empty/);
     expect(() => tf.io.browserHTTPRequest(''))
         .toThrowError(/must not be null, undefined or empty/);
+  });
+
+  it('router', () => {
+    expect(httpRequestRouter('http://bar/foo') instanceof BrowserHTTPRequest)
+        .toEqual(true);
+    expect(
+        httpRequestRouter('https://localhost:5000/upload') instanceof
+        BrowserHTTPRequest)
+        .toEqual(true);
+    expect(httpRequestRouter('localhost://foo')).toBeNull();
+    expect(httpRequestRouter('foo:5000/bar')).toBeNull();
   });
 });

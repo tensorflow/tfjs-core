@@ -23,6 +23,8 @@ import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
 import {CPU_ENVS} from '../test_util';
 
+// tslint:disable-next-line:max-line-length
+import {browserDownloads, BrowserDownloads, browserDownloadsRouter} from './browser_files';
 import {WeightsManifestConfig, WeightsManifestEntry} from './types';
 
 const modelTopology1: {} = {
@@ -104,7 +106,62 @@ describeWithFlags('browserDownloads', CPU_ENVS, () => {
 
   it('Explicit file name prefix, with existing anchors', async done => {
     const testStartDate = new Date();
-    const downloadTrigger = tf.io.browserDownloads('test-model');
+    const downloadTrigger = browserDownloads('test-model');
+    downloadTrigger.save(artifacts1)
+        .then(async saveResult => {
+          expect(saveResult.errors).toEqual(undefined);
+          const artifactsInfo = saveResult.modelArtifactsInfo;
+          expect(artifactsInfo.dateSaved.getTime())
+              .toBeGreaterThanOrEqual(testStartDate.getTime());
+          expect(saveResult.modelArtifactsInfo.modelTopologyBytes)
+              .toEqual(JSON.stringify(modelTopology1).length);
+          expect(saveResult.modelArtifactsInfo.weightSpecsBytes)
+              .toEqual(JSON.stringify(weightSpecs1).length);
+          expect(saveResult.modelArtifactsInfo.weightDataBytes).toEqual(16);
+
+          const jsonAnchor = fakeAnchors[0];
+          const weightDataAnchor = fakeAnchors[1];
+          expect(jsonAnchor.download).toEqual('test-model.json');
+          expect(weightDataAnchor.download).toEqual('test-model.weights.bin');
+
+          // Verify the content of the JSON file.
+          const jsonContent = await fetch(jsonAnchor.href);
+          const modelTopologyAndWeightsManifest =
+              JSON.parse(await jsonContent.text());
+          expect(modelTopologyAndWeightsManifest.modelTopology)
+              .toEqual(modelTopology1);
+          const weightsManifest =
+              modelTopologyAndWeightsManifest.weightsManifest as
+              WeightsManifestConfig;
+          expect(weightsManifest.length).toEqual(1);
+          expect(weightsManifest[0].paths).toEqual([
+            './test-model.weights.bin'
+          ]);
+          expect(weightsManifest[0].weights).toEqual(weightSpecs1);
+
+          // Verify the content of the binary weights file.
+          const weightsContent = await fetch(weightDataAnchor.href);
+          const fileReader = new FileReader();
+          // tslint:disable-next-line:no-any
+          fileReader.onload = (event: any) => {
+            const buffer = event.target.result as ArrayBuffer;
+            expect(buffer).toEqual(weightData1);
+            done();
+          };
+          fileReader.readAsArrayBuffer(await weightsContent.blob());
+
+          // Verify that the downloads are triggered through clicks.
+          expect(jsonAnchor.clicked).toEqual(1);
+          expect(weightDataAnchor.clicked).toEqual(1);
+        })
+        .catch(err => {
+          done.fail(err.stack);
+        });
+  });
+
+  it('URL scheme in explicit name gets stripped', async done => {
+    const testStartDate = new Date();
+    const downloadTrigger = browserDownloads('downloads://test-model');
     downloadTrigger.save(artifacts1)
         .then(async saveResult => {
           expect(saveResult.errors).toEqual(undefined);
@@ -159,7 +216,7 @@ describeWithFlags('browserDownloads', CPU_ENVS, () => {
 
   it('No file name provided, with existing anchors', async done => {
     const testStartDate = new Date();
-    const downloadTrigger = tf.io.browserDownloads();
+    const downloadTrigger = browserDownloads();
     downloadTrigger.save(artifacts1)
         .then(async saveResult => {
           expect(saveResult.errors).toEqual(undefined);
@@ -210,7 +267,7 @@ describeWithFlags('browserDownloads', CPU_ENVS, () => {
 
   it('Download only model topology', async done => {
     const testStartDate = new Date();
-    const downloadTrigger = tf.io.browserDownloads();
+    const downloadTrigger = browserDownloads();
     const modelTopologyOnlyArtifacts: tf.io.ModelArtifacts = {
       modelTopology: modelTopology1,
     };
@@ -246,6 +303,14 @@ describeWithFlags('browserDownloads', CPU_ENVS, () => {
         .catch(err => {
           done.fail(err.stack);
         });
+  });
+
+  it('browserDownloadsRouter', () => {
+    expect(
+        browserDownloadsRouter('downloads://foo') instanceof BrowserDownloads)
+        .toEqual(true);
+    expect(browserDownloadsRouter('invaliddownloads://foo')).toBeNull();
+    expect(browserDownloadsRouter('foo')).toBeNull();
   });
 });
 
