@@ -29,6 +29,7 @@ import {getAxesPermutation, parseAxisParam} from './axis_util';
 import {ConcatOps} from './concat';
 import {operation} from './operation';
 import {MPRandGauss} from './rand';
+import {ReductionOps} from './reduction_ops';
 
 export class ArrayOps {
   /**
@@ -682,8 +683,12 @@ export class ArrayOps {
           `1, 3 or 4 but got ${depth}`);
     }
 
-    const min = (await img.min().data())[0];
-    const max = (await img.max().data())[0];
+    const minTensor = img.min();
+    const maxTensor = img.max();
+    const min = (await minTensor.data())[0];
+    const max = (await maxTensor.data())[0];
+    minTensor.dispose();
+    maxTensor.dispose();
     if (img.dtype === 'float32') {
       if (min < 0 || max > 1) {
         throw new Error(
@@ -936,9 +941,16 @@ export class ArrayOps {
     util.assertArgumentsAreTensors({x, indices}, 'gather');
 
     util.assert(indices.dtype === 'int32', 'Indices must be of dtype `int32`');
-    const axes = parseAxisParam(axis, x.shape);
+    axis = parseAxisParam(axis, x.shape)[0];
+    const grad = (dy: T) => {
+      const derX = () => {
+        return ReductionOps.unsortedSegmentSum(
+            dy, indices, x.shape[axis], axis);
+      };
+      return {x: derX};
+    };
     return ENV.engine.runKernel(
-        backend => backend.gather(x, indices, axes[0]), {x, indices});
+        backend => backend.gather(x, indices, axis), {x}, grad);
   }
 
   /**
