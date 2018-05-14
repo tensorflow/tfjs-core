@@ -30,7 +30,7 @@ export enum Type {
 export interface Features {
   // Whether to enable debug mode.
   'DEBUG'?: boolean;
-  // Whether we are in a node.js (i.e., non-browser) environment.
+  // Whether we are in a browser (as versus, say, node.js) environment.
   'IS_BROWSER'?: boolean;
   // The disjoint_query_timer extension version.
   // 0: disabled, 1: EXT_disjoint_timer_query, 2:
