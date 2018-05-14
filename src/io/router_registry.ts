@@ -85,7 +85,7 @@ export class IORouterRegistry {
       IOHandler[] {
     const validHandlers: IOHandler[] = [];
     const routers = handlerType === 'load' ? this.getInstance().loadRouters :
-                                             this.getInstance().saveRouters
+                                             this.getInstance().saveRouters;
     routers.forEach(router => {
       const handler = router(url);
       if (handler !== null) {
