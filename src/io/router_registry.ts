@@ -20,6 +20,7 @@ import {IOHandler} from './io';
 export type IORouter = (url: string) => IOHandler;
 
 export class IORouterRegistry {
+  // Singletone instance.
   private static instance: IORouterRegistry = null;
 
   private saveRouters: IORouter[];
@@ -37,18 +38,46 @@ export class IORouterRegistry {
     return IORouterRegistry.instance;
   }
 
+  /**
+   * Register a save-handler router.
+   *
+   * @param saveRouter A function that maps a URL-like string onto an instance
+   * of `IOHandler` with the `save` method defined or `null`.
+   */
   static registerSaveRouter(saveRouter: IORouter) {
     IORouterRegistry.getInstance().saveRouters.push(saveRouter);
   }
 
+  /**
+   * Register a load-handler router.
+   *
+   * @param loadRouter A function that maps a URL-like string onto an instance
+   * of `IOHandler` with the `load` method defined or `null`.
+   */
   static registerLoadRouter(loadRouter: IORouter) {
     IORouterRegistry.getInstance().loadRouters.push(loadRouter);
   }
 
+  /**
+   * Look up IOHandler for saving, given a URL-like string.
+   *
+   * @param url
+   * @returns If only one match is found, an instance of IOHandler with the
+   * `save` method defined. If no match is found, `null`.
+   * @throws Error, if more than one match is found.
+   */
   static getSaveHandler(url: string): IOHandler {
     return IORouterRegistry.getHandler(url, 'save');
   }
 
+  /**
+   * Look up IOHandler for loading, given a URL-like string.
+   *
+   * @param url
+   * @returns If only one match is found, an instance of IOHandler with the
+   * `save` method defined. If no match is found, `null`.
+   * @throws Error, if more than one match is found.
+   */
   static getLoadHandler(url: string): IOHandler {
     return IORouterRegistry.getHandler(url, 'load');
   }
