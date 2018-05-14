@@ -1154,7 +1154,7 @@ export class ArrayOps {
    * @param exclusive Whether to perform exclusive cumulative sum. Optional.
    *     Defaults to false. If set to true then the sum of each tensor entry
    *     does not include its own value, but only the values previous to it
-  *      along the specified axis.
+   *     along the specified axis.
    * @param reverse Whether to sum in the opposite direction. Optional.
    *     Defaults to false.
    */
