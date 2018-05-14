@@ -185,7 +185,7 @@ IORouterRegistry.registerLoadRouter(indexedDBRouter);
  * model.add(
  *     tf.layers.dense({units: 1, inputShape: [100], activation: 'sigmoid'}));
  *
- * const saveResult = await model.save(tf.io.browserIndexedDB('MyModel'));
+ * const saveResult = await model.save('indexeddb://MyModel'));
  * console.log(saveResult);
  * ```
  *
