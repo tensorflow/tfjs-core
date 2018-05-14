@@ -17,7 +17,6 @@
 
 import {doc} from '../doc';
 import {ENV} from '../environment';
-import {tensor} from '../index';
 import {Tensor} from '../tensor';
 import * as util from '../util';
 
@@ -59,106 +58,9 @@ export class StridedSliceOps {
       endMask = 0): T {
     util.assertArgumentsAreTensors({x}, 'stridedSlice');
 
-    // Note that the axis orders are reversed for runtime ops, so the indices,
-    // strides and masks must be as well too.
-    const rank = x.shape.length;
-    const startIndex: number[] = [];
-    const endIndex: number[] = [];
-    for (let i = 0; i < rank; i++) {
-      startIndex[i] =
-          StridedSliceOps.startForAxis(beginMask, begin, strides, x.shape, i);
-      endIndex[i] =
-          StridedSliceOps.stopForAxis(endMask, end, strides, x.shape, i);
-    }
-
-    let size = new Array(x.rank).fill(0);
-    size = size.map((d, i) => {
-      let count = 0;
-      for (let start = startIndex[i];
-           !(strides[i] > 0 ? start >= endIndex[i] : start <= endIndex[i]);
-           start += strides[i]) {
-        count += 1;
-      }
-      return count;
-    });
     return ENV.engine.runKernel(
-               size.some(axis => axis === 0) ?
-                   backend => tensor([], size) :
-                   backend => backend.stridedSlice(
-                       x, begin, end, strides, beginMask, endMask, startIndex,
-                       size),
+               backend => backend.stridedSlice(
+                   x, begin, end, strides, beginMask, endMask),
                {x}) as T;
-  }
-
-  // Return the index for the first element along that axis. This index will be
-  // a positive integer between [0, axis_size - 1] that can be used to index
-  // directly into the data.
-  private static startForAxis(
-      beginMask: number, startIndices: number[], strides: number[],
-      inputShape: number[], axis: number): number {
-    // Begin with the specified index
-    let start = startIndices[axis];
-
-    // Check the axis bit from right of beginMask
-    if (beginMask & 1 << axis) {
-      if (strides[axis] > 0) {
-        // Forward iteration - use the first element. These values will get
-        // clamped below (Note: We could have set them to 0 and axis_size-1, but
-        // use lowest() and max() to maintain symmetry with StopForAxis())
-        start = Number.MIN_SAFE_INTEGER;
-      } else {
-        // Backward iteration - use the last element.
-        start = Number.MAX_SAFE_INTEGER;
-      }
-    }
-
-    // Handle negative indices
-    const axisSize = inputShape[axis];
-    if (start < 0) {
-      start += axisSize;
-    }
-
-    // Clamping
-    start = util.clamp(0, start, axisSize - 1);
-
-    return start;
-  }
-
-  private static stopForAxis(
-      endMask: number, stopIndices: number[], strides: number[],
-      inputShape: number[], axis: number): number {
-    // Begin with the specified index
-    let stop = stopIndices[axis];
-
-    // Check the axis bit from right of endMask
-    if (endMask & (1 << axis)) {
-      if (strides[axis] > 0) {
-        // Forward iteration - use the last element. These values will get
-        // clamped below
-        stop = Number.MAX_SAFE_INTEGER;
-      } else {
-        // Backward iteration - use the first element.
-        stop = Number.MIN_SAFE_INTEGER;
-      }
-    }
-
-    // Handle negative indices
-    const axisSize = inputShape[axis];
-    if (stop < 0) {
-      stop += axisSize;
-    }
-
-    // Clamping
-    // Because the end index points one past the last element, we need slightly
-    // different clamping ranges depending on the direction.
-    if (strides[axis] > 0) {
-      // Forward iteration
-      stop = util.clamp(0, stop, axisSize);
-    } else {
-      // Backward iteration
-      stop = util.clamp(-1, stop, axisSize - 1);
-    }
-
-    return stop;
   }
 }
