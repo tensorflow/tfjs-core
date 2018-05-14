@@ -106,7 +106,7 @@ describeWithFlags('IndexedDB', CPU_ENVS, () => {
 
   it('Save-load round trip', done => {
     const testStartDate = new Date();
-    const handler = browserIndexedDB('FooModel');
+    const handler = tf.io.getSaveHandlers('indexeddb://FooModel')[0];
     handler.save(artifacts1)
         .then(saveResult => {
           expect(saveResult.modelArtifactsInfo.dateSaved.getTime())
@@ -143,7 +143,7 @@ describeWithFlags('IndexedDB', CPU_ENVS, () => {
       weightSpecs: weightSpecs2,
       weightData: weightData2,
     };
-    const handler1 = browserIndexedDB('Model/1');
+    const handler1 = tf.io.getSaveHandlers('indexeddb://Model/1')[0];
     handler1.save(artifacts1)
         .then(saveResult1 => {
           // Note: The following two assertions work only because there is no
@@ -155,7 +155,7 @@ describeWithFlags('IndexedDB', CPU_ENVS, () => {
           expect(saveResult1.modelArtifactsInfo.weightDataBytes)
               .toEqual(weightData1.byteLength);
 
-          const handler2 = browserIndexedDB('Model/2');
+          const handler2 = tf.io.getSaveHandlers('indexeddb://Model/2')[0];
           handler2.save(artifacts2)
               .then(saveResult2 => {
                 expect(saveResult2.modelArtifactsInfo.dateSaved.getTime())
@@ -193,7 +193,7 @@ describeWithFlags('IndexedDB', CPU_ENVS, () => {
   });
 
   it('Loading nonexistent model fails', done => {
-    const handler = browserIndexedDB('NonexistentModel');
+    const handler = tf.io.getSaveHandlers('indexeddb://NonexistentModel')[0];
     handler.load()
         .then(modelArtifacts => {
           done.fail(

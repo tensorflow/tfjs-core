@@ -35,8 +35,10 @@ export class BrowserHTTPRequest implements IOHandler {
 
   readonly DEFAULT_METHOD = 'POST';
 
+  static readonly URL_SCHEMES = ['http://', 'https://'];
+
   constructor(path: string, requestInit?: RequestInit) {
-    if (ENV.get('IS_NODE')) {
+    if (!ENV.get('IS_BROWSER')) {
       throw new Error(
           'browserHTTPRequest is not supported outside the web browser.');
     }
@@ -107,14 +109,13 @@ export class BrowserHTTPRequest implements IOHandler {
   //   See: https://github.com/tensorflow/tfjs/issues/290
 }
 
-const URL_SCHEMES = ['http://', 'https://'];
 export const httpRequestRouter: IORouter = (url: string) => {
-  if (ENV.get('IS_NODE')) {
+  if (!ENV.get('IS_BROWSER')) {
     // browserHTTPRequest uses `fetch`, which differs from HTTP requests in
     // node.js, which use `node-fetch`.
     return null;
   } else {
-    for (const scheme of URL_SCHEMES) {
+    for (const scheme of BrowserHTTPRequest.URL_SCHEMES) {
       if (url.startsWith(scheme)) {
         return browserHTTPRequest(url);
       }

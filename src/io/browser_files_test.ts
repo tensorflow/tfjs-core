@@ -104,9 +104,9 @@ describeWithFlags('browserDownloads', CPU_ENVS, () => {
     });
   });
 
-  it('Explicit file name prefix, with existing anchors', async done => {
+  it('Explicit file name prefix, with existing anchors', done => {
     const testStartDate = new Date();
-    const downloadTrigger = browserDownloads('test-model');
+    const downloadTrigger = tf.io.getSaveHandlers('downloads://test-model')[0];
     downloadTrigger.save(artifacts1)
         .then(async saveResult => {
           expect(saveResult.errors).toEqual(undefined);
@@ -159,7 +159,7 @@ describeWithFlags('browserDownloads', CPU_ENVS, () => {
         });
   });
 
-  it('URL scheme in explicit name gets stripped', async done => {
+  it('URL scheme in explicit name gets stripped', done => {
     const testStartDate = new Date();
     const downloadTrigger = browserDownloads('downloads://test-model');
     downloadTrigger.save(artifacts1)
@@ -214,7 +214,7 @@ describeWithFlags('browserDownloads', CPU_ENVS, () => {
         });
   });
 
-  it('No file name provided, with existing anchors', async done => {
+  it('No file name provided, with existing anchors', done => {
     const testStartDate = new Date();
     const downloadTrigger = browserDownloads();
     downloadTrigger.save(artifacts1)
@@ -265,7 +265,7 @@ describeWithFlags('browserDownloads', CPU_ENVS, () => {
         });
   });
 
-  it('Download only model topology', async done => {
+  it('Download only model topology', done => {
     const testStartDate = new Date();
     const downloadTrigger = browserDownloads();
     const modelTopologyOnlyArtifacts: tf.io.ModelArtifacts = {
@@ -320,7 +320,7 @@ describeWithFlags('browserFiles', CPU_ENVS, () => {
   const weightsFile = new File(
       [weightsBlob], 'model.weights.bin', {type: 'application/octet-stream'});
 
-  it('One group, one path', async done => {
+  it('One group, one path', done => {
     const weightsManifest: WeightsManifestConfig = [{
       paths: ['./model.weights.bin'],
       weights: weightSpecs1,
@@ -349,7 +349,7 @@ describeWithFlags('browserFiles', CPU_ENVS, () => {
         });
   });
 
-  it(`One group, two paths`, async done => {
+  it(`One group, two paths`, done => {
     const weightSpecs: WeightsManifestEntry[] = [
       {
         name: 'foo',
@@ -404,7 +404,7 @@ describeWithFlags('browserFiles', CPU_ENVS, () => {
         });
   });
 
-  it(`Two groups, four paths, reverseOrder=false`, async done => {
+  it(`Two groups, four paths, reverseOrder=false`, done => {
     const weightSpecs1: WeightsManifestEntry[] = [
       {
         name: 'foo',
@@ -491,7 +491,7 @@ describeWithFlags('browserFiles', CPU_ENVS, () => {
         });
   });
 
-  it(`Two groups, four paths, reverseOrder=true`, async done => {
+  it(`Two groups, four paths, reverseOrder=true`, done => {
     const weightSpecs1: WeightsManifestEntry[] = [
       {
         name: 'foo',
@@ -578,7 +578,7 @@ describeWithFlags('browserFiles', CPU_ENVS, () => {
         });
   });
 
-  it('Upload model topology only', async done => {
+  it('Upload model topology only', done => {
     const weightsManifest: WeightsManifestConfig = [{
       paths: ['./model.weights.bin'],
       weights: weightSpecs1,
@@ -606,7 +606,7 @@ describeWithFlags('browserFiles', CPU_ENVS, () => {
         });
   });
 
-  it('Mismatch in number of paths and number of files', async done => {
+  it('Mismatch in number of paths and number of files', done => {
     const weightsManifest: WeightsManifestConfig = [{
       paths: ['./model.weights.1.bin'],
       weights: weightSpecs1,
@@ -653,7 +653,7 @@ describeWithFlags('browserFiles', CPU_ENVS, () => {
         });
   });
 
-  it('Mismatch in manifest paths and file names', async done => {
+  it('Mismatch in manifest paths and file names', done => {
     const weightSpecs: WeightsManifestEntry[] = [
       {
         name: 'foo',
@@ -711,7 +711,7 @@ describeWithFlags('browserFiles', CPU_ENVS, () => {
         });
   });
 
-  it('Duplicate basenames in paths fails', async done => {
+  it('Duplicate basenames in paths fails', done => {
     const weightSpecs: WeightsManifestEntry[] = [
       {
         name: 'foo',
@@ -771,7 +771,7 @@ describeWithFlags('browserFiles', CPU_ENVS, () => {
         });
   });
 
-  it('Missing modelTopology from JSON leads to Error', async done => {
+  it('Missing modelTopology from JSON leads to Error', done => {
     const weightsManifest: WeightsManifestConfig = [{
       paths: ['./model.weights.bin'],
       weights: weightSpecs1,

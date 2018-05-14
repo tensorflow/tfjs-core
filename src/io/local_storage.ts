@@ -37,8 +37,7 @@ const WEIGHT_DATA_SUFFIX = 'weight_data';
  * @returns Paths of the models purged.
  */
 export function purgeLocalStorageArtifacts(): string[] {
-  // TODO(cais): Use central environment flag when it's available.
-  if (ENV.get('IS_NODE') || typeof window.localStorage === 'undefined') {
+  if (!ENV.get('IS_BROWSER') || typeof window.localStorage === 'undefined') {
     throw new Error(
         'purgeLocalStorageModels() cannot proceed because local storage is ' +
         'unavailable in the current environment.');
@@ -68,8 +67,10 @@ export class BrowserLocalStorage implements IOHandler {
   protected readonly modelPath: string;
   protected readonly paths: {[key: string]: string};
 
+  static readonly URL_SCHEME = 'localstorage://';
+
   constructor(modelPath: string) {
-    if (ENV.get('IS_NODE') || typeof window.localStorage === 'undefined') {
+    if (!ENV.get('IS_BROWSER') || typeof window.localStorage === 'undefined') {
       // TODO(cais): Add more info about what IOHandler subtypes are available.
       //   Maybe point to a doc page on the web and/or automatically determine
       //   the available IOHandlers and print them in the error message.
@@ -193,13 +194,13 @@ export class BrowserLocalStorage implements IOHandler {
   }
 }
 
-const URL_SCHEME = 'localstorage://';
 export const localStorageRouter: IORouter = (url: string) => {
-  if (ENV.get('IS_NODE')) {
+  if (!ENV.get('IS_BROWSER')) {
     return null;
   } else {
-    if (url.startsWith(URL_SCHEME)) {
-      return browserLocalStorage(url.slice(URL_SCHEME.length));
+    if (url.startsWith(BrowserLocalStorage.URL_SCHEME)) {
+      return browserLocalStorage(
+          url.slice(BrowserLocalStorage.URL_SCHEME.length));
     } else {
       return null;
     }

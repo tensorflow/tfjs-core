@@ -20,8 +20,8 @@ import {IOHandler} from './io';
 export type IORouter = (url: string) => IOHandler;
 
 export class IORouterRegistry {
-  // Singletone instance.
-  private static instance: IORouterRegistry = null;
+  // Singleton instance.
+  private static instance: IORouterRegistry;
 
   private saveRouters: IORouter[];
   private loadRouters: IORouter[];
@@ -66,41 +66,32 @@ export class IORouterRegistry {
    * `save` method defined. If no match is found, `null`.
    * @throws Error, if more than one match is found.
    */
-  static getSaveHandler(url: string): IOHandler {
-    return IORouterRegistry.getHandler(url, 'save');
+  static getSaveHandlers(url: string): IOHandler[] {
+    return IORouterRegistry.getHandlers(url, 'save');
   }
 
   /**
    * Look up IOHandler for loading, given a URL-like string.
    *
    * @param url
-   * @returns If only one match is found, an instance of IOHandler with the
-   * `save` method defined. If no match is found, `null`.
-   * @throws Error, if more than one match is found.
+   * @returns All valid handlers for `url`, given the currently registered
+   *   handler routers.
    */
-  static getLoadHandler(url: string): IOHandler {
-    return IORouterRegistry.getHandler(url, 'load');
+  static getLoadHandlers(url: string): IOHandler[] {
+    return IORouterRegistry.getHandlers(url, 'load');
   }
 
-  private static getHandler(url: string, handlerType: 'save'|'load'):
-      IOHandler {
+  private static getHandlers(url: string, handlerType: 'save'|'load'):
+      IOHandler[] {
     const validHandlers: IOHandler[] = [];
-    for (const router of handlerType === 'load' ?
-             this.getInstance().loadRouters :
-             this.getInstance().saveRouters) {
+    const routers = handlerType === 'load' ? this.getInstance().loadRouters :
+                                             this.getInstance().saveRouters
+    routers.forEach(router => {
       const handler = router(url);
       if (handler !== null) {
         validHandlers.push(handler);
       }
-    }
-    if (validHandlers.length === 0) {
-      return null;
-    } else if (validHandlers.length > 1) {
-      throw new Error(
-          `More than one (${validHandlers.length}) ${handlerType} handlers ` +
-          ` are found for URL '${url}'.`);
-    } else {
-      return validHandlers[0];
-    }
+    });
+    return validHandlers;
   }
 }

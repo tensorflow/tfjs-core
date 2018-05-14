@@ -58,27 +58,31 @@ describe('IORouterRegistry', () => {
     IORouterRegistry.registerSaveRouter(localStorageRouter);
     IORouterRegistry.registerSaveRouter(indexedDBRouter);
 
-    const out1 = tf.io.getSaveHandler('localstorage://foo-model');
-    expect(out1 instanceof BrowserLocalStorage).toEqual(true);
-    const out2 = tf.io.getSaveHandler('indexeddb://foo-model');
-    expect(out2 instanceof BrowserIndexedDB).toEqual(true);
+    const out1 = tf.io.getSaveHandlers('localstorage://foo-model');
+    expect(out1.length).toEqual(1);
+    expect(out1[0] instanceof BrowserLocalStorage).toEqual(true);
+    const out2 = tf.io.getSaveHandlers('indexeddb://foo-model');
+    expect(out2.length).toEqual(1);
+    expect(out2[0] instanceof BrowserIndexedDB).toEqual(true);
   });
 
   it('getLoadHandler succeeds', () => {
     IORouterRegistry.registerLoadRouter(localStorageRouter);
     IORouterRegistry.registerLoadRouter(indexedDBRouter);
 
-    const out1 = tf.io.getLoadHandler('localstorage://foo-model');
-    expect(out1 instanceof BrowserLocalStorage).toEqual(true);
-    const out2 = tf.io.getLoadHandler('indexeddb://foo-model');
-    expect(out2 instanceof BrowserIndexedDB).toEqual(true);
+    const out1 = tf.io.getLoadHandlers('localstorage://foo-model');
+    expect(out1.length).toEqual(1);
+    expect(out1[0] instanceof BrowserLocalStorage).toEqual(true);
+    const out2 = tf.io.getLoadHandlers('indexeddb://foo-model');
+    expect(out2.length).toEqual(1);
+    expect(out2[0] instanceof BrowserIndexedDB).toEqual(true);
   });
 
   it('getSaveHandler fails', () => {
     IORouterRegistry.registerSaveRouter(localStorageRouter);
 
-    expect(tf.io.getSaveHandler('invalidscheme://foo-model')).toBeNull();
+    expect(tf.io.getSaveHandlers('invalidscheme://foo-model')).toEqual([]);
     // Check there is no crosstalk between save and load handlers.
-    expect(tf.io.getLoadHandler('localstorage://foo-model')).toBeNull();
+    expect(tf.io.getLoadHandlers('localstorage://foo-model')).toEqual([]);
   });
 });

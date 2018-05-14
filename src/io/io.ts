@@ -30,16 +30,16 @@ import {loadWeights} from './weights_loader';
 
 const registerSaveRouter = IORouterRegistry.registerSaveRouter;
 const registerLoadRouter = IORouterRegistry.registerLoadRouter;
-const getSaveHandler = IORouterRegistry.getSaveHandler;
-const getLoadHandler = IORouterRegistry.getLoadHandler;
+const getSaveHandlers = IORouterRegistry.getSaveHandlers;
+const getLoadHandlers = IORouterRegistry.getLoadHandlers;
 
 export {
   browserFiles,
   browserHTTPRequest,
   decodeWeights,
   encodeWeights,
-  getLoadHandler,
-  getSaveHandler,
+  getLoadHandlers,
+  getSaveHandlers,
   IOHandler,
   LoadHandler,
   loadWeights,

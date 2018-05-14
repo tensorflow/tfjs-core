@@ -39,9 +39,10 @@ export class BrowserDownloads implements IOHandler {
   private readonly jsonAnchor: HTMLAnchorElement;
   private readonly weightDataAnchor: HTMLAnchorElement;
 
+  static readonly URL_SCHEME = 'downloads://';
+
   constructor(fileNamePrefix?: string) {
-    // TODO(cais): Use central environment flag when it's available.
-    if (ENV.get('IS_NODE')) {
+    if (!ENV.get('IS_BROWSER')) {
       // TODO(cais): Provide info on what IOHandlers are available under the
       //   current environment.
       throw new Error(
@@ -49,8 +50,8 @@ export class BrowserDownloads implements IOHandler {
           'is not a browser.');
     }
 
-    if (fileNamePrefix.startsWith(URL_SCHEME)) {
-      fileNamePrefix = fileNamePrefix.slice(URL_SCHEME.length);
+    if (fileNamePrefix.startsWith(BrowserDownloads.URL_SCHEME)) {
+      fileNamePrefix = fileNamePrefix.slice(BrowserDownloads.URL_SCHEME.length);
     }
     if (fileNamePrefix == null || fileNamePrefix.length === 0) {
       fileNamePrefix = DEFAULT_FILE_NAME_PREFIX;
@@ -240,13 +241,12 @@ class BrowserFiles implements IOHandler {
   }
 }
 
-const URL_SCHEME = 'downloads://';
 export const browserDownloadsRouter: IORouter = (url: string) => {
-  if (ENV.get('IS_NODE')) {
+  if (!ENV.get('IS_BROWSER')) {
     return null;
   } else {
-    if (url.startsWith(URL_SCHEME)) {
-      return browserDownloads(url.slice(URL_SCHEME.length));
+    if (url.startsWith(BrowserDownloads.URL_SCHEME)) {
+      return browserDownloads(url.slice(BrowserDownloads.URL_SCHEME.length));
     } else {
       return null;
     }

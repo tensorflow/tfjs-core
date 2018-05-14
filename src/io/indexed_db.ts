@@ -42,9 +42,7 @@ export async function deleteDatabase(): Promise<void> {
 }
 
 function getIndexedDBFactory(): IDBFactory {
-  // TODO(cais): Use central environment flag when it's available.
-  //   See: https://github.com/tensorflow/tfjs/issues/282.
-  if (ENV.get('IS_NODE')) {
+  if (!ENV.get('IS_BROWSER')) {
     // TODO(cais): Add more info about what IOHandler subtypes are available.
     //   Maybe point to a doc page on the web and/or automatically determine
     //   the available IOHandlers and print them in the error message.
@@ -72,6 +70,8 @@ function getIndexedDBFactory(): IDBFactory {
 export class BrowserIndexedDB implements IOHandler {
   protected readonly indexedDB: IDBFactory;
   protected readonly modelPath: string;
+
+  static readonly URL_SCHEME = 'indexeddb://';
 
   constructor(modelPath: string) {
     this.indexedDB = getIndexedDBFactory();
@@ -162,13 +162,12 @@ export class BrowserIndexedDB implements IOHandler {
   }
 }
 
-const URL_SCHEME = 'indexeddb://';
 export const indexedDBRouter: IORouter = (url: string) => {
-  if (ENV.get('IS_NODE')) {
+  if (!ENV.get('IS_BROWSER')) {
     return null;
   } else {
-    if (url.startsWith(URL_SCHEME)) {
-      return browserIndexedDB(url.slice(URL_SCHEME.length));
+    if (url.startsWith(BrowserIndexedDB.URL_SCHEME)) {
+      return browserIndexedDB(url.slice(BrowserIndexedDB.URL_SCHEME.length));
     } else {
       return null;
     }
