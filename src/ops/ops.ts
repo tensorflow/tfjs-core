@@ -85,6 +85,7 @@ export const mean = ReductionOps.mean;
 export const min = ReductionOps.min;
 export const moments = ReductionOps.moments;
 export const sum = ReductionOps.sum;
+export const unsortedSegmentSum = ReductionOps.unsortedSegmentSum;
 
 export const equal = CompareOps.equal;
 export const equalStrict = CompareOps.equalStrict;
@@ -233,6 +234,8 @@ export const losses = {
   absoluteDifference: LossOps.absoluteDifference,
   computeWeightedLoss: LossOps.computeWeightedLoss,
   cosineDistance: LossOps.cosineDistance,
+  hingeLoss: LossOps.hingeLoss,
+  logLoss: LossOps.logLoss,
   meanSquaredError: LossOps.meanSquaredError,
   softmaxCrossEntropy: SoftmaxOps.softmaxCrossEntropy
 };
