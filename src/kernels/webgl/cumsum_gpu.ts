@@ -46,7 +46,6 @@ export class CumSumProgram implements GPGPUProgram {
         ${dtype} coords = getOutputCoords();
         ${dtype} adjustableCoords = ${dtype}(${outputCoords});
         int finalCoord = int(${finalCoord});
-        
         float val = 0.0;
         for (int i = ${finalDim} - 1; i >= 0; i -= 1) {
           int idx = getIndex(i);

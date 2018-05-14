@@ -2297,4 +2297,16 @@ describeWithFlags('cumsum', ALL_ENVS, () => {
     expect(res.shape).toEqual([2, 2]);
     expectArraysClose(res, [2, 0, 4, 0]);
   });
+
+  it('2D axis=0', () => {
+    const res = tf.tensor2d([[1, 2], [3, 4]]).cumsum();
+    expect(res.shape).toEqual([2, 2]);
+    expectArraysClose(res, [1, 2, 4, 6]);
+  });
+
+  it('3D standard', () => {
+    const res =tf.tensor3d([[[0, 1], [2, 3]], [[4, 5], [6, 7]]]).cumsum(2);
+    expect(res.shape).toEqual([2, 2, 2]);
+    expectArraysClose(res, [0, 1, 2, 5, 4, 9, 6, 13]);
+  });
 });

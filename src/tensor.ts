@@ -417,13 +417,13 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   /**
-   * Returns a `Tensor` that has expanded rank, by inserting a dimension
-   * into the tensor's shape. See `expandDims` for details.
+   * Returns the cumulative sum of the `Tensor` along `axis`.
    *
-   * @param axis The dimension index at which to insert shape of 1. Defaults to
-   *    0 (the first dimension).
+   * @param axis The axis along which to sum. Optional. Defaults to 0.
    * @param exclusive Whether to perform exclusive cumulative sum. Defaults to
-   *    false.
+   *    false. If set to true then the sum of each tensor entry does not include
+   *    its own value, but only the values previous to it along the specified
+   *    axis.
    * @param reverse Whether to sum in the opposite direction. Defaults to
    *    false.
    */

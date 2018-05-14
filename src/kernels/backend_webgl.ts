@@ -485,7 +485,6 @@ export class MathBackendWebGL implements KernelBackend {
 
   cumsum(x: Tensor, axis: number, exclusive: boolean, reverse: boolean):
       Tensor {
-    axis_util.assertAxesAreInnerMostDims('cumsum', [axis], x.rank);
     const program = new CumSumProgram(x.shape, exclusive, reverse);
     return this.compileAndRun(program, [x]);
   }
