@@ -269,10 +269,10 @@ export class BrowserIndexedDBManager implements ModelStoreManager {
             const store = tx.objectStore(INFO_STORE_NAME);
             // tslint:disable:max-line-length
             // Need to cast `store` as `any` here because TypeScript's DOM
-            // library does not have the `getAllKeys` method even though the
+            // library does not have the `getAll()` method even though the
             // method is supported in the latest version of most mainstream
             // browsers:
-            // https://developer.mozilla.org/en-US/docs/Web/API/IDBObjectStore/getAllKeys
+            // https://developer.mozilla.org/en-US/docs/Web/API/IDBObjectStore/getAll
             // tslint:enable:max-line-length
             // tslint:disable-next-line:no-any
             const getAllInfoRequest = (store as any).getAll() as IDBRequest;
