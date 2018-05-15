@@ -17,16 +17,25 @@
 
 // tslint:disable:max-line-length
 import {ENV} from '../environment';
+import {assert} from '../util';
 
-import {getModelArtifactsInfoForKerasJSON} from './io_utils';
+import {getModelArtifactsInfoForJSON} from './io_utils';
 import {IORouter, IORouterRegistry} from './router_registry';
-import {IOHandler, ModelArtifacts, ModelArtifactsInfo, SaveResult} from './types';
+import {IOHandler, ModelArtifacts, ModelArtifactsInfo, ModelStoreManager, SaveResult} from './types';
 
 // tslint:enable:max-line-length
 
 const DATABASE_NAME = 'tensorflowjs';
 const DATABASE_VERSION = 1;
-const OBJECT_STORE_NAME = 'models_store';
+
+// Model data and ModelArtifactsInfo (metadata) are stored in two separate
+// stores for efficient access of the list of stored models and their metadata.
+// 1. The object store for model data: topology, weights and weight manifests.
+const MODEL_STORE_NAME = 'models_store';
+// 2. The object store forModelArtifactsInfo, including meta-information such as
+//    the type of topology (JSON vs binary), byte size of the topology, byte
+//    size of the weights, etc.
+const INFO_STORE_NAME = 'modle_info_store';
 
 /**
  * Delete the entire database for tensorflow.js, including the models store.
@@ -60,6 +69,12 @@ function getIndexedDBFactory(): IDBFactory {
         'The current browser does not appear to support IndexedDB.');
   }
   return factory;
+}
+
+function setUpDatabase(openRequest: IDBRequest) {
+  const db = openRequest.result as IDBDatabase;
+  db.createObjectStore(MODEL_STORE_NAME, {keyPath: 'modelPath'});
+  db.createObjectStore(INFO_STORE_NAME, {keyPath: 'modelPath'});
 }
 
 /**
@@ -117,48 +132,79 @@ export class BrowserIndexedDB implements IOHandler {
       Promise<ModelArtifacts|SaveResult> {
     return new Promise<ModelArtifacts|SaveResult>((resolve, reject) => {
       const openRequest = this.indexedDB.open(DATABASE_NAME, DATABASE_VERSION);
-
-      openRequest.onupgradeneeded = () => this.setUpDatabase(openRequest);
+      openRequest.onupgradeneeded = () => setUpDatabase(openRequest);
 
       openRequest.onsuccess = () => {
         const db = openRequest.result as IDBDatabase;
-        const tx = db.transaction(
-            OBJECT_STORE_NAME,
-            modelArtifacts == null ? 'readonly' : 'readwrite');
-        const store = tx.objectStore(OBJECT_STORE_NAME);
 
         if (modelArtifacts == null) {
           // Read model out from object store.
-          const getRequest = store.get(this.modelPath);
+          const modelTx = db.transaction(
+              MODEL_STORE_NAME,
+              modelArtifacts == null ? 'readonly' : 'readwrite');
+          const modelStore = modelTx.objectStore(MODEL_STORE_NAME);
+          const getRequest = modelStore.get(this.modelPath);
           getRequest.onsuccess = () => {
             if (getRequest.result === undefined) {
-              reject(new Error(
+              db.close();
+              return reject(new Error(
                   `Cannot find model with path '${this.modelPath}' ` +
                   `in IndexedDB.`));
             } else {
               resolve(getRequest.result.modelArtifacts);
             }
           };
-          getRequest.onerror = error => reject(getRequest.error);
+          getRequest.onerror = error => {
+            db.close();
+            return reject(getRequest.error);
+          };
+          modelTx.oncomplete = () => db.close();
         } else {
           // Put model into object store.
           const modelArtifactsInfo: ModelArtifactsInfo =
-              getModelArtifactsInfoForKerasJSON(modelArtifacts);
-          const putRequest = store.put(
-              {modelPath: this.modelPath, modelArtifacts, modelArtifactsInfo});
-          putRequest.onsuccess = () => resolve({modelArtifactsInfo});
-          putRequest.onerror = error => reject(putRequest.error);
-          tx.oncomplete = () => db.close();
+              getModelArtifactsInfoForJSON(modelArtifacts);
+          // First, put ModelArtifactsInfo into info store.
+          const infoTx = db.transaction(
+              INFO_STORE_NAME,
+              modelArtifacts == null ? 'readonly' : 'readwrite');
+          const infoStore = infoTx.objectStore(INFO_STORE_NAME);
+          const putInfoRequest =
+              infoStore.put({modelPath: this.modelPath, modelArtifactsInfo});
+          let modelTx: IDBTransaction;
+          putInfoRequest.onsuccess = () => {
+            // Second, put model data into model store.
+            modelTx = db.transaction(
+                MODEL_STORE_NAME,
+                modelArtifacts == null ? 'readonly' : 'readwrite');
+            const modelStore = modelTx.objectStore(MODEL_STORE_NAME);
+            const putModelRequest = modelStore.put({
+              modelPath: this.modelPath,
+              modelArtifacts,
+              modelArtifactsInfo
+            });
+            putModelRequest.onsuccess = () => {
+              resolve({modelArtifactsInfo});
+            };
+            putModelRequest.onerror = error => {
+              db.close();
+              return reject(putModelRequest.error);
+            };
+          };
+          putInfoRequest.onerror = error => {
+            db.close();
+            return reject(putInfoRequest.error);
+          };
+          infoTx.oncomplete = () => {
+            if (modelTx == null) {
+              db.close();
+            } else {
+              modelTx.oncomplete = () => db.close();
+            }
+          };
         }
-        tx.oncomplete = () => db.close();
       };
       openRequest.onerror = error => reject(openRequest.error);
     });
-  }
-
-  private setUpDatabase(openRequest: IDBRequest) {
-    const db = openRequest.result as IDBDatabase;
-    db.createObjectStore(OBJECT_STORE_NAME, {keyPath: 'modelPath'});
   }
 }
 
@@ -195,4 +241,221 @@ IORouterRegistry.registerLoadRouter(indexedDBRouter);
  */
 export function browserIndexedDB(modelPath: string): IOHandler {
   return new BrowserIndexedDB(modelPath);
+}
+
+function maybeStripScheme(key: string) {
+  return key.startsWith(BrowserIndexedDB.URL_SCHEME) ?
+      key.slice(BrowserIndexedDB.URL_SCHEME.length) :
+      key;
+}
+
+export class BrowserIndexedDBManager implements ModelStoreManager {
+  private indexedDB: IDBFactory;
+
+  constructor() {
+    this.indexedDB = getIndexedDBFactory();
+  }
+
+  async listModels(): Promise<{[path: string]: ModelArtifactsInfo}> {
+    return new Promise<{[path: string]: ModelArtifactsInfo}>(
+        (resolve, reject) => {
+          const openRequest =
+              this.indexedDB.open(DATABASE_NAME, DATABASE_VERSION);
+          openRequest.onupgradeneeded = () => setUpDatabase(openRequest);
+
+          openRequest.onsuccess = () => {
+            const db = openRequest.result as IDBDatabase;
+            const tx = db.transaction(INFO_STORE_NAME, 'readonly');
+            const store = tx.objectStore(INFO_STORE_NAME);
+            // tslint:disable:max-line-length
+            // Need to cast `store` as `any` here because TypeScript's DOM
+            // library does not have the `getAllKeys` method even though the
+            // method is supported in the latest version of most mainstream
+            // browsers:
+            // https://developer.mozilla.org/en-US/docs/Web/API/IDBObjectStore/getAllKeys
+            // tslint:enable:max-line-length
+            // tslint:disable-next-line:no-any
+            const getAllInfoRequest = (store as any).getAll() as IDBRequest;
+            getAllInfoRequest.onsuccess = () => {
+              const out: {[path: string]: ModelArtifactsInfo} = {};
+              for (const item of getAllInfoRequest.result) {
+                out[item.modelPath] = item.modelArtifactsInfo;
+              }
+              resolve(out);
+            };
+            getAllInfoRequest.onerror = error => {
+              db.close();
+              return reject(getAllInfoRequest.error);
+            };
+            tx.oncomplete = () => db.close();
+          };
+          openRequest.onerror = error => reject(openRequest.error);
+        });
+  }
+
+  async deleteModel(path: string): Promise<ModelArtifactsInfo> {
+    path = maybeStripScheme(path);
+    return new Promise<ModelArtifactsInfo>((resolve, reject) => {
+      const openRequest = this.indexedDB.open(DATABASE_NAME, DATABASE_VERSION);
+      openRequest.onupgradeneeded = () => setUpDatabase(openRequest);
+
+      openRequest.onsuccess = () => {
+        const db = openRequest.result as IDBDatabase;
+        const infoTx = db.transaction(INFO_STORE_NAME, 'readwrite');
+        const infoStore = infoTx.objectStore(INFO_STORE_NAME);
+
+        const getInfoRequest = infoStore.get(path);
+        let modelTx: IDBTransaction;
+        getInfoRequest.onsuccess = () => {
+          if (getInfoRequest.result === undefined) {
+            db.close();
+            return reject(new Error(
+                `Cannot find model with path '${path}' ` +
+                `in IndexedDB.`));
+          } else {
+            // First, delete the entry in the info store.
+            const deleteInfoRequest = infoStore.delete(path);
+            deleteInfoRequest.onsuccess = () => {
+              // Second, delete the entry in the model store.
+              modelTx = db.transaction(MODEL_STORE_NAME, 'readwrite');
+              const modelStore = modelTx.objectStore(MODEL_STORE_NAME);
+              const deleteModelRequest = modelStore.delete(path);
+              deleteModelRequest.onsuccess = () =>
+                  resolve(getInfoRequest.result.modelArtifactsInfo);
+              deleteModelRequest.onerror = error =>
+                  reject(getInfoRequest.error);
+            };
+            deleteInfoRequest.onerror = error => {
+              db.close();
+              return reject(getInfoRequest.error);
+            };
+          }
+        };
+        getInfoRequest.onerror = error => {
+          db.close();
+          return reject(getInfoRequest.error);
+        };
+
+        infoTx.oncomplete = () => {
+          if (modelTx == null) {
+            db.close();
+          } else {
+            modelTx.oncomplete = () => db.close();
+          }
+        };
+      };
+      openRequest.onerror = error => reject(openRequest.error);
+    });
+  }
+
+  async copyModel(oldPath: string, newPath: string):
+      Promise<ModelArtifactsInfo> {
+    oldPath = maybeStripScheme(oldPath);
+    newPath = maybeStripScheme(newPath);
+    assert(
+        oldPath !== newPath,
+        `Old path and new path are the same: '${oldPath}'`);
+
+    return new Promise<ModelArtifactsInfo>((resolve, reject) => {
+      const openRequest = this.indexedDB.open(DATABASE_NAME, DATABASE_VERSION);
+      openRequest.onupgradeneeded = () => setUpDatabase(openRequest);
+
+      openRequest.onsuccess = () => {
+        const db = openRequest.result as IDBDatabase;
+        const infoTx = db.transaction(INFO_STORE_NAME, 'readwrite');
+        const infoStore = infoTx.objectStore(INFO_STORE_NAME);
+
+        let modelTx: IDBTransaction;
+        const getInfoRequest = infoStore.get(oldPath);
+        getInfoRequest.onsuccess = () => {
+          if (getInfoRequest.result == null) {
+            db.close();
+            return reject(new Error(
+                `Cannot find model with path '${oldPath}' ` +
+                `in IndexedDB.`));
+          } else {
+            // First, copy info data.
+            const newInfoData = getInfoRequest.result;
+            newInfoData.modelPath = newPath;
+            const putInfoRequest = infoStore.put(newInfoData);
+            putInfoRequest.onsuccess = () => {
+              // Second, copy model data.
+              modelTx = db.transaction(MODEL_STORE_NAME, 'readwrite');
+              const modelStore = modelTx.objectStore(MODEL_STORE_NAME);
+
+              const getModelRequest = modelStore.get(oldPath);
+              getModelRequest.onsuccess = () => {
+                const newModelData = getModelRequest.result;
+                newModelData.modelPath = newPath;
+                const putModelRequest = modelStore.put(newModelData);
+                putModelRequest.onsuccess = () => {
+                  resolve(getInfoRequest.result.modelArtifactsInfo);
+                };
+                putModelRequest.onerror = error =>
+                    reject(putModelRequest.error);
+              };
+              getModelRequest.onerror = error => {
+                db.close();
+                return reject(getModelRequest.error);
+              };
+            };
+            putInfoRequest.onerror = error => {
+              db.close();
+              return reject(getInfoRequest.error);
+            };
+          }
+        };
+        getInfoRequest.onerror = error => {
+          db.close();
+          return reject(getInfoRequest.error);
+        };
+
+        infoTx.oncomplete = () => {
+          if (modelTx == null) {
+            db.close();
+          } else {
+            modelTx.oncomplete = () => db.close();
+          }
+        };
+      };
+      openRequest.onerror = error => reject(openRequest.error);
+    });
+  }
+}
+
+/**
+ * Create an instance of manager for models stored in browser IndexedDB.
+ *
+ * The manager supports listinng, deleting and copying models in IndexedDB.
+ *
+ * ```js
+ * // First create and save a model.
+ * const model = tf.sequential();
+ * model.add(tf.layers.dense(
+ *     {units: 1, inputShape: [10], activation: 'sigmoid'}));
+ * await model.save('indexeddb://demo/local-storage-manager/model1');
+ *
+ * // Create a manager and use it to list existing models.
+ * const manager = tf.io.browserIndexedDBManager();
+ * console.log(await manager.listModels());
+ *
+ * // Copy the model and list all models again.
+ * await manager.copyModel(
+ *     'demo/local-storage-manager/model1',
+ *     'demo/local-storage-manager/model2'));
+ * console.log(await manager.listModels());
+ *
+ * // Delete a model; list models again.
+ * await manager.deleteModel('demo/local-storage-manager/model2');
+ * console.log(await manager.listModels());
+ *
+ * // Delete a model; list models again.
+ * await manager.deleteModel('demo/local-storage-manager/model1');
+ * console.log(await manager.listModels());
+ * ```
+ *
+ * @returns An instance of `ModelStoreManager`.
+ */
+export function browserIndexedDBManager(): ModelStoreManager {
+  return new BrowserIndexedDBManager();
 }

@@ -22,10 +22,12 @@ import './local_storage';
 
 import {browserFiles} from './browser_files';
 import {browserHTTPRequest} from './browser_http';
+import {browserIndexedDBManager} from './indexed_db';
 import {decodeWeights, encodeWeights} from './io_utils';
+import {browserLocalStorageManager} from './local_storage';
 import {IORouterRegistry} from './router_registry';
 // tslint:disable-next-line:max-line-length
-import {IOHandler, LoadHandler, ModelArtifacts, SaveConfig, SaveHandler, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
+import {IOHandler, LoadHandler, ModelArtifacts, ModelStoreManager, SaveConfig, SaveHandler, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
 import {loadWeights} from './weights_loader';
 
 const registerSaveRouter = IORouterRegistry.registerSaveRouter;
@@ -36,6 +38,8 @@ const getLoadHandlers = IORouterRegistry.getLoadHandlers;
 export {
   browserFiles,
   browserHTTPRequest,
+  browserIndexedDBManager,
+  browserLocalStorageManager,
   decodeWeights,
   encodeWeights,
   getLoadHandlers,
@@ -44,6 +48,7 @@ export {
   LoadHandler,
   loadWeights,
   ModelArtifacts,
+  ModelStoreManager,
   registerLoadRouter,
   registerSaveRouter,
   SaveConfig,

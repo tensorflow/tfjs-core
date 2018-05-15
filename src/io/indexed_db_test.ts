@@ -226,4 +226,326 @@ describeWithFlags('IndexedDB', CPU_ENVS, () => {
     expect(indexedDBRouter('localstorage://bar')).toBeNull();
     expect(indexedDBRouter('qux')).toBeNull();
   });
+
+  it('Manager: List models: 0 result', done => {
+    // Before any model is saved, listModels should return empty result.
+    tf.io.browserIndexedDBManager()
+        .listModels()
+        .then(out => {
+          expect(out).toEqual({});
+          done();
+        })
+        .catch(err => {
+          done.fail(err.stack);
+        });
+  });
+
+  it('Manager: List models: 1 result', done => {
+    const handler = tf.io.getSaveHandlers('indexeddb://baz/QuxModel')[0];
+    handler.save(artifacts1)
+        .then(saveResult => {
+          // After successful saving, there should be one model.
+          tf.io.browserIndexedDBManager()
+              .listModels()
+              .then(out => {
+                expect(Object.keys(out).length).toEqual(1);
+                expect(out['baz/QuxModel'].modelTopologyType)
+                    .toEqual(saveResult.modelArtifactsInfo.modelTopologyType);
+                expect(out['baz/QuxModel'].modelTopologyBytes)
+                    .toEqual(saveResult.modelArtifactsInfo.modelTopologyBytes);
+                expect(out['baz/QuxModel'].weightSpecsBytes)
+                    .toEqual(saveResult.modelArtifactsInfo.weightSpecsBytes);
+                expect(out['baz/QuxModel'].weightDataBytes)
+                    .toEqual(saveResult.modelArtifactsInfo.weightDataBytes);
+                done();
+              })
+              .catch(err => {
+                done.fail(err.stack);
+              });
+        })
+        .catch(err => {
+          done.fail(err.stack);
+        });
+  });
+
+  it('Manager: List models: 2 result', done => {
+    // First, save a model.
+    const handler1 = tf.io.getSaveHandlers('indexeddb://QuxModel')[0];
+    handler1.save(artifacts1)
+        .then(saveResult1 => {
+          // Then, save the model under another path.
+          const handler2 =
+              tf.io.getSaveHandlers('indexeddb://repeat/QuxModel')[0];
+          handler2.save(artifacts1)
+              .then(saveResult2 => {
+                // After successful saving, there should be one model.
+                tf.io.browserIndexedDBManager()
+                    .listModels()
+                    .then(out => {
+                      expect(Object.keys(out).length).toEqual(2);
+                      expect(out['QuxModel'].modelTopologyType)
+                          .toEqual(
+                              saveResult1.modelArtifactsInfo.modelTopologyType);
+                      expect(out['QuxModel'].modelTopologyBytes)
+                          .toEqual(saveResult1.modelArtifactsInfo
+                                       .modelTopologyBytes);
+                      expect(out['QuxModel'].weightSpecsBytes)
+                          .toEqual(
+                              saveResult1.modelArtifactsInfo.weightSpecsBytes);
+                      expect(out['QuxModel'].weightDataBytes)
+                          .toEqual(
+                              saveResult1.modelArtifactsInfo.weightDataBytes);
+                      expect(out['repeat/QuxModel'].modelTopologyType)
+                          .toEqual(
+                              saveResult2.modelArtifactsInfo.modelTopologyType);
+                      expect(out['repeat/QuxModel'].modelTopologyBytes)
+                          .toEqual(saveResult2.modelArtifactsInfo
+                                       .modelTopologyBytes);
+                      expect(out['repeat/QuxModel'].weightSpecsBytes)
+                          .toEqual(
+                              saveResult2.modelArtifactsInfo.weightSpecsBytes);
+                      expect(out['repeat/QuxModel'].weightDataBytes)
+                          .toEqual(
+                              saveResult2.modelArtifactsInfo.weightDataBytes);
+                      done();
+                    })
+                    .catch(err => {
+                      done.fail(err.stack);
+                    });
+              })
+              .catch(err => {
+                done.fail(err.stack);
+              });
+        })
+        .catch(err => {
+          done.fail(err.stack);
+        });
+  });
+
+  it('Manager: Successful deleteModel', done => {
+    // First, save a model.
+    const handler1 = tf.io.getSaveHandlers('indexeddb://QuxModel')[0];
+    handler1.save(artifacts1)
+        .then(saveResult1 => {
+          // Then, save the model under another path.
+          const handler2 =
+              tf.io.getSaveHandlers('indexeddb://repeat/QuxModel')[0];
+          handler2.save(artifacts1)
+              .then(saveResult2 => {
+                // After successful saving, delete the first save, and then
+                // `listModel` should give only one result.
+                const manager = tf.io.browserIndexedDBManager();
+
+                manager.deleteModel('QuxModel')
+                    .then(deletedInfo => {
+                      manager.listModels().then(out => {
+                        expect(Object.keys(out)).toEqual(['repeat/QuxModel']);
+                      });
+                      done();
+                    })
+                    .catch(err => {
+                      done.fail(err.stack);
+                    });
+              })
+              .catch(err => {
+                done.fail(err.stack);
+              });
+        })
+        .catch(err => {
+          done.fail(err.stack);
+        });
+  });
+
+  it('Manager: Successful deleteModel with URL scheme', done => {
+    // First, save a model.
+    const handler1 = tf.io.getSaveHandlers('indexeddb://QuxModel')[0];
+    handler1.save(artifacts1)
+        .then(saveResult1 => {
+          // Then, save the model under another path.
+          const handler2 =
+              tf.io.getSaveHandlers('indexeddb://repeat/QuxModel')[0];
+          handler2.save(artifacts1)
+              .then(saveResult2 => {
+                // After successful saving, delete the first save, and then
+                // `listModel` should give only one result.
+                const manager = tf.io.browserIndexedDBManager();
+
+                // Delete a model specified with a path that includes the
+                // indexeddb:// scheme prefix should work.
+                manager.deleteModel('indexeddb://QuxModel')
+                    .then(deletedInfo => {
+                      manager.listModels().then(out => {
+                        expect(Object.keys(out)).toEqual(['repeat/QuxModel']);
+                      });
+                      done();
+                    })
+                    .catch(err => {
+                      done.fail(err.stack);
+                    });
+              })
+              .catch(err => {
+                done.fail(err.stack);
+              });
+        })
+        .catch(err => {
+          done.fail(err.stack);
+        });
+  });
+
+  it('Manager: Failed deletedModel', done => {
+    // Attempt to delete a nonexistent model is expected to fail.
+    tf.io.browserIndexedDBManager()
+        .deleteModel('nonexistent')
+        .then(out => {
+          done.fail('Deleting nonexistent model succeeded unexpectedly.');
+        })
+        .catch(err => {
+          expect(err.message)
+              .toEqual(
+                  'Cannot find model with path \'nonexistent\' in IndexedDB.');
+          done();
+        });
+  });
+
+  it('Manager: Successful copyModel', done => {
+    // First, save a model.
+    const handler1 = tf.io.getSaveHandlers('indexeddb://a1/QuxModel')[0];
+    handler1.save(artifacts1)
+        .then(saveResult => {
+          // Once model is saved, copy the model to another path.
+          const manager = tf.io.browserIndexedDBManager();
+          manager.copyModel('a1/QuxModel', 'a1/clone/QuxModel')
+              .then(modelInfo => {
+                manager.listModels().then(out => {
+                  expect(Object.keys(out).length).toEqual(2);
+                  expect(out['a1/QuxModel'].modelTopologyType)
+                      .toEqual(saveResult.modelArtifactsInfo.modelTopologyType);
+                  expect(out['a1/QuxModel'].modelTopologyBytes)
+                      .toEqual(
+                          saveResult.modelArtifactsInfo.modelTopologyBytes);
+                  expect(out['a1/QuxModel'].weightSpecsBytes)
+                      .toEqual(saveResult.modelArtifactsInfo.weightSpecsBytes);
+                  expect(out['a1/QuxModel'].weightDataBytes)
+                      .toEqual(saveResult.modelArtifactsInfo.weightDataBytes);
+                  expect(out['a1/clone/QuxModel'].modelTopologyType)
+                      .toEqual(saveResult.modelArtifactsInfo.modelTopologyType);
+                  expect(out['a1/clone/QuxModel'].modelTopologyBytes)
+                      .toEqual(
+                          saveResult.modelArtifactsInfo.modelTopologyBytes);
+                  expect(out['a1/clone/QuxModel'].weightSpecsBytes)
+                      .toEqual(saveResult.modelArtifactsInfo.weightSpecsBytes);
+                  expect(out['a1/clone/QuxModel'].weightDataBytes)
+                      .toEqual(saveResult.modelArtifactsInfo.weightDataBytes);
+
+                  // Load the copy and verify the content.
+                  const handler2 =
+                      tf.io.getLoadHandlers('indexeddb://a1/clone/QuxModel')[0];
+                  handler2.load()
+                      .then(loaded => {
+                        expect(loaded.modelTopology).toEqual(modelTopology1);
+                        expect(loaded.weightSpecs).toEqual(weightSpecs1);
+                        expect(new Uint8Array(loaded.weightData))
+                            .toEqual(new Uint8Array(weightData1));
+                        done();
+                      })
+                      .catch(err => {
+                        done.fail(err.stack);
+                      });
+                });
+              })
+              .catch(err => {
+                done.fail(err.stack);
+              });
+        })
+        .catch(err => {
+          done.fail(err.stack);
+        });
+  });
+
+  it('Manager: Successful copyModel with URL scheme', done => {
+    // First, save a model.
+    const handler1 = tf.io.getSaveHandlers('indexeddb://a1/QuxModel')[0];
+    handler1.save(artifacts1)
+        .then(saveResult => {
+          // Once model is saved, copy the model to another path.
+          const manager = tf.io.browserIndexedDBManager();
+          // Copying model with paths prefixed by the URL scheme should work.
+          manager
+              .copyModel(
+                  'indexeddb://a1/QuxModel', 'indexeddb://a1/clone/QuxModel')
+              .then(modelInfo => {
+                manager.listModels().then(out => {
+                  expect(Object.keys(out).length).toEqual(2);
+                  expect(out['a1/QuxModel'].modelTopologyType)
+                      .toEqual(saveResult.modelArtifactsInfo.modelTopologyType);
+                  expect(out['a1/QuxModel'].modelTopologyBytes)
+                      .toEqual(
+                          saveResult.modelArtifactsInfo.modelTopologyBytes);
+                  expect(out['a1/QuxModel'].weightSpecsBytes)
+                      .toEqual(saveResult.modelArtifactsInfo.weightSpecsBytes);
+                  expect(out['a1/QuxModel'].weightDataBytes)
+                      .toEqual(saveResult.modelArtifactsInfo.weightDataBytes);
+                  expect(out['a1/clone/QuxModel'].modelTopologyType)
+                      .toEqual(saveResult.modelArtifactsInfo.modelTopologyType);
+                  expect(out['a1/clone/QuxModel'].modelTopologyBytes)
+                      .toEqual(
+                          saveResult.modelArtifactsInfo.modelTopologyBytes);
+                  expect(out['a1/clone/QuxModel'].weightSpecsBytes)
+                      .toEqual(saveResult.modelArtifactsInfo.weightSpecsBytes);
+                  expect(out['a1/clone/QuxModel'].weightDataBytes)
+                      .toEqual(saveResult.modelArtifactsInfo.weightDataBytes);
+
+                  // Load the copy and verify the content.
+                  const handler2 =
+                      tf.io.getLoadHandlers('indexeddb://a1/clone/QuxModel')[0];
+                  handler2.load()
+                      .then(loaded => {
+                        expect(loaded.modelTopology).toEqual(modelTopology1);
+                        expect(loaded.weightSpecs).toEqual(weightSpecs1);
+                        expect(new Uint8Array(loaded.weightData))
+                            .toEqual(new Uint8Array(weightData1));
+                        done();
+                      })
+                      .catch(err => {
+                        done.fail(err.stack);
+                      });
+                });
+              })
+              .catch(err => {
+                done.fail(err.stack);
+              });
+        })
+        .catch(err => {
+          done.fail(err.stack);
+        });
+  });
+
+  it('Manager: Failed copyModel', done => {
+    // Attempt to copy a nonexistent model should fail.
+    tf.io.browserIndexedDBManager()
+        .copyModel('nonexistent', 'destination')
+        .then(out => {
+          done.fail('Copying nonexistent model succeeded unexpectedly.');
+        })
+        .catch(err => {
+          expect(err.message)
+              .toEqual(
+                  'Cannot find model with path \'nonexistent\' in IndexedDB.');
+          done();
+        });
+  });
+
+  it('Manager: identical oldPath and newPath leads to Error', done => {
+    tf.io.browserIndexedDBManager()
+        .copyModel('a/1', 'a/1')
+        .then(out => {
+          done.fail(
+              'Copying with identical old & new paths succeeded unexpectedly.');
+        })
+        .catch(err => {
+          expect(err.message)
+              .toEqual('Old path and new path are the same: \'a/1\'');
+          done();
+        });
+  });
 });
