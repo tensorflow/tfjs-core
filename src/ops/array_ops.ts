@@ -1185,8 +1185,8 @@ export class ArrayOps {
       return {permutedX: () => dy.cumsum(axis, exclusive, !reverse)};
     };
     let value =  ENV.engine.runKernel(
-      backend => backend.cumsum(permutedX, axis, exclusive, reverse),
-      {permutedX}, grad) as T;
+        backend => backend.cumsum(permutedX, axis, exclusive, reverse),
+        {permutedX}, grad) as T;
 
     if (permutation != null) {
       value = value.transpose(permutation);

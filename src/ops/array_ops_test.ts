@@ -2346,19 +2346,24 @@ describeWithFlags('cumsum', ALL_ENVS, () => {
   });
 
   it('1D reverse', () => {
-    const res = tf.tensor1d([1, 2, 3, 4]).cumsum(0, false, true);
+    const reverse = true;
+    const exclusive = false;
+    const res = tf.tensor1d([1, 2, 3, 4]).cumsum(0, exclusive, reverse);
     expect(res.shape).toEqual([4]);
     expectArraysClose(res, [10, 9, 7, 4]);
   });
 
   it('1D exclusive', () => {
-    const res = tf.tensor1d([1, 2, 3, 4]).cumsum(0, true);
+    const exclusive = true;
+    const res = tf.tensor1d([1, 2, 3, 4]).cumsum(0, exclusive);
     expect(res.shape).toEqual([4]);
     expectArraysClose(res, [0, 1, 3, 6]);
   });
 
   it('1D exclusive reverse', () => {
-    const res = tf.tensor1d([1, 2, 3, 4]).cumsum(0, true, true);
+    const reverse = true;
+    const exclusive = true;
+    const res = tf.tensor1d([1, 2, 3, 4]).cumsum(0, exclusive, reverse);
     expect(res.shape).toEqual([4]);
     expectArraysClose(res, [9, 7, 4, 0]);
   });
@@ -2379,7 +2384,9 @@ describeWithFlags('cumsum', ALL_ENVS, () => {
   });
 
   it('2D reverse exclusive', () => {
-    const res = tf.tensor2d([[1, 2], [3, 4]]).cumsum(1, true, true);
+    const reverse = true;
+    const exclusive = true;
+    const res = tf.tensor2d([[1, 2], [3, 4]]).cumsum(1, exclusive, reverse);
     expect(res.shape).toEqual([2, 2]);
     expectArraysClose(res, [2, 0, 4, 0]);
   });
@@ -2391,7 +2398,7 @@ describeWithFlags('cumsum', ALL_ENVS, () => {
   });
 
   it('3D standard', () => {
-    const res =tf.tensor3d([[[0, 1], [2, 3]], [[4, 5], [6, 7]]]).cumsum(2);
+    const res = tf.tensor3d([[[0, 1], [2, 3]], [[4, 5], [6, 7]]]).cumsum(2);
     expect(res.shape).toEqual([2, 2, 2]);
     expectArraysClose(res, [0, 1, 2, 5, 4, 9, 6, 13]);
   });
