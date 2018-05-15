@@ -16,13 +16,11 @@ export default {
       namedExports: {
         './node_modules/seedrandom/index.js': ['alea']
       },
-    }),
-    resolve({
-      browser: true
     })
   ],
   output: {
-    banner: `// @tensorflow/tfjs-models Copyright ${(new Date).getFullYear()} Google`,
+    extend: true,
+    banner: `// @tensorflow/tfjs-core Copyright ${(new Date).getFullYear()} Google`,
     file: "dist/bundle.js",
     format: "umd",
     name: "tf",
@@ -33,6 +31,6 @@ export default {
     if (circularDepFilter.test(warning.toString())) {
       return;
     }
-    console.warn(warning);
+    console.warn(warning.toString());
   }
 };

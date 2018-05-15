@@ -20,24 +20,6 @@ const shell = require('shelljs');
 
 const IGNORE_DIRS = ['node_modules', 'dist', 'coverage'];
 
-/** Returns all sub-dirs that contain package.json. */
-function getPackageDirs(dir, filelist) {
-  const files = fs.readdirSync(dir);
-  filelist = filelist || [];
-  files.forEach(file => {
-    if (IGNORE_DIRS.indexOf(file) >= 0 || file.startsWith('.')) {
-      return;
-    }
-    const childPath = path.join(dir, file);
-    if (fs.statSync(childPath).isDirectory()) {
-      filelist = getPackageDirs(childPath, filelist);
-    } else if (file === 'package.json') {
-      filelist.push(dir);
-    }
-  });
-  return filelist;
-};
-
 function run(cmd, filePath) {
   if (shell.exec(cmd).code !== 0) {
     shell.echo('Failed running', cmd, 'on', filePath);
@@ -45,20 +27,9 @@ function run(cmd, filePath) {
   }
 }
 
-function runYarn(filePath) {
-  const cwd = process.cwd();
-  shell.cd(filePath);
-  shell.echo('=======================================================');
-  shell.echo('Building', filePath);
-  run('yarn', filePath);
-  run('yarn build', filePath);
-  run('yarn lint', filePath);
-  shell.cd(cwd);
-}
-
-let dirs = getPackageDirs(process.cwd());
-// Keep only packages that have the 'name' property.
-dirs = dirs.filter(dir => require(path.join(dir, 'package.json')).name && dir !== process.cwd());
-
-runYarn(process.cwd());
-dirs.forEach(dir => runYarn(dir));
+const cwd = process.cwd();
+shell.echo('=======================================================');
+shell.echo('Building', cwd);
+run('yarn', cwd);
+run('yarn build', cwd);
+run('yarn lint', cwd);
