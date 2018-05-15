@@ -2,9 +2,17 @@
 # yarn lockfile v1
 
 
+"@types/estree@0.0.38":
+  version "0.0.38"
+  resolved "https://registry.yarnpkg.com/@types/estree/-/estree-0.0.38.tgz#c1be40aa933723c608820a99a373a16d215a1ca2"
+
 "@types/jasmine@~2.5.53":
   version "2.5.54"
   resolved "https://registry.yarnpkg.com/@types/jasmine/-/jasmine-2.5.54.tgz#a6b5f2ae2afb6e0307774e8c7c608e037d491c63"
+
+"@types/node@*":
+  version "10.0.10"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-10.0.10.tgz#7f4667269e086daeef8667069f9f2cd862f49eb7"
 
 "@types/node@~9.6.0":
   version "9.6.0"
@@ -593,6 +601,10 @@ buffers@~0.1.1:
 builtin-modules@^1.0.0, builtin-modules@^1.1.1:
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/builtin-modules/-/builtin-modules-1.1.1.tgz#270f076c5a72c02f5b65a47df94c5fe3a278892f"
+
+builtin-modules@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/builtin-modules/-/builtin-modules-2.0.0.tgz#60b7ef5ae6546bd7deefa74b08b62a43a232648e"
 
 builtin-status-codes@^3.0.0:
   version "3.0.0"
@@ -1195,6 +1207,10 @@ estraverse@^1.9.1:
   version "1.9.3"
   resolved "https://registry.yarnpkg.com/estraverse/-/estraverse-1.9.3.tgz#af67f2dc922582415950926091a4005d29c9bb44"
 
+estree-walker@^0.5.1, estree-walker@^0.5.2:
+  version "0.5.2"
+  resolved "https://registry.yarnpkg.com/estree-walker/-/estree-walker-0.5.2.tgz#d3850be7529c9580d815600b53126515e146dd39"
+
 esutils@^2.0.2:
   version "2.0.2"
   resolved "https://registry.yarnpkg.com/esutils/-/esutils-2.0.2.tgz#0abf4f1caa5bcb1f7a9d8acc6dea4faaa04bac9b"
@@ -1333,6 +1349,14 @@ fs-access@^1.0.0:
 fs-extra@^4.0.2:
   version "4.0.3"
   resolved "https://registry.yarnpkg.com/fs-extra/-/fs-extra-4.0.3.tgz#0d852122e5bc5beb453fb028e9c0c9bf36340c94"
+  dependencies:
+    graceful-fs "^4.1.2"
+    jsonfile "^4.0.0"
+    universalify "^0.1.0"
+
+fs-extra@^5.0.0:
+  version "5.0.0"
+  resolved "https://registry.yarnpkg.com/fs-extra/-/fs-extra-5.0.0.tgz#414d0110cdd06705734d055652c5411260c31abd"
   dependencies:
     graceful-fs "^4.1.2"
     jsonfile "^4.0.0"
@@ -1732,6 +1756,10 @@ is-glob@^2.0.0, is-glob@^2.0.1:
   dependencies:
     is-extglob "^1.0.0"
 
+is-module@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/is-module/-/is-module-1.0.0.tgz#3258fb69f78c14d5b815d664336b4cffb6441591"
+
 is-number@^0.1.1:
   version "0.1.1"
   resolved "https://registry.yarnpkg.com/is-number/-/is-number-0.1.1.tgz#69a7af116963d47206ec9bd9b48a14216f1e3806"
@@ -2109,6 +2137,12 @@ lru-cache@4.1.x:
     pseudomap "^1.0.2"
     yallist "^2.1.2"
 
+magic-string@^0.22.4:
+  version "0.22.5"
+  resolved "https://registry.yarnpkg.com/magic-string/-/magic-string-0.22.5.tgz#8e9cf5afddf44385c1da5bc2a6a0dbd10b03657e"
+  dependencies:
+    vlq "^0.2.2"
+
 map-limit@0.0.1:
   version "0.0.1"
   resolved "https://registry.yarnpkg.com/map-limit/-/map-limit-0.0.1.tgz#eb7961031c0f0e8d001bf2d56fab685d58822f38"
@@ -2152,7 +2186,7 @@ meow@^3.3.0:
     redent "^1.0.0"
     trim-newlines "^1.0.0"
 
-micromatch@^2.1.5:
+micromatch@^2.1.5, micromatch@^2.3.11:
   version "2.3.11"
   resolved "https://registry.yarnpkg.com/micromatch/-/micromatch-2.3.11.tgz#86677c97d1720b363431d04d0d15293bd38c1565"
   dependencies:
@@ -2880,6 +2914,12 @@ resolve@^1.1.3, resolve@^1.1.4, resolve@^1.1.6, resolve@^1.3.2:
   dependencies:
     path-parse "^1.0.5"
 
+resolve@^1.5.0, resolve@^1.7.1:
+  version "1.7.1"
+  resolved "https://registry.yarnpkg.com/resolve/-/resolve-1.7.1.tgz#aadd656374fd298aee895bc026b8297418677fd3"
+  dependencies:
+    path-parse "^1.0.5"
+
 right-align@^0.1.1:
   version "0.1.3"
   resolved "https://registry.yarnpkg.com/right-align/-/right-align-0.1.3.tgz#61339b722fe6a3515689210d24e14c96148613ef"
@@ -2898,6 +2938,46 @@ ripemd160@^2.0.0, ripemd160@^2.0.1:
   dependencies:
     hash-base "^2.0.0"
     inherits "^2.0.1"
+
+rollup-plugin-commonjs@9.1.3:
+  version "9.1.3"
+  resolved "https://registry.yarnpkg.com/rollup-plugin-commonjs/-/rollup-plugin-commonjs-9.1.3.tgz#37bfbf341292ea14f512438a56df8f9ca3ba4d67"
+  dependencies:
+    estree-walker "^0.5.1"
+    magic-string "^0.22.4"
+    resolve "^1.5.0"
+    rollup-pluginutils "^2.0.1"
+
+rollup-plugin-node-resolve@3.3.0:
+  version "3.3.0"
+  resolved "https://registry.yarnpkg.com/rollup-plugin-node-resolve/-/rollup-plugin-node-resolve-3.3.0.tgz#c26d110a36812cbefa7ce117cadcd3439aa1c713"
+  dependencies:
+    builtin-modules "^2.0.0"
+    is-module "^1.0.0"
+    resolve "^1.1.6"
+
+rollup-plugin-typescript2@0.13.0:
+  version "0.13.0"
+  resolved "https://registry.yarnpkg.com/rollup-plugin-typescript2/-/rollup-plugin-typescript2-0.13.0.tgz#5fc838657d05af82e04554832cadf06cdb32f657"
+  dependencies:
+    fs-extra "^5.0.0"
+    resolve "^1.7.1"
+    rollup-pluginutils "^2.0.1"
+    tslib "^1.9.0"
+
+rollup-pluginutils@^2.0.1:
+  version "2.2.0"
+  resolved "https://registry.yarnpkg.com/rollup-pluginutils/-/rollup-pluginutils-2.2.0.tgz#64ba3f29988b84322bafa188a9f99ca731c95354"
+  dependencies:
+    estree-walker "^0.5.2"
+    micromatch "^2.3.11"
+
+rollup@^0.58.2:
+  version "0.58.2"
+  resolved "https://registry.yarnpkg.com/rollup/-/rollup-0.58.2.tgz#2feddea8c0c022f3e74b35c48e3c21b3433803ce"
+  dependencies:
+    "@types/estree" "0.0.38"
+    "@types/node" "*"
 
 safe-buffer@^5.0.1, safe-buffer@^5.1.0, safe-buffer@^5.1.1, safe-buffer@~5.1.0, safe-buffer@~5.1.1:
   version "5.1.1"
@@ -3327,6 +3407,10 @@ tslib@^1.7.1, tslib@^1.8.1:
   version "1.9.0"
   resolved "https://registry.yarnpkg.com/tslib/-/tslib-1.9.0.tgz#e37a86fda8cbbaf23a057f473c9f4dc64e5fc2e8"
 
+tslib@^1.9.0:
+  version "1.9.1"
+  resolved "https://registry.yarnpkg.com/tslib/-/tslib-1.9.1.tgz#a5d1f0532a49221c87755cfcc89ca37197242ba7"
+
 tslint@~5.8.0:
   version "5.8.0"
   resolved "https://registry.yarnpkg.com/tslint/-/tslint-5.8.0.tgz#1f49ad5b2e77c76c3af4ddcae552ae4e3612eb13"
@@ -3491,6 +3575,10 @@ verror@1.10.0:
     assert-plus "^1.0.0"
     core-util-is "1.0.2"
     extsprintf "^1.2.0"
+
+vlq@^0.2.2:
+  version "0.2.3"
+  resolved "https://registry.yarnpkg.com/vlq/-/vlq-0.2.3.tgz#8f3e4328cf63b1540c0d67e1b2778386f8975b26"
 
 vm-browserify@0.0.4, vm-browserify@~0.0.1:
   version "0.0.4"

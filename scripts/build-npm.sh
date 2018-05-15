@@ -16,10 +16,12 @@
 
 set -e
 
-rimraf dist/
+#rimraf dist/
 yarn
 tsc --sourceMap false
-browserify --standalone tfc src/index.ts -p [tsify] > dist/tf-core.js
-uglifyjs dist/tf-core.js -c -m -o dist/tf-core.min.js
+
+#browserify --standalone tfc src/index.ts -p [tsify] > dist/tf-core.js
+#uglifyjs dist/tf-core.js -c -m -o dist/tf-core.min.js
+rollup -c
 echo "Stored standalone library at dist/tf-core(.min).js"
 npm pack

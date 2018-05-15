@@ -14,3 +14,4 @@ dist/
 **/*.pyc
 .yalc/
 yalc.lock
+.rpt2_cache/
