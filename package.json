@@ -16,7 +16,6 @@
     "@types/jasmine": "~2.5.53",
     "@types/node": "~9.6.0",
     "@types/seedrandom": "~2.4.27",
-    "browserify": "~14.4.0",
     "clang-format": "~1.2.2",
     "jasmine-core": "~2.6.4",
     "karma": "~1.7.0",
