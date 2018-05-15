@@ -268,7 +268,7 @@ describeWithFlags('IndexedDB', CPU_ENVS, () => {
         });
   });
 
-  it('Manager: List models: 2 result', done => {
+  it('Manager: List models: 2 results', done => {
     // First, save a model.
     const handler1 = tf.io.getSaveHandlers('indexeddb://QuxModel')[0];
     handler1.save(artifacts1)

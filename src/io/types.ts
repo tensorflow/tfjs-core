@@ -223,23 +223,32 @@ export interface IOHandler {
 export interface ModelStoreManager {
   /**
    * List all models in the model store.
+   *
+   * @returns A dictionary mapping paths of existing models to their
+   *   model artifacts info. Model artifacts info include type of the model's
+   *   topology, byte sizes of the topology, weights, etc.
    */
   listModels(): Promise<{[path: string]: ModelArtifactsInfo}>;
 
   /**
    * Delete a model specified by `path`.
+   *
    * @param path
    * @returns ModelArtifactsInfo of the deleted model (if and only if deletion
    *   is successful).
+   * @throws Error if deletion fails, e.g., if no model exists at `path`.
    */
   deleteModel(path: string): Promise<ModelArtifactsInfo>;
 
   /**
    * Copy a model from one path to another.
+   *
    * @param oldPath
    * @param newPath
    * @returns ModelArtifactsInfo of the copied model (if and only if copying
    *   is successful).
+   * @throws Error if deletion fails, e.g., if no model exists at `oldPath`, or
+   *   if `oldPath` and `newPath` are identical.
    */
   copyModel(oldPath: string, newPath: string): Promise<ModelArtifactsInfo>;
 }

@@ -35,7 +35,7 @@ const MODEL_STORE_NAME = 'models_store';
 // 2. The object store forModelArtifactsInfo, including meta-information such as
 //    the type of topology (JSON vs binary), byte size of the topology, byte
 //    size of the weights, etc.
-const INFO_STORE_NAME = 'modle_info_store';
+const INFO_STORE_NAME = 'model_info_store';
 
 /**
  * Delete the entire database for tensorflow.js, including the models store.
@@ -145,7 +145,7 @@ export class BrowserIndexedDB implements IOHandler {
           const modelStore = modelTx.objectStore(MODEL_STORE_NAME);
           const getRequest = modelStore.get(this.modelPath);
           getRequest.onsuccess = () => {
-            if (getRequest.result === undefined) {
+            if (getRequest.result == null) {
               db.close();
               return reject(new Error(
                   `Cannot find model with path '${this.modelPath}' ` +
@@ -307,7 +307,7 @@ export class BrowserIndexedDBManager implements ModelStoreManager {
         const getInfoRequest = infoStore.get(path);
         let modelTx: IDBTransaction;
         getInfoRequest.onsuccess = () => {
-          if (getInfoRequest.result === undefined) {
+          if (getInfoRequest.result == null) {
             db.close();
             return reject(new Error(
                 `Cannot find model with path '${path}' ` +
