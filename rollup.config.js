@@ -31,6 +31,6 @@ export default {
     if (circularDepFilter.test(warning.toString())) {
       return;
     }
-    console.warn(warning.toString());
+    console.warn('WARNING: ', warning.toString());
   }
 };
