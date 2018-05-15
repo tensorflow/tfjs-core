@@ -1097,23 +1097,14 @@ export class ArrayOps {
    * ```
    *
    * @param value A tensor object.
-   * @param num The number of unstacked tensors.
    * @param axis The axis to unstack along. Defaults to 0 (the first dim).
    */
   @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
   @operation
   static unstack<T extends Tensor>(
-      value: T, num: number = null, axis = 0): Tensor[] {
-    if (num === null) {
-      // Default num is the length of dimension axis.
-      num = value.shape[axis];
-    }
-    util.assert(
-        value.shape[axis] === num,
-        'Number of splits must be equal to the axis.');
-
-    const outputShape: number[]
-        = Array(value.rank - 1).fill(0);
+      value: T, axis = 0): Tensor[] {
+    const num = value.shape[axis];
+    const outputShape: number[] = Array(value.rank - 1).fill(0);
     let outIndex = 0;
     for (let i = 0; i < value.rank; i++) {
       if (i !== axis) {

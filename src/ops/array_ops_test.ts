@@ -2264,7 +2264,7 @@ describeWithFlags('unstack', ALL_ENVS, () => {
 
   it('unstack into 3 tensors', () => {
     const x = tf.tensor2d([1, 2, 3, 4, 5, 6], [3, 2]);
-    const res = tf.unstack(x, 3, 0);
+    const res = tf.unstack(x, 0);
     expect(res.length).toEqual(3);
     expect(res[0].rank).toEqual(1);
     expect(res[0].shape).toEqual([2]);
@@ -2279,7 +2279,7 @@ describeWithFlags('unstack', ALL_ENVS, () => {
 
   it('unstack by axis=1', () => {
     const x = tf.tensor2d([1, 2, 3, 4, 5, 6, 7, 8], [2, 4]);
-    const res = tf.unstack(x, 4, 1);
+    const res = tf.unstack(x, 1);
     expect(res.length).toEqual(4);
     expect(res[0].rank).toEqual(1);
     expect(res[0].shape).toEqual([2]);
@@ -2309,7 +2309,7 @@ describeWithFlags('unstack', ALL_ENVS, () => {
 
   it('unstack rank 3 tensor with axis=1', () => {
     const x = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2]);
-    const res = tf.unstack(x, 2, 1);
+    const res = tf.unstack(x, 1);
     expect(res.length).toEqual(2);
     expect(res[0].rank).toEqual(2);
     expect(res[0].shape).toEqual([2, 2]);
@@ -2321,7 +2321,7 @@ describeWithFlags('unstack', ALL_ENVS, () => {
 
   it('unstack rank 3 tensor with axis=2', () => {
     const x = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2]);
-    const res = tf.unstack(x, 2, 2);
+    const res = tf.unstack(x, 2);
     expect(res.length).toEqual(2);
     expect(res[0].rank).toEqual(2);
     expect(res[0].shape).toEqual([2, 2]);
@@ -2345,7 +2345,7 @@ describeWithFlags('unstack', ALL_ENVS, () => {
 
   it('unstack rank 4 tensor with axis=1', () => {
     const x = tf.tensor4d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2, 1]);
-    const res = tf.unstack(x, 2, 1);
+    const res = tf.unstack(x, 1);
     expect(res.length).toEqual(2);
     expect(res[0].rank).toEqual(3);
     expect(res[0].shape).toEqual([2, 2, 1]);
@@ -2357,7 +2357,7 @@ describeWithFlags('unstack', ALL_ENVS, () => {
 
   it('unstack rank 4 tensor with axis=2', () => {
     const x = tf.tensor4d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2, 1]);
-    const res = tf.unstack(x, 2, 2);
+    const res = tf.unstack(x, 2);
     expect(res.length).toEqual(2);
     expect(res[0].rank).toEqual(3);
     expect(res[0].shape).toEqual([2, 2, 1]);
@@ -2369,7 +2369,7 @@ describeWithFlags('unstack', ALL_ENVS, () => {
 
   it('unstack rank 4 tensor with axis=3', () => {
     const x = tf.tensor4d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2, 1]);
-    const res = tf.unstack(x, 1, 3);
+    const res = tf.unstack(x, 3);
     expect(res.length).toEqual(1);
     expect(res[0].rank).toEqual(3);
     expect(res[0].shape).toEqual([2, 2, 2]);
