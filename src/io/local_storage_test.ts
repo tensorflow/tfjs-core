@@ -620,7 +620,9 @@ describeWithFlags('LocalStorage', CPU_ENVS, () => {
         })
         .catch(err => {
           expect(err.message)
-              .toEqual('Cannot find model at path \'nonexistent\'');
+              .toEqual(
+                  'In local storage, there is no model with name ' +
+                  '\'nonexistent\'');
           done();
         });
   });

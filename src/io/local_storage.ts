@@ -312,31 +312,10 @@ export class BrowserLocalStorageManager implements ModelStoreManager {
     assert(
         oldPath !== newPath,
         `Old path and new path are the same: '${oldPath}'`);
-    const oldKeys = getModelKeys(oldPath);
-    const newKeys = getModelKeys(newPath);
-    if (this.LS.getItem(oldKeys.info) == null) {
-      throw new Error(`Cannot find model at path '${oldPath}'`);
-    }
-    const info =
-        JSON.parse(this.LS.getItem(oldKeys.info)) as ModelArtifactsInfo;
 
-    try {
-      this.LS.setItem(newKeys.info, this.LS.getItem(oldKeys.info));
-      this.LS.setItem(newKeys.topology, this.LS.getItem(oldKeys.topology));
-      this.LS.setItem(
-          newKeys.weightSpecs, this.LS.getItem(oldKeys.weightSpecs));
-      this.LS.setItem(newKeys.weightData, this.LS.getItem(oldKeys.weightData));
-    } catch (err) {
-      // In case of failure, roll back all items for the new path.
-      this.LS.removeItem(newKeys.info);
-      this.LS.removeItem(newKeys.topology);
-      this.LS.removeItem(newKeys.weightSpecs);
-      this.LS.removeItem(newKeys.weightData);
-      throw new Error(
-          `Failed to copy model from path ${oldPath} to ${newPath}.`);
-    }
-
-    return info;
+    const modelArtifacts = await browserLocalStorage(oldPath).load();
+    const saveResult = await browserLocalStorage(newPath).save(modelArtifacts);
+    return saveResult.modelArtifactsInfo;
   }
 }
 

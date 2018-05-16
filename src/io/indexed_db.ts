@@ -22,7 +22,6 @@ import {assert} from '../util';
 import {getModelArtifactsInfoForJSON} from './io_utils';
 import {IORouter, IORouterRegistry} from './router_registry';
 import {IOHandler, ModelArtifacts, ModelArtifactsInfo, ModelStoreManager, SaveResult} from './types';
-
 // tslint:enable:max-line-length
 
 const DATABASE_NAME = 'tensorflowjs';
@@ -167,7 +166,7 @@ export class BrowserIndexedDB implements IOHandler {
           const infoTx = db.transaction(
               INFO_STORE_NAME,
               modelArtifacts == null ? 'readonly' : 'readwrite');
-          const infoStore = infoTx.objectStore(INFO_STORE_NAME);
+          let infoStore = infoTx.objectStore(INFO_STORE_NAME);
           const putInfoRequest =
               infoStore.put({modelPath: this.modelPath, modelArtifactsInfo});
           let modelTx: IDBTransaction;
@@ -186,8 +185,18 @@ export class BrowserIndexedDB implements IOHandler {
               resolve({modelArtifactsInfo});
             };
             putModelRequest.onerror = error => {
-              db.close();
-              return reject(putModelRequest.error);
+              // If the put-model request fails, roll back the info entry as
+              // well.
+              infoStore = infoTx.objectStore(INFO_STORE_NAME);
+              const deleteInfoRequest = infoStore.delete(this.modelPath);
+              deleteInfoRequest.onsuccess = () => {
+                db.close();
+                return reject(putModelRequest.error);
+              };
+              deleteInfoRequest.onerror = error => {
+                db.close();
+                return reject(putModelRequest.error);
+              };
             };
           };
           putInfoRequest.onerror = error => {
@@ -315,7 +324,7 @@ export class BrowserIndexedDBManager implements ModelStoreManager {
           } else {
             // First, delete the entry in the info store.
             const deleteInfoRequest = infoStore.delete(path);
-            deleteInfoRequest.onsuccess = () => {
+            const deleteModelData = () => {
               // Second, delete the entry in the model store.
               modelTx = db.transaction(MODEL_STORE_NAME, 'readwrite');
               const modelStore = modelTx.objectStore(MODEL_STORE_NAME);
@@ -325,7 +334,11 @@ export class BrowserIndexedDBManager implements ModelStoreManager {
               deleteModelRequest.onerror = error =>
                   reject(getInfoRequest.error);
             };
+            // Proceed with deleting model data regardless of whether deletion
+            // of info data succeeds or not.
+            deleteInfoRequest.onsuccess = deleteModelData;
             deleteInfoRequest.onerror = error => {
+              deleteModelData();
               db.close();
               return reject(getInfoRequest.error);
             };
@@ -356,70 +369,9 @@ export class BrowserIndexedDBManager implements ModelStoreManager {
         oldPath !== newPath,
         `Old path and new path are the same: '${oldPath}'`);
 
-    return new Promise<ModelArtifactsInfo>((resolve, reject) => {
-      const openRequest = this.indexedDB.open(DATABASE_NAME, DATABASE_VERSION);
-      openRequest.onupgradeneeded = () => setUpDatabase(openRequest);
-
-      openRequest.onsuccess = () => {
-        const db = openRequest.result as IDBDatabase;
-        const infoTx = db.transaction(INFO_STORE_NAME, 'readwrite');
-        const infoStore = infoTx.objectStore(INFO_STORE_NAME);
-
-        let modelTx: IDBTransaction;
-        const getInfoRequest = infoStore.get(oldPath);
-        getInfoRequest.onsuccess = () => {
-          if (getInfoRequest.result == null) {
-            db.close();
-            return reject(new Error(
-                `Cannot find model with path '${oldPath}' ` +
-                `in IndexedDB.`));
-          } else {
-            // First, copy info data.
-            const newInfoData = getInfoRequest.result;
-            newInfoData.modelPath = newPath;
-            const putInfoRequest = infoStore.put(newInfoData);
-            putInfoRequest.onsuccess = () => {
-              // Second, copy model data.
-              modelTx = db.transaction(MODEL_STORE_NAME, 'readwrite');
-              const modelStore = modelTx.objectStore(MODEL_STORE_NAME);
-
-              const getModelRequest = modelStore.get(oldPath);
-              getModelRequest.onsuccess = () => {
-                const newModelData = getModelRequest.result;
-                newModelData.modelPath = newPath;
-                const putModelRequest = modelStore.put(newModelData);
-                putModelRequest.onsuccess = () => {
-                  resolve(getInfoRequest.result.modelArtifactsInfo);
-                };
-                putModelRequest.onerror = error =>
-                    reject(putModelRequest.error);
-              };
-              getModelRequest.onerror = error => {
-                db.close();
-                return reject(getModelRequest.error);
-              };
-            };
-            putInfoRequest.onerror = error => {
-              db.close();
-              return reject(getInfoRequest.error);
-            };
-          }
-        };
-        getInfoRequest.onerror = error => {
-          db.close();
-          return reject(getInfoRequest.error);
-        };
-
-        infoTx.oncomplete = () => {
-          if (modelTx == null) {
-            db.close();
-          } else {
-            modelTx.oncomplete = () => db.close();
-          }
-        };
-      };
-      openRequest.onerror = error => reject(openRequest.error);
-    });
+    const modelArtifacts = await browserIndexedDB(oldPath).load();
+    const saveResult = await browserIndexedDB(newPath).save(modelArtifacts);
+    return saveResult.modelArtifactsInfo;
   }
 }
 
