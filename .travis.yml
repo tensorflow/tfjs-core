@@ -4,7 +4,7 @@ node_js:
   - "10"
 script:
   - ./scripts/build_and_lint_all
-  - if [ "$BROWSERSTACK_KEY" ]; then yarn test-travis; fi
+  - yarn test-travis
 cache: yarn
 git:
   depth: 5
