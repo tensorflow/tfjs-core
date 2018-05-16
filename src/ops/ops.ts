@@ -35,6 +35,7 @@ import {ReductionOps} from './reduction_ops';
 import {ReverseOps} from './reverse';
 import {SliceOps} from './slice';
 import {SoftmaxOps} from './softmax';
+import {StridedSliceOps} from './strided_slice';
 import {TransposeOps} from './transpose';
 import {UnaryOps} from './unary_ops';
 
@@ -76,6 +77,8 @@ export const slice1d = SliceOps.slice1d;
 export const slice2d = SliceOps.slice2d;
 export const slice3d = SliceOps.slice3d;
 export const slice4d = SliceOps.slice4d;
+
+export const stridedSlice = StridedSliceOps.stridedSlice;
 
 export const argMax = ReductionOps.argMax;
 export const argMin = ReductionOps.argMin;
@@ -199,7 +202,9 @@ export const tensor4d = ArrayOps.tensor4d;
 export const print = ArrayOps.print;
 export const expandDims = ArrayOps.expandDims;
 export const stack = ArrayOps.stack;
+export const unstack = ArrayOps.unstack;
 export const split = ArrayOps.split;
+export const cumsum = ArrayOps.cumsum;
 
 export const pad = ArrayOps.pad;
 export const pad1d = ArrayOps.pad1d;
