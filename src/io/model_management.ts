@@ -62,7 +62,11 @@ export class ModelStoreManagerRegistry {
       scheme = scheme.slice(0, scheme.indexOf(URL_SCHEME_SUFFIX));
     }
     assert(scheme.length > 0, 'scheme must not be an empty string.');
-    ModelStoreManagerRegistry.getInstance().managers[scheme] = manager;
+    const registry = ModelStoreManagerRegistry.getInstance();
+    assert(
+        registry.managers[scheme] == null,
+        `A model store manager is already registered for scheme '${scheme}'.`);
+    registry.managers[scheme] = manager;
   }
 
   static getManager(scheme: string): ModelStoreManager {

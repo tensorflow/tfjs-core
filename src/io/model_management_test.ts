@@ -312,7 +312,7 @@ describeWithFlags('ModelManagement', CPU_ENVS, () => {
     const url2 = 'localstorage://a1/FooModel';
     tf.io.copyModel(url1, url2)
         .then(out => {
-          done.fail('Copying to invalid URL succeeded unexpectedly.');
+          done.fail('Copying from invalid URL succeeded unexpectedly.');
         })
         .catch(err => {
           expect(err.message)
@@ -364,7 +364,14 @@ describeWithFlags('ModelManagement', CPU_ENVS, () => {
                     .toEqual(
                         'Copying failed because no save handler is found for ' +
                         'destination URL invalidurl.');
-                done();
+
+                // Verify that the source has not been removed.
+                tf.io.listModels()
+                    .then(out => {
+                      expect(Object.keys(out)).toEqual([url1]);
+                      done();
+                    })
+                    .catch(err => done.fail(err.stack));
               });
         })
         .catch(err => done.fail(err.stack));
