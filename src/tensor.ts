@@ -1006,16 +1006,18 @@ export class Variable<R extends Rank = Rank> extends Tensor<R> {
    * @param newValue New tensor to be assigned to this variable.
    */
   @doc({heading: 'Tensors', subheading: 'Classes'})
-  assign(newValue: Tensor<R>): void {
+  assign(newValue: Tensor<R>, validateShape = true): void {
     if (newValue.dtype !== this.dtype) {
       throw new Error(
           `dtype of the new value (${newValue.dtype}) and ` +
           `previous value (${this.dtype}) must match`);
     }
-    if (!util.arraysEqual(newValue.shape, this.shape)) {
-      throw new Error(
-          `shape of the new value (${newValue.shape}) and ` +
-          `previous value (${this.shape}) must match`);
+    if (validateShape) {
+      if (!util.arraysEqual(newValue.shape, this.shape)) {
+        throw new Error(
+            `shape of the new value (${newValue.shape}) and ` +
+            `previous value (${this.shape}) must match`);
+      }
     }
     ENV.engine.disposeTensor(this);
     this.dataId = newValue.dataId;
