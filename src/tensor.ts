@@ -1004,6 +1004,7 @@ export class Variable<R extends Rank = Rank> extends Tensor<R> {
    * same shape and dtype as the old `Tensor`.
    *
    * @param newValue New tensor to be assigned to this variable.
+   * @param validateShape Validate that the shape of `newValue` matches the shape of the Tensor being assigned to. Defaults to true.
    */
   @doc({heading: 'Tensors', subheading: 'Classes'})
   assign(newValue: Tensor<R>, validateShape = true): void {
