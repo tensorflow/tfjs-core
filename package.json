@@ -38,7 +38,7 @@
     "yalc": "~1.0.0-pre.21"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc --project tsconfig-package.json",
     "build-npm": "./scripts/build-npm.sh",
     "link-local": "yalc link",
     "publish-local": "yarn build-npm && yalc push",

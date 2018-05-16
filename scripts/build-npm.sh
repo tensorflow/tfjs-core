@@ -19,7 +19,7 @@ set -e
 rimraf dist/
 yarn
 
-tsc --sourceMap false
+yarn build
 rollup -c
 uglifyjs dist/tf-core.js -c -m -o dist/tf-core.min.js
 
