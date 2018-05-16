@@ -16,7 +16,10 @@
  */
 
 // tslint:disable:max-line-length
+import {ENV} from '../environment';
+
 import {arrayBufferToBase64String, base64StringToArrayBuffer, getModelArtifactsInfoForKerasJSON} from './io_utils';
+import {IORouter, IORouterRegistry} from './router_registry';
 import {IOHandler, ModelArtifacts, ModelArtifactsInfo, SaveResult} from './types';
 
 // tslint:enable:max-line-length
@@ -34,9 +37,7 @@ const WEIGHT_DATA_SUFFIX = 'weight_data';
  * @returns Paths of the models purged.
  */
 export function purgeLocalStorageArtifacts(): string[] {
-  // TODO(cais): Use central environment flag when it's available.
-  if (typeof window === 'undefined' ||
-      typeof window.localStorage === 'undefined') {
+  if (!ENV.get('IS_BROWSER') || typeof window.localStorage === 'undefined') {
     throw new Error(
         'purgeLocalStorageModels() cannot proceed because local storage is ' +
         'unavailable in the current environment.');
@@ -66,8 +67,10 @@ export class BrowserLocalStorage implements IOHandler {
   protected readonly modelPath: string;
   protected readonly paths: {[key: string]: string};
 
+  static readonly URL_SCHEME = 'localstorage://';
+
   constructor(modelPath: string) {
-    if (!(window && window.localStorage)) {
+    if (!ENV.get('IS_BROWSER') || typeof window.localStorage === 'undefined') {
       // TODO(cais): Add more info about what IOHandler subtypes are available.
       //   Maybe point to a doc page on the web and/or automatically determine
       //   the available IOHandlers and print them in the error message.
@@ -100,11 +103,6 @@ export class BrowserLocalStorage implements IOHandler {
    * @returns An instance of SaveResult.
    */
   async save(modelArtifacts: ModelArtifacts): Promise<SaveResult> {
-    if (!(window && window.localStorage)) {
-      throw new Error(
-          'The current environment does not support local storage.');
-    }
-
     if (modelArtifacts.modelTopology instanceof ArrayBuffer) {
       throw new Error(
           'BrowserLocalStorage.save() does not support saving model topology ' +
@@ -196,6 +194,21 @@ export class BrowserLocalStorage implements IOHandler {
   }
 }
 
+export const localStorageRouter: IORouter = (url: string) => {
+  if (!ENV.get('IS_BROWSER')) {
+    return null;
+  } else {
+    if (url.startsWith(BrowserLocalStorage.URL_SCHEME)) {
+      return browserLocalStorage(
+          url.slice(BrowserLocalStorage.URL_SCHEME.length));
+    } else {
+      return null;
+    }
+  }
+};
+IORouterRegistry.registerSaveRouter(localStorageRouter);
+IORouterRegistry.registerLoadRouter(localStorageRouter);
+
 /**
  * Factory function for local storage IOHandler.
  *
@@ -217,8 +230,8 @@ export class BrowserLocalStorage implements IOHandler {
  *
  * @param modelPath A unique identifier for the model to be saved. Must be a
  *   non-empty string.
- * @returns An instance of `BrowserLocalStorage` (sublcass of `IOHandler`),
- *   which can be used with, e.g., `tf.Model.save`.
+ * @returns An instance of `IOHandler`, which can be used with, e.g.,
+ *   `tf.Model.save`.
  */
 export function browserLocalStorage(modelPath: string): IOHandler {
   return new BrowserLocalStorage(modelPath);

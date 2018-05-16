@@ -203,6 +203,7 @@ export const print = ArrayOps.print;
 export const expandDims = ArrayOps.expandDims;
 export const stack = ArrayOps.stack;
 export const split = ArrayOps.split;
+export const cumsum = ArrayOps.cumsum;
 
 export const pad = ArrayOps.pad;
 export const pad1d = ArrayOps.pad1d;
@@ -237,6 +238,7 @@ export const losses = {
   computeWeightedLoss: LossOps.computeWeightedLoss,
   cosineDistance: LossOps.cosineDistance,
   hingeLoss: LossOps.hingeLoss,
+  logLoss: LossOps.logLoss,
   meanSquaredError: LossOps.meanSquaredError,
   softmaxCrossEntropy: SoftmaxOps.softmaxCrossEntropy
 };
