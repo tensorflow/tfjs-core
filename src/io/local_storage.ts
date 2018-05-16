@@ -20,6 +20,7 @@ import {ENV} from '../environment';
 import {assert} from '../util';
 
 import {arrayBufferToBase64String, base64StringToArrayBuffer, getModelArtifactsInfoForJSON} from './io_utils';
+import {ModelStoreManagerRegistry} from './model_management';
 import {IORouter, IORouterRegistry} from './router_registry';
 import {IOHandler, ModelArtifacts, ModelArtifactsInfo, ModelStoreManager, SaveResult} from './types';
 
@@ -290,7 +291,7 @@ export class BrowserLocalStorageManager implements ModelStoreManager {
     return out;
   }
 
-  async deleteModel(path: string): Promise<ModelArtifactsInfo> {
+  async removeModel(path: string): Promise<ModelArtifactsInfo> {
     path = maybeStripScheme(path);
     const keys = getModelKeys(path);
     if (this.LS.getItem(keys.info) == null) {
@@ -304,54 +305,14 @@ export class BrowserLocalStorageManager implements ModelStoreManager {
     this.LS.removeItem(keys.weightData);
     return info;
   }
-
-  async copyModel(oldPath: string, newPath: string):
-      Promise<ModelArtifactsInfo> {
-    oldPath = maybeStripScheme(oldPath);
-    newPath = maybeStripScheme(newPath);
-    assert(
-        oldPath !== newPath,
-        `Old path and new path are the same: '${oldPath}'`);
-
-    const modelArtifacts = await browserLocalStorage(oldPath).load();
-    const saveResult = await browserLocalStorage(newPath).save(modelArtifacts);
-    return saveResult.modelArtifactsInfo;
-  }
 }
 
-/**
- * Create an instance of manager for models stored in browser local storage.
- *
- * The manager supports listinng, deleting and copying models in local storage.
- *
- * ```js
- * // First create and save a model.
- * const model = tf.sequential();
- * model.add(tf.layers.dense(
- *     {units: 1, inputShape: [10], activation: 'sigmoid'}));
- * await model.save('localstorage://demo/local-storage-manager/model1');
- *
- * // Create a manager and use it to list existing models.
- * const manager = tf.io.browserLocalStorageManager();
- * console.log(await manager.listModels());
- *
- * // Copy the model and list all models again.
- * await manager.copyModel(
- *     'demo/local-storage-manager/model1',
- *     'demo/local-storage-manager/model2'));
- * console.log(await manager.listModels());
- *
- * // Delete a model; list models again.
- * await manager.deleteModel('demo/local-storage-manager/model2');
- * console.log(await manager.listModels());
- *
- * // Delete a model; list models again.
- * await manager.deleteModel('demo/local-storage-manager/model1');
- * console.log(await manager.listModels());
- * ```
- *
- * @returns An instance of `ModelStoreManager`.
- */
-export function browserLocalStorageManager(): ModelStoreManager {
-  return new BrowserLocalStorageManager();
+if (ENV.get('IS_BROWSER')) {
+  // Wrap the construction and registration, to guard against browsers that
+  // don't support Local Storage.
+  try {
+    ModelStoreManagerRegistry.registerManager(
+        BrowserLocalStorage.URL_SCHEME, new BrowserLocalStorageManager());
+  } catch (err) {
+  }
 }

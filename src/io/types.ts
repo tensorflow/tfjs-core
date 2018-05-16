@@ -218,7 +218,6 @@ export interface IOHandler {
  *
  * - Listing the models stored in the store.
  * - Deleting a model from the store.
- * - Copying a model in the store, from one path to another.
  */
 export interface ModelStoreManager {
   /**
@@ -231,24 +230,12 @@ export interface ModelStoreManager {
   listModels(): Promise<{[path: string]: ModelArtifactsInfo}>;
 
   /**
-   * Delete a model specified by `path`.
+   * Remove a model specified by `path`.
    *
    * @param path
    * @returns ModelArtifactsInfo of the deleted model (if and only if deletion
    *   is successful).
    * @throws Error if deletion fails, e.g., if no model exists at `path`.
    */
-  deleteModel(path: string): Promise<ModelArtifactsInfo>;
-
-  /**
-   * Copy a model from one path to another.
-   *
-   * @param oldPath
-   * @param newPath
-   * @returns ModelArtifactsInfo of the copied model (if and only if copying
-   *   is successful).
-   * @throws Error if deletion fails, e.g., if no model exists at `oldPath`, or
-   *   if `oldPath` and `newPath` are identical.
-   */
-  copyModel(oldPath: string, newPath: string): Promise<ModelArtifactsInfo>;
+  removeModel(path: string): Promise<ModelArtifactsInfo>;
 }

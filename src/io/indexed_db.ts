@@ -17,11 +17,12 @@
 
 // tslint:disable:max-line-length
 import {ENV} from '../environment';
-import {assert} from '../util';
 
 import {getModelArtifactsInfoForJSON} from './io_utils';
+import {ModelStoreManagerRegistry} from './model_management';
 import {IORouter, IORouterRegistry} from './router_registry';
 import {IOHandler, ModelArtifacts, ModelArtifactsInfo, ModelStoreManager, SaveResult} from './types';
+
 // tslint:enable:max-line-length
 
 const DATABASE_NAME = 'tensorflowjs';
@@ -31,8 +32,8 @@ const DATABASE_VERSION = 1;
 // stores for efficient access of the list of stored models and their metadata.
 // 1. The object store for model data: topology, weights and weight manifests.
 const MODEL_STORE_NAME = 'models_store';
-// 2. The object store forModelArtifactsInfo, including meta-information such as
-//    the type of topology (JSON vs binary), byte size of the topology, byte
+// 2. The object store for ModelArtifactsInfo, including meta-information such
+//    as the type of topology (JSON vs binary), byte size of the topology, byte
 //    size of the weights, etc.
 const INFO_STORE_NAME = 'model_info_store';
 
@@ -138,9 +139,7 @@ export class BrowserIndexedDB implements IOHandler {
 
         if (modelArtifacts == null) {
           // Read model out from object store.
-          const modelTx = db.transaction(
-              MODEL_STORE_NAME,
-              modelArtifacts == null ? 'readonly' : 'readwrite');
+          const modelTx = db.transaction(MODEL_STORE_NAME, 'readonly');
           const modelStore = modelTx.objectStore(MODEL_STORE_NAME);
           const getRequest = modelStore.get(this.modelPath);
           getRequest.onsuccess = () => {
@@ -163,27 +162,21 @@ export class BrowserIndexedDB implements IOHandler {
           const modelArtifactsInfo: ModelArtifactsInfo =
               getModelArtifactsInfoForJSON(modelArtifacts);
           // First, put ModelArtifactsInfo into info store.
-          const infoTx = db.transaction(
-              INFO_STORE_NAME,
-              modelArtifacts == null ? 'readonly' : 'readwrite');
+          const infoTx = db.transaction(INFO_STORE_NAME, 'readwrite');
           let infoStore = infoTx.objectStore(INFO_STORE_NAME);
           const putInfoRequest =
               infoStore.put({modelPath: this.modelPath, modelArtifactsInfo});
           let modelTx: IDBTransaction;
           putInfoRequest.onsuccess = () => {
             // Second, put model data into model store.
-            modelTx = db.transaction(
-                MODEL_STORE_NAME,
-                modelArtifacts == null ? 'readonly' : 'readwrite');
+            modelTx = db.transaction(MODEL_STORE_NAME, 'readwrite');
             const modelStore = modelTx.objectStore(MODEL_STORE_NAME);
             const putModelRequest = modelStore.put({
               modelPath: this.modelPath,
               modelArtifacts,
               modelArtifactsInfo
             });
-            putModelRequest.onsuccess = () => {
-              resolve({modelArtifactsInfo});
-            };
+            putModelRequest.onsuccess = () => resolve({modelArtifactsInfo});
             putModelRequest.onerror = error => {
               // If the put-model request fails, roll back the info entry as
               // well.
@@ -302,7 +295,7 @@ export class BrowserIndexedDBManager implements ModelStoreManager {
         });
   }
 
-  async deleteModel(path: string): Promise<ModelArtifactsInfo> {
+  async removeModel(path: string): Promise<ModelArtifactsInfo> {
     path = maybeStripScheme(path);
     return new Promise<ModelArtifactsInfo>((resolve, reject) => {
       const openRequest = this.indexedDB.open(DATABASE_NAME, DATABASE_VERSION);
@@ -360,54 +353,14 @@ export class BrowserIndexedDBManager implements ModelStoreManager {
       openRequest.onerror = error => reject(openRequest.error);
     });
   }
-
-  async copyModel(oldPath: string, newPath: string):
-      Promise<ModelArtifactsInfo> {
-    oldPath = maybeStripScheme(oldPath);
-    newPath = maybeStripScheme(newPath);
-    assert(
-        oldPath !== newPath,
-        `Old path and new path are the same: '${oldPath}'`);
-
-    const modelArtifacts = await browserIndexedDB(oldPath).load();
-    const saveResult = await browserIndexedDB(newPath).save(modelArtifacts);
-    return saveResult.modelArtifactsInfo;
-  }
 }
 
-/**
- * Create an instance of manager for models stored in browser IndexedDB.
- *
- * The manager supports listinng, deleting and copying models in IndexedDB.
- *
- * ```js
- * // First create and save a model.
- * const model = tf.sequential();
- * model.add(tf.layers.dense(
- *     {units: 1, inputShape: [10], activation: 'sigmoid'}));
- * await model.save('indexeddb://demo/local-storage-manager/model1');
- *
- * // Create a manager and use it to list existing models.
- * const manager = tf.io.browserIndexedDBManager();
- * console.log(await manager.listModels());
- *
- * // Copy the model and list all models again.
- * await manager.copyModel(
- *     'demo/local-storage-manager/model1',
- *     'demo/local-storage-manager/model2'));
- * console.log(await manager.listModels());
- *
- * // Delete a model; list models again.
- * await manager.deleteModel('demo/local-storage-manager/model2');
- * console.log(await manager.listModels());
- *
- * // Delete a model; list models again.
- * await manager.deleteModel('demo/local-storage-manager/model1');
- * console.log(await manager.listModels());
- * ```
- *
- * @returns An instance of `ModelStoreManager`.
- */
-export function browserIndexedDBManager(): ModelStoreManager {
-  return new BrowserIndexedDBManager();
+if (ENV.get('IS_BROWSER')) {
+  // Wrap the construction and registration, to guard against browsers that
+  // don't support Local Storage.
+  try {
+    ModelStoreManagerRegistry.registerManager(
+        BrowserIndexedDB.URL_SCHEME, new BrowserIndexedDBManager());
+  } catch (err) {
+  }
 }
