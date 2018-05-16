@@ -22,8 +22,8 @@
  * - Listing models on all registered storage mediums.
  * - Remove model by URL from any registered storage mediums, by using URL
  *   string.
- * - Moving model from one path to another in the same medium or from one
- *   medium to another, by using URL strings.
+ * - Moving or copying model from one path to another in the same medium or from
+ *   one medium to another, by using URL strings.
  */
 
 import {assert} from '../util';
@@ -304,7 +304,7 @@ export async function copyModel(
  * // List models again.
  * console.log(await tf.io.listModels());
  *
- * // Remove the moved models.
+ * // Remove the moved model.
  * await tf.io.removeModel('indexeddb://demo/management/model1');
  * ```
  *
