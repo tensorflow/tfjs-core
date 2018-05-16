@@ -50,7 +50,9 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
       Tensor2D;
 
   slice<T extends Tensor>(x: T, begin: number[], size: number[]): T;
-
+  stridedSlice<T extends Tensor>(
+      x: T, begin: number[], end: number[], strides: number[],
+      beginMask: number, endMask: number): T;
   reverse<T extends Tensor>(a: T, axis: number[]): T;
 
   // Any concat of n-dimensional tensors across any axis can be reduced to
@@ -210,6 +212,9 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
 
   oneHot(indices: Tensor1D, depth: number, onValue: number, offValue: number):
       Tensor2D;
+
+  cumsum(x: Tensor, axis: number, exclusive: boolean, reverse: boolean):
+      Tensor;
 
   dispose(): void;
 }

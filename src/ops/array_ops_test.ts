@@ -2249,6 +2249,134 @@ describeWithFlags('stack', ALL_ENVS, () => {
   });
 });
 
+describeWithFlags('unstack', ALL_ENVS, () => {
+  it('unstack by default', () => {
+    const x = tf.tensor2d([1, 2, 3, 4, 5, 6, 7, 8], [2, 4]);
+    const res = tf.unstack(x);
+    expect(res.length).toEqual(2);
+    expect(res[0].rank).toEqual(1);
+    expect(res[0].shape).toEqual([4]);
+    expectArraysClose(res[0], [1, 2, 3, 4]);
+    expect(res[1].rank).toEqual(1);
+    expect(res[1].shape).toEqual([4]);
+    expectArraysClose(res[1], [5, 6, 7, 8]);
+  });
+
+  it('unstack into 3 tensors', () => {
+    const x = tf.tensor2d([1, 2, 3, 4, 5, 6], [3, 2]);
+    const res = tf.unstack(x, 0);
+    expect(res.length).toEqual(3);
+    expect(res[0].rank).toEqual(1);
+    expect(res[0].shape).toEqual([2]);
+    expectArraysClose(res[0], [1, 2]);
+    expect(res[1].rank).toEqual(1);
+    expect(res[1].shape).toEqual([2]);
+    expectArraysClose(res[1], [3, 4]);
+    expect(res[2].rank).toEqual(1);
+    expect(res[2].shape).toEqual([2]);
+    expectArraysClose(res[2], [5, 6]);
+  });
+
+  it('unstack by axis=1', () => {
+    const x = tf.tensor2d([1, 2, 3, 4, 5, 6, 7, 8], [2, 4]);
+    const res = tf.unstack(x, 1);
+    expect(res.length).toEqual(4);
+    expect(res[0].rank).toEqual(1);
+    expect(res[0].shape).toEqual([2]);
+    expectArraysClose(res[0], [1, 5]);
+    expect(res[1].rank).toEqual(1);
+    expect(res[1].shape).toEqual([2]);
+    expectArraysClose(res[1], [2, 6]);
+    expect(res[2].rank).toEqual(1);
+    expect(res[2].shape).toEqual([2]);
+    expectArraysClose(res[2], [3, 7]);
+    expect(res[3].rank).toEqual(1);
+    expect(res[3].shape).toEqual([2]);
+    expectArraysClose(res[3], [4, 8]);
+  });
+
+  it('unstack rank 3 tensor', () => {
+    const x = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2]);
+    const res = tf.unstack(x);
+    expect(res.length).toEqual(2);
+    expect(res[0].rank).toEqual(2);
+    expect(res[0].shape).toEqual([2, 2]);
+    expectArraysClose(res[0], [1, 2, 3, 4]);
+    expect(res[1].rank).toEqual(2);
+    expect(res[1].shape).toEqual([2, 2]);
+    expectArraysClose(res[1], [5, 6, 7, 8]);
+  });
+
+  it('unstack rank 3 tensor with axis=1', () => {
+    const x = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2]);
+    const res = tf.unstack(x, 1);
+    expect(res.length).toEqual(2);
+    expect(res[0].rank).toEqual(2);
+    expect(res[0].shape).toEqual([2, 2]);
+    expectArraysClose(res[0], [1, 2, 5, 6]);
+    expect(res[1].rank).toEqual(2);
+    expect(res[1].shape).toEqual([2, 2]);
+    expectArraysClose(res[1], [3, 4, 7, 8]);
+  });
+
+  it('unstack rank 3 tensor with axis=2', () => {
+    const x = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2]);
+    const res = tf.unstack(x, 2);
+    expect(res.length).toEqual(2);
+    expect(res[0].rank).toEqual(2);
+    expect(res[0].shape).toEqual([2, 2]);
+    expectArraysClose(res[0], [1, 3, 5, 7]);
+    expect(res[1].rank).toEqual(2);
+    expect(res[1].shape).toEqual([2, 2]);
+    expectArraysClose(res[1], [2, 4, 6, 8]);
+  });
+
+  it('unstack rank 4 tensor', () => {
+    const x = tf.tensor4d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2, 1]);
+    const res = tf.unstack(x);
+    expect(res.length).toEqual(2);
+    expect(res[0].rank).toEqual(3);
+    expect(res[0].shape).toEqual([2, 2, 1]);
+    expectArraysClose(res[0], [1, 2, 3, 4]);
+    expect(res[1].rank).toEqual(3);
+    expect(res[1].shape).toEqual([2, 2, 1]);
+    expectArraysClose(res[1], [5, 6, 7, 8]);
+  });
+
+  it('unstack rank 4 tensor with axis=1', () => {
+    const x = tf.tensor4d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2, 1]);
+    const res = tf.unstack(x, 1);
+    expect(res.length).toEqual(2);
+    expect(res[0].rank).toEqual(3);
+    expect(res[0].shape).toEqual([2, 2, 1]);
+    expectArraysClose(res[0], [1, 2, 5, 6]);
+    expect(res[1].rank).toEqual(3);
+    expect(res[1].shape).toEqual([2, 2, 1]);
+    expectArraysClose(res[1], [3, 4, 7, 8]);
+  });
+
+  it('unstack rank 4 tensor with axis=2', () => {
+    const x = tf.tensor4d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2, 1]);
+    const res = tf.unstack(x, 2);
+    expect(res.length).toEqual(2);
+    expect(res[0].rank).toEqual(3);
+    expect(res[0].shape).toEqual([2, 2, 1]);
+    expectArraysClose(res[0], [1, 3, 5, 7]);
+    expect(res[1].rank).toEqual(3);
+    expect(res[1].shape).toEqual([2, 2, 1]);
+    expectArraysClose(res[1], [2, 4, 6, 8]);
+  });
+
+  it('unstack rank 4 tensor with axis=3', () => {
+    const x = tf.tensor4d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2, 1]);
+    const res = tf.unstack(x, 3);
+    expect(res.length).toEqual(1);
+    expect(res[0].rank).toEqual(3);
+    expect(res[0].shape).toEqual([2, 2, 2]);
+    expectArraysClose(res[0], [1, 2, 3, 4, 5, 6, 7, 8]);
+  });
+});
+
 describeWithFlags('split', ALL_ENVS, () => {
   it('split by number', () => {
     const x = tf.tensor2d([1, 2, 3, 4, 5, 6, 7, 8], [2, 4]);
@@ -2335,5 +2463,71 @@ describeWithFlags('expandDims', ALL_ENVS, () => {
   it('throws when passed a non-tensor', () => {
     expect(() => tf.expandDims({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'expandDims' must be a Tensor/);
+  });
+});
+
+describeWithFlags('cumsum', ALL_ENVS, () => {
+  it('1D standard', () => {
+    const res = tf.tensor1d([1, 2, 3, 4]).cumsum();
+    expect(res.shape).toEqual([4]);
+    expectArraysClose(res, [1, 3, 6, 10]);
+  });
+
+  it('1D reverse', () => {
+    const reverse = true;
+    const exclusive = false;
+    const res = tf.tensor1d([1, 2, 3, 4]).cumsum(0, exclusive, reverse);
+    expect(res.shape).toEqual([4]);
+    expectArraysClose(res, [10, 9, 7, 4]);
+  });
+
+  it('1D exclusive', () => {
+    const exclusive = true;
+    const res = tf.tensor1d([1, 2, 3, 4]).cumsum(0, exclusive);
+    expect(res.shape).toEqual([4]);
+    expectArraysClose(res, [0, 1, 3, 6]);
+  });
+
+  it('1D exclusive reverse', () => {
+    const reverse = true;
+    const exclusive = true;
+    const res = tf.tensor1d([1, 2, 3, 4]).cumsum(0, exclusive, reverse);
+    expect(res.shape).toEqual([4]);
+    expectArraysClose(res, [9, 7, 4, 0]);
+  });
+
+  it('gradient: 1D', () => {
+    const a = tf.tensor1d([1, 2, 3]);
+    const dy = tf.tensor1d([4, 5, 6]);
+    const da = tf.grad(x => tf.cumsum(x))(a, dy);
+
+    expect(da.shape).toEqual([3]);
+    expectArraysClose(da, [15, 11, 6]);
+  });
+
+  it('2D standard', () => {
+    const res = tf.tensor2d([[1, 2], [3, 4]]).cumsum(1);
+    expect(res.shape).toEqual([2, 2]);
+    expectArraysClose(res, [1, 3, 3, 7]);
+  });
+
+  it('2D reverse exclusive', () => {
+    const reverse = true;
+    const exclusive = true;
+    const res = tf.tensor2d([[1, 2], [3, 4]]).cumsum(1, exclusive, reverse);
+    expect(res.shape).toEqual([2, 2]);
+    expectArraysClose(res, [2, 0, 4, 0]);
+  });
+
+  it('2D axis=0', () => {
+    const res = tf.tensor2d([[1, 2], [3, 4]]).cumsum();
+    expect(res.shape).toEqual([2, 2]);
+    expectArraysClose(res, [1, 2, 4, 6]);
+  });
+
+  it('3D standard', () => {
+    const res = tf.tensor3d([[[0, 1], [2, 3]], [[4, 5], [6, 7]]]).cumsum(2);
+    expect(res.shape).toEqual([2, 2, 2]);
+    expectArraysClose(res, [0, 1, 2, 5, 4, 9, 6, 13]);
   });
 });
