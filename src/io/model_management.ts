@@ -267,7 +267,7 @@ async function cloneModelInternal(
  * @param destURL Destination URL of copying.
  * @returns ModelArtifactsInfo of the copied model (if and only if copying
  *   is successful).
- * @throws Error if deletion fails, e.g., if no model exists at `oldPath`, or
+ * @throws Error if copying fails, e.g., if no model exists at `sourceURL`, or
  *   if `oldPath` and `newPath` are identical.
  */
 export async function copyModel(
@@ -312,7 +312,7 @@ export async function copyModel(
  * @param destURL Destination URL of moving.
  * @returns ModelArtifactsInfo of the copied model (if and only if copying
  *   is successful).
- * @throws Error if deletion fails, e.g., if no model exists at `oldPath`, or
+ * @throws Error if moving fails, e.g., if no model exists at `sourceURL`, or
  *   if `oldPath` and `newPath` are identical.
  */
 export async function moveModel(
