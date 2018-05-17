@@ -377,6 +377,22 @@ describeWithFlags('ModelManagement', CPU_ENVS, () => {
         .catch(err => done.fail(err.stack));
   });
 
+  it('Failed deletedModel: Absent scheme', done => {
+    // Attempt to delete a nonexistent model is expected to fail.
+    tf.io.removeModel('foo')
+        .then(out => {
+          done.fail(
+              'Removing model with missing scheme succeeded unexpectedly.');
+        })
+        .catch(err => {
+          expect(err.message)
+              .toMatch(/The url string provided does not contain a scheme/);
+          expect(err.message.indexOf('localstorage')).toBeGreaterThan(0);
+          expect(err.message.indexOf('indexeddb')).toBeGreaterThan(0);
+          done();
+        });
+  });
+
   it('Failed deletedModel: Invalid scheme', done => {
     // Attempt to delete a nonexistent model is expected to fail.
     tf.io.removeModel('invalidscheme://foo')

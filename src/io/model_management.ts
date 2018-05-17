@@ -95,7 +95,7 @@ function parseURL(url: string): {scheme: string, path: string} {
     throw new Error(
         `The url string provided does not contain a scheme. ` +
         `Supported schemes are: ` +
-        `${Object.keys(ModelStoreManagerRegistry.getSchemes()).join(',')}`);
+        `${ModelStoreManagerRegistry.getSchemes().join(',')}`);
   }
   return {
     scheme: url.split(URL_SCHEME_SUFFIX)[0],
