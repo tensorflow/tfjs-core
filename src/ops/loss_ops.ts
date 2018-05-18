@@ -239,8 +239,9 @@ export class LossOps {
    *    `labels`, and must be broadcastable to `labels` (i.e., all dimensions
    *    must be either `1`, or the same as the corresponding `losses`
    *    dimension).
+   * @param delta Point where huber loss changes from quadratic to linear.
    * @param reduction Type of reduction to apply to loss. Should be of type
-   *    `Reduction`
+   *    `Reduction`.
    */
   @doc({heading: 'Training', subheading: 'Losses', namespace: 'losses'})
   @operation
