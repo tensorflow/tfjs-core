@@ -29,7 +29,7 @@ import {getAxesPermutation, parseAxisParam} from './axis_util';
 import {ConcatOps} from './concat';
 import {operation} from './operation';
 import {MPRandGauss} from './rand';
-import {ReductionOps} from './reduction_ops';
+import {SegmentOps} from './segment_ops';
 
 export class ArrayOps {
   /**
@@ -944,8 +944,7 @@ export class ArrayOps {
     axis = parseAxisParam(axis, x.shape)[0];
     const grad = (dy: T) => {
       const derX = () => {
-        return ReductionOps.unsortedSegmentSum(
-            dy, indices, x.shape[axis], axis);
+        return SegmentOps.unsortedSegmentSum(dy, indices, x.shape[axis], axis);
       };
       return {x: derX};
     };
@@ -1101,8 +1100,7 @@ export class ArrayOps {
    */
   @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
   @operation
-  static unstack<T extends Tensor>(
-      value: T, axis = 0): Tensor[] {
+  static unstack<T extends Tensor>(value: T, axis = 0): Tensor[] {
     const num = value.shape[axis];
     const outputShape: number[] = Array(value.rank - 1).fill(0);
     let outIndex = 0;
@@ -1221,9 +1219,10 @@ export class ArrayOps {
     const grad = (dy: T) => {
       return {permutedX: () => dy.cumsum(axis, exclusive, !reverse)};
     };
-    let value =  ENV.engine.runKernel(
-        backend => backend.cumsum(permutedX, axis, exclusive, reverse),
-        {permutedX}, grad) as T;
+    let value =
+        ENV.engine.runKernel(
+            backend => backend.cumsum(permutedX, axis, exclusive, reverse),
+            {permutedX}, grad) as T;
 
     if (permutation != null) {
       value = value.transpose(permutation);
