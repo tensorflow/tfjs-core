@@ -130,17 +130,18 @@ export interface TensorContainerArray extends Array<TensorContainer> {}
 
 export interface ModelPredictConfig {
   /**
-   * Batch size (Integer). If unspecified, it will default to 32.
+   * Optional. Batch size (Integer). If unspecified, it will default to 32.
    */
   batchSize?: number;
 
   /**
-   * Verbosity mode. Defaults to false.
+   * Optional. Verbosity mode. Defaults to false.
    */
   verbose?: boolean;
 
   /**
-   * Output node names. Default to model graph outputs if not set.
+   * Optional. List of output node names to evaluate when running predict().
+   * Defaults to the model's default output.
    */
   outputs?: string|string[];
 }
@@ -151,22 +152,23 @@ export interface ModelPredictConfig {
 export interface InferenceModel {
   /**
    * Execute the inference for the input tensors.
-   * When there is single input for the model, inputs param should be a Tensor.
-   * For models with mutliple inputs, inputs params
-   * should be in either Tensor[] if the input order is fixed, or otherwise
-   * NamedTensorMap format.
    *
+   * @param input The input tensors, when there is single input for the model,
+   * inputs param should be a Tensor. For models with mutliple inputs, inputs
+   * params should be in either Tensor[] if the input order is fixed, or
+   * otherwise NamedTensorMap format.
    * For batch inference execution, the tensors for each input need to be
-   * cancatenated together. For example with mobilenet, the required input shape
+   * concatenated together. For example with mobilenet, the required input shape
    * is [1, 244, 244, 3], which represents the [batch, height, width, channel].
-   * If we are provide a batched data of 100 images, the input tensor should
-   * be in the shape of [100, 244, 244, 3].
+   * If we are provide a batched data of 100 images, the input tensor should be
+   * in the shape of [100, 244, 244, 3].
    *
-   * ModelPredictConfig can be used for specifying the batch size and output
-   * node names.
+   * @param config Prediction configuration for specifying the batch size and
+   * output node names.
    *
-   * The output would be a Tensor if there is single output node, Tensor[] or
-   * NamedTensorMap[] will be returned for model with multiple inputs.
+   * @returns Inference result tensors. The output would be single Tensor if
+   * model has single output node, otherwise Tensor[] or NamedTensorMap[] will
+   * be returned for model with multiple outputs.
    */
   predict(inputs: Tensor|Tensor[]|NamedTensorMap, config: ModelPredictConfig):
       Tensor|Tensor[]|NamedTensorMap;
