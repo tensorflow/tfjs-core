@@ -146,7 +146,7 @@ export interface ModelPredictConfig {
 }
 
 /**
- * Common interface for inference model.
+ * Common interface for a machine learning model that can do inference.
  */
 export interface InferenceModel {
   /**
@@ -156,8 +156,14 @@ export interface InferenceModel {
    * should be in either Tensor[] if the input order is fixed, or otherwise
    * NamedTensorMap format.
    *
-   * config param can be used for specifying the batch size and output node
-   * names.
+   * For batch inference execution, the tensors for each input need to be
+   * cancatenated together. For example with mobilenet, the required input shape
+   * is [1, 244, 244, 3], which represents the [batch, height, width, channel].
+   * If we are provide a batched data of 100 images, the input tensor should
+   * be in the shape of [100, 244, 244, 3].
+   *
+   * ModelPredictConfig can be used for specifying the batch size and output
+   * node names.
    *
    * The output would be a Tensor if there is single output node, Tensor[] or
    * NamedTensorMap[] will be returned for model with multiple inputs.
