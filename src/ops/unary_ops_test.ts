@@ -722,6 +722,17 @@ describeWithFlags('square', ALL_ENVS, () => {
     expectArraysClose(gradients, [-6 * 1, 2 * 2, 4 * 3, 6 * 4]);
   });
 
+  it('gradients: Tensor5D', () => {
+    const a = tf.tensor5d([-3, 1, 2, 3], [1, 1, 1, 2, 2]);
+    const dy = tf.tensor5d([1, 2, 3, 4], [1, 1, 1, 2, 2]);
+
+    const gradients = tf.grad(a => tf.square(a))(a, dy);
+
+    expect(gradients.shape).toEqual(a.shape);
+    expect(gradients.dtype).toEqual('float32');
+    expectArraysClose(gradients, [-6 * 1, 2 * 2, 4 * 3, 6 * 4]);
+  });
+
   it('throws when passed a non-tensor', () => {
     expect(() => tf.square({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'square' must be a Tensor/);
