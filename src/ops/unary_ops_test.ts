@@ -676,6 +676,13 @@ describeWithFlags('square', ALL_ENVS, () => {
     expectArraysClose(r, [1, 4, 2, 3]);
   });
 
+  it('5D array', () => {
+    const a = tf.tensor5d([1, 2, Math.sqrt(2), Math.sqrt(3)], [1, 1, 2, 2, 1]);
+    const r = tf.square(a);
+    expect(r.shape).toEqual([1, 1, 2, 2, 1]);
+    expectArraysClose(r, [1, 4, 2, 3]);
+  });
+
   it('square propagates NaNs', () => {
     const a = tf.tensor1d([1.5, NaN]);
     const r = tf.square(a);
