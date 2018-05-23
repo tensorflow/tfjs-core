@@ -146,24 +146,22 @@ export interface ModelPredictConfig {
 }
 
 /**
- * Common interface for rxjs inference model.
+ * Common interface for inference model.
  */
 export interface InferenceModel {
   /**
    * Execute the inference for the input tensors.
-   * When there is single input for the model, inputs param should be a Tensor
-   * and Tensor[] for batch mode. For models with mutliple inputs, inputs params
-   * should be in NamedTensorMap format, and NamedTensorMap[] for batch mode.
+   * When there is single input for the model, inputs param should be a Tensor.
+   * For models with mutliple inputs, inputs params
+   * should be in either Tensor[] if the input order is fixed, or otherwise
+   * NamedTensorMap format.
    *
    * config param can be used for specifying the batch size and output node
    * names.
    *
-   * The output would be a Tensor if there is single output node or
-   * Tensor[] for batch mode. For model with multiple outputs either
-   * NamedTensorMap or NamedTensorMap[] will be returned.
+   * The output would be a Tensor if there is single output node, Tensor[] or
+   * NamedTensorMap[] will be returned for model with multiple inputs.
    */
-  predict(
-      inputs: Tensor|Tensor[]|NamedTensorMap|NamedTensorMap[],
-      config: ModelPredictConfig): Tensor|Tensor[]|NamedTensorMap
-      |NamedTensorMap[];
+  predict(inputs: Tensor|Tensor[]|NamedTensorMap, config: ModelPredictConfig):
+      Tensor|Tensor[]|NamedTensorMap;
 }
