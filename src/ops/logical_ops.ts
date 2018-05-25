@@ -22,6 +22,8 @@ import * as types from '../types';
 import * as util from '../util';
 import * as broadcast_util from './broadcast_util';
 import {operation} from './operation';
+import {customGrad} from '../globals';
+import {zerosLike} from '../ops/ops';
 
 export class LogicalOps {
   /**
@@ -160,10 +162,20 @@ export class LogicalOps {
       util.assertShapesMatch(condition.shape, b.shape, 'Error in where: ');
     }
 
-    // Default to highest percision of number:
-    const dtype = types.upcastType(a.dtype, b.dtype);
-    return ENV.engine.runKernel(
-               backend => backend.where(condition, a, b, dtype),
-               {condition, a, b}) as T;
+    const customOp = customGrad((condition, a, b) => {
+      // Default to highest percision of number:
+      const dtype = types.upcastType(a.dtype, b.dtype);
+      const y = ENV.engine.runKernel(
+                 backend => backend.where(condition, a, b, dtype),
+                 {condition, a, b}) as T;
+      const gradFunc = (dy: T) => {
+        const dcond = zerosLike(condition);
+        const da = dy.mul(condition.cast(a.dtype));
+        const db = dy.mul(condition.logicalNot().cast(b.dtype));
+        return [dcond, da, db];
+      };
+      return {value: y, gradFunc: gradFunc};
+    });
+    return customOp(condition, a, b);
   }
 }

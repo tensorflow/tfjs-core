@@ -559,4 +559,53 @@ describeWithFlags('where', ALL_ENVS, () => {
             tf.scalar(1, 'bool'), tf.scalar(1, 'bool'), {} as tf.Tensor))
         .toThrowError(/Argument 'b' passed to 'where' must be a Tensor/);
   });
+
+  it('1D gradient', () => {
+    const c = tf.tensor1d([1, 0, 1], 'bool');
+    const a = tf.tensor1d([1, 2, 3]);
+    const b = tf.tensor1d([4, 5, 6]);
+    const [dc, da, db] = tf.grads((c,a,b) => tf.where(c,a,b).sum())([c, a, b]);
+    expectArraysClose(dc, [0, 0, 0]);
+    expectArraysClose(da, [1, 0, 1]);
+    expectArraysClose(db, [0, 1, 0]);
+    expect(dc.shape).toEqual(c.shape);
+    expect(da.shape).toEqual(a.shape);
+    expect(db.shape).toEqual(b.shape);
+  });
+  it('2D gradient', () => {
+    const c = tf.tensor2d([1, 0, 1, 1, 1, 0], [2, 3], 'bool');
+    const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
+    const b = tf.tensor2d([7, 8, 9, 10, 11, 12], [2, 3]);
+    const [dc, da, db] = tf.grads((c,a,b) => tf.where(c,a,b).sum())([c, a, b]);
+    expectArraysClose(dc, [0, 0, 0, 0, 0, 0]);
+    expectArraysClose(da, [1, 0, 1, 1, 1, 0]);
+    expectArraysClose(db, [0, 1, 0, 0, 0, 1]);
+    expect(dc.shape).toEqual(c.shape);
+    expect(da.shape).toEqual(a.shape);
+    expect(db.shape).toEqual(b.shape);
+  });
+  it('3D gradient', () => {
+    const c = tf.tensor3d([1, 1, 0, 1, 1, 0], [2, 3, 1], 'bool');
+    const a = tf.tensor3d([1, 2, 3, 4, 5, 6], [2, 3, 1]);
+    const b = tf.tensor3d([7, 8, 9, 10, 11, 12], [2, 3, 1]);
+    const [dc, da, db] = tf.grads((c,a,b) => tf.where(c,a,b).sum())([c, a, b]);
+    expectArraysClose(dc, [0, 0, 0, 0, 0, 0]);
+    expectArraysClose(da, [1, 1, 0, 1, 1, 0]);
+    expectArraysClose(db, [0, 0, 1, 0, 0, 1]);
+    expect(dc.shape).toEqual(c.shape);
+    expect(da.shape).toEqual(a.shape);
+    expect(db.shape).toEqual(b.shape);
+  });
+  it('4D gradient', () => {
+    const c = tf.tensor4d([1, 1, 0, 1], [2, 2, 1, 1], 'bool');
+    const a = tf.tensor4d([1, 2, 3, 4], [2, 2, 1, 1]);
+    const b = tf.tensor4d([5, 6, 7, 8], [2, 2, 1, 1]);
+    const [dc, da, db] = tf.grads((c,a,b) => tf.where(c,a,b).sum())([c, a, b]);
+    expectArraysClose(dc, [0, 0, 0, 0]);
+    expectArraysClose(da, [1, 1, 0, 1]);
+    expectArraysClose(db, [0, 0, 1, 0]);
+    expect(dc.shape).toEqual(c.shape);
+    expect(da.shape).toEqual(a.shape);
+    expect(db.shape).toEqual(b.shape);
+  });
 });
