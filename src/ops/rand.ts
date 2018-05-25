@@ -17,85 +17,121 @@
 
 import * as seedrandom from 'seedrandom';
 
-export interface RandGauss {
-  nextValue(): number;
-}
+import {Tensor} from '..';
+import {Rank, ShapeMap} from '../types';
+import {ArrayOps} from './array_ops';
 
 export interface RandNormalDataTypes {
   float32: Float32Array;
   int32: Int32Array;
 }
 
+export interface Marsaglia {
+  value: number;
+  m: number;
+}
+
 // https://en.wikipedia.org/wiki/Marsaglia_polar_method
-export class MPRandGauss implements RandGauss {
-  private mean: number;
-  private stdDev: number;
-  private nextVal: number;
+export class MPRandGauss<R extends Rank> {
+  private mean: Tensor;
+  private stdDev: Tensor;
+  private meanValues: Float32Array|Int32Array|Uint8Array;
+  private stdDevValues: Float32Array|Int32Array|Uint8Array;
+  private nextVal: Marsaglia;
   private dtype?: keyof RandNormalDataTypes;
+  private shape: ShapeMap[R];
   private truncated?: boolean;
-  private upper?: number;
-  private lower?: number;
   private random: seedrandom.prng;
 
   constructor(
-      mean: number, stdDeviation: number, dtype?: keyof RandNormalDataTypes,
-      truncated?: boolean, seed?: number) {
+      mean: number|Tensor, stdDeviation: number|Tensor,
+      dtype?: keyof RandNormalDataTypes, truncated?: boolean, seed?: number) {
+    if (typeof mean === 'number') {
+      mean = ArrayOps.scalar(mean as number);
+    }
+    if (typeof stdDeviation === 'number') {
+      stdDeviation = ArrayOps.scalar(stdDeviation as number);
+    }
+    if (mean.shape.toString() !== stdDeviation.shape.toString()) {
+      throw new Error(
+          `Shape of loc (${mean.shape}) must be the same shape than scale ${
+              stdDeviation.shape}`);
+    }
     this.mean = mean;
     this.stdDev = stdDeviation;
+    this.meanValues = mean.dataSync();
+    this.stdDevValues = stdDeviation.dataSync();
+    this.shape = mean.shape;
     this.dtype = dtype;
-    this.nextVal = NaN;
+    this.nextVal = null;
     this.truncated = truncated;
-    if (this.truncated) {
-      this.upper = this.mean + this.stdDev * 2;
-      this.lower = this.mean - this.stdDev * 2;
-    }
     const seedValue = seed ? seed : Math.random();
     this.random = seedrandom.alea(seedValue.toString());
   }
 
-  /** Returns next sample from a gaussian distribution. */
-  public nextValue(): number {
-    if (!isNaN(this.nextVal)) {
-      const value = this.nextVal;
-      this.nextVal = NaN;
-      return value;
+  // choosing random points x, y in the square s
+  private nextMarsaglia(index: number): Marsaglia {
+    let v1: number, v2: number, s: number;
+    if (this.nextVal) {
+      const nextPt = {value: this.nextVal.value, m: this.nextVal.m};
+      this.nextVal = null;
+      return nextPt;
     }
-
-    let resultX: number, resultY: number;
     let isValid = false;
+    let m: number;
     while (!isValid) {
-      let v1: number, v2: number, s: number;
       do {
         v1 = 2 * this.random() - 1;
         v2 = 2 * this.random() - 1;
         s = v1 * v1 + v2 * v2;
       } while (s >= 1 || s === 0);
-
-      const mul = Math.sqrt(-2.0 * Math.log(s) / s);
-      resultX = this.mean + this.stdDev * v1 * mul;
-      resultY = this.mean + this.stdDev * v2 * mul;
-
-      if (!this.truncated || this.isValidTruncated(resultX)) {
+      m = Math.sqrt(-2.0 * Math.log(s) / s);
+      const resultX =
+          this.meanValues[index] + this.stdDevValues[index] * v1 * m;
+      if (!this.truncated || this.isValidTruncated(resultX, index)) {
         isValid = true;
       }
     }
-
-    if (!this.truncated || this.isValidTruncated(resultY)) {
-      this.nextVal = this.convertValue(resultY);
+    index = (index + 1) % this.meanValues.length;
+    const resultY = this.meanValues[index] + this.stdDevValues[index] * v2 * m;
+    if (!this.truncated || this.isValidTruncated(resultY, index)) {
+      this.nextVal = {value: v2, m};
     }
-    return this.convertValue(resultX);
+    return {value: v1, m};
+  }
+
+  /**
+   * Returns a sample from a gaussian distribution.
+   * @param shape An array of integers defining the output tensor shape.
+   */
+  public sample(shape: ShapeMap[R]): Tensor<R> {
+    const nShape = shape.concat(this.shape);
+    const mResults = ArrayOps.buffer(nShape);
+    const xResults = ArrayOps.buffer(nShape);
+    let index: number;
+    for (let i = 0; i < xResults.values.length; i++) {
+      index = i % this.meanValues.length;
+      const {value, m} = this.nextMarsaglia(index);
+      xResults.values[i] = value;
+      mResults.values[i] = m;
+    }
+    const spare = mResults.toTensor().mul(xResults.toTensor());
+    const nTensor = this.mean.add(this.stdDev.mul(spare));
+    return this.convertValue(nTensor as Tensor<R>);
   }
 
   /** Handles proper rounding for non floating point numbers. */
-  private convertValue(value: number): number {
+  private convertValue(value: Tensor<R>): Tensor<R> {
     if (this.dtype == null || this.dtype === 'float32') {
       return value;
     }
-    return Math.round(value);
+    return value.round().toInt();
   }
 
   /** Returns true if less than 2-standard-deviations from the mean. */
-  private isValidTruncated(value: number): boolean {
-    return value <= this.upper && value >= this.lower;
+  private isValidTruncated(value: number, index: number): boolean {
+    const upper = this.meanValues[index] + this.stdDevValues[index] * 2;
+    const lower = this.meanValues[index] - this.stdDevValues[index] * 2;
+    return value <= upper && value >= lower;
   }
 }

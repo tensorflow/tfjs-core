@@ -424,29 +424,29 @@ export class ArrayOps {
    *
    * ```js
    * tf.randomNormal([2, 2]).print();
+   * const means = tf.tensor1d([0., 5., 10.]);
+   * const stds = tf.tensor1d([1., 1., 1.]);
+   * tf.randomNormal([2, 2], means, stds).print();
    * ```
    *
    * @param shape An array of integers defining the output tensor shape.
-   * @param mean The mean of the normal distribution.
-   * @param stdDev The standard deviation of the normal distribution.
+   * @param mean The mean(s) of the normal distribution.
+   * @param stdDev The standard(s) deviation of the normal distribution.
    * @param dtype The data type of the output.
    * @param seed The seed for the random number generator.
    */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   @operation
   static randomNormal<R extends Rank>(
-      shape: ShapeMap[R], mean = 0, stdDev = 1, dtype?: 'float32'|'int32',
-      seed?: number): Tensor<R> {
+      shape: number[], mean: Tensor<R>|number = 0, stdDev: Tensor<R>|number = 1,
+      dtype?: 'float32'|'int32', seed?: number): Tensor<R> {
     if (dtype != null && (dtype as DataType) === 'bool') {
       throw new Error(`Unsupported data type ${dtype}`);
     }
     const randGauss =
         new MPRandGauss(mean, stdDev, dtype, false /* truncated */, seed);
-    const res = ArrayOps.buffer(shape, dtype);
-    for (let i = 0; i < res.values.length; i++) {
-      res.values[i] = randGauss.nextValue();
-    }
-    return res.toTensor();
+    const res = randGauss.sample(shape);
+    return res as Tensor<R>;
   }
 
   /**
@@ -455,6 +455,9 @@ export class ArrayOps {
    *
    * ```js
    * tf.truncatedNormal([2, 2]).print();
+   * const means = tf.tensor1d([0., 5., 10.]);
+   * const stds = tf.tensor1d([1., 1., 1.]);
+   * tf.truncatedNormal([2, 2], means, stds).print();
    * ```
    *
    * The generated values follow a normal distribution with specified mean and
@@ -462,26 +465,23 @@ export class ArrayOps {
    * standard deviations from the mean are dropped and re-picked.
    *
    * @param shape An array of integers defining the output tensor shape.
-   * @param mean The mean of the normal distribution.
-   * @param stdDev The standard deviation of the normal distribution.
+   * @param mean The mean(s) of the normal distribution.
+   * @param stdDev The standard deviation(s) of the normal distribution.
    * @param dtype The data type of the output tensor.
    * @param seed The seed for the random number generator.
    */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   @operation
   static truncatedNormal<R extends Rank>(
-      shape: ShapeMap[R], mean = 0, stdDev = 1, dtype?: 'float32'|'int32',
-      seed?: number): Tensor<R> {
+      shape: number[], mean: number|Tensor<R> = 0, stdDev: number|Tensor<R> = 1,
+      dtype?: 'float32'|'int32', seed?: number): Tensor<R> {
     if (dtype != null && (dtype as DataType) === 'bool') {
       throw new Error(`Unsupported data type ${dtype}`);
     }
     const randGauss =
         new MPRandGauss(mean, stdDev, dtype, true /* truncated */, seed);
-    const res = ArrayOps.buffer(shape, dtype);
-    for (let i = 0; i < res.values.length; i++) {
-      res.values[i] = randGauss.nextValue();
-    }
-    return res.toTensor();
+    const res = randGauss.sample(shape);
+    return res as Tensor<R>;
   }
 
   /**
