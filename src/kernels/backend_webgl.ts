@@ -536,6 +536,11 @@ export class MathBackendWebGL implements KernelBackend {
 
   cumsum(x: Tensor, axis: number, exclusive: boolean, reverse: boolean):
       Tensor {
+    if (axis !== x.rank - 1) {
+      throw new Error(
+          `WebGL cumsum shader expects an inner-most axis=${x.rank - 1} ` +
+          `but got axis=${axis}`);
+    }
     const program = new CumSumProgram(x.shape, exclusive, reverse);
     return this.compileAndRun(program, [x]);
   }
