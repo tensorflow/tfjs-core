@@ -174,7 +174,7 @@ export class LogicalOps {
         const db = dy.mul(condition.logicalNot().cast(b.dtype));
         return [dcond, da, db];
       };
-      return {value: y, gradFunc: gradFunc};
+      return {value: y, gradFunc};
     });
     return customOp(condition, a, b);
   }
