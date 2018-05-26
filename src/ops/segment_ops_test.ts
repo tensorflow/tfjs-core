@@ -98,6 +98,19 @@ describeWithFlags('unsortedSegmentSum', ALL_ENVS, () => {
     expectArraysClose(res, [1, 4, 2]);
   });
 
+  it('gradient ignores negative segmentIds', () => {
+    const t = tf.tensor1d([1, 2, 3, 4]);
+    const segmentIds = tf.tensor1d([0, 2, -1, 1], 'int32');
+    const numSegments = 3;
+
+    const dy = tf.tensor1d([11, 2, 7]);
+    const gradient =
+        tf.grad(a => tf.unsortedSegmentSum(a, segmentIds, numSegments))(t, dy);
+
+    expect(gradient.shape).toEqual(t.shape);
+    expectArraysClose(gradient, [11, 7, 0, 2]);
+  });
+
   it('tensor1D gradient', () => {
     const t = tf.tensor1d([1, 2, 3, 4]);
     const segmentIds = tf.tensor1d([0, 2, 0, 1], 'int32');

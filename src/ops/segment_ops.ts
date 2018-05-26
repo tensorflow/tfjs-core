@@ -2,7 +2,11 @@ import {doc} from '../doc';
 import {ENV} from '../environment';
 import {Tensor, Tensor1D} from '../tensor';
 import * as util from '../util';
+import {ArrayOps} from './array_ops';
 import * as axis_util from './axis_util';
+import {BinaryOps} from './binary_ops';
+import {CompareOps} from './compare';
+import {LogicalOps} from './logical_ops';
 import {operation} from './operation';
 
 export class SegmentOps {
@@ -45,7 +49,7 @@ export class SegmentOps {
     }
     const grad = (dy: T) => {
       const derX = () => {
-        let gradRes = dy.gather(segmentIds, axis);
+        let gradRes = gatherDropNegatives(dy, segmentIds, axis);
         if (permutation != null) {
           gradRes =
               gradRes.transpose(axis_util.getUndoAxesPermutation(permutation));
@@ -63,4 +67,23 @@ export class SegmentOps {
     }
     return res;
   }
+}
+
+function gatherDropNegatives<T extends Tensor>(
+    x: T, indices: Tensor1D, axis: number) {
+  // Helper function for unsorted segment ops. Gathers params for
+  // positive segment ids and gathers 0 for inputs with negative segment id.
+  // Mirrors _GatherDropNegatives from tensorflow/python/ops/math_grad.py
+  const zeroClippedIndices =
+      BinaryOps.maximum(indices, ArrayOps.zerosLike(indices));
+  const gathered = ArrayOps.gather(x, zeroClippedIndices as Tensor1D, axis);
+  let isPositive =
+      CompareOps.greaterEqual(indices, ArrayOps.scalar(0, 'int32'));
+  for (let i = 0; i < gathered.rank - isPositive.rank; ++i) {
+    isPositive = ArrayOps.expandDims(isPositive, -1);
+  }
+  const bools = ArrayOps.onesLike(gathered).equal(ArrayOps.scalar(1));
+  isPositive = LogicalOps.logicalAnd(isPositive, bools);
+  const zeroSlice = ArrayOps.zerosLike(gathered);
+  return LogicalOps.where(isPositive, gathered, zeroSlice);
 }
