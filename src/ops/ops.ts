@@ -247,4 +247,5 @@ export const losses = {
 export const image = {
   resizeBilinear: ImageOps.resizeBilinear,
   resizeNearestNeighbor: ImageOps.resizeNearestNeighbor,
+  nonMaxSuppression: ImageOps.nonMaxSuppression
 };
