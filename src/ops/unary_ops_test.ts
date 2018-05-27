@@ -30,6 +30,12 @@ describeWithFlags('relu', ALL_ENVS, () => {
     expectArraysClose(result, [1, 0, 0, 3, 0]);
   });
 
+  it('5D', () => {
+    const a = tf.tensor5d([1, -2, 5, -3], [1, 2, 2, 1, 1]);
+    const result = tf.relu(a);
+    expectArraysClose(result, [1, 0, 5, 0]);
+  });
+
   it('does nothing to positive values', () => {
     const a = tf.scalar(1);
     const result = tf.relu(a);
@@ -102,6 +108,12 @@ describeWithFlags('abs', ALL_ENVS, () => {
     const a = tf.tensor1d([1, -2, 0, 3, -0.1]);
     const result = tf.abs(a);
     expectArraysClose(result, [1, 2, 0, 3, 0.1]);
+  });
+
+  it('5D', () => {
+    const a = tf.tensor5d([1, -2, 0, -3], [1, 2, 2, 1, 1]);
+    const result = tf.abs(a);
+    expectArraysClose(result, [1, 2, 0, 3]);
   });
 
   it('propagates NaNs', () => {
