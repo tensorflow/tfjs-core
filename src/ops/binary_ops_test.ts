@@ -880,3 +880,32 @@ describeWithFlags('atan2', ALL_ENVS, () => {
         .toThrowError(/Argument 'b' passed to 'atan2' must be a Tensor/);
   });
 });
+
+describeWithFlags('div', ALL_ENVS, () => {
+  it('basic', () => {
+    const a = tf.tensor1d([0, 1, -2, -4]);
+    const b = tf.tensor1d([0.15, 0.2, 0.25, 0.5]);
+    const result = tf.div(a, b);
+
+    expect(result.shape).toEqual(a.shape);
+    expectArraysClose(result, [0, 5.0, -8.0, -8.0]);
+  });
+
+  it('floored internally', () => {
+    const a = tf.tensor1d([10, 20, -20, -40], 'int32');
+    const b = tf.tensor1d([10, 12, 8, 5], 'int32');
+    const result = tf.div(a, b);
+
+    expect(result.shape).toEqual(a.shape);
+    expectArraysClose(result, [1, 1, -3, -8]);
+  });
+
+  it('floorDiv', () => {
+    const a = tf.tensor1d([10, 20, -20, -40], 'int32');
+    const b = tf.tensor1d([10, 12, 8, 5], 'int32');
+    const result = tf.floorDiv(a, b);
+
+    expect(result.shape).toEqual(a.shape);
+    expectArraysClose(result, [1, 1, -3, -8]);
+  });
+});
