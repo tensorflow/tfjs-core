@@ -120,9 +120,13 @@ export class MathBackendWebGL implements KernelBackend {
 
     if (pixels instanceof HTMLVideoElement) {
       if (this.canvas == null) {
-        throw new Error(
-            'Can\'t read pixels from HTMLImageElement outside ' +
-            'the browser.');
+        if (typeof document !== 'undefined') {
+          this.canvas = document.createElement('canvas');
+        } else {
+          throw new Error(
+              'Can\'t read pixels from HTMLImageElement outside ' +
+              'the browser.');
+        }
       }
       this.canvas.width = pixels.width;
       this.canvas.height = pixels.height;
@@ -302,9 +306,6 @@ export class MathBackendWebGL implements KernelBackend {
   constructor(private gpgpu?: GPGPUContext, private delayedStorage = true) {
     if (ENV.get('WEBGL_VERSION') < 1) {
       throw new Error('WebGL is not supported on this device');
-    }
-    if (typeof document !== 'undefined') {
-      this.canvas = document.createElement('canvas');
     }
     if (gpgpu == null) {
       this.gpgpu = new GPGPUContext(gpgpu_util.createWebGLContext(this.canvas));
