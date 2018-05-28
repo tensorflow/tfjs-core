@@ -120,6 +120,12 @@ export class MathBackendWebGL implements KernelBackend {
 
     if (pixels instanceof HTMLVideoElement) {
       if (this.canvas == null) {
+        if (document.readyState !== 'complete') {
+          throw new Error(
+              'The DOM is not ready yet. Please call tf.fromPixels() ' +
+              'once the DOM is ready. One way to do that is to add an event ' +
+              'listener for `DOMContentLoaded` on the document object');
+        }
         if (typeof document !== 'undefined') {
           this.canvas = document.createElement('canvas');
         } else {
