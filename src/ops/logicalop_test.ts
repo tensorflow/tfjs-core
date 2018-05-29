@@ -350,9 +350,9 @@ describeWithFlags('where', ALL_ENVS, () => {
     const c = tf.tensor1d([1, 0, 1, 0], 'int32');
     const a = tf.tensor1d([10, 10, 10, 10], 'bool');
     const b = tf.tensor1d([20, 20, 20, 20], 'bool');
-    let f = () => {
+    const f = () => {
       tf.where(c, a, b);
-    }
+    };
     expect(f).toThrowError();
   });
 
