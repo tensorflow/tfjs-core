@@ -19,8 +19,21 @@
 import {tensor} from '../ops/ops';
 import {NamedTensorMap} from '../types';
 import * as util from '../util';
+
+// import {concatenateArrayBuffers} from './io_utils';
 import {DTYPE_VALUE_SIZE_MAP, WeightsManifestConfig, WeightsManifestEntry} from './types';
+
 // tslint:enable:max-line-length
+
+export async function loadWeightsAsArrayBuffer(
+    fetchURLs: string[], requestOptions?: RequestInit): Promise<ArrayBuffer[]> {
+  // Create the requests for all of the weights in parallel.
+  const requests = fetchURLs.map(fetchURL => fetch(fetchURL, requestOptions));
+  const responses = await Promise.all(requests);
+  const buffers =
+      await Promise.all(responses.map(response => response.arrayBuffer()));
+  return buffers;
+}
 
 /**
  * Reads a weights manifest JSON configuration, fetches the weights and
@@ -43,6 +56,7 @@ export async function loadWeights(
 
   // Collect all the groups, weights, and their relative offsets to be
   // fetched.
+
   const groupIndicesToFetchMap = manifest.map(() => false);
   const groupWeightsToFetch: {
     [group: number]: Array<{
@@ -110,19 +124,15 @@ export async function loadWeights(
         return accumulator;
       }, []);
 
-  // Create the requests for all of the weights in parallel.
-  const requests: Array<Promise<Response>> = [];
+  const fetchUrls: string[] = [];
   groupIndicesToFetch.forEach(i => {
     manifest[i].paths.forEach(filepath => {
       const fetchUrl = filePathPrefix +
           (!filePathPrefix.endsWith('/') ? '/' : '') + filepath;
-      requests.push(fetch(fetchUrl, requestOptions));
+      fetchUrls.push(fetchUrl);
     });
   });
-
-  const responses = await Promise.all(requests);
-  const buffers =
-      await Promise.all(responses.map(response => response.arrayBuffer()));
+  const buffers = await loadWeightsAsArrayBuffer(fetchUrls, requestOptions);
 
   const weightsTensorMap: NamedTensorMap = {};
   let bufferIndexOffset = 0;
