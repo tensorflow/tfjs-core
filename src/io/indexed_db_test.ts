@@ -23,7 +23,8 @@ import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
 import {CPU_ENVS} from '../test_util';
 
-import {deleteDatabase} from './indexed_db';
+// tslint:disable-next-line:max-line-length
+import {browserIndexedDB, BrowserIndexedDB, BrowserIndexedDBManager, deleteDatabase, indexedDBRouter} from './indexed_db';
 
 describeWithFlags('IndexedDB', CPU_ENVS, () => {
   // Test data.
@@ -105,7 +106,7 @@ describeWithFlags('IndexedDB', CPU_ENVS, () => {
 
   it('Save-load round trip', done => {
     const testStartDate = new Date();
-    const handler = tf.io.browserIndexedDB('FooModel');
+    const handler = tf.io.getSaveHandlers('indexeddb://FooModel')[0];
     handler.save(artifacts1)
         .then(saveResult => {
           expect(saveResult.modelArtifactsInfo.dateSaved.getTime())
@@ -142,7 +143,7 @@ describeWithFlags('IndexedDB', CPU_ENVS, () => {
       weightSpecs: weightSpecs2,
       weightData: weightData2,
     };
-    const handler1 = tf.io.browserIndexedDB('Model/1');
+    const handler1 = tf.io.getSaveHandlers('indexeddb://Model/1')[0];
     handler1.save(artifacts1)
         .then(saveResult1 => {
           // Note: The following two assertions work only because there is no
@@ -154,7 +155,7 @@ describeWithFlags('IndexedDB', CPU_ENVS, () => {
           expect(saveResult1.modelArtifactsInfo.weightDataBytes)
               .toEqual(weightData1.byteLength);
 
-          const handler2 = tf.io.browserIndexedDB('Model/2');
+          const handler2 = tf.io.getSaveHandlers('indexeddb://Model/2')[0];
           handler2.save(artifacts2)
               .then(saveResult2 => {
                 expect(saveResult2.modelArtifactsInfo.dateSaved.getTime())
@@ -192,7 +193,7 @@ describeWithFlags('IndexedDB', CPU_ENVS, () => {
   });
 
   it('Loading nonexistent model fails', done => {
-    const handler = tf.io.browserIndexedDB('NonexistentModel');
+    const handler = tf.io.getSaveHandlers('indexeddb://NonexistentModel')[0];
     handler.load()
         .then(modelArtifacts => {
           done.fail(
@@ -208,14 +209,185 @@ describeWithFlags('IndexedDB', CPU_ENVS, () => {
   });
 
   it('Null, undefined or empty modelPath throws Error', () => {
-    expect(() => tf.io.browserIndexedDB(null))
+    expect(() => browserIndexedDB(null))
         .toThrowError(
             /IndexedDB, modelPath must not be null, undefined or empty/);
-    expect(() => tf.io.browserIndexedDB(undefined))
+    expect(() => browserIndexedDB(undefined))
         .toThrowError(
             /IndexedDB, modelPath must not be null, undefined or empty/);
-    expect(() => tf.io.browserIndexedDB(''))
+    expect(() => browserIndexedDB(''))
         .toThrowError(
             /IndexedDB, modelPath must not be null, undefined or empty./);
+  });
+
+  it('router', () => {
+    expect(indexedDBRouter('indexeddb://bar') instanceof BrowserIndexedDB)
+        .toEqual(true);
+    expect(indexedDBRouter('localstorage://bar')).toBeNull();
+    expect(indexedDBRouter('qux')).toBeNull();
+  });
+
+  it('Manager: List models: 0 result', done => {
+    // Before any model is saved, listModels should return empty result.
+    new BrowserIndexedDBManager()
+        .listModels()
+        .then(out => {
+          expect(out).toEqual({});
+          done();
+        })
+        .catch(err => done.fail(err.stack));
+  });
+
+  it('Manager: List models: 1 result', done => {
+    const handler = tf.io.getSaveHandlers('indexeddb://baz/QuxModel')[0];
+    handler.save(artifacts1)
+        .then(saveResult => {
+          // After successful saving, there should be one model.
+          new BrowserIndexedDBManager()
+              .listModels()
+              .then(out => {
+                expect(Object.keys(out).length).toEqual(1);
+                expect(out['baz/QuxModel'].modelTopologyType)
+                    .toEqual(saveResult.modelArtifactsInfo.modelTopologyType);
+                expect(out['baz/QuxModel'].modelTopologyBytes)
+                    .toEqual(saveResult.modelArtifactsInfo.modelTopologyBytes);
+                expect(out['baz/QuxModel'].weightSpecsBytes)
+                    .toEqual(saveResult.modelArtifactsInfo.weightSpecsBytes);
+                expect(out['baz/QuxModel'].weightDataBytes)
+                    .toEqual(saveResult.modelArtifactsInfo.weightDataBytes);
+                done();
+              })
+              .catch(err => done.fail(err.stack));
+        })
+        .catch(err => done.fail(err.stack));
+  });
+
+  it('Manager: List models: 2 results', done => {
+    // First, save a model.
+    const handler1 = tf.io.getSaveHandlers('indexeddb://QuxModel')[0];
+    handler1.save(artifacts1)
+        .then(saveResult1 => {
+          // Then, save the model under another path.
+          const handler2 =
+              tf.io.getSaveHandlers('indexeddb://repeat/QuxModel')[0];
+          handler2.save(artifacts1)
+              .then(saveResult2 => {
+                // After successful saving, there should be two models.
+                new BrowserIndexedDBManager()
+                    .listModels()
+                    .then(out => {
+                      expect(Object.keys(out).length).toEqual(2);
+                      expect(out['QuxModel'].modelTopologyType)
+                          .toEqual(
+                              saveResult1.modelArtifactsInfo.modelTopologyType);
+                      expect(out['QuxModel'].modelTopologyBytes)
+                          .toEqual(saveResult1.modelArtifactsInfo
+                                       .modelTopologyBytes);
+                      expect(out['QuxModel'].weightSpecsBytes)
+                          .toEqual(
+                              saveResult1.modelArtifactsInfo.weightSpecsBytes);
+                      expect(out['QuxModel'].weightDataBytes)
+                          .toEqual(
+                              saveResult1.modelArtifactsInfo.weightDataBytes);
+                      expect(out['repeat/QuxModel'].modelTopologyType)
+                          .toEqual(
+                              saveResult2.modelArtifactsInfo.modelTopologyType);
+                      expect(out['repeat/QuxModel'].modelTopologyBytes)
+                          .toEqual(saveResult2.modelArtifactsInfo
+                                       .modelTopologyBytes);
+                      expect(out['repeat/QuxModel'].weightSpecsBytes)
+                          .toEqual(
+                              saveResult2.modelArtifactsInfo.weightSpecsBytes);
+                      expect(out['repeat/QuxModel'].weightDataBytes)
+                          .toEqual(
+                              saveResult2.modelArtifactsInfo.weightDataBytes);
+                      done();
+                    })
+                    .catch(err => done.fail(err.stack));
+              })
+              .catch(err => done.fail(err.stack));
+        })
+        .catch(err => done.fail(err.stack));
+  });
+
+  it('Manager: Successful deleteModel', done => {
+    // First, save a model.
+    const handler1 = tf.io.getSaveHandlers('indexeddb://QuxModel')[0];
+    handler1.save(artifacts1)
+        .then(saveResult1 => {
+          // Then, save the model under another path.
+          const handler2 =
+              tf.io.getSaveHandlers('indexeddb://repeat/QuxModel')[0];
+          handler2.save(artifacts1)
+              .then(saveResult2 => {
+                // After successful saving, delete the first save, and then
+                // `listModel` should give only one result.
+                const manager = new BrowserIndexedDBManager();
+
+                manager.removeModel('QuxModel')
+                    .then(deletedInfo => {
+                      manager.listModels()
+                          .then(out => {
+                            expect(Object.keys(out)).toEqual([
+                              'repeat/QuxModel'
+                            ]);
+                            done();
+                          })
+                          .catch(err => done.fail(err.stack));
+                    })
+                    .catch(err => done.fail(err.stack));
+              })
+              .catch(err => done.fail(err.stack));
+        })
+        .catch(err => done.fail(err.stack));
+  });
+
+  it('Manager: Successful deleteModel with URL scheme', done => {
+    // First, save a model.
+    const handler1 = tf.io.getSaveHandlers('indexeddb://QuxModel')[0];
+    handler1.save(artifacts1)
+        .then(saveResult1 => {
+          // Then, save the model under another path.
+          const handler2 =
+              tf.io.getSaveHandlers('indexeddb://repeat/QuxModel')[0];
+          handler2.save(artifacts1)
+              .then(saveResult2 => {
+                // After successful saving, delete the first save, and then
+                // `listModel` should give only one result.
+                const manager = new BrowserIndexedDBManager();
+
+                // Delete a model specified with a path that includes the
+                // indexeddb:// scheme prefix should work.
+                manager.removeModel('indexeddb://QuxModel')
+                    .then(deletedInfo => {
+                      manager.listModels()
+                          .then(out => {
+                            expect(Object.keys(out)).toEqual([
+                              'repeat/QuxModel'
+                            ]);
+                            done();
+                          })
+                          .catch(err => done.fail(err));
+                    })
+                    .catch(err => done.fail(err.stack));
+              })
+              .catch(err => done.fail(err.stack));
+        })
+        .catch(err => done.fail(err.stack));
+  });
+
+  it('Manager: Failed deletedModel', done => {
+    // Attempt to delete a nonexistent model is expected to fail.
+    new BrowserIndexedDBManager()
+        .removeModel('nonexistent')
+        .then(out => {
+          done.fail('Deleting nonexistent model succeeded unexpectedly.');
+        })
+        .catch(err => {
+          expect(err.message)
+              .toEqual(
+                  'Cannot find model with path \'nonexistent\' in IndexedDB.');
+          done();
+        });
   });
 });

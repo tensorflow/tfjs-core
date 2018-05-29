@@ -24,11 +24,12 @@ import * as tensor_util from '../tensor_util';
 // tslint:disable-next-line:max-line-length
 import {ArrayData, DataType, DataTypeMap, Rank, ShapeMap, TensorLike, TensorLike1D, TensorLike2D, TensorLike3D, TensorLike4D, TypedArray} from '../types';
 import * as util from '../util';
-
-import {parseAxisParam} from './axis_util';
+// tslint:disable-next-line:max-line-length
+import {getAxesPermutation, getInnerMostAxes, parseAxisParam} from './axis_util';
 import {ConcatOps} from './concat';
 import {operation} from './operation';
 import {MPRandGauss} from './rand';
+import {ReductionOps} from './reduction_ops';
 
 export class ArrayOps {
   /**
@@ -682,8 +683,12 @@ export class ArrayOps {
           `1, 3 or 4 but got ${depth}`);
     }
 
-    const min = (await img.min().data())[0];
-    const max = (await img.max().data())[0];
+    const minTensor = img.min();
+    const maxTensor = img.max();
+    const min = (await minTensor.data())[0];
+    const max = (await maxTensor.data())[0];
+    minTensor.dispose();
+    maxTensor.dispose();
     if (img.dtype === 'float32') {
       if (min < 0 || max > 1) {
         throw new Error(
@@ -845,7 +850,7 @@ export class ArrayOps {
    *
    * a.tile([1, 2]).print();  // or a.tile([1, 2])
    * ```
-   * @param x The tensor to transpose.
+   * @param x The tensor to tile.
    * @param reps Determines the number of replications per dimension.
    */
   @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
@@ -936,9 +941,16 @@ export class ArrayOps {
     util.assertArgumentsAreTensors({x, indices}, 'gather');
 
     util.assert(indices.dtype === 'int32', 'Indices must be of dtype `int32`');
-    const axes = parseAxisParam(axis, x.shape);
+    axis = parseAxisParam(axis, x.shape)[0];
+    const grad = (dy: T) => {
+      const derX = () => {
+        return ReductionOps.unsortedSegmentSum(
+            dy, indices, x.shape[axis], axis);
+      };
+      return {x: derX};
+    };
     return ENV.engine.runKernel(
-        backend => backend.gather(x, indices, axes[0]), {x, indices});
+        backend => backend.gather(x, indices, axis), {x}, grad);
   }
 
   /**
@@ -1077,6 +1089,42 @@ export class ArrayOps {
   }
 
   /**
+   * Unstacks a `Tensor` of rank-`R` into a list of rank-`(R-1)` `Tensor`s.
+   *
+   * ```js
+   * const a = tf.tensor2d([1, 2, 3, 4], [2, 2]);
+   * tf.unstack(a).print();
+   * ```
+   *
+   * @param value A tensor object.
+   * @param axis The axis to unstack along. Defaults to 0 (the first dim).
+   */
+  @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
+  @operation
+  static unstack<T extends Tensor>(value: T, axis = 0): Tensor[] {
+    const num = value.shape[axis];
+    const outputShape: number[] = Array(value.rank - 1).fill(0);
+    let outIndex = 0;
+    for (let i = 0; i < value.rank; i++) {
+      if (i !== axis) {
+        outputShape[outIndex] = value.shape[i];
+        outIndex++;
+      }
+    }
+
+    let splitSizes: number[];
+    splitSizes = Array(num).fill(1);
+    const begin = Array(value.rank).fill(0);
+    const size = value.shape.slice();
+    return splitSizes.map(s => {
+      size[axis] = s;
+      const slice = value.slice(begin, size);
+      begin[axis] += s;
+      return slice.reshape(outputShape);
+    });
+  }
+
+  /**
    * Splits a `Tensor` into sub tensors.
    *
    * If `numOrSizeSplits` is a number, splits `x` along dimension `axis`
@@ -1135,6 +1183,54 @@ export class ArrayOps {
       begin[axis] += s;
       return slice;
     });
+  }
+
+  /**
+   * Computes the cumulative sum of a `Tensor` along `axis`.
+   *
+   * ```js
+   * const x = tf.tensor([1, 2, 3, 4]);
+   * x.cumsum().print();
+   * ```
+   * ```js
+   * const x = tf.tensor([[1, 2], [3, 4]]);
+   * x.cumsum().print();
+   * ```
+   *
+   * @param x The input tensor to be summed.
+   * @param axis The axis along which to sum. Optional. Defaults to 0.
+   * @param exclusive Whether to perform exclusive cumulative sum. Optional.
+   *     Defaults to false. If set to true then the sum of each tensor entry
+   *     does not include its own value, but only the values previous to it
+   *     along the specified axis.
+   * @param reverse Whether to sum in the opposite direction. Optional.
+   *     Defaults to false.
+   */
+  @doc({heading: 'Operations', subheading: 'Scan'})
+  static cumsum<T extends Tensor>(
+      x: Tensor, axis = 0, exclusive = false, reverse = false): T {
+    util.assertArgumentsAreTensors({x}, 'cumsum');
+
+    axis = axis | 0;
+    const permutation = getAxesPermutation([axis], x.rank);
+    let permutedX = x;
+    if (permutation != null) {
+      permutedX = x.transpose(permutation);
+    }
+    const permutedAxis = getInnerMostAxes(1, x.rank)[0];
+
+    const grad = (dy: T) => {
+      return {permutedX: () => dy.cumsum(axis, exclusive, !reverse)};
+    };
+    let value = ENV.engine.runKernel(
+                    backend => backend.cumsum(
+                        permutedX, permutedAxis, exclusive, reverse),
+                    {permutedX}, grad) as T;
+
+    if (permutation != null) {
+      value = value.transpose(permutation);
+    }
+    return value;
   }
 
   /**

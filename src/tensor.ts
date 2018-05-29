@@ -417,6 +417,23 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   /**
+   * Returns the cumulative sum of the `Tensor` along `axis`.
+   *
+   * @param axis The axis along which to sum. Optional. Defaults to 0.
+   * @param exclusive Whether to perform exclusive cumulative sum. Defaults to
+   *    false. If set to true then the sum of each tensor entry does not include
+   *    its own value, but only the values previous to it along the specified
+   *    axis.
+   * @param reverse Whether to sum in the opposite direction. Defaults to
+   *    false.
+   */
+  @doc({ heading: 'Tensors', subheading: 'Classes' })
+  cumsum<T extends Tensor>(axis = 0, exclusive = false, reverse = false):
+    T {
+    return ops.cumsum(this, axis, exclusive, reverse);
+  }
+
+  /**
    * Returns a `Tensor` with dimensions of size 1 removed from the shape.
    * See `squeeze` for more details.
    *
@@ -481,6 +498,9 @@ export class Tensor<R extends Rank = Rank> {
   }
   stack(x: Tensor, axis = 0): Tensor {
     return ops.stack([this, x], axis);
+  }
+  unstack(x: Tensor, axis = 0): Tensor[] {
+    return ops.unstack(this, axis);
   }
   pad<T extends Tensor>(
       this: T, paddings: Array<[number, number]>, constantValue = 0): T {
@@ -912,6 +932,12 @@ export class Tensor<R extends Rank = Rank> {
   variable(trainable = true, name?: string, dtype?: DataType): Variable<R> {
     this.throwIfDisposed();
     return Variable.variable(this, trainable, name, dtype);
+  }
+
+  unsortedSegmentSum<T extends Tensor>(
+      this: T, segmentIds: Tensor1D, numSegments: number, axis = 0): T {
+    this.throwIfDisposed();
+    return ops.unsortedSegmentSum(this, segmentIds, numSegments, axis);
   }
 }
 

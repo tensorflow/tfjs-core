@@ -21,8 +21,12 @@
  */
 
 // tslint:disable:max-line-length
-import {basename, concatenateArrayBuffers, getModelArtifactsInfoForKerasJSON} from './io_utils';
+import {ENV} from '../environment';
+
+import {basename, concatenateArrayBuffers, getModelArtifactsInfoForJSON} from './io_utils';
+import {IORouter, IORouterRegistry} from './router_registry';
 import {IOHandler, ModelArtifacts, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
+
 // tslint:enable:max-line-length
 
 const DEFAULT_FILE_NAME_PREFIX = 'model';
@@ -35,9 +39,10 @@ export class BrowserDownloads implements IOHandler {
   private readonly jsonAnchor: HTMLAnchorElement;
   private readonly weightDataAnchor: HTMLAnchorElement;
 
+  static readonly URL_SCHEME = 'downloads://';
+
   constructor(fileNamePrefix?: string) {
-    // TODO(cais): Use central environment flag when it's available.
-    if (typeof window === 'undefined') {
+    if (!ENV.get('IS_BROWSER')) {
       // TODO(cais): Provide info on what IOHandlers are available under the
       //   current environment.
       throw new Error(
@@ -45,7 +50,10 @@ export class BrowserDownloads implements IOHandler {
           'is not a browser.');
     }
 
-    if (fileNamePrefix == null) {
+    if (fileNamePrefix.startsWith(BrowserDownloads.URL_SCHEME)) {
+      fileNamePrefix = fileNamePrefix.slice(BrowserDownloads.URL_SCHEME.length);
+    }
+    if (fileNamePrefix == null || fileNamePrefix.length === 0) {
       fileNamePrefix = DEFAULT_FILE_NAME_PREFIX;
     }
 
@@ -95,14 +103,12 @@ export class BrowserDownloads implements IOHandler {
         weightDataAnchor.click();
       }
 
-      return {
-        modelArtifactsInfo: getModelArtifactsInfoForKerasJSON(modelArtifacts)
-      };
+      return {modelArtifactsInfo: getModelArtifactsInfoForJSON(modelArtifacts)};
     }
   }
 }
 
-export class BrowserFiles implements IOHandler {
+class BrowserFiles implements IOHandler {
   private readonly files: File[];
 
   constructor(files: File[]) {
@@ -233,6 +239,19 @@ export class BrowserFiles implements IOHandler {
   }
 }
 
+export const browserDownloadsRouter: IORouter = (url: string) => {
+  if (!ENV.get('IS_BROWSER')) {
+    return null;
+  } else {
+    if (url.startsWith(BrowserDownloads.URL_SCHEME)) {
+      return browserDownloads(url.slice(BrowserDownloads.URL_SCHEME.length));
+    } else {
+      return null;
+    }
+  }
+};
+IORouterRegistry.registerSaveRouter(browserDownloadsRouter);
+
 /**
  * Creates an IOHandler that triggers file downloads from the browser.
  *
@@ -243,10 +262,17 @@ export class BrowserFiles implements IOHandler {
  * const model = tf.sequential();
  * model.add(tf.layers.dense(
  *     {units: 1, inputShape: [10], activation: 'sigmoid'}));
- * const artifactsInfo = await model.save(tf.io.browserDownloads('mymodel'));
+ * const saveResult = await model.save(tf.io.browserDownloads('mymodel'));
  * // This will trigger downloading of two files:
  * //   'mymodel.json' and 'mymodel.weights.bin'.
- * console.log(artifactsInfo);
+ * console.log(saveResult);
+ * ```
+ *
+ * You can also simply pass a string with a 'downloads://' scheme followed by
+ * the file-name prefix to `model.save`:
+ *
+ * ```js
+ * const saveResult = await model.save('downloads://mymodel');
  * ```
  *
  * @param fileNamePrefix Prefix name of the files to be downloaded. For use with
