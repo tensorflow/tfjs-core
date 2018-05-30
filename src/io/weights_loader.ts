@@ -56,7 +56,6 @@ export async function loadWeights(
 
   // Collect all the groups, weights, and their relative offsets to be
   // fetched.
-
   const groupIndicesToFetchMap = manifest.map(() => false);
   const groupWeightsToFetch: {
     [group: number]: Array<{
