@@ -24,7 +24,7 @@ import * as util from '../util';
 import * as broadcast_util from './broadcast_util';
 import {operation} from './operation';
 import {neg, scalar, square} from './ops';
-import {KernelBackend} from '..';
+import {KernelBackend} from '../kernels/backend';
 
 export class BinaryOps {
   /**
@@ -345,9 +345,9 @@ export class BinaryOps {
 
     let forwardFunc: (backend: KernelBackend) => Tensor;
     if (a.dtype === 'int32' && b.dtype === 'int32') {
-      forwardFunc = (backend: KernelBackend) => backend.floorDiv(a, b);
+      return BinaryOps.floorDiv(a, b);
     } else {
-      forwardFunc = (backend: KernelBackend) => backend.divide(a, b);
+      forwardFunc = (backend: KernelBackend) => backend.realDivide(a, b);
     }
 
     const outShape =

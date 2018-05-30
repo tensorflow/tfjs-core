@@ -284,7 +284,7 @@ export class MathBackendCPU implements KernelBackend {
                (aValue, bValue) => aValue * bValue) as Tensor;
   }
 
-  divide(a: Tensor, b: Tensor): Tensor {
+  realDivide(a: Tensor, b: Tensor): Tensor {
     const op = (a: number, b: number) => a / b;
     const outputDtype = 'float32';
     return this.broadcastedBinaryOp(a, b, outputDtype, op) as Tensor;
