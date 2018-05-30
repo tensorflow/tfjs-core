@@ -180,8 +180,8 @@ export class MatmulOps {
    *
    * ```js
    * const a = tf.tensor1d([1, 2]);
-   * const b = tf.tensor2d([1, 2], [3, 4]);
-   * const c = tf.tensor2d([1, 2, 3, 4], [5, 6]);
+   * const b = tf.tensor2d([[1, 2], [3, 4]]);
+   * const c = tf.tensor2d([[1, 2, 3], [4, 5, 6]]);
    *
    * a.dot(b).print();  // or tf.dot(a, b)
    * b.dot(a).print();
