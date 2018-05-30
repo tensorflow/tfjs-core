@@ -19,12 +19,17 @@
 import {tensor} from '../ops/ops';
 import {NamedTensorMap} from '../types';
 import * as util from '../util';
-
-// import {concatenateArrayBuffers} from './io_utils';
 import {DTYPE_VALUE_SIZE_MAP, WeightsManifestConfig, WeightsManifestEntry} from './types';
-
 // tslint:enable:max-line-length
 
+/**
+ * Reads binary weights data from a number of URLs.
+ *
+ * @param fetchURLs URLs to send the HTTP requests at, using `fetch` calls.
+ * @param requestOptions RequestInit (options) for the HTTP requests.
+ * @returns A `Promise` of an Array of `ArrayBuffer`. The Array has the same
+ *   length as `fetchURLs`.
+ */
 export async function loadWeightsAsArrayBuffer(
     fetchURLs: string[], requestOptions?: RequestInit): Promise<ArrayBuffer[]> {
   // Create the requests for all of the weights in parallel.

@@ -109,12 +109,10 @@ export class BrowserHTTPRequest implements IOHandler {
   async load(): Promise<ModelArtifacts> {
     const modelConfigRequest = await fetch(this.path, this.requestInit);
     const modelConfig = await modelConfigRequest.json();
-
     const modelTopology = modelConfig['modelTopology'];
 
-    let weightSpecs: WeightsManifestEntry[] = undefined;
-    let weightData: ArrayBuffer = undefined;
-
+    let weightSpecs: WeightsManifestEntry[];
+    let weightData: ArrayBuffer;
     if (modelConfig['weightsManifest'] != null) {
       const weightsManifest =
           modelConfig['weightsManifest'] as WeightsManifestConfig;
