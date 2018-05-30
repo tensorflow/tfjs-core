@@ -874,6 +874,11 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [x, filter]);
   }
 
+  depthwiseConv2DDerInput(dy: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
+      Tensor4D {
+    return dy;
+  }
+
   maxPool(x: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
     const program = new Pool2DProgram(convInfo, 'max', false);
     const output =

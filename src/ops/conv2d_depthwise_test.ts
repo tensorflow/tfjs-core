@@ -16,7 +16,7 @@
  */
 
 import * as tf from '../index';
-import {ALL_ENVS, expectArraysClose} from '../test_util';
+import {ALL_ENVS, CPU_ENVS, expectArraysClose} from '../test_util';
 import {describeWithFlags} from '../jasmine_util';
 import {Rank} from '../types';
 
@@ -370,5 +370,76 @@ describeWithFlags('depthwiseConv2D', ALL_ENVS, () => {
         () => tf.depthwiseConv2d(
             x, {} as tf.Tensor4D, stride, pad, dataFormat, dilation))
         .toThrowError(e);
+  });
+});
+
+describeWithFlags('depthwiseConv2d gradients', CPU_ENVS, () => {
+  let images: tf.Tensor4D;
+  let filter: tf.Tensor4D;
+  let result: tf.Tensor4D;
+  const stride = 1;
+  const pad = 'same';
+
+  beforeEach(() => {
+    //two 2x2 RGB images => 2x2x2x3
+    images = tf.tensor4d([[
+      [[2,3,1],[3,0,2]],
+      [[0,4,1],[3,1,3]]
+    ], [
+      [[2,1,0],[0,3,3]],
+      [[4,0,1],[1,4,1]]
+    ]])
+    //2x2 filters, multiplier = 2 => 2x2x3x2
+    filter = tf.tensor4d([[
+      [[1,1],[1,1],[0,0]],
+      [[0,1],[1,1],[1,1]]
+    ], [
+      [[1,0],[1,1],[0,0]],
+      [[0,1],[1,0],[0,0]]
+    ]]);
+    //result of convolution operatoin
+    result = tf.tensor4d([[
+     [[2,8,8,7,2,2],[6,3,1,1,0,0]],
+     [[0,3,5,5,3,3],[3,3,1,1,0,0]]
+    ], [
+     [[6,3,8,4,3,3],[1,0,7,7,0,0]],
+     [[4,5,4,4,1,1],[1,1,4,4,0,0]]
+    ]]);
+  });
+
+  it('wrt input', () => {
+    const {value, grad} = tf.valueAndGrad(
+      (x: tf.Tensor4D) => tf.depthwiseConv2d(x, filter, stride, pad)
+    )(images);
+
+    expectArraysClose(value, result);
+
+    const expectedGrad = tf.tensor4d([[
+      [[2,2,0],[3,4,2]],
+      [[3,4,0],[5,7,2]]
+    ], [
+      [[2,2,0],[3,4,2]],
+      [[3,4,0],[5,7,2]]
+    ]]);
+
+    expectArraysClose(grad, expectedGrad);
+  });
+
+  it('wrt filter', () => {
+    const {value, grad} = tf.valueAndGrad(
+      (f: tf.Tensor4D) => tf.depthwiseConv2d(images, f, stride, pad)
+    )(filter);
+
+    expectArraysClose(value, result);
+
+    const expectedGrad = tf.tensor4d([[
+      [[15,15],[16,16],[12,12]],
+      [[7,7], [8,8], [9,9]]
+    ], [
+      [[8,8], [9,9], [6,6]],
+      [[4,4], [5,5], [4,4]]
+    ]])
+
+    expectArraysClose(grad, expectedGrad);
   });
 });

@@ -479,12 +479,106 @@ export class ConvOps {
               `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
     }
 
+    const grad = (dy: Tensor4D) => {
+      return {
+        x: () => ConvOps.depthwiseConv2DDerInput(
+            x4D.shape, dy, filter, strides, pad),
+        filter: () => dy
+      };
+    };
+
     const convInfo = conv_util.computeConv2DInfo(
         x4D.shape, filter.shape, strides, dilations, pad, dimRoundingMode,
         true /* depthwise */);
     const res = ENV.engine.runKernel(
         backend => backend.depthwiseConv2D(x4D, filter, convInfo),
-        {x4D, filter});
+        {x: x4D, filter}, grad);
+    if (reshapedTo4D) {
+      return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as T;
+    }
+    return res as T;
+  }
+
+  /**
+   * Computes the derivative of the input of a 2D depthwise convolution.
+   *
+   * @param xShape The shape of the input: [batch, height, width, inDepth].
+   * If length of 3, batch of 1 is assumed.
+   * @param dy The derivative of the output, of rank 4 or rank 3 of shape
+   *   `[batch, outHeight, outWidth, outDepth]`. If rank 3, batch of 1 is
+   * assumed.
+   * @param filter The filter, rank 4, of shape
+   *     `[filterHeight, filterWidth, inDepth, outDepth]`.
+   * @param strides The strides of the convolution: `[strideHeight,
+   * strideWidth]`.
+   * @param pad The type of padding algorithm used:
+   *    - `same` and stride 1: output will be of same size as input,
+   *       regardless of filter size.
+   *    - `valid`: output will be smaller than input if filter is larger
+   *       than 1x1.
+   * @param dimRoundingMode The rounding mode used when computing output
+   *     dimensions if pad is a number. If none is provided, it will not round
+   *     and error if the output is of fractional size.
+   */
+  @operation
+  static depthwiseConv2DDerInput<T extends Tensor3D|Tensor4D>(
+      xShape: [number, number, number, number]|[number, number, number], dy: T,
+      filter: Tensor4D, strides: [number, number]|number,
+      pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil'): T {
+    util.assertArgumentsAreTensors({dy, filter}, 'depthwiseConv2DDerInput');
+
+    util.assert(
+        xShape.length === dy.rank,
+        `Length of inShape ` +
+            `(${xShape.length}) and rank of dy (${dy.rank}) must match`);
+
+    let xShape4D = xShape as [number, number, number, number];
+    let dy4D = dy as Tensor4D;
+    let reshapedTo4D = false;
+    if (dy.rank === 3) {
+      reshapedTo4D = true;
+      dy4D = dy.as4D(1, dy.shape[0], dy.shape[1], dy.shape[2]);
+      xShape4D = [1, xShape[0], xShape[1], xShape[2]];
+    }
+
+    const inDepth = xShape4D[3];
+    const outDepth = dy4D.shape[3];
+    util.assert(
+        xShape4D.length === 4,
+        `Error in depthwiseConv2DDerInput: inShape must be length 4, but got length ` +
+            `${xShape4D.length}.`);
+    util.assert(
+        dy4D.rank === 4,
+        `Error in depthwiseConv2DDerInput: dy must be rank 4, but got ` +
+            `rank ${dy4D.rank}`);
+    util.assert(
+        filter.rank === 4,
+        `Error in depthwiseConv2DDerInput: filter must be rank 4, but got ` +
+            `rank ${filter.rank}`);
+    util.assert(
+        inDepth === filter.shape[2],
+        `Error in depthwiseConv2DDerInput: depth of input (${inDepth}) must ` +
+            `match input depth for filter ${filter.shape[2]}.`);
+    util.assert(
+        outDepth === filter.shape[3] * inDepth,
+        `Error in depthwiseConv2DDerInput: depth of output (${
+            outDepth}) must ` +
+            `match input depth times filter multiplier ${filter.shape[3]}.`);
+    if (dimRoundingMode != null) {
+      util.assert(
+          util.isInt(pad as number),
+          `Error in depthwiseConv2DDerInput: pad must be an integer when using, ` +
+              `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
+    }
+
+    const dilations = 1;
+
+    const convInfo = conv_util.computeConv2DInfo(
+        xShape4D, filter.shape, strides, dilations, pad, dimRoundingMode,
+        true /* depthwise */);
+    const res = ENV.engine.runKernel(
+        backend => backend.depthwiseConv2DDerInput(dy4D, filter, convInfo),
+        {dy4D});
     if (reshapedTo4D) {
       return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as T;
     }
