@@ -198,11 +198,11 @@ export class MatmulOps {
         `Error in dot: inputs must all be rank 1 or 2, but got ranks ` +
             `${t1.rank} and ${t2.rank}.`);
 
-    let t1Inner = (t1.rank === 1 ? t1.size : t1.shape[1]);
-    let t2Inner = (t2.rank === 1 ? t2.size : t2.shape[0]);
+    const t1Inner = (t1.rank === 1 ? t1.size : t1.shape[1]);
+    const t2Inner = (t2.rank === 1 ? t2.size : t2.shape[0]);
 
     util.assert(
-        t1Inner == t2Inner,
+        t1Inner === t2Inner,
         `Error in dot: inner dimensions of inputs must match, but got ` +
             `${t1Inner} and ${t2Inner}.`);
 
