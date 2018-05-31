@@ -430,28 +430,40 @@ describeWithFlags('dot', ALL_ENVS, () => {
 
   beforeEach(() => {
     a = tf.tensor1d([1, 2]);
-    b = tf.tensor2d([1, 2, 3, 4], [2, 2]);
-    c = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
+    b = tf.tensor2d([[1, 2], [3, 4]]);
+    c = tf.tensor2d([[1, 2, 3], [4, 5, 6]]);
     d = tf.tensor3d([1, 2], [1, 1, 2]);
     e = tf.scalar(1);
   });
 
   it('vector-vector', () => {
-    expectArraysClose(tf.dot(a, a), [5]);
+    const aa = tf.dot(a, a);
+    expectArraysClose(aa, [5]);
+    expect(aa.shape).toEqual([]);
   });
 
   it('vector-matrix', () => {
-    expectArraysClose(tf.dot(a, b), [7, 10]);
-    expectArraysClose(tf.dot(a, c), [9, 12, 15]);
+    const ab = tf.dot(a, b);
+    const ac = tf.dot(a, c);
+    expect(ab.shape).toEqual([2]);
+    expect(ac.shape).toEqual([3]);
+    expectArraysClose(ab, [7, 10]);
+    expectArraysClose(ac, [9, 12, 15]);
   });
 
   it('matrix-vector', () => {
-    expectArraysClose(tf.dot(b, a), [5, 11]);
+    const ba = b.dot(a);
+    expect(ba.shape).toEqual([2]);
+    expectArraysClose(ba, [5, 11]);
   });
 
   it('matrix-matrix', () => {
-    expectArraysClose(tf.dot(b, b), [7, 10, 15, 22]);
-    expectArraysClose(tf.dot(b, c), [9, 12, 15, 19, 26, 33]);
+    const bb = tf.dot(b, b);
+    const bc = tf.dot(b, c);
+    expect(bb.shape).toEqual([2, 2]);
+    expect(bc.shape).toEqual([2, 3]);
+    expectArraysClose(bb, [7, 10, 15, 22]);
+    expectArraysClose(bc, [9, 12, 15, 19, 26, 33]);
   });
 
   it('throws error on incompatible dimensions', () => {
