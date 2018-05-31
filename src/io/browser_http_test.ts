@@ -573,4 +573,20 @@ describeWithFlags('browserHTTPRequest-load', CPU_ENVS, () => {
         })
         .catch(err => done.fail(err.stack));
   });
+
+  it('Missing modelTopology and weightsManifest leads to error', done => {
+    setupFakeWeightFiles({'path1/model.json': JSON.stringify({})});
+    const handler = tf.io.browserHTTPRequest('path1/model.json');
+    handler.load()
+        .then(modelTopology1 => {
+          done.fail(
+              'Loading from missing modelTopology and weightsManifest ' +
+              'succeeded expectedly.');
+        })
+        .catch(err => {
+          expect(err.message)
+              .toMatch(/contains neither model topology or manifest/);
+          done();
+        });
+  });
 });

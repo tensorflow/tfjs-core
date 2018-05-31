@@ -106,14 +106,30 @@ export class BrowserHTTPRequest implements IOHandler {
     }
   }
 
+  /**
+   * Load model artifacts via HTTP request(s).
+   *
+   * See the documentation to `browserHTTPRequest` for details on the saved
+   * artifacts.
+   *
+   * @returns The loaded model artifacts (if loading succeeds).
+   */
   async load(): Promise<ModelArtifacts> {
     const modelConfigRequest = await fetch(this.path, this.requestInit);
     const modelConfig = await modelConfigRequest.json();
     const modelTopology = modelConfig['modelTopology'];
+    const weightsManifest = modelConfig['weightsManifest'];
+
+    // We do not allow both modelTopology and weightsManifest to be missing.
+    if (modelTopology == null && weightsManifest == null) {
+      throw new Error(
+          `The JSON from HTTP path ${this.path} contains neither model ` +
+          `topology or manifest for weights.`);
+    }
 
     let weightSpecs: WeightsManifestEntry[];
     let weightData: ArrayBuffer;
-    if (modelConfig['weightsManifest'] != null) {
+    if (weightsManifest != null) {
       const weightsManifest =
           modelConfig['weightsManifest'] as WeightsManifestConfig;
       weightSpecs = [];
