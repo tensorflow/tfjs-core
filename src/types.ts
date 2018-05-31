@@ -175,12 +175,13 @@ export interface InferenceModel {
    * params should be in either Tensor[] if the input order is fixed, or
    * otherwise NamedTensorMap format.
    *
-   * @param outputs string|string[] Optional. List of output node names to
-   * evaluate when running predict(). Defaults to the model's default output.
+   * @param outputs string|string[]. List of output node names to retrieve
+   * activation from.
    *
-   * @returns Activation values for the output nodes result tensors. The output
-   * would be single Tensor if single output is specified, otherwise Tensor[]
-   * for multiple outputs.
+   * @returns Activation values for the output nodes result tensors. The return
+   * type matches specified parameter outputs type. The output would be single
+   * Tensor if single output is specified, otherwise Tensor[] for multiple
+   * outputs.
    */
   execute(inputs: Tensor|Tensor[]|NamedTensorMap, outputs: string|string[]):
       Tensor|Tensor[];
