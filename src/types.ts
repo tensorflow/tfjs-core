@@ -167,20 +167,13 @@ export interface InferenceModel {
       Tensor|Tensor[]|NamedTensorMap;
 
   /**
-   * Execute the inference for the input tensors and return activation values
-   * for specified output node names.
+   * Single Execute the inference for the input tensors and return activation
+   * values for specified output node names without batching.
    *
    * @param input The input tensors, when there is single input for the model,
    * inputs param should be a Tensor. For models with mutliple inputs, inputs
    * params should be in either Tensor[] if the input order is fixed, or
    * otherwise NamedTensorMap format.
-   * For batch inference execution, the tensors for each input need to be
-   * concatenated together. For example with mobilenet, the required input shape
-   * is [1, 244, 244, 3], which represents the [batch, height, width, channel].
-   * If we are provide a batched data of 100 images, the input tensor should be
-   * in the shape of [100, 244, 244, 3].
-   *
-   * @param config Prediction configuration for specifying the batch size.
    *
    * @param outputs string|string[] Optional. List of output node names to
    * evaluate when running predict(). Defaults to the model's default output.
@@ -189,7 +182,6 @@ export interface InferenceModel {
    * would be single Tensor if single output is specified, otherwise Tensor[]
    * or NamedTensorMap[] for multiple outputs.
    */
-  execute(
-      inputs: Tensor|Tensor[]|NamedTensorMap, config: ModelPredictConfig,
-      outputs: string|string[]): Tensor|Tensor[]|NamedTensorMap;
+  execute(inputs: Tensor|Tensor[]|NamedTensorMap, outputs: string|string[]):
+      Tensor|Tensor[]|NamedTensorMap;
 }
