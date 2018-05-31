@@ -483,7 +483,8 @@ export class ConvOps {
       return {
         x: () => ConvOps.depthwiseConv2DDerInput(
             x4D.shape, dy, filter, strides, pad),
-        filter: () => dy
+        filter: () => ConvOps.depthwiseConv2DDerFilter(
+            x4D, dy, filter.shape, strides, pad)
       };
     };
 
@@ -583,6 +584,77 @@ export class ConvOps {
       return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as T;
     }
     return res as T;
+  }
+
+  /**
+   * Computes the derivative of the filter of a 2D depthwise convolution.
+   *
+   * @param x The input tensor, of rank 4 or rank 3 of shape
+   *     [batch, height, width, inChannels]. If rank 3, batch of 1 is assumed.
+   * @param dy The dy image, of rank 4 or rank 3, of shape
+   *     [batch, height, width, outDepth]. If rank 3, batch of 1 is assumed.
+   * @param filterShape The shape of the filter, length 4,
+   *     [filterHeight, filterWidth, inDepth, outDepth].
+   * @param strides The strides of the convolution: [strideHeight,
+   * strideWidth].
+   * @param pad A string from: 'same', 'valid'. The type of padding algorithm
+   *     used in the forward prop of the op.
+   * @param dimRoundingMode A string from: 'ceil', 'round', 'floor'. The
+   *     rounding mode used when computing output dimensions if pad is a
+   *     number. If none is provided, it will not round and error if the output
+   *     is of fractional size.
+   */
+  @operation
+  static depthwiseConv2DDerFilter<T extends Tensor3D|Tensor4D>(
+      x: T, dy: T, filterShape: [number, number, number, number],
+      strides: [number, number]|number, pad: 'valid'|'same'|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): Tensor4D {
+    util.assertArgumentsAreTensors({x, dy}, 'conv2dDerFilter');
+
+    let x4D = x as Tensor4D;
+    if (x.rank === 3) {
+      x4D = x.as4D(1, x.shape[0], x.shape[1], x.shape[2]);
+    }
+    let dy4D = dy as Tensor4D;
+    if (dy4D.rank === 3) {
+      dy4D = dy.as4D(1, dy.shape[0], dy.shape[1], dy.shape[2]);
+    }
+    util.assert(
+        x4D.rank === 4,
+        `Error in depthwiseConv2DDerFilter: input must be rank 4, but got shape ` +
+            `${x4D.shape}.`);
+    util.assert(
+        dy4D.rank === 4,
+        `Error in depthwiseConv2DDerFilter: dy must be rank 4, but got shape ` +
+            `${dy4D.shape}.`);
+    util.assert(
+        filterShape.length === 4,
+        `Error in depthwiseConv2DDerFilter: filterShape must be length 4, but got ` +
+            `${filterShape}.`);
+    util.assert(
+        x4D.shape[3] === filterShape[2],
+        `Error in depthwiseConv2DDerFilter: depth of input ${
+            x4D.shape[3]}) must ` +
+            `match input depth in filter (${filterShape[2]}.`);
+    util.assert(
+        dy4D.shape[3] === filterShape[3] * x4D.shape[3],
+        `Error in depthwiseConv2DDerFilter: depth of dy (${dy4D.shape[3]}) ` +
+            `must match input depth times multiplier ${filterShape[3]}.`);
+    if (dimRoundingMode != null) {
+      util.assert(
+          util.isInt(pad as number),
+          `Error in depthwiseConv2DDerFilter: pad must be an integer when using, ` +
+              `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
+    }
+
+    const dilations = 1;
+
+    const convInfo = conv_util.computeConv2DInfo(
+        x4D.shape, filterShape, strides, dilations, pad, dimRoundingMode,
+        true /* depthwise */);
+    return ENV.engine.runKernel(
+        backend => backend.depthwiseConv2DDerFilter(x4D, dy4D, convInfo),
+        {x4D, dy4D});
   }
 
   /**

@@ -876,6 +876,15 @@ export class MathBackendWebGL implements KernelBackend {
 
   depthwiseConv2DDerInput(dy: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
       Tensor4D {
+    // TODO: implement
+    util.assert(false, 'not implemented');
+    return dy;
+  }
+
+  depthwiseConv2DDerFilter(x: Tensor4D, dy: Tensor4D, convInfo: Conv2DInfo):
+      Tensor4D {
+    // TODO: implement
+    util.assert(false, 'not implemented');
     return dy;
   }
 

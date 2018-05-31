@@ -1261,7 +1261,7 @@ export class MathBackendCPU implements KernelBackend {
     return dx.toTensor();
   }
 
-  /*depthwiseConv2DDerFilter(x: Tensor4D, dy: Tensor4D, convInfo: Conv2DInfo):
+  depthwiseConv2DDerFilter(x: Tensor4D, dy: Tensor4D, convInfo: Conv2DInfo):
       Tensor4D {
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
@@ -1271,6 +1271,7 @@ export class MathBackendCPU implements KernelBackend {
 
     const leftPad = convInfo.padInfo.left;
     const topPad = convInfo.padInfo.top;
+    const chMul = convInfo.outChannels / convInfo.inChannels;
 
     for (let wR = 0; wR < filterHeight; ++wR) {
       const yRMin = Math.max(0, Math.ceil((topPad - wR) / strideHeight));
@@ -1282,26 +1283,26 @@ export class MathBackendCPU implements KernelBackend {
         const yCMax = Math.min(
             convInfo.outWidth, (convInfo.inWidth + leftPad - wC) / strideWidth);
 
-        for (let d1 = 0; d1 < convInfo.inChannels; ++d1) {
-          for (let d2 = 0; d2 < convInfo.outChannels; ++d2) {
-            // Need to convolve.
-            let dotProd = 0;
-            for (let b = 0; b < convInfo.batchSize; ++b) {
-              for (let yR = yRMin; yR < yRMax; ++yR) {
-                const xR = wR + yR * strideHeight - topPad;
-                for (let yC = yCMin; yC < yCMax; ++yC) {
-                  const xC = wC + yC * strideWidth - leftPad;
-                  dotProd += x.get(b, xR, xC, d1) * dy.get(b, yR, yC, d2);
-                }
+        for (let d2 = 0; d2 < convInfo.outChannels; ++d2) {
+          const d1 = Math.trunc(d2 / chMul);
+          const dm = d2 % chMul;
+
+          let dotProd = 0;
+          for (let b = 0; b < convInfo.batchSize; ++b) {
+            for (let yR = yRMin; yR < yRMax; ++yR) {
+              const xR = wR + yR * strideHeight - topPad;
+              for (let yC = yCMin; yC < yCMax; ++yC) {
+                const xC = wC + yC * strideWidth - leftPad;
+                dotProd += x.get(b, xR, xC, d1) * dy.get(b, yR, yC, d2);
               }
             }
-            dW.set(dotProd, wR, wC, d1, d2);
           }
+          dW.set(dotProd, wR, wC, d1, dm);
         }
       }
     }
     return dW.toTensor();
-  }*/
+  }
 
   tile<T extends Tensor>(x: T, reps: number[]): T {
     const newShape: number[] = new Array(x.rank);
