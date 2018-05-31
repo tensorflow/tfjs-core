@@ -546,8 +546,8 @@ export class ConvOps {
     const outDepth = dy4D.shape[3];
     util.assert(
         xShape4D.length === 4,
-        `Error in depthwiseConv2DDerInput: inShape must be length 4, but got length ` +
-            `${xShape4D.length}.`);
+        `Error in depthwiseConv2DDerInput: inShape must be length 4, but ` +
+            `got length ${xShape4D.length}.`);
     util.assert(
         dy4D.rank === 4,
         `Error in depthwiseConv2DDerInput: dy must be rank 4, but got ` +
@@ -568,8 +568,8 @@ export class ConvOps {
     if (dimRoundingMode != null) {
       util.assert(
           util.isInt(pad as number),
-          `Error in depthwiseConv2DDerInput: pad must be an integer when using, ` +
-              `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
+          `Error in depthwiseConv2DDerInput: pad must be an integer when ` +
+              `using dimRoundingMode ${dimRoundingMode}, but got pad ${pad}.`);
     }
 
     const dilations = 1;
@@ -621,21 +621,20 @@ export class ConvOps {
     }
     util.assert(
         x4D.rank === 4,
-        `Error in depthwiseConv2DDerFilter: input must be rank 4, but got shape ` +
-            `${x4D.shape}.`);
+        `Error in depthwiseConv2DDerFilter: input must be rank 4, ` +
+            `but got shape ${x4D.shape}.`);
     util.assert(
         dy4D.rank === 4,
-        `Error in depthwiseConv2DDerFilter: dy must be rank 4, but got shape ` +
-            `${dy4D.shape}.`);
+        `Error in depthwiseConv2DDerFilter: dy must be rank 4, ` +
+            `but got shape ${dy4D.shape}.`);
     util.assert(
         filterShape.length === 4,
-        `Error in depthwiseConv2DDerFilter: filterShape must be length 4, but got ` +
-            `${filterShape}.`);
+        `Error in depthwiseConv2DDerFilter: filterShape must be length 4, ` +
+            `but got shape ${filterShape}.`);
     util.assert(
         x4D.shape[3] === filterShape[2],
-        `Error in depthwiseConv2DDerFilter: depth of input ${
-            x4D.shape[3]}) must ` +
-            `match input depth in filter (${filterShape[2]}.`);
+        `Error in depthwiseConv2DDerFilter: depth of input ${x4D.shape[3]}) ` +
+            `must match input depth in filter (${filterShape[2]}.`);
     util.assert(
         dy4D.shape[3] === filterShape[3] * x4D.shape[3],
         `Error in depthwiseConv2DDerFilter: depth of dy (${dy4D.shape[3]}) ` +
@@ -643,8 +642,8 @@ export class ConvOps {
     if (dimRoundingMode != null) {
       util.assert(
           util.isInt(pad as number),
-          `Error in depthwiseConv2DDerFilter: pad must be an integer when using, ` +
-              `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
+          `Error in depthwiseConv2DDerFilter: pad must be an integer when ` +
+              `using dimRoundingMode ${dimRoundingMode}, but got pad ${pad}.`);
     }
 
     const dilations = 1;

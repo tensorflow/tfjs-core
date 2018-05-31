@@ -388,7 +388,7 @@ describeWithFlags('depthwiseConv2d gradients', CPU_ENVS, () => {
     ], [
       [[2,1,0],[0,3,3]],
       [[4,0,1],[1,4,1]]
-    ]])
+    ]]);
     //2x2 filters, multiplier = 2 => 2x2x3x2
     filter = tf.tensor4d([[
       [[1,1],[1,1],[0,0]],
@@ -438,7 +438,7 @@ describeWithFlags('depthwiseConv2d gradients', CPU_ENVS, () => {
     ], [
       [[8,8], [9,9], [6,6]],
       [[4,4], [5,5], [4,4]]
-    ]])
+    ]]);
 
     expectArraysClose(grad, expectedGrad);
   });
