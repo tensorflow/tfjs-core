@@ -180,8 +180,8 @@ export interface InferenceModel {
    *
    * @returns Activation values for the output nodes result tensors. The output
    * would be single Tensor if single output is specified, otherwise Tensor[]
-   * or NamedTensorMap[] for multiple outputs.
+   * for multiple outputs.
    */
   execute(inputs: Tensor|Tensor[]|NamedTensorMap, outputs: string|string[]):
-      Tensor|Tensor[]|NamedTensorMap;
+      Tensor|Tensor[];
 }
