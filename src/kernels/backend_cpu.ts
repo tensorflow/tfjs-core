@@ -1243,10 +1243,8 @@ export class MathBackendCPU implements KernelBackend {
                 const fltOffset = fltS0 * (filterHeight - 1 - wR) +
                     fltS1 * (filterWidth - 1 - wC) + fltS2 * d1;
 
-                const d2Min = d1 * chMul;
-                const d2Max = d2Min + chMul;
-                for (let d2 = d2Min; d2 < d2Max; ++d2) {
-                  const dm = d2 - d2Min;
+                for (let dm = 0; dm < chMul; ++dm) {
+                  const d2 = d1 * chMul + dm;
                   const pixel = dyValues[dyOffset + d2];
                   const weight = fltValues[fltOffset + dm];
                   dotProd += pixel * weight;
