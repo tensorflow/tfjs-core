@@ -16,7 +16,7 @@
  */
 
 import * as tf from '../index';
-import {ALL_ENVS, CPU_ENVS, expectArraysClose} from '../test_util';
+import {ALL_ENVS, expectArraysClose} from '../test_util';
 import {describeWithFlags} from '../jasmine_util';
 import {Rank} from '../types';
 
@@ -373,7 +373,7 @@ describeWithFlags('depthwiseConv2D', ALL_ENVS, () => {
   });
 });
 
-describeWithFlags('depthwiseConv2d gradients', CPU_ENVS, () => {
+describeWithFlags('depthwiseConv2d gradients', ALL_ENVS, () => {
   let images: tf.Tensor4D;
   let filter: tf.Tensor4D;
   let result: tf.Tensor4D;
@@ -415,11 +415,30 @@ describeWithFlags('depthwiseConv2d gradients', CPU_ENVS, () => {
     expectArraysClose(value, result);
 
     const expectedGrad = tf.tensor4d([[
-      [[2,2,0],[3,4,2]],
-      [[3,4,0],[5,7,2]]
+      [[2., 2., 0.], [3., 4., 2.]],
+      [[3., 4., 0.], [5., 7., 2.]]
     ], [
-      [[2,2,0],[3,4,2]],
-      [[3,4,0],[5,7,2]]
+      [[2., 2., 0.], [3., 4., 2.]],
+      [[3., 4., 0.], [5., 7., 2.]]
+    ]]);
+
+    expectArraysClose(grad, expectedGrad);
+  });
+
+  // The gradients of normal and depthwise 2D convolutions are actually the same
+  // in the special case that dy = 1, so we also test the gradient of a function
+  // of the output to disambiguate the two methods.
+  it('wrt input, squared output', () => {
+    const grad = tf.grad(
+      (x: tf.Tensor4D) => tf.square(tf.depthwiseConv2d(x, filter, stride, pad))
+    )(images);
+
+    const expectedGrad = tf.tensor4d([[
+      [[20., 30.,  0.], [34., 34.,  8.]],
+      [[10., 50.,  0.], [46., 44., 12.]]
+    ], [
+      [[18., 24.,  0.], [ 8., 52., 12.]],
+      [[30., 40.,  0.], [22., 76.,  4.]]
     ]]);
 
     expectArraysClose(grad, expectedGrad);
@@ -433,11 +452,28 @@ describeWithFlags('depthwiseConv2d gradients', CPU_ENVS, () => {
     expectArraysClose(value, result);
 
     const expectedGrad = tf.tensor4d([[
-      [[15,15],[16,16],[12,12]],
-      [[7,7], [8,8], [9,9]]
+      [[15., 15.], [16., 16.], [12., 12.]],
+      [[ 7.,  7.], [ 8.,  8.], [ 9.,  9.]]
     ], [
-      [[8,8], [9,9], [6,6]],
-      [[4,4], [5,5], [4,4]]
+      [[ 8.,  8.], [ 9.,  9.], [ 6.,  6.]],
+      [[ 4.,  4.], [ 5.,  5.], [ 4.,  4.]]
+    ]]);
+
+    expectArraysClose(grad, expectedGrad);
+  });
+
+  // Also disambiguate regular vs. depthwise filter gradients
+  it('wrt filter, squared output', () => {
+    const grad = tf.grad(
+      (f: tf.Tensor4D) => tf.square(tf.depthwiseConv2d(images, f, stride, pad))
+    )(filter);
+
+    const expectedGrad = tf.tensor4d([[
+      [[120., 122.], [180., 166.], [ 12.,  12.]],
+      [[ 20.,  76.], [ 90.,  66.], [ 46.,  46.]]
+    ], [
+      [[ 86.,  42.], [122., 114.], [ 10.,  10.]],
+      [[ 24.,  54.], [ 80.,  46.], [ 18.,  18.]]
     ]]);
 
     expectArraysClose(grad, expectedGrad);
