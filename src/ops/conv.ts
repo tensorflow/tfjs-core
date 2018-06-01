@@ -484,6 +484,10 @@ export class ConvOps {
         true /* depthwise */);
 
     const grad = (dy: Tensor4D) => {
+      util.assert(
+          tupleValuesAreOne(dilations),
+          'Error in gradient of depthwiseConv2d: dilation rates greater than ' +
+              `1 are not yet supported. Got dilations '${dilations}'`);
       return {
         x: () =>
             ConvOps.depthwiseConv2dDerInput(x4D.shape, dy, filter, convInfo),
@@ -504,10 +508,6 @@ export class ConvOps {
   static depthwiseConv2dDerInput<T extends Tensor3D|Tensor4D>(
       xShape: [number, number, number, number]|[number, number, number], dy: T,
       filter: Tensor4D, convInfo: conv_util.Conv2DInfo): T {
-    util.assert(
-        convInfo.dilationHeight == 1 && convInfo.dilationWidth == 1,
-        `Error in depthwiseConv2dDerInput: gradients of 2D convolutions ` +
-            `do not currently support height/width dilations larger than 1`);
     let dy4D = dy as Tensor4D;
     let reshapedTo4D = false;
     if (dy.rank === 3) {
@@ -526,10 +526,6 @@ export class ConvOps {
   static depthwiseConv2dDerFilter<T extends Tensor3D|Tensor4D>(
       x: T, dy: T, filterShape: [number, number, number, number],
       convInfo: conv_util.Conv2DInfo): Tensor4D {
-    util.assert(
-        convInfo.dilationHeight == 1 && convInfo.dilationWidth == 1,
-        `Error in depthwiseConv2dDerFilter: gradients of 2d convolutions ` +
-            `do not currently support height/width dilations larger than 1`);
     let x4D = x as Tensor4D;
     if (x.rank === 3) {
       x4D = x.as4D(1, x.shape[0], x.shape[1], x.shape[2]);
