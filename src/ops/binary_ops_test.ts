@@ -883,12 +883,12 @@ describeWithFlags('atan2', ALL_ENVS, () => {
 
 describeWithFlags('div', ALL_ENVS, () => {
   it('basic', () => {
-    const a = tf.tensor1d([0, 1, -2, -4]);
-    const b = tf.tensor1d([0.15, 0.2, 0.25, 0.5]);
+    const a = tf.tensor1d([0, 1, -2, -4, 4, -4]);
+    const b = tf.tensor1d([0.15, 0.2, 0.25, 0.5, 0.7, 1.2]);
     const result = tf.div(a, b);
 
     expect(result.shape).toEqual(a.shape);
-    expectArraysClose(result, [0, 5.0, -8.0, -8.0]);
+    expectArraysClose(result, [0, 5.0, -8.0, -8.0, 5.714285850524902, -3.3333332538604736]);
   });
 
   it('floored internally', () => {
