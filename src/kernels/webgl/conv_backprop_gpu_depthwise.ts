@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2017 Google Inc. All Rights Reserved.
+ * Copyright 2018 Google Inc. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -43,6 +43,7 @@ export class DepthwiseConv2DDerFilterProgram implements GPGPUProgram {
 
         float dotProd = 0.0;
 
+        // TODO: Vec4 over the batch size
         for (int b = 0; b < ${convInfo.batchSize}; b++) {
           for (int yR = 0; yR < ${convInfo.outHeight}; yR++) {
             int xR = wR + yR * ${strideHeight} - ${padTop};
@@ -121,6 +122,7 @@ export class DepthwiseConv2DDerInputProgram implements GPGPUProgram {
 
             int wCPerm = ${filterWidth} - 1 - wC;
 
+            // TODO: Vec4 over the channelMul
             for (int dm = 0; dm < ${channelMul}; dm++) {
               int d2 = d1 * ${channelMul} + dm;
               float xValue = getDy(batch, idyR, idyC, d2);
