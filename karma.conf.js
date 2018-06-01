@@ -23,7 +23,7 @@ module.exports = function(config) {
       '**/*.ts': ['karma-typescript'],  // *.tsx for React Jsx
     },
     karmaTypescriptConfig: {
-      tsconfig: 'tsconfig-es2017.json',
+      tsconfig: 'tsconfig.json',
       compilerOptions: {module: 'commonjs', sourceMap: true}
     },
     reporters: ['progress', 'karma-typescript'],

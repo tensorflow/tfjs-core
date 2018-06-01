@@ -157,16 +157,13 @@ describeWithFlags('LocalStorage', CPU_ENVS, () => {
 
   it('Save-load round trip succeeds', async () => {
     const handler1 = tf.io.getSaveHandlers('localstorage://FooModel')[0];
-    try {
-      await handler1.save(artifacts1);
-      const handler2 = tf.io.getLoadHandlers('localstorage://FooModel')[0];
-      const loaded = await handler2.load();
-      expect(loaded.modelTopology).toEqual(modelTopology1);
-      expect(loaded.weightSpecs).toEqual(weightSpecs1);
-      expect(loaded.weightData).toEqual(weightData1);
-    } catch (err) {
-      console.error(err.stack);
-    }
+
+    await handler1.save(artifacts1);
+    const handler2 = tf.io.getLoadHandlers('localstorage://FooModel')[0];
+    const loaded = await handler2.load();
+    expect(loaded.modelTopology).toEqual(modelTopology1);
+    expect(loaded.weightSpecs).toEqual(weightSpecs1);
+    expect(loaded.weightData).toEqual(weightData1);
   });
 
   it('Loading nonexistent model fails.', done => {
