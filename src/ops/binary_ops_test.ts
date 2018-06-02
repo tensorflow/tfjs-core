@@ -888,7 +888,8 @@ describeWithFlags('div', ALL_ENVS, () => {
     const result = tf.div(a, b);
 
     expect(result.shape).toEqual(a.shape);
-    expectArraysClose(result, [0, 5.0, -8.0, -8.0, 5.714285850524902, -3.3333332538604736]);
+    expectArraysClose(result, [0, 5.0, -8.0, -8.0,
+      5.714285850524902, -3.3333332538604736]);
   });
 
   it('floored internally', () => {
