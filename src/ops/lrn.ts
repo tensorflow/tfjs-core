@@ -31,7 +31,7 @@ export class LRNOps {
    *     normalized independently.
    * @param radius The number of adjacent channels or spatial locations of the
    *     1D normalization window. In Tensorflow this param is called
-   *     'depth_radius' because only 'acrossChannels' mode is supported.
+   *     'depth_radius'.
    * @param bias A constant bias term for the basis.
    * @param alpha A scale factor, usually positive.
    * @param beta An exponent.
