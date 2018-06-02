@@ -16,11 +16,14 @@
  */
 
 import * as tf from '../index';
+import {describeWithFlags} from '../jasmine_util';
+import {CPU_ENVS} from '../test_util';
 
 import {arrayBufferToBase64String, base64StringToArrayBuffer} from './io_utils';
-import {purgeLocalStorageArtifacts} from './local_storage';
+// tslint:disable-next-line:max-line-length
+import {browserLocalStorage, BrowserLocalStorage, BrowserLocalStorageManager, localStorageRouter, purgeLocalStorageArtifacts} from './local_storage';
 
-describe('LocalStorage', () => {
+describeWithFlags('LocalStorage', CPU_ENVS, () => {
   // Test data.
   const modelTopology1: {} = {
     'class_name': 'Sequential',
@@ -104,9 +107,9 @@ describe('LocalStorage', () => {
     purgeLocalStorageArtifacts();
   });
 
-  it('Save artifacts succeeds', async done => {
+  it('Save artifacts succeeds', done => {
     const testStartDate = new Date();
-    const handler = tf.io.browserLocalStorage('FooModel');
+    const handler = tf.io.getSaveHandlers('localstorage://foo/FooModel')[0];
     handler.save(artifacts1)
         .then(saveResult => {
           expect(saveResult.modelArtifactsInfo.dateSaved.getTime())
@@ -122,7 +125,7 @@ describe('LocalStorage', () => {
           // Check the content of the saved items in local storage.
           const LS = window.localStorage;
           const info =
-              JSON.parse(LS.getItem('tensorflowjs_models/FooModel/info'));
+              JSON.parse(LS.getItem('tensorflowjs_models/foo/FooModel/info'));
           expect(Date.parse(info.dateSaved))
               .toEqual(saveResult.modelArtifactsInfo.dateSaved.getTime());
           expect(info.modelTopologyBytes)
@@ -133,15 +136,15 @@ describe('LocalStorage', () => {
               .toEqual(saveResult.modelArtifactsInfo.weightDataBytes);
 
           const topologyString =
-              LS.getItem('tensorflowjs_models/FooModel/model_topology');
+              LS.getItem('tensorflowjs_models/foo/FooModel/model_topology');
           expect(JSON.stringify(modelTopology1)).toEqual(topologyString);
 
           const weightSpecsString =
-              LS.getItem('tensorflowjs_models/FooModel/weight_specs');
+              LS.getItem('tensorflowjs_models/foo/FooModel/weight_specs');
           expect(JSON.stringify(weightSpecs1)).toEqual(weightSpecsString);
 
           const weightDataBase64String =
-              LS.getItem('tensorflowjs_models/FooModel/weight_data');
+              LS.getItem('tensorflowjs_models/foo/FooModel/weight_data');
           expect(base64StringToArrayBuffer(weightDataBase64String))
               .toEqual(weightData1);
 
@@ -152,29 +155,19 @@ describe('LocalStorage', () => {
         });
   });
 
-  it('Save-load round trip succeeds', async done => {
-    const handler1 = tf.io.browserLocalStorage('FooModel');
-    handler1.save(artifacts1)
-        .then(saveResult => {
-          const handler2 = tf.io.browserLocalStorage('FooModel');
-          handler2.load()
-              .then(loaded => {
-                expect(loaded.modelTopology).toEqual(modelTopology1);
-                expect(loaded.weightSpecs).toEqual(weightSpecs1);
-                expect(loaded.weightData).toEqual(weightData1);
-                done();
-              })
-              .catch(err => {
-                console.error(err.stack);
-              });
-        })
-        .catch(err => {
-          console.error(err.stack);
-        });
+  it('Save-load round trip succeeds', async () => {
+    const handler1 = tf.io.getSaveHandlers('localstorage://FooModel')[0];
+
+    await handler1.save(artifacts1);
+    const handler2 = tf.io.getLoadHandlers('localstorage://FooModel')[0];
+    const loaded = await handler2.load();
+    expect(loaded.modelTopology).toEqual(modelTopology1);
+    expect(loaded.weightSpecs).toEqual(weightSpecs1);
+    expect(loaded.weightData).toEqual(weightData1);
   });
 
-  it('Loading nonexistent model fails.', async done => {
-    const handler = tf.io.browserLocalStorage('NonexistentModel');
+  it('Loading nonexistent model fails.', done => {
+    const handler = tf.io.getSaveHandlers('localstorage://NonexistentModel')[0];
     handler.load()
         .then(aritfacts => {
           fail('Loading nonexistent model succeeded unexpectedly.');
@@ -188,15 +181,15 @@ describe('LocalStorage', () => {
         });
   });
 
-  it('Loading model with missing topology fails.', async done => {
-    const handler1 = tf.io.browserLocalStorage('FooModel');
+  it('Loading model with missing topology fails.', done => {
+    const handler1 = tf.io.getSaveHandlers('localstorage://FooModel')[0];
     handler1.save(artifacts1)
         .then(saveResult => {
           // Manually remove the topology item from local storage.
           window.localStorage.removeItem(
               'tensorflowjs_models/FooModel/model_topology');
 
-          const handler2 = tf.io.browserLocalStorage('FooModel');
+          const handler2 = tf.io.getLoadHandlers('localstorage://FooModel')[0];
           handler2.load()
               .then(aritfacts => {
                 fail(
@@ -216,15 +209,15 @@ describe('LocalStorage', () => {
         });
   });
 
-  it('Loading model with missing weight specs fails.', async done => {
-    const handler1 = tf.io.browserLocalStorage('FooModel');
+  it('Loading model with missing weight specs fails.', done => {
+    const handler1 = tf.io.getSaveHandlers('localstorage://FooModel')[0];
     handler1.save(artifacts1)
         .then(saveResult => {
           // Manually remove the weight specs item from local storage.
           window.localStorage.removeItem(
               'tensorflowjs_models/FooModel/weight_specs');
 
-          const handler2 = tf.io.browserLocalStorage('FooModel');
+          const handler2 = tf.io.getLoadHandlers('localstorage://FooModel')[0];
           handler2.load()
               .then(aritfacts => {
                 fail(
@@ -244,15 +237,15 @@ describe('LocalStorage', () => {
         });
   });
 
-  it('Loading model with missing weight data fails.', async done => {
-    const handler1 = tf.io.browserLocalStorage('FooModel');
+  it('Loading model with missing weight data fails.', done => {
+    const handler1 = tf.io.getSaveHandlers('localstorage://FooModel')[0];
     handler1.save(artifacts1)
         .then(saveResult => {
           // Manually remove the weight data item from local storage.
           window.localStorage.removeItem(
               'tensorflowjs_models/FooModel/weight_data');
 
-          const handler2 = tf.io.browserLocalStorage('FooModel');
+          const handler2 = tf.io.getLoadHandlers('localstorage://FooModel')[0];
           handler2.load()
               .then(aritfacts => {
                 fail(
@@ -272,14 +265,14 @@ describe('LocalStorage', () => {
         });
   });
 
-  it('Data size too large leads to error thrown', async done => {
+  it('Data size too large leads to error thrown', done => {
     const overflowByteSize = findOverflowingByteSize();
     const overflowArtifacts: tf.io.ModelArtifacts = {
       modelTopology: modelTopology1,
       weightSpecs: weightSpecs1,
       weightData: new ArrayBuffer(overflowByteSize),
     };
-    const handler1 = tf.io.browserLocalStorage('FooModel');
+    const handler1 = tf.io.getSaveHandlers('localstorage://FooModel')[0];
     handler1.save(overflowArtifacts)
         .then(saveResult => {
           fail(
@@ -296,14 +289,133 @@ describe('LocalStorage', () => {
   });
 
   it('Null, undefined or empty modelPath throws Error', () => {
-    expect(() => tf.io.browserLocalStorage(null))
+    expect(() => browserLocalStorage(null))
         .toThrowError(
             /local storage, modelPath must not be null, undefined or empty/);
-    expect(() => tf.io.browserLocalStorage(undefined))
+    expect(() => browserLocalStorage(undefined))
         .toThrowError(
             /local storage, modelPath must not be null, undefined or empty/);
-    expect(() => tf.io.browserLocalStorage(''))
+    expect(() => browserLocalStorage(''))
         .toThrowError(
             /local storage, modelPath must not be null, undefined or empty./);
+  });
+
+  it('router', () => {
+    expect(
+        localStorageRouter('localstorage://bar') instanceof BrowserLocalStorage)
+        .toEqual(true);
+    expect(localStorageRouter('indexeddb://bar')).toBeNull();
+    expect(localStorageRouter('qux')).toBeNull();
+  });
+
+  it('Manager: List models: 0 result', done => {
+    // Before any model is saved, listModels should return empty result.
+    new BrowserLocalStorageManager()
+        .listModels()
+        .then(out => {
+          expect(out).toEqual({});
+          done();
+        })
+        .catch(err => done.fail(err.stack));
+  });
+
+  it('Manager: List models: 1 result', done => {
+    const handler = tf.io.getSaveHandlers('localstorage://baz/QuxModel')[0];
+    handler.save(artifacts1)
+        .then(saveResult => {
+          // After successful saving, there should be one model.
+          new BrowserLocalStorageManager()
+              .listModels()
+              .then(out => {
+                expect(Object.keys(out).length).toEqual(1);
+                expect(out['baz/QuxModel'].modelTopologyType)
+                    .toEqual(saveResult.modelArtifactsInfo.modelTopologyType);
+                expect(out['baz/QuxModel'].modelTopologyBytes)
+                    .toEqual(saveResult.modelArtifactsInfo.modelTopologyBytes);
+                expect(out['baz/QuxModel'].weightSpecsBytes)
+                    .toEqual(saveResult.modelArtifactsInfo.weightSpecsBytes);
+                expect(out['baz/QuxModel'].weightDataBytes)
+                    .toEqual(saveResult.modelArtifactsInfo.weightDataBytes);
+                done();
+              })
+              .catch(err => done.fail(err.stack));
+        })
+        .catch(err => done.fail(err.stack));
+  });
+
+  it('Manager: List models: 2 results', done => {
+    // First, save a model.
+    const handler1 = tf.io.getSaveHandlers('localstorage://QuxModel')[0];
+    handler1.save(artifacts1)
+        .then(saveResult1 => {
+          // Then, save the model under another path.
+          const handler2 =
+              tf.io.getSaveHandlers('localstorage://repeat/QuxModel')[0];
+          handler2.save(artifacts1)
+              .then(saveResult2 => {
+                // After successful saving, there should be two models.
+                new BrowserLocalStorageManager()
+                    .listModels()
+                    .then(out => {
+                      expect(Object.keys(out).length).toEqual(2);
+                      expect(out['QuxModel'].modelTopologyType)
+                          .toEqual(
+                              saveResult1.modelArtifactsInfo.modelTopologyType);
+                      expect(out['QuxModel'].modelTopologyBytes)
+                          .toEqual(saveResult1.modelArtifactsInfo
+                                       .modelTopologyBytes);
+                      expect(out['QuxModel'].weightSpecsBytes)
+                          .toEqual(
+                              saveResult1.modelArtifactsInfo.weightSpecsBytes);
+                      expect(out['QuxModel'].weightDataBytes)
+                          .toEqual(
+                              saveResult1.modelArtifactsInfo.weightDataBytes);
+                      expect(out['repeat/QuxModel'].modelTopologyType)
+                          .toEqual(
+                              saveResult2.modelArtifactsInfo.modelTopologyType);
+                      expect(out['repeat/QuxModel'].modelTopologyBytes)
+                          .toEqual(saveResult2.modelArtifactsInfo
+                                       .modelTopologyBytes);
+                      expect(out['repeat/QuxModel'].weightSpecsBytes)
+                          .toEqual(
+                              saveResult2.modelArtifactsInfo.weightSpecsBytes);
+                      expect(out['repeat/QuxModel'].weightDataBytes)
+                          .toEqual(
+                              saveResult2.modelArtifactsInfo.weightDataBytes);
+                      done();
+                    })
+                    .catch(err => done.fail(err.stack));
+              })
+              .catch(err => done.fail(err.stack));
+        })
+        .catch(err => done.fail(err.stack));
+  });
+
+  it('Manager: Successful deleteModel', done => {
+    // First, save a model.
+    const handler1 = tf.io.getSaveHandlers('localstorage://QuxModel')[0];
+    handler1.save(artifacts1)
+        .then(saveResult1 => {
+          // Then, save the model under another path.
+          const handler2 =
+              tf.io.getSaveHandlers('localstorage://repeat/QuxModel')[0];
+          handler2.save(artifacts1)
+              .then(saveResult2 => {
+                // After successful saving, delete the first save, and then
+                // `listModel` should give only one result.
+                const manager = new BrowserLocalStorageManager();
+
+                manager.removeModel('QuxModel')
+                    .then(deletedInfo => {
+                      manager.listModels().then(out => {
+                        expect(Object.keys(out)).toEqual(['repeat/QuxModel']);
+                      });
+                      done();
+                    })
+                    .catch(err => done.fail(err.stack));
+              })
+              .catch(err => done.fail(err.stack));
+        })
+        .catch(err => done.fail(err.stack));
   });
 });

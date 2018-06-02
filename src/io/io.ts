@@ -15,20 +15,51 @@
  * =============================================================================
  */
 
-import {decodeWeights, encodeWeights} from './io_utils';
-import {browserLocalStorage} from './local_storage';
-// tslint:disable-next-line:max-line-length
-import {IOHandler, LoadHandler, ModelArtifacts, SaveConfig, SaveHandler, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
+// tslint:disable:max-line-length
+// Importing local_storage and indexed_db is necessary for the routers to be
+// registered.
+import './indexed_db';
+import './local_storage';
+
+import {browserFiles} from './browser_files';
+import {browserHTTPRequest} from './browser_http';
+import {decodeWeights, encodeWeights, getModelArtifactsInfoForJSON} from './io_utils';
+import {ModelManagement} from './model_management';
+import {IORouterRegistry} from './router_registry';
+
+import {IOHandler, LoadHandler, ModelArtifacts, ModelStoreManager, SaveConfig, SaveHandler, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
 import {loadWeights} from './weights_loader';
+// tslint:enable:max-line-length
+
+const registerSaveRouter = IORouterRegistry.registerSaveRouter;
+const registerLoadRouter = IORouterRegistry.registerLoadRouter;
+const getSaveHandlers = IORouterRegistry.getSaveHandlers;
+const getLoadHandlers = IORouterRegistry.getLoadHandlers;
+
+const copyModel = ModelManagement.copyModel;
+const listModels = ModelManagement.listModels;
+const moveModel = ModelManagement.moveModel;
+const removeModel = ModelManagement.removeModel;
 
 export {
-  browserLocalStorage,
+  browserFiles,
+  browserHTTPRequest,
+  copyModel,
   decodeWeights,
   encodeWeights,
+  getLoadHandlers,
+  getModelArtifactsInfoForJSON,
+  getSaveHandlers,
   IOHandler,
+  listModels,
   LoadHandler,
   loadWeights,
   ModelArtifacts,
+  ModelStoreManager,
+  moveModel,
+  registerLoadRouter,
+  registerSaveRouter,
+  removeModel,
   SaveConfig,
   SaveHandler,
   SaveResult,

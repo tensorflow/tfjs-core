@@ -21,6 +21,7 @@ import * as axis_util from '../ops/axis_util';
 import {Conv2DInfo} from '../ops/conv_util';
 import * as ops from '../ops/ops';
 import * as reduce_util from '../ops/reduce_util';
+import {getStridedSlicedInfo} from '../ops/slice_util';
 // tslint:disable-next-line:max-line-length
 import {DataId, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import * as types from '../types';
@@ -38,8 +39,11 @@ import {ClipProgram} from './webgl/clip_gpu';
 import {ConcatProgram} from './webgl/concat_gpu';
 // tslint:disable-next-line:max-line-length
 import {Conv2DDerFilterProgram, Conv2DDerInputProgram} from './webgl/conv_backprop_gpu';
+// tslint:disable-next-line:max-line-length
+import {DepthwiseConv2DDerFilterProgram, DepthwiseConv2DDerInputProgram} from './webgl/conv_backprop_gpu_depthwise';
 import {Conv2DProgram} from './webgl/conv_gpu';
 import {DepthwiseConv2DProgram} from './webgl/conv_gpu_depthwise';
+import {CumSumProgram} from './webgl/cumsum_gpu';
 import {FromPixelsProgram} from './webgl/from_pixels_gpu';
 import {GatherProgram} from './webgl/gather_gpu';
 import {GPGPUContext} from './webgl/gpgpu_context';
@@ -55,11 +59,14 @@ import {OneHotProgram} from './webgl/onehot_gpu';
 import {PadProgram} from './webgl/pad_gpu';
 import {Pool2DProgram} from './webgl/pool_gpu';
 import {ReduceProgram} from './webgl/reduce_gpu';
+// tslint:disable-next-line:max-line-length
+import {ResizeBilinearBackpropProgram} from './webgl/resize_bilinear_backprop_gpu';
 import {ResizeBilinearProgram} from './webgl/resize_bilinear_gpu';
 // tslint:disable-next-line:max-line-length
 import {ResizeNearestNeighborProgram} from './webgl/resize_nearest_neighbor_gpu';
 import {ReverseProgram} from './webgl/reverse_gpu';
 import {SliceProgram} from './webgl/slice_gpu';
+import {StridedSliceProgram} from './webgl/strided_slice_gpu';
 import {TextureData, TextureType} from './webgl/tex_util';
 import {TextureManager} from './webgl/texture_manager';
 import {TileProgram} from './webgl/tile_gpu';
@@ -83,6 +90,7 @@ export interface WebGLTimingInfo extends TimingInfo {
 export class MathBackendWebGL implements KernelBackend {
   private texData = new WeakMap<DataId, TextureData>();
   private canvas: HTMLCanvasElement;
+  private fromPixelsCanvas: HTMLCanvasElement;
 
   private programTimersStack: TimerNode[];
   private activeTimers: TimerNode[];
@@ -114,16 +122,24 @@ export class MathBackendWebGL implements KernelBackend {
     const outShape = [pixels.height, pixels.width, numChannels];
 
     if (pixels instanceof HTMLVideoElement) {
-      if (this.canvas == null) {
-        throw new Error(
-            'Can\'t read pixels from HTMLImageElement outside ' +
-            'the browser.');
+      if (this.fromPixelsCanvas == null) {
+        if (typeof document === 'undefined') {
+          throw new Error(
+              'Can\'t read pixels from HTMLImageElement outside the browser.');
+        }
+        if (document.readyState !== 'complete') {
+          throw new Error(
+              'The DOM is not ready yet. Please call tf.fromPixels() ' +
+              'once the DOM is ready. One way to do that is to add an event ' +
+              'listener for `DOMContentLoaded` on the document object');
+        }
+        this.fromPixelsCanvas = document.createElement('canvas');
       }
-      this.canvas.width = pixels.width;
-      this.canvas.height = pixels.height;
-      this.canvas.getContext('2d').drawImage(
+      this.fromPixelsCanvas.width = pixels.width;
+      this.fromPixelsCanvas.height = pixels.height;
+      this.fromPixelsCanvas.getContext('2d').drawImage(
           pixels, 0, 0, pixels.width, pixels.height);
-      pixels = this.canvas;
+      pixels = this.fromPixelsCanvas;
     }
     const tempPixelArray = Tensor.make(texShape, {}, 'int32');
 
@@ -324,6 +340,20 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [x], null, customSetup);
   }
 
+  stridedSlice<T extends Tensor>(
+      x: T, begin: number[], end: number[], strides: number[],
+      beginMask: number, endMask: number): T {
+    const [beginIndex, size] =
+        getStridedSlicedInfo(x.shape, begin, end, strides, beginMask, endMask);
+
+    if (size.some(axis => axis === 0)) {
+      return ops.tensor([], size) as T;
+    }
+
+    const program = new StridedSliceProgram(beginIndex, strides, size);
+    return this.compileAndRun(program, [x]);
+  }
+
   reverse<T extends Tensor>(x: T, axis: number[]): T {
     const program = new ReverseProgram(x.shape, axis);
     return this.compileAndRun(program, [x]);
@@ -478,6 +508,17 @@ export class MathBackendWebGL implements KernelBackend {
     const inSize = util.sizeFromShape(reduceShape);
     const a2D = x.as2D(-1, inSize);
     return this.argReduce(a2D, 'max').reshape(outShape);
+  }
+
+  cumsum(x: Tensor, axis: number, exclusive: boolean, reverse: boolean):
+      Tensor {
+    if (axis !== x.rank - 1) {
+      throw new Error(
+          `WebGL cumsum shader expects an inner-most axis=${x.rank - 1} ` +
+          `but got axis=${axis}`);
+    }
+    const program = new CumSumProgram(x.shape, exclusive, reverse);
+    return this.compileAndRun(program, [x]);
   }
 
   equal(a: Tensor, b: Tensor): Tensor {
@@ -835,6 +876,18 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [x, filter]);
   }
 
+  depthwiseConv2DDerInput(dy: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
+      Tensor4D {
+    const program = new DepthwiseConv2DDerInputProgram(convInfo);
+    return this.compileAndRun(program, [dy, filter]);
+  }
+
+  depthwiseConv2DDerFilter(x: Tensor4D, dy: Tensor4D, convInfo: Conv2DInfo):
+      Tensor4D {
+    const program = new DepthwiseConv2DDerFilterProgram(convInfo);
+    return this.compileAndRun(program, [x, dy]);
+  }
+
   maxPool(x: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
     const program = new Pool2DProgram(convInfo, 'max', false);
     const output =
@@ -887,6 +940,13 @@ export class MathBackendWebGL implements KernelBackend {
     const program =
         new ResizeBilinearProgram(x.shape, newHeight, newWidth, alignCorners);
     return this.compileAndRun(program, [x]);
+  }
+
+  resizeBilinearBackprop(dy: Tensor4D, x: Tensor4D, alignCorners: boolean):
+      Tensor4D {
+    const program = new ResizeBilinearBackpropProgram(dy, x, alignCorners);
+
+    return this.compileAndRun(program, [dy]);
   }
 
   resizeNearestNeighbor(
@@ -980,6 +1040,9 @@ export class MathBackendWebGL implements KernelBackend {
     }
     this.textureManager.dispose();
     this.canvas.remove();
+    if (this.fromPixelsCanvas != null) {
+      this.fromPixelsCanvas.remove();
+    }
     if (this.gpgpuCreatedLocally) {
       this.gpgpu.dispose();
     }

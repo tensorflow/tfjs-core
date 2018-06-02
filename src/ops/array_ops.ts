@@ -24,10 +24,12 @@ import * as tensor_util from '../tensor_util';
 // tslint:disable-next-line:max-line-length
 import {ArrayData, DataType, DataTypeMap, Rank, ShapeMap, TensorLike, TensorLike1D, TensorLike2D, TensorLike3D, TensorLike4D, TensorLike5D, TypedArray} from '../types';
 import * as util from '../util';
-import {parseAxisParam} from './axis_util';
+// tslint:disable-next-line:max-line-length
+import {getAxesPermutation, getInnerMostAxes, parseAxisParam} from './axis_util';
 import {ConcatOps} from './concat';
 import {operation} from './operation';
 import {MPRandGauss} from './rand';
+import {ReductionOps} from './reduction_ops';
 
 export class ArrayOps {
   /**
@@ -414,6 +416,53 @@ export class ArrayOps {
   }
 
   /**
+   * Create an identity matrix.
+   *
+   * @param numRows Number of rows.
+   * @param numColumns Number of columns. Defaults to `numRows`.
+   * @param batchShape If provided, will add the batch shape to the beginning
+   *   of the shape of the returned `Tensor` by repeating the identity
+   *   matrix.
+   * @param dtype Data type.
+   * @returns Identity matrix of the specified size and data type, possibly
+   *   with batch repetition if `batchShape` is specified.
+   */
+  @doc({heading: 'Tensors', subheading: 'Creation'})
+  @operation
+  static eye(
+      numRows: number, numColumns?: number,
+      batchShape?: [number]|[number, number],
+      dtype: DataType = 'float32'): Tensor2D {
+    if (numColumns == null) {
+      numColumns = numRows;
+    }
+    const buffer = ArrayOps.buffer([numRows, numColumns], dtype);
+    const n = numRows <= numColumns ? numRows : numColumns;
+    for (let i = 0; i < n; ++i) {
+      buffer.set(1, i, i);
+    }
+    const out = buffer.toTensor().as2D(numRows, numColumns);
+    if (batchShape == null) {
+      return out;
+    } else {
+      if (batchShape.length === 1) {
+        return ArrayOps.tile(
+            ArrayOps.expandDims(out, 0), [batchShape[0], 1, 1]);
+      } else if (batchShape.length === 2) {
+        return ArrayOps.tile(
+            ArrayOps.expandDims(ArrayOps.expandDims(out, 0), 0),
+            [batchShape[0], batchShape[1], 1, 1]);
+      } else {
+        // TODO(cais): Add support for length-3 once Tensor5D is available.
+        throw new Error(
+            `eye() currently supports only 1D and 2D ` +
+            // tslint:disable-next-line:no-any
+            `batchShapes, but received ${(batchShape as any).length}D.`);
+      }
+    }
+  }
+
+  /**
    * Creates a `Tensor` with values sampled from a normal distribution.
    *
    * ```js
@@ -513,8 +562,8 @@ export class ArrayOps {
    * function defined by the user.
    *
    * @param shape An array of integers defining the output tensor shape.
-   * @param randFunction A random number generator function which is called for
-   * each element in the output tensor.
+   * @param randFunction A random number generator function which is called
+   * for each element in the output tensor.
    * @param dtype The data type of the output tensor. Defaults to 'float32'.
    */
   @operation
@@ -589,7 +638,7 @@ export class ArrayOps {
    * `offValue` (defaults to 0).
    *
    * ```js
-   * tf.oneHot(tf.tensor1d([0, 1]), 3).print();
+   * tf.oneHot(tf.tensor1d([0, 1], 'int32'), 3).print();
    * ```
    *
    * @param indices `Tensor1D` of indices with dtype `int32`.
@@ -653,10 +702,10 @@ export class ArrayOps {
    * Returns a promise that resolves when the canvas has been drawn to.
    *
    * @param img A rank-2 or rank-3 tensor. If rank-2, draws grayscale. If
-   *     rank-3, must have depth of 1, 3 or 4. When depth of 1, draws grayscale.
-   *     When depth of 3, we draw with the first three components of the depth
-   *     dimension corresponding to r, g, b and alpha = 1. When depth of 4,
-   *     all four components of the depth dimension correspond to r, g, b, a.
+   *     rank-3, must have depth of 1, 3 or 4. When depth of 1, draws
+   * grayscale. When depth of 3, we draw with the first three components of
+   * the depth dimension corresponding to r, g, b and alpha = 1. When depth of
+   * 4, all four components of the depth dimension correspond to r, g, b, a.
    * @param canvas The canvas to draw to.
    */
   @doc({heading: 'Visualization'})
@@ -677,8 +726,12 @@ export class ArrayOps {
           `1, 3 or 4 but got ${depth}`);
     }
 
-    const min = (await img.min().data())[0];
-    const max = (await img.max().data())[0];
+    const minTensor = img.min();
+    const maxTensor = img.max();
+    const min = (await minTensor.data())[0];
+    const max = (await maxTensor.data())[0];
+    minTensor.dispose();
+    maxTensor.dispose();
     if (img.dtype === 'float32') {
       if (min < 0 || max > 1) {
         throw new Error(
@@ -789,8 +842,8 @@ export class ArrayOps {
    *
    * @param x The input tensor to be squeezed.
    * @param axis An optional list of numbers. If specified, only
-   *     squeezes the dimensions listed. The dimension index starts at 0. It is
-   *     an error to squeeze a dimension that is not 1.
+   *     squeezes the dimensions listed. The dimension index starts at 0. It
+   * is an error to squeeze a dimension that is not 1.
    */
   @doc({heading: 'Tensors', subheading: 'Transformations'})
   static squeeze<T extends Tensor>(x: Tensor, axis?: number[]): T {
@@ -840,7 +893,7 @@ export class ArrayOps {
    *
    * a.tile([1, 2]).print();  // or a.tile([1, 2])
    * ```
-   * @param x The tensor to transpose.
+   * @param x The tensor to tile.
    * @param reps Determines the number of replications per dimension.
    */
   @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
@@ -910,14 +963,14 @@ export class ArrayOps {
    *
    * ```js
    * const x = tf.tensor1d([1, 2, 3, 4]);
-   * const indices = tf.tensor1d([1, 3, 3]);
+   * const indices = tf.tensor1d([1, 3, 3], 'int32');
    *
    * x.gather(indices).print();
    * ```
    *
    * ```js
    * const x = tf.tensor2d([1, 2, 3, 4], [2, 2]);
-   * const indices = tf.tensor1d([1, 1, 0]);
+   * const indices = tf.tensor1d([1, 1, 0], 'int32');
    *
    * x.gather(indices).print();
    * ```
@@ -931,9 +984,16 @@ export class ArrayOps {
     util.assertArgumentsAreTensors({x, indices}, 'gather');
 
     util.assert(indices.dtype === 'int32', 'Indices must be of dtype `int32`');
-    const axes = parseAxisParam(axis, x.shape);
+    axis = parseAxisParam(axis, x.shape)[0];
+    const grad = (dy: T) => {
+      const derX = () => {
+        return ReductionOps.unsortedSegmentSum(
+            dy, indices, x.shape[axis], axis);
+      };
+      return {x: derX};
+    };
     return ENV.engine.runKernel(
-        backend => backend.gather(x, indices, axes[0]), {x, indices});
+        backend => backend.gather(x, indices, axis), {x}, grad);
   }
 
   /**
@@ -1003,9 +1063,9 @@ export class ArrayOps {
    * x.pad([[1, 2]]).print();
    * ```
    * @param x The tensor to pad.
-   * @param paddings An array of length `R` (the rank of the tensor), where each
-   *     element is a length-2 tuple of ints `[padBefore, padAfter]`, specifying
-   *     how much to pad along each dimension of the tensor.
+   * @param paddings An array of length `R` (the rank of the tensor), where
+   * each element is a length-2 tuple of ints `[padBefore, padAfter]`,
+   * specifying how much to pad along each dimension of the tensor.
    * @param constantValue The pad value to use. Defaults to 0.
    */
   @doc({heading: 'Tensors', subheading: 'Transformations'})
@@ -1017,8 +1077,8 @@ export class ArrayOps {
     if (x.rank === 0) {
       throw new Error('pad(scalar) is not defined. Pass non-scalar to pad');
     }
-    // Pad introduces values around the original tensor, so the gradient slices
-    // the original shape out of the gradient.
+    // Pad introduces values around the original tensor, so the gradient
+    // slices the original shape out of the gradient.
     const begin = paddings.map(p => p[0]);
     const grad = (dy: T) => {
       return {x: () => dy.slice(begin, x.shape)};
@@ -1072,6 +1132,42 @@ export class ArrayOps {
   }
 
   /**
+   * Unstacks a `Tensor` of rank-`R` into a list of rank-`(R-1)` `Tensor`s.
+   *
+   * ```js
+   * const a = tf.tensor2d([1, 2, 3, 4], [2, 2]);
+   * tf.unstack(a).print();
+   * ```
+   *
+   * @param value A tensor object.
+   * @param axis The axis to unstack along. Defaults to 0 (the first dim).
+   */
+  @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
+  @operation
+  static unstack<T extends Tensor>(value: T, axis = 0): Tensor[] {
+    const num = value.shape[axis];
+    const outputShape: number[] = Array(value.rank - 1).fill(0);
+    let outIndex = 0;
+    for (let i = 0; i < value.rank; i++) {
+      if (i !== axis) {
+        outputShape[outIndex] = value.shape[i];
+        outIndex++;
+      }
+    }
+
+    let splitSizes: number[];
+    splitSizes = Array(num).fill(1);
+    const begin = Array(value.rank).fill(0);
+    const size = value.shape.slice();
+    return splitSizes.map(s => {
+      size[axis] = s;
+      const slice = value.slice(begin, size);
+      begin[axis] += s;
+      return slice.reshape(outputShape);
+    });
+  }
+
+  /**
    * Splits a `Tensor` into sub tensors.
    *
    * If `numOrSizeSplits` is a number, splits `x` along dimension `axis`
@@ -1097,8 +1193,8 @@ export class ArrayOps {
    *
    * @param x The input tensor to split.
    * @param numOrSizeSplits Either an integer indicating the number of
-   * splits along the axis or an array of integers containing the sizes of each
-   * output tensor along the axis. If a number then it must evenly divide
+   * splits along the axis or an array of integers containing the sizes of
+   * each output tensor along the axis. If a number then it must evenly divide
    * `x.shape[axis]`; otherwise the sum of sizes must match `x.shape[axis]`.
    * @param axis The dimension along which to split. Defaults to 0 (the first
    * dim).
@@ -1130,6 +1226,54 @@ export class ArrayOps {
       begin[axis] += s;
       return slice;
     });
+  }
+
+  /**
+   * Computes the cumulative sum of a `Tensor` along `axis`.
+   *
+   * ```js
+   * const x = tf.tensor([1, 2, 3, 4]);
+   * x.cumsum().print();
+   * ```
+   * ```js
+   * const x = tf.tensor([[1, 2], [3, 4]]);
+   * x.cumsum().print();
+   * ```
+   *
+   * @param x The input tensor to be summed.
+   * @param axis The axis along which to sum. Optional. Defaults to 0.
+   * @param exclusive Whether to perform exclusive cumulative sum. Optional.
+   *     Defaults to false. If set to true then the sum of each tensor entry
+   *     does not include its own value, but only the values previous to it
+   *     along the specified axis.
+   * @param reverse Whether to sum in the opposite direction. Optional.
+   *     Defaults to false.
+   */
+  @doc({heading: 'Operations', subheading: 'Scan'})
+  static cumsum<T extends Tensor>(
+      x: Tensor, axis = 0, exclusive = false, reverse = false): T {
+    util.assertArgumentsAreTensors({x}, 'cumsum');
+
+    axis = axis | 0;
+    const permutation = getAxesPermutation([axis], x.rank);
+    let permutedX = x;
+    if (permutation != null) {
+      permutedX = x.transpose(permutation);
+    }
+    const permutedAxis = getInnerMostAxes(1, x.rank)[0];
+
+    const grad = (dy: T) => {
+      return {permutedX: () => dy.cumsum(axis, exclusive, !reverse)};
+    };
+    let value = ENV.engine.runKernel(
+                    backend => backend.cumsum(
+                        permutedX, permutedAxis, exclusive, reverse),
+                    {permutedX}, grad) as T;
+
+    if (permutation != null) {
+      value = value.transpose(permutation);
+    }
+    return value;
   }
 
   /**
@@ -1166,8 +1310,6 @@ export class ArrayOps {
    * @param start The start value of the sequence.
    * @param stop The end value of the sequence.
    * @param num The number of values to generate.
-   * @param endpoint Determines whether stop is included in the
-   * sequence. Defaults to true.
    */
   @operation
   @doc({heading: 'Tensors', subheading: 'Creation'})
@@ -1242,8 +1384,7 @@ export class ArrayOps {
    * Creates an empty `TensorBuffer` with the specified `shape` and `dtype`.
    *
    * The values are stored in cpu as `TypedArray`. Fill the buffer using
-   * `buffer.set()`, or by modifying directly `buffer.values`. When done,
-   * call `buffer.toTensor()` to get an immutable `Tensor` with those values.
+   * `buffer.set()`, or by modifying directly `buffer.values`.
    *
    * When done, call `buffer.toTensor()` to get an immutable `Tensor` with
    * those values.

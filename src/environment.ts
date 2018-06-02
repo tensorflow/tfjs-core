@@ -30,6 +30,8 @@ export enum Type {
 export interface Features {
   // Whether to enable debug mode.
   'DEBUG'?: boolean;
+  // Whether we are in a browser (as versus, say, node.js) environment.
+  'IS_BROWSER'?: boolean;
   // The disjoint_query_timer extension version.
   // 0: disabled, 1: EXT_disjoint_timer_query, 2:
   // EXT_disjoint_timer_query_webgl2.
@@ -51,7 +53,7 @@ export interface Features {
 }
 
 export const URL_PROPERTIES: URLProperty[] = [
-  {name: 'DEBUG', type: Type.BOOLEAN},
+  {name: 'DEBUG', type: Type.BOOLEAN}, {name: 'IS_BROWSER', type: Type.BOOLEAN},
   {name: 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION', type: Type.NUMBER},
   {name: 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE', type: Type.BOOLEAN},
   {name: 'WEBGL_VERSION', type: Type.NUMBER},
@@ -214,7 +216,12 @@ export class Environment {
    * Sets the backend (cpu, webgl, etc) responsible for creating tensors and
    * executing operations on those tensors.
    *
-   * @param backendType The backend type. Currently supports `'webgl'|'cpu'`.
+   * Note this disposes the current backend, if any, as well as any tensors
+   * associated with it.  A new backend is initialized, even if it is of the
+   * same type as the previous one.
+   *
+   * @param backendType The backend type. Currently supports `'webgl'|'cpu'` in
+   *     the browser, and `'tensorflow'` under node.js (requires tfjs-node).
    * @param safeMode Defaults to false. In safe mode, you are forced to
    *     construct tensors and call math operations inside a `tidy()` which
    *     will automatically clean up intermediate tensors.
@@ -298,6 +305,8 @@ export class Environment {
   private evaluateFeature<K extends keyof Features>(feature: K): Features[K] {
     if (feature === 'DEBUG') {
       return false;
+    } else if (feature === 'IS_BROWSER') {
+      return typeof window !== 'undefined';
     } else if (feature === 'BACKEND') {
       return this.getBestBackendType();
     } else if (feature === 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') {

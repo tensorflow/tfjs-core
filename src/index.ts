@@ -26,6 +26,7 @@ import * as environment from './environment';
 import {Environment} from './environment';
 // Serialization.
 import * as io from './io/io';
+import * as serialization from './serialization';
 import * as test_util from './test_util';
 import * as util from './util';
 import {version} from './version';
@@ -42,7 +43,8 @@ export {RMSPropOptimizer} from './optimizers/rmsprop_optimizer';
 export {SGDOptimizer} from './optimizers/sgd_optimizer';
 // tslint:disable-next-line:max-line-length
 export {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer, variable, Variable} from './tensor';
-export {DataType, Rank, ShapeMap} from './types';
+// tslint:disable-next-line:max-line-length
+export {DataType, InferenceModel, ModelPredictConfig, NamedTensorMap, Rank, ShapeMap} from './types';
 
 export * from './ops/ops';
 export {LSTMCellFunc} from './ops/lstm';
@@ -63,7 +65,7 @@ export {doc} from './doc';
 export const nextFrame = BrowserUtil.nextFrame;
 
 // Second level exports.
-export {environment, io, test_util, util, webgl};
+export {environment, io, serialization, test_util, util, webgl};
 
 // Backend specific.
 export {KernelBackend, BackendTimingInfo} from './kernels/backend';
