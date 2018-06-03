@@ -54,6 +54,9 @@ module.exports = function(config) {
         flags: ['--blacklist-accelerated-compositing', '--blacklist-webgl']
       }
     },
-    client: {args: ['--grep', config.grep || '']}
+    client: {
+      jasmine: {random: false},
+      args: ['--grep', config.grep || '']
+    }
   });
 };
