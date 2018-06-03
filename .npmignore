@@ -3,7 +3,6 @@
 integration_tests/
 scripts/
 src/
-starter/
 models/
 coverage/
 node_modules/
