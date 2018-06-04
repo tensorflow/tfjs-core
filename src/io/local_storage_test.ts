@@ -19,6 +19,7 @@ import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
 import {CPU_ENVS} from '../test_util';
 
+import {deleteDatabase} from './indexed_db';
 import {arrayBufferToBase64String, base64StringToArrayBuffer} from './io_utils';
 // tslint:disable-next-line:max-line-length
 import {browserLocalStorage, BrowserLocalStorage, BrowserLocalStorageManager, localStorageRouter, purgeLocalStorageArtifacts} from './local_storage';
@@ -99,12 +100,18 @@ describeWithFlags('LocalStorage', CPU_ENVS, () => {
         `Unable to determined overflowing byte size up to ${maxKilobytes} kB.`);
   }
 
-  beforeEach(() => {
+  beforeEach(done => {
     purgeLocalStorageArtifacts();
+    deleteDatabase().then(() => {
+      done();
+    });
   });
 
-  afterEach(() => {
+  afterEach(done => {
     purgeLocalStorageArtifacts();
+    deleteDatabase().then(() => {
+      done();
+    });
   });
 
   it('Save artifacts succeeds', done => {
