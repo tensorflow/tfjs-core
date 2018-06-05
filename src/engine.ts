@@ -291,7 +291,8 @@ export class Engine implements TensorManager {
 
     // Track the current result in the parent scope.
     tensorsToTrackInParent.forEach(tensor => {
-      // Only track the tensor if was allocated in the inner scope.
+      // Only track the tensor if was allocated in the inner scope and is not
+      // globally kept.
       if (!util.isTensorInList(tensor, this.keepTensors) &&
           util.isTensorInList(tensor, oldScope.track)) {
         this.track(tensor);
