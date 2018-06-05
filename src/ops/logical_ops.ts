@@ -27,17 +27,32 @@ export class LogicalOps {
   /**
    * Returns the truth value of `NOT x` element-wise.
    *
+   * ```js
+   * const a = tf.tensor1d([false, true], 'bool');
+   *
+   * a.logicalNot().print();
+   * ```
+   *
    * @param x The input tensor. Must be of dtype 'bool'.
    */
   @doc({heading: 'Operations', subheading: 'Logical'})
   @operation
   static logicalNot<T extends Tensor>(x: T): T {
+    util.assertArgumentsAreTensors({x}, 'logicalNot');
     util.assert(x.dtype === 'bool', 'Error Array must be of type bool.');
+
     return ENV.engine.runKernel(backend => backend.logicalNot(x), {x});
   }
 
   /**
    * Returns the truth value of a AND b element-wise. Supports broadcasting.
+   *
+   * ```js
+   * const a = tf.tensor1d([false, false, true, true], 'bool');
+   * const b = tf.tensor1d([false, true, false, true], 'bool');
+   *
+   * a.logicalAnd(b).print();
+   * ```
    *
    * @param a The first input tensor. Must be of dtype bool.
    * @param b The second input tensor. Must be of dtype bool.
@@ -45,10 +60,12 @@ export class LogicalOps {
   @doc({heading: 'Operations', subheading: 'Logical'})
   @operation
   static logicalAnd<T extends Tensor>(a: Tensor, b: Tensor): T {
+    util.assertArgumentsAreTensors({a, b}, 'logicalAnd');
     util.assert(
         a.dtype === 'bool' && b.dtype === 'bool',
         'Error Array must be of type bool.');
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+
     return ENV.engine.runKernel(backend => backend.logicalAnd(a, b), {a, b}) as
         T;
   }
@@ -56,16 +73,24 @@ export class LogicalOps {
   /**
    * Returns the truth value of `a OR b` element-wise. Supports broadcasting.
    *
+   * ```js
+   * const a = tf.tensor1d([false, false, true, true], 'bool');
+   * const b = tf.tensor1d([false, true, false, true], 'bool');
+   *
+   * a.logicalOr(b).print();
+   * ```
    * @param a The first input tensor. Must be of dtype bool.
    * @param b The second input tensor. Must be of dtype bool.
    */
   @doc({heading: 'Operations', subheading: 'Logical'})
   @operation
   static logicalOr<T extends Tensor>(a: Tensor, b: Tensor): T {
+    util.assertArgumentsAreTensors({a, b}, 'logicalOr');
     util.assert(
         a.dtype === 'bool' && b.dtype === 'bool',
         'Error Array must be of type bool.');
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+
     return ENV.engine.runKernel(backend => backend.logicalOr(a, b), {a, b}) as
         T;
   }
@@ -73,24 +98,42 @@ export class LogicalOps {
   /**
    * Returns the truth value of `a XOR b` element-wise. Supports broadcasting.
    *
+   * ```js
+   * const a = tf.tensor1d([false, false, true, true], 'bool');
+   * const b = tf.tensor1d([false, true, false, true], 'bool');
+   *
+   * a.logicalXor(b).print();
+   * ```
+   *
    * @param a The first input tensor. Must be of dtype bool.
    * @param b The second input tensor. Must be of dtype bool.
    */
   @doc({heading: 'Operations', subheading: 'Logical'})
   @operation
   static logicalXor<T extends Tensor>(a: Tensor, b: Tensor): T {
+    util.assertArgumentsAreTensors({a, b}, 'logicalXor');
     util.assert(
         a.dtype === 'bool' && b.dtype === 'bool',
         'Error Array must be of type bool.');
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    return ENV.engine.runKernel(backend => backend.logicalXor(a, b), {a, b}) as
-        T;
+
+    // x ^ y = (x | y) & ~(x & y)
+    return LogicalOps.logicalOr(a, b).logicalAnd(
+               LogicalOps.logicalAnd(a, b).logicalNot()) as T;
   }
 
   /**
    * Returns the elements, either `a` or `b` depending on the `condition`.
    *
    * If the condition is true, select from `a`, otherwise select from `b`.
+   *
+   * ```js
+   * const cond = tf.tensor1d([false, false, true], 'bool');
+   * const a = tf.tensor1d([1 , 2, 3]);
+   * const b = tf.tensor1d([-1, -2, -3]);
+   *
+   * a.where(cond, b).print();
+   * ```
    *
    * @param condition The input condition. Must be of dtype bool.
    * @param a If `condition` is rank 1, `a` may have a higher rank but
@@ -100,10 +143,10 @@ export class LogicalOps {
   @doc({heading: 'Operations', subheading: 'Logical'})
   @operation
   static where<T extends Tensor>(condition: Tensor, a: T, b: T): T {
+    util.assertArgumentsAreTensors({condition, a, b}, 'where');
     util.assert(
-        condition.dtype === 'bool' || a.dtype === 'bool' || b.dtype === 'bool',
-        'Error Array must be of type bool.');
-
+        condition.dtype === 'bool',
+        'Error Condition must be of type bool.');
     util.assertShapesMatch(a.shape, b.shape, 'Error in where: ');
 
     if (condition.rank === 1) {

@@ -53,21 +53,21 @@ export class Gradients {
    * // f(x) = x ^ 2
    * const f = x => x.square();
    * // f'(x) = 2x
-   * const g = dl.grad(f);
+   * const g = tf.grad(f);
    *
-   * const x = dl.tensor1d([2, 3]);
+   * const x = tf.tensor1d([2, 3]);
    * g(x).print();
    * ```
    *
    * ```js
    * // f(x) = x ^ 3
-   * const f = x => x.pow(dl.scalar(3, 'int32'));
+   * const f = x => x.pow(tf.scalar(3, 'int32'));
    * // f'(x) = 3x ^ 2
-   * const g = dl.grad(f);
+   * const g = tf.grad(f);
    * // f''(x) = 6x
-   * const gg = dl.grad(g);
+   * const gg = tf.grad(g);
    *
-   * const x = dl.tensor1d([2, 3]);
+   * const x = tf.tensor1d([2, 3]);
    * gg(x).print();
    * ```
    *
@@ -84,16 +84,17 @@ export class Gradients {
       util.assert(
           dy == null || dy instanceof Tensor,
           'The dy passed in grad(f)(x, dy) must be a tensor');
-      const {value, grads} = ENV.engine.gradients(() => f(x), [x], dy);
-      if (dy != null) {
-        util.assertShapesMatch(
-            value.shape, dy.shape,
-            'The shape of dy passed in grad(f)(x, dy) must match the shape ' +
-                'returned by f(x)');
-      }
-      value.dispose();
-      checkGrads(grads);
-      return grads[0] as I;
+      return tidy(() => {
+        const {value, grads} = ENV.engine.gradients(() => f(x), [x], dy);
+        if (dy != null) {
+          util.assertShapesMatch(
+              value.shape, dy.shape,
+              'The shape of dy passed in grad(f)(x, dy) must match the shape ' +
+              'returned by f(x)');
+        }
+        checkGrads(grads);
+        return grads[0] as I;
+      });
     };
   }
 
@@ -111,10 +112,10 @@ export class Gradients {
    * // f(a, b) = a * b
    * const f = (a, b) => a.mul(b);
    * // df / da = b, df / db = a
-   * const g = dl.grads(f);
+   * const g = tf.grads(f);
    *
-   * const a = dl.tensor1d([2, 3]);
-   * const b = dl.tensor1d([-2, -3]);
+   * const a = tf.tensor1d([2, 3]);
+   * const b = tf.tensor1d([-2, -3]);
    * const [da, db] = g([a, b]);
    * console.log('da');
    * da.print();
@@ -136,21 +137,22 @@ export class Gradients {
       util.assert(
           dy == null || dy instanceof Tensor,
           'The dy passed in grads(f)(args, dy) must be a tensor');
-      const {value, grads} = ENV.engine.gradients(() => f(...args), args, dy);
-      if (dy != null) {
-        util.assertShapesMatch(
-            value.shape, dy.shape,
-            'The shape of dy passed in grads(f)([x1,...], dy) must match the ' +
-                'shape returned by f([x1,...])');
-      }
-      value.dispose();
-      checkGrads(grads);
-      return grads;
+      return tidy(() => {
+        const {value, grads} = ENV.engine.gradients(() => f(...args), args, dy);
+        if (dy != null) {
+          util.assertShapesMatch(
+              value.shape, dy.shape,
+              'The shape of dy passed in grads(f)([x1,...], dy) must ' +
+              'match the shape returned by f([x1,...])');
+        }
+        checkGrads(grads);
+        return grads;
+      });
     };
   }
 
   /**
-   * Like `dl.grad`, but also returns the value of `f()`. Useful when `f()`
+   * Like `grad`, but also returns the value of `f()`. Useful when `f()`
    * returns a metric you want to show.
    *
    * The result is a rich object with the following properties:
@@ -161,9 +163,9 @@ export class Gradients {
    * // f(x) = x ^ 2
    * const f = x => x.square();
    * // f'(x) = 2x
-   * const g = dl.valueAndGrad(f);
+   * const g = tf.valueAndGrad(f);
    *
-   * const x = dl.tensor1d([2, 3]);
+   * const x = tf.tensor1d([2, 3]);
    * const {value, grad} = g(x);
    *
    * console.log('value');
@@ -206,10 +208,10 @@ export class Gradients {
    * // f(a, b) = a * b
    * const f = (a, b) => a.mul(b);
    * // df/da = b, df/db = a
-   * const g = dl.valueAndGrads(f);
+   * const g = tf.valueAndGrads(f);
    *
-   * const a = dl.tensor1d([2, 3]);
-   * const b = dl.tensor1d([-2, -3]);
+   * const a = tf.tensor1d([2, 3]);
+   * const b = tf.tensor1d([-2, -3]);
    * const {value, grads} = g([a, b]);
    *
    * const [da, db] = grads;
@@ -257,14 +259,14 @@ export class Gradients {
    * defaults to all trainable variables.
    *
    * ```js
-   * const a = dl.variable(dl.tensor1d([3, 4]));
-   * const b = dl.variable(dl.tensor1d([5, 6]));
-   * const x = dl.tensor1d([1, 2]);
+   * const a = tf.variable(tf.tensor1d([3, 4]));
+   * const b = tf.variable(tf.tensor1d([5, 6]));
+   * const x = tf.tensor1d([1, 2]);
    *
    * // f(a, b) = a * x ^ 2 + b * x
    * const f = () => a.mul(x.square()).add(b.mul(x)).sum();
    * // df/da = x ^ 2, df/db = x
-   * const {value, grads} = dl.variableGrads(f);
+   * const {value, grads} = tf.variableGrads(f);
    *
    * Object.keys(grads).forEach(varName => grads[varName].print());
    * ```
@@ -332,13 +334,13 @@ export class Gradients {
    * respect to each input of `f` are computed using `f().gradFunc`.
    *
    * ```js
-   * const customOp = dl.customGrad(x => {
+   * const customOp = tf.customGrad(x => {
    *   // Override gradient of our custom x ^ 2 op to be dy * abs(x);
    *   return {value: x.square(), gradFunc: dy => [dy.mul(x.abs())]};
    * });
    *
-   * const x = dl.tensor1d([-1, -2, 3]);
-   * const dx = dl.grad(x => customOp(x));
+   * const x = tf.tensor1d([-1, -2, 3]);
+   * const dx = tf.grad(x => customOp(x));
    *
    * console.log(`f(x):`);
    * customOp(x).print();

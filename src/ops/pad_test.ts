@@ -15,56 +15,58 @@
  * =============================================================================
  */
 
-import * as dl from '../index';
+import {Environment} from '../environment';
+import * as tf from '../index';
+import {describeWithFlags} from '../jasmine_util';
 // tslint:disable-next-line:max-line-length
-import {ALL_ENVS, describeWithFlags, expectArraysClose} from '../test_util';
+import {ALL_ENVS, expectArraysClose} from '../test_util';
 
 describeWithFlags('pad1d', ALL_ENVS, () => {
   it('Should pad 1D arrays', () => {
-    const a = dl.tensor1d([1, 2, 3, 4, 5, 6], 'int32');
-    const b = dl.pad1d(a, [2, 3]);
+    const a = tf.tensor1d([1, 2, 3, 4, 5, 6], 'int32');
+    const b = tf.pad1d(a, [2, 3]);
     expectArraysClose(b, [0, 0, 1, 2, 3, 4, 5, 6, 0, 0, 0]);
   });
 
   it('Should not pad 1D arrays with 0s', () => {
-    const a = dl.tensor1d([1, 2, 3, 4], 'int32');
-    const b = dl.pad1d(a, [0, 0]);
+    const a = tf.tensor1d([1, 2, 3, 4], 'int32');
+    const b = tf.pad1d(a, [0, 0]);
     expectArraysClose(b, [1, 2, 3, 4]);
   });
 
   it('Should handle padding with custom value', () => {
-    let a = dl.tensor1d([1, 2, 3, 4], 'int32');
-    let b = dl.pad1d(a, [2, 3], 9);
+    let a = tf.tensor1d([1, 2, 3, 4], 'int32');
+    let b = tf.pad1d(a, [2, 3], 9);
     expectArraysClose(b, [9, 9, 1, 2, 3, 4, 9, 9, 9]);
 
-    a = dl.tensor1d([1, 2, 3, 4]);
-    b = dl.pad1d(a, [2, 1], 1.1);
+    a = tf.tensor1d([1, 2, 3, 4]);
+    b = tf.pad1d(a, [2, 1], 1.1);
     expectArraysClose(b, [1.1, 1.1, 1, 2, 3, 4, 1.1]);
 
-    a = dl.tensor1d([1, 2, 3, 4]);
-    b = dl.pad1d(a, [2, 1], 1);
+    a = tf.tensor1d([1, 2, 3, 4]);
+    b = tf.pad1d(a, [2, 1], 1);
     expectArraysClose(b, [1, 1, 1, 2, 3, 4, 1]);
   });
 
   it('Should handle NaNs with 1D arrays', () => {
-    const a = dl.tensor1d([1, NaN, 2, NaN]);
-    const b = dl.pad1d(a, [1, 1]);
+    const a = tf.tensor1d([1, NaN, 2, NaN]);
+    const b = tf.pad1d(a, [1, 1]);
     expectArraysClose(b, [0, 1, NaN, 2, NaN, 0]);
   });
 
   it('Should handle invalid paddings', () => {
-    const a = dl.tensor1d([1, 2, 3, 4], 'int32');
+    const a = tf.tensor1d([1, 2, 3, 4], 'int32');
     const f = () => {
       // tslint:disable-next-line:no-any
-      dl.pad1d(a, [2, 2, 2] as any);
+      tf.pad1d(a, [2, 2, 2] as any);
     };
     expect(f).toThrowError();
   });
 
   it('grad', () => {
-    const a = dl.tensor1d([1, 2, 3]);
-    const dy = dl.tensor1d([10, 20, 30, 40, 50, 60]);
-    const da = dl.grad((a: dl.Tensor1D) => dl.pad1d(a, [2, 1]))(a, dy);
+    const a = tf.tensor1d([1, 2, 3]);
+    const dy = tf.tensor1d([10, 20, 30, 40, 50, 60]);
+    const da = tf.grad((a: tf.Tensor1D) => tf.pad1d(a, [2, 1]))(a, dy);
     expect(da.shape).toEqual([3]);
     expectArraysClose(da, [30, 40, 50]);
   });
@@ -72,16 +74,16 @@ describeWithFlags('pad1d', ALL_ENVS, () => {
 
 describeWithFlags('pad2d', ALL_ENVS, () => {
   it('Should pad 2D arrays', () => {
-    let a = dl.tensor2d([[1], [2]], [2, 1], 'int32');
-    let b = dl.pad2d(a, [[1, 1], [1, 1]]);
+    let a = tf.tensor2d([[1], [2]], [2, 1], 'int32');
+    let b = tf.pad2d(a, [[1, 1], [1, 1]]);
     // 0, 0, 0
     // 0, 1, 0
     // 0, 2, 0
     // 0, 0, 0
     expectArraysClose(b, [0, 0, 0, 0, 1, 0, 0, 2, 0, 0, 0, 0]);
 
-    a = dl.tensor2d([[1, 2, 3], [4, 5, 6]], [2, 3], 'int32');
-    b = dl.pad2d(a, [[2, 2], [1, 1]]);
+    a = tf.tensor2d([[1, 2, 3], [4, 5, 6]], [2, 3], 'int32');
+    b = tf.pad2d(a, [[2, 2], [1, 1]]);
     // 0, 0, 0, 0, 0
     // 0, 0, 0, 0, 0
     // 0, 1, 2, 3, 0
@@ -95,32 +97,32 @@ describeWithFlags('pad2d', ALL_ENVS, () => {
   });
 
   it('Should not pad 2D arrays with 0s', () => {
-    const a = dl.tensor2d([[1, 2, 3], [4, 5, 6]], [2, 3], 'int32');
-    const b = dl.pad2d(a, [[0, 0], [0, 0]]);
+    const a = tf.tensor2d([[1, 2, 3], [4, 5, 6]], [2, 3], 'int32');
+    const b = tf.pad2d(a, [[0, 0], [0, 0]]);
     expectArraysClose(b, [1, 2, 3, 4, 5, 6]);
   });
 
   it('Should handle padding with custom value', () => {
-    let a = dl.tensor2d([[1, 2, 3], [4, 5, 6]], [2, 3], 'int32');
-    let b = dl.pad2d(a, [[1, 1], [1, 1]], 10);
+    let a = tf.tensor2d([[1, 2, 3], [4, 5, 6]], [2, 3], 'int32');
+    let b = tf.pad2d(a, [[1, 1], [1, 1]], 10);
     expectArraysClose(b, [
       10, 10, 10, 10, 10, 10, 1,  2,  3,  10,
       10, 4,  5,  6,  10, 10, 10, 10, 10, 10
     ]);
 
-    a = dl.tensor2d([[1], [1]], [2, 1]);
-    b = dl.pad2d(a, [[1, 1], [1, 1]], -2.1);
+    a = tf.tensor2d([[1], [1]], [2, 1]);
+    b = tf.pad2d(a, [[1, 1], [1, 1]], -2.1);
     expectArraysClose(
         b, [-2.1, -2.1, -2.1, -2.1, 1, -2.1, -2.1, 1, -2.1, -2.1, -2.1, -2.1]);
 
-    a = dl.tensor2d([[1], [1]], [2, 1]);
-    b = dl.pad2d(a, [[1, 1], [1, 1]], -2);
+    a = tf.tensor2d([[1], [1]], [2, 1]);
+    b = tf.pad2d(a, [[1, 1], [1, 1]], -2);
     expectArraysClose(b, [-2, -2, -2, -2, 1, -2, -2, 1, -2, -2, -2, -2]);
   });
 
   it('Should handle NaNs with 2D arrays', () => {
-    const a = dl.tensor2d([[1, NaN], [1, NaN]], [2, 2]);
-    const b = dl.pad2d(a, [[1, 1], [1, 1]]);
+    const a = tf.tensor2d([[1, NaN], [1, NaN]], [2, 2]);
+    const b = tf.pad2d(a, [[1, 1], [1, 1]]);
     // 0, 0, 0,   0
     // 0, 1, NaN, 0
     // 0, 1, NaN, 0
@@ -129,36 +131,58 @@ describeWithFlags('pad2d', ALL_ENVS, () => {
   });
 
   it('Should handle invalid paddings', () => {
-    const a = dl.tensor2d([[1], [2]], [2, 1], 'int32');
+    const a = tf.tensor2d([[1], [2]], [2, 1], 'int32');
     const f = () => {
       // tslint:disable-next-line:no-any
-      dl.pad2d(a, [[2, 2, 2], [1, 1, 1]] as any);
+      tf.pad2d(a, [[2, 2, 2], [1, 1, 1]] as any);
     };
     expect(f).toThrowError();
   });
 
   it('grad', () => {
-    const a = dl.tensor2d([[1, 2], [3, 4]]);
-    const dy = dl.tensor2d([[0, 0, 0], [10, 20, 0], [30, 40, 0]], [3, 3]);
+    const a = tf.tensor2d([[1, 2], [3, 4]]);
+    const dy = tf.tensor2d([[0, 0, 0], [10, 20, 0], [30, 40, 0]], [3, 3]);
     const da =
-        dl.grad((a: dl.Tensor2D) => dl.pad2d(a, [[1, 0], [0, 1]]))(a, dy);
+        tf.grad((a: tf.Tensor2D) => tf.pad2d(a, [[1, 0], [0, 1]]))(a, dy);
     expect(da.shape).toEqual([2, 2]);
     expectArraysClose(da, [10, 20, 30, 40]);
   });
 });
 
+describeWithFlags('pad4d', ALL_ENVS, () => {
+  it('Should pad 4D arrays', () => {
+    const a = tf.tensor4d([[[[9]]]], [1, 1, 1, 1], 'int32');
+    const b = tf.pad4d(a, [[0, 0], [1, 1], [1, 1], [0, 0]]);
+    const expected = tf.tensor4d(
+        [[[[0], [0], [0]], [[0], [9], [0]], [[0], [0], [0]]]], [1, 3, 3, 1],
+        'int32');
+    expectArraysClose(b, expected);
+  });
+
+  it('does not leak memory', () => {
+    const a = tf.tensor4d([[[[9]]]], [1, 1, 1, 1], 'int32');
+    // The first call to pad may create and keeps internal singleton tensors.
+    // Subsequent calls should always create exactly one new tensor.
+    tf.pad4d(a, [[0, 0], [1, 1], [1, 1], [0, 0]]);
+    // Count before real call.
+    const numTensors = Environment.memory().numTensors;
+    tf.pad4d(a, [[0, 0], [1, 1], [1, 1], [0, 0]]);
+    expect(Environment.memory().numTensors).toEqual(numTensors + 1);
+  });
+});
+
 describeWithFlags('pad', ALL_ENVS, () => {
   it('Pad tensor2d', () => {
-    let a = dl.tensor2d([[1], [2]], [2, 1], 'int32');
-    let b = dl.pad(a, [[1, 1], [1, 1]]);
+    let a = tf.tensor2d([[1], [2]], [2, 1], 'int32');
+    let b = tf.pad(a, [[1, 1], [1, 1]]);
     // 0, 0, 0
     // 0, 1, 0
     // 0, 2, 0
     // 0, 0, 0
     expectArraysClose(b, [0, 0, 0, 0, 1, 0, 0, 2, 0, 0, 0, 0]);
 
-    a = dl.tensor2d([[1, 2, 3], [4, 5, 6]], [2, 3], 'int32');
-    b = dl.pad(a, [[2, 2], [1, 1]]);
+    a = tf.tensor2d([[1, 2, 3], [4, 5, 6]], [2, 3], 'int32');
+    b = tf.pad(a, [[2, 2], [1, 1]]);
     // 0, 0, 0, 0, 0
     // 0, 0, 0, 0, 0
     // 0, 1, 2, 3, 0
@@ -169,5 +193,10 @@ describeWithFlags('pad', ALL_ENVS, () => {
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 0,
       0, 4, 5, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
     ]);
+  });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.pad({} as tf.Tensor, [[0, 0]]))
+        .toThrowError(/Argument 'x' passed to 'pad' must be a Tensor/);
   });
 });

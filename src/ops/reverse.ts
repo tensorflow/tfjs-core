@@ -75,13 +75,13 @@ export class ReverseOps {
    * Reverses a `Tensor` along a specified axis.
    *
    * ```js
-   * const x = dl.tensor1d([1, 2, 3, 4]);
+   * const x = tf.tensor1d([1, 2, 3, 4]);
    *
    * x.reverse().print();
    * ```
    *
    * ```js
-   * const x = dl.tensor2d([1, 2, 3, 4], [2, 2]);
+   * const x = tf.tensor2d([1, 2, 3, 4], [2, 2]);
    *
    * const axis = 1;
    * x.reverse(axis).print();
@@ -93,6 +93,8 @@ export class ReverseOps {
   @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
   @operation
   static reverse<T extends Tensor>(x: T, axis?: number|number[]): T {
+    util.assertArgumentsAreTensors({x}, 'reverse');
+
     if (x.rank === 0) {
       return x.clone();
     }

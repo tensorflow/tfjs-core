@@ -14,6 +14,14 @@
 # limitations under the License.
 # =============================================================================
 
-scripts/build-standalone.sh
-node_modules/.bin/tsc --sourceMap false
+set -e
+
+rimraf dist/
+yarn
+
+yarn build
+rollup -c
+uglifyjs dist/tf-core.js --comments -c -m -o dist/tf-core.min.js
+
+echo "Stored standalone library at dist/tf-core(.min).js"
 npm pack

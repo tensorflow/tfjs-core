@@ -30,7 +30,7 @@ export class ConcatOps {
    * For example, if:
    * A: shape(3) = |r1, g1, b1|
    * B: shape(2) = |r2, g2|
-   * C = dl.concat1d([A, B]) == |r1, g1, b1, r2, g2|
+   * C = tf.concat1d([A, B]) == |r1, g1, b1, r2, g2|
    *
    * @param tensors A list of `Tensor`s to concatenate.
    * @return The concatenated array.
@@ -49,7 +49,7 @@ export class ConcatOps {
    * B: shape(2, 3) = | r3, g3, b3 |
    *                  | r4, g4, b4 |
    *
-   * C = dl.concat2d([A, B], axis)
+   * C = tf.concat2d([A, B], axis)
    *
    * if axis = 0:
    * C: shape(4, 3) = | r1, g1, b1 |
@@ -80,7 +80,7 @@ export class ConcatOps {
    * B: shape(2, 1, 3) = | r3, g3, b3 |
    *                     | r4, g4, b4 |
    *
-   * C = dl.concat3d([A, B], axis)
+   * C = tf.concat3d([A, B], axis)
    *
    * if axis = 0:
    * C: shape(4, 1, 3) = | r1, g1, b1 |
@@ -122,23 +122,23 @@ export class ConcatOps {
    * dimensions except `axis`.
    *
    * ```js
-   * const a = dl.tensor1d([1, 2]);
-   * const b = dl.tensor1d([3, 4]);
+   * const a = tf.tensor1d([1, 2]);
+   * const b = tf.tensor1d([3, 4]);
    * a.concat(b).print();  // or a.concat(b)
    * ```
    *
    * ```js
-   * const a = dl.tensor1d([1, 2]);
-   * const b = dl.tensor1d([3, 4]);
-   * const c = dl.tensor1d([5, 6]);
-   * dl.concat([a, b, c]).print();
+   * const a = tf.tensor1d([1, 2]);
+   * const b = tf.tensor1d([3, 4]);
+   * const c = tf.tensor1d([5, 6]);
+   * tf.concat([a, b, c]).print();
    * ```
    *
    * ```js
-   * const a = dl.tensor2d([[1, 2], [10, 20]]);
-   * const b = dl.tensor2d([[3, 4], [30, 40]]);
+   * const a = tf.tensor2d([[1, 2], [10, 20]]);
+   * const b = tf.tensor2d([[3, 4], [30, 40]]);
    * const axis = 1;
-   * dl.concat([a, b], axis).print();
+   * tf.concat([a, b], axis).print();
    * ```
    * @param tensors A list of tensors to concatenate.
    * @param axis The axis to concate along. Defaults to 0 (the first dim).
@@ -146,8 +146,13 @@ export class ConcatOps {
   @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
   @operation
   static concat<T extends Tensor>(tensors: T[], axis = 0): T {
-    util.assert(tensors.length >= 2, 'Pass at least two tensors to concat');
+    util.assert(tensors.length >= 1, 'Pass at least one tensor to concat');
+    util.assertArgumentsAreTensors({tensors}, 'concat');
+
     let result = tensors[0];
+    if (tensors.length === 1) {
+      return result;
+    }
     const axes = parseAxisParam(axis, result.shape);
 
     for (let i = 1; i < tensors.length; ++i) {

@@ -1,5 +1,7 @@
 .vscode/
+.rpt2_cache/
 demos/
+integration_tests/
 docs/
 scripts/
 src/
@@ -9,11 +11,9 @@ coverage/
 node_modules/
 website/
 karma.conf.js
-deeplearn-*.tgz
+*.tgz
 dist/demos/
 dist/**/*.js.map
-dist/**/*_test.js
-dist/**/*_test.d.ts
 .travis.yml
 .npmignore
 CONTRIBUTING.md

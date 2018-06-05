@@ -15,25 +15,26 @@
  * =============================================================================
  */
 
-import * as dl from '../index';
-import {ALL_ENVS, describeWithFlags, expectArraysClose} from '../test_util';
+import * as tf from '../index';
+import {describeWithFlags} from '../jasmine_util';
+import {ALL_ENVS, expectArraysClose} from '../test_util';
 
 describeWithFlags('AdadeltaOptimizer', ALL_ENVS, () => {
   it('basic', () => {
     const learningRate = .1;
     const rho = .95;
-    const optimizer = dl.train.adadelta(learningRate, rho);
+    const optimizer = tf.train.adadelta(learningRate, rho);
 
-    const x = dl.tensor1d([1, 2]).variable();
+    const x = tf.tensor1d([1, 2]).variable();
 
-    const f = () => x.square().sum() as dl.Scalar;
+    const f = () => x.square().sum() as tf.Scalar;
 
-    let numTensors = dl.memory().numTensors;
+    let numTensors = tf.memory().numTensors;
 
     let cost = optimizer.minimize(f, /* returnCost */ true);
 
     // Cost & 2 accumulators should be the only additional arrays.
-    expect(dl.memory().numTensors).toBe(numTensors + 3);
+    expect(tf.memory().numTensors).toBe(numTensors + 3);
 
     // epsilon = 1-e8
     // newAccumulatedGrad = rho * accumulatedGrad + (1 - rho) * grad ^ 2
@@ -51,7 +52,7 @@ describeWithFlags('AdadeltaOptimizer', ALL_ENVS, () => {
     expectArraysClose(x, [0.8, 1.6]);
 
     cost.dispose();
-    numTensors = dl.memory().numTensors;
+    numTensors = tf.memory().numTensors;
 
     cost = optimizer.minimize(f, /* returnCost */ false);
 
@@ -64,7 +65,7 @@ describeWithFlags('AdadeltaOptimizer', ALL_ENVS, () => {
     expectArraysClose(x, [0.64, 1.28]);
 
     // There should be no new additional Tensors.
-    expect(dl.memory().numTensors).toBe(numTensors);
+    expect(tf.memory().numTensors).toBe(numTensors);
 
     expect(cost).toBe(null);
 
@@ -72,6 +73,12 @@ describeWithFlags('AdadeltaOptimizer', ALL_ENVS, () => {
     optimizer.dispose();
 
     // The only tensor remaining is the argument to variable().
-    expect(dl.memory().numTensors).toBe(1);
+    expect(tf.memory().numTensors).toBe(1);
+  });
+  it('serialization round-trip', () => {
+    const originalOpt = tf.train.adadelta(0.1, 0.2, 2e-8);
+    const reserialized = tf.AdadeltaOptimizer.fromConfig(
+        tf.AdadeltaOptimizer, originalOpt.getConfig());
+    expect(reserialized.getConfig()).toEqual(originalOpt.getConfig());
   });
 });

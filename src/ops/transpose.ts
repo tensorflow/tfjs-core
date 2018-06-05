@@ -32,9 +32,9 @@ export class TransposeOps {
    * operation performs a regular matrix transpose on 2-D input `Tensor`s.
    *
    * ```js
-   * const a = dl.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
+   * const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
    *
-   * a.transpose().print();  // or dl.transpose(a)
+   * a.transpose().print();  // or tf.transpose(a)
    * ```
    *
    * @param x The tensor to transpose.
@@ -43,17 +43,30 @@ export class TransposeOps {
   @doc({heading: 'Operations', subheading: 'Matrices'})
   @operation
   static transpose<T extends Tensor>(x: T, perm?: number[]): T {
+    util.assertArgumentsAreTensors({x}, 'transpose');
+
     if (perm == null) {
       perm = x.shape.map((s, i) => i).reverse();
     }
-    const der = (dy: T) => {
-      const undoPerm = axis_util.getUndoAxesPermutation(perm);
-      return {x: () => dy.transpose(undoPerm)};
-    };
     util.assert(
         x.rank === perm.length,
         `Error in transpose: rank of input ${x.rank} ` +
             `must match length of perm ${perm}.`);
+    perm.forEach(axis => {
+      util.assert(
+          axis >= 0 && axis < x.rank,
+          `All entries in 'perm' must be between 0 and ${x.rank - 1}` +
+              ` but got ${perm}`);
+    });
+
+    if (x.rank <= 1) {
+      return x.clone();
+    }
+
+    const der = (dy: T) => {
+      const undoPerm = axis_util.getUndoAxesPermutation(perm);
+      return {x: () => dy.transpose(undoPerm)};
+    };
     return ENV.engine.runKernel(
         backend => backend.transpose(x, perm), {x}, der);
   }

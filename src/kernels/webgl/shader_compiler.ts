@@ -75,6 +75,8 @@ function getSamplerFromInInfo(inInfo: InputInfo): string {
       return getSampler3D(inInfo);
     case 4:
       return getSampler4D(inInfo);
+    case 5:
+      return getSampler5D(inInfo);
     default:
       throw new Error(
           `${shape.length}-D input sampling` +
@@ -88,8 +90,8 @@ function getInputSamplingSnippet(
   res += getSamplerFromInInfo(inInfo);
 
   // If input and output have matching logical shapes, add
-  // getTexNameAtOutCoord() method that samples the input texture using the
-  // output coordinates.
+  // getTexNameAtOutCoord() method that samples the input
+  // textureSampler using the output coordinates.
   if (broadcast ||
       util.arraysEqual(
           inInfo.shapeInfo.logicalShape, outShapeInfo.logicalShape)) {
@@ -113,6 +115,9 @@ function getOutputSamplingSnippet(
     case 4:
       return getOutput4DCoords(
           outShape as [number, number, number, number], outTexShape);
+    case 5:
+      return getOutput5DCoords(
+          outShape as [number, number, number, number, number], outTexShape);
     default:
       throw new Error(
           `${outShape.length}-D output sampling is not yet supported`);
@@ -159,6 +164,19 @@ vec2 UVfrom4D(int texNumR, int texNumC, int stride0,
 }
 `;
 
+const SAMPLE_5D_SNIPPET = `
+vec2 UVfrom5D(int texNumR, int texNumC, int stride0,
+    int stride1, int stride2, int stride3, int row, int col, int depth,
+    int depth2, int depth3) {
+  // Explicitly use integer operations as dot() only works on floats.
+  int index = row * stride0 + col * stride1 + 
+              depth * stride2 + depth2 * stride3 + depth3;
+  int texR = index / texNumC;
+  int texC = index - texR * texNumC;
+  return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
+}
+`;
+
 const UNSIGNED_BYTE_TEXTURE_SAMPLE_SNIPPET = `
   uniform float NaN;
 
@@ -173,8 +191,8 @@ const UNSIGNED_BYTE_TEXTURE_SAMPLE_SNIPPET = `
   const float range = (maxValue - minValue) / 255.0;
   const vec2 dotRange = vec2(1.0, range);
 
-  float sample(sampler2D texture, vec2 uv) {
-    vec4 sampleValue = texture2D(texture, uv);
+  float sampleTexture(sampler2D textureSampler, vec2 uv) {
+    vec4 sampleValue = texture2D(textureSampler, uv);
     if (all(equal(sampleValue, vec4(${tex_util.BYTE_NAN_VALUE})))) {
       return NaN;
     }
@@ -218,8 +236,8 @@ const UNSIGNED_BYTE_TEXTURE_SETOUTPUT_SNIPPET = `
 `;
 
 const FLOAT_TEXTURE_SAMPLE_SNIPPET = `
-  float sample(sampler2D texture, vec2 uv) {
-    return texture2D(texture, uv).r;
+  float sampleTexture(sampler2D textureSampler, vec2 uv) {
+    return texture2D(textureSampler, uv).r;
   }
 `;
 
@@ -234,6 +252,15 @@ const SHADER_PREFIX = `
   precision highp int;
   varying vec2 resultUV;
   const vec2 halfCR = vec2(0.5, 0.5);
+
+  struct ivec5
+  {
+    int x;
+    int y;
+    int z;
+    int w;
+    int u;
+  };
 
   bool isNaN(float val) {
     float v1 = val * val;
@@ -259,19 +286,21 @@ const SHADER_PREFIX = `
     return x - y * (x / y);
   }
 
-  const vec2 randomConst = vec2(
-    23.14069263277926, // e^pi (Gelfond's constant)
-     2.665144142690225 // 2^sqrt(2) (Gelfond–Schneider constant)
-  );
-
-  float random(float seed) {
-      return fract(cos(dot(resultUV * seed, randomConst)) * 12345.6789);
+  //Based on the work of Dave Hoskins
+  //https://www.shadertoy.com/view/4djSRW
+  #define HASHSCALE1 443.8975
+  float random(float seed){
+    vec2 p = resultUV * seed;
+    vec3 p3  = fract(vec3(p.xyx) * HASHSCALE1);
+    p3 += dot(p3, p3.yzx + 19.19);
+    return fract((p3.x + p3.y) * p3.z);
   }
 
   ${SAMPLE_1D_SNIPPET}
   ${SAMPLE_2D_SNIPPET}
   ${SAMPLE_3D_SNIPPET}
   ${SAMPLE_4D_SNIPPET}
+  ${SAMPLE_5D_SNIPPET}
 `;
 
 function getOutputScalarCoords() {
@@ -351,6 +380,38 @@ function getOutput4DCoords(
   `;
 }
 
+function getOutput5DCoords(
+    shape: [number, number, number, number, number],
+    texShape: [number, number]): string {
+  const stride3 = shape[4];
+  const stride2 = shape[3] * stride3;
+  const stride1 = shape[2] * stride2;
+  const stride0 = shape[1] * stride1;
+  return `
+    ivec5 getOutputCoords() {
+      ivec2 resTexRC = ivec2(resultUV.yx * vec2(${texShape[0]},
+                             ${texShape[1]}));
+
+      int index = resTexRC.x * ${texShape[1]} + resTexRC.y;
+
+      int r = index / ${stride0};
+      index -= r * ${stride0};
+
+      int c = index / ${stride1};
+      index -= c * ${stride1};
+
+      int d = index / ${stride2};
+      index -= d * ${stride2};
+
+      int d2 = index  / ${stride3};
+      int d3 = index - d2 * ${stride3};
+
+      ivec5 outShape = ivec5(r, c, d, d2, d3);
+      return outShape;
+    }
+  `;
+}
+
 function getOutput2DCoords(
     shape: [number, number], texShape: [number, number]): string {
   if (util.arraysEqual(shape, texShape)) {
@@ -397,7 +458,7 @@ function getSamplerScalar(inputInfo: InputInfo): string {
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
   return `
     float ${funcName}() {
-      return sample(${texName}, halfCR);
+      return sampleTexture(${texName}, halfCR);
     }
   `;
 }
@@ -423,7 +484,7 @@ function getSampler2D(inputInfo: InputInfo): string {
     return `
     float ${funcName}(int row, int col) {
       vec2 uv = (vec2(col, row) + halfCR) / vec2(${texNumC}.0, ${texNumR}.0);
-      return sample(${texName}, uv);
+      return sampleTexture(${texName}, uv);
     }
   `;
   }
@@ -444,7 +505,7 @@ function getSampler2D(inputInfo: InputInfo): string {
     float ${funcName}(int row, int col) {
       int index = row * ${shape[1]} + col;
       vec2 uv = vec2(0.5, (float(index) + 0.5) / ${texNumR}.0);
-      return sample(${texName}, uv);
+      return sampleTexture(${texName}, uv);
     }
   `;
   }
@@ -453,14 +514,14 @@ function getSampler2D(inputInfo: InputInfo): string {
     float ${funcName}(int row, int col) {
       int index = row * ${shape[1]} + col;
       vec2 uv = vec2((float(index) + 0.5) / ${texNumC}.0, 0.5);
-      return sample(${texName}, uv);
+      return sampleTexture(${texName}, uv);
     }
   `;
   }
   return `
   float ${funcName}(int row, int col) {
     vec2 uv = UVfrom2D(${texNumR}, ${texNumC}, ${shape[1]}, row, col);
-    return sample(${texName}, uv);
+    return sampleTexture(${texName}, uv);
   }
 `;
 }
@@ -495,7 +556,7 @@ function getSampler3D(inputInfo: InputInfo): string {
           int texC = col * ${stride1} + depth;
           vec2 uv = (vec2(texC, texR) + halfCR) /
                      vec2(${texNumC}.0, ${texNumR}.0);
-          return sample(${texName}, uv);
+          return sampleTexture(${texName}, uv);
         }
       `;
   }
@@ -506,7 +567,7 @@ function getSampler3D(inputInfo: InputInfo): string {
       int texR = row * ${shape[1]} + col;
       int texC = depth;
       vec2 uv = (vec2(texC, texR) + halfCR) / vec2(${texNumC}.0, ${texNumR}.0);
-      return sample(${texName}, uv);
+      return sampleTexture(${texName}, uv);
     }
   `;
   }
@@ -515,7 +576,7 @@ function getSampler3D(inputInfo: InputInfo): string {
       float ${funcName}(int row, int col, int depth) {
         vec2 uv = UVfrom3D(
             ${texNumR}, ${texNumC}, ${stride0}, ${stride1}, row, col, depth);
-        return sample(${texName}, uv);
+        return sampleTexture(${texName}, uv);
       }
   `;
 }
@@ -548,7 +609,7 @@ function getSampler4D(inputInfo: InputInfo): string {
         int texC = col * ${stride1} + depth * ${stride2} + depth2;
         vec2 uv = (vec2(texC, texR) + halfCR) /
                    vec2(${texNumC}.0, ${texNumR}.0);
-        return sample(${texName}, uv);
+        return sampleTexture(${texName}, uv);
       }
     `;
   }
@@ -559,7 +620,7 @@ function getSampler4D(inputInfo: InputInfo): string {
         int texC = depth2;
         vec2 uv = (vec2(texC, texR) + halfCR) /
                   vec2(${texNumC}.0, ${texNumR}.0);
-        return sample(${texName}, uv);
+        return sampleTexture(${texName}, uv);
       }
     `;
   }
@@ -567,7 +628,64 @@ function getSampler4D(inputInfo: InputInfo): string {
     float ${funcName}(int row, int col, int depth, int depth2) {
       vec2 uv = UVfrom4D(${texNumR}, ${texNumC}, ${stride0}, ${stride1},
           ${stride2}, row, col, depth, depth2);
-      return sample(${texName}, uv);
+      return sampleTexture(${texName}, uv);
+    }
+  `;
+}
+
+function getSampler5D(inputInfo: InputInfo): string {
+  const shape = inputInfo.shapeInfo.logicalShape;
+  const texShape = inputInfo.shapeInfo.texShape;
+  const texName = inputInfo.name;
+  const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
+  const texNumR = texShape[0];
+  const texNumC = texShape[1];
+  const stride3 = shape[4];
+  const stride2 = shape[3] * stride3;
+  const stride1 = shape[2] * stride2;
+  const stride0 = shape[1] * stride1;
+  const {newShape, keptDims} = util.squeezeShape(shape);
+  if (newShape.length < shape.length) {
+    const newInputInfo = squeezeInputInfo(inputInfo, newShape);
+    const params = ['row', 'col', 'depth', 'depth2', 'depth3'];
+    return `
+      ${getSamplerFromInInfo(newInputInfo)}
+      float ${funcName}(int row, int col, int depth, int depth2, int depth3) {
+        return ${funcName}(${getSqueezedParams(params, keptDims)});
+      }
+    `;
+  }
+  if (texNumC === stride0) {
+    return `
+      float ${funcName}(int row, int col, int depth, int depth2, int depth3) {
+        int texR = row;
+        int texC = col * ${stride1} + depth * ${stride2} +
+                   depth2 * ${stride3} + depth3;
+        vec2 uv = (vec2(texC, texR) + halfCR) /
+                   vec2(${texNumC}.0, ${texNumR}.0);
+        return sampleTexture(${texName}, uv);
+      }
+    `;
+  }
+
+  if (texNumC === stride3) {
+    return `
+      float ${funcName}(int row, int col, int depth, int depth2, int depth3) {
+        int texR = row * ${shape[1] * shape[2]} + col * ${shape[2]} +
+                   depth * ${shape[3]} + depth2;
+        int texC = depth3;
+        vec2 uv = (vec2(texC, texR) + halfCR) /
+                  vec2(${texNumC}.0, ${texNumR}.0);
+        return sampleTexture(${texName}, uv);
+      }
+    `;
+  }
+
+  return `
+    float ${funcName}(int row, int col, int depth, int depth2, int depth3) {
+      vec2 uv = UVfrom5D(${texNumR}, ${texNumC}, ${stride0}, ${stride1},
+          ${stride2}, ${stride3}, row, col, depth, depth2, depth3);
+      return sampleTexture(${texName}, uv);
     }
   `;
 }
@@ -582,7 +700,7 @@ function getSamplerFlat(inputInfo: InputInfo): string {
   if (tNumC === 1 && tNumR === 1) {
     return `
       float ${funcName}(int index) {
-        return sample(${texName}, halfCR);
+        return sampleTexture(${texName}, halfCR);
       }
     `;
   }
@@ -590,7 +708,7 @@ function getSamplerFlat(inputInfo: InputInfo): string {
     return `
       float ${funcName}(int index) {
         vec2 uv = vec2(0.5, (float(index) + 0.5) / ${tNumR}.0);
-        return sample(${texName}, uv);
+        return sampleTexture(${texName}, uv);
       }
     `;
   }
@@ -598,14 +716,14 @@ function getSamplerFlat(inputInfo: InputInfo): string {
     return `
       float ${funcName}(int index) {
         vec2 uv = vec2((float(index) + 0.5) / ${tNumC}.0, 0.5);
-        return sample(${texName}, uv);
+        return sampleTexture(${texName}, uv);
       }
     `;
   }
   return `
     float ${funcName}(int index) {
       vec2 uv = UVfrom1D(${tNumR}, ${tNumC}, index);
-      return sample(${texName}, uv);
+      return sampleTexture(${texName}, uv);
     }
   `;
 }
@@ -679,7 +797,7 @@ function getSamplerAtOutputCoords(
   if (util.arraysEqual(inTexShape, outTexShape)) {
     return `
       float ${funcName}() {
-        return sample(${texName}, resultUV);
+        return sampleTexture(${texName}, resultUV);
       }
     `;
   }
@@ -703,7 +821,7 @@ function getSamplerAtOutputCoords(
       vec2 uv = (vec2(texC, texR) + halfCR) /
                  vec2(${inTexShape[1]}.0, ${inTexShape[0]}.0);
 
-      return sample(${texName}, uv);
+      return sampleTexture(${texName}, uv);
     }
   `;
 }
@@ -717,7 +835,9 @@ export function getCoordsDataType(rank: number): string {
     return 'ivec3';
   } else if (rank === 4) {
     return 'ivec4';
-  } else {
+  } else if (rank === 5) {
+    return 'ivec5';
+  }else {
     throw Error(`GPU for rank ${rank} is not yet supported`);
   }
 }

@@ -24,9 +24,7 @@ module.exports = function(config) {
     },
     karmaTypescriptConfig: {
       tsconfig: 'tsconfig.json',
-      compilerOptions: {
-        module: 'commonjs'
-      },
+      compilerOptions: {module: 'commonjs', sourceMap: true},
       reports: {} // Do not produce coverage html.
     },
     reporters: ['progress', 'karma-typescript'],
@@ -36,21 +34,21 @@ module.exports = function(config) {
       accessKey: process.env.BROWSERSTACK_KEY
     },
     reportSlowerThan: 500,
-    browserNoActivityTimeout: 30000,
+    browserNoActivityTimeout: 60000,
     customLaunchers: {
       bs_chrome_mac: {
         base: 'BrowserStack',
         browser: 'chrome',
         browser_version: 'latest',
         os: 'OS X',
-        os_version: 'Sierra'
+        os_version: 'High Sierra'
       },
       bs_firefox_mac: {
         base: 'BrowserStack',
         browser: 'firefox',
         browser_version: 'latest',
         os: 'OS X',
-        os_version: 'Sierra'
+        os_version: 'High Sierra'
       },
       chrome_with_swift_shader: {
         base: 'Chrome',
@@ -58,6 +56,7 @@ module.exports = function(config) {
       }
     },
     client: {
+      jasmine: {random: false},
       args: ['--grep', config.grep || '']
     }
   });

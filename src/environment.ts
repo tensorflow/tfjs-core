@@ -30,6 +30,8 @@ export enum Type {
 export interface Features {
   // Whether to enable debug mode.
   'DEBUG'?: boolean;
+  // Whether we are in a browser (as versus, say, node.js) environment.
+  'IS_BROWSER'?: boolean;
   // The disjoint_query_timer extension version.
   // 0: disabled, 1: EXT_disjoint_timer_query, 2:
   // EXT_disjoint_timer_query_webgl2.
@@ -47,11 +49,11 @@ export interface Features {
   'WEBGL_FLOAT_TEXTURE_ENABLED'?: boolean;
   // Whether WEBGL_get_buffer_sub_data_async is enabled.
   'WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED'?: boolean;
-  'BACKEND'?: BackendType;
+  'BACKEND'?: string;
 }
 
 export const URL_PROPERTIES: URLProperty[] = [
-  {name: 'DEBUG', type: Type.BOOLEAN},
+  {name: 'DEBUG', type: Type.BOOLEAN}, {name: 'IS_BROWSER', type: Type.BOOLEAN},
   {name: 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION', type: Type.NUMBER},
   {name: 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE', type: Type.BOOLEAN},
   {name: 'WEBGL_VERSION', type: Type.NUMBER},
@@ -175,7 +177,7 @@ function isFloatTextureReadPixelsEnabled(webGLVersion: number): boolean {
 
 function isWebGLGetBufferSubDataAsyncExtensionEnabled(webGLVersion: number) {
   // TODO(nsthorat): Remove this once we fix
-  // https://github.com/PAIR-code/deeplearnjs/issues/848
+  // https://github.com/tensorflow/tfjs/issues/137
   if (webGLVersion > 0) {
     return false;
   }
@@ -190,18 +192,12 @@ function isWebGLGetBufferSubDataAsyncExtensionEnabled(webGLVersion: number) {
   return isEnabled;
 }
 
-/** @docalias 'webgl'|'cpu' */
-export type BackendType = 'webgl'|'cpu'|string;
-
-/** List of currently supported backends ordered by preference. */
-const SUPPORTED_BACKENDS: BackendType[] = ['webgl', 'cpu'];
-
 export class Environment {
   private features: Features = {};
   private globalEngine: Engine;
-  private BACKEND_REGISTRY: {[id: string]: KernelBackend} = {};
-  private backends: {[id: string]: KernelBackend} = this.BACKEND_REGISTRY;
-  private currentBackendType: BackendType;
+  private registry:
+      {[id: string]: {backend: KernelBackend, priority: number}} = {};
+  private currentBackend: string;
 
   constructor(features?: Features) {
     if (features != null) {
@@ -220,14 +216,19 @@ export class Environment {
    * Sets the backend (cpu, webgl, etc) responsible for creating tensors and
    * executing operations on those tensors.
    *
-   * @param backendType The backend type. Currently supports `'webgl'|'cpu'`.
+   * Note this disposes the current backend, if any, as well as any tensors
+   * associated with it.  A new backend is initialized, even if it is of the
+   * same type as the previous one.
+   *
+   * @param backendType The backend type. Currently supports `'webgl'|'cpu'` in
+   *     the browser, and `'tensorflow'` under node.js (requires tfjs-node).
    * @param safeMode Defaults to false. In safe mode, you are forced to
-   *     construct tensors and call math operations inside a `dl.tidy()` which
+   *     construct tensors and call math operations inside a `tidy()` which
    *     will automatically clean up intermediate tensors.
    */
   @doc({heading: 'Environment'})
-  static setBackend(backendType: BackendType, safeMode = false) {
-    if (!(backendType in ENV.backends)) {
+  static setBackend(backendType: string, safeMode = false) {
+    if (!(backendType in ENV.registry)) {
       throw new Error(`Backend type '${backendType}' not found in registry`);
     }
     ENV.initBackend(backendType, safeMode);
@@ -238,9 +239,17 @@ export class Environment {
    * for creating tensors and executing operations on those tensors.
    */
   @doc({heading: 'Environment'})
-  static getBackend(): BackendType {
+  static getBackend(): string {
     ENV.initDefaultBackend();
-    return ENV.currentBackendType;
+    return ENV.currentBackend;
+  }
+
+  /**
+   * Dispose all variables kept in backend engine.
+   */
+  @doc({heading: 'Environment'})
+  static disposeVariables(): void {
+    ENV.engine.disposeVariables();
   }
 
   /**
@@ -256,7 +265,7 @@ export class Environment {
    * - `unreliable`: `Optional` `boolean`:
    *    - On WebGL, not present (always reliable).
    *    - On CPU, true. Due to automatic garbage collection, these numbers
-   *     represent undisposed tensors, i.e. not wrapped in `dl.tidy()`, or
+   *     represent undisposed tensors, i.e. not wrapped in `tidy()`, or
    *     lacking a call to `tensor.dispose()`.
    */
   @doc({heading: 'Performance', subheading: 'Memory'})
@@ -278,19 +287,26 @@ export class Environment {
     this.features[feature] = value;
   }
 
-  getBestBackendType(): BackendType {
-    for (let i = 0; i < SUPPORTED_BACKENDS.length; ++i) {
-      const backendId = SUPPORTED_BACKENDS[i];
-      if (backendId in this.backends) {
-        return backendId;
-      }
+  getBestBackendType(): string {
+    if (Object.keys(this.registry).length === 0) {
+      throw new Error('No backend found in registry.');
     }
-    throw new Error('No backend found in registry.');
+    const sortedBackends = Object.keys(this.registry)
+                               .map(name => {
+                                 return {name, entry: this.registry[name]};
+                               })
+                               .sort((a, b) => {
+                                 // Highest priority comes first.
+                                 return b.entry.priority - a.entry.priority;
+                               });
+    return sortedBackends[0].name;
   }
 
   private evaluateFeature<K extends keyof Features>(feature: K): Features[K] {
     if (feature === 'DEBUG') {
       return false;
+    } else if (feature === 'IS_BROWSER') {
+      return typeof window !== 'undefined';
     } else if (feature === 'BACKEND') {
       return this.getBestBackendType();
     } else if (feature === 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') {
@@ -322,9 +338,7 @@ export class Environment {
   }
 
   setFeatures(features: Features) {
-    this.reset();
     this.features = features;
-    this.backends = {};
   }
 
   reset() {
@@ -333,71 +347,57 @@ export class Environment {
       this.globalEngine.dispose();
       this.globalEngine = null;
     }
-    if (this.backends !== this.BACKEND_REGISTRY) {
-      for (const name in this.backends) {
-        this.backends[name].dispose();
-      }
-      this.backends = this.BACKEND_REGISTRY;
-    }
   }
 
-  private initBackend(backend?: BackendType|KernelBackend, safeMode = false) {
-    let customBackend = false;
-    if (typeof backend === 'string') {
-      this.currentBackendType = backend;
-      backend = ENV.findBackend(backend);
-    } else {
-      customBackend = true;
-      this.currentBackendType = 'custom' as BackendType;
+  private initBackend(backendType?: string, safeMode = false) {
+    this.currentBackend = backendType;
+    if (this.globalEngine != null) {
+      this.globalEngine.dispose();
     }
-    this.globalEngine = new Engine(backend, customBackend, safeMode);
+    const backend = ENV.findBackend(backendType);
+    this.globalEngine = new Engine(backend, safeMode);
   }
 
-  findBackend(name: BackendType): KernelBackend {
-    return this.backends[name];
-  }
-
-  /**
-   * Adds a custom backend. Usually used in tests to simulate different
-   * environments.
-   *
-   * @param factory: The backend factory function. When called, it should return
-   *     an instance of the backend.
-   * @return False if the creation/registration failed. True otherwise.
-   */
-  addCustomBackend(name: BackendType, factory: () => KernelBackend): boolean {
-    if (name in this.backends) {
-      throw new Error(`${name} backend was already registered`);
+  findBackend(name: string): KernelBackend {
+    if (!(name in this.registry)) {
+      return null;
     }
-    try {
-      const backend = factory();
-      this.backends[name] = backend;
-      return true;
-    } catch (err) {
-      return false;
-    }
+    return this.registry[name].backend;
   }
 
   /**
    * Registers a global backend. The registration should happen when importing
    * a module file (e.g. when importing `backend_webgl.ts`), and is used for
-   * modular builds (e.g. custom deeplearn.js bundle with only webgl support).
+   * modular builds (e.g. custom tfjs bundle with only webgl support).
    *
    * @param factory: The backend factory function. When called, it should
    * return an instance of the backend.
+   * @param priority The priority of the backend (higher = more important).
+   *     In case multiple backends are registered, `getBestBackendType` uses
+   *     priority to find the best backend. Defaults to 1.
    * @return False if the creation/registration failed. True otherwise.
    */
-  registerBackend(name: BackendType, factory: () => KernelBackend): boolean {
-    if (name in this.BACKEND_REGISTRY) {
-      throw new Error(`${name} backend was already registered as global`);
+  registerBackend(name: string, factory: () => KernelBackend, priority = 1):
+      boolean {
+    if (name in this.registry) {
+      console.warn(`${name} backend was already registered`);
     }
     try {
       const backend = factory();
-      this.BACKEND_REGISTRY[name] = backend;
+      this.registry[name] = {backend, priority};
       return true;
     } catch (err) {
+      console.warn(err.message);
       return false;
     }
+  }
+
+  removeBackend(name: string): void {
+    if (!(name in this.registry)) {
+      throw new Error(`${name} backend not found in registry`);
+    }
+    this.registry[name].backend.dispose();
+    delete this.registry[name];
   }
 
   get engine(): Engine {
@@ -412,20 +412,20 @@ export class Environment {
   }
 }
 
-// Expects flags from URL in the format ?dljsflags=FLAG1:1,FLAG2:true.
-const DEEPLEARNJS_FLAGS_PREFIX = 'dljsflags';
+// Expects flags from URL in the format ?tfjsflags=FLAG1:1,FLAG2:true.
+const TENSORFLOWJS_FLAGS_PREFIX = 'tfjsflags';
 function getFeaturesFromURL(): Features {
   const features: Features = {};
 
-  if (typeof window === 'undefined') {
+  if (typeof window === 'undefined' || typeof window.location === 'undefined') {
     return features;
   }
 
   const urlParams = util.getQueryParams(window.location.search);
-  if (DEEPLEARNJS_FLAGS_PREFIX in urlParams) {
+  if (TENSORFLOWJS_FLAGS_PREFIX in urlParams) {
     const urlFlags: {[key: string]: string} = {};
 
-    const keyValues = urlParams[DEEPLEARNJS_FLAGS_PREFIX].split(',');
+    const keyValues = urlParams[TENSORFLOWJS_FLAGS_PREFIX].split(',');
     keyValues.forEach(keyValue => {
       const [key, value] = keyValue.split(':') as [string, string];
       urlFlags[key] = value;

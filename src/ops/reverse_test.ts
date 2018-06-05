@@ -15,22 +15,23 @@
  * =============================================================================
  */
 
-import * as dl from '../index';
+import * as tf from '../index';
 // tslint:disable-next-line:max-line-length
-import {ALL_ENVS, describeWithFlags, expectArraysClose} from '../test_util';
+import {ALL_ENVS, CPU_ENVS, expectArraysClose} from '../test_util';
+import {describeWithFlags} from '../jasmine_util';
 
 describeWithFlags('reverse1d', ALL_ENVS, () => {
   it('reverse a 1D array', () => {
-    const input = dl.tensor1d([1, 2, 3, 4, 5]);
-    const result = dl.reverse1d(input);
+    const input = tf.tensor1d([1, 2, 3, 4, 5]);
+    const result = tf.reverse1d(input);
     expect(result.shape).toEqual(input.shape);
     expectArraysClose(result, [5, 4, 3, 2, 1]);
   });
 
   it('grad', () => {
-    const a = dl.tensor1d([1, 2, 3]);
-    const dy = dl.tensor1d([10, 20, 30]);
-    const da = dl.grad((a: dl.Tensor1D) => dl.reverse1d(a))(a, dy);
+    const a = tf.tensor1d([1, 2, 3]);
+    const dy = tf.tensor1d([10, 20, 30]);
+    const da = tf.grad((a: tf.Tensor1D) => tf.reverse1d(a))(a, dy);
     expect(da.shape).toEqual([3]);
     expectArraysClose(da, [30, 20, 10]);
   });
@@ -39,8 +40,8 @@ describeWithFlags('reverse1d', ALL_ENVS, () => {
 describeWithFlags('reverse2d', ALL_ENVS, () => {
   it('reverse a 2D array at axis [0]', () => {
     const axis = [0];
-    const a = dl.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
-    const result = dl.reverse2d(a, axis);
+    const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
+    const result = tf.reverse2d(a, axis);
 
     expect(result.shape).toEqual(a.shape);
     expectArraysClose(result, [4, 5, 6, 1, 2, 3]);
@@ -48,8 +49,8 @@ describeWithFlags('reverse2d', ALL_ENVS, () => {
 
   it('reverse a 2D array at axis [1]', () => {
     const axis = [1];
-    const a = dl.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
-    const result = dl.reverse2d(a, axis);
+    const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
+    const result = tf.reverse2d(a, axis);
 
     expect(result.shape).toEqual(a.shape);
     expectArraysClose(result, [3, 2, 1, 6, 5, 4]);
@@ -57,41 +58,41 @@ describeWithFlags('reverse2d', ALL_ENVS, () => {
 
   it('throws error with invalid input', () => {
     // tslint:disable-next-line:no-any
-    const x: any = dl.tensor1d([1, 20, 300, 4]);
-    expect(() => dl.reverse2d(x, [0])).toThrowError();
+    const x: any = tf.tensor1d([1, 20, 300, 4]);
+    expect(() => tf.reverse2d(x, [0])).toThrowError();
   });
 
   it('throws error with invalid axis param', () => {
-    const x = dl.tensor2d([1, 20, 300, 4], [1, 4]);
-    expect(() => dl.reverse2d(x, [2])).toThrowError();
-    expect(() => dl.reverse2d(x, [-3])).toThrowError();
+    const x = tf.tensor2d([1, 20, 300, 4], [1, 4]);
+    expect(() => tf.reverse2d(x, [2])).toThrowError();
+    expect(() => tf.reverse2d(x, [-3])).toThrowError();
   });
 
   it('throws error with non integer axis param', () => {
-    const x = dl.tensor2d([1, 20, 300, 4], [1, 4]);
-    expect(() => dl.reverse2d(x, [0.5])).toThrowError();
+    const x = tf.tensor2d([1, 20, 300, 4], [1, 4]);
+    expect(() => tf.reverse2d(x, [0.5])).toThrowError();
   });
 
   it('grad', () => {
-    const a = dl.tensor2d([[1, 2, 3], [4, 5, 6]]);
-    const dy = dl.tensor2d([[10, 20, 30], [40, 50, 60]]);
-    const da = dl.grad((a: dl.Tensor2D) => dl.reverse2d(a))(a, dy);
+    const a = tf.tensor2d([[1, 2, 3], [4, 5, 6]]);
+    const dy = tf.tensor2d([[10, 20, 30], [40, 50, 60]]);
+    const da = tf.grad((a: tf.Tensor2D) => tf.reverse2d(a))(a, dy);
     expect(da.shape).toEqual([2, 3]);
     expectArraysClose(da, [60, 50, 40, 30, 20, 10]);
   });
 
   it('grad with reverse(axis=0)', () => {
-    const a = dl.tensor2d([[1, 2, 3], [4, 5, 6]]);
-    const dy = dl.tensor2d([[10, 20, 30], [40, 50, 60]]);
-    const da = dl.grad((a: dl.Tensor2D) => dl.reverse2d(a, 0))(a, dy);
+    const a = tf.tensor2d([[1, 2, 3], [4, 5, 6]]);
+    const dy = tf.tensor2d([[10, 20, 30], [40, 50, 60]]);
+    const da = tf.grad((a: tf.Tensor2D) => tf.reverse2d(a, 0))(a, dy);
     expect(da.shape).toEqual([2, 3]);
     expectArraysClose(da, [40, 50, 60, 10, 20, 30]);
   });
 
   it('grad with reverse(axis=1)', () => {
-    const a = dl.tensor2d([[1, 2, 3], [4, 5, 6]]);
-    const dy = dl.tensor2d([[10, 20, 30], [40, 50, 60]]);
-    const da = dl.grad((a: dl.Tensor2D) => dl.reverse2d(a, 1))(a, dy);
+    const a = tf.tensor2d([[1, 2, 3], [4, 5, 6]]);
+    const dy = tf.tensor2d([[10, 20, 30], [40, 50, 60]]);
+    const da = tf.grad((a: tf.Tensor2D) => tf.reverse2d(a, 1))(a, dy);
     expect(da.shape).toEqual([2, 3]);
     expectArraysClose(da, [30, 20, 10, 60, 50, 40]);
   });
@@ -117,8 +118,8 @@ describeWithFlags('reverse3d', ALL_ENVS, () => {
   ];
 
   it('reverse a 3D array at axis [0]', () => {
-    const input = dl.tensor3d(data, shape);
-    const result = dl.reverse3d(input, [0]);
+    const input = tf.tensor3d(data, shape);
+    const result = tf.reverse3d(input, [0]);
     expect(result.shape).toEqual(input.shape);
     expectArraysClose(result, [
       12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
@@ -127,8 +128,8 @@ describeWithFlags('reverse3d', ALL_ENVS, () => {
   });
 
   it('reverse a 3D array at axis [1]', () => {
-    const input = dl.tensor3d(data, shape);
-    const result = dl.reverse3d(input, [1]);
+    const input = tf.tensor3d(data, shape);
+    const result = tf.reverse3d(input, [1]);
     expect(result.shape).toEqual(input.shape);
     expectArraysClose(result, [
       8,  9,  10, 11, 4,  5,  6,  7,  0,  1,  2,  3,
@@ -137,8 +138,8 @@ describeWithFlags('reverse3d', ALL_ENVS, () => {
   });
 
   it('reverse a 3D array at axis [2]', () => {
-    const input = dl.tensor3d(data, shape);
-    const result = dl.reverse3d(input, [2]);
+    const input = tf.tensor3d(data, shape);
+    const result = tf.reverse3d(input, [2]);
     expect(result.shape).toEqual(input.shape);
     expectArraysClose(result, [
       3,  2,  1,  0,  7,  6,  5,  4,  11, 10, 9,  8,
@@ -147,8 +148,8 @@ describeWithFlags('reverse3d', ALL_ENVS, () => {
   });
 
   it('reverse a 3D array at axis [0, 1]', () => {
-    const input = dl.tensor3d(data, shape);
-    const result = dl.reverse3d(input, [0, 1]);
+    const input = tf.tensor3d(data, shape);
+    const result = tf.reverse3d(input, [0, 1]);
     expect(result.shape).toEqual(input.shape);
     expectArraysClose(result, [
       20, 21, 22, 23, 16, 17, 18, 19, 12, 13, 14, 15,
@@ -157,8 +158,8 @@ describeWithFlags('reverse3d', ALL_ENVS, () => {
   });
 
   it('reverse a 3D array at axis [0, 2]', () => {
-    const input = dl.tensor3d(data, shape);
-    const result = dl.reverse3d(input, [0, 2]);
+    const input = tf.tensor3d(data, shape);
+    const result = tf.reverse3d(input, [0, 2]);
     expect(result.shape).toEqual(input.shape);
     expectArraysClose(result, [
       15, 14, 13, 12, 19, 18, 17, 16, 23, 22, 21, 20,
@@ -167,8 +168,8 @@ describeWithFlags('reverse3d', ALL_ENVS, () => {
   });
 
   it('reverse a 3D array at axis [1, 2]', () => {
-    const input = dl.tensor3d(data, shape);
-    const result = dl.reverse3d(input, [1, 2]);
+    const input = tf.tensor3d(data, shape);
+    const result = tf.reverse3d(input, [1, 2]);
     expect(result.shape).toEqual(input.shape);
     expectArraysClose(result, [
       11, 10, 9,  8,  7,  6,  5,  4,  3,  2,  1,  0,
@@ -178,19 +179,19 @@ describeWithFlags('reverse3d', ALL_ENVS, () => {
 
   it('throws error with invalid input', () => {
     // tslint:disable-next-line:no-any
-    const x: any = dl.tensor2d([1, 20, 300, 4], [1, 4]);
-    expect(() => dl.reverse3d(x, [1])).toThrowError();
+    const x: any = tf.tensor2d([1, 20, 300, 4], [1, 4]);
+    expect(() => tf.reverse3d(x, [1])).toThrowError();
   });
 
   it('throws error with invalid axis param', () => {
-    const x = dl.tensor3d([1, 20, 300, 4], [1, 1, 4]);
-    expect(() => dl.reverse3d(x, [3])).toThrowError();
-    expect(() => dl.reverse3d(x, [-4])).toThrowError();
+    const x = tf.tensor3d([1, 20, 300, 4], [1, 1, 4]);
+    expect(() => tf.reverse3d(x, [3])).toThrowError();
+    expect(() => tf.reverse3d(x, [-4])).toThrowError();
   });
 
   it('throws error with non integer axis param', () => {
-    const x = dl.tensor3d([1, 20, 300, 4], [1, 1, 4]);
-    expect(() => dl.reverse3d(x, [0.5])).toThrowError();
+    const x = tf.tensor3d([1, 20, 300, 4], [1, 1, 4]);
+    expect(() => tf.reverse3d(x, [0.5])).toThrowError();
   });
 });
 
@@ -242,8 +243,8 @@ describeWithFlags('reverse4d', ALL_ENVS, () => {
   ];
 
   it('reverse a 4D array at axis [0]', () => {
-    const input = dl.tensor4d(data, shape);
-    const result = dl.reverse4d(input, [0]);
+    const input = tf.tensor4d(data, shape);
+    const result = tf.reverse4d(input, [0]);
     expect(result.shape).toEqual(input.shape);
     expectArraysClose(result, [
       48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65,
@@ -254,8 +255,8 @@ describeWithFlags('reverse4d', ALL_ENVS, () => {
   });
 
   it('reverse a 4D array at axis [1]', () => {
-    const input = dl.tensor4d(data, shape);
-    const result = dl.reverse4d(input, [1]);
+    const input = tf.tensor4d(data, shape);
+    const result = tf.reverse4d(input, [1]);
     expect(result.shape).toEqual(input.shape);
     expectArraysClose(result, [
       12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 0,  1,  2,  3,  4,  5,
@@ -266,8 +267,8 @@ describeWithFlags('reverse4d', ALL_ENVS, () => {
   });
 
   it('reverse a 4D array at axis [2]', () => {
-    const input = dl.tensor4d(data, shape);
-    const result = dl.reverse4d(input, [2]);
+    const input = tf.tensor4d(data, shape);
+    const result = tf.reverse4d(input, [2]);
     expect(result.shape).toEqual(input.shape);
     expectArraysClose(result, [
       8,  9,  10, 11, 4,  5,  6,  7,  0,  1,  2,  3,  20, 21, 22, 23, 16, 17,
@@ -278,8 +279,8 @@ describeWithFlags('reverse4d', ALL_ENVS, () => {
   });
 
   it('reverse a 4D array at axis [3]', () => {
-    const input = dl.tensor4d(data, shape);
-    const result = dl.reverse4d(input, [3]);
+    const input = tf.tensor4d(data, shape);
+    const result = tf.reverse4d(input, [3]);
     expect(result.shape).toEqual(input.shape);
     expectArraysClose(result, [
       3,  2,  1,  0,  7,  6,  5,  4,  11, 10, 9,  8,  15, 14, 13, 12, 19, 18,
@@ -290,8 +291,8 @@ describeWithFlags('reverse4d', ALL_ENVS, () => {
   });
 
   it('reverse a 4D array at axis [0, 2]', () => {
-    const input = dl.tensor4d(data, shape);
-    const result = dl.reverse4d(input, [0, 2]);
+    const input = tf.tensor4d(data, shape);
+    const result = tf.reverse4d(input, [0, 2]);
     expect(result.shape).toEqual(input.shape);
     expectArraysClose(result, [
       56, 57, 58, 59, 52, 53, 54, 55, 48, 49, 50, 51, 68, 69, 70, 71, 64, 65,
@@ -302,8 +303,8 @@ describeWithFlags('reverse4d', ALL_ENVS, () => {
   });
 
   it('reverse a 4D array at axis [1, 3]', () => {
-    const input = dl.tensor4d(data, shape);
-    const result = dl.reverse4d(input, [1, 3]);
+    const input = tf.tensor4d(data, shape);
+    const result = tf.reverse4d(input, [1, 3]);
     expect(result.shape).toEqual(input.shape);
     expectArraysClose(result, [
       15, 14, 13, 12, 19, 18, 17, 16, 23, 22, 21, 20, 3,  2,  1,  0,  7,  6,
@@ -315,18 +316,25 @@ describeWithFlags('reverse4d', ALL_ENVS, () => {
 
   it('throws error with invalid input', () => {
     // tslint:disable-next-line:no-any
-    const x: any = dl.tensor3d([1, 20, 300, 4], [1, 1, 4]);
-    expect(() => dl.reverse4d(x, [1])).toThrowError();
+    const x: any = tf.tensor3d([1, 20, 300, 4], [1, 1, 4]);
+    expect(() => tf.reverse4d(x, [1])).toThrowError();
   });
 
   it('throws error with invalid axis param', () => {
-    const x = dl.tensor4d([1, 20, 300, 4], [1, 1, 1, 4]);
-    expect(() => dl.reverse4d(x, [4])).toThrowError();
-    expect(() => dl.reverse4d(x, [-5])).toThrowError();
+    const x = tf.tensor4d([1, 20, 300, 4], [1, 1, 1, 4]);
+    expect(() => tf.reverse4d(x, [4])).toThrowError();
+    expect(() => tf.reverse4d(x, [-5])).toThrowError();
   });
 
   it('throws error with non integer axis param', () => {
-    const x = dl.tensor4d([1, 20, 300, 4], [1, 1, 1, 4]);
-    expect(() => dl.reverse4d(x, [0.5])).toThrowError();
+    const x = tf.tensor4d([1, 20, 300, 4], [1, 1, 1, 4]);
+    expect(() => tf.reverse4d(x, [0.5])).toThrowError();
+  });
+});
+
+describeWithFlags('reverse', CPU_ENVS, () => {
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.reverse({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'reverse' must be a Tensor/);
   });
 });

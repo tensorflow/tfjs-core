@@ -15,56 +15,91 @@
  * =============================================================================
  */
 
-import * as dl from '../index';
-import {ALL_ENVS, describeWithFlags, expectArraysClose} from '../test_util';
+import * as tf from '../index';
+import {ALL_ENVS, expectArraysClose} from '../test_util';
+import {describeWithFlags} from '../jasmine_util';
 import {Rank} from '../types';
 
 describeWithFlags('depthwiseConv2D', ALL_ENVS, () => {
-  it('input=1x3x3x1,f=2,s=1,p=valid,chMul=1', () => {
+  it('input=1x3x3x1,f=2,s=1,d=1,p=valid,chMul=1', () => {
     const fSize = 2;
     const pad = 'valid';
     const stride = 1;
     const chMul = 1;
     const inDepth = 1;
 
-    const x = dl.tensor4d(
+    const x = tf.tensor4d(
         [
           0.230664, 0.987388, 0.0685208, 0.419224, 0.887861, 0.731641,
           0.0741907, 0.409265, 0.351377
         ],
         [1, 3, 3, inDepth]);
-    const w = dl.tensor4d(
+    const w = tf.tensor4d(
         [0.303873, 0.229223, 0.144333, 0.803373],
         [fSize, fSize, inDepth, chMul],
     );
-    const result = dl.depthwiseConv2d(x, w, stride, pad);
+    const result = tf.depthwiseConv2d(x, w, stride, pad);
     expect(result.shape).toEqual([1, 2, 2, 1]);
 
     const expected = [1.07022, 1.03167, 0.67041, 0.778863];
     expectArraysClose(result, expected);
   });
 
-  it('input=1x3x3x2,f=2,s=1,p=same,chMul=1', () => {
+  it('input=1x3x3x1,f=2,s=1,d=2,p=valid,chMul=1', () => {
+    const fSize = 2;
+    const pad = 'valid';
+    const stride = 1;
+    const dilation = 2;
+    const chMul = 1;
+    const inDepth = 1;
+
+    const x = tf.tensor4d(
+        [
+          0.230664, 0.987388, 0.0685208, 0.419224, 0.887861, 0.731641,
+          0.0741907, 0.409265, 0.351377
+        ],
+        [1, 3, 3, inDepth]);
+    const w = tf.tensor4d(
+        [0.303873, 0.229223, 0.144333, 0.803373],
+        [fSize, fSize, inDepth, chMul],
+    );
+    // adding a dilation rate is equivalent to using a filter
+    // with 0s for the dilation rate
+    const fSizeDilated = fSize + (fSize - 1) * (dilation - 1);
+    const wDilated = tf.tensor4d(
+        [0.303873, 0, 0.229223, 0, 0, 0, 0.144333, 0, 0.803373],
+        [fSizeDilated, fSizeDilated, inDepth, chMul],
+    );
+
+    const result = tf.depthwiseConv2d(x, w, stride, pad, 'NHWC', dilation);
+
+    const expectedResult = tf.depthwiseConv2d(x, wDilated, stride, pad);
+
+    expect(result.shape).toEqual(expectedResult.shape);
+    expectArraysClose(result, expectedResult);
+  });
+
+  it('input=1x3x3x2,f=2,s=1,d=1,p=same,chMul=1', () => {
     const fSize = 2;
     const pad = 'same';
     const stride = 1;
     const chMul = 1;
     const inDepth = 2;
 
-    const x = dl.tensor4d(
+    const x = tf.tensor4d(
         [
           0.111057, 0.661818, 0.701979, 0.424362, 0.992854, 0.417599, 0.423036,
           0.500499, 0.368484, 0.714135, 0.456693, 0.531058, 0.636636, 0.345024,
           0.0506303, 0.789682, 0.177473, 0.793569
         ],
         [1, 3, 3, inDepth]);
-    const w = dl.tensor4d(
+    const w = tf.tensor4d(
         [
           0.614293, 0.0648011, 0.101113, 0.452887, 0.0582746, 0.426481,
           0.872743, 0.765767
         ],
         [fSize, fSize, inDepth, chMul]);
-    const result = dl.depthwiseConv2d(x, w, stride, pad);
+    const result = tf.depthwiseConv2d(x, w, stride, pad);
     expect(result.shape).toEqual([1, 3, 3, 2]);
 
     const expected = [
@@ -75,6 +110,58 @@ describeWithFlags('depthwiseConv2D', ALL_ENVS, () => {
     expectArraysClose(result, expected);
   });
 
+  it('input=1x3x3x2,f=2,s=1,d=2,p=same,chMul=1', () => {
+    const fSize = 2;
+    const pad = 'same';
+    const stride = 1;
+    const dilation = 2;
+    const inDepth = 2;
+
+    const x = tf.tensor4d(
+        [
+          0.111057, 0.661818, 0.701979, 0.424362, 0.992854, 0.417599, 0.423036,
+          0.500499, 0.368484, 0.714135, 0.456693, 0.531058, 0.636636, 0.345024,
+          0.0506303, 0.789682, 0.177473, 0.793569
+        ],
+        [1, 3, 3, inDepth]);
+
+    const w =
+        tf.stack(
+              [
+                tf.tensor2d(
+                    [0.614293, 0.0648011, 0.101113, 0.452887], [fSize, fSize]),
+                tf.tensor2d(
+                    [0.0582746, 0.426481, 0.872743, 0.765767], [fSize, fSize])
+              ],
+              2)
+            .expandDims(3) as tf.Tensor4D;
+
+    // adding a dilation rate is equivalent to using a filter
+    // with 0s for the dilation rate
+    const fSizeDilated = fSize + (fSize - 1) * (dilation - 1);
+    const wDilated =
+        tf.stack(
+              [
+                tf.tensor2d(
+                    [0.614293, 0, 0.0648011, 0, 0, 0, 0.101113, 0, 0.452887],
+                    [fSizeDilated, fSizeDilated]),
+                tf.tensor2d(
+                    [0.0582746, 0, 0.426481, 0, 0, 0, 0.872743, 0, 0.765767],
+                    [fSizeDilated, fSizeDilated])
+              ],
+              2)
+            .expandDims(3) as tf.Tensor4D;
+
+    expect(wDilated.shape).toEqual([fSizeDilated, fSizeDilated, inDepth, 1]);
+
+    const result = tf.depthwiseConv2d(x, w, stride, pad, 'NHWC', dilation);
+
+    const expectedResult = tf.depthwiseConv2d(x, wDilated, stride, pad);
+
+    expect(result.shape).toEqual(expectedResult.shape);
+    expectArraysClose(result, expectedResult);
+  });
+
   it('input=1x3x3x2,f=2,s=1,p=same,chMul=2', () => {
     const fSize = 2;
     const pad = 'same';
@@ -82,21 +169,21 @@ describeWithFlags('depthwiseConv2D', ALL_ENVS, () => {
     const chMul = 2;
     const inDepth = 2;
 
-    const x = dl.tensor4d(
+    const x = tf.tensor4d(
         [
           0.675707, 0.758567, 0.413529, 0.963967, 0.217291, 0.101335, 0.804231,
           0.329673, 0.924503, 0.728742, 0.180217, 0.210459, 0.133869, 0.650827,
           0.047613, 0.554795, 0.653365, 0.442196
         ],
         [1, 3, 3, inDepth]);
-    const w = dl.tensor4d(
+    const w = tf.tensor4d(
         [
           0.347154, 0.386692, 0.327191, 0.483784, 0.591807, 0.24263, 0.95182,
           0.174353, 0.592136, 0.623469, 0.988244, 0.660731, 0.946534, 0.0801365,
           0.864889, 0.874602
         ],
         [fSize, fSize, inDepth, chMul]);
-    const result = dl.depthwiseConv2d(x, w, stride, pad);
+    const result = tf.depthwiseConv2d(x, w, stride, pad);
     expect(result.shape).toEqual([1, 3, 3, 4]);
 
     const expected = [
@@ -117,7 +204,7 @@ describeWithFlags('depthwiseConv2D', ALL_ENVS, () => {
     const chMul = 2;
     const inDepth = 2;
 
-    const x = dl.tensor4d(
+    const x = tf.tensor4d(
         [
           0.261945, 0.0528113, 0.656698,  0.127345,  0.610039, 0.169131,
           0.458647, 0.0988288, 0.966109,  0.0421747, 0.82035,  0.274711,
@@ -127,14 +214,14 @@ describeWithFlags('depthwiseConv2D', ALL_ENVS, () => {
           0.363789, 0.269745,  0.486136,  0.894215,  0.794299, 0.724615
         ],
         [2, 3, 3, inDepth]);
-    const w = dl.tensor4d(
+    const w = tf.tensor4d(
         [
           0.240347, 0.906352, 0.478657, 0.825918, 0.380769, 0.184705, 0.238241,
           0.201907, 0.294087, 0.181165, 0.191303, 0.7225, 0.430064, 0.900622,
           0.670338, 0.33478
         ],
         [fSize, fSize, inDepth, chMul]);
-    const result = dl.depthwiseConv2d(x, w, stride, pad);
+    const result = tf.depthwiseConv2d(x, w, stride, pad);
     expect(result.shape).toEqual([2, 3, 3, 4]);
 
     const expected = [
@@ -153,6 +240,76 @@ describeWithFlags('depthwiseConv2D', ALL_ENVS, () => {
     expectArraysClose(result, expected);
   });
 
+  it('input=2x3x3x2,f=2,s=1,d=2,p=same,chMul=2', () => {
+    const fSize = 2;
+    const pad = 'same';
+    const stride = 1;
+    // const chMul = 2;
+    const inDepth = 2;
+    const dilation = 2;
+    const noDilation = 1;
+
+    const x = tf.tensor4d(
+        [
+          0.261945, 0.0528113, 0.656698,  0.127345,  0.610039, 0.169131,
+          0.458647, 0.0988288, 0.966109,  0.0421747, 0.82035,  0.274711,
+          0.359377, 0.512113,  0.689682,  0.941571,  0.31961,  0.743826,
+          0.858147, 0.984766,  0.926973,  0.579597,  0.444104, 0.505969,
+          0.241437, 0.937999,  0.0957074, 0.773611,  0.46023,  0.469379,
+          0.363789, 0.269745,  0.486136,  0.894215,  0.794299, 0.724615
+        ],
+        [2, 3, 3, inDepth]);
+
+    const w = tf.stack([
+      tf.stack(
+          [
+            tf.tensor2d(
+                [0.240347, 0.906352, 0.478657, 0.825918], [fSize, fSize]),
+            tf.tensor2d(
+                [0.380769, 0.184705, 0.238241, 0.201907], [fSize, fSize])
+          ],
+          2),
+      tf.stack(
+          [
+            tf.tensor2d([0.294087, 0.181165, 0.191303, 0.7225], [fSize, fSize]),
+            tf.tensor2d(
+                [0.430064, 0.900622, 0.670338, 0.33478], [fSize, fSize])
+          ],
+          2)
+    ], 3) as tf.Tensor4D;
+
+    const fSizeDilated = fSize + (fSize - 1) * (dilation - 1);
+    const wDilated = tf.stack([
+      tf.stack(
+          [
+            tf.tensor2d(
+              [0.240347, 0, 0.906352, 0, 0, 0, 0.478657, 0, 0.825918],
+              [fSizeDilated, fSizeDilated]),
+            tf.tensor2d(
+              [0.380769, 0, 0.184705, 0, 0, 0, 0.238241, 0, 0.201907],
+              [fSizeDilated, fSizeDilated])
+          ],
+          2),
+      tf.stack(
+          [
+            tf.tensor2d([0.294087, 0, 0.181165, 0, 0, 0, 0.191303, 0, 0.7225],
+              [fSizeDilated, fSizeDilated]),
+            tf.tensor2d(
+              [0.430064, 0, 0.900622, 0, 0, 0, 0.670338, 0, 0.33478],
+              [fSizeDilated, fSizeDilated])
+          ],
+          2)
+    ], 3) as tf.Tensor4D;
+
+    const result = tf.depthwiseConv2d(x, w, stride, pad, 'NHWC', dilation);
+
+    const expectedResult =
+        tf.depthwiseConv2d(x, wDilated, stride, pad, 'NHWC', noDilation);
+
+    expect(result.shape).toEqual(expectedResult.shape);
+    expectArraysClose(result, expectedResult);
+  });
+
   it('Tensor3D is allowed', () => {
     const fSize = 2;
     const pad = 'same';
@@ -160,9 +317,9 @@ describeWithFlags('depthwiseConv2D', ALL_ENVS, () => {
     const chMul = 3;
     const inDepth = 2;
 
-    const x = dl.zeros<Rank.R3>([3, 3, inDepth]);
-    const w = dl.zeros<Rank.R4>([fSize, fSize, inDepth, chMul]);
-    const result = dl.depthwiseConv2d(x, w, stride, pad);
+    const x = tf.zeros<Rank.R3>([3, 3, inDepth]);
+    const w = tf.zeros<Rank.R4>([fSize, fSize, inDepth, chMul]);
+    const result = tf.depthwiseConv2d(x, w, stride, pad);
     expect(result.shape).toEqual([3, 3, inDepth * chMul]);
   });
 
@@ -174,9 +331,224 @@ describeWithFlags('depthwiseConv2D', ALL_ENVS, () => {
     const inDepth = 2;
     const dilations: [number, number] = null;
 
-    const x = dl.zeros<Rank.R3>([3, 3, inDepth]);
-    const w = dl.zeros<Rank.R4>([fSize, fSize, inDepth, chMul]);
-    const result = dl.depthwiseConv2d(x, w, stride, pad, dilations);
+    const x = tf.zeros<Rank.R3>([3, 3, inDepth]);
+    const w = tf.zeros<Rank.R4>([fSize, fSize, inDepth, chMul]);
+    const result = tf.depthwiseConv2d(x, w, stride, pad, 'NHWC', dilations);
     expect(result.shape).toEqual([3, 3, inDepth * chMul]);
+  });
+
+  it('throws when passed x as a non-tensor', () => {
+    const inputDepth = 1;
+    const outputDepth = 1;
+    const fSize = 1;
+    const pad = 'same';
+    const stride = 2;
+    const dataFormat = 'NHWC';
+    const dilation = 2;
+
+    const w = tf.tensor4d([3], [fSize, fSize, inputDepth, outputDepth]);
+
+    const e = /Argument 'x' passed to 'depthwiseConv2d' must be a Tensor/;
+    expect(
+        () => tf.depthwiseConv2d(
+              {} as tf.Tensor3D, w, stride, pad, dataFormat, dilation))
+        .toThrowError(e);
+  });
+
+  it('throws when passed filter as a non-tensor', () => {
+    const inputDepth = 1;
+    const inputShape: [number, number, number] = [2, 2, inputDepth];
+    const pad = 'same';
+    const stride = 2;
+    const dataFormat = 'NHWC';
+    const dilation = 2;
+
+    const x = tf.tensor3d([1, 2, 3, 4], inputShape);
+
+    const e = /Argument 'filter' passed to 'depthwiseConv2d' must be a Tensor/;
+    expect(
+        () => tf.depthwiseConv2d(
+            x, {} as tf.Tensor4D, stride, pad, dataFormat, dilation))
+        .toThrowError(e);
+  });
+});
+
+describeWithFlags('depthwiseConv2d gradients', ALL_ENVS, () => {
+  let images: tf.Tensor4D;
+  let filter: tf.Tensor4D;
+  let result: tf.Tensor4D;
+  const stride = 1;
+  const pad = 'same';
+
+  beforeEach(() => {
+    //two 2x2 RGB images => 2x2x2x3
+    images = tf.tensor4d([[
+      [[2,3,1],[3,0,2]],
+      [[0,4,1],[3,1,3]]
+    ], [
+      [[2,1,0],[0,3,3]],
+      [[4,0,1],[1,4,1]]
+    ]]);
+    //2x2 filters, chMul = 2 => 2x2x3x2
+    filter = tf.tensor4d([[
+      [[1,1],[1,1],[0,0]],
+      [[0,1],[1,1],[1,1]]
+    ], [
+      [[1,0],[1,1],[0,0]],
+      [[0,1],[1,0],[0,0]]
+    ]]);
+    //result of convolution operatoin
+    result = tf.tensor4d([[
+     [[2,8,8,7,2,2],[6,3,1,1,0,0]],
+     [[0,3,5,5,3,3],[3,3,1,1,0,0]]
+    ], [
+     [[6,3,8,4,3,3],[1,0,7,7,0,0]],
+     [[4,5,4,4,1,1],[1,1,4,4,0,0]]
+    ]]);
+  });
+
+  it('wrt input', () => {
+    const {value, grad} = tf.valueAndGrad(
+      (x: tf.Tensor4D) => tf.depthwiseConv2d(x, filter, stride, pad)
+    )(images);
+
+    expectArraysClose(value, result);
+
+    const expectedGrad = tf.tensor4d([[
+      [[2., 2., 0.], [3., 4., 2.]],
+      [[3., 4., 0.], [5., 7., 2.]]
+    ], [
+      [[2., 2., 0.], [3., 4., 2.]],
+      [[3., 4., 0.], [5., 7., 2.]]
+    ]]);
+
+    expectArraysClose(grad, expectedGrad);
+  });
+
+  // The gradients of normal and depthwise 2D convolutions are actually the same
+  // in the special case that dy = 1, so we also test the gradient of a function
+  // of the output to disambiguate the two methods.
+  it('wrt input, squared output', () => {
+    const grad = tf.grad(
+      (x: tf.Tensor4D) => tf.square(tf.depthwiseConv2d(x, filter, stride, pad))
+    )(images);
+
+    const expectedGrad = tf.tensor4d([[
+      [[20., 30.,  0.], [34., 34.,  8.]],
+      [[10., 50.,  0.], [46., 44., 12.]]
+    ], [
+      [[18., 24.,  0.], [ 8., 52., 12.]],
+      [[30., 40.,  0.], [22., 76.,  4.]]
+    ]]);
+
+    expectArraysClose(grad, expectedGrad);
+  });
+
+  it('wrt filter', () => {
+    const {value, grad} = tf.valueAndGrad(
+      (f: tf.Tensor4D) => tf.depthwiseConv2d(images, f, stride, pad)
+    )(filter);
+
+    expectArraysClose(value, result);
+
+    const expectedGrad = tf.tensor4d([[
+      [[15., 15.], [16., 16.], [12., 12.]],
+      [[ 7.,  7.], [ 8.,  8.], [ 9.,  9.]]
+    ], [
+      [[ 8.,  8.], [ 9.,  9.], [ 6.,  6.]],
+      [[ 4.,  4.], [ 5.,  5.], [ 4.,  4.]]
+    ]]);
+
+    expectArraysClose(grad, expectedGrad);
+  });
+
+  // Also disambiguate regular vs. depthwise filter gradients
+  it('wrt filter, squared output', () => {
+    const grad = tf.grad(
+      (f: tf.Tensor4D) => tf.square(tf.depthwiseConv2d(images, f, stride, pad))
+    )(filter);
+
+    const expectedGrad = tf.tensor4d([[
+      [[120., 122.], [180., 166.], [ 12.,  12.]],
+      [[ 20.,  76.], [ 90.,  66.], [ 46.,  46.]]
+    ], [
+      [[ 86.,  42.], [122., 114.], [ 10.,  10.]],
+      [[ 24.,  54.], [ 80.,  46.], [ 18.,  18.]]
+    ]]);
+
+    expectArraysClose(grad, expectedGrad);
+  });
+
+  it('throws error on dilations > 1', () => {
+    const grad = tf.grad(
+      (x: tf.Tensor4D) => tf.depthwiseConv2d(x, filter, stride, pad, 'NHWC', 2)
+    );
+
+    expect(() => grad(images))
+      .toThrowError(/dilation rates greater than 1 are not yet supported/);
+  });
+
+  it('wrt input, stride=2, pad=valid', () => {
+    const dx = tf.grad(
+      (x: tf.Tensor4D) => tf.depthwiseConv2d(x, filter, 2, 'valid')
+    )(images);
+
+    expectArraysClose(dx, tf.tensor4d([[
+      [[2., 2., 0.], [1., 2., 2.]],
+      [[1., 2., 0.], [1., 1., 0.]]
+    ], [
+      [[2., 2., 0.], [1., 2., 2.]],
+      [[1., 2., 0.], [1., 1., 0.]]
+    ]]));
+  });
+
+  it('wrt filter, stride=2, pad=valid', () => {
+    const df = tf.grad(
+      (f: tf.Tensor4D) => tf.depthwiseConv2d(images, f, 2, 'valid')
+    )(filter);
+
+    expectArraysClose(df, tf.tensor4d([[
+      [[4., 4.], [4., 4.], [1., 1.]],
+      [[3., 3.], [3., 3.], [5., 5.]]
+    ], [
+      [[4., 4.], [4., 4.], [2., 2.]],
+      [[4., 4.], [5., 5.], [4., 4.]]
+    ]]));
+  });
+
+  it('wrt input and filter, 1x3x3x1 and 2x2x1x1', () => {
+    const fSize = 2;
+    const pad = 'valid';
+    const stride = 1;
+    const chMul = 1;
+    const inDepth = 1;
+
+    const x = tf.tensor4d(
+        [
+          0.230664, 0.987388, 0.0685208, 0.419224, 0.887861, 0.731641,
+          0.0741907, 0.409265, 0.351377
+        ],
+        [1, 3, 3, inDepth]);
+
+    const f = tf.tensor4d(
+        [0.303873, 0.229223, 0.144333, 0.803373],
+        [fSize, fSize, inDepth, chMul],
+    );
+
+    const [dx, df] = tf.grads(
+      (x: tf.Tensor4D, f: tf.Tensor4D) => tf.depthwiseConv2d(x, f, stride, pad)
+    )([x, f]);
+
+    expectArraysClose(dx, tf.tensor4d([[
+      [[0.303873], [0.533096], [0.229223]],
+      [[0.448206], [1.480802], [1.032596]],
+      [[0.144333], [0.947706], [0.803373]]
+    ]]));
+
+    expectArraysClose(df, tf.tensor4d([
+      [[[2.525137]], [[2.6754108]]
+    ], [
+      [[1.7905407]], [[2.380144 ]]
+    ]]));
   });
 });
