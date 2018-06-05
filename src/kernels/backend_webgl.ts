@@ -87,9 +87,9 @@ export interface WebGLTimingInfo extends TimingInfo {
   downloadWaitMs: number;
 }
 
-// Maximum number of textures before we start moving data from gpu to cpu.
-// Moving avoids gpu memory leaks and relies on JavaScript's garbage collector.
-const NUM_TEXTURES_BEFORE_PAGING = 1000;
+// Empirically determined constant used to decide the number of bytes on GPU
+// before we start paging. Used with the device screen resolution.
+const BEFORE_PAGING_CONSTANT = 300;
 
 export class MathBackendWebGL implements KernelBackend {
   private texData = new WeakMap<DataId, TextureData>();
@@ -98,8 +98,15 @@ export class MathBackendWebGL implements KernelBackend {
   // List of data ids that are scheduled for disposal, but are waiting on a
   // pending read operation.
   private pendingDisposal = new WeakSet<DataId>();
-  // List of data ids that are currently residing on gpu memory.
-  private dataInGPU: DataId[] = [];
+  // List of data ids that are currently residing on gpu memory. Sorted with
+  // least recently used being first.
+  private lruDataGPU: DataId[] = [];
+  private numBytesInGPU: number;
+  /**
+   * Number of bytes allocated on the GPU before we start moving data to cpu.
+   * Moving avoids gpu memory leaks and relies on JS's garbage collector.
+   */
+  private NUM_BYTES_BEFORE_PAGING: number;
 
   private canvas: HTMLCanvasElement;
   private fromPixelsCanvas: HTMLCanvasElement;
@@ -230,9 +237,9 @@ export class MathBackendWebGL implements KernelBackend {
       return this.readSync(dataId);
     }
 
+    this.pendingRead.set(dataId, []);
     // Construct an empty query. We're just interested in getting a callback
     // when the GPU command queue has executed until this point in time.
-    this.pendingRead.set(dataId, []);
     await this.gpgpu.runQuery(() => {});
     const subscribers = this.pendingRead.get(dataId);
     this.pendingRead.delete(dataId);
@@ -356,7 +363,11 @@ export class MathBackendWebGL implements KernelBackend {
     } else {
       this.gpgpuCreatedLocally = false;
     }
-
+    // Use the device screen's resolution as a heuristic to decide on the
+    // maximum memory allocated on the GPU before starting to page.
+    this.NUM_BYTES_BEFORE_PAGING =
+        (window.screen.height * window.screen.width * window.devicePixelRatio) *
+        BEFORE_PAGING_CONSTANT;
     this.textureManager = new TextureManager(this.gpgpu);
   }
 
@@ -1098,8 +1109,8 @@ export class MathBackendWebGL implements KernelBackend {
     if (texture != null) {
       // Array is already on GPU. No-op.
       // Touching the texture.
-      this.dataInGPU.splice(this.dataInGPU.indexOf(dataId), 1);
-      this.dataInGPU.push(dataId);
+      this.lruDataGPU.splice(this.lruDataGPU.indexOf(dataId), 1);
+      this.lruDataGPU.push(dataId);
       return;
     }
     const shouldTimeProgram = this.activeTimers != null;
@@ -1143,9 +1154,11 @@ export class MathBackendWebGL implements KernelBackend {
   private releaseTexture(
       dataId: DataId, texture: WebGLTexture, texShape: [number, number],
       texType: TextureType) {
-    const idx = this.dataInGPU.indexOf(dataId);
+    const {shape, dtype} = this.texData.get(dataId);
+    const idx = this.lruDataGPU.indexOf(dataId);
     if (idx >= 0) {
-      this.dataInGPU.splice(idx, 1);
+      this.lruDataGPU.splice(idx, 1);
+      this.numBytesInGPU -= this.computeBytes(shape, dtype);
     }
     this.textureManager.releaseTexture(texture, texShape, texType);
   }
@@ -1153,11 +1166,24 @@ export class MathBackendWebGL implements KernelBackend {
   private acquireTexture(
       dataId: DataId, texShape: [number, number],
       texType: TextureType): WebGLTexture {
-    this.dataInGPU.push(dataId);
-    if (this.dataInGPU.length > NUM_TEXTURES_BEFORE_PAGING) {
-      this.read(this.dataInGPU.shift());
+    const {shape, dtype} = this.texData.get(dataId);
+    this.lruDataGPU.push(dataId);
+    this.numBytesInGPU += this.computeBytes(shape, dtype);
+
+    if (this.numBytesInGPU > this.NUM_BYTES_BEFORE_PAGING) {
+      let numBytesToPage = this.numBytesInGPU - this.NUM_BYTES_BEFORE_PAGING;
+      while (numBytesToPage > 0) {
+        const dataIdToRead = this.lruDataGPU.shift();
+        const {shape, dtype} = this.texData.get(dataId);
+        numBytesToPage -= this.computeBytes(shape, dtype);
+        this.read(dataIdToRead);
+      }
     }
     return this.textureManager.acquireTexture(texShape, texType);
+  }
+
+  private computeBytes(shape: number[], dtype: DataType) {
+    return util.sizeFromShape(shape) * util.bytesPerElement(dtype);
   }
 }
 
