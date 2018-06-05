@@ -341,7 +341,7 @@ export class Tensor<R extends Rank = Rank> {
     if (this.isDisposed) {
       return;
     }
-    this.isDisposed = true;
+    this.isDisposedInternal = true;
     ENV.engine.disposeTensor(this);
   }
 
