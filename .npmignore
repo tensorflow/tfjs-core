@@ -13,7 +13,6 @@ website/
 karma.conf.js
 *.tgz
 dist/demos/
-dist/**/*.js.map
 .travis.yml
 .npmignore
 CONTRIBUTING.md

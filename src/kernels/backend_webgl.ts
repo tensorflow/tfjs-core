@@ -101,7 +101,7 @@ export class MathBackendWebGL implements KernelBackend {
   // List of data ids that are currently residing on gpu memory. Sorted with
   // least recently used being first.
   private lruDataGPU: DataId[] = [];
-  private numBytesInGPU: number;
+  private numBytesInGPU = 0;
   /**
    * Number of bytes allocated on the GPU before we start moving data to cpu.
    * Moving avoids gpu memory leaks and relies on JS's garbage collector.
