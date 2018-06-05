@@ -594,6 +594,10 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return ops.div(this, x);
   }
+  floorDiv<T extends Tensor>(x: Tensor): T {
+    this.throwIfDisposed();
+    return ops.floorDiv(this, x);
+  }
   divStrict<T extends this>(this: T, x: T): T {
     this.throwIfDisposed();
     return ops.divStrict(this, x);
@@ -954,6 +958,8 @@ export type Tensor2D = Tensor<Rank.R2>;
 export type Tensor3D = Tensor<Rank.R3>;
 /** @doclink Tensor */
 export type Tensor4D = Tensor<Rank.R4>;
+/** @doclink Tensor */
+export type Tensor5D = Tensor<Rank.R5>;
 
 /**
  * A mutable `Tensor`, useful for persisting state, e.g. for training.
