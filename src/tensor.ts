@@ -345,7 +345,7 @@ export class Tensor<R extends Rank = Rank> {
     ENV.engine.disposeTensor(this);
   }
 
-  private isDisposed = false;
+  public isDisposed = false;
   private throwIfDisposed() {
     if (this.isDisposed) {
       throw new Error(`Tensor is disposed.`);
