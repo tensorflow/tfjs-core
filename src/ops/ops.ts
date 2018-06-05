@@ -22,6 +22,7 @@ import {CompareOps} from './compare';
 import {ConcatOps} from './concat';
 import {ConvOps} from './conv';
 import {ImageOps} from './image_ops';
+import {LinalgOps} from './linalg_ops';
 import {LogicalOps} from './logical_ops';
 import {LossOps, Reduction} from './loss_ops';
 import {LRNOps} from './lrn';
@@ -34,6 +35,7 @@ import {ReductionOps} from './reduction_ops';
 import {ReverseOps} from './reverse';
 import {SliceOps} from './slice';
 import {SoftmaxOps} from './softmax';
+import {StridedSliceOps} from './strided_slice';
 import {TransposeOps} from './transpose';
 import {UnaryOps} from './unary_ops';
 
@@ -58,6 +60,7 @@ export const matMul = MatmulOps.matMul;
 export const matrixTimesVector = MatmulOps.matrixTimesVector;
 export const outerProduct = MatmulOps.outerProduct;
 export const vectorTimesMatrix = MatmulOps.vectorTimesMatrix;
+export const dot = MatmulOps.dot;
 
 export const avgPool = PoolOps.avgPool;
 export const maxPool = PoolOps.maxPool;
@@ -76,6 +79,8 @@ export const slice2d = SliceOps.slice2d;
 export const slice3d = SliceOps.slice3d;
 export const slice4d = SliceOps.slice4d;
 
+export const stridedSlice = StridedSliceOps.stridedSlice;
+
 export const argMax = ReductionOps.argMax;
 export const argMin = ReductionOps.argMin;
 export const logSumExp = ReductionOps.logSumExp;
@@ -84,6 +89,7 @@ export const mean = ReductionOps.mean;
 export const min = ReductionOps.min;
 export const moments = ReductionOps.moments;
 export const sum = ReductionOps.sum;
+export const unsortedSegmentSum = ReductionOps.unsortedSegmentSum;
 
 export const equal = CompareOps.equal;
 export const equalStrict = CompareOps.equalStrict;
@@ -146,6 +152,7 @@ export const add = BinaryOps.add;
 export const addStrict = BinaryOps.addStrict;
 export const atan2 = BinaryOps.atan2;
 export const div = BinaryOps.div;
+export const floorDiv = BinaryOps.floorDiv;
 export const divStrict = BinaryOps.divStrict;
 export const maximum = BinaryOps.maximum;
 export const maximumStrict = BinaryOps.maximumStrict;
@@ -173,6 +180,7 @@ export const ones = ArrayOps.ones;
 export const onesLike = ArrayOps.onesLike;
 export const zeros = ArrayOps.zeros;
 export const zerosLike = ArrayOps.zerosLike;
+export const eye = ArrayOps.eye;
 export const rand = ArrayOps.rand;
 export const randomNormal = ArrayOps.randomNormal;
 export const truncatedNormal = ArrayOps.truncatedNormal;
@@ -193,10 +201,13 @@ export const tensor1d = ArrayOps.tensor1d;
 export const tensor2d = ArrayOps.tensor2d;
 export const tensor3d = ArrayOps.tensor3d;
 export const tensor4d = ArrayOps.tensor4d;
+export const tensor5d = ArrayOps.tensor5d;
 export const print = ArrayOps.print;
 export const expandDims = ArrayOps.expandDims;
 export const stack = ArrayOps.stack;
+export const unstack = ArrayOps.unstack;
 export const split = ArrayOps.split;
+export const cumsum = ArrayOps.cumsum;
 
 export const pad = ArrayOps.pad;
 export const pad1d = ArrayOps.pad1d;
@@ -213,6 +224,10 @@ export const softmax = SoftmaxOps.softmax;
 
 export const localResponseNormalization = LRNOps.localResponseNormalization;
 
+export const linalg = LinalgOps;
+
+export {operation} from './operation';
+
 // So typings can propagate.
 import {Tensor} from '../tensor';
 import {Rank} from '../types';
@@ -226,6 +241,9 @@ export const losses = {
   absoluteDifference: LossOps.absoluteDifference,
   computeWeightedLoss: LossOps.computeWeightedLoss,
   cosineDistance: LossOps.cosineDistance,
+  hingeLoss: LossOps.hingeLoss,
+  huberLoss: LossOps.huberLoss,
+  logLoss: LossOps.logLoss,
   meanSquaredError: LossOps.meanSquaredError,
   softmaxCrossEntropy: SoftmaxOps.softmaxCrossEntropy
 };

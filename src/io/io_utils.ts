@@ -20,7 +20,8 @@ import {Tensor} from '../tensor';
 import {NamedTensorMap, TypedArray} from '../types';
 import {sizeFromShape} from '../util';
 
-import {DTYPE_VALUE_SIZE_MAP, WeightsManifestEntry} from './types';
+// tslint:disable-next-line:max-line-length
+import {DTYPE_VALUE_SIZE_MAP, ModelArtifacts, ModelArtifactsInfo, WeightsManifestEntry} from './types';
 
 /**
  * Encode a map from names to weight values as an ArrayBuffer, along with an
@@ -180,4 +181,68 @@ export function base64StringToArrayBuffer(str: string): ArrayBuffer {
     buffer.set([s.charCodeAt(i)], i);
   }
   return buffer.buffer;
+}
+
+/**
+ * Concatenate a number of ArrayBuffers into one.
+ *
+ * @param buffers A number of array buffers to concatenate.
+ * @returns Result of concatenating `buffers` in order.
+ */
+export function concatenateArrayBuffers(buffers: ArrayBuffer[]): ArrayBuffer {
+  let totalByteLength = 0;
+  buffers.forEach(buffer => {
+    totalByteLength += buffer.byteLength;
+  });
+
+  const temp = new Uint8Array(totalByteLength);
+  let offset = 0;
+  buffers.forEach(buffer => {
+    temp.set(new Uint8Array(buffer), offset);
+    offset += buffer.byteLength;
+  });
+  return temp.buffer;
+}
+
+/**
+ * Get the basename of a path.
+ *
+ * Behaves in a way analogous to Linux's basename command.
+ *
+ * @param path
+ */
+export function basename(path: string): string {
+  const SEPARATOR = '/';
+  path = path.trim();
+  while (path.endsWith(SEPARATOR)) {
+    path = path.slice(0, path.length - 1);
+  }
+  const items = path.split(SEPARATOR);
+  return items[items.length - 1];
+}
+
+/**
+ * Populate ModelArtifactsInfo fields for a model with JSON topology.
+ * @param modelArtifacts
+ * @returns A ModelArtifactsInfo object.
+ */
+export function getModelArtifactsInfoForJSON(modelArtifacts: ModelArtifacts):
+    ModelArtifactsInfo {
+  if (modelArtifacts.modelTopology instanceof ArrayBuffer) {
+    throw new Error('Expected JSON model topology, received ArrayBuffer.');
+  }
+
+  return {
+    dateSaved: new Date(),
+    modelTopologyType: 'JSON',
+    modelTopologyBytes: modelArtifacts.modelTopology == null ?
+        0 :
+        stringByteLength(JSON.stringify(modelArtifacts.modelTopology)),
+    weightSpecsBytes: modelArtifacts.weightSpecs == null ?
+        0 :
+        stringByteLength(JSON.stringify(modelArtifacts.weightSpecs)),
+    weightDataBytes: modelArtifacts.weightData == null ?
+        0 :
+        modelArtifacts.weightData.byteLength,
+  };
 }

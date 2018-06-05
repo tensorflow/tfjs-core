@@ -26,6 +26,7 @@ import * as erf_util from '../ops/erf_util';
 import * as ops from '../ops/ops';
 import {buffer, tensor3d, tensor4d} from '../ops/ops';
 import * as selu_util from '../ops/selu_util';
+import {getStridedSlicedInfo} from '../ops/slice_util';
 // tslint:disable-next-line:max-line-length
 import {DataId, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import * as types from '../types';
@@ -153,6 +154,31 @@ export class MathBackendCPU implements KernelBackend {
     return buffer.toTensor() as T;
   }
 
+  stridedSlice<T extends Tensor>(
+      x: T, begin: number[], end: number[], strides: number[],
+      beginMask: number, endMask: number): T {
+    const [beginIndex, size] =
+        getStridedSlicedInfo(x.shape, begin, end, strides, beginMask, endMask);
+
+    if (size.some(axis => axis === 0)) {
+      return ops.tensor([], size) as T;
+    }
+
+    const buffer = ops.buffer(size, x.dtype);
+
+    for (let i = 0; i < buffer.size; i++) {
+      const loc = buffer.indexToLoc(i);
+
+      const newLoc: number[] = new Array(loc.length);
+      for (let j = 0; j < newLoc.length; j++) {
+        newLoc[j] = loc[j] * strides[j] + beginIndex[j];
+      }
+      buffer.set(x.get(...newLoc), ...loc);
+    }
+
+    return buffer.toTensor() as T;
+  }
+
   reverse<T extends Tensor>(x: T, axis: number[]): T {
     const buffer = ops.buffer(x.shape, x.dtype);
     const xBuffer = x.buffer();
@@ -258,16 +284,15 @@ export class MathBackendCPU implements KernelBackend {
                (aValue, bValue) => aValue * bValue) as Tensor;
   }
 
-  divide(a: Tensor, b: Tensor): Tensor {
-    let op: (a: number, b: number) => number;
-    let outputDtype: 'float32'|'int32';
-    if (a.dtype === 'int32' && b.dtype === 'int32') {
-      outputDtype = 'int32';
-      op = (a: number, b: number) => Math.floor(a / b);
-    } else {
-      outputDtype = 'float32';
-      op = (a: number, b: number) => a / b;
-    }
+  realDivide(a: Tensor, b: Tensor): Tensor {
+    const op = (a: number, b: number) => a / b;
+    const outputDtype = 'float32';
+    return this.broadcastedBinaryOp(a, b, outputDtype, op) as Tensor;
+  }
+
+  floorDiv(a: Tensor, b: Tensor): Tensor {
+    const op = (a: number, b: number) => Math.floor(a / b);
+    const outputDtype = 'int32';
     return this.broadcastedBinaryOp(a, b, outputDtype, op) as Tensor;
   }
 
@@ -340,6 +365,37 @@ export class MathBackendCPU implements KernelBackend {
         }
       }
       vals[i] = maxIndex;
+    }
+    return result;
+  }
+
+  cumsum(x: Tensor, axis: number, exclusive: boolean, reverse: boolean):
+      Tensor {
+    if (axis !== x.rank - 1) {
+      throw new Error(
+          `backend.cumsum in CPU expects an inner-most axis=${x.rank - 1} ` +
+          `but got axis=${axis}`);
+    }
+    const resultDtype = types.upcastType(x.dtype, 'int32');
+    const result = ops.zeros(x.shape, resultDtype);
+    const vals = result.dataSync();
+
+    const aVals = x.dataSync();
+    const finalDim = x.shape[x.rank - 1];
+    const indexAdjuster = reverse ?
+        (i: number, j: number) => i + finalDim - j - 1 :
+        (i: number, j: number) => i + j;
+    for (let i = 0; i < aVals.length; i += finalDim) {
+      for (let j = 0; j < finalDim; j++) {
+        const idx = indexAdjuster(i, j);
+        if (j === 0) {
+          vals[idx] = exclusive ? 0 : aVals[idx];
+        } else {
+          const prevIdx = indexAdjuster(i, j - 1);
+          vals[idx] = exclusive ? aVals[prevIdx] + vals[prevIdx] :
+                                  aVals[idx] + vals[prevIdx];
+        }
+      }
     }
     return result;
   }
@@ -1136,6 +1192,115 @@ export class MathBackendCPU implements KernelBackend {
     return y.toTensor();
   }
 
+  depthwiseConv2DDerInput(dy: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
+      Tensor4D {
+    const dx = ops.buffer<Rank.R4>(convInfo.inShape, 'float32');
+    const dxValues = dx.values;
+    const [dxS0, dxS1, dxS2] = dx.strides;
+    const dyValues = dy.dataSync();
+    const [dyS0, dyS1, dyS2] = dy.strides;
+    const fltValues = filter.dataSync();
+    const [fltS0, fltS1, fltS2] = filter.strides;
+    const {
+      batchSize,
+      filterHeight,
+      filterWidth,
+      inChannels,
+      inHeight,
+      inWidth,
+      outChannels,
+      outHeight,
+      outWidth,
+      strideHeight,
+      strideWidth
+    } = convInfo;
+    const topPad = filterHeight - 1 - convInfo.padInfo.top;
+    const leftPad = filterWidth - 1 - convInfo.padInfo.left;
+    const chMul = outChannels / inChannels;
+
+    for (let b = 0; b < batchSize; ++b) {
+      for (let d1 = 0; d1 < inChannels; ++d1) {
+        for (let xR = 0; xR < inHeight; ++xR) {
+          const xRCorner = xR - topPad;
+          const xRMin = Math.max(0, Math.ceil(xRCorner / strideHeight));
+          const yRMax =
+              Math.min(outHeight, (filterHeight + xRCorner) / strideHeight);
+
+          for (let xC = 0; xC < inWidth; ++xC) {
+            const xCCorner = xC - leftPad;
+            const xCMin = Math.max(0, Math.ceil(xCCorner / strideWidth));
+            const yCMax =
+                Math.min(outWidth, (filterWidth + xCCorner) / strideWidth);
+
+            let dotProd = 0;
+            for (let yR = xRMin; yR < yRMax; ++yR) {
+              const wR = yR * strideHeight - xRCorner;
+
+              for (let yC = xCMin; yC < yCMax; ++yC) {
+                const wC = yC * strideWidth - xCCorner;
+                const dyOffset = dyS0 * b + dyS1 * yR + dyS2 * yC;
+                const fltOffset = fltS0 * (filterHeight - 1 - wR) +
+                    fltS1 * (filterWidth - 1 - wC) + fltS2 * d1;
+
+                for (let dm = 0; dm < chMul; ++dm) {
+                  const d2 = d1 * chMul + dm;
+                  const pixel = dyValues[dyOffset + d2];
+                  const weight = fltValues[fltOffset + dm];
+                  dotProd += pixel * weight;
+                }
+              }
+            }
+            dxValues[dxS0 * b + dxS1 * xR + dxS2 * xC + d1] = dotProd;
+          }
+        }
+      }
+    }
+    return dx.toTensor();
+  }
+
+  depthwiseConv2DDerFilter(x: Tensor4D, dy: Tensor4D, convInfo: Conv2DInfo):
+      Tensor4D {
+    const strideHeight = convInfo.strideHeight;
+    const strideWidth = convInfo.strideWidth;
+    const filterHeight = convInfo.filterHeight;
+    const filterWidth = convInfo.filterWidth;
+    const dW = ops.buffer<Rank.R4>(convInfo.filterShape, 'float32');
+
+    const leftPad = convInfo.padInfo.left;
+    const topPad = convInfo.padInfo.top;
+    const chMul = convInfo.outChannels / convInfo.inChannels;
+
+    for (let wR = 0; wR < filterHeight; ++wR) {
+      const yRMin = Math.max(0, Math.ceil((topPad - wR) / strideHeight));
+      const yRMax = Math.min(
+          convInfo.outHeight, (convInfo.inHeight + topPad - wR) / strideHeight);
+
+      for (let wC = 0; wC < filterWidth; ++wC) {
+        const yCMin = Math.max(0, Math.ceil((leftPad - wC) / strideWidth));
+        const yCMax = Math.min(
+            convInfo.outWidth, (convInfo.inWidth + leftPad - wC) / strideWidth);
+
+        for (let d2 = 0; d2 < convInfo.outChannels; ++d2) {
+          const d1 = Math.trunc(d2 / chMul);
+          const dm = d2 % chMul;
+
+          let dotProd = 0;
+          for (let b = 0; b < convInfo.batchSize; ++b) {
+            for (let yR = yRMin; yR < yRMax; ++yR) {
+              const xR = wR + yR * strideHeight - topPad;
+              for (let yC = yCMin; yC < yCMax; ++yC) {
+                const xC = wC + yC * strideWidth - leftPad;
+                dotProd += x.get(b, xR, xC, d1) * dy.get(b, yR, yC, d2);
+              }
+            }
+          }
+          dW.set(dotProd, wR, wC, d1, dm);
+        }
+      }
+    }
+    return dW.toTensor();
+  }
+
   tile<T extends Tensor>(x: T, reps: number[]): T {
     const newShape: number[] = new Array(x.rank);
     for (let i = 0; i < newShape.length; i++) {
@@ -1429,10 +1594,16 @@ export class MathBackendCPU implements KernelBackend {
     const output =
         ops.buffer<Rank.R4>([batch, newHeight, newWidth, numChannels], x.dtype);
 
-    const effectiveInputSize: [number, number] =
-        alignCorners ? [oldHeight - 1, oldWidth - 1] : [oldHeight, oldWidth];
-    const effectiveOutputSize: [number, number] =
-        alignCorners ? [newHeight - 1, newWidth - 1] : [newHeight, newWidth];
+    const effectiveInputSize: [number, number] = [
+      (alignCorners && newHeight > 1) ? oldHeight - 1 : oldHeight,
+      (alignCorners && newWidth > 1) ? oldWidth - 1 : oldWidth
+    ];
+
+    const effectiveOutputSize: [number, number] = [
+      (alignCorners && newHeight > 1) ? newHeight - 1 : newHeight,
+      (alignCorners && newWidth > 1) ? newWidth - 1 : newWidth
+    ];
+
     for (let b = 0; b < batch; b++) {
       for (let r = 0; r < newHeight; r++) {
         for (let c = 0; c < newWidth; c++) {
@@ -1465,6 +1636,74 @@ export class MathBackendCPU implements KernelBackend {
             const newValue = top + (bottom - top) * rowFrac;
 
             output.set(newValue, b, r, c, d);
+          }
+        }
+      }
+    }
+    return output.toTensor();
+  }
+
+  resizeBilinearBackprop(dy: Tensor4D, x: Tensor4D, alignCorners: boolean) {
+    const [batch, xHeight, xWidth, depth] = x.shape;
+    const [, yHeight, yWidth] = dy.shape;
+
+    const output =
+        ops.buffer<Rank.R4>([batch, xHeight, xWidth, depth], x.dtype);
+
+    // In the backwards pass, we want to find the pixels that were generated for
+    // each pixel in the input image the forward pass and add the corresponding
+    // coefficient from dy to the gradient (with some interpolation).
+
+    const effectiveXSize: [number, number] = [
+      (alignCorners && yHeight > 1) ? xHeight - 1 : xHeight,
+      (alignCorners && yWidth > 1) ? xWidth - 1 : xWidth
+    ];
+
+    const effectiveYSize: [number, number] = [
+      (alignCorners && yHeight > 1) ? yHeight - 1 : yHeight,
+      (alignCorners && yWidth > 1) ? yWidth - 1 : yWidth
+    ];
+
+    const heightScale = effectiveXSize[0] / effectiveYSize[0];
+    const widthScale = effectiveXSize[1] / effectiveYSize[1];
+
+    // Reference implementation
+    // tslint:disable-next-line:max-line-length
+    // https://github.com/tensorflow/tensorflow/blob/3039375c86a5bbc9610c7725dcaa95d635f87ba2/tensorflow/core/kernels/resize_bilinear_op.cc#L275
+
+    for (let b = 0; b < batch; b++) {
+      for (let r = 0; r < yHeight; r++) {
+        const dxR = r * heightScale;
+        const topDxRIndex = Math.floor(dxR);
+        const bottomDxRIndex = Math.min(Math.ceil(dxR), xHeight - 1);
+        const dxRLerp = dxR - topDxRIndex;
+        const inverseDxRLerp = 1.0 - dxRLerp;
+
+        for (let c = 0; c < yWidth; c++) {
+          const dxC = c * widthScale;
+          const leftDxCIndex = Math.floor(dxC);
+          const rightDxCIndex = Math.min(Math.ceil(dxC), xWidth - 1);
+          const dxCLerp = dxC - leftDxCIndex;
+          const inverseDxCLerp = 1.0 - dxCLerp;
+
+          for (let d = 0; d < depth; d++) {
+            const dyVal = dy.get(b, r, c, d);
+
+            let topLeft = output.get(b, topDxRIndex, leftDxCIndex, d);
+            topLeft += dyVal * inverseDxRLerp * inverseDxCLerp;
+            output.set(topLeft, b, topDxRIndex, leftDxCIndex, d);
+
+            let topRight = output.get(b, topDxRIndex, rightDxCIndex, d);
+            topRight += dyVal * inverseDxRLerp * dxCLerp;
+            output.set(topRight, b, topDxRIndex, rightDxCIndex, d);
+
+            let bottomLeft = output.get(b, bottomDxRIndex, leftDxCIndex, d);
+            bottomLeft += dyVal * dxRLerp * inverseDxCLerp;
+            output.set(bottomLeft, b, bottomDxRIndex, leftDxCIndex, d);
+
+            let bottomRight = output.get(b, bottomDxRIndex, rightDxCIndex, d);
+            bottomRight += dyVal * dxRLerp * dxCLerp;
+            output.set(bottomRight, b, bottomDxRIndex, rightDxCIndex, d);
           }
         }
       }

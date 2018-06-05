@@ -50,7 +50,9 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
       Tensor2D;
 
   slice<T extends Tensor>(x: T, begin: number[], size: number[]): T;
-
+  stridedSlice<T extends Tensor>(
+      x: T, begin: number[], end: number[], strides: number[],
+      beginMask: number, endMask: number): T;
   reverse<T extends Tensor>(a: T, axis: number[]): T;
 
   // Any concat of n-dimensional tensors across any axis can be reduced to
@@ -70,7 +72,8 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
   add(a: Tensor, b: Tensor): Tensor;
   subtract(a: Tensor, b: Tensor): Tensor;
   multiply(a: Tensor, b: Tensor): Tensor;
-  divide(a: Tensor, b: Tensor): Tensor;
+  realDivide(a: Tensor, b: Tensor): Tensor;
+  floorDiv(a: Tensor, b: Tensor): Tensor;
 
   sum(x: Tensor, axes: number[]): Tensor;
 
@@ -164,6 +167,10 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
 
   depthwiseConv2D(input: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
       Tensor4D;
+  depthwiseConv2DDerInput(dy: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
+      Tensor4D;
+  depthwiseConv2DDerFilter(x: Tensor4D, dY: Tensor4D, convInfo: Conv2DInfo):
+      Tensor4D;
 
   maxPool(x: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
   maxPoolBackprop(dy: Tensor4D, x: Tensor4D, y: Tensor4D, convInfo: Conv2DInfo):
@@ -188,6 +195,9 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
       x: Tensor4D, newHeight: number, newWidth: number,
       alignCorners: boolean): Tensor4D;
 
+  resizeBilinearBackprop(dy: Tensor4D, x: Tensor4D, alignCorners: boolean):
+      Tensor4D;
+
   resizeNearestNeighbor(
       x: Tensor4D, newHEight: number, newWidth: number,
       alignCorners: boolean): Tensor4D;
@@ -207,6 +217,9 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
 
   oneHot(indices: Tensor1D, depth: number, onValue: number, offValue: number):
       Tensor2D;
+
+  cumsum(x: Tensor, axis: number, exclusive: boolean, reverse: boolean):
+      Tensor;
 
   dispose(): void;
 }

@@ -417,6 +417,22 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   /**
+   * Returns the cumulative sum of the `Tensor` along `axis`.
+   *
+   * @param axis The axis along which to sum. Optional. Defaults to 0.
+   * @param exclusive Whether to perform exclusive cumulative sum. Defaults to
+   *    false. If set to true then the sum of each tensor entry does not include
+   *    its own value, but only the values previous to it along the specified
+   *    axis.
+   * @param reverse Whether to sum in the opposite direction. Defaults to
+   *    false.
+   */
+  @doc({heading: 'Tensors', subheading: 'Classes'})
+  cumsum<T extends Tensor>(axis = 0, exclusive = false, reverse = false): T {
+    return ops.cumsum(this, axis, exclusive, reverse);
+  }
+
+  /**
    * Returns a `Tensor` with dimensions of size 1 removed from the shape.
    * See `squeeze` for more details.
    *
@@ -460,6 +476,10 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return ops.matMul(this as Tensor2D, b, transposeA, transposeB);
   }
+  dot(b: Tensor): Tensor {
+    this.throwIfDisposed();
+    return ops.dot(this, b);
+  }
   norm(
       ord: number|'euclidean'|'fro' = 'euclidean', axis: number|number[] = null,
       keepDims = false): Tensor {
@@ -481,6 +501,9 @@ export class Tensor<R extends Rank = Rank> {
   }
   stack(x: Tensor, axis = 0): Tensor {
     return ops.stack([this, x], axis);
+  }
+  unstack(x: Tensor, axis = 0): Tensor[] {
+    return ops.unstack(this, axis);
   }
   pad<T extends Tensor>(
       this: T, paddings: Array<[number, number]>, constantValue = 0): T {
@@ -570,6 +593,10 @@ export class Tensor<R extends Rank = Rank> {
   div<T extends Tensor>(x: Tensor): T {
     this.throwIfDisposed();
     return ops.div(this, x);
+  }
+  floorDiv<T extends Tensor>(x: Tensor): T {
+    this.throwIfDisposed();
+    return ops.floorDiv(this, x);
   }
   divStrict<T extends this>(this: T, x: T): T {
     this.throwIfDisposed();
@@ -913,6 +940,12 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return Variable.variable(this, trainable, name, dtype);
   }
+
+  unsortedSegmentSum<T extends Tensor>(
+      this: T, segmentIds: Tensor1D, numSegments: number, axis = 0): T {
+    this.throwIfDisposed();
+    return ops.unsortedSegmentSum(this, segmentIds, numSegments, axis);
+  }
 }
 
 /** @doclink Tensor */
@@ -925,6 +958,8 @@ export type Tensor2D = Tensor<Rank.R2>;
 export type Tensor3D = Tensor<Rank.R3>;
 /** @doclink Tensor */
 export type Tensor4D = Tensor<Rank.R4>;
+/** @doclink Tensor */
+export type Tensor5D = Tensor<Rank.R5>;
 
 /**
  * A mutable `Tensor`, useful for persisting state, e.g. for training.
