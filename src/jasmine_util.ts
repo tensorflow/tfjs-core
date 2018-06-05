@@ -46,12 +46,14 @@ let AFTER_EACH = (features: Features) => {};
 let TEST_ENV_FEATURES: Features[] = [
   {
     'BACKEND': 'test-webgl',
-    'WEBGL_FLOAT_TEXTURE_ENABLED': true,
+    'WEBGL_RENDER_FLOAT32_ENABLED': true,
+    'WEBGL_DOWNLOAD_FLOAT_ENABLED': true,
     'WEBGL_VERSION': 1
   },
   {
     'BACKEND': 'test-webgl',
-    'WEBGL_FLOAT_TEXTURE_ENABLED': true,
+    'WEBGL_RENDER_FLOAT32_ENABLED': true,
+    'WEBGL_DOWNLOAD_FLOAT_ENABLED': true,
     'WEBGL_VERSION': 2
   },
   {'BACKEND': 'test-cpu'}

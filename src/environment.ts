@@ -48,7 +48,6 @@ export interface Features {
   // Whether downloading float textures is enabled. If disabled, uses IEEE 754
   // encoding of the float32 values to 4 uint8 when downloading.
   'WEBGL_DOWNLOAD_FLOAT_ENABLED'?: boolean;
-
   // Whether WEBGL_get_buffer_sub_data_async is enabled.
   'WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED'?: boolean;
   'BACKEND'?: string;

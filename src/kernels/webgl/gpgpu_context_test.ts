@@ -90,8 +90,11 @@ describeWithFlags('GPGPUContext color texture with float', WEBGL_ENVS, () => {
 });
 
 describeWithFlags(
-    'GPGPUContext color texture with byte',
-    {'WEBGL_FLOAT_TEXTURE_ENABLED': false}, () => {
+    'GPGPUContext color texture with byte', {
+      'WEBGL_RENDER_FLOAT32_ENABLED': false,
+      'WEBGL_DOWNLOAD_FLOAT_ENABLED': false,
+    },
+    () => {
       let gpgpu: GPGPUContext;
       let texture: WebGLTexture;
 

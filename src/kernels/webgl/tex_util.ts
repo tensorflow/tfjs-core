@@ -67,8 +67,7 @@ export function getMatrixSizeFromUnpackedArraySize(
 export type TypedArray = Float32Array|Uint8Array;
 
 export function encodeMatrixToUnpackedArray(
-    matrix: TypedArray|Uint16Array, unpackedArray: TypedArray|Uint16Array,
-    channelsPerTexture: number) {
+    matrix: TypedArray, unpackedArray: TypedArray, channelsPerTexture: number) {
   const requiredSize =
       getUnpackedArraySizeFromMatrixSize(matrix.length, channelsPerTexture);
   if (unpackedArray.length < requiredSize) {
