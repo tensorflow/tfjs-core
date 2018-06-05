@@ -677,7 +677,7 @@ export class ArrayOps {
    * supported image types are all 4-channel.
    * @param numChannels The number of channels of the output tensor. A
    * numChannels value less than 4 allows you to ignore channels. Defaults to
-   * 3 (ignores alpha channel of input image)
+   * 3 (ignores alpha channel of input image).
    */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   @operation
