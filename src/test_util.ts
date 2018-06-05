@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {Features} from './environment';
+import {ENV, Features} from './environment';
 import {Tensor} from './tensor';
 import {TypedArray} from './types';
 import * as util from './util';
@@ -29,12 +29,12 @@ export const CPU_ENVS: Features = {
 };
 export const ALL_ENVS = {};
 
-/** Accuracy for tests. */
-export const TEST_EPSILON = 1e-3;
-
 export function expectArraysClose(
     actual: Tensor|TypedArray|number[],
-    expected: Tensor|TypedArray|number[]|boolean[], epsilon = TEST_EPSILON) {
+    expected: Tensor|TypedArray|number[]|boolean[], epsilon?: number) {
+  if (epsilon == null) {
+    epsilon = ENV.get('TEST_EPSILON');
+  }
   if (!(actual instanceof Tensor) && !(expected instanceof Tensor)) {
     const aType = actual.constructor.name;
     const bType = expected.constructor.name;
@@ -105,8 +105,10 @@ export function expectArraysEqual(
   return expectArraysClose(actual, expected, 0);
 }
 
-export function expectNumbersClose(
-    a: number, e: number, epsilon = TEST_EPSILON) {
+export function expectNumbersClose(a: number, e: number, epsilon?: number) {
+  if (epsilon == null) {
+    epsilon = ENV.get('TEST_EPSILON');
+  }
   if (!areClose(a, e, epsilon)) {
     throw new Error(`Numbers differ: actual === ${a}, expected === ${e}`);
   }

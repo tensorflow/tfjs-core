@@ -56,13 +56,14 @@ let TEST_ENV_FEATURES: Features[] = [
     'WEBGL_DOWNLOAD_FLOAT_ENABLED': true,
     'WEBGL_VERSION': 2
   },
+  // Emulates iOS
+  {
+    'BACKEND': 'test-webgl',
+    'WEBGL_RENDER_FLOAT32_ENABLED': false,
+    'WEBGL_DOWNLOAD_FLOAT_ENABLED': false,
+    'WEBGL_VERSION': 1
+  },
   {'BACKEND': 'test-cpu'}
-  // TODO(nsthorat,smilkov): Enable when byte-backed textures are fixed.
-  // {
-  // 'BACKEND': 'webgl',
-  // 'WEBGL_FLOAT_TEXTURE_ENABLED': false,
-  // 'WEBGL_VERSION': 1
-  // }
 ];
 
 export function setBeforeAll(f: (features: Features) => void) {

@@ -335,7 +335,7 @@ export class MathBackendWebGL implements KernelBackend {
   private binaryCache: {[key: string]: GPGPUBinary} = {};
   private gpgpuCreatedLocally: boolean;
 
-  constructor(private gpgpu?: GPGPUContext, private delayedStorage = false) {
+  constructor(private gpgpu?: GPGPUContext, private delayedStorage = true) {
     if (ENV.get('WEBGL_VERSION') < 1) {
       throw new Error('WebGL is not supported on this device');
     }

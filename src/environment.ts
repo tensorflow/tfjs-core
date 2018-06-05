@@ -50,6 +50,9 @@ export interface Features {
   // Whether downloading float textures is enabled. If disabled, uses IEEE 754
   // encoding of the float32 values to 4 uint8 when downloading.
   'WEBGL_DOWNLOAD_FLOAT_ENABLED'?: boolean;
+  // Test precision for unit tests. This is decreased when we can't render
+  // float32 textures.
+  'TEST_EPSILON'?: number;
   // Whether WEBGL_get_buffer_sub_data_async is enabled.
   'WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED'?: boolean;
   'BACKEND'?: string;
@@ -72,6 +75,9 @@ export interface URLProperty {
   name: keyof Features;
   type: Type;
 }
+
+const TEST_EPSILON_FLOAT32_ENABLED = 1e-3;
+const TEST_EPSILON_FLOAT32_DISABLED = 1e-1;
 
 function hasExtension(gl: WebGLRenderingContext, extensionName: string) {
   const ext = gl.getExtension(extensionName);
@@ -414,6 +420,11 @@ export class Environment {
         feature === 'WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED') {
       return isWebGLGetBufferSubDataAsyncExtensionEnabled(
           this.get('WEBGL_VERSION'));
+    } else if (feature === 'TEST_EPSILON') {
+      if (this.get('WEBGL_RENDER_FLOAT32_ENABLED')) {
+        return TEST_EPSILON_FLOAT32_ENABLED;
+      }
+      return TEST_EPSILON_FLOAT32_DISABLED;
     }
     throw new Error(`Unknown feature ${feature}.`);
   }

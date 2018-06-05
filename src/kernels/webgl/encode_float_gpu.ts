@@ -29,6 +29,10 @@ export class EncodeFloatProgram implements GPGPUProgram {
       const float FLOAT_MIN = 1.17549435e-38;
 
       lowp vec4 encode_float(highp float v) {
+        if (isNaN(v)) {
+          return vec4(255, 255, 255, 255);
+        }
+
         highp float av = abs(v);
 
         if(av < FLOAT_MIN) {
@@ -62,7 +66,6 @@ export class EncodeFloatProgram implements GPGPUProgram {
 
       void main() {
         float x = getAAtOutCoords();
-        //gl_FragColor = vec4(x + .01, x * 2.0, .2, .2);
         gl_FragColor = encode_float(x);
       }
     `;
