@@ -82,7 +82,7 @@ export class Engine implements TensorManager {
   // Keep Tensors that parallel the tapes.
   private activeScope: ScopeState;
   private scopeStack: ScopeState[];
-  private keepTensors: Tensor[] = [];
+  private keepTensors: Set<number> = new Set();
   private profiler: Profiler;
 
   constructor(private backend: KernelBackend, public safeMode: boolean) {
@@ -230,7 +230,7 @@ export class Engine implements TensorManager {
           'Safe mode is ON. Enclose all tensor operations inside tf.tidy(): ' +
           'tf.tidy(() => {...}) to avoid memory leaks.');
     }
-    this.keepTensors.push(result);
+    this.keepTensors.add(result.id);
     return result;
   }
 
@@ -266,14 +266,15 @@ export class Engine implements TensorManager {
       }
     }
 
-    let tensorsToKeep = this.keepTensors.slice();
+    let tensorsToKeep = new Set(this.keepTensors);
+
     const tensorsToTrackInParent = util.extractTensorsFromContainer(result);
-    tensorsToKeep = tensorsToKeep.concat(tensorsToTrackInParent);
+    tensorsToTrackInParent.forEach(tensor => tensorsToKeep.add(tensor.id));
 
     // Dispose the arrays tracked in this scope.
     for (let i = 0; i < this.activeScope.track.length; i++) {
       const tensor = this.activeScope.track[i];
-      if (util.isTensorInList(tensor, tensorsToKeep)) {
+      if (tensorsToKeep.has(tensor.id)) {
         continue;
       }
 
@@ -293,14 +294,12 @@ export class Engine implements TensorManager {
     tensorsToTrackInParent.forEach(tensor => {
       // Only track the tensor if was allocated in the inner scope and is not
       // globally kept.
-      if (!util.isTensorInList(tensor, this.keepTensors) &&
+      if (!this.keepTensors.has(tensor.id) &&
           util.isTensorInList(tensor, oldScope.track)) {
         this.track(tensor);
       }
     });
   }
-
-  dispose() {}
 
   /**
    * Returns gradients of `f` with respect to each of the `xs`. The gradients
