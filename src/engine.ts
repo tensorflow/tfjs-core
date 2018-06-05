@@ -266,7 +266,7 @@ export class Engine implements TensorManager {
       }
     }
 
-    let tensorsToKeep = new Set(this.keepTensors);
+    const tensorsToKeep = new Set(this.keepTensors);
 
     const tensorsToTrackInParent = util.extractTensorsFromContainer(result);
     tensorsToTrackInParent.forEach(tensor => tensorsToKeep.add(tensor.id));
