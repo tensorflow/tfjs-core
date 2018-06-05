@@ -39,6 +39,8 @@ import {ClipProgram} from './webgl/clip_gpu';
 import {ConcatProgram} from './webgl/concat_gpu';
 // tslint:disable-next-line:max-line-length
 import {Conv2DDerFilterProgram, Conv2DDerInputProgram} from './webgl/conv_backprop_gpu';
+// tslint:disable-next-line:max-line-length
+import {DepthwiseConv2DDerFilterProgram, DepthwiseConv2DDerInputProgram} from './webgl/conv_backprop_gpu_depthwise';
 import {Conv2DProgram} from './webgl/conv_gpu';
 import {DepthwiseConv2DProgram} from './webgl/conv_gpu_depthwise';
 import {CumSumProgram} from './webgl/cumsum_gpu';
@@ -88,6 +90,7 @@ export interface WebGLTimingInfo extends TimingInfo {
 export class MathBackendWebGL implements KernelBackend {
   private texData = new WeakMap<DataId, TextureData>();
   private canvas: HTMLCanvasElement;
+  private fromPixelsCanvas: HTMLCanvasElement;
 
   private programTimersStack: TimerNode[];
   private activeTimers: TimerNode[];
@@ -119,16 +122,24 @@ export class MathBackendWebGL implements KernelBackend {
     const outShape = [pixels.height, pixels.width, numChannels];
 
     if (pixels instanceof HTMLVideoElement) {
-      if (this.canvas == null) {
-        throw new Error(
-            'Can\'t read pixels from HTMLImageElement outside ' +
-            'the browser.');
+      if (this.fromPixelsCanvas == null) {
+        if (typeof document === 'undefined') {
+          throw new Error(
+              'Can\'t read pixels from HTMLImageElement outside the browser.');
+        }
+        if (document.readyState !== 'complete') {
+          throw new Error(
+              'The DOM is not ready yet. Please call tf.fromPixels() ' +
+              'once the DOM is ready. One way to do that is to add an event ' +
+              'listener for `DOMContentLoaded` on the document object');
+        }
+        this.fromPixelsCanvas = document.createElement('canvas');
       }
-      this.canvas.width = pixels.width;
-      this.canvas.height = pixels.height;
-      this.canvas.getContext('2d').drawImage(
+      this.fromPixelsCanvas.width = pixels.width;
+      this.fromPixelsCanvas.height = pixels.height;
+      this.fromPixelsCanvas.getContext('2d').drawImage(
           pixels, 0, 0, pixels.width, pixels.height);
-      pixels = this.canvas;
+      pixels = this.fromPixelsCanvas;
     }
     const tempPixelArray = Tensor.make(texShape, {}, 'int32');
 
@@ -621,17 +632,17 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [a, b]);
   }
 
-  divide(a: Tensor, b: Tensor): Tensor {
-    let op: string;
-    let outputDtype: 'float32'|'int32';
-    if (a.dtype === 'int32' && b.dtype === 'int32') {
-      op = binaryop_gpu.INT_DIV;
-      outputDtype = 'int32';
-    } else {
-      op = binaryop_gpu.DIV;
-      outputDtype = 'float32';
-    }
+  realDivide(a: Tensor, b: Tensor): Tensor {
+    const op = binaryop_gpu.DIV;
+    const outputDtype = 'float32';
+    const program = new BinaryOpProgram(op, a.shape, b.shape);
+    const output = this.makeOutputArray(program.outputShape, outputDtype);
+    return this.compileAndRun<Tensor, Tensor>(program, [a, b], output);
+  }
 
+  floorDiv(a: Tensor, b: Tensor): Tensor {
+    const op = binaryop_gpu.INT_DIV;
+    const outputDtype = 'int32';
     const program = new BinaryOpProgram(op, a.shape, b.shape);
     const output = this.makeOutputArray(program.outputShape, outputDtype);
     return this.compileAndRun<Tensor, Tensor>(program, [a, b], output);
@@ -865,6 +876,18 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [x, filter]);
   }
 
+  depthwiseConv2DDerInput(dy: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
+      Tensor4D {
+    const program = new DepthwiseConv2DDerInputProgram(convInfo);
+    return this.compileAndRun(program, [dy, filter]);
+  }
+
+  depthwiseConv2DDerFilter(x: Tensor4D, dy: Tensor4D, convInfo: Conv2DInfo):
+      Tensor4D {
+    const program = new DepthwiseConv2DDerFilterProgram(convInfo);
+    return this.compileAndRun(program, [x, dy]);
+  }
+
   maxPool(x: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
     const program = new Pool2DProgram(convInfo, 'max', false);
     const output =
@@ -1017,6 +1040,9 @@ export class MathBackendWebGL implements KernelBackend {
     }
     this.textureManager.dispose();
     this.canvas.remove();
+    if (this.fromPixelsCanvas != null) {
+      this.fromPixelsCanvas.remove();
+    }
     if (this.gpgpuCreatedLocally) {
       this.gpgpu.dispose();
     }

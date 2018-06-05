@@ -72,7 +72,8 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
   add(a: Tensor, b: Tensor): Tensor;
   subtract(a: Tensor, b: Tensor): Tensor;
   multiply(a: Tensor, b: Tensor): Tensor;
-  divide(a: Tensor, b: Tensor): Tensor;
+  realDivide(a: Tensor, b: Tensor): Tensor;
+  floorDiv(a: Tensor, b: Tensor): Tensor;
 
   sum(x: Tensor, axes: number[]): Tensor;
 
@@ -165,6 +166,10 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
   conv2dDerFilter(x: Tensor4D, dY: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
 
   depthwiseConv2D(input: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
+      Tensor4D;
+  depthwiseConv2DDerInput(dy: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
+      Tensor4D;
+  depthwiseConv2DDerFilter(x: Tensor4D, dY: Tensor4D, convInfo: Conv2DInfo):
       Tensor4D;
 
   maxPool(x: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
