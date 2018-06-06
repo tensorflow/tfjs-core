@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {TimingInfo} from '../engine';
+import {MemoryInfo, TimingInfo} from '../engine';
 import {ENV} from '../environment';
 import * as axis_util from '../ops/axis_util';
 import {Conv2DInfo} from '../ops/conv_util';
@@ -82,13 +82,18 @@ export interface CPUTimerQuery {
   endMs?: number;
 }
 
+export interface WebGLMemoryInfo extends MemoryInfo {
+  numBytesInGPU: number;
+  unreliable: boolean;
+}
+
 export interface WebGLTimingInfo extends TimingInfo {
   uploadWaitMs: number;
   downloadWaitMs: number;
 }
 
 // Empirically determined constant used to decide the number of bytes on GPU
-// before we start paging. Used with the device screen resolution.
+// before we start paging. The bytes are this constant * screen area * dpi.
 const BEFORE_PAGING_CONSTANT = 300;
 
 export class MathBackendWebGL implements KernelBackend {
@@ -290,8 +295,9 @@ export class MathBackendWebGL implements KernelBackend {
     this.downloadWaitMs = 0;
     return res;
   }
-  memory() {
-    return {unreliable: false};
+  memory(): WebGLMemoryInfo {
+    return {unreliable: false, numBytesInGPU: this.numBytesInGPU} as
+        WebGLMemoryInfo;
   }
 
   private startTimer(): WebGLQuery|CPUTimerQuery {
@@ -339,11 +345,6 @@ export class MathBackendWebGL implements KernelBackend {
   getTexture(dataId: DataId): WebGLTexture {
     this.uploadToGPU(dataId);
     return this.texData.get(dataId).texture;
-  }
-
-  getTextureData(dataId: DataId): TextureData {
-    this.uploadToGPU(dataId);
-    return this.texData.get(dataId);
   }
 
   private textureManager: TextureManager;
@@ -1054,6 +1055,16 @@ export class MathBackendWebGL implements KernelBackend {
 
     gpgpu_math.runProgram(binary, inputsData, outputData, customSetup);
 
+    if (this.numBytesInGPU > this.NUM_BYTES_BEFORE_PAGING) {
+      let numBytesToPage = this.numBytesInGPU - this.NUM_BYTES_BEFORE_PAGING;
+      while (numBytesToPage > 0) {
+        const dataId = this.lruDataGPU.shift();
+        const {shape, dtype} = this.texData.get(dataId);
+        numBytesToPage -= this.computeBytes(shape, dtype);
+        this.read(dataId);
+      }
+    }
+
     if (shouldTimeProgram) {
       query = this.endTimer(query);
       this.activeTimers.push(this.getQueryTime(query));
@@ -1128,6 +1139,8 @@ export class MathBackendWebGL implements KernelBackend {
           newTexture, texShape[0],
           // TODO(smilkov): Propagate the original typed array to gpgpu.
           texShape[1], typedArrayToFloat32(values, dtype));
+      // Once uploaded, don't store the values on cpu.
+      texData.values = null;
       if (shouldTimeProgram) {
         this.uploadWaitMs += performance.now() - start;
       }
@@ -1158,8 +1171,8 @@ export class MathBackendWebGL implements KernelBackend {
     const idx = this.lruDataGPU.indexOf(dataId);
     if (idx >= 0) {
       this.lruDataGPU.splice(idx, 1);
-      this.numBytesInGPU -= this.computeBytes(shape, dtype);
     }
+    this.numBytesInGPU -= this.computeBytes(shape, dtype);
     this.textureManager.releaseTexture(texture, texShape, texType);
   }
 
@@ -1169,16 +1182,6 @@ export class MathBackendWebGL implements KernelBackend {
     const {shape, dtype} = this.texData.get(dataId);
     this.lruDataGPU.push(dataId);
     this.numBytesInGPU += this.computeBytes(shape, dtype);
-
-    if (this.numBytesInGPU > this.NUM_BYTES_BEFORE_PAGING) {
-      let numBytesToPage = this.numBytesInGPU - this.NUM_BYTES_BEFORE_PAGING;
-      while (numBytesToPage > 0) {
-        const dataIdToRead = this.lruDataGPU.shift();
-        const {shape, dtype} = this.texData.get(dataId);
-        numBytesToPage -= this.computeBytes(shape, dtype);
-        this.read(dataIdToRead);
-      }
-    }
     return this.textureManager.acquireTexture(texShape, texType);
   }
 
