@@ -16,7 +16,7 @@
  */
 import {Tensor} from './tensor';
 // tslint:disable-next-line:max-line-length
-import {DataType, DataTypeMap, FlatVector, NamedTensorMap, RecursiveArray, RegularArray, TensorContainer, TypedArray} from './types';
+import {DataType, DataTypeMap, FlatVector, NamedTensorMap, RecursiveArray, RegularArray, TensorContainer, TensorContainerArray, TypedArray} from './types';
 
 function assertArgumentIsTensor(
     x: Tensor, argName: string, functionName: string) {
@@ -440,10 +440,6 @@ export function isFunction(f: Function) {
   return !!(f && f.constructor && f.call && f.apply);
 }
 
-export function extractTensorsFromContainer(result: TensorContainer): Tensor[] {
-  return extractTensorsFromAny(result);
-}
-
 /**
  * Extracts any `Tensor`s found within the provided object up to depth 1.
  *
@@ -458,28 +454,34 @@ export function extractTensorsFromContainer(result: TensorContainer): Tensor[] {
  *   however not be found.  If the object is not a `Tensor` or does not
  *   contain `Tensors`, an empty list is returned.
  */
-// tslint:disable-next-line:no-any
-export function extractTensorsFromAny(result: any): Tensor[] {
-  if (result == null) {
-    return [];
-  }
-  if (result instanceof Tensor) {
-    return [result];
-  }
-
+export function getTensorsInContainer(result: TensorContainer): Tensor[] {
   const list: Tensor[] = [];
-  // tslint:disable-next-line:no-any
-  const resultObj = result as {[key: string]: any};
-  if (!isIterable(resultObj)) {
-    return [];
-  }
-
-  // Iteration over keys works also for arrays.
-  for (const k in resultObj) {
-    const sublist = flatten(resultObj[k]).filter(x => x instanceof Tensor);
-    list.push(...sublist);
-  }
+  const seen = new Set<{}|void>();
+  walkTensorContainer(result, list, seen);
   return list;
+}
+
+function walkTensorContainer(
+    container: TensorContainer, list: Tensor[], seen: Set<{}|void>): void {
+  if (container == null) {
+    return;
+  }
+  if (container instanceof Tensor) {
+    list.push(container);
+    return;
+  }
+  if (!isIterable(container)) {
+    return;
+  }
+  // Iteration over keys works also for arrays.
+  const iterable = container as TensorContainerArray;
+  for (const k in iterable) {
+    const val = iterable[k];
+    if (!seen.has(val)) {
+      seen.add(val);
+      walkTensorContainer(val, list, seen);
+    }
+  }
 }
 
 // tslint:disable-next-line:no-any

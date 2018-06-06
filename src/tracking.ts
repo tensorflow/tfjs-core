@@ -20,7 +20,7 @@ import {ScopeFn, TimingInfo} from './engine';
 import {ENV} from './environment';
 import {Tensor} from './tensor';
 import {TensorContainer} from './types';
-import {extractTensorsFromAny} from './util';
+import {getTensorsInContainer} from './util';
 
 export class Tracking {
   /**
@@ -111,7 +111,7 @@ export class Tracking {
    */
   // tslint:disable-next-line:no-any
   static dispose(container: any) {
-    const tensors = extractTensorsFromAny(container);
+    const tensors = getTensorsInContainer(container);
     tensors.forEach(tensor => tensor.dispose());
   }
 
