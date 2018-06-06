@@ -12,3 +12,4 @@ dist-es6/
 .yalc/
 yalc.lock
 .rpt2_cache/
+package/
