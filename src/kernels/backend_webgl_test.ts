@@ -106,8 +106,7 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
 });
 
 describe('Custom window size', () => {
-  // tslint:disable-next-line:ban
-  fit('Set screen area to be 1x1', () => {
+  it('Set screen area to be 1x1', () => {
     // This will set the screen size to 1x1 to make sure the page limit is
     // very small.
     spyOnProperty(window, 'screen', 'get')
