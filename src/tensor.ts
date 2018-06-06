@@ -341,11 +341,15 @@ export class Tensor<R extends Rank = Rank> {
     if (this.isDisposed) {
       return;
     }
-    this.isDisposed = true;
     ENV.engine.disposeTensor(this);
+    this.isDisposedInternal = true;
   }
 
-  private isDisposed = false;
+  private isDisposedInternal = false;
+  get isDisposed(): boolean {
+    return this.isDisposedInternal;
+  }
+
   private throwIfDisposed() {
     if (this.isDisposed) {
       throw new Error(`Tensor is disposed.`);
