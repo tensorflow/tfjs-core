@@ -441,7 +441,7 @@ export function isFunction(f: Function) {
 }
 
 /**
- * Extracts any `Tensor`s found within the provided object up to depth 1.
+ * Extracts any `Tensor`s found within the provided object.
  *
  * @param container an object that may be a `Tensor` or may directly contain
  *   `Tensor`s, such as a `Tensor[]` or `{key: Tensor, ...}`.  In general it
@@ -449,9 +449,7 @@ export function isFunction(f: Function) {
  *   supported.
  * @returns An array of `Tensors` found within the passed object.  If the
  *   argument is simply a `Tensor', a list containing that `Tensor` is
- *   returned.  If the argument directly contains `Tensor`s, a list of them
- *   will be returned.  `Tensor`s nested more deeply within the argument will
- *   however not be found.  If the object is not a `Tensor` or does not
+ *   returned. If the object is not a `Tensor` or does not
  *   contain `Tensors`, an empty list is returned.
  */
 export function getTensorsInContainer(result: TensorContainer): Tensor[] {
