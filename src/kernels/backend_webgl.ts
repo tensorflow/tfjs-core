@@ -1033,14 +1033,21 @@ export class MathBackendWebGL implements KernelBackend {
     if (output == null) {
       output = this.makeOutputArray(program.outputShape, inputs[0].dtype);
     }
-    const inputsData: Array<TensorData<T>> = inputs.map(input => {
-      this.uploadToGPU(input.dataId);
-      return {tensor: input, texData: this.texData.get(input.dataId)};
+    const inputsData: Array<TensorData<T>> = inputs.map(tensor => {
+      const texData = this.texData.get(tensor.dataId);
+      // Don't upload scalars that live on CPU as texture. We will upload them
+      // as uniforms.
+      if (texData.texture == null && tensor.rank === 0) {
+        return {tensor, texData: null, isUniform: true};
+      }
+      this.uploadToGPU(tensor.dataId);
+      return {tensor, texData, isUniform: false};
     });
     this.uploadToGPU(output.dataId);
     const outputData = {
       tensor: output,
-      texData: this.texData.get(output.dataId)
+      texData: this.texData.get(output.dataId),
+      isUniform: false
     };
     const key = gpgpu_math.makeShaderKey(program, inputsData, outputData);
     const binary = this.getAndSaveBinary(key, () => {

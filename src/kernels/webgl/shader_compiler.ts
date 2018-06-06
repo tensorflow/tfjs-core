@@ -16,13 +16,15 @@
  */
 
 import {ENV} from '../../environment';
-import * as util from '../../util';
 import * as broadcast_util from '../../ops/broadcast_util';
+import * as util from '../../util';
+
 import * as tex_util from './tex_util';
 
 export type ShapeInfo = {
   logicalShape: number[],
-  texShape: [number, number]
+  texShape: [number, number],
+  isUniform: boolean
 };
 
 export type InputInfo = {
@@ -169,7 +171,7 @@ vec2 UVfrom5D(int texNumR, int texNumC, int stride0,
     int stride1, int stride2, int stride3, int row, int col, int depth,
     int depth2, int depth3) {
   // Explicitly use integer operations as dot() only works on floats.
-  int index = row * stride0 + col * stride1 + 
+  int index = row * stride0 + col * stride1 +
               depth * stride2 + depth2 * stride3 + depth3;
   int texR = index / texNumC;
   int texC = index - texR * texNumC;
@@ -837,7 +839,7 @@ export function getCoordsDataType(rank: number): string {
     return 'ivec4';
   } else if (rank === 5) {
     return 'ivec5';
-  }else {
+  } else {
     throw Error(`GPU for rank ${rank} is not yet supported`);
   }
 }
