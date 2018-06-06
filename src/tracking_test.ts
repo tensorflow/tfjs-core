@@ -265,13 +265,19 @@ describeWithFlags('tidy', ALL_ENVS, () => {
   });
 
   it('works with arbitrary depth of result', () => {
-    const res = tf.tidy(() => {
-      return [tf.scalar(1), [[tf.scalar(2)]], {list: [tf.scalar(3)]}];
+    tf.tidy(() => {
+      const res = tf.tidy(() => {
+        return [tf.scalar(1), [[tf.scalar(2)]], {list: [tf.scalar(3)]}];
+      });
+      expectArraysEqual(res[0] as tf.Tensor, [1]);
+      // tslint:disable-next-line:no-any
+      expectArraysEqual((res[1] as any)[0][0], [2]);
+      // tslint:disable-next-line:no-any
+      expectArraysEqual((res[2] as any).list[0], [3]);
+      expect(tf.memory().numTensors).toBe(3);
+      return res[0];
     });
-    expectArraysEqual(res[0] as tf.Tensor, [1]);
-    // tslint:disable-next-line:no-any
-    expectArraysEqual((res[1] as any)[0][0], [2]);
-    // tslint:disable-next-line:no-any
-    expectArraysEqual((res[2] as any).list[0], [3]);
+    // Everything but scalar(1) got disposed.
+    expect(tf.memory().numTensors).toBe(1);
   });
 });
