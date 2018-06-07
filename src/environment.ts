@@ -388,7 +388,8 @@ export class Environment {
       this.registry[name] = {backend, priority};
       return true;
     } catch (err) {
-      console.warn(err.message);
+      console.warn(`Registration of backend ${name} failed`);
+      console.warn(err.stack || err.message);
       return false;
     }
   }
