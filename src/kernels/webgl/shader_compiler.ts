@@ -37,8 +37,15 @@ export function makeShader(
     broadcast: boolean): string {
   const sampleSnippet = getSampleSnippet();
   const setOutputSnippet = getSetOutputSnippet();
-  const inputPrefixSnippet =
-      inputsInfo.map(x => `uniform sampler2D ${x.name};`).join('\n');
+  let inputPrefixSnippet: string[]|string = inputsInfo.map(x => {
+    const rank = x.shapeInfo.logicalShape.length;
+    const size = util.sizeFromShape(x.shapeInfo.logicalShape);
+    if (x.shapeInfo.isUniform) {
+      return `uniform float ${x.name}${rank === 1 ? `[${size}]` : ''};`;
+    }
+    return `uniform sampler2D ${x.name};`;
+  });
+  inputPrefixSnippet = inputPrefixSnippet.join('\n');
   const inputSamplingSnippet =
       inputsInfo.map(x => getInputSamplingSnippet(x, outputShape, broadcast))
           .join('\n');
@@ -458,6 +465,9 @@ function getOutput2DCoords(
 function getSamplerScalar(inputInfo: InputInfo): string {
   const texName = inputInfo.name;
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
+  if (inputInfo.shapeInfo.isUniform) {
+    return `float ${funcName}() {return ${texName};}`;
+  }
   return `
     float ${funcName}() {
       return sampleTexture(${texName}, halfCR);
@@ -468,6 +478,20 @@ function getSamplerScalar(inputInfo: InputInfo): string {
 function getSampler1D(inputInfo: InputInfo): string {
   const texName = inputInfo.name;
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
+  const inSize = util.sizeFromShape(inputInfo.shapeInfo.logicalShape);
+
+  if (inputInfo.shapeInfo.isUniform) {
+    return `
+      float ${funcName}(int index) {
+        for (int i = 0; i < ${inSize}; i++) {
+          if (i == index) {
+            return ${texName}[i];
+          }
+        }
+      }
+    `;
+  }
+
   return `
     float ${funcName}(int index) {
       return ${funcName}Flat(index);
@@ -694,9 +718,28 @@ function getSampler5D(inputInfo: InputInfo): string {
 
 function getSamplerFlat(inputInfo: InputInfo): string {
   const texName = inputInfo.name;
-  const texShape = inputInfo.shapeInfo.texShape;
   const funcName =
       'get' + texName.charAt(0).toUpperCase() + texName.slice(1) + 'Flat';
+  const inSize = util.sizeFromShape(inputInfo.shapeInfo.logicalShape);
+  const rank = inputInfo.shapeInfo.logicalShape.length;
+
+  if (inputInfo.shapeInfo.isUniform) {
+    if (rank === 1) {
+      return `
+        float ${funcName}(int index) {
+          for (int i = 0; i < ${inSize}; i++) {
+            if (i == index) {
+              return ${texName}[i];
+            }
+          }
+        }
+      `;
+    } else if (rank === 0) {
+      return `float ${funcName}(int index) {return ${texName};}`;
+    }
+  }
+
+  const texShape = inputInfo.shapeInfo.texShape;
   const tNumR = texShape[0];
   const tNumC = texShape[1];
   if (tNumC === 1 && tNumR === 1) {
@@ -776,9 +819,7 @@ function getBroadcastOutputCoordsSampler(
 function getSamplerAtOutputCoords(
     inputInfo: InputInfo, outShapeInfo: ShapeInfo,
     supportsBroadcasting: boolean) {
-  const inTexShape = inputInfo.shapeInfo.texShape;
   const texName = inputInfo.name;
-
   const texFuncSnippet = texName.charAt(0).toUpperCase() + texName.slice(1);
   const funcName = 'get' + texFuncSnippet + 'AtOutCoords';
 
@@ -790,12 +831,47 @@ function getSamplerAtOutputCoords(
       supportsBroadcasting && ((outRank > inRank) || broadcastDims.length > 0);
   const broadcastOverOuter =
       broadcast_util.broadcastDimsAreOuter(broadcastDims);
+  const isUniform = inputInfo.shapeInfo.isUniform;
+  const rank = inputInfo.shapeInfo.logicalShape.length;
+
+  const outTexShape = outShapeInfo.texShape;
+  const inSize = util.sizeFromShape(inputInfo.shapeInfo.logicalShape);
+  let broadcastSnippet = '';
+  if (doBroadcast && broadcastOverOuter) {
+    broadcastSnippet = `
+        int mainPart = index / ${inSize};
+        index -= mainPart * ${inSize};
+      `;
+  }
+
+  if (isUniform) {
+    if (rank === 0) {
+      return `float ${funcName}() {return ${texName};}`;
+    }
+    if (rank === 1) {
+      return `
+        float ${funcName}() {
+          ivec2 resTexRC = ivec2(resultUV.yx *
+                                vec2(${outTexShape[0]}, ${outTexShape[1]}));
+          int index = resTexRC.x * ${outTexShape[1]} + resTexRC.y;
+          ${broadcastSnippet}
+          for (int i = 0; i < ${inSize}; i++) {
+            if (i == index) {
+              return ${texName}[i];
+            }
+          }
+        }
+      `;
+    }
+  }
+
   if (doBroadcast && !broadcastOverOuter) {
     return getBroadcastOutputCoordsSampler(
         inputInfo, outShapeInfo, texFuncSnippet, funcName);
   }
 
-  const outTexShape = outShapeInfo.texShape;
+  // At this point, the input is not a uniform.
+  const inTexShape = inputInfo.shapeInfo.texShape;
   if (util.arraysEqual(inTexShape, outTexShape)) {
     return `
       float ${funcName}() {
@@ -804,14 +880,6 @@ function getSamplerAtOutputCoords(
     `;
   }
 
-  const inSize = util.sizeFromShape(inTexShape);
-  let broadcastSnippet = '';
-  if (doBroadcast && broadcastOverOuter) {
-    broadcastSnippet = `
-        int mainPart = index / ${inSize};
-        index -= mainPart * ${inSize};
-      `;
-  }
   return `
     float ${funcName}() {
       ivec2 resTexRC = ivec2(resultUV.yx *

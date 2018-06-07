@@ -106,7 +106,7 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
 });
 
 describe('Custom window size', () => {
-  it('Set screen area to be 1x1', () => {
+  it('Set screen area to be 1x1', async () => {
     // This will set the screen size to 1x1 to make sure the page limit is
     // very small.
     spyOnProperty(window, 'screen', 'get')
@@ -121,7 +121,7 @@ describe('Custom window size', () => {
     // No gpu memory used yet because of delayed storage.
     expect((tf.memory() as tf.webgl.WebGLMemoryInfo).numBytesInGPU).toBe(0);
 
-    a.square();
+    await a.square().data();
     // Everything got paged out of gpu after the run finished.
     expect((tf.memory() as tf.webgl.WebGLMemoryInfo).numBytesInGPU).toBe(0);
 
