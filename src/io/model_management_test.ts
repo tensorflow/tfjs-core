@@ -107,6 +107,10 @@ describeWithFlags('ModelManagement', CPU_ENVS, () => {
           // After successful saving, there should be one model.
           tf.io.listModels()
               .then(out => {
+                if (Object.keys(out).length !== 1) {
+                  console.log(`ERROR: Found incorrect number of keys: ${
+                      Object.keys(out)}`);
+                }
                 expect(Object.keys(out).length).toEqual(1);
                 expect(out[url].modelTopologyType)
                     .toEqual(saveResult.modelArtifactsInfo.modelTopologyType);
@@ -138,6 +142,10 @@ describeWithFlags('ModelManagement', CPU_ENVS, () => {
                 // After successful saving, there should be two models.
                 tf.io.listModels()
                     .then(out => {
+                      if (Object.keys(out).length !== 2) {
+                        console.log(`ERROR: Found incorrect number of keys: ${
+                            Object.keys(out)}`);
+                      }
                       expect(Object.keys(out).length).toEqual(2);
                       expect(out[url1].modelTopologyType)
                           .toEqual(
