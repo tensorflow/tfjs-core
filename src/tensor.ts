@@ -341,11 +341,15 @@ export class Tensor<R extends Rank = Rank> {
     if (this.isDisposed) {
       return;
     }
-    this.isDisposed = true;
     ENV.engine.disposeTensor(this);
+    this.isDisposedInternal = true;
   }
 
-  private isDisposed = false;
+  private isDisposedInternal = false;
+  get isDisposed(): boolean {
+    return this.isDisposedInternal;
+  }
+
   private throwIfDisposed() {
     if (this.isDisposed) {
       throw new Error(`Tensor is disposed.`);
@@ -427,9 +431,8 @@ export class Tensor<R extends Rank = Rank> {
    * @param reverse Whether to sum in the opposite direction. Defaults to
    *    false.
    */
-  @doc({ heading: 'Tensors', subheading: 'Classes' })
-  cumsum<T extends Tensor>(axis = 0, exclusive = false, reverse = false):
-    T {
+  @doc({heading: 'Tensors', subheading: 'Classes'})
+  cumsum<T extends Tensor>(axis = 0, exclusive = false, reverse = false): T {
     return ops.cumsum(this, axis, exclusive, reverse);
   }
 
@@ -476,6 +479,10 @@ export class Tensor<R extends Rank = Rank> {
   matMul(b: Tensor2D, transposeA = false, transposeB = false): Tensor2D {
     this.throwIfDisposed();
     return ops.matMul(this as Tensor2D, b, transposeA, transposeB);
+  }
+  dot(b: Tensor): Tensor {
+    this.throwIfDisposed();
+    return ops.dot(this, b);
   }
   norm(
       ord: number|'euclidean'|'fro' = 'euclidean', axis: number|number[] = null,
@@ -590,6 +597,10 @@ export class Tensor<R extends Rank = Rank> {
   div<T extends Tensor>(x: Tensor): T {
     this.throwIfDisposed();
     return ops.div(this, x);
+  }
+  floorDiv<T extends Tensor>(x: Tensor): T {
+    this.throwIfDisposed();
+    return ops.floorDiv(this, x);
   }
   divStrict<T extends this>(this: T, x: T): T {
     this.throwIfDisposed();
@@ -951,6 +962,8 @@ export type Tensor2D = Tensor<Rank.R2>;
 export type Tensor3D = Tensor<Rank.R3>;
 /** @doclink Tensor */
 export type Tensor4D = Tensor<Rank.R4>;
+/** @doclink Tensor */
+export type Tensor5D = Tensor<Rank.R5>;
 
 /**
  * A mutable `Tensor`, useful for persisting state, e.g. for training.
