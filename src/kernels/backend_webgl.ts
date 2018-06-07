@@ -1036,7 +1036,7 @@ export class MathBackendWebGL implements KernelBackend {
     const inputsData: Array<TensorData<T>> = inputs.map(tensor => {
       const texData = this.texData.get(tensor.dataId);
       // Upload scalar/1d tensor that lives on CPU as uniform, not as texture.
-      if (texData.texture == null && tensor.rank <= 1 && tensor.size <= 8) {
+      if (texData.texture == null && tensor.rank <= 1 && tensor.size <= 256) {
         return {tensor, texData: null, isUniform: true};
       }
       this.uploadToGPU(tensor.dataId);

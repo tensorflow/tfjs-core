@@ -16,9 +16,9 @@
  */
 
 import * as tf from '../index';
+import {describeWithFlags} from '../jasmine_util';
 // tslint:disable-next-line:max-line-length
 import {ALL_ENVS, expectArraysClose, expectNumbersClose, WEBGL_ENVS} from '../test_util';
-import {describeWithFlags} from '../jasmine_util';
 import {Rank} from '../types';
 import {MatmulOps} from './matmul';
 
@@ -421,7 +421,7 @@ describeWithFlags('matmul webgl-only', WEBGL_ENVS, () => {
   });
 });
 
-describeWithFlags('dot', ALL_ENVS, () => {
+describeWithFlags('dot', WEBGL_ENVS, () => {
   let a: tf.Tensor1D;
   let b: tf.Tensor2D;
   let c: tf.Tensor2D;
@@ -474,5 +474,25 @@ describeWithFlags('dot', ALL_ENVS, () => {
   it('throws error when inputs are not rank 1 or 2', () => {
     expect(() => tf.dot(a, d)).toThrowError();
     expect(() => tf.dot(a, e)).toThrowError();
+  });
+
+  // tslint:disable-next-line:ban
+  fit('benchmark dot', () => {
+    const size = 256;
+    const a = tf.randomUniform([size]);
+    let res: tf.Tensor;
+
+    tf.square(tf.randomUniform([size])).dataSync();  // warmup.
+
+    const start = performance.now();
+    const numIter = 10000;
+    for (let i = 0; i < numIter; i++) {
+      res = tf.square(a);
+      if (i < numIter - 1) {
+        res.dispose();
+      }
+    }
+    res.dataSync();
+    console.log(performance.now() - start, 'ms');
   });
 });
