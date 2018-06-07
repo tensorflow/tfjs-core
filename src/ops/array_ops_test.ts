@@ -379,7 +379,7 @@ describeWithFlags('zerosLike', ALL_ENVS, () => {
     expect(b.shape).toEqual([2, 2, 1, 1]);
     expectArraysEqual(b, [0, 0, 0, 0]);
   });
-  
+
   it('4D default dtype', () => {
     const a = tf.tensor4d([1, 2, 3, 4], [2, 2, 1, 1]);
     const b = tf.zerosLike(a);
@@ -417,6 +417,38 @@ describeWithFlags('zerosLike', ALL_ENVS, () => {
     const b = tf.zerosLike(a);
     expect(b.dtype).toBe('float32');
     expect(b.shape).toEqual([1, 2, 2, 1, 1]);
+    expectArraysClose(b, [0, 0, 0, 0]);
+  });
+
+  it('6D float32 dtype', () => {
+    const a = tf.tensor6d([1, 2, 3, 4], [1, 2, 2, 1, 1, 1], 'float32');
+    const b = tf.zerosLike(a);
+    expect(b.dtype).toBe('float32');
+    expect(b.shape).toEqual([1, 2, 2, 1, 1, 1]);
+    expectArraysClose(b, [0, 0, 0, 0]);
+  });
+
+  it('6D int32 dtype', () => {
+    const a = tf.tensor6d([1, 2, 3, 4], [1, 2, 2, 1, 1, 1], 'int32');
+    const b = tf.zerosLike(a);
+    expect(b.dtype).toBe('int32');
+    expect(b.shape).toEqual(a.shape);
+    expectArraysEqual(b, [0, 0, 0, 0]);
+  });
+
+  it('6D bool dtype', () => {
+    const a = tf.tensor6d([1, 2, 3, 4], [1, 2, 2, 1, 1, 1], 'bool');
+    const b = tf.zerosLike(a);
+    expect(b.dtype).toBe('bool');
+    expect(b.shape).toEqual(a.shape);
+    expectArraysEqual(b, [0, 0, 0, 0]);
+  });
+
+  it('6D default dtype', () => {
+    const a = tf.tensor6d([1, 2, 3, 4], [1, 2, 2, 1, 1, 1]);
+    const b = tf.zerosLike(a);
+    expect(b.dtype).toBe('float32');
+    expect(b.shape).toEqual(a.shape);
     expectArraysClose(b, [0, 0, 0, 0]);
   });
 
@@ -592,6 +624,38 @@ describeWithFlags('onesLike', ALL_ENVS, () => {
     const b = tf.onesLike(a);
     expect(b.dtype).toBe('float32');
     expect(b.shape).toEqual([1, 2, 2, 1, 1]);
+    expectArraysClose(b, [1, 1, 1, 1]);
+  });
+
+  it('6D int32 dtype', () => {
+    const a = tf.tensor6d([1, 2, 3, 4], [1, 2, 2, 1, 1, 1], 'int32');
+    const b = tf.onesLike(a);
+    expect(b.dtype).toBe('int32');
+    expect(b.shape).toEqual(a.shape);
+    expectArraysEqual(b, [1, 1, 1, 1]);
+  });
+
+  it('6D bool dtype', () => {
+    const a = tf.tensor6d([1, 2, 3, 4], [1, 2, 2, 1, 1, 1], 'bool');
+    const b = tf.onesLike(a);
+    expect(b.dtype).toBe('bool');
+    expect(b.shape).toEqual(a.shape);
+    expectArraysEqual(b, [1, 1, 1, 1]);
+  });
+
+  it('6D default dtype', () => {
+    const a = tf.tensor6d([1, 2, 3, 4], [1, 2, 2, 1, 1, 1]);
+    const b = tf.onesLike(a);
+    expect(b.dtype).toBe('float32');
+    expect(b.shape).toEqual(a.shape);
+    expectArraysClose(b, [1, 1, 1, 1]);
+  });
+
+  it('6D float32 dtype', () => {
+    const a = tf.tensor6d([1, 2, 3, 4], [1, 2, 2, 1, 1, 1], 'float32');
+    const b = tf.onesLike(a);
+    expect(b.dtype).toBe('float32');
+    expect(b.shape).toEqual(a.shape);
     expectArraysClose(b, [1, 1, 1, 1]);
   });
 
