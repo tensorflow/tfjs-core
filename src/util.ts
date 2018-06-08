@@ -103,6 +103,7 @@ export function assertTypesMatch(a: Tensor, b: Tensor): void {
 // NOTE: We explicitly type out what T extends instead of any so that
 // util.flatten on a nested array of number doesn't try to infer T as a
 // number[][], causing us to explicitly type util.flatten<number>().
+// tslint:disable-next-line:no-any
 export function flatten<T extends number|boolean|Tensor|Promise<number>>(
     arr: T|RecursiveArray<T>, ret: T[] = []): T[] {
   if (Array.isArray(arr)) {

@@ -18,6 +18,68 @@ import {ENV, Environment, Features} from './environment';
 import {MathBackendCPU} from './kernels/backend_cpu';
 import {MathBackendWebGL} from './kernels/backend_webgl';
 
+// Represents the non-override environment.
+export const REAL_ENV = new Environment();
+
+function canEmulateFeature<K extends keyof Features>(
+    feature: K, emulatedFeatures: Features,
+    realEnvironment?: Environment): boolean {
+  // Since backends are registered on "ENV", we use that as the real environment
+  // when the feature is "BACKEND".
+  realEnvironment = realEnvironment || (feature === 'BACKEND' ? ENV : REAL_ENV);
+
+  const emulatedFeature = emulatedFeatures[feature];
+
+  if (feature === 'BACKEND') {
+    const backend = realEnvironment.findBackend(emulatedFeature as string);
+    return backend != null;
+  } else if (feature === 'WEBGL_VERSION') {
+    return realEnvironment.get(feature) >= emulatedFeature;
+  } else if (feature === 'WEBGL_FLOAT_TEXTURE_ENABLED') {
+    if (realEnvironment.get(feature) === false && emulatedFeature === true) {
+      return false;
+    }
+    return true;
+  }
+  return true;
+}
+
+// Tests whether the set of features can be emulated within the current real
+// environment.
+export function canEmulateEnvironment(
+    emulatedFeatures: Features, realEnvironment?: Environment): boolean {
+  const featureNames = Object.keys(emulatedFeatures) as Array<keyof Features>;
+  for (let i = 0; i < featureNames.length; i++) {
+    const featureName = featureNames[i];
+    if (!canEmulateFeature(featureName, emulatedFeatures, realEnvironment)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+export const WEBGL_ENVS = [
+  {
+    'BACKEND': 'test-webgl',
+    'WEBGL_FLOAT_TEXTURE_ENABLED': true,
+    'WEBGL_VERSION': 1
+  },
+  {
+    'BACKEND': 'test-webgl',
+    'WEBGL_FLOAT_TEXTURE_ENABLED': true,
+    'WEBGL_VERSION': 2
+  }
+];
+
+export function describeWithFeatures(
+    name: string, featuresToRun: Features[], tests: () => void) {
+  // const flatFeatures = util.flatten(featuresToRun);
+  featuresToRun.forEach(features => {
+    const testName = name + ' ' + JSON.stringify(features);
+    executeTests(testName, tests, features);
+  });
+}
+
 export function describeWithFlags(
     name: string, constraints: Features, tests: () => void) {
   const envFeatures = TEST_ENV_FEATURES.filter(f => {
@@ -26,10 +88,11 @@ export function describeWithFlags(
       return (constraints as any)[key] === (f as any)[key];
     });
   });
-  envFeatures.forEach(features => {
-    const testName = name + ' ' + JSON.stringify(features);
-    executeTests(testName, tests, features);
-  });
+  envFeatures.forEach(
+      features => {
+          // const testName = name + ' ' + JSON.stringify(features);
+          // executeTests(testName, tests, features);
+      });
 }
 
 let BEFORE_ALL = (features: Features) => {
