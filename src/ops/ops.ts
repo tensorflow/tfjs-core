@@ -33,6 +33,7 @@ import {NormOps} from './norm';
 import {PoolOps} from './pool';
 import {ReductionOps} from './reduction_ops';
 import {ReverseOps} from './reverse';
+import {SigmoidCrossEntropyOps} from './sigmoid_cross_entropy';
 import {SliceOps} from './slice';
 import {SoftmaxOps} from './softmax';
 import {StridedSliceOps} from './strided_slice';
@@ -221,6 +222,8 @@ export const basicLSTMCell = LSTMOps.basicLSTMCell;
 export const multiRNNCell = LSTMOps.multiRNNCell;
 
 export const softmax = SoftmaxOps.softmax;
+export const sigmoidCrossEntropyWithLogits =
+    SigmoidCrossEntropyOps.sigmoidCrossEntropyWithLogits;
 
 export const localResponseNormalization = LRNOps.localResponseNormalization;
 
