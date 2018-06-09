@@ -318,9 +318,10 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   unsortedSegmentSum<T extends Tensor>(
-      x: T, segmentIds: Tensor1D, numSegments: number, axis: number): Tensor {
+      x: T, segmentIds: Tensor1D, numSegments: number): Tensor {
     const res = [];
     const [dim] = segmentIds.shape;
+    const axis = axis_util.getInnerMostAxes(1, x.rank)[0];
 
     // Reshape the segment id's so that they can be broadcast with
     // x. The new shape should be [1, 1, ... 1, dim, 1, ..., 1] where

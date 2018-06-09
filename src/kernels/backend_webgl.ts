@@ -538,8 +538,8 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   unsortedSegmentSum<T extends Tensor>(
-      x: T, segmentIds: Tensor1D, numSegments: number, axis = 0): Tensor {
-    axis_util.assertAxesAreInnerMostDims('unsortedSegmentSum', [axis], x.rank);
+      x: T, segmentIds: Tensor1D, numSegments: number): Tensor {
+    const axis = axis_util.getInnerMostAxes(1, x.rank)[0];
     const outShape = segment_util.computeOutShape(x.shape, axis, numSegments);
     const inSize = util.sizeFromShape([x.shape[axis]]);
     const a2D = x.as2D(-1, inSize);

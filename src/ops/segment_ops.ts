@@ -1,3 +1,20 @@
+/**
+ * @license
+ * Copyright 2018 Google Inc. All Rights Reserved.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * =============================================================================
+ */
+
 import {doc} from '../doc';
 import {ENV} from '../environment';
 import {Tensor, Tensor1D} from '../tensor';
@@ -17,55 +34,45 @@ export class SegmentOps {
    * const x = tf.tensor1d([1, 2, 3, 4]);
    * const segmentIds = tf.tensor1d([1, 2, 0, 1], 'int32');
    * comst numSegments = 3;
-   * const axis = 0;
    *
-   * x.unsortedSegmentSum(indices, numSegments, axis).print() //or
-   * tf.unsortedSegmentSum(x, indices, numSegments, axis)
+   * x.unsortedSegmentSum(indices, numSegments).print() //or
+   * tf.unsortedSegmentSum(x, indices, numSegments)
    * ```
    * @param x The `Tensor` that will be summed along its segments
    * @param segmentIds A `Tensor1D` whose rank is equal to the rank of `x`'s
    * dimension along the `axis`.  Maps each element of `x` to a segment.
    * @param numSegments The number of distinct `segmentIds`
-   * @param axis The dimension along which the sums will be
-   * calculated. Defaults to 0.
    */
   @doc({heading: 'Operations', subheading: 'Segment'})
   @operation
   static unsortedSegmentSum<T extends Tensor>(
-      x: T, segmentIds: Tensor1D, numSegments: number, axis = 0): T {
+      x: T, segmentIds: Tensor1D, numSegments: number): T {
     util.assertArgumentsAreTensors({x, segmentIds}, 'unsortedSegmentSum');
-
     util.assert(
         segmentIds.dtype === 'int32', 'segmentIds must be of dtype `int32`');
-
     util.assert(util.isInt(numSegments), 'numSegments must be of dtype int');
 
+    let axis = 0;
     const permutation = axis_util.getAxesPermutation([axis], x.rank);
-    axis = axis_util.parseAxisParam(axis, x.shape)[0];
     let permutedX = x;
     if (permutation != null) {
       permutedX = x.transpose(permutation);
       axis = axis_util.getInnerMostAxes(1, x.rank)[0];
     }
-    const grad = (dy: T) => {
+    const gradFunc = (dy: T) => {
       const derX = () => {
-        let gradRes = gatherDropNegatives(dy, segmentIds, axis);
-        if (permutation != null) {
-          gradRes =
-              gradRes.transpose(axis_util.getUndoAxesPermutation(permutation));
-        }
-        return gradRes;
+        return gatherDropNegatives(dy, segmentIds, axis);
       };
-      return {x: derX};
+      return {permutedX: derX};
     };
-    const res = ENV.engine.runKernel(
-                    backend => backend.unsortedSegmentSum(
-                        permutedX, segmentIds, numSegments, axis),
-                    {x}, grad) as T;
+    let result = ENV.engine.runKernel(
+        backend =>
+            backend.unsortedSegmentSum(permutedX, segmentIds, numSegments) as T,
+        {permutedX}, gradFunc);
     if (permutation != null) {
-      return res.transpose(axis_util.getUndoAxesPermutation(permutation));
+      result = result.transpose(axis_util.getUndoAxesPermutation(permutation));
     }
-    return res;
+    return result;
   }
 }
 

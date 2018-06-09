@@ -78,7 +78,7 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
   sum(x: Tensor, axes: number[]): Tensor;
 
   unsortedSegmentSum<T extends Tensor>(
-      x: T, segmentIds: Tensor1D, numSegments: number, axis: number): Tensor;
+      x: T, segmentIds: Tensor1D, numSegments: number): Tensor;
 
   argMin(x: Tensor, axis: number): Tensor;
   argMax(x: Tensor, axis: number): Tensor;
