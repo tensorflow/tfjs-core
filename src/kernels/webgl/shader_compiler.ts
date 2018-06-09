@@ -38,10 +38,9 @@ export function makeShader(
   const sampleSnippet = getSampleSnippet();
   const setOutputSnippet = getSetOutputSnippet();
   let inputPrefixSnippet: string[]|string = inputsInfo.map(x => {
-    const rank = x.shapeInfo.logicalShape.length;
     const size = util.sizeFromShape(x.shapeInfo.logicalShape);
     if (x.shapeInfo.isUniform) {
-      return `uniform float ${x.name}${rank === 1 ? `[${size}]` : ''};`;
+      return `uniform float ${x.name}${size > 1 ? `[${size}]` : ''};`;
     }
     return `uniform sampler2D ${x.name};`;
   });
@@ -478,19 +477,6 @@ function getSamplerScalar(inputInfo: InputInfo): string {
 function getSampler1D(inputInfo: InputInfo): string {
   const texName = inputInfo.name;
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
-  const inSize = util.sizeFromShape(inputInfo.shapeInfo.logicalShape);
-
-  if (inputInfo.shapeInfo.isUniform) {
-    return `
-      float ${funcName}(int index) {
-        for (int i = 0; i < ${inSize}; i++) {
-          if (i == index) {
-            return ${texName}[i];
-          }
-        }
-      }
-    `;
-  }
 
   return `
     float ${funcName}(int index) {
@@ -501,12 +487,14 @@ function getSampler1D(inputInfo: InputInfo): string {
 
 function getSampler2D(inputInfo: InputInfo): string {
   const shape = inputInfo.shapeInfo.logicalShape;
-  const texShape = inputInfo.shapeInfo.texShape;
   const texName = inputInfo.name;
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
-  const texNumR = texShape[0];
-  const texNumC = texShape[1];
-  if (util.arraysEqual(shape, texShape)) {
+  const inSize = util.sizeFromShape(shape);
+
+  const texShape = inputInfo.shapeInfo.texShape;
+  if (texShape != null && util.arraysEqual(shape, texShape)) {
+    const texNumR = texShape[0];
+    const texNumC = texShape[1];
     return `
     float ${funcName}(int row, int col) {
       vec2 uv = (vec2(col, row) + halfCR) / vec2(${texNumC}.0, ${texNumR}.0);
@@ -514,6 +502,7 @@ function getSampler2D(inputInfo: InputInfo): string {
     }
   `;
   }
+
   const {newShape, keptDims} = util.squeezeShape(shape);
   const squeezedShape = newShape;
   if (squeezedShape.length < shape.length) {
@@ -526,6 +515,22 @@ function getSampler2D(inputInfo: InputInfo): string {
       }
     `;
   }
+
+  if (inputInfo.shapeInfo.isUniform) {
+    return `
+      float ${funcName}(int row, int col) {
+        int index = row * ${shape[1]} + col;
+        for (int i = 0; i < ${inSize}; i++) {
+          if (i == index) {
+            return ${texName}[i];
+          }
+        }
+      }
+    `;
+  }
+
+  const texNumR = texShape[0];
+  const texNumC = texShape[1];
   if (texNumC === 1) {
     return `
     float ${funcName}(int row, int col) {
@@ -553,14 +558,12 @@ function getSampler2D(inputInfo: InputInfo): string {
 }
 
 function getSampler3D(inputInfo: InputInfo): string {
-  const texShape = inputInfo.shapeInfo.texShape;
   const shape = inputInfo.shapeInfo.logicalShape;
   const texName = inputInfo.name;
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
-  const texNumR = texShape[0];
-  const texNumC = texShape[1];
   const stride0 = shape[1] * shape[2];
   const stride1 = shape[2];
+  const inSize = util.sizeFromShape(shape);
 
   const {newShape, keptDims} = util.squeezeShape(shape);
   const squeezedShape = newShape;
@@ -575,6 +578,22 @@ function getSampler3D(inputInfo: InputInfo): string {
       `;
   }
 
+  if (inputInfo.shapeInfo.isUniform) {
+    return `
+      float ${funcName}(int row, int col, int depth) {
+        int index = row * ${stride0} + col * ${stride1} + depth;
+        for (int i = 0; i < ${inSize}; i++) {
+          if (i == index) {
+            return ${texName}[i];
+          }
+        }
+      }
+    `;
+  }
+
+  const texShape = inputInfo.shapeInfo.texShape;
+  const texNumR = texShape[0];
+  const texNumC = texShape[1];
   if (texNumC === stride0) {
     return `
         float ${funcName}(int row, int col, int depth) {
@@ -609,14 +628,13 @@ function getSampler3D(inputInfo: InputInfo): string {
 
 function getSampler4D(inputInfo: InputInfo): string {
   const shape = inputInfo.shapeInfo.logicalShape;
-  const texShape = inputInfo.shapeInfo.texShape;
   const texName = inputInfo.name;
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
-  const texNumR = texShape[0];
-  const texNumC = texShape[1];
   const stride2 = shape[3];
   const stride1 = shape[2] * stride2;
   const stride0 = shape[1] * stride1;
+  const inSize = util.sizeFromShape(shape);
+
   const {newShape, keptDims} = util.squeezeShape(shape);
   if (newShape.length < shape.length) {
     const newInputInfo = squeezeInputInfo(inputInfo, newShape);
@@ -628,6 +646,24 @@ function getSampler4D(inputInfo: InputInfo): string {
       }
     `;
   }
+
+  if (inputInfo.shapeInfo.isUniform) {
+    return `
+      float ${funcName}(int row, int col, int depth, int depth2) {
+        int index = row * ${stride0} + col * ${stride1} +
+            depth * ${stride2} + depth2;
+        for (int i = 0; i < ${inSize}; i++) {
+          if (i == index) {
+            return ${texName}[i];
+          }
+        }
+      }
+    `;
+  }
+
+  const texShape = inputInfo.shapeInfo.texShape;
+  const texNumR = texShape[0];
+  const texNumC = texShape[1];
   if (texNumC === stride0) {
     return `
       float ${funcName}(int row, int col, int depth, int depth2) {
@@ -661,15 +697,14 @@ function getSampler4D(inputInfo: InputInfo): string {
 
 function getSampler5D(inputInfo: InputInfo): string {
   const shape = inputInfo.shapeInfo.logicalShape;
-  const texShape = inputInfo.shapeInfo.texShape;
   const texName = inputInfo.name;
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
-  const texNumR = texShape[0];
-  const texNumC = texShape[1];
   const stride3 = shape[4];
   const stride2 = shape[3] * stride3;
   const stride1 = shape[2] * stride2;
   const stride0 = shape[1] * stride1;
+  const inSize = util.sizeFromShape(shape);
+
   const {newShape, keptDims} = util.squeezeShape(shape);
   if (newShape.length < shape.length) {
     const newInputInfo = squeezeInputInfo(inputInfo, newShape);
@@ -681,6 +716,25 @@ function getSampler5D(inputInfo: InputInfo): string {
       }
     `;
   }
+
+  if (inputInfo.shapeInfo.isUniform) {
+    return `
+      float ${funcName}(int row, int col, int depth, int depth2, int depth3) {
+        int index = row * ${stride0} + col * ${stride1} +
+            depth * ${stride2} + depth2 * ${stride3} + depth3;
+        for (int i = 0; i < ${inSize}; i++) {
+          if (i == index) {
+            return ${texName}[i];
+          }
+        }
+      }
+    `;
+  }
+
+  const texShape = inputInfo.shapeInfo.texShape;
+  const texNumR = texShape[0];
+  const texNumC = texShape[1];
+
   if (texNumC === stride0) {
     return `
       float ${funcName}(int row, int col, int depth, int depth2, int depth3) {
@@ -721,22 +775,20 @@ function getSamplerFlat(inputInfo: InputInfo): string {
   const funcName =
       'get' + texName.charAt(0).toUpperCase() + texName.slice(1) + 'Flat';
   const inSize = util.sizeFromShape(inputInfo.shapeInfo.logicalShape);
-  const rank = inputInfo.shapeInfo.logicalShape.length;
 
   if (inputInfo.shapeInfo.isUniform) {
-    if (rank === 1) {
-      return `
-        float ${funcName}(int index) {
-          for (int i = 0; i < ${inSize}; i++) {
-            if (i == index) {
-              return ${texName}[i];
-            }
-          }
-        }
-      `;
-    } else if (rank === 0) {
+    if (inSize === 1) {
       return `float ${funcName}(int index) {return ${texName};}`;
     }
+    return `
+      float ${funcName}(int index) {
+        for (int i = 0; i < ${inSize}; i++) {
+          if (i == index) {
+            return ${texName}[i];
+          }
+        }
+      }
+    `;
   }
 
   const texShape = inputInfo.shapeInfo.texShape;
@@ -832,9 +884,12 @@ function getSamplerAtOutputCoords(
   const broadcastOverOuter =
       broadcast_util.broadcastDimsAreOuter(broadcastDims);
   const isUniform = inputInfo.shapeInfo.isUniform;
-  const rank = inputInfo.shapeInfo.logicalShape.length;
 
-  const outTexShape = outShapeInfo.texShape;
+  if (doBroadcast && !broadcastOverOuter) {
+    return getBroadcastOutputCoordsSampler(
+        inputInfo, outShapeInfo, texFuncSnippet, funcName);
+  }
+
   const inSize = util.sizeFromShape(inputInfo.shapeInfo.logicalShape);
   let broadcastSnippet = '';
   if (doBroadcast && broadcastOverOuter) {
@@ -844,30 +899,24 @@ function getSamplerAtOutputCoords(
       `;
   }
 
+  const outTexShape = outShapeInfo.texShape;
   if (isUniform) {
-    if (rank === 0) {
+    if (inSize === 1) {
       return `float ${funcName}() {return ${texName};}`;
     }
-    if (rank === 1) {
-      return `
-        float ${funcName}() {
-          ivec2 resTexRC = ivec2(resultUV.yx *
-                                vec2(${outTexShape[0]}, ${outTexShape[1]}));
-          int index = resTexRC.x * ${outTexShape[1]} + resTexRC.y;
-          ${broadcastSnippet}
-          for (int i = 0; i < ${inSize}; i++) {
-            if (i == index) {
-              return ${texName}[i];
-            }
+    return `
+      float ${funcName}() {
+        ivec2 resTexRC = ivec2(resultUV.yx *
+                              vec2(${outTexShape[0]}, ${outTexShape[1]}));
+        int index = resTexRC.x * ${outTexShape[1]} + resTexRC.y;
+        ${broadcastSnippet}
+        for (int i = 0; i < ${inSize}; i++) {
+          if (i == index) {
+            return ${texName}[i];
           }
         }
-      `;
-    }
-  }
-
-  if (doBroadcast && !broadcastOverOuter) {
-    return getBroadcastOutputCoordsSampler(
-        inputInfo, outShapeInfo, texFuncSnippet, funcName);
+      }
+    `;
   }
 
   // At this point, the input is not a uniform.

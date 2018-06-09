@@ -95,6 +95,8 @@ export interface WebGLTimingInfo extends TimingInfo {
 // Empirically determined constant used to decide the number of bytes on GPU
 // before we start paging. The bytes are this constant * screen area * dpi.
 const BEFORE_PAGING_CONSTANT = 300;
+// Tensors with size <= than this will be uploaded as uniforms, not textures.
+const SIZE_UPLOAD_UNIFORM = 32;
 
 export class MathBackendWebGL implements KernelBackend {
   private texData = new WeakMap<DataId, TextureData>();
@@ -1035,8 +1037,8 @@ export class MathBackendWebGL implements KernelBackend {
     }
     const inputsData: Array<TensorData<T>> = inputs.map(tensor => {
       const texData = this.texData.get(tensor.dataId);
-      // Upload scalar/1d tensor that lives on CPU as uniform, not as texture.
-      if (texData.texture == null && tensor.rank <= 1 && tensor.size <= 256) {
+      // Upload small tensors that live on the CPU as uniforms, not as textures.
+      if (texData.texture == null && tensor.size <= SIZE_UPLOAD_UNIFORM) {
         return {tensor, texData: null, isUniform: true};
       }
       this.uploadToGPU(tensor.dataId);

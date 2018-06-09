@@ -149,11 +149,14 @@ export function runProgram<T extends Tensor, K extends Tensor>(
     const variableName = binary.program.variableNames[i];
     const variableUniformLocation = binary.uniformLocations[variableName];
     if (input.isUniform) {
-      if (input.tensor.rank === 0) {
-        gpgpu.gl.uniform1f(variableUniformLocation, input.tensor.get());
-      } else if (input.tensor.rank === 1) {
-        gpgpu.gl.uniform1fv(
-            variableUniformLocation, input.tensor.dataSync() as Float32Array);
+      if (input.tensor.size === 1) {
+        gpgpu.gl.uniform1f(variableUniformLocation, input.tensor.dataSync()[0]);
+      } else {
+        let vals = input.tensor.dataSync();
+        if (!(vals instanceof Float32Array)) {
+          vals = new Float32Array(vals);
+        }
+        gpgpu.gl.uniform1fv(variableUniformLocation, vals);
       }
       return;
     }

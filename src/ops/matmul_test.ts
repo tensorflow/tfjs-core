@@ -475,24 +475,4 @@ describeWithFlags('dot', WEBGL_ENVS, () => {
     expect(() => tf.dot(a, d)).toThrowError();
     expect(() => tf.dot(a, e)).toThrowError();
   });
-
-  // tslint:disable-next-line:ban
-  fit('benchmark dot', () => {
-    const size = 256;
-    const a = tf.randomUniform([size]);
-    let res: tf.Tensor;
-
-    tf.square(tf.randomUniform([size])).dataSync();  // warmup.
-
-    const start = performance.now();
-    const numIter = 10000;
-    for (let i = 0; i < numIter; i++) {
-      res = tf.square(a);
-      if (i < numIter - 1) {
-        res.dispose();
-      }
-    }
-    res.dataSync();
-    console.log(performance.now() - start, 'ms');
-  });
 });
