@@ -421,7 +421,7 @@ describeWithFlags('matmul webgl-only', WEBGL_ENVS, () => {
   });
 });
 
-describeWithFlags('dot', WEBGL_ENVS, () => {
+describeWithFlags('dot', ALL_ENVS, () => {
   let a: tf.Tensor1D;
   let b: tf.Tensor2D;
   let c: tf.Tensor2D;
