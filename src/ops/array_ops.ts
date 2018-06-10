@@ -1137,9 +1137,7 @@ export class ArrayOps {
    * ```js
    * const a = tf.tensor2d([1, 2, 3, 4], [2, 2]);
    *
-   * tf.unstack(a).forEach(function(tensor) {
-   *   tensor.print();
-   * });
+   * tf.unstack(a).forEach(tensor => tensor.print());
    * ```
    *
    * @param value A tensor object.
