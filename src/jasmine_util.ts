@@ -139,25 +139,25 @@ let AFTER_ALL = (features: Features) => {};
 let BEFORE_EACH = (features: Features) => {};
 let AFTER_EACH = (features: Features) => {};
 
-let TEST_ENV_FEATURES: Features[] = [
-  {
-    'BACKEND': 'test-webgl',
-    'WEBGL_FLOAT_TEXTURE_ENABLED': true,
-    'WEBGL_VERSION': 1
-  },
-  {
-    'BACKEND': 'test-webgl',
-    'WEBGL_FLOAT_TEXTURE_ENABLED': true,
-    'WEBGL_VERSION': 2
-  },
-  {'BACKEND': 'test-cpu'}
-  // TODO(nsthorat,smilkov): Enable when byte-backed textures are fixed.
-  // {
-  // 'BACKEND': 'webgl',
-  // 'WEBGL_FLOAT_TEXTURE_ENABLED': false,
-  // 'WEBGL_VERSION': 1
-  // }
-];
+// let TEST_ENV_FEATURES: Features[] = [
+//   {
+//     'BACKEND': 'test-webgl',
+//     'WEBGL_FLOAT_TEXTURE_ENABLED': true,
+//     'WEBGL_VERSION': 1
+//   },
+//   {
+//     'BACKEND': 'test-webgl',
+//     'WEBGL_FLOAT_TEXTURE_ENABLED': true,
+//     'WEBGL_VERSION': 2
+//   },
+//   {'BACKEND': 'test-cpu'}
+//   // TODO(nsthorat,smilkov): Enable when byte-backed textures are fixed.
+//   // {
+//   // 'BACKEND': 'webgl',
+//   // 'WEBGL_FLOAT_TEXTURE_ENABLED': false,
+//   // 'WEBGL_VERSION': 1
+//   // }
+// ];
 
 export function setBeforeAll(f: (features: Features) => void) {
   BEFORE_ALL = f;
