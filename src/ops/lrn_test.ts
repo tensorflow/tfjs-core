@@ -17,8 +17,8 @@
 
 // tslint:disable-next-line:max-line-length
 import * as tf from '../index';
-import {ALL_ENVS, expectArraysClose} from '../test_util';
 import {describeWithFlags} from '../jasmine_util';
+import {ALL_ENVS, expectArraysClose} from '../test_util';
 
 const sqArr = (arr: number[]) => arr.map(d => d * d);
 const sumArr = (arr: number[]) => arr.reduce((prev, curr) => prev + curr, 0);
@@ -31,236 +31,237 @@ const flatten = (arr: any): number[] => {
   }, []);
 };
 
-describeWithFlags('localResponseNormalization with Tensor3D', ALL_ENVS, () => {
-  it('throws error with invalid input', () => {
-    // tslint:disable-next-line:no-any
-    const x: any = tf.tensor2d([1, 20, 300, 4], [1, 4]);
-    const radius = 3;
+describeWithFlags(
+    'localResponseNormalization with Tensor3D', ALL_ENVS, () => {
+      it('throws error with invalid input', () => {
+        // tslint:disable-next-line:no-any
+        const x: any = tf.tensor2d([1, 20, 300, 4], [1, 4]);
+        const radius = 3;
 
-    expect(() => x.localResponseNormalization(radius)).toThrowError();
-  });
+        expect(() => x.localResponseNormalization(radius)).toThrowError();
+      });
 
-  it('throws error with invalid radius', () => {
-    const x = tf.tensor3d([1, 20, 300, 4], [1, 1, 4]);
-    const radius = 0.5;
+      it('throws error with invalid radius', () => {
+        const x = tf.tensor3d([1, 20, 300, 4], [1, 1, 4]);
+        const radius = 0.5;
 
-    expect(() => x.localResponseNormalization(radius)).toThrowError();
-  });
+        expect(() => x.localResponseNormalization(radius)).toThrowError();
+      });
 
-  it('computes simple normalization across channels', () => {
-    const x = tf.tensor3d([1, 20, 300, 4], [1, 1, 4]);
-    const radius = 1;
-    const bias = 1;
-    const alpha = 1;
-    const beta = 0.5;
+      it('computes simple normalization across channels', () => {
+        const x = tf.tensor3d([1, 20, 300, 4], [1, 1, 4]);
+        const radius = 1;
+        const bias = 1;
+        const alpha = 1;
+        const beta = 0.5;
 
-    const result = x.localResponseNormalization(radius, bias, alpha, beta);
+        const result = x.localResponseNormalization(radius, bias, alpha, beta);
 
-    const f = (...vals: number[]) =>
-        Math.pow(bias + alpha * sumArr(sqArr(vals)), -beta);
+        const f = (...vals: number[]) =>
+            Math.pow(bias + alpha * sumArr(sqArr(vals)), -beta);
 
-    expectArraysClose(result, [
-      x.get(0, 0, 0) * f(x.get(0, 0, 0), x.get(0, 0, 1)),
-      x.get(0, 0, 1) * f(x.get(0, 0, 0), x.get(0, 0, 1), x.get(0, 0, 2)),
-      x.get(0, 0, 2) * f(x.get(0, 0, 1), x.get(0, 0, 2), x.get(0, 0, 3)),
-      x.get(0, 0, 3) * f(x.get(0, 0, 2), x.get(0, 0, 3)),
-    ]);
-  });
+        expectArraysClose(result, [
+          x.get(0, 0, 0) * f(x.get(0, 0, 0), x.get(0, 0, 1)),
+          x.get(0, 0, 1) * f(x.get(0, 0, 0), x.get(0, 0, 1), x.get(0, 0, 2)),
+          x.get(0, 0, 2) * f(x.get(0, 0, 1), x.get(0, 0, 2), x.get(0, 0, 3)),
+          x.get(0, 0, 3) * f(x.get(0, 0, 2), x.get(0, 0, 3)),
+        ]);
+      });
 
-  it('uses beta = 1.0 to test GPU optimization', () => {
-    const x = tf.tensor3d([1, 20, 300, 4], [1, 1, 4]);
-    const radius = 1;
-    const bias = 1;
-    const alpha = 1;
-    const beta = 1.0;
+      it('uses beta = 1.0 to test GPU optimization', () => {
+        const x = tf.tensor3d([1, 20, 300, 4], [1, 1, 4]);
+        const radius = 1;
+        const bias = 1;
+        const alpha = 1;
+        const beta = 1.0;
 
-    const result = x.localResponseNormalization(radius, bias, alpha, beta);
+        const result = x.localResponseNormalization(radius, bias, alpha, beta);
 
-    const f = (...vals: number[]) =>
-        Math.pow(bias + alpha * sumArr(sqArr(vals)), -beta);
+        const f = (...vals: number[]) =>
+            Math.pow(bias + alpha * sumArr(sqArr(vals)), -beta);
 
-    expectArraysClose(result, [
-      x.get(0, 0, 0) * f(x.get(0, 0, 0), x.get(0, 0, 1)),
-      x.get(0, 0, 1) * f(x.get(0, 0, 0), x.get(0, 0, 1), x.get(0, 0, 2)),
-      x.get(0, 0, 2) * f(x.get(0, 0, 1), x.get(0, 0, 2), x.get(0, 0, 3)),
-      x.get(0, 0, 3) * f(x.get(0, 0, 2), x.get(0, 0, 3)),
-    ]);
-  });
+        expectArraysClose(result, [
+          x.get(0, 0, 0) * f(x.get(0, 0, 0), x.get(0, 0, 1)),
+          x.get(0, 0, 1) * f(x.get(0, 0, 0), x.get(0, 0, 1), x.get(0, 0, 2)),
+          x.get(0, 0, 2) * f(x.get(0, 0, 1), x.get(0, 0, 2), x.get(0, 0, 3)),
+          x.get(0, 0, 3) * f(x.get(0, 0, 2), x.get(0, 0, 3)),
+        ]);
+      });
 
-  it('uses beta = 0.75 to test GPU optimization', () => {
-    const x = tf.tensor3d([1, 20, 300, 4], [1, 1, 4]);
-    const radius = 1;
-    const bias = 1;
-    const alpha = 1;
-    const beta = 0.75;
+      it('uses beta = 0.75 to test GPU optimization', () => {
+        const x = tf.tensor3d([1, 20, 300, 4], [1, 1, 4]);
+        const radius = 1;
+        const bias = 1;
+        const alpha = 1;
+        const beta = 0.75;
 
-    const result = x.localResponseNormalization(radius, bias, alpha, beta);
+        const result = x.localResponseNormalization(radius, bias, alpha, beta);
 
-    const f = (...vals: number[]) =>
-        Math.pow(bias + alpha * sumArr(sqArr(vals)), -beta);
+        const f = (...vals: number[]) =>
+            Math.pow(bias + alpha * sumArr(sqArr(vals)), -beta);
 
-    expectArraysClose(result, [
-      x.get(0, 0, 0) * f(x.get(0, 0, 0), x.get(0, 0, 1)),
-      x.get(0, 0, 1) * f(x.get(0, 0, 0), x.get(0, 0, 1), x.get(0, 0, 2)),
-      x.get(0, 0, 2) * f(x.get(0, 0, 1), x.get(0, 0, 2), x.get(0, 0, 3)),
-      x.get(0, 0, 3) * f(x.get(0, 0, 2), x.get(0, 0, 3)),
-    ]);
-  });
+        expectArraysClose(result, [
+          x.get(0, 0, 0) * f(x.get(0, 0, 0), x.get(0, 0, 1)),
+          x.get(0, 0, 1) * f(x.get(0, 0, 0), x.get(0, 0, 1), x.get(0, 0, 2)),
+          x.get(0, 0, 2) * f(x.get(0, 0, 1), x.get(0, 0, 2), x.get(0, 0, 3)),
+          x.get(0, 0, 3) * f(x.get(0, 0, 2), x.get(0, 0, 3)),
+        ]);
+      });
 
-  it('computes complex normalization across channels', () => {
-    const x = tf.tensor3d(
-        [1, 20, 300, 4, 5, 15, 24, 200, 1, 20, 300, 4, 5, 15, 24, 200],
-        [2, 2, 4]);
-    const radius = 1;
-    const bias = 1;
-    const alpha = 1;
-    const beta = 0.5;
-    const result = x.localResponseNormalization(radius, bias, alpha, beta);
+      it('computes complex normalization across channels', () => {
+        const x = tf.tensor3d(
+            [1, 20, 300, 4, 5, 15, 24, 200, 1, 20, 300, 4, 5, 15, 24, 200],
+            [2, 2, 4]);
+        const radius = 1;
+        const bias = 1;
+        const alpha = 1;
+        const beta = 0.5;
+        const result = x.localResponseNormalization(radius, bias, alpha, beta);
 
-    const f = (...vals: number[]) =>
-        Math.pow(bias + alpha * sumArr(sqArr(vals)), -beta);
+        const f = (...vals: number[]) =>
+            Math.pow(bias + alpha * sumArr(sqArr(vals)), -beta);
 
-    // 1       | 2       | 3       | 4
-    // ------- | ------- | ------- | -------
-    // o x . . | x o x . | . x o x | . . x o
+        // 1       | 2       | 3       | 4
+        // ------- | ------- | ------- | -------
+        // o x . . | x o x . | . x o x | . . x o
 
-    expectArraysClose(result, [
-      // 1 - 4
-      x.get(0, 0, 0) * f(x.get(0, 0, 0), x.get(0, 0, 1)),
-      x.get(0, 0, 1) * f(x.get(0, 0, 0), x.get(0, 0, 1), x.get(0, 0, 2)),
-      x.get(0, 0, 2) * f(x.get(0, 0, 1), x.get(0, 0, 2), x.get(0, 0, 3)),
-      x.get(0, 0, 3) * f(x.get(0, 0, 2), x.get(0, 0, 3)),
+        expectArraysClose(result, [
+          // 1 - 4
+          x.get(0, 0, 0) * f(x.get(0, 0, 0), x.get(0, 0, 1)),
+          x.get(0, 0, 1) * f(x.get(0, 0, 0), x.get(0, 0, 1), x.get(0, 0, 2)),
+          x.get(0, 0, 2) * f(x.get(0, 0, 1), x.get(0, 0, 2), x.get(0, 0, 3)),
+          x.get(0, 0, 3) * f(x.get(0, 0, 2), x.get(0, 0, 3)),
 
-      // 1 - 4
-      x.get(0, 1, 0) * f(x.get(0, 1, 0), x.get(0, 1, 1)),
-      x.get(0, 1, 1) * f(x.get(0, 1, 0), x.get(0, 1, 1), x.get(0, 1, 2)),
-      x.get(0, 1, 2) * f(x.get(0, 1, 1), x.get(0, 1, 2), x.get(0, 1, 3)),
-      x.get(0, 1, 3) * f(x.get(0, 1, 2), x.get(0, 1, 3)),
+          // 1 - 4
+          x.get(0, 1, 0) * f(x.get(0, 1, 0), x.get(0, 1, 1)),
+          x.get(0, 1, 1) * f(x.get(0, 1, 0), x.get(0, 1, 1), x.get(0, 1, 2)),
+          x.get(0, 1, 2) * f(x.get(0, 1, 1), x.get(0, 1, 2), x.get(0, 1, 3)),
+          x.get(0, 1, 3) * f(x.get(0, 1, 2), x.get(0, 1, 3)),
 
-      // 1 - 4
-      x.get(1, 0, 0) * f(x.get(1, 0, 0), x.get(1, 0, 1)),
-      x.get(1, 0, 1) * f(x.get(1, 0, 0), x.get(1, 0, 1), x.get(1, 0, 2)),
-      x.get(1, 0, 2) * f(x.get(1, 0, 1), x.get(1, 0, 2), x.get(1, 0, 3)),
-      x.get(1, 0, 3) * f(x.get(1, 0, 2), x.get(1, 0, 3)),
+          // 1 - 4
+          x.get(1, 0, 0) * f(x.get(1, 0, 0), x.get(1, 0, 1)),
+          x.get(1, 0, 1) * f(x.get(1, 0, 0), x.get(1, 0, 1), x.get(1, 0, 2)),
+          x.get(1, 0, 2) * f(x.get(1, 0, 1), x.get(1, 0, 2), x.get(1, 0, 3)),
+          x.get(1, 0, 3) * f(x.get(1, 0, 2), x.get(1, 0, 3)),
 
-      // 1 - 4
-      x.get(1, 1, 0) * f(x.get(1, 1, 0), x.get(1, 1, 1)),
-      x.get(1, 1, 1) * f(x.get(1, 1, 0), x.get(1, 1, 1), x.get(1, 1, 2)),
-      x.get(1, 1, 2) * f(x.get(1, 1, 1), x.get(1, 1, 2), x.get(1, 1, 3)),
-      x.get(1, 1, 3) * f(x.get(1, 1, 2), x.get(1, 1, 3)),
-    ]);
-  });
+          // 1 - 4
+          x.get(1, 1, 0) * f(x.get(1, 1, 0), x.get(1, 1, 1)),
+          x.get(1, 1, 1) * f(x.get(1, 1, 0), x.get(1, 1, 1), x.get(1, 1, 2)),
+          x.get(1, 1, 2) * f(x.get(1, 1, 1), x.get(1, 1, 2), x.get(1, 1, 3)),
+          x.get(1, 1, 3) * f(x.get(1, 1, 2), x.get(1, 1, 3)),
+        ]);
+      });
 
-  it('yields same result as tensorflow', () => {
-    // t = tf.random_uniform([1, 3, 3, 8])
-    // l = tf.nn.lrn(t, depth_radius=2)
-    // print(tf.Session().run([t, l]))
+      it('yields same result as tensorflow', () => {
+        // t = tf.random_uniform([1, 3, 3, 8])
+        // l = tf.nn.lrn(t, depth_radius=2)
+        // print(tf.Session().run([t, l]))
 
-    const input = [
-      [
-        [
-          0.95782757, 0.12892687, 0.63624668, 0.70160735, 0.77376258,
-          0.54166114, 0.71172535, 0.65087497
-        ],
-        [
-          0.91872108, 0.38846886, 0.37847793, 0.50477624, 0.42154622,
-          0.43310916, 0.36253822, 0.07576156
-        ],
-        [
-          0.48662257, 0.4154036, 0.81704032, 0.91660416, 0.87671542, 0.64215934,
-          0.29933751, 0.90671134
-        ]
-      ],
+        const input = [
+          [
+            [
+              0.95782757, 0.12892687, 0.63624668, 0.70160735, 0.77376258,
+              0.54166114, 0.71172535, 0.65087497
+            ],
+            [
+              0.91872108, 0.38846886, 0.37847793, 0.50477624, 0.42154622,
+              0.43310916, 0.36253822, 0.07576156
+            ],
+            [
+              0.48662257, 0.4154036, 0.81704032, 0.91660416, 0.87671542,
+              0.64215934, 0.29933751, 0.90671134
+            ]
+          ],
 
-      [
-        [
-          0.6208992, 0.60847163, 0.41475761, 0.2127713, 0.65306914, 0.13923979,
-          0.32003641, 0.28183973
-        ],
-        [
-          0.04751575, 0.26870155, 0.45150304, 0.58678186, 0.99118924,
-          0.58878231, 0.30913198, 0.18836617
-        ],
-        [
-          0.16166461, 0.56322742, 0.67908955, 0.2269547, 0.38491273, 0.97113752,
-          0.51210916, 0.69430435
-        ]
-      ],
+          [
+            [
+              0.6208992, 0.60847163, 0.41475761, 0.2127713, 0.65306914,
+              0.13923979, 0.32003641, 0.28183973
+            ],
+            [
+              0.04751575, 0.26870155, 0.45150304, 0.58678186, 0.99118924,
+              0.58878231, 0.30913198, 0.18836617
+            ],
+            [
+              0.16166461, 0.56322742, 0.67908955, 0.2269547, 0.38491273,
+              0.97113752, 0.51210916, 0.69430435
+            ]
+          ],
 
-      [
-        [
-          0.06625497, 0.13011181, 0.59202921, 0.88871598, 0.6366322, 0.47911358,
-          0.96530843, 0.74259472
-        ],
-        [
-          0.62660718, 0.0445286, 0.18430257, 0.76863647, 0.87511849, 0.53588808,
-          0.27980685, 0.30281997
-        ],
-        [
-          0.73987067, 0.91034842, 0.26241004, 0.72832751, 0.78974342,
-          0.50751543, 0.05434644, 0.8231523
-        ]
-      ]
-    ];
+          [
+            [
+              0.06625497, 0.13011181, 0.59202921, 0.88871598, 0.6366322,
+              0.47911358, 0.96530843, 0.74259472
+            ],
+            [
+              0.62660718, 0.0445286, 0.18430257, 0.76863647, 0.87511849,
+              0.53588808, 0.27980685, 0.30281997
+            ],
+            [
+              0.73987067, 0.91034842, 0.26241004, 0.72832751, 0.78974342,
+              0.50751543, 0.05434644, 0.8231523
+            ]
+          ]
+        ];
 
-    const expected = [
-      [
-        [
-          0.62630326, 0.07662392, 0.34354961, 0.41885775, 0.42621866,
-          0.29751951, 0.42365381, 0.4364861
-        ],
-        [
-          0.62828875, 0.251122, 0.23605582, 0.36483878, 0.30624411, 0.32672295,
-          0.29576892, 0.06582346
-        ],
-        [
-          0.3376624, 0.24321821, 0.42558169, 0.46646208, 0.45103404, 0.32380751,
-          0.17021206, 0.59476018
-        ]
-      ],
+        const expected = [
+          [
+            [
+              0.62630326, 0.07662392, 0.34354961, 0.41885775, 0.42621866,
+              0.29751951, 0.42365381, 0.4364861
+            ],
+            [
+              0.62828875, 0.251122, 0.23605582, 0.36483878, 0.30624411,
+              0.32672295, 0.29576892, 0.06582346
+            ],
+            [
+              0.3376624, 0.24321821, 0.42558169, 0.46646208, 0.45103404,
+              0.32380751, 0.17021206, 0.59476018
+            ]
+          ],
 
-      [
-        [
-          0.44719055, 0.43318295, 0.26775005, 0.14921051, 0.49148726,
-          0.10764983, 0.25084552, 0.25714993
-        ],
-        [
-          0.04202608, 0.21094096, 0.27973703, 0.34166718, 0.57487047,
-          0.35158369, 0.19708875, 0.15495601
-        ],
-        [
-          0.12034657, 0.41341963, 0.47968671, 0.13278878, 0.22735766,
-          0.57154536, 0.30411762, 0.42352781
-        ]
-      ],
+          [
+            [
+              0.44719055, 0.43318295, 0.26775005, 0.14921051, 0.49148726,
+              0.10764983, 0.25084552, 0.25714993
+            ],
+            [
+              0.04202608, 0.21094096, 0.27973703, 0.34166718, 0.57487047,
+              0.35158369, 0.19708875, 0.15495601
+            ],
+            [
+              0.12034657, 0.41341963, 0.47968671, 0.13278878, 0.22735766,
+              0.57154536, 0.30411762, 0.42352781
+            ]
+          ],
 
-      [
-        [
-          0.05656794, 0.08849642, 0.36951816, 0.53186077, 0.33065733,
-          0.24236222, 0.54666328, 0.45085984
-        ],
-        [
-          0.52425432, 0.03133496, 0.11043368, 0.46954039, 0.5271349, 0.31946796,
-          0.1876673, 0.25085902
-        ],
-        [
-          0.47316891, 0.5277527, 0.13831842, 0.40036613, 0.50113004, 0.28860986,
-          0.03395459, 0.59127772
-        ]
-      ]
-    ];
+          [
+            [
+              0.05656794, 0.08849642, 0.36951816, 0.53186077, 0.33065733,
+              0.24236222, 0.54666328, 0.45085984
+            ],
+            [
+              0.52425432, 0.03133496, 0.11043368, 0.46954039, 0.5271349,
+              0.31946796, 0.1876673, 0.25085902
+            ],
+            [
+              0.47316891, 0.5277527, 0.13831842, 0.40036613, 0.50113004,
+              0.28860986, 0.03395459, 0.59127772
+            ]
+          ]
+        ];
 
-    const x = tf.tensor3d(flatten(input), [3, 3, 8]);
-    const radius = 2;
-    const bias = 1;
-    const alpha = 1;
-    const beta = 0.5;
+        const x = tf.tensor3d(flatten(input), [3, 3, 8]);
+        const radius = 2;
+        const bias = 1;
+        const alpha = 1;
+        const beta = 0.5;
 
-    const result = x.localResponseNormalization(radius, bias, alpha, beta);
+        const result = x.localResponseNormalization(radius, bias, alpha, beta);
 
-    expectArraysClose(result, flatten(expected));
-  });
-});
+        expectArraysClose(result, flatten(expected));
+      });
+    });
 
 describeWithFlags('localResponseNormalization with Tensor4D', ALL_ENVS, () => {
   it('throws error with invalid input', () => {

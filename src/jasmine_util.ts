@@ -18,6 +18,7 @@ import {KernelBackend} from '.';
 import {ENV, Environment, Features} from './environment';
 import {MathBackendCPU} from './kernels/backend_cpu';
 import {MathBackendWebGL} from './kernels/backend_webgl';
+import {DEFAULT_FEATURES} from './test_util';
 
 function canEmulateFeature<K extends keyof Features>(
     feature: K, emulatedFeatures: Features,
@@ -60,25 +61,6 @@ export function canEmulateEnvironment(
   return true;
 }
 
-export const WEBGL_FEATURES = [
-  {
-    'BACKEND': 'test-webgl',
-    'WEBGL_FLOAT_TEXTURE_ENABLED': true,
-    'WEBGL_VERSION': 1
-  },
-  {
-    'BACKEND': 'test-webgl',
-    'WEBGL_FLOAT_TEXTURE_ENABLED': true,
-    'WEBGL_VERSION': 2
-  }
-];
-export const CPU_FEATURES = [{'BACKEND': 'test-cpu'}];
-
-// Emulates the current device.
-export const DEFAULT_FEATURES = {};
-export const ALL_FEATURES =
-    [DEFAULT_FEATURES].concat(WEBGL_FEATURES).concat(CPU_FEATURES);
-
 export function anyFeaturesEquivalentToDefault(
     emulatedFeatures: Features[], environent: Environment) {
   for (let j = 0; j < emulatedFeatures.length; j++) {
@@ -105,7 +87,7 @@ export function anyFeaturesEquivalentToDefault(
   return false;
 }
 
-export function describeWithFeatures(
+export function describeWithFlags(
     name: string, featuresToRun: Features[], tests: () => void) {
   for (let i = 0; i < featuresToRun.length; i++) {
     const features = featuresToRun[i];
@@ -123,7 +105,8 @@ export function describeWithFeatures(
   }
 }
 
-export function describeWithFlags(
+/*
+export function describeWithFeatures(
     name: string, constraints: Features, tests: () => void) {
   const envFeatures = TEST_ENV_FEATURES.filter(f => {
     return Object.keys(constraints).every(key => {
@@ -136,7 +119,7 @@ export function describeWithFlags(
           // const testName = name + ' ' + JSON.stringify(features);
           // executeTests(testName, tests, features);
       });
-}
+}*/
 
 export interface TestBackendFactory {
   name: string;

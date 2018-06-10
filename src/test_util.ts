@@ -15,19 +15,27 @@
  * =============================================================================
  */
 
-import {Features} from './environment';
 import {Tensor} from './tensor';
 import {TypedArray} from './types';
 import * as util from './util';
 
-// Constraints for testing.
-export const WEBGL_ENVS: Features = {
-  'BACKEND': 'test-webgl'
-};
-export const CPU_ENVS: Features = {
-  'BACKEND': 'test-cpu'
-};
-export const ALL_ENVS = {};
+export const WEBGL_ENVS = [
+  {
+    'BACKEND': 'test-webgl',
+    'WEBGL_FLOAT_TEXTURE_ENABLED': true,
+    'WEBGL_VERSION': 1
+  },
+  {
+    'BACKEND': 'test-webgl',
+    'WEBGL_FLOAT_TEXTURE_ENABLED': true,
+    'WEBGL_VERSION': 2
+  }
+];
+export const CPU_ENVS = [{'BACKEND': 'test-cpu'}];
+
+// Emulates the current device.
+export const DEFAULT_FEATURES = {};
+export const ALL_ENVS = [DEFAULT_FEATURES].concat(WEBGL_ENVS).concat(CPU_ENVS);
 
 /** Accuracy for tests. */
 export const TEST_EPSILON = 1e-3;
