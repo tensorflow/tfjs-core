@@ -17,10 +17,25 @@
 
 import * as tf from '../index';
 // tslint:disable-next-line:max-line-length
+import {describeWithFeatures, describeWithFlags, ALL_FEATURES} from '../jasmine_util';
+// tslint:disable-next-line:max-line-length
 import {ALL_ENVS, expectArraysClose, expectNumbersClose, WEBGL_ENVS} from '../test_util';
-import {describeWithFlags} from '../jasmine_util';
 import {Rank} from '../types';
+
 import {MatmulOps} from './matmul';
+
+describeWithFeatures('matmul', ALL_FEATURES, () => {
+  it('A x B', () => {
+    console.log(tf.ENV);
+    const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
+    const b = tf.tensor2d([0, 1, -3, 2, 2, 1], [3, 2]);
+
+    const c = tf.matMul(a, b);
+
+    expect(c.shape).toEqual([2, 2]);
+    expectArraysClose(c, [0, 8, -3, 20]);
+  });
+});
 
 describeWithFlags('matmul', ALL_ENVS, () => {
   it('A x B', () => {

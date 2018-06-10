@@ -285,6 +285,10 @@ export class Environment {
     return this.features[feature];
   }
 
+  getFeatures(): Features {
+    return this.features;
+  }
+
   set<K extends keyof Features>(feature: K, value: Features[K]): void {
     this.features[feature] = value;
   }

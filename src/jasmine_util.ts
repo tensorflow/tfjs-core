@@ -14,29 +14,29 @@
  * limitations under the License.
  * =============================================================================
  */
+import {KernelBackend} from '.';
 import {ENV, Environment, Features} from './environment';
 import {MathBackendCPU} from './kernels/backend_cpu';
 import {MathBackendWebGL} from './kernels/backend_webgl';
 
-// Represents the non-override environment.
-export const REAL_ENV = new Environment();
-
 function canEmulateFeature<K extends keyof Features>(
     feature: K, emulatedFeatures: Features,
-    realEnvironment?: Environment): boolean {
-  // Since backends are registered on "ENV", we use that as the real environment
-  // when the feature is "BACKEND".
-  realEnvironment = realEnvironment || (feature === 'BACKEND' ? ENV : REAL_ENV);
+    testBackendFactories?: TestBackendFactory[]): boolean {
+  testBackendFactories = testBackendFactories || TEST_BACKENDS;
 
   const emulatedFeature = emulatedFeatures[feature];
 
   if (feature === 'BACKEND') {
-    const backend = realEnvironment.findBackend(emulatedFeature as string);
-    return backend != null;
+    for (let i = 0; i < testBackendFactories.length; i++) {
+      if (testBackendFactories[i].name === emulatedFeature) {
+        return true;
+      }
+    }
+    return false;
   } else if (feature === 'WEBGL_VERSION') {
-    return realEnvironment.get(feature) >= emulatedFeature;
+    return ENV.get(feature) >= emulatedFeature;
   } else if (feature === 'WEBGL_FLOAT_TEXTURE_ENABLED') {
-    if (realEnvironment.get(feature) === false && emulatedFeature === true) {
+    if (ENV.get(feature) === false && emulatedFeature === true) {
       return false;
     }
     return true;
@@ -47,18 +47,20 @@ function canEmulateFeature<K extends keyof Features>(
 // Tests whether the set of features can be emulated within the current real
 // environment.
 export function canEmulateEnvironment(
-    emulatedFeatures: Features, realEnvironment?: Environment): boolean {
+    emulatedFeatures: Features,
+    testBackendFactories?: TestBackendFactory[]): boolean {
   const featureNames = Object.keys(emulatedFeatures) as Array<keyof Features>;
   for (let i = 0; i < featureNames.length; i++) {
     const featureName = featureNames[i];
-    if (!canEmulateFeature(featureName, emulatedFeatures, realEnvironment)) {
+    if (!canEmulateFeature(
+            featureName, emulatedFeatures, testBackendFactories)) {
       return false;
     }
   }
   return true;
 }
 
-export const WEBGL_ENVS = [
+export const WEBGL_FEATURES = [
   {
     'BACKEND': 'test-webgl',
     'WEBGL_FLOAT_TEXTURE_ENABLED': true,
@@ -70,14 +72,55 @@ export const WEBGL_ENVS = [
     'WEBGL_VERSION': 2
   }
 ];
+export const CPU_FEATURES = [{'BACKEND': 'test-cpu'}];
+
+// Emulates the current device.
+export const DEFAULT_FEATURES = {};
+export const ALL_FEATURES =
+    [DEFAULT_FEATURES].concat(WEBGL_FEATURES).concat(CPU_FEATURES);
+
+export function anyFeaturesEquivalentToDefault(
+    emulatedFeatures: Features[], environent: Environment) {
+  for (let j = 0; j < emulatedFeatures.length; j++) {
+    const candidateDuplicateFeature = emulatedFeatures[j];
+    if (candidateDuplicateFeature === DEFAULT_FEATURES) {
+      continue;
+    }
+
+    const featureNames =
+        Object.keys(candidateDuplicateFeature) as Array<(keyof Features)>;
+    const featuresMatch = featureNames.every(featureName => {
+      // Since no test backends are registered when this method is called,
+      // we have to manually find the highest priority backend from the test
+      // backend list.
+      const featureValue = featureName === 'BACKEND' ? getBestTestBackend() :
+                                                       ENV.get(featureName);
+      return candidateDuplicateFeature[featureName] === featureValue;
+    });
+
+    if (featuresMatch) {
+      return true;
+    }
+  }
+  return false;
+}
 
 export function describeWithFeatures(
     name: string, featuresToRun: Features[], tests: () => void) {
-  // const flatFeatures = util.flatten(featuresToRun);
-  featuresToRun.forEach(features => {
-    const testName = name + ' ' + JSON.stringify(features);
-    executeTests(testName, tests, features);
-  });
+  for (let i = 0; i < featuresToRun.length; i++) {
+    const features = featuresToRun[i];
+    // If using the default feature, check for duplicates and don't execute the
+    // default if it's a duplicate.
+    if (features === DEFAULT_FEATURES &&
+        anyFeaturesEquivalentToDefault(featuresToRun, ENV)) {
+      continue;
+    }
+
+    if (canEmulateEnvironment(features)) {
+      const testName = name + ' ' + JSON.stringify(features);
+      executeTests(testName, tests, features);
+    }
+  }
 }
 
 export function describeWithFlags(
@@ -95,14 +138,21 @@ export function describeWithFlags(
       });
 }
 
-let BEFORE_ALL = (features: Features) => {
-  ENV.registerBackend('test-webgl', () => new MathBackendWebGL());
-  ENV.registerBackend('test-cpu', () => new MathBackendCPU());
-};
-let AFTER_ALL = (features: Features) => {
-  ENV.removeBackend('test-webgl');
-  ENV.removeBackend('test-cpu');
-};
+export interface TestBackendFactory {
+  name: string;
+  factory: () => KernelBackend;
+  priority: number;
+}
+
+let TEST_BACKENDS: TestBackendFactory[];
+setTestBackends([
+  // High priority to override the real defaults.
+  {name: 'test-webgl', factory: () => new MathBackendWebGL(), priority: 101},
+  {name: 'test-cpu', factory: () => new MathBackendCPU(), priority: 100}
+]);
+
+let BEFORE_ALL = (features: Features) => {};
+let AFTER_ALL = (features: Features) => {};
 let BEFORE_EACH = (features: Features) => {};
 let AFTER_EACH = (features: Features) => {};
 
@@ -138,7 +188,16 @@ export function setBeforeEach(f: (features: Features) => void) {
 export function setAfterEach(f: (features: Features) => void) {
   AFTER_EACH = f;
 }
-
+function getBestTestBackend(): string {
+  return TEST_BACKENDS.slice()
+      .sort((a: TestBackendFactory, b: TestBackendFactory) => {
+        return a.priority < b.priority ? 1 : -1;
+      })[0]
+      .name;
+}
+export function setTestBackends(testBackends: TestBackendFactory[]) {
+  TEST_BACKENDS = testBackends;
+}
 export function setTestEnvFeatures(features: Features[]) {
   TEST_ENV_FEATURES = features;
 }
@@ -147,6 +206,13 @@ function executeTests(testName: string, tests: () => void, features: Features) {
   describe(testName, () => {
     beforeAll(() => {
       ENV.setFeatures(features);
+
+      TEST_BACKENDS.forEach(backendFactory => {
+        ENV.registerBackend(
+            backendFactory.name, backendFactory.factory,
+            backendFactory.priority);
+      });
+
       BEFORE_ALL(features);
     });
 
@@ -165,6 +231,11 @@ function executeTests(testName: string, tests: () => void, features: Features) {
 
     afterAll(() => {
       AFTER_ALL(features);
+
+      TEST_BACKENDS.forEach(backendFactory => {
+        ENV.removeBackend(backendFactory.name);
+      });
+
       ENV.reset();
     });
 
