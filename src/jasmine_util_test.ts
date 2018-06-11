@@ -16,6 +16,7 @@
  */
 import {ENV, Environment, Features} from './environment';
 import * as jasmine_util from './jasmine_util';
+import {MathBackendCPU} from './kernels/backend_cpu';
 import {DEFAULT_FEATURES} from './test_util';
 import {MathBackendWebGL} from './webgl';
 
@@ -28,108 +29,99 @@ describe('canEmulateEnvironment', () => {
   });
 
   it('no registered backends', () => {
-    const testBackends: jasmine_util.TestBackendFactory[] = [];
-    const fakeFeatures = {'BACKEND': 'webgl'};
+    const fakeFeatures = {'BACKEND': 'fake-webgl'};
 
-    expect(jasmine_util.canEmulateEnvironment(fakeFeatures, testBackends))
-        .toBe(false);
+    expect(jasmine_util.canEmulateEnvironment(fakeFeatures)).toBe(false);
   });
 
   it('webgl backend, webgl emulation', () => {
-    const testBackends: jasmine_util.TestBackendFactory[] =
-        [{name: 'webgl', factory: () => new MathBackendWebGL(), priority: 1}];
+    ENV.registerBackend('fake-webgl', () => new MathBackendCPU());
 
-    const fakeFeatures = {'BACKEND': 'webgl'};
-    expect(jasmine_util.canEmulateEnvironment(fakeFeatures, testBackends))
-        .toBe(true);
+    const fakeFeatures = {'BACKEND': 'fake-webgl'};
+    expect(jasmine_util.canEmulateEnvironment(fakeFeatures)).toBe(true);
+
+    ENV.removeBackend('fake-webgl');
   });
 
   it('webgl backend, tensorflow emulation', () => {
-    const testBackends: jasmine_util.TestBackendFactory[] =
-        [{name: 'webgl', factory: () => new MathBackendWebGL(), priority: 1}];
+    ENV.registerBackend('fake-webgl', () => new MathBackendCPU());
 
     const fakeFeatures = {'BACKEND': 'tensorflow'};
-    expect(jasmine_util.canEmulateEnvironment(fakeFeatures, testBackends))
-        .toBe(false);
+    expect(jasmine_util.canEmulateEnvironment(fakeFeatures)).toBe(false);
+
+    ENV.removeBackend('fake-webgl');
   });
 
   it('webgl backend, webgl 2.0 emulation on webgl 2.0', () => {
-    const testBackends: jasmine_util.TestBackendFactory[] =
-        [{name: 'webgl', factory: () => new MathBackendWebGL(), priority: 1}];
-
+    ENV.registerBackend('fake-webgl', () => new MathBackendCPU());
     ENV.set('WEBGL_VERSION', 2);
 
-    const fakeFeatures = {'BACKEND': 'webgl', 'WEBGL_VERSION': 2};
-    expect(jasmine_util.canEmulateEnvironment(fakeFeatures, testBackends))
-        .toBe(true);
+    const fakeFeatures = {'BACKEND': 'fake-webgl', 'WEBGL_VERSION': 2};
+    expect(jasmine_util.canEmulateEnvironment(fakeFeatures)).toBe(true);
+
+    ENV.removeBackend('fake-webgl');
   });
 
   it('webgl backend, webgl 1.0 emulation on webgl 2.0', () => {
-    const testBackends: jasmine_util.TestBackendFactory[] =
-        [{name: 'webgl', factory: () => new MathBackendWebGL(), priority: 1}];
-
+    ENV.registerBackend('fake-webgl', () => new MathBackendCPU());
     ENV.set('WEBGL_VERSION', 2);
 
-    const fakeFeatures = {'BACKEND': 'webgl', 'WEBGL_VERSION': 1};
-    expect(jasmine_util.canEmulateEnvironment(fakeFeatures, testBackends))
-        .toBe(true);
+    const fakeFeatures = {'BACKEND': 'fake-webgl', 'WEBGL_VERSION': 1};
+    expect(jasmine_util.canEmulateEnvironment(fakeFeatures)).toBe(true);
+    ENV.removeBackend('fake-webgl');
   });
 
   it('webgl backend, webgl 2.0 emulation on webgl 1.0 fails', () => {
-    const testBackends: jasmine_util.TestBackendFactory[] =
-        [{name: 'webgl', factory: () => new MathBackendWebGL(), priority: 1}];
-
+    ENV.registerBackend('fake-webgl', () => new MathBackendCPU());
     ENV.set('WEBGL_VERSION', 1);
 
-    const fakeFeatures = {'BACKEND': 'webgl', 'WEBGL_VERSION': 2};
-    expect(jasmine_util.canEmulateEnvironment(fakeFeatures, testBackends))
-        .toBe(false);
+    const fakeFeatures = {'BACKEND': 'fake-webgl', 'WEBGL_VERSION': 2};
+    expect(jasmine_util.canEmulateEnvironment(fakeFeatures)).toBe(false);
+
+    ENV.removeBackend('fake-webgl');
   });
 
   it('webgl backend, webgl 1.0 no float emulation on webgl 2.0', () => {
-    const testBackends: jasmine_util.TestBackendFactory[] =
-        [{name: 'webgl', factory: () => new MathBackendWebGL(), priority: 1}];
-
+    ENV.registerBackend('fake-webgl', () => new MathBackendCPU());
     ENV.set('WEBGL_VERSION', 2);
     ENV.set('WEBGL_FLOAT_TEXTURE_ENABLED', true);
 
     // Emulates iOS.
     const fakeFeatures = {
-      'BACKEND': 'webgl',
+      'BACKEND': 'fake-webgl',
       'WEBGL_VERSION': 1,
       'WEBGL_FLOAT_TEXTURE_ENABLED': false
     };
-    expect(jasmine_util.canEmulateEnvironment(fakeFeatures, testBackends))
-        .toBe(true);
+    expect(jasmine_util.canEmulateEnvironment(fakeFeatures)).toBe(true);
+
+    ENV.removeBackend('fake-webgl');
   });
 
   it('webgl backend, webgl 1.0 no float emulation on webgl 1.0 no float',
      () => {
-       const testBackends: jasmine_util.TestBackendFactory[] = [
-         {name: 'webgl', factory: () => new MathBackendWebGL(), priority: 1}
-       ];
-
+       ENV.registerBackend('fake-webgl', () => new MathBackendCPU());
        ENV.set('WEBGL_VERSION', 1);
        ENV.set('WEBGL_FLOAT_TEXTURE_ENABLED', false);
 
        // Emulates iOS.
        const fakeFeatures = {
-         'BACKEND': 'webgl',
+         'BACKEND': 'fake-webgl',
          'WEBGL_VERSION': 1,
          'WEBGL_FLOAT_TEXTURE_ENABLED': false
        };
-       expect(jasmine_util.canEmulateEnvironment(fakeFeatures, testBackends))
-           .toBe(true);
+       expect(jasmine_util.canEmulateEnvironment(fakeFeatures)).toBe(true);
+
+       ENV.removeBackend('fake-webgl');
      });
 });
 
 describe('anyFeaturesEquivalentToDefault', () => {
-  let oldTestBackends: jasmine_util.TestBackendFactory[];
+  let testBackends: jasmine_util.TestBackendFactory[];
   beforeEach(() => {
-    oldTestBackends = jasmine_util.TEST_BACKENDS;
+    testBackends = jasmine_util.TEST_BACKENDS;
   });
   afterEach(() => {
-    jasmine_util.setTestBackends(oldTestBackends);
+    jasmine_util.setTestBackends(testBackends);
   });
 
   it('ignores default', () => {
@@ -140,30 +132,35 @@ describe('anyFeaturesEquivalentToDefault', () => {
   });
 
   it('equivalent features', () => {
-    jasmine_util.setTestBackends([
-      {name: 'webgl', factory: () => new MathBackendWebGL(), priority: 1000}
-    ]);
+    jasmine_util.setTestBackends([{
+      name: 'fake-webgl',
+      factory: () => new MathBackendWebGL(),
+      priority: 1000
+    }]);
 
     const env = new Environment();
     env.set('WEBGL_VERSION', 1);
-    env.set('BACKEND', 'webgl');
+    env.set('BACKEND', 'fake-webgl');
 
     const features: Features[] =
-        [DEFAULT_FEATURES, {'WEBGL_VERSION': 1, 'BACKEND': 'webgl'}];
+        [DEFAULT_FEATURES, {'WEBGL_VERSION': 1, 'BACKEND': 'fake-webgl'}];
     expect(jasmine_util.anyFeaturesEquivalentToDefault(features, env))
         .toBe(true);
   });
 
   it('different features', () => {
-    jasmine_util.setTestBackends(
-        [{name: 'webgl', factory: () => new MathBackendWebGL(), priority: 1}]);
+    jasmine_util.setTestBackends([{
+      name: 'fake-webgl',
+      factory: () => new MathBackendWebGL(),
+      priority: 1
+    }]);
 
     const env = new Environment();
     env.set('WEBGL_VERSION', 0);
-    env.set('BACKEND', 'cpu');
+    env.set('BACKEND', 'fake-cpu');
 
-    const features: Features[] =
-        [DEFAULT_FEATURES].concat([{'WEBGL_VERSION': 1, 'BACKEND': 'webgl'}]);
+    const features: Features[] = [DEFAULT_FEATURES].concat(
+        [{'WEBGL_VERSION': 1, 'BACKEND': 'fake-webgl'}]);
     expect(jasmine_util.anyFeaturesEquivalentToDefault(features, env))
         .toBe(false);
   });

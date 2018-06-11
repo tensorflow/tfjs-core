@@ -245,9 +245,9 @@ describe('Backend', () => {
 
   it('webgl not supported, falls back to cpu', () => {
     ENV.setFeatures({'WEBGL_VERSION': 0});
-    ENV.registerBackend('custom-cpu', () => new MathBackendCPU(), 3);
+    ENV.registerBackend('custom-cpu', () => new MathBackendCPU(), 103);
     const success =
-        ENV.registerBackend('custom-webgl', () => new MathBackendWebGL(), 4);
+        ENV.registerBackend('custom-webgl', () => new MathBackendWebGL(), 104);
     expect(success).toBe(false);
     expect(ENV.findBackend('custom-webgl') == null).toBe(true);
     expect(ENV.getBestBackendType()).toBe('custom-cpu');
