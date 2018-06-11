@@ -16,12 +16,10 @@
  */
 
 import * as tf from '../index';
-// tslint:disable-next-line:max-line-length
 import {describeWithFlags} from '../jasmine_util';
 // tslint:disable-next-line:max-line-length
 import {ALL_ENVS, expectArraysClose, expectNumbersClose, WEBGL_ENVS} from '../test_util';
 import {Rank} from '../types';
-
 import {MatmulOps} from './matmul';
 
 describeWithFlags('matmul', ALL_ENVS, () => {
