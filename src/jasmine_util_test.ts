@@ -14,8 +14,9 @@
  * limitations under the License.
  * =============================================================================
  */
-import {ENV} from './environment';
+import {ENV, Environment, Features} from './environment';
 import * as jasmine_util from './jasmine_util';
+import {DEFAULT_FEATURES} from './test_util';
 import {MathBackendWebGL} from './webgl';
 
 describe('canEmulateEnvironment', () => {
@@ -120,4 +121,50 @@ describe('canEmulateEnvironment', () => {
        expect(jasmine_util.canEmulateEnvironment(fakeFeatures, testBackends))
            .toBe(true);
      });
+});
+
+describe('anyFeaturesEquivalentToDefault', () => {
+  let oldTestBackends: jasmine_util.TestBackendFactory[];
+  beforeEach(() => {
+    oldTestBackends = jasmine_util.TEST_BACKENDS;
+  });
+  afterEach(() => {
+    jasmine_util.setTestBackends(oldTestBackends);
+  });
+
+  it('ignores default', () => {
+    const env = new Environment();
+    const features = [DEFAULT_FEATURES];
+    expect(jasmine_util.anyFeaturesEquivalentToDefault(features, env))
+        .toBe(false);
+  });
+
+  it('equivalent features', () => {
+    jasmine_util.setTestBackends([
+      {name: 'webgl', factory: () => new MathBackendWebGL(), priority: 1000}
+    ]);
+
+    const env = new Environment();
+    env.set('WEBGL_VERSION', 1);
+    env.set('BACKEND', 'webgl');
+
+    const features: Features[] =
+        [DEFAULT_FEATURES, {'WEBGL_VERSION': 1, 'BACKEND': 'webgl'}];
+    expect(jasmine_util.anyFeaturesEquivalentToDefault(features, env))
+        .toBe(true);
+  });
+
+  it('different features', () => {
+    jasmine_util.setTestBackends(
+        [{name: 'webgl', factory: () => new MathBackendWebGL(), priority: 1}]);
+
+    const env = new Environment();
+    env.set('WEBGL_VERSION', 0);
+    env.set('BACKEND', 'cpu');
+
+    const features: Features[] =
+        [DEFAULT_FEATURES].concat([{'WEBGL_VERSION': 1, 'BACKEND': 'webgl'}]);
+    expect(jasmine_util.anyFeaturesEquivalentToDefault(features, env))
+        .toBe(false);
+  });
 });

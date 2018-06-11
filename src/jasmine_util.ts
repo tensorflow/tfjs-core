@@ -77,8 +77,9 @@ export function anyFeaturesEquivalentToDefault(
       // Since no test backends are registered when this method is called,
       // we have to manually find the highest priority backend from the test
       // backend list.
-      const featureValue = featureName === 'BACKEND' ? getBestTestBackend() :
-                                                       ENV.get(featureName);
+      const featureValue = featureName === 'BACKEND' ?
+          getBestTestBackend() :
+          environent.get(featureName);
       return candidateDuplicateFeature[featureName] === featureValue;
     });
 
@@ -113,7 +114,7 @@ export interface TestBackendFactory {
   priority: number;
 }
 
-let TEST_BACKENDS: TestBackendFactory[] = [
+export let TEST_BACKENDS: TestBackendFactory[] = [
   // High priority to override the real defaults.
   {name: 'test-webgl', factory: () => new MathBackendWebGL(), priority: 101},
   {name: 'test-cpu', factory: () => new MathBackendCPU(), priority: 100}
