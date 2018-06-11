@@ -145,9 +145,6 @@ function getBestTestBackend(): string {
 export function setTestBackends(testBackends: TestBackendFactory[]) {
   TEST_BACKENDS = testBackends;
 }
-export function setTestEnvFeatures(features: Features[]) {
-  // TEST_ENV_FEATURES = features;
-}
 
 function executeTests(testName: string, tests: () => void, features: Features) {
   describe(testName, () => {

@@ -478,7 +478,7 @@ function getGlobalNamespace(): {ENV: Environment} {
   return ns;
 }
 
-export function getOrMakeEnvironment(): Environment {
+function getOrMakeEnvironment(): Environment {
   const ns = getGlobalNamespace();
   ns.ENV = ns.ENV || new Environment(getFeaturesFromURL());
   return ns.ENV;

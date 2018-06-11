@@ -15,11 +15,12 @@
  * =============================================================================
  */
 
+import {Features} from '.';
 import {Tensor} from './tensor';
 import {TypedArray} from './types';
 import * as util from './util';
 
-export const WEBGL_ENVS = [
+export const WEBGL_ENVS: Features[] = [
   {
     'BACKEND': 'test-webgl',
     'WEBGL_FLOAT_TEXTURE_ENABLED': true,
@@ -31,12 +32,12 @@ export const WEBGL_ENVS = [
     'WEBGL_VERSION': 2
   }
 ];
-export const CPU_ENVS = [{'BACKEND': 'test-cpu'}];
+export const CPU_ENVS: Features[] = [{'BACKEND': 'test-cpu'}];
 
 // Emulates the current device.
-export const DEFAULT_FEATURES = {};
-export const BROWSER_ENVS = [].concat(WEBGL_ENVS).concat(CPU_ENVS);
-export const ALL_ENVS = [DEFAULT_FEATURES].concat(BROWSER_ENVS);
+export const DEFAULT_FEATURES: Features = {};
+export const BROWSER_ENVS: Features[] = [].concat(WEBGL_ENVS).concat(CPU_ENVS);
+export const ALL_ENVS: Features[] = [DEFAULT_FEATURES].concat(BROWSER_ENVS);
 
 /** Accuracy for tests. */
 export const TEST_EPSILON = 1e-3;
