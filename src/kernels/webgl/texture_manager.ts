@@ -24,8 +24,7 @@ export class TextureManager {
   private numFreeTextures = 0;
   private freeTextures: {[shape: string]: WebGLTexture[]} = {};
   private logEnabled = false;
-  private allocatedTextures: WebGLTexture[] = [];
-  private usedTextureCount: {[shape: string]: number} = {};
+  private usedTextures: {[shape: string]: WebGLTexture[]} = {};
 
   constructor(private gpgpu: GPGPUContext) {}
 
@@ -37,16 +36,17 @@ export class TextureManager {
     if (!(shapeKey in this.freeTextures)) {
       this.freeTextures[shapeKey] = [];
     }
-    if (!(shapeKey in this.usedTextureCount)) {
-      this.usedTextureCount[shapeKey] = 0;
+    if (!(shapeKey in this.usedTextures)) {
+      this.usedTextures[shapeKey] = [];
     }
-    this.usedTextureCount[shapeKey]++;
 
     if (this.freeTextures[shapeKey].length > 0) {
       this.numFreeTextures--;
       this.numUsedTextures++;
       this.log();
-      return this.freeTextures[shapeKey].shift();
+      const newTexture = this.freeTextures[shapeKey].shift();
+      this.usedTextures[shapeKey].push(newTexture);
+      return newTexture;
     }
     this.numUsedTextures++;
     this.log();
@@ -63,7 +63,8 @@ export class TextureManager {
       newTexture =
           this.gpgpu.createUnsignedBytesMatrixTexture(shapeRC[0], shapeRC[1]);
     }
-    this.allocatedTextures.push(newTexture);
+    this.usedTextures[shapeKey].push(newTexture);
+
     return newTexture;
   }
 
@@ -78,7 +79,14 @@ export class TextureManager {
     this.freeTextures[shapeKey].push(texture);
     this.numFreeTextures++;
     this.numUsedTextures--;
-    this.usedTextureCount[shapeKey]--;
+    const texList = this.usedTextures[shapeKey];
+    const texIndex = texList.indexOf(texture);
+    if (texIndex < 0) {
+      throw new Error(
+          'Cannot release a texture that was never provided by this ' +
+          'texture manager');
+    }
+    texList.splice(texIndex, 1);
     this.log();
   }
 
@@ -101,16 +109,22 @@ export class TextureManager {
   }
 
   dispose() {
-    if (this.allocatedTextures == null) {
+    if (this.freeTextures == null) {
       // Already disposed.
       return;
     }
-    this.allocatedTextures.forEach(texture => {
-      this.gpgpu.deleteMatrixTexture(texture);
-    });
+    for (const texShape in this.freeTextures) {
+      this.freeTextures[texShape].forEach(tex => {
+        this.gpgpu.deleteMatrixTexture(tex);
+      });
+    }
+    for (const texShape in this.usedTextures) {
+      this.usedTextures[texShape].forEach(tex => {
+        this.gpgpu.deleteMatrixTexture(tex);
+      });
+    }
     this.freeTextures = null;
-    this.allocatedTextures = null;
-    this.usedTextureCount = null;
+    this.usedTextures = null;
     this.numUsedTextures = 0;
     this.numFreeTextures = 0;
   }

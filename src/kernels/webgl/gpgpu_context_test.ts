@@ -15,12 +15,10 @@
  * =============================================================================
  */
 
-// tslint:disable-next-line:max-line-length
 import {describeWithFlags} from '../../jasmine_util';
 // tslint:disable-next-line:max-line-length
 import {expectArraysClose, expectNumbersClose, WEBGL_ENVS} from '../../test_util';
-
-import {GPGPUContext} from './gpgpu_context';
+import {binSearchLastTrue, GPGPUContext} from './gpgpu_context';
 import * as tex_util from './tex_util';
 
 describeWithFlags('GPGPUContext downloadMatrixFromTexture', WEBGL_ENVS, () => {
@@ -88,37 +86,6 @@ describeWithFlags('GPGPUContext color texture with float', WEBGL_ENVS, () => {
     expectNumbersClose(result[0], 0.123);
   });
 });
-
-describeWithFlags(
-    'GPGPUContext color texture with byte', {
-      'WEBGL_RENDER_FLOAT32_ENABLED': false,
-      'WEBGL_DOWNLOAD_FLOAT_ENABLED': false,
-    },
-    () => {
-      let gpgpu: GPGPUContext;
-      let texture: WebGLTexture;
-
-      afterEach(() => {
-        gpgpu.deleteMatrixTexture(texture);
-        gpgpu.dispose();
-      });
-
-      it('basic', () => {
-        gpgpu = new GPGPUContext();
-        gpgpu.enableAutomaticDebugValidation(true);
-        texture = gpgpu.createFloat32MatrixTexture(1, 1);
-
-        gpgpu.setOutputMatrixTexture(texture, 1, 1);
-        const uintArray = tex_util.encodeFloatArray2(new Float32Array([0.123]));
-        gpgpu.gl.clearColor(
-            uintArray[0] / 255, uintArray[1] / 255, uintArray[2] / 255,
-            uintArray[3] / 255);
-        gpgpu.gl.clear(gpgpu.gl.COLOR_BUFFER_BIT);
-        const result =
-            gpgpu.downloadFloat32MatrixFromOutputTexture(texture, 1, 1);
-        expectNumbersClose(result[0], 0.123);
-      });
-    });
 
 describeWithFlags('GPGPUContext setOutputMatrixTexture', WEBGL_ENVS, () => {
   let gpgpu: GPGPUContext;
@@ -317,5 +284,91 @@ describeWithFlags('GPGPUContext', WEBGL_ENVS, () => {
     gpgpu.deleteMatrixTexture(result);
     expect(gpgpu.executeProgram).toThrowError();
     gpgpu.deleteProgram(program);
+  });
+});
+
+describe('gpgpu_context binSearchLastTrue', () => {
+  it('[false]', () => {
+    const a: boolean[] = [false];
+    const arr = a.map(x => () => x);
+    expect(binSearchLastTrue(arr)).toBe(-1);
+  });
+
+  it('[true]', () => {
+    const a: boolean[] = [true];
+    const arr = a.map(x => () => x);
+    expect(binSearchLastTrue(arr)).toBe(0);
+  });
+
+  it('[false, false]', () => {
+    const a: boolean[] = [false, false];
+    const arr = a.map(x => () => x);
+    expect(binSearchLastTrue(arr)).toBe(-1);
+  });
+
+  it('[true, false]', () => {
+    const a: boolean[] = [true, false];
+    const arr = a.map(x => () => x);
+    expect(binSearchLastTrue(arr)).toBe(0);
+  });
+
+  it('[true, true]', () => {
+    const a: boolean[] = [true, true];
+    const arr = a.map(x => () => x);
+    expect(binSearchLastTrue(arr)).toBe(1);
+  });
+
+  it('[false, false, false]', () => {
+    const a: boolean[] = [false, false, false];
+    const arr = a.map(x => () => x);
+    expect(binSearchLastTrue(arr)).toBe(-1);
+  });
+
+  it('[true, false, false]', () => {
+    const a: boolean[] = [true, false, false];
+    const arr = a.map(x => () => x);
+    expect(binSearchLastTrue(arr)).toBe(0);
+  });
+
+  it('[true, true, false]', () => {
+    const a: boolean[] = [true, true, false];
+    const arr = a.map(x => () => x);
+    expect(binSearchLastTrue(arr)).toBe(1);
+  });
+
+  it('[true, true, true]', () => {
+    const a: boolean[] = [true, true, true];
+    const arr = a.map(x => () => x);
+    expect(binSearchLastTrue(arr)).toBe(2);
+  });
+
+  it('[false, false, false, false]', () => {
+    const a: boolean[] = [false, false, false, false];
+    const arr = a.map(x => () => x);
+    expect(binSearchLastTrue(arr)).toBe(-1);
+  });
+
+  it('[true, false, false, false]', () => {
+    const a: boolean[] = [true, false, false, false];
+    const arr = a.map(x => () => x);
+    expect(binSearchLastTrue(arr)).toBe(0);
+  });
+
+  it('[true, true, false, false]', () => {
+    const a: boolean[] = [true, true, false, false];
+    const arr = a.map(x => () => x);
+    expect(binSearchLastTrue(arr)).toBe(1);
+  });
+
+  it('[true, true, true, false]', () => {
+    const a: boolean[] = [true, true, true, false];
+    const arr = a.map(x => () => x);
+    expect(binSearchLastTrue(arr)).toBe(2);
+  });
+
+  it('[true, true, true, true]', () => {
+    const a: boolean[] = [true, true, true, true];
+    const arr = a.map(x => () => x);
+    expect(binSearchLastTrue(arr)).toBe(3);
   });
 });

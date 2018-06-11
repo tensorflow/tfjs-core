@@ -14,15 +14,13 @@
  * limitations under the License.
  * =============================================================================
  */
-
 import * as broadcast_util from '../../ops/broadcast_util';
 import * as util from '../../util';
 
-// import * as tex_util from './tex_util';
-
 export type ShapeInfo = {
   logicalShape: number[],
-  texShape: [number, number]
+  texShape: [number, number],
+  isUniform: boolean
 };
 
 export type InputInfo = {
@@ -33,8 +31,14 @@ export type InputInfo = {
 export function makeShader(
     inputsInfo: InputInfo[], outputShape: ShapeInfo, userCode: string,
     broadcast: boolean): string {
-  const inputPrefixSnippet =
-      inputsInfo.map(x => `uniform sampler2D ${x.name};`).join('\n');
+  let inputPrefixSnippet: string[]|string = inputsInfo.map(x => {
+    const size = util.sizeFromShape(x.shapeInfo.logicalShape);
+    if (x.shapeInfo.isUniform) {
+      return `uniform float ${x.name}${size > 1 ? `[${size}]` : ''};`;
+    }
+    return `uniform sampler2D ${x.name};`;
+  });
+  inputPrefixSnippet = inputPrefixSnippet.join('\n');
   const inputSamplingSnippet =
       inputsInfo.map(x => getInputSamplingSnippet(x, outputShape, broadcast))
           .join('\n');
@@ -385,6 +389,9 @@ function getOutput2DCoords(
 function getSamplerScalar(inputInfo: InputInfo): string {
   const texName = inputInfo.name;
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
+  if (inputInfo.shapeInfo.isUniform) {
+    return `float ${funcName}() {return ${texName};}`;
+  }
   return `
     float ${funcName}() {
       return sampleTexture(${texName}, halfCR);
@@ -395,6 +402,7 @@ function getSamplerScalar(inputInfo: InputInfo): string {
 function getSampler1D(inputInfo: InputInfo): string {
   const texName = inputInfo.name;
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
+
   return `
     float ${funcName}(int index) {
       return ${funcName}Flat(index);
@@ -404,12 +412,13 @@ function getSampler1D(inputInfo: InputInfo): string {
 
 function getSampler2D(inputInfo: InputInfo): string {
   const shape = inputInfo.shapeInfo.logicalShape;
-  const texShape = inputInfo.shapeInfo.texShape;
   const texName = inputInfo.name;
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
-  const texNumR = texShape[0];
-  const texNumC = texShape[1];
-  if (util.arraysEqual(shape, texShape)) {
+
+  const texShape = inputInfo.shapeInfo.texShape;
+  if (texShape != null && util.arraysEqual(shape, texShape)) {
+    const texNumR = texShape[0];
+    const texNumC = texShape[1];
     return `
     float ${funcName}(int row, int col) {
       vec2 uv = (vec2(col, row) + halfCR) / vec2(${texNumC}.0, ${texNumR}.0);
@@ -417,6 +426,7 @@ function getSampler2D(inputInfo: InputInfo): string {
     }
   `;
   }
+
   const {newShape, keptDims} = util.squeezeShape(shape);
   const squeezedShape = newShape;
   if (squeezedShape.length < shape.length) {
@@ -429,6 +439,18 @@ function getSampler2D(inputInfo: InputInfo): string {
       }
     `;
   }
+
+  if (inputInfo.shapeInfo.isUniform) {
+    return `
+      float ${funcName}(int row, int col) {
+        int index = row * ${shape[1]} + col;
+        return ${funcName}Flat(index);
+      }
+    `;
+  }
+
+  const texNumR = texShape[0];
+  const texNumC = texShape[1];
   if (texNumC === 1) {
     return `
     float ${funcName}(int row, int col) {
@@ -456,12 +478,9 @@ function getSampler2D(inputInfo: InputInfo): string {
 }
 
 function getSampler3D(inputInfo: InputInfo): string {
-  const texShape = inputInfo.shapeInfo.texShape;
   const shape = inputInfo.shapeInfo.logicalShape;
   const texName = inputInfo.name;
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
-  const texNumR = texShape[0];
-  const texNumC = texShape[1];
   const stride0 = shape[1] * shape[2];
   const stride1 = shape[2];
 
@@ -478,6 +497,18 @@ function getSampler3D(inputInfo: InputInfo): string {
       `;
   }
 
+  if (inputInfo.shapeInfo.isUniform) {
+    return `
+      float ${funcName}(int row, int col, int depth) {
+        int index = row * ${stride0} + col * ${stride1} + depth;
+        return ${funcName}Flat(index);
+      }
+    `;
+  }
+
+  const texShape = inputInfo.shapeInfo.texShape;
+  const texNumR = texShape[0];
+  const texNumC = texShape[1];
   if (texNumC === stride0) {
     return `
         float ${funcName}(int row, int col, int depth) {
@@ -512,14 +543,12 @@ function getSampler3D(inputInfo: InputInfo): string {
 
 function getSampler4D(inputInfo: InputInfo): string {
   const shape = inputInfo.shapeInfo.logicalShape;
-  const texShape = inputInfo.shapeInfo.texShape;
   const texName = inputInfo.name;
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
-  const texNumR = texShape[0];
-  const texNumC = texShape[1];
   const stride2 = shape[3];
   const stride1 = shape[2] * stride2;
   const stride0 = shape[1] * stride1;
+
   const {newShape, keptDims} = util.squeezeShape(shape);
   if (newShape.length < shape.length) {
     const newInputInfo = squeezeInputInfo(inputInfo, newShape);
@@ -531,6 +560,20 @@ function getSampler4D(inputInfo: InputInfo): string {
       }
     `;
   }
+
+  if (inputInfo.shapeInfo.isUniform) {
+    return `
+      float ${funcName}(int row, int col, int depth, int depth2) {
+        int index = row * ${stride0} + col * ${stride1} +
+            depth * ${stride2} + depth2;
+        return ${funcName}Flat(index);
+      }
+    `;
+  }
+
+  const texShape = inputInfo.shapeInfo.texShape;
+  const texNumR = texShape[0];
+  const texNumC = texShape[1];
   if (texNumC === stride0) {
     return `
       float ${funcName}(int row, int col, int depth, int depth2) {
@@ -564,15 +607,13 @@ function getSampler4D(inputInfo: InputInfo): string {
 
 function getSampler5D(inputInfo: InputInfo): string {
   const shape = inputInfo.shapeInfo.logicalShape;
-  const texShape = inputInfo.shapeInfo.texShape;
   const texName = inputInfo.name;
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
-  const texNumR = texShape[0];
-  const texNumC = texShape[1];
   const stride3 = shape[4];
   const stride2 = shape[3] * stride3;
   const stride1 = shape[2] * stride2;
   const stride0 = shape[1] * stride1;
+
   const {newShape, keptDims} = util.squeezeShape(shape);
   if (newShape.length < shape.length) {
     const newInputInfo = squeezeInputInfo(inputInfo, newShape);
@@ -584,6 +625,21 @@ function getSampler5D(inputInfo: InputInfo): string {
       }
     `;
   }
+
+  if (inputInfo.shapeInfo.isUniform) {
+    return `
+      float ${funcName}(int row, int col, int depth, int depth2, int depth3) {
+        int index = row * ${stride0} + col * ${stride1} +
+            depth * ${stride2} + depth2 * ${stride3} + depth3;
+        return ${funcName}Flat(index);
+      }
+    `;
+  }
+
+  const texShape = inputInfo.shapeInfo.texShape;
+  const texNumR = texShape[0];
+  const texNumC = texShape[1];
+
   if (texNumC === stride0) {
     return `
       float ${funcName}(int row, int col, int depth, int depth2, int depth3) {
@@ -621,9 +677,26 @@ function getSampler5D(inputInfo: InputInfo): string {
 
 function getSamplerFlat(inputInfo: InputInfo): string {
   const texName = inputInfo.name;
-  const texShape = inputInfo.shapeInfo.texShape;
   const funcName =
       'get' + texName.charAt(0).toUpperCase() + texName.slice(1) + 'Flat';
+  const inSize = util.sizeFromShape(inputInfo.shapeInfo.logicalShape);
+
+  if (inputInfo.shapeInfo.isUniform) {
+    if (inSize === 1) {
+      return `float ${funcName}(int index) {return ${texName};}`;
+    }
+    return `
+      float ${funcName}(int index) {
+        for (int i = 0; i < ${inSize}; i++) {
+          if (i == index) {
+            return ${texName}[i];
+          }
+        }
+      }
+    `;
+  }
+
+  const texShape = inputInfo.shapeInfo.texShape;
   const tNumR = texShape[0];
   const tNumC = texShape[1];
   if (tNumC === 1 && tNumR === 1) {
@@ -703,9 +776,7 @@ function getBroadcastOutputCoordsSampler(
 function getSamplerAtOutputCoords(
     inputInfo: InputInfo, outShapeInfo: ShapeInfo,
     supportsBroadcasting: boolean) {
-  const inTexShape = inputInfo.shapeInfo.texShape;
   const texName = inputInfo.name;
-
   const texFuncSnippet = texName.charAt(0).toUpperCase() + texName.slice(1);
   const funcName = 'get' + texFuncSnippet + 'AtOutCoords';
 
@@ -717,12 +788,40 @@ function getSamplerAtOutputCoords(
       supportsBroadcasting && ((outRank > inRank) || broadcastDims.length > 0);
   const broadcastOverOuter =
       broadcast_util.broadcastDimsAreOuter(broadcastDims);
+  const isUniform = inputInfo.shapeInfo.isUniform;
+
   if (doBroadcast && !broadcastOverOuter) {
     return getBroadcastOutputCoordsSampler(
         inputInfo, outShapeInfo, texFuncSnippet, funcName);
   }
 
+  const inSize = util.sizeFromShape(inputInfo.shapeInfo.logicalShape);
+  let broadcastSnippet = '';
+  if (doBroadcast && broadcastOverOuter) {
+    broadcastSnippet = `
+        int mainPart = index / ${inSize};
+        index -= mainPart * ${inSize};
+      `;
+  }
+
   const outTexShape = outShapeInfo.texShape;
+  if (isUniform) {
+    if (inSize === 1) {
+      return `float ${funcName}() {return ${texName};}`;
+    }
+    return `
+      float ${funcName}() {
+        ivec2 resTexRC = ivec2(resultUV.yx *
+                              vec2(${outTexShape[0]}, ${outTexShape[1]}));
+        int index = resTexRC.x * ${outTexShape[1]} + resTexRC.y;
+        ${broadcastSnippet}
+        return get${texFuncSnippet}Flat(index);
+      }
+    `;
+  }
+
+  // At this point, the input is not a uniform.
+  const inTexShape = inputInfo.shapeInfo.texShape;
   if (util.arraysEqual(inTexShape, outTexShape)) {
     return `
       float ${funcName}() {
@@ -731,14 +830,6 @@ function getSamplerAtOutputCoords(
     `;
   }
 
-  const inSize = util.sizeFromShape(inTexShape);
-  let broadcastSnippet = '';
-  if (doBroadcast && broadcastOverOuter) {
-    broadcastSnippet = `
-        int mainPart = index / ${inSize};
-        index -= mainPart * ${inSize};
-      `;
-  }
   return `
     float ${funcName}() {
       ivec2 resTexRC = ivec2(resultUV.yx *

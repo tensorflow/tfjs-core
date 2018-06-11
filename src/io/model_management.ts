@@ -175,13 +175,13 @@ export class ModelManagement {
    * await model.save('localstorage://demo/management/model1');
    *
    * // Then list existing models.
-   * console.log(await tf.io.listModels());
+   * console.log(JSON.stringify(await tf.io.listModels()));
    *
    * // Delete the model.
    * await tf.io.removeModel('localstorage://demo/management/model1');
    *
    * // List models again.
-   * console.log(await tf.io.listModels());
+   * console.log(JSON.stringify(await tf.io.listModels()));
    * ```
    *
    * @returns A `Promise` of a dictionary mapping URLs of existing models to
@@ -189,7 +189,7 @@ export class ModelManagement {
    *   'indexeddb://my/model/1'. Model artifacts info include type of the
    * model's topology, byte sizes of the topology, weights, etc.
    */
-  @doc({heading: 'Models', subheading: 'Management'})
+  @doc({heading: 'Models', subheading: 'Management', namespace: 'io'})
   static async listModels(): Promise<{[url: string]: ModelArtifactsInfo}> {
     const schemes = ModelStoreManagerRegistry.getSchemes();
     const out: {[url: string]: ModelArtifactsInfo} = {};
@@ -215,13 +215,13 @@ export class ModelManagement {
    * await model.save('localstorage://demo/management/model1');
    *
    * // Then list existing models.
-   * console.log(await tf.io.listModels());
+   * console.log(JSON.stringify(await tf.io.listModels()));
    *
    * // Delete the model.
    * await tf.io.removeModel('localstorage://demo/management/model1');
    *
    * // List models again.
-   * console.log(await tf.io.listModels());
+   * console.log(JSON.stringify(await tf.io.listModels()));
    * ```
    *
    * @param url A URL to a stored model, with a scheme prefix, e.g.,
@@ -230,7 +230,7 @@ export class ModelManagement {
    *   is successful).
    * @throws Error if deletion fails, e.g., if no model exists at `path`.
    */
-  @doc({heading: 'Models', subheading: 'Management'})
+  @doc({heading: 'Models', subheading: 'Management', namespace: 'io'})
   static async removeModel(url: string): Promise<ModelArtifactsInfo> {
     const schemeAndPath = parseURL(url);
     const manager = ModelStoreManagerRegistry.getManager(schemeAndPath.scheme);
@@ -255,7 +255,7 @@ export class ModelManagement {
    * await model.save('localstorage://demo/management/model1');
    *
    * // Then list existing models.
-   * console.log(await tf.io.listModels());
+   * console.log(JSON.stringify(await tf.io.listModels()));
    *
    * // Copy the model, from Local Storage to IndexedDB.
    * await tf.io.copyModel(
@@ -263,7 +263,7 @@ export class ModelManagement {
    *     'indexeddb://demo/management/model1');
    *
    * // List models again.
-   * console.log(await tf.io.listModels());
+   * console.log(JSON.stringify(await tf.io.listModels()));
    *
    * // Remove both models.
    * await tf.io.removeModel('localstorage://demo/management/model1');
@@ -277,7 +277,7 @@ export class ModelManagement {
    * @throws Error if copying fails, e.g., if no model exists at `sourceURL`, or
    *   if `oldPath` and `newPath` are identical.
    */
-  @doc({heading: 'Models', subheading: 'Management'})
+  @doc({heading: 'Models', subheading: 'Management', namespace: 'io'})
   static async copyModel(sourceURL: string, destURL: string):
       Promise<ModelArtifactsInfo> {
     const deleteSource = false;
@@ -302,7 +302,7 @@ export class ModelManagement {
    * await model.save('localstorage://demo/management/model1');
    *
    * // Then list existing models.
-   * console.log(await tf.io.listModels());
+   * console.log(JSON.stringify(await tf.io.listModels()));
    *
    * // Move the model, from Local Storage to IndexedDB.
    * await tf.io.moveModel(
@@ -310,7 +310,7 @@ export class ModelManagement {
    *     'indexeddb://demo/management/model1');
    *
    * // List models again.
-   * console.log(await tf.io.listModels());
+   * console.log(JSON.stringify(await tf.io.listModels()));
    *
    * // Remove the moved model.
    * await tf.io.removeModel('indexeddb://demo/management/model1');
@@ -323,7 +323,7 @@ export class ModelManagement {
    * @throws Error if moving fails, e.g., if no model exists at `sourceURL`, or
    *   if `oldPath` and `newPath` are identical.
    */
-  @doc({heading: 'Models', subheading: 'Management'})
+  @doc({heading: 'Models', subheading: 'Management', namespace: 'io'})
   static async moveModel(sourceURL: string, destURL: string):
       Promise<ModelArtifactsInfo> {
     const deleteSource = true;
