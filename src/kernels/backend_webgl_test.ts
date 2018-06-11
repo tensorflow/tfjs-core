@@ -18,7 +18,6 @@
 // tslint:disable-next-line:max-line-length
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
-// tslint:disable-next-line:max-line-length
 import {expectArraysClose, expectArraysEqual, WEBGL_ENVS} from '../test_util';
 // tslint:disable-next-line:max-line-length
 import {MathBackendWebGL, SIZE_UPLOAD_UNIFORM, WebGLMemoryInfo} from './backend_webgl';

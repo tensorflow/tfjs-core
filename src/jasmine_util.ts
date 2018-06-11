@@ -14,8 +14,8 @@
  * limitations under the License.
  * =============================================================================
  */
-import {KernelBackend} from '.';
 import {ENV, Environment, Features} from './environment';
+import {KernelBackend} from './kernels/backend';
 import {MathBackendCPU} from './kernels/backend_cpu';
 import {MathBackendWebGL} from './kernels/backend_webgl';
 import {DEFAULT_FEATURES} from './test_util';
@@ -28,12 +28,7 @@ function canEmulateFeature<K extends keyof Features>(
   const emulatedFeature = emulatedFeatures[feature];
 
   if (feature === 'BACKEND') {
-    for (let i = 0; i < testBackendFactories.length; i++) {
-      if (testBackendFactories[i].name === emulatedFeature) {
-        return true;
-      }
-    }
-    return false;
+    return testBackendFactories.map(x => x.name).indexOf(feature) >= 0;
   } else if (feature === 'WEBGL_VERSION') {
     return ENV.get(feature) >= emulatedFeature;
   } else if (feature === 'WEBGL_FLOAT_TEXTURE_ENABLED') {

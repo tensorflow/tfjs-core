@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {Features} from '.';
+import {Features} from './environment';
 import {Tensor} from './tensor';
 import {TypedArray} from './types';
 import * as util from './util';
@@ -36,7 +36,7 @@ export const CPU_ENVS: Features[] = [{'BACKEND': 'test-cpu'}];
 
 // Emulates the current device.
 export const DEFAULT_FEATURES: Features = {};
-export const BROWSER_ENVS: Features[] = [].concat(WEBGL_ENVS).concat(CPU_ENVS);
+export const BROWSER_ENVS: Features[] = WEBGL_ENVS.concat(CPU_ENVS);
 export const ALL_ENVS: Features[] = [DEFAULT_FEATURES].concat(BROWSER_ENVS);
 
 /** Accuracy for tests. */
