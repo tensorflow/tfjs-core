@@ -75,6 +75,8 @@ export function anyFeaturesEquivalentToDefault(
 
 export function describeWithFlags(
     name: string, featuresToRun: Features[], tests: () => void) {
+  registerTestBackends();
+
   for (let i = 0; i < featuresToRun.length; i++) {
     const features = featuresToRun[i];
     // If using the default feature, check for duplicates and don't execute the
@@ -122,7 +124,6 @@ export function setAfterEach(f: (features: Features) => void) {
 }
 export function setTestBackends(testBackends: TestBackendFactory[]) {
   TEST_BACKENDS = testBackends;
-  registerTestBackends();
 }
 export function registerTestBackends() {
   TEST_BACKENDS.forEach(testBackend => {
