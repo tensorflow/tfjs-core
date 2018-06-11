@@ -111,10 +111,8 @@ function validateBinaryAndProgram(
 
   shapeInfos.forEach((s, i) => {
     const shapeA = s.logicalShape;
-    const texShapeA = s.texShape;
     const input = inputs[i];
     const shapeB = input.tensor.shape;
-    const texShapeB = input.isUniform ? null : input.texData.texShape;
 
     if (!util.arraysEqual(shapeA, shapeB)) {
       throw Error(
@@ -122,9 +120,12 @@ function validateBinaryAndProgram(
           `the current args. Shapes ${shapeA} and ${shapeB} must match`);
     }
     // The input is uploaded as uniform.
-    if (texShapeA == null && texShapeB == null) {
+    if (s.isUniform && input.isUniform) {
       return;
     }
+
+    const texShapeA = s.texShape;
+    const texShapeB = input.isUniform ? null : input.texData.texShape;
     if (!util.arraysEqual(texShapeA, texShapeB)) {
       throw Error(
           `Binary was compiled with different texture shapes than the` +

@@ -19,7 +19,8 @@
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
 import {expectArraysClose, expectArraysEqual, WEBGL_ENVS} from '../test_util';
-import {MathBackendWebGL} from './backend_webgl';
+// tslint:disable-next-line:max-line-length
+import {MathBackendWebGL, SIZE_UPLOAD_UNIFORM, WebGLMemoryInfo} from './backend_webgl';
 
 describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
   it('delayed storage, reading', () => {
@@ -127,5 +128,31 @@ describe('Custom window size', () => {
 
     expectArraysEqual(a, new Float32Array(100 * 100).fill(1));
     tf.setBackend(oldBackend);
+  });
+});
+
+describeWithFlags('upload tensors as uniforms', WEBGL_ENVS, () => {
+  it('small tensor gets uploaded as scalar', () => {
+    let m = tf.memory() as WebGLMemoryInfo;
+    expect(m.numBytesInGPU).toBe(0);
+
+    const a = tf.zeros([SIZE_UPLOAD_UNIFORM - 1]);
+    a.square();
+
+    // Only the result lives on the gpu, the input is gone.
+    m = tf.memory() as WebGLMemoryInfo;
+    expect(m.numBytesInGPU).toBe(a.size * 4);
+  });
+
+  it('large tensor gets uploaded to gpu', () => {
+    let m = tf.memory() as WebGLMemoryInfo;
+    expect(m.numBytesInGPU).toBe(0);
+
+    const a = tf.zeros([SIZE_UPLOAD_UNIFORM + 1]);
+    a.square();
+
+    // Both the result and the input live on the gpu.
+    m = tf.memory() as WebGLMemoryInfo;
+    expect(m.numBytesInGPU).toBe(a.size * 4 * 2);
   });
 });
