@@ -161,12 +161,12 @@ export interface InferenceModel {
   /**
    * Return the array of input tensor info.
    */
-  getInputs(): TensorInfo[];
+  readonly inputs: TensorInfo[];
 
   /**
    * Return the array of output tensor info.
    */
-  getOuputs(): TensorInfo[];
+  readonly ouputs: TensorInfo[];
 
   /**
    * Execute the inference for the input tensors.
