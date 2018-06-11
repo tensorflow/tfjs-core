@@ -108,11 +108,6 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
 });
 
 describeWithFlags('Custom window size', WEBGL_ENVS, () => {
-  beforeAll(() => {
-    // Silences backend registration warnings.
-    spyOn(console, 'warn');
-  });
-
   it('Set screen area to be 1x1', async () => {
     // This will set the screen size to 1x1 to make sure the page limit is
     // very small.
@@ -134,6 +129,7 @@ describeWithFlags('Custom window size', WEBGL_ENVS, () => {
 
     expectArraysEqual(a, new Float32Array(100 * 100).fill(1));
     tf.setBackend(oldBackend);
+    tf.ENV.removeBackend('custom-webgl');
   });
 });
 
