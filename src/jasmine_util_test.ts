@@ -17,7 +17,7 @@
 import {ENV, Environment, Features} from './environment';
 import * as jasmine_util from './jasmine_util';
 import {MathBackendCPU} from './kernels/backend_cpu';
-import {DEFAULT_FEATURES} from './test_util';
+import {NATIVE_ENV} from './test_util';
 import {MathBackendWebGL} from './webgl';
 
 describe('canEmulateEnvironment', () => {
@@ -126,7 +126,7 @@ describe('anyFeaturesEquivalentToDefault', () => {
 
   it('ignores default', () => {
     const env = new Environment();
-    const features = [DEFAULT_FEATURES];
+    const features = [NATIVE_ENV];
     expect(jasmine_util.anyFeaturesEquivalentToDefault(features, env))
         .toBe(false);
   });
@@ -143,7 +143,7 @@ describe('anyFeaturesEquivalentToDefault', () => {
     env.set('BACKEND', 'fake-webgl');
 
     const features: Features[] =
-        [DEFAULT_FEATURES, {'WEBGL_VERSION': 1, 'BACKEND': 'fake-webgl'}];
+        [NATIVE_ENV, {'WEBGL_VERSION': 1, 'BACKEND': 'fake-webgl'}];
     expect(jasmine_util.anyFeaturesEquivalentToDefault(features, env))
         .toBe(true);
   });
@@ -159,8 +159,8 @@ describe('anyFeaturesEquivalentToDefault', () => {
     env.set('WEBGL_VERSION', 0);
     env.set('BACKEND', 'fake-cpu');
 
-    const features: Features[] = [DEFAULT_FEATURES].concat(
-        [{'WEBGL_VERSION': 1, 'BACKEND': 'fake-webgl'}]);
+    const features: Features[] =
+        [NATIVE_ENV].concat([{'WEBGL_VERSION': 1, 'BACKEND': 'fake-webgl'}]);
     expect(jasmine_util.anyFeaturesEquivalentToDefault(features, env))
         .toBe(false);
   });

@@ -18,7 +18,7 @@ import {ENV, Environment, Features} from './environment';
 import {KernelBackend} from './kernels/backend';
 import {MathBackendCPU} from './kernels/backend_cpu';
 import {MathBackendWebGL} from './kernels/backend_webgl';
-import {DEFAULT_FEATURES} from './test_util';
+import {NATIVE_ENV} from './test_util';
 
 function canEmulateFeature<K extends keyof Features>(
     feature: K, emulatedFeatures: Features): boolean {
@@ -56,7 +56,7 @@ export function anyFeaturesEquivalentToDefault(
     emulatedFeatures: Features[], environment: Environment) {
   for (let j = 0; j < emulatedFeatures.length; j++) {
     const candidateDuplicateFeature = emulatedFeatures[j];
-    if (candidateDuplicateFeature === DEFAULT_FEATURES) {
+    if (candidateDuplicateFeature === NATIVE_ENV) {
       continue;
     }
 
@@ -81,7 +81,7 @@ export function describeWithFlags(
     const features = featuresToRun[i];
     // If using the default feature, check for duplicates and don't execute the
     // default if it's a duplicate.
-    if (features === DEFAULT_FEATURES &&
+    if (features === NATIVE_ENV &&
         anyFeaturesEquivalentToDefault(featuresToRun, ENV)) {
       continue;
     }
