@@ -46,7 +46,7 @@ describe('canEmulateEnvironment', () => {
   it('webgl backend, tensorflow emulation', () => {
     ENV.registerBackend('fake-webgl', () => new MathBackendCPU());
 
-    const fakeFeatures = {'BACKEND': 'tensorflow'};
+    const fakeFeatures = {'BACKEND': 'fake-tensorflow'};
     expect(jasmine_util.canEmulateEnvironment(fakeFeatures)).toBe(false);
 
     ENV.removeBackend('fake-webgl');
