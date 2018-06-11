@@ -35,7 +35,8 @@ export const CPU_ENVS = [{'BACKEND': 'test-cpu'}];
 
 // Emulates the current device.
 export const DEFAULT_FEATURES = {};
-export const ALL_ENVS = [DEFAULT_FEATURES].concat(WEBGL_ENVS).concat(CPU_ENVS);
+export const BROWSER_ENVS = [].concat(WEBGL_ENVS).concat(CPU_ENVS);
+export const ALL_ENVS = [DEFAULT_FEATURES].concat(BROWSER_ENVS);
 
 /** Accuracy for tests. */
 export const TEST_EPSILON = 1e-3;

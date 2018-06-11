@@ -18,7 +18,9 @@
 // tslint:disable-next-line:max-line-length
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
+// tslint:disable-next-line:max-line-length
 import {expectArraysClose, expectArraysEqual, WEBGL_ENVS} from '../test_util';
+
 import {MathBackendWebGL} from './backend_webgl';
 
 describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
@@ -105,7 +107,7 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
   });
 });
 
-describe('Custom window size', () => {
+describeWithFlags('Custom window size', WEBGL_ENVS, () => {
   it('Set screen area to be 1x1', () => {
     // This will set the screen size to 1x1 to make sure the page limit is
     // very small.

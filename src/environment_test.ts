@@ -17,11 +17,11 @@
 
 import * as device_util from './device_util';
 import {ENV, Environment, Features} from './environment';
+import {describeWithFlags} from './jasmine_util';
 import {KernelBackend} from './kernels/backend';
 import {MathBackendCPU} from './kernels/backend_cpu';
 import {MathBackendWebGL} from './kernels/backend_webgl';
 import {WEBGL_ENVS} from './test_util';
-import {describeWithFlags} from './jasmine_util';
 
 describeWithFlags('disjoint query timer enabled', WEBGL_ENVS, () => {
   afterEach(() => {
@@ -223,6 +223,11 @@ describeWithFlags('WebGL version', WEBGL_ENVS, () => {
 });
 
 describe('Backend', () => {
+  beforeAll(() => {
+    // Silences backend registration warnings.
+    spyOn(console, 'warn');
+  });
+
   afterEach(() => {
     ENV.reset();
   });

@@ -61,6 +61,8 @@ export function canEmulateEnvironment(
   return true;
 }
 
+// Checks whether any of the emulated features are equivalent to the default
+// environment by comparing the features.
 export function anyFeaturesEquivalentToDefault(
     emulatedFeatures: Features[], environent: Environment) {
   for (let j = 0; j < emulatedFeatures.length; j++) {
@@ -105,60 +107,22 @@ export function describeWithFlags(
   }
 }
 
-/*
-export function describeWithFeatures(
-    name: string, constraints: Features, tests: () => void) {
-  const envFeatures = TEST_ENV_FEATURES.filter(f => {
-    return Object.keys(constraints).every(key => {
-      // tslint:disable-next-line:no-any
-      return (constraints as any)[key] === (f as any)[key];
-    });
-  });
-  envFeatures.forEach(
-      features => {
-          // const testName = name + ' ' + JSON.stringify(features);
-          // executeTests(testName, tests, features);
-      });
-}*/
-
 export interface TestBackendFactory {
   name: string;
   factory: () => KernelBackend;
   priority: number;
 }
 
-let TEST_BACKENDS: TestBackendFactory[];
-setTestBackends([
+let TEST_BACKENDS: TestBackendFactory[] = [
   // High priority to override the real defaults.
   {name: 'test-webgl', factory: () => new MathBackendWebGL(), priority: 101},
   {name: 'test-cpu', factory: () => new MathBackendCPU(), priority: 100}
-]);
+];
 
 let BEFORE_ALL = (features: Features) => {};
 let AFTER_ALL = (features: Features) => {};
 let BEFORE_EACH = (features: Features) => {};
 let AFTER_EACH = (features: Features) => {};
-
-// let TEST_ENV_FEATURES: Features[] = [
-//   {
-//     'BACKEND': 'test-webgl',
-//     'WEBGL_FLOAT_TEXTURE_ENABLED': true,
-//     'WEBGL_VERSION': 1
-//   },
-//   {
-//     'BACKEND': 'test-webgl',
-//     'WEBGL_FLOAT_TEXTURE_ENABLED': true,
-//     'WEBGL_VERSION': 2
-//   },
-//   {'BACKEND': 'test-cpu'}
-//   // TODO(nsthorat,smilkov): Enable when byte-backed textures are fixed.
-//   // {
-//   // 'BACKEND': 'webgl',
-//   // 'WEBGL_FLOAT_TEXTURE_ENABLED': false,
-//   // 'WEBGL_VERSION': 1
-//   // }
-// ];
-
 export function setBeforeAll(f: (features: Features) => void) {
   BEFORE_ALL = f;
 }

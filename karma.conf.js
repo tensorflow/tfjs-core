@@ -28,7 +28,7 @@ module.exports = function(config) {
       reports: {} // Do not produce coverage html.
     },
     reporters: ['progress', 'karma-typescript'],
-    browsers: ['Chrome', 'Firefox', 'Safari'],
+    browsers: ['Chrome', 'Firefox'],
     browserStack: {
       username: process.env.BROWSERSTACK_USERNAME,
       accessKey: process.env.BROWSERSTACK_KEY

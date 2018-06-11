@@ -103,7 +103,13 @@ function loseContext(gl: WebGLRenderingContext) {
 }
 
 function isWebGLVersionEnabled(webGLVersion: 1|2) {
-  const gl = getWebGLRenderingContext(webGLVersion);
+  let gl;
+  try {
+    gl = getWebGLRenderingContext(webGLVersion);
+  } catch (e) {
+    return false;
+  }
+
   if (gl != null) {
     loseContext(gl);
     return true;

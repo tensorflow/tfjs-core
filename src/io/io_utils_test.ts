@@ -16,8 +16,9 @@
  */
 
 import * as tf from '../index';
+import {describeWithFlags} from '../jasmine_util';
 import {scalar, tensor1d, tensor2d} from '../ops/ops';
-import {expectArraysEqual} from '../test_util';
+import {BROWSER_ENVS, expectArraysEqual} from '../test_util';
 import {NamedTensorMap} from '../types';
 
 // tslint:disable-next-line:max-line-length
@@ -312,7 +313,7 @@ describe('decodeWeights', () => {
   });
 });
 
-describe('stringByteLength', () => {
+describeWithFlags('stringByteLength', BROWSER_ENVS, () => {
   it('ASCII only', () => {
     const str = '_Lorem ipsum 1337!';
     expect(stringByteLength(str)).toEqual(str.length);
@@ -327,25 +328,26 @@ describe('stringByteLength', () => {
   });
 });
 
-describe('arrayBufferToBase64String-base64StringToArrayBuffer', () => {
-  it('Round trip', () => {
-    // Generate some semi-random binary data.
-    const x = [];
-    for (let k = 0; k < 2; ++k) {
-      for (let i = 0; i < 254; ++i) {
-        x.push(i + k);
-      }
-      for (let i = 254; i >= 0; --i) {
-        x.push(i + k);
-      }
-    }
-    const buffer = Uint8Array.from(x).buffer;
-    const base64Str = arrayBufferToBase64String(buffer);
-    const decoded =
-        Array.from(new Uint8Array(base64StringToArrayBuffer(base64Str)));
-    expect(decoded).toEqual(x);
-  });
-});
+describeWithFlags(
+    'arrayBufferToBase64String-base64StringToArrayBuffer', BROWSER_ENVS, () => {
+      it('Round trip', () => {
+        // Generate some semi-random binary data.
+        const x = [];
+        for (let k = 0; k < 2; ++k) {
+          for (let i = 0; i < 254; ++i) {
+            x.push(i + k);
+          }
+          for (let i = 254; i >= 0; --i) {
+            x.push(i + k);
+          }
+        }
+        const buffer = Uint8Array.from(x).buffer;
+        const base64Str = arrayBufferToBase64String(buffer);
+        const decoded =
+            Array.from(new Uint8Array(base64StringToArrayBuffer(base64Str)));
+        expect(decoded).toEqual(x);
+      });
+    });
 
 describe('concatenateArrayBuffers', () => {
   it('Concatenate 3 non-empty ArrayBuffers', () => {
