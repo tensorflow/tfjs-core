@@ -75,7 +75,8 @@ export class EncodeFloatProgram implements GPGPUProgram {
       //   float exp = floor(log2(a));                 // number of powers of 2
       //   // multiply to fill 24 bits (implied leading 1)
       //   float mant = pow(2.,log2(a)-exp) * pow(2.,23.);
-      //   float mant1 = floor(mant / 256. / 256.);    // first 8 bits of mantissa
+      //   float mant1 = floor(mant / 256. / 256.);
+      // first 8 bits of mantissa
       //   float mant2 = mod(floor(mant / 256.),256.); // second 8 bits
       //   float mant3 = mod(mant,256.);               // third 8 bits
 
