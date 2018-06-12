@@ -46,7 +46,9 @@ export class EncodeFloatProgram implements GPGPUProgram {
         highp vec4 c = vec4(0,0,0,0);
 
         highp float e = floor(log2(av));
-        highp float m = av * pow(2.0, -e) - 1.0;
+        //highp float m = av * pow(2.0, -e) - 1.0;
+        highp float m = av * exp2(log2(av) - e) - 1;
+        pow(2.0, -e) - 1.0;
 
         c[2] = floor(128.0 * m);
         m -= c[2] / 128.0;
@@ -64,32 +66,32 @@ export class EncodeFloatProgram implements GPGPUProgram {
         return c / 255.0;
       }
 
-      vec4 encode_float2(float val) {
+      // vec4 encode_float2(float val) {
 
-        // TODO: correctly handle denormal numbers
-        // http://www.2ality.com/2012/04/number-encoding.html
-        // encode absolute value + sign
-        float a = abs(val);
-        float exp = floor(log2(a));                 // number of powers of 2
-        // multiply to fill 24 bits (implied leading 1)
-        float mant = pow(2.,log2(a)-exp) * pow(2.,23.);
-        float mant1 = floor(mant / 256. / 256.);    // first 8 bits of mantissa
-        float mant2 = mod(floor(mant / 256.),256.); // second 8 bits
-        float mant3 = mod(mant,256.);               // third 8 bits
+      //   // TODO: correctly handle denormal numbers
+      //   // http://www.2ality.com/2012/04/number-encoding.html
+      //   // encode absolute value + sign
+      //   float a = abs(val);
+      //   float exp = floor(log2(a));                 // number of powers of 2
+      //   // multiply to fill 24 bits (implied leading 1)
+      //   float mant = pow(2.,log2(a)-exp) * pow(2.,23.);
+      //   float mant1 = floor(mant / 256. / 256.);    // first 8 bits of mantissa
+      //   float mant2 = mod(floor(mant / 256.),256.); // second 8 bits
+      //   float mant3 = mod(mant,256.);               // third 8 bits
 
-        highp float sign = 128.-128.*(a/val);			// sign bit is 256 or 0
-        highp float e = (sign+exp+127.)/510.;		// exponent and sign
-        // handle leading bit
-        highp float m1 = (mant1-(128.*(1.-mod(exp+127.,2.))))/255.;
-        highp float m2 = (mant2)/255.;				// middle part
-        highp float m3 = (mant3+.5)/255.;			// scale to 0 - 255
+      //   highp float sign = 128.-128.*(a/val);			// sign bit is 256 or 0
+      //   highp float e = (sign+exp+127.)/510.;		// exponent and sign
+      //   // handle leading bit
+      //   highp float m1 = (mant1-(128.*(1.-mod(exp+127.,2.))))/255.;
+      //   highp float m2 = (mant2)/255.;				// middle part
+      //   highp float m3 = (mant3+.5)/255.;			// scale to 0 - 255
 
-        return vec4(m3,m2,m1,e);
-      }
+      //   return vec4(m3,m2,m1,e);
+      // }
 
       void main() {
         float x = getAAtOutCoords();
-        gl_FragColor = encode_float2(x);
+        gl_FragColor = encode_float(x);
       }
     `;
   }
