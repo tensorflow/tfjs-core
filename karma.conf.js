@@ -32,6 +32,7 @@ module.exports = function(config) {
       username: process.env.BROWSERSTACK_USERNAME,
       accessKey: process.env.BROWSERSTACK_KEY
     },
+    captureTimeout: 120000,
     reportSlowerThan: 500,
     browserNoActivityTimeout: 180000,
     customLaunchers: {
@@ -51,10 +52,8 @@ module.exports = function(config) {
       },
       bs_ios_11: {
         base: 'BrowserStack',
-        browser: 'iphone',
         device: 'iPhone X',
-        browser_version: 'latest',
-        os: 'ios',
+        os: 'iOS',
         os_version: '11.0',
         real_mobile: true
       },
