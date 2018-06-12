@@ -913,7 +913,6 @@ export class MathBackendWebGL implements KernelBackend {
 
   atan<T extends Tensor>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.ATAN);
-    console.log(program.userCode);
     return this.compileAndRun(program, [x]) as T;
   }
 

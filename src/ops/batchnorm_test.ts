@@ -318,7 +318,7 @@ describeWithFlags('batchNormalization3D', ALL_ENVS, () => {
   });
 
   it('simple batchnorm3D gradients, 2x1x2', () => {
-    const x = tf.tensor3d([2, 100, 4, 200], [2, 1, 2]);
+    const x = tf.tensor3d([2, 4, 9, 23], [2, 1, 2]);
     const mean = tf.tensor1d([1, 2]);
     const variance = tf.tensor1d([2, 3]);
     const offset = tf.tensor1d([3, 4]);
@@ -339,7 +339,7 @@ describeWithFlags('batchNormalization3D', ALL_ENVS, () => {
     const gradVariance = tf.grad(
         (variance: tf.Tensor1D) => tf.batchNormalization3d(
             x, mean, variance, varianceEpsilon, scale, offset))(variance, dy);
-    expectArraysClose(gradVariance, tf.tensor1d([-1.413, -142.342]));
+    expectArraysClose(gradVariance, tf.tensor1d([-3.180, -11.060]));
     const gradOffset = tf.grad(
         (offset: tf.Tensor1D) => tf.batchNormalization3d(
             x, mean, variance, varianceEpsilon, scale, offset))(offset, dy);
@@ -347,7 +347,7 @@ describeWithFlags('batchNormalization3D', ALL_ENVS, () => {
     const gradScale = tf.grad(
         (scale: tf.Tensor1D) => tf.batchNormalization3d(
             x, mean, variance, varianceEpsilon, scale, offset))(scale, dy);
-    expectArraysClose(gradScale, tf.tensor1d([2.828, 170.867]));
+    expectArraysClose(gradScale, tf.tensor1d([6.362, 13.277]));
   });
 
   it('batchnorm3D gradients, same shapes in x, mean and variance', () => {
