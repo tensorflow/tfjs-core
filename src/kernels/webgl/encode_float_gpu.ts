@@ -45,7 +45,7 @@ export class EncodeFloatProgram implements GPGPUProgram {
 
         highp vec4 c = vec4(0,0,0,0);
 
-        highp int e = int(floor(log2(av)));
+        highp float e = floor(log2(av));
         highp float m = exp2(fract(log2(av))) - 1.0;
 
         c[2] = floor(128.0 * m);
