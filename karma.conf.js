@@ -51,6 +51,7 @@ module.exports = function(config) {
       },
       bs_ios_11: {
         base: 'BrowserStack',
+        browser: 'iphone',
         device: 'iPhone X',
         browser_version: 'latest',
         os: 'ios',
