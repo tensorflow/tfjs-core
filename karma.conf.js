@@ -54,13 +54,8 @@ module.exports = function(config) {
         browser: 'iPhone X',
         browser_version: 'latest',
         os: 'ios',
-        os_version: '11.0'
-      },
-      bs_iphone5: {
-        base: 'BrowserStack',
-        device: 'iPhone 5',
-        os: 'ios',
-        os_version: '6.0'
+        os_version: '11.0',
+        real_mobile: true
       },
       chrome_with_swift_shader: {
         base: 'Chrome',
