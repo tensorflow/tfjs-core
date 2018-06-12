@@ -265,13 +265,8 @@ describeWithFlags('browserHTTPRequest-save', CPU_ENVS, () => {
   });
 
   it('Existing body leads to Error', () => {
-    const key1Data = '1337';
-    const key2Data = '42';
-    const extraFormData = new FormData();
-    extraFormData.set('key1', key1Data);
-    extraFormData.set('key2', key2Data);
     expect(() => tf.io.browserHTTPRequest('model-upload-test', {
-      body: extraFormData
+      body: 'existing body'
     })).toThrowError(/requestInit is expected to have no pre-existing body/);
   });
 

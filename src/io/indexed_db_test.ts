@@ -20,7 +20,7 @@
  */
 
 import * as tf from '../index';
-import {describeWithFlags} from '../jasmine_util';
+import {describeWithFlags, expectArrayBuffersEqual} from '../jasmine_util';
 import {CPU_ENVS} from '../test_util';
 
 // tslint:disable-next-line:max-line-length
@@ -124,7 +124,8 @@ describeWithFlags('IndexedDB', CPU_ENVS, () => {
               .then(loadedArtifacts => {
                 expect(loadedArtifacts.modelTopology).toEqual(modelTopology1);
                 expect(loadedArtifacts.weightSpecs).toEqual(weightSpecs1);
-                expect(loadedArtifacts.weightData).toEqual(weightData1);
+                expectArrayBuffersEqual(
+                    loadedArtifacts.weightData, weightData1);
                 done();
               })
               .catch(err => {
@@ -176,7 +177,8 @@ describeWithFlags('IndexedDB', CPU_ENVS, () => {
                       expect(loadedArtifacts.modelTopology)
                           .toEqual(modelTopology1);
                       expect(loadedArtifacts.weightSpecs).toEqual(weightSpecs1);
-                      expect(loadedArtifacts.weightData).toEqual(weightData1);
+                      expectArrayBuffersEqual(
+                          loadedArtifacts.weightData, weightData1);
                       done();
                     })
                     .catch(err => {

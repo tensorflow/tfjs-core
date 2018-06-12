@@ -27,7 +27,7 @@ module.exports = function(config) {
       reports: {} // Do not produce coverage html.
     },
     reporters: ['progress', 'karma-typescript'],
-    browsers: ['Chrome', 'Firefox'],
+    browsers: ['Chrome', 'Firefox', 'Safari'],
     browserStack: {
       username: process.env.BROWSERSTACK_USERNAME,
       accessKey: process.env.BROWSERSTACK_KEY
@@ -48,6 +48,13 @@ module.exports = function(config) {
         browser_version: 'latest',
         os: 'OS X',
         os_version: 'High Sierra'
+      },
+      bs_ios_11: {
+        base: 'BrowserStack',
+        browser: 'iphone',
+        browser_version: 'latest',
+        os: 'ios',
+        os_version: '11.0'
       },
       chrome_with_swift_shader: {
         base: 'Chrome',

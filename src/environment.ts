@@ -219,55 +219,6 @@ function isDownloadFloatTextureEnabled(webGLVersion: number): boolean {
   return readPixelsNoError;
 }
 
-function isFloatTextureReadPixelsEnabled(webGLVersion: number): boolean {
-  if (webGLVersion === 0) {
-    return false;
-  }
-
-  const gl = getWebGLRenderingContext(webGLVersion);
-
-  if (webGLVersion === 1) {
-    if (!hasExtension(gl, 'OES_texture_float')) {
-      return false;
-    }
-  } else {
-    if (!hasExtension(gl, 'EXT_color_buffer_float')) {
-      return false;
-    }
-  }
-
-  createFloatTexture(gl, webGLVersion);
-
-  // const frameBuffer = gl.createFramebuffer();
-  // const texture = gl.createTexture();
-
-  // gl.bindTexture(gl.TEXTURE_2D, texture);
-
-  // // tslint:disable-next-line:no-any
-  // const internalFormat = webGLVersion === 2 ? (gl as any).RGBA32F : gl.RGBA;
-  // gl.texImage2D(
-  //     gl.TEXTURE_2D, 0, internalFormat, 1, 1, 0, gl.RGBA, gl.FLOAT, null);
-
-  // gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
-  // gl.framebufferTexture2D(
-  //     gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
-
-  const frameBufferComplete =
-      (gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE);
-
-  gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.FLOAT, new Float32Array(4));
-
-  const readPixelsNoError = gl.getError() === gl.NO_ERROR;
-
-  loseContext(gl);
-
-  console.log('FLOAT TEST:', [frameBufferComplete, readPixelsNoError]);
-
-  return frameBufferComplete && readPixelsNoError;
-}
-
-console.log(isFloatTextureReadPixelsEnabled(1));
-
 function isWebGLGetBufferSubDataAsyncExtensionEnabled(webGLVersion: number) {
   // TODO(nsthorat): Remove this once we fix
   // https://github.com/tensorflow/tfjs/issues/137
