@@ -6,7 +6,7 @@ console.log(tfc.ENV.features);
 
 // tfc.tensor1d([2, 4, 16, 2.4]).square().print();
 
-const res = tfc.tensor1d([2, 4, 16, 2.4, NaN]).square();
+const res = tfc.tensor1d([2, 4, 16, 2.4, 32, NaN]).square();
 document.getElementById('content').innerHTML =
   `tfc.tensor1d([2, 4, 16, 2.4, NaN]).square() = ${res}`;
 // tfc.tensor1d([2, 4, 16, 2.4, NaN]).square()
