@@ -48,7 +48,6 @@ export function purgeLocalStorageArtifacts(): string[] {
   const purgedModelPaths: string[] = [];
   for (let i = 0; i < LS.length; ++i) {
     const key = LS.key(i);
-    console.log(key);
     const prefix = PATH_PREFIX + PATH_SEPARATOR;
     if (key.startsWith(prefix) && key.length > prefix.length) {
       LS.removeItem(key);
