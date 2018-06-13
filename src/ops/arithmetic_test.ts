@@ -710,8 +710,6 @@ describeWithFlags('pow', ALL_ENVS, () => {
     const b = tf.tensor2d([[2, 3], [.4, .5]], [2, 2]);
     const dy = tf.tensor2d([[6, 7], [8, 9]], [2, 2]);
 
-    a.pow(b).print();
-
     const grads = tf.grads((a, b) => tf.pow(a, b));
     const [da, db] = grads([a, b], dy);
 
