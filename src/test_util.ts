@@ -35,6 +35,8 @@ export const WEBGL_ENVS: Features[] = [
   }
 ];
 export const CPU_ENVS: Features[] = [{'BACKEND': 'test-cpu'}];
+export const CHROME_CPU_ENVS: Features[] =
+    [{'BACKEND': 'test-cpu', 'IS_CHROME': true}];
 
 // Emulates the current device.
 export const NATIVE_ENV: Features = {};

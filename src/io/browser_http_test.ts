@@ -21,7 +21,8 @@
 
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
-import {CPU_ENVS} from '../test_util';
+import {CHROME_CPU_ENVS, CPU_ENVS} from '../test_util';
+
 import {BrowserHTTPRequest, httpRequestRouter} from './browser_http';
 
 // Test data.
@@ -58,7 +59,9 @@ const modelTopology1: {} = {
   'backend': 'tensorflow'
 };
 
-describeWithFlags('browserHTTPRequest-save', CPU_ENVS, () => {
+// Turned off for other browsers due to:
+// https://github.com/tensorflow/tfjs/issues/426
+describeWithFlags('browserHTTPRequest-save', CHROME_CPU_ENVS, () => {
   // Test data.
   const weightSpecs1: tf.io.WeightsManifestEntry[] = [
     {

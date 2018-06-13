@@ -30,7 +30,7 @@ function canEmulateFeature<K extends keyof Features>(
     return ENV.get(feature) >= emulatedFeature;
   } else if (
       feature === 'WEBGL_RENDER_FLOAT32_ENABLED' ||
-      feature === 'WEBGL_DOWNLOAD_FLOAT_ENABLED') {
+      feature === 'WEBGL_DOWNLOAD_FLOAT_ENABLED' || feature === 'IS_CHROME') {
     if (ENV.get(feature) === false && emulatedFeature === true) {
       return false;
     }

@@ -58,6 +58,7 @@ export interface Features {
   // Whether WEBGL_get_buffer_sub_data_async is enabled.
   'WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED'?: boolean;
   'BACKEND'?: string;
+  'IS_CHROME'?: boolean;
 }
 
 export const URL_PROPERTIES: URLProperty[] = [
@@ -236,6 +237,11 @@ function isWebGLGetBufferSubDataAsyncExtensionEnabled(webGLVersion: number) {
   return isEnabled;
 }
 
+function isChrome() {
+  return navigator != null && navigator.userAgent != null &&
+      /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
+}
+
 export class Environment {
   private features: Features = {};
   private globalEngine: Engine;
@@ -358,6 +364,8 @@ export class Environment {
     } else if (feature === 'IS_NODE') {
       return (typeof process !== 'undefined') &&
           (typeof process.versions.node !== 'undefined');
+    } else if (feature === 'IS_CHROME') {
+      return isChrome();
     } else if (feature === 'BACKEND') {
       return this.getBestBackendType();
     } else if (feature === 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') {
