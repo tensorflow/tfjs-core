@@ -21,6 +21,7 @@
     "experimentalDecorators": true
   },
   "include": [
-    "src/"
+    "src/",
+    "dist/"
   ]
 }
