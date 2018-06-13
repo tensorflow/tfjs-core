@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {ENV} from '..';
+import {ENV} from '../environment';
 import {Tensor} from '../tensor';
 import {expectNumbersClose} from '../test_util';
 import {TypedArray} from '../types';

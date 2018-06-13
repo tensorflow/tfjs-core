@@ -95,31 +95,11 @@ export function createIndexBuffer(gl: WebGLRenderingContext): WebGLBuffer {
   return webgl_util.createStaticIndexBuffer(gl, triangleVertexIndices);
 }
 
-const LOOKUP: {[key: number]: string} = {};
-
 export function getTextureConfig(
     // tslint:disable-next-line:no-any
     gl: WebGLRenderingContext, textureHalfFloatExtension: any): TextureConfig {
   // tslint:disable-next-line:no-any
   const glany = gl as any;
-
-  LOOKUP[gl.RGBA] = 'RGBA';
-  LOOKUP[gl.UNSIGNED_BYTE] = 'UNSIGNED_BYTE';
-  if (glany.RED != null) {
-    LOOKUP[glany.RED] = 'RED';
-  }
-  if (glany.R32F != null) {
-    LOOKUP[glany.R32F] = 'RGBA';
-  }
-  if (glany.HALF_FLOAT != null) {
-    LOOKUP[glany.HALF_FLOAT] = 'HALF_FLOAT';
-  }
-  if (glany.FLOAT != null) {
-    LOOKUP[glany.FLOAT] = 'FLOAT';
-  }
-  if (textureHalfFloatExtension != null) {
-    LOOKUP[textureHalfFloatExtension.HALF_FLOAT_OES] = 'HALF_FLOAT_OES';
-  }
 
   let internalFormatFloat: number;
   let internalFormatHalfFloat: number;
