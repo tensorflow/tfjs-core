@@ -18,3 +18,4 @@
 if [[ $(node -v) = *v10* ]]; then
   karma start --browsers='bs_firefox_mac,bs_chrome_mac' \
       --singleRun --reporters='dots,karma-typescript'
+fi
