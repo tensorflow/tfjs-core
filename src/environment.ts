@@ -80,7 +80,7 @@ export interface URLProperty {
 }
 
 const TEST_EPSILON_FLOAT32_ENABLED = 1e-3;
-const TEST_EPSILON_FLOAT32_DISABLED = 1e-1;
+const TEST_EPSILON_FLOAT32_DISABLED = 1e-3;
 
 function hasExtension(gl: WebGLRenderingContext, extensionName: string) {
   const ext = gl.getExtension(extensionName);

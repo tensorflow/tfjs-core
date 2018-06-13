@@ -27,7 +27,7 @@ module.exports = function(config) {
       reports: {} // Do not produce coverage html.
     },
     reporters: ['progress', 'karma-typescript'],
-    browsers: [ 'Safari'], //'Chrome', 'Firefox',
+    browsers: [ 'Chrome'],
     browserStack: {
       username: process.env.BROWSERSTACK_USERNAME,
       accessKey: process.env.BROWSERSTACK_KEY
@@ -46,6 +46,13 @@ module.exports = function(config) {
       bs_firefox_mac: {
         base: 'BrowserStack',
         browser: 'firefox',
+        browser_version: 'latest',
+        os: 'OS X',
+        os_version: 'High Sierra'
+      },
+      bs_safari_mac: {
+        base: 'BrowserStack',
+        browser: 'safari',
         browser_version: 'latest',
         os: 'OS X',
         os_version: 'High Sierra'
