@@ -168,10 +168,3 @@ function executeTests(testName: string, tests: () => void, features: Features) {
     tests();
   });
 }
-
-export function expectArrayBuffersEqual(
-    actual: ArrayBuffer, expected: ArrayBuffer) {
-  // Safari & Jasmine dont like comparing ArrayBuffers directly. Wrapping in
-  // a Float32Array solves this issue.
-  expect(new Float32Array(actual)).toEqual(new Float32Array(expected));
-}

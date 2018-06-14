@@ -16,8 +16,9 @@
  */
 
 import {ENV} from '../../environment';
+
 import {GPGPUContext} from './gpgpu_context';
-import {LogicalTextureType, PhysicalTextureType} from './tex_util';
+import {PhysicalTextureType, TextureUsage} from './tex_util';
 
 export class TextureManager {
   private numUsedTextures = 0;
@@ -28,7 +29,7 @@ export class TextureManager {
 
   constructor(private gpgpu: GPGPUContext) {}
 
-  acquireTexture(shapeRC: [number, number], logicalTexType: LogicalTextureType):
+  acquireTexture(shapeRC: [number, number], logicalTexType: TextureUsage):
       WebGLTexture {
     const physicalTexType = getPhysicalFromLogicalTextureType(logicalTexType);
 
@@ -70,7 +71,7 @@ export class TextureManager {
 
   releaseTexture(
       texture: WebGLTexture, shape: [number, number],
-      logicalTexType: LogicalTextureType): void {
+      logicalTexType: TextureUsage): void {
     const physicalTexType = getPhysicalFromLogicalTextureType(logicalTexType);
     const shapeKey = getKeyFromTextureShape(shape, physicalTexType);
     if (!(shapeKey in this.freeTextures)) {
@@ -130,13 +131,14 @@ export class TextureManager {
   }
 }
 
-function getPhysicalFromLogicalTextureType(logicalTexType: LogicalTextureType):
+function getPhysicalFromLogicalTextureType(logicalTexType: TextureUsage):
     PhysicalTextureType {
-  if (logicalTexType === LogicalTextureType.UNSIGNED_BYTE) {
+  if (logicalTexType === TextureUsage.DOWNLOAD ||
+      logicalTexType === TextureUsage.PIXELS) {
     return PhysicalTextureType.UNSIGNED_BYTE;
-  } else if (logicalTexType === LogicalTextureType.FLOAT_UPLOAD) {
+  } else if (logicalTexType === TextureUsage.UPLOAD) {
     return PhysicalTextureType.FLOAT32;
-  } else if (logicalTexType === LogicalTextureType.FLOAT_RENDER) {
+  } else if (logicalTexType === TextureUsage.RENDER) {
     return ENV.get('WEBGL_RENDER_FLOAT32_ENABLED') ?
         PhysicalTextureType.FLOAT32 :
         PhysicalTextureType.FLOAT16;

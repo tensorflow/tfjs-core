@@ -17,10 +17,11 @@
 
 import {DataType, DataTypeMap} from '../../types';
 
-export enum LogicalTextureType {
-  FLOAT_RENDER,
-  FLOAT_UPLOAD,
-  UNSIGNED_BYTE
+export enum TextureUsage {
+  RENDER,
+  UPLOAD,
+  PIXELS,
+  DOWNLOAD
 }
 
 export enum PhysicalTextureType {
@@ -36,7 +37,7 @@ export interface TextureData {
   texShape: [number, number];
   dtype: DataType;
   values: DataTypeMap[DataType];
-  texType: LogicalTextureType;
+  usage: TextureUsage;
 }
 
 export function getUnpackedMatrixTextureShapeWidthHeight(
