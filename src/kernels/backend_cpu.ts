@@ -39,14 +39,31 @@ import * as backend_util from './backend_util';
 export class MathBackendCPU implements KernelBackend {
   private data = new WeakMap<DataId, DataTypeMap[DataType]>();
   private canvas: HTMLCanvasElement;
+  private firstUse = true;
 
   constructor() {
-    if (typeof document !== 'undefined') {
+    if (ENV.get('IS_BROWSER')) {
       this.canvas = document.createElement('canvas');
     }
   }
 
   register(dataId: DataId, shape: number[], dtype: DataType): void {
+    if (this.firstUse) {
+      this.firstUse = false;
+      if (ENV.get('IS_NODE')) {
+        console.warn(
+            '\n============================\n' +
+            'Hi there 👋. Looks like you are running TensorFlow.js in ' +
+            'Node.js. To speed things up dramatically, install our node ' +
+            'backend, which binds to TensorFlow C++, by running ' +
+            'npm i @tensorflow/tfjs-node, ' +
+            'or npm i @tensorflow/tfjs-node-gpu if you have CUDA. ' +
+            'Then call require(\'tensorflow/tfjs-node\'); (-gpu ' +
+            'suffix for CUDA) at the start of your program. ' +
+            'Visit https://github.com/tensorflow/tfjs-node for more details.' +
+            '\n============================\n');
+      }
+    }
     if (this.data.has(dataId)) {
       throw new Error(`Data buffer is already registered`);
     }
@@ -315,6 +332,35 @@ export class MathBackendCPU implements KernelBackend {
       vals[i] = sum;
     }
     return result;
+  }
+
+  unsortedSegmentSum<T extends Tensor>(
+      x: T, segmentIds: Tensor1D, numSegments: number): Tensor {
+    const res = [];
+    const [dim] = segmentIds.shape;
+    const axis = axis_util.getInnerMostAxes(1, x.rank)[0];
+
+    // Reshape the segment id's so that they can be broadcast with
+    // x. The new shape should be [1, 1, ... 1, dim, 1, ..., 1] where
+    // dim is at index = axis.
+    const newShape = [];
+    for (let i = 0; i < x.shape.length; ++i) {
+      if (i === axis) {
+        newShape.push(dim);
+      } else {
+        newShape.push(1);
+      }
+    }
+
+    const reshapedSegmentIds = ops.reshape(segmentIds, newShape);
+    for (let i = 0; i < numSegments; ++i) {
+      const segmentId = ops.scalar(i, 'int32');
+      const mask = ops.equal(segmentId, reshapedSegmentIds).asType('float32');
+      const sum = mask.mul(x).sum(axis);
+      res.push(sum);
+    }
+
+    return ops.stack(res, axis) as T;
   }
 
   argMin(x: Tensor, axis: number): Tensor {
