@@ -14,12 +14,9 @@
 # limitations under the License.
 # =============================================================================
 
-set -e
-
-rimraf dist/
-yarn
-
-yarn build
-rollup -c
-echo "Stored standalone library at dist/tf-core(.min).js"
-npm pack
+if [[ $(node -v) = *v10* ]]; then
+  karma start \
+      --browsers='bs_firefox_mac,bs_chrome_mac,bs_safari_mac,bs_ios_11' \
+      --singleRun --reporters='dots,karma-typescript,BrowserStack' \
+      --hostname='bs-local.com'
+fi

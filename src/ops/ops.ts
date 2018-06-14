@@ -33,6 +33,7 @@ import {NormOps} from './norm';
 import {PoolOps} from './pool';
 import {ReductionOps} from './reduction_ops';
 import {ReverseOps} from './reverse';
+import {SegmentOps} from './segment_ops';
 import {SigmoidCrossEntropyOps} from './sigmoid_cross_entropy';
 import {SliceOps} from './slice';
 import {SoftmaxOps} from './softmax';
@@ -90,7 +91,8 @@ export const mean = ReductionOps.mean;
 export const min = ReductionOps.min;
 export const moments = ReductionOps.moments;
 export const sum = ReductionOps.sum;
-export const unsortedSegmentSum = ReductionOps.unsortedSegmentSum;
+
+export const unsortedSegmentSum = SegmentOps.unsortedSegmentSum;
 
 export const equal = CompareOps.equal;
 export const equalStrict = CompareOps.equalStrict;
