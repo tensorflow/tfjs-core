@@ -15,7 +15,6 @@
  * =============================================================================
  */
 
-/*
 import {describeWithFlags} from '../../jasmine_util';
 import {WEBGL_ENVS} from '../../test_util';
 
@@ -23,102 +22,109 @@ import {GPGPUContext} from './gpgpu_context';
 import * as gpgpu_util from './gpgpu_util';
 
 describeWithFlags('gpgpu_util createWebGLContext', WEBGL_ENVS, () => {
- let gpgpu: GPGPUContext;
+  let gpgpu: GPGPUContext;
 
- beforeEach(() => {
-   gpgpu = new GPGPUContext();
- });
+  beforeEach(() => {
+    gpgpu = new GPGPUContext();
+  });
 
- afterEach(() => {
-   gpgpu.dispose();
- });
+  afterEach(() => {
+    gpgpu.dispose();
+  });
 
- it('disables DEPTH_TEST and STENCIL_TEST', () => {
-   expect(gpgpu.gl.getParameter(gpgpu.gl.DEPTH_TEST)).toEqual(false);
-   expect(gpgpu.gl.getParameter(gpgpu.gl.STENCIL_TEST)).toEqual(false);
- });
+  it('disables DEPTH_TEST and STENCIL_TEST', () => {
+    expect(gpgpu.gl.getParameter(gpgpu.gl.DEPTH_TEST)).toEqual(false);
+    expect(gpgpu.gl.getParameter(gpgpu.gl.STENCIL_TEST)).toEqual(false);
+  });
 
- it('disables BLEND', () => {
-   expect(gpgpu.gl.getParameter(gpgpu.gl.BLEND)).toEqual(false);
- });
+  it('disables BLEND', () => {
+    expect(gpgpu.gl.getParameter(gpgpu.gl.BLEND)).toEqual(false);
+  });
 
- it('disables DITHER, POLYGON_OFFSET_FILL', () => {
-   expect(gpgpu.gl.getParameter(gpgpu.gl.DITHER)).toEqual(false);
-   expect(gpgpu.gl.getParameter(gpgpu.gl.POLYGON_OFFSET_FILL)).toEqual(false);
- });
+  it('disables DITHER, POLYGON_OFFSET_FILL', () => {
+    expect(gpgpu.gl.getParameter(gpgpu.gl.DITHER)).toEqual(false);
+    expect(gpgpu.gl.getParameter(gpgpu.gl.POLYGON_OFFSET_FILL)).toEqual(false);
+  });
 
- it('enables CULL_FACE with BACK', () => {
-   expect(gpgpu.gl.getParameter(gpgpu.gl.CULL_FACE)).toEqual(true);
-   expect(gpgpu.gl.getParameter(gpgpu.gl.CULL_FACE_MODE))
-       .toEqual(gpgpu.gl.BACK);
- });
+  it('enables CULL_FACE with BACK', () => {
+    expect(gpgpu.gl.getParameter(gpgpu.gl.CULL_FACE)).toEqual(true);
+    expect(gpgpu.gl.getParameter(gpgpu.gl.CULL_FACE_MODE))
+        .toEqual(gpgpu.gl.BACK);
+  });
 
- it('enables SCISSOR_TEST', () => {
-   expect(gpgpu.gl.getParameter(gpgpu.gl.SCISSOR_TEST)).toEqual(true);
- });
+  it('enables SCISSOR_TEST', () => {
+    expect(gpgpu.gl.getParameter(gpgpu.gl.SCISSOR_TEST)).toEqual(true);
+  });
 });
 
-describeWithFlags('gpgpu_util createMatrixTexture', WEBGL_ENVS, () => {
- it('sets the TEXTURE_WRAP S+T parameters to CLAMP_TO_EDGE', () => {
-   const gpgpu = new GPGPUContext();
-   const tex = gpgpu_util.createMatrixTexture(gpgpu.gl, 32, 32);
-   gpgpu.gl.bindTexture(gpgpu.gl.TEXTURE_2D, tex);
-   expect(
-       gpgpu.gl.getTexParameter(gpgpu.gl.TEXTURE_2D, gpgpu.gl.TEXTURE_WRAP_S))
-       .toEqual(gpgpu.gl.CLAMP_TO_EDGE);
-   expect(
-       gpgpu.gl.getTexParameter(gpgpu.gl.TEXTURE_2D, gpgpu.gl.TEXTURE_WRAP_T))
-       .toEqual(gpgpu.gl.CLAMP_TO_EDGE);
-   gpgpu.gl.bindTexture(gpgpu.gl.TEXTURE_2D, null);
-   gpgpu.deleteMatrixTexture(tex);
-   gpgpu.dispose();
- });
+describeWithFlags('gpgpu_util createFloat32MatrixTexture', WEBGL_ENVS, () => {
+  it('sets the TEXTURE_WRAP S+T parameters to CLAMP_TO_EDGE', () => {
+    const gpgpu = new GPGPUContext();
+    const textureConfig = gpgpu_util.getTextureConfig(gpgpu.gl);
+    const tex =
+        gpgpu_util.createFloat32MatrixTexture(gpgpu.gl, 32, 32, textureConfig);
+    gpgpu.gl.bindTexture(gpgpu.gl.TEXTURE_2D, tex);
+    expect(
+        gpgpu.gl.getTexParameter(gpgpu.gl.TEXTURE_2D, gpgpu.gl.TEXTURE_WRAP_S))
+        .toEqual(gpgpu.gl.CLAMP_TO_EDGE);
+    expect(
+        gpgpu.gl.getTexParameter(gpgpu.gl.TEXTURE_2D, gpgpu.gl.TEXTURE_WRAP_T))
+        .toEqual(gpgpu.gl.CLAMP_TO_EDGE);
+    gpgpu.gl.bindTexture(gpgpu.gl.TEXTURE_2D, null);
+    gpgpu.deleteMatrixTexture(tex);
+    gpgpu.dispose();
+  });
 
- it('sets the TEXTURE_[MIN|MAG]_FILTER parameters to NEAREST', () => {
-   const gpgpu = new GPGPUContext();
-   const tex = gpgpu_util.createMatrixTexture(gpgpu.gl, 32, 32);
-   gpgpu.gl.bindTexture(gpgpu.gl.TEXTURE_2D, tex);
-   expect(gpgpu.gl.getTexParameter(
-              gpgpu.gl.TEXTURE_2D, gpgpu.gl.TEXTURE_MIN_FILTER))
-       .toEqual(gpgpu.gl.NEAREST);
-   expect(gpgpu.gl.getTexParameter(
-              gpgpu.gl.TEXTURE_2D, gpgpu.gl.TEXTURE_MAG_FILTER))
-       .toEqual(gpgpu.gl.NEAREST);
-   gpgpu.gl.bindTexture(gpgpu.gl.TEXTURE_2D, null);
-   gpgpu.deleteMatrixTexture(tex);
-   gpgpu.dispose();
- });
+  it('sets the TEXTURE_[MIN|MAG]_FILTER parameters to NEAREST', () => {
+    const gpgpu = new GPGPUContext();
+    const textureConfig = gpgpu_util.getTextureConfig(gpgpu.gl);
+    const tex =
+        gpgpu_util.createFloat32MatrixTexture(gpgpu.gl, 32, 32, textureConfig);
+    gpgpu.gl.bindTexture(gpgpu.gl.TEXTURE_2D, tex);
+    expect(gpgpu.gl.getTexParameter(
+               gpgpu.gl.TEXTURE_2D, gpgpu.gl.TEXTURE_MIN_FILTER))
+        .toEqual(gpgpu.gl.NEAREST);
+    expect(gpgpu.gl.getTexParameter(
+               gpgpu.gl.TEXTURE_2D, gpgpu.gl.TEXTURE_MAG_FILTER))
+        .toEqual(gpgpu.gl.NEAREST);
+    gpgpu.gl.bindTexture(gpgpu.gl.TEXTURE_2D, null);
+    gpgpu.deleteMatrixTexture(tex);
+    gpgpu.dispose();
+  });
 });
 
 describeWithFlags('gpgpu_util createPackedMatrixTexture', WEBGL_ENVS, () => {
- it('sets the TEXTURE_WRAP S+T parameters to CLAMP_TO_EDGE', () => {
-   const gpgpu = new GPGPUContext();
-   const tex = gpgpu_util.createPackedMatrixTexture(gpgpu.gl, 32, 32);
-   gpgpu.gl.bindTexture(gpgpu.gl.TEXTURE_2D, tex);
-   expect(
-       gpgpu.gl.getTexParameter(gpgpu.gl.TEXTURE_2D, gpgpu.gl.TEXTURE_WRAP_S))
-       .toEqual(gpgpu.gl.CLAMP_TO_EDGE);
-   expect(
-       gpgpu.gl.getTexParameter(gpgpu.gl.TEXTURE_2D, gpgpu.gl.TEXTURE_WRAP_T))
-       .toEqual(gpgpu.gl.CLAMP_TO_EDGE);
-   gpgpu.gl.bindTexture(gpgpu.gl.TEXTURE_2D, null);
-   gpgpu.deleteMatrixTexture(tex);
-   gpgpu.dispose();
- });
+  it('sets the TEXTURE_WRAP S+T parameters to CLAMP_TO_EDGE', () => {
+    const gpgpu = new GPGPUContext();
+    const textureConfig = gpgpu_util.getTextureConfig(gpgpu.gl);
+    const tex =
+        gpgpu_util.createPackedMatrixTexture(gpgpu.gl, 32, 32, textureConfig);
+    gpgpu.gl.bindTexture(gpgpu.gl.TEXTURE_2D, tex);
+    expect(
+        gpgpu.gl.getTexParameter(gpgpu.gl.TEXTURE_2D, gpgpu.gl.TEXTURE_WRAP_S))
+        .toEqual(gpgpu.gl.CLAMP_TO_EDGE);
+    expect(
+        gpgpu.gl.getTexParameter(gpgpu.gl.TEXTURE_2D, gpgpu.gl.TEXTURE_WRAP_T))
+        .toEqual(gpgpu.gl.CLAMP_TO_EDGE);
+    gpgpu.gl.bindTexture(gpgpu.gl.TEXTURE_2D, null);
+    gpgpu.deleteMatrixTexture(tex);
+    gpgpu.dispose();
+  });
 
- it('sets the TEXTURE_[MIN|MAG]_FILTER parameters to NEAREST', () => {
-   const gpgpu = new GPGPUContext();
-   const tex = gpgpu_util.createPackedMatrixTexture(gpgpu.gl, 32, 32);
-   gpgpu.gl.bindTexture(gpgpu.gl.TEXTURE_2D, tex);
-   expect(gpgpu.gl.getTexParameter(
-              gpgpu.gl.TEXTURE_2D, gpgpu.gl.TEXTURE_MIN_FILTER))
-       .toEqual(gpgpu.gl.NEAREST);
-   expect(gpgpu.gl.getTexParameter(
-              gpgpu.gl.TEXTURE_2D, gpgpu.gl.TEXTURE_MAG_FILTER))
-       .toEqual(gpgpu.gl.NEAREST);
-   gpgpu.gl.bindTexture(gpgpu.gl.TEXTURE_2D, null);
-   gpgpu.deleteMatrixTexture(tex);
-   gpgpu.dispose();
- });
+  it('sets the TEXTURE_[MIN|MAG]_FILTER parameters to NEAREST', () => {
+    const gpgpu = new GPGPUContext();
+    const textureConfig = gpgpu_util.getTextureConfig(gpgpu.gl);
+    const tex =
+        gpgpu_util.createPackedMatrixTexture(gpgpu.gl, 32, 32, textureConfig);
+    gpgpu.gl.bindTexture(gpgpu.gl.TEXTURE_2D, tex);
+    expect(gpgpu.gl.getTexParameter(
+               gpgpu.gl.TEXTURE_2D, gpgpu.gl.TEXTURE_MIN_FILTER))
+        .toEqual(gpgpu.gl.NEAREST);
+    expect(gpgpu.gl.getTexParameter(
+               gpgpu.gl.TEXTURE_2D, gpgpu.gl.TEXTURE_MAG_FILTER))
+        .toEqual(gpgpu.gl.NEAREST);
+    gpgpu.gl.bindTexture(gpgpu.gl.TEXTURE_2D, null);
+    gpgpu.deleteMatrixTexture(tex);
+    gpgpu.dispose();
+  });
 });
-*/

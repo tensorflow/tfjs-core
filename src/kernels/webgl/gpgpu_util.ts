@@ -97,7 +97,7 @@ export function createIndexBuffer(gl: WebGLRenderingContext): WebGLBuffer {
 
 export function getTextureConfig(
     // tslint:disable-next-line:no-any
-    gl: WebGLRenderingContext, textureHalfFloatExtension: any): TextureConfig {
+    gl: WebGLRenderingContext, textureHalfFloatExtension?: any): TextureConfig {
   // tslint:disable-next-line:no-any
   const glany = gl as any;
 
