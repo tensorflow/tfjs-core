@@ -128,7 +128,9 @@ export function sumOutType(type: DataType) {
  */
 export type TensorContainer = void|Tensor|string|number|boolean|
     TensorContainerObject|TensorContainerArray;
-export interface TensorContainerObject { [x: string]: TensorContainer; }
+export interface TensorContainerObject {
+  [x: string]: TensorContainer;
+}
 export interface TensorContainerArray extends Array<TensorContainer> {}
 
 export interface ModelPredictConfig {
@@ -164,7 +166,7 @@ export interface InferenceModel {
   /**
    * Return the array of output tensor info.
    */
-  readonly ouputs: TensorInfo[];
+  readonly outputs: TensorInfo[];
 
   /**
    * Execute the inference for the input tensors.
