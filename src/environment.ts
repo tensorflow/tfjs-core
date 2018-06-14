@@ -151,7 +151,8 @@ function getWebGLDisjointQueryTimerVersion(webGLVersion: number): number {
   return queryTimerVersion;
 }
 
-function createFloatTexture(gl: WebGLRenderingContext, webGLVersion: number) {
+function createFloatTextureAndBindToFramebuffer(
+    gl: WebGLRenderingContext, webGLVersion: number) {
   const frameBuffer = gl.createFramebuffer();
   const texture = gl.createTexture();
 
@@ -184,7 +185,7 @@ function isRenderToFloatTextureEnabled(webGLVersion: number): boolean {
     }
   }
 
-  createFloatTexture(gl, webGLVersion);
+  createFloatTextureAndBindToFramebuffer(gl, webGLVersion);
 
   const isFrameBufferComplete =
       gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
@@ -210,7 +211,7 @@ function isDownloadFloatTextureEnabled(webGLVersion: number): boolean {
     }
   }
 
-  createFloatTexture(gl, webGLVersion);
+  createFloatTextureAndBindToFramebuffer(gl, webGLVersion);
   gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.FLOAT, new Float32Array(4));
 
   const readPixelsNoError = gl.getError() === gl.NO_ERROR;
