@@ -196,9 +196,6 @@ const SHADER_PREFIX = `
   };
 
   bool isNaN(float val) {
-   // float v1 = val * val;
-   // float v2 = val * val;
-   // return v1 == v2 ? false : true;
     return (val < 0.0 || 0.0 < val || val == 0.0) ? false : true;
   }
 
