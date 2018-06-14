@@ -150,10 +150,29 @@ export interface ModelPredictConfig {
   verbose?: boolean;
 }
 
+export interface TensorInfo {
+  // Name of the tensor.
+  name: string;
+  // Tensor shape information, Optional.
+  shape?: number[];
+  // Data type of the tensor.
+  dtype: DataType;
+}
+
 /**
  * Common interface for a machine learning model that can do inference.
  */
 export interface InferenceModel {
+  /**
+   * Return the array of input tensor info.
+   */
+  readonly inputs: TensorInfo[];
+
+  /**
+   * Return the array of output tensor info.
+   */
+  readonly outputs: TensorInfo[];
+
   /**
    * Execute the inference for the input tensors.
    *
