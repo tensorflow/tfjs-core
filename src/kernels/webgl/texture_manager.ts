@@ -29,9 +29,8 @@ export class TextureManager {
 
   constructor(private gpgpu: GPGPUContext) {}
 
-  acquireTexture(shapeRC: [number, number], logicalTexType: TextureUsage):
-      WebGLTexture {
-    const physicalTexType = getPhysicalFromLogicalTextureType(logicalTexType);
+  acquireTexture(shapeRC: [number, number], usage: TextureUsage): WebGLTexture {
+    const physicalTexType = getPhysicalFromLogicalTextureType(usage);
 
     const shapeKey = getKeyFromTextureShape(shapeRC, physicalTexType);
     if (!(shapeKey in this.freeTextures)) {
