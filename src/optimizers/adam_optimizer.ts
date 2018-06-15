@@ -24,6 +24,9 @@ import {Scalar, Variable} from '../tensor';
 import {NamedVariableMap} from '../types';
 
 import {Optimizer} from './optimizer';
+import * as optimizer_utils from './optimizer_utils';
+
+const DEFAULT_EPSILON = optimizer_utils.getOptimizerDefaultEpsilonValue();
 
 export class AdamOptimizer extends Optimizer {
   static className = 'AdamOptimizer';
@@ -42,7 +45,7 @@ export class AdamOptimizer extends Optimizer {
 
   constructor(
       protected learningRate: number, protected beta1: number,
-      protected beta2: number, protected epsilon = 1e-8) {
+      protected beta2: number, protected epsilon = DEFAULT_EPSILON) {
     super();
     this.c = keep(scalar(-learningRate));
     this.epsScalar = keep(scalar(epsilon));

@@ -24,6 +24,9 @@ import {Scalar} from '../tensor';
 import {NamedVariableMap} from '../types';
 
 import {Optimizer} from './optimizer';
+import * as optimizer_utils from './optimizer_utils';
+
+const DEFAULT_EPSILON = optimizer_utils.getOptimizerDefaultEpsilonValue();
 
 /** @doclink Optimizer */
 export class AdadeltaOptimizer extends Optimizer {
@@ -38,7 +41,7 @@ export class AdadeltaOptimizer extends Optimizer {
 
   constructor(
       protected learningRate: number, protected rho: number,
-      protected epsilon = 1e-8) {
+      protected epsilon = DEFAULT_EPSILON) {
     super();
     this.c = keep(scalar(-learningRate));
     this.epsilonScalar = keep(scalar(epsilon));
