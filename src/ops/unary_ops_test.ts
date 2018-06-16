@@ -720,13 +720,7 @@ describeWithFlags('square', ALL_ENVS, () => {
 
   it('6D array', () => {
     const a = tf.tensor6d(
-        [
-          1, 2, Math.sqrt(2),
-          Math.sqrt(
-              3,
-              ),
-          3, 4, Math.sqrt(7), Math.sqrt(13)
-        ],
+        [1, 2, Math.sqrt(2), Math.sqrt(3), 3, 4, Math.sqrt(7), Math.sqrt(13)],
         [1, 1, 2, 2, 2, 1]);
     const r = tf.square(a);
     expect(r.shape).toEqual(a.shape);

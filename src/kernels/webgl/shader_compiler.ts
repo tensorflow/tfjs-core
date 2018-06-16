@@ -741,11 +741,8 @@ function getSampler5D(inputInfo: InputInfo): string {
 
 function getSampler6D(inputInfo: InputInfo): string {
   const shape = inputInfo.shapeInfo.logicalShape;
-  const texShape = inputInfo.shapeInfo.texShape;
   const texName = inputInfo.name;
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
-  const texNumR = texShape[0];
-  const texNumC = texShape[1];
   const stride4 = shape[5];
   const stride3 = shape[4] * stride4;
   const stride2 = shape[3] * stride3;
@@ -763,6 +760,22 @@ function getSampler6D(inputInfo: InputInfo): string {
       }
     `;
   }
+
+  if (inputInfo.shapeInfo.isUniform) {
+    return `
+      float ${funcName}(int row, int col, int depth,
+                  int depth2, int depth3, int depth4) {
+        int index = row * ${stride0} + col * ${stride1} +
+            depth * ${stride2} + depth2 * ${stride3} + depth3 * ${stride3}
+            + depth4
+        return ${funcName}Flat(index);
+      }
+    `;
+  }
+
+  const texShape = inputInfo.shapeInfo.texShape;
+  const texNumR = texShape[0];
+  const texNumC = texShape[1];
   if (texNumC === stride0) {
     return `
       float ${funcName}(int row, int col, int depth,
