@@ -42,7 +42,7 @@ export class RMSPropOptimizer extends Optimizer {
 
   constructor(
       protected learningRate: number, protected decay = 0.9,
-      protected momentum = 0.0, protected epsilon: number = undefined,
+      protected momentum = 0.0, protected epsilon: number = null,
       centered = false) {
     super();
 
@@ -52,7 +52,7 @@ export class RMSPropOptimizer extends Optimizer {
     this.oneMinusDecay = keep(scalar(1 - decay));
     this.centered = centered;
 
-    if (epsilon === undefined) {
+    if (epsilon === null) {
       epsilon = optimizer_utils.getOptimizerDefaultEpsilonValue();
     }
 

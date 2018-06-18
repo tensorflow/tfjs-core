@@ -43,7 +43,7 @@ export class AdamOptimizer extends Optimizer {
 
   constructor(
       protected learningRate: number, protected beta1: number,
-      protected beta2: number, protected epsilon: number = undefined) {
+      protected beta2: number, protected epsilon: number = null) {
     super();
     this.c = keep(scalar(-learningRate));
     // b1, b2 keep initial value of beta* hyperparameters.
@@ -58,7 +58,7 @@ export class AdamOptimizer extends Optimizer {
     this.oneMinusBeta2 = keep(scalar(1 - beta2));
     this.one = keep(scalar(1));
 
-    if (epsilon === undefined) {
+    if (epsilon === null) {
       epsilon = optimizer_utils.getOptimizerDefaultEpsilonValue();
     }
 

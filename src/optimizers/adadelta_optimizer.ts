@@ -39,14 +39,14 @@ export class AdadeltaOptimizer extends Optimizer {
 
   constructor(
       protected learningRate: number, protected rho: number,
-      protected epsilon: number = undefined) {
+      protected epsilon: number = null) {
     super();
 
     this.c = keep(scalar(-learningRate));
     this.rhoScalar = keep(scalar(rho));
     this.oneMinusRho = keep(scalar(1 - rho));
 
-    if (epsilon === undefined) {
+    if (epsilon === null) {
       epsilon = optimizer_utils.getOptimizerDefaultEpsilonValue();
     }
 

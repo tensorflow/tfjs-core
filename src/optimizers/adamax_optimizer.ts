@@ -43,7 +43,7 @@ export class AdamaxOptimizer extends Optimizer {
 
   constructor(
       protected learningRate: number, protected beta1: number,
-      protected beta2: number, protected epsilon: number = undefined,
+      protected beta2: number, protected epsilon: number = null,
       protected decay = 0.0) {
     super();
     this.c = keep(scalar(-learningRate));
@@ -62,7 +62,7 @@ export class AdamaxOptimizer extends Optimizer {
     this.oneMinusBeta1 = keep(scalar(1 - beta1));
     this.one = keep(scalar(1));
 
-    if (epsilon === undefined) {
+    if (epsilon === null) {
       epsilon = optimizer_utils.getOptimizerDefaultEpsilonValue();
     }
 
