@@ -18,4 +18,3 @@ ISSUE_TEMPLATE.md
 PULL_REQUEST_TEMPLATE.md
 rollup.config.js
 tsconfig.json
-tsconfig-es2015.json
