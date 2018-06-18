@@ -1854,15 +1854,15 @@ describeWithFlags('tile', ALL_ENVS, () => {
     const x = tf.tensor4d([[[[1]], [[2]]], [[[3]], [[4]]]], [2, 2, 1, 1]);
     const dy = tf.tensor4d(
         [
-          [[[1, 10], [100, 1000]], [[2, 20], [200, 2000]]],
-          [[[3, 30], [300, 3000]], [[4, 40], [400, 4000]]]
+          [[[.01, .1], [1, 10]], [[.02, .2], [2, 20]]],
+          [[[.03, .3], [3, 30]], [[.04, .4], [4, 40]]]
         ],
         [2, 2, 2, 2]);
     const gradients = tf.grad(x => tf.tile(x, [1, 1, 2, 2]))(x, dy);
     expectArraysClose(
         gradients,
         tf.tensor4d(
-            [[[[1111]], [[2222]]], [[[3333]], [[4444]]]], [2, 2, 1, 1]));
+            [[[[11.11]], [[22.22]]], [[[33.33]], [[44.44]]]], [2, 2, 1, 1]));
   });
 
   it('throws when passed a non-tensor', () => {
@@ -2161,6 +2161,14 @@ describeWithFlags('oneHot', ALL_ENVS, () => {
   it('indices not int32 throws error', () => {
     const indices = tf.tensor1d([0, 1], 'float32');
     expect(() => tf.oneHot(indices, 2)).toThrowError();
+  });
+
+  it('check output dtype', () => {
+    const expectedType = 'int32';
+    const indices = tf.tensor1d([0, 1], 'int32');
+    const res = tf.oneHot(indices, 2);
+
+    expect(res.dtype).toEqual(expectedType);
   });
 });
 
