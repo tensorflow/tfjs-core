@@ -17,7 +17,7 @@
 import {ENV} from '../environment';
 
 const DEFAULT_FLOAT32_EPSILON = 1e-8;
-const DEFAULT_FLOAT16_EPSILON = 1e-5;
+const DEFAULT_FLOAT16_EPSILON = 1e-4;
 
 export function getOptimizerDefaultEpsilonValue() {
   if (ENV.get('WEBGL_RENDER_FLOAT32_ENABLED')) {
