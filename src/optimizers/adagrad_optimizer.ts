@@ -26,8 +26,6 @@ import {NamedVariableMap} from '../types';
 import {Optimizer} from './optimizer';
 import * as optimizer_utils from './optimizer_utils';
 
-const DEFAULT_EPSILON = optimizer_utils.getOptimizerDefaultEpsilonValue();
-
 /** @doclink Optimizer */
 export class AdagradOptimizer extends Optimizer {
   static className = 'AdagradOptimizer';
@@ -40,7 +38,9 @@ export class AdagradOptimizer extends Optimizer {
       protected learningRate: number, private initialAccumulatorValue = 0.1) {
     super();
     this.c = keep(scalar(-learningRate));
-    this.epsilon = keep(scalar(DEFAULT_EPSILON));
+
+    const epsilon = optimizer_utils.getOptimizerDefaultEpsilonValue();
+    this.epsilon = keep(scalar(epsilon));
   }
 
   applyGradients(variableGradients: NamedVariableMap) {

@@ -26,8 +26,6 @@ import {NamedVariableMap} from '../types';
 import {Optimizer} from './optimizer';
 import * as optimizer_utils from './optimizer_utils';
 
-const DEFAULT_EPSILON = optimizer_utils.getOptimizerDefaultEpsilonValue();
-
 /** @doclink Optimizer */
 export class AdadeltaOptimizer extends Optimizer {
   static className = 'AdadeltaOptimizer';
@@ -41,12 +39,18 @@ export class AdadeltaOptimizer extends Optimizer {
 
   constructor(
       protected learningRate: number, protected rho: number,
-      protected epsilon = DEFAULT_EPSILON) {
+      protected epsilon: number = undefined) {
     super();
+
     this.c = keep(scalar(-learningRate));
-    this.epsilonScalar = keep(scalar(epsilon));
     this.rhoScalar = keep(scalar(rho));
     this.oneMinusRho = keep(scalar(1 - rho));
+
+    if (epsilon === undefined) {
+      epsilon = optimizer_utils.getOptimizerDefaultEpsilonValue();
+    }
+
+    this.epsilonScalar = keep(scalar(epsilon));
   }
 
   applyGradients(variableGradients: NamedVariableMap) {

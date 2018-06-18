@@ -26,8 +26,6 @@ import {NamedVariableMap} from '../types';
 import {Optimizer} from './optimizer';
 import * as optimizer_utils from './optimizer_utils';
 
-const DEFAULT_EPSILON = optimizer_utils.getOptimizerDefaultEpsilonValue();
-
 /** @doclink Optimizer */
 export class RMSPropOptimizer extends Optimizer {
   static className = 'RMSPropOptimizer';
@@ -44,16 +42,21 @@ export class RMSPropOptimizer extends Optimizer {
 
   constructor(
       protected learningRate: number, protected decay = 0.9,
-      protected momentum = 0.0, protected epsilon = DEFAULT_EPSILON,
+      protected momentum = 0.0, protected epsilon: number = undefined,
       centered = false) {
     super();
 
     this.c = keep(scalar(learningRate));
-    this.epsilonScalar = keep(scalar(epsilon));
     this.decayScalar = keep(scalar(decay));
     this.momentumScalar = keep(scalar(momentum));
     this.oneMinusDecay = keep(scalar(1 - decay));
     this.centered = centered;
+
+    if (epsilon === undefined) {
+      epsilon = optimizer_utils.getOptimizerDefaultEpsilonValue();
+    }
+
+    this.epsilonScalar = keep(scalar(epsilon));
   }
 
   applyGradients(variableGradients: NamedVariableMap) {

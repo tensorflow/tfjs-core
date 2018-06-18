@@ -26,8 +26,6 @@ import {NamedVariableMap} from '../types';
 import {Optimizer} from './optimizer';
 import * as optimizer_utils from './optimizer_utils';
 
-const DEFAULT_EPSILON = optimizer_utils.getOptimizerDefaultEpsilonValue();
-
 export class AdamOptimizer extends Optimizer {
   static className = 'AdamOptimizer';
   private c: Scalar;
@@ -45,10 +43,9 @@ export class AdamOptimizer extends Optimizer {
 
   constructor(
       protected learningRate: number, protected beta1: number,
-      protected beta2: number, protected epsilon = DEFAULT_EPSILON) {
+      protected beta2: number, protected epsilon: number = undefined) {
     super();
     this.c = keep(scalar(-learningRate));
-    this.epsScalar = keep(scalar(epsilon));
     // b1, b2 keep initial value of beta* hyperparameters.
     this.beta1Scalar = keep(scalar(beta1));
     this.beta2Scalar = keep(scalar(beta2));
@@ -60,6 +57,12 @@ export class AdamOptimizer extends Optimizer {
     this.oneMinusBeta1 = keep(scalar(1 - beta1));
     this.oneMinusBeta2 = keep(scalar(1 - beta2));
     this.one = keep(scalar(1));
+
+    if (epsilon === undefined) {
+      epsilon = optimizer_utils.getOptimizerDefaultEpsilonValue();
+    }
+
+    this.epsScalar = keep(scalar(epsilon));
   }
 
   applyGradients(variableGradients: NamedVariableMap) {

@@ -22,11 +22,8 @@ import {AdagradOptimizer} from './adagrad_optimizer';
 import {AdamOptimizer} from './adam_optimizer';
 import {AdamaxOptimizer} from './adamax_optimizer';
 import {MomentumOptimizer} from './momentum_optimizer';
-import * as optimizer_utils from './optimizer_utils';
 import {RMSPropOptimizer} from './rmsprop_optimizer';
 import {SGDOptimizer} from './sgd_optimizer';
-
-const DEFAULT_EPSILON = optimizer_utils.getOptimizerDefaultEpsilonValue();
 
 export class OptimizerConstructors {
   /**
@@ -109,7 +106,7 @@ export class OptimizerConstructors {
   @doc({heading: 'Training', subheading: 'Optimizers', namespace: 'train'})
   static rmsprop(
       learningRate: number, decay = .9, momentum = 0.0,
-      epsilon = DEFAULT_EPSILON, centered = false): RMSPropOptimizer {
+      epsilon: number = undefined, centered = false): RMSPropOptimizer {
     return new RMSPropOptimizer(
         learningRate, decay, momentum, epsilon, centered);
   }
@@ -127,7 +124,7 @@ export class OptimizerConstructors {
   @doc({heading: 'Training', subheading: 'Optimizers', namespace: 'train'})
   static adam(
       learningRate = 0.001, beta1 = 0.9, beta2 = 0.999,
-      epsilon = DEFAULT_EPSILON): AdamOptimizer {
+      epsilon: number = undefined): AdamOptimizer {
     return new AdamOptimizer(learningRate, beta1, beta2, epsilon);
   }
 
@@ -142,7 +139,7 @@ export class OptimizerConstructors {
    * update.
    */
   @doc({heading: 'Training', subheading: 'Optimizers', namespace: 'train'})
-  static adadelta(learningRate = .001, rho = .95, epsilon = DEFAULT_EPSILON):
+  static adadelta(learningRate = .001, rho = .95, epsilon: number = undefined):
       AdadeltaOptimizer {
     return new AdadeltaOptimizer(learningRate, rho, epsilon);
   }
@@ -161,7 +158,7 @@ export class OptimizerConstructors {
   @doc({heading: 'Training', subheading: 'Optimizers', namespace: 'train'})
   static adamax(
       learningRate = 0.002, beta1 = 0.9, beta2 = 0.999,
-      epsilon = DEFAULT_EPSILON, decay = 0.0): AdamaxOptimizer {
+      epsilon: number = undefined, decay = 0.0): AdamaxOptimizer {
     return new AdamaxOptimizer(learningRate, beta1, beta2, epsilon, decay);
   }
 
