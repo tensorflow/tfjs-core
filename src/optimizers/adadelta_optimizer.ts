@@ -50,7 +50,10 @@ export class AdadeltaOptimizer extends Optimizer {
       epsilon = optimizer_utils.getOptimizerDefaultEpsilonValue();
     }
 
+    console.log(epsilon);
+
     this.epsilonScalar = keep(scalar(epsilon));
+    this.epsilonScalar.print();
   }
 
   applyGradients(variableGradients: NamedVariableMap) {
@@ -79,6 +82,11 @@ export class AdadeltaOptimizer extends Optimizer {
         const newAccumulatedGrad =
             this.rhoScalar.mul(accumulatedGrad)
                 .add(this.oneMinusRho.mul(gradient.square()));
+
+        this.epsilonScalar.print();
+        accumulatedGrad.print();
+        accumulatedGrad.add(this.epsilonScalar).print();
+        accumulatedGrad.add(this.epsilonScalar).sqrt().print();
 
         const updates = accumulatedUpdate.add(this.epsilonScalar)
                             .sqrt()
