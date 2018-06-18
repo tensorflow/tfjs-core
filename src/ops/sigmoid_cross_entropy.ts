@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2018 Google Inc. All Rights Reserved.
+ * Copyright 2018 Google LLC. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -25,8 +25,6 @@ export class SigmoidCrossEntropyOps {
   /**
    * Computes sigmoid cross entropy given logits.
    *
-   * Implementation:
-   *
    * @param labels A Tensor of the same type and shape as logits.
    * @param logits A Tensor of type float32 or float64.
    */
@@ -39,6 +37,26 @@ export class SigmoidCrossEntropyOps {
     util.assertShapesMatch(
         labels.shape, logits.shape, 'Error in sigmoidCrossEntropyWithLogits: ');
 
+    /**
+     * Implementation Details:
+     *
+     * For brevity, let `x = logits`, `z = labels`.  The logistic loss is
+     *     z * -log(sigmoid(x)) + (1 - z) * -log(1 - sigmoid(x))
+     *   = z * -log(1 / (1 + exp(-x))) + (1 - z) * -log(exp(-x) / (1 + exp(-x)))
+     *   = z * log(1 + exp(-x)) + (1 - z) * (-log(exp(-x)) + log(1 + exp(-x)))
+     *   = z * log(1 + exp(-x)) + (1 - z) * (x + log(1 + exp(-x))
+     *   = (1 - z) * x + log(1 + exp(-x))
+     *   = x - x * z + log(1 + exp(-x))
+     *
+     *   For x < 0, to avoid overflow in exp(-x), we reformulate the above
+     *     x - x * z + log(1 + exp(-x))
+     *   = log(exp(x)) - x * z + log(1 + exp(-x))
+     *   = - x * z + log(1 + exp(x))
+     *
+     * Hence, to ensure stability and avoid overflow, the implementation uses
+     * this equivalent formulation:
+     *     max(x, 0) - x * z + log(1 + exp(-abs(x)))
+     */
     const maxOutput = logits.relu();
     const outputXTarget = logits.mul(labels);
     const sigmoidOutput = logits.abs().neg().exp().log1p();
