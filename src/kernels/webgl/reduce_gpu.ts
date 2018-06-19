@@ -67,7 +67,8 @@ export class ReduceProgram implements GPGPUProgram {
       initializationValue = '1.0';
       updateSnippet = `
         bool reducedAllValue = all(values);
-        allValue = float(allValue >= 1.0 && float(reducedAllValue) >= 1.0);
+        float floatedReducedAllValue = float(reducedAllValue);
+        allValue = float(allValue >= 1.0 && floatedReducedAllValue >= 1.0);
       `;
       vecType = `bvec4`;
     }
