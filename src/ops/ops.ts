@@ -34,6 +34,7 @@ import {PoolOps} from './pool';
 import {ReductionOps} from './reduction_ops';
 import {ReverseOps} from './reverse';
 import {SegmentOps} from './segment_ops';
+import {SigmoidCrossEntropyOps} from './sigmoid_cross_entropy';
 import {SliceOps} from './slice';
 import {SoftmaxOps} from './softmax';
 import {StridedSliceOps} from './strided_slice';
@@ -204,6 +205,7 @@ export const tensor2d = ArrayOps.tensor2d;
 export const tensor3d = ArrayOps.tensor3d;
 export const tensor4d = ArrayOps.tensor4d;
 export const tensor5d = ArrayOps.tensor5d;
+export const tensor6d = ArrayOps.tensor6d;
 export const print = ArrayOps.print;
 export const expandDims = ArrayOps.expandDims;
 export const stack = ArrayOps.stack;
@@ -223,6 +225,8 @@ export const basicLSTMCell = LSTMOps.basicLSTMCell;
 export const multiRNNCell = LSTMOps.multiRNNCell;
 
 export const softmax = SoftmaxOps.softmax;
+export const sigmoidCrossEntropyWithLogits =
+    SigmoidCrossEntropyOps.sigmoidCrossEntropyWithLogits;
 
 export const localResponseNormalization = LRNOps.localResponseNormalization;
 
