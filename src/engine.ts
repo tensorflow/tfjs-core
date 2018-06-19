@@ -234,7 +234,6 @@ export class Engine implements TensorManager {
           'tf.tidy(() => {...}) to avoid memory leaks.');
     }
     this.keepTensors.add(result.id);
-    console.log('keep size:', this.keepTensors.size);
     return result;
   }
 
