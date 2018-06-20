@@ -1,0 +1,2 @@
+export declare const SELU_SCALEALPHA = 1.7580993408473768;
+export declare const SELU_SCALE = 1.0507009873554805;

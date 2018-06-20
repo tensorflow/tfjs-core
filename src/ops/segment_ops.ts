@@ -18,7 +18,9 @@
 import {doc} from '../doc';
 import {ENV} from '../environment';
 import {Tensor, Tensor1D} from '../tensor';
+import {TensorLike} from '../types';
 import * as util from '../util';
+
 import {ArrayOps} from './array_ops';
 import {BinaryOps} from './binary_ops';
 import {CompareOps} from './compare';
@@ -45,22 +47,25 @@ export class SegmentOps {
   @doc({heading: 'Operations', subheading: 'Segment'})
   @operation
   static unsortedSegmentSum<T extends Tensor>(
-      x: T, segmentIds: Tensor1D, numSegments: number): T {
-    util.assertArgumentsAreTensors({x, segmentIds}, 'unsortedSegmentSum');
+      x: T|TensorLike, segmentIds: Tensor1D|TensorLike, numSegments: number):
+      T {
+    const $x = util.assertArgIsTensor(x, 'x', 'unsortedSegmentSum');
+    const $segmentIds = util.assertArgIsTensor(
+        segmentIds, 'segmentIds', 'unsortedSegmentSum', 'int32');
     util.assert(
-        segmentIds.dtype === 'int32', 'segmentIds must be of dtype `int32`');
+        $segmentIds.dtype === 'int32', 'segmentIds must be of dtype `int32`');
     util.assert(util.isInt(numSegments), 'numSegments must be of dtype int');
 
     const gradFunc = (dy: T) => {
       const derX = () => {
-        return gatherDropNegatives(dy, segmentIds);
+        return gatherDropNegatives(dy, $segmentIds);
       };
-      return {x: derX};
+      return {$x: derX};
     };
     return ENV.engine.runKernel(
                backend =>
-                   backend.unsortedSegmentSum(x, segmentIds, numSegments),
-               {x}, gradFunc) as T;
+                   backend.unsortedSegmentSum($x, $segmentIds, numSegments),
+               {$x}, gradFunc) as T;
   }
 }
 
