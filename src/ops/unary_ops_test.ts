@@ -95,6 +95,11 @@ describeWithFlags('relu', ALL_ENVS, () => {
     expect(() => tf.relu({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'relu' must be a Tensor/);
   });
+
+  it('accepts a tensor-like object', () => {
+    const result = tf.relu([1, -2, 0, 3, -0.1]);
+    expectArraysClose(result, [1, 0, 0, 3, 0]);
+  });
 });
 
 describeWithFlags('abs', ALL_ENVS, () => {
@@ -146,6 +151,11 @@ describeWithFlags('abs', ALL_ENVS, () => {
   it('throws when passed a non-tensor', () => {
     expect(() => tf.abs({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'abs' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const result = tf.abs([1, -2, 0, 3, -0.1]);
+    expectArraysClose(result, [1, 2, 0, 3, 0.1]);
   });
 });
 
@@ -212,6 +222,11 @@ describeWithFlags('step', ALL_ENVS, () => {
     expect(() => tf.step({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'step' must be a Tensor/);
   });
+
+  it('accepts a tensor-like object', () => {
+    const result = tf.step([1, -2, -.01, 3, -0.1]);
+    expectArraysClose(result, [1, 0, 0, 1, 0]);
+  });
 });
 
 describeWithFlags('neg', ALL_ENVS, () => {
@@ -265,6 +280,11 @@ describeWithFlags('neg', ALL_ENVS, () => {
     expect(() => tf.neg({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'neg' must be a Tensor/);
   });
+
+  it('accepts a tensor-like object', () => {
+    const result = tf.neg([1, -3, 2, 7, -4]);
+    expectArraysClose(result, [-1, 3, -2, -7, 4]);
+  });
 });
 
 describeWithFlags('sigmoid', ALL_ENVS, () => {
@@ -305,6 +325,17 @@ describeWithFlags('sigmoid', ALL_ENVS, () => {
   it('throws when passed a non-tensor', () => {
     expect(() => tf.sigmoid({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'sigmoid' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const values = [1, -3, 2, 7, -4];
+    const result = tf.sigmoid(values);
+
+    const expected = [];
+    for (let i = 0; i < values.length; i++) {
+      expected[i] = 1 / (1 + Math.exp(-values[i]));
+    }
+    expectArraysClose(result, expected);
   });
 });
 
@@ -416,6 +447,12 @@ describeWithFlags('logSigmoid', ALL_ENVS, () => {
   it('throws when passed a non-tensor', () => {
     expect(() => tf.logSigmoid({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'logSigmoid' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const result = tf.logSigmoid(-2);
+    const expected = [Math.log(1 / (1 + Math.exp(2)))];
+    expectArraysClose(result, expected);
   });
 });
 
@@ -530,6 +567,12 @@ describeWithFlags('softplus', ALL_ENVS, () => {
     expect(() => tf.softplus({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'softplus' must be a Tensor/);
   });
+
+  it('accepts a tensor-like object', () => {
+    const result = tf.softplus(-2);
+    const expected = [Math.log((1 + Math.exp(-2)))];
+    expectArraysClose(result, expected);
+  });
 });
 
 describeWithFlags('sqrt', ALL_ENVS, () => {
@@ -594,6 +637,12 @@ describeWithFlags('sqrt', ALL_ENVS, () => {
   it('throws when passed a non-tensor', () => {
     expect(() => tf.sqrt({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'sqrt' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const r = tf.sqrt([2, 4]);
+    expectNumbersClose(r.get(0), Math.sqrt(2));
+    expectNumbersClose(r.get(1), Math.sqrt(4));
   });
 });
 
@@ -660,6 +709,12 @@ describeWithFlags('rsqrt', ALL_ENVS, () => {
     expect(() => tf.rsqrt({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'rsqrt' must be a Tensor/);
   });
+
+  it('accepts a tensor-like object', () => {
+    const r = tf.rsqrt([2, 4]);
+    expectNumbersClose(r.get(0), 1 / Math.sqrt(2));
+    expectNumbersClose(r.get(1), 1 / Math.sqrt(4));
+  });
 });
 
 describeWithFlags('square', ALL_ENVS, () => {
@@ -718,6 +773,11 @@ describeWithFlags('square', ALL_ENVS, () => {
   it('throws when passed a non-tensor', () => {
     expect(() => tf.square({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'square' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const r = tf.square([2, 4, Math.sqrt(2)]);
+    expectArraysClose(r, [4, 16, 2]);
   });
 });
 
@@ -784,6 +844,11 @@ describeWithFlags('reciprocal', ALL_ENVS, () => {
     expect(() => tf.reciprocal({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'reciprocal' must be a Tensor/);
   });
+
+  it('accepts a tensor-like object', () => {
+    const r = tf.reciprocal([2, 3, 0, NaN]);
+    expectArraysClose(r, [1 / 2, 1 / 3, Infinity, NaN]);
+  });
 });
 
 describeWithFlags('log', ALL_ENVS, () => {
@@ -836,6 +901,12 @@ describeWithFlags('log', ALL_ENVS, () => {
   it('throws when passed a non-tensor', () => {
     expect(() => tf.log({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'log' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const r = tf.log([1, 2]);
+    expectNumbersClose(r.get(0), Math.log(1));
+    expectNumbersClose(r.get(1), Math.log(2));
   });
 });
 
@@ -892,6 +963,12 @@ describeWithFlags('log1p', ALL_ENVS, () => {
     expect(() => tf.log1p({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'log1p' must be a Tensor/);
   });
+
+  it('accepts a tensor-like object', () => {
+    const r = tf.log1p([1, 2]);
+    expectNumbersClose(r.get(0), Math.log1p(1));
+    expectNumbersClose(r.get(1), Math.log1p(2));
+  });
 });
 
 describeWithFlags('ceil', ALL_ENVS, () => {
@@ -945,6 +1022,13 @@ describeWithFlags('ceil', ALL_ENVS, () => {
   it('throws when passed a non-tensor', () => {
     expect(() => tf.ceil({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'ceil' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const r = tf.ceil([1.5, 2.1, -1.4]);
+    expectNumbersClose(r.get(0), 2);
+    expectNumbersClose(r.get(1), 3);
+    expectNumbersClose(r.get(2), -1);
   });
 });
 
@@ -1001,6 +1085,13 @@ describeWithFlags('floor', ALL_ENVS, () => {
     expect(() => tf.floor({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'floor' must be a Tensor/);
   });
+
+  it('accepts a tensor-like object', () => {
+    const r = tf.floor([1.5, 2.1, -1.4]);
+    expectNumbersClose(r.get(0), 1);
+    expectNumbersClose(r.get(1), 2);
+    expectNumbersClose(r.get(2), -2);
+  });
 });
 
 describeWithFlags('sign', ALL_ENVS, () => {
@@ -1055,6 +1146,14 @@ describeWithFlags('sign', ALL_ENVS, () => {
   it('throws when passed a non-tensor', () => {
     expect(() => tf.sign({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'sign' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const r = tf.sign([1.5, 0, NaN, -1.4]);
+    expectNumbersClose(r.get(0), 1);
+    expectNumbersClose(r.get(1), 0);
+    expectNumbersClose(r.get(2), 0);
+    expectNumbersClose(r.get(3), -1);
   });
 });
 
@@ -1117,6 +1216,14 @@ describeWithFlags('exp', ALL_ENVS, () => {
     expect(() => tf.exp({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'exp' must be a Tensor/);
   });
+
+  it('accepts a tensor-like object', () => {
+    const r = tf.exp([1, 2, 0]);
+
+    expectNumbersClose(r.get(0), Math.exp(1));
+    expectNumbersClose(r.get(1), Math.exp(2));
+    expectNumbersClose(r.get(2), 1);
+  });
 });
 
 describeWithFlags('expm1', ALL_ENVS, () => {
@@ -1177,6 +1284,14 @@ describeWithFlags('expm1', ALL_ENVS, () => {
   it('throws when passed a non-tensor', () => {
     expect(() => tf.expm1({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'expm1' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const r = tf.expm1([1, 2, 0]);
+
+    expectNumbersClose(r.get(0), Math.expm1(1));
+    expectNumbersClose(r.get(1), Math.expm1(2));
+    expectNumbersClose(r.get(2), Math.expm1(0));
   });
 });
 
@@ -1241,6 +1356,17 @@ describeWithFlags('sin', ALL_ENVS, () => {
   it('throws when passed a non-tensor', () => {
     expect(() => tf.sin({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'sin' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const values = [1, -3, 2, 7, -4];
+    const result = tf.sin(values);
+
+    const expected = [];
+    for (let i = 0; i < values.length; i++) {
+      expected[i] = Math.sin(values[i]);
+    }
+    expectArraysClose(result, expected);
   });
 });
 
@@ -1311,6 +1437,17 @@ describeWithFlags('cos', ALL_ENVS, () => {
   it('throws when passed a non-tensor', () => {
     expect(() => tf.cos({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'cos' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const values = [1, -3, 2, 7, -4];
+    const result = tf.cos(values);
+
+    const expected = [];
+    for (let i = 0; i < values.length; i++) {
+      expected[i] = Math.cos(values[i]);
+    }
+    expectArraysClose(result, expected);
   });
 });
 
@@ -1384,6 +1521,17 @@ describeWithFlags('tan', ALL_ENVS, () => {
     expect(() => tf.tan({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'tan' must be a Tensor/);
   });
+
+  it('accepts a tensor-like object', () => {
+    const values = [1, -3, 2, 7, -4];
+    const result = tf.tan(values);
+
+    const expected = [];
+    for (let i = 0; i < values.length; i++) {
+      expected[i] = Math.tan(values[i]);
+    }
+    expectArraysClose(result, expected);
+  });
 });
 
 describeWithFlags('asin', ALL_ENVS, () => {
@@ -1455,6 +1603,17 @@ describeWithFlags('asin', ALL_ENVS, () => {
   it('throws when passed a non-tensor', () => {
     expect(() => tf.asin({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'asin' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const values = [.1, -3, 2, 7, -4];
+    const result = tf.asin(values);
+
+    const expected = [];
+    for (let i = 0; i < values.length; i++) {
+      expected[i] = Math.asin(values[i]);
+    }
+    expectArraysClose(result, expected);
   });
 });
 
@@ -1530,6 +1689,17 @@ describeWithFlags('acos', ALL_ENVS, () => {
     expect(() => tf.acos({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'acos' must be a Tensor/);
   });
+
+  it('accepts a tensor-like object', () => {
+    const values = [.1, -3, 2, 7, -4];
+    const result = tf.acos(values);
+
+    const expected = [];
+    for (let i = 0; i < values.length; i++) {
+      expected[i] = Math.acos(values[i]);
+    }
+    expectArraysClose(result, expected);
+  });
 });
 
 describeWithFlags('atan', ALL_ENVS, () => {
@@ -1601,6 +1771,17 @@ describeWithFlags('atan', ALL_ENVS, () => {
   it('throws when passed a non-tensor', () => {
     expect(() => tf.atan({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'atan' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const values = [1, -3, 2, 7, -4];
+    const result = tf.atan(values);
+
+    const expected = [];
+    for (let i = 0; i < values.length; i++) {
+      expected[i] = Math.atan(values[i]);
+    }
+    expectArraysClose(result, expected);
   });
 });
 
@@ -1674,6 +1855,17 @@ describeWithFlags('sinh', ALL_ENVS, () => {
     expect(() => tf.sinh({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'sinh' must be a Tensor/);
   });
+
+  it('accepts a tensor-like object', () => {
+    const values = [1, -3, 2, 7, -4];
+    const result = tf.sinh(values);
+
+    const expected = [];
+    for (let i = 0; i < values.length; i++) {
+      expected[i] = Math.sinh(values[i]);
+    }
+    expectArraysClose(result, expected);
+  });
 });
 
 describeWithFlags('cosh', ALL_ENVS, () => {
@@ -1687,7 +1879,6 @@ describeWithFlags('cosh', ALL_ENVS, () => {
       expected[i] = Math.cosh(values[i]);
     }
 
-    // TODO(nsthorat): Fix the precision problem here.
     expectArraysClose(result, expected);
   });
 
@@ -1747,6 +1938,18 @@ describeWithFlags('cosh', ALL_ENVS, () => {
   it('throws when passed a non-tensor', () => {
     expect(() => tf.cosh({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'cosh' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const values = [1, -3, 2, -1, -4];
+    const result = tf.cosh(values);
+
+    const expected = [];
+    for (let i = 0; i < values.length; i++) {
+      expected[i] = Math.cosh(values[i]);
+    }
+
+    expectArraysClose(result, expected);
   });
 });
 
@@ -1822,6 +2025,17 @@ describeWithFlags('tanh', ALL_ENVS, () => {
     expect(() => tf.tanh({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'tanh' must be a Tensor/);
   });
+
+  it('accepts a tensor-like object', () => {
+    const values = [1, -3, 2, 7, -4];
+    const result = tf.tanh(values);
+
+    const expected = [];
+    for (let i = 0; i < values.length; i++) {
+      expected[i] = util.tanh(values[i]);
+    }
+    expectArraysClose(result, expected);
+  });
 });
 
 describeWithFlags('leakyRelu', ALL_ENVS, () => {
@@ -1889,6 +2103,13 @@ describeWithFlags('leakyRelu', ALL_ENVS, () => {
     expect(() => tf.leakyRelu({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'leakyRelu' must be a Tensor/);
   });
+
+  it('accepts a tensor-like object', () => {
+    const result = tf.leakyRelu([0, 1, -2]);
+
+    expect(result.shape).toEqual([3]);
+    expectArraysClose(result, [0, 1, -0.4]);
+  });
 });
 
 describeWithFlags('elu', ALL_ENVS, () => {
@@ -1920,6 +2141,12 @@ describeWithFlags('elu', ALL_ENVS, () => {
   it('throws when passed a non-tensor', () => {
     expect(() => tf.elu({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'elu' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const result = tf.elu([1, -1, 0]);
+    expect(result.shape).toEqual(result.shape);
+    expectArraysClose(result, [1, -0.6321, 0]);
   });
 });
 
@@ -2014,6 +2241,12 @@ describeWithFlags('selu', ALL_ENVS, () => {
     expect(() => tf.selu({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'selu' must be a Tensor/);
   });
+
+  it('accepts a tensor-like object', () => {
+    const result = tf.selu([1, -1, 0]);
+    expect(result.shape).toEqual([3]);
+    expectArraysClose(result, [1.0507, -1.1113, 0]);
+  });
 });
 
 describeWithFlags('clip', ALL_ENVS, () => {
@@ -2076,6 +2309,13 @@ describeWithFlags('clip', ALL_ENVS, () => {
     expect(() => tf.clipByValue({} as tf.Tensor, 0, 1))
         .toThrowError(/Argument 'x' passed to 'clipByValue' must be a Tensor/);
   });
+
+  it('accepts a tensor-like object', () => {
+    const min = -1;
+    const max = 50;
+    const result = tf.clipByValue([3, -1, 0, 100, -7, 2], min, max);
+    expectArraysClose(result, [3, -1, 0, 50, -1, 2]);
+  });
 });
 
 describeWithFlags('round', ALL_ENVS, () => {
@@ -2132,6 +2372,11 @@ describeWithFlags('round', ALL_ENVS, () => {
   it('throws when passed a non-tensor', () => {
     expect(() => tf.round({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'round' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const r = tf.round([0.9, 2.5, 2.3, 1.5, -4.5]);
+    expectArraysClose(r, [1, 2, 2, 2, -4]);
   });
 });
 
@@ -2224,6 +2469,17 @@ describeWithFlags('asinh', ALL_ENVS, () => {
   it('throws when passed a non-tensor', () => {
     expect(() => tf.asinh({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'asinh' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const values = [1, -3, 2, 7, -4];
+    const result = tf.asinh(values);
+
+    const expected = [];
+    for (let i = 0; i < values.length; i++) {
+      expected[i] = Math.asinh(values[i]);
+    }
+    expectArraysClose(result, expected);
   });
 });
 
@@ -2324,6 +2580,17 @@ describeWithFlags('acosh', ALL_ENVS, () => {
     expect(() => tf.acosh({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'acosh' must be a Tensor/);
   });
+
+  it('accepts a tensor-like object', () => {
+    const values = [2, 3, 4, 5, 6];
+    const result = tf.acosh(values);
+
+    const expected = [];
+    for (let i = 0; i < values.length; i++) {
+      expected[i] = Math.acosh(values[i]);
+    }
+    expectArraysClose(result, expected);
+  });
 });
 
 describeWithFlags('atanh', ALL_ENVS, () => {
@@ -2423,6 +2690,11 @@ describeWithFlags('atanh', ALL_ENVS, () => {
     expect(() => tf.atanh({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'atanh' must be a Tensor/);
   });
+
+  it('accepts a tensor-like object', () => {
+    const result = tf.atanh(0.2);
+    expectNumbersClose(result.get(), Math.atanh(0.2));
+  });
 });
 
 describeWithFlags('erf', ALL_ENVS, () => {
@@ -2502,5 +2774,15 @@ describeWithFlags('erf', ALL_ENVS, () => {
     expect(gradients.shape).toEqual(a.shape);
     expect(gradients.dtype).toEqual('float32');
     expectArraysClose(gradients, expected);
+  });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.erf({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'erf' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const result = tf.erf(1);
+    expectNumbersClose(result.get(), 0.8427008);
   });
 });

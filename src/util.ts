@@ -14,29 +14,43 @@
  * limitations under the License.
  * =============================================================================
  */
+import {tensor} from './ops/ops';
 import {Tensor} from './tensor';
 // tslint:disable-next-line:max-line-length
-import {DataType, DataTypeMap, FlatVector, NamedTensorMap, RecursiveArray, RegularArray, TensorContainer, TypedArray} from './types';
+import {DataType, DataTypeMap, FlatVector, NamedTensorMap, RecursiveArray, RegularArray, TensorContainer, TensorLike, TypedArray} from './types';
 
-function assertArgumentIsTensor(
-    x: Tensor, argName: string, functionName: string) {
-  assert(
-      x instanceof Tensor,
-      `Argument '${argName}' passed to '${functionName}' must be a Tensor, ` +
-          `but got ${typeof x}.`);
+export function assertArgIsTensor<T extends Tensor>(
+    x: T|TensorLike, argName: string, functionName: string,
+    dtype: DataType = 'float32'): T {
+  dtype = dtype || 'float32';
+  if (x instanceof Tensor) {
+    return x;
+  }
+  try {
+    return tensor(x, null, dtype) as T;
+  } catch (ex) {
+    throw new Error(
+        `Argument '${argName}' passed to '${functionName}' must be a ` +
+        `Tensor or TensorLike. ${ex.message}`);
+  }
 }
 
-export function assertArgumentsAreTensors(
-    args: {[argName: string]: Tensor|Tensor[]}, functionName: string) {
+export function assertArgIsTensorArr<T extends Tensor>(
+    arg: T[]|TensorLike[], argName: string, functionName: string): T[] {
+  if (!Array.isArray(arg)) {
+    throw new Error(
+        `Argument ${argName} passed to ${functionName} must be a ` +
+        '`Tensor[]` or `TensorLike[]`');
+  }
+  const tensors = arg as T[];
+  return tensors.map(
+      (t, i) => assertArgIsTensor(t, `${argName}[${i}]`, functionName));
+}
+
+export function assertArgumentsAreTensors<T extends Tensor>(
+    args: {[argName: string]: T|TensorLike}, functionName: string): void {
   for (const argName in args) {
-    const arg = args[argName];
-    if (Array.isArray(arg)) {
-      arg.forEach((t, i) => {
-        assertArgumentIsTensor(t, `${argName}[${i}]`, functionName);
-      });
-    } else {
-      assertArgumentIsTensor(arg, argName, functionName);
-    }
+    assertArgIsTensor(args[argName], argName, functionName);
   }
 }
 

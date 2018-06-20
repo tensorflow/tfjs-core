@@ -17,8 +17,8 @@
 
 import {doc} from '../doc';
 import {Scalar, Tensor1D, Tensor2D} from '../tensor';
+import {TensorLike} from '../types';
 import * as util from '../util';
-
 import {operation} from './operation';
 
 /**
@@ -46,14 +46,17 @@ export class LSTMOps {
   @doc({heading: 'Operations', subheading: 'RNN'})
   @operation
   static multiRNNCell(
-      lstmCells: LSTMCellFunc[], data: Tensor2D, c: Tensor2D[], h: Tensor2D[]):
-      [Tensor2D[], Tensor2D[]] {
-    util.assertArgumentsAreTensors({data, c, h}, 'multiRNNCell');
+      lstmCells: LSTMCellFunc[], data: Tensor2D|TensorLike,
+      c: Tensor2D[]|TensorLike[],
+      h: Tensor2D[]|TensorLike[]): [Tensor2D[], Tensor2D[]] {
+    const $data = util.assertArgIsTensor(data, 'data', 'multiRNNCell');
+    const $c = util.assertArgIsTensorArr(c, 'c', 'multiRNNCell');
+    const $h = util.assertArgIsTensorArr(h, 'h', 'multiRNNCell');
 
-    let input = data;
+    let input = $data;
     const newStates = [];
     for (let i = 0; i < lstmCells.length; i++) {
-      const output = lstmCells[i](input, c[i], h[i]);
+      const output = lstmCells[i](input, $c[i], $h[i]);
       newStates.push(output[0]);
       newStates.push(output[1]);
       input = output[1];

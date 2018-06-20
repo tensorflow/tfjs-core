@@ -18,6 +18,7 @@
 import {doc} from '../doc';
 import {ENV} from '../environment';
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
+import {TensorLike} from '../types';
 import * as util from '../util';
 import {parseAxisParam} from './axis_util';
 import * as concat_util from './concat_util';
@@ -145,18 +146,18 @@ export class ConcatOps {
    */
   @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
   @operation
-  static concat<T extends Tensor>(tensors: T[], axis = 0): T {
+  static concat<T extends Tensor>(tensors: T[]|TensorLike[], axis = 0): T {
     util.assert(tensors.length >= 1, 'Pass at least one tensor to concat');
-    util.assertArgumentsAreTensors({tensors}, 'concat');
+    const $tensors = util.assertArgIsTensorArr(tensors, 'tensors', 'concat');
 
-    let result = tensors[0];
-    if (tensors.length === 1) {
+    let result = $tensors[0] as T;
+    if ($tensors.length === 1) {
       return result;
     }
     const axes = parseAxisParam(axis, result.shape);
 
-    for (let i = 1; i < tensors.length; ++i) {
-      result = concat2Tensors(result, tensors[i], axes[0]);
+    for (let i = 1; i < $tensors.length; ++i) {
+      result = concat2Tensors(result, $tensors[i], axes[0]) as T;
     }
     return result;
   }

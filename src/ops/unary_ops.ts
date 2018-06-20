@@ -18,6 +18,7 @@
 import {doc} from '../doc';
 import {ENV} from '../environment';
 import {Tensor} from '../tensor';
+import {TensorLike} from '../types';
 import * as util from '../util';
 import {operation} from './operation';
 import * as ops from './ops';
@@ -38,13 +39,13 @@ export class UnaryOps {
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
-  static neg<T extends Tensor>(x: T): T {
-    util.assertArgumentsAreTensors({x}, 'neg');
+  static neg<T extends Tensor>(x: T|TensorLike): T {
+    const $x = util.assertArgIsTensor(x, 'x', 'neg');
 
     const grad = (dy: T) => {
-      return {x: () => dy.neg()};
+      return {$x: () => dy.neg()};
     };
-    return ENV.engine.runKernel(backend => backend.neg(x), {x}, grad);
+    return ENV.engine.runKernel(backend => backend.neg($x), {$x}, grad);
   }
 
   /**
@@ -59,14 +60,14 @@ export class UnaryOps {
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
-  static ceil<T extends Tensor>(x: T): T {
-    util.assertArgumentsAreTensors({x}, 'ceil');
+  static ceil<T extends Tensor>(x: T|TensorLike): T {
+    const $x = util.assertArgIsTensor(x, 'x', 'ceil');
 
     // TODO(manrajgrover): Return null for gradients when backprop supports it.
     const grad = (dy: T) => {
-      return {x: () => ops.zerosLike(dy)};
+      return {$x: () => ops.zerosLike(dy)};
     };
-    return ENV.engine.runKernel(backend => backend.ceil(x), {x}, grad);
+    return ENV.engine.runKernel(backend => backend.ceil($x), {$x}, grad);
   }
 
   /**
@@ -81,15 +82,15 @@ export class UnaryOps {
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
-  static floor<T extends Tensor>(x: T): T {
-    util.assertArgumentsAreTensors({x}, 'floor');
+  static floor<T extends Tensor>(x: T|TensorLike): T {
+    const $x = util.assertArgIsTensor(x, 'x', 'floor');
 
     // TODO(nsthorat): Let gradients be null for cases where we want to stop
     // backpropgation.
     const grad = (dy: T) => {
-      return {x: () => ops.zerosLike(dy)};
+      return {$x: () => ops.zerosLike(dy)};
     };
-    return ENV.engine.runKernel(backend => backend.floor(x), {x}, grad);
+    return ENV.engine.runKernel(backend => backend.floor($x), {$x}, grad);
   }
 
   /**
@@ -104,13 +105,13 @@ export class UnaryOps {
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
-  static sign<T extends Tensor>(x: T): T {
-    util.assertArgumentsAreTensors({x}, 'sign');
+  static sign<T extends Tensor>(x: T|TensorLike): T {
+    const $x = util.assertArgIsTensor(x, 'x', 'sign');
 
     const grad = (dy: T) => {
-      return {x: () => ops.zerosLike(dy)};
+      return {$x: () => ops.zerosLike(dy)};
     };
-    return ENV.engine.runKernel(backend => backend.sign(x), {x}, grad);
+    return ENV.engine.runKernel(backend => backend.sign($x), {$x}, grad);
   }
 
   /**
@@ -126,15 +127,15 @@ export class UnaryOps {
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
-  static round<T extends Tensor>(x: T): T {
-    util.assertArgumentsAreTensors({x}, 'round');
+  static round<T extends Tensor>(x: T|TensorLike): T {
+    const $x = util.assertArgIsTensor(x, 'x', 'round');
 
     // TODO(nsthorat): Let gradients be null for cases where we want to stop
     // backpropgation.
     const grad = (dy: T) => {
-      return {x: () => ops.zerosLike(dy)};
+      return {$x: () => ops.zerosLike(dy)};
     };
-    return ENV.engine.runKernel(backend => backend.round(x), {x}, grad);
+    return ENV.engine.runKernel(backend => backend.round($x), {$x}, grad);
   }
 
   /**
@@ -149,15 +150,15 @@ export class UnaryOps {
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
-  static exp<T extends Tensor>(x: T): T {
-    util.assertArgumentsAreTensors({x}, 'exp');
+  static exp<T extends Tensor>(x: T|TensorLike): T {
+    const $x = util.assertArgIsTensor(x, 'x', 'exp');
 
     const bck = (dy: T, saved: Tensor[]) => {
       const [y] = saved;
-      return {x: () => dy.mulStrict(y as T)};
+      return {$x: () => dy.mulStrict(y as T)};
     };
     return ENV.engine.runKernel(
-        (backend, save) => save(backend.exp(x)), {x}, bck);
+        (backend, save) => save(backend.exp($x)), {$x}, bck);
   }
 
   /**
@@ -173,13 +174,13 @@ export class UnaryOps {
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
-  static expm1<T extends Tensor>(x: T): T {
-    util.assertArgumentsAreTensors({x}, 'expm1');
+  static expm1<T extends Tensor>(x: T|TensorLike): T {
+    const $x = util.assertArgIsTensor(x, 'x', 'expm1');
 
     const grad = (dy: T) => {
-      return {x: () => dy.mulStrict(x.exp())};
+      return {$x: () => dy.mulStrict($x.exp())};
     };
-    return ENV.engine.runKernel(backend => backend.expm1(x), {x}, grad);
+    return ENV.engine.runKernel(backend => backend.expm1($x), {$x}, grad);
   }
 
   /**
@@ -194,13 +195,13 @@ export class UnaryOps {
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
-  static log<T extends Tensor>(x: T): T {
-    util.assertArgumentsAreTensors({x}, 'log');
+  static log<T extends Tensor>(x: T|TensorLike): T {
+    const $x = util.assertArgIsTensor(x, 'x', 'log');
 
     const grad = (dy: T) => {
-      return {x: () => dy.divStrict(x.toFloat())};
+      return {$x: () => dy.divStrict($x.toFloat())};
     };
-    return ENV.engine.runKernel(backend => backend.log(x), {x}, grad);
+    return ENV.engine.runKernel(backend => backend.log($x), {$x}, grad);
   }
 
   /**
@@ -216,13 +217,13 @@ export class UnaryOps {
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
-  static log1p<T extends Tensor>(x: T): T {
-    util.assertArgumentsAreTensors({x}, 'log1p');
+  static log1p<T extends Tensor>(x: T|TensorLike): T {
+    const $x = util.assertArgIsTensor(x, 'x', 'log1p');
 
     const grad = (dy: T) => {
-      return {x: () => dy.divStrict(x.add(ops.scalar(1)))};
+      return {$x: () => dy.divStrict($x.add(ops.scalar(1)))};
     };
-    return ENV.engine.runKernel(backend => backend.log1p(x), {x}, grad);
+    return ENV.engine.runKernel(backend => backend.log1p($x), {$x}, grad);
   }
 
   /**
@@ -237,13 +238,13 @@ export class UnaryOps {
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
-  static sqrt<T extends Tensor>(x: T): T {
-    util.assertArgumentsAreTensors({x}, 'sqrt');
+  static sqrt<T extends Tensor>(x: T|TensorLike): T {
+    const $x = util.assertArgIsTensor(x, 'x', 'sqrt');
 
     const grad = (dy: T) => {
-      return {x: () => dy.divStrict(x.toFloat().sqrt().mul(ops.scalar(2)))};
+      return {$x: () => dy.divStrict($x.toFloat().sqrt().mul(ops.scalar(2)))};
     };
-    return ENV.engine.runKernel(backend => backend.sqrt(x), {x}, grad);
+    return ENV.engine.runKernel(backend => backend.sqrt($x), {$x}, grad);
   }
 
   /**
@@ -259,15 +260,15 @@ export class UnaryOps {
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
-  static rsqrt<T extends Tensor>(x: T): T {
-    util.assertArgumentsAreTensors({x}, 'rsqrt');
+  static rsqrt<T extends Tensor>(x: T|TensorLike): T {
+    const $x = util.assertArgIsTensor(x, 'x', 'rsqrt');
 
     const grad = (dy: T) => {
       return {
-        x: () => dy.divStrict(x.pow(ops.scalar(1.5)).mul(ops.scalar(2))).neg()
+        $x: () => dy.divStrict($x.pow(ops.scalar(1.5)).mul(ops.scalar(2))).neg()
       };
     };
-    return ENV.engine.runKernel(backend => backend.rsqrt(x), {x}, grad);
+    return ENV.engine.runKernel(backend => backend.rsqrt($x), {$x}, grad);
   }
 
   /**
@@ -282,13 +283,13 @@ export class UnaryOps {
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
-  static square<T extends Tensor>(x: T): T {
-    util.assertArgumentsAreTensors({x}, 'square');
+  static square<T extends Tensor>(x: T|TensorLike): T {
+    const $x = util.assertArgIsTensor(x, 'x', 'square');
 
     const grad = (dy: T) => {
-      return {x: () => dy.mulStrict(x.toFloat().mul(ops.scalar(2)))};
+      return {$x: () => dy.mulStrict($x.toFloat().mul(ops.scalar(2)))};
     };
-    return ENV.engine.runKernel(backend => backend.square(x), {x}, grad);
+    return ENV.engine.runKernel(backend => backend.square($x), {$x}, grad);
   }
 
   /**
@@ -303,13 +304,13 @@ export class UnaryOps {
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
-  static reciprocal<T extends Tensor>(x: T): T {
-    util.assertArgumentsAreTensors({x}, 'reciprocal');
+  static reciprocal<T extends Tensor>(x: T|TensorLike): T {
+    const $x = util.assertArgIsTensor(x, 'x', 'reciprocal');
 
     const grad = (dy: T) => {
-      return {x: () => dy.divStrict(x.square().neg())};
+      return {$x: () => dy.divStrict($x.square().neg())};
     };
-    return ENV.engine.runKernel(backend => backend.reciprocal(x), {x}, grad);
+    return ENV.engine.runKernel(backend => backend.reciprocal($x), {$x}, grad);
   }
 
   /**
@@ -324,13 +325,13 @@ export class UnaryOps {
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
-  static abs<T extends Tensor>(x: T): T {
-    util.assertArgumentsAreTensors({x}, 'abs');
+  static abs<T extends Tensor>(x: T|TensorLike): T {
+    const $x = util.assertArgIsTensor(x, 'x', 'abs');
 
     const grad = (dy: T) => {
-      return {x: () => dy.mulStrict(x.toFloat().step(-1))};
+      return {$x: () => dy.mulStrict($x.toFloat().step(-1))};
     };
-    return ENV.engine.runKernel(backend => backend.abs(x), {x}, grad);
+    return ENV.engine.runKernel(backend => backend.abs($x), {$x}, grad);
   }
 
   /**
@@ -348,8 +349,8 @@ export class UnaryOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static clipByValue<T extends Tensor>(
-      x: T, clipValueMin: number, clipValueMax: number): T {
-    util.assertArgumentsAreTensors({x}, 'clipByValue');
+      x: T|TensorLike, clipValueMin: number, clipValueMax: number): T {
+    const $x = util.assertArgIsTensor(x, 'x', 'clipByValue');
     util.assert(
         (clipValueMin <= clipValueMax),
         `Error in clip: min (${clipValueMin}) must be ` +
@@ -359,14 +360,14 @@ export class UnaryOps {
       return {
         // TODO(cais): Fix gradients for the case where x = min or x
         // = max.
-        x: () => dy.where(
-                     x.greater(ops.scalar(clipValueMin))
-                         .logicalAnd(x.less(ops.scalar(clipValueMax))),
-                     zerosLike(dy)) as T,
+        $x: () => dy.where(
+                      $x.greater(ops.scalar(clipValueMin))
+                          .logicalAnd($x.less(ops.scalar(clipValueMax))),
+                      zerosLike(dy)) as T,
       };
     };
     return ENV.engine.runKernel(
-        backend => backend.clip(x, clipValueMin, clipValueMax), {x}, grad);
+        backend => backend.clip($x, clipValueMin, clipValueMax), {$x}, grad);
   }
 
   /**
@@ -382,17 +383,17 @@ export class UnaryOps {
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
-  static relu<T extends Tensor>(x: T): T {
-    util.assertArgumentsAreTensors({x}, 'relu');
+  static relu<T extends Tensor>(x: T|TensorLike): T {
+    const $x = util.assertArgIsTensor(x, 'x', 'relu');
 
-    if (x.dtype === 'bool') {
-      return x.toInt();
+    if ($x.dtype === 'bool') {
+      return $x.toInt();
     }
     const grad = (dy: T) => {
-      const stepRes = x.step();
-      return {x: () => dy.mulStrict(stepRes.toFloat())};
+      const stepRes = $x.step();
+      return {$x: () => dy.mulStrict(stepRes.toFloat())};
     };
-    return ENV.engine.runKernel(backend => backend.relu(x), {x}, grad);
+    return ENV.engine.runKernel(backend => backend.relu($x), {$x}, grad);
   }
 
   /**
@@ -407,18 +408,18 @@ export class UnaryOps {
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
-  static elu<T extends Tensor>(x: T): T {
-    util.assertArgumentsAreTensors({x}, 'elu');
+  static elu<T extends Tensor>(x: T|TensorLike): T {
+    const $x = util.assertArgIsTensor(x, 'x', 'elu');
 
     const grad = (dy: T, saved: Tensor[]) => {
       const [y] = saved;
       return {
-        x: () =>
+        $x: () =>
             ENV.engine.runKernel(backend => backend.eluDer(dy, y), {dy, y}) as T
       };
     };
     return ENV.engine.runKernel(
-        (backend, save) => save(backend.elu(x)), {x}, grad);
+        (backend, save) => save(backend.elu($x)), {$x}, grad);
   }
 
   /**
@@ -435,25 +436,25 @@ export class UnaryOps {
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
-  static selu<T extends Tensor>(x: T): T {
-    util.assertArgumentsAreTensors({x}, 'selu');
+  static selu<T extends Tensor>(x: T|TensorLike): T {
+    const $x = util.assertArgIsTensor(x, 'x', 'selu');
 
     const grad = (dy: T) => {
       return {
-        x: () => {
-          const mask = x.greater(ops.scalar(0));
+        $x: () => {
+          const mask = $x.greater(ops.scalar(0));
 
           const scaleAlpha = ops.scalar(selu_util.SELU_SCALEALPHA);
           const scale = ops.scalar(selu_util.SELU_SCALE);
 
           const greaterThanZeroDer = dy.mul(scale);
-          const lessEqualZeroDer = dy.mul(scaleAlpha).mul(x.toFloat().exp());
+          const lessEqualZeroDer = dy.mul(scaleAlpha).mul($x.toFloat().exp());
 
           return ops.where(mask, greaterThanZeroDer, lessEqualZeroDer) as T;
         }
       };
     };
-    return ENV.engine.runKernel(backend => backend.selu(x), {x}, grad);
+    return ENV.engine.runKernel(backend => backend.selu($x), {$x}, grad);
   }
 
   /**
@@ -473,10 +474,10 @@ export class UnaryOps {
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
-  static leakyRelu<T extends Tensor>(x: T, alpha = 0.2): T {
-    util.assertArgumentsAreTensors({x}, 'leakyRelu');
+  static leakyRelu<T extends Tensor>(x: T|TensorLike, alpha = 0.2): T {
+    const $x = util.assertArgIsTensor(x, 'x', 'leakyRelu');
 
-    return ops.maximum(ops.scalar(alpha).mul(x), x);
+    return ops.maximum(ops.scalar(alpha).mul($x), $x);
   }
 
   /**
@@ -495,11 +496,12 @@ export class UnaryOps {
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
-  static prelu<T extends Tensor>(x: T, alpha: T): T {
-    util.assertArgumentsAreTensors({x, alpha}, 'prelu');
+  static prelu<T extends Tensor>(x: T|TensorLike, alpha: T|TensorLike): T {
+    const $x = util.assertArgIsTensor(x, 'x', 'prelu');
+    const $alpha = util.assertArgIsTensor(alpha, 'alpha', 'prelu');
 
     const zero = ops.scalar(0);
-    return ops.maximum(zero, x).add(alpha.mul(ops.minimum(zero, x)));
+    return ops.maximum(zero, $x).add($alpha.mul(ops.minimum(zero, $x)));
   }
 
   /**
@@ -514,15 +516,15 @@ export class UnaryOps {
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
-  static sigmoid<T extends Tensor>(x: T): T {
-    util.assertArgumentsAreTensors({x}, 'sigmoid');
+  static sigmoid<T extends Tensor>(x: T|TensorLike): T {
+    const $x = util.assertArgIsTensor(x, 'x', 'sigmoid');
 
     const grad = (dy: T, saved: Tensor[]) => {
       const [y] = saved;
-      return {x: () => dy.mulStrict(y.mul(ops.scalar(1).sub(y)))};
+      return {$x: () => dy.mulStrict(y.mul(ops.scalar(1).sub(y)))};
     };
     return ENV.engine.runKernel(
-        (backend, save) => save(backend.sigmoid(x)), {x}, grad);
+        (backend, save) => save(backend.sigmoid($x)), {$x}, grad);
   }
 
   /**
@@ -538,14 +540,14 @@ export class UnaryOps {
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
-  static logSigmoid<T extends Tensor>(x: T): T {
-    util.assertArgumentsAreTensors({x}, 'logSigmoid');
+  static logSigmoid<T extends Tensor>(x: T|TensorLike): T {
+    const $x = util.assertArgIsTensor(x, 'x', 'logSigmoid');
 
     const grad = (dy: T) => {
-      return {x: () => dy.mulStrict(x.neg().sigmoid())};
+      return {$x: () => dy.mulStrict($x.neg().sigmoid())};
     };
     return ENV.engine.runKernel(
-        backend => backend.softplus(x.neg()).neg(), {x}, grad);
+        backend => backend.softplus($x.neg()).neg(), {$x}, grad);
   }
 
   /**
@@ -560,13 +562,13 @@ export class UnaryOps {
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
-  static softplus<T extends Tensor>(x: T): T {
-    util.assertArgumentsAreTensors({x}, 'softplus');
+  static softplus<T extends Tensor>(x: T|TensorLike): T {
+    const $x = util.assertArgIsTensor(x, 'x', 'softplus');
 
     const grad = (dy: T) => {
-      return {x: () => dy.mulStrict(x.sigmoid())};
+      return {$x: () => dy.mulStrict($x.sigmoid())};
     };
-    return ENV.engine.runKernel(backend => backend.softplus(x), {x}, grad);
+    return ENV.engine.runKernel(backend => backend.softplus($x), {$x}, grad);
   }
 
   /**
@@ -581,13 +583,13 @@ export class UnaryOps {
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
-  static sin<T extends Tensor>(x: T): T {
-    util.assertArgumentsAreTensors({x}, 'sin');
+  static sin<T extends Tensor>(x: T|TensorLike): T {
+    const $x = util.assertArgIsTensor(x, 'x', 'sin');
 
     const grad = (dy: T) => {
-      return {x: () => x.toFloat().cos().mulStrict(dy)};
+      return {$x: () => $x.toFloat().cos().mulStrict(dy)};
     };
-    return ENV.engine.runKernel(backend => backend.sin(x), {x}, grad);
+    return ENV.engine.runKernel(backend => backend.sin($x), {$x}, grad);
   }
 
   /**
@@ -602,13 +604,13 @@ export class UnaryOps {
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
-  static cos<T extends Tensor>(x: T): T {
-    util.assertArgumentsAreTensors({x}, 'cos');
+  static cos<T extends Tensor>(x: T|TensorLike): T {
+    const $x = util.assertArgIsTensor(x, 'x', 'cos');
 
     const grad = (dy: T) => {
-      return {x: () => x.toFloat().sin().neg().mulStrict(dy)};
+      return {$x: () => $x.toFloat().sin().neg().mulStrict(dy)};
     };
-    return ENV.engine.runKernel(backend => backend.cos(x), {x}, grad);
+    return ENV.engine.runKernel(backend => backend.cos($x), {$x}, grad);
   }
 
   /**
@@ -623,13 +625,13 @@ export class UnaryOps {
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
-  static tan<T extends Tensor>(x: T): T {
-    util.assertArgumentsAreTensors({x}, 'tan');
+  static tan<T extends Tensor>(x: T|TensorLike): T {
+    const $x = util.assertArgIsTensor(x, 'x', 'tan');
 
     const grad = (dy: T) => {
-      return {x: () => dy.divStrict(x.cos().square())};
+      return {$x: () => dy.divStrict($x.cos().square())};
     };
-    return ENV.engine.runKernel(backend => backend.tan(x), {x}, grad);
+    return ENV.engine.runKernel(backend => backend.tan($x), {$x}, grad);
   }
 
   /**
@@ -644,16 +646,16 @@ export class UnaryOps {
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
-  static asin<T extends Tensor>(x: T): T {
-    util.assertArgumentsAreTensors({x}, 'asin');
+  static asin<T extends Tensor>(x: T|TensorLike): T {
+    const $x = util.assertArgIsTensor(x, 'x', 'asin');
 
     const grad = (dy: T) => {
       return {
-        x: () =>
-            dy.divStrict(UnaryOps.sqrt(ops.scalar(1).sub(x.toFloat().square())))
+        $x: () =>
+            dy.divStrict(ops.scalar(1).sub($x.toFloat().square()).sqrt() as T)
       };
     };
-    return ENV.engine.runKernel(backend => backend.asin(x), {x}, grad);
+    return ENV.engine.runKernel(backend => backend.asin($x), {$x}, grad);
   }
 
   /**
@@ -668,17 +670,17 @@ export class UnaryOps {
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
-  static acos<T extends Tensor>(x: T): T {
-    util.assertArgumentsAreTensors({x}, 'acos');
+  static acos<T extends Tensor>(x: T|TensorLike): T {
+    const $x = util.assertArgIsTensor(x, 'x', 'acos');
 
     const grad = (dy: T) => {
       return {
-        x: () =>
-            dy.divStrict(UnaryOps.sqrt(ops.scalar(1).sub(x.toFloat().square())))
+        $x: () =>
+            dy.divStrict(ops.scalar(1).sub($x.toFloat().square()).sqrt() as T)
                 .neg()
       };
     };
-    return ENV.engine.runKernel(backend => backend.acos(x), {x}, grad);
+    return ENV.engine.runKernel(backend => backend.acos($x), {$x}, grad);
   }
 
   /**
@@ -693,13 +695,13 @@ export class UnaryOps {
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
-  static atan<T extends Tensor>(x: T): T {
-    util.assertArgumentsAreTensors({x}, 'atan');
+  static atan<T extends Tensor>(x: T|TensorLike): T {
+    const $x = util.assertArgIsTensor(x, 'x', 'atan');
 
     const grad = (dy: T) => {
-      return {x: () => dy.divStrict(ops.scalar(1).add(x.toFloat().square()))};
+      return {$x: () => dy.divStrict(ops.scalar(1).add($x.toFloat().square()))};
     };
-    return ENV.engine.runKernel(backend => backend.atan(x), {x}, grad);
+    return ENV.engine.runKernel(backend => backend.atan($x), {$x}, grad);
   }
 
   /**
@@ -714,13 +716,13 @@ export class UnaryOps {
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
-  static sinh<T extends Tensor>(x: T): T {
-    util.assertArgumentsAreTensors({x}, 'sinh');
+  static sinh<T extends Tensor>(x: T|TensorLike): T {
+    const $x = util.assertArgIsTensor(x, 'x', 'sinh');
 
     const grad = (dy: T) => {
-      return {x: () => x.toFloat().cosh().mulStrict(dy)};
+      return {$x: () => $x.toFloat().cosh().mulStrict(dy)};
     };
-    return ENV.engine.runKernel(backend => backend.sinh(x), {x}, grad);
+    return ENV.engine.runKernel(backend => backend.sinh($x), {$x}, grad);
   }
 
   /**
@@ -735,13 +737,13 @@ export class UnaryOps {
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
-  static cosh<T extends Tensor>(x: T): T {
-    util.assertArgumentsAreTensors({x}, 'cosh');
+  static cosh<T extends Tensor>(x: T|TensorLike): T {
+    const $x = util.assertArgIsTensor(x, 'x', 'cosh');
 
     const grad = (dy: T) => {
-      return {x: () => x.toFloat().sinh().mulStrict(dy)};
+      return {$x: () => $x.toFloat().sinh().mulStrict(dy)};
     };
-    return ENV.engine.runKernel(backend => backend.cosh(x), {x}, grad);
+    return ENV.engine.runKernel(backend => backend.cosh($x), {$x}, grad);
   }
 
   /**
@@ -756,15 +758,15 @@ export class UnaryOps {
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
-  static tanh<T extends Tensor>(x: T): T {
-    util.assertArgumentsAreTensors({x}, 'tanh');
+  static tanh<T extends Tensor>(x: T|TensorLike): T {
+    const $x = util.assertArgIsTensor(x, 'x', 'tanh');
 
     const grad = (dy: T, saved: Tensor[]) => {
       const [y] = saved;
-      return {x: () => ops.scalar(1).sub(y.square()).mulStrict(dy) as T};
+      return {$x: () => ops.scalar(1).sub(y.square()).mulStrict(dy) as T};
     };
     return ENV.engine.runKernel(
-        (backend, save) => save(backend.tanh(x)), {x}, grad);
+        (backend, save) => save(backend.tanh($x)), {$x}, grad);
   }
 
   /**
@@ -780,16 +782,16 @@ export class UnaryOps {
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
-  static asinh<T extends Tensor>(x: T): T {
-    util.assertArgumentsAreTensors({x}, 'asinh');
+  static asinh<T extends Tensor>(x: T|TensorLike): T {
+    const $x = util.assertArgIsTensor(x, 'x', 'asinh');
 
     const grad = (dy: T) => {
       return {
-        x: () =>
-            dy.divStrict(UnaryOps.sqrt(ops.scalar(1).add(x.toFloat().square())))
+        $x: () =>
+            dy.divStrict(ops.scalar(1).add($x.toFloat().square()).sqrt() as T)
       };
     };
-    return ENV.engine.runKernel(backend => backend.asinh(x), {x}, grad);
+    return ENV.engine.runKernel(backend => backend.asinh($x), {$x}, grad);
   }
 
   /**
@@ -805,16 +807,16 @@ export class UnaryOps {
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
-  static acosh<T extends Tensor>(x: T): T {
-    util.assertArgumentsAreTensors({x}, 'acosh');
+  static acosh<T extends Tensor>(x: T|TensorLike): T {
+    const $x = util.assertArgIsTensor(x, 'x', 'acosh');
 
     const grad = (dy: T) => {
       return {
-        x: () =>
-            dy.divStrict(UnaryOps.sqrt(x.toFloat().square().sub(ops.scalar(1))))
+        $x: () =>
+            dy.divStrict($x.toFloat().square().sub(ops.scalar(1)).sqrt() as T)
       };
     };
-    return ENV.engine.runKernel(backend => backend.acosh(x), {x}, grad);
+    return ENV.engine.runKernel(backend => backend.acosh($x), {$x}, grad);
   }
 
   /**
@@ -830,13 +832,13 @@ export class UnaryOps {
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
-  static atanh<T extends Tensor>(x: T): T {
-    util.assertArgumentsAreTensors({x}, 'atanh');
+  static atanh<T extends Tensor>(x: T|TensorLike): T {
+    const $x = util.assertArgIsTensor(x, 'x', 'atanh');
 
     const grad = (dy: T) => {
-      return {x: () => dy.divStrict(ops.scalar(1).sub(x.toFloat().square()))};
+      return {$x: () => dy.divStrict(ops.scalar(1).sub($x.toFloat().square()))};
     };
-    return ENV.engine.runKernel(backend => backend.atanh(x), {x}, grad);
+    return ENV.engine.runKernel(backend => backend.atanh($x), {$x}, grad);
   }
 
   /**
@@ -852,22 +854,23 @@ export class UnaryOps {
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
-  static erf<T extends Tensor>(x: T): T {
-    util.assert(x.dtype === 'int32' || x.dtype === 'float32',
+  static erf<T extends Tensor>(x: T|TensorLike): T {
+    let $x = util.assertArgIsTensor(x, 'x', 'erf');
+    util.assert(
+        $x.dtype === 'int32' || $x.dtype === 'float32',
         'Input dtype must be `int32` or `float32`.');
 
-    if (x.dtype === 'int32') {
-      x = x.toFloat();
+    if ($x.dtype === 'int32') {
+      $x = $x.toFloat();
     }
 
     const grad = (dy: T) => {
       return {
-        x: () =>
-            dy.mulStrict(ops.scalar(2/Math.sqrt(Math.PI))
-                .mul(x.square().neg().exp()))
+        $x: () => dy.mulStrict(
+            ops.scalar(2 / Math.sqrt(Math.PI)).mul($x.square().neg().exp()))
       };
     };
-    return ENV.engine.runKernel(backend => backend.erf(x), {x}, grad);
+    return ENV.engine.runKernel(backend => backend.erf($x), {$x}, grad);
   }
 
   /**
@@ -883,13 +886,14 @@ export class UnaryOps {
    */
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
-  static step<T extends Tensor>(x: T, alpha = 0.0): T {
-    util.assertArgumentsAreTensors({x}, 'step');
+  static step<T extends Tensor>(x: T|TensorLike, alpha = 0.0): T {
+    const $x = util.assertArgIsTensor(x, 'x', 'step');
 
-    // TODO(manrajgrover): Return null for gradients when backprop supports it.
+    // TODO(manrajgrover): Return null for gradients when backprop supports
+    // it.
     const grad = (dy: T) => {
-      return {x: () => ops.zerosLike(dy)};
+      return {$x: () => ops.zerosLike(dy)};
     };
-    return ENV.engine.runKernel(backend => backend.step(x, alpha), {x}, grad);
+    return ENV.engine.runKernel(backend => backend.step($x, alpha), {$x}, grad);
   }
 }

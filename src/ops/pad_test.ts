@@ -199,4 +199,14 @@ describeWithFlags('pad', ALL_ENVS, () => {
     expect(() => tf.pad({} as tf.Tensor, [[0, 0]]))
         .toThrowError(/Argument 'x' passed to 'pad' must be a Tensor/);
   });
+
+  it('accepts a tensor-like object', () => {
+    const x = [[1], [2]];
+    const res = tf.pad(x, [[1, 1], [1, 1]]);
+    // 0, 0, 0
+    // 0, 1, 0
+    // 0, 2, 0
+    // 0, 0, 0
+    expectArraysClose(res, [0, 0, 0, 0, 1, 0, 0, 2, 0, 0, 0, 0]);
+  });
 });

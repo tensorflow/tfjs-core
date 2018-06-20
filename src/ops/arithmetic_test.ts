@@ -16,9 +16,9 @@
  */
 
 import * as tf from '../index';
+import {describeWithFlags} from '../jasmine_util';
 // tslint:disable-next-line:max-line-length
 import {ALL_ENVS, expectArraysClose, expectArraysEqual} from '../test_util';
-import {describeWithFlags} from '../jasmine_util';
 
 describeWithFlags('div', ALL_ENVS, () => {
   it('same shape', () => {
@@ -275,6 +275,7 @@ describeWithFlags('div', ALL_ENVS, () => {
     expect(() => tf.div({} as tf.Tensor, tf.scalar(1)))
         .toThrowError(/Argument 'a' passed to 'div' must be a Tensor/);
   });
+
   it('throws when passed b as a non-tensor', () => {
     expect(() => tf.div(tf.scalar(1), {} as tf.Tensor))
         .toThrowError(/Argument 'b' passed to 'div' must be a Tensor/);

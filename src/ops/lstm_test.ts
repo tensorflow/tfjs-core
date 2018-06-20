@@ -16,10 +16,10 @@
  */
 
 import * as tf from '../index';
+import {describeWithFlags} from '../jasmine_util';
 import {Tensor2D} from '../tensor';
 // tslint:disable-next-line:max-line-length
 import {ALL_ENVS, CPU_ENVS, expectArraysClose} from '../test_util';
-import {describeWithFlags} from '../jasmine_util';
 import {Rank} from '../types';
 
 describeWithFlags('lstm', ALL_ENVS, () => {
