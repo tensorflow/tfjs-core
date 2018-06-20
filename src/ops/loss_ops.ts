@@ -17,8 +17,8 @@
 
 import {doc} from '../doc';
 import {Tensor} from '../tensor';
+import {TensorLike} from '../types';
 import * as util from '../util';
-
 import {operation} from './operation';
 import * as ops from './ops';
 
@@ -42,14 +42,17 @@ export class LossOps {
   @doc({heading: 'Training', subheading: 'Losses', namespace: 'losses'})
   @operation
   static computeWeightedLoss<T extends Tensor, O extends Tensor>(
-      losses: T, weights?: Tensor,
+      losses: T|TensorLike, weights?: Tensor|TensorLike,
       reduction = Reduction.SUM_BY_NONZERO_WEIGHTS): O {
-    util.assertArgumentsAreTensors({losses}, 'computeWeightedLoss');
+    const $losses =
+        util.assertArgIsTensor(losses, 'losses', 'computeWeightedLoss');
+    let $weights: Tensor = null;
     if (weights != null) {
-      util.assertArgumentsAreTensors({weights}, 'computeWeightedLoss');
+      $weights =
+          util.assertArgIsTensor(weights, 'weights', 'computeWeightedLoss');
     }
 
-    const weightedLoss = (weights == null) ? losses : losses.mul(weights);
+    const weightedLoss = ($weights == null) ? $losses : $losses.mul($weights);
 
     if (reduction === Reduction.NONE) {
       return weightedLoss as O;
@@ -58,14 +61,14 @@ export class LossOps {
       return weightedLoss.sum();
     }
     if (reduction === Reduction.MEAN) {
-      return (weights == null) ? weightedLoss.mean() :
-                                 weightedLoss.sum().div(weights.sum());
+      return ($weights == null) ? weightedLoss.mean() :
+                                  weightedLoss.sum().div($weights.sum());
     }
     if (reduction === Reduction.SUM_BY_NONZERO_WEIGHTS) {
-      if (weights == null) {
-        return weightedLoss.sum().div(ops.scalar(losses.size));
+      if ($weights == null) {
+        return weightedLoss.sum().div(ops.scalar($losses.size));
       } else {
-        const numNonZeros = weights.notEqual(ops.scalar(0)).sum().toFloat();
+        const numNonZeros = $weights.notEqual(ops.scalar(0)).sum().toFloat();
         return weightedLoss.sum().div(numNonZeros);
       }
     }
@@ -89,17 +92,23 @@ export class LossOps {
   @doc({heading: 'Training', subheading: 'Losses', namespace: 'losses'})
   @operation
   static absoluteDifference<T extends Tensor, O extends Tensor>(
-      labels: T, predictions: T, weights?: Tensor,
+      labels: T|TensorLike, predictions: T|TensorLike,
+      weights?: Tensor|TensorLike,
       reduction = Reduction.SUM_BY_NONZERO_WEIGHTS): O {
-    util.assertArgumentsAreTensors({labels, predictions}, 'absoluteDifference');
+    const $labels =
+        util.assertArgIsTensor(labels, 'labels', 'absoluteDifference');
+    const $predictions = util.assertArgIsTensor(
+        predictions, 'predictions', 'absoluteDifference');
+    let $weights: Tensor = null;
     if (weights != null) {
-      util.assertArgumentsAreTensors({weights}, 'absoluteDifference');
+      $weights =
+          util.assertArgIsTensor(weights, 'weights', 'absoluteDifference');
     }
     util.assertShapesMatch(
-        labels.shape, predictions.shape, 'Error in absoluteDifference: ');
+        $labels.shape, $predictions.shape, 'Error in absoluteDifference: ');
 
-    const losses = labels.sub(predictions).abs();
-    return LossOps.computeWeightedLoss(losses, weights, reduction);
+    const losses = $labels.sub($predictions).abs();
+    return LossOps.computeWeightedLoss(losses, $weights, reduction);
   }
 
   /**
@@ -118,17 +127,22 @@ export class LossOps {
   @doc({heading: 'Training', subheading: 'Losses', namespace: 'losses'})
   @operation
   static meanSquaredError<T extends Tensor, O extends Tensor>(
-      labels: T, predictions: T, weights?: Tensor,
+      labels: T|TensorLike, predictions: T|TensorLike,
+      weights?: Tensor|TensorLike,
       reduction = Reduction.SUM_BY_NONZERO_WEIGHTS): O {
-    util.assertArgumentsAreTensors({labels, predictions}, 'meanSquaredError');
+    const $labels =
+        util.assertArgIsTensor(labels, 'labels', 'meanSquaredError');
+    const $predictions =
+        util.assertArgIsTensor(predictions, 'predictions', 'meanSquaredError');
+    let $weights: Tensor = null;
     if (weights != null) {
-      util.assertArgumentsAreTensors({weights}, 'meanSquaredError');
+      $weights = util.assertArgIsTensor(weights, 'weights', 'meanSquaredError');
     }
     util.assertShapesMatch(
-        labels.shape, predictions.shape, 'Error in meanSquaredError: ');
+        $labels.shape, $predictions.shape, 'Error in meanSquaredError: ');
 
-    const losses = labels.squaredDifference(predictions);
-    return LossOps.computeWeightedLoss(losses, weights, reduction);
+    const losses = $labels.squaredDifference($predictions);
+    return LossOps.computeWeightedLoss(losses, $weights, reduction);
   }
 
   /**
@@ -148,18 +162,22 @@ export class LossOps {
   @doc({heading: 'Training', subheading: 'Losses', namespace: 'losses'})
   @operation
   static cosineDistance<T extends Tensor, O extends Tensor>(
-      labels: T, predictions: T, axis: number, weights?: Tensor,
+      labels: T|TensorLike, predictions: T|TensorLike, axis: number,
+      weights?: Tensor|TensorLike,
       reduction = Reduction.SUM_BY_NONZERO_WEIGHTS): O {
-    util.assertArgumentsAreTensors({labels, predictions}, 'cosineDistance');
+    const $labels = util.assertArgIsTensor(labels, 'labels', 'cosineDistance');
+    const $predictions =
+        util.assertArgIsTensor(predictions, 'predictions', 'cosineDistance');
+    let $weights: Tensor = null;
     if (weights != null) {
-      util.assertArgumentsAreTensors({weights}, 'cosineDistance');
+      $weights = util.assertArgIsTensor(weights, 'weights', 'cosineDistance');
     }
     util.assertShapesMatch(
-        labels.shape, predictions.shape, 'Error in cosineDistance: ');
+        $labels.shape, $predictions.shape, 'Error in cosineDistance: ');
 
     const one = ops.scalar(1);
-    const losses = one.sub(labels.mul(predictions).sum(axis, true));
-    return LossOps.computeWeightedLoss(losses, weights, reduction);
+    const losses = one.sub($labels.mul($predictions).sum(axis, true));
+    return LossOps.computeWeightedLoss(losses, $weights, reduction);
   }
 
   /**
@@ -178,20 +196,24 @@ export class LossOps {
   @doc({heading: 'Training', subheading: 'Losses', namespace: 'losses'})
   @operation
   static hingeLoss<T extends Tensor, O extends Tensor>(
-      labels: T, predictions: T, weights?: Tensor,
+      labels: T|TensorLike, predictions: T|TensorLike,
+      weights?: Tensor|TensorLike,
       reduction = Reduction.SUM_BY_NONZERO_WEIGHTS): O {
-    util.assertArgumentsAreTensors({labels, predictions}, 'hingeLoss');
+    let $labels = util.assertArgIsTensor(labels, 'labels', 'hingeLoss');
+    const $predictions =
+        util.assertArgIsTensor(predictions, 'predictions', 'hingeLoss');
+    let $weights: Tensor = null;
     if (weights != null) {
-      util.assertArgumentsAreTensors({weights}, 'hingeLoss');
+      $weights = util.assertArgIsTensor(weights, 'weights', 'hingeLoss');
     }
     util.assertShapesMatch(
-        labels.shape, predictions.shape, 'Error in hingeLoss: ');
+        $labels.shape, $predictions.shape, 'Error in hingeLoss: ');
 
     const one = ops.scalar(1);
     // Convert binary labels to (-1, 1)
-    labels = ops.scalar(2).mul(labels).sub(one);
-    const losses = one.sub(labels.mul(predictions)).relu();
-    return LossOps.computeWeightedLoss(losses, weights, reduction);
+    $labels = ops.scalar(2).mul($labels).sub(one);
+    const losses = one.sub($labels.mul($predictions)).relu();
+    return LossOps.computeWeightedLoss(losses, $weights, reduction);
   }
 
   /**
@@ -211,22 +233,26 @@ export class LossOps {
   @doc({heading: 'Training', subheading: 'Losses', namespace: 'losses'})
   @operation
   static logLoss<T extends Tensor, O extends Tensor>(
-      labels: T, predictions: T, weights?: Tensor, epsilon = 1e-7,
+      labels: T|TensorLike, predictions: T|TensorLike,
+      weights?: Tensor|TensorLike, epsilon = 1e-7,
       reduction = Reduction.SUM_BY_NONZERO_WEIGHTS): O {
-    util.assertArgumentsAreTensors({labels, predictions}, 'logLoss');
+    const $labels = util.assertArgIsTensor(labels, 'labels', 'logLoss');
+    const $predictions =
+        util.assertArgIsTensor(predictions, 'predictions', 'logLoss');
+    let $weights: Tensor = null;
     if (weights != null) {
-      util.assertArgumentsAreTensors({weights}, 'logLoss');
+      $weights = util.assertArgIsTensor(weights, 'weights', 'logLoss');
     }
     util.assertShapesMatch(
-        labels.shape, predictions.shape, 'Error in logLoss: ');
+        $labels.shape, $predictions.shape, 'Error in logLoss: ');
 
     const one = ops.scalar(1);
     const epsilonScalar = ops.scalar(epsilon);
-    const losses = labels.mul(predictions.add(epsilonScalar).log())
+    const losses = $labels.mul($predictions.add(epsilonScalar).log())
                        .neg()
-                       .sub(one.sub(labels).mul(
-                           one.sub(predictions).add(epsilonScalar).log()));
-    return LossOps.computeWeightedLoss(losses, weights, reduction);
+                       .sub(one.sub($labels).mul(
+                           one.sub($predictions).add(epsilonScalar).log()));
+    return LossOps.computeWeightedLoss(losses, $weights, reduction);
   }
 
   /**
@@ -246,22 +272,26 @@ export class LossOps {
   @doc({heading: 'Training', subheading: 'Losses', namespace: 'losses'})
   @operation
   static huberLoss<T extends Tensor, O extends Tensor>(
-      labels: T, predictions: T, weights?: Tensor, delta = 1.0,
+      labels: T|TensorLike, predictions: T|TensorLike,
+      weights?: Tensor|TensorLike, delta = 1.0,
       reduction = Reduction.SUM_BY_NONZERO_WEIGHTS): O {
-    util.assertArgumentsAreTensors({labels, predictions}, 'huberLoss');
+    const $labels = util.assertArgIsTensor(labels, 'labels', 'huberLoss');
+    const $predictions =
+        util.assertArgIsTensor(predictions, 'predictions', 'huberLoss');
+    let $weights: Tensor = null;
     if (weights != null) {
-      util.assertArgumentsAreTensors({weights}, 'huberLoss');
+      $weights = util.assertArgIsTensor(weights, 'weights', 'huberLoss');
     }
     util.assertShapesMatch(
-        labels.shape, predictions.shape, 'Error in huberLoss: ');
+        $labels.shape, $predictions.shape, 'Error in huberLoss: ');
 
     const deltaScalar = ops.scalar(delta);
-    const error = predictions.sub(labels).abs();
+    const error = $predictions.sub($labels).abs();
     const quadratic = ops.minimum(error, deltaScalar);
     const linear = error.sub(quadratic);
 
     const losses =
         ops.scalar(0.5).mul(quadratic.square()).add(deltaScalar.mul(linear));
-    return LossOps.computeWeightedLoss(losses, weights, reduction);
+    return LossOps.computeWeightedLoss(losses, $weights, reduction);
   }
 }
