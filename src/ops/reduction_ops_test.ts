@@ -81,6 +81,10 @@ describeWithFlags('min', ALL_ENVS, () => {
     expect(() => tf.min({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'min' must be a Tensor/);
   });
+
+  it('accepts a tensor-like object', () => {
+    expectNumbersClose(tf.min([3, -1, 0, 100, -7, 2]).get(), -7);
+  });
 });
 
 describeWithFlags('max', ALL_ENVS, () => {
@@ -147,6 +151,11 @@ describeWithFlags('max', ALL_ENVS, () => {
   it('throws when passed a non-tensor', () => {
     expect(() => tf.max({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'max' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const r = tf.max([3, -1, 0, 100, -7, 2]);
+    expectNumbersClose(r.get(), 100);
   });
 });
 
@@ -216,6 +225,12 @@ describeWithFlags('argmax', ALL_ENVS, () => {
     expect(() => tf.argMax({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'argMax' must be a Tensor/);
   });
+
+  it('accepts a tensor-like object', () => {
+    const result = tf.argMax([1, 0, 3, 2]);
+    expect(result.dtype).toBe('int32');
+    expect(result.get()).toBe(2);
+  });
 });
 
 describeWithFlags('argmin', ALL_ENVS, () => {
@@ -278,6 +293,11 @@ describeWithFlags('argmin', ALL_ENVS, () => {
   it('throws when passed a non-tensor', () => {
     expect(() => tf.argMin({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'argMin' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const result = tf.argMin([1, 0, 3, 2]);
+    expect(result.get()).toBe(1);
   });
 });
 
@@ -378,6 +398,12 @@ describeWithFlags('logSumExp', ALL_ENVS, () => {
   it('throws when passed a non-tensor', () => {
     expect(() => tf.logSumExp({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'logSumExp' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const result = tf.logSumExp([1, 2, -3]);
+    expectNumbersClose(
+        result.get(), Math.log(Math.exp(1) + Math.exp(2) + Math.exp(-3)));
   });
 });
 
@@ -508,6 +534,11 @@ describeWithFlags('sum', ALL_ENVS, () => {
     expect(() => tf.sum({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'sum' must be a Tensor/);
   });
+
+  it('accepts a tensor-like object', () => {
+    const result = tf.sum([[1, 2], [3, 0], [0, 1]]);
+    expectNumbersClose(result.get(), 7);
+  });
 });
 
 describeWithFlags('mean', ALL_ENVS, () => {
@@ -630,6 +661,13 @@ describeWithFlags('mean', ALL_ENVS, () => {
     expect(() => tf.mean({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'mean' must be a Tensor/);
   });
+
+  it('accepts a tensor-like object', () => {
+    const r = tf.mean([[1, 2, 3], [0, 0, 1]]);
+
+    expect(r.dtype).toBe('float32');
+    expectNumbersClose(r.get(), 7 / 6);
+  });
 });
 
 describeWithFlags('moments', ALL_ENVS, () => {
@@ -748,6 +786,15 @@ describeWithFlags('moments', ALL_ENVS, () => {
   it('throws when passed a non-tensor', () => {
     expect(() => tf.moments({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'moments' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const {mean, variance} = tf.moments([1, 2, 3, 0, 0, 1]);
+
+    expect(mean.dtype).toBe('float32');
+    expect(variance.dtype).toBe('float32');
+    expectNumbersClose(mean.get(), 7 / 6);
+    expectNumbersClose(variance.get(), 1.1389);
   });
 });
 
@@ -1007,6 +1054,13 @@ describeWithFlags('norm', ALL_ENVS, () => {
     expect(() => tf.norm({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'norm' must be a Tensor/);
   });
+
+  it('accepts a tensor-like objects', () => {
+    const norm = tf.norm([1, -2, 3, -4], 1);
+
+    expect(norm.dtype).toBe('float32');
+    expectNumbersClose(norm.get(), 10);
+  });
 });
 
 describeWithFlags('unsortedSegmentSum', ALL_ENVS, () => {
@@ -1072,5 +1126,15 @@ describeWithFlags('unsortedSegmentSum', ALL_ENVS, () => {
 
     expect(res.shape).toEqual([2, 3, 2]);
     expectArraysClose(res, [3, 0, 7, 0, 11, 0, 15, 0, 19, 0, 23, 0]);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const x = [1, 2, 3, 4];
+    const segmentIds = [0, 2, 0, 1];
+    const numSegments = 3;
+    const res = tf.unsortedSegmentSum(x, segmentIds, numSegments);
+
+    expect(res.shape).toEqual([3]);
+    expectArraysClose(res, [4, 4, 2]);
   });
 });

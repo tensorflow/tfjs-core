@@ -17,8 +17,8 @@
 
 import {doc} from '../doc';
 import {Tensor} from '../tensor';
+import {TensorLike} from '../types';
 import * as util from '../util';
-
 import * as axis_util from './axis_util';
 import {operation} from './operation';
 import * as ops from './ops';
@@ -63,9 +63,9 @@ export class NormOps {
   @doc({heading: 'Operations', subheading: 'Matrices'})
   @operation
   static norm(
-      x: Tensor, ord: number|'euclidean'|'fro' = 'euclidean',
+      x: Tensor|TensorLike, ord: number|'euclidean'|'fro' = 'euclidean',
       axis: number|number[] = null, keepDims = false): Tensor {
-    util.assertArgumentsAreTensors({x}, 'norm');
+    x = util.assertArgIsTensor(x, 'x', 'norm');
 
     const norm = normImpl(x, ord, axis);
     let keepDimsShape = norm.shape;

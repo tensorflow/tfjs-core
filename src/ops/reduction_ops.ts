@@ -19,6 +19,7 @@ import {doc} from '../doc';
 import {ENV} from '../environment';
 import {customGrad} from '../globals';
 import {Tensor, Tensor1D} from '../tensor';
+import {TensorLike} from '../types';
 import * as util from '../util';
 import * as axis_util from './axis_util';
 import {operation} from './operation';
@@ -55,12 +56,12 @@ export class ReductionOps {
   @doc({heading: 'Operations', subheading: 'Reduction'})
   @operation
   static logSumExp<T extends Tensor>(
-      x: Tensor, axis: number|number[] = null, keepDims = false): T {
-    util.assertArgumentsAreTensors({x}, 'logSumExp');
+      x: Tensor|TensorLike, axis: number|number[] = null, keepDims = false): T {
+    const $x = util.assertArgIsTensor(x, 'x', 'logSumExp');
 
-    const axes = axis_util.parseAxisParam(axis, x.shape);
-    const xMax = x.max(axes, true /* keepDims */);
-    const a = x.sub(xMax);
+    const axes = axis_util.parseAxisParam(axis, $x.shape);
+    const xMax = $x.max(axes, true /* keepDims */);
+    const a = $x.sub(xMax);
     const b = a.exp();
     const c = b.sum(axes);
     const d = c.log();
@@ -104,13 +105,13 @@ export class ReductionOps {
   @doc({heading: 'Operations', subheading: 'Reduction'})
   @operation
   static sum<T extends Tensor>(
-      x: Tensor, axis: number|number[] = null, keepDims = false): T {
-    util.assertArgumentsAreTensors({x}, 'sum');
+      x: Tensor|TensorLike, axis: number|number[] = null, keepDims = false): T {
+    let $x = util.assertArgIsTensor(x, 'x', 'sum');
 
-    if (x.dtype === 'bool') {
-      x = x.toInt();
+    if ($x.dtype === 'bool') {
+      $x = $x.toInt();
     }
-    const axes = axis_util.parseAxisParam(axis, x.shape);
+    const axes = axis_util.parseAxisParam(axis, $x.shape);
 
     // Use a custom gradient to bypass 2 gradient backprops since sum is used
     // extremely often.
@@ -142,7 +143,7 @@ export class ReductionOps {
       return {value, gradFunc};
     });
 
-    return customOp(x) as T;
+    return customOp($x) as T;
   }
 
   /**
@@ -175,11 +176,11 @@ export class ReductionOps {
   @doc({heading: 'Operations', subheading: 'Reduction'})
   @operation
   static mean<T extends Tensor>(
-      x: Tensor, axis: number|number[] = null, keepDims = false): T {
-    util.assertArgumentsAreTensors({x}, 'mean');
+      x: Tensor|TensorLike, axis: number|number[] = null, keepDims = false): T {
+    const $x = util.assertArgIsTensor(x, 'x', 'mean');
 
-    const axes = axis_util.parseAxisParam(axis, x.shape);
-    const shapes = axis_util.computeOutAndReduceShapes(x.shape, axes);
+    const axes = axis_util.parseAxisParam(axis, $x.shape);
+    const shapes = axis_util.computeOutAndReduceShapes($x.shape, axes);
     const reduceShape = shapes[1];
     const reduceSize = util.sizeFromShape(reduceShape);
 
@@ -207,7 +208,7 @@ export class ReductionOps {
       return {value, gradFunc};
     });
 
-    return customOp(x) as T;
+    return customOp($x) as T;
   }
 
   /**
@@ -240,17 +241,17 @@ export class ReductionOps {
   @doc({heading: 'Operations', subheading: 'Reduction'})
   @operation
   static min<T extends Tensor>(
-      x: Tensor, axis: number|number[] = null, keepDims = false): T {
-    util.assertArgumentsAreTensors({x}, 'min');
+      x: Tensor|TensorLike, axis: number|number[] = null, keepDims = false): T {
+    let $x = util.assertArgIsTensor(x, 'x', 'min');
 
-    const origAxes = axis_util.parseAxisParam(axis, x.shape);
+    const origAxes = axis_util.parseAxisParam(axis, $x.shape);
     let axes = origAxes;
-    const permutedAxes = axis_util.getAxesPermutation(axes, x.rank);
+    const permutedAxes = axis_util.getAxesPermutation(axes, $x.rank);
     if (permutedAxes != null) {
-      x = x.transpose(permutedAxes);
-      axes = axis_util.getInnerMostAxes(axes.length, x.rank);
+      $x = $x.transpose(permutedAxes);
+      axes = axis_util.getInnerMostAxes(axes.length, $x.rank);
     }
-    const res = ENV.engine.runKernel(backend => backend.min(x, axes), {x});
+    const res = ENV.engine.runKernel(backend => backend.min($x, axes), {$x});
     if (keepDims) {
       const newShape = axis_util.expandShapeToKeepDim(res.shape, origAxes);
       return res.reshape(newShape) as T;
@@ -288,17 +289,17 @@ export class ReductionOps {
   @doc({heading: 'Operations', subheading: 'Reduction'})
   @operation
   static max<T extends Tensor>(
-      x: Tensor, axis: number|number[] = null, keepDims = false): T {
-    util.assertArgumentsAreTensors({x}, 'max');
+      x: Tensor|TensorLike, axis: number|number[] = null, keepDims = false): T {
+    let $x = util.assertArgIsTensor(x, 'x', 'max');
 
-    const origAxes = axis_util.parseAxisParam(axis, x.shape);
+    const origAxes = axis_util.parseAxisParam(axis, $x.shape);
     let axes = origAxes;
-    const permutedAxes = axis_util.getAxesPermutation(axes, x.rank);
+    const permutedAxes = axis_util.getAxesPermutation(axes, $x.rank);
     if (permutedAxes != null) {
-      x = x.transpose(permutedAxes);
-      axes = axis_util.getInnerMostAxes(axes.length, x.rank);
+      $x = $x.transpose(permutedAxes);
+      axes = axis_util.getInnerMostAxes(axes.length, $x.rank);
     }
-    const res = ENV.engine.runKernel(backend => backend.max(x, axes), {x});
+    const res = ENV.engine.runKernel(backend => backend.max($x, axes), {$x});
     if (keepDims) {
       const newShape = axis_util.expandShapeToKeepDim(res.shape, origAxes);
       return res.reshape(newShape) as T;
@@ -331,19 +332,19 @@ export class ReductionOps {
    */
   @doc({heading: 'Operations', subheading: 'Reduction'})
   @operation
-  static argMin<T extends Tensor>(x: Tensor, axis = 0): T {
-    util.assertArgumentsAreTensors({x}, 'argMin');
+  static argMin<T extends Tensor>(x: Tensor|TensorLike, axis = 0): T {
+    let $x = util.assertArgIsTensor(x, 'x', 'argMin');
 
     if (axis == null) {
       axis = 0;
     }
-    let axes = axis_util.parseAxisParam(axis, x.shape);
-    const permutedAxes = axis_util.getAxesPermutation(axes, x.rank);
+    let axes = axis_util.parseAxisParam(axis, $x.shape);
+    const permutedAxes = axis_util.getAxesPermutation(axes, $x.rank);
     if (permutedAxes != null) {
-      x = x.transpose(permutedAxes);
-      axes = axis_util.getInnerMostAxes(axes.length, x.rank);
+      $x = $x.transpose(permutedAxes);
+      axes = axis_util.getInnerMostAxes(axes.length, $x.rank);
     }
-    return ENV.engine.runKernel(backend => backend.argMin(x, axes[0]), {x}) as
+    return ENV.engine.runKernel(backend => backend.argMin($x, axes[0]), {$x}) as
         T;
   }
 
@@ -371,20 +372,19 @@ export class ReductionOps {
    */
   @doc({heading: 'Operations', subheading: 'Reduction'})
   @operation
-  static argMax<T extends Tensor>(x: Tensor, axis = 0): T {
-    util.assertArgumentsAreTensors({x}, 'argMax');
+  static argMax<T extends Tensor>(x: Tensor|TensorLike, axis = 0): T {
+    let $x = util.assertArgIsTensor(x, 'x', 'argMax');
 
     if (axis == null) {
       axis = 0;
     }
-    let axes = axis_util.parseAxisParam(axis, x.shape);
-    const permutedAxes = axis_util.getAxesPermutation(axes, x.rank);
+    let axes = axis_util.parseAxisParam(axis, $x.shape);
+    const permutedAxes = axis_util.getAxesPermutation(axes, $x.rank);
     if (permutedAxes != null) {
-      x = x.transpose(permutedAxes);
-      axes = axis_util.getInnerMostAxes(axes.length, x.rank);
+      $x = $x.transpose(permutedAxes);
+      axes = axis_util.getInnerMostAxes(axes.length, $x.rank);
     }
-
-    return ENV.engine.runKernel(backend => backend.argMax(x, axes[0]), {x}) as
+    return ENV.engine.runKernel(backend => backend.argMax($x, axes[0]), {$x}) as
         T;
   }
 
@@ -402,10 +402,10 @@ export class ReductionOps {
    */
   @doc({heading: 'Operations', subheading: 'Normalization'})
   @operation
-  static moments(x: Tensor, axis: number|number[] = null, keepDims = false):
+  static moments(
+      x: Tensor|TensorLike, axis: number|number[] = null, keepDims = false):
       {mean: Tensor, variance: Tensor} {
-    util.assertArgumentsAreTensors({x}, 'moments');
-
+    x = util.assertArgIsTensor(x, 'x', 'moments');
     const axes = axis_util.parseAxisParam(axis, x.shape);
     const mean = x.mean(axes, keepDims);
     let keepDimsShape = mean.shape;
@@ -439,21 +439,24 @@ export class ReductionOps {
   @doc({heading: 'Operations', subheading: 'Reduction'})
   @operation
   static unsortedSegmentSum<T extends Tensor>(
-      x: T, segmentIds: Tensor1D, numSegments: number, axis = 0): T {
-    util.assertArgumentsAreTensors({x, segmentIds}, 'unsortedSegmentSum');
+      x: T|TensorLike, segmentIds: Tensor1D|TensorLike, numSegments: number,
+      axis = 0): T {
+    const $x = util.assertArgIsTensor(x, 'x', 'unsortedSegmentSum');
+    const $segmentIds = util.assertArgIsTensor(
+        segmentIds, 'segmentIds', 'unsortedSegmentSum', 'int32');
 
     util.assert(
-        segmentIds.dtype === 'int32', 'Segment Ids must be of dtype `int32`');
+        $segmentIds.dtype === 'int32', 'Segment Ids must be of dtype `int32`');
 
-    axis = axis_util.parseAxisParam(axis, x.shape)[0];
+    axis = axis_util.parseAxisParam(axis, $x.shape)[0];
     const res = [];
-    const [dim] = segmentIds.shape;
+    const [dim] = $segmentIds.shape;
 
     // Reshape the segment id's so that they can be broadcast with
     // x. The new shape should be [1, 1, ... 1, dim, 1, ..., 1] where
     // dim is at index = axis.
     const newShape = [];
-    for (let i = 0; i < x.shape.length; i++) {
+    for (let i = 0; i < $x.shape.length; i++) {
       if (i === axis) {
         newShape.push(dim);
       } else {
@@ -461,11 +464,11 @@ export class ReductionOps {
       }
     }
 
-    const reshapedSegmentIds = ops.reshape(segmentIds, newShape);
+    const reshapedSegmentIds = ops.reshape($segmentIds, newShape);
     for (let i = 0; i < numSegments; i++) {
       const segmentId = ops.scalar(i, 'int32');
       const mask = ops.equal(segmentId, reshapedSegmentIds).asType('float32');
-      const sum = mask.mul(x).sum(axis);
+      const sum = mask.mul($x).sum(axis);
       res.push(sum);
     }
 
