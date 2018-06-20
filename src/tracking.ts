@@ -20,12 +20,12 @@ import {ScopeFn, TimingInfo} from './engine';
 import {ENV} from './environment';
 import {Tensor} from './tensor';
 import {TensorContainer} from './types';
-import {extractTensorsFromAny} from './util';
+import {getTensorsInContainer} from './util';
 
 export class Tracking {
   /**
-   * Executes the provided function `f` and after it is executed, cleans up all
-   * intermediate tensors allocated by `f` except those returned by `f`.
+   * Executes the provided function `fn` and after it is executed, cleans up all
+   * intermediate tensors allocated by `fn` except those returned by `fn`.
    * `f` must not return a Promise (async functions not allowed).
    * The returned result can be a complex object, however tidy only walks the
    * top-level properties (depth 1) of that object to search for tensors, or
@@ -61,11 +61,13 @@ export class Tracking {
    *     If debug mode is on, the timing and the memory usage of the function
    *     will be tracked and displayed on the console using the provided name.
    * @param fn The function to execute.
-   * @param gradMode If true, starts a tape and doesn't dispose tensors.
    */
   @doc({heading: 'Performance', subheading: 'Memory'})
   static tidy<T extends TensorContainer>(
       nameOrFn: string|ScopeFn<T>, fn?: ScopeFn<T>, gradMode = false): T {
+    // gradMode Primarily for internal use during backprop
+    //          If true, will start a tape if it is the outermost tidy.
+
     let name = null;
     if (fn == null) {
       // Called with only 1 argument.
@@ -99,7 +101,7 @@ export class Tracking {
   }
 
   /**
-   * Disposes any `Tensor`s found within the provided object up to depth 1.
+   * Disposes any `Tensor`s found within the provided object.
    *
    * @param container an object that may be a `Tensor` or may directly contain
    *     `Tensor`s, such as a `Tensor[]` or `{key: Tensor, ...}`.  If the
@@ -107,9 +109,9 @@ export class Tracking {
    *     happens. In general it is safe to pass any object here, except that
    *     `Promise`s are not supported.
    */
-  // tslint:disable-next-line:no-any
-  static dispose(container: any) {
-    const tensors = extractTensorsFromAny(container);
+  @doc({heading: 'Performance', subheading: 'Memory'})
+  static dispose(container: TensorContainer) {
+    const tensors = getTensorsInContainer(container);
     tensors.forEach(tensor => tensor.dispose());
   }
 

@@ -15,10 +15,10 @@
  * =============================================================================
  */
 
+import {describeWithFlags} from '../../jasmine_util';
 // tslint:disable-next-line:max-line-length
 import {expectArraysClose, expectNumbersClose, WEBGL_ENVS} from '../../test_util';
-import {describeWithFlags} from '../../jasmine_util';
-import {GPGPUContext} from './gpgpu_context';
+import {binSearchLastTrue, GPGPUContext} from './gpgpu_context';
 import * as tex_util from './tex_util';
 
 describeWithFlags('GPGPUContext downloadMatrixFromTexture', WEBGL_ENVS, () => {
@@ -28,7 +28,7 @@ describeWithFlags('GPGPUContext downloadMatrixFromTexture', WEBGL_ENVS, () => {
   beforeEach(() => {
     gpgpu = new GPGPUContext();
     gpgpu.enableAutomaticDebugValidation(true);
-    texture = gpgpu.createMatrixTexture(1, 1);
+    texture = gpgpu.createFloat32MatrixTexture(1, 1);
   });
 
   afterEach(() => {
@@ -38,25 +38,25 @@ describeWithFlags('GPGPUContext downloadMatrixFromTexture', WEBGL_ENVS, () => {
 
   it('returns 1x1 matrix that was uploaded', () => {
     gpgpu.uploadMatrixToTexture(texture, 1, 1, new Float32Array([1.234]));
-    const result = gpgpu.downloadMatrixFromTexture(texture, 1, 1);
+    const result = gpgpu.downloadFloat32MatrixFromOutputTexture(texture, 1, 1);
     expectNumbersClose(result[0], 1.234);
   });
 
   it('returns 2x2 matrix that was uploaded', () => {
-    const texture2 = gpgpu.createMatrixTexture(2, 2);
+    const texture2 = gpgpu.createFloat32MatrixTexture(2, 2);
     gpgpu.uploadMatrixToTexture(
         texture2, 2, 2, new Float32Array([1.234, 2, 3, 4]));
-    const result = gpgpu.downloadMatrixFromTexture(texture2, 2, 2);
+    const result = gpgpu.downloadFloat32MatrixFromOutputTexture(texture2, 2, 2);
     expectArraysClose(result, new Float32Array([1.234, 2, 3, 4]));
     gpgpu.deleteMatrixTexture(texture2);
   });
 
   it('uses texture parameter', () => {
-    const texture2: WebGLTexture = gpgpu.createMatrixTexture(1, 1);
+    const texture2: WebGLTexture = gpgpu.createFloat32MatrixTexture(1, 1);
     gpgpu.uploadMatrixToTexture(texture, 1, 1, new Float32Array([1]));
     gpgpu.uploadMatrixToTexture(texture2, 1, 1, new Float32Array([2]));
-    const read1 = gpgpu.downloadMatrixFromTexture(texture, 1, 1);
-    const read2 = gpgpu.downloadMatrixFromTexture(texture2, 1, 1);
+    const read1 = gpgpu.downloadFloat32MatrixFromOutputTexture(texture, 1, 1);
+    const read2 = gpgpu.downloadFloat32MatrixFromOutputTexture(texture2, 1, 1);
 
     expectNumbersClose(read1[0], 1);
     expectNumbersClose(read2[0], 2);
@@ -77,42 +77,15 @@ describeWithFlags('GPGPUContext color texture with float', WEBGL_ENVS, () => {
   it('basic', () => {
     gpgpu = new GPGPUContext();
     gpgpu.enableAutomaticDebugValidation(true);
-    texture = gpgpu.createMatrixTexture(1, 1);
+    texture = gpgpu.createFloat32MatrixTexture(1, 1);
 
     gpgpu.setOutputMatrixTexture(texture, 1, 1);
     gpgpu.gl.clearColor(0.123, 0, 0, 0);
     gpgpu.gl.clear(gpgpu.gl.COLOR_BUFFER_BIT);
-    const result = gpgpu.downloadMatrixFromTexture(texture, 1, 1);
+    const result = gpgpu.downloadFloat32MatrixFromOutputTexture(texture, 1, 1);
     expectNumbersClose(result[0], 0.123);
   });
 });
-
-describeWithFlags(
-    'GPGPUContext color texture with byte',
-    {'WEBGL_FLOAT_TEXTURE_ENABLED': false}, () => {
-      let gpgpu: GPGPUContext;
-      let texture: WebGLTexture;
-
-      afterEach(() => {
-        gpgpu.deleteMatrixTexture(texture);
-        gpgpu.dispose();
-      });
-
-      it('basic', () => {
-        gpgpu = new GPGPUContext();
-        gpgpu.enableAutomaticDebugValidation(true);
-        texture = gpgpu.createMatrixTexture(1, 1);
-
-        gpgpu.setOutputMatrixTexture(texture, 1, 1);
-        const uintArray = tex_util.encodeFloatArray(new Float32Array([0.123]));
-        gpgpu.gl.clearColor(
-            uintArray[0] / 255, uintArray[1] / 255, uintArray[2] / 255,
-            uintArray[3] / 255);
-        gpgpu.gl.clear(gpgpu.gl.COLOR_BUFFER_BIT);
-        const result = gpgpu.downloadMatrixFromTexture(texture, 1, 1);
-        expectNumbersClose(result[0], 0.123);
-      });
-    });
 
 describeWithFlags('GPGPUContext setOutputMatrixTexture', WEBGL_ENVS, () => {
   let gpgpu: GPGPUContext;
@@ -121,7 +94,7 @@ describeWithFlags('GPGPUContext setOutputMatrixTexture', WEBGL_ENVS, () => {
   beforeEach(() => {
     gpgpu = new GPGPUContext();
     gpgpu.enableAutomaticDebugValidation(true);
-    texture = gpgpu.createMatrixTexture(1, 1);
+    texture = gpgpu.createFloat32MatrixTexture(1, 1);
   });
 
   afterEach(() => {
@@ -135,28 +108,30 @@ describeWithFlags('GPGPUContext setOutputMatrixTexture', WEBGL_ENVS, () => {
   });
 
   it('rebinds the output texture to the color buffer target', () => {
-    const output: WebGLTexture = gpgpu.createMatrixTexture(1, 1);
+    const output: WebGLTexture = gpgpu.createFloat32MatrixTexture(1, 1);
     gpgpu.uploadMatrixToTexture(texture, 1, 1, new Float32Array([10]));
     gpgpu.setOutputMatrixTexture(output, 1, 1);
-    const tBeforeClear = gpgpu.downloadMatrixFromTexture(texture, 1, 1);
+    const tBeforeClear =
+        gpgpu.downloadFloat32MatrixFromOutputTexture(texture, 1, 1);
     expectNumbersClose(tBeforeClear[0], 10);
     gpgpu.gl.clearColor(1, 0, 0, 0);
     gpgpu.gl.clear(gpgpu.gl.COLOR_BUFFER_BIT);
-    const tAfterClear = gpgpu.downloadMatrixFromTexture(texture, 1, 1);
+    const tAfterClear =
+        gpgpu.downloadFloat32MatrixFromOutputTexture(texture, 1, 1);
     expectNumbersClose(tAfterClear[0], 10);
     gpgpu.deleteMatrixTexture(output);
   });
 
   it('resets output texture to null if nothing was previously bound', () => {
     expect(gpgpu.outputTexture).toBeNull();
-    gpgpu.downloadMatrixFromTexture(texture, 1, 1);
+    gpgpu.downloadFloat32MatrixFromOutputTexture(texture, 1, 1);
     expect(gpgpu.outputTexture).toBeNull();
   });
 
   it('sets the gl viewport to the output texture dimensions', () => {
     const columns = 456;
     const rows = 123;
-    const output = gpgpu.createMatrixTexture(rows, columns);
+    const output = gpgpu.createFloat32MatrixTexture(rows, columns);
     gpgpu.setOutputMatrixTexture(output, rows, columns);
     const expected = new Int32Array([0, 0, columns, rows]);
     expect(gpgpu.gl.getParameter(gpgpu.gl.VIEWPORT)).toEqual(expected);
@@ -164,9 +139,9 @@ describeWithFlags('GPGPUContext setOutputMatrixTexture', WEBGL_ENVS, () => {
   });
 
   it('doesn\'t change gl viewport when downloading a non-output tex', () => {
-    const output = gpgpu.createMatrixTexture(128, 128);
+    const output = gpgpu.createFloat32MatrixTexture(128, 128);
     gpgpu.setOutputMatrixTexture(output, 128, 128);
-    gpgpu.downloadMatrixFromTexture(texture, 1, 1);
+    gpgpu.downloadFloat32MatrixFromOutputTexture(texture, 1, 1);
     const expected = new Int32Array([0, 0, 128, 128]);
     expect(gpgpu.gl.getParameter(gpgpu.gl.VIEWPORT)).toEqual(expected);
     gpgpu.deleteMatrixTexture(output);
@@ -219,7 +194,7 @@ describeWithFlags('GPGPUContext setOutputMatrixWriteRegion', WEBGL_ENVS, () => {
     const src =
         'precision highp float; void main() { gl_FragColor = vec4(2,0,0,0); }';
     program = gpgpu.createProgram(src);
-    output = gpgpu.createMatrixTexture(4, 4);
+    output = gpgpu.createFloat32MatrixTexture(4, 4);
     gpgpu.uploadMatrixToTexture(output, 4, 4, new Float32Array(16));
     gpgpu.setOutputMatrixTexture(output, 4, 4);
     gpgpu.setProgram(program);
@@ -233,7 +208,7 @@ describeWithFlags('GPGPUContext setOutputMatrixWriteRegion', WEBGL_ENVS, () => {
 
   it('writes to all pixels by default', () => {
     gpgpu.executeProgram();
-    const result = gpgpu.downloadMatrixFromTexture(output, 4, 4);
+    const result = gpgpu.downloadFloat32MatrixFromOutputTexture(output, 4, 4);
     const expected = new Float32Array(4 * 4);
     expected.fill(2);
     expectArraysClose(result, expected);
@@ -251,7 +226,7 @@ describeWithFlags('GPGPUContext setOutputMatrixWriteRegion', WEBGL_ENVS, () => {
   it('writes only to center 2x2 region of 4x4 texture', () => {
     gpgpu.setOutputMatrixWriteRegion(1, 2, 1, 2);
     gpgpu.executeProgram();
-    const result = gpgpu.downloadMatrixFromTexture(output, 4, 4);
+    const result = gpgpu.downloadFloat32MatrixFromOutputTexture(output, 4, 4);
     const expected =
         new Float32Array([0, 0, 0, 0, 0, 2, 2, 0, 0, 2, 2, 0, 0, 0, 0, 0]);
     expectArraysClose(result, expected);
@@ -262,7 +237,7 @@ describeWithFlags('GPGPUContext setOutputMatrixWriteRegion', WEBGL_ENVS, () => {
     gpgpu.executeProgram();
     gpgpu.setOutputMatrixWriteRegion(3, 1, 0, 4);  // bottom row
     gpgpu.executeProgram();
-    const result = gpgpu.downloadMatrixFromTexture(output, 4, 4);
+    const result = gpgpu.downloadFloat32MatrixFromOutputTexture(output, 4, 4);
     const expected =
         new Float32Array([2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2]);
     expectArraysClose(result, expected);
@@ -275,7 +250,7 @@ describeWithFlags('GPGPUContext setOutputMatrixWriteRegion', WEBGL_ENVS, () => {
         gpgpu.executeProgram();
       }
     }
-    const result = gpgpu.downloadMatrixFromTexture(output, 4, 4);
+    const result = gpgpu.downloadFloat32MatrixFromOutputTexture(output, 4, 4);
     const expected = new Float32Array(4 * 4);
     expected.fill(2);
     expectArraysClose(result, expected);
@@ -303,11 +278,97 @@ describeWithFlags('GPGPUContext', WEBGL_ENVS, () => {
   it('throws an error if validation is on and framebuffer incomplete', () => {
     const src = `precision highp float; void main() {}`;
     const program = gpgpu.createProgram(src);
-    const result = gpgpu.createMatrixTexture(1, 1);
+    const result = gpgpu.createFloat32MatrixTexture(1, 1);
     gpgpu.setOutputMatrixTexture(result, 1, 1);
     gpgpu.setProgram(program);
     gpgpu.deleteMatrixTexture(result);
     expect(gpgpu.executeProgram).toThrowError();
     gpgpu.deleteProgram(program);
+  });
+});
+
+describe('gpgpu_context binSearchLastTrue', () => {
+  it('[false]', () => {
+    const a: boolean[] = [false];
+    const arr = a.map(x => () => x);
+    expect(binSearchLastTrue(arr)).toBe(-1);
+  });
+
+  it('[true]', () => {
+    const a: boolean[] = [true];
+    const arr = a.map(x => () => x);
+    expect(binSearchLastTrue(arr)).toBe(0);
+  });
+
+  it('[false, false]', () => {
+    const a: boolean[] = [false, false];
+    const arr = a.map(x => () => x);
+    expect(binSearchLastTrue(arr)).toBe(-1);
+  });
+
+  it('[true, false]', () => {
+    const a: boolean[] = [true, false];
+    const arr = a.map(x => () => x);
+    expect(binSearchLastTrue(arr)).toBe(0);
+  });
+
+  it('[true, true]', () => {
+    const a: boolean[] = [true, true];
+    const arr = a.map(x => () => x);
+    expect(binSearchLastTrue(arr)).toBe(1);
+  });
+
+  it('[false, false, false]', () => {
+    const a: boolean[] = [false, false, false];
+    const arr = a.map(x => () => x);
+    expect(binSearchLastTrue(arr)).toBe(-1);
+  });
+
+  it('[true, false, false]', () => {
+    const a: boolean[] = [true, false, false];
+    const arr = a.map(x => () => x);
+    expect(binSearchLastTrue(arr)).toBe(0);
+  });
+
+  it('[true, true, false]', () => {
+    const a: boolean[] = [true, true, false];
+    const arr = a.map(x => () => x);
+    expect(binSearchLastTrue(arr)).toBe(1);
+  });
+
+  it('[true, true, true]', () => {
+    const a: boolean[] = [true, true, true];
+    const arr = a.map(x => () => x);
+    expect(binSearchLastTrue(arr)).toBe(2);
+  });
+
+  it('[false, false, false, false]', () => {
+    const a: boolean[] = [false, false, false, false];
+    const arr = a.map(x => () => x);
+    expect(binSearchLastTrue(arr)).toBe(-1);
+  });
+
+  it('[true, false, false, false]', () => {
+    const a: boolean[] = [true, false, false, false];
+    const arr = a.map(x => () => x);
+    expect(binSearchLastTrue(arr)).toBe(0);
+  });
+
+  it('[true, true, false, false]', () => {
+    const a: boolean[] = [true, true, false, false];
+    const arr = a.map(x => () => x);
+    expect(binSearchLastTrue(arr)).toBe(1);
+  });
+
+  it('[true, true, true, false]', () => {
+    const a: boolean[] = [true, true, true, false];
+    const arr = a.map(x => () => x);
+    expect(binSearchLastTrue(arr)).toBe(2);
+  });
+
+  it('[true, true, true, true]', () => {
+    const a: boolean[] = [true, true, true, true];
+    const arr = a.map(x => () => x);
+    expect(binSearchLastTrue(arr)).toBe(3);
   });
 });

@@ -22,7 +22,7 @@ import {ALL_ENVS, expectArraysClose, expectArraysEqual, expectNumbersClose} from
 
 import * as reduce_util from './reduce_util';
 
-describeWithFlags('min', ALL_ENVS, () => {
+describeWithFlags('Reduction: min', ALL_ENVS, () => {
   it('Tensor1D', () => {
     const a = tf.tensor1d([3, -1, 0, 100, -7, 2]);
     expectNumbersClose(tf.min(a).get(), -7);
@@ -87,7 +87,7 @@ describeWithFlags('min', ALL_ENVS, () => {
   });
 });
 
-describeWithFlags('max', ALL_ENVS, () => {
+describeWithFlags('Reduction: max', ALL_ENVS, () => {
   it('with one element dominating', () => {
     const a = tf.tensor1d([3, -1, 0, 100, -7, 2]);
     const r = tf.max(a);
@@ -101,7 +101,7 @@ describeWithFlags('max', ALL_ENVS, () => {
   });
 
   it('ignores NaNs', () => {
-    expect(tf.max(tf.tensor1d([3, NaN, 2])).get()).toEqual(3);
+    expectNumbersClose(tf.max(tf.tensor1d([3, NaN, 2])).get(), 3);
   });
 
   it('2D', () => {
@@ -148,6 +148,16 @@ describeWithFlags('max', ALL_ENVS, () => {
     expectArraysClose(r, [5, 100]);
   });
 
+  it('6D, axis=[5]', () => {
+    const a = tf.range(0, 64).reshape([2, 2, 2, 2, 2, 2]);
+    const r = tf.max(a, [5]);
+    const expectedResult = [
+      1,  3,  5,  7,  9,  11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31,
+      33, 35, 37, 39, 41, 43, 45, 47, 49, 51, 53, 55, 57, 59, 61, 63
+    ];
+    expectArraysClose(r, expectedResult);
+  });
+
   it('throws when passed a non-tensor', () => {
     expect(() => tf.max({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'max' must be a Tensor/);
@@ -159,7 +169,7 @@ describeWithFlags('max', ALL_ENVS, () => {
   });
 });
 
-describeWithFlags('argmax', ALL_ENVS, () => {
+describeWithFlags('Reduction: argmax', ALL_ENVS, () => {
   it('Tensor1D', () => {
     const a = tf.tensor1d([1, 0, 3, 2]);
     const result = tf.argMax(a);
@@ -233,7 +243,7 @@ describeWithFlags('argmax', ALL_ENVS, () => {
   });
 });
 
-describeWithFlags('argmin', ALL_ENVS, () => {
+describeWithFlags('Reduction: argmin', ALL_ENVS, () => {
   it('Tensor1D', () => {
     const a = tf.tensor1d([1, 0, 3, 2]);
     const result = tf.argMin(a);
@@ -301,7 +311,7 @@ describeWithFlags('argmin', ALL_ENVS, () => {
   });
 });
 
-describeWithFlags('logSumExp', ALL_ENVS, () => {
+describeWithFlags('Reduction: logSumExp', ALL_ENVS, () => {
   it('0', () => {
     const a = tf.scalar(0);
     const result = tf.logSumExp(a);
@@ -407,7 +417,7 @@ describeWithFlags('logSumExp', ALL_ENVS, () => {
   });
 });
 
-describeWithFlags('sum', ALL_ENVS, () => {
+describeWithFlags('Reduction: sum', ALL_ENVS, () => {
   it('basic', () => {
     const a = tf.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
     const result = tf.sum(a);
@@ -541,7 +551,7 @@ describeWithFlags('sum', ALL_ENVS, () => {
   });
 });
 
-describeWithFlags('mean', ALL_ENVS, () => {
+describeWithFlags('Reduction: mean', ALL_ENVS, () => {
   it('basic', () => {
     const a = tf.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
     const r = tf.mean(a);
@@ -670,7 +680,7 @@ describeWithFlags('mean', ALL_ENVS, () => {
   });
 });
 
-describeWithFlags('moments', ALL_ENVS, () => {
+describeWithFlags('Reduction: moments', ALL_ENVS, () => {
   it('basic', () => {
     const a = tf.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
     const {mean, variance} = tf.moments(a);
@@ -798,7 +808,7 @@ describeWithFlags('moments', ALL_ENVS, () => {
   });
 });
 
-describeWithFlags('norm', ALL_ENVS, () => {
+describeWithFlags('Reduction: norm', ALL_ENVS, () => {
   it('scalar norm', () => {
     const a = tf.scalar(-22.0);
     const norm = tf.norm(a);
@@ -1063,69 +1073,80 @@ describeWithFlags('norm', ALL_ENVS, () => {
   });
 });
 
-describeWithFlags('unsortedSegmentSum', ALL_ENVS, () => {
-  it('tensor1D', () => {
-    const t = tf.tensor1d([1, 2, 3, 4]);
-    const segmentIds = tf.tensor1d([0, 2, 0, 1], 'int32');
-    const numSegments = 3;
-    const res = tf.unsortedSegmentSum(t, segmentIds, numSegments);
+describeWithFlags('Reduction: all', ALL_ENVS, () => {
+  it('Tensor1D', () => {
+    let a = tf.tensor1d([0, 0, 0], 'bool');
+    expectNumbersClose(tf.all(a).get(), 0);
 
-    expect(res.shape).toEqual([3]);
-    expectArraysClose(res, [4, 4, 2]);
+    a = tf.tensor1d([1, 0, 1], 'bool');
+    expectNumbersClose(tf.all(a).get(), 0);
+
+    a = tf.tensor1d([1, 1, 1], 'bool');
+    expectNumbersClose(tf.all(a).get(), 1);
   });
 
-  it('tensor2D axis=0', () => {
-    const t = tf.tensor2d([1, 2, 3, 4], [2, 2]);
-    const segmentIds = tf.tensor1d([0, 0], 'int32');
-    const numSegments = 2;
-    const res = tf.unsortedSegmentSum(t, segmentIds, numSegments);
-
-    expect(res.shape).toEqual([2, 2]);
-    expectArraysClose(res, [4, 6, 0, 0]);
+  it('ignores NaNs', () => {
+    const a = tf.tensor1d([1, NaN, 1], 'bool');
+    expect(tf.all(a).get()).toEqual(1);
   });
 
-  it('tensor2D axis=11', () => {
-    const t = tf.tensor2d([1, 2, 3, 4], [2, 2]);
-    const segmentIds = tf.tensor1d([0, 0], 'int32');
-    const numSegments = 2;
-    const axis = 1;
-    const res = tf.unsortedSegmentSum(t, segmentIds, numSegments, axis);
-
-    expect(res.shape).toEqual([2, 2]);
-    expectArraysClose(res, [3, 0, 7, 0]);
+  it('2D', () => {
+    const a = tf.tensor2d([1, 1, 0, 0], [2, 2], 'bool');
+    expectNumbersClose(tf.all(a).get(), 0);
   });
 
-  it('tensor3D axis=0', () => {
-    const t = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [3, 2, 2]);
-    const segmentIds = tf.tensor1d([2, 1, 2], 'int32');
-    const numSegments = 3;
-    const axis = 0;
-    const res = tf.unsortedSegmentSum(t, segmentIds, numSegments, axis);
-
-    expect(res.shape).toEqual([3, 2, 2]);
-    expectArraysClose(res, [0, 0, 0, 0, 5, 6, 7, 8, 10, 12, 14, 16]);
+  it('2D axis=[0,1]', () => {
+    const a = tf.tensor2d([1, 1, 0, 0, 1, 0], [2, 3], 'bool');
+    expectNumbersClose(tf.all(a, [0, 1]).get(), 0);
   });
 
-  it('tensor3D axis=1', () => {
-    const t = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [2, 3, 2]);
-    const segmentIds = tf.tensor1d([2, 2, 2], 'int32');
-    const numSegments = 3;
-    const axis = 1;
-    const res = tf.unsortedSegmentSum(t, segmentIds, numSegments, axis);
+  it('2D, axis=0', () => {
+    const a = tf.tensor2d([1, 1, 0, 0], [2, 2], 'bool');
+    let r = tf.all(a, 0);
 
-    expect(res.shape).toEqual([2, 3, 2]);
-    expectArraysClose(res, [0, 0, 0, 0, 9, 12, 0, 0, 0, 0, 27, 30]);
+    expect(r.shape).toEqual([2]);
+    expectArraysClose(r, [0, 0]);
+
+    r = tf.all(a, 1);
+
+    expect(r.shape).toEqual([2]);
+    expectArraysClose(r, [1, 0]);
   });
 
-  it('tensor3D axis=2', () => {
-    const t = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [2, 3, 2]);
-    const segmentIds = tf.tensor1d([0, 0], 'int32');
-    const numSegments = 2;
-    const axis = 2;
-    const res = tf.unsortedSegmentSum(t, segmentIds, numSegments, axis);
+  it('2D, axis=0, keepDims', () => {
+    const a = tf.tensor2d([1, 1, 0, 0, 1, 0], [2, 3], 'bool');
+    const r = a.all(0, true /* keepDims */);
 
-    expect(res.shape).toEqual([2, 3, 2]);
-    expectArraysClose(res, [3, 0, 7, 0, 11, 0, 15, 0, 19, 0, 23, 0]);
+    expect(r.shape).toEqual([1, 3]);
+    expectArraysClose(r, [0, 1, 0]);
+  });
+
+  it('2D, axis=1 provided as a number', () => {
+    const a = tf.tensor2d([1, 1, 0, 0, 1, 0], [2, 3], 'bool');
+    const r = tf.all(a, 1);
+    expectArraysClose(r, [0, 0]);
+  });
+
+  it('2D, axis = -1 provided as a number', () => {
+    const a = tf.tensor2d([1, 1, 0, 0, 1, 0], [2, 3], 'bool');
+    const r = tf.all(a, -1);
+    expectArraysClose(r, [0, 0]);
+  });
+
+  it('2D, axis=[1]', () => {
+    const a = tf.tensor2d([1, 1, 0, 0, 1, 0], [2, 3], 'bool');
+    const r = tf.all(a, [1]);
+    expectArraysClose(r, [0, 0]);
+  });
+
+  it('throws when dtype is not boolean', () => {
+    const a = tf.tensor2d([1, 1, 0, 0], [2, 2]);
+    expect(() => tf.all(a)).toThrowError(/Error Array must be of type bool/);
+  });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.all({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'all' must be a Tensor/);
   });
 
   it('accepts a tensor-like object', () => {

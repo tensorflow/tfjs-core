@@ -19,17 +19,18 @@ import {doc} from '../doc';
 // import {ForwardFunc} from '../engine';
 import {ENV} from '../environment';
 // tslint:disable-next-line:max-line-length
-import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
+import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D, Tensor6D, TensorBuffer} from '../tensor';
 import * as tensor_util from '../tensor_util';
 // tslint:disable-next-line:max-line-length
-import {ArrayData, DataType, DataTypeMap, Rank, ShapeMap, TensorLike, TensorLike1D, TensorLike2D, TensorLike3D, TensorLike4D, TypedArray} from '../types';
+import {ArrayData, DataType, DataTypeMap, Rank, ShapeMap, TensorLike, TensorLike1D, TensorLike2D, TensorLike3D, TensorLike4D, TensorLike5D, TensorLike6D, TypedArray} from '../types';
 import * as util from '../util';
+import * as axis_util from './axis_util';
 // tslint:disable-next-line:max-line-length
 import {getAxesPermutation, getInnerMostAxes, parseAxisParam} from './axis_util';
 import {ConcatOps} from './concat';
 import {operation} from './operation';
 import {MPRandGauss} from './rand';
-import {ReductionOps} from './reduction_ops';
+import {SegmentOps} from './segment_ops';
 
 export class ArrayOps {
   /**
@@ -253,6 +254,92 @@ export class ArrayOps {
           'are a flat array');
     }
     shape = shape || inferredShape as [number, number, number, number];
+    return ArrayOps.tensor(values, shape, dtype);
+  }
+
+  /**
+   * Creates rank-5 `Tensor` with the provided values, shape and dtype.
+   *
+   * The same functionality can be achieved with `tensor`, but in general
+   * we recommend using `tensor5d` as it makes the code more readable.
+   *
+   *  ```js
+   * // Pass a nested array.
+   * tf.tensor5d([[[[[1], [2]], [[3], [4]]]]]).print();
+   * ```
+   * ```js
+   * // Pass a flat array and specify a shape.
+   * tf.tensor5d([1, 2, 3, 4, 5, 6, 7, 8], [1, 2, 2, 2, 1]).print();
+   * ```
+   *
+   * @param values The values of the tensor. Can be nested array of numbers,
+   *     or a flat array, or a `TypedArray`.
+   * @param shape The shape of the tensor. Optional. If not provided,
+   *   it is inferred from `values`.
+   * @param dtype The data type.
+   */
+  @doc({heading: 'Tensors', subheading: 'Creation'})
+  static tensor5d(
+      values: TensorLike5D, shape?: [number, number, number, number, number],
+      dtype: DataType = 'float32'): Tensor5D {
+    if (shape != null && shape.length !== 5) {
+      throw new Error('tensor5d() requires shape to have five numbers');
+    }
+    const inferredShape = util.inferShape(values);
+    if (inferredShape.length !== 5 && inferredShape.length !== 1) {
+      throw new Error('tensor5d() requires values to be \
+           number[][][][][] or flat/TypedArray');
+    }
+    if (inferredShape.length === 1 && shape == null) {
+      throw new Error(
+          'tensor5d() requires shape to be provided when `values` ' +
+          'are a flat array');
+    }
+    shape = shape || inferredShape as [number, number, number, number, number];
+    return ArrayOps.tensor(values, shape, dtype);
+  }
+
+  /**
+   * Creates rank-6 `Tensor` with the provided values, shape and dtype.
+   *
+   * The same functionality can be achieved with `tensor`, but in general
+   * we recommend using `tensor6d` as it makes the code more readable.
+   *
+   *  ```js
+   * // Pass a nested array.
+   * tf.tensor6d([[[[[[1],[2]],[[3],[4]]],[[[5],[6]],[[7],[8]]]]]]).print();
+   * ```
+   * ```js
+   * // Pass a flat array and specify a shape.
+   * tf.tensor6d([1, 2, 3, 4, 5, 6, 7, 8], [1, 1, 2, 2, 2, 1]).print();
+   * ```
+   *
+   * @param values The values of the tensor. Can be nested array of numbers,
+   *     or a flat array, or a `TypedArray`.
+   * @param shape The shape of the tensor. Optional. If not provided,
+   *   it is inferred from `values`.
+   * @param dtype The data type.
+   */
+  @doc({heading: 'Tensors', subheading: 'Creation'})
+  static tensor6d(
+      values: TensorLike6D,
+      shape?: [number, number, number, number, number, number],
+      dtype: DataType = 'float32'): Tensor6D {
+    if (shape != null && shape.length !== 6) {
+      throw new Error('tensor6d() requires shape to have six numbers');
+    }
+    const inferredShape = util.inferShape(values);
+    if (inferredShape.length !== 6 && inferredShape.length !== 1) {
+      throw new Error(
+          'tensor6d() requires values to be number[][][][] or flat/TypedArray');
+    }
+    if (inferredShape.length === 1 && shape == null) {
+      throw new Error(
+          'tensor6d() requires shape to be provided when `values` ' +
+          'are a flat array');
+    }
+    shape = shape ||
+        inferredShape as [number, number, number, number, number, number];
     return ArrayOps.tensor(values, shape, dtype);
   }
 
@@ -637,10 +724,11 @@ export class ArrayOps {
    * tf.fromPixels(image).print();
    * ```
    *
-   * @param pixels The input image to construct the tensor from.
-   * @param numChannels The number of channels of the output tensor. The
-   * supported image types are all 4-channel by default, a numChannels value
-   * less than 4 allows you to ignore channels.
+   * @param pixels The input image to construct the tensor from. The
+   * supported image types are all 4-channel.
+   * @param numChannels The number of channels of the output tensor. A
+   * numChannels value less than 4 allows you to ignore channels. Defaults to
+   * 3 (ignores alpha channel of input image).
    */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   @operation
@@ -956,8 +1044,39 @@ export class ArrayOps {
     axis = parseAxisParam(axis, $x.shape)[0];
     const grad = (dy: T) => {
       const derX = () => {
-        return ReductionOps.unsortedSegmentSum(
-            dy, $indices as Tensor1D, $x.shape[axis], axis);
+        if (axis === 0) {
+          return SegmentOps.unsortedSegmentSum(dy, $indices, $x.shape[axis]);
+        }
+        const paramsShape = $x.shape;
+        const indicesSize = $indices.size;
+
+        const outerShape = paramsShape.slice(0, axis);
+        const outerDims = outerShape.length;
+        const innerShape = paramsShape.slice(axis, paramsShape.length).slice(1);
+        const innerDims = innerShape.length;
+
+        const outerAxesIndices = arrayRange(0, outerDims);
+        const innerAxesIndices =
+            arrayRange(outerDims + 1, outerDims + 1 + innerDims);
+
+        const valuesShape =
+            arrayConcat([outerShape, [indicesSize], innerShape]);
+
+        const values = dy.reshape(valuesShape);
+        const reshapedIndices = $indices.reshape([indicesSize]);
+
+        const transposeDims =
+            arrayConcat([[outerDims], outerAxesIndices, innerAxesIndices]);
+        const valuesTranspose = values.transpose(transposeDims);
+
+        let paramsGrad = SegmentOps.unsortedSegmentSum(
+            valuesTranspose, reshapedIndices as Tensor1D, $x.shape[axis]);
+
+        const invertTransposeDims =
+            axis_util.getUndoAxesPermutation(transposeDims);
+        paramsGrad = paramsGrad.transpose(invertTransposeDims);
+
+        return paramsGrad as T;
       };
       return {$x: derX};
     };
@@ -1027,6 +1146,13 @@ export class ArrayOps {
    * Pads a `Tensor` with a given value and paddings.
    *
    * This operation currently only implements the `CONSTANT` mode.
+   *
+   * Also available are stricter rank-specific methods with the same signature
+   * as this method that assert that `paddings` is of given length.
+   *   - `tf.pad1d`
+   *   - `tf.pad2d`
+   *   - `tf.pad3d`
+   *   - `tf.pad4d`
    *
    * ```js
    * const x = tf.tensor1d([1, 2, 3, 4]);
@@ -1107,7 +1233,8 @@ export class ArrayOps {
    *
    * ```js
    * const a = tf.tensor2d([1, 2, 3, 4], [2, 2]);
-   * tf.unstack(a).print();
+   *
+   * tf.unstack(a).forEach(tensor => tensor.print());
    * ```
    *
    * @param x A tensor object.
@@ -1440,4 +1567,22 @@ function noConversionNeeded<D extends DataType>(
   return (a instanceof Float32Array && dtype === 'float32') ||
       (a instanceof Int32Array && dtype === 'int32') ||
       (a instanceof Uint8Array && dtype === 'bool');
+}
+
+function arrayRange(start: number, stop: number): number[] {
+  const result = [];
+  for (let i = start; i < stop; ++i) {
+    result.push(i);
+  }
+  return result;
+}
+
+function arrayConcat(arrays: number[][]): number[] {
+  const result = [];
+  for (let i = 0; i < arrays.length; ++i) {
+    for (let j = 0; j < arrays[i].length; ++j) {
+      result.push(arrays[i][j]);
+    }
+  }
+  return result;
 }

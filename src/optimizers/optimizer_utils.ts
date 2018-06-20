@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2017 Google Inc. All Rights Reserved.
+ * Copyright 2018 Google Inc. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,24 +14,15 @@
  * limitations under the License.
  * =============================================================================
  */
+import {ENV} from '../environment';
 
-/**
- * Inputs of size above this threshold will be parallelized by calling multiple
- * shader programs.
- */
-import {nearestDivisor} from '../util';
+const DEFAULT_FLOAT32_EPSILON = 1e-8;
+const DEFAULT_FLOAT16_EPSILON = 1e-4;
 
-export const PARALLELIZE_THRESHOLD = 30;
-
-export interface ReduceInfo {
-  windowSize: number;
-  batchSize: number;
-  inSize: number;
-}
-
-export function computeOptimalWindowSize(inSize: number): number {
-  if (inSize <= PARALLELIZE_THRESHOLD) {
-    return inSize;
+export function getOptimizerDefaultEpsilonValue() {
+  if (ENV.get('WEBGL_RENDER_FLOAT32_ENABLED')) {
+    return DEFAULT_FLOAT32_EPSILON;
   }
-  return nearestDivisor(inSize, Math.floor(Math.sqrt(inSize)));
+
+  return DEFAULT_FLOAT16_EPSILON;
 }

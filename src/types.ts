@@ -30,6 +30,8 @@ export interface ShapeMap {
   R2: [number, number];
   R3: [number, number, number];
   R4: [number, number, number, number];
+  R5: [number, number, number, number, number];
+  R6: [number, number, number, number, number, number];
 }
 
 /** @hidden */
@@ -47,13 +49,16 @@ export enum Rank {
   R1 = 'R1',
   R2 = 'R2',
   R3 = 'R3',
-  R4 = 'R4'
+  R4 = 'R4',
+  R5 = 'R5',
+  R6 = 'R6'
 }
 
 /** @docalias TypedArray|Array */
 export type TensorLike =
     TypedArray|number|boolean|number[]|number[][]|number[][][]|number[][][][]|
-    boolean[]|boolean[][]|boolean[][][]|boolean[][][][];
+    number[][][][][]|number[][][][][][]|boolean[]|boolean[][]|boolean[][][]|
+    boolean[][][][]|boolean[][][][][]|boolean[][][][][][];
 /** @docalias TypedArray|Array */
 export type TensorLike1D = TypedArray|number[]|boolean[];
 /** @docalias TypedArray|Array */
@@ -64,9 +69,16 @@ export type TensorLike3D =
 /** @docalias TypedArray|Array */
 export type TensorLike4D =
     TypedArray|number[]|number[][][][]|boolean[]|boolean[][][][];
+/** @docalias TypedArray|Array */
+export type TensorLike5D =
+    TypedArray|number[]|number[][][][][]|boolean[]|boolean[][][][][];
+/** @docalias TypedArray|Array */
+export type TensorLike6D =
+    TypedArray|number[]|number[][][][][][]|boolean[]|boolean[][][][][][];
 
 export type FlatVector = boolean[]|number[]|TypedArray;
-export type RegularArray<T> = T[]|T[][]|T[][][]|T[][][][];
+export type RegularArray<T> =
+    T[]|T[][]|T[][][]|T[][][][]|T[][][][][]|T[][][][][][];
 export type ArrayData<D extends DataType> =
     DataTypeMap[D]|RegularArray<number>|RegularArray<boolean>;
 
@@ -123,9 +135,7 @@ export function sumOutType(type: DataType) {
  */
 export type TensorContainer = void|Tensor|string|number|boolean|
     TensorContainerObject|TensorContainerArray;
-export interface TensorContainerObject {
-  [x: string]: TensorContainer;
-}
+export interface TensorContainerObject { [x: string]: TensorContainer; }
 export interface TensorContainerArray extends Array<TensorContainer> {}
 
 export interface ModelPredictConfig {
@@ -140,10 +150,29 @@ export interface ModelPredictConfig {
   verbose?: boolean;
 }
 
+export interface TensorInfo {
+  // Name of the tensor.
+  name: string;
+  // Tensor shape information, Optional.
+  shape?: number[];
+  // Data type of the tensor.
+  dtype: DataType;
+}
+
 /**
  * Common interface for a machine learning model that can do inference.
  */
 export interface InferenceModel {
+  /**
+   * Return the array of input tensor info.
+   */
+  readonly inputs: TensorInfo[];
+
+  /**
+   * Return the array of output tensor info.
+   */
+  readonly outputs: TensorInfo[];
+
   /**
    * Execute the inference for the input tensors.
    *

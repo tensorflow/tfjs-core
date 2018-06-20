@@ -39,14 +39,31 @@ import * as backend_util from './backend_util';
 export class MathBackendCPU implements KernelBackend {
   private data = new WeakMap<DataId, DataTypeMap[DataType]>();
   private canvas: HTMLCanvasElement;
+  private firstUse = true;
 
   constructor() {
-    if (typeof document !== 'undefined') {
+    if (ENV.get('IS_BROWSER')) {
       this.canvas = document.createElement('canvas');
     }
   }
 
   register(dataId: DataId, shape: number[], dtype: DataType): void {
+    if (this.firstUse) {
+      this.firstUse = false;
+      if (ENV.get('IS_NODE')) {
+        console.warn(
+            '\n============================\n' +
+            'Hi there 👋. Looks like you are running TensorFlow.js in ' +
+            'Node.js. To speed things up dramatically, install our node ' +
+            'backend, which binds to TensorFlow C++, by running ' +
+            'npm i @tensorflow/tfjs-node, ' +
+            'or npm i @tensorflow/tfjs-node-gpu if you have CUDA. ' +
+            'Then call require(\'tensorflow/tfjs-node\'); (-gpu ' +
+            'suffix for CUDA) at the start of your program. ' +
+            'Visit https://github.com/tensorflow/tfjs-node for more details.' +
+            '\n============================\n');
+      }
+    }
     if (this.data.has(dataId)) {
       throw new Error(`Data buffer is already registered`);
     }
@@ -284,16 +301,15 @@ export class MathBackendCPU implements KernelBackend {
                (aValue, bValue) => aValue * bValue) as Tensor;
   }
 
-  divide(a: Tensor, b: Tensor): Tensor {
-    let op: (a: number, b: number) => number;
-    let outputDtype: 'float32'|'int32';
-    if (a.dtype === 'int32' && b.dtype === 'int32') {
-      outputDtype = 'int32';
-      op = (a: number, b: number) => Math.floor(a / b);
-    } else {
-      outputDtype = 'float32';
-      op = (a: number, b: number) => a / b;
-    }
+  realDivide(a: Tensor, b: Tensor): Tensor {
+    const op = (a: number, b: number) => a / b;
+    const outputDtype = 'float32';
+    return this.broadcastedBinaryOp(a, b, outputDtype, op) as Tensor;
+  }
+
+  floorDiv(a: Tensor, b: Tensor): Tensor {
+    const op = (a: number, b: number) => Math.floor(a / b);
+    const outputDtype = 'int32';
     return this.broadcastedBinaryOp(a, b, outputDtype, op) as Tensor;
   }
 
@@ -316,6 +332,27 @@ export class MathBackendCPU implements KernelBackend {
       vals[i] = sum;
     }
     return result;
+  }
+
+  unsortedSegmentSum<T extends Tensor>(
+      x: T, segmentIds: Tensor1D, numSegments: number): Tensor {
+    const res = [];
+
+    // Reshape the segment id's so that they can be broadcast with
+    // x. The new shape should be [segmentIds.shape, 1, ..., 1]
+    const numIters = x.rank - segmentIds.rank;
+    for (let i = 0; i < numIters; ++i) {
+      segmentIds = segmentIds.expandDims(i + 1);
+    }
+
+    for (let i = 0; i < numSegments; ++i) {
+      const segmentId = ops.scalar(i, 'int32');
+      const mask = ops.equal(segmentId, segmentIds).asType('float32');
+      const sum = mask.mul(x).sum(0);
+      res.push(sum);
+    }
+
+    return ops.stack(res);
   }
 
   argMin(x: Tensor, axis: number): Tensor {
@@ -523,7 +560,7 @@ export class MathBackendCPU implements KernelBackend {
     const aVals = x.dataSync();
     for (let i = 0; i < vals.length; ++i) {
       const offset = i * reduceSize;
-      let min = aVals[0];
+      let min = aVals[offset];
       for (let j = 0; j < reduceSize; ++j) {
         const value = aVals[offset + j];
         if (value < min) {
@@ -577,6 +614,27 @@ export class MathBackendCPU implements KernelBackend {
   maximum(a: Tensor, b: Tensor): Tensor {
     return this.broadcastedBinaryOp(
         a, b, a.dtype, (aVal, bVal) => Math.max(aVal, bVal));
+  }
+
+  all(x: Tensor, axes: number[]): Tensor {
+    axis_util.assertAxesAreInnerMostDims('all', axes, x.rank);
+    const [outShape, reduceShape] =
+        axis_util.computeOutAndReduceShapes(x.shape, axes);
+    const result = ops.zeros(outShape, x.dtype);
+    const reduceSize = util.sizeFromShape(reduceShape);
+    const vals = result.dataSync();
+
+    const aVals = x.dataSync();
+    for (let i = 0; i < vals.length; ++i) {
+      const offset = i * reduceSize;
+      let all = aVals[offset];
+      for (let j = 0; j < reduceSize; ++j) {
+        const value = aVals[offset + j];
+        all = all && value;
+      }
+      vals[i] = all;
+    }
+    return result;
   }
 
   squaredDifference(a: Tensor, b: Tensor): Tensor {
@@ -1849,9 +1907,11 @@ export class MathBackendCPU implements KernelBackend {
     res.fill(offValue);
 
     for (let event = 0; event < indices.size; ++event) {
-      res[event * depth + indices.get(event)] = onValue;
+      if (indices.get(event) >= 0 && indices.get(event) < depth) {
+        res[event * depth + indices.get(event)] = onValue;
+      }
     }
-    return ops.tensor2d(res, [indices.size, depth]);
+    return ops.tensor2d(res, [indices.size, depth], 'int32');
   }
 
   private broadcastedBinaryOp(

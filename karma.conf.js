@@ -24,36 +24,54 @@ module.exports = function(config) {
     },
     karmaTypescriptConfig: {
       tsconfig: 'tsconfig.json',
-      compilerOptions: {module: 'commonjs', sourceMap: true}
+      reports: {} // Do not produce coverage html.
     },
     reporters: ['progress', 'karma-typescript'],
-    browsers: ['Chrome', 'Firefox'],
+    browsers: ['Chrome'],
     browserStack: {
       username: process.env.BROWSERSTACK_USERNAME,
       accessKey: process.env.BROWSERSTACK_KEY
     },
+    captureTimeout: 120000,
     reportSlowerThan: 500,
-    browserNoActivityTimeout: 60000,
+    browserNoActivityTimeout: 180000,
     customLaunchers: {
       bs_chrome_mac: {
         base: 'BrowserStack',
         browser: 'chrome',
         browser_version: 'latest',
         os: 'OS X',
-        os_version: 'Sierra'
+        os_version: 'High Sierra'
       },
       bs_firefox_mac: {
         base: 'BrowserStack',
         browser: 'firefox',
         browser_version: 'latest',
         os: 'OS X',
-        os_version: 'Sierra'
+        os_version: 'High Sierra'
+      },
+      bs_safari_mac: {
+        base: 'BrowserStack',
+        browser: 'safari',
+        browser_version: 'latest',
+        os: 'OS X',
+        os_version: 'High Sierra'
+      },
+      bs_ios_11: {
+        base: 'BrowserStack',
+        device: 'iPhone X',
+        os: 'iOS',
+        os_version: '11.0',
+        real_mobile: true
       },
       chrome_with_swift_shader: {
         base: 'Chrome',
         flags: ['--blacklist-accelerated-compositing', '--blacklist-webgl']
       }
     },
-    client: {args: ['--grep', config.grep || '']}
+    client: {
+      jasmine: {random: false},
+      args: ['--grep', config.grep || '']
+    }
   });
 };

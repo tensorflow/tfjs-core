@@ -341,11 +341,15 @@ export class Tensor<R extends Rank = Rank> {
     if (this.isDisposed) {
       return;
     }
-    this.isDisposed = true;
     ENV.engine.disposeTensor(this);
+    this.isDisposedInternal = true;
   }
 
-  private isDisposed = false;
+  private isDisposedInternal = false;
+  get isDisposed(): boolean {
+    return this.isDisposedInternal;
+  }
+
   private throwIfDisposed() {
     if (this.isDisposed) {
       throw new Error(`Tensor is disposed.`);
@@ -519,7 +523,10 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   // Reduction ops.
-
+  all<T extends Tensor>(axis: number|number[] = null, keepDims = false): T {
+    this.throwIfDisposed();
+    return ops.all(this, axis, keepDims);
+  }
   logSumExp<T extends Tensor>(axis: number|number[] = null, keepDims = false):
       T {
     this.throwIfDisposed();
@@ -593,6 +600,10 @@ export class Tensor<R extends Rank = Rank> {
   div<T extends Tensor>(x: Tensor): T {
     this.throwIfDisposed();
     return ops.div(this, x);
+  }
+  floorDiv<T extends Tensor>(x: Tensor): T {
+    this.throwIfDisposed();
+    return ops.floorDiv(this, x);
   }
   divStrict<T extends this>(this: T, x: T): T {
     this.throwIfDisposed();
@@ -938,9 +949,9 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   unsortedSegmentSum<T extends Tensor>(
-      this: T, segmentIds: Tensor1D, numSegments: number, axis = 0): T {
+      this: T, segmentIds: Tensor1D, numSegments: number): T {
     this.throwIfDisposed();
-    return ops.unsortedSegmentSum(this, segmentIds, numSegments, axis);
+    return ops.unsortedSegmentSum(this, segmentIds, numSegments);
   }
 }
 
@@ -954,6 +965,10 @@ export type Tensor2D = Tensor<Rank.R2>;
 export type Tensor3D = Tensor<Rank.R3>;
 /** @doclink Tensor */
 export type Tensor4D = Tensor<Rank.R4>;
+/** @doclink Tensor */
+export type Tensor5D = Tensor<Rank.R5>;
+/** @doclink Tensor */
+export type Tensor6D = Tensor<Rank.R6>;
 
 /**
  * A mutable `Tensor`, useful for persisting state, e.g. for training.
