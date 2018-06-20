@@ -280,6 +280,12 @@ describeWithFlags('div', ALL_ENVS, () => {
     expect(() => tf.div(tf.scalar(1), {} as tf.Tensor))
         .toThrowError(/Argument 'b' passed to 'div' must be a Tensor/);
   });
+
+  it('accepts a tensor-like object', () => {
+    const r = tf.div([[1, 2, 3], [4, 5, 6]], 2);
+    expect(r.shape).toEqual([2, 3]);
+    expectArraysClose(r, [1 / 2, 2 / 2, 3 / 2, 4 / 2, 5 / 2, 6 / 2]);
+  });
 });
 
 describeWithFlags('mul', ALL_ENVS, () => {
@@ -499,6 +505,12 @@ describeWithFlags('mul', ALL_ENVS, () => {
   it('throws when passed b as a non-tensor', () => {
     expect(() => tf.mul(tf.scalar(1), {} as tf.Tensor))
         .toThrowError(/Argument 'b' passed to 'mul' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const result = tf.mul([[1, 2], [-3, -4]], 2);
+    expect(result.shape).toEqual([2, 2]);
+    expectArraysClose(result, [2, 4, -6, -8]);
   });
 });
 
@@ -737,6 +749,14 @@ describeWithFlags('pow', ALL_ENVS, () => {
     expect(() => tf.pow(tf.scalar(1), {} as tf.Tensor))
         .toThrowError(/Argument 'exp' passed to 'pow' must be a Tensor/);
   });
+
+  it('accepts a tensor-like object', () => {
+    const result = tf.pow([1, 2, 3], 2);
+
+    expect(result.shape).toEqual([3]);
+    expect(result.dtype).toBe('float32');
+    expectArraysEqual(result, [1, 4, 9]);
+  });
 });
 
 describeWithFlags('add', ALL_ENVS, () => {
@@ -889,6 +909,11 @@ describeWithFlags('add', ALL_ENVS, () => {
   it('throws when passed b as a non-tensor', () => {
     expect(() => tf.add(tf.scalar(1), {} as tf.Tensor))
         .toThrowError(/Argument 'b' passed to 'add' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const result = tf.add(5, [1, 2, 3]);
+    expectArraysClose(result, [6, 7, 8]);
   });
 });
 
@@ -1103,5 +1128,10 @@ describeWithFlags('sub', ALL_ENVS, () => {
   it('throws when passed b as a non-tensor', () => {
     expect(() => tf.sub(tf.scalar(1), {} as tf.Tensor))
         .toThrowError(/Argument 'b' passed to 'sub' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const result = tf.sub(5, [7, 2, 3]);
+    expectArraysClose(result, [-2, 3, 2]);
   });
 });
