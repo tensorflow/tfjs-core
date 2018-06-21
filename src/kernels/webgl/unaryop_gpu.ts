@@ -18,8 +18,8 @@
 import * as erf_util from '../../ops/erf_util';
 import * as selu_util from '../../ops/selu_util';
 
-import { GPGPUProgram } from './gpgpu_math';
-import { GPGPUContext } from './gpgpu_context';
+import {GPGPUProgram} from './gpgpu_math';
+import {GPGPUContext} from './gpgpu_context';
 
 export class UnaryOpProgram implements GPGPUProgram {
   variableNames = ['A'];
