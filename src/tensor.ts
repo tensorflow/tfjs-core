@@ -16,7 +16,6 @@
  */
 
 import {doc} from './doc';
-import {ENV} from './environment';
 import * as ops from './ops/ops';
 import * as tensor_util from './tensor_util';
 import {DataType, Rank, ShapeMap, TypedArray} from './types';
@@ -134,6 +133,21 @@ export class TensorBuffer<R extends Rank> {
   }
 }
 
+export interface TensorTracker {
+  registerTensor(t: Tensor): void;
+  disposeTensor(t: Tensor): void;
+  write(dataId: DataId, values: TypedArray): void;
+  read(dataId: DataId): Promise<TypedArray>;
+  readSync(dataId: DataId): TypedArray;
+  registerVariable(v: Variable): void;
+}
+
+let tracker: TensorTracker = null;
+
+export function setTensorTracker(t: TensorTracker) {
+  tracker = t;
+}
+
 /**
  * We wrap data id since we use weak map to avoid memory leaks.
  * Since we have our own memory management, we have a reference counter
@@ -193,9 +207,9 @@ export class Tensor<R extends Rank = Rank> {
     this.dataId = dataId != null ? dataId : {};
     this.id = Tensor.nextId++;
     this.rankType = (this.rank < 5 ? this.rank.toString() : 'higher') as R;
-    ENV.engine.registerTensor(this);
+    tracker.registerTensor(this);
     if (values != null) {
-      ENV.engine.write(this.dataId, values);
+      tracker.write(this.dataId, values);
     }
   }
 
@@ -320,7 +334,7 @@ export class Tensor<R extends Rank = Rank> {
   @doc({heading: 'Tensors', subheading: 'Classes'})
   async data(): Promise<TypedArray> {
     this.throwIfDisposed();
-    return ENV.engine.read(this.dataId);
+    return tracker.read(this.dataId);
   }
 
   /**
@@ -330,7 +344,7 @@ export class Tensor<R extends Rank = Rank> {
   @doc({heading: 'Tensors', subheading: 'Classes'})
   dataSync(): TypedArray {
     this.throwIfDisposed();
-    return ENV.engine.readSync(this.dataId);
+    return tracker.readSync(this.dataId);
   }
 
   /**
@@ -341,7 +355,7 @@ export class Tensor<R extends Rank = Rank> {
     if (this.isDisposed) {
       return;
     }
-    ENV.engine.disposeTensor(this);
+    tracker.disposeTensor(this);
     this.isDisposedInternal = true;
   }
 
@@ -997,7 +1011,7 @@ export class Variable<R extends Rank = Rank> extends Tensor<R> {
       this.name = Variable.nextVarId.toString();
       Variable.nextVarId++;
     }
-    ENV.engine.registerVariable(this);
+    tracker.registerVariable(this);
   }
 
   /**
@@ -1042,9 +1056,9 @@ export class Variable<R extends Rank = Rank> extends Tensor<R> {
           `shape of the new value (${newValue.shape}) and ` +
           `previous value (${this.shape}) must match`);
     }
-    ENV.engine.disposeTensor(this);
+    tracker.disposeTensor(this);
     this.dataId = newValue.dataId;
-    ENV.engine.registerTensor(this);
+    tracker.registerTensor(this);
   }
 }
 

@@ -22,7 +22,7 @@ import * as ops from './ops/ops';
 import {Profiler} from './profiler';
 import {backpropagateGradients, getFilteredNodesXToY} from './tape';
 import {NamedGradientMap, TapeNode} from './tape';
-import {DataId, Tensor, Tensor3D, Variable} from './tensor';
+import {DataId, setTensorTracker, Tensor, Tensor3D, Variable} from './tensor';
 // tslint:disable-next-line:max-line-length
 import {NamedTensorMap, NamedVariableMap, TensorContainer, TypedArray} from './types';
 import * as util from './util';
@@ -90,6 +90,7 @@ export class Engine implements TensorManager {
     this.activeScope = {track: []};
     this.scopeStack = [this.activeScope];
     this.profiler = new Profiler(backend);
+    setTensorTracker(this);
   }
 
   runKernel<T extends Tensor, I extends NamedTensorMap>(
