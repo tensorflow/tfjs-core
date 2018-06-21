@@ -420,7 +420,9 @@ export class ReductionOps {
   static all<T extends Tensor>(
       x: Tensor, axis: number|number[] = null, keepDims = false): T {
     util.assertArgumentsAreTensors({x}, 'all');
-    util.assert(x.dtype === 'bool', 'Error Array must be of type bool.');
+    util.assert(
+        x.dtype === 'bool',
+        `Error Tensor must be of type bool. Got: ${x.dtype}`);
 
     const origAxes = axis_util.parseAxisParam(axis, x.shape);
     let axes = origAxes;
@@ -469,7 +471,9 @@ export class ReductionOps {
   static any<T extends Tensor>(
       x: Tensor, axis: number|number[] = null, keepDims = false): T {
     util.assertArgumentsAreTensors({x}, 'any');
-    util.assert(x.dtype === 'bool', 'Error Array must be of type bool.');
+    util.assert(
+        x.dtype === 'bool',
+        `Error Tensor must be of type bool. Got: ${x.dtype}`);
 
     const origAxes = axis_util.parseAxisParam(axis, x.shape);
     let axes = origAxes;

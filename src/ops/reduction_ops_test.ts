@@ -1087,7 +1087,7 @@ describeWithFlags('Reduction: all', ALL_ENVS, () => {
 
   it('throws when dtype is not boolean', () => {
     const a = tf.tensor2d([1, 1, 0, 0], [2, 2]);
-    expect(() => tf.all(a)).toThrowError(/Error Array must be of type bool/);
+    expect(() => tf.all(a)).toThrowError(/Error Tensor must be of type bool/);
   });
 
   it('throws when passed a non-tensor', () => {
@@ -1164,7 +1164,7 @@ describeWithFlags('Reduction: any', ALL_ENVS, () => {
 
   it('throws when dtype is not boolean', () => {
     const a = tf.tensor2d([1, 1, 0, 0], [2, 2]);
-    expect(() => tf.any(a)).toThrowError(/Error Array must be of type bool/);
+    expect(() => tf.any(a)).toThrowError(/Error Tensor must be of type bool/);
   });
 
   it('throws when passed a non-tensor', () => {
