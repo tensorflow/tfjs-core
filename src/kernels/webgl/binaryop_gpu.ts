@@ -16,8 +16,8 @@
  */
 
 import * as broadcast_util from '../../ops/broadcast_util';
-import { GPGPUProgram } from './gpgpu_math';
-import { GPGPUContext } from './gpgpu_context';
+import {GPGPUProgram} from './gpgpu_math';
+import {GPGPUContext} from './gpgpu_context';
 
 const CHECK_NAN_SNIPPET = `
   if (isNaN(a)) return a;
