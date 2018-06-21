@@ -508,8 +508,9 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [x, indices]);
   }
 
-  private reduce(x: Tensor2D, reduceType: 'max' | 'min' | 'sum', dtype: DataType):
-    Tensor2D {
+  private reduce(
+      x: Tensor2D, reduceType: 'max' | 'min' | 'sum',
+      dtype: DataType): Tensor2D {
     const batchSize = x.shape[0];
     const inSize = x.shape[1];
     const windowSize = reduce_util.computeOptimalWindowSize(inSize);
