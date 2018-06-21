@@ -523,7 +523,14 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   // Reduction ops.
-
+  all<T extends Tensor>(axis: number|number[] = null, keepDims = false): T {
+    this.throwIfDisposed();
+    return ops.all(this, axis, keepDims);
+  }
+  any<T extends Tensor>(axis: number|number[] = null, keepDims = false): T {
+    this.throwIfDisposed();
+    return ops.any(this, axis, keepDims);
+  }
   logSumExp<T extends Tensor>(axis: number|number[] = null, keepDims = false):
       T {
     this.throwIfDisposed();
@@ -964,6 +971,8 @@ export type Tensor3D = Tensor<Rank.R3>;
 export type Tensor4D = Tensor<Rank.R4>;
 /** @doclink Tensor */
 export type Tensor5D = Tensor<Rank.R5>;
+/** @doclink Tensor */
+export type Tensor6D = Tensor<Rank.R6>;
 
 /**
  * A mutable `Tensor`, useful for persisting state, e.g. for training.

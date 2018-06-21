@@ -560,7 +560,7 @@ export class MathBackendCPU implements KernelBackend {
     const aVals = x.dataSync();
     for (let i = 0; i < vals.length; ++i) {
       const offset = i * reduceSize;
-      let min = aVals[0];
+      let min = aVals[offset];
       for (let j = 0; j < reduceSize; ++j) {
         const value = aVals[offset + j];
         if (value < min) {
@@ -614,6 +614,48 @@ export class MathBackendCPU implements KernelBackend {
   maximum(a: Tensor, b: Tensor): Tensor {
     return this.broadcastedBinaryOp(
         a, b, a.dtype, (aVal, bVal) => Math.max(aVal, bVal));
+  }
+
+  all(x: Tensor, axes: number[]): Tensor {
+    axis_util.assertAxesAreInnerMostDims('all', axes, x.rank);
+    const [outShape, reduceShape] =
+        axis_util.computeOutAndReduceShapes(x.shape, axes);
+    const result = ops.zeros(outShape, x.dtype);
+    const reduceSize = util.sizeFromShape(reduceShape);
+    const vals = result.dataSync();
+
+    const aVals = x.dataSync();
+    for (let i = 0; i < vals.length; ++i) {
+      const offset = i * reduceSize;
+      let all = aVals[offset];
+      for (let j = 0; j < reduceSize; ++j) {
+        const value = aVals[offset + j];
+        all = all && value;
+      }
+      vals[i] = all;
+    }
+    return result;
+  }
+
+  any(x: Tensor, axes: number[]): Tensor {
+    axis_util.assertAxesAreInnerMostDims('any', axes, x.rank);
+    const [outShape, reduceShape] =
+        axis_util.computeOutAndReduceShapes(x.shape, axes);
+    const result = ops.zeros(outShape, x.dtype);
+    const reduceSize = util.sizeFromShape(reduceShape);
+    const vals = result.dataSync();
+
+    const aVals = x.dataSync();
+    for (let i = 0; i < vals.length; ++i) {
+      const offset = i * reduceSize;
+      let anyVal = aVals[offset];
+      for (let j = 0; j < reduceSize; ++j) {
+        const value = aVals[offset + j];
+        anyVal = anyVal || value;
+      }
+      vals[i] = anyVal;
+    }
+    return result;
   }
 
   squaredDifference(a: Tensor, b: Tensor): Tensor {
@@ -1886,7 +1928,9 @@ export class MathBackendCPU implements KernelBackend {
     res.fill(offValue);
 
     for (let event = 0; event < indices.size; ++event) {
-      res[event * depth + indices.get(event)] = onValue;
+      if (indices.get(event) >= 0 && indices.get(event) < depth) {
+        res[event * depth + indices.get(event)] = onValue;
+      }
     }
     return ops.tensor2d(res, [indices.size, depth], 'int32');
   }
