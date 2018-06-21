@@ -103,7 +103,7 @@ export function assertTypesMatch(a: Tensor, b: Tensor): void {
 export function assertNonNull(a: TensorLike): void {
   assert(
       a != null,
-      `The input must be non-null value`);
+      `The input to the tensor constructor must be a non-null value.`);
 }
 
 // NOTE: We explicitly type out what T extends instead of any so that

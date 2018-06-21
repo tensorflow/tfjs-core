@@ -325,6 +325,7 @@ export class ArrayOps {
       values: TensorLike6D,
       shape?: [number, number, number, number, number, number],
       dtype: DataType = 'float32'): Tensor6D {
+    assertNonNull(values);
     if (shape != null && shape.length !== 6) {
       throw new Error('tensor6d() requires shape to have six numbers');
     }

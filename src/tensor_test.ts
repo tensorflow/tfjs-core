@@ -273,7 +273,8 @@ describeWithFlags('tensor', ALL_ENVS, () => {
 
   it('tf.tensor1d() throw error with null input value', () => {
     expect(() => tf.tensor1d(null))
-        .toThrowError('The input must be non-null value');
+        .toThrowError('The input to the tensor constructor ' +
+            'must be a non-null value.');
   });
 
   it('tf.tensor1d() from number[][], shape mismatch', () => {
@@ -303,7 +304,8 @@ describeWithFlags('tensor', ALL_ENVS, () => {
 
   it('tf.tensor2d() throw error with null input value', () => {
     expect(() => tf.tensor2d(null))
-        .toThrowError('The input must be non-null value');
+        .toThrowError('The input to the tensor constructor ' +
+            'must be a non-null value.');
   });
 
   it('tensor3d() from number[][][]', () => {
@@ -329,7 +331,8 @@ describeWithFlags('tensor', ALL_ENVS, () => {
 
   it('tf.tensor3d() throw error with null input value', () => {
     expect(() => tf.tensor3d(null))
-        .toThrowError('The input must be non-null value');
+        .toThrowError('The input to the tensor constructor ' +
+            'must be a non-null value.');
   });
 
   it('tensor4d() from number[][][][]', () => {
@@ -357,7 +360,20 @@ describeWithFlags('tensor', ALL_ENVS, () => {
 
   it('tf.tensor4d() throw error with null input value', () => {
     expect(() => tf.tensor4d(null))
-        .toThrowError('The input must be non-null value');
+        .toThrowError('The input to the tensor constructor ' +
+            'must be a non-null value.');
+  });
+
+  it('tf.tensor5d() throw error with null input value', () => {
+    expect(() => tf.tensor5d(null))
+        .toThrowError('The input to the tensor constructor ' +
+            'must be a non-null value.');
+  });
+
+  it('tf.tensor6d() throw error with null input value', () => {
+    expect(() => tf.tensor6d(null))
+        .toThrowError('The input to the tensor constructor ' +
+            'must be a non-null value.');
   });
 
   it('default dtype', () => {
