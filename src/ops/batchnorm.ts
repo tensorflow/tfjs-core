@@ -18,13 +18,14 @@
 import {doc} from '../doc';
 import {ENV} from '../environment';
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
+import {assertArgumentsAreTensors} from '../tensor_util';
 import {Rank} from '../types';
 import * as util from '../util';
-
 import {ArrayOps} from './array_ops';
 import {getReductionAxes} from './broadcast_util';
 import {operation} from './operation';
-import {rsqrt} from './ops';
+import {TensorOps} from './tensor_ops';
+import {UnaryOps} from './unary_ops';
 
 export class BatchNormOps {
   /**
@@ -173,6 +174,12 @@ export class BatchNormOps {
    *   - In the common case, the depth dimension is the last dimension of x, so
    *     the values would be an `Tensor1D` of shape [depth].
    *
+   * Also available are stricter rank-specific methods with the same signature
+   * as this method that assert that parameters passed are of given rank
+   *   - `tf.batchNormalization2d`
+   *   - `tf.batchNormalization3d`
+   *   - `tf.batchNormalization4d`
+   *
    * @param x The input Tensor.
    * @param mean A mean Tensor.
    * @param variance A variance Tensor.
@@ -185,12 +192,12 @@ export class BatchNormOps {
       x: Tensor<R>, mean: Tensor<R>|Tensor1D, variance: Tensor<R>|Tensor1D,
       varianceEpsilon = .001, scale?: Tensor<R>|Tensor1D,
       offset?: Tensor<R>|Tensor1D): Tensor<R> {
-    util.assertArgumentsAreTensors({x, mean, variance}, 'batchNormalization');
+    assertArgumentsAreTensors({x, mean, variance}, 'batchNormalization');
     if (scale != null) {
-      util.assertArgumentsAreTensors({scale}, 'batchNormalization');
+      assertArgumentsAreTensors({scale}, 'batchNormalization');
     }
     if (offset != null) {
-      util.assertArgumentsAreTensors({offset}, 'batchNormalization');
+      assertArgumentsAreTensors({offset}, 'batchNormalization');
     }
 
     util.assert(
@@ -218,7 +225,7 @@ export class BatchNormOps {
     }
 
     const der = (dy: Tensor) => {
-      const scaleValue = scale == null ? ArrayOps.scalar(1) : scale;
+      const scaleValue = scale == null ? TensorOps.scalar(1) : scale;
       const reductionAxes = getReductionAxes(mean.shape, x4D.shape);
       const tileShape: number[] = [];
       if (mean.rank === 1) {
@@ -231,10 +238,10 @@ export class BatchNormOps {
       const xMinusMean = x.sub(mean);
       const dyTimesScaleValue = dy.mul(scaleValue);
       const oneOverSqrtVariance =
-          rsqrt(variance.add(ArrayOps.scalar(varianceEpsilon)));
+          UnaryOps.rsqrt(variance.add(TensorOps.scalar(varianceEpsilon)));
       const minusHalfRCube = oneOverSqrtVariance.mul(oneOverSqrtVariance)
                                  .mul(oneOverSqrtVariance)
-                                 .mul(ArrayOps.scalar(-0.5));
+                                 .mul(TensorOps.scalar(-0.5));
       const derX = () => {
         if (mean.rank === 1) {
           return dy
@@ -247,8 +254,8 @@ export class BatchNormOps {
         }
       };
       const derMean = () => {
-        let meanDer =
-            oneOverSqrtVariance.mul(ArrayOps.scalar(-1)).mul(dyTimesScaleValue);
+        let meanDer = oneOverSqrtVariance.mul(TensorOps.scalar(-1))
+                          .mul(dyTimesScaleValue);
         if (mean.rank === 1) {
           meanDer = meanDer.sum(reductionAxes);
         }

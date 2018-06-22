@@ -14,18 +14,15 @@
  * limitations under the License.
  * =============================================================================
  */
+import {ENV} from '../environment';
 
-import {Environment} from './environment';
-import {Gradients} from './gradients';
+const DEFAULT_FLOAT32_EPSILON = 1e-8;
+const DEFAULT_FLOAT16_EPSILON = 1e-4;
 
-export const tidy = Environment.tidy;
-export const keep = Environment.keep;
-export const dispose = Environment.dispose;
-export const time = Environment.time;
+export function getOptimizerDefaultEpsilonValue() {
+  if (ENV.get('WEBGL_RENDER_FLOAT32_ENABLED')) {
+    return DEFAULT_FLOAT32_EPSILON;
+  }
 
-export const grad = Gradients.grad;
-export const valueAndGrad = Gradients.valueAndGrad;
-export const grads = Gradients.grads;
-export const valueAndGrads = Gradients.valueAndGrads;
-export const variableGrads = Gradients.variableGrads;
-export const customGrad = Gradients.customGrad;
+  return DEFAULT_FLOAT16_EPSILON;
+}

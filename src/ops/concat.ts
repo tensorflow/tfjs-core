@@ -18,6 +18,7 @@
 import {doc} from '../doc';
 import {ENV} from '../environment';
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
+import {assertArgumentsAreTensors} from '../tensor_util';
 import * as util from '../util';
 import {parseAxisParam} from './axis_util';
 import * as concat_util from './concat_util';
@@ -121,6 +122,16 @@ export class ConcatOps {
    * The tensors ranks and types must match, and their sizes must match in all
    * dimensions except `axis`.
    *
+   * Also available are stricter rank-specific methods that assert that
+   * `tensors` are of the given rank:
+   *   - `tf.concat1d`
+   *   - `tf.concat2d`
+   *   - `tf.concat3d`
+   *   - `tf.concat4d`
+   *
+   * Except `tf.concat1d` (which does not have axis param), all methods have
+   * same signature as this method.
+   *
    * ```js
    * const a = tf.tensor1d([1, 2]);
    * const b = tf.tensor1d([3, 4]);
@@ -147,7 +158,7 @@ export class ConcatOps {
   @operation
   static concat<T extends Tensor>(tensors: T[], axis = 0): T {
     util.assert(tensors.length >= 1, 'Pass at least one tensor to concat');
-    util.assertArgumentsAreTensors({tensors}, 'concat');
+    assertArgumentsAreTensors({tensors}, 'concat');
 
     let result = tensors[0];
     if (tensors.length === 1) {
