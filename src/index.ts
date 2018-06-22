@@ -57,7 +57,10 @@ export {Reduction} from './ops/loss_ops';
 export * from './train';
 export * from './globals';
 
-export {ENV, Environment, Features, TimingInfo} from './environment';
+export {Features} from './environment_util';
+export {TimingInfo} from './engine';
+export {ENV, Environment} from './environment';
+
 export const setBackend = Environment.setBackend;
 export const getBackend = Environment.getBackend;
 export const disposeVariables = Environment.disposeVariables;

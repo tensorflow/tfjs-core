@@ -16,7 +16,8 @@
  */
 
 import {doc} from './doc';
-import {CustomGradientFunc, ENV, ScopeFn} from './environment';
+import {CustomGradientFunc, ScopeFn} from './engine';
+import {ENV} from './environment';
 import {Scalar, Tensor, Variable} from './tensor';
 import {NamedTensorMap, TensorContainer} from './tensor_types';
 import * as util from './util';
