@@ -20,7 +20,6 @@ import {ENV} from '../environment';
 import {Tensor, Tensor3D, Tensor4D} from '../tensor';
 import {assertArgumentsAreTensors} from '../tensor_util';
 import * as util from '../util';
-
 import * as conv_util from './conv_util';
 import {operation} from './operation';
 

@@ -21,7 +21,6 @@ import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import {assertArgumentsAreTensors} from '../tensor_util';
 import {Rank} from '../types';
 import * as util from '../util';
-
 import {ArrayOps} from './array_ops';
 import {getReductionAxes} from './broadcast_util';
 import {operation} from './operation';

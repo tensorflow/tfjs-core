@@ -20,7 +20,6 @@ import {customGrad} from '../globals';
 import {Tensor} from '../tensor';
 import {assertArgumentsAreTensors} from '../tensor_util';
 import * as util from '../util';
-
 import * as axis_util from './axis_util';
 import {operation} from './operation';
 import {TensorOps} from './tensor_ops';

@@ -22,7 +22,6 @@ import {scalar} from '../ops/ops';
 import {ConfigDict, Serializable, SerializableConstructor, SerializationMap} from '../serialization';
 import {Scalar} from '../tensor';
 import {NamedTensorMap} from '../tensor_types';
-
 import {Optimizer} from './optimizer';
 
 /** @doclink Optimizer */

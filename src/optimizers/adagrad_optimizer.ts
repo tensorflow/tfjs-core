@@ -22,7 +22,6 @@ import {fill, scalar} from '../ops/ops';
 import {ConfigDict, Serializable, SerializableConstructor, SerializationMap} from '../serialization';
 import {Scalar} from '../tensor';
 import {NamedVariableMap} from '../tensor_types';
-
 import {Optimizer} from './optimizer';
 import * as optimizer_utils from './optimizer_utils';
 

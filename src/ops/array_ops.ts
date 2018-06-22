@@ -22,7 +22,6 @@ import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer, tensorToSt
 import {assertArgumentsAreTensors} from '../tensor_util';
 import {DataType, Rank, ShapeMap, TypedArray} from '../types';
 import * as util from '../util';
-
 // tslint:disable-next-line:max-line-length
 import {getAxesPermutation, getInnerMostAxes, parseAxisParam} from './axis_util';
 import {ConcatOps} from './concat';

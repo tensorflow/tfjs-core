@@ -19,7 +19,6 @@ import {doc} from '../doc';
 import {Scalar, Tensor} from '../tensor';
 import {assertArgumentsAreTensors, assertTypesMatch} from '../tensor_util';
 import * as util from '../util';
-
 import {BinaryOps} from './binary_ops';
 import {operation} from './operation';
 import {TensorOps} from './tensor_ops';

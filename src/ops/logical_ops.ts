@@ -21,7 +21,6 @@ import {Tensor} from '../tensor';
 import {assertArgumentsAreTensors} from '../tensor_util';
 import * as types from '../types';
 import * as util from '../util';
-
 import * as broadcast_util from './broadcast_util';
 import {operation} from './operation';
 import {TensorOps} from './tensor_ops';

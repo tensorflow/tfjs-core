@@ -22,7 +22,6 @@ import {scalar, zerosLike} from '../ops/ops';
 import {ConfigDict, Serializable, SerializableConstructor, SerializationMap} from '../serialization';
 import {Scalar, Tensor} from '../tensor';
 import {NamedVariableMap} from '../tensor_types';
-
 import {SGDOptimizer} from './sgd_optimizer';
 
 /** @doclink Optimizer */

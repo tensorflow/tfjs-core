@@ -20,7 +20,6 @@ import {ENV} from '../environment';
 import {Tensor, Tensor1D} from '../tensor';
 import {assertArgumentsAreTensors} from '../tensor_util';
 import * as util from '../util';
-
 import {ArrayOps} from './array_ops';
 import {getUndoAxesPermutation, parseAxisParam} from './axis_util';
 import {BinaryOps} from './binary_ops';

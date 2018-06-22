@@ -20,7 +20,6 @@ import {ENV} from '../environment';
 import {Scalar, Tensor, Tensor1D, Tensor2D} from '../tensor';
 import {assertArgumentsAreTensors} from '../tensor_util';
 import * as util from '../util';
-
 import {operation} from './operation';
 
 export class MatmulOps {
