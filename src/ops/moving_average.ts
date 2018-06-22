@@ -17,7 +17,9 @@
 
 import {doc} from '../doc';
 import {Scalar, Tensor} from '../tensor';
+import {assertArgumentsAreTensors, assertTypesMatch} from '../tensor_util';
 import * as util from '../util';
+
 import {BinaryOps} from './binary_ops';
 import {operation} from './operation';
 import {TensorOps} from './tensor_ops';
@@ -54,8 +56,8 @@ export class MovingAverageOps {
   static movingAverage<T extends Tensor>(
       v: T, x: T, decay: number|Scalar, step?: number|Scalar,
       zeroDebias = true): T {
-    util.assertArgumentsAreTensors({v, x}, 'movingAverage');
-    util.assertTypesMatch(v, x);
+    assertArgumentsAreTensors({v, x}, 'movingAverage');
+    assertTypesMatch(v, x);
     util.assert(
         util.arraysEqual(v.shape, x.shape), 'Shape mismatch in v and x');
 

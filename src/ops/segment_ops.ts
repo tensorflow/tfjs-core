@@ -18,7 +18,9 @@
 import {doc} from '../doc';
 import {ENV} from '../environment';
 import {Tensor, Tensor1D} from '../tensor';
+import {assertArgumentsAreTensors} from '../tensor_util';
 import * as util from '../util';
+
 import {ArrayOps} from './array_ops';
 import {getUndoAxesPermutation, parseAxisParam} from './axis_util';
 import {BinaryOps} from './binary_ops';
@@ -48,7 +50,7 @@ export class SegmentOps {
   @operation
   static unsortedSegmentSum<T extends Tensor>(
       x: T, segmentIds: Tensor1D, numSegments: number): T {
-    util.assertArgumentsAreTensors({x, segmentIds}, 'unsortedSegmentSum');
+    assertArgumentsAreTensors({x, segmentIds}, 'unsortedSegmentSum');
     util.assert(
         segmentIds.dtype === 'int32', 'segmentIds must be of dtype `int32`');
     util.assert(util.isInt(numSegments), 'numSegments must be of dtype int');
@@ -88,7 +90,7 @@ export class SegmentOps {
   @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
   @operation
   static gather<T extends Tensor>(x: T, indices: Tensor1D, axis = 0): T {
-    util.assertArgumentsAreTensors({x, indices}, 'gather');
+    assertArgumentsAreTensors({x, indices}, 'gather');
 
     util.assert(indices.dtype === 'int32', 'Indices must be of dtype `int32`');
     axis = parseAxisParam(axis, x.shape)[0];

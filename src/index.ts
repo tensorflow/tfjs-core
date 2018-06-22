@@ -45,7 +45,9 @@ export {SGDOptimizer} from './optimizers/sgd_optimizer';
 // tslint:disable-next-line:max-line-length
 export {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer, variable, Variable} from './tensor';
 // tslint:disable-next-line:max-line-length
-export {DataType, InferenceModel, ModelPredictConfig, NamedTensorMap, Rank, ShapeMap} from './types';
+export {InferenceModel, ModelPredictConfig, NamedTensorMap} from './tensor_types';
+// tslint:disable-next-line:max-line-length
+export {DataType, Rank, ShapeMap} from './types';
 
 export * from './ops/ops';
 export {LSTMCellFunc} from './ops/lstm';

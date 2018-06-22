@@ -17,6 +17,7 @@
 
 import {doc} from '../doc';
 import {Tensor} from '../tensor';
+import {assertArgumentsAreTensors} from '../tensor_util';
 import * as util from '../util';
 import {BinaryOps} from './binary_ops';
 import {operation} from './operation';
@@ -44,9 +45,9 @@ export class LossOps {
   static computeWeightedLoss<T extends Tensor, O extends Tensor>(
       losses: T, weights?: Tensor,
       reduction = Reduction.SUM_BY_NONZERO_WEIGHTS): O {
-    util.assertArgumentsAreTensors({losses}, 'computeWeightedLoss');
+    assertArgumentsAreTensors({losses}, 'computeWeightedLoss');
     if (weights != null) {
-      util.assertArgumentsAreTensors({weights}, 'computeWeightedLoss');
+      assertArgumentsAreTensors({weights}, 'computeWeightedLoss');
     }
 
     const weightedLoss = (weights == null) ? losses : losses.mul(weights);
@@ -92,9 +93,9 @@ export class LossOps {
   static absoluteDifference<T extends Tensor, O extends Tensor>(
       labels: T, predictions: T, weights?: Tensor,
       reduction = Reduction.SUM_BY_NONZERO_WEIGHTS): O {
-    util.assertArgumentsAreTensors({labels, predictions}, 'absoluteDifference');
+    assertArgumentsAreTensors({labels, predictions}, 'absoluteDifference');
     if (weights != null) {
-      util.assertArgumentsAreTensors({weights}, 'absoluteDifference');
+      assertArgumentsAreTensors({weights}, 'absoluteDifference');
     }
     util.assertShapesMatch(
         labels.shape, predictions.shape, 'Error in absoluteDifference: ');
@@ -121,9 +122,9 @@ export class LossOps {
   static meanSquaredError<T extends Tensor, O extends Tensor>(
       labels: T, predictions: T, weights?: Tensor,
       reduction = Reduction.SUM_BY_NONZERO_WEIGHTS): O {
-    util.assertArgumentsAreTensors({labels, predictions}, 'meanSquaredError');
+    assertArgumentsAreTensors({labels, predictions}, 'meanSquaredError');
     if (weights != null) {
-      util.assertArgumentsAreTensors({weights}, 'meanSquaredError');
+      assertArgumentsAreTensors({weights}, 'meanSquaredError');
     }
     util.assertShapesMatch(
         labels.shape, predictions.shape, 'Error in meanSquaredError: ');
@@ -151,9 +152,9 @@ export class LossOps {
   static cosineDistance<T extends Tensor, O extends Tensor>(
       labels: T, predictions: T, axis: number, weights?: Tensor,
       reduction = Reduction.SUM_BY_NONZERO_WEIGHTS): O {
-    util.assertArgumentsAreTensors({labels, predictions}, 'cosineDistance');
+    assertArgumentsAreTensors({labels, predictions}, 'cosineDistance');
     if (weights != null) {
-      util.assertArgumentsAreTensors({weights}, 'cosineDistance');
+      assertArgumentsAreTensors({weights}, 'cosineDistance');
     }
     util.assertShapesMatch(
         labels.shape, predictions.shape, 'Error in cosineDistance: ');
@@ -181,9 +182,9 @@ export class LossOps {
   static hingeLoss<T extends Tensor, O extends Tensor>(
       labels: T, predictions: T, weights?: Tensor,
       reduction = Reduction.SUM_BY_NONZERO_WEIGHTS): O {
-    util.assertArgumentsAreTensors({labels, predictions}, 'hingeLoss');
+    assertArgumentsAreTensors({labels, predictions}, 'hingeLoss');
     if (weights != null) {
-      util.assertArgumentsAreTensors({weights}, 'hingeLoss');
+      assertArgumentsAreTensors({weights}, 'hingeLoss');
     }
     util.assertShapesMatch(
         labels.shape, predictions.shape, 'Error in hingeLoss: ');
@@ -214,9 +215,9 @@ export class LossOps {
   static logLoss<T extends Tensor, O extends Tensor>(
       labels: T, predictions: T, weights?: Tensor, epsilon = 1e-7,
       reduction = Reduction.SUM_BY_NONZERO_WEIGHTS): O {
-    util.assertArgumentsAreTensors({labels, predictions}, 'logLoss');
+    assertArgumentsAreTensors({labels, predictions}, 'logLoss');
     if (weights != null) {
-      util.assertArgumentsAreTensors({weights}, 'logLoss');
+      assertArgumentsAreTensors({weights}, 'logLoss');
     }
     util.assertShapesMatch(
         labels.shape, predictions.shape, 'Error in logLoss: ');
@@ -249,9 +250,9 @@ export class LossOps {
   static huberLoss<T extends Tensor, O extends Tensor>(
       labels: T, predictions: T, weights?: Tensor, delta = 1.0,
       reduction = Reduction.SUM_BY_NONZERO_WEIGHTS): O {
-    util.assertArgumentsAreTensors({labels, predictions}, 'huberLoss');
+    assertArgumentsAreTensors({labels, predictions}, 'huberLoss');
     if (weights != null) {
-      util.assertArgumentsAreTensors({weights}, 'huberLoss');
+      assertArgumentsAreTensors({weights}, 'huberLoss');
     }
     util.assertShapesMatch(
         labels.shape, predictions.shape, 'Error in huberLoss: ');

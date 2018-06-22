@@ -15,15 +15,16 @@
  * =============================================================================
  */
 
-import {Rank, Tensor, util} from '..';
 import {TensorOps} from '../ops/tensor_ops';
+import {Tensor} from '../tensor';
+import {Rank} from '../types';
 import {DataType, ShapeMap} from '../types';
-
+import {hasEncodingLoss} from '../util';
 import {KernelBackend} from './backend';
 
 export function castTensor<T extends Tensor<Rank>>(
     x: T, dtype: DataType, backend: KernelBackend): T {
-  if (!util.hasEncodingLoss(x.dtype, dtype)) {
+  if (!hasEncodingLoss(x.dtype, dtype)) {
     // We don't change the underlying data, since we cast to higher
     // precision.
     return Tensor.make(x.shape, {dataId: x.dataId}, dtype) as T;

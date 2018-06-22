@@ -25,9 +25,10 @@ import {backpropagateGradients, getFilteredNodesXToY, NamedGradientMap, TapeNode
 // tslint:disable-next-line:max-line-length
 import {DataId, setTensorTracker, Tensor, Tensor3D, Variable} from './tensor';
 // tslint:disable-next-line:max-line-length
-import {NamedTensorMap, NamedVariableMap, TensorContainer, TypedArray} from './types';
+import {NamedTensorMap, NamedVariableMap, TensorContainer} from './tensor_types';
+import {getTensorsInContainer, isTensorInList} from './tensor_util';
+import {TypedArray} from './types';
 import * as util from './util';
-import {getTensorsInContainer} from './util';
 
 interface ScopeState {
   track: Tensor[];
@@ -432,7 +433,7 @@ export class Engine implements TensorManager {
 
     const tensorsToKeep = new Set(this.keepTensors);
 
-    const tensorsToTrackInParent = util.getTensorsInContainer(result);
+    const tensorsToTrackInParent = getTensorsInContainer(result);
     tensorsToTrackInParent.forEach(tensor => tensorsToKeep.add(tensor.id));
 
     // Dispose the arrays tracked in this scope.
@@ -459,7 +460,7 @@ export class Engine implements TensorManager {
       // Only track the tensor if was allocated in the inner scope and is not
       // globally kept.
       if (!this.keepTensors.has(tensor.id) &&
-          util.isTensorInList(tensor, oldScope.track)) {
+          isTensorInList(tensor, oldScope.track)) {
         this.track(tensor);
       }
     });

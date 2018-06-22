@@ -1,0 +1,133 @@
+/**
+ * @license
+ * Copyright 2018 Google LLC. All Rights Reserved.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * =============================================================================
+ */
+
+import {Tensor} from './tensor';
+// tslint:disable-next-line:max-line-length
+import {NamedTensorMap, TensorContainer, TensorContainerArray} from './tensor_types';
+import {assert} from './util';
+
+export function assertTypesMatch(a: Tensor, b: Tensor): void {
+  assert(
+      a.dtype === b.dtype,
+      ` The dtypes of the first(${a.dtype}) and` +
+          ` second(${b.dtype}) input must match`);
+}
+
+function assertArgumentIsTensor(
+    x: Tensor, argName: string, functionName: string) {
+  assert(
+      x instanceof Tensor,
+      `Argument '${argName}' passed to '${functionName}' must be a Tensor, ` +
+          `but got ${typeof x}.`);
+}
+
+export function assertArgumentsAreTensors(
+    args: {[argName: string]: Tensor|Tensor[]}, functionName: string) {
+  for (const argName in args) {
+    const arg = args[argName];
+    if (Array.isArray(arg)) {
+      arg.forEach((t, i) => {
+        assertArgumentIsTensor(t, `${argName}[${i}]`, functionName);
+      });
+    } else {
+      assertArgumentIsTensor(arg, argName, functionName);
+    }
+  }
+}
+
+export function isTensorInList(tensor: Tensor, tensorList: Tensor[]): boolean {
+  for (let i = 0; i < tensorList.length; i++) {
+    if (tensorList[i].id === tensor.id) {
+      return true;
+    }
+  }
+  return false;
+}
+
+export function flattenNameArrayMap(
+    nameArrayMap: Tensor|NamedTensorMap, keys?: string[]): Tensor[] {
+  const xs: Tensor[] = [];
+  if (nameArrayMap instanceof Tensor) {
+    xs.push(nameArrayMap);
+  } else {
+    const xMap = nameArrayMap as {[xName: string]: Tensor};
+    for (let i = 0; i < keys.length; i++) {
+      xs.push(xMap[keys[i]]);
+    }
+  }
+  return xs;
+}
+
+export function unflattenToNameArrayMap(
+    keys: string[], flatArrays: Tensor[]): NamedTensorMap {
+  if (keys.length !== flatArrays.length) {
+    throw new Error(
+        `Cannot unflatten Tensor[], keys and arrays are not of same length.`);
+  }
+  const result: NamedTensorMap = {};
+  for (let i = 0; i < keys.length; i++) {
+    result[keys[i]] = flatArrays[i];
+  }
+  return result;
+}
+
+/**
+ * Extracts any `Tensor`s found within the provided object.
+ *
+ * @param container an object that may be a `Tensor` or may directly contain
+ *   `Tensor`s, such as a `Tensor[]` or `{key: Tensor, ...}`.  In general it
+ *   is safe to pass any object here, except that `Promise`s are not
+ *   supported.
+ * @returns An array of `Tensors` found within the passed object.  If the
+ *   argument is simply a `Tensor', a list containing that `Tensor` is
+ *   returned. If the object is not a `Tensor` or does not
+ *   contain `Tensors`, an empty list is returned.
+ */
+export function getTensorsInContainer(result: TensorContainer): Tensor[] {
+  const list: Tensor[] = [];
+  const seen = new Set<{}|void>();
+  walkTensorContainer(result, list, seen);
+  return list;
+}
+
+function walkTensorContainer(
+    container: TensorContainer, list: Tensor[], seen: Set<{}|void>): void {
+  if (container == null) {
+    return;
+  }
+  if (container instanceof Tensor) {
+    list.push(container);
+    return;
+  }
+  if (!isIterable(container)) {
+    return;
+  }
+  // Iteration over keys works also for arrays.
+  const iterable = container as TensorContainerArray;
+  for (const k in iterable) {
+    const val = iterable[k];
+    if (!seen.has(val)) {
+      seen.add(val);
+      walkTensorContainer(val, list, seen);
+    }
+  }
+}
+
+// tslint:disable-next-line:no-any
+function isIterable(obj: any): boolean {
+  return Array.isArray(obj) || typeof obj === 'object';
+}

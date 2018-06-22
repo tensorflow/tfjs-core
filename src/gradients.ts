@@ -18,7 +18,8 @@
 import {doc} from './doc';
 import {CustomGradientFunc, ENV, ScopeFn} from './environment';
 import {Scalar, Tensor, Variable} from './tensor';
-import {NamedTensorMap, TensorContainer} from './types';
+// tslint:disable-next-line:max-line-length
+import {NamedTensorMap, TensorContainer} from './tensor_types';
 import * as util from './util';
 
 export class Gradients {

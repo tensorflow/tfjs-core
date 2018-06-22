@@ -18,7 +18,9 @@
 import {doc} from '../doc';
 import {ENV} from '../environment';
 import {Tensor3D, Tensor4D} from '../tensor';
+import {assertArgumentsAreTensors} from '../tensor_util';
 import * as util from '../util';
+
 import {operation} from './operation';
 
 export class LRNOps {
@@ -39,7 +41,7 @@ export class LRNOps {
   @operation
   static localResponseNormalization<T extends Tensor3D|Tensor4D>(
       x: T, depthRadius = 5, bias = 1, alpha = 1, beta = 0.5): T {
-    util.assertArgumentsAreTensors({x}, 'localResponseNormalization');
+    assertArgumentsAreTensors({x}, 'localResponseNormalization');
     util.assert(
         x.rank === 4 || x.rank === 3,
         `Error in localResponseNormalization: x must be rank 3 or 4 but got

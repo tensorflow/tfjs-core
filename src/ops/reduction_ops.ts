@@ -19,7 +19,9 @@ import {doc} from '../doc';
 import {ENV} from '../environment';
 import {customGrad} from '../globals';
 import {Tensor} from '../tensor';
+import {assertArgumentsAreTensors} from '../tensor_util';
 import * as util from '../util';
+
 import * as axis_util from './axis_util';
 import {operation} from './operation';
 import {TensorOps} from './tensor_ops';
@@ -56,7 +58,7 @@ export class ReductionOps {
   @operation
   static logSumExp<T extends Tensor>(
       x: Tensor, axis: number|number[] = null, keepDims = false): T {
-    util.assertArgumentsAreTensors({x}, 'logSumExp');
+    assertArgumentsAreTensors({x}, 'logSumExp');
 
     const axes = axis_util.parseAxisParam(axis, x.shape);
     const xMax = x.max(axes, true /* keepDims */);
@@ -105,7 +107,7 @@ export class ReductionOps {
   @operation
   static sum<T extends Tensor>(
       x: Tensor, axis: number|number[] = null, keepDims = false): T {
-    util.assertArgumentsAreTensors({x}, 'sum');
+    assertArgumentsAreTensors({x}, 'sum');
 
     if (x.dtype === 'bool') {
       x = x.toInt();
@@ -176,7 +178,7 @@ export class ReductionOps {
   @operation
   static mean<T extends Tensor>(
       x: Tensor, axis: number|number[] = null, keepDims = false): T {
-    util.assertArgumentsAreTensors({x}, 'mean');
+    assertArgumentsAreTensors({x}, 'mean');
 
     const axes = axis_util.parseAxisParam(axis, x.shape);
     const shapes = axis_util.computeOutAndReduceShapes(x.shape, axes);
@@ -241,7 +243,7 @@ export class ReductionOps {
   @operation
   static min<T extends Tensor>(
       x: Tensor, axis: number|number[] = null, keepDims = false): T {
-    util.assertArgumentsAreTensors({x}, 'min');
+    assertArgumentsAreTensors({x}, 'min');
 
     const origAxes = axis_util.parseAxisParam(axis, x.shape);
     let axes = origAxes;
@@ -289,7 +291,7 @@ export class ReductionOps {
   @operation
   static max<T extends Tensor>(
       x: Tensor, axis: number|number[] = null, keepDims = false): T {
-    util.assertArgumentsAreTensors({x}, 'max');
+    assertArgumentsAreTensors({x}, 'max');
 
     const origAxes = axis_util.parseAxisParam(axis, x.shape);
     let axes = origAxes;
@@ -332,7 +334,7 @@ export class ReductionOps {
   @doc({heading: 'Operations', subheading: 'Reduction'})
   @operation
   static argMin<T extends Tensor>(x: Tensor, axis = 0): T {
-    util.assertArgumentsAreTensors({x}, 'argMin');
+    assertArgumentsAreTensors({x}, 'argMin');
 
     if (axis == null) {
       axis = 0;
@@ -372,7 +374,7 @@ export class ReductionOps {
   @doc({heading: 'Operations', subheading: 'Reduction'})
   @operation
   static argMax<T extends Tensor>(x: Tensor, axis = 0): T {
-    util.assertArgumentsAreTensors({x}, 'argMax');
+    assertArgumentsAreTensors({x}, 'argMax');
 
     if (axis == null) {
       axis = 0;
@@ -419,7 +421,7 @@ export class ReductionOps {
   @operation
   static all<T extends Tensor>(
       x: Tensor, axis: number|number[] = null, keepDims = false): T {
-    util.assertArgumentsAreTensors({x}, 'all');
+    assertArgumentsAreTensors({x}, 'all');
     util.assert(
         x.dtype === 'bool',
         `Error Tensor must be of type bool. Got: ${x.dtype}`);
@@ -470,7 +472,7 @@ export class ReductionOps {
   @operation
   static any<T extends Tensor>(
       x: Tensor, axis: number|number[] = null, keepDims = false): T {
-    util.assertArgumentsAreTensors({x}, 'any');
+    assertArgumentsAreTensors({x}, 'any');
     util.assert(
         x.dtype === 'bool',
         `Error Tensor must be of type bool. Got: ${x.dtype}`);
@@ -506,7 +508,7 @@ export class ReductionOps {
   @operation
   static moments(x: Tensor, axis: number|number[] = null, keepDims = false):
       {mean: Tensor, variance: Tensor} {
-    util.assertArgumentsAreTensors({x}, 'moments');
+    assertArgumentsAreTensors({x}, 'moments');
 
     const axes = axis_util.parseAxisParam(axis, x.shape);
     const mean = x.mean(axes, keepDims);

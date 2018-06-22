@@ -18,8 +18,10 @@
 import {doc} from '../doc';
 import {ENV} from '../environment';
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
+import {assertArgumentsAreTensors} from '../tensor_util';
 import {Rank} from '../types';
 import * as util from '../util';
+
 import {ArrayOps} from './array_ops';
 import {getReductionAxes} from './broadcast_util';
 import {operation} from './operation';
@@ -191,12 +193,12 @@ export class BatchNormOps {
       x: Tensor<R>, mean: Tensor<R>|Tensor1D, variance: Tensor<R>|Tensor1D,
       varianceEpsilon = .001, scale?: Tensor<R>|Tensor1D,
       offset?: Tensor<R>|Tensor1D): Tensor<R> {
-    util.assertArgumentsAreTensors({x, mean, variance}, 'batchNormalization');
+    assertArgumentsAreTensors({x, mean, variance}, 'batchNormalization');
     if (scale != null) {
-      util.assertArgumentsAreTensors({scale}, 'batchNormalization');
+      assertArgumentsAreTensors({scale}, 'batchNormalization');
     }
     if (offset != null) {
-      util.assertArgumentsAreTensors({offset}, 'batchNormalization');
+      assertArgumentsAreTensors({offset}, 'batchNormalization');
     }
 
     util.assert(

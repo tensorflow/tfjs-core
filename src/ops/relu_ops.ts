@@ -18,7 +18,7 @@
 import {doc} from '../doc';
 import {ENV} from '../environment';
 import {Tensor} from '../tensor';
-import * as util from '../util';
+import {assertArgumentsAreTensors} from '../tensor_util';
 import {BinaryOps} from './binary_ops';
 import {LogicalOps} from './logical_ops';
 import {operation} from './operation';
@@ -40,7 +40,7 @@ export class ReluOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static relu<T extends Tensor>(x: T): T {
-    util.assertArgumentsAreTensors({x}, 'relu');
+    assertArgumentsAreTensors({x}, 'relu');
 
     if (x.dtype === 'bool') {
       return x.toInt();
@@ -65,7 +65,7 @@ export class ReluOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static elu<T extends Tensor>(x: T): T {
-    util.assertArgumentsAreTensors({x}, 'elu');
+    assertArgumentsAreTensors({x}, 'elu');
 
     const grad = (dy: T, saved: Tensor[]) => {
       const [y] = saved;
@@ -93,7 +93,7 @@ export class ReluOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static selu<T extends Tensor>(x: T): T {
-    util.assertArgumentsAreTensors({x}, 'selu');
+    assertArgumentsAreTensors({x}, 'selu');
 
     const grad = (dy: T) => {
       return {
@@ -132,7 +132,7 @@ export class ReluOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static leakyRelu<T extends Tensor>(x: T, alpha = 0.2): T {
-    util.assertArgumentsAreTensors({x}, 'leakyRelu');
+    assertArgumentsAreTensors({x}, 'leakyRelu');
 
     return BinaryOps.maximum(TensorOps.scalar(alpha).mul(x), x);
   }
@@ -154,7 +154,7 @@ export class ReluOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static prelu<T extends Tensor>(x: T, alpha: T): T {
-    util.assertArgumentsAreTensors({x, alpha}, 'prelu');
+    assertArgumentsAreTensors({x, alpha}, 'prelu');
 
     const zero = TensorOps.scalar(0);
     return BinaryOps.maximum(zero, x).add(

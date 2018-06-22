@@ -17,7 +17,8 @@
 
 import {TensorOps} from '../ops/tensor_ops';
 import {Tensor} from '../tensor';
-import {NamedTensorMap, TypedArray} from '../types';
+import {NamedTensorMap} from '../tensor_types';
+import {TypedArray} from '../types';
 import {sizeFromShape} from '../util';
 
 // tslint:disable-next-line:max-line-length

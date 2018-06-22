@@ -18,10 +18,13 @@
 import {doc} from '../doc';
 // tslint:disable-next-line:max-line-length
 import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D, Tensor6D} from '../tensor';
+import {assertArgumentsAreTensors} from '../tensor_util';
 // tslint:disable-next-line:max-line-length
-import {ArrayData, DataType, DataTypeMap, Rank, ShapeMap, TensorLike, TensorLike1D, TensorLike2D, TensorLike3D, TensorLike4D, TensorLike5D, TensorLike6D} from '../types';
+import {TensorLike, TensorLike1D, TensorLike2D, TensorLike3D, TensorLike4D, TensorLike5D, TensorLike6D} from '../types';
 // tslint:disable-next-line:max-line-length
-import {assertArgumentsAreTensors, assertNonNull, assertShapesMatch, copyTypedArray, flatten, getTypedArrayFromDType, inferShape, isTypedArray, sizeFromShape} from '../util';
+import {ArrayData, DataType, DataTypeMap, Rank, ShapeMap} from '../types';
+// tslint:disable-next-line:max-line-length
+import {assertNonNull, assertShapesMatch, copyTypedArray, flatten, getTypedArrayFromDType, inferShape, isTypedArray, sizeFromShape} from '../util';
 
 export class TensorOps {
   /**
