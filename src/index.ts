@@ -27,7 +27,7 @@ import {Environment} from './environment';
 // Serialization.
 import * as io from './io/io';
 import * as serialization from './serialization';
-import {setOps} from './tensor';
+import {setOpHandler} from './tensor';
 import * as test_util from './test_util';
 import * as util from './util';
 import {version} from './version';
@@ -71,4 +71,4 @@ export {environment, io, serialization, test_util, util, webgl};
 export {KernelBackend, BackendTimingInfo} from './kernels/backend';
 
 import * as ops from './ops/ops';
-setOps(ops);
+setOpHandler(ops);
