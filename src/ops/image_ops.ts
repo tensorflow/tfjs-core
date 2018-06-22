@@ -16,8 +16,7 @@
  */
 
 import {doc} from '../doc';
-import {ForwardFunc} from '../engine';
-import {ENV} from '../environment';
+import {ENV, ForwardFunc} from '../environment';
 import {Tensor, Tensor3D, Tensor4D} from '../tensor';
 import * as util from '../util';
 import {operation} from './operation';

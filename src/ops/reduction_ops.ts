@@ -22,7 +22,7 @@ import {Tensor} from '../tensor';
 import * as util from '../util';
 import * as axis_util from './axis_util';
 import {operation} from './operation';
-import * as ops from './ops';
+import {TensorOps} from './tensor_ops';
 
 export class ReductionOps {
   /**
@@ -136,7 +136,7 @@ export class ReductionOps {
           expandedDyShape[axis] = 1;
         });
         const expandedDy = dy.reshape(expandedDyShape);
-        const derX = expandedDy.mul(ops.ones(x.shape, 'float32'));
+        const derX = expandedDy.mul(TensorOps.ones(x.shape, 'float32'));
         return derX;
       };
       return {value, gradFunc};
@@ -186,7 +186,7 @@ export class ReductionOps {
     // Use a custom gradient to bypass 2 gradient backprops since mean is used
     // extremely often.
     const customOp = customGrad(x => {
-      const reduceSizeScalar = ops.scalar(reduceSize);
+      const reduceSizeScalar = TensorOps.scalar(reduceSize);
       // Cast if needed.
       const xReduce = reduceSizeScalar.dtype === x.dtype ?
           x :
@@ -200,8 +200,8 @@ export class ReductionOps {
           expandedDyShape[axis] = 1;
         });
         const expandedDy = dy.reshape(expandedDyShape);
-        const derX =
-            expandedDy.mul(ops.ones(x.shape, 'float32')).div(reduceSizeScalar);
+        const derX = expandedDy.mul(TensorOps.ones(x.shape, 'float32'))
+                         .div(reduceSizeScalar);
         return derX;
       };
       return {value, gradFunc};

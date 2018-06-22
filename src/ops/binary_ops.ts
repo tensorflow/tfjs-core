@@ -17,14 +17,14 @@
 
 import {doc} from '../doc';
 import {ENV} from '../environment';
+import {KernelBackend} from '../kernels/backend';
 import {Tensor} from '../tensor';
 import {upcastType} from '../types';
 import * as util from '../util';
-
 import * as broadcast_util from './broadcast_util';
 import {operation} from './operation';
-import {neg, scalar, square} from './ops';
-import {KernelBackend} from '../kernels/backend';
+import {TensorOps} from './tensor_ops';
+import {UnaryOps} from './unary_ops';
 
 export class BinaryOps {
   /**
@@ -372,8 +372,7 @@ export class BinaryOps {
       };
       return {a: derA, b: derB};
     };
-    return ENV.engine.runKernel(forwardFunc, {a, b}, der) as
-        T;
+    return ENV.engine.runKernel(forwardFunc, {a, b}, der) as T;
   }
 
   /**
@@ -429,8 +428,7 @@ export class BinaryOps {
       };
       return {a: derA, b: derB};
     };
-    return ENV.engine.runKernel(forwardFunc, {a, b}, der) as
-        T;
+    return ENV.engine.runKernel(forwardFunc, {a, b}, der) as T;
   }
 
   /**
@@ -668,7 +666,7 @@ export class BinaryOps {
 
     broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     const der = (dy: Tensor) => {
-      const two = scalar(2);
+      const two = TensorOps.scalar(2);
       const derA = () => dy.mul(a.sub(b).mul(two));
       const derB = () => dy.mul(b.sub(a).mul(two));
       return {a: derA, b: derB};
@@ -719,7 +717,7 @@ export class BinaryOps {
 
     const der = (dy: Tensor) => {
       const derA = () => {
-        const d = BinaryOps.add(square(a), square(b));
+        const d = BinaryOps.add(UnaryOps.square(a), UnaryOps.square(b));
         let res = dy.mul(b.div(d));
         const reduceAxes = broadcast_util.getReductionAxes(a.shape, outShape);
         if (reduceAxes.length > 0) {
@@ -728,8 +726,8 @@ export class BinaryOps {
         return res.reshape(a.shape);
       };
       const derB = () => {
-        const d = BinaryOps.add(square(a), square(b)) as T;
-        let res = neg(dy.mul(a.div(d)));
+        const d = BinaryOps.add(UnaryOps.square(a), UnaryOps.square(b)) as T;
+        let res = UnaryOps.neg(dy.mul(a.div(d)));
         const reduceAxes = broadcast_util.getReductionAxes(b.shape, outShape);
         if (reduceAxes.length > 0) {
           res = res.sum(reduceAxes);

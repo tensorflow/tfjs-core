@@ -18,9 +18,9 @@
 import {doc} from '../doc';
 import {Tensor} from '../tensor';
 import * as util from '../util';
-
+import {BinaryOps} from './binary_ops';
 import {operation} from './operation';
-import * as ops from './ops';
+import {TensorOps} from './tensor_ops';
 
 export enum Reduction {
   NONE,
@@ -63,9 +63,10 @@ export class LossOps {
     }
     if (reduction === Reduction.SUM_BY_NONZERO_WEIGHTS) {
       if (weights == null) {
-        return weightedLoss.sum().div(ops.scalar(losses.size));
+        return weightedLoss.sum().div(TensorOps.scalar(losses.size));
       } else {
-        const numNonZeros = weights.notEqual(ops.scalar(0)).sum().toFloat();
+        const numNonZeros =
+            weights.notEqual(TensorOps.scalar(0)).sum().toFloat();
         return weightedLoss.sum().div(numNonZeros);
       }
     }
@@ -157,7 +158,7 @@ export class LossOps {
     util.assertShapesMatch(
         labels.shape, predictions.shape, 'Error in cosineDistance: ');
 
-    const one = ops.scalar(1);
+    const one = TensorOps.scalar(1);
     const losses = one.sub(labels.mul(predictions).sum(axis, true));
     return LossOps.computeWeightedLoss(losses, weights, reduction);
   }
@@ -187,9 +188,9 @@ export class LossOps {
     util.assertShapesMatch(
         labels.shape, predictions.shape, 'Error in hingeLoss: ');
 
-    const one = ops.scalar(1);
+    const one = TensorOps.scalar(1);
     // Convert binary labels to (-1, 1)
-    labels = ops.scalar(2).mul(labels).sub(one);
+    labels = TensorOps.scalar(2).mul(labels).sub(one);
     const losses = one.sub(labels.mul(predictions)).relu();
     return LossOps.computeWeightedLoss(losses, weights, reduction);
   }
@@ -220,8 +221,8 @@ export class LossOps {
     util.assertShapesMatch(
         labels.shape, predictions.shape, 'Error in logLoss: ');
 
-    const one = ops.scalar(1);
-    const epsilonScalar = ops.scalar(epsilon);
+    const one = TensorOps.scalar(1);
+    const epsilonScalar = TensorOps.scalar(epsilon);
     const losses = labels.mul(predictions.add(epsilonScalar).log())
                        .neg()
                        .sub(one.sub(labels).mul(
@@ -255,13 +256,14 @@ export class LossOps {
     util.assertShapesMatch(
         labels.shape, predictions.shape, 'Error in huberLoss: ');
 
-    const deltaScalar = ops.scalar(delta);
+    const deltaScalar = TensorOps.scalar(delta);
     const error = predictions.sub(labels).abs();
-    const quadratic = ops.minimum(error, deltaScalar);
+    const quadratic = BinaryOps.minimum(error, deltaScalar);
     const linear = error.sub(quadratic);
 
-    const losses =
-        ops.scalar(0.5).mul(quadratic.square()).add(deltaScalar.mul(linear));
+    const losses = TensorOps.scalar(0.5)
+                       .mul(quadratic.square())
+                       .add(deltaScalar.mul(linear));
     return LossOps.computeWeightedLoss(losses, weights, reduction);
   }
 }

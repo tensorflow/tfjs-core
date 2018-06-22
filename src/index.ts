@@ -27,6 +27,7 @@ import {Environment} from './environment';
 // Serialization.
 import * as io from './io/io';
 import * as serialization from './serialization';
+import {setOps} from './tensor';
 import * as test_util from './test_util';
 import * as util from './util';
 import {version} from './version';
@@ -53,12 +54,11 @@ export {Reduction} from './ops/loss_ops';
 export * from './train';
 export * from './globals';
 
-export {ENV, Environment, Features} from './environment';
+export {ENV, Environment, Features, TimingInfo} from './environment';
 export const setBackend = Environment.setBackend;
 export const getBackend = Environment.getBackend;
 export const disposeVariables = Environment.disposeVariables;
 export const memory = Environment.memory;
-export {TimingInfo} from './engine';
 export {version as version_core};
 export {doc} from './doc';
 
@@ -69,3 +69,6 @@ export {environment, io, serialization, test_util, util, webgl};
 
 // Backend specific.
 export {KernelBackend, BackendTimingInfo} from './kernels/backend';
+
+import * as ops from './ops/ops';
+setOps(ops);

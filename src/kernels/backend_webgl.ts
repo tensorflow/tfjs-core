@@ -15,8 +15,7 @@
  * =============================================================================
  */
 
-import {MemoryInfo, TimingInfo} from '../engine';
-import {ENV} from '../environment';
+import {ENV, MemoryInfo, TimingInfo} from '../environment';
 import * as axis_util from '../ops/axis_util';
 import {Conv2DInfo} from '../ops/conv_util';
 import * as ops from '../ops/ops';

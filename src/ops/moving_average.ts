@@ -18,9 +18,9 @@
 import {doc} from '../doc';
 import {Scalar, Tensor} from '../tensor';
 import * as util from '../util';
-import {ArrayOps} from './array_ops';
 import {BinaryOps} from './binary_ops';
 import {operation} from './operation';
+import {TensorOps} from './tensor_ops';
 
 export class MovingAverageOps {
   /**
@@ -59,15 +59,15 @@ export class MovingAverageOps {
     util.assert(
         util.arraysEqual(v.shape, x.shape), 'Shape mismatch in v and x');
 
-    const one = ArrayOps.scalar(1);
-    decay = typeof decay === 'number' ? ArrayOps.scalar(decay) : decay;
+    const one = TensorOps.scalar(1);
+    decay = typeof decay === 'number' ? TensorOps.scalar(decay) : decay;
     const oneMinusDecay = one.sub(decay);
 
     let update = x.sub(v).mul(oneMinusDecay);
     if (zeroDebias) {
       util.assert(
           step != null, 'When using zeroDebias: true, step is required.');
-      step = typeof step === 'number' ? ArrayOps.scalar(step) : step;
+      step = typeof step === 'number' ? TensorOps.scalar(step) : step;
       update = update.div(one.sub(BinaryOps.pow(decay, step)));
     }
     return v.add(update);

@@ -16,8 +16,6 @@
  */
 
 import {doc} from './doc';
-import * as ops from './ops/ops';
-import * as tensor_util from './tensor_util';
 import {DataType, Rank, ShapeMap, TypedArray} from './types';
 import * as util from './util';
 
@@ -142,10 +140,45 @@ export interface TensorTracker {
   registerVariable(v: Variable): void;
 }
 
+export interface Ops {
+  cast<T extends Tensor>(x: T, dtype: DataType): T;
+  buffer<R extends Rank>(
+      shape: ShapeMap[R], dtype: DataType,
+      values?: TypedArray): TensorBuffer<R>;
+  print<T extends Tensor>(x: T, verbose: boolean): void;
+  reshape<R2 extends Rank>(x: Tensor, shape: ShapeMap[R2]): Tensor<R2>;
+  expandDims<R2 extends Rank>(x: Tensor, axis: number): Tensor<R2>;
+  cumsum<T extends Tensor>(
+      x: Tensor, axis: number, exclusive: boolean, reverse: boolean): T;
+  squeeze<T extends Tensor>(x: Tensor, axis?: number[]): T;
+  clone<T extends Tensor>(x: T): T;
+  tile<T extends Tensor>(x: T, reps: number[]): T;
+  gather<T extends Tensor>(x: T, indices: Tensor1D, axis: number): T;
+  matMul(a: Tensor2D, b: Tensor2D, transposeA: boolean, transposeB: boolean):
+      Tensor2D;
+  dot(t1: Tensor, t2: Tensor): Tensor;
+  norm(
+      x: Tensor, ord: number|'euclidean'|'fro', axis: number|number[],
+      keepDims: boolean): Tensor;
+  slice<R extends Rank, T extends Tensor<R>>(
+      x: T, begin: number|number[], size?: number|number[]): T;
+  reverse<T extends Tensor>(x: T, axis?: number|number[]): T;
+  concat<T extends Tensor>(tensors: T[], axis: number): T;
+  stack<T extends Tensor>(tensors: T[], axis: number): Tensor;
+  unstack<T extends Tensor>(value: T, axis: number): Tensor[];
+  pad<T extends Tensor>(
+      x: T, paddings: Array<[number, number]>, constantValue: number): T;
+}
+
 let tracker: TensorTracker = null;
+let ops: Ops = null;
 
 export function setTensorTracker(t: TensorTracker) {
   tracker = t;
+}
+
+export function setOps(o: Ops) {
+  ops = o;
 }
 
 /**
@@ -474,7 +507,7 @@ export class Tensor<R extends Rank = Rank> {
   /** Returns a human-readable description of the tensor. Useful for logging. */
   @doc({heading: 'Tensors', subheading: 'Classes'})
   toString(verbose = false): string {
-    return tensor_util.tensorToString(this, verbose);
+    return tensorToString(this, verbose);
   }
 
   // Below is chain API that is not exposed to docs to avoid repetition. To
@@ -1079,4 +1112,126 @@ function computeStrides(shape: number[]): number[] {
     strides[i] = strides[i + 1] * shape[i + 1];
   }
   return strides;
+}
+
+// Maximum number of values before we decide to show ellipsis.
+const FORMAT_LIMIT_NUM_VALS = 20;
+// Number of first and last values to show when displaying a, b,...,y, z.
+const FORMAT_NUM_FIRST_LAST_VALS = 3;
+// Number of significant digits to show.
+const FORMAT_NUM_SIG_DIGITS = 7;
+
+export function tensorToString(t: Tensor, verbose: boolean) {
+  const vals = t.dataSync();
+  const padPerCol = computeMaxSizePerColumn(t);
+  const valsLines = subTensorToString(vals, t.shape, t.strides, padPerCol);
+  const lines = ['Tensor'];
+  if (verbose) {
+    lines.push(`  dtype: ${t.dtype}`);
+    lines.push(`  rank: ${t.rank}`);
+    lines.push(`  shape: [${t.shape}]`);
+    lines.push(`  values:`);
+  }
+  lines.push(valsLines.map(l => '    ' + l).join('\n'));
+  return lines.join('\n');
+}
+
+function computeMaxSizePerColumn(t: Tensor): number[] {
+  const vals = t.dataSync();
+  const n = t.size;
+
+  const numCols = t.strides[t.strides.length - 1];
+  const padPerCol = new Array(numCols).fill(0);
+  if (t.rank > 1) {
+    for (let row = 0; row < n / numCols; row++) {
+      const offset = row * numCols;
+      for (let j = 0; j < numCols; j++) {
+        padPerCol[j] =
+            Math.max(padPerCol[j], valToString(vals[offset + j], 0).length);
+      }
+    }
+  }
+  return padPerCol;
+}
+
+function valToString(val: number, pad: number) {
+  return util.rightPad(
+      parseFloat(val.toFixed(FORMAT_NUM_SIG_DIGITS)).toString(), pad);
+}
+
+function subTensorToString(
+    vals: TypedArray, shape: number[], strides: number[], padPerCol: number[],
+    isLast = true): string[] {
+  const size = shape[0];
+  const rank = shape.length;
+  if (rank === 0) {
+    return [vals[0].toString()];
+  }
+
+  if (rank === 1) {
+    if (size > FORMAT_LIMIT_NUM_VALS) {
+      const firstVals =
+          Array.from(vals.subarray(0, FORMAT_NUM_FIRST_LAST_VALS));
+      const lastVals =
+          Array.from(vals.subarray(size - FORMAT_NUM_FIRST_LAST_VALS, size));
+      return [
+        '[' + firstVals.map((x, i) => valToString(x, padPerCol[i])).join(', ') +
+        ', ..., ' +
+        lastVals
+            .map(
+                (x, i) => valToString(
+                    x, padPerCol[size - FORMAT_NUM_FIRST_LAST_VALS + i]))
+            .join(', ') +
+        ']'
+      ];
+    }
+    return [
+      '[' +
+      Array.from(vals).map((x, i) => valToString(x, padPerCol[i])).join(', ') +
+      ']'
+    ];
+  }
+
+  // The array is rank 2 or more.
+  const subshape = shape.slice(1);
+  const substrides = strides.slice(1);
+  const stride = strides[0];
+  const lines: string[] = [];
+  if (size > FORMAT_LIMIT_NUM_VALS) {
+    for (let i = 0; i < FORMAT_NUM_FIRST_LAST_VALS; i++) {
+      const start = i * stride;
+      const end = start + stride;
+      lines.push(...subTensorToString(
+          vals.subarray(start, end), subshape, substrides, padPerCol,
+          false /* isLast */));
+    }
+    lines.push('...');
+    for (let i = size - FORMAT_NUM_FIRST_LAST_VALS; i < size; i++) {
+      const start = i * stride;
+      const end = start + stride;
+      lines.push(...subTensorToString(
+          vals.subarray(start, end), subshape, substrides, padPerCol,
+          i === size - 1 /* isLast */));
+    }
+  } else {
+    for (let i = 0; i < size; i++) {
+      const start = i * stride;
+      const end = start + stride;
+      lines.push(...subTensorToString(
+          vals.subarray(start, end), subshape, substrides, padPerCol,
+          i === size - 1 /* isLast */));
+    }
+  }
+  const sep = rank === 2 ? ',' : '';
+  lines[0] = '[' + lines[0] + sep;
+  for (let i = 1; i < lines.length - 1; i++) {
+    lines[i] = ' ' + lines[i] + sep;
+  }
+  let newLineSep = ',\n';
+  for (let i = 2; i < rank; i++) {
+    newLineSep += '\n';
+  }
+  lines[lines.length - 1] =
+      ' ' + lines[lines.length - 1] + ']' + (isLast ? '' : newLineSep);
+  return lines;
 }

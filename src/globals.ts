@@ -15,13 +15,12 @@
  * =============================================================================
  */
 
+import {Engine} from './environment';
 import {Gradients} from './gradients';
-import {Tracking} from './tracking';
-
-export const tidy = Tracking.tidy;
-export const keep = Tracking.keep;
-export const dispose = Tracking.dispose;
-export const time = Tracking.time;
+export const tidy = Engine.tidy;
+export const keep = Engine.keep;
+export const dispose = Engine.dispose;
+export const time = Engine.time;
 
 export const grad = Gradients.grad;
 export const valueAndGrad = Gradients.valueAndGrad;

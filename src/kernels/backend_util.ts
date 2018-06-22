@@ -16,8 +16,9 @@
  */
 
 import {Rank, Tensor, util} from '..';
-import {ArrayOps} from '../ops/array_ops';
+import {TensorOps} from '../ops/tensor_ops';
 import {DataType, ShapeMap} from '../types';
+
 import {KernelBackend} from './backend';
 
 export function castTensor<T extends Tensor<Rank>>(
@@ -30,7 +31,7 @@ export function castTensor<T extends Tensor<Rank>>(
   if (dtype === 'int32') {
     return backend.int(x);
   } else if (dtype === 'bool') {
-    return backend.notEqual(x, ArrayOps.scalar(0, x.dtype)) as T;
+    return backend.notEqual(x, TensorOps.scalar(0, x.dtype)) as T;
   } else {
     throw new Error(`Error in Cast: unknown dtype argument (${dtype})`);
   }

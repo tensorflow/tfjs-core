@@ -18,10 +18,9 @@
 import {doc} from '../doc';
 import {Tensor} from '../tensor';
 import * as util from '../util';
-
 import * as axis_util from './axis_util';
 import {operation} from './operation';
-import * as ops from './ops';
+import {TensorOps} from './tensor_ops';
 
 export class NormOps {
   /**
@@ -102,7 +101,8 @@ function normImpl(
     }
     if (p === 'euclidean' || p === 2) {
       // norm(x, 2) = sum(abs(xi) ^ 2) ^ 1/2
-      return x.abs().pow(ops.scalar(2, 'int32')).sum(axis).sqrt() as Tensor;
+      return x.abs().pow(TensorOps.scalar(2, 'int32')).sum(axis).sqrt() as
+          Tensor;
     }
 
     throw new Error(`Error in norm: invalid ord value: ${p}`);

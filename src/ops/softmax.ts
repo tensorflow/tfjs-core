@@ -19,10 +19,9 @@ import {doc} from '../doc';
 import {customGrad} from '../globals';
 import {Tensor} from '../tensor';
 import * as util from '../util';
-
 import * as axis_util from './axis_util';
 import {operation} from './operation';
-import * as ops from './ops';
+import {TensorOps} from './tensor_ops';
 
 export class SoftmaxOps {
   /**
@@ -123,7 +122,7 @@ export class SoftmaxOps {
     const customOp = customGrad((labels, logits) => {
       const predictedProbs = logits.softmax(dim);
       const costVector =
-          ops.scalar(1e-5).add(predictedProbs).log().mul(labels).neg();
+          TensorOps.scalar(1e-5).add(predictedProbs).log().mul(labels).neg();
       const value = costVector.sum([dim]) as O;
 
       const gradFunc = (dy: O) => {

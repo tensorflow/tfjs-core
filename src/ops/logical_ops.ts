@@ -22,7 +22,7 @@ import * as types from '../types';
 import * as util from '../util';
 import * as broadcast_util from './broadcast_util';
 import {operation} from './operation';
-import {zerosLike} from '../ops/ops';
+import {TensorOps} from './tensor_ops';
 
 export class LogicalOps {
   /**
@@ -146,8 +146,7 @@ export class LogicalOps {
   static where<T extends Tensor>(condition: Tensor, a: T, b: T): T {
     util.assertArgumentsAreTensors({condition, a, b}, 'where');
     util.assert(
-        condition.dtype === 'bool',
-        'Error Condition must be of type bool.');
+        condition.dtype === 'bool', 'Error Condition must be of type bool.');
     util.assertShapesMatch(a.shape, b.shape, 'Error in where: ');
 
     if (condition.rank === 1) {
@@ -167,13 +166,13 @@ export class LogicalOps {
     // TODO(julianoks): Return null for condition gradient
     // when backprop supports it.
     const grad = (dy: T) => ({
-      condition: () => zerosLike(condition),
+      condition: () => TensorOps.zerosLike(condition),
       a: () => dy.mul(condition.cast(a.dtype)) as T,
       b: () => dy.mul(condition.logicalNot().cast(b.dtype)) as T
     });
-    
+
     return ENV.engine.runKernel(
-    	backend => backend.where(condition, a, b, dtype), 
-    	{condition, a, b}, grad) as T;
+               backend => backend.where(condition, a, b, dtype),
+               {condition, a, b}, grad) as T;
   }
 }
