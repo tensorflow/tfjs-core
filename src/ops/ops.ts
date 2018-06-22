@@ -15,6 +15,8 @@
  * =============================================================================
  */
 
+import {Tensor} from '../tensor';
+import {Rank} from '../types';
 import {ArrayOps} from './array_ops';
 import {BatchNormOps} from './batchnorm';
 import {BinaryOps} from './binary_ops';
@@ -32,11 +34,14 @@ import {MovingAverageOps} from './moving_average';
 import {NormOps} from './norm';
 import {PoolOps} from './pool';
 import {ReductionOps} from './reduction_ops';
+import {ReluOps} from './relu_ops';
 import {ReverseOps} from './reverse';
+import {SegmentOps} from './segment_ops';
 import {SigmoidCrossEntropyOps} from './sigmoid_cross_entropy';
 import {SliceOps} from './slice';
 import {SoftmaxOps} from './softmax';
 import {StridedSliceOps} from './strided_slice';
+import {TensorOps} from './tensor_ops';
 import {TransposeOps} from './transpose';
 import {UnaryOps} from './unary_ops';
 
@@ -236,11 +241,6 @@ export const linalg = LinalgOps;
 export {operation} from './operation';
 
 // So typings can propagate.
-import {Tensor} from '../tensor';
-import {Rank} from '../types';
-import {TensorOps} from './tensor_ops';
-import {ReluOps} from './relu_ops';
-import {SegmentOps} from './segment_ops';
 // tslint:disable-next-line:no-unused-expression
 [Tensor, Rank];
 
