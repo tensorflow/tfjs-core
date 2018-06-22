@@ -18,10 +18,10 @@
 import {doc} from '../doc';
 import {Tensor} from '../tensor';
 import {TensorLike} from '../types';
-import * as util from '../util';
+import {assertArgIsTensor} from '../util';
 import * as axis_util from './axis_util';
 import {operation} from './operation';
-import * as ops from './ops';
+import {TensorOps} from './tensor_ops';
 
 export class NormOps {
   /**
@@ -65,7 +65,7 @@ export class NormOps {
   static norm(
       x: Tensor|TensorLike, ord: number|'euclidean'|'fro' = 'euclidean',
       axis: number|number[] = null, keepDims = false): Tensor {
-    x = util.assertArgIsTensor(x, 'x', 'norm');
+    x = assertArgIsTensor(x, 'x', 'norm');
 
     const norm = normImpl(x, ord, axis);
     let keepDimsShape = norm.shape;
@@ -102,7 +102,8 @@ function normImpl(
     }
     if (p === 'euclidean' || p === 2) {
       // norm(x, 2) = sum(abs(xi) ^ 2) ^ 1/2
-      return x.abs().pow(ops.scalar(2, 'int32')).sum(axis).sqrt() as Tensor;
+      return x.abs().pow(TensorOps.scalar(2, 'int32')).sum(axis).sqrt() as
+          Tensor;
     }
 
     throw new Error(`Error in norm: invalid ord value: ${p}`);

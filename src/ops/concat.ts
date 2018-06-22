@@ -19,7 +19,7 @@ import {doc} from '../doc';
 import {ENV} from '../environment';
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import {TensorLike} from '../types';
-import * as util from '../util';
+import {assert, assertArgIsTensorArr, sizeFromShape} from '../util';
 import {parseAxisParam} from './axis_util';
 import * as concat_util from './concat_util';
 import {operation} from './operation';
@@ -157,8 +157,8 @@ export class ConcatOps {
   @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
   @operation
   static concat<T extends Tensor>(tensors: T[]|TensorLike[], axis = 0): T {
-    util.assert(tensors.length >= 1, 'Pass at least one tensor to concat');
-    const $tensors = util.assertArgIsTensorArr(tensors, 'tensors', 'concat');
+    assert(tensors.length >= 1, 'Pass at least one tensor to concat');
+    const $tensors = assertArgIsTensorArr(tensors, 'tensors', 'concat');
 
     let result = $tensors[0] as T;
     if ($tensors.length === 1) {
@@ -178,8 +178,8 @@ function concat2Tensors<T extends Tensor>(a: T, b: T, axis: number): T {
   const outShape = concat_util.computeOutShape(a.shape, b.shape, axis);
 
   // Do the reshape.
-  const a2D = a.as2D(-1, util.sizeFromShape(a.shape.slice(axis)));
-  const b2D = b.as2D(-1, util.sizeFromShape(b.shape.slice(axis)));
+  const a2D = a.as2D(-1, sizeFromShape(a.shape.slice(axis)));
+  const b2D = b.as2D(-1, sizeFromShape(b.shape.slice(axis)));
   // Concats 2d tensors along axis=1. See comments in MathBackend.concat().
   const {aBegin, aSize, bBegin, bSize} =
       concat_util.computeGradientSliceShapes(a2D.shape, b2D.shape);

@@ -19,11 +19,13 @@ import {doc} from '../doc';
 import {ENV} from '../environment';
 import {customGrad} from '../globals';
 import {Tensor} from '../tensor';
+import {assertArgIsTensor, assertArgumentsAreTensors} from '../tensor_util';
 import {TensorLike} from '../types';
 import * as util from '../util';
+
 import * as axis_util from './axis_util';
 import {operation} from './operation';
-import * as ops from './ops';
+import {TensorOps} from './tensor_ops';
 
 export class ReductionOps {
   /**
@@ -57,7 +59,7 @@ export class ReductionOps {
   @operation
   static logSumExp<T extends Tensor>(
       x: Tensor|TensorLike, axis: number|number[] = null, keepDims = false): T {
-    const $x = util.assertArgIsTensor(x, 'x', 'logSumExp');
+    const $x = assertArgIsTensor(x, 'x', 'logSumExp');
 
     const axes = axis_util.parseAxisParam(axis, $x.shape);
     const xMax = $x.max(axes, true /* keepDims */);
@@ -106,7 +108,7 @@ export class ReductionOps {
   @operation
   static sum<T extends Tensor>(
       x: Tensor|TensorLike, axis: number|number[] = null, keepDims = false): T {
-    let $x = util.assertArgIsTensor(x, 'x', 'sum');
+    let $x = assertArgIsTensor(x, 'x', 'sum');
 
     if ($x.dtype === 'bool') {
       $x = $x.toInt();
@@ -137,7 +139,7 @@ export class ReductionOps {
           expandedDyShape[axis] = 1;
         });
         const expandedDy = dy.reshape(expandedDyShape);
-        const derX = expandedDy.mul(ops.ones(x.shape, 'float32'));
+        const derX = expandedDy.mul(TensorOps.ones(x.shape, 'float32'));
         return derX;
       };
       return {value, gradFunc};
@@ -177,7 +179,7 @@ export class ReductionOps {
   @operation
   static mean<T extends Tensor>(
       x: Tensor|TensorLike, axis: number|number[] = null, keepDims = false): T {
-    const $x = util.assertArgIsTensor(x, 'x', 'mean');
+    const $x = assertArgIsTensor(x, 'x', 'mean');
 
     const axes = axis_util.parseAxisParam(axis, $x.shape);
     const shapes = axis_util.computeOutAndReduceShapes($x.shape, axes);
@@ -187,7 +189,7 @@ export class ReductionOps {
     // Use a custom gradient to bypass 2 gradient backprops since mean is used
     // extremely often.
     const customOp = customGrad(x => {
-      const reduceSizeScalar = ops.scalar(reduceSize);
+      const reduceSizeScalar = TensorOps.scalar(reduceSize);
       // Cast if needed.
       const xReduce = reduceSizeScalar.dtype === x.dtype ?
           x :
@@ -201,8 +203,8 @@ export class ReductionOps {
           expandedDyShape[axis] = 1;
         });
         const expandedDy = dy.reshape(expandedDyShape);
-        const derX =
-            expandedDy.mul(ops.ones(x.shape, 'float32')).div(reduceSizeScalar);
+        const derX = expandedDy.mul(TensorOps.ones(x.shape, 'float32'))
+                         .div(reduceSizeScalar);
         return derX;
       };
       return {value, gradFunc};
@@ -242,7 +244,7 @@ export class ReductionOps {
   @operation
   static min<T extends Tensor>(
       x: Tensor|TensorLike, axis: number|number[] = null, keepDims = false): T {
-    let $x = util.assertArgIsTensor(x, 'x', 'min');
+    let $x = assertArgIsTensor(x, 'x', 'min');
 
     const origAxes = axis_util.parseAxisParam(axis, $x.shape);
     let axes = origAxes;
@@ -290,7 +292,7 @@ export class ReductionOps {
   @operation
   static max<T extends Tensor>(
       x: Tensor|TensorLike, axis: number|number[] = null, keepDims = false): T {
-    let $x = util.assertArgIsTensor(x, 'x', 'max');
+    let $x = assertArgIsTensor(x, 'x', 'max');
 
     const origAxes = axis_util.parseAxisParam(axis, $x.shape);
     let axes = origAxes;
@@ -333,7 +335,7 @@ export class ReductionOps {
   @doc({heading: 'Operations', subheading: 'Reduction'})
   @operation
   static argMin<T extends Tensor>(x: Tensor|TensorLike, axis = 0): T {
-    let $x = util.assertArgIsTensor(x, 'x', 'argMin');
+    let $x = assertArgIsTensor(x, 'x', 'argMin');
 
     if (axis == null) {
       axis = 0;
@@ -373,7 +375,7 @@ export class ReductionOps {
   @doc({heading: 'Operations', subheading: 'Reduction'})
   @operation
   static argMax<T extends Tensor>(x: Tensor|TensorLike, axis = 0): T {
-    let $x = util.assertArgIsTensor(x, 'x', 'argMax');
+    let $x = assertArgIsTensor(x, 'x', 'argMax');
 
     if (axis == null) {
       axis = 0;
@@ -419,8 +421,10 @@ export class ReductionOps {
   @operation
   static all<T extends Tensor>(
       x: Tensor, axis: number|number[] = null, keepDims = false): T {
-    util.assertArgumentsAreTensors({x}, 'all');
-    util.assert(x.dtype === 'bool', 'Error Array must be of type bool.');
+    assertArgumentsAreTensors({x}, 'all');
+    util.assert(
+        x.dtype === 'bool',
+        `Error Tensor must be of type bool. Got: ${x.dtype}`);
 
     const origAxes = axis_util.parseAxisParam(axis, x.shape);
     let axes = origAxes;
@@ -430,6 +434,57 @@ export class ReductionOps {
       axes = axis_util.getInnerMostAxes(axes.length, x.rank);
     }
     const res = ENV.engine.runKernel(backend => backend.all(x, axes), {x});
+    if (keepDims) {
+      const newShape = axis_util.expandShapeToKeepDim(res.shape, origAxes);
+      return res.reshape(newShape) as T;
+    }
+    return res as T;
+  }
+
+  /**
+   * Computes the logical or of elements across dimensions of a `Tensor`.
+   *
+   * Reduces the input along the dimensions given in `axes`. Unless `keepDims`
+   * is true, the rank of the `Tensor` is reduced by 1 for each entry in `axes`.
+   * If `keepDims` is true, the reduced dimensions are retained with length 1.
+   * If `axes` has no entries, all dimensions are reduced, and an `Tensor` with
+   * a single element is returned.
+   *
+   * ```js
+   * const x = tf.tensor1d([1, 1, 1]);
+   *
+   * x.any().print();  // or tf.any(x)
+   * ```
+   *
+   * ```js
+   * const x = tf.tensor2d([1, 1, 0, 0], [2, 2], 'bool');
+   *
+   * const axis = 1;
+   * x.any(axis).print();  // or tf.any(x, axis)
+   * ```
+   *
+   * @param x The input tensor. Must be of dtype bool.
+   * @param axis The dimension(s) to reduce. By default it reduces
+   *     all dimensions.
+   * @param keepDims If true, retains reduced dimensions with size 1.
+   */
+  @doc({heading: 'Operations', subheading: 'Reduction'})
+  @operation
+  static any<T extends Tensor>(
+      x: Tensor, axis: number|number[] = null, keepDims = false): T {
+    assertArgumentsAreTensors({x}, 'any');
+    util.assert(
+        x.dtype === 'bool',
+        `Error Tensor must be of type bool. Got: ${x.dtype}`);
+
+    const origAxes = axis_util.parseAxisParam(axis, x.shape);
+    let axes = origAxes;
+    const permutedAxes = axis_util.getAxesPermutation(axes, x.rank);
+    if (permutedAxes != null) {
+      x = x.transpose(permutedAxes);
+      axes = axis_util.getInnerMostAxes(axes.length, x.rank);
+    }
+    const res = ENV.engine.runKernel(backend => backend.any(x, axes), {x});
     if (keepDims) {
       const newShape = axis_util.expandShapeToKeepDim(res.shape, origAxes);
       return res.reshape(newShape) as T;
@@ -454,7 +509,7 @@ export class ReductionOps {
   static moments(
       x: Tensor|TensorLike, axis: number|number[] = null, keepDims = false):
       {mean: Tensor, variance: Tensor} {
-    x = util.assertArgIsTensor(x, 'x', 'moments');
+    x = assertArgIsTensor(x, 'x', 'moments');
     const axes = axis_util.parseAxisParam(axis, x.shape);
     const mean = x.mean(axes, keepDims);
     let keepDimsShape = mean.shape;

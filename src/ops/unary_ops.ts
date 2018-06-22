@@ -20,10 +20,11 @@ import {ENV} from '../environment';
 import {Tensor} from '../tensor';
 import {TensorLike} from '../types';
 import * as util from '../util';
+import {BinaryOps} from './binary_ops';
+import {LogicalOps} from './logical_ops';
 import {operation} from './operation';
-import * as ops from './ops';
-import {zerosLike} from './ops';
-import * as selu_util from './selu_util';
+import {SELU_SCALE, SELU_SCALEALPHA} from './selu_util';
+import {TensorOps} from './tensor_ops';
 
 export class UnaryOps {
   /**
@@ -65,7 +66,7 @@ export class UnaryOps {
 
     // TODO(manrajgrover): Return null for gradients when backprop supports it.
     const grad = (dy: T) => {
-      return {$x: () => ops.zerosLike(dy)};
+      return {$x: () => TensorOps.zerosLike(dy)};
     };
     return ENV.engine.runKernel(backend => backend.ceil($x), {$x}, grad);
   }
@@ -88,7 +89,7 @@ export class UnaryOps {
     // TODO(nsthorat): Let gradients be null for cases where we want to stop
     // backpropgation.
     const grad = (dy: T) => {
-      return {$x: () => ops.zerosLike(dy)};
+      return {$x: () => TensorOps.zerosLike(dy)};
     };
     return ENV.engine.runKernel(backend => backend.floor($x), {$x}, grad);
   }
@@ -109,7 +110,7 @@ export class UnaryOps {
     const $x = util.assertArgIsTensor(x, 'x', 'sign');
 
     const grad = (dy: T) => {
-      return {$x: () => ops.zerosLike(dy)};
+      return {$x: () => TensorOps.zerosLike(dy)};
     };
     return ENV.engine.runKernel(backend => backend.sign($x), {$x}, grad);
   }
@@ -133,7 +134,7 @@ export class UnaryOps {
     // TODO(nsthorat): Let gradients be null for cases where we want to stop
     // backpropgation.
     const grad = (dy: T) => {
-      return {$x: () => ops.zerosLike(dy)};
+      return {$x: () => TensorOps.zerosLike(dy)};
     };
     return ENV.engine.runKernel(backend => backend.round($x), {$x}, grad);
   }
@@ -221,7 +222,7 @@ export class UnaryOps {
     const $x = util.assertArgIsTensor(x, 'x', 'log1p');
 
     const grad = (dy: T) => {
-      return {$x: () => dy.divStrict($x.add(ops.scalar(1)))};
+      return {$x: () => dy.divStrict($x.add(TensorOps.scalar(1)))};
     };
     return ENV.engine.runKernel(backend => backend.log1p($x), {$x}, grad);
   }
@@ -242,7 +243,9 @@ export class UnaryOps {
     const $x = util.assertArgIsTensor(x, 'x', 'sqrt');
 
     const grad = (dy: T) => {
-      return {$x: () => dy.divStrict($x.toFloat().sqrt().mul(ops.scalar(2)))};
+      return {
+        $x: () => dy.divStrict($x.toFloat().sqrt().mul(TensorOps.scalar(2)))
+      };
     };
     return ENV.engine.runKernel(backend => backend.sqrt($x), {$x}, grad);
   }
@@ -265,7 +268,9 @@ export class UnaryOps {
 
     const grad = (dy: T) => {
       return {
-        $x: () => dy.divStrict($x.pow(ops.scalar(1.5)).mul(ops.scalar(2))).neg()
+        $x: () =>
+            dy.divStrict($x.pow(TensorOps.scalar(1.5)).mul(TensorOps.scalar(2)))
+                .neg()
       };
     };
     return ENV.engine.runKernel(backend => backend.rsqrt($x), {$x}, grad);
@@ -287,7 +292,7 @@ export class UnaryOps {
     const $x = util.assertArgIsTensor(x, 'x', 'square');
 
     const grad = (dy: T) => {
-      return {$x: () => dy.mulStrict($x.toFloat().mul(ops.scalar(2)))};
+      return {$x: () => dy.mulStrict($x.toFloat().mul(TensorOps.scalar(2)))};
     };
     return ENV.engine.runKernel(backend => backend.square($x), {$x}, grad);
   }
@@ -358,10 +363,11 @@ export class UnaryOps {
 
     const grad = (dy: T) => {
       return {
-        $x: () => dy.where(
-                      $x.greaterEqual(ops.scalar(clipValueMin))
-                          .logicalAnd($x.lessEqual(ops.scalar(clipValueMax))),
-                      zerosLike(dy)) as T,
+        $x: () =>
+            dy.where(
+                $x.greaterEqual(TensorOps.scalar(clipValueMin))
+                    .logicalAnd($x.lessEqual(TensorOps.scalar(clipValueMax))),
+                TensorOps.zerosLike(dy)) as T,
       };
     };
     return ENV.engine.runKernel(
@@ -440,15 +446,16 @@ export class UnaryOps {
     const grad = (dy: T) => {
       return {
         $x: () => {
-          const mask = $x.greater(ops.scalar(0));
+          const mask = $x.greater(TensorOps.scalar(0));
 
-          const scaleAlpha = ops.scalar(selu_util.SELU_SCALEALPHA);
-          const scale = ops.scalar(selu_util.SELU_SCALE);
+          const scaleAlpha = TensorOps.scalar(SELU_SCALEALPHA);
+          const scale = TensorOps.scalar(SELU_SCALE);
 
           const greaterThanZeroDer = dy.mul(scale);
           const lessEqualZeroDer = dy.mul(scaleAlpha).mul($x.toFloat().exp());
 
-          return ops.where(mask, greaterThanZeroDer, lessEqualZeroDer) as T;
+          return LogicalOps.where(mask, greaterThanZeroDer, lessEqualZeroDer) as
+              T;
         }
       };
     };
@@ -475,7 +482,7 @@ export class UnaryOps {
   static leakyRelu<T extends Tensor>(x: T|TensorLike, alpha = 0.2): T {
     const $x = util.assertArgIsTensor(x, 'x', 'leakyRelu');
 
-    return ops.maximum(ops.scalar(alpha).mul($x), $x);
+    return BinaryOps.maximum(TensorOps.scalar(alpha).mul($x), $x);
   }
 
   /**
@@ -498,8 +505,9 @@ export class UnaryOps {
     const $x = util.assertArgIsTensor(x, 'x', 'prelu');
     const $alpha = util.assertArgIsTensor(alpha, 'alpha', 'prelu');
 
-    const zero = ops.scalar(0);
-    return ops.maximum(zero, $x).add($alpha.mul(ops.minimum(zero, $x)));
+    const zero = TensorOps.scalar(0);
+    return BinaryOps.maximum(zero, $x).add(
+        $alpha.mul(BinaryOps.minimum(zero, $x)));
   }
 
   /**
@@ -519,7 +527,7 @@ export class UnaryOps {
 
     const grad = (dy: T, saved: Tensor[]) => {
       const [y] = saved;
-      return {$x: () => dy.mulStrict(y.mul(ops.scalar(1).sub(y)))};
+      return {$x: () => dy.mulStrict(y.mul(TensorOps.scalar(1).sub(y)))};
     };
     return ENV.engine.runKernel(
         (backend, save) => save(backend.sigmoid($x)), {$x}, grad);
@@ -649,8 +657,8 @@ export class UnaryOps {
 
     const grad = (dy: T) => {
       return {
-        $x: () =>
-            dy.divStrict(ops.scalar(1).sub($x.toFloat().square()).sqrt() as T)
+        $x: () => dy.divStrict(
+            TensorOps.scalar(1).sub($x.toFloat().square()).sqrt() as T)
       };
     };
     return ENV.engine.runKernel(backend => backend.asin($x), {$x}, grad);
@@ -674,7 +682,8 @@ export class UnaryOps {
     const grad = (dy: T) => {
       return {
         $x: () =>
-            dy.divStrict(ops.scalar(1).sub($x.toFloat().square()).sqrt() as T)
+            dy.divStrict(
+                  TensorOps.scalar(1).sub($x.toFloat().square()).sqrt() as T)
                 .neg()
       };
     };
@@ -697,7 +706,9 @@ export class UnaryOps {
     const $x = util.assertArgIsTensor(x, 'x', 'atan');
 
     const grad = (dy: T) => {
-      return {$x: () => dy.divStrict(ops.scalar(1).add($x.toFloat().square()))};
+      return {
+        $x: () => dy.divStrict(TensorOps.scalar(1).add($x.toFloat().square()))
+      };
     };
     return ENV.engine.runKernel(backend => backend.atan($x), {$x}, grad);
   }
@@ -761,7 +772,7 @@ export class UnaryOps {
 
     const grad = (dy: T, saved: Tensor[]) => {
       const [y] = saved;
-      return {$x: () => ops.scalar(1).sub(y.square()).mulStrict(dy) as T};
+      return {$x: () => TensorOps.scalar(1).sub(y.square()).mulStrict(dy) as T};
     };
     return ENV.engine.runKernel(
         (backend, save) => save(backend.tanh($x)), {$x}, grad);
@@ -785,8 +796,8 @@ export class UnaryOps {
 
     const grad = (dy: T) => {
       return {
-        $x: () =>
-            dy.divStrict(ops.scalar(1).add($x.toFloat().square()).sqrt() as T)
+        $x: () => dy.divStrict(
+            TensorOps.scalar(1).add($x.toFloat().square()).sqrt() as T)
       };
     };
     return ENV.engine.runKernel(backend => backend.asinh($x), {$x}, grad);
@@ -810,8 +821,8 @@ export class UnaryOps {
 
     const grad = (dy: T) => {
       return {
-        $x: () =>
-            dy.divStrict($x.toFloat().square().sub(ops.scalar(1)).sqrt() as T)
+        $x: () => dy.divStrict(
+            $x.toFloat().square().sub(TensorOps.scalar(1)).sqrt() as T)
       };
     };
     return ENV.engine.runKernel(backend => backend.acosh($x), {$x}, grad);
@@ -834,7 +845,9 @@ export class UnaryOps {
     const $x = util.assertArgIsTensor(x, 'x', 'atanh');
 
     const grad = (dy: T) => {
-      return {$x: () => dy.divStrict(ops.scalar(1).sub($x.toFloat().square()))};
+      return {
+        $x: () => dy.divStrict(TensorOps.scalar(1).sub($x.toFloat().square()))
+      };
     };
     return ENV.engine.runKernel(backend => backend.atanh($x), {$x}, grad);
   }
@@ -864,8 +877,8 @@ export class UnaryOps {
 
     const grad = (dy: T) => {
       return {
-        $x: () => dy.mulStrict(
-            ops.scalar(2 / Math.sqrt(Math.PI)).mul($x.square().neg().exp()))
+        $x: () => dy.mulStrict(TensorOps.scalar(2 / Math.sqrt(Math.PI))
+                                   .mul($x.square().neg().exp()))
       };
     };
     return ENV.engine.runKernel(backend => backend.erf($x), {$x}, grad);
@@ -890,7 +903,7 @@ export class UnaryOps {
     // TODO(manrajgrover): Return null for gradients when backprop supports
     // it.
     const grad = (dy: T) => {
-      return {$x: () => ops.zerosLike(dy)};
+      return {$x: () => TensorOps.zerosLike(dy)};
     };
     return ENV.engine.runKernel(backend => backend.step($x, alpha), {$x}, grad);
   }
