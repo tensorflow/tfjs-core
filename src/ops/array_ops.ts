@@ -18,7 +18,7 @@
 import {doc} from '../doc';
 import {ENV} from '../environment';
 // tslint:disable-next-line:max-line-length
-import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer, tensorToString} from '../tensor';
+import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
 import {assertArgumentsAreTensors} from '../tensor_util';
 import {DataType, Rank, ShapeMap, TypedArray} from '../types';
 import * as util from '../util';
@@ -957,6 +957,6 @@ export class ArrayOps {
    */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   static print<T extends Tensor>(x: T, verbose = false): void {
-    console.log(tensorToString(x, verbose));
+    console.log(x.toString(verbose));
   }
 }
