@@ -168,6 +168,134 @@ export interface Ops {
   unstack<T extends Tensor>(value: T, axis: number): Tensor[];
   pad<T extends Tensor>(
       x: T, paddings: Array<[number, number]>, constantValue: number): T;
+  batchNormalization<R extends Rank>(
+      x: Tensor<R>, mean: Tensor<R>|Tensor1D, variance: Tensor<R>|Tensor1D,
+      varianceEpsilon: number, scale?: Tensor<R>|Tensor1D,
+      offset?: Tensor<R>|Tensor1D): Tensor<R>;
+  all<T extends Tensor>(x: Tensor, axis: number|number[], keepDims: boolean): T;
+  any<T extends Tensor>(x: Tensor, axis: number|number[], keepDims: boolean): T;
+  logSumExp<T extends Tensor>(
+      x: Tensor, axis: number|number[], keepDims: boolean): T;
+  sum<T extends Tensor>(x: Tensor, axis: number|number[], keepDims: boolean): T;
+  mean<T extends Tensor>(x: Tensor, axis: number|number[], keepDims: boolean):
+      T;
+  min<T extends Tensor>(x: Tensor, axis: number|number[], keepDims: boolean): T;
+  max<T extends Tensor>(x: Tensor, axis: number|number[], keepDims: boolean): T;
+  argMin<T extends Tensor>(x: Tensor, axis: number): T;
+  argMax<T extends Tensor>(x: Tensor, axis: number): T;
+  add<T extends Tensor>(a: Tensor, b: Tensor): T;
+  addStrict<T extends Tensor>(a: T, b: T): T;
+  sub<T extends Tensor>(a: Tensor, b: Tensor): T;
+  subStrict<T extends Tensor>(a: T, b: T): T;
+  pow<T extends Tensor>(base: T, exp: Tensor): T;
+  powStrict<T extends Tensor>(base: T, exp: Tensor): T;
+  mul<T extends Tensor>(a: Tensor, b: Tensor): T;
+  mulStrict<T extends Tensor>(a: T, b: T): T;
+  div<T extends Tensor>(a: Tensor, b: Tensor): T;
+  floorDiv<T extends Tensor>(a: Tensor, b: Tensor): T;
+  divStrict<T extends Tensor>(a: T, b: T): T;
+  mod<T extends Tensor>(a: Tensor, b: Tensor): T;
+  modStrict<T extends Tensor>(a: T, b: T): T;
+  minimum<T extends Tensor>(a: Tensor, b: Tensor): T;
+  minimumStrict<T extends Tensor>(a: T, b: T): T;
+  maximum<T extends Tensor>(a: Tensor, b: Tensor): T;
+  maximumStrict<T extends Tensor>(a: T, b: T): T;
+  squaredDifference<T extends Tensor>(a: Tensor, b: Tensor): T;
+  squaredDifferenceStrict<T extends Tensor>(a: T, b: T): T;
+  transpose<T extends Tensor>(x: T, perm?: number[]): T;
+  logicalNot<T extends Tensor>(x: T): T;
+  logicalAnd<T extends Tensor>(a: Tensor, b: Tensor): T;
+  logicalOr<T extends Tensor>(a: Tensor, b: Tensor): T;
+  logicalXor<T extends Tensor>(a: Tensor, b: Tensor): T;
+  where<T extends Tensor>(condition: Tensor, a: T, b: T): T;
+  notEqual<T extends Tensor>(a: Tensor, b: Tensor): T;
+  notEqualStrict<T extends Tensor>(a: T, b: T): T;
+  less<T extends Tensor>(a: Tensor, b: Tensor): T;
+  lessStrict<T extends Tensor>(a: T, b: T): T;
+  equal<T extends Tensor>(a: Tensor, b: Tensor): T;
+  equalStrict<T extends Tensor>(a: T, b: T): T;
+  lessEqual<T extends Tensor>(a: Tensor, b: Tensor): T;
+  lessEqualStrict<T extends Tensor>(a: T, b: T): T;
+  greater<T extends Tensor>(a: Tensor, b: Tensor): T;
+  greaterStrict<T extends Tensor>(a: T, b: T): T;
+  greaterEqual<T extends Tensor>(a: Tensor, b: Tensor): T;
+  greaterEqualStrict<T extends Tensor>(a: T, b: T): T;
+  neg<T extends Tensor>(x: T): T;
+  ceil<T extends Tensor>(x: T): T;
+  floor<T extends Tensor>(x: T): T;
+  sign<T extends Tensor>(x: T): T;
+  round<T extends Tensor>(x: T): T;
+  exp<T extends Tensor>(x: T): T;
+  expm1<T extends Tensor>(x: T): T;
+  log<T extends Tensor>(x: T): T;
+  log1p<T extends Tensor>(x: T): T;
+  sqrt<T extends Tensor>(x: T): T;
+  rsqrt<T extends Tensor>(x: T): T;
+  square<T extends Tensor>(x: T): T;
+  reciprocal<T extends Tensor>(x: T): T;
+  abs<T extends Tensor>(x: T): T;
+  clipByValue<T extends Tensor>(
+      x: T, clipValueMin: number, clipValueMax: number): T;
+  sigmoid<T extends Tensor>(x: T): T;
+  logSigmoid<T extends Tensor>(x: T): T;
+  softplus<T extends Tensor>(x: T): T;
+  sin<T extends Tensor>(x: T): T;
+  cos<T extends Tensor>(x: T): T;
+  tan<T extends Tensor>(x: T): T;
+  asin<T extends Tensor>(x: T): T;
+  acos<T extends Tensor>(x: T): T;
+  atan<T extends Tensor>(x: T): T;
+  sinh<T extends Tensor>(x: T): T;
+  cosh<T extends Tensor>(x: T): T;
+  tanh<T extends Tensor>(x: T): T;
+  asinh<T extends Tensor>(x: T): T;
+  acosh<T extends Tensor>(x: T): T;
+  atanh<T extends Tensor>(x: T): T;
+  erf<T extends Tensor>(x: T): T;
+  step<T extends Tensor>(x: T, alpha: number): T;
+  relu<T extends Tensor>(x: T): T;
+  elu<T extends Tensor>(x: T): T;
+  selu<T extends Tensor>(x: T): T;
+  leakyRelu<T extends Tensor>(x: T, alpha: number): T;
+  prelu<T extends Tensor>(x: T, alpha: T): T;
+  softmax<T extends Tensor>(logits: T, dim: number): T;
+  image: {
+    resizeBilinear<T extends Tensor3D|Tensor4D>(
+        images: T, size: [number, number], alignCorners: boolean): T;
+    resizeNearestNeighbor<T extends Tensor3D|Tensor4D>(
+        images: T, size: [number, number], alignCorners: boolean): T;
+  };
+  conv1d<T extends Tensor2D|Tensor3D>(
+      x: T, filter: Tensor3D, stride: number, pad: 'valid'|'same'|number,
+      dataFormat: 'NWC'|'NCW', dilation: number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T;
+  conv2d<T extends Tensor3D|Tensor4D>(
+      x: T, filter: Tensor4D, strides: [number, number]|number,
+      pad: 'valid'|'same'|number, dataFormat: 'NHWC'|'NCHW',
+      dilations: [number, number]|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T;
+  conv2dTranspose<T extends Tensor3D|Tensor4D>(
+      x: T, filter: Tensor4D,
+      outputShape: [number, number, number, number]|[number, number, number],
+      strides: [number, number]|number, pad: 'valid'|'same'|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T;
+  depthwiseConv2d<T extends Tensor3D|Tensor4D>(
+      x: T, filter: Tensor4D, strides: [number, number]|number,
+      pad: 'valid'|'same'|number, dataFormat: 'NHWC'|'NCHW',
+      dilations: [number, number]|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T;
+  maxPool<T extends Tensor3D|Tensor4D>(
+      x: T, filterSize: [number, number]|number,
+      strides: [number, number]|number, pad: 'valid'|'same'|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T;
+  avgPool<T extends Tensor3D|Tensor4D>(
+      x: T, filterSize: [number, number]|number,
+      strides: [number, number]|number, pad: 'valid'|'same'|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T;
+  localResponseNormalization<T extends Tensor3D|Tensor4D>(
+      x: T, depthRadius: number, bias: number, alpha: number, beta: number): T;
+  unsortedSegmentSum<T extends Tensor>(
+      x: T, segmentIds: Tensor1D, numSegments: number): T;
 }
 
 let tracker: TensorTracker = null;
