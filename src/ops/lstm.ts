@@ -18,8 +18,8 @@
 import {doc} from '../doc';
 import {Scalar, Tensor1D, Tensor2D} from '../tensor';
 import {assertArgumentsAreTensors} from '../tensor_util';
+import {assertArgIsTensor, assertArgIsTensorArr} from '../tensor_util';
 import {TensorLike} from '../types';
-import {assertArgIsTensor, assertArgIsTensorArr} from '../util';
 import {operation} from './operation';
 
 /**

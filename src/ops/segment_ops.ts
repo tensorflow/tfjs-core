@@ -18,9 +18,10 @@
 import {doc} from '../doc';
 import {ENV} from '../environment';
 import {Tensor, Tensor1D} from '../tensor';
+import {assertArgIsTensor} from '../tensor_util';
 import {TensorLike} from '../types';
-import * as util from '../util';
-import {assertArgIsTensor, assertArgumentsAreTensors} from '../util';
+import {assert, isInt} from '../util';
+
 import {ArrayOps} from './array_ops';
 import {getUndoAxesPermutation, parseAxisParam} from './axis_util';
 import {BinaryOps} from './binary_ops';
@@ -52,11 +53,11 @@ export class SegmentOps {
       x: T|TensorLike, segmentIds: Tensor1D|TensorLike, numSegments: number):
       T {
     const $x = assertArgIsTensor(x, 'x', 'unsortedSegmentSum');
-    const $segmentIds = util.assertArgIsTensor(
+    const $segmentIds = assertArgIsTensor(
         segmentIds, 'segmentIds', 'unsortedSegmentSum', 'int32');
-    util.assert(
+    assert(
         $segmentIds.dtype === 'int32', 'segmentIds must be of dtype `int32`');
-    util.assert(util.isInt(numSegments), 'numSegments must be of dtype int');
+    assert(isInt(numSegments), 'numSegments must be of dtype int');
 
     const gradFunc = (dy: T) => {
       const derX = () => {
@@ -92,18 +93,20 @@ export class SegmentOps {
    */
   @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
   @operation
-  static gather<T extends Tensor>(x: T, indices: Tensor1D, axis = 0): T {
-    assertArgumentsAreTensors({x, indices}, 'gather');
+  static gather<T extends Tensor>(
+      x: T|TensorLike, indices: Tensor1D|TensorLike, axis = 0): T {
+    const $x = assertArgIsTensor(x, 'x', 'gather');
+    const $indices = assertArgIsTensor(indices, 'indices', 'gather', 'int32');
 
-    util.assert(indices.dtype === 'int32', 'Indices must be of dtype `int32`');
-    axis = parseAxisParam(axis, x.shape)[0];
+    assert($indices.dtype === 'int32', 'Indices must be of dtype `int32`');
+    axis = parseAxisParam(axis, $x.shape)[0];
     const grad = (dy: T) => {
       const derX = () => {
         if (axis === 0) {
-          return SegmentOps.unsortedSegmentSum(dy, indices, x.shape[axis]);
+          return SegmentOps.unsortedSegmentSum(dy, $indices, $x.shape[axis]);
         }
-        const paramsShape = x.shape;
-        const indicesSize = indices.size;
+        const paramsShape = $x.shape;
+        const indicesSize = $indices.size;
 
         const outerShape = paramsShape.slice(0, axis);
         const outerDims = outerShape.length;
@@ -118,24 +121,25 @@ export class SegmentOps {
             arrayConcat([outerShape, [indicesSize], innerShape]);
 
         const values = dy.reshape(valuesShape);
-        const reshapedIndices = indices.reshape([indicesSize]);
+        const reshapedIndices = $indices.reshape([indicesSize]);
 
         const transposeDims =
             arrayConcat([[outerDims], outerAxesIndices, innerAxesIndices]);
         const valuesTranspose = values.transpose(transposeDims);
 
         let paramsGrad = SegmentOps.unsortedSegmentSum(
-            valuesTranspose, reshapedIndices as Tensor1D, x.shape[axis]);
+            valuesTranspose, reshapedIndices as Tensor1D, $x.shape[axis]);
 
         const invertTransposeDims = getUndoAxesPermutation(transposeDims);
         paramsGrad = paramsGrad.transpose(invertTransposeDims);
 
         return paramsGrad as T;
       };
-      return {x: derX};
+      return {$x: derX};
     };
     return ENV.engine.runKernel(
-        backend => backend.gather(x, indices, axis), {x}, grad);
+               backend => backend.gather($x, $indices as Tensor1D, axis), {$x},
+               grad) as T;
   }
 }
 

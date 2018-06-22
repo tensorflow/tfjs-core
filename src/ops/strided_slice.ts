@@ -18,8 +18,8 @@
 import {doc} from '../doc';
 import {ENV} from '../environment';
 import {Tensor} from '../tensor';
+import {assertArgIsTensor} from '../tensor_util';
 import {TensorLike} from '../types';
-import {assertArgIsTensor} from '../util';
 import {operation} from './operation';
 
 export class StridedSliceOps {

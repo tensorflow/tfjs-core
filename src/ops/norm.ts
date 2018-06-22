@@ -17,8 +17,8 @@
 
 import {doc} from '../doc';
 import {Tensor} from '../tensor';
+import {assertArgIsTensor} from '../tensor_util';
 import {TensorLike} from '../types';
-import {assertArgIsTensor} from '../util';
 import * as axis_util from './axis_util';
 import {operation} from './operation';
 import {TensorOps} from './tensor_ops';

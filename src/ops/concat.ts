@@ -18,8 +18,9 @@
 import {doc} from '../doc';
 import {ENV} from '../environment';
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
+import {assertArgIsTensorArr} from '../tensor_util';
 import {TensorLike} from '../types';
-import {assert, assertArgIsTensorArr, sizeFromShape} from '../util';
+import {assert, sizeFromShape} from '../util';
 import {parseAxisParam} from './axis_util';
 import * as concat_util from './concat_util';
 import {operation} from './operation';

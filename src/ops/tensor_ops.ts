@@ -18,13 +18,14 @@
 import {doc} from '../doc';
 // tslint:disable-next-line:max-line-length
 import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D, Tensor6D} from '../tensor';
-import {assertArgumentsAreTensors} from '../tensor_util';
+import {assertArgIsTensor} from '../tensor_util';
 // tslint:disable-next-line:max-line-length
 import {TensorLike, TensorLike1D, TensorLike2D, TensorLike3D, TensorLike4D, TensorLike5D, TensorLike6D} from '../types';
 // tslint:disable-next-line:max-line-length
 import {ArrayData, DataType, DataTypeMap, Rank, ShapeMap} from '../types';
 // tslint:disable-next-line:max-line-length
-import {assertNonNull, assertShapesMatch, copyTypedArray, flatten, getTypedArrayFromDType, inferShape, isTypedArray, sizeFromShape} from '../util';
+import {assertShapesMatch, copyTypedArray, flatten, getTypedArrayFromDType, inferShape, isTypedArray, sizeFromShape} from '../util';
+import {operation} from './operation';
 
 export class TensorOps {
   /**
@@ -56,6 +57,12 @@ export class TensorOps {
   static tensor<R extends Rank>(
       values: TensorLike, shape?: ShapeMap[R], dtype: DataType = 'float32'):
       Tensor<R> {
+    if (!isTypedArray(values) && !Array.isArray(values) &&
+        typeof values !== 'number' && typeof values !== 'boolean') {
+      throw new Error(
+          'values passed to tensor(values) must be an ' +
+          'array of numbers or booleans, or a TypedArray');
+    }
     const inferredShape = inferShape(values);
     if (shape != null && inferredShape.length !== 1) {
       assertShapesMatch(
@@ -113,7 +120,6 @@ export class TensorOps {
   @doc({heading: 'Tensors', subheading: 'Creation'})
   static tensor1d(values: TensorLike1D, dtype: DataType = 'float32'): Tensor1D {
     const inferredShape = inferShape(values);
-    assertNonNull(values);
     if (inferredShape.length !== 1) {
       throw new Error('tensor1d() requires values to be a flat/TypedArray');
     }
@@ -145,7 +151,6 @@ export class TensorOps {
   static tensor2d(
       values: TensorLike2D, shape?: [number, number],
       dtype: DataType = 'float32'): Tensor2D {
-    assertNonNull(values);
     if (shape != null && shape.length !== 2) {
       throw new Error('tensor2d() requires shape to have two numbers');
     }
@@ -188,7 +193,6 @@ export class TensorOps {
   static tensor3d(
       values: TensorLike3D, shape?: [number, number, number],
       dtype: DataType = 'float32'): Tensor3D {
-    assertNonNull(values);
     if (shape != null && shape.length !== 3) {
       throw new Error('tensor3d() requires shape to have three numbers');
     }
@@ -231,7 +235,6 @@ export class TensorOps {
   static tensor4d(
       values: TensorLike4D, shape?: [number, number, number, number],
       dtype: DataType = 'float32'): Tensor4D {
-    assertNonNull(values);
     if (shape != null && shape.length !== 4) {
       throw new Error('tensor4d() requires shape to have four numbers');
     }
@@ -274,7 +277,6 @@ export class TensorOps {
   static tensor5d(
       values: TensorLike5D, shape?: [number, number, number, number, number],
       dtype: DataType = 'float32'): Tensor5D {
-    assertNonNull(values);
     if (shape != null && shape.length !== 5) {
       throw new Error('tensor5d() requires shape to have five numbers');
     }
@@ -318,7 +320,6 @@ export class TensorOps {
       values: TensorLike6D,
       shape?: [number, number, number, number, number, number],
       dtype: DataType = 'float32'): Tensor6D {
-    assertNonNull(values);
     if (shape != null && shape.length !== 6) {
       throw new Error('tensor6d() requires shape to have six numbers');
     }
@@ -349,6 +350,7 @@ export class TensorOps {
    *     'float'.
    */
   @doc({heading: 'Tensors', subheading: 'Creation'})
+  @operation
   static ones<R extends Rank>(shape: ShapeMap[R], dtype: DataType = 'float32'):
       Tensor<R> {
     const values = makeOnesTypedArray(sizeFromShape(shape), dtype);
@@ -367,6 +369,7 @@ export class TensorOps {
    *     be 'float32', 'int32' or 'bool'. Defaults to 'float'.
    */
   @doc({heading: 'Tensors', subheading: 'Creation'})
+  @operation
   static zeros<R extends Rank>(shape: ShapeMap[R], dtype: DataType = 'float32'):
       Tensor<R> {
     const values = makeZerosTypedArray(sizeFromShape(shape), dtype);
@@ -386,6 +389,7 @@ export class TensorOps {
    * 'float'.
    */
   @doc({heading: 'Tensors', subheading: 'Creation'})
+  @operation
   static fill<R extends Rank>(
       shape: ShapeMap[R], value: number, dtype: DataType = 'float32'):
       Tensor<R> {
@@ -405,9 +409,10 @@ export class TensorOps {
    * @param x A tensor.
    */
   @doc({heading: 'Tensors', subheading: 'Creation'})
-  static onesLike<T extends Tensor>(x: T): T {
-    assertArgumentsAreTensors({x}, 'onesLike');
-    return TensorOps.ones(x.shape, x.dtype) as T;
+  @operation
+  static onesLike<T extends Tensor>(x: T|TensorLike): T {
+    const $x = assertArgIsTensor(x, 'x', 'onesLike');
+    return TensorOps.ones($x.shape, $x.dtype) as T;
   }
 
   /**
@@ -422,9 +427,10 @@ export class TensorOps {
    * @param x The tensor of required shape.
    */
   @doc({heading: 'Tensors', subheading: 'Creation'})
-  static zerosLike<T extends Tensor>(x: T): T {
-    assertArgumentsAreTensors({x}, 'zerosLike');
-    return TensorOps.zeros(x.shape, x.dtype) as T;
+  @operation
+  static zerosLike<T extends Tensor>(x: T|TensorLike): T {
+    const $x = assertArgIsTensor(x, 'x', 'zerosLike');
+    return TensorOps.zeros($x.shape, $x.dtype) as T;
   }
 
   /**

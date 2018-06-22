@@ -18,9 +18,9 @@
 import {doc} from '../doc';
 import {ENV} from '../environment';
 import {Tensor} from '../tensor';
+import {assertArgIsTensor} from '../tensor_util';
 import {TensorLike} from '../types';
 import * as util from '../util';
-import {assertArgIsTensor} from '../util';
 import * as axis_util from './axis_util';
 import {operation} from './operation';
 
