@@ -18,7 +18,7 @@
 import {doc} from '../doc';
 import {ENV} from '../environment';
 import {Tensor} from '../tensor';
-import {assertArgIsTensor} from '../tensor_util';
+import {convertToTensor} from '../tensor_util';
 import {TensorLike} from '../types';
 import * as util from '../util';
 import {operation} from './operation';
@@ -39,7 +39,7 @@ export class UnaryOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static neg<T extends Tensor>(x: T|TensorLike): T {
-    const $x = assertArgIsTensor(x, 'x', 'neg');
+    const $x = convertToTensor(x, 'x', 'neg');
 
     const grad = (dy: T) => {
       return {$x: () => dy.neg()};
@@ -60,7 +60,7 @@ export class UnaryOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static ceil<T extends Tensor>(x: T|TensorLike): T {
-    const $x = assertArgIsTensor(x, 'x', 'ceil');
+    const $x = convertToTensor(x, 'x', 'ceil');
 
     // TODO(manrajgrover): Return null for gradients when backprop supports it.
     const grad = (dy: T) => {
@@ -82,7 +82,7 @@ export class UnaryOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static floor<T extends Tensor>(x: T|TensorLike): T {
-    const $x = assertArgIsTensor(x, 'x', 'floor');
+    const $x = convertToTensor(x, 'x', 'floor');
 
     // TODO(nsthorat): Let gradients be null for cases where we want to stop
     // backpropgation.
@@ -105,7 +105,7 @@ export class UnaryOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static sign<T extends Tensor>(x: T|TensorLike): T {
-    const $x = assertArgIsTensor(x, 'x', 'sign');
+    const $x = convertToTensor(x, 'x', 'sign');
 
     const grad = (dy: T) => {
       return {$x: () => TensorOps.zerosLike(dy)};
@@ -127,7 +127,7 @@ export class UnaryOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static round<T extends Tensor>(x: T|TensorLike): T {
-    const $x = assertArgIsTensor(x, 'x', 'round');
+    const $x = convertToTensor(x, 'x', 'round');
 
     // TODO(nsthorat): Let gradients be null for cases where we want to stop
     // backpropgation.
@@ -150,7 +150,7 @@ export class UnaryOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static exp<T extends Tensor>(x: T|TensorLike): T {
-    const $x = assertArgIsTensor(x, 'x', 'exp');
+    const $x = convertToTensor(x, 'x', 'exp');
 
     const bck = (dy: T, saved: Tensor[]) => {
       const [y] = saved;
@@ -174,7 +174,7 @@ export class UnaryOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static expm1<T extends Tensor>(x: T|TensorLike): T {
-    const $x = assertArgIsTensor(x, 'x', 'expm1');
+    const $x = convertToTensor(x, 'x', 'expm1');
 
     const grad = (dy: T) => {
       return {$x: () => dy.mulStrict($x.exp())};
@@ -195,7 +195,7 @@ export class UnaryOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static log<T extends Tensor>(x: T|TensorLike): T {
-    const $x = assertArgIsTensor(x, 'x', 'log');
+    const $x = convertToTensor(x, 'x', 'log');
 
     const grad = (dy: T) => {
       return {$x: () => dy.divStrict($x.toFloat())};
@@ -217,7 +217,7 @@ export class UnaryOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static log1p<T extends Tensor>(x: T|TensorLike): T {
-    const $x = assertArgIsTensor(x, 'x', 'log1p');
+    const $x = convertToTensor(x, 'x', 'log1p');
 
     const grad = (dy: T) => {
       return {$x: () => dy.divStrict($x.add(TensorOps.scalar(1)))};
@@ -238,7 +238,7 @@ export class UnaryOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static sqrt<T extends Tensor>(x: T|TensorLike): T {
-    const $x = assertArgIsTensor(x, 'x', 'sqrt');
+    const $x = convertToTensor(x, 'x', 'sqrt');
 
     const grad = (dy: T) => {
       return {
@@ -262,7 +262,7 @@ export class UnaryOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static rsqrt<T extends Tensor>(x: T|TensorLike): T {
-    const $x = assertArgIsTensor(x, 'x', 'rsqrt');
+    const $x = convertToTensor(x, 'x', 'rsqrt');
 
     const grad = (dy: T) => {
       return {
@@ -287,7 +287,7 @@ export class UnaryOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static square<T extends Tensor>(x: T|TensorLike): T {
-    const $x = assertArgIsTensor(x, 'x', 'square');
+    const $x = convertToTensor(x, 'x', 'square');
 
     const grad = (dy: T) => {
       return {$x: () => dy.mulStrict($x.toFloat().mul(TensorOps.scalar(2)))};
@@ -308,7 +308,7 @@ export class UnaryOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static reciprocal<T extends Tensor>(x: T|TensorLike): T {
-    const $x = assertArgIsTensor(x, 'x', 'reciprocal');
+    const $x = convertToTensor(x, 'x', 'reciprocal');
 
     const grad = (dy: T) => {
       return {$x: () => dy.divStrict($x.square().neg())};
@@ -329,7 +329,7 @@ export class UnaryOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static abs<T extends Tensor>(x: T|TensorLike): T {
-    const $x = assertArgIsTensor(x, 'x', 'abs');
+    const $x = convertToTensor(x, 'x', 'abs');
 
     const grad = (dy: T) => {
       return {$x: () => dy.mulStrict($x.toFloat().step(-1))};
@@ -353,7 +353,7 @@ export class UnaryOps {
   @operation
   static clipByValue<T extends Tensor>(
       x: T|TensorLike, clipValueMin: number, clipValueMax: number): T {
-    const $x = assertArgIsTensor(x, 'x', 'clipByValue');
+    const $x = convertToTensor(x, 'x', 'clipByValue');
     util.assert(
         (clipValueMin <= clipValueMax),
         `Error in clip: min (${clipValueMin}) must be ` +
@@ -385,7 +385,7 @@ export class UnaryOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static sigmoid<T extends Tensor>(x: T|TensorLike): T {
-    const $x = assertArgIsTensor(x, 'x', 'sigmoid');
+    const $x = convertToTensor(x, 'x', 'sigmoid');
 
     const grad = (dy: T, saved: Tensor[]) => {
       const [y] = saved;
@@ -409,7 +409,7 @@ export class UnaryOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static logSigmoid<T extends Tensor>(x: T|TensorLike): T {
-    const $x = assertArgIsTensor(x, 'x', 'logSigmoid');
+    const $x = convertToTensor(x, 'x', 'logSigmoid');
 
     const grad = (dy: T) => {
       return {$x: () => dy.mulStrict($x.neg().sigmoid())};
@@ -431,7 +431,7 @@ export class UnaryOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static softplus<T extends Tensor>(x: T|TensorLike): T {
-    const $x = assertArgIsTensor(x, 'x', 'softplus');
+    const $x = convertToTensor(x, 'x', 'softplus');
 
     const grad = (dy: T) => {
       return {$x: () => dy.mulStrict($x.sigmoid())};
@@ -452,7 +452,7 @@ export class UnaryOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static sin<T extends Tensor>(x: T|TensorLike): T {
-    const $x = assertArgIsTensor(x, 'x', 'sin');
+    const $x = convertToTensor(x, 'x', 'sin');
 
     const grad = (dy: T) => {
       return {$x: () => $x.toFloat().cos().mulStrict(dy)};
@@ -473,7 +473,7 @@ export class UnaryOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static cos<T extends Tensor>(x: T|TensorLike): T {
-    const $x = assertArgIsTensor(x, 'x', 'cos');
+    const $x = convertToTensor(x, 'x', 'cos');
 
     const grad = (dy: T) => {
       return {$x: () => $x.toFloat().sin().neg().mulStrict(dy)};
@@ -494,7 +494,7 @@ export class UnaryOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static tan<T extends Tensor>(x: T|TensorLike): T {
-    const $x = assertArgIsTensor(x, 'x', 'tan');
+    const $x = convertToTensor(x, 'x', 'tan');
 
     const grad = (dy: T) => {
       return {$x: () => dy.divStrict($x.cos().square())};
@@ -515,7 +515,7 @@ export class UnaryOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static asin<T extends Tensor>(x: T|TensorLike): T {
-    const $x = assertArgIsTensor(x, 'x', 'asin');
+    const $x = convertToTensor(x, 'x', 'asin');
 
     const grad = (dy: T) => {
       return {
@@ -539,7 +539,7 @@ export class UnaryOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static acos<T extends Tensor>(x: T|TensorLike): T {
-    const $x = assertArgIsTensor(x, 'x', 'acos');
+    const $x = convertToTensor(x, 'x', 'acos');
 
     const grad = (dy: T) => {
       return {
@@ -565,7 +565,7 @@ export class UnaryOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static atan<T extends Tensor>(x: T|TensorLike): T {
-    const $x = assertArgIsTensor(x, 'x', 'atan');
+    const $x = convertToTensor(x, 'x', 'atan');
 
     const grad = (dy: T) => {
       return {
@@ -588,7 +588,7 @@ export class UnaryOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static sinh<T extends Tensor>(x: T|TensorLike): T {
-    const $x = assertArgIsTensor(x, 'x', 'sinh');
+    const $x = convertToTensor(x, 'x', 'sinh');
 
     const grad = (dy: T) => {
       return {$x: () => $x.toFloat().cosh().mulStrict(dy)};
@@ -609,7 +609,7 @@ export class UnaryOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static cosh<T extends Tensor>(x: T|TensorLike): T {
-    const $x = assertArgIsTensor(x, 'x', 'cosh');
+    const $x = convertToTensor(x, 'x', 'cosh');
 
     const grad = (dy: T) => {
       return {$x: () => $x.toFloat().sinh().mulStrict(dy)};
@@ -630,7 +630,7 @@ export class UnaryOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static tanh<T extends Tensor>(x: T|TensorLike): T {
-    const $x = assertArgIsTensor(x, 'x', 'tanh');
+    const $x = convertToTensor(x, 'x', 'tanh');
 
     const grad = (dy: T, saved: Tensor[]) => {
       const [y] = saved;
@@ -654,7 +654,7 @@ export class UnaryOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static asinh<T extends Tensor>(x: T|TensorLike): T {
-    const $x = assertArgIsTensor(x, 'x', 'asinh');
+    const $x = convertToTensor(x, 'x', 'asinh');
 
     const grad = (dy: T) => {
       return {
@@ -679,7 +679,7 @@ export class UnaryOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static acosh<T extends Tensor>(x: T|TensorLike): T {
-    const $x = assertArgIsTensor(x, 'x', 'acosh');
+    const $x = convertToTensor(x, 'x', 'acosh');
 
     const grad = (dy: T) => {
       return {
@@ -704,7 +704,7 @@ export class UnaryOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static atanh<T extends Tensor>(x: T|TensorLike): T {
-    const $x = assertArgIsTensor(x, 'x', 'atanh');
+    const $x = convertToTensor(x, 'x', 'atanh');
 
     const grad = (dy: T) => {
       return {
@@ -728,7 +728,7 @@ export class UnaryOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static erf<T extends Tensor>(x: T|TensorLike): T {
-    let $x = assertArgIsTensor(x, 'x', 'erf');
+    let $x = convertToTensor(x, 'x', 'erf');
     util.assert(
         $x.dtype === 'int32' || $x.dtype === 'float32',
         'Input dtype must be `int32` or `float32`.');
@@ -760,7 +760,7 @@ export class UnaryOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static step<T extends Tensor>(x: T|TensorLike, alpha = 0.0): T {
-    const $x = assertArgIsTensor(x, 'x', 'step');
+    const $x = convertToTensor(x, 'x', 'step');
 
     // TODO(manrajgrover): Return null for gradients when backprop supports
     // it.

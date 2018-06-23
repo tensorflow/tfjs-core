@@ -18,7 +18,7 @@
 import {doc} from '../doc';
 import {ENV} from '../environment';
 import {Tensor} from '../tensor';
-import {assertArgIsTensor} from '../tensor_util';
+import {convertToTensor} from '../tensor_util';
 import {TensorLike} from '../types';
 import {operation} from './operation';
 
@@ -56,7 +56,7 @@ export class StridedSliceOps {
   static stridedSlice<T extends Tensor>(
       x: T|TensorLike, begin: number[], end: number[], strides: number[],
       beginMask = 0, endMask = 0): T {
-    const $x = assertArgIsTensor(x, 'x', 'stridedSlice');
+    const $x = convertToTensor(x, 'x', 'stridedSlice');
     return ENV.engine.runKernel(
                backend => backend.stridedSlice(
                    $x, begin, end, strides, beginMask, endMask),

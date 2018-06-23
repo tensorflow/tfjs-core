@@ -18,7 +18,7 @@
 import {doc} from '../doc';
 import {ENV} from '../environment';
 import {Tensor} from '../tensor';
-import {assertArgIsTensor} from '../tensor_util';
+import {convertToTensor} from '../tensor_util';
 import {TensorLike} from '../types';
 import * as util from '../util';
 import * as axis_util from './axis_util';
@@ -45,7 +45,7 @@ export class TransposeOps {
   @doc({heading: 'Operations', subheading: 'Matrices'})
   @operation
   static transpose<T extends Tensor>(x: T|TensorLike, perm?: number[]): T {
-    const $x = assertArgIsTensor(x, 'x', 'transpose');
+    const $x = convertToTensor(x, 'x', 'transpose');
 
     if (perm == null) {
       perm = $x.shape.map((s, i) => i).reverse();

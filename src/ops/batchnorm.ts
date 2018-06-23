@@ -18,7 +18,7 @@
 import {doc} from '../doc';
 import {ENV} from '../environment';
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
-import {assertArgIsTensor} from '../tensor_util';
+import {convertToTensor} from '../tensor_util';
 import {Rank, TensorLike} from '../types';
 import * as util from '../util';
 import {ArrayOps} from './array_ops';
@@ -44,17 +44,17 @@ export class BatchNormOps {
       x: Tensor2D, mean: Tensor2D|Tensor1D, variance: Tensor2D|Tensor1D,
       varianceEpsilon = .001, scale?: Tensor2D|Tensor1D,
       offset?: Tensor2D|Tensor1D): Tensor2D {
-    const $x = assertArgIsTensor(x, 'x', 'batchNormalization');
-    const $mean = assertArgIsTensor(mean, 'mean', 'batchNormalization');
+    const $x = convertToTensor(x, 'x', 'batchNormalization');
+    const $mean = convertToTensor(mean, 'mean', 'batchNormalization');
     const $variance =
-        assertArgIsTensor(variance, 'variance', 'batchNormalization');
+        convertToTensor(variance, 'variance', 'batchNormalization');
     let $scale: Tensor2D|Tensor1D;
     if (scale != null) {
-      $scale = assertArgIsTensor(scale, 'scale', 'batchNormalization');
+      $scale = convertToTensor(scale, 'scale', 'batchNormalization');
     }
     let $offset: Tensor2D|Tensor1D;
     if (offset != null) {
-      $offset = assertArgIsTensor(offset, 'offset', 'batchNormalization');
+      $offset = convertToTensor(offset, 'offset', 'batchNormalization');
     }
     util.assert(
         $x.rank === 2,
@@ -101,17 +101,17 @@ export class BatchNormOps {
       x: Tensor3D, mean: Tensor3D|Tensor1D, variance: Tensor3D|Tensor1D,
       varianceEpsilon = .001, scale?: Tensor3D|Tensor1D,
       offset?: Tensor3D|Tensor1D): Tensor3D {
-    const $x = assertArgIsTensor(x, 'x', 'batchNormalization');
-    const $mean = assertArgIsTensor(mean, 'mean', 'batchNormalization');
+    const $x = convertToTensor(x, 'x', 'batchNormalization');
+    const $mean = convertToTensor(mean, 'mean', 'batchNormalization');
     const $variance =
-        assertArgIsTensor(variance, 'variance', 'batchNormalization');
+        convertToTensor(variance, 'variance', 'batchNormalization');
     let $scale: Tensor3D|Tensor1D;
     if (scale != null) {
-      $scale = assertArgIsTensor(scale, 'scale', 'batchNormalization');
+      $scale = convertToTensor(scale, 'scale', 'batchNormalization');
     }
     let $offset: Tensor3D|Tensor1D;
     if (offset != null) {
-      $offset = assertArgIsTensor(offset, 'offset', 'batchNormalization');
+      $offset = convertToTensor(offset, 'offset', 'batchNormalization');
     }
     util.assert(
         $x.rank === 3,
@@ -159,17 +159,17 @@ export class BatchNormOps {
       variance: Tensor4D|Tensor1D|TensorLike, varianceEpsilon = .001,
       scale?: Tensor4D|Tensor1D|TensorLike,
       offset?: Tensor4D|Tensor1D|TensorLike): Tensor4D {
-    const $x = assertArgIsTensor(x, 'x', 'batchNormalization');
-    const $mean = assertArgIsTensor(mean, 'mean', 'batchNormalization');
+    const $x = convertToTensor(x, 'x', 'batchNormalization');
+    const $mean = convertToTensor(mean, 'mean', 'batchNormalization');
     const $variance =
-        assertArgIsTensor(variance, 'variance', 'batchNormalization');
+        convertToTensor(variance, 'variance', 'batchNormalization');
     let $scale: Tensor4D|Tensor1D;
     if (scale != null) {
-      $scale = assertArgIsTensor(scale, 'scale', 'batchNormalization');
+      $scale = convertToTensor(scale, 'scale', 'batchNormalization');
     }
     let $offset: Tensor4D|Tensor1D;
     if (offset != null) {
-      $offset = assertArgIsTensor(offset, 'offset', 'batchNormalization');
+      $offset = convertToTensor(offset, 'offset', 'batchNormalization');
     }
     util.assert(
         $x.rank === 4,
@@ -230,17 +230,17 @@ export class BatchNormOps {
       variance: Tensor<R>|Tensor1D|TensorLike, varianceEpsilon = .001,
       scale?: Tensor<R>|Tensor1D|TensorLike,
       offset?: Tensor<R>|Tensor1D|TensorLike): Tensor<R> {
-    const $x = assertArgIsTensor(x, 'x', 'batchNormalization');
-    const $mean = assertArgIsTensor(mean, 'mean', 'batchNormalization');
+    const $x = convertToTensor(x, 'x', 'batchNormalization');
+    const $mean = convertToTensor(mean, 'mean', 'batchNormalization');
     const $variance =
-        assertArgIsTensor(variance, 'variance', 'batchNormalization');
+        convertToTensor(variance, 'variance', 'batchNormalization');
     let $scale: Tensor<R>|Tensor1D;
     if (scale != null) {
-      $scale = assertArgIsTensor(scale, 'scale', 'batchNormalization');
+      $scale = convertToTensor(scale, 'scale', 'batchNormalization');
     }
     let $offset: Tensor<R>|Tensor1D;
     if (offset != null) {
-      $offset = assertArgIsTensor(offset, 'offset', 'batchNormalization');
+      $offset = convertToTensor(offset, 'offset', 'batchNormalization');
     }
 
     util.assert(

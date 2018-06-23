@@ -18,8 +18,9 @@
 import {doc} from '../doc';
 import {Scalar, Tensor1D, Tensor2D} from '../tensor';
 import {assertArgumentsAreTensors} from '../tensor_util';
-import {assertArgIsTensor, assertArgIsTensorArr} from '../tensor_util';
+import {assertArgIsTensorArr, convertToTensor} from '../tensor_util';
 import {TensorLike} from '../types';
+
 import {operation} from './operation';
 
 /**
@@ -50,7 +51,7 @@ export class LSTMOps {
       lstmCells: LSTMCellFunc[], data: Tensor2D|TensorLike,
       c: Tensor2D[]|TensorLike[],
       h: Tensor2D[]|TensorLike[]): [Tensor2D[], Tensor2D[]] {
-    const $data = assertArgIsTensor(data, 'data', 'multiRNNCell');
+    const $data = convertToTensor(data, 'data', 'multiRNNCell');
     const $c = assertArgIsTensorArr(c, 'c', 'multiRNNCell');
     const $h = assertArgIsTensorArr(h, 'h', 'multiRNNCell');
 

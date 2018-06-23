@@ -19,9 +19,10 @@ import {doc} from '../doc';
 import {ENV} from '../environment';
 // tslint:disable-next-line:max-line-length
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
-import {assertArgIsTensor, assertArgIsTensorArr} from '../tensor_util';
+import {assertArgIsTensorArr, convertToTensor} from '../tensor_util';
 import {DataType, Rank, ShapeMap, TensorLike, TypedArray} from '../types';
 import * as util from '../util';
+
 // tslint:disable-next-line:max-line-length
 import {getAxesPermutation, getInnerMostAxes, parseAxisParam} from './axis_util';
 import {ConcatOps} from './concat';
@@ -45,7 +46,7 @@ export class ArrayOps {
   @doc({heading: 'Tensors', subheading: 'Creation'})
   @operation
   static clone<T extends Tensor>(x: T|TensorLike): T {
-    const $x = assertArgIsTensor(x, 'x', 'clone');
+    const $x = convertToTensor(x, 'x', 'clone');
     const der = (dy: T) => {
       return {$x: () => dy.toFloat()};
     };
@@ -252,7 +253,7 @@ export class ArrayOps {
   static multinomial(
       logits: Tensor1D|Tensor2D|TensorLike, numSamples: number, seed?: number,
       normalized = false): Tensor1D|Tensor2D {
-    const $logits = assertArgIsTensor(logits, 'logits', 'multinomial');
+    const $logits = convertToTensor(logits, 'logits', 'multinomial');
     const numOutcomes = $logits.size;
     const origRank = $logits.rank;
     if (numOutcomes < 2) {
@@ -462,7 +463,7 @@ export class ArrayOps {
   @operation
   static reshape<R2 extends Rank>(x: Tensor|TensorLike, shape: ShapeMap[R2]):
       Tensor<R2> {
-    const $x = assertArgIsTensor(x, 'x', 'reshape');
+    const $x = convertToTensor(x, 'x', 'reshape');
     shape = util.inferFromImplicitShape(shape, $x.size);
     util.assert(
         $x.size === util.sizeFromShape(shape),
@@ -490,7 +491,7 @@ export class ArrayOps {
    */
   @doc({heading: 'Tensors', subheading: 'Transformations'})
   static squeeze<T extends Tensor>(x: Tensor|TensorLike, axis?: number[]): T {
-    const $x = assertArgIsTensor(x, 'x', 'squeeze');
+    const $x = convertToTensor(x, 'x', 'squeeze');
     return ArrayOps.reshape($x, util.squeezeShape($x.shape, axis).newShape) as
         T;
   }
@@ -508,7 +509,7 @@ export class ArrayOps {
   @doc({heading: 'Tensors', subheading: 'Transformations'})
   @operation
   static cast<T extends Tensor>(x: T|TensorLike, dtype: DataType): T {
-    const $x = assertArgIsTensor(x, 'x', 'cast');
+    const $x = convertToTensor(x, 'x', 'cast');
 
     const grad = (dy: T) => {
       return {$x: () => dy.clone()};
@@ -543,7 +544,7 @@ export class ArrayOps {
   @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
   @operation
   static tile<T extends Tensor>(x: T|TensorLike, reps: number[]): T {
-    const $x = assertArgIsTensor(x, 'x', 'tile');
+    const $x = convertToTensor(x, 'x', 'tile');
 
     util.assert(
         $x.rank === reps.length,
@@ -687,7 +688,7 @@ export class ArrayOps {
   static pad<T extends Tensor>(
       x: T|TensorLike, paddings: Array<[number, number]>, constantValue = 0):
       T {
-    const $x = assertArgIsTensor(x, 'x', 'pad');
+    const $x = convertToTensor(x, 'x', 'pad');
 
     if ($x.rank === 0) {
       throw new Error('pad(scalar) is not defined. Pass non-scalar to pad');
@@ -761,7 +762,7 @@ export class ArrayOps {
   @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
   @operation
   static unstack<T extends Tensor>(x: T|TensorLike, axis = 0): Tensor[] {
-    const $x = assertArgIsTensor(x, 'x', 'unstack');
+    const $x = convertToTensor(x, 'x', 'unstack');
     const num = $x.shape[axis];
     const outputShape: number[] = Array($x.rank - 1).fill(0);
     let outIndex = 0;
@@ -820,7 +821,7 @@ export class ArrayOps {
   @operation
   static split<T extends Tensor>(
       x: T|TensorLike, numOrSizeSplits: number[]|number, axis = 0): T[] {
-    const $x = assertArgIsTensor(x, 'x', 'split');
+    const $x = convertToTensor(x, 'x', 'split');
 
     axis = parseAxisParam(axis, $x.shape)[0];
     let splitSizes: number[];
@@ -870,7 +871,7 @@ export class ArrayOps {
   @doc({heading: 'Operations', subheading: 'Scan'})
   static cumsum<T extends Tensor>(
       x: Tensor|TensorLike, axis = 0, exclusive = false, reverse = false): T {
-    const $x = assertArgIsTensor(x, 'x', 'cumsum');
+    const $x = convertToTensor(x, 'x', 'cumsum');
 
     axis = axis | 0;
     const permutation = getAxesPermutation([axis], $x.rank);
@@ -912,7 +913,7 @@ export class ArrayOps {
   @operation
   static expandDims<R2 extends Rank>(x: Tensor|TensorLike, axis = 0):
       Tensor<R2> {
-    const $x = assertArgIsTensor(x, 'x', 'expandDims');
+    const $x = convertToTensor(x, 'x', 'expandDims');
 
     util.assert(axis <= $x.rank, 'Axis must be <= rank of the tensor');
     const newShape = $x.shape.slice();

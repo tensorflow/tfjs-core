@@ -18,7 +18,7 @@
 import {doc} from '../doc';
 import {ENV} from '../environment';
 import {Tensor, Tensor1D} from '../tensor';
-import {assertArgIsTensor} from '../tensor_util';
+import {convertToTensor} from '../tensor_util';
 import {TensorLike} from '../types';
 import {assert, isInt} from '../util';
 
@@ -52,8 +52,8 @@ export class SegmentOps {
   static unsortedSegmentSum<T extends Tensor>(
       x: T|TensorLike, segmentIds: Tensor1D|TensorLike, numSegments: number):
       T {
-    const $x = assertArgIsTensor(x, 'x', 'unsortedSegmentSum');
-    const $segmentIds = assertArgIsTensor(
+    const $x = convertToTensor(x, 'x', 'unsortedSegmentSum');
+    const $segmentIds = convertToTensor(
         segmentIds, 'segmentIds', 'unsortedSegmentSum', 'int32');
     assert(
         $segmentIds.dtype === 'int32', 'segmentIds must be of dtype `int32`');
@@ -95,8 +95,8 @@ export class SegmentOps {
   @operation
   static gather<T extends Tensor>(
       x: T|TensorLike, indices: Tensor1D|TensorLike, axis = 0): T {
-    const $x = assertArgIsTensor(x, 'x', 'gather');
-    const $indices = assertArgIsTensor(indices, 'indices', 'gather', 'int32');
+    const $x = convertToTensor(x, 'x', 'gather');
+    const $indices = convertToTensor(indices, 'indices', 'gather', 'int32');
 
     assert($indices.dtype === 'int32', 'Indices must be of dtype `int32`');
     axis = parseAxisParam(axis, $x.shape)[0];

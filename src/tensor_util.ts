@@ -28,7 +28,7 @@ export function assertTypesMatch(a: Tensor, b: Tensor): void {
           ` second(${b.dtype}) input must match`);
 }
 
-export function assertArgIsTensor<T extends Tensor>(
+export function convertToTensor<T extends Tensor>(
     x: T|TensorLike, argName: string, functionName: string,
     dtype: DataType = 'float32'): T {
   dtype = dtype || 'float32';
@@ -59,13 +59,13 @@ export function assertArgIsTensorArr<T extends Tensor>(
   }
   const tensors = arg as T[];
   return tensors.map(
-      (t, i) => assertArgIsTensor(t, `${argName}[${i}]`, functionName));
+      (t, i) => convertToTensor(t, `${argName}[${i}]`, functionName));
 }
 
 export function assertArgumentsAreTensors<T extends Tensor>(
     args: {[argName: string]: T|TensorLike}, functionName: string): void {
   for (const argName in args) {
-    assertArgIsTensor(args[argName], argName, functionName);
+    convertToTensor(args[argName], argName, functionName);
   }
 }
 

@@ -18,7 +18,7 @@
 import {doc} from '../doc';
 import {ENV} from '../environment';
 import {Tensor} from '../tensor';
-import {assertArgIsTensor} from '../tensor_util';
+import {convertToTensor} from '../tensor_util';
 import {TensorLike} from '../types';
 import {BinaryOps} from './binary_ops';
 import {LogicalOps} from './logical_ops';
@@ -41,7 +41,7 @@ export class ReluOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static relu<T extends Tensor>(x: T|TensorLike): T {
-    const $x = assertArgIsTensor(x, 'x', 'relu');
+    const $x = convertToTensor(x, 'x', 'relu');
 
     if ($x.dtype === 'bool') {
       return $x.toInt();
@@ -66,7 +66,7 @@ export class ReluOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static elu<T extends Tensor>(x: T|TensorLike): T {
-    const $x = assertArgIsTensor(x, 'x', 'elu');
+    const $x = convertToTensor(x, 'x', 'elu');
 
     const grad = (dy: T, saved: Tensor[]) => {
       const [y] = saved;
@@ -94,7 +94,7 @@ export class ReluOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static selu<T extends Tensor>(x: T|TensorLike): T {
-    const $x = assertArgIsTensor(x, 'x', 'selu');
+    const $x = convertToTensor(x, 'x', 'selu');
 
     const grad = (dy: T) => {
       return {
@@ -133,7 +133,7 @@ export class ReluOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static leakyRelu<T extends Tensor>(x: T|TensorLike, alpha = 0.2): T {
-    const $x = assertArgIsTensor(x, 'x', 'leakyRelu');
+    const $x = convertToTensor(x, 'x', 'leakyRelu');
 
     return BinaryOps.maximum(TensorOps.scalar(alpha).mul($x), $x);
   }
@@ -155,8 +155,8 @@ export class ReluOps {
   @doc({heading: 'Operations', subheading: 'Basic math'})
   @operation
   static prelu<T extends Tensor>(x: T|TensorLike, alpha: T|TensorLike): T {
-    const $x = assertArgIsTensor(x, 'x', 'prelu');
-    const $alpha = assertArgIsTensor(alpha, 'alpha', 'prelu');
+    const $x = convertToTensor(x, 'x', 'prelu');
+    const $alpha = convertToTensor(alpha, 'alpha', 'prelu');
 
     const zero = TensorOps.scalar(0);
     return BinaryOps.maximum(zero, $x).add(

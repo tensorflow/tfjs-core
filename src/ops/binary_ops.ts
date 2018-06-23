@@ -19,9 +19,10 @@ import {doc} from '../doc';
 import {ENV} from '../environment';
 import {KernelBackend} from '../kernels/backend';
 import {Tensor} from '../tensor';
-import {assertArgIsTensor, assertTypesMatch} from '../tensor_util';
+import {assertTypesMatch, convertToTensor} from '../tensor_util';
 import {TensorLike, upcastType} from '../types';
 import * as util from '../util';
+
 import * as broadcast_util from './broadcast_util';
 import {operation} from './operation';
 import {TensorOps} from './tensor_ops';
@@ -54,8 +55,8 @@ export class BinaryOps {
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
   static add<T extends Tensor>(a: Tensor|TensorLike, b: Tensor|TensorLike): T {
-    const $a = assertArgIsTensor(a, 'a', 'add');
-    const $b = assertArgIsTensor(b, 'b', 'add');
+    const $a = convertToTensor(a, 'a', 'add');
+    const $b = convertToTensor(b, 'b', 'add');
     assertTypesMatch($a, $b);
 
     const outShape =
@@ -125,8 +126,8 @@ export class BinaryOps {
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
   static sub<T extends Tensor>(a: Tensor|TensorLike, b: Tensor|TensorLike): T {
-    const $a = assertArgIsTensor(a, 'a', 'sub');
-    const $b = assertArgIsTensor(b, 'b', 'sub');
+    const $a = convertToTensor(a, 'a', 'sub');
+    const $b = convertToTensor(b, 'b', 'sub');
     assertTypesMatch($a, $b);
 
     const outShape =
@@ -199,8 +200,8 @@ export class BinaryOps {
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
   static pow<T extends Tensor>(base: T|TensorLike, exp: Tensor|TensorLike): T {
-    const $base = assertArgIsTensor(base, 'base', 'pow');
-    const $exp = assertArgIsTensor(exp, 'exp', 'pow');
+    const $base = convertToTensor(base, 'base', 'pow');
+    const $exp = convertToTensor(exp, 'exp', 'pow');
 
     const outShape =
         broadcast_util.assertAndGetBroadcastShape($base.shape, $exp.shape);
@@ -274,8 +275,8 @@ export class BinaryOps {
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
   static mul<T extends Tensor>(a: Tensor|TensorLike, b: Tensor|TensorLike): T {
-    const $a = assertArgIsTensor(a, 'a', 'mul');
-    const $b = assertArgIsTensor(b, 'b', 'mul');
+    const $a = convertToTensor(a, 'a', 'mul');
+    const $b = convertToTensor(b, 'b', 'mul');
     assertTypesMatch($a, $b);
 
     const outShape =
@@ -347,8 +348,8 @@ export class BinaryOps {
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
   static div<T extends Tensor>(a: Tensor|TensorLike, b: Tensor|TensorLike): T {
-    const $a = assertArgIsTensor(a, 'a', 'div');
-    const $b = assertArgIsTensor(b, 'b', 'div');
+    const $a = convertToTensor(a, 'a', 'div');
+    const $b = convertToTensor(b, 'b', 'div');
     assertTypesMatch($a, $b);
 
     let forwardFunc: (backend: KernelBackend) => Tensor;
@@ -411,8 +412,8 @@ export class BinaryOps {
   @operation
   static floorDiv<T extends Tensor>(a: Tensor|TensorLike, b: Tensor|TensorLike):
       T {
-    const $a = assertArgIsTensor(a, 'a', 'floorDiv');
-    const $b = assertArgIsTensor(b, 'b', 'floorDiv');
+    const $a = convertToTensor(a, 'a', 'floorDiv');
+    const $b = convertToTensor(b, 'b', 'floorDiv');
     assertTypesMatch($a, $b);
 
     const forwardFunc = (backend: KernelBackend) => backend.floorDiv($a, $b);
@@ -483,8 +484,8 @@ export class BinaryOps {
   @doc({heading: 'Operations', subheading: 'Arithmetic'})
   @operation
   static mod<T extends Tensor>(a: Tensor|TensorLike, b: Tensor|TensorLike): T {
-    const $a = assertArgIsTensor(a, 'a', 'mod');
-    const $b = assertArgIsTensor(b, 'b', 'mod');
+    const $a = convertToTensor(a, 'a', 'mod');
+    const $b = convertToTensor(b, 'b', 'mod');
     assertTypesMatch($a, $b);
 
     const outShape =
@@ -553,8 +554,8 @@ export class BinaryOps {
   @operation
   static minimum<T extends Tensor>(a: Tensor|TensorLike, b: Tensor|TensorLike):
       T {
-    let $a = assertArgIsTensor(a, 'a', 'minimum');
-    let $b = assertArgIsTensor(b, 'b', 'minimum');
+    let $a = convertToTensor(a, 'a', 'minimum');
+    let $b = convertToTensor(b, 'b', 'minimum');
     assertTypesMatch($a, $b);
 
     if ($a.dtype === 'bool') {
@@ -615,8 +616,8 @@ export class BinaryOps {
   @operation
   static maximum<T extends Tensor>(a: Tensor|TensorLike, b: Tensor|TensorLike):
       T {
-    let $a = assertArgIsTensor(a, 'a', 'maximum');
-    let $b = assertArgIsTensor(b, 'b', 'maximum');
+    let $a = convertToTensor(a, 'a', 'maximum');
+    let $b = convertToTensor(b, 'b', 'maximum');
     assertTypesMatch($a, $b);
 
     if ($a.dtype === 'bool') {
@@ -678,8 +679,8 @@ export class BinaryOps {
   @operation
   static squaredDifference<T extends Tensor>(
       a: Tensor|TensorLike, b: Tensor|TensorLike): T {
-    const $a = assertArgIsTensor(a, 'a', 'squaredDifference');
-    const $b = assertArgIsTensor(b, 'b', 'squaredDifference');
+    const $a = convertToTensor(a, 'a', 'squaredDifference');
+    const $b = convertToTensor(b, 'b', 'squaredDifference');
     assertTypesMatch($a, $b);
 
     broadcast_util.assertAndGetBroadcastShape($a.shape, $b.shape);
@@ -729,8 +730,8 @@ export class BinaryOps {
   @operation
   static atan2<T extends Tensor>(a: Tensor|TensorLike, b: Tensor|TensorLike):
       T {
-    const $a = assertArgIsTensor(a, 'a', 'atan2');
-    const $b = assertArgIsTensor(b, 'b', 'atan2');
+    const $a = convertToTensor(a, 'a', 'atan2');
+    const $b = convertToTensor(b, 'b', 'atan2');
     assertTypesMatch($a, $b);
 
     const outShape =

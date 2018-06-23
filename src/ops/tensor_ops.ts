@@ -18,7 +18,7 @@
 import {doc} from '../doc';
 // tslint:disable-next-line:max-line-length
 import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D, Tensor6D} from '../tensor';
-import {assertArgIsTensor} from '../tensor_util';
+import {convertToTensor} from '../tensor_util';
 // tslint:disable-next-line:max-line-length
 import {TensorLike, TensorLike1D, TensorLike2D, TensorLike3D, TensorLike4D, TensorLike5D, TensorLike6D} from '../types';
 import {ArrayData, DataType, Rank, ShapeMap} from '../types';
@@ -411,7 +411,7 @@ export class TensorOps {
    */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   static onesLike<T extends Tensor>(x: T|TensorLike): T {
-    const $x = assertArgIsTensor(x, 'x', 'onesLike');
+    const $x = convertToTensor(x, 'x', 'onesLike');
     return TensorOps.ones($x.shape, $x.dtype) as T;
   }
 
@@ -428,7 +428,7 @@ export class TensorOps {
    */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   static zerosLike<T extends Tensor>(x: T|TensorLike): T {
-    const $x = assertArgIsTensor(x, 'x', 'zerosLike');
+    const $x = convertToTensor(x, 'x', 'zerosLike');
     return TensorOps.zeros($x.shape, $x.dtype) as T;
   }
 

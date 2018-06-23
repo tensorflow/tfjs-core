@@ -18,7 +18,7 @@
 import {doc} from '../doc';
 import {ENV} from '../environment';
 import {Tensor2D, Tensor3D, Tensor4D} from '../tensor';
-import {assertArgIsTensor} from '../tensor_util';
+import {convertToTensor} from '../tensor_util';
 import {TensorLike} from '../types';
 import * as util from '../util';
 import * as conv_util from './conv_util';
@@ -58,8 +58,8 @@ export class ConvOps {
       x: T|TensorLike, filter: Tensor3D|TensorLike, stride: number,
       pad: 'valid'|'same'|number, dataFormat: 'NWC'|'NCW' = 'NWC', dilation = 1,
       dimRoundingMode?: 'floor'|'round'|'ceil'): T {
-    const $x = assertArgIsTensor(x, 'x', 'conv1d');
-    const $filter = assertArgIsTensor(filter, 'filter', 'conv1d');
+    const $x = convertToTensor(x, 'x', 'conv1d');
+    const $filter = convertToTensor(filter, 'filter', 'conv1d');
 
     let x3D = $x as Tensor3D;
     let reshapedTo3D = false;
@@ -152,8 +152,8 @@ export class ConvOps {
       dataFormat: 'NHWC'|'NCHW' = 'NHWC',
       dilations: [number, number]|number = [1, 1],
       dimRoundingMode?: 'floor'|'round'|'ceil'): T {
-    const $x = assertArgIsTensor(x, 'x', 'conv2d');
-    const $filter = assertArgIsTensor(filter, 'filter', 'conv2d');
+    const $x = convertToTensor(x, 'x', 'conv2d');
+    const $filter = convertToTensor(filter, 'filter', 'conv2d');
 
     let x4D = $x as Tensor4D;
     let reshapedTo4D = false;
@@ -241,8 +241,8 @@ export class ConvOps {
       dy: T|TensorLike, filter: Tensor4D|TensorLike,
       strides: [number, number]|number, pad: 'valid'|'same'|number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): T {
-    const $dy = assertArgIsTensor(dy, 'dy', 'conv2dDerInput');
-    const $filter = assertArgIsTensor(filter, 'filter', 'conv2dDerInput');
+    const $dy = convertToTensor(dy, 'dy', 'conv2dDerInput');
+    const $filter = convertToTensor(filter, 'filter', 'conv2dDerInput');
 
     util.assert(
         xShape.length === $dy.rank,
@@ -323,8 +323,8 @@ export class ConvOps {
       filterShape: [number, number, number, number],
       strides: [number, number]|number, pad: 'valid'|'same'|number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): Tensor4D {
-    const $x = assertArgIsTensor(x, 'x', 'conv2dDerFilter');
-    const $dy = assertArgIsTensor(dy, 'dy', 'conv2dDerFilter');
+    const $x = convertToTensor(x, 'x', 'conv2dDerFilter');
+    const $dy = convertToTensor(dy, 'dy', 'conv2dDerFilter');
 
     let x4D = $x as Tensor4D;
     if ($x.rank === 3) {
@@ -395,8 +395,8 @@ export class ConvOps {
       outputShape: [number, number, number, number]|[number, number, number],
       strides: [number, number]|number, pad: 'valid'|'same'|number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): T {
-    const $x = assertArgIsTensor(x, 'x', 'conv2dTranspose');
-    const $filter = assertArgIsTensor(filter, 'filter', 'conv2dTranspose');
+    const $x = convertToTensor(x, 'x', 'conv2dTranspose');
+    const $filter = convertToTensor(filter, 'filter', 'conv2dTranspose');
 
     return ConvOps.conv2dDerInput(
         outputShape, $x, $filter, strides, pad, dimRoundingMode);
@@ -454,8 +454,8 @@ export class ConvOps {
       dataFormat: 'NHWC'|'NCHW' = 'NHWC',
       dilations: [number, number]|number = [1, 1],
       dimRoundingMode?: 'floor'|'round'|'ceil'): T {
-    const $x = assertArgIsTensor(x, 'x', 'depthwiseConv2d');
-    const $filter = assertArgIsTensor(filter, 'filter', 'depthwiseConv2d');
+    const $x = convertToTensor(x, 'x', 'depthwiseConv2d');
+    const $filter = convertToTensor(filter, 'filter', 'depthwiseConv2d');
 
     let x4D = $x as Tensor4D;
     let reshapedTo4D = false;
@@ -566,11 +566,11 @@ export class ConvOps {
       pointwiseFilter: Tensor4D|TensorLike, strides: [number, number]|number,
       pad: 'valid'|'same', dilation: [number, number]|number = [1, 1],
       dataFormat: 'NHWC'|'NCHW' = 'NHWC'): T {
-    const $x = assertArgIsTensor(x, 'x', 'separableConv2d');
-    const $depthwiseFilter = assertArgIsTensor(
-        depthwiseFilter, 'depthwiseFilter', 'separableConv2d');
-    const $pointwiseFilter = assertArgIsTensor(
-        pointwiseFilter, 'pointwiseFilter', 'separableConv2d');
+    const $x = convertToTensor(x, 'x', 'separableConv2d');
+    const $depthwiseFilter =
+        convertToTensor(depthwiseFilter, 'depthwiseFilter', 'separableConv2d');
+    const $pointwiseFilter =
+        convertToTensor(pointwiseFilter, 'pointwiseFilter', 'separableConv2d');
 
     let x4D = $x as Tensor4D;
     let reshapedTo4D = false;

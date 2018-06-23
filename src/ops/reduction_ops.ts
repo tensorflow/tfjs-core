@@ -19,7 +19,7 @@ import {doc} from '../doc';
 import {ENV} from '../environment';
 import {customGrad} from '../globals';
 import {Tensor} from '../tensor';
-import {assertArgIsTensor, assertArgumentsAreTensors} from '../tensor_util';
+import {assertArgumentsAreTensors, convertToTensor} from '../tensor_util';
 import {TensorLike} from '../types';
 import * as util from '../util';
 
@@ -59,7 +59,7 @@ export class ReductionOps {
   @operation
   static logSumExp<T extends Tensor>(
       x: Tensor|TensorLike, axis: number|number[] = null, keepDims = false): T {
-    const $x = assertArgIsTensor(x, 'x', 'logSumExp');
+    const $x = convertToTensor(x, 'x', 'logSumExp');
 
     const axes = axis_util.parseAxisParam(axis, $x.shape);
     const xMax = $x.max(axes, true /* keepDims */);
@@ -108,7 +108,7 @@ export class ReductionOps {
   @operation
   static sum<T extends Tensor>(
       x: Tensor|TensorLike, axis: number|number[] = null, keepDims = false): T {
-    let $x = assertArgIsTensor(x, 'x', 'sum');
+    let $x = convertToTensor(x, 'x', 'sum');
 
     if ($x.dtype === 'bool') {
       $x = $x.toInt();
@@ -179,7 +179,7 @@ export class ReductionOps {
   @operation
   static mean<T extends Tensor>(
       x: Tensor|TensorLike, axis: number|number[] = null, keepDims = false): T {
-    const $x = assertArgIsTensor(x, 'x', 'mean');
+    const $x = convertToTensor(x, 'x', 'mean');
 
     const axes = axis_util.parseAxisParam(axis, $x.shape);
     const shapes = axis_util.computeOutAndReduceShapes($x.shape, axes);
@@ -244,7 +244,7 @@ export class ReductionOps {
   @operation
   static min<T extends Tensor>(
       x: Tensor|TensorLike, axis: number|number[] = null, keepDims = false): T {
-    let $x = assertArgIsTensor(x, 'x', 'min');
+    let $x = convertToTensor(x, 'x', 'min');
 
     const origAxes = axis_util.parseAxisParam(axis, $x.shape);
     let axes = origAxes;
@@ -292,7 +292,7 @@ export class ReductionOps {
   @operation
   static max<T extends Tensor>(
       x: Tensor|TensorLike, axis: number|number[] = null, keepDims = false): T {
-    let $x = assertArgIsTensor(x, 'x', 'max');
+    let $x = convertToTensor(x, 'x', 'max');
 
     const origAxes = axis_util.parseAxisParam(axis, $x.shape);
     let axes = origAxes;
@@ -335,7 +335,7 @@ export class ReductionOps {
   @doc({heading: 'Operations', subheading: 'Reduction'})
   @operation
   static argMin<T extends Tensor>(x: Tensor|TensorLike, axis = 0): T {
-    let $x = assertArgIsTensor(x, 'x', 'argMin');
+    let $x = convertToTensor(x, 'x', 'argMin');
 
     if (axis == null) {
       axis = 0;
@@ -375,7 +375,7 @@ export class ReductionOps {
   @doc({heading: 'Operations', subheading: 'Reduction'})
   @operation
   static argMax<T extends Tensor>(x: Tensor|TensorLike, axis = 0): T {
-    let $x = assertArgIsTensor(x, 'x', 'argMax');
+    let $x = convertToTensor(x, 'x', 'argMax');
 
     if (axis == null) {
       axis = 0;
@@ -509,7 +509,7 @@ export class ReductionOps {
   static moments(
       x: Tensor|TensorLike, axis: number|number[] = null, keepDims = false):
       {mean: Tensor, variance: Tensor} {
-    x = assertArgIsTensor(x, 'x', 'moments');
+    x = convertToTensor(x, 'x', 'moments');
     const axes = axis_util.parseAxisParam(axis, x.shape);
     const mean = x.mean(axes, keepDims);
     let keepDimsShape = mean.shape;
