@@ -21,11 +21,9 @@ import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D, Tensor
 import {assertArgIsTensor} from '../tensor_util';
 // tslint:disable-next-line:max-line-length
 import {TensorLike, TensorLike1D, TensorLike2D, TensorLike3D, TensorLike4D, TensorLike5D, TensorLike6D} from '../types';
+import {ArrayData, DataType, Rank, ShapeMap} from '../types';
 // tslint:disable-next-line:max-line-length
-import {ArrayData, DataType, DataTypeMap, Rank, ShapeMap} from '../types';
-// tslint:disable-next-line:max-line-length
-import {assertShapesMatch, copyTypedArray, flatten, getTypedArrayFromDType, inferShape, isTypedArray, sizeFromShape} from '../util';
-import {operation} from './operation';
+import {assertShapesMatch, getTypedArrayFromDType, inferShape, isTypedArray, makeOnesTypedArray, makeZerosTypedArray, sizeFromShape, toTypedArray} from '../util';
 
 export class TensorOps {
   /**
@@ -350,7 +348,6 @@ export class TensorOps {
    *     'float'.
    */
   @doc({heading: 'Tensors', subheading: 'Creation'})
-  @operation
   static ones<R extends Rank>(shape: ShapeMap[R], dtype: DataType = 'float32'):
       Tensor<R> {
     const values = makeOnesTypedArray(sizeFromShape(shape), dtype);
@@ -369,7 +366,6 @@ export class TensorOps {
    *     be 'float32', 'int32' or 'bool'. Defaults to 'float'.
    */
   @doc({heading: 'Tensors', subheading: 'Creation'})
-  @operation
   static zeros<R extends Rank>(shape: ShapeMap[R], dtype: DataType = 'float32'):
       Tensor<R> {
     const values = makeZerosTypedArray(sizeFromShape(shape), dtype);
@@ -389,7 +385,6 @@ export class TensorOps {
    * 'float'.
    */
   @doc({heading: 'Tensors', subheading: 'Creation'})
-  @operation
   static fill<R extends Rank>(
       shape: ShapeMap[R], value: number, dtype: DataType = 'float32'):
       Tensor<R> {
@@ -409,7 +404,6 @@ export class TensorOps {
    * @param x A tensor.
    */
   @doc({heading: 'Tensors', subheading: 'Creation'})
-  @operation
   static onesLike<T extends Tensor>(x: T|TensorLike): T {
     const $x = assertArgIsTensor(x, 'x', 'onesLike');
     return TensorOps.ones($x.shape, $x.dtype) as T;
@@ -427,7 +421,6 @@ export class TensorOps {
    * @param x The tensor of required shape.
    */
   @doc({heading: 'Tensors', subheading: 'Creation'})
-  @operation
   static zerosLike<T extends Tensor>(x: T|TensorLike): T {
     const $x = assertArgIsTensor(x, 'x', 'zerosLike');
     return TensorOps.zeros($x.shape, $x.dtype) as T;
@@ -508,45 +501,5 @@ export class TensorOps {
     }
 
     return TensorOps.tensor1d(values, dtype);
-  }
-}
-
-function toTypedArray<D extends DataType>(
-    a: ArrayData<D>, dtype: D): DataTypeMap[D] {
-  if (noConversionNeeded(a, dtype)) {
-    return a as DataTypeMap[D];
-  }
-  if (Array.isArray(a)) {
-    a = flatten(a as number[]);
-  }
-  return copyTypedArray(a, dtype);
-}
-
-function noConversionNeeded<D extends DataType>(
-    a: ArrayData<D>, dtype: D): boolean {
-  return (a instanceof Float32Array && dtype === 'float32') ||
-      (a instanceof Int32Array && dtype === 'int32') ||
-      (a instanceof Uint8Array && dtype === 'bool');
-}
-
-function makeOnesTypedArray<D extends DataType>(
-    size: number, dtype: D): DataTypeMap[D] {
-  const array = makeZerosTypedArray(size, dtype);
-  for (let i = 0; i < array.length; i++) {
-    array[i] = 1;
-  }
-  return array;
-}
-
-function makeZerosTypedArray<D extends DataType>(
-    size: number, dtype: D): DataTypeMap[D] {
-  if (dtype == null || dtype === 'float32') {
-    return new Float32Array(size);
-  } else if (dtype === 'int32') {
-    return new Int32Array(size);
-  } else if (dtype === 'bool') {
-    return new Uint8Array(size);
-  } else {
-    throw new Error(`Unknown data type $ {dtype}`);
   }
 }

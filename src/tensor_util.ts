@@ -15,12 +15,11 @@
  * =============================================================================
  */
 
-import {TensorOps} from './ops/tensor_ops';
 import {Tensor} from './tensor';
 // tslint:disable-next-line:max-line-length
 import {NamedTensorMap, TensorContainer, TensorContainerArray} from './tensor_types';
-import {DataType, TensorLike} from './types';
-import {assert} from './util';
+import {ArrayData, DataType, TensorLike} from './types';
+import {assert, inferShape, isTypedArray, toTypedArray} from './util';
 
 export function assertTypesMatch(a: Tensor, b: Tensor): void {
   assert(
@@ -36,13 +35,19 @@ export function assertArgIsTensor<T extends Tensor>(
   if (x instanceof Tensor) {
     return x;
   }
-  try {
-    return TensorOps.tensor(x, null, dtype) as T;
-  } catch (ex) {
+  if (!isTypedArray(x) && !Array.isArray(x) && typeof x !== 'number' &&
+      typeof x !== 'boolean') {
     throw new Error(
         `Argument '${argName}' passed to '${functionName}' must be a ` +
-        `Tensor or TensorLike. ${ex.message}`);
+        `Tensor or TensorLike.`);
   }
+  const inferredShape = inferShape(x);
+  if (!isTypedArray(x) && !Array.isArray(x)) {
+    x = [x] as number[];
+  }
+  return Tensor.make(
+      inferredShape, {values: toTypedArray(x as ArrayData<DataType>, dtype)},
+      dtype);
 }
 
 export function assertArgIsTensorArr<T extends Tensor>(

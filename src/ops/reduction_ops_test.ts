@@ -1065,7 +1065,7 @@ describeWithFlags('Reduction: norm', ALL_ENVS, () => {
         .toThrowError(/Argument 'x' passed to 'norm' must be a Tensor/);
   });
 
-  it('accepts a tensor-like objects', () => {
+  it('accepts a tensor-like object', () => {
     const norm = tf.norm([1, -2, 3, -4], 1);
 
     expect(norm.dtype).toBe('float32');

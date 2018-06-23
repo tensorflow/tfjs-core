@@ -16,7 +16,7 @@
  */
 
 // tslint:disable-next-line:max-line-length
-import {DataType, DataTypeMap, FlatVector, RecursiveArray, RegularArray, TensorLike, TypedArray} from './types';
+import {ArrayData, DataType, DataTypeMap, FlatVector, RecursiveArray, RegularArray, TensorLike, TypedArray} from './types';
 
 /** Shuffles the array using Fisher-Yates algorithm. */
 // tslint:disable-next-line:no-any
@@ -404,4 +404,44 @@ export function computeStrides(shape: number[]): number[] {
     strides[i] = strides[i + 1] * shape[i + 1];
   }
   return strides;
+}
+
+export function toTypedArray<D extends DataType>(
+    a: ArrayData<D>, dtype: D): DataTypeMap[D] {
+  if (noConversionNeeded(a, dtype)) {
+    return a as DataTypeMap[D];
+  }
+  if (Array.isArray(a)) {
+    a = flatten(a as number[]);
+  }
+  return copyTypedArray(a, dtype);
+}
+
+function noConversionNeeded<D extends DataType>(
+    a: ArrayData<D>, dtype: D): boolean {
+  return (a instanceof Float32Array && dtype === 'float32') ||
+      (a instanceof Int32Array && dtype === 'int32') ||
+      (a instanceof Uint8Array && dtype === 'bool');
+}
+
+export function makeOnesTypedArray<D extends DataType>(
+    size: number, dtype: D): DataTypeMap[D] {
+  const array = makeZerosTypedArray(size, dtype);
+  for (let i = 0; i < array.length; i++) {
+    array[i] = 1;
+  }
+  return array;
+}
+
+export function makeZerosTypedArray<D extends DataType>(
+    size: number, dtype: D): DataTypeMap[D] {
+  if (dtype == null || dtype === 'float32') {
+    return new Float32Array(size);
+  } else if (dtype === 'int32') {
+    return new Int32Array(size);
+  } else if (dtype === 'bool') {
+    return new Uint8Array(size);
+  } else {
+    throw new Error(`Unknown data type $ {dtype}`);
+  }
 }

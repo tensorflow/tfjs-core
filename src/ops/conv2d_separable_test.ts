@@ -441,7 +441,7 @@ describeWithFlags('separableConv2d', ALL_ENVS, () => {
         .toThrowError(e);
   });
 
-  it('accepts a tensor-like objects', () => {
+  it('accepts a tensor-like object', () => {
     const pad = 'valid';
     const stride = 1;
     const outDepth = 2;

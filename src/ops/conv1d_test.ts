@@ -216,7 +216,7 @@ describeWithFlags('conv1d', ALL_ENVS, () => {
         .toThrowError(/Argument 'filter' passed to 'conv1d' must be a Tensor/);
   });
 
-  it('accepts a tensor-like objects', () => {
+  it('accepts a tensor-like object', () => {
     const pad = 'same';
     const stride = 1;
     const dataFormat = 'NWC';
