@@ -150,10 +150,10 @@ export class TensorOps {
   static tensor2d(
       values: TensorLike2D, shape?: [number, number],
       dtype: DataType = 'float32'): Tensor2D {
+    assertNonNull(values);
     if (shape != null && shape.length !== 2) {
       throw new Error('tensor2d() requires shape to have two numbers');
     }
-    assertNonNull(values);
     const inferredShape = inferShape(values);
     if (inferredShape.length !== 2 && inferredShape.length !== 1) {
       throw new Error(
@@ -193,10 +193,10 @@ export class TensorOps {
   static tensor3d(
       values: TensorLike3D, shape?: [number, number, number],
       dtype: DataType = 'float32'): Tensor3D {
+    assertNonNull(values);
     if (shape != null && shape.length !== 3) {
       throw new Error('tensor3d() requires shape to have three numbers');
     }
-    assertNonNull(values);
     const inferredShape = inferShape(values);
     if (inferredShape.length !== 3 && inferredShape.length !== 1) {
       throw new Error(
@@ -236,10 +236,10 @@ export class TensorOps {
   static tensor4d(
       values: TensorLike4D, shape?: [number, number, number, number],
       dtype: DataType = 'float32'): Tensor4D {
+    assertNonNull(values);
     if (shape != null && shape.length !== 4) {
       throw new Error('tensor4d() requires shape to have four numbers');
     }
-    assertNonNull(values);
     const inferredShape = inferShape(values);
     if (inferredShape.length !== 4 && inferredShape.length !== 1) {
       throw new Error(
@@ -279,10 +279,10 @@ export class TensorOps {
   static tensor5d(
       values: TensorLike5D, shape?: [number, number, number, number, number],
       dtype: DataType = 'float32'): Tensor5D {
+    assertNonNull(values);
     if (shape != null && shape.length !== 5) {
       throw new Error('tensor5d() requires shape to have five numbers');
     }
-    assertNonNull(values);
     const inferredShape = inferShape(values);
     if (inferredShape.length !== 5 && inferredShape.length !== 1) {
       throw new Error('tensor5d() requires values to be \
@@ -323,6 +323,7 @@ export class TensorOps {
       values: TensorLike6D,
       shape?: [number, number, number, number, number, number],
       dtype: DataType = 'float32'): Tensor6D {
+    assertNonNull(values);
     if (shape != null && shape.length !== 6) {
       throw new Error('tensor6d() requires shape to have six numbers');
     }
