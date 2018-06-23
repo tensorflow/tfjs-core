@@ -23,7 +23,7 @@ import {assertArgIsTensor} from '../tensor_util';
 import {TensorLike, TensorLike1D, TensorLike2D, TensorLike3D, TensorLike4D, TensorLike5D, TensorLike6D} from '../types';
 import {ArrayData, DataType, Rank, ShapeMap} from '../types';
 // tslint:disable-next-line:max-line-length
-import {assertShapesMatch, getTypedArrayFromDType, inferShape, isTypedArray, makeOnesTypedArray, makeZerosTypedArray, sizeFromShape, toTypedArray} from '../util';
+import {assertNonNull, assertShapesMatch, getTypedArrayFromDType, inferShape, isTypedArray, makeOnesTypedArray, makeZerosTypedArray, sizeFromShape, toTypedArray} from '../util';
 
 export class TensorOps {
   /**
@@ -117,6 +117,7 @@ export class TensorOps {
    */
   @doc({heading: 'Tensors', subheading: 'Creation'})
   static tensor1d(values: TensorLike1D, dtype: DataType = 'float32'): Tensor1D {
+    assertNonNull(values);
     const inferredShape = inferShape(values);
     if (inferredShape.length !== 1) {
       throw new Error('tensor1d() requires values to be a flat/TypedArray');
@@ -152,6 +153,7 @@ export class TensorOps {
     if (shape != null && shape.length !== 2) {
       throw new Error('tensor2d() requires shape to have two numbers');
     }
+    assertNonNull(values);
     const inferredShape = inferShape(values);
     if (inferredShape.length !== 2 && inferredShape.length !== 1) {
       throw new Error(
@@ -194,6 +196,7 @@ export class TensorOps {
     if (shape != null && shape.length !== 3) {
       throw new Error('tensor3d() requires shape to have three numbers');
     }
+    assertNonNull(values);
     const inferredShape = inferShape(values);
     if (inferredShape.length !== 3 && inferredShape.length !== 1) {
       throw new Error(
@@ -236,6 +239,7 @@ export class TensorOps {
     if (shape != null && shape.length !== 4) {
       throw new Error('tensor4d() requires shape to have four numbers');
     }
+    assertNonNull(values);
     const inferredShape = inferShape(values);
     if (inferredShape.length !== 4 && inferredShape.length !== 1) {
       throw new Error(
@@ -278,6 +282,7 @@ export class TensorOps {
     if (shape != null && shape.length !== 5) {
       throw new Error('tensor5d() requires shape to have five numbers');
     }
+    assertNonNull(values);
     const inferredShape = inferShape(values);
     if (inferredShape.length !== 5 && inferredShape.length !== 1) {
       throw new Error('tensor5d() requires values to be \
