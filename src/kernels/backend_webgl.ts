@@ -17,6 +17,7 @@
 
 import {MemoryInfo, TimingInfo} from '../engine';
 import {ENV} from '../environment';
+import * as array_ops_util from '../ops/array_ops_uitl';
 import * as axis_util from '../ops/axis_util';
 import {Conv2DInfo} from '../ops/conv_util';
 import * as ops from '../ops/ops';
@@ -28,6 +29,7 @@ import {DataId, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor'
 import * as types from '../types';
 import {DataType, DataTypeMap, RecursiveArray, TypedArray} from '../types';
 import * as util from '../util';
+
 import {KernelBackend} from './backend';
 import * as backend_util from './backend_util';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
@@ -505,6 +507,28 @@ export class MathBackendWebGL implements KernelBackend {
   gather<T extends Tensor>(x: T, indices: Tensor1D, axis: number): T {
     const program = new GatherProgram(x.shape, indices.size, axis);
     return this.compileAndRun(program, [x, indices]);
+  }
+
+  batchToSpaceND<T extends Tensor>(
+      x: T, blockShape: number[], crops: number[][]): T {
+    util.assert(x.rank <= 4, 'WebGL for rank > 4 not yet implemented');
+    const prod = blockShape.reduce((a, b) => a * b);
+
+    const reshaped =
+        array_ops_util.getReshapedBatchDim(x.shape, blockShape, prod);
+    const perm =
+        array_ops_util.getInputAndBlockPermutation(reshaped, blockShape.length);
+    const reshapedPermuted =
+        array_ops_util.getOutputShapeBeforeCrop(x.shape, blockShape, prod);
+    const sliceBeginCoords = array_ops_util.getSliceBeginCoords(
+        reshapedPermuted.length, crops, blockShape.length);
+    const sliceSize =
+        array_ops_util.getSliceSize(reshapedPermuted, crops, blockShape.length);
+
+    return x.reshape(reshaped)
+               .transpose(perm)
+               .reshape(reshapedPermuted)
+               .slice(sliceBeginCoords, sliceSize) as T;
   }
 
   private reduce(
@@ -1129,7 +1153,8 @@ export class MathBackendWebGL implements KernelBackend {
     }
     const inputsData: Array<TensorData<T>> = inputs.map(tensor => {
       const texData = this.texData.get(tensor.dataId);
-      // Upload small tensors that live on the CPU as uniforms, not as textures.
+      // Upload small tensors that live on the CPU as uniforms, not as
+      // textures.
       if (texData.texture == null && tensor.size <= SIZE_UPLOAD_UNIFORM) {
         return {tensor, texData: null, isUniform: true};
       }
@@ -1248,9 +1273,9 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   private cacheOnCPU(dataId: DataId, float32Values?: Float32Array) {
-    // In delayed storage mode, when the user reads data, we don't keep a copy
-    // on the gpu, to minimize likelihood of memory leak. We re-upload to gpu
-    // the next time a gpgpu program needs the texture.
+    // In delayed storage mode, when the user reads data, we don't keep a
+    // copy on the gpu, to minimize likelihood of memory leak. We re-upload
+    // to gpu the next time a gpgpu program needs the texture.
     const dontKeepCopyOnGPU = this.delayedStorage;
     const texData = this.texData.get(dataId);
     const {texture, texShape, dtype, usage} = texData;

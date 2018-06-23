@@ -87,6 +87,8 @@ export const slice4d = SliceOps.slice4d;
 
 export const stridedSlice = StridedSliceOps.stridedSlice;
 
+export const batchToSpaceND = ArrayOps.batchToSpaceND;
+
 export const argMax = ReductionOps.argMax;
 export const argMin = ReductionOps.argMin;
 export const logSumExp = ReductionOps.logSumExp;

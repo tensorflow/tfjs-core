@@ -18,6 +18,7 @@
 import * as seedrandom from 'seedrandom';
 
 import {ENV} from '../environment';
+import * as array_ops_util from '../ops/array_ops_uitl';
 import * as axis_util from '../ops/axis_util';
 import * as broadcast_util from '../ops/broadcast_util';
 import * as concat_util from '../ops/concat_util';
@@ -1463,6 +1464,27 @@ export class MathBackendCPU implements KernelBackend {
       result.values[i] = xBuf.values[originalIndex];
     }
     return result.toTensor() as T;
+  }
+
+  batchToSpaceND<T extends Tensor>(
+      x: T, blockShape: number[], crops: number[][]): T {
+    const prod = blockShape.reduce((a, b) => a * b);
+
+    const reshaped =
+        array_ops_util.getReshapedBatchDim(x.shape, blockShape, prod);
+    const perm =
+        array_ops_util.getInputAndBlockPermutation(reshaped, blockShape.length);
+    const reshapedPermuted =
+        array_ops_util.getOutputShapeBeforeCrop(x.shape, blockShape, prod);
+    const sliceBeginCoords = array_ops_util.getSliceBeginCoords(
+        reshapedPermuted.length, crops, blockShape.length);
+    const sliceSize =
+        array_ops_util.getSliceSize(reshapedPermuted, crops, blockShape.length);
+
+    return x.reshape(reshaped)
+               .transpose(perm)
+               .reshape(reshapedPermuted)
+               .slice(sliceBeginCoords, sliceSize) as T;
   }
 
   private pool(x: Tensor4D, convInfo: Conv2DInfo, poolType: 'max'|'avg'):

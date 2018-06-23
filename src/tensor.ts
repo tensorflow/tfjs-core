@@ -301,6 +301,8 @@ export interface OpHandler {
       x: T, depthRadius: number, bias: number, alpha: number, beta: number): T;
   unsortedSegmentSum<T extends Tensor>(
       x: T, segmentIds: Tensor1D, numSegments: number): T;
+  batchToSpaceND<T extends Tensor>(
+      x: T, blockShape: number[], crops: number[][]): T;
 }
 
 // For tracking tensor creation and disposal.
@@ -1150,6 +1152,12 @@ export class Tensor<R extends Rank = Rank> {
       this: T, segmentIds: Tensor1D, numSegments: number): T {
     this.throwIfDisposed();
     return opHandler.unsortedSegmentSum(this, segmentIds, numSegments);
+  }
+
+  batchToSpaceND<T extends Tensor>(
+      this: T, blockShape: number[], crops: number[][]): T {
+    this.throwIfDisposed();
+    return opHandler.batchToSpaceND(this, blockShape, crops);
   }
 }
 
