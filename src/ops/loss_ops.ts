@@ -264,4 +264,49 @@ export class LossOps {
         ops.scalar(0.5).mul(quadratic.square()).add(deltaScalar.mul(linear));
     return LossOps.computeWeightedLoss(losses, weights, reduction);
   }
+
+  /**
+   * Computes the sigmoid cross entropy loss between two tensors.
+   *
+   * If labelSmoothing is nonzero, smooth the labels towards 1/2:
+   *
+   *   newMulticlassLabels = multiclassLabels * (1 - labelSmoothing)
+   *                         + 0.5 * labelSmoothing
+   *
+   * @param multiClassLabels The ground truth output tensor of shape
+   * [batch_size, num_classes], same dimensions as 'predictions'.
+   * @param logits The predicted outputs.
+   * @param weights Tensor whose rank is either 0, or the same rank as
+   *    `labels`, and must be broadcastable to `labels` (i.e., all dimensions
+   *    must be either `1`, or the same as the corresponding `losses`
+   *    dimension).
+   * @param labelSmoothing If greater than 0, then smooth the labels.
+   * @param reduction Type of reduction to apply to loss. Should be of type
+   *    `Reduction`
+   */
+  @doc({heading: 'Training', subheading: 'Losses', namespace: 'losses'})
+  @operation
+  static sigmoidCrossEntropy<T extends Tensor, O extends Tensor>(
+      multiClassLabels: T, logits: T, weights?: Tensor, labelSmoothing = 0,
+      reduction = Reduction.SUM_BY_NONZERO_WEIGHTS): O {
+    util.assertArgumentsAreTensors(
+        {multiClassLabels, logits}, 'sigmoidCrossEntropy');
+    if (weights != null) {
+      util.assertArgumentsAreTensors({weights}, 'sigmoidCrossEntropy');
+    }
+    util.assertShapesMatch(
+        multiClassLabels.shape, logits.shape, 'Error in sigmoidCrossEntropy: ');
+
+    if (labelSmoothing > 0) {
+      const labelSmoothingScalar = ops.scalar(labelSmoothing);
+      const one = ops.scalar(1);
+      const half = ops.scalar(0.5);
+
+      multiClassLabels = multiClassLabels.mul(one.sub(labelSmoothingScalar))
+                             .add(half.mul(labelSmoothingScalar));
+    }
+    const losses = ops.sigmoidCrossEntropyWithLogits(multiClassLabels, logits);
+
+    return LossOps.computeWeightedLoss(losses, weights, reduction);
+  }
 }

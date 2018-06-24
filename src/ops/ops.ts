@@ -254,6 +254,7 @@ export const losses = {
   huberLoss: LossOps.huberLoss,
   logLoss: LossOps.logLoss,
   meanSquaredError: LossOps.meanSquaredError,
+  sigmoidCrossEntropy: LossOps.sigmoidCrossEntropy,
   softmaxCrossEntropy: SoftmaxOps.softmaxCrossEntropy
 };
 
