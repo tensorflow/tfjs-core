@@ -50,7 +50,7 @@ export function convertToTensor<T extends Tensor>(
       dtype);
 }
 
-export function assertArgIsTensorArr<T extends Tensor>(
+export function convertToTensorArray<T extends Tensor>(
     arg: T[]|TensorLike[], argName: string, functionName: string): T[] {
   if (!Array.isArray(arg)) {
     throw new Error(

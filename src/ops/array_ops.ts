@@ -19,7 +19,7 @@ import {doc} from '../doc';
 import {ENV} from '../environment';
 // tslint:disable-next-line:max-line-length
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
-import {assertArgIsTensorArr, convertToTensor} from '../tensor_util';
+import {convertToTensor, convertToTensorArray} from '../tensor_util';
 import {DataType, Rank, ShapeMap, TensorLike, TypedArray} from '../types';
 import * as util from '../util';
 
@@ -720,7 +720,7 @@ export class ArrayOps {
   @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
   @operation
   static stack<T extends Tensor>(tensors: T[]|TensorLike[], axis = 0): Tensor {
-    const $tensors = assertArgIsTensorArr(tensors, 'tensors', 'stack');
+    const $tensors = convertToTensorArray(tensors, 'tensors', 'stack');
 
     util.assert($tensors.length >= 1, 'Pass at least one tensor to tf.stack');
     if ($tensors.length === 1) {

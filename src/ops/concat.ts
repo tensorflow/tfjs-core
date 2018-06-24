@@ -18,7 +18,7 @@
 import {doc} from '../doc';
 import {ENV} from '../environment';
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
-import {assertArgIsTensorArr} from '../tensor_util';
+import {convertToTensorArray} from '../tensor_util';
 import {TensorLike} from '../types';
 import {assert, sizeFromShape} from '../util';
 import {parseAxisParam} from './axis_util';
@@ -159,7 +159,7 @@ export class ConcatOps {
   @operation
   static concat<T extends Tensor>(tensors: T[]|TensorLike[], axis = 0): T {
     assert(tensors.length >= 1, 'Pass at least one tensor to concat');
-    const $tensors = assertArgIsTensorArr(tensors, 'tensors', 'concat');
+    const $tensors = convertToTensorArray(tensors, 'tensors', 'concat');
 
     let result = $tensors[0] as T;
     if ($tensors.length === 1) {

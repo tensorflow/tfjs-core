@@ -18,7 +18,7 @@
 import {doc} from '../doc';
 import {Scalar, Tensor1D, Tensor2D} from '../tensor';
 import {assertArgumentsAreTensors} from '../tensor_util';
-import {assertArgIsTensorArr, convertToTensor} from '../tensor_util';
+import {convertToTensor, convertToTensorArray} from '../tensor_util';
 import {TensorLike} from '../types';
 
 import {operation} from './operation';
@@ -52,8 +52,8 @@ export class LSTMOps {
       c: Tensor2D[]|TensorLike[],
       h: Tensor2D[]|TensorLike[]): [Tensor2D[], Tensor2D[]] {
     const $data = convertToTensor(data, 'data', 'multiRNNCell');
-    const $c = assertArgIsTensorArr(c, 'c', 'multiRNNCell');
-    const $h = assertArgIsTensorArr(h, 'h', 'multiRNNCell');
+    const $c = convertToTensorArray(c, 'c', 'multiRNNCell');
+    const $h = convertToTensorArray(h, 'h', 'multiRNNCell');
 
     let input = $data;
     const newStates = [];
