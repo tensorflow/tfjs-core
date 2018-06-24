@@ -19,8 +19,10 @@ import {doc} from '../doc';
 import {Tensor} from '../tensor';
 import {assertArgumentsAreTensors} from '../tensor_util';
 import * as util from '../util';
+
 import {BinaryOps} from './binary_ops';
 import {operation} from './operation';
+import {SigmoidCrossEntropyOps} from './sigmoid_cross_entropy';
 import {TensorOps} from './tensor_ops';
 
 export enum Reduction {
@@ -292,23 +294,24 @@ export class LossOps {
   static sigmoidCrossEntropy<T extends Tensor, O extends Tensor>(
       multiClassLabels: T, logits: T, weights?: Tensor, labelSmoothing = 0,
       reduction = Reduction.SUM_BY_NONZERO_WEIGHTS): O {
-    util.assertArgumentsAreTensors(
+    assertArgumentsAreTensors(
         {multiClassLabels, logits}, 'sigmoidCrossEntropy');
     if (weights != null) {
-      util.assertArgumentsAreTensors({weights}, 'sigmoidCrossEntropy');
+      assertArgumentsAreTensors({weights}, 'sigmoidCrossEntropy');
     }
     util.assertShapesMatch(
         multiClassLabels.shape, logits.shape, 'Error in sigmoidCrossEntropy: ');
 
     if (labelSmoothing > 0) {
-      const labelSmoothingScalar = ops.scalar(labelSmoothing);
-      const one = ops.scalar(1);
-      const half = ops.scalar(0.5);
+      const labelSmoothingScalar = TensorOps.scalar(labelSmoothing);
+      const one = TensorOps.scalar(1);
+      const half = TensorOps.scalar(0.5);
 
       multiClassLabels = multiClassLabels.mul(one.sub(labelSmoothingScalar))
                              .add(half.mul(labelSmoothingScalar));
     }
-    const losses = ops.sigmoidCrossEntropyWithLogits(multiClassLabels, logits);
+    const losses = SigmoidCrossEntropyOps.sigmoidCrossEntropyWithLogits(
+        multiClassLabels, logits);
 
     return LossOps.computeWeightedLoss(losses, weights, reduction);
   }
