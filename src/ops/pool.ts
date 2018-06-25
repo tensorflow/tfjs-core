@@ -19,6 +19,7 @@ import {doc} from '../doc';
 import {ENV} from '../environment';
 import {Tensor, Tensor3D, Tensor4D} from '../tensor';
 import {convertToTensor} from '../tensor_util';
+import {TensorLike} from '../types';
 import * as util from '../util';
 import * as conv_util from './conv_util';
 import {operation} from './operation';
@@ -46,7 +47,7 @@ export class PoolOps {
   @doc({heading: 'Operations', subheading: 'Convolution'})
   @operation
   static maxPool<T extends Tensor3D|Tensor4D>(
-      x: T, filterSize: [number, number]|number,
+      x: T|TensorLike, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     const $x = convertToTensor(x, 'x', 'maxPool');
@@ -107,9 +108,9 @@ export class PoolOps {
    */
   @operation
   static maxPoolBackprop(
-      dy: Tensor4D, input: Tensor4D, output: Tensor4D,
-      filterSize: [number, number]|number, strides: [number, number]|number,
-      pad: 'valid'|'same'|number,
+      dy: Tensor4D|TensorLike, input: Tensor4D|TensorLike,
+      output: Tensor4D|TensorLike, filterSize: [number, number]|number,
+      strides: [number, number]|number, pad: 'valid'|'same'|number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): Tensor4D {
     const $dy = convertToTensor(dy, 'dy', 'maxPoolBackprop');
     const $input = convertToTensor(input, 'input', 'maxPoolBackprop');
@@ -164,7 +165,7 @@ export class PoolOps {
   @doc({heading: 'Operations', subheading: 'Convolution'})
   @operation
   static avgPool<T extends Tensor3D|Tensor4D>(
-      x: T, filterSize: [number, number]|number,
+      x: T|TensorLike, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     const $x = convertToTensor(x, 'x', 'avgPool');
@@ -219,8 +220,9 @@ export class PoolOps {
    */
   @operation
   static avgPoolBackprop<T extends Tensor3D|Tensor4D>(
-      dy: T, input: T, filterSize: [number, number]|number,
-      strides: [number, number]|number, pad: 'valid'|'same'|number): T {
+      dy: T|TensorLike, input: T|TensorLike,
+      filterSize: [number, number]|number, strides: [number, number]|number,
+      pad: 'valid'|'same'|number): T {
     const $dy = convertToTensor(dy, 'dy', 'avgPoolBackprop');
     const $input = convertToTensor(input, 'input', 'avgPoolBackprop');
     util.assert(

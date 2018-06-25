@@ -16,9 +16,9 @@
  */
 
 import * as tf from '../index';
+import {describeWithFlags} from '../jasmine_util';
 // tslint:disable-next-line:max-line-length
 import {ALL_ENVS, expectArraysClose} from '../test_util';
-import {describeWithFlags} from '../jasmine_util';
 
 describeWithFlags('resizeNearestNeighbor', ALL_ENVS, () => {
   it('simple alignCorners=false', () => {
@@ -46,14 +46,14 @@ describeWithFlags('resizeNearestNeighbor', ALL_ENVS, () => {
     const output = input.resizeNearestNeighbor([4, 5], false);
 
     expectArraysClose(output, [
-      1.19074047, 0.913731039, 1.19074047, 0.913731039, 2.01611662,
-      -0.522708297, 2.01611662, -0.522708297, 0.38725394, 1.30809784,
-      1.19074047, 0.913731039, 1.19074047, 0.913731039, 2.01611662,
-      -0.522708297, 2.01611662, -0.522708297, 0.38725394, 1.30809784,
-      0.61835146, 3.49600649, 0.61835146, 3.49600649, 2.09230995,
-      0.564739943, 2.09230995, 0.564739943, 0.0382394306, 1.19864893,
-      0.61835146, 3.49600649, 0.61835146, 3.49600649, 2.09230995,
-      0.564739943, 2.09230995, 0.564739943, 0.0382394306, 1.19864893
+      1.19074047,   0.913731039, 1.19074047,   0.913731039,  2.01611662,
+      -0.522708297, 2.01611662,  -0.522708297, 0.38725394,   1.30809784,
+      1.19074047,   0.913731039, 1.19074047,   0.913731039,  2.01611662,
+      -0.522708297, 2.01611662,  -0.522708297, 0.38725394,   1.30809784,
+      0.61835146,   3.49600649,  0.61835146,   3.49600649,   2.09230995,
+      0.564739943,  2.09230995,  0.564739943,  0.0382394306, 1.19864893,
+      0.61835146,   3.49600649,  0.61835146,   3.49600649,   2.09230995,
+      0.564739943,  2.09230995,  0.564739943,  0.0382394306, 1.19864893
     ]);
   });
 
@@ -92,5 +92,12 @@ describeWithFlags('resizeNearestNeighbor', ALL_ENVS, () => {
     expect(() => tf.image.resizeNearestNeighbor({} as tf.Tensor3D, [
       1, 1
     ])).toThrowError(e);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const input = [[[2], [2]], [[4], [4]]];  // 2x2x1
+    const output = tf.image.resizeNearestNeighbor(input, [3, 3], false);
+
+    expectArraysClose(output, [2, 2, 2, 2, 2, 2, 4, 4, 4]);
   });
 });
