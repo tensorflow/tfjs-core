@@ -41,7 +41,7 @@ export class LogicalOps {
   @doc({heading: 'Operations', subheading: 'Logical'})
   @operation
   static logicalNot<T extends Tensor>(x: T|TensorLike): T {
-    const $x = convertToTensor(x, 'x', 'logicalNot');
+    const $x = convertToTensor(x, 'x', 'logicalNot', 'bool');
     assert($x.dtype === 'bool', 'Error Array must be of type bool.');
 
     return ENV.engine.runKernel(backend => backend.logicalNot($x), {$x});
@@ -64,8 +64,8 @@ export class LogicalOps {
   @operation
   static logicalAnd<T extends Tensor>(
       a: Tensor|TensorLike, b: Tensor|TensorLike): T {
-    const $a = convertToTensor(a, 'a', 'logicalAnd');
-    const $b = convertToTensor(b, 'b', 'logicalAnd');
+    const $a = convertToTensor(a, 'a', 'logicalAnd', 'bool');
+    const $b = convertToTensor(b, 'b', 'logicalAnd', 'bool');
     assert(
         $a.dtype === 'bool' && $b.dtype === 'bool',
         'Error Array must be of type bool.');
@@ -91,8 +91,8 @@ export class LogicalOps {
   @operation
   static logicalOr<T extends Tensor>(
       a: Tensor|TensorLike, b: Tensor|TensorLike): T {
-    const $a = convertToTensor(a, 'a', 'logicalOr');
-    const $b = convertToTensor(b, 'b', 'logicalOr');
+    const $a = convertToTensor(a, 'a', 'logicalOr', 'bool');
+    const $b = convertToTensor(b, 'b', 'logicalOr', 'bool');
     assert(
         $a.dtype === 'bool' && $b.dtype === 'bool',
         'Error Array must be of type bool.');
@@ -119,8 +119,8 @@ export class LogicalOps {
   @operation
   static logicalXor<T extends Tensor>(
       a: Tensor|TensorLike, b: Tensor|TensorLike): T {
-    const $a = convertToTensor(a, 'a', 'logicalXor');
-    const $b = convertToTensor(b, 'b', 'logicalXor');
+    const $a = convertToTensor(a, 'a', 'logicalXor', 'bool');
+    const $b = convertToTensor(b, 'b', 'logicalXor', 'bool');
     assert(
         $a.dtype === 'bool' && $b.dtype === 'bool',
         'Error Array must be of type bool.');
