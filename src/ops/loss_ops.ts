@@ -22,7 +22,6 @@ import * as util from '../util';
 
 import {BinaryOps} from './binary_ops';
 import {operation} from './operation';
-import {ones} from './ops';
 import {TensorOps} from './tensor_ops';
 
 export enum Reduction {
@@ -68,7 +67,7 @@ export class LossOps {
       if (weights == null) {
         return weightedLoss.sum().div(TensorOps.scalar(losses.size));
       } else {
-        const broadcastedWeights = weights.mul(ones(losses.shape));
+        const broadcastedWeights = weights.mul(TensorOps.ones(losses.shape));
 
         const numNonZeros =
             broadcastedWeights.notEqual(TensorOps.scalar(0)).sum().toFloat();
