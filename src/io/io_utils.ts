@@ -15,9 +15,10 @@
  * =============================================================================
  */
 
-import {ArrayOps} from '../ops/array_ops';
+import {TensorOps} from '../ops/tensor_ops';
 import {Tensor} from '../tensor';
-import {NamedTensorMap, TypedArray} from '../types';
+import {NamedTensorMap} from '../tensor_types';
+import {TypedArray} from '../types';
 import {sizeFromShape} from '../util';
 
 // tslint:disable-next-line:max-line-length
@@ -91,14 +92,14 @@ export function decodeWeights(
     const size = sizeFromShape(shape);
     let value: Tensor;
     if (dtype === 'float32') {
-      value = ArrayOps.tensor(
+      value = TensorOps.tensor(
           new Float32Array(buffer, offset, size), shape, 'float32');
     } else if (dtype === 'int32') {
-      value =
-          ArrayOps.tensor(new Int32Array(buffer, offset, size), shape, 'int32');
+      value = TensorOps.tensor(
+          new Int32Array(buffer, offset, size), shape, 'int32');
     } else if (dtype === 'bool') {
       value =
-          ArrayOps.tensor(new Uint8Array(buffer, offset, size), shape, 'bool');
+          TensorOps.tensor(new Uint8Array(buffer, offset, size), shape, 'bool');
     } else {
       throw new Error(`Unsupported dtype in weight '${name}': ${dtype}`);
     }
@@ -122,10 +123,10 @@ export function concatenateTypedArrays(xs: TypedArray[]): ArrayBuffer {
   xs.forEach(x => {
     // tslint:disable-next-line:no-any
     if (x as any instanceof Float32Array || x as any instanceof Int32Array) {
-      totalByteLength += x.length * 4;
+      totalByteLength += x.buffer.byteLength;
       // tslint:disable-next-line:no-any
     } else if (x as any instanceof Uint8Array) {
-      totalByteLength += x.length;
+      totalByteLength += x.buffer.byteLength;
     } else {
       throw new Error(`Unsupported TypedArray subtype: ${x.constructor.name}`);
     }
@@ -135,11 +136,7 @@ export function concatenateTypedArrays(xs: TypedArray[]): ArrayBuffer {
   let offset = 0;
   xs.forEach(x => {
     y.set(new Uint8Array(x.buffer), offset);
-    if (x instanceof Float32Array || x instanceof Int32Array) {
-      offset += x.length * 4;
-    } else {
-      offset += x.length;
-    }
+    offset += x.buffer.byteLength;
   });
 
   return y.buffer;

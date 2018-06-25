@@ -28,7 +28,6 @@ import {DataId, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor'
 import * as types from '../types';
 import {DataType, DataTypeMap, RecursiveArray, TypedArray} from '../types';
 import * as util from '../util';
-
 import {KernelBackend} from './backend';
 import * as backend_util from './backend_util';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
@@ -510,8 +509,9 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [x, indices]);
   }
 
-  private reduce(x: Tensor2D, reduceType: 'max'|'min'|'sum', dtype: DataType):
-      Tensor2D {
+  private reduce(
+      x: Tensor2D, reduceType: 'all'|'any'|'max'|'min'|'sum',
+      dtype: DataType): Tensor2D {
     const batchSize = x.shape[0];
     const inSize = x.shape[1];
     const windowSize = reduce_util.computeOptimalWindowSize(inSize);
@@ -566,15 +566,27 @@ export class MathBackendWebGL implements KernelBackend {
 
   unsortedSegmentSum<T extends Tensor>(
       x: T, segmentIds: Tensor1D, numSegments: number): Tensor {
-    const axis = axis_util.getInnerMostAxes(1, x.rank)[0];
-    const outShape = segment_util.computeOutShape(x.shape, axis, numSegments);
-    const inSize = util.sizeFromShape([x.shape[axis]]);
-    const a2D = x.as2D(-1, inSize);
+    let axis = 0;
+    const permutation = axis_util.getAxesPermutation([axis], x.rank);
+    let permutedX = x;
+    if (permutation != null) {
+      permutedX = x.transpose(permutation);
+      axis = axis_util.getInnerMostAxes(1, x.rank)[0];
+    }
+
+    const outShape =
+        segment_util.computeOutShape(permutedX.shape, axis, numSegments);
+    const inSize = util.sizeFromShape([permutedX.shape[axis]]);
+    const a2D = permutedX.as2D(-1, inSize);
     const outputDType = types.sumOutType(x.dtype);
-    return this
-        .segOpCompute(
-            a2D, 'unsortedSegmentSum', segmentIds, outputDType, numSegments)
-        .reshape(outShape);
+    let result =
+        this.segOpCompute(
+                a2D, 'unsortedSegmentSum', segmentIds, outputDType, numSegments)
+            .reshape(outShape);
+    if (permutation != null) {
+      result = result.transpose(axis_util.getUndoAxesPermutation(permutation));
+    }
+    return result;
   }
 
   private segOpCompute(
@@ -716,7 +728,8 @@ export class MathBackendWebGL implements KernelBackend {
 
   mod(a: Tensor, b: Tensor): Tensor {
     const program = new BinaryOpProgram(binaryop_gpu.MOD, a.shape, b.shape);
-    return this.compileAndRun(program, [a, b]);
+    const customSetup = program.getCustomSetupFunc();
+    return this.compileAndRun(program, [a, b], null, customSetup);
   }
 
   max(x: Tensor, axes: number[]): Tensor {
@@ -731,6 +744,24 @@ export class MathBackendWebGL implements KernelBackend {
   maximum(a: Tensor, b: Tensor): Tensor {
     const program = new BinaryOpProgram(binaryop_gpu.MAX, a.shape, b.shape);
     return this.compileAndRun(program, [a, b]);
+  }
+
+  all(x: Tensor, axes: number[]): Tensor {
+    axis_util.assertAxesAreInnerMostDims('all', axes, x.rank);
+    const [outShape, reduceShape] =
+        axis_util.computeOutAndReduceShapes(x.shape, axes);
+    const inSize = util.sizeFromShape(reduceShape);
+    const a2D = x.as2D(-1, inSize);
+    return this.reduce(a2D, 'all', a2D.dtype).reshape(outShape);
+  }
+
+  any(x: Tensor, axes: number[]): Tensor {
+    axis_util.assertAxesAreInnerMostDims('any', axes, x.rank);
+    const [outShape, reduceShape] =
+        axis_util.computeOutAndReduceShapes(x.shape, axes);
+    const inSize = util.sizeFromShape(reduceShape);
+    const a2D = x.as2D(-1, inSize);
+    return this.reduce(a2D, 'any', a2D.dtype).reshape(outShape);
   }
 
   squaredDifference(a: Tensor, b: Tensor): Tensor {
@@ -811,7 +842,8 @@ export class MathBackendWebGL implements KernelBackend {
 
   log<T extends Tensor>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.LOG);
-    return this.compileAndRun(program, [x]) as T;
+    const customSetup = program.getCustomSetupFunc();
+    return this.compileAndRun(program, [x], null, customSetup) as T;
   }
 
   log1p<T extends Tensor>(x: T): T {
@@ -943,12 +975,14 @@ export class MathBackendWebGL implements KernelBackend {
 
   acosh<T extends Tensor>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.ACOSH);
-    return this.compileAndRun(program, [x]) as T;
+    const customSetup = program.getCustomSetupFunc();
+    return this.compileAndRun(program, [x], null, customSetup) as T;
   }
 
   atanh<T extends Tensor>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.ATANH);
-    return this.compileAndRun(program, [x]) as T;
+    const customSetup = program.getCustomSetupFunc();
+    return this.compileAndRun(program, [x], null, customSetup) as T;
   }
 
   erf<T extends Tensor>(x: T): T {
