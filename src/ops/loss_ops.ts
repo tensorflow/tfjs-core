@@ -68,8 +68,10 @@ export class LossOps {
       if (weights == null) {
         return weightedLoss.sum().div(TensorOps.scalar(losses.size));
       } else {
+        const broadcastedWeights = weights.mul(TensorOps.ones(losses.shape));
+
         const numNonZeros =
-            weights.notEqual(TensorOps.scalar(0)).sum().toFloat();
+            broadcastedWeights.notEqual(TensorOps.scalar(0)).sum().toFloat();
         return weightedLoss.sum().div(numNonZeros);
       }
     }
