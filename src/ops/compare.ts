@@ -37,8 +37,8 @@ export class CompareOps {
    *
    * a.notEqual(b).print();
    * ```
-   * @param $a The first input tensor.
-   * @param $b The second input tensor. Must have the same dtype as `a`.
+   * @param a The first input tensor.
+   * @param b The second input tensor. Must have the same dtype as `a`.
    */
   @doc({heading: 'Operations', subheading: 'Logical'})
   @operation

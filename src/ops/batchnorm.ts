@@ -32,12 +32,12 @@ export class BatchNormOps {
    * Batch normalization, strictly for 2D. For the more relaxed version, see
    * `batchNormalization`.
    *
-   * @param $x The input Tensor.
-   * @param $mean A mean Tensor.
-   * @param $variance A variance Tensor.
+   * @param x The input Tensor.
+   * @param mean A mean Tensor.
+   * @param variance A variance Tensor.
    * @param varianceEpsilon A small float number to avoid dividing by 0.
-   * @param $scale A scale Tensor.
-   * @param $offset An offset Tensor.
+   * @param scale A scale Tensor.
+   * @param offset An offset Tensor.
    */
   @operation
   static batchNormalization2d(
@@ -89,12 +89,12 @@ export class BatchNormOps {
    * Batch normalization, strictly for 3D. For the more relaxed version, see
    * `batchNormalization`.
    *
-   * @param $x The input Tensor.
-   * @param $mean A mean Tensor.
-   * @param $variance A variance Tensor.
+   * @param x The input Tensor.
+   * @param mean A mean Tensor.
+   * @param variance A variance Tensor.
    * @param varianceEpsilon A small float number to avoid dividing by 0.
-   * @param $scale A scale Tensor.
-   * @param $offset An offset Tensor.
+   * @param scale A scale Tensor.
+   * @param offset An offset Tensor.
    */
   @operation
   static batchNormalization3d(
@@ -146,12 +146,12 @@ export class BatchNormOps {
    * Batch normalization, strictly for 4D. For the more relaxed version, see
    * `batchNormalization`.
    *
-   * @param $x The input Tensor.
-   * @param $mean A mean Tensor.
-   * @param $variance A variance Tensor.
+   * @param x The input Tensor.
+   * @param mean A mean Tensor.
+   * @param variance A variance Tensor.
    * @param varianceEpsilon A small float number to avoid dividing by 0.
-   * @param $scale A scale Tensor.
-   * @param $offset An offset Tensor.
+   * @param scale A scale Tensor.
+   * @param offset An offset Tensor.
    */
   @operation
   static batchNormalization4d(
