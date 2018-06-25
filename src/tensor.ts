@@ -397,6 +397,7 @@ export class Tensor<R extends Rank = Rank> {
   static make<T extends Tensor<R>, D extends DataType = 'float32',
                                              R extends Rank = Rank>(
       shape: ShapeMap[R], data: TensorData, dtype?: D): T {
+    util.assert(shape !== null, 'shape is null');
     return new Tensor(shape, dtype, data.values, data.dataId) as T;
   }
 

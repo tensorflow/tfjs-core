@@ -278,6 +278,11 @@ describeWithFlags('tensor', ALL_ENVS, () => {
             'must be a non-null value.');
   });
 
+  it('Tensor.make throw error with null input value', () => {
+    expect(() => Tensor.make(null, {values: null}))
+        .toThrowError('shape is null');
+  });
+
   it('tf.tensor1d() from number[][], shape mismatch', () => {
     // tslint:disable-next-line:no-any
     expect(() => tf.tensor1d([[1], [2], [3]] as any)).toThrowError();
