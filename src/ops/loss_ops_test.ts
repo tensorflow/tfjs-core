@@ -1258,10 +1258,7 @@ describeWithFlags('sigmoidCrossEntropy', ALL_ENVS, () => {
         [[10.0, -10.0, -10.0], [-10.0, 10.0, -10.0], [-10.0, -10.0, 10.0]],
         [3, 3]);
 
-    // Weights not being broadcasted when while computing weighted loss
-    // with reduction
-    const weights =
-        tf.tensor2d([[0.1, 0.2, 0.3], [0.1, 0.2, 0.3], [0.1, 0.2, 0.3]]);
+    const weights = tf.tensor2d([[0.1, 0.2, 0.3]]);
 
     const y = tf.losses.sigmoidCrossEntropy(label, predictions, weights);
 
@@ -1274,8 +1271,7 @@ describeWithFlags('sigmoidCrossEntropy', ALL_ENVS, () => {
     const predictions = tf.tensor2d(
         [[10.0, -10.0, -10.0], [-10.0, 10.0, -10.0], [-10.0, -10.0, 10.0]],
         [3, 3]);
-    const weights =
-        tf.tensor2d([[0.1, 0.2, 0.3], [0.1, 0.2, 0.3], [0.1, 0.2, 0.3]]);
+    const weights = tf.tensor2d([[0.1, 0.2, 0.3]]);
 
     const y = tf.losses.sigmoidCrossEntropy(
         label, predictions, weights, undefined, tf.Reduction.NONE);
@@ -1305,8 +1301,7 @@ describeWithFlags('sigmoidCrossEntropy', ALL_ENVS, () => {
     const predictions = tf.tensor2d(
         [[10.0, -10.0, -10.0], [-10.0, 10.0, -10.0], [-10.0, -10.0, 10.0]],
         [3, 3]);
-    const weights =
-        tf.tensor2d([[0.1, 0.2, 0.3], [0.1, 0.2, 0.3], [0.1, 0.2, 0.3]]);
+    const weights = tf.tensor2d([[0.1, 0.2, 0.3]]);
 
     const y = tf.losses.sigmoidCrossEntropy(
         label, predictions, weights, undefined, tf.Reduction.MEAN);
@@ -1323,8 +1318,7 @@ describeWithFlags('sigmoidCrossEntropy', ALL_ENVS, () => {
     const predictions = tf.tensor2d(
         [[10.0, -10.0, -10.0], [-10.0, 10.0, -10.0], [-10.0, -10.0, 10.0]],
         [3, 3]);
-    const weights =
-        tf.tensor2d([[0.1, 0.2, 0.3], [0.1, 0.2, 0.3], [0.1, 0.2, 0.3]]);
+    const weights = tf.tensor2d([[0.1, 0.2, 0.3]]);
     const labelSmoothing = 0.3;
 
     const y = tf.losses.sigmoidCrossEntropy(
@@ -1349,7 +1343,7 @@ describeWithFlags('sigmoidCrossEntropy', ALL_ENVS, () => {
     const predictions = tf.tensor2d(
         [[10.0, -10.0, -10.0], [-10.0, 10.0, -10.0], [-10.0, -10.0, 10.0]],
         [3, 3]);
-    const weights = tf.tensor1d([0.1, 0.2, 0.3]);
+    const weights = tf.tensor2d([[0.1, 0.2, 0.3]]);
 
     const e = new RegExp(
         'Argument \'multiClassLabels\' passed to \'sigmoidCrossEntropy\' ' +
@@ -1363,7 +1357,7 @@ describeWithFlags('sigmoidCrossEntropy', ALL_ENVS, () => {
 
   it('throws when passed logits as a non-tensor', () => {
     const label = tf.tensor2d([[0, 0, 1], [1, 0, 0], [0, 1, 0]], [3, 3]);
-    const weights = tf.tensor1d([0.1, 0.2, 0.3]);
+    const weights = tf.tensor2d([[0.1, 0.2, 0.3]]);
 
     const e = new RegExp(
         'Argument \'logits\' passed to \'sigmoidCrossEntropy\' ' +
