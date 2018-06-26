@@ -93,6 +93,13 @@ describeWithFlags('resizeNearestNeighbor', ALL_ENVS, () => {
       1, 1
     ])).toThrowError(e);
   });
+
+  it('does not throw when one output dim is 1 and alignCorners=true', () => {
+    const input = tf.tensor3d([2, 2, 4, 4], [2, 2, 1]);
+    expect(() => input.resizeNearestNeighbor([1, 3], true)).not.toThrow();
+  });
+
+
 });
 
 describeWithFlags('resizeNearestNeighbor gradients', ALL_ENVS, () => {
