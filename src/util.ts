@@ -58,9 +58,9 @@ export function distSquared(a: FlatVector, b: FlatVector): number {
   return result;
 }
 
-export function assert(expr: boolean, msg: string) {
+export function assert(expr: boolean, msg: string|(() => string)) {
   if (!expr) {
-    throw new Error(msg);
+    throw new Error(typeof msg === 'string' ? msg : msg());
   }
 }
 
@@ -94,6 +94,8 @@ export function flatten<T extends number|boolean|Promise<number>>(
 
 export function inferShape(val: TypedArray|number|boolean|RegularArray<number>|
                            RegularArray<boolean>): number[] {
+  let firstElem: typeof val = val;
+
   if (isTypedArray(val)) {
     return [(val as TypedArray).length];
   }
@@ -101,11 +103,40 @@ export function inferShape(val: TypedArray|number|boolean|RegularArray<number>|
     return [];  // Scalar.
   }
   const shape: number[] = [];
-  while (val instanceof Array) {
-    shape.push(val.length);
-    val = val[0];
+
+  while (firstElem instanceof Array) {
+    shape.push(firstElem.length);
+    firstElem = firstElem[0];
+  }
+  if (val instanceof Array) {
+    deepAssertShape(val, shape, []);
   }
   return shape;
+}
+
+function deepAssertShape(
+    val: number|boolean|RegularArray<number>|RegularArray<boolean>,
+    shape: number[], indices?: number[]) {
+  indices = indices || [];
+  if (!(val instanceof Array)) {
+    assert(
+        shape.length === 0,
+        () => `Element arr[${indices.join('][')}] is a primitive, ` +
+            `but should be an array of ${shape[0]} elements`);
+    return;
+  }
+  assert(
+      shape.length > 0,
+      () => `Element arr[${indices.join('][')}] should be a primitive, ` +
+          `but is an array of ${val.length} elements`);
+  assert(
+      val.length === shape[0],
+      () => `Element arr[${indices.join('][')}] should have ${shape[0]} ` +
+          `elements, but has ${val.length} elements`);
+  const subShape = shape.slice(1);
+  for (let i = 0; i < val.length; ++i) {
+    deepAssertShape(val[i], subShape, indices.concat(i));
+  }
 }
 
 export function sizeFromShape(shape: number[]): number {

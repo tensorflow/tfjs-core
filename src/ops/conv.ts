@@ -237,24 +237,20 @@ export class ConvOps {
    */
   @operation
   static conv2dDerInput<T extends Tensor3D|Tensor4D>(
-      xShape: [number, number, number, number]|[number, number, number],
-      dy: T|TensorLike, filter: Tensor4D|TensorLike,
-      strides: [number, number]|number, pad: 'valid'|'same'|number,
-      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
-    const $dy = convertToTensor(dy, 'dy', 'conv2dDerInput');
-    const $filter = convertToTensor(filter, 'filter', 'conv2dDerInput');
-
+      xShape: [number, number, number, number]|[number, number, number], dy: T,
+      filter: Tensor4D, strides: [number, number]|number,
+      pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     util.assert(
-        xShape.length === $dy.rank,
+        xShape.length === dy.rank,
         `Length of inShape ` +
-            `(${xShape.length}) and rank of dy (${$dy.rank}) must match`);
+            `(${xShape.length}) and rank of dy (${dy.rank}) must match`);
 
     let xShape4D = xShape as [number, number, number, number];
-    let dy4D = $dy as Tensor4D;
+    let dy4D = dy as Tensor4D;
     let reshapedTo4D = false;
-    if ($dy.rank === 3) {
+    if (dy.rank === 3) {
       reshapedTo4D = true;
-      dy4D = $dy.as4D(1, $dy.shape[0], $dy.shape[1], $dy.shape[2]);
+      dy4D = dy.as4D(1, dy.shape[0], dy.shape[1], dy.shape[2]);
       xShape4D = [1, xShape[0], xShape[1], xShape[2]];
     }
 
@@ -269,17 +265,17 @@ export class ConvOps {
         `Error in conv2dDerInput: dy must be rank 4, but got ` +
             `rank ${dy4D.rank}`);
     util.assert(
-        $filter.rank === 4,
+        filter.rank === 4,
         `Error in conv2dDerInput: filter must be rank 4, but got ` +
-            `rank ${$filter.rank}`);
+            `rank ${filter.rank}`);
     util.assert(
-        inDepth === $filter.shape[2],
+        inDepth === filter.shape[2],
         `Error in conv2dDerInput: depth of input (${inDepth}) must ` +
-            `match input depth for filter ${$filter.shape[2]}.`);
+            `match input depth for filter ${filter.shape[2]}.`);
     util.assert(
-        outDepth === $filter.shape[3],
+        outDepth === filter.shape[3],
         `Error in conv2dDerInput: depth of output (${outDepth}) must ` +
-            `match output depth for filter ${$filter.shape[3]}.`);
+            `match output depth for filter ${filter.shape[3]}.`);
     if (dimRoundingMode != null) {
       util.assert(
           util.isInt(pad as number),
@@ -290,9 +286,9 @@ export class ConvOps {
     const dilations = 1;
 
     const convInfo = conv_util.computeConv2DInfo(
-        xShape4D, $filter.shape, strides, dilations, pad, dimRoundingMode);
+        xShape4D, filter.shape, strides, dilations, pad, dimRoundingMode);
     const res = ENV.engine.runKernel(
-        backend => backend.conv2dDerInput(dy4D, $filter, convInfo), {dy4D});
+        backend => backend.conv2dDerInput(dy4D, filter, convInfo), {dy4D});
     if (reshapedTo4D) {
       return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as T;
     }
@@ -319,20 +315,16 @@ export class ConvOps {
    */
   @operation
   static conv2dDerFilter<T extends Tensor3D|Tensor4D>(
-      x: T|TensorLike, dy: T|TensorLike,
-      filterShape: [number, number, number, number],
+      x: T, dy: T, filterShape: [number, number, number, number],
       strides: [number, number]|number, pad: 'valid'|'same'|number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): Tensor4D {
-    const $x = convertToTensor(x, 'x', 'conv2dDerFilter');
-    const $dy = convertToTensor(dy, 'dy', 'conv2dDerFilter');
-
-    let x4D = $x as Tensor4D;
-    if ($x.rank === 3) {
-      x4D = $x.as4D(1, $x.shape[0], $x.shape[1], $x.shape[2]);
+    let x4D = x as Tensor4D;
+    if (x.rank === 3) {
+      x4D = x.as4D(1, x.shape[0], x.shape[1], x.shape[2]);
     }
     let dy4D = dy as Tensor4D;
     if (dy4D.rank === 3) {
-      dy4D = $dy.as4D(1, $dy.shape[0], $dy.shape[1], $dy.shape[2]);
+      dy4D = dy.as4D(1, dy.shape[0], dy.shape[1], dy.shape[2]);
     }
     util.assert(
         x4D.rank === 4,

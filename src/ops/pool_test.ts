@@ -116,7 +116,7 @@ describeWithFlags('maxPool', ALL_ENVS, () => {
   it('accepts a tensor-like object', () => {
     const x = [[[0]]];  // 1x1x1
     const result = tf.maxPool(x, 1, 1, 0);
-    expectArraysClose(result, [0])
+    expectArraysClose(result, [0]);
   });
 });
 

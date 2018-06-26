@@ -273,7 +273,8 @@ describeWithFlags('tensor', ALL_ENVS, () => {
 
   it('tf.tensor1d() throw error with null input value', () => {
     expect(() => tf.tensor1d(null))
-        .toThrowError('The input to the tensor constructor ' +
+        .toThrowError(
+            'The input to the tensor constructor ' +
             'must be a non-null value.');
   });
 
@@ -304,7 +305,8 @@ describeWithFlags('tensor', ALL_ENVS, () => {
 
   it('tf.tensor2d() throw error with null input value', () => {
     expect(() => tf.tensor2d(null))
-        .toThrowError('The input to the tensor constructor ' +
+        .toThrowError(
+            'The input to the tensor constructor ' +
             'must be a non-null value.');
   });
 
@@ -331,7 +333,8 @@ describeWithFlags('tensor', ALL_ENVS, () => {
 
   it('tf.tensor3d() throw error with null input value', () => {
     expect(() => tf.tensor3d(null))
-        .toThrowError('The input to the tensor constructor ' +
+        .toThrowError(
+            'The input to the tensor constructor ' +
             'must be a non-null value.');
   });
 
@@ -360,19 +363,22 @@ describeWithFlags('tensor', ALL_ENVS, () => {
 
   it('tf.tensor4d() throw error with null input value', () => {
     expect(() => tf.tensor4d(null))
-        .toThrowError('The input to the tensor constructor ' +
+        .toThrowError(
+            'The input to the tensor constructor ' +
             'must be a non-null value.');
   });
 
   it('tf.tensor5d() throw error with null input value', () => {
     expect(() => tf.tensor5d(null))
-        .toThrowError('The input to the tensor constructor ' +
+        .toThrowError(
+            'The input to the tensor constructor ' +
             'must be a non-null value.');
   });
 
   it('tf.tensor6d() throw error with null input value', () => {
     expect(() => tf.tensor6d(null))
-        .toThrowError('The input to the tensor constructor ' +
+        .toThrowError(
+            'The input to the tensor constructor ' +
             'must be a non-null value.');
   });
 
@@ -787,7 +793,7 @@ describeWithFlags('tensor', ALL_ENVS, () => {
         .toThrowError(/Argument 'x' passed to 'reshape' must be a Tensor/);
   });
 
-  it('reshape takes tensor-like object', () => {
+  it('reshape accepts a tensor-like object', () => {
     const res = tf.reshape([[1, 2, 3], [4, 5, 6]], [3, 2]);
     expect(res.dtype).toBe('float32');
     expect(res.shape).toEqual([3, 2]);

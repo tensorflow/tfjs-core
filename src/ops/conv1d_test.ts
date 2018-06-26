@@ -221,11 +221,8 @@ describeWithFlags('conv1d', ALL_ENVS, () => {
     const stride = 1;
     const dataFormat = 'NWC';
     const dilation = 1;
-
-    // 2x2x1
-    const x = [[[1], [2]], [[3], [4]]];
-    // 1x1x1
-    const w = [[[3]]];
+    const x = [[[1], [2]], [[3], [4]]];  // 2x2x1
+    const w = [[[3]]];                   // 1x1x1
 
     const result = tf.conv1d(x, w, stride, pad, dataFormat, dilation);
 
