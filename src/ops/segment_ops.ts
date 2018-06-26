@@ -21,7 +21,6 @@ import {Tensor, Tensor1D} from '../tensor';
 import {convertToTensor} from '../tensor_util';
 import {TensorLike} from '../types';
 import {assert, isInt} from '../util';
-
 import {ArrayOps} from './array_ops';
 import {getUndoAxesPermutation, parseAxisParam} from './axis_util';
 import {BinaryOps} from './binary_ops';

@@ -39,7 +39,7 @@ export function convertToTensor<T extends Tensor>(
       typeof x !== 'boolean') {
     throw new Error(
         `Argument '${argName}' passed to '${functionName}' must be a ` +
-        `Tensor or TensorLike.`);
+        `Tensor or TensorLike, but got ${x.constructor.name}`);
   }
   const inferredShape = inferShape(x);
   if (!isTypedArray(x) && !Array.isArray(x)) {

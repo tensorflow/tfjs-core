@@ -1150,13 +1150,8 @@ describeWithFlags('Reduction: all', ALL_ENVS, () => {
   });
 
   it('accepts a tensor-like object', () => {
-    const x = [1, 2, 3, 4];
-    const segmentIds = [0, 2, 0, 1];
-    const numSegments = 3;
-    const res = tf.unsortedSegmentSum(x, segmentIds, numSegments);
-
-    expect(res.shape).toEqual([3]);
-    expectArraysClose(res, [4, 4, 2]);
+    const a = [0, 0, 0];
+    expectNumbersClose(tf.all(a).get(), 0);
   });
 });
 
@@ -1234,5 +1229,10 @@ describeWithFlags('Reduction: any', ALL_ENVS, () => {
   it('throws when passed a non-tensor', () => {
     expect(() => tf.any({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'any' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const a = [0, 0, 0];
+    expectNumbersClose(tf.any(a).get(), 0);
   });
 });

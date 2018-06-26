@@ -37,7 +37,7 @@ export class ConcatOps {
    * @param tensors A list of `Tensor`s to concatenate.
    * @return The concatenated array.
    */
-  static concat1d(tensors: Tensor1D[]): Tensor1D {
+  static concat1d(tensors: Tensor1D[]|TensorLike[]): Tensor1D {
     return ConcatOps.concat(tensors, 0 /* axis */);
   }
 
@@ -68,7 +68,7 @@ export class ConcatOps {
    * @param axis The axis to concatenate along.
    * @return The concatenated array.
    */
-  static concat2d(tensors: Tensor2D[], axis: number): Tensor2D {
+  static concat2d(tensors: Tensor2D[]|TensorLike[], axis: number): Tensor2D {
     return ConcatOps.concat(tensors, axis);
   }
 
@@ -102,7 +102,7 @@ export class ConcatOps {
    * @param axis The axis to concate along.
    * @return The concatenated array.
    */
-  static concat3d(tensors: Tensor3D[], axis: number): Tensor3D {
+  static concat3d(tensors: Tensor3D[]|TensorLike[], axis: number): Tensor3D {
     return ConcatOps.concat(tensors, axis);
   }
 
@@ -113,7 +113,7 @@ export class ConcatOps {
    * @param axis The axis to concate along.
    * @return The concatenated array.
    */
-  static concat4d(tensors: Tensor4D[], axis: number): Tensor4D {
+  static concat4d(tensors: Tensor4D[]|TensorLike[], axis: number): Tensor4D {
     return ConcatOps.concat(tensors, axis);
   }
 

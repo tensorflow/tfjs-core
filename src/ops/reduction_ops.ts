@@ -19,10 +19,9 @@ import {doc} from '../doc';
 import {ENV} from '../environment';
 import {customGrad} from '../globals';
 import {Tensor} from '../tensor';
-import {assertArgumentsAreTensors, convertToTensor} from '../tensor_util';
+import {convertToTensor} from '../tensor_util';
 import {TensorLike} from '../types';
 import * as util from '../util';
-
 import * as axis_util from './axis_util';
 import {operation} from './operation';
 import {TensorOps} from './tensor_ops';
@@ -420,20 +419,20 @@ export class ReductionOps {
   @doc({heading: 'Operations', subheading: 'Reduction'})
   @operation
   static all<T extends Tensor>(
-      x: Tensor, axis: number|number[] = null, keepDims = false): T {
-    assertArgumentsAreTensors({x}, 'all');
+      x: Tensor|TensorLike, axis: number|number[] = null, keepDims = false): T {
+    let $x = convertToTensor(x, 'x', 'all', 'bool');
     util.assert(
-        x.dtype === 'bool',
-        `Error Tensor must be of type bool. Got: ${x.dtype}`);
+        $x.dtype === 'bool',
+        `Error Tensor must be of type bool. Got: ${$x.dtype}`);
 
-    const origAxes = axis_util.parseAxisParam(axis, x.shape);
+    const origAxes = axis_util.parseAxisParam(axis, $x.shape);
     let axes = origAxes;
-    const permutedAxes = axis_util.getAxesPermutation(axes, x.rank);
+    const permutedAxes = axis_util.getAxesPermutation(axes, $x.rank);
     if (permutedAxes != null) {
-      x = x.transpose(permutedAxes);
-      axes = axis_util.getInnerMostAxes(axes.length, x.rank);
+      $x = $x.transpose(permutedAxes);
+      axes = axis_util.getInnerMostAxes(axes.length, $x.rank);
     }
-    const res = ENV.engine.runKernel(backend => backend.all(x, axes), {x});
+    const res = ENV.engine.runKernel(backend => backend.all($x, axes), {$x});
     if (keepDims) {
       const newShape = axis_util.expandShapeToKeepDim(res.shape, origAxes);
       return res.reshape(newShape) as T;
@@ -471,20 +470,20 @@ export class ReductionOps {
   @doc({heading: 'Operations', subheading: 'Reduction'})
   @operation
   static any<T extends Tensor>(
-      x: Tensor, axis: number|number[] = null, keepDims = false): T {
-    assertArgumentsAreTensors({x}, 'any');
+      x: Tensor|TensorLike, axis: number|number[] = null, keepDims = false): T {
+    let $x = convertToTensor(x, 'x', 'any', 'bool');
     util.assert(
-        x.dtype === 'bool',
-        `Error Tensor must be of type bool. Got: ${x.dtype}`);
+        $x.dtype === 'bool',
+        `Error Tensor must be of type bool. Got: ${$x.dtype}`);
 
-    const origAxes = axis_util.parseAxisParam(axis, x.shape);
+    const origAxes = axis_util.parseAxisParam(axis, $x.shape);
     let axes = origAxes;
-    const permutedAxes = axis_util.getAxesPermutation(axes, x.rank);
+    const permutedAxes = axis_util.getAxesPermutation(axes, $x.rank);
     if (permutedAxes != null) {
-      x = x.transpose(permutedAxes);
-      axes = axis_util.getInnerMostAxes(axes.length, x.rank);
+      $x = $x.transpose(permutedAxes);
+      axes = axis_util.getInnerMostAxes(axes.length, $x.rank);
     }
-    const res = ENV.engine.runKernel(backend => backend.any(x, axes), {x});
+    const res = ENV.engine.runKernel(backend => backend.any($x, axes), {$x});
     if (keepDims) {
       const newShape = axis_util.expandShapeToKeepDim(res.shape, origAxes);
       return res.reshape(newShape) as T;
