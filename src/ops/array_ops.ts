@@ -608,8 +608,9 @@ export class ArrayOps {
   /**
    * Pads a `Tensor1D` with a given value and paddings. See `pad` for details.
    */
-  static pad1d(x: Tensor1D, paddings: [number, number], constantValue = 0):
-      Tensor1D {
+  static pad1d(
+      x: Tensor1D|TensorLike, paddings: [number, number],
+      constantValue = 0): Tensor1D {
     util.assert(
         paddings.length === 2,
         'Invalid number of paddings. Must be length of 2.');
@@ -620,7 +621,7 @@ export class ArrayOps {
    * Pads a `Tensor2D` with a given value and paddings. See `pad` for details.
    */
   static pad2d(
-      x: Tensor2D, paddings: [[number, number], [number, number]],
+      x: Tensor2D|TensorLike, paddings: [[number, number], [number, number]],
       constantValue = 0): Tensor2D {
     util.assert(
         paddings.length === 2 && paddings[0].length === 2 &&
@@ -633,7 +634,7 @@ export class ArrayOps {
    * Pads a `Tensor3D` with a given value and paddings. See `pad` for details.
    */
   static pad3d(
-      x: Tensor3D,
+      x: Tensor3D|TensorLike,
       paddings: [[number, number], [number, number], [number, number]],
       constantValue = 0): Tensor3D {
     util.assert(
@@ -647,7 +648,7 @@ export class ArrayOps {
    * Pads a `Tensor4D` with a given value and paddings. See `pad` for details.
    */
   static pad4d(
-      x: Tensor4D,
+      x: Tensor4D|TensorLike,
       paddings:
           [
             [number, number], [number, number], [number, number],

@@ -62,13 +62,6 @@ export function convertToTensorArray<T extends Tensor>(
       (t, i) => convertToTensor(t, `${argName}[${i}]`, functionName));
 }
 
-export function assertArgumentsAreTensors<T extends Tensor>(
-    args: {[argName: string]: T|TensorLike}, functionName: string): void {
-  for (const argName in args) {
-    convertToTensor(args[argName], argName, functionName);
-  }
-}
-
 export function isTensorInList(tensor: Tensor, tensorList: Tensor[]): boolean {
   for (let i = 0; i < tensorList.length; i++) {
     if (tensorList[i].id === tensor.id) {

@@ -70,6 +70,12 @@ describeWithFlags('pad1d', ALL_ENVS, () => {
     expect(da.shape).toEqual([3]);
     expectArraysClose(da, [30, 40, 50]);
   });
+
+  it('accepts a tensor-like object', () => {
+    const a = [1, 2, 3, 4, 5, 6];
+    const b = tf.pad1d(a, [2, 3]);
+    expectArraysClose(b, [0, 0, 1, 2, 3, 4, 5, 6, 0, 0, 0]);
+  });
 });
 
 describeWithFlags('pad2d', ALL_ENVS, () => {
@@ -147,6 +153,12 @@ describeWithFlags('pad2d', ALL_ENVS, () => {
     expect(da.shape).toEqual([2, 2]);
     expectArraysClose(da, [10, 20, 30, 40]);
   });
+
+  it('accepts a tensor-like object', () => {
+    const a = [[1, 2, 3], [4, 5, 6]];  // 2x3
+    const b = tf.pad2d(a, [[0, 0], [0, 0]]);
+    expectArraysClose(b, [1, 2, 3, 4, 5, 6]);
+  });
 });
 
 describeWithFlags('pad4d', ALL_ENVS, () => {
@@ -168,6 +180,15 @@ describeWithFlags('pad4d', ALL_ENVS, () => {
     const numTensors = Environment.memory().numTensors;
     tf.pad4d(a, [[0, 0], [1, 1], [1, 1], [0, 0]]);
     expect(Environment.memory().numTensors).toEqual(numTensors + 1);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const a = [[[[9]]]];  // 1x1x1x1
+    const b = tf.pad4d(a, [[0, 0], [1, 1], [1, 1], [0, 0]]);
+    const expected = tf.tensor4d(
+        [[[[0], [0], [0]], [[0], [9], [0]], [[0], [0], [0]]]], [1, 3, 3, 1],
+        'int32');
+    expectArraysClose(b, expected);
   });
 });
 
