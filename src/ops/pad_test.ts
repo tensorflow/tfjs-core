@@ -187,7 +187,7 @@ describeWithFlags('pad4d', ALL_ENVS, () => {
     const b = tf.pad4d(a, [[0, 0], [1, 1], [1, 1], [0, 0]]);
     const expected = tf.tensor4d(
         [[[[0], [0], [0]], [[0], [9], [0]], [[0], [0], [0]]]], [1, 3, 3, 1],
-        'int32');
+        'float32');
     expectArraysClose(b, expected);
   });
 });
