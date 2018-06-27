@@ -19,6 +19,7 @@ import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
 import {Tensor1D, Tensor2D} from '../tensor';
 import {ALL_ENVS, expectArraysClose, WEBGL_ENVS} from '../test_util';
+import {tensor2d} from './ops';
 
 describeWithFlags('gramSchmidt-tiny', ALL_ENVS, () => {
   it('2x2, Array of Tensor1D', () => {
@@ -83,5 +84,71 @@ describeWithFlags('gramSchmidt-non-tiny', WEBGL_ENVS, () => {
     const xs = tf.randomUniform([32, 512]) as Tensor2D;
     const y = tf.linalg.gramSchmidt(xs) as Tensor2D;
     expectArraysClose(y.matMul(y.transpose()), tf.eye(32));
+  });
+});
+
+describeWithFlags('qr', ALL_ENVS, () => {
+  it('1x1', () => {
+    const x = tensor2d([[10]], [1, 1]);
+    const [q, r] = tf.linalg.qr(x);
+    expectArraysClose(q, tensor2d([[-1]], [1, 1]));
+    expectArraysClose(r, tensor2d([[-10]], [1, 1]));
+  });
+
+  it('2x2', () => {
+    const x = tensor2d([[1, 3], [-2, -4]], [2, 2]);
+    const [q, r] = tf.linalg.qr(x);
+    expectArraysClose(
+        q, tensor2d([[-0.4472, -0.8944], [0.8944, -0.4472]], [2, 2]));
+    expectArraysClose(r, tensor2d([[-2.2361, -4.9193], [0, -0.8944]], [2, 2]));
+  });
+
+  it('3x3', () => {
+    const x = tensor2d([[1, 3, 2], [-2, 0, 7], [8, -9, 4]], [3, 3]);
+    const [q, r] = tf.linalg.qr(x);
+    expectArraysClose(
+        q,
+        tensor2d(
+            [
+              [-0.1204, 0.8729, 0.4729], [0.2408, -0.4364, 0.8669],
+              [-0.9631, -0.2182, 0.1576]
+            ],
+            [3, 3]));
+    expectArraysClose(
+        r,
+        tensor2d(
+            [[-8.3066, 8.3066, -2.4077], [0, 4.5826, -2.1822], [0, 0, 7.6447]],
+            [3, 3]));
+  });
+
+  it('3x2', () => {
+    const x = tensor2d([[1, 2], [3, -3], [-2, 1]], [3, 2]);
+    const [q, r] = tf.linalg.qr(x);
+    expectArraysClose(
+        q,
+        tensor2d(
+            [
+              [-0.2673, 0.9221, 0.2798], [-0.8018, -0.3738, 0.4663],
+              [0.5345, -0.0997, 0.8393]
+            ],
+            [3, 3]));
+    expectArraysClose(
+        r, tensor2d([[-3.7417, 2.4054], [0, 2.8661], [0, 0]], [3, 2]));
+  });
+
+  it('does not leak memory', () => {
+    const x = tensor2d([[1, 3], [-2, -4]], [2, 2]);
+    // The first call to qr creates and keeps internal singleton tensors.
+    // Subsequent calls should always create exactly two tensors.
+    tf.linalg.qr(x);
+    // Count before real call.
+    const numTensors = tf.memory().numTensors;
+    tf.linalg.qr(x);
+    expect(tf.memory().numTensors).toEqual(numTensors + 2);
+  });
+
+  it('Incorrect shape leads to error', () => {
+    const x = tensor2d([[1, 2, 3], [-3, -2, 1]], [2, 3]);
+    expect(() => tf.linalg.qr(x)).toThrowError(/requires.*shape/);
   });
 });
