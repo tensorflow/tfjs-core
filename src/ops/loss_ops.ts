@@ -61,8 +61,13 @@ export class LossOps {
       return weightedLoss.sum();
     }
     if (reduction === Reduction.MEAN) {
-      return (weights == null) ? weightedLoss.mean() :
-                                 weightedLoss.sum().div(weights.sum());
+      if (weights == null) {
+        return weightedLoss.mean();
+      } else {
+        const broadcastedWeights = weights.mul(TensorOps.ones(losses.shape));
+
+        return weightedLoss.sum().div(broadcastedWeights.sum());
+      }
     }
     if (reduction === Reduction.SUM_BY_NONZERO_WEIGHTS) {
       if (weights == null) {
