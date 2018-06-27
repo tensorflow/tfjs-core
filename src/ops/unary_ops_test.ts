@@ -1955,7 +1955,7 @@ describeWithFlags('sinh', ALL_ENVS, () => {
   });
 
   it('accepts a tensor-like object', () => {
-    const values = [1, -3, 2, 7, -4];
+    const values = [1, -3, 2, -1, -4];
     const result = tf.sinh(values);
 
     const expected = [];
