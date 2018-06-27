@@ -353,17 +353,16 @@ export class ArrayOps {
    * @param canvas The canvas to draw to.
    */
   @doc({heading: 'Visualization'})
-  static async toPixels(img: Tensor2D|Tensor3D, canvas?: HTMLCanvasElement):
+  static async toPixels(
+      img: Tensor2D|Tensor3D|TensorLike, canvas?: HTMLCanvasElement):
       Promise<Uint8ClampedArray> {
-    if (!(img instanceof Tensor)) {
-      throw new Error('Argument `img` in toPixels() must be a Tensor');
-    }
-    if (img.rank !== 2 && img.rank !== 3) {
+    const $img = convertToTensor(img, 'img', 'toPixels', 'int32');
+    if ($img.rank !== 2 && $img.rank !== 3) {
       throw new Error(
-          `toPixels only supports rank 2 or 3 tensors, got rank ${img.rank}.`);
+          `toPixels only supports rank 2 or 3 tensors, got rank ${$img.rank}.`);
     }
-    const [height, width] = img.shape.slice(0, 2);
-    const depth = img.rank === 2 ? 1 : img.shape[2];
+    const [height, width] = $img.shape.slice(0, 2);
+    const depth = $img.rank === 2 ? 1 : $img.shape[2];
 
     if (depth > 4 || depth === 2) {
       throw new Error(
@@ -371,19 +370,19 @@ export class ArrayOps {
           `1, 3 or 4 but got ${depth}`);
     }
 
-    const minTensor = img.min();
-    const maxTensor = img.max();
+    const minTensor = $img.min();
+    const maxTensor = $img.max();
     const min = (await minTensor.data())[0];
     const max = (await maxTensor.data())[0];
     minTensor.dispose();
     maxTensor.dispose();
-    if (img.dtype === 'float32') {
+    if ($img.dtype === 'float32') {
       if (min < 0 || max > 1) {
         throw new Error(
             `Tensor values for a float32 Tensor must be in the ` +
             `range [0 - 1] but got range [${min} - ${max}].`);
       }
-    } else if (img.dtype === 'int32') {
+    } else if ($img.dtype === 'int32') {
       if (min < 0 || max > 255) {
         throw new Error(
             `Tensor values for a int32 Tensor must be in the ` +
@@ -391,12 +390,12 @@ export class ArrayOps {
       }
     } else {
       throw new Error(
-          `Unsupported type for toPixels: ${img.dtype}.` +
+          `Unsupported type for toPixels: ${$img.dtype}.` +
           ` Please use float32 or int32 tensors.`);
     }
 
-    const data = await img.data();
-    const multiplier = img.dtype === 'float32' ? 255 : 1;
+    const data = await $img.data();
+    const multiplier = $img.dtype === 'float32' ? 255 : 1;
     const bytes = new Uint8ClampedArray(width * height * 4);
 
     for (let i = 0; i < height * width; ++i) {

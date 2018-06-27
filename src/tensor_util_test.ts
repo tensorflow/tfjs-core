@@ -130,6 +130,7 @@ describeWithFlags('convertToTensor', CPU_ENVS, () => {
     const a = convertToTensor([1, 2, 3], 'a', 'test');
     expect(a.rank).toBe(1);
     expect(a.dtype).toBe('float32');
+    expect(a.shape).toEqual([3]);
     expectArraysClose(a, [1, 2, 3]);
   });
 

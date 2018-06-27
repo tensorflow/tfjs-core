@@ -317,11 +317,11 @@ describeWithFlags('batchNormalization3D', ALL_ENVS, () => {
   });
 
   it('accepts a tensor-like object', () => {
-    const x = tf.tensor3d([2, 4, 9, 23], [2, 1, 2]);
-    const mean = tf.tensor1d([1, 2]);
-    const variance = tf.tensor1d([2, 3]);
-    const offset = tf.tensor1d([3, 4]);
-    const scale = tf.tensor1d([4, 5]);
+    const x = [[[2, 4]], [[9, 23]]];  // 2x1x2
+    const mean = [1, 2];
+    const variance = [2, 3];
+    const offset = [3, 4];
+    const scale = [4, 5];
 
     const varianceEpsilon = .001;
 
@@ -329,18 +329,18 @@ describeWithFlags('batchNormalization3D', ALL_ENVS, () => {
         x, mean, variance, varianceEpsilon, scale, offset);
 
     expectArraysClose(result, [
-      offset.get(0) +
-          (x.get(0, 0, 0) - mean.get(0)) * scale.get(0) /
-              Math.sqrt(variance.get(0) + varianceEpsilon),
-      offset.get(1) +
-          (x.get(0, 0, 1) - mean.get(1)) * scale.get(1) /
-              Math.sqrt(variance.get(1) + varianceEpsilon),
-      offset.get(0) +
-          (x.get(1, 0, 0) - mean.get(0)) * scale.get(0) /
-              Math.sqrt(variance.get(0) + varianceEpsilon),
-      offset.get(1) +
-          (x.get(1, 0, 1) - mean.get(1)) * scale.get(1) /
-              Math.sqrt(variance.get(1) + varianceEpsilon)
+      offset[0] +
+          (x[0][0][0] - mean[0]) * scale[0] /
+              Math.sqrt(variance[0] + varianceEpsilon),
+      offset[1] +
+          (x[0][0][1] - mean[1]) * scale[1] /
+              Math.sqrt(variance[1] + varianceEpsilon),
+      offset[0] +
+          (x[1][0][0] - mean[0]) * scale[0] /
+              Math.sqrt(variance[0] + varianceEpsilon),
+      offset[1] +
+          (x[1][0][1] - mean[1]) * scale[1] /
+              Math.sqrt(variance[1] + varianceEpsilon)
     ]);
   });
 
@@ -705,5 +705,33 @@ describeWithFlags('batchNormalization2D', ALL_ENVS, () => {
         () => tf.batchNormalization(
             x, mean, variance, epsilon, scale, {} as tf.Tensor))
         .toThrowError(e);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const x = [[2, 4], [9, 23]];
+    const mean = [1, 2];
+    const variance = [2, 3];
+    const offset = [3, 4];
+    const scale = [4, 5];
+
+    const varianceEpsilon = .001;
+
+    const result = tf.batchNormalization2d(
+        x, mean, variance, varianceEpsilon, scale, offset);
+
+    expectArraysClose(result, [
+      offset[0] +
+          (x[0][0] - mean[0]) * scale[0] /
+              Math.sqrt(variance[0] + varianceEpsilon),
+      offset[1] +
+          (x[0][1] - mean[1]) * scale[1] /
+              Math.sqrt(variance[1] + varianceEpsilon),
+      offset[0] +
+          (x[1][0] - mean[0]) * scale[0] /
+              Math.sqrt(variance[0] + varianceEpsilon),
+      offset[1] +
+          (x[1][1] - mean[1]) * scale[1] /
+              Math.sqrt(variance[1] + varianceEpsilon)
+    ]);
   });
 });

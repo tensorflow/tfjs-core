@@ -41,9 +41,10 @@ export class BatchNormOps {
    */
   @operation
   static batchNormalization2d(
-      x: Tensor2D, mean: Tensor2D|Tensor1D, variance: Tensor2D|Tensor1D,
-      varianceEpsilon = .001, scale?: Tensor2D|Tensor1D,
-      offset?: Tensor2D|Tensor1D): Tensor2D {
+      x: Tensor2D|TensorLike, mean: Tensor2D|Tensor1D|TensorLike,
+      variance: Tensor2D|Tensor1D|TensorLike, varianceEpsilon = .001,
+      scale?: Tensor2D|Tensor1D|TensorLike,
+      offset?: Tensor2D|Tensor1D|TensorLike): Tensor2D {
     const $x = convertToTensor(x, 'x', 'batchNormalization');
     const $mean = convertToTensor(mean, 'mean', 'batchNormalization');
     const $variance =
@@ -98,9 +99,10 @@ export class BatchNormOps {
    */
   @operation
   static batchNormalization3d(
-      x: Tensor3D, mean: Tensor3D|Tensor1D, variance: Tensor3D|Tensor1D,
-      varianceEpsilon = .001, scale?: Tensor3D|Tensor1D,
-      offset?: Tensor3D|Tensor1D): Tensor3D {
+      x: Tensor3D|TensorLike, mean: Tensor3D|Tensor1D|TensorLike,
+      variance: Tensor3D|Tensor1D|TensorLike, varianceEpsilon = .001,
+      scale?: Tensor3D|Tensor1D|TensorLike,
+      offset?: Tensor3D|Tensor1D|TensorLike): Tensor3D {
     const $x = convertToTensor(x, 'x', 'batchNormalization');
     const $mean = convertToTensor(mean, 'mean', 'batchNormalization');
     const $variance =

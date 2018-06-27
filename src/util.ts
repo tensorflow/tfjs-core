@@ -109,12 +109,12 @@ export function inferShape(val: TypedArray|number|boolean|RegularArray<number>|
     firstElem = firstElem[0];
   }
   if (val instanceof Array) {
-    deepAssertShape(val, shape, []);
+    deepAssertShapeConsistency(val, shape, []);
   }
   return shape;
 }
 
-function deepAssertShape(
+function deepAssertShapeConsistency(
     val: number|boolean|RegularArray<number>|RegularArray<boolean>,
     shape: number[], indices?: number[]) {
   indices = indices || [];
@@ -135,7 +135,7 @@ function deepAssertShape(
           `elements, but has ${val.length} elements`);
   const subShape = shape.slice(1);
   for (let i = 0; i < val.length; ++i) {
-    deepAssertShape(val[i], subShape, indices.concat(i));
+    deepAssertShapeConsistency(val[i], subShape, indices.concat(i));
   }
 }
 
