@@ -18,7 +18,7 @@
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
 // tslint:disable-next-line:max-line-length
-import {ALL_ENVS, expectArraysClose, expectArraysEqual, expectPromiseToFail, expectValuesInRange, WEBGL_ENVS, BROWSER_ENVS, CPU_ENVS} from '../test_util';
+import {ALL_ENVS, BROWSER_ENVS, CPU_ENVS, expectArraysClose, expectArraysEqual, expectPromiseToFail, expectValuesInRange, WEBGL_ENVS} from '../test_util';
 import * as util from '../util';
 import {expectArrayInMeanStdRange, jarqueBeraNormalityTest} from './rand_util';
 
@@ -1352,13 +1352,13 @@ describeWithFlags('fromPixels', BROWSER_ENVS, () => {
   it('throws when passed a primitive number', () => {
     // tslint:disable-next-line:no-any
     expect(() => tf.fromPixels(3 as any))
-      .toThrowError(/pixels passed to tf.fromPixels\(\) must be either/);
+        .toThrowError(/pixels passed to tf.fromPixels\(\) must be either/);
   });
 
   it('throws when passed a string', () => {
     // tslint:disable-next-line:no-any
     expect(() => tf.fromPixels('test' as any))
-      .toThrowError(/pixels passed to tf.fromPixels\(\) must be either/);
+        .toThrowError(/pixels passed to tf.fromPixels\(\) must be either/);
   });
 });
 

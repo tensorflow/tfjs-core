@@ -78,7 +78,7 @@ export class MathBackendCPU implements KernelBackend {
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
       numChannels: number): Tensor3D {
     if (pixels == null) {
-      throw new Error('MathBackendCPU.writePixels(): pixels can not be null');
+      throw new Error('pixels passed to tf.fromPixels() can not be null');
     }
     let vals: Uint8ClampedArray;
     // tslint:disable-next-line:no-any
@@ -113,7 +113,9 @@ export class MathBackendCPU implements KernelBackend {
                  .data;
     } else {
       throw new Error(
-          `pixels is of unknown type: ${(pixels as {}).constructor.name}`);
+          'pixels passed to tf.fromPixels() must be either an ' +
+          `HTMLVideoElement, HTMLImageElement, HTMLCanvasElement or ` +
+          `ImageData, but was ${(pixels as {}).constructor.name}`);
     }
     let values: Int32Array;
     if (numChannels === 4) {
