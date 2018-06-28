@@ -130,7 +130,7 @@ export class LinalgOps {
           `qr() requires input tensor to have a rank >= 2, but got rank ${
               x.rank}`);
     } else if (x.rank === 2) {
-      return LinalgOps.qr2d(x as Tensor2D, fullMatrices);
+      return qr2d(x as Tensor2D, fullMatrices);
     } else {
       // Rank > 2.
       // TODO(cais): Below we split the input into individual 2D tensors,
@@ -147,7 +147,7 @@ export class LinalgOps {
       const q2ds: Tensor2D[] = [];
       const r2ds: Tensor2D[] = [];
       x2ds.forEach(x2d => {
-        const [q2d, r2d] = LinalgOps.qr2d(x2d as Tensor2D, fullMatrices);
+        const [q2d, r2d] = qr2d(x2d as Tensor2D, fullMatrices);
         q2ds.push(q2d);
         r2ds.push(r2d);
       });
@@ -156,9 +156,10 @@ export class LinalgOps {
       return [q, r];
     }
   }
+}
 
-  @operation
-  private static qr2d(x: Tensor2D, fullMatrices = false): [Tensor2D, Tensor2D] {
+function qr2d(x: Tensor2D, fullMatrices = false): [Tensor2D, Tensor2D] {
+  return ENV.engine.tidy(() => {
     if (x.shape.length !== 2) {
       throw new Error(
           `qr2d() requires a 2D Tensor, but got a ${x.shape.length}D Tensor.`);
@@ -230,5 +231,5 @@ export class LinalgOps {
     }
 
     return [q, r];
-  }
+  }) as [Tensor2D, Tensor2D];
 }
