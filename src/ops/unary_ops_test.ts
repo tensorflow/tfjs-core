@@ -1254,6 +1254,12 @@ describeWithFlags('exp', ALL_ENVS, () => {
     expectNumbersClose(r.get(2), 1);
   });
 
+  it('exp does not support int32 KREEGER', () => {
+    expect(() => {
+      tf.exp(tf.scalar(2, 'int32'));
+    }).toThrowError();
+  });
+
   it('exp propagates NaNs', () => {
     const a = tf.tensor1d([1, NaN, 0]);
     const r = tf.exp(a);

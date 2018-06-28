@@ -151,6 +151,7 @@ export class UnaryOps {
   @operation
   static exp<T extends Tensor>(x: T|TensorLike): T {
     const $x = convertToTensor(x, 'x', 'exp');
+    util.assert($x.dtype !== 'int32', 'Input dtype must not be `int32`.');
 
     const bck = (dy: T, saved: Tensor[]) => {
       const [y] = saved;
