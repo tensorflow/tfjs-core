@@ -99,14 +99,12 @@ export class LinalgOps {
   /**
    * Compute QR decomposition of m-by-n matrix using Householder transformation.
    *
-   * Requires `m >= n`.
-   *
    * Implementation based on
    *   [http://www.cs.cornell.edu/~bindel/class/cs6210-f09/lec18.pdf]
    * (http://www.cs.cornell.edu/~bindel/class/cs6210-f09/lec18.pdf)
    *
    * @param x The `Tensor` to be QR-decomposed. Must have rank >= 2. Suppose
-   *   it has the shape `[..., M, N]`. Currently it is required that `M >= N`.
+   *   it has the shape `[..., M, N]`.
    * @param fullMatrices An optional boolean parameter. Defaults to `false`.
    *   If `true`, compute full-sized `Q`. If `false` (the default),
    *   compute only the leading N columns of `Q` and `R`.
@@ -118,7 +116,7 @@ export class LinalgOps {
    *       - `R` has a shape of `[..., N, N]`.
    *     If `fullMatrices` is `true` (default),
    *       - `Q` has a shape of `[..., M, M]`,
-   *       - `R` has a shape of `[...,  M, N]`.
+   *       - `R` has a shape of `[..., M, N]`.
    *   If `M < N`,
    *     - `Q` has a shape of `[..., M, M]`,
    *     - `R` has a shape of `[..., M, N]`.
@@ -166,10 +164,8 @@ export class LinalgOps {
     const m = x.shape[0];
     const n = x.shape[1];
 
-    // const qSize = m >= n ? n : m;
-    const qSize = m;
-    let q = ArrayOps.eye(qSize) as Tensor2D;  // Orthogonal transform so far.
-    let r = x.clone();                        // Transformed matrix so far.
+    let q = ArrayOps.eye(m) as Tensor2D;  // Orthogonal transform so far.
+    let r = x.clone();                    // Transformed matrix so far.
 
     const one2D = TensorOps.tensor2d([[1]], [1, 1]);
     let w: Tensor2D = one2D.clone();
