@@ -133,6 +133,9 @@ export class LinalgOps {
       return LinalgOps.qr2d(x as Tensor2D, fullMatrices);
     } else {
       // Rank > 2.
+      // TODO(cais): Below we split the input into individual 2D tensors,
+      //   perform QR decomposition on them and then stack the results back
+      //   together. We should explore whether this can be parallelized.
       const outerDimsProd = x.shape.slice(0, x.shape.length - 2)
                                 .reduce((value, prev) => value * prev);
       const x2ds = ArrayOps.unstack(
