@@ -1304,6 +1304,18 @@ describeWithFlags('fromPixels', WEBGL_ENVS, () => {
     expect(res.dtype).toBe('float32');
     expectArraysClose(res, [260, 9, 11]);
   });
+
+  it('throws when passed a primitive number', () => {
+    // tslint:disable-next-line:no-any
+    expect(() => tf.fromPixels(3 as any))
+      .toThrowError(/pixels passed to tf.fromPixels\(\) must be either/);
+  });
+
+  it('throws when passed a string', () => {
+    // tslint:disable-next-line:no-any
+    expect(() => tf.fromPixels('test' as any))
+      .toThrowError(/pixels passed to tf.fromPixels\(\) must be either/);
+  });
 });
 
 describeWithFlags('toPixels no canvas', ALL_ENVS, () => {
