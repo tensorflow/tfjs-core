@@ -46,7 +46,6 @@ export class Environment {
           'be downloaded to CPU and checked for NaNs. ' +
           'This significantly impacts performance.');
     }
-    setTensorTracker(() => this.engine);
   }
 
   /**
@@ -355,7 +354,9 @@ export class Environment {
     if (name in this.registry) {
       console.warn(
           `${name} backend was already registered. Reusing existing backend`);
-      setTensorTrackerFn(() => this.engine);
+      if (setTensorTrackerFn != null) {
+        setTensorTrackerFn(() => this.engine);
+      }
       return false;
     }
     try {
@@ -404,7 +405,10 @@ function getGlobalNamespace(): {ENV: Environment} {
 
 function getOrMakeEnvironment(): Environment {
   const ns = getGlobalNamespace();
-  ns.ENV = ns.ENV || new Environment(getFeaturesFromURL());
+  if (ns.ENV == null) {
+    ns.ENV = new Environment(getFeaturesFromURL());
+    setTensorTracker(() => ns.ENV.engine);
+  }
   return ns.ENV;
 }
 
