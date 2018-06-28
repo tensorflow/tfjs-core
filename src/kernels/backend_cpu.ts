@@ -18,7 +18,7 @@
 import * as seedrandom from 'seedrandom';
 
 import {ENV} from '../environment';
-import * as array_ops_util from '../ops/array_ops_uitl';
+import * as array_ops_util from '../ops/array_ops_util';
 import * as axis_util from '../ops/axis_util';
 import * as broadcast_util from '../ops/broadcast_util';
 import * as concat_util from '../ops/concat_util';
@@ -1470,19 +1470,18 @@ export class MathBackendCPU implements KernelBackend {
       x: T, blockShape: number[], crops: number[][]): T {
     const prod = blockShape.reduce((a, b) => a * b);
 
-    const reshaped =
-        array_ops_util.getReshapedBatchDim(x.shape, blockShape, prod);
-    const perm =
-        array_ops_util.getInputAndBlockPermutation(reshaped, blockShape.length);
+    const reshaped = array_ops_util.getReshaped(x.shape, blockShape, prod);
+    const permuted =
+        array_ops_util.getPermuted(reshaped.length, blockShape.length);
     const reshapedPermuted =
-        array_ops_util.getOutputShapeBeforeCrop(x.shape, blockShape, prod);
-    const sliceBeginCoords = array_ops_util.getSliceBeginCoords(
-        reshapedPermuted.length, crops, blockShape.length);
+        array_ops_util.getReshapedPermuted(x.shape, blockShape, prod);
+    const sliceBeginCoords =
+        array_ops_util.getSliceBeginCoords(crops, blockShape.length);
     const sliceSize =
         array_ops_util.getSliceSize(reshapedPermuted, crops, blockShape.length);
 
     return x.reshape(reshaped)
-               .transpose(perm)
+               .transpose(permuted)
                .reshape(reshapedPermuted)
                .slice(sliceBeginCoords, sliceSize) as T;
   }

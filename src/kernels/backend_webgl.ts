@@ -17,7 +17,7 @@
 
 import {MemoryInfo, TimingInfo} from '../engine';
 import {ENV} from '../environment';
-import * as array_ops_util from '../ops/array_ops_uitl';
+import * as array_ops_util from '../ops/array_ops_util';
 import * as axis_util from '../ops/axis_util';
 import {Conv2DInfo} from '../ops/conv_util';
 import * as ops from '../ops/ops';
@@ -514,19 +514,18 @@ export class MathBackendWebGL implements KernelBackend {
     util.assert(x.rank <= 4, 'WebGL for rank > 4 not yet implemented');
     const prod = blockShape.reduce((a, b) => a * b);
 
-    const reshaped =
-        array_ops_util.getReshapedBatchDim(x.shape, blockShape, prod);
-    const perm =
-        array_ops_util.getInputAndBlockPermutation(reshaped, blockShape.length);
+    const reshaped = array_ops_util.getReshaped(x.shape, blockShape, prod);
+    const permuted =
+        array_ops_util.getPermuted(reshaped.length, blockShape.length);
     const reshapedPermuted =
-        array_ops_util.getOutputShapeBeforeCrop(x.shape, blockShape, prod);
-    const sliceBeginCoords = array_ops_util.getSliceBeginCoords(
-        reshapedPermuted.length, crops, blockShape.length);
+        array_ops_util.getReshapedPermuted(x.shape, blockShape, prod);
+    const sliceBeginCoords =
+        array_ops_util.getSliceBeginCoords(crops, blockShape.length);
     const sliceSize =
         array_ops_util.getSliceSize(reshapedPermuted, crops, blockShape.length);
 
     return x.reshape(reshaped)
-               .transpose(perm)
+               .transpose(permuted)
                .reshape(reshapedPermuted)
                .slice(sliceBeginCoords, sliceSize) as T;
   }
