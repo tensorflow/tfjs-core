@@ -110,17 +110,23 @@ export class LinalgOps {
    * @param fullMatrices An optional boolean parameter. Defaults to `false`.
    *   If `true`, compute full-sized `Q`. If `false` (the default),
    *   compute only the leading N columns of `Q` and `R`.
-   * @return An `Array` of two `Tensor`s: `[Q, R]`, where `Q` is a unitary
-   *   matrix of size `[M, M]`. `R` has the same shape as `x`.
-   * @throws ValueError if `M < N`, or if `x`'s rank is less than 2.
+   * @return An `Array` of two `Tensor`s: `[Q, R]`. `Q` is a unitary matrix,
+   *   i.e., its columns all have unit norm and are mutually orthogonal.
+   *   If `M >= N`,
+   *     If `fullMatrices` is `false` (default),
+   *       - `Q` has a shape of `[..., M, N]`,
+   *       - `R` has a shape of `[..., N, N]`.
+   *     If `fullMatrices` is `true` (default),
+   *       - `Q` has a shape of `[..., M, M]`,
+   *       - `R` has a shape of `[...,  M, N]`.
+   *   If `M < N`,
+   *     - `Q` has a shape of `[..., M, M]`,
+   *     - `R` has a shape of `[..., M, N]`.
+   * @throws If the rank of `x` is less than 2.
    */
   @doc({heading: 'Operations', subheading: 'Linear Algebra'})
   @operation
   static qr(x: Tensor, fullMatrices = false): [Tensor, Tensor] {
-    // if (fullMatrices) { // TODO(cais): Remove.
-    //   // TODO(cais): Implement the fullMatrices = true mode.
-    //   throw new Error('fullMatrices mode is not implemented in qr() yet');
-    // }
     if (x.rank < 2) {
       throw new Error(
           `qr() requires input tensor to have a rank >= 2, but got rank ${
@@ -157,26 +163,19 @@ export class LinalgOps {
           `qr2d() requires a 2D Tensor, but got a ${x.shape.length}D Tensor.`);
     }
 
-    // TODO(cais): Remove.
-    // if (x.shape[0] < x.shape[1]) {
-    //   throw new Error(
-    //       `qr() requires x.shape[0] >= x.shape[1], but got shape: [${
-    //           x.shape}]`);
-    // }
-
     const m = x.shape[0];
     const n = x.shape[1];
-    console.log(`m = ${m}, n = ${n}`);  // DEBUG
 
-    const qSize = m >= n ? n : m;
+    // const qSize = m >= n ? n : m;
+    const qSize = m;
     let q = ArrayOps.eye(qSize) as Tensor2D;  // Orthogonal transform so far.
     let r = x.clone();                        // Transformed matrix so far.
 
     const one2D = TensorOps.tensor2d([[1]], [1, 1]);
     let w: Tensor2D = one2D.clone();
 
-    for (let j = 0; j < qSize; ++j) {
-      console.log(`j = ${j}`);  // DEBUG
+    const iters = m >= n ? n : m;
+    for (let j = 0; j < iters; ++j) {
       // This tidy within the for-loop ensures we clean up temporary
       // tensors as soon as they are no longer needed.
       const rTemp = r;
@@ -221,7 +220,6 @@ export class LinalgOps {
                           qAllJEnd.matMul(w).matMul(tauTimesW.transpose())),
                       1) as Tensor2D;
         }
-        q.print();  // DEBUG
         return [w, r, q];
       });
       dispose([rTemp, wTemp, qTemp]);
