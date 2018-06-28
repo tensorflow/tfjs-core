@@ -351,7 +351,9 @@ export class Environment {
   registerBackend(name: string, factory: () => KernelBackend, priority = 1):
       boolean {
     if (name in this.registry) {
-      console.warn(`${name} backend was already registered`);
+      console.warn(
+          `${name} backend was already registered. Reusing existing backend`);
+      return false;
     }
     try {
       const backend = factory();
