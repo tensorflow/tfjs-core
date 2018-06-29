@@ -24,7 +24,7 @@ import * as reduce_util from '../ops/reduce_util';
 import * as segment_util from '../ops/segment_util';
 import {getStridedSlicedInfo} from '../ops/slice_util';
 // tslint:disable-next-line:max-line-length
-import {DataId, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
+import {DataId, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import * as types from '../types';
 import {DataType, DataTypeMap, RecursiveArray, TypedArray} from '../types';
 import * as util from '../util';
@@ -146,11 +146,20 @@ export class MathBackendWebGL implements KernelBackend {
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
       numChannels: number): Tensor3D {
     if (pixels == null) {
-      throw new Error('MathBackendWebGL.writePixels(): pixels can not be null');
+      throw new Error('pixels passed to tf.fromPixels() can not be null');
     }
     const texShape: [number, number] = [pixels.height, pixels.width];
     const outShape = [pixels.height, pixels.width, numChannels];
 
+    if (!(pixels instanceof HTMLVideoElement) &&
+        !(pixels instanceof HTMLImageElement) &&
+        !(pixels instanceof HTMLCanvasElement) &&
+        !(pixels instanceof ImageData)) {
+      throw new Error(
+          'pixels passed to tf.fromPixels() must be either an ' +
+          `HTMLVideoElement, HTMLImageElement, HTMLCanvasElement or ` +
+          `ImageData, but was ${(pixels as {}).constructor.name}`);
+    }
     if (pixels instanceof HTMLVideoElement) {
       if (this.fromPixelsCanvas == null) {
         if (!ENV.get('IS_BROWSER')) {
@@ -1300,7 +1309,9 @@ export class MathBackendWebGL implements KernelBackend {
 }
 
 if (ENV.get('IS_BROWSER')) {
-  ENV.registerBackend('webgl', () => new MathBackendWebGL(), 2 /* priority */);
+  ENV.registerBackend(
+      'webgl', () => new MathBackendWebGL(), 2 /* priority */,
+      setTensorTracker);
 }
 
 function float32ToTypedArray<D extends DataType>(
