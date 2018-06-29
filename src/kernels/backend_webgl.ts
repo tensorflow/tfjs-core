@@ -66,6 +66,8 @@ import {ReduceProgram} from './webgl/reduce_gpu';
 import {ResizeBilinearBackpropProgram} from './webgl/resize_bilinear_backprop_gpu';
 import {ResizeBilinearProgram} from './webgl/resize_bilinear_gpu';
 // tslint:disable-next-line:max-line-length
+import {ResizeNearestNeigborBackpropProgram} from './webgl/resize_nearest_neighbor_backprop_gpu';
+// tslint:disable-next-line:max-line-length
 import {ResizeNearestNeighborProgram} from './webgl/resize_nearest_neighbor_gpu';
 import {ReverseProgram} from './webgl/reverse_gpu';
 import {SegmentOpProgram} from './webgl/segment_gpu';
@@ -146,11 +148,20 @@ export class MathBackendWebGL implements KernelBackend {
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
       numChannels: number): Tensor3D {
     if (pixels == null) {
-      throw new Error('MathBackendWebGL.writePixels(): pixels can not be null');
+      throw new Error('pixels passed to tf.fromPixels() can not be null');
     }
     const texShape: [number, number] = [pixels.height, pixels.width];
     const outShape = [pixels.height, pixels.width, numChannels];
 
+    if (!(pixels instanceof HTMLVideoElement) &&
+        !(pixels instanceof HTMLImageElement) &&
+        !(pixels instanceof HTMLCanvasElement) &&
+        !(pixels instanceof ImageData)) {
+      throw new Error(
+          'pixels passed to tf.fromPixels() must be either an ' +
+          `HTMLVideoElement, HTMLImageElement, HTMLCanvasElement or ` +
+          `ImageData, but was ${(pixels as {}).constructor.name}`);
+    }
     if (pixels instanceof HTMLVideoElement) {
       if (this.fromPixelsCanvas == null) {
         if (!ENV.get('IS_BROWSER')) {
@@ -1117,6 +1128,13 @@ export class MathBackendWebGL implements KernelBackend {
     const program = new ResizeNearestNeighborProgram(
         x.shape, newHeight, newWidth, alignCorners);
     return this.compileAndRun(program, [x]);
+  }
+
+  resizeNearestNeighborBackprop(
+      dy: Tensor4D, x: Tensor4D, alignCorners: boolean): Tensor4D {
+    const program =
+        new ResizeNearestNeigborBackpropProgram(dy, x, alignCorners);
+    return this.compileAndRun(program, [dy]);
   }
 
   multinomial(

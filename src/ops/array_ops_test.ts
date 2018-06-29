@@ -18,9 +18,8 @@
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
 // tslint:disable-next-line:max-line-length
-import {ALL_ENVS, expectArraysClose, expectArraysEqual, expectPromiseToFail, expectValuesInRange, WEBGL_ENVS} from '../test_util';
+import {ALL_ENVS, BROWSER_ENVS, CPU_ENVS, expectArraysClose, expectArraysEqual, expectPromiseToFail, expectValuesInRange, WEBGL_ENVS} from '../test_util';
 import * as util from '../util';
-
 import {expectArrayInMeanStdRange, jarqueBeraNormalityTest} from './rand_util';
 
 describeWithFlags('zeros', ALL_ENVS, () => {
@@ -456,6 +455,12 @@ describeWithFlags('zerosLike', ALL_ENVS, () => {
     expect(() => tf.zerosLike({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'zerosLike' must be a Tensor/);
   });
+
+  it('accepts a tensor-like object', () => {
+    const res = tf.zerosLike([[1, 2], [3, 4]]);
+    expect(res.shape).toEqual([2, 2]);
+    expectArraysEqual(res, [0, 0, 0, 0]);
+  });
 });
 
 describeWithFlags('onesLike', ALL_ENVS, () => {
@@ -662,6 +667,12 @@ describeWithFlags('onesLike', ALL_ENVS, () => {
   it('throws when passed a non-tensor', () => {
     expect(() => tf.onesLike({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'onesLike' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const res = tf.onesLike([[1, 2], [3, 4]]);
+    expect(res.shape).toEqual([2, 2]);
+    expectArraysEqual(res, [1, 1, 1, 1]);
   });
 });
 
@@ -1189,7 +1200,51 @@ describeWithFlags('randomUniform', ALL_ENVS, () => {
   });
 });
 
-describeWithFlags('fromPixels', WEBGL_ENVS, () => {
+class MockContext {
+  getImageData(x: number, y: number, width: number, height: number) {
+    const data = new Uint8ClampedArray(width * height * 4);
+    for (let i = 0; i < data.length; ++i) {
+      data[i] = i + 1;
+    }
+    return {data};
+  }
+}
+
+class MockCanvas {
+  constructor(public width: number, public height: number) {}
+  getContext(type: '2d'): MockContext {
+    return new MockContext();
+  }
+}
+
+describeWithFlags('fromPixels, mock canvas', CPU_ENVS, () => {
+  it('accepts a canvas-like element', () => {
+    const c = new MockCanvas(2, 2);
+    // tslint:disable-next-line:no-any
+    const t = tf.fromPixels(c as any);
+    expect(t.dtype).toBe('int32');
+    expect(t.shape).toEqual([2, 2, 3]);
+    tf.test_util.expectArraysEqual(
+        t, [1, 2, 3, 5, 6, 7, 9, 10, 11, 13, 14, 15]);
+  });
+
+  it('accepts a canvas-like element, numChannels=4', () => {
+    const c = new MockCanvas(2, 2);
+    // tslint:disable-next-line:no-any
+    const t = tf.fromPixels(c as any, 4);
+    expect(t.dtype).toBe('int32');
+    expect(t.shape).toEqual([2, 2, 4]);
+    tf.test_util.expectArraysEqual(
+        t, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
+  });
+
+  it('errors when passed a non-canvas object', () => {
+    // tslint:disable-next-line:no-any
+    expect(() => tf.fromPixels(5 as any)).toThrowError();
+  });
+});
+
+describeWithFlags('fromPixels', BROWSER_ENVS, () => {
   it('ImageData 1x1x3', () => {
     const pixels = new ImageData(1, 1);
     pixels.data[0] = 0;
@@ -1292,6 +1347,18 @@ describeWithFlags('fromPixels', WEBGL_ENVS, () => {
     expect(res.shape).toEqual([1, 1, 3]);
     expect(res.dtype).toBe('float32');
     expectArraysClose(res, [260, 9, 11]);
+  });
+
+  it('throws when passed a primitive number', () => {
+    // tslint:disable-next-line:no-any
+    expect(() => tf.fromPixels(3 as any))
+        .toThrowError(/pixels passed to tf.fromPixels\(\) must be either/);
+  });
+
+  it('throws when passed a string', () => {
+    // tslint:disable-next-line:no-any
+    expect(() => tf.fromPixels('test' as any))
+        .toThrowError(/pixels passed to tf.fromPixels\(\) must be either/);
   });
 });
 
@@ -1436,6 +1503,14 @@ describeWithFlags('toPixels no canvas', ALL_ENVS, () => {
   it('throws when passed a non-tensor', done => {
     // tslint:disable-next-line:no-any
     expectPromiseToFail(() => tf.toPixels({} as any), done);
+  });
+
+  it('accepts a tensor-like object', async () => {
+    const x = [[10], [20]];  // 2x1;
+    const data = await tf.toPixels(x);
+
+    const expected = new Uint8ClampedArray([10, 10, 10, 255, 20, 20, 20, 255]);
+    expect(data).toEqual(expected);
   });
 });
 
@@ -1589,6 +1664,21 @@ describeWithFlags('toPixels', WEBGL_ENVS, () => {
       expect(imgData.data).toEqual(expected);
       done();
     });
+  });
+
+  it('accepts a tensor-like object', async () => {
+    const x = [[127], [100]];  // 2x1;
+    const canvas = document.createElement('canvas');
+
+    const data = await tf.toPixels(x, canvas);
+    const expected =
+        new Uint8ClampedArray([127, 127, 127, 255, 100, 100, 100, 255]);
+    expect(data).toEqual(expected);
+
+    const ctx = canvas.getContext('2d');
+    const imgData = ctx.getImageData(0, 0, 1, 2);
+
+    expect(imgData.data).toEqual(expected);
   });
 });
 
@@ -1933,6 +2023,12 @@ describeWithFlags('tile', ALL_ENVS, () => {
     expect(() => tf.tile({} as tf.Tensor, [1]))
         .toThrowError(/Argument 'x' passed to 'tile' must be a Tensor/);
   });
+
+  it('accepts a tensor-like object', () => {
+    const res = tf.tile([1, 2, 3], [2]);
+    expect(res.shape).toEqual([6]);
+    expectArraysClose(res, [1, 2, 3, 1, 2, 3]);
+  });
 });
 
 describeWithFlags('gather', ALL_ENVS, () => {
@@ -2019,6 +2115,12 @@ describeWithFlags('gather', ALL_ENVS, () => {
     // tslint:disable-next-line:no-any
     expect(() => tf.gather(tf.tensor1d([1]), {} as any))
         .toThrowError(/Argument 'indices' passed to 'gather' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const res = tf.gather([1, 2, 3], [0, 2, 0, 1], 0);
+    expect(res.shape).toEqual([4]);
+    expectArraysClose(res, [1, 3, 1, 2]);
   });
 
   it('gradient 1D (gather)', () => {
@@ -2542,6 +2644,13 @@ describeWithFlags('stack', ALL_ENVS, () => {
         .toThrowError(
             /Argument 'tensors\[0\]' passed to 'stack' must be a Tensor/);
   });
+
+  it('accepts a tensor-like object', () => {
+    const a = [[1, 2], [3, 4]];
+    const res = tf.stack([a], 2 /* axis */);
+    expect(res.shape).toEqual([2, 2, 1]);
+    expectArraysClose(res, [1, 2, 3, 4]);
+  });
 });
 
 describeWithFlags('unstack', ALL_ENVS, () => {
@@ -2670,6 +2779,23 @@ describeWithFlags('unstack', ALL_ENVS, () => {
     expect(res[0].shape).toEqual([2, 2, 2]);
     expectArraysClose(res[0], [1, 2, 3, 4, 5, 6, 7, 8]);
   });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.unstack({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'unstack' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const x = [[1, 2, 3, 4], [5, 6, 7, 8]];
+    const res = tf.unstack(x);
+    expect(res.length).toEqual(2);
+    expect(res[0].rank).toEqual(1);
+    expect(res[0].shape).toEqual([4]);
+    expectArraysClose(res[0], [1, 2, 3, 4]);
+    expect(res[1].rank).toEqual(1);
+    expect(res[1].shape).toEqual([4]);
+    expectArraysClose(res[1], [5, 6, 7, 8]);
+  });
 });
 
 describeWithFlags('split', ALL_ENVS, () => {
@@ -2710,6 +2836,16 @@ describeWithFlags('split', ALL_ENVS, () => {
   it('throws when passed a non-tensor', () => {
     expect(() => tf.split({} as tf.Tensor, 1))
         .toThrowError(/Argument 'x' passed to 'split' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const x = [[1, 2, 3, 4], [5, 6, 7, 8]];
+    const res = tf.split(x, 2, 1);
+    expect(res.length).toEqual(2);
+    expect(res[0].shape).toEqual([2, 2]);
+    expectArraysClose(res[0], [1, 2, 5, 6]);
+    expect(res[1].shape).toEqual([2, 2]);
+    expectArraysClose(res[1], [3, 4, 7, 8]);
   });
 });
 
@@ -2764,6 +2900,12 @@ describeWithFlags('expandDims', ALL_ENVS, () => {
   it('throws when passed a non-tensor', () => {
     expect(() => tf.expandDims({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'expandDims' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const res = tf.expandDims(7);
+    expect(res.shape).toEqual([1]);
+    expectArraysClose(res, [7]);
   });
 });
 
@@ -2830,6 +2972,17 @@ describeWithFlags('cumsum', ALL_ENVS, () => {
     const res = tf.tensor3d([[[0, 1], [2, 3]], [[4, 5], [6, 7]]]).cumsum(2);
     expect(res.shape).toEqual([2, 2, 2]);
     expectArraysClose(res, [0, 1, 2, 5, 4, 9, 6, 13]);
+  });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.cumsum({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'cumsum' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const res = tf.cumsum([1, 2, 3, 4]);
+    expect(res.shape).toEqual([4]);
+    expectArraysClose(res, [1, 3, 6, 10]);
   });
 });
 
