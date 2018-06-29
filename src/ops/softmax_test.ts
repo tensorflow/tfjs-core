@@ -126,13 +126,13 @@ describeWithFlags('softmax', ALL_ENVS, () => {
   });
 });
 
-describeWithFlags('softmaxCrossEntropy', ALL_ENVS, () => {
+describeWithFlags('softmaxCrossEntropyWithLogits', ALL_ENVS, () => {
   it('1D', () => {
     const logits = tf.tensor1d([1, 2, 3]);
     const label = tf.tensor1d([0.3, 0.6, 0.1]);
     const softmaxLogits = tf.softmax(logits);
 
-    const y = tf.losses.softmaxCrossEntropy(label, logits);
+    const y = tf.softmaxCrossEntropyWithLogits(label, logits);
 
     expect(y.shape).toEqual([]);
     expectNumbersClose(
@@ -147,7 +147,7 @@ describeWithFlags('softmaxCrossEntropy', ALL_ENVS, () => {
     const label = tf.tensor2d([0.3, 0.6, 0.1, 0.2, 0.3, 0.5], [2, 3]);
     const softmaxLogits = tf.softmax(logits);
 
-    const y = tf.losses.softmaxCrossEntropy(label, logits);
+    const y = tf.softmaxCrossEntropyWithLogits(label, logits);
 
     expect(y.shape).toEqual([2]);
     expectArraysClose(y, [
@@ -166,7 +166,7 @@ describeWithFlags('softmaxCrossEntropy', ALL_ENVS, () => {
     const dim = 1;
     const softmaxLogits = tf.softmax(logits, dim);
 
-    const y = tf.losses.softmaxCrossEntropy(label, logits, dim);
+    const y = tf.softmaxCrossEntropyWithLogits(label, logits, dim);
 
     expect(y.shape).toEqual([2]);
     expectArraysClose(y, [
@@ -184,7 +184,7 @@ describeWithFlags('softmaxCrossEntropy', ALL_ENVS, () => {
     const label = tf.tensor2d([0.3, 0.6, 0.1, 0.2, 0.3, 0.5], [2, 3]);
     const dim = 0;
 
-    expect(() => tf.losses.softmaxCrossEntropy(label, logits, dim))
+    expect(() => tf.softmaxCrossEntropyWithLogits(label, logits, dim))
         .toThrowError();
   });
 
@@ -192,7 +192,7 @@ describeWithFlags('softmaxCrossEntropy', ALL_ENVS, () => {
     const logits = tf.tensor1d([1, 2, NaN]);
     const label = tf.tensor1d([0.3, 0.6, 0.1]);
 
-    const y = tf.losses.softmaxCrossEntropy(label, logits);
+    const y = tf.softmaxCrossEntropyWithLogits(label, logits);
 
     expect(y.shape).toEqual([]);
     expectArraysClose(y, [NaN]);
@@ -205,7 +205,7 @@ describeWithFlags('softmaxCrossEntropy', ALL_ENVS, () => {
     const dy = tf.scalar(2);
 
     const grads = tf.grads(
-        (labels, logits) => tf.losses.softmaxCrossEntropy(labels, logits));
+        (labels, logits) => tf.softmaxCrossEntropyWithLogits(labels, logits));
     const [dlabels, dlogits] = grads([labels, logits], dy);
 
     expect(dlogits.shape).toEqual(logits.shape);
@@ -230,7 +230,7 @@ describeWithFlags('softmaxCrossEntropy', ALL_ENVS, () => {
     const dy = tf.tensor1d([2, 4]);
 
     const dlogits = tf.grad(
-        logits => tf.losses.softmaxCrossEntropy(labels, logits))(logits, dy);
+        logits => tf.softmaxCrossEntropyWithLogits(labels, logits))(logits, dy);
 
     expect(dlogits.shape).toEqual(logits.shape);
 
@@ -245,18 +245,21 @@ describeWithFlags('softmaxCrossEntropy', ALL_ENVS, () => {
   });
 
   it('throws when passed labels as a non-tensor', () => {
-    const e =
-        /Argument 'labels' passed to 'softmaxCrossEntropy' must be a Tensor/;
-    expect(() => tf.losses.softmaxCrossEntropy({} as tf.Tensor, tf.tensor1d([
+    const e = new RegExp(
+        'Argument \'labels\' passed to \'softmaxCrossEntropyWithLogits\' ' +
+        'must be a Tensor');
+    expect(() => tf.softmaxCrossEntropyWithLogits({} as tf.Tensor, tf.tensor1d([
       1
     ]))).toThrowError(e);
   });
 
   it('throws when passed logits as a non-tensor', () => {
-    const e =
-        /Argument 'logits' passed to 'softmaxCrossEntropy' must be a Tensor/;
+    const e = new RegExp(
+        'Argument \'logits\' passed to \'softmaxCrossEntropyWithLogits\' ' +
+        'must be a Tensor');
     expect(
-        () => tf.losses.softmaxCrossEntropy(tf.tensor1d([1]), {} as tf.Tensor))
+        () =>
+            tf.softmaxCrossEntropyWithLogits(tf.tensor1d([1]), {} as tf.Tensor))
         .toThrowError(e);
   });
 
@@ -265,7 +268,7 @@ describeWithFlags('softmaxCrossEntropy', ALL_ENVS, () => {
     const label = [0.3, 0.6, 0.1];
     const softmaxLogits = tf.softmax(logits);
 
-    const y = tf.losses.softmaxCrossEntropy(label, logits);
+    const y = tf.softmaxCrossEntropyWithLogits(label, logits);
 
     expect(y.shape).toEqual([]);
     expectNumbersClose(

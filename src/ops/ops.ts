@@ -231,6 +231,8 @@ export const basicLSTMCell = LSTMOps.basicLSTMCell;
 export const multiRNNCell = LSTMOps.multiRNNCell;
 
 export const softmax = SoftmaxOps.softmax;
+export const softmaxCrossEntropyWithLogits =
+    SoftmaxOps.softmaxCrossEntropyWithLogits;
 export const sigmoidCrossEntropyWithLogits =
     SigmoidCrossEntropyOps.sigmoidCrossEntropyWithLogits;
 
@@ -255,7 +257,7 @@ export const losses = {
   huberLoss: LossOps.huberLoss,
   logLoss: LossOps.logLoss,
   meanSquaredError: LossOps.meanSquaredError,
-  softmaxCrossEntropy: SoftmaxOps.softmaxCrossEntropy
+  softmaxCrossEntropy: LossOps.softmaxCrossEntropy
 };
 
 export const image = {

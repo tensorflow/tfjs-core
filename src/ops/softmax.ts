@@ -24,7 +24,6 @@ import * as util from '../util';
 
 import * as axis_util from './axis_util';
 import {operation} from './operation';
-import {TensorOps} from './tensor_ops';
 
 export class SoftmaxOps {
   /**
@@ -106,12 +105,15 @@ export class SoftmaxOps {
    */
   @doc({heading: 'Training', subheading: 'Losses', namespace: 'losses'})
   @operation
-  static softmaxCrossEntropy<T extends Tensor, O extends Tensor>(
+  static softmaxCrossEntropyWithLogits<T extends Tensor, O extends Tensor>(
       labels: T|TensorLike, logits: T|TensorLike, dim = -1): O {
-    const $labels = convertToTensor(labels, 'labels', 'softmaxCrossEntropy');
-    const $logits = convertToTensor(logits, 'logits', 'softmaxCrossEntropy');
+    const $labels =
+        convertToTensor(labels, 'labels', 'softmaxCrossEntropyWithLogits');
+    const $logits =
+        convertToTensor(logits, 'logits', 'softmaxCrossEntropyWithLogits');
     util.assertShapesMatch(
-        $labels.shape, $logits.shape, 'Error in softmaxCrossEntropy: ');
+        $labels.shape, $logits.shape,
+        'Error in softmaxCrossEntropyWithLogits: ');
 
     if (dim === -1) {
       dim = $logits.rank - 1;
@@ -125,8 +127,8 @@ export class SoftmaxOps {
     // Use a custom gradient for numerical stability.
     const customOp = customGrad((labels, logits) => {
       const predictedProbs = logits.softmax(dim);
-      const costVector =
-          TensorOps.scalar(1e-5).add(predictedProbs).log().mul(labels).neg();
+      const costVector = predictedProbs.log().mul(labels).neg();
+
       const value = costVector.sum([dim]) as O;
 
       const gradFunc = (dy: O) => {
