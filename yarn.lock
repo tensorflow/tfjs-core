@@ -1956,7 +1956,7 @@ karma-jasmine@~1.1.0:
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/karma-jasmine/-/karma-jasmine-1.1.2.tgz#394f2b25ffb4a644b9ada6f22d443e2fd08886c3"
 
-karma-typescript@~3.0.8:
+karma-typescript@~3.0.12:
   version "3.0.12"
   resolved "https://registry.yarnpkg.com/karma-typescript/-/karma-typescript-3.0.12.tgz#aa2cbdd111442a09c6dbcbaaeaf48499654c6913"
   dependencies:
