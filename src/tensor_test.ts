@@ -278,13 +278,6 @@ describeWithFlags('tensor', ALL_ENVS, () => {
             'must be a non-null value.');
   });
 
-  it('Tensor.make throw error with null shape', () => {
-    const values = new Float32Array([1, 2, 3, 4]);
-    expect(() => Tensor.make(null, {values}))
-        .toThrowError('The shape field passed to the tensor constructor ' +
-            'is null. Please pass a non-null shape.');
-  });
-
   it('tf.tensor1d() from number[][], shape mismatch', () => {
     // tslint:disable-next-line:no-any
     expect(() => tf.tensor1d([[1], [2], [3]] as any)).toThrowError();
