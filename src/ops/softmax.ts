@@ -23,7 +23,9 @@ import {TensorLike} from '../types';
 import * as util from '../util';
 
 import * as axis_util from './axis_util';
+import {BinaryOps} from './binary_ops';
 import {operation} from './operation';
+import {TensorOps} from './tensor_ops';
 
 export class SoftmaxOps {
   /**
@@ -127,7 +129,12 @@ export class SoftmaxOps {
     // Use a custom gradient for numerical stability.
     const customOp = customGrad((labels, logits) => {
       const predictedProbs = logits.softmax(dim);
-      const costVector = predictedProbs.log().mul(labels).neg();
+      const epsilonScalar = TensorOps.scalar(1e-10);
+      console.log(predictedProbs.dataSync());
+      const costVector = BinaryOps.maximum(predictedProbs, epsilonScalar)
+                             .log()
+                             .mul(labels)
+                             .neg();
 
       const value = costVector.sum([dim]) as O;
 
