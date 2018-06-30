@@ -24,9 +24,8 @@ import {TensorLike} from '../types';
 import * as util from '../util';
 
 import * as axis_util from './axis_util';
-import {BinaryOps} from './binary_ops';
 import {operation} from './operation';
-import {TensorOps} from './tensor_ops';
+import {UnaryOps} from './unary_ops';
 
 export class SoftmaxOps {
   /**
@@ -136,11 +135,12 @@ export class SoftmaxOps {
         epsilon = 1e-10;
       }
 
-      const epsilonScalar = TensorOps.scalar(epsilon);
-      console.log(predictedProbs.dataSync());
-      const maxVals = BinaryOps.maximum(predictedProbs, epsilonScalar);
-      console.log(maxVals.dataSync());
-      const costVector = maxVals.log().mul(labels).neg();
+      const clippedPredictedProb =
+          UnaryOps.clipByValue(predictedProbs, epsilon, 1 - epsilon);
+
+      console.log({'clippedPredictedProb': clippedPredictedProb.dataSync()});
+      const costVector = clippedPredictedProb.log().mul(labels).neg();
+      console.log({'costVector': costVector.dataSync()});
 
       const value = costVector.sum([dim]) as O;
 
