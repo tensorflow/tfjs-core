@@ -16,6 +16,7 @@
  */
 
 import {doc} from '../doc';
+import {ENV} from '../environment';
 import {customGrad} from '../globals';
 import {Tensor} from '../tensor';
 import {convertToTensor} from '../tensor_util';
@@ -129,12 +130,17 @@ export class SoftmaxOps {
     // Use a custom gradient for numerical stability.
     const customOp = customGrad((labels, logits) => {
       const predictedProbs = logits.softmax(dim);
-      const epsilonScalar = TensorOps.scalar(1e-10);
+      let epsilon = 1e-5;
+
+      if (ENV.get('WEBGL_RENDER_FLOAT32_ENABLED')) {
+        epsilon = 1e-10;
+      }
+
+      const epsilonScalar = TensorOps.scalar(epsilon);
       console.log(predictedProbs.dataSync());
-      const costVector = BinaryOps.maximum(predictedProbs, epsilonScalar)
-                             .log()
-                             .mul(labels)
-                             .neg();
+      const maxVals = BinaryOps.maximum(predictedProbs, epsilonScalar);
+      console.log(maxVals.dataSync());
+      const costVector = maxVals.log().mul(labels).neg();
 
       const value = costVector.sum([dim]) as O;
 
