@@ -129,11 +129,15 @@ export class SoftmaxOps {
     // Use a custom gradient for numerical stability.
     const customOp = customGrad((labels, logits) => {
       const predictedProbs = logits.softmax(dim);
-      let epsilon = 1e-5;
+      let epsilon = 1e-4;
 
       if (ENV.get('WEBGL_RENDER_FLOAT32_ENABLED')) {
         epsilon = 1e-10;
       }
+
+      console.log({'epsilon': epsilon});
+      console.log({'sub epsilon': 1 - epsilon});
+      console.log({'predictedProbs': predictedProbs.dataSync()});
 
       const clippedPredictedProb =
           UnaryOps.clipByValue(predictedProbs, epsilon, 1 - epsilon);
