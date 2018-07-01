@@ -19,7 +19,7 @@ import {doc} from './doc';
 import {tensorToString} from './tensor_format';
 import {DataType, Rank, ShapeMap, TypedArray} from './types';
 import * as util from './util';
-import {computeStrides} from './util';
+import {assertNonNull, computeStrides} from './util';
 
 /** @hidden */
 export interface TensorData {
@@ -371,6 +371,9 @@ export class Tensor<R extends Rank = Rank> {
   protected constructor(
       shape: ShapeMap[R], dtype: DataType, values?: TypedArray,
       dataId?: DataId) {
+    util.assert(shape !== null, 'The shape field passed to the ' +
+        'tensor constructor is null. Please pass a non-null shape.');
+    assertNonNull(values);
     this.size = util.sizeFromShape(shape);
     if (values != null) {
       util.assert(
