@@ -16,7 +16,7 @@
  */
 
 import {doc} from '../doc';
-import {ENV} from '../environment';
+// import {ENV} from '../environment';
 import {customGrad} from '../globals';
 import {Tensor} from '../tensor';
 import {convertToTensor} from '../tensor_util';
@@ -25,7 +25,7 @@ import * as util from '../util';
 
 import * as axis_util from './axis_util';
 import {operation} from './operation';
-import {UnaryOps} from './unary_ops';
+// import {UnaryOps} from './unary_ops';
 
 export class SoftmaxOps {
   /**
@@ -128,22 +128,14 @@ export class SoftmaxOps {
     }
     // Use a custom gradient for numerical stability.
     const customOp = customGrad((labels, logits) => {
-      const predictedProbs = logits.softmax(dim);
-      let epsilon = 1e-4;
+      const keepDims = true;
+      const lse = logits.logSumExp([dim], keepDims);
+      console.log({'lse': lse.dataSync()});
 
-      if (ENV.get('WEBGL_RENDER_FLOAT32_ENABLED')) {
-        epsilon = 1e-10;
-      }
+      const logResult = logits.toFloat().sub(lse);
+      console.log({'logResult': logResult.dataSync()});
 
-      console.log({'epsilon': epsilon});
-      console.log({'sub epsilon': 1 - epsilon});
-      console.log({'predictedProbs': predictedProbs.dataSync()});
-
-      const clippedPredictedProb =
-          UnaryOps.clipByValue(predictedProbs, epsilon, 1 - epsilon);
-
-      console.log({'clippedPredictedProb': clippedPredictedProb.dataSync()});
-      const costVector = clippedPredictedProb.log().mul(labels).neg();
+      const costVector = logResult.mul(labels).neg();
       console.log({'costVector': costVector.dataSync()});
 
       const value = costVector.sum([dim]) as O;
@@ -151,8 +143,8 @@ export class SoftmaxOps {
       const gradFunc = (dy: O) => {
         const dyShape = axis_util.expandShapeToKeepDim(dy.shape, [dim]);
         return [
-          dy.reshape(dyShape).mul(labels.toFloat().sub(predictedProbs)),
-          dy.reshape(dyShape).mul(predictedProbs.sub(labels.toFloat())),
+          dy.reshape(dyShape).mul(labels.toFloat().sub(logResult.exp())),
+          dy.reshape(dyShape).mul(logResult.exp().sub(labels.toFloat())),
         ];
       };
       return {value, gradFunc};
