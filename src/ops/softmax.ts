@@ -16,7 +16,6 @@
  */
 
 import {doc} from '../doc';
-// import {ENV} from '../environment';
 import {customGrad} from '../globals';
 import {Tensor} from '../tensor';
 import {convertToTensor} from '../tensor_util';
@@ -25,7 +24,6 @@ import * as util from '../util';
 
 import * as axis_util from './axis_util';
 import {operation} from './operation';
-// import {UnaryOps} from './unary_ops';
 
 export class SoftmaxOps {
   /**
