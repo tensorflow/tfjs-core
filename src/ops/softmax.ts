@@ -128,15 +128,14 @@ export class SoftmaxOps {
     }
     // Use a custom gradient for numerical stability.
     const customOp = customGrad((labels, logits) => {
+      // Reference:
+      //   1. http://cs231n.github.io/linear-classify/#softmax
+      //   2. https://blog.feedly.com/tricks-of-the-trade-logsumexp/
       const keepDims = true;
       const lse = logits.logSumExp([dim], keepDims);
-      console.log({'lse': lse.dataSync()});
 
       const logResult = logits.toFloat().sub(lse);
-      console.log({'logResult': logResult.dataSync()});
-
       const costVector = logResult.mul(labels).neg();
-      console.log({'costVector': costVector.dataSync()});
 
       const value = costVector.sum([dim]) as O;
 
