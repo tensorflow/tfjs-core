@@ -286,6 +286,8 @@ export class Environment {
     } else if (feature === 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE') {
       return this.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') > 0 &&
           !device_util.isMobile();
+    } else if (feature === 'HAS_WEBGL') {
+      return this.get('WEBGL_VERSION') > 0;
     } else if (feature === 'WEBGL_VERSION') {
       if (isWebGLVersionEnabled(2, this.get('IS_BROWSER'))) {
         return 2;
