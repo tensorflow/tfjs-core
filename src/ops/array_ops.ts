@@ -20,6 +20,7 @@ import {ENV} from '../environment';
 // tslint:disable-next-line:max-line-length
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
 import {convertToTensor, convertToTensorArray} from '../tensor_util';
+// tslint:disable-next-line:max-line-length
 import {DataType, Rank, ShapeMap, TensorLike, TensorLike1D, TypedArray} from '../types';
 import * as util from '../util';
 
