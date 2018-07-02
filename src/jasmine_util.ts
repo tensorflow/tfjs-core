@@ -34,14 +34,14 @@ export function envSatisfiesConstraints(constraints: Features): boolean {
 
 export function describeWithFlags(
     name: string, constraints: Features, tests: () => void) {
-  registerTestBackends();
-
-  if (envSatisfiesConstraints(constraints)) {
-    TEST_ENVS.forEach(testEnv => {
-      const testName = name + ' ' + JSON.stringify(testEnv.features);
+  TEST_ENVS.forEach(testEnv => {
+    ENV.setFeatures(testEnv.features);
+    if (envSatisfiesConstraints(constraints)) {
+      const testName =
+          name + ' ' + testEnv.name + ' ' + JSON.stringify(testEnv.features);
       executeTests(testName, tests, testEnv);
-    });
-  }
+    }
+  });
 }
 
 export interface TestEnv {
@@ -62,25 +62,20 @@ setTestEnvs([
     factory: () => new MathBackendWebGL(),
     features: {'WEBGL_VERSION': 2}
   },
-  {name: 'test-cpu', factory: () => new MathBackendCPU(), features: {}}
+  {
+    name: 'test-cpu',
+    factory: () => new MathBackendCPU(),
+    features: {'HAS_WEBGL': false}
+  }
 ]);
 
 export function setTestEnvs(testEnvs: TestEnv[]) {
   TEST_ENVS = testEnvs;
 }
-export function registerTestBackends() {
-  TEST_ENVS.forEach(testBackend => {
-    if (ENV.findBackend(testBackend.name) != null) {
-      ENV.removeBackend(testBackend.name);
-    }
-    ENV.registerBackend(testBackend.name, testBackend.factory, 100);
-  });
-}
 
 function executeTests(testName: string, tests: () => void, testEnv: TestEnv) {
   describe(testName, () => {
     beforeAll(() => {
-      ENV.setFeatures(testEnv.features);
       ENV.registerBackend(testEnv.name, testEnv.factory, 1000);
       Environment.setBackend(testEnv.name);
     });
@@ -90,7 +85,8 @@ function executeTests(testName: string, tests: () => void, testEnv: TestEnv) {
     });
 
     afterEach(() => {
-      ENV.engine.endScope(null);
+      ENV.engine.endScope();
+      Environment.disposeVariables();
     });
 
     afterAll(() => {

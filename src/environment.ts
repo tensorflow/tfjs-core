@@ -328,7 +328,7 @@ export class Environment {
   private initBackend(backendType?: string, safeMode = false) {
     this.currentBackend = backendType;
     const backend = this.findBackend(backendType);
-    this.globalEngine = new Engine(backend, safeMode, this.get('DEBUG'));
+    this.globalEngine = new Engine(backend, safeMode, () => this.get('DEBUG'));
   }
 
   findBackend(name: string): KernelBackend {

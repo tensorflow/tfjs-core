@@ -89,7 +89,7 @@ export class Engine implements TensorManager {
 
   constructor(
       private backend: KernelBackend, public safeMode: boolean,
-      private debugMode: boolean) {
+      private debugMode: () => boolean) {
     // Create a default outer scope.
     this.activeScope = {track: []};
     this.scopeStack = [this.activeScope];
@@ -125,12 +125,18 @@ export class Engine implements TensorManager {
       // profiling.
     }
     this.startScope(name, gradMode);
-    const result = fn();
-    if (result instanceof Promise) {
-      console.error('Cannot return a Promise inside of tidy.');
+    let result: T;
+    try {
+      result = fn();
+      if (result instanceof Promise) {
+        console.error('Cannot return a Promise inside of tidy.');
+      }
+      this.endScope(result, gradMode);
+      return result;
+    } catch (ex) {
+      this.endScope(result, gradMode);
+      throw ex;
     }
-    this.endScope(result, gradMode);
-    return result;
   }
 
   runKernel<T extends Tensor, I extends NamedTensorMap>(
@@ -148,7 +154,7 @@ export class Engine implements TensorManager {
 
     // Stop recording to a tape when running a kernel.
     this.customGradientDepth++;
-    if (!this.debugMode) {
+    if (!this.debugMode()) {
       result = forwardFunc(this.backend, saveFunc);
     } else {
       result = this.profiler.profileKernel(
@@ -302,7 +308,7 @@ export class Engine implements TensorManager {
    * End a scope. Use this with startScope() to achieve the same functionality
    * as scope() without the need for a function closure.
    */
-  endScope(result: TensorContainer, gradientsMode = false) {
+  endScope(result?: TensorContainer, gradientsMode = false) {
     if (gradientsMode) {
       this.gradientScopeCount--;
       if (this.gradientScopeCount === 0) {
