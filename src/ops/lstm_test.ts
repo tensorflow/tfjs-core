@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import * as tf from '..';
+import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
 import {Tensor2D} from '../tensor';
 // tslint:disable-next-line:max-line-length
