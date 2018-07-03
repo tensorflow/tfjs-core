@@ -21,6 +21,8 @@ import {KernelBackend} from './kernels/backend';
 import {MathBackendCPU} from './kernels/backend_cpu';
 import {MathBackendWebGL} from './kernels/backend_webgl';
 
+Error.stackTraceLimit = Infinity;
+
 // Tests whether the current environment satisfies the set of constraints.
 export function envSatisfiesConstraints(constraints: Features): boolean {
   for (const key in constraints) {
@@ -30,6 +32,49 @@ export function envSatisfiesConstraints(constraints: Features): boolean {
     }
   }
   return true;
+}
+
+// tslint:disable-next-line:no-any
+declare let __karma__: any;
+
+function parseKarmaFlags(): void {
+  const args: string[] = __karma__.config.args;
+  let features: Features;
+  let backend: () => KernelBackend;
+  let name = '';
+
+  args.forEach((arg, i) => {
+    if (arg === '--features') {
+      features = JSON.parse(args[i + 1]);
+    } else if (arg === '--backend') {
+      const type = args[i + 1];
+      name = 'test-' + type;
+      if (type.toLowerCase() === 'cpu') {
+        backend = () => new MathBackendCPU();
+      } else if (type.toLowerCase() === 'webgl') {
+        backend = () => new MathBackendWebGL();
+      } else {
+        throw new Error(
+            `Unknown value ${type} for flag --backend. ` +
+            `Allowed values are 'cpu' or 'webgl'.`);
+      }
+    } else if (arg === '--name') {
+      name = args[i + 1];
+    }
+  });
+
+  if (features == null && backend == null) {
+    return;
+  }
+  if (features != null && backend == null) {
+    throw new Error(
+        '--backend flag is required when --features is present. ' +
+        'Available values are "webgl" or "cpu".');
+  }
+  if (features == null && backend != null) {
+    throw new Error('--features flag is required when --backend is present.');
+  }
+  setTestEnvs([{features, factory: backend, name}]);
 }
 
 export function describeWithFlags(
@@ -50,8 +95,7 @@ export interface TestEnv {
   features: Features;
 }
 
-export let TEST_ENVS: TestEnv[];
-setTestEnvs([
+export let TEST_ENVS: TestEnv[] = [
   {
     name: 'test-webgl1',
     factory: () => new MathBackendWebGL(),
@@ -67,7 +111,11 @@ setTestEnvs([
     factory: () => new MathBackendCPU(),
     features: {'HAS_WEBGL': false}
   }
-]);
+];
+
+if (typeof __karma__ !== 'undefined') {
+  parseKarmaFlags();
+}
 
 export function setTestEnvs(testEnvs: TestEnv[]) {
   TEST_ENVS = testEnvs;
@@ -76,6 +124,7 @@ export function setTestEnvs(testEnvs: TestEnv[]) {
 function executeTests(testName: string, tests: () => void, testEnv: TestEnv) {
   describe(testName, () => {
     beforeAll(() => {
+      ENV.setFeatures(testEnv.features);
       ENV.registerBackend(testEnv.name, testEnv.factory, 1000);
       Environment.setBackend(testEnv.name);
     });

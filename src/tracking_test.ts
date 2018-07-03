@@ -226,6 +226,7 @@ describeWithFlags('tidy', ALL_ENVS, () => {
     });
 
     expect(b.isDisposed).toBe(false);
+    b.dispose();
   });
 
   it('single argument', () => {

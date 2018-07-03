@@ -3,7 +3,7 @@ node_js:
   - '8'
   - '10'
 script:
-  - yarn && yarn build && yarn lint && yarn test-travis
+  - yarn && yarn build && yarn lint && ./scripts/test-travis.sh
 cache: yarn
 git:
   depth: 5

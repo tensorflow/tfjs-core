@@ -315,7 +315,7 @@ export class Environment {
   }
 
   setFeatures(features: Features) {
-    this.features = features;
+    this.features = Object.assign({}, features);
   }
 
   reset() {

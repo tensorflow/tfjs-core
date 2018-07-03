@@ -47,7 +47,7 @@
     "lint": "tslint -p . -t verbose",
     "coverage": "KARMA_COVERAGE=1 karma start --browsers='Chrome' --singleRun",
     "test": "karma start",
-    "test-travis": "./scripts/test-travis.sh"
+    "test-travis": "karma start --singleRun --reporters='dots,karma-typescript,BrowserStack' --hostname='bs-local.com'"
   },
   "dependencies": {
     "seedrandom": "~2.4.3"
