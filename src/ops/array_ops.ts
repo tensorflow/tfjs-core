@@ -697,6 +697,16 @@ export class ArrayOps {
     if ($x.rank === 0) {
       throw new Error('pad(scalar) is not defined. Pass non-scalar to pad');
     }
+
+    if (mode === 'reflect') {
+      paddings.forEach((p, i) => {
+        if (p[1] >= $x.shape[i]) {
+          throw new Error(`paddings must be less than the dimension size: ${
+              paddings[i]} not less than ${p[1]}`);
+        }
+      });
+    }
+
     // Pad introduces values around the original tensor, so the gradient
     // slices the original shape out of the gradient.
     const begin = paddings.map(p => p[0]);
