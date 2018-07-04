@@ -14,12 +14,18 @@
 # limitations under the License.
 # =============================================================================
 
+set -e
+
 if [[ $(node -v) = *v10* ]]; then
+  # Run the first karma separately so it can download the browser stack binary
+  # without conflicting with others.
+  yarn test-travis --browsers=bs_safari_mac --features {} --backend webgl
+  # Run the rest of the karma tests in parallel. These runs will reuse the
+  # already downloaded binary.
   node_modules/.bin/npm-run-all -p -c --aggregate-output \
-    "test-travis -- --browsers=bs_firefox_mac" \
-    "test-travis -- --browsers=bs_chrome_mac" \
-    "test-travis -- --browsers=bs_safari_mac --features {} --backend webgl" \
     "test-travis -- --browsers=bs_safari_mac --features '{\"HAS_WEBGL\": false}' --backend cpu" \
     "test-travis -- --browsers=bs_ios_11 --features {} --backend webgl" \
-    "test-travis -- --browsers=bs_ios_11 --features '{\"HAS_WEBGL\": false}' --backend cpu"
+    "test-travis -- --browsers=bs_ios_11 --features '{\"HAS_WEBGL\": false}' --backend cpu" \
+    "test-travis -- --browsers=bs_firefox_mac" \
+    "test-travis -- --browsers=bs_chrome_mac"
 fi
