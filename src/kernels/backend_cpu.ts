@@ -1413,7 +1413,8 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   pad<T extends Tensor>(
-      x: T, paddings: Array<[number, number]>, constantValue: number): T {
+      x: T, paddings: Array<[number, number]>, constantValue: number,
+      mode = 'constant'): T {
     const outShape = paddings.map(
         (p, i) => p[0] /* beforePad */ + x.shape[i] + p[1] /* afterPad */);
     const start = paddings.map(p => p[0]);
