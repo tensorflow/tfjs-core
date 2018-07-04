@@ -48,7 +48,7 @@ function parseKarmaFlags(): void {
       features = JSON.parse(args[i + 1]);
     } else if (arg === '--backend') {
       const type = args[i + 1];
-      name = 'test-' + type;
+      name = type;
       if (type.toLowerCase() === 'cpu') {
         backend = () => new MathBackendCPU();
       } else if (type.toLowerCase() === 'webgl') {
@@ -58,8 +58,6 @@ function parseKarmaFlags(): void {
             `Unknown value ${type} for flag --backend. ` +
             `Allowed values are 'cpu' or 'webgl'.`);
       }
-    } else if (arg === '--name') {
-      name = args[i + 1];
     }
   });
 
@@ -120,10 +118,12 @@ export function setTestEnvs(testEnvs: TestEnv[]) {
 
 function executeTests(testName: string, tests: () => void, testEnv: TestEnv) {
   describe(testName, () => {
+    const backendName = 'test-' + testEnv.name;
+
     beforeAll(() => {
       ENV.setFeatures(testEnv.features);
-      ENV.registerBackend(testEnv.name, testEnv.factory, 1000);
-      Environment.setBackend(testEnv.name);
+      ENV.registerBackend(backendName, testEnv.factory, 1000);
+      Environment.setBackend(backendName);
     });
 
     beforeEach(() => {
@@ -136,7 +136,7 @@ function executeTests(testName: string, tests: () => void, testEnv: TestEnv) {
     });
 
     afterAll(() => {
-      ENV.removeBackend(testEnv.name);
+      ENV.removeBackend(backendName);
       ENV.reset();
     });
 

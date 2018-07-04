@@ -16,8 +16,7 @@
  */
 
 import {describeWithFlags} from '../../jasmine_util';
-// tslint:disable-next-line:max-line-length
-import {expectArraysClose, expectNumbersClose, WEBGL_ENVS} from '../../test_util';
+import {expectArraysClose, expectNumbersClose} from '../../test_util';
 import {binSearchLastTrue, GPGPUContext} from './gpgpu_context';
 import * as tex_util from './tex_util';
 
@@ -153,7 +152,7 @@ describeWithFlags('GPGPUContext setOutputMatrixTexture', constraints, () => {
 });
 
 describeWithFlags(
-    'GPGPUContext setOutputPackedMatrixTexture', WEBGL_ENVS, () => {
+    'GPGPUContext setOutputPackedMatrixTexture', constraints, () => {
       let gpgpu: GPGPUContext;
       let texture: WebGLTexture;
 
@@ -266,7 +265,7 @@ describeWithFlags(
       });
     });
 
-describeWithFlags('GPGPUContext', WEBGL_ENVS, () => {
+describeWithFlags('GPGPUContext', constraints, () => {
   let gpgpu: GPGPUContext;
 
   beforeEach(() => {

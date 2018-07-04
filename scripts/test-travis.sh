@@ -15,19 +15,11 @@
 # =============================================================================
 
 if [[ $(node -v) = *v10* ]]; then
-  yarn test-travis --browsers='bs_firefox_mac' &
-
-  yarn test-travis --browsers='bs_chrome_mac' &
-
-  yarn test-travis --browsers='bs_safari_mac' \
-      --features '{}' --backend webgl &
-
-  yarn test-travis --browsers='bs_safari_mac' \
-      --features '{"HAS_WEBGL": false}' --backend cpu &
-
-  yarn test-travis --browsers='bs_ios_11' \
-      --features '{}' --backend webgl &
-
-  yarn test-travis --browsers='bs_ios_11' \
-      --features '{"HAS_WEBGL": false}' --backend cpu
+  node_modules/.bin/npm-run-all -p -c --aggregate-output \
+    "test-travis -- --browsers=bs_firefox_mac" \
+    "test-travis -- --browsers=bs_chrome_mac" \
+    "test-travis -- --browsers=bs_safari_mac --features {} --backend webgl" \
+    "test-travis -- --browsers=bs_safari_mac --features '{\"HAS_WEBGL\": false}' --backend cpu" \
+    "test-travis -- --browsers=bs_ios_11 --features {} --backend webgl" \
+    "test-travis -- --browsers=bs_ios_11 --features '{\"HAS_WEBGL\": false}' --backend cpu"
 fi
