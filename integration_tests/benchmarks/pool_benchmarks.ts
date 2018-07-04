@@ -37,11 +37,6 @@ function getPoolingOp(option: string): (
               strides: [number, number]|number) => {
         return x.maxPool(filterSize, strides, 'same');
       };
-    case 'min':
-      // return (x: tf.Tensor3D, filterSize: [number, number]|number,
-      //         strides: [number, number]|number) => {
-      //   return x.minPool(filterSize, strides, 'same');
-      // };
     case 'avg':
       return (x: tf.Tensor3D, filterSize: [number, number]|number,
               strides: [number, number]|number) => {
