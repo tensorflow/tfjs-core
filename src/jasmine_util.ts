@@ -37,8 +37,7 @@ export function envSatisfiesConstraints(constraints: Features): boolean {
 // tslint:disable-next-line:no-any
 declare let __karma__: any;
 
-function parseKarmaFlags(): void {
-  const args: string[] = __karma__.config.args;
+export function parseKarmaFlags(args: string[]): TestEnv {
   let features: Features;
   let backend: () => KernelBackend;
   let name = '';
@@ -62,14 +61,14 @@ function parseKarmaFlags(): void {
   });
 
   if (features == null && backend == null) {
-    return;
+    return null;
   }
   if (features != null && backend == null) {
     throw new Error(
         '--backend flag is required when --features is present. ' +
         'Available values are "webgl" or "cpu".');
   }
-  setTestEnvs([{features: features || {}, factory: backend, name}]);
+  return {features: features || {}, factory: backend, name};
 }
 
 export function describeWithFlags(
@@ -109,7 +108,10 @@ export let TEST_ENVS: TestEnv[] = [
 ];
 
 if (typeof __karma__ !== 'undefined') {
-  parseKarmaFlags();
+  const testEnv = parseKarmaFlags(__karma__.config.args);
+  if (testEnv) {
+    setTestEnvs([testEnv]);
+  }
 }
 
 export function setTestEnvs(testEnvs: TestEnv[]) {

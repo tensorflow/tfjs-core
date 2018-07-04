@@ -17,9 +17,10 @@
 set -e
 
 if [[ $(node -v) = *v10* ]]; then
-  # Run the first karma separately so it can download the browser stack binary
+  # Run the first karma separately so it can download the BrowserStack binary
   # without conflicting with others.
   yarn test-travis --browsers=bs_safari_mac --features {} --backend webgl
+
   # Run the rest of the karma tests in parallel. These runs will reuse the
   # already downloaded binary.
   node_modules/.bin/npm-run-all -p -c --aggregate-output \

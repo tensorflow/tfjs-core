@@ -15,103 +15,71 @@
  * =============================================================================
  */
 
-// import {ENV} from './environment';
-// import * as jasmine_util from './jasmine_util';
-// import {MathBackendCPU} from './kernels/backend_cpu';
+import * as tf from './index';
+import {envSatisfiesConstraints, parseKarmaFlags} from './jasmine_util';
+import {MathBackendCPU} from './kernels/backend_cpu';
+import {MathBackendWebGL} from './kernels/backend_webgl';
 
-// describe('canEmulateEnvironment', () => {
-//   beforeEach(() => {
-//     ENV.reset();
-//   });
-//   afterEach(() => {
-//     ENV.reset();
-//   });
+describe('jasmine_util.envSatisfiesConstraints', () => {
+  it('ENV satisfies empty constraints', () => {
+    expect(envSatisfiesConstraints({})).toBe(true);
+  });
 
-//   it('no registered backends', () => {
-//     const fakeFeatures = {'BACKEND': 'fake-webgl'};
+  it('ENV satisfies matching constraints', () => {
+    const c = {TEST_EPSILON: tf.ENV.get('TEST_EPSILON')};
+    expect(envSatisfiesConstraints(c)).toBe(true);
+  });
 
-//     expect(jasmine_util.envSatisfiesConstraints(fakeFeatures)).toBe(false);
-//   });
+  it('ENV does not satisfy mismatching constraints', () => {
+    const c = {TEST_EPSILON: tf.ENV.get('TEST_EPSILON') + 0.1};
+    expect(envSatisfiesConstraints(c)).toBe(false);
+  });
+});
 
-//   it('webgl backend, webgl emulation', () => {
-//     ENV.registerBackend('fake-webgl', () => new MathBackendCPU());
+describe('jasmine_util.parseKarmaFlags', () => {
+  it('parse empty args', () => {
+    const res = parseKarmaFlags([]);
+    expect(res).toBeNull();
+  });
 
-//     const fakeFeatures = {'BACKEND': 'fake-webgl'};
-//     expect(jasmine_util.envSatisfiesConstraints(fakeFeatures)).toBe(true);
+  it('--backend cpu', () => {
+    const res = parseKarmaFlags(['--backend', 'cpu']);
+    expect(res.name).toBe('cpu');
+    expect(res.features).toEqual({});
+    expect(res.factory() instanceof MathBackendCPU).toBe(true);
+  });
 
-//     ENV.removeBackend('fake-webgl');
-//   });
+  it('--backend webgl', () => {
+    const res = parseKarmaFlags(['--backend', 'webgl']);
+    expect(res.name).toBe('webgl');
+    expect(res.features).toEqual({});
+    expect(res.factory() instanceof MathBackendWebGL).toBe(true);
+  });
 
-//   it('webgl backend, tensorflow emulation', () => {
-//     ENV.registerBackend('fake-webgl', () => new MathBackendCPU());
+  it('--backend webgl --features {"IS_NODE": true}', () => {
+    const res = parseKarmaFlags(
+        ['--backend', 'webgl', '--features', '{"IS_NODE": true}']);
+    expect(res.name).toBe('webgl');
+    expect(res.features).toEqual({IS_NODE: true});
+    expect(res.factory() instanceof MathBackendWebGL).toBe(true);
+  });
 
-//     const fakeFeatures = {'BACKEND': 'fake-tensorflow'};
-//     expect(jasmine_util.envSatisfiesConstraints(fakeFeatures)).toBe(false);
+  it('"--backend unknown" throws error', () => {
+    expect(() => parseKarmaFlags(['--backend', 'unknown'])).toThrowError();
+  });
 
-//     ENV.removeBackend('fake-webgl');
-//   });
+  it('"--features {}" throws error since --backend is missing', () => {
+    expect(() => parseKarmaFlags(['--features', '{}'])).toThrowError();
+  });
 
-//   it('webgl backend, webgl 2.0 emulation on webgl 2.0', () => {
-//     ENV.registerBackend('fake-webgl', () => new MathBackendCPU());
-//     ENV.set('WEBGL_VERSION', 2);
+  it('"--backend cpu --features" throws error since features value is missing',
+     () => {
+       expect(() => parseKarmaFlags(['--backend', 'cpu', '--features']))
+           .toThrowError();
+     });
 
-//     const fakeFeatures = {'BACKEND': 'fake-webgl', 'WEBGL_VERSION': 2};
-//     expect(jasmine_util.envSatisfiesConstraints(fakeFeatures)).toBe(true);
-
-//     ENV.removeBackend('fake-webgl');
-//   });
-
-//   it('webgl backend, webgl 1.0 emulation on webgl 2.0', () => {
-//     ENV.registerBackend('fake-webgl', () => new MathBackendCPU());
-//     ENV.set('WEBGL_VERSION', 2);
-
-//     const fakeFeatures = {'BACKEND': 'fake-webgl', 'WEBGL_VERSION': 1};
-//     expect(jasmine_util.envSatisfiesConstraints(fakeFeatures)).toBe(true);
-//     ENV.removeBackend('fake-webgl');
-//   });
-
-//   it('webgl backend, webgl 2.0 emulation on webgl 1.0 fails', () => {
-//     ENV.registerBackend('fake-webgl', () => new MathBackendCPU());
-//     ENV.set('WEBGL_VERSION', 1);
-
-//     const fakeFeatures = {'BACKEND': 'fake-webgl', 'WEBGL_VERSION': 2};
-//     expect(jasmine_util.envSatisfiesConstraints(fakeFeatures)).toBe(false);
-
-//     ENV.removeBackend('fake-webgl');
-//   });
-
-//   it('webgl backend, webgl 1.0 no float emulation on webgl 2.0', () => {
-//     ENV.registerBackend('fake-webgl', () => new MathBackendCPU());
-//     ENV.set('WEBGL_VERSION', 2);
-//     ENV.set('WEBGL_RENDER_FLOAT32_ENABLED', true);
-
-//     // Emulates iOS.
-//     const fakeFeatures = {
-//       'BACKEND': 'fake-webgl',
-//       'WEBGL_VERSION': 1,
-//       'WEBGL_RENDER_FLOAT32_ENABLED': false
-//     };
-//     expect(jasmine_util.envSatisfiesConstraints(fakeFeatures)).toBe(true);
-
-//     ENV.removeBackend('fake-webgl');
-//   });
-
-//   it('webgl backend, webgl 1.0 no float emulation on webgl 1.0 no float',
-//      () => {
-//        ENV.registerBackend('fake-webgl', () => new MathBackendCPU());
-//        ENV.set('WEBGL_VERSION', 1);
-//        ENV.set('WEBGL_RENDER_FLOAT32_ENABLED', false);
-//        ENV.set('WEBGL_DOWNLOAD_FLOAT_ENABLED', false);
-
-//        // Emulates iOS.
-//        const fakeFeatures = {
-//          'BACKEND': 'fake-webgl',
-//          'WEBGL_VERSION': 1,
-//          'WEBGL_RENDER_FLOAT32_ENABLED': false,
-//          'WEBGL_DOWNLOAD_FLOAT_ENABLED': false
-//        };
-//        expect(jasmine_util.envSatisfiesConstraints(fakeFeatures)).toBe(true);
-
-//        ENV.removeBackend('fake-webgl');
-//      });
-// });
+  it('"--backend cpu --features notJson" throws error', () => {
+    expect(() => parseKarmaFlags(['--backend', 'cpu', '--features', 'notJson']))
+        .toThrowError();
+  });
+});

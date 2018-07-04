@@ -20,8 +20,6 @@ import {MathBackendCPU} from './kernels/backend_cpu';
 // tslint:disable-next-line:no-require-imports
 const jasmineCtor = require('jasmine');
 
-Error.stackTraceLimit = Infinity;
-
 const IGNORE_LIST: string[] = [
   // See https://github.com/tensorflow/tfjs/issues/161
   'depthwiseConv2D',   // Requires space_to_batch() for dilation > 1.
