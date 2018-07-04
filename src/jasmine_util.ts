@@ -71,10 +71,7 @@ function parseKarmaFlags(): void {
         '--backend flag is required when --features is present. ' +
         'Available values are "webgl" or "cpu".');
   }
-  if (features == null && backend != null) {
-    throw new Error('--features flag is required when --backend is present.');
-  }
-  setTestEnvs([{features, factory: backend, name}]);
+  setTestEnvs([{features: features || {}, factory: backend, name}]);
 }
 
 export function describeWithFlags(

@@ -15,14 +15,17 @@
  * =============================================================================
  */
 
-// tslint:disable-next-line:max-line-length
-import {expectArraysClose, expectNumbersClose, WEBGL_ENVS} from '../../test_util';
 import {describeWithFlags} from '../../jasmine_util';
+import {expectArraysClose, expectNumbersClose} from '../../test_util';
 import {GPGPUContext} from './gpgpu_context';
 import * as mulmat_packed_gpu from './mulmat_packed_gpu';
 import {MatrixOrientation} from './mulmat_packed_gpu';
 
-describeWithFlags('mulmat_packed_gpu (1x1 * 1x1)', WEBGL_ENVS, () => {
+const constraints = {
+  'WEBGL_DOWNLOAD_FLOAT_ENABLED': true
+};
+
+describeWithFlags('mulmat_packed_gpu (1x1 * 1x1)', constraints, () => {
   it('returns a 1x1 matrix', () => {
     const a = new Float32Array([0]);
     const b = new Float32Array([0]);
@@ -80,7 +83,7 @@ describeWithFlags('mulmat_packed_gpu (1x1 * 1x1)', WEBGL_ENVS, () => {
   });
 });
 
-describeWithFlags('mulmat_packed_gpu (dot product)', WEBGL_ENVS, () => {
+describeWithFlags('mulmat_packed_gpu (dot product)', constraints, () => {
   it('returns a 1x1 matrix', () => {
     const a = new Float32Array(5);
     const b = new Float32Array(5);
@@ -144,7 +147,7 @@ function cpuMul2x2(a: Float32Array, b: Float32Array): Float32Array {
   return result;
 }
 
-describeWithFlags('mulmat_packed_gpu (2x2 * 2x2)', WEBGL_ENVS, () => {
+describeWithFlags('mulmat_packed_gpu (2x2 * 2x2)', constraints, () => {
   it('returns a 2x2 matrix', () => {
     const a = new Float32Array([0, 0, 0, 0]);
     const b = new Float32Array([0, 0, 0, 0]);
@@ -202,7 +205,7 @@ describeWithFlags('mulmat_packed_gpu (2x2 * 2x2)', WEBGL_ENVS, () => {
   });
 });
 
-describeWithFlags('mulmat_packed_gpu (different shapes)', WEBGL_ENVS, () => {
+describeWithFlags('mulmat_packed_gpu (different shapes)', constraints, () => {
   it('returns a 4x1 when multiplying a 4x4 with a 4x1', () => {
     const a = new Float32Array(16);
     const b = new Float32Array(4);
@@ -255,7 +258,7 @@ describeWithFlags('mulmat_packed_gpu (different shapes)', WEBGL_ENVS, () => {
   });
 });
 
-describeWithFlags('mulmat_packed_gpu (large matrices)', WEBGL_ENVS, () => {
+describeWithFlags('mulmat_packed_gpu (large matrices)', constraints, () => {
   it('returns 128x128 when multiplying 2 128x128s', () => {
     const a = new Float32Array(128 * 128);
     const b = new Float32Array(128 * 128);
@@ -274,7 +277,7 @@ describeWithFlags('mulmat_packed_gpu (large matrices)', WEBGL_ENVS, () => {
   });
 });
 
-describeWithFlags('mulmat_packed_gpu (multiple matrices)', WEBGL_ENVS, () => {
+describeWithFlags('mulmat_packed_gpu (multiple matrices)', constraints, () => {
   it('4x2 * 2x12 * 12x1 === 4x1', () => {
     const aData = new Float32Array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]);
     const bData = new Float32Array([
@@ -325,7 +328,7 @@ describeWithFlags('mulmat_packed_gpu (multiple matrices)', WEBGL_ENVS, () => {
   });
 });
 
-describeWithFlags('mulmat_packed_gpu A * B^t', WEBGL_ENVS, () => {
+describeWithFlags('mulmat_packed_gpu A * B^t', constraints, () => {
   it('1x1 * 1x1', () => {
     const a = new Float32Array([2]);
     const b = new Float32Array([3]);
@@ -373,37 +376,38 @@ describeWithFlags('mulmat_packed_gpu A * B^t', WEBGL_ENVS, () => {
   });
 });
 
-describeWithFlags('mulmat_packed_gpu (transposed versions)', WEBGL_ENVS, () => {
-  it('A * B^t', () => {
-    const a = new Float32Array([1, 2, 3, 4, 5, 6]);
-    const b = new Float32Array([1, 0, 2, 4, 3, 0]);
-    const c = mulmat_packed_gpu.uploadMultiplyMatrixPackedDownload(
-        a, [2, 3], b, [2, 3], MatrixOrientation.REGULAR,
-        MatrixOrientation.TRANSPOSED);
-    const expected = new Float32Array([7, 10, 16, 31]);
-    expect(c).toEqual(expected);
-  });
+describeWithFlags(
+    'mulmat_packed_gpu (transposed versions)', constraints, () => {
+      it('A * B^t', () => {
+        const a = new Float32Array([1, 2, 3, 4, 5, 6]);
+        const b = new Float32Array([1, 0, 2, 4, 3, 0]);
+        const c = mulmat_packed_gpu.uploadMultiplyMatrixPackedDownload(
+            a, [2, 3], b, [2, 3], MatrixOrientation.REGULAR,
+            MatrixOrientation.TRANSPOSED);
+        const expected = new Float32Array([7, 10, 16, 31]);
+        expect(c).toEqual(expected);
+      });
 
-  it('A^t * B', () => {
-    const a = new Float32Array([1, 2, 3, 4, 5, 6]);
-    const b = new Float32Array([1, 0, 2, 4, 3, 0]);
-    const c = mulmat_packed_gpu.uploadMultiplyMatrixPackedDownload(
-        a, [2, 3], b, [2, 3], MatrixOrientation.TRANSPOSED,
-        MatrixOrientation.REGULAR);
-    const expected = new Float32Array([17, 12, 2, 22, 15, 4, 27, 18, 6]);
-    expect(c).toEqual(expected);
-  });
+      it('A^t * B', () => {
+        const a = new Float32Array([1, 2, 3, 4, 5, 6]);
+        const b = new Float32Array([1, 0, 2, 4, 3, 0]);
+        const c = mulmat_packed_gpu.uploadMultiplyMatrixPackedDownload(
+            a, [2, 3], b, [2, 3], MatrixOrientation.TRANSPOSED,
+            MatrixOrientation.REGULAR);
+        const expected = new Float32Array([17, 12, 2, 22, 15, 4, 27, 18, 6]);
+        expect(c).toEqual(expected);
+      });
 
-  it('A^t * B^t', () => {
-    const a = new Float32Array([1, 2, 3, 4, 5, 6]);
-    const b = new Float32Array([1, 0, 2, 4, 3, 0]);
-    const c = mulmat_packed_gpu.uploadMultiplyMatrixPackedDownload(
-        a, [3, 2], b, [2, 3], MatrixOrientation.TRANSPOSED,
-        MatrixOrientation.TRANSPOSED);
-    const expected = new Float32Array([11, 13, 14, 20]);
-    expect(c).toEqual(expected);
-  });
-});
+      it('A^t * B^t', () => {
+        const a = new Float32Array([1, 2, 3, 4, 5, 6]);
+        const b = new Float32Array([1, 0, 2, 4, 3, 0]);
+        const c = mulmat_packed_gpu.uploadMultiplyMatrixPackedDownload(
+            a, [3, 2], b, [2, 3], MatrixOrientation.TRANSPOSED,
+            MatrixOrientation.TRANSPOSED);
+        const expected = new Float32Array([11, 13, 14, 20]);
+        expect(c).toEqual(expected);
+      });
+    });
 
 function randomArrayInRange(
     n: number, minValue: number, maxValue: number): Float32Array {

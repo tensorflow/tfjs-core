@@ -21,7 +21,11 @@ import {expectArraysClose, expectNumbersClose, WEBGL_ENVS} from '../../test_util
 import {binSearchLastTrue, GPGPUContext} from './gpgpu_context';
 import * as tex_util from './tex_util';
 
-describeWithFlags('GPGPUContext downloadMatrixFromTexture', WEBGL_ENVS, () => {
+const constraints = {
+  'WEBGL_DOWNLOAD_FLOAT_ENABLED': true
+};
+
+describeWithFlags('GPGPUContext downloadMatrixFromTexture', constraints, () => {
   let gpgpu: GPGPUContext;
   let texture: WebGLTexture;
 
@@ -65,7 +69,7 @@ describeWithFlags('GPGPUContext downloadMatrixFromTexture', WEBGL_ENVS, () => {
   });
 });
 
-describeWithFlags('GPGPUContext color texture with float', WEBGL_ENVS, () => {
+describeWithFlags('GPGPUContext color texture with float', constraints, () => {
   let gpgpu: GPGPUContext;
   let texture: WebGLTexture;
 
@@ -87,7 +91,7 @@ describeWithFlags('GPGPUContext color texture with float', WEBGL_ENVS, () => {
   });
 });
 
-describeWithFlags('GPGPUContext setOutputMatrixTexture', WEBGL_ENVS, () => {
+describeWithFlags('GPGPUContext setOutputMatrixTexture', constraints, () => {
   let gpgpu: GPGPUContext;
   let texture: WebGLTexture;
 
@@ -183,79 +187,84 @@ describeWithFlags(
       });
     });
 
-describeWithFlags('GPGPUContext setOutputMatrixWriteRegion', WEBGL_ENVS, () => {
-  let gpgpu: GPGPUContext;
-  let program: WebGLProgram;
-  let output: WebGLTexture;
+describeWithFlags(
+    'GPGPUContext setOutputMatrixWriteRegion   ', constraints, () => {
+      let gpgpu: GPGPUContext;
+      let program: WebGLProgram;
+      let output: WebGLTexture;
 
-  beforeEach(() => {
-    gpgpu = new GPGPUContext();
-    gpgpu.enableAutomaticDebugValidation(true);
-    const src =
-        'precision highp float; void main() { gl_FragColor = vec4(2,0,0,0); }';
-    program = gpgpu.createProgram(src);
-    output = gpgpu.createFloat32MatrixTexture(4, 4);
-    gpgpu.uploadMatrixToTexture(output, 4, 4, new Float32Array(16));
-    gpgpu.setOutputMatrixTexture(output, 4, 4);
-    gpgpu.setProgram(program);
-  });
+      beforeEach(() => {
+        gpgpu = new GPGPUContext();
+        gpgpu.enableAutomaticDebugValidation(true);
+        const src =
+            'precision highp float; void main(){gl_FragColor = vec4(2,0,0,0);}';
+        program = gpgpu.createProgram(src);
+        output = gpgpu.createFloat32MatrixTexture(4, 4);
+        gpgpu.uploadMatrixToTexture(output, 4, 4, new Float32Array(16));
+        gpgpu.setOutputMatrixTexture(output, 4, 4);
+        gpgpu.setProgram(program);
+      });
 
-  afterEach(() => {
-    gpgpu.deleteMatrixTexture(output);
-    gpgpu.deleteProgram(program);
-    gpgpu.dispose();
-  });
+      afterEach(() => {
+        gpgpu.deleteMatrixTexture(output);
+        gpgpu.deleteProgram(program);
+        gpgpu.dispose();
+      });
 
-  it('writes to all pixels by default', () => {
-    gpgpu.executeProgram();
-    const result = gpgpu.downloadFloat32MatrixFromOutputTexture(output, 4, 4);
-    const expected = new Float32Array(4 * 4);
-    expected.fill(2);
-    expectArraysClose(result, expected);
-  });
-
-  it('sets the scissor box to the requested parameters', () => {
-    gpgpu.setOutputMatrixWriteRegion(0, 1, 2, 3);
-    const scissorBox = gpgpu.gl.getParameter(gpgpu.gl.SCISSOR_BOX);
-    expect(scissorBox[0]).toEqual(2);
-    expect(scissorBox[1]).toEqual(0);
-    expect(scissorBox[2]).toEqual(3);
-    expect(scissorBox[3]).toEqual(1);
-  });
-
-  it('writes only to center 2x2 region of 4x4 texture', () => {
-    gpgpu.setOutputMatrixWriteRegion(1, 2, 1, 2);
-    gpgpu.executeProgram();
-    const result = gpgpu.downloadFloat32MatrixFromOutputTexture(output, 4, 4);
-    const expected =
-        new Float32Array([0, 0, 0, 0, 0, 2, 2, 0, 0, 2, 2, 0, 0, 0, 0, 0]);
-    expectArraysClose(result, expected);
-  });
-
-  it('preserves data from previous writes outside of write region', () => {
-    gpgpu.setOutputMatrixWriteRegion(0, 1, 0, 4);  // top row
-    gpgpu.executeProgram();
-    gpgpu.setOutputMatrixWriteRegion(3, 1, 0, 4);  // bottom row
-    gpgpu.executeProgram();
-    const result = gpgpu.downloadFloat32MatrixFromOutputTexture(output, 4, 4);
-    const expected =
-        new Float32Array([2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2]);
-    expectArraysClose(result, expected);
-  });
-
-  it('writes adjacent cells across multiple calls', () => {
-    for (let row = 0; row < 4; ++row) {
-      for (let col = 0; col < 4; ++col) {
-        gpgpu.setOutputMatrixWriteRegion(row, 1, col, 1);
+      it('writes to all pixels by default', () => {
         gpgpu.executeProgram();
-      }
-    }
-    const result = gpgpu.downloadFloat32MatrixFromOutputTexture(output, 4, 4);
-    const expected = new Float32Array(4 * 4);
-    expected.fill(2);
-    expectArraysClose(result, expected);
-  });
-});
+        const result =
+            gpgpu.downloadFloat32MatrixFromOutputTexture(output, 4, 4);
+        const expected = new Float32Array(4 * 4);
+        expected.fill(2);
+        expectArraysClose(result, expected);
+      });
+
+      it('sets the scissor box to the requested parameters', () => {
+        gpgpu.setOutputMatrixWriteRegion(0, 1, 2, 3);
+        const scissorBox = gpgpu.gl.getParameter(gpgpu.gl.SCISSOR_BOX);
+        expect(scissorBox[0]).toEqual(2);
+        expect(scissorBox[1]).toEqual(0);
+        expect(scissorBox[2]).toEqual(3);
+        expect(scissorBox[3]).toEqual(1);
+      });
+
+      it('writes only to center 2x2 region of 4x4 texture', () => {
+        gpgpu.setOutputMatrixWriteRegion(1, 2, 1, 2);
+        gpgpu.executeProgram();
+        const result =
+            gpgpu.downloadFloat32MatrixFromOutputTexture(output, 4, 4);
+        const expected =
+            new Float32Array([0, 0, 0, 0, 0, 2, 2, 0, 0, 2, 2, 0, 0, 0, 0, 0]);
+        expectArraysClose(result, expected);
+      });
+
+      it('preserves data from previous writes outside of write region', () => {
+        gpgpu.setOutputMatrixWriteRegion(0, 1, 0, 4);  // top row
+        gpgpu.executeProgram();
+        gpgpu.setOutputMatrixWriteRegion(3, 1, 0, 4);  // bottom row
+        gpgpu.executeProgram();
+        const result =
+            gpgpu.downloadFloat32MatrixFromOutputTexture(output, 4, 4);
+        const expected =
+            new Float32Array([2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2]);
+        expectArraysClose(result, expected);
+      });
+
+      it('writes adjacent cells across multiple calls', () => {
+        for (let row = 0; row < 4; ++row) {
+          for (let col = 0; col < 4; ++col) {
+            gpgpu.setOutputMatrixWriteRegion(row, 1, col, 1);
+            gpgpu.executeProgram();
+          }
+        }
+        const result =
+            gpgpu.downloadFloat32MatrixFromOutputTexture(output, 4, 4);
+        const expected = new Float32Array(4 * 4);
+        expected.fill(2);
+        expectArraysClose(result, expected);
+      });
+    });
 
 describeWithFlags('GPGPUContext', WEBGL_ENVS, () => {
   let gpgpu: GPGPUContext;

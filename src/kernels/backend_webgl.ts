@@ -238,14 +238,12 @@ export class MathBackendWebGL implements KernelBackend {
 
       const tmpInput = Tensor.make(shape, {dataId}, dtype);
       const program = new EncodeFloatProgram(shape);
-      const res = this.compileAndRun(program, [tmpInput], tmpTarget);
-
+      this.compileAndRun(program, [tmpInput], tmpTarget);
       const tmpData = this.texData.get(tmpTarget.dataId);
       float32Values =
           this.gpgpu.downloadByteEncodedFloatMatrixFromOutputTexture(
               tmpData.texture, tmpData.texShape[0], tmpData.texShape[1]);
 
-      res.dispose();
       tmpInput.dispose();
       tmpTarget.dispose();
     }
@@ -1173,9 +1171,10 @@ export class MathBackendWebGL implements KernelBackend {
 
     gpgpu_math.runProgram(binary, inputsData, outputData, customSetup);
 
-    if (this.numBytesInGPU > this.NUM_BYTES_BEFORE_PAGING) {
+    if (!(program instanceof EncodeFloatProgram) &&
+        this.numBytesInGPU > this.NUM_BYTES_BEFORE_PAGING) {
       let numBytesToPage = this.numBytesInGPU - this.NUM_BYTES_BEFORE_PAGING;
-      while (numBytesToPage > 0) {
+      while (numBytesToPage > 0 && this.lruDataGPU.length > 0) {
         const dataId = this.lruDataGPU.shift();
         const {shape, dtype} = this.texData.get(dataId);
         numBytesToPage -= this.computeBytes(shape, dtype);
@@ -1238,8 +1237,11 @@ export class MathBackendWebGL implements KernelBackend {
     if (texture != null) {
       // Array is already on GPU. No-op.
       // Touching the texture.
-      this.lruDataGPU.splice(this.lruDataGPU.indexOf(dataId), 1);
-      this.lruDataGPU.push(dataId);
+      const index = this.lruDataGPU.indexOf(dataId);
+      if (index >= 0) {
+        this.lruDataGPU.splice(this.lruDataGPU.indexOf(dataId), 1);
+        this.lruDataGPU.push(dataId);
+      }
       return;
     }
     const shouldTimeProgram = this.activeTimers != null;
