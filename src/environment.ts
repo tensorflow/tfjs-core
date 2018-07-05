@@ -273,6 +273,8 @@ export class Environment {
           (typeof process.versions.node !== 'undefined');
     } else if (feature === 'IS_CHROME') {
       return isChrome();
+    } else if (feature === 'IS_TEST') {
+      return false;
     } else if (feature === 'BACKEND') {
       return this.getBestBackendType();
     } else if (feature === 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') {

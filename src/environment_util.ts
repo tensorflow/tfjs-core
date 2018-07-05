@@ -51,6 +51,8 @@ export interface Features {
   // float32 textures.
   'TEST_EPSILON'?: number;
   'IS_CHROME'?: boolean;
+  // True if running unit tests.
+  'IS_TEST'?: boolean;
 }
 
 export enum Type {

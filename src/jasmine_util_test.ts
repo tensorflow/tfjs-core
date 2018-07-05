@@ -16,9 +16,11 @@
  */
 
 import * as tf from './index';
-import {envSatisfiesConstraints, parseKarmaFlags} from './jasmine_util';
+// tslint:disable-next-line:max-line-length
+import {describeWithFlags, envSatisfiesConstraints, parseKarmaFlags} from './jasmine_util';
 import {MathBackendCPU} from './kernels/backend_cpu';
 import {MathBackendWebGL} from './kernels/backend_webgl';
+import {WEBGL_ENVS} from './test_util';
 
 describe('jasmine_util.envSatisfiesConstraints', () => {
   it('ENV satisfies empty constraints', () => {
@@ -49,19 +51,12 @@ describe('jasmine_util.parseKarmaFlags', () => {
     expect(res.factory() instanceof MathBackendCPU).toBe(true);
   });
 
-  it('--backend webgl', () => {
-    const res = parseKarmaFlags(['--backend', 'webgl']);
-    expect(res.name).toBe('webgl');
-    expect(res.features).toEqual({});
-    expect(res.factory() instanceof MathBackendWebGL).toBe(true);
-  });
-
-  it('--backend webgl --features {"IS_NODE": true}', () => {
+  it('--backend cpu --features {"IS_NODE": true}', () => {
     const res = parseKarmaFlags(
-        ['--backend', 'webgl', '--features', '{"IS_NODE": true}']);
-    expect(res.name).toBe('webgl');
+        ['--backend', 'cpu', '--features', '{"IS_NODE": true}']);
+    expect(res.name).toBe('cpu');
     expect(res.features).toEqual({IS_NODE: true});
-    expect(res.factory() instanceof MathBackendWebGL).toBe(true);
+    expect(res.factory() instanceof MathBackendCPU).toBe(true);
   });
 
   it('"--backend unknown" throws error', () => {
@@ -81,5 +76,14 @@ describe('jasmine_util.parseKarmaFlags', () => {
   it('"--backend cpu --features notJson" throws error', () => {
     expect(() => parseKarmaFlags(['--backend', 'cpu', '--features', 'notJson']))
         .toThrowError();
+  });
+});
+
+describeWithFlags('jasmine_util.envSatisfiesConstraints', WEBGL_ENVS, () => {
+  it('--backend webgl', () => {
+    const res = parseKarmaFlags(['--backend', 'webgl']);
+    expect(res.name).toBe('webgl');
+    expect(res.features).toEqual({});
+    expect(res.factory() instanceof MathBackendWebGL).toBe(true);
   });
 });

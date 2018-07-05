@@ -27,6 +27,7 @@ import {NamedTensorMap, NamedVariableMap, TensorContainer} from './tensor_types'
 import {getTensorsInContainer, isTensorInList} from './tensor_util';
 import {TypedArray} from './types';
 import * as util from './util';
+import {now} from './util';
 
 /**
  * A function that computes an output. The save function is for saving tensors
@@ -455,9 +456,9 @@ export class Engine implements TensorManager {
     return this.backend.fromPixels(pixels, numChannels);
   }
   async time(query: () => void): Promise<TimingInfo> {
-    const start = performance.now();
+    const start = now();
     const timingInfo = await this.backend.time(query) as TimingInfo;
-    timingInfo.wallMs = performance.now() - start;
+    timingInfo.wallMs = now() - start;
     return timingInfo;
   }
 

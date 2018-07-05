@@ -32,7 +32,7 @@ const IGNORE_LIST: string[] = [
 ];
 
 setTestEnvs(
-    [{name: 'test-cpu', factory: () => new MathBackendCPU(), features: {}}]);
+    [{name: 'node', factory: () => new MathBackendCPU(), features: {}}]);
 
 const runner = new jasmineCtor();
 runner.loadConfig({spec_files: ['src/**/*_test.ts']});

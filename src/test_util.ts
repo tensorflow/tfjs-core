@@ -21,15 +21,15 @@ import {Tensor} from './tensor';
 import {TypedArray} from './types';
 import * as util from './util';
 
+// TODO(smilkov): Move these constants to jasmine_util.
 export const WEBGL_ENVS: Features = {
   'HAS_WEBGL': true
 };
 export const CPU_ENVS: Features = {
   'HAS_WEBGL': false
 };
-export const CHROME_CPU_ENVS: Features = {
-  'IS_CHROME': true,
-  'HAS_WEBGL': false
+export const CHROME_ENVS: Features = {
+  'IS_CHROME': true
 };
 export const BROWSER_ENVS: Features = {
   'IS_BROWSER': true

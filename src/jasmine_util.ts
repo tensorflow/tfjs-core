@@ -124,6 +124,7 @@ function executeTests(testName: string, tests: () => void, testEnv: TestEnv) {
 
     beforeAll(() => {
       ENV.setFeatures(testEnv.features);
+      ENV.set('IS_TEST', true);
       ENV.registerBackend(backendName, testEnv.factory, 1000);
       Environment.setBackend(backendName);
     });
