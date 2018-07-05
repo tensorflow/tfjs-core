@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copyright 2017 Google Inc. All Rights Reserved.
+# Copyright 2018 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,13 +21,13 @@ yarn test-node
 
 # Run the first karma separately so it can download the BrowserStack binary
 # without conflicting with others.
-yarn test-travis --browsers=bs_safari_mac --features {} --backend webgl
+yarn test-travis --browsers=bs_safari_mac --backend webgl
 
 # Run the rest of the karma tests in parallel. These runs will reuse the
 # already downloaded binary.
 npm-run-all -p -c --aggregate-output \
-  "test-travis -- --browsers=bs_safari_mac --features '{\"HAS_WEBGL\": false}' --backend cpu" \
-  "test-travis -- --browsers=bs_ios_11 --features {} --backend webgl" \
-  "test-travis -- --browsers=bs_ios_11 --features '{\"HAS_WEBGL\": false}' --backend cpu" \
-  "test-travis -- --browsers=bs_firefox_mac" \
-  "test-travis -- --browsers=bs_chrome_mac"
+  "test-travis --browsers=bs_safari_mac --features '{\"HAS_WEBGL\": false}' --backend cpu" \
+  "test-travis --browsers=bs_ios_11 --backend webgl" \
+  "test-travis --browsers=bs_ios_11 --features '{\"HAS_WEBGL\": false}' --backend cpu" \
+  "test-travis --browsers=bs_firefox_mac" \
+  "test-travis --browsers=bs_chrome_mac"
