@@ -18,41 +18,11 @@
 import {setTestEnvs} from './jasmine_util';
 import {MathBackendCPU} from './kernels/backend_cpu';
 // tslint:disable-next-line:no-require-imports
-const jasmineCtor = require('jasmine');
-
-const IGNORE_LIST: string[] = [
-  // See https://github.com/tensorflow/tfjs/issues/161
-  'depthwiseConv2D',   // Requires space_to_batch() for dilation > 1.
-  'separableConv2d',   // Requires space_to_batch() for dilation > 1.
-  'IORouterRegistry',  // https://github.com/tensorflow/tfjs/issues/303
-  // https://github.com/tensorflow/tfjs/issues/417
-  'unsortedSegmentSum', 'gather {} gradient',
-  // https://github.com/tensorflow/tfjs/issues/279
-  'arrayBufferToBase64String', 'stringByteLength'
-];
+const jasmine = require('jasmine');
 
 setTestEnvs(
     [{name: 'node', factory: () => new MathBackendCPU(), features: {}}]);
 
-const runner = new jasmineCtor();
-runner.loadConfig({spec_files: ['src/**/*_test.ts']});
-
-if (process.env.JASMINE_SEED) {
-  runner.seed(process.env.JASMINE_SEED);
-}
-
-const env = jasmine.getEnv();
-
-// Filter method that returns boolean, if a given test should return.
-env.specFilter = spec => {
-  // Return false (skip the test) if the test is in the ignore list.
-  for (let i = 0; i < IGNORE_LIST.length; ++i) {
-    if (spec.getFullName().startsWith(IGNORE_LIST[i])) {
-      return false;
-    }
-  }
-  // Otherwise run the test.
-  return true;
-};
-
+const runner = new jasmine();
+runner.loadConfig({spec_files: ['src/**/*_test.ts'], random: false});
 runner.execute();

@@ -123,6 +123,7 @@ function executeTests(testName: string, tests: () => void, testEnv: TestEnv) {
     const backendName = 'test-' + testEnv.name;
 
     beforeAll(() => {
+      ENV.reset();
       ENV.setFeatures(testEnv.features);
       ENV.set('IS_TEST', true);
       ENV.registerBackend(backendName, testEnv.factory, 1000);

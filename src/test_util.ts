@@ -25,8 +25,8 @@ import * as util from './util';
 export const WEBGL_ENVS: Features = {
   'HAS_WEBGL': true
 };
-export const CPU_ENVS: Features = {
-  'HAS_WEBGL': false
+export const NODE_ENVS: Features = {
+  'IS_NODE': true
 };
 export const CHROME_ENVS: Features = {
   'IS_CHROME': true
