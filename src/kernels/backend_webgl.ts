@@ -238,7 +238,7 @@ export class MathBackendWebGL implements KernelBackend {
 
       const tmpInput = Tensor.make(shape, {dataId}, dtype);
       const program = new EncodeFloatProgram(shape);
-      this.compileAndRun(program, [tmpInput], tmpTarget);
+      this.compileAndRun(program, [tmpInput], tmpTarget, null, false);
       const tmpData = this.texData.get(tmpTarget.dataId);
       float32Values =
           this.gpgpu.downloadByteEncodedFloatMatrixFromOutputTexture(
@@ -1139,8 +1139,8 @@ export class MathBackendWebGL implements KernelBackend {
 
   private compileAndRun<T extends Tensor, K extends Tensor>(
       program: GPGPUProgram, inputs: T[], output?: K,
-      customSetup?: (gpgpu: GPGPUContext, webGLProgram: WebGLProgram) => void):
-      K {
+      customSetup?: (gpgpu: GPGPUContext, webGLProgram: WebGLProgram) => void,
+      pageToCpu = true): K {
     if (output == null) {
       output = this.makeOutputArray(program.outputShape, inputs[0].dtype);
     }
@@ -1172,8 +1172,7 @@ export class MathBackendWebGL implements KernelBackend {
 
     gpgpu_math.runProgram(binary, inputsData, outputData, customSetup);
 
-    if (!(program instanceof EncodeFloatProgram) &&
-        this.numBytesInGPU > this.NUM_BYTES_BEFORE_PAGING) {
+    if (pageToCpu && this.numBytesInGPU > this.NUM_BYTES_BEFORE_PAGING) {
       let numBytesToPage = this.numBytesInGPU - this.NUM_BYTES_BEFORE_PAGING;
       while (numBytesToPage > 0 && this.lruDataGPU.length > 0) {
         const dataId = this.lruDataGPU.shift();
