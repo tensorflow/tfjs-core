@@ -102,7 +102,7 @@ export class Engine implements TensorManager {
     // gradMode Primarily for internal use during backprop
     //          If true, will start a tape if it is the outermost tidy.
 
-    let name = null;
+    let name: string = null;
     if (fn == null) {
       // Called with only 1 argument.
       if (typeof nameOrFn !== 'function') {
@@ -125,17 +125,26 @@ export class Engine implements TensorManager {
       // TODO(nsthorat,smilkov): Do operation logging and performance
       // profiling.
     }
-    this.startScope(name, gradMode);
     let result: T;
+    return this.scopedRun(
+        () => this.startScope(name, gradMode),
+        () => this.endScope(result, gradMode), () => {
+          result = fn();
+          if (result instanceof Promise) {
+            console.error('Cannot return a Promise inside of tidy.');
+          }
+          return result;
+        });
+  }
+
+  private scopedRun<T>(start: () => void, end: () => void, f: () => T): T {
+    start();
     try {
-      result = fn();
-      if (result instanceof Promise) {
-        console.error('Cannot return a Promise inside of tidy.');
-      }
-      this.endScope(result, gradMode);
-      return result;
+      const res = f();
+      end();
+      return res;
     } catch (ex) {
-      this.endScope(result, gradMode);
+      end();
       throw ex;
     }
   }
@@ -154,15 +163,16 @@ export class Engine implements TensorManager {
     const scopeName = this.activeScope.name;
 
     // Stop recording to a tape when running a kernel.
-    this.customGradientDepth++;
-    if (!this.debugMode()) {
-      result = forwardFunc(this.backend, saveFunc);
-    } else {
-      result = this.profiler.profileKernel(
-          scopeName, () => forwardFunc(this.backend, saveFunc));
-    }
-    // Continue recording after the kernel is done.
-    this.customGradientDepth--;
+    this.scopedRun(
+        () => this.customGradientDepth++, () => this.customGradientDepth--,
+        () => {
+          if (!this.debugMode()) {
+            result = forwardFunc(this.backend, saveFunc);
+          } else {
+            result = this.profiler.profileKernel(
+                scopeName, () => forwardFunc(this.backend, saveFunc));
+          }
+        });
 
     if (this.shouldRecord()) {
       const tapeNode: TapeNode = {
@@ -398,25 +408,27 @@ export class Engine implements TensorManager {
       util.assert(
           inputs.every(t => t instanceof Tensor),
           'The args passed in customGrad(f)(x1, x2,...) must all be tensors');
-      this.customGradientDepth++;
 
       let gradientsFunc: (dy: T) => Tensor | Tensor[];
-      const gradientsMode = true;
-      const result = this.tidy(f.name, () => {
-        const {value, gradFunc} = f(...inputs);
-        util.assert(
-            value instanceof Tensor,
-            'The function f passed in customGrad(f) must return an object ' +
-                'where `obj.value` is a tensor');
-        util.assert(
-            util.isFunction(gradFunc),
-            'The function f passed in customGrad(f) must return an object ' +
-                'where `obj.gradFunc` is a function.');
-        gradientsFunc = gradFunc;
-        return value;
-      }, gradientsMode);
-
-      this.customGradientDepth--;
+      let result: T;
+      this.scopedRun(
+          () => this.customGradientDepth++, () => this.customGradientDepth--,
+          () => {
+            const gradientsMode = true;
+            result = this.tidy(f.name, () => {
+              const {value, gradFunc} = f(...inputs);
+              util.assert(
+                  value instanceof Tensor,
+                  'The function f passed in customGrad(f) must return an ' +
+                      'object where `obj.value` is a tensor');
+              util.assert(
+                  util.isFunction(gradFunc),
+                  'The function f passed in customGrad(f) must return an ' +
+                      'object where `obj.gradFunc` is a function.');
+              gradientsFunc = gradFunc;
+              return value;
+            }, gradientsMode);
+          });
 
       if (this.shouldRecord()) {
         const gradFunc = (dy: T): Tensor[] => {
