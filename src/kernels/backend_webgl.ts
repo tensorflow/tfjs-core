@@ -238,7 +238,8 @@ export class MathBackendWebGL implements KernelBackend {
 
       const tmpInput = Tensor.make(shape, {dataId}, dtype);
       const program = new EncodeFloatProgram(shape);
-      this.compileAndRun(program, [tmpInput], tmpTarget, null, false);
+      const pageToCpu = false;
+      this.compileAndRun(program, [tmpInput], tmpTarget, null, pageToCpu);
       const tmpData = this.texData.get(tmpTarget.dataId);
       float32Values =
           this.gpgpu.downloadByteEncodedFloatMatrixFromOutputTexture(
