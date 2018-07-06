@@ -34,6 +34,9 @@ export const CHROME_ENVS: Features = {
 export const BROWSER_ENVS: Features = {
   'IS_BROWSER': true
 };
+export const CPU_ENVS: Features = {
+  'HAS_WEBGL': false
+};
 export const ALL_ENVS: Features = {};
 
 export function expectArraysClose(
