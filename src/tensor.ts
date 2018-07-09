@@ -1152,6 +1152,11 @@ export class Tensor<R extends Rank = Rank> {
     return opHandler.unsortedSegmentSum(this, segmentIds, numSegments);
   }
 }
+Object.defineProperty(Tensor, Symbol.hasInstance, {
+  value: (instance: Tensor) => {
+    return instance.shape != null && instance.dtype != null;
+  }
+});
 
 /** @doclink Tensor */
 export type Scalar = Tensor<Rank.R0>;
