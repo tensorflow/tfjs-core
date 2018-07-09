@@ -23,9 +23,9 @@ import {TensorLike} from '../types';
 import {assert, sizeFromShape} from '../util';
 import {parseAxisParam} from './axis_util';
 import * as concat_util from './concat_util';
-import {operation} from './operation';
+import {oper} from './operation';
 
-export class ConcatOps {
+class ConcatOps {
   /**
    * Concatenates a list of `Tensor1D`s along an axis. See `concat` for details.
    *
@@ -156,7 +156,6 @@ export class ConcatOps {
    * @param axis The axis to concate along. Defaults to 0 (the first dim).
    */
   @doc({heading: 'Tensors', subheading: 'Slicing and Joining'})
-  @operation
   static concat<T extends Tensor>(tensors: T[]|TensorLike[], axis = 0): T {
     assert(tensors.length >= 1, 'Pass at least one tensor to concat');
     const $tensors = convertToTensorArray(tensors, 'tensors', 'concat');
@@ -173,6 +172,12 @@ export class ConcatOps {
     return result;
   }
 }
+
+export const concat = oper(ConcatOps.concat);
+export const concat1d = oper(ConcatOps.concat1d);
+export const concat2d = oper(ConcatOps.concat2d);
+export const concat3d = oper(ConcatOps.concat3d);
+export const concat4d = oper(ConcatOps.concat4d);
 
 function concat2Tensors<T extends Tensor>(a: T, b: T, axis: number): T {
   concat_util.assertParams(a.shape, b.shape, axis);

@@ -23,7 +23,6 @@ import {Rank, TensorLike} from '../types';
 import * as util from '../util';
 import {ArrayOps} from './array_ops';
 import {getReductionAxes} from './broadcast_util';
-import {operation} from './operation';
 import {TensorOps} from './tensor_ops';
 import {UnaryOps} from './unary_ops';
 
@@ -39,7 +38,6 @@ export class BatchNormOps {
    * @param scale A scale Tensor.
    * @param offset An offset Tensor.
    */
-  @operation
   static batchNormalization2d(
       x: Tensor2D|TensorLike, mean: Tensor2D|Tensor1D|TensorLike,
       variance: Tensor2D|Tensor1D|TensorLike, varianceEpsilon = .001,
@@ -97,7 +95,6 @@ export class BatchNormOps {
    * @param scale A scale Tensor.
    * @param offset An offset Tensor.
    */
-  @operation
   static batchNormalization3d(
       x: Tensor3D|TensorLike, mean: Tensor3D|Tensor1D|TensorLike,
       variance: Tensor3D|Tensor1D|TensorLike, varianceEpsilon = .001,
@@ -155,7 +152,6 @@ export class BatchNormOps {
    * @param scale A scale Tensor.
    * @param offset An offset Tensor.
    */
-  @operation
   static batchNormalization4d(
       x: Tensor4D|TensorLike, mean: Tensor4D|Tensor1D|TensorLike,
       variance: Tensor4D|Tensor1D|TensorLike, varianceEpsilon = .001,

@@ -23,10 +23,9 @@ import {convertToTensor, convertToTensorArray} from '../tensor_util';
 // tslint:disable-next-line:max-line-length
 import {DataType, Rank, ShapeMap, TensorLike, TensorLike1D, TypedArray} from '../types';
 import * as util from '../util';
-
 // tslint:disable-next-line:max-line-length
 import {getAxesPermutation, getInnerMostAxes, parseAxisParam} from './axis_util';
-import {ConcatOps} from './concat';
+import {concat} from './concat';
 import {operation} from './operation';
 import {MPRandGauss} from './rand';
 import {TensorOps} from './tensor_ops';
@@ -749,7 +748,7 @@ export class ArrayOps {
           'All tensors passed to stack must have matching dtypes');
     });
     const expandedTensors = $tensors.map(t => t.expandDims(axis));
-    return ConcatOps.concat(expandedTensors, axis);
+    return concat(expandedTensors, axis);
   }
 
   /**

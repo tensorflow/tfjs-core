@@ -21,7 +21,6 @@ import {ArrayOps} from './array_ops';
 import {BatchNormOps} from './batchnorm';
 import {BinaryOps} from './binary_ops';
 import {CompareOps} from './compare';
-import {ConcatOps} from './concat';
 import {ConvOps} from './conv';
 import {ImageOps} from './image_ops';
 import {LinalgOps} from './linalg_ops';
@@ -50,11 +49,7 @@ export const batchNormalization2d = BatchNormOps.batchNormalization2d;
 export const batchNormalization3d = BatchNormOps.batchNormalization3d;
 export const batchNormalization4d = BatchNormOps.batchNormalization4d;
 
-export const concat = ConcatOps.concat;
-export const concat1d = ConcatOps.concat1d;
-export const concat2d = ConcatOps.concat2d;
-export const concat3d = ConcatOps.concat3d;
-export const concat4d = ConcatOps.concat4d;
+export * from './concat';
 
 export const conv1d = ConvOps.conv1d;
 export const conv2d = ConvOps.conv2d;
