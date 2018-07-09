@@ -187,4 +187,9 @@ describeWithFlags('x instanceof Variable', ALL_ENVS, () => {
     const t = {something: 'else'};
     expect(t instanceof Variable).toBe(false);
   });
+
+  it('x: Tensor, fails', () => {
+    const t = tf.scalar(1);
+    expect(t instanceof Variable).toBe(false);
+  });
 });
