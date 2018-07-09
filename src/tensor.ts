@@ -1251,6 +1251,12 @@ export class Variable<R extends Rank = Rank> extends Tensor<R> {
     trackerFn().registerTensor(this);
   }
 }
+Object.defineProperty(Variable, Symbol.hasInstance, {
+  value: (instance: Variable) => {
+    return instance instanceof Tensor && instance.assign != null &&
+        instance.assign instanceof Function;
+  }
+});
 
 const variable = Variable.variable;
 export {variable};
