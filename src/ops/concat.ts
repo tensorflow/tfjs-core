@@ -23,7 +23,7 @@ import {TensorLike} from '../types';
 import {assert, sizeFromShape} from '../util';
 import {parseAxisParam} from './axis_util';
 import * as concat_util from './concat_util';
-import {oper} from './operation';
+import {op} from './operation';
 
 class ConcatOps {
   /**
@@ -173,12 +173,6 @@ class ConcatOps {
   }
 }
 
-export const concat = oper(ConcatOps.concat);
-export const concat1d = oper(ConcatOps.concat1d);
-export const concat2d = oper(ConcatOps.concat2d);
-export const concat3d = oper(ConcatOps.concat3d);
-export const concat4d = oper(ConcatOps.concat4d);
-
 function concat2Tensors<T extends Tensor>(a: T, b: T, axis: number): T {
   concat_util.assertParams(a.shape, b.shape, axis);
   const outShape = concat_util.computeOutShape(a.shape, b.shape, axis);
@@ -196,3 +190,9 @@ function concat2Tensors<T extends Tensor>(a: T, b: T, axis: number): T {
       backend => backend.concat(a2D, b2D), {a: a2D, b: b2D}, der);
   return res.reshape(outShape) as T;
 }
+
+export const concat = op(ConcatOps.concat);
+export const concat1d = op(ConcatOps.concat1d);
+export const concat2d = op(ConcatOps.concat2d);
+export const concat3d = op(ConcatOps.concat3d);
+export const concat4d = op(ConcatOps.concat4d);

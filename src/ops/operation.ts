@@ -17,24 +17,14 @@
 
 import {Environment} from '../environment';
 
-export function oper<T extends Function>(f: T): T {
+/**
+ * Used for wrapping functions that perform math operations on
+ * Tensors. The function will be wrapped in a named scope that cleans all
+ * memory usage after the function is done.
+ */
+export function op<T extends Function>(f: T): T {
   // tslint:disable-next-line:no-any
   const f2 = (...args: any[]) => Environment.tidy(f.name, () => f(...args));
   // tslint:disable-next-line:no-any
   return f2 as any as T;
-}
-
-/**
- * Decorator for wrapping functions that perform math operations on
- * Tensors. The function will be wrapped in a named scope that cleans all
- * memory usage after the function is done.
- */
-export function operation(
-    target: {}, name: string, descriptor: PropertyDescriptor) {
-  const fn = descriptor.value;
-  // tslint:disable-next-line:no-any
-  descriptor.value = (...args: any[]) => {
-    return Environment.tidy(name, () => fn(...args));
-  };
-  return descriptor;
 }
