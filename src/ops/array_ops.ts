@@ -956,8 +956,7 @@ class ArrayOps {
   }
 }
 
-// No need to wrap.
-export const fromPixels = ArrayOps.fromPixels;
+// Not wrapped in op() on purpose.
 export const buffer = ArrayOps.buffer;
 export const print = ArrayOps.print;
 export const toPixels = ArrayOps.toPixels;
@@ -967,6 +966,7 @@ export const clone = op(ArrayOps.clone);
 export const cumsum = op(ArrayOps.cumsum);
 export const expandDims = op(ArrayOps.expandDims);
 export const eye = op(ArrayOps.eye);
+export const fromPixels = op(ArrayOps.fromPixels);
 export const multinomial = op(ArrayOps.multinomial);
 export const oneHot = op(ArrayOps.oneHot);
 export const pad = op(ArrayOps.pad);

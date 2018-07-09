@@ -42,9 +42,8 @@ export * from './strided_slice';
 
 export {op} from './operation';
 
+// Second level exports.
 import * as losses from './loss_ops';
 import * as linalg from './linalg_ops';
 import * as image from './image_ops';
-
-// Second level exports.
 export {image, linalg, losses};
