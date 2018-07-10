@@ -23,8 +23,6 @@ import * as tf from '..';
 import {describeWithFlags} from '../jasmine_util';
 import {BROWSER_ENVS} from '../test_util';
 
-// tslint:disable-next-line:max-line-length
-
 const modelTopology1: {} = {
   'class_name': 'Sequential',
   'keras_version': '2.1.4',
@@ -57,6 +55,7 @@ const modelTopology1: {} = {
   }],
   'backend': 'tensorflow'
 };
+
 const weightSpecs1: tf.io.WeightsManifestEntry[] = [
   {
     name: 'dense/kernel',
@@ -69,6 +68,7 @@ const weightSpecs1: tf.io.WeightsManifestEntry[] = [
     dtype: 'float32',
   }
 ];
+
 const weightData1 = new ArrayBuffer(16);
 const artifacts1: tf.io.ModelArtifacts = {
   modelTopology: modelTopology1,
@@ -122,6 +122,7 @@ describeWithFlags('Passthrough Loader', BROWSER_ENVS, () => {
     expect(modelArtifacts.weightSpecs).toEqual(weightSpecs1);
     expect(modelArtifacts.weightData).toEqual(weightData1);
   });
+
   it('load model topology only', async () => {
     const passthroughHandler = tf.io.fromMemory(modelTopology1);
     const modelArtifacts = await passthroughHandler.load();
