@@ -87,14 +87,14 @@ describeWithFlags('Passthrough Saver', BROWSER_ENVS, () => {
         modelArtifactsInfo: {
           dateSaved: testStartDate,
           modelTopologyType: 'JSON',
-          modelTopologyBytes: 555,
-          weightSpecsBytes: 109,
-          weightDataBytes: 16,
+          modelTopologyBytes: JSON.stringify(modelTopology1).length,
+          weightSpecsBytes: JSON.stringify(weightSpecs1).length,
+          weightDataBytes: weightData1.byteLength,
         }
       };
     }
 
-    const saveTrigger = tf.io.withHandler(saveHandler);
+    const saveTrigger = tf.io.withSaveHandler(saveHandler);
     const saveResult = await saveTrigger.save(artifacts1);
 
     expect(saveResult.errors).toEqual(undefined);

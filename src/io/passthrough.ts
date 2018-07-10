@@ -25,21 +25,22 @@ import {IOHandler, ModelArtifacts, SaveResult, WeightsManifestEntry} from './typ
 
 class PassthroughLoader implements IOHandler {
   constructor(
-      private readonly modelTopology: {},
+      private readonly modelTopology?: {}|ArrayBuffer,
       private readonly weightSpecs?: WeightsManifestEntry[],
       private readonly weightData?: ArrayBuffer) {}
 
   async load(): Promise<ModelArtifacts> {
-    return new Promise<ModelArtifacts>((resolve, reject) => {
-      if (this.weightData === undefined || this.weightData.byteLength === 0) {
-        resolve({modelTopology: this.modelTopology});
-      }
-      resolve({
-        modelTopology: this.modelTopology,
-        weightSpecs: this.weightSpecs,
-        weightData: this.weightData,
-      });
-    });
+    let result = {};
+    if (this.modelTopology != null) {
+      result = {modelTopology: this.modelTopology, ...result};
+    }
+    if (this.weightSpecs != null && this.weightSpecs.length > 0) {
+      result = {weightSpecs: this.weightSpecs, ...result};
+    }
+    if (this.weightData != null && this.weightData.byteLength > 0) {
+      result = {weightData: this.weightData, ...result};
+    }
+    return result;
   }
 }
 
@@ -60,7 +61,7 @@ class PassthroughSaver implements IOHandler {
  * (Keras-style) can be constructed from the loaded artifacts.
  *
  * ```js
- * const model = await tfl.loadModel(tf.io.fromMemory(
+ * const model = await tf.loadModel(tf.io.fromMemory(
  *     modelTopology, weightSpecs, weightData));
  * ```
  *
@@ -82,10 +83,19 @@ export function fromMemory(
 /**
  * Creates an IOHandler that passes saved model artifacts to a callback.
  *
+ * ```
+ * function handleSave(artifacts) {
+ *   // ... do something with the artifacts ...
+ *   return {modelArtifactsInfo: {...}, ...};
+ * }
+ *
+ * const saveResult = model.save(tf.io.withSaveHandler(handleSave));
+ * ```
+ *
  * @param saveHandler A function that accepts a `ModelArtifacts` and returns a
  *     `SaveResult`.
  */
-export function withHandler(
+export function withSaveHandler(
     saveHandler: (artifacts: ModelArtifacts) => SaveResult): IOHandler {
   return new PassthroughSaver(saveHandler);
 }
