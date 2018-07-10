@@ -16,7 +16,7 @@
  */
 
 /**
- * Unit tests for file-related IOHandlers.
+ * Unit tests for passthrough IOHandlers.
  */
 
 import * as tf from '..';

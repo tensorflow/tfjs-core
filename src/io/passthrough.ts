@@ -16,8 +16,7 @@
  */
 
 /**
- * IOHandlers related to files, such as browser-triggered file downloads,
- * user-selected files in browser.
+ * IOHandlers that pass through the in-memory ModelArtifacts format.
  */
 
 // tslint:disable:max-line-length
@@ -65,7 +64,8 @@ class PassthroughSaver implements IOHandler {
  *     modelTopology, weightSpecs, weightData));
  * ```
  *
- * @param modelTopology a JSON object containing model topology
+ * @param modelTopology a object containing model topology (i.e., parsed from
+ *   the JSON format).
  * @param weightSpecs An array of `WeightsManifestEntry` objects describing the
  *   names, shapes, types, and quantization of the weight data.
  * @param weightData A single `ArrayBuffer` containing the weight data,
