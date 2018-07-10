@@ -23,7 +23,6 @@ import * as tf from '..';
 import {describeWithFlags} from '../jasmine_util';
 import {BROWSER_ENVS} from '../test_util';
 
-import {ModelArtifacts} from './io';
 // tslint:disable-next-line:max-line-length
 
 const modelTopology1: {} = {
@@ -80,9 +79,9 @@ const artifacts1: tf.io.ModelArtifacts = {
 describeWithFlags('Passthrough Saver', BROWSER_ENVS, () => {
   it('passes provided arguments through on save', async () => {
     const testStartDate = new Date();
-    let savedArtifacts: ModelArtifacts = null;
+    let savedArtifacts: tf.io.ModelArtifacts = null;
 
-    function saveHandler(artifacts: ModelArtifacts): tf.io.SaveResult {
+    function saveHandler(artifacts: tf.io.ModelArtifacts): tf.io.SaveResult {
       savedArtifacts = artifacts;
       return {
         modelArtifactsInfo: {
