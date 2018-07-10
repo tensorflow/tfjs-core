@@ -164,7 +164,8 @@ export class Environment {
    *     `Promise`s are not supported.
    */
   @doc({heading: 'Performance', subheading: 'Memory'})
-  static dispose(container: TensorContainer) {
+  // tslint:disable-next-line:no-any
+  static dispose(container: any) {
     const tensors = getTensorsInContainer(container);
     tensors.forEach(tensor => tensor.dispose());
   }

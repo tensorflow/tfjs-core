@@ -17,7 +17,7 @@
 
 import {Tensor} from './tensor';
 // tslint:disable-next-line:max-line-length
-import {NamedTensorMap, TensorContainer, TensorContainerArray} from './tensor_types';
+import {NamedTensorMap} from './tensor_types';
 import {ArrayData, DataType, TensorLike} from './types';
 import {assert, inferShape, isTypedArray, toTypedArray} from './util';
 
@@ -110,7 +110,8 @@ export function unflattenToNameArrayMap(
  *   returned. If the object is not a `Tensor` or does not
  *   contain `Tensors`, an empty list is returned.
  */
-export function getTensorsInContainer(result: TensorContainer): Tensor[] {
+// tslint:disable-next-line:no-any
+export function getTensorsInContainer(result: any): Tensor[] {
   const list: Tensor[] = [];
   const seen = new Set<{}|void>();
   walkTensorContainer(result, list, seen);
@@ -118,7 +119,8 @@ export function getTensorsInContainer(result: TensorContainer): Tensor[] {
 }
 
 function walkTensorContainer(
-    container: TensorContainer, list: Tensor[], seen: Set<{}|void>): void {
+    // tslint:disable-next-line:no-any
+    container: any, list: Tensor[], seen: Set<{}|void>): void {
   if (container == null) {
     return;
   }
@@ -130,9 +132,8 @@ function walkTensorContainer(
     return;
   }
   // Iteration over keys works also for arrays.
-  const iterable = container as TensorContainerArray;
-  for (const k in iterable) {
-    const val = iterable[k];
+  for (const k in container) {
+    const val = container[k];
     if (!seen.has(val)) {
       seen.add(val);
       walkTensorContainer(val, list, seen);
