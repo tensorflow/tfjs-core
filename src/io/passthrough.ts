@@ -83,7 +83,7 @@ export function fromMemory(
 /**
  * Creates an IOHandler that passes saved model artifacts to a callback.
  *
- * ```
+ * ```js
  * function handleSave(artifacts) {
  *   // ... do something with the artifacts ...
  *   return {modelArtifactsInfo: {...}, ...};
