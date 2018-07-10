@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {Environment} from '../environment';
+import {ENV} from '../environment';
 
 /**
  * Used for wrapping functions that perform math operations on
@@ -24,7 +24,20 @@ import {Environment} from '../environment';
  */
 export function op<T extends Function>(f: T): T {
   // tslint:disable-next-line:no-any
-  const f2 = (...args: any[]) => Environment.tidy(f.name, () => f(...args));
+  const f2 = (...args: any[]) => {
+    ENV.engine.startScope(f.name);
+    try {
+      const result = f(...args);
+      if (result instanceof Promise) {
+        console.error('Cannot return a Promise inside of tidy.');
+      }
+      ENV.engine.endScope(result);
+      return result;
+    } catch (ex) {
+      ENV.engine.endScope(null);
+      throw ex;
+    }
+  };
   // tslint:disable-next-line:no-any
   return f2 as any as T;
 }

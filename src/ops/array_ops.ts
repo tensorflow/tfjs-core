@@ -425,7 +425,9 @@ class ArrayOps {
       const imageData = new ImageData(bytes, width, height);
       ctx.putImageData(imageData, 0, 0);
     }
-
+    if ($img !== img) {
+      $img.dispose();
+    }
     return bytes;
   }
 
@@ -956,10 +958,8 @@ class ArrayOps {
   }
 }
 
-// Not wrapped in op() on purpose.
-export const buffer = ArrayOps.buffer;
-export const print = ArrayOps.print;
-export const toPixels = ArrayOps.toPixels;
+export const buffer = ArrayOps.buffer;  // Not wrapped in op() since no tensors.
+export const toPixels = ArrayOps.toPixels;  // Not wrapped in op() since async.
 
 export const cast = op(ArrayOps.cast);
 export const clone = op(ArrayOps.clone);
@@ -974,6 +974,7 @@ export const pad1d = op(ArrayOps.pad1d);
 export const pad2d = op(ArrayOps.pad2d);
 export const pad3d = op(ArrayOps.pad3d);
 export const pad4d = op(ArrayOps.pad4d);
+export const print = op(ArrayOps.print);
 export const rand = op(ArrayOps.rand);
 export const randomNormal = op(ArrayOps.randomNormal);
 export const randomUniform = op(ArrayOps.randomUniform);
