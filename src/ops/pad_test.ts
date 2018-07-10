@@ -246,6 +246,13 @@ describeWithFlags('reflection pad', ALL_ENVS, () => {
     expectArraysClose(res, [2, 1, 2, 3, 4, 5, 6, 5]);
   });
 
+  it('pads tensor1d with large padding', () => {
+    const a = tf.tensor1d([1, 2, 3, 4, 5, 6]);
+    const res = tf.pad1d(a, [2, 3], 0, 'reflect');
+    // 3, 2, 1, 2, 3, 4, 5, 6, 5, 4, 3
+    expectArraysClose(res, [3, 2, 1, 2, 3, 4, 5, 6, 5, 4, 3]);
+  });
+
   it('pads tensor2d', () => {
     const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
     const res = tf.pad2d(a, [[1, 1], [2, 2]], 0, 'reflect');
@@ -259,6 +266,18 @@ describeWithFlags('reflection pad', ALL_ENVS, () => {
       6, 5, 4, 5, 6, 5, 4, 3, 2, 1, 2, 3, 2, 1,
       6, 5, 4, 5, 6, 5, 4, 3, 2, 1, 2, 3, 2, 1
     ]);
+  });
+
+  it('pads minimal tensor2d', () => {
+    const a = tf.tensor2d([1, 2, 3, 4], [2, 2]);
+    const res = tf.pad2d(a, [[1, 1], [1, 1]], 0, 'reflect');
+    /*
+      [[4, 3, 4, 3],
+       [2, 1, 2, 1],
+       [4, 3, 4, 3],
+       [2, 1, 2, 1]]
+    */
+    expectArraysClose(res, [4, 3, 4, 3, 2, 1, 2, 1, 4, 3, 4, 3, 2, 1, 2, 1]);
   });
 
   it('pads tensor2d with single padding', () => {
