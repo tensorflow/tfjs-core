@@ -66,7 +66,6 @@ export const getBackend = Environment.getBackend;
 export const disposeVariables = Environment.disposeVariables;
 export const memory = Environment.memory;
 export {version as version_core};
-export {doc} from './doc';
 
 export const nextFrame = BrowserUtil.nextFrame;
 

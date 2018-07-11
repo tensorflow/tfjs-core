@@ -26,7 +26,6 @@
  *   one medium to another, by using URL strings.
  */
 
-import {doc} from '../doc';
 import {assert} from '../util';
 
 import {IORouterRegistry} from './router_registry';
@@ -189,7 +188,7 @@ export class ModelManagement {
    *   'indexeddb://my/model/1'. Model artifacts info include type of the
    * model's topology, byte sizes of the topology, weights, etc.
    */
-  @doc({heading: 'Models', subheading: 'Management', namespace: 'io'})
+  /** @doc {heading: 'Models', subheading: 'Management', namespace: 'io'} */
   static async listModels(): Promise<{[url: string]: ModelArtifactsInfo}> {
     const schemes = ModelStoreManagerRegistry.getSchemes();
     const out: {[url: string]: ModelArtifactsInfo} = {};
@@ -230,7 +229,7 @@ export class ModelManagement {
    *   is successful).
    * @throws Error if deletion fails, e.g., if no model exists at `path`.
    */
-  @doc({heading: 'Models', subheading: 'Management', namespace: 'io'})
+  /** @doc {heading: 'Models', subheading: 'Management', namespace: 'io'} */
   static async removeModel(url: string): Promise<ModelArtifactsInfo> {
     const schemeAndPath = parseURL(url);
     const manager = ModelStoreManagerRegistry.getManager(schemeAndPath.scheme);
@@ -277,7 +276,7 @@ export class ModelManagement {
    * @throws Error if copying fails, e.g., if no model exists at `sourceURL`, or
    *   if `oldPath` and `newPath` are identical.
    */
-  @doc({heading: 'Models', subheading: 'Management', namespace: 'io'})
+  /** @doc {heading: 'Models', subheading: 'Management', namespace: 'io'} */
   static async copyModel(sourceURL: string, destURL: string):
       Promise<ModelArtifactsInfo> {
     const deleteSource = false;
@@ -323,7 +322,7 @@ export class ModelManagement {
    * @throws Error if moving fails, e.g., if no model exists at `sourceURL`, or
    *   if `oldPath` and `newPath` are identical.
    */
-  @doc({heading: 'Models', subheading: 'Management', namespace: 'io'})
+  /** @doc {heading: 'Models', subheading: 'Management', namespace: 'io'} */
   static async moveModel(sourceURL: string, destURL: string):
       Promise<ModelArtifactsInfo> {
     const deleteSource = true;

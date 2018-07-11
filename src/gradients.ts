@@ -15,7 +15,6 @@
  * =============================================================================
  */
 
-import {doc} from './doc';
 import {CustomGradientFunc, ScopeFn} from './engine';
 import {ENV} from './environment';
 import {Scalar, Tensor, Variable} from './tensor';
@@ -71,7 +70,7 @@ export class Gradients {
    *
    * @param f The function f(x), to compute gradient for.
    */
-  @doc({heading: 'Training', subheading: 'Gradients'})
+  /** @doc {heading: 'Training', subheading: 'Gradients'} */
   static grad<I extends Tensor, O extends Tensor>(f: (x: I) => O):
       (x: I, dy?: O) => I {
     util.assert(
@@ -123,7 +122,7 @@ export class Gradients {
    *
    * @param f The function `f(x1, x2,...)` to compute gradients for.
    */
-  @doc({heading: 'Training', subheading: 'Gradients'})
+  /** @doc {heading: 'Training', subheading: 'Gradients'} */
   static grads<O extends Tensor>(f: (...args: Tensor[]) => O):
       (args: Tensor[], dy?: O) => Tensor[] {
     util.assert(
@@ -172,7 +171,7 @@ export class Gradients {
    * grad.print();
    * ```
    */
-  @doc({heading: 'Training', subheading: 'Gradients'})
+  /** @doc {heading: 'Training', subheading: 'Gradients'} */
   static valueAndGrad<I extends Tensor, O extends Tensor>(f: (x: I) => O):
       (x: I, dy?: O) => {
         value: O;
@@ -223,7 +222,7 @@ export class Gradients {
    * db.print();
    * ```
    */
-  @doc({heading: 'Training', subheading: 'Gradients'})
+  /** @doc {heading: 'Training', subheading: 'Gradients'} */
   static valueAndGrads<O extends Tensor>(f: (...args: Tensor[]) => O):
       (args: Tensor[], dy?: O) => {
         grads: Tensor[];
@@ -272,7 +271,7 @@ export class Gradients {
    * @param f The function to execute. f() should return a scalar.
    * @param varList The list of trainable variables. Defaults to all variables.
    */
-  @doc({heading: 'Training', subheading: 'Gradients'})
+  /** @doc {heading: 'Training', subheading: 'Gradients'} */
   static variableGrads(f: () => Scalar, varList?: Variable[]):
       {value: Scalar, grads: NamedTensorMap} {
     util.assert(
@@ -350,7 +349,7 @@ export class Gradients {
    *     `{value: Tensor, gradFunc: (dy) => Tensor[]}`, where `gradFunc` returns
    *     the custom gradients of `f` with respect to its inputs.
    */
-  @doc({heading: 'Training', subheading: 'Gradients'})
+  /** @doc {heading: 'Training', subheading: 'Gradients'} */
   static customGrad<T extends Tensor>(f: CustomGradientFunc<T>):
       (...args: Tensor[]) => T {
     return ENV.engine.customGrad(f);

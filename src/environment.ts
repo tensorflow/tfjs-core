@@ -16,7 +16,7 @@
  */
 
 import * as device_util from './device_util';
-import {doc} from './doc';
+
 import {Engine, MemoryInfo, ScopeFn, TimingInfo} from './engine';
 // tslint:disable-next-line:max-line-length
 import {Features, getFeaturesFromURL, getWebGLDisjointQueryTimerVersion, isChrome, isDownloadFloatTextureEnabled, isRenderToFloatTextureEnabled, isWebGLGetBufferSubDataAsyncExtensionEnabled, isWebGLVersionEnabled} from './environment_util';
@@ -62,7 +62,7 @@ export class Environment {
    *     construct tensors and call math operations inside a `tidy()` which
    *     will automatically clean up intermediate tensors.
    */
-  @doc({heading: 'Environment'})
+  /** @doc {heading: 'Environment'} */
   static setBackend(backendType: string, safeMode = false) {
     if (!(backendType in ENV.registry)) {
       throw new Error(`Backend type '${backendType}' not found in registry`);
@@ -74,7 +74,7 @@ export class Environment {
    * Returns the current backend (cpu, webgl, etc). The backend is responsible
    * for creating tensors and executing operations on those tensors.
    */
-  @doc({heading: 'Environment'})
+  /** @doc {heading: 'Environment'} */
   static getBackend(): string {
     ENV.initDefaultBackend();
     return ENV.currentBackend;
@@ -83,7 +83,7 @@ export class Environment {
   /**
    * Dispose all variables kept in backend engine.
    */
-  @doc({heading: 'Environment'})
+  /** @doc {heading: 'Environment'} */
   static disposeVariables(): void {
     ENV.engine.disposeVariables();
   }
@@ -104,7 +104,7 @@ export class Environment {
    *     represent undisposed tensors, i.e. not wrapped in `tidy()`, or
    *     lacking a call to `tensor.dispose()`.
    */
-  @doc({heading: 'Performance', subheading: 'Memory'})
+  /** @doc {heading: 'Performance', subheading: 'Memory'} */
   static memory(): MemoryInfo {
     return ENV.engine.memory();
   }
@@ -148,7 +148,7 @@ export class Environment {
    *     will be tracked and displayed on the console using the provided name.
    * @param fn The function to execute.
    */
-  @doc({heading: 'Performance', subheading: 'Memory'})
+  /** @doc {heading: 'Performance', subheading: 'Memory'} */
   static tidy<T extends TensorContainer>(
       nameOrFn: string|ScopeFn<T>, fn?: ScopeFn<T>, gradMode = false): T {
     return ENV.engine.tidy(nameOrFn, fn, gradMode);
@@ -163,7 +163,7 @@ export class Environment {
    *     happens. In general it is safe to pass any object here, except that
    *     `Promise`s are not supported.
    */
-  @doc({heading: 'Performance', subheading: 'Memory'})
+  /** @doc {heading: 'Performance', subheading: 'Memory'} */
   static dispose(container: TensorContainer) {
     const tensors = getTensorsInContainer(container);
     tensors.forEach(tensor => tensor.dispose());
@@ -199,7 +199,7 @@ export class Environment {
    *
    * @param result The tensor to keep from being disposed.
    */
-  @doc({heading: 'Performance', subheading: 'Memory'})
+  /** @doc {heading: 'Performance', subheading: 'Memory'} */
   static keep<T extends Tensor>(result: T): T {
     return ENV.engine.keep(result);
   }
@@ -225,7 +225,7 @@ export class Environment {
    *
    * @param f The function to execute and time.
    */
-  @doc({heading: 'Performance', subheading: 'Timing'})
+  /** @doc {heading: 'Performance', subheading: 'Timing'} */
   static time(f: () => void): Promise<TimingInfo> {
     return ENV.engine.time(f);
   }

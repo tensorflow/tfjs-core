@@ -14,11 +14,11 @@
  * limitations under the License.
  * =============================================================================
  */
-import {doc} from './doc';
 
-const delayCallback = typeof requestAnimationFrame !== 'undefined'
-  ? requestAnimationFrame // Browsers
-  : setImmediate; // Node.js
+const delayCallback = typeof requestAnimationFrame !== 'undefined' ?
+    requestAnimationFrame  // Browsers
+    :
+    setImmediate;  // Node.js
 
 export class BrowserUtil {
   /**
@@ -29,7 +29,7 @@ export class BrowserUtil {
    * This is simply a sugar method so that users can do the following:
    * `await tf.nextFrame();`
    */
-  @doc({heading: 'Performance', subheading: 'Timing'})
+  /** @doc {heading: 'Performance', subheading: 'Timing'} */
   static nextFrame(): Promise<void> {
     return new Promise<void>(resolve => delayCallback(() => resolve()));
   }
