@@ -15,10 +15,11 @@
  * =============================================================================
  */
 
-import {Gradients} from '../gradients';
+import {customGrad} from '../gradients';
 import {Tensor} from '../tensor';
 import {convertToTensor} from '../tensor_util';
 import {TensorLike} from '../types';
+
 import {op} from './operation';
 
 /**
@@ -53,7 +54,7 @@ function softmax_<T extends Tensor>(logits: T|TensorLike, dim = -1): T {
         `Logits was rank ${$logits.rank} and dim was ${dim}`);
   }
 
-  const customOp = Gradients.customGrad(logits => {
+  const customOp = customGrad(logits => {
     // Do it in log space for numerical stability.
     // exp(X - logSumExp(X))
     const keepDims = true;

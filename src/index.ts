@@ -21,7 +21,7 @@
 import './kernels/backend_webgl';
 import './kernels/backend_cpu';
 
-import {BrowserUtil} from './browser_util';
+import {nextFrame} from './browser_util';
 import * as environment from './environment';
 import {Environment} from './environment';
 
@@ -67,7 +67,7 @@ export const disposeVariables = Environment.disposeVariables;
 export const memory = Environment.memory;
 export {version as version_core};
 
-export const nextFrame = BrowserUtil.nextFrame;
+export {nextFrame};
 
 // Second level exports.
 export {environment, io, serialization, test_util, util, webgl};
