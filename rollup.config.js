@@ -15,9 +15,9 @@
  * =============================================================================
  */
 
+import commonjs from 'rollup-plugin-commonjs';
 import node from 'rollup-plugin-node-resolve';
 import typescript from 'rollup-plugin-typescript2';
-import commonjs from 'rollup-plugin-commonjs';
 import uglify from 'rollup-plugin-uglify';
 
 const PREAMBLE = `/**
@@ -38,22 +38,18 @@ const PREAMBLE = `/**
  */`;
 
 function minify() {
-  return uglify({
-    output: {preamble: PREAMBLE}
-  });
+  return uglify({output: {preamble: PREAMBLE}});
 }
 
 function config({plugins = [], output = {}, external = []}) {
   return {
     input: 'src/index.ts',
     plugins: [
-      typescript({
-        tsconfigOverride: {compilerOptions: {module: 'ES2015'}}
-      }),
+      typescript({tsconfigOverride: {compilerOptions: {module: 'ES2015'}}}),
       node(),
       // Polyfill require() from dependencies.
       commonjs({
-        ignore: ["crypto"],
+        ignore: ['crypto'],
         include: 'node_modules/**',
         namedExports: {
           './node_modules/seedrandom/index.js': ['alea'],
@@ -63,16 +59,13 @@ function config({plugins = [], output = {}, external = []}) {
     ],
     output: {
       banner: PREAMBLE,
-      ...output
+      sourcemap: true,
+      ...output,
     },
-    external: [
-      'crypto',
-      ...external
-    ],
+    external: ['crypto', ...external],
     onwarn: warning => {
       let {code} = warning;
-      if (code === 'CIRCULAR_DEPENDENCY' ||
-          code === 'CIRCULAR' ||
+      if (code === 'CIRCULAR_DEPENDENCY' || code === 'CIRCULAR' ||
           code === 'THIS_IS_UNDEFINED') {
         return;
       }
@@ -83,12 +76,8 @@ function config({plugins = [], output = {}, external = []}) {
 
 export default [
   config({
-    output: {
-      format: 'umd',
-      name: 'tf',
-      extend: true,
-      file: 'dist/tf-core.js'
-    }
+    output:
+        {format: 'umd', name: 'tf', extend: true, file: 'dist/tf-core.js'}
   }),
   config({
     plugins: [minify()],
@@ -101,9 +90,6 @@ export default [
   }),
   config({
     plugins: [minify()],
-    output: {
-      format: 'es',
-      file: 'dist/tf-core.esm.js'
-    }
+    output: {format: 'es', file: 'dist/tf-core.esm.js'}
   })
 ];
