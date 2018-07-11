@@ -52,7 +52,6 @@ function clone_<T extends Tensor>(x: T|TensorLike): T {
                  Tensor.make($x.shape, {dataId: $x.dataId}, $x.dtype) as T,
              {$x}, der) as T;
 }
-export const clone = op({clone_});
 
 /**
  * Create an identity matrix.
@@ -105,7 +104,6 @@ function eye_(
     }
   }
 }
-export const eye = op({eye_});
 
 /**
  * Creates a `Tensor` with values sampled from a normal distribution.
@@ -135,7 +133,6 @@ function randomNormal_<R extends Rank>(
   }
   return res.toTensor();
 }
-export const randomNormal = op({randomNormal_});
 
 /**
  * Creates a `Tensor` with values sampled from a truncated normal
@@ -170,8 +167,6 @@ function truncatedNormal_<R extends Rank>(
   }
   return res.toTensor();
 }
-export const truncatedNormal = op({truncatedNormal_});
-
 
 /**
  * Creates a `Tensor` with values sampled from a uniform distribution.
@@ -201,7 +196,6 @@ function randomUniform_<R extends Rank>(
   }
   return res.toTensor();
 }
-export const randomUniform = op({randomUniform_});
 
 /**
  * Creates a `Tensor` with values sampled from a random number generator
@@ -233,7 +227,6 @@ function rand_<R extends Rank>(
   }
   return Tensor.make(shape, {values}, dtype);
 }
-export const rand = op({rand_});
 
 /**
  * Creates a `Tensor` with values drawn from a multinomial distribution.
@@ -276,7 +269,6 @@ function multinomial_(
 
   return origRank === 1 ? res.as1D() : res;
 }
-export const multinomial = op({multinomial_});
 
 /**
  * Creates a one-hot `Tensor`. The locations represented by `indices` take
@@ -308,7 +300,6 @@ function oneHot_(
       backend => backend.oneHot($indices, depth, onValue, offValue),
       {$indices});
 }
-export const oneHot = op({oneHot_});
 
 /**
  * Creates a `Tensor` from an image.
@@ -339,7 +330,6 @@ function fromPixels_(
   }
   return ENV.engine.fromPixels(pixels, numChannels);
 }
-export const fromPixels = op({fromPixels_});
 
 /**
  * Draws a `Tensor` of pixel values to a byte array or optionally a
@@ -359,7 +349,7 @@ export const fromPixels = op({fromPixels_});
  * @param canvas The canvas to draw to.
  */
 /** @doc {heading: 'Visualization'} */
-export async function toPixels(
+async function toPixels(
     img: Tensor2D|Tensor3D|TensorLike,
     canvas?: HTMLCanvasElement): Promise<Uint8ClampedArray> {
   const $img = convertToTensor(img, 'img', 'toPixels', 'int32');
@@ -482,7 +472,6 @@ function reshape_<R2 extends Rank>(
   return ENV.engine.runKernel(
       backend => backend.reshape($x, shape), {$x}, grad);
 }
-export const reshape = op({reshape_});
 
 /**
  * Removes dimensions of size 1 from the shape of a `Tensor`.
@@ -502,7 +491,6 @@ function squeeze_<T extends Tensor>(x: Tensor|TensorLike, axis?: number[]): T {
   const $x = convertToTensor(x, 'x', 'squeeze');
   return reshape($x, util.squeezeShape($x.shape, axis).newShape) as T;
 }
-export const squeeze = op({squeeze_});
 
 /**
  * Casts a `Tensor` to a new dtype.
@@ -524,7 +512,6 @@ function cast_<T extends Tensor>(x: T|TensorLike, dtype: DataType): T {
   return ENV.engine.runKernel(backend => backend.cast($x, dtype), {$x}, grad) as
       T;
 }
-export const cast = op({cast_});
 
 /**
  * Construct an tensor by repeating it the number of times given by reps.
@@ -610,7 +597,6 @@ function tile_<T extends Tensor>(x: T|TensorLike, reps: number[]): T {
   };
   return ENV.engine.runKernel(backend => backend.tile($x, reps), {$x}, grad);
 }
-export const tile = op({tile_});
 
 /**
  * Pads a `Tensor1D` with a given value and paddings. See `pad` for details.
@@ -623,7 +609,6 @@ function pad1d_(
       'Invalid number of paddings. Must be length of 2.');
   return pad(x, [paddings], constantValue);
 }
-export const pad1d = op({pad1d_});
 
 /**
  * Pads a `Tensor2D` with a given value and paddings. See `pad` for details.
@@ -637,7 +622,6 @@ function pad2d_(
       'Invalid number of paddings. Must be length of 2 each.');
   return pad(x, paddings, constantValue);
 }
-export const pad2d = op({pad2d_});
 
 /**
  * Pads a `Tensor3D` with a given value and paddings. See `pad` for details.
@@ -652,7 +636,6 @@ function pad3d_(
       'Invalid number of paddings. Must be length of 2 each.');
   return pad(x, paddings, constantValue);
 }
-export const pad3d = op({pad3d_});
 
 /**
  * Pads a `Tensor4D` with a given value and paddings. See `pad` for details.
@@ -672,7 +655,6 @@ function pad4d_(
       'Invalid number of paddings. Must be length of 2 each.');
   return pad(x, paddings, constantValue);
 }
-export const pad4d = op({pad4d_});
 
 /**
  * Pads a `Tensor` with a given value and paddings.
@@ -714,7 +696,6 @@ function pad_<T extends Tensor>(
              backend => backend.pad($x, paddings, constantValue), {$x}, grad) as
       T;
 }
-export const pad = op({pad_});
 
 /**
  * Stacks a list of rank-`R` `Tensor`s into one rank-`(R+1)` `Tensor`.
@@ -757,7 +738,6 @@ function stack_<T extends Tensor>(tensors: T[]|TensorLike[], axis = 0): Tensor {
   const expandedTensors = $tensors.map(t => t.expandDims(axis));
   return concat(expandedTensors, axis);
 }
-export const stack = op({stack_});
 
 /**
  * Unstacks a `Tensor` of rank-`R` into a list of rank-`(R-1)` `Tensor`s.
@@ -795,7 +775,6 @@ function unstack_<T extends Tensor>(x: T|TensorLike, axis = 0): Tensor[] {
     return slice.reshape(outputShape);
   });
 }
-export const unstack = op({unstack_});
 
 /**
  * Splits a `Tensor` into sub tensors.
@@ -856,7 +835,6 @@ function split_<T extends Tensor>(
     return slice;
   });
 }
-export const split = op({split_});
 
 /**
  * Computes the cumulative sum of a `Tensor` along `axis`.
@@ -905,7 +883,6 @@ function cumsum_<T extends Tensor>(
   }
   return value;
 }
-export const cumsum = op({cumsum_});
 
 /**
  * Returns a `Tensor` that has expanded rank, by inserting a dimension
@@ -938,7 +915,6 @@ function expandDims_<R2 extends Rank>(
   newShape.splice(axis, 0, 1);
   return reshape($x, newShape);
 }
-export const expandDims = op({expandDims_});
 
 /**
  * Creates an empty `TensorBuffer` with the specified `shape` and `dtype`.
@@ -965,7 +941,7 @@ export const expandDims = op({expandDims_});
  * zeros.
  */
 /** @doc {heading: 'Tensors', subheading: 'Creation'} */
-export function buffer<R extends Rank>(
+function buffer<R extends Rank>(
     shape: ShapeMap[R], dtype: DataType = 'float32',
     values?: TypedArray): TensorBuffer<R> {
   return new TensorBuffer<R>(shape, dtype, values);
@@ -983,6 +959,35 @@ export function buffer<R extends Rank>(
  * including dtype and size.
  */
 /** @doc {heading: 'Tensors', subheading: 'Creation'} */
-export function print<T extends Tensor>(x: T, verbose = false): void {
+function print<T extends Tensor>(x: T, verbose = false): void {
   console.log(x.toString(verbose));
 }
+
+export {
+  buffer,    // Not wrapped in op() since no tensors.
+  toPixels,  // Not wrapped in op() since async.
+  print      // Not wrapped in op() since no need to increase stack trace.
+};
+
+export const cast = op({cast_});
+export const clone = op({clone_});
+export const cumsum = op({cumsum_});
+export const expandDims = op({expandDims_});
+export const eye = op({eye_});
+export const fromPixels = op({fromPixels_});
+export const multinomial = op({multinomial_});
+export const oneHot = op({oneHot_});
+export const pad = op({pad_});
+export const pad1d = op({pad1d_});
+export const pad2d = op({pad2d_});
+export const pad3d = op({pad3d_});
+export const pad4d = op({pad4d_});
+export const rand = op({rand_});
+export const randomNormal = op({randomNormal_});
+export const randomUniform = op({randomUniform_});
+export const reshape = op({reshape_});
+export const split = op({split_});
+export const squeeze = op({squeeze_});
+export const stack = op({stack_});
+export const tile = op({tile_});
+export const truncatedNormal = op({truncatedNormal_});

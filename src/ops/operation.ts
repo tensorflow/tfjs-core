@@ -44,6 +44,8 @@ export function op<T extends Function>(f: T|{[name: string]: T}): T {
   }
   const opName = Object.keys(f)[0];
   const fn = f[opName];
+  Object.defineProperty(fn, 'name', {value: opName, configurable: true});
+
   // tslint:disable-next-line:no-any
   const f2 = (...args: any[]) => {
     ENV.engine.startScope(opName);
