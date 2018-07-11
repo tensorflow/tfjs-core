@@ -22,29 +22,14 @@ import {ENV} from '../environment';
  * Tensors. The function will be wrapped in a named scope that cleans all
  * memory usage after the function is done.
  */
-export function op<T extends Function>(f: T|{[name: string]: T}): T {
-  if (f instanceof Function) {
-    // tslint:disable-next-line:no-any
-    const f2 = (...args: any[]) => {
-      ENV.engine.startScope(f.name);
-      try {
-        const result = f(...args);
-        if (result instanceof Promise) {
-          console.error('Cannot return a Promise inside of tidy.');
-        }
-        ENV.engine.endScope(result);
-        return result;
-      } catch (ex) {
-        ENV.engine.endScope(null);
-        throw ex;
-      }
-    };
-    // tslint:disable-next-line:no-any
-    return f2 as any as T;
-  }
-  const opName = Object.keys(f)[0];
+export function op<T extends Function>(f: {[name: string]: T}): T {
+  let opName = Object.keys(f)[0];
   const fn = f[opName];
-  Object.defineProperty(fn, 'name', {value: opName, configurable: true});
+
+  // Strip the underscore from the end of the function name.
+  if (opName.endsWith('_')) {
+    opName = opName.substring(0, opName.length - 2);
+  }
 
   // tslint:disable-next-line:no-any
   const f2 = (...args: any[]) => {
@@ -61,6 +46,8 @@ export function op<T extends Function>(f: T|{[name: string]: T}): T {
       throw ex;
     }
   };
+  Object.defineProperty(f2, 'name', {value: opName, configurable: true});
+
   // tslint:disable-next-line:no-any
   return f2 as any as T;
 }
