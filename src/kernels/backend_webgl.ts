@@ -238,14 +238,13 @@ export class MathBackendWebGL implements KernelBackend {
 
       const tmpInput = Tensor.make(shape, {dataId}, dtype);
       const program = new EncodeFloatProgram(shape);
-      const res = this.compileAndRun(program, [tmpInput], tmpTarget);
-
+      const pageToCpu = false;
+      this.compileAndRun(program, [tmpInput], tmpTarget, null, pageToCpu);
       const tmpData = this.texData.get(tmpTarget.dataId);
       float32Values =
           this.gpgpu.downloadByteEncodedFloatMatrixFromOutputTexture(
               tmpData.texture, tmpData.texShape[0], tmpData.texShape[1]);
 
-      res.dispose();
       tmpInput.dispose();
       tmpTarget.dispose();
     }
@@ -813,10 +812,11 @@ export class MathBackendWebGL implements KernelBackend {
 
   pow<T extends Tensor>(a: T, b: Tensor): T {
     const program = new BinaryOpProgram(binaryop_gpu.POW, a.shape, b.shape);
+    const customSetup = program.getCustomSetupFunc();
     const output =
         this.makeOutputArray(
             program.outputShape, types.upcastType(a.dtype, b.dtype)) as T;
-    return this.compileAndRun<Tensor, T>(program, [a, b], output);
+    return this.compileAndRun<Tensor, T>(program, [a, b], output, customSetup);
   }
 
   ceil<T extends Tensor>(x: T): T {
@@ -1140,8 +1140,8 @@ export class MathBackendWebGL implements KernelBackend {
 
   private compileAndRun<T extends Tensor, K extends Tensor>(
       program: GPGPUProgram, inputs: T[], output?: K,
-      customSetup?: (gpgpu: GPGPUContext, webGLProgram: WebGLProgram) => void):
-      K {
+      customSetup?: (gpgpu: GPGPUContext, webGLProgram: WebGLProgram) => void,
+      pageToCpu = true): K {
     if (output == null) {
       output = this.makeOutputArray(program.outputShape, inputs[0].dtype);
     }
@@ -1173,9 +1173,9 @@ export class MathBackendWebGL implements KernelBackend {
 
     gpgpu_math.runProgram(binary, inputsData, outputData, customSetup);
 
-    if (this.numBytesInGPU > this.NUM_BYTES_BEFORE_PAGING) {
+    if (pageToCpu && this.numBytesInGPU > this.NUM_BYTES_BEFORE_PAGING) {
       let numBytesToPage = this.numBytesInGPU - this.NUM_BYTES_BEFORE_PAGING;
-      while (numBytesToPage > 0) {
+      while (numBytesToPage > 0 && this.lruDataGPU.length > 0) {
         const dataId = this.lruDataGPU.shift();
         const {shape, dtype} = this.texData.get(dataId);
         numBytesToPage -= this.computeBytes(shape, dtype);
@@ -1238,8 +1238,11 @@ export class MathBackendWebGL implements KernelBackend {
     if (texture != null) {
       // Array is already on GPU. No-op.
       // Touching the texture.
-      this.lruDataGPU.splice(this.lruDataGPU.indexOf(dataId), 1);
-      this.lruDataGPU.push(dataId);
+      const index = this.lruDataGPU.indexOf(dataId);
+      if (index >= 0) {
+        this.lruDataGPU.splice(this.lruDataGPU.indexOf(dataId), 1);
+        this.lruDataGPU.push(dataId);
+      }
       return;
     }
     const shouldTimeProgram = this.activeTimers != null;

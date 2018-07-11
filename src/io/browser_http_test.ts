@@ -21,8 +21,7 @@
 
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
-import {CHROME_CPU_ENVS, CPU_ENVS} from '../test_util';
-
+import {BROWSER_ENVS, CHROME_ENVS} from '../test_util';
 import {BrowserHTTPRequest, httpRequestRouter} from './browser_http';
 
 // Test data.
@@ -61,7 +60,7 @@ const modelTopology1: {} = {
 
 // Turned off for other browsers due to:
 // https://github.com/tensorflow/tfjs/issues/426
-describeWithFlags('browserHTTPRequest-save', CHROME_CPU_ENVS, () => {
+describeWithFlags('browserHTTPRequest-save', CHROME_ENVS, () => {
   // Test data.
   const weightSpecs1: tf.io.WeightsManifestEntry[] = [
     {
@@ -134,13 +133,13 @@ describeWithFlags('browserHTTPRequest-save', CHROME_CPU_ENVS, () => {
                   .toEqual(new Uint8Array(weightData1));
               done();
             };
-            weightsFileReader.onerror = (error: ErrorEvent) => {
-              done.fail(error.message);
+            weightsFileReader.onerror = (error: FileReaderProgressEvent) => {
+              done.fail(error.target.error.message);
             };
             weightsFileReader.readAsArrayBuffer(weightsFile);
           };
-          jsonFileReader.onerror = (error: ErrorEvent) => {
-            done.fail(error.message);
+          jsonFileReader.onerror = (error: FileReaderProgressEvent) => {
+            done.fail(error.target.error.message);
           };
           jsonFileReader.readAsText(jsonFile);
         })
@@ -178,8 +177,8 @@ describeWithFlags('browserHTTPRequest-save', CHROME_CPU_ENVS, () => {
             expect(body.get('model.weights.bin')).toEqual(null);
             done();
           };
-          jsonFileReader.onerror = (error: ErrorEvent) => {
-            done.fail(error.message);
+          jsonFileReader.onerror = (error: FileReaderProgressEvent) => {
+            done.fail(error.target.error.message);
           };
           jsonFileReader.readAsText(jsonFile);
         })
@@ -239,13 +238,13 @@ describeWithFlags('browserHTTPRequest-save', CHROME_CPU_ENVS, () => {
                   .toEqual(new Uint8Array(weightData1));
               done();
             };
-            weightsFileReader.onerror = (error: ErrorEvent) => {
-              done.fail(error.message);
+            weightsFileReader.onerror = (error: FileReaderProgressEvent) => {
+              done.fail(error.target.error.message);
             };
             weightsFileReader.readAsArrayBuffer(weightsFile);
           };
-          jsonFileReader.onerror = (error: ErrorEvent) => {
-            done.fail(error.message);
+          jsonFileReader.onerror = (error: FileReaderProgressEvent) => {
+            done.fail(error.target.error.message);
           };
           jsonFileReader.readAsText(jsonFile);
         })
@@ -294,7 +293,7 @@ describeWithFlags('browserHTTPRequest-save', CHROME_CPU_ENVS, () => {
   });
 });
 
-describeWithFlags('browserHTTPRequest-load', CPU_ENVS, () => {
+describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
   let requestInits: RequestInit[];
 
   const setupFakeWeightFiles = (fileBufferMap: {
