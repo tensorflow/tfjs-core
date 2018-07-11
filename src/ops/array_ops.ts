@@ -991,3 +991,4 @@ export const squeeze = op({squeeze_});
 export const stack = op({stack_});
 export const tile = op({tile_});
 export const truncatedNormal = op({truncatedNormal_});
+export const unstack = op({unstack_});
