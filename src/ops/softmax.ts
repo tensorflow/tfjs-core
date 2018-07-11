@@ -16,16 +16,16 @@
  */
 
 import {doc} from '../doc';
-import {customGrad} from '../globals';
+import {Gradients} from '../gradients';
 import {Tensor} from '../tensor';
 import {convertToTensor} from '../tensor_util';
 import {TensorLike} from '../types';
-import * as util from '../util';
+import {assertShapesMatch} from '../util';
 
 import * as axis_util from './axis_util';
-import {operation} from './operation';
+import {op} from './operation';
 
-export class SoftmaxOps {
+class SoftmaxOps {
   /**
    * Computes the softmax normalized vector given the logits.
    *
@@ -46,7 +46,6 @@ export class SoftmaxOps {
    *     which indicates the last dimension.
    */
   @doc({heading: 'Operations', subheading: 'Normalization'})
-  @operation
   static softmax<T extends Tensor>(logits: T|TensorLike, dim = -1): T {
     const $logits = convertToTensor(logits, 'logits', 'softmax');
 
@@ -59,7 +58,7 @@ export class SoftmaxOps {
           `Logits was rank ${$logits.rank} and dim was ${dim}`);
     }
 
-    const customOp = customGrad(logits => {
+    const customOp = Gradients.customGrad(logits => {
       // Do it in log space for numerical stability.
       // exp(X - logSumExp(X))
       const keepDims = true;
@@ -104,14 +103,13 @@ export class SoftmaxOps {
    *     which indicates the last dimension.
    */
   @doc({heading: 'Training', subheading: 'Losses', namespace: 'losses'})
-  @operation
   static softmaxCrossEntropyWithLogits<T extends Tensor, O extends Tensor>(
       labels: T|TensorLike, logits: T|TensorLike, dim = -1): O {
     const $labels =
         convertToTensor(labels, 'labels', 'softmaxCrossEntropyWithLogits');
     const $logits =
         convertToTensor(logits, 'logits', 'softmaxCrossEntropyWithLogits');
-    util.assertShapesMatch(
+    assertShapesMatch(
         $labels.shape, $logits.shape,
         'Error in softmaxCrossEntropyWithLogits: ');
 
@@ -125,7 +123,7 @@ export class SoftmaxOps {
           `and dim was ${dim}`);
     }
     // Use a custom gradient for numerical stability.
-    const customOp = customGrad((labels, logits) => {
+    const customOp = Gradients.customGrad((labels, logits) => {
       // Reference:
       //   1. http://cs231n.github.io/linear-classify/#softmax
       //   2. https://blog.feedly.com/tricks-of-the-trade-logsumexp/
@@ -150,3 +148,7 @@ export class SoftmaxOps {
     return customOp($labels, $logits);
   }
 }
+
+export const softmax = op(SoftmaxOps.softmax);
+export const softmaxCrossEntropyWithLogits =
+    op(SoftmaxOps.softmaxCrossEntropyWithLogits);

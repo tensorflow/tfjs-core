@@ -21,10 +21,10 @@ import {convertToTensor} from '../tensor_util';
 import {TensorLike} from '../types';
 import {assertShapesMatch} from '../util';
 
-import {BinaryOps} from './binary_ops';
-import {operation} from './operation';
-import {SoftmaxOps} from './softmax';
-import {TensorOps} from './tensor_ops';
+import {minimum} from './binary_ops';
+import {op} from './operation';
+import {softmaxCrossEntropyWithLogits} from './softmax';
+import {ones, scalar} from './tensor_ops';
 
 export enum Reduction {
   NONE,
@@ -33,7 +33,7 @@ export enum Reduction {
   SUM_BY_NONZERO_WEIGHTS
 }
 
-export class LossOps {
+class LossOps {
   /**
    * Computes the weighted loss between two tensors.
    *
@@ -44,7 +44,6 @@ export class LossOps {
    *    `losses` dimension).
    */
   @doc({heading: 'Training', subheading: 'Losses', namespace: 'losses'})
-  @operation
   static computeWeightedLoss<T extends Tensor, O extends Tensor>(
       losses: T|TensorLike, weights?: Tensor|TensorLike,
       reduction = Reduction.SUM_BY_NONZERO_WEIGHTS): O {
@@ -68,12 +67,12 @@ export class LossOps {
     }
     if (reduction === Reduction.SUM_BY_NONZERO_WEIGHTS) {
       if ($weights == null) {
-        return weightedLoss.sum().div(TensorOps.scalar($losses.size));
+        return weightedLoss.sum().div(scalar($losses.size));
       } else {
-        const broadcastedWeights = $weights.mul(TensorOps.ones($losses.shape));
+        const broadcastedWeights = $weights.mul(ones($losses.shape));
 
         const numNonZeros =
-            broadcastedWeights.notEqual(TensorOps.scalar(0)).sum().toFloat();
+            broadcastedWeights.notEqual(scalar(0)).sum().toFloat();
         return weightedLoss.sum().div(numNonZeros);
       }
     }
@@ -95,7 +94,6 @@ export class LossOps {
    *    `Reduction`
    */
   @doc({heading: 'Training', subheading: 'Losses', namespace: 'losses'})
-  @operation
   static absoluteDifference<T extends Tensor, O extends Tensor>(
       labels: T|TensorLike, predictions: T|TensorLike,
       weights?: Tensor|TensorLike,
@@ -128,7 +126,6 @@ export class LossOps {
    *    `Reduction`
    */
   @doc({heading: 'Training', subheading: 'Losses', namespace: 'losses'})
-  @operation
   static meanSquaredError<T extends Tensor, O extends Tensor>(
       labels: T|TensorLike, predictions: T|TensorLike,
       weights?: Tensor|TensorLike,
@@ -162,7 +159,6 @@ export class LossOps {
    *    `Reduction`
    */
   @doc({heading: 'Training', subheading: 'Losses', namespace: 'losses'})
-  @operation
   static cosineDistance<T extends Tensor, O extends Tensor>(
       labels: T|TensorLike, predictions: T|TensorLike, axis: number,
       weights?: Tensor|TensorLike,
@@ -177,7 +173,7 @@ export class LossOps {
     assertShapesMatch(
         $labels.shape, $predictions.shape, 'Error in cosineDistance: ');
 
-    const one = TensorOps.scalar(1);
+    const one = scalar(1);
     const losses = one.sub($labels.mul($predictions).sum(axis, true));
     return LossOps.computeWeightedLoss(losses, $weights, reduction);
   }
@@ -196,7 +192,6 @@ export class LossOps {
    *    `Reduction`
    */
   @doc({heading: 'Training', subheading: 'Losses', namespace: 'losses'})
-  @operation
   static hingeLoss<T extends Tensor, O extends Tensor>(
       labels: T|TensorLike, predictions: T|TensorLike,
       weights?: Tensor|TensorLike,
@@ -211,9 +206,9 @@ export class LossOps {
     assertShapesMatch(
         $labels.shape, $predictions.shape, 'Error in hingeLoss: ');
 
-    const one = TensorOps.scalar(1);
+    const one = scalar(1);
     // Convert binary labels to (-1, 1)
-    $labels = TensorOps.scalar(2).mul($labels).sub(one);
+    $labels = scalar(2).mul($labels).sub(one);
     const losses = one.sub($labels.mul($predictions)).relu();
     return LossOps.computeWeightedLoss(losses, $weights, reduction);
   }
@@ -233,7 +228,6 @@ export class LossOps {
    *    `Reduction`
    */
   @doc({heading: 'Training', subheading: 'Losses', namespace: 'losses'})
-  @operation
   static logLoss<T extends Tensor, O extends Tensor>(
       labels: T|TensorLike, predictions: T|TensorLike,
       weights?: Tensor|TensorLike, epsilon = 1e-7,
@@ -246,8 +240,8 @@ export class LossOps {
     }
     assertShapesMatch($labels.shape, $predictions.shape, 'Error in logLoss: ');
 
-    const one = TensorOps.scalar(1);
-    const epsilonScalar = TensorOps.scalar(epsilon);
+    const one = scalar(1);
+    const epsilonScalar = scalar(epsilon);
     const losses = $labels.mul($predictions.add(epsilonScalar).log())
                        .neg()
                        .sub(one.sub($labels).mul(
@@ -270,7 +264,6 @@ export class LossOps {
    *    `Reduction`.
    */
   @doc({heading: 'Training', subheading: 'Losses', namespace: 'losses'})
-  @operation
   static huberLoss<T extends Tensor, O extends Tensor>(
       labels: T|TensorLike, predictions: T|TensorLike,
       weights?: Tensor|TensorLike, delta = 1.0,
@@ -285,14 +278,13 @@ export class LossOps {
     assertShapesMatch(
         $labels.shape, $predictions.shape, 'Error in huberLoss: ');
 
-    const deltaScalar = TensorOps.scalar(delta);
+    const deltaScalar = scalar(delta);
     const error = $predictions.sub($labels).abs();
-    const quadratic = BinaryOps.minimum(error, deltaScalar);
+    const quadratic = minimum(error, deltaScalar);
     const linear = error.sub(quadratic);
 
-    const losses = TensorOps.scalar(0.5)
-                       .mul(quadratic.square())
-                       .add(deltaScalar.mul(linear));
+    const losses =
+        scalar(0.5).mul(quadratic.square()).add(deltaScalar.mul(linear));
     return LossOps.computeWeightedLoss(losses, $weights, reduction);
   }
 
@@ -314,7 +306,6 @@ export class LossOps {
    *    `Reduction`
    */
   @doc({heading: 'Training', subheading: 'Losses', namespace: 'losses'})
-  @operation
   static softmaxCrossEntropy<T extends Tensor, O extends Tensor>(
       onehotLabels: T|TensorLike, logits: T|TensorLike,
       weights?: Tensor|TensorLike, labelSmoothing = 0,
@@ -332,17 +323,25 @@ export class LossOps {
         $onehotLabels.shape, $logits.shape, 'Error in softmaxCrossEntropy: ');
 
     if (labelSmoothing > 0) {
-      const labelSmoothingScalar = TensorOps.scalar(labelSmoothing);
-      const one = TensorOps.scalar(1);
-      const numClasses = TensorOps.scalar($onehotLabels.shape[1]);
+      const labelSmoothingScalar = scalar(labelSmoothing);
+      const one = scalar(1);
+      const numClasses = scalar($onehotLabels.shape[1]);
 
       $onehotLabels = $onehotLabels.mul(one.sub(labelSmoothingScalar))
                           .add(labelSmoothingScalar.div(numClasses));
     }
 
-    const losses =
-        SoftmaxOps.softmaxCrossEntropyWithLogits($onehotLabels, $logits);
+    const losses = softmaxCrossEntropyWithLogits($onehotLabels, $logits);
 
     return LossOps.computeWeightedLoss(losses, $weights, reduction);
   }
 }
+
+export const absoluteDifference = op(LossOps.absoluteDifference);
+export const computeWeightedLoss = op(LossOps.computeWeightedLoss);
+export const cosineDistance = op(LossOps.cosineDistance);
+export const hingeLoss = op(LossOps.hingeLoss);
+export const huberLoss = op(LossOps.huberLoss);
+export const logLoss = op(LossOps.logLoss);
+export const meanSquaredError = op(LossOps.meanSquaredError);
+export const softmaxCrossEntropy = op(LossOps.softmaxCrossEntropy);

@@ -18,7 +18,7 @@
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
 // tslint:disable-next-line:max-line-length
-import {ALL_ENVS, BROWSER_ENVS, CPU_ENVS, expectArraysClose, expectArraysEqual, expectPromiseToFail, expectValuesInRange, WEBGL_ENVS} from '../test_util';
+import {ALL_ENVS, BROWSER_ENVS, expectArraysClose, expectArraysEqual, expectPromiseToFail, expectValuesInRange, WEBGL_ENVS, NODE_ENVS} from '../test_util';
 import * as util from '../util';
 import {expectArrayInMeanStdRange, jarqueBeraNormalityTest} from './rand_util';
 
@@ -824,6 +824,15 @@ describeWithFlags('eye', ALL_ENVS, () => {
     ]));
   });
 
+  it('with 3D batchShape', () => {
+    expectArraysClose(tf.eye(2, 2, [2, 2, 3]), tf.tensor5d([
+      [[[[1, 0], [0, 1]], [[1, 0], [0, 1]], [[1, 0], [0, 1]]],
+        [[[1, 0], [0, 1]], [[1, 0], [0, 1]], [[1, 0], [0, 1]]]],
+      [[[[1, 0], [0, 1]], [[1, 0], [0, 1]], [[1, 0], [0, 1]]],
+        [[[1, 0], [0, 1]], [[1, 0], [0, 1]], [[1, 0], [0, 1]]]]
+    ]));
+  });
+
   it('3x3, int32', () => {
     expectArraysClose(
         tf.eye(3, 3, null, 'int32'),
@@ -1217,7 +1226,7 @@ class MockCanvas {
   }
 }
 
-describeWithFlags('fromPixels, mock canvas', CPU_ENVS, () => {
+describeWithFlags('fromPixels, mock canvas', NODE_ENVS, () => {
   it('accepts a canvas-like element', () => {
     const c = new MockCanvas(2, 2);
     // tslint:disable-next-line:no-any
@@ -2343,6 +2352,12 @@ describeWithFlags('oneHot', ALL_ENVS, () => {
 
     expect(res.dtype).toEqual(expectedType);
   });
+
+  it('oneHot accepts a tensor-like object', () => {
+    const res = tf.oneHot([0, 1], 2);
+    expect(res.shape).toEqual([2, 2]);
+    expectArraysClose(res, [1, 0, 0, 1]);
+  });
 });
 
 describeWithFlags('linspace', ALL_ENVS, () => {
@@ -2861,6 +2876,24 @@ describeWithFlags('expandDims', ALL_ENVS, () => {
     expect(f).toThrowError();
   });
 
+  it('1d, axis=-3', () => {
+    expect(() => {
+      tf.tensor1d([1, 2, 3]).expandDims(-3);
+    }).toThrowError('Axis must be in the interval [-2, 1]');
+  });
+
+  it('1d, axis=-2', () => {
+    const res = tf.tensor1d([1, 2, 3]).expandDims(-2 /* axis */);
+    expect(res.shape).toEqual([1, 3]);
+    expectArraysClose(res, [1, 2, 3]);
+  });
+
+  it('1d, axis=-1', () => {
+    const res = tf.tensor1d([1, 2, 3]).expandDims(-1 /* axis */);
+    expect(res.shape).toEqual([3, 1]);
+    expectArraysClose(res, [1, 2, 3]);
+  });
+
   it('1d, axis=0', () => {
     const res = tf.tensor1d([1, 2, 3]).expandDims(0 /* axis */);
     expect(res.shape).toEqual([1, 3]);
@@ -2871,6 +2904,30 @@ describeWithFlags('expandDims', ALL_ENVS, () => {
     const res = tf.tensor1d([1, 2, 3]).expandDims(1 /* axis */);
     expect(res.shape).toEqual([3, 1]);
     expectArraysClose(res, [1, 2, 3]);
+  });
+
+  it('2d, axis=-4', () => {
+    expect(() => {
+      tf.tensor2d([[1, 2], [3, 4], [5, 6]]).expandDims(-4 /* axis */);
+    }).toThrowError('Axis must be in the interval [-3, 2]');
+  });
+
+  it('2d, axis=-3', () => {
+    const res = tf.tensor2d([[1, 2], [3, 4], [5, 6]]).expandDims(-3 /* axis */);
+    expect(res.shape).toEqual([1, 3, 2]);
+    expectArraysClose(res, [1, 2, 3, 4, 5, 6]);
+  });
+
+  it('2d, axis=-2', () => {
+    const res = tf.tensor2d([[1, 2], [3, 4], [5, 6]]).expandDims(-2 /* axis */);
+    expect(res.shape).toEqual([3, 1, 2]);
+    expectArraysClose(res, [1, 2, 3, 4, 5, 6]);
+  });
+
+  it('2d, axis=-1', () => {
+    const res = tf.tensor2d([[1, 2], [3, 4], [5, 6]]).expandDims(-1 /* axis */);
+    expect(res.shape).toEqual([3, 2, 1]);
+    expectArraysClose(res, [1, 2, 3, 4, 5, 6]);
   });
 
   it('2d, axis=0', () => {
