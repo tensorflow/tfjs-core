@@ -188,8 +188,7 @@ async function cloneModelInternal(
  * model's topology, byte sizes of the topology, weights, etc.
  */
 /** @doc {heading: 'Models', subheading: 'Management', namespace: 'io'} */
-export async function listModels():
-    Promise<{[url: string]: ModelArtifactsInfo}> {
+async function listModels(): Promise<{[url: string]: ModelArtifactsInfo}> {
   const schemes = ModelStoreManagerRegistry.getSchemes();
   const out: {[url: string]: ModelArtifactsInfo} = {};
   for (const scheme of schemes) {
@@ -230,7 +229,7 @@ export async function listModels():
  * @throws Error if deletion fails, e.g., if no model exists at `path`.
  */
 /** @doc {heading: 'Models', subheading: 'Management', namespace: 'io'} */
-export async function removeModel(url: string): Promise<ModelArtifactsInfo> {
+async function removeModel(url: string): Promise<ModelArtifactsInfo> {
   const schemeAndPath = parseURL(url);
   const manager = ModelStoreManagerRegistry.getManager(schemeAndPath.scheme);
   return await manager.removeModel(schemeAndPath.path);
@@ -277,7 +276,7 @@ export async function removeModel(url: string): Promise<ModelArtifactsInfo> {
  *   if `oldPath` and `newPath` are identical.
  */
 /** @doc {heading: 'Models', subheading: 'Management', namespace: 'io'} */
-export async function copyModel(
+async function copyModel(
     sourceURL: string, destURL: string): Promise<ModelArtifactsInfo> {
   const deleteSource = false;
   return await cloneModelInternal(sourceURL, destURL, deleteSource);
@@ -323,8 +322,10 @@ export async function copyModel(
  *   if `oldPath` and `newPath` are identical.
  */
 /** @doc {heading: 'Models', subheading: 'Management', namespace: 'io'} */
-export async function moveModel(
+async function moveModel(
     sourceURL: string, destURL: string): Promise<ModelArtifactsInfo> {
   const deleteSource = true;
   return await cloneModelInternal(sourceURL, destURL, deleteSource);
 }
+
+export {moveModel, copyModel, removeModel, listModels};

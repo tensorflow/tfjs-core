@@ -28,6 +28,8 @@ const delayCallback = typeof requestAnimationFrame !== 'undefined' ?
  * `await tf.nextFrame();`
  */
 /** @doc {heading: 'Performance', subheading: 'Timing'} */
-export function nextFrame(): Promise<void> {
+function nextFrame(): Promise<void> {
   return new Promise<void>(resolve => delayCallback(() => resolve()));
 }
+
+export {nextFrame};

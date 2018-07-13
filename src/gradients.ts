@@ -32,7 +32,7 @@ import * as util from './util';
  *     using the provided name.
  * @param scopeFn The function to execute.
  */
-export function gradScope<T extends TensorContainer>(
+function gradScope<T extends TensorContainer>(
     nameOrScopeFn: string|ScopeFn<T>, scopeFn?: ScopeFn<T>): T {
   return ENV.engine.tidy(nameOrScopeFn, scopeFn, true /* gradScope */);
 }
@@ -70,7 +70,7 @@ export function gradScope<T extends TensorContainer>(
  * @param f The function f(x), to compute gradient for.
  */
 /** @doc {heading: 'Training', subheading: 'Gradients'} */
-export function grad<I extends Tensor, O extends Tensor>(f: (x: I) => O): (
+function grad<I extends Tensor, O extends Tensor>(f: (x: I) => O): (
     x: I, dy?: O) => I {
   util.assert(util.isFunction(f), 'The f passed in grad(f) must be a function');
   return (x: I, dy?: O): I => {
@@ -121,7 +121,7 @@ export function grad<I extends Tensor, O extends Tensor>(f: (x: I) => O): (
  * @param f The function `f(x1, x2,...)` to compute gradients for.
  */
 /** @doc {heading: 'Training', subheading: 'Gradients'} */
-export function grads<O extends Tensor>(f: (...args: Tensor[]) => O): (
+function grads<O extends Tensor>(f: (...args: Tensor[]) => O): (
     args: Tensor[], dy?: O) => Tensor[] {
   util.assert(
       util.isFunction(f), 'The f passed in grads(f) must be a function');
@@ -170,8 +170,8 @@ export function grads<O extends Tensor>(f: (...args: Tensor[]) => O): (
  * ```
  */
 /** @doc {heading: 'Training', subheading: 'Gradients'} */
-export function valueAndGrad<I extends Tensor, O extends Tensor>(
-    f: (x: I) => O): (x: I, dy?: O) => {
+function valueAndGrad<I extends Tensor, O extends Tensor>(f: (x: I) => O): (
+    x: I, dy?: O) => {
   value: O;
   grad: I;
 } {
@@ -220,7 +220,7 @@ export function valueAndGrad<I extends Tensor, O extends Tensor>(
  * ```
  */
 /** @doc {heading: 'Training', subheading: 'Gradients'} */
-export function valueAndGrads<O extends Tensor>(f: (...args: Tensor[]) => O): (
+function valueAndGrads<O extends Tensor>(f: (...args: Tensor[]) => O): (
     args: Tensor[], dy?: O) => {
   grads: Tensor[];
   value: O;
@@ -269,7 +269,7 @@ export function valueAndGrads<O extends Tensor>(f: (...args: Tensor[]) => O): (
  * @param varList The list of trainable variables. Defaults to all variables.
  */
 /** @doc {heading: 'Training', subheading: 'Gradients'} */
-export function variableGrads(f: () => Scalar, varList?: Variable[]):
+function variableGrads(f: () => Scalar, varList?: Variable[]):
     {value: Scalar, grads: NamedTensorMap} {
   util.assert(
       util.isFunction(f),
@@ -347,7 +347,7 @@ export function variableGrads(f: () => Scalar, varList?: Variable[]):
  *     the custom gradients of `f` with respect to its inputs.
  */
 /** @doc {heading: 'Training', subheading: 'Gradients'} */
-export function customGrad<T extends Tensor>(f: CustomGradientFunc<T>):
+function customGrad<T extends Tensor>(f: CustomGradientFunc<T>):
     (...args: Tensor[]) => T {
   return ENV.engine.customGrad(f);
 }
@@ -360,3 +360,13 @@ function checkGrads(grads: Tensor[]) {
     the f you passed encloses all operations that lead from x to y.`);
   }
 }
+
+export {
+  gradScope,
+  customGrad,
+  variableGrads,
+  valueAndGrad,
+  valueAndGrads,
+  grad,
+  grads,
+};
