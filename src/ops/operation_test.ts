@@ -34,4 +34,10 @@ describeWithFlags('operation', ALL_ENVS, () => {
     expect(opfn.name).toBe('opName');
     expect(opfn()).toBe(2);
   });
+
+  it('throws when passing an object with multiple keys', () => {
+    const f = () => 2;
+    expect(() => op({'opName_': f, 'opName2_': f}))
+        .toThrowError(/Please provide an object with a single key/);
+  });
 });

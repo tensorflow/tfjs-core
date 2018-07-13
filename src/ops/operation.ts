@@ -23,7 +23,15 @@ import {ENV} from '../environment';
  * memory usage after the function is done.
  */
 export function op<T extends Function>(f: {[name: string]: T}): T {
-  let opName = Object.keys(f)[0];
+  const keys = Object.keys(f);
+  if (keys.length !== 1) {
+    throw new Error(
+        `Please provide an object with a single key ` +
+        `(operation name) mapping to a function. Got an object with ` +
+        `${keys.length} keys.`);
+  }
+
+  let opName = keys[0];
   const fn = f[opName];
 
   // Strip the underscore from the end of the function name.
