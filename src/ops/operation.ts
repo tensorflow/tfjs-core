@@ -28,7 +28,7 @@ export function op<T extends Function>(f: {[name: string]: T}): T {
 
   // Strip the underscore from the end of the function name.
   if (opName.endsWith('_')) {
-    opName = opName.substring(0, opName.length - 2);
+    opName = opName.substring(0, opName.length - 1);
   }
 
   // tslint:disable-next-line:no-any
