@@ -1227,8 +1227,8 @@ describeWithFlags('x instanceof Tensor', ALL_ENVS, () => {
   // tslint:disable-next-line:ban
   fit('square 2.4', () => {
     // tf.ENV.set('WEBGL_DOWNLOAD_FLOAT_ENABLED', false);
-    const a = tf.scalar(2.4);
-    console.log(a.square().get());
-    console.log('a after upload', a.get());
+    const a = tf.tensor1d([2.4, 2]);
+    console.log(a.square().dataSync());
+    console.log('a after upload', a.dataSync());
   });
 });
