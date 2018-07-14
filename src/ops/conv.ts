@@ -16,7 +16,7 @@
  */
 
 import {ENV} from '../environment';
-import {Tensor2D, Tensor3D, Tensor4D} from '../tensor';
+import {Tensor2D, Tensor3D, Tensor4D, Tensor5D} from '../tensor';
 import {convertToTensor} from '../tensor_util';
 import {TensorLike} from '../types';
 import * as util from '../util';
@@ -655,8 +655,64 @@ function depthwiseConv2dDerFilter<T extends Tensor3D|Tensor4D>(
       {x4D, dy4D});
 }
 
+/**
+ * Computes a 3D convolution over the input x.
+ *
+ * @param x The input tensor, of rank 5 or rank 4, of shape
+ *     `[batch, in_depth, in_height, in_width, in_channels]`. If rank 4,
+ * batch of 1 is assumed.
+ * @param filter The filter, rank 5, of shape
+ *     `[filter_depth, filter_height, filter_width, in_channels, out_channels]`.
+ *      in_channels must match between input and filter.
+ * @param strides The strides of the convolution: `[strideDepth, strideHeight,
+ * strideWidth]`.
+ * @param pad The type of padding algorithm.
+ *    - `same` and stride 1: output will be of same size as input,
+ *       regardless of filter size.
+ *    - `valid`: output will be smaller than input if filter is larger
+ *       than 1x1.
+ *   - For more info, see this guide:
+ *     [https://www.tensorflow.org/api_guides/python/nn#Convolution](
+ *          https://www.tensorflow.org/api_guides/python/nn#Convolution)
+ * @param dataFormat: An optional string from: "NHWC", "NCHW". Defaults to
+ *     "NHWC". Specify the data format of the input and output data. With the
+ *     default format "NHWC", the data is stored in the order of: [batch,
+ *     depth, height, width, channels]. Only "NHWC" is currently supported.
+ * @param dilations The dilation rates: `[dilationDepth, dilationHeight,
+ *     dilationWidth]` in which we sample input values across the height
+ *     and width dimensions in atrous convolution. Defaults to `[1, 1, 1]`.
+ *     If `dilations` is a single number, then
+ *     `dilationDepth == dilationHeight == dilationWidth`. If it is greater
+ *     than 1, then all values of `strides` must be 1.
+ * @param dimRoundingMode The rounding mode used when computing output
+ *     dimensions if pad is a number. If none is provided, it will not round
+ *     and error if the output is of fractional size.
+ */
+// TODO: should dimRoundingMode be provided for conv3d?
+// TODO: why does the tfjs format for x, pad, strides, dilations differ from
+// tensorflow python documentation?
+
+/** @doc {heading: 'Operations', subheading: 'Convolution'} */
+function conv3d_<T extends Tensor4D|Tensor5D>(
+    x: T|TensorLike, filter: Tensor5D|TensorLike,
+    strides: [number, number]|number, pad: 'valid'|'same'|number,
+    dataFormat: 'NHWC'|'NCHW' = 'NHWC',
+    dilations: [number, number]|number = [1, 1],
+    dimRoundingMode?: 'floor'|'round'|'ceil'): T {
+  // const $x = convertToTensor(x, 'x', 'conv3d');
+  // const $filter = convertToTensor(filter, 'filter', 'conv3d');
+
+  // TODO: add optional conversion for X, 4d to 5d
+  // TODO: add var checks
+  // TODO: add convinfo & gradient calculations
+  // TODO: implement runKernel op
+
+  return null;
+}
+
 export const conv1d = op({conv1d_});
 export const conv2d = op({conv2d_});
+export const conv3d = op({conv3d_});
 export const depthwiseConv2d = op({depthwiseConv2d_});
 export const separableConv2d = op({separableConv2d_});
 export const conv2dTranspose = op({conv2dTranspose_});
