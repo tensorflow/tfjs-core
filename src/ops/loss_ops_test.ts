@@ -1314,7 +1314,7 @@ describeWithFlags('huberLoss', ALL_ENVS, () => {
   });
 });
 
-describeWithFlags('Loss Ops: softmaxCrossEntropy', ALL_ENVS, () => {
+describeWithFlags('softmaxCrossEntropy', ALL_ENVS, () => {
   it('All wrong', () => {
     const label = tf.tensor2d([[0, 0, 1], [1, 0, 0], [0, 1, 0]], [3, 3]);
     const predictions = tf.tensor2d(
@@ -1465,5 +1465,16 @@ describeWithFlags('Loss Ops: softmaxCrossEntropy', ALL_ENVS, () => {
         () => tf.losses.softmaxCrossEntropy(
             label, predictions, {} as tf.Tensor, tf.Reduction.MEAN))
         .toThrowError(e);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const label = [[0, 0, 1], [1, 0, 0], [0, 1, 0]];
+    const predictions =
+        [[10.0, -10.0, -10.0], [-10.0, 10.0, -10.0], [-10.0, -10.0, 10.0]];
+
+    const y = tf.losses.softmaxCrossEntropy(label, predictions);
+
+    expect(y.shape).toEqual([]);
+    expectNumbersClose(y.get(), 20);
   });
 });

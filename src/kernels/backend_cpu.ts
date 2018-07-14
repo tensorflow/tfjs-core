@@ -17,6 +17,7 @@
 
 import * as seedrandom from 'seedrandom';
 import {ENV} from '../environment';
+import * as array_ops_util from '../ops/array_ops_util';
 import * as axis_util from '../ops/axis_util';
 import * as broadcast_util from '../ops/broadcast_util';
 import * as concat_util from '../ops/concat_util';
@@ -1475,6 +1476,26 @@ export class MathBackendCPU implements KernelBackend {
     return result.toTensor() as T;
   }
 
+  batchToSpaceND<T extends Tensor>(
+      x: T, blockShape: number[], crops: number[][]): T {
+    const prod = blockShape.reduce((a, b) => a * b);
+
+    const reshaped = array_ops_util.getReshaped(x.shape, blockShape, prod);
+    const permuted =
+        array_ops_util.getPermuted(reshaped.length, blockShape.length);
+    const reshapedPermuted =
+        array_ops_util.getReshapedPermuted(x.shape, blockShape, prod);
+    const sliceBeginCoords =
+        array_ops_util.getSliceBeginCoords(crops, blockShape.length);
+    const sliceSize =
+        array_ops_util.getSliceSize(reshapedPermuted, crops, blockShape.length);
+
+    return x.reshape(reshaped)
+               .transpose(permuted)
+               .reshape(reshapedPermuted)
+               .slice(sliceBeginCoords, sliceSize) as T;
+  }
+
   private pool(x: Tensor4D, convInfo: Conv2DInfo, poolType: 'max'|'avg'):
       Tensor4D {
     const strideHeight = convInfo.strideHeight;
@@ -1987,6 +2008,44 @@ export class MathBackendCPU implements KernelBackend {
       }
     }
 
+    return output.toTensor();
+  }
+
+  LRNGrad(
+      dy: Tensor4D, inputImage: Tensor4D, outputImage: Tensor4D,
+      depthRadius: number, bias: number, alpha: number,
+      beta: number): Tensor4D {
+    const batch = dy.shape[0];
+    const rows = dy.shape[1];
+    const cols = dy.shape[2];
+    const depth = dy.shape[3];
+    const output = ops.buffer<Rank.R4>([batch, rows, cols, depth], 'float32');
+
+    for (let b = 0; b < batch; ++b) {
+      for (let r = 0; r < rows; ++r) {
+        for (let c = 0; c < cols; ++c) {
+          for (let d = 0; d < depth; ++d) {
+            const depthBegin = Math.max(0, d - depthRadius);
+            const depthEnd = Math.min(depth, d + depthRadius + 1);
+
+            let norm = 0;
+            for (let k = depthBegin; k < depthEnd; ++k) {
+              norm += inputImage.get(b, r, c, k) * inputImage.get(b, r, c, k);
+            }
+            norm = alpha * norm + bias;
+            for (let k = depthBegin; k < depthEnd; ++k) {
+              let dyi = -2 * alpha * beta * inputImage.get(b, r, c, k) *
+                  outputImage.get(b, r, c, d) / norm;
+              if (d === k) {
+                dyi += Math.pow(norm, -beta);
+              }
+              dyi *= dy.get(b, r, c, d);
+              output.set(dyi + output.get(b, r, c, k), b, r, c, k);
+            }
+          }
+        }
+      }
+    }
     return output.toTensor();
   }
 
