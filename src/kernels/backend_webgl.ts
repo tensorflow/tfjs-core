@@ -522,7 +522,9 @@ export class MathBackendWebGL implements KernelBackend {
 
   batchToSpaceND<T extends Tensor>(
       x: T, blockShape: number[], crops: number[][]): T {
-    util.assert(x.rank <= 4, 'WebGL for rank > 4 not yet implemented');
+    util.assert(
+        x.rank <= 4,
+        'batchToSpaceND for rank > 4 with a WebGL backend not implemented yet');
     const prod = blockShape.reduce((a, b) => a * b);
 
     const reshaped = array_ops_util.getReshaped(x.shape, blockShape, prod);
