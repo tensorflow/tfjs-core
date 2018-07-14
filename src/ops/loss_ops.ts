@@ -19,7 +19,7 @@ import {customGrad} from '../globals';
 import {Tensor} from '../tensor';
 import {convertToTensor} from '../tensor_util';
 import {TensorLike} from '../types';
-import {assertShapesMatch} from '../util';
+import {assertShapesMatch, sizeFromShape} from '../util';
 
 import {expandShapeToKeepDim} from './axis_util';
 import {minimum} from './binary_ops';
@@ -62,12 +62,13 @@ function computeWeightedLoss_<T extends Tensor, O extends Tensor>(
   }
   if (reduction === Reduction.MEAN) {
     if ($weights == null) {
-      weightedLoss.sum().div($weights.sum());
       return weightedLoss.mean();
     } else {
-      const broadcastedWeights = $weights.mul(ones($losses.shape));
-
-      return weightedLoss.sum().div(broadcastedWeights.sum());
+      const broadcastFactor =
+          sizeFromShape($losses.shape) / sizeFromShape($weights.shape);
+      const result = weightedLoss.sum().div($weights.sum());
+      return broadcastFactor > 1 ? result.div(scalar(broadcastFactor)) :
+                                   result as O;
     }
   }
   if (reduction === Reduction.SUM_BY_NONZERO_WEIGHTS) {

@@ -151,6 +151,16 @@ describeWithFlags('computeWeightedLoss', ALL_ENVS, () => {
         y.get(), (4 * 1 + 8 * 0 + 12 * 2 + (8 * -5) + 1 * 0 + 3 * 6) / 4);
   });
 
+  it('2D - weights - broadcast - MEAN', () => {
+    const losses = tf.tensor2d([[0, 0, 1], [1, 0, 0], [0, 1, 0]], [3, 3]);
+    const weights = tf.tensor2d([[0.1, 0.2, 0.3]]);
+
+    const y = tf.losses.computeWeightedLoss(losses, weights, tf.Reduction.MEAN);
+
+    expect(y.shape).toEqual([]);
+    expectNumbersClose(y.get(), (0.3 + 0.1 + 0.2) / (3 * 0.6));
+  });
+
   it('2D - no weights - Reduction.SUM', () => {
     const losses = tf.tensor2d([4, 8, 12, 8, 1, 3], [2, 3]);
 
