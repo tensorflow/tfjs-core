@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {TensorOps} from '../ops/tensor_ops';
+import {tensor} from '../ops/tensor_ops';
 import {Tensor} from '../tensor';
 import {NamedTensorMap} from '../tensor_types';
 import {TypedArray} from '../types';
@@ -92,14 +92,11 @@ export function decodeWeights(
     const size = sizeFromShape(shape);
     let value: Tensor;
     if (dtype === 'float32') {
-      value = TensorOps.tensor(
-          new Float32Array(buffer, offset, size), shape, 'float32');
+      value = tensor(new Float32Array(buffer, offset, size), shape, 'float32');
     } else if (dtype === 'int32') {
-      value = TensorOps.tensor(
-          new Int32Array(buffer, offset, size), shape, 'int32');
+      value = tensor(new Int32Array(buffer, offset, size), shape, 'int32');
     } else if (dtype === 'bool') {
-      value =
-          TensorOps.tensor(new Uint8Array(buffer, offset, size), shape, 'bool');
+      value = tensor(new Uint8Array(buffer, offset, size), shape, 'bool');
     } else {
       throw new Error(`Unsupported dtype in weight '${name}': ${dtype}`);
     }
@@ -142,6 +139,11 @@ export function concatenateTypedArrays(xs: TypedArray[]): ArrayBuffer {
   return y.buffer;
 }
 
+// Use Buffer on Node.js instead of Blob/atob/btoa
+const useNodeBuffer = typeof Buffer !== 'undefined' &&
+    (typeof Blob === 'undefined' || typeof atob === 'undefined' ||
+     typeof btoa === 'undefined');
+
 /**
  * Calculate the byte length of a JavaScript string.
  *
@@ -152,6 +154,9 @@ export function concatenateTypedArrays(xs: TypedArray[]): ArrayBuffer {
  * @returns Byte length.
  */
 export function stringByteLength(str: string): number {
+  if (useNodeBuffer) {
+    return Buffer.byteLength(str);
+  }
   return new Blob([str]).size;
 }
 
@@ -162,6 +167,9 @@ export function stringByteLength(str: string): number {
  * @returns A string that base64-encodes `buffer`.
  */
 export function arrayBufferToBase64String(buffer: ArrayBuffer): string {
+  if (useNodeBuffer) {
+    return Buffer.from(buffer).toString('base64');
+  }
   return btoa(String.fromCharCode.apply(null, new Uint8Array(buffer)));
 }
 
@@ -172,6 +180,10 @@ export function arrayBufferToBase64String(buffer: ArrayBuffer): string {
  * @returns Decoded `ArrayBuffer`.
  */
 export function base64StringToArrayBuffer(str: string): ArrayBuffer {
+  if (useNodeBuffer) {
+    const buf = Buffer.from(str, 'base64');
+    return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+  }
   const s = atob(str);
   const buffer = new Uint8Array(s.length);
   for (let i = 0; i < s.length; ++i) {

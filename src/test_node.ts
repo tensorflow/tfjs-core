@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2017 Google Inc. All Rights Reserved.
+ * Copyright 2018 Google LLC. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,15 +15,16 @@
  * =============================================================================
  */
 
-export function validateShapes(
-    sourceSize: [number, number], destSize: [number, number]) {
-  const srcArea = sourceSize[0] * sourceSize[1];
-  const dstArea = destSize[0] * destSize[1];
-  if (srcArea !== dstArea) {
-    const srcStr = `[${sourceSize[0]}, ${sourceSize[1]}]`;
-    const dstStr = `[${destSize[0]}, ${destSize[1]}]`;
-    throw new Error(
-        `copy2D shapes have different areas:\n  sourceSize ${srcStr}` +
-        `, area ${srcArea}\n  destSize ${dstStr}, area ${dstArea}`);
-  }
-}
+import {setTestEnvs} from './jasmine_util';
+import {MathBackendCPU} from './kernels/backend_cpu';
+// tslint:disable-next-line:no-require-imports
+const jasmine = require('jasmine');
+
+process.on('unhandledRejection', e => { throw e; });
+
+setTestEnvs(
+    [{name: 'node', factory: () => new MathBackendCPU(), features: {}}]);
+
+const runner = new jasmine();
+runner.loadConfig({spec_files: ['src/**/*_test.ts'], random: false});
+runner.execute();

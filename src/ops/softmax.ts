@@ -15,130 +15,63 @@
  * =============================================================================
  */
 
-import {doc} from '../doc';
-import {customGrad} from '../globals';
+import {customGrad} from '../gradients';
 import {Tensor} from '../tensor';
 import {convertToTensor} from '../tensor_util';
 import {TensorLike} from '../types';
-import * as util from '../util';
 
-import * as axis_util from './axis_util';
-import {operation} from './operation';
-import {TensorOps} from './tensor_ops';
+import {op} from './operation';
 
-export class SoftmaxOps {
-  /**
-   * Computes the softmax normalized vector given the logits.
-   *
-   * ```js
-   * const a = tf.tensor1d([1, 2, 3]);
-   *
-   * a.softmax().print();  // or tf.softmax(a)
-   * ```
-   *
-   * ```js
-   * const a = tf.tensor2d([2, 4, 6, 1, 2, 3], [2, 3]);
-   *
-   * a.softmax().print();  // or tf.softmax(a)
-   * ```
-   *
-   * @param logits The logits array.
-   * @param dim The dimension softmax would be performed on. Defaults to `-1`
-   *     which indicates the last dimension.
-   */
-  @doc({heading: 'Operations', subheading: 'Normalization'})
-  @operation
-  static softmax<T extends Tensor>(logits: T|TensorLike, dim = -1): T {
-    const $logits = convertToTensor(logits, 'logits', 'softmax');
+/**
+ * Computes the softmax normalized vector given the logits.
+ *
+ * ```js
+ * const a = tf.tensor1d([1, 2, 3]);
+ *
+ * a.softmax().print();  // or tf.softmax(a)
+ * ```
+ *
+ * ```js
+ * const a = tf.tensor2d([2, 4, 6, 1, 2, 3], [2, 3]);
+ *
+ * a.softmax().print();  // or tf.softmax(a)
+ * ```
+ *
+ * @param logits The logits array.
+ * @param dim The dimension softmax would be performed on. Defaults to `-1`
+ *     which indicates the last dimension.
+ */
+/** @doc {heading: 'Operations', subheading: 'Normalization'} */
+function softmax_<T extends Tensor>(logits: T|TensorLike, dim = -1): T {
+  const $logits = convertToTensor(logits, 'logits', 'softmax');
 
-    if (dim === -1) {
-      dim = $logits.rank - 1;
-    }
-    if (dim !== $logits.rank - 1) {
-      throw Error(
-          'Softmax along a non-last dimension is not yet supported. ' +
-          `Logits was rank ${$logits.rank} and dim was ${dim}`);
-    }
+  if (dim === -1) {
+    dim = $logits.rank - 1;
+  }
+  if (dim !== $logits.rank - 1) {
+    throw Error(
+        'Softmax along a non-last dimension is not yet supported. ' +
+        `Logits was rank ${$logits.rank} and dim was ${dim}`);
+  }
 
-    const customOp = customGrad(logits => {
-      // Do it in log space for numerical stability.
-      // exp(X - logSumExp(X))
+  const customOp = customGrad(logits => {
+    // Do it in log space for numerical stability.
+    // exp(X - logSumExp(X))
+    const keepDims = true;
+    const lse = logits.logSumExp([dim], keepDims);
+    const logResult = logits.toFloat().sub(lse);
+    const y = logResult.exp() as T;
+
+    const gradFunc = (dy: T) => {
+      const dyTimesY = dy.mul(y);
       const keepDims = true;
-      const lse = logits.logSumExp([dim], keepDims);
-      const logResult = logits.toFloat().sub(lse);
-      const y = logResult.exp() as T;
+      return dyTimesY.sub(dyTimesY.sum([dim], keepDims).mul(y));
+    };
 
-      const gradFunc = (dy: T) => {
-        const dyTimesY = dy.mul(y);
-        const keepDims = true;
-        return dyTimesY.sub(dyTimesY.sum([dim], keepDims).mul(y));
-      };
+    return {value: y, gradFunc};
+  });
 
-      return {value: y, gradFunc};
-    });
-
-    return customOp($logits);
-  }
-
-  /**
-   * Computes softmax cross entropy between logits and labels.
-   *
-   * Measures the probability error in discrete classification tasks in which
-   * the classes are mutually exclusive (each entry is in exactly one class).
-   * For example, each CIFAR-10 image is labeled with one and only one label: an
-   * image can be a dog or a truck, but not both.
-   *
-   * `NOTE`: While the classes are mutually exclusive, their probabilities need
-   * not be. All that is required is that each row of labels is a valid
-   * probability distribution. If they are not, the computation of the gradient
-   * will be incorrect.
-   *
-   * `WARNING`: This op expects unscaled logits, since it performs a softmax on
-   * logits internally for efficiency. Do not call this op with the output of
-   * softmax, as it will produce incorrect results.
-   *
-   * logits and labels must have the same shape, e.g. [batch_size, num_classes]
-   * and the same dtype.
-   * @param labels The labels array.
-   * @param logits The logits array.
-   * @param dim The dimension softmax would be performed on. Defaults to `-1`
-   *     which indicates the last dimension.
-   */
-  @doc({heading: 'Training', subheading: 'Losses', namespace: 'losses'})
-  @operation
-  static softmaxCrossEntropy<T extends Tensor, O extends Tensor>(
-      labels: T|TensorLike, logits: T|TensorLike, dim = -1): O {
-    const $labels = convertToTensor(labels, 'labels', 'softmaxCrossEntropy');
-    const $logits = convertToTensor(logits, 'logits', 'softmaxCrossEntropy');
-    util.assertShapesMatch(
-        $labels.shape, $logits.shape, 'Error in softmaxCrossEntropy: ');
-
-    if (dim === -1) {
-      dim = $logits.rank - 1;
-    }
-    if (dim !== $logits.rank - 1) {
-      throw Error(
-          `Softmax cross entropy along a non-last dimension is not yet ` +
-          `supported. Labels / logits was rank ${$logits.rank} ` +
-          `and dim was ${dim}`);
-    }
-    // Use a custom gradient for numerical stability.
-    const customOp = customGrad((labels, logits) => {
-      const predictedProbs = logits.softmax(dim);
-      const costVector =
-          TensorOps.scalar(1e-5).add(predictedProbs).log().mul(labels).neg();
-      const value = costVector.sum([dim]) as O;
-
-      const gradFunc = (dy: O) => {
-        const dyShape = axis_util.expandShapeToKeepDim(dy.shape, [dim]);
-        return [
-          dy.reshape(dyShape).mul(labels.toFloat().sub(predictedProbs)),
-          dy.reshape(dyShape).mul(predictedProbs.sub(labels.toFloat())),
-        ];
-      };
-      return {value, gradFunc};
-    });
-
-    return customOp($labels, $logits);
-  }
+  return customOp($logits);
 }
+
+export const softmax = op({softmax_});

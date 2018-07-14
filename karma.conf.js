@@ -15,17 +15,47 @@
  * =============================================================================
  */
 
+const karmaTypescriptConfig = {
+  tsconfig: 'tsconfig.json',
+  // Disable coverage reports and instrumentation by default for tests
+  coverageOptions: {
+    instrumentation: false
+  },
+  reports: {
+  }
+};
+
+// Enable coverage reports and instrumentation under KARMA_COVERAGE=1 env
+const coverageEnabled = !!process.env.KARMA_COVERAGE;
+if (coverageEnabled) {
+  karmaTypescriptConfig.coverageOptions.instrumentation = true;
+  karmaTypescriptConfig.coverageOptions.exclude = /_test\.ts$/;
+  karmaTypescriptConfig.reports = {
+    html: 'coverage',
+    'text-summary': ''
+  };
+}
+
 module.exports = function(config) {
+  const args = [];
+  if (config.backend) {
+    args.push('--backend', config.backend);
+  }
+  if (config.grep) {
+    args.push('--grep', config.grep);
+  }
+  if (config.features) {
+    args.push('--features', config.features);
+  }
+
   config.set({
     frameworks: ['jasmine', 'karma-typescript'],
     files: [{pattern: 'src/**/*.ts'}],
+    exclude: ['src/test_node.ts'],
     preprocessors: {
       '**/*.ts': ['karma-typescript'],  // *.tsx for React Jsx
     },
-    karmaTypescriptConfig: {
-      tsconfig: 'tsconfig.json',
-      reports: {} // Do not produce coverage html.
-    },
+    karmaTypescriptConfig,
     reporters: ['progress', 'karma-typescript'],
     browsers: ['Chrome'],
     browserStack: {
@@ -71,7 +101,7 @@ module.exports = function(config) {
     },
     client: {
       jasmine: {random: false},
-      args: ['--grep', config.grep || '']
+      args: args
     }
   });
 };
