@@ -399,21 +399,15 @@ function huberLoss_<T extends Tensor, O extends Tensor>(
  *     which indicates the last dimension.
  */
 function softmaxCrossEntropyWithLogits_<T extends Tensor, O extends Tensor>(
-    labels: T|TensorLike, logits: T|TensorLike, dim = -1): O {
-  const $labels =
-      convertToTensor(labels, 'labels', 'softmaxCrossEntropyWithLogits');
-  const $logits =
-      convertToTensor(logits, 'logits', 'softmaxCrossEntropyWithLogits');
-  assertShapesMatch(
-      $labels.shape, $logits.shape, 'Error in softmaxCrossEntropyWithLogits: ');
-
+    labels: T, logits: T, dim = -1): O {
   if (dim === -1) {
-    dim = $logits.rank - 1;
+    dim = logits.rank - 1;
   }
-  if (dim !== $logits.rank - 1) {
+
+  if (dim !== logits.rank - 1) {
     throw Error(
         `Softmax cross entropy along a non-last dimension is not yet ` +
-        `supported. Labels / logits was rank ${$logits.rank} ` +
+        `supported. Labels / logits was rank ${logits.rank} ` +
         `and dim was ${dim}`);
   }
   // Use a custom gradient for numerical stability.
@@ -439,7 +433,7 @@ function softmaxCrossEntropyWithLogits_<T extends Tensor, O extends Tensor>(
     return {value, gradFunc};
   });
 
-  return customOp($labels, $logits);
+  return customOp(labels, logits);
 }
 
 /**
