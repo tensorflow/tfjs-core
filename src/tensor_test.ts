@@ -1223,4 +1223,12 @@ describeWithFlags('x instanceof Tensor', ALL_ENVS, () => {
     const t = {something: 'else'};
     expect(t instanceof Tensor).toBe(false);
   });
+
+  // tslint:disable-next-line:ban
+  fit('square 2.4', () => {
+    // tf.ENV.set('WEBGL_DOWNLOAD_FLOAT_ENABLED', false);
+    const a = tf.tensor1d([2.4, 2]);
+    console.log(a.square().dataSync());
+    console.log('a after upload', a.dataSync());
+  });
 });
