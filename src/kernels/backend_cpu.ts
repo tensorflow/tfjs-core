@@ -21,6 +21,7 @@ import {warn} from '../log';
 import * as array_ops_util from '../ops/array_ops_util';
 import * as axis_util from '../ops/axis_util';
 import * as broadcast_util from '../ops/broadcast_util';
+import {Complex} from '../ops/complex';
 import * as concat_util from '../ops/concat_util';
 import {Conv2DInfo} from '../ops/conv_util';
 import * as erf_util from '../ops/erf_util';
@@ -2115,6 +2116,81 @@ export class MathBackendCPU implements KernelBackend {
     const scoresVals = scores.dataSync();
     return nonMaxSuppressionImpl(
         boxesVals, scoresVals, maxOutputSize, iouThreshold, scoreThreshold);
+  }
+
+  fft(input: Tensor2D): Tensor2D {
+    // First dimension represents the number of samples.
+    const n = input.shape[0];
+    const data = input.dataSync();
+    const output = this.fftTransform(data, n);
+    return ops.tensor2d(output, input.shape);
+  }
+
+  private fftTransform(data: TypedArray, size: number): TypedArray {
+    if ((size & (size - 1)) === 0) {
+      return this.fftRadix2(data, size);
+    } else {
+      // TODO: Optimize by using Bluestein algorithm
+      return this.fourierTransformByMatmul(data, size);
+    }
+  }
+
+  // FFT using Cooley-Tukey algorithm on rarix 2 dimention input.
+  private fftRadix2(data: TypedArray, size: number): TypedArray {
+    if (size === 1) {
+      return data;
+    }
+    const ret = new Float32Array(size * 2);
+    const half = size / 2;
+    let even: TypedArray = new Float32Array(size);
+    let odd: TypedArray = new Float32Array(size);
+
+    let i = 0;
+    // Split the original input into even-indexed values and odd-indexed values.
+    while (i < size) {
+      const evenComplex = Complex.fromTypedArrayWithIndex(data, i * 2);
+      even[i * 2] = evenComplex.real;
+      even[i * 2 + 1] = evenComplex.imag;
+      const oddComplex = Complex.fromTypedArrayWithIndex(data, i * 2 + 1);
+      odd[i * 2] = oddComplex.real;
+      odd[i * 2 + 1] = oddComplex.imag;
+      i++;
+    }
+
+    // Recursive call for half part of original input.
+    even = this.fftRadix2(even, half);
+    odd = this.fftRadix2(odd, half);
+
+    for (let k = 0; k < half; k++) {
+      const c = Complex.fromTypedArrayWithIndex(even, k);
+      const e = Complex.exponent(k, size).mul(
+          Complex.fromTypedArrayWithIndex(odd, k));
+
+      // Results for first half values.
+      const addPart = c.add(e);
+      Complex.assign(ret, addPart, k);
+
+      // Results for rest half values.
+      const subPart = c.sub(e);
+      Complex.assign(ret, subPart, k + half);
+    }
+
+    return ret;
+  }
+
+  // Calculate fourier transform by multplying sinusoid matrix.
+  private fourierTransformByMatmul(data: TypedArray, size: number) {
+    const ret = new Float32Array(size * 2);
+    for (let r = 0; r < size; r++) {
+      let tmp = new Complex(0, 0);
+      for (let c = 0; c < size; c++) {
+        const e = Complex.exponent(r * c, size);
+        const term = Complex.fromTypedArrayWithIndex(data, c).mul(e);
+        tmp = tmp.add(term);
+      }
+      Complex.assign(ret, tmp, r);
+    }
+    return ret;
   }
 
   private broadcastedBinaryOp(

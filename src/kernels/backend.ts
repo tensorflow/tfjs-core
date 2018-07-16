@@ -245,5 +245,7 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
       boxes: Tensor2D, scores: Tensor1D, maxOutputSize: number,
       iouThreshold: number, scoreThreshold?: number): Tensor1D;
 
+  fft(x: Tensor2D): Tensor2D;
+
   dispose(): void;
 }

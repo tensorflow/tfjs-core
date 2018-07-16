@@ -49,6 +49,7 @@ import {Conv2DProgram} from './webgl/conv_gpu';
 import {DepthwiseConv2DProgram} from './webgl/conv_gpu_depthwise';
 import {CumSumProgram} from './webgl/cumsum_gpu';
 import {EncodeFloatProgram} from './webgl/encode_float_gpu';
+import {FFTProgram} from './webgl/fft_gpu';
 import {FromPixelsProgram} from './webgl/from_pixels_gpu';
 import {GatherProgram} from './webgl/gather_gpu';
 import {GPGPUContext} from './webgl/gpgpu_context';
@@ -1236,6 +1237,11 @@ export class MathBackendWebGL implements KernelBackend {
     const scoresVals = scores.dataSync();
     return nonMaxSuppressionImpl(
         boxesVals, scoresVals, maxOutputSize, iouThreshold, scoreThreshold);
+  }
+
+  fft(x: Tensor2D): Tensor2D {
+    const program = new FFTProgram(x.shape);
+    return this.compileAndRun<Tensor2D, Tensor2D>(program, [x]);
   }
 
   private makeOutputArray<T extends Tensor>(shape: number[], dtype: DataType):
