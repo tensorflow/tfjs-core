@@ -58,7 +58,7 @@
     "url": "https://github.com/tensorflow/tfjs-core"
   },
   "devDependencies": {
-    "@tensorflow/tfjs-core": "file:../../../",
+    "@tensorflow/tfjs-core": "0.12.4",
     "@types/jasmine": "~2.5.53",
     "@types/polymer": "~1.1.31",
     "browserify": "^16.2.2",
