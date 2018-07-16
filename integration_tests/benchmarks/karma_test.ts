@@ -22,9 +22,15 @@ declare let __karma__: any;
 describe('benchmarks', () => {
   it('test', async () => {
     const matmulGPU = new MatmulGPUBenchmark();
-    const result = await matmulGPU.run(100);
 
-    console.log(result);
-    console.log(__karma__);
+    const sizes = [1, 100, 400, 1000, 5000];
+    console.log('-------------matmul benchmark------------');
+    for (let i = 0; i < sizes.length; i++) {
+      const size = sizes[i];
+      const result = await matmulGPU.run(size);
+
+      console.log(`[${size}]: ${result}`);
+    }
+    console.log('-----------------------------------------');
   });
 });
