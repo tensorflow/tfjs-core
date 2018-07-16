@@ -51,7 +51,6 @@
     "@bower_components/polymer": "Polymer/polymer#1.*.*",
     "@bower_components/web-animations-js": "web-animations/web-animations-js#^2.2.0",
     "@bower_components/webcomponentsjs": "webcomponents/webcomponentsjs",
-    "@tensorflow/tfjs-core": "file:../../",
     "chart.js": "^2.7.2"
   },
   "repository": {
