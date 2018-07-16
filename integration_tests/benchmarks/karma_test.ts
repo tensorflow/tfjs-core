@@ -19,17 +19,26 @@ import {MatmulGPUBenchmark} from './matmul_benchmarks';
 // tslint:disable-next-line:no-any
 declare let __karma__: any;
 
+
+const avgTimes = 100;
+
 describe('benchmarks', () => {
   it('test', async () => {
     const matmulGPU = new MatmulGPUBenchmark();
 
-    const sizes = [1, 100, 400, 1000, 5000];
+    const sizes = [1, 100, 400, 1000];
     console.log('-------------matmul benchmark------------');
+    console.log('UA: ' + navigator.userAgent);
     for (let i = 0; i < sizes.length; i++) {
       const size = sizes[i];
-      const result = await matmulGPU.run(size);
 
-      console.log(`[${size}]: ${result}`);
+      let total = 0;
+      for (let j = 0; j < avgTimes; j++) {
+        const result = await matmulGPU.run(size);
+        total += result / avgTimes;
+      }
+
+      console.log(`[${size}]: ${total}`);
     }
     console.log('-----------------------------------------');
   });
