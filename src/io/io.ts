@@ -21,7 +21,7 @@
 import './indexed_db';
 import './local_storage';
 
-import {browserFiles} from './browser_files';
+import {browserDownloads, browserFiles} from './browser_files';
 import {browserHTTPRequest} from './browser_http';
 import {concatenateArrayBuffers, decodeWeights, encodeWeights, getModelArtifactsInfoForJSON} from './io_utils';
 import {fromMemory, withSaveHandler} from './passthrough';
@@ -39,6 +39,7 @@ export {copyModel, listModels, moveModel, removeModel} from './model_management'
 // tslint:enable:max-line-length
 
 export {
+  browserDownloads,
   browserFiles,
   browserHTTPRequest,
   concatenateArrayBuffers,
