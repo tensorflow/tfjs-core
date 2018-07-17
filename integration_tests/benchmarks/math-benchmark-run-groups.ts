@@ -105,10 +105,11 @@ export function getRunGroups(): BenchmarkRunGroup[] {
     max: 1024,
     stepToSizeTransformation: (step: number) => Math.max(1, step),
     options: [
-      'log', 'exp', 'neg', 'ceil', 'floor', 'log1p', 'sqrt', 'square',
-      'abs', 'relu', 'elu', 'selu', 'leakyRelu', 'prelu', 'sigmoid',
-      'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'sinh', 'cosh',
-      'tanh', 'step'
+      'log', 'exp', 'expm1', 'neg', 'ceil', 'floor', 'log1p', 'sqrt', 'rsqrt',
+      'square', 'abs', 'relu', 'elu', 'selu', 'leakyRelu', 'prelu', 'sigmoid',
+      'logSigmoid', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'sinh', 'cosh',
+      'tanh', 'asinh', 'acosh', 'atanh', 'step', 'sign', 'round', 'reciprocal',
+      'softplus', 'erf'
     ],
     selectedOption: 'log',
     stepSize: 64,
