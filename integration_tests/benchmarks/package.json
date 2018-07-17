@@ -85,7 +85,7 @@
     "lint": "tslint -p . -t verbose",
     "server": "yarn build && http-server",
     "test": "karma start",
-    "test-travis": "karma start --singleRun --reporters='dots,karma-typescript,BrowserStack' --hostname='bs-local.com'"
+    "test-travis2": "karma start --singleRun --reporters='dots,karma-typescript,BrowserStack' --hostname='bs-local.com'"
   },
   "license": "Apache-2.0",
   "engines": {
