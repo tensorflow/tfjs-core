@@ -21,14 +21,8 @@ const karmaTypescriptConfig = {
 
 module.exports = function(config) {
   const args = [];
-  if (config.backend) {
-    args.push('--backend', config.backend);
-  }
   if (config.grep) {
     args.push('--grep', config.grep);
-  }
-  if (config.features) {
-    args.push('--features', config.features);
   }
 
   config.set({
