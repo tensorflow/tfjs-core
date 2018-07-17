@@ -76,10 +76,6 @@ module.exports = function(config) {
         os: 'iOS',
         os_version: '11.0',
         real_mobile: true
-      },
-      chrome_with_swift_shader: {
-        base: 'Chrome',
-        flags: ['--blacklist-accelerated-compositing', '--blacklist-webgl']
       }
     },
     client: {
