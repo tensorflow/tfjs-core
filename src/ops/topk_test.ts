@@ -92,6 +92,19 @@ describeWithFlags('topk', ALL_ENVS, () => {
     expectArraysClose(indices, [3]);
   });
 
+  it('lower-index element appears first, k=4', () => {
+    const a = tensor1d([1, 2, 2, 1], 'int32');
+    const k = 4;
+    const {values, indices} = tf.topk(a, k);
+
+    expect(values.shape).toEqual([4]);
+    expect(indices.shape).toEqual([4]);
+    expect(values.dtype).toBe('int32');
+    expect(indices.dtype).toBe('int32');
+    expectArraysClose(values, [2, 2, 1, 1]);
+    expectArraysClose(indices, [1, 2, 0, 3]);
+  });
+
   it('throws when k > size of array', () => {
     const a = tensor2d([[10, 50], [40, 30]]);
     expect(() => tf.topk(a, 3))

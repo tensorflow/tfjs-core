@@ -21,6 +21,29 @@ import {convertToTensor} from '../tensor_util';
 import {TensorLike} from '../types';
 import {op} from './operation';
 
+/**
+ * Finds the values and indices of the `k` largest entries along the last
+ * dimension.
+ *
+ * If the input is a vector (rank=1), finds the k largest entries in the vector
+ * and outputs their values and indices as vectors. Thus values[j] is the j-th
+ * largest entry in input, and its index is indices[j].
+ * For higher rank inputs, computes the top k entries along the last dimension.
+ *
+ * If two elements are equal, the lower-index element appears first.
+ *
+ * ```js
+ * const a = tensor2d([[1, 5], [4, 3]]);
+ * const {values, indices} = tf.topk(a);
+ * values.print();
+ * indices.print();
+ * ```
+ * @param x 1-D or higher `Tensor` with last dimension being at least `k`.
+ * @param k Number of top elements to look for along the last dimension.
+ * @param sorted If true, the resulting `k` elements will be sorted by the
+ *     values in descending order.
+ */
+/** @doc {heading: 'Operations', subheading: 'Evaluation'} */
 function topk_<T extends Tensor>(
     x: T|TensorLike, k = 1, sorted = true): {values: T, indices: T} {
   const $x = convertToTensor(x, 'x', 'topk');
