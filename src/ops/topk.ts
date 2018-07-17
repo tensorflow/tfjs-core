@@ -21,13 +21,22 @@ import {convertToTensor} from '../tensor_util';
 import {TensorLike} from '../types';
 import {op} from './operation';
 
-function topk_<T extends Tensor>(x: T|TensorLike, k: number, sorted = true): T {
+function topk_<T extends Tensor>(
+    x: T|TensorLike, k = 1, sorted = true): {values: T, indices: T} {
   const $x = convertToTensor(x, 'x', 'topk');
 
   if ($x.rank === 0) {
-    throw new Error('Topk expects the input to be of rank-1 or higher');
+    throw new Error('topk() expects the input to be of rank 1 or higher');
   }
-  return ENV.engine.runKernel(b => b.topk(x, k, sorted), {x});
+  const lastDim = $x.shape[$x.shape.length - 1];
+  if (k > lastDim) {
+    throw new Error(
+        `'k' passed to topk() must be <= the last dimension (${lastDim})`);
+  }
+
+  const [values, indices] =
+      ENV.engine.runKernel(b => b.topk($x, k, sorted), {$x});
+  return {values, indices};
 }
 
 export const topk = op({topk_});
