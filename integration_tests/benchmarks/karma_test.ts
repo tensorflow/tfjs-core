@@ -19,7 +19,7 @@ import {MatmulGPUBenchmark} from './matmul_benchmarks';
 // tslint:disable-next-line:no-any
 declare let __karma__: any;
 
-const avgTimes = 100;
+const BENCHMARK_RUNS = 100;
 
 describe('benchmarks', () => {
   it('test', async () => {
@@ -32,9 +32,9 @@ describe('benchmarks', () => {
       const size = sizes[i];
 
       let total = 0;
-      for (let j = 0; j < avgTimes; j++) {
+      for (let j = 0; j < BENCHMARK_RUNS; j++) {
         const result = await matmulGPU.run(size);
-        total += result / avgTimes;
+        total += result / BENCHMARK_RUNS;
       }
 
       console.log(`[${size}]: ${total}`);
