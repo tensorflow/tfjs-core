@@ -55,27 +55,6 @@ module.exports = function(config) {
         browser_version: 'latest',
         os: 'OS X',
         os_version: 'High Sierra'
-      },
-      bs_firefox_mac: {
-        base: 'BrowserStack',
-        browser: 'firefox',
-        browser_version: 'latest',
-        os: 'OS X',
-        os_version: 'High Sierra'
-      },
-      bs_safari_mac: {
-        base: 'BrowserStack',
-        browser: 'safari',
-        browser_version: 'latest',
-        os: 'OS X',
-        os_version: 'High Sierra'
-      },
-      bs_ios_11: {
-        base: 'BrowserStack',
-        device: 'iPhone X',
-        os: 'iOS',
-        os_version: '11.0',
-        real_mobile: true
       }
     },
     client: {
