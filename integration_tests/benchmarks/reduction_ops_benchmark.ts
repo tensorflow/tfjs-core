@@ -26,9 +26,9 @@ function getReductionOp(option: string): (x: tf.Tensor) => tf.Scalar {
     case 'min':
       return x => x.min();
     case 'argMax':
-      return x => x.argMax();
+      return x => x.argMax().argMax();
     case 'argMin':
-      return x => x.argMin();
+      return x => x.argMin().argMin();
     case 'sum':
       return x => x.sum();
     case 'logSumExp':
