@@ -16,8 +16,10 @@
  */
 
 import {ENV} from '../../environment';
+import {repeatedTry} from '../../util';
 
 import * as tex_util from './tex_util';
+// import {WebGL2RenderingContext} from './webgl_types';
 import * as webgl_util from './webgl_util';
 
 export function getWebGLContextAttributes(): WebGLContextAttributes {
@@ -282,13 +284,59 @@ export function uploadMatrixToPackedTexture(
   uploadDataToTexture(gl, texture, w, h, packedRGBA, gl.RGBA);
 }
 
-export async function downloadMatrixFromOutputTextureAsync(
+export function maybeCreateBufferFromTexture(
+    gl: WebGLRenderingContext, texture: WebGLTexture, rows: number,
+    columns: number, textureConfig: TextureConfig): WebGLBuffer|WebGLTexture {
+  let bufferOrTexture: WebGLBuffer|WebGLTexture = texture;
+
+  if (ENV.get('WEBGL_VERSION') === 2) {
+    const gl2 = gl as WebGL2RenderingContext;
+
+    // Create and bind the buffer.
+    const buffer = gl2.createBuffer();
+    webgl_util.callAndCheck(
+        gl, () => gl.bindBuffer(gl2.PIXEL_PACK_BUFFER, buffer));
+
+    // Initialize the buffer to the size of the texture in bytes.
+    const bufferSizeBytes = tex_util.getUnpackedArraySizeFromMatrixSize(
+        rows * columns, textureConfig.downloadUnpackNumChannels);
+    webgl_util.callAndCheck(
+        gl,
+        () => gl.bufferData(
+            gl2.PIXEL_PACK_BUFFER, bufferSizeBytes, gl.STATIC_DRAW));
+
+    // Copy the texture into the buffer.
+    webgl_util.callAndCheck(
+        gl, () => gl2.readPixels(0, 0, columns, rows, gl.RGBA, gl.FLOAT, 0));
+
+    bufferOrTexture = buffer;
+  }
+
+  return bufferOrTexture;
+}
+
+export function downloadFloat32MatrixFromBuffer(
+    gl: WebGLRenderingContext, buffer: WebGLBuffer, rows: number,
+    columns: number, textureConfig: TextureConfig): Float32Array {
+  const gl2 = gl as WebGL2RenderingContext;
+
+  const downloadTarget =
+      new Float32Array(tex_util.getUnpackedArraySizeFromMatrixSize(
+          rows * columns, textureConfig.downloadUnpackNumChannels));
+
+  gl2.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  gl2.getBufferSubData(gl.ARRAY_BUFFER, 0, downloadTarget);
+
+  return downloadTarget;
+}
+
+export async function downloadFloat32MatrixFromOutputTextureAsync(
     // tslint:disable-next-line:no-any
     gl: WebGLRenderingContext, getBufferSubDataAsyncExtension: any,
     rows: number, columns: number,
     textureConfig: TextureConfig): Promise<Float32Array> {
-  // tslint:disable-next-line:no-any
-  const gl2 = gl as any;
+  console.log('async ------ downloadFloat32MatrixFromOutputTextureAsync');
+  const gl2 = gl as WebGL2RenderingContext;
 
   const downloadTarget =
       new Float32Array(tex_util.getUnpackedArraySizeFromMatrixSize(
@@ -307,11 +355,32 @@ export async function downloadMatrixFromOutputTextureAsync(
       () => gl.bufferData(
           gl2.PIXEL_PACK_BUFFER, bufferSizeBytes, gl.STATIC_DRAW));
 
-  webgl_util.callAndCheck(
-      gl, () => gl2.readPixels(0, 0, columns, rows, gl.RGBA, gl.FLOAT, 0));
+  // TODO: UNDO
+  // webgl_util.callAndCheck(
+  //     gl, () => gl2.readPixels(0, 0, columns, rows, gl.RGBA, gl.FLOAT, 0));
 
-  await getBufferSubDataAsyncExtension.getBufferSubDataAsync(
-      gl2.PIXEL_PACK_BUFFER, 0, downloadTarget);
+  const sync = gl2.fenceSync(gl2.SYNC_GPU_COMMANDS_COMPLETE, 0);
+  gl.flush();
+  await repeatedTry(() => {
+    // It periodically checks the fence's status:
+    const status = gl2.clientWaitSync(sync, 0, 0);
+
+    console.log('trying');
+    return status === gl2.ALREADY_SIGNALED ||
+        status === gl2.CONDITION_SATISFIED;
+  });
+
+  // var data = new Uint8Array(4);
+  gl2.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  // 4. Once the fence has passed, it performs a readback from the buffer.
+  // If the application has not written into b between the fence and now,
+  // this operation will be non-blocking - no round-trip to the GPU process.
+  // (It requires only a memcpy from a existing shadow copy of the buffer.)
+  gl2.getBufferSubData(gl.ARRAY_BUFFER, 0, downloadTarget);
+  console.log(downloadTarget);
+
+  // await getBufferSubDataAsyncExtension.getBufferSubDataAsync(
+  //     gl2.PIXEL_PACK_BUFFER, 0, downloadTarget);
 
   const matrix = new Float32Array(rows * columns);
   tex_util.decodeMatrixFromUnpackedArray(

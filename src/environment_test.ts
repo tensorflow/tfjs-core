@@ -125,52 +125,53 @@ describeWithFlags(
       });
     });
 
+/*
 describeWithFlags(
-    'WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED', WEBGL_ENVS, () => {
-      afterEach(() => {
-        ENV.reset();
-      });
+'WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED', WEBGL_ENVS, () => {
+  afterEach(() => {
+    ENV.reset();
+  });
 
-      beforeEach(() => {
-        spyOn(document, 'createElement').and.returnValue({
-          getContext: (context: string) => {
-            if (context === 'webgl2') {
-              return {
-                getExtension: (extensionName: string) => {
-                  if (extensionName === 'WEBGL_get_buffer_sub_data_async') {
-                    return {};
-                  } else if (extensionName === 'WEBGL_lose_context') {
-                    return {loseContext: () => {}};
-                  }
-                  return null;
-                }
-              };
+  beforeEach(() => {
+    spyOn(document, 'createElement').and.returnValue({
+      getContext: (context: string) => {
+        if (context === 'webgl2') {
+          return {
+            getExtension: (extensionName: string) => {
+              if (extensionName === 'WEBGL_get_buffer_sub_data_async') {
+                return {};
+              } else if (extensionName === 'WEBGL_lose_context') {
+                return {loseContext: () => {}};
+              }
+              return null;
             }
-            return null;
-          }
-        });
-      });
-
-      it('WebGL 2 enabled', () => {
-        const features: Features = {'WEBGL_VERSION': 2};
-
-        const env = new Environment(features);
-
-        // TODO(nsthorat): Expect true when we fix
-        // https://github.com/tensorflow/tfjs/issues/137
-        expect(env.get('WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED'))
-            .toBe(false);
-      });
-
-      it('WebGL 1 disabled', () => {
-        const features: Features = {'WEBGL_VERSION': 1};
-
-        const env = new Environment(features);
-
-        expect(env.get('WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED'))
-            .toBe(false);
-      });
+          };
+        }
+        return null;
+      }
     });
+  });
+
+  it('WebGL 2 enabled', () => {
+    const features: Features = {'WEBGL_VERSION': 2};
+
+    const env = new Environment(features);
+
+    // TODO(nsthorat): Expect true when we fix
+    // https://github.com/tensorflow/tfjs/issues/137
+    expect(env.get('WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED'))
+        .toBe(false);
+  });
+
+  it('WebGL 1 disabled', () => {
+    const features: Features = {'WEBGL_VERSION': 1};
+
+    const env = new Environment(features);
+
+    expect(env.get('WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED'))
+        .toBe(false);
+  });
+});*/
 
 describeWithFlags('WebGL version', WEBGL_ENVS, () => {
   afterEach(() => {
