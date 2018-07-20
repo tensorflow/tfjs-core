@@ -202,7 +202,7 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
       x: T, blockShape: number[], crops: number[][]): T;
 
   spaceToBatchND<T extends Tensor>(
-      x: T, blockShape: number[], crops: number[][]): T;
+      x: T, blockShape: number[], paddings: number[][]): T;
 
   resizeBilinear(
       x: Tensor4D, newHeight: number, newWidth: number,

@@ -866,7 +866,7 @@ function spaceToBatchND_<T extends Tensor>(
 
   util.assert(
       paddings.length === blockShape.length,
-      `paddings.shape[0] must be equal to [blockShape] but got ${
+      `paddings.shape[0] must be equal to [blockShape], got ${
           paddings.length}`);
 
   util.assert($x.shape.reduce((a, b, i) => {
