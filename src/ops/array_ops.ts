@@ -807,6 +807,29 @@ function batchToSpaceND_<T extends Tensor>(
       backend => backend.batchToSpaceND($x, blockShape, crops), {});
 }
 
+function spaceToBatchND_<T extends Tensor>(
+    x: T|TensorLike, blockShape: number[], paddings: number[][]): T {
+  const $x = convertToTensor(x, 'x', 'spaceToBatchND');
+
+  util.assert(
+      $x.rank >= 1 + blockShape.length,
+      `input rank should be > than [blockShape] but got ${$x.rank}`);
+
+  util.assert(
+      paddings.length === blockShape.length,
+      `paddings.shape[0] must be equal to [blockShape] but got ${
+          paddings.length}`);
+
+  util.assert($x.shape.reduce((a, b, i) => {
+    if (i > 0 && i <= blockShape.length) {
+      return a && (b % blockShape[i - 1] === 0);
+    }
+    return a;
+  }, true), `input spatial dimensions must be divisible by blockShapes`);
+  return ENV.engine.runKernel(
+      backend => backend.spaceToBatchND($x, blockShape, paddings), {});
+}
+
 /**
  * Unstacks a `Tensor` of rank-`R` into a list of rank-`(R-1)` `Tensor`s.
  *
@@ -1061,3 +1084,4 @@ export const tile = op({tile_});
 export const truncatedNormal = op({truncatedNormal_});
 export const unstack = op({unstack_});
 export const batchToSpaceND = op({batchToSpaceND_});
+export const spaceToBatchND = op({spaceToBatchND_});
