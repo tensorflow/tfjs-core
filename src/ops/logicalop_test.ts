@@ -68,9 +68,28 @@ describeWithFlags('logicalNot', ALL_ENVS, () => {
     expectArraysClose(tf.logicalNot(a), [0, 0, 0, 0]);
   });
 
+  it('Tensor6D', () => {
+    let a = tf.tensor6d([1, 0, 1, 0], [2, 2, 1, 1, 1,1], 'bool');
+    expectArraysClose(tf.logicalNot(a), [0, 1, 0, 1]);
+
+    a = tf.zeros([2, 2, 2, 2, 2, 2]).cast('bool');
+    let expectedResult = new Int32Array(64);
+    expectedResult = expectedResult.fill(1);
+    expectArraysClose(tf.logicalNot(a), expectedResult);
+
+    a = tf.ones([2, 2, 2, 2, 2, 2]).cast('bool');
+    expectedResult = expectedResult.fill(0);
+    expectArraysClose(tf.logicalNot(a), expectedResult);
+  });
+
   it('throws when passed a non-tensor', () => {
     expect(() => tf.logicalNot({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'logicalNot' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const a = [1, 0, 0];
+    expectArraysClose(tf.logicalNot(a), [0, 1, 1]);
   });
 });
 
@@ -159,6 +178,12 @@ describeWithFlags('logicalAnd', ALL_ENVS, () => {
     expect(() => tf.logicalAnd(tf.scalar(1, 'bool'), {} as tf.Tensor))
         .toThrowError(/Argument 'b' passed to 'logicalAnd' must be a Tensor/);
   });
+
+  it('accepts a tensor-like object', () => {
+    const a = [1, 0, 0, 1];
+    const b = [0, 1, 0, 1];
+    expectArraysClose(tf.logicalAnd(a, b), [0, 0, 0, 1]);
+  });
 });
 
 describeWithFlags('logicalOr', ALL_ENVS, () => {
@@ -244,6 +269,12 @@ describeWithFlags('logicalOr', ALL_ENVS, () => {
   it('throws when passed b as a non-tensor', () => {
     expect(() => tf.logicalOr(tf.scalar(1, 'bool'), {} as tf.Tensor))
         .toThrowError(/Argument 'b' passed to 'logicalOr' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const a = [1, 0, 0, 1];
+    const b = [0, 1, 0, 1];
+    expectArraysClose(tf.logicalOr(a, b), [1, 1, 0, 1]);
   });
 });
 
@@ -335,6 +366,11 @@ describeWithFlags('logicalXor', ALL_ENVS, () => {
     expect(() => tf.logicalXor(tf.scalar(1, 'bool'), {} as tf.Tensor))
         .toThrowError(/Argument 'b' passed to 'logicalXor' must be a Tensor/);
   });
+  it('accepts a tensor-like object', () => {
+    const a = [1, 0, 0, 1];
+    const b = [0, 1, 0, 1];
+    expectArraysClose(tf.logicalXor(a, b), [1, 1, 0, 0]);
+  });
 });
 
 describeWithFlags('where', ALL_ENVS, () => {
@@ -345,6 +381,17 @@ describeWithFlags('where', ALL_ENVS, () => {
 
     expectArraysClose(tf.where(c, a, b), [10]);
   });
+
+  it('Invalid condition type', () => {
+    const c = tf.tensor1d([1, 0, 1, 0], 'int32');
+    const a = tf.tensor1d([10, 10, 10, 10], 'bool');
+    const b = tf.tensor1d([20, 20, 20, 20], 'bool');
+    const f = () => {
+      tf.where(c, a, b);
+    };
+    expect(f).toThrowError();
+  });
+
   it('Tensor1D', () => {
     const c = tf.tensor1d([1, 0, 1, 0], 'bool');
     const a = tf.tensor1d([10, 10, 10, 10]);
@@ -558,5 +605,69 @@ describeWithFlags('where', ALL_ENVS, () => {
         () => tf.where(
             tf.scalar(1, 'bool'), tf.scalar(1, 'bool'), {} as tf.Tensor))
         .toThrowError(/Argument 'b' passed to 'where' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const a = 10;
+    const b = 20;
+    const c = 1;
+    expectArraysClose(tf.where(c, a, b), [10]);
+  });
+
+  it('1D gradient', () => {
+    const c = tf.tensor1d([1, 0, 1], 'bool');
+    const a = tf.tensor1d([1, 2, 3]);
+    const b = tf.tensor1d([4, 5, 6]);
+    const dy = tf.tensor1d([1, 2, 3]);
+    const grads = tf.grads((c, a, b) => tf.where(c, a, b));
+    const [dc, da, db] = grads([c, a, b], dy);
+    expectArraysClose(dc, [0, 0, 0]);
+    expectArraysClose(da, [1, 0, 3]);
+    expectArraysClose(db, [0, 2, 0]);
+    expect(dc.shape).toEqual(c.shape);
+    expect(da.shape).toEqual(a.shape);
+    expect(db.shape).toEqual(b.shape);
+  });
+  it('2D gradient', () => {
+    const c = tf.tensor2d([1, 0, 1, 1, 1, 0], [2, 3], 'bool');
+    const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
+    const b = tf.tensor2d([7, 8, 9, 10, 11, 12], [2, 3]);
+    const dy = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
+    const grads = tf.grads((c, a, b) => tf.where(c, a, b));
+    const [dc, da, db] = grads([c, a, b], dy);
+    expectArraysClose(dc, [0, 0, 0, 0, 0, 0]);
+    expectArraysClose(da, [1, 0, 3, 4, 5, 0]);
+    expectArraysClose(db, [0, 2, 0, 0, 0, 6]);
+    expect(dc.shape).toEqual(c.shape);
+    expect(da.shape).toEqual(a.shape);
+    expect(db.shape).toEqual(b.shape);
+  });
+  it('3D gradient', () => {
+    const c = tf.tensor3d([1, 1, 0, 1, 1, 0], [2, 3, 1], 'bool');
+    const a = tf.tensor3d([1, 2, 3, 4, 5, 6], [2, 3, 1]);
+    const b = tf.tensor3d([7, 8, 9, 10, 11, 12], [2, 3, 1]);
+    const dy = tf.tensor3d([1, 2, 3, 4, 5, 6], [2, 3, 1]);
+    const grads = tf.grads((c, a, b) => tf.where(c, a, b));
+    const [dc, da, db] = grads([c, a, b], dy);
+    expectArraysClose(dc, [0, 0, 0, 0, 0, 0]);
+    expectArraysClose(da, [1, 2, 0, 4, 5, 0]);
+    expectArraysClose(db, [0, 0, 3, 0, 0, 6]);
+    expect(dc.shape).toEqual(c.shape);
+    expect(da.shape).toEqual(a.shape);
+    expect(db.shape).toEqual(b.shape);
+  });
+  it('4D gradient', () => {
+    const c = tf.tensor4d([1, 1, 0, 1], [2, 2, 1, 1], 'bool');
+    const a = tf.tensor4d([1, 2, 3, 4], [2, 2, 1, 1]);
+    const b = tf.tensor4d([5, 6, 7, 8], [2, 2, 1, 1]);
+    const dy = tf.tensor4d([1, 2, 3, 4], [2, 2, 1, 1]);
+    const grads = tf.grads((c, a, b) => tf.where(c, a, b));
+    const [dc, da, db] = grads([c, a, b], dy);
+    expectArraysClose(dc, [0, 0, 0, 0]);
+    expectArraysClose(da, [1, 2, 0, 4]);
+    expectArraysClose(db, [0, 0, 3, 0]);
+    expect(dc.shape).toEqual(c.shape);
+    expect(da.shape).toEqual(a.shape);
+    expect(db.shape).toEqual(b.shape);
   });
 });

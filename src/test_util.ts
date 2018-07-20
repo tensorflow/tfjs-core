@@ -15,26 +15,36 @@
  * =============================================================================
  */
 
-import {Features} from './environment';
+import {ENV} from './environment';
+import {Features} from './environment_util';
 import {Tensor} from './tensor';
 import {TypedArray} from './types';
 import * as util from './util';
 
-// Constraints for testing.
+// TODO(smilkov): Move these constants to jasmine_util.
 export const WEBGL_ENVS: Features = {
-  'BACKEND': 'test-webgl'
+  'HAS_WEBGL': true
+};
+export const NODE_ENVS: Features = {
+  'IS_NODE': true
+};
+export const CHROME_ENVS: Features = {
+  'IS_CHROME': true
+};
+export const BROWSER_ENVS: Features = {
+  'IS_BROWSER': true
 };
 export const CPU_ENVS: Features = {
-  'BACKEND': 'test-cpu'
+  'HAS_WEBGL': false
 };
-export const ALL_ENVS = {};
-
-/** Accuracy for tests. */
-export const TEST_EPSILON = 1e-3;
+export const ALL_ENVS: Features = {};
 
 export function expectArraysClose(
     actual: Tensor|TypedArray|number[],
-    expected: Tensor|TypedArray|number[]|boolean[], epsilon = TEST_EPSILON) {
+    expected: Tensor|TypedArray|number[]|boolean[], epsilon?: number) {
+  if (epsilon == null) {
+    epsilon = ENV.get('TEST_EPSILON');
+  }
   if (!(actual instanceof Tensor) && !(expected instanceof Tensor)) {
     const aType = actual.constructor.name;
     const bType = expected.constructor.name;
@@ -105,8 +115,10 @@ export function expectArraysEqual(
   return expectArraysClose(actual, expected, 0);
 }
 
-export function expectNumbersClose(
-    a: number, e: number, epsilon = TEST_EPSILON) {
+export function expectNumbersClose(a: number, e: number, epsilon?: number) {
+  if (epsilon == null) {
+    epsilon = ENV.get('TEST_EPSILON');
+  }
   if (!areClose(a, e, epsilon)) {
     throw new Error(`Numbers differ: actual === ${a}, expected === ${e}`);
   }
@@ -136,4 +148,11 @@ export function expectValuesInRange(
           `Value out of range:${actualVals[i]} low: ${low}, high: ${high}`);
     }
   }
+}
+
+export function expectArrayBuffersEqual(
+    actual: ArrayBuffer, expected: ArrayBuffer) {
+  // Safari & Jasmine dont like comparing ArrayBuffers directly. Wrapping in
+  // a Float32Array solves this issue.
+  expect(new Float32Array(actual)).toEqual(new Float32Array(expected));
 }

@@ -16,9 +16,9 @@
  */
 
 import * as tf from '../index';
+import {describeWithFlags} from '../jasmine_util';
 // tslint:disable-next-line:max-line-length
 import {ALL_ENVS, expectArraysClose, expectArraysEqual} from '../test_util';
-import {describeWithFlags} from '../jasmine_util';
 
 describeWithFlags('div', ALL_ENVS, () => {
   it('same shape', () => {
@@ -275,9 +275,16 @@ describeWithFlags('div', ALL_ENVS, () => {
     expect(() => tf.div({} as tf.Tensor, tf.scalar(1)))
         .toThrowError(/Argument 'a' passed to 'div' must be a Tensor/);
   });
+
   it('throws when passed b as a non-tensor', () => {
     expect(() => tf.div(tf.scalar(1), {} as tf.Tensor))
         .toThrowError(/Argument 'b' passed to 'div' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const r = tf.div([[1, 2, 3], [4, 5, 6]], 2);
+    expect(r.shape).toEqual([2, 3]);
+    expectArraysClose(r, [1 / 2, 2 / 2, 3 / 2, 4 / 2, 5 / 2, 6 / 2]);
   });
 });
 
@@ -499,6 +506,12 @@ describeWithFlags('mul', ALL_ENVS, () => {
     expect(() => tf.mul(tf.scalar(1), {} as tf.Tensor))
         .toThrowError(/Argument 'b' passed to 'mul' must be a Tensor/);
   });
+
+  it('accepts a tensor-like object', () => {
+    const result = tf.mul([[1, 2], [-3, -4]], 2);
+    expect(result.shape).toEqual([2, 2]);
+    expectArraysClose(result, [2, 4, -6, -8]);
+  });
 });
 
 describeWithFlags('pow', ALL_ENVS, () => {
@@ -707,7 +720,7 @@ describeWithFlags('pow', ALL_ENVS, () => {
 
   it('gradient: Tensor2D / Tensor2D w/ broadcast', () => {
     const a = tf.tensor2d([3, 4], [2, 1]);
-    const b = tf.tensor2d([[2, 3], [4, 5]], [2, 2]);
+    const b = tf.tensor2d([[2, 3], [.4, .5]], [2, 2]);
     const dy = tf.tensor2d([[6, 7], [8, 9]], [2, 2]);
 
     const grads = tf.grads((a, b) => tf.pow(a, b));
@@ -717,14 +730,14 @@ describeWithFlags('pow', ALL_ENVS, () => {
     expect(da.dtype).toEqual('float32');
     expectArraysClose(da, [
       6 * 2 * Math.pow(3, 1) + 7 * 3 * Math.pow(3, 2),
-      8 * 4 * Math.pow(4, 3) + 9 * 5 * Math.pow(4, 4)
+      8 * .4 * Math.pow(4, .4 - 1) + 9 * .5 * Math.pow(4, .5 - 1)
     ]);
 
     expect(db.shape).toEqual(b.shape);
     expect(db.dtype).toEqual('float32');
     expectArraysClose(db, [
       6 * Math.pow(3, 2) * Math.log(3), 7 * Math.pow(3, 3) * Math.log(3),
-      8 * Math.pow(4, 4) * Math.log(4), 9 * Math.pow(4, 5) * Math.log(4)
+      8 * Math.pow(4, .4) * Math.log(4), 9 * Math.pow(4, .5) * Math.log(4)
     ]);
   });
 
@@ -735,6 +748,34 @@ describeWithFlags('pow', ALL_ENVS, () => {
   it('throws when passed exp as a non-tensor', () => {
     expect(() => tf.pow(tf.scalar(1), {} as tf.Tensor))
         .toThrowError(/Argument 'exp' passed to 'pow' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const result = tf.pow([1, 2, 3], 2);
+
+    expect(result.shape).toEqual([3]);
+    expect(result.dtype).toBe('float32');
+    expectArraysEqual(result, [1, 4, 9]);
+  });
+
+  it('negative base and whole exponent not NaN', () => {
+    const a = tf.tensor1d([-2, -3, -4], 'float32');
+    const b = tf.tensor1d([2, -3, 4], 'float32');
+
+    const expected = [Math.pow(-2, 2), Math.pow(-3, -3), Math.pow(-4, 4)];
+    const result = tf.pow(a, b);
+
+    expectArraysClose(result, expected);
+  });
+
+  it('negative base and fract exponent NaN', () => {
+    const a = tf.tensor1d([-2, -3, -4], 'float32');
+    const b = tf.tensor1d([2.1, -3.01, 4.001], 'float32');
+
+    const expected = [NaN, NaN, NaN];
+    const result = tf.pow(a, b);
+
+    expectArraysClose(result, expected);
   });
 });
 
@@ -847,6 +888,34 @@ describeWithFlags('add', ALL_ENVS, () => {
     expectArraysClose(res, [0, 1, 2, 3, 4, 5]);
   });
 
+  it('6D+scalar', () => {
+    const a = tf.range(0, 64).reshape([2, 2, 2, 2, 2, 2]);
+    const b = tf.scalar(-1);
+    const res = tf.add(a, b);
+    expect(res.shape).toEqual([2, 2, 2, 2, 2, 2]);
+    const expectedResult = [
+      -1, 0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14,
+      15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+      31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46,
+      47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62
+    ];
+    expectArraysClose(res, expectedResult);
+  });
+
+  it('6D+2D', () => {
+    const a = tf.range(0, 64).reshape([2, 2, 2, 2, 2, 2]);
+    const b = tf.tensor2d([11, 13, 17, 19], [2, 2]);
+    const res = tf.add(a, b);
+    expect(res.shape).toEqual([2, 2, 2, 2, 2, 2]);
+    const expectedResult = [
+      11, 14, 19, 22, 15, 18, 23, 26, 19, 22, 27, 30, 23, 26, 31, 34,
+      27, 30, 35, 38, 31, 34, 39, 42, 35, 38, 43, 46, 39, 42, 47, 50,
+      43, 46, 51, 54, 47, 50, 55, 58, 51, 54, 59, 62, 55, 58, 63, 66,
+      59, 62, 67, 70, 63, 66, 71, 74, 67, 70, 75, 78, 71, 74, 79, 82
+    ];
+    expectArraysClose(res, expectedResult);
+  });
+
   it('gradient: scalar + 1D broadcast', () => {
     const a = tf.scalar(2);
     const b = tf.tensor1d([3, 4, 5]);
@@ -888,6 +957,11 @@ describeWithFlags('add', ALL_ENVS, () => {
   it('throws when passed b as a non-tensor', () => {
     expect(() => tf.add(tf.scalar(1), {} as tf.Tensor))
         .toThrowError(/Argument 'b' passed to 'add' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const result = tf.add(5, [1, 2, 3]);
+    expectArraysClose(result, [6, 7, 8]);
   });
 });
 
@@ -1102,5 +1176,10 @@ describeWithFlags('sub', ALL_ENVS, () => {
   it('throws when passed b as a non-tensor', () => {
     expect(() => tf.sub(tf.scalar(1), {} as tf.Tensor))
         .toThrowError(/Argument 'b' passed to 'sub' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const result = tf.sub(5, [7, 2, 3]);
+    expectArraysClose(result, [-2, 3, 2]);
   });
 });

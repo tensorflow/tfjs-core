@@ -15,17 +15,11 @@
  * =============================================================================
  */
 
-import {Gradients} from './gradients';
-import {Tracking} from './tracking';
+import {Environment} from './environment';
+// tslint:disable-next-line:max-line-length
+export {customGrad, grad, grads, valueAndGrad, valueAndGrads, variableGrads} from './gradients';
 
-export const tidy = Tracking.tidy;
-export const keep = Tracking.keep;
-export const dispose = Tracking.dispose;
-export const time = Tracking.time;
-
-export const grad = Gradients.grad;
-export const valueAndGrad = Gradients.valueAndGrad;
-export const grads = Gradients.grads;
-export const valueAndGrads = Gradients.valueAndGrads;
-export const variableGrads = Gradients.variableGrads;
-export const customGrad = Gradients.customGrad;
+export const tidy = Environment.tidy;
+export const keep = Environment.keep;
+export const dispose = Environment.dispose;
+export const time = Environment.time;

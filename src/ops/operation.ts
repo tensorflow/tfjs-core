@@ -15,19 +15,47 @@
  * =============================================================================
  */
 
-import {tidy} from '../globals';
+import {ENV} from '../environment';
 
 /**
- * Decorator for wrapping functions that perform math operations on
+ * Used for wrapping functions that perform math operations on
  * Tensors. The function will be wrapped in a named scope that cleans all
  * memory usage after the function is done.
  */
-export function operation(
-    target: {}, name: string, descriptor: PropertyDescriptor) {
-  const fn = descriptor.value;
+export function op<T extends Function>(f: {[name: string]: T}): T {
+  const keys = Object.keys(f);
+  if (keys.length !== 1) {
+    throw new Error(
+        `Please provide an object with a single key ` +
+        `(operation name) mapping to a function. Got an object with ` +
+        `${keys.length} keys.`);
+  }
+
+  let opName = keys[0];
+  const fn = f[opName];
+
+  // Strip the underscore from the end of the function name.
+  if (opName.endsWith('_')) {
+    opName = opName.substring(0, opName.length - 1);
+  }
+
   // tslint:disable-next-line:no-any
-  descriptor.value = (...args: any[]) => {
-    return tidy(name, () => fn(...args));
+  const f2 = (...args: any[]) => {
+    ENV.engine.startScope(opName);
+    try {
+      const result = fn(...args);
+      if (result instanceof Promise) {
+        console.error('Cannot return a Promise inside of tidy.');
+      }
+      ENV.engine.endScope(result);
+      return result;
+    } catch (ex) {
+      ENV.engine.endScope(null);
+      throw ex;
+    }
   };
-  return descriptor;
+  Object.defineProperty(f2, 'name', {value: opName, configurable: true});
+
+  // tslint:disable-next-line:no-any
+  return f2 as any as T;
 }

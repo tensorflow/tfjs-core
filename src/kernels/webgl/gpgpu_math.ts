@@ -15,12 +15,12 @@
  * =============================================================================
  */
 
-import {ENV} from '../../environment';
 import {Tensor} from '../../tensor';
 import * as util from '../../util';
+
 import {GPGPUContext} from './gpgpu_context';
 import * as shader_compiler from './shader_compiler';
-import {ShapeInfo} from './shader_compiler';
+import {InputInfo, ShapeInfo} from './shader_compiler';
 import {TextureData} from './tex_util';
 
 export interface GPGPUProgram {
@@ -40,32 +40,29 @@ export interface GPGPUBinary {
   outShapeInfo: ShapeInfo;
 }
 
-const NAN_UNIFORM_NAME = 'NaN';
-
-function shouldUploadNaNUniform(): boolean {
-  return !ENV.get('WEBGL_FLOAT_TEXTURE_ENABLED');
-}
-
 export interface TensorData<T extends Tensor> {
   tensor: T;
   texData: TextureData;
+  isUniform: boolean;
 }
 
 export function compileProgram<T extends Tensor, K extends Tensor>(
     gpgpu: GPGPUContext, program: GPGPUProgram, inputs: Array<TensorData<T>>,
     output: TensorData<K>): GPGPUBinary {
   const userCode = program.userCode;
-  const inputInfos = inputs.map((input, i) => {
+  const inputInfos: InputInfo[] = inputs.map((input, i) => {
     const shapeInfo = {
       logicalShape: input.tensor.shape,
-      texShape: input.texData.texShape
+      texShape: input.isUniform ? null : input.texData.texShape,
+      isUniform: input.isUniform
     };
     return {name: program.variableNames[i], shapeInfo};
   });
   const inShapeInfos = inputInfos.map(x => x.shapeInfo);
   const outShapeInfo = {
     logicalShape: output.tensor.shape,
-    texShape: output.texData.texShape
+    texShape: output.texData.texShape,
+    isUniform: false
   };
   const source = shader_compiler.makeShader(
       inputInfos, outShapeInfo, userCode,
@@ -76,14 +73,9 @@ export function compileProgram<T extends Tensor, K extends Tensor>(
   const uniformLocations: {[name: string]: WebGLUniformLocation} = {};
   for (let i = 0; i < program.variableNames.length; i++) {
     const uniformName = program.variableNames[i];
+    const shouldThrow = false;
     uniformLocations[uniformName] =
-        gpgpu.getUniformLocation(webGLProgram, uniformName);
-  }
-
-  if (shouldUploadNaNUniform()) {
-    const throwIfNaNUniformIsNotUsed = false;
-    uniformLocations[NAN_UNIFORM_NAME] = gpgpu.getUniformLocation(
-        webGLProgram, NAN_UNIFORM_NAME, throwIfNaNUniformIsNotUsed);
+        gpgpu.getUniformLocation(webGLProgram, uniformName, shouldThrow);
   }
 
   return {
@@ -107,15 +99,21 @@ function validateBinaryAndProgram(
 
   shapeInfos.forEach((s, i) => {
     const shapeA = s.logicalShape;
-    const texShapeA = s.texShape;
-    const shapeB = inputs[i].tensor.shape;
-    const texShapeB = inputs[i].texData.texShape;
+    const input = inputs[i];
+    const shapeB = input.tensor.shape;
 
     if (!util.arraysEqual(shapeA, shapeB)) {
       throw Error(
           `Binary was compiled with different shapes than ` +
           `the current args. Shapes ${shapeA} and ${shapeB} must match`);
     }
+    // The input is uploaded as uniform.
+    if (s.isUniform && input.isUniform) {
+      return;
+    }
+
+    const texShapeA = s.texShape;
+    const texShapeB = input.isUniform ? null : input.texData.texShape;
     if (!util.arraysEqual(texShapeA, texShapeB)) {
       throw Error(
           `Binary was compiled with different texture shapes than the` +
@@ -137,15 +135,26 @@ export function runProgram<T extends Tensor, K extends Tensor>(
   gpgpu.setOutputMatrixTexture(outTex, outTexShape[0], outTexShape[1]);
   gpgpu.setProgram(binary.webGLProgram);
   inputs.forEach((input, i) => {
-    const tex = input.texData.texture;
     const variableName = binary.program.variableNames[i];
     const variableUniformLocation = binary.uniformLocations[variableName];
-    gpgpu.setInputMatrixTexture(tex, variableUniformLocation, i);
+    if (variableUniformLocation != null) {
+      if (input.isUniform) {
+        if (input.tensor.size === 1) {
+          gpgpu.gl.uniform1f(
+              variableUniformLocation, input.tensor.dataSync()[0]);
+        } else {
+          let vals = input.tensor.dataSync();
+          if (!(vals instanceof Float32Array)) {
+            vals = new Float32Array(vals);
+          }
+          gpgpu.gl.uniform1fv(variableUniformLocation, vals);
+        }
+        return;
+      }
+      const tex = input.texData.texture;
+      gpgpu.setInputMatrixTexture(tex, variableUniformLocation, i);
+    }
   });
-
-  if (shouldUploadNaNUniform()) {
-    gpgpu.gl.uniform1f(binary.uniformLocations[NAN_UNIFORM_NAME], NaN);
-  }
 
   if (customSetup != null) {
     customSetup(gpgpu, binary.webGLProgram);
@@ -158,7 +167,8 @@ export function makeShaderKey(
     output: TensorData<Tensor>): string {
   let keyInputs = '';
   inputs.concat(output).forEach(x => {
-    keyInputs += `${x.tensor.shape}_${x.texData.texShape}`;
+    keyInputs +=
+        `${x.tensor.shape}_${x.isUniform ? 'uniform' : x.texData.texShape}`;
   });
   const keyUserCode = program.userCode;
   const keyBroadcast = (program.supportsBroadcasting === true).toString();

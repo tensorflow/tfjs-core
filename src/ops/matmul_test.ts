@@ -16,11 +16,10 @@
  */
 
 import * as tf from '../index';
+import {describeWithFlags} from '../jasmine_util';
 // tslint:disable-next-line:max-line-length
 import {ALL_ENVS, expectArraysClose, expectNumbersClose, WEBGL_ENVS} from '../test_util';
-import {describeWithFlags} from '../jasmine_util';
 import {Rank} from '../types';
-import {MatmulOps} from './matmul';
 
 describeWithFlags('matmul', ALL_ENVS, () => {
   it('A x B', () => {
@@ -125,7 +124,7 @@ describeWithFlags('matmul', ALL_ENVS, () => {
   it('Vector times matrix', () => {
     const v = tf.tensor1d([2, 3]);
     const matrix = tf.tensor2d([1, 2, 3, 4], [2, 2]);
-    const result = tf.vectorTimesMatrix(v, matrix);
+    const result = tf.dot(v, matrix);
 
     const expected = [11, 16];
     expectArraysClose(result, expected);
@@ -135,32 +134,16 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     const v = tf.tensor1d([2, 3]);
 
     const matrix = tf.tensor2d([1, 2, 3, 4], [2, 2]);
-    const result = tf.vectorTimesMatrix(v, matrix);
+    const result = tf.dot(v, matrix);
 
     const expected = [11, 16];
     expectArraysClose(result, expected);
   });
 
-  it('Vector times matrix throws when not passed a vector', () => {
-    // tslint:disable-next-line:no-any
-    const v: any = tf.tensor2d([1, 2, 3, 4], [2, 2]);
-    const matrix = tf.tensor2d([1, 2, 3, 4], [2, 2]);
-
-    expect(() => tf.vectorTimesMatrix(v, matrix)).toThrowError();
-  });
-
-  it('Vector times matrix throws when not passed a matrix', () => {
-    const v = tf.tensor1d([2, 3]);
-    // tslint:disable-next-line:no-any
-    const matrix: any = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2]);
-
-    expect(() => tf.vectorTimesMatrix(v, matrix)).toThrowError();
-  });
-
   it('Matrix times vector', () => {
     const matrix = tf.tensor2d([1, 2, 3, 4], [2, 2]);
     const v = tf.tensor1d([2, 3]);
-    const result = tf.matrixTimesVector(matrix, v);
+    const result = tf.dot(matrix, v);
 
     const expected = [8, 18];
     expectArraysClose(result, expected);
@@ -169,18 +152,10 @@ describeWithFlags('matmul', ALL_ENVS, () => {
   it('Matrix * vector propagates NaNs', () => {
     const matrix = tf.tensor2d([1, 2, 3, 4], [2, 2]);
     const v = tf.tensor1d([2, NaN]);
-    const result = tf.matrixTimesVector(matrix, v);
+    const result = tf.dot(matrix, v);
 
     const expected = [NaN, NaN];
     expectArraysClose(result, expected);
-  });
-
-  it('matrix times vector throws when not passed a vector', () => {
-    // tslint:disable-next-line:no-any
-    const v: any = tf.tensor2d([1, 2, 3, 4], [2, 2]);
-    const matrix = tf.tensor2d([1, 2, 3, 4], [2, 2]);
-
-    expect(() => tf.matrixTimesVector(matrix, v)).toThrowError();
   });
 
   it('matrix times vector throws when not passed a matrix', () => {
@@ -189,13 +164,13 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     // tslint:disable-next-line:no-any
     const matrix: any = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2]);
 
-    expect(() => tf.matrixTimesVector(matrix, v)).toThrowError();
+    expect(() => tf.dot(matrix, v)).toThrowError();
   });
 
   it('Dot product', () => {
     const v1 = tf.tensor1d([2, 3]);
     const v2 = tf.tensor1d([2, 1]);
-    const result = MatmulOps.dotProduct(v1, v2);
+    const result = tf.dot(v1, v2);
 
     expectNumbersClose(result.get(), 7);
   });
@@ -203,7 +178,7 @@ describeWithFlags('matmul', ALL_ENVS, () => {
   it('Dot product propagates NaNs', () => {
     const v1 = tf.tensor1d([2, NaN]);
     const v2 = tf.tensor1d([2, 1]);
-    const result = MatmulOps.dotProduct(v1, v2);
+    const result = tf.dot(v1, v2);
     expect(result.get()).toEqual(NaN);
   });
 
@@ -211,17 +186,8 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     const v1 = tf.tensor1d([2, 3, 3]);
     const v2 = tf.tensor1d([2, 1]);
 
-    expect(() => MatmulOps.dotProduct(v1, v2)).toThrowError();
-    expect(() => MatmulOps.dotProduct(v2, v1)).toThrowError();
-  });
-
-  it('Dot product throws when passed non vectors', () => {
-    // tslint:disable-next-line:no-any
-    const v1: any = tf.tensor2d([1, 2, 3, 3], [2, 2]);
-    const v2 = tf.tensor1d([2, 1]);
-
-    expect(() => MatmulOps.dotProduct(v1, v2)).toThrowError();
-    expect(() => MatmulOps.dotProduct(v2, v1)).toThrowError();
+    expect(() => tf.dot(v1, v2)).toThrowError();
+    expect(() => tf.dot(v2, v1)).toThrowError();
   });
 
   it('Outer product', () => {
@@ -229,6 +195,15 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     const v2 = tf.tensor1d([2, 1]);
     const result = tf.outerProduct(v1, v2);
 
+    const expected = [4, 2, 6, 3];
+    expect(result.shape).toEqual([2, 2]);
+    expectArraysClose(result, expected);
+  });
+
+  it('outer product accepts a tensor-like object', () => {
+    const v1 = [2, 3];
+    const v2 = [2, 1];
+    const result = tf.outerProduct(v1, v2);
     const expected = [4, 2, 6, 3];
     expect(result.shape).toEqual([2, 2]);
     expectArraysClose(result, expected);
@@ -401,6 +376,15 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     expect(() => tf.matMul(tf.tensor2d([2], [1, 1]), {} as tf.Tensor2D))
         .toThrowError(/Argument 'b' passed to 'matMul' must be a Tensor/);
   });
+
+  it('accepts a tensor-like object', () => {
+    const a = [[1, 2, 3], [4, 5, 6]];     // 2x3
+    const b = [[0, 1], [-3, 2], [2, 1]];  // 3x2
+    const c = tf.matMul(a, b);
+
+    expect(c.shape).toEqual([2, 2]);
+    expectArraysClose(c, [0, 8, -3, 20]);
+  });
 });
 
 describeWithFlags('matmul webgl-only', WEBGL_ENVS, () => {
@@ -415,8 +399,71 @@ describeWithFlags('matmul webgl-only', WEBGL_ENVS, () => {
     v.set(1, sharedDim - 3);
     v.set(1, sharedDim - 2);
 
-    const result = tf.matrixTimesVector(matrix.toTensor(), v.toTensor());
+    const result = tf.dot(matrix.toTensor(), v.toTensor());
     const expected = [2, 0];
     expectArraysClose(result, expected);
+  });
+});
+
+describeWithFlags('dot', ALL_ENVS, () => {
+  let a: tf.Tensor1D;
+  let b: tf.Tensor2D;
+  let c: tf.Tensor2D;
+  let d: tf.Tensor3D;
+  let e: tf.Scalar;
+
+  beforeEach(() => {
+    a = tf.tensor1d([1, 2]);
+    b = tf.tensor2d([[1, 2], [3, 4]]);
+    c = tf.tensor2d([[1, 2, 3], [4, 5, 6]]);
+    d = tf.tensor3d([1, 2], [1, 1, 2]);
+    e = tf.scalar(1);
+  });
+
+  it('vector-vector', () => {
+    const aa = tf.dot(a, a);
+    expectArraysClose(aa, [5]);
+    expect(aa.shape).toEqual([]);
+  });
+
+  it('vector-matrix', () => {
+    const ab = tf.dot(a, b);
+    const ac = tf.dot(a, c);
+    expect(ab.shape).toEqual([2]);
+    expect(ac.shape).toEqual([3]);
+    expectArraysClose(ab, [7, 10]);
+    expectArraysClose(ac, [9, 12, 15]);
+  });
+
+  it('matrix-vector', () => {
+    const ba = b.dot(a);
+    expect(ba.shape).toEqual([2]);
+    expectArraysClose(ba, [5, 11]);
+  });
+
+  it('matrix-matrix', () => {
+    const bb = tf.dot(b, b);
+    const bc = tf.dot(b, c);
+    expect(bb.shape).toEqual([2, 2]);
+    expect(bc.shape).toEqual([2, 3]);
+    expectArraysClose(bb, [7, 10, 15, 22]);
+    expectArraysClose(bc, [9, 12, 15, 19, 26, 33]);
+  });
+
+  it('throws error on incompatible dimensions', () => {
+    expect(() => tf.dot(c, a)).toThrowError();
+    expect(() => tf.dot(c, b)).toThrowError();
+  });
+
+  it('throws error when inputs are not rank 1 or 2', () => {
+    expect(() => tf.dot(a, d)).toThrowError();
+    expect(() => tf.dot(a, e)).toThrowError();
+  });
+
+  it('accepts a tensor-like object', () => {
+    const a = [1, 2, 3];
+    const res = tf.dot(a, a);
+    expectArraysClose(res, [14]);
+    expect(res.shape).toEqual([]);
   });
 });

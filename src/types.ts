@@ -15,8 +15,6 @@
  * =============================================================================
  */
 
-import {Tensor, Variable} from './tensor';
-
 export enum DType {
   float32 = 'float32',
   int32 = 'int32',
@@ -30,6 +28,8 @@ export interface ShapeMap {
   R2: [number, number];
   R3: [number, number, number];
   R4: [number, number, number, number];
+  R5: [number, number, number, number, number];
+  R6: [number, number, number, number, number, number];
 }
 
 /** @hidden */
@@ -47,26 +47,14 @@ export enum Rank {
   R1 = 'R1',
   R2 = 'R2',
   R3 = 'R3',
-  R4 = 'R4'
+  R4 = 'R4',
+  R5 = 'R5',
+  R6 = 'R6'
 }
 
-/** @docalias TypedArray|Array */
-export type TensorLike =
-    TypedArray|number|boolean|number[]|number[][]|number[][][]|number[][][][]|
-    boolean[]|boolean[][]|boolean[][][]|boolean[][][][];
-/** @docalias TypedArray|Array */
-export type TensorLike1D = TypedArray|number[]|boolean[];
-/** @docalias TypedArray|Array */
-export type TensorLike2D = TypedArray|number[]|number[][]|boolean[]|boolean[][];
-/** @docalias TypedArray|Array */
-export type TensorLike3D =
-    TypedArray|number[]|number[][][]|boolean[]|boolean[][][];
-/** @docalias TypedArray|Array */
-export type TensorLike4D =
-    TypedArray|number[]|number[][][][]|boolean[]|boolean[][][][];
-
 export type FlatVector = boolean[]|number[]|TypedArray;
-export type RegularArray<T> = T[]|T[][]|T[][][]|T[][][][];
+export type RegularArray<T> =
+    T[]|T[][]|T[][][]|T[][][][]|T[][][][][]|T[][][][][][];
 export type ArrayData<D extends DataType> =
     DataTypeMap[D]|RegularArray<number>|RegularArray<boolean>;
 
@@ -75,37 +63,28 @@ export interface RecursiveArray<T extends any> {
   [index: number]: T|RecursiveArray<T>;
 }
 
-/** @docalias {[name: string]: Tensor} */
-export type NamedTensorMap = {
-  [name: string]: Tensor
-};
-
-export type NamedVariableMap = {
-  [name: string]: Variable;
-};
-
 enum UpcastInt32AndMap {
-  float32 = 'float32',
-  int32 = 'int32',
-  bool = 'int32'
+  'float32' = 'float32',
+  'int32' = 'int32',
+  'bool' = 'int32'
 }
 
 enum UpcastBoolAndMap {
-  float32 = 'float32',
-  int32 = 'int32',
-  bool = 'bool'
+  'float32' = 'float32',
+  'int32' = 'int32',
+  'bool' = 'bool'
 }
 
 enum UpcastFloat32AndMap {
-  float32 = 'float32',
-  int32 = 'float32',
-  bool = 'float32'
+  'float32' = 'float32',
+  'int32' = 'float32',
+  'bool' = 'float32'
 }
 
 const upcastTypeMap = {
-  float32: UpcastFloat32AndMap,
-  int32: UpcastInt32AndMap,
-  bool: UpcastBoolAndMap
+  'float32': UpcastFloat32AndMap,
+  'int32': UpcastInt32AndMap,
+  'bool': UpcastBoolAndMap
 };
 
 export function upcastType(typeA: DataType, typeB: DataType): DataType {
@@ -117,59 +96,24 @@ export function sumOutType(type: DataType) {
   return upcastType(type, 'int32');
 }
 
-/**
- * @docalias void|number|string|Tensor|Tensor[]|{[key:
- * string]:Tensor|number|string}
- */
-export type TensorContainer = void|Tensor|string|number|boolean|
-    TensorContainerObject|TensorContainerArray;
-export interface TensorContainerObject {
-  [x: string]: TensorContainer;
-}
-export interface TensorContainerArray extends Array<TensorContainer> {}
-
-export interface ModelPredictConfig {
-  /**
-   * Optional. Batch size (Integer). If unspecified, it will default to 32.
-   */
-  batchSize?: number;
-
-  /**
-   * Optional. Verbosity mode. Defaults to false.
-   */
-  verbose?: boolean;
-
-  /**
-   * Optional. List of output node names to evaluate when running predict().
-   * Defaults to the model's default output.
-   */
-  outputs?: string|string[];
-}
-
-/**
- * Common interface for a machine learning model that can do inference.
- */
-export interface InferenceModel {
-  /**
-   * Execute the inference for the input tensors.
-   *
-   * @param input The input tensors, when there is single input for the model,
-   * inputs param should be a Tensor. For models with mutliple inputs, inputs
-   * params should be in either Tensor[] if the input order is fixed, or
-   * otherwise NamedTensorMap format.
-   * For batch inference execution, the tensors for each input need to be
-   * concatenated together. For example with mobilenet, the required input shape
-   * is [1, 244, 244, 3], which represents the [batch, height, width, channel].
-   * If we are provide a batched data of 100 images, the input tensor should be
-   * in the shape of [100, 244, 244, 3].
-   *
-   * @param config Prediction configuration for specifying the batch size and
-   * output node names.
-   *
-   * @returns Inference result tensors. The output would be single Tensor if
-   * model has single output node, otherwise Tensor[] or NamedTensorMap[] will
-   * be returned for model with multiple outputs.
-   */
-  predict(inputs: Tensor|Tensor[]|NamedTensorMap, config: ModelPredictConfig):
-      Tensor|Tensor[]|NamedTensorMap;
-}
+/** @docalias TypedArray|Array */
+export type TensorLike =
+    TypedArray|number|boolean|number[]|number[][]|number[][][]|number[][][][]|
+    number[][][][][]|number[][][][][][]|boolean[]|boolean[][]|boolean[][][]|
+    boolean[][][][]|boolean[][][][][]|boolean[][][][][][];
+/** @docalias TypedArray|Array */
+export type TensorLike1D = TypedArray|number[]|boolean[];
+/** @docalias TypedArray|Array */
+export type TensorLike2D = TypedArray|number[]|number[][]|boolean[]|boolean[][];
+/** @docalias TypedArray|Array */
+export type TensorLike3D =
+    TypedArray|number[]|number[][][]|boolean[]|boolean[][][];
+/** @docalias TypedArray|Array */
+export type TensorLike4D =
+    TypedArray|number[]|number[][][][]|boolean[]|boolean[][][][];
+/** @docalias TypedArray|Array */
+export type TensorLike5D =
+    TypedArray|number[]|number[][][][][]|boolean[]|boolean[][][][][];
+/** @docalias TypedArray|Array */
+export type TensorLike6D =
+    TypedArray|number[]|number[][][][][][]|boolean[]|boolean[][][][][][];

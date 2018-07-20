@@ -19,6 +19,7 @@ import {ENV} from '../../environment';
 import * as util from '../../util';
 
 import * as gpgpu_util from './gpgpu_util';
+import {TextureConfig} from './gpgpu_util';
 import * as tex_util from './tex_util';
 // tslint:disable-next-line:max-line-length
 import {WebGL1DisjointQueryTimerExtension, WebGL2DisjointQueryTimerExtension, WebGL2RenderingContext, WebGLLoseContextExtension, WebGLQuery} from './webgl_types';
@@ -27,7 +28,9 @@ import * as webgl_util from './webgl_util';
 export class GPGPUContext {
   gl: WebGLRenderingContext;
   textureFloatExtension: {};
+  textureHalfFloatExtension: {};
   colorBufferFloatExtension: {};
+  colorBufferHalfFloatExtension: {};
   getBufferSubDataAsyncExtension: {};
   loseContextExtension: WebGLLoseContextExtension;
   disjointQueryTimerExtension: WebGL2DisjointQueryTimerExtension|
@@ -39,6 +42,9 @@ export class GPGPUContext {
   program: WebGLProgram|null = null;
   private disposed = false;
   private autoDebugValidate = false;
+  private disjoint: boolean;
+
+  private textureConfig: TextureConfig;
 
   constructor(gl?: WebGLRenderingContext) {
     if (gl != null) {
@@ -52,6 +58,13 @@ export class GPGPUContext {
           webgl_util.getExtensionOrThrow(this.gl, 'OES_texture_float');
       this.colorBufferFloatExtension =
           this.gl.getExtension('WEBGL_color_buffer_float');
+
+      if (!ENV.get('WEBGL_RENDER_FLOAT32_ENABLED')) {
+        this.textureHalfFloatExtension =
+            webgl_util.getExtensionOrThrow(this.gl, 'OES_texture_half_float');
+        this.colorBufferHalfFloatExtension =
+            this.gl.getExtension('EXT_color_buffer_half_float');
+      }
     } else {
       this.colorBufferFloatExtension =
           webgl_util.getExtensionOrThrow(this.gl, 'EXT_color_buffer_float');
@@ -69,6 +82,9 @@ export class GPGPUContext {
     this.vertexBuffer = gpgpu_util.createVertexBuffer(this.gl);
     this.indexBuffer = gpgpu_util.createIndexBuffer(this.gl);
     this.framebuffer = webgl_util.createFramebuffer(this.gl);
+
+    this.textureConfig =
+        gpgpu_util.getTextureConfig(this.gl, this.textureHalfFloatExtension);
   }
 
   public dispose() {
@@ -106,9 +122,25 @@ export class GPGPUContext {
     webgl_util.enableDebugWebGLErrorChecking(enabled);
   }
 
-  public createMatrixTexture(rows: number, columns: number): WebGLTexture {
+  public createFloat32MatrixTexture(rows: number, columns: number):
+      WebGLTexture {
     this.throwIfDisposed();
-    return gpgpu_util.createMatrixTexture(this.gl, rows, columns);
+    return gpgpu_util.createFloat32MatrixTexture(
+        this.gl, rows, columns, this.textureConfig);
+  }
+
+  public createFloat16MatrixTexture(rows: number, columns: number):
+      WebGLTexture {
+    this.throwIfDisposed();
+    return gpgpu_util.createFloat16MatrixTexture(
+        this.gl, rows, columns, this.textureConfig);
+  }
+
+  public createUnsignedBytesMatrixTexture(rows: number, columns: number):
+      WebGLTexture {
+    this.throwIfDisposed();
+    return gpgpu_util.createUnsignedBytesMatrixTexture(
+        this.gl, rows, columns, this.textureConfig);
   }
 
   public uploadPixelDataToTexture(
@@ -121,7 +153,8 @@ export class GPGPUContext {
   public createPackedMatrixTexture(rows: number, columns: number):
       WebGLTexture {
     this.throwIfDisposed();
-    return gpgpu_util.createPackedMatrixTexture(this.gl, rows, columns);
+    return gpgpu_util.createPackedMatrixTexture(
+        this.gl, rows, columns, this.textureConfig);
   }
 
   public deleteMatrixTexture(texture: WebGLTexture) {
@@ -137,9 +170,10 @@ export class GPGPUContext {
       texture: WebGLTexture, rows: number, columns: number,
       matrix: Float32Array) {
     this.throwIfDisposed();
-    const numChannels = 1;
+    const numChannels = webgl_util.getNumChannels();
     return gpgpu_util.uploadMatrixToTexture(
-        this.gl, texture, rows, columns, matrix, numChannels);
+        this.gl, texture, rows, columns, matrix, numChannels,
+        this.textureConfig);
   }
 
   public uploadMatrixToPackedTexture(
@@ -147,15 +181,23 @@ export class GPGPUContext {
       matrix: Float32Array) {
     this.throwIfDisposed();
     return gpgpu_util.uploadMatrixToPackedTexture(
-        this.gl, texture, rows, columns, matrix);
+        this.gl, texture, rows, columns, matrix, this.textureConfig);
   }
 
-  public downloadMatrixFromTexture(
+  public downloadFloat32MatrixFromOutputTexture(
       texture: WebGLTexture, rows: number, columns: number): Float32Array {
     return this.downloadMatrixDriver(
         texture,
-        () =>
-            gpgpu_util.downloadMatrixFromOutputTexture(this.gl, rows, columns));
+        () => gpgpu_util.downloadFloat32MatrixFromOutputTexture(
+            this.gl, rows, columns, this.textureConfig));
+  }
+
+  public downloadByteEncodedFloatMatrixFromOutputTexture(
+      texture: WebGLTexture, rows: number, columns: number): Float32Array {
+    return this.downloadMatrixDriver(
+        texture,
+        () => gpgpu_util.downloadByteEncodedFloatMatrixFromOutputTexture(
+            this.gl, rows, columns, this.textureConfig));
   }
 
   public async downloadMatrixFromTextureAsync(
@@ -170,16 +212,8 @@ export class GPGPUContext {
     return this.downloadMatrixDriverAsync(
         texture,
         () => gpgpu_util.downloadMatrixFromOutputTextureAsync(
-            this.gl, this.getBufferSubDataAsyncExtension, rows, columns));
-  }
-
-  public downloadMatrixFromRGBAColorTexture(
-      texture: WebGLTexture, rows: number, columns: number,
-      channels: number): Float32Array {
-    return this.downloadMatrixDriver(
-        texture,
-        () => gpgpu_util.downloadMatrixFromRGBAColorTexture(
-            this.gl, rows, columns, channels));
+            this.gl, this.getBufferSubDataAsyncExtension, rows, columns,
+            this.textureConfig));
   }
 
   public downloadMatrixFromPackedTexture(
@@ -187,7 +221,7 @@ export class GPGPUContext {
     return this.downloadMatrixDriver(
         texture,
         () => gpgpu_util.downloadMatrixFromPackedOutputTexture(
-            this.gl, rows, columns));
+            this.gl, rows, columns, this.textureConfig));
   }
 
   private vertexAttrsAreBound = false;
@@ -348,11 +382,8 @@ export class GPGPUContext {
    */
   public runQuery(queryFn: () => void): Promise<number> {
     const query = this.beginQuery();
-
     queryFn();
-
     this.endQuery();
-
     return this.pollQueryTime(query);
   }
 
@@ -394,33 +425,58 @@ export class GPGPUContext {
 
       const available =
           gl2.getQueryParameter(query, gl2.QUERY_RESULT_AVAILABLE);
+      if (this.disjoint == null) {
+        this.disjoint = this.gl.getParameter(ext.GPU_DISJOINT_EXT);
+      }
 
-      const disjoint = this.gl.getParameter(ext.GPU_DISJOINT_EXT);
-      return available && !disjoint;
+      return available && !this.disjoint;
     } else {
       const ext = this.getQueryTimerExtensionWebGL1();
 
       const available =
           ext.getQueryObjectEXT(query, ext.QUERY_RESULT_AVAILABLE_EXT);
+      if (this.disjoint == null) {
+        this.disjoint = this.gl.getParameter(ext.GPU_DISJOINT_EXT);
+      }
 
-      const disjoint = this.gl.getParameter(ext.GPU_DISJOINT_EXT);
-
-      return available && !disjoint;
+      return available && !this.disjoint;
     }
   }
 
   pollQueryTime(query: WebGLQuery): Promise<number> {
-    return new Promise<number>((resolve, reject) => {
-      const resolveWithWarning = () => {
-        console.warn('Disjoint query timer never available.');
-        resolve(-1);
-      };
-
+    return new Promise<number>(resolve => {
       const queryTimerVersion =
           ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION');
-      util.repeatedTry(() => this.isQueryAvailable(query, queryTimerVersion))
-          .then(() => resolve(this.getQueryTime(query, queryTimerVersion)))
-          .catch(resolveWithWarning);
+      this.addItemToPoll(
+          () => this.isQueryAvailable(query, queryTimerVersion),
+          () => resolve(this.getQueryTime(query, queryTimerVersion)));
+    });
+  }
+
+  private itemsToPoll: PollItem[] = [];
+
+  pollItems(): void {
+    // Find the last query that has finished using binary search.
+    // All other queries before it are also done.
+    const index = binSearchLastTrue(this.itemsToPoll.map(x => x.isDoneFn));
+    for (let i = 0; i <= index; ++i) {
+      const {resolveFn} = this.itemsToPoll[i];
+      resolveFn();
+    }
+    this.itemsToPoll = this.itemsToPoll.slice(index + 1);
+  }
+
+  private addItemToPoll(isDoneFn: () => boolean, resolveFn: () => void) {
+    this.itemsToPoll.push({isDoneFn, resolveFn});
+    if (this.itemsToPoll.length > 1) {
+      // We already have a running loop that polls.
+      return;
+    }
+    // Start a new loop that polls.
+    util.repeatedTry(() => {
+      this.pollItems();
+      // End the loop if no more items to poll.
+      return this.itemsToPoll.length === 0;
     });
   }
 
@@ -519,4 +575,30 @@ export class GPGPUContext {
       throw new Error('No GPU program is currently set.');
     }
   }
+}
+
+type PollItem = {
+  isDoneFn: () => boolean,
+  resolveFn: () => void
+};
+
+/**
+ * Finds the index of the last true element using binary search where
+ * evaluation of an entry is expensive.
+ */
+export function binSearchLastTrue(arr: Array<() => boolean>): number {
+  let start = 0;
+  let end = arr.length - 1;
+  let best = -1;
+  while (start <= end) {
+    const mid = (start + end) >> 1;
+    const isDone = arr[mid]();
+    if (isDone) {
+      best = mid;
+      start = mid + 1;
+    } else {
+      end = mid - 1;
+    }
+  }
+  return best;
 }

@@ -16,10 +16,9 @@
  */
 
 import * as tf from '../index';
-import {Tensor2D} from '../tensor';
-// tslint:disable-next-line:max-line-length
-import {ALL_ENVS, CPU_ENVS, expectArraysClose} from '../test_util';
 import {describeWithFlags} from '../jasmine_util';
+import {Tensor2D} from '../tensor';
+import {ALL_ENVS, expectArraysClose} from '../test_util';
 import {Rank} from '../types';
 
 describeWithFlags('lstm', ALL_ENVS, () => {
@@ -85,9 +84,26 @@ describeWithFlags('lstm', ALL_ENVS, () => {
     expect(newC.get(0, 0)).toEqual(newC.get(1, 0));
     expect(newH.get(0, 0)).toEqual(newH.get(1, 0));
   });
+
+  it('basicLSTMCell accepts a tensor-like object', () => {
+    const lstmKernel = tf.randomNormal<Rank.R2>([3, 4]);
+    const lstmBias = [0, 0, 0, 0];
+    const forgetBias = 1;
+
+    const data = [[0, 0]];                             // 1x2
+    const batchedData = tf.concat2d([data, data], 0);  // 2x2
+    const c = [[0]];                                   // 1x1
+    const batchedC = tf.concat2d([c, c], 0);           // 2x1
+    const h = [[0]];                                   // 1x1
+    const batchedH = tf.concat2d([h, h], 0);           // 2x1
+    const [newC, newH] = tf.basicLSTMCell(
+        forgetBias, lstmKernel, lstmBias, batchedData, batchedC, batchedH);
+    expect(newC.get(0, 0)).toEqual(newC.get(1, 0));
+    expect(newH.get(0, 0)).toEqual(newH.get(1, 0));
+  });
 });
 
-describeWithFlags('multiRNN throws when passed non-tensor', CPU_ENVS, () => {
+describeWithFlags('multiRNN throws when passed non-tensor', ALL_ENVS, () => {
   it('input: data', () => {
     const lstmKernel1: tf.Tensor2D = tf.zeros([3, 4]);
     const lstmBias1: tf.Tensor1D = tf.zeros([4]);
@@ -159,7 +175,7 @@ describeWithFlags('multiRNN throws when passed non-tensor', CPU_ENVS, () => {
   });
 });
 
-describeWithFlags('basicLSTMCell throws with non-tensor', CPU_ENVS, () => {
+describeWithFlags('basicLSTMCell throws with non-tensor', ALL_ENVS, () => {
   it('input: forgetBias', () => {
     const lstmKernel = tf.randomNormal<Rank.R2>([3, 4]);
     const lstmBias = tf.randomNormal<Rank.R1>([4]);

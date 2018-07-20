@@ -17,13 +17,12 @@
 
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
-import {CPU_ENVS} from '../test_util';
-
+import {BROWSER_ENVS} from '../test_util';
 import {arrayBufferToBase64String, base64StringToArrayBuffer} from './io_utils';
 // tslint:disable-next-line:max-line-length
 import {browserLocalStorage, BrowserLocalStorage, BrowserLocalStorageManager, localStorageRouter, purgeLocalStorageArtifacts} from './local_storage';
 
-describeWithFlags('LocalStorage', CPU_ENVS, () => {
+describeWithFlags('LocalStorage', BROWSER_ENVS, () => {
   // Test data.
   const modelTopology1: {} = {
     'class_name': 'Sequential',
@@ -155,25 +154,15 @@ describeWithFlags('LocalStorage', CPU_ENVS, () => {
         });
   });
 
-  it('Save-load round trip succeeds', done => {
+  it('Save-load round trip succeeds', async () => {
     const handler1 = tf.io.getSaveHandlers('localstorage://FooModel')[0];
-    handler1.save(artifacts1)
-        .then(saveResult => {
-          const handler2 = tf.io.getLoadHandlers('localstorage://FooModel')[0];
-          handler2.load()
-              .then(loaded => {
-                expect(loaded.modelTopology).toEqual(modelTopology1);
-                expect(loaded.weightSpecs).toEqual(weightSpecs1);
-                expect(loaded.weightData).toEqual(weightData1);
-                done();
-              })
-              .catch(err => {
-                console.error(err.stack);
-              });
-        })
-        .catch(err => {
-          console.error(err.stack);
-        });
+
+    await handler1.save(artifacts1);
+    const handler2 = tf.io.getLoadHandlers('localstorage://FooModel')[0];
+    const loaded = await handler2.load();
+    expect(loaded.modelTopology).toEqual(modelTopology1);
+    expect(loaded.weightSpecs).toEqual(weightSpecs1);
+    expect(loaded.weightData).toEqual(weightData1);
   });
 
   it('Loading nonexistent model fails.', done => {

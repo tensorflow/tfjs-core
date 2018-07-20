@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2017 Google Inc. All Rights Reserved.
+ * Copyright 2018 Google Inc. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,16 +14,15 @@
  * limitations under the License.
  * =============================================================================
  */
+import {ENV} from '../environment';
 
-export function validateShapes(
-    sourceSize: [number, number], destSize: [number, number]) {
-  const srcArea = sourceSize[0] * sourceSize[1];
-  const dstArea = destSize[0] * destSize[1];
-  if (srcArea !== dstArea) {
-    const srcStr = `[${sourceSize[0]}, ${sourceSize[1]}]`;
-    const dstStr = `[${destSize[0]}, ${destSize[1]}]`;
-    throw new Error(
-        `copy2D shapes have different areas:\n  sourceSize ${srcStr}` +
-        `, area ${srcArea}\n  destSize ${dstStr}, area ${dstArea}`);
+const DEFAULT_FLOAT32_EPSILON = 1e-8;
+const DEFAULT_FLOAT16_EPSILON = 1e-4;
+
+export function getOptimizerDefaultEpsilonValue() {
+  if (ENV.get('WEBGL_RENDER_FLOAT32_ENABLED')) {
+    return DEFAULT_FLOAT32_EPSILON;
   }
+
+  return DEFAULT_FLOAT16_EPSILON;
 }

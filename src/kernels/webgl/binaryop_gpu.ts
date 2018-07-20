@@ -16,6 +16,8 @@
  */
 
 import * as broadcast_util from '../../ops/broadcast_util';
+
+import {GPGPUContext} from './gpgpu_context';
 import {GPGPUProgram} from './gpgpu_math';
 
 const CHECK_NAN_SNIPPET = `
@@ -26,7 +28,8 @@ const CHECK_NAN_SNIPPET = `
 export const ADD = 'return a + b;';
 export const SUB = 'return a - b;';
 export const MUL = 'return a * b;';
-export const DIV = 'return a / b;';
+export const DIV = `if (a == b) return 1.0;
+  return a / b;`;
 
 // We use native integer division to deal with floating point imprecision. Since
 // we implement floor division and glsl implements truncated division, we
@@ -46,8 +49,11 @@ export const INT_DIV = `
 `;
 
 export const POW = `
-  return (round(mod(b, 2.0)) == 0 || round(mod(b, 2.0)) == 2) ?
-      pow(abs(a), b) : sign(a) * pow(abs(a), b);
+if(a < 0.0 && floor(b) < b){
+  return NAN;
+}
+return (round(mod(b, 2.0)) == 0 || round(mod(b, 2.0)) == 2) ?
+    pow(abs(a), b) : sign(a) * pow(abs(a), b);
 `;
 export const SQUARED_DIFFERENCE = 'return (a - b) * (a - b);';
 
@@ -73,7 +79,8 @@ export const MAX = CHECK_NAN_SNIPPET + `
 export const MIN = CHECK_NAN_SNIPPET + `
   return min(a, b);
 `;
-export const MOD = `return mod(a, b);`;
+export const MOD = `if (b == 0.0) return NAN;
+  return mod(a, b);`;
 
 export const ATAN2 = CHECK_NAN_SNIPPET + `
   return atan(a, b);
@@ -87,10 +94,14 @@ export class BinaryOpProgram implements GPGPUProgram {
   userCode: string;
   supportsBroadcasting = true;
 
+  // Caching uniform location for speed.
+  startLoc: WebGLUniformLocation;
+
   constructor(op: string, aShape: number[], bShape: number[]) {
     this.outputShape =
         broadcast_util.assertAndGetBroadcastShape(aShape, bShape);
     this.userCode = `
+      uniform float NAN;
       float binaryOperation(float a, float b) {
         ${op}
       }
@@ -101,5 +112,19 @@ export class BinaryOpProgram implements GPGPUProgram {
         setOutput(binaryOperation(a, b));
       }
     `;
+  }
+
+  getCustomSetupFunc() {
+    return (gpgpu: GPGPUContext, webGLProgram: WebGLProgram) => {
+      if (this.startLoc == null) {
+        this.startLoc = gpgpu.getUniformLocationNoThrow(webGLProgram, 'NAN');
+        if (this.startLoc == null) {
+          // This means the compiler has optimized and realized it doesn't need
+          // the uniform.
+          return;
+        }
+      }
+      gpgpu.gl.uniform1f(this.startLoc, NaN);
+    };
   }
 }

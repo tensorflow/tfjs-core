@@ -271,6 +271,13 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     expectArraysClose(a, [1, 2, 3]);
   });
 
+  it('tf.tensor1d() throw error with null input value', () => {
+    expect(() => tf.tensor1d(null))
+        .toThrowError(
+            'The input to the tensor constructor ' +
+            'must be a non-null value.');
+  });
+
   it('tf.tensor1d() from number[][], shape mismatch', () => {
     // tslint:disable-next-line:no-any
     expect(() => tf.tensor1d([[1], [2], [3]] as any)).toThrowError();
@@ -296,6 +303,13 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     expect(() => tf.tensor2d([1, 2, 3, 4])).toThrowError();
   });
 
+  it('tf.tensor2d() throw error with null input value', () => {
+    expect(() => tf.tensor2d(null))
+        .toThrowError(
+            'The input to the tensor constructor ' +
+            'must be a non-null value.');
+  });
+
   it('tensor3d() from number[][][]', () => {
     const a = tf.tensor3d([[[1], [2], [3]], [[4], [5], [6]]], [2, 3, 1]);
     expectArraysClose(a, [1, 2, 3, 4, 5, 6]);
@@ -315,6 +329,13 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     // tslint:disable-next-line:no-any
     const shape: any = [4, 1];
     expect(() => tf.tensor3d([1, 2, 3, 4], shape)).toThrowError();
+  });
+
+  it('tf.tensor3d() throw error with null input value', () => {
+    expect(() => tf.tensor3d(null))
+        .toThrowError(
+            'The input to the tensor constructor ' +
+            'must be a non-null value.');
   });
 
   it('tensor4d() from number[][][][]', () => {
@@ -338,6 +359,27 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     // tslint:disable-next-line:no-any
     const shape: any = [4, 1];
     expect(() => tf.tensor4d([1, 2, 3, 4], shape)).toThrowError();
+  });
+
+  it('tf.tensor4d() throw error with null input value', () => {
+    expect(() => tf.tensor4d(null))
+        .toThrowError(
+            'The input to the tensor constructor ' +
+            'must be a non-null value.');
+  });
+
+  it('tf.tensor5d() throw error with null input value', () => {
+    expect(() => tf.tensor5d(null))
+        .toThrowError(
+            'The input to the tensor constructor ' +
+            'must be a non-null value.');
+  });
+
+  it('tf.tensor6d() throw error with null input value', () => {
+    expect(() => tf.tensor6d(null))
+        .toThrowError(
+            'The input to the tensor constructor ' +
+            'must be a non-null value.');
   });
 
   it('default dtype', () => {
@@ -751,6 +793,13 @@ describeWithFlags('tensor', ALL_ENVS, () => {
         .toThrowError(/Argument 'x' passed to 'reshape' must be a Tensor/);
   });
 
+  it('reshape accepts a tensor-like object', () => {
+    const res = tf.reshape([[1, 2, 3], [4, 5, 6]], [3, 2]);
+    expect(res.dtype).toBe('float32');
+    expect(res.shape).toEqual([3, 2]);
+    expectArraysClose(res, [1, 2, 3, 4, 5, 6]);
+  });
+
   it('cast bool -> bool', () => {
     const a = tf.tensor1d([1, 0], 'bool');
     expect(a.cast('bool').dtype).toEqual('bool');
@@ -799,6 +848,13 @@ describeWithFlags('tensor', ALL_ENVS, () => {
   it('cast throws when passed a non-tensor', () => {
     expect(() => tf.cast({} as tf.Tensor, 'float32'))
         .toThrowError(/Argument 'x' passed to 'cast' must be a Tensor/);
+  });
+
+  it('cast accepts a tensor-like object', () => {
+    const a = [1.0, 2.0];
+    const res = tf.cast(a, 'int32');
+    expect(res.dtype).toEqual('int32');
+    expectArraysClose(res, [1, 2]);
   });
 
   it('scalar bool -> int32', () => {
@@ -876,6 +932,12 @@ describeWithFlags('tensor', ALL_ENVS, () => {
   it('squeeze throws when passed a non-tensor', () => {
     expect(() => tf.squeeze({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'squeeze' must be a Tensor/);
+  });
+
+  it('squeeze accepts a tensor-like object', () => {
+    const res = tf.squeeze([[[4]], [[2]], [[1]]] /* shape is [3, 1, 1] */);
+    expect(res.shape).toEqual([3]);
+    expectArraysClose(res, [4, 2, 1]);
   });
 
   it('scalar -> 2d', () => {
@@ -1102,5 +1164,63 @@ describeWithFlags('tensor grad', ALL_ENVS, () => {
     const x = tf.tensor1d([2, 3]);
     const data = gg(x);
     expectArraysClose(data, [12, 18]);
+  });
+});
+
+describeWithFlags('tensor.data', ALL_ENVS, () => {
+  it('.data() postpones disposal of tensor', done => {
+    expect(tf.memory().numTensors).toBe(0);
+    tf.tidy(() => {
+      const a = tf.scalar(5);
+      expect(tf.memory().numTensors).toBe(1);
+      a.square();  // Uploads it on GPU.
+      a.data().then(vals => {
+        // The tidy above should not dispose the scalar since there is
+        // a pending data read.
+        expectNumbersClose(vals[0], 5);
+      });
+    });
+
+    // tidy ends immediately, but should not dispose the scalar.
+
+    setTimeout(() => {
+      // tidy should dispose the tensor.
+      expect(tf.memory().numTensors).toBe(0);
+      done();
+    });
+  });
+
+  it('calling .data() twice works (2 subscribers to a single read)', done => {
+    tf.tidy(() => {
+      const a = tf.scalar(5);
+      a.square();  // Uploads it on GPU.
+      a.data().then(vals => {
+        expectNumbersClose(vals[0], 5);
+      });
+      a.data()
+          .then(vals => {
+            expectNumbersClose(vals[0], 5);
+          })
+          .then(done);
+    });
+    // tidy ends immediately, but should not dispose the scalar since there is
+    // a pending data read.
+  });
+});
+
+describeWithFlags('x instanceof Tensor', ALL_ENVS, () => {
+  it('x: Tensor', () => {
+    const t = tf.scalar(1);
+    expect(t instanceof Tensor).toBe(true);
+  });
+
+  it('x: Tensor-like', () => {
+    const t = {shape: [2], dtype: 'float32'};
+    expect(t instanceof Tensor).toBe(true);
+  });
+
+  it('x: other object, fails', () => {
+    const t = {something: 'else'};
+    expect(t instanceof Tensor).toBe(false);
   });
 });
