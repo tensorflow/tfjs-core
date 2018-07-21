@@ -16,7 +16,8 @@
  */
 
 import {ENV} from '../environment';
-import {Tensor} from '../tensor';
+import {whereImpl} from '../kernels/where_impl';
+import {Tensor, Tensor2D} from '../tensor';
 import {convertToTensor} from '../tensor_util';
 import {TensorLike} from '../types';
 import {assert, assertShapesMatch} from '../util';
@@ -175,8 +176,30 @@ function where_<T extends Tensor>(
              {$condition, $a, $b}, grad) as T;
 }
 
+/**
+ * Returns the coordinates of true elements of condition.
+ *
+ * The coordinates are returned in a 2-D tensor where the first dimension (rows)
+ * represents the number of true elements, and the second dimension (columns)
+ * represents the coordinates of the true elements. Keep in mind, the shape of
+ * the output tensor can vary depending on how many true values there are in
+ * input. Indices are output in row-major order. The resulting tensor has the
+ * shape `[numTrueElems, condition.rank]`.
+ */
+async function whereAsync_(condition: Tensor|TensorLike): Promise<Tensor2D> {
+  const $condition = convertToTensor(condition, 'condition', 'where', 'bool');
+  assert($condition.dtype === 'bool', 'Condition must be of type bool.');
+  const vals = await $condition.data();
+  const res = whereImpl($condition.shape, vals);
+  if (condition !== $condition) {
+    $condition.dispose();
+  }
+  return res;
+}
+
 export const logicalAnd = op({logicalAnd_});
 export const logicalNot = op({logicalNot_});
 export const logicalOr = op({logicalOr_});
 export const logicalXor = op({logicalXor_});
 export const where = op({where_});
+export const whereAsync = whereAsync_;

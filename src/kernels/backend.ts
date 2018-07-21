@@ -241,5 +241,9 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
 
   cumsum(x: Tensor, axis: number, exclusive: boolean, reverse: boolean): Tensor;
 
+  nonMaxSuppression(
+      boxes: Tensor2D, scores: Tensor1D, maxOutputSize: number,
+      iouThreshold: number, scoreThreshold: number): Tensor1D;
+
   dispose(): void;
 }

@@ -116,4 +116,44 @@ describeWithFlags('topk', ALL_ENVS, () => {
     expect(() => tf.topk(a))
         .toThrowError(/topk\(\) expects the input to be of rank 1 or higher/);
   });
+
+  it('accepts a tensor-like object, k=2', () => {
+    const a = [20, 10, 40, 30];
+    const k = 2;
+    const {values, indices} = tf.topk(a, k);
+
+    expect(values.shape).toEqual([2]);
+    expect(indices.shape).toEqual([2]);
+    expect(values.dtype).toBe('float32');
+    expect(indices.dtype).toBe('int32');
+    expectArraysClose(values, [40, 30]);
+    expectArraysClose(indices, [2, 3]);
+  });
+});
+
+describeWithFlags('topkAsync', ALL_ENVS, () => {
+  it('1d array with default k', async () => {
+    const a = tensor1d([20, 10, 40, 30]);
+    const {values, indices} = await tf.topkAsync(a);
+
+    expect(values.shape).toEqual([1]);
+    expect(indices.shape).toEqual([1]);
+    expect(values.dtype).toBe('float32');
+    expect(indices.dtype).toBe('int32');
+    expectArraysClose(values, [40]);
+    expectArraysClose(indices, [2]);
+  });
+
+  it('accepts a tensor-like object, k=2', async () => {
+    const a = [20, 10, 40, 30];
+    const k = 2;
+    const {values, indices} = await tf.topkAsync(a, k);
+
+    expect(values.shape).toEqual([2]);
+    expect(indices.shape).toEqual([2]);
+    expect(values.dtype).toBe('float32');
+    expect(indices.dtype).toBe('int32');
+    expectArraysClose(values, [40, 30]);
+    expectArraysClose(indices, [2, 3]);
+  });
 });

@@ -35,7 +35,9 @@ import * as util from '../util';
 import {now} from '../util';
 import {BackendTimingInfo, KernelBackend} from './backend';
 import * as backend_util from './backend_util';
+import {nonMaxSuppressionImpl} from './non_max_suppression_impl';
 import {topkImpl} from './topk_impl';
+import {whereImpl} from './where_impl';
 
 export class MathBackendCPU implements KernelBackend {
   private data = new WeakMap<DataId, DataTypeMap[DataType]>();
@@ -531,28 +533,13 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   where(condition: Tensor): Tensor2D {
-    const vals = condition.dataSync();
-
-    const indices = [];
-    for (let i = 0; i < vals.length; i++) {
-      if (vals[i]) {
-        indices.push(i);
-      }
-    }
-
-    const inBuffer = buffer(condition.shape, 'int32');
-
-    const out = buffer([indices.length, condition.rank], 'int32');
-    for (let i = 0; i < indices.length; i++) {
-      const loc = inBuffer.indexToLoc(i);
-      const offset = i * condition.rank;
-      out.values.set(loc, offset);
-    }
-    return out.toTensor() as Tensor2D;
+    const condVals = condition.dataSync();
+    return whereImpl(condition.shape, condVals);
   }
 
   topk<T extends Tensor>(x: T, k: number, sorted: boolean): [T, T] {
-    return topkImpl(x, k, sorted);
+    const xVals = x.dataSync();
+    return topkImpl(xVals, x.shape, x.dtype, k, sorted);
   }
 
   min(x: Tensor, axes: number[]): Tensor {
@@ -2118,6 +2105,15 @@ export class MathBackendCPU implements KernelBackend {
       }
     }
     return ops.tensor2d(res, [indices.size, depth], 'int32');
+  }
+
+  nonMaxSuppression(
+      boxes: Tensor2D, scores: Tensor1D, maxOutputSize: number,
+      iouThreshold: number, scoreThreshold: number): Tensor1D {
+    const boxesVals = boxes.dataSync();
+    const scoresVals = scores.dataSync();
+    return nonMaxSuppressionImpl(
+        boxesVals, scoresVals, maxOutputSize, iouThreshold, scoreThreshold);
   }
 
   private broadcastedBinaryOp(

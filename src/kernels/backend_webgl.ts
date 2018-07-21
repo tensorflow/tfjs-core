@@ -31,6 +31,7 @@ import {DataType, DataTypeMap, RecursiveArray, TypedArray} from '../types';
 import * as util from '../util';
 import {KernelBackend} from './backend';
 import * as backend_util from './backend_util';
+import {nonMaxSuppressionImpl} from './non_max_suppression_impl';
 import {topkImpl} from './topk_impl';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
 import {AvgPool2DBackpropProgram} from './webgl/avg_pool_backprop_gpu';
@@ -82,6 +83,7 @@ import * as unary_op from './webgl/unaryop_gpu';
 import {UnaryOpProgram} from './webgl/unaryop_gpu';
 import {WebGLQuery} from './webgl/webgl_types';
 import * as webgl_util from './webgl/webgl_util';
+import {whereImpl} from './where_impl';
 
 type TimerNode = RecursiveArray<Promise<number>>|Promise<number>;
 export interface CPUTimerQuery {
@@ -779,12 +781,18 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   where(condition: Tensor): Tensor2D {
-    throw new Error(
-        'tf.where is not supported in WebGL. Call tf.whereAsync() instead');
+    console.warn(
+        'tf.where() in webgl locks the UI thread. ' +
+        'Call tf.whereAsync() instead');
+    const condVals = condition.dataSync();
+    return whereImpl(condition.shape, condVals);
   }
 
   topk<T extends Tensor>(x: T, k: number, sorted: boolean): [T, T] {
-    return topkImpl(x, k, sorted);
+    console.warn(
+        'tf.topk() in webgl locks the UI thread. Call tf.topkAsync() instead');
+    const xVals = x.dataSync();
+    return topkImpl(xVals, x.shape, x.dtype, k, sorted);
   }
 
   min(x: Tensor, axes: number[]): Tensor {
@@ -1198,6 +1206,18 @@ export class MathBackendWebGL implements KernelBackend {
       Tensor2D {
     const program = new OneHotProgram(indices.size, depth, onValue, offValue);
     return this.compileAndRun(program, [indices]);
+  }
+
+  nonMaxSuppression(
+      boxes: Tensor2D, scores: Tensor1D, maxOutputSize: number,
+      iouThreshold: number, scoreThreshold: number): Tensor1D {
+    console.warn(
+        'tf.nonMaxSuppression() in webgl locks the UI thread. ' +
+        'Call tf.nonMaxSuppressionAsync() instead');
+    const boxesVals = boxes.dataSync();
+    const scoresVals = scores.dataSync();
+    return nonMaxSuppressionImpl(
+        boxesVals, scoresVals, maxOutputSize, iouThreshold, scoreThreshold);
   }
 
   private makeOutputArray<T extends Tensor>(shape: number[], dtype: DataType):
