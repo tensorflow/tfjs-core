@@ -15,11 +15,29 @@
  * =============================================================================
  */
 
-import {Environment} from './environment';
-// tslint:disable-next-line:max-line-length
-export {customGrad, grad, grads, valueAndGrad, valueAndGrads, variableGrads} from './gradients';
+import * as tf from './index';
+import {describeWithFlags} from './jasmine_util';
+import {ALL_ENVS} from './test_util';
 
-export const tidy = Environment.tidy;
-export const keep = Environment.keep;
-export const dispose = Environment.dispose;
-export const time = Environment.time;
+describeWithFlags('nextFrame', ALL_ENVS, () => {
+  it('basic usage', async () => {
+    const t0 = tf.util.now();
+    await tf.nextFrame();
+    const t1 = tf.util.now();
+    // tf.util.now should give sufficient accuracy on all supported envs.
+    expect(t1 > t0);
+  });
+
+  it('does not block timers', async () => {
+    let flag = false;
+    setTimeout(() => {
+      flag = true;
+    }, 50);
+    const t0 = tf.util.now();
+    expect(flag).toBe(false);
+    while (tf.util.now() - t0 < 1000 && !flag) {
+      await tf.nextFrame();
+    }
+    expect(flag).toBe(true);
+  });
+});

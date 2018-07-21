@@ -17,6 +17,7 @@
 
 import {MemoryInfo, TimingInfo} from '../engine';
 import {ENV} from '../environment';
+import * as array_ops_util from '../ops/array_ops_util';
 import * as axis_util from '../ops/axis_util';
 import {Conv2DInfo} from '../ops/conv_util';
 import * as ops from '../ops/ops';
@@ -28,8 +29,10 @@ import {DataId, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D
 import * as types from '../types';
 import {DataType, DataTypeMap, RecursiveArray, TypedArray} from '../types';
 import * as util from '../util';
+
 import {KernelBackend} from './backend';
 import * as backend_util from './backend_util';
+import {topkImpl} from './topk_impl';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
 import {AvgPool2DBackpropProgram} from './webgl/avg_pool_backprop_gpu';
 import {BatchNormProgram} from './webgl/batchnorm_gpu';
@@ -53,6 +56,7 @@ import {GPGPUBinary, GPGPUProgram, TensorData} from './webgl/gpgpu_math';
 import * as gpgpu_util from './webgl/gpgpu_util';
 import {WhereProgram} from './webgl/logical_gpu';
 import {LRNProgram} from './webgl/lrn_gpu';
+import {LRNGradProgram} from './webgl/lrn_grad_gpu';
 import {MaxPool2DBackpropProgram} from './webgl/max_pool_backprop_gpu';
 import {MatMulProgram} from './webgl/mulmat_gpu';
 import {MultinomialProgram} from './webgl/multinomial_gpu';
@@ -496,6 +500,15 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [x]);
   }
 
+  LRNGrad(
+      dy: Tensor4D, inputImage: Tensor4D, outputImage: Tensor4D,
+      depthRadius: number, bias: number, alpha: number,
+      beta: number): Tensor4D {
+    const program =
+        new LRNGradProgram(inputImage.shape, depthRadius, bias, alpha, beta);
+    return this.compileAndRun(program, [inputImage, outputImage, dy]);
+  }
+
   tile<T extends Tensor>(x: T, reps: number[]): T {
     const program = new TileProgram(x.shape, reps);
     return this.compileAndRun(program, [x]);
@@ -515,6 +528,59 @@ export class MathBackendWebGL implements KernelBackend {
   gather<T extends Tensor>(x: T, indices: Tensor1D, axis: number): T {
     const program = new GatherProgram(x.shape, indices.size, axis);
     return this.compileAndRun(program, [x, indices]);
+  }
+
+  batchToSpaceND<T extends Tensor>(
+      x: T, blockShape: number[], crops: number[][]): T {
+    util.assert(
+        x.rank <= 4,
+        'batchToSpaceND for rank > 4 with a WebGL backend not implemented yet');
+    const prod = blockShape.reduce((a, b) => a * b);
+
+    const reshaped = array_ops_util.getReshaped(x.shape, blockShape, prod);
+    const permuted =
+        array_ops_util.getPermuted(reshaped.length, blockShape.length);
+    const reshapedPermuted =
+        array_ops_util.getReshapedPermuted(x.shape, blockShape, prod);
+    const sliceBeginCoords =
+        array_ops_util.getSliceBeginCoords(crops, blockShape.length);
+    const sliceSize =
+        array_ops_util.getSliceSize(reshapedPermuted, crops, blockShape.length);
+
+    return x.reshape(reshaped)
+               .transpose(permuted)
+               .reshape(reshapedPermuted)
+               .slice(sliceBeginCoords, sliceSize) as T;
+  }
+
+  spaceToBatchND<T extends Tensor>(
+      x: T, blockShape: number[], paddings: Array<[number, number]>): T {
+    util.assert(
+        x.rank <= 4,
+        'spaceToBatchND for rank > 4 with a WebGL backend not implemented yet');
+
+    const prod = blockShape.reduce((a, b) => a * b);
+
+    const completePaddings: Array<[number, number]> = [[0, 0]];
+    completePaddings.push(...paddings);
+    for (let i = 1 + blockShape.length; i < x.shape.length; ++i) {
+      completePaddings.push([0, 0]);
+    }
+
+    const paddedX = x.pad(completePaddings);
+
+    const reshapedPaddedShape =
+        array_ops_util.getReshaped(paddedX.shape, blockShape, prod, false);
+
+    const permutedReshapedPaddedPermutation = array_ops_util.getPermuted(
+        reshapedPaddedShape.length, blockShape.length, false);
+
+    const flattenShape = array_ops_util.getReshapedPermuted(
+        paddedX.shape, blockShape, prod, false);
+
+    return paddedX.reshape(reshapedPaddedShape)
+               .transpose(permutedReshapedPaddedPermutation)
+               .reshape(flattenShape) as T;
   }
 
   private reduce(
@@ -712,12 +778,8 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [condition, a, b], output);
   }
 
-  topKValues<T extends Tensor>(x: T, k: number): Tensor1D {
-    throw new Error('topKValues GPU not yet implemented!');
-  }
-
-  topKIndices(x: Tensor, k: number): Tensor1D {
-    throw new Error('topKIndices GPU not yet implemented!');
+  topk<T extends Tensor>(x: T, k: number, sorted: boolean): [T, T] {
+    return topkImpl(x, k, sorted);
   }
 
   min(x: Tensor, axes: number[]): Tensor {
@@ -1147,7 +1209,8 @@ export class MathBackendWebGL implements KernelBackend {
     }
     const inputsData: Array<TensorData<T>> = inputs.map(tensor => {
       const texData = this.texData.get(tensor.dataId);
-      // Upload small tensors that live on the CPU as uniforms, not as textures.
+      // Upload small tensors that live on the CPU as uniforms, not as
+      // textures.
       if (texData.texture == null && tensor.size <= SIZE_UPLOAD_UNIFORM) {
         return {tensor, texData: null, isUniform: true};
       }
@@ -1269,9 +1332,9 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   private cacheOnCPU(dataId: DataId, float32Values?: Float32Array) {
-    // In delayed storage mode, when the user reads data, we don't keep a copy
-    // on the gpu, to minimize likelihood of memory leak. We re-upload to gpu
-    // the next time a gpgpu program needs the texture.
+    // In delayed storage mode, when the user reads data, we don't keep a
+    // copy on the gpu, to minimize likelihood of memory leak. We re-upload
+    // to gpu the next time a gpgpu program needs the texture.
     const dontKeepCopyOnGPU = this.delayedStorage;
     const texData = this.texData.get(dataId);
     const {texture, texShape, dtype, usage} = texData;

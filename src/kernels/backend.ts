@@ -100,8 +100,7 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
 
   where(condition: Tensor, a: Tensor, b: Tensor, dtype: DataType): Tensor;
 
-  topKValues<T extends Tensor>(x: T, k: number): Tensor1D;
-  topKIndices(x: Tensor, k: number): Tensor1D;
+  topk<T extends Tensor>(x: T, k: number, sorted: boolean): [T, T];
 
   min(x: Tensor, axes: number[]): Tensor;
   minimum(a: Tensor, b: Tensor): Tensor;
@@ -199,6 +198,12 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
 
   gather<T extends Tensor>(x: T, indices: Tensor1D, axis: number): T;
 
+  batchToSpaceND<T extends Tensor>(
+      x: T, blockShape: number[], crops: number[][]): T;
+
+  spaceToBatchND<T extends Tensor>(
+      x: T, blockShape: number[], paddings: number[][]): T;
+
   resizeBilinear(
       x: Tensor4D, newHeight: number, newWidth: number,
       alignCorners: boolean): Tensor4D;
@@ -221,6 +226,10 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
   localResponseNormalization4D(
       x: Tensor4D, radius: number, bias: number, alpha: number,
       beta: number): Tensor4D;
+
+  LRNGrad(
+      dy: Tensor4D, inputImage: Tensor4D, outputImage: Tensor4D, radius: number,
+      bias: number, alpha: number, beta: number): Tensor4D;
 
   multinomial(
       logits: Tensor2D, normalized: boolean, numSamples: number,

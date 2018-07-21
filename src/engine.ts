@@ -32,7 +32,7 @@ import {makeOnesTypedArray, now, sizeFromShape} from './util';
  * A function that computes an output. The save function is for saving tensors
  * computed in the forward pass, that we need in the backwards pass.
  */
-export type ForwardFunc<T extends Tensor> =
+export type ForwardFunc<T> =
     (backend: KernelBackend, save?: <S extends Tensor>(tensor: S) => S) => T;
 
 /**
@@ -64,7 +64,7 @@ export interface TensorManager {
 
 interface ScopeState {
   track: Tensor[];
-  name?: string;
+  name: string;
 }
 
 export class Engine implements TensorManager {
@@ -91,7 +91,7 @@ export class Engine implements TensorManager {
       private backend: KernelBackend, public safeMode: boolean,
       private debugMode: () => boolean) {
     // Create a default outer scope.
-    this.activeScope = {track: []};
+    this.activeScope = {track: [], name: 'default scope'};
     this.scopeStack = [this.activeScope];
     this.profiler = new Profiler(backend);
   }
@@ -148,7 +148,7 @@ export class Engine implements TensorManager {
     }
   }
 
-  runKernel<T extends Tensor, I extends NamedTensorMap>(
+  runKernel<T extends Tensor|Tensor[], I extends NamedTensorMap>(
       forwardFunc: ForwardFunc<T>,
       inputs: I,
       backwardsFunc?: (dy: T, saved: Tensor[]) => {[P in keyof I]: () => I[P]},
@@ -178,11 +178,13 @@ export class Engine implements TensorManager {
         id: this.nextTapeNodeId++,
         name: scopeName,
         inputs,
-        output: result,
-
+        // Keep gradient records only for the first output.
+        output: Array.isArray(result) ? result[0] : result
       };
       if (backwardsFunc != null) {
-        tapeNode.gradient = (dy: T) => backwardsFunc(dy, saved);
+        tapeNode.gradient =
+            ((dy: T) => backwardsFunc(dy, saved)) as (dy: Tensor) =>
+                NamedGradientMap;
       }
       this.activeTape.push(tapeNode);
     }
@@ -306,7 +308,7 @@ export class Engine implements TensorManager {
       this.gradientScopeCount++;
     }
 
-    const scopeInfo: ScopeState = {track: []};
+    const scopeInfo: ScopeState = {track: [], name: 'unnamed scope'};
     if (name) {
       scopeInfo.name = name;
     }
@@ -347,7 +349,7 @@ export class Engine implements TensorManager {
 
     const oldScope = this.scopeStack.pop();
     this.activeScope = this.scopeStack.length === 0 ?
-        {track: []} :
+        {track: [], name: 'default scope'} :
         this.scopeStack[this.scopeStack.length - 1];
 
     // Track the current result in the parent scope.
