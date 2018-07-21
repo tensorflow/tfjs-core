@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+// tslint:disable-next-line:no-circular-imports
 import {ENV} from './environment';
 // tslint:disable-next-line:max-line-length
 import {ArrayData, DataType, DataTypeMap, FlatVector, RecursiveArray, RegularArray, TensorLike, TypedArray} from './types';
