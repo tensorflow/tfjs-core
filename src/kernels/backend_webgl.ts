@@ -29,7 +29,6 @@ import {DataId, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D
 import * as types from '../types';
 import {DataType, DataTypeMap, RecursiveArray, TypedArray} from '../types';
 import * as util from '../util';
-
 import {KernelBackend} from './backend';
 import * as backend_util from './backend_util';
 import {topkImpl} from './topk_impl';
@@ -54,7 +53,6 @@ import {GPGPUContext} from './webgl/gpgpu_context';
 import * as gpgpu_math from './webgl/gpgpu_math';
 import {GPGPUBinary, GPGPUProgram, TensorData} from './webgl/gpgpu_math';
 import * as gpgpu_util from './webgl/gpgpu_util';
-import {WhereProgram} from './webgl/logical_gpu';
 import {LRNProgram} from './webgl/lrn_gpu';
 import {LRNGradProgram} from './webgl/lrn_grad_gpu';
 import {MaxPool2DBackpropProgram} from './webgl/max_pool_backprop_gpu';
@@ -73,6 +71,7 @@ import {ResizeNearestNeigborBackpropProgram} from './webgl/resize_nearest_neighb
 import {ResizeNearestNeighborProgram} from './webgl/resize_nearest_neighbor_gpu';
 import {ReverseProgram} from './webgl/reverse_gpu';
 import {SegmentOpProgram} from './webgl/segment_gpu';
+import {SelectProgram} from './webgl/select_gpu';
 import {SliceProgram} from './webgl/slice_gpu';
 import {StridedSliceProgram} from './webgl/strided_slice_gpu';
 import {TextureData, TextureUsage} from './webgl/tex_util';
@@ -742,10 +741,16 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [a, b], output);
   }
 
-  where(condition: Tensor, a: Tensor, b: Tensor, dtype: DataType): Tensor {
-    const program = new WhereProgram(condition.rank, a.shape, a.rank);
-    const output = this.makeOutputArray(program.outputShape, dtype);
+  select(condition: Tensor, a: Tensor, b: Tensor): Tensor {
+    const program = new SelectProgram(condition.rank, a.shape, a.rank);
+    const output = this.makeOutputArray(
+        program.outputShape, types.upcastType(a.dtype, b.dtype));
     return this.compileAndRun(program, [condition, a, b], output);
+  }
+
+  where(condition: Tensor): Tensor2D {
+    throw new Error(
+        'tf.where is not supported in WebGL. Call tf.whereAsync() instead');
   }
 
   topk<T extends Tensor>(x: T, k: number, sorted: boolean): [T, T] {

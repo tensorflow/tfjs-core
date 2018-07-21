@@ -507,11 +507,11 @@ export class MathBackendCPU implements KernelBackend {
     });
   }
 
-  where(condition: Tensor, a: Tensor, b: Tensor, dtype: DataType): Tensor {
+  select(condition: Tensor, a: Tensor, b: Tensor): Tensor {
     const values = condition.dataSync();
     const aValues = a.dataSync();
     const bValues = b.dataSync();
-    const result = ops.zeros(a.shape, dtype);
+    const result = ops.zeros(a.shape, types.upcastType(a.dtype, b.dtype));
     const newValues = result.dataSync();
     let index = 0;
     const offset = condition.rank === 0 || condition.rank > 1 || a.rank === 1 ?
@@ -528,6 +528,27 @@ export class MathBackendCPU implements KernelBackend {
       }
     }
     return result;
+  }
+
+  where(condition: Tensor): Tensor2D {
+    const vals = condition.dataSync();
+
+    const indices = [];
+    for (let i = 0; i < vals.length; i++) {
+      if (vals[i]) {
+        indices.push(i);
+      }
+    }
+
+    const inBuffer = buffer(condition.shape, 'int32');
+
+    const out = buffer([indices.length, condition.rank], 'int32');
+    for (let i = 0; i < indices.length; i++) {
+      const loc = inBuffer.indexToLoc(i);
+      const offset = i * condition.rank;
+      out.values.set(loc, offset);
+    }
+    return out.toTensor() as Tensor2D;
   }
 
   topk<T extends Tensor>(x: T, k: number, sorted: boolean): [T, T] {

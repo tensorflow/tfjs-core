@@ -98,7 +98,8 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
   logicalAnd(a: Tensor, b: Tensor): Tensor;
   logicalOr(a: Tensor, b: Tensor): Tensor;
 
-  where(condition: Tensor, a: Tensor, b: Tensor, dtype: DataType): Tensor;
+  where(condition: Tensor): Tensor2D;
+  select(condition: Tensor, a: Tensor, b: Tensor): Tensor;
 
   topk<T extends Tensor>(x: T, k: number, sorted: boolean): [T, T];
 

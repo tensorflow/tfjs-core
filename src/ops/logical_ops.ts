@@ -18,7 +18,6 @@
 import {ENV} from '../environment';
 import {Tensor} from '../tensor';
 import {convertToTensor} from '../tensor_util';
-import * as types from '../types';
 import {TensorLike} from '../types';
 import {assert, assertShapesMatch} from '../util';
 import {assertAndGetBroadcastShape} from './broadcast_util';
@@ -163,9 +162,6 @@ function where_<T extends Tensor>(
     assertShapesMatch($condition.shape, $b.shape, 'Error in where: ');
   }
 
-  // Default to highest precision:
-  const dtype = types.upcastType($a.dtype, $b.dtype);
-
   // TODO(julianoks): Return null for condition gradient
   // when backprop supports it.
   const grad = (dy: T) => ({
@@ -175,7 +171,7 @@ function where_<T extends Tensor>(
   });
 
   return ENV.engine.runKernel(
-             backend => backend.where($condition, $a, $b, dtype),
+             backend => backend.select($condition, $a, $b),
              {$condition, $a, $b}, grad) as T;
 }
 

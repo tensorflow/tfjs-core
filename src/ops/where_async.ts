@@ -20,9 +20,10 @@ import {convertToTensor} from '../tensor_util';
 import {TensorLike} from '../types';
 import {assert} from '../util';
 import {buffer} from './array_ops';
+import {op} from './operation';
 
 /** @doc {heading: 'Operations', subheading: 'Logical'} */
-async function whereAsync(condition: Tensor|TensorLike): Promise<Tensor2D> {
+async function whereAsync_(condition: Tensor|TensorLike): Promise<Tensor2D> {
   const $condition = convertToTensor(condition, 'condition', 'where', 'bool');
   assert($condition.dtype === 'bool', 'Error Condition must be of type bool.');
 
@@ -45,3 +46,5 @@ async function whereAsync(condition: Tensor|TensorLike): Promise<Tensor2D> {
   }
   return out.toTensor() as Tensor2D;
 }
+
+export const whereAsync = op({whereAsync_});
