@@ -789,8 +789,6 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   topk<T extends Tensor>(x: T, k: number, sorted: boolean): [T, T] {
-    console.warn(
-        'tf.topk() in webgl locks the UI thread. Call tf.topkAsync() instead');
     const xVals = x.dataSync();
     return topkImpl(xVals, x.shape, x.dtype, k, sorted);
   }
