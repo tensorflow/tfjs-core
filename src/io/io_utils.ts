@@ -126,7 +126,7 @@ export function concatenateTypedArrays(xs: TypedArray[]): ArrayBuffer {
   // this property, a new `TypedArray` that satisfy this property will be
   // constructed and pushed into `normalizedXs`.
   const normalizedXs: TypedArray[] = [];
-  xs.forEach(x => {
+  xs.forEach((x: TypedArray) => {
     totalByteLength += x.byteLength;
     // tslint:disable:no-any
     normalizedXs.push(
@@ -141,7 +141,7 @@ export function concatenateTypedArrays(xs: TypedArray[]): ArrayBuffer {
 
   const y = new Uint8Array(totalByteLength);
   let offset = 0;
-  normalizedXs.forEach(x => {
+  normalizedXs.forEach((x: TypedArray) => {
     y.set(new Uint8Array(x.buffer), offset);
     offset += x.byteLength;
   });
@@ -210,13 +210,13 @@ export function base64StringToArrayBuffer(str: string): ArrayBuffer {
  */
 export function concatenateArrayBuffers(buffers: ArrayBuffer[]): ArrayBuffer {
   let totalByteLength = 0;
-  buffers.forEach(buffer => {
+  buffers.forEach((buffer: ArrayBuffer) => {
     totalByteLength += buffer.byteLength;
   });
 
   const temp = new Uint8Array(totalByteLength);
   let offset = 0;
-  buffers.forEach(buffer => {
+  buffers.forEach((buffer: ArrayBuffer) => {
     temp.set(new Uint8Array(buffer), offset);
     offset += buffer.byteLength;
   });
