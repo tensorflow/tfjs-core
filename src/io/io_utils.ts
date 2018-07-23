@@ -117,6 +117,14 @@ export function concatenateTypedArrays(xs: TypedArray[]): ArrayBuffer {
   }
 
   let totalByteLength = 0;
+
+  // `normalized` is here for this reason: a `TypedArray`'s `buffer'
+  // can have a different byte length from that of the `TypedArray` itself,
+  // for example, when the `TypedArray` is created from an offset in an
+  // `ArrayBuffer`. `normliazedXs` holds `TypedArray`s whose `buffer`s match
+  // the `TypedArray` in byte length. If an element of `xs` does not show
+  // this property, a new `TypedArray` is constructed and pushed into
+  // `normalizedXs`.
   const normalizedXs: TypedArray[] = [];
   xs.forEach(x => {
     totalByteLength += x.byteLength;

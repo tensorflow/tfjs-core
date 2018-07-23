@@ -95,7 +95,7 @@ describe('concatenateTypedArrays', () => {
     expect(y2.buffer.byteLength).toEqual(6 * 4);
 
     const yConcatenated = concatenateTypedArrays([y1, y2]);
-
+    expect(yConcatenated.byteLength).toEqual(6 * 4);
     expect(new Float32Array(yConcatenated, 0, 3)).toEqual(x1);
     expect(new Float32Array(yConcatenated, 3 * 4, 3)).toEqual(x2);
   });
@@ -113,7 +113,7 @@ describe('concatenateTypedArrays', () => {
     expect(y2.buffer.byteLength).toEqual(6 * 4);
 
     const yConcatenated = concatenateTypedArrays([y1, y2]);
-
+    expect(yConcatenated.byteLength).toEqual(6 * 4);
     expect(new Int32Array(yConcatenated, 0, 3)).toEqual(x1);
     expect(new Int32Array(yConcatenated, 3 * 4, 3)).toEqual(x2);
   });
@@ -131,7 +131,7 @@ describe('concatenateTypedArrays', () => {
     expect(y2.buffer.byteLength).toEqual(6);
 
     const yConcatenated = concatenateTypedArrays([y1, y2]);
-
+    expect(yConcatenated.byteLength).toEqual(6);
     expect(new Uint8Array(yConcatenated, 0, 3)).toEqual(x1);
     expect(new Uint8Array(yConcatenated, 3, 3)).toEqual(x2);
   });
@@ -152,7 +152,7 @@ describe('concatenateTypedArrays', () => {
     expect(y3.buffer.byteLength).toEqual(4 + 3 * 4 + 3 * 4);
 
     const yConcatenated = concatenateTypedArrays([y1, y2, y3]);
-
+    expect(yConcatenated.byteLength).toEqual(4 + 3 * 4 + 3 * 4);
     expect(new Uint8Array(yConcatenated, 0, 4)).toEqual(x1);
     expect(new Int32Array(yConcatenated, 4, 3)).toEqual(x2);
     expect(new Float32Array(yConcatenated, 4 + 3 * 4, 3)).toEqual(x3);
