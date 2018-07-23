@@ -16,7 +16,6 @@
  */
 
 import {ENV} from '../environment';
-import {topkImpl} from '../kernels/topk_impl';
 import {Tensor} from '../tensor';
 import {convertToTensor} from '../tensor_util';
 import {TensorLike} from '../types';
@@ -48,38 +47,19 @@ import {op} from './operation';
 function topk_<T extends Tensor>(
     x: T|TensorLike, k = 1, sorted = true): {values: T, indices: T} {
   const $x = convertToTensor(x, 'x', 'topk');
-  topkSanityCheck($x, k);
+  if ($x.rank === 0) {
+    throw new Error('topk() expects the input to be of rank 1 or higher');
+  }
+  const lastDim = $x.shape[$x.shape.length - 1];
+  if (k > lastDim) {
+    throw new Error(
+        `'k' passed to topk() must be <= the last dimension (${lastDim}) ` +
+        `but got ${k}`);
+  }
 
   const [values, indices] =
       ENV.engine.runKernel(b => b.topk($x, k, sorted), {$x});
   return {values, indices};
 }
 
-/** This is the async version of `topk` */
-async function topkAsync_<T extends Tensor>(
-    x: T|TensorLike, k = 1, sorted = true): Promise<{values: T, indices: T}> {
-  const $x = convertToTensor(x, 'x', 'topkAsync');
-  topkSanityCheck($x, k);
-
-  const xVals = await $x.data();
-  const [values, indices] = topkImpl(xVals, $x.shape, $x.dtype, k, sorted);
-  if ($x !== x) {
-    $x.dispose();
-  }
-  return {values, indices};
-}
-
-function topkSanityCheck(x: Tensor, k: number) {
-  if (x.rank === 0) {
-    throw new Error('topk() expects the input to be of rank 1 or higher');
-  }
-  const lastDim = x.shape[x.shape.length - 1];
-  if (k > lastDim) {
-    throw new Error(
-        `'k' passed to topk() must be <= the last dimension (${lastDim}) ` +
-        `but got ${k}`);
-  }
-}
-
 export const topk = op({topk_});
-export const topkAsync = topkAsync_;

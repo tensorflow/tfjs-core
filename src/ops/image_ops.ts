@@ -200,7 +200,8 @@ async function nonMaxSuppressionAsync_(
 
 function nonMaxSuppSanityCheck(
     boxes: Tensor2D, scores: Tensor1D, maxOutputSize: number,
-    iouThreshold: number, scoreThreshold: number) {
+    iouThreshold: number, scoreThreshold: number):
+    {maxOutputSize: number, iouThreshold: number, scoreThreshold: number} {
   if (iouThreshold == null) {
     iouThreshold = 0.5;
   }

@@ -41,7 +41,7 @@ export function nonMaxSuppressionImpl(
 
     let ignoreCandidate = false;
     for (let j = selected.length - 1; j >= 0; --j) {
-      const iou = IOU(boxes, boxIndex, selected[j]);
+      const iou = intersectionOverUnion(boxes, boxIndex, selected[j]);
       if (iou >= iouThreshold) {
         ignoreCandidate = true;
         break;
@@ -59,7 +59,7 @@ export function nonMaxSuppressionImpl(
   return tensor1d(selected, 'int32');
 }
 
-function IOU(boxes: TypedArray, i: number, j: number) {
+function intersectionOverUnion(boxes: TypedArray, i: number, j: number) {
   const iCoord = boxes.subarray(i * 4, i * 4 + 4);
   const jCoord = boxes.subarray(j * 4, j * 4 + 4);
   const yminI = Math.min(iCoord[0], iCoord[2]);

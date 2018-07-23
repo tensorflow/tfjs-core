@@ -243,7 +243,7 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
 
   nonMaxSuppression(
       boxes: Tensor2D, scores: Tensor1D, maxOutputSize: number,
-      iouThreshold: number, scoreThreshold: number): Tensor1D;
+      iouThreshold: number, scoreThreshold?: number): Tensor1D;
 
   dispose(): void;
 }
