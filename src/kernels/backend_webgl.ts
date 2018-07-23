@@ -17,6 +17,7 @@
 
 import {MemoryInfo, TimingInfo} from '../engine';
 import {ENV} from '../environment';
+import {warn} from '../log';
 import * as array_ops_util from '../ops/array_ops_util';
 import * as axis_util from '../ops/axis_util';
 import {Conv2DInfo} from '../ops/conv_util';
@@ -781,7 +782,7 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   where(condition: Tensor): Tensor2D {
-    console.warn(
+    warn(
         'tf.where() in webgl locks the UI thread. ' +
         'Call tf.whereAsync() instead');
     const condVals = condition.dataSync();
@@ -1209,7 +1210,7 @@ export class MathBackendWebGL implements KernelBackend {
   nonMaxSuppression(
       boxes: Tensor2D, scores: Tensor1D, maxOutputSize: number,
       iouThreshold: number, scoreThreshold: number): Tensor1D {
-    console.warn(
+    warn(
         'tf.nonMaxSuppression() in webgl locks the UI thread. ' +
         'Call tf.nonMaxSuppressionAsync() instead');
     const boxesVals = boxes.dataSync();

@@ -17,6 +17,7 @@
 
 import * as seedrandom from 'seedrandom';
 import {ENV} from '../environment';
+import {warn} from '../log';
 import * as array_ops_util from '../ops/array_ops_util';
 import * as axis_util from '../ops/axis_util';
 import * as broadcast_util from '../ops/broadcast_util';
@@ -53,8 +54,8 @@ export class MathBackendCPU implements KernelBackend {
   register(dataId: DataId, shape: number[], dtype: DataType): void {
     if (this.firstUse) {
       this.firstUse = false;
-      if (ENV.get('IS_NODE') && !ENV.get('IS_TEST')) {
-        console.warn(
+      if (ENV.get('IS_NODE')) {
+        warn(
             '\n============================\n' +
             'Hi there 👋. Looks like you are running TensorFlow.js in ' +
             'Node.js. To speed things up dramatically, install our node ' +
