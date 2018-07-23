@@ -17,8 +17,14 @@
 
 import {ENV} from './environment';
 
-export function warn(msg: string|(() => string)): void {
-  if (ENV.get('IS_TEST')) {
-    console.warn(typeof msg === 'string' ? msg : msg());
+export function warn(...msg: Array<{}>): void {
+  if (!ENV.get('IS_TEST')) {
+    console.warn(...msg);
+  }
+}
+
+export function log(...msg: Array<{}>): void {
+  if (!ENV.get('IS_TEST')) {
+    console.log(...msg);
   }
 }
