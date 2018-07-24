@@ -125,9 +125,7 @@ describeWithFlags(
       });
     });
 
-/*
-describeWithFlags(
-'WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED', WEBGL_ENVS, () => {
+describeWithFlags('WEBGL_FENCE_API_ENABLED', WEBGL_ENVS, () => {
   afterEach(() => {
     ENV.reset();
   });
@@ -144,7 +142,8 @@ describeWithFlags(
                 return {loseContext: () => {}};
               }
               return null;
-            }
+            },
+            fenceSync: () => 1
           };
         }
         return null;
@@ -157,10 +156,7 @@ describeWithFlags(
 
     const env = new Environment(features);
 
-    // TODO(nsthorat): Expect true when we fix
-    // https://github.com/tensorflow/tfjs/issues/137
-    expect(env.get('WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED'))
-        .toBe(false);
+    expect(env.get('WEBGL_FENCE_API_ENABLED')).toBe(true);
   });
 
   it('WebGL 1 disabled', () => {
@@ -168,10 +164,9 @@ describeWithFlags(
 
     const env = new Environment(features);
 
-    expect(env.get('WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED'))
-        .toBe(false);
+    expect(env.get('WEBGL_FENCE_API_ENABLED')).toBe(false);
   });
-});*/
+});
 
 describeWithFlags('WebGL version', WEBGL_ENVS, () => {
   afterEach(() => {
