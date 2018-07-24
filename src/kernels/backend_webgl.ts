@@ -258,6 +258,13 @@ export class MathBackendWebGL implements KernelBackend {
 
     this.pendingRead.set(dataId, []);
 
+    if (!ENV.get('WEBGL_DOWNLOAD_FLOAT_ENABLED') &&
+        ENV.get('WEBGL_VERSION') === 2) {
+      throw new Error(
+          `tensor.data() with WEBGL_DOWNLOAD_FLOAT_ENABLED=false and ` +
+          `WEBGL_VERSION=2 not yet supported.`);
+    }
+
     // Possibly copy the texture into a buffer before inserting a fence.
     const bufferOrTexture = this.gpgpu.maybeCreateBufferFromTexture(
         texture, texShape[0], texShape[1]);
