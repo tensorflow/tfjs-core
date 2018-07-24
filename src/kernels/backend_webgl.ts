@@ -77,7 +77,6 @@ import {TileProgram} from './webgl/tile_gpu';
 import {TransposeProgram} from './webgl/transpose_gpu';
 import * as unary_op from './webgl/unaryop_gpu';
 import {UnaryOpProgram} from './webgl/unaryop_gpu';
-import {WebGLQuery} from './webgl/webgl_types';
 import * as webgl_util from './webgl/webgl_util';
 
 type TimerNode = RecursiveArray<Promise<number>>|Promise<number>;
@@ -377,7 +376,7 @@ export class MathBackendWebGL implements KernelBackend {
 
   private async getQueryTime(query: WebGLQuery|CPUTimerQuery): Promise<number> {
     if (ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') > 0) {
-      return this.gpgpu.pollFence(query);
+      return this.gpgpu.waitForQueryAndGetTime(query);
     }
     const timerQuery = query as CPUTimerQuery;
     return timerQuery.endMs - timerQuery.startMs;

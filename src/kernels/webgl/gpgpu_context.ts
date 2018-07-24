@@ -79,11 +79,6 @@ export class GPGPUContext {
         webgl_util.getExtensionOrThrow(this.gl, 'WEBGL_lose_context') as
         WebGLLoseContext;
 
-    // if (ENV.get('WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED')) {
-    //   this.getBufferSubDataAsyncExtension =
-    //       this.gl.getExtension('WEBGL_get_buffer_sub_data_async');
-    // }
-
     this.vertexBuffer = gpgpu_util.createVertexBuffer(this.gl);
     this.indexBuffer = gpgpu_util.createIndexBuffer(this.gl);
     this.framebuffer = webgl_util.createFramebuffer(this.gl);
@@ -215,7 +210,7 @@ export class GPGPUContext {
       texture: WebGLTexture, rows: number, columns: number): WebGLBuffer
       |WebGLTexture {
     this.bindTextureToFrameBuffer(texture);
-    const result = gpgpu_util.maybeCreateBufferFromTexture(
+    const result = gpgpu_util.maybeCreateBufferFromOutputTexture(
         this.gl, texture, rows, columns, this.textureConfig);
     this.unbindTextureToFrameBuffer();
     return result;
@@ -254,22 +249,6 @@ export class GPGPUContext {
     }
 
     return {query, isFencePassed};
-  }
-
-  public async downloadMatrixFromTextureAsync(
-      texture: WebGLTexture, rows: number,
-      columns: number): Promise<Float32Array> {
-    // if (this.getBufferSubDataAsyncExtension == null) {
-    //   throw new Error(
-    //       `Cannot download matrix from output texture asynchronously, ` +
-    //       `WEBGL_get_buffer_sub_data_async is not enabled.`);
-    // }
-
-    return this.downloadMatrixDriverAsync(
-        texture,
-        () => gpgpu_util.downloadFloat32MatrixFromOutputTextureAsync(
-            this.gl, this.getBufferSubDataAsyncExtension, rows, columns,
-            this.textureConfig));
   }
 
   public downloadMatrixFromPackedTexture(
@@ -430,19 +409,6 @@ export class GPGPUContext {
     return this.getQueryTimerExtension() as WebGL1DisjointQueryTimerExtension;
   }
 
-  /**
-   * Executes a query function which contains GL commands and resolves when
-   * the command buffer has finished executing the query.
-   * @param queryFn The query function containing GL commands to execute.
-   * @return a promise that resolves with the ellapsed GPU time in milliseconds.
-   */
-  public runQuery(queryFn: () => void): Promise<number> {
-    const query = this.beginQuery();
-    queryFn();
-    this.endQuery();
-    return this.pollQueryTime(query);
-  }
-
   beginQuery(): WebGLQuery {
     if (ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') === 2) {
       const gl2 = this.gl as WebGL2RenderingContext;
@@ -467,6 +433,35 @@ export class GPGPUContext {
     }
     const ext = this.getQueryTimerExtensionWebGL1();
     ext.endQueryEXT(ext.TIME_ELAPSED_EXT);
+  }
+
+  public async waitForQueryAndGetTime(query: WebGLQuery): Promise<number> {
+    await util.repeatedTry(
+        () => this.isQueryAvailable(
+            query, ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION')));
+    return this.getQueryTime(
+        query, ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION'));
+  }
+
+  private getQueryTime(query: WebGLQuery, queryTimerVersion: number): number {
+    if (queryTimerVersion === 0) {
+      return null;
+    }
+
+    if (queryTimerVersion === 2) {
+      const gl2 = this.gl as WebGL2RenderingContext;
+
+      const timeElapsedNanos = gl2.getQueryParameter(query, gl2.QUERY_RESULT);
+      // Return milliseconds.
+      return timeElapsedNanos / 1000000;
+    } else {
+      const ext = this.getQueryTimerExtensionWebGL1();
+
+      const timeElapsedNanos =
+          ext.getQueryObjectEXT(query, ext.QUERY_RESULT_EXT);
+      // Return milliseconds.
+      return timeElapsedNanos / 1000000;
+    }
   }
 
   private isQueryAvailable(query: WebGLQuery, queryTimerVersion: number):
@@ -499,19 +494,9 @@ export class GPGPUContext {
     }
   }
 
-  pollQueryTime(query: WebGLQuery): Promise<number> {
-    return new Promise<number>(resolve => {
-      const queryTimerVersion =
-          ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION');
-      this.addItemToPoll(
-          () => this.isQueryAvailable(query, queryTimerVersion),
-          () => resolve(this.getQueryTime(query, queryTimerVersion)));
-    });
-  }
-
   pollFence(fenceContext: FenceContext) {
     return new Promise<void>(resolve => {
-      this.addItemToPoll(() => fenceContext.isFencePassed(), () => resolve);
+      this.addItemToPoll(() => fenceContext.isFencePassed(), () => resolve());
     });
   }
 
@@ -541,28 +526,6 @@ export class GPGPUContext {
       return this.itemsToPoll.length === 0;
     });
   }
-
-  private getQueryTime(query: WebGLQuery, queryTimerVersion: number): number {
-    if (queryTimerVersion === 0) {
-      return null;
-    }
-
-    if (queryTimerVersion === 2) {
-      const gl2 = this.gl as WebGL2RenderingContext;
-
-      const timeElapsedNanos = gl2.getQueryParameter(query, gl2.QUERY_RESULT);
-      // Return milliseconds.
-      return timeElapsedNanos / 1000000;
-    } else {
-      const ext = this.getQueryTimerExtensionWebGL1();
-
-      const timeElapsedNanos =
-          ext.getQueryObjectEXT(query, ext.QUERY_RESULT_EXT);
-      // Return milliseconds.
-      return timeElapsedNanos / 1000000;
-    }
-  }
-
   private bindTextureToFrameBuffer(texture: WebGLTexture) {
     this.throwIfDisposed();
     webgl_util.bindColorTextureToFramebuffer(
@@ -589,16 +552,6 @@ export class GPGPUContext {
       downloadAndDecode: () => Float32Array): Float32Array {
     this.bindTextureToFrameBuffer(texture);
     const result = downloadAndDecode();
-    this.unbindTextureToFrameBuffer();
-
-    return result;
-  }
-
-  private async downloadMatrixDriverAsync(
-      texture: WebGLTexture,
-      downloadAndDecode: () => Promise<Float32Array>): Promise<Float32Array> {
-    this.bindTextureToFrameBuffer(texture);
-    const result = await downloadAndDecode();
     this.unbindTextureToFrameBuffer();
 
     return result;
