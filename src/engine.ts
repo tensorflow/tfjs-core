@@ -16,7 +16,6 @@
  */
 
 import {BackendTimingInfo, KernelBackend} from './kernels/backend';
-import {TensorOps} from './ops/tensor_ops';
 import {Profiler} from './profiler';
 // tslint:disable-next-line:max-line-length
 import {backpropagateGradients, getFilteredNodesXToY, NamedGradientMap, TapeNode} from './tape';
@@ -27,12 +26,13 @@ import {NamedTensorMap, NamedVariableMap, TensorContainer} from './tensor_types'
 import {getTensorsInContainer, isTensorInList} from './tensor_util';
 import {TypedArray} from './types';
 import * as util from './util';
+import {makeOnesTypedArray, now, sizeFromShape} from './util';
 
 /**
  * A function that computes an output. The save function is for saving tensors
  * computed in the forward pass, that we need in the backwards pass.
  */
-export type ForwardFunc<T extends Tensor> =
+export type ForwardFunc<T> =
     (backend: KernelBackend, save?: <S extends Tensor>(tensor: S) => S) => T;
 
 /**
@@ -64,7 +64,7 @@ export interface TensorManager {
 
 interface ScopeState {
   track: Tensor[];
-  name?: string;
+  name: string;
 }
 
 export class Engine implements TensorManager {
@@ -89,9 +89,9 @@ export class Engine implements TensorManager {
 
   constructor(
       private backend: KernelBackend, public safeMode: boolean,
-      private debugMode: boolean) {
+      private debugMode: () => boolean) {
     // Create a default outer scope.
-    this.activeScope = {track: []};
+    this.activeScope = {track: [], name: 'default scope'};
     this.scopeStack = [this.activeScope];
     this.profiler = new Profiler(backend);
   }
@@ -101,7 +101,7 @@ export class Engine implements TensorManager {
     // gradMode Primarily for internal use during backprop
     //          If true, will start a tape if it is the outermost tidy.
 
-    let name = null;
+    let name: string = null;
     if (fn == null) {
       // Called with only 1 argument.
       if (typeof nameOrFn !== 'function') {
@@ -124,16 +124,31 @@ export class Engine implements TensorManager {
       // TODO(nsthorat,smilkov): Do operation logging and performance
       // profiling.
     }
-    this.startScope(name, gradMode);
-    const result = fn();
-    if (result instanceof Promise) {
-      console.error('Cannot return a Promise inside of tidy.');
-    }
-    this.endScope(result, gradMode);
-    return result;
+    let result: T;
+    return this.scopedRun(
+        () => this.startScope(name, gradMode),
+        () => this.endScope(result, gradMode), () => {
+          result = fn();
+          if (result instanceof Promise) {
+            console.error('Cannot return a Promise inside of tidy.');
+          }
+          return result;
+        });
   }
 
-  runKernel<T extends Tensor, I extends NamedTensorMap>(
+  private scopedRun<T>(start: () => void, end: () => void, f: () => T): T {
+    start();
+    try {
+      const res = f();
+      end();
+      return res;
+    } catch (ex) {
+      end();
+      throw ex;
+    }
+  }
+
+  runKernel<T extends Tensor|Tensor[], I extends NamedTensorMap>(
       forwardFunc: ForwardFunc<T>,
       inputs: I,
       backwardsFunc?: (dy: T, saved: Tensor[]) => {[P in keyof I]: () => I[P]},
@@ -147,26 +162,29 @@ export class Engine implements TensorManager {
     const scopeName = this.activeScope.name;
 
     // Stop recording to a tape when running a kernel.
-    this.customGradientDepth++;
-    if (!this.debugMode) {
-      result = forwardFunc(this.backend, saveFunc);
-    } else {
-      result = this.profiler.profileKernel(
-          scopeName, () => forwardFunc(this.backend, saveFunc));
-    }
-    // Continue recording after the kernel is done.
-    this.customGradientDepth--;
+    this.scopedRun(
+        () => this.customGradientDepth++, () => this.customGradientDepth--,
+        () => {
+          if (!this.debugMode()) {
+            result = forwardFunc(this.backend, saveFunc);
+          } else {
+            result = this.profiler.profileKernel(
+                scopeName, () => forwardFunc(this.backend, saveFunc));
+          }
+        });
 
     if (this.shouldRecord()) {
       const tapeNode: TapeNode = {
         id: this.nextTapeNodeId++,
         name: scopeName,
         inputs,
-        output: result,
-
+        // Keep gradient records only for the first output.
+        output: Array.isArray(result) ? result[0] : result
       };
       if (backwardsFunc != null) {
-        tapeNode.gradient = (dy: T) => backwardsFunc(dy, saved);
+        tapeNode.gradient =
+            ((dy: T) => backwardsFunc(dy, saved)) as (dy: Tensor) =>
+                NamedGradientMap;
       }
       this.activeTape.push(tapeNode);
     }
@@ -290,7 +308,7 @@ export class Engine implements TensorManager {
       this.gradientScopeCount++;
     }
 
-    const scopeInfo: ScopeState = {track: []};
+    const scopeInfo: ScopeState = {track: [], name: 'unnamed scope'};
     if (name) {
       scopeInfo.name = name;
     }
@@ -302,7 +320,7 @@ export class Engine implements TensorManager {
    * End a scope. Use this with startScope() to achieve the same functionality
    * as scope() without the need for a function closure.
    */
-  endScope(result: TensorContainer, gradientsMode = false) {
+  endScope(result?: TensorContainer, gradientsMode = false) {
     if (gradientsMode) {
       this.gradientScopeCount--;
       if (this.gradientScopeCount === 0) {
@@ -331,7 +349,7 @@ export class Engine implements TensorManager {
 
     const oldScope = this.scopeStack.pop();
     this.activeScope = this.scopeStack.length === 0 ?
-        {track: []} :
+        {track: [], name: 'default scope'} :
         this.scopeStack[this.scopeStack.length - 1];
 
     // Track the current result in the parent scope.
@@ -371,8 +389,7 @@ export class Engine implements TensorManager {
       }
 
       const accumulatedGradientMap: {[tensorId: number]: Tensor} = {};
-      accumulatedGradientMap[y.id] =
-          (dy == null) ? TensorOps.ones(y.shape) : dy;
+      accumulatedGradientMap[y.id] = (dy == null) ? ones(y.shape) : dy;
 
       // Backprop gradients through the filtered nodes.
       backpropagateGradients(accumulatedGradientMap, filteredTape);
@@ -391,25 +408,27 @@ export class Engine implements TensorManager {
       util.assert(
           inputs.every(t => t instanceof Tensor),
           'The args passed in customGrad(f)(x1, x2,...) must all be tensors');
-      this.customGradientDepth++;
 
       let gradientsFunc: (dy: T) => Tensor | Tensor[];
-      const gradientsMode = true;
-      const result = this.tidy(f.name, () => {
-        const {value, gradFunc} = f(...inputs);
-        util.assert(
-            value instanceof Tensor,
-            'The function f passed in customGrad(f) must return an object ' +
-                'where `obj.value` is a tensor');
-        util.assert(
-            util.isFunction(gradFunc),
-            'The function f passed in customGrad(f) must return an object ' +
-                'where `obj.gradFunc` is a function.');
-        gradientsFunc = gradFunc;
-        return value;
-      }, gradientsMode);
-
-      this.customGradientDepth--;
+      let result: T;
+      this.scopedRun(
+          () => this.customGradientDepth++, () => this.customGradientDepth--,
+          () => {
+            const gradientsMode = true;
+            result = this.tidy(f.name, () => {
+              const {value, gradFunc} = f(...inputs);
+              util.assert(
+                  value instanceof Tensor,
+                  'The function f passed in customGrad(f) must return an ' +
+                      'object where `obj.value` is a tensor');
+              util.assert(
+                  util.isFunction(gradFunc),
+                  'The function f passed in customGrad(f) must return an ' +
+                      'object where `obj.gradFunc` is a function.');
+              gradientsFunc = gradFunc;
+              return value;
+            }, gradientsMode);
+          });
 
       if (this.shouldRecord()) {
         const gradFunc = (dy: T): Tensor[] => {
@@ -449,9 +468,9 @@ export class Engine implements TensorManager {
     return this.backend.fromPixels(pixels, numChannels);
   }
   async time(query: () => void): Promise<TimingInfo> {
-    const start = performance.now();
+    const start = now();
     const timingInfo = await this.backend.time(query) as TimingInfo;
-    timingInfo.wallMs = performance.now() - start;
+    timingInfo.wallMs = now() - start;
     return timingInfo;
   }
 
@@ -470,4 +489,9 @@ export class Engine implements TensorManager {
     this.activeScope.track.push(result);
     return result;
   }
+}
+
+function ones(shape: number[]): Tensor {
+  const values = makeOnesTypedArray(sizeFromShape(shape), 'float32');
+  return Tensor.make(shape, {values});
 }

@@ -16,7 +16,7 @@
  */
 
 import * as device_util from './device_util';
-import {doc} from './doc';
+
 import {Engine, MemoryInfo, ScopeFn, TimingInfo} from './engine';
 // tslint:disable-next-line:max-line-length
 import {Features, getFeaturesFromURL, getWebGLDisjointQueryTimerVersion, isChrome, isDownloadFloatTextureEnabled, isRenderToFloatTextureEnabled, isWebGLFenceEnabled, isWebGLVersionEnabled} from './environment_util';
@@ -33,7 +33,8 @@ export class Environment {
   private globalEngine: Engine;
   private registry:
       {[id: string]: {backend: KernelBackend, priority: number}} = {};
-  private currentBackend: string;
+  backendName: string;
+  backend: KernelBackend;
 
   constructor(features?: Features) {
     if (features != null) {
@@ -56,34 +57,35 @@ export class Environment {
    * associated with it.  A new backend is initialized, even if it is of the
    * same type as the previous one.
    *
-   * @param backendType The backend type. Currently supports `'webgl'|'cpu'` in
-   *     the browser, and `'tensorflow'` under node.js (requires tfjs-node).
+   * @param backendName The name of the backend. Currently supports
+   *     `'webgl'|'cpu'` in the browser, and `'tensorflow'` under node.js
+   *     (requires tfjs-node).
    * @param safeMode Defaults to false. In safe mode, you are forced to
    *     construct tensors and call math operations inside a `tidy()` which
    *     will automatically clean up intermediate tensors.
    */
-  @doc({heading: 'Environment'})
-  static setBackend(backendType: string, safeMode = false) {
-    if (!(backendType in ENV.registry)) {
-      throw new Error(`Backend type '${backendType}' not found in registry`);
+  /** @doc {heading: 'Environment'} */
+  static setBackend(backendName: string, safeMode = false) {
+    if (!(backendName in ENV.registry)) {
+      throw new Error(`Backend name '${backendName}' not found in registry`);
     }
-    ENV.initBackend(backendType, safeMode);
+    ENV.initBackend(backendName, safeMode);
   }
 
   /**
-   * Returns the current backend (cpu, webgl, etc). The backend is responsible
-   * for creating tensors and executing operations on those tensors.
+   * Returns the current backend name (cpu, webgl, etc). The backend is
+   * responsible for creating tensors and executing operations on those tensors.
    */
-  @doc({heading: 'Environment'})
+  /** @doc {heading: 'Environment'} */
   static getBackend(): string {
     ENV.initDefaultBackend();
-    return ENV.currentBackend;
+    return ENV.backendName;
   }
 
   /**
    * Dispose all variables kept in backend engine.
    */
-  @doc({heading: 'Environment'})
+  /** @doc {heading: 'Environment'} */
   static disposeVariables(): void {
     ENV.engine.disposeVariables();
   }
@@ -104,7 +106,7 @@ export class Environment {
    *     represent undisposed tensors, i.e. not wrapped in `tidy()`, or
    *     lacking a call to `tensor.dispose()`.
    */
-  @doc({heading: 'Performance', subheading: 'Memory'})
+  /** @doc {heading: 'Performance', subheading: 'Memory'} */
   static memory(): MemoryInfo {
     return ENV.engine.memory();
   }
@@ -148,7 +150,7 @@ export class Environment {
    *     will be tracked and displayed on the console using the provided name.
    * @param fn The function to execute.
    */
-  @doc({heading: 'Performance', subheading: 'Memory'})
+  /** @doc {heading: 'Performance', subheading: 'Memory'} */
   static tidy<T extends TensorContainer>(
       nameOrFn: string|ScopeFn<T>, fn?: ScopeFn<T>, gradMode = false): T {
     return ENV.engine.tidy(nameOrFn, fn, gradMode);
@@ -163,7 +165,7 @@ export class Environment {
    *     happens. In general it is safe to pass any object here, except that
    *     `Promise`s are not supported.
    */
-  @doc({heading: 'Performance', subheading: 'Memory'})
+  /** @doc {heading: 'Performance', subheading: 'Memory'} */
   static dispose(container: TensorContainer) {
     const tensors = getTensorsInContainer(container);
     tensors.forEach(tensor => tensor.dispose());
@@ -199,7 +201,7 @@ export class Environment {
    *
    * @param result The tensor to keep from being disposed.
    */
-  @doc({heading: 'Performance', subheading: 'Memory'})
+  /** @doc {heading: 'Performance', subheading: 'Memory'} */
   static keep<T extends Tensor>(result: T): T {
     return ENV.engine.keep(result);
   }
@@ -225,7 +227,7 @@ export class Environment {
    *
    * @param f The function to execute and time.
    */
-  @doc({heading: 'Performance', subheading: 'Timing'})
+  /** @doc {heading: 'Performance', subheading: 'Timing'} */
   static time(f: () => void): Promise<TimingInfo> {
     return ENV.engine.time(f);
   }
@@ -248,7 +250,7 @@ export class Environment {
     this.features[feature] = value;
   }
 
-  getBestBackendType(): string {
+  private getBestBackendName(): string {
     if (Object.keys(this.registry).length === 0) {
       throw new Error('No backend found in registry.');
     }
@@ -273,8 +275,10 @@ export class Environment {
           (typeof process.versions.node !== 'undefined');
     } else if (feature === 'IS_CHROME') {
       return isChrome();
+    } else if (feature === 'IS_TEST') {
+      return false;
     } else if (feature === 'BACKEND') {
-      return this.getBestBackendType();
+      return this.getBestBackendName();
     } else if (feature === 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') {
       const webGLVersion = this.get('WEBGL_VERSION');
 
@@ -286,6 +290,8 @@ export class Environment {
     } else if (feature === 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE') {
       return this.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') > 0 &&
           !device_util.isMobile();
+    } else if (feature === 'HAS_WEBGL') {
+      return this.get('WEBGL_VERSION') > 0;
     } else if (feature === 'WEBGL_VERSION') {
       if (isWebGLVersionEnabled(2, this.get('IS_BROWSER'))) {
         return 2;
@@ -312,7 +318,7 @@ export class Environment {
   }
 
   setFeatures(features: Features) {
-    this.features = features;
+    this.features = Object.assign({}, features);
   }
 
   reset() {
@@ -322,10 +328,11 @@ export class Environment {
     }
   }
 
-  private initBackend(backendType?: string, safeMode = false) {
-    this.currentBackend = backendType;
-    const backend = this.findBackend(backendType);
-    this.globalEngine = new Engine(backend, safeMode, this.get('DEBUG'));
+  private initBackend(backendName?: string, safeMode = false) {
+    this.backendName = backendName;
+    this.backend = this.findBackend(backendName);
+    this.globalEngine =
+        new Engine(this.backend, safeMode, () => this.get('DEBUG'));
   }
 
   findBackend(name: string): KernelBackend {
@@ -343,8 +350,8 @@ export class Environment {
    * @param factory: The backend factory function. When called, it should
    * return an instance of the backend.
    * @param priority The priority of the backend (higher = more important).
-   *     In case multiple backends are registered, `getBestBackendType` uses
-   *     priority to find the best backend. Defaults to 1.
+   *     In case multiple backends are registered, the priority is used to find
+   *     the best backend. Defaults to 1.
    * @return False if the creation/registration failed. True otherwise.
    */
   registerBackend(

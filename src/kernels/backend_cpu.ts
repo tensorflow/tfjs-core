@@ -17,6 +17,8 @@
 
 import * as seedrandom from 'seedrandom';
 import {ENV} from '../environment';
+import {warn} from '../log';
+import * as array_ops_util from '../ops/array_ops_util';
 import * as axis_util from '../ops/axis_util';
 import * as broadcast_util from '../ops/broadcast_util';
 import * as concat_util from '../ops/concat_util';
@@ -31,8 +33,12 @@ import {DataId, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D
 import * as types from '../types';
 import {DataType, DataTypeMap, Rank, TypedArray} from '../types';
 import * as util from '../util';
+import {now} from '../util';
 import {BackendTimingInfo, KernelBackend} from './backend';
 import * as backend_util from './backend_util';
+import {nonMaxSuppressionImpl} from './non_max_suppression_impl';
+import {topkImpl} from './topk_impl';
+import {whereImpl} from './where_impl';
 
 export class MathBackendCPU implements KernelBackend {
   private data = new WeakMap<DataId, DataTypeMap[DataType]>();
@@ -49,7 +55,7 @@ export class MathBackendCPU implements KernelBackend {
     if (this.firstUse) {
       this.firstUse = false;
       if (ENV.get('IS_NODE')) {
-        console.warn(
+        warn(
             '\n============================\n' +
             'Hi there 👋. Looks like you are running TensorFlow.js in ' +
             'Node.js. To speed things up dramatically, install our node ' +
@@ -148,9 +154,9 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   async time(f: () => void): Promise<BackendTimingInfo> {
-    const start = performance.now();
+    const start = now();
     f();
-    const kernelMs = performance.now() - start;
+    const kernelMs = now() - start;
     return {kernelMs};
   }
   memory() {
@@ -504,11 +510,11 @@ export class MathBackendCPU implements KernelBackend {
     });
   }
 
-  where(condition: Tensor, a: Tensor, b: Tensor, dtype: DataType): Tensor {
+  select(condition: Tensor, a: Tensor, b: Tensor): Tensor {
     const values = condition.dataSync();
     const aValues = a.dataSync();
     const bValues = b.dataSync();
-    const result = ops.zeros(a.shape, dtype);
+    const result = ops.zeros(a.shape, types.upcastType(a.dtype, b.dtype));
     const newValues = result.dataSync();
     let index = 0;
     const offset = condition.rank === 0 || condition.rank > 1 || a.rank === 1 ?
@@ -527,35 +533,14 @@ export class MathBackendCPU implements KernelBackend {
     return result;
   }
 
-  topKValues<T extends Tensor>(x: T, k: number): Tensor1D {
-    return this.topK(x, k).values as Tensor1D;
+  where(condition: Tensor): Tensor2D {
+    const condVals = condition.dataSync();
+    return whereImpl(condition.shape, condVals);
   }
 
-  topKIndices(x: Tensor, k: number): Tensor1D {
-    return this.topK(x, k).indices;
-  }
-
-  private topK<T extends Tensor>(x: T, k: number):
-      {values: Tensor1D, indices: Tensor1D} {
-    const values = x.dataSync();
-    const valuesAndIndices: Array<{value: number, index: number}> = [];
-    for (let i = 0; i < values.length; i++) {
-      valuesAndIndices.push({value: values[i], index: i});
-    }
-    valuesAndIndices.sort((a, b) => {
-      return b.value - a.value;
-    });
-
-    const topkValues = util.getTypedArrayFromDType(x.dtype, k);
-    const topkIndices = new Int32Array(k);
-    for (let i = 0; i < k; i++) {
-      topkValues[i] = valuesAndIndices[i].value;
-      topkIndices[i] = valuesAndIndices[i].index;
-    }
-    return {
-      values: ops.tensor1d(topkValues, x.dtype),
-      indices: ops.tensor1d(topkIndices, 'int32')
-    };
+  topk<T extends Tensor>(x: T, k: number, sorted: boolean): [T, T] {
+    const xVals = x.dataSync();
+    return topkImpl(xVals, x.shape, x.dtype, k, sorted);
   }
 
   min(x: Tensor, axes: number[]): Tensor {
@@ -1474,6 +1459,50 @@ export class MathBackendCPU implements KernelBackend {
     return result.toTensor() as T;
   }
 
+  batchToSpaceND<T extends Tensor>(
+      x: T, blockShape: number[], crops: number[][]): T {
+    const prod = blockShape.reduce((a, b) => a * b);
+
+    const reshaped = array_ops_util.getReshaped(x.shape, blockShape, prod);
+    const permuted =
+        array_ops_util.getPermuted(reshaped.length, blockShape.length);
+    const reshapedPermuted =
+        array_ops_util.getReshapedPermuted(x.shape, blockShape, prod);
+    const sliceBeginCoords =
+        array_ops_util.getSliceBeginCoords(crops, blockShape.length);
+    const sliceSize =
+        array_ops_util.getSliceSize(reshapedPermuted, crops, blockShape.length);
+
+    return x.reshape(reshaped)
+               .transpose(permuted)
+               .reshape(reshapedPermuted)
+               .slice(sliceBeginCoords, sliceSize) as T;
+  }
+
+  spaceToBatchND<T extends Tensor>(
+      x: T, blockShape: number[], paddings: Array<[number, number]>): T {
+    const prod = blockShape.reduce((a, b) => a * b);
+
+    const completePaddings: Array<[number, number]> = [[0, 0]];
+    completePaddings.push(...paddings);
+    for (let i = 1 + blockShape.length; i < x.shape.length; ++i) {
+      completePaddings.push([0, 0]);
+    }
+
+    const paddedX = x.pad(completePaddings);
+
+    const reshapedPaddedShape =
+        array_ops_util.getReshaped(paddedX.shape, blockShape, prod, false);
+    const permutedReshapedPaddedPermutation = array_ops_util.getPermuted(
+        reshapedPaddedShape.length, blockShape.length, false);
+    const flattenShape = array_ops_util.getReshapedPermuted(
+        paddedX.shape, blockShape, prod, false);
+
+    return paddedX.reshape(reshapedPaddedShape)
+               .transpose(permutedReshapedPaddedPermutation)
+               .reshape(flattenShape) as T;
+  }
+
   private pool(x: Tensor4D, convInfo: Conv2DInfo, poolType: 'max'|'avg'):
       Tensor4D {
     const strideHeight = convInfo.strideHeight;
@@ -1989,6 +2018,44 @@ export class MathBackendCPU implements KernelBackend {
     return output.toTensor();
   }
 
+  LRNGrad(
+      dy: Tensor4D, inputImage: Tensor4D, outputImage: Tensor4D,
+      depthRadius: number, bias: number, alpha: number,
+      beta: number): Tensor4D {
+    const batch = dy.shape[0];
+    const rows = dy.shape[1];
+    const cols = dy.shape[2];
+    const depth = dy.shape[3];
+    const output = ops.buffer<Rank.R4>([batch, rows, cols, depth], 'float32');
+
+    for (let b = 0; b < batch; ++b) {
+      for (let r = 0; r < rows; ++r) {
+        for (let c = 0; c < cols; ++c) {
+          for (let d = 0; d < depth; ++d) {
+            const depthBegin = Math.max(0, d - depthRadius);
+            const depthEnd = Math.min(depth, d + depthRadius + 1);
+
+            let norm = 0;
+            for (let k = depthBegin; k < depthEnd; ++k) {
+              norm += inputImage.get(b, r, c, k) * inputImage.get(b, r, c, k);
+            }
+            norm = alpha * norm + bias;
+            for (let k = depthBegin; k < depthEnd; ++k) {
+              let dyi = -2 * alpha * beta * inputImage.get(b, r, c, k) *
+                  outputImage.get(b, r, c, d) / norm;
+              if (d === k) {
+                dyi += Math.pow(norm, -beta);
+              }
+              dyi *= dy.get(b, r, c, d);
+              output.set(dyi + output.get(b, r, c, k), b, r, c, k);
+            }
+          }
+        }
+      }
+    }
+    return output.toTensor();
+  }
+
   multinomial(
       logits: Tensor2D, normalized: boolean, numSamples: number,
       seed: number): Tensor2D {
@@ -2039,6 +2106,15 @@ export class MathBackendCPU implements KernelBackend {
       }
     }
     return ops.tensor2d(res, [indices.size, depth], 'int32');
+  }
+
+  nonMaxSuppression(
+      boxes: Tensor2D, scores: Tensor1D, maxOutputSize: number,
+      iouThreshold: number, scoreThreshold: number): Tensor1D {
+    const boxesVals = boxes.dataSync();
+    const scoresVals = scores.dataSync();
+    return nonMaxSuppressionImpl(
+        boxesVals, scoresVals, maxOutputSize, iouThreshold, scoreThreshold);
   }
 
   private broadcastedBinaryOp(

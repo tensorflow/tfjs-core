@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "lib": ["es2015", "dom"],
+    "sourceMap": true,
+    "outDir": "./dist"
+  },
+  "include": [
+    "*.ts"
+  ]
+}

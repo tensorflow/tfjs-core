@@ -15,13 +15,21 @@
  * =============================================================================
  */
 
-import * as dl from 'deeplearn';
+import * as tf from '@tensorflow/tfjs-core';
 
-export async function warmupAndBenchmarkGPU(benchmark: () => dl.Tensor):
+export async function warmupAndBenchmarkGPU(benchmark: () => tf.Tensor):
     Promise<number> {
   // Warmup.
   const out = benchmark();
   await out.data();
   out.dispose();
-  return (await dl.time(benchmark)).kernelMs;
+
+  // Use normal performance.now() timing until query timers are enabled again.
+  const start = performance.now();
+  const result = benchmark();
+  await result.data();
+  return performance.now() - start;
+
+  // Uncomment this once query timers are enabled again.
+  // return (await tf.time(benchmark)).kernelMs;
 }

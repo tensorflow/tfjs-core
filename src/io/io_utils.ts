@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {TensorOps} from '../ops/tensor_ops';
+import {tensor} from '../ops/tensor_ops';
 import {Tensor} from '../tensor';
 import {NamedTensorMap} from '../tensor_types';
 import {TypedArray} from '../types';
@@ -92,14 +92,11 @@ export function decodeWeights(
     const size = sizeFromShape(shape);
     let value: Tensor;
     if (dtype === 'float32') {
-      value = TensorOps.tensor(
-          new Float32Array(buffer, offset, size), shape, 'float32');
+      value = tensor(new Float32Array(buffer, offset, size), shape, 'float32');
     } else if (dtype === 'int32') {
-      value = TensorOps.tensor(
-          new Int32Array(buffer, offset, size), shape, 'int32');
+      value = tensor(new Int32Array(buffer, offset, size), shape, 'int32');
     } else if (dtype === 'bool') {
-      value =
-          TensorOps.tensor(new Uint8Array(buffer, offset, size), shape, 'bool');
+      value = tensor(new Uint8Array(buffer, offset, size), shape, 'bool');
     } else {
       throw new Error(`Unsupported dtype in weight '${name}': ${dtype}`);
     }
@@ -120,27 +117,42 @@ export function concatenateTypedArrays(xs: TypedArray[]): ArrayBuffer {
   }
 
   let totalByteLength = 0;
-  xs.forEach(x => {
-    // tslint:disable-next-line:no-any
-    if (x as any instanceof Float32Array || x as any instanceof Int32Array) {
-      totalByteLength += x.buffer.byteLength;
-      // tslint:disable-next-line:no-any
-    } else if (x as any instanceof Uint8Array) {
-      totalByteLength += x.buffer.byteLength;
-    } else {
+
+  // `normalizedXs` is here for this reason: a `TypedArray`'s `buffer'
+  // can have a different byte length from that of the `TypedArray` itself,
+  // for example, when the `TypedArray` is created from an offset in an
+  // `ArrayBuffer`. `normliazedXs` holds `TypedArray`s whose `buffer`s match
+  // the `TypedArray` in byte length. If an element of `xs` does not show
+  // this property, a new `TypedArray` that satisfy this property will be
+  // constructed and pushed into `normalizedXs`.
+  const normalizedXs: TypedArray[] = [];
+  xs.forEach((x: TypedArray) => {
+    totalByteLength += x.byteLength;
+    // tslint:disable:no-any
+    normalizedXs.push(
+        x.byteLength === x.buffer.byteLength ? x :
+                                               new (x.constructor as any)(x));
+    if (!(x as any instanceof Float32Array || x as any instanceof Int32Array ||
+          x as any instanceof Uint8Array)) {
       throw new Error(`Unsupported TypedArray subtype: ${x.constructor.name}`);
     }
+    // tslint:enable:no-any
   });
 
   const y = new Uint8Array(totalByteLength);
   let offset = 0;
-  xs.forEach(x => {
+  normalizedXs.forEach((x: TypedArray) => {
     y.set(new Uint8Array(x.buffer), offset);
-    offset += x.buffer.byteLength;
+    offset += x.byteLength;
   });
 
   return y.buffer;
 }
+
+// Use Buffer on Node.js instead of Blob/atob/btoa
+const useNodeBuffer = typeof Buffer !== 'undefined' &&
+    (typeof Blob === 'undefined' || typeof atob === 'undefined' ||
+     typeof btoa === 'undefined');
 
 /**
  * Calculate the byte length of a JavaScript string.
@@ -152,6 +164,9 @@ export function concatenateTypedArrays(xs: TypedArray[]): ArrayBuffer {
  * @returns Byte length.
  */
 export function stringByteLength(str: string): number {
+  if (useNodeBuffer) {
+    return Buffer.byteLength(str);
+  }
   return new Blob([str]).size;
 }
 
@@ -162,6 +177,9 @@ export function stringByteLength(str: string): number {
  * @returns A string that base64-encodes `buffer`.
  */
 export function arrayBufferToBase64String(buffer: ArrayBuffer): string {
+  if (useNodeBuffer) {
+    return Buffer.from(buffer).toString('base64');
+  }
   return btoa(String.fromCharCode.apply(null, new Uint8Array(buffer)));
 }
 
@@ -172,6 +190,10 @@ export function arrayBufferToBase64String(buffer: ArrayBuffer): string {
  * @returns Decoded `ArrayBuffer`.
  */
 export function base64StringToArrayBuffer(str: string): ArrayBuffer {
+  if (useNodeBuffer) {
+    const buf = Buffer.from(str, 'base64');
+    return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+  }
   const s = atob(str);
   const buffer = new Uint8Array(s.length);
   for (let i = 0; i < s.length; ++i) {
@@ -188,13 +210,13 @@ export function base64StringToArrayBuffer(str: string): ArrayBuffer {
  */
 export function concatenateArrayBuffers(buffers: ArrayBuffer[]): ArrayBuffer {
   let totalByteLength = 0;
-  buffers.forEach(buffer => {
+  buffers.forEach((buffer: ArrayBuffer) => {
     totalByteLength += buffer.byteLength;
   });
 
   const temp = new Uint8Array(totalByteLength);
   let offset = 0;
-  buffers.forEach(buffer => {
+  buffers.forEach((buffer: ArrayBuffer) => {
     temp.set(new Uint8Array(buffer), offset);
     offset += buffer.byteLength;
   });
