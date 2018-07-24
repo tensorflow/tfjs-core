@@ -280,6 +280,7 @@ export class MathBackendWebGL implements KernelBackend {
       vals = this.gpgpu.downloadFloat32MatrixFromBuffer(
           bufferOrTexture, texShape[0], texShape[1]);
     }
+    console.log('caching on CPU', vals);
     this.cacheOnCPU(dataId, vals);
 
     const subscribers = this.pendingRead.get(dataId);
