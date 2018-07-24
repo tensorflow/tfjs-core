@@ -17,11 +17,11 @@
 set -e
 
 # Test in node (headless environment).
-#yarn test-node
+yarn test-node
 
 # Run the first karma separately so it can download the BrowserStack binary
 # without conflicting with others.
-yarn test-travis --browsers=bs_safari_mac --backend webgl --grep="Custom window size"
+yarn test-travis --browsers=bs_safari_mac --backend webgl
 
 # Run the rest of the karma tests in parallel. These runs will reuse the
 # already downloaded binary.

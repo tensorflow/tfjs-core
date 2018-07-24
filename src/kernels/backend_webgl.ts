@@ -301,7 +301,8 @@ export class MathBackendWebGL implements KernelBackend {
       const tmpTarget = Tensor.make(shape, {});
       this.texData.get(tmpTarget.dataId).usage = TextureUsage.DOWNLOAD;
 
-      const tmpInput = Tensor.make(shape, {dataId}, dtype);
+      const tmpDataId = {};
+      const tmpInput = Tensor.make(shape, {dataId: tmpDataId}, dtype);
       const program = new EncodeFloatProgram(shape);
       const res = this.compileAndRun(program, [tmpInput], tmpTarget);
 
@@ -1401,9 +1402,6 @@ export class MathBackendWebGL implements KernelBackend {
       this.lruDataGPU.splice(idx, 1);
     }
     this.numBytesInGPU -= this.computeBytes(shape, dtype);
-    console.log(
-        'releasing', this.computeBytes(shape, dtype), 'after bytes',
-        this.numBytesInGPU);
     this.textureManager.releaseTexture(texture, texShape, texType);
   }
 
@@ -1412,7 +1410,6 @@ export class MathBackendWebGL implements KernelBackend {
       texType: TextureUsage): WebGLTexture {
     const {shape, dtype} = this.texData.get(dataId);
     this.lruDataGPU.push(dataId);
-    console.log('acquireTexture', texShape, dtype);
     this.numBytesInGPU += this.computeBytes(shape, dtype);
     return this.textureManager.acquireTexture(texShape, texType);
   }
