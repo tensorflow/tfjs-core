@@ -329,7 +329,7 @@ export function squeezeShape(shape: number[], axis?: number[]):
 }
 
 export function getTypedArrayFromDType<D extends DataType>(
-    dtype: D, size: number): DataTypeMap[D] {
+    dtype: D, size: number): TypedArray {
   let values = null;
   if (dtype == null || dtype === 'float32') {
     values = new Float32Array(size);
@@ -350,7 +350,7 @@ export function checkForNaN<D extends DataType>(
     return;
   }
   for (let i = 0; i < vals.length; i++) {
-    if (isNaN(vals[i])) {
+    if (isNaN(vals[i] as number)) {
       throw Error(`The result of the '${name}' has NaNs.`);
     }
   }

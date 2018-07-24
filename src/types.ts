@@ -18,7 +18,8 @@
 export enum DType {
   float32 = 'float32',
   int32 = 'int32',
-  bool = 'bool'
+  bool = 'bool',
+  string = 'string'
 }
 
 /** @docalias number[] */
@@ -37,10 +38,12 @@ export interface DataTypeMap {
   float32: Float32Array;
   int32: Int32Array;
   bool: Uint8Array;
+  string: string[];
 }
+
 /** @docalias 'float32'|'int32'|'bool' */
 export type DataType = keyof DataTypeMap;
-export type TypedArray = DataTypeMap[DataType];
+export type TypedArray = Float32Array|Int32Array|Uint8Array;
 
 export enum Rank {
   R0 = 'R0',
@@ -55,8 +58,8 @@ export enum Rank {
 export type FlatVector = boolean[]|number[]|TypedArray;
 export type RegularArray<T> =
     T[]|T[][]|T[][][]|T[][][][]|T[][][][][]|T[][][][][][];
-export type ArrayData<D extends DataType> =
-    DataTypeMap[D]|RegularArray<number>|RegularArray<boolean>;
+export type ArrayData<D extends DataType> = DataTypeMap[D]|RegularArray<number>|
+    RegularArray<boolean>|RegularArray<string>;
 
 // tslint:disable-next-line:no-any
 export interface RecursiveArray<T extends any> {
@@ -88,6 +91,15 @@ const upcastTypeMap = {
 };
 
 export function upcastType(typeA: DataType, typeB: DataType): DataType {
+  if (typeA === 'string') {
+    if (typeB !== 'string') {
+      throw new Error(`Can not upcast string with ${typeB}`);
+    } else {
+      return 'string';
+    }
+  } else if (typeB === 'string') {
+    throw new Error(`Can no upcast ${typeA} with string`);
+  }
   return upcastTypeMap[typeA][typeB];
 }
 

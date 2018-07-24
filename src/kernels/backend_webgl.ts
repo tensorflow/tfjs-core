@@ -28,7 +28,7 @@ import {getStridedSlicedInfo} from '../ops/slice_util';
 // tslint:disable-next-line:max-line-length
 import {DataId, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import * as types from '../types';
-import {DataType, DataTypeMap, RecursiveArray, TypedArray} from '../types';
+import {DataType, RecursiveArray, TypedArray} from '../types';
 import * as util from '../util';
 import {KernelBackend} from './backend';
 import * as backend_util from './backend_util';
@@ -1405,7 +1405,7 @@ if (ENV.get('IS_BROWSER')) {
 }
 
 function float32ToTypedArray<D extends DataType>(
-    a: Float32Array, dtype: D): DataTypeMap[D] {
+    a: Float32Array, dtype: D): TypedArray {
   if (dtype === 'float32') {
     return a;
   } else if (dtype === 'int32' || dtype === 'bool') {
@@ -1421,6 +1421,6 @@ function float32ToTypedArray<D extends DataType>(
 }
 
 function typedArrayToFloat32<D extends DataType>(
-    a: DataTypeMap[D], dtype: D): Float32Array {
+    a: TypedArray, dtype: D): Float32Array {
   return (a instanceof Float32Array) ? a : new Float32Array(a);
 }

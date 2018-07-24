@@ -15,15 +15,16 @@
  * =============================================================================
  */
 
+import {tensor} from './ops/ops';
 import {tensorToString} from './tensor_format';
-import {DataType, Rank, ShapeMap, TypedArray} from './types';
+import {DataType, DataTypeMap, Rank, ShapeMap, TypedArray} from './types';
 import * as util from './util';
 import {computeStrides} from './util';
 
 /** @hidden */
 export interface TensorData {
   dataId?: DataId;
-  values?: TypedArray;
+  values?: DataTypeMap[DataType];
 }
 
 /**
@@ -338,6 +339,16 @@ export function setOpHandler(handler: OpHandler) {
  */
 export type DataId = object;  // object instead of {} to force non-primitive.
 
+export interface ValuesMap {
+  string: string[];
+  number: TypedArray;
+}
+
+export interface ValueMap {
+  string: string;
+  number: number;
+}
+
 /**
  * A `Tensor` object represents an immutable, multidimensional array of numbers
  * that has a shape and a data type.
@@ -345,7 +356,8 @@ export type DataId = object;  // object instead of {} to force non-primitive.
  * See `tensor` for details on how to create a `Tensor`.
  */
 /** @doc {heading: 'Tensors', subheading: 'Classes'} */
-export class Tensor<R extends Rank = Rank> {
+export class Tensor<R extends Rank = Rank,
+                              D extends 'string' | 'number' = 'number'> {
   private static nextId = 0;
 
   /** Unique id of this tensor. */
@@ -372,7 +384,7 @@ export class Tensor<R extends Rank = Rank> {
   readonly strides: number[];
 
   protected constructor(
-      shape: ShapeMap[R], dtype: DataType, values?: TypedArray,
+      shape: ShapeMap[R], dtype: DataType, values?: DataTypeMap[DataType],
       dataId?: DataId) {
     this.size = util.sizeFromShape(shape);
     if (values != null) {
@@ -486,7 +498,7 @@ export class Tensor<R extends Rank = Rank> {
    *
    * @param locs The location indices.
    */
-  get(...locs: number[]) {
+  get(...locs: number[]): ValueMap[D] {
     util.assert(
         locs.length === this.rank,
         'Number of coordinates in get() must match the rank of the tensor');
@@ -512,7 +524,7 @@ export class Tensor<R extends Rank = Rank> {
    * `TypedArray` that resolves when the computation has finished.
    */
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
-  async data(): Promise<TypedArray> {
+  async data(): Promise<ValuesMap[D]> {
     this.throwIfDisposed();
     return trackerFn().read(this.dataId);
   }
@@ -522,7 +534,7 @@ export class Tensor<R extends Rank = Rank> {
    * thread until the values are ready, which can cause performance issues.
    */
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
-  dataSync(): TypedArray {
+  dataSync(): ValuesMap[D] {
     this.throwIfDisposed();
     return trackerFn().readSync(this.dataId);
   }
@@ -867,15 +879,15 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return opHandler.equal(this, x);
   }
-  equalStrict<T extends this>(this: T, x: T): T {
+  equalStrict<T extends Tensor>(this: T, x: T): T {
     this.throwIfDisposed();
     return opHandler.equalStrict(this, x) as T;
   }
-  lessEqual<T extends Tensor>(x: Tensor): T {
+  lessEqual<T extends Tensor>(this: T, x: Tensor): T {
     this.throwIfDisposed();
     return opHandler.lessEqual(this, x);
   }
-  lessEqualStrict<T extends this>(this: T, x: T): T {
+  lessEqualStrict<T extends Tensor>(this: T, x: T): T {
     this.throwIfDisposed();
     return opHandler.lessEqualStrict(this, x) as T;
   }
@@ -991,7 +1003,7 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return opHandler.leakyRelu(this, alpha);
   }
-  prelu(alpha: Tensor<R>): Tensor<R> {
+  prelu<T extends Tensor>(this: T, alpha: T): T {
     this.throwIfDisposed();
     return opHandler.prelu(this, alpha);
   }
@@ -1067,7 +1079,7 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return opHandler.step(this, alpha);
   }
-  softmax<T extends this>(this: T, dim = -1): T {
+  softmax<T extends Tensor>(this: T, dim = -1): T {
     this.throwIfDisposed();
     return opHandler.softmax(this, dim) as T;
   }
@@ -1146,7 +1158,8 @@ export class Tensor<R extends Rank = Rank> {
 
   variable(trainable = true, name?: string, dtype?: DataType): Variable<R> {
     this.throwIfDisposed();
-    return Variable.variable(this, trainable, name, dtype);
+    return Variable.variable(
+        this as Tensor<R, 'number'>, trainable, name, dtype);
   }
 
   unsortedSegmentSum<T extends Tensor>(
@@ -1167,6 +1180,7 @@ export class Tensor<R extends Rank = Rank> {
     return opHandler.spaceToBatchND(this, blockShape, paddings);
   }
 }
+
 Object.defineProperty(Tensor, Symbol.hasInstance, {
   value: (instance: Tensor) => {
     return instance.shape != null && instance.dtype != null;

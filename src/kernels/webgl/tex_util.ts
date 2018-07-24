@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {DataType, DataTypeMap} from '../../types';
+import {DataType, TypedArray} from '../../types';
 
 export enum TextureUsage {
   RENDER,
@@ -36,7 +36,7 @@ export interface TextureData {
   /** [rows, columns] shape of the texture. */
   texShape: [number, number];
   dtype: DataType;
-  values: DataTypeMap[DataType];
+  values: TypedArray;
   usage: TextureUsage;
 }
 
@@ -64,8 +64,6 @@ export function getMatrixSizeFromUnpackedArraySize(
   }
   return unpackedSize / channelsPerTexture;
 }
-
-export type TypedArray = Float32Array|Uint8Array;
 
 export function encodeMatrixToUnpackedArray(
     matrix: TypedArray, unpackedArray: TypedArray, channelsPerTexture: number) {

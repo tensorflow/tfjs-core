@@ -31,7 +31,7 @@ import {getStridedSlicedInfo} from '../ops/slice_util';
 // tslint:disable-next-line:max-line-length
 import {DataId, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import * as types from '../types';
-import {DataType, DataTypeMap, Rank, TypedArray} from '../types';
+import {DataType, Rank, TypedArray} from '../types';
 import * as util from '../util';
 import {now} from '../util';
 import {BackendTimingInfo, KernelBackend} from './backend';
@@ -41,7 +41,7 @@ import {topkImpl} from './topk_impl';
 import {whereImpl} from './where_impl';
 
 export class MathBackendCPU implements KernelBackend {
-  private data = new WeakMap<DataId, DataTypeMap[DataType]>();
+  private data = new WeakMap<DataId, TypedArray>();
   private canvas: HTMLCanvasElement;
   private firstUse = true;
 
