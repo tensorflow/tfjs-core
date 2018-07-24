@@ -18,7 +18,6 @@
 import {ENV} from '../../environment';
 
 import * as tex_util from './tex_util';
-// import {WebGL2RenderingContext} from './webgl_types';
 import * as webgl_util from './webgl_util';
 
 export function getWebGLContextAttributes(): WebGLContextAttributes {
