@@ -1402,6 +1402,9 @@ export class MathBackendWebGL implements KernelBackend {
       this.lruDataGPU.splice(idx, 1);
     }
     this.numBytesInGPU -= this.computeBytes(shape, dtype);
+    console.log(
+        'releasing', this.computeBytes(shape, dtype), 'after bytes',
+        this.numBytesInGPU);
     this.textureManager.releaseTexture(texture, texShape, texType);
   }
 
