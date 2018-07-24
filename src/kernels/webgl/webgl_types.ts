@@ -15,7 +15,6 @@
  * =============================================================================
  */
 
-
 // TODO(nsthorat): Move these to the webgl official typings.
 export interface WebGL2DisjointQueryTimerExtension {
   TIME_ELAPSED_EXT: number;
