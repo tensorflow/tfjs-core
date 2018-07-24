@@ -280,7 +280,6 @@ export class MathBackendWebGL implements KernelBackend {
       vals = this.gpgpu.downloadFloat32MatrixFromBuffer(
           bufferOrTexture, texShape[0], texShape[1]);
     }
-    console.log('caching on CPU', vals);
     this.cacheOnCPU(dataId, vals);
 
     const subscribers = this.pendingRead.get(dataId);
@@ -1413,6 +1412,7 @@ export class MathBackendWebGL implements KernelBackend {
       texType: TextureUsage): WebGLTexture {
     const {shape, dtype} = this.texData.get(dataId);
     this.lruDataGPU.push(dataId);
+    console.log('acquireTexture', texShape, dtype);
     this.numBytesInGPU += this.computeBytes(shape, dtype);
     return this.textureManager.acquireTexture(texShape, texType);
   }
