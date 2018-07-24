@@ -233,31 +233,8 @@ export class MathBackendWebGL implements KernelBackend {
       start = performance.now();
     }
 
-<<<<<<< HEAD
     const float32Values =
         this.getValuesFromTexture(texture, dataId, dtype, texShape, shape);
-=======
-    let float32Values;
-    if (ENV.get('WEBGL_DOWNLOAD_FLOAT_ENABLED')) {
-      float32Values = this.gpgpu.downloadFloat32MatrixFromOutputTexture(
-          texture, texShape[0], texShape[1]);
-    } else {
-      const tmpTarget = Tensor.make(shape, {});
-      this.texData.get(tmpTarget.dataId).usage = TextureUsage.DOWNLOAD;
-
-      const tmpInput = Tensor.make(shape, {dataId}, dtype);
-      const program = new EncodeFloatProgram(shape);
-      const pageToCpu = false;
-      this.compileAndRun(program, [tmpInput], tmpTarget, null, pageToCpu);
-      const tmpData = this.texData.get(tmpTarget.dataId);
-      float32Values =
-          this.gpgpu.downloadByteEncodedFloatMatrixFromOutputTexture(
-              tmpData.texture, tmpData.texShape[0], tmpData.texShape[1]);
-
-      tmpInput.dispose();
-      tmpTarget.dispose();
-    }
->>>>>>> origin
 
     if (shouldTimeProgram) {
       this.downloadWaitMs += performance.now() - start;
