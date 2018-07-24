@@ -301,8 +301,7 @@ export class MathBackendWebGL implements KernelBackend {
       const tmpTarget = Tensor.make(shape, {});
       this.texData.get(tmpTarget.dataId).usage = TextureUsage.DOWNLOAD;
 
-      const tmpDataId = {};
-      const tmpInput = Tensor.make(shape, {dataId: tmpDataId}, dtype);
+      const tmpInput = Tensor.make(shape, {dataId}, dtype);
       const program = new EncodeFloatProgram(shape);
       const res = this.compileAndRun(program, [tmpInput], tmpTarget);
 
