@@ -255,14 +255,6 @@ export class MathBackendWebGL implements KernelBackend {
       this.cacheOnCPU(dataId);
       return values;
     }
-    // tslint:disable-next-line:no-unused-expression
-    [texture, texShape];
-
-    // If no disjoint query or fence API, we have to synchronously read.
-    if (ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') === 0 &&
-        !ENV.get('WEBGL_FENCE_API_ENABLED')) {
-      return this.readSync(dataId);
-    }
 
     this.pendingRead.set(dataId, []);
 
