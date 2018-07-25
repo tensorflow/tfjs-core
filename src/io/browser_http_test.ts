@@ -64,11 +64,13 @@ describeWithFlags('browserHTTPRequest-load', NODE_ENVS, () => {
 
   // simulate a fetch polyfill, this needs to be non-null for spyOn to work
   beforeEach(() => {
+    // tslint:disable-next-line:no-any
     (global as any).fetch = () => {};
     requestInits = [];
   });
 
   afterAll(() => {
+    // tslint:disable-next-line:no-any
     delete (global as any).fetch;
   });
   type TypedArrays = Float32Array|Int32Array|Uint8Array|Uint16Array;
