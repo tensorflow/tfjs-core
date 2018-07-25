@@ -1372,6 +1372,8 @@ export class MathBackendWebGL implements KernelBackend {
   private computeBytes(shape: number[], dtype: DataType) {
     return util.sizeFromShape(shape) * util.bytesPerElement(dtype);
   }
+
+  pack(a: Tensor2D): Tensor2D {}
 }
 
 if (ENV.get('IS_BROWSER')) {

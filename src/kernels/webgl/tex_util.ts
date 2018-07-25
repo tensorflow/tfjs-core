@@ -18,10 +18,22 @@
 import {DataType, DataTypeMap} from '../../types';
 
 export enum TextureUsage {
+  // Output texture to store the result of a regular shader program.
   RENDER,
+
+  // Used to upload regular tensor values.
   UPLOAD,
+
+  // Used to upload pixels that come from image or canvas.
   PIXELS,
-  DOWNLOAD
+
+  // A temporary texture to store the values into byte-encoded IEEE-754 format
+  // for download to cpu.
+  DOWNLOAD,
+
+  // A temporary texture which stores values into 2x2 packed format that some
+  // shader programs use.
+  PACKED
 }
 
 export enum PhysicalTextureType {
