@@ -1225,7 +1225,9 @@ describeWithFlags('x instanceof Tensor', ALL_ENVS, () => {
   });
 
   it('x: undefined or null, fails', () => {
-    expect(undefined as any instanceof Tensor).toBe(false);
-    expect(null as any instanceof Tensor).toBe(false);
+    // tslint:disable-next-line:no-any
+    expect((undefined as any) instanceof Tensor).toBe(false);
+    // tslint:disable-next-line:no-any
+    expect((null as any) instanceof Tensor).toBe(false);
   });
 });
