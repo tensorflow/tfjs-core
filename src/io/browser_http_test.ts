@@ -59,7 +59,7 @@ const modelTopology1: {} = {
   'backend': 'tensorflow'
 };
 
-describeWithFlags('browserHTTPRequest-load', NODE_ENVS, () => {
+describeWithFlags('browserHTTPRequest-load fetch-polyfill', NODE_ENVS, () => {
   let requestInits: RequestInit[];
 
   // simulate a fetch polyfill, this needs to be non-null for spyOn to work
@@ -140,11 +140,10 @@ describeWithFlags('browserHTTPRequest-load', NODE_ENVS, () => {
     // tslint:disable-next-line:no-any
     delete (global as any).fetch;
     try {
-      void tf.io.browserHTTPRequest('./model.json');
+      tf.io.browserHTTPRequest('./model.json');
     } catch (err) {
       expect(err.message)
           .toMatch(
-              // tslint:disable-next-line:max-line-length
               /not supported outside the web browser without a fetch polyfill/);
     }
   });
