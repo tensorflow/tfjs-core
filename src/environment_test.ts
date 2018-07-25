@@ -56,8 +56,8 @@ describeWithFlags('disjoint query timer enabled', WEBGL_ENVS, () => {
     });
 
     ENV.setFeatures(features);
-    // expect to be 1 when https://github.com/tensorflow/tfjs/issues/544 is
-    // fixed.
+    // TODO(nsthorat): expect to be 1 when
+    // https://github.com/tensorflow/tfjs/issues/544 is fixed.
     expect(ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION')).toBe(0);
   });
 
@@ -83,8 +83,8 @@ describeWithFlags('disjoint query timer enabled', WEBGL_ENVS, () => {
     });
 
     ENV.setFeatures(features);
-    // expect to be 2 when https://github.com/tensorflow/tfjs/issues/544 is
-    // fixed.
+    // TODO(nsthorat): expect to be 2 when
+    // https://github.com/tensorflow/tfjs/issues/544 is fixed.
     expect(ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION')).toBe(0);
   });
 });

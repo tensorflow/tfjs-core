@@ -306,7 +306,8 @@ export function maybeCreateBufferFromOutputTexture(
         () => gl.bufferData(
             gl2.PIXEL_PACK_BUFFER, bufferSizeBytes, gl.STATIC_DRAW));
 
-    // Copy the texture into the buffer.
+    // Enqueue a command on the GPU command queue to copy of texture into the
+    // buffer.
     webgl_util.callAndCheck(
         gl, () => gl2.readPixels(0, 0, columns, rows, gl.RGBA, gl.FLOAT, 0));
 

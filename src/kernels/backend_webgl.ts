@@ -297,26 +297,26 @@ export class MathBackendWebGL implements KernelBackend {
   private getValuesFromTexture(
       texture: WebGLTexture, dataId: DataId, dtype: DataType,
       texShape: [number, number], shape: number[]): Float32Array {
-    if (!ENV.get('WEBGL_DOWNLOAD_FLOAT_ENABLED')) {
-      const tmpTarget = Tensor.make(shape, {});
-      this.texData.get(tmpTarget.dataId).usage = TextureUsage.DOWNLOAD;
-
-      const tmpInput = Tensor.make(shape, {dataId}, dtype);
-      const program = new EncodeFloatProgram(shape);
-      const pageToCpu = false;
-      this.compileAndRun(program, [tmpInput], tmpTarget, null, pageToCpu);
-      const tmpData = this.texData.get(tmpTarget.dataId);
-      const vals = this.gpgpu.downloadByteEncodedFloatMatrixFromOutputTexture(
-          tmpData.texture, tmpData.texShape[0], tmpData.texShape[1]);
-
-      tmpInput.dispose();
-      tmpTarget.dispose();
-
-      return vals;
+    if (ENV.get('WEBGL_DOWNLOAD_FLOAT_ENABLED')) {
+      return this.gpgpu.downloadFloat32MatrixFromOutputTexture(
+          texture, texShape[0], texShape[1]);
     }
 
-    return this.gpgpu.downloadFloat32MatrixFromOutputTexture(
-        texture, texShape[0], texShape[1]);
+    const tmpTarget = Tensor.make(shape, {});
+    this.texData.get(tmpTarget.dataId).usage = TextureUsage.DOWNLOAD;
+
+    const tmpInput = Tensor.make(shape, {dataId}, dtype);
+    const program = new EncodeFloatProgram(shape);
+    const pageToCpu = false;
+    this.compileAndRun(program, [tmpInput], tmpTarget, null, pageToCpu);
+    const tmpData = this.texData.get(tmpTarget.dataId);
+    const vals = this.gpgpu.downloadByteEncodedFloatMatrixFromOutputTexture(
+        tmpData.texture, tmpData.texShape[0], tmpData.texShape[1]);
+
+    tmpInput.dispose();
+    tmpTarget.dispose();
+
+    return vals;
   }
 
   async time(f: () => void): Promise<WebGLTimingInfo> {

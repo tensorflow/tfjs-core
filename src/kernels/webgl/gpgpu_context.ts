@@ -244,7 +244,10 @@ export class GPGPUContext {
       isFencePassed = () => this.isQueryAvailable(
           query, ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION'));
     } else {
-      // If we have no way to fence, return true immediately.
+      // If we have no way to fence, return true immediately. This will fire in
+      // WebGL 1.0 when there is no disjoint query timer. In this case, because
+      // the fence passes immediately, we'll immediately ask for a download of
+      // the texture, which will cause the UI thread to hang.
       isFencePassed = () => true;
     }
 
