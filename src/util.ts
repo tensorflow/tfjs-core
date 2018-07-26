@@ -373,10 +373,14 @@ export function hasEncodingLoss(oldType: DataType, newType: DataType): boolean {
 }
 
 function copyTypedArray<D extends DataType>(
-    array: DataTypeMap[D]|number[]|boolean[], dtype: D): DataTypeMap[D] {
+    array: DataTypeMap[D]|number[]|boolean[], dtype: D,
+    debugMode: boolean): DataTypeMap[D] {
   if (dtype == null || dtype === 'float32') {
     return new Float32Array(array as number[]);
   } else if (dtype === 'int32') {
+    if (debugMode) {
+      checkConversionForNaN(array as number[], dtype);
+    }
     return new Int32Array(array as number[]);
   } else if (dtype === 'bool') {
     const bool = new Uint8Array(array.length);
@@ -437,14 +441,14 @@ export function computeStrides(shape: number[]): number[] {
 }
 
 export function toTypedArray<D extends DataType>(
-    a: ArrayData<D>, dtype: D): DataTypeMap[D] {
+    a: ArrayData<D>, dtype: D, debugMode: boolean): DataTypeMap[D] {
   if (noConversionNeeded(a, dtype)) {
     return a as DataTypeMap[D];
   }
   if (Array.isArray(a)) {
     a = flatten(a as number[]);
   }
-  return copyTypedArray(a, dtype);
+  return copyTypedArray(a, dtype, debugMode);
 }
 
 function noConversionNeeded<D extends DataType>(

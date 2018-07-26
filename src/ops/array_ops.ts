@@ -16,7 +16,7 @@
  */
 import {ENV} from '../environment';
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
-import {convertToTensor, convertToTensorArray} from '../tensor_util';
+import {convertToTensor, convertToTensorArray} from '../tensor_util_env';
 import {DataType, Rank, ShapeMap, TensorLike, TensorLike1D, TypedArray} from '../types';
 import * as util from '../util';
 import {getAxesPermutation, getInnerMostAxes, parseAxisParam} from './axis_util';
