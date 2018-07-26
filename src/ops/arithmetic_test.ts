@@ -993,7 +993,7 @@ describeWithFlags('addN', ALL_ENVS, () => {
 
   it('accepts a tensor-like object', () => {
     const res = tf.addN([[1, 2], [3, 4]]);
-    expectArraysEqual(res, [4, 6]);
+    expectArraysClose(res, [4, 6]);
     expect(res.dtype).toBe('float32');
     expect(res.shape).toEqual([2]);
   });
