@@ -16,7 +16,6 @@
  */
 
 import {Tensor} from './tensor';
-// tslint:disable-next-line:max-line-length
 import {NamedTensorMap, TensorContainer, TensorContainerArray} from './tensor_types';
 import {ArrayData, DataType, TensorLike} from './types';
 import {assert, inferShape, isTypedArray, toTypedArray} from './util';

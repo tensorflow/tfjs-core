@@ -22,13 +22,10 @@
  */
 
 import {assert} from '../util';
-
-// tslint:disable:max-line-length
 import {concatenateArrayBuffers, getModelArtifactsInfoForJSON} from './io_utils';
 import {IORouter, IORouterRegistry} from './router_registry';
 import {IOHandler, ModelArtifacts, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
 import {loadWeightsAsArrayBuffer} from './weights_loader';
-// tslint:enable:max-line-length
 
 export class BrowserHTTPRequest implements IOHandler {
   protected readonly path: string;
@@ -173,7 +170,6 @@ export const httpRequestRouter: IORouter = (url: string) => {
 IORouterRegistry.registerSaveRouter(httpRequestRouter);
 IORouterRegistry.registerLoadRouter(httpRequestRouter);
 
-// tslint:disable:max-line-length
 /**
  * Creates an IOHandler subtype that sends model artifacts to HTTP server.
  *
@@ -309,7 +305,6 @@ IORouterRegistry.registerLoadRouter(httpRequestRouter);
  *    If `requestInit` has a `body`, an Error will be thrown.
  * @returns An instance of `IOHandler`.
  */
-// tslint:enable:max-line-length
 export function browserHTTPRequest(
     path: string, requestInit?: RequestInit): IOHandler {
   return new BrowserHTTPRequest(path, requestInit);
