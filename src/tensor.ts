@@ -15,16 +15,15 @@
  * =============================================================================
  */
 
-import {tensor} from './ops/ops';
 import {tensorToString} from './tensor_format';
-import {DataType, DataTypeMap, Rank, ShapeMap, TypedArray} from './types';
+// tslint:disable-next-line:max-line-length
+import {DataType, DataTypeMap, Rank, ShapeMap, TypedArray, ValueMap} from './types';
 import * as util from './util';
 import {computeStrides} from './util';
 
-/** @hidden */
-export interface TensorData {
+export interface TensorData<D extends DataType> {
   dataId?: DataId;
-  values?: DataTypeMap[DataType];
+  values?: DataTypeMap[D];
 }
 
 /**
@@ -339,16 +338,6 @@ export function setOpHandler(handler: OpHandler) {
  */
 export type DataId = object;  // object instead of {} to force non-primitive.
 
-export interface ValuesMap {
-  string: string[];
-  number: TypedArray;
-}
-
-export interface ValueMap {
-  string: string;
-  number: number;
-}
-
 /**
  * A `Tensor` object represents an immutable, multidimensional array of numbers
  * that has a shape and a data type.
@@ -356,8 +345,8 @@ export interface ValueMap {
  * See `tensor` for details on how to create a `Tensor`.
  */
 /** @doc {heading: 'Tensors', subheading: 'Classes'} */
-export class Tensor<R extends Rank = Rank,
-                              D extends 'string' | 'number' = 'number'> {
+export class Tensor<R extends Rank = Rank, D extends DataType = 'float32' |
+                        'int32' | 'bool'> {
   private static nextId = 0;
 
   /** Unique id of this tensor. */
@@ -372,7 +361,7 @@ export class Tensor<R extends Rank = Rank,
   /** Number of elements in the tensor. */
   readonly size: number;
   /** The data type for the array. */
-  readonly dtype: DataType;
+  readonly dtype: D;
   /** The rank type for the array (see `Rank` enum). */
   readonly rankType: R;
 
@@ -384,8 +373,7 @@ export class Tensor<R extends Rank = Rank,
   readonly strides: number[];
 
   protected constructor(
-      shape: ShapeMap[R], dtype: DataType, values?: DataTypeMap[DataType],
-      dataId?: DataId) {
+      shape: ShapeMap[R], dtype: D, values?: DataTypeMap[D], dataId?: DataId) {
     this.size = util.sizeFromShape(shape);
     if (values != null) {
       util.assert(
@@ -394,7 +382,7 @@ export class Tensor<R extends Rank = Rank,
               `length of values (${values.length})`);
     }
     this.shape = shape.slice();
-    this.dtype = dtype || 'float32';
+    this.dtype = dtype || 'float32' as D;
     this.strides = computeStrides(shape);
     this.dataId = dataId != null ? dataId : {};
     this.id = Tensor.nextId++;
@@ -409,9 +397,9 @@ export class Tensor<R extends Rank = Rank,
    * Makes a new tensor with the provided shape and values. Values should be in
    * a flat array.
    */
-  static make<T extends Tensor<R>, D extends DataType = 'float32',
-                                             R extends Rank = Rank>(
-      shape: ShapeMap[R], data: TensorData, dtype?: D): T {
+  static make<T extends Tensor<R, D>, D extends DataType = 'float32',
+                                                R extends Rank = Rank>(
+      shape: ShapeMap[R], data: TensorData<D>, dtype: D = 'float32' as D): T {
     return new Tensor(shape, dtype, data.values, data.dataId) as T;
   }
 
@@ -524,7 +512,7 @@ export class Tensor<R extends Rank = Rank,
    * `TypedArray` that resolves when the computation has finished.
    */
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
-  async data(): Promise<ValuesMap[D]> {
+  async data(): Promise<DataTypeMap[D]> {
     this.throwIfDisposed();
     return trackerFn().read(this.dataId);
   }
@@ -534,7 +522,7 @@ export class Tensor<R extends Rank = Rank,
    * thread until the values are ready, which can cause performance issues.
    */
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
-  dataSync(): ValuesMap[D] {
+  dataSync(): DataTypeMap[D] {
     this.throwIfDisposed();
     return trackerFn().readSync(this.dataId);
   }

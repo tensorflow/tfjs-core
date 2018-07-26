@@ -33,7 +33,13 @@ export interface ShapeMap {
   R6: [number, number, number, number, number, number];
 }
 
-/** @hidden */
+export interface ValueMap {
+  float32: number;
+  int32: number;
+  bool: number;
+  string: string;
+}
+
 export interface DataTypeMap {
   float32: Float32Array;
   int32: Int32Array;
