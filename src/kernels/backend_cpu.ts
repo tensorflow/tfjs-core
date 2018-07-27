@@ -35,6 +35,7 @@ import * as util from '../util';
 import {now} from '../util';
 import {BackendTimingInfo, KernelBackend} from './backend';
 import * as backend_util from './backend_util';
+import {topkImpl} from './topk_impl';
 
 export class MathBackendCPU implements KernelBackend {
   private data = new WeakMap<DataId, DataTypeMap[DataType]>();
@@ -529,35 +530,8 @@ export class MathBackendCPU implements KernelBackend {
     return result;
   }
 
-  topKValues<T extends Tensor>(x: T, k: number): Tensor1D {
-    return this.topK(x, k).values as Tensor1D;
-  }
-
-  topKIndices(x: Tensor, k: number): Tensor1D {
-    return this.topK(x, k).indices;
-  }
-
-  private topK<T extends Tensor>(x: T, k: number):
-      {values: Tensor1D, indices: Tensor1D} {
-    const values = x.dataSync();
-    const valuesAndIndices: Array<{value: number, index: number}> = [];
-    for (let i = 0; i < values.length; i++) {
-      valuesAndIndices.push({value: values[i], index: i});
-    }
-    valuesAndIndices.sort((a, b) => {
-      return b.value - a.value;
-    });
-
-    const topkValues = util.getTypedArrayFromDType(x.dtype, k);
-    const topkIndices = new Int32Array(k);
-    for (let i = 0; i < k; i++) {
-      topkValues[i] = valuesAndIndices[i].value;
-      topkIndices[i] = valuesAndIndices[i].index;
-    }
-    return {
-      values: ops.tensor1d(topkValues, x.dtype),
-      indices: ops.tensor1d(topkIndices, 'int32')
-    };
+  topk<T extends Tensor>(x: T, k: number, sorted: boolean): [T, T] {
+    return topkImpl(x, k, sorted);
   }
 
   min(x: Tensor, axes: number[]): Tensor {
@@ -1494,6 +1468,30 @@ export class MathBackendCPU implements KernelBackend {
                .transpose(permuted)
                .reshape(reshapedPermuted)
                .slice(sliceBeginCoords, sliceSize) as T;
+  }
+
+  spaceToBatchND<T extends Tensor>(
+      x: T, blockShape: number[], paddings: Array<[number, number]>): T {
+    const prod = blockShape.reduce((a, b) => a * b);
+
+    const completePaddings: Array<[number, number]> = [[0, 0]];
+    completePaddings.push(...paddings);
+    for (let i = 1 + blockShape.length; i < x.shape.length; ++i) {
+      completePaddings.push([0, 0]);
+    }
+
+    const paddedX = x.pad(completePaddings);
+
+    const reshapedPaddedShape =
+        array_ops_util.getReshaped(paddedX.shape, blockShape, prod, false);
+    const permutedReshapedPaddedPermutation = array_ops_util.getPermuted(
+        reshapedPaddedShape.length, blockShape.length, false);
+    const flattenShape = array_ops_util.getReshapedPermuted(
+        paddedX.shape, blockShape, prod, false);
+
+    return paddedX.reshape(reshapedPaddedShape)
+               .transpose(permutedReshapedPaddedPermutation)
+               .reshape(flattenShape) as T;
   }
 
   private pool(x: Tensor4D, convInfo: Conv2DInfo, poolType: 'max'|'avg'):

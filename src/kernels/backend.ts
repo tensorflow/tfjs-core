@@ -100,8 +100,7 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
 
   where(condition: Tensor, a: Tensor, b: Tensor, dtype: DataType): Tensor;
 
-  topKValues<T extends Tensor>(x: T, k: number): Tensor1D;
-  topKIndices(x: Tensor, k: number): Tensor1D;
+  topk<T extends Tensor>(x: T, k: number, sorted: boolean): [T, T];
 
   min(x: Tensor, axes: number[]): Tensor;
   minimum(a: Tensor, b: Tensor): Tensor;
@@ -201,6 +200,9 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
 
   batchToSpaceND<T extends Tensor>(
       x: T, blockShape: number[], crops: number[][]): T;
+
+  spaceToBatchND<T extends Tensor>(
+      x: T, blockShape: number[], paddings: number[][]): T;
 
   resizeBilinear(
       x: Tensor4D, newHeight: number, newWidth: number,

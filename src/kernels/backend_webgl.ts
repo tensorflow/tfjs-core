@@ -32,6 +32,7 @@ import * as util from '../util';
 
 import {KernelBackend} from './backend';
 import * as backend_util from './backend_util';
+import {topkImpl} from './topk_impl';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
 import {AvgPool2DBackpropProgram} from './webgl/avg_pool_backprop_gpu';
 import {BatchNormProgram} from './webgl/batchnorm_gpu';
@@ -552,6 +553,36 @@ export class MathBackendWebGL implements KernelBackend {
                .slice(sliceBeginCoords, sliceSize) as T;
   }
 
+  spaceToBatchND<T extends Tensor>(
+      x: T, blockShape: number[], paddings: Array<[number, number]>): T {
+    util.assert(
+        x.rank <= 4,
+        'spaceToBatchND for rank > 4 with a WebGL backend not implemented yet');
+
+    const prod = blockShape.reduce((a, b) => a * b);
+
+    const completePaddings: Array<[number, number]> = [[0, 0]];
+    completePaddings.push(...paddings);
+    for (let i = 1 + blockShape.length; i < x.shape.length; ++i) {
+      completePaddings.push([0, 0]);
+    }
+
+    const paddedX = x.pad(completePaddings);
+
+    const reshapedPaddedShape =
+        array_ops_util.getReshaped(paddedX.shape, blockShape, prod, false);
+
+    const permutedReshapedPaddedPermutation = array_ops_util.getPermuted(
+        reshapedPaddedShape.length, blockShape.length, false);
+
+    const flattenShape = array_ops_util.getReshapedPermuted(
+        paddedX.shape, blockShape, prod, false);
+
+    return paddedX.reshape(reshapedPaddedShape)
+               .transpose(permutedReshapedPaddedPermutation)
+               .reshape(flattenShape) as T;
+  }
+
   private reduce(
       x: Tensor2D, reduceType: 'all'|'any'|'max'|'min'|'sum',
       dtype: DataType): Tensor2D {
@@ -747,12 +778,8 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [condition, a, b], output);
   }
 
-  topKValues<T extends Tensor>(x: T, k: number): Tensor1D {
-    throw new Error('topKValues GPU not yet implemented!');
-  }
-
-  topKIndices(x: Tensor, k: number): Tensor1D {
-    throw new Error('topKIndices GPU not yet implemented!');
+  topk<T extends Tensor>(x: T, k: number, sorted: boolean): [T, T] {
+    return topkImpl(x, k, sorted);
   }
 
   min(x: Tensor, axes: number[]): Tensor {
