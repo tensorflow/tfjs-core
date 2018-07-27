@@ -1716,56 +1716,7 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   rotate(x: Tensor4D, angles: Tensor1D): Tensor4D {
-    const [batch, height, width, numChannels] = x.shape;
-    const output =
-        ops.buffer<Rank.R4>([batch, height, width, numChannels], x.dtype);
-
-    function sampleBilinear(
-        img: Tensor4D, b: number, y: number, x: number, c: number) {
-      const xLo = Math.floor(x);
-      const xHi = Math.ceil(x);
-      const yLo = Math.floor(y);
-      const yHi = Math.ceil(y);
-      const xF = x - xLo;
-      const yF = y - yLo;
-      const rowSampleLo =
-          (1.0 - xF) * img.get(b, yLo, xLo, c) + xF * img.get(b, yLo, xHi, c);
-      const rowSampleHi =
-          (1.0 - xF) * img.get(b, yHi, xLo, c) + xF * img.get(b, yHi, xHi, c);
-      const sample = (1.0 - yF) * rowSampleLo + yF * rowSampleHi;
-      return sample;
-    }
-
-    for (let b = 0; b < batch; b++) {
-      const angle = -angles.get(b);
-      const sinFactor = Math.sin(angle);
-      const cosFactor = Math.cos(angle);
-      for (let h = 0; h < height; h++) {
-        for (let w = 0; w < width; w++) {
-          const hCentered = 2.0 * (h / height) - 1.0;
-          const wCentered = 2.0 * (w / width) - 1.0;
-          const hRotatedCentered =
-              wCentered * sinFactor + hCentered * cosFactor;
-          const wRotatedCentered =
-              wCentered * cosFactor - hCentered * sinFactor;
-          const hRotated = (hRotatedCentered * 0.5 + 0.5) * height;
-          const wRotated = (wRotatedCentered * 0.5 + 0.5) * width;
-          const hRotatedPixel = Math.floor(hRotated);
-          const wRotatedPixel = Math.floor(wRotated);
-          if (hRotatedPixel > height || wRotatedPixel > width ||
-              hRotatedPixel < 0 || wRotatedPixel < 0) {
-            continue;
-          }
-          for (let d = 0; d < numChannels; d++) {
-            const writeTo = [b, h, w, d];
-            const sample = sampleBilinear(x, b, hRotated, wRotated, d);
-            output.set(sample, ...writeTo);
-          }
-        }
-      }
-    }
-
-    return output.toTensor();
+    throw new Error('tf.image.rotate only implemented for webgl backend');
   }
 
   resizeBilinear(

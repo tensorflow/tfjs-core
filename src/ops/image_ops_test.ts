@@ -22,7 +22,6 @@ describeWithFlags('rotate', WEBGL_ENVS, () => {
   it('rotates 90 degrees', () => {
     const image = tf.linspace(0, 8, 9).reshape([1, 3, 3, 1]) as tf.Tensor4D;
     const rotated = tf.image.rotate(image, Math.PI * 0.5);
-
     const rotatedCorrect =
         tf.tensor2d([[6, 3, 0], [7, 4, 1], [8, 5, 2]]).reshape([1, 3, 3, 1]);
     expectArraysClose(rotated, rotatedCorrect);

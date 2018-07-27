@@ -36,12 +36,13 @@ export class RotateProgram implements GPGPUProgram {
         float s = sin(-getTheta(b));
         float c = cos(-getTheta(b));
         mat2 rot = mat2(c, -s, s, c);
-        ivec2 yRC = coords.yz + ivec2(0.0, 1.0);
+        ivec2 yRC = coords.yz;
+        vec2 off = rot * vec2(1.0, 0.0);
         // Fractional source index.
-        vec2 centered = 2.0 * (vec2(yRC) / inputShapeRC) - 1.0;
+        vec2 centered = 2.0 * ((vec2(yRC) + off) / inputShapeRC) - 1.0;
         vec2 sourceFracIndexRC = ((rot * centered) * 0.5 + 0.5) * inputShapeRC;
         // Compute the four integer indices.
-        ivec2 sourceFloorRC = ivec2(sourceFracIndexRC);
+        ivec2 sourceFloorRC = ivec2(max(vec2(-1.0), floor(sourceFracIndexRC)));
         ivec2 sourceCeilRC = ivec2(
           min(inputShapeRC - 1.0, ceil(sourceFracIndexRC)));
 
