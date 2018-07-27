@@ -27,6 +27,7 @@ export class RotateProgram implements GPGPUProgram {
     const [, height, width, ] = inputShape;
     // bilinear sampling copied from resize_bilinear_gpu.ts
     this.userCode = `
+      const vec2 inputShapeRC = vec2(${height}.0, ${width}.0);
 
       void main() {
         ivec4 coords = getOutputCoords();
@@ -35,19 +36,14 @@ export class RotateProgram implements GPGPUProgram {
         float s = sin(-getTheta(b));
         float c = cos(-getTheta(b));
         mat2 rot = mat2(c, -s, s, c);
-        ivec2 yRC = coords.yz;
+        ivec2 yRC = coords.yz + ivec2(0.0, 1.0);
         // Fractional source index.
-        vec2 sourceFracIndexRC = rot * vec2(yRC);
+        vec2 centered = 2.0 * (vec2(yRC) / inputShapeRC) - 1.0;
+        vec2 sourceFracIndexRC = ((rot * centered) * 0.5 + 0.5) * inputShapeRC;
         // Compute the four integer indices.
         ivec2 sourceFloorRC = ivec2(sourceFracIndexRC);
         ivec2 sourceCeilRC = ivec2(
           min(inputShapeRC - 1.0, ceil(sourceFracIndexRC)));
-
-        if(sourceFloorRC.x < 0 || sourceFloorRC.y < 0
-          || sourceFloorRC.x > ${height} || sourceFloorRC.y > ${width}) {
-            setOutput(0.0);
-            return;
-        }
 
         float topLeft = getA(b, sourceFloorRC.x, sourceFloorRC.y, d);
         float bottomLeft = getA(b, sourceCeilRC.x, sourceFloorRC.y, d);

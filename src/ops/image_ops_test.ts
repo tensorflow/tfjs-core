@@ -16,7 +16,29 @@
  */
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
-import {ALL_ENVS, expectArraysEqual} from '../test_util';
+import {ALL_ENVS, expectArraysClose, expectArraysEqual, WEBGL_ENVS} from '../test_util';
+
+describeWithFlags('rotate', WEBGL_ENVS, () => {
+  it('rotates 90 degrees', () => {
+    const image = tf.linspace(0, 8, 9).reshape([1, 3, 3, 1]) as tf.Tensor4D;
+    const rotated = tf.image.rotate(image, Math.PI * 0.5);
+
+    const rotatedCorrect =
+        tf.tensor2d([[6, 3, 0], [7, 4, 1], [8, 5, 2]]).reshape([1, 3, 3, 1]);
+    expectArraysClose(rotated, rotatedCorrect);
+
+    const imageEven =
+        tf.linspace(0, 15, 16).reshape([1, 4, 4, 1]) as tf.Tensor4D;
+    const rotatedEven = tf.image.rotate(imageEven, Math.PI * 0.5);
+
+    const rotatedEvenCorrect =
+        tf.tensor2d([
+            [12, 8, 4, 0], [13, 9, 5, 1], [14, 10, 6, 2], [15, 11, 7, 3]
+          ]).reshape([1, 4, 4, 1]);
+
+    expectArraysClose(rotatedEven, rotatedEvenCorrect);
+  });
+});
 
 describeWithFlags('nonMaxSuppression', ALL_ENVS, () => {
   it('select from three clusters', () => {
