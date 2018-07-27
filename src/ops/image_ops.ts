@@ -136,6 +136,58 @@ function resizeNearestNeighbor_<T extends Tensor3D|Tensor4D>(
 }
 
 /**
+ * Rotate a batch of 3D images.
+ *
+ * @param images The images, of rank 4 or rank 3, of shape
+ *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is assumed.
+ * @param angles The angles in radians to rotate each element of the batch by.
+ *      If a scalar is provided, each image in the batch is rotated by that
+ * angle.
+ */
+/** @doc {heading: 'Operations', subheading: 'Images', namespace: 'image'} */
+function rotate_<T extends Tensor3D|Tensor4D>(
+    images: T|TensorLike, angles: Tensor1D|TensorLike): T {
+  const $images = convertToTensor(images, 'images', 'rotate');
+  let $angles = convertToTensor(angles, 'angles', 'rotate');
+  util.assert(
+      $images.rank === 3 || $images.rank === 4,
+      `Error in rotate: x must be rank 3 or 4, but got ` +
+          `rank ${$images.rank}.`);
+  util.assert(
+      $angles.rank === 0 || $angles.rank === 1,
+      `Error in rotate: angles must be rank 0 or 1, but got shape ` +
+          `${$angles.rank}.`);
+
+  let batchImages = $images as Tensor4D;
+  let reshapedTo4D = false;
+  if ($images.rank === 3) {
+    reshapedTo4D = true;
+    batchImages =
+        $images.as4D(1, $images.shape[0], $images.shape[1], $images.shape[2]);
+  }
+
+  if ($angles.rank === 0) {
+    $angles = $angles.as1D().tile([$images.shape[0]]);
+  }
+
+  const forward: ForwardFunc<Tensor4D> = (backend, save) =>
+      backend.rotate(batchImages, $angles);
+
+  const backward = (dy: Tensor4D, saved: Tensor[]) => {
+    return {
+      batchImages: () =>
+          ENV.engine.runKernel(backend => backend.rotate(dy, $angles.neg()), {})
+    };
+  };
+
+  const res = ENV.engine.runKernel(forward, {batchImages}, backward);
+  if (reshapedTo4D) {
+    return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as T;
+  }
+  return res as T;
+}
+
+/**
  * Performs non maximum suppression of bounding boxes based on
  * iou (intersection over union)
  *
@@ -228,6 +280,7 @@ function nonMaxSuppSanityCheck(
   return {maxOutputSize, iouThreshold, scoreThreshold};
 }
 
+export const rotate = op({rotate_});
 export const resizeBilinear = op({resizeBilinear_});
 export const resizeNearestNeighbor = op({resizeNearestNeighbor_});
 export const nonMaxSuppression = op({nonMaxSuppression_});
