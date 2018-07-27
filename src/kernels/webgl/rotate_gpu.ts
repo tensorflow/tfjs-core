@@ -32,8 +32,8 @@ export class RotateProgram implements GPGPUProgram {
         ivec4 coords = getOutputCoords();
         int b = coords[0];
         int d = coords[3];
-        float s = sin(-getTheta(d));
-        float c = cos(-getTheta(d));
+        float s = sin(-getTheta(b));
+        float c = cos(-getTheta(b));
         mat2 rot = mat2(c, -s, s, c);
         ivec2 yRC = coords.yz;
         // Fractional source index.
