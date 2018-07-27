@@ -18,7 +18,6 @@
 import * as tf from './index';
 import {describeWithFlags} from './jasmine_util';
 import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
-// tslint:disable-next-line:max-line-length
 import {ALL_ENVS, expectArraysClose, expectArraysEqual, expectNumbersClose} from './test_util';
 import {DType, Rank} from './types';
 
@@ -1168,6 +1167,19 @@ describeWithFlags('tensor grad', ALL_ENVS, () => {
 });
 
 describeWithFlags('tensor.data', ALL_ENVS, () => {
+  it('interleaving .data() and .dataSync()', async () => {
+    const a = tf.tensor1d([1, 2, 3]);
+    const b = tf.tensor1d([4, 5, 6]);
+
+    const ra = a.square().data();
+    const rb = b.square().dataSync();
+
+    expectArraysClose(a, [1, 2, 3]);
+    expectArraysClose(b, [4, 5, 6]);
+    expectArraysClose(Array.from(rb), [16, 25, 36]);
+    expectArraysClose(Array.from(await ra), [1, 4, 9]);
+  });
+
   it('.data() postpones disposal of tensor', done => {
     expect(tf.memory().numTensors).toBe(0);
     tf.tidy(() => {
@@ -1222,5 +1234,12 @@ describeWithFlags('x instanceof Tensor', ALL_ENVS, () => {
   it('x: other object, fails', () => {
     const t = {something: 'else'};
     expect(t instanceof Tensor).toBe(false);
+  });
+
+  it('x: undefined or null, fails', () => {
+    // tslint:disable-next-line:no-any
+    expect((undefined as any) instanceof Tensor).toBe(false);
+    // tslint:disable-next-line:no-any
+    expect((null as any) instanceof Tensor).toBe(false);
   });
 });

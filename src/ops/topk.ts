@@ -17,7 +17,7 @@
 
 import {ENV} from '../environment';
 import {Tensor} from '../tensor';
-import {convertToTensor} from '../tensor_util';
+import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import {op} from './operation';
 
@@ -47,7 +47,6 @@ import {op} from './operation';
 function topk_<T extends Tensor>(
     x: T|TensorLike, k = 1, sorted = true): {values: T, indices: T} {
   const $x = convertToTensor(x, 'x', 'topk');
-
   if ($x.rank === 0) {
     throw new Error('topk() expects the input to be of rank 1 or higher');
   }

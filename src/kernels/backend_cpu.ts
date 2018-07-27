@@ -17,6 +17,7 @@
 
 import * as seedrandom from 'seedrandom';
 import {ENV} from '../environment';
+import {warn} from '../log';
 import * as array_ops_util from '../ops/array_ops_util';
 import * as axis_util from '../ops/axis_util';
 import * as broadcast_util from '../ops/broadcast_util';
@@ -27,15 +28,15 @@ import * as ops from '../ops/ops';
 import {buffer, tensor3d, tensor4d} from '../ops/ops';
 import * as selu_util from '../ops/selu_util';
 import {getStridedSlicedInfo} from '../ops/slice_util';
-// tslint:disable-next-line:max-line-length
 import {DataId, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
-import * as types from '../types';
-import {DataType, DataTypeMap, Rank, TypedArray} from '../types';
+import {DataType, DataTypeMap, Rank, ShapeMap, TypedArray, upcastType} from '../types';
 import * as util from '../util';
 import {now} from '../util';
 import {BackendTimingInfo, KernelBackend} from './backend';
 import * as backend_util from './backend_util';
+import {nonMaxSuppressionImpl} from './non_max_suppression_impl';
 import {topkImpl} from './topk_impl';
+import {whereImpl} from './where_impl';
 
 export class MathBackendCPU implements KernelBackend {
   private data = new WeakMap<DataId, DataTypeMap[DataType]>();
@@ -51,8 +52,8 @@ export class MathBackendCPU implements KernelBackend {
   register(dataId: DataId, shape: number[], dtype: DataType): void {
     if (this.firstUse) {
       this.firstUse = false;
-      if (ENV.get('IS_NODE') && !ENV.get('IS_TEST')) {
-        console.warn(
+      if (ENV.get('IS_NODE')) {
+        warn(
             '\n============================\n' +
             'Hi there 👋. Looks like you are running TensorFlow.js in ' +
             'Node.js. To speed things up dramatically, install our node ' +
@@ -255,13 +256,26 @@ export class MathBackendCPU implements KernelBackend {
 
   add(a: Tensor, b: Tensor): Tensor {
     return this.broadcastedBinaryOp(
-               a, b, types.upcastType(a.dtype, b.dtype),
+               a, b, upcastType(a.dtype, b.dtype),
                (aValue, bValue) => aValue + bValue) as Tensor;
+  }
+
+  addN<T extends Tensor>(tensors: T[]): T {
+    const vals = tensors.map(t => t.dataSync());
+    const result = ops.buffer(tensors[0].shape, tensors[0].dtype);
+    const resultVals = result.values;
+    for (let i = 0; i < tensors.length; i++) {
+      const currVals = vals[i];
+      for (let j = 0; j < resultVals.length; j++) {
+        resultVals[j] += currVals[j];
+      }
+    }
+    return result.toTensor() as T;
   }
 
   subtract(a: Tensor, b: Tensor): Tensor {
     return this.broadcastedBinaryOp(
-               a, b, types.upcastType(a.dtype, b.dtype),
+               a, b, upcastType(a.dtype, b.dtype),
                (aValue, bValue) => aValue - bValue) as Tensor;
   }
 
@@ -309,7 +323,7 @@ export class MathBackendCPU implements KernelBackend {
 
   multiply(a: Tensor, b: Tensor): Tensor {
     return this.broadcastedBinaryOp(
-               a, b, types.upcastType(a.dtype, b.dtype),
+               a, b, upcastType(a.dtype, b.dtype),
                (aValue, bValue) => aValue * bValue) as Tensor;
   }
 
@@ -329,7 +343,7 @@ export class MathBackendCPU implements KernelBackend {
     axis_util.assertAxesAreInnerMostDims('sum', axes, x.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(x.shape, axes);
-    const resultDtype = types.upcastType(x.dtype, 'int32');
+    const resultDtype = upcastType(x.dtype, 'int32');
     const result = ops.zeros(outShape, resultDtype);
     const reduceSize = util.sizeFromShape(reduceShape);
     const vals = result.dataSync();
@@ -426,7 +440,7 @@ export class MathBackendCPU implements KernelBackend {
           `backend.cumsum in CPU expects an inner-most axis=${x.rank - 1} ` +
           `but got axis=${axis}`);
     }
-    const resultDtype = types.upcastType(x.dtype, 'int32');
+    const resultDtype = upcastType(x.dtype, 'int32');
     const result = ops.zeros(x.shape, resultDtype);
     const vals = result.dataSync();
 
@@ -507,11 +521,11 @@ export class MathBackendCPU implements KernelBackend {
     });
   }
 
-  where(condition: Tensor, a: Tensor, b: Tensor, dtype: DataType): Tensor {
+  select(condition: Tensor, a: Tensor, b: Tensor): Tensor {
     const values = condition.dataSync();
     const aValues = a.dataSync();
     const bValues = b.dataSync();
-    const result = ops.zeros(a.shape, dtype);
+    const result = ops.zeros(a.shape, upcastType(a.dtype, b.dtype));
     const newValues = result.dataSync();
     let index = 0;
     const offset = condition.rank === 0 || condition.rank > 1 || a.rank === 1 ?
@@ -530,8 +544,14 @@ export class MathBackendCPU implements KernelBackend {
     return result;
   }
 
+  where(condition: Tensor): Tensor2D {
+    const condVals = condition.dataSync();
+    return whereImpl(condition.shape, condVals);
+  }
+
   topk<T extends Tensor>(x: T, k: number, sorted: boolean): [T, T] {
-    return topkImpl(x, k, sorted);
+    const xVals = x.dataSync();
+    return topkImpl(xVals, x.shape, x.dtype, k, sorted);
   }
 
   min(x: Tensor, axes: number[]): Tensor {
@@ -1683,12 +1703,11 @@ export class MathBackendCPU implements KernelBackend {
     return dx.toTensor();
   }
 
-  cast<T extends Tensor<types.Rank>>(x: T, dtype: DataType): T {
+  cast<T extends Tensor>(x: T, dtype: DataType): T {
     return backend_util.castTensor(x, dtype, this);
   }
 
-  reshape<T extends Tensor<types.Rank>, R extends types.Rank>(
-      x: T, shape: types.ShapeMap[R]): Tensor<R> {
+  reshape<R extends Rank>(x: Tensor, shape: ShapeMap[R]): Tensor<R> {
     return backend_util.reshapeTensor(x, shape);
   }
 
@@ -2097,6 +2116,15 @@ export class MathBackendCPU implements KernelBackend {
       }
     }
     return ops.tensor2d(res, [indices.size, depth], 'int32');
+  }
+
+  nonMaxSuppression(
+      boxes: Tensor2D, scores: Tensor1D, maxOutputSize: number,
+      iouThreshold: number, scoreThreshold: number): Tensor1D {
+    const boxesVals = boxes.dataSync();
+    const scoresVals = scores.dataSync();
+    return nonMaxSuppressionImpl(
+        boxesVals, scoresVals, maxOutputSize, iouThreshold, scoreThreshold);
   }
 
   private broadcastedBinaryOp(

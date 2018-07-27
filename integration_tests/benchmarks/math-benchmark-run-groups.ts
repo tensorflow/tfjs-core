@@ -15,18 +15,12 @@
  * =============================================================================
  */
 
-// tslint:disable-next-line:max-line-length
 import {BatchNormalization3DCPUBenchmark, BatchNormalization3DGPUBenchmark} from './batchnormalization3d_benchmark';
 import {BenchmarkRun, BenchmarkRunGroup} from './benchmark';
-// tslint:disable-next-line:max-line-length
 import {ConvGPUBenchmark, ConvParams, DepthwiseConvParams, RegularConvParams} from './conv_benchmarks';
-// tslint:disable-next-line:max-line-length
 import {MatmulCPUBenchmark, MatmulGPUBenchmark} from './matmul_benchmarks';
-// tslint:disable-next-line:max-line-length
 import {PoolBenchmarkParams, PoolCPUBenchmark, PoolGPUBenchmark} from './pool_benchmarks';
-// tslint:disable-next-line:max-line-length
 import {ReductionOpsCPUBenchmark, ReductionOpsGPUBenchmark} from './reduction_ops_benchmark';
-// tslint:disable-next-line:max-line-length
 import {UnaryOpsCPUBenchmark, UnaryOpsGPUBenchmark} from './unary_ops_benchmark';
 
 export function getRunGroups(): BenchmarkRunGroup[] {
@@ -109,7 +103,7 @@ export function getRunGroups(): BenchmarkRunGroup[] {
       'cosh', 'elu', 'erf', 'exp', 'expm1', 'floor', 'leakyRelu', 'log',
       'log1p', 'logSigmoid', 'neg', 'prelu', 'reciprocal', 'relu', 'round',
       'rsqrt', 'selu', 'sigmoid', 'sign', 'sin', 'sinh', 'softplus', 'sqrt',
-      'square', 'step', 'tan', 'tanh',
+      'square', 'step', 'tan', 'tanh'
     ],
     selectedOption: 'log',
     stepSize: 64,

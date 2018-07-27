@@ -17,7 +17,7 @@
 
 import * as device_util from './device_util';
 import {ENV, Environment} from './environment';
-import {Features} from './environment_util';
+import {Features, getQueryParams} from './environment_util';
 import {describeWithFlags} from './jasmine_util';
 import {KernelBackend} from './kernels/backend';
 import {MathBackendCPU} from './kernels/backend_cpu';
@@ -56,8 +56,9 @@ describeWithFlags('disjoint query timer enabled', WEBGL_ENVS, () => {
     });
 
     ENV.setFeatures(features);
-
-    expect(ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION')).toBe(1);
+    // TODO(nsthorat): expect to be 1 when
+    // https://github.com/tensorflow/tfjs/issues/544 is fixed.
+    expect(ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION')).toBe(0);
   });
 
   it('webgl 2', () => {
@@ -82,7 +83,9 @@ describeWithFlags('disjoint query timer enabled', WEBGL_ENVS, () => {
     });
 
     ENV.setFeatures(features);
-    expect(ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION')).toBe(2);
+    // TODO(nsthorat): expect to be 2 when
+    // https://github.com/tensorflow/tfjs/issues/544 is fixed.
+    expect(ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION')).toBe(0);
   });
 });
 
@@ -125,52 +128,48 @@ describeWithFlags(
       });
     });
 
-describeWithFlags(
-    'WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED', WEBGL_ENVS, () => {
-      afterEach(() => {
-        ENV.reset();
-      });
+describeWithFlags('WEBGL_FENCE_API_ENABLED', WEBGL_ENVS, () => {
+  afterEach(() => {
+    ENV.reset();
+  });
 
-      beforeEach(() => {
-        spyOn(document, 'createElement').and.returnValue({
-          getContext: (context: string) => {
-            if (context === 'webgl2') {
-              return {
-                getExtension: (extensionName: string) => {
-                  if (extensionName === 'WEBGL_get_buffer_sub_data_async') {
-                    return {};
-                  } else if (extensionName === 'WEBGL_lose_context') {
-                    return {loseContext: () => {}};
-                  }
-                  return null;
-                }
-              };
-            }
-            return null;
-          }
-        });
-      });
-
-      it('WebGL 2 enabled', () => {
-        const features: Features = {'WEBGL_VERSION': 2};
-
-        const env = new Environment(features);
-
-        // TODO(nsthorat): Expect true when we fix
-        // https://github.com/tensorflow/tfjs/issues/137
-        expect(env.get('WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED'))
-            .toBe(false);
-      });
-
-      it('WebGL 1 disabled', () => {
-        const features: Features = {'WEBGL_VERSION': 1};
-
-        const env = new Environment(features);
-
-        expect(env.get('WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED'))
-            .toBe(false);
-      });
+  beforeEach(() => {
+    spyOn(document, 'createElement').and.returnValue({
+      getContext: (context: string) => {
+        if (context === 'webgl2') {
+          return {
+            getExtension: (extensionName: string) => {
+              if (extensionName === 'WEBGL_get_buffer_sub_data_async') {
+                return {};
+              } else if (extensionName === 'WEBGL_lose_context') {
+                return {loseContext: () => {}};
+              }
+              return null;
+            },
+            fenceSync: () => 1
+          };
+        }
+        return null;
+      }
     });
+  });
+
+  it('WebGL 2 enabled', () => {
+    const features: Features = {'WEBGL_VERSION': 2};
+
+    const env = new Environment(features);
+
+    expect(env.get('WEBGL_FENCE_API_ENABLED')).toBe(true);
+  });
+
+  it('WebGL 1 disabled', () => {
+    const features: Features = {'WEBGL_VERSION': 1};
+
+    const env = new Environment(features);
+
+    expect(env.get('WEBGL_FENCE_API_ENABLED')).toBe(false);
+  });
+});
 
 describeWithFlags('WebGL version', WEBGL_ENVS, () => {
   afterEach(() => {
@@ -274,5 +273,12 @@ describe('Backend', () => {
     expect(success).toBeTruthy();
     expect(ENV.findBackend('custom')).toEqual(backend);
     ENV.removeBackend('custom');
+  });
+});
+
+describe('environment_util.getQueryParams', () => {
+  it('basic', () => {
+    expect(getQueryParams('?a=1&b=hi&f=animal'))
+        .toEqual({'a': '1', 'b': 'hi', 'f': 'animal'});
   });
 });
