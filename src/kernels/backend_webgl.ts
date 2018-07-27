@@ -1184,10 +1184,6 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [x, angles]);
   }
 
-  rotateBackprop(x: Tensor4D, angles: Tensor1D): Tensor4D {
-    return this.rotate(x, this.neg(angles));
-  }
-
   resizeBilinear(
       x: Tensor4D, newHeight: number, newWidth: number,
       alignCorners: boolean): Tensor4D {
