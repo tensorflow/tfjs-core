@@ -1246,7 +1246,6 @@ describeWithFlags('x instanceof Tensor', ALL_ENVS, () => {
 
 describeWithFlags('tensor with 0 in shape', ALL_ENVS, () => {
   it('1d of shape [0]', () => {
-    // Have to use Tensor.make since tensor1d() does not let us provide a shape.
     const a = tf.tensor1d([]);
     expect(a.dtype).toBe('float32');
     expect(a.rank).toBe(1);
