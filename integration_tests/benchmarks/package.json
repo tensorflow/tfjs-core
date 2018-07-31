@@ -74,6 +74,7 @@
     "karma-jasmine": "~1.1.0",
     "karma-typescript": "~3.0.12",
     "polymer-bundler": "~3.0.1",
+    "ts-node": "~7.0.0",
     "tsc": "^1.20150623.0",
     "tsify": "^3.0.4",
     "tslint": "^5.10.0",
@@ -85,6 +86,7 @@
     "lint": "tslint -p . -t verbose",
     "server": "yarn build && http-server",
     "test": "karma start",
+    "test-node": "ts-node ./run_tests.ts",
     "test-travis": "if [ \"$TRAVIS_EVENT_TYPE\" = cron ]; then karma start --singleRun --reporters='dots,karma-typescript,BrowserStack' --hostname='bs-local.com' --browsers=bs_chrome_mac; fi"
   },
   "license": "Apache-2.0",
