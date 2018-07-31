@@ -1245,10 +1245,6 @@ export class MathBackendWebGL implements KernelBackend {
     return Tensor.make(shape, {}, dtype) as T;
   }
 
-  private hasZeroInShape(output: Tensor): boolean {
-    return output.shape.indexOf(0) >= 0;
-  }
-
   private compileAndRun<T extends Tensor, K extends Tensor>(
       program: GPGPUProgram, inputs: T[], output?: K,
       customSetup?: (gpgpu: GPGPUContext, webGLProgram: WebGLProgram) => void,
@@ -1256,7 +1252,7 @@ export class MathBackendWebGL implements KernelBackend {
     if (output == null) {
       output = this.makeOutputArray(program.outputShape, inputs[0].dtype);
     }
-    if (this.hasZeroInShape(output)) {
+    if (output.size === 0) {
       // Short-circuit the computation since the result is empty (has 0 in its
       // shape).
       this.texData.get(output.dataId).values =
