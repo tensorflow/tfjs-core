@@ -1257,6 +1257,8 @@ export class MathBackendWebGL implements KernelBackend {
       output = this.makeOutputArray(program.outputShape, inputs[0].dtype);
     }
     if (this.hasZeroInShape(output)) {
+      // Short-circuit the computation since the result is empty (has 0 in its
+      // shape).
       this.texData.get(output.dataId).values =
           getTypedArrayFromDType(output.dtype, 0);
       return output;
