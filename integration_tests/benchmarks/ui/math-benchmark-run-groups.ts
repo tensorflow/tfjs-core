@@ -15,13 +15,13 @@
  * =============================================================================
  */
 
-import {BatchNormalization3DCPUBenchmark, BatchNormalization3DGPUBenchmark} from './batchnormalization3d_benchmark';
-import {BenchmarkRun, BenchmarkRunGroup} from './benchmark';
-import {ConvGPUBenchmark, ConvParams, DepthwiseConvParams, RegularConvParams} from './conv_benchmarks';
-import {MatmulCPUBenchmark, MatmulGPUBenchmark} from './matmul_benchmarks';
-import {PoolBenchmarkParams, PoolCPUBenchmark, PoolGPUBenchmark} from './pool_benchmarks';
-import {ReductionOpsCPUBenchmark, ReductionOpsGPUBenchmark} from './reduction_ops_benchmark';
-import {UnaryOpsCPUBenchmark, UnaryOpsGPUBenchmark} from './unary_ops_benchmark';
+import {BatchNormalization3DCPUBenchmark, BatchNormalization3DGPUBenchmark} from '../common/batchnormalization3d_benchmark';
+import {BenchmarkRun, BenchmarkRunGroup} from '../common/benchmark';
+import {ConvGPUBenchmark, ConvParams, DepthwiseConvParams, RegularConvParams} from '../common/conv_benchmarks';
+import {MatmulCPUBenchmark, MatmulGPUBenchmark} from '../common/matmul_benchmarks';
+import {PoolBenchmarkParams, PoolCPUBenchmark, PoolGPUBenchmark} from '../common/pool_benchmarks';
+import {ReductionOpsCPUBenchmark, ReductionOpsGPUBenchmark} from '../common/reduction_ops_benchmark';
+import {UnaryOpsCPUBenchmark, UnaryOpsGPUBenchmark} from '../common/unary_ops_benchmark';
 
 export function getRunGroups(): BenchmarkRunGroup[] {
   const groups: BenchmarkRunGroup[] = [];

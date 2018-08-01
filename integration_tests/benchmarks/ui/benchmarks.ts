@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {BenchmarkRunGroup} from './benchmark';
+import {BenchmarkRunGroup} from '../common/benchmark';
 import {getRunGroups} from './math-benchmark-run-groups';
 
 import {PolymerElement, PolymerHTMLElement} from './polymer-spec';

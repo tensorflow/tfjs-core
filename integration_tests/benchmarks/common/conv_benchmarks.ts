@@ -27,9 +27,13 @@ export interface ConvParams {
   pad: 'valid'|'same'|number;
 }
 
-export interface RegularConvParams extends ConvParams { outDepth: number; }
+export interface RegularConvParams extends ConvParams {
+  outDepth: number;
+}
 
-export interface DepthwiseConvParams extends ConvParams { channelMul: number; }
+export interface DepthwiseConvParams extends ConvParams {
+  channelMul: number;
+}
 
 export class ConvGPUBenchmark implements BenchmarkTest {
   async run(size: number, opType: string, params: ConvParams): Promise<number> {

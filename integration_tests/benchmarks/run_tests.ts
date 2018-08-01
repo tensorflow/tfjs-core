@@ -27,7 +27,7 @@ const server = new karma.Server(config, exitCode => {
   process.exit(exitCode);
 });
 
-const results: BenchmarkLog[] = [];
+const benchmarkLogs: BenchmarkLog[] = [];
 server.on('browser_log', (_, result: string) => {
   // Strip the leading and trailing quotes.
   if (result.startsWith('\'')) {
@@ -37,17 +37,17 @@ server.on('browser_log', (_, result: string) => {
     result = result.substring(0, result.length - 1);
   }
 
-  let json;
+  let benchmarkLog;
   try {
-    json = JSON.parse(result) as BenchmarkLog;
+    benchmarkLog = JSON.parse(result) as BenchmarkLog;
   } catch (e) {
   }
 
-  results.push(json);
+  benchmarkLogs.push(benchmarkLog);
 });
 
 server.on('run_complete', () => {
-  console.log(results);
+  console.log(benchmarkLogs);
 });
 
 server.start();

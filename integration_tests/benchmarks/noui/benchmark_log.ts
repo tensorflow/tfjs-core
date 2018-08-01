@@ -21,3 +21,5 @@ export interface BenchmarkLog {
   averageTimeMs: number;
   userAgent: string;
 }
+
+export function logBenchmarkRun() {}
