@@ -1435,9 +1435,14 @@ export class MathBackendCPU implements KernelBackend {
         const rightPad = paddings[0][1];
 
         // Extract slices in the desired padding length and reverse
-        const padBefore = x.slice(1, leftPad).reverse();
-        const padAfter = x.slice(x.shape[0] - 1 - rightPad, rightPad).reverse();
-
+        let padBefore = x.slice(1, leftPad);
+        if (padBefore.size > 0) {
+          padBefore = padBefore.reverse();
+        }
+        let padAfter = x.slice(x.shape[0] - 1 - rightPad, rightPad);
+        if (padAfter.size > 0) {
+          padAfter = padAfter.reverse();
+        }
         // Iterate over padding areas and fill buffer with values from extracted
         // padding slices
         for (let i = 0; i < leftPad; i++) {
@@ -1454,11 +1459,16 @@ export class MathBackendCPU implements KernelBackend {
 
         // Extract vertical padding areas to the left and right of the 2D canvas
         // and reverse them along the horizontal axis
-        const leftPadColumns =
-            x.slice([0, 1], [x.shape[0], leftPad]).reverse(1);
-        const rightPadColumns = x.slice([0, x.shape[1] - 1 - rightPad], [
-                                   x.shape[0], rightPad
-                                 ]).reverse(1);
+        let leftPadColumns = x.slice([0, 1], [x.shape[0], leftPad]);
+        if (leftPadColumns.size > 0) {
+          leftPadColumns = leftPadColumns.reverse(1);
+        }
+
+        let rightPadColumns =
+            x.slice([0, x.shape[1] - 1 - rightPad], [x.shape[0], rightPad]);
+        if (rightPadColumns.size > 0) {
+          rightPadColumns = rightPadColumns.reverse(1);
+        }
 
         // Iterate over area between top and bottom padding and set horizontal
         // padding values.
@@ -1476,13 +1486,15 @@ export class MathBackendCPU implements KernelBackend {
         // Store in intermediate tensor and extract rows that correspond to the
         // top and bottom padding area
         const tmpTensor = buffer.toTensor();
-        const topPadRows =
-            tmpTensor.slice([topPad + 1, 0], [topPad, -1]).reverse(0);
-        const bottomPadRows =
-            tmpTensor
-                .slice(
-                    [topPad + x.shape[0] - 1 - bottomPad, 0], [bottomPad, -1])
-                .reverse(0);
+        let topPadRows = tmpTensor.slice([topPad + 1, 0], [topPad, -1]);
+        if (topPadRows.size > 0) {
+          topPadRows = topPadRows.reverse(0);
+        }
+        let bottomPadRows = tmpTensor.slice(
+            [topPad + x.shape[0] - 1 - bottomPad, 0], [bottomPad, -1]);
+        if (bottomPadRows.size > 0) {
+          bottomPadRows = bottomPadRows.reverse(0);
+        }
 
         // Iterate full width of of output tensor and add padding values into
         // top and bottom padding rows
@@ -1519,13 +1531,16 @@ export class MathBackendCPU implements KernelBackend {
         // Create intermediate tensor and extract 3D padding values by fetching
         // channels corresponding to the padding and reversing the results.
         const tmpTensor = buffer.toTensor();
-        const before3D =
-            tmpTensor.slice([padBefore + 1, 0, 0], [padBefore, -1, -1])
-                .reverse(0);
-        const after3D =
-            tmpTensor
-                .slice([padBefore + x.shape[0] - 2, 0, 0], [padAfter, -1, -1])
-                .reverse(0);
+        let before3D =
+            tmpTensor.slice([padBefore + 1, 0, 0], [padBefore, -1, -1]);
+        if (before3D.size > 0) {
+          before3D = before3D.reverse(0);
+        }
+        let after3D = tmpTensor.slice(
+            [padBefore + x.shape[0] - 2, 0, 0], [padAfter, -1, -1]);
+        if (after3D.size > 0) {
+          after3D = after3D.reverse(0);
+        }
 
         // Fill remaining channels in the buffer with the values
         for (let row = 0; row < buffer.shape[1]; row++) {
@@ -1564,14 +1579,18 @@ export class MathBackendCPU implements KernelBackend {
         }
 
         const tmpTensor = buffer.toTensor();
-        const before4D =
-            tmpTensor.slice([padBefore + 1, 0, 0, 0], [padBefore, -1, -1, -1])
-                .reverse(0);
-        const after4D = tmpTensor
-                            .slice(
-                                [padBefore + x.shape[0] - 2, 0, 0, 0],
-                                [padAfter, -1, -1, -1])
-                            .reverse(0);
+
+        // Handle 0 paddings
+        let before4D =
+            tmpTensor.slice([padBefore + 1, 0, 0, 0], [padBefore, -1, -1, -1]);
+        if (before4D.size > 0) {
+          before4D = before4D.reverse(0);
+        }
+        let after4D = tmpTensor.slice(
+            [padBefore + x.shape[0] - 2, 0, 0, 0], [padAfter, -1, -1, -1]);
+        if (after4D.size > 0) {
+          after4D = after4D.reverse(0);
+        }
 
         for (let channel = 0; channel < buffer.shape[1]; channel++) {
           for (let row = 0; row < buffer.shape[2]; row++) {
