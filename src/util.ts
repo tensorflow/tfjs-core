@@ -262,8 +262,8 @@ export function inferFromImplicitShape(
             `Found -1 at dim ${implicitIdx} and dim ${i}`);
       }
       implicitIdx = i;
-    } else if (shape[i] <= 0) {
-      throw Error(`Shapes can not be <= 0. Found ${shape[i]} at dim ${i}`);
+    } else if (shape[i] < 0) {
+      throw Error(`Shapes can not be < 0. Found ${shape[i]} at dim ${i}`);
     }
   }
 
