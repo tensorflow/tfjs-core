@@ -240,6 +240,12 @@ describeWithFlags('reflection pad', ALL_ENVS, () => {
     expectArraysClose(res, [2, 1, 2, 3, 4, 5, 6, 5, 4]);
   });
 
+  it('pads tensor1d with no paddings', () => {
+    const a = tf.tensor1d([1, 2, 3, 4, 5, 6]);
+    const res = tf.pad1d(a, [0, 0], 0, 'reflect');
+    expectArraysClose(res, [1, 2, 3, 4, 5, 6]);
+  });
+
   it('pads tensor1d with single padding', () => {
     const a = tf.tensor1d([1, 2, 3, 4, 5, 6]);
     const res = tf.pad1d(a, [1, 1], 0, 'reflect');
@@ -267,6 +273,12 @@ describeWithFlags('reflection pad', ALL_ENVS, () => {
       6, 5, 4, 5, 6, 5, 4, 3, 2, 1, 2, 3, 2, 1,
       6, 5, 4, 5, 6, 5, 4, 3, 2, 1, 2, 3, 2, 1
     ]);
+  });
+
+  it('pads tensor2d with no paddings', () => {
+    const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
+    const res = tf.pad2d(a, [[0, 0], [0, 0]], 0, 'reflect');
+    expectArraysClose(res, [1, 2, 3, 4, 5, 6]);
   });
 
   it('pads minimal tensor2d', () => {
@@ -327,6 +339,12 @@ describeWithFlags('reflection pad', ALL_ENVS, () => {
       11, 10, 8,  7,  8,  9,  8, 7, 5, 4, 5, 6, 5,  4,  2,  1,
       2,  3,  2,  1,  5,  4,  5, 6, 5, 4, 2, 1, 2,  3,  2,  1
     ]);
+  });
+
+  it('pads tensor3d with no paddings', () => {
+    const a = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [2, 2, 3]);
+    const res = tf.pad3d(a, [[0, 0], [0, 0], [0, 0]], 0, 'reflect');
+    expectArraysClose(res, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
   });
 
   it('pads tensor4d', () => {
@@ -431,5 +449,13 @@ describeWithFlags('reflection pad', ALL_ENVS, () => {
       8,  7,  6,  5,  6,  5,  4,  3,  4,  3,  2,  1,  2,  1,  4,  3,  4,  3,
       2,  1,  2,  1
     ]);
+  });
+
+  it('pads tensor4d', () => {
+    const a = tf.tensor4d(
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], [2, 2, 2, 2]);
+    const res = tf.pad4d(a, [[0, 0], [0, 0], [0, 0], [0, 0]], 0, 'reflect');
+    expectArraysClose(
+        res, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
   });
 });
