@@ -16,11 +16,12 @@
  */
 import * as tf from '@tensorflow/tfjs-core';
 
-import {BenchmarkTest, LAST_RUN_CPU_CUTOFF_MS} from './benchmark';
-import * as benchmark_util from './benchmark_util';
+import * as benchmark_util from './util';
+import {BenchmarkTest, LAST_RUN_CPU_CUTOFF_MS} from './util';
 
-export class MatmulCPUBenchmark implements BenchmarkTest {
+export class BatchNormalization3DCPUBenchmark implements BenchmarkTest {
   lastRunTimeMs: number;
+
   async run(size: number): Promise<number> {
     if (this.lastRunTimeMs > LAST_RUN_CPU_CUTOFF_MS) {
       return new Promise<number>((resolve, reject) => {
@@ -28,30 +29,38 @@ export class MatmulCPUBenchmark implements BenchmarkTest {
       });
     }
     tf.setBackend('cpu');
-
-    const a: tf.Tensor2D = tf.randomUniform([size, size], -1, 1);
-    const b: tf.Tensor2D = tf.randomUniform([size, size], -1, 1);
+    const x: tf.Tensor3D = tf.randomUniform([size, size, 8], -1, 1);
+    const mean = tf.tensor1d([0]);
+    const variance = tf.tensor1d([1]);
+    const varianceEpsilon = .001;
     const start = performance.now();
-    tf.matMul(a, b);
+
+    x.batchNormalization(mean, variance, varianceEpsilon);
+
     const end = performance.now();
+
     this.lastRunTimeMs = end - start;
     return this.lastRunTimeMs;
   }
 }
 
-export class MatmulGPUBenchmark implements BenchmarkTest {
-  async run(size: number): Promise<number> {
+export class BatchNormalization3DGPUBenchmark implements BenchmarkTest {
+  async run(size: number) {
     tf.setBackend('webgl');
 
-    const a: tf.Tensor2D = tf.randomNormal([size, size]);
-    const b: tf.Tensor2D = tf.randomNormal([size, size]);
+    const x: tf.Tensor3D = tf.randomUniform([size, size, 8], -1, 1);
+    const mean = tf.tensor1d([0]);
+    const variance = tf.tensor1d([1]);
+    const varianceEpsilon = .001;
 
-    const benchmark = () => tf.matMul(a, b);
+    const benchmark = () =>
+        x.batchNormalization(mean, variance, varianceEpsilon);
 
     const time = await benchmark_util.warmupAndBenchmarkGPU(benchmark);
 
-    a.dispose();
-    b.dispose();
+    x.dispose();
+    mean.dispose();
+    variance.dispose();
 
     return time;
   }

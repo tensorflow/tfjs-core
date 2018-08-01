@@ -16,51 +16,41 @@
  */
 import * as tf from '@tensorflow/tfjs-core';
 
-import {BenchmarkTest, LAST_RUN_CPU_CUTOFF_MS} from './benchmark';
-import * as benchmark_util from './benchmark_util';
+import * as util from './util';
 
-export class BatchNormalization3DCPUBenchmark implements BenchmarkTest {
+export class MatmulCPUBenchmark implements util.BenchmarkTest {
   lastRunTimeMs: number;
-
   async run(size: number): Promise<number> {
-    if (this.lastRunTimeMs > LAST_RUN_CPU_CUTOFF_MS) {
+    if (this.lastRunTimeMs > util.LAST_RUN_CPU_CUTOFF_MS) {
       return new Promise<number>((resolve, reject) => {
         resolve(-1);
       });
     }
     tf.setBackend('cpu');
-    const x: tf.Tensor3D = tf.randomUniform([size, size, 8], -1, 1);
-    const mean = tf.tensor1d([0]);
-    const variance = tf.tensor1d([1]);
-    const varianceEpsilon = .001;
+
+    const a: tf.Tensor2D = tf.randomUniform([size, size], -1, 1);
+    const b: tf.Tensor2D = tf.randomUniform([size, size], -1, 1);
     const start = performance.now();
-
-    x.batchNormalization(mean, variance, varianceEpsilon);
-
+    tf.matMul(a, b);
     const end = performance.now();
-
     this.lastRunTimeMs = end - start;
     return this.lastRunTimeMs;
   }
 }
 
-export class BatchNormalization3DGPUBenchmark implements BenchmarkTest {
-  async run(size: number) {
+export class MatmulGPUBenchmark implements util.BenchmarkTest {
+  async run(size: number): Promise<number> {
     tf.setBackend('webgl');
 
-    const x: tf.Tensor3D = tf.randomUniform([size, size, 8], -1, 1);
-    const mean = tf.tensor1d([0]);
-    const variance = tf.tensor1d([1]);
-    const varianceEpsilon = .001;
+    const a: tf.Tensor2D = tf.randomNormal([size, size]);
+    const b: tf.Tensor2D = tf.randomNormal([size, size]);
 
-    const benchmark = () =>
-        x.batchNormalization(mean, variance, varianceEpsilon);
+    const benchmark = () => tf.matMul(a, b);
 
-    const time = await benchmark_util.warmupAndBenchmarkGPU(benchmark);
+    const time = await util.warmupAndBenchmarkGPU(benchmark);
 
-    x.dispose();
-    mean.dispose();
-    variance.dispose();
+    a.dispose();
+    b.dispose();
 
     return time;
   }

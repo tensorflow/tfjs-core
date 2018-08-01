@@ -15,9 +15,8 @@
  * =============================================================================
  */
 
-import {MatmulGPUBenchmark} from '../common/matmul_benchmarks';
-
 import {BenchmarkLog} from './benchmark_log';
+import {MatmulGPUBenchmark} from './matmul_benchmarks';
 
 const BENCHMARK_RUNS = 100;
 

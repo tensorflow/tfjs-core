@@ -3,12 +3,15 @@ TensorFlow.js Benchmark Tools
 
 This is a micro benchmark to measure the performance of TensorFlow.js kernel ops.
 
-# Usage 
+There are two directories, `karma` and `ui` which contain headless tests and a
+UI for running benchmarks respectively.
 
-First install all dependencies. Benchmark tools refers local TensorFlow.js code instead of release versions. 
+# Benchmarks UI usage
+
+While inside the `ui` directory, install all dependencies.
 
 ```
-$ yarn 
+$ yarn
 ```
 
 Launch the server to host benchmark application.
@@ -17,12 +20,12 @@ Launch the server to host benchmark application.
 $ yarn server
 ```
 
-http://localhost:8080 show the benchmark tool for various kind of kernel ops.
+http://localhost:8080 shows the benchmark tool for various kind of kernel ops.
 
 - Batch Normalization 3D
 - Matrix multiplication
 - Convolutional Ops
-- Pooling Ops 
+- Pooling Ops
 - Unary Ops
 - Reduction Ops
 
@@ -31,4 +34,3 @@ Each benchmark suite runs kernel ops with specific size of input in target backe
 - CPU
 - WebGL
 
- 

@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import * as karma from 'karma';
+import * as karma from 'karma/lib';
 import * as path from 'path';
 import {BenchmarkLog} from './benchmark_log';
 

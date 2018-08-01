@@ -17,8 +17,7 @@
 
 import * as tf from '@tensorflow/tfjs-core';
 
-import {BenchmarkTest} from './benchmark';
-import * as benchmark_util from './benchmark_util';
+import * as util from './util';
 
 function getUnaryOp(option: string) {
   switch (option) {
@@ -79,7 +78,7 @@ function getUnaryOp(option: string) {
   }
 }
 
-export class UnaryOpsCPUBenchmark implements BenchmarkTest {
+export class UnaryOpsCPUBenchmark implements util.BenchmarkTest {
   async run(size: number, option: string): Promise<number> {
     tf.setBackend('cpu');
 
@@ -96,7 +95,7 @@ export class UnaryOpsCPUBenchmark implements BenchmarkTest {
   }
 }
 
-export class UnaryOpsGPUBenchmark implements BenchmarkTest {
+export class UnaryOpsGPUBenchmark implements util.BenchmarkTest {
   async run(size: number, option: string) {
     tf.setBackend('webgl');
 
@@ -105,7 +104,7 @@ export class UnaryOpsGPUBenchmark implements BenchmarkTest {
 
     const benchmark = () => op(input);
 
-    const time = await benchmark_util.warmupAndBenchmarkGPU(benchmark);
+    const time = await util.warmupAndBenchmarkGPU(benchmark);
 
     input.dispose();
     return time;

@@ -16,8 +16,7 @@
  */
 import * as tf from '@tensorflow/tfjs-core';
 
-import {BenchmarkTest} from './benchmark';
-import * as benchmark_util from './benchmark_util';
+import * as util from './util';
 
 function getReductionOp(option: string): (x: tf.Tensor) => tf.Scalar {
   switch (option) {
@@ -38,7 +37,7 @@ function getReductionOp(option: string): (x: tf.Tensor) => tf.Scalar {
   }
 }
 
-export class ReductionOpsCPUBenchmark implements BenchmarkTest {
+export class ReductionOpsCPUBenchmark implements util.BenchmarkTest {
   async run(size: number, option: string): Promise<number> {
     tf.setBackend('cpu');
 
@@ -55,7 +54,7 @@ export class ReductionOpsCPUBenchmark implements BenchmarkTest {
   }
 }
 
-export class ReductionOpsGPUBenchmark implements BenchmarkTest {
+export class ReductionOpsGPUBenchmark implements util.BenchmarkTest {
   async run(size: number, option: string) {
     tf.setBackend('webgl');
 
@@ -64,7 +63,7 @@ export class ReductionOpsGPUBenchmark implements BenchmarkTest {
 
     const benchmark = () => op(input);
 
-    const time = await benchmark_util.warmupAndBenchmarkGPU(benchmark);
+    const time = await util.warmupAndBenchmarkGPU(benchmark);
 
     input.dispose();
 

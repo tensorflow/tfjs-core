@@ -27,8 +27,11 @@ module.exports = function(config) {
 
   config.set({
     frameworks: ['jasmine', 'karma-typescript'],
-    files: [{pattern: '*.ts'}],
-    exclude: ['polymer-spec.ts', 'benchmarks.ts', 'run_tests.ts'],
+    files: [
+      {pattern: '*.ts'}
+    ],
+    include: ['*.ts'],
+    exclude: ['run_tests.ts'],
     preprocessors: {
       '**/*.ts': ['karma-typescript'],  // *.tsx for React Jsx
     },
