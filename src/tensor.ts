@@ -304,8 +304,8 @@ export interface OpHandler {
       x: T, blockShape: number[], crops: number[][]): T;
   spaceToBatchND<T extends Tensor>(
       x: T, blockShape: number[], paddings: number[][]): T;
-  topk<T extends Tensor>(x: T, k: number, sorted: boolean)
-    : {values: T, indices: T};
+  topk<T extends Tensor>(x: T, k: number, sorted: boolean):
+      {values: T, indices: T};
   stridedSlice<T extends Tensor>(x: T, begin: number[], end: number[],
     strides: number[], beginMask: number, endMask: number): T;
 }
@@ -382,8 +382,8 @@ export class Tensor<R extends Rank = Rank> {
     if (values != null) {
       util.assert(
           this.size === values.length,
-          `Constructing tensor of shape (${this.size}) should match the ` +
-              `length of values (${values.length})`);
+          `Based on the provided shape, [${shape}], the tensor should have ` +
+              `${this.size} values but has ${values.length}`);
     }
     this.shape = shape.slice();
     this.dtype = dtype || 'float32';
@@ -1171,15 +1171,15 @@ export class Tensor<R extends Rank = Rank> {
     return opHandler.spaceToBatchND(this, blockShape, paddings);
   }
 
-  topk<T extends Tensor>(
-    this: T, k = 1, sorted = true): {values: T, indices: T} {
-      this.throwIfDisposed();
-      return opHandler.topk(this, k, sorted);
+  topk<T extends Tensor>(this: T, k = 1, sorted = true):
+      {values: T, indices: T} {
+    this.throwIfDisposed();
+    return opHandler.topk(this, k, sorted);
   }
 
   stridedSlice<T extends Tensor>(
     this: T, begin: number[], end: number[], strides: number[],
-    beginMask = 0 , endMask = 0) {
+    beginMask = 0 , endMask = 0): T {
       this.throwIfDisposed();
       return opHandler.stridedSlice(this, begin, end, strides,
         beginMask, endMask);
