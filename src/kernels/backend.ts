@@ -16,7 +16,6 @@
  */
 
 import {Conv2DInfo} from '../ops/conv_util';
-// tslint:disable-next-line:max-line-length
 import {DataId, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import {DataType, Rank, ShapeMap, TypedArray} from '../types';
 
@@ -72,6 +71,7 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
   neg<T extends Tensor>(a: T): T;
 
   add(a: Tensor, b: Tensor): Tensor;
+  addN<T extends Tensor>(tensors: T[]): T;
   subtract(a: Tensor, b: Tensor): Tensor;
   multiply(a: Tensor, b: Tensor): Tensor;
   realDivide(a: Tensor, b: Tensor): Tensor;
@@ -98,10 +98,10 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
   logicalAnd(a: Tensor, b: Tensor): Tensor;
   logicalOr(a: Tensor, b: Tensor): Tensor;
 
-  where(condition: Tensor, a: Tensor, b: Tensor, dtype: DataType): Tensor;
+  where(condition: Tensor): Tensor2D;
+  select(condition: Tensor, a: Tensor, b: Tensor): Tensor;
 
-  topKValues<T extends Tensor>(x: T, k: number): Tensor1D;
-  topKIndices(x: Tensor, k: number): Tensor1D;
+  topk<T extends Tensor>(x: T, k: number, sorted: boolean): [T, T];
 
   min(x: Tensor, axes: number[]): Tensor;
   minimum(a: Tensor, b: Tensor): Tensor;
@@ -202,6 +202,9 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
   batchToSpaceND<T extends Tensor>(
       x: T, blockShape: number[], crops: number[][]): T;
 
+  spaceToBatchND<T extends Tensor>(
+      x: T, blockShape: number[], paddings: number[][]): T;
+
   resizeBilinear(
       x: Tensor4D, newHeight: number, newWidth: number,
       alignCorners: boolean): Tensor4D;
@@ -237,6 +240,10 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
       Tensor2D;
 
   cumsum(x: Tensor, axis: number, exclusive: boolean, reverse: boolean): Tensor;
+
+  nonMaxSuppression(
+      boxes: Tensor2D, scores: Tensor1D, maxOutputSize: number,
+      iouThreshold: number, scoreThreshold?: number): Tensor1D;
 
   dispose(): void;
 }

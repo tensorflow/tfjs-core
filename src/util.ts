@@ -15,7 +15,6 @@
  * =============================================================================
  */
 
-// tslint:disable-next-line:max-line-length
 import {ArrayData, DataType, DataTypeMap, FlatVector, RecursiveArray, RegularArray, TensorLike, TypedArray} from './types';
 
 /** Shuffles the array using Fisher-Yates algorithm. */
@@ -239,20 +238,6 @@ export function repeatedTry(
   });
 }
 
-export function getQueryParams(queryString: string): {[key: string]: string} {
-  const params = {};
-  queryString.replace(/[?&]([^=?&]+)(?:=([^&]*))?/g, (s, ...t) => {
-    decodeParam(params, t[0], t[1]);
-    return t.join('=');
-  });
-  return params;
-}
-
-function decodeParam(
-    params: {[key: string]: string}, name: string, value?: string) {
-  params[decodeURIComponent(name)] = decodeURIComponent(value || '');
-}
-
 /**
  * Given the full size of the array and a shape that may contain -1 as the
  * implicit dimension, returns the inferred shape where -1 is replaced.
@@ -268,17 +253,17 @@ export function inferFromImplicitShape(
   let implicitIdx = -1;
 
   for (let i = 0; i < shape.length; ++i) {
-    if (shape[i] > 0) {
+    if (shape[i] >= 0) {
       shapeProd *= shape[i];
     } else if (shape[i] === -1) {
       if (implicitIdx !== -1) {
         throw Error(
             `Shapes can only have 1 implicit size. ` +
-            `Found - 1 at dim ${implicitIdx} and dim ${i}`);
+            `Found -1 at dim ${implicitIdx} and dim ${i}`);
       }
       implicitIdx = i;
-    } else if (shape[i] <= 0) {
-      throw Error(`Shapes can not be <= 0. Found ${shape[i]} at dim ${i}`);
+    } else if (shape[i] < 0) {
+      throw Error(`Shapes can not be < 0. Found ${shape[i]} at dim ${i}`);
     }
   }
 
@@ -289,6 +274,11 @@ export function inferFromImplicitShape(
     return shape;
   }
 
+  if (shapeProd === 0) {
+    throw Error(
+        `Cannot infer the missing size in [${shape}] when ` +
+        `there are 0 elements`);
+  }
   if (size % shapeProd !== 0) {
     throw Error(
         `The implicit shape can't be a fractional number. ` +
@@ -308,7 +298,7 @@ export function squeezeShape(shape: number[], axis?: number[]):
   let j = 0;
   for (let i = 0; i < shape.length; ++i) {
     if (axis != null) {
-      if (axis[j] === i && shape[i] > 1) {
+      if (axis[j] === i && shape[i] !== 1) {
         throw new Error(
             `Can't squeeze axis ${i} since its dim '${shape[i]}' is not 1`);
       }
@@ -320,7 +310,7 @@ export function squeezeShape(shape: number[], axis?: number[]):
         j++;
       }
     }
-    if (shape[i] > 1) {
+    if (shape[i] !== 1) {
       newShape.push(shape[i]);
       keptDims.push(i);
     }
@@ -343,15 +333,29 @@ export function getTypedArrayFromDType<D extends DataType>(
   return values;
 }
 
-export function checkForNaN<D extends DataType>(
+export function checkComputationForNaN<D extends DataType>(
     vals: DataTypeMap[D], dtype: D, name: string): void {
   if (dtype !== 'float32') {
-    // NaN is a floating point concept.
+    // Only floating point computations will generate NaN values
     return;
   }
   for (let i = 0; i < vals.length; i++) {
     if (isNaN(vals[i])) {
       throw Error(`The result of the '${name}' has NaNs.`);
+    }
+  }
+}
+
+export function checkConversionForNaN<D extends DataType>(
+    vals: DataTypeMap[D]|number[], dtype: D): void {
+  if (dtype === 'float32') {
+    // NaN is valid for floating point conversions
+    return;
+  }
+
+  for (let i = 0; i < vals.length; i++) {
+    if (isNaN(vals[i])) {
+      throw Error(`NaN is not a valid value for dtype: '${dtype}'.`);
     }
   }
 }
@@ -373,11 +377,15 @@ export function hasEncodingLoss(oldType: DataType, newType: DataType): boolean {
   return true;
 }
 
-export function copyTypedArray<D extends DataType>(
-    array: DataTypeMap[D]|number[]|boolean[], dtype: D): DataTypeMap[D] {
+function copyTypedArray<D extends DataType>(
+    array: DataTypeMap[D]|number[]|boolean[], dtype: D,
+    debugMode: boolean): DataTypeMap[D] {
   if (dtype == null || dtype === 'float32') {
     return new Float32Array(array as number[]);
   } else if (dtype === 'int32') {
+    if (debugMode) {
+      checkConversionForNaN(array as number[], dtype);
+    }
     return new Int32Array(array as number[]);
   } else if (dtype === 'bool') {
     const bool = new Uint8Array(array.length);
@@ -438,14 +446,14 @@ export function computeStrides(shape: number[]): number[] {
 }
 
 export function toTypedArray<D extends DataType>(
-    a: ArrayData<D>, dtype: D): DataTypeMap[D] {
+    a: ArrayData<D>, dtype: D, debugMode: boolean): DataTypeMap[D] {
   if (noConversionNeeded(a, dtype)) {
     return a as DataTypeMap[D];
   }
   if (Array.isArray(a)) {
     a = flatten(a as number[]);
   }
-  return copyTypedArray(a, dtype);
+  return copyTypedArray(a, dtype, debugMode);
 }
 
 function noConversionNeeded<D extends DataType>(
