@@ -99,11 +99,12 @@ export function getRunGroups(): BenchmarkRunGroup[] {
     max: 1024,
     stepToSizeTransformation: (step: number) => Math.max(1, step),
     options: [
-      'abs', 'acos', 'acosh', 'asin', 'asinh', 'atan', 'atanh', 'ceil', 'cos',
-      'cosh', 'elu', 'erf', 'exp', 'expm1', 'floor', 'leakyRelu', 'log',
-      'log1p', 'logSigmoid', 'neg', 'prelu', 'reciprocal', 'relu', 'round',
-      'rsqrt', 'selu', 'sigmoid', 'sign', 'sin', 'sinh', 'softplus', 'sqrt',
-      'square', 'step', 'tan', 'tanh'
+      'abs',        'acos',  'acosh',   'asin',       'asinh', 'atan',
+      'atanh',      'ceil',  'cos',     'cosh',       'elu',   'erf',
+      'exp',        'expm1', 'floor',   'leakyRelu',  'log',   'log1p',
+      'logSigmoid', 'neg',   'prelu',   'reciprocal', 'relu',  'round',
+      'rsqrt',      'selu',  'sigmoid', 'sign',       'sin',   'sinh',
+      'softplus',   'sqrt',  'square',  'step',       'tan',   'tanh'
     ],
     selectedOption: 'log',
     stepSize: 64,
@@ -115,13 +116,13 @@ export function getRunGroups(): BenchmarkRunGroup[] {
   });
 
   groups.push({
-    name: 'Reduction Ops: input [size, size]',
+    name: 'Reduction Ops: input [size]',
     min: 0,
-    max: 1024,
+    max: 1024 * 1024,  // Make these 1D tests comparable to the above 2D ones
     stepToSizeTransformation: (step: number) => Math.max(1, step),
     options: ['max', 'min', 'argMax', 'argMin', 'sum', 'logSumExp'],
     selectedOption: 'max',
-    stepSize: 64,
+    stepSize: 64 * 1024,
     benchmarkRuns: [
       new BenchmarkRun('reduction ops CPU', new ReductionOpsCPUBenchmark()),
       new BenchmarkRun('reduction ops GPU', new ReductionOpsGPUBenchmark())
