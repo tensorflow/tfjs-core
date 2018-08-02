@@ -61,10 +61,10 @@ describeWithFlags('custom-op webgl', WEBGL_ENVS, () => {
 
     const backward = (dy: T) => {
       return {
-        x: () => tf.tidy(() => {
+        x: () => {
           const backpropProgram = new SquareAndAddBackpropKernel(dy.shape);
           return webglBackend.compileAndRun(backpropProgram, [x]).mul(dy) as T;
-        })
+        }
       };
     };
 
@@ -86,5 +86,14 @@ describeWithFlags('custom-op webgl', WEBGL_ENVS, () => {
     const {value, grad} = grads(input);
     expectArraysClose(value, inputArr.map(x => x * x + x));
     expectArraysClose(grad, inputArr.map(x => 2 * x + 1));
+  });
+
+  it('multiplies by dy parameter when it is passed', () => {
+    const inputArr = [1, 2, 3, 4];
+    const input = tf.tensor(inputArr);
+    const grads = tf.valueAndGrad(x => squareAndAdd(x));
+    const {value, grad} = grads(input, tf.zerosLike(input));
+    expectArraysClose(value, inputArr.map(x => x * x + x));
+    expectArraysClose(grad, inputArr.map(() => 0.0));
   });
 });
