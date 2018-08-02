@@ -34,8 +34,7 @@
     "server": "yarn build && http-server",
     "test": "karma start --firebaseKey $FIREBASE_KEY",
     "test-browserstack": "browserstack-runner",
-    "test-travis": "karma start --firebaseKey $FIREBASE_KEY --travis --singleRun --reporters='dots,karma-typescript,BrowserStack' --hostname='bs-local.com' --browsers=bs_chrome_mac",
-    "test-travis-cron": "if [ \"$TRAVIS_EVENT_TYPE\" = cron ]; then karma start --singleRun --reporters='dots,karma-typescript,BrowserStack' --hostname='bs-local.com' --browsers=bs_chrome_mac; fi"
+    "test-travis": "./test_travis.sh"
   },
   "license": "Apache-2.0",
   "engines": {
