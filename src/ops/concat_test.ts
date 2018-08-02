@@ -17,7 +17,7 @@
 
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
-import {ALL_ENVS, expectArraysClose} from '../test_util';
+import {ALL_ENVS, expectArraysClose, expectArraysEqual} from '../test_util';
 
 describeWithFlags('concat1d', ALL_ENVS, () => {
   it('3 + 5', () => {
@@ -168,6 +168,20 @@ describeWithFlags('concat2d', ALL_ENVS, () => {
     expect(result.shape).toEqual([2, 1]);
     expectArraysClose(result, expected);
   });
+
+  it('concat zero-sized tensors', () => {
+    const a = tf.tensor2d([], [0, 5]);
+    const b = tf.tensor2d([], [0, 5]);
+    const c = tf.tensor2d([], [0, 5]);
+
+    const res = tf.concat([a, b, c], /* axis */ 0);
+    expect(res.shape).toEqual([0, 5]);
+    expectArraysEqual(res, []);
+
+    const res2 = tf.concat([a, b, c], /* axis */ 1);
+    expect(res2.shape).toEqual([0, 15]);
+    expectArraysEqual(res2, []);
+  });
 });
 
 describeWithFlags('concat3d', ALL_ENVS, () => {
@@ -312,6 +326,14 @@ describeWithFlags('concat3d', ALL_ENVS, () => {
     const tensor2 = [[[4, 5, 6]]];  // 1x1x3
     const values = tf.concat3d([tensor1, tensor2], 0);
     expect(values.shape).toEqual([2, 1, 3]);
+    expectArraysClose(values, [1, 2, 3, 4, 5, 6]);
+  });
+
+  it('concat tensors with 0 in their shape', () => {
+    const tensor1 = tf.tensor3d([1, 2, 3, 4, 5, 6], [2, 3, 1]);
+    const tensor2 = tf.tensor3d([], [0, 3, 1]);
+    const values = tf.concat3d([tensor1, tensor2], 0);
+    expect(values.shape).toEqual([2, 3, 1]);
     expectArraysClose(values, [1, 2, 3, 4, 5, 6]);
   });
 });

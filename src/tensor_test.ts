@@ -18,7 +18,6 @@
 import * as tf from './index';
 import {describeWithFlags} from './jasmine_util';
 import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
-// tslint:disable-next-line:max-line-length
 import {ALL_ENVS, expectArraysClose, expectArraysEqual, expectNumbersClose} from './test_util';
 import {DType, Rank} from './types';
 
@@ -940,6 +939,12 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     expectArraysClose(res, [4, 2, 1]);
   });
 
+  it('squeeze a zero-sized tensor', () => {
+    const a = tf.tensor3d([], [0, 1, 0]);
+    const res = tf.squeeze(a);
+    expect(res.shape).toEqual([0, 0]);
+  });
+
   it('scalar -> 2d', () => {
     const a = tf.scalar(4, 'int32');
     const b = a.as2D(1, 1);
@@ -1242,5 +1247,72 @@ describeWithFlags('x instanceof Tensor', ALL_ENVS, () => {
     expect((undefined as any) instanceof Tensor).toBe(false);
     // tslint:disable-next-line:no-any
     expect((null as any) instanceof Tensor).toBe(false);
+  });
+});
+
+describeWithFlags('tensor with 0 in shape', ALL_ENVS, () => {
+  it('1d of shape [0]', () => {
+    const a = tf.tensor1d([]);
+    expect(a.dtype).toBe('float32');
+    expect(a.rank).toBe(1);
+    expect(a.shape).toEqual([0]);
+    expectArraysEqual(a, []);
+  });
+
+  it('1d throws when values are not empty', () => {
+    const values = new Float32Array([1, 2, 3]);
+    // Have to use Tensor.make since tensor1d() does not let us provide a shape.
+    expect(() => Tensor.make([0], {values}))
+        .toThrowError(
+            'Based on the provided shape, [0], the tensor should ' +
+            'have 0 values but has 3');
+  });
+
+  it('2d of shape [0, 5]', () => {
+    const a = tf.tensor2d([], [0, 5]);
+    expect(a.dtype).toBe('float32');
+    expect(a.rank).toBe(2);
+    expect(a.shape).toEqual([0, 5]);
+    expectArraysEqual(a, []);
+  });
+
+  it('2d throws when values are not empty', () => {
+    const values = [1, 2, 3, 4];
+    expect(() => tf.tensor2d(values, [0, 5]))
+        .toThrowError(
+            'Based on the provided shape, [0,5], the tensor should ' +
+            'have 0 values but has 4');
+  });
+
+  it('3d of shape [0, 3, 0]', () => {
+    const a = tf.tensor3d([], [0, 3, 0]);
+    expect(a.dtype).toBe('float32');
+    expect(a.rank).toBe(3);
+    expect(a.shape).toEqual([0, 3, 0]);
+    expectArraysEqual(a, []);
+  });
+
+  it('3d throws when values are not empty', () => {
+    const values = [1, 2, 3];
+    expect(() => tf.tensor3d(values, [0, 3, 0]))
+        .toThrowError(
+            'Based on the provided shape, [0,3,0], the tensor should ' +
+            'have 0 values but has 3');
+  });
+
+  it('4d of shape [1, 3, 0, 5]', () => {
+    const a = tf.tensor4d([], [1, 3, 0, 5]);
+    expect(a.dtype).toBe('float32');
+    expect(a.rank).toBe(4);
+    expect(a.shape).toEqual([1, 3, 0, 5]);
+    expectArraysEqual(a, []);
+  });
+
+  it('4d throws when values are not empty', () => {
+    const values = [1, 2, 3];
+    expect(() => tf.tensor4d(values, [1, 3, 0, 5]))
+        .toThrowError(
+            'Based on the provided shape, [1,3,0,5], the tensor should ' +
+            'have 0 values but has 3');
   });
 });

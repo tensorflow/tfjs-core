@@ -15,13 +15,10 @@
  * =============================================================================
  */
 import {ENV} from '../environment';
-// tslint:disable-next-line:max-line-length
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
-import {convertToTensor, convertToTensorArray} from '../tensor_util';
-// tslint:disable-next-line:max-line-length
+import {convertToTensor, convertToTensorArray} from '../tensor_util_env';
 import {DataType, Rank, ShapeMap, TensorLike, TensorLike1D, TypedArray} from '../types';
 import * as util from '../util';
-// tslint:disable-next-line:max-line-length
 import {getAxesPermutation, getInnerMostAxes, parseAxisParam} from './axis_util';
 import {concat} from './concat';
 import {op} from './operation';
@@ -803,8 +800,13 @@ function batchToSpaceND_<T extends Tensor>(
   util.assert(
       $x.shape[0] % prod === 0,
       `input tensor batch must be divisible by prod( blockShape )`);
+
+  const grad = (dy: T) => {
+    return {$x: () => dy.spaceToBatchND(blockShape, crops)};
+  };
+
   return ENV.engine.runKernel(
-      backend => backend.batchToSpaceND($x, blockShape, crops), {});
+      backend => backend.batchToSpaceND($x, blockShape, crops), {$x}, grad);
 }
 
 /**
@@ -875,8 +877,13 @@ function spaceToBatchND_<T extends Tensor>(
     }
     return a;
   }, true), `input spatial dimensions must be divisible by blockShapes`);
+
+  const grad = (dy: T) => {
+    return {$x: () => dy.batchToSpaceND(blockShape, paddings)};
+  };
+
   return ENV.engine.runKernel(
-      backend => backend.spaceToBatchND($x, blockShape, paddings), {});
+      backend => backend.spaceToBatchND($x, blockShape, paddings), {$x}, grad);
 }
 
 /**
