@@ -54,7 +54,7 @@ export function getStridedSlicedInfo(
   for (let i = 0; i < shape.length; i++) {
     startIndex[i] = startForAxis(beginMask, begin, strides, shape, i);
     endIndex[i] = stopForAxis(endMask, end, strides, shape, i);
-    // When shrinking an axis, user startIndex + 1 for endIndex.
+    // When shrinking an axis, use startIndex + 1 for endIndex.
     // Check the axis bit from right of shrinkAxisMask
     if (shrinkAxisMask & 1 << i) {
       endIndex[i] = startIndex[i] + 1;

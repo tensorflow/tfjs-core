@@ -55,7 +55,14 @@ import {op} from './operation';
 /** @doc {heading: 'Operations', subheading: 'Slicing and Joining'} */
 function stridedSlice_<T extends Tensor>(
     x: T|TensorLike, begin: number[], end: number[], strides: number[],
-    beginMask = 0, endMask = 0, shrinkAxisMask = 0): T {
+    beginMask = 0, endMask = 0, ellipsisMask = 0, newAxisMask = 0,
+    shrinkAxisMask = 0): T {
+  if (ellipsisMask !== 0) {
+    throw new Error('ellipsis mask is not yet supported');
+  }
+  if (newAxisMask !== 0) {
+    throw new Error('new axis mask is not yet supported');
+  }
   const $x = convertToTensor(x, 'x', 'stridedSlice');
   return ENV.engine.runKernel(
              backend => backend.stridedSlice(
