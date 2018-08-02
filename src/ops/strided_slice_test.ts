@@ -27,7 +27,7 @@ describeWithFlags('stridedSlice', ALL_ENVS, () => {
     expectArraysClose(output, [0, 2]);
   });
 
-  it('stridedSlice with 1d tensor should be executed by tensor directly', () => {
+  it('stridedSlice with 1d tensor should be used by tensor directly', () => {
     const t = tf.tensor1d([0, 1, 2, 3]);
     const output = t.stridedSlice([0], [3], [2]);
     expect(output.shape).toEqual([2]);
@@ -150,7 +150,7 @@ describeWithFlags('stridedSlice', ALL_ENVS, () => {
     expectArraysClose(output, [4, 5]);
   });
 
-  it('stridedSlice with 2d tensor should be executed by tensor directly', () => {
+  it('stridedSlice with 2d tensor should be used by tensor directly', () => {
     const t = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
     const output = t.stridedSlice([1, 0], [2, 2], [1, 1]);
     expect(output.shape).toEqual([1, 2]);
