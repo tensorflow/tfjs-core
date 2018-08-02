@@ -2131,6 +2131,9 @@ export class MathBackendCPU implements KernelBackend {
   fft(input: Tensor2D): Tensor2D {
     // First dimension represents the number of samples.
     const n = input.shape[0];
+    util.assert(
+        input.shape[1] === 2,
+        'Inner demension must be 2 to represents complex number.');
     const data = input.dataSync();
     const output = this.fftTransform(data, n);
     return ops.tensor2d(output, input.shape);

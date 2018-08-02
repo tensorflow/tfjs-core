@@ -22,35 +22,27 @@ import {TypedArray} from '../types';
  * Internal representation for complex number
  */
 export class Complex {
-  private _real: number;
-  private _imag: number;
+  real: number;
+  imag: number;
 
   constructor(real: number, imag: number) {
-    this._real = real;
-    this._imag = imag;
+    this.real = real;
+    this.imag = imag;
   }
 
   add(other: Complex) {
-    return new Complex(this._real + other._real, this._imag + other._imag);
+    return new Complex(this.real + other.real, this.imag + other.imag);
   }
 
   sub(other: Complex) {
-    return new Complex(this._real - other._real, this._imag - other._imag);
+    return new Complex(this.real - other.real, this.imag - other.imag);
   }
 
   mul(other: Complex) {
     return new Complex(
-      this._real * other._real - this._imag * other._imag,
-      this._real * other._imag + this._imag * other._real
+      this.real * other.real - this.imag * other.imag,
+      this.real * other.imag + this.imag * other.real
     );
-  }
-
-  get real(): number {
-    return this._real;
-  }
-
-  get imag(): number {
-    return this._imag;
   }
 
   static fromTypedArray(data: TypedArray) {
@@ -70,7 +62,7 @@ export class Complex {
   }
 
   // Put complex value to given TypedArray in the specified position.
-  static assign(data: TypedArray, complex: Complex, i: number) {
+  static assignToTypedArray(data: TypedArray, complex: Complex, i: number) {
     data[i*2] = complex.real;
     data[i*2+1] = complex.imag;
   }
