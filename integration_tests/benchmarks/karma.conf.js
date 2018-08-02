@@ -40,9 +40,6 @@ module.exports = function(config) {
     preprocessors: {
       '**/*.ts': ['karma-typescript'],  // *.tsx for React Jsx
     },
-    browserConsoleLogOptions: {
-      level: 'info'
-    },
     karmaTypescriptConfig,
     reporters: ['progress', 'karma-typescript'],
     browsers: ['Chrome'],

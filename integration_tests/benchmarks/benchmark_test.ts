@@ -18,7 +18,7 @@
 import {ConvGPUBenchmark, RegularConvParams} from './conv_benchmarks';
 import {MatmulGPUBenchmark} from './matmul_benchmarks';
 import {MobileNetV1GPUBenchmark} from './mobilenet_benchmarks';
-import * as util from './util';
+import * as test_util from './test_util';
 
 const BENCHMARK_RUNS = 100;
 
@@ -32,7 +32,7 @@ describe('benchmarks', () => {
 
     const benchmark = new MatmulGPUBenchmark();
 
-    await util.benchmarkAndLog(
+    await test_util.benchmarkAndLog(
         'matmul', size => benchmark.run(size), sizes, size => `N=${size}`,
         BENCHMARK_RUNS);
 
@@ -45,7 +45,7 @@ describe('benchmarks', () => {
         {inDepth: 16, outDepth: 32, filterSize: 5, stride: 1, pad: 'same'};
     const benchmark = new ConvGPUBenchmark();
 
-    await util.benchmarkAndLog(
+    await test_util.benchmarkAndLog(
         'conv2d', size => benchmark.run(size, 'regular', convParams), sizes,
         size => `N=${size} ${JSON.stringify(convParams)}`, BENCHMARK_RUNS);
 
@@ -57,7 +57,7 @@ describe('benchmarks', () => {
 
     const benchmark = new MobileNetV1GPUBenchmark();
 
-    await util.benchmarkAndLog(
+    await test_util.benchmarkAndLog(
         'mobilenet_v1', size => benchmark.run(size), sizes,
         size => `N=${size}_0_224`, BENCHMARK_RUNS);
 

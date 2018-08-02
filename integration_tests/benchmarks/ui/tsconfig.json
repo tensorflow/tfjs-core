@@ -1,6 +1,7 @@
 {
   "extends": "../tsconfig",
   "include": [
-    "*.ts"
-  ]
+    "**/*.ts"
+  ],
+  "exclude": []
 }

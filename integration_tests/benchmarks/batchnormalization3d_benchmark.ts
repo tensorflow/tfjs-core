@@ -17,14 +17,13 @@
 import * as tf from '@tensorflow/tfjs-core';
 
 import {BenchmarkTest} from './types';
-import * as benchmark_util from './util';
-import {LAST_RUN_CPU_CUTOFF_MS} from './util';
+import * as util from './util';
 
 export class BatchNormalization3DCPUBenchmark implements BenchmarkTest {
   lastRunTimeMs: number;
 
   async run(size: number): Promise<number> {
-    if (this.lastRunTimeMs > LAST_RUN_CPU_CUTOFF_MS) {
+    if (this.lastRunTimeMs > util.LAST_RUN_CPU_CUTOFF_MS) {
       return new Promise<number>((resolve, reject) => {
         resolve(-1);
       });
@@ -57,7 +56,7 @@ export class BatchNormalization3DGPUBenchmark implements BenchmarkTest {
     const benchmark = () =>
         x.batchNormalization(mean, variance, varianceEpsilon);
 
-    const time = await benchmark_util.warmupAndBenchmarkGPU(benchmark);
+    const time = await util.warmupAndBenchmarkGPU(benchmark);
 
     x.dispose();
     mean.dispose();

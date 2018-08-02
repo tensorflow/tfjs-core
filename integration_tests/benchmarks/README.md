@@ -3,8 +3,25 @@ TensorFlow.js Benchmark Tools
 
 This is a micro benchmark to measure the performance of TensorFlow.js kernel ops.
 
-There are two directories, `karma` and `ui` which contain headless tests and a
-UI for running benchmarks respectively.
+# Benchmarks headless usage
+
+Benchmarks will run nightly on browserstack automatically via `yarn test-travis`.
+When running benchmarks locally, use:
+
+`yarn benchmark`
+
+This will not write to firebase, it will simply log what would have been written
+to firebase.
+
+If you want to push to firebase locally, add --travis to the test script. Be
+careful, as this will overwrite other runs of the day.
+
+On travis, during crons, we run:
+
+`yarn benchmark-travis`
+
+This will run the benchmarks with the `--travis` flag flipped and write to
+firebase. Note, this only happens on a cron.
 
 # Benchmarks UI usage
 
