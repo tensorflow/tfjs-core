@@ -63,7 +63,11 @@ export async function logBenchmarkRun(
   logs.forEach(log => {
     runs[log.params] = {averageTimeMs: log.averageTimeMs};
   });
-  const entry: BenchmarkEntry = {userAgent: navigator.userAgent, runs};
+  const entry: BenchmarkEntry = {
+    userAgent: navigator.userAgent,
+    runs,
+    timestamp: Date.now()
+  };
 
   const entryDisplay: string = JSON.stringify(entry, undefined, 2);
   const ref = `${humanReadableDate}/${benchmarkName}/${DEVICE}`;
