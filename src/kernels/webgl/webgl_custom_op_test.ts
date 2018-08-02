@@ -60,8 +60,12 @@ describeWithFlags('custom-op webgl', WEBGL_ENVS, () => {
     const forward = () => webglBackend.compileAndRun(program, [x]);
 
     const backward = (dy: T) => {
-      const backpropProgram = new SquareAndAddBackpropKernel(dy.shape);
-      return {x: () => webglBackend.compileAndRun(backpropProgram, [x]) as T};
+      return {
+        x: () => tf.tidy(() => {
+          const backpropProgram = new SquareAndAddBackpropKernel(dy.shape);
+          return webglBackend.compileAndRun(backpropProgram, [x]).mul(dy) as T;
+        })
+      };
     };
 
     const res = tf.ENV.engine.runKernel(forward, {x}, backward);
