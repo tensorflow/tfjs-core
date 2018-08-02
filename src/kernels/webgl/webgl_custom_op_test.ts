@@ -15,9 +15,9 @@
  * =============================================================================
  */
 
-import * as tf from './index';
-import {describeWithFlags} from './jasmine_util';
-import {expectArraysClose, WEBGL_ENVS} from './test_util';
+import * as tf from '../../index';
+import {describeWithFlags} from '../../jasmine_util';
+import {expectArraysClose, WEBGL_ENVS} from '../../test_util';
 
 describeWithFlags('custom-op webgl', WEBGL_ENVS, () => {
   class SquareAndAddKernel implements tf.webgl.GPGPUProgram {
