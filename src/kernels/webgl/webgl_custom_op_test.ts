@@ -37,6 +37,18 @@ describeWithFlags('custom-op webgl', WEBGL_ENVS, () => {
     }
   }
 
+  const sqAdd = (inShape: number[]): tf.webgl.GPGPUProgram => ({
+    variableNames: ['X'],
+    outputShape: inShape.slice(),
+    userCode: `
+      void main() {
+        float x = getXAtOutCoords();
+        float value = x * x + x;
+        return setOutput(value);
+      }
+    `
+  });
+
   class SquareAndAddBackpropKernel implements tf.webgl.GPGPUProgram {
     variableNames = ['X'];
     outputShape: number[];
@@ -61,8 +73,7 @@ describeWithFlags('custom-op webgl', WEBGL_ENVS, () => {
 
     const gradFunc = (dy: tf.Tensor) => {
       const backpropProgram = new SquareAndAddBackpropKernel(x.shape);
-      return tf.tidy(
-          () => webglBackend.compileAndRun(backpropProgram, [x]).mul(dy));
+      return webglBackend.compileAndRun(backpropProgram, [x]).mul(dy);
     };
 
     return {value, gradFunc};
