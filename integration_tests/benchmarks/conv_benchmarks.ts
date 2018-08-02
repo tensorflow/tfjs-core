@@ -17,8 +17,8 @@
 
 import * as tf from '@tensorflow/tfjs-core';
 
+import {BenchmarkTest} from './types';
 import * as benchmark_util from './util';
-import {BenchmarkTest} from './util';
 
 export interface ConvParams {
   inDepth: number;

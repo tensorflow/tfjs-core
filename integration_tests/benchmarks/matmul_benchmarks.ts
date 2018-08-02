@@ -16,9 +16,10 @@
  */
 import * as tf from '@tensorflow/tfjs-core';
 
+import {BenchmarkTest} from './types';
 import * as util from './util';
 
-export class MatmulCPUBenchmark implements util.BenchmarkTest {
+export class MatmulCPUBenchmark implements BenchmarkTest {
   lastRunTimeMs: number;
   async run(size: number): Promise<number> {
     if (this.lastRunTimeMs > util.LAST_RUN_CPU_CUTOFF_MS) {
@@ -38,7 +39,7 @@ export class MatmulCPUBenchmark implements util.BenchmarkTest {
   }
 }
 
-export class MatmulGPUBenchmark implements util.BenchmarkTest {
+export class MatmulGPUBenchmark implements BenchmarkTest {
   async run(size: number): Promise<number> {
     tf.setBackend('webgl');
 

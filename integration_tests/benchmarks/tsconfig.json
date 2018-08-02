@@ -17,7 +17,8 @@
     "noUnusedParameters": false,
     "pretty": true,
     "noFallthroughCasesInSwitch": true,
-    "allowUnreachableCode": false
+    "allowUnreachableCode": false,
+    "esModuleInterop": true
   },
   "include": [
     "*.ts",

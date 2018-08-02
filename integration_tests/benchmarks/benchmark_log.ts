@@ -16,10 +16,8 @@
  */
 
 export interface BenchmarkLog {
-  benchmarkName: string;
-  parameters: string;
+  params: string;
   averageTimeMs: number;
-  userAgent: string;
 }
 
 export function logBenchmarkRun() {}

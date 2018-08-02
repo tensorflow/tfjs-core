@@ -24,6 +24,10 @@ module.exports = function(config) {
   if (config.grep) {
     args.push('--grep', config.grep);
   }
+  if (config.firebaseKey) {
+    args.push('--firebaseKey', config.firebaseKey);
+  }
+  args.push('--travis', !!config.travis);
 
   config.set({
     frameworks: ['jasmine', 'karma-typescript'],

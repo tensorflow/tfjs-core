@@ -16,6 +16,7 @@
  */
 import * as tf from '@tensorflow/tfjs-core';
 
+import {BenchmarkTest} from './types';
 import * as util from './util';
 
 function getReductionOp(option: string): (x: tf.Tensor) => tf.Scalar {
@@ -37,7 +38,7 @@ function getReductionOp(option: string): (x: tf.Tensor) => tf.Scalar {
   }
 }
 
-export class ReductionOpsCPUBenchmark implements util.BenchmarkTest {
+export class ReductionOpsCPUBenchmark implements BenchmarkTest {
   async run(size: number, option: string): Promise<number> {
     tf.setBackend('cpu');
 
@@ -54,7 +55,7 @@ export class ReductionOpsCPUBenchmark implements util.BenchmarkTest {
   }
 }
 
-export class ReductionOpsGPUBenchmark implements util.BenchmarkTest {
+export class ReductionOpsGPUBenchmark implements BenchmarkTest {
   async run(size: number, option: string) {
     tf.setBackend('webgl');
 

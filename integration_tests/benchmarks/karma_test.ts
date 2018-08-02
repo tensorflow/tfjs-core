@@ -16,6 +16,8 @@
  */
 
 import {BenchmarkLog} from './benchmark_log';
+import {ConvGPUBenchmark, RegularConvParams} from './conv_benchmarks';
+import * as firebase from './firebase';
 import {MatmulGPUBenchmark} from './matmul_benchmarks';
 
 const BENCHMARK_RUNS = 100;
@@ -30,32 +32,56 @@ describe('benchmarks', () => {
   });
 
   it('matmul', async done => {
-    const matmulGPU = new MatmulGPUBenchmark();
+    const logs: BenchmarkLog[] = [];
+    const matmulBenchmark = new MatmulGPUBenchmark();
 
-    const sizes = [1];  //, 100, 400, 1000];
-    // console.log('-------------matmul benchmark------------');
-    // console.log('UA: ' + navigator.userAgent);
+    const sizes = [1, 100, 400, 1000];
     for (let i = 0; i < sizes.length; i++) {
       const size = sizes[i];
 
       let total = 0;
       for (let j = 0; j < BENCHMARK_RUNS; j++) {
-        const result = await matmulGPU.run(size);
+        const result = await matmulBenchmark.run(size);
+        total += result / BENCHMARK_RUNS;
+        await nextTick();
+      }
+
+      const benchmarkLog:
+          BenchmarkLog = {params: `N=${size}`, averageTimeMs: total};
+
+      logs.push(benchmarkLog);
+    }
+    await firebase.logBenchmarkRun('matmul', logs);
+
+    done();
+  });
+
+  it('conv2d', async done => {
+    const logs: BenchmarkLog[] = [];
+    const convBenchmark = new ConvGPUBenchmark();
+
+    const sizes = [10, 100, 227];
+    const convParams: RegularConvParams =
+        {inDepth: 16, outDepth: 32, filterSize: 5, stride: 1, pad: 'same'};
+    for (let i = 0; i < sizes.length; i++) {
+      const size = sizes[i];
+
+      let total = 0;
+      for (let j = 0; j < BENCHMARK_RUNS; j++) {
+        const result = await convBenchmark.run(size, 'regular', convParams);
         total += result / BENCHMARK_RUNS;
         await nextTick();
       }
 
       const benchmarkLog: BenchmarkLog = {
-        benchmarkName: 'matmul',
-        parameters: `[${size}]`,
-        averageTimeMs: total,
-        userAgent: navigator.userAgent
+        params: `N=${size},${JSON.stringify(convParams)}`,
+        averageTimeMs: total
       };
 
-      // console.log(`[${size}]: ${total}`);
-      console.log(JSON.stringify(benchmarkLog));
+      logs.push(benchmarkLog);
     }
-    // console.log('-----------------------------------------');
+    await firebase.logBenchmarkRun('conv2d', logs);
+
     done();
   });
 });

@@ -16,8 +16,9 @@
  */
 import * as tf from '@tensorflow/tfjs-core';
 
+import {BenchmarkTest} from './types';
 import * as benchmark_util from './util';
-import {BenchmarkTest, LAST_RUN_CPU_CUTOFF_MS} from './util';
+import {LAST_RUN_CPU_CUTOFF_MS} from './util';
 
 export class BatchNormalization3DCPUBenchmark implements BenchmarkTest {
   lastRunTimeMs: number;

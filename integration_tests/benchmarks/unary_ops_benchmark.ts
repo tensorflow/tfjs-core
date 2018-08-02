@@ -17,6 +17,7 @@
 
 import * as tf from '@tensorflow/tfjs-core';
 
+import {BenchmarkTest} from './types';
 import * as util from './util';
 
 function getUnaryOp(option: string) {
@@ -78,7 +79,7 @@ function getUnaryOp(option: string) {
   }
 }
 
-export class UnaryOpsCPUBenchmark implements util.BenchmarkTest {
+export class UnaryOpsCPUBenchmark implements BenchmarkTest {
   async run(size: number, option: string): Promise<number> {
     tf.setBackend('cpu');
 
@@ -95,7 +96,7 @@ export class UnaryOpsCPUBenchmark implements util.BenchmarkTest {
   }
 }
 
-export class UnaryOpsGPUBenchmark implements util.BenchmarkTest {
+export class UnaryOpsGPUBenchmark implements BenchmarkTest {
   async run(size: number, option: string) {
     tf.setBackend('webgl');
 
