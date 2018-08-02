@@ -57,14 +57,13 @@ describeWithFlags('custom-op webgl', WEBGL_ENVS, () => {
   function squareAndAdd<T extends tf.Tensor>(x: T): T {
     const webglBackend = tf.ENV.backend as tf.webgl.MathBackendWebGL;
     const program = new SquareAndAddKernel(x.shape);
+    const backpropProgram = new SquareAndAddBackpropKernel(x.shape);
+
     const forward = () => webglBackend.compileAndRun(program, [x]);
 
     const backward = (dy: T) => {
       return {
-        x: () => {
-          const backpropProgram = new SquareAndAddBackpropKernel(dy.shape);
-          return webglBackend.compileAndRun(backpropProgram, [x]).mul(dy) as T;
-        }
+        x: () => webglBackend.compileAndRun(backpropProgram, [x]).mul(dy) as T
       };
     };
 
