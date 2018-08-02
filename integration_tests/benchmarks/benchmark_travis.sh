@@ -14,7 +14,7 @@
 # limitations under the License.
 # =============================================================================
 
-if [ "$TRAVIS_EVENT_TYPE" = cron ] && [[ $(node -v) = *v10* ]]
+if [ "$TRAVIS_EVENT_TYPE" != cron ] && [[ $(node -v) = *v10* ]]
 then
   karma start --firebaseKey $FIREBASE_KEY --travis \
     --singleRun --reporters='dots,karma-typescript,BrowserStack' \
