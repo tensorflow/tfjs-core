@@ -18,3 +18,8 @@
 export interface BenchmarkTest {
   run(size: number, opType?: string, params?: {}): Promise<number>;
 }
+
+export interface BenchmarkLog {
+  averageTimeMs: number;
+  params: string;
+}

@@ -17,6 +17,9 @@
 
 import * as tf from '@tensorflow/tfjs-core';
 
+import * as firebase from './firebase';
+import {BenchmarkLog} from './types';
+
 // Maximum number of time before CPU tests don't execute during the next round.
 export const LAST_RUN_CPU_CUTOFF_MS = 5000;
 
@@ -35,4 +38,29 @@ export async function warmupAndBenchmarkGPU(benchmark: () => tf.Tensor):
 
   // Uncomment this once query timers are enabled again.
   // return (await tf.time(benchmark)).kernelMs;
+}
+
+function nextTick(): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve));
+}
+
+// tslint:disable-next-line:no-any
+export async function benchmarkAndLog<T extends any>(
+    name: string, benchmark: (size: T) => Promise<number>, sizes: T[],
+    sizeToParams: (size: T) => string, runCount = 100): Promise<void> {
+  const logs: BenchmarkLog[] = [];
+
+  for (let i = 0; i < sizes.length; i++) {
+    const size = sizes[i];
+    let averageTimeMs = 0;
+    for (let j = 0; j < runCount; j++) {
+      const result = await benchmark(size);
+      averageTimeMs += result / runCount;
+      await nextTick();
+    }
+    const benchmarkLog:
+        BenchmarkLog = {params: sizeToParams(size), averageTimeMs};
+    logs.push(benchmarkLog);
+  }
+  await firebase.logBenchmarkRun(name, logs);
 }

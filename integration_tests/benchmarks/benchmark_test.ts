@@ -15,72 +15,51 @@
  * =============================================================================
  */
 
-import {BenchmarkLog} from './benchmark_log';
 import {ConvGPUBenchmark, RegularConvParams} from './conv_benchmarks';
-import * as firebase from './firebase';
 import {MatmulGPUBenchmark} from './matmul_benchmarks';
+import {MobileNetV1GPUBenchmark} from './mobilenet_benchmarks';
+import * as util from './util';
 
 const BENCHMARK_RUNS = 100;
 
-function nextTick(): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve));
-}
-
 describe('benchmarks', () => {
   beforeAll(() => {
-    jasmine.DEFAULT_TIMEOUT_INTERVAL = 120000;
+    jasmine.DEFAULT_TIMEOUT_INTERVAL = 600000;
   });
 
   it('matmul', async done => {
-    const logs: BenchmarkLog[] = [];
-    const matmulBenchmark = new MatmulGPUBenchmark();
-
     const sizes = [1, 100, 400, 1000];
-    for (let i = 0; i < sizes.length; i++) {
-      const size = sizes[i];
 
-      let total = 0;
-      for (let j = 0; j < BENCHMARK_RUNS; j++) {
-        const result = await matmulBenchmark.run(size);
-        total += result / BENCHMARK_RUNS;
-        await nextTick();
-      }
+    const benchmark = new MatmulGPUBenchmark();
 
-      const benchmarkLog:
-          BenchmarkLog = {params: `N=${size}`, averageTimeMs: total};
-
-      logs.push(benchmarkLog);
-    }
-    await firebase.logBenchmarkRun('matmul', logs);
+    await util.benchmarkAndLog(
+        'matmul', size => benchmark.run(size), sizes, size => `N=${size}`,
+        BENCHMARK_RUNS);
 
     done();
   });
 
   it('conv2d', async done => {
-    const logs: BenchmarkLog[] = [];
-    const convBenchmark = new ConvGPUBenchmark();
-
     const sizes = [10, 100, 227];
     const convParams: RegularConvParams =
         {inDepth: 16, outDepth: 32, filterSize: 5, stride: 1, pad: 'same'};
-    for (let i = 0; i < sizes.length; i++) {
-      const size = sizes[i];
+    const benchmark = new ConvGPUBenchmark();
 
-      let total = 0;
-      for (let j = 0; j < BENCHMARK_RUNS; j++) {
-        const result = await convBenchmark.run(size, 'regular', convParams);
-        total += result / BENCHMARK_RUNS;
-        await nextTick();
-      }
+    await util.benchmarkAndLog(
+        'conv2d', size => benchmark.run(size, 'regular', convParams), sizes,
+        size => `N=${size} ${JSON.stringify(convParams)}`, BENCHMARK_RUNS);
 
-      const benchmarkLog: BenchmarkLog = {
-        params: `N=${size},${JSON.stringify(convParams)}`,
-        averageTimeMs: total
-      };
+    done();
+  });
 
-      logs.push(benchmarkLog);
-    }
-    await firebase.logBenchmarkRun('conv2d', logs);
+  it('mobilenet_v1', async done => {
+    const sizes = [1];  // MobileNet version
+
+    const benchmark = new MobileNetV1GPUBenchmark();
+
+    await util.benchmarkAndLog(
+        'mobilenet_v1', size => benchmark.run(size), sizes,
+        size => `N=${size}_0_224`, BENCHMARK_RUNS);
 
     done();
   });
