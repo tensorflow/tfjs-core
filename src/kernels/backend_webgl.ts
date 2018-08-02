@@ -68,6 +68,7 @@ import {ResizeBilinearProgram} from './webgl/resize_bilinear_gpu';
 import {ResizeNearestNeigborBackpropProgram} from './webgl/resize_nearest_neighbor_backprop_gpu';
 import {ResizeNearestNeighborProgram} from './webgl/resize_nearest_neighbor_gpu';
 import {ReverseProgram} from './webgl/reverse_gpu';
+import {RotateProgram} from './webgl/rotate_gpu';
 import {SegmentOpProgram} from './webgl/segment_gpu';
 import {SelectProgram} from './webgl/select_gpu';
 import {SliceProgram} from './webgl/slice_gpu';
@@ -1177,6 +1178,11 @@ export class MathBackendWebGL implements KernelBackend {
 
   reshape<R extends Rank>(x: Tensor, shape: ShapeMap[R]): Tensor<R> {
     return backend_util.reshapeTensor(x, shape);
+  }
+
+  rotate(x: Tensor4D, angles: Tensor1D): Tensor4D {
+    const program = new RotateProgram(x.shape);
+    return this.compileAndRun(program, [x, angles]);
   }
 
   resizeBilinear(

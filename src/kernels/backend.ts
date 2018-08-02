@@ -205,6 +205,8 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
   spaceToBatchND<T extends Tensor>(
       x: T, blockShape: number[], paddings: number[][]): T;
 
+  rotate(x: Tensor4D, angles: Tensor1D): Tensor4D;
+
   resizeBilinear(
       x: Tensor4D, newHeight: number, newWidth: number,
       alignCorners: boolean): Tensor4D;

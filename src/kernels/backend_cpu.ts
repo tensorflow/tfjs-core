@@ -1715,6 +1715,10 @@ export class MathBackendCPU implements KernelBackend {
     return this.pool(x, convInfo, 'avg').toFloat();
   }
 
+  rotate(x: Tensor4D, angles: Tensor1D): Tensor4D {
+    throw new Error('tf.image.rotate only implemented for webgl backend');
+  }
+
   resizeBilinear(
       x: Tensor4D, newHeight: number, newWidth: number,
       alignCorners: boolean): Tensor4D {
