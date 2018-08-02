@@ -24,7 +24,6 @@
     "*.ts",
   ],
   "exclude": [
-    "ui/**/*.ts",
-    "run_tests.ts"
+    "ui/**/*.ts"
   ]
 }

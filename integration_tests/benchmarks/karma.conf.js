@@ -27,7 +27,9 @@ module.exports = function(config) {
   if (config.firebaseKey) {
     args.push('--firebaseKey', config.firebaseKey);
   }
-  args.push('--travis', !!config.travis);
+  if (config.travis) {
+    args.push('--travis');
+  }
 
   config.set({
     frameworks: ['jasmine', 'karma-typescript'],
@@ -35,7 +37,6 @@ module.exports = function(config) {
       {pattern: '*.ts'}
     ],
     include: ['*.ts'],
-    exclude: ['run_tests.ts'],
     preprocessors: {
       '**/*.ts': ['karma-typescript'],  // *.tsx for React Jsx
     },

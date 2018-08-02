@@ -66,9 +66,11 @@ export async function logBenchmarkRun(
 
   if (!karmaFlags.travis) {
     console.log(
-        'Not inside travis so not querying Firebase. Would have entered: ');
+        'Not inside travis so not querying firebase. Would have added: ');
     console.log(runs);
   } else {
+    console.log('Writing to firebase:');
+    console.log(runs);
     return new Promise<void>(resolve => {
       firebase.database()
           .ref(`${humanReadableDate}/${benchmarkName}/${DEVICE}`)
@@ -91,13 +93,13 @@ interface KarmaFlags {
 
 function parseKarmaFlags(args: string[]): KarmaFlags {
   let apiKey: string;
-  let travis: boolean;
+  let travis = false;
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--firebaseKey') {
       apiKey = args[i + 1];
     }
     if (args[i] === '--travis') {
-      travis = args[i + 1] === 'true';
+      travis = true;
     }
   }
   return {apiKey, travis};
