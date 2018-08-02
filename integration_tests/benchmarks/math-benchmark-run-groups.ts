@@ -116,13 +116,13 @@ export function getRunGroups(): BenchmarkRunGroup[] {
   });
 
   groups.push({
-    name: 'Reduction Ops: input [size]',
+    name: 'Reduction Ops: input [size * size]',
     min: 0,
-    max: 1024 * 1024,  // Make these 1D tests comparable to the above 2D ones
+    max: 1024,
     stepToSizeTransformation: (step: number) => Math.max(1, step),
     options: ['max', 'min', 'argMax', 'argMin', 'sum', 'logSumExp'],
     selectedOption: 'max',
-    stepSize: 64 * 1024,
+    stepSize: 64,
     benchmarkRuns: [
       new BenchmarkRun('reduction ops CPU', new ReductionOpsCPUBenchmark()),
       new BenchmarkRun('reduction ops GPU', new ReductionOpsGPUBenchmark())
