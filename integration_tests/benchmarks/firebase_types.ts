@@ -25,5 +25,9 @@ export interface ApplicationConfig {
 }
 
 export interface BenchmarkEntry {
+  userAgent: string;
+  runs: {[params: string]: BenchmarkRunEntry};
+}
+export interface BenchmarkRunEntry {
   averageTimeMs: number;
 }

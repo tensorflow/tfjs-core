@@ -23,7 +23,7 @@ declare let __karma__: any;
 
 import 'firebase/auth';
 import 'firebase/database';
-import {ApplicationConfig, BenchmarkEntry} from './firebase_types';
+import {ApplicationConfig, BenchmarkRunEntry, BenchmarkEntry} from './firebase_types';
 
 // TODO(nsthorat): Support more than Chrome + mac;
 const DEVICE = 'chrome_mac';
@@ -59,24 +59,26 @@ export async function logBenchmarkRun(
   }
   const humanReadableDate = date.getFullYear() + '-' + month + '-' + day;
 
-  const runs: {[params: string]: BenchmarkEntry} = {};
+  const runs: {[params: string]: BenchmarkRunEntry} = {};
   logs.forEach(log => {
     runs[log.params] = {averageTimeMs: log.averageTimeMs};
   });
+  const entry: BenchmarkEntry = {userAgent: navigator.userAgent, runs};
 
+  const entryDisplay: string = JSON.stringify(entry, undefined, 2);
   if (!karmaFlags.travis) {
     console.log(
         'Not inside travis so not querying firebase. Would have added: ');
-    console.log(runs);
+    console.log(entryDisplay);
   } else {
     console.log('Writing to firebase:');
-    console.log(runs);
+    console.log(entryDisplay);
     return new Promise<void>(resolve => {
       firebase.database()
           .ref(`${humanReadableDate}/${benchmarkName}/${DEVICE}`)
           // We set the database entry to be an array of one value so in the
           // future we can benchmark multiple devices.
-          .set(runs, error => {
+          .set(entry, error => {
             if (error) {
               throw new Error(`Write to firebase failed with error: ${error}`);
             }
