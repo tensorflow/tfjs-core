@@ -148,7 +148,7 @@ export function getRunGroups(): BenchmarkRunGroup[] {
   });
 
   groups.push({
-    name: 'Reduction Ops: input [size, size]',
+    name: 'Reduction Ops: input [size * size]',
     min: 0,
     max: 1024,
     stepToSizeTransformation: (step: number) => Math.max(1, step),
