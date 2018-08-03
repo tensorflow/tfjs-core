@@ -66,7 +66,8 @@ function stridedSlice_<T extends Tensor>(
   const $x = convertToTensor(x, 'x', 'stridedSlice');
   return ENV.engine.runKernel(
              backend => backend.stridedSlice(
-                 $x, begin, end, strides, beginMask, endMask, shrinkAxisMask),
+                 $x, begin, end, strides, beginMask, endMask, ellipsisMask,
+                 newAxisMask, shrinkAxisMask),
              {$x}) as T;
 }
 
