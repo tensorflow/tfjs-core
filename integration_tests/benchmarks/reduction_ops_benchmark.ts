@@ -16,8 +16,8 @@
  */
 import * as tf from '@tensorflow/tfjs-core';
 
-import {BenchmarkTest} from './benchmark';
-import * as benchmark_util from './benchmark_util';
+import {BenchmarkTest} from './types';
+import * as util from './util';
 
 function getReductionOp(option: string): (x: tf.Tensor) => tf.Scalar {
   switch (option) {
@@ -42,7 +42,9 @@ export class ReductionOpsCPUBenchmark implements BenchmarkTest {
   async run(size: number, option: string): Promise<number> {
     tf.setBackend('cpu');
 
-    const input: tf.Tensor2D = tf.randomUniform([size, size], -1, 1);
+    // Square the provided size to make these 1D benchmarks comparable to the
+    // other 2D ones.
+    const input: tf.Tensor1D = tf.randomUniform([size * size], -1, 1);
     const op = getReductionOp(option);
     const start = performance.now();
 
@@ -59,12 +61,14 @@ export class ReductionOpsGPUBenchmark implements BenchmarkTest {
   async run(size: number, option: string) {
     tf.setBackend('webgl');
 
-    const input: tf.Tensor2D = tf.randomUniform([size, size], -1, 1);
+    // Square the provided size to make these 1D benchmarks comparable to the
+    // other 2D ones.
+    const input: tf.Tensor1D = tf.randomUniform([size * size], -1, 1);
     const op = getReductionOp(option);
 
     const benchmark = () => op(input);
 
-    const time = await benchmark_util.warmupAndBenchmarkGPU(benchmark);
+    const time = await util.warmupAndBenchmarkGPU(benchmark);
 
     input.dispose();
 

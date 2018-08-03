@@ -55,17 +55,18 @@ describeWithFlags('custom-op webgl', WEBGL_ENVS, () => {
   }
 
   function squareAndAdd<T extends tf.Tensor>(x: T): T {
-    const webglBackend = tf.ENV.backend as tf.webgl.MathBackendWebGL;
-    const program = new SquareAndAddKernel(x.shape);
-    const forward = () => webglBackend.compileAndRun(program, [x]);
+    const fn = tf.customGrad(x => {
+      const webglBackend = tf.ENV.backend as tf.webgl.MathBackendWebGL;
+      const program = new SquareAndAddKernel(x.shape);
+      const backpropProgram = new SquareAndAddBackpropKernel(x.shape);
 
-    const backward = (dy: T) => {
-      const backpropProgram = new SquareAndAddBackpropKernel(dy.shape);
-      return {x: () => webglBackend.compileAndRun(backpropProgram, [x]) as T};
-    };
+      const value = webglBackend.compileAndRun(program, [x]);
 
-    const res = tf.ENV.engine.runKernel(forward, {x}, backward);
-    return res as T;
+      const gradFunc = (dy: T) =>
+          webglBackend.compileAndRun(backpropProgram, [x]).mul(dy) as T;
+      return {value, gradFunc};
+    });
+    return fn(x) as T;
   }
 
   it('lets users use custom operations', () => {
@@ -82,5 +83,14 @@ describeWithFlags('custom-op webgl', WEBGL_ENVS, () => {
     const {value, grad} = grads(input);
     expectArraysClose(value, inputArr.map(x => x * x + x));
     expectArraysClose(grad, inputArr.map(x => 2 * x + 1));
+  });
+
+  it('multiplies by dy parameter when it is passed', () => {
+    const inputArr = [1, 2, 3, 4];
+    const input = tf.tensor(inputArr);
+    const grads = tf.valueAndGrad(x => squareAndAdd(x));
+    const {value, grad} = grads(input, tf.zerosLike(input));
+    expectArraysClose(value, inputArr.map(x => x * x + x));
+    expectArraysClose(grad, inputArr.map(() => 0.0));
   });
 });
