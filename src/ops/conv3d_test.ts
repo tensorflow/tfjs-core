@@ -38,6 +38,61 @@ describeWithFlags('conv3d', ALL_ENVS, () => {
     const w = tf.tensor5d(filt, [fSize, fSize, fSize, inChannels, outChannels]);
 
     const result = tf.conv3d(x, w, stride, pad);
+
+    // TODO: result is a tensor object,
+    // TODO: will need to iterate thru result and compare to expectedOutput.
+    const expectedOutput = [
+      0.18518519, 0.22222222, 0.25925926, 0.40740741, 0.5, 0.59259259,
+      0.62962963, 0.77777778, 0.92592593, 0.85185185, 1.05555556, 1.25925926,
+      1.07407407, 1.33333333, 1.59259259, 1.2962963, 1.61111111, 1.92592593
+    ];
+
+    expectArraysClose(result, expectedOutput);
+  });
+
+  it('x=[1, 2, 1, 3, 3] f=[1, 1, 1, 3, 3] s=1 d=1 p=0', () => {
+    const batch = 1;
+    const inputDepth = 2;
+    const inChannels = 3;
+    const outChannels = 3;
+    const inputShape: [number, number, number, number, number] =
+        [batch, inputDepth, 1, 3, inChannels];
+    const fSize = 1;
+    const pad = 0;
+    const stride = 1;
+    const inp = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+    const filt = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+    const x = tf.tensor5d(inp, inputShape);
+    const w = tf.tensor5d(filt, [fSize, fSize, fSize, inChannels, outChannels]);
+
+    const result = tf.conv3d(x, w, stride, pad);
+    const expectedOutput = [
+      0.18518519, 0.22222222, 0.25925926, 0.40740741, 0.5, 0.59259259,
+      0.62962963, 0.77777778, 0.92592593, 0.85185185, 1.05555556, 1.25925926,
+      1.07407407, 1.33333333, 1.59259259, 1.2962963, 1.61111111, 1.92592593
+    ];
+
+    expectArraysClose(result, expectedOutput);
+  });
+
+  it('x=[1, 1, 2, 3, 3] f=[1, 1, 1, 3, 3] s=1 d=1 p=0', () => {
+    const batch = 1;
+    const inputDepth = 1;
+    const inChannels = 3;
+    const outChannels = 3;
+    const inputShape: [number, number, number, number, number] =
+        [batch, inputDepth, 2, 3, inChannels];
+    const fSize = 1;
+    const pad = 0;
+    const stride = 1;
+    const inp = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+    const filt = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+    const x = tf.tensor5d(inp, inputShape);
+    const w = tf.tensor5d(filt, [fSize, fSize, fSize, inChannels, outChannels]);
+
+    const result = tf.conv3d(x, w, stride, pad);
     const expectedOutput = [
       0.18518519, 0.22222222, 0.25925926, 0.40740741, 0.5, 0.59259259,
       0.62962963, 0.77777778, 0.92592593, 0.85185185, 1.05555556, 1.25925926,

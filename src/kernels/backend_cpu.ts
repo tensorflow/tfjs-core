@@ -20,14 +20,14 @@ import {ENV} from '../environment';
 import * as axis_util from '../ops/axis_util';
 import * as broadcast_util from '../ops/broadcast_util';
 import * as concat_util from '../ops/concat_util';
-import {Conv2DInfo} from '../ops/conv_util';
+import {Conv2DInfo, Conv3DInfo} from '../ops/conv_util';
 import * as erf_util from '../ops/erf_util';
 import * as ops from '../ops/ops';
 import {buffer, tensor3d, tensor4d} from '../ops/ops';
 import * as selu_util from '../ops/selu_util';
 import {getStridedSlicedInfo} from '../ops/slice_util';
 // tslint:disable-next-line:max-line-length
-import {DataId, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
+import {DataId, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D} from '../tensor';
 import * as types from '../types';
 import {DataType, DataTypeMap, Rank, TypedArray} from '../types';
 import * as util from '../util';
@@ -1122,6 +1122,70 @@ export class MathBackendCPU implements KernelBackend {
               }
             }
             y.set(dotProd, b, yR, yC, d2);
+          }
+        }
+      }
+    }
+    return y.toTensor();
+  }
+
+  conv3d(x: Tensor5D, filter: Tensor5D, convInfo: Conv3DInfo): Tensor5D {
+    const filterDepth = convInfo.filterDepth;
+    const filterHeight = convInfo.filterHeight;
+    const filterWidth = convInfo.filterWidth;
+    const dilationDepth = convInfo.dilationDepth;
+    const dilationHeight = convInfo.dilationHeight;
+    const dilationWidth = convInfo.dilationWidth;
+    const padFront = convInfo.padInfo.front;
+    const padLeft = convInfo.padInfo.left;
+    const padTop = convInfo.padInfo.top;
+    const y = ops.buffer<Rank.R5>(convInfo.outShape, x.dtype);
+
+    for (let b = 0; b < convInfo.batchSize; ++b) {
+      for (let d2 = 0; d2 < convInfo.outChannels; ++d2) {
+        // Aisles representing depth
+        for (let yA = 0; yA < convInfo.outDepth; ++yA) {
+          const xACorner = yA * convInfo.strideDepth - padFront;
+          // Rows as per standard 2d notation
+          for (let yR = 0; yR < convInfo.outHeight; ++yR) {
+            const xRCorner = yR * convInfo.strideHeight - padLeft;
+            // Columns as per standard 2d notation
+            for (let yC = 0; yC < convInfo.outWidth; ++yC) {
+              const xCCorner = yC * convInfo.strideWidth - padTop;
+
+              let dotProd = 0;
+              for (let wA = 0; wA < filterDepth; wA++) {
+                const xA = xACorner + wA * dilationDepth;
+
+                if (xA < 0 || xA >= convInfo.inDepth) {
+                  continue;
+                }
+
+                for (let wR = 0; wR < filterHeight; wR++) {
+                  const xR = xRCorner + wR * dilationHeight;
+
+                  if (xR < 0 || xR >= convInfo.inHeight) {
+                    continue;
+                  }
+
+                  for (let wC = 0; wC < filterWidth; wC++) {
+                    const xC = xCCorner + wC * dilationWidth;
+
+                    if (xC < 0 || xC >= convInfo.inWidth) {
+                      continue;
+                    }
+
+                    for (let d1 = 0; d1 < convInfo.inChannels; ++d1) {
+                      const pixel = x.get(b, xA, xR, xC, d1);
+                      const weight = filter.get(wA, wR, wC, d1, d2);
+                      dotProd += pixel * weight;
+                    }
+                  }
+                }
+              }
+
+              y.set(dotProd, b, yA, yR, yC, d2);
+            }
           }
         }
       }

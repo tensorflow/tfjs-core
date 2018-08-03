@@ -688,26 +688,74 @@ function depthwiseConv2dDerFilter<T extends Tensor3D|Tensor4D>(
  *     dimensions if pad is a number. If none is provided, it will not round
  *     and error if the output is of fractional size.
  */
-// TODO: should dimRoundingMode be provided for conv3d?
-// TODO: why does the tfjs format for x, pad, strides, dilations differ from
-// tensorflow python documentation?
 
 /** @doc {heading: 'Operations', subheading: 'Convolution'} */
 function conv3d_<T extends Tensor4D|Tensor5D>(
     x: T|TensorLike, filter: Tensor5D|TensorLike,
-    strides: [number, number]|number, pad: 'valid'|'same'|number,
+    strides: [number, number, number]|number, pad: 'valid'|'same',
     dataFormat: 'NHWC'|'NCHW' = 'NHWC',
-    dilations: [number, number]|number = [1, 1],
-    dimRoundingMode?: 'floor'|'round'|'ceil'): T {
-  // const $x = convertToTensor(x, 'x', 'conv3d');
-  // const $filter = convertToTensor(filter, 'filter', 'conv3d');
+    dilations: [number, number, number]|number = [1, 1, 1]): T {
+  const $x = convertToTensor(x, 'x', 'conv3d');
+  const $filter = convertToTensor(filter, 'filter', 'conv3d');
 
-  // TODO: add optional conversion for X, 4d to 5d
-  // TODO: add var checks
-  // TODO: add convinfo & gradient calculations
-  // TODO: implement runKernel op
+  let x5D = $x as Tensor5D;
+  let reshapedTo5D = false;
 
-  return null;
+  if ($x.rank === 4) {
+    reshapedTo5D = true;
+    x5D = $x.as5D(1, $x.shape[0], $x.shape[1], $x.shape[2], $x.shape[3]);
+  }
+  util.assert(
+      x5D.rank === 5,
+      `Error in conv3d: input must be rank 5, but got rank ${x5D.rank}.`);
+  util.assert(
+      $filter.rank === 5,
+      `Error in conv3d: filter must be rank 5, but got rank ` +
+          `${$filter.rank}.`);
+
+  util.assert(
+      x5D.shape[4] === $filter.shape[3],
+      `Error in conv3d: depth of input (${x5D.shape[4]}) must match ` +
+          `input depth for filter ${$filter.shape[3]}.`);
+  /*
+  //TODO: Unsure if this check is required.
+  //TODO: Other checks may be required around the stride and dilation inputs.
+  util.assert(
+      eitherStridesOrDilationsAreOne(strides, dilations),
+      'Error in conv2D: Either strides or dilations must be 1. ' +
+          `Got strides ${strides} and dilations '${dilations}'`);
+  */
+  util.assert(
+      dataFormat === 'NHWC',
+      `Error in conv3d: got dataFormat of ${
+          dataFormat} but only NHWC is currently supported.`);
+
+  const convInfo = conv_util.computeConv3DInfo(
+      x5D.shape, $filter.shape, strides, dilations, pad);
+
+  const grad = (dy: Tensor5D) => {
+    /*
+    //TODO: need to implement a check ensuring dilations values are appropriate.
+    util.assert(
+        tupleValuesAreOne(dilations),
+        'Error in gradient of conv2D: dilation rates greater than 1 are not' +
+            `yet supported in gradients. Got dilations '${dilations}'`);
+    */
+
+    return {
+      x: () => conv3dDerInput_(x5D.shape, dy, $filter, strides, pad),
+      $filter: () => conv3dDerFilter_(x5D, dy, $filter.shape, strides, pad)
+    };
+  };
+
+  const res = ENV.engine.runKernel(
+      backend => backend.conv3d(x5D, $filter, convInfo), {x: x5D, $filter},
+      grad);
+  if (reshapedTo5D) {
+    return res.as4D(res.shape[1], res.shape[2], res.shape[3], res.shape[4]) as
+        T;
+  }
+  return res as T;
 }
 
 export const conv1d = op({conv1d_});
