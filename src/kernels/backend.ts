@@ -15,9 +15,9 @@
  * =============================================================================
  */
 
-import {Conv2DInfo} from '../ops/conv_util';
+import {Conv2DInfo, Conv3DInfo} from '../ops/conv_util';
 // tslint:disable-next-line:max-line-length
-import {DataId, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
+import {DataId, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D} from '../tensor';
 import {DataType, Rank, ShapeMap, TypedArray} from '../types';
 
 // Required information for all backends.
@@ -179,6 +179,11 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
       Tensor4D;
   depthwiseConv2DDerFilter(x: Tensor4D, dY: Tensor4D, convInfo: Conv2DInfo):
       Tensor4D;
+
+  conv3d(x: Tensor5D, filter: Tensor5D, convInfo: Conv3DInfo): Tensor5D;
+  conv3dDerInput(dy: Tensor5D, filter: Tensor5D, convInfo: Conv3DInfo):
+      Tensor5D;
+  conv3dDerFilter(x: Tensor5D, dY: Tensor5D, convInfo: Conv3DInfo): Tensor5D;
 
   maxPool(x: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
   maxPoolBackprop(dy: Tensor4D, x: Tensor4D, y: Tensor4D, convInfo: Conv2DInfo):

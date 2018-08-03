@@ -18,13 +18,13 @@
 import {MemoryInfo, TimingInfo} from '../engine';
 import {ENV} from '../environment';
 import * as axis_util from '../ops/axis_util';
-import {Conv2DInfo} from '../ops/conv_util';
+import {Conv2DInfo, Conv3DInfo} from '../ops/conv_util';
 import * as ops from '../ops/ops';
 import * as reduce_util from '../ops/reduce_util';
 import * as segment_util from '../ops/segment_util';
 import {getStridedSlicedInfo} from '../ops/slice_util';
 // tslint:disable-next-line:max-line-length
-import {DataId, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
+import {DataId, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D} from '../tensor';
 import * as types from '../types';
 import {DataType, DataTypeMap, RecursiveArray, TypedArray} from '../types';
 import * as util from '../util';
@@ -38,10 +38,10 @@ import {BinaryOpProgram} from './webgl/binaryop_gpu';
 import {ClipProgram} from './webgl/clip_gpu';
 import {ConcatProgram} from './webgl/concat_gpu';
 // tslint:disable-next-line:max-line-length
-import {Conv2DDerFilterProgram, Conv2DDerInputProgram} from './webgl/conv_backprop_gpu';
+import {Conv2DDerFilterProgram, Conv2DDerInputProgram, Conv3DDerFilterProgram, Conv3DDerInputProgram} from './webgl/conv_backprop_gpu';
 // tslint:disable-next-line:max-line-length
 import {DepthwiseConv2DDerFilterProgram, DepthwiseConv2DDerInputProgram} from './webgl/conv_backprop_gpu_depthwise';
-import {Conv2DProgram} from './webgl/conv_gpu';
+import {Conv2DProgram, Conv3DProgram} from './webgl/conv_gpu';
 import {DepthwiseConv2DProgram} from './webgl/conv_gpu_depthwise';
 import {CumSumProgram} from './webgl/cumsum_gpu';
 import {EncodeFloatProgram} from './webgl/encode_float_gpu';
@@ -1035,6 +1035,22 @@ export class MathBackendWebGL implements KernelBackend {
   depthwiseConv2DDerFilter(x: Tensor4D, dy: Tensor4D, convInfo: Conv2DInfo):
       Tensor4D {
     const program = new DepthwiseConv2DDerFilterProgram(convInfo);
+    return this.compileAndRun(program, [x, dy]);
+  }
+
+  conv3d(x: Tensor5D, filter: Tensor5D, convInfo: Conv3DInfo): Tensor5D {
+    const program = new Conv3DProgram(convInfo);
+    return this.compileAndRun(program, [x, filter]);
+  }
+
+  conv3dDerInput(dy: Tensor5D, filter: Tensor5D, convInfo: Conv3DInfo):
+      Tensor5D {
+    const program = new Conv3DDerInputProgram(convInfo);
+    return this.compileAndRun(program, [dy, filter]);
+  }
+
+  conv3dDerFilter(x: Tensor5D, dy: Tensor5D, convInfo: Conv3DInfo): Tensor5D {
+    const program = new Conv3DDerFilterProgram(convInfo);
     return this.compileAndRun(program, [x, dy]);
   }
 

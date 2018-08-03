@@ -1143,21 +1143,21 @@ export class MathBackendCPU implements KernelBackend {
 
     for (let b = 0; b < convInfo.batchSize; ++b) {
       for (let d2 = 0; d2 < convInfo.outChannels; ++d2) {
-        // Aisles representing depth
-        for (let yA = 0; yA < convInfo.outDepth; ++yA) {
-          const xACorner = yA * convInfo.strideDepth - padFront;
-          // Rows as per standard 2d notation
+        // Frames representing depth
+        for (let yF = 0; yF < convInfo.outDepth; ++yF) {
+          const xFCorner = yF * convInfo.strideDepth - padFront;
+          // Rows as per standard 2d matrix notation
           for (let yR = 0; yR < convInfo.outHeight; ++yR) {
             const xRCorner = yR * convInfo.strideHeight - padLeft;
-            // Columns as per standard 2d notation
+            // Columns as per standard 2d matrix notation
             for (let yC = 0; yC < convInfo.outWidth; ++yC) {
               const xCCorner = yC * convInfo.strideWidth - padTop;
 
               let dotProd = 0;
-              for (let wA = 0; wA < filterDepth; wA++) {
-                const xA = xACorner + wA * dilationDepth;
+              for (let wF = 0; wF < filterDepth; wF++) {
+                const xF = xFCorner + wF * dilationDepth;
 
-                if (xA < 0 || xA >= convInfo.inDepth) {
+                if (xF < 0 || xF >= convInfo.inDepth) {
                   continue;
                 }
 
@@ -1176,15 +1176,15 @@ export class MathBackendCPU implements KernelBackend {
                     }
 
                     for (let d1 = 0; d1 < convInfo.inChannels; ++d1) {
-                      const pixel = x.get(b, xA, xR, xC, d1);
-                      const weight = filter.get(wA, wR, wC, d1, d2);
+                      const pixel = x.get(b, xF, xR, xC, d1);
+                      const weight = filter.get(wF, wR, wC, d1, d2);
                       dotProd += pixel * weight;
                     }
                   }
                 }
               }
 
-              y.set(dotProd, b, yA, yR, yC, d2);
+              y.set(dotProd, b, yF, yR, yC, d2);
             }
           }
         }
@@ -1257,6 +1257,93 @@ export class MathBackendCPU implements KernelBackend {
     return dx.toTensor();
   }
 
+  conv3dDerInput(dy: Tensor5D, filter: Tensor5D, convInfo: Conv3DInfo):
+      Tensor5D {
+    const dx = ops.buffer<Rank.R5>(convInfo.inShape, 'float32');
+    const dxValues = dx.values;
+    const [dxS0, dxS1, dxS2, dxS3] = dx.strides;
+    const dyValues = dy.dataSync();
+    const [dyS0, dyS1, dyS2, dyS3] = dy.strides;
+    const fltValues = filter.dataSync();
+    const [fltS0, fltS1, fltS2, fltS3] = filter.strides;
+    const {
+      batchSize,
+      filterDepth,
+      filterHeight,
+      filterWidth,
+      inChannels,
+      inDepth,
+      inHeight,
+      inWidth,
+      outChannels,
+      outDepth,
+      outHeight,
+      outWidth,
+      strideDepth,
+      strideHeight,
+      strideWidth
+    } = convInfo;
+    const frontPad = filterDepth - 1 - convInfo.padInfo.front;
+    const topPad = filterHeight - 1 - convInfo.padInfo.top;
+    const leftPad = filterWidth - 1 - convInfo.padInfo.left;
+
+    for (let b = 0; b < batchSize; ++b) {
+      for (let d1 = 0; d1 < inChannels; ++d1) {
+        // Frames of depth
+        for (let xF = 0; xF < inDepth; ++xF) {
+          const xFCorner = xF - frontPad;
+          const xFMin = Math.max(0, Math.ceil(xFCorner / strideDepth));
+          const yFMax =
+              Math.min(outDepth, (filterDepth + xFCorner) / strideDepth);
+
+          // Rows as per standard 2d matrix notation
+          for (let xR = 0; xR < inHeight; ++xR) {
+            const xRCorner = xR - topPad;
+            const xRMin = Math.max(0, Math.ceil(xRCorner / strideHeight));
+            const yRMax =
+                Math.min(outHeight, (filterHeight + xRCorner) / strideHeight);
+            // Columns as per standard 2d matrix notation
+            for (let xC = 0; xC < inWidth; ++xC) {
+              const xCCorner = xC - leftPad;
+              const xCMin = Math.max(0, Math.ceil(xCCorner / strideWidth));
+              const yCMax =
+                  Math.min(outWidth, (filterWidth + xCCorner) / strideWidth);
+
+              let dotProd = 0;
+              for (let yF = xFMin; yF < yFMax; ++yF) {
+                const wF = yF & strideDepth - xFCorner;
+
+                for (let yR = xRMin; yR < yRMax; ++yR) {
+                  const wR = yR * strideHeight - xRCorner;
+
+                  for (let yC = xCMin; yC < yCMax; ++yC) {
+                    // TODO: do computed strides (dyS0, dyS1, etc.) correspond
+                    // with order of window dimensions?
+                    const wC = yC * strideWidth - xCCorner;
+                    const dyOffset =
+                        dyS0 * b + dyS1 * yF + dyS2 * yR + dyS3 * yC;
+                    const fltOffset = fltS0 * (filterDepth - 1 - wF) +
+                        fltS1 * (filterHeight - 1 - wR) +
+                        fltS2 * (filterWidth - 1 - wC) + fltS3 * d1;
+
+                    for (let d2 = 0; d2 < outChannels; ++d2) {
+                      const pixel = dyValues[dyOffset + d2];
+                      const weight = fltValues[fltOffset + d2];
+                      dotProd += pixel * weight;
+                    }
+                  }
+                }
+              }
+              dxValues[dxS0 * b + dxS1 * xF + dxS2 * xR + dxS3 * xC + d1] =
+                  dotProd;
+            }
+          }
+        }
+      }
+    }
+    return dx.toTensor();
+  }
+
   conv2dDerFilter(x: Tensor4D, dy: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
@@ -1291,6 +1378,62 @@ export class MathBackendCPU implements KernelBackend {
               }
             }
             dW.set(dotProd, wR, wC, d1, d2);
+          }
+        }
+      }
+    }
+    return dW.toTensor();
+  }
+
+  conv3dDerFilter(x: Tensor5D, dy: Tensor5D, convInfo: Conv3DInfo): Tensor5D {
+    const strideDepth = convInfo.strideDepth;
+    const strideHeight = convInfo.strideHeight;
+    const strideWidth = convInfo.strideWidth;
+    const filterDepth = convInfo.filterDepth;
+    const filterHeight = convInfo.filterHeight;
+    const filterWidth = convInfo.filterWidth;
+    const dW = ops.buffer<Rank.R5>(convInfo.filterShape, 'float32');
+
+    const frontPad = convInfo.padInfo.front;
+    const leftPad = convInfo.padInfo.left;
+    const topPad = convInfo.padInfo.top;
+
+    for (let wF = 0; wF < filterDepth; ++wF) {
+      const yFMin = Math.max(0, Math.ceil((frontPad - wF) / strideDepth));
+      const yFMax = Math.min(
+          convInfo.outDepth, (convInfo.inDepth + frontPad - wF) / strideDepth);
+
+      for (let wR = 0; wR < filterHeight; ++wR) {
+        const yRMin = Math.max(0, Math.ceil((topPad - wR) / strideHeight));
+        const yRMax = Math.min(
+            convInfo.outHeight,
+            (convInfo.inHeight + topPad - wR) / strideHeight);
+
+        for (let wC = 0; wC < filterWidth; ++wC) {
+          const yCMin = Math.max(0, Math.ceil((leftPad - wC) / strideWidth));
+          const yCMax = Math.min(
+              convInfo.outWidth,
+              (convInfo.inWidth + leftPad - wC) / strideWidth);
+
+          for (let d1 = 0; d1 < convInfo.inChannels; ++d1) {
+            for (let d2 = 0; d2 < convInfo.outChannels; ++d2) {
+              // Need to convolve.
+              let dotProd = 0;
+              for (let b = 0; b < convInfo.batchSize; ++b) {
+                for (let yF = yFMin; yF < yFMax; ++yF) {
+                  const xF = wF + yF * strideDepth - frontPad;
+                  for (let yR = yRMin; yR < yRMax; ++yR) {
+                    const xR = wR + yR * strideHeight - topPad;
+                    for (let yC = yCMin; yC < yCMax; ++yC) {
+                      const xC = wC + yC * strideWidth - leftPad;
+                      dotProd +=
+                          x.get(b, xF, xR, xC, d1) * dy.get(b, yF, yR, yC, d2);
+                    }
+                  }
+                }
+              }
+              dW.set(dotProd, wF, wR, wC, d1, d2);
+            }
           }
         }
       }

@@ -758,6 +758,137 @@ function conv3d_<T extends Tensor4D|Tensor5D>(
   return res as T;
 }
 
+/**
+ * Computes the derivative of the input of a 3D convolution.
+ *
+ * @param xShape The shape of the input: [batch, depth, height, width,
+ * in_channels]. If length of 4, batch of 1 is assumed.
+ * @param dy The derivative of the output, of rank 5 or rank 4 of shape
+ *   `[batch, outDepth, outHeight, outWidth, in_channels]`.
+ * If rank 4, batch of 1 is assumed.
+ * @param filter The filter, rank 5, of shape
+ *     `[filterDepth, filterHeight, filterWidth, inDepth, outDepth]`.
+ * @param strides The strides of the convolution: `[strideDepth, strideHeight,
+ * strideWidth]`.
+ * @param pad The type of padding algorithm used:
+ *    - `same` and stride 1: output will be of same size as input,
+ *       regardless of filter size.
+ *    - `valid`: output will be smaller than input if filter is larger
+ *       than 1x1.
+ */
+function conv3dDerInput_<T extends Tensor4D|Tensor5D>(
+    xShape:
+        [number, number, number, number,
+         number]|[number, number, number, number],
+    dy: T, filter: Tensor5D, strides: [number, number, number]|number,
+    pad: 'valid'|'same'): T {
+  util.assert(
+      xShape.length === dy.rank,
+      `Length of inShape ` +
+          `(${xShape.length}) and rank of dy (${dy.rank}) must match`);
+
+  let xShape5D = xShape as [number, number, number, number, number];
+  let dy5D = dy as Tensor5D;
+  let reshapedTo5D = false;
+  if (dy.rank === 4) {
+    reshapedTo5D = true;
+    dy5D = dy.as5D(1, dy.shape[0], dy.shape[1], dy.shape[2], dy.shape[3]);
+    xShape5D = [1, xShape[0], xShape[1], xShape[2], xShape[3]];
+  }
+
+  const inDepth = xShape5D[4];
+  const outDepth = dy5D.shape[4];
+  util.assert(
+      xShape5D.length === 5,
+      `Error in conv3dDerInput: inShape must be length 5, but got length ` +
+          `${xShape5D.length}.`);
+  util.assert(
+      dy5D.rank === 5,
+      `Error in conv3dDerInput: dy must be rank 5, but got ` +
+          `rank ${dy5D.rank}`);
+  util.assert(
+      filter.rank === 5,
+      `Error in conv3dDerInput: filter must be rank 5, but got ` +
+          `rank ${filter.rank}`);
+  util.assert(
+      inDepth === filter.shape[3],
+      `Error in conv3dDerInput: depth of input (${inDepth}) must ` +
+          `match input depth for filter ${filter.shape[3]}.`);
+  util.assert(
+      outDepth === filter.shape[4],
+      `Error in conv3dDerInput: depth of output (${outDepth}) must ` +
+          `match output depth for filter ${filter.shape[4]}.`);
+
+  const dilations = 1;
+
+  const convInfo = conv_util.computeConv3DInfo(
+      xShape5D, filter.shape, strides, dilations, pad);
+  const res = ENV.engine.runKernel(
+      backend => backend.conv3dDerInput(dy5D, filter, convInfo), {dy5D});
+  if (reshapedTo5D) {
+    return res.as4D(res.shape[1], res.shape[2], res.shape[3], res.shape[4]) as
+        T;
+  }
+  return res as T;
+}
+
+/**
+ * Computes the derivative of the filter of a 2D convolution.
+ *
+ * @param x The input tensor, of rank 5 or rank 4 of shape
+ *     [batch, depth, height, width, inChannels]. If rank 4, batch of 1 is
+ *     assumed.
+ * @param dy The dy image, of rank 5 or rank 4, of shape
+ *     [batch, depth, height, width, outDepth]. If rank 4, batch of 1 is
+ *     assumed.
+ * @param filterShape The shape of the filter, length 5,
+ *     [filterDepth, filterHeight, filterWidth, inDepth, outDepth].
+ * @param strides The strides of the convolution: [strideDepth, strideHeight,
+ * strideWidth].
+ * @param pad A string from: 'same', 'valid'. The type of padding algorithm
+ *     used in the forward prop of the op.
+ */
+function conv3dDerFilter_<T extends Tensor4D|Tensor5D>(
+    x: T, dy: T, filterShape: [number, number, number, number, number],
+    strides: [number, number, number]|number, pad: 'valid'|'same'): Tensor5D {
+  let x5D = x as Tensor5D;
+  if (x.rank === 4) {
+    x5D = x.as5D(1, x.shape[0], x.shape[1], x.shape[2], x.shape[3]);
+  }
+  let dy5D = dy as Tensor5D;
+  if (dy5D.rank === 4) {
+    dy5D = dy.as5D(1, dy.shape[0], dy.shape[1], dy.shape[2], dy.shape[3]);
+  }
+  util.assert(
+      x5D.rank === 5,
+      `Error in conv3dDerFilter: input must be rank 5, but got shape ` +
+          `${x5D.shape}.`);
+  util.assert(
+      dy5D.rank === 5,
+      `Error in conv3dDerFilter: dy must be rank 5, but got shape ` +
+          `${dy5D.shape}.`);
+  util.assert(
+      filterShape.length === 5,
+      `Error in conv3dDerFilter: filterShape must be length 5, but got ` +
+          `${filterShape}.`);
+  // TODO: double check the following two assertions
+  util.assert(
+      x5D.shape[4] === filterShape[3],
+      `Error in conv3dDerFilter: depth of input ${x5D.shape[4]}) must ` +
+          `match input depth in filter (${filterShape[3]}.`);
+  util.assert(
+      dy5D.shape[4] === filterShape[4],
+      `Error in conv3dDerFilter: depth of dy (${dy5D.shape[4]}) must ` +
+          `match output depth for filter (${filterShape[4]}).`);
+
+  const dilations = 1;
+
+  const convInfo = conv_util.computeConv3DInfo(
+      x5D.shape, filterShape, strides, dilations, pad);
+  return ENV.engine.runKernel(
+      backend => backend.conv3dDerFilter(x5D, dy5D, convInfo), {x5D, dy5D});
+}
+
 export const conv1d = op({conv1d_});
 export const conv2d = op({conv2d_});
 export const conv3d = op({conv3d_});
