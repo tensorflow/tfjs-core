@@ -2185,11 +2185,11 @@ export class MathBackendCPU implements KernelBackend {
 
       // Results for first half values.
       const addPart = c.add(e);
-      Complex.assign(ret, addPart, k);
+      Complex.assignToTypedArray(ret, addPart, k);
 
       // Results for rest half values.
       const subPart = c.sub(e);
-      Complex.assign(ret, subPart, k + half);
+      Complex.assignToTypedArray(ret, subPart, k + half);
     }
 
     return ret;
@@ -2205,7 +2205,7 @@ export class MathBackendCPU implements KernelBackend {
         const term = Complex.fromTypedArrayWithIndex(data, c).mul(e);
         tmp = tmp.add(term);
       }
-      Complex.assign(ret, tmp, r);
+      Complex.assignToTypedArray(ret, tmp, r);
     }
     return ret;
   }

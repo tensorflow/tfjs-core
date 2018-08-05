@@ -38,8 +38,8 @@ describeWithFlags('Complex', ALL_ENVS, () => {
   it('assign complex value in TypedArray', () => {
     const t = new Float32Array(4);
 
-    Complex.assign(t, new Complex(1, 2), 0);
-    Complex.assign(t, new Complex(3, 4), 1);
+    Complex.assignToTypedArray(t, new Complex(1, 2), 0);
+    Complex.assignToTypedArray(t, new Complex(3, 4), 1);
 
     expectArraysClose(t, new Float32Array([1, 2, 3, 4]));
   });
