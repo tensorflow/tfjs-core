@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2017 Google Inc. All Rights Reserved.
+ * Copyright 2018 Google LLC. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,10 +15,11 @@
  * =============================================================================
  */
 
-import * as gpgpu_util from './kernels/webgl/gpgpu_util';
-import * as webgl_util from './kernels/webgl/webgl_util';
-export {MathBackendWebGL, WebGLMemoryInfo, WebGLTimingInfo} from './kernels/backend_webgl';
-export {GPGPUContext} from './kernels/webgl/gpgpu_context';
-export {GPGPUProgram} from './kernels/webgl/gpgpu_math';
-// WebGL specific utils.
-export {gpgpu_util, webgl_util};
+export interface BenchmarkTest {
+  run(size: number, opType?: string, params?: {}): Promise<number>;
+}
+
+export interface BenchmarkLog {
+  averageTimeMs: number;
+  params: string;
+}
