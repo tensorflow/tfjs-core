@@ -153,6 +153,9 @@ describeWithFlags('conv3d', ALL_ENVS, () => {
     expectArraysClose(result, expectedOutput);
   });
 
+  // NOTE: there are no TFJS conv2d tests showing that strides function properly
+  // if different stride lengths are provided for each spatial dimension
+
   // TODO: this case currently fails. NOTE: python test case seems to have less
   // decimal precision, float16 type is used in their tests
   // Seems this could be an issue with multi-dimensional stride inputs
@@ -260,5 +263,115 @@ describeWithFlags('conv3d', ALL_ENVS, () => {
     expectArraysClose(result, expectedOutput);
   });
 
-  // NOTE: stopped @ 'testKernelSmallerThanStride'
+  it('x=[1, 3, 3, 3, 1] f=[1, 1, 1, 1, 1] s=2 d=1 p=same', () => {
+    const batch = 1;
+    const inDepth = 3;
+    const inHeight = 3;
+    const inWidth = 3;
+    const inChannels = 1;
+    const outChannels = 1;
+    const fSize = 1;
+    const pad = 'same';
+    const stride = 2;
+    const result = runConv3DTestCase(
+        batch, inDepth, inHeight, inWidth, inChannels, outChannels, fSize,
+        fSize, fSize, pad, stride);
+
+    const expectedOutput = [
+      0.03703704, 0.11111111, 0.25925926, 0.33333333, 0.7037037, 0.77777778,
+      0.92592593, 1.
+    ];
+
+    expectArraysClose(result, expectedOutput);
+  });
+
+  it('x=[1, 3, 3, 3, 1] f=[1, 1, 1, 1, 1] s=2 d=1 p=valid', () => {
+    const batch = 1;
+    const inDepth = 3;
+    const inHeight = 3;
+    const inWidth = 3;
+    const inChannels = 1;
+    const outChannels = 1;
+    const fSize = 1;
+    const pad = 'valid';
+    const stride = 2;
+    const result = runConv3DTestCase(
+        batch, inDepth, inHeight, inWidth, inChannels, outChannels, fSize,
+        fSize, fSize, pad, stride);
+
+    const expectedOutput = [
+      0.03703704, 0.11111111, 0.25925926, 0.33333333, 0.7037037, 0.77777778,
+      0.92592593, 1.
+    ];
+
+    expectArraysClose(result, expectedOutput);
+  });
+
+  it('x=[1, 7, 7, 7, 1] f=[2, 2, 2, 1, 1] s=3 d=1 p=same', () => {
+    const batch = 1;
+    const inDepth = 7;
+    const inHeight = 7;
+    const inWidth = 7;
+    const inChannels = 1;
+    const outChannels = 1;
+    const fSize = 2;
+    const pad = 'same';
+    const stride = 3;
+    const result = runConv3DTestCase(
+        batch, inDepth, inHeight, inWidth, inChannels, outChannels, fSize,
+        fSize, fSize, pad, stride);
+
+    const expectedOutput = [
+      0.54081633, 0.58017493, 0.28061224, 0.81632653, 0.85568513, 0.40306122,
+      0.41873178, 0.4340379,  0.19642857, 2.46938776, 2.50874636, 1.1377551,
+      2.74489796, 2.78425656, 1.26020408, 1.16873178, 1.1840379,  0.51785714,
+      1.09511662, 1.10604956, 0.44642857, 1.17164723, 1.18258017, 0.47704082,
+      0.3691691,  0.37244898, 0.125
+    ];
+
+    expectArraysClose(result, expectedOutput);
+  });
+
+  it('x=[1, 7, 7, 7, 1] f=[2, 2, 2, 1, 1] s=3 d=1 p=valid', () => {
+    const batch = 1;
+    const inDepth = 7;
+    const inHeight = 7;
+    const inWidth = 7;
+    const inChannels = 1;
+    const outChannels = 1;
+    const fSize = 2;
+    const pad = 'valid';
+    const stride = 3;
+    const result = runConv3DTestCase(
+        batch, inDepth, inHeight, inWidth, inChannels, outChannels, fSize,
+        fSize, fSize, pad, stride);
+
+    const expectedOutput = [
+      0.540816, 0.580175, 0.816327, 0.855685, 2.469388, 2.508746, 2.744898,
+      2.784257
+    ];
+
+    expectArraysClose(result, expectedOutput);
+  });
+
+  it('x=[1, 2, 1, 2, 1] f=[2, 1, 2, 1, 2] s=1 d=1 p=valid', () => {
+    const batch = 1;
+    const inDepth = 2;
+    const inHeight = 1;
+    const inWidth = 2;
+    const inChannels = 1;
+    const outChannels = 2;
+    const fDepth = 2;
+    const fHeight = 1;
+    const fWidth = 2;
+    const pad = 'valid';
+    const stride = 1;
+    const result = runConv3DTestCase(
+        batch, inDepth, inHeight, inWidth, inChannels, outChannels, fDepth,
+        fHeight, fWidth, pad, stride);
+
+    const expectedOutput = [1.5625, 1.875];
+
+    expectArraysClose(result, expectedOutput);
+  });
 });

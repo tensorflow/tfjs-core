@@ -21,6 +21,20 @@ import {describeWithFlags} from '../jasmine_util';
 import {ALL_ENVS, expectArraysClose} from '../test_util';
 import {Rank} from '../types';
 
+function generateCaseInputs(totalSizeTensor: number, totalSizeFilter: number) {
+  const inp = new Array(totalSizeTensor);
+  const filt = new Array(totalSizeFilter);
+
+  for (let i = 0; i < totalSizeTensor; i++) {
+    inp[i] = 1.0 * (i + 1);
+  }
+  for (let i = 0; i < totalSizeFilter; i++) {
+    filt[i] = 1.0 * (i + 1);
+  }
+
+  return {input: inp, filter: filt};
+}
+
 describeWithFlags('conv2d', ALL_ENVS, () => {
   it('x=[2,2,1] f=[1,1,1,2] s=1 d=1 p=0', () => {
     const inputDepth = 1;
@@ -102,6 +116,23 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
 
     expect(result.shape).toEqual(expectedResult.shape);
     expectArraysClose(result, expectedResult);
+  });
+
+  it('x=[1,3,6,1] f=[2,2,1,1] s=[1,2] d=1 p=valid', () => {
+    const inputDepth = 1;
+    const inputShape: [number, number, number, number] = [1, 3, 6, inputDepth];
+    const outputDepth = 1;
+    const fSize = 2;
+    const pad = 'valid';
+    const stride: [number, number] = [1, 2];
+
+    const inputs = generateCaseInputs(1 * 3 * 6 * inputDepth, fSize * fSize);
+    const x = tf.tensor4d(inputs.input, inputShape);
+    const w =
+        tf.tensor4d(inputs.filter, [fSize, fSize, inputDepth, outputDepth]);
+
+    const result = tf.conv2d(x, w, stride, pad);
+    expectArraysClose(result, [58.0, 78.0, 98.0, 118.0, 138.0, 158.0]);
   });
 
   it('throws when x is not rank 3', () => {

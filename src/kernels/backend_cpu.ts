@@ -1257,6 +1257,7 @@ export class MathBackendCPU implements KernelBackend {
     return dx.toTensor();
   }
 
+  // TOOD: possible I'm assigning dx.strides values incorrectly.
   conv3dDerInput(dy: Tensor5D, filter: Tensor5D, convInfo: Conv3DInfo):
       Tensor5D {
     const dx = ops.buffer<Rank.R5>(convInfo.inShape, 'float32');
@@ -1311,7 +1312,7 @@ export class MathBackendCPU implements KernelBackend {
 
               let dotProd = 0;
               for (let yF = xFMin; yF < yFMax; ++yF) {
-                const wF = yF & strideDepth - xFCorner;
+                const wF = yF * strideDepth - xFCorner;
 
                 for (let yR = xRMin; yR < yRMax; ++yR) {
                   const wR = yR * strideHeight - xRCorner;
