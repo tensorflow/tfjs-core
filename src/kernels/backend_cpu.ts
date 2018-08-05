@@ -33,6 +33,7 @@ import {DataType, DataTypeMap, Rank, ShapeMap, TypedArray, upcastType} from '../
 import * as util from '../util';
 import {now} from '../util';
 import {BackendTimingInfo, KernelBackend} from './backend';
+import {AsmModule} from './backend_cpu_asm.js';
 import * as backend_util from './backend_util';
 import {nonMaxSuppressionImpl} from './non_max_suppression_impl';
 import {topkImpl} from './topk_impl';
@@ -42,11 +43,38 @@ export class MathBackendCPU implements KernelBackend {
   private data = new WeakMap<DataId, DataTypeMap[DataType]>();
   private canvas: HTMLCanvasElement;
   private firstUse = true;
+  private asmModule: AsmModule;
+  private asmHeap: ArrayBuffer;
+
+  private setupAsm() {
+    this.asmHeap = new ArrayBuffer(0x7000000 /* 112 MB */);
+    const stdlib = {Float32Array, Math};
+    this.asmModule = new AsmModule(stdlib, null, this.asmHeap);
+  }
+
+  private copyTensorsToHeap(tensors: Tensor[]): TypedArray {
+    let byteOffset = 0;
+    let heapVals: TypedArray;
+    tensors.forEach(t => {
+      if (t.dtype === 'float32') {
+        heapVals = new Float32Array(this.asmHeap, byteOffset, t.size);
+      } else if (t.dtype === 'int32') {
+        heapVals = new Int32Array(this.asmHeap, byteOffset, t.size);
+      } else if (t.dtype === 'bool') {
+        heapVals = new Uint8Array(this.asmHeap, byteOffset, t.size);
+      }
+      const vals = t.dataSync();
+      heapVals.set(vals);
+      byteOffset += vals.byteLength;
+    });
+    return heapVals;
+  }
 
   constructor() {
     if (ENV.get('IS_BROWSER')) {
       this.canvas = document.createElement('canvas');
     }
+    this.setupAsm();
   }
 
   register(dataId: DataId, shape: number[], dtype: DataType): void {
@@ -286,6 +314,19 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   matMul(a: Tensor2D, b: Tensor2D, transposeA: boolean, transposeB: boolean):
+      Tensor2D {
+    const sharedDim = transposeA ? a.shape[0] : a.shape[1];
+    const leftDim = transposeA ? a.shape[1] : a.shape[0];
+    const rightDim = transposeB ? b.shape[0] : b.shape[1];
+
+    const res = ops.zeros([leftDim, rightDim]) as Tensor2D;
+    const resultHeapVals = this.copyTensorsToHeap([a, b, res]);
+    this.asmModule.matmul(leftDim, sharedDim, rightDim, transposeA, transposeB);
+    res.dataSync().set(resultHeapVals);
+    return res;
+  }
+
+  matMul2(a: Tensor2D, b: Tensor2D, transposeA: boolean, transposeB: boolean):
       Tensor2D {
     const sharedDim = transposeA ? a.shape[0] : a.shape[1];
     const leftDim = transposeA ? a.shape[1] : a.shape[0];
@@ -863,7 +904,8 @@ export class MathBackendCPU implements KernelBackend {
     const resultValues = new Float32Array(x.size);
     const values = x.dataSync();
     for (let i = 0; i < values.length; ++i) {
-      resultValues[i] = Math.min(max, Math.max(min, values[i]));
+      const v = values[i];
+      resultValues[i] = v > max ? max : (v < min ? min : v);
     }
     return Tensor.make(x.shape, {values: resultValues}) as T;
   }
@@ -1537,6 +1579,11 @@ export class MathBackendCPU implements KernelBackend {
     const y = ops.buffer<Rank.R4>(convInfo.outShape, 'float32');
     const padTop = convInfo.padInfo.top;
     const padLeft = convInfo.padInfo.left;
+
+    const initialValue =
+        (poolType === 'max' ? Number.NEGATIVE_INFINITY :
+                              Number.POSITIVE_INFINITY);
+
     for (let b = 0; b < convInfo.batchSize; ++b) {
       for (let d = 0; d < convInfo.inChannels; ++d) {
         for (let yR = 0; yR < convInfo.outHeight; ++yR) {
@@ -1547,10 +1594,7 @@ export class MathBackendCPU implements KernelBackend {
             const xCCorner = yC * strideWidth - padLeft;
             const xCMin = Math.max(0, xCCorner);
             const xCMax = Math.min(convInfo.inWidth, filterWidth + xCCorner);
-
-            let minMaxValue =
-                (poolType === 'max' ? Number.NEGATIVE_INFINITY :
-                                      Number.POSITIVE_INFINITY);
+            let minMaxValue = initialValue;
             let avgValue = 0;
             let count = 0;
             for (let xR = xRMin; xR < xRMax; ++xR) {
