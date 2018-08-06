@@ -22,6 +22,10 @@ const karmaTypescriptConfig = {
     instrumentation: false
   },
   reports: {
+  },
+  compilerOptions: {
+    allowJs: true,
+    declaration: false
   }
 };
 
@@ -50,10 +54,14 @@ module.exports = function(config) {
 
   config.set({
     frameworks: ['jasmine', 'karma-typescript'],
-    files: [{pattern: 'src/**/*.ts'}],
+    files: [
+      {pattern: 'src/**/*.ts'},
+      'src/kernels/backend_cpu_asm.js'
+    ],
     exclude: ['src/test_node.ts'],
     preprocessors: {
-      '**/*.ts': ['karma-typescript'],  // *.tsx for React Jsx
+      '**/*.ts': ['karma-typescript'],
+      'src/kernels/backend_cpu_asm.js': ['karma-typescript']
     },
     karmaTypescriptConfig,
     reporters: ['progress', 'karma-typescript'],

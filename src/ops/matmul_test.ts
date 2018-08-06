@@ -19,6 +19,7 @@ import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
 import {ALL_ENVS, expectArraysClose, expectNumbersClose, WEBGL_ENVS} from '../test_util';
 import {Rank} from '../types';
+import {now} from '../util';
 
 describeWithFlags('matmul', ALL_ENVS, () => {
   it('A x B', () => {
@@ -29,6 +30,28 @@ describeWithFlags('matmul', ALL_ENVS, () => {
 
     expect(c.shape).toEqual([2, 2]);
     expectArraysClose(c, [0, 8, -3, 20]);
+  });
+
+  // tslint:disable-next-line:ban
+  fit('benchmark matmul', () => {
+    const ns = [64, 128, 192, 256];
+    const RUNS = 100;
+
+    ns.forEach(n => {
+      const a = tf.randomUniform([n, n]) as tf.Tensor2D;
+      const b = tf.randomUniform([n, n]) as tf.Tensor2D;
+      // Warmup.
+      tf.matMul(a, b).dataSync();
+
+      let res: tf.Tensor = null;
+      const start = now();
+      for (let i = 0; i < RUNS; i++) {
+        res = tf.matMul(a, b);
+      }
+      res.dataSync();
+      const elapsed = (now() - start) / RUNS;
+      console.log(`N: ${n}: ${elapsed.toFixed(2)} ms`);
+    });
   });
 
   it('A x B^t', () => {
