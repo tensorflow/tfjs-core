@@ -50,7 +50,8 @@ export class BrowserHTTPRequest implements IOHandler {
     if (Array.isArray(path)) {
       assert(
           path.length === 2,
-          'URL paths for browserHTTPRequest must have length of 2.');
+          'URL paths for browserHTTPRequest must have a length of 2, ' +
+              `(actual length is ${path.length}).`);
     }
     this.path = path;
 
@@ -134,7 +135,7 @@ export class BrowserHTTPRequest implements IOHandler {
     }
   }
 
-  private async loadBinaryModel(): Promise<ModelArtifacts> {
+  protected async loadBinaryModel(): Promise<ModelArtifacts> {
     const graphPromise = this.loadBinaryTopology();
     const manifestPromise = await fetch(this.path[1], this.requestInit);
 
@@ -152,25 +153,13 @@ export class BrowserHTTPRequest implements IOHandler {
         weightSpecs.push(...entry.weights);
       }
 
-      let pathPrefix =
-          (this.path[1]).substring(0, this.path[1].lastIndexOf('/'));
-      if (!pathPrefix.endsWith('/')) {
-        pathPrefix = pathPrefix + '/';
-      }
-      const fetchURLs: string[] = [];
-      weightsManifest.forEach(weightsGroup => {
-        weightsGroup.paths.forEach(path => {
-          fetchURLs.push(pathPrefix + path);
-        });
-      });
-      weightData = concatenateArrayBuffers(
-          await loadWeightsAsArrayBuffer(fetchURLs, this.requestInit));
+      weightData = await this.loadWeightData(weightsManifest);
     }
 
     return {modelTopology, weightSpecs, weightData};
   }
 
-  private async loadJSONModel(): Promise<ModelArtifacts> {
+  protected async loadJSONModel(): Promise<ModelArtifacts> {
     const modelConfigRequest =
         await fetch(this.path as string, this.requestInit);
     const modelConfig = await modelConfigRequest.json();
@@ -194,23 +183,28 @@ export class BrowserHTTPRequest implements IOHandler {
         weightSpecs.push(...entry.weights);
       }
 
-      let pathPrefix =
-          (this.path as string).substring(0, this.path.lastIndexOf('/'));
-      if (!pathPrefix.endsWith('/')) {
-        pathPrefix = pathPrefix + '/';
-      }
-
-      const fetchURLs: string[] = [];
-      weightsManifest.forEach(weightsGroup => {
-        weightsGroup.paths.forEach(path => {
-          fetchURLs.push(pathPrefix + path);
-        });
-      });
-      weightData = concatenateArrayBuffers(
-          await loadWeightsAsArrayBuffer(fetchURLs, this.requestInit));
+      weightData = await this.loadWeightData(weightsManifest);
     }
 
     return {modelTopology, weightSpecs, weightData};
+  }
+
+  private async loadWeightData(weightsManifest: WeightsManifestConfig):
+      Promise<ArrayBuffer> {
+    let pathPrefix =
+        (this.path as string).substring(0, this.path.lastIndexOf('/'));
+    if (!pathPrefix.endsWith('/')) {
+      pathPrefix = pathPrefix + '/';
+    }
+
+    const fetchURLs: string[] = [];
+    weightsManifest.forEach(weightsGroup => {
+      weightsGroup.paths.forEach(path => {
+        fetchURLs.push(pathPrefix + path);
+      });
+    });
+    return concatenateArrayBuffers(
+        await loadWeightsAsArrayBuffer(fetchURLs, this.requestInit));
   }
 }
 
