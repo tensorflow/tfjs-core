@@ -338,8 +338,9 @@ export class MathBackendCPU implements KernelBackend {
     return ops.tensor2d(result, [leftDim, rightDim]);
   }
 
-  matMul2(a: Tensor2D, b: Tensor2D, transposeA: boolean, transposeB: boolean):
-      Tensor2D {
+  matMulNaive(
+      a: Tensor2D, b: Tensor2D, transposeA: boolean,
+      transposeB: boolean): Tensor2D {
     const sharedDim = transposeA ? a.shape[0] : a.shape[1];
     const leftDim = transposeA ? a.shape[1] : a.shape[0];
     const rightDim = transposeB ? b.shape[0] : b.shape[1];

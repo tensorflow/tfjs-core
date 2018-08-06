@@ -48,14 +48,15 @@ describeWithFlags('matmul matmul-only', ALL_ENVS, () => {
       const start = now();
 
       for (let i = 0; i < RUNS; i++) {
-        res = (tf.ENV.backend as MathBackendCPU).matMul2(a, b, false, false);
+        res =
+            (tf.ENV.backend as MathBackendCPU).matMulNaive(a, b, false, false);
       }
 
       res.dataSync();
       const regularTime = (now() - start) / RUNS;
       console.log(`N: ${n}: unblocked ${regularTime.toFixed(2)} ms`);
 
-      for (const bs of [16, 32, (32 + 64) / 2, 64, 128]) {
+      for (const bs of [32, (32 + 64) / 2, 64, 128]) {
         (tf.ENV.backend as MathBackendCPU).blockSize = bs;
         const a = tf.randomUniform([n, n]) as tf.Tensor2D;
         const b = tf.randomUniform([n, n]) as tf.Tensor2D;
