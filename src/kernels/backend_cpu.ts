@@ -318,11 +318,16 @@ export class MathBackendCPU implements KernelBackend {
           const jBlock = Math.min(j0 + blockSize, rightDim);
           const kBlock = Math.min(k0 + blockSize, sharedDim);
           for (let i = i0; i < iBlock; i++) {
+            const iXOuterStep = i * aOuterStep;
             for (let j = j0; j < jBlock; j++) {
+              const jXOuterStep = j * bOuterStep;
+              let aInner = iXOuterStep + k0 * aInnerStep;
+              let bInner = jXOuterStep + k0 * bInnerStep;
               let sum = 0.0;
               for (let k = k0; k < kBlock; k++) {
-                sum += aValues[i * aOuterStep + k * aInnerStep] *
-                    bValues[k * bInnerStep + j * bOuterStep];
+                sum += aValues[aInner] * bValues[bInner];
+                aInner += aInnerStep;
+                bInner += bInnerStep;
               }
               result[resultIndex++] = sum;
             }

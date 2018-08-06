@@ -23,6 +23,10 @@ import {Rank} from '../types';
 import {now} from '../util';
 
 describeWithFlags('matmul matmul-only', ALL_ENVS, () => {
+  beforeEach(() => {
+    jasmine.DEFAULT_TIMEOUT_INTERVAL = 10 * 60 * 1000;
+  });
+
   it('A x B', () => {
     const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
     const b = tf.tensor2d([0, 1, -3, 2, 2, 1], [3, 2]);
@@ -33,14 +37,26 @@ describeWithFlags('matmul matmul-only', ALL_ENVS, () => {
     expectArraysClose(c, [0, 8, -3, 20]);
   });
   // tslint:disable-next-line:ban
-  fit('benchmark matmul', () => {
+  fit('benchmark matmul', async done => {
     const ns = [64, 128, 192, 256, 512];
     const RUNS = 50;
+    for (const n of ns) {
+      const a = tf.randomUniform([n, n]) as tf.Tensor2D;
+      const b = tf.randomUniform([n, n]) as tf.Tensor2D;
+      let res;
 
-    ns.forEach(n => {
+      const start = now();
+
+      for (let i = 0; i < RUNS; i++) {
+        res = (tf.ENV.backend as MathBackendCPU).matMul2(a, b, false, false);
+      }
+
+      res.dataSync();
+      const regularTime = (now() - start) / RUNS;
+      console.log(`N: ${n}: unblocked ${regularTime.toFixed(2)} ms`);
+
       for (const bs of [16, 32, (32 + 64) / 2, 64, 128]) {
         (tf.ENV.backend as MathBackendCPU).blockSize = bs;
-
         const a = tf.randomUniform([n, n]) as tf.Tensor2D;
         const b = tf.randomUniform([n, n]) as tf.Tensor2D;
         // Warmup.
@@ -48,14 +64,21 @@ describeWithFlags('matmul matmul-only', ALL_ENVS, () => {
 
         let res: tf.Tensor = null;
         const start = now();
+
         for (let i = 0; i < RUNS; i++) {
-          res = tf.matMul(a, b);
+          res = (tf.ENV.backend as MathBackendCPU).matMul(a, b, false, false);
         }
+
         res.dataSync();
         const elapsed = (now() - start) / RUNS;
-        console.log(`BS: ${bs} N: ${n}: ${elapsed.toFixed(2)} ms`);
+        const speedup = (regularTime / elapsed);
+        console.log(`N: ${n}: BS: ${bs} ${elapsed.toFixed(2)} ms, speedup = ${
+            speedup.toFixed(
+                2)}x, diff: ${(elapsed - regularTime).toFixed(2)} ms`);
+        await tf.nextFrame();
       }
-    });
+    }
+    done();
   });
 
   it('A x B^t', () => {
