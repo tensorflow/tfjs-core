@@ -16,7 +16,7 @@
  */
 
 import {tensorToString} from './tensor_format';
-import {DataType, Rank, ShapeMap, TypedArray} from './types';
+import {DataType, Rank, ShapeMap, TensorLike, TypedArray} from './types';
 import * as util from './util';
 import {computeStrides} from './util';
 
@@ -306,8 +306,12 @@ export interface OpHandler {
       x: T, blockShape: number[], paddings: number[][]): T;
   topk<T extends Tensor>(x: T, k: number, sorted: boolean):
       {values: T, indices: T};
-  stridedSlice<T extends Tensor>(x: T, begin: number[], end: number[],
-    strides: number[], beginMask: number, endMask: number): T;
+  stridedSlice<T extends Tensor>(
+      x: T, begin: number[], end: number[], strides: number[],
+      beginMask: number, endMask: number): T;
+  movingAverage<T extends Tensor>(
+      v: T|TensorLike, x: T|TensorLike, decay: number|Scalar,
+      step?: number|Scalar, zeroDebias?: boolean): T;
 }
 
 // For tracking tensor creation and disposal.
@@ -1178,11 +1182,18 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   stridedSlice<T extends Tensor>(
-    this: T, begin: number[], end: number[], strides: number[],
-    beginMask = 0 , endMask = 0): T {
-      this.throwIfDisposed();
-      return opHandler.stridedSlice(this, begin, end, strides,
-        beginMask, endMask);
+      this: T, begin: number[], end: number[], strides: number[], beginMask = 0,
+      endMask = 0): T {
+    this.throwIfDisposed();
+    return opHandler.stridedSlice(
+        this, begin, end, strides, beginMask, endMask);
+  }
+
+  movingAverage<T extends Tensor>(
+      this: T, x: T, decay: number|Scalar, step?: number|Scalar,
+      zeroDebias = true): T {
+    this.throwIfDisposed();
+    return opHandler.movingAverage(this, x, decay, step, zeroDebias);
   }
 }
 Object.defineProperty(Tensor, Symbol.hasInstance, {
