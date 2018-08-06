@@ -39,6 +39,8 @@ import {topkImpl} from './topk_impl';
 import {whereImpl} from './where_impl';
 
 export class MathBackendCPU implements KernelBackend {
+  public blockSize = 64;
+
   private data = new WeakMap<DataId, DataTypeMap[DataType]>();
   private canvas: HTMLCanvasElement;
   private firstUse = true;
@@ -290,6 +292,48 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   matMul(a: Tensor2D, b: Tensor2D, transposeA: boolean, transposeB: boolean):
+      Tensor2D {
+    const sharedDim = transposeA ? a.shape[0] : a.shape[1];
+    const leftDim = transposeA ? a.shape[1] : a.shape[0];
+    const rightDim = transposeB ? b.shape[0] : b.shape[1];
+
+    const aValues = a.dataSync();
+    const bValues = b.dataSync();
+
+    const [aOuterStep, aInnerStep] =
+        transposeA ? [1, a.strides[0]] : [a.strides[0], 1];
+    const [bOuterStep, bInnerStep] =
+        transposeB ? [b.strides[0], 1] : [1, b.strides[0]];
+
+    const result = new Float32Array(leftDim * rightDim);
+
+    const blockSize = this.blockSize;
+    let resultIndex = 0;
+
+    for (let i0 = 0; i0 < leftDim; i0 += blockSize) {
+      for (let j0 = 0; j0 < rightDim; j0 += blockSize) {
+        for (let k0 = 0; k0 < sharedDim; k0 += blockSize) {
+          // for when blockSize doesn't evenly divide the input
+          const iBlock = Math.min(i0 + blockSize, leftDim);
+          const jBlock = Math.min(j0 + blockSize, rightDim);
+          const kBlock = Math.min(k0 + blockSize, sharedDim);
+          for (let i = i0; i < iBlock; i++) {
+            for (let j = j0; j < jBlock; j++) {
+              let sum = 0.0;
+              for (let k = k0; k < kBlock; k++) {
+                sum += aValues[i * aOuterStep + k * aInnerStep] *
+                    bValues[k * bInnerStep + j * bOuterStep];
+              }
+              result[resultIndex++] = sum;
+            }
+          }
+        }
+      }
+    }
+    return ops.tensor2d(result, [leftDim, rightDim]);
+  }
+
+  matMul2(a: Tensor2D, b: Tensor2D, transposeA: boolean, transposeB: boolean):
       Tensor2D {
     const sharedDim = transposeA ? a.shape[0] : a.shape[1];
     const leftDim = transposeA ? a.shape[1] : a.shape[0];
