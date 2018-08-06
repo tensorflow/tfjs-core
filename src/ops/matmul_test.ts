@@ -19,6 +19,7 @@ import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
 import {ALL_ENVS, expectArraysClose, expectNumbersClose, WEBGL_ENVS} from '../test_util';
 import {Rank} from '../types';
+import {now} from '../util';
 
 describeWithFlags('matmul', ALL_ENVS, () => {
   it('A x B', () => {
@@ -31,21 +32,25 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     expectArraysClose(c, [0, 8, -3, 20]);
   });
 
-  it('benchmark matmul', () => {
+  // tslint:disable-next-line:ban
+  fit('benchmark matmul', () => {
     const ns = [64, 128, 192, 256];
-    const RUNS = 60;
+    const RUNS = 100;
 
     ns.forEach(n => {
       const a = tf.randomUniform([n, n]) as tf.Tensor2D;
       const b = tf.randomUniform([n, n]) as tf.Tensor2D;
-      let totalTime = 0;
+      // Warmup.
+      tf.matMul(a, b).dataSync();
+
+      let res: tf.Tensor = null;
+      const start = now();
       for (let i = 0; i < RUNS; i++) {
-        const start = performance.now();
-        tf.matMul(a, b).dataSync();
-        const elapsed = performance.now() - start;
-        totalTime += elapsed / RUNS;
+        res = tf.matMul(a, b);
       }
-      console.log(`N: ${n}: ${totalTime.toFixed(2)} ms`);
+      res.dataSync();
+      const elapsed = (now() - start) / RUNS;
+      console.log(`N: ${n}: ${elapsed.toFixed(2)} ms`);
     });
   });
 
