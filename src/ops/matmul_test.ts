@@ -19,7 +19,6 @@ import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
 import {ALL_ENVS, expectArraysClose, expectNumbersClose, WEBGL_ENVS} from '../test_util';
 import {Rank} from '../types';
-import {now} from '../util';
 
 describeWithFlags('matmul', ALL_ENVS, () => {
   it('A x B', () => {
