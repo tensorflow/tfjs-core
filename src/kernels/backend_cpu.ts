@@ -33,7 +33,6 @@ import {DataType, DataTypeMap, Rank, ShapeMap, TypedArray, upcastType} from '../
 import * as util from '../util';
 import {now} from '../util';
 import {BackendTimingInfo, KernelBackend} from './backend';
-import {AsmModule} from './backend_cpu_asm.js';
 import * as backend_util from './backend_util';
 import {nonMaxSuppressionImpl} from './non_max_suppression_impl';
 import {topkImpl} from './topk_impl';
@@ -43,38 +42,11 @@ export class MathBackendCPU implements KernelBackend {
   private data = new WeakMap<DataId, DataTypeMap[DataType]>();
   private canvas: HTMLCanvasElement;
   private firstUse = true;
-  private asmModule: AsmModule;
-  private asmHeap: ArrayBuffer;
-
-  private setupAsm() {
-    this.asmHeap = new ArrayBuffer(0x7000000 /* 112 MB */);
-    const stdlib = {Float32Array, Math};
-    this.asmModule = new AsmModule(stdlib, null, this.asmHeap);
-  }
-
-  private copyTensorsToHeap(tensors: Tensor[]): TypedArray {
-    let byteOffset = 0;
-    let heapVals: TypedArray;
-    tensors.forEach(t => {
-      if (t.dtype === 'float32') {
-        heapVals = new Float32Array(this.asmHeap, byteOffset, t.size);
-      } else if (t.dtype === 'int32') {
-        heapVals = new Int32Array(this.asmHeap, byteOffset, t.size);
-      } else if (t.dtype === 'bool') {
-        heapVals = new Uint8Array(this.asmHeap, byteOffset, t.size);
-      }
-      const vals = t.dataSync();
-      heapVals.set(vals);
-      byteOffset += vals.byteLength;
-    });
-    return heapVals;
-  }
 
   constructor() {
     if (ENV.get('IS_BROWSER')) {
       this.canvas = document.createElement('canvas');
     }
-    this.setupAsm();
   }
 
   register(dataId: DataId, shape: number[], dtype: DataType): void {
@@ -314,19 +286,6 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   matMul(a: Tensor2D, b: Tensor2D, transposeA: boolean, transposeB: boolean):
-      Tensor2D {
-    const sharedDim = transposeA ? a.shape[0] : a.shape[1];
-    const leftDim = transposeA ? a.shape[1] : a.shape[0];
-    const rightDim = transposeB ? b.shape[0] : b.shape[1];
-
-    const res = ops.zeros([leftDim, rightDim]) as Tensor2D;
-    const resultHeapVals = this.copyTensorsToHeap([a, b, res]);
-    this.asmModule.matmul(leftDim, sharedDim, rightDim, transposeA, transposeB);
-    res.dataSync().set(resultHeapVals);
-    return res;
-  }
-
-  matMul2(a: Tensor2D, b: Tensor2D, transposeA: boolean, transposeB: boolean):
       Tensor2D {
     const sharedDim = transposeA ? a.shape[0] : a.shape[1];
     const leftDim = transposeA ? a.shape[1] : a.shape[0];
@@ -1121,20 +1080,6 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   conv2d(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
-    const y = ops.zeros<Rank.R4>(convInfo.outShape, x.dtype);
-    const yHeapVals = this.copyTensorsToHeap([x, filter, y]);
-    const c = convInfo;
-    this.asmModule.conv2d(
-        x.strides[0], x.strides[1], y.strides[0], y.strides[1],
-        filter.strides[0], filter.strides[1], c.batchSize, c.inHeight,
-        c.inWidth, c.inChannels, c.outHeight, c.outWidth, c.outChannels,
-        c.strideHeight, c.strideWidth, c.dilationHeight, c.dilationWidth,
-        c.filterHeight, c.filterWidth, c.padInfo.left, c.padInfo.top);
-    y.dataSync().set(yHeapVals);
-    return y;
-  }
-
-  conv2d2(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
     const filterHeight = convInfo.filterHeight;
     const filterWidth = convInfo.filterWidth;
     const dilationHeight = convInfo.dilationHeight;

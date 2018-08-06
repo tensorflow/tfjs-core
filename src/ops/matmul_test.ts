@@ -32,28 +32,6 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     expectArraysClose(c, [0, 8, -3, 20]);
   });
 
-  // tslint:disable-next-line:ban
-  fit('benchmark matmul', () => {
-    const ns = [64, 128, 192, 256];
-    const RUNS = 100;
-
-    ns.forEach(n => {
-      const a = tf.randomUniform([n, n]) as tf.Tensor2D;
-      const b = tf.randomUniform([n, n]) as tf.Tensor2D;
-      // Warmup.
-      tf.matMul(a, b).dataSync();
-
-      let res: tf.Tensor = null;
-      const start = now();
-      for (let i = 0; i < RUNS; i++) {
-        res = tf.matMul(a, b);
-      }
-      res.dataSync();
-      const elapsed = (now() - start) / RUNS;
-      console.log(`N: ${n}: ${elapsed.toFixed(2)} ms`);
-    });
-  });
-
   it('A x B^t', () => {
     const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
     const b = tf.tensor2d([1, 0, 2, 4, 3, 0], [2, 3]);

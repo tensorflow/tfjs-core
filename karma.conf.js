@@ -18,15 +18,8 @@
 const karmaTypescriptConfig = {
   tsconfig: 'tsconfig.json',
   // Disable coverage reports and instrumentation by default for tests
-  coverageOptions: {
-    instrumentation: false
-  },
-  reports: {
-  },
-  compilerOptions: {
-    allowJs: true,
-    declaration: false
-  }
+  coverageOptions: {instrumentation: false},
+  reports: {}
 };
 
 // Enable coverage reports and instrumentation under KARMA_COVERAGE=1 env
@@ -34,10 +27,7 @@ const coverageEnabled = !!process.env.KARMA_COVERAGE;
 if (coverageEnabled) {
   karmaTypescriptConfig.coverageOptions.instrumentation = true;
   karmaTypescriptConfig.coverageOptions.exclude = /_test\.ts$/;
-  karmaTypescriptConfig.reports = {
-    html: 'coverage',
-    'text-summary': ''
-  };
+  karmaTypescriptConfig.reports = {html: 'coverage', 'text-summary': ''};
 }
 
 module.exports = function(config) {
@@ -54,15 +44,9 @@ module.exports = function(config) {
 
   config.set({
     frameworks: ['jasmine', 'karma-typescript'],
-    files: [
-      {pattern: 'src/**/*.ts'},
-      'src/kernels/backend_cpu_asm.js'
-    ],
+    files: [{pattern: 'src/**/*.ts'}],
     exclude: ['src/test_node.ts'],
-    preprocessors: {
-      '**/*.ts': ['karma-typescript'],
-      'src/kernels/backend_cpu_asm.js': ['karma-typescript']
-    },
+    preprocessors: {'**/*.ts': ['karma-typescript']},
     karmaTypescriptConfig,
     reporters: ['progress', 'karma-typescript'],
     browsers: ['Chrome'],
@@ -107,9 +91,6 @@ module.exports = function(config) {
         flags: ['--blacklist-accelerated-compositing', '--blacklist-webgl']
       }
     },
-    client: {
-      jasmine: {random: false},
-      args: args
-    }
+    client: {jasmine: {random: false}, args: args}
   });
 };
