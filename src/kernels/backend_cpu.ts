@@ -1121,6 +1121,20 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   conv2d(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
+    const y = ops.zeros<Rank.R4>(convInfo.outShape, x.dtype);
+    const yHeapVals = this.copyTensorsToHeap([x, filter, y]);
+    const c = convInfo;
+    this.asmModule.conv2d(
+        x.strides[0], x.strides[1], y.strides[0], y.strides[1],
+        filter.strides[0], filter.strides[1], c.batchSize, c.inHeight,
+        c.inWidth, c.inChannels, c.outHeight, c.outWidth, c.outChannels,
+        c.strideHeight, c.strideWidth, c.dilationHeight, c.dilationWidth,
+        c.filterHeight, c.filterWidth, c.padInfo.left, c.padInfo.top);
+    y.dataSync().set(yHeapVals);
+    return y;
+  }
+
+  conv2d2(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
     const filterHeight = convInfo.filterHeight;
     const filterWidth = convInfo.filterWidth;
     const dilationHeight = convInfo.dilationHeight;
@@ -1147,7 +1161,7 @@ export class MathBackendCPU implements KernelBackend {
           const wOffset1 = wR * filter.strides[0];
           const xOffset2 = xOffset1 + xR * x.strides[1];
           for (let yC = 0; yC < convInfo.outWidth; ++yC) {
-            const yOffset3 = yOffset2 + yC * y.strides[2];
+            const yOffset3 = yOffset2 + yC * convInfo.outChannels;
             const xCCorner = yC * convInfo.strideWidth - padTop;
             for (let wC = 0; wC < filterWidth; wC++) {
               const xC = xCCorner + wC * dilationWidth;
