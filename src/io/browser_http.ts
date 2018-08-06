@@ -148,12 +148,7 @@ export class BrowserHTTPRequest implements IOHandler {
     let weightSpecs: WeightsManifestEntry[];
     let weightData: ArrayBuffer;
     if (weightsManifest != null) {
-      weightSpecs = [];
-      for (const entry of weightsManifest) {
-        weightSpecs.push(...entry.weights);
-      }
-
-      weightData = await this.loadWeightData(weightsManifest);
+      [weightSpecs, weightData] = await this.loadWeights(weightsManifest);
     }
 
     return {modelTopology, weightSpecs, weightData};
@@ -178,20 +173,21 @@ export class BrowserHTTPRequest implements IOHandler {
     if (weightsManifest != null) {
       const weightsManifest =
           modelConfig['weightsManifest'] as WeightsManifestConfig;
-      weightSpecs = [];
-      for (const entry of weightsManifest) {
-        weightSpecs.push(...entry.weights);
-      }
-
-      weightData = await this.loadWeightData(weightsManifest);
+      [weightSpecs, weightData] = await this.loadWeights(weightsManifest);
     }
 
     return {modelTopology, weightSpecs, weightData};
   }
 
-  private async loadWeightData(weightsManifest: WeightsManifestConfig):
-      Promise<ArrayBuffer> {
+  private async loadWeights(weightsManifest: WeightsManifestConfig):
+      Promise<[WeightsManifestEntry[], ArrayBuffer]> {
     const weightPath = Array.isArray(this.path) ? this.path[1] : this.path;
+
+    const weightSpecs = [];
+    for (const entry of weightsManifest) {
+      weightSpecs.push(...entry.weights);
+    }
+
     let pathPrefix = weightPath.substring(0, weightPath.lastIndexOf('/'));
     if (!pathPrefix.endsWith('/')) {
       pathPrefix = pathPrefix + '/';
@@ -202,8 +198,11 @@ export class BrowserHTTPRequest implements IOHandler {
         fetchURLs.push(pathPrefix + path);
       });
     });
-    return concatenateArrayBuffers(
-        await loadWeightsAsArrayBuffer(fetchURLs, this.requestInit));
+    return [
+      weightSpecs,
+      concatenateArrayBuffers(
+          await loadWeightsAsArrayBuffer(fetchURLs, this.requestInit))
+    ];
   }
 }
 
