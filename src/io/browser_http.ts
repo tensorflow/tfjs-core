@@ -206,14 +206,25 @@ export class BrowserHTTPRequest implements IOHandler {
   }
 }
 
-export const httpRequestRouter: IORouter = (url: string) => {
+export const httpRequestRouter: IORouter = (url: string|string[]) => {
   if (typeof fetch === 'undefined') {
     // browserHTTPRequest uses `fetch`, if one wants to use it in node.js
     // they have to setup a global fetch polyfill.
     return null;
   } else {
     for (const scheme of BrowserHTTPRequest.URL_SCHEMES) {
-      if (url.startsWith(scheme)) {
+      let isHTTP = true;
+      if (Array.isArray(url)) {
+        for (const urlItem of url) {
+          if (urlItem.startsWith(scheme)) {
+            isHTTP = false;
+            break;
+          }
+        }
+      } else {
+        isHTTP = url.startsWith(scheme);
+      }
+      if (isHTTP) {
         return browserHTTPRequest(url);
       }
     }
