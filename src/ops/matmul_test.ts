@@ -17,10 +17,8 @@
 
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
-import {MathBackendCPU} from '../kernels/backend_cpu';
 import {ALL_ENVS, expectArraysClose, expectNumbersClose, WEBGL_ENVS} from '../test_util';
 import {Rank} from '../types';
-import {now} from '../util';
 
 describeWithFlags('matmul matmul-only', ALL_ENVS, () => {
   beforeEach(() => {
@@ -53,51 +51,6 @@ describeWithFlags('matmul matmul-only', ALL_ENVS, () => {
 
     const identity = tf.tensor2d(identityValues, [128, 128]);
     expectArraysClose(aat, identity);
-  });
-
-  // tslint:disable-next-line:ban
-  it('benchmark matmul sq matrix', async done => {
-    const backend = tf.ENV.backend as MathBackendCPU;
-    const bs = [32, 48, 64, (64 / 2) + 64, 128, (128 / 2) + 128];
-    const ns = [64, 128, 192, 256, 512];
-    const RUNS = 30;
-    for (const n of ns) {
-      const a = tf.randomUniform([n, n]) as tf.Tensor2D;
-      const b = tf.randomUniform([n, n]) as tf.Tensor2D;
-      // Warmup.
-      backend.matMulNaive(a, b, false, false).dataSync();
-
-      let res: tf.Tensor = null;
-      const start = now();
-      for (let i = 0; i < RUNS; i++) {
-        res = backend.matMulNaive(a, b, false, false);
-      }
-      res.dataSync();
-      const naiveTime = (now() - start) / RUNS;
-      console.log(`N: ${n}\t ${naiveTime.toFixed(2)}ms`);
-
-      for (const blockSize of bs) {
-        backend.blockSize = blockSize;
-        const a = tf.randomUniform([n, n]) as tf.Tensor2D;
-        const b = tf.randomUniform([n, n]) as tf.Tensor2D;
-        // Warmup.
-        backend.matMul(a, b, false, false).dataSync();
-
-        let res: tf.Tensor = null;
-        const start = now();
-        for (let i = 0; i < RUNS; i++) {
-          res = backend.matMul(a, b, false, false);
-        }
-        res.dataSync();
-        const elapsed = (now() - start) / RUNS;
-        const speedup = (naiveTime / elapsed).toFixed(2);
-        console.log(
-            `mul BS: ${blockSize}\t ${elapsed.toFixed(2)} ms\t speedup: ${
-                speedup}x\t diff:${(elapsed - naiveTime).toFixed(2)}ms`);
-        await tf.nextFrame();
-      }
-    }
-    done();
   });
 
   it('A x B^t', () => {
