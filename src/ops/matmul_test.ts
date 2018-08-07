@@ -37,8 +37,26 @@ describeWithFlags('matmul matmul-only', ALL_ENVS, () => {
     expectArraysClose(c, [0, 8, -3, 20]);
   });
 
+  it('big A x A^t', () => {
+    const rows = 128;
+    const cols = 128;
+    const a = tf.randomUniform([cols, rows], -1, 1) as tf.Tensor2D;
+    const aOrtho = tf.linalg.gramSchmidt(a) as tf.Tensor2D;
+    const aat = tf.matMul(aOrtho, aOrtho, false, true);
+    expect(aat.shape).toEqual([cols, rows]);
+
+    const identityValues = new Array(cols * rows).fill(0).map((_, i) => {
+      const col = i % cols;
+      const row = Math.floor(i / rows);
+      return col === row ? 1.0 : 0.0;
+    });
+
+    const identity = tf.tensor2d(identityValues, [128, 128]);
+    expectArraysClose(aat, identity);
+  });
+
   // tslint:disable-next-line:ban
-  fit('benchmark matmul sq matrix', async done => {
+  it('benchmark matmul sq matrix', async done => {
     const backend = tf.ENV.backend as MathBackendCPU;
     const bs = [32, 48, 64, (64 / 2) + 64, 128, (128 / 2) + 128];
     const ns = [64, 128, 192, 256, 512];
@@ -73,8 +91,9 @@ describeWithFlags('matmul matmul-only', ALL_ENVS, () => {
         res.dataSync();
         const elapsed = (now() - start) / RUNS;
         const speedup = (naiveTime / elapsed).toFixed(2);
-        console.log(`BS: ${blockSize}\t ${elapsed.toFixed(2)} ms\t speedup: ${
-            speedup}x\t diff:${(elapsed - naiveTime).toFixed(2)}`);
+        console.log(
+            `mul BS: ${blockSize}\t ${elapsed.toFixed(2)} ms\t speedup: ${
+                speedup}x\t diff:${(elapsed - naiveTime).toFixed(2)}ms`);
         await tf.nextFrame();
       }
     }
