@@ -39,6 +39,8 @@ export const CPU_ENVS: Features = {
 };
 export const ALL_ENVS: Features = {};
 
+export {describeWithFlags} from './jasmine_util';
+
 export function expectArraysClose(
     actual: Tensor|TypedArray|number[],
     expected: Tensor|TypedArray|number[]|boolean[], epsilon?: number) {
