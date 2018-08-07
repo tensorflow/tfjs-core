@@ -1281,7 +1281,18 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   reshape<R extends Rank>(x: Tensor, shape: ShapeMap[R]): Tensor<R> {
-    return backend_util.reshapeTensor(x, shape);
+    const reshapedTensor = backend_util.reshapeTensor(x, shape);
+
+    // Reshape the real and imaginary parts of the complex tensor.
+    if (x.dtype === 'complex64') {
+      const xData = this.texData.get(x.dataId);
+      const reshapedData = this.texData.get(reshapedTensor.dataId;
+      reshapedData.complexTensors = {
+        real: ENV.engine.keep(xData.complexTensors.real.reshape(shape)),
+        imag: ENV.engine.keep(xData.complexTensors.imag.reshape(shape))
+      };
+    }
+    return reshapedTensor;
   }
 
   resizeBilinear(
@@ -1366,16 +1377,14 @@ export class MathBackendWebGL implements KernelBackend {
     }
 
     const inputsData: TensorData[] = inputs.map(input => {
-      const texData = this.texData.get(input.dataId);
-
-      if (input.dtype === 'complex64' &&
-          (program.supportsComplexNumbers == null ||
-           !program.supportsComplexNumbers)) {
+      if (input.dtype === 'complex64') {
         throw new Error(
-            `GPGPUProgram does not support complex64 input. Please mark the ` +
-            `GPGPUProgram with the supportsComplexNumbers bit to enable ` +
-            `complex64 support.`);
+            `GPGPUProgram does not support complex64 input. For complex64 ` +
+            `dtypes, please separate the program into real and imaginary ` +
+            `parts.`);
       }
+
+      const texData = this.texData.get(input.dataId);
       // Upload small tensors that live on the CPU as uniforms, not as
       // textures.
       if (texData.texture == null &&
