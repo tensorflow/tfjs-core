@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {scalar} from '../ops/tensor_ops';
+import {scalar, zerosLike} from '../ops/tensor_ops';
 import {Tensor} from '../tensor';
 import {Rank} from '../types';
 import {DataType, ShapeMap} from '../types';
@@ -24,6 +24,15 @@ import {KernelBackend} from './backend';
 
 export function castTensor<T extends Tensor>(
     x: T, dtype: DataType, backend: KernelBackend): T {
+  if (dtype === 'complex64') {
+    const zeros = zerosLike(x);
+    const floatX = x.toFloat();
+    const result = backend.complex(floatX, zeros);
+    zeros.dispose();
+    floatX.dispose();
+    return result;
+  }
+
   if (!hasEncodingLoss(x.dtype, dtype)) {
     // We don't change the underlying data, since we cast to higher
     // precision.
@@ -32,7 +41,10 @@ export function castTensor<T extends Tensor>(
   if (dtype === 'int32') {
     return backend.int(x);
   } else if (dtype === 'bool') {
-    return backend.notEqual(x, scalar(0, x.dtype)) as T;
+    const zero = scalar(0, x.dtype);
+    const result = backend.notEqual(x, zero) as T;
+    zero.dispose();
+    return result;
   } else {
     throw new Error(`Error in Cast: unknown dtype argument (${dtype})`);
   }

@@ -3447,3 +3447,86 @@ describeWithFlags('batchToSpaceND X spaceToBatchND', ALL_ENVS, () => {
         gradient, [2, 8, 3, 9, 14, 20, 15, 21, 5, 11, 6, 12, 17, 23, 18, 24]);
   });
 });
+
+describeWithFlags('complex64', ALL_ENVS, () => {
+  it('tf.complex', () => {
+    const real = tf.tensor1d([3, 30]);
+    const imag = tf.tensor1d([4, 40]);
+    const complex = tf.complex(real, imag);
+
+    expect(complex.dtype).toBe('complex64');
+    expect(complex.shape).toEqual(real.shape);
+    expectArraysClose(complex, [3, 4, 30, 40]);
+  });
+
+  it('tf.real', () => {
+    const complex = tf.complex([3, 30], [4, 40]);
+    const real = tf.real(complex);
+
+    expect(real.dtype).toBe('float32');
+    expect(real.shape).toEqual([2]);
+    expectArraysClose(real, [3, 30]);
+  });
+
+  it('tf.imag', () => {
+    const complex = tf.complex([3, 30], [4, 40]);
+    const imag = tf.imag(complex);
+
+    expect(imag.dtype).toBe('float32');
+    expect(imag.shape).toEqual([2]);
+    expectArraysClose(imag, [4, 40]);
+  });
+});
+
+describeWithFlags('complex64 memory webgl', WEBGL_ENVS, () => {
+  it('usage', () => {
+    let numTensors = tf.memory().numTensors;
+    let numBuffers = tf.memory().numDataBuffers;
+
+    const real1 = tf.tensor1d([1]);
+    const imag1 = tf.tensor1d([2]);
+    const complex1 = tf.complex(real1, imag1);
+
+    // 5 new Tensors: real1, imag1, complex1, and two internal clones.
+    expect(tf.memory().numTensors).toBe(numTensors + 5);
+    // Only 3 new data buckets are actually created.
+    expect(tf.memory().numDataBuffers).toBe(numBuffers + 3);
+    numTensors = tf.memory().numTensors;
+    numBuffers = tf.memory().numDataBuffers;
+
+    const real2 = tf.tensor1d([3]);
+    const imag2 = tf.tensor1d([4]);
+    const complex2 = tf.complex(real2, imag2);
+
+    // 5 new Tensors: real1, imag1, complex1, and two internal clones.
+    expect(tf.memory().numTensors).toBe(numTensors + 5);
+    // Only 3 new data buckets are actually created.
+    expect(tf.memory().numDataBuffers).toBe(numBuffers + 3);
+    numTensors = tf.memory().numTensors;
+    numBuffers = tf.memory().numDataBuffers;
+
+    const result = complex1.add(complex2);
+
+    // A complex tensor is created, which is composed of 2 underlying tensors.
+    expect(tf.memory().numTensors).toBe(numTensors + 3);
+    numTensors = tf.memory().numTensors;
+
+    expect(result.dtype).toBe('complex64');
+    expect(result.shape).toEqual([1]);
+    expectArraysClose(result, [4, 6]);
+
+    const real = tf.real(result);
+
+    expect(tf.memory().numTensors).toBe(numTensors + 1);
+    numTensors = tf.memory().numTensors;
+
+    expectArraysClose(real, [4]);
+
+    const imag = tf.imag(result);
+
+    expect(tf.memory().numTensors).toBe(numTensors + 1);
+    numTensors = tf.memory().numTensors;
+
+    expectArraysClose(imag, [6]);
+  });
+});

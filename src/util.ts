@@ -409,6 +409,8 @@ export function isTypedArray(a: TypedArray|number|boolean|RegularArray<number>|
 export function bytesPerElement(dtype: DataType): number {
   if (dtype === 'float32' || dtype === 'int32') {
     return 4;
+  } else if (dtype === 'complex64') {
+    return 8;
   } else if (dtype === 'bool') {
     return 1;
   } else {

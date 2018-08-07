@@ -511,6 +511,70 @@ function cast_<T extends Tensor>(x: T|TensorLike, dtype: DataType): T {
 }
 
 /**
+ * Converts two real numbers to a complex number.
+ *
+ * Given a tensor real representing the real part of a complex number, and a
+ * tensor imag representing the imaginary part of a complex number, this
+ * operation returns complex numbers elementwise of the form , where a
+ * represents the real part and b represents the imag part.
+ *
+ * The input tensors real and imag must have the same shape.
+ *
+ * ```js
+ * const real = tf.tensor1d([2.25, 3.25]);
+ * const imag = tf.tensor1d([4.75, 5.75]);
+ * const complex = tf.complex(real, imag);
+ *
+ * complex.print();
+ * ```
+ */
+/** @doc {heading: 'Tensors', subheading: 'Creation'} */
+function complex_<T extends Tensor>(real: T|TensorLike, imag: T|TensorLike): T {
+  const $real = convertToTensor(real, 'real', 'complex');
+  const $imag = convertToTensor(imag, 'imag', 'complex');
+
+  return ENV.engine.runKernel(
+             backend => backend.complex($real, $imag), {$real, $imag}) as T;
+}
+
+/**
+ * Returns the real part of a complex (or real) tensor.
+ *
+ * Given a tensor input, this operation returns a tensor of type float that is
+ * the real part of each element in input considered as a complex number.
+ *
+ * ```js
+ * const x = tf.complex([-2.25, 3.25], [4.75, 5.75]);
+ * tf.real(x).print();
+ * ```
+ */
+/** @doc {heading: 'Tensors', subheading: 'Creation'} */
+function real_<T extends Tensor>(input: T|TensorLike): T {
+  const $input = convertToTensor(input, 'input', 'real');
+
+  return ENV.engine.runKernel(backend => backend.real($input), {$input}) as T;
+}
+
+/**
+ * Returns the imaginary part of a complex (or real) tensor.
+ *
+ * Given a tensor input, this operation returns a tensor of type float that is
+ * the imaginary part of each element in input considered as a complex number.
+ * If input is real, a tensor of all zeros is returned.
+ *
+ * ```js
+ * const x = tf.complex([-2.25, 3.25], [4.75, 5.75]);
+ * tf.imag(x).print();
+ * ```
+ */
+/** @doc {heading: 'Tensors', subheading: 'Creation'} */
+function imag_<T extends Tensor>(input: T|TensorLike): T {
+  const $input = convertToTensor(input, 'input', 'imag');
+
+  return ENV.engine.runKernel(backend => backend.imag($input), {$input}) as T;
+}
+
+/**
  * Construct an tensor by repeating it the number of times given by reps.
  *
  * This operation creates a new tensor by replicating `input` `reps`
@@ -1141,3 +1205,6 @@ export const truncatedNormal = op({truncatedNormal_});
 export const unstack = op({unstack_});
 export const batchToSpaceND = op({batchToSpaceND_});
 export const spaceToBatchND = op({spaceToBatchND_});
+export const complex = op({complex_});
+export const real = op({real_});
+export const imag = op({imag_});

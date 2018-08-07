@@ -37,6 +37,7 @@ export interface DataTypeMap {
   float32: Float32Array;
   int32: Int32Array;
   bool: Uint8Array;
+  complex64: Float32Array;
 }
 /** @docalias 'float32'|'int32'|'bool' */
 export type DataType = keyof DataTypeMap;
@@ -66,25 +67,36 @@ export interface RecursiveArray<T extends any> {
 enum UpcastInt32AndMap {
   'float32' = 'float32',
   'int32' = 'int32',
-  'bool' = 'int32'
+  'bool' = 'int32',
+  'complex64' = 'complex64'
 }
 
 enum UpcastBoolAndMap {
   'float32' = 'float32',
   'int32' = 'int32',
-  'bool' = 'bool'
+  'bool' = 'bool',
+  'complex64' = 'complex64'
 }
 
 enum UpcastFloat32AndMap {
   'float32' = 'float32',
   'int32' = 'float32',
-  'bool' = 'float32'
+  'bool' = 'float32',
+  'complex64' = 'complex64'
+}
+
+enum UpcastComplex64AndMap {
+  'float32' = 'complex64',
+  'int32' = 'complex64',
+  'bool' = 'complex64',
+  'complex64' = 'complex64'
 }
 
 const upcastTypeMap = {
   'float32': UpcastFloat32AndMap,
   'int32': UpcastInt32AndMap,
-  'bool': UpcastBoolAndMap
+  'bool': UpcastBoolAndMap,
+  'complex64': UpcastComplex64AndMap
 };
 
 export function upcastType(typeA: DataType, typeB: DataType): DataType {
@@ -92,7 +104,7 @@ export function upcastType(typeA: DataType, typeB: DataType): DataType {
 }
 
 /** Returns the output type after summation. */
-export function sumOutType(type: DataType) {
+export function sumOutType(type: DataType): DataType {
   return upcastType(type, 'int32');
 }
 

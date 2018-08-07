@@ -38,9 +38,12 @@ import {topkImpl} from './topk_impl';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
 import {AvgPool2DBackpropProgram} from './webgl/avg_pool_backprop_gpu';
 import {BatchNormProgram} from './webgl/batchnorm_gpu';
+import * as binaryop_complex_gpu from './webgl/binaryop_complex_gpu';
+import {BinaryOpComplexProgram} from './webgl/binaryop_complex_gpu';
 import * as binaryop_gpu from './webgl/binaryop_gpu';
 import {BinaryOpProgram} from './webgl/binaryop_gpu';
 import {ClipProgram} from './webgl/clip_gpu';
+import {mergeRealAndImagArrays, splitRealAndImagArrays} from './webgl/complex_util';
 import {ConcatProgram} from './webgl/concat_gpu';
 import {Conv2DDerFilterProgram, Conv2DDerInputProgram} from './webgl/conv_backprop_gpu';
 import {DepthwiseConv2DDerFilterProgram, DepthwiseConv2DDerInputProgram} from './webgl/conv_backprop_gpu_depthwise';
@@ -139,6 +142,7 @@ export class MathBackendWebGL implements KernelBackend {
       dtype,
       values: null,
       texture: null,
+      complexTensors: null,
       texShape: null,
       usage: TextureUsage.RENDER
     });
@@ -201,7 +205,15 @@ export class MathBackendWebGL implements KernelBackend {
     this.throwIfNoData(dataId);
 
     const texData = this.texData.get(dataId);
-    const {texture, texShape, usage} = texData;
+    const {texture, texShape, usage, complexTensors, dtype} = texData;
+
+    if (dtype === 'complex64') {
+      const {real, imag} = splitRealAndImagArrays(values as Float32Array);
+      this.write(complexTensors.real, real);
+      this.write(complexTensors.imag, imag);
+      return;
+    }
+
     if (texture != null) {
       // Release the old texture.
       this.releaseTexture(dataId, texture, texShape, usage);
@@ -218,7 +230,7 @@ export class MathBackendWebGL implements KernelBackend {
   readSync(dataId: DataId): TypedArray {
     this.throwIfNoData(dataId);
     const texData = this.texData.get(dataId);
-    const {shape, texture, values, texShape, dtype} = texData;
+    const {shape, texture, values, texShape, dtype, complexTensors} = texData;
     if (values != null) {
       this.cacheOnCPU(dataId);
       return values;
@@ -229,13 +241,20 @@ export class MathBackendWebGL implements KernelBackend {
       start = performance.now();
     }
 
-    const float32Values =
-        this.getValuesFromTexture(texture, dataId, dtype, texShape, shape);
+    let result: Float32Array;
+    if (dtype === 'complex64') {
+      const realValues = complexTensors.real.dataSync() as Float32Array;
+      const imagValues = complexTensors.imag.dataSync() as Float32Array;
+      result = mergeRealAndImagArrays(realValues, imagValues);
+    } else {
+      result =
+          this.getValuesFromTexture(texture, dataId, dtype, texShape, shape);
+    }
 
     if (shouldTimeProgram) {
       this.downloadWaitMs += performance.now() - start;
     }
-    this.cacheOnCPU(dataId, float32Values);
+    this.cacheOnCPU(dataId, result);
     return texData.values;
   }
 
@@ -391,9 +410,14 @@ export class MathBackendWebGL implements KernelBackend {
       return;
     }
     if (this.texData.has(dataId)) {
-      const {texture, texShape, usage} = this.texData.get(dataId);
+      const {texture, texShape, usage, complexTensors} =
+          this.texData.get(dataId);
       if (texture != null) {
         this.releaseTexture(dataId, texture, texShape, usage);
+      }
+      if (complexTensors != null) {
+        complexTensors.real.dispose();
+        complexTensors.imag.dispose();
       }
       this.texData.delete(dataId);
     }
@@ -436,6 +460,29 @@ export class MathBackendWebGL implements KernelBackend {
     return this.canvas;
   }
 
+  complex<T extends Tensor>(real: T, imag: T): T {
+    const result = Tensor.make(real.shape, {}, 'complex64') as T;
+
+    const resultData = this.texData.get(result.dataId);
+    // The backend owns the reference to the underlying real and imaginary
+    // clones. These will explicitly get disposed when the complex tensor is
+    // disposed.
+    resultData.complexTensors = {
+      real: ENV.engine.keep(real.clone()),
+      imag: ENV.engine.keep(imag.clone())
+    };
+
+    return result;
+  }
+  real<T extends Tensor>(input: T): T {
+    const resultData = this.texData.get(input.dataId);
+    return resultData.complexTensors.real.clone() as T;
+  }
+  imag<T extends Tensor>(input: T): T {
+    const resultData = this.texData.get(input.dataId);
+    return resultData.complexTensors.imag.clone() as T;
+  }
+
   slice<T extends Tensor>(x: T, begin: number[], size: number[]): T {
     const program = new SliceProgram(size);
     const customSetup = program.getCustomSetupFunc(begin);
@@ -475,14 +522,36 @@ export class MathBackendWebGL implements KernelBackend {
   matMul(a: Tensor2D, b: Tensor2D, transposeA: boolean, transposeB: boolean):
       Tensor2D {
     const program = new MatMulProgram(a.shape, b.shape, transposeA, transposeB);
-    return this.compileAndRun<Tensor2D, Tensor2D>(program, [a, b]);
+    return this.compileAndRun<Tensor2D>(program, [a, b]);
   }
 
   multiply(a: Tensor, b: Tensor): Tensor {
+    if (a.dtype === 'complex64') {
+      const aData = this.texData.get(a.dataId);
+      const bData = this.texData.get(b.dataId);
+
+      const realProgram = new BinaryOpComplexProgram(
+          binaryop_complex_gpu.COMPLEX_MULTIPLY.real, a.shape, b.shape);
+      const imagProgram = new BinaryOpComplexProgram(
+          binaryop_complex_gpu.COMPLEX_MULTIPLY.imag, a.shape, b.shape);
+
+      const real = this.compileAndRun<Tensor>(realProgram, [
+        aData.complexTensors.real, aData.complexTensors.imag,
+        bData.complexTensors.real, bData.complexTensors.imag
+      ]);
+      const imag = this.compileAndRun<Tensor>(imagProgram, [
+        aData.complexTensors.real, aData.complexTensors.imag,
+        bData.complexTensors.real, bData.complexTensors.imag
+      ]);
+
+      const complex = this.complex(real, imag);
+      real.dispose();
+      imag.dispose();
+      return complex;
+    }
+
     const program = new BinaryOpProgram(binaryop_gpu.MUL, a.shape, b.shape);
-    const output =
-        this.makeOutputArray(
-            program.outputShape, upcastType(a.dtype, b.dtype)) as Tensor;
+    const output = this.makeOutputArray(program.outputShape, a.dtype) as Tensor;
     return this.compileAndRun(program, [a, b], output) as Tensor;
   }
 
@@ -610,6 +679,7 @@ export class MathBackendWebGL implements KernelBackend {
     const program = new ReduceProgram(reduceInfo, reduceType);
     const [rows, cols] = program.outputShape;
     const output = this.makeOutputArray<Tensor2D>([rows, cols], dtype);
+
     this.compileAndRun(program, [x], output);
     // No need to run another GPGPU program.
     if (output.shape[1] === 1) {
@@ -872,7 +942,7 @@ export class MathBackendWebGL implements KernelBackend {
     const outputDtype = 'float32';
     const program = new BinaryOpProgram(op, a.shape, b.shape);
     const output = this.makeOutputArray(program.outputShape, outputDtype);
-    return this.compileAndRun<Tensor, Tensor>(program, [a, b], output);
+    return this.compileAndRun<Tensor>(program, [a, b], output);
   }
 
   floorDiv(a: Tensor, b: Tensor): Tensor {
@@ -880,15 +950,46 @@ export class MathBackendWebGL implements KernelBackend {
     const outputDtype = 'int32';
     const program = new BinaryOpProgram(op, a.shape, b.shape);
     const output = this.makeOutputArray(program.outputShape, outputDtype);
-    return this.compileAndRun<Tensor, Tensor>(program, [a, b], output);
+    return this.compileAndRun<Tensor>(program, [a, b], output);
   }
 
   add(a: Tensor, b: Tensor): Tensor {
+    if (a.dtype === 'complex64' && b.dtype === 'complex64') {
+      return this.complexSeparableBinaryOp(a, b, binaryop_gpu.ADD);
+    }
+
     const program = new BinaryOpProgram(binaryop_gpu.ADD, a.shape, b.shape);
     const output =
         this.makeOutputArray(
             program.outputShape, upcastType(a.dtype, b.dtype)) as Tensor;
-    return this.compileAndRun<Tensor, Tensor>(program, [a, b], output);
+    return this.compileAndRun<Tensor>(program, [a, b], output);
+  }
+
+  /**
+   * Computes a complex binary operation that can be decomposed into a simple
+   * binary operation on both the real and imagary parts.
+   */
+  private complexSeparableBinaryOp(a: Tensor, b: Tensor, binaryOp: string):
+      Tensor {
+    const aData = this.texData.get(a.dataId);
+    const bData = this.texData.get(b.dataId);
+
+    const realProgram = new BinaryOpProgram(
+        binaryOp, aData.complexTensors.real.shape,
+        bData.complexTensors.real.shape);
+    const imagProgram = new BinaryOpProgram(
+        binaryOp, aData.complexTensors.imag.shape,
+        bData.complexTensors.imag.shape);
+
+    const real = this.compileAndRun<Tensor>(
+        realProgram, [aData.complexTensors.real, bData.complexTensors.real]);
+    const imag = this.compileAndRun<Tensor>(
+        imagProgram, [aData.complexTensors.imag, bData.complexTensors.imag]);
+
+    const complex = this.complex(real, imag);
+    real.dispose();
+    imag.dispose();
+    return complex;
   }
 
   addN<T extends Tensor>(tensors: T[]): T {
@@ -900,11 +1001,15 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   subtract(a: Tensor, b: Tensor): Tensor {
+    if (a.dtype === 'complex64' && b.dtype === 'complex64') {
+      return this.complexSeparableBinaryOp(a, b, binaryop_gpu.SUB);
+    }
+
     const program = new BinaryOpProgram(binaryop_gpu.SUB, a.shape, b.shape);
     const output =
         this.makeOutputArray(
             program.outputShape, upcastType(a.dtype, b.dtype)) as Tensor;
-    return this.compileAndRun<Tensor, Tensor>(program, [a, b], output);
+    return this.compileAndRun<Tensor>(program, [a, b], output);
   }
 
   pow<T extends Tensor>(a: T, b: Tensor): T {
@@ -912,7 +1017,7 @@ export class MathBackendWebGL implements KernelBackend {
     const customSetup = program.getCustomSetupFunc();
     const output = this.makeOutputArray(
                        program.outputShape, upcastType(a.dtype, b.dtype)) as T;
-    return this.compileAndRun<Tensor, T>(program, [a, b], output, customSetup);
+    return this.compileAndRun<T>(program, [a, b], output, customSetup);
   }
 
   ceil<T extends Tensor>(x: T): T {
@@ -1245,8 +1350,8 @@ export class MathBackendWebGL implements KernelBackend {
     return Tensor.make(shape, {}, dtype) as T;
   }
 
-  public compileAndRun<T extends Tensor, K extends Tensor>(
-      program: GPGPUProgram, inputs: T[], output?: K,
+  public compileAndRun<K extends Tensor>(
+      program: GPGPUProgram, inputs: Tensor[], output?: K,
       customSetup?: (gpgpu: GPGPUContext, webGLProgram: WebGLProgram) => void,
       pageToCpu = true): K {
     if (output == null) {
@@ -1259,16 +1364,33 @@ export class MathBackendWebGL implements KernelBackend {
           getTypedArrayFromDType(output.dtype, 0);
       return output;
     }
-    const inputsData: Array<TensorData<T>> = inputs.map(tensor => {
-      const texData = this.texData.get(tensor.dataId);
+
+    const inputsData: TensorData[] = inputs.map(input => {
+      const texData = this.texData.get(input.dataId);
+
+      if (input.dtype === 'complex64' &&
+          (program.supportsComplexNumbers == null ||
+           !program.supportsComplexNumbers)) {
+        throw new Error(
+            `GPGPUProgram does not support complex64 input. Please mark the ` +
+            `GPGPUProgram with the supportsComplexNumbers bit to enable ` +
+            `complex64 support.`);
+      }
       // Upload small tensors that live on the CPU as uniforms, not as
       // textures.
-      if (texData.texture == null && tensor.size <= SIZE_UPLOAD_UNIFORM) {
-        return {tensor, texData: null, isUniform: true};
+      if (texData.texture == null &&
+          util.sizeFromShape(texData.shape) <= SIZE_UPLOAD_UNIFORM) {
+        return {
+          tensor: input,
+          texData: null,
+          isUniform: true,
+          uniformValues: texData.values
+        };
       }
-      this.uploadToGPU(tensor.dataId);
-      return {tensor, texData, isUniform: false};
+      this.uploadToGPU(input.dataId);
+      return {tensor: input, texData, isUniform: false};
     });
+
     this.uploadToGPU(output.dataId);
     const outputData = {
       tensor: output,
@@ -1434,7 +1556,7 @@ if (ENV.get('IS_BROWSER')) {
 
 function float32ToTypedArray<D extends DataType>(
     a: Float32Array, dtype: D): DataTypeMap[D] {
-  if (dtype === 'float32') {
+  if (dtype === 'float32' || dtype === 'complex64') {
     return a;
   } else if (dtype === 'int32' || dtype === 'bool') {
     const result = (dtype === 'int32') ? new Int32Array(a.length) :

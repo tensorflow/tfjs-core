@@ -173,6 +173,16 @@ export class MathBackendCPU implements KernelBackend {
     }
   }
 
+  complex<T extends Tensor>(real: T, imag: T): T {
+    return real;
+  }
+  real<T extends Tensor>(input: T): T {
+    return input;
+  }
+  imag<T extends Tensor>(input: T): T {
+    return input;
+  }
+
   slice<T extends Tensor>(x: T, begin: number[], size: number[]): T {
     const buffer = ops.buffer(size, x.dtype);
 

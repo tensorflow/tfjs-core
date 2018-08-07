@@ -21,7 +21,7 @@ import {backpropagateGradients, getFilteredNodesXToY, NamedGradientMap, TapeNode
 import {DataId, Tensor, Tensor3D, Variable} from './tensor';
 import {NamedTensorMap, NamedVariableMap, TensorContainer} from './tensor_types';
 import {getTensorsInContainer, isTensorInList} from './tensor_util';
-import {TypedArray} from './types';
+import {DataType, TypedArray} from './types';
 import * as util from './util';
 import {makeOnesTypedArray, now, sizeFromShape} from './util';
 
@@ -191,18 +191,35 @@ export class Engine implements TensorManager {
   // TensorManager implementation.
 
   registerTensor(a: Tensor|Variable): void {
-    const refCount =
-        this.refCounter.has(a.dataId) ? this.refCounter.get(a.dataId) : 0;
+    this.incRef(a.dataId, a.shape, a.dtype);
+
     this.numTensors++;
-    if (refCount === 0) {
-      this.numDataBuffers++;
-      this.numBytes +=
-          util.sizeFromShape(a.shape) * util.bytesPerElement(a.dtype);
-      this.backend.register(a.dataId, a.shape, a.dtype);
-    }
-    this.refCounter.set(a.dataId, refCount + 1);
     if (!(a instanceof Variable)) {
       this.track(a);
+    }
+  }
+
+  incRef(dataId: DataId, shape: number[], dtype: DataType) {
+    const refCount =
+        this.refCounter.has(dataId) ? this.refCounter.get(dataId) : 0;
+    if (refCount === 0) {
+      this.numDataBuffers++;
+      this.numBytes += util.sizeFromShape(shape) * util.bytesPerElement(dtype);
+      this.backend.register(dataId, shape, dtype);
+    }
+
+    this.refCounter.set(dataId, refCount + 1);
+  }
+
+  decRef(dataId: DataId, shape: number[], dtype: DataType) {
+    const refCount = this.refCounter.get(dataId);
+    if (refCount <= 1) {
+      this.refCounter.delete(dataId);
+      this.backend.disposeData(dataId);
+      this.numDataBuffers--;
+      this.numBytes -= util.sizeFromShape(shape) * util.bytesPerElement(dtype);
+    } else {
+      this.refCounter.set(dataId, refCount - 1);
     }
   }
 
@@ -221,16 +238,7 @@ export class Engine implements TensorManager {
       this.keepTensors.delete(a.id);
     }
     this.numTensors--;
-    const refCount = this.refCounter.get(a.dataId);
-    if (refCount <= 1) {
-      this.refCounter.delete(a.dataId);
-      this.backend.disposeData(a.dataId);
-      this.numDataBuffers--;
-      this.numBytes -=
-          util.sizeFromShape(a.shape) * util.bytesPerElement(a.dtype);
-    } else {
-      this.refCounter.set(a.dataId, refCount - 1);
-    }
+    this.decRef(a.dataId, a.shape, a.dtype);
     // TODO(nsthorat): Construct an error and save the stack trace for
     // debugging when in debug mode. Creating a stack trace is too expensive
     // to do unconditionally.

@@ -245,5 +245,9 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
       boxes: Tensor2D, scores: Tensor1D, maxOutputSize: number,
       iouThreshold: number, scoreThreshold?: number): Tensor1D;
 
+  complex<T extends Tensor>(real: T, imag: T): T;
+  real<T extends Tensor>(input: T): T;
+  imag<T extends Tensor>(input: T): T;
+
   dispose(): void;
 }
