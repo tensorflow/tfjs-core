@@ -36,46 +36,45 @@ describeWithFlags('matmul matmul-only', ALL_ENVS, () => {
     expect(c.shape).toEqual([2, 2]);
     expectArraysClose(c, [0, 8, -3, 20]);
   });
+
   // tslint:disable-next-line:ban
-  fit('benchmark matmul', async done => {
+  fit('benchmark matmul sq matrix', async done => {
+    const backend = tf.ENV.backend as MathBackendCPU;
+    const bs = [32, 48, 64, (64 / 2) + 64, 128, (128 / 2) + 128];
     const ns = [64, 128, 192, 256, 512];
-    const RUNS = 50;
+    const RUNS = 30;
     for (const n of ns) {
       const a = tf.randomUniform([n, n]) as tf.Tensor2D;
       const b = tf.randomUniform([n, n]) as tf.Tensor2D;
-      let res;
+      // Warmup.
+      backend.matMulNaive(a, b, false, false).dataSync();
 
+      let res: tf.Tensor = null;
       const start = now();
-
       for (let i = 0; i < RUNS; i++) {
-        res =
-            (tf.ENV.backend as MathBackendCPU).matMulNaive(a, b, false, false);
+        res = backend.matMulNaive(a, b, false, false);
       }
-
       res.dataSync();
-      const regularTime = (now() - start) / RUNS;
-      console.log(`N: ${n}: unblocked ${regularTime.toFixed(2)} ms`);
+      const naiveTime = (now() - start) / RUNS;
+      console.log(`N: ${n}\t ${naiveTime.toFixed(2)}ms`);
 
-      for (const bs of [32, (32 + 64) / 2, 64, 128]) {
-        (tf.ENV.backend as MathBackendCPU).blockSize = bs;
+      for (const blockSize of bs) {
+        backend.blockSize = blockSize;
         const a = tf.randomUniform([n, n]) as tf.Tensor2D;
         const b = tf.randomUniform([n, n]) as tf.Tensor2D;
         // Warmup.
-        tf.matMul(a, b).dataSync();
+        backend.matMul(a, b, false, false).dataSync();
 
         let res: tf.Tensor = null;
         const start = now();
-
         for (let i = 0; i < RUNS; i++) {
-          res = (tf.ENV.backend as MathBackendCPU).matMul(a, b, false, false);
+          res = backend.matMul(a, b, false, false);
         }
-
         res.dataSync();
         const elapsed = (now() - start) / RUNS;
-        const speedup = (regularTime / elapsed);
-        console.log(`N: ${n}: BS: ${bs} ${elapsed.toFixed(2)} ms, speedup = ${
-            speedup.toFixed(
-                2)}x, diff: ${(elapsed - regularTime).toFixed(2)} ms`);
+        const speedup = (naiveTime / elapsed).toFixed(2);
+        console.log(`BS: ${blockSize}\t ${elapsed.toFixed(2)} ms\t speedup: ${
+            speedup}x\t diff:${(elapsed - naiveTime).toFixed(2)}`);
         await tf.nextFrame();
       }
     }

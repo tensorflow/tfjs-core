@@ -39,7 +39,7 @@ import {topkImpl} from './topk_impl';
 import {whereImpl} from './where_impl';
 
 export class MathBackendCPU implements KernelBackend {
-  public blockSize = 64;
+  public blockSize = 16;
 
   private data = new WeakMap<DataId, DataTypeMap[DataType]>();
   private canvas: HTMLCanvasElement;
@@ -299,16 +299,20 @@ export class MathBackendCPU implements KernelBackend {
 
     const aValues = a.dataSync();
     const bValues = b.dataSync();
-
+    // a.print();
+    // b.print();
+    // console.log(aValues, bValues);
     const [aOuterStep, aInnerStep] =
         transposeA ? [1, a.strides[0]] : [a.strides[0], 1];
     const [bOuterStep, bInnerStep] =
         transposeB ? [b.strides[0], 1] : [1, b.strides[0]];
-
+    // console.log(`aOuterStep: ${aOuterStep}, aInnerStep: ${aInnerStep}`);
+    // console.log(`bOuterStep: ${bOuterStep}, bInnerStep: ${bInnerStep}`);
+    // console.log(leftDim, rightDim);
     const result = new Float32Array(leftDim * rightDim);
 
     const blockSize = this.blockSize;
-    let resultIndex = 0;
+    // let resultIndex = 0;
 
     for (let i0 = 0; i0 < leftDim; i0 += blockSize) {
       for (let j0 = 0; j0 < rightDim; j0 += blockSize) {
@@ -318,18 +322,25 @@ export class MathBackendCPU implements KernelBackend {
           const jBlock = Math.min(j0 + blockSize, rightDim);
           const kBlock = Math.min(k0 + blockSize, sharedDim);
           for (let i = i0; i < iBlock; i++) {
-            const iXOuterStep = i * aOuterStep;
+            // const iXOuterStep = i * aOuterStep;
             for (let j = j0; j < jBlock; j++) {
-              const jXOuterStep = j * bOuterStep;
-              let aInner = iXOuterStep + k0 * aInnerStep;
-              let bInner = jXOuterStep + k0 * bInnerStep;
+              //  const jXOuterStep = j * bOuterStep;
+              //     let aInner = iXOuterStep + k0 * aInnerStep;
+              //     let bInner = jXOuterStep + k0 * bInnerStep;
               let sum = 0.0;
               for (let k = k0; k < kBlock; k++) {
-                sum += aValues[aInner] * bValues[bInner];
-                aInner += aInnerStep;
-                bInner += bInnerStep;
+                /* console.log(
+                    `i:${i}, j:${j}, k:${k}`, i * aOuterStep + k * aInnerStep,
+                    k * bInnerStep + j * bOuterStep,
+                    `${aValues[i * aOuterStep + k * aInnerStep]} x ${
+                        bValues[k * bInnerStep + j * bOuterStep]}`); */
+                sum += aValues[i * aOuterStep + k * aInnerStep] *
+                    bValues[k * bInnerStep + j * bOuterStep];
+                //        aInner += aInnerStep;
+                //       bInner += bInnerStep;
               }
-              result[resultIndex++] = sum;
+              result[i * rightDim + j] += sum;
+              // console.log(result, i, j, i * leftDim + j);
             }
           }
         }
