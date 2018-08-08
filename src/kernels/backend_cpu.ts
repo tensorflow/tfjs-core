@@ -1428,21 +1428,209 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   pad<T extends Tensor>(
-      x: T, paddings: Array<[number, number]>, constantValue: number): T {
+      x: T, paddings: Array<[number, number]>, constantValue: number,
+      mode = 'constant'): T {
     const outShape = paddings.map(
         (p, i) => p[0] /* beforePad */ + x.shape[i] + p[1] /* afterPad */);
     const start = paddings.map(p => p[0]);
     const xBuffer = x.buffer();
     const buffer = ops.buffer(outShape, x.dtype);
-    if (constantValue !== 0) {
+
+    // Initialize output with constant value if one is given
+    if (mode === 'constant' && constantValue !== 0) {
       buffer.values.fill(constantValue);
     }
 
+    // Copy old values into padded shape
     for (let i = 0; i < x.size; i++) {
       const coords = xBuffer.indexToLoc(i);
       const outCoords = coords.map((c, i) => c + start[i]);
       buffer.set(x.get(...coords), ...outCoords);
     }
+
+    if (mode === 'reflect') {
+      if (x.rank === 1) {
+        const leftPad = paddings[0][0];
+        const rightPad = paddings[0][1];
+
+        // Extract slices in the desired padding length and reverse
+        let padBefore = x.slice(1, leftPad);
+        if (padBefore.size > 0) {
+          padBefore = padBefore.reverse();
+        }
+        let padAfter = x.slice(x.shape[0] - 1 - rightPad, rightPad);
+        if (padAfter.size > 0) {
+          padAfter = padAfter.reverse();
+        }
+        // Iterate over padding areas and fill buffer with values from extracted
+        // padding slices
+        for (let i = 0; i < leftPad; i++) {
+          buffer.set(padBefore.get(i), i);
+        }
+        for (let i = leftPad + x.shape[0]; i < buffer.shape[0]; i++) {
+          buffer.set(padAfter.get(i - leftPad - x.shape[0]), i);
+        }
+      } else if (x.rank === 2) {
+        const topPad = paddings[0][0];
+        const bottomPad = paddings[0][1];
+        const leftPad = paddings[1][0];
+        const rightPad = paddings[1][1];
+
+        // Extract vertical padding areas to the left and right of the 2D canvas
+        // and reverse them along the horizontal axis
+        let leftPadColumns = x.slice([0, 1], [x.shape[0], leftPad]);
+        if (leftPadColumns.size > 0) {
+          leftPadColumns = leftPadColumns.reverse(1);
+        }
+
+        let rightPadColumns =
+            x.slice([0, x.shape[1] - 1 - rightPad], [x.shape[0], rightPad]);
+        if (rightPadColumns.size > 0) {
+          rightPadColumns = rightPadColumns.reverse(1);
+        }
+
+        // Iterate over area between top and bottom padding and set horizontal
+        // padding values.
+        for (let row = topPad; row < topPad + x.shape[0]; row++) {
+          for (let col = 0; col < leftPad; col++) {
+            buffer.set(leftPadColumns.get(row - topPad, col), row, col);
+          }
+          for (let col = leftPad + x.shape[1]; col < buffer.shape[1]; col++) {
+            buffer.set(
+                rightPadColumns.get(row - topPad, col - leftPad - x.shape[1]),
+                row, col);
+          }
+        }
+
+        // Store in intermediate tensor and extract rows that correspond to the
+        // top and bottom padding area
+        const tmpTensor = buffer.toTensor();
+        let topPadRows = tmpTensor.slice([topPad + 1, 0], [topPad, -1]);
+        if (topPadRows.size > 0) {
+          topPadRows = topPadRows.reverse(0);
+        }
+        let bottomPadRows = tmpTensor.slice(
+            [topPad + x.shape[0] - 1 - bottomPad, 0], [bottomPad, -1]);
+        if (bottomPadRows.size > 0) {
+          bottomPadRows = bottomPadRows.reverse(0);
+        }
+
+        // Iterate full width of of output tensor and add padding values into
+        // top and bottom padding rows
+        for (let col = 0; col < tmpTensor.shape[1]; col++) {
+          for (let row = 0; row < topPad; row++) {
+            buffer.set(topPadRows.get(row, col), row, col);
+          }
+          for (let row = topPad + x.shape[0]; row < tmpTensor.shape[0]; row++) {
+            buffer.set(
+                bottomPadRows.get(row - topPad - x.shape[0], col), row, col);
+          }
+        }
+        tmpTensor.dispose();
+      } else if (x.rank === 3) {
+        const padBefore = paddings[0][0];
+        const padAfter = paddings[0][1];
+
+        // Extract individual 2D subtensors and pad them using recursion, add
+        // padding values ('around' 2D core) to buffer
+        for (let i = 0; i < x.shape[0]; i++) {
+          const paddings2d = paddings.slice(1, 3);
+          const subTensor = x.slice([i, 0, 0], [1, -1, -1]).squeeze();
+          const paddedSubTensor =
+              this.pad(subTensor, paddings2d, constantValue, mode) as Tensor2D;
+
+          for (let row = 0; row < paddedSubTensor.shape[0]; row++) {
+            for (let col = 0; col < paddedSubTensor.shape[1]; col++) {
+              buffer.set(
+                  paddedSubTensor.get(row, col), padBefore + i, row, col);
+            }
+          }
+        }
+
+        // Create intermediate tensor and extract 3D padding values by fetching
+        // channels corresponding to the padding and reversing the results.
+        const tmpTensor = buffer.toTensor();
+        let before3D =
+            tmpTensor.slice([padBefore + 1, 0, 0], [padBefore, -1, -1]);
+        if (before3D.size > 0) {
+          before3D = before3D.reverse(0);
+        }
+        let after3D = tmpTensor.slice(
+            [padBefore + x.shape[0] - 2, 0, 0], [padAfter, -1, -1]);
+        if (after3D.size > 0) {
+          after3D = after3D.reverse(0);
+        }
+
+        // Fill remaining channels in the buffer with the values
+        for (let row = 0; row < buffer.shape[1]; row++) {
+          for (let col = 0; col < buffer.shape[2]; col++) {
+            for (let i = 0; i < padBefore; i++) {
+              buffer.set(before3D.get(i, row, col), i, row, col);
+            }
+
+            for (let i = padBefore + x.shape[0]; i < buffer.shape[0]; i++) {
+              buffer.set(
+                  after3D.get(i - padBefore - x.shape[0], row, col), i, row,
+                  col);
+            }
+          }
+        }
+        tmpTensor.dispose();
+      } else if (x.rank === 4) {
+        // Repeat same steps as in 3D but use additional channel dimension
+        const padBefore = paddings[0][0];
+        const padAfter = paddings[0][1];
+
+        for (let i = 0; i < x.shape[0]; i++) {
+          const paddings3d = paddings.slice(1, 4);
+          const subTensor = x.slice([i, 0, 0, 0], [1, -1, -1, -1]).squeeze();
+          const paddedSubTensor =
+              this.pad(subTensor, paddings3d, constantValue, mode) as Tensor3D;
+          for (let channel = 0; channel < paddedSubTensor.shape[0]; channel++) {
+            for (let row = 0; row < paddedSubTensor.shape[1]; row++) {
+              for (let col = 0; col < paddedSubTensor.shape[2]; col++) {
+                buffer.set(
+                    paddedSubTensor.get(channel, row, col), padBefore + i,
+                    channel, row, col);
+              }
+            }
+          }
+        }
+
+        const tmpTensor = buffer.toTensor();
+
+        // Handle 0 paddings
+        let before4D =
+            tmpTensor.slice([padBefore + 1, 0, 0, 0], [padBefore, -1, -1, -1]);
+        if (before4D.size > 0) {
+          before4D = before4D.reverse(0);
+        }
+        let after4D = tmpTensor.slice(
+            [padBefore + x.shape[0] - 2, 0, 0, 0], [padAfter, -1, -1, -1]);
+        if (after4D.size > 0) {
+          after4D = after4D.reverse(0);
+        }
+
+        for (let channel = 0; channel < buffer.shape[1]; channel++) {
+          for (let row = 0; row < buffer.shape[2]; row++) {
+            for (let col = 0; col < buffer.shape[3]; col++) {
+              for (let i = 0; i < padBefore; i++) {
+                buffer.set(
+                    before4D.get(i, channel, row, col), i, channel, row, col);
+              }
+
+              for (let i = padBefore + x.shape[0]; i < buffer.shape[0]; i++) {
+                buffer.set(
+                    after4D.get(i - padBefore - x.shape[0], channel, row, col),
+                    i, channel, row, col);
+              }
+            }
+          }
+        }
+        tmpTensor.dispose();
+      }
+    }
+
     return buffer.toTensor() as T;
   }
 

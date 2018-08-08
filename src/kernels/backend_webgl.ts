@@ -536,8 +536,9 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   pad<T extends Tensor>(
-      x: T, paddings: Array<[number, number]>, constantValue: number): T {
-    const program = new PadProgram(x.shape, paddings, constantValue);
+      x: T, paddings: Array<[number, number]>, constantValue: number,
+      mode: string): T {
+    const program = new PadProgram(x.shape, paddings, constantValue, mode);
     return this.compileAndRun(program, [x]);
   }
 

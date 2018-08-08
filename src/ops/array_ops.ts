@@ -599,12 +599,12 @@ function tile_<T extends Tensor>(x: T|TensorLike, reps: number[]): T {
  * Pads a `Tensor1D` with a given value and paddings. See `pad` for details.
  */
 function pad1d_(
-    x: Tensor1D|TensorLike, paddings: [number, number],
-    constantValue = 0): Tensor1D {
+    x: Tensor1D|TensorLike, paddings: [number, number], constantValue = 0,
+    mode = 'constant'): Tensor1D {
   util.assert(
       paddings.length === 2,
       'Invalid number of paddings. Must be length of 2.');
-  return pad(x, [paddings], constantValue);
+  return pad(x, [paddings], constantValue, mode);
 }
 
 /**
@@ -612,12 +612,12 @@ function pad1d_(
  */
 function pad2d_(
     x: Tensor2D|TensorLike, paddings: [[number, number], [number, number]],
-    constantValue = 0): Tensor2D {
+    constantValue = 0, mode = 'constant'): Tensor2D {
   util.assert(
       paddings.length === 2 && paddings[0].length === 2 &&
           paddings[1].length === 2,
       'Invalid number of paddings. Must be length of 2 each.');
-  return pad(x, paddings, constantValue);
+  return pad(x, paddings, constantValue, mode);
 }
 
 /**
@@ -626,12 +626,12 @@ function pad2d_(
 function pad3d_(
     x: Tensor3D|TensorLike,
     paddings: [[number, number], [number, number], [number, number]],
-    constantValue = 0): Tensor3D {
+    constantValue = 0, mode = 'constant'): Tensor3D {
   util.assert(
       paddings.length === 3 && paddings[0].length === 2 &&
           paddings[1].length === 2 && paddings[2].length === 2,
       'Invalid number of paddings. Must be length of 2 each.');
-  return pad(x, paddings, constantValue);
+  return pad(x, paddings, constantValue, mode);
 }
 
 /**
@@ -644,19 +644,19 @@ function pad4d_(
           [number, number], [number, number], [number, number],
           [number, number]
         ],
-    constantValue = 0): Tensor4D {
+    constantValue = 0, mode = 'constant'): Tensor4D {
   util.assert(
       paddings.length === 4 && paddings[0].length === 2 &&
           paddings[1].length === 2 && paddings[2].length === 2 &&
           paddings[3].length === 2,
       'Invalid number of paddings. Must be length of 2 each.');
-  return pad(x, paddings, constantValue);
+  return pad(x, paddings, constantValue, mode);
 }
 
 /**
  * Pads a `Tensor` with a given value and paddings.
  *
- * This operation currently only implements the `CONSTANT` mode.
+ * This operation currently only implements the `CONSTANT` and 'REFLECT' mode.
  *
  * Also available are stricter rank-specific methods with the same signature
  * as this method that assert that `paddings` is of given length.
@@ -674,15 +674,27 @@ function pad4d_(
  * each element is a length-2 tuple of ints `[padBefore, padAfter]`,
  * specifying how much to pad along each dimension of the tensor.
  * @param constantValue The pad value to use. Defaults to 0.
+ * @param mode The mode to use. Currently only supports 'constant' and 'reflect'
  */
 /** @doc {heading: 'Tensors', subheading: 'Transformations'} */
 function pad_<T extends Tensor>(
-    x: T|TensorLike, paddings: Array<[number, number]>, constantValue = 0): T {
+    x: T|TensorLike, paddings: Array<[number, number]>, constantValue = 0,
+    mode = 'constant'): T {
   const $x = convertToTensor(x, 'x', 'pad');
 
   if ($x.rank === 0) {
     throw new Error('pad(scalar) is not defined. Pass non-scalar to pad');
   }
+
+  if (mode === 'reflect') {
+    paddings.forEach((p, i) => {
+      if (p[1] >= $x.shape[i]) {
+        throw new Error(`paddings must be less than the dimension size: ${
+            paddings[i]} not less than ${p[1]}`);
+      }
+    });
+  }
+
   // Pad introduces values around the original tensor, so the gradient
   // slices the original shape out of the gradient.
   const begin = paddings.map(p => p[0]);
@@ -690,8 +702,8 @@ function pad_<T extends Tensor>(
     return {$x: () => dy.slice(begin, $x.shape)};
   };
   return ENV.engine.runKernel(
-             backend => backend.pad($x, paddings, constantValue), {$x}, grad) as
-      T;
+             backend => backend.pad($x, paddings, constantValue, mode), {$x},
+             grad) as T;
 }
 
 /**

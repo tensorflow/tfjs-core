@@ -194,7 +194,8 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
   tile<T extends Tensor>(x: T, reps: number[]): T;
 
   pad<T extends Tensor>(
-      x: T, paddings: Array<[number, number]>, constantValue: number): T;
+      x: T, paddings: Array<[number, number]>, constantValue: number,
+      mode: string): T;
 
   transpose<T extends Tensor>(x: T, perm: number[]): T;
 
