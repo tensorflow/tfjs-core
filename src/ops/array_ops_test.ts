@@ -1727,6 +1727,14 @@ describeWithFlags('clone', ALL_ENVS, () => {
     expectArraysEqual(b, [1, 1, 0]);
   });
 
+  it('1D complex64 dtype', () => {
+    const a = tf.tensor1d([1, 1], 'complex64');
+    const b = tf.clone(a);
+    expect(b.dtype).toBe('complex64');
+    expect(b.shape).toEqual([1]);
+    expectArraysEqual(b, [1, 1]);
+  });
+
   it('2D default dtype', () => {
     const a = tf.tensor2d([1, 2, 3, 4], [2, 2]);
     const b = tf.clone(a);
@@ -3482,6 +3490,7 @@ describeWithFlags('complex64 memory webgl', WEBGL_ENVS, () => {
   it('usage', () => {
     let numTensors = tf.memory().numTensors;
     let numBuffers = tf.memory().numDataBuffers;
+    const startTensors = numTensors;
 
     const real1 = tf.tensor1d([1]);
     const imag1 = tf.tensor1d([2]);
@@ -3528,5 +3537,17 @@ describeWithFlags('complex64 memory webgl', WEBGL_ENVS, () => {
     numTensors = tf.memory().numTensors;
 
     expectArraysClose(imag, [6]);
+
+    // After disposing, there should be no tensors.
+    real1.dispose();
+    imag1.dispose();
+    real2.dispose();
+    imag2.dispose();
+    complex1.dispose();
+    complex2.dispose();
+    result.dispose();
+    real.dispose();
+    imag.dispose();
+    expect(tf.memory().numTensors).toBe(startTensors);
   });
 });

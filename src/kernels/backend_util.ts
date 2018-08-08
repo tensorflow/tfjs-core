@@ -38,6 +38,12 @@ export function castTensor<T extends Tensor>(
     // precision.
     return Tensor.make(x.shape, {dataId: x.dataId}, dtype) as T;
   }
+  if (x.dtype === 'complex64') {
+    const real = backend.real(x);
+    const result = real.cast(dtype);
+    real.dispose();
+    return result;
+  }
   if (dtype === 'int32') {
     return backend.int(x);
   } else if (dtype === 'bool') {

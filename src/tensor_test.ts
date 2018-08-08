@@ -722,6 +722,14 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     expect(b.shape).toEqual([1, 1, 1]);
   });
 
+  it('Scalar complex64 dtype', () => {
+    const a = tf.scalar([4, 5], 'complex64');
+    const b = a.reshape([1, 1]);
+    expectArraysClose(a, [4, 5]);
+    expect(b.dtype).toBe('complex64');
+    expect(b.shape).toEqual([1, 1]);
+  });
+
   it('Tensor1D default dtype', () => {
     const a = tf.tensor1d([1, 2, 3, 4]);
     const b = a.reshape([2, 2]);
@@ -842,6 +850,30 @@ describeWithFlags('tensor', ALL_ENVS, () => {
   it('cast float32 -> float32', () => {
     const a = tf.tensor1d([1.0, 2.0]);
     expect(a.cast('float32').dtype).toEqual('float32');
+  });
+
+  it('cast complex64 -> float32', () => {
+    const a = tf.complex([1.0, 2.0], [3.0, 4.0]);
+    const result = a.cast('float32');
+
+    expect(result.dtype).toEqual('float32');
+    expectArraysClose(result, [1.0, 2.0]);
+  });
+
+  it('cast complex64 -> int32', () => {
+    const a = tf.complex([1.0, 2.0], [3.0, 4.0]);
+    const result = a.cast('int32');
+
+    expect(result.dtype).toEqual('int32');
+    expectArraysClose(result, [1, 2]);
+  });
+
+  it('cast complex64 -> bool', () => {
+    const a = tf.complex([1.0, 0.0], [1.0, 1.0]);
+    const result = a.cast('bool');
+
+    expect(result.dtype).toEqual('bool');
+    expectArraysClose(result, [true, false]);
   });
 
   it('cast throws when passed a non-tensor', () => {

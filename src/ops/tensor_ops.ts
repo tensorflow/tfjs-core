@@ -58,7 +58,7 @@ function tensor<R extends Rank>(
         'values passed to tensor(values) must be an ' +
         'array of numbers or booleans, or a TypedArray');
   }
-  const inferredShape = inferShape(values);
+  const inferredShape = inferShape(values, dtype);
   if (shape != null && inferredShape.length !== 1) {
     assertShapesMatch(
         shape, inferredShape,
@@ -92,8 +92,10 @@ function tensor<R extends Rank>(
  * @param dtype The data type.
  */
 /** @doc {heading: 'Tensors', subheading: 'Creation'} */
-function scalar(value: number|boolean, dtype: DataType = 'float32'): Scalar {
-  if (isTypedArray(value) || Array.isArray(value)) {
+function scalar(
+    value: number|boolean|[number, number],
+    dtype: DataType = 'float32'): Scalar {
+  if ((isTypedArray(value) || Array.isArray(value)) && dtype !== 'complex64') {
     throw new Error(
         'Error creating a new Scalar: value must be a primitive ' +
         '(number|boolean)');
@@ -118,7 +120,7 @@ function scalar(value: number|boolean, dtype: DataType = 'float32'): Scalar {
 /** @doc {heading: 'Tensors', subheading: 'Creation'} */
 function tensor1d(values: TensorLike1D, dtype: DataType = 'float32'): Tensor1D {
   assertNonNull(values);
-  const inferredShape = inferShape(values);
+  const inferredShape = inferShape(values, dtype);
   if (inferredShape.length !== 1) {
     throw new Error('tensor1d() requires values to be a flat/TypedArray');
   }
@@ -154,7 +156,7 @@ function tensor2d(
   if (shape != null && shape.length !== 2) {
     throw new Error('tensor2d() requires shape to have two numbers');
   }
-  const inferredShape = inferShape(values);
+  const inferredShape = inferShape(values, dtype);
   if (inferredShape.length !== 2 && inferredShape.length !== 1) {
     throw new Error(
         'tensor2d() requires values to be number[][] or flat/TypedArray');
@@ -197,7 +199,7 @@ function tensor3d(
   if (shape != null && shape.length !== 3) {
     throw new Error('tensor3d() requires shape to have three numbers');
   }
-  const inferredShape = inferShape(values);
+  const inferredShape = inferShape(values, dtype);
   if (inferredShape.length !== 3 && inferredShape.length !== 1) {
     throw new Error(
         'tensor3d() requires values to be number[][][] or flat/TypedArray');
@@ -240,7 +242,7 @@ function tensor4d(
   if (shape != null && shape.length !== 4) {
     throw new Error('tensor4d() requires shape to have four numbers');
   }
-  const inferredShape = inferShape(values);
+  const inferredShape = inferShape(values, dtype);
   if (inferredShape.length !== 4 && inferredShape.length !== 1) {
     throw new Error(
         'tensor4d() requires values to be number[][][][] or flat/TypedArray');
@@ -283,7 +285,7 @@ function tensor5d(
   if (shape != null && shape.length !== 5) {
     throw new Error('tensor5d() requires shape to have five numbers');
   }
-  const inferredShape = inferShape(values);
+  const inferredShape = inferShape(values, dtype);
   if (inferredShape.length !== 5 && inferredShape.length !== 1) {
     throw new Error(
         'tensor5d() requires values to be ' +
@@ -328,7 +330,7 @@ function tensor6d(
   if (shape != null && shape.length !== 6) {
     throw new Error('tensor6d() requires shape to have six numbers');
   }
-  const inferredShape = inferShape(values);
+  const inferredShape = inferShape(values, dtype);
   if (inferredShape.length !== 6 && inferredShape.length !== 1) {
     throw new Error(
         'tensor6d() requires values to be number[][][][] or flat/TypedArray');

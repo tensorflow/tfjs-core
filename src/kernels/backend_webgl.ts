@@ -205,12 +205,14 @@ export class MathBackendWebGL implements KernelBackend {
     this.throwIfNoData(dataId);
 
     const texData = this.texData.get(dataId);
-    const {texture, texShape, usage, complexTensors, dtype} = texData;
+    const {texture, texShape, usage, dtype, shape} = texData;
 
     if (dtype === 'complex64') {
       const {real, imag} = splitRealAndImagArrays(values as Float32Array);
-      this.write(complexTensors.real, real);
-      this.write(complexTensors.imag, imag);
+      texData.complexTensors = {
+        real: Tensor.make(shape, {values: real}, 'float32'),
+        imag: Tensor.make(shape, {values: imag}, 'float32')
+      };
       return;
     }
 
@@ -955,7 +957,7 @@ export class MathBackendWebGL implements KernelBackend {
 
   add(a: Tensor, b: Tensor): Tensor {
     if (a.dtype === 'complex64' && b.dtype === 'complex64') {
-      return this.complexSeparableBinaryOp(a, b, binaryop_gpu.ADD);
+      return this.complexSeparableBinaryOp(a, b, (a, b) => a.add(b));
     }
 
     const program = new BinaryOpProgram(binaryop_gpu.ADD, a.shape, b.shape);
@@ -969,22 +971,13 @@ export class MathBackendWebGL implements KernelBackend {
    * Computes a complex binary operation that can be decomposed into a simple
    * binary operation on both the real and imagary parts.
    */
-  private complexSeparableBinaryOp(a: Tensor, b: Tensor, binaryOp: string):
-      Tensor {
+  private complexSeparableBinaryOp(
+      a: Tensor, b: Tensor, op: (a: Tensor, b: Tensor) => Tensor): Tensor {
     const aData = this.texData.get(a.dataId);
     const bData = this.texData.get(b.dataId);
 
-    const realProgram = new BinaryOpProgram(
-        binaryOp, aData.complexTensors.real.shape,
-        bData.complexTensors.real.shape);
-    const imagProgram = new BinaryOpProgram(
-        binaryOp, aData.complexTensors.imag.shape,
-        bData.complexTensors.imag.shape);
-
-    const real = this.compileAndRun<Tensor>(
-        realProgram, [aData.complexTensors.real, bData.complexTensors.real]);
-    const imag = this.compileAndRun<Tensor>(
-        imagProgram, [aData.complexTensors.imag, bData.complexTensors.imag]);
+    const real = op(aData.complexTensors.real, bData.complexTensors.real);
+    const imag = op(aData.complexTensors.imag, bData.complexTensors.imag);
 
     const complex = this.complex(real, imag);
     real.dispose();
@@ -1002,7 +995,7 @@ export class MathBackendWebGL implements KernelBackend {
 
   subtract(a: Tensor, b: Tensor): Tensor {
     if (a.dtype === 'complex64' && b.dtype === 'complex64') {
-      return this.complexSeparableBinaryOp(a, b, binaryop_gpu.SUB);
+      return this.complexSeparableBinaryOp(a, b, (a, b) => a.sub(b));
     }
 
     const program = new BinaryOpProgram(binaryop_gpu.SUB, a.shape, b.shape);
@@ -1286,7 +1279,7 @@ export class MathBackendWebGL implements KernelBackend {
     // Reshape the real and imaginary parts of the complex tensor.
     if (x.dtype === 'complex64') {
       const xData = this.texData.get(x.dataId);
-      const reshapedData = this.texData.get(reshapedTensor.dataId;
+      const reshapedData = this.texData.get(reshapedTensor.dataId);
       reshapedData.complexTensors = {
         real: ENV.engine.keep(xData.complexTensors.real.reshape(shape)),
         imag: ENV.engine.keep(xData.complexTensors.imag.reshape(shape))

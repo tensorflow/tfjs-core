@@ -381,11 +381,21 @@ export class Tensor<R extends Rank = Rank> {
       dataId?: DataId) {
     this.size = util.sizeFromShape(shape);
     if (values != null) {
-      util.assert(
-          this.size === values.length,
-          `Based on the provided shape, [${shape}], the tensor should have ` +
-              `${this.size} values but has ${values.length}`);
+      if (dtype === 'complex64') {
+        util.assert(
+            this.size * 2 === values.length,
+            `Based on the provided shape, [${shape}], and dtype ${dtype}, ` +
+                `the tensor should have ${this.size * 2} values but has ` +
+                `${values.length}`);
+      } else {
+        util.assert(
+            this.size === values.length,
+            `Based on the provided shape, [${shape}], and dtype ${dtype}, ` +
+                `the tensor should have ${this.size} values but has ` +
+                `${values.length}`);
+      }
     }
+
     this.shape = shape.slice();
     this.dtype = dtype || 'float32';
     this.strides = computeStrides(shape);

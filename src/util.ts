@@ -91,12 +91,14 @@ export function flatten<T extends number|boolean|Promise<number>>(
   return ret;
 }
 
-export function inferShape(val: TypedArray|number|boolean|RegularArray<number>|
-                           RegularArray<boolean>): number[] {
+export function inferShape(
+    val: TypedArray|number|boolean|RegularArray<number>|RegularArray<boolean>,
+    dtype: DataType): number[] {
+  const sizeDivisor = dtype === 'complex64' ? 2 : 1;
   let firstElem: typeof val = val;
 
   if (isTypedArray(val)) {
-    return [(val as TypedArray).length];
+    return [(val as TypedArray).length / sizeDivisor];
   }
   if (!Array.isArray(val)) {
     return [];  // Scalar.
@@ -104,18 +106,18 @@ export function inferShape(val: TypedArray|number|boolean|RegularArray<number>|
   const shape: number[] = [];
 
   while (firstElem instanceof Array) {
-    shape.push(firstElem.length);
+    shape.push(firstElem.length / sizeDivisor);
     firstElem = firstElem[0];
   }
   if (val instanceof Array) {
-    deepAssertShapeConsistency(val, shape, []);
+    deepAssertShapeConsistency(val, shape, [], dtype);
   }
   return shape;
 }
 
 function deepAssertShapeConsistency(
     val: number|boolean|RegularArray<number>|RegularArray<boolean>,
-    shape: number[], indices?: number[]) {
+    shape: number[], indices: number[], dtype: DataType) {
   indices = indices || [];
   if (!(val instanceof Array)) {
     assert(
@@ -129,12 +131,12 @@ function deepAssertShapeConsistency(
       () => `Element arr[${indices.join('][')}] should be a primitive, ` +
           `but is an array of ${val.length} elements`);
   assert(
-      val.length === shape[0],
+      val.length / (dtype === 'complex64' ? 2 : 1) === shape[0],
       () => `Element arr[${indices.join('][')}] should have ${shape[0]} ` +
           `elements, but has ${val.length} elements`);
   const subShape = shape.slice(1);
   for (let i = 0; i < val.length; ++i) {
-    deepAssertShapeConsistency(val[i], subShape, indices.concat(i));
+    deepAssertShapeConsistency(val[i], subShape, indices.concat(i), dtype);
   }
 }
 
@@ -365,10 +367,13 @@ export function checkConversionForNaN<D extends DataType>(
  * precision.
  */
 export function hasEncodingLoss(oldType: DataType, newType: DataType): boolean {
-  if (newType === 'float32') {
+  if (newType === 'complex64') {
     return false;
   }
-  if (newType === 'int32' && oldType !== 'float32') {
+  if (newType === 'float32' && oldType !== 'complex64') {
+    return false;
+  }
+  if (newType === 'int32' && oldType !== 'float32' && oldType !== 'complex64') {
     return false;
   }
   if (newType === 'bool' && oldType === 'bool') {
@@ -380,7 +385,7 @@ export function hasEncodingLoss(oldType: DataType, newType: DataType): boolean {
 function copyTypedArray<D extends DataType>(
     array: DataTypeMap[D]|number[]|boolean[], dtype: D,
     debugMode: boolean): DataTypeMap[D] {
-  if (dtype == null || dtype === 'float32') {
+  if (dtype == null || dtype === 'float32' || dtype === 'complex64') {
     return new Float32Array(array as number[]);
   } else if (dtype === 'int32') {
     if (debugMode) {
