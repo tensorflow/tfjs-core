@@ -33,7 +33,7 @@ export class BrowserHTTPRequest implements IOHandler {
 
   readonly DEFAULT_METHOD = 'POST';
 
-  static readonly URL_SCHEMES = ['http://', 'https://'];
+  static readonly URL_SCHEME_REGEX = /^https?:\/\//;
 
   constructor(path: string|string[], requestInit?: RequestInit) {
     if (typeof fetch === 'undefined') {
@@ -206,13 +206,8 @@ export class BrowserHTTPRequest implements IOHandler {
   }
 }
 
-function isHTTPScheme(url: string) {
-  for (const scheme of BrowserHTTPRequest.URL_SCHEMES) {
-    if (url.startsWith(scheme)) {
-      return true;
-    }
-  }
-  return false;
+function isHTTPScheme(url: string): boolean {
+  return url.match(BrowserHTTPRequest.URL_SCHEME_REGEX) != null;
 }
 
 export const httpRequestRouter: IORouter = (url: string|string[]) => {
@@ -223,12 +218,7 @@ export const httpRequestRouter: IORouter = (url: string|string[]) => {
   } else {
     let isHTTP = true;
     if (Array.isArray(url)) {
-      for (const urlItem of url) {
-        if (!isHTTPScheme(urlItem)) {
-          isHTTP = false;
-          break;
-        }
-      }
+      isHTTP = url.every(urlItem => isHTTPScheme(urlItem));
     } else {
       isHTTP = isHTTPScheme(url);
     }
