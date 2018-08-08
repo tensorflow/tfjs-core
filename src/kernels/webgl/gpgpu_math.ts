@@ -41,11 +41,10 @@ export interface GPGPUBinary {
   outShapeInfo: ShapeInfo;
 }
 
-export interface TensorData {  //<T extends Tensor> {
+export interface TensorData {
   tensor: Tensor;
   texData: TextureData;
   isUniform: boolean;
-  uniformValues?: TypedArray;
 }
 
 export function compileProgram<T extends Tensor, K extends Tensor>(
@@ -141,10 +140,11 @@ export function runProgram<T extends Tensor, K extends Tensor>(
     const variableUniformLocation = binary.uniformLocations[variableName];
     if (variableUniformLocation != null) {
       if (input.isUniform) {
-        if (util.sizeFromShape(input.tensor.shape) === 1) {
-          gpgpu.gl.uniform1f(variableUniformLocation, input.uniformValues[0]);
+        if (input.tensor.size === 1) {
+          gpgpu.gl.uniform1f(
+              variableUniformLocation, input.tensor.dataSync()[0]);
         } else {
-          let vals = input.uniformValues;
+          let vals = input.tensor.dataSync();
           if (!(vals instanceof Float32Array)) {
             vals = new Float32Array(vals);
           }

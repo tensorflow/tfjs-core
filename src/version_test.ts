@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {version_core} from '.';
+import {version_core} from './index';
 
 describe('version', () => {
   it('version is contained', () => {
