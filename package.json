@@ -1,6 +1,6 @@
 {
   "name": "@tensorflow/tfjs-core",
-  "version": "0.12.8",
+  "version": "0.12.9",
   "description": "Hardware-accelerated JavaScript library for machine intelligence",
   "private": false,
   "main": "dist/index.js",
@@ -53,8 +53,8 @@
   },
   "dependencies": {
     "@types/seedrandom": "~2.4.27",
-    "@types/webgl2": "~0.0.4",
     "@types/webgl-ext": "~0.0.29",
+    "@types/webgl2": "~0.0.4",
     "seedrandom": "~2.4.3"
   }
 }
