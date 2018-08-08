@@ -329,6 +329,8 @@ export function getTypedArrayFromDType<D extends DataType>(
     values = new Int32Array(size);
   } else if (dtype === 'bool') {
     values = new Uint8Array(size);
+  } else if (dtype === 'complex64') {
+    values = new Float32Array(size * 2);
   } else {
     throw new Error(`Unknown data type ${dtype}`);
   }

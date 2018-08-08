@@ -44,9 +44,9 @@ export class TensorBuffer<R extends Rank> {
       const n = values.length;
       const size = util.sizeFromShape(shape);
       util.assert(
-          n === size,
+          n / (dtype === 'complex64' ? 2 : 1) === size,
           `Length of values '${n}' does not match the size ` +
-              `inferred by the shape '${size}'`);
+              `inferred by the shape '${size}' with dtype ${dtype}.`);
     }
     this.shape = shape.slice();
     this.values =

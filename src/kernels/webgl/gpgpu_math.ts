@@ -16,7 +16,6 @@
  */
 
 import {Tensor} from '../../tensor';
-import {TypedArray} from '../../types';
 import * as util from '../../util';
 
 import {GPGPUContext} from './gpgpu_context';
