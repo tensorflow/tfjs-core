@@ -20,7 +20,7 @@ import {describeWithFlags} from '../jasmine_util';
 import {ALL_ENVS, expectArraysClose, expectNumbersClose, WEBGL_ENVS} from '../test_util';
 import {Rank} from '../types';
 
-describeWithFlags('matmul matmul-only', ALL_ENVS, () => {
+describeWithFlags('matmul', ALL_ENVS, () => {
   it('A x B', () => {
     const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
     const b = tf.tensor2d([0, 1, -3, 2, 2, 1], [3, 2]);
