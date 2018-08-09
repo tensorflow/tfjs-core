@@ -39,7 +39,7 @@ import {topkImpl} from './topk_impl';
 import {whereImpl} from './where_impl';
 
 export class MathBackendCPU implements KernelBackend {
-  public blockSize = 2;
+  public blockSize = 48;
 
   private data = new WeakMap<DataId, DataTypeMap[DataType]>();
   private canvas: HTMLCanvasElement;
@@ -328,43 +328,6 @@ export class MathBackendCPU implements KernelBackend {
             }
           }
         }
-      }
-    }
-    return ops.tensor2d(result, [leftDim, rightDim]);
-  }
-
-  matMulNaive(
-      a: Tensor2D, b: Tensor2D, transposeA: boolean,
-      transposeB: boolean): Tensor2D {
-    const sharedDim = transposeA ? a.shape[0] : a.shape[1];
-    const leftDim = transposeA ? a.shape[1] : a.shape[0];
-    const rightDim = transposeB ? b.shape[0] : b.shape[1];
-
-    const aValues = a.dataSync();
-    const bValues = b.dataSync();
-
-    const [aOuterStep, aInnerStep] =
-        transposeA ? [1, a.strides[0]] : [a.strides[0], 1];
-    const [bOuterStep, bInnerStep] =
-        transposeB ? [b.strides[0], 1] : [1, b.strides[0]];
-
-    const aOuterEnd = leftDim * aOuterStep;
-    const bOuterEnd = rightDim * bOuterStep;
-
-    const result = new Float32Array(leftDim * rightDim);
-    let resultIndex = 0;
-
-    for (let aOuter = 0; aOuter < aOuterEnd; aOuter += aOuterStep) {
-      for (let bOuter = 0; bOuter < bOuterEnd; bOuter += bOuterStep) {
-        let aInner = aOuter;
-        let bInner = bOuter;
-        let sum = 0;
-        for (let k = 0; k < sharedDim; ++k) {
-          sum += aValues[aInner] * bValues[bInner];
-          aInner += aInnerStep;
-          bInner += bInnerStep;
-        }
-        result[resultIndex++] = sum;
       }
     }
     return ops.tensor2d(result, [leftDim, rightDim]);
