@@ -21,10 +21,6 @@ import {ALL_ENVS, expectArraysClose, expectNumbersClose, WEBGL_ENVS} from '../te
 import {Rank} from '../types';
 
 describeWithFlags('matmul matmul-only', ALL_ENVS, () => {
-  beforeEach(() => {
-    jasmine.DEFAULT_TIMEOUT_INTERVAL = 10 * 60 * 1000;
-  });
-
   it('A x B', () => {
     const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
     const b = tf.tensor2d([0, 1, -3, 2, 2, 1], [3, 2]);
