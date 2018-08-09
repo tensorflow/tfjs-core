@@ -32,8 +32,8 @@ describeWithFlags('matmul', ALL_ENVS, () => {
   });
 
   it('big A x A^t', () => {
-    const rows = 128;
-    const cols = 128;
+    const rows = 64;
+    const cols = 64;
     const a = tf.randomUniform([cols, rows], -1, 1) as tf.Tensor2D;
 
     // for an orthonomal matrix, its transpose is its inverse
