@@ -35,6 +35,9 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     const rows = 128;
     const cols = 128;
     const a = tf.randomUniform([cols, rows], -1, 1) as tf.Tensor2D;
+
+    // for an orthonomal matrix, its transpose is its inverse
+    // so aOrtho x aOrtho^t should be the identity matrix
     const aOrtho = tf.linalg.gramSchmidt(a) as tf.Tensor2D;
     const aat = tf.matMul(aOrtho, aOrtho, false, true);
     expect(aat.shape).toEqual([cols, rows]);
