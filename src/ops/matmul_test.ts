@@ -25,9 +25,7 @@ describeWithFlags('matmul matmul-only', ALL_ENVS, () => {
     jasmine.DEFAULT_TIMEOUT_INTERVAL = 10 * 60 * 1000;
   });
 
-  fit('A x B', () => {
-    tf.matMul(
-        tf.tensor2d([1, 2, 3, 4], [2, 2]), tf.tensor2d([1, 2, 3, 4], [2, 2]));
+  it('A x B', () => {
     const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
     const b = tf.tensor2d([0, 1, -3, 2, 2, 1], [3, 2]);
 
