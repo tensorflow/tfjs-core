@@ -2361,6 +2361,16 @@ describeWithFlags('oneHot', ALL_ENVS, () => {
     expect(res.shape).toEqual([2, 2]);
     expectArraysClose(res, [1, 0, 0, 1]);
   });
+
+  it('has gradient', () => {
+    const a = tf.tensor1d([0, 1, 2], 'int32');
+    const dy = tf.ones([3, 3], 'float32') as tf.Tensor2D;
+    const da = tf.grad((x: tf.Tensor1D) => tf.oneHot(x, 3))(a, dy);
+
+    expect(da.dtype).toBe('int32');
+    expect(da.shape).toEqual([3]);
+    expectArraysClose(da, [0, 0, 0]);
+  });
 });
 
 describeWithFlags('linspace', ALL_ENVS, () => {
