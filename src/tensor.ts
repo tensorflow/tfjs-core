@@ -309,6 +309,7 @@ export interface OpHandler {
   stridedSlice<T extends Tensor>(
       x: T, begin: number[], end: number[], strides: number[],
       beginMask: number, endMask: number): T;
+  depthToSpace(x: Tensor4D, blockSize: number, dataFormat: string): Tensor4D;
 }
 
 // For tracking tensor creation and disposal.
@@ -1184,6 +1185,12 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return opHandler.stridedSlice(
         this, begin, end, strides, beginMask, endMask);
+  }
+
+  depthToSpace(this: Tensor4D, blockSize: number, dataFormat: 'NHwC'|'NCHW'):
+      Tensor4D {
+    this.throwIfDisposed();
+    return opHandler.depthToSpace(this, blockSize, dataFormat);
   }
 }
 Object.defineProperty(Tensor, Symbol.hasInstance, {
