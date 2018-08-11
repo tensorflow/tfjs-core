@@ -80,21 +80,56 @@ export function decodeWeights(
     const name = spec.name;
     const dtype = spec.dtype;
     const shape = spec.shape;
+    const size = sizeFromShape(shape);
 
-    if (spec.quantization != null) {
-      throw new Error(
-          `decodeWeights does not support quantization yet, but encountered ` +
-          `weight '${name} with quantization.'`);
+    let typedArray: TypedArray;
+
+    if ('quantization' in spec) {
+      const quantization = spec.quantization;
+      if (quantization.dtype !== 'uint8' && quantization.dtype !== 'uint16') {
+        throw new Error(
+            `Weight ${spec.name} has unknown ` +
+            `quantization dtype ${quantization.dtype}.`);
+      }
+      const quantizationSizeFactor = quantization.dtype === 'uint8' ? 1 : 2;
+      const byteBuffer =
+          buffer.slice(offset, offset + size * quantizationSizeFactor);
+      const quantizedArray = (quantization.dtype === 'uint8') ?
+          new Uint8Array(byteBuffer) :
+          new Uint16Array(byteBuffer);
+      if (dtype === 'float32') {
+        typedArray = Float32Array.from(
+            quantizedArray, v => v * quantization.scale + quantization.min);
+      } else if (dtype === 'int32') {
+        typedArray = Int32Array.from(
+            quantizedArray,
+            v => Math.round(v * quantization.scale + quantization.min));
+      } else {
+        throw new Error(
+            `Unsupported quantization dtype in weight '${name}': ${dtype}`);
+      }
+    } else {
+      const dtypeFactor = dtype === 'bool' ? 1 : 4;
+      const byteBuffer = buffer.slice(offset, offset + size * dtypeFactor);
+
+      if (dtype === 'float32') {
+        typedArray = new Float32Array(byteBuffer);
+      } else if (dtype === 'int32') {
+        typedArray = new Int32Array(byteBuffer);
+      } else if (dtype === 'bool') {
+        typedArray = new Uint8Array(byteBuffer);
+      } else {
+        throw new Error(`Unsupported dtype in weight '${name}': ${dtype}`);
+      }
     }
 
-    const size = sizeFromShape(shape);
     let value: Tensor;
     if (dtype === 'float32') {
-      value = tensor(new Float32Array(buffer, offset, size), shape, 'float32');
+      value = tensor(typedArray, shape, 'float32');
     } else if (dtype === 'int32') {
-      value = tensor(new Int32Array(buffer, offset, size), shape, 'int32');
+      value = tensor(typedArray, shape, 'int32');
     } else if (dtype === 'bool') {
-      value = tensor(new Uint8Array(buffer, offset, size), shape, 'bool');
+      value = tensor(typedArray, shape, 'bool');
     } else {
       throw new Error(`Unsupported dtype in weight '${name}': ${dtype}`);
     }

@@ -20,6 +20,7 @@ import {scalar, tensor1d, tensor2d} from '../ops/ops';
 import {NamedTensorMap} from '../tensor_types';
 import {expectArraysEqual} from '../test_util';
 import {arrayBufferToBase64String, base64StringToArrayBuffer, basename, concatenateArrayBuffers, concatenateTypedArrays, stringByteLength} from './io_utils';
+import {WeightsManifestEntry} from './types';
 
 describe('concatenateTypedArrays', () => {
   it('Single float arrays', () => {
@@ -344,19 +345,19 @@ describe('encodeWeights', () => {
   });
 });
 
-describe('decodeWeights', () => {
+fdescribe('decodeWeights', () => {
   it('Mixed dtype tensors', async done => {
     const tensors: NamedTensorMap = {
       x1: tensor2d([[10, 20], [30, 40]], [2, 2], 'int32'),
       x2: scalar(13.37, 'float32'),
-      x3: tensor1d([true, false, false, true], 'bool'),
+      x3: tensor1d([true, false, false], 'bool'),
       y1: tensor2d([-10, -20, -30], [3, 1], 'float32'),
     };
     tf.io.encodeWeights(tensors)
         .then(dataAndSpecs => {
           const data = dataAndSpecs.data;
           const specs = dataAndSpecs.specs;
-          expect(data.byteLength).toEqual(4 * 4 + 4 * 1 + 1 * 4 + 4 * 3);
+          expect(data.byteLength).toEqual(4 * 4 + 4 * 1 + 1 * 3 + 4 * 3);
           const decoded = tf.io.decodeWeights(data, specs);
           expect(Object.keys(decoded).length).toEqual(4);
           expectArraysEqual(decoded['x1'], tensors['x1']);
@@ -383,6 +384,48 @@ describe('decodeWeights', () => {
     ];
     expect(() => tf.io.decodeWeights(buffer, specs))
         .toThrowError(/Unsupported dtype in weight \'x\': int16/);
+  });
+
+  it('support quantization uint8 weights', () => {
+    const manifestSpecs: WeightsManifestEntry[] = [
+      {
+        'name': 'weight0',
+        'dtype': 'float32',
+        'shape': [3],
+        'quantization': {'min': -1, 'scale': 0.1, 'dtype': 'uint8'}
+      },
+      {
+        'name': 'weight1',
+        'dtype': 'int32',
+        'shape': [3],
+        'quantization': {'min': -1, 'scale': 0.1, 'dtype': 'uint8'}
+      }
+    ];
+    const data = new Uint8Array([0, 48, 255, 0, 48, 255]);
+    const decoded = tf.io.decodeWeights(data.buffer, manifestSpecs);
+    expectArraysEqual(decoded['weight0'], [0, 48, 255]);
+    expectArraysEqual(decoded['weight1'], [0, 48, 255]);
+  });
+
+  it('support quantization uint16 weights', () => {
+    const manifestSpecs: WeightsManifestEntry[] = [
+      {
+        'name': 'weight0',
+        'dtype': 'float32',
+        'shape': [3],
+        'quantization': {'min': -1, 'scale': 0.1, 'dtype': 'uint16'}
+      },
+      {
+        'name': 'weight1',
+        'dtype': 'int32',
+        'shape': [3],
+        'quantization': {'min': -1, 'scale': 0.1, 'dtype': 'uint16'}
+      }
+    ];
+    const data = new Uint16Array([0, 48, 255, 0, 48, 255]);
+    const decoded = tf.io.decodeWeights(data.buffer, manifestSpecs);
+    expectArraysEqual(decoded['weight0'], [0, 48, 255]);
+    expectArraysEqual(decoded['weight1'], [0, 48, 255]);
   });
 });
 
