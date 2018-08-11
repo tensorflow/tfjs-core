@@ -81,7 +81,6 @@ export function decodeWeights(
     const dtype = spec.dtype;
     const shape = spec.shape;
     const size = sizeFromShape(shape);
-
     let typedArray: TypedArray;
 
     if ('quantization' in spec) {
@@ -91,7 +90,7 @@ export function decodeWeights(
             `Weight ${spec.name} has unknown ` +
             `quantization dtype ${quantization.dtype}.`);
       }
-      const quantizationSizeFactor = quantization.dtype === 'uint8' ? 1 : 2;
+      const quantizationSizeFactor = DTYPE_VALUE_SIZE_MAP[quantization.dtype];
       const byteBuffer =
           buffer.slice(offset, offset + size * quantizationSizeFactor);
       const quantizedArray = (quantization.dtype === 'uint8') ?
@@ -108,8 +107,9 @@ export function decodeWeights(
         throw new Error(
             `Unsupported quantization dtype in weight '${name}': ${dtype}`);
       }
+      offset += size * quantizationSizeFactor;
     } else {
-      const dtypeFactor = dtype === 'bool' ? 1 : 4;
+      const dtypeFactor = DTYPE_VALUE_SIZE_MAP[dtype];
       const byteBuffer = buffer.slice(offset, offset + size * dtypeFactor);
 
       if (dtype === 'float32') {
@@ -121,6 +121,7 @@ export function decodeWeights(
       } else {
         throw new Error(`Unsupported dtype in weight '${name}': ${dtype}`);
       }
+      offset += size * dtypeFactor;
     }
 
     let value: Tensor;
@@ -134,8 +135,6 @@ export function decodeWeights(
       throw new Error(`Unsupported dtype in weight '${name}': ${dtype}`);
     }
     out[name] = value;
-
-    offset += size * DTYPE_VALUE_SIZE_MAP[dtype];
   }
   return out;
 }

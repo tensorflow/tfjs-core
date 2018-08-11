@@ -19,6 +19,8 @@ import * as tf from '../index';
 import {scalar, tensor1d, tensor2d} from '../ops/ops';
 import {NamedTensorMap} from '../tensor_types';
 import {expectArraysEqual} from '../test_util';
+import {expectArraysClose} from '../test_util';
+
 import {arrayBufferToBase64String, base64StringToArrayBuffer, basename, concatenateArrayBuffers, concatenateTypedArrays, stringByteLength} from './io_utils';
 import {WeightsManifestEntry} from './types';
 
@@ -345,7 +347,7 @@ describe('encodeWeights', () => {
   });
 });
 
-fdescribe('decodeWeights', () => {
+describe('decodeWeights', () => {
   it('Mixed dtype tensors', async done => {
     const tensors: NamedTensorMap = {
       x1: tensor2d([[10, 20], [30, 40]], [2, 2], 'int32'),
@@ -403,8 +405,15 @@ fdescribe('decodeWeights', () => {
     ];
     const data = new Uint8Array([0, 48, 255, 0, 48, 255]);
     const decoded = tf.io.decodeWeights(data.buffer, manifestSpecs);
-    expectArraysEqual(decoded['weight0'], [0, 48, 255]);
-    expectArraysEqual(decoded['weight1'], [0, 48, 255]);
+    const weight0 = decoded['weight0'];
+    expectArraysClose(weight0, [-1, 3.8, 24.5]);
+    expect(weight0.shape).toEqual([3]);
+    expect(weight0.dtype).toEqual('float32');
+
+    const weight1 = decoded['weight1'];
+    expectArraysEqual(weight1, [-1, 4, 25]);
+    expect(weight1.shape).toEqual([3]);
+    expect(weight1.dtype).toEqual('int32');
   });
 
   it('support quantization uint16 weights', () => {
@@ -424,8 +433,15 @@ fdescribe('decodeWeights', () => {
     ];
     const data = new Uint16Array([0, 48, 255, 0, 48, 255]);
     const decoded = tf.io.decodeWeights(data.buffer, manifestSpecs);
-    expectArraysEqual(decoded['weight0'], [0, 48, 255]);
-    expectArraysEqual(decoded['weight1'], [0, 48, 255]);
+    const weight0 = decoded['weight0'];
+    expectArraysClose(weight0, [-1, 3.8, 24.5]);
+    expect(weight0.shape).toEqual([3]);
+    expect(weight0.dtype).toEqual('float32');
+
+    const weight1 = decoded['weight1'];
+    expectArraysEqual(weight1, [-1, 4, 25]);
+    expect(weight1.shape).toEqual([3]);
+    expect(weight1.dtype).toEqual('int32');
   });
 });
 
