@@ -2875,6 +2875,14 @@ describeWithFlags('split', ALL_ENVS, () => {
     expect(res[1].shape).toEqual([2, 2]);
     expectArraysClose(res[1], [3, 4, 7, 8]);
   });
+
+  it('should have proper gradient', () => {
+    const a = tf.tensor1d([1, 2, 3]);
+    const da = tf.grad(x => tf.split(x, [ 1, 2 ])[1])(a);
+
+    expect(da.shape).toEqual([3]);
+    expectArraysClose(da, [0, 1, 1]);
+  });
 });
 
 describeWithFlags('expandDims', ALL_ENVS, () => {
