@@ -53,13 +53,14 @@ export class Profiler {
 export class Logger {
   logKernelProfile(
       name: string, result: Tensor, vals: TypedArray, timeMs: number) {
-    const time = util.rightPad(`${timeMs}ms`, 9);
-    const paddedName = util.rightPad(name, 25);
-    const rank = result.rank;
-    const size = result.size;
-    const shape = util.rightPad(result.shape.toString(), 14);
-    console.log(
-        `%c${paddedName}\t%c${time}\t%c${rank}D ${shape}\t%c${size}`,
-        'font-weight:bold', 'color:red', 'color:blue', 'color: orange');
+    return;
+    // const time = util.rightPad(`${timeMs}ms`, 9);
+    // const paddedName = util.rightPad(name, 25);
+    // const rank = result.rank;
+    // const size = result.size;
+    // const shape = util.rightPad(result.shape.toString(), 14);
+    // console.log(
+    //     `%c${paddedName}\t%c${time}\t%c${rank}D ${shape}\t%c${size}`,
+    //     'font-weight:bold', 'color:red', 'color:blue', 'color: orange');
   }
 }

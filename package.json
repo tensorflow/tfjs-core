@@ -7,8 +7,6 @@
   "jsdelivr": "dist/tf-core.min.js",
   "unpkg": "dist/tf-core.min.js",
   "types": "dist/index.d.ts",
-  "jsnext:main": "dist/tf-core.esm.js",
-  "module": "dist/tf-core.esm.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/tensorflow/tfjs-core.git"

@@ -20,6 +20,7 @@ const DEFAULT_FLOAT32_EPSILON = 1e-8;
 const DEFAULT_FLOAT16_EPSILON = 1e-4;
 
 export function getOptimizerDefaultEpsilonValue() {
+  // TODO: Treat android as float16.
   if (ENV.get('WEBGL_RENDER_FLOAT32_ENABLED')) {
     return DEFAULT_FLOAT32_EPSILON;
   }
