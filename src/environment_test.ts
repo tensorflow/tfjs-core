@@ -263,6 +263,27 @@ describe('Backend', () => {
     ENV.removeBackend('custom-cpu');
   });
 
+  it('web worker', () => {
+    if (typeof OffscreenCanvas !== 'undefined') {
+      const features = {
+        'WEBGL_VERSION': 2,
+        'IS_WORKER': true,
+        'IS_BROWSER': false
+      };
+      ENV.setFeatures(features);
+
+      let backend: MathBackendWebGL;
+      const success = ENV.registerBackend('worker-webgl', () => {
+        backend = new MathBackendWebGL();
+        return backend;
+      }, 104);
+      expect(success).toBe(true);
+
+      const canvas = backend.getCanvas();
+      expect(canvas.constructor.name).toBe('OffscreenCanvas');
+    }
+  });
+
   it('default custom background null', () => {
     expect(ENV.findBackend('custom')).toBeNull();
   });

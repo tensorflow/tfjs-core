@@ -412,7 +412,9 @@ export class MathBackendWebGL implements KernelBackend {
     if (ENV.get('WEBGL_VERSION') < 1) {
       throw new Error('WebGL is not supported on this device');
     }
-    if (ENV.get('IS_BROWSER')) {
+    if (ENV.get('IS_WORKER')) {
+      this.canvas = new OffscreenCanvas(1, 1);
+    } else if (ENV.get('IS_BROWSER')) {
       this.canvas = document.createElement('canvas');
     }
     if (gpgpu == null) {

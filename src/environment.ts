@@ -268,6 +268,8 @@ export class Environment {
       return false;
     } else if (feature === 'IS_BROWSER') {
       return typeof window !== 'undefined';
+    } else if (feature === 'IS_WORKER') {
+      return typeof importScripts !== 'undefined';
     } else if (feature === 'IS_NODE') {
       return (typeof process !== 'undefined') &&
           (typeof process.versions.node !== 'undefined');

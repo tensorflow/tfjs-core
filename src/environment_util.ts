@@ -20,6 +20,8 @@ export interface Features {
   'DEBUG'?: boolean;
   // Whether we are in a browser (as versus, say, node.js) environment.
   'IS_BROWSER'?: boolean;
+  // Whether we are in a web worker environment
+  'IS_WORKER'?: boolean;
   // Whether we are in the Node.js environment.
   'IS_NODE'?: boolean;
   // The disjoint_query_timer extension version.
@@ -61,6 +63,7 @@ export enum Type {
 
 export const URL_PROPERTIES: URLProperty[] = [
   {name: 'DEBUG', type: Type.BOOLEAN}, {name: 'IS_BROWSER', type: Type.BOOLEAN},
+  {name: 'IS_WORKER', type: Type.BOOLEAN},
   {name: 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION', type: Type.NUMBER},
   {name: 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE', type: Type.BOOLEAN},
   {name: 'WEBGL_VERSION', type: Type.NUMBER},
