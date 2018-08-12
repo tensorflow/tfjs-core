@@ -1249,7 +1249,7 @@ export class MathBackendWebGL implements KernelBackend {
       Tensor4D {
     util.assert(
         blockSize > 1,
-        `blockSize should be > 1 for depthToSpace, but was: ` + blockSize);
+        `blockSize should be > 1 for depthToSpace, but was: ${blockSize}`);
 
     const batchSize = x.shape[0];
     const inputHeight = (dataFormat === 'NHWC') ? x.shape[1] : x.shape[2];

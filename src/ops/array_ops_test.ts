@@ -3486,10 +3486,9 @@ describeWithFlags('depthToSpace', ALL_ENVS, () => {
     const blockSize = 3;
 
     expect(() => tf.depthToSpace(t, blockSize))
-        .toThrowError(
-            `Dimension size must be evenly divisible by ` +
-            blockSize * blockSize + ` but is ` + t.shape[3] +
-            ` for depthToSpace with input shape ` + t.shape);
+        .toThrowError(`Dimension size must be evenly divisible by ${
+            blockSize * blockSize} but is ${
+            t.shape[3]} for depthToSpace with input shape ${t.shape}`);
   });
 
   it('throws when blocksize < 2', () => {
@@ -3498,7 +3497,7 @@ describeWithFlags('depthToSpace', ALL_ENVS, () => {
 
     expect(() => tf.depthToSpace(t, blockSize))
         .toThrowError(
-            `blockSize should be > 1 for depthToSpace, but was: ` + blockSize);
+            `blockSize should be > 1 for depthToSpace, but was: ${blockSize}`);
   });
 });
 
@@ -3510,8 +3509,8 @@ describeWithFlags('depthToSpace', CPU_ENVS, () => {
 
     expect(() => tf.depthToSpace(t, blockSize, dataFormat))
         .toThrowError(
-            `Only NHWC dataFormat supported on CPU for depthToSpace. Got ` +
-            dataFormat);
+            `Only NHWC dataFormat supported on CPU for depthToSpace. Got ${
+                dataFormat}`);
   });
 });
 

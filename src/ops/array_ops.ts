@@ -1110,21 +1110,21 @@ function depthToSpace_(
 
   util.assert(
       inputHeight * blockSize >= 0,
-      `Negative dimension size caused by overflow when multiplying ` +
-          inputHeight + ` and ` + blockSize +
-          ` for depthToSpace with input shape ` + $x.shape);
+      `Negative dimension size caused by overflow when multiplying
+      ${inputHeight} and ${blockSize}  for depthToSpace with input shape
+      ${$x.shape}`);
 
   util.assert(
       inputWidth * blockSize >= 0,
-      `Negative dimension size caused by overflow when multiplying ` +
-          inputWidth + ` and ` + blockSize +
-          ` for depthToSpace with input shape ` + $x.shape);
+      `Negative dimension size caused by overflow when multiplying
+      ${inputWidth} and ${blockSize} for depthToSpace with input shape
+          ${$x.shape}`);
 
   util.assert(
       (inputDepth % (blockSize * blockSize) === 0),
-      `Dimension size must be evenly divisible by ` + blockSize * blockSize +
-          ` but is ` + inputDepth + ` for depthToSpace with input shape ` +
-          $x.shape);
+      `Dimension size must be evenly divisible by ${
+          blockSize * blockSize} but is ${
+          inputDepth} for depthToSpace with input shape ${$x.shape}`);
 
   return ENV.engine.runKernel(
       backend => backend.depthToSpace($x, blockSize, dataFormat), {$x});

@@ -2179,11 +2179,11 @@ export class MathBackendCPU implements KernelBackend {
       Tensor4D {
     util.assert(
         dataFormat === 'NHWC',
-        `Only NHWC dataFormat supported on CPU for depthToSpace. Got ` +
-            dataFormat);
+        `Only NHWC dataFormat supported on CPU for depthToSpace. Got ${
+            dataFormat}`);
     util.assert(
         blockSize > 1,
-        `blockSize should be > 1 for depthToSpace, but was: ` + blockSize);
+        `blockSize should be > 1 for depthToSpace, but was: ${blockSize}`);
 
     const batchSize = x.shape[0];
     const inputHeight = x.shape[1];
