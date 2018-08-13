@@ -2213,8 +2213,8 @@ export class MathBackendCPU implements KernelBackend {
 
   dispose() {}
 
-  epsilon(): number {
-    return 1e-8;
+  floatSupport(): 'float16'|'float32' {
+    return 'float32';
   }
 }
 

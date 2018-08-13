@@ -1342,14 +1342,12 @@ export class MathBackendWebGL implements KernelBackend {
     this.disposed = true;
   }
 
-  epsilon(): number {
-    const float32Epsilon = 1e-8;
-    const float16Epsilon = 1e-4;
+  floatSupport(): 'float16'|'float32' {
     return tidy(() => {
-      if (this.abs(scalar(float32Epsilon)).get() > 0) {
-        return float32Epsilon;
+      if (this.abs(scalar(1e-8)).get() > 0) {
+        return 'float32';
       }
-      return float16Epsilon;
+      return 'float16';
     });
   }
 
