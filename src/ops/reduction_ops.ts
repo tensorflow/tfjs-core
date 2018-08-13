@@ -335,8 +335,11 @@ function argMin_<T extends Tensor>(x: Tensor|TensorLike, axis = 0): T {
     $x = $x.transpose(permutedAxes);
     axes = axis_util.getInnerMostAxes(axes.length, $x.rank);
   }
-  return ENV.engine.runKernel(backend => backend.argMin($x, axes[0]), {$x}) as
-      T;
+  const grad = (dy: T) => {
+    return {$x: () => zerosLike($x)};
+  };
+  return ENV.engine.runKernel(backend => backend.argMin($x, axes[0]), {$x},
+      grad) as T;
 }
 
 /**

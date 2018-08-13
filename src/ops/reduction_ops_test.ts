@@ -318,6 +318,16 @@ describeWithFlags('Reduction: argmin', ALL_ENVS, () => {
     const result = tf.argMin([1, 0, 3, 2]);
     expect(result.get()).toBe(1);
   });
+
+  it('has gradient', () => {
+    const a = tf.tensor2d([3, 2, 5, 100, -7, 2], [2, 3]);
+    const dy = tf.ones([3], 'float32') as tf.Tensor1D;
+    const da = tf.grad((x: tf.Tensor2D) => tf.argMin(x))(a, dy);
+
+    expect(da.dtype).toBe('float32');
+    expect(da.shape).toEqual([2, 3]);
+    expectArraysClose(da, [0, 0, 0, 0, 0, 0]);
+  });
 });
 
 describeWithFlags('Reduction: logSumExp', ALL_ENVS, () => {
