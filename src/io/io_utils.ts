@@ -88,7 +88,8 @@ export function decodeWeights(
       if (quantization.dtype !== 'uint8' && quantization.dtype !== 'uint16') {
         throw new Error(
             `Weight ${spec.name} has unknown ` +
-            `quantization dtype ${quantization.dtype}.`);
+            `quantization dtype ${quantization.dtype}. ` +
+            `Supported quantization dtypes are: 'uint8' and 'uint16'.`);
       }
       const quantizationSizeFactor = DTYPE_VALUE_SIZE_MAP[quantization.dtype];
       const byteBuffer =
@@ -104,8 +105,7 @@ export function decodeWeights(
             quantizedArray,
             v => Math.round(v * quantization.scale + quantization.min));
       } else {
-        throw new Error(
-            `Unsupported quantization dtype in weight '${name}': ${dtype}`);
+        throw new Error(`Unsupported dtype in weight '${name}': ${dtype}`);
       }
       offset += size * quantizationSizeFactor;
     } else {
