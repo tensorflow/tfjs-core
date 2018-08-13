@@ -186,7 +186,6 @@ export class MathBackendWebGL implements KernelBackend {
 
     // This is a byte texture with pixels.
     this.texData.get(tempPixelArray.dataId).usage = TextureUsage.PIXELS;
-    console.log(this.texData.get(tempPixelArray.dataId));
     this.gpgpu.uploadPixelDataToTexture(
         this.getTexture(tempPixelArray.dataId), pixels);
     const program = new FromPixelsProgram(outShape);
