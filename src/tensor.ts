@@ -663,10 +663,6 @@ export class Tensor<R extends Rank = Rank> {
     return tensorToString(vals, this.shape, this.dtype, verbose);
   }
 
-  get values() {
-    return this.dataSync();
-  }
-
   // Below is chain API that is not exposed to docs to avoid repetition. To
   // expose a method, move it above this comment and add @doc and jsdoc.
 
