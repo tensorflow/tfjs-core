@@ -35,7 +35,6 @@ export class Environment {
   private registry:
       {[id: string]: {backend: KernelBackend, priority: number}} = {};
   backendName: string;
-  backend: KernelBackend;
 
   constructor(features?: Features) {
     if (features != null) {
@@ -342,9 +341,12 @@ export class Environment {
 
   private initBackend(backendName?: string, safeMode = false) {
     this.backendName = backendName;
-    this.backend = this.findBackend(backendName);
-    this.globalEngine =
-        new Engine(this.backend, safeMode, () => this.get('DEBUG'));
+    const backend = this.findBackend(backendName);
+    this.globalEngine = new Engine(backend, safeMode, () => this.get('DEBUG'));
+  }
+
+  get backend(): KernelBackend {
+    return this.engine.backend;
   }
 
   findBackend(name: string): KernelBackend {
