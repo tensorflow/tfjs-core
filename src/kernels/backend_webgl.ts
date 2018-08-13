@@ -186,6 +186,7 @@ export class MathBackendWebGL implements KernelBackend {
 
     // This is a byte texture with pixels.
     this.texData.get(tempPixelArray.dataId).usage = TextureUsage.PIXELS;
+    console.log(this.texData.get(tempPixelArray.dataId));
     this.gpgpu.uploadPixelDataToTexture(
         this.getTexture(tempPixelArray.dataId), pixels);
     const program = new FromPixelsProgram(outShape);
@@ -1365,7 +1366,7 @@ export class MathBackendWebGL implements KernelBackend {
   private uploadToGPU(dataId: DataId): void {
     this.throwIfNoData(dataId);
     const texData = this.texData.get(dataId);
-    const {shape, values, texture, dtype} = texData;
+    const {shape, values, texture, dtype, usage} = texData;
     if (texture != null) {
       // Array is already on GPU. No-op.
       // Touching the texture.
@@ -1384,8 +1385,7 @@ export class MathBackendWebGL implements KernelBackend {
     const texShape =
         webgl_util.getTextureShapeFromLogicalShape(this.gpgpu.gl, shape);
     texData.texShape = texShape;
-    const newTexture =
-        this.acquireTexture(dataId, texShape, TextureUsage.UPLOAD);
+    const newTexture = this.acquireTexture(dataId, texShape, usage);
     texData.texture = newTexture;
     if (values != null) {
       this.gpgpu.uploadMatrixToTexture(
