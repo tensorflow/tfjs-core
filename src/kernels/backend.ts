@@ -47,6 +47,10 @@ export interface BackendTimer {
  * methods).
  */
 export interface KernelBackend extends TensorStorage, BackendTimer {
+  // Returns the smallest positive number used to make some ops numerically
+  // stable (e.g. division, log, etc.)
+  epsilon(): number;
+
   matMul(a: Tensor2D, b: Tensor2D, transposeA: boolean, transposeB: boolean):
       Tensor2D;
 

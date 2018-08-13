@@ -17,6 +17,7 @@
 
 import {MemoryInfo, TimingInfo} from '../engine';
 import {ENV} from '../environment';
+import {tidy} from '../globals';
 import {warn} from '../log';
 import * as array_ops_util from '../ops/array_ops_util';
 import * as axis_util from '../ops/axis_util';
@@ -25,7 +26,7 @@ import * as reduce_util from '../ops/reduce_util';
 import * as segment_util from '../ops/segment_util';
 import {getStridedSlicedInfo} from '../ops/slice_util';
 import {softmax} from '../ops/softmax';
-import {range, tensor} from '../ops/tensor_ops';
+import {range, scalar, tensor} from '../ops/tensor_ops';
 import {DataId, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import {DataType, DataTypeMap, Rank, RecursiveArray, ShapeMap, sumOutType, TypedArray, upcastType} from '../types';
 import * as util from '../util';
@@ -1339,6 +1340,17 @@ export class MathBackendWebGL implements KernelBackend {
       this.gpgpu.dispose();
     }
     this.disposed = true;
+  }
+
+  epsilon(): number {
+    const float32Epsilon = 1e-8;
+    const float16Epsilon = 1e-4;
+    return tidy(() => {
+      if (this.abs(scalar(float32Epsilon)).get() > 0) {
+        return float32Epsilon;
+      }
+      return float16Epsilon;
+    });
   }
 
   private throwIfNoData(dataId: DataId) {

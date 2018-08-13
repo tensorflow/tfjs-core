@@ -2212,6 +2212,10 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   dispose() {}
+
+  epsilon(): number {
+    return 1e-8;
+  }
 }
 
 ENV.registerBackend(

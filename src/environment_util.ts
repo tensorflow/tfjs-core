@@ -51,6 +51,9 @@ export interface Features {
   'IS_CHROME'?: boolean;
   // True if running unit tests.
   'IS_TEST'?: boolean;
+  // Smallest positive value used to make ops like division and log numerically
+  // stable.
+  'EPSILON'?: number;
 }
 
 export enum Type {
@@ -67,7 +70,7 @@ export const URL_PROPERTIES: URLProperty[] = [
   {name: 'WEBGL_RENDER_FLOAT32_ENABLED', type: Type.BOOLEAN},
   {name: 'WEBGL_DOWNLOAD_FLOAT_ENABLED', type: Type.BOOLEAN},
   {name: 'WEBGL_FENCE_API_ENABLED', type: Type.BOOLEAN},
-  {name: 'BACKEND', type: Type.STRING}
+  {name: 'BACKEND', type: Type.STRING}, {name: 'EPSILON', type: Type.NUMBER}
 ];
 
 export interface URLProperty {

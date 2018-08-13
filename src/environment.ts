@@ -317,6 +317,8 @@ export class Environment {
         return TEST_EPSILON_FLOAT32_ENABLED;
       }
       return TEST_EPSILON_FLOAT32_DISABLED;
+    } else if (feature === 'EPSILON') {
+      return this.backend.epsilon();
     }
     throw new Error(`Unknown feature ${feature}.`);
   }
