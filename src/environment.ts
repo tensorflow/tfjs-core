@@ -292,28 +292,33 @@ export class Environment {
         return 0;
       }
       return getWebGLDisjointQueryTimerVersion(
-          webGLVersion, this.get('IS_BROWSER'));
+          webGLVersion, this.get('IS_BROWSER'), this.get('IS_WORKER'));
     } else if (feature === 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE') {
       return this.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') > 0 &&
           !device_util.isMobile();
     } else if (feature === 'HAS_WEBGL') {
       return this.get('WEBGL_VERSION') > 0;
     } else if (feature === 'WEBGL_VERSION') {
-      if (isWebGLVersionEnabled(2, this.get('IS_BROWSER'))) {
+      if (isWebGLVersionEnabled(
+              2, this.get('IS_BROWSER'), this.get('IS_WORKER'))) {
         return 2;
-      } else if (isWebGLVersionEnabled(1, this.get('IS_BROWSER'))) {
+      } else if (isWebGLVersionEnabled(
+                     1, this.get('IS_BROWSER'), this.get('IS_WORKER'))) {
         return 1;
       }
       return 0;
     } else if (feature === 'WEBGL_RENDER_FLOAT32_ENABLED') {
       return isRenderToFloatTextureEnabled(
-          this.get('WEBGL_VERSION'), this.get('IS_BROWSER'));
+          this.get('WEBGL_VERSION'), this.get('IS_BROWSER'),
+          this.get('IS_WORKER'));
     } else if (feature === 'WEBGL_DOWNLOAD_FLOAT_ENABLED') {
       return isDownloadFloatTextureEnabled(
-          this.get('WEBGL_VERSION'), this.get('IS_BROWSER'));
+          this.get('WEBGL_VERSION'), this.get('IS_BROWSER'),
+          this.get('IS_WORKER'));
     } else if (feature === 'WEBGL_FENCE_API_ENABLED') {
       return isWebGLFenceEnabled(
-          this.get('WEBGL_VERSION'), this.get('IS_BROWSER'));
+          this.get('WEBGL_VERSION'), this.get('IS_BROWSER'),
+          this.get('IS_WORKER'));
     } else if (feature === 'TEST_EPSILON') {
       if (this.get('WEBGL_RENDER_FLOAT32_ENABLED')) {
         return TEST_EPSILON_FLOAT32_ENABLED;

@@ -78,10 +78,11 @@ export interface URLProperty {
   type: Type;
 }
 
-export function isWebGLVersionEnabled(webGLVersion: 1|2, isBrowser: boolean) {
+export function isWebGLVersionEnabled(
+    webGLVersion: 1|2, isBrowser: boolean, isWorker: boolean) {
   let gl;
   try {
-    gl = getWebGLRenderingContext(webGLVersion, isBrowser);
+    gl = getWebGLRenderingContext(webGLVersion, isBrowser, isWorker);
   } catch (e) {
     return false;
   }
@@ -94,13 +95,13 @@ export function isWebGLVersionEnabled(webGLVersion: 1|2, isBrowser: boolean) {
 }
 
 export function getWebGLDisjointQueryTimerVersion(
-    webGLVersion: number, isBrowser: boolean): number {
+    webGLVersion: number, isBrowser: boolean, isWorker: boolean): number {
   if (webGLVersion === 0) {
     return 0;
   }
 
   let queryTimerVersion: number;
-  const gl = getWebGLRenderingContext(webGLVersion, isBrowser);
+  const gl = getWebGLRenderingContext(webGLVersion, isBrowser, isWorker);
 
   if (hasExtension(gl, 'EXT_disjoint_timer_query_webgl2') &&
       webGLVersion === 2) {
@@ -118,12 +119,12 @@ export function getWebGLDisjointQueryTimerVersion(
 }
 
 export function isRenderToFloatTextureEnabled(
-    webGLVersion: number, isBrowser: boolean): boolean {
+    webGLVersion: number, isBrowser: boolean, isWorker: boolean): boolean {
   if (webGLVersion === 0) {
     return false;
   }
 
-  const gl = getWebGLRenderingContext(webGLVersion, isBrowser);
+  const gl = getWebGLRenderingContext(webGLVersion, isBrowser, isWorker);
 
   if (webGLVersion === 1) {
     if (!hasExtension(gl, 'OES_texture_float')) {
@@ -145,12 +146,12 @@ export function isRenderToFloatTextureEnabled(
 }
 
 export function isDownloadFloatTextureEnabled(
-    webGLVersion: number, isBrowser: boolean): boolean {
+    webGLVersion: number, isBrowser: boolean, isWorker: boolean): boolean {
   if (webGLVersion === 0) {
     return false;
   }
 
-  const gl = getWebGLRenderingContext(webGLVersion, isBrowser);
+  const gl = getWebGLRenderingContext(webGLVersion, isBrowser, isWorker);
 
   if (webGLVersion === 1) {
     if (!hasExtension(gl, 'OES_texture_float')) {
@@ -172,11 +173,12 @@ export function isDownloadFloatTextureEnabled(
   return readPixelsNoError;
 }
 
-export function isWebGLFenceEnabled(webGLVersion: number, isBrowser: boolean) {
+export function isWebGLFenceEnabled(
+    webGLVersion: number, isBrowser: boolean, isWorker: boolean) {
   if (webGLVersion !== 2) {
     return false;
   }
-  const gl = getWebGLRenderingContext(webGLVersion, isBrowser);
+  const gl = getWebGLRenderingContext(webGLVersion, isBrowser, isWorker);
 
   // tslint:disable-next-line:no-any
   const isEnabled = (gl as any).fenceSync != null;
@@ -237,12 +239,18 @@ function hasExtension(gl: WebGLRenderingContext, extensionName: string) {
 }
 
 function getWebGLRenderingContext(
-    webGLVersion: number, isBrowser: boolean): WebGLRenderingContext {
-  if (webGLVersion === 0 || !isBrowser) {
+    webGLVersion: number, isBrowser: boolean,
+    isWorker: boolean): WebGLRenderingContext {
+  if (webGLVersion === 0 || !(isBrowser || isWorker)) {
     throw new Error('Cannot get WebGL rendering context, WebGL is disabled.');
   }
 
-  const tempCanvas = document.createElement('canvas');
+  let tempCanvas;
+  if (isBrowser) {
+    tempCanvas = document.createElement('canvas');
+  } else {
+    tempCanvas = new OffscreenCanvas(1, 1);
+  }
 
   if (webGLVersion === 1) {
     return (tempCanvas.getContext('webgl') ||
