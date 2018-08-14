@@ -176,9 +176,14 @@ describeWithFlags('upload tensors as uniforms', WEBGL_ENVS, () => {
   });
 
   it('download and re-upload an output of a shader', () => {
-    const a = tf.ones([SIZE_UPLOAD_UNIFORM + 1]).square();
+    const vals = new Float32Array(SIZE_UPLOAD_UNIFORM + 1);
+    vals.fill(2);
+    const a = tf.square(vals);
     a.dataSync();            // Download to CPU.
     const res = a.square();  // Re-upload to GPU.
-    expectArraysClose(res, tf.ones([SIZE_UPLOAD_UNIFORM + 1]));
+
+    const expected = new Float32Array(SIZE_UPLOAD_UNIFORM + 1);
+    expected.fill(16);
+    expectArraysClose(res, expected);
   });
 });
