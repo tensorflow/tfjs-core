@@ -315,12 +315,12 @@ export class Environment {
       return isWebGLFenceEnabled(
           this.get('WEBGL_VERSION'), this.get('IS_BROWSER'));
     } else if (feature === 'TEST_EPSILON') {
-      if (this.backend.floatSupport() === 'float32') {
+      if (this.backend.floatPrecision() === 32) {
         return TEST_EPSILON_FLOAT32;
       }
       return TEST_EPSILON_FLOAT16;
     } else if (feature === 'EPSILON') {
-      if (this.backend.floatSupport() === 'float32') {
+      if (this.backend.floatPrecision() === 16) {
         return EPSILON_FLOAT32;
       }
       return EPSILON_FLOAT16;
