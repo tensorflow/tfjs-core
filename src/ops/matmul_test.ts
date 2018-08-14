@@ -199,6 +199,16 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     expectArraysClose(result, expected);
   });
 
+  it('Outer product from tensor', () => {
+    const v1 = tf.tensor1d([2, 3]);
+    const v2 = tf.tensor1d([2, 1]);
+    const result = v1.outerProduct(v2);
+
+    const expected = [4, 2, 6, 3];
+    expect(result.shape).toEqual([2, 2]);
+    expectArraysClose(result, expected);
+  });
+
   it('outer product accepts a tensor-like object', () => {
     const v1 = [2, 3];
     const v2 = [2, 1];

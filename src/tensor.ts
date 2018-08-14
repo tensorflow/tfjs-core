@@ -161,6 +161,7 @@ export interface OpHandler {
   matMul(a: Tensor2D, b: Tensor2D, transposeA: boolean, transposeB: boolean):
       Tensor2D;
   dot(t1: Tensor, t2: Tensor): Tensor;
+  outerProduct(v1: Tensor1D, v2: Tensor1D): Tensor2D;
   norm(
       x: Tensor, ord: number|'euclidean'|'fro', axis: number|number[],
       keepDims: boolean): Tensor;
@@ -683,6 +684,12 @@ export class Tensor<R extends Rank = Rank> {
   dot(b: Tensor): Tensor {
     this.throwIfDisposed();
     return opHandler.dot(this, b);
+  }
+  outerProduct(b: Tensor1D): Tensor2D {
+    this.throwIfDisposed();
+    util.assert(this.rank === 1, 'Inputs must be rank 1.');
+    const a = this.as1D();
+    return opHandler.outerProduct(a, b);
   }
   norm(
       ord: number|'euclidean'|'fro' = 'euclidean', axis: number|number[] = null,
