@@ -507,8 +507,8 @@ function getSampler2D(inputInfo: InputInfo): string {
   if (inputInfo.shapeInfo.isUniform) {
     return `
       float ${funcName}(int row, int col) {
-        int index = row * ${shape[1]} + col;
-        return ${funcName}Flat(index);
+        float index = dot(vec2(row, col), vec2(${shape[1]}, 1));
+        return ${funcName}Flat(round(index));
       }
     `;
   }
@@ -518,8 +518,8 @@ function getSampler2D(inputInfo: InputInfo): string {
   if (texNumC === 1) {
     return `
     float ${funcName}(int row, int col) {
-      int index = row * ${shape[1]} + col;
-      vec2 uv = vec2(0.5, (float(index) + 0.5) / ${texNumR}.0);
+      float index = dot(vec2(row, col), vec2(${shape[1]}, 1));
+      vec2 uv = vec2(0.5, (index + 0.5) / ${texNumR}.0);
       return sampleTexture(${texName}, uv);
     }
   `;
@@ -527,8 +527,8 @@ function getSampler2D(inputInfo: InputInfo): string {
   if (texNumR === 1) {
     return `
     float ${funcName}(int row, int col) {
-      int index = row * ${shape[1]} + col;
-      vec2 uv = vec2((float(index) + 0.5) / ${texNumC}.0, 0.5);
+      float index = dot(vec2(row, col), vec2(${shape[1]}, 1));
+      vec2 uv = vec2((index + 0.5) / ${texNumC}.0, 0.5);
       return sampleTexture(${texName}, uv);
     }
   `;
@@ -564,8 +564,9 @@ function getSampler3D(inputInfo: InputInfo): string {
   if (inputInfo.shapeInfo.isUniform) {
     return `
       float ${funcName}(int row, int col, int depth) {
-        int index = row * ${stride0} + col * ${stride1} + depth;
-        return ${funcName}Flat(index);
+        float index = dot(vec3(row, col, depth),
+                          vec3(${stride0}, ${stride1}, 1));
+        return ${funcName}Flat(round(index));
       }
     `;
   }
@@ -576,8 +577,8 @@ function getSampler3D(inputInfo: InputInfo): string {
   if (texNumC === stride0) {
     return `
         float ${funcName}(int row, int col, int depth) {
-          int texR = row;
-          int texC = col * ${stride1} + depth;
+          float texR = float(row);
+          float texC = dot(vec2(col, depth), vec2(${stride1}, 1));
           vec2 uv = (vec2(texC, texR) + halfCR) /
                      vec2(${texNumC}.0, ${texNumR}.0);
           return sampleTexture(${texName}, uv);
@@ -588,8 +589,8 @@ function getSampler3D(inputInfo: InputInfo): string {
   if (texNumC === stride1) {
     return `
     float ${funcName}(int row, int col, int depth) {
-      int texR = row * ${shape[1]} + col;
-      int texC = depth;
+      float texR = dot(vec2(row, col), vec2(${shape[1]}, 1));
+      float texC = float(depth);
       vec2 uv = (vec2(texC, texR) + halfCR) / vec2(${texNumC}.0, ${texNumR}.0);
       return sampleTexture(${texName}, uv);
     }
@@ -628,9 +629,9 @@ function getSampler4D(inputInfo: InputInfo): string {
   if (inputInfo.shapeInfo.isUniform) {
     return `
       float ${funcName}(int row, int col, int depth, int depth2) {
-        int index = row * ${stride0} + col * ${stride1} +
-            depth * ${stride2} + depth2;
-        return ${funcName}Flat(index);
+        float index = dot(vec4(row, col, depth, depth2),
+                          vec4(${stride0}, ${stride1}, ${stride2}, 1));
+        return ${funcName}Flat(round(index));
       }
     `;
   }
@@ -641,8 +642,9 @@ function getSampler4D(inputInfo: InputInfo): string {
   if (texNumC === stride0) {
     return `
       float ${funcName}(int row, int col, int depth, int depth2) {
-        int texR = row;
-        int texC = col * ${stride1} + depth * ${stride2} + depth2;
+        float texR = float(row);
+        float texC =
+            dot(vec3(col, depth, depth2), vec3(${stride1}, ${stride2}, 1));
         vec2 uv = (vec2(texC, texR) + halfCR) /
                    vec2(${texNumC}.0, ${texNumR}.0);
         return sampleTexture(${texName}, uv);
@@ -652,8 +654,9 @@ function getSampler4D(inputInfo: InputInfo): string {
   if (texNumC === stride2) {
     return `
       float ${funcName}(int row, int col, int depth, int depth2) {
-        int texR = row * ${shape[1] * shape[2]} + col * ${shape[2]} + depth;
-        int texC = depth2;
+        float texR = dot(vec3(row, col, depth),
+                         vec3(${shape[1] * shape[2]}, ${shape[2]}, 1));
+        float texC = float(depth2);
         vec2 uv = (vec2(texC, texR) + halfCR) /
                   vec2(${texNumC}.0, ${texNumR}.0);
         return sampleTexture(${texName}, uv);
