@@ -707,6 +707,7 @@ export class Tensor<R extends Rank = Rank> {
   }
   split<T extends Tensor>(this: T, numOrSizeSplits: number[]|number, axis = 0):
       T[] {
+    this.throwIfDisposed();
     return opHandler.split(this, numOrSizeSplits, axis);
   }
   stack(x: Tensor, axis = 0): Tensor {
