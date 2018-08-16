@@ -723,8 +723,8 @@ function getSampler5D(inputInfo: InputInfo): string {
   if (texNumC === stride3) {
     return `
       float ${funcName}(int row, int col, int depth, int depth2, int depth3) {
-        int texR = row * ${shape[1] * shape[2]} + col * ${shape[2]} +
-                   depth * ${shape[3]} + depth2;
+        int texR = row * ${shape[1] * shape[2] * shape[3]} +
+                   col * ${shape[2] * shape[3]} + depth * ${shape[3]} + depth2;
         int texC = depth3;
         vec2 uv = (vec2(texC, texR) + halfCR) /
                   vec2(${texNumC}.0, ${texNumR}.0);
