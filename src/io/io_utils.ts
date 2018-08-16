@@ -87,7 +87,7 @@ export function decodeWeights(
           `weight '${name} with quantization.'`);
     }
 
-    const size = sizeFromShape(shape);
+    const size = sizeFromShape(shape, dtype);
     let value: Tensor;
     if (dtype === 'float32') {
       value = tensor(new Float32Array(buffer, offset, size), shape, 'float32');

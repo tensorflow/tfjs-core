@@ -377,7 +377,7 @@ function ones<R extends Rank>(
 /** @doc {heading: 'Tensors', subheading: 'Creation'} */
 function zeros<R extends Rank>(
     shape: ShapeMap[R], dtype: DataType = 'float32'): Tensor<R> {
-  const values = makeZerosTypedArray(sizeFromShape(shape), dtype);
+  const values = makeZerosTypedArray(sizeFromShape(shape, dtype), dtype);
   return Tensor.make(shape, {values}, dtype);
 }
 

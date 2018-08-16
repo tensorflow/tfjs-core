@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {scalar, zerosLike} from '../ops/tensor_ops';
+import {scalar, zeros} from '../ops/tensor_ops';
 import {Tensor} from '../tensor';
 import {Rank} from '../types';
 import {DataType, ShapeMap} from '../types';
@@ -25,12 +25,15 @@ import {KernelBackend} from './backend';
 export function castTensor<T extends Tensor>(
     x: T, dtype: DataType, backend: KernelBackend): T {
   if (dtype === 'complex64') {
-    const zeros = zerosLike(x);
+    if (x.dtype === 'complex64') {
+      return x.clone();
+    }
+    const zerosTensor = zeros(x.shape);
     const floatX = x.toFloat();
-    const result = backend.complex(floatX, zeros);
-    zeros.dispose();
+    const result = backend.complex(floatX, zerosTensor);
+    zerosTensor.dispose();
     floatX.dispose();
-    return result;
+    return result as T;
   }
 
   if (!hasEncodingLoss(x.dtype, dtype)) {

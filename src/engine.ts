@@ -197,7 +197,7 @@ export class Engine implements TensorManager {
     if (refCount === 0) {
       this.numDataBuffers++;
       this.numBytes +=
-          util.sizeFromShape(a.shape) * util.bytesPerElement(a.dtype);
+          util.sizeFromShape(a.shape, a.dtype) * util.bytesPerElement(a.dtype);
       this.backend.register(a.dataId, a.shape, a.dtype);
     }
     this.refCounter.set(a.dataId, refCount + 1);
@@ -227,7 +227,7 @@ export class Engine implements TensorManager {
       this.backend.disposeData(a.dataId);
       this.numDataBuffers--;
       this.numBytes -=
-          util.sizeFromShape(a.shape) * util.bytesPerElement(a.dtype);
+          util.sizeFromShape(a.shape, a.dtype) * util.bytesPerElement(a.dtype);
     } else {
       this.refCounter.set(a.dataId, refCount - 1);
     }

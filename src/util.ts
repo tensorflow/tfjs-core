@@ -94,10 +94,10 @@ export function flatten<T extends number|boolean|Promise<number>>(
 export function inferShape(
     val: TypedArray|number|boolean|RegularArray<number>|RegularArray<boolean>,
     dtype: DataType): number[] {
-  const sizeDivisor = dtype === 'complex64' ? 2 : 1;
   let firstElem: typeof val = val;
 
   if (isTypedArray(val)) {
+    const sizeDivisor = dtype === 'complex64' ? 2 : 1;
     return [(val as TypedArray).length / sizeDivisor];
   }
   if (!Array.isArray(val)) {
@@ -106,11 +106,15 @@ export function inferShape(
   const shape: number[] = [];
 
   while (firstElem instanceof Array) {
-    shape.push(firstElem.length / sizeDivisor);
+    shape.push(firstElem.length);
     firstElem = firstElem[0];
   }
   if (val instanceof Array) {
     deepAssertShapeConsistency(val, shape, [], dtype);
+  }
+
+  if (dtype === 'complex64') {
+    shape[shape.length - 1] /= 2;
   }
   return shape;
 }
@@ -131,7 +135,7 @@ function deepAssertShapeConsistency(
       () => `Element arr[${indices.join('][')}] should be a primitive, ` +
           `but is an array of ${val.length} elements`);
   assert(
-      val.length / (dtype === 'complex64' ? 2 : 1) === shape[0],
+      val.length === shape[0],
       () => `Element arr[${indices.join('][')}] should have ${shape[0]} ` +
           `elements, but has ${val.length} elements`);
   const subShape = shape.slice(1);
@@ -140,16 +144,18 @@ function deepAssertShapeConsistency(
   }
 }
 
-export function sizeFromShape(shape: number[]): number {
+export function sizeFromShape(
+    shape: number[], dtype: DataType = 'float32'): number {
+  const sizePerEntry = dtype === 'complex64' ? 2 : 1;
   if (shape.length === 0) {
     // Scalar.
-    return 1;
+    return sizePerEntry;
   }
   let size = shape[0];
   for (let i = 1; i < shape.length; i++) {
     size *= shape[i];
   }
-  return size;
+  return size * sizePerEntry;
 }
 
 export function isScalarShape(shape: number[]): boolean {
@@ -483,7 +489,7 @@ export function makeOnesTypedArray<D extends DataType>(
 
 export function makeZerosTypedArray<D extends DataType>(
     size: number, dtype: D): DataTypeMap[D] {
-  if (dtype == null || dtype === 'float32') {
+  if (dtype == null || dtype === 'float32' || dtype === 'complex64') {
     return new Float32Array(size);
   } else if (dtype === 'int32') {
     return new Int32Array(size);

@@ -301,6 +301,14 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   add(a: Tensor, b: Tensor): Tensor {
+    if (a.dtype === 'complex64' || b.dtype === 'complex64') {
+      return this.broadcastedBinaryComplexOp(
+                 a.cast('complex64'), b.cast('complex64'),
+                 (aReal, aImag, bReal, bImag) => {
+                   return {real: aReal + bReal, imag: aImag + bImag};
+                 }) as Tensor;
+    }
+
     return this.broadcastedBinaryOp(
                a, b, upcastType(a.dtype, b.dtype),
                (aValue, bValue) => aValue + bValue) as Tensor;
@@ -322,6 +330,14 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   subtract(a: Tensor, b: Tensor): Tensor {
+    if (a.dtype === 'complex64' || b.dtype === 'complex64') {
+      return this.broadcastedBinaryComplexOp(
+                 a.cast('complex64'), b.cast('complex64'),
+                 (aReal, aImag, bReal, bImag) => {
+                   return {real: aReal - bReal, imag: aImag - bImag};
+                 }) as Tensor;
+    }
+
     return this.broadcastedBinaryOp(
                a, b, upcastType(a.dtype, b.dtype),
                (aValue, bValue) => aValue - bValue) as Tensor;
@@ -374,7 +390,16 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   multiply(a: Tensor, b: Tensor): Tensor {
-    this.assertNotComplex([a, b], 'multiply');
+    if (a.dtype === 'complex64' || b.dtype === 'complex64') {
+      return this.broadcastedBinaryComplexOp(
+                 a.cast('complex64'), b.cast('complex64'),
+                 (aReal, aImag, bReal, bImag) => {
+                   return {
+                     real: aReal * bReal - aImag * bImag,
+                     imag: aReal * bImag + aImag * bReal
+                   };
+                 }) as Tensor;
+    }
 
     return this.broadcastedBinaryOp(
                a, b, upcastType(a.dtype, b.dtype),
@@ -2051,19 +2076,22 @@ export class MathBackendCPU implements KernelBackend {
           for (let d = 0; d < depth; d++) {
             const dyVal = dy.get(b, r, c, d);
 
-            let topLeft = output.get(b, topDxRIndex, leftDxCIndex, d);
+            let topLeft = output.get(b, topDxRIndex, leftDxCIndex, d) as number;
             topLeft += dyVal * inverseDxRLerp * inverseDxCLerp;
             output.set(topLeft, b, topDxRIndex, leftDxCIndex, d);
 
-            let topRight = output.get(b, topDxRIndex, rightDxCIndex, d);
+            let topRight =
+                output.get(b, topDxRIndex, rightDxCIndex, d) as number;
             topRight += dyVal * inverseDxRLerp * dxCLerp;
             output.set(topRight, b, topDxRIndex, rightDxCIndex, d);
 
-            let bottomLeft = output.get(b, bottomDxRIndex, leftDxCIndex, d);
+            let bottomLeft =
+                output.get(b, bottomDxRIndex, leftDxCIndex, d) as number;
             bottomLeft += dyVal * dxRLerp * inverseDxCLerp;
             output.set(bottomLeft, b, bottomDxRIndex, leftDxCIndex, d);
 
-            let bottomRight = output.get(b, bottomDxRIndex, rightDxCIndex, d);
+            let bottomRight =
+                output.get(b, bottomDxRIndex, rightDxCIndex, d) as number;
             bottomRight += dyVal * dxRLerp * dxCLerp;
             output.set(bottomRight, b, bottomDxRIndex, rightDxCIndex, d);
           }
@@ -2320,8 +2348,8 @@ export class MathBackendCPU implements KernelBackend {
               if (d === k) {
                 dyi += Math.pow(norm, -beta);
               }
-              dyi *= dy.get(b, r, c, d);
-              output.set(dyi + output.get(b, r, c, k), b, r, c, k);
+              dyi *= dy.get(b, r, c, d) as number;
+              output.set(dyi + (output.get(b, r, c, k) as number), b, r, c, k);
             }
           }
         }
@@ -2428,6 +2456,56 @@ export class MathBackendCPU implements KernelBackend {
         const bIndex = bBuf.locToIndex(bLoc);
 
         resVals[i] = op(aVals[aIndex], bVals[bIndex]);
+      }
+    }
+    return result.toTensor();
+  }
+
+  private broadcastedBinaryComplexOp(
+      a: Tensor, b: Tensor,
+      op:
+          (aReal: number, aImag: number, bReal: number,
+           bImag: number) => {real: number, imag: number}): Tensor {
+    const newShape =
+        broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+    const result = ops.buffer(newShape, 'complex64');
+    const aVals = a.dataSync();
+    const bVals = b.dataSync();
+    const aBroadcastDims = broadcast_util.getBroadcastDims(a.shape, newShape);
+    const bBroadcastDims = broadcast_util.getBroadcastDims(b.shape, newShape);
+
+    const resVals = result.values;
+    if (aBroadcastDims.length + bBroadcastDims.length === 0) {
+      for (let i = 0; i < resVals.length; i += 2) {
+        const aIdx = i % aVals.length;
+        const bIdx = i % bVals.length;
+
+        const result =
+            op(aVals[aIdx], aVals[aIdx + 1], bVals[bIdx], bVals[bIdx + 1]);
+
+        resVals[i] = result.real;
+        resVals[i + 1] = result.imag;
+      }
+    } else {
+      const aBuf = a.buffer();
+      const bBuf = b.buffer();
+      for (let i = 0; i < resVals.length; i += 2) {
+        const loc = result.indexToLoc(i / 2);
+
+        const aLoc = loc.slice(-a.rank);
+        aBroadcastDims.forEach(d => aLoc[d] = 0);
+        const aIndex = aBuf.locToIndex(aLoc);
+
+        const bLoc = loc.slice(-b.rank);
+        bBroadcastDims.forEach(d => bLoc[d] = 0);
+        const bIndex = bBuf.locToIndex(bLoc);
+
+        const opResult =
+            op(aVals[aIndex * 2], aVals[aIndex * 2 + 1], bVals[bIndex * 2],
+               bVals[bIndex * 2 + 1]);
+
+        resVals[i] = opResult.real;
+        resVals[i + 1] = opResult.imag;
       }
     }
     return result.toTensor();

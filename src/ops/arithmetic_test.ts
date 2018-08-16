@@ -542,7 +542,9 @@ describeWithFlags('mul', ALL_ENVS, () => {
   });
   it('throws when dtypes dont match', () => {
     expect(() => tf.mul(tf.scalar(1, 'int32'), tf.scalar(1)))
-        .toThrowError(/Argument 'a' passed to 'mul' must be a Tensor/);
+        .toThrowError(
+            // tslint:disable-next-line:max-line-length
+            /The dtypes of the first\(int32\) and second\(float32\) input must match/);
   });
 
   it('accepts a tensor-like object', () => {
@@ -1041,7 +1043,9 @@ describeWithFlags('add', ALL_ENVS, () => {
 
   it('throws when dtypes dont match', () => {
     expect(() => tf.add(tf.scalar(1, 'int32'), tf.scalar(1)))
-        .toThrowError(/Argument 'a' passed to 'add' must be a Tensor/);
+        .toThrowError(
+            // tslint:disable-next-line:max-line-length
+            /The dtypes of the first\(int32\) and second\(float32\) input must match/);
   });
 
   it('accepts a tensor-like object', () => {
@@ -1365,7 +1369,9 @@ describeWithFlags('sub', ALL_ENVS, () => {
   });
   it('throws when dtypes dont match', () => {
     expect(() => tf.sub(tf.scalar(1, 'int32'), tf.scalar(1)))
-        .toThrowError(/Argument 'a' passed to 'mul' must be a Tensor/);
+        .toThrowError(
+            // tslint:disable-next-line:max-line-length
+            /The dtypes of the first\(int32\) and second\(float32\) input must match/);
   });
 
   it('accepts a tensor-like object', () => {

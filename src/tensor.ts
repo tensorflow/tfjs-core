@@ -42,9 +42,9 @@ export class TensorBuffer<R extends Rank> {
   constructor(shape: ShapeMap[R], public dtype: DataType, values: TypedArray) {
     if (values != null) {
       const n = values.length;
-      const size = util.sizeFromShape(shape);
+      const size = util.sizeFromShape(shape, dtype);
       util.assert(
-          n / (dtype === 'complex64' ? 2 : 1) === size,
+          n === size,
           `Length of values '${n}' does not match the size ` +
               `inferred by the shape '${size}' with dtype ${dtype}.`);
     }
@@ -62,7 +62,7 @@ export class TensorBuffer<R extends Rank> {
    * @param locs  The location indices.
    */
   /** @doc {heading: 'Tensors', subheading: 'Creation'} */
-  set(value: number, ...locs: number[]) {
+  set(value: number|[number, number], ...locs: number[]) {
     if (locs.length === 0) {
       locs = [0];
     }
@@ -70,8 +70,24 @@ export class TensorBuffer<R extends Rank> {
         locs.length === this.rank,
         `The number of provided coordinates (${locs.length}) must ` +
             `match the rank (${this.rank})`);
+
+    if (Array.isArray(value) && this.dtype !== 'complex64') {
+      throw new Error(
+          `value must not be an array for TensorBuffer of ` +
+          `type ${this.dtype}.`);
+    } else if (!Array.isArray(value) && this.dtype === 'complex64') {
+      throw new Error(
+          `value must be an array for TensorBuffer of ` +
+          `type complex64.`);
+    }
+
     const index = this.locToIndex(locs);
-    this.values[index] = value;
+    if (this.dtype !== 'complex64') {
+      this.values[index] = value as number;
+    } else {
+      this.values[index] = (value as [number, number])[0];
+      this.values[index + 1] = (value as [number, number])[1];
+    }
   }
 
   /**
@@ -80,7 +96,7 @@ export class TensorBuffer<R extends Rank> {
    * @param locs The location indices.
    */
   /** @doc {heading: 'Tensors', subheading: 'Creation'} */
-  get(...locs: number[]): number {
+  get(...locs: number[]): number|[number, number] {
     if (locs.length === 0) {
       locs = [0];
     }
@@ -88,7 +104,9 @@ export class TensorBuffer<R extends Rank> {
     for (let i = 0; i < locs.length - 1; ++i) {
       index += this.strides[i] * locs[i];
     }
-    return this.values[index];
+    return this.dtype === 'complex64' ?
+        [this.values[index], this.values[index + 1]] :
+        this.values[index];
   }
 
   locToIndex(locs: number[]): number {
@@ -380,24 +398,25 @@ export class Tensor<R extends Rank = Rank> {
       shape: ShapeMap[R], dtype: DataType, values?: TypedArray,
       dataId?: DataId) {
     this.size = util.sizeFromShape(shape);
+    this.shape = shape.slice();
+    this.dtype = dtype || 'float32';
+
     if (values != null) {
       if (dtype === 'complex64') {
         util.assert(
             this.size * 2 === values.length,
-            `Based on the provided shape, [${shape}], and dtype ${dtype}, ` +
-                `the tensor should have ${this.size * 2} values but has ` +
-                `${values.length}`);
+            `Based on the provided shape, [${shape}], and dtype ` +
+                `${this.dtype}, the tensor should have ${this.size * 2} ` +
+                `values but has ${values.length}`);
       } else {
         util.assert(
             this.size === values.length,
-            `Based on the provided shape, [${shape}], and dtype ${dtype}, ` +
-                `the tensor should have ${this.size} values but has ` +
-                `${values.length}`);
+            `Based on the provided shape, [${shape}], and dtype ` +
+                `${this.dtype}, the tensor should have ${this.size} values ` +
+                `but has ${values.length}`);
       }
     }
 
-    this.shape = shape.slice();
-    this.dtype = dtype || 'float32';
     this.strides = computeStrides(shape);
     this.dataId = dataId != null ? dataId : {};
     this.id = Tensor.nextId++;

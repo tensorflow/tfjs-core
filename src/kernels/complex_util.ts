@@ -38,7 +38,5 @@ export function splitRealAndImagArrays(complex: Float32Array):
     real[i / 2] = complex[i];
     imag[i / 2] = complex[i + 1];
   }
-  console.log('r', real);
-  console.log('imag', imag);
   return {real, imag};
 }
