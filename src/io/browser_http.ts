@@ -25,7 +25,24 @@ import {assert} from '../util';
 import {concatenateArrayBuffers, getModelArtifactsInfoForJSON} from './io_utils';
 import {IORouter, IORouterRegistry} from './router_registry';
 import {IOHandler, ModelArtifacts, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
-import {loadWeightsAsArrayBuffer} from './weights_loader';
+
+/**
+ * Reads binary weights data from a number of URLs.
+ *
+ * @param fetchURLs URLs to send the HTTP requests at, using `fetch` calls.
+ * @param requestOptions RequestInit (options) for the HTTP requests.
+ * @returns A `Promise` of an Array of `ArrayBuffer`. The Array has the same
+ *   length as `fetchURLs`.
+ */
+export async function loadWeightsAsArrayBuffer(
+    fetchURLs: string[], requestOptions?: RequestInit): Promise<ArrayBuffer[]> {
+  // Create the requests for all of the weights in parallel.
+  const requests = fetchURLs.map(fetchURL => fetch(fetchURL, requestOptions));
+  const responses = await Promise.all(requests);
+  const buffers =
+      await Promise.all(responses.map(response => response.arrayBuffer()));
+  return buffers;
+}
 
 export class BrowserHTTPRequest implements IOHandler {
   protected readonly path: string|string[];
