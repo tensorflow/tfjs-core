@@ -113,6 +113,8 @@ export function inferShape(
     deepAssertShapeConsistency(val, shape, [], dtype);
   }
 
+  // For complex64 dtypes the inner most dimension has 2 values per tensor
+  // entry.
   if (dtype === 'complex64') {
     shape[shape.length - 1] /= 2;
   }

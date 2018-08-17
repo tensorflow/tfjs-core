@@ -713,6 +713,7 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     const b = a.reshape([1, 1]);
     expect(b.dtype).toBe('float32');
     expect(b.shape).toEqual([1, 1]);
+    expectArraysClose(a.dataSync(), b.dataSync());
   });
 
   it('Scalar bool dtype', () => {
@@ -720,6 +721,7 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     const b = a.reshape([1, 1, 1]);
     expect(b.dtype).toBe('bool');
     expect(b.shape).toEqual([1, 1, 1]);
+    expectArraysClose(a.dataSync(), b.dataSync());
   });
 
   it('Scalar complex64 dtype', () => {
@@ -728,6 +730,7 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     expectArraysClose(a, [4, 5]);
     expect(b.dtype).toBe('complex64');
     expect(b.shape).toEqual([1, 1]);
+    expectArraysClose(a.dataSync(), b.dataSync());
   });
 
   it('Tensor1D default dtype', () => {
@@ -735,6 +738,7 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     const b = a.reshape([2, 2]);
     expect(b.dtype).toBe('float32');
     expect(b.shape).toEqual([2, 2]);
+    expectArraysClose(a.dataSync(), b.dataSync());
   });
 
   it('Tensor1D int32 dtype', () => {
@@ -742,6 +746,15 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     const b = a.reshape([2, 2]);
     expect(b.dtype).toBe('int32');
     expect(b.shape).toEqual([2, 2]);
+    expectArraysClose(a.dataSync(), b.dataSync());
+  });
+
+  it('Tensor1D complex64 dtype', () => {
+    const a = tf.tensor1d([1, 2, 3, 4, 6, 7, 8, 9], 'complex64');
+    const b = a.reshape([2, 2]);
+    expect(b.dtype).toBe('complex64');
+    expect(b.shape).toEqual([2, 2]);
+    expectArraysClose(a.dataSync(), b.dataSync());
   });
 
   it('Tensor2D default dtype', () => {
@@ -749,6 +762,7 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     const b = a.reshape([6]);
     expect(b.dtype).toBe('float32');
     expect(b.shape).toEqual([6]);
+    expectArraysClose(a.dataSync(), b.dataSync());
   });
 
   it('Tensor2D bool dtype', () => {
@@ -756,6 +770,16 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     const b = a.reshape([6]);
     expect(b.dtype).toBe('bool');
     expect(b.shape).toEqual([6]);
+    expectArraysClose(a.dataSync(), b.dataSync());
+  });
+
+  it('Tensor2D complex64 dtype', () => {
+    const a = tf.tensor2d(
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [2, 3], 'complex64');
+    const b = a.reshape([6]);
+    expect(b.dtype).toBe('complex64');
+    expect(b.shape).toEqual([6]);
+    expectArraysClose(a.dataSync(), b.dataSync());
   });
 
   it('Tensor3D default dtype', () => {
@@ -763,6 +787,7 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     const b = a.reshape([6]);
     expect(b.dtype).toBe('float32');
     expect(b.shape).toEqual([6]);
+    expectArraysClose(a.dataSync(), b.dataSync());
   });
 
   it('Tensor3D bool dtype', () => {
@@ -770,6 +795,16 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     const b = a.reshape([6]);
     expect(b.dtype).toBe('bool');
     expect(b.shape).toEqual([6]);
+    expectArraysClose(a.dataSync(), b.dataSync());
+  });
+
+  it('Tensor3D complex64 dtype', () => {
+    const a = tf.tensor3d(
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [2, 3, 1], 'complex64');
+    const b = a.reshape([6]);
+    expect(b.dtype).toBe('complex64');
+    expect(b.shape).toEqual([6]);
+    expectArraysClose(a.dataSync(), b.dataSync());
   });
 
   it('Tensor4D default dtype', () => {
@@ -777,6 +812,7 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     const b = a.reshape([2, 3]);
     expect(b.dtype).toBe('float32');
     expect(b.shape).toEqual([2, 3]);
+    expectArraysClose(a.dataSync(), b.dataSync());
   });
 
   it('Tensor4D int32 dtype', () => {
@@ -784,6 +820,16 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     const b = a.reshape([3, 2]);
     expect(b.dtype).toBe('int32');
     expect(b.shape).toEqual([3, 2]);
+    expectArraysClose(a.dataSync(), b.dataSync());
+  });
+
+  it('Tensor4D complex64 dtype', () => {
+    const a = tf.tensor4d(
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [2, 3, 1, 1], 'complex64');
+    const b = a.reshape([3, 2]);
+    expect(b.dtype).toBe('complex64');
+    expect(b.shape).toEqual([3, 2]);
+    expectArraysClose(a.dataSync(), b.dataSync());
   });
 
   it('reshape is functional', () => {
