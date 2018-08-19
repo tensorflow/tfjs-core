@@ -1187,7 +1187,7 @@ export class Tensor<R extends Rank = Rank> {
         this, begin, end, strides, beginMask, endMask);
   }
 
-  depthToSpace(this: Tensor4D, blockSize: number, dataFormat: 'NHwC'|'NCHW'):
+  depthToSpace(this: Tensor4D, blockSize: number, dataFormat: 'NHWC'|'NCHW'):
       Tensor4D {
     this.throwIfDisposed();
     return opHandler.depthToSpace(this, blockSize, dataFormat);
