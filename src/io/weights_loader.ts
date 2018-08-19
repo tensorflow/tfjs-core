@@ -158,71 +158,16 @@ export async function loadWeights(
     }
 
     const weightsEntries = groupWeightsToFetch[i];
-    const w = weightsEntries.map(item => item.manifestEntry);
-    const namedTensorMap = decodeWeights(groupBuffer, w);
-    for (const name in namedTensorMap) {
-      weightsTensorMap[name] = namedTensorMap[name];
-    }
-
-    // weightsEntries.forEach(weightsEntry => {
-    //   const byteBuffer = groupBuffer.slice(
-    //       weightsEntry.groupOffset,
-    //       weightsEntry.groupOffset + weightsEntry.sizeBytes);
-
-    //   let typedArray: TypedArray;
-
-    //   const dtype = weightsEntry.manifestEntry.dtype;
-
-    //   if ('quantization' in weightsEntry.manifestEntry) {
-    //     const quantization = weightsEntry.manifestEntry.quantization;
-    //     if (quantization.dtype !== 'uint8' && quantization.dtype !==
-    //     'uint16') {
-    //       throw new Error(
-    //           `Weight ${weightsEntry.manifestEntry.name} has unknown ` +
-    //           `quantization dtype ${quantization.dtype}.`);
-    //     }
-    //     const quantizedArray = (quantization.dtype === 'uint8') ?
-    //         new Uint8Array(byteBuffer) :
-    //         new Uint16Array(byteBuffer);
-    //     if (dtype === 'float32') {
-    //       typedArray = Float32Array.from(
-    //           quantizedArray, v => v * quantization.scale +
-    //           quantization.min);
-    //     } else if (dtype === 'int32') {
-    //       typedArray = Int32Array.from(
-    //           quantizedArray,
-    //           v => Math.round(v * quantization.scale + quantization.min));
-    //     } else {
-    //       throw new Error(
-    //           `Weight ${weightsEntry.manifestEntry.name} has a dtype not ` +
-    //           `supported by quantization: ${dtype}`);
-    //     }
-    //   } else {
-    //     if (dtype === 'float32') {
-    //       typedArray = new Float32Array(byteBuffer);
-    //     } else if (dtype === 'int32') {
-    //       typedArray = new Int32Array(byteBuffer);
-    //     } else if (dtype === 'bool') {
-    //       typedArray = new Uint8Array(byteBuffer);
-    //     } else {
-    //       throw new Error(
-    //           `Weight ${weightsEntry.manifestEntry.name} has unknown dtype `
-    //           +
-    //           `${dtype}.`);
-    //     }
-    //   }
-
-    //   const weightName = weightsEntry.manifestEntry.name;
-    //   if (weightsTensorMap[weightName] != null) {
-    //     throw new Error(
-    //         `Duplicate weight with name ${weightName}. ` +
-    //         `Please make sure weights names are unique in the manifest
-    //         JSON.`);
-    //   }
-    //   weightsTensorMap[weightName] = tensor(
-    //       typedArray, weightsEntry.manifestEntry.shape,
-    //       weightsEntry.manifestEntry.dtype);
-    // });
+    weightsEntries.forEach(weightsEntry => {
+      const byteBuffer = groupBuffer.slice(
+          weightsEntry.groupOffset,
+          weightsEntry.groupOffset + weightsEntry.sizeBytes);
+      const nameToTensorMap =
+          decodeWeights(byteBuffer, [weightsEntry.manifestEntry]);
+      for (const name in nameToTensorMap) {
+        weightsTensorMap[name] = nameToTensorMap[name];
+      }
+    });
 
     bufferIndexOffset += numBuffers;
   });
