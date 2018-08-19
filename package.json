@@ -48,7 +48,7 @@
     "coverage": "KARMA_COVERAGE=1 karma start --browsers='Chrome' --singleRun",
     "test": "karma start",
     "test-travis": "karma start --singleRun --reporters='dots,karma-typescript,BrowserStack' --hostname='bs-local.com'",
-    "test-node": "ts-node src/test_node.ts",
+    "test-node": "ts-node --files src/test_node.ts",
     "test-all": "./scripts/test-all.sh"
   },
   "dependencies": {
