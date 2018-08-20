@@ -18,6 +18,7 @@
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
 import {ALL_ENVS, expectArraysClose} from '../test_util';
+import {invertMatrix} from './linalg_solve';
 
 describeWithFlags('solve_linear', ALL_ENVS, () => {
   it('solve equation with a the matrix eye', () => {
@@ -38,5 +39,15 @@ describeWithFlags('solve_linear', ALL_ENVS, () => {
     const a = tf.ones([3, 3]);
     const b = tf.tensor2d([1, 2, 3], [3, 1]);
     expect(() => tf.solve(a, b)).toThrowError('Input matrix is not inversible');
+  });
+});
+
+describeWithFlags('invert_matrix', ALL_ENVS, () => {
+  it('solve equation with a the matrix eye', () => {
+    const m = tf.tensor2d([1, 3, 3, 1, 4, 3, 1, 3, 4], [3, 3]);
+    const inv = invertMatrix(m);
+    m.print();
+    inv.print();
+    expect(() => expectArraysClose(inv, [7, -3, -3, -1, 1, 0, -1, 0, 1]));
   });
 });
