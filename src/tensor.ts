@@ -16,7 +16,7 @@
  */
 
 import {tensorToString} from './tensor_format';
-import {DataType, Rank, ShapeMap, TypedArray} from './types';
+import {DataType, Rank, ShapeMap, TensorLike, TypedArray} from './types';
 import * as util from './util';
 import {computeStrides} from './util';
 
@@ -191,6 +191,7 @@ export interface OpHandler {
   argMax<T extends Tensor>(x: Tensor, axis: number): T;
   add<T extends Tensor>(a: Tensor, b: Tensor): T;
   addStrict<T extends Tensor>(a: T, b: T): T;
+  atan2<T extends Tensor>(a: Tensor, b: Tensor): T;
   sub<T extends Tensor>(a: Tensor, b: Tensor): T;
   subStrict<T extends Tensor>(a: T, b: T): T;
   pow<T extends Tensor>(base: T, exp: Tensor): T;
@@ -290,6 +291,11 @@ export interface OpHandler {
       pad: 'valid'|'same'|number, dataFormat: 'NHWC'|'NCHW',
       dilations: [number, number]|number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): T;
+  separableConv2d<T extends Tensor3D|Tensor4D>(
+      x: T|TensorLike, depthwiseFilter: Tensor4D|TensorLike,
+      pointwiseFilter: Tensor4D|TensorLike, strides: [number, number]|number,
+      pad: 'valid'|'same', dilation: [number, number]|number,
+      dataFormat: 'NHWC'|'NCHW'): T;
   maxPool<T extends Tensor3D|Tensor4D>(
       x: T, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number,
@@ -784,6 +790,10 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return opHandler.addStrict(this, x) as T;
   }
+  atan2<T extends this>(this: T, x: T): T {
+    this.throwIfDisposed();
+    return opHandler.atan2(this, x) as T;
+  }
   sub<T extends Tensor>(x: Tensor): T {
     this.throwIfDisposed();
     return opHandler.sub(this, x);
@@ -1133,6 +1143,17 @@ export class Tensor<R extends Rank = Rank> {
     (this as Tensor).throwIfDisposed();
     return opHandler.depthwiseConv2d(
         this, filter, strides, pad, dataFormat, dilations, dimRoundingMode);
+  }
+
+  separableConv2d<T extends Tensor3D|Tensor4D>(
+      this: T|TensorLike, depthwiseFilter: Tensor4D|TensorLike,
+      pointwiseFilter: Tensor4D|TensorLike, strides: [number, number]|number,
+      pad: 'valid'|'same', dilation: [number, number]|number = [1, 1],
+      dataFormat: 'NHWC'|'NCHW' = 'NHWC'): T {
+    (this as Tensor).throwIfDisposed();
+    return opHandler.separableConv2d(
+        this, depthwiseFilter, pointwiseFilter, strides, pad, dilation,
+        dataFormat);
   }
 
   // Pooling.
