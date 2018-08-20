@@ -288,8 +288,10 @@ describe('Backend', () => {
     Environment.setBackend('custom');
     const engine3 = ENV.engine;
 
-    expect(engine1).not.toEqual(engine2);
-    expect(engine1).toEqual(engine3);
+    expect(engine1).not.toBe(engine2);
+    expect(engine1).toBe(engine3);
+    ENV.removeBackend('custom');
+    ENV.removeBackend('custom2');
   });
 });
 

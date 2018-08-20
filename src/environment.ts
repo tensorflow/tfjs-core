@@ -403,6 +403,10 @@ export class Environment {
     }
     this.registry[name].backend.dispose();
     delete this.registry[name];
+
+    if (name in this.engines) {
+      delete this.engines[name];
+    }
   }
 
   get engine(): Engine {
