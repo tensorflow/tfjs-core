@@ -29,7 +29,6 @@ import {op} from './operation';
 
 function gaussJordanTriangular(
     a: Tensor2D, b: Tensor2D): {upperM: Tensor2D, det: Scalar} {
-  console.log('gauss');
   const [r, c] = a.shape;
   const [r2, c2] = b.shape;
   assert(r === r2, 'Second dimension size does not match');
@@ -71,16 +70,13 @@ function gaussJordanTriangular(
       return {inv, coef};
     }));
   }
-  console.log('coef', coef.dataSync()[0]);
   const determinant =
       diagonalMul(split(inv, [c, c2], 1)[0] as Tensor2D).div(coef).asScalar();
-  console.log('determinant', determinant.dataSync()[0]);
   return {upperM: inv as Tensor2D, det: determinant};
 }
 
 function diagonalMul(x: Tensor2D): Scalar {
   const [r, c] = x.shape;
-  console.log('diag');
   x.print();
   assert(r === c, 'Input is not a square matrix');
   let mul = x.slice([0, 0], [1, 1]).as1D().asScalar();
@@ -96,7 +92,6 @@ function solve_(a: Tensor2D, b: Tensor2D): Tensor2D {
   assert(r === r2, 'Second dimension size does not match');
   return ENV.engine.tidy(() => {
     const {upperM, det} = gaussJordanTriangular(a, b);
-    console.log('determinant', det);
     assert(det.dataSync()[0] !== 0, 'Input matrix is not inversible');
     const trian = unstack(upperM);
     const len = trian.length;
@@ -123,35 +118,6 @@ function det_(m: Tensor2D): Scalar {
 }
 
 function adjointM_(m: Tensor2D): Tensor2D {
-  /* const [r, c] = m.shape;
-  assert(r === c, 'Input is not a square matrix');
-  const rows = Array.from({length: r}, (v, i) => i);
-  const dets: Tensor1D[] = [];
-  for (let i = 0; i < r; i++) {
-    for (let j = 0; j < r; j++) {
-      const mSub = m.gather(tensor1d(rows.filter(e => e !== i), 'int32'));
-      mSub.print();
-      let sli;
-      if (j === 0) {
-        sli = mSub.slice([0, 1], [r - 1, r - 1]);
-      } else if (j === r - 1) {
-        sli = mSub.slice([0, 0], [r - 1, r - 1]);
-      } else {
-        const [a, b, c] = split(mSub, [j, 1, r - (j + 1)], 1);
-        a.print();
-        c.print();
-        b.dispose();
-        sli = concat([a, c], 1);
-        sli.print();
-      }
-      dets.push(
-          scalar(Math.pow(-1, (i + j)))
-              .mul(gaussJordanTriangular(sli, eye(sli.shape[0]) as Tensor2D)
-                       .det.as1D()));
-    }
-  }
-  const adjM = transpose(concat(dets).reshape([r, r]));
-  return adjM as Tensor2D; */
   return invertMatrix(m).mul(det(m));
 }
 

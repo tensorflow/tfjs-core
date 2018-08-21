@@ -58,7 +58,6 @@ describeWithFlags('adjoint_matrix', ALL_ENVS, () => {
     const m = tf.tensor2d([1, 3, 3, 1, 4, 3, 1, 3, 4], [3, 3]);
     const a = adjM(m);
     m.print();
-    console.log('adjm');
     a.print();
     expect(() => expectArraysClose(a, [7, -3, -3, -1, 1, 0, -1, 0, 1]));
   });
