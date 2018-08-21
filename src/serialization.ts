@@ -15,6 +15,8 @@
  * =============================================================================
  */
 
+import {assert} from './util';
+
 /**
  * Types to support JSON-esque data structures internally.
  *
@@ -128,6 +130,10 @@ export class SerializationMap {
    * Registers the class as serializable.
    */
   static register<T extends Serializable>(cls: SerializableConstructor<T>) {
+    assert(
+        cls.className != null,
+        `className of a class being registered with SerializationMap must ` +
+        `not be null or undefined.`);
     SerializationMap.getMap().classNameMap[cls.className] =
         [cls, cls.fromConfig];
   }
