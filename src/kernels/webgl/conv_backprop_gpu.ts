@@ -223,8 +223,8 @@ export class Conv3DDerInputProgram implements GPGPUProgram {
 
       void main() {
         ivec5 coords = getOutputCoords();
-        int batch = coords[0];
-        int d1 = coords[4];
+        int batch = coords.x;
+        int d1 = coords.u;
 
         ivec3 dyCorner = coords.xyz - pads;
         int dyFCorner = dyCorner.x

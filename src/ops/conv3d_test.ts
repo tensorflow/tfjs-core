@@ -153,12 +153,6 @@ describeWithFlags('conv3d', ALL_ENVS, () => {
     expectArraysClose(result, expectedOutput);
   });
 
-  // NOTE: there are no TFJS conv2d tests showing that strides function properly
-  // if different stride lengths are provided for each spatial dimension
-
-  // TODO: this case currently fails. NOTE: python test case seems to have less
-  // decimal precision, float16 type is used in their tests
-  // Seems this could be an issue with multi-dimensional stride inputs
   it('x=[1, 5, 8, 7, 1] f=[1, 2, 3, 1, 1] s=[2, 3, 1] d=1 p=same', () => {
     const batch = 1;
     const inDepth = 5;

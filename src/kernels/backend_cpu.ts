@@ -1148,10 +1148,10 @@ export class MathBackendCPU implements KernelBackend {
           const xFCorner = yF * convInfo.strideDepth - padFront;
           // Rows as per standard 2d matrix notation
           for (let yR = 0; yR < convInfo.outHeight; ++yR) {
-            const xRCorner = yR * convInfo.strideHeight - padLeft;
+            const xRCorner = yR * convInfo.strideHeight - padTop;
             // Columns as per standard 2d matrix notation
             for (let yC = 0; yC < convInfo.outWidth; ++yC) {
-              const xCCorner = yC * convInfo.strideWidth - padTop;
+              const xCCorner = yC * convInfo.strideWidth - padLeft;
 
               let dotProd = 0;
               for (let wF = 0; wF < filterDepth; wF++) {
@@ -1183,7 +1183,6 @@ export class MathBackendCPU implements KernelBackend {
                   }
                 }
               }
-
               y.set(dotProd, b, yF, yR, yC, d2);
             }
           }

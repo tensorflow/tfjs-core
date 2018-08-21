@@ -381,6 +381,7 @@ function get3DPadAndOutInfo(
     const bottom = padAlongHeight - top;
     const left = Math.floor(padAlongWidth / 2);
     const right = padAlongWidth - left;
+
     padInfo = {top, bottom, left, right, front, back, type: 'SAME'};
   } else if (pad === 'valid') {
     padInfo = {

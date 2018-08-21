@@ -151,10 +151,10 @@ export class Conv3DProgram implements GPGPUProgram {
 
       void main() {
         ivec5 coords = getOutputCoords();
-        int batch = coords[0];
-        int d2 = coords[4];
+        int batch = coords.x;
+        int d2 = coords.u;
 
-        ivec3 xFRCCorner = coords.xyz * strides - pads;
+        ivec3 xFRCCorner = coords.yx * strides - pads;
         int xFCorner = xFRCCorner.z;
         int xRCorner = xFRCCorner.x;
         int xCCorner = xFRCCorner.y;
