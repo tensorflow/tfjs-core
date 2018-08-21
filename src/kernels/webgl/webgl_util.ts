@@ -388,10 +388,18 @@ export function getTextureShapeFromLogicalShape(
       logShape[2] <= maxTexSize) {
     return [logShape[0] * logShape[1], logShape[2]];
   } else if (
+      logShape.length === 3 && logShape[0] <= maxTexSize &&
+      logShape[1] * logShape[2] <= maxTexSize) {
+    return [logShape[0], logShape[1] * logShape[2]];
+  } else if (
       logShape.length === 4 &&
       logShape[0] * logShape[1] * logShape[2] <= maxTexSize &&
       logShape[3] <= maxTexSize) {
     return [logShape[0] * logShape[1] * logShape[2], logShape[3]];
+  } else if (
+      logShape.length === 4 && logShape[0] <= maxTexSize &&
+      logShape[1] * logShape[2] * logShape[3] <= maxTexSize) {
+    return [logShape[0], logShape[1] * logShape[2] * logShape[3]];
   } else {
     return util.sizeToSquarishShape(size);
   }

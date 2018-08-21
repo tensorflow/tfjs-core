@@ -100,7 +100,7 @@ export interface WebGLTimingInfo extends TimingInfo {
 
 // Empirically determined constant used to decide the number of bytes on GPU
 // before we start paging. The bytes are this constant * screen area * dpi.
-const BEFORE_PAGING_CONSTANT = 300;
+// const BEFORE_PAGING_CONSTANT = 300;
 // Tensors with size <= than this will be uploaded as uniforms, not textures.
 export const SIZE_UPLOAD_UNIFORM = 4;
 
@@ -113,13 +113,13 @@ export class MathBackendWebGL implements KernelBackend {
   private pendingDisposal = new WeakSet<DataId>();
   // List of data ids that are currently residing on gpu memory. Sorted with
   // least recently used being first.
-  private lruDataGPU: DataId[] = [];
+  // private lruDataGPU: DataId[] = [];
   private numBytesInGPU = 0;
   /**
    * Number of bytes allocated on the GPU before we start moving data to cpu.
    * Moving avoids gpu memory leaks and relies on JS's garbage collector.
    */
-  private NUM_BYTES_BEFORE_PAGING: number;
+  // private NUM_BYTES_BEFORE_PAGING: number;
 
   private canvas: HTMLCanvasElement;
   private fromPixelsCanvas: HTMLCanvasElement;
@@ -329,7 +329,7 @@ export class MathBackendWebGL implements KernelBackend {
     }
     this.activeTimers = newActiveTimers;
 
-    f();
+    await f();
 
     const flattenedActiveTimers = util.flatten(this.activeTimers);
     this.activeTimers = oldActiveTimers;
@@ -424,9 +424,9 @@ export class MathBackendWebGL implements KernelBackend {
     }
     // Use the device screen's resolution as a heuristic to decide on the
     // maximum memory allocated on the GPU before starting to page.
-    this.NUM_BYTES_BEFORE_PAGING =
-        (window.screen.height * window.screen.width * window.devicePixelRatio) *
-        BEFORE_PAGING_CONSTANT;
+    // this.NUM_BYTES_BEFORE_PAGING =
+    //     (window.screen.height * window.screen.width *
+    //     window.devicePixelRatio) * BEFORE_PAGING_CONSTANT;
     this.textureManager = new TextureManager(this.gpgpu);
   }
 
@@ -1293,15 +1293,15 @@ export class MathBackendWebGL implements KernelBackend {
 
     gpgpu_math.runProgram(binary, inputsData, outputData, customSetup);
 
-    if (pageToCpu && this.numBytesInGPU > this.NUM_BYTES_BEFORE_PAGING) {
-      let numBytesToPage = this.numBytesInGPU - this.NUM_BYTES_BEFORE_PAGING;
-      while (numBytesToPage > 0 && this.lruDataGPU.length > 0) {
-        const dataId = this.lruDataGPU.shift();
-        const {shape, dtype} = this.texData.get(dataId);
-        numBytesToPage -= this.computeBytes(shape, dtype);
-        this.read(dataId);
-      }
-    }
+    // if (pageToCpu && this.numBytesInGPU > this.NUM_BYTES_BEFORE_PAGING) {
+    //   let numBytesToPage = this.numBytesInGPU - this.NUM_BYTES_BEFORE_PAGING;
+    //   while (numBytesToPage > 0 && this.lruDataGPU.length > 0) {
+    //     const dataId = this.lruDataGPU.shift();
+    //     const {shape, dtype} = this.texData.get(dataId);
+    //     numBytesToPage -= this.computeBytes(shape, dtype);
+    //     this.read(dataId);
+    //   }
+    // }
 
     if (shouldTimeProgram) {
       query = this.endTimer(query);
@@ -1367,11 +1367,11 @@ export class MathBackendWebGL implements KernelBackend {
     if (texture != null) {
       // Array is already on GPU. No-op.
       // Touching the texture.
-      const index = this.lruDataGPU.indexOf(dataId);
-      if (index >= 0) {
-        this.lruDataGPU.splice(this.lruDataGPU.indexOf(dataId), 1);
-        this.lruDataGPU.push(dataId);
-      }
+      // const index = this.lruDataGPU.indexOf(dataId);
+      // if (index >= 0) {
+      //   this.lruDataGPU.splice(this.lruDataGPU.indexOf(dataId), 1);
+      //   this.lruDataGPU.push(dataId);
+      // }
       return;
     }
     const shouldTimeProgram = this.activeTimers != null;
@@ -1419,10 +1419,10 @@ export class MathBackendWebGL implements KernelBackend {
       dataId: DataId, texture: WebGLTexture, texShape: [number, number],
       texType: TextureUsage) {
     const {shape, dtype} = this.texData.get(dataId);
-    const idx = this.lruDataGPU.indexOf(dataId);
-    if (idx >= 0) {
-      this.lruDataGPU.splice(idx, 1);
-    }
+    // const idx = this.lruDataGPU.indexOf(dataId);
+    // if (idx >= 0) {
+    //   this.lruDataGPU.splice(idx, 1);
+    // }
     this.numBytesInGPU -= this.computeBytes(shape, dtype);
     this.textureManager.releaseTexture(texture, texShape, texType);
   }
@@ -1431,7 +1431,7 @@ export class MathBackendWebGL implements KernelBackend {
       dataId: DataId, texShape: [number, number],
       texType: TextureUsage): WebGLTexture {
     const {shape, dtype} = this.texData.get(dataId);
-    this.lruDataGPU.push(dataId);
+    // this.lruDataGPU.push(dataId);
     this.numBytesInGPU += this.computeBytes(shape, dtype);
     return this.textureManager.acquireTexture(texShape, texType);
   }
