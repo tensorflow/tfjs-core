@@ -16,23 +16,32 @@
  */
 
 import * as tf from '../index';
+import {concat} from '../index';
 import {describeWithFlags} from '../jasmine_util';
 import {ALL_ENVS, expectArraysClose} from '../test_util';
 
 import {adjM, invertMatrix} from './linalg_solve';
 
 describeWithFlags('solve_linear', ALL_ENVS, () => {
-  it('solve equation with a the matrix eye', () => {
+  it('solve equation with a: the matrix eye', () => {
     const a = tf.eye(3);
     const b = tf.tensor2d([1, 2, 3], [3, 1]);
-    const x = tf.solve(a, b);
+    const x = tf.solve(a, b) as tf.Tensor2D;
+    expect(() => expectArraysClose(x, [1, 2, 3]));
+  });
+
+  it('solve equation with a: an array of matrix eye', () => {
+    const a = [tf.eye(3), tf.eye(3), tf.eye(3)];
+    const b = Array.from({length: 3}, (v, i) => tf.tensor2d([1, 2, 3], [3, 1]));
+    const x = concat(tf.solve(a, b) as tf.Tensor2D[]);
+    (tf.solve(a, b) as tf.Tensor2D[]).forEach(e => e.print());
     expect(() => expectArraysClose(x, [1, 2, 3]));
   });
 
   it('solve equation with a the matrix eye times 2', () => {
     const a = tf.eye(3).mul(tf.scalar(2)) as tf.Tensor2D;
     const b = tf.tensor2d([1, 2, 3], [3, 1]);
-    const x = tf.solve(a, b);
+    const x = tf.solve(a, b) as tf.Tensor2D;
     expect(() => expectArraysClose(x, [1, 2, 3]));
   });
 
@@ -47,8 +56,6 @@ describeWithFlags('invert_matrix', ALL_ENVS, () => {
   it('invert a matrix', () => {
     const m = tf.tensor2d([1, 3, 3, 1, 4, 3, 1, 3, 4], [3, 3]);
     const inv = invertMatrix(m);
-    m.print();
-    inv.print();
     expect(() => expectArraysClose(inv, [7, -3, -3, -1, 1, 0, -1, 0, 1]));
   });
 });
@@ -57,8 +64,6 @@ describeWithFlags('adjoint_matrix', ALL_ENVS, () => {
   it('computes the adjoint of a matrix', () => {
     const m = tf.tensor2d([1, 3, 3, 1, 4, 3, 1, 3, 4], [3, 3]);
     const a = adjM(m);
-    m.print();
-    a.print();
     expect(() => expectArraysClose(a, [7, -3, -3, -1, 1, 0, -1, 0, 1]));
   });
 });

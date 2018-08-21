@@ -27,6 +27,17 @@ import {assert} from '../util';
 import {eye, stack, unstack} from './array_ops';
 import {op} from './operation';
 
+/**
+ *
+ * @param a is a square matrix M (Tensor2d with shape `[r, c]` such that `r ===
+ * c`)
+ * @param b is a Tensor2d with shape `[r2, c2]`
+ * @desc `r === r2`
+ * @returns a matrix of shape `[r, c+c2]` after a [jordan-gauss
+ * elimination](https://en.wikipedia.org/wiki/Gaussian_elimination) on the
+ * matrix given by the concatenation `[a, b]`. The first r or c columns is an
+ * upper triangular matrix
+ */
 function gaussJordanTriangular(
     a: Tensor2D, b: Tensor2D): {upperM: Tensor2D, det: Scalar} {
   const [r, c] = a.shape;
@@ -75,21 +86,37 @@ function gaussJordanTriangular(
   return {upperM: inv as Tensor2D, det: determinant};
 }
 
-function diagonalMul(x: Tensor2D): Scalar {
-  const [r, c] = x.shape;
-  x.print();
+/**
+ *
+ * @param m Tensor2d or matrix
+ * @returns the product of the diagonal elements of @param m as a `tf.scalar`
+ */
+function diagonalMul(m: Tensor2D): Scalar {
+  const [r, c] = m.shape;
   assert(r === c, 'Input is not a square matrix');
-  let mul = x.slice([0, 0], [1, 1]).as1D().asScalar();
+  let mul = m.slice([0, 0], [1, 1]).as1D().asScalar();
   for (let i = 0; i < r; i++) {
-    mul = x.slice([i, i], [1, 1]).as1D().asScalar();
+    mul = m.slice([i, i], [1, 1]).as1D().asScalar();
   }
   return mul;
 }
 
-// function solve_(a: Tensor2D): Tensor;
+/**
+ *
+ * @param a is a unique square matrix M or a tensor of shape `[..., M, M]` whose
+ * inner-most 2 dimensions form square matrices
+ * @param b is a unique matrix M or a tensor of shape `[..., M, M]`
+ * @param adjoint is a boolean.
+ * If adjoint is false then each output matrix satisfies `a * output = b`
+ * (respectively `a[..., :, :] * output[..., :, :] = b[..., :, :]` if the inputs
+ * are arrays of matrixes) . If adjoint is true then each output matrix
+ * satisfies `adjoint(a) * output = b` (respectively `adjoint(a[..., :, :]) *
+ * output[..., :, :] = b[..., :,
+ * :]`).
+ */
 function solve_(
-    a: Tensor2D[]|Tensor2D, b: Tensor2D[]|Tensor2D, adjoint = false): Tensor2D|
-    Tensor2D[] {
+    a: Tensor2D[]|Tensor2D, b: Tensor2D[]|Tensor2D,
+    adjoint = false): Tensor2D[]|Tensor2D {
   if (Array.isArray(a) || Array.isArray(b)) {
     assert(
         (a as Tensor2D[]).length === (b as Tensor2D[]).length,
@@ -104,6 +131,7 @@ function solve_(
   }
 }
 
+// helper to the solve equation
 function solve_unique_equation(
     a: Tensor2D, b: Tensor2D, adjoint = false): Tensor2D {
   return ENV.engine.tidy(() => {
@@ -129,16 +157,31 @@ function solve_unique_equation(
   });
 }
 
-function invertMatrix_(x: Tensor2D): Tensor2D {
-  const [r, c] = x.shape;
+/**
+ *
+ * @param x square matrix to invert
+ * @returns the invert matrix of @param m if inversible
+ */
+function invertMatrix_(m: Tensor2D): Tensor2D {
+  const [r, c] = m.shape;
   assert(r === c, 'Input is not a square matrix');
-  return solve(x, eye(r));
+  return solve(m, eye(r)) as Tensor2D;
 }
 
+/**
+ *
+ * @param m Tensor2d or matrix
+ * @returns the determinant of @param m as a `tf.scalar`
+ */
 function det_(m: Tensor2D): Scalar {
   return gaussJordanTriangular(m, eye(m.shape[0]) as Tensor2D).det;
 }
 
+/**
+ *
+ * @param m Tensor2d or matrix
+ * @returns the adjoint of @param m if inversible
+ */
 function adjointM_(m: Tensor2D): Tensor2D {
   return invertMatrix(m).mul(det(m));
 }
