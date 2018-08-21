@@ -19,9 +19,7 @@
  * IOHandlers that pass through the in-memory ModelArtifacts format.
  */
 
-// tslint:disable:max-line-length
 import {IOHandler, ModelArtifacts, SaveResult, WeightsManifestEntry} from './types';
-// tslint:enable:max-line-length
 
 class PassthroughLoader implements IOHandler {
   constructor(
@@ -46,8 +44,8 @@ class PassthroughLoader implements IOHandler {
 
 class PassthroughSaver implements IOHandler {
   constructor(
-      private readonly saveHandler: (artifacts: ModelArtifacts) => SaveResult) {
-  }
+      private readonly saveHandler:
+          (artifacts: ModelArtifacts) => Promise<SaveResult>) {}
 
   async save(modelArtifacts: ModelArtifacts) {
     return this.saveHandler(modelArtifacts);
@@ -96,6 +94,7 @@ export function fromMemory(
  *     `SaveResult`.
  */
 export function withSaveHandler(
-    saveHandler: (artifacts: ModelArtifacts) => SaveResult): IOHandler {
+    saveHandler: (artifacts: ModelArtifacts) =>
+        Promise<SaveResult>): IOHandler {
   return new PassthroughSaver(saveHandler);
 }

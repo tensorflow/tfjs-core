@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2017 Google Inc. All Rights Reserved.
+ * Copyright 2018 Google LLC. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,20 +15,16 @@
  * =============================================================================
  */
 
-export function topK(values: Float32Array, k: number):
-    {values: Float32Array, indices: Int32Array} {
-  const valuesAndIndices: Array<{value: number, index: number}> = [];
-  for (let i = 0; i < values.length; i++) {
-    valuesAndIndices.push({value: values[i], index: i});
+import {ENV} from './environment';
+
+export function warn(...msg: Array<{}>): void {
+  if (!ENV.get('IS_TEST')) {
+    console.warn(...msg);
   }
-  valuesAndIndices.sort((a, b) => {
-    return b.value - a.value;
-  });
-  const topkValues = new Float32Array(k);
-  const topkIndices = new Int32Array(k);
-  for (let i = 0; i < k; i++) {
-    topkValues[i] = valuesAndIndices[i].value;
-    topkIndices[i] = valuesAndIndices[i].index;
+}
+
+export function log(...msg: Array<{}>): void {
+  if (!ENV.get('IS_TEST')) {
+    console.log(...msg);
   }
-  return {values: topkValues, indices: topkIndices};
 }

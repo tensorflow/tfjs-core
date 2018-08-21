@@ -20,8 +20,6 @@ import {Tensor} from '../tensor';
 import {NamedTensorMap} from '../tensor_types';
 import {TypedArray} from '../types';
 import {sizeFromShape} from '../util';
-
-// tslint:disable-next-line:max-line-length
 import {DTYPE_VALUE_SIZE_MAP, ModelArtifacts, ModelArtifactsInfo, WeightsManifestEntry} from './types';
 
 /**
@@ -82,27 +80,61 @@ export function decodeWeights(
     const name = spec.name;
     const dtype = spec.dtype;
     const shape = spec.shape;
+    const size = sizeFromShape(shape);
+    let typedArray: TypedArray;
 
-    if (spec.quantization != null) {
-      throw new Error(
-          `decodeWeights does not support quantization yet, but encountered ` +
-          `weight '${name} with quantization.'`);
+    if ('quantization' in spec) {
+      const quantization = spec.quantization;
+      if (quantization.dtype !== 'uint8' && quantization.dtype !== 'uint16') {
+        throw new Error(
+            `Weight ${spec.name} has unknown ` +
+            `quantization dtype ${quantization.dtype}. ` +
+            `Supported quantization dtypes are: 'uint8' and 'uint16'.`);
+      }
+      const quantizationSizeFactor = DTYPE_VALUE_SIZE_MAP[quantization.dtype];
+      const byteBuffer =
+          buffer.slice(offset, offset + size * quantizationSizeFactor);
+      const quantizedArray = (quantization.dtype === 'uint8') ?
+          new Uint8Array(byteBuffer) :
+          new Uint16Array(byteBuffer);
+      if (dtype === 'float32') {
+        typedArray = Float32Array.from(
+            quantizedArray, v => v * quantization.scale + quantization.min);
+      } else if (dtype === 'int32') {
+        typedArray = Int32Array.from(
+            quantizedArray,
+            v => Math.round(v * quantization.scale + quantization.min));
+      } else {
+        throw new Error(`Unsupported dtype in weight '${name}': ${dtype}`);
+      }
+      offset += size * quantizationSizeFactor;
+    } else {
+      const dtypeFactor = DTYPE_VALUE_SIZE_MAP[dtype];
+      const byteBuffer = buffer.slice(offset, offset + size * dtypeFactor);
+
+      if (dtype === 'float32') {
+        typedArray = new Float32Array(byteBuffer);
+      } else if (dtype === 'int32') {
+        typedArray = new Int32Array(byteBuffer);
+      } else if (dtype === 'bool') {
+        typedArray = new Uint8Array(byteBuffer);
+      } else {
+        throw new Error(`Unsupported dtype in weight '${name}': ${dtype}`);
+      }
+      offset += size * dtypeFactor;
     }
 
-    const size = sizeFromShape(shape);
     let value: Tensor;
     if (dtype === 'float32') {
-      value = tensor(new Float32Array(buffer, offset, size), shape, 'float32');
+      value = tensor(typedArray, shape, 'float32');
     } else if (dtype === 'int32') {
-      value = tensor(new Int32Array(buffer, offset, size), shape, 'int32');
+      value = tensor(typedArray, shape, 'int32');
     } else if (dtype === 'bool') {
-      value = tensor(new Uint8Array(buffer, offset, size), shape, 'bool');
+      value = tensor(typedArray, shape, 'bool');
     } else {
       throw new Error(`Unsupported dtype in weight '${name}': ${dtype}`);
     }
     out[name] = value;
-
-    offset += size * DTYPE_VALUE_SIZE_MAP[dtype];
   }
   return out;
 }
@@ -117,23 +149,33 @@ export function concatenateTypedArrays(xs: TypedArray[]): ArrayBuffer {
   }
 
   let totalByteLength = 0;
-  xs.forEach(x => {
-    // tslint:disable-next-line:no-any
-    if (x as any instanceof Float32Array || x as any instanceof Int32Array) {
-      totalByteLength += x.buffer.byteLength;
-      // tslint:disable-next-line:no-any
-    } else if (x as any instanceof Uint8Array) {
-      totalByteLength += x.buffer.byteLength;
-    } else {
+
+  // `normalizedXs` is here for this reason: a `TypedArray`'s `buffer'
+  // can have a different byte length from that of the `TypedArray` itself,
+  // for example, when the `TypedArray` is created from an offset in an
+  // `ArrayBuffer`. `normliazedXs` holds `TypedArray`s whose `buffer`s match
+  // the `TypedArray` in byte length. If an element of `xs` does not show
+  // this property, a new `TypedArray` that satisfy this property will be
+  // constructed and pushed into `normalizedXs`.
+  const normalizedXs: TypedArray[] = [];
+  xs.forEach((x: TypedArray) => {
+    totalByteLength += x.byteLength;
+    // tslint:disable:no-any
+    normalizedXs.push(
+        x.byteLength === x.buffer.byteLength ? x :
+                                               new (x.constructor as any)(x));
+    if (!(x as any instanceof Float32Array || x as any instanceof Int32Array ||
+          x as any instanceof Uint8Array)) {
       throw new Error(`Unsupported TypedArray subtype: ${x.constructor.name}`);
     }
+    // tslint:enable:no-any
   });
 
   const y = new Uint8Array(totalByteLength);
   let offset = 0;
-  xs.forEach(x => {
+  normalizedXs.forEach((x: TypedArray) => {
     y.set(new Uint8Array(x.buffer), offset);
-    offset += x.buffer.byteLength;
+    offset += x.byteLength;
   });
 
   return y.buffer;
@@ -200,13 +242,13 @@ export function base64StringToArrayBuffer(str: string): ArrayBuffer {
  */
 export function concatenateArrayBuffers(buffers: ArrayBuffer[]): ArrayBuffer {
   let totalByteLength = 0;
-  buffers.forEach(buffer => {
+  buffers.forEach((buffer: ArrayBuffer) => {
     totalByteLength += buffer.byteLength;
   });
 
   const temp = new Uint8Array(totalByteLength);
   let offset = 0;
-  buffers.forEach(buffer => {
+  buffers.forEach((buffer: ArrayBuffer) => {
     temp.set(new Uint8Array(buffer), offset);
     offset += buffer.byteLength;
   });

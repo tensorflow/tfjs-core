@@ -18,12 +18,10 @@
 import {ENV} from '../environment';
 import {keep, tidy} from '../globals';
 import {scalar, zerosLike} from '../ops/ops';
-// tslint:disable-next-line:max-line-length
 import {ConfigDict, Serializable, SerializableConstructor, SerializationMap} from '../serialization';
 import {Scalar, Variable} from '../tensor';
 import {NamedVariableMap} from '../tensor_types';
 import {Optimizer} from './optimizer';
-import * as optimizer_utils from './optimizer_utils';
 
 export class AdamOptimizer extends Optimizer {
   static className = 'AdamOptimizer';
@@ -58,7 +56,7 @@ export class AdamOptimizer extends Optimizer {
     this.one = keep(scalar(1));
 
     if (epsilon === null) {
-      epsilon = optimizer_utils.getOptimizerDefaultEpsilonValue();
+      epsilon = ENV.get('EPSILON');
     }
 
     this.epsScalar = keep(scalar(epsilon));

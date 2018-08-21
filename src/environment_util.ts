@@ -15,8 +15,6 @@
  * =============================================================================
  */
 
-import {getQueryParams} from './util';
-
 export interface Features {
   // Whether to enable debug mode.
   'DEBUG'?: boolean;
@@ -44,8 +42,8 @@ export interface Features {
   // Whether downloading float textures is enabled. If disabled, uses IEEE 754
   // encoding of the float32 values to 4 uint8 when downloading.
   'WEBGL_DOWNLOAD_FLOAT_ENABLED'?: boolean;
-  // Whether WEBGL_get_buffer_sub_data_async is enabled.
-  'WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED'?: boolean;
+  // Whether the fence API is available.
+  'WEBGL_FENCE_API_ENABLED'?: boolean;
   'BACKEND'?: string;
   // Test precision for unit tests. This is decreased when we can't render
   // float32 textures.
@@ -53,6 +51,9 @@ export interface Features {
   'IS_CHROME'?: boolean;
   // True if running unit tests.
   'IS_TEST'?: boolean;
+  // Smallest positive value used to make ops like division and log numerically
+  // stable.
+  'EPSILON'?: number;
 }
 
 export enum Type {
@@ -67,11 +68,9 @@ export const URL_PROPERTIES: URLProperty[] = [
   {name: 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE', type: Type.BOOLEAN},
   {name: 'WEBGL_VERSION', type: Type.NUMBER},
   {name: 'WEBGL_RENDER_FLOAT32_ENABLED', type: Type.BOOLEAN},
-  {name: 'WEBGL_DOWNLOAD_FLOAT_ENABLED', type: Type.BOOLEAN}, {
-    name: 'WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED',
-    type: Type.BOOLEAN
-  },
-  {name: 'BACKEND', type: Type.STRING}
+  {name: 'WEBGL_DOWNLOAD_FLOAT_ENABLED', type: Type.BOOLEAN},
+  {name: 'WEBGL_FENCE_API_ENABLED', type: Type.BOOLEAN},
+  {name: 'BACKEND', type: Type.STRING}, {name: 'EPSILON', type: Type.NUMBER}
 ];
 
 export interface URLProperty {
@@ -136,11 +135,8 @@ export function isRenderToFloatTextureEnabled(
     }
   }
 
-  createFloatTextureAndBindToFramebuffer(gl, webGLVersion);
-
   const isFrameBufferComplete =
-      gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
-
+      createFloatTextureAndBindToFramebuffer(gl, webGLVersion);
   loseContext(gl);
   return isFrameBufferComplete;
 }
@@ -157,36 +153,29 @@ export function isDownloadFloatTextureEnabled(
     if (!hasExtension(gl, 'OES_texture_float')) {
       return false;
     }
+    if (!hasExtension(gl, 'WEBGL_color_buffer_float')) {
+      return false;
+    }
   } else {
     if (!hasExtension(gl, 'EXT_color_buffer_float')) {
       return false;
     }
   }
 
-  createFloatTextureAndBindToFramebuffer(gl, webGLVersion);
-  gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.FLOAT, new Float32Array(4));
-
-  const readPixelsNoError = gl.getError() === gl.NO_ERROR;
-
+  const isFrameBufferComplete =
+      createFloatTextureAndBindToFramebuffer(gl, webGLVersion);
   loseContext(gl);
-
-  return readPixelsNoError;
+  return isFrameBufferComplete;
 }
 
-export function isWebGLGetBufferSubDataAsyncExtensionEnabled(
-    webGLVersion: number, isBrowser: boolean) {
-  // TODO(nsthorat): Remove this once we fix
-  // https://github.com/tensorflow/tfjs/issues/137
-  if (webGLVersion > 0) {
-    return false;
-  }
-
+export function isWebGLFenceEnabled(webGLVersion: number, isBrowser: boolean) {
   if (webGLVersion !== 2) {
     return false;
   }
   const gl = getWebGLRenderingContext(webGLVersion, isBrowser);
 
-  const isEnabled = hasExtension(gl, 'WEBGL_get_buffer_sub_data_async');
+  // tslint:disable-next-line:no-any
+  const isEnabled = (gl as any).fenceSync != null;
   loseContext(gl);
   return isEnabled;
 }
@@ -271,7 +260,7 @@ function loseContext(gl: WebGLRenderingContext) {
 }
 
 function createFloatTextureAndBindToFramebuffer(
-    gl: WebGLRenderingContext, webGLVersion: number) {
+    gl: WebGLRenderingContext, webGLVersion: number): boolean {
   const frameBuffer = gl.createFramebuffer();
   const texture = gl.createTexture();
 
@@ -285,4 +274,28 @@ function createFloatTextureAndBindToFramebuffer(
   gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
   gl.framebufferTexture2D(
       gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+
+  const isFrameBufferComplete =
+      gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
+
+  gl.bindTexture(gl.TEXTURE_2D, null);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.deleteTexture(texture);
+  gl.deleteFramebuffer(frameBuffer);
+
+  return isFrameBufferComplete;
+}
+
+export function getQueryParams(queryString: string): {[key: string]: string} {
+  const params = {};
+  queryString.replace(/[?&]([^=?&]+)(?:=([^&]*))?/g, (s, ...t) => {
+    decodeParam(params, t[0], t[1]);
+    return t.join('=');
+  });
+  return params;
+}
+
+function decodeParam(
+    params: {[key: string]: string}, name: string, value?: string) {
+  params[decodeURIComponent(name)] = decodeURIComponent(value || '');
 }

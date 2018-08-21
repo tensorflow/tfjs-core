@@ -20,14 +20,10 @@
  * user-selected files in browser.
  */
 
-// tslint:disable:max-line-length
 import {ENV} from '../environment';
-
 import {basename, concatenateArrayBuffers, getModelArtifactsInfoForJSON} from './io_utils';
 import {IORouter, IORouterRegistry} from './router_registry';
 import {IOHandler, ModelArtifacts, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
-
-// tslint:enable:max-line-length
 
 const DEFAULT_FILE_NAME_PREFIX = 'model';
 const DEFAULT_JSON_EXTENSION_NAME = '.json';
@@ -239,11 +235,11 @@ class BrowserFiles implements IOHandler {
   }
 }
 
-export const browserDownloadsRouter: IORouter = (url: string) => {
+export const browserDownloadsRouter: IORouter = (url: string|string[]) => {
   if (!ENV.get('IS_BROWSER')) {
     return null;
   } else {
-    if (url.startsWith(BrowserDownloads.URL_SCHEME)) {
+    if (!Array.isArray(url) && url.startsWith(BrowserDownloads.URL_SCHEME)) {
       return browserDownloads(url.slice(BrowserDownloads.URL_SCHEME.length));
     } else {
       return null;
@@ -262,17 +258,10 @@ IORouterRegistry.registerSaveRouter(browserDownloadsRouter);
  * const model = tf.sequential();
  * model.add(tf.layers.dense(
  *     {units: 1, inputShape: [10], activation: 'sigmoid'}));
- * const saveResult = await model.save(tf.io.browserDownloads('mymodel'));
+ * const saveResult = await model.save('downloads://mymodel'));
  * // This will trigger downloading of two files:
  * //   'mymodel.json' and 'mymodel.weights.bin'.
  * console.log(saveResult);
- * ```
- *
- * You can also simply pass a string with a 'downloads://' scheme followed by
- * the file-name prefix to `model.save`:
- *
- * ```js
- * const saveResult = await model.save('downloads://mymodel');
  * ```
  *
  * @param fileNamePrefix Prefix name of the files to be downloaded. For use with

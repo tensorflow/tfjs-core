@@ -15,10 +15,8 @@
  * =============================================================================
  */
 
+import {BenchmarkRunGroup, getRunGroups} from './benchmark_run_groups';
 import {PolymerElement, PolymerHTMLElement} from './polymer-spec';
-import {BenchmarkRunGroup} from './benchmark';
-
-import {getRunGroups} from './math-benchmark-run-groups';
 
 // tslint:disable-next-line:variable-name
 export let MathBenchmarkPolymer: new () => PolymerHTMLElement =

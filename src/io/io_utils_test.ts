@@ -16,12 +16,14 @@
  */
 
 import * as tf from '../index';
+import {describeWithFlags} from '../jasmine_util';
 import {scalar, tensor1d, tensor2d} from '../ops/ops';
 import {NamedTensorMap} from '../tensor_types';
 import {expectArraysEqual} from '../test_util';
+import {expectArraysClose} from '../test_util';
 
-// tslint:disable-next-line:max-line-length
 import {arrayBufferToBase64String, base64StringToArrayBuffer, basename, concatenateArrayBuffers, concatenateTypedArrays, stringByteLength} from './io_utils';
+import {WeightsManifestEntry} from './types';
 
 describe('concatenateTypedArrays', () => {
   it('Single float arrays', () => {
@@ -80,6 +82,82 @@ describe('concatenateTypedArrays', () => {
     expect(new Uint8Array(buffer, 0, 4)).toEqual(x);
     expect(new Int32Array(buffer, 4, 4)).toEqual(y);
     expect(new Float32Array(buffer, 20, 4)).toEqual(z);
+  });
+
+  it('Concatenate Float32Arrays from SubArrays', () => {
+    const x1 = new Float32Array([1.1, 2.2, 3.3]);
+    const x2 = new Float32Array([-1.1, -2.2, -3.3]);
+    const xConcatenated = concatenateTypedArrays([x1, x2]);
+    const y1 = new Float32Array(xConcatenated, 0, 3);
+    const y2 = new Float32Array(xConcatenated, 3 * 4, 3);
+    // At this point, the buffer of y1 is longer than than the actual byte
+    // length of y1, because of the way y1 is constructed. The same is true for
+    // y2.
+    expect(y1.buffer.byteLength).toEqual(6 * 4);
+    expect(y2.buffer.byteLength).toEqual(6 * 4);
+
+    const yConcatenated = concatenateTypedArrays([y1, y2]);
+    expect(yConcatenated.byteLength).toEqual(6 * 4);
+    expect(new Float32Array(yConcatenated, 0, 3)).toEqual(x1);
+    expect(new Float32Array(yConcatenated, 3 * 4, 3)).toEqual(x2);
+  });
+
+  it('Concatenate Int32Array from SubArrays', () => {
+    const x1 = new Int32Array([11, 22, 33]);
+    const x2 = new Int32Array([-11, -22, -33]);
+    const xConcatenated = concatenateTypedArrays([x1, x2]);
+    const y1 = new Int32Array(xConcatenated, 0, 3);
+    const y2 = new Int32Array(xConcatenated, 3 * 4, 3);
+    // At this point, the buffer of y1 is longer than than the actual byte
+    // length of y1, because of the way y1 is constructed. The same is true for
+    // y2.
+    expect(y1.buffer.byteLength).toEqual(6 * 4);
+    expect(y2.buffer.byteLength).toEqual(6 * 4);
+
+    const yConcatenated = concatenateTypedArrays([y1, y2]);
+    expect(yConcatenated.byteLength).toEqual(6 * 4);
+    expect(new Int32Array(yConcatenated, 0, 3)).toEqual(x1);
+    expect(new Int32Array(yConcatenated, 3 * 4, 3)).toEqual(x2);
+  });
+
+  it('Concatenate Uint8Array from SubArrays', () => {
+    const x1 = new Uint8Array([11, 22, 33]);
+    const x2 = new Uint8Array([44, 55, 66]);
+    const xConcatenated = concatenateTypedArrays([x1, x2]);
+    const y1 = new Uint8Array(xConcatenated, 0, 3);
+    const y2 = new Uint8Array(xConcatenated, 3, 3);
+    // At this point, the buffer of y1 is longer than than the actual byte
+    // length of y1, because of the way y1 is constructed. The same is true for
+    // y2.
+    expect(y1.buffer.byteLength).toEqual(6);
+    expect(y2.buffer.byteLength).toEqual(6);
+
+    const yConcatenated = concatenateTypedArrays([y1, y2]);
+    expect(yConcatenated.byteLength).toEqual(6);
+    expect(new Uint8Array(yConcatenated, 0, 3)).toEqual(x1);
+    expect(new Uint8Array(yConcatenated, 3, 3)).toEqual(x2);
+  });
+
+  it('Concatenate mixed TypedArrays from SubArrays', () => {
+    const x1 = new Uint8Array([11, 22, 33, 44]);
+    const x2 = new Int32Array([-44, -55, -66]);
+    const x3 = new Float32Array([1.1, 2.2, 3.3]);
+    const xConcatenated = concatenateTypedArrays([x1, x2, x3]);
+    const y1 = new Uint8Array(xConcatenated, 0, 4);
+    const y2 = new Int32Array(xConcatenated, 4, 3);
+    const y3 = new Float32Array(xConcatenated, 4 + 3 * 4, 3);
+    // At this point, the buffer of y1 is longer than than the actual byte
+    // length of y1, because of the way y1 is constructed. The same is true for
+    // y2 and y3.
+    expect(y1.buffer.byteLength).toEqual(4 + 3 * 4 + 3 * 4);
+    expect(y2.buffer.byteLength).toEqual(4 + 3 * 4 + 3 * 4);
+    expect(y3.buffer.byteLength).toEqual(4 + 3 * 4 + 3 * 4);
+
+    const yConcatenated = concatenateTypedArrays([y1, y2, y3]);
+    expect(yConcatenated.byteLength).toEqual(4 + 3 * 4 + 3 * 4);
+    expect(new Uint8Array(yConcatenated, 0, 4)).toEqual(x1);
+    expect(new Int32Array(yConcatenated, 4, 3)).toEqual(x2);
+    expect(new Float32Array(yConcatenated, 4 + 3 * 4, 3)).toEqual(x3);
   });
 
   it('null and undefined inputs', () => {
@@ -270,19 +348,19 @@ describe('encodeWeights', () => {
   });
 });
 
-describe('decodeWeights', () => {
+describeWithFlags('decodeWeights', {}, () => {
   it('Mixed dtype tensors', async done => {
     const tensors: NamedTensorMap = {
       x1: tensor2d([[10, 20], [30, 40]], [2, 2], 'int32'),
       x2: scalar(13.37, 'float32'),
-      x3: tensor1d([true, false, false, true], 'bool'),
+      x3: tensor1d([true, false, false], 'bool'),
       y1: tensor2d([-10, -20, -30], [3, 1], 'float32'),
     };
     tf.io.encodeWeights(tensors)
         .then(dataAndSpecs => {
           const data = dataAndSpecs.data;
           const specs = dataAndSpecs.specs;
-          expect(data.byteLength).toEqual(4 * 4 + 4 * 1 + 1 * 4 + 4 * 3);
+          expect(data.byteLength).toEqual(4 * 4 + 4 * 1 + 1 * 3 + 4 * 3);
           const decoded = tf.io.decodeWeights(data, specs);
           expect(Object.keys(decoded).length).toEqual(4);
           expectArraysEqual(decoded['x1'], tensors['x1']);
@@ -309,6 +387,62 @@ describe('decodeWeights', () => {
     ];
     expect(() => tf.io.decodeWeights(buffer, specs))
         .toThrowError(/Unsupported dtype in weight \'x\': int16/);
+  });
+
+  it('support quantization uint8 weights', () => {
+    const manifestSpecs: WeightsManifestEntry[] = [
+      {
+        'name': 'weight0',
+        'dtype': 'float32',
+        'shape': [3],
+        'quantization': {'min': -1, 'scale': 0.1, 'dtype': 'uint8'}
+      },
+      {
+        'name': 'weight1',
+        'dtype': 'int32',
+        'shape': [3],
+        'quantization': {'min': -1, 'scale': 0.1, 'dtype': 'uint8'}
+      }
+    ];
+    const data = new Uint8Array([0, 48, 255, 0, 48, 255]);
+    const decoded = tf.io.decodeWeights(data.buffer, manifestSpecs);
+    const weight0 = decoded['weight0'];
+    expectArraysClose(weight0, [-1, 3.8, 24.5]);
+    expect(weight0.shape).toEqual([3]);
+    expect(weight0.dtype).toEqual('float32');
+
+    const weight1 = decoded['weight1'];
+    expectArraysEqual(weight1, [-1, 4, 25]);
+    expect(weight1.shape).toEqual([3]);
+    expect(weight1.dtype).toEqual('int32');
+  });
+
+  it('support quantization uint16 weights', () => {
+    const manifestSpecs: WeightsManifestEntry[] = [
+      {
+        'name': 'weight0',
+        'dtype': 'float32',
+        'shape': [3],
+        'quantization': {'min': -1, 'scale': 0.1, 'dtype': 'uint16'}
+      },
+      {
+        'name': 'weight1',
+        'dtype': 'int32',
+        'shape': [3],
+        'quantization': {'min': -1, 'scale': 0.1, 'dtype': 'uint16'}
+      }
+    ];
+    const data = new Uint16Array([0, 48, 255, 0, 48, 255]);
+    const decoded = tf.io.decodeWeights(data.buffer, manifestSpecs);
+    const weight0 = decoded['weight0'];
+    expectArraysClose(weight0, [-1, 3.8, 24.5]);
+    expect(weight0.shape).toEqual([3]);
+    expect(weight0.dtype).toEqual('float32');
+
+    const weight1 = decoded['weight1'];
+    expectArraysEqual(weight1, [-1, 4, 25]);
+    expect(weight1.shape).toEqual([3]);
+    expect(weight1.dtype).toEqual('int32');
   });
 });
 

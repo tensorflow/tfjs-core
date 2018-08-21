@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2018 Google Inc. All Rights Reserved.
+ * Copyright 2018 Google LLC. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,15 +14,21 @@
  * limitations under the License.
  * =============================================================================
  */
-import {ENV} from '../environment';
 
-const DEFAULT_FLOAT32_EPSILON = 1e-8;
-const DEFAULT_FLOAT16_EPSILON = 1e-4;
+export interface ApplicationConfig {
+  apiKey?: string;
+  authDomain?: string;
+  databaseURL?: string;
+  projectId?: string;
+  storageBucket?: string;
+  messagingSenderId?: string;
+}
 
-export function getOptimizerDefaultEpsilonValue() {
-  if (ENV.get('WEBGL_RENDER_FLOAT32_ENABLED')) {
-    return DEFAULT_FLOAT32_EPSILON;
-  }
-
-  return DEFAULT_FLOAT16_EPSILON;
+export interface BenchmarkEntry {
+  userAgent: string;
+  timestamp: number;
+  runs: {[params: string]: BenchmarkRunEntry};
+}
+export interface BenchmarkRunEntry {
+  averageTimeMs: number;
 }

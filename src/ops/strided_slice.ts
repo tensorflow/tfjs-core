@@ -17,7 +17,7 @@
 
 import {ENV} from '../environment';
 import {Tensor} from '../tensor';
-import {convertToTensor} from '../tensor_util';
+import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import {op} from './operation';
 
@@ -48,15 +48,26 @@ import {op} from './operation';
  *      and the fullest possible range in that dimension is used instead.
  * @param endMask: If the ith bit of end_mask is set, end[i] is ignored
  *      and the fullest possible range in that dimension is used instead.
+ * @param shrinkAxisMask: a bitmask where bit i implies that
+ * the ith specification should shrink the dimensionality. begin and end must
+ * imply a slice of size 1 in the dimension.
  */
 /** @doc {heading: 'Operations', subheading: 'Slicing and Joining'} */
 function stridedSlice_<T extends Tensor>(
     x: T|TensorLike, begin: number[], end: number[], strides: number[],
-    beginMask = 0, endMask = 0): T {
+    beginMask = 0, endMask = 0, ellipsisMask = 0, newAxisMask = 0,
+    shrinkAxisMask = 0): T {
+  if (ellipsisMask !== 0) {
+    throw new Error('ellipsis mask is not yet supported');
+  }
+  if (newAxisMask !== 0) {
+    throw new Error('new axis mask is not yet supported');
+  }
   const $x = convertToTensor(x, 'x', 'stridedSlice');
   return ENV.engine.runKernel(
              backend => backend.stridedSlice(
-                 $x, begin, end, strides, beginMask, endMask),
+                 $x, begin, end, strides, beginMask, endMask, ellipsisMask,
+                 newAxisMask, shrinkAxisMask),
              {$x}) as T;
 }
 

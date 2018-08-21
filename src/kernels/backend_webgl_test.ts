@@ -15,11 +15,9 @@
  * =============================================================================
  */
 
-// tslint:disable-next-line:max-line-length
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
 import {expectArraysClose, expectArraysEqual, WEBGL_ENVS} from '../test_util';
-// tslint:disable-next-line:max-line-length
 import {MathBackendWebGL, SIZE_UPLOAD_UNIFORM, WebGLMemoryInfo} from './backend_webgl';
 
 describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
@@ -175,5 +173,17 @@ describeWithFlags('upload tensors as uniforms', WEBGL_ENVS, () => {
     // Both the result and the input live on the gpu.
     m = tf.memory() as WebGLMemoryInfo;
     expect(m.numBytesInGPU).toBe(a.size * 4 * 2);
+  });
+
+  it('download and re-upload an output of a shader', () => {
+    const vals = new Float32Array(SIZE_UPLOAD_UNIFORM + 1);
+    vals.fill(2);
+    const a = tf.square(vals);
+    a.dataSync();            // Download to CPU.
+    const res = a.square();  // Re-upload to GPU.
+
+    const expected = new Float32Array(SIZE_UPLOAD_UNIFORM + 1);
+    expected.fill(16);
+    expectArraysClose(res, expected);
   });
 });

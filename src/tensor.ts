@@ -16,7 +16,7 @@
  */
 
 import {tensorToString} from './tensor_format';
-import {DataType, Rank, ShapeMap, TypedArray} from './types';
+import {DataType, Rank, ShapeMap, TensorLike, TypedArray} from './types';
 import * as util from './util';
 import {computeStrides} from './util';
 
@@ -166,6 +166,8 @@ export interface OpHandler {
       keepDims: boolean): Tensor;
   slice<R extends Rank, T extends Tensor<R>>(
       x: T, begin: number|number[], size?: number|number[]): T;
+  split<T extends Tensor>(
+      x: T, numOrSizeSplits: number[]|number, axis?: number): T[];
   reverse<T extends Tensor>(x: T, axis?: number|number[]): T;
   concat<T extends Tensor>(tensors: T[], axis: number): T;
   stack<T extends Tensor>(tensors: T[], axis: number): Tensor;
@@ -189,6 +191,7 @@ export interface OpHandler {
   argMax<T extends Tensor>(x: Tensor, axis: number): T;
   add<T extends Tensor>(a: Tensor, b: Tensor): T;
   addStrict<T extends Tensor>(a: T, b: T): T;
+  atan2<T extends Tensor>(a: Tensor, b: Tensor): T;
   sub<T extends Tensor>(a: Tensor, b: Tensor): T;
   subStrict<T extends Tensor>(a: T, b: T): T;
   pow<T extends Tensor>(base: T, exp: Tensor): T;
@@ -243,6 +246,8 @@ export interface OpHandler {
   sigmoid<T extends Tensor>(x: T): T;
   logSigmoid<T extends Tensor>(x: T): T;
   softplus<T extends Tensor>(x: T): T;
+  zerosLike<T extends Tensor>(x: T): T;
+  onesLike<T extends Tensor>(x: T): T;
   sin<T extends Tensor>(x: T): T;
   cos<T extends Tensor>(x: T): T;
   tan<T extends Tensor>(x: T): T;
@@ -288,6 +293,11 @@ export interface OpHandler {
       pad: 'valid'|'same'|number, dataFormat: 'NHWC'|'NCHW',
       dilations: [number, number]|number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): T;
+  separableConv2d<T extends Tensor3D|Tensor4D>(
+      x: T|TensorLike, depthwiseFilter: Tensor4D|TensorLike,
+      pointwiseFilter: Tensor4D|TensorLike, strides: [number, number]|number,
+      pad: 'valid'|'same', dilation: [number, number]|number,
+      dataFormat: 'NHWC'|'NCHW'): T;
   maxPool<T extends Tensor3D|Tensor4D>(
       x: T, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number,
@@ -300,6 +310,15 @@ export interface OpHandler {
       x: T, depthRadius: number, bias: number, alpha: number, beta: number): T;
   unsortedSegmentSum<T extends Tensor>(
       x: T, segmentIds: Tensor1D, numSegments: number): T;
+  batchToSpaceND<T extends Tensor>(
+      x: T, blockShape: number[], crops: number[][]): T;
+  spaceToBatchND<T extends Tensor>(
+      x: T, blockShape: number[], paddings: number[][]): T;
+  topk<T extends Tensor>(x: T, k: number, sorted: boolean):
+      {values: T, indices: T};
+  stridedSlice<T extends Tensor>(
+      x: T, begin: number[], end: number[], strides: number[],
+      beginMask: number, endMask: number): T;
 }
 
 // For tracking tensor creation and disposal.
@@ -374,8 +393,8 @@ export class Tensor<R extends Rank = Rank> {
     if (values != null) {
       util.assert(
           this.size === values.length,
-          `Constructing tensor of shape (${this.size}) should match the ` +
-              `length of values (${values.length})`);
+          `Based on the provided shape, [${shape}], the tensor should have ` +
+              `${this.size} values but has ${values.length}`);
     }
     this.shape = shape.slice();
     this.dtype = dtype || 'float32';
@@ -711,6 +730,11 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return opHandler.concat([this, x], axis);
   }
+  split<T extends Tensor>(this: T, numOrSizeSplits: number[]|number, axis = 0):
+      T[] {
+    this.throwIfDisposed();
+    return opHandler.split(this, numOrSizeSplits, axis);
+  }
   stack(x: Tensor, axis = 0): Tensor {
     return opHandler.stack([this, x], axis);
   }
@@ -784,6 +808,10 @@ export class Tensor<R extends Rank = Rank> {
   addStrict<T extends this>(this: T, x: T): T {
     this.throwIfDisposed();
     return opHandler.addStrict(this, x) as T;
+  }
+  atan2<T extends this>(this: T, x: T): T {
+    this.throwIfDisposed();
+    return opHandler.atan2(this, x) as T;
   }
   sub<T extends Tensor>(x: Tensor): T {
     this.throwIfDisposed();
@@ -1020,6 +1048,14 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return opHandler.softplus(this);
   }
+  zerosLike<T extends Tensor>(this: T): T {
+    this.throwIfDisposed();
+    return opHandler.zerosLike(this);
+  }
+  onesLike<T extends Tensor>(this: T): T {
+    this.throwIfDisposed();
+    return opHandler.onesLike(this);
+  }
   sin<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return opHandler.sin(this);
@@ -1136,6 +1172,17 @@ export class Tensor<R extends Rank = Rank> {
         this, filter, strides, pad, dataFormat, dilations, dimRoundingMode);
   }
 
+  separableConv2d<T extends Tensor3D|Tensor4D>(
+      this: T|TensorLike, depthwiseFilter: Tensor4D|TensorLike,
+      pointwiseFilter: Tensor4D|TensorLike, strides: [number, number]|number,
+      pad: 'valid'|'same', dilation: [number, number]|number = [1, 1],
+      dataFormat: 'NHWC'|'NCHW' = 'NHWC'): T {
+    (this as Tensor).throwIfDisposed();
+    return opHandler.separableConv2d(
+        this, depthwiseFilter, pointwiseFilter, strides, pad, dilation,
+        dataFormat);
+  }
+
   // Pooling.
   avgPool<T extends Tensor3D|Tensor4D>(
       this: T, filterSize: [number, number]|number,
@@ -1167,10 +1214,36 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return opHandler.unsortedSegmentSum(this, segmentIds, numSegments);
   }
+
+  batchToSpaceND<T extends Tensor>(
+      this: T, blockShape: number[], crops: number[][]): T {
+    this.throwIfDisposed();
+    return opHandler.batchToSpaceND(this, blockShape, crops);
+  }
+
+  spaceToBatchND<T extends Tensor>(
+      this: T, blockShape: number[], paddings: number[][]): T {
+    this.throwIfDisposed();
+    return opHandler.spaceToBatchND(this, blockShape, paddings);
+  }
+
+  topk<T extends Tensor>(this: T, k = 1, sorted = true):
+      {values: T, indices: T} {
+    this.throwIfDisposed();
+    return opHandler.topk(this, k, sorted);
+  }
+
+  stridedSlice<T extends Tensor>(
+      this: T, begin: number[], end: number[], strides: number[], beginMask = 0,
+      endMask = 0): T {
+    this.throwIfDisposed();
+    return opHandler.stridedSlice(
+        this, begin, end, strides, beginMask, endMask);
+  }
 }
 Object.defineProperty(Tensor, Symbol.hasInstance, {
   value: (instance: Tensor) => {
-    return instance.shape != null && instance.dtype != null;
+    return !!instance && instance.shape != null && instance.dtype != null;
   }
 });
 

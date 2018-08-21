@@ -17,11 +17,8 @@
 
 import {BackendTimingInfo, KernelBackend} from './kernels/backend';
 import {Profiler} from './profiler';
-// tslint:disable-next-line:max-line-length
 import {backpropagateGradients, getFilteredNodesXToY, NamedGradientMap, TapeNode} from './tape';
-// tslint:disable-next-line:max-line-length
 import {DataId, Tensor, Tensor3D, Variable} from './tensor';
-// tslint:disable-next-line:max-line-length
 import {NamedTensorMap, NamedVariableMap, TensorContainer} from './tensor_types';
 import {getTensorsInContainer, isTensorInList} from './tensor_util';
 import {TypedArray} from './types';
@@ -32,7 +29,7 @@ import {makeOnesTypedArray, now, sizeFromShape} from './util';
  * A function that computes an output. The save function is for saving tensors
  * computed in the forward pass, that we need in the backwards pass.
  */
-export type ForwardFunc<T extends Tensor> =
+export type ForwardFunc<T> =
     (backend: KernelBackend, save?: <S extends Tensor>(tensor: S) => S) => T;
 
 /**
@@ -88,7 +85,7 @@ export class Engine implements TensorManager {
   private profiler: Profiler;
 
   constructor(
-      private backend: KernelBackend, public safeMode: boolean,
+      public backend: KernelBackend, public safeMode: boolean,
       private debugMode: () => boolean) {
     // Create a default outer scope.
     this.activeScope = {track: [], name: 'default scope'};
@@ -148,7 +145,7 @@ export class Engine implements TensorManager {
     }
   }
 
-  runKernel<T extends Tensor, I extends NamedTensorMap>(
+  runKernel<T extends Tensor|Tensor[], I extends NamedTensorMap>(
       forwardFunc: ForwardFunc<T>,
       inputs: I,
       backwardsFunc?: (dy: T, saved: Tensor[]) => {[P in keyof I]: () => I[P]},
@@ -178,11 +175,13 @@ export class Engine implements TensorManager {
         id: this.nextTapeNodeId++,
         name: scopeName,
         inputs,
-        output: result,
-
+        // Keep gradient records only for the first output.
+        output: Array.isArray(result) ? result[0] : result
       };
       if (backwardsFunc != null) {
-        tapeNode.gradient = (dy: T) => backwardsFunc(dy, saved);
+        tapeNode.gradient =
+            ((dy: T) => backwardsFunc(dy, saved)) as (dy: Tensor) =>
+                NamedGradientMap;
       }
       this.activeTape.push(tapeNode);
     }

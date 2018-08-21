@@ -15,13 +15,11 @@
  * =============================================================================
  */
 
-// tslint:disable:max-line-length
 import {ENV} from '../environment';
 import {getModelArtifactsInfoForJSON} from './io_utils';
 import {ModelStoreManagerRegistry} from './model_management';
 import {IORouter, IORouterRegistry} from './router_registry';
 import {IOHandler, ModelArtifacts, ModelArtifactsInfo, ModelStoreManager, SaveResult} from './types';
-// tslint:enable:max-line-length
 
 const DATABASE_NAME = 'tensorflowjs';
 const DATABASE_VERSION = 1;
@@ -208,11 +206,11 @@ export class BrowserIndexedDB implements IOHandler {
   }
 }
 
-export const indexedDBRouter: IORouter = (url: string) => {
+export const indexedDBRouter: IORouter = (url: string|string[]) => {
   if (!ENV.get('IS_BROWSER')) {
     return null;
   } else {
-    if (url.startsWith(BrowserIndexedDB.URL_SCHEME)) {
+    if (!Array.isArray(url) && url.startsWith(BrowserIndexedDB.URL_SCHEME)) {
       return browserIndexedDB(url.slice(BrowserIndexedDB.URL_SCHEME.length));
     } else {
       return null;

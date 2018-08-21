@@ -21,34 +21,38 @@
  * Uses [`fetch`](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API).
  */
 
-import {ENV} from '../environment';
 import {assert} from '../util';
-
-// tslint:disable:max-line-length
 import {concatenateArrayBuffers, getModelArtifactsInfoForJSON} from './io_utils';
 import {IORouter, IORouterRegistry} from './router_registry';
 import {IOHandler, ModelArtifacts, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
 import {loadWeightsAsArrayBuffer} from './weights_loader';
-// tslint:enable:max-line-length
 
 export class BrowserHTTPRequest implements IOHandler {
-  protected readonly path: string;
+  protected readonly path: string|string[];
   protected readonly requestInit: RequestInit;
 
   readonly DEFAULT_METHOD = 'POST';
 
-  static readonly URL_SCHEMES = ['http://', 'https://'];
+  static readonly URL_SCHEME_REGEX = /^https?:\/\//;
 
-  constructor(path: string, requestInit?: RequestInit) {
-    if (!ENV.get('IS_BROWSER')) {
+  constructor(path: string|string[], requestInit?: RequestInit) {
+    if (typeof fetch === 'undefined') {
       throw new Error(
-          'browserHTTPRequest is not supported outside the web browser.');
+          // tslint:disable-next-line:max-line-length
+          'browserHTTPRequest is not supported outside the web browser without a fetch polyfill.');
     }
 
     assert(
         path != null && path.length > 0,
         'URL path for browserHTTPRequest must not be null, undefined or ' +
             'empty.');
+
+    if (Array.isArray(path)) {
+      assert(
+          path.length === 2,
+          'URL paths for browserHTTPRequest must have a length of 2, ' +
+              `(actual length is ${path.length}).`);
+    }
     this.path = path;
 
     if (requestInit != null && requestInit.body != null) {
@@ -92,7 +96,7 @@ export class BrowserHTTPRequest implements IOHandler {
           'model.weights.bin');
     }
 
-    const response = await fetch(this.path, init);
+    const response = await fetch(this.path as string, init);
 
     if (response.status === 200) {
       return {
@@ -115,7 +119,44 @@ export class BrowserHTTPRequest implements IOHandler {
    * @returns The loaded model artifacts (if loading succeeds).
    */
   async load(): Promise<ModelArtifacts> {
-    const modelConfigRequest = await fetch(this.path, this.requestInit);
+    return Array.isArray(this.path) ? this.loadBinaryModel() :
+                                      this.loadJSONModel();
+  }
+
+  /**
+   * Loads the model topology file and build the in memory graph of the model.
+   */
+  private async loadBinaryTopology(): Promise<ArrayBuffer> {
+    try {
+      const response = await fetch(this.path[0], this.requestInit);
+      return await response.arrayBuffer();
+    } catch (error) {
+      throw new Error(`${this.path[0]} not found. ${error}`);
+    }
+  }
+
+  protected async loadBinaryModel(): Promise<ModelArtifacts> {
+    const graphPromise = this.loadBinaryTopology();
+    const manifestPromise = await fetch(this.path[1], this.requestInit);
+
+    const [modelTopology, weightsManifestResponse] =
+        await Promise.all([graphPromise, manifestPromise]);
+
+    const weightsManifest =
+        await weightsManifestResponse.json() as WeightsManifestConfig;
+
+    let weightSpecs: WeightsManifestEntry[];
+    let weightData: ArrayBuffer;
+    if (weightsManifest != null) {
+      [weightSpecs, weightData] = await this.loadWeights(weightsManifest);
+    }
+
+    return {modelTopology, weightSpecs, weightData};
+  }
+
+  protected async loadJSONModel(): Promise<ModelArtifacts> {
+    const modelConfigRequest =
+        await fetch(this.path as string, this.requestInit);
     const modelConfig = await modelConfigRequest.json();
     const modelTopology = modelConfig['modelTopology'];
     const weightsManifest = modelConfig['weightsManifest'];
@@ -132,48 +173,64 @@ export class BrowserHTTPRequest implements IOHandler {
     if (weightsManifest != null) {
       const weightsManifest =
           modelConfig['weightsManifest'] as WeightsManifestConfig;
-      weightSpecs = [];
-      for (const entry of weightsManifest) {
-        weightSpecs.push(...entry.weights);
-      }
-
-      let pathPrefix = this.path.substring(0, this.path.lastIndexOf('/'));
-      if (!pathPrefix.endsWith('/')) {
-        pathPrefix = pathPrefix + '/';
-      }
-
-      const fetchURLs: string[] = [];
-      weightsManifest.forEach(weightsGroup => {
-        weightsGroup.paths.forEach(path => {
-          fetchURLs.push(pathPrefix + path);
-        });
-      });
-      weightData = concatenateArrayBuffers(
-          await loadWeightsAsArrayBuffer(fetchURLs, this.requestInit));
+      [weightSpecs, weightData] = await this.loadWeights(weightsManifest);
     }
 
     return {modelTopology, weightSpecs, weightData};
   }
+
+  private async loadWeights(weightsManifest: WeightsManifestConfig):
+      Promise<[WeightsManifestEntry[], ArrayBuffer]> {
+    const weightPath = Array.isArray(this.path) ? this.path[1] : this.path;
+
+    const weightSpecs = [];
+    for (const entry of weightsManifest) {
+      weightSpecs.push(...entry.weights);
+    }
+
+    let pathPrefix = weightPath.substring(0, weightPath.lastIndexOf('/'));
+    if (!pathPrefix.endsWith('/')) {
+      pathPrefix = pathPrefix + '/';
+    }
+    const fetchURLs: string[] = [];
+    weightsManifest.forEach(weightsGroup => {
+      weightsGroup.paths.forEach(path => {
+        fetchURLs.push(pathPrefix + path);
+      });
+    });
+    return [
+      weightSpecs,
+      concatenateArrayBuffers(
+          await loadWeightsAsArrayBuffer(fetchURLs, this.requestInit))
+    ];
+  }
 }
 
-export const httpRequestRouter: IORouter = (url: string) => {
-  if (!ENV.get('IS_BROWSER')) {
-    // browserHTTPRequest uses `fetch`, which differs from HTTP requests in
-    // node.js, which use `node-fetch`.
+function isHTTPScheme(url: string): boolean {
+  return url.match(BrowserHTTPRequest.URL_SCHEME_REGEX) != null;
+}
+
+export const httpRequestRouter: IORouter = (url: string|string[]) => {
+  if (typeof fetch === 'undefined') {
+    // browserHTTPRequest uses `fetch`, if one wants to use it in node.js
+    // they have to setup a global fetch polyfill.
     return null;
   } else {
-    for (const scheme of BrowserHTTPRequest.URL_SCHEMES) {
-      if (url.startsWith(scheme)) {
-        return browserHTTPRequest(url);
-      }
+    let isHTTP = true;
+    if (Array.isArray(url)) {
+      isHTTP = url.every(urlItem => isHTTPScheme(urlItem));
+    } else {
+      isHTTP = isHTTPScheme(url);
     }
-    return null;
+    if (isHTTP) {
+      return browserHTTPRequest(url);
+    }
   }
+  return null;
 };
 IORouterRegistry.registerSaveRouter(httpRequestRouter);
 IORouterRegistry.registerLoadRouter(httpRequestRouter);
 
-// tslint:disable:max-line-length
 /**
  * Creates an IOHandler subtype that sends model artifacts to HTTP server.
  *
@@ -184,7 +241,7 @@ IORouterRegistry.registerLoadRouter(httpRequestRouter);
  *   - A JSON file consisting of `modelTopology` and `weightsManifest`.
  *   - A binary weights file consisting of the concatenated weight values.
  * These files are in the same format as the one generated by
- * [tensorflowjs_converter](https://js.tensorflow.org/tutorials/import-keras.html).
+ * [tfjs_converter](https://js.tensorflow.org/tutorials/import-keras.html).
  *
  * The following code snippet exemplifies the client-side code that uses this
  * function:
@@ -295,22 +352,24 @@ IORouterRegistry.registerLoadRouter(httpRequestRouter);
  *   main()
  * ```
  *
- * @param path URL path. Can be an absolute HTTP path (e.g.,
+ * @param path A single URL path or an Array of URL  paths.
+ *   Currently, only a single URL path is supported. Array input is reserved
+ *   for future development.
+ *   Can be an absolute HTTP path (e.g.,
  *   'http://localhost:8000/model-upload)') or a relative path (e.g.,
  *   './model-upload').
  * @param requestInit Request configurations to be used when sending
  *    HTTP request to server using `fetch`. It can contain fields such as
  *    `method`, `credentials`, `headers`, `mode`, etc. See
  *    https://developer.mozilla.org/en-US/docs/Web/API/Request/Request
- *    for more information. `requestInit` must not have a body, because the body
- *    will be set by TensorFlow.js. File blobs representing
- *    the model topology (filename: 'model.json') and the weights of the
- *    model (filename: 'model.weights.bin') will be appended to the body.
- *    If `requestInit` has a `body`, an Error will be thrown.
+ *    for more information. `requestInit` must not have a body, because the
+ * body will be set by TensorFlow.js. File blobs representing the model
+ * topology (filename: 'model.json') and the weights of the model (filename:
+ * 'model.weights.bin') will be appended to the body. If `requestInit` has a
+ * `body`, an Error will be thrown.
  * @returns An instance of `IOHandler`.
  */
-// tslint:enable:max-line-length
 export function browserHTTPRequest(
-    path: string, requestInit?: RequestInit): IOHandler {
+    path: string|string[], requestInit?: RequestInit): IOHandler {
   return new BrowserHTTPRequest(path, requestInit);
 }

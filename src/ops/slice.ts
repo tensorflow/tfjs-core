@@ -17,7 +17,7 @@
 
 import {ENV} from '../environment';
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
-import {convertToTensor} from '../tensor_util';
+import {convertToTensor} from '../tensor_util_env';
 import {Rank, TensorLike} from '../types';
 import * as util from '../util';
 import {op} from './operation';
@@ -125,7 +125,7 @@ function slice_<R extends Rank, T extends Tensor<R>>(
   } else if (begin.length < $x.rank) {
     begin_ = begin.concat(new Array($x.rank - begin.length).fill(0));
   } else {
-    begin_ = begin;
+    begin_ = begin.slice();
   }
   let size_: number[];
   if (size == null) {

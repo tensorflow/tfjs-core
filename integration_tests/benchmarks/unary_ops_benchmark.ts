@@ -17,8 +17,8 @@
 
 import * as tf from '@tensorflow/tfjs-core';
 
-import {BenchmarkTest} from './benchmark';
-import * as benchmark_util from './benchmark_util';
+import {BenchmarkTest} from './types';
+import * as util from './util';
 
 function getUnaryOp(option: string) {
   switch (option) {
@@ -26,6 +26,8 @@ function getUnaryOp(option: string) {
       return (x: tf.Tensor) => x.log();
     case 'exp':
       return (x: tf.Tensor) => x.exp();
+    case 'expm1':
+      return (x: tf.Tensor) => x.expm1();
     case 'neg':
       return (x: tf.Tensor) => x.neg();
     case 'ceil':
@@ -36,6 +38,8 @@ function getUnaryOp(option: string) {
       return (x: tf.Tensor) => x.log1p();
     case 'sqrt':
       return (x: tf.Tensor) => x.sqrt();
+    case 'rsqrt':
+      return (x: tf.Tensor) => x.rsqrt();
     case 'square':
       return (x: tf.Tensor) => x.square();
     case 'abs':
@@ -54,6 +58,8 @@ function getUnaryOp(option: string) {
       return (x: tf.Tensor) => x.prelu(alpha);
     case 'sigmoid':
       return (x: tf.Tensor) => x.sigmoid();
+    case 'logSigmoid':
+      return (x: tf.Tensor) => x.logSigmoid();
     case 'sin':
       return (x: tf.Tensor) => x.sin();
     case 'cos':
@@ -72,8 +78,24 @@ function getUnaryOp(option: string) {
       return (x: tf.Tensor) => x.cosh();
     case 'tanh':
       return (x: tf.Tensor) => x.tanh();
+    case 'asinh':
+      return (x: tf.Tensor) => x.asinh();
+    case 'acosh':
+      return (x: tf.Tensor) => x.acosh();
+    case 'atanh':
+      return (x: tf.Tensor) => x.atanh();
     case 'step':
       return (x: tf.Tensor) => x.step();
+    case 'sign':
+      return (x: tf.Tensor) => x.sign();
+    case 'round':
+      return (x: tf.Tensor) => x.round();
+    case 'reciprocal':
+      return (x: tf.Tensor) => x.reciprocal();
+    case 'softplus':
+      return (x: tf.Tensor) => x.softplus();
+    case 'erf':
+      return (x: tf.Tensor) => x.erf();
     default:
       throw new Error(`Not found such ops: ${option}`);
   }
@@ -105,7 +127,7 @@ export class UnaryOpsGPUBenchmark implements BenchmarkTest {
 
     const benchmark = () => op(input);
 
-    const time = await benchmark_util.warmupAndBenchmarkGPU(benchmark);
+    const time = await util.warmupAndBenchmarkGPU(benchmark);
 
     input.dispose();
     return time;

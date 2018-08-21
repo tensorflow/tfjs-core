@@ -16,13 +16,12 @@
  */
 
 import * as tf from './index';
-// tslint:disable-next-line:max-line-length
 import {describeWithFlags, envSatisfiesConstraints, parseKarmaFlags} from './jasmine_util';
 import {MathBackendCPU} from './kernels/backend_cpu';
 import {MathBackendWebGL} from './kernels/backend_webgl';
 import {WEBGL_ENVS} from './test_util';
 
-describe('jasmine_util.envSatisfiesConstraints', () => {
+describeWithFlags('jasmine_util.envSatisfiesConstraints', {}, () => {
   it('ENV satisfies empty constraints', () => {
     expect(envSatisfiesConstraints({})).toBe(true);
   });
@@ -47,7 +46,7 @@ describe('jasmine_util.parseKarmaFlags', () => {
   it('--backend cpu', () => {
     const res = parseKarmaFlags(['--backend', 'cpu']);
     expect(res.name).toBe('cpu');
-    expect(res.features).toEqual({});
+    expect(res.features).toEqual({'HAS_WEBGL': false});
     expect(res.factory() instanceof MathBackendCPU).toBe(true);
   });
 

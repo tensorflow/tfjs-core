@@ -15,19 +15,45 @@
  * =============================================================================
  */
 
-// tslint:disable-next-line:max-line-length
-import {BatchNormalization3DCPUBenchmark, BatchNormalization3DGPUBenchmark} from './batchnormalization3d_benchmark';
-import {BenchmarkRun, BenchmarkRunGroup} from './benchmark';
-// tslint:disable-next-line:max-line-length
-import {ConvGPUBenchmark, ConvParams, DepthwiseConvParams, RegularConvParams} from './conv_benchmarks';
-// tslint:disable-next-line:max-line-length
-import {MatmulCPUBenchmark, MatmulGPUBenchmark} from './matmul_benchmarks';
-// tslint:disable-next-line:max-line-length
-import {PoolBenchmarkParams, PoolCPUBenchmark, PoolGPUBenchmark} from './pool_benchmarks';
-// tslint:disable-next-line:max-line-length
-import {ReductionOpsCPUBenchmark, ReductionOpsGPUBenchmark} from './reduction_ops_benchmark';
-// tslint:disable-next-line:max-line-length
-import {UnaryOpsCPUBenchmark, UnaryOpsGPUBenchmark} from './unary_ops_benchmark';
+import {BatchNormalization3DCPUBenchmark, BatchNormalization3DGPUBenchmark} from '../batchnormalization3d_benchmark';
+import {ConvGPUBenchmark, ConvParams, DepthwiseConvParams, RegularConvParams} from '../conv_benchmarks';
+import {MatmulCPUBenchmark, MatmulGPUBenchmark} from '../matmul_benchmarks';
+import {PoolBenchmarkParams, PoolCPUBenchmark, PoolGPUBenchmark} from '../pool_benchmarks';
+import {ReductionOpsCPUBenchmark, ReductionOpsGPUBenchmark} from '../reduction_ops_benchmark';
+import {BenchmarkTest} from '../types';
+import {UnaryOpsCPUBenchmark, UnaryOpsGPUBenchmark} from '../unary_ops_benchmark';
+
+export interface BenchmarkRunGroup {
+  name: string;
+  // Min and max steps to run the benchmark test over.
+  min: number;
+  max: number;
+  // The size of the step to take between benchmark runs.
+  stepSize: number;
+  // A transformation of step to the size passed to the benchmark test.
+  stepToSizeTransformation?: (step: number) => number;
+  // Option parameters which is given to the benchmark test. (e.g. ops types)
+  options?: string[];
+  selectedOption?: string;
+  benchmarkRuns: BenchmarkRun[];
+  params: {[option: string]: {}};
+}
+
+export class BenchmarkRun {
+  name: string;
+  benchmarkTest: BenchmarkTest;
+
+  chartData: ChartData[];
+  constructor(name: string, benchmarkTest: BenchmarkTest) {
+    this.name = name;
+    this.benchmarkTest = benchmarkTest;
+    this.chartData = [];
+  }
+
+  clearChartData() {
+    this.chartData = [];
+  }
+}
 
 export function getRunGroups(): BenchmarkRunGroup[] {
   const groups: BenchmarkRunGroup[] = [];
@@ -105,10 +131,12 @@ export function getRunGroups(): BenchmarkRunGroup[] {
     max: 1024,
     stepToSizeTransformation: (step: number) => Math.max(1, step),
     options: [
-      'log', 'exp', 'neg', 'ceil', 'floor', 'log1p', 'sqrt', 'square',
-      'abs', 'relu', 'elu', 'selu', 'leakyRelu', 'prelu', 'sigmoid',
-      'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'sinh', 'cosh',
-      'tanh', 'step'
+      'abs',        'acos',  'acosh',   'asin',       'asinh', 'atan',
+      'atanh',      'ceil',  'cos',     'cosh',       'elu',   'erf',
+      'exp',        'expm1', 'floor',   'leakyRelu',  'log',   'log1p',
+      'logSigmoid', 'neg',   'prelu',   'reciprocal', 'relu',  'round',
+      'rsqrt',      'selu',  'sigmoid', 'sign',       'sin',   'sinh',
+      'softplus',   'sqrt',  'square',  'step',       'tan',   'tanh'
     ],
     selectedOption: 'log',
     stepSize: 64,
@@ -120,7 +148,7 @@ export function getRunGroups(): BenchmarkRunGroup[] {
   });
 
   groups.push({
-    name: 'Reduction Ops: input [size, size]',
+    name: 'Reduction Ops: input [size * size]',
     min: 0,
     max: 1024,
     stepToSizeTransformation: (step: number) => Math.max(1, step),
