@@ -86,11 +86,33 @@ function diagonalMul(x: Tensor2D): Scalar {
   return mul;
 }
 
-function solve_(a: Tensor2D, b: Tensor2D): Tensor2D {
-  const [r, c] = a.shape;
-  const [r2, c2] = b.shape;
-  assert(r === r2, 'Second dimension size does not match');
+// function solve_(a: Tensor2D): Tensor;
+function solve_(
+    a: Tensor2D[]|Tensor2D, b: Tensor2D[]|Tensor2D, adjoint = false): Tensor2D|
+    Tensor2D[] {
+  if (Array.isArray(a) || Array.isArray(b)) {
+    assert(
+        (a as Tensor2D[]).length === (b as Tensor2D[]).length,
+        'Second dimension size does not match');
+    const sol: Tensor2D[] = [];
+    (a as Tensor2D[]).forEach((m, i) => {
+      sol.push(solve_unique_equation(m, (b as Tensor2D[])[i], adjoint));
+    });
+    return sol;
+  } else {
+    return solve_unique_equation(a, b, adjoint);
+  }
+}
+
+function solve_unique_equation(
+    a: Tensor2D, b: Tensor2D, adjoint = false): Tensor2D {
   return ENV.engine.tidy(() => {
+    const [r, c] = a.shape;
+    const [r2, c2] = b.shape;
+    assert(r === r2, 'Second dimension size does not match');
+    if (adjoint) {
+      a = adjM(a);
+    }
     const {upperM, det} = gaussJordanTriangular(a, b);
     assert(det.dataSync()[0] !== 0, 'Input matrix is not inversible');
     const trian = unstack(upperM);
