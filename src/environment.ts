@@ -320,7 +320,7 @@ export class Environment {
       }
       return TEST_EPSILON_FLOAT16;
     } else if (feature === 'EPSILON') {
-      if (this.backend.floatPrecision() === 16) {
+      if (this.backend.floatPrecision() === 32) {
         return EPSILON_FLOAT32;
       }
       return EPSILON_FLOAT16;
