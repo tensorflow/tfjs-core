@@ -18,6 +18,7 @@
 import * as device_util from './device_util';
 import {ENV, Environment} from './environment';
 import {Features, getQueryParams} from './environment_util';
+import * as tf from './index';
 import {describeWithFlags} from './jasmine_util';
 import {KernelBackend} from './kernels/backend';
 import {MathBackendCPU} from './kernels/backend_cpu';
@@ -287,5 +288,9 @@ describeWithFlags('epsilon', {}, () => {
   it('Epsilon is a function of float precision', () => {
     const epsilonValue = ENV.backend.floatPrecision() === 32 ? 1e-8 : 1e-4;
     expect(ENV.get('EPSILON')).toBe(epsilonValue);
+  });
+
+  it('abs(epsilon) > 0', () => {
+    expect(tf.abs(ENV.get('EPSILON')).get()).toBeGreaterThan(0);
   });
 });
