@@ -6,11 +6,18 @@ console.log(tf);
 
 async function init() {
 	const { profile, result } = await tf.profile(() => {
-	  const x = tf.tensor1d([1, 2, 3]);
-	  let x2 = x.square();
-	  x2.dispose();
-	  x2 = x.square();
-	  x2.dispose();
+    /*
+    this function triggers:
+    - acquireTexture
+    - releaseTexture
+    - acquireTexture
+    - releaseTexture
+    */
+    const x = tf.tensor1d([1, 2, 3]); // does not trigger acquire, but would if it were larger
+	  let x2 = x.square(); // [1, 4, 9]
+	  // x2.dispose();
+	  // x2 = x.square();
+	  // x2.dispose();
 	  return x;
 	});
 	
@@ -19,6 +26,7 @@ async function init() {
 
 	console.log('ACTUAL RESULT');
 	console.log(result);
+  console.log(tf.memory());
 }
 
 init();
@@ -27,19 +35,14 @@ init();
 {
   memory: {
     peakBytes: 24,
-    averageBytes: 44  // (12 + 24 + 24) / 3, after each kernel is run
+    averageBytes: 20  // (12 + 24 + 24) / 3, after each kernel is run
     newTensors: 1,
     newTensorsBytes: 12
   },
   timing: {
-    totalKernelTimeMs: 100
+    totalKernelTimeMs: 100 // cannot implement this yet
   },
   kernels: [
-    {name: square, kernelTimeMs: 10, inputShapes: [[3]], outputShape: [3]},
-    {name: square, kernelTimeMs: 12, inputShapes: [[3]], outputShape: [3]},
-  ],
-  // Possibly later, as a hierarchy at the op level (via the named scopes).
-  operations: [
     {name: square, kernelTimeMs: 10, inputShapes: [[3]], outputShape: [3]},
     {name: square, kernelTimeMs: 12, inputShapes: [[3]], outputShape: [3]},
   ]
