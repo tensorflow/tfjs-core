@@ -1069,7 +1069,7 @@ function expandDims_<R2 extends Rank>(
 /**
  * Creates an empty `TensorBuffer` with the specified `shape` and `dtype`.
  *
- * The values are stored in cpu as `TypedArray`. Fill the buffer using
+ * The values are stored in CPU as `TypedArray`. Fill the buffer using
  * `buffer.set()`, or by modifying directly `buffer.values`.
  *
  * When done, call `buffer.toTensor()` to get an immutable `Tensor` with
