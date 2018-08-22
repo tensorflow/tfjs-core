@@ -13,3 +13,4 @@ yalc.lock
 .rpt2_cache/
 package/
 integration_tests/benchmarks/ui/bundle.js
+.cache/

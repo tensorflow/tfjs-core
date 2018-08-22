@@ -244,6 +244,10 @@ export class Engine implements TensorManager {
     }
   }
 
+  profile(): MemoryInfo {
+    return this.backend.memory() as MemoryInfo;
+  }
+
   memory(): MemoryInfo {
     const info = this.backend.memory() as MemoryInfo;
     info.numTensors = this.numTensors;
