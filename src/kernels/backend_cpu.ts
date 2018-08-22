@@ -1156,49 +1156,54 @@ export class MathBackendCPU implements KernelBackend {
     const padTop = convInfo.padInfo.top;
     const y = ops.buffer<Rank.R5>(convInfo.outShape, x.dtype);
 
+    const xVals = x.dataSync();
+    const wVals = filter.dataSync();
+    const yVals = y.values;
+
     for (let b = 0; b < convInfo.batchSize; ++b) {
-      for (let d2 = 0; d2 < convInfo.outChannels; ++d2) {
-        // Frames representing depth
-        for (let yF = 0; yF < convInfo.outDepth; ++yF) {
-          const xFCorner = yF * convInfo.strideDepth - padFront;
-          // Rows as per standard 2d matrix notation
+      const xOffset1 = b * x.strides[0];
+      const yOffset1 = b * y.strides[0];
+      for (let yF = 0; yF < convInfo.outDepth; ++yF) {
+        const yOffset2 = yOffset1 + yF * y.strides[1];
+        const xFCorner = yF * convInfo.strideDepth - padFront;
+        for (let wF = 0; wF < filterDepth; wF++) {
+          const xF = xFCorner + wF * dilationDepth;
+          if (xF < 0 || xF >= convInfo.inDepth) {
+            continue;
+          }
+          const wOffset1 = wF * filter.strides[0];
+          const xOffset2 = xOffset1 + xF * x.strides[1];
+
           for (let yR = 0; yR < convInfo.outHeight; ++yR) {
+            const yOffset3 = yOffset2 + yR * y.strides[2];
             const xRCorner = yR * convInfo.strideHeight - padTop;
-            // Columns as per standard 2d matrix notation
-            for (let yC = 0; yC < convInfo.outWidth; ++yC) {
-              const xCCorner = yC * convInfo.strideWidth - padLeft;
-
-              let dotProd = 0;
-              for (let wF = 0; wF < filterDepth; wF++) {
-                const xF = xFCorner + wF * dilationDepth;
-
-                if (xF < 0 || xF >= convInfo.inDepth) {
-                  continue;
-                }
-
-                for (let wR = 0; wR < filterHeight; wR++) {
-                  const xR = xRCorner + wR * dilationHeight;
-
-                  if (xR < 0 || xR >= convInfo.inHeight) {
+            for (let wR = 0; wR < filterHeight; wR++) {
+              const xR = xRCorner + wR * dilationHeight;
+              if (xR < 0 || xR >= convInfo.inHeight) {
+                continue;
+              }
+              const wOffset2 = wOffset1 + wR * filter.strides[1];
+              const xOffset3 = xOffset2 + xR * x.strides[2];
+              for (let yC = 0; yC < convInfo.outWidth; ++yC) {
+                const yOffset4 = yOffset3 + yC * convInfo.outChannels;
+                const xCCorner = yC * convInfo.strideWidth - padLeft;
+                for (let wC = 0; wC < filterWidth; wC++) {
+                  const xC = xCCorner + wC * dilationWidth;
+                  if (xC < 0 || xC >= convInfo.inWidth) {
                     continue;
                   }
-
-                  for (let wC = 0; wC < filterWidth; wC++) {
-                    const xC = xCCorner + wC * dilationWidth;
-
-                    if (xC < 0 || xC >= convInfo.inWidth) {
-                      continue;
+                  const wOffset3 = wOffset2 + wC * filter.strides[2];
+                  const xOffset4 = xOffset3 + xC * convInfo.inChannels;
+                  let wOffset4 = wOffset3;
+                  for (let d1 = 0; d1 < convInfo.inChannels; ++d1) {
+                    const xVal = xVals[xOffset4 + d1];
+                    for (let d2 = 0; d2 < convInfo.outChannels; ++d2) {
+                      yVals[yOffset4 + d2] += xVal * wVals[wOffset4 + d2];
                     }
-
-                    for (let d1 = 0; d1 < convInfo.inChannels; ++d1) {
-                      const pixel = x.get(b, xF, xR, xC, d1);
-                      const weight = filter.get(wF, wR, wC, d1, d2);
-                      dotProd += pixel * weight;
-                    }
+                    wOffset4 += convInfo.outChannels;
                   }
                 }
               }
-              y.set(dotProd, b, yF, yR, yC, d2);
             }
           }
         }
