@@ -112,6 +112,13 @@ export class Environment {
   }
 
   /**
+  */
+  /** @doc {heading: 'Performance', subheading: 'Memory'} */
+  static profile(f: () => void): Promise<ProfileInfo> {
+    return ENV.engine.profile(f);
+  }
+
+  /**
    * Executes the provided function `fn` and after it is executed, cleans up all
    * intermediate tensors allocated by `fn` except those returned by `fn`.
    * `f` must not return a Promise (async functions not allowed).

@@ -45,6 +45,10 @@ export type MemoryInfo = {
   unreliable?: boolean;
 };
 
+export type ProfileInfo = {
+
+};
+
 export interface TimingInfo extends BackendTimingInfo {
   wallMs: number;
 }
@@ -244,16 +248,16 @@ export class Engine implements TensorManager {
     }
   }
 
-  profile(): MemoryInfo {
-    return this.backend.memory() as MemoryInfo;
-  }
-
   memory(): MemoryInfo {
     const info = this.backend.memory() as MemoryInfo;
     info.numTensors = this.numTensors;
     info.numDataBuffers = this.numDataBuffers;
     info.numBytes = this.numBytes;
     return info;
+  }
+
+  async profile(query: () => void): Promise<ProfileInfo> {
+    return this.backend.profile(query) as ProfileInfo;
   }
 
   private shouldRecord(): boolean {

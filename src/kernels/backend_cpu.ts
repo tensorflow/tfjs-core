@@ -166,6 +166,10 @@ export class MathBackendCPU implements KernelBackend {
     };
   }
 
+  async profile(f: () => void) {
+    return {};
+  }
+
   private throwIfNoData(dataId: DataId) {
     if (!this.data.has(dataId)) {
       throw new Error(
