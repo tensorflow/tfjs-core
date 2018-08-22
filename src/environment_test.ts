@@ -286,7 +286,7 @@ describe('environment_util.getQueryParams', () => {
 
 describeWithFlags('epsilon', {}, () => {
   it('Epsilon is a function of float precision', () => {
-    const epsilonValue = ENV.backend.floatPrecision() === 32 ? 1e-8 : 1e-4;
+    const epsilonValue = ENV.backend.floatPrecision() === 32 ? 1e-7 : 1e-4;
     expect(ENV.get('EPSILON')).toBe(epsilonValue);
   });
 
