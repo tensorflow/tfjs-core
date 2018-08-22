@@ -2432,7 +2432,6 @@ describeWithFlags('clip', ALL_ENVS, () => {
     const res = tf.clipByValue([0, 1], min, max).dataSync();
     expect(res[0]).toBeGreaterThan(0);
     expect(res[1]).toBeLessThan(1);
-    console.log(res);
   });
 });
 
