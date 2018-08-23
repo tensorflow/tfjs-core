@@ -259,16 +259,22 @@ export class Engine implements TensorManager {
 
   async profile(query: () => void): Promise<ProfileInfo> {
     const kernels = [];
+    const newTensors = [];
     const startBytes = this.numBytes;
 
     const original = this.runKernel;
     this.runKernel = function() {
       const startingBytecount = this.numBytes;
+      const inputs = arguments[1];
       const output = original.call(this, ...[].slice.apply(arguments));
+
+      const bytesAdded = this.numBytes - startingBytecount;
 
       kernels.push({ 
         name: this.activeScope.name,
-        bytesAdded: this.numBytes - startingBytecount 
+        bytesAdded,
+        bytesUsed: bytesAdded + Object.keys(inputs).reduce((acc, curr) => 
+          acc + util.sizeFromShape(inputs[curr].shape) * util.bytesPerElement(inputs[curr].dtype), 0)
       });
 
       return output;
