@@ -18,8 +18,7 @@
 import {ENV} from '../environment';
 import {tidy} from '../globals';
 import {scalar, zerosLike} from '../ops/ops';
-import * as serialization from '../serialization';
-import {ConfigDict, Serializable, SerializableConstructor} from '../serialization';
+import {ConfigDict, registerClass, Serializable, SerializableConstructor} from '../serialization';
 import {Scalar, Tensor} from '../tensor';
 import {NamedVariableMap} from '../tensor_types';
 import {SGDOptimizer} from './sgd_optimizer';
@@ -98,4 +97,4 @@ export class MomentumOptimizer extends SGDOptimizer {
     return new cls(config.learningRate, config.momentum, config.useNesterov);
   }
 }
-serialization.registerClass(MomentumOptimizer);
+registerClass(MomentumOptimizer);

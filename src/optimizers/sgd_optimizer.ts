@@ -18,8 +18,7 @@
 import {ENV} from '../environment';
 import {keep, tidy} from '../globals';
 import {scalar} from '../ops/ops';
-import * as serialization from '../serialization';
-import {ConfigDict, Serializable, SerializableConstructor} from '../serialization';
+import {ConfigDict, registerClass, Serializable, SerializableConstructor} from '../serialization';
 import {Scalar} from '../tensor';
 import {NamedTensorMap} from '../tensor_types';
 import {Optimizer} from './optimizer';
@@ -70,4 +69,4 @@ export class SGDOptimizer extends Optimizer {
     return new cls(config.learningRate);
   }
 }
-serialization.registerClass(SGDOptimizer);
+registerClass(SGDOptimizer);
