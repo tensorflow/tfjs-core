@@ -162,7 +162,7 @@ export function registerClass<T extends Serializable>(
     cls: SerializableConstructor<T>) {
   assert(
       cls.className != null,
-      `Class being registered does not have the required className member ` +
+      `Class being registered does not have the static className property ` +
       `defined.`);
   assert(
       typeof cls.className === 'string',

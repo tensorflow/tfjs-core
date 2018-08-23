@@ -51,7 +51,7 @@ describe('registerClass', () => {
   it('registerClass fails on missing className', () => {
     // tslint:disable-next-line:no-any
     expect(() => registerClass(OptimizerWithoutClassName as any))
-        .toThrowError(/does not have the required className/);
+        .toThrowError(/does not have the static className property/);
   });
 
   class OptimizerWithEmptyClassName extends Optimizer {
