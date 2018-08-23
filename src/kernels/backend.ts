@@ -15,9 +15,9 @@
  * =============================================================================
  */
 
-import {Conv2DInfo} from '../ops/conv_util';
-import {DataId, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
-import {DataType, Rank, ShapeMap, TypedArray} from '../types';
+import { Conv2DInfo } from '../ops/conv_util';
+import { DataId, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D } from '../tensor';
+import { DataType, Rank, ShapeMap, TypedArray } from '../types';
 
 // Required information for all backends.
 export interface BackendTimingInfo {
@@ -30,10 +30,10 @@ export interface TensorStorage {
   disposeData(dataId: DataId): void;
   write(dataId: DataId, values: TypedArray): void;
   fromPixels(
-      pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
-      numChannels: number): Tensor3D;
+    pixels: ImageData | HTMLImageElement | HTMLCanvasElement | HTMLVideoElement,
+    numChannels: number): Tensor3D;
   register(dataId: DataId, shape: number[], dtype: DataType): void;
-  memory(): {unreliable: boolean;};  // Backend-specific information.
+  memory(): { unreliable: boolean; };  // Backend-specific information.
 }
 
 export interface BackendTimer {
@@ -51,13 +51,13 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
   floatPrecision(): number;
 
   matMul(a: Tensor2D, b: Tensor2D, transposeA: boolean, transposeB: boolean):
-      Tensor2D;
+    Tensor2D;
 
   slice<T extends Tensor>(x: T, begin: number[], size: number[]): T;
   stridedSlice<T extends Tensor>(
-      x: T, begin: number[], end: number[], strides: number[],
-      beginMask: number, endMask: number, ellipsisMask: number,
-      newAxisMask: number, shrinkAxisMask: number): T;
+    x: T, begin: number[], end: number[], strides: number[],
+    beginMask: number, endMask: number, ellipsisMask: number,
+    newAxisMask: number, shrinkAxisMask: number): T;
   reverse<T extends Tensor>(a: T, axis: number[]): T;
 
   // Any concat of n-dimensional tensors across any axis can be reduced to
@@ -84,7 +84,7 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
   sum(x: Tensor, axes: number[]): Tensor;
 
   unsortedSegmentSum<T extends Tensor>(
-      x: T, segmentIds: Tensor1D, numSegments: number): Tensor;
+    x: T, segmentIds: Tensor1D, numSegments: number): Tensor;
 
   argMin(x: Tensor, axis: number): Tensor;
   argMax(x: Tensor, axis: number): Tensor;
@@ -174,80 +174,93 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
 
   conv2d(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
   conv2dDerInput(dy: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
-      Tensor4D;
+    Tensor4D;
   conv2dDerFilter(x: Tensor4D, dY: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
 
   depthwiseConv2D(input: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
-      Tensor4D;
+    Tensor4D;
   depthwiseConv2DDerInput(dy: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
-      Tensor4D;
+    Tensor4D;
   depthwiseConv2DDerFilter(x: Tensor4D, dY: Tensor4D, convInfo: Conv2DInfo):
-      Tensor4D;
+    Tensor4D;
 
   maxPool(x: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
   maxPoolBackprop(dy: Tensor4D, x: Tensor4D, y: Tensor4D, convInfo: Conv2DInfo):
-      Tensor4D;
+    Tensor4D;
   avgPool(x: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
   avgPoolBackprop(dy: Tensor4D, x: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
 
   reshape<T extends Tensor, R extends Rank>(x: T, shape: ShapeMap[R]):
-      Tensor<R>;
+    Tensor<R>;
   cast<T extends Tensor>(x: T, dtype: DataType): T;
 
   tile<T extends Tensor>(x: T, reps: number[]): T;
 
   pad<T extends Tensor>(
-      x: T, paddings: Array<[number, number]>, constantValue: number): T;
+    x: T, paddings: Array<[number, number]>, constantValue: number): T;
 
   transpose<T extends Tensor>(x: T, perm: number[]): T;
 
   gather<T extends Tensor>(x: T, indices: Tensor1D, axis: number): T;
 
   batchToSpaceND<T extends Tensor>(
-      x: T, blockShape: number[], crops: number[][]): T;
+    x: T, blockShape: number[], crops: number[][]): T;
 
   spaceToBatchND<T extends Tensor>(
-      x: T, blockShape: number[], paddings: number[][]): T;
+    x: T, blockShape: number[], paddings: number[][]): T;
 
   resizeBilinear(
-      x: Tensor4D, newHeight: number, newWidth: number,
-      alignCorners: boolean): Tensor4D;
+    x: Tensor4D, newHeight: number, newWidth: number,
+    alignCorners: boolean): Tensor4D;
 
   resizeBilinearBackprop(dy: Tensor4D, x: Tensor4D, alignCorners: boolean):
-      Tensor4D;
+    Tensor4D;
 
   resizeNearestNeighbor(
-      x: Tensor4D, newHEight: number, newWidth: number,
-      alignCorners: boolean): Tensor4D;
+    x: Tensor4D, newHEight: number, newWidth: number,
+    alignCorners: boolean): Tensor4D;
 
   resizeNearestNeighborBackprop(
-      dy: Tensor4D, x: Tensor4D, alignCorners: boolean): Tensor4D;
+    dy: Tensor4D, x: Tensor4D, alignCorners: boolean): Tensor4D;
 
   batchNormalization(
-      x: Tensor4D, mean: Tensor4D|Tensor1D, variance: Tensor4D|Tensor1D,
-      varianceEpsilon: number, scale?: Tensor4D|Tensor1D,
-      offset?: Tensor4D|Tensor1D): Tensor4D;
+    x: Tensor4D, mean: Tensor4D | Tensor1D, variance: Tensor4D | Tensor1D,
+    varianceEpsilon: number, scale?: Tensor4D | Tensor1D,
+    offset?: Tensor4D | Tensor1D): Tensor4D;
 
   localResponseNormalization4D(
-      x: Tensor4D, radius: number, bias: number, alpha: number,
-      beta: number): Tensor4D;
+    x: Tensor4D, radius: number, bias: number, alpha: number,
+    beta: number): Tensor4D;
 
   LRNGrad(
-      dy: Tensor4D, inputImage: Tensor4D, outputImage: Tensor4D, radius: number,
-      bias: number, alpha: number, beta: number): Tensor4D;
+    dy: Tensor4D, inputImage: Tensor4D, outputImage: Tensor4D, radius: number,
+    bias: number, alpha: number, beta: number): Tensor4D;
 
   multinomial(
-      logits: Tensor2D, normalized: boolean, numSamples: number,
-      seed: number): Tensor2D;
+    logits: Tensor2D, normalized: boolean, numSamples: number,
+    seed: number): Tensor2D;
 
   oneHot(indices: Tensor1D, depth: number, onValue: number, offValue: number):
-      Tensor2D;
+    Tensor2D;
 
   cumsum(x: Tensor, axis: number, exclusive: boolean, reverse: boolean): Tensor;
 
   nonMaxSuppression(
-      boxes: Tensor2D, scores: Tensor1D, maxOutputSize: number,
-      iouThreshold: number, scoreThreshold?: number): Tensor1D;
+    boxes: Tensor2D, scores: Tensor1D, maxOutputSize: number,
+    iouThreshold: number, scoreThreshold?: number): Tensor1D;
+
+  cropAndResize(
+    image: Tensor4D, boxes: Tensor2D, boxIndex: Tensor1D,
+    cropSize: [number, number], method: string, extrapolationValue: number,
+  ): Tensor4D;
+
+  cropAndResizeBackpropImage(
+    grad: Tensor4D, image: Tensor4D, boxes: Tensor2D, boxIndex: Tensor1D,
+    method: string): Tensor4D;
+
+  cropAndResizeBackpropBoxes(
+    grad: Tensor4D, image: Tensor4D, boxes: Tensor2D,
+    boxIndex: Tensor1D): Tensor2D;
 
   dispose(): void;
 }
