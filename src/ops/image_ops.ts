@@ -229,7 +229,8 @@ function nonMaxSuppSanityCheck(
 
 function cropAndResize_(
   image: Tensor4D, boxes: Tensor2D, boxInd: Tensor1D,
-  cropSize: [number, number], method?: string, extrapolationValue?: number,
+  cropSize: [number, number], method?: 'bilinear' | 'nearest',
+  extrapolationValue?: number,
 ) {
 
   // TODO need to guarantee that
@@ -239,7 +240,8 @@ function cropAndResize_(
   // 4) method is bilinear or nearest
   // 5) extrapolationValue is
 
-  method = method || "bilinear";
+  method = method || 'bilinear';
+  extrapolationValue = extrapolationValue || 0;
 
   const numBoxes = boxes.shape[0]
   util.assert(
