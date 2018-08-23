@@ -15,6 +15,8 @@
  * =============================================================================
  */
 
+import {assert} from './util';
+
 /**
  * Types to support JSON-esque data structures internally.
  *
@@ -133,7 +135,36 @@ export class SerializationMap {
   }
 }
 
+/**
+ * Register a class with the serialization map of TensorFlow.js.
+ * 
+ * This is often used for registering custom Layers, so they can be
+ * serialized and deserialized.
+ * 
+ * Example:
+ * 
+ * ```js
+ * class MyCustomLayer extends tf.layers.Layer {
+ *   static className = 'MyCustomLayer';
+ * 
+ *   constructor(config) {
+ *     super(config);
+ *   }
+ * }
+ * tf.serialization.registerClass(MyCustomLayer);
+ * ```
+ * 
+ * @param cls The class to be registered. It must have a public static member
+ *   called `className` defined and the value must be a non-empty string.
+ */
+/** @doc {heading: 'Models', subheading: 'Customization'} */
 export function registerClass<T extends Serializable>(
     cls: SerializableConstructor<T>) {
+  assert(cls.className != null,
+      `Class being registered does not have the required className member ` +
+      `defined.`);
+  assert(cls.className.length > 0,
+      `Class being registered has an empty string as its className`);
+
   SerializationMap.register(cls);
 }

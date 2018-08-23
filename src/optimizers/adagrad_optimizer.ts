@@ -18,7 +18,8 @@
 import {ENV} from '../environment';
 import {keep, tidy} from '../globals';
 import {fill, scalar} from '../ops/ops';
-import {ConfigDict, registerClass, Serializable, SerializableConstructor} from '../serialization';
+import * as serialization from '../serialization';
+import {ConfigDict, Serializable, SerializableConstructor} from '../serialization';
 import {Scalar} from '../tensor';
 import {NamedVariableMap} from '../tensor_types';
 import {Optimizer} from './optimizer';
@@ -86,4 +87,4 @@ export class AdagradOptimizer extends Optimizer {
     return new cls(config.learningRate, config.initialAccumulatorValue);
   }
 }
-registerClass(AdagradOptimizer);
+serialization.registerClass(AdagradOptimizer);

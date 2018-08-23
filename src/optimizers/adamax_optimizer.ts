@@ -18,7 +18,8 @@
 import {ENV} from '../environment';
 import {keep, tidy} from '../globals';
 import {scalar, zerosLike} from '../ops/ops';
-import {ConfigDict, registerClass, Serializable, SerializableConstructor} from '../serialization';
+import * as serialization from '../serialization';
+import {ConfigDict, Serializable, SerializableConstructor} from '../serialization';
 import {Scalar, Variable} from '../tensor';
 import {NamedVariableMap} from '../tensor_types';
 import {Optimizer} from './optimizer';
@@ -152,4 +153,4 @@ export class AdamaxOptimizer extends Optimizer {
         config.decay);
   }
 }
-registerClass(AdamaxOptimizer);
+serialization.registerClass(AdamaxOptimizer);
