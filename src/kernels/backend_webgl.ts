@@ -358,11 +358,6 @@ export class MathBackendWebGL implements KernelBackend {
         WebGLMemoryInfo;
   }
 
-  async profile(f: () => void): Promise {
-    // may be useful in case we want to distinguish between bytes and bytesOnGPU in the future
-    return {};
-  }
-
   private startTimer(): WebGLQuery|CPUTimerQuery {
     if (ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') > 0) {
       return this.gpgpu.beginQuery();

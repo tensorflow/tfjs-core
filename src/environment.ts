@@ -16,7 +16,7 @@
  */
 
 import * as device_util from './device_util';
-import {Engine, MemoryInfo, ScopeFn, TimingInfo} from './engine';
+import {Engine, MemoryInfo, ProfileInfo, ScopeFn, TimingInfo} from './engine';
 import {Features, getFeaturesFromURL, getWebGLDisjointQueryTimerVersion, isChrome, isDownloadFloatTextureEnabled, isRenderToFloatTextureEnabled, isWebGLFenceEnabled, isWebGLVersionEnabled} from './environment_util';
 import {KernelBackend} from './kernels/backend';
 import {setTensorTracker, Tensor, TensorTracker} from './tensor';
@@ -114,7 +114,7 @@ export class Environment {
   /**
   */
   /** @doc {heading: 'Performance', subheading: 'Memory'} */
-  static profile(f: () => void): Promise<ProfileInfo> {
+  static profile(f: () => any): Promise<ProfileInfo> {
     return ENV.engine.profile(f);
   }
 

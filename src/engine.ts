@@ -45,9 +45,18 @@ export type MemoryInfo = {
   unreliable?: boolean;
 };
 
-export type ProfileInfo = {
+type KernelProfile = {
+  name: string;
+  bytesAdded: number;
+  bytesUsed: number;
+}
 
-};
+export type ProfileInfo = {
+  startBytes: number;
+  endBytes: number;
+  kernels: KernelProfile[],
+  result?: Tensor
+}
 
 export interface TimingInfo extends BackendTimingInfo {
   wallMs: number;
@@ -257,10 +266,11 @@ export class Engine implements TensorManager {
     return info;
   }
 
-  async profile(query: () => void): Promise<ProfileInfo> {
-    const kernels = [];
-    const newTensors = [];
-    const startBytes = this.numBytes;
+  async profile(query: () => any): Promise<ProfileInfo> {
+    const profile = {} as ProfileInfo;
+
+    profile.startBytes = this.numBytes;
+    profile.kernels = [];
 
     const original = this.runKernel;
     this.runKernel = function() {
@@ -270,7 +280,7 @@ export class Engine implements TensorManager {
 
       const bytesAdded = this.numBytes - startingBytecount;
 
-      kernels.push({ 
+      profile.kernels.push({ 
         name: this.activeScope.name,
         bytesAdded,
         bytesUsed: bytesAdded + Object.keys(inputs).reduce((acc, curr) => 
@@ -280,17 +290,10 @@ export class Engine implements TensorManager {
       return output;
     }
 
-    const result = await query();
+    profile.result = await query();
     this.runKernel = original;
 
-    return { 
-      profile: {
-        startBytes,
-        endBytes: this.numBytes,
-        kernels
-      },
-      result
-    };
+    return profile;
   }
 
   private shouldRecord(): boolean {
