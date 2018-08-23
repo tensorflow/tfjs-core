@@ -361,8 +361,8 @@ describeWithFlags('memory', ALL_ENVS, () => {
 });
 
 describeWithFlags('profile', ALL_ENVS, () => {
-  it('squaring', () => {
-    const result = tf.profile(() => {
+  it('squaring', async () => {
+    const result = await tf.profile(() => {
       const x = tf.tensor1d([1, 2, 3]);
       let x2 = x.square();
       x2.dispose();
@@ -376,8 +376,8 @@ describeWithFlags('profile', ALL_ENVS, () => {
     expect(result.kernels[0].bytesAdded).toBe(12);
   });
 
-  it('matMul', () => {
-    const result = tf.profile(() => {
+  it('matMul', async () => {
+    const result = await tf.profile(() => {
       const a = tf.tensor2d([1, 2], [1, 2]);
       const b = tf.tensor2d([1, 2, 3, 4], [2, 2]);
       const c = a.matMul(b);
