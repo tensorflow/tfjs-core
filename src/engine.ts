@@ -274,6 +274,7 @@ export class Engine implements TensorManager {
     profile.startBytes = this.numBytes;
     profile.kernels = [];
 
+    // Temporarily wrap runKernel with a function that keeps track of byte usage.
     const original = this.runKernel;
 
     this.runKernel = <T extends Tensor|Tensor[], I extends NamedTensorMap>(
