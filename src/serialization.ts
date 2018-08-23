@@ -157,14 +157,21 @@ export class SerializationMap {
  * @param cls The class to be registered. It must have a public static member
  *   called `className` defined and the value must be a non-empty string.
  */
-/** @doc {heading: 'Models', subheading: 'Customization'} */
+/** @doc {heading: 'Models', subheading: 'Serialization'} */
 export function registerClass<T extends Serializable>(
     cls: SerializableConstructor<T>) {
-  assert(cls.className != null,
+  assert(
+      cls.className != null,
       `Class being registered does not have the required className member ` +
       `defined.`);
-  assert(cls.className.length > 0,
-      `Class being registered has an empty string as its className`);
+  assert(
+      typeof cls.className === 'string',
+      `className is required to be a string, but got type ` +
+          typeof cls.className);
+  assert(
+      cls.className.length > 0,
+      `Class being registered has an empty-string as its className, which ` +
+          `is disallowed.`);
 
   SerializationMap.register(cls);
 }
