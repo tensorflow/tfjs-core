@@ -54,6 +54,8 @@ type KernelProfile = {
 export type ProfileInfo = {
   startBytes: number;
   endBytes: number;
+  peak: number;
+  average: number;
   kernels: KernelProfile[],
   result?: Tensor
 }
@@ -292,6 +294,10 @@ export class Engine implements TensorManager {
 
     profile.result = await query();
     this.runKernel = original;
+
+    profile.peak = Math.max(...profile.kernels.map(d => d.bytesUsed));
+    profile.average = profile.kernels.map(d => d.bytesUsed)
+      .reduce((acc, curr) => acc + curr, 0) / profile.kernels.length;
 
     return profile;
   }
