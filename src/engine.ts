@@ -189,13 +189,13 @@ export class Engine implements TensorManager {
       }
       this.activeTape.push(tapeNode);
     }
+
     return result;
   }
 
   // TensorManager implementation.
 
   registerTensor(a: Tensor|Variable): void {
-    console.log('REGISTER');
     const refCount =
         this.refCounter.has(a.dataId) ? this.refCounter.get(a.dataId) : 0;
     this.numTensors++;
@@ -219,7 +219,6 @@ export class Engine implements TensorManager {
   }
 
   disposeTensor(a: Tensor): void {
-    console.log('DISPOSE');
     if (!this.refCounter.has(a.dataId)) {
       return;
     }
@@ -259,16 +258,27 @@ export class Engine implements TensorManager {
   }
 
   async profile(query: () => void): Promise<ProfileInfo> {
-    console.log('engine profile');
-    // return this.backend.profile(query) as ProfileInfo;
+    const kernels = [];
     const startBytes = this.numBytes;
+    
+    const original = this.runKernel;
+    this.runKernel = function() {
+      const startingBytecount = this.numBytes;
+      const output = original.call(this, ...[].slice.apply(arguments));
+
+      kernels.push({ bytesAdded: this.numBytes - startingBytecount });
+
+      return output;
+    }
+
     const result = await query();
-    const endBytes = this.numBytes;
+    this.runKernel = original;
 
     return { 
       profile: {
         startBytes,
-        endBytes
+        endBytes: this.numBytes,
+        kernels
       },
       result
     };
