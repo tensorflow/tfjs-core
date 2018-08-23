@@ -132,3 +132,8 @@ export class SerializationMap {
         [cls, cls.fromConfig];
   }
 }
+
+export function registerClass<T extends Serializable>(
+    cls: SerializableConstructor<T>) {
+  SerializationMap.register(cls);
+}
