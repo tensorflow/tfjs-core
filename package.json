@@ -1,6 +1,6 @@
 {
   "name": "@tensorflow/tfjs-core",
-  "version": "0.12.12",
+  "version": "0.12.14",
   "description": "Hardware-accelerated JavaScript library for machine intelligence",
   "private": false,
   "main": "dist/index.js",
@@ -17,9 +17,6 @@
   "devDependencies": {
     "@types/jasmine": "~2.5.53",
     "@types/node": "~9.6.0",
-    "babel-core": "^6.26.3",
-    "babel-plugin-transform-runtime": "~6.23.0",
-    "babel-polyfill": "~6.26.0",
     "clang-format": "~1.2.2",
     "jasmine": "~3.1.0",
     "jasmine-core": "~3.1.0",
