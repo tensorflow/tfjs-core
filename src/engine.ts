@@ -49,6 +49,8 @@ type KernelProfile = {
   name: string;
   bytesAdded: number;
   bytesUsed: number;
+  inputShapes: number[][];
+  outputShape: number[]
 }
 
 export type ProfileInfo = {
@@ -284,14 +286,17 @@ export class Engine implements TensorManager {
       ): T => {
       const startingBytecount = this.numBytes;
       const output = original.call(this, forwardFunc, inputs, backwardsFunc);
+      const inputKeys = Object.keys(inputs);
 
       const bytesAdded = this.numBytes - startingBytecount;
 
       profile.kernels.push({ 
         name: this.activeScope.name,
         bytesAdded,
-        bytesUsed: bytesAdded + Object.keys(inputs).reduce((acc, curr) => 
-          acc + util.sizeFromShape(inputs[curr].shape) * util.bytesPerElement(inputs[curr].dtype), 0)
+        bytesUsed: bytesAdded + inputKeys.reduce((acc, curr) => 
+          acc + util.sizeFromShape(inputs[curr].shape) * util.bytesPerElement(inputs[curr].dtype), 0),
+        inputShapes: inputKeys.map(key => inputs[key].shape),
+        outputShape: output.shape
       });
 
       return output;
