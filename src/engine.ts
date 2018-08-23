@@ -275,10 +275,14 @@ export class Engine implements TensorManager {
     profile.kernels = [];
 
     const original = this.runKernel;
-    this.runKernel = function() {
+
+    this.runKernel = <T extends Tensor|Tensor[], I extends NamedTensorMap>(
+      forwardFunc: ForwardFunc<T>,
+      inputs: I,
+      backwardsFunc?: (dy: T, saved: Tensor[]) => {[P in keyof I]: () => I[P]},
+      ): T => {
       const startingBytecount = this.numBytes;
-      const inputs = arguments[1];
-      const output = original.call(this, ...[].slice.apply(arguments));
+      const output = original.call(this, forwardFunc, inputs, backwardsFunc);
 
       const bytesAdded = this.numBytes - startingBytecount;
 
