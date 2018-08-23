@@ -371,10 +371,11 @@ describeWithFlags('profile', ALL_ENVS, () => {
       return x;
     });
 
-    expect(result.endBytes - result.startBytes).toBe(12);
+    expect(result.newBytes).toBe(12);
     expect(result.peak).toBe(24);
     expect(result.kernels[0].bytesAdded).toBe(12);
   });
+
 
   it('matMul', async () => {
     const result = await tf.profile(() => {
@@ -384,10 +385,11 @@ describeWithFlags('profile', ALL_ENVS, () => {
       return c;
     });
 
-    expect(result.endBytes - result.startBytes).toBe(32);
+    expect(result.newBytes).toBe(32);
     expect(result.peak).toBe(32);
     expect(result.kernels[0].bytesAdded).toBe(8);
   });
+
 });
 
 describeWithFlags('disposeVariables', ALL_ENVS, () => {

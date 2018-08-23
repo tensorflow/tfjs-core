@@ -54,8 +54,8 @@ type KernelProfile = {
 }
 
 export type ProfileInfo = {
-  startBytes: number;
-  endBytes: number;
+  newBytes: number;
+  newTensors: number;
   peak: number;
   average: number;
   kernels: KernelProfile[],
@@ -271,9 +271,10 @@ export class Engine implements TensorManager {
   }
 
   async profile(query: () => any): Promise<ProfileInfo> {
-    const profile = {} as ProfileInfo;
+    const startBytes = this.numBytes;
+    const startNumTensors = this.numTensors;
 
-    profile.startBytes = this.numBytes;
+    const profile = {} as ProfileInfo;
     profile.kernels = [];
 
     // Temporarily wrap runKernel with a function that keeps track of byte usage.
@@ -308,7 +309,8 @@ export class Engine implements TensorManager {
     profile.peak = Math.max(...profile.kernels.map(d => d.bytesUsed));
     profile.average = profile.kernels.map(d => d.bytesUsed)
       .reduce((acc, curr) => acc + curr, 0) / profile.kernels.length;
-    profile.endBytes = this.numBytes;
+    profile.newBytes = this.numBytes - startBytes;
+    profile.newTensors = this.numTensors - startNumTensors;
 
     return profile;
   }
