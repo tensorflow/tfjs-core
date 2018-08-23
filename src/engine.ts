@@ -195,6 +195,7 @@ export class Engine implements TensorManager {
   // TensorManager implementation.
 
   registerTensor(a: Tensor|Variable): void {
+    console.log('REGISTER');
     const refCount =
         this.refCounter.has(a.dataId) ? this.refCounter.get(a.dataId) : 0;
     this.numTensors++;
@@ -218,6 +219,7 @@ export class Engine implements TensorManager {
   }
 
   disposeTensor(a: Tensor): void {
+    console.log('DISPOSE');
     if (!this.refCounter.has(a.dataId)) {
       return;
     }
@@ -257,7 +259,19 @@ export class Engine implements TensorManager {
   }
 
   async profile(query: () => void): Promise<ProfileInfo> {
-    return this.backend.profile(query) as ProfileInfo;
+    console.log('engine profile');
+    // return this.backend.profile(query) as ProfileInfo;
+    const startBytes = this.numBytes;
+    const result = await query();
+    const endBytes = this.numBytes;
+
+    return { 
+      profile: {
+        startBytes,
+        endBytes
+      },
+      result
+    };
   }
 
   private shouldRecord(): boolean {

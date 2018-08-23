@@ -359,10 +359,8 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   async profile(f: () => void): Promise {
-    return { 
-      profile: 'lol',
-      result: await f()
-    };
+    // may be useful in case we want to distinguish between bytes and bytesOnGPU in the future
+    return {};
   }
 
   private startTimer(): WebGLQuery|CPUTimerQuery {
