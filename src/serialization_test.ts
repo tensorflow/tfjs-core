@@ -20,7 +20,7 @@ import {ConfigDict, registerClass, SerializationMap} from './serialization';
 import {NamedVariableMap} from './tensor_types';
 
 describe('registerClass', () => {
-  const randomClassName = 'OptimizerForTest' + Math.random();
+  const randomClassName = `OptimizerForTest${Math.random()}`;
   class OptimizerForTest extends Optimizer {
     static className = randomClassName;
     constructor() {
