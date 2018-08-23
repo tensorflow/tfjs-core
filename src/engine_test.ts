@@ -360,6 +360,36 @@ describeWithFlags('memory', ALL_ENVS, () => {
   });
 });
 
+describeWithFlags('profile', ALL_ENVS, () => {
+  it('squaring', () => {
+    const result = tf.profile(() => {
+      const x = tf.tensor1d([1, 2, 3]);
+      let x2 = x.square();
+      x2.dispose();
+      x2 = x.square();
+      x2.dispose();
+      return x;
+    });
+
+    expect(result.endBytes - result.startBytes).toBe(12);
+    expect(result.peak).toBe(24);
+    expect(result.kernels[0].bytesAdded).toBe(12);
+  });
+
+  it('matMul', () => {
+    const result = tf.profile(() => {
+      const a = tf.tensor2d([1, 2], [1, 2]);
+      const b = tf.tensor2d([1, 2, 3, 4], [2, 2]);
+      const c = a.matMul(b);
+      return c;
+    });
+
+    expect(result.endBytes - result.startBytes).toBe(32);
+    expect(result.peak).toBe(32);
+    expect(result.kernels[0].bytesAdded).toBe(8);
+  });
+});
+
 describeWithFlags('disposeVariables', ALL_ENVS, () => {
   it('reuse same name variable', () => {
     tf.tensor1d([1, 2, 3]).variable(true, 'v1');

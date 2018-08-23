@@ -302,6 +302,7 @@ export class Engine implements TensorManager {
     profile.peak = Math.max(...profile.kernels.map(d => d.bytesUsed));
     profile.average = profile.kernels.map(d => d.bytesUsed)
       .reduce((acc, curr) => acc + curr, 0) / profile.kernels.length;
+    profile.endBytes = this.numBytes;
 
     return profile;
   }
