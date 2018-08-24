@@ -19,10 +19,12 @@
  * Linear algebra ops.
  */
 
+import {concat, linalg} from '..';
 import {ENV} from '../environment';
 import {dispose} from '../globals';
 import {Tensor, Tensor1D, Tensor2D} from '../tensor';
 import {assert} from '../util';
+
 import {eye, split, squeeze, stack, unstack} from './array_ops';
 import {norm} from './norm';
 import {op} from './operation';
@@ -227,5 +229,29 @@ function qr2d(x: Tensor2D, fullMatrices = false): [Tensor2D, Tensor2D] {
   }) as [Tensor2D, Tensor2D];
 }
 
+/* function svd_(m: Tensor2D) {
+  const mT = m.dot(transpose(m));
+  const tM = transpose(m).dot(m);
+} */
+
+function eingenValues_(m: Tensor): Tensor1D {
+  for (let i = 0; i < 10; i++) {
+    const [x, y] = linalg.qr(m);
+    x.print();
+    y.print();
+    m = y.mul(x);
+  }
+  return diagonalElements(m);
+}
+
+function diagonalElements(m: Tensor): Tensor1D {
+  const ei: Tensor1D[] = [];
+  for (let i = 0; i < m.shape[0]; i++) {
+    ei.push(m.slice([i, i], [1, 1]).as1D());
+  }
+  return concat(ei);
+}
+
 export const gramSchmidt = op({gramSchmidt_});
 export const qr = op({qr_});
+export const eingenValues = op({eingenValues_})

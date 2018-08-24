@@ -20,6 +20,7 @@ import {describeWithFlags} from '../jasmine_util';
 import {Tensor1D, Tensor2D} from '../tensor';
 import {ALL_ENVS, expectArraysClose, WEBGL_ENVS} from '../test_util';
 
+import {eingenValues} from './linalg_ops';
 import {scalar, tensor1d, tensor2d, tensor3d, tensor4d} from './ops';
 
 describeWithFlags('gramSchmidt-tiny', ALL_ENVS, () => {
@@ -239,5 +240,14 @@ describeWithFlags('qr', ALL_ENVS, () => {
     expect(() => tf.linalg.qr(x1)).toThrowError(/rank >= 2.*got rank 0/);
     const x2 = tensor1d([12]);
     expect(() => tf.linalg.qr(x2)).toThrowError(/rank >= 2.*got rank 1/);
+  });
+});
+
+describeWithFlags('eigen_values', ALL_ENVS, () => {
+  it('eigen_values 2*2', () => {
+    const m = tf.tensor2d([1, 2, 0, 0, 3, 0, 2, -4, 2], [3, 3]);
+    const e = eingenValues(m);
+    e.print();
+    expect(() => expectArraysClose(e, [7, -3, -3, -1, 1, 0, -1, 0, 1]));
   });
 });
