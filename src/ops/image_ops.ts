@@ -200,7 +200,8 @@ async function nonMaxSuppressionAsync_(
 
 function nonMaxSuppSanityCheck(
   boxes: Tensor2D, scores: Tensor1D, maxOutputSize: number,
-  iouThreshold: number, scoreThreshold: number): { maxOutputSize: number, iouThreshold: number, scoreThreshold: number } {
+  iouThreshold: number, scoreThreshold: number
+): { maxOutputSize: number, iouThreshold: number, scoreThreshold: number } {
   if (iouThreshold == null) {
     iouThreshold = 0.5;
   }
@@ -233,17 +234,10 @@ function cropAndResize_(
   extrapolationValue?: number,
 ) {
 
-  // TODO need to guarantee that
-  // 1) image shape is positive
-  // 2) crop dimensions > 0
-  // 3) dim0 of box_index and boxes match
-  // 4) method is bilinear or nearest
-  // 5) extrapolationValue is
-
   method = method || 'bilinear';
   extrapolationValue = extrapolationValue || 0;
 
-  const numBoxes = boxes.shape[0]
+  const numBoxes = boxes.shape[0];
   util.assert(
     image.rank === 4,
     `Error in cropAndResize: image must be rank 4, but got ` +
@@ -262,10 +256,11 @@ function cropAndResize_(
     `${cropSize}.`);
   util.assert(
     method === 'bilinear' || method === 'nearest',
-    `method must be bilinear or nearest, but was ${method}`)
+    `method must be bilinear or nearest, but was ${method}`);
 
   const forward: ForwardFunc<Tensor4D> = (backend, save) =>
-    backend.cropAndResize(image, boxes, boxInd, cropSize, method, extrapolationValue);
+    backend.cropAndResize(image, boxes, boxInd,
+      cropSize, method, extrapolationValue);
 
   const backwardBilinear = (dy: Tensor4D, saved: Tensor[]) => {
     return {

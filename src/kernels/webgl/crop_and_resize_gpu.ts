@@ -18,16 +18,17 @@
 import { GPGPUProgram } from './gpgpu_math';
 
 export class CropAndResizeProgram implements GPGPUProgram {
-  variableNames = ['Image', 'Boxes', "BoxInd"];
+  variableNames = ['Image', 'Boxes', 'BoxInd'];
   outputShape: number[] = [];
   userCode: string;
 
   constructor(
     imageShape: [number, number, number, number], boxShape: [number, number],
-    cropSize: [number, number], method: 'bilinear' | 'nearest', extrapolationValue: number) {
+    cropSize: [number, number], method: 'bilinear' | 'nearest',
+    extrapolationValue: number) {
     const [batch, imageHeight, imageWidth, depth] = imageShape;
     const [numBoxes,] = boxShape;
-    const [cropHeight, cropWidth] = cropSize
+    const [cropHeight, cropWidth] = cropSize;
     this.outputShape = [numBoxes, cropHeight, cropWidth, depth];
     const methodId = method === 'bilinear' ? 1 : 0;
 
@@ -59,7 +60,7 @@ export class CropAndResizeProgram implements GPGPUProgram {
         : 0;
 
         float in_y = (${cropHeight} > 1)
-        ? y1 * (${imageHeight - 1} + y*(height_scale)
+        ? y1 * (${imageHeight - 1} + y*height_scale)
         : 0.5 * (y1+y2) * ${imageHeight - 1};
 
         if( in_y < 0 || in_y > ${imageHeight - 1} ) {
@@ -68,7 +69,7 @@ export class CropAndResizeProgram implements GPGPUProgram {
         }
 
         float in_x = (${cropWidth} > 1)
-          ? x1 * (${imageWidth - 1} + x*(width_scale)
+          ? x1 * (${imageWidth - 1} + x*width_scale)
           : 0.5 * (x1+x2) * ${imageWidth - 1};
         if( in_x < 0 || in_x > ${imageWidth - 1} ) {
           setOutput(${extrapolationValue})

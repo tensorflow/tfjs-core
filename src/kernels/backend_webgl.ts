@@ -378,7 +378,8 @@ export class MathBackendWebGL implements KernelBackend {
     return query;
   }
 
-  private async getQueryTime(query: WebGLQuery | CPUTimerQuery): Promise<number> {
+  private async getQueryTime(
+    query: WebGLQuery | CPUTimerQuery): Promise<number> {
     if (ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') > 0) {
       return this.gpgpu.waitForQueryAndGetTime(query);
     }
@@ -1222,7 +1223,8 @@ export class MathBackendWebGL implements KernelBackend {
     cropSize: [number, number], method: 'bilinear' | 'nearest',
     extrapolationValue: number): Tensor4D {
     const program =
-      new CropAndResizeProgram(image.shape, boxes.shape, cropSize, method, extrapolationValue);
+      new CropAndResizeProgram(image.shape, boxes.shape,
+      cropSize, method, extrapolationValue);
     return this.compileAndRun(program, [image, boxes, boxIndex]);
   }
   cropAndResizeBackpropImage(
@@ -1236,7 +1238,7 @@ export class MathBackendWebGL implements KernelBackend {
     grad: Tensor4D, image: Tensor4D, boxes: Tensor2D, boxIndex: Tensor1D,
   ): Tensor2D {
     const program =
-      new CropAndResizeBackpropBoxesProgram(grad.shape, image.shape)
+      new CropAndResizeBackpropBoxesProgram(grad.shape, image.shape);
     return this.compileAndRun(program, [grad, image, boxes, boxIndex]);
   }
 

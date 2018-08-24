@@ -2227,30 +2227,31 @@ export class MathBackendCPU implements KernelBackend {
   ) {
 
     const [batch, oldHeight, oldWidth, numChannels] = images.shape;
-    const numBoxes = boxes.shape[0]
+    const numBoxes = boxes.shape[0];
 
-    const [cropHeight, cropWidth] = cropSize
-    const output = ops.buffer<Rank.R4>([numBoxes, cropHeight, cropWidth, numChannels])
+    const [cropHeight, cropWidth] = cropSize;
+    const output = ops.buffer<Rank.R4>(
+      [numBoxes, cropHeight, cropWidth, numChannels]);
 
-    const boxVals = boxes.dataSync()
-    const boxIndVals = boxIndex.dataSync()
-    const imageVals = images.dataSync()
+    const boxVals = boxes.dataSync();
+    const boxIndVals = boxIndex.dataSync();
+    const imageVals = images.dataSync();
 
-    const stride = images.strides
+    const stride = images.strides;
 
     for (let b = 0; b < numBoxes; b++) {
-      const y1 = boxVals[(b * 4)]
-      const x1 = boxVals[(b * 4) + 1]
-      const y2 = boxVals[(b * 4) + 2]
-      const x2 = boxVals[(b * 4) + 3]
+      const y1 = boxVals[(b * 4)];
+      const x1 = boxVals[(b * 4) + 1];
+      const y2 = boxVals[(b * 4) + 2];
+      const x2 = boxVals[(b * 4) + 3];
 
-      const bInd: number = boxIndVals[b]
+      const bInd: number = boxIndVals[b];
 
-      if (bInd >= batch) { continue }
+      if (bInd >= batch) { continue; }
 
       const heightScale = (cropHeight > 1)
         ? (y2 - y1) * (oldHeight - 1) / (cropHeight - 1)
-        : 0
+        : 0;
       const widthScale = (cropWidth > 1)
         ? (y2 - y1) * (oldWidth - 1) / (cropWidth - 1)
         : 0;
@@ -2258,11 +2259,11 @@ export class MathBackendCPU implements KernelBackend {
       for (let y = 0; y < cropHeight; y++) {
         const yInd: number = (cropHeight > 1)
           ? y1 * (oldHeight - 1) + y * (heightScale)
-          : 0.5 * (y1 + y2) * (oldHeight - 1)
+          : 0.5 * (y1 + y2) * (oldHeight - 1);
         if (yInd < 0 || yInd > oldHeight - 1) {
           for (let x = 0; x < cropWidth; x++) {
             for (let c = 0; c < numChannels; c++) {
-              output.set(extrapolationValue, b, y, x, c)
+              output.set(extrapolationValue, b, y, x, c);
             }
           }
           continue;
@@ -2278,7 +2279,7 @@ export class MathBackendCPU implements KernelBackend {
               : 0.5 * (x1 + x2) * (oldWidth - 1);
             if (xInd < 0 || xInd > oldWidth - 1) {
               for (let c = 0; c < numChannels; c++) {
-                output.set(extrapolationValue, b, y, x, c)
+                output.set(extrapolationValue, b, y, x, c);
               }
               continue;
             }
@@ -2291,30 +2292,30 @@ export class MathBackendCPU implements KernelBackend {
               let ind = c
                 + leftInd * stride[2]
                 + topInd * stride[1]
-                + bInd * stride[0]
-              const topLeft = imageVals[ind]
+                + bInd * stride[0];
+              const topLeft = imageVals[ind];
 
               ind = c
                 + rightInd * stride[2]
                 + topInd * stride[1]
-                + bInd * stride[0]
-              const topRight = imageVals[ind]
+                + bInd * stride[0];
+              const topRight = imageVals[ind];
 
               ind = c
                 + leftInd * stride[2]
                 + bottomInd * stride[1]
-                + bInd * stride[0]
-              const bottomLeft = imageVals[ind]
+                + bInd * stride[0];
+              const bottomLeft = imageVals[ind];
 
               ind = c
                 + rightInd * stride[2]
                 + bottomInd * stride[1]
-                + bInd * stride[0]
-              const bottomRight = imageVals[ind]
+                + bInd * stride[0];
+              const bottomRight = imageVals[ind];
 
               const top = topLeft + (topRight - topLeft) * xLerp;
               const bottom = bottomLeft + (bottomRight - bottomLeft) * xLerp;
-              output.set(top + ((bottom - top) * yLerp), b, y, x, c)
+              output.set(top + ((bottom - top) * yLerp), b, y, x, c);
             }
           }
         } else {  // method == "nearest"
@@ -2324,19 +2325,19 @@ export class MathBackendCPU implements KernelBackend {
               : 0.5 * (x1 + x2) * (oldWidth - 1);
             if (xInd < 0 || xInd > oldWidth - 1) {
               for (let c = 0; c < numChannels; c++) {
-                output.set(extrapolationValue, b, y, x, c)
+                output.set(extrapolationValue, b, y, x, c);
               }
               continue;
             }
 
-            const closest_x_index = Math.round(xInd);
-            const closest_y_index = Math.round(yInd);
+            const closestX = Math.round(xInd);
+            const closestY = Math.round(yInd);
             for (let c = 0; c < numChannels; c++) {
               const ind = c
-                + closest_x_index * stride[2]
-                + closest_y_index * stride[1]
-                + bInd * stride[0]
-              output.set(imageVals[ind], b, y, x, c)
+                + closestX * stride[2]
+                + closestY * stride[1]
+                + bInd * stride[0];
+              output.set(imageVals[ind], b, y, x, c);
             }
           }
         }
@@ -2349,26 +2350,26 @@ export class MathBackendCPU implements KernelBackend {
     grad: Tensor4D, image: Tensor4D, boxes: Tensor2D,
     boxIndex: Tensor1D, method: string,
   ) {
-    const [batch, imageHeight, imageWidth, numChannels] = image.shape
-    const [numBoxes, cropHeight, cropWidth,] = grad.shape
+    const [batch, imageHeight, imageWidth, numChannels] = image.shape;
+    const [numBoxes, cropHeight, cropWidth,] = grad.shape;
 
-    const output = ops.buffer<Rank.R4>(image.shape)
-    const boxVals = boxes.dataSync()
-    const boxIndVals = boxIndex.dataSync()
-    const gradVals = grad.dataSync()
+    const output = ops.buffer<Rank.R4>(image.shape);
+    const boxVals = boxes.dataSync();
+    const boxIndVals = boxIndex.dataSync();
+    const gradVals = grad.dataSync();
 
     const stride = image.strides;
     let curInd = 0;
     for (let b = 0; b < numBoxes; b++) {
       if (b > 0) { curInd += stride[0]; }
 
-      const y1 = boxVals[b * 4]
-      const x1 = boxVals[b * 4 + 1]
-      const y2 = boxVals[b * 4 + 2]
-      const x2 = boxVals[b * 4 + 3]
+      const y1 = boxVals[b * 4];
+      const x1 = boxVals[b * 4 + 1];
+      const y2 = boxVals[b * 4 + 2];
+      const x2 = boxVals[b * 4 + 3];
 
-      const bInd = boxIndVals[b]
-      if (bInd > batch) { continue }
+      const bInd = boxIndVals[b];
+      if (bInd > batch) { continue; }
 
       const heightScale = (cropHeight > 1)
         ? (y2 - y1) * (imageHeight - 1) / (cropHeight - 1)
@@ -2388,7 +2389,7 @@ export class MathBackendCPU implements KernelBackend {
         }
         const topInd = Math.floor(yInd);
         const bottomInd = Math.ceil(yInd);
-        const yLerp = yInd - topInd
+        const yLerp = yInd - topInd;
 
         for (let x = 0; x < cropWidth; ++x) {
           if (x > 0) { curInd += stride[2]; }
@@ -2399,34 +2400,36 @@ export class MathBackendCPU implements KernelBackend {
           if (xInd < 0 || xInd > imageWidth - 1) {
             continue;
           }
-          if (method == "bilinear") {
+          if (method === 'bilinear') {
             const leftInd = Math.floor(xInd);
             const rightInd = Math.ceil(xInd);
             const xLerp = xInd - leftInd;
 
             for (let c = 0; c < numChannels; c++) {
               const dtop = (1 - yLerp) * gradVals[curInd + c];
-              const dbottom = yLerp * gradVals[curInd + c]
+              const dbottom = yLerp * gradVals[curInd + c];
 
-              let out = output.get(bInd, topInd, leftInd, c)
-              output.set(out + (1 - xLerp) * dtop, bInd, topInd, leftInd, c)
+              let out = output.get(bInd, topInd, leftInd, c);
+              output.set(out + (1 - xLerp) * dtop, bInd, topInd, leftInd, c);
 
-              out = output.get(bInd, topInd, rightInd, c)
-              output.set(out + xLerp * dtop, bInd, topInd, rightInd, c)
+              out = output.get(bInd, topInd, rightInd, c);
+              output.set(out + xLerp * dtop, bInd, topInd, rightInd, c);
 
-              out = output.get(bInd, bottomInd, leftInd, c)
-              output.set(out + (1 - xLerp) * dbottom, bInd, bottomInd, leftInd, c)
+              out = output.get(bInd, bottomInd, leftInd, c);
+              output.set(out + (1 - xLerp) * dbottom,
+                bInd, bottomInd, leftInd, c);
 
-              out = output.get(bInd, bottomInd, rightInd, c)
-              output.set(out + xLerp * dbottom, bInd, bottomInd, rightInd, c)
+              out = output.get(bInd, bottomInd, rightInd, c);
+              output.set(out + xLerp * dbottom, bInd, bottomInd, rightInd, c);
             }
           } else {  // method_name == "nearest"
             for (let c = 0; c < numChannels; c++) {
               const closestX = Math.round(xInd);
               const closestY = Math.round(yInd);
 
-              let out = output.get(bInd, closestY, closestX, c);
-              output.set(out + gradVals[curInd + c], bInd, closestY, closestX, c)
+              const out = output.get(bInd, closestY, closestX, c);
+              output.set(out + gradVals[curInd + c],
+                bInd, closestY, closestX, c);
             }
           }
         }
@@ -2439,14 +2442,14 @@ export class MathBackendCPU implements KernelBackend {
     grad: Tensor4D, image: Tensor4D, boxes: Tensor2D,
     boxIndex: Tensor1D
   ) {
-    const [batch, imageHeight, imageWidth,] = image.shape
-    const [numBoxes, cropHeight, cropWidth, numChannels] = grad.shape
+    const [batch, imageHeight, imageWidth,] = image.shape;
+    const [numBoxes, cropHeight, cropWidth, numChannels] = grad.shape;
 
-    const output = ops.buffer<Rank.R2>(boxes.shape)
-    const boxVals = boxes.dataSync()
-    const imageVals = boxes.dataSync()
-    const boxIndVals = boxIndex.dataSync()
-    const gradVals = grad.dataSync()
+    const output = ops.buffer<Rank.R2>(boxes.shape);
+    const boxVals = boxes.dataSync();
+    const imageVals = boxes.dataSync();
+    const boxIndVals = boxIndex.dataSync();
+    const gradVals = grad.dataSync();
 
     const stride = image.strides;
     let curInd = 0;
@@ -2454,20 +2457,20 @@ export class MathBackendCPU implements KernelBackend {
     for (let b = 0; b < numBoxes; b++) {
       if (b > 0) { curInd += stride[0]; }
 
-      const y1 = boxVals[b * 4]
-      const x1 = boxVals[b * 4 + 1]
-      const y2 = boxVals[b * 4 + 2]
-      const x2 = boxVals[b * 4 + 3]
+      const y1 = boxVals[b * 4];
+      const x1 = boxVals[b * 4 + 1];
+      const y2 = boxVals[b * 4 + 2];
+      const x2 = boxVals[b * 4 + 3];
 
-      const bInd = boxIndVals[b]
-      if (bInd > batch) { continue }
+      const bInd = boxIndVals[b];
+      if (bInd > batch) { continue; }
 
       const heightRatio = (cropHeight > 1)
         ? (imageHeight - 1) / (cropHeight - 1)
-        : 0
+        : 0;
       const widthRatio = (cropWidth > 1)
         ? (imageWidth - 1) / (cropWidth - 1)
-        : 0
+        : 0;
       const heightScale = (cropHeight > 1)
         ? (y2 - y1) * heightRatio
         : 0;
@@ -2486,7 +2489,7 @@ export class MathBackendCPU implements KernelBackend {
         }
         const topInd = Math.floor(yInd);
         const bottomInd = Math.ceil(yInd);
-        const yLerp = yInd - topInd
+        const yLerp = yInd - topInd;
 
         for (let x = 0; x < cropWidth; ++x) {
           if (x > 0) { curInd += stride[2]; }
@@ -2505,51 +2508,52 @@ export class MathBackendCPU implements KernelBackend {
             let ind = c
               + leftInd * stride[2]
               + topInd * stride[1]
-              + bInd * stride[0]
-            const topLeft = imageVals[ind]
+              + bInd * stride[0];
+            const topLeft = imageVals[ind];
 
             ind = c
               + rightInd * stride[2]
               + topInd * stride[1]
-              + bInd * stride[0]
-            const topRight = imageVals[ind]
+              + bInd * stride[0];
+            const topRight = imageVals[ind];
 
             ind = c
               + leftInd * stride[2]
               + bottomInd * stride[1]
-              + bInd * stride[0]
-            const bottomLeft = imageVals[ind]
+              + bInd * stride[0];
+            const bottomLeft = imageVals[ind];
 
             ind = c
               + rightInd * stride[2]
               + bottomInd * stride[1]
-              + bInd * stride[0]
-            const bottomRight = imageVals[ind]
+              + bInd * stride[0];
+            const bottomRight = imageVals[ind];
 
             let imageGradY = (1 - xLerp) * (bottomLeft - topLeft) +
               xLerp * (bottomRight - topRight);
             let imageGradX = (1 - yLerp) * (topRight - topLeft) +
               yLerp * (bottomRight - bottomLeft);
-            const topGrad = gradVals[curInd + c]
-            imageGradY *= topGrad
-            imageGradX *= topGrad
+            const topGrad = gradVals[curInd + c];
+            imageGradY *= topGrad;
+            imageGradX *= topGrad;
 
             // dy1, dy2
             if (cropHeight > 1) {
-              output.set(imageGradY * (imageHeight - 1 - y * heightRatio), b, 0)
-              output.set(imageGradY * (y * heightRatio), b, 2)
+              output.set(imageGradY * (imageHeight - 1 - y * heightRatio),
+                b, 0);
+              output.set(imageGradY * (y * heightRatio), b, 2);
             } else {
-              output.set(imageGradY * 0.5 * (imageHeight - 1), b, 0)
-              output.set(imageGradY * 0.5 * (imageHeight - 1), b, 2)
+              output.set(imageGradY * 0.5 * (imageHeight - 1), b, 0);
+              output.set(imageGradY * 0.5 * (imageHeight - 1), b, 2);
             }
 
             // dx1, dx2
             if (cropWidth > 1) {
-              output.set(imageGradX * (imageWidth - 1 - x * widthRatio), b, 1)
-              output.set(imageGradX * (y * widthRatio), b, 3)
+              output.set(imageGradX * (imageWidth - 1 - x * widthRatio), b, 1);
+              output.set(imageGradX * (y * widthRatio), b, 3);
             } else {
-              output.set(imageGradX * 0.5 * (imageWidth - 1), b, 1)
-              output.set(imageGradX * 0.5 * (imageWidth - 1), b, 3)
+              output.set(imageGradX * 0.5 * (imageWidth - 1), b, 1);
+              output.set(imageGradX * 0.5 * (imageWidth - 1), b, 3);
             }
           }
         }

@@ -22,7 +22,8 @@ export class CropAndResizeBackpropBoxesProgram implements GPGPUProgram {
   outputShape: number[] = [];
   userCode: string;
 
-  constructor(gradShape: [number, number, number, number], imageShape: [number, number, number, number]) {
+  constructor(gradShape: [number, number, number, number],
+    imageShape: [number, number, number, number]) {
     const [batch, xHeight, xWidth, depth] = imageShape;
     const [numBoxes, yHeight, yWidth, ,] = gradShape;
     this.outputShape = [numBoxes, 4];
