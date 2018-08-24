@@ -42,7 +42,13 @@ export function clamp(min: number, x: number, max: number): number {
   return Math.max(min, Math.min(x, max));
 }
 
-/** Returns a sample from a uniform [a, b) distribution. */
+/**
+ * Returns a sample from a uniform [a, b) distribution.
+ *
+ * @param a The minimum support (inclusive).
+ * @param b The maximum support (exclusive).
+ * @return A pseudorandom number on the half-open interval [a,b).
+ */
 export function randUniform(a: number, b: number) {
   return Math.random() * (b - a) + a;
 }
