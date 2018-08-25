@@ -257,7 +257,16 @@ function cropAndResize_(
   util.assert(
     method === 'bilinear' || method === 'nearest',
     `method must be bilinear or nearest, but was ${method}`);
+  util.assert(
+    cropSize[0] >= 1 && cropSize[1] >= 1,
+    `size must be atleast [1,1], but was ${cropSize}`);
+  /*
+  util.assert(
+    boxInd.dtype === 'int32',
+    `size must be atleast [1,1], but was ${cropSize}`);
+  */
 
+  console.log(boxInd.dtype);
   const forward: ForwardFunc<Tensor4D> = (backend, save) =>
     backend.cropAndResize(image, boxes, boxInd,
       cropSize, method, extrapolationValue);

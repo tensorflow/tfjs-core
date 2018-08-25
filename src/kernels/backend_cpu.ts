@@ -2225,6 +2225,7 @@ export class MathBackendCPU implements KernelBackend {
     method: string,
     extrapolationValue: number,
   ) {
+    console.log('cropandresize on cpu');
 
     const [batch, oldHeight, oldWidth, numChannels] = images.shape;
     const numBoxes = boxes.shape[0];

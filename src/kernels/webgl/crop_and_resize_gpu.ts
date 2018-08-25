@@ -41,43 +41,43 @@ export class CropAndResizeProgram implements GPGPUProgram {
         int d = coords[3];
 
         // get box vals
-        int y1 = getBoxes(b,0);
-        int x1 = getBoxes(b,1);
-        int y2 = getBoxes(b,2);
-        int x2 = getBoxes(b,3);
+        float y1 = getBoxes(b,0);
+        float x1 = getBoxes(b,1);
+        float y2 = getBoxes(b,2);
+        float x2 = getBoxes(b,3);
 
         // get image in batch index
-        int bInd = getBoxInd(b);
+        int bInd = int(floor(getBoxInd(b)));
         if(bInd < 0 || bInd >= ${batch}) {
           return;
         }
 
         float height_scale = (${cropHeight} > 1)
-        ? (y2-y1) * ${imageHeight - 1}/${cropHeight - 1}
-        : 0;
+        ? (y2-y1) * ${imageHeight - 1}.0/${cropHeight - 1}.0
+        : 0.0;
         float width_scale = (${cropWidth} > 1)
-        ? (y2-y1) * ${imageWidth - 1}/${cropWidth - 1}
-        : 0;
+        ? (x2-x1) * ${imageWidth - 1}.0/${cropWidth - 1}.0
+        : 0.0;
 
         float in_y = (${cropHeight} > 1)
-        ? y1 * (${imageHeight - 1} + y*height_scale)
-        : 0.5 * (y1+y2) * ${imageHeight - 1};
+        ? y1 * (${imageHeight - 1}.0 + float(y)*height_scale)
+        : 0.5 * (y1+y2) * ${imageHeight - 1}.0;
 
-        if( in_y < 0 || in_y > ${imageHeight - 1} ) {
-          setOutput(${extrapolationValue});
+        if( in_y < 0.0 || in_y > ${imageHeight - 1}.0 ) {
+          setOutput(${extrapolationValue}.0);
           return;
         }
 
         float in_x = (${cropWidth} > 1)
-          ? x1 * (${imageWidth - 1} + x*width_scale)
-          : 0.5 * (x1+x2) * ${imageWidth - 1};
-        if( in_x < 0 || in_x > ${imageWidth - 1} ) {
-          setOutput(${extrapolationValue})
+          ? x1 * (${imageWidth - 1}.0 + float(x)*width_scale)
+          : 0.5 * (x1+x2) * ${imageWidth - 1}.0;
+        if( in_x < 0.0 || in_x > ${imageWidth - 1}.0 ) {
+          setOutput(${extrapolationValue}.0);
           return;
         }
 
         // Fractional source index.
-        vec2 sourceFracIndexRC = vec2(in_y,in_x)
+        vec2 sourceFracIndexRC = vec2(in_y,in_x);
 
         if(${methodId} == 1) {
 
@@ -85,10 +85,10 @@ export class CropAndResizeProgram implements GPGPUProgram {
           ivec2 sourceFloorRC = ivec2(sourceFracIndexRC);
           ivec2 sourceCeilRC = ivec2(ceil(sourceFracIndexRC));
 
-          float topLeft = getA(b, sourceFloorRC.x, sourceFloorRC.y, d);
-          float bottomLeft = getA(b, sourceCeilRC.x, sourceFloorRC.y, d);
-          float topRight = getA(b, sourceFloorRC.x, sourceCeilRC.y, d);
-          float bottomRight = getA(b, sourceCeilRC.x, sourceCeilRC.y, d);
+          float topLeft = getImage(b, sourceFloorRC.x, sourceFloorRC.y, d);
+          float bottomLeft = getImage(b, sourceCeilRC.x, sourceFloorRC.y, d);
+          float topRight = getImage(b, sourceFloorRC.x, sourceCeilRC.y, d);
+          float bottomRight = getImage(b, sourceCeilRC.x, sourceCeilRC.y, d);
 
           vec2 fracRC = sourceFracIndexRC - vec2(sourceFloorRC);
 
@@ -98,8 +98,9 @@ export class CropAndResizeProgram implements GPGPUProgram {
           setOutput(newValue);
         } else {
           // Compute the coordinators of nearest neighbor point.
-          ivec2 sourceNearestRC = ivec2(floor(sourceFracIndexRC + 0.5));
-          float newValue = getA(b, sourceNearestRC.x, sourceNearestRC.y, d);
+          ivec2 sourceNearestRC = ivec2(floor(
+            sourceFracIndexRC + vec2(0.5,0.5)));
+          float newValue = getImage(b, sourceNearestRC.x, sourceNearestRC.y, d);
           setOutput(newValue);
         }
       }
