@@ -19,7 +19,7 @@
  * Linear algebra ops.
  */
 
-import {concat, linalg} from '..';
+import {concat, linalg, sqrt, transpose} from '..';
 import {ENV} from '../environment';
 import {dispose} from '../globals';
 import {Tensor, Tensor1D, Tensor2D} from '../tensor';
@@ -29,7 +29,8 @@ import {eye, split, squeeze, stack, unstack} from './array_ops';
 import {norm} from './norm';
 import {op} from './operation';
 import {sum} from './reduction_ops';
-import {tensor2d} from './tensor_ops';
+import {tensor1d, tensor2d} from './tensor_ops';
+
 
 /**
  * Gram-Schmidt orthogonalization.
@@ -229,19 +230,36 @@ function qr2d(x: Tensor2D, fullMatrices = false): [Tensor2D, Tensor2D] {
   }) as [Tensor2D, Tensor2D];
 }
 
-/* function svd_(m: Tensor2D) {
+function svd_(m: Tensor2D): {u: Tensor, s: Tensor, v: Tensor} {
   const mT = m.dot(transpose(m));
+  const u = eingen(mT).vectors;
+  // transform a tensor1d to a diagonal matrix
+  // where the tensor1d elements are in the diagonal
+  const s = concat(unstack(eingen(mT).values).reduce((a, b, i, ar) => {
+              const row = Array.from(
+                  {length: ar.length},
+                  (e, index) => index === i ? sqrt(b.as1D()) : tensor1d([0]));
+              a.push(...row);
+              return a;
+            }, [])).reshape(m.shape);
+  // const s = eye(m.shape[0]).dot(sqrt(eingen(mT).values));
   const tM = transpose(m).dot(m);
-} */
+  const v = eingen(tM).vectors;
+  console.log('vp mT');
+  eingen(mT).values.print();
+  console.log('vp tM');
+  eingen(tM).values.print();
+  return {u, s, v};
+}
 
-function eingenValues_(m: Tensor): Tensor1D {
-  for (let i = 0; i < 100; i++) {
+function eingen_(m: Tensor): {values: Tensor1D, vectors: Tensor} {
+  let z;
+  for (let i = 0; i < 200; i++) {
     const [x, y] = linalg.qr(m);
     m = y.dot(x);
-    x.dispose();
-    y.dispose();
+    z = z ? z.dot(x) : x;
   }
-  return diagonalElements(m);
+  return {values: diagonalElements(m), vectors: z};
 }
 
 function diagonalElements(m: Tensor): Tensor1D {
@@ -254,4 +272,5 @@ function diagonalElements(m: Tensor): Tensor1D {
 
 export const gramSchmidt = op({gramSchmidt_});
 export const qr = op({qr_});
-export const eingenValues = op({eingenValues_})
+export const eingen = op({eingen_});
+export const svd = op({svd_});

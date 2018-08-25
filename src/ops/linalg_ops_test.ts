@@ -20,7 +20,7 @@ import {describeWithFlags} from '../jasmine_util';
 import {Tensor1D, Tensor2D} from '../tensor';
 import {ALL_ENVS, expectArraysClose, WEBGL_ENVS} from '../test_util';
 
-import {eingenValues} from './linalg_ops';
+import {svd} from './linalg_ops';
 import {scalar, tensor1d, tensor2d, tensor3d, tensor4d} from './ops';
 
 describeWithFlags('gramSchmidt-tiny', ALL_ENVS, () => {
@@ -243,12 +243,33 @@ describeWithFlags('qr', ALL_ENVS, () => {
   });
 });
 
-describeWithFlags('eigen_values', ALL_ENVS, () => {
+/* describeWithFlags('eigen_values', ALL_ENVS, () => {
   it('3*3', () => {
     const m = tf.tensor2d([1, 2, 0, 0, 3, 0, 2, -4, 2], [3, 3]);
     const e = Array.from(eingenValues(m).dataSync().sort().reverse());
-    console.log('first');
     eingenValues(m).print();
     expectArraysClose(e, [2.999996, 1.999998, 1.0000006]);
+  });
+}); */
+
+describeWithFlags('svd', ALL_ENVS, () => {
+  it('3*3', () => {
+    const ar = [1];
+    // const m = tf.tensor2d([1, 2, 0, 0, 3, 0, 2, -4, 2], [3, 3]);
+    const m = tf.tensor2d([2, -1, 0, -1, 2, -1, 0, -1, 2], [3, 3]);
+    // const e = Array.from(eingenVectors(m).dataSync().sort().reverse());
+    const {u, s, v} = svd(m);
+    const [a, b, c] = tf.unstack(u);
+    a.mul(b).print();
+    b.mul(c).print();
+    m.print();
+    u.dot(s).dot(v).print();
+    console.log('u');
+    u.print();
+    console.log('s');
+    s.print();
+    console.log('v');
+    v.print();
+    expectArraysClose(ar, [1]);
   });
 });
