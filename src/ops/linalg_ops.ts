@@ -19,7 +19,7 @@
  * Linear algebra ops.
  */
 
-import {concat, linalg, sqrt, transpose} from '..';
+import {concat, linalg, solve, sqrt, transpose} from '..';
 import {ENV} from '../environment';
 import {dispose} from '../globals';
 import {Tensor, Tensor1D, Tensor2D} from '../tensor';
@@ -30,6 +30,7 @@ import {norm} from './norm';
 import {op} from './operation';
 import {sum} from './reduction_ops';
 import {tensor1d, tensor2d} from './tensor_ops';
+
 
 
 /**
@@ -242,13 +243,7 @@ function svd_(m: Tensor2D): {u: Tensor, s: Tensor, v: Tensor} {
               a.push(...row);
               return a;
             }, [])).reshape(m.shape);
-  // const s = eye(m.shape[0]).dot(sqrt(eingen(mT).values));
-  const tM = transpose(m).dot(m);
-  const v = eingen(tM).vectors;
-  console.log('vp mT');
-  eingen(mT).values.print();
-  console.log('vp tM');
-  eingen(tM).values.print();
+  const v: Tensor2D = solve(u.dot(s) as Tensor2D, m as Tensor2D) as Tensor2D;
   return {u, s, v};
 }
 
