@@ -244,10 +244,11 @@ describeWithFlags('qr', ALL_ENVS, () => {
 });
 
 describeWithFlags('eigen_values', ALL_ENVS, () => {
-  it('eigen_values 2*2', () => {
+  it('3*3', () => {
     const m = tf.tensor2d([1, 2, 0, 0, 3, 0, 2, -4, 2], [3, 3]);
-    const e = eingenValues(m);
-    e.print();
-    expect(() => expectArraysClose(e, [7, -3, -3, -1, 1, 0, -1, 0, 1]));
+    const e = Array.from(eingenValues(m).dataSync().sort().reverse());
+    console.log('first');
+    eingenValues(m).print();
+    expectArraysClose(e, [2.999996, 1.999998, 1.0000006]);
   });
 });

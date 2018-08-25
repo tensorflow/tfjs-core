@@ -235,11 +235,11 @@ function qr2d(x: Tensor2D, fullMatrices = false): [Tensor2D, Tensor2D] {
 } */
 
 function eingenValues_(m: Tensor): Tensor1D {
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 100; i++) {
     const [x, y] = linalg.qr(m);
-    x.print();
-    y.print();
-    m = y.mul(x);
+    m = y.dot(x);
+    x.dispose();
+    y.dispose();
   }
   return diagonalElements(m);
 }
