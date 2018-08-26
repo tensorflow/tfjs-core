@@ -23,10 +23,10 @@ import {setTensorTracker, Tensor, TensorTracker} from './tensor';
 import {TensorContainer} from './tensor_types';
 import {getTensorsInContainer} from './tensor_util';
 
-const EPSILON_FLOAT16 = 1e-4;
+const EPSILON_FLOAT16 = 1e-3;
 const TEST_EPSILON_FLOAT16 = 1e-1;
 
-const EPSILON_FLOAT32 = 1e-8;
+const EPSILON_FLOAT32 = 1e-7;
 const TEST_EPSILON_FLOAT32 = 1e-3;
 
 export class Environment {
@@ -315,15 +315,11 @@ export class Environment {
       return isWebGLFenceEnabled(
           this.get('WEBGL_VERSION'), this.get('IS_BROWSER'));
     } else if (feature === 'TEST_EPSILON') {
-      if (this.backend.floatPrecision() === 32) {
-        return TEST_EPSILON_FLOAT32;
-      }
-      return TEST_EPSILON_FLOAT16;
+      return this.backend.floatPrecision() === 32 ? TEST_EPSILON_FLOAT32 :
+                                                    TEST_EPSILON_FLOAT16;
     } else if (feature === 'EPSILON') {
-      if (this.backend.floatPrecision() === 16) {
-        return EPSILON_FLOAT32;
-      }
-      return EPSILON_FLOAT16;
+      return this.backend.floatPrecision() === 32 ? EPSILON_FLOAT32 :
+                                                    EPSILON_FLOAT16;
     }
     throw new Error(`Unknown feature ${feature}.`);
   }
