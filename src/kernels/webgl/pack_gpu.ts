@@ -11,7 +11,7 @@ export class PackProgram implements GPGPUProgram {
 			void main() {
 				vec2 textureSize = vec2(4.); // input texture size
 				vec2 onePixel = vec2(1.) / textureSize; // in uv space
-				vec2 coord = resultUV;
+				vec2 coord = resultUV - onePixel;
 
 				// gl_FragColor = vec4(gl_FragCoord.x);
 
