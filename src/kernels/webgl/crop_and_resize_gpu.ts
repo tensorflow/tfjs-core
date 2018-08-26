@@ -60,7 +60,7 @@ export class CropAndResizeProgram implements GPGPUProgram {
         : 0.0;
 
         float in_y = (${cropHeight} > 1)
-        ? y1 * (${imageHeight - 1}.0 + float(y)*height_scale)
+        ? (y1 * ${imageHeight - 1}.0) + float(y)*height_scale
         : 0.5 * (y1+y2) * ${imageHeight - 1}.0;
 
         if( in_y < 0.0 || in_y > ${imageHeight - 1}.0 ) {
@@ -69,7 +69,7 @@ export class CropAndResizeProgram implements GPGPUProgram {
         }
 
         float in_x = (${cropWidth} > 1)
-          ? x1 * (${imageWidth - 1}.0 + float(x)*width_scale)
+          ? (x1 * ${imageWidth - 1}.0) + float(x)*width_scale
           : 0.5 * (x1+x2) * ${imageWidth - 1}.0;
         if( in_x < 0.0 || in_x > ${imageWidth - 1}.0 ) {
           setOutput(${extrapolationValue}.0);
