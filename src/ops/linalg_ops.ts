@@ -249,10 +249,11 @@ function svd_(m: Tensor2D): {u: Tensor, s: Tensor, v: Tensor} {
 
 function eingen_(m: Tensor): {values: Tensor1D, vectors: Tensor} {
   let z;
-  for (let i = 0; i < 200; i++) {
+  for (let i = 0; i < 5; i++) {
     const [x, y] = linalg.qr(m);
     m = y.dot(x);
     z = z ? z.dot(x) : x;
+    y.dispose();
   }
   return {values: diagonalElements(m), vectors: z};
 }

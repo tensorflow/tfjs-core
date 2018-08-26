@@ -243,33 +243,26 @@ describeWithFlags('qr', ALL_ENVS, () => {
   });
 });
 
-/* describeWithFlags('eigen_values', ALL_ENVS, () => {
-  it('3*3', () => {
-    const m = tf.tensor2d([1, 2, 0, 0, 3, 0, 2, -4, 2], [3, 3]);
-    const e = Array.from(eingenValues(m).dataSync().sort().reverse());
-    eingenValues(m).print();
-    expectArraysClose(e, [2.999996, 1.999998, 1.0000006]);
-  });
-}); */
-
 describeWithFlags('svd', ALL_ENVS, () => {
-  it('3*3', () => {
-    const ar = [1];
-    // const m = tf.tensor2d([1, 2, 0, 0, 3, 0, 2, -4, 2], [3, 3]);
+  it('m = u*s*v ', () => {
     const m = tf.tensor2d([2, -1, 0, -1, 2, -1, 0, -1, 2], [3, 3]);
-    // const e = Array.from(eingenVectors(m).dataSync().sort().reverse());
     const {u, s, v} = svd(m);
+    expectArraysClose(u.dot(s).dot(v), m);
+  });
+  it('orthogonal u', () => {
+    const m = tf.tensor2d([1, 2, 0, 0, 3, 0, 2, -4, 2], [3, 3]);
+    const {u} = svd(m);
     const [a, b, c] = tf.unstack(u);
-    a.mul(b).print();
-    b.mul(c).print();
-    m.print();
-    u.dot(s).dot(v).print();
-    console.log('u');
-    u.print();
-    console.log('s');
-    s.print();
-    console.log('v');
-    v.print();
-    expectArraysClose(ar, [1]);
+    expectArraysClose(a.dot(b), tf.scalar(0));
+    expectArraysClose(a.dot(c), tf.scalar(0));
+    expectArraysClose(b.dot(c), tf.scalar(0));
+  });
+  it('orthogonal v', () => {
+    const m = tf.tensor2d([1, 2, 0, 0, 3, 0, 2, -4, 2], [3, 3]);
+    const {v} = svd(m);
+    const [a, b, c] = tf.unstack(v);
+    expectArraysClose(a.dot(b), tf.scalar(0));
+    expectArraysClose(a.dot(c), tf.scalar(0));
+    expectArraysClose(b.dot(c), tf.scalar(0));
   });
 });
