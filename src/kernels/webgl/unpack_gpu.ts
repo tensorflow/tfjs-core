@@ -7,30 +7,19 @@ export class UnpackProgram implements GPGPUProgram {
 
 	constructor(outputShape: number[]) {
 		this.outputShape = outputShape;
+		
 		this.userCode = `
-			float eps = 0.0001;
-
 			void main() {
-				vec2 textureSize = vec2(4.);
-				vec2 thisCoord = gl_FragCoord.xy / textureSize;
+				vec4 packedInput = texture2D(A, resultUV);
+				vec2 coord = gl_FragCoord.xy - halfCR;
+				vec2 modCoord = mod(coord, vec2(2.0));
 
-				vec4 packedInput = texture2D(A, thisCoord);
-
-				vec2 coord = floor(gl_FragCoord.xy);
-
-				if(mod(coord.x, 2.0) < eps) { // x is even
-					if(mod(coord.y, 2.0) < eps) { // y is even
-						gl_FragColor = vec4(packedInput.r, 0, 0, 0);
-					} else {
-						gl_FragColor = vec4(packedInput.b, 0, 0, 0);
-					}
-				} else { // x is odd
-					if(mod(coord.y, 2.0) < eps) {
-						gl_FragColor = vec4(packedInput.g, 0, 0, 0);
-					} else {
-						gl_FragColor = vec4(packedInput.a, 0, 0, 0);
-					}
-				}
+				gl_FragColor = vec4(
+					modCoord.x == 0.0 ? 
+						(modCoord.y == 0.0 ? packedInput.r : packedInput.b) : 
+						(modCoord.y == 0.0 ? packedInput.g : packedInput.a),
+					0, 0, 0
+				);
 			}
 		`;
 	}
