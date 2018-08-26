@@ -11,9 +11,16 @@ export class UnpackProgram implements GPGPUProgram {
 			float eps = 0.0001;
 
 			void main() {
-				vec4 packedInput = texture2D(A, resultUV / 2.);
+				vec2 onePixel = vec2(0.25);
+				vec2 thisCoord = gl_FragCoord.xy / vec2(4.);
+
+				vec4 packedInput = texture2D(A, thisCoord);
 
 				vec2 coord = floor(gl_FragCoord.xy);
+
+				// gl_FragColor = vec4(thisCoord.x);
+				// gl_FragColor = vec4(texture2D(A, thisCoord).x);
+				// gl_FragColor = vec4(texture2D(A, thisCoord).x);
 
 				if(mod(coord.x, 2.0) < eps) { // x is even
 					if(mod(coord.y, 2.0) < eps) { // y is even
