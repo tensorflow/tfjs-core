@@ -231,6 +231,19 @@ function qr2d(x: Tensor2D, fullMatrices = false): [Tensor2D, Tensor2D] {
   }) as [Tensor2D, Tensor2D];
 }
 
+/**
+ *
+ * @param m matrix whose svd is to be computed
+ * @returns
+ *  `u`: orthogonal matrix
+ *
+ *  `s`: diagonal matrix
+ *
+ *  `v`: orthogonal matrix
+ *
+ * such that `m = u*s*v`
+ *
+ */
 function svd_(m: Tensor2D): {u: Tensor, s: Tensor, v: Tensor} {
   const mT = m.dot(transpose(m));
   const u = eingen(mT).vectors;
@@ -247,6 +260,30 @@ function svd_(m: Tensor2D): {u: Tensor, s: Tensor, v: Tensor} {
   return {u, s, v};
 }
 
+/**
+ * The algorithm used is the QR decomposition
+ *
+ * Implementation based on:
+ * [http://www.math.tamu.edu/~dallen/linear_algebra/chpt6.pdf]
+ * (http://www.math.tamu.edu/~dallen/linear_algebra/chpt6.pdf):
+ *
+ *   - `A0 = Q0 * R0`
+ *   - `A1 = R0 * Q0 = Q1 * R1`
+ *   - `A2 = R1 * Q1 = Q2 * R2`
+ *   -  .  = .  * .  = .  * .
+ *   -  .  = .  * .  = .  * .
+ *   -  .  = .  * .  = .  * .
+ *   - `An = Rn * Qn = Qn * Rn`
+ *
+ *   `An` tends to a diagonal matrix where the diagonal values are the
+ * eingen values of A.
+ *
+ *    Π(Q0, Q1, ..., Qn) gives the eigen vectors associated to the eigen values
+ *
+ * @param m matrix whose eigen values and vectors are to compute
+ * @returns
+ * {values: eigen values as Tensor1D, vectors: eigen vectors as Tensor}
+ */
 function eingen_(m: Tensor): {values: Tensor1D, vectors: Tensor} {
   let z;
   for (let i = 0; i < 5; i++) {
