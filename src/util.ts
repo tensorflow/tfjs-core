@@ -110,7 +110,7 @@ export function inferShape(
     firstElem = firstElem[0];
   }
   if (val instanceof Array) {
-    deepAssertShapeConsistency(val, shape, [], dtype);
+    deepAssertShapeConsistency(val, shape, []);
   }
 
   // For complex64 dtypes the inner most dimension has 2 values per tensor
@@ -123,7 +123,7 @@ export function inferShape(
 
 function deepAssertShapeConsistency(
     val: number|boolean|RegularArray<number>|RegularArray<boolean>,
-    shape: number[], indices: number[], dtype: DataType) {
+    shape: number[], indices: number[]) {
   indices = indices || [];
   if (!(val instanceof Array)) {
     assert(
@@ -142,22 +142,28 @@ function deepAssertShapeConsistency(
           `elements, but has ${val.length} elements`);
   const subShape = shape.slice(1);
   for (let i = 0; i < val.length; ++i) {
-    deepAssertShapeConsistency(val[i], subShape, indices.concat(i), dtype);
+    deepAssertShapeConsistency(val[i], subShape, indices.concat(i));
   }
 }
 
-export function sizeFromShape(
-    shape: number[], dtype: DataType = 'float32'): number {
-  const sizePerEntry = dtype === 'complex64' ? 2 : 1;
+export function sizeFromShape(shape: number[]): number {
   if (shape.length === 0) {
     // Scalar.
-    return sizePerEntry;
+    return 1;
   }
   let size = shape[0];
   for (let i = 1; i < shape.length; i++) {
     size *= shape[i];
   }
-  return size * sizePerEntry;
+  return size;
+}
+
+export function getStorageSize(shape: number[], dtype: DataType) {
+  const size = sizeFromShape(shape);
+  if (dtype === 'complex64') {
+    return 2 * size;
+  }
+  return size;
 }
 
 export function isScalarShape(shape: number[]): boolean {
@@ -329,16 +335,14 @@ export function squeezeShape(shape: number[], axis?: number[]):
 }
 
 export function getTypedArrayFromDType<D extends DataType>(
-    dtype: D, size: number): DataTypeMap[D] {
+    dtype: D, storageSize: number): DataTypeMap[D] {
   let values = null;
-  if (dtype == null || dtype === 'float32') {
-    values = new Float32Array(size);
+  if (dtype == null || dtype === 'float32' || dtype === 'complex64') {
+    values = new Float32Array(storageSize);
   } else if (dtype === 'int32') {
-    values = new Int32Array(size);
+    values = new Int32Array(storageSize);
   } else if (dtype === 'bool') {
-    values = new Uint8Array(size);
-  } else if (dtype === 'complex64') {
-    values = new Float32Array(size * 2);
+    values = new Uint8Array(storageSize);
   } else {
     throw new Error(`Unknown data type ${dtype}`);
   }

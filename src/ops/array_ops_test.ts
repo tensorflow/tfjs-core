@@ -3508,6 +3508,15 @@ describeWithFlags('complex64', ALL_ENVS, () => {
     expect(imag.shape).toEqual([2]);
     expectArraysClose(imag, [4, 40]);
   });
+
+  it('throws when shapes dont match', () => {
+    const real = tf.tensor1d([3, 30]);
+    const imag = tf.tensor1d([4, 40, 50]);
+
+    const re =
+        /real and imag shapes, 2 and 3, must match in call to tf.complex\(\)/;
+    expect(() => tf.complex(real, imag)).toThrowError(re);
+  });
 });
 
 describeWithFlags('complex64 memory webgl', WEBGL_ENVS, () => {

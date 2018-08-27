@@ -20,8 +20,10 @@ import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D, Tensor
 import {convertToTensor} from '../tensor_util_env';
 import {TensorLike, TensorLike1D, TensorLike2D, TensorLike3D, TensorLike4D, TensorLike5D, TensorLike6D} from '../types';
 import {ArrayData, DataType, Rank, ShapeMap} from '../types';
-import {assertNonNull, assertShapesMatch, getTypedArrayFromDType, inferShape, isTypedArray, makeOnesTypedArray, makeZerosTypedArray, sizeFromShape, toTypedArray} from '../util';
+import {assertNonNull, assertShapesMatch, getStorageSize, getTypedArrayFromDType, inferShape, isTypedArray, makeOnesTypedArray, makeZerosTypedArray, sizeFromShape, toTypedArray} from '../util';
+
 import {op} from './operation';
+
 
 /**
  * Creates a `Tensor` with the provided values, shape and dtype.
@@ -359,7 +361,7 @@ function tensor6d(
 /** @doc {heading: 'Tensors', subheading: 'Creation'} */
 function ones<R extends Rank>(
     shape: ShapeMap[R], dtype: DataType = 'float32'): Tensor<R> {
-  const values = makeOnesTypedArray(sizeFromShape(shape), dtype);
+  const values = makeOnesTypedArray(getStorageSize(shape, dtype), dtype);
   return Tensor.make(shape, {values}, dtype);
 }
 
@@ -377,7 +379,7 @@ function ones<R extends Rank>(
 /** @doc {heading: 'Tensors', subheading: 'Creation'} */
 function zeros<R extends Rank>(
     shape: ShapeMap[R], dtype: DataType = 'float32'): Tensor<R> {
-  const values = makeZerosTypedArray(sizeFromShape(shape, dtype), dtype);
+  const values = makeZerosTypedArray(getStorageSize(shape, dtype), dtype);
   return Tensor.make(shape, {values}, dtype);
 }
 

@@ -77,7 +77,7 @@ export async function loadWeights(
           weightsEntry.dtype;
 
       const weightsBytes = DTYPE_VALUE_SIZE_MAP[rawDtype] *
-          util.sizeFromShape(weightsEntry.shape, weightsEntry.dtype);
+          util.sizeFromShape(weightsEntry.shape);
 
       const enqueueWeightsForFetchingFn = () => {
         groupIndicesToFetchMap[groupIndex] = true;

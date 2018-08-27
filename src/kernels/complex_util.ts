@@ -15,6 +15,20 @@
  * =============================================================================
  */
 
+/**
+ * Merges real and imaginary Float32Arrays into a single complex Float32Array.
+ *
+ * The memory layout is interleaved as follows:
+ * real: [r0, r1, r2]
+ * imag: [i0, i1, i2]
+ * complex: [r0, i0, r1, i1, r2, i2]
+ *
+ * This is the inverse of splitRealAndImagArrays.
+ *
+ * @param real The real values of the complex tensor values.
+ * @param imag The imag values of the complex tensor values.
+ * @returns A complex tensor as a Float32Array with merged values.
+ */
 export function mergeRealAndImagArrays(
     real: Float32Array, imag: Float32Array): Float32Array {
   if (real.length !== imag.length) {
@@ -30,6 +44,20 @@ export function mergeRealAndImagArrays(
   return result;
 }
 
+/**
+ * Splits a complex Float32Array into real and imag parts.
+ *
+ * The memory layout is interleaved as follows:
+ * complex: [r0, i0, r1, i1, r2, i2]
+ * real: [r0, r1, r2]
+ * imag: [i0, i1, i2]
+ *
+ * This is the inverse of mergeRealAndImagArrays.
+ *
+ * @param complex The complex tensor values.
+ * @returns An object with real and imag Float32Array components of the complex
+ *     tensor.
+ */
 export function splitRealAndImagArrays(complex: Float32Array):
     {real: Float32Array, imag: Float32Array} {
   const real = new Float32Array(complex.length / 2);

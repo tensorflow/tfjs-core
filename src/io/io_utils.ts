@@ -80,7 +80,7 @@ export function decodeWeights(
     const name = spec.name;
     const dtype = spec.dtype;
     const shape = spec.shape;
-    const size = sizeFromShape(shape, dtype);
+    const size = sizeFromShape(shape);
     let typedArray: TypedArray;
 
     if ('quantization' in spec) {

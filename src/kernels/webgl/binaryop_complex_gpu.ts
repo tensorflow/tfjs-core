@@ -23,8 +23,8 @@ import {GPGPUProgram} from './gpgpu_math';
 // Yr = ArBr - AB
 // Yi = ArBi + AiBr
 export const COMPLEX_MULTIPLY = {
-  real: 'return areal * breal - aimag * bimag;',
-  imag: 'return areal * bimag + aimag * breal;'
+  REAL: 'return areal * breal - aimag * bimag;',
+  IMAG: 'return areal * bimag + aimag * breal;'
 };
 
 export class BinaryOpComplexProgram implements GPGPUProgram {

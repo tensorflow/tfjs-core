@@ -1014,6 +1014,25 @@ describeWithFlags('add', ALL_ENVS, () => {
     expectArraysClose(result, [4, 6]);
   });
 
+  it('complex number reshape and then addition', () => {
+    const real1 = tf.tensor1d([1]);
+    const imag1 = tf.tensor1d([2]);
+    const complex1 = tf.complex(real1, imag1);
+
+    const real2 = tf.tensor1d([3]);
+    const imag2 = tf.tensor1d([4]);
+    const complex2 = tf.complex(real2, imag2);
+
+    const complex1Reshaped = complex1.reshape([1, 1, 1]);
+    const complex2Reshaped = complex2.reshape([1, 1, 1]);
+
+    const result = complex1Reshaped.add(complex2Reshaped);
+
+    expect(result.dtype).toBe('complex64');
+    expect(result.shape).toEqual([1, 1, 1]);
+    expectArraysClose(result, [4, 6]);
+  });
+
   it('complex number broadcasting addition', () => {
     const real1 = tf.tensor2d([1, 2, -3, -4], [2, 2]);
     const imag1 = tf.tensor2d([10, 20, -30, -40], [2, 2]);
@@ -1341,7 +1360,7 @@ describeWithFlags('sub', ALL_ENVS, () => {
     expectArraysClose(result, [2, 5]);
   });
 
-  it('complex number broadcasting addition', () => {
+  it('complex number broadcasting subtraction', () => {
     const real1 = tf.tensor2d([1, 2, -3, -4], [2, 2]);
     const imag1 = tf.tensor2d([10, 20, -30, -40], [2, 2]);
     const complex1 = tf.complex(real1, imag1);
@@ -1372,6 +1391,14 @@ describeWithFlags('sub', ALL_ENVS, () => {
         .toThrowError(
             // tslint:disable-next-line:max-line-length
             /The dtypes of the first\(int32\) and second\(float32\) input must match/);
+  });
+
+  it('throws when dtypes dont match', () => {
+    expect(
+        () => tf.sub(tf.scalar(1, 'float32'), tf.scalar([1, 2], 'complex64')))
+        .toThrowError(
+            // tslint:disable-next-line:max-line-length
+            /The dtypes of the first\(float32\) and second\(complex64\) input must match/);
   });
 
   it('accepts a tensor-like object', () => {

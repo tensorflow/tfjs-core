@@ -64,6 +64,8 @@ export interface RecursiveArray<T extends any> {
   [index: number]: T|RecursiveArray<T>;
 }
 
+// Looks for upcasting types. Used, for example, in operations with mixed dtype
+// inputs.
 enum UpcastInt32AndMap {
   'float32' = 'float32',
   'int32' = 'int32',
