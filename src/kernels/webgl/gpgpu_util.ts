@@ -145,8 +145,6 @@ export function getTextureConfig(
   };
 }
 
-var debugIter = 0;
-
 function createAndConfigureTexture(
     gl: WebGLRenderingContext, width: number, height: number,
     internalFormat: number, textureFormat: number,
@@ -166,19 +164,11 @@ function createAndConfigureTexture(
       gl, () => gl.texParameteri(tex2d, gl.TEXTURE_MAG_FILTER, gl.NEAREST));
   webgl_util.callAndCheck(
       gl,
-      () => {
-        if(debugIter === 1 || debugIter === 3 || debugIter === 4) {
-          console.log('MODIFIED TYPES');
-          return gl.texImage2D(
-            tex2d, 0, gl.RGBA32F, width, height, 0, gl.RGBA, gl.FLOAT, null);
-        }
-        return gl.texImage2D(
+      () => gl.texImage2D(
           tex2d, 0, internalFormat, width, height, 0, textureFormat,
-          textureType, null)
-      });
+          textureType, null));
   webgl_util.callAndCheck(gl, () => gl.bindTexture(gl.TEXTURE_2D, null));
 
-  debugIter++;
   return texture;
 }
 

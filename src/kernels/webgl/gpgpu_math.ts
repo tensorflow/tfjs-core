@@ -28,6 +28,7 @@ export interface GPGPUProgram {
   outputShape: number[];
   userCode: string;
   supportsBroadcasting?: boolean;
+  packed?: boolean;
 }
 
 export interface GPGPUBinary {

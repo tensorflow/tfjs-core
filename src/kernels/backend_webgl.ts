@@ -1267,7 +1267,7 @@ export class MathBackendWebGL implements KernelBackend {
   public compileAndRun<T extends Tensor, K extends Tensor>(
       program: GPGPUProgram, inputs: T[], output?: K,
       customSetup?: (gpgpu: GPGPUContext, webGLProgram: WebGLProgram) => void,
-      pageToCpu = true): K {
+      pageToCpu = true, packed = false): K {
     if (output == null) {
       output = this.makeOutputArray(program.outputShape, inputs[0].dtype);
     }
@@ -1288,7 +1288,7 @@ export class MathBackendWebGL implements KernelBackend {
       this.uploadToGPU(tensor.dataId);
       return {tensor, texData, isUniform: false};
     });
-    this.uploadToGPU(output.dataId);
+    this.uploadToGPU(output.dataId, program.packed);
     const outputData = {
       tensor: output,
       texData: this.texData.get(output.dataId),
@@ -1374,7 +1374,7 @@ export class MathBackendWebGL implements KernelBackend {
     }
   }
 
-  private uploadToGPU(dataId: DataId): void {
+  private uploadToGPU(dataId: DataId, packed = false): void {
     this.throwIfNoData(dataId);
     const texData = this.texData.get(dataId);
     const {shape, values, texture, dtype, usage} = texData;
@@ -1396,7 +1396,7 @@ export class MathBackendWebGL implements KernelBackend {
     const texShape =
         webgl_util.getTextureShapeFromLogicalShape(this.gpgpu.gl, shape);
     texData.texShape = texShape;
-    const newTexture = this.acquireTexture(dataId, texShape, usage);
+    const newTexture = this.acquireTexture(dataId, texShape, usage, packed);
     texData.texture = newTexture;
     if (values != null) {
       this.gpgpu.uploadMatrixToTexture(
@@ -1443,11 +1443,12 @@ export class MathBackendWebGL implements KernelBackend {
 
   private acquireTexture(
       dataId: DataId, texShape: [number, number],
-      texType: TextureUsage): WebGLTexture {
+      texType: TextureUsage,
+      packed: boolean): WebGLTexture {
     const {shape, dtype} = this.texData.get(dataId);
     this.lruDataGPU.push(dataId);
     this.numBytesInGPU += this.computeBytes(shape, dtype);
-    return this.textureManager.acquireTexture(texShape, texType);
+    return this.textureManager.acquireTexture(texShape, texType, packed);
   }
 
   private computeBytes(shape: number[], dtype: DataType) {
