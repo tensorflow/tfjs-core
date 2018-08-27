@@ -19,7 +19,6 @@ import {ForwardFunc} from '../engine';
 import {ENV} from '../environment';
 import {nonMaxSuppressionImpl} from '../kernels/non_max_suppression_impl';
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
-import {tensor2d,zeros} from '../index';
 import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import * as util from '../util';
@@ -293,26 +292,7 @@ function cropAndResize_(
       backend.cropAndResize(
           $image, $boxes, $boxInd, cropSize, method, extrapolationValue);
 
-  // gradient for crop boxes is not well-defined with nearest neighbor
-  // but approximate with gradient derived from bilinear sampling
-  const backwardBilinear = (dy: Tensor4D, saved: Tensor[]) => {
-    return {
-      $image: () => numBoxes === 0
-          ? zeros($image.shape,$image.dtype) as Tensor4D
-          : ENV.engine.runKernel(
-          backend => backend.cropAndResizeBackpropImage(
-              dy, $image, $boxes, $boxInd, method),
-          {}),
-      $boxes: () => numBoxes === 0
-          ? tensor2d([],$boxes.shape)
-          : ENV.engine.runKernel(
-          backend =>
-              backend.cropAndResizeBackpropBoxes(dy, $image, $boxes, $boxInd),
-          {})
-    };
-  };
-
-  const res = ENV.engine.runKernel(forward, {$image, $boxes}, backwardBilinear);
+  const res = ENV.engine.runKernel(forward, {$image, $boxes});
   return res as Tensor4D;
 }
 

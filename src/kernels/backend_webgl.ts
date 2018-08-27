@@ -47,8 +47,6 @@ import {Conv2DDerFilterProgram, Conv2DDerInputProgram} from './webgl/conv_backpr
 import {DepthwiseConv2DDerFilterProgram, DepthwiseConv2DDerInputProgram} from './webgl/conv_backprop_gpu_depthwise';
 import {Conv2DProgram} from './webgl/conv_gpu';
 import {DepthwiseConv2DProgram} from './webgl/conv_gpu_depthwise';
-import {CropAndResizeBackpropBoxesProgram} from './webgl/crop_and_resize_backprop_boxes_gpu';
-import {CropAndResizeBackpropImageProgram} from './webgl/crop_and_resize_backprop_image_gpu';
 import {CropAndResizeProgram} from './webgl/crop_and_resize_gpu';
 import {CumSumProgram} from './webgl/cumsum_gpu';
 import {EncodeFloatProgram} from './webgl/encode_float_gpu';
@@ -1224,23 +1222,6 @@ export class MathBackendWebGL implements KernelBackend {
     const program = new CropAndResizeProgram(
         image.shape, boxes.shape, cropSize, method, extrapolationValue);
     return this.compileAndRun(program, [image, boxes, boxIndex]);
-  }
-  cropAndResizeBackpropImage(
-      grad: Tensor4D, image: Tensor4D, boxes: Tensor2D, boxIndex: Tensor1D,
-      method: 'bilinear'|'nearest'): Tensor4D {
-    const program =
-        new CropAndResizeBackpropImageProgram(grad.shape, image.shape, method);
-    return this.compileAndRun(program, [grad, boxes, boxIndex]);
-  }
-  cropAndResizeBackpropBoxes(
-      grad: Tensor4D,
-      image: Tensor4D,
-      boxes: Tensor2D,
-      boxIndex: Tensor1D,
-      ): Tensor2D {
-    const program =
-        new CropAndResizeBackpropBoxesProgram(grad.shape, image.shape);
-    return this.compileAndRun(program, [grad, image, boxes, boxIndex]);
   }
 
   multinomial(

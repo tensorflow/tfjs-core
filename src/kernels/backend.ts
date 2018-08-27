@@ -255,12 +255,4 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
       image: Tensor4D, boxes: Tensor2D, boxIndex: Tensor1D,
       cropSize: [number, number], method: 'bilinear' | 'nearest',
       extrapolationValue: number): Tensor4D;
-
-  cropAndResizeBackpropImage(
-      grad: Tensor4D, image: Tensor4D, boxes: Tensor2D, boxIndex: Tensor1D,
-      method: 'bilinear' | 'nearest'): Tensor4D;
-
-  cropAndResizeBackpropBoxes(
-      grad: Tensor4D, image: Tensor4D, boxes: Tensor2D,
-      boxIndex: Tensor1D): Tensor2D;
 }

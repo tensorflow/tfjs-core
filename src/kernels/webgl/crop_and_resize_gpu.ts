@@ -33,9 +33,10 @@ export class CropAndResizeProgram implements GPGPUProgram {
     const methodId = method === 'bilinear' ? 1 : 0;
 
     const [xHeightFloat, xWidthFloat] =
-    [`${imageHeight - 1}.0`, `${imageWidth - 1}.0`];
+      [`${imageHeight - 1}.0`, `${imageWidth - 1}.0`];
     const [yHeightFloat, yWidthFloat] =
-    [`${cropHeight - 1}.0`, `${cropWidth - 1}.0`];
+      [`${cropHeight - 1}.0`, `${cropWidth - 1}.0`];
+
     const [heightRatio, heightScale, inY] = cropHeight > 1 ?
       [
         `${xHeightFloat}/${yHeightFloat}`,
@@ -98,11 +99,8 @@ export class CropAndResizeProgram implements GPGPUProgram {
           return;
         }
 
-        // Fractional source index.
         vec2 sourceFracIndexRC = vec2(in_y,in_x);
-
         if(${methodId} == 1) {
-
           // Compute the four integer indices.
           ivec2 sourceFloorRC = ivec2(sourceFracIndexRC);
           ivec2 sourceCeilRC = ivec2(ceil(sourceFracIndexRC));

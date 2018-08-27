@@ -2242,25 +2242,30 @@ export class MathBackendCPU implements KernelBackend {
     // tslint:disable-next-line:max-line-length
     // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/crop_and_resize_op.cc
     for (let b = 0; b < numBoxes; b++) {
-      const y1 = boxVals[(b * 4)];
-      const x1 = boxVals[(b * 4) + 1];
-      const y2 = boxVals[(b * 4) + 2];
-      const x2 = boxVals[(b * 4) + 3];
+      const startInd = b * 4;
+      const y1 = boxVals[startInd];
+      const x1 = boxVals[startInd + 1];
+      const y2 = boxVals[startInd + 2];
+      const x2 = boxVals[startInd + 3];
 
       const bInd: number = boxIndVals[b];
       if (bInd >= batch) {
         continue;
       }
 
-      const heightScale =
-        (cropHeight > 1) ? (y2 - y1) * (imageHeight - 1) / (cropHeight - 1) : 0;
-      const widthScale =
-        (cropWidth > 1) ? (y2 - y1) * (imageWidth - 1) / (cropWidth - 1) : 0;
+      const heightScale = (cropHeight > 1) ?
+        (y2 - y1) * (imageHeight - 1) / (cropHeight - 1) :
+        0;
+      const widthScale = (cropWidth > 1) ?
+        (y2 - y1) * (imageWidth - 1) / (cropWidth - 1) :
+        0;
 
       for (let y = 0; y < cropHeight; y++) {
+
         const yInd: number = (cropHeight > 1) ?
             y1 * (imageHeight - 1) + y * (heightScale) :
             0.5 * (y1 + y2) * (imageHeight - 1);
+
         if (yInd < 0 || yInd > imageHeight - 1) {
           for (let x = 0; x < cropWidth; x++) {
             for (let c = 0; c < numChannels; c++) {
@@ -2280,6 +2285,7 @@ export class MathBackendCPU implements KernelBackend {
             const xInd = (cropWidth > 1) ?
                 x1 * (imageWidth - 1) + x * widthScale :
                 0.5 * (x1 + x2) * (imageWidth - 1);
+
             if (xInd < 0 || xInd > imageWidth - 1) {
               for (let c = 0; c < numChannels; c++) {
                 output.set(extrapolationValue, b, y, x, c);
@@ -2318,6 +2324,7 @@ export class MathBackendCPU implements KernelBackend {
             const xInd = (cropWidth > 1) ?
                 x1 * (imageWidth - 1) + x * widthScale :
                 0.5 * (x1 + x2) * (imageWidth - 1);
+
             if (xInd < 0 || xInd > imageWidth - 1) {
               for (let c = 0; c < numChannels; c++) {
                 output.set(extrapolationValue, b, y, x, c);
@@ -2331,214 +2338,6 @@ export class MathBackendCPU implements KernelBackend {
               const ind = c + closestX * stride[2] + closestY * stride[1] +
                   bInd * stride[0];
               output.set(imageVals[ind], b, y, x, c);
-            }
-          }
-        }
-      }
-    }
-    return output.toTensor();
-  }
-
-  cropAndResizeBackpropImage(
-      grad: Tensor4D,
-      image: Tensor4D,
-      boxes: Tensor2D,
-      boxIndex: Tensor1D,
-      method: string,
-  ) {
-    const [batch, imageHeight, imageWidth, numChannels] = image.shape;
-    const [numBoxes, cropHeight, cropWidth, ] = grad.shape;
-
-    const output = ops.buffer<Rank.R4>(image.shape);
-    const boxVals = boxes.dataSync();
-    const boxIndVals = boxIndex.dataSync();
-    const gradVals = grad.dataSync();
-
-    const stride = grad.strides;
-
-    // Reference implementation
-    // tslint:disable-next-line:max-line-length
-    // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/crop_and_resize_op.cc
-    for (let b = 0; b < numBoxes; b++) {
-      const y1 = boxVals[b * 4];
-      const x1 = boxVals[b * 4 + 1];
-      const y2 = boxVals[b * 4 + 2];
-      const x2 = boxVals[b * 4 + 3];
-
-      const bInd = boxIndVals[b];
-      if (bInd > batch) {
-        continue;
-      }
-
-      const heightScale =
-        (cropHeight > 1) ? (y2 - y1) * (imageHeight - 1) / (cropHeight - 1) : 0;
-      const widthScale =
-        (cropWidth > 1) ? (x2 - x1) * (imageWidth - 1) / (cropWidth - 1) : 0;
-
-      for (let y = 0; y < cropHeight; ++y) {
-        const yInd = (cropHeight > 1) ?
-            y1 * (imageHeight - 1) + y * heightScale :
-            0.5 * (y1 + y2) * (imageHeight - 1);
-        if (yInd < 0 || yInd > imageHeight - 1) {
-          continue;
-        }
-        const topInd = Math.floor(yInd);
-        const bottomInd = Math.ceil(yInd);
-        const yLerp = yInd - topInd;
-
-        for (let x = 0; x < cropWidth; ++x) {
-          const xInd = (cropWidth > 1) ?
-              x1 * (imageWidth - 1) + x * widthScale :
-              0.5 * (x1 + x2) * (imageWidth - 1);
-          if (xInd < 0 || xInd > imageWidth - 1) {
-            continue;
-          }
-          if (method === 'bilinear') {
-            const leftInd = Math.floor(xInd);
-            const rightInd = Math.ceil(xInd);
-            const xLerp = xInd - leftInd;
-
-            for (let c = 0; c < numChannels; c++) {
-              const gradInd = c + x * stride[2] + y * stride[1] + b * stride[0];
-              const dtop = (1 - yLerp) * gradVals[gradInd];
-              const dbottom = yLerp * gradVals[gradInd];
-
-              let out = output.get(bInd, topInd, leftInd, c);
-              output.set(out + (1 - xLerp) * dtop, bInd, topInd, leftInd, c);
-
-              out = output.get(bInd, topInd, rightInd, c);
-              output.set(out + xLerp * dtop, bInd, topInd, rightInd, c);
-
-              out = output.get(bInd, bottomInd, leftInd, c);
-              output.set(
-                  out + (1 - xLerp) * dbottom, bInd, bottomInd, leftInd, c);
-
-              out = output.get(bInd, bottomInd, rightInd, c);
-              output.set(out + xLerp * dbottom, bInd, bottomInd, rightInd, c);
-            }
-          } else {  // method_name == "nearest"
-            for (let c = 0; c < numChannels; c++) {
-              const closestX = Math.round(xInd);
-              const closestY = Math.round(yInd);
-
-              const out = output.get(bInd, closestY, closestX, c);
-              const gradInd = c + x * stride[2] + y * stride[1] + b * stride[0];
-              output.set(out + gradVals[gradInd], bInd, closestY, closestX, c);
-            }
-          }
-        }
-      }
-    }
-    return output.toTensor();
-  }
-
-  cropAndResizeBackpropBoxes(
-      grad: Tensor4D, image: Tensor4D, boxes: Tensor2D, boxIndex: Tensor1D) {
-    const [batch, imageHeight, imageWidth, ] = image.shape;
-    const [numBoxes, cropHeight, cropWidth, numChannels] = grad.shape;
-
-    const output = ops.buffer<Rank.R2>(boxes.shape);
-    const imageVals = image.dataSync();
-    const boxVals = boxes.dataSync();
-    const boxIndVals = boxIndex.dataSync();
-    const gradVals = grad.dataSync();
-
-    const stride = image.strides;
-
-    // Reference implementation
-    // tslint:disable-next-line:max-line-length
-    // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/crop_and_resize_op.cc
-    for (let b = 0; b < numBoxes; b++) {
-      const y1 = boxVals[b * 4];
-      const x1 = boxVals[b * 4 + 1];
-      const y2 = boxVals[b * 4 + 2];
-      const x2 = boxVals[b * 4 + 3];
-
-      const bInd = boxIndVals[b];
-      if (bInd > batch) {
-        continue;
-      }
-
-      const heightRatio =
-          (cropHeight > 1) ? (imageHeight - 1) / (cropHeight - 1) : 0;
-      const widthRatio =
-          (cropWidth > 1) ? (imageWidth - 1) / (cropWidth - 1) : 0;
-      const heightScale = (cropHeight > 1) ? (y2 - y1) * heightRatio : 0;
-      const widthScale = (cropWidth > 1) ? (x2 - x1) * widthRatio : 0;
-
-      for (let y = 0; y < cropHeight; ++y) {
-        const yInd = (cropHeight > 1) ?
-            y1 * (imageHeight - 1) + y * heightScale :
-            0.5 * (y1 + y2) * (imageHeight - 1);
-        if (yInd < 0 || yInd > imageHeight - 1) {
-          continue;
-        }
-        const topInd = Math.floor(yInd);
-        const bottomInd = Math.ceil(yInd);
-        const yLerp = yInd - topInd;
-
-        for (let x = 0; x < cropWidth; ++x) {
-          const xInd = (cropWidth > 1) ?
-              x1 * (imageWidth - 1) + x * widthScale :
-              0.5 * (x1 + x2) * (imageWidth - 1);
-          if (xInd < 0 || xInd > imageWidth - 1) {
-            continue;
-          }
-          const leftInd = Math.floor(xInd);
-          const rightInd = Math.ceil(xInd);
-          const xLerp = xInd - leftInd;
-
-          for (let c = 0; c < numChannels; c++) {
-            let ind =
-                c + leftInd * stride[2] + topInd * stride[1] + bInd * stride[0];
-            const topLeft = imageVals[ind];
-
-            ind = c + rightInd * stride[2] + topInd * stride[1] +
-                bInd * stride[0];
-            const topRight = imageVals[ind];
-
-            ind = c + leftInd * stride[2] + bottomInd * stride[1] +
-                bInd * stride[0];
-            const bottomLeft = imageVals[ind];
-
-            ind = c + rightInd * stride[2] + bottomInd * stride[1] +
-                bInd * stride[0];
-            const bottomRight = imageVals[ind];
-
-            let imageGradY = (1 - xLerp) * (bottomLeft - topLeft) +
-                xLerp * (bottomRight - topRight);
-            let imageGradX = (1 - yLerp) * (topRight - topLeft) +
-                yLerp * (bottomRight - bottomLeft);
-            const gradInd = c + x * grad.strides[2] + y * grad.strides[1] +
-                b * grad.strides[0];
-            const topGrad = gradVals[gradInd];
-            imageGradY *= topGrad;
-            imageGradX *= topGrad;
-
-            // dy1, dy2
-            const dy1 = output.get(b, 0);
-            const dy2 = output.get(b, 2);
-            if (cropHeight > 1) {
-              output.set(
-                  dy1 + imageGradY * (imageHeight - 1 - y * heightRatio), b, 0);
-              output.set(dy2 + imageGradY * (y * heightRatio), b, 2);
-            }
-            else {
-              output.set(dy1 + imageGradY * 0.5 * (imageHeight - 1), b, 0);
-              output.set(dy2 + imageGradY * 0.5 * (imageHeight - 1), b, 2);
-            }
-
-            // dx1, dx2
-            const dx1 = output.get(b, 1);
-            const dx2 = output.get(b, 3);
-            if (cropWidth > 1) {
-              output.set(
-                  dx1 + imageGradX * (imageWidth - 1 - x * widthRatio), b, 1);
-              output.set(dx2 + imageGradX * (y * widthRatio), b, 3);
-            }
-            else {
-              output.set(dx1 + imageGradX * 0.5 * (imageWidth - 1), b, 1);
-              output.set(dx2 + imageGradX * 0.5 * (imageWidth - 1), b, 3);
             }
           }
         }
