@@ -250,17 +250,17 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
     iouThreshold: number, scoreThreshold?: number): Tensor1D;
 
   cropAndResize(
-    image: Tensor4D, boxes: Tensor2D, boxIndex: Tensor1D,
+    image: Tensor4D, boxes: Tensor2D, boxInd: Tensor1D,
     cropSize: [number, number], method: 'bilinear' | 'nearest',
     extrapolationValue: number): Tensor4D;
 
   cropAndResizeBackpropImage(
-    grad: Tensor4D, image: Tensor4D, boxes: Tensor2D, boxIndex: Tensor1D,
+    grad: Tensor4D, image: Tensor4D, boxes: Tensor2D, boxInd: Tensor1D,
     method: 'bilinear' | 'nearest'): Tensor4D;
 
   cropAndResizeBackpropBoxes(
     grad: Tensor4D, image: Tensor4D, boxes: Tensor2D,
-    boxIndex: Tensor1D): Tensor2D;
+    boxInd: Tensor1D): Tensor2D;
 
   dispose(): void;
 }

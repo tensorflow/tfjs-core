@@ -2225,7 +2225,7 @@ export class MathBackendCPU implements KernelBackend {
       method: string,
       extrapolationValue: number,
   ) {
-    const [batch, oldHeight, oldWidth, numChannels] = images.shape;
+    const [batch, imageHeight, imageWidth, numChannels] = images.shape;
     const numBoxes = boxes.shape[0];
 
     const [cropHeight, cropWidth] = cropSize;
@@ -2236,8 +2236,11 @@ export class MathBackendCPU implements KernelBackend {
     const boxIndVals = boxIndex.dataSync();
     const imageVals = images.dataSync();
 
-    const stride = images.strides;
+    const stride = images.strides; // to calculate flat indexes into imageVals
 
+    // Reference implementation
+    // tslint:disable-next-line:max-line-length
+    // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/crop_and_resize_op.cc
     for (let b = 0; b < numBoxes; b++) {
       const y1 = boxVals[(b * 4)];
       const x1 = boxVals[(b * 4) + 1];
@@ -2245,21 +2248,20 @@ export class MathBackendCPU implements KernelBackend {
       const x2 = boxVals[(b * 4) + 3];
 
       const bInd: number = boxIndVals[b];
-
       if (bInd >= batch) {
         continue;
       }
 
       const heightScale =
-          (cropHeight > 1) ? (y2 - y1) * (oldHeight - 1) / (cropHeight - 1) : 0;
+        (cropHeight > 1) ? (y2 - y1) * (imageHeight - 1) / (cropHeight - 1) : 0;
       const widthScale =
-          (cropWidth > 1) ? (y2 - y1) * (oldWidth - 1) / (cropWidth - 1) : 0;
+        (cropWidth > 1) ? (y2 - y1) * (imageWidth - 1) / (cropWidth - 1) : 0;
 
       for (let y = 0; y < cropHeight; y++) {
         const yInd: number = (cropHeight > 1) ?
-            y1 * (oldHeight - 1) + y * (heightScale) :
-            0.5 * (y1 + y2) * (oldHeight - 1);
-        if (yInd < 0 || yInd > oldHeight - 1) {
+            y1 * (imageHeight - 1) + y * (heightScale) :
+            0.5 * (y1 + y2) * (imageHeight - 1);
+        if (yInd < 0 || yInd > imageHeight - 1) {
           for (let x = 0; x < cropWidth; x++) {
             for (let c = 0; c < numChannels; c++) {
               output.set(extrapolationValue, b, y, x, c);
@@ -2267,16 +2269,18 @@ export class MathBackendCPU implements KernelBackend {
           }
           continue;
         }
+
         if (method === 'bilinear') {
           const topInd = Math.floor(yInd);
           const bottomInd = Math.ceil(yInd);
           const yLerp = yInd - topInd;
 
           for (let x = 0; x < cropWidth; x++) {
+
             const xInd = (cropWidth > 1) ?
-                x1 * (oldWidth - 1) + x * widthScale :
-                0.5 * (x1 + x2) * (oldWidth - 1);
-            if (xInd < 0 || xInd > oldWidth - 1) {
+                x1 * (imageWidth - 1) + x * widthScale :
+                0.5 * (x1 + x2) * (imageWidth - 1);
+            if (xInd < 0 || xInd > imageWidth - 1) {
               for (let c = 0; c < numChannels; c++) {
                 output.set(extrapolationValue, b, y, x, c);
               }
@@ -2312,9 +2316,9 @@ export class MathBackendCPU implements KernelBackend {
         } else {  // method == "nearest"
           for (let x = 0; x < cropWidth; ++x) {
             const xInd = (cropWidth > 1) ?
-                x1 * (oldWidth - 1) + x * widthScale :
-                0.5 * (x1 + x2) * (oldWidth - 1);
-            if (xInd < 0 || xInd > oldWidth - 1) {
+                x1 * (imageWidth - 1) + x * widthScale :
+                0.5 * (x1 + x2) * (imageWidth - 1);
+            if (xInd < 0 || xInd > imageWidth - 1) {
               for (let c = 0; c < numChannels; c++) {
                 output.set(extrapolationValue, b, y, x, c);
               }
@@ -2351,6 +2355,10 @@ export class MathBackendCPU implements KernelBackend {
     const gradVals = grad.dataSync();
 
     const stride = grad.strides;
+
+    // Reference implementation
+    // tslint:disable-next-line:max-line-length
+    // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/crop_and_resize_op.cc
     for (let b = 0; b < numBoxes; b++) {
       const y1 = boxVals[b * 4];
       const x1 = boxVals[b * 4 + 1];
@@ -2362,11 +2370,10 @@ export class MathBackendCPU implements KernelBackend {
         continue;
       }
 
-      const heightScale = (cropHeight > 1) ?
-          (y2 - y1) * (imageHeight - 1) / (cropHeight - 1) :
-          0;
+      const heightScale =
+        (cropHeight > 1) ? (y2 - y1) * (imageHeight - 1) / (cropHeight - 1) : 0;
       const widthScale =
-          (cropWidth > 1) ? (x2 - x1) * (imageWidth - 1) / (cropWidth - 1) : 0;
+        (cropWidth > 1) ? (x2 - x1) * (imageWidth - 1) / (cropWidth - 1) : 0;
 
       for (let y = 0; y < cropHeight; ++y) {
         const yInd = (cropHeight > 1) ?
@@ -2438,6 +2445,9 @@ export class MathBackendCPU implements KernelBackend {
 
     const stride = image.strides;
 
+    // Reference implementation
+    // tslint:disable-next-line:max-line-length
+    // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/crop_and_resize_op.cc
     for (let b = 0; b < numBoxes; b++) {
       const y1 = boxVals[b * 4];
       const x1 = boxVals[b * 4 + 1];

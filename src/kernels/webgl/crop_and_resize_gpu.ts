@@ -32,7 +32,39 @@ export class CropAndResizeProgram implements GPGPUProgram {
     this.outputShape = [numBoxes, cropHeight, cropWidth, depth];
     const methodId = method === 'bilinear' ? 1 : 0;
 
+    const [xHeightFloat, xWidthFloat] =
+    [`${imageHeight - 1}.0`, `${imageWidth - 1}.0`];
+    const [yHeightFloat, yWidthFloat] =
+    [`${cropHeight - 1}.0`, `${cropWidth - 1}.0`];
+    const [heightRatio, heightScale, inY] = cropHeight > 1 ?
+      [
+        `${xHeightFloat}/${yHeightFloat}`,
+        '(y2-y1) * height_ratio',
+        `y1*${xHeightFloat} + float(y)*(height_scale)`,
+      ] :
+      [
+        '0.0',
+        '0.0',
+        `0.5 * (y1+y2) * ${xHeightFloat}`,
+      ];
+    const [widthRatio, widthScale, inX] = cropWidth > 1 ?
+      [
+        `${xWidthFloat}/${yWidthFloat}`,
+        '(x2-x1) * width_ratio',
+        `x1*${xWidthFloat} + float(x)*(width_scale)`,
+      ] :
+      [
+        '0.0',
+        '0.0',
+        `0.5 * (x1+x2) * ${xWidthFloat}`,
+      ];
+
+    // Reference implementation
+    // tslint:disable-next-line:max-line-length
+    // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/crop_and_resize_op_gpu.cu.cc
     this.userCode = `
+      const float height_ratio = ${heightRatio};
+      const float width_ratio = ${widthRatio};
       void main() {
         ivec4 coords = getOutputCoords();
         int b = coords[0];
@@ -52,26 +84,16 @@ export class CropAndResizeProgram implements GPGPUProgram {
           return;
         }
 
-        float height_scale = (${cropHeight} > 1)
-        ? (y2-y1) * ${imageHeight - 1}.0/${cropHeight - 1}.0
-        : 0.0;
-        float width_scale = (${cropWidth} > 1)
-        ? (x2-x1) * ${imageWidth - 1}.0/${cropWidth - 1}.0
-        : 0.0;
+        float height_scale = ${heightScale};
+        float width_scale = ${widthScale};
 
-        float in_y = (${cropHeight} > 1)
-        ? (y1 * ${imageHeight - 1}.0) + float(y)*height_scale
-        : 0.5 * (y1+y2) * ${imageHeight - 1}.0;
-
-        if( in_y < 0.0 || in_y > ${imageHeight - 1}.0 ) {
+        float in_y = ${inY};
+        if( in_y < 0.0 || in_y > ${xHeightFloat} ) {
           setOutput(${extrapolationValue}.0);
           return;
         }
-
-        float in_x = (${cropWidth} > 1)
-          ? (x1 * ${imageWidth - 1}.0) + float(x)*width_scale
-          : 0.5 * (x1+x2) * ${imageWidth - 1}.0;
-        if( in_x < 0.0 || in_x > ${imageWidth - 1}.0 ) {
+        float in_x = ${inX};
+        if( in_x < 0.0 || in_x > ${xWidthFloat} ) {
           setOutput(${extrapolationValue}.0);
           return;
         }

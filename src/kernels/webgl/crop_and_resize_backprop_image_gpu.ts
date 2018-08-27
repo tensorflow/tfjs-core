@@ -26,38 +26,45 @@ export class CropAndResizeBackpropImageProgram implements GPGPUProgram {
       gradShape: [number, number, number, number],
       imageShape: [number, number, number, number],
       method: 'bilinear'|'nearest') {
-    const [batch, imageHeight, imageWidth, depth] = imageShape;
-    const [numBoxes, cropHeight, cropWidth, ] = gradShape;
-    this.outputShape = [batch, imageHeight, imageWidth, depth];
-    if (numBoxes === 0) {
-      this.variableNames = [];
-      this.userCode = 'void main() {setOutput(0);}';
-      return;
-    }
+    const [batch, xHeight, xWidth, depth] = imageShape;
+    const [numBoxes, yHeight, yWidth, ] = gradShape;
+    this.outputShape = [batch, xHeight, xWidth, depth];
     const methodId = method === 'bilinear' ? 1 : 0;
-    /*
-    const heightScale = (cropHeight > 1) ?
-    (imageHeight - 1) / (cropHeight - 1) : 0;
-    const widthScale = (cropWidth > 1) ?
-    (imageWidth - 1) / (cropWidth - 1) : 0;
-    */
 
     const [xHeightFloat, xWidthFloat] =
-    [`${imageHeight - 1}.0`, `${imageWidth - 1}.0`];
+    [`${xHeight - 1}.0`, `${xWidth - 1}.0`];
     const [yHeightFloat, yWidthFloat] =
-    [`${cropHeight - 1}.0`, `${cropWidth - 1}.0`];
-    /*
-        const heightScale = (cropHeight > 1)
-        ? (imageHeight - 1) / (cropHeight - 1) : 0;
-        const invHeightScale =
-            (cropHeight > 1) ? (cropHeight - 1) / (imageHeight - 1) : 0;
-        const widthScale = (cropWidth > 1) ? (imageWidth - 1) / (cropWidth - 1)
-        : 0; const invWidthScale = (cropWidth > 1) ? (cropWidth - 1) /
-        (imageWidth - 1) : 0; const winHeight = (Math.ceil(invHeightScale) * 2)
-        + 2; const winWidth = (Math.ceil(invWidthScale) * 2) + 2;
-        */
+    [`${yHeight - 1}.0`, `${yWidth - 1}.0`];
+    const [heightRatio, heightScale, inY] = yHeight > 1 ?
+      [
+        `${xHeightFloat}/${yHeightFloat}`,
+        '(y2-y1) * height_ratio',
+        `y1*${xHeightFloat} + float(dyR)*(height_scale)`,
+      ] :
+      [
+        '0.0',
+        '0.0',
+        `0.5 * (y1+y2) * ${xHeightFloat}`,
+      ];
+    const [widthRatio, widthScale, inX] = yWidth > 1 ?
+      [
+        `${xWidthFloat}/${yWidthFloat}`,
+        '(x2-x1) * width_ratio',
+        `x1*${xWidthFloat} + float(dyC)*(width_scale)`,
+      ] :
+      [
+        '0.0',
+        '0.0',
+        `0.5 * (x1+x2) * ${xWidthFloat}`,
+      ];
 
-    this.userCode = `void main() {
+    // Reference implementation
+    // tslint:disable-next-line:max-line-length
+    // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/crop_and_resize_op_gpu.cu.cc
+    this.userCode = `
+    const float height_ratio = ${heightRatio};
+    const float width_ratio = ${widthRatio};
+    void main() {
       ivec4 coords = getOutputCoords();
       int batch = coords[0];
       int y = coords[1];
@@ -77,27 +84,17 @@ export class CropAndResizeBackpropImageProgram implements GPGPUProgram {
         float y2 = getBoxes(b,2);
         float x2 = getBoxes(b,3);
 
-        float height_scale = (${cropHeight} > 1)
-        ? (y2-y1) * ${xHeightFloat}/${yHeightFloat}
-        : 0.0;
-        float width_scale = (${cropWidth} > 1)
-        ? (y2-y1) * ${xWidthFloat}/${yWidthFloat}
-        : 0.0;
+        float height_scale = ${heightScale};
+        float width_scale = ${widthScale};
 
         // Loop over dy
-        for (int dyR = 0; dyR < ${cropHeight}; dyR++) {
-          float in_y = ${cropHeight > 1}
-          ? y1*${xHeightFloat} + float(dyR)*(height_scale)
-          : 0.5 * (y1+y2) * ${xHeightFloat};
-
+        for (int dyR = 0; dyR < ${yHeight}; dyR++) {
+          float in_y = ${inY};
           if( in_y < 0.0 || in_y > ${xHeightFloat} ) {
             continue;
           }
-
-          for (int dyC = 0; dyC < ${cropWidth}; dyC++) {
-            float in_x = ${cropWidth > 1}
-            ? x1*${xWidthFloat} + float(dyC)*(width_scale)
-            : 0.5 * (x1+x2) * ${xWidthFloat};
+          for (int dyC = 0; dyC < ${yWidth}; dyC++) {
+            float in_x = ${inX};
             if( in_x < 0.0 || in_x > ${xWidthFloat} ) {
               continue;
             }

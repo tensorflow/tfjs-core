@@ -19,6 +19,7 @@ import {ForwardFunc} from '../engine';
 import {ENV} from '../environment';
 import {nonMaxSuppressionImpl} from '../kernels/non_max_suppression_impl';
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
+import {tensor2d,zeros} from '../index';
 import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import * as util from '../util';
@@ -228,6 +229,28 @@ function nonMaxSuppSanityCheck(
   return {maxOutputSize, iouThreshold, scoreThreshold};
 }
 
+/**
+ * Extracts crops from the input image tensor and resizes them using bilinear
+ * sampling or nearest neighbor sampling (possibl with aspect ratio change)
+ * to a common output size specified by crop_size;
+ *
+ * @param image 4d tensor of shape `[batch,imageHeight,imageWidth, depth]`.
+ *     where image_height and image_width must be positive, specifying the
+ *     batch of images from which to take crops
+ * @param boxes 2d float32 tensor of shape `[numBoxes, 4]`. Each entry is
+ *     `[y1, x1, y2, x2]`, where `(y1, x1)` and `(y2, x2)` are the normalized
+ *     coordinates of the box in the boxInd[i]'th image in the batch
+ * @param boxInd 1d int32 tensor of shape `[numBoxes]` with values in range
+ *     `[0, batch)` that specifies the image that the `i`-th box refers to.
+ * @param cropSize 1d int32 tensor of 2 elements `[cropHeigh, cropWidth]`
+ *     specifying the size to which all crops are resized to.
+ * @param method Optional string from `'bilinear' | 'nearest'`,
+ *     defaults to bilinear, which specifies the sampling method for resizing
+ * @param extrapolationValue A threshold for deciding when to remove boxes based
+ *     on score. Defaults to -inf, which means any score is accepted.
+ * @return A 4D tensor of the shape `[numBoxes,cropHeight,cropWidth,depth]`
+ */
+/** @doc {heading: 'Operations', subheading: 'Images', namespace: 'image'} */
 function cropAndResize_(
     image: Tensor4D|TensorLike,
     boxes: Tensor2D|TensorLike,
@@ -243,26 +266,6 @@ function cropAndResize_(
   extrapolationValue = extrapolationValue || 0;
 
   const numBoxes = $boxes.shape[0];
-  /*
-  if (numBoxes === 0) {
-    const forward: ForwardFunc<Tensor4D> = (backend) => convertToTensor([],)
-    const backwardBilinear = (dy: Tensor4D, saved: Tensor[]) => {
-      return {
-        $image: () => ENV.engine.runKernel(
-            backend => backend.cropAndResizeBackpropImage(
-                dy, $image, $boxes, $boxInd, method),
-            {}),
-        $boxes: () => ENV.engine.runKernel(
-            backend =>
-                backend.cropAndResizeBackpropBoxes(dy, $image, $boxes, $boxInd),
-            {})
-      };
-    };
-
-    const res = ENV.engine.runKernel(() => {return })
-  }
-  */
-
   util.assert(
       $image.rank === 4,
       `Error in cropAndResize: image must be rank 4, but got ` +
@@ -294,11 +297,15 @@ function cropAndResize_(
   // but approximate with gradient derived from bilinear sampling
   const backwardBilinear = (dy: Tensor4D, saved: Tensor[]) => {
     return {
-      $image: () => ENV.engine.runKernel(
+      $image: () => numBoxes === 0
+          ? zeros($image.shape,$image.dtype) as Tensor4D
+          : ENV.engine.runKernel(
           backend => backend.cropAndResizeBackpropImage(
               dy, $image, $boxes, $boxInd, method),
           {}),
-      $boxes: () => ENV.engine.runKernel(
+      $boxes: () => numBoxes === 0
+          ? tensor2d([],$boxes.shape)
+          : ENV.engine.runKernel(
           backend =>
               backend.cropAndResizeBackpropBoxes(dy, $image, $boxes, $boxInd),
           {})

@@ -28,45 +28,44 @@ export class CropAndResizeBackpropBoxesProgram implements GPGPUProgram {
     const [batch, xHeight, xWidth, depth] = imageShape;
     const [numBoxes, yHeight, yWidth, , ] = gradShape;
     this.outputShape = [numBoxes, 4];
-    if (numBoxes === 0) {
-      this.variableNames = [];
-      this.userCode = 'void main() {setOutput(0);}';
-      return;
-    }
 
     const [xHeightFloat, yHeightFloat] =
-        [`${xHeight - 1}.0`, `${yHeight - 1}.0`];
+      [`${xHeight - 1}.0`, `${yHeight - 1}.0`];
     const [xWidthFloat, yWidthFloat] = [`${xWidth - 1}.0`, `${yWidth - 1}.0`];
     const [heightRatio, heightScale, inY, dy1, dy2] = yHeight > 1 ?
-        [
-          `${xHeightFloat}/${yHeightFloat}`,
-          '(y2-y1) * height_scale',
-          `y1*${xHeightFloat} + float(dyR)*(height_scale)`,
-          `image_grad_y * (${xHeightFloat} - float(y)*height_ratio)`,
-          'image_grad_y * float(y) * height_ratio',
-        ] :
-        [
-          '0.0',
-          '0.0',
-          `0.5 * (y1+y2) * ${xHeightFloat}`,
-          `image_grad_y * 0.5 * ${xHeightFloat}`,
-          `image_grad_y * 0.5 * ${xHeightFloat}`,
-        ];
+      [
+        `${xHeightFloat}/${yHeightFloat}`,
+        '(y2-y1) * height_ratio',
+        `y1*${xHeightFloat} + float(dyR)*(height_scale)`,
+        `image_grad_y * (${xHeightFloat} - float(y)*height_ratio)`,
+        'image_grad_y * float(y) * height_ratio',
+      ] :
+      [
+        '0.0',
+        '0.0',
+        `0.5 * (y1+y2) * ${xHeightFloat}`,
+        `image_grad_y * 0.5 * ${xHeightFloat}`,
+        `image_grad_y * 0.5 * ${xHeightFloat}`,
+      ];
     const [widthRatio, widthScale, inX, dx1, dx2] = yWidth > 1 ?
-        [
-          `${xWidthFloat}/${yWidthFloat}`, '(x2-x1) * width_scale',
-          `x1*${xWidthFloat} + float(dyC)*(width_scale)`,
-          `image_grad_x * (${xWidthFloat} - float(x)*width_ratio)`,
-          'image_grad_x * float(x) * width_ratio'
-        ] :
-        [
-          '0.0',
-          '0.0',
-          `0.5 * (x1+x2) * ${xWidthFloat}`,
-          `image_grad_x * 0.5 * ${xWidthFloat}`,
-          `image_grad_x * 0.5 * ${xWidthFloat}`,
-        ];
+      [
+        `${xWidthFloat}/${yWidthFloat}`,
+        '(x2-x1) * width_ratio',
+        `x1*${xWidthFloat} + float(dyC)*(width_scale)`,
+        `image_grad_x * (${xWidthFloat} - float(x)*width_ratio)`,
+        'image_grad_x * float(x) * width_ratio'
+      ] :
+      [
+        '0.0',
+        '0.0',
+        `0.5 * (x1+x2) * ${xWidthFloat}`,
+        `image_grad_x * 0.5 * ${xWidthFloat}`,
+        `image_grad_x * 0.5 * ${xWidthFloat}`,
+      ];
 
+    // Reference implementation
+    // tslint:disable-next-line:max-line-length
+    // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/crop_and_resize_op_gpu.cu.cc
     this.userCode = `
     const float height_ratio = ${heightRatio};
     const float width_ratio = ${widthRatio};
