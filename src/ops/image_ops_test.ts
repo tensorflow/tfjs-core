@@ -16,7 +16,7 @@
  */
 import * as tf from '../index';
 import { describeWithFlags } from '../jasmine_util';
-import { ALL_ENVS, expectArraysEqual } from '../test_util';
+import { ALL_ENVS, expectArraysEqual, expectArraysClose } from '../test_util';
 
 describeWithFlags('nonMaxSuppression', ALL_ENVS, () => {
   it('select from three clusters', () => {
@@ -225,7 +225,7 @@ describeWithFlags('cropAndResize', ALL_ENVS, () => {
     const output = tf.image.cropAndResize(image,boxes,boxInd,
                                           [1,1],'bilinear',0);
     expect(output.shape).toEqual([1,1,1,1]);
-    expectArraysEqual(output,[2.5]);
+    expectArraysClose(output,[2.5]);
   });
   it('1x1-nearest', () => {
     const image:tf.Tensor4D = tf.tensor4d([1,2,3,4],[1,2,2,1]);
@@ -235,7 +235,7 @@ describeWithFlags('cropAndResize', ALL_ENVS, () => {
     const output = tf.image.cropAndResize(image,boxes,boxInd,
                                           [1,1],'nearest',0);
     expect(output.shape).toEqual([1,1,1,1]);
-    expectArraysEqual(output,[4.0]);
+    expectArraysClose(output,[4.0]);
   });
   it('1x1Flipped-bilinear', () => {
     const image:tf.Tensor4D = tf.tensor4d([1,2,3,4],[1,2,2,1]);
@@ -245,7 +245,7 @@ describeWithFlags('cropAndResize', ALL_ENVS, () => {
     const output = tf.image.cropAndResize(image,boxes,boxInd,
                                           [1,1],'bilinear',0);
     expect(output.shape).toEqual([1,1,1,1]);
-    expectArraysEqual(output,[2.5]);
+    expectArraysClose(output,[2.5]);
   });
   it('1x1Flipped-nearest', () => {
     const image:tf.Tensor4D = tf.tensor4d([1,2,3,4],[1,2,2,1]);
@@ -255,7 +255,7 @@ describeWithFlags('cropAndResize', ALL_ENVS, () => {
     const output = tf.image.cropAndResize(image,boxes,boxInd,
                                           [1,1],'nearest',0);
     expect(output.shape).toEqual([1,1,1,1]);
-    expectArraysEqual(output,[4.0]);
+    expectArraysClose(output,[4.0]);
   });
   it('3x3-bilinear', () => {
     const image:tf.Tensor4D = tf.tensor4d([1,2,3,4],[1,2,2,1]);
@@ -265,7 +265,7 @@ describeWithFlags('cropAndResize', ALL_ENVS, () => {
     const output = tf.image.cropAndResize(image,boxes,boxInd,
                                           [3,3],'bilinear',0);
     expect(output.shape).toEqual([1,3,3,1]);
-    expectArraysEqual(output,[1,1.5,2,2,2.5,3,3,3.5,4]);
+    expectArraysClose(output,[1,1.5,2,2,2.5,3,3,3.5,4]);
   });
   it('3x3-nearest', () => {
     const image:tf.Tensor4D = tf.tensor4d([1,2,3,4],[1,2,2,1]);
@@ -275,7 +275,7 @@ describeWithFlags('cropAndResize', ALL_ENVS, () => {
     const output = tf.image.cropAndResize(image,boxes,boxInd,
                                           [3,3],'nearest',0);
     expect(output.shape).toEqual([1,3,3,1]);
-    expectArraysEqual(output,[1,2,2,3,4,4,3,4,4]);
+    expectArraysClose(output,[1,2,2,3,4,4,3,4,4]);
   });
   it('3x3Flipped-bilinear', () => {
     const image:tf.Tensor4D = tf.tensor4d([1,2,3,4],[1,2,2,1]);
@@ -285,7 +285,7 @@ describeWithFlags('cropAndResize', ALL_ENVS, () => {
     const output = tf.image.cropAndResize(image,boxes,boxInd,
                                           [3,3],'bilinear',0);
     expect(output.shape).toEqual([1,3,3,1]);
-    expectArraysEqual(output,[4,3.5,3,3,2.5,2,2,1.5,1]);
+    expectArraysClose(output,[4,3.5,3,3,2.5,2,2,1.5,1]);
   });
   it('3x3Flipped-nearest', () => {
     const image:tf.Tensor4D = tf.tensor4d([1,2,3,4],[1,2,2,1]);
@@ -295,7 +295,7 @@ describeWithFlags('cropAndResize', ALL_ENVS, () => {
     const output = tf.image.cropAndResize(image,boxes,boxInd,
                                           [3,3],'nearest',0);
     expect(output.shape).toEqual([1,3,3,1]);
-    expectArraysEqual(output,[4,4,3,4,4,3,2,2,1]);
+    expectArraysClose(output,[4,4,3,4,4,3,2,2,1]);
   });
   it('3x3to2x2-bilinear', () => {
     const image:tf.Tensor4D = tf.tensor4d([1,2,3,4,5,6,7,8,9],[1,3,3,1]);
@@ -305,7 +305,7 @@ describeWithFlags('cropAndResize', ALL_ENVS, () => {
     const output = tf.image.cropAndResize(image,boxes,boxInd,
                                           [2,2],'bilinear',0);
     expect(output.shape).toEqual([2,2,2,1]);
-    expectArraysEqual(output,[1,3,7,9,1,2,4,5]);
+    expectArraysClose(output,[1,3,7,9,1,2,4,5]);
   });
   it('3x3to2x2-nearest', () => {
     const image:tf.Tensor4D = tf.tensor4d([1,2,3,4,5,6,7,8,9],[1,3,3,1]);
@@ -315,7 +315,7 @@ describeWithFlags('cropAndResize', ALL_ENVS, () => {
     const output = tf.image.cropAndResize(image,boxes,boxInd,
                                           [2,2],'nearest',0);
     expect(output.shape).toEqual([2,2,2,1]);
-    expectArraysEqual(output,[1,3,7,9,1,2,4,5]);
+    expectArraysClose(output,[1,3,7,9,1,2,4,5]);
   });
   it('3x3to2x2Flipped-bilinear', () => {
     const image:tf.Tensor4D = tf.tensor4d([1,2,3,4,5,6,7,8,9],[1,3,3,1]);
@@ -325,7 +325,7 @@ describeWithFlags('cropAndResize', ALL_ENVS, () => {
     const output = tf.image.cropAndResize(image,boxes,boxInd,
                                           [2,2],'bilinear',0);
     expect(output.shape).toEqual([2,2,2,1]);
-    expectArraysEqual(output,[9,7,3,1,5,4,2,1]);
+    expectArraysClose(output,[9,7,3,1,5,4,2,1]);
   });
   it('3x3to2x2Flipped-nearest', () => {
     const image:tf.Tensor4D = tf.tensor4d([1,2,3,4,5,6,7,8,9],[1,3,3,1]);
@@ -335,7 +335,7 @@ describeWithFlags('cropAndResize', ALL_ENVS, () => {
     const output = tf.image.cropAndResize(image,boxes,boxInd,
                                           [2,2],'nearest',0);
     expect(output.shape).toEqual([2,2,2,1]);
-    expectArraysEqual(output,[9,7,3,1,5,4,2,1]);
+    expectArraysClose(output,[9,7,3,1,5,4,2,1]);
   });
   it('2x2to3x3-Extrapolated', () => {
     const val = -1.0;
@@ -346,7 +346,7 @@ describeWithFlags('cropAndResize', ALL_ENVS, () => {
     const output = tf.image.cropAndResize(image,boxes,boxInd,
                                           [3,3],'bilinear',val);
     expect(output.shape).toEqual([1,3,3,1]);
-    expectArraysEqual(output,[val,val,val,val,1,2,val,3,4]);
+    expectArraysClose(output,[val,val,val,val,1,2,val,3,4]);
   });
   it('2x2to3x3-NoCrop', () => {
     const val = -1.0;
@@ -360,6 +360,6 @@ describeWithFlags('cropAndResize', ALL_ENVS, () => {
 
     // test forward pass
     expect(output.shape).toEqual([0,3,3,1]);
-    expectArraysEqual(output,[]);
+    expectArraysClose(output,[]);
   });
 });
