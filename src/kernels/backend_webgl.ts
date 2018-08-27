@@ -551,7 +551,6 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   gather<T extends Tensor>(x: T, indices: Tensor1D, axis: number): T {
-    console.log(indices.shape)
     const program = new GatherProgram(x.shape, indices.size, axis);
     return this.compileAndRun(program, [x, indices]);
   }
@@ -1231,7 +1230,9 @@ export class MathBackendWebGL implements KernelBackend {
       method: 'bilinear'|'nearest'): Tensor4D {
     const program =
         new CropAndResizeBackpropImageProgram(grad.shape, image.shape, method);
-    return this.compileAndRun(program, [grad, boxes, boxIndex]);
+    return grad.shape[0] === 0 ?
+        this.compileAndRun(program, [grad, boxes, boxIndex]) :
+        this.compileAndRun(program, []);
   }
   cropAndResizeBackpropBoxes(
       grad: Tensor4D,
@@ -1241,7 +1242,9 @@ export class MathBackendWebGL implements KernelBackend {
       ): Tensor2D {
     const program =
         new CropAndResizeBackpropBoxesProgram(grad.shape, image.shape);
-    return this.compileAndRun(program, [grad, image, boxes, boxIndex]);
+    return grad.shape[0] === 0 ?
+        this.compileAndRun(program, [grad, image, boxes, boxIndex]) :
+        this.compileAndRun(program, []);
   }
 
   multinomial(

@@ -362,6 +362,21 @@ describeWithFlags('cropAndResize', ALL_ENVS, () => {
     expectArraysEqual(output,[]);
   });
 });
+describeWithFlags('testingavi', ALL_ENVS, () => {
+  it('1x1-bilinear', () => {
+    const image:tf.Tensor4D = tf.tensor4d([1,2,3,4],[1,2,2,1]);
+    const boxes:tf.Tensor2D = tf.tensor2d([0,0,1,1],[1,4]);
+    const boxInd:tf.Tensor1D = tf.tensor1d([0]);
+    const [imageGrad,boxesGrad] = tf.grads((i:tf.Tensor4D,b:tf.Tensor2D) =>
+      (tf.image.cropAndResize(i,b,boxInd,[1,1],'bilinear',0)))([image,boxes]);
+    expect(imageGrad.shape).toEqual(image.shape);
+    expect(boxesGrad.shape).toEqual(boxes.shape);
+    console.log(imageGrad.dataSync())
+    console.log(boxesGrad.dataSync())
+    expectArraysEqual(imageGrad,[0.25,0.25,0.25,0.25]);
+    expectArraysEqual(boxesGrad,[1,0.5,1,0.5]);
+  });
+});
 describeWithFlags('cropAndResizeGradients', CPU_ENVS, () => {
   it('1x1-bilinear', () => {
     const image:tf.Tensor4D = tf.tensor4d([1,2,3,4],[1,2,2,1]);
@@ -415,8 +430,6 @@ describeWithFlags('cropAndResizeGradients', CPU_ENVS, () => {
       (tf.image.cropAndResize(i,b,boxInd,[3,3],'bilinear',0)))([image,boxes]);
     expect(imageGrad.shape).toEqual(image.shape);
     expect(boxesGrad.shape).toEqual(boxes.shape);
-    console.log(imageGrad.dataSync());
-    console.log(boxesGrad.dataSync());
     expect(boxesGrad.shape).toEqual(boxes.shape);
     expectArraysEqual(imageGrad,[2.25,2.25,2.25,2.25]);
     expectArraysEqual(boxesGrad,[3,1.5,3,1.5]);
@@ -504,7 +517,7 @@ describeWithFlags('cropAndResizeGradients', CPU_ENVS, () => {
     const boxes:tf.Tensor2D = tf.tensor2d([-1,-1,1,1],[1,4]);
     const boxInd:tf.Tensor1D = tf.tensor1d([0]);
     const [imageGrad,boxesGrad] = tf.grads((i:tf.Tensor4D,b:tf.Tensor2D) =>
-      (tf.image.cropAndResize(i,b,boxInd,[2,2],'bilinear',val)))([image,boxes]);
+      (tf.image.cropAndResize(i,b,boxInd,[3,3],'bilinear',val)))([image,boxes]);
     expect(imageGrad.shape).toEqual(image.shape);
     expect(boxesGrad.shape).toEqual(boxes.shape);
     expectArraysEqual(imageGrad,[1,1,1,1]);
@@ -516,10 +529,10 @@ describeWithFlags('cropAndResizeGradients', CPU_ENVS, () => {
     const boxes:tf.Tensor2D = tf.tensor2d([-1,-1,1,1],[1,4]);
     const boxInd:tf.Tensor1D = tf.tensor1d([0]);
     const [imageGrad,boxesGrad] = tf.grads((i:tf.Tensor4D,b:tf.Tensor2D) =>
-      (tf.image.cropAndResize(i,b,boxInd,[2,2],'nearest',val)))([image,boxes]);
+      (tf.image.cropAndResize(i,b,boxInd,[3,3],'nearest',val)))([image,boxes]);
     expect(imageGrad.shape).toEqual(image.shape);
     expect(boxesGrad.shape).toEqual(boxes.shape);
-    expectArraysEqual(imageGrad,[1,0,0,0]);
+    expectArraysEqual(imageGrad,[1,1,1,1]);
     expectArraysEqual(boxesGrad,[0,0,0,0]);
   });
   it('2x2to3x3-NoCrop', () => {

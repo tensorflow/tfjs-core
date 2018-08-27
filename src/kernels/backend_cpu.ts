@@ -2346,17 +2346,13 @@ export class MathBackendCPU implements KernelBackend {
     const [numBoxes, cropHeight, cropWidth, ] = grad.shape;
 
     const output = ops.buffer<Rank.R4>(image.shape);
+    console.log(output.values)
     const boxVals = boxes.dataSync();
     const boxIndVals = boxIndex.dataSync();
     const gradVals = grad.dataSync();
 
-    const stride = image.strides;
-    let curInd = 0;
+    const stride = grad.strides;
     for (let b = 0; b < numBoxes; b++) {
-      if (b > 0) {
-        curInd += stride[0];
-      }
-
       const y1 = boxVals[b * 4];
       const x1 = boxVals[b * 4 + 1];
       const y2 = boxVals[b * 4 + 2];
@@ -2374,10 +2370,6 @@ export class MathBackendCPU implements KernelBackend {
           (cropWidth > 1) ? (x2 - x1) * (imageWidth - 1) / (cropWidth - 1) : 0;
 
       for (let y = 0; y < cropHeight; ++y) {
-        if (y > 0) {
-          curInd += stride[1];
-        }
-
         const yInd = (cropHeight > 1) ?
             y1 * (imageHeight - 1) + y * heightScale :
             0.5 * (y1 + y2) * (imageHeight - 1);
@@ -2389,10 +2381,6 @@ export class MathBackendCPU implements KernelBackend {
         const yLerp = yInd - topInd;
 
         for (let x = 0; x < cropWidth; ++x) {
-          if (x > 0) {
-            curInd += stride[2];
-          }
-
           const xInd = (cropWidth > 1) ?
               x1 * (imageWidth - 1) + x * widthScale :
               0.5 * (x1 + x2) * (imageWidth - 1);
@@ -2404,13 +2392,11 @@ export class MathBackendCPU implements KernelBackend {
             const rightInd = Math.ceil(xInd);
             const xLerp = xInd - leftInd;
 
-            console.log('coords')
-            console.log(yInd)
-            console.log(xInd)
 
             for (let c = 0; c < numChannels; c++) {
-              const dtop = (1 - yLerp) * gradVals[curInd + c];
-              const dbottom = yLerp * gradVals[curInd + c];
+              const gradInd = c + x * stride[2] + y * stride[1] + b * stride[0];
+              const dtop = (1 - yLerp) * gradVals[gradInd];
+              const dbottom = yLerp * gradVals[gradInd];
 
               let out = output.get(bInd, topInd, leftInd, c);
               output.set(out + (1 - xLerp) * dtop, bInd, topInd, leftInd, c);
@@ -2431,8 +2417,8 @@ export class MathBackendCPU implements KernelBackend {
               const closestY = Math.round(yInd);
 
               const out = output.get(bInd, closestY, closestX, c);
-              output.set(
-                  out + gradVals[curInd + c], bInd, closestY, closestX, c);
+              const gradInd = c + x * stride[2] + y * stride[1] + b * stride[0];
+              output.set(out + gradVals[gradInd], bInd, closestY, closestX, c);
             }
           }
         }
@@ -2453,13 +2439,8 @@ export class MathBackendCPU implements KernelBackend {
     const gradVals = grad.dataSync();
 
     const stride = image.strides;
-    let curInd = 0;
 
     for (let b = 0; b < numBoxes; b++) {
-      if (b > 0) {
-        curInd += stride[0];
-      }
-
       const y1 = boxVals[b * 4];
       const x1 = boxVals[b * 4 + 1];
       const y2 = boxVals[b * 4 + 2];
@@ -2478,10 +2459,6 @@ export class MathBackendCPU implements KernelBackend {
       const widthScale = (cropWidth > 1) ? (x2 - x1) * widthRatio : 0;
 
       for (let y = 0; y < cropHeight; ++y) {
-        if (y > 0) {
-          curInd += stride[1];
-        }
-
         const yInd = (cropHeight > 1) ?
             y1 * (imageHeight - 1) + y * heightScale :
             0.5 * (y1 + y2) * (imageHeight - 1);
@@ -2493,10 +2470,6 @@ export class MathBackendCPU implements KernelBackend {
         const yLerp = yInd - topInd;
 
         for (let x = 0; x < cropWidth; ++x) {
-          if (x > 0) {
-            curInd += stride[2];
-          }
-
           const xInd = (cropWidth > 1) ?
               x1 * (imageWidth - 1) + x * widthScale :
               0.5 * (x1 + x2) * (imageWidth - 1);
@@ -2528,27 +2501,36 @@ export class MathBackendCPU implements KernelBackend {
                 xLerp * (bottomRight - topRight);
             let imageGradX = (1 - yLerp) * (topRight - topLeft) +
                 yLerp * (bottomRight - bottomLeft);
-            const topGrad = gradVals[curInd + c];
+            const gradInd = c + x * grad.strides[2] + y * grad.strides[1] +
+                b * grad.strides[0];
+            const topGrad = gradVals[gradInd];
             imageGradY *= topGrad;
             imageGradX *= topGrad;
 
             // dy1, dy2
+            const dy1 = output.get(b, 0)
+            const dy2 = output.get(b, 2)
             if (cropHeight > 1) {
               output.set(
-                  imageGradY * (imageHeight - 1 - y * heightRatio), b, 0);
-              output.set(imageGradY * (y * heightRatio), b, 2);
-            } else {
-              output.set(imageGradY * 0.5 * (imageHeight - 1), b, 0);
-              output.set(imageGradY * 0.5 * (imageHeight - 1), b, 2);
+                  dy1 + imageGradY * (imageHeight - 1 - y * heightRatio), b, 0);
+              output.set(dy2 + imageGradY * (y * heightRatio), b, 2);
+            }
+            else {
+              output.set(dy1 + imageGradY * 0.5 * (imageHeight - 1), b, 0);
+              output.set(dy2 + imageGradY * 0.5 * (imageHeight - 1), b, 2);
             }
 
             // dx1, dx2
+            const dx1 = output.get(b, 1)
+            const dx2 = output.get(b, 3)
             if (cropWidth > 1) {
-              output.set(imageGradX * (imageWidth - 1 - x * widthRatio), b, 1);
-              output.set(imageGradX * (y * widthRatio), b, 3);
-            } else {
-              output.set(imageGradX * 0.5 * (imageWidth - 1), b, 1);
-              output.set(imageGradX * 0.5 * (imageWidth - 1), b, 3);
+              output.set(
+                  dx1 + imageGradX * (imageWidth - 1 - x * widthRatio), b, 1);
+              output.set(dx2 + imageGradX * (y * widthRatio), b, 3);
+            }
+            else {
+              output.set(dx1 + imageGradX * 0.5 * (imageWidth - 1), b, 1);
+              output.set(dx2 + imageGradX * 0.5 * (imageWidth - 1), b, 3);
             }
           }
         }

@@ -28,6 +28,11 @@ export class CropAndResizeBackpropBoxesProgram implements GPGPUProgram {
     const [batch, xHeight, xWidth, depth] = imageShape;
     const [numBoxes, yHeight, yWidth, , ] = gradShape;
     this.outputShape = [numBoxes, 4];
+    if (numBoxes === 0) {
+      this.variableNames = [];
+      this.userCode = 'void main() {setOutput(0);}'
+      return;
+    }
 
     const [xHeightFloat, yHeightFloat] =
         [`${xHeight - 1}.0`, `${yHeight - 1}.0`];
@@ -63,8 +68,8 @@ export class CropAndResizeBackpropBoxesProgram implements GPGPUProgram {
         ];
 
     this.userCode = `
-    const float height_ratio = ${heightRatio}
-    const float width_ratio = ${widthRatio}
+    const float height_ratio = ${heightRatio};
+    const float width_ratio = ${widthRatio};
     void main() {
       ivec2 coords = getOutputCoords();
       int b = coords[0];
@@ -90,49 +95,49 @@ export class CropAndResizeBackpropBoxesProgram implements GPGPUProgram {
       // Loop over dy
       for (int dyR = 0; dyR < ${yHeight}; dyR++) {
         float in_y = ${inY};
-        if( in_y < 0 || in_y > ${xHeightFloat} ) {
+        if( in_y < 0.0 || in_y > ${xHeightFloat} ) {
           continue;
         }
         for (int dyC = 0; dyC < ${yWidth}; dyC++) {
           float in_x = ${inX};
-          if( in_x < 0 || in_x > ${xWidthFloat} ) {
+          if( in_x < 0.0 || in_x > ${xWidthFloat} ) {
             continue;
           }
 
           // Fractional source index.
-          vec2 sourceFracIndexRC = vec2(in_y,in_x)
+          vec2 sourceFracIndexRC = vec2(in_y,in_x);
           ivec2 sourceFloorRC = ivec2(sourceFracIndexRC);
           ivec2 sourceCeilRC = ivec2(ceil(sourceFracIndexRC));
           vec2 fracRC = sourceFracIndexRC - vec2(sourceFloorRC);
 
-          for (int dyD = 0; dyD < ${depth}; dyC++) {
-            float topLeft = getA(b, sourceFloorRC.x, sourceFloorRC.y, dyD);
-            float bottomLeft = getA(b, sourceCeilRC.x, sourceFloorRC.y, dyD);
-            float topRight = getA(b, sourceFloorRC.x, sourceCeilRC.y, dyD);
-            float bottomRight = getA(b, sourceCeilRC.x, sourceCeilRC.y, dyD);
+          for (int dyD = 0; dyD < ${depth}; dyD++) {
+            float topLeft = getImage(b, sourceFloorRC.x, sourceFloorRC.y, dyD);
+            float bottomLeft = getImage(b, sourceCeilRC.x, sourceFloorRC.y, dyD);
+            float topRight = getImage(b, sourceFloorRC.x, sourceCeilRC.y, dyD);
+            float bottomRight = getImage(b, sourceCeilRC.x, sourceCeilRC.y, dyD);
 
             // Compute the image gradient.
-            float image_grad_y = (1 - fracRC[1]) * (bottomLeft - topLeft) +
+            float image_grad_y = (1.0 - fracRC[1]) * (bottomLeft - topLeft) +
                                  fracRC[1] * (bottomRight - topRight);
-            float image_grad_x = (1 - fracRC[0]) * (topRight - topLeft) +
+            float image_grad_x = (1.0 - fracRC[0]) * (topRight - topLeft) +
                                  fracRC[0] * (bottomRight - bottomLeft);
 
             // Modulate the image gradient with the incoming gradient.
-            float top_grad = getdy(bInd,dyR,dyC,dyD);
+            float top_grad = getDy(bInd,dyR,dyC,dyD);
             image_grad_y *= top_grad;
             image_grad_x *= top_grad;
 
             if(r == 0) {
-              accumulator += ${dy1}
+              accumulator += ${dy1};
             }
             else if(r == 1) {
-              accumulator += ${dx1}
+              accumulator += ${dx1};
             }
             else if(r == 2) {
-              accumulator += ${dy2}
+              accumulator += ${dy2};
             }
             else{
-              accumulator += ${dx2}
+              accumulator += ${dx2};
             }
           }
         }

@@ -29,13 +29,13 @@ export class CropAndResizeBackpropImageProgram implements GPGPUProgram {
     const [batch, imageHeight, imageWidth, depth] = imageShape;
     const [numBoxes, cropHeight, cropWidth, ] = gradShape;
     this.outputShape = [batch, imageHeight, imageWidth, depth];
+    if (numBoxes === 0) {
+      this.variableNames = [];
+      this.userCode = 'void main() {setOutput(0);}'
+      return;
+    }
     const methodId = method === 'bilinear' ? 1 : 0;
-    console
-        .log(numBoxes, methodId, cropHeight, cropWidth)
-
-        // This defines the size of the window of values around a particular
-        // index in dy that we want to search for contributions to dx.
-        /*
+    /*
         const heightScale =
             (cropHeight > 1) ? (imageHeight - 1) / (cropHeight - 1) : 0;
         const invHeightScale =
@@ -46,13 +46,7 @@ export class CropAndResizeBackpropImageProgram implements GPGPUProgram {
         + 2; const winWidth = (Math.ceil(invWidthScale) * 2) + 2;
         */
 
-        this.userCode = `void main() {
-          setOutput(0.0);
-        }`;
-  }
-}
-/*
-    void main() {
+    this.userCode = `void main() {
       ivec4 coords = getOutputCoords();
       int b = coords[0];
       int y = coords[1];
@@ -169,4 +163,8 @@ export class CropAndResizeBackpropImageProgram implements GPGPUProgram {
       setOutput(accumulator);
     }
   `;
+  }
+}
+/*
+    void main() {
 */
