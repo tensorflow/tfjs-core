@@ -490,7 +490,7 @@ export class MathBackendWebGL implements KernelBackend {
     const program = new MatMulProgram(packedA.shape, packedB.shape, transposeA, transposeB);
     const result: Tensor2D = this.compileAndRun<Tensor2D, Tensor2D>(program, [packedA, packedB]);
 
-    const unpackProgram = new UnpackProgram([a.shape[0], b.shape[1]]);
+    const unpackProgram = new UnpackProgram(program.outputShape);
     return this.compileAndRun(unpackProgram, [result]);
   }
 
