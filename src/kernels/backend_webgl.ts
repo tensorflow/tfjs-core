@@ -47,6 +47,7 @@ import {Conv2DDerFilterProgram, Conv2DDerInputProgram} from './webgl/conv_backpr
 import {DepthwiseConv2DDerFilterProgram, DepthwiseConv2DDerInputProgram} from './webgl/conv_backprop_gpu_depthwise';
 import {Conv2DProgram} from './webgl/conv_gpu';
 import {DepthwiseConv2DProgram} from './webgl/conv_gpu_depthwise';
+import {CropAndResizeProgram} from './webgl/crop_and_resize_gpu';
 import {CumSumProgram} from './webgl/cumsum_gpu';
 import {EncodeFloatProgram} from './webgl/encode_float_gpu';
 import {FromPixelsProgram} from './webgl/from_pixels_gpu';
@@ -1212,6 +1213,15 @@ export class MathBackendWebGL implements KernelBackend {
     const program =
         new ResizeNearestNeigborBackpropProgram(dy, x, alignCorners);
     return this.compileAndRun(program, [dy]);
+  }
+
+  cropAndResize(
+      image: Tensor4D, boxes: Tensor2D, boxIndex: Tensor1D,
+      cropSize: [number, number], method: 'bilinear'|'nearest',
+      extrapolationValue: number): Tensor4D {
+    const program = new CropAndResizeProgram(
+        image.shape, boxes.shape, cropSize, method, extrapolationValue);
+    return this.compileAndRun(program, [image, boxes, boxIndex]);
   }
 
   multinomial(
