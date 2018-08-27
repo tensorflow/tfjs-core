@@ -6,8 +6,7 @@ export class MatMulProgram implements GPGPUProgram {
 	userCode: string;
   packed = true;
 
-	constructor(aShape: [number, number], bShape: [number, number], transposeA = false,
-      transposeB = false) {
+	constructor(aShape: [number, number], bShape: [number, number], transposeA = false, transposeB = false) {
 	  const outerShapeA = transposeA ? aShape[1] : aShape[0];
     const outerShapeB = transposeB ? bShape[0] : bShape[1];
     const sharedDim = transposeA ? aShape[0] : aShape[1];
