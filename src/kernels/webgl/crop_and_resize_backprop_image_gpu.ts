@@ -31,13 +31,24 @@ export class CropAndResizeBackpropImageProgram implements GPGPUProgram {
     this.outputShape = [batch, imageHeight, imageWidth, depth];
     if (numBoxes === 0) {
       this.variableNames = [];
-      this.userCode = 'void main() {setOutput(0);}'
+      this.userCode = 'void main() {setOutput(0);}';
       return;
     }
     const methodId = method === 'bilinear' ? 1 : 0;
     /*
-        const heightScale =
-            (cropHeight > 1) ? (imageHeight - 1) / (cropHeight - 1) : 0;
+    const heightScale = (cropHeight > 1) ?
+    (imageHeight - 1) / (cropHeight - 1) : 0;
+    const widthScale = (cropWidth > 1) ?
+    (imageWidth - 1) / (cropWidth - 1) : 0;
+    */
+
+    const [xHeightFloat, xWidthFloat] =
+    [`${imageHeight - 1}.0`, `${imageWidth - 1}.0`];
+    const [yHeightFloat, yWidthFloat] =
+    [`${cropHeight - 1}.0`, `${cropWidth - 1}.0`];
+    /*
+        const heightScale = (cropHeight > 1)
+        ? (imageHeight - 1) / (cropHeight - 1) : 0;
         const invHeightScale =
             (cropHeight > 1) ? (cropHeight - 1) / (imageHeight - 1) : 0;
         const widthScale = (cropWidth > 1) ? (imageWidth - 1) / (cropWidth - 1)
@@ -48,73 +59,50 @@ export class CropAndResizeBackpropImageProgram implements GPGPUProgram {
 
     this.userCode = `void main() {
       ivec4 coords = getOutputCoords();
-      int b = coords[0];
+      int batch = coords[0];
       int y = coords[1];
       int x = coords[2];
       int d = coords[3];
 
       float accumulator = 0.0;
-      float height_scale = (${cropHeight} > 1)
-      ? (y2-y1) * ${imageHeight - 1}/${cropHeight - 1}
-      : 0;
-      float width_scale = (${cropWidth} > 1)
-      ? (y2-y1) * ${imageWidth - 1}/${cropWidth - 1}
-      : 0;
-      float invHeightScale = float(${invHeightScale});
-      float invWidthScale = float(${invWidthScale});
-      int winHeight = int(${winHeight});
-      int winWidth = int(${winWidth});
 
       for(int b = 0; b < ${numBoxes}; b++) {
-        int bInd = getBoxInd(b);
+        int bInd = int(floor(getBoxInd(b)));
         if(bInd != batch) {
           continue;
         }
 
-        int y1 = getBoxes(b,0);
-        int x1 = getBoxes(b,1);
-        int y2 = getBoxes(b,2);
-        int x2 = getBoxes(b,3);
+        float y1 = getBoxes(b,0);
+        float x1 = getBoxes(b,1);
+        float y2 = getBoxes(b,2);
+        float x2 = getBoxes(b,3);
 
-        // per box, the input element can contribute to any pixel in crop
-        // that floored/ceiled to its value, therefore get inverse mappings
-        // and compute possible range based on crop box size
-
-        // Compute bounds for where in dy we will look
-        float startRLerp = floor(float(r) * invHeightScale);
-        float cropHeight = (y2-y1)*${imageHeight};
-        float cropWidth = (x2-x1)*${imageWidth};
-        float winScale = cropHeight/${cropHeight};
-        int startDyR = int(startRLerp - float(winHeight / 2));
-
-        float startCLerp = floor(float(c) * invWidthScale);
-        int startDyC = int(startCLerp - float(winWidth / 2));
+        float height_scale = (${cropHeight} > 1)
+        ? (y2-y1) * ${xHeightFloat}/${yHeightFloat}
+        : 0.0;
+        float width_scale = (${cropWidth} > 1)
+        ? (y2-y1) * ${xWidthFloat}/${yWidthFloat}
+        : 0.0;
 
         // Loop over dy
-        for (int dyROffset = 0; dyROffset < winHeight; dyROffset++) {
-          int dyR = dyROffset + startDyR;
+        for (int dyR = 0; dyR < ${cropHeight}; dyR++) {
+          float in_y = ${cropHeight > 1}
+          ? y1*${xHeightFloat} + float(dyR)*(height_scale)
+          : 0.5 * (y1+y2) * ${xHeightFloat};
 
-          // Guard against the window exceeding the bounds of dy
-          if (dyR < 0 || dyR >= ${cropHeight}) {
+          if( in_y < 0.0 || in_y > ${xHeightFloat} ) {
             continue;
           }
 
-          for (int dyCOffset = 0; dyCOffset < winWidth; dyCOffset++) {
-            int dyC = dyCOffset + startDyC;
-
-            // Guard against the window exceeding the bounds of dy
-            if (dyC < 0 || dyC >= ${cropWidth}) {
+          for (int dyC = 0; dyC < ${cropWidth}; dyC++) {
+            float in_x = ${cropWidth > 1}
+            ? x1*${xWidthFloat} + float(dyC)*(width_scale)
+            : 0.5 * (x1+x2) * ${xWidthFloat};
+            if( in_x < 0.0 || in_x > ${xWidthFloat} ) {
               continue;
             }
 
-            float in_y = float(dyR) * ${heightScale};
-            float in_x = float(dyC) * ${widthScale};
-            if( in_y < 0 || in_y > ${imageHeight - 1} ||
-                in_x < 0 || in_x > ${imageWidth - 1} ) {
-              continue;
-            }
-            vec2 sourceFracIndexRC =
-              vec2(float(dyR) * ${heightScale},float(dyC) * ${widthScale})
+            vec2 sourceFracIndexRC = vec2(in_y,in_x);
             if(${methodId} == 1) {
               // Fractional source index.
               ivec2 sourceFloorRC = ivec2(sourceFracIndexRC);
@@ -143,15 +131,9 @@ export class CropAndResizeBackpropImageProgram implements GPGPUProgram {
                 accumulator += getDy(b, dyR, dyC, d) * fracRC[0] * fracRC[1];
               }
             } else {
-              int sourceNearestRow = int(min(
-                float(int(${imageHeight}) - 1),
-                float(round(sourceFracIndexRC[0]))
-              ));
-              int sourceNearestCol = int(min(
-                float(int(${imageWidth}) - 1),
-                float(round(sourceFracIndexRC[1]))
-              ));
-              if (x == sourceNearestRow && y == sourceNearestCol) {
+              ivec2 sourceNearestRC = ivec2(floor(
+              sourceFracIndexRC + vec2(0.5,0.5)));
+              if (y == sourceNearestRC[0] && y == sourceNearestRC[1]) {
                 accumulator += getDy(b, dyR, dyC, d);
               }
             }
@@ -165,6 +147,3 @@ export class CropAndResizeBackpropImageProgram implements GPGPUProgram {
   `;
   }
 }
-/*
-    void main() {
-*/

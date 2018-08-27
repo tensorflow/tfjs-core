@@ -305,7 +305,7 @@ function cropAndResize_(
     };
   };
 
-  const res = ENV.engine.runKernel(forward, {$image, $boxes}, backwardBilinear)
+  const res = ENV.engine.runKernel(forward, {$image, $boxes}, backwardBilinear);
   return res as Tensor4D;
 }
 

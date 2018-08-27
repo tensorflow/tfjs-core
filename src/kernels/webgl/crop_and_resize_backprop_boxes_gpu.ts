@@ -30,7 +30,7 @@ export class CropAndResizeBackpropBoxesProgram implements GPGPUProgram {
     this.outputShape = [numBoxes, 4];
     if (numBoxes === 0) {
       this.variableNames = [];
-      this.userCode = 'void main() {setOutput(0);}'
+      this.userCode = 'void main() {setOutput(0);}';
       return;
     }
 
@@ -112,9 +112,11 @@ export class CropAndResizeBackpropBoxesProgram implements GPGPUProgram {
 
           for (int dyD = 0; dyD < ${depth}; dyD++) {
             float topLeft = getImage(b, sourceFloorRC.x, sourceFloorRC.y, dyD);
-            float bottomLeft = getImage(b, sourceCeilRC.x, sourceFloorRC.y, dyD);
+            float bottomLeft =
+              getImage(b, sourceCeilRC.x, sourceFloorRC.y, dyD);
             float topRight = getImage(b, sourceFloorRC.x, sourceCeilRC.y, dyD);
-            float bottomRight = getImage(b, sourceCeilRC.x, sourceCeilRC.y, dyD);
+            float bottomRight =
+              getImage(b, sourceCeilRC.x, sourceCeilRC.y, dyD);
 
             // Compute the image gradient.
             float image_grad_y = (1.0 - fracRC[1]) * (bottomLeft - topLeft) +

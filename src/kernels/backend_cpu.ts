@@ -2346,7 +2346,6 @@ export class MathBackendCPU implements KernelBackend {
     const [numBoxes, cropHeight, cropWidth, ] = grad.shape;
 
     const output = ops.buffer<Rank.R4>(image.shape);
-    console.log(output.values)
     const boxVals = boxes.dataSync();
     const boxIndVals = boxIndex.dataSync();
     const gradVals = grad.dataSync();
@@ -2391,7 +2390,6 @@ export class MathBackendCPU implements KernelBackend {
             const leftInd = Math.floor(xInd);
             const rightInd = Math.ceil(xInd);
             const xLerp = xInd - leftInd;
-
 
             for (let c = 0; c < numChannels; c++) {
               const gradInd = c + x * stride[2] + y * stride[1] + b * stride[0];
@@ -2508,8 +2506,8 @@ export class MathBackendCPU implements KernelBackend {
             imageGradX *= topGrad;
 
             // dy1, dy2
-            const dy1 = output.get(b, 0)
-            const dy2 = output.get(b, 2)
+            const dy1 = output.get(b, 0);
+            const dy2 = output.get(b, 2);
             if (cropHeight > 1) {
               output.set(
                   dy1 + imageGradY * (imageHeight - 1 - y * heightRatio), b, 0);
@@ -2521,8 +2519,8 @@ export class MathBackendCPU implements KernelBackend {
             }
 
             // dx1, dx2
-            const dx1 = output.get(b, 1)
-            const dx2 = output.get(b, 3)
+            const dx1 = output.get(b, 1);
+            const dx2 = output.get(b, 3);
             if (cropWidth > 1) {
               output.set(
                   dx1 + imageGradX * (imageWidth - 1 - x * widthRatio), b, 1);

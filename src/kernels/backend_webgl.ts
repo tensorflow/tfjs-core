@@ -1230,9 +1230,7 @@ export class MathBackendWebGL implements KernelBackend {
       method: 'bilinear'|'nearest'): Tensor4D {
     const program =
         new CropAndResizeBackpropImageProgram(grad.shape, image.shape, method);
-    return grad.shape[0] === 0 ?
-        this.compileAndRun(program, [grad, boxes, boxIndex]) :
-        this.compileAndRun(program, []);
+    return this.compileAndRun(program, [grad, boxes, boxIndex]);
   }
   cropAndResizeBackpropBoxes(
       grad: Tensor4D,
@@ -1242,9 +1240,7 @@ export class MathBackendWebGL implements KernelBackend {
       ): Tensor2D {
     const program =
         new CropAndResizeBackpropBoxesProgram(grad.shape, image.shape);
-    return grad.shape[0] === 0 ?
-        this.compileAndRun(program, [grad, image, boxes, boxIndex]) :
-        this.compileAndRun(program, []);
+    return this.compileAndRun(program, [grad, image, boxes, boxIndex]);
   }
 
   multinomial(
