@@ -17,7 +17,6 @@
 import * as tf from '../index';
 import { describeWithFlags } from '../jasmine_util';
 import { ALL_ENVS, CPU_ENVS, expectArraysEqual } from '../test_util';
-console.log(CPU_ENVS);
 
 describeWithFlags('nonMaxSuppression', ALL_ENVS, () => {
   it('select from three clusters', () => {
@@ -221,7 +220,7 @@ describeWithFlags('cropAndResize', ALL_ENVS, () => {
   it('1x1-bilinear', () => {
     const image:tf.Tensor4D = tf.tensor4d([1,2,3,4],[1,2,2,1]);
     const boxes:tf.Tensor2D = tf.tensor2d([0,0,1,1],[1,4]);
-    // const boxInd:tf.Tensor1D = tf.tensor1d([0],'int32');
+
     const boxInd:tf.Tensor1D = tf.tensor1d([0]);
     const output = tf.image.cropAndResize(image,boxes,boxInd,
                                           [1,1],'bilinear',0);
@@ -266,7 +265,6 @@ describeWithFlags('cropAndResize', ALL_ENVS, () => {
     const output = tf.image.cropAndResize(image,boxes,boxInd,
                                           [3,3],'bilinear',0);
     expect(output.shape).toEqual([1,3,3,1]);
-    console.log(output.dataSync());
     expectArraysEqual(output,[1,1.5,2,2,2.5,3,3,3.5,4]);
   });
   it('3x3-nearest', () => {
@@ -277,7 +275,6 @@ describeWithFlags('cropAndResize', ALL_ENVS, () => {
     const output = tf.image.cropAndResize(image,boxes,boxInd,
                                           [3,3],'nearest',0);
     expect(output.shape).toEqual([1,3,3,1]);
-    console.log(output.dataSync());
     expectArraysEqual(output,[1,2,2,3,4,4,3,4,4]);
   });
   it('3x3Flipped-bilinear', () => {
@@ -308,7 +305,6 @@ describeWithFlags('cropAndResize', ALL_ENVS, () => {
     const output = tf.image.cropAndResize(image,boxes,boxInd,
                                           [2,2],'bilinear',0);
     expect(output.shape).toEqual([2,2,2,1]);
-    console.log(output.dataSync());
     expectArraysEqual(output,[1,3,7,9,1,2,4,5]);
   });
   it('3x3to2x2-nearest', () => {
@@ -319,7 +315,6 @@ describeWithFlags('cropAndResize', ALL_ENVS, () => {
     const output = tf.image.cropAndResize(image,boxes,boxInd,
                                           [2,2],'nearest',0);
     expect(output.shape).toEqual([2,2,2,1]);
-    console.log(output.dataSync());
     expectArraysEqual(output,[1,3,7,9,1,2,4,5]);
   });
   it('3x3to2x2Flipped-bilinear', () => {
@@ -330,7 +325,6 @@ describeWithFlags('cropAndResize', ALL_ENVS, () => {
     const output = tf.image.cropAndResize(image,boxes,boxInd,
                                           [2,2],'bilinear',0);
     expect(output.shape).toEqual([2,2,2,1]);
-    console.log(output.dataSync());
     expectArraysEqual(output,[9,7,3,1,5,4,2,1]);
   });
   it('3x3to2x2Flipped-nearest', () => {
@@ -341,7 +335,6 @@ describeWithFlags('cropAndResize', ALL_ENVS, () => {
     const output = tf.image.cropAndResize(image,boxes,boxInd,
                                           [2,2],'nearest',0);
     expect(output.shape).toEqual([2,2,2,1]);
-    console.log(output.dataSync());
     expectArraysEqual(output,[9,7,3,1,5,4,2,1]);
   });
   it('2x2to3x3-Extrapolated', () => {
@@ -353,33 +346,192 @@ describeWithFlags('cropAndResize', ALL_ENVS, () => {
     const output = tf.image.cropAndResize(image,boxes,boxInd,
                                           [3,3],'bilinear',val);
     expect(output.shape).toEqual([1,3,3,1]);
-    console.log(output.dataSync());
     expectArraysEqual(output,[val,val,val,val,1,2,val,3,4]);
   });
   it('2x2to3x3-NoCrop', () => {
     const val = -1.0;
     const image:tf.Tensor4D = tf.tensor4d([1,2,3,4],[1,2,2,1]);
     const boxes:tf.Tensor2D = tf.tensor2d([],[0,4]);
-    // const boxInd:tf.Tensor1D = tf.tensor1d([],'int32');
     const boxInd:tf.Tensor1D = tf.tensor1d([]);
-    const output = tf.image.cropAndResize(image,boxes,boxInd,
-                                          [3,3],'bilinear',val);
+
+    // compute forward and backward passes
+    const output = tf.image.cropAndResize(image,boxes,boxInd,[3,3],'bilinear',val)
+
+    // test forward pass
     expect(output.shape).toEqual([0,3,3,1]);
     expectArraysEqual(output,[]);
   });
 });
-
-    /*
+describeWithFlags('cropAndResizeGradients', CPU_ENVS, () => {
+  it('1x1-bilinear', () => {
     const image:tf.Tensor4D = tf.tensor4d([1,2,3,4],[1,2,2,1]);
     const boxes:tf.Tensor2D = tf.tensor2d([0,0,1,1],[1,4]);
     const boxInd:tf.Tensor1D = tf.tensor1d([0]);
-    const cropSize:[number,number] = [1,1];
-    const method:'bilinear'|'nearest' = 'bilinear';
-    const extrapolationValue = 0;
-    const output = tf.image.cropAndResize(image,boxes,boxInd,
-                          cropSize,method,extrapolationValue);
-    expect(image.shape).toEqual([1,2,2,1]);
-    expectArraysEqual(image,[0,0,1,1]);
-    expect(output.shape).toEqual([1,1,1,1]);
-    expectArraysEqual(output,[2.5]);
-    */
+    const [imageGrad,boxesGrad] = tf.grads((i:tf.Tensor4D,b:tf.Tensor2D) =>
+      (tf.image.cropAndResize(i,b,boxInd,[1,1],'bilinear',0)))([image,boxes]);
+    expect(imageGrad.shape).toEqual(image.shape);
+    expect(boxesGrad.shape).toEqual(boxes.shape);
+    expectArraysEqual(imageGrad,[0.25,0.25,0.25,0.25]);
+    expectArraysEqual(boxesGrad,[1,0.5,1,0.5]);
+  });
+  it('1x1-nearest', () => {
+    const image:tf.Tensor4D = tf.tensor4d([1,2,3,4],[1,2,2,1]);
+    const boxes:tf.Tensor2D = tf.tensor2d([0,0,1,1],[1,4]);
+    const boxInd:tf.Tensor1D = tf.tensor1d([0]);
+    const [imageGrad,boxesGrad] = tf.grads((i:tf.Tensor4D,b:tf.Tensor2D) =>
+      (tf.image.cropAndResize(i,b,boxInd,[1,1],'nearest',0)))([image,boxes]);
+    expect(imageGrad.shape).toEqual(image.shape);
+    expect(boxesGrad.shape).toEqual(boxes.shape);
+    expectArraysEqual(imageGrad,[0,0,0,1]);
+    expectArraysEqual(boxesGrad,[1,0.5,1,0.5]);
+  });
+  it('1x1Flipped-bilinear', () => {
+    const image:tf.Tensor4D = tf.tensor4d([1,2,3,4],[1,2,2,1]);
+    const boxes:tf.Tensor2D = tf.tensor2d([1,1,0,0],[1,4]);
+    const boxInd:tf.Tensor1D = tf.tensor1d([0]);
+    const [imageGrad,boxesGrad] = tf.grads((i:tf.Tensor4D,b:tf.Tensor2D) =>
+      (tf.image.cropAndResize(i,b,boxInd,[1,1],'bilinear',0)))([image,boxes]);
+    expect(imageGrad.shape).toEqual(image.shape);
+    expect(boxesGrad.shape).toEqual(boxes.shape);
+    expectArraysEqual(imageGrad,[0.25,0.25,0.25,0.25]);
+    expectArraysEqual(boxesGrad,[1,0.5,1,0.5]);
+  });
+  it('1x1Flipped-nearest', () => {
+    const image:tf.Tensor4D = tf.tensor4d([1,2,3,4],[1,2,2,1]);
+    const boxes:tf.Tensor2D = tf.tensor2d([1,1,0,0],[1,4]);
+    const boxInd:tf.Tensor1D = tf.tensor1d([0]);
+    const [imageGrad,boxesGrad] = tf.grads((i:tf.Tensor4D,b:tf.Tensor2D) =>
+      (tf.image.cropAndResize(i,b,boxInd,[1,1],'nearest',0)))([image,boxes]);
+    expect(imageGrad.shape).toEqual(image.shape);
+    expect(boxesGrad.shape).toEqual(boxes.shape);
+    expectArraysEqual(imageGrad,[0,0,0,1]);
+    expectArraysEqual(boxesGrad,[1,0.5,1,0.5]);
+  });
+  it('3x3-bilinear', () => {
+    const image:tf.Tensor4D = tf.tensor4d([1,2,3,4],[1,2,2,1]);
+    const boxes:tf.Tensor2D = tf.tensor2d([0,0,1,1],[1,4]);
+    const boxInd:tf.Tensor1D = tf.tensor1d([0]);
+    const [imageGrad,boxesGrad] = tf.grads((i:tf.Tensor4D,b:tf.Tensor2D) =>
+      (tf.image.cropAndResize(i,b,boxInd,[3,3],'bilinear',0)))([image,boxes]);
+    expect(imageGrad.shape).toEqual(image.shape);
+    expect(boxesGrad.shape).toEqual(boxes.shape);
+    console.log(imageGrad.dataSync());
+    console.log(boxesGrad.dataSync());
+    expect(boxesGrad.shape).toEqual(boxes.shape);
+    expectArraysEqual(imageGrad,[2.25,2.25,2.25,2.25]);
+    expectArraysEqual(boxesGrad,[3,1.5,3,1.5]);
+  });
+  it('3x3-nearest', () => {
+    const image:tf.Tensor4D = tf.tensor4d([1,2,3,4],[1,2,2,1]);
+    const boxes:tf.Tensor2D = tf.tensor2d([0,0,1,1],[1,4]);
+    const boxInd:tf.Tensor1D = tf.tensor1d([0]);
+    const [imageGrad,boxesGrad] = tf.grads((i:tf.Tensor4D,b:tf.Tensor2D) =>
+      (tf.image.cropAndResize(i,b,boxInd,[3,3],'nearest',0)))([image,boxes]);
+    expect(imageGrad.shape).toEqual(image.shape);
+    expect(boxesGrad.shape).toEqual(boxes.shape);
+    expectArraysEqual(imageGrad,[1,2,2,4]);
+    expectArraysEqual(boxesGrad,[3,1.5,3,1.5]);
+  });
+  it('3x3Flipped-bilinear', () => {
+    const image:tf.Tensor4D = tf.tensor4d([1,2,3,4],[1,2,2,1]);
+    const boxes:tf.Tensor2D = tf.tensor2d([1,1,0,0],[1,4]);
+    const boxInd:tf.Tensor1D = tf.tensor1d([0]);
+    const [imageGrad,boxesGrad] = tf.grads((i:tf.Tensor4D,b:tf.Tensor2D) =>
+      (tf.image.cropAndResize(i,b,boxInd,[3,3],'bilinear',0)))([image,boxes]);
+    expect(imageGrad.shape).toEqual(image.shape);
+    expect(boxesGrad.shape).toEqual(boxes.shape);
+    expectArraysEqual(imageGrad,[2.25,2.25,2.25,2.25]);
+    expectArraysEqual(boxesGrad,[3,1.5,3,1.5]);
+  });
+  it('3x3Flipped-nearest', () => {
+    const image:tf.Tensor4D = tf.tensor4d([1,2,3,4],[1,2,2,1]);
+    const boxes:tf.Tensor2D = tf.tensor2d([1,1,0,0],[1,4]);
+    const boxInd:tf.Tensor1D = tf.tensor1d([0]);
+    const [imageGrad,boxesGrad] = tf.grads((i:tf.Tensor4D,b:tf.Tensor2D) =>
+      (tf.image.cropAndResize(i,b,boxInd,[3,3],'nearest',0)))([image,boxes]);
+    expect(imageGrad.shape).toEqual(image.shape);
+    expect(boxesGrad.shape).toEqual(boxes.shape);
+    expectArraysEqual(imageGrad,[1,2,2,4]);
+    expectArraysEqual(boxesGrad,[3,1.5,3,1.5]);
+  });
+  it('3x3to2x2-bilinear', () => {
+    const image:tf.Tensor4D = tf.tensor4d([1,2,3,4,5,6,7,8,9],[1,3,3,1]);
+    const boxes:tf.Tensor2D = tf.tensor2d([0,0,1,1,0,0,0.5,0.5],[2,4]);
+    const boxInd:tf.Tensor1D = tf.tensor1d([0,0]);
+    const [imageGrad,boxesGrad] = tf.grads((i:tf.Tensor4D,b:tf.Tensor2D) =>
+      (tf.image.cropAndResize(i,b,boxInd,[2,2],'bilinear',0)))([image,boxes]);
+    expect(imageGrad.shape).toEqual(image.shape);
+    expect(boxesGrad.shape).toEqual(boxes.shape);
+    expectArraysEqual(imageGrad,[2,1,1,1,1,0,1,0,1]);
+    expectArraysEqual(boxesGrad,[0,0,0,0,0,0,0,0]);
+  });
+  it('3x3to2x2-nearest', () => {
+    const image:tf.Tensor4D = tf.tensor4d([1,2,3,4,5,6,7,8,9],[1,3,3,1]);
+    const boxes:tf.Tensor2D = tf.tensor2d([0,0,1,1,0,0,0.5,0.5],[2,4]);
+    const boxInd:tf.Tensor1D = tf.tensor1d([0,0]);
+    const [imageGrad,boxesGrad] = tf.grads((i:tf.Tensor4D,b:tf.Tensor2D) =>
+      (tf.image.cropAndResize(i,b,boxInd,[2,2],'nearest',0)))([image,boxes]);
+    expect(imageGrad.shape).toEqual(image.shape);
+    expect(boxesGrad.shape).toEqual(boxes.shape);
+    expectArraysEqual(imageGrad,[2,1,1,1,1,0,1,0,1]);
+    expectArraysEqual(boxesGrad,[0,0,0,0,0,0,0,0]);
+  });
+  it('3x3to2x2Flipped-bilinear', () => {
+    const image:tf.Tensor4D = tf.tensor4d([1,2,3,4,5,6,7,8,9],[1,3,3,1]);
+    const boxes:tf.Tensor2D = tf.tensor2d([1,1,0,0,0.5,0.5,0,0],[2,4]);
+    const boxInd:tf.Tensor1D = tf.tensor1d([0,0]);
+    const [imageGrad,boxesGrad] = tf.grads((i:tf.Tensor4D,b:tf.Tensor2D) =>
+      (tf.image.cropAndResize(i,b,boxInd,[2,2],'bilinear',0)))([image,boxes]);
+    expect(imageGrad.shape).toEqual(image.shape);
+    expect(boxesGrad.shape).toEqual(boxes.shape);
+    expectArraysEqual(imageGrad,[2,1,1,1,1,0,1,0,1]);
+    expectArraysEqual(boxesGrad,[0,0,0,0,0,0,0,0]);
+  });
+  it('3x3to2x2Flipped-nearest', () => {
+    const image:tf.Tensor4D = tf.tensor4d([1,2,3,4,5,6,7,8,9],[1,3,3,1]);
+    const boxes:tf.Tensor2D = tf.tensor2d([1,1,0,0,0.5,0.5,0,0],[2,4]);
+    const boxInd:tf.Tensor1D = tf.tensor1d([0,0]);
+    const [imageGrad,boxesGrad] = tf.grads((i:tf.Tensor4D,b:tf.Tensor2D) =>
+      (tf.image.cropAndResize(i,b,boxInd,[2,2],'nearest',0)))([image,boxes]);
+    expect(imageGrad.shape).toEqual(image.shape);
+    expect(boxesGrad.shape).toEqual(boxes.shape);
+    expectArraysEqual(imageGrad,[2,1,1,1,1,0,1,0,1]);
+    expectArraysEqual(boxesGrad,[0,0,0,0,0,0,0,0]);
+  });
+  it('2x2to3x3-Extrapolated', () => {
+    const val = -1.0;
+    const image:tf.Tensor4D = tf.tensor4d([1,2,3,4],[1,2,2,1]);
+    const boxes:tf.Tensor2D = tf.tensor2d([-1,-1,1,1],[1,4]);
+    const boxInd:tf.Tensor1D = tf.tensor1d([0]);
+    const [imageGrad,boxesGrad] = tf.grads((i:tf.Tensor4D,b:tf.Tensor2D) =>
+      (tf.image.cropAndResize(i,b,boxInd,[2,2],'bilinear',val)))([image,boxes]);
+    expect(imageGrad.shape).toEqual(image.shape);
+    expect(boxesGrad.shape).toEqual(boxes.shape);
+    expectArraysEqual(imageGrad,[1,1,1,1]);
+    expectArraysEqual(boxesGrad,[0,0,0,0]);
+  });
+  it('2x2to3x3-Extrapolated-nearest', () => {
+    const val = -1.0;
+    const image:tf.Tensor4D = tf.tensor4d([1,2,3,4],[1,2,2,1]);
+    const boxes:tf.Tensor2D = tf.tensor2d([-1,-1,1,1],[1,4]);
+    const boxInd:tf.Tensor1D = tf.tensor1d([0]);
+    const [imageGrad,boxesGrad] = tf.grads((i:tf.Tensor4D,b:tf.Tensor2D) =>
+      (tf.image.cropAndResize(i,b,boxInd,[2,2],'nearest',val)))([image,boxes]);
+    expect(imageGrad.shape).toEqual(image.shape);
+    expect(boxesGrad.shape).toEqual(boxes.shape);
+    expectArraysEqual(imageGrad,[1,0,0,0]);
+    expectArraysEqual(boxesGrad,[0,0,0,0]);
+  });
+  it('2x2to3x3-NoCrop', () => {
+    const val = -1.0;
+    const image:tf.Tensor4D = tf.tensor4d([1,2,3,4],[1,2,2,1]);
+    const boxes:tf.Tensor2D = tf.tensor2d([],[0,4]);
+    const boxInd:tf.Tensor1D = tf.tensor1d([]);
+    const [imageGrad,boxesGrad] = tf.grads((i:tf.Tensor4D,b:tf.Tensor2D) =>
+      (tf.image.cropAndResize(i,b,boxInd,[2,2],'bilinear',val)))([image,boxes]);
+    expect(imageGrad.shape).toEqual(image.shape);
+    expect(boxesGrad.shape).toEqual(boxes.shape);
+    expectArraysEqual(imageGrad,[0,0,0,0]);
+    expectArraysEqual(boxesGrad,[]);
+  });
+});

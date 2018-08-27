@@ -15,39 +15,43 @@
  * =============================================================================
  */
 
-import { GPGPUProgram } from './gpgpu_math';
+import {GPGPUProgram} from './gpgpu_math';
 
 export class CropAndResizeBackpropImageProgram implements GPGPUProgram {
   variableNames = ['dy', 'boxes', 'boxInd'];
   outputShape: number[] = [];
   userCode: string;
 
-  constructor(gradShape: [number, number, number, number],
-    imageShape: [number, number, number, number],
-    method: 'bilinear' | 'nearest') {
+  constructor(
+      gradShape: [number, number, number, number],
+      imageShape: [number, number, number, number],
+      method: 'bilinear'|'nearest') {
     const [batch, imageHeight, imageWidth, depth] = imageShape;
-    const [numBoxes, cropHeight, cropWidth,] = gradShape;
+    const [numBoxes, cropHeight, cropWidth, ] = gradShape;
     this.outputShape = [batch, imageHeight, imageWidth, depth];
     const methodId = method === 'bilinear' ? 1 : 0;
+    console
+        .log(numBoxes, methodId, cropHeight, cropWidth)
 
-    // This defines the size of the window of values around a particular
-    // index in dy that we want to search for contributions to dx.
-    const heightScale = (cropHeight > 1)
-    ? (imageHeight - 1) / (cropHeight - 1)
-    : 0;
-    const invHeightScale = (cropHeight > 1)
-    ? (cropHeight - 1) / (imageHeight - 1)
-    : 0;
-    const widthScale = (cropWidth > 1)
-    ? (imageWidth - 1) / (cropWidth - 1)
-    : 0;
-    const invWidthScale = (cropWidth > 1)
-    ? (cropWidth - 1) / (imageWidth - 1)
-    : 0;
-    const winHeight = (Math.ceil(invHeightScale) * 2) + 2;
-    const winWidth = (Math.ceil(invWidthScale) * 2) + 2;
+        // This defines the size of the window of values around a particular
+        // index in dy that we want to search for contributions to dx.
+        /*
+        const heightScale =
+            (cropHeight > 1) ? (imageHeight - 1) / (cropHeight - 1) : 0;
+        const invHeightScale =
+            (cropHeight > 1) ? (cropHeight - 1) / (imageHeight - 1) : 0;
+        const widthScale = (cropWidth > 1) ? (imageWidth - 1) / (cropWidth - 1)
+        : 0; const invWidthScale = (cropWidth > 1) ? (cropWidth - 1) /
+        (imageWidth - 1) : 0; const winHeight = (Math.ceil(invHeightScale) * 2)
+        + 2; const winWidth = (Math.ceil(invWidthScale) * 2) + 2;
+        */
 
-    this.userCode = `
+        this.userCode = `void main() {
+          setOutput(0.0);
+        }`;
+  }
+}
+/*
     void main() {
       ivec4 coords = getOutputCoords();
       int b = coords[0];
@@ -165,5 +169,4 @@ export class CropAndResizeBackpropImageProgram implements GPGPUProgram {
       setOutput(accumulator);
     }
   `;
-  }
-}
+*/

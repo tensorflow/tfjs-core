@@ -15,14 +15,14 @@
  * =============================================================================
  */
 
-import { ForwardFunc } from '../engine';
-import { ENV } from '../environment';
-import { nonMaxSuppressionImpl } from '../kernels/non_max_suppression_impl';
-import { Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D } from '../tensor';
-import { convertToTensor } from '../tensor_util_env';
-import { TensorLike } from '../types';
+import {ForwardFunc} from '../engine';
+import {ENV} from '../environment';
+import {nonMaxSuppressionImpl} from '../kernels/non_max_suppression_impl';
+import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
+import {convertToTensor} from '../tensor_util_env';
+import {TensorLike} from '../types';
 import * as util from '../util';
-import { op } from './operation';
+import {op} from './operation';
 
 /**
  * Bilinear resize a batch of 3D images to a new shape.
@@ -37,40 +37,40 @@ import { op } from './operation';
  *     `new_height / height`. Treat similarly the width dimension.
  */
 /** @doc {heading: 'Operations', subheading: 'Images', namespace: 'image'} */
-function resizeBilinear_<T extends Tensor3D | Tensor4D>(
-  images: T | TensorLike, size: [number, number], alignCorners = false): T {
+function resizeBilinear_<T extends Tensor3D|Tensor4D>(
+    images: T|TensorLike, size: [number, number], alignCorners = false): T {
   const $images = convertToTensor(images, 'images', 'resizeBilinear');
   util.assert(
-    $images.rank === 3 || $images.rank === 4,
-    `Error in resizeBilinear: x must be rank 3 or 4, but got ` +
-    `rank ${$images.rank}.`);
+      $images.rank === 3 || $images.rank === 4,
+      `Error in resizeBilinear: x must be rank 3 or 4, but got ` +
+          `rank ${$images.rank}.`);
   util.assert(
-    size.length === 2,
-    `Error in resizeBilinear: new shape must 2D, but got shape ` +
-    `${size}.`);
+      size.length === 2,
+      `Error in resizeBilinear: new shape must 2D, but got shape ` +
+          `${size}.`);
 
   let batchImages = $images as Tensor4D;
   let reshapedTo4D = false;
   if ($images.rank === 3) {
     reshapedTo4D = true;
     batchImages =
-      $images.as4D(1, $images.shape[0], $images.shape[1], $images.shape[2]);
+        $images.as4D(1, $images.shape[0], $images.shape[1], $images.shape[2]);
   }
 
   const [newHeight, newWidth] = size;
   const forward: ForwardFunc<Tensor4D> = (backend, save) =>
-    backend.resizeBilinear(batchImages, newHeight, newWidth, alignCorners);
+      backend.resizeBilinear(batchImages, newHeight, newWidth, alignCorners);
 
   const backward = (dy: Tensor4D, saved: Tensor[]) => {
     return {
       batchImages: () => ENV.engine.runKernel(
-        backend =>
-          backend.resizeBilinearBackprop(dy, batchImages, alignCorners),
-        {})
+          backend =>
+              backend.resizeBilinearBackprop(dy, batchImages, alignCorners),
+          {})
     };
   };
 
-  const res = ENV.engine.runKernel(forward, { batchImages }, backward);
+  const res = ENV.engine.runKernel(forward, {batchImages}, backward);
   if (reshapedTo4D) {
     return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as T;
   }
@@ -90,44 +90,44 @@ function resizeBilinear_<T extends Tensor3D | Tensor4D>(
  *     `new_height / height`. Treat similarly the width dimension.
  */
 /** @doc {heading: 'Operations', subheading: 'Images', namespace: 'image'} */
-function resizeNearestNeighbor_<T extends Tensor3D | Tensor4D>(
-  images: T | TensorLike, size: [number, number], alignCorners = false): T {
+function resizeNearestNeighbor_<T extends Tensor3D|Tensor4D>(
+    images: T|TensorLike, size: [number, number], alignCorners = false): T {
   const $images = convertToTensor(images, 'images', 'resizeNearestNeighbor');
   util.assert(
-    $images.rank === 3 || $images.rank === 4,
-    `Error in resizeNearestNeighbor: x must be rank 3 or 4, but got ` +
-    `rank ${$images.rank}.`);
+      $images.rank === 3 || $images.rank === 4,
+      `Error in resizeNearestNeighbor: x must be rank 3 or 4, but got ` +
+          `rank ${$images.rank}.`);
   util.assert(
-    size.length === 2,
-    `Error in resizeNearestNeighbor: new shape must 2D, but got shape ` +
-    `${size}.`);
+      size.length === 2,
+      `Error in resizeNearestNeighbor: new shape must 2D, but got shape ` +
+          `${size}.`);
   util.assert(
-    $images.dtype === 'float32' || $images.dtype === 'int32',
-    '`images` must have `int32` or `float32` as dtype');
+      $images.dtype === 'float32' || $images.dtype === 'int32',
+      '`images` must have `int32` or `float32` as dtype');
 
   let batchImages = $images as Tensor4D;
   let reshapedTo4D = false;
   if ($images.rank === 3) {
     reshapedTo4D = true;
     batchImages =
-      $images.as4D(1, $images.shape[0], $images.shape[1], $images.shape[2]);
+        $images.as4D(1, $images.shape[0], $images.shape[1], $images.shape[2]);
   }
   const [newHeight, newWidth] = size;
 
   const forward: ForwardFunc<Tensor4D> = (backend, save) =>
-    backend.resizeNearestNeighbor(
-      batchImages, newHeight, newWidth, alignCorners);
+      backend.resizeNearestNeighbor(
+          batchImages, newHeight, newWidth, alignCorners);
 
   const backward = (dy: Tensor4D, saved: Tensor[]) => {
     return {
       batchImages: () => ENV.engine.runKernel(
-        backend => backend.resizeNearestNeighborBackprop(
-          dy, batchImages, alignCorners),
-        {})
+          backend => backend.resizeNearestNeighborBackprop(
+              dy, batchImages, alignCorners),
+          {})
     };
   };
 
-  const res = ENV.engine.runKernel(forward, { batchImages }, backward);
+  const res = ENV.engine.runKernel(forward, {batchImages}, backward);
 
   if (reshapedTo4D) {
     return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as T;
@@ -153,34 +153,34 @@ function resizeNearestNeighbor_<T extends Tensor3D | Tensor4D>(
  */
 /** @doc {heading: 'Operations', subheading: 'Images', namespace: 'image'} */
 function nonMaxSuppression_(
-  boxes: Tensor2D | TensorLike, scores: Tensor1D | TensorLike,
-  maxOutputSize: number, iouThreshold = 0.5,
-  scoreThreshold = Number.NEGATIVE_INFINITY): Tensor1D {
+    boxes: Tensor2D|TensorLike, scores: Tensor1D|TensorLike,
+    maxOutputSize: number, iouThreshold = 0.5,
+    scoreThreshold = Number.NEGATIVE_INFINITY): Tensor1D {
   const $boxes = convertToTensor(boxes, 'boxes', 'nonMaxSuppression');
   const $scores = convertToTensor(scores, 'scores', 'nonMaxSuppression');
 
   const inputs = nonMaxSuppSanityCheck(
-    $boxes, $scores, maxOutputSize, iouThreshold, scoreThreshold);
+      $boxes, $scores, maxOutputSize, iouThreshold, scoreThreshold);
   maxOutputSize = inputs.maxOutputSize;
   iouThreshold = inputs.iouThreshold;
   scoreThreshold = inputs.scoreThreshold;
 
   return ENV.engine.runKernel(
-    b => b.nonMaxSuppression(
-      $boxes, $scores, maxOutputSize, iouThreshold, scoreThreshold),
-    { $boxes });
+      b => b.nonMaxSuppression(
+          $boxes, $scores, maxOutputSize, iouThreshold, scoreThreshold),
+      {$boxes});
 }
 
 /** This is the async version of `nonMaxSuppression` */
 async function nonMaxSuppressionAsync_(
-  boxes: Tensor2D | TensorLike, scores: Tensor1D | TensorLike,
-  maxOutputSize: number, iouThreshold = 0.5,
-  scoreThreshold = Number.NEGATIVE_INFINITY): Promise<Tensor1D> {
+    boxes: Tensor2D|TensorLike, scores: Tensor1D|TensorLike,
+    maxOutputSize: number, iouThreshold = 0.5,
+    scoreThreshold = Number.NEGATIVE_INFINITY): Promise<Tensor1D> {
   const $boxes = convertToTensor(boxes, 'boxes', 'nonMaxSuppressionAsync');
   const $scores = convertToTensor(scores, 'scores', 'nonMaxSuppressionAsync');
 
   const inputs = nonMaxSuppSanityCheck(
-    $boxes, $scores, maxOutputSize, iouThreshold, scoreThreshold);
+      $boxes, $scores, maxOutputSize, iouThreshold, scoreThreshold);
   maxOutputSize = inputs.maxOutputSize;
   iouThreshold = inputs.iouThreshold;
   scoreThreshold = inputs.scoreThreshold;
@@ -188,7 +188,7 @@ async function nonMaxSuppressionAsync_(
   const boxesVals = await $boxes.data();
   const scoresVals = await $scores.data();
   const res = nonMaxSuppressionImpl(
-    boxesVals, scoresVals, maxOutputSize, iouThreshold, scoreThreshold);
+      boxesVals, scoresVals, maxOutputSize, iouThreshold, scoreThreshold);
   if ($boxes !== boxes) {
     $boxes.dispose();
   }
@@ -199,9 +199,9 @@ async function nonMaxSuppressionAsync_(
 }
 
 function nonMaxSuppSanityCheck(
-  boxes: Tensor2D, scores: Tensor1D, maxOutputSize: number,
-  iouThreshold: number, scoreThreshold: number
-): { maxOutputSize: number, iouThreshold: number, scoreThreshold: number } {
+    boxes: Tensor2D, scores: Tensor1D, maxOutputSize: number,
+    iouThreshold: number, scoreThreshold: number):
+    {maxOutputSize: number, iouThreshold: number, scoreThreshold: number} {
   if (iouThreshold == null) {
     iouThreshold = 0.5;
   }
@@ -212,94 +212,105 @@ function nonMaxSuppSanityCheck(
   maxOutputSize = Math.min(maxOutputSize, numBoxes);
 
   util.assert(
-    0 <= iouThreshold && iouThreshold <= 1,
-    `iouThreshold must be in [0, 1], but was '${iouThreshold}'`);
+      0 <= iouThreshold && iouThreshold <= 1,
+      `iouThreshold must be in [0, 1], but was '${iouThreshold}'`);
   util.assert(
-    boxes.rank === 2,
-    `boxes must be a 2D tensor, but was of rank '${boxes.rank}'`);
+      boxes.rank === 2,
+      `boxes must be a 2D tensor, but was of rank '${boxes.rank}'`);
   util.assert(
-    boxes.shape[1] === 4,
-    `boxes must have 4 columns, but 2nd dimension was ${boxes.shape[1]}`);
+      boxes.shape[1] === 4,
+      `boxes must have 4 columns, but 2nd dimension was ${boxes.shape[1]}`);
   util.assert(scores.rank === 1, 'scores must be a 1D tensor');
   util.assert(
-    scores.shape[0] === numBoxes,
-    `scores has incompatible shape with boxes. Expected ${numBoxes}, ` +
-    `but was ${scores.shape[0]}`);
-  return { maxOutputSize, iouThreshold, scoreThreshold };
+      scores.shape[0] === numBoxes,
+      `scores has incompatible shape with boxes. Expected ${numBoxes}, ` +
+          `but was ${scores.shape[0]}`);
+  return {maxOutputSize, iouThreshold, scoreThreshold};
 }
 
 function cropAndResize_(
-  image: Tensor4D, boxes: Tensor2D, boxInd: Tensor1D,
-  cropSize: [number, number], method?: 'bilinear' | 'nearest',
-  extrapolationValue?: number,
+    image: Tensor4D|TensorLike,
+    boxes: Tensor2D|TensorLike,
+    boxInd: Tensor1D|TensorLike,
+    cropSize: [number, number],
+    method?: 'bilinear'|'nearest',
+    extrapolationValue?: number,
 ) {
-
+  const $image = convertToTensor(image, 'image', 'cropAndResize', 'float32');
+  const $boxes = convertToTensor(boxes, 'boxes', 'cropAndResize', 'float32');
+  const $boxInd = convertToTensor(boxInd, 'boxInd', 'cropAndResize', 'int32');
   method = method || 'bilinear';
   extrapolationValue = extrapolationValue || 0;
 
-  const numBoxes = boxes.shape[0];
-  util.assert(
-    image.rank === 4,
-    `Error in cropAndResize: image must be rank 4, but got ` +
-    `rank ${image.rank}.`);
-  util.assert(
-    boxes.rank === 2 && boxes.shape[1] === 4,
-    `Error in cropAndResize: boxes must be have size [${numBoxes},4] ` +
-    `but had shape ${boxes.shape}.`);
-  util.assert(
-    boxInd.rank === 1 && boxInd.shape[0] === boxes.shape[0],
-    `Error in cropAndResize: boxInd must be have size [${numBoxes}] ` +
-    `but had shape ${boxes.shape}.`);
-  util.assert(
-    cropSize.length === 2,
-    `Error in cropAndResize: new shape must 2D, but got shape ` +
-    `${cropSize}.`);
-  util.assert(
-    method === 'bilinear' || method === 'nearest',
-    `method must be bilinear or nearest, but was ${method}`);
-  util.assert(
-    cropSize[0] >= 1 && cropSize[1] >= 1,
-    `size must be atleast [1,1], but was ${cropSize}`);
+  const numBoxes = $boxes.shape[0];
   /*
-  util.assert(
-    boxInd.dtype === 'int32',
-    `size must be atleast [1,1], but was ${cropSize}`);
+  if (numBoxes === 0) {
+    const forward: ForwardFunc<Tensor4D> = (backend) => convertToTensor([],)
+    const backwardBilinear = (dy: Tensor4D, saved: Tensor[]) => {
+      return {
+        $image: () => ENV.engine.runKernel(
+            backend => backend.cropAndResizeBackpropImage(
+                dy, $image, $boxes, $boxInd, method),
+            {}),
+        $boxes: () => ENV.engine.runKernel(
+            backend =>
+                backend.cropAndResizeBackpropBoxes(dy, $image, $boxes, $boxInd),
+            {})
+      };
+    };
+
+    const res = ENV.engine.runKernel(() => {return })
+  }
   */
 
-  console.log(boxInd.dtype);
-  const forward: ForwardFunc<Tensor4D> = (backend, save) =>
-    backend.cropAndResize(image, boxes, boxInd,
-      cropSize, method, extrapolationValue);
+  util.assert(
+      $image.rank === 4,
+      `Error in cropAndResize: image must be rank 4, but got ` +
+          `rank ${$image.rank}.`);
+  util.assert(
+      $boxes.rank === 2 && $boxes.shape[1] === 4,
+      `Error in cropAndResize: boxes must be have size [${numBoxes},4] ` +
+          `but had shape ${$boxes.shape}.`);
+  util.assert(
+      $boxInd.rank === 1 && $boxInd.shape[0] === numBoxes,
+      `Error in cropAndResize: boxInd must be have size [${numBoxes}] ` +
+          `but had shape ${$boxes.shape}.`);
+  util.assert(
+      cropSize.length === 2,
+      `Error in cropAndResize: new shape must 2D, but got shape ` +
+          `${cropSize}.`);
+  util.assert(
+      method === 'bilinear' || method === 'nearest',
+      `method must be bilinear or nearest, but was ${method}`);
+  util.assert(
+      cropSize[0] >= 1 && cropSize[1] >= 1,
+      `size must be atleast [1,1], but was ${cropSize}`);
 
+  const forward: ForwardFunc<Tensor4D> = (backend, save) =>
+      backend.cropAndResize(
+          $image, $boxes, $boxInd, cropSize, method, extrapolationValue);
+
+  // gradient for crop boxes is not well-defined with nearest neighbor
+  // but approximate with gradient derived from bilinear sampling
   const backwardBilinear = (dy: Tensor4D, saved: Tensor[]) => {
     return {
-      image: () => ENV.engine.runKernel(
-        backend =>
-          backend.cropAndResizeBackpropImage(dy, image, boxes, boxInd, method),
-        {}),
-      boxes: () => ENV.engine.runKernel(
-        backend =>
-          backend.cropAndResizeBackpropBoxes(dy, image, boxes, boxInd),
-        {})
-    };
-  };
-  const backwardNearest = (dy: Tensor4D, saved: Tensor[]) => {
-    return {
-      image: () => ENV.engine.runKernel(
-        backend =>
-          backend.cropAndResizeBackpropImage(dy, image, boxes, boxInd, method),
-        {})
+      $image: () => ENV.engine.runKernel(
+          backend => backend.cropAndResizeBackpropImage(
+              dy, $image, $boxes, $boxInd, method),
+          {}),
+      $boxes: () => ENV.engine.runKernel(
+          backend =>
+              backend.cropAndResizeBackpropBoxes(dy, $image, $boxes, $boxInd),
+          {})
     };
   };
 
-  const res = method === 'bilinear'
-    ? ENV.engine.runKernel(forward, { image, boxes }, backwardBilinear)
-    : ENV.engine.runKernel(forward, { image }, backwardNearest);
+  const res = ENV.engine.runKernel(forward, {$image, $boxes}, backwardBilinear)
   return res as Tensor4D;
 }
 
-export const resizeBilinear = op({ resizeBilinear_ });
-export const resizeNearestNeighbor = op({ resizeNearestNeighbor_ });
-export const nonMaxSuppression = op({ nonMaxSuppression_ });
+export const resizeBilinear = op({resizeBilinear_});
+export const resizeNearestNeighbor = op({resizeNearestNeighbor_});
+export const nonMaxSuppression = op({nonMaxSuppression_});
 export const nonMaxSuppressionAsync = nonMaxSuppressionAsync_;
 export const cropAndResize = cropAndResize_;
