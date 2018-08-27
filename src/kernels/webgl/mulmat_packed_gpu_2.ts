@@ -1,6 +1,6 @@
 import {GPGPUProgram} from './gpgpu_math';
 
-export class MatMulPackedProgram implements GPGPUProgram {
+export class MatMulProgram implements GPGPUProgram {
 	variableNames = ['matrixA', 'matrixB'];
 	outputShape: number[];
 	userCode: string;

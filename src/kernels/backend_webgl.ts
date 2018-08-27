@@ -58,8 +58,7 @@ import * as gpgpu_util from './webgl/gpgpu_util';
 import {LRNProgram} from './webgl/lrn_gpu';
 import {LRNGradProgram} from './webgl/lrn_grad_gpu';
 import {MaxPool2DBackpropProgram} from './webgl/max_pool_backprop_gpu';
-import {MatMulProgram} from './webgl/mulmat_gpu';
-import {MatMulPackedProgram} from './webgl/mulmat_packed_gpu_2';
+import {MatMulProgram} from './webgl/mulmat_packed_gpu_2';
 import {PackProgram} from './webgl/pack_gpu';
 import {UnpackProgram} from './webgl/unpack_gpu';
 import {MultinomialProgram} from './webgl/multinomial_gpu';
@@ -490,7 +489,7 @@ export class MathBackendWebGL implements KernelBackend {
     const packProgramB = new PackProgram([bPackedHeight, bPackedWidth], b.shape);
     const packedB: Tensor2D = this.compileAndRun(packProgramB, [b]);
 
-    const program = new MatMulPackedProgram(packedA.shape, packedB.shape, transposeA, transposeB);
+    const program = new MatMulProgram(packedA.shape, packedB.shape, transposeA, transposeB);
     const result: Tensor2D = this.compileAndRun<Tensor2D, Tensor2D>(program, [packedA, packedB]);
 
     const unpackProgram = new UnpackProgram([a.shape[0], b.shape[1]]);
