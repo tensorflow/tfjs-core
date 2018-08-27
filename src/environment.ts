@@ -55,15 +55,15 @@ export class Environment {
    * executing operations on those tensors.
    *
    * Note this disposes the current backend, if any, as well as any tensors
-   * associated with it. A new backend is initialized, even if it is of the
-   * same type as the previous one.
+   * associated with it. A new backend is initialized, even if it is of the same
+   * type as the previous one.
    *
    * @param backendName The name of the backend. Currently supports
    *     `'webgl'|'cpu'` in the browser, and `'tensorflow'` under node.js
    *     (requires tfjs-node).
    * @param safeMode Defaults to false. In safe mode, you are forced to
-   *     construct tensors and call math operations inside a `tidy()` which
-   *     will automatically clean up intermediate tensors.
+   *     construct tensors and call math operations inside a `tidy()` which will
+   *     automatically clean up intermediate tensors.
    */
   /** @doc {heading: 'Environment'} */
   static setBackend(backendName: string, safeMode = false) {
@@ -97,15 +97,15 @@ export class Environment {
    *
    * - `numBytes`: Number of bytes allocated (undisposed) at this time.
    * - `numTensors`: Number of unique tensors allocated.
-   * - `numDataBuffers`: Number of unique data buffers allocated
-   *   (undisposed) at this time, which is ≤ the number of tensors
-   *   (e.g. `a.reshape(newShape)` makes a new Tensor that shares the same
-   *   data buffer with `a`).
+   * - `numDataBuffers`: Number of unique data buffers allocated (undisposed) at
+   *   this time, which is ≤ the number of tensors
+   *   (e.g. `a.reshape(newShape)` makes a new Tensor that shares the same data
+   *   buffer with `a`).
    * - `unreliable`: `Optional` `boolean`:
    *    - On WebGL, not present (always reliable).
    *    - On CPU, true. Due to automatic garbage collection, these numbers
-   *     represent undisposed tensors, i.e. not wrapped in `tidy()`, or
-   *     lacking a call to `tensor.dispose()`.
+   *     represent undisposed tensors, i.e. not wrapped in `tidy()`, or lacking
+   *     a call to `tensor.dispose()`.
    */
   /** @doc {heading: 'Performance', subheading: 'Memory'} */
   static memory(): MemoryInfo {
@@ -115,7 +115,9 @@ export class Environment {
   /**
    * Executes the provided function `fn` and after it is executed, cleans up all
    * intermediate tensors allocated by `fn` except those returned by `fn`.
+   *
    * `f` must not return a Promise (async functions not allowed).
+   *
    * The returned result can be a complex object, however tidy only walks the
    * top-level properties (depth 1) of that object to search for tensors, or
    * lists of tensors that need to be tracked in the parent scope.
@@ -123,8 +125,8 @@ export class Environment {
    * Using this method helps avoid memory leaks. In general, wrap calls to
    * operations in `tidy` for automatic memory cleanup.
    *
-   * When in safe mode, you must enclose all `Tensor` creation and ops
-   * inside a `tidy` to prevent memory leaks.
+   * When in safe mode, you must enclose all `Tensor` creation and ops inside a
+   * `tidy` to prevent memory leaks.
    *
    * ```js
    * // y = 2 ^ 2 + 1
@@ -136,8 +138,8 @@ export class Environment {
    *
    *   console.log('numTensors (in tidy): ' + tf.memory().numTensors);
    *
-   *   // The value returned inside the tidy function will return
-   *   // through the tidy, in this case to the variable y.
+   *   // The value returned inside the tidy function will return through the
+   *   // tidy, in this case to the variable y.
    *   return b.add(one);
    * });
    *
@@ -145,10 +147,10 @@ export class Environment {
    * y.print();
    * ```
    *
-   * @param nameOrFn The name of the closure, or the function to execute.
-   *     If a name is provided, the 2nd argument should be the function.
-   *     If debug mode is on, the timing and the memory usage of the function
-   *     will be tracked and displayed on the console using the provided name.
+   * @param nameOrFn The name of the closure, or the function to execute. If a
+   *     name is provided, the 2nd argument should be the function. If debug
+   *     mode is on, the timing and the memory usage of the function will be
+   *     tracked and displayed on the console using the provided name.
    * @param fn The function to execute.
    */
   /** @doc {heading: 'Performance', subheading: 'Memory'} */
@@ -161,10 +163,10 @@ export class Environment {
    * Disposes any `Tensor`s found within the provided object.
    *
    * @param container an object that may be a `Tensor` or may directly contain
-   *     `Tensor`s, such as a `Tensor[]` or `{key: Tensor, ...}`. If the
-   *     object is not a `Tensor` or does not contain `Tensors`, nothing
-   *     happens. In general it is safe to pass any object here, except that
-   *     `Promise`s are not supported.
+   *     `Tensor`s, such as a `Tensor[]` or `{key: Tensor, ...}`. If the object
+   *     is not a `Tensor` or does not contain `Tensors`, nothing happens. In
+   *     general it is safe to pass any object here, except that `Promise`s are
+   *     not supported.
    */
   /** @doc {heading: 'Performance', subheading: 'Memory'} */
   static dispose(container: TensorContainer) {
@@ -188,8 +190,8 @@ export class Environment {
    *
    *   console.log('numTensors (in tidy): ' + tf.memory().numTensors);
    *
-   *   // The value returned inside the tidy function will return
-   *   // through the tidy, in this case to the variable y.
+   *   // The value returned inside the tidy function will return through the
+   *   // tidy, in this case to the variable y.
    *   return b.add(one);
    * });
    *
@@ -208,8 +210,7 @@ export class Environment {
   }
 
   /**
-   * Executes `f()` and returns a promise that resolves with timing
-   * information.
+   * Executes `f()` and returns a promise that resolves with timing information.
    *
    * The result is an object with the following properties:
    *
@@ -287,7 +288,7 @@ export class Environment {
         return 0;
       }
       // Remove this and reenable this extension when the
-      // EXT_disjoint_query_timer extension is reenabled in chrome.
+      // EXT_disjoint_query_timer extension is re-enabled in chrome.
       // https://github.com/tensorflow/tfjs/issues/544
       if (webGLVersion > 0) {
         return 0;
@@ -360,14 +361,14 @@ export class Environment {
   }
 
   /**
-   * Registers a global backend. The registration should happen when importing
-   * a module file (e.g. when importing `backend_webgl.ts`), and is used for
+   * Registers a global backend. The registration should happen when importing a
+   * module file (e.g. when importing `backend_webgl.ts`), and is used for
    * modular builds (e.g. custom tfjs bundle with only webgl support).
    *
-   * @param factory The backend factory function. When called, it should
-   * return an instance of the backend.
-   * @param priority The priority of the backend (higher = more important).
-   *     In case multiple backends are registered, the priority is used to find
+   * @param factory The backend factory function. When called, it should return
+   *     an instance of the backend.
+   * @param priority The priority of the backend (higher = more important). In
+   *     case multiple backends are registered, the priority is used to find
    *     the best backend. Defaults to 1.
    * @return False if the creation/registration failed. True otherwise.
    */

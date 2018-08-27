@@ -472,8 +472,8 @@ export class Engine implements TensorManager {
   }
 
   /**
-   * Tracks a Tensor in the current scope to be automatically cleaned up
-   * when the current scope ends, and returns the value.
+   * Tracks a Tensor in the current scope to be automatically cleaned up when
+   * the current scope ends, and returns the value.
    *
    * @param result The Tensor to track in the current scope.
    */
