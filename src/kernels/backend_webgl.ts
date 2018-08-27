@@ -75,7 +75,7 @@ import {SegmentOpProgram} from './webgl/segment_gpu';
 import {SelectProgram} from './webgl/select_gpu';
 import {SliceProgram} from './webgl/slice_gpu';
 import {StridedSliceProgram} from './webgl/strided_slice_gpu';
-import {TextureData, TextureUsage, getPackedMatrixTextureShapeWidthHeight} from './webgl/tex_util';
+import {TextureData, TextureUsage} from './webgl/tex_util';
 import {TextureManager} from './webgl/texture_manager';
 import {TileProgram} from './webgl/tile_gpu';
 import {TransposeProgram} from './webgl/transpose_gpu';
@@ -481,12 +481,10 @@ export class MathBackendWebGL implements KernelBackend {
 
   matMul(a: Tensor2D, b: Tensor2D, transposeA: boolean, transposeB: boolean):
       Tensor2D {
-    const [aPackedWidth, aPackedHeight] = getPackedMatrixTextureShapeWidthHeight(a.shape[0], a.shape[1]);
-    const packProgramA = new PackProgram([aPackedHeight, aPackedWidth], a.shape);
+    const packProgramA = new PackProgram(a.shape);
     const packedA: Tensor2D = this.compileAndRun(packProgramA, [a]);
 
-    const [bPackedWidth, bPackedHeight] = getPackedMatrixTextureShapeWidthHeight(b.shape[0], b.shape[1]);
-    const packProgramB = new PackProgram([bPackedHeight, bPackedWidth], b.shape);
+    const packProgramB = new PackProgram(b.shape);
     const packedB: Tensor2D = this.compileAndRun(packProgramB, [b]);
 
     const program = new MatMulProgram(packedA.shape, packedB.shape, transposeA, transposeB);
