@@ -258,6 +258,14 @@ describeWithFlags('zerosLike', ALL_ENVS, () => {
     expectArraysClose(b, [0, 0, 0]);
   });
 
+  it('chainable 1D default dtype', () => {
+    const a = tf.tensor1d([1, 2, 3]);
+    const b = a.zerosLike();
+    expect(b.dtype).toBe('float32');
+    expect(b.shape).toEqual([3]);
+    expectArraysClose(b, [0, 0, 0]);
+  });
+
   it('1D float32 dtype', () => {
     const a = tf.tensor1d([1, 2, 3], 'float32');
     const b = tf.zerosLike(a);
@@ -466,6 +474,14 @@ describeWithFlags('onesLike', ALL_ENVS, () => {
   it('1D default dtype', () => {
     const a = tf.tensor1d([1, 2, 3]);
     const b = tf.onesLike(a);
+    expect(b.dtype).toBe('float32');
+    expect(b.shape).toEqual([3]);
+    expectArraysClose(b, [1, 1, 1]);
+  });
+
+  it('chainable 1D default dtype', () => {
+    const a = tf.tensor1d([1, 2, 3]);
+    const b = a.onesLike();
     expect(b.dtype).toBe('float32');
     expect(b.shape).toEqual([3]);
     expectArraysClose(b, [1, 1, 1]);
@@ -2393,6 +2409,16 @@ describeWithFlags('oneHot', ALL_ENVS, () => {
     expect(res.shape).toEqual([2, 2]);
     expectArraysClose(res, [1, 0, 0, 1]);
   });
+
+  it('has gradient', () => {
+    const a = tf.tensor1d([0, 1, 2], 'int32');
+    const dy = tf.ones([3, 3], 'float32') as tf.Tensor2D;
+    const da = tf.grad((x: tf.Tensor1D) => tf.oneHot(x, 3))(a, dy);
+
+    expect(da.dtype).toBe('int32');
+    expect(da.shape).toEqual([3]);
+    expectArraysClose(da, [0, 0, 0]);
+  });
 });
 
 describeWithFlags('linspace', ALL_ENVS, () => {
@@ -2871,6 +2897,19 @@ describeWithFlags('split', ALL_ENVS, () => {
     expectArraysClose(res[2], [4, 8]);
   });
 
+  it('chainable split by sizes', () => {
+    const x = tf.tensor2d([1, 2, 3, 4, 5, 6, 7, 8], [2, 4]);
+    const res = x.split([1, 2, 1], 1);
+
+    expect(res.length).toEqual(3);
+    expect(res[0].shape).toEqual([2, 1]);
+    expectArraysClose(res[0], [1, 5]);
+    expect(res[1].shape).toEqual([2, 2]);
+    expectArraysClose(res[1], [2, 3, 6, 7]);
+    expect(res[2].shape).toEqual([2, 1]);
+    expectArraysClose(res[2], [4, 8]);
+  });
+
   it('sizes to not sum to axis size throws error', () => {
     const x = tf.tensor2d([1, 2, 3, 4, 5, 6, 7, 8], [2, 4]);
     const f = () => tf.split(x, [1, 2], 1);
@@ -2896,6 +2935,14 @@ describeWithFlags('split', ALL_ENVS, () => {
     expectArraysClose(res[0], [1, 2, 5, 6]);
     expect(res[1].shape).toEqual([2, 2]);
     expectArraysClose(res[1], [3, 4, 7, 8]);
+  });
+
+  it('should have proper gradient', () => {
+    const a = tf.tensor1d([1, 2, 3]);
+    const da = tf.grad(x => tf.split(x, [ 1, 2 ])[1])(a);
+
+    expect(da.shape).toEqual([3]);
+    expectArraysClose(da, [0, 1, 1]);
   });
 });
 
