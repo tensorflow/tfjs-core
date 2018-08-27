@@ -22,14 +22,14 @@ import {NamedTensorMap, TensorContainer} from './tensor_types';
 import * as util from './util';
 
 /**
- * Create a new gradient scope. Similar to scope, but forces all inner scopes
- * to not clean up so that gradient operations can be used inside of this
- * scope.
- * @param nameOrScopeFn The name of the scope, or the function to execute.
- *     If a name is provided, the 2nd argument should be the function.
- *     If a name is provided, and debug mode is on, the timing and the memory
- *     usage of the function will be tracked and displayed on the console
- *     using the provided name.
+ * Create a new gradient scope. Similar to scope, but forces all inner scopes to
+ * not clean up so that gradient operations can be used inside of this scope.
+ *
+ * @param nameOrScopeFn The name of the scope, or the function to execute. If a
+ *     name is provided, the 2nd argument should be the function. If a name is
+ *     provided, and debug mode is on, the timing and the memory usage of the
+ *     function will be tracked and displayed on the console using the provided
+ *     name.
  * @param scopeFn The function to execute.
  */
 function gradScope<T extends TensorContainer>(
@@ -41,9 +41,9 @@ function gradScope<T extends TensorContainer>(
  * Provided `f(x)`, returns another function `g(x, dy?)`, which gives the
  * gradient of `f(x)` with respect to `x`.
  *
- * If `dy` is provided, the gradient of `f(x).mul(dy).sum()` with respect to
- * `x` is computed instead. `f(x)` must take a single tensor `x` and return a
- * single tensor `y`. If `f()` takes multiple inputs, use `grads` instead.
+ * If `dy` is provided, the gradient of `f(x).mul(dy).sum()` with respect to `x`
+ * is computed instead. `f(x)` must take a single tensor `x` and return a single
+ * tensor `y`. If `f()` takes multiple inputs, use `grads` instead.
  *
  * ```js
  * // f(x) = x ^ 2
@@ -100,6 +100,7 @@ function grad<I extends Tensor, O extends Tensor>(f: (x: I) => O): (
  *
  * If `dy` is passed when calling `g()`, the gradient of
  * `f(x1,...).mul(dy).sum()` with respect to each input is computed instead.
+ *
  * The provided `f` must take one or more tensors and return a single tensor
  * `y`. If `f()` takes a single input, we recommend using `grad` instead.
  *
@@ -147,8 +148,8 @@ function grads<O extends Tensor>(f: (...args: Tensor[]) => O): (
 }
 
 /**
- * Like `grad`, but also returns the value of `f()`. Useful when `f()`
- * returns a metric you want to show.
+ * Like `grad`, but also returns the value of `f()`. Useful when `f()` returns a
+ * metric you want to show.
  *
  * The result is a rich object with the following properties:
  * - grad: The gradient of `f(x)` w.r.t `x` (result of `grad`).
@@ -191,8 +192,8 @@ function valueAndGrad<I extends Tensor, O extends Tensor>(f: (x: I) => O): (
 }
 
 /**
- * Like `grads`, but returns also the value of `f()`. Useful when `f()`
- * returns a metric you want to show.
+ * Like `grads`, but returns also the value of `f()`. Useful when `f()` returns
+ * a metric you want to show.
  *
  * The result is a rich object with the following properties:
  * - grads: The gradients of `f()` w.r.t each input (result of `grads`).
