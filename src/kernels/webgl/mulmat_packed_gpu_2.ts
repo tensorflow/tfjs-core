@@ -37,6 +37,7 @@ export class MatMulPackedProgram implements GPGPUProgram {
 
     	void main() {
     		gl_FragColor = dot2x2ARowBCol();
-    	}`;
+    	}
+    `;
 	}
 }

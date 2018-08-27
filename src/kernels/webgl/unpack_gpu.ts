@@ -2,8 +2,8 @@ import {GPGPUProgram} from './gpgpu_math';
 
 export class UnpackProgram implements GPGPUProgram {
 	variableNames = ['A'];
+  outputShape: number[];
 	userCode: string;
-	outputShape: number[];
 
 	constructor(outputShape: number[]) {
 		this.outputShape = outputShape;
