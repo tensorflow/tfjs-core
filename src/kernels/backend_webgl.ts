@@ -59,6 +59,9 @@ import {LRNProgram} from './webgl/lrn_gpu';
 import {LRNGradProgram} from './webgl/lrn_grad_gpu';
 import {MaxPool2DBackpropProgram} from './webgl/max_pool_backprop_gpu';
 import {MatMulProgram} from './webgl/mulmat_gpu';
+import {MatMulPackedProgram} from './webgl/mulmat_packed_gpu_2';
+import {PackProgram} from './webgl/pack_gpu';
+import {UnpackProgram} from './webgl/unpack_gpu';
 import {MultinomialProgram} from './webgl/multinomial_gpu';
 import {OneHotProgram} from './webgl/onehot_gpu';
 import {PadProgram} from './webgl/pad_gpu';
@@ -73,7 +76,7 @@ import {SegmentOpProgram} from './webgl/segment_gpu';
 import {SelectProgram} from './webgl/select_gpu';
 import {SliceProgram} from './webgl/slice_gpu';
 import {StridedSliceProgram} from './webgl/strided_slice_gpu';
-import {TextureData, TextureUsage} from './webgl/tex_util';
+import {TextureData, TextureUsage, getPackedMatrixTextureShapeWidthHeight} from './webgl/tex_util';
 import {TextureManager} from './webgl/texture_manager';
 import {TileProgram} from './webgl/tile_gpu';
 import {TransposeProgram} from './webgl/transpose_gpu';
@@ -479,8 +482,19 @@ export class MathBackendWebGL implements KernelBackend {
 
   matMul(a: Tensor2D, b: Tensor2D, transposeA: boolean, transposeB: boolean):
       Tensor2D {
-    const program = new MatMulProgram(a.shape, b.shape, transposeA, transposeB);
-    return this.compileAndRun<Tensor2D, Tensor2D>(program, [a, b]);
+    const [aPackedWidth, aPackedHeight] = getPackedMatrixTextureShapeWidthHeight(a.shape[0], a.shape[1]);
+    const packProgramA = new PackProgram([aPackedHeight, aPackedWidth], a.shape);
+    const packedA: Tensor2D = this.compileAndRun(packProgramA, [a]);
+
+    const [bPackedWidth, bPackedHeight] = getPackedMatrixTextureShapeWidthHeight(b.shape[0], b.shape[1]);
+    const packProgramB = new PackProgram([bPackedHeight, bPackedWidth], b.shape);
+    const packedB: Tensor2D = this.compileAndRun(packProgramB, [b]);
+
+    const program = new MatMulPackedProgram(packedA.shape, packedB.shape, transposeA, transposeB);
+    const result: Tensor2D = this.compileAndRun<Tensor2D, Tensor2D>(program, [packedA, packedB]);
+
+    const unpackProgram = new UnpackProgram([a.shape[0], b.shape[1]]);
+    return this.compileAndRun(unpackProgram, [result]);
   }
 
   multiply(a: Tensor, b: Tensor): Tensor {
