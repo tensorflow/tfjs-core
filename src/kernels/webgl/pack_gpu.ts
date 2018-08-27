@@ -12,18 +12,17 @@ export class PackProgram implements GPGPUProgram {
     this.userCode = `
       void main() {
         vec2 onePixel = vec2(1.) / vec2(${outputShape[1]}, ${outputShape[0]});
-        vec2 coord = ((gl_FragCoord.xy * 2.) - halfCR) / vec2(${outputShape[1]}, ${outputShape[0]});
 
-        float r = sampleTexture(A, coord);
-        float g = sampleTexture(A, vec2(coord.x + onePixel.x, coord.y));
-        float b = sampleTexture(A, vec2(coord.x, coord.y + onePixel.y));
-        float a = sampleTexture(A, coord + onePixel);
+        vec2 upperLeft = ((gl_FragCoord.xy * 2.) - halfCR) / vec2(${outputShape[1]}, ${outputShape[0]});
+        vec2 upperRight = vec2(upperLeft.x + onePixel.x, upperLeft.y);
+        vec2 lowerLeft = vec2(upperLeft.x, upperLeft.y + onePixel.y);
+        vec2 lowerRight = upperLeft + onePixel;
 
         gl_FragColor = vec4(
-          r, 
-          coord.x + onePixel.x > 1. ? 0. : g, 
-          coord.y + onePixel.y > 1. ? 0. : b, 
-          coord.x + onePixel.x > 1. || coord.y + onePixel.y > 1. ? 0. : a);
+          sampleTexture(A, upperLeft),
+          upperRight.x > 1. ? 0. : sampleTexture(A, upperRight), 
+          lowerLeft.y > 1. ? 0. : sampleTexture(A, lowerLeft),
+          lowerRight.x > 1. || lowerRight.y > 1. ? 0. : sampleTexture(A, lowerRight));
       }
     `;
   }
