@@ -382,6 +382,11 @@ export class Tensor<R extends Rank = Rank> {
   readonly shape: ShapeMap[R];
   /** Number of elements in the tensor. */
   readonly size: number;
+  /**
+   * Number of elements in the backing array. This is larger for complex
+   * numbers.
+   */
+  readonly storageSize: number;
   /** The data type for the array. */
   readonly dtype: DataType;
   /** The rank type for the array (see `Rank` enum). */
@@ -400,12 +405,14 @@ export class Tensor<R extends Rank = Rank> {
     this.shape = shape.slice();
     this.dtype = dtype || 'float32';
     this.size = util.sizeFromShape(shape);
+    this.storageSize = util.getStorageSize(this.shape, dtype);
 
     if (values != null) {
       util.assert(
-          this.size === values.length,
-          `Based on the provided shape, [${shape}], the tensor should have ` +
-              `${this.size} values but has ${values.length}`);
+          this.storageSize === values.length,
+          `Based on the provided shape, [${shape}], and dtype ` +
+              `${this.dtype}, the tensor should have ` +
+              `${this.storageSize} values but has ${values.length}`);
     }
 
     this.strides = computeStrides(shape);
