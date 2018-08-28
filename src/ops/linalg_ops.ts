@@ -117,7 +117,11 @@ function gramSchmidt_(xs: Tensor1D[]|Tensor2D): Tensor1D[]|Tensor2D {
  *     - `R` has a shape of `[..., M, N]`.
  * @throws If the rank of `x` is less than 2.
  */
-/** @doc {heading: 'Operations', subheading: 'Linear Algebra'} */
+/**
+ * @doc {heading:'Operations',
+ *       subheading:'Linear Algebra',
+ *       namespace:'linalg'}
+ */
 function qr_(x: Tensor, fullMatrices = false): [Tensor, Tensor] {
   if (x.rank < 2) {
     throw new Error(
