@@ -258,6 +258,14 @@ describeWithFlags('zerosLike', ALL_ENVS, () => {
     expectArraysClose(b, [0, 0, 0]);
   });
 
+  it('chainable 1D default dtype', () => {
+    const a = tf.tensor1d([1, 2, 3]);
+    const b = a.zerosLike();
+    expect(b.dtype).toBe('float32');
+    expect(b.shape).toEqual([3]);
+    expectArraysClose(b, [0, 0, 0]);
+  });
+
   it('1D float32 dtype', () => {
     const a = tf.tensor1d([1, 2, 3], 'float32');
     const b = tf.zerosLike(a);
@@ -466,6 +474,14 @@ describeWithFlags('onesLike', ALL_ENVS, () => {
   it('1D default dtype', () => {
     const a = tf.tensor1d([1, 2, 3]);
     const b = tf.onesLike(a);
+    expect(b.dtype).toBe('float32');
+    expect(b.shape).toEqual([3]);
+    expectArraysClose(b, [1, 1, 1]);
+  });
+
+  it('chainable 1D default dtype', () => {
+    const a = tf.tensor1d([1, 2, 3]);
+    const b = a.onesLike();
     expect(b.dtype).toBe('float32');
     expect(b.shape).toEqual([3]);
     expectArraysClose(b, [1, 1, 1]);
@@ -2840,6 +2856,19 @@ describeWithFlags('split', ALL_ENVS, () => {
   it('split by sizes', () => {
     const x = tf.tensor2d([1, 2, 3, 4, 5, 6, 7, 8], [2, 4]);
     const res = tf.split(x, [1, 2, 1], 1);
+    expect(res.length).toEqual(3);
+    expect(res[0].shape).toEqual([2, 1]);
+    expectArraysClose(res[0], [1, 5]);
+    expect(res[1].shape).toEqual([2, 2]);
+    expectArraysClose(res[1], [2, 3, 6, 7]);
+    expect(res[2].shape).toEqual([2, 1]);
+    expectArraysClose(res[2], [4, 8]);
+  });
+
+  it('chainable split by sizes', () => {
+    const x = tf.tensor2d([1, 2, 3, 4, 5, 6, 7, 8], [2, 4]);
+    const res = x.split([1, 2, 1], 1);
+
     expect(res.length).toEqual(3);
     expect(res[0].shape).toEqual([2, 1]);
     expectArraysClose(res[0], [1, 5]);
