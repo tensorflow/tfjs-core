@@ -1394,8 +1394,7 @@ describeWithFlags('sub', ALL_ENVS, () => {
   });
 
   it('throws when dtypes dont match', () => {
-    expect(
-        () => tf.sub(tf.scalar(1, 'float32'), tf.scalar([1, 2], 'complex64')))
+    expect(() => tf.sub(tf.scalar(1, 'float32'), tf.complex(1, 2)))
         .toThrowError(
             // tslint:disable-next-line:max-line-length
             /The dtypes of the first\(float32\) and second\(complex64\) input must match/);

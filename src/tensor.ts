@@ -51,6 +51,12 @@ export class TensorBuffer<R extends Rank> {
           `Length of values '${n}' does not match the size ` +
               `inferred by the shape '${storageSize}'.`);
     }
+    if (dtype === 'complex64') {
+      throw new Error(
+          `complex64 dtype TensorBuffers are not supported. Please create ` +
+          `a TensorBuffer for the real and imaginary parts separately and ` +
+          `call tf.complex(real, imag).`);
+    }
     this.values = values ||
         util.getTypedArrayFromDType(
             dtype, util.getStorageSize(this.shape, this.dtype));
@@ -65,7 +71,7 @@ export class TensorBuffer<R extends Rank> {
    * @param locs  The location indices.
    */
   /** @doc {heading: 'Tensors', subheading: 'Creation'} */
-  set(value: number|[number, number], ...locs: number[]) {
+  set(value: number, ...locs: number[]) {
     if (locs.length === 0) {
       locs = [0];
     }
@@ -74,23 +80,8 @@ export class TensorBuffer<R extends Rank> {
         `The number of provided coordinates (${locs.length}) must ` +
             `match the rank (${this.rank})`);
 
-    if (Array.isArray(value) && this.dtype !== 'complex64') {
-      throw new Error(
-          `value must not be an array for TensorBuffer of ` +
-          `type ${this.dtype}.`);
-    } else if (!Array.isArray(value) && this.dtype === 'complex64') {
-      throw new Error(
-          `value must be an array for TensorBuffer of ` +
-          `type complex64.`);
-    }
-
     const index = this.locToIndex(locs);
-    if (this.dtype !== 'complex64') {
-      this.values[index] = value as number;
-    } else {
-      this.values[index * 2] = (value as [number, number])[0];
-      this.values[index * 2 + 1] = (value as [number, number])[1];
-    }
+    this.values[index] = value as number;
   }
 
   /**
@@ -99,7 +90,7 @@ export class TensorBuffer<R extends Rank> {
    * @param locs The location indices.
    */
   /** @doc {heading: 'Tensors', subheading: 'Creation'} */
-  get(...locs: number[]): number|[number, number] {
+  get(...locs: number[]): number {
     if (locs.length === 0) {
       locs = [0];
     }
@@ -107,9 +98,7 @@ export class TensorBuffer<R extends Rank> {
     for (let i = 0; i < locs.length - 1; ++i) {
       index += this.strides[i] * locs[i];
     }
-    return this.dtype === 'complex64' ?
-        [this.values[index * 2], this.values[index * 2 + 1]] :
-        this.values[index];
+    return this.values[index];
   }
 
   locToIndex(locs: number[]): number {
@@ -154,8 +143,8 @@ export class TensorBuffer<R extends Rank> {
 }
 
 export interface TensorTracker {
-  registerTensor(t: Tensor, countBytes?: boolean): void;
-  disposeTensor(t: Tensor, countBytes?: boolean): void;
+  registerTensor(t: Tensor): void;
+  disposeTensor(t: Tensor): void;
   write(dataId: DataId, values: TypedArray): void;
   read(dataId: DataId): Promise<TypedArray>;
   readSync(dataId: DataId): TypedArray;
@@ -413,8 +402,8 @@ export class Tensor<R extends Rank = Rank> {
   readonly strides: number[];
 
   protected constructor(
-      shape: ShapeMap[R], dtype: DataType, values?: TypedArray, dataId?: DataId,
-      countBytes = true) {
+      shape: ShapeMap[R], dtype: DataType, values?: TypedArray,
+      dataId?: DataId) {
     this.shape = shape.slice();
     this.dtype = dtype || 'float32';
     this.size = util.sizeFromShape(shape);
@@ -432,7 +421,7 @@ export class Tensor<R extends Rank = Rank> {
     this.dataId = dataId != null ? dataId : {};
     this.id = Tensor.nextId++;
     this.rankType = (this.rank < 5 ? this.rank.toString() : 'higher') as R;
-    trackerFn().registerTensor(this, countBytes);
+    trackerFn().registerTensor(this);
     if (values != null) {
       trackerFn().write(this.dataId, values);
     }
@@ -444,8 +433,8 @@ export class Tensor<R extends Rank = Rank> {
    */
   static make<T extends Tensor<R>, D extends DataType = 'float32',
                                              R extends Rank = Rank>(
-      shape: ShapeMap[R], data: TensorData, dtype?: D, countBytes = true): T {
-    return new Tensor(shape, dtype, data.values, data.dataId, countBytes) as T;
+      shape: ShapeMap[R], data: TensorData, dtype?: D): T {
+    return new Tensor(shape, dtype, data.values, data.dataId) as T;
   }
 
   /** Flatten a Tensor to a 1D array. */
@@ -574,9 +563,6 @@ export class Tensor<R extends Rank = Rank> {
 
   /**
    * Disposes `Tensor` from memory.
-   *
-   * @param countBytes Whether to decrease the number of bytes during a
-   *   disposal.
    */
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
   dispose(): void {

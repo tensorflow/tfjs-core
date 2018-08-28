@@ -34,7 +34,7 @@ import {getTypedArrayFromDType} from '../util';
 
 import {KernelBackend} from './backend';
 import * as backend_util from './backend_util';
-import {mergeRealAndImagArrays, splitRealAndImagArrays} from './complex_util';
+import {mergeRealAndImagArrays} from './complex_util';
 import {nonMaxSuppressionImpl} from './non_max_suppression_impl';
 import {topkImpl} from './topk_impl';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
@@ -212,19 +212,11 @@ export class MathBackendWebGL implements KernelBackend {
     this.throwIfNoData(dataId);
 
     const texData = this.texData.get(dataId);
-    const {texture, texShape, usage, dtype, shape} = texData;
-
-    // For complex number writes, split the values and write them to the
-    // underlying real and imag buckets.
+    const {texture, texShape, usage, dtype} = texData;
     if (dtype === 'complex64') {
-      const {real, imag} = splitRealAndImagArrays(values as Float32Array);
-      // Bytes are counted by the complex64 tensor itself.
-      const countBytes = false;
-      texData.complexTensors = {
-        real: Tensor.make(shape, {values: real}, 'float32', countBytes),
-        imag: Tensor.make(shape, {values: imag}, 'float32', countBytes)
-      };
-      return;
+      throw new Error(
+          `Cannot write to a complex64 dtype. ` +
+          `Please use tf.complex(real, imag).`);
     }
 
     if (texture != null) {
@@ -429,9 +421,8 @@ export class MathBackendWebGL implements KernelBackend {
         this.releaseTexture(dataId, texture, texShape, usage);
       }
       if (complexTensors != null) {
-        const countBytes = false;
-        ENV.engine.disposeTensor(complexTensors.real, countBytes);
-        ENV.engine.disposeTensor(complexTensors.imag, countBytes);
+        complexTensors.real.dispose();
+        complexTensors.imag.dispose();
       }
       this.texData.delete(dataId);
     }

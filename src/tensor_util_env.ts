@@ -33,7 +33,7 @@ export function convertToTensor<T extends Tensor>(
         `Argument '${argName}' passed to '${functionName}' must be a ` +
         `Tensor or TensorLike, but got ${x.constructor.name}`);
   }
-  const inferredShape = inferShape(x, dtype);
+  const inferredShape = inferShape(x);
   if (!isTypedArray(x) && !Array.isArray(x)) {
     x = [x] as number[];
   }

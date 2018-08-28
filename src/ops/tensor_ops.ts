@@ -22,6 +22,7 @@ import {TensorLike, TensorLike1D, TensorLike2D, TensorLike3D, TensorLike4D, Tens
 import {ArrayData, DataType, Rank, ShapeMap} from '../types';
 import {assertNonNull, assertShapesMatch, getStorageSize, getTypedArrayFromDType, inferShape, isTypedArray, makeOnesTypedArray, makeZerosTypedArray, sizeFromShape, toTypedArray} from '../util';
 
+import {complex} from './array_ops';
 import {op} from './operation';
 
 
@@ -54,13 +55,18 @@ import {op} from './operation';
 function tensor<R extends Rank>(
     values: TensorLike, shape?: ShapeMap[R],
     dtype: DataType = 'float32'): Tensor<R> {
+  if (dtype === 'complex64') {
+    throw new Error(
+        `Cannot construct a complex64 tensor directly. ` +
+        `Please use tf.complex(real, imag).`);
+  }
   if (!isTypedArray(values) && !Array.isArray(values) &&
       typeof values !== 'number' && typeof values !== 'boolean') {
     throw new Error(
         'values passed to tensor(values) must be an ' +
         'array of numbers or booleans, or a TypedArray');
   }
-  const inferredShape = inferShape(values, dtype);
+  const inferredShape = inferShape(values);
   if (shape != null && inferredShape.length !== 1) {
     assertShapesMatch(
         shape, inferredShape,
@@ -122,7 +128,7 @@ function scalar(
 /** @doc {heading: 'Tensors', subheading: 'Creation'} */
 function tensor1d(values: TensorLike1D, dtype: DataType = 'float32'): Tensor1D {
   assertNonNull(values);
-  const inferredShape = inferShape(values, dtype);
+  const inferredShape = inferShape(values);
   if (inferredShape.length !== 1) {
     throw new Error('tensor1d() requires values to be a flat/TypedArray');
   }
@@ -158,7 +164,7 @@ function tensor2d(
   if (shape != null && shape.length !== 2) {
     throw new Error('tensor2d() requires shape to have two numbers');
   }
-  const inferredShape = inferShape(values, dtype);
+  const inferredShape = inferShape(values);
   if (inferredShape.length !== 2 && inferredShape.length !== 1) {
     throw new Error(
         'tensor2d() requires values to be number[][] or flat/TypedArray');
@@ -201,7 +207,7 @@ function tensor3d(
   if (shape != null && shape.length !== 3) {
     throw new Error('tensor3d() requires shape to have three numbers');
   }
-  const inferredShape = inferShape(values, dtype);
+  const inferredShape = inferShape(values);
   if (inferredShape.length !== 3 && inferredShape.length !== 1) {
     throw new Error(
         'tensor3d() requires values to be number[][][] or flat/TypedArray');
@@ -244,7 +250,7 @@ function tensor4d(
   if (shape != null && shape.length !== 4) {
     throw new Error('tensor4d() requires shape to have four numbers');
   }
-  const inferredShape = inferShape(values, dtype);
+  const inferredShape = inferShape(values);
   if (inferredShape.length !== 4 && inferredShape.length !== 1) {
     throw new Error(
         'tensor4d() requires values to be number[][][][] or flat/TypedArray');
@@ -287,7 +293,7 @@ function tensor5d(
   if (shape != null && shape.length !== 5) {
     throw new Error('tensor5d() requires shape to have five numbers');
   }
-  const inferredShape = inferShape(values, dtype);
+  const inferredShape = inferShape(values);
   if (inferredShape.length !== 5 && inferredShape.length !== 1) {
     throw new Error(
         'tensor5d() requires values to be ' +
@@ -332,7 +338,7 @@ function tensor6d(
   if (shape != null && shape.length !== 6) {
     throw new Error('tensor6d() requires shape to have six numbers');
   }
-  const inferredShape = inferShape(values, dtype);
+  const inferredShape = inferShape(values);
   if (inferredShape.length !== 6 && inferredShape.length !== 1) {
     throw new Error(
         'tensor6d() requires values to be number[][][][] or flat/TypedArray');
@@ -361,6 +367,11 @@ function tensor6d(
 /** @doc {heading: 'Tensors', subheading: 'Creation'} */
 function ones<R extends Rank>(
     shape: ShapeMap[R], dtype: DataType = 'float32'): Tensor<R> {
+  if (dtype === 'complex64') {
+    const real = ones(shape, 'float32');
+    const imag = ones(shape, 'float32');
+    return complex(real, imag) as Tensor<R>;
+  }
   const values = makeOnesTypedArray(getStorageSize(shape, dtype), dtype);
   return Tensor.make(shape, {values}, dtype);
 }
@@ -379,6 +390,11 @@ function ones<R extends Rank>(
 /** @doc {heading: 'Tensors', subheading: 'Creation'} */
 function zeros<R extends Rank>(
     shape: ShapeMap[R], dtype: DataType = 'float32'): Tensor<R> {
+  if (dtype === 'complex64') {
+    const real = zeros(shape, 'float32');
+    const imag = zeros(shape, 'float32');
+    return complex(real, imag) as Tensor<R>;
+  }
   const values = makeZerosTypedArray(getStorageSize(shape, dtype), dtype);
   return Tensor.make(shape, {values}, dtype);
 }

@@ -179,9 +179,9 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   complex<T extends Tensor>(real: T, imag: T): T {
-    const result = complex_util.mergeRealAndImagArrays(
+    const values = complex_util.mergeRealAndImagArrays(
         real.dataSync() as Float32Array, imag.dataSync() as Float32Array);
-    return tensor(result, real.shape, 'complex64') as T;
+    return Tensor.make(real.shape, {values}, 'complex64') as T;
   }
   real<T extends Tensor>(input: T): T {
     const result =
@@ -2475,47 +2475,52 @@ export class MathBackendCPU implements KernelBackend {
            bImag: number) => {real: number, imag: number}): Tensor {
     const newShape =
         broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    const result = ops.buffer(newShape, 'complex64');
+    const realResult = ops.buffer(newShape, 'float32');
+    const imagResult = ops.buffer(newShape, 'float32');
+
     const aVals = a.dataSync();
     const bVals = b.dataSync();
     const aBroadcastDims = broadcast_util.getBroadcastDims(a.shape, newShape);
     const bBroadcastDims = broadcast_util.getBroadcastDims(b.shape, newShape);
 
-    const resVals = result.values;
+    const realVals = realResult.values;
+    const imagVals = imagResult.values;
+
     if (aBroadcastDims.length + bBroadcastDims.length === 0) {
-      for (let i = 0; i < resVals.length; i += 2) {
+      for (let i = 0; i < realVals.length; i++) {
         const aIdx = i % aVals.length;
         const bIdx = i % bVals.length;
 
         const result =
-            op(aVals[aIdx], aVals[aIdx + 1], bVals[bIdx], bVals[bIdx + 1]);
+            op(aVals[aIdx * 2], aVals[aIdx * 2 + 1], bVals[bIdx * 2],
+               bVals[bIdx * 2 + 1]);
 
-        resVals[i] = result.real;
-        resVals[i + 1] = result.imag;
+        realVals[i] = result.real;
+        imagVals[i] = result.imag;
       }
     } else {
-      const aBuf = a.buffer();
-      const bBuf = b.buffer();
-      for (let i = 0; i < resVals.length; i += 2) {
-        const loc = result.indexToLoc(i / 2);
+      const aRealBuf = this.real(a).buffer();
+      const bRealBuf = this.real(b).buffer();
+      for (let i = 0; i < realVals.length; i++) {
+        const loc = realResult.indexToLoc(i);
 
         const aLoc = loc.slice(-a.rank);
         aBroadcastDims.forEach(d => aLoc[d] = 0);
-        const aIndex = aBuf.locToIndex(aLoc);
+        const aIndex = aRealBuf.locToIndex(aLoc);
 
         const bLoc = loc.slice(-b.rank);
         bBroadcastDims.forEach(d => bLoc[d] = 0);
-        const bIndex = bBuf.locToIndex(bLoc);
+        const bIndex = bRealBuf.locToIndex(bLoc);
 
         const opResult =
             op(aVals[aIndex * 2], aVals[aIndex * 2 + 1], bVals[bIndex * 2],
                bVals[bIndex * 2 + 1]);
 
-        resVals[i] = opResult.real;
-        resVals[i + 1] = opResult.imag;
+        realVals[i] = opResult.real;
+        imagVals[i] = opResult.imag;
       }
     }
-    return result.toTensor();
+    return this.complex(realResult.toTensor(), imagResult.toTensor());
   }
 
   dispose() {}

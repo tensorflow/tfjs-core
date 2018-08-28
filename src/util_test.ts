@@ -72,20 +72,20 @@ describe('Util', () => {
   });
 
   it('infer shape single number', () => {
-    expect(util.inferShape(4, 'float32')).toEqual([]);
+    expect(util.inferShape(4)).toEqual([]);
   });
 
   it('infer shape 1d array', () => {
-    expect(util.inferShape([1, 2, 5], 'float32')).toEqual([3]);
+    expect(util.inferShape([1, 2, 5])).toEqual([3]);
   });
 
   it('infer shape 2d array', () => {
-    expect(util.inferShape([[1, 2, 5], [5, 4, 1]], 'float32')).toEqual([2, 3]);
+    expect(util.inferShape([[1, 2, 5], [5, 4, 1]])).toEqual([2, 3]);
   });
 
   it('infer shape 3d array', () => {
     const a = [[[1, 2], [2, 3], [5, 6]], [[5, 6], [4, 5], [1, 2]]];
-    expect(util.inferShape(a, 'float32')).toEqual([2, 3, 2]);
+    expect(util.inferShape(a)).toEqual([2, 3, 2]);
   });
 
   it('infer shape 4d array', () => {
@@ -93,47 +93,12 @@ describe('Util', () => {
       [[[1], [2]], [[2], [3]], [[5], [6]]],
       [[[5], [6]], [[4], [5]], [[1], [2]]]
     ];
-    expect(util.inferShape(a, 'float32')).toEqual([2, 3, 2, 1]);
+    expect(util.inferShape(a)).toEqual([2, 3, 2, 1]);
   });
 
   it('infer shape of typed array', () => {
     const a = new Float32Array([1, 2, 3, 4, 5]);
-    expect(util.inferShape(a, 'float32')).toEqual([5]);
-  });
-
-  it('infer shape single complex number', () => {
-    expect(util.inferShape(4, 'complex64')).toEqual([]);
-  });
-
-  it('infer shape 1d complex array', () => {
-    expect(util.inferShape([1, 2, 3, 4], 'complex64')).toEqual([2]);
-  });
-
-  it('infer shape 2d array', () => {
-    expect(
-        util.inferShape([[1, 2, 5, 2, 4, 6], [5, 4, 1, 3, 2, 1]], 'complex64'))
-        .toEqual([2, 3]);
-  });
-
-  it('infer shape 3d complex array', () => {
-    const a = [
-      [[1, 2, 3, 4], [2, 3, 4, 5], [5, 6, 7, 8]],
-      [[5, 6, 7, 8], [4, 5, 6, 7], [1, 2, 3, 4]]
-    ];
-    expect(util.inferShape(a, 'complex64')).toEqual([2, 3, 2]);
-  });
-
-  it('infer shape 4d complex array', () => {
-    const a = [
-      [[[1, 2], [2, 3]], [[2, 3], [3, 4]], [[5, 6], [6, 7]]],
-      [[[5, 6], [6, 7]], [[4, 5], [5, 6]], [[1, 2], [2, 3]]]
-    ];
-    expect(util.inferShape(a, 'complex64')).toEqual([2, 3, 2, 1]);
-  });
-
-  it('infer shape of complex typed array', () => {
-    const a = new Float32Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
-    expect(util.inferShape(a, 'complex64')).toEqual([5]);
+    expect(util.inferShape(a)).toEqual([5]);
   });
 });
 

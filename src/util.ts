@@ -51,7 +51,7 @@ export function clamp(min: number, x: number, max: number): number {
  */
 export function randUniform(a: number, b: number) {
   const r = Math.random();
-  return (b*r) + (1-r)*a;
+  return (b * r) + (1 - r) * a;
 }
 
 /** Returns the squared Euclidean distance between two vectors. */
@@ -98,14 +98,12 @@ export function flatten<T extends number|boolean|Promise<number>>(
   return ret;
 }
 
-export function inferShape(
-    val: TypedArray|number|boolean|RegularArray<number>|RegularArray<boolean>,
-    dtype: DataType): number[] {
+export function inferShape(val: TypedArray|number|boolean|RegularArray<number>|
+                           RegularArray<boolean>): number[] {
   let firstElem: typeof val = val;
 
   if (isTypedArray(val)) {
-    const sizeDivisor = dtype === 'complex64' ? 2 : 1;
-    return [(val as TypedArray).length / sizeDivisor];
+    return [(val as TypedArray).length];
   }
   if (!Array.isArray(val)) {
     return [];  // Scalar.
@@ -120,11 +118,6 @@ export function inferShape(
     deepAssertShapeConsistency(val, shape, []);
   }
 
-  // For complex64 dtypes the inner most dimension has 2 values per tensor
-  // entry.
-  if (dtype === 'complex64') {
-    shape[shape.length - 1] /= 2;
-  }
   return shape;
 }
 

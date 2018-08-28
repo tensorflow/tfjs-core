@@ -725,7 +725,7 @@ describeWithFlags('tensor', ALL_ENVS, () => {
   });
 
   it('Scalar complex64 dtype', () => {
-    const a = tf.scalar([4, 5], 'complex64');
+    const a = tf.complex(4, 5);
     const b = a.reshape([1, 1]);
     expectArraysClose(a, [4, 5]);
     expect(b.dtype).toBe('complex64');
@@ -750,7 +750,7 @@ describeWithFlags('tensor', ALL_ENVS, () => {
   });
 
   it('Tensor1D complex64 dtype', () => {
-    const a = tf.tensor1d([1, 2, 3, 4, 6, 7, 8, 9], 'complex64');
+    const a = tf.complex([1, 3, 5, 7], [2, 4, 6, 8]);
     const b = a.reshape([2, 2]);
     expect(b.dtype).toBe('complex64');
     expect(b.shape).toEqual([2, 2]);
@@ -774,8 +774,7 @@ describeWithFlags('tensor', ALL_ENVS, () => {
   });
 
   it('Tensor2D complex64 dtype', () => {
-    const a = tf.tensor2d(
-        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [2, 3], 'complex64');
+    const a = tf.complex([[1, 3, 5], [7, 9, 11]], [[2, 4, 6], [8, 10, 12]]);
     const b = a.reshape([6]);
     expect(b.dtype).toBe('complex64');
     expect(b.shape).toEqual([6]);
@@ -799,8 +798,9 @@ describeWithFlags('tensor', ALL_ENVS, () => {
   });
 
   it('Tensor3D complex64 dtype', () => {
-    const a = tf.tensor3d(
-        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [2, 3, 1], 'complex64');
+    const a = tf.complex(
+        [[[1], [3], [5]], [[7], [9], [11]]],
+        [[[2], [4], [6]], [[8], [10], [12]]]);
     const b = a.reshape([6]);
     expect(b.dtype).toBe('complex64');
     expect(b.shape).toEqual([6]);
@@ -824,8 +824,9 @@ describeWithFlags('tensor', ALL_ENVS, () => {
   });
 
   it('Tensor4D complex64 dtype', () => {
-    const a = tf.tensor4d(
-        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [2, 3, 1, 1], 'complex64');
+    const a = tf.complex(
+        [[[[1]], [[3]], [[5]]], [[[7]], [[9]], [[11]]]],
+        [[[[2]], [[4]], [[6]]], [[[8]], [[10]], [[12]]]]);
     const b = a.reshape([3, 2]);
     expect(b.dtype).toBe('complex64');
     expect(b.shape).toEqual([3, 2]);
@@ -1024,7 +1025,7 @@ describeWithFlags('tensor', ALL_ENVS, () => {
   });
 
   it('squeeze a complex64 tensor', () => {
-    const a = tf.tensor2d([4, 2, 1, 3, 5, 6], [3, 1], 'complex64');
+    const a = tf.complex([[4], [1], [5]], [[2], [3], [6]]);
     const b = a.squeeze();
     expect(b.shape).toEqual([3]);
     expectArraysClose(b, [4, 2, 1, 3, 5, 6]);
@@ -1066,23 +1067,25 @@ describeWithFlags('tensor', ALL_ENVS, () => {
   });
 });
 
+const BYTES_PER_COMPLEX_ELEMENT = 4 * 2;
 describeWithFlags('complex64 WebGL memory', WEBGL_ENVS, () => {
   it('reshape', () => {
     const memoryBefore = tf.memory();
 
-    const a = tf.tensor2d(
-        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [2, 3], 'complex64');
+    const a = tf.complex([[1, 3, 5], [7, 9, 11]], [[2, 4, 6], [8, 10, 12]]);
 
     // 3 new tensors, the complex64 tensor and the 2 underlying float32 tensors.
     expect(tf.memory().numTensors).toBe(memoryBefore.numTensors + 3);
-    // Bytes should be counted once
-    expect(tf.memory().numBytes).toBe(memoryBefore.numBytes + 12 * 4);
+    // Bytes should be counted once.
+    expect(tf.memory().numBytes)
+        .toBe(memoryBefore.numBytes + 12 * BYTES_PER_COMPLEX_ELEMENT);
 
     const b = a.reshape([6]);
     // 1 new tensor from the reshape.
     expect(tf.memory().numTensors).toBe(memoryBefore.numTensors + 4);
     // No new bytes from a reshape.
-    expect(tf.memory().numBytes).toBe(memoryBefore.numBytes + 12 * 4);
+    expect(tf.memory().numBytes)
+        .toBe(memoryBefore.numBytes + 12 * BYTES_PER_COMPLEX_ELEMENT);
 
     expect(b.dtype).toBe('complex64');
     expect(b.shape).toEqual([6]);
@@ -1092,7 +1095,8 @@ describeWithFlags('complex64 WebGL memory', WEBGL_ENVS, () => {
     // 1 complex tensor should be disposed.
     expect(tf.memory().numTensors).toBe(memoryBefore.numTensors + 3);
     // Byte count should not change because the refcounts are all 1.
-    expect(tf.memory().numBytes).toBe(memoryBefore.numBytes + 12 * 4);
+    expect(tf.memory().numBytes)
+        .toBe(memoryBefore.numBytes + 12 * BYTES_PER_COMPLEX_ELEMENT);
 
     a.dispose();
     // All the tensors should now be disposed.
@@ -1104,19 +1108,20 @@ describeWithFlags('complex64 WebGL memory', WEBGL_ENVS, () => {
   it('clone', () => {
     const memoryBefore = tf.memory();
 
-    const a = tf.tensor2d(
-        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [2, 3], 'complex64');
+    const a = tf.complex([[1, 3, 5], [7, 9, 11]], [[2, 4, 6], [8, 10, 12]]);
 
     // 3 new tensors, the complex64 tensor and the 2 underlying float32 tensors.
     expect(tf.memory().numTensors).toBe(memoryBefore.numTensors + 3);
     // Bytes should be counted once
-    expect(tf.memory().numBytes).toBe(memoryBefore.numBytes + 12 * 4);
+    expect(tf.memory().numBytes)
+        .toBe(memoryBefore.numBytes + 12 * BYTES_PER_COMPLEX_ELEMENT);
 
     const b = a.clone();
     // 1 new tensor from the clone.
     expect(tf.memory().numTensors).toBe(memoryBefore.numTensors + 4);
     // No new bytes from a clone.
-    expect(tf.memory().numBytes).toBe(memoryBefore.numBytes + 12 * 4);
+    expect(tf.memory().numBytes)
+        .toBe(memoryBefore.numBytes + 12 * BYTES_PER_COMPLEX_ELEMENT);
 
     expect(b.dtype).toBe('complex64');
     expectArraysClose(a, b);
@@ -1125,7 +1130,8 @@ describeWithFlags('complex64 WebGL memory', WEBGL_ENVS, () => {
     // 1 complex tensor should be disposed.
     expect(tf.memory().numTensors).toBe(memoryBefore.numTensors + 3);
     // Byte count should not change because the refcounts are all 1.
-    expect(tf.memory().numBytes).toBe(memoryBefore.numBytes + 12 * 4);
+    expect(tf.memory().numBytes)
+        .toBe(memoryBefore.numBytes + 12 * BYTES_PER_COMPLEX_ELEMENT);
 
     a.dispose();
     // All the tensors should now be disposed.
@@ -1313,7 +1319,7 @@ describe('tensor.toString', () => {
 
   it('scalar complex64 verbose', () => {
     const verbose = true;
-    const str = tf.scalar([5, 6], 'complex64').toString(verbose);
+    const str = tf.complex(5, 6).toString(verbose);
     expect(str).toEqual(
         'Tensor\n' +
         '  dtype: complex64\n' +
@@ -1325,7 +1331,7 @@ describe('tensor.toString', () => {
 
   it('1d complex64 tensor verbose', () => {
     const verbose = true;
-    const str = tf.tensor1d([3, 4, 5, 6], 'complex64').toString(verbose);
+    const str = tf.complex([3, 5], [4, 6]).toString(verbose);
     expect(str).toEqual(
         'Tensor\n' +
         '  dtype: complex64\n' +
@@ -1337,8 +1343,6 @@ describe('tensor.toString', () => {
 
   it('2d complex64 tensor verbose', () => {
     const verbose = true;
-    console.log(tf.zeros([3, 3], 'complex64').dataSync());
-
     const str = tf.zeros([3, 3], 'complex64').toString(verbose);
     expect(str).toEqual(
         'Tensor\n' +
@@ -1403,13 +1407,13 @@ describe('tensor.toString', () => {
 
   it('2d complex64 with padding to align columns verbose', () => {
     const verbose = true;
-    const str = tf.tensor(
+
+    const str = tf.complex(
                       [
-                        [0.8597712, 1, 3, 1.0102332, 0.2740789, 3],
-                        [0.6696132, 2, 0.4825962, 5, 2.75, 2.34424],
-                        [1.991, 1.23, 0.0640865, 2, 0.2983858, .123]
+                        [0.8597712, 3, 0.2740789], [0.6696132, 0.4825962, 2.75],
+                        [1.991, 0.0640865, 0.2983858]
                       ],
-                      [3, 3], 'complex64')
+                      [[1, 1.0102332, 3], [2, 5, 2.34424], [1.23, 2, 0.123]])
                     .toString(verbose);
     expect(str).toEqual(
         'Tensor\n' +
@@ -1423,7 +1427,7 @@ describe('tensor.toString', () => {
   });
 
   it('scalar complex64', () => {
-    const str = tf.scalar([5, 4], 'complex64').toString();
+    const str = tf.complex(5, 4).toString();
     expect(str).toEqual(
         'Tensor\n' +
         '    5 + 4j');
@@ -1480,20 +1484,19 @@ describe('tensor.toString', () => {
         '     [0 + 0j, 0 + 0j, 0 + 0j, ..., 0 + 0j, 0 + 0j, 0 + 0j]]');
   });
 
-  it('2d with padding to align columns', () => {
-    const str = tf.tensor(
+  it('2d complex64 with padding to align columns', () => {
+    const str = tf.complex(
                       [
-                        [0.8597712, 1, 3, 1.0102332, 0.2740789, 3],
-                        [0.6696132, 2, 0.4825962, 5, 2.75, 2.34424],
-                        [1.991, 1.23, 0.0640865, 2, 0.2983858, .123]
+                        [0.8597712, 3, 0.2740789], [0.6696132, 0.4825962, 2.75],
+                        [1.991, 0.0640865, 0.2983858]
                       ],
-                      [3, 3], 'complex64')
+                      [[1, 1.0102332, 3], [2, 5, 2.34424], [1.23, 2, 0.123]])
                     .toString();
     expect(str).toEqual(
         'Tensor\n' +
-        '    [[0.8597712 + 1j   , 3 + 1.0102332j, 0.2740789 + 3j   ],\n' +
-        '     [0.6696132 + 2j   , 0.4825962 + 5j, 2.75 + 2.34424j  ],\n' +
-        '     [1.9910001 + 1.23j, 0.0640865 + 2j, 0.2983858 + .123j]]');
+        '    [[0.8597712 + 1j   , 3 + 1.0102332j, 0.2740789 + 3j    ],\n' +
+        '     [0.6696132 + 2j   , 0.4825962 + 5j, 2.75 + 2.34424j   ],\n' +
+        '     [1.9910001 + 1.23j, 0.0640865 + 2j, 0.2983858 + 0.123j]]');
   });
 });
 
@@ -1656,7 +1659,9 @@ describeWithFlags('tensor with 0 in shape', ALL_ENVS, () => {
   });
 
   it('complex64 with 0 in shape', () => {
-    const a = tf.tensor2d([], [0, 5], 'complex64');
+    const areal = tf.tensor2d([], [0, 5]);
+    const breal = tf.tensor2d([], [0, 5]);
+    const a = tf.complex(areal, breal);
     expect(a.dtype).toBe('complex64');
     expect(a.rank).toBe(2);
     expect(a.shape).toEqual([0, 5]);
@@ -1685,19 +1690,5 @@ describeWithFlags('buffer', ALL_ENVS, () => {
     expect(buff.get(0, 1, 1)).toEqual(0);
     expect(buff.get(0, 1, 2)).toEqual(0);
     expectArraysClose(buff.toTensor(), [1, 0, 0, 2, 0, 0]);
-  });
-
-  it('complex64', () => {
-    const buff = tf.buffer([1, 2, 3], 'complex64');
-    buff.set([1, 2], 0, 0, 0);
-    buff.set([3, 4], 0, 1, 0);
-
-    expect(buff.get(0, 0, 0)).toEqual([1, 2]);
-    expect(buff.get(0, 0, 1)).toEqual([0, 0]);
-    expect(buff.get(0, 0, 2)).toEqual([0, 0]);
-    expect(buff.get(0, 1, 0)).toEqual([3, 4]);
-    expect(buff.get(0, 1, 1)).toEqual([0, 0]);
-    expect(buff.get(0, 1, 2)).toEqual([0, 0]);
-    expectArraysClose(buff.toTensor(), [1, 2, 0, 0, 0, 0, 3, 4, 0, 0, 0, 0]);
   });
 });

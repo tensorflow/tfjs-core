@@ -190,16 +190,15 @@ export class Engine implements TensorManager {
 
   // TensorManager implementation.
 
-  registerTensor(a: Tensor|Variable, countBytes = true): void {
+  registerTensor(a: Tensor|Variable): void {
     const refCount =
         this.refCounter.has(a.dataId) ? this.refCounter.get(a.dataId) : 0;
     this.numTensors++;
     if (refCount === 0) {
       this.numDataBuffers++;
-      if (countBytes) {
-        this.numBytes +=
-            util.sizeFromShape(a.shape) * util.bytesPerElement(a.dtype);
-      }
+      this.numBytes +=
+          util.sizeFromShape(a.shape) * util.bytesPerElement(a.dtype);
+
       this.backend.register(a.dataId, a.shape, a.dtype);
     }
     this.refCounter.set(a.dataId, refCount + 1);
@@ -215,7 +214,7 @@ export class Engine implements TensorManager {
     this.registeredVariables[v.name] = v;
   }
 
-  disposeTensor(a: Tensor, countBytes = true): void {
+  disposeTensor(a: Tensor): void {
     if (!this.refCounter.has(a.dataId)) {
       return;
     }
@@ -228,10 +227,9 @@ export class Engine implements TensorManager {
       this.refCounter.delete(a.dataId);
       this.backend.disposeData(a.dataId);
       this.numDataBuffers--;
-      if (countBytes) {
-        this.numBytes -=
-            util.sizeFromShape(a.shape) * util.bytesPerElement(a.dtype);
-      }
+      this.numBytes -=
+          util.sizeFromShape(a.shape) * util.bytesPerElement(a.dtype);
+
     } else {
       this.refCounter.set(a.dataId, refCount - 1);
     }
