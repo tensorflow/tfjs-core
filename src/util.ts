@@ -158,14 +158,6 @@ export function sizeFromShape(shape: number[]): number {
   return size;
 }
 
-export function getStorageSize(shape: number[], dtype: DataType) {
-  const size = sizeFromShape(shape);
-  if (dtype === 'complex64') {
-    return 2 * size;
-  }
-  return size;
-}
-
 export function isScalarShape(shape: number[]): boolean {
   return shape.length === 0;
 }

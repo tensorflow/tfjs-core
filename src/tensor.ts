@@ -45,9 +45,8 @@ export class TensorBuffer<R extends Rank> {
 
     if (values != null) {
       const n = values.length;
-      const storageSize = util.getStorageSize(this.shape, this.dtype);
       util.assert(
-          n === storageSize,
+          n === util.sizeFromShape(this.shape),
           `Length of values '${n}' does not match the size ` +
               `inferred by the shape '${storageSize}'.`);
     }
@@ -58,8 +57,7 @@ export class TensorBuffer<R extends Rank> {
           `call tf.complex(real, imag).`);
     }
     this.values = values ||
-        util.getTypedArrayFromDType(
-            dtype, util.getStorageSize(this.shape, this.dtype));
+        util.getTypedArrayFromDType(dtype, util.sizeFromShape(this.shape));
     this.strides = computeStrides(shape);
     this.size = util.sizeFromShape(shape);
   }
@@ -384,11 +382,6 @@ export class Tensor<R extends Rank = Rank> {
   readonly shape: ShapeMap[R];
   /** Number of elements in the tensor. */
   readonly size: number;
-  /**
-   * Number of elements in the underlying data. This is different than
-   * size when the dtype is complex64.
-   */
-  readonly storageSize: number;
   /** The data type for the array. */
   readonly dtype: DataType;
   /** The rank type for the array (see `Rank` enum). */
@@ -407,7 +400,6 @@ export class Tensor<R extends Rank = Rank> {
     this.shape = shape.slice();
     this.dtype = dtype || 'float32';
     this.size = util.sizeFromShape(shape);
-    this.storageSize = util.getStorageSize(shape, this.dtype);
 
     if (values != null) {
       util.assert(
