@@ -98,14 +98,14 @@ function matMul_<T extends Tensor>(
     } else {
       return {
         a: () => b3D.toFloat().matMul(dy, true, true),
-        b: () => dy.matMul($a.toFloat(), true, true)
+        b: () => dy.matMul(a3D.toFloat(), true, true)
       };
     }
   };
   const res = ENV.engine.runKernel(
       backend => backend.matMul(a3D, b3D, transposeA, transposeB), {a: a3D, b: b3D},
       grad);
-  return res.reshape(outShape);
+  return res.reshape(outShape) as T;
 }
 
 /**
