@@ -35,6 +35,7 @@ import {tensor2d} from './tensor_ops';
  * ```js
  * const x = tf.tensor2d([[1, 2], [3, 4]]);
  * let y = tf.linalg.gramSchmidt(x);
+ * y.print();
  * console.log('Othogonalized:');
  * y.dot(y.transpose()).print();  // should be nearly the identity matrix.
  * console.log('First row direction maintained:');
@@ -112,8 +113,12 @@ function gramSchmidt_(xs: Tensor1D[]|Tensor2D): Tensor1D[]|Tensor2D {
  * (http://www.cs.cornell.edu/~bindel/class/cs6210-f09/lec18.pdf)
  *
  * ```js
- * const a = tf.tensor2d([1, 2], [3, 4]);
+ * const a = tf.tensor2d([[1, 2], [3, 4]]);
  * let [q, r] = tf.linalg.qr(a);
+ * console.log('Q');
+ * q.print();
+ * console.log('R');
+ * r.print();
  * console.log('Orthogonalized');
  * q.dot(q.transpose()).print()  // should be nearly the identity matrix.
  * console.log('Reconstructed');
