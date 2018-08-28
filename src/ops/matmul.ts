@@ -16,13 +16,13 @@
  */
 
 import {ENV} from '../environment';
-import {Tensor, Tensor1D, Tensor2D} from '../tensor';
+import {Tensor, Tensor1D, Tensor2D, Tensor3D} from '../tensor';
 import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import * as util from '../util';
 import {op} from './operation';
 
-function computeBatchDimension_(shape) {
+function computeBatchDimension_(shape: number[]) {
   return shape.slice(0, -2).reduce((acc, curr) => acc * curr, 1);
 }
 
@@ -41,9 +41,9 @@ function computeBatchDimension_(shape) {
  * @param transposeB If true, `b` is transposed before multiplication.
  */
 /** @doc {heading: 'Operations', subheading: 'Matrices'} */
-function matMul_(
-    a: Tensor2D|TensorLike, b: Tensor2D|TensorLike, transposeA = false,
-    transposeB = false): Tensor2D {
+function matMul_<T extends Tensor>(
+    a: T, b: T, transposeA = false,
+    transposeB = false): T {
   const $a = convertToTensor(a, 'a', 'matMul');
   const $b = convertToTensor(b, 'b', 'matMul');
 
@@ -74,10 +74,12 @@ function matMul_(
           `${$b.shape} and transposeA=${transposeA}` +
           ` and transposeB=${transposeB} must match.`);
 
-  const a3d = a.as3D(-1, outerShapeA, innerShapeA);
-  const b3d = b.as3D(-1, innerShapeB, outerShapeB);
+  const a3D = a.as3D(-1, outerShapeA, innerShapeA);
+  const b3D = b.as3D(-1, innerShapeB, outerShapeB);
 
-  const grad = (dy: Tensor2D) => {
+  const outShape = $a.shape.slice(0, -2).concat([outerShapeA, outerShapeB]);
+
+  const grad = (dy: Tensor3D) => {
     if (!transposeA && !transposeB) {
       return {
         $a: () => dy.matMul($b.toFloat(), false, true),
@@ -100,9 +102,10 @@ function matMul_(
       };
     }
   };
-  return ENV.engine.runKernel(
-      backend => backend.matMul($a, $b, transposeA, transposeB), {$a, $b},
+  const res = ENV.engine.runKernel(
+      backend => backend.matMul(a3D, b3D, transposeA, transposeB), {a: a3D, b: b3D},
       grad);
+  return res.reshape(outShape);
 }
 
 /**
