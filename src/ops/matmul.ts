@@ -23,7 +23,7 @@ import * as util from '../util';
 import {op} from './operation';
 
 function computeBatchDimension_(shape) {
-  return shape.slice(0, -2).reduce((acc, curr) => acc + curr, 0);
+  return shape.slice(0, -2).reduce((acc, curr) => acc * curr, 1);
 }
 
 /**
