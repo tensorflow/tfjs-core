@@ -478,9 +478,9 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   matMul(a: Tensor3D, b: Tensor3D, transposeA: boolean, transposeB: boolean):
-      Tensor2D {
+      Tensor3D {
     const program = new MatMulProgram(a.shape, b.shape, transposeA, transposeB);
-    return this.compileAndRun<Tensor3D, Tensor3D>(program, [a, b]);
+    return this.compileAndRun(program, [a, b]);
   }
 
   multiply(a: Tensor, b: Tensor): Tensor {

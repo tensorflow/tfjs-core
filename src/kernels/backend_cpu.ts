@@ -291,8 +291,8 @@ export class MathBackendCPU implements KernelBackend {
         T;
   }
 
-  matMul(a: Tensor2D, b: Tensor2D, transposeA: boolean, transposeB: boolean):
-      Tensor2D {
+  matMul(a: Tensor3D, b: Tensor3D, transposeA: boolean, transposeB: boolean):
+      Tensor3D {
     const sharedDim = transposeA ? a.shape[0] : a.shape[1];
     const leftDim = transposeA ? a.shape[1] : a.shape[0];
     const rightDim = transposeB ? b.shape[0] : b.shape[1];
@@ -330,7 +330,7 @@ export class MathBackendCPU implements KernelBackend {
         }
       }
     }
-    return ops.tensor2d(result, [leftDim, rightDim]);
+    return ops.tensor3d(result, [1, leftDim, rightDim]);
   }
 
   multiply(a: Tensor, b: Tensor): Tensor {

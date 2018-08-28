@@ -16,7 +16,7 @@
  */
 
 import {ENV} from '../environment';
-import {Tensor, Tensor1D, Tensor2D, Tensor3D} from '../tensor';
+import {Tensor, Tensor1D, Tensor2D} from '../tensor';
 import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import * as util from '../util';
@@ -79,26 +79,26 @@ function matMul_<T extends Tensor>(
 
   const outShape = $a.shape.slice(0, -2).concat([outerShapeA, outerShapeB]);
 
-  const grad = (dy: Tensor3D) => {
+  const grad = (dy: Tensor) => {
     if (!transposeA && !transposeB) {
       return {
-        $a: () => dy.matMul($b.toFloat(), false, true),
-        $b: () => $a.toFloat().matMul(dy, true, false)
+        a: () => dy.matMul(b3D.toFloat(), false, true),
+        b: () => a3D.toFloat().matMul(dy, true, false)
       };
     } else if (!transposeA && transposeB) {
       return {
-        $a: () => dy.matMul($b.toFloat(), false, false),
-        $b: () => dy.matMul($a.toFloat(), true, false)
+        a: () => dy.matMul(b3D.toFloat(), false, false),
+        b: () => dy.matMul(a3D.toFloat(), true, false)
       };
     } else if (transposeA && !transposeB) {
       return {
-        $a: () => $b.toFloat().matMul(dy, false, true),
-        $b: () => $a.toFloat().matMul(dy, false, false)
+        a: () => b3D.toFloat().matMul(dy, false, true),
+        b: () => a3D.toFloat().matMul(dy, false, false)
       };
     } else {
       return {
-        $a: () => $b.toFloat().matMul(dy, true, true),
-        $b: () => dy.matMul($a.toFloat(), true, true)
+        a: () => b3D.toFloat().matMul(dy, true, true),
+        b: () => dy.matMul($a.toFloat(), true, true)
       };
     }
   };
