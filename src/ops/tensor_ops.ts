@@ -22,6 +22,7 @@ import {TensorLike, TensorLike1D, TensorLike2D, TensorLike3D, TensorLike4D, Tens
 import {ArrayData, DataType, Rank, ShapeMap} from '../types';
 import {assertNonNull, assertShapesMatch, getStorageSize, getTypedArrayFromDType, inferShape, isTypedArray, makeOnesTypedArray, makeZerosTypedArray, sizeFromShape, toTypedArray} from '../util';
 
+import {complex} from './complex_ops';
 import {op} from './operation';
 
 /**
@@ -368,10 +369,7 @@ function ones<R extends Rank>(
   if (dtype === 'complex64') {
     const real = ones(shape, 'float32');
     const imag = ones(shape, 'float32');
-    // To avoid circular deps we call the kernel directly.
-    return ENV.engine.runKernel(
-               backend => backend.complex(real, imag), {real, imag}) as
-        Tensor<R>;
+    return complex(real, imag);
   }
   const values = makeOnesTypedArray(getStorageSize(shape, dtype), dtype);
   return Tensor.make(shape, {values}, dtype);
@@ -394,10 +392,7 @@ function zeros<R extends Rank>(
   if (dtype === 'complex64') {
     const real = zeros(shape, 'float32');
     const imag = zeros(shape, 'float32');
-    // To avoid circular deps we call the kernel directly.
-    return ENV.engine.runKernel(
-               backend => backend.complex(real, imag), {real, imag}) as
-        Tensor<R>;
+    return complex(real, imag);
   }
   const values = makeZerosTypedArray(getStorageSize(shape, dtype), dtype);
   return Tensor.make(shape, {values}, dtype);
