@@ -22,6 +22,10 @@ import {TensorLike} from '../types';
 import * as util from '../util';
 import {op} from './operation';
 
+function computeBatchDimension_(shape) {
+  return shape.slice(0, -2).reduce((acc, curr) => acc + curr, 0);
+}
+
 /**
  * Computes the dot product of two matrices, A * B. These must be matrices.
  *
@@ -43,13 +47,25 @@ function matMul_(
   const $a = convertToTensor(a, 'a', 'matMul');
   const $b = convertToTensor(b, 'b', 'matMul');
 
-  const innerShapeA = transposeA ? $a.shape[0] : $a.shape[1];
-  const innerShapeB = transposeB ? $b.shape[1] : $b.shape[0];
+  const innerShapeA = transposeA ? $a.shape[0] : $a.shape[$a.rank - 1];
+  const innerShapeB = transposeB ? $b.shape[1] : $b.shape[$b.rank - 2];
+
+  const outerShapeA = transposeA ? $a.shape[1] : $a.shape[$a.rank - 2];
+  const outerShapeB = transposeB ? $b.shape[0] : $b.shape[$b.rank - 1];
+
+  const batchDimA = computeBatchDimension_($a.shape);
+  const batchDimB = computeBatchDimension_($b.shape);
 
   util.assert(
-      $a.rank === 2 && $b.rank === 2,
-      `Error in matMul: inputs must be rank 2, got ranks ${$a.rank}` +
+      $a.rank >= 2 && $b.rank >= 2,
+      `Error in matMul: inputs must be at least rank 2, got ranks ${$a.rank}` +
           ` and ${$b.rank}.`);
+
+  util.assert(
+      batchDimA === batchDimB,
+      `Error in matMul: batch dimensions (${batchDimA}) and (` + 
+        `${batchDimB}) of Tensors with shapes ${$a.shape} and ` + 
+        `${$b.shape} must match.`);
 
   util.assert(
       innerShapeA === innerShapeB,
@@ -57,6 +73,9 @@ function matMul_(
           `${innerShapeB}) of Tensors with shapes ${$a.shape} and ` +
           `${$b.shape} and transposeA=${transposeA}` +
           ` and transposeB=${transposeB} must match.`);
+
+  const a3d = a.as3D(-1, outerShapeA, innerShapeA);
+  const b3d = b.as3D(-1, innerShapeB, outerShapeB);
 
   const grad = (dy: Tensor2D) => {
     if (!transposeA && !transposeB) {
