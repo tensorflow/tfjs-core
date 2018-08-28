@@ -1606,7 +1606,7 @@ describeWithFlags('tensor with 0 in shape', ALL_ENVS, () => {
     // Have to use Tensor.make since tensor1d() does not let us provide a shape.
     expect(() => Tensor.make([0], {values}, 'float32'))
         .toThrowError(
-            'Based on the provided shape, [0], and dtype float32, the tensor ' +
+            'Based on the provided shape, [0], the tensor ' +
             'should have 0 values but has 3');
   });
 
@@ -1622,7 +1622,7 @@ describeWithFlags('tensor with 0 in shape', ALL_ENVS, () => {
     const values = [1, 2, 3, 4];
     expect(() => tf.tensor2d(values, [0, 5], 'float32'))
         .toThrowError(
-            'Based on the provided shape, [0,5], and dtype float32, the ' +
+            'Based on the provided shape, [0,5], the ' +
             'tensor should have 0 values but has 4');
   });
 
@@ -1638,7 +1638,7 @@ describeWithFlags('tensor with 0 in shape', ALL_ENVS, () => {
     const values = [1, 2, 3];
     expect(() => tf.tensor3d(values, [0, 3, 0], 'float32'))
         .toThrowError(
-            'Based on the provided shape, [0,3,0], and dtype float32, the ' +
+            'Based on the provided shape, [0,3,0], the ' +
             'tensor should have 0 values but has 3');
   });
 
@@ -1654,7 +1654,7 @@ describeWithFlags('tensor with 0 in shape', ALL_ENVS, () => {
     const values = [1, 2, 3];
     expect(() => tf.tensor4d(values, [1, 3, 0, 5], 'float32'))
         .toThrowError(
-            'Based on the provided shape, [1,3,0,5], and dtype float32, the ' +
+            'Based on the provided shape, [1,3,0,5], the ' +
             'tensor should have 0 values but has 3');
   });
 
@@ -1666,15 +1666,6 @@ describeWithFlags('tensor with 0 in shape', ALL_ENVS, () => {
     expect(a.rank).toBe(2);
     expect(a.shape).toEqual([0, 5]);
     expectArraysEqual(a, []);
-  });
-
-  it('complex64 throws when values are not empty', () => {
-    const values = new Float32Array([1, 2, 3, 4, 5, 6]);
-    // Have to use Tensor.make since tensor1d() does not let us provide a shape.
-    expect(() => Tensor.make([0], {values}, 'complex64'))
-        .toThrowError(
-            'Based on the provided shape, [0], and dtype complex64, the ' +
-            'tensor should have 0 values but has 6');
   });
 });
 

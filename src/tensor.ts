@@ -403,10 +403,9 @@ export class Tensor<R extends Rank = Rank> {
 
     if (values != null) {
       util.assert(
-          this.storageSize === values.length,
-          `Based on the provided shape, [${shape}], and dtype ` +
-              `${this.dtype}, the tensor should have ` +
-              `${this.storageSize} values but has ${values.length}`);
+          this.size === values.length,
+          `Based on the provided shape, [${shape}], the tensor should have ` +
+              `${this.size} values but has ${values.length}`);
     }
 
     this.strides = computeStrides(shape);
