@@ -42,13 +42,14 @@ export class TensorBuffer<R extends Rank> {
 
   constructor(shape: ShapeMap[R], public dtype: DataType, values?: TypedArray) {
     this.shape = shape.slice();
+    this.size = util.sizeFromShape(shape);
 
     if (values != null) {
       const n = values.length;
       util.assert(
-          n === util.sizeFromShape(this.shape),
+          n === this.size,
           `Length of values '${n}' does not match the size ` +
-              `inferred by the shape '${storageSize}'.`);
+              `inferred by the shape '${this.size}'.`);
     }
     if (dtype === 'complex64') {
       throw new Error(
@@ -59,7 +60,6 @@ export class TensorBuffer<R extends Rank> {
     this.values = values ||
         util.getTypedArrayFromDType(dtype, util.sizeFromShape(this.shape));
     this.strides = computeStrides(shape);
-    this.size = util.sizeFromShape(shape);
   }
 
   /**
