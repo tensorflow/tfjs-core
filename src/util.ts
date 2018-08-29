@@ -248,6 +248,7 @@ export function repeatedTry(
 /**
  * Given the full size of the array and a shape that may contain -1 as the
  * implicit dimension, returns the inferred shape where -1 is replaced.
+ *
  * E.g. For shape=[2, -1, 3] and size=24, it will return [2, 4, 3].
  *
  * @param shape The shape, which may contain -1 in some dimension.
@@ -493,8 +494,8 @@ export function makeZerosTypedArray<D extends DataType>(
 }
 
 /**
- * Returns the current high-resolution real time in milliseconds. It is
- * relative to an arbitrary time in the past.
+ * Returns the current high-resolution real time in milliseconds. It is relative
+ * to an arbitrary time in the past.
  */
 export function now(): number {
   if (typeof performance !== 'undefined') {
