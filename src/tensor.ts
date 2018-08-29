@@ -319,6 +319,9 @@ export interface OpHandler {
   stridedSlice<T extends Tensor>(
       x: T, begin: number[], end: number[], strides: number[],
       beginMask: number, endMask: number): T;
+  movingAverage<T extends Tensor>(
+      v: T|TensorLike, x: T|TensorLike, decay: number|Scalar,
+      step?: number|Scalar, zeroDebias?: boolean): T;
 }
 
 // For tracking tensor creation and disposal.
@@ -1222,6 +1225,13 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return opHandler.stridedSlice(
         this, begin, end, strides, beginMask, endMask);
+  }
+
+  movingAverage<T extends Tensor>(
+      this: T, x: T, decay: number|Scalar, step?: number|Scalar,
+      zeroDebias = true): T {
+    this.throwIfDisposed();
+    return opHandler.movingAverage(this, x, decay, step, zeroDebias);
   }
 }
 Object.defineProperty(Tensor, Symbol.hasInstance, {

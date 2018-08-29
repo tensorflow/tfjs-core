@@ -58,6 +58,19 @@ describeWithFlags('movingAverage', ALL_ENVS, () => {
     expectArraysClose(v2, tf.tensor2d([[7.25, 8.25], [9.25, 10.25]], [2, 2]));
   });
 
+  it('zeroDebias=true, decay and step are numbers by direct ops', () => {
+    const v0 = tf.tensor2d([[0, 0], [0, 0]], [2, 2]);
+    const x = tf.tensor2d([[1, 2], [3, 4]], [2, 2]);
+    const decay = 0.6;
+
+    const v1 = v0.movingAverage(x, decay, 1);
+    expectArraysClose(v1, tf.tensor2d([[1, 2], [3, 4]], [2, 2]));
+
+    const y = tf.tensor2d([[11, 12], [13, 14]], [2, 2]);
+    const v2 = v1.movingAverage(y, decay, 2);
+    expectArraysClose(v2, tf.tensor2d([[7.25, 8.25], [9.25, 10.25]], [2, 2]));
+  });
+
   it('zeroDebias=true, decay and step are scalars', () => {
     const v0 = tf.tensor2d([[0, 0], [0, 0]], [2, 2]);
     const x = tf.tensor2d([[1, 2], [3, 4]], [2, 2]);
@@ -106,6 +119,19 @@ describeWithFlags('movingAverage', ALL_ENVS, () => {
 
     const y = tf.tensor2d([[11, 12], [13, 14]], [2, 2]);
     const v2 = tf.movingAverage(v1, y, decay, null, false);
+    expectArraysClose(v2, tf.tensor2d([[4.64, 5.28], [5.92, 6.56]], [2, 2]));
+  });
+
+  it('zeroDebias=false, decay and step are numbers by direct ops', () => {
+    const v0 = tf.tensor2d([[0, 0], [0, 0]], [2, 2]);
+    const x = tf.tensor2d([[1, 2], [3, 4]], [2, 2]);
+    const decay = 0.6;
+
+    const v1 = v0.movingAverage(x, decay, null, false);
+    expectArraysClose(v1, tf.tensor2d([[0.4, 0.8], [1.2, 1.6]], [2, 2]));
+
+    const y = tf.tensor2d([[11, 12], [13, 14]], [2, 2]);
+    const v2 = v1.movingAverage(y, decay, null, false);
     expectArraysClose(v2, tf.tensor2d([[4.64, 5.28], [5.92, 6.56]], [2, 2]));
   });
 
