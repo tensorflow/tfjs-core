@@ -75,7 +75,6 @@ function matMul_<T extends Tensor>(
           `${$b.shape} and transposeA=${transposeA}` +
           ` and transposeB=${transposeB} must match.`);
 
-
   const outShape = $a.shape.slice(0, -2).concat([outerShapeA, outerShapeB]);
 
   const grad = (dy: T) => {
@@ -103,11 +102,12 @@ function matMul_<T extends Tensor>(
   };
   const res = ENV.engine.runKernel(
       backend => backend.matMul(
-        $a.as3D(-1, outerShapeA, innerShapeA), 
-        $b.as3D(-1, innerShapeB, outerShapeB), 
+        transposeA ? $a.as3D(innerShapeA, outerShapeA, -1) : $a.as3D(-1, outerShapeA, innerShapeA), 
+        transposeB ? $b.as3D(outerShapeB, innerShapeB, -1) : $b.as3D(-1, innerShapeB, outerShapeB), 
         transposeA, transposeB
       ) as T, {$a, $b}, grad);
-  return res.reshape(outShape) as T;
+  const reshaped = res.reshape(outShape) as T
+  return reshaped;
 }
 
 /**
