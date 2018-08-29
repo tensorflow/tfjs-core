@@ -127,7 +127,7 @@ export function getFilteredNodesXToY(
  * Backpropagate gradients through the filtered TapeNodes.
  *
  * @param tensorAccumulatedGradientMap A map of Tensor to its gradient. This map
- * is mutated by this method.
+ *     is mutated by this method.
  * @param filteredTape The filtered TapeNodes to backprop through.
  */
 export function backpropagateGradients(

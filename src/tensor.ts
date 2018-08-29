@@ -27,8 +27,8 @@ export interface TensorData {
 }
 
 /**
- * A mutable object, similar to `Tensor`, that allows users to set values
- * at locations before converting to an immutable `Tensor`.
+ * A mutable object, similar to `Tensor`, that allows users to set values at
+ * locations before converting to an immutable `Tensor`.
  *
  * See `buffer` for creating a tensor buffer.
  */
@@ -328,9 +328,8 @@ let trackerFn: () => TensorTracker = null;
 let opHandler: OpHandler = null;
 
 /**
- * An external consumer can register itself as the tensor tracker. This way
- * the Tensor class can notify the tracker for every tensor created and
- * disposed.
+ * An external consumer can register itself as the tensor tracker. This way the
+ * Tensor class can notify the tracker for every tensor created and disposed.
  */
 export function setTensorTracker(fn: () => TensorTracker) {
   trackerFn = fn;
@@ -345,14 +344,15 @@ export function setOpHandler(handler: OpHandler) {
 }
 
 /**
- * We wrap data id since we use weak map to avoid memory leaks.
- * Since we have our own memory management, we have a reference counter
- * mapping a tensor to its data, so there is always a pointer (even if that
- * data is otherwise garbage collectable).
+ * We wrap data id since we use weak map to avoid memory leaks. Since we have
+ * our own memory management, we have a reference counter mapping a tensor to
+ * its data, so there is always a pointer (even if that data is otherwise
+ * garbage collectable).
+ *
  * See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/
  * Global_Objects/WeakMap
  */
-export type DataId = object;  // object instead of {} to force non-primitive.
+export type DataId = object; // object instead of {} to force non-primitive.
 
 /**
  * A `Tensor` object represents an immutable, multidimensional array of numbers
@@ -497,7 +497,9 @@ export class Tensor<R extends Rank = Rank> {
 
   /**
    * Returns the value in the tensor at the provided location.
+   *
    * If using WebGL backend, this is a blocking call.
+   *
    * Prefer calling the `async data()[flatIndex]` method instead.
    *
    * @param locs The location indices.
@@ -588,7 +590,7 @@ export class Tensor<R extends Rank = Rank> {
    * Prints the `Tensor`. See `print` for details.
    *
    * @param verbose Whether to print verbose information about the tensor,
-   *    including dtype and size.
+   *     including dtype and size.
    */
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
   print(verbose = false): void {
@@ -597,6 +599,7 @@ export class Tensor<R extends Rank = Rank> {
 
   /**
    * Reshapes the tensor into the provided shape.
+   *
    * See `reshape` for more details.
    *
    * @param newShape An array of integers defining the output tensor shape.
@@ -619,11 +622,11 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   /**
-   * Returns a `Tensor` that has expanded rank, by inserting a dimension
-   * into the tensor's shape. See `expandDims` for details.
+   * Returns a `Tensor` that has expanded rank, by inserting a dimension into
+   * the tensor's shape. See `expandDims` for details.
    *
    * @param axis The dimension index at which to insert shape of 1. Defaults to
-   *    0 (the first dimension).
+   *     0 (the first dimension).
    */
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
   expandDims<R2 extends Rank>(axis = 0): Tensor<R2> {
@@ -635,11 +638,10 @@ export class Tensor<R extends Rank = Rank> {
    *
    * @param axis The axis along which to sum. Optional. Defaults to 0.
    * @param exclusive Whether to perform exclusive cumulative sum. Defaults to
-   *    false. If set to true then the sum of each tensor entry does not include
-   *    its own value, but only the values previous to it along the specified
-   *    axis.
-   * @param reverse Whether to sum in the opposite direction. Defaults to
-   *    false.
+   *     false. If set to true then the sum of each tensor entry does not
+   *     include its own value, but only the values previous to it along the
+   *     specified axis.
+   * @param reverse Whether to sum in the opposite direction. Defaults to false.
    */
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
   cumsum<T extends Tensor>(axis = 0, exclusive = false, reverse = false): T {
@@ -648,11 +650,12 @@ export class Tensor<R extends Rank = Rank> {
 
   /**
    * Returns a `Tensor` with dimensions of size 1 removed from the shape.
+   *
    * See `squeeze` for more details.
    *
-   * @param axis A list of numbers. If specified, only squeezes the
-   *    dimensions listed. The dimension index starts at 0. It is an error to
-   *    squeeze a dimension that is not 1.
+   * @param axis A list of numbers. If specified, only squeezes the dimensions
+   *     listed. The dimension index starts at 0. It is an error to squeeze a
+   *     dimension that is not 1.
    */
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
   squeeze<T extends Tensor>(axis?: number[]): T {
@@ -1285,6 +1288,7 @@ export class Variable<R extends Rank = Rank> extends Tensor<R> {
 
   /**
    * Creates a new variable with the provided initial value.
+   *
    * ```js
    * const x = tf.variable(tf.tensor([1, 2, 3]));
    * x.assign(tf.tensor([4, 5, 6]));
@@ -1308,8 +1312,8 @@ export class Variable<R extends Rank = Rank> extends Tensor<R> {
   }
 
   /**
-   * Assign a new `Tensor` to this variable. The new `Tensor` must have the
-   * same shape and dtype as the old `Tensor`.
+   * Assign a new `Tensor` to this variable. The new `Tensor` must have the same
+   * shape and dtype as the old `Tensor`.
    *
    * @param newValue New tensor to be assigned to this variable.
    */
