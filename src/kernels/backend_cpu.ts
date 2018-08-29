@@ -2236,7 +2236,8 @@ export class MathBackendCPU implements KernelBackend {
     const boxIndVals = boxIndex.dataSync();
     const imageVals = images.dataSync();
 
-    const stride = images.strides; // to calculate flat indexes into imageVals
+    const inStride = images.strides; // to calculate flat indexes into image
+    const outStride = output.strides; // to calculate flat indexes into output
 
     // Reference implementation
     // tslint:disable-next-line:max-line-length
@@ -2257,7 +2258,7 @@ export class MathBackendCPU implements KernelBackend {
         (y2 - y1) * (imageHeight - 1) / (cropHeight - 1) :
         0;
       const widthScale = (cropWidth > 1) ?
-        (y2 - y1) * (imageWidth - 1) / (cropWidth - 1) :
+        (x2 - x1) * (imageWidth - 1) / (cropWidth - 1) :
         0;
 
       for (let y = 0; y < cropHeight; y++) {
@@ -2269,7 +2270,9 @@ export class MathBackendCPU implements KernelBackend {
         if (yInd < 0 || yInd > imageHeight - 1) {
           for (let x = 0; x < cropWidth; x++) {
             for (let c = 0; c < numChannels; c++) {
-              output.set(extrapolationValue, b, y, x, c);
+              const ind = c + x * outStride[2] + y * outStride[1] +
+                  b * outStride[0];
+              output.values[ind] = extrapolationValue;
             }
           }
           continue;
@@ -2288,7 +2291,9 @@ export class MathBackendCPU implements KernelBackend {
 
             if (xInd < 0 || xInd > imageWidth - 1) {
               for (let c = 0; c < numChannels; c++) {
-                output.set(extrapolationValue, b, y, x, c);
+                const ind = c + x * outStride[2] + y * outStride[1] +
+                    b * outStride[0];
+                output.values[ind] = extrapolationValue;
               }
               continue;
             }
@@ -2298,25 +2303,28 @@ export class MathBackendCPU implements KernelBackend {
             const xLerp = xInd - leftInd;
 
             for (let c = 0; c < numChannels; c++) {
-              let ind = c + leftInd * stride[2] + topInd * stride[1] +
-                  bInd * stride[0];
+              let ind = c + leftInd * inStride[2] + topInd * inStride[1] +
+                  bInd * inStride[0];
               const topLeft = imageVals[ind];
 
-              ind = c + rightInd * stride[2] + topInd * stride[1] +
-                  bInd * stride[0];
+              ind = c + rightInd * inStride[2] + topInd * inStride[1] +
+                  bInd * inStride[0];
               const topRight = imageVals[ind];
 
-              ind = c + leftInd * stride[2] + bottomInd * stride[1] +
-                  bInd * stride[0];
+              ind = c + leftInd * inStride[2] + bottomInd * inStride[1] +
+                  bInd * inStride[0];
               const bottomLeft = imageVals[ind];
 
-              ind = c + rightInd * stride[2] + bottomInd * stride[1] +
-                  bInd * stride[0];
+              ind = c + rightInd * inStride[2] + bottomInd * inStride[1] +
+                  bInd * inStride[0];
               const bottomRight = imageVals[ind];
 
               const top = topLeft + (topRight - topLeft) * xLerp;
               const bottom = bottomLeft + (bottomRight - bottomLeft) * xLerp;
-              output.set(top + ((bottom - top) * yLerp), b, y, x, c);
+
+              ind = c + x * outStride[2] + y * outStride[1] +
+                    b * outStride[0];
+              output.values[ind] = top + ((bottom - top) * yLerp);
             }
           }
         } else {  // method == "nearest"
@@ -2327,7 +2335,9 @@ export class MathBackendCPU implements KernelBackend {
 
             if (xInd < 0 || xInd > imageWidth - 1) {
               for (let c = 0; c < numChannels; c++) {
-                output.set(extrapolationValue, b, y, x, c);
+                const ind = c + x * outStride[2] + y * outStride[1] +
+                    b * outStride[0];
+                output.values[ind] = extrapolationValue;
               }
               continue;
             }
@@ -2335,9 +2345,11 @@ export class MathBackendCPU implements KernelBackend {
             const closestX = Math.round(xInd);
             const closestY = Math.round(yInd);
             for (let c = 0; c < numChannels; c++) {
-              const ind = c + closestX * stride[2] + closestY * stride[1] +
-                  bInd * stride[0];
-              output.set(imageVals[ind], b, y, x, c);
+              const inInd = c + closestX * inStride[2]
+                  + closestY * inStride[1] + bInd * inStride[0];
+              const outInd = c + x * outStride[2] + y * outStride[1] +
+                  b * outStride[0];
+              output.values[outInd] = imageVals[inInd];
             }
           }
         }

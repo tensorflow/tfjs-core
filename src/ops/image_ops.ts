@@ -230,11 +230,11 @@ function nonMaxSuppSanityCheck(
 
 /**
  * Extracts crops from the input image tensor and resizes them using bilinear
- * sampling or nearest neighbor sampling (possibl with aspect ratio change)
+ * sampling or nearest neighbor sampling (possibly with aspect ratio change)
  * to a common output size specified by crop_size;
  *
- * @param image 4d tensor of shape `[batch,imageHeight,imageWidth, depth]`.
- *     where image_height and image_width must be positive, specifying the
+ * @param image 4d tensor of shape `[batch,imageHeight,imageWidth, depth]`,
+ *     where imageHeight and imageWidth must be positive, specifying the
  *     batch of images from which to take crops
  * @param boxes 2d float32 tensor of shape `[numBoxes, 4]`. Each entry is
  *     `[y1, x1, y2, x2]`, where `(y1, x1)` and `(y2, x2)` are the normalized
@@ -258,42 +258,42 @@ function cropAndResize_(
   method?: 'bilinear'|'nearest',
   extrapolationValue?: number,
 ) {
-const $image = convertToTensor(image, 'image', 'cropAndResize', 'float32');
-const $boxes = convertToTensor(boxes, 'boxes', 'cropAndResize', 'float32');
-const $boxInd = convertToTensor(boxInd, 'boxInd', 'cropAndResize', 'int32');
-method = method || 'bilinear';
-extrapolationValue = extrapolationValue || 0;
+  const $image = convertToTensor(image, 'image', 'cropAndResize', 'float32');
+  const $boxes = convertToTensor(boxes, 'boxes', 'cropAndResize', 'float32');
+  const $boxInd = convertToTensor(boxInd, 'boxInd', 'cropAndResize', 'int32');
+  method = method || 'bilinear';
+  extrapolationValue = extrapolationValue || 0;
 
-const numBoxes = $boxes.shape[0];
-util.assert(
-    $image.rank === 4,
-    `Error in cropAndResize: image must be rank 4, but got ` +
-        `rank ${$image.rank}.`);
-util.assert(
-    $boxes.rank === 2 && $boxes.shape[1] === 4,
-    `Error in cropAndResize: boxes must be have size [${numBoxes},4] ` +
-        `but had shape ${$boxes.shape}.`);
-util.assert(
-    $boxInd.rank === 1 && $boxInd.shape[0] === numBoxes,
-    `Error in cropAndResize: boxInd must be have size [${numBoxes}] ` +
-        `but had shape ${$boxes.shape}.`);
-util.assert(
-    cropSize.length === 2,
-    `Error in cropAndResize: cropSize must be of length 2, but got length ` +
-        `${cropSize.length}.`);
-util.assert(
-    cropSize[0] >= 1 && cropSize[1] >= 1,
-    `cropSize must be atleast [1,1], but was ${cropSize}`);
-util.assert(
-    method === 'bilinear' || method === 'nearest',
-    `method must be bilinear or nearest, but was ${method}`);
+  const numBoxes = $boxes.shape[0];
 
-const forward: ForwardFunc<Tensor4D> = (backend, save) =>
-    backend.cropAndResize(
-        $image, $boxes, $boxInd, cropSize, method, extrapolationValue);
+  util.assert(
+      $image.rank === 4, 'Error in cropAndResize: image must be rank 4,' +
+          `but got rank ${$image.rank}.`);
+  util.assert(
+      $boxes.rank === 2 && $boxes.shape[1] === 4,
+      `Error in cropAndResize: boxes must be have size [${numBoxes},4] ` +
+          `but had shape ${$boxes.shape}.`);
+  util.assert(
+      $boxInd.rank === 1 && $boxInd.shape[0] === numBoxes,
+      `Error in cropAndResize: boxInd must be have size [${numBoxes}] ` +
+          `but had shape ${$boxes.shape}.`);
+  util.assert(
+      cropSize.length === 2,
+      `Error in cropAndResize: cropSize must be of length 2, but got length ` +
+          `${cropSize.length}.`);
+  util.assert(
+      cropSize[0] >= 1 && cropSize[1] >= 1,
+      `cropSize must be atleast [1,1], but was ${cropSize}`);
+  util.assert(
+      method === 'bilinear' || method === 'nearest',
+      `method must be bilinear or nearest, but was ${method}`);
 
-const res = ENV.engine.runKernel(forward, {$image, $boxes});
-return res as Tensor4D;
+  const forward: ForwardFunc<Tensor4D> = (backend, save) =>
+      backend.cropAndResize(
+          $image, $boxes, $boxInd, cropSize, method, extrapolationValue);
+
+  const res = ENV.engine.runKernel(forward, {$image, $boxes});
+  return res as Tensor4D;
 }
 
 export const resizeBilinear = op({resizeBilinear_});

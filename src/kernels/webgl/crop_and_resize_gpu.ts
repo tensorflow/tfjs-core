@@ -87,7 +87,7 @@ export class CropAndResizeProgram implements GPGPUProgram {
         float x2 = getBoxes(b,3);
 
         // get image in batch index
-        int bInd = int(floor(getBoxInd(b)));
+        int bInd = round(getBoxInd(b));
         if(bInd < 0 || bInd >= ${batch}) {
           return;
         }

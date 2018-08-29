@@ -326,7 +326,35 @@ describeWithFlags('cropAndResize', ALL_ENVS, () => {
     expect(output.shape).toEqual([2,2,2,1]);
     expectArraysClose(output,[9,7,3,1,5,4,2,1]);
   });
+  it('3x3-BoxisRectangular', () => {
+    const image:tf.Tensor4D = tf.tensor4d([1,2,3,4],[1,2,2,1]);
+    const boxes:tf.Tensor2D = tf.tensor2d([0,0,1,1.5],[1,4]);
+    const boxInd:tf.Tensor1D = tf.tensor1d([0]);
+    const output = tf.image.cropAndResize(image,boxes,boxInd,
+                                          [3,3],'bilinear',0);
+    expect(output.shape).toEqual([1,3,3,1]);
+    expectArraysClose(output,[1,1.75,0,2,2.75,0,3,3.75,0]);
+  });
+  it('3x3-BoxisRectangular-nearest', () => {
+    const image:tf.Tensor4D = tf.tensor4d([1,2,3,4],[1,2,2,1]);
+    const boxes:tf.Tensor2D = tf.tensor2d([0,0,1,1.5],[1,4]);
+    const boxInd:tf.Tensor1D = tf.tensor1d([0]);
+    const output = tf.image.cropAndResize(image,boxes,boxInd,
+                                          [3,3],'nearest',0);
+    expect(output.shape).toEqual([1,3,3,1]);
+    expectArraysClose(output,[1,2,0,3,4,0,3,4,0]);
+  });
   it('2x2to3x3-Extrapolated', () => {
+    const val = -1;
+    const image:tf.Tensor4D = tf.tensor4d([1,2,3,4],[1,2,2,1]);
+    const boxes:tf.Tensor2D = tf.tensor2d([-1,-1,1,1],[1,4]);
+    const boxInd:tf.Tensor1D = tf.tensor1d([0]);
+    const output = tf.image.cropAndResize(image,boxes,boxInd,
+                                          [3,3],'bilinear',val);
+    expect(output.shape).toEqual([1,3,3,1]);
+    expectArraysClose(output,[val,val,val,val,1,2,val,3,4]);
+  });
+  it('2x2to3x3-Extrapolated-Float', () => {
     const val = -1.5;
     const image:tf.Tensor4D = tf.tensor4d([1,2,3,4],[1,2,2,1]);
     const boxes:tf.Tensor2D = tf.tensor2d([-1,-1,1,1],[1,4]);
