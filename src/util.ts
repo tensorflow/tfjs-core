@@ -42,12 +42,19 @@ export function clamp(min: number, x: number, max: number): number {
   return Math.max(min, Math.min(x, max));
 }
 
-/** Returns a sample from a uniform [a, b] distribution. */
+/**
+ * Returns a sample from a uniform [a, b) distribution.
+ *
+ * @param a The minimum support (inclusive).
+ * @param b The maximum support (exclusive).
+ * @return A pseudorandom number on the half-open interval [a,b).
+ */
 export function randUniform(a: number, b: number) {
-  return Math.random() * (b - a) + a;
+  const r = Math.random();
+  return (b * r) + (1 - r) * a;
 }
 
-/** Returns squared eucledian distance between two vectors. */
+/** Returns the squared Euclidean distance between two vectors. */
 export function distSquared(a: FlatVector, b: FlatVector): number {
   let result = 0;
   for (let i = 0; i < a.length; i++) {
@@ -110,12 +117,13 @@ export function inferShape(val: TypedArray|number|boolean|RegularArray<number>|
   if (val instanceof Array) {
     deepAssertShapeConsistency(val, shape, []);
   }
+
   return shape;
 }
 
 function deepAssertShapeConsistency(
     val: number|boolean|RegularArray<number>|RegularArray<boolean>,
-    shape: number[], indices?: number[]) {
+    shape: number[], indices: number[]) {
   indices = indices || [];
   if (!(val instanceof Array)) {
     assert(
@@ -365,10 +373,13 @@ export function checkConversionForNaN<D extends DataType>(
  * precision.
  */
 export function hasEncodingLoss(oldType: DataType, newType: DataType): boolean {
-  if (newType === 'float32') {
+  if (newType === 'complex64') {
     return false;
   }
-  if (newType === 'int32' && oldType !== 'float32') {
+  if (newType === 'float32' && oldType !== 'complex64') {
+    return false;
+  }
+  if (newType === 'int32' && oldType !== 'float32' && oldType !== 'complex64') {
     return false;
   }
   if (newType === 'bool' && oldType === 'bool') {
@@ -380,7 +391,7 @@ export function hasEncodingLoss(oldType: DataType, newType: DataType): boolean {
 function copyTypedArray<D extends DataType>(
     array: DataTypeMap[D]|number[]|boolean[], dtype: D,
     debugMode: boolean): DataTypeMap[D] {
-  if (dtype == null || dtype === 'float32') {
+  if (dtype == null || dtype === 'float32' || dtype === 'complex64') {
     return new Float32Array(array as number[]);
   } else if (dtype === 'int32') {
     if (debugMode) {
@@ -409,6 +420,8 @@ export function isTypedArray(a: TypedArray|number|boolean|RegularArray<number>|
 export function bytesPerElement(dtype: DataType): number {
   if (dtype === 'float32' || dtype === 'int32') {
     return 4;
+  } else if (dtype === 'complex64') {
+    return 8;
   } else if (dtype === 'bool') {
     return 1;
   } else {
@@ -474,7 +487,7 @@ export function makeOnesTypedArray<D extends DataType>(
 
 export function makeZerosTypedArray<D extends DataType>(
     size: number, dtype: D): DataTypeMap[D] {
-  if (dtype == null || dtype === 'float32') {
+  if (dtype == null || dtype === 'float32' || dtype === 'complex64') {
     return new Float32Array(size);
   } else if (dtype === 'int32') {
     return new Int32Array(size);
@@ -497,7 +510,7 @@ export function now(): number {
     return time[0] * 1000 + time[1] / 1000000;
   } else {
     throw new Error(
-        'Can not measure time in this environment. You should run tf.js ' +
+        'Cannot measure time in this environment. You should run tf.js ' +
         'in the browser or in Node.js');
   }
 }
