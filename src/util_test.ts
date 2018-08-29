@@ -30,14 +30,6 @@ describe('Util', () => {
     expect(util.sizeFromShape([1, 2, 3, 4])).toEqual(24);
   });
 
-  it('getStorageSize float32', () => {
-    expect(util.getStorageSize([1, 2, 3, 4], 'float32')).toEqual(24);
-  });
-
-  it('getStorageSize complex64', () => {
-    expect(util.getStorageSize([1, 2, 3, 4], 'complex64')).toEqual(48);
-  });
-
   it('Correctly identifies scalars', () => {
     expect(util.isScalarShape([])).toBe(true);
     expect(util.isScalarShape([1, 2])).toBe(false);

@@ -158,14 +158,6 @@ export function sizeFromShape(shape: number[]): number {
   return size;
 }
 
-export function getStorageSize(shape: number[], dtype: DataType) {
-  const size = sizeFromShape(shape);
-  if (dtype === 'complex64') {
-    return 2 * size;
-  }
-  return size;
-}
-
 export function isScalarShape(shape: number[]): boolean {
   return shape.length === 0;
 }
@@ -335,14 +327,14 @@ export function squeezeShape(shape: number[], axis?: number[]):
 }
 
 export function getTypedArrayFromDType<D extends DataType>(
-    dtype: D, storageSize: number): DataTypeMap[D] {
+    dtype: D, size: number): DataTypeMap[D] {
   let values = null;
-  if (dtype == null || dtype === 'float32' || dtype === 'complex64') {
-    values = new Float32Array(storageSize);
+  if (dtype == null || dtype === 'float32') {
+    values = new Float32Array(size);
   } else if (dtype === 'int32') {
-    values = new Int32Array(storageSize);
+    values = new Int32Array(size);
   } else if (dtype === 'bool') {
-    values = new Uint8Array(storageSize);
+    values = new Uint8Array(size);
   } else {
     throw new Error(`Unknown data type ${dtype}`);
   }

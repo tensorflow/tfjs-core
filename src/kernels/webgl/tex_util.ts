@@ -35,7 +35,7 @@ export interface TextureData {
   texture: WebGLTexture;
   // For complex numbers, the real and imaginary parts are stored as their own
   // individual tensors, with a parent joining the two with the
-  // complexDataIds field. When this is defined, texture will be null.
+  // complexTensors field. When this is defined, texture will be null.
   complexTensors?: {real: Tensor, imag: Tensor};
 
   shape: number[];

@@ -35,7 +35,6 @@ export interface TensorData {
 /** @doc {heading: 'Tensors', subheading: 'Classes'} */
 export class TensorBuffer<R extends Rank> {
   size: number;
-  storageSize: number;
   shape: ShapeMap[R];
   strides: number[];
   values: TypedArray;
@@ -79,7 +78,7 @@ export class TensorBuffer<R extends Rank> {
             `match the rank (${this.rank})`);
 
     const index = this.locToIndex(locs);
-    this.values[index] = value as number;
+    this.values[index] = value;
   }
 
   /**
@@ -382,11 +381,6 @@ export class Tensor<R extends Rank = Rank> {
   readonly shape: ShapeMap[R];
   /** Number of elements in the tensor. */
   readonly size: number;
-  /**
-   * Number of elements in the backing array. This is larger for complex
-   * numbers.
-   */
-  readonly storageSize: number;
   /** The data type for the array. */
   readonly dtype: DataType;
   /** The rank type for the array (see `Rank` enum). */
@@ -405,14 +399,12 @@ export class Tensor<R extends Rank = Rank> {
     this.shape = shape.slice();
     this.dtype = dtype || 'float32';
     this.size = util.sizeFromShape(shape);
-    this.storageSize = util.getStorageSize(this.shape, dtype);
-
     if (values != null) {
       util.assert(
-          this.storageSize === values.length,
+          this.size === values.length,
           `Based on the provided shape, [${shape}], and dtype ` +
               `${this.dtype}, the tensor should have ` +
-              `${this.storageSize} values but has ${values.length}`);
+              `${this.size} values but has ${values.length}`);
     }
 
     this.strides = computeStrides(shape);
@@ -522,6 +514,9 @@ export class Tensor<R extends Rank = Rank> {
     util.assert(
         locs.length === this.rank,
         'Number of coordinates in get() must match the rank of the tensor');
+    util.assert(
+        this.dtype !== 'complex64',
+        'Tensor.get() is not supported for complex64 tensors yet.');
     this.throwIfDisposed();
     if (locs.length === 0) {
       locs = [0];

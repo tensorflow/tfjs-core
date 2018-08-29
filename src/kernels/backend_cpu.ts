@@ -26,7 +26,7 @@ import * as concat_util from '../ops/concat_util';
 import {Conv2DInfo} from '../ops/conv_util';
 import * as erf_util from '../ops/erf_util';
 import * as ops from '../ops/ops';
-import {buffer, tensor, tensor3d, tensor4d} from '../ops/ops';
+import {buffer, tensor3d, tensor4d} from '../ops/ops';
 import * as selu_util from '../ops/selu_util';
 import {getStridedSlicedInfo} from '../ops/slice_util';
 import {DataId, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
@@ -41,10 +41,19 @@ import {nonMaxSuppressionImpl} from './non_max_suppression_impl';
 import {topkImpl} from './topk_impl';
 import {whereImpl} from './where_impl';
 
+interface TensorData<T extends DataType> {
+  values?: DataTypeMap[T];
+  dtype: T;
+  // For complex numbers, the real and imaginary parts are stored as their own
+  // individual tensors, with a parent joining the two with the
+  // complexTensors field. When this is defined, texture will be null.
+  complexTensors?: {real: Tensor, imag: Tensor};
+}
+
 export class MathBackendCPU implements KernelBackend {
   public blockSize = 48;
 
-  private data = new WeakMap<DataId, DataTypeMap[DataType]>();
+  private data = new WeakMap<DataId, TensorData<DataType>>();
   private canvas: HTMLCanvasElement;
   private firstUse = true;
 
@@ -74,14 +83,14 @@ export class MathBackendCPU implements KernelBackend {
     if (this.data.has(dataId)) {
       throw new Error(`Data buffer is already registered`);
     }
-    this.data.set(dataId, null);
+    this.data.set(dataId, {dtype});
   }
   write(dataId: DataId, values: TypedArray): void {
     if (values == null) {
       throw new Error('MathBackendCPU.write(): values can not be null');
     }
     this.throwIfNoData(dataId);
-    this.data.set(dataId, values);
+    this.data.get(dataId).values = values;
   }
   fromPixels(
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
@@ -147,11 +156,22 @@ export class MathBackendCPU implements KernelBackend {
   }
   readSync(dataId: DataId): TypedArray {
     this.throwIfNoData(dataId);
-    return this.data.get(dataId);
+    const {dtype, complexTensors} = this.data.get(dataId);
+    if (dtype === 'complex64') {
+      const realValues = complexTensors.real.dataSync() as Float32Array;
+      const imagValues = complexTensors.imag.dataSync() as Float32Array;
+      return complex_util.mergeRealAndImagArrays(realValues, imagValues);
+    }
+    return this.data.get(dataId).values;
   }
 
   disposeData(dataId: DataId): void {
     if (this.data.has(dataId)) {
+      const {complexTensors} = this.data.get(dataId);
+      if (complexTensors != null) {
+        complexTensors.real.dispose();
+        complexTensors.imag.dispose();
+      }
       this.data.delete(dataId);
     }
   }
@@ -179,19 +199,26 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   complex<T extends Tensor>(real: T, imag: T): T {
-    const values = complex_util.mergeRealAndImagArrays(
-        real.dataSync() as Float32Array, imag.dataSync() as Float32Array);
-    return Tensor.make(real.shape, {values}, 'complex64') as T;
+    const result = Tensor.make(real.shape, {}, 'complex64') as T;
+
+    const resultData = this.data.get(result.dataId);
+    // The backend owns the reference to the underlying real and imaginary
+    // clones. These will explicitly get disposed when the complex tensor is
+    // disposed.
+    resultData.complexTensors = {
+      real: ENV.engine.keep(real.clone()),
+      imag: ENV.engine.keep(imag.clone())
+    };
+
+    return result;
   }
   real<T extends Tensor>(input: T): T {
-    const result =
-        complex_util.splitRealAndImagArrays(input.dataSync() as Float32Array);
-    return tensor(result.real, input.shape, 'float32') as T;
+    const resultData = this.data.get(input.dataId);
+    return resultData.complexTensors.real.clone() as T;
   }
   imag<T extends Tensor>(input: T): T {
-    const result =
-        complex_util.splitRealAndImagArrays(input.dataSync() as Float32Array);
-    return tensor(result.imag, input.shape, 'float32') as T;
+    const resultData = this.data.get(input.dataId);
+    return resultData.complexTensors.imag.clone() as T;
   }
 
   private assertNotComplex(tensor: Tensor|Tensor[], opName: string) {
@@ -2499,8 +2526,8 @@ export class MathBackendCPU implements KernelBackend {
         imagVals[i] = result.imag;
       }
     } else {
-      const aRealBuf = this.real(a).buffer();
-      const bRealBuf = this.real(b).buffer();
+      const aRealBuf = this.data.get(a.dataId).complexTensors.real.buffer();
+      const bRealBuf = this.data.get(b.dataId).complexTensors.real.buffer();
       for (let i = 0; i < realVals.length; i++) {
         const loc = realResult.indexToLoc(i);
 
