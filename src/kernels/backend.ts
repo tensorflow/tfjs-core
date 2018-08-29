@@ -254,4 +254,6 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
   imag<T extends Tensor>(input: T): T;
 
   dispose(): void;
+
+  depthToSpace(x: Tensor4D, blockSize: number, dataFormat: string): Tensor4D;
 }
