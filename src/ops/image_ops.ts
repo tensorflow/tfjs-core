@@ -246,7 +246,7 @@ function nonMaxSuppSanityCheck(
  * @param method Optional string from `'bilinear' | 'nearest'`,
  *     defaults to bilinear, which specifies the sampling method for resizing
  * @param extrapolationValue A threshold for deciding when to remove boxes based
- *     on score. Defaults to -inf, which means any score is accepted.
+ *     on score. Defaults to 0.
  * @return A 4D tensor of the shape `[numBoxes,cropHeight,cropWidth,depth]`
  */
 /** @doc {heading: 'Operations', subheading: 'Images', namespace: 'image'} */
@@ -279,14 +279,14 @@ util.assert(
         `but had shape ${$boxes.shape}.`);
 util.assert(
     cropSize.length === 2,
-    `Error in cropAndResize: new shape must 2D, but got shape ` +
-        `${cropSize}.`);
+    `Error in cropAndResize: cropSize must be of length 2, but got length ` +
+        `${cropSize.length}.`);
+util.assert(
+    cropSize[0] >= 1 && cropSize[1] >= 1,
+    `cropSize must be atleast [1,1], but was ${cropSize}`);
 util.assert(
     method === 'bilinear' || method === 'nearest',
     `method must be bilinear or nearest, but was ${method}`);
-util.assert(
-    cropSize[0] >= 1 && cropSize[1] >= 1,
-    `size must be atleast [1,1], but was ${cropSize}`);
 
 const forward: ForwardFunc<Tensor4D> = (backend, save) =>
     backend.cropAndResize(

@@ -32,32 +32,39 @@ export class CropAndResizeProgram implements GPGPUProgram {
     this.outputShape = [numBoxes, cropHeight, cropWidth, depth];
     const methodId = method === 'bilinear' ? 1 : 0;
 
-    const [xHeightFloat, xWidthFloat] =
+    const [inputHeightFloat, inputWidthFloat] =
       [`${imageHeight - 1}.0`, `${imageWidth - 1}.0`];
-    const [yHeightFloat, yWidthFloat] =
-      [`${cropHeight - 1}.0`, `${cropWidth - 1}.0`];
+
+    // simplify shader program by precomputing strings of floats
+    const toFloatString = (value:number) => {
+      return Number.isInteger(value) ?
+        `${value}.0` :
+        `${value}`;
+    };
+
+    const eValFloat = toFloatString(extrapolationValue);
 
     const [heightRatio, heightScale, inY] = cropHeight > 1 ?
       [
-        `${xHeightFloat}/${yHeightFloat}`,
+        toFloatString((imageHeight-1)/(cropHeight-1)),
         '(y2-y1) * height_ratio',
-        `y1*${xHeightFloat} + float(y)*(height_scale)`,
+        `y1*${inputHeightFloat} + float(y)*(height_scale)`,
       ] :
       [
         '0.0',
         '0.0',
-        `0.5 * (y1+y2) * ${xHeightFloat}`,
+        `0.5 * (y1+y2) * ${inputHeightFloat}`,
       ];
     const [widthRatio, widthScale, inX] = cropWidth > 1 ?
       [
-        `${xWidthFloat}/${yWidthFloat}`,
+        toFloatString((imageWidth-1)/(cropWidth-1)),
         '(x2-x1) * width_ratio',
-        `x1*${xWidthFloat} + float(x)*(width_scale)`,
+        `x1*${inputWidthFloat} + float(x)*(width_scale)`,
       ] :
       [
         '0.0',
         '0.0',
-        `0.5 * (x1+x2) * ${xWidthFloat}`,
+        `0.5 * (x1+x2) * ${inputWidthFloat}`,
       ];
 
     // Reference implementation
@@ -89,13 +96,13 @@ export class CropAndResizeProgram implements GPGPUProgram {
         float width_scale = ${widthScale};
 
         float in_y = ${inY};
-        if( in_y < 0.0 || in_y > ${xHeightFloat} ) {
-          setOutput(${extrapolationValue}.0);
+        if( in_y < 0.0 || in_y > ${inputHeightFloat} ) {
+          setOutput(${eValFloat});
           return;
         }
         float in_x = ${inX};
-        if( in_x < 0.0 || in_x > ${xWidthFloat} ) {
-          setOutput(${extrapolationValue}.0);
+        if( in_x < 0.0 || in_x > ${inputWidthFloat} ) {
+          setOutput(${eValFloat});
           return;
         }
 
