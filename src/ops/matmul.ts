@@ -80,23 +80,23 @@ function matMul_<T extends Tensor>(
   const grad = (dy: T) => {
     if (!transposeA && !transposeB) {
       return {
-        $a: () => dy.matMul($b.toFloat(), false, true),
-        $b: () => $a.toFloat().matMul(dy, true, false)
+        $a: () => dy.matMul($b.toFloat(), false, true).reshape($a.shape) as T,
+        $b: () => $a.toFloat().matMul(dy, true, false).reshape($b.shape) as T
       };
     } else if (!transposeA && transposeB) {
       return {
-        $a: () => dy.matMul($b.toFloat(), false, false),
-        $b: () => dy.matMul($a.toFloat(), true, false)
+        $a: () => dy.matMul($b.toFloat(), false, false).reshape($a.shape) as T,
+        $b: () => dy.matMul($a.toFloat(), true, false).reshape($b.shape) as T
       };
     } else if (transposeA && !transposeB) {
       return {
-        $a: () => $b.toFloat().matMul(dy, false, true),
-        $b: () => $a.toFloat().matMul(dy, false, false)
+        $a: () => $b.toFloat().matMul(dy, false, true).reshape($a.shape) as T,
+        $b: () => $a.toFloat().matMul(dy, false, false).reshape($b.shape) as T
       };
     } else {
       return {
-        $a: () => $b.toFloat().matMul(dy, true, true),
-        $b: () => dy.matMul($a.toFloat(), true, true)
+        $a: () => $b.toFloat().matMul(dy, true, true).reshape($a.shape) as T,
+        $b: () => dy.matMul($a.toFloat(), true, true).reshape($b.shape) as T
       };
     }
   };
