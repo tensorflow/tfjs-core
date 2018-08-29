@@ -20,16 +20,16 @@ import {assert} from './util';
 /**
  * Types to support JSON-esque data structures internally.
  *
- * Internally ConfigDict's use camelCase keys and values where the
- * values are class names to be instantiated.  On the python side, these
- * will be snake_case.  Internally we allow Enums into the values for better
- * type safety, but these need to be converted to raw primitives (usually
- * strings) for round-tripping with python.
+ * Internally ConfigDict's use camelCase keys and values where the values are
+ * class names to be instantiated. On the python side, these will be snake_case.
+ * Internally we allow Enums into the values for better type safety, by these
+ * need to be converted to raw primitives (usually strings) for round-tripping
+ * with python.
  *
- * toConfig returns the TS-friendly representation. model.toJSON() returns
- * the pythonic version as that's the portable format.  If you need to
- * python-ify a non-model level toConfig output, you'll need to use a
- * convertTsToPythonic from serialization_utils in -Layers.
+ * toConfig returns the TS-friendly representation. model.toJSON() returns the
+ * pythonic version as that's the portable format.  If you need to python-ify a
+ * non-model level toConfig output, you'll need to use a convertTsToPythonic
+ * from serialization_utils in -Layers.
  *
  */
 export type ConfigDictValue =
@@ -42,8 +42,8 @@ export interface ConfigDictArray extends Array<ConfigDictValue> {}
 /**
  * Type to represent the class-type of Serializable objects.
  *
- * Ie the class prototype with access to the constructor and any
- * static members/methods. Instance methods are not listed here.
+ * I.e. the class prototype with access to the constructor and any static
+ * members/methods. Instance methods are not listed here.
  *
  * Source for this idea: https://stackoverflow.com/a/43607255
  */
@@ -57,20 +57,20 @@ export type FromConfigMethod<T extends Serializable> =
 /**
  * Serializable defines the serialization contract.
  *
- * TFJS requires serializable classes to return their className when asked
- * to avoid issues with minification.
+ * TFJS requires serializable classes to return their className when asked to
+ * avoid issues with minification.
  */
 export abstract class Serializable {
   /**
    * Return the class name for this class to use in serialization contexts.
    *
-   * Generally speaking this will be the same thing that constructor.name
-   * would have returned.  However, the class name needs to be robust
-   * against minification for serialization/deserialization to work properly.
+   * Generally speaking this will be the same thing that constructor.name would
+   * have returned.  However, the class name needs to be robust against
+   * minification for serialization/deserialization to work properly.
    *
    * There's also places such as initializers.VarianceScaling, where
-   * implementation details between different languages led to different
-   * class hierarchies and a non-leaf node is used for serialization purposes.
+   * implementation details between different languages led to different class
+   * hierarchies and a non-leaf node is used for serialization purposes.
    */
   getClassName(): string {
     return (this.constructor as SerializableConstructor<Serializable>)
@@ -85,8 +85,9 @@ export abstract class Serializable {
   /**
    * Creates an instance of T from a ConfigDict.
    *
-   * This works for most descendants of serializable.  A few need to
-   * provide special handling.
+   * This works for most descendants of serializable. A few need to provide
+   * special handling.
+   *
    * @param cls A Constructor for the class to instantiate.
    * @param config The Configuration for the object.
    */
@@ -100,8 +101,8 @@ export abstract class Serializable {
  * Maps string keys to class constructors.
  *
  * Used during (de)serialization from the cross-language JSON format, which
- * requires the class name in the serialization format matches the class
- * names as used in Python, should it exist.
+ * requires the class name in the serialization format matches the class names
+ * as used in Python, should it exist.
  */
 export class SerializationMap {
   private static instance: SerializationMap;
@@ -138,8 +139,8 @@ export class SerializationMap {
 /**
  * Register a class with the serialization map of TensorFlow.js.
  * 
- * This is often used for registering custom Layers, so they can be
- * serialized and deserialized.
+ * This is often used for registering custom Layers, so they can be serialized
+ * and deserialized.
  * 
  * Example:
  * 
@@ -155,7 +156,7 @@ export class SerializationMap {
  * ```
  * 
  * @param cls The class to be registered. It must have a public static member
- *   called `className` defined and the value must be a non-empty string.
+ *     called `className` defined and the value must be a non-empty string.
  */
 /** @doc {heading: 'Models', subheading: 'Serialization'} */
 export function registerClass<T extends Serializable>(
