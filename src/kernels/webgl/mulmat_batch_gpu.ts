@@ -14,11 +14,11 @@ export class MatMulProgram implements GPGPUProgram {
     this.outputShape = [batchSize, outerShapeA, outerShapeB];
 
     const aSnippetFromOffset = (vec4Offset: number, indexVar: string|number) =>
-        transposeA ? `${indexVar} + ${vec4Offset}, aRow` :
-                     `aRow, ${indexVar} + ${vec4Offset}`;
+        transposeA ? `${indexVar} + ${vec4Offset}, aRow, batch` :
+                     `batch, aRow, ${indexVar} + ${vec4Offset}`;
     const bSnippetFromOffset = (vec4Offset: number, indexVar: string|number) =>
-        transposeB ? `bCol, ${indexVar} + ${vec4Offset}` :
-                     `${indexVar} + ${vec4Offset}, bCol`;
+        transposeB ? `bCol, ${indexVar} + ${vec4Offset}, batch` :
+                     `batch, ${indexVar} + ${vec4Offset}, bCol`;
 
     const sharedDimNearestVec4 = Math.floor(sharedDim / 4) * 4;
     const sharedDimVec4Remainder = sharedDim % 4;
@@ -27,44 +27,44 @@ export class MatMulProgram implements GPGPUProgram {
       float result = 0.0;
       for (int i = 0; i < ${sharedDimNearestVec4}; i += 4) {
         vec4 a = vec4(
-          getMatrixA(batch, ${aSnippetFromOffset(0, 'i')}),
-          getMatrixA(batch, ${aSnippetFromOffset(1, 'i')}),
-          getMatrixA(batch, ${aSnippetFromOffset(2, 'i')}),
-          getMatrixA(batch, ${aSnippetFromOffset(3, 'i')})
+          getMatrixA(${aSnippetFromOffset(0, 'i')}),
+          getMatrixA(${aSnippetFromOffset(1, 'i')}),
+          getMatrixA(${aSnippetFromOffset(2, 'i')}),
+          getMatrixA(${aSnippetFromOffset(3, 'i')})
         );
         vec4 b = vec4(
-          getMatrixB(batch, ${bSnippetFromOffset(0, 'i')}),
-          getMatrixB(batch, ${bSnippetFromOffset(1, 'i')}),
-          getMatrixB(batch, ${bSnippetFromOffset(2, 'i')}),
-          getMatrixB(batch, ${bSnippetFromOffset(3, 'i')})
+          getMatrixB(${bSnippetFromOffset(0, 'i')}),
+          getMatrixB(${bSnippetFromOffset(1, 'i')}),
+          getMatrixB(${bSnippetFromOffset(2, 'i')}),
+          getMatrixB(${bSnippetFromOffset(3, 'i')})
         );        
 
         result += dot(a, b);
       }
 
       if (${sharedDimVec4Remainder === 1}) {
-        result += getMatrixA(batch, ${aSnippetFromOffset(0, sharedDimNearestVec4)}) *
-          getMatrixB(batch, ${bSnippetFromOffset(0, sharedDimNearestVec4)});
+        result += getMatrixA(${aSnippetFromOffset(0, sharedDimNearestVec4)}) *
+          getMatrixB(${bSnippetFromOffset(0, sharedDimNearestVec4)});
       } else if (${sharedDimVec4Remainder === 2}) {
         vec2 a = vec2(
-          getMatrixA(batch, ${aSnippetFromOffset(0, sharedDimNearestVec4)}),
-          getMatrixA(batch, ${aSnippetFromOffset(1, sharedDimNearestVec4)})
+          getMatrixA(${aSnippetFromOffset(0, sharedDimNearestVec4)}),
+          getMatrixA(${aSnippetFromOffset(1, sharedDimNearestVec4)})
         );
         vec2 b = vec2(
-          getMatrixB(batch, ${bSnippetFromOffset(0, sharedDimNearestVec4)}),
-          getMatrixB(batch, ${bSnippetFromOffset(1, sharedDimNearestVec4)})
+          getMatrixB(${bSnippetFromOffset(0, sharedDimNearestVec4)}),
+          getMatrixB(${bSnippetFromOffset(1, sharedDimNearestVec4)})
         );
         result += dot(a, b);
       } else if (${sharedDimVec4Remainder === 3}) {
         vec3 a = vec3(
-          getMatrixA(batch, ${aSnippetFromOffset(0, sharedDimNearestVec4)}),
-          getMatrixA(batch, ${aSnippetFromOffset(1, sharedDimNearestVec4)}),
-          getMatrixA(batch, ${aSnippetFromOffset(2, sharedDimNearestVec4)})
+          getMatrixA(${aSnippetFromOffset(0, sharedDimNearestVec4)}),
+          getMatrixA(${aSnippetFromOffset(1, sharedDimNearestVec4)}),
+          getMatrixA(${aSnippetFromOffset(2, sharedDimNearestVec4)})
         );
         vec3 b = vec3(
-          getMatrixB(batch, ${bSnippetFromOffset(0, sharedDimNearestVec4)}),
-          getMatrixB(batch, ${bSnippetFromOffset(1, sharedDimNearestVec4)}),
-          getMatrixB(batch, ${bSnippetFromOffset(2, sharedDimNearestVec4)})
+          getMatrixB(${bSnippetFromOffset(0, sharedDimNearestVec4)}),
+          getMatrixB(${bSnippetFromOffset(1, sharedDimNearestVec4)}),
+          getMatrixB(${bSnippetFromOffset(2, sharedDimNearestVec4)})
         );
         result += dot(a, b);
       }
