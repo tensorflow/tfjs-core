@@ -40,9 +40,9 @@ export class TensorBuffer<R extends Rank> {
   values: TypedArray;
 
   constructor(shape: ShapeMap[R], public dtype: DataType, values: TypedArray) {
+    const size = util.sizeFromShape(shape);
     if (values != null) {
       const n = values.length;
-      const size = util.sizeFromShape(shape);
       util.assert(
           n === size,
           `Length of values '${n}' does not match the size ` +
@@ -50,9 +50,9 @@ export class TensorBuffer<R extends Rank> {
     }
     this.shape = shape.slice();
     this.values =
-        values || util.getTypedArrayFromDType(dtype, util.sizeFromShape(shape));
+        values || util.getTypedArrayFromDType(dtype, size);
     this.strides = computeStrides(shape);
-    this.size = util.sizeFromShape(shape);
+    this.size = size;
   }
 
   /**
@@ -319,6 +319,7 @@ export interface OpHandler {
   stridedSlice<T extends Tensor>(
       x: T, begin: number[], end: number[], strides: number[],
       beginMask: number, endMask: number): T;
+  depthToSpace(x: Tensor4D, blockSize: number, dataFormat: string): Tensor4D;
 }
 
 // For tracking tensor creation and disposal.
@@ -1223,6 +1224,12 @@ export class Tensor<R extends Rank = Rank> {
     return opHandler.stridedSlice(
         this, begin, end, strides, beginMask, endMask);
   }
+
+  depthToSpace(this: Tensor4D, blockSize: number, dataFormat: 'NHWC'|'NCHW'):
+      Tensor4D {
+    this.throwIfDisposed();
+    return opHandler.depthToSpace(this, blockSize, dataFormat);
+  }
 }
 Object.defineProperty(Tensor, Symbol.hasInstance, {
   value: (instance: Tensor) => {
@@ -1254,7 +1261,7 @@ export class Variable<R extends Rank = Rank> extends Tensor<R> {
   name: string;
 
   /**
-   * Private constructor since we can not add logic before calling `super()`.
+   * Private constructor since we cannot add logic before calling `super()`.
    * Instead, we expose static `Variable.variable` method below, which will be
    * added to global namespace.
    */

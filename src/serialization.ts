@@ -43,7 +43,7 @@ export interface ConfigDictArray extends Array<ConfigDictValue> {}
  * Type to represent the class-type of Serializable objects.
  *
  * Ie the class prototype with access to the constructor and any
- * static members/methods.  Instance methods are not listed here.
+ * static members/methods. Instance methods are not listed here.
  *
  * Source for this idea: https://stackoverflow.com/a/43607255
  */
@@ -66,7 +66,7 @@ export abstract class Serializable {
    *
    * Generally speaking this will be the same thing that constructor.name
    * would have returned.  However, the class name needs to be robust
-   * against minification for serialization/deserialazation to work properly.
+   * against minification for serialization/deserialization to work properly.
    *
    * There's also places such as initializers.VarianceScaling, where
    * implementation details between different languages led to different
@@ -137,4 +137,45 @@ export class SerializationMap {
     SerializationMap.getMap().classNameMap[cls.className] =
         [cls, cls.fromConfig];
   }
+}
+
+/**
+ * Register a class with the serialization map of TensorFlow.js.
+ * 
+ * This is often used for registering custom Layers, so they can be
+ * serialized and deserialized.
+ * 
+ * Example:
+ * 
+ * ```js
+ * class MyCustomLayer extends tf.layers.Layer {
+ *   static className = 'MyCustomLayer';
+ * 
+ *   constructor(config) {
+ *     super(config);
+ *   }
+ * }
+ * tf.serialization.registerClass(MyCustomLayer);
+ * ```
+ * 
+ * @param cls The class to be registered. It must have a public static member
+ *   called `className` defined and the value must be a non-empty string.
+ */
+/** @doc {heading: 'Models', subheading: 'Serialization'} */
+export function registerClass<T extends Serializable>(
+    cls: SerializableConstructor<T>) {
+  assert(
+      cls.className != null,
+      `Class being registered does not have the static className property ` +
+      `defined.`);
+  assert(
+      typeof cls.className === 'string',
+      `className is required to be a string, but got type ` +
+          typeof cls.className);
+  assert(
+      cls.className.length > 0,
+      `Class being registered has an empty-string as its className, which ` +
+          `is disallowed.`);
+
+  SerializationMap.register(cls);
 }
