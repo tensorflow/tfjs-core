@@ -17,7 +17,6 @@
 
 import {ENV} from '../environment';
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
-import {NamedTensorMap} from '../tensor_types';
 import {convertToTensorArray} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import {assert, sizeFromShape} from '../util';
@@ -177,7 +176,7 @@ function concat_<T extends Tensor>(tensors: T[]|TensorLike[], axis = 0): T {
     const derTensors = split(dy, sizeSplits, axis);
     return derTensors.map(t => () => t) as {};
   };
-  const inputs = $tensors as {} as NamedTensorMap;
+  const inputs = $tensors as {};
   return ENV.engine.runKernel(
       backend => backend.concat($tensors, axes) as T, inputs, der);
 }
