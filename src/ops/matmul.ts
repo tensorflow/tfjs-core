@@ -22,10 +22,6 @@ import {TensorLike} from '../types';
 import * as util from '../util';
 import {op} from './operation';
 
-function computeBatchDimension_(shape: number[]) {
-  return shape.slice(0, -2).reduce((acc, curr) => acc * curr, 1);
-}
-
 /**
  * Computes the dot product of two matrices, A * B. These must be matrices.
  *
@@ -44,33 +40,34 @@ function computeBatchDimension_(shape: number[]) {
 function matMul_<T extends Tensor>(
     a: T|TensorLike, b: T|TensorLike, transposeA = false,
     transposeB = false): T {
-
   const $a = convertToTensor(a, 'a', 'matMul');
   const $b = convertToTensor(b, 'b', 'matMul');
 
-  const innerShapeA = transposeA ? 
-                      $a.shape[$a.rank - 2] : $a.shape[$a.rank - 1];
-  const innerShapeB = transposeB ? 
-                      $b.shape[$b.rank - 1] : $b.shape[$b.rank - 2];
+  const innerShapeA =
+      transposeA ? $a.shape[$a.rank - 2] : $a.shape[$a.rank - 1];
+  const innerShapeB =
+      transposeB ? $b.shape[$b.rank - 1] : $b.shape[$b.rank - 2];
 
-  const outerShapeA = transposeA ? 
-                      $a.shape[$a.rank - 1] : $a.shape[$a.rank - 2];
-  const outerShapeB = transposeB ? 
-                      $b.shape[$b.rank - 2] : $b.shape[$b.rank - 1];
+  const outerShapeA =
+      transposeA ? $a.shape[$a.rank - 1] : $a.shape[$a.rank - 2];
+  const outerShapeB =
+      transposeB ? $b.shape[$b.rank - 2] : $b.shape[$b.rank - 1];
 
-  const batchDimA = computeBatchDimension_($a.shape);
-  const batchDimB = computeBatchDimension_($b.shape);
+  const outerDimsA = $a.shape.slice(0, -2);
+  const outerDimsB = $b.shape.slice(0, -2);
+  const batchDimA = util.sizeFromShape(outerDimsA);
+  const batchDimB = util.sizeFromShape(outerDimsB);
 
   util.assert(
       $a.rank >= 2 && $b.rank >= 2 && $a.rank === $b.rank,
-      `Error in matMul: inputs must have the same rank of at least 2,` +
-          ` got ranks ${$a.rank} and ${$b.rank}.`);
+      `Error in matMul: inputs must have the same rank of at least 2, ` +
+          `got ranks ${$a.rank} and ${$b.rank}.`);
 
   util.assert(
-      batchDimA === batchDimB,
-      `Error in matMul: batch dimensions (${batchDimA}) and (` + 
-        `${batchDimB}) of Tensors with shapes ${$a.shape} and ` + 
-        `${$b.shape} must match.`);
+      util.arraysEqual(outerDimsA, outerDimsB),
+      `Error in matMul: outer dimensions (${outerDimsA}) and (` +
+          `${outerDimsB}) of Tensors with shapes ${$a.shape} and ` +
+          `${$b.shape} must match.`);
 
   util.assert(
       innerShapeA === innerShapeB,
@@ -81,9 +78,9 @@ function matMul_<T extends Tensor>(
 
   const outShape = $a.shape.slice(0, -2).concat([outerShapeA, outerShapeB]);
 
-  const a3D = transposeA ? $a.as3D(batchDimA, innerShapeA, outerShapeA) : 
+  const a3D = transposeA ? $a.as3D(batchDimA, innerShapeA, outerShapeA) :
                            $a.as3D(batchDimA, outerShapeA, innerShapeA);
-  const b3D = transposeB ? $b.as3D(batchDimB, outerShapeB, innerShapeB) : 
+  const b3D = transposeB ? $b.as3D(batchDimB, outerShapeB, innerShapeB) :
                            $b.as3D(batchDimB, innerShapeB, outerShapeB);
 
   const grad = (dy: Tensor3D) => {
@@ -103,7 +100,7 @@ function matMul_<T extends Tensor>(
         $b: () => a3D.toFloat().matMul(dy, false, false)
       };
     } else {
-      return { 
+      return {
         $a: () => b3D.toFloat().matMul(dy, true, true),
         $b: () => dy.matMul(a3D.toFloat(), true, true)
       };
@@ -111,7 +108,7 @@ function matMul_<T extends Tensor>(
   };
 
   const res = ENV.engine.runKernel(
-      backend => backend.matMul(a3D, b3D, transposeA, transposeB), 
+      backend => backend.batchMatMul(a3D, b3D, transposeA, transposeB),
       {$a: a3D, $b: b3D}, grad);
   return res.reshape(outShape) as T;
 }

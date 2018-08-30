@@ -380,8 +380,9 @@ export class MathBackendCPU implements KernelBackend {
         T;
   }
 
-  matMul(a: Tensor3D, b: Tensor3D, transposeA: boolean, transposeB: boolean):
-      Tensor3D {
+  batchMatMul(
+      a: Tensor3D, b: Tensor3D, transposeA: boolean,
+      transposeB: boolean): Tensor3D {
     this.assertNotComplex([a, b], 'matMul');
 
     const sharedDim = transposeA ? a.shape[1] : a.shape[2];
@@ -392,41 +393,39 @@ export class MathBackendCPU implements KernelBackend {
     const aValues = a.dataSync();
     const bValues = b.dataSync();
     const [aBatch, aOuterStep, aInnerStep] = transposeA ?
-      [a.strides[0], 1, a.strides[1]] : [a.strides[0], a.strides[1], 1];
+        [a.strides[0], 1, a.strides[1]] :
+        [a.strides[0], a.strides[1], 1];
     const [bInnerStep, bOuterStep, bBatch] = transposeB ?
-      [1, b.strides[1], b.strides[0]] : [b.strides[1], 1, b.strides[0]];
+        [1, b.strides[1], b.strides[0]] :
+        [b.strides[1], 1, b.strides[0]];
 
     const result = new Float32Array(batchDim * leftDim * rightDim);
 
     const blockSize = this.blockSize;
 
-    for(let b0 = 0; b0 < batchDim; b0 += blockSize) {
+    for (let b = 0; b < batchDim; b++) {
       for (let i0 = 0; i0 < leftDim; i0 += blockSize) {
         for (let j0 = 0; j0 < rightDim; j0 += blockSize) {
           for (let k0 = 0; k0 < sharedDim; k0 += blockSize) {
             // for when blockSize doesn't evenly divide the input
-            const bBlock = Math.min(b0 + blockSize, batchDim);
             const iBlock = Math.min(i0 + blockSize, leftDim);
             const jBlock = Math.min(j0 + blockSize, rightDim);
             const kBlock = Math.min(k0 + blockSize, sharedDim);
 
-            for(let b = b0; b < bBlock; b++) {
-              for (let i = i0; i < iBlock; i++) {
-                for (let j = j0; j < jBlock; j++) {
-                  let sum = 0.0;
+            for (let i = i0; i < iBlock; i++) {
+              for (let j = j0; j < jBlock; j++) {
+                let sum = 0.0;
 
-                  for (let k = k0; k < kBlock; k++) {
-                    sum += 
-                      aValues[b * aBatch + i * aOuterStep + k * aInnerStep] *
+                for (let k = k0; k < kBlock; k++) {
+                  sum += aValues[b * aBatch + i * aOuterStep + k * aInnerStep] *
                       bValues[k * bInnerStep + j * bOuterStep + b * bBatch];
-                  }
-                  result[b * (leftDim * rightDim) + (i * rightDim + j)] += sum;
                 }
+                result[b * (leftDim * rightDim) + (i * rightDim + j)] += sum;
               }
             }
           }
         }
-      }      
+      }
     }
 
     return ops.tensor3d(result, [batchDim, leftDim, rightDim]);

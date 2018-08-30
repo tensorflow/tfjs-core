@@ -531,8 +531,9 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [x]) as T;
   }
 
-  matMul(a: Tensor3D, b: Tensor3D, transposeA: boolean, transposeB: boolean):
-      Tensor3D {
+  batchMatMul(
+      a: Tensor3D, b: Tensor3D, transposeA: boolean,
+      transposeB: boolean): Tensor3D {
     const program = new MatMulProgram(a.shape, b.shape, transposeA, transposeB);
     return this.compileAndRun<Tensor3D>(program, [a, b]);
   }

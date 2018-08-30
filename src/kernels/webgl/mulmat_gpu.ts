@@ -23,9 +23,8 @@ export class MatMulProgram implements GPGPUProgram {
   userCode: string;
 
   constructor(
-    aShape: [number, number, number], 
-    bShape: [number, number, number], 
-    transposeA = false, transposeB = false) {
+      aShape: [number, number, number], bShape: [number, number, number],
+      transposeA = false, transposeB = false) {
     const batchSize = aShape[0];
     const outerShapeA = transposeA ? aShape[2] : aShape[1];
     const outerShapeB = transposeB ? bShape[1] : bShape[2];
@@ -56,7 +55,7 @@ export class MatMulProgram implements GPGPUProgram {
           getMatrixB(${bSnippetFromOffset(1, 'i')}),
           getMatrixB(${bSnippetFromOffset(2, 'i')}),
           getMatrixB(${bSnippetFromOffset(3, 'i')})
-        );        
+        );
 
         result += dot(a, b);
       }
