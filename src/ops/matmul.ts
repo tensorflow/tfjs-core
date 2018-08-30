@@ -91,7 +91,7 @@ function matMul_<T extends Tensor>(
     } else if (!transposeA && transposeB) {
       return {
         $a: () => dy.matMul(b3D.toFloat(), false, false),
-        $b: () => dyt.matMul(a3D.toFloat(), false, false)
+        $b: () => dy.transpose([0, 2, 1]).matMul(a3D.toFloat(), false, false)
       };
     } else if (transposeA && !transposeB) {
       return {

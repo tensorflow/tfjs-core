@@ -14,10 +14,10 @@ export class MatMulProgram implements GPGPUProgram {
     this.outputShape = [batchSize, outerShapeA, outerShapeB];
 
     const aSnippetFromOffset = (vec4Offset: number, indexVar: string|number) =>
-        transposeA ? `${indexVar} + ${vec4Offset}, aRow, batch` :
+        transposeA ? `batch, ${indexVar} + ${vec4Offset}, aRow` :
                      `batch, aRow, ${indexVar} + ${vec4Offset}`;
     const bSnippetFromOffset = (vec4Offset: number, indexVar: string|number) =>
-        transposeB ? `bCol, ${indexVar} + ${vec4Offset}, batch` :
+        transposeB ? `batch, bCol, ${indexVar} + ${vec4Offset}` :
                      `batch, ${indexVar} + ${vec4Offset}, bCol`;
 
     const sharedDimNearestVec4 = Math.floor(sharedDim / 4) * 4;
