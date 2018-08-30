@@ -23,14 +23,15 @@ import {setTensorTracker, Tensor, TensorTracker} from './tensor';
 import {TensorContainer} from './tensor_types';
 import {getTensorsInContainer} from './tensor_util';
 
-const EPSILON_FLOAT16 = 1e-4;
+const EPSILON_FLOAT16 = 1e-3;
 const TEST_EPSILON_FLOAT16 = 1e-1;
 
-const EPSILON_FLOAT32 = 1e-8;
+const EPSILON_FLOAT32 = 1e-7;
 const TEST_EPSILON_FLOAT32 = 1e-3;
 
 export class Environment {
   private features: Features = {};
+  private engines: {[id: string]: Engine} = {};
   private globalEngine: Engine;
   private registry:
       {[id: string]: {backend: KernelBackend, priority: number}} = {};
@@ -54,7 +55,7 @@ export class Environment {
    * executing operations on those tensors.
    *
    * Note this disposes the current backend, if any, as well as any tensors
-   * associated with it.  A new backend is initialized, even if it is of the
+   * associated with it. A new backend is initialized, even if it is of the
    * same type as the previous one.
    *
    * @param backendName The name of the backend. Currently supports
@@ -167,7 +168,7 @@ export class Environment {
    * Disposes any `Tensor`s found within the provided object.
    *
    * @param container an object that may be a `Tensor` or may directly contain
-   *     `Tensor`s, such as a `Tensor[]` or `{key: Tensor, ...}`.  If the
+   *     `Tensor`s, such as a `Tensor[]` or `{key: Tensor, ...}`. If the
    *     object is not a `Tensor` or does not contain `Tensors`, nothing
    *     happens. In general it is safe to pass any object here, except that
    *     `Promise`s are not supported.
@@ -322,15 +323,11 @@ export class Environment {
       return isWebGLFenceEnabled(
           this.get('WEBGL_VERSION'), this.get('IS_BROWSER'));
     } else if (feature === 'TEST_EPSILON') {
-      if (this.backend.floatPrecision() === 32) {
-        return TEST_EPSILON_FLOAT32;
-      }
-      return TEST_EPSILON_FLOAT16;
+      return this.backend.floatPrecision() === 32 ? TEST_EPSILON_FLOAT32 :
+                                                    TEST_EPSILON_FLOAT16;
     } else if (feature === 'EPSILON') {
-      if (this.backend.floatPrecision() === 16) {
-        return EPSILON_FLOAT32;
-      }
-      return EPSILON_FLOAT16;
+      return this.backend.floatPrecision() === 32 ? EPSILON_FLOAT32 :
+                                                    EPSILON_FLOAT16;
     }
     throw new Error(`Unknown feature ${feature}.`);
   }
@@ -348,8 +345,14 @@ export class Environment {
 
   private initBackend(backendName?: string, safeMode = false) {
     this.backendName = backendName;
-    const backend = this.findBackend(backendName);
-    this.globalEngine = new Engine(backend, safeMode, () => this.get('DEBUG'));
+    if (this.engines[backendName]) {
+      this.globalEngine = this.engines[backendName];
+    } else {
+      const backend = this.findBackend(backendName);
+      this.globalEngine =
+          new Engine(backend, safeMode, () => this.get('DEBUG'));
+      this.engines[backendName] = this.globalEngine;
+    }
   }
 
   get backend(): KernelBackend {
@@ -368,7 +371,7 @@ export class Environment {
    * a module file (e.g. when importing `backend_webgl.ts`), and is used for
    * modular builds (e.g. custom tfjs bundle with only webgl support).
    *
-   * @param factory: The backend factory function. When called, it should
+   * @param factory The backend factory function. When called, it should
    * return an instance of the backend.
    * @param priority The priority of the backend (higher = more important).
    *     In case multiple backends are registered, the priority is used to find
@@ -403,6 +406,10 @@ export class Environment {
     }
     this.registry[name].backend.dispose();
     delete this.registry[name];
+
+    if (name in this.engines) {
+      delete this.engines[name];
+    }
   }
 
   get engine(): Engine {
