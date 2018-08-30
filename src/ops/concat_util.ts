@@ -17,7 +17,7 @@
 
 import * as util from '../util';
 
-export function assertParams(shapes: number[][], axis: number) {
+export function assertParamsConsistent(shapes: number[][], axis: number) {
   const rank = shapes[0].length;
   shapes.forEach((shape, i) => {
     util.assert(

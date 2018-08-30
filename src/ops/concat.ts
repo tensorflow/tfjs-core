@@ -22,7 +22,7 @@ import {TensorLike} from '../types';
 import {assert, sizeFromShape} from '../util';
 import {split} from './array_ops';
 import {parseAxisParam} from './axis_util';
-import {assertParams, computeOutShape} from './concat_util';
+import {assertParamsConsistent, computeOutShape} from './concat_util';
 import {op} from './operation';
 import {tensor} from './tensor_ops';
 
@@ -170,7 +170,7 @@ function concat_<T extends Tensor>(tensors: T[]|TensorLike[], axis = 0): T {
   }
   const axes = parseAxisParam(axis, $tensors[0].shape)[0];
   const shapes = $tensors.map(t => t.shape);
-  assertParams(shapes, axes);
+  assertParamsConsistent(shapes, axes);
   const der = (dy: T) => {
     const sizeSplits = shapes.map(s => s[axis]);
     const derTensors = split(dy, sizeSplits, axis);
