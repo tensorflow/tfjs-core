@@ -105,11 +105,7 @@ function matMul_<T extends Tensor>(
   };
 
   const res = ENV.engine.runKernel(
-      backend => backend.matMul(
-        a3D, 
-        b3D, 
-        transposeA, transposeB
-      ), {$a: a3D, $b: b3D}, grad);
+      backend => backend.matMul(a3D, b3D, transposeA, transposeB), {$a: a3D, $b: b3D}, grad);
   return res.reshape(outShape) as T;
 }
 
