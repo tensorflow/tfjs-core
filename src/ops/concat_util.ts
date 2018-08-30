@@ -49,12 +49,3 @@ export function computeOutShape(shapes: number[][], axis: number): number[] {
   }
   return outputShape;
 }
-
-export function computeGradientSliceShapes(shapes: number[][], axis: number) {
-  const sharedBegin = shapes[0].map(() => 0);
-  return shapes.map(shape => {
-    const begin = sharedBegin.slice();
-    sharedBegin[axis] += shape[axis];
-    return {begin, size: shape};
-  });
-}

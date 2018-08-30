@@ -21,8 +21,9 @@ import {NamedTensorMap} from '../tensor_types';
 import {convertToTensorArray} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import {assert, sizeFromShape} from '../util';
+import {split} from './array_ops';
 import {parseAxisParam} from './axis_util';
-import {assertParams, computeGradientSliceShapes, computeOutShape} from './concat_util';
+import {assertParams, computeOutShape} from './concat_util';
 import {op} from './operation';
 import {tensor} from './tensor_ops';
 
@@ -172,12 +173,9 @@ function concat_<T extends Tensor>(tensors: T[]|TensorLike[], axis = 0): T {
   const shapes = $tensors.map(t => t.shape);
   assertParams(shapes, axes);
   const der = (dy: T) => {
-    const gradSlices = computeGradientSliceShapes(shapes, axis);
-    const ders: {[key: string]: () => Tensor} = {};
-    for (let i = 0; i < gradSlices.length; ++i) {
-      ders[i] = () => dy.slice(gradSlices[i].begin, gradSlices[i].size);
-    }
-    return ders;
+    const sizeSplits = shapes.map(s => s[axis]);
+    const derTensors = split(dy, sizeSplits, axis);
+    return derTensors.map(t => () => t) as {};
   };
   const inputs = $tensors as {} as NamedTensorMap;
   return ENV.engine.runKernel(

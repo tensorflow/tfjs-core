@@ -57,6 +57,20 @@ describe('concat_util.assertConcatShapesMatch rank=3D', () => {
 
     expect(assertFn).not.toThrow();
   });
+
+  it('3 shapes, all line up', () => {
+    const assertFn = () => {
+      concat_util.assertParams([[2, 3, 3], [2, 3, 4], [2, 3, 8]], 2);
+    };
+    expect(assertFn).not.toThrow();
+  });
+
+  it('3 shapes, 3rd shape does not line up', () => {
+    const assertFn = () => {
+      concat_util.assertParams([[2, 5, 3], [2, 1, 3], [2, 1, 5]], 1);
+    };
+    expect(assertFn).toThrow();
+  });
 });
 
 describe('concat_util.computeConcatOutputShape', () => {
@@ -64,40 +78,5 @@ describe('concat_util.computeConcatOutputShape', () => {
     expect(concat_util.computeOutShape([[2, 2, 3], [1, 2, 3]], 0)).toEqual([
       3, 2, 3
     ]);
-  });
-});
-
-describe('concat_util.computeGradientSliceShapes', () => {
-  it('axis = 0', () => {
-    const a = [3, 7];
-    const b = [5, 7];
-    const axis = 0;
-    const gradSlices = concat_util.computeGradientSliceShapes([a, b], axis);
-    expect(gradSlices[0].begin).toEqual([0, 0]);
-    expect(gradSlices[0].size).toEqual(a);
-    expect(gradSlices[1].begin).toEqual([3, 0]);
-    expect(gradSlices[1].size).toEqual(b);
-  });
-
-  it('axis = 1', () => {
-    const a = [3, 7, 6];
-    const b = [3, 4, 6];
-    const axis = 1;
-    const gradSlices = concat_util.computeGradientSliceShapes([a, b], axis);
-    expect(gradSlices[0].begin).toEqual([0, 0, 0]);
-    expect(gradSlices[0].size).toEqual(a);
-    expect(gradSlices[1].begin).toEqual([0, 7, 0]);
-    expect(gradSlices[1].size).toEqual(b);
-  });
-
-  it('axis = 2', () => {
-    const a = [3, 1, 6];
-    const b = [3, 1, 8];
-    const axis = 2;
-    const gradSlices = concat_util.computeGradientSliceShapes([a, b], axis);
-    expect(gradSlices[0].begin).toEqual([0, 0, 0]);
-    expect(gradSlices[0].size).toEqual(a);
-    expect(gradSlices[1].begin).toEqual([0, 0, 6]);
-    expect(gradSlices[1].size).toEqual(b);
   });
 });
