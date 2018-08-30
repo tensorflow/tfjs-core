@@ -374,4 +374,24 @@ describeWithFlags('cropAndResize', ALL_ENVS, () => {
     expect(output.shape).toEqual([0,3,3,1]);
     expectArraysClose(output,[]);
   });
+  it('MultipleBoxes-DifferentBoxes', () => {
+    const image:tf.Tensor4D = tf.tensor4d([1,2,3,4,5,6,7,8],[2,2,2,1]);
+    const boxes:tf.Tensor2D = tf.tensor2d([0,0,1,1.5,0,0,1.5,1],[2,4]);
+    const boxInd:tf.Tensor1D = tf.tensor1d([0,1]);
+    const output = tf.image.cropAndResize(image,boxes,boxInd,
+                                          [3,3],'bilinear',0);
+    expect(output.shape).toEqual([2,3,3,1]);
+    expectArraysClose(output,
+        [1,1.75,0,2,2.75,0,3,3.75,0,5,5.5,6,6.5,7,7.5,0,0,0]);
+  });
+  it('MultipleBoxes-DifferentBoxes-Nearest', () => {
+    const image:tf.Tensor4D = tf.tensor4d([1,2,3,4,5,6,7,8],[2,2,2,1]);
+    const boxes:tf.Tensor2D = tf.tensor2d([0,0,1,1.5,0,0,2,1],[2,4]);
+    const boxInd:tf.Tensor1D = tf.tensor1d([0,1]);
+    const output = tf.image.cropAndResize(image,boxes,boxInd,
+                                          [3,3],'nearest',0);
+    expect(output.shape).toEqual([2,3,3,1]);
+    expectArraysClose(output,
+        [1,2,0,3,4,0,3,4,0,5,6,6,7,8,8,0,0,0]);
+  });
 });
