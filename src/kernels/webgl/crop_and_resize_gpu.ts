@@ -35,18 +35,9 @@ export class CropAndResizeProgram implements GPGPUProgram {
     const [inputHeightFloat, inputWidthFloat] =
       [`${imageHeight - 1}.0`, `${imageWidth - 1}.0`];
 
-    // simplify shader program by precomputing strings of floats
-    const toFloatString = (value:number) => {
-      return Number.isInteger(value) ?
-        `${value}.0` :
-        `${value}`;
-    };
-
-    const eValFloat = toFloatString(extrapolationValue);
-
     const [heightRatio, heightScale, inY] = cropHeight > 1 ?
       [
-        toFloatString((imageHeight-1)/(cropHeight-1)),
+        `${(imageHeight-1)/(cropHeight-1)}`,
         '(y2-y1) * height_ratio',
         `y1*${inputHeightFloat} + float(y)*(height_scale)`,
       ] :
@@ -57,7 +48,7 @@ export class CropAndResizeProgram implements GPGPUProgram {
       ];
     const [widthRatio, widthScale, inX] = cropWidth > 1 ?
       [
-        toFloatString((imageWidth-1)/(cropWidth-1)),
+        `${(imageWidth-1)/(cropWidth-1)}`,
         '(x2-x1) * width_ratio',
         `x1*${inputWidthFloat} + float(x)*(width_scale)`,
       ] :
@@ -71,8 +62,8 @@ export class CropAndResizeProgram implements GPGPUProgram {
     // tslint:disable-next-line:max-line-length
     // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/crop_and_resize_op_gpu.cu.cc
     this.userCode = `
-      const float height_ratio = ${heightRatio};
-      const float width_ratio = ${widthRatio};
+      const float height_ratio = float(${heightRatio});
+      const float width_ratio = float(${widthRatio});
       void main() {
         ivec4 coords = getOutputCoords();
         int b = coords[0];
@@ -97,12 +88,12 @@ export class CropAndResizeProgram implements GPGPUProgram {
 
         float in_y = ${inY};
         if( in_y < 0.0 || in_y > ${inputHeightFloat} ) {
-          setOutput(${eValFloat});
+          setOutput(float(${extrapolationValue}));
           return;
         }
         float in_x = ${inX};
         if( in_x < 0.0 || in_x > ${inputWidthFloat} ) {
-          setOutput(${eValFloat});
+          setOutput(float(${extrapolationValue}));
           return;
         }
 
