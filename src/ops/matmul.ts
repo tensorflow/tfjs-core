@@ -79,8 +79,8 @@ function matMul_<T extends Tensor>(
   const outerDimensions = transposeA ? $a.shape.slice(2) : $a.shape.slice(0, -2);
   const outShape = outerDimensions.concat([outerShapeA, outerShapeB]);
 
-  const a3D = transposeA ? $a.as3D(-1, innerShapeA, outerShapeA) : $a.as3D(-1, outerShapeA, innerShapeA);
-  const b3D = transposeB ? $b.as3D(-1, outerShapeB, innerShapeB) : $b.as3D(-1, innerShapeB, outerShapeB);
+  const a3D = transposeA ? $a.as3D(batchDimA, innerShapeA, outerShapeA) : $a.as3D(batchDimA, outerShapeA, innerShapeA);
+  const b3D = transposeB ? $b.as3D(batchDimB, outerShapeB, innerShapeB) : $b.as3D(batchDimB, innerShapeB, outerShapeB);
 
   const grad = (dy: Tensor3D) => {
     if (!transposeA && !transposeB) {
@@ -95,8 +95,8 @@ function matMul_<T extends Tensor>(
       };
     } else if (transposeA && !transposeB) {
       return {
-        $a: () => b3D.toFloat().matMul(dy.transpose([0, 2, 1]), false, false), // here, dy should be transposed, b can be left alone
-        $b: () => a3D.toFloat().matMul(dy, false, false) // here, a should be transposed
+        $a: () => b3D.toFloat().matMul(dy.transpose([0, 2, 1]), false, false),
+        $b: () => a3D.toFloat().matMul(dy, false, false)
       };
     } else {
       return { 
