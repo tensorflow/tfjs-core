@@ -157,6 +157,8 @@ export function backpropagateGradients(
 
     // Backprop dy through this node and accumulate gradients over the inputs.
     const inputGradients =
+        // Grad functions of ops with single outputs expect a dy, while ops
+        // with multiple outputs expect dys (array of dy).
         node.gradient(node.outputs.length === 1 ? dys[0] : dys);
     for (const inputName in node.inputs) {
       if (!(inputName in inputGradients)) {
