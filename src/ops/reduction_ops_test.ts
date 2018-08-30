@@ -328,7 +328,7 @@ describeWithFlags('Reduction: argmin', ALL_ENVS, () => {
 
   it('accepts tensor with bool values', () => {
     const t = tf.tensor1d([0, 1], 'bool');
-    const result = tf.argMax(t);
+    const result = tf.argMin(t);
     expect(result.dtype).toBe('int32');
     expect(result.get()).toBe(0);
   });
