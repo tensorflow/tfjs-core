@@ -7,10 +7,10 @@ export class MatMulProgram implements GPGPUProgram {
 
   constructor(
     aShape: [number, number, number], bShape: [number, number, number], transposeA = false, transposeB = false) {
-    const batchSize = transposeA ? aShape[2] : aShape[0];
-    const outerShapeA = aShape[1];
-    const outerShapeB = transposeB ? bShape[0] : bShape[2];
-    const sharedDim = transposeA ? aShape[0] : aShape[2];
+    const batchSize = aShape[0];
+    const outerShapeA = transposeA ? aShape[2] : aShape[1];
+    const outerShapeB = transposeB ? bShape[1] : bShape[2];
+    const sharedDim = transposeA ? aShape[1] : aShape[2];
     this.outputShape = [batchSize, outerShapeA, outerShapeB];
 
     const aSnippetFromOffset = (vec4Offset: number, indexVar: string|number) =>

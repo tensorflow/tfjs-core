@@ -16,14 +16,15 @@
  */
 
 import {ENV} from '../environment';
-import {Tensor, Tensor1D, Tensor2D} from '../tensor';
+import {Tensor, Tensor1D, Tensor2D, Tensor3D} from '../tensor';
 import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import * as util from '../util';
 import {op} from './operation';
 
-function computeBatchDimension_(shape: number[]) {
-  return shape.slice(0, -2).reduce((acc, curr) => acc * curr, 1);
+function computeBatchDimension_(shape: number[], transposed: boolean) {
+  const batch = transposed ? shape.slice(2) : shape.slice(0, -2);
+  return batch.reduce((acc, curr) => acc * curr, 1);
 }
 
 /**
@@ -54,8 +55,8 @@ function matMul_<T extends Tensor>(
   const outerShapeA = transposeA ? $a.shape[1] : $a.shape[$a.rank - 2];
   const outerShapeB = transposeB ? $b.shape[0] : $b.shape[$b.rank - 1];
 
-  const batchDimA = computeBatchDimension_($a.shape);
-  const batchDimB = computeBatchDimension_($b.shape);
+  const batchDimA = computeBatchDimension_($a.shape, transposeA);
+  const batchDimB = computeBatchDimension_($b.shape, transposeB);
 
   util.assert(
       $a.rank >= 2 && $b.rank >= 2,
@@ -75,39 +76,43 @@ function matMul_<T extends Tensor>(
           `${$b.shape} and transposeA=${transposeA}` +
           ` and transposeB=${transposeB} must match.`);
 
-  const outShape = $a.shape.slice(0, -2).concat([outerShapeA, outerShapeB]);
+  const outerDimensions = transposeA ? $a.shape.slice(2) : $a.shape.slice(0, -2);
+  const outShape = outerDimensions.concat([outerShapeA, outerShapeB]);
 
-  const grad = (dy: T) => {
+  const a3D = transposeA ? $a.as3D(-1, innerShapeA, outerShapeA) : $a.as3D(-1, outerShapeA, innerShapeA);
+  const b3D = transposeB ? $b.as3D(-1, outerShapeB, innerShapeB) : $b.as3D(-1, innerShapeB, outerShapeB);
+
+  const grad = (dy: Tensor3D) => {
     if (!transposeA && !transposeB) {
       return {
-        $a: () => dy.matMul($b.toFloat(), false, true).reshape($a.shape) as T,
-        $b: () => $a.toFloat().matMul(dy, true, false).reshape($b.shape) as T
+        $a: () => dy.matMul(b3D.transpose([0, 2, 1]).toFloat(), false, false),
+        $b: () => a3D.transpose([0, 2, 1]).toFloat().matMul(dy, false, false)
       };
     } else if (!transposeA && transposeB) {
       return {
-        $a: () => dy.matMul($b.toFloat(), false, false).reshape($a.shape) as T,
-        $b: () => dy.matMul($a.toFloat(), true, false).reshape($b.shape) as T
+        $a: () => dy.matMul(b3D.toFloat(), false, false),
+        $b: () => dyt.matMul(a3D.toFloat(), false, false)
       };
     } else if (transposeA && !transposeB) {
       return {
-        $a: () => $b.toFloat().matMul(dy, false, true).reshape($a.shape) as T,
-        $b: () => $a.toFloat().matMul(dy, false, false).reshape($b.shape) as T
+        $a: () => b3D.toFloat().matMul(dy.transpose([0, 2, 1]), false, false), // here, dy should be transposed, b can be left alone
+        $b: () => a3D.toFloat().matMul(dy, false, false) // here, a should be transposed
       };
     } else {
-      return {
-        $a: () => $b.toFloat().matMul(dy, true, true).reshape($a.shape) as T,
-        $b: () => dy.matMul($a.toFloat(), true, true).reshape($b.shape) as T
+      return { 
+        $a: () => b3D.transpose([0, 2, 1]).toFloat().matMul(dy.transpose([0, 2, 1]), false, false),
+        $b: () => dy.transpose([0, 2, 1]).matMul(a3D.transpose([0, 2, 1]).toFloat(), false, false)
       };
     }
   };
+
   const res = ENV.engine.runKernel(
       backend => backend.matMul(
-        transposeA ? $a.as3D(innerShapeA, outerShapeA, -1) : $a.as3D(-1, outerShapeA, innerShapeA), 
-        transposeB ? $b.as3D(outerShapeB, innerShapeB, -1) : $b.as3D(-1, innerShapeB, outerShapeB), 
+        a3D, 
+        b3D, 
         transposeA, transposeB
-      ) as T, {$a, $b}, grad);
-  const reshaped = res.reshape(outShape) as T
-  return reshaped;
+      ), {$a: a3D, $b: b3D}, grad);
+  return res.reshape(outShape) as T;
 }
 
 /**

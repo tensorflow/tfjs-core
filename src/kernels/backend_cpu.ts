@@ -293,17 +293,17 @@ export class MathBackendCPU implements KernelBackend {
 
   matMul(a: Tensor3D, b: Tensor3D, transposeA: boolean, transposeB: boolean):
       Tensor3D {
-    const sharedDim = transposeA ? a.shape[0] : a.shape[2];
-    const leftDim = a.shape[1];
-    const rightDim = transposeB ? b.shape[0] : b.shape[2];
-    const batchDim = transposeA ? a.shape[2] : a.shape[0];
+    const sharedDim = transposeA ? a.shape[1] : a.shape[2];
+    const leftDim = transposeA ? a.shape[2] : a.shape[1];
+    const rightDim = transposeB ? b.shape[1] : b.shape[2];
+    const batchDim = a.shape[0];
 
     const aValues = a.dataSync();
     const bValues = b.dataSync();
     const [aBatchStrides, aOuterStep, aInnerStep] =
-        transposeA ? [1, a.strides[1], a.strides[0]] : [a.strides[0], a.strides[1], 1];
+        transposeA ? [a.strides[0], 1, a.strides[1]] : [a.strides[0], a.strides[1], 1];
     const [bInnerStep, bOuterStep, bBatchStrides] =
-        transposeB ? [b.strides[1], b.strides[0], 1] : [b.strides[1], 1, b.strides[0]];
+        transposeB ? [1, b.strides[1], b.strides[0]] : [b.strides[1], 1, b.strides[0]];
 
     const result = new Float32Array(batchDim * leftDim * rightDim);
 
