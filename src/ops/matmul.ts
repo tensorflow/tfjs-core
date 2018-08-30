@@ -61,8 +61,6 @@ function matMul_<T extends Tensor>(
   const batchDimA = computeBatchDimension_($a.shape);
   const batchDimB = computeBatchDimension_($b.shape);
 
-  console.log(innerShapeA, innerShapeB);
-
   util.assert(
       $a.rank >= 2 && $b.rank >= 2 && $a.rank === $b.rank,
       `Error in matMul: inputs must have the same rank of at least 2,` +
