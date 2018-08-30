@@ -22,9 +22,8 @@ import {TensorLike} from '../types';
 import * as util from '../util';
 import {op} from './operation';
 
-function computeBatchDimension_(shape: number[], transposed: boolean) {
-  const batch = transposed ? shape.slice(2) : shape.slice(0, -2);
-  return batch.reduce((acc, curr) => acc * curr, 1);
+function computeBatchDimension_(shape: number[]) {
+  return shape.slice(0, -2).reduce((acc, curr) => acc * curr, 1);
 }
 
 /**
@@ -49,18 +48,18 @@ function matMul_<T extends Tensor>(
   const $a = convertToTensor(a, 'a', 'matMul');
   const $b = convertToTensor(b, 'b', 'matMul');
 
-  const innerShapeA = transposeA ? $a.shape[0] : $a.shape[$a.rank - 1];
-  const innerShapeB = transposeB ? $b.shape[1] : $b.shape[$b.rank - 2];
+  const innerShapeA = transposeA ? $a.shape[$a.rank - 2] : $a.shape[$a.rank - 1];
+  const innerShapeB = transposeB ? $b.shape[$b.rank - 1] : $b.shape[$b.rank - 2];
 
-  const outerShapeA = transposeA ? $a.shape[1] : $a.shape[$a.rank - 2];
-  const outerShapeB = transposeB ? $b.shape[0] : $b.shape[$b.rank - 1];
+  const outerShapeA = transposeA ? $a.shape[$a.rank - 1] : $a.shape[$a.rank - 2];
+  const outerShapeB = transposeB ? $b.shape[$b.rank - 2] : $b.shape[$b.rank - 1];
 
-  const batchDimA = computeBatchDimension_($a.shape, transposeA);
-  const batchDimB = computeBatchDimension_($b.shape, transposeB);
+  const batchDimA = computeBatchDimension_($a.shape);
+  const batchDimB = computeBatchDimension_($b.shape);
 
   util.assert(
-      $a.rank >= 2 && $b.rank >= 2,
-      `Error in matMul: inputs must be at least rank 2, got ranks ${$a.rank}` +
+      $a.rank >= 2 && $b.rank >= 2 && $a.rank === $b.rank,
+      `Error in matMul: inputs must have the same rank of at least 2, got ranks ${$a.rank}` +
           ` and ${$b.rank}.`);
 
   util.assert(
@@ -76,8 +75,7 @@ function matMul_<T extends Tensor>(
           `${$b.shape} and transposeA=${transposeA}` +
           ` and transposeB=${transposeB} must match.`);
 
-  const outerDimensions = transposeA ? $a.shape.slice(2) : $a.shape.slice(0, -2);
-  const outShape = outerDimensions.concat([outerShapeA, outerShapeB]);
+  const outShape = $a.shape.slice(0, -2).concat([outerShapeA, outerShapeB]);
 
   const a3D = transposeA ? $a.as3D(batchDimA, innerShapeA, outerShapeA) : $a.as3D(batchDimA, outerShapeA, innerShapeA);
   const b3D = transposeB ? $b.as3D(batchDimB, outerShapeB, innerShapeB) : $b.as3D(batchDimB, innerShapeB, outerShapeB);
