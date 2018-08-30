@@ -83,23 +83,23 @@ function matMul_<T extends Tensor>(
   const grad = (dy: Tensor3D) => {
     if (!transposeA && !transposeB) {
       return {
-        $a: () => dy.matMul(b3D.transpose([0, 2, 1]).toFloat(), false, false),
-        $b: () => a3D.transpose([0, 2, 1]).toFloat().matMul(dy, false, false)
+        $a: () => dy.matMul(b3D.toFloat(), false, true),
+        $b: () => a3D.toFloat().matMul(dy, true, false)
       };
     } else if (!transposeA && transposeB) {
       return {
         $a: () => dy.matMul(b3D.toFloat(), false, false),
-        $b: () => dy.transpose([0, 2, 1]).matMul(a3D.toFloat(), false, false)
+        $b: () => dy.matMul(a3D.toFloat(), true, false)
       };
     } else if (transposeA && !transposeB) {
       return {
-        $a: () => b3D.toFloat().matMul(dy.transpose([0, 2, 1]), false, false),
+        $a: () => b3D.toFloat().matMul(dy, false, true),
         $b: () => a3D.toFloat().matMul(dy, false, false)
       };
     } else {
       return { 
-        $a: () => b3D.transpose([0, 2, 1]).toFloat().matMul(dy.transpose([0, 2, 1]), false, false),
-        $b: () => dy.transpose([0, 2, 1]).matMul(a3D.transpose([0, 2, 1]).toFloat(), false, false)
+        $a: () => b3D.toFloat().matMul(dy, true, true),
+        $b: () => dy.matMul(a3D.toFloat(), true, true)
       };
     }
   };
