@@ -39,20 +39,26 @@ export class TensorBuffer<R extends Rank> {
   strides: number[];
   values: TypedArray;
 
-  constructor(shape: ShapeMap[R], public dtype: DataType, values: TypedArray) {
+  constructor(shape: ShapeMap[R], public dtype: DataType, values?: TypedArray) {
+    this.shape = shape.slice();
+    this.size = util.sizeFromShape(shape);
+
     if (values != null) {
       const n = values.length;
-      const size = util.sizeFromShape(shape);
       util.assert(
-          n === size,
+          n === this.size,
           `Length of values '${n}' does not match the size ` +
-              `inferred by the shape '${size}'`);
+              `inferred by the shape '${this.size}'.`);
     }
-    this.shape = shape.slice();
-    this.values =
-        values || util.getTypedArrayFromDType(dtype, util.sizeFromShape(shape));
+    if (dtype === 'complex64') {
+      throw new Error(
+          `complex64 dtype TensorBuffers are not supported. Please create ` +
+          `a TensorBuffer for the real and imaginary parts separately and ` +
+          `call tf.complex(real, imag).`);
+    }
+    this.values = values ||
+        util.getTypedArrayFromDType(dtype, util.sizeFromShape(this.shape));
     this.strides = computeStrides(shape);
-    this.size = util.sizeFromShape(shape);
   }
 
   /**
@@ -70,6 +76,7 @@ export class TensorBuffer<R extends Rank> {
         locs.length === this.rank,
         `The number of provided coordinates (${locs.length}) must ` +
             `match the rank (${this.rank})`);
+
     const index = this.locToIndex(locs);
     this.values[index] = value;
   }
@@ -318,6 +325,7 @@ export interface OpHandler {
   stridedSlice<T extends Tensor>(
       x: T, begin: number[], end: number[], strides: number[],
       beginMask: number, endMask: number): T;
+  depthToSpace(x: Tensor4D, blockSize: number, dataFormat: string): Tensor4D;
 }
 
 // For tracking tensor creation and disposal.
@@ -388,15 +396,17 @@ export class Tensor<R extends Rank = Rank> {
   protected constructor(
       shape: ShapeMap[R], dtype: DataType, values?: TypedArray,
       dataId?: DataId) {
+    this.shape = shape.slice();
+    this.dtype = dtype || 'float32';
     this.size = util.sizeFromShape(shape);
     if (values != null) {
       util.assert(
           this.size === values.length,
-          `Based on the provided shape, [${shape}], the tensor should have ` +
+          `Based on the provided shape, [${shape}], and dtype ` +
+              `${this.dtype}, the tensor should have ` +
               `${this.size} values but has ${values.length}`);
     }
-    this.shape = shape.slice();
-    this.dtype = dtype || 'float32';
+
     this.strides = computeStrides(shape);
     this.dataId = dataId != null ? dataId : {};
     this.id = Tensor.nextId++;
@@ -504,6 +514,9 @@ export class Tensor<R extends Rank = Rank> {
     util.assert(
         locs.length === this.rank,
         'Number of coordinates in get() must match the rank of the tensor');
+    util.assert(
+        this.dtype !== 'complex64',
+        'Tensor.get() is not supported for complex64 tensors yet.');
     this.throwIfDisposed();
     if (locs.length === 0) {
       locs = [0];
@@ -1221,6 +1234,12 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return opHandler.stridedSlice(
         this, begin, end, strides, beginMask, endMask);
+  }
+
+  depthToSpace(this: Tensor4D, blockSize: number, dataFormat: 'NHWC'|'NCHW'):
+      Tensor4D {
+    this.throwIfDisposed();
+    return opHandler.depthToSpace(this, blockSize, dataFormat);
   }
 }
 Object.defineProperty(Tensor, Symbol.hasInstance, {
