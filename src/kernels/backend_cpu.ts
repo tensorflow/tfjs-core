@@ -399,7 +399,8 @@ export class MathBackendCPU implements KernelBackend {
         [1, b.strides[1], b.strides[0]] :
         [b.strides[1], 1, b.strides[0]];
 
-    const result = new Float32Array(batchDim * leftDim * rightDim);
+    const size = leftDim * rightDim;
+    const result = new Float32Array(batchDim * size);
 
     const blockSize = this.blockSize;
 
@@ -420,7 +421,7 @@ export class MathBackendCPU implements KernelBackend {
                   sum += aValues[b * aBatch + i * aOuterStep + k * aInnerStep] *
                       bValues[k * bInnerStep + j * bOuterStep + b * bBatch];
                 }
-                result[b * (leftDim * rightDim) + (i * rightDim + j)] += sum;
+                result[b * size + (i * rightDim + j)] += sum;
               }
             }
           }
