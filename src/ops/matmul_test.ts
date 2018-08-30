@@ -122,8 +122,8 @@ describeWithFlags('matmul', ALL_ENVS, () => {
 
   it('matmul throws when passed a vector', () => {
     // tslint:disable-next-line:no-any
-    const matrix = tf.tensor2d([1, 2, 3, 4], [2, 2]);
     const v: any = tf.tensor1d([2, 3]);
+    const matrix = tf.tensor2d([1, 2, 3, 4], [2, 2]);
 
     expect(() => tf.matMul(matrix, v)).toThrowError();
   });
