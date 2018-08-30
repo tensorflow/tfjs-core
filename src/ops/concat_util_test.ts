@@ -20,7 +20,7 @@ import * as concat_util from './concat_util';
 describe('concat_util.assertConcatShapesMatch rank=3D', () => {
   it('Non-3D tensor x1', () => {
     const assertFn = () => {
-      concat_util.assertParams([1], [1, 2, 3], 1);
+      concat_util.assertParams([[1], [1, 2, 3]], 1);
     };
 
     expect(assertFn).toThrow();
@@ -28,7 +28,7 @@ describe('concat_util.assertConcatShapesMatch rank=3D', () => {
 
   it('Non-3D tensor x2', () => {
     const assertFn = () => {
-      concat_util.assertParams([1, 2, 3], [2, 3], 1);
+      concat_util.assertParams([[1, 2, 3], [2, 3]], 1);
     };
 
     expect(assertFn).toThrow();
@@ -36,7 +36,7 @@ describe('concat_util.assertConcatShapesMatch rank=3D', () => {
 
   it('axis out of bound', () => {
     const assertFn = () => {
-      concat_util.assertParams([1, 2, 3], [1, 2, 3], 4);
+      concat_util.assertParams([[1, 2, 3], [1, 2, 3]], 4);
     };
 
     expect(assertFn).toThrow();
@@ -44,7 +44,7 @@ describe('concat_util.assertConcatShapesMatch rank=3D', () => {
 
   it('non-axis shape mismatch', () => {
     const assertFn = () => {
-      concat_util.assertParams([2, 3, 3], [2, 2, 4], 2);
+      concat_util.assertParams([[2, 3, 3], [2, 2, 4]], 2);
     };
 
     expect(assertFn).toThrow();
@@ -52,7 +52,7 @@ describe('concat_util.assertConcatShapesMatch rank=3D', () => {
 
   it('shapes line up', () => {
     const assertFn = () => {
-      concat_util.assertParams([2, 3, 3], [2, 3, 4], 2);
+      concat_util.assertParams([[2, 3, 3], [2, 3, 4]], 2);
     };
 
     expect(assertFn).not.toThrow();
@@ -67,26 +67,37 @@ describe('concat_util.computeConcatOutputShape', () => {
   });
 });
 
-describe('concat_util.computeBackpropSizes', () => {
-  it('compute backprop sizes of 2D tensors, original axis=0', () => {
-    const a: [number, number] = [1, 6];
-    const b: [number, number] = [1, 8];
-    const {aBegin, aSize, bBegin, bSize} =
-        concat_util.computeGradientSliceShapes(a, b);
-    expect(aBegin).toEqual([0, 0]);
-    expect(aSize).toEqual([1, 6]);
-    expect(bBegin).toEqual([0, 6]);
-    expect(bSize).toEqual([1, 8]);
+describe('concat_util.computeGradientSliceShapes', () => {
+  it('axis = 0', () => {
+    const a = [3, 7];
+    const b = [5, 7];
+    const axis = 0;
+    const gradSlices = concat_util.computeGradientSliceShapes([a, b], axis);
+    expect(gradSlices[0].begin).toEqual([0, 0]);
+    expect(gradSlices[0].size).toEqual(a);
+    expect(gradSlices[1].begin).toEqual([3, 0]);
+    expect(gradSlices[1].size).toEqual(b);
   });
 
-  it('compute backprop sizes of 2D tensors, original axis=1', () => {
-    const a: [number, number] = [3, 2];
-    const b: [number, number] = [3, 7];
-    const {aBegin, aSize, bBegin, bSize} =
-        concat_util.computeGradientSliceShapes(a, b);
-    expect(aBegin).toEqual([0, 0]);
-    expect(aSize).toEqual([3, 2]);
-    expect(bBegin).toEqual([0, 2]);
-    expect(bSize).toEqual([3, 7]);
+  it('axis = 1', () => {
+    const a = [3, 7, 6];
+    const b = [3, 4, 6];
+    const axis = 1;
+    const gradSlices = concat_util.computeGradientSliceShapes([a, b], axis);
+    expect(gradSlices[0].begin).toEqual([0, 0, 0]);
+    expect(gradSlices[0].size).toEqual(a);
+    expect(gradSlices[1].begin).toEqual([0, 7, 0]);
+    expect(gradSlices[1].size).toEqual(b);
+  });
+
+  it('axis = 2', () => {
+    const a = [3, 1, 6];
+    const b = [3, 1, 8];
+    const axis = 2;
+    const gradSlices = concat_util.computeGradientSliceShapes([a, b], axis);
+    expect(gradSlices[0].begin).toEqual([0, 0, 0]);
+    expect(gradSlices[0].size).toEqual(a);
+    expect(gradSlices[1].begin).toEqual([0, 0, 6]);
+    expect(gradSlices[1].size).toEqual(b);
   });
 });

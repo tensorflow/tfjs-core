@@ -17,6 +17,7 @@
 
 import {ENV} from '../environment';
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
+import {NamedTensorMap} from '../tensor_types';
 import {convertToTensorArray} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import {assert, sizeFromShape} from '../util';
@@ -164,34 +165,23 @@ function concat_<T extends Tensor>(tensors: T[]|TensorLike[], axis = 0): T {
   }
   // Keep only non-empty tensors (ignore tensors with 0 in their shape).
   $tensors = $tensors.filter(t => t.size > 0);
-  let result = $tensors[0] as T;
   if ($tensors.length === 1) {
-    return result;
+    return $tensors[0];
   }
-  const axes = parseAxisParam(axis, result.shape);
-
-  for (let i = 1; i < $tensors.length; ++i) {
-    result = concat2Tensors(result, $tensors[i], axes[0]) as T;
-  }
-  return result;
-}
-
-function concat2Tensors<T extends Tensor>(a: T, b: T, axis: number): T {
-  assertParams(a.shape, b.shape, axis);
-  const outShape = computeOutShape([a.shape, b.shape], axis);
-
-  // Do the reshape.
-  const a2D = a.as2D(-1, sizeFromShape(a.shape.slice(axis)));
-  const b2D = b.as2D(-1, sizeFromShape(b.shape.slice(axis)));
-  // Concats 2d tensors along axis=1. See comments in MathBackend.concat().
-  const {aBegin, aSize, bBegin, bSize} =
-      computeGradientSliceShapes(a2D.shape, b2D.shape);
-  const der = (dy: Tensor2D) => {
-    return {a: () => dy.slice(aBegin, aSize), b: () => dy.slice(bBegin, bSize)};
+  const axes = parseAxisParam(axis, $tensors[0].shape)[0];
+  const shapes = $tensors.map(t => t.shape);
+  assertParams(shapes, axes);
+  const der = (dy: T) => {
+    const gradSlices = computeGradientSliceShapes(shapes, axis);
+    const ders: {[key: string]: () => Tensor} = {};
+    for (let i = 0; i < gradSlices.length; ++i) {
+      ders[i] = () => dy.slice(gradSlices[i].begin, gradSlices[i].size);
+    }
+    return ders;
   };
-  const res = ENV.engine.runKernel(
-      backend => backend.concat(a2D, b2D), {a: a2D, b: b2D}, der);
-  return res.reshape(outShape) as T;
+  const inputs = $tensors as {} as NamedTensorMap;
+  return ENV.engine.runKernel(
+      backend => backend.concat($tensors, axes) as T, inputs, der);
 }
 
 export const concat = op({concat_});
