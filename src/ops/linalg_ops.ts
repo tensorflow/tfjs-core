@@ -19,15 +19,19 @@
  * Linear algebra ops.
  */
 
+import {concat, linalg, solve, sqrt, transpose} from '..';
 import {ENV} from '../environment';
 import {dispose} from '../globals';
 import {Tensor, Tensor1D, Tensor2D} from '../tensor';
 import {assert} from '../util';
+
 import {eye, split, squeeze, stack, unstack} from './array_ops';
 import {norm} from './norm';
 import {op} from './operation';
 import {sum} from './reduction_ops';
-import {tensor2d} from './tensor_ops';
+import {tensor1d, tensor2d} from './tensor_ops';
+
+
 
 /**
  * Gram-Schmidt orthogonalization.
@@ -258,5 +262,79 @@ function qr2d(x: Tensor2D, fullMatrices = false): [Tensor2D, Tensor2D] {
   }) as [Tensor2D, Tensor2D];
 }
 
+/**
+ *
+ * @param m matrix whose svd is to be computed
+ * @returns
+ *  `u`: orthogonal matrix
+ *
+ *  `s`: diagonal matrix
+ *
+ *  `v`: orthogonal matrix
+ *
+ * such that `m = u*s*v`
+ *
+ */
+function svd_(m: Tensor2D): {u: Tensor, s: Tensor, v: Tensor} {
+  const mT = m.dot(transpose(m));
+  const u = eingen(mT).vectors;
+  // transform a tensor1d to a diagonal matrix
+  // where the tensor1d elements are in the diagonal
+  const s = concat(unstack(eingen(mT).values).reduce((a, b, i, ar) => {
+              const row = Array.from(
+                  {length: ar.length},
+                  (e, index) => index === i ? sqrt(b.as1D()) : tensor1d([0]));
+              a.push(...row);
+              return a;
+            }, [])).reshape(m.shape);
+  const v: Tensor2D = solve(u.dot(s) as Tensor2D, m as Tensor2D) as Tensor2D;
+  return {u, s, v};
+}
+
+/**
+ * The algorithm used is the QR decomposition
+ *
+ * Implementation based on:
+ * [http://www.math.tamu.edu/~dallen/linear_algebra/chpt6.pdf]
+ * (http://www.math.tamu.edu/~dallen/linear_algebra/chpt6.pdf):
+ *
+ *   - `A0 = Q0 * R0`
+ *   - `A1 = R0 * Q0 = Q1 * R1`
+ *   - `A2 = R1 * Q1 = Q2 * R2`
+ *   -  .  = .  * .  = .  * .
+ *   -  .  = .  * .  = .  * .
+ *   -  .  = .  * .  = .  * .
+ *   - `An = Rn * Qn = Qn * Rn`
+ *
+ *   `An` tends to a diagonal matrix where the diagonal values are the
+ * eingen values of A.
+ *
+ *    Π(Q0, Q1, ..., Qn) gives the eigen vectors associated to the eigen values
+ *
+ * @param m matrix whose eigen values and vectors are to compute
+ * @returns
+ * {values: eigen values as Tensor1D, vectors: eigen vectors as Tensor}
+ */
+function eingen_(m: Tensor): {values: Tensor1D, vectors: Tensor} {
+  let z;
+  for (let i = 0; i < 5; i++) {
+    const [x, y] = linalg.qr(m);
+    m = y.dot(x);
+    z = z ? z.dot(x) : x;
+    y.dispose();
+  }
+  return {values: diagonalElements(m), vectors: z};
+}
+
+function diagonalElements(m: Tensor): Tensor1D {
+  const ei: Tensor1D[] = [];
+  for (let i = 0; i < m.shape[0]; i++) {
+    ei.push(m.slice([i, i], [1, 1]).as1D());
+  }
+  return concat(ei);
+}
+
 export const gramSchmidt = op({gramSchmidt_});
 export const qr = op({qr_});
+export const eingen = op({eingen_});
+export const svd = op({svd_});

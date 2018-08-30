@@ -20,6 +20,7 @@ import {describeWithFlags} from '../jasmine_util';
 import {Tensor1D, Tensor2D} from '../tensor';
 import {ALL_ENVS, expectArraysClose, WEBGL_ENVS} from '../test_util';
 
+import {svd} from './linalg_ops';
 import {scalar, tensor1d, tensor2d, tensor3d, tensor4d} from './ops';
 
 describeWithFlags('gramSchmidt-tiny', ALL_ENVS, () => {
@@ -239,5 +240,29 @@ describeWithFlags('qr', ALL_ENVS, () => {
     expect(() => tf.linalg.qr(x1)).toThrowError(/rank >= 2.*got rank 0/);
     const x2 = tensor1d([12]);
     expect(() => tf.linalg.qr(x2)).toThrowError(/rank >= 2.*got rank 1/);
+  });
+});
+
+describeWithFlags('svd', ALL_ENVS, () => {
+  it('m = u*s*v ', () => {
+    const m = tf.tensor2d([2, -1, 0, -1, 2, -1, 0, -1, 2], [3, 3]);
+    const {u, s, v} = svd(m);
+    expectArraysClose(u.dot(s).dot(v), m);
+  });
+  it('orthogonal u', () => {
+    const m = tf.tensor2d([1, 2, 0, 0, 3, 0, 2, -4, 2], [3, 3]);
+    const {u} = svd(m);
+    const [a, b, c] = tf.unstack(u);
+    expectArraysClose(a.dot(b), tf.scalar(0));
+    expectArraysClose(a.dot(c), tf.scalar(0));
+    expectArraysClose(b.dot(c), tf.scalar(0));
+  });
+  it('orthogonal v', () => {
+    const m = tf.tensor2d([1, 2, 0, 0, 3, 0, 2, -4, 2], [3, 3]);
+    const {v} = svd(m);
+    const [a, b, c] = tf.unstack(v);
+    expectArraysClose(a.dot(b), tf.scalar(0));
+    expectArraysClose(a.dot(c), tf.scalar(0));
+    expectArraysClose(b.dot(c), tf.scalar(0));
   });
 });
