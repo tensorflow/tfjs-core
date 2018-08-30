@@ -48,19 +48,25 @@ function matMul_<T extends Tensor>(
   const $a = convertToTensor(a, 'a', 'matMul');
   const $b = convertToTensor(b, 'b', 'matMul');
 
-  const innerShapeA = transposeA ? $a.shape[$a.rank - 2] : $a.shape[$a.rank - 1];
-  const innerShapeB = transposeB ? $b.shape[$b.rank - 1] : $b.shape[$b.rank - 2];
+  const innerShapeA = transposeA ? 
+                      $a.shape[$a.rank - 2] : $a.shape[$a.rank - 1];
+  const innerShapeB = transposeB ? 
+                      $b.shape[$b.rank - 1] : $b.shape[$b.rank - 2];
 
-  const outerShapeA = transposeA ? $a.shape[$a.rank - 1] : $a.shape[$a.rank - 2];
-  const outerShapeB = transposeB ? $b.shape[$b.rank - 2] : $b.shape[$b.rank - 1];
+  const outerShapeA = transposeA ? 
+                      $a.shape[$a.rank - 1] : $a.shape[$a.rank - 2];
+  const outerShapeB = transposeB ? 
+                      $b.shape[$b.rank - 2] : $b.shape[$b.rank - 1];
 
   const batchDimA = computeBatchDimension_($a.shape);
   const batchDimB = computeBatchDimension_($b.shape);
 
+  console.log(innerShapeA, innerShapeB);
+
   util.assert(
       $a.rank >= 2 && $b.rank >= 2 && $a.rank === $b.rank,
-      `Error in matMul: inputs must have the same rank of at least 2, got ranks ${$a.rank}` +
-          ` and ${$b.rank}.`);
+      `Error in matMul: inputs must have the same rank of at least 2,` +
+          ` got ranks ${$a.rank} and ${$b.rank}.`);
 
   util.assert(
       batchDimA === batchDimB,
@@ -77,8 +83,10 @@ function matMul_<T extends Tensor>(
 
   const outShape = $a.shape.slice(0, -2).concat([outerShapeA, outerShapeB]);
 
-  const a3D = transposeA ? $a.as3D(batchDimA, innerShapeA, outerShapeA) : $a.as3D(batchDimA, outerShapeA, innerShapeA);
-  const b3D = transposeB ? $b.as3D(batchDimB, outerShapeB, innerShapeB) : $b.as3D(batchDimB, innerShapeB, outerShapeB);
+  const a3D = transposeA ? $a.as3D(batchDimA, innerShapeA, outerShapeA) : 
+                           $a.as3D(batchDimA, outerShapeA, innerShapeA);
+  const b3D = transposeB ? $b.as3D(batchDimB, outerShapeB, innerShapeB) : 
+                           $b.as3D(batchDimB, innerShapeB, outerShapeB);
 
   const grad = (dy: Tensor3D) => {
     if (!transposeA && !transposeB) {
@@ -105,7 +113,8 @@ function matMul_<T extends Tensor>(
   };
 
   const res = ENV.engine.runKernel(
-      backend => backend.matMul(a3D, b3D, transposeA, transposeB), {$a: a3D, $b: b3D}, grad);
+      backend => backend.matMul(a3D, b3D, transposeA, transposeB), 
+      {$a: a3D, $b: b3D}, grad);
   return res.reshape(outShape) as T;
 }
 

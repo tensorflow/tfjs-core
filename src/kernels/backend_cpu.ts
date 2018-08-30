@@ -391,10 +391,10 @@ export class MathBackendCPU implements KernelBackend {
 
     const aValues = a.dataSync();
     const bValues = b.dataSync();
-    const [aBatchStrides, aOuterStep, aInnerStep] =
-        transposeA ? [a.strides[0], 1, a.strides[1]] : [a.strides[0], a.strides[1], 1];
-    const [bInnerStep, bOuterStep, bBatchStrides] =
-        transposeB ? [1, b.strides[1], b.strides[0]] : [b.strides[1], 1, b.strides[0]];
+    const [aBatch, aOuterStep, aInnerStep] = transposeA ?
+      [a.strides[0], 1, a.strides[1]] : [a.strides[0], a.strides[1], 1];
+    const [bInnerStep, bOuterStep, bBatch] = transposeB ?
+      [1, b.strides[1], b.strides[0]] : [b.strides[1], 1, b.strides[0]];
 
     const result = new Float32Array(batchDim * leftDim * rightDim);
 
@@ -416,8 +416,9 @@ export class MathBackendCPU implements KernelBackend {
                   let sum = 0.0;
 
                   for (let k = k0; k < kBlock; k++) {
-                    sum += aValues[b * aBatchStrides + i * aOuterStep + k * aInnerStep] *
-                           bValues[k * bInnerStep + j * bOuterStep + b * bBatchStrides];
+                    sum += 
+                      aValues[b * aBatch + i * aOuterStep + k * aInnerStep] *
+                      bValues[k * bInnerStep + j * bOuterStep + b * bBatch];
                   }
                   result[b * (leftDim * rightDim) + (i * rightDim + j)] += sum;
                 }

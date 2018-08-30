@@ -165,7 +165,8 @@ export interface OpHandler {
   clone<T extends Tensor>(x: T): T;
   tile<T extends Tensor>(x: T, reps: number[]): T;
   gather<T extends Tensor>(x: T, indices: Tensor1D, axis: number): T;
-  matMul<T extends Tensor>(a: T, b: T, transposeA: boolean, transposeB: boolean): T;
+  matMul<T extends Tensor>(
+      a: T, b: T, transposeA: boolean, transposeB: boolean): T;
   dot(t1: Tensor, t2: Tensor): Tensor;
   norm(
       x: Tensor, ord: number|'euclidean'|'fro', axis: number|number[],
@@ -698,7 +699,8 @@ export class Tensor<R extends Rank = Rank> {
     return opHandler.gather(this, indices, axis) as T;
   }
 
-  matMul<T extends Tensor>(this: T, b: T, transposeA = false, transposeB = false): T {
+  matMul<T extends Tensor>(
+    this: T, b: T, transposeA = false, transposeB = false): T {
     this.throwIfDisposed();
     return opHandler.matMul(this, b, transposeA, transposeB);
   }
