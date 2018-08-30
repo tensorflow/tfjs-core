@@ -30,6 +30,11 @@ import {op} from './operation';
  *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is assumed.
  * @param filterSize The filter size, a tuple `[filterHeight, filterWidth]`.
  * @param strides The strides of the pooling: `[strideHeight, strideWidth]`.
+ * @param dilations The dilation rates: `[dilationHeight, dilationWidth]`
+ *     in which we sample input values across the height and width dimensions
+ *     in dilated pooling. Defaults to `[1, 1]`. If `dilations` is a single
+ *     number, then `dilationHeight == dilationWidth`. If it is greater than
+ *     1, then all values of `strides` must be 1.
  * @param pad The type of padding algorithm.
  *    - `same` and stride 1: output will be of same size as input,
  *       regardless of filter size.
@@ -45,8 +50,8 @@ import {op} from './operation';
 /** @doc {heading: 'Operations', subheading: 'Convolution'} */
 function maxPool_<T extends Tensor3D|Tensor4D>(
     x: T|TensorLike, filterSize: [number, number]|number,
-    strides: [number, number]|number, pad: 'valid'|'same'|number,
-    dimRoundingMode?: 'floor'|'round'|'ceil'): T {
+    strides: [number, number]|number, dilations: [number, number]|number,
+    pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil'): T {
   const $x = convertToTensor(x, 'x', 'maxPool');
 
   let x4D = $x as Tensor4D;
@@ -55,9 +60,16 @@ function maxPool_<T extends Tensor3D|Tensor4D>(
     reshapedTo4D = true;
     x4D = $x.as4D(1, $x.shape[0], $x.shape[1], $x.shape[2]);
   }
+  if (dilations == null) {
+    dilations = [1, 1];
+  }
   util.assert(
       x4D.rank === 4,
       `Error in maxPool: input must be rank 4 but got rank ${x4D.rank}.`);
+  util.assert(
+      conv_util.eitherStridesOrDilationsAreOne(strides, dilations),
+      'Error in maxPool: Either strides or dilations must be 1. ' +
+          `Got strides ${strides} and dilations '${dilations}'`);
   if (dimRoundingMode != null) {
     util.assert(
         util.isInt(pad as number),
@@ -65,13 +77,13 @@ function maxPool_<T extends Tensor3D|Tensor4D>(
             `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
   }
   const convInfo = conv_util.computePool2DInfo(
-      x4D.shape, filterSize, strides, pad, dimRoundingMode);
+      x4D.shape, filterSize, strides, dilations, pad, dimRoundingMode);
 
   const grad = (dy: Tensor4D, saved: Tensor[]) => {
     const [y4D] = saved;
     return {
-      x: () =>
-          maxPoolBackprop(dy, x4D, y4D as Tensor4D, filterSize, strides, pad)
+      x: () => maxPoolBackprop(
+          dy, x4D, y4D as Tensor4D, filterSize, strides, dilations, pad)
     };
   };
 
@@ -90,6 +102,11 @@ function maxPool_<T extends Tensor3D|Tensor4D>(
  *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is assumed.
  * @param filterSize The filter size, a tuple `[filterHeight, filterWidth]`.
  * @param strides The strides of the pooling: `[strideHeight, strideWidth]`.
+ * @param dilations The dilation rates: `[dilationHeight, dilationWidth]`
+ *     in which we sample input values across the height and width dimensions
+ *     in dilated pooling. Defaults to `[1, 1]`. If `dilations` is a single
+ *     number, then `dilationHeight == dilationWidth`. If it is greater than
+ *     1, then all values of `strides` must be 1.
  * @param pad The type of padding algorithm:
  *    - `same` and stride 1: output will be of same size as input,
  *       regardless of filter size.
@@ -105,11 +122,18 @@ function maxPool_<T extends Tensor3D|Tensor4D>(
 /** @doc {heading: 'Operations', subheading: 'Convolution'} */
 function avgPool_<T extends Tensor3D|Tensor4D>(
     x: T|TensorLike, filterSize: [number, number]|number,
-    strides: [number, number]|number, pad: 'valid'|'same'|number,
-    dimRoundingMode?: 'floor'|'round'|'ceil'): T {
+    strides: [number, number]|number, dilations: [number, number]|number,
+    pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil'): T {
   const $x = convertToTensor(x, 'x', 'avgPool');
   util.assert(
       $x.dtype === 'float32', 'The input dtype to avgPool must be float32');
+  if (dilations == null) {
+    dilations = [1, 1];
+  }
+  util.assert(
+      conv_util.eitherStridesOrDilationsAreOne(strides, dilations),
+      'Error in avgPool: Either strides or dilations must be 1. ' +
+          `Got strides ${strides} and dilations '${dilations}'`);
   let x4D = $x as Tensor4D;
   let reshapedTo4D = false;
   if ($x.rank === 3) {
@@ -126,11 +150,13 @@ function avgPool_<T extends Tensor3D|Tensor4D>(
             `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
   }
 
-  const convInfo =
-      conv_util.computePool2DInfo(x4D.shape, filterSize, strides, pad);
+  const convInfo = conv_util.computePool2DInfo(
+      x4D.shape, filterSize, strides, dilations, pad);
 
   const grad = (dy: Tensor4D) => {
-    return {x: () => avgPoolBackprop(dy, x4D, filterSize, strides, pad)};
+    return {
+      x: () => avgPoolBackprop(dy, x4D, filterSize, strides, dilations, pad)
+    };
   };
   let res = ENV.engine.runKernel(
       backend => backend.avgPool(x4D, convInfo), {x: x4D}, grad);
@@ -163,7 +189,8 @@ function avgPool_<T extends Tensor3D|Tensor4D>(
 function maxPoolBackprop(
     dy: Tensor4D|TensorLike, input: Tensor4D|TensorLike,
     output: Tensor4D|TensorLike, filterSize: [number, number]|number,
-    strides: [number, number]|number, pad: 'valid'|'same'|number,
+    strides: [number, number]|number, dilations: [number, number]|number,
+    pad: 'valid'|'same'|number,
     dimRoundingMode?: 'floor'|'round'|'ceil'): Tensor4D {
   const $dy = convertToTensor(dy, 'dy', 'maxPoolBackprop');
   const $input = convertToTensor(input, 'input', 'maxPoolBackprop');
@@ -171,6 +198,13 @@ function maxPoolBackprop(
   util.assert(
       $input.rank === $dy.rank,
       `Rank of input (${$input.rank}) does not match rank of dy (${$dy.rank})`);
+  if (dilations == null) {
+    dilations = [1, 1];
+  }
+  util.assert(
+      conv_util.eitherStridesOrDilationsAreOne(strides, dilations),
+      'Error in maxPoolBackProp: Either strides or dilations must be 1. ' +
+          `Got strides ${strides} and dilations '${dilations}'`);
 
   util.assert(
       $dy.rank === 4,
@@ -188,7 +222,7 @@ function maxPoolBackprop(
   }
 
   const convInfo = conv_util.computePool2DInfo(
-      $input.shape, filterSize, strides, pad, dimRoundingMode);
+      $input.shape, filterSize, strides, dilations, pad, dimRoundingMode);
   const res = ENV.engine.runKernel(
       backend => backend.maxPoolBackprop($dy, $input, $output, convInfo),
       {$dy, $input});
@@ -211,12 +245,20 @@ function maxPoolBackprop(
  */
 function avgPoolBackprop<T extends Tensor3D|Tensor4D>(
     dy: T|TensorLike, input: T|TensorLike, filterSize: [number, number]|number,
-    strides: [number, number]|number, pad: 'valid'|'same'|number): T {
+    strides: [number, number]|number, dilations: [number, number]|number,
+    pad: 'valid'|'same'|number): T {
   const $dy = convertToTensor(dy, 'dy', 'avgPoolBackprop');
   const $input = convertToTensor(input, 'input', 'avgPoolBackprop');
   util.assert(
       $input.rank === $dy.rank,
       `Rank of input (${$input.rank}) does not match rank of dy (${$dy.rank})`);
+  if (dilations == null) {
+    dilations = [1, 1];
+  }
+  util.assert(
+      conv_util.eitherStridesOrDilationsAreOne(strides, dilations),
+      'Error in avgPoolBackprop: Either strides or dilations must be 1. ' +
+          `Got strides ${strides} and dilations '${dilations}'`);
 
   let input4D = $input as Tensor4D;
   let dy4D = $dy as Tensor4D;
@@ -236,8 +278,8 @@ function avgPoolBackprop<T extends Tensor3D|Tensor4D>(
       `Error in avgPoolBackprop: input must be rank 4 but got rank ` +
           `${input4D.rank}.`);
 
-  const convInfo =
-      conv_util.computePool2DInfo(input4D.shape, filterSize, strides, pad);
+  const convInfo = conv_util.computePool2DInfo(
+      input4D.shape, filterSize, strides, dilations, pad);
   const res = ENV.engine.runKernel(
       backend => backend.avgPoolBackprop(dy4D, input4D, convInfo),
       {dy4D, input4D});

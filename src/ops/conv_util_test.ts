@@ -391,31 +391,33 @@ describe('conv_util computePoolInfo roundingMode', () => {
       [batchSize, inSize, inSize, inChannels];
   const fSize = 2;
   const stride = 2;
+  const dilation = 1;
   const pad = 1;
 
   it('should fail computing the output dimension of Pool Layer', () => {
     expect(
-        () => conv_util.computePool2DInfo(inShape, [fSize, fSize], stride, pad))
+        () => conv_util.computePool2DInfo(
+            inShape, [fSize, fSize], stride, dilation, pad))
         .toThrowError();
   });
 
   it('Floor the output dimension of Pool Layer', () => {
     const poolInfo = conv_util.computePool2DInfo(
-        inShape, [fSize, fSize], stride, pad, 'floor');
+        inShape, [fSize, fSize], stride, pad, dilation, 'floor');
 
     expect(poolInfo.outShape).toEqual([batchSize, 3, 3, inChannels]);
   });
 
   it('Round the output dimension of Pool Layer', () => {
     const poolInfo = conv_util.computePool2DInfo(
-        inShape, [fSize, fSize], stride, pad, 'round');
+        inShape, [fSize, fSize], stride, pad, dilation, 'round');
 
     expect(poolInfo.outShape).toEqual([batchSize, 4, 4, inChannels]);
   });
 
   it('Ceil the output dimension of Pool Layer', () => {
     const poolInfo = conv_util.computePool2DInfo(
-        inShape, [fSize, fSize], stride, pad, 'ceil');
+        inShape, [fSize, fSize], stride, pad, dilation, 'ceil');
 
     expect(poolInfo.outShape).toEqual([batchSize, 4, 4, inChannels]);
   });
