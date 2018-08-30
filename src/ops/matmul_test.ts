@@ -760,7 +760,7 @@ describeWithFlags('matmulBatch', ALL_ENVS, () => {
     ]);
   });
 
-  fit('4d gradients: A x B^t', () => {
+  it('4d gradients: A x B^t', () => {
     const a = tf.tensor4d(
         [
           -2, 3,  5,  -5, 3,  9,  -3, -5, 1,   1,  -9, 9,   -6, 6,  -8,
