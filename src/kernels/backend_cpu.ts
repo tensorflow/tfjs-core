@@ -36,6 +36,7 @@ import {BackendTimingInfo, KernelBackend} from './backend';
 import * as backend_util from './backend_util';
 import * as complex_util from './complex_util';
 import {nonMaxSuppressionImpl} from './non_max_suppression_impl';
+import {split} from './split_shared';
 import {topkImpl} from './topk_impl';
 import {whereImpl} from './where_impl';
 
@@ -2599,6 +2600,10 @@ export class MathBackendCPU implements KernelBackend {
       }
     }
     return this.complex(realResult.toTensor(), imagResult.toTensor());
+  }
+
+  split<T extends Tensor>(x: T, sizeSplits: number[], axis: number): T[] {
+    return split(x, sizeSplits, axis);
   }
 
   dispose() {}

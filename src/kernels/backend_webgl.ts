@@ -36,6 +36,7 @@ import {KernelBackend} from './backend';
 import * as backend_util from './backend_util';
 import {mergeRealAndImagArrays} from './complex_util';
 import {nonMaxSuppressionImpl} from './non_max_suppression_impl';
+import {split} from './split_shared';
 import {topkImpl} from './topk_impl';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
 import {AvgPool2DBackpropProgram} from './webgl/avg_pool_backprop_gpu';
@@ -1415,6 +1416,10 @@ export class MathBackendWebGL implements KernelBackend {
 
     const program = new DepthToSpaceProgram(outputShape, blockSize, dataFormat);
     return this.compileAndRun(program, [x]);
+  }
+
+  split<T extends Tensor>(x: T, sizeSplits: number[], axis: number): T[] {
+    return split(x, sizeSplits, axis);
   }
 
   private makeOutputArray<T extends Tensor>(shape: number[], dtype: DataType):

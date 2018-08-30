@@ -243,7 +243,10 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
   real<T extends Tensor>(input: T): T;
   imag<T extends Tensor>(input: T): T;
 
-  dispose(): void;
-
   depthToSpace(x: Tensor4D, blockSize: number, dataFormat: string): Tensor4D;
+
+  // Aligns with the "SplitV" kernel in TensorFlow.
+  split<T extends Tensor>(value: T, sizeSplits: number[], axis: number): T[];
+
+  dispose(): void;
 }

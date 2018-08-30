@@ -17,10 +17,9 @@
 
 import {ENV} from '../environment';
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
-import {convertToTensorArray} from '../tensor_util_env';
+import {convertToTensor, convertToTensorArray} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import {assert, sizeFromShape} from '../util';
-import {split} from './array_ops';
 import {parseAxisParam} from './axis_util';
 import {assertParamsConsistent, computeOutShape} from './concat_util';
 import {op} from './operation';
@@ -181,8 +180,64 @@ function concat_<T extends Tensor>(tensors: T[]|TensorLike[], axis = 0): T {
       backend => backend.concat($tensors, axes) as T, inputs, der);
 }
 
+/**
+ * Splits a `Tensor` into sub tensors.
+ *
+ * If `numOrSizeSplits` is a number, splits `x` along dimension `axis`
+ * into `numOrSizeSplits` smaller tensors.
+ * Requires that `numOrSizeSplits` evenly divides `x.shape[axis]`.
+ *
+ * If `numOrSizeSplits` is a number array, splits `x` into
+ * `(numOrSizeSplits.length` pieces. The shape of the `i`-th piece has the
+ * same size as `x` except along dimension `axis` where the size is
+ * `numOrSizeSplits[i]`.
+ *
+ * ```js
+ * const x = tf.tensor2d([1, 2, 3, 4, 5, 6, 7, 8], [2, 4]);
+ * const [a, b] = tf.split(x, 2, 1);
+ * a.print();
+ * b.print();
+ *
+ * const [c, d, e] = tf.split(x, [1, 2, 1], 1);
+ * c.print();
+ * d.print();
+ * e.print();
+ * ```
+ *
+ * @param x The input tensor to split.
+ * @param numOrSizeSplits Either an integer indicating the number of
+ * splits along the axis or an array of integers containing the sizes of
+ * each output tensor along the axis. If a number then it must evenly divide
+ * `x.shape[axis]`; otherwise the sum of sizes must match `x.shape[axis]`.
+ * @param axis The dimension along which to split. Defaults to 0 (the first
+ * dim).
+ */
+/** @doc {heading: 'Tensors', subheading: 'Slicing and Joining'} */
+function split_<T extends Tensor>(
+    x: T|TensorLike, numOrSizeSplits: number[]|number, axis = 0): T[] {
+  const $x = convertToTensor(x, 'x', 'split');
+
+  axis = parseAxisParam(axis, $x.shape)[0];
+  let splitSizes: number[];
+  if (typeof (numOrSizeSplits) === 'number') {
+    assert(
+        $x.shape[axis] % numOrSizeSplits === 0,
+        'Number of splits must evenly divide the axis.');
+    splitSizes = Array(numOrSizeSplits).fill($x.shape[axis] / numOrSizeSplits);
+  } else {
+    assert(
+        $x.shape[axis] === numOrSizeSplits.reduce((a, b) => a + b),
+        'The sum of sizes must match the size of the axis dimension.');
+    splitSizes = numOrSizeSplits;
+  }
+  const der = (dy: T[]) => ({$x: () => concat(dy, axis)});
+  return ENV.engine.runKernel(
+      backend => backend.split($x, splitSizes, axis), {$x}, der);
+}
+
 export const concat = op({concat_});
 export const concat1d = op({concat1d_});
 export const concat2d = op({concat2d_});
 export const concat3d = op({concat3d_});
 export const concat4d = op({concat4d_});
+export const split = op({split_});
