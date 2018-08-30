@@ -380,22 +380,14 @@ export class MathBackendCPU implements KernelBackend {
         T;
   }
 
-<<<<<<< HEAD
   matMul(a: Tensor3D, b: Tensor3D, transposeA: boolean, transposeB: boolean):
       Tensor3D {
+    this.assertNotComplex([a, b], 'matMul');
+
     const sharedDim = transposeA ? a.shape[1] : a.shape[2];
     const leftDim = transposeA ? a.shape[2] : a.shape[1];
     const rightDim = transposeB ? b.shape[1] : b.shape[2];
     const batchDim = a.shape[0];
-=======
-  matMul(a: Tensor2D, b: Tensor2D, transposeA: boolean, transposeB: boolean):
-      Tensor2D {
-    this.assertNotComplex([a, b], 'matMul');
-
-    const sharedDim = transposeA ? a.shape[0] : a.shape[1];
-    const leftDim = transposeA ? a.shape[1] : a.shape[0];
-    const rightDim = transposeB ? b.shape[0] : b.shape[1];
->>>>>>> master
 
     const aValues = a.dataSync();
     const bValues = b.dataSync();
