@@ -492,4 +492,21 @@ describeWithFlags('Switching backends with WebGL', WEBGL_ENVS, () => {
 
     expectArraysClose(tf.add(a, b), [6, 8, 10]);
   });
+
+  it('single tidy multiple backends', () => {
+    expect(tf.memory().numTensors).toBe(0);
+
+    tf.tidy(() => {
+      tf.setBackend('webgl1');
+      const a = tf.scalar(1);
+      a.square();  // Uploads to GPU.
+
+      tf.setBackend('webgl2');
+      const b = tf.scalar(1);
+      b.square();  // Uploads to GPU.
+
+      expect(tf.memory().numTensors).toBe(4);
+    });
+    expect(tf.memory().numTensors).toBe(0);
+  });
 });
