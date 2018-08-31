@@ -137,7 +137,7 @@ export function backpropagateGradients(
     const dys: Tensor[] = [];
     node.outputs.forEach(o => {
       const gradTensor = tensorAccumulatedGradientMap[o.id];
-      if (gradTensor) {
+      if (gradTensor != null) {
         dys.push(gradTensor);
       } else {
         // This particular output is not in the back-propagation subgraph, so it
