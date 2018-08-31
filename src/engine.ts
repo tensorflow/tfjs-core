@@ -85,6 +85,9 @@ export class Engine implements TensorManager {
   private numTensors = 0;
   private numDataBuffers = 0;
 
+  private profiling = false;
+  private activeProfile: ProfileInfo;
+
   private activeTape: TapeNode[];
   private gradientScopeCount = 0;
   private customGradientDepth = 0;
@@ -102,6 +105,8 @@ export class Engine implements TensorManager {
     this.activeScope = {track: [], name: 'default scope'};
     this.scopeStack = [this.activeScope];
     this.profiler = new Profiler(backend);
+    this.activeProfile =
+        {newBytes: 0, newTensors: 0, peak: 0, kernels: [], result: null};
   }
 
   tidy<T extends TensorContainer>(
@@ -168,6 +173,7 @@ export class Engine implements TensorManager {
       return x;
     };
     const scopeName = this.activeScope.name;
+    const startingBytecount = this.numBytes;
 
     // Stop recording to a tape when running a kernel.
     this.scopedRun(
@@ -194,6 +200,24 @@ export class Engine implements TensorManager {
                 NamedGradientMap;
       }
       this.activeTape.push(tapeNode);
+    }
+
+    if (this.profiling) {
+      const bytesAdded = this.numBytes - startingBytecount;
+      const inputKeys = Object.keys(inputs);
+
+      this.activeProfile.kernels.push({
+        name: scopeName,
+        bytesAdded,
+        bytesUsed: bytesAdded +
+            inputKeys.reduce(
+                (acc, curr) => acc +
+                    util.sizeFromShape(inputs[curr].shape) *
+                        util.bytesPerElement(inputs[curr].dtype),
+                0),
+        inputShapes: inputKeys.map(key => inputs[key].shape),
+        outputShape: result.shape
+      });
     }
 
     return result;
@@ -274,56 +298,21 @@ export class Engine implements TensorManager {
   }
 
   async profile(query: () => void): Promise<ProfileInfo> {
+    this.profiling = true;
+
     const startBytes = this.numBytes;
     const startNumTensors = this.numTensors;
 
-    const profile = {} as ProfileInfo;
-    profile.kernels = [];
+    this.activeProfile.kernels = [];
+    this.activeProfile.result = await query();
 
-    // Temporarily wrap runKernel with a function that keeps track of byte
-    // usage.
-    const original = this.runKernel;
+    this.profiling = false;
 
-    this.runKernel = <T extends Tensor|Tensor[], I extends NamedTensorMap>(
-        forwardFunc: ForwardFunc<T>,
-        inputs: I,
-        backwardsFunc?: (
-            dy: T, saved: Tensor[]) => {[P in keyof I]: () => I[P]},
-        ): T => {
-      const startingBytecount = this.numBytes;
-      const output = original.call(this, forwardFunc, inputs, backwardsFunc);
-      const inputKeys = Object.keys(inputs);
-
-      const bytesAdded = this.numBytes - startingBytecount;
-
-      profile.kernels.push({
-        name: this.activeScope.name,
-        bytesAdded,
-        bytesUsed: bytesAdded +
-            inputKeys.reduce(
-                (acc, curr) => acc +
-                    util.sizeFromShape(inputs[curr].shape) *
-                        util.bytesPerElement(inputs[curr].dtype),
-                0),
-        inputShapes: inputKeys.map(key => inputs[key].shape),
-        outputShape: output.shape
-      });
-
-      return output;
-    };
-
-    profile.result = await query();
-    this.runKernel = original;
-
-    const bytesUsed = profile.kernels.map(d => d.bytesUsed);
-    profile.peak = Math.max(...bytesUsed);
-    // profile.average =
-    //     bytesUsed.reduce((acc, curr) => acc + curr, 0) /
-    //     profile.kernels.length;
-    profile.newBytes = this.numBytes - startBytes;
-    profile.newTensors = this.numTensors - startNumTensors;
-
-    return profile;
+    this.activeProfile.peak =
+        Math.max(...this.activeProfile.kernels.map(d => d.bytesUsed));
+    this.activeProfile.newBytes = this.numBytes - startBytes;
+    this.activeProfile.newTensors = this.numTensors - startNumTensors;
+    return this.activeProfile;
   }
 
   private shouldRecord(): boolean {
