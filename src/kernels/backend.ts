@@ -32,8 +32,8 @@ export interface TensorStorage {
   fromPixels(
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
       numChannels: number): Tensor3D;
-  memory(): {unreliable: boolean;};  // Backend-specific information.
   register(dataId: DataId, shape: number[], dtype: DataType): void;
+  memory(): {unreliable: boolean;};  // Backend-specific information.
 }
 
 export interface BackendTimer {
