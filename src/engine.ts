@@ -216,7 +216,7 @@ export class Engine implements TensorManager {
                         util.bytesPerElement(inputs[curr].dtype),
                 0),
         inputShapes: inputKeys.map(key => inputs[key].shape),
-        outputShape: result.shape
+        outputShape: (result as Tensor).shape
       });
     }
 
