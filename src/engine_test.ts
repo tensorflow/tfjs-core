@@ -417,7 +417,7 @@ describe('Switching backends', () => {
     expect(tf.memory().numBytes).toBe(0);
   });
 
-  it('can call kernel with data from different backends', () => {
+  it('can execute op with data from mixed backends', () => {
     tf.setBackend('cpu1');
     // This scalar lives in cpu1.
     const a = tf.scalar(5);
@@ -456,7 +456,7 @@ describeWithFlags('Switching backends with WebGL', WEBGL_ENVS, () => {
     tf.ENV.removeBackend('webgl2');
   });
 
-  it('can call kernel with data from different backends', () => {
+  it('can execute op with data from mixed backends', () => {
     tf.setBackend('webgl1');
     const a = tf.scalar(5);
 
@@ -479,5 +479,17 @@ describeWithFlags('Switching backends with WebGL', WEBGL_ENVS, () => {
 
     expect(tf.memory().numTensors).toBe(0);
     expect(tf.memory().numDataBuffers).toBe(0);
+  });
+
+  it('fromPixels with mixed backends works', () => {
+    tf.setBackend('webgl1');
+    const a =
+        tf.fromPixels(new ImageData(new Uint8ClampedArray([1, 2, 3, 4]), 1, 1));
+
+    tf.setBackend('webgl2');
+    const b =
+        tf.fromPixels(new ImageData(new Uint8ClampedArray([5, 6, 7, 8]), 1, 1));
+
+    expectArraysClose(tf.add(a, b), [6, 8, 10]);
   });
 });
