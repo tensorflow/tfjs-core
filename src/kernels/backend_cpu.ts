@@ -196,7 +196,7 @@ export class MathBackendCPU implements KernelBackend {
 
   private checkForData(dataId: DataId) {
     if (!this.data.has(dataId)) {
-      this.engine.tensorNotFound(dataId);
+      this.engine.fetchTensor(dataId);
     }
   }
 

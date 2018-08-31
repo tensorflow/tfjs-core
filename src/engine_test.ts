@@ -516,8 +516,7 @@ describeWithFlags('withBackend', ALL_ENVS, () => {
 
   afterEach(() => tf.ENV.removeBackend('cpu1'));
 
-  // tslint:disable-next-line:ban
-  fit('run some ops on the custom cpu backend', () => {
+  it('run some ops on the custom cpu backend', () => {
     const a = tf.scalar(3);
     expect(tf.getBackend()).not.toEqual('cpu1');
 
@@ -526,5 +525,10 @@ describeWithFlags('withBackend', ALL_ENVS, () => {
       expectArraysClose(a.square(), [9]);
     });
     expect(tf.getBackend()).not.toEqual('cpu1');
+  });
+
+  it('throws an error if the function is async', () => {
+    // @ts-ignore because compliler won't allow async fn to be passed.
+    expect(() => tf.withBackend('cpu1', async () => {})).toThrowError();
   });
 });

@@ -254,11 +254,20 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
   // Aligns with the "SplitV" kernel in TensorFlow.
   split<T extends Tensor>(value: T, sizeSplits: number[], axis: number): T[];
 
+  /**
+   * Sets the engine for this backend. Backends should use this engine to
+   * fetch tensors from other backends by calling engine.fetchTensor().
+   */
   setEngine(engine: TensorEngine): void;
 
   dispose(): void;
 }
 
 export interface TensorEngine {
-  tensorNotFound(dataId: DataId): void;
+  /**
+   * To be called by backends whenever they see a dataId that they don't own.
+   * Upon calling this method, the engine will fetch the tensor from another
+   * backend and register it with the current active backend.
+   */
+  fetchTensor(dataId: DataId): void;
 }

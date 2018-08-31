@@ -1563,7 +1563,7 @@ export class MathBackendWebGL implements KernelBackend {
 
   private checkForData(dataId: DataId) {
     if (!this.texData.has(dataId)) {
-      this.engine.tensorNotFound(dataId);
+      this.engine.fetchTensor(dataId);
     }
   }
 

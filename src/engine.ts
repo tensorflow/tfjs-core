@@ -83,7 +83,7 @@ export class Engine implements TensorManager {
   private keepTensors: Set<number> = new Set();
   private profiler: Profiler;
 
-  private storageInfo = new WeakMap<DataId, {
+  private tensorInfo = new WeakMap<DataId, {
     backend: KernelBackend,
     dtype: DataType,
     shape: number[],
@@ -200,8 +200,8 @@ export class Engine implements TensorManager {
   // TensorManager implementation.
 
   registerTensor(a: Tensor|Variable): void {
-    const refCount = this.storageInfo.has(a.dataId) ?
-        this.storageInfo.get(a.dataId).refCount :
+    const refCount = this.tensorInfo.has(a.dataId) ?
+        this.tensorInfo.get(a.dataId).refCount :
         0;
     this.numTensors++;
     if (refCount === 0) {
@@ -213,12 +213,12 @@ export class Engine implements TensorManager {
         this.numBytes +=
             util.sizeFromShape(a.shape) * util.bytesPerElement(a.dtype);
       }
-      this.storageInfo.set(
+      this.tensorInfo.set(
           a.dataId,
           {backend: this.backend, dtype: a.dtype, shape: a.shape, refCount: 0});
       this.backend.register(a.dataId, a.shape, a.dtype);
     }
-    this.storageInfo.get(a.dataId).refCount++;
+    this.tensorInfo.get(a.dataId).refCount++;
     if (!(a instanceof Variable)) {
       this.track(a);
     }
@@ -232,16 +232,16 @@ export class Engine implements TensorManager {
   }
 
   disposeTensor(a: Tensor): void {
-    if (!this.storageInfo.has(a.dataId)) {
+    if (!this.tensorInfo.has(a.dataId)) {
       return;
     }
     if (this.keepTensors.has(a.id)) {
       this.keepTensors.delete(a.id);
     }
     this.numTensors--;
-    const refCount = this.storageInfo.get(a.dataId).refCount;
+    const refCount = this.tensorInfo.get(a.dataId).refCount;
     if (refCount <= 1) {
-      const info = this.storageInfo.get(a.dataId);
+      const info = this.tensorInfo.get(a.dataId);
       info.backend.disposeData(a.dataId);
       this.numDataBuffers--;
       // Don't count bytes for complex numbers as they are counted by their
@@ -250,9 +250,9 @@ export class Engine implements TensorManager {
         this.numBytes -=
             util.sizeFromShape(a.shape) * util.bytesPerElement(a.dtype);
       }
-      this.storageInfo.delete(a.dataId);
+      this.tensorInfo.delete(a.dataId);
     } else {
-      this.storageInfo.get(a.dataId).refCount--;
+      this.tensorInfo.get(a.dataId).refCount--;
     }
     // TODO(nsthorat): Construct an error and save the stack trace for
     // debugging when in debug mode. Creating a stack trace is too expensive
@@ -474,9 +474,9 @@ export class Engine implements TensorManager {
 
   // Forwarding to backend.
   write(dataId: DataId, values: TypedArray): void {
-    const info = this.storageInfo.get(dataId);
+    const info = this.tensorInfo.get(dataId);
     if (this.backend !== info.backend) {
-      // Delete the tensor from the old backend and move to the new backend.
+      // Delete the tensor from the old backend and move it to the new backend.
       info.backend.disposeData(dataId);
       info.backend = this.backend;
       this.backend.register(dataId, info.shape, info.dtype);
@@ -485,12 +485,12 @@ export class Engine implements TensorManager {
   }
   readSync(dataId: DataId): TypedArray {
     // Route the read to the correct backend.
-    const info = this.storageInfo.get(dataId);
+    const info = this.tensorInfo.get(dataId);
     return info.backend.readSync(dataId);
   }
   read(dataId: DataId): Promise<TypedArray> {
     // Route the read to the correct backend.
-    const info = this.storageInfo.get(dataId);
+    const info = this.tensorInfo.get(dataId);
     return info.backend.read(dataId);
   }
   fromPixels(

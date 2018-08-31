@@ -116,10 +116,8 @@ export class Environment {
   /**
    * Executes the provided function `fn` and after it is executed, cleans up all
    * intermediate tensors allocated by `fn` except those returned by `fn`.
-   * `f` must not return a Promise (async functions not allowed).
-   * The returned result can be a complex object, however tidy only walks the
-   * top-level properties (depth 1) of that object to search for tensors, or
-   * lists of tensors that need to be tracked in the parent scope.
+   * `fn` must not return a Promise (async functions not allowed). The returned
+   * result can be a complex object.
    *
    * Using this method helps avoid memory leaks. In general, wrap calls to
    * operations in `tidy` for automatic memory cleanup.
@@ -159,27 +157,32 @@ export class Environment {
   }
 
   /**
-   * Runs the provided function while using the specified backend. After the
-   * function is done, it switches back to the original backend.
+   * Calls the provided function `fn` while using the specified backend. After
+   * the function is done, it switches back to the original backend. `fn` cannot
+   * be an async function.
    *
    * ```js
    * tf.setBackend('webgl');
    * const a = tf.square(3); // Do the square on GPU.
    * a.print();
    * tf.withBackend('cpu', () => {
-   *   console.log('Backend inside the function:', tf.getBackend());
+   *   console.log('Inside the function:', tf.getBackend());
    *   a.sqrt().print(); // Do the sqrt on CPU.
    * });
-   * console.log('Backend outside the function:', tf.getBackend());
+   * console.log('Outside the function:', tf.getBackend());
    * ```
    *
    * @param backendName The name of the backend to use.
    * @param fn The function to run.
    */
-  static withBackend(backendName: string, fn: () => {} | void) {
+  static withBackend(backendName: string, fn: () => TensorContainer) {
     const prevBackendName = this.getBackend();
     this.setBackend(backendName);
-    fn();
+    const result = fn();
+    if (result instanceof Promise) {
+      throw new Error(
+          'Async functions are not allowed inside tf.setBackend().');
+    }
     this.setBackend(prevBackendName);
   }
 
