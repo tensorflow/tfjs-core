@@ -70,6 +70,7 @@ export class Environment {
       throw new Error(`Backend name '${backendName}' not found in registry`);
     }
     ENV.engine.backend = ENV.findBackend(backendName);
+    ENV.backendName = backendName;
     ENV.engine.backend.setEngine(ENV.engine);
   }
 
@@ -79,7 +80,7 @@ export class Environment {
    */
   /** @doc {heading: 'Environment'} */
   static getBackend(): string {
-    ENV.initDefaultBackend();
+    ENV.initEngine();
     return ENV.backendName;
   }
 
@@ -155,6 +156,31 @@ export class Environment {
   static tidy<T extends TensorContainer>(
       nameOrFn: string|ScopeFn<T>, fn?: ScopeFn<T>, gradMode = false): T {
     return ENV.engine.tidy(nameOrFn, fn, gradMode);
+  }
+
+  /**
+   * Runs the provided function while using the specified backend. After the
+   * function is done, it switches back to the original backend.
+   *
+   * ```js
+   * tf.setBackend('webgl');
+   * const a = tf.square(3); // Do the square on GPU.
+   * a.print();
+   * tf.withBackend('cpu', () => {
+   *   console.log('Backend inside the function:', tf.getBackend());
+   *   a.sqrt().print(); // Do the sqrt on CPU.
+   * });
+   * console.log('Backend outside the function:', tf.getBackend());
+   * ```
+   *
+   * @param backendName The name of the backend to use.
+   * @param fn The function to run.
+   */
+  static withBackend(backendName: string, fn: () => {} | void) {
+    const prevBackendName = this.getBackend();
+    this.setBackend(backendName);
+    fn();
+    this.setBackend(prevBackendName);
   }
 
   /**
@@ -390,11 +416,11 @@ export class Environment {
   }
 
   get engine(): Engine {
-    this.initDefaultBackend();
+    this.initEngine();
     return this.globalEngine;
   }
 
-  private initDefaultBackend() {
+  private initEngine() {
     if (this.globalEngine == null) {
       this.backendName = this.get('BACKEND');
       const backend = this.findBackend(this.backendName);

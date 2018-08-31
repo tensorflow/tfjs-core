@@ -510,3 +510,21 @@ describeWithFlags('Switching backends with WebGL', WEBGL_ENVS, () => {
     expect(tf.memory().numTensors).toBe(0);
   });
 });
+
+describeWithFlags('withBackend', ALL_ENVS, () => {
+  beforeEach(() => tf.ENV.registerBackend('cpu1', () => new MathBackendCPU()));
+
+  afterEach(() => tf.ENV.removeBackend('cpu1'));
+
+  // tslint:disable-next-line:ban
+  fit('run some ops on the custom cpu backend', () => {
+    const a = tf.scalar(3);
+    expect(tf.getBackend()).not.toEqual('cpu1');
+
+    tf.withBackend('cpu1', () => {
+      expect(tf.getBackend()).toEqual('cpu1');
+      expectArraysClose(a.square(), [9]);
+    });
+    expect(tf.getBackend()).not.toEqual('cpu1');
+  });
+});

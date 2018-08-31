@@ -171,7 +171,6 @@ export class MathBackendCPU implements KernelBackend {
 
   disposeData(dataId: DataId): void {
     if (this.data.has(dataId)) {
-      console.log('dispoding', this.data.get(dataId));
       const {complexTensors} = this.data.get(dataId);
       if (complexTensors != null) {
         complexTensors.real.dispose();
