@@ -91,24 +91,16 @@ export class Engine implements TensorManager {
   }>();
 
   constructor(
-      public backend_: KernelBackend, public safeMode: boolean,
+      public backend: KernelBackend, public safeMode: boolean,
       private debugMode: () => boolean) {
     // Create a default outer scope.
     this.activeScope = {track: [], name: 'default scope'};
     this.scopeStack = [this.activeScope];
-    this.profiler = new Profiler(backend_);
+    this.profiler = new Profiler(backend);
   }
 
-  get backend(): KernelBackend {
-    return this.backend_;
-  }
-
-  tensorNotFound(dataId: DataId) {
+  fetchTensor(dataId: DataId) {
     this.write(dataId, this.readSync(dataId));
-  }
-
-  set backend(backend: KernelBackend) {
-    this.backend_ = backend;
   }
 
   tidy<T extends TensorContainer>(
@@ -484,7 +476,7 @@ export class Engine implements TensorManager {
   write(dataId: DataId, values: TypedArray): void {
     const info = this.storageInfo.get(dataId);
     if (this.backend !== info.backend) {
-      // Remove from old backend and update the backend.
+      // Delete the tensor from the old backend and move to the new backend.
       info.backend.disposeData(dataId);
       info.backend = this.backend;
       this.backend.register(dataId, info.shape, info.dtype);
@@ -492,10 +484,12 @@ export class Engine implements TensorManager {
     this.backend.write(dataId, values);
   }
   readSync(dataId: DataId): TypedArray {
+    // Route the read to the correct backend.
     const info = this.storageInfo.get(dataId);
     return info.backend.readSync(dataId);
   }
   read(dataId: DataId): Promise<TypedArray> {
+    // Route the read to the correct backend.
     const info = this.storageInfo.get(dataId);
     return info.backend.read(dataId);
   }
