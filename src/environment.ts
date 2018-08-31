@@ -113,7 +113,7 @@ export class Environment {
   }
 
   /**
-  */
+   */
   /** @doc {heading: 'Performance', subheading: 'Memory'} */
   static profile(f: () => any): Promise<ProfileInfo> {
     return ENV.engine.profile(f);

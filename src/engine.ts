@@ -46,21 +46,16 @@ export type MemoryInfo = {
 };
 
 type KernelProfile = {
-  name: string;
-  bytesAdded: number;
-  bytesUsed: number;
-  inputShapes: number[][];
+  name: string; bytesAdded: number; bytesUsed: number; inputShapes: number[][];
   outputShape: number[]
-}
+};
 
 export type ProfileInfo = {
-  newBytes: number;
-  newTensors: number;
-  peak: number;
-  average: number;
+  newBytes: number; newTensors: number; peak: number; average: number;
   kernels: KernelProfile[],
-  result?: Tensor
-}
+  // tslint:disable-next-line:no-any
+  result?: any
+};
 
 export interface TimingInfo extends BackendTimingInfo {
   wallMs: number;
@@ -279,45 +274,54 @@ export class Engine implements TensorManager {
     return info;
   }
 
-  async profile(query: () => any): Promise<ProfileInfo> {
+  async profile(query: () => void): Promise<ProfileInfo> {
     const startBytes = this.numBytes;
     const startNumTensors = this.numTensors;
 
     const profile = {} as ProfileInfo;
     profile.kernels = [];
 
-    // Temporarily wrap runKernel with a function that keeps track of byte usage.
+    // Temporarily wrap runKernel with a function that keeps track of byte
+    // usage.
     const original = this.runKernel;
 
     this.runKernel = <T extends Tensor|Tensor[], I extends NamedTensorMap>(
-      forwardFunc: ForwardFunc<T>,
-      inputs: I,
-      backwardsFunc?: (dy: T, saved: Tensor[]) => {[P in keyof I]: () => I[P]},
-      ): T => {
-      const startingBytecount = this.numBytes;
-      const output = original.call(this, forwardFunc, inputs, backwardsFunc);
-      const inputKeys = Object.keys(inputs);
+        forwardFunc: ForwardFunc<T>,
+        inputs: I,
+        backwardsFunc?: (
+            dy: T, saved: Tensor[]) => {[P in keyof I]: () => I[P]},
+        ):
+        T => {
+          const startingBytecount = this.numBytes;
+          const output =
+              original.call(this, forwardFunc, inputs, backwardsFunc);
+          const inputKeys = Object.keys(inputs);
 
-      const bytesAdded = this.numBytes - startingBytecount;
+          const bytesAdded = this.numBytes - startingBytecount;
 
-      profile.kernels.push({ 
-        name: this.activeScope.name,
-        bytesAdded,
-        bytesUsed: bytesAdded + inputKeys.reduce((acc, curr) => 
-          acc + util.sizeFromShape(inputs[curr].shape) * util.bytesPerElement(inputs[curr].dtype), 0),
-        inputShapes: inputKeys.map(key => inputs[key].shape),
-        outputShape: output.shape
-      });
+          profile.kernels.push({
+            name: this.activeScope.name,
+            bytesAdded,
+            bytesUsed: bytesAdded +
+                inputKeys.reduce(
+                    (acc, curr) => acc +
+                        util.sizeFromShape(inputs[curr].shape) *
+                            util.bytesPerElement(inputs[curr].dtype),
+                    0),
+            inputShapes: inputKeys.map(key => inputs[key].shape),
+            outputShape: output.shape
+          });
 
-      return output;
-    }
+          return output;
+        }
 
     profile.result = await query();
     this.runKernel = original;
 
-    profile.peak = Math.max(...profile.kernels.map(d => d.bytesUsed));
-    profile.average = profile.kernels.map(d => d.bytesUsed)
-      .reduce((acc, curr) => acc + curr, 0) / profile.kernels.length;
+    const bytesUsed = profile.kernels.map(d => d.bytesUsed);
+    profile.peak = Math.max(...bytesUsed);
+    profile.average =
+        bytesUsed.reduce((acc, curr) => acc + curr, 0) / profile.kernels.length;
     profile.newBytes = this.numBytes - startBytes;
     profile.newTensors = this.numTensors - startNumTensors;
 

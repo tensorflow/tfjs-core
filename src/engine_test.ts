@@ -389,7 +389,6 @@ describeWithFlags('profile', ALL_ENVS, () => {
     expect(result.peak).toBe(32);
     expect(result.kernels[0].bytesAdded).toBe(8);
   });
-
 });
 
 describeWithFlags('disposeVariables', ALL_ENVS, () => {

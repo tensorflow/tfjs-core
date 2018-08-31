@@ -18,7 +18,6 @@
 import {Conv2DInfo} from '../ops/conv_util';
 import {DataId, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import {DataType, Rank, ShapeMap, TypedArray} from '../types';
-import {ProfileInfo} from '../engine';
 
 // Required information for all backends.
 export interface BackendTimingInfo {
@@ -35,7 +34,6 @@ export interface TensorStorage {
       numChannels: number): Tensor3D;
   memory(): {unreliable: boolean;};  // Backend-specific information.
   register(dataId: DataId, shape: number[], dtype: DataType): void;
-  profile?(f: () => any): Promise<ProfileInfo>;
 }
 
 export interface BackendTimer {
