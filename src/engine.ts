@@ -52,9 +52,9 @@ type KernelProfile = {
 
 export type ProfileInfo = {
   newBytes: number; newTensors: number; peak: number; average: number;
-  kernels: KernelProfile[],
+  kernels: KernelProfile[];
   // tslint:disable-next-line:no-any
-  result?: any
+  result: any
 };
 
 export interface TimingInfo extends BackendTimingInfo {
@@ -290,30 +290,28 @@ export class Engine implements TensorManager {
         inputs: I,
         backwardsFunc?: (
             dy: T, saved: Tensor[]) => {[P in keyof I]: () => I[P]},
-        ):
-        T => {
-          const startingBytecount = this.numBytes;
-          const output =
-              original.call(this, forwardFunc, inputs, backwardsFunc);
-          const inputKeys = Object.keys(inputs);
+        ): T => {
+      const startingBytecount = this.numBytes;
+      const output = original.call(this, forwardFunc, inputs, backwardsFunc);
+      const inputKeys = Object.keys(inputs);
 
-          const bytesAdded = this.numBytes - startingBytecount;
+      const bytesAdded = this.numBytes - startingBytecount;
 
-          profile.kernels.push({
-            name: this.activeScope.name,
-            bytesAdded,
-            bytesUsed: bytesAdded +
-                inputKeys.reduce(
-                    (acc, curr) => acc +
-                        util.sizeFromShape(inputs[curr].shape) *
-                            util.bytesPerElement(inputs[curr].dtype),
-                    0),
-            inputShapes: inputKeys.map(key => inputs[key].shape),
-            outputShape: output.shape
-          });
+      profile.kernels.push({
+        name: this.activeScope.name,
+        bytesAdded,
+        bytesUsed: bytesAdded +
+            inputKeys.reduce(
+                (acc, curr) => acc +
+                    util.sizeFromShape(inputs[curr].shape) *
+                        util.bytesPerElement(inputs[curr].dtype),
+                0),
+        inputShapes: inputKeys.map(key => inputs[key].shape),
+        outputShape: output.shape
+      });
 
-          return output;
-        }
+      return output;
+    };
 
     profile.result = await query();
     this.runKernel = original;

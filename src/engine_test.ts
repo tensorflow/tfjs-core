@@ -376,7 +376,6 @@ describeWithFlags('profile', ALL_ENVS, () => {
     expect(result.kernels[0].bytesAdded).toBe(12);
   });
 
-
   it('matMul', async () => {
     const result = await tf.profile(() => {
       const a = tf.tensor2d([1, 2], [1, 2]);
