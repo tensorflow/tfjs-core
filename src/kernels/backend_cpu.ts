@@ -16,7 +16,6 @@
  */
 
 import * as seedrandom from 'seedrandom';
-
 import {ENV} from '../environment';
 import {warn} from '../log';
 import * as array_ops_util from '../ops/array_ops_util';
@@ -26,18 +25,18 @@ import * as concat_util from '../ops/concat_util';
 import {Conv2DInfo} from '../ops/conv_util';
 import * as erf_util from '../ops/erf_util';
 import * as ops from '../ops/ops';
-import {buffer, tensor3d, tensor4d} from '../ops/ops';
+import {buffer, tensor, tensor3d, tensor4d} from '../ops/ops';
 import * as selu_util from '../ops/selu_util';
 import {getStridedSlicedInfo} from '../ops/slice_util';
 import {DataId, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import {DataType, DataTypeMap, Rank, ShapeMap, TypedArray, upcastType} from '../types';
 import * as util from '../util';
 import {now} from '../util';
-
 import {BackendTimingInfo, KernelBackend} from './backend';
 import * as backend_util from './backend_util';
 import * as complex_util from './complex_util';
 import {nonMaxSuppressionImpl} from './non_max_suppression_impl';
+import {split} from './split_shared';
 import {topkImpl} from './topk_impl';
 import {whereImpl} from './where_impl';
 
@@ -294,33 +293,41 @@ export class MathBackendCPU implements KernelBackend {
     return buffer.toTensor() as T;
   }
 
-  // Concats 2d tensors along axis=1. See comments in MathBackend.concat().
-  concat(a: Tensor2D, b: Tensor2D): Tensor2D {
-    this.assertNotComplex([a, b], 'concat');
-
-    const outShape = concat_util.computeOutShape(
-                         [a.shape, b.shape], 1 /* axis */) as [number, number];
-    const buffer = ops.buffer<Rank.R2>(outShape, a.dtype);
-
-    if (a.shape[0] === 1 && b.shape[0] === 1) {
+  concat(tensors: Tensor[], axis: number): Tensor {
+    this.assertNotComplex(tensors, 'concat');
+    const tensors2D = tensors.map(t => {
+      const innerSize = util.sizeFromShape(t.shape.slice(axis));
+      return t.as2D(-1, innerSize);
+    });
+    const outShape =
+        concat_util.computeOutShape(tensors2D.map(t => t.shape), 1 /* axis */);
+    const values =
+        ops.buffer<Rank.R2>(outShape as [number, number], tensors[0].dtype)
+            .values;
+    if (tensors2D[0].shape[0] === 1) {
       // Use built-in TypedArray.set() method for speed.
-      const aVals = a.dataSync();
-      const bVals = b.dataSync();
-      const vals = buffer.values;
-      vals.set(aVals, 0);
-      vals.set(bVals, a.size);
-      return buffer.toTensor();
+      let offset = 0;
+      tensors2D.forEach(t => {
+        values.set(t.dataSync(), offset);
+        offset += t.size;
+      });
+    } else {
+      let colOffset = 0;
+      tensors2D.forEach(t => {
+        const tVals = t.dataSync();
+        let tIdx = 0;
+        for (let row = 0; row < t.shape[0]; ++row) {
+          const resIdx = row * outShape[1] + colOffset;
+          for (let col = 0; col < t.shape[1]; ++col) {
+            values[resIdx + col] = tVals[tIdx++];
+          }
+        }
+        colOffset += t.shape[1];
+      });
     }
-
-    for (let i = 0; i < outShape[0]; ++i) {
-      for (let j = 0; j < a.shape[1]; ++j) {
-        buffer.set(a.get(i, j), i, j);
-      }
-      for (let j = 0; j < b.shape[1]; ++j) {
-        buffer.set(b.get(i, j), i, j + a.shape[1]);
-      }
-    }
-    return buffer.toTensor();
+    const finalOutShape =
+        concat_util.computeOutShape(tensors.map(t => t.shape), axis);
+    return tensor(values, finalOutShape, tensors[0].dtype);
   }
 
   neg<T extends Tensor>(x: T): T {
@@ -380,48 +387,56 @@ export class MathBackendCPU implements KernelBackend {
         T;
   }
 
-  matMul(a: Tensor2D, b: Tensor2D, transposeA: boolean, transposeB: boolean):
-      Tensor2D {
+  batchMatMul(
+      a: Tensor3D, b: Tensor3D, transposeA: boolean,
+      transposeB: boolean): Tensor3D {
     this.assertNotComplex([a, b], 'matMul');
 
-    const sharedDim = transposeA ? a.shape[0] : a.shape[1];
-    const leftDim = transposeA ? a.shape[1] : a.shape[0];
-    const rightDim = transposeB ? b.shape[0] : b.shape[1];
+    const sharedDim = transposeA ? a.shape[1] : a.shape[2];
+    const leftDim = transposeA ? a.shape[2] : a.shape[1];
+    const rightDim = transposeB ? b.shape[1] : b.shape[2];
+    const batchDim = a.shape[0];
 
     const aValues = a.dataSync();
     const bValues = b.dataSync();
-    const [aOuterStep, aInnerStep] =
-        transposeA ? [1, a.strides[0]] : [a.strides[0], 1];
-    const [bOuterStep, bInnerStep] =
-        transposeB ? [b.strides[0], 1] : [1, b.strides[0]];
+    const [aBatch, aOuterStep, aInnerStep] = transposeA ?
+        [a.strides[0], 1, a.strides[1]] :
+        [a.strides[0], a.strides[1], 1];
+    const [bInnerStep, bOuterStep, bBatch] = transposeB ?
+        [1, b.strides[1], b.strides[0]] :
+        [b.strides[1], 1, b.strides[0]];
 
-    const result = new Float32Array(leftDim * rightDim);
+    const size = leftDim * rightDim;
+    const result = new Float32Array(batchDim * size);
 
     const blockSize = this.blockSize;
 
-    for (let i0 = 0; i0 < leftDim; i0 += blockSize) {
-      for (let j0 = 0; j0 < rightDim; j0 += blockSize) {
-        for (let k0 = 0; k0 < sharedDim; k0 += blockSize) {
-          // for when blockSize doesn't evenly divide the input
-          const iBlock = Math.min(i0 + blockSize, leftDim);
-          const jBlock = Math.min(j0 + blockSize, rightDim);
-          const kBlock = Math.min(k0 + blockSize, sharedDim);
+    for (let b = 0; b < batchDim; b++) {
+      for (let i0 = 0; i0 < leftDim; i0 += blockSize) {
+        for (let j0 = 0; j0 < rightDim; j0 += blockSize) {
+          for (let k0 = 0; k0 < sharedDim; k0 += blockSize) {
+            // for when blockSize doesn't evenly divide the input
+            const iBlock = Math.min(i0 + blockSize, leftDim);
+            const jBlock = Math.min(j0 + blockSize, rightDim);
+            const kBlock = Math.min(k0 + blockSize, sharedDim);
 
-          for (let i = i0; i < iBlock; i++) {
-            for (let j = j0; j < jBlock; j++) {
-              let sum = 0.0;
+            for (let i = i0; i < iBlock; i++) {
+              for (let j = j0; j < jBlock; j++) {
+                let sum = 0.0;
 
-              for (let k = k0; k < kBlock; k++) {
-                sum += aValues[i * aOuterStep + k * aInnerStep] *
-                    bValues[k * bInnerStep + j * bOuterStep];
+                for (let k = k0; k < kBlock; k++) {
+                  sum += aValues[b * aBatch + i * aOuterStep + k * aInnerStep] *
+                      bValues[k * bInnerStep + j * bOuterStep + b * bBatch];
+                }
+                result[b * size + (i * rightDim + j)] += sum;
               }
-              result[i * rightDim + j] += sum;
             }
           }
         }
       }
     }
-    return ops.tensor2d(result, [leftDim, rightDim]);
+
+    return ops.tensor3d(result, [batchDim, leftDim, rightDim]);
   }
 
   multiply(a: Tensor, b: Tensor): Tensor {
@@ -2595,10 +2610,155 @@ export class MathBackendCPU implements KernelBackend {
     return this.complex(realResult.toTensor(), imagResult.toTensor());
   }
 
+  split<T extends Tensor>(x: T, sizeSplits: number[], axis: number): T[] {
+    return split(x, sizeSplits, axis);
+  }
+
   dispose() {}
 
   floatPrecision() {
     return 32;
+  }
+
+  cropAndResize(
+      images: Tensor4D,
+      boxes: Tensor2D,
+      boxIndex: Tensor1D,
+      cropSize: [number, number],
+      method: string,
+      extrapolationValue: number,
+  ) {
+    const [batch, imageHeight, imageWidth, numChannels] = images.shape;
+    const numBoxes = boxes.shape[0];
+
+    const [cropHeight, cropWidth] = cropSize;
+    const output =
+        ops.buffer<Rank.R4>([numBoxes, cropHeight, cropWidth, numChannels]);
+
+    const boxVals = boxes.dataSync();
+    const boxIndVals = boxIndex.dataSync();
+    const imageVals = images.dataSync();
+
+    const inStride = images.strides; // to calculate flat indexes into image
+    const outStride = output.strides; // to calculate flat indexes into output
+
+    // Reference implementation
+    // tslint:disable-next-line:max-line-length
+    // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/crop_and_resize_op.cc
+    for (let b = 0; b < numBoxes; b++) {
+      const startInd = b * 4;
+      const y1 = boxVals[startInd];
+      const x1 = boxVals[startInd + 1];
+      const y2 = boxVals[startInd + 2];
+      const x2 = boxVals[startInd + 3];
+
+      const bInd: number = boxIndVals[b];
+      if (bInd >= batch) {
+        continue;
+      }
+
+      const heightScale = (cropHeight > 1) ?
+        (y2 - y1) * (imageHeight - 1) / (cropHeight - 1) :
+        0;
+      const widthScale = (cropWidth > 1) ?
+        (x2 - x1) * (imageWidth - 1) / (cropWidth - 1) :
+        0;
+
+      for (let y = 0; y < cropHeight; y++) {
+
+        const yInd: number = (cropHeight > 1) ?
+            y1 * (imageHeight - 1) + y * (heightScale) :
+            0.5 * (y1 + y2) * (imageHeight - 1);
+
+        if (yInd < 0 || yInd > imageHeight - 1) {
+          for (let x = 0; x < cropWidth; x++) {
+            for (let c = 0; c < numChannels; c++) {
+              const ind = c + x * outStride[2] + y * outStride[1] +
+                  b * outStride[0];
+              output.values[ind] = extrapolationValue;
+            }
+          }
+          continue;
+        }
+
+        if (method === 'bilinear') {
+          const topInd = Math.floor(yInd);
+          const bottomInd = Math.ceil(yInd);
+          const yLerp = yInd - topInd;
+
+          for (let x = 0; x < cropWidth; x++) {
+
+            const xInd = (cropWidth > 1) ?
+                x1 * (imageWidth - 1) + x * widthScale :
+                0.5 * (x1 + x2) * (imageWidth - 1);
+
+            if (xInd < 0 || xInd > imageWidth - 1) {
+              for (let c = 0; c < numChannels; c++) {
+                const ind = c + x * outStride[2] + y * outStride[1] +
+                    b * outStride[0];
+                output.values[ind] = extrapolationValue;
+              }
+              continue;
+            }
+
+            const leftInd = Math.floor(xInd);
+            const rightInd = Math.ceil(xInd);
+            const xLerp = xInd - leftInd;
+
+            for (let c = 0; c < numChannels; c++) {
+              let ind = c + leftInd * inStride[2] + topInd * inStride[1] +
+                  bInd * inStride[0];
+              const topLeft = imageVals[ind];
+
+              ind = c + rightInd * inStride[2] + topInd * inStride[1] +
+                  bInd * inStride[0];
+              const topRight = imageVals[ind];
+
+              ind = c + leftInd * inStride[2] + bottomInd * inStride[1] +
+                  bInd * inStride[0];
+              const bottomLeft = imageVals[ind];
+
+              ind = c + rightInd * inStride[2] + bottomInd * inStride[1] +
+                  bInd * inStride[0];
+              const bottomRight = imageVals[ind];
+
+              const top = topLeft + (topRight - topLeft) * xLerp;
+              const bottom = bottomLeft + (bottomRight - bottomLeft) * xLerp;
+
+              ind = c + x * outStride[2] + y * outStride[1] +
+                    b * outStride[0];
+              output.values[ind] = top + ((bottom - top) * yLerp);
+            }
+          }
+        } else {  // method == "nearest"
+          for (let x = 0; x < cropWidth; ++x) {
+            const xInd = (cropWidth > 1) ?
+                x1 * (imageWidth - 1) + x * widthScale :
+                0.5 * (x1 + x2) * (imageWidth - 1);
+
+            if (xInd < 0 || xInd > imageWidth - 1) {
+              for (let c = 0; c < numChannels; c++) {
+                const ind = c + x * outStride[2] + y * outStride[1] +
+                    b * outStride[0];
+                output.values[ind] = extrapolationValue;
+              }
+              continue;
+            }
+
+            const closestX = Math.round(xInd);
+            const closestY = Math.round(yInd);
+            for (let c = 0; c < numChannels; c++) {
+              const inInd = c + closestX * inStride[2]
+                  + closestY * inStride[1] + bInd * inStride[0];
+              const outInd = c + x * outStride[2] + y * outStride[1] +
+                  b * outStride[0];
+              output.values[outInd] = imageVals[inInd];
+            }
+          }
+        }
+      }
+    }
+    return output.toTensor();
   }
 }
 
