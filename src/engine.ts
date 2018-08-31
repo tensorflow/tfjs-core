@@ -27,7 +27,7 @@ import {makeOnesTypedArray, now, sizeFromShape} from './util';
 
 /**
  * A function that computes an output. The save function is for saving tensors
- * computed in the forward pass, that we need in the backwards pass.
+ * computed in the forward pass, that we need in the backward pass.
  */
 export type ForwardFunc<T> =
     (backend: KernelBackend, save?: <S extends Tensor>(tensor: S) => S) => T;
@@ -175,8 +175,7 @@ export class Engine implements TensorManager {
         id: this.nextTapeNodeId++,
         name: scopeName,
         inputs,
-        // Keep gradient records only for the first output.
-        output: Array.isArray(result) ? result[0] : result
+        outputs: Array.isArray(result) ? result : [result] as Tensor[]
       };
       if (backwardsFunc != null) {
         tapeNode.gradient =
@@ -196,8 +195,14 @@ export class Engine implements TensorManager {
     this.numTensors++;
     if (refCount === 0) {
       this.numDataBuffers++;
-      this.numBytes +=
-          util.sizeFromShape(a.shape) * util.bytesPerElement(a.dtype);
+
+      // Don't count bytes for complex numbers as they are counted by their
+      // components.
+      if (a.dtype !== 'complex64') {
+        this.numBytes +=
+            util.sizeFromShape(a.shape) * util.bytesPerElement(a.dtype);
+      }
+
       this.backend.register(a.dataId, a.shape, a.dtype);
     }
     this.refCounter.set(a.dataId, refCount + 1);
@@ -226,8 +231,12 @@ export class Engine implements TensorManager {
       this.refCounter.delete(a.dataId);
       this.backend.disposeData(a.dataId);
       this.numDataBuffers--;
-      this.numBytes -=
-          util.sizeFromShape(a.shape) * util.bytesPerElement(a.dtype);
+      // Don't count bytes for complex numbers as they are counted by their
+      // components.
+      if (a.dtype !== 'complex64') {
+        this.numBytes -=
+            util.sizeFromShape(a.shape) * util.bytesPerElement(a.dtype);
+      }
     } else {
       this.refCounter.set(a.dataId, refCount - 1);
     }
@@ -277,7 +286,7 @@ export class Engine implements TensorManager {
       id: this.nextTapeNodeId++,
       name: this.activeScope.name,
       inputs: inputsMap,
-      output: result,
+      outputs: [result],
       gradient
     };
     this.activeTape.push(tapeNode);

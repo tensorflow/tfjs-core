@@ -16,7 +16,8 @@
  */
 
 export * from './batchnorm';
-export * from './concat';
+export * from './complex_ops';
+export * from './concat_split';
 export * from './conv';
 export * from './matmul';
 export * from './reverse';
