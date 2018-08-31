@@ -386,7 +386,7 @@ describeWithFlags('profile', ALL_ENVS, () => {
 
     expect(result.newBytes).toBe(32);
     expect(result.peak).toBe(32);
-    expect(result.kernels[0].bytesAdded).toBe(8);
+    expect(result.kernels.find(d => d.name === 'matMul').bytesAdded).toBe(8);
   });
 });
 
