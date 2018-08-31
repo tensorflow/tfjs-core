@@ -32,7 +32,7 @@ import {DataId, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D
 import {DataType, DataTypeMap, Rank, RecursiveArray, ShapeMap, sumOutType, TypedArray, upcastType} from '../types';
 import * as util from '../util';
 import {getTypedArrayFromDType, sizeFromShape} from '../util';
-import {KernelBackend} from './backend';
+import {KernelBackend, TensorEngine} from './backend';
 import * as backend_util from './backend_util';
 import {mergeRealAndImagArrays} from './complex_util';
 import {nonMaxSuppressionImpl} from './non_max_suppression_impl';
@@ -50,8 +50,8 @@ import {ConcatProgram} from './webgl/concat_gpu';
 import {Conv2DDerFilterProgram, Conv2DDerInputProgram} from './webgl/conv_backprop_gpu';
 import {DepthwiseConv2DDerFilterProgram, DepthwiseConv2DDerInputProgram} from './webgl/conv_backprop_gpu_depthwise';
 import {Conv2DProgram} from './webgl/conv_gpu';
-import {CropAndResizeProgram} from './webgl/crop_and_resize_gpu';
 import {DepthwiseConv2DProgram} from './webgl/conv_gpu_depthwise';
+import {CropAndResizeProgram} from './webgl/crop_and_resize_gpu';
 import {CumSumProgram} from './webgl/cumsum_gpu';
 import {DepthToSpaceProgram} from './webgl/depth_to_space_gpu';
 import {EncodeFloatProgram} from './webgl/encode_float_gpu';
@@ -144,6 +144,7 @@ export class MathBackendWebGL implements KernelBackend {
   private uploadWaitMs = 0;
   // Accumulated time spent (including blocking in downloading data from webgl.
   private downloadWaitMs = 0;
+  private engine: TensorEngine;
 
   register(dataId: DataId, shape: number[], dtype: DataType): void {
     if (this.texData.has(dataId)) {
@@ -159,6 +160,11 @@ export class MathBackendWebGL implements KernelBackend {
       usage: TextureUsage.RENDER
     });
   }
+
+  setEngine(engine: TensorEngine): void {
+    this.engine = engine;
+  }
+
   fromPixels(
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
       numChannels: number): Tensor3D {
@@ -214,7 +220,7 @@ export class MathBackendWebGL implements KernelBackend {
     if (values == null) {
       throw new Error('MathBackendWebGL.write(): values can not be null');
     }
-    this.throwIfNoData(dataId);
+    this.checkForData(dataId);
 
     const texData = this.texData.get(dataId);
     const {texture, texShape, usage, dtype} = texData;
@@ -238,7 +244,7 @@ export class MathBackendWebGL implements KernelBackend {
     }
   }
   readSync(dataId: DataId): TypedArray {
-    this.throwIfNoData(dataId);
+    this.checkForData(dataId);
     const texData = this.texData.get(dataId);
     const {shape, texture, values, texShape, dtype, complexTensors} = texData;
     if (values != null) {
@@ -273,7 +279,7 @@ export class MathBackendWebGL implements KernelBackend {
       const subscribers = this.pendingRead.get(dataId);
       return new Promise<TypedArray>(resolve => subscribers.push(resolve));
     }
-    this.throwIfNoData(dataId);
+    this.checkForData(dataId);
     const texData = this.texData.get(dataId);
     const {shape, texture, values, texShape, dtype} = texData;
     if (values != null) {
@@ -1454,6 +1460,7 @@ export class MathBackendWebGL implements KernelBackend {
     }
 
     const inputsData: TensorData[] = inputs.map(input => {
+      this.checkForData(input.dataId);
       if (input.dtype === 'complex64') {
         throw new Error(
             `GPGPUProgram does not support complex64 input. For complex64 ` +
@@ -1554,17 +1561,14 @@ export class MathBackendWebGL implements KernelBackend {
     });
   }
 
-  private throwIfNoData(dataId: DataId) {
+  private checkForData(dataId: DataId) {
     if (!this.texData.has(dataId)) {
-      throw new Error(
-          `WebGL backend: No data found for this tensor. ` +
-          `Did you change your backend in the middle of the program? ` +
-          `New backends can't use Tensors created with previous backends`);
+      this.engine.tensorNotFound(dataId);
     }
   }
 
   private uploadToGPU(dataId: DataId): void {
-    this.throwIfNoData(dataId);
+    this.checkForData(dataId);
     const texData = this.texData.get(dataId);
     const {shape, values, texture, dtype, usage} = texData;
     if (texture != null) {

@@ -254,5 +254,11 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
   // Aligns with the "SplitV" kernel in TensorFlow.
   split<T extends Tensor>(value: T, sizeSplits: number[], axis: number): T[];
 
+  setEngine(engine: TensorEngine): void;
+
   dispose(): void;
+}
+
+export interface TensorEngine {
+  tensorNotFound(dataId: DataId): void;
 }

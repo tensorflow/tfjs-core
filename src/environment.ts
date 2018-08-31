@@ -31,7 +31,6 @@ const TEST_EPSILON_FLOAT32 = 1e-3;
 
 export class Environment {
   private features: Features = {};
-  private engines: {[id: string]: Engine} = {};
   private globalEngine: Engine;
   private registry:
       {[id: string]: {backend: KernelBackend, priority: number}} = {};
@@ -70,7 +69,8 @@ export class Environment {
     if (!(backendName in ENV.registry)) {
       throw new Error(`Backend name '${backendName}' not found in registry`);
     }
-    ENV.initBackend(backendName, safeMode);
+    ENV.engine.backend = ENV.findBackend(backendName);
+    ENV.engine.backend.setEngine(ENV.engine);
   }
 
   /**
@@ -336,18 +336,6 @@ export class Environment {
     }
   }
 
-  private initBackend(backendName?: string, safeMode = false) {
-    this.backendName = backendName;
-    if (this.engines[backendName]) {
-      this.globalEngine = this.engines[backendName];
-    } else {
-      const backend = this.findBackend(backendName);
-      this.globalEngine =
-          new Engine(backend, safeMode, () => this.get('DEBUG'));
-      this.engines[backendName] = this.globalEngine;
-    }
-  }
-
   get backend(): KernelBackend {
     return this.engine.backend;
   }
@@ -399,10 +387,6 @@ export class Environment {
     }
     this.registry[name].backend.dispose();
     delete this.registry[name];
-
-    if (name in this.engines) {
-      delete this.engines[name];
-    }
   }
 
   get engine(): Engine {
@@ -412,7 +396,10 @@ export class Environment {
 
   private initDefaultBackend() {
     if (this.globalEngine == null) {
-      this.initBackend(this.get('BACKEND'), false /* safeMode */);
+      this.backendName = this.get('BACKEND');
+      const backend = this.findBackend(this.backendName);
+      this.globalEngine =
+          new Engine(backend, false /* safeMode */, () => this.get('DEBUG'));
     }
   }
 }
