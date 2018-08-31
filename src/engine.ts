@@ -51,8 +51,7 @@ type KernelProfile = {
 };
 
 export type ProfileInfo = {
-  newBytes: number; newTensors: number; peak: number; average: number;
-  kernels: KernelProfile[];
+  newBytes: number; newTensors: number; peak: number; kernels: KernelProfile[];
   // tslint:disable-next-line:no-any
   result: any
 };
@@ -318,8 +317,9 @@ export class Engine implements TensorManager {
 
     const bytesUsed = profile.kernels.map(d => d.bytesUsed);
     profile.peak = Math.max(...bytesUsed);
-    profile.average =
-        bytesUsed.reduce((acc, curr) => acc + curr, 0) / profile.kernels.length;
+    // profile.average =
+    //     bytesUsed.reduce((acc, curr) => acc + curr, 0) /
+    //     profile.kernels.length;
     profile.newBytes = this.numBytes - startBytes;
     profile.newTensors = this.numTensors - startNumTensors;
 
