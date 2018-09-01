@@ -65,7 +65,7 @@ export class DataStorage<T> {
 export interface DataMover {
   /**
    * To be called by backends whenever they see a dataId that they don't own.
-   * Upon calling this method, the move will fetch the tensor from another
+   * Upon calling this method, the mover will fetch the tensor from another
    * backend and register it with the current active backend.
    */
   moveData(dataId: DataId): void;
