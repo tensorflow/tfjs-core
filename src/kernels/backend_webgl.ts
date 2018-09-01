@@ -161,9 +161,7 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   setDataMover(dataMover: DataMover): void {
-    if (this.texData == null) {
-      this.texData = new DataStorage(dataMover);
-    }
+    this.texData = new DataStorage(dataMover);
   }
 
   fromPixels(
