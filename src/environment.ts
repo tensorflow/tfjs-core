@@ -158,24 +158,26 @@ export class Environment {
 
   /**
    * Calls the provided function `fn` while using the specified backend. After
-   * the function is done, it switches back to the original backend. `fn` cannot
-   * be an async function.
+   * the function is done, it switches back to the original backend. The result
+   * of `fn` is propagated forward. `fn` cannot be an async function.
    *
    * ```js
    * tf.setBackend('webgl');
-   * const a = tf.square(3); // Do the square on GPU.
-   * a.print();
-   * tf.withBackend('cpu', () => {
+   * const squareOfThree = tf.square(3); // Do the square on GPU.
+   * squareOfThree.print();
+   * const three = tf.withBackend('cpu', () => {
    *   console.log('Inside the function:', tf.getBackend());
-   *   a.sqrt().print(); // Do the sqrt on CPU.
+   *   return a.sqrt(); // Do the sqrt on CPU.
    * });
+   * three.print();
    * console.log('Outside the function:', tf.getBackend());
    * ```
    *
    * @param backendName The name of the backend to use.
    * @param fn The function to run.
    */
-  static withBackend(backendName: string, fn: () => TensorContainer) {
+  static withBackend<T extends TensorContainer>(
+      backendName: string, fn: () => T): T {
     const prevBackendName = this.getBackend();
     this.setBackend(backendName);
     const result = fn();
@@ -184,6 +186,7 @@ export class Environment {
           'Async functions are not allowed inside tf.setBackend().');
     }
     this.setBackend(prevBackendName);
+    return result;
   }
 
   /**

@@ -375,7 +375,7 @@ describeWithFlags('disposeVariables', ALL_ENVS, () => {
   });
 });
 
-describe('Switching backends', () => {
+describe('Switching cpu backends', () => {
   beforeEach(() => {
     tf.ENV.registerBackend('cpu1', () => new MathBackendCPU());
     tf.ENV.registerBackend('cpu2', () => new MathBackendCPU());
@@ -409,8 +409,7 @@ describe('Switching backends', () => {
     expectArraysClose(a, [5]);
     expectArraysClose(b, [3]);
 
-    a.dispose();
-    b.dispose();
+    tf.dispose([a, b]);
 
     expect(tf.memory().numDataBuffers).toBe(0);
     expect(tf.memory().numTensors).toBe(0);
@@ -437,23 +436,24 @@ describe('Switching backends', () => {
     expect(tf.memory().numTensors).toBe(2);
     expect(tf.memory().numDataBuffers).toBe(2);
 
-    a.dispose();
-    b.dispose();
+    tf.dispose([a, b]);
 
     expect(tf.memory().numTensors).toBe(0);
     expect(tf.memory().numDataBuffers).toBe(0);
   });
 });
 
-describeWithFlags('Switching backends with WebGL', WEBGL_ENVS, () => {
+describeWithFlags('Switching WebGL + CPU backends', WEBGL_ENVS, () => {
   beforeEach(() => {
     tf.ENV.registerBackend('webgl1', () => new MathBackendWebGL());
     tf.ENV.registerBackend('webgl2', () => new MathBackendWebGL());
+    tf.ENV.registerBackend('cpu1', () => new MathBackendCPU());
   });
 
   afterEach(() => {
     tf.ENV.removeBackend('webgl1');
     tf.ENV.removeBackend('webgl2');
+    tf.ENV.removeBackend('cpu1');
   });
 
   it('can execute op with data from mixed backends', () => {
@@ -463,19 +463,25 @@ describeWithFlags('Switching backends with WebGL', WEBGL_ENVS, () => {
     tf.setBackend('webgl2');
     const b = tf.scalar(3);
 
+    tf.setBackend('cpu1');
+    const c = tf.scalar(2);
+
     // Verify that ops can execute with mixed backend data.
     tf.tidy(() => {
       tf.setBackend('webgl1');
-      expectArraysClose(tf.add(a, b), [8]);
+      expectArraysClose(tf.addN([a, b, c]), [10]);
 
       tf.setBackend('webgl2');
-      expectArraysClose(tf.add(a, b), [8]);
-    });
-    expect(tf.memory().numTensors).toBe(2);
-    expect(tf.memory().numDataBuffers).toBe(2);
+      expectArraysClose(tf.addN([a, b, c]), [10]);
 
-    a.dispose();
-    b.dispose();
+      tf.setBackend('cpu1');
+      expectArraysClose(tf.addN([a, b, c]), [10]);
+    });
+
+    expect(tf.memory().numTensors).toBe(3);
+    expect(tf.memory().numDataBuffers).toBe(3);
+
+    tf.dispose([a, b, c]);
 
     expect(tf.memory().numTensors).toBe(0);
     expect(tf.memory().numDataBuffers).toBe(0);
@@ -520,10 +526,11 @@ describeWithFlags('withBackend', ALL_ENVS, () => {
     const a = tf.scalar(3);
     expect(tf.getBackend()).not.toEqual('cpu1');
 
-    tf.withBackend('cpu1', () => {
+    const aSquared = tf.withBackend('cpu1', () => {
       expect(tf.getBackend()).toEqual('cpu1');
-      expectArraysClose(a.square(), [9]);
+      return a.square();
     });
+    expectArraysClose(aSquared, [9]);
     expect(tf.getBackend()).not.toEqual('cpu1');
   });
 
