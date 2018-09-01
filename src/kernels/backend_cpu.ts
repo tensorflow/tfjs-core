@@ -32,7 +32,7 @@ import {DataId, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D
 import {DataType, DataTypeMap, Rank, ShapeMap, TypedArray, upcastType} from '../types';
 import * as util from '../util';
 import {now} from '../util';
-import {BackendTimingInfo, KernelBackend, TensorEngine} from './backend';
+import {BackendTimingInfo, DataMover, DataStorage, KernelBackend} from './backend';
 import * as backend_util from './backend_util';
 import * as complex_util from './complex_util';
 import {nonMaxSuppressionImpl} from './non_max_suppression_impl';
@@ -52,10 +52,9 @@ interface TensorData<T extends DataType> {
 export class MathBackendCPU implements KernelBackend {
   public blockSize = 48;
 
-  private data = new WeakMap<DataId, TensorData<DataType>>();
+  private data: DataStorage<TensorData<DataType>>;
   private canvas: HTMLCanvasElement;
   private firstUse = true;
-  private engine: TensorEngine;
 
   constructor() {
     if (ENV.get('IS_BROWSER')) {
@@ -63,8 +62,10 @@ export class MathBackendCPU implements KernelBackend {
     }
   }
 
-  setEngine(engine: TensorEngine): void {
-    this.engine = engine;
+  setDataMover(dataMover: DataMover): void {
+    if (this.data == null) {
+      this.data = new DataStorage(dataMover);
+    }
   }
 
   register(dataId: DataId, shape: number[], dtype: DataType): void {
@@ -93,7 +94,6 @@ export class MathBackendCPU implements KernelBackend {
     if (values == null) {
       throw new Error('MathBackendCPU.write(): values can not be null');
     }
-    this.checkForData(dataId);
     this.data.get(dataId).values = values;
   }
   fromPixels(
@@ -159,7 +159,6 @@ export class MathBackendCPU implements KernelBackend {
     return this.readSync(dataId);
   }
   readSync(dataId: DataId): TypedArray {
-    this.checkForData(dataId);
     const {dtype, complexTensors} = this.data.get(dataId);
     if (dtype === 'complex64') {
       const realValues = complexTensors.real.dataSync() as Float32Array;
@@ -192,12 +191,6 @@ export class MathBackendCPU implements KernelBackend {
       // Unreliable due to automatic gc. The numbers above are cumulative.
       unreliable: true
     };
-  }
-
-  private checkForData(dataId: DataId) {
-    if (!this.data.has(dataId)) {
-      this.engine.fetchTensor(dataId);
-    }
   }
 
   complex<T extends Tensor>(real: T, imag: T): T {

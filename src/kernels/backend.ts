@@ -36,6 +36,41 @@ export interface TensorStorage {
   memory(): {unreliable: boolean;};  // Backend-specific information.
 }
 
+/** Convenient class for storing tensor-related data. */
+export class DataStorage<T> {
+  private data = new WeakMap<DataId, T>();
+
+  constructor(private dataMover: DataMover) {}
+
+  get(dataId: DataId) {
+    if (!this.data.has(dataId)) {
+      this.dataMover.moveData(dataId);
+    }
+    return this.data.get(dataId);
+  }
+
+  set(dataId: DataId, value: T): void {
+    this.data.set(dataId, value);
+  }
+
+  has(dataId: DataId): boolean {
+    return this.data.has(dataId);
+  }
+
+  delete(dataId: DataId): boolean {
+    return this.data.delete(dataId);
+  }
+}
+
+export interface DataMover {
+  /**
+   * To be called by backends whenever they see a dataId that they don't own.
+   * Upon calling this method, the move will fetch the tensor from another
+   * backend and register it with the current active backend.
+   */
+  moveData(dataId: DataId): void;
+}
+
 export interface BackendTimer {
   time(f: () => void): Promise<BackendTimingInfo>;
 }
@@ -255,19 +290,10 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
   split<T extends Tensor>(value: T, sizeSplits: number[], axis: number): T[];
 
   /**
-   * Sets the engine for this backend. Backends should use this engine to
-   * fetch tensors from other backends by calling engine.fetchTensor().
+   * Sets the data mover for this backend. Backends should use the mover to
+   * move data from other backends to this backend.
    */
-  setEngine(engine: TensorEngine): void;
+  setDataMover(dataMover: DataMover): void;
 
   dispose(): void;
-}
-
-export interface TensorEngine {
-  /**
-   * To be called by backends whenever they see a dataId that they don't own.
-   * Upon calling this method, the engine will fetch the tensor from another
-   * backend and register it with the current active backend.
-   */
-  fetchTensor(dataId: DataId): void;
 }

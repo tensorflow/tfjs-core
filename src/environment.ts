@@ -71,7 +71,7 @@ export class Environment {
     }
     ENV.engine.backend = ENV.findBackend(backendName);
     ENV.backendName = backendName;
-    ENV.engine.backend.setEngine(ENV.engine);
+    ENV.engine.backend.setDataMover(ENV.engine);
   }
 
   /**

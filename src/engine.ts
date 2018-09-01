@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {BackendTimingInfo, KernelBackend} from './kernels/backend';
+import {BackendTimingInfo, DataMover, KernelBackend} from './kernels/backend';
 import {Profiler} from './profiler';
 import {backpropagateGradients, getFilteredNodesXToY, NamedGradientMap, TapeNode} from './tape';
 import {DataId, Tensor, Tensor3D, Variable} from './tensor';
@@ -64,7 +64,7 @@ interface ScopeState {
   name: string;
 }
 
-export class Engine implements TensorManager {
+export class Engine implements TensorManager, DataMover {
   // Public since optimizers will use it.
   registeredVariables: NamedVariableMap = {};
 
@@ -97,9 +97,10 @@ export class Engine implements TensorManager {
     this.activeScope = {track: [], name: 'default scope'};
     this.scopeStack = [this.activeScope];
     this.profiler = new Profiler(backend);
+    backend.setDataMover(this);
   }
 
-  fetchTensor(dataId: DataId) {
+  moveData(dataId: DataId) {
     this.write(dataId, this.readSync(dataId));
   }
 
