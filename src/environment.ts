@@ -19,7 +19,7 @@ import * as device_util from './device_util';
 import {Engine, MemoryInfo, ScopeFn, TimingInfo} from './engine';
 import {Features, getFeaturesFromURL, getWebGLDisjointQueryTimerVersion, isChrome, isDownloadFloatTextureEnabled, isRenderToFloatTextureEnabled, isWebGLFenceEnabled, isWebGLVersionEnabled} from './environment_util';
 import {KernelBackend} from './kernels/backend';
-import {setTensorTracker, Tensor, TensorTracker} from './tensor';
+import {DataId, setTensorTracker, Tensor, TensorTracker} from './tensor';
 import {TensorContainer} from './tensor_types';
 import {getTensorsInContainer} from './tensor_util';
 
@@ -71,7 +71,6 @@ export class Environment {
     }
     ENV.engine.backend = ENV.findBackend(backendName);
     ENV.backendName = backendName;
-    ENV.engine.backend.setDataMover(ENV.engine);
   }
 
   /**
@@ -404,6 +403,8 @@ export class Environment {
     }
     try {
       const backend = factory();
+      backend.setDataMover(
+          {moveData: (dataId: DataId) => this.engine.moveData(dataId)});
       this.registry[name] = {backend, priority};
       return true;
     } catch (err) {

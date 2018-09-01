@@ -97,7 +97,6 @@ export class Engine implements TensorManager, DataMover {
     this.activeScope = {track: [], name: 'default scope'};
     this.scopeStack = [this.activeScope];
     this.profiler = new Profiler(backend);
-    backend.setDataMover(this);
   }
 
   moveData(dataId: DataId) {
