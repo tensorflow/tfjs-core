@@ -202,19 +202,25 @@ export class MathBackendWebGL implements KernelBackend {
           pixels, 0, 0, pixels.width, pixels.height);
       pixels = this.fromPixelsCanvas;
     }
-    const tempPixelArray = Tensor.make(texShape, {}, 'int32');
-
+    const tempPixelHandle = this.makeTensorHandle(texShape, 'int32');
     // This is a byte texture with pixels.
-    this.texData.get(tempPixelArray.dataId).usage = TextureUsage.PIXELS;
+    this.texData.get(tempPixelHandle.dataId).usage = TextureUsage.PIXELS;
     this.gpgpu.uploadPixelDataToTexture(
-        this.getTexture(tempPixelArray.dataId), pixels);
+        this.getTexture(tempPixelHandle.dataId), pixels);
     const program = new FromPixelsProgram(outShape);
-    const res = this.compileAndRun(program, [tempPixelArray]);
+    const res = this.compileAndRun(program, [tempPixelHandle]);
 
-    tempPixelArray.dispose();
+    this.disposeData(tempPixelHandle.dataId);
 
     return res as Tensor3D;
   }
+
+  private makeTensorHandle(shape: number[], dtype: DataType): TensorHandle {
+    const dataId = {};
+    this.register(dataId, shape, dtype);
+    return {dataId, shape, dtype};
+  }
+
   write(dataId: DataId, values: TypedArray): void {
     if (values == null) {
       throw new Error('MathBackendWebGL.write(): values can not be null');
@@ -242,7 +248,7 @@ export class MathBackendWebGL implements KernelBackend {
   }
   readSync(dataId: DataId): TypedArray {
     const texData = this.texData.get(dataId);
-    const {shape, texture, values, texShape, dtype, complexTensors} = texData;
+    const {values, dtype, complexTensors} = texData;
     if (values != null) {
       this.cacheOnCPU(dataId);
       return values;
@@ -259,8 +265,7 @@ export class MathBackendWebGL implements KernelBackend {
       const imagValues = complexTensors.imag.dataSync() as Float32Array;
       result = mergeRealAndImagArrays(realValues, imagValues);
     } else {
-      result =
-          this.getValuesFromTexture(texture, dataId, dtype, texShape, shape);
+      result = this.getValuesFromTexture(dataId);
     }
 
     if (shouldTimeProgram) {
@@ -276,7 +281,7 @@ export class MathBackendWebGL implements KernelBackend {
       return new Promise<TypedArray>(resolve => subscribers.push(resolve));
     }
     const texData = this.texData.get(dataId);
-    const {shape, texture, values, texShape, dtype} = texData;
+    const {texture, values, texShape} = texData;
     if (values != null) {
       this.cacheOnCPU(dataId);
       return values;
@@ -301,7 +306,7 @@ export class MathBackendWebGL implements KernelBackend {
     // Download the values from the GPU.
     let vals: Float32Array;
     if (bufferOrTexture instanceof WebGLTexture) {
-      vals = this.getValuesFromTexture(texture, dataId, dtype, texShape, shape);
+      vals = this.getValuesFromTexture(dataId);
     } else {
       vals = this.gpgpu.downloadFloat32MatrixFromBuffer(
           bufferOrTexture, texShape[0], texShape[1]);
@@ -320,27 +325,25 @@ export class MathBackendWebGL implements KernelBackend {
     return vals;
   }
 
-  private getValuesFromTexture(
-      texture: WebGLTexture, dataId: DataId, dtype: DataType,
-      texShape: [number, number], shape: number[]): Float32Array {
+  private getValuesFromTexture(dataId: DataId): Float32Array {
+    const {shape, dtype, texture, texShape} = this.texData.get(dataId);
     if (ENV.get('WEBGL_DOWNLOAD_FLOAT_ENABLED')) {
       return this.gpgpu.downloadFloat32MatrixFromOutputTexture(
           texture, texShape[0], texShape[1]);
     }
 
-    const tmpTarget = Tensor.make(shape, {});
+    const tmpTarget = this.makeTensorHandle(shape, 'float32') as TensorHandle &
+        {size: number};
+    tmpTarget.size = sizeFromShape(shape);
     this.texData.get(tmpTarget.dataId).usage = TextureUsage.DOWNLOAD;
-
-    const tmpInput = Tensor.make(shape, {dataId}, dtype);
     const program = new EncodeFloatProgram(shape);
     const pageToCpu = false;
-    this.compileAndRun(program, [tmpInput], tmpTarget, null, pageToCpu);
+    this.compileAndRun(
+        program, [{shape, dtype, dataId}], tmpTarget, null, pageToCpu);
     const tmpData = this.texData.get(tmpTarget.dataId);
     const vals = this.gpgpu.downloadByteEncodedFloatMatrixFromOutputTexture(
         tmpData.texture, tmpData.texShape[0], tmpData.texShape[1]);
-
-    tmpInput.dispose();
-    tmpTarget.dispose();
+    this.disposeData(tmpTarget.dataId);
 
     return vals;
   }
@@ -472,8 +475,7 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   complex<T extends Tensor>(real: T, imag: T): T {
-    const result = Tensor.make(real.shape, {}, 'complex64') as T;
-
+    const result = this.makeOutputArray(real.shape, 'complex64') as T;
     const resultData = this.texData.get(result.dataId);
     // The backend owns the reference to the underlying real and imaginary
     // clones. These will explicitly get disposed when the complex tensor is
@@ -535,7 +537,7 @@ export class MathBackendWebGL implements KernelBackend {
     const a2D = a.as2D(-1, sizeFromShape(a.shape.slice(axis)));
     const b2D = b.as2D(-1, sizeFromShape(b.shape.slice(axis)));
     const program = new ConcatProgram(a2D.shape, b2D.shape);
-    const res = this.compileAndRun(program, [a2D, b2D]);
+    const res = this.compileAndRun(program, [a2D, b2D]) as Tensor;
     return res.reshape(outShape) as T;
   }
 
@@ -1439,12 +1441,14 @@ export class MathBackendWebGL implements KernelBackend {
     return Tensor.make(shape, {}, dtype) as T;
   }
 
-  public compileAndRun<K extends Tensor>(
+  public compileAndRun<
+      K extends {dtype: DataType, size: number, dataId: {}, shape: number[]}>(
       program: GPGPUProgram, inputs: TensorHandle[], output?: K,
       customSetup?: (gpgpu: GPGPUContext, webGLProgram: WebGLProgram) => void,
       pageToCpu = true): K {
     if (output == null) {
-      output = this.makeOutputArray(program.outputShape, inputs[0].dtype);
+      output =
+          this.makeOutputArray(program.outputShape, inputs[0].dtype) as {} as K;
     }
     if (output.size === 0) {
       // Short-circuit the computation since the result is empty (has 0 in its
