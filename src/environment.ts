@@ -166,7 +166,7 @@ export class Environment {
    * squareOfThree.print();
    * const three = tf.withBackend('cpu', () => {
    *   console.log('Inside the function:', tf.getBackend());
-   *   return a.sqrt(); // Do the sqrt on CPU.
+   *   return squareOfThree.sqrt(); // Do the sqrt on CPU.
    * });
    * three.print();
    * console.log('Outside the function:', tf.getBackend());
