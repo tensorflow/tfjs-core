@@ -156,48 +156,6 @@ export class Environment {
   }
 
   /**
-   * Calls the provided function `fn` while using the specified backend (e.g.
-   * webgl, cpu, tensorflow, etc.).
-   *
-   * After the function is done, it switches back to the
-   * original backend. The result of `fn` is propagated forward and `fn` cannot
-   * be an async function.
-   *
-   * This API should not be confused with `tf.device(device_name)`
-   * in Python - devices are specific to the TensorFlow Node backend.
-   *
-   * ```js
-   * tf.setBackend('webgl');
-   * const squareOfThree = tf.square(3); // Do the square on GPU.
-   * squareOfThree.print();
-   * const three = tf.withBackend('cpu', () => {
-   *   console.log('Inside the function:', tf.getBackend());
-   *   return squareOfThree.sqrt(); // Do the sqrt on CPU.
-   * });
-   * three.print();
-   * console.log('Outside the function:', tf.getBackend());
-   * ```
-   *
-   * @param backendName The name of the backend to use.
-   * @param fn The function to run.
-   */
-  // TODO(smilkov): Once https://github.com/tensorflow/tfjs/issues/668 is
-  // closed, link to the Node section in our API docs when talking about
-  // devices in the jsdoc above.
-  static withBackend<T extends TensorContainer>(
-      backendName: string, fn: () => T): T {
-    const prevBackendName = this.getBackend();
-    this.setBackend(backendName);
-    const result = fn();
-    if (result instanceof Promise) {
-      throw new Error(
-          'Async functions are not allowed inside tf.setBackend().');
-    }
-    this.setBackend(prevBackendName);
-    return result;
-  }
-
-  /**
    * Disposes any `Tensor`s found within the provided object.
    *
    * @param container an object that may be a `Tensor` or may directly contain

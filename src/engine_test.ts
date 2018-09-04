@@ -516,26 +516,3 @@ describeWithFlags('Switching WebGL + CPU backends', WEBGL_ENVS, () => {
     expect(tf.memory().numTensors).toBe(0);
   });
 });
-
-describeWithFlags('withBackend', ALL_ENVS, () => {
-  beforeEach(() => tf.ENV.registerBackend('cpu1', () => new MathBackendCPU()));
-
-  afterEach(() => tf.ENV.removeBackend('cpu1'));
-
-  it('run some ops on the custom cpu backend', () => {
-    const a = tf.scalar(3);
-    expect(tf.getBackend()).not.toEqual('cpu1');
-
-    const aSquared = tf.withBackend('cpu1', () => {
-      expect(tf.getBackend()).toEqual('cpu1');
-      return a.square();
-    });
-    expectArraysClose(aSquared, [9]);
-    expect(tf.getBackend()).not.toEqual('cpu1');
-  });
-
-  it('throws an error if the function is async', () => {
-    // @ts-ignore because compliler won't allow async fn to be passed.
-    expect(() => tf.withBackend('cpu1', async () => {})).toThrowError();
-  });
-});
