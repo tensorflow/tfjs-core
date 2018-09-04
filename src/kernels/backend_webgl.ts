@@ -326,8 +326,10 @@ export class MathBackendWebGL implements KernelBackend {
       texture: WebGLTexture, dataId: DataId, dtype: DataType,
       texShape: [number, number], shape: number[]): Float32Array {
     if (ENV.get('WEBGL_DOWNLOAD_FLOAT_ENABLED')) {
-      return this.gpgpu.downloadFloat32MatrixFromOutputTexture(
+      return this.gpgpu.downloadMatrixFromPackedTexture(
           texture, texShape[0], texShape[1]);
+      // return this.gpgpu.downloadFloat32MatrixFromBuffer(
+      //     texture, texShape[0], texShape[1]);
     }
 
     const tmpTarget = Tensor.make(shape, {});
@@ -563,15 +565,18 @@ export class MathBackendWebGL implements KernelBackend {
     const packProgramA = new PackProgram(a.shape);
     const packedA: Tensor2D = this.compileAndRun(packProgramA, [a]);
 
-    const packProgramB = new PackProgram(b.shape);
-    const packedB: Tensor2D = this.compileAndRun(packProgramB, [b]);
+    return packedA;
 
-    const program =
-        new MatMulProgram(packedA.shape, packedB.shape, transposeA, transposeB);
-    const result = this.compileAndRun<Tensor3D>(program, [a, b]);
+    // const packProgramB = new PackProgram(b.shape);
+    // const packedB: Tensor2D = this.compileAndRun(packProgramB, [b]);
 
-    const unpackProgram = new UnpackProgram(program.outputShape);
-    return this.compileAndRun(unpackProgram, [result]);
+    // const program =
+    //     new MatMulProgram(packedA.shape, packedB.shape, transposeA,
+    //     transposeB);
+    // const result = this.compileAndRun<Tensor3D>(program, [a, b]);
+
+    // const unpackProgram = new UnpackProgram(program.outputShape);
+    // return this.compileAndRun(unpackProgram, [result]);
   }
 
   multiply(a: Tensor, b: Tensor): Tensor {
@@ -1489,12 +1494,7 @@ export class MathBackendWebGL implements KernelBackend {
       this.uploadToGPU(input.dataId);
       return {shape: input.shape, texData, isUniform: false};
     });
-<<<<<<< HEAD
     this.uploadToGPU(output.dataId, program.packed);
-=======
-
-    this.uploadToGPU(output.dataId);
->>>>>>> master
     const outputData = {
       shape: output.shape,
       texData: this.texData.get(output.dataId),

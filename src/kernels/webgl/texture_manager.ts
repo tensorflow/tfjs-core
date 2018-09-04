@@ -29,7 +29,9 @@ export class TextureManager {
 
   constructor(private gpgpu: GPGPUContext) {}
 
-  acquireTexture(shapeRC: [number, number], usage: TextureUsage, packed: boolean): WebGLTexture {
+  acquireTexture(
+      shapeRC: [number, number], usage: TextureUsage,
+      packed: boolean): WebGLTexture {
     const physicalTexType = getPhysicalFromLogicalTextureType(usage);
 
     const shapeKey = getKeyFromTextureShape(shapeRC, physicalTexType);
@@ -53,12 +55,12 @@ export class TextureManager {
 
     let newTexture: WebGLTexture;
     if (physicalTexType === PhysicalTextureType.FLOAT32) {
-      if(packed) {
+      if (packed) {
         newTexture =
             this.gpgpu.createPackedMatrixTexture(shapeRC[0], shapeRC[1]);
       } else {
         newTexture =
-            this.gpgpu.createFloat32MatrixTexture(shapeRC[0], shapeRC[1]);        
+            this.gpgpu.createFloat32MatrixTexture(shapeRC[0], shapeRC[1]);
       }
     } else if (physicalTexType === PhysicalTextureType.FLOAT16) {
       newTexture =
