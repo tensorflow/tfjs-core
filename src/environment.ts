@@ -318,6 +318,8 @@ export class Environment {
         return EPSILON_FLOAT32;
       }
       return EPSILON_FLOAT16;
+    } else if (feature === 'PROD') {
+      return false;
     }
     throw new Error(`Unknown feature ${feature}.`);
   }

@@ -83,20 +83,20 @@ export default [
       file: 'dist/tf-core.js',
     }
   }),
-  // config({
-  //   plugins: [minify()],
-  //   output: {
-  //     format: 'umd',
-  //     name: 'tf',
-  //     extend: true,
-  //     file: 'dist/tf-core.min.js',
-  //   }
-  // }),
-  // config({
-  //   plugins: [minify()],
-  //   output: {
-  //     format: 'es',
-  //     file: 'dist/tf-core.esm.js',
-  //   }
-  // })
+  config({
+    plugins: [minify()],
+    output: {
+      format: 'umd',
+      name: 'tf',
+      extend: true,
+      file: 'dist/tf-core.min.js',
+    }
+  }),
+  config({
+    plugins: [minify()],
+    output: {
+      format: 'es',
+      file: 'dist/tf-core.esm.js',
+    }
+  })
 ];

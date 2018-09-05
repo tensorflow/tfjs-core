@@ -15,7 +15,9 @@
  * =============================================================================
  */
 
+import {ENV} from './environment';
 import {ArrayData, DataType, DataTypeMap, FlatVector, RecursiveArray, RegularArray, TensorLike, TypedArray} from './types';
+
 
 /** Shuffles the array using Fisher-Yates algorithm. */
 // tslint:disable-next-line:no-any
@@ -107,36 +109,36 @@ export function inferShape(val: TypedArray|number|boolean|RegularArray<number>|
     shape.push(firstElem.length);
     firstElem = firstElem[0];
   }
-  // if (val instanceof Array) {
-  //   deepAssertShapeConsistency(val, shape, []);
-  // }
+  if (!ENV.get('PROD') && val instanceof Array) {
+    deepAssertShapeConsistency(val, shape, []);
+  }
   return shape;
 }
 
-// function deepAssertShapeConsistency(
-//     val: number|boolean|RegularArray<number>|RegularArray<boolean>,
-//     shape: number[], indices?: number[]) {
-//   indices = indices || [];
-//   if (!(val instanceof Array)) {
-//     assert(
-//         shape.length === 0,
-//         () => `Element arr[${indices.join('][')}] is a primitive, ` +
-//             `but should be an array of ${shape[0]} elements`);
-//     return;
-//   }
-//   assert(
-//       shape.length > 0,
-//       () => `Element arr[${indices.join('][')}] should be a primitive, ` +
-//           `but is an array of ${val.length} elements`);
-//   assert(
-//       val.length === shape[0],
-//       () => `Element arr[${indices.join('][')}] should have ${shape[0]} ` +
-//           `elements, but has ${val.length} elements`);
-//   const subShape = shape.slice(1);
-//   for (let i = 0; i < val.length; ++i) {
-//     deepAssertShapeConsistency(val[i], subShape, indices.concat(i));
-//   }
-// }
+function deepAssertShapeConsistency(
+    val: number|boolean|RegularArray<number>|RegularArray<boolean>,
+    shape: number[], indices?: number[]) {
+  indices = indices || [];
+  if (!(val instanceof Array)) {
+    assert(
+        shape.length === 0,
+        () => `Element arr[${indices.join('][')}] is a primitive, ` +
+            `but should be an array of ${shape[0]} elements`);
+    return;
+  }
+  assert(
+      shape.length > 0,
+      () => `Element arr[${indices.join('][')}] should be a primitive, ` +
+          `but is an array of ${val.length} elements`);
+  assert(
+      val.length === shape[0],
+      () => `Element arr[${indices.join('][')}] should have ${shape[0]} ` +
+          `elements, but has ${val.length} elements`);
+  const subShape = shape.slice(1);
+  for (let i = 0; i < val.length; ++i) {
+    deepAssertShapeConsistency(val[i], subShape, indices.concat(i));
+  }
+}
 
 export function sizeFromShape(shape: number[]): number {
   if (shape.length === 0) {
