@@ -15,9 +15,9 @@ export class PackProgram implements GPGPUProgram {
 
         gl_FragColor = vec4(
           getA(resBRC.x * 2, resBRC.y * 2, resBRC.z * 2),
-          getA(resBRC.x * 2, resBRC.y * 2, resBRC.z * 2),
-          getA(resBRC.x * 2, resBRC.y * 2, resBRC.z * 2),
-          getA(resBRC.x * 2, resBRC.y * 2, resBRC.z * 2)
+          getA(resBRC.x * 2, resBRC.y * 2, resBRC.z * 2 + 1),
+          getA(resBRC.x * 2, resBRC.y * 2 + 1, resBRC.z * 2),
+          getA(resBRC.x * 2, resBRC.y * 2 + 1, resBRC.z * 2 + 1)
         );
       }
     `;
