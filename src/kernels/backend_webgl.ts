@@ -577,7 +577,7 @@ export class MathBackendWebGL implements KernelBackend {
           packedA.shape, packedB.shape, transposeA, transposeB);
       const result = this.compileAndRun(program, [packedA, packedB]);
 
-      return result;
+      return result.reshape([1, result.shape[0], result.shape[1]]);
 
       // const unpackProgram = new UnpackProgram(packedA.shape);
       // return this.compileAndRun(unpackProgram, [packedA]);
