@@ -10,39 +10,20 @@ export class UnpackProgram implements GPGPUProgram {
 
     this.userCode = `
       void main() {
-        // vec2 onePixel = vec2(1.) / vec2(${outputShape[1]}, ${
-        outputShape[0]});
+        vec2 onePixel = vec2(1.) / vec2(${outputShape[1]}, ${outputShape[0]});
         vec2 modCoord = mod(gl_FragCoord.xy - halfCR, vec2(2.0));
 
-        // vec4 packedInput = texture2D(A, vec2(
-        //   resultUV.x - (step(1., modCoord.x) * onePixel.x),
-        //   resultUV.y - (step(1., modCoord.y) * onePixel.y)
-        // ));
+        vec4 packedInput = texture2D(A, vec2(
+          resultUV.x - (step(1., modCoord.x) * onePixel.x),
+          resultUV.y - (step(1., modCoord.y) * onePixel.y)
+        ));
 
-        // gl_FragColor = vec4(
-        //   modCoord.x == 0.0 ?
-        //     (modCoord.y == 0.0 ? packedInput.r : packedInput.b) :
-        //     (modCoord.y == 0.0 ? packedInput.g : packedInput.a),
-        //   0, 0, 0
-        // );
-
-
-
-        ivec3 resBRC = getOutputCoords();
-
-        if(modCoord.x == 0.0) {
-          if(modCoord.y == 0.0) {
-            gl_FragColor = vec4(getA(resBRC.x, resBRC.y, resBRC.z).x);
-          } else {
-            gl_FragColor = vec4(getA(resBRC.x, resBRC.y, resBRC.z).z);
-          }
-        } else {
-          if(modCoord.y == 0.0) {
-            gl_FragColor = vec4(getA(resBRC.x, resBRC.y, resBRC.z).y);
-          } else {
-            gl_FragColor = vec4(getA(resBRC.x, resBRC.y, resBRC.z).w);
-          }
-        }
+        gl_FragColor = vec4(
+          modCoord.x == 0.0 ?
+            (modCoord.y == 0.0 ? packedInput.r : packedInput.b) :
+            (modCoord.y == 0.0 ? packedInput.g : packedInput.a),
+          0, 0, 0
+        );
       }
     `;
   }

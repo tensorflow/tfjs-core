@@ -11,13 +11,13 @@ export class PackProgram implements GPGPUProgram {
 
     this.userCode = `
       void main() {
-        ivec3 resBRC = getOutputCoords();
+        ivec2 rc = getOutputCoords();
 
         gl_FragColor = vec4(
-          getA(resBRC.x * 2, resBRC.y * 2, resBRC.z * 2),
-          getA(resBRC.x * 2, resBRC.y * 2, resBRC.z * 2 + 1),
-          getA(resBRC.x * 2, resBRC.y * 2 + 1, resBRC.z * 2),
-          getA(resBRC.x * 2, resBRC.y * 2 + 1, resBRC.z * 2 + 1)
+          getA(rc.x * 2, rc.y * 2),
+          getA(rc.x * 2, rc.y * 2 + 1),
+          getA(rc.x * 2 + 1, rc.y * 2),
+          getA(rc.x * 2 + 1, rc.y * 2 + 1)
         );
       }
     `;
