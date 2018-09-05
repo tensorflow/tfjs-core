@@ -564,14 +564,14 @@ export class MathBackendWebGL implements KernelBackend {
       a: Tensor3D, b: Tensor3D, transposeA: boolean,
       transposeB: boolean): Tensor3D {
     if (a.shape[0] === 1 && b.shape[0] === 1) {
-      const aSqueezed = a.reshape(a.shape.slice(1));
-      const bSqueezed = b.reshape(b.shape.slice(1));
+      const aSqueezed = a.as2D(a.shape[1], a.shape[2]);
+      const bSqueezed = b.as2D(b.shape[1], b.shape[2]);
 
       const packProgramA = new PackProgram(aSqueezed.shape);
-      const packedA = this.compileAndRun(packProgramA, [aSqueezed]);
+      const packedA = this.compileAndRun<Tensor2D>(packProgramA, [aSqueezed]);
 
       const packProgramB = new PackProgram(bSqueezed.shape);
-      const packedB = this.compileAndRun(packProgramB, [bSqueezed]);
+      const packedB = this.compileAndRun<Tensor2D>(packProgramB, [bSqueezed]);
 
       const program = new MatMulPackedProgram(
           packedA.shape, packedB.shape, transposeA, transposeB);
