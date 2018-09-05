@@ -14,12 +14,14 @@ export class PackProgram implements GPGPUProgram {
         ivec2 rc = getOutputCoords();
 
         gl_FragColor = vec4(
-          getA(rc.x * 2, rc.y * 2),
-          rc.y * 2 + 1 > ${outputShape[0]} ? 0. : getA(rc.x * 2, rc.y * 2 + 1),
-          rc.x * 2 + 1 > ${outputShape[1]} ? 0. : getA(rc.x * 2 + 1, rc.y * 2),
-          rc.x * 2 + 1 > ${outputShape[1]} || rc.y * 2 + 1 > ${
-        outputShape[0]} ? 0. : getA(rc.x * 2 + 1, rc.y * 2 + 1)
-        );
+            getA(rc.x * 2, rc.y * 2),
+            rc.y * 2 + 1 >= ${
+        outputShape[1]} ? 0. : getA(rc.x * 2, rc.y * 2 + 1),
+            rc.x * 2 + 1 >= ${
+        outputShape[0]} ? 0. : getA(rc.x * 2 + 1, rc.y * 2),
+            rc.x * 2 + 1 >= ${outputShape[0]} || rc.y * 2 + 1 > ${
+        outputShape[1]} ? 0. : getA(rc.x * 2 + 1, rc.y * 2 + 1)
+          );
       }
     `;
   }
