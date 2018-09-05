@@ -327,10 +327,10 @@ export class MathBackendWebGL implements KernelBackend {
       texture: WebGLTexture, dataId: DataId, dtype: DataType,
       texShape: [number, number], shape: number[]): Float32Array {
     if (ENV.get('WEBGL_DOWNLOAD_FLOAT_ENABLED')) {
-      return this.gpgpu.downloadMatrixFromPackedTexture(
-          texture, texShape[0], texShape[1]);
-      // return this.gpgpu.downloadFloat32MatrixFromOutputTexture(
+      // return this.gpgpu.downloadMatrixFromPackedTexture(
       //     texture, texShape[0], texShape[1]);
+      return this.gpgpu.downloadFloat32MatrixFromOutputTexture(
+          texture, texShape[0], texShape[1]);
     }
 
     const tmpTarget = Tensor.make(shape, {});
@@ -577,13 +577,15 @@ export class MathBackendWebGL implements KernelBackend {
           packedA.shape, packedB.shape, transposeA, transposeB);
       const result = this.compileAndRun(program, [packedA, packedB]);
 
-      return result.reshape([1, result.shape[0], result.shape[1]]);
+      // return result.reshape([1, result.shape[0], result.shape[1]]);
 
       // const unpackProgram = new UnpackProgram(packedA.shape);
       // return this.compileAndRun(unpackProgram, [packedA]);
 
-      // const unpackProgram = new UnpackProgram(program.outputShape);
-      // return this.compileAndRun(unpackProgram, [result]);
+      const unpackProgram = new UnpackProgram(result.shape);
+      return this.compileAndRun(unpackProgram, [result]).reshape([
+        1, result.shape[0], result.shape[1]
+      ]);
     } else {
       return this.compileAndRun(
           new MatMulProgram(a.shape, b.shape, transposeA, transposeB), [a, b]);
