@@ -65,7 +65,8 @@ import * as gpgpu_util from './webgl/gpgpu_util';
 import {LRNProgram} from './webgl/lrn_gpu';
 import {LRNGradProgram} from './webgl/lrn_grad_gpu';
 import {MaxPool2DBackpropProgram} from './webgl/max_pool_backprop_gpu';
-import {MatMulProgram} from './webgl/mulmat_packed_gpu_alt';
+import {MatMulProgram} from './webgl/mulmat_gpu';
+import {MatMulPackedProgram} from './webgl/mulmat_packed_gpu_alt';
 import {MultinomialProgram} from './webgl/multinomial_gpu';
 import {OneHotProgram} from './webgl/onehot_gpu';
 import {PackProgram} from './webgl/pack_gpu';
@@ -326,10 +327,10 @@ export class MathBackendWebGL implements KernelBackend {
       texture: WebGLTexture, dataId: DataId, dtype: DataType,
       texShape: [number, number], shape: number[]): Float32Array {
     if (ENV.get('WEBGL_DOWNLOAD_FLOAT_ENABLED')) {
-      return this.gpgpu.downloadMatrixFromPackedTexture(
-          texture, texShape[0], texShape[1]);
-      // return this.gpgpu.downloadFloat32MatrixFromBuffer(
+      // return this.gpgpu.downloadMatrixFromPackedTexture(
       //     texture, texShape[0], texShape[1]);
+      return this.gpgpu.downloadFloat32MatrixFromOutputTexture(
+          texture, texShape[0], texShape[1]);
     }
 
     const tmpTarget = Tensor.make(shape, {});
@@ -562,21 +563,26 @@ export class MathBackendWebGL implements KernelBackend {
   batchMatMul(
       a: Tensor3D, b: Tensor3D, transposeA: boolean,
       transposeB: boolean): Tensor3D {
-    const packProgramA = new PackProgram(a.shape);
-    const packedA: Tensor2D = this.compileAndRun(packProgramA, [a]);
+    if (a.shape[0] === 1 && b.shape[0] === 1) {
+      const aSqueezed = a.reshape(a.shape.slice(1));
+      const bSqueezed = b.reshape(b.shape.slice(1));
 
-    return packedA;
+      const packProgramA = new PackProgram(aSqueezed.shape);
+      const packedA = this.compileAndRun(packProgramA, [aSqueezed]);
 
-    // const packProgramB = new PackProgram(b.shape);
-    // const packedB: Tensor2D = this.compileAndRun(packProgramB, [b]);
+      const packProgramB = new PackProgram(bSqueezed.shape);
+      const packedB = this.compileAndRun(packProgramB, [bSqueezed]);
 
-    // const program =
-    //     new MatMulProgram(packedA.shape, packedB.shape, transposeA,
-    //     transposeB);
-    // const result = this.compileAndRun<Tensor3D>(program, [a, b]);
+      const program = new MatMulPackedProgram(
+          packedA.shape, packedB.shape, transposeA, transposeB);
+      const result = this.compileAndRun(program, [aSqueezed, bSqueezed]);
 
-    // const unpackProgram = new UnpackProgram(program.outputShape);
-    // return this.compileAndRun(unpackProgram, [result]);
+      const unpackProgram = new UnpackProgram(program.outputShape);
+      return this.compileAndRun(unpackProgram, [result]);
+    } else {
+      return this.compileAndRun(
+          new MatMulProgram(a.shape, b.shape, transposeA, transposeB), [a, b]);
+    }
   }
 
   multiply(a: Tensor, b: Tensor): Tensor {

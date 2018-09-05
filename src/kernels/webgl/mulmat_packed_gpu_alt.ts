@@ -1,12 +1,14 @@
 import {GPGPUProgram} from './gpgpu_math';
 
-export class MatMulProgram implements GPGPUProgram {
+export class MatMulPackedProgram implements GPGPUProgram {
   variableNames = ['matrixA', 'matrixB'];
   outputShape: number[];
   userCode: string;
   packed = true;
 
-  constructor(aShape: [number, number], bShape: [number, number], transposeA = false, transposeB = false) {
+  constructor(
+      aShape: [number, number], bShape: [number, number], transposeA = false,
+      transposeB = false) {
     const outerShapeA = transposeA ? aShape[1] : aShape[0];
     const outerShapeB = transposeB ? bShape[0] : bShape[1];
     const sharedDim = transposeA ? aShape[0] : aShape[1];
@@ -30,7 +32,8 @@ export class MatMulProgram implements GPGPUProgram {
           vec4 a = texture2D(matrixA, vec2(${aSample}));
           vec4 b = texture2D(matrixB, vec2(${bSample}));
 
-          result += (${aSwizzle[0]} * ${bSwizzle[0]}) + (${aSwizzle[1]} * ${bSwizzle[1]});
+          result += (${aSwizzle[0]} * ${bSwizzle[0]}) + (${aSwizzle[1]} * ${
+        bSwizzle[1]});
         }
         return result;
       }
