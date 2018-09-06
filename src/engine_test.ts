@@ -361,7 +361,7 @@ describeWithFlags('memory', ALL_ENVS, () => {
 });
 
 describeWithFlags('profile', ALL_ENVS, () => {
-  fit('squaring', async () => {
+  it('squaring', async () => {
     const result = await tf.profile(() => {
       const x = tf.tensor1d([1, 2, 3]);
       let x2 = x.square();
@@ -396,7 +396,7 @@ describeWithFlags('profile', ALL_ENVS, () => {
     ])
   });
 
-  fit('matMul', async () => {
+  it('matMul', async () => {
     const result = await tf.profile(() => {
       const a = tf.tensor2d([1, 2], [1, 2]);
       const b = tf.tensor2d([1, 2, 3, 4], [2, 2]);
