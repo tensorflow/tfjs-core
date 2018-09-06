@@ -361,7 +361,7 @@ describeWithFlags('memory', ALL_ENVS, () => {
 });
 
 describeWithFlags('profile', ALL_ENVS, () => {
-  it('squaring', async () => {
+  fit('squaring', async () => {
     const result = await tf.profile(() => {
       const x = tf.tensor1d([1, 2, 3]);
       let x2 = x.square();
@@ -372,11 +372,31 @@ describeWithFlags('profile', ALL_ENVS, () => {
     });
 
     expect(result.newBytes).toBe(12);
-    expect(result.peak).toBe(24);
-    expect(result.kernels[0].bytesAdded).toBe(12);
+    expect(result.peakBytes).toBe(24);
+    expect(result.newTensors).toBe(1);
+    expect(result.kernels).toEqual([
+      {
+        'name': 'square',
+        'bytesAdded': 12,
+        'totalBytesSnapshot': 24,
+        'tensorsAdded': 1,
+        'totalTensorsSnapshot': 2,
+        'inputShapes': [[3]],
+        'outputShape': [3]
+      },
+      {
+        'name': 'square',
+        'bytesAdded': 12,
+        'totalBytesSnapshot': 24,
+        'tensorsAdded': 1,
+        'totalTensorsSnapshot': 2,
+        'inputShapes': [[3]],
+        'outputShape': [3]
+      }
+    ])
   });
 
-  it('matMul', async () => {
+  fit('matMul', async () => {
     const result = await tf.profile(() => {
       const a = tf.tensor2d([1, 2], [1, 2]);
       const b = tf.tensor2d([1, 2, 3, 4], [2, 2]);
@@ -385,8 +405,46 @@ describeWithFlags('profile', ALL_ENVS, () => {
     });
 
     expect(result.newBytes).toBe(32);
-    expect(result.peak).toBe(32);
-    expect(result.kernels.find(d => d.name === 'matMul').bytesAdded).toBe(8);
+    expect(result.peakBytes).toBe(32);
+    expect(result.newTensors).toBe(3);
+    expect(result.kernels).toEqual([
+      {
+        'name': 'reshape',
+        'bytesAdded': 0,
+        'totalBytesSnapshot': 24,
+        'tensorsAdded': 1,
+        'totalTensorsSnapshot': 3,
+        'inputShapes': [[1, 2]],
+        'outputShape': [1, 1, 2]
+      },
+      {
+        'name': 'reshape',
+        'bytesAdded': 0,
+        'totalBytesSnapshot': 24,
+        'tensorsAdded': 1,
+        'totalTensorsSnapshot': 4,
+        'inputShapes': [[2, 2]],
+        'outputShape': [1, 2, 2]
+      },
+      {
+        'name': 'matMul',
+        'bytesAdded': 8,
+        'totalBytesSnapshot': 32,
+        'tensorsAdded': 1,
+        'totalTensorsSnapshot': 5,
+        'inputShapes': [[1, 1, 2], [1, 2, 2]],
+        'outputShape': [1, 1, 2]
+      },
+      {
+        'name': 'reshape',
+        'bytesAdded': 0,
+        'totalBytesSnapshot': 32,
+        'tensorsAdded': 1,
+        'totalTensorsSnapshot': 6,
+        'inputShapes': [[1, 1, 2]],
+        'outputShape': [1, 2]
+      }
+    ]);
   });
 });
 
