@@ -214,7 +214,9 @@ export class Engine implements TensorManager {
         tensorsAdded: this.numTensors - startingNumTensors,
         totalTensorsSnapshot: this.numTensors,
         inputShapes: Object.keys(inputs).map(key => inputs[key].shape),
-        outputShape: (result as Tensor).shape
+        outputShape: Array.isArray(result) ?
+            (result as Tensor[]).map(item => (item as Tensor).shape) :
+            (result as Tensor).shape
       });
     }
 
@@ -295,14 +297,14 @@ export class Engine implements TensorManager {
     return info;
   }
 
-  async profile(query: () => void): Promise<ProfileInfo> {
+  async profile(query: () => TensorContainer): Promise<ProfileInfo> {
     this.profiling = true;
 
     const startBytes = this.numBytes;
     const startNumTensors = this.numTensors;
 
     this.activeProfile.kernels = [];
-    this.activeProfile.result = await query();
+    this.activeProfile.result = query();
 
     this.profiling = false;
 
