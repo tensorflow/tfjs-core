@@ -304,8 +304,13 @@ function max_<T extends Tensor>(
       console.log('eq=');  // DEBUG
       eq.print(true);  // DEBUG
       console.log('dy=');  // DEBUG
+
+      // const newShape = axis_util.expandShapeToKeepDim(dy.shape, eq.shape);
+      // console.log('newShape =', newShape);  // DEBUG
+      // dy = dy.reshape(newShape) as T;
+      dy = dy.reshape([2, 1]) as T;  // TODO(cais): Ad hoc!
       dy.print();  // DEBUG
-      return dy.mulStrict(eq);
+      return dy.mul(eq.cast(dy.dtype));
     }};
   };
 
