@@ -236,6 +236,7 @@ function mean_<T extends Tensor>(
 function min_<T extends Tensor>(
     x: Tensor|TensorLike, axis: number|number[] = null, keepDims = false): T {
   let $x = convertToTensor(x, 'x', 'min');
+  const xOrig = $x;
 
   const origAxes = axis_util.parseAxisParam(axis, $x.shape);
   let axes = origAxes;
@@ -244,10 +245,28 @@ function min_<T extends Tensor>(
     $x = $x.transpose(permutedAxes);
     axes = axis_util.getInnerMostAxes(axes.length, $x.rank);
   }
-  const res = ENV.engine.runKernel(backend => backend.min($x, axes), {$x});
+
+  const grad = (dy: T, saved: Tensor[]) => {
+    let [y] = saved;
+    if (y.rank < xOrig.rank) {
+      y = res.reshape(axis_util.expandShapeToKeepDim(y.shape, origAxes)) as T;
+    }
+    if (dy.rank < xOrig.rank) {
+      dy = dy.reshape(axis_util.expandShapeToKeepDim(dy.shape, origAxes)) as T;
+    }
+    return {
+      $x: () => {
+        const dx = dy.mul(xOrig.equal(y).cast(dy.dtype));
+        return permutedAxes == null ? dx : dx.transpose(permutedAxes);
+      }
+    };
+  };
+
+  let res = ENV.engine.runKernel(
+      (backend, save) => save(backend.min($x, axes)), {$x}, grad);
   if (keepDims) {
     const newShape = axis_util.expandShapeToKeepDim(res.shape, origAxes);
-    return res.reshape(newShape) as T;
+    res = res.reshape(newShape) as T;
   }
   return res as T;
 }
