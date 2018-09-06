@@ -23,20 +23,22 @@ export class MatMulPackedProgram implements GPGPUProgram {
   userCode: string;
 
   constructor(
-      aShape: [number, number], bShape: [number, number], transposeA = false,
-      transposeB = false) {
+      aShape: [number, number], bShape: [number, number],
+      outputShape: [number, number], transposeA = false, transposeB = false) {
+    this.outputShape = outputShape;
+
     const sharedDim = transposeA ? aShape[0] : aShape[1];
     const sharedDimensionPacked = Math.ceil(sharedDim / 2);
 
-    const aSample = transposeA ? 'resultUV.t, center' : 'center, resultUV.t';
-    const bSample = transposeB ? 'center, resultUV.s' : 'resultUV.s, center';
+    const aSample = transposeA ? 'uv.t, center' : 'center, uv.t';
+    const bSample = transposeB ? 'center, uv.s' : 'uv.s, center';
     const aSwizzle = transposeA ? ['a.xxyy', 'a.zzww'] : ['a.xxzz', 'a.yyww'];
     const bSwizzle = transposeB ? ['b.xzxz', 'b.ywyw'] : ['b.xyxy', 'b.zwzw'];
 
     this.userCode = `
       const float sharedDimension = ${sharedDimensionPacked}.0;
 
-      vec4 dot2x2ARowBCol() {
+      vec4 dot2x2ARowBCol(vec2 uv) {
         vec4 result = vec4(0);
         for (int ii = 0; ii < ${sharedDimensionPacked}; ii++) {
           float i = float(ii);
@@ -51,7 +53,10 @@ export class MatMulPackedProgram implements GPGPUProgram {
       }
 
       void main() {
-        gl_FragColor = dot2x2ARowBCol();
+        vec2 realUV = gl_FragCoord.xy / vec2(${
+        Math.ceil(outputShape[0] / 2)}, ${Math.ceil(outputShape[1] / 2)});
+
+        gl_FragColor = dot2x2ARowBCol(realUV);
       }
     `;
   }

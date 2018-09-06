@@ -119,7 +119,7 @@ export interface TensorHandle {
 // before we start paging. The bytes are this constant * screen area * dpi.
 const BEFORE_PAGING_CONSTANT = 300;
 // Tensors with size <= than this will be uploaded as uniforms, not textures.
-export const SIZE_UPLOAD_UNIFORM = 32;
+export const SIZE_UPLOAD_UNIFORM = 0;
 
 export class MathBackendWebGL implements KernelBackend {
   private texData = new WeakMap<DataId, TextureData>();
@@ -582,11 +582,12 @@ export class MathBackendWebGL implements KernelBackend {
           packProgramB, [bSqueezed], packedBOutput);
 
       const program = new MatMulPackedProgram(
-          packedA.shape, packedB.shape, transposeA, transposeB);
-      program.outputShape = [
-        transposeA ? aSqueezed.shape[1] : aSqueezed.shape[0],
-        transposeB ? bSqueezed.shape[0] : bSqueezed.shape[1]
-      ];
+          packedA.shape, packedB.shape,
+          [
+            transposeA ? aSqueezed.shape[1] : aSqueezed.shape[0],
+            transposeB ? bSqueezed.shape[0] : bSqueezed.shape[1]
+          ],
+          transposeA, transposeB);
       const packedMatMulOutput = Tensor.make(program.outputShape, {});
       this.texData.get(packedMatMulOutput.dataId).usage = TextureUsage.PACK;
       const result =
