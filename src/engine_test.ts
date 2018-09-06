@@ -393,7 +393,7 @@ describeWithFlags('profile', ALL_ENVS, () => {
         'inputShapes': [[3]],
         'outputShape': [3]
       }
-    ])
+    ]);
   });
 
   it('matMul', async () => {
