@@ -86,7 +86,8 @@ describeWithFlags('Reduction: min', ALL_ENVS, () => {
   });
 });
 
-describeWithFlags('Reduction: max', ALL_ENVS, () => {
+// TODO(cais): Change name back. DO NOT SUBMIT.
+describeWithFlags('Reduction-max', ALL_ENVS, () => {
   it('with one element dominating', () => {
     const a = tf.tensor1d([3, -1, 0, 100, -7, 2]);
     const r = tf.max(a);
@@ -167,16 +168,32 @@ describeWithFlags('Reduction: max', ALL_ENVS, () => {
     expectNumbersClose(r.get(), 100);
   });
 
-  it('max gradient: all axes, keepDims=false', () => {
-    console.log('=== BEGIN ===');  // DEBUG
+  it('max gradient: 2D, axes=-1, keepDims=false', () => {
     const x = tf.tensor2d([[0, 20, 10], [-10, -30, -20]]);
-    const y = tf.max(x);
-    y.print();  // DEBUG
-
     const dy = tf.tensor1d([-1, -1]);
-    const gradients = tf.grad(v => tf.max(v))(x, dy);
-    gradients.print();  // DEBUG
+    const axis = -1;
+    const gradients = tf.grad(v => tf.max(v, axis))(x, dy);
+    expectArraysClose(gradients, tf.tensor2d([[0, -1, 0], [-1, 0, 0]]));
+  });
+
+  it('max gradient: 2D, axes=0, keepDims=false', () => {
+    console.log('=== BEGIN ===');  // DEBUG
+    const x = tf.tensor2d([[0, 20, 10], [-10, -30, 20]]);
+    const dy = tf.tensor1d([-1, -1, -1]);
+    const axis = 0;
+    const gradients = tf.grad(v => tf.max(v, axis))(x, dy);
+    // tf.max(x, axis).print();  // DEBUG
+    expectArraysClose(gradients, tf.tensor2d([[-1, -1, 0], [0, 0, -1]]));
     console.log('=== END ===');  // DEBUG
+  });
+
+  it('max gradient: 2D, axes=-1, keepDims=true', () => {
+    const x = tf.tensor2d([[0, 20, 10], [-10, -30, -20]]);
+    const dy = tf.tensor2d([[-1], [-1]]);
+    const axis = -1;
+    const keepDims = true;
+    const gradients = tf.grad(v => tf.max(v, axis, keepDims))(x, dy);
+    expectArraysClose(gradients, tf.tensor2d([[0, -1, 0], [-1, 0, 0]]));
   });
 });
 

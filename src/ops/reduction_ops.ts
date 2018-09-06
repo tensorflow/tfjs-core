@@ -283,35 +283,52 @@ function min_<T extends Tensor>(
 function max_<T extends Tensor>(
     x: Tensor|TensorLike, axis: number|number[] = null, keepDims = false): T {
   let $x = convertToTensor(x, 'x', 'max');
+  const origX = $x;
 
   const origAxes = axis_util.parseAxisParam(axis, $x.shape);
+  console.log(`origAxes = ${JSON.stringify(origAxes)}`);  // DEBUG
   let axes = origAxes;
   const permutedAxes = axis_util.getAxesPermutation(axes, $x.rank);
   if (permutedAxes != null) {
     $x = $x.transpose(permutedAxes);
     axes = axis_util.getInnerMostAxes(axes.length, $x.rank);
   }
-  console.log(`axes = ${axes}`);  // DEBUG
+  console.log(`axes = ${axes}`);          // DEBUG
+  console.log(`keepDims = ${keepDims}`);  // DEBUG
 
   const grad = (dy: T, saved: Tensor[]) => {
-    const [y] = saved;
-    console.log('In grad: y=');  // DEBUG
-    y.print();  // DEBUG
-    console.log('In grad: res=');  // DEBUG
-    res.print();  // DEBUG
-    return {$x: () => {
-      const eq = $x.equal(y) as T;
-      console.log('eq=');  // DEBUG
-      eq.print(true);  // DEBUG
-      console.log('dy=');  // DEBUG
+    let [y] = saved;
+    // const origX = permutedAxes == null ?
+    //     $x :
+    //     $x.transpose(axis_util.getUndoAxesPermutation(permutedAxes));
+    // console.log('In grad: origX=');  // DEBUG
+    // origX.print();                   // DEBUG
 
-      // const newShape = axis_util.expandShapeToKeepDim(dy.shape, eq.shape);
-      // console.log('newShape =', newShape);  // DEBUG
-      // dy = dy.reshape(newShape) as T;
-      dy = dy.reshape([2, 1]) as T;  // TODO(cais): Ad hoc!
-      dy.print();  // DEBUG
-      return dy.mul(eq.cast(dy.dtype));
-    }};
+    if (y.rank < origX.rank) {
+      const newShape = axis_util.expandShapeToKeepDim(y.shape, origAxes);
+      y = res.reshape(newShape) as T;
+    }
+    if (dy.rank < origX.rank) {
+      const newShape = axis_util.expandShapeToKeepDim(dy.shape, origAxes);
+      dy = dy.reshape(newShape) as T;
+    }
+    console.log('In grad: y=');   // DEBUG
+    y.print();                    // DEBUG
+    console.log('In grad: dy=');  // DEBUG
+    dy.print();                   // DEBUG
+    return {
+      $x: () => {
+        console.log('eq=');  // DEBUG
+        const eq = origX.equal(y) as T;
+        eq.print(true);                     // DEBUG
+        console.log('dy=');                 // DEBUG
+        dy.print();                         // DEBUG
+        console.log('grad result:');        // DEBUG
+        dy.mul(eq.cast(dy.dtype)).print();  // DEBUG
+        const dx = dy.mul(eq.cast(dy.dtype));
+        return permutedAxes == null ? dx : dx.transpose(permutedAxes);
+      }
+    };
   };
 
   let res = ENV.engine.runKernel(
@@ -320,8 +337,8 @@ function max_<T extends Tensor>(
     const newShape = axis_util.expandShapeToKeepDim(res.shape, origAxes);
     res = res.reshape(newShape) as T;
   }
-  console.log('returning:');  // DEBUG
-  res.print();  // DEBUG
+  console.log('Returning:');  // DEBUG
+  res.print();                // DEBUG
   return res as T;
 }
 
@@ -364,8 +381,8 @@ function argMin_<T extends Tensor>(x: Tensor|TensorLike, axis = 0): T {
   const grad = (dy: T) => {
     return {$x: () => zerosLike($x)};
   };
-  return ENV.engine.runKernel(backend => backend.argMin($x, axes[0]), {$x},
-      grad) as T;
+  return ENV.engine.runKernel(
+             backend => backend.argMin($x, axes[0]), {$x}, grad) as T;
 }
 
 /**
@@ -406,8 +423,8 @@ function argMax_<T extends Tensor>(x: Tensor|TensorLike, axis = 0): T {
   const grad = (dy: T) => {
     return {$x: () => zerosLike($x)};
   };
-  return ENV.engine.runKernel(backend => backend.argMax($x, axes[0]), {$x},
-    grad) as T;
+  return ENV.engine.runKernel(
+             backend => backend.argMax($x, axes[0]), {$x}, grad) as T;
 }
 
 /**
