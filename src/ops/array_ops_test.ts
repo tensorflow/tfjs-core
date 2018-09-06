@@ -17,7 +17,7 @@
 
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
-import {ALL_ENVS, BROWSER_ENVS, expectArraysClose, expectArraysEqual, expectPromiseToFail, expectValuesInRange, NODE_ENVS, WEBGL_ENVS} from '../test_util';
+import {ALL_ENVS, BROWSER_ENVS, expectArraysClose, expectArraysEqual, expectPromiseToFail, expectValuesInRange, NODE_ENVS, WEBGL_ENVS, CPU_ENVS} from '../test_util';
 import * as util from '../util';
 import {expectArrayInMeanStdRange, jarqueBeraNormalityTest} from './rand_util';
 
@@ -3589,6 +3589,9 @@ describeWithFlags('depthToSpace', BROWSER_ENVS, () => {
         .toThrowError(
             `blockSize should be > 1 for depthToSpace, but was: ${blockSize}`);
   });
+});
+
+describeWithFlags('depthToSpace', CPU_ENVS, () => {
   it('throws when CPU backend used with data format NCHW', () => {
     const t = tf.tensor4d([1, 2, 3, 4], [1, 4, 1, 1]);
     const blockSize = 2;
