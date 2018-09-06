@@ -30,7 +30,8 @@ export class UnpackProgram implements GPGPUProgram {
         vec2 onePixel = 1. / vec2(${outputShape[1]}, ${outputShape[0]});
         vec2 modCoord = mod(gl_FragCoord.xy - halfCR, 2.);
 
-        vec4 packedInput = texture2D(A, resultUV - step(1., modCoord) * onePixel);
+        vec4 packedInput = texture2D(A,
+          resultUV - step(1., modCoord) * onePixel);
 
         setOutput(
           modCoord.x == 0. ?
