@@ -3578,7 +3578,9 @@ describeWithFlags('depthToSpace', ALL_ENVS, () => {
             blockSize * blockSize} but is ${
             t.shape[3]} for depthToSpace with input shape ${t.shape}`);
   });
+});
 
+describeWithFlags('depthToSpace', BROWSER_ENVS, () => {
   it('throws when blocksize < 2', () => {
     const t = tf.tensor4d([1, 2, 3, 4], [1, 1, 1, 4]);
     const blockSize = 1;
@@ -3587,9 +3589,6 @@ describeWithFlags('depthToSpace', ALL_ENVS, () => {
         .toThrowError(
             `blockSize should be > 1 for depthToSpace, but was: ${blockSize}`);
   });
-});
-
-describeWithFlags('depthToSpace', CPU_ENVS, () => {
   it('throws when CPU backend used with data format NCHW', () => {
     const t = tf.tensor4d([1, 2, 3, 4], [1, 4, 1, 1]);
     const blockSize = 2;
