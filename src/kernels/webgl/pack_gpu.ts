@@ -4,7 +4,6 @@ export class PackProgram implements GPGPUProgram {
   variableNames = ['A'];
   outputShape: number[];
   userCode: string;
-  packed = true;
 
   constructor(outputShape: number[]) {
     this.outputShape = outputShape;

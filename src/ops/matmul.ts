@@ -111,7 +111,8 @@ function matMul_<T extends Tensor>(
       backend => backend.batchMatMul(a3D, b3D, transposeA, transposeB),
       {$a: a3D, $b: b3D}, grad);
 
-  return res.reshape(outShape) as T;
+  // return res.reshape(outShape) as T;
+  return res;
 }
 
 /**

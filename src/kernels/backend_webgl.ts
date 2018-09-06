@@ -568,24 +568,33 @@ export class MathBackendWebGL implements KernelBackend {
       const bSqueezed = b.as2D(b.shape[1], b.shape[2]);
 
       const packProgramA = new PackProgram(aSqueezed.shape);
-      const packedA = this.compileAndRun<Tensor2D>(packProgramA, [aSqueezed]);
+      const packedAOutput = Tensor.make(aSqueezed.shape, {});
+      this.texData.get(packedAOutput.dataId).usage = TextureUsage.PACKED;
+
+      const packedA = this.compileAndRun<Tensor2D>(
+          packProgramA, [aSqueezed], packedAOutput);
+
 
       const packProgramB = new PackProgram(bSqueezed.shape);
-      const packedB = this.compileAndRun<Tensor2D>(packProgramB, [bSqueezed]);
+      const packedBOutput = Tensor.make(bSqueezed.shape, {});
+      this.texData.get(packedBOutput.dataId).usage = TextureUsage.PACKED;
 
-      const program = new MatMulPackedProgram(
-          packedA.shape, packedB.shape, transposeA, transposeB);
-      const result = this.compileAndRun(program, [packedA, packedB]);
+      const packedB = this.compileAndRun<Tensor2D>(
+          packProgramB, [bSqueezed], packedBOutput);
+
+      // const program = new MatMulPackedProgram(
+      //     packedA.shape, packedB.shape, transposeA, transposeB);
+      // const result = this.compileAndRun(program, [packedA, packedB]);
 
       // return result.reshape([1, result.shape[0], result.shape[1]]);
 
-      // const unpackProgram = new UnpackProgram(packedA.shape);
-      // return this.compileAndRun(unpackProgram, [packedA]);
+      const unpackProgram = new UnpackProgram(packedA.shape);
+      return this.compileAndRun(unpackProgram, [packedA]);
 
-      const unpackProgram = new UnpackProgram(result.shape);
-      return this.compileAndRun(unpackProgram, [result]).reshape([
-        1, result.shape[0], result.shape[1]
-      ]);
+      // const unpackProgram = new UnpackProgram(result.shape);
+      // return this.compileAndRun(unpackProgram, [result]).reshape([
+      //   1, result.shape[0], result.shape[1]
+      // ]);
     } else {
       return this.compileAndRun(
           new MatMulProgram(a.shape, b.shape, transposeA, transposeB), [a, b]);
@@ -1507,7 +1516,7 @@ export class MathBackendWebGL implements KernelBackend {
       this.uploadToGPU(input.dataId);
       return {shape: input.shape, texData, isUniform: false};
     });
-    this.uploadToGPU(output.dataId, program.packed);
+    this.uploadToGPU(output.dataId);
     const outputData = {
       shape: output.shape,
       texData: this.texData.get(output.dataId),
@@ -1593,7 +1602,7 @@ export class MathBackendWebGL implements KernelBackend {
     }
   }
 
-  private uploadToGPU(dataId: DataId, packed = false): void {
+  private uploadToGPU(dataId: DataId): void {
     this.throwIfNoData(dataId);
     const texData = this.texData.get(dataId);
     const {shape, values, texture, dtype, usage} = texData;
@@ -1615,7 +1624,7 @@ export class MathBackendWebGL implements KernelBackend {
     const texShape =
         webgl_util.getTextureShapeFromLogicalShape(this.gpgpu.gl, shape);
     texData.texShape = texShape;
-    const newTexture = this.acquireTexture(dataId, texShape, usage, packed);
+    const newTexture = this.acquireTexture(dataId, texShape, usage);
     texData.texture = newTexture;
     if (values != null) {
       this.gpgpu.uploadMatrixToTexture(
@@ -1661,12 +1670,12 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   private acquireTexture(
-      dataId: DataId, texShape: [number, number], texType: TextureUsage,
-      packed: boolean): WebGLTexture {
+      dataId: DataId, texShape: [number, number],
+      texType: TextureUsage): WebGLTexture {
     const {shape, dtype} = this.texData.get(dataId);
     this.lruDataGPU.push(dataId);
     this.numBytesInGPU += this.computeBytes(shape, dtype);
-    return this.textureManager.acquireTexture(texShape, texType, packed);
+    return this.textureManager.acquireTexture(texShape, texType);
   }
 
   private computeBytes(shape: number[], dtype: DataType) {

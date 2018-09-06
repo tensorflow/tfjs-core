@@ -4,7 +4,6 @@ export class MatMulPackedProgram implements GPGPUProgram {
   variableNames = ['matrixA', 'matrixB'];
   outputShape: number[];
   userCode: string;
-  packed = true;
 
   constructor(
       aShape: [number, number], bShape: [number, number], transposeA = false,

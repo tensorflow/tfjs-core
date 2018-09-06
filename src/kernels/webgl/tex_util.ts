@@ -22,13 +22,15 @@ export enum TextureUsage {
   RENDER,
   UPLOAD,
   PIXELS,
-  DOWNLOAD
+  DOWNLOAD,
+  PACKED
 }
 
 export enum PhysicalTextureType {
   FLOAT16,
   FLOAT32,
-  UNSIGNED_BYTE
+  UNSIGNED_BYTE,
+  PACKED
 }
 
 export interface TextureData {
