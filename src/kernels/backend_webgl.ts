@@ -582,19 +582,33 @@ export class MathBackendWebGL implements KernelBackend {
       const packedB = this.compileAndRun<Tensor2D>(
           packProgramB, [bSqueezed], packedBOutput);
 
-      // const program = new MatMulPackedProgram(
-      //     packedA.shape, packedB.shape, transposeA, transposeB);
-      // const result = this.compileAndRun(program, [packedA, packedB]);
+
+      const program = new MatMulPackedProgram(
+          packedA.shape, packedB.shape, transposeA, transposeB);
+      const outerShapeA = transposeA ? aSqueezed.shape[1] : aSqueezed.shape[0];
+      const outerShapeB = transposeB ? bSqueezed.shape[0] : bSqueezed.shape[1];
+      const packedMatMulOutput = Tensor.make([outerShapeA, outerShapeB], {});
+      this.texData.get(packedMatMulOutput.dataId).usage = TextureUsage.PACKED;
+      const result =
+          this.compileAndRun(program, [packedA, packedB], packedMatMulOutput);
 
       // return result.reshape([1, result.shape[0], result.shape[1]]);
 
-      const unpackProgram = new UnpackProgram(packedA.shape);
-      return this.compileAndRun(unpackProgram, [packedA]);
+      // const unpackProgram = new UnpackProgram(packedA.shape);
+      // return this.compileAndRun(unpackProgram, [packedA]);
 
-      // const unpackProgram = new UnpackProgram(result.shape);
-      // return this.compileAndRun(unpackProgram, [result]).reshape([
-      //   1, result.shape[0], result.shape[1]
-      // ]);
+
+
+      const unpackProgram = new UnpackProgram(result.shape);
+      const unpacked = this.compileAndRun(unpackProgram, [result]).reshape([
+        1, result.shape[0], result.shape[1]
+      ]);
+
+      packedAOutput.dispose();
+      packedBOutput.dispose();
+      packedMatMulOutput.dispose();
+
+      return unpacked;
     } else {
       return this.compileAndRun(
           new MatMulProgram(a.shape, b.shape, transposeA, transposeB), [a, b]);
