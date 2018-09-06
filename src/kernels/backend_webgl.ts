@@ -32,7 +32,6 @@ import {DataId, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D
 import {DataType, DataTypeMap, Rank, RecursiveArray, ShapeMap, sumOutType, TypedArray, upcastType} from '../types';
 import * as util from '../util';
 import {getTypedArrayFromDType, sizeFromShape} from '../util';
-
 import {KernelBackend} from './backend';
 import * as backend_util from './backend_util';
 import {mergeRealAndImagArrays} from './complex_util';
@@ -66,7 +65,7 @@ import {LRNProgram} from './webgl/lrn_gpu';
 import {LRNGradProgram} from './webgl/lrn_grad_gpu';
 import {MaxPool2DBackpropProgram} from './webgl/max_pool_backprop_gpu';
 import {MatMulProgram} from './webgl/mulmat_gpu';
-import {MatMulPackedProgram} from './webgl/mulmat_packed_gpu_alt';
+import {MatMulPackedProgram} from './webgl/mulmat_packed_gpu';
 import {MultinomialProgram} from './webgl/multinomial_gpu';
 import {OneHotProgram} from './webgl/onehot_gpu';
 import {PackProgram} from './webgl/pack_gpu';
@@ -327,8 +326,6 @@ export class MathBackendWebGL implements KernelBackend {
       texture: WebGLTexture, dataId: DataId, dtype: DataType,
       texShape: [number, number], shape: number[]): Float32Array {
     if (ENV.get('WEBGL_DOWNLOAD_FLOAT_ENABLED')) {
-      // return this.gpgpu.downloadMatrixFromPackedTexture(
-      //     texture, texShape[0], texShape[1]);
       return this.gpgpu.downloadFloat32MatrixFromOutputTexture(
           texture, texShape[0], texShape[1]);
     }
@@ -1484,7 +1481,7 @@ export class MathBackendWebGL implements KernelBackend {
   public compileAndRun<K extends Tensor>(
       program: GPGPUProgram, inputs: TensorHandle[], output?: K,
       customSetup?: (gpgpu: GPGPUContext, webGLProgram: WebGLProgram) => void,
-      pageToCpu = true, packed = false): K {
+      pageToCpu = true): K {
     if (output == null) {
       output = this.makeOutputArray(program.outputShape, inputs[0].dtype);
     }
@@ -1519,6 +1516,7 @@ export class MathBackendWebGL implements KernelBackend {
       this.uploadToGPU(input.dataId);
       return {shape: input.shape, texData, isUniform: false};
     });
+
     this.uploadToGPU(output.dataId);
     const outputData = {
       shape: output.shape,

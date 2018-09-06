@@ -205,7 +205,6 @@ export function createPackedMatrixTexture(
     textureConfig: TextureConfig): WebGLTexture {
   const [width, height] =
       tex_util.getPackedMatrixTextureShapeWidthHeight(rows, columns);
-
   return createAndConfigureTexture(
       gl, width, height, textureConfig.internalFormatPackedFloat, gl.RGBA,
       gl.FLOAT);
@@ -394,7 +393,6 @@ export function downloadMatrixFromPackedOutputTexture(
       tex_util.getPackedRGBAArraySizeFromMatrixShape(rows, columns));
   webgl_util.callAndCheck(
       gl, () => gl.readPixels(0, 0, w, h, gl.RGBA, gl.FLOAT, packedRGBA));
-
   const matrix = new Float32Array(rows * columns);
   return tex_util.decodeMatrixFromPackedRGBA(packedRGBA, rows, columns, matrix);
 }

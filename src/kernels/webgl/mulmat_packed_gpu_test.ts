@@ -18,8 +18,8 @@
 import {describeWithFlags} from '../../jasmine_util';
 import {expectArraysClose, expectNumbersClose} from '../../test_util';
 import {GPGPUContext} from './gpgpu_context';
-import * as mulmat_packed_gpu from './mulmat_packed_gpu';
-import {MatrixOrientation} from './mulmat_packed_gpu';
+import * as mulmat_packed_gpu from './mulmat_packed_gpu_alt';
+import {MatrixOrientation} from './mulmat_packed_gpu_alt';
 
 const DOWNLOAD_FLOAT_ENVS = {
   'WEBGL_DOWNLOAD_FLOAT_ENABLED': true
