@@ -166,6 +166,18 @@ describeWithFlags('Reduction: max', ALL_ENVS, () => {
     const r = tf.max([3, -1, 0, 100, -7, 2]);
     expectNumbersClose(r.get(), 100);
   });
+
+  it('max gradient: keepDims=true', () => {
+    console.log('=== BEGIN ===');  // DEBUG
+    const x = tf.tensor2d([[0, 20, 10], [-10, -30, -20]]);
+    const y = tf.max(x, -1, true);
+    y.print();  // DEBUG
+
+    const dy = tf.tensor2d([[-1], [-1]]);
+    const gradients = tf.grad(v => tf.max(v))(x, dy);
+    gradients.print();  // DEBUG
+    console.log('=== END ===');  // DEBUG
+  });
 });
 
 describeWithFlags('Reduction: argmax', ALL_ENVS, () => {

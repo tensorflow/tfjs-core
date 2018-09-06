@@ -291,11 +291,32 @@ function max_<T extends Tensor>(
     $x = $x.transpose(permutedAxes);
     axes = axis_util.getInnerMostAxes(axes.length, $x.rank);
   }
-  const res = ENV.engine.runKernel(backend => backend.max($x, axes), {$x});
+  console.log(`axes = ${axes}`);  // DEBUG
+
+  const grad = (dy: T, saved: Tensor[]) => {
+    const [y] = saved;
+    console.log('In grad: y=');  // DEBUG
+    y.print();  // DEBUG
+    console.log('In grad: res=');  // DEBUG
+    res.print();  // DEBUG
+    return {$x: () => {
+      const eq = $x.equal(y) as T;
+      console.log('eq=');  // DEBUG
+      eq.print(true);  // DEBUG
+      console.log('dy=');  // DEBUG
+      dy.print();  // DEBUG
+      return dy.mulStrict(eq);
+    }};
+  };
+
+  let res = ENV.engine.runKernel(
+      (backend, save) => save(backend.max($x, axes)), {$x}, grad);
   if (keepDims) {
     const newShape = axis_util.expandShapeToKeepDim(res.shape, origAxes);
-    return res.reshape(newShape) as T;
+    res = res.reshape(newShape) as T;
   }
+  console.log('returning:');  // DEBUG
+  res.print();  // DEBUG
   return res as T;
 }
 
