@@ -197,13 +197,13 @@ describeWithFlags('Reduction: min', ALL_ENVS, () => {
       [[[0, -20], [-20, -20]], [[10, 30], [10, 30]]],
       [[[0, 20], [20, 20]], [[-10, -30], [-10, -30]]]
     ]);
-    const dy = tf.tensor4d([[[[-1]], [[-1]]], [[[-1]], [[-1]]]]);
+    const dy = tf.tensor4d([[[[-1]], [[-2]]], [[[-3]], [[-4]]]]);
     const axis = [2, 3];
     const keepDims = true;
     const gradients = tf.grad(v => tf.min(v, axis, keepDims))(x, dy);
     expectArraysClose(gradients, tf.tensor4d([
-      [[[0, -1], [-1, -1]], [[-1, 0], [-1, 0]]],
-      [[[-1, 0], [0, 0]], [[0, -1], [0, -1]]]
+      [[[0, -1], [-1, -1]], [[-2, 0], [-2, 0]]],
+      [[[-3, 0], [0, 0]], [[0, -4], [0, -4]]]
     ]));
   });
 });
@@ -401,13 +401,13 @@ describeWithFlags('Reduction: max', ALL_ENVS, () => {
       [[[0, 20], [20, 20]], [[-10, -30], [-10, -30]]],
       [[[0, -20], [-20, -20]], [[10, 30], [10, 30]]]
     ]);
-    const dy = tf.tensor4d([[[[-1]], [[-1]]], [[[-1]], [[-1]]]]);
+    const dy = tf.tensor4d([[[[-1]], [[-2]]], [[[-3]], [[-4]]]]);
     const axis = [2, 3];
     const keepDims = true;
     const gradients = tf.grad(v => tf.max(v, axis, keepDims))(x, dy);
     expectArraysClose(gradients, tf.tensor4d([
-      [[[0, -1], [-1, -1]], [[-1, 0], [-1, 0]]],
-      [[[-1, 0], [0, 0]], [[0, -1], [0, -1]]]
+      [[[0, -1], [-1, -1]], [[-2, 0], [-2, 0]]],
+      [[[-3, 0], [0, 0]], [[0, -4], [0, -4]]]
     ]));
   });
 });
