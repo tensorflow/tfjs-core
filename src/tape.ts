@@ -170,10 +170,6 @@ export function backpropagateGradients(
       // Call the gradient function.
       const dx = inputGradients[inputName]();
       const x = node.inputs[inputName];
-      console.log('GRAD dx:');  // DEBUG
-      dx.print();               // DEBUG
-      console.log('GRAD x:');   // DEBUG
-      x.print();                // DEBUG
       if (!util.arraysEqual(dx.shape, x.shape)) {
         throw new Error(
             `Error in gradient for op ${node.name}. The gradient of input ` +

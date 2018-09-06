@@ -283,36 +283,33 @@ function min_<T extends Tensor>(
 function max_<T extends Tensor>(
     x: Tensor|TensorLike, axis: number|number[] = null, keepDims = false): T {
   let $x = convertToTensor(x, 'x', 'max');
-  const origX = $x;
+  const xOrig = $x;
 
   const origAxes = axis_util.parseAxisParam(axis, $x.shape);
-  console.log(`origAxes = ${JSON.stringify(origAxes)}`);  // DEBUG
   let axes = origAxes;
   const permutedAxes = axis_util.getAxesPermutation(axes, $x.rank);
   if (permutedAxes != null) {
     $x = $x.transpose(permutedAxes);
     axes = axis_util.getInnerMostAxes(axes.length, $x.rank);
   }
-  console.log(`axes = ${axes}`);          // DEBUG
-  console.log(`keepDims = ${keepDims}`);  // DEBUG
+  // console.log(`axes = ${axes}`);          // DEBUG
+  // console.log(`keepDims = ${keepDims}`);  // DEBUG
 
   const grad = (dy: T, saved: Tensor[]) => {
     let [y] = saved;
-    if (y.rank < origX.rank) {
-      const newShape = axis_util.expandShapeToKeepDim(y.shape, origAxes);
-      y = res.reshape(newShape) as T;
+    if (y.rank < xOrig.rank) {
+      y = res.reshape(axis_util.expandShapeToKeepDim(y.shape, origAxes)) as T;
     }
-    if (dy.rank < origX.rank) {
-      const newShape = axis_util.expandShapeToKeepDim(dy.shape, origAxes);
-      dy = dy.reshape(newShape) as T;
+    if (dy.rank < xOrig.rank) {
+      dy = dy.reshape(axis_util.expandShapeToKeepDim(dy.shape, origAxes)) as T;
     }
-    console.log('In grad: y=');   // DEBUG
-    y.print();                    // DEBUG
-    console.log('In grad: dy=');  // DEBUG
-    dy.print();                   // DEBUG
+    // console.log('In grad: y=');   // DEBUG
+    // y.print();                    // DEBUG
+    // console.log('In grad: dy=');  // DEBUG
+    // dy.print();                   // DEBUG
     return {
       $x: () => {
-        const dx = dy.mul(origX.equal(y).cast(dy.dtype));
+        const dx = dy.mul(xOrig.equal(y).cast(dy.dtype));
         return permutedAxes == null ? dx : dx.transpose(permutedAxes);
       }
     };
