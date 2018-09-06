@@ -570,34 +570,26 @@ export class MathBackendWebGL implements KernelBackend {
       const packProgramA = new PackProgram(aSqueezed.shape);
       const packedAOutput = Tensor.make<Tensor2D>(aSqueezed.shape, {});
       this.texData.get(packedAOutput.dataId).usage = TextureUsage.PACKED;
-
       const packedA = this.compileAndRun<Tensor2D>(
           packProgramA, [aSqueezed], packedAOutput);
-
 
       const packProgramB = new PackProgram(bSqueezed.shape);
       const packedBOutput = Tensor.make<Tensor2D>(bSqueezed.shape, {});
       this.texData.get(packedBOutput.dataId).usage = TextureUsage.PACKED;
-
       const packedB = this.compileAndRun<Tensor2D>(
           packProgramB, [bSqueezed], packedBOutput);
 
-
       const program = new MatMulPackedProgram(
           packedA.shape, packedB.shape, transposeA, transposeB);
-      const outerShapeA = transposeA ? aSqueezed.shape[1] : aSqueezed.shape[0];
-      const outerShapeB = transposeB ? bSqueezed.shape[0] : bSqueezed.shape[1];
-      const packedMatMulOutput = Tensor.make([outerShapeA, outerShapeB], {});
+      const outputShape = [
+        transposeA ? aSqueezed.shape[1] : aSqueezed.shape[0],
+        transposeB ? bSqueezed.shape[0] : bSqueezed.shape[1]
+      ];
+      const packedMatMulOutput = Tensor.make(outputShape, {});
+      program.outputShape = outputShape;
       this.texData.get(packedMatMulOutput.dataId).usage = TextureUsage.PACKED;
       const result =
           this.compileAndRun(program, [packedA, packedB], packedMatMulOutput);
-
-      // return result.reshape([1, result.shape[0], result.shape[1]]);
-
-      // const unpackProgram = new UnpackProgram(packedA.shape);
-      // return this.compileAndRun(unpackProgram, [packedA]);
-
-
 
       const unpackProgram = new UnpackProgram(result.shape);
       const unpacked = this.compileAndRun(unpackProgram, [result]);
