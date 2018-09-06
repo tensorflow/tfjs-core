@@ -206,6 +206,27 @@ function mean_<T extends Tensor>(
 }
 
 /**
+ * Gradient helper function for the min and max operations.
+ */
+function gradForMinAndMax<T extends Tensor>(
+    dy: T, saved: Tensor[], xOrig: Tensor, origAxes: number[],
+    permutedAxes: number[]) {
+  let [y] = saved;
+  if (y.rank < xOrig.rank) {
+    y = y.reshape(axis_util.expandShapeToKeepDim(y.shape, origAxes)) as T;
+  }
+  if (dy.rank < xOrig.rank) {
+    dy = dy.reshape(axis_util.expandShapeToKeepDim(dy.shape, origAxes)) as T;
+  }
+  return {
+    $x: () => {
+      const dx = dy.mul(xOrig.equal(y).cast(dy.dtype));
+      return permutedAxes == null ? dx : dx.transpose(permutedAxes);
+    }
+  };
+}
+
+/**
  * Computes the minimum value from the input.
  *
  * Reduces the input along the dimensions given in `axes`. Unless `keepDims`
@@ -246,22 +267,8 @@ function min_<T extends Tensor>(
     axes = axis_util.getInnerMostAxes(axes.length, $x.rank);
   }
 
-  const grad = (dy: T, saved: Tensor[]) => {
-    let [y] = saved;
-    if (y.rank < xOrig.rank) {
-      y = res.reshape(axis_util.expandShapeToKeepDim(y.shape, origAxes)) as T;
-    }
-    if (dy.rank < xOrig.rank) {
-      dy = dy.reshape(axis_util.expandShapeToKeepDim(dy.shape, origAxes)) as T;
-    }
-    return {
-      $x: () => {
-        const dx = dy.mul(xOrig.equal(y).cast(dy.dtype));
-        return permutedAxes == null ? dx : dx.transpose(permutedAxes);
-      }
-    };
-  };
-
+  const grad = (dy: T, saved: Tensor[]) =>
+      gradForMinAndMax(dy, saved, xOrig, origAxes, permutedAxes);
   let res = ENV.engine.runKernel(
       (backend, save) => save(backend.min($x, axes)), {$x}, grad);
   if (keepDims) {
@@ -311,29 +318,9 @@ function max_<T extends Tensor>(
     $x = $x.transpose(permutedAxes);
     axes = axis_util.getInnerMostAxes(axes.length, $x.rank);
   }
-  // console.log(`axes = ${axes}`);          // DEBUG
-  // console.log(`keepDims = ${keepDims}`);  // DEBUG
 
-  const grad = (dy: T, saved: Tensor[]) => {
-    let [y] = saved;
-    if (y.rank < xOrig.rank) {
-      y = res.reshape(axis_util.expandShapeToKeepDim(y.shape, origAxes)) as T;
-    }
-    if (dy.rank < xOrig.rank) {
-      dy = dy.reshape(axis_util.expandShapeToKeepDim(dy.shape, origAxes)) as T;
-    }
-    // console.log('In grad: y=');   // DEBUG
-    // y.print();                    // DEBUG
-    // console.log('In grad: dy=');  // DEBUG
-    // dy.print();                   // DEBUG
-    return {
-      $x: () => {
-        const dx = dy.mul(xOrig.equal(y).cast(dy.dtype));
-        return permutedAxes == null ? dx : dx.transpose(permutedAxes);
-      }
-    };
-  };
-
+  const grad = (dy: T, saved: Tensor[]) =>
+      gradForMinAndMax(dy, saved, xOrig, origAxes, permutedAxes);
   let res = ENV.engine.runKernel(
       (backend, save) => save(backend.max($x, axes)), {$x}, grad);
   if (keepDims) {
