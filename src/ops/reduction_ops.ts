@@ -298,12 +298,6 @@ function max_<T extends Tensor>(
 
   const grad = (dy: T, saved: Tensor[]) => {
     let [y] = saved;
-    // const origX = permutedAxes == null ?
-    //     $x :
-    //     $x.transpose(axis_util.getUndoAxesPermutation(permutedAxes));
-    // console.log('In grad: origX=');  // DEBUG
-    // origX.print();                   // DEBUG
-
     if (y.rank < origX.rank) {
       const newShape = axis_util.expandShapeToKeepDim(y.shape, origAxes);
       y = res.reshape(newShape) as T;
@@ -318,14 +312,7 @@ function max_<T extends Tensor>(
     dy.print();                   // DEBUG
     return {
       $x: () => {
-        console.log('eq=');  // DEBUG
-        const eq = origX.equal(y) as T;
-        eq.print(true);                     // DEBUG
-        console.log('dy=');                 // DEBUG
-        dy.print();                         // DEBUG
-        console.log('grad result:');        // DEBUG
-        dy.mul(eq.cast(dy.dtype)).print();  // DEBUG
-        const dx = dy.mul(eq.cast(dy.dtype));
+        const dx = dy.mul(origX.equal(y).cast(dy.dtype));
         return permutedAxes == null ? dx : dx.transpose(permutedAxes);
       }
     };
@@ -337,8 +324,6 @@ function max_<T extends Tensor>(
     const newShape = axis_util.expandShapeToKeepDim(res.shape, origAxes);
     res = res.reshape(newShape) as T;
   }
-  console.log('Returning:');  // DEBUG
-  res.print();                // DEBUG
   return res as T;
 }
 
