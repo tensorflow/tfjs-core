@@ -46,14 +46,17 @@ export type MemoryInfo = {
 };
 
 type KernelProfile = {
-  name: string; bytesAdded: number; bytesUsed: number; inputShapes: number[][];
-  outputShape: number[]
+  name: string; bytesAdded: number; totalBytesSnapshot: number;
+  tensorsAdded: number;
+  totalTensorsSnapshot: number;
+  inputShapes: number[][];
+  outputShape: number[] | number[][];
 };
 
 export type ProfileInfo = {
-  newBytes: number; newTensors: number; peak: number; kernels: KernelProfile[];
-  // tslint:disable-next-line:no-any
-  result: any
+  newBytes: number; newTensors: number; peakBytes: number;
+  kernels: KernelProfile[];
+  result: TensorContainer
 };
 
 export interface TimingInfo extends BackendTimingInfo {
@@ -106,7 +109,7 @@ export class Engine implements TensorManager {
     this.scopeStack = [this.activeScope];
     this.profiler = new Profiler(backend);
     this.activeProfile =
-        {newBytes: 0, newTensors: 0, peak: 0, kernels: [], result: null};
+        {newBytes: 0, newTensors: 0, peakBytes: 0, kernels: [], result: null};
   }
 
   tidy<T extends TensorContainer>(
@@ -174,6 +177,7 @@ export class Engine implements TensorManager {
     };
     const scopeName = this.activeScope.name;
     const startingBytecount = this.numBytes;
+    const startingNumTensors = this.numTensors;
 
     // Stop recording to a tape when running a kernel.
     this.scopedRun(
@@ -203,19 +207,13 @@ export class Engine implements TensorManager {
     }
 
     if (this.profiling) {
-      const bytesAdded = this.numBytes - startingBytecount;
-      const inputKeys = Object.keys(inputs);
-
       this.activeProfile.kernels.push({
         name: scopeName,
-        bytesAdded,
-        bytesUsed: bytesAdded +
-            inputKeys.reduce(
-                (acc, curr) => acc +
-                    util.sizeFromShape(inputs[curr].shape) *
-                        util.bytesPerElement(inputs[curr].dtype),
-                0),
-        inputShapes: inputKeys.map(key => inputs[key].shape),
+        bytesAdded: this.numBytes - startingBytecount,
+        totalBytesSnapshot: this.numBytes,
+        tensorsAdded: this.numTensors - startingNumTensors,
+        totalTensorsSnapshot: this.numTensors,
+        inputShapes: Object.keys(inputs).map(key => inputs[key].shape),
         outputShape: (result as Tensor).shape
       });
     }
@@ -308,8 +306,8 @@ export class Engine implements TensorManager {
 
     this.profiling = false;
 
-    this.activeProfile.peak =
-        Math.max(...this.activeProfile.kernels.map(d => d.bytesUsed));
+    this.activeProfile.peakBytes =
+        Math.max(...this.activeProfile.kernels.map(d => d.totalBytesSnapshot));
     this.activeProfile.newBytes = this.numBytes - startBytes;
     this.activeProfile.newTensors = this.numTensors - startNumTensors;
     return this.activeProfile;
