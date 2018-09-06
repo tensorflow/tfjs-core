@@ -1420,10 +1420,12 @@ export class MathBackendWebGL implements KernelBackend {
       dataId: DataId, texture: WebGLTexture, texShape: [number, number],
       texType: TextureUsage) {
     const {shape, dtype} = this.texData.get(dataId);
-    // const idx = this.lruDataGPU.indexOf(dataId);
-    // if (idx >= 0) {
-    //   this.lruDataGPU.splice(idx, 1);
-    // }
+    if (!ENV.get('PROD')) {
+      const idx = this.lruDataGPU.indexOf(dataId);
+      if (idx >= 0) {
+        this.lruDataGPU.splice(idx, 1);
+      }
+    }
     this.numBytesInGPU -= this.computeBytes(shape, dtype);
     this.textureManager.releaseTexture(texture, texShape, texType);
   }
