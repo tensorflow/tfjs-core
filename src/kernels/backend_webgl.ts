@@ -581,12 +581,11 @@ export class MathBackendWebGL implements KernelBackend {
 
       const program = new MatMulPackedProgram(
           packedA.shape, packedB.shape, transposeA, transposeB);
-      const outputShape = [
+      program.outputShape = [
         transposeA ? aSqueezed.shape[1] : aSqueezed.shape[0],
         transposeB ? bSqueezed.shape[0] : bSqueezed.shape[1]
       ];
-      const packedMatMulOutput = Tensor.make(outputShape, {});
-      program.outputShape = outputShape;
+      const packedMatMulOutput = Tensor.make(program.outputShape, {});
       this.texData.get(packedMatMulOutput.dataId).usage = TextureUsage.PACKED;
       const result =
           this.compileAndRun(program, [packedA, packedB], packedMatMulOutput);
