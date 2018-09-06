@@ -117,12 +117,30 @@ export class Environment {
    * with information about the function's memory use:
    * - `newBytes`: tne number of new bytes allocated
    * - `newTensors`: the number of new tensors created
+   * - `peakBytes`: the maximum number of bytes used in any kernel
    * - `kernels`: an array of objects for each kernel involved that reports
-   * their input and output shapes and number of bytes used.
-   * - `peak`: the maximum number of bytes used in any kernel
+   * their input and output shapes, number of bytes used, and number of new
+   * tensors created.
+   *
+   * ```js
+   * const profile = await tf.profile(() => {
+   *   const x = tf.tensor1d([1, 2, 3]);
+   *   let x2 = x.square();
+   *   x2.dispose();
+   *   x2 = x.square();
+   *   x2.dispose();
+   *   return x;
+   * });
+   *
+   * console.log(`newBytes: ${profile.newBytes}`);
+   * console.log(`newTensors: ${profile.newTensors}`);
+   * console.log(`byte usage over all kernels: ${profile.kernels.map(k =>
+   * k.totalBytesSnapshot)}`);
+   * ```
+   *
    */
-  /** @doc {heading: 'Performance', subheading: 'Memory'} */
-  static profile(f: () => void): Promise<ProfileInfo> {
+  /** @doc {heading: 'Performance', subheading: 'Profile'} */
+  static profile(f: () => TensorContainer): Promise<ProfileInfo> {
     return ENV.engine.profile(f);
   }
 
