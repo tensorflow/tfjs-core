@@ -23,7 +23,7 @@ export enum TextureUsage {
   UPLOAD,
   PIXELS,
   DOWNLOAD,
-  PACKED
+  PACK
 }
 
 export enum PhysicalTextureType {

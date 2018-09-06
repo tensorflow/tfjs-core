@@ -143,7 +143,7 @@ function getPhysicalFromLogicalTextureType(logicalTexType: TextureUsage):
     return ENV.get('WEBGL_RENDER_FLOAT32_ENABLED') ?
         PhysicalTextureType.FLOAT32 :
         PhysicalTextureType.FLOAT16;
-  } else if (logicalTexType === TextureUsage.PACKED) {
+  } else if (logicalTexType === TextureUsage.PACK) {
     return PhysicalTextureType.PACKED;
   }
   throw new Error(`Unknown logical texture type ${logicalTexType}`);

@@ -569,13 +569,13 @@ export class MathBackendWebGL implements KernelBackend {
 
       const packProgramA = new PackProgram(aSqueezed.shape);
       const packedAOutput = Tensor.make<Tensor2D>(aSqueezed.shape, {});
-      this.texData.get(packedAOutput.dataId).usage = TextureUsage.PACKED;
+      this.texData.get(packedAOutput.dataId).usage = TextureUsage.PACK;
       const packedA = this.compileAndRun<Tensor2D>(
           packProgramA, [aSqueezed], packedAOutput);
 
       const packProgramB = new PackProgram(bSqueezed.shape);
       const packedBOutput = Tensor.make<Tensor2D>(bSqueezed.shape, {});
-      this.texData.get(packedBOutput.dataId).usage = TextureUsage.PACKED;
+      this.texData.get(packedBOutput.dataId).usage = TextureUsage.PACK;
       const packedB = this.compileAndRun<Tensor2D>(
           packProgramB, [bSqueezed], packedBOutput);
 
@@ -586,7 +586,7 @@ export class MathBackendWebGL implements KernelBackend {
         transposeB ? bSqueezed.shape[0] : bSqueezed.shape[1]
       ];
       const packedMatMulOutput = Tensor.make(program.outputShape, {});
-      this.texData.get(packedMatMulOutput.dataId).usage = TextureUsage.PACKED;
+      this.texData.get(packedMatMulOutput.dataId).usage = TextureUsage.PACK;
       const result =
           this.compileAndRun(program, [packedA, packedB], packedMatMulOutput);
 
