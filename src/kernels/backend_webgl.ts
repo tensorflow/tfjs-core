@@ -326,8 +326,13 @@ export class MathBackendWebGL implements KernelBackend {
       texture: WebGLTexture, dataId: DataId, dtype: DataType,
       texShape: [number, number], shape: number[]): Float32Array {
     if (ENV.get('WEBGL_DOWNLOAD_FLOAT_ENABLED')) {
-      return this.gpgpu.downloadFloat32MatrixFromOutputTexture(
-          texture, texShape[0], texShape[1]);
+      if (this.texData.get(dataId).usage === TextureUsage.PACK) {
+        return this.gpgpu.downloadMatrixFromPackedTexture(
+            texture, texShape[0], texShape[1]);
+      } else {
+        return this.gpgpu.downloadFloat32MatrixFromOutputTexture(
+            texture, texShape[0], texShape[1]);
+      }
     }
 
     const tmpTarget = Tensor.make(shape, {});
