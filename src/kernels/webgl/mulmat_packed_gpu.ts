@@ -54,7 +54,7 @@ export class MatMulPackedProgram implements GPGPUProgram {
 
       void main() {
         vec2 realUV = gl_FragCoord.xy / vec2(${
-        Math.ceil(outputShape[0] / 2)}, ${Math.ceil(outputShape[1] / 2)});
+        Math.ceil(outputShape[1] / 2)}, ${Math.ceil(outputShape[0] / 2)});
 
         gl_FragColor = dot2x2ARowBCol(realUV);
       }
