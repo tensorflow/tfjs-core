@@ -21,8 +21,7 @@ import {ALL_ENVS, expectArraysClose, expectArraysEqual, expectNumbersClose} from
 
 import * as reduce_util from './reduce_util';
 
-// TODO(cais): Change name back. DO NOT SUBMIT.
-describeWithFlags('Reduction-min', ALL_ENVS, () => {
+describeWithFlags('Reduction: min', ALL_ENVS, () => {
   it('Tensor1D', () => {
     const a = tf.tensor1d([3, -1, 0, 100, -7, 2]);
     expectNumbersClose(tf.min(a).get(), -7);
@@ -209,8 +208,7 @@ describeWithFlags('Reduction-min', ALL_ENVS, () => {
   });
 });
 
-// TODO(cais): Change name back. DO NOT SUBMIT.
-describeWithFlags('Reduction-max', ALL_ENVS, () => {
+describeWithFlags('Reduction: max', ALL_ENVS, () => {
   it('with one element dominating', () => {
     const a = tf.tensor1d([3, -1, 0, 100, -7, 2]);
     const r = tf.max(a);
