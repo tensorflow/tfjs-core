@@ -22,7 +22,7 @@ import * as util from '../../util';
 import {GPGPUContext} from './gpgpu_context';
 import * as shader_compiler from './shader_compiler';
 import {InputInfo, ShapeInfo} from './shader_compiler';
-import {TextureData} from './tex_util';
+import {TextureData, TextureUsage} from './tex_util';
 
 export interface GPGPUProgram {
   variableNames: string[];
@@ -134,7 +134,11 @@ export function runProgram<T extends Tensor, K extends Tensor>(
   const outTex = output.texData.texture;
   const outTexShape = output.texData.texShape;
   const gpgpu = binary.gpgpu;
-  gpgpu.setOutputMatrixTexture(outTex, outTexShape[0], outTexShape[1]);
+  if (output.texData.usage === TextureUsage.PACK) {
+    gpgpu.setOutputPackedMatrixTexture(outTex, outTexShape[0], outTexShape[1]);
+  } else {
+    gpgpu.setOutputMatrixTexture(outTex, outTexShape[0], outTexShape[1]);
+  }
   gpgpu.setProgram(binary.webGLProgram);
   inputs.forEach((input, i) => {
     const variableName = binary.program.variableNames[i];
