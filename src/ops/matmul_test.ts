@@ -21,11 +21,26 @@ import {ALL_ENVS, expectArraysClose, expectNumbersClose, WEBGL_ENVS} from '../te
 import {Rank} from '../types';
 
 describeWithFlags('matmul', ALL_ENVS, () => {
+  fit('resultUV should be texture coordinates', () => {
+    const a = tf.randomUniform([4, 4]);
+    const b = tf.randomUniform([4, 4]);
+
+    const c = tf.matMul(a, b);
+    c.print();
+
+    expectArraysClose(c, [
+      0.25, 0.25, -1, -1, 0.75, 0.25, -1, -1, 0.25, 0.75, -1, -1, 0.75, 0.75,
+      -1, -1
+    ]);
+  });
+
   it('A x B', () => {
     const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
     const b = tf.tensor2d([0, 1, -3, 2, 2, 1], [3, 2]);
 
     const c = tf.matMul(a, b);
+
+    c.print();
 
     expect(c.shape).toEqual([2, 2]);
     expectArraysClose(c, [0, 8, -3, 20]);
