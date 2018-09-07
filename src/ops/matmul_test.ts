@@ -40,8 +40,6 @@ describeWithFlags('matmul', ALL_ENVS, () => {
 
     const c = tf.matMul(a, b);
 
-    c.print();
-
     expect(c.shape).toEqual([2, 2]);
     expectArraysClose(c, [0, 8, -3, 20]);
   });
