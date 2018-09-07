@@ -117,7 +117,7 @@ export class Environment {
    * with information about the function's memory use:
    * - `newBytes`: tne number of new bytes allocated
    * - `newTensors`: the number of new tensors created
-   * - `peakBytes`: the peak number of bytes allocated for any kernel
+   * - `peakBytes`: the peak number of bytes allocated
    * - `kernels`: an array of objects for each kernel involved that reports
    * their input and output shapes, number of bytes used, and number of new
    * tensors created.
