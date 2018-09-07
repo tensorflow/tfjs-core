@@ -56,7 +56,7 @@ type KernelProfile = {
 export type ProfileInfo = {
   newBytes: number; newTensors: number; peakBytes: number;
   kernels: KernelProfile[];
-  result: TensorContainer
+  result: TensorContainer;
 };
 
 export interface TimingInfo extends BackendTimingInfo {

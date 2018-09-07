@@ -17,6 +17,7 @@
 
 import * as tf from './index';
 import {describeWithFlags} from './jasmine_util';
+import {Tensor} from './tensor';
 import {ALL_ENVS, expectArraysClose, expectArraysEqual, expectNumbersClose, WEBGL_ENVS} from './test_util';
 
 describeWithFlags('fromPixels + regular math op', WEBGL_ENVS, () => {
@@ -362,7 +363,7 @@ describeWithFlags('memory', ALL_ENVS, () => {
 
 describeWithFlags('profile', ALL_ENVS, () => {
   it('squaring', async () => {
-    const result = await tf.profile(() => {
+    const profile = await tf.profile(() => {
       const x = tf.tensor1d([1, 2, 3]);
       let x2 = x.square();
       x2.dispose();
@@ -371,10 +372,13 @@ describeWithFlags('profile', ALL_ENVS, () => {
       return x;
     });
 
-    expect(result.newBytes).toBe(12);
-    expect(result.peakBytes).toBe(24);
-    expect(result.newTensors).toBe(1);
-    expect(result.kernels).toEqual([
+    const result = profile.result as Tensor;
+
+    expect(profile.newBytes).toBe(12);
+    expect(profile.peakBytes).toBe(24);
+    expect(profile.newTensors).toBe(1);
+    expectArraysClose(result, [1, 2, 3]);
+    expect(profile.kernels).toEqual([
       {
         'name': 'square',
         'bytesAdded': 12,
@@ -397,17 +401,20 @@ describeWithFlags('profile', ALL_ENVS, () => {
   });
 
   it('matMul', async () => {
-    const result = await tf.profile(() => {
+    const profile = await tf.profile(() => {
       const a = tf.tensor2d([1, 2], [1, 2]);
       const b = tf.tensor2d([1, 2, 3, 4], [2, 2]);
       const c = a.matMul(b);
       return c;
     });
 
-    expect(result.newBytes).toBe(32);
-    expect(result.peakBytes).toBe(32);
-    expect(result.newTensors).toBe(3);
-    expect(result.kernels).toEqual([
+    const result = profile.result as Tensor;
+
+    expect(profile.newBytes).toBe(32);
+    expect(profile.peakBytes).toBe(32);
+    expect(profile.newTensors).toBe(3);
+    expectArraysClose(result, [7, 10]);
+    expect(profile.kernels).toEqual([
       {
         'name': 'reshape',
         'bytesAdded': 0,
