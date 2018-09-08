@@ -26,6 +26,8 @@ export class UnpackProgram implements GPGPUProgram {
     this.outputShape = outputShape;
 
     this.userCode = `
+      const vec2 onePixel = 1. / vec2(${outputShape[1]}, ${outputShape[0]});
+
       void main() {
         vec2 modCoord = mod(gl_FragCoord.xy - halfCR, 2.);
 

@@ -39,8 +39,6 @@ export function makeShader(
     }
     return `uniform sampler2D ${x.name};`;
   });
-  inputPrefixSnippet.push(`const vec2 onePixel = vec2(${
-      1 / outputShape.texShape[1]}, ${1 / outputShape.texShape[0]});`);
   inputPrefixSnippet = inputPrefixSnippet.join('\n');
   const inputSamplingSnippet =
       inputsInfo.map(x => getInputSamplingSnippet(x, outputShape, broadcast))
