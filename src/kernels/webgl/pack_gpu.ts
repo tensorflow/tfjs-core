@@ -34,7 +34,6 @@ export class PackProgram implements GPGPUProgram {
         int rp1 = r + 1;
         int cp1 = c + 1;
 
-
         gl_FragColor = vec4(
             getA(r, c),
             cp1 >= ${outputShape[1]} ? 0. : getA(r, cp1),

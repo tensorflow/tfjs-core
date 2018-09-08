@@ -86,30 +86,10 @@ function getSamplerFromInInfo(inInfo: InputInfo): string {
   }
 }
 
-function getPackedSamplerFromInInfo(inInfo: InputInfo): string {
-  const shape = inInfo.shapeInfo.logicalShape;
-  switch (shape.length) {
-    case 0:
-      return getSamplerScalar(inInfo);
-    case 1:
-      return getSamplerFlat(inInfo);
-    case 2:
-      return getPackedSampler2D(inInfo);
-    default:
-      throw new Error(
-          `${shape.length}-D input packed sampling` +
-          ` is not yet supported`);
-  }
-}
-
 function getInputSamplingSnippet(
     inInfo: InputInfo, outShapeInfo: ShapeInfo, broadcast: boolean): string {
   let res = getSamplerFlat(inInfo);
-  if (outShapeInfo.isPacked) {
-    res += getPackedSamplerFromInInfo(inInfo);
-  } else {
-    res += getSamplerFromInInfo(inInfo);
-  }
+  res += getSamplerFromInInfo(inInfo);
 
   // If input and output have matching logical shapes, add
   // getTexNameAtOutCoord() method that samples the input
@@ -593,31 +573,6 @@ function getSampler2D(inputInfo: InputInfo): string {
     return sampleTexture(${texName}, uv);
   }
 `;
-}
-
-function getPackedSampler2D(inputInfo: InputInfo): string {
-  const shape = inputInfo.shapeInfo.logicalShape;
-  const texName = inputInfo.name;
-  const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
-
-  if (inputInfo.shapeInfo.isUniform) {
-    return `
-      float ${funcName}(int row, int col) {
-        int index = row * ${shape[1]} + col;
-        return ${funcName}Flat(index);
-      }
-    `;
-  }
-
-  const texShape = inputInfo.shapeInfo.texShape;
-  const texNumR = texShape[0];
-  const texNumC = texShape[1];
-
-  return `
-    float ${funcName}(int row, int col) {
-      vec2 uv = (vec2(col, row) + halfCR) / vec2(${texNumC}, ${texNumR});
-      return sampleTexture(${texName}, uv);
-    }`;
 }
 
 function getSampler3D(inputInfo: InputInfo): string {
