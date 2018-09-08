@@ -34,12 +34,14 @@ export class PackProgram implements GPGPUProgram {
         int rp1 = r + 1;
         int cp1 = c + 1;
 
+        bool cEdge = cp1 >= ${outputShape[1]};
+        bool rEdge = rp1 >= ${outputShape[0]};
+
         gl_FragColor = vec4(
             getA(r, c),
-            cp1 >= ${outputShape[1]} ? 0. : getA(r, cp1),
-            rp1 >= ${outputShape[0]} ? 0. : getA(rp1, c),
-            rp1 >= ${outputShape[0]} || cp1 >= ${
-        outputShape[1]} ? 0. : getA(rp1, cp1)
+            cEdge ? 0. : getA(r, cp1),
+            rEdge ? 0. : getA(rp1, c),
+            rEdge || cEdge ? 0. : getA(rp1, cp1)
           );
       }
     `;

@@ -27,7 +27,6 @@ export class UnpackProgram implements GPGPUProgram {
 
     this.userCode = `
       void main() {
-        vec2 onePixel = 1. / vec2(${outputShape[1]}, ${outputShape[0]});
         vec2 modCoord = mod(gl_FragCoord.xy - halfCR, 2.);
 
         vec4 packedInput = texture2D(A,
