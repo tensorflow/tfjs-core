@@ -20,7 +20,8 @@ import * as util from '../../util';
 export type ShapeInfo = {
   logicalShape: number[],
   texShape: [number, number],
-  isUniform: boolean
+  isUniform: boolean,
+  isPacked: boolean
 };
 
 export type InputInfo = {
@@ -43,8 +44,16 @@ export function makeShader(
       inputsInfo.map(x => getInputSamplingSnippet(x, outputShape, broadcast))
           .join('\n');
   const outTexShape = outputShape.texShape;
-  const outputSamplingSnippet =
-      getOutputSamplingSnippet(outputShape.logicalShape, outTexShape);
+  let outputSamplingSnippet: string;
+
+  if (outputShape.isPacked) {
+    outputSamplingSnippet =
+        getPackedOutputSamplingSnippet(outputShape.logicalShape, outTexShape);
+  } else {
+    outputSamplingSnippet =
+        getOutputSamplingSnippet(outputShape.logicalShape, outTexShape);
+  }
+
   const source = [
     SHADER_PREFIX, FLOAT_TEXTURE_SAMPLE_SNIPPET,
     FLOAT_TEXTURE_SETOUTPUT_SNIPPET, inputPrefixSnippet, outputSamplingSnippet,
@@ -77,10 +86,30 @@ function getSamplerFromInInfo(inInfo: InputInfo): string {
   }
 }
 
+function getPackedSamplerFromInInfo(inInfo: InputInfo): string {
+  const shape = inInfo.shapeInfo.logicalShape;
+  switch (shape.length) {
+    case 0:
+      return getSamplerScalar(inInfo);
+    case 1:
+      return getSamplerFlat(inInfo);
+    case 2:
+      return getPackedSampler2D(inInfo);
+    default:
+      throw new Error(
+          `${shape.length}-D input packed sampling` +
+          ` is not yet supported`);
+  }
+}
+
 function getInputSamplingSnippet(
     inInfo: InputInfo, outShapeInfo: ShapeInfo, broadcast: boolean): string {
   let res = getSamplerFlat(inInfo);
-  res += getSamplerFromInInfo(inInfo);
+  if (outShapeInfo.isPacked) {
+    res += getPackedSamplerFromInInfo(inInfo);
+  } else {
+    res += getSamplerFromInInfo(inInfo);
+  }
 
   // If input and output have matching logical shapes, add
   // getTexNameAtOutCoord() method that samples the input
@@ -91,6 +120,21 @@ function getInputSamplingSnippet(
     res += getSamplerAtOutputCoords(inInfo, outShapeInfo, broadcast);
   }
   return res;
+}
+
+function getPackedOutputSamplingSnippet(
+    outShape: number[], outTexShape: [number, number]): string {
+  switch (outShape.length) {
+    case 0:
+      return getOutputScalarCoords();
+    case 1:
+      return getOutput1DCoords(outShape as [number], outTexShape);
+    case 2:
+      return getOutputPacked2DCoords(outShape as [number, number], outTexShape);
+    default:
+      throw new Error(
+          `${outShape.length}-D output packed sampling is not yet supported`);
+  }
 }
 
 function getOutputSamplingSnippet(
@@ -409,6 +453,16 @@ function getOutput6DCoords(
   `;
 }
 
+function getOutputPacked2DCoords(
+    shape: [number, number], texShape: [number, number]): string {
+  return `
+    ivec2 getOutputCoords() {
+      return 2 * ivec2(resultUV.yx * vec2(${Math.ceil(texShape[0] / 2)}, ${
+      Math.ceil(texShape[1] / 2)}));
+    }
+  `;
+}
+
 function getOutput2DCoords(
     shape: [number, number], texShape: [number, number]): string {
   if (util.arraysEqual(shape, texShape)) {
@@ -539,6 +593,31 @@ function getSampler2D(inputInfo: InputInfo): string {
     return sampleTexture(${texName}, uv);
   }
 `;
+}
+
+function getPackedSampler2D(inputInfo: InputInfo): string {
+  const shape = inputInfo.shapeInfo.logicalShape;
+  const texName = inputInfo.name;
+  const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
+
+  if (inputInfo.shapeInfo.isUniform) {
+    return `
+      float ${funcName}(int row, int col) {
+        int index = row * ${shape[1]} + col;
+        return ${funcName}Flat(index);
+      }
+    `;
+  }
+
+  const texShape = inputInfo.shapeInfo.texShape;
+  const texNumR = texShape[0];
+  const texNumC = texShape[1];
+
+  return `
+    float ${funcName}(int row, int col) {
+      vec2 uv = (vec2(col, row) + halfCR) / vec2(${texNumC}, ${texNumR});
+      return sampleTexture(${texName}, uv);
+    }`;
 }
 
 function getSampler3D(inputInfo: InputInfo): string {

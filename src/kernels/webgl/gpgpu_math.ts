@@ -56,7 +56,9 @@ export function compileProgram<T extends Tensor, K extends Tensor>(
     const shapeInfo = {
       logicalShape: input.shape,
       texShape: input.isUniform ? null : input.texData.texShape,
-      isUniform: input.isUniform
+      isUniform: input.isUniform,
+      isPacked: input.isUniform ? false :
+                                  input.texData.usage === TextureUsage.PACK
     };
     return {name: program.variableNames[i], shapeInfo};
   });
@@ -64,7 +66,8 @@ export function compileProgram<T extends Tensor, K extends Tensor>(
   const outShapeInfo = {
     logicalShape: output.shape,
     texShape: output.texData.texShape,
-    isUniform: false
+    isUniform: false,
+    isPacked: output.texData.usage === TextureUsage.PACK
   };
   const source = shader_compiler.makeShader(
       inputInfos, outShapeInfo, userCode,
