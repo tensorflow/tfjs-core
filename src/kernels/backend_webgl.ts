@@ -565,7 +565,14 @@ export class MathBackendWebGL implements KernelBackend {
   batchMatMul(
       a: Tensor3D, b: Tensor3D, transposeA: boolean,
       transposeB: boolean): Tensor3D {
-    if (a.shape[0] === 1 && b.shape[0] === 1) {
+    const outerShapeA = transposeA ? a.shape[2] : a.shape[1];
+    const outerShapeB = transposeB ? b.shape[1] : b.shape[2];
+
+    if (a.shape[0] === 1 && b.shape[0] === 1 &&
+        util.arraysEqual(
+            webgl_util.getTextureShapeFromLogicalShape(
+                this.gpgpu.gl, [outerShapeA, outerShapeB]),
+            [outerShapeA, outerShapeB])) {
       const aSqueezed = a.as2D(a.shape[1], a.shape[2]);
       const bSqueezed = b.as2D(b.shape[1], b.shape[2]);
 
@@ -582,12 +589,8 @@ export class MathBackendWebGL implements KernelBackend {
           packProgramB, [bSqueezed], packedBOutput);
 
       const program = new MatMulPackedProgram(
-          packedA.shape, packedB.shape,
-          [
-            transposeA ? aSqueezed.shape[1] : aSqueezed.shape[0],
-            transposeB ? bSqueezed.shape[0] : bSqueezed.shape[1]
-          ],
-          transposeA, transposeB);
+          packedA.shape, packedB.shape, [outerShapeA, outerShapeB], transposeA,
+          transposeB);
       const packedMatMulOutput = Tensor.make(program.outputShape, {});
       this.texData.get(packedMatMulOutput.dataId).usage = TextureUsage.PACK;
       const result =
