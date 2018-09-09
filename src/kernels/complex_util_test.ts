@@ -14,19 +14,20 @@
  * limitations under the License.
  * =============================================================================
  */
+import * as complex_util from './complex_util';
 
-import {setTestEnvs} from './jasmine_util';
-import {MathBackendCPU} from './kernels/backend_cpu';
-// tslint:disable-next-line:no-require-imports
-const jasmine = require('jasmine');
+describe('complex_util', () => {
+  it('mergeRealAndImagArrays', () => {
+    const real = new Float32Array([1, 2, 3]);
+    const imag = new Float32Array([4, 5, 6]);
+    const complex = complex_util.mergeRealAndImagArrays(real, imag);
+    expect(complex).toEqual(new Float32Array([1, 4, 2, 5, 3, 6]));
+  });
 
-process.on('unhandledRejection', e => {
-  throw e;
+  it('splitRealAndImagArrays', () => {
+    const complex = new Float32Array([1, 4, 2, 5, 3, 6]);
+    const result = complex_util.splitRealAndImagArrays(complex);
+    expect(result.real).toEqual(new Float32Array([1, 2, 3]));
+    expect(result.imag).toEqual(new Float32Array([4, 5, 6]));
+  });
 });
-
-setTestEnvs(
-    [{name: 'node', factory: () => new MathBackendCPU(), features: {}}]);
-
-const runner = new jasmine();
-runner.loadConfig({spec_files: ['src/**/**_test.ts'], random: false});
-runner.execute();

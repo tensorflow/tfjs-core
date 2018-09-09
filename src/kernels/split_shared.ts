@@ -14,15 +14,18 @@
  * limitations under the License.
  * =============================================================================
  */
-import {ENV} from '../environment';
 
-const DEFAULT_FLOAT32_EPSILON = 1e-8;
-const DEFAULT_FLOAT16_EPSILON = 1e-4;
+import {Tensor} from '../tensor';
 
-export function getOptimizerDefaultEpsilonValue() {
-  if (ENV.get('WEBGL_RENDER_FLOAT32_ENABLED')) {
-    return DEFAULT_FLOAT32_EPSILON;
-  }
-
-  return DEFAULT_FLOAT16_EPSILON;
+/** Shared implementation of the split kernel across WebGL and CPU. */
+export function split<T extends Tensor>(
+    x: T, sizeSplits: number[], axis: number): T[] {
+  const begin = Array(x.rank).fill(0);
+  const size = x.shape.slice();
+  return sizeSplits.map(s => {
+    size[axis] = s;
+    const slice = x.slice(begin, size);
+    begin[axis] += s;
+    return slice;
+  });
 }

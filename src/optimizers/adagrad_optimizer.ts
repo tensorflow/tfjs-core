@@ -18,11 +18,10 @@
 import {ENV} from '../environment';
 import {keep, tidy} from '../globals';
 import {fill, scalar} from '../ops/ops';
-import {ConfigDict, Serializable, SerializableConstructor, SerializationMap} from '../serialization';
+import {ConfigDict, registerClass, Serializable, SerializableConstructor} from '../serialization';
 import {Scalar} from '../tensor';
 import {NamedVariableMap} from '../tensor_types';
 import {Optimizer} from './optimizer';
-import * as optimizer_utils from './optimizer_utils';
 
 /** @doclink Optimizer */
 export class AdagradOptimizer extends Optimizer {
@@ -37,8 +36,7 @@ export class AdagradOptimizer extends Optimizer {
     super();
     this.c = keep(scalar(-learningRate));
 
-    const epsilon = optimizer_utils.getOptimizerDefaultEpsilonValue();
-    this.epsilon = keep(scalar(epsilon));
+    this.epsilon = keep(scalar(ENV.get('EPSILON')));
   }
 
   applyGradients(variableGradients: NamedVariableMap) {
@@ -88,4 +86,4 @@ export class AdagradOptimizer extends Optimizer {
     return new cls(config.learningRate, config.initialAccumulatorValue);
   }
 }
-SerializationMap.register(AdagradOptimizer);
+registerClass(AdagradOptimizer);

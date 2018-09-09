@@ -33,7 +33,7 @@ export class BrowserHTTPRequest implements IOHandler {
 
   readonly DEFAULT_METHOD = 'POST';
 
-  static readonly URL_SCHEMES = ['http://', 'https://'];
+  static readonly URL_SCHEME_REGEX = /^https?:\/\//;
 
   constructor(path: string|string[], requestInit?: RequestInit) {
     if (typeof fetch === 'undefined') {
@@ -139,8 +139,8 @@ export class BrowserHTTPRequest implements IOHandler {
     const graphPromise = this.loadBinaryTopology();
     const manifestPromise = await fetch(this.path[1], this.requestInit);
 
-    const [modelTopology, weightsManifestResponse] =
-        await Promise.all([graphPromise, manifestPromise]);
+    const results = await Promise.all([graphPromise, manifestPromise]);
+    const [modelTopology, weightsManifestResponse] = results;
 
     const weightsManifest =
         await weightsManifestResponse.json() as WeightsManifestConfig;
@@ -148,7 +148,8 @@ export class BrowserHTTPRequest implements IOHandler {
     let weightSpecs: WeightsManifestEntry[];
     let weightData: ArrayBuffer;
     if (weightsManifest != null) {
-      [weightSpecs, weightData] = await this.loadWeights(weightsManifest);
+      const results = await this.loadWeights(weightsManifest);
+      [weightSpecs, weightData] = results;
     }
 
     return {modelTopology, weightSpecs, weightData};
@@ -173,7 +174,8 @@ export class BrowserHTTPRequest implements IOHandler {
     if (weightsManifest != null) {
       const weightsManifest =
           modelConfig['weightsManifest'] as WeightsManifestConfig;
-      [weightSpecs, weightData] = await this.loadWeights(weightsManifest);
+      const results = await this.loadWeights(weightsManifest);
+      [weightSpecs, weightData] = results;
     }
 
     return {modelTopology, weightSpecs, weightData};
@@ -206,19 +208,27 @@ export class BrowserHTTPRequest implements IOHandler {
   }
 }
 
-export const httpRequestRouter: IORouter = (url: string) => {
+function isHTTPScheme(url: string): boolean {
+  return url.match(BrowserHTTPRequest.URL_SCHEME_REGEX) != null;
+}
+
+export const httpRequestRouter: IORouter = (url: string|string[]) => {
   if (typeof fetch === 'undefined') {
     // browserHTTPRequest uses `fetch`, if one wants to use it in node.js
     // they have to setup a global fetch polyfill.
     return null;
   } else {
-    for (const scheme of BrowserHTTPRequest.URL_SCHEMES) {
-      if (url.startsWith(scheme)) {
-        return browserHTTPRequest(url);
-      }
+    let isHTTP = true;
+    if (Array.isArray(url)) {
+      isHTTP = url.every(urlItem => isHTTPScheme(urlItem));
+    } else {
+      isHTTP = isHTTPScheme(url);
     }
-    return null;
+    if (isHTTP) {
+      return browserHTTPRequest(url);
+    }
   }
+  return null;
 };
 IORouterRegistry.registerSaveRouter(httpRequestRouter);
 IORouterRegistry.registerLoadRouter(httpRequestRouter);

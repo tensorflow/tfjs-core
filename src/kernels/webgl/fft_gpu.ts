@@ -18,11 +18,11 @@
 import {GPGPUProgram} from './gpgpu_math';
 
 export class FFTProgram implements GPGPUProgram {
-  variableNames = ['matrixA'];
+  variableNames = ['real', 'imag'];
   outputShape: number[];
   userCode: string;
 
-  constructor(inputShape: [number, number]) {
+  constructor(inputShape: number[]) {
     const size = inputShape[0];
     this.outputShape = [size, 2];
 
@@ -35,8 +35,8 @@ export class FFTProgram implements GPGPUProgram {
         float x = -2.0 * PI * float(row * i) / float(${size});
         float expR = cos(x);
         float expI = sin(x);
-        float real = getMatrixA(i, 0);
-        float imag = getMatrixA(i, 1);
+        float real = getReal(i);
+        float imag = getImag(i);
 
         if (col == 0) {
           // In case of real number

@@ -17,7 +17,7 @@
 
 import {ENV} from '../environment';
 import {op} from '../ops/operation';
-import {Tensor2D} from '../tensor';
+import {Tensor} from '../tensor';
 import {assert} from '../util';
 
 /**
@@ -26,16 +26,17 @@ import {assert} from '../util';
  * Inner-most value represents a complex value.
  *
  * ```js
- * const x = tf.tensor2d([1, 0], [2, 0]);
+ * const real = tf.tensor1d([1, 2, 3]);
+ * const imag = tf.tensor1d([1, 2, 3]);
+ * const x = tf.complex(real, imag);
  *
  * x.fft().print();
  * ```
- * @param {Tensor2D} input
+ * @param {Tensor} input
  * @private
  */
-function fft_(input: Tensor2D): Tensor2D {
-  assert(input.shape[1] === 2,
-    'Inner dimension must be 2 to represents complex number');
+function fft_(input: Tensor): Tensor {
+  assert(input.dtype === 'complex64', 'dtype must be complex64');
   const ret = ENV.engine.runKernel(backend => backend.fft(input), {input});
   return ret;
 }
