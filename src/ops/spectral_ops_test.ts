@@ -54,9 +54,9 @@ describeWithFlags('FFT', ALL_ENVS, () => {
       [-5.9999995, -6, 2.3660252, 0.63397473, 0.6339747, 2.3660254]);
   });
 
-  // it('should throw exception with invalid complex number', () => {
-  //   const t = tf.tensor2d([[1], [2], [3]]);
-  //   expect(() => tf.fft(t))
-  //     .toThrowError('Inner dimension must be 2 to represents complex number');
-  // });
+  it('should throw exception with invalid complex number', () => {
+    const t = tf.tensor2d([[1], [2], [3]]);
+    expect(() => tf.fft(t))
+      .toThrowError('dtype must be complex64');
+  });
 });
