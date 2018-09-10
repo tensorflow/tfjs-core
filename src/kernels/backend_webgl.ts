@@ -573,7 +573,8 @@ export class MathBackendWebGL implements KernelBackend {
     // pack shader needs its input to be a 2D matrix, and our unpack shader
     // needs its input to be a 2D matrix whose physical dimensions match its
     // logical dimensions.
-    if (a.shape[0] === 1 && b.shape[0] === 1 &&
+    if (ENV.get('WEBGL_RENDER_FLOAT32_ENABLED') && a.shape[0] === 1 &&
+        b.shape[0] === 1 &&
         util.arraysEqual(
             webgl_util.getTextureShapeFromLogicalShape(
                 this.gpgpu.gl, [outerShapeA, outerShapeB]),
