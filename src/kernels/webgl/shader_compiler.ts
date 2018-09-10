@@ -205,6 +205,15 @@ const SHADER_PREFIX = `
   varying vec2 resultUV;
   const vec2 halfCR = vec2(0.5, 0.5);
 
+  struct vec5
+  {
+    float x;
+    float y;
+    float z;
+    float w;
+    float u;
+  };
+
   struct ivec5
   {
     int x;
@@ -254,6 +263,10 @@ const SHADER_PREFIX = `
     vec3 p3  = fract(vec3(p.xyx) * HASHSCALE1);
     p3 += dot(p3, p3.yzx + 19.19);
     return fract((p3.x + p3.y) * p3.z);
+  }
+
+  float dot(vec5 a, vec5 b) {
+    return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w + a.u * b.u;
   }
 
   ${SAMPLE_1D_SNIPPET}

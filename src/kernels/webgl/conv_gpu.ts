@@ -154,10 +154,10 @@ export class Conv3DProgram implements GPGPUProgram {
         int batch = coords.x;
         int d2 = coords.u;
 
-        ivec3 xFRCCorner = coords.yx * strides - pads;
-        int xFCorner = xFRCCorner.z;
-        int xRCorner = xFRCCorner.x;
-        int xCCorner = xFRCCorner.y;
+        ivec3 xFRCCorner = ivec3(coords.y, coords.z, coords.w) * strides - pads;
+        int xFCorner = xFRCCorner.x;
+        int xRCorner = xFRCCorner.y;
+        int xCCorner = xFRCCorner.z;
 
         // Convolve x(?, ?, ?, d1) with w(:, :, :, d1, d2) to get
         // y(yF, yR, yC, d2). ? = to be determined. : = across all
@@ -184,7 +184,6 @@ export class Conv3DProgram implements GPGPUProgram {
                 continue;
               }
 
-              //TODO: not sure if this is correct
               for (int d1 = 0; d1 < ${inputDepthNearestVec5}; d1 += 5) {
                 vec5 xValues = vec5(
                   getX(batch, xF, xR, xC, d1),
