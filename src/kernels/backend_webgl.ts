@@ -568,6 +568,11 @@ export class MathBackendWebGL implements KernelBackend {
     const outerShapeA = transposeA ? a.shape[2] : a.shape[1];
     const outerShapeB = transposeB ? b.shape[1] : b.shape[2];
 
+    // TODO(annxingyuan): Support 3D tensors
+    // We're restricting packed matMul to these conditions because for now, our
+    // pack shader needs its input to be a 2D matrix, and our unpack shader
+    // needs its input to be a 2D matrix whose physical dimensions match its
+    // logical dimensions.
     if (a.shape[0] === 1 && b.shape[0] === 1 &&
         util.arraysEqual(
             webgl_util.getTextureShapeFromLogicalShape(
