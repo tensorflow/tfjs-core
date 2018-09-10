@@ -1,15 +1,13 @@
-import {tensor} from '../ops/tensor_ops';
+import {ENV} from '../environment';
+// import {tensor} from '../ops/tensor_ops';
 import {Tensor} from '../tensor';
+import {convertToTensor} from '../tensor_util_env';
 
 import {op} from './operation';
 
-function diag_(t: Tensor): Tensor {
-  const arr = Array.from(t.dataSync());
-  const m = arr.reduce((a, b, i, d) => {
-    a.push(...d.map((e, ind) => ind === i ? e : 0));
-    return a;
-  }, []);
-  return tensor(m, [...t.shape, ...t.shape]);
+function diag_(x: Tensor): Tensor {
+  const $x = convertToTensor(x, 'x', 'diag');
+  return ENV.engine.runKernel(backend => backend.diag($x), {$x});
 }
 
 export const diag = op({diag_});

@@ -215,6 +215,19 @@ export class MathBackendCPU implements KernelBackend {
     return buffer.toTensor().reshape(shape) as T;
   }
 
+  diag(x: Tensor): Tensor {
+    const xBuffer = x.buffer();
+    const allVals = [];
+    for (let i = 0; i < x.size; i++) {
+      const arr = Array(x.size).fill(0);
+      arr[i] = xBuffer.get(i);
+      allVals.push(...arr);
+    }
+    return ops
+        .buffer([...x.shape, ...x.shape], x.dtype, Float32Array.from(allVals))
+        .toTensor();
+  }
+
   reverse<T extends Tensor>(x: T, axis: number[]): T {
     const buffer = ops.buffer(x.shape, x.dtype);
     const xBuffer = x.buffer();
