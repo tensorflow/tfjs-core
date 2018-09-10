@@ -159,9 +159,6 @@ export class Conv3DDerFilterProgram implements GPGPUProgram {
         int d1 = coords.w;
         int d2 = coords.u;
 
-        // Convolve x(?, ?, ?, d1) with dy(:, :, :, d2) to get
-        // dw(wF, wR, wC, d1, d2). ? = to be determined. : = across all
-        // values in that axis.
         float dotProd = 0.0;
 
         for (int b = 0; b < ${convInfo.batchSize}; b++) {
@@ -226,14 +223,11 @@ export class Conv3DDerInputProgram implements GPGPUProgram {
         int batch = coords.x;
         int d1 = coords.u;
 
-        ivec3 dyCorner = coords.xyz - pads;
+        ivec3 dyCorner = ivec3(coords.x, coords.y, coords.z) - pads;
         int dyFCorner = dyCorner.x
         int dyRCorner = dyCorner.y;
         int dyCCorner = dyCorner.z;
 
-        // Convolve dy(?, ?, ?, d2) with w(:, :, :, d1, d2) to compute
-        // dx(xF, xR, xC, d1). ? = to be determined. : = across all values
-        // in that axis.
         float dotProd = 0.0;
         for (int wF = 0; wF < ${filterDepth}; wF++) {
           float dyF = float(dyFCorner + wF) / ${strideDepth}.0;

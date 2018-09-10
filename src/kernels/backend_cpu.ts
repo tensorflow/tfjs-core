@@ -1523,7 +1523,6 @@ export class MathBackendCPU implements KernelBackend {
     return dx.toTensor();
   }
 
-  // TOOD: possible I'm assigning dx.strides values incorrectly.
   conv3dDerInput(dy: Tensor5D, filter: Tensor5D, convInfo: Conv3DInfo):
       Tensor5D {
     const dx = ops.buffer<Rank.R5>(convInfo.inShape, 'float32');
@@ -1584,8 +1583,6 @@ export class MathBackendCPU implements KernelBackend {
                   const wR = yR * strideHeight - xRCorner;
 
                   for (let yC = xCMin; yC < yCMax; ++yC) {
-                    // TODO: do computed strides (dyS0, dyS1, etc.) correspond
-                    // with order of window dimensions?
                     const wC = yC * strideWidth - xCCorner;
                     const dyOffset =
                         dyS0 * b + dyS1 * yF + dyS2 * yR + dyS3 * yC;
@@ -2852,8 +2849,8 @@ export class MathBackendCPU implements KernelBackend {
     const boxIndVals = boxIndex.dataSync();
     const imageVals = images.dataSync();
 
-    const inStride = images.strides; // to calculate flat indexes into image
-    const outStride = output.strides; // to calculate flat indexes into output
+    const inStride = images.strides;   // to calculate flat indexes into image
+    const outStride = output.strides;  // to calculate flat indexes into output
 
     // Reference implementation
     // tslint:disable-next-line:max-line-length
@@ -2871,14 +2868,12 @@ export class MathBackendCPU implements KernelBackend {
       }
 
       const heightScale = (cropHeight > 1) ?
-        (y2 - y1) * (imageHeight - 1) / (cropHeight - 1) :
-        0;
-      const widthScale = (cropWidth > 1) ?
-        (x2 - x1) * (imageWidth - 1) / (cropWidth - 1) :
-        0;
+          (y2 - y1) * (imageHeight - 1) / (cropHeight - 1) :
+          0;
+      const widthScale =
+          (cropWidth > 1) ? (x2 - x1) * (imageWidth - 1) / (cropWidth - 1) : 0;
 
       for (let y = 0; y < cropHeight; y++) {
-
         const yInd: number = (cropHeight > 1) ?
             y1 * (imageHeight - 1) + y * (heightScale) :
             0.5 * (y1 + y2) * (imageHeight - 1);
@@ -2886,8 +2881,8 @@ export class MathBackendCPU implements KernelBackend {
         if (yInd < 0 || yInd > imageHeight - 1) {
           for (let x = 0; x < cropWidth; x++) {
             for (let c = 0; c < numChannels; c++) {
-              const ind = c + x * outStride[2] + y * outStride[1] +
-                  b * outStride[0];
+              const ind =
+                  c + x * outStride[2] + y * outStride[1] + b * outStride[0];
               output.values[ind] = extrapolationValue;
             }
           }
@@ -2900,15 +2895,14 @@ export class MathBackendCPU implements KernelBackend {
           const yLerp = yInd - topInd;
 
           for (let x = 0; x < cropWidth; x++) {
-
             const xInd = (cropWidth > 1) ?
                 x1 * (imageWidth - 1) + x * widthScale :
                 0.5 * (x1 + x2) * (imageWidth - 1);
 
             if (xInd < 0 || xInd > imageWidth - 1) {
               for (let c = 0; c < numChannels; c++) {
-                const ind = c + x * outStride[2] + y * outStride[1] +
-                    b * outStride[0];
+                const ind =
+                    c + x * outStride[2] + y * outStride[1] + b * outStride[0];
                 output.values[ind] = extrapolationValue;
               }
               continue;
@@ -2938,8 +2932,7 @@ export class MathBackendCPU implements KernelBackend {
               const top = topLeft + (topRight - topLeft) * xLerp;
               const bottom = bottomLeft + (bottomRight - bottomLeft) * xLerp;
 
-              ind = c + x * outStride[2] + y * outStride[1] +
-                    b * outStride[0];
+              ind = c + x * outStride[2] + y * outStride[1] + b * outStride[0];
               output.values[ind] = top + ((bottom - top) * yLerp);
             }
           }
@@ -2951,8 +2944,8 @@ export class MathBackendCPU implements KernelBackend {
 
             if (xInd < 0 || xInd > imageWidth - 1) {
               for (let c = 0; c < numChannels; c++) {
-                const ind = c + x * outStride[2] + y * outStride[1] +
-                    b * outStride[0];
+                const ind =
+                    c + x * outStride[2] + y * outStride[1] + b * outStride[0];
                 output.values[ind] = extrapolationValue;
               }
               continue;
@@ -2961,10 +2954,10 @@ export class MathBackendCPU implements KernelBackend {
             const closestX = Math.round(xInd);
             const closestY = Math.round(yInd);
             for (let c = 0; c < numChannels; c++) {
-              const inInd = c + closestX * inStride[2]
-                  + closestY * inStride[1] + bInd * inStride[0];
-              const outInd = c + x * outStride[2] + y * outStride[1] +
-                  b * outStride[0];
+              const inInd = c + closestX * inStride[2] +
+                  closestY * inStride[1] + bInd * inStride[0];
+              const outInd =
+                  c + x * outStride[2] + y * outStride[1] + b * outStride[0];
               output.values[outInd] = imageVals[inInd];
             }
           }

@@ -119,8 +119,6 @@ export class Conv2DProgram implements GPGPUProgram {
   }
 }
 
-// TODO: verify correctness.
-// likely jumbled the order of coords x, y, z
 export class Conv3DProgram implements GPGPUProgram {
   variableNames = ['x', 'W'];
   outputShape: number[];
