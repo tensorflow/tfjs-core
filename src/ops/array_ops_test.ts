@@ -17,8 +17,9 @@
 
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
-import {ALL_ENVS, BROWSER_ENVS, expectArraysClose, expectArraysEqual, expectPromiseToFail, expectValuesInRange, NODE_ENVS, WEBGL_ENVS, CPU_ENVS} from '../test_util';
+import {ALL_ENVS, BROWSER_ENVS, CPU_ENVS, expectArraysClose, expectArraysEqual, expectPromiseToFail, expectValuesInRange, NODE_ENVS, WEBGL_ENVS} from '../test_util';
 import * as util from '../util';
+
 import {expectArrayInMeanStdRange, jarqueBeraNormalityTest} from './rand_util';
 
 describeWithFlags('zeros', ALL_ENVS, () => {
@@ -1865,7 +1866,7 @@ describeWithFlags('clone', ALL_ENVS, () => {
 
   it('4D complex64 dtype', () => {
     const a = tf.complex(
-      [[[[1]], [[3]]], [[[5]], [[7]]]], [[[[2]], [[4]]], [[[6]], [[8]]]]);
+        [[[[1]], [[3]]], [[[5]], [[7]]]], [[[[2]], [[4]]], [[[6]], [[8]]]]);
     const b = tf.clone(a);
     expect(b.dtype).toBe('complex64');
     expect(b.shape).toEqual([2, 2, 1, 1]);
@@ -2940,7 +2941,7 @@ describeWithFlags('split', ALL_ENVS, () => {
 
   it('gradient of 1st output', () => {
     const a = tf.tensor1d([1, 2, 3]);
-    const da = tf.grad(x => tf.split(x, [1,2])[0])(a);
+    const da = tf.grad(x => tf.split(x, [1, 2])[0])(a);
 
     expect(da.shape).toEqual([3]);
     expectArraysClose(da, [1, 0, 0]);
@@ -2948,7 +2949,7 @@ describeWithFlags('split', ALL_ENVS, () => {
 
   it('gradient of 2nd output', () => {
     const a = tf.tensor1d([1, 2, 3]);
-    const da = tf.grad(x => tf.split(x, [1,2])[1])(a);
+    const da = tf.grad(x => tf.split(x, [1, 2])[1])(a);
 
     expect(da.shape).toEqual([3]);
     expectArraysClose(da, [0, 1, 1]);
@@ -3249,7 +3250,8 @@ describeWithFlags('batchToSpaceND', ALL_ENVS, () => {
     const crops = [[0, 0], [0, 0], [0, 0], [0, 0]];
 
     expect(() => tf.batchToSpaceND(t, blockShape, crops))
-        .toThrowError('input rank should be > than [blockShape] but got 4');
+        .toThrowError(`input rank is ${
+            t.rank} but should be > than [blockShape] ${blockShape.length}`);
   });
 
   it('throws when crops row dimension not equal to blockshape', () => {
@@ -3258,17 +3260,21 @@ describeWithFlags('batchToSpaceND', ALL_ENVS, () => {
     const crops = [[0, 0]];
 
     expect(() => tf.batchToSpaceND(t, blockShape, crops))
-        .toThrowError('crops.shape[0] must be equal to [blockShape] but got 1');
+        .toThrowError(`crops.shape[0] is ${
+            crops.length} but should be equal to [blockShape] ${
+            blockShape.length}`);
   });
 
   it('throws when input tensor batch not divisible by prod(blockShape)', () => {
     const t = tf.tensor4d([1, 2, 3, 4, 5], [5, 1, 1, 1]);
     const blockShape = [2, 2];
     const crops = [[0, 0], [0, 0]];
+    const prod = blockShape.reduce((a, b) => a * b);
 
     expect(() => tf.batchToSpaceND(t, blockShape, crops))
         .toThrowError(
-            'input tensor batch must be divisible by prod( blockShape )');
+          `input tensor batch is ${
+            t.shape[0]} but is not divisible by prod( blockShape ) ${prod}`);
   });
 
   it('accepts a tensor-like object', () => {
@@ -3428,8 +3434,8 @@ describeWithFlags('spaceToBatchND', ALL_ENVS, () => {
 
        expect(() => tf.spaceToBatchND(t, blockShape, paddings))
            .toThrowError(
-               'input spatial dimensions 2,3,1 with paddings 0,0,0,0 must be '
-               + 'divisible by blockShapes 2,2');
+               'input spatial dimensions 2,3,1 with paddings 0,0,0,0 must be ' +
+               'divisible by blockShapes 2,2');
      });
 
   it('accepts a tensor-like object', () => {
