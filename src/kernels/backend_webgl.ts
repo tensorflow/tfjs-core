@@ -48,6 +48,7 @@ import {DepthwiseConv2DDerFilterProgram, DepthwiseConv2DDerInputProgram} from '.
 import {Conv2DProgram} from './webgl/conv_gpu';
 import {DepthwiseConv2DProgram} from './webgl/conv_gpu_depthwise';
 import {CumSumProgram} from './webgl/cumsum_gpu';
+import {DiagProgram} from './webgl/diag_gpu';
 import {EncodeFloatProgram} from './webgl/encode_float_gpu';
 import {FromPixelsProgram} from './webgl/from_pixels_gpu';
 import {GatherProgram} from './webgl/gather_gpu';
@@ -1231,6 +1232,11 @@ export class MathBackendWebGL implements KernelBackend {
       Tensor2D {
     const program = new OneHotProgram(indices.size, depth, onValue, offValue);
     return this.compileAndRun(program, [indices]);
+  }
+
+  diag(x: Tensor): Tensor {
+    const program = new DiagProgram(x.shape);
+    return this.compileAndRun(program, [x]);
   }
 
   nonMaxSuppression(

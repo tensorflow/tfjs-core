@@ -250,4 +250,6 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
       iouThreshold: number, scoreThreshold?: number): Tensor1D;
 
   dispose(): void;
+
+  diag(x: Tensor): Tensor;
 }
