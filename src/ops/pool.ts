@@ -46,12 +46,17 @@ import {op} from './operation';
  * @param dimRoundingMode The rounding mode used when computing output
  *     dimensions if pad is a number. If none is provided, it will not round
  *     and error if the output is of fractional size.
+ * @param dataFormat An optional string from: "NHWC", "NCHW". Defaults to
+ *     "NHWC". Specify the data format of the input and output data. With the
+ *     default format "NHWC", the data is stored in the order of: [batch,
+ *     height, width, channels]. Only "NHWC" is currently supported.
  */
 /** @doc {heading: 'Operations', subheading: 'Convolution'} */
-function maxPool_<T extends Tensor3D|Tensor4D>(
+function maxPoolImpl_<T extends Tensor3D|Tensor4D>(
     x: T|TensorLike, filterSize: [number, number]|number,
     strides: [number, number]|number, dilations: [number, number]|number,
-    pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil'): T {
+    pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil',
+    dataFormat?: 'NHWC'|'NCHW'): T {
   const $x = convertToTensor(x, 'x', 'maxPool');
 
   let x4D = $x as Tensor4D;
@@ -70,6 +75,13 @@ function maxPool_<T extends Tensor3D|Tensor4D>(
       conv_util.eitherStridesOrDilationsAreOne(strides, dilations),
       'Error in maxPool: Either strides or dilations must be 1. ' +
           `Got strides ${strides} and dilations '${dilations}'`);
+  if (dataFormat == null) {
+    dataFormat = 'NHWC';
+  }
+  util.assert(
+      dataFormat === 'NHWC',
+      `Error in conv2d: got dataFormat of ${
+          dataFormat} but only NHWC is currently supported.`);
   if (dimRoundingMode != null) {
     util.assert(
         util.isInt(pad as number),
@@ -89,6 +101,122 @@ function maxPool_<T extends Tensor3D|Tensor4D>(
 
   const res = ENV.engine.runKernel(
       (backend, save) => save(backend.maxPool(x4D, convInfo)), {x: x4D}, grad);
+  if (reshapedTo4D) {
+    return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as T;
+  }
+  return res as T;
+}
+
+/**
+ * Computes the 2D max pooling of an image.
+ *
+ * @param x The input tensor, of rank 4 or rank 3 of shape
+ *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is assumed.
+ * @param filterSize The filter size, a tuple `[filterHeight, filterWidth]`.
+ * @param strides The strides of the pooling: `[strideHeight, strideWidth]`.
+ * @param dilations The dilation rates: `[dilationHeight, dilationWidth]`
+ *     in which we sample input values across the height and width dimensions
+ *     in dilated pooling. Defaults to `[1, 1]`. If `dilations` is a single
+ *     number, then `dilationHeight == dilationWidth`. If it is greater than
+ *     1, then all values of `strides` must be 1.
+ * @param pad The type of padding algorithm.
+ *    - `same` and stride 1: output will be of same size as input,
+ *       regardless of filter size.
+ *    - `valid`: output will be smaller than input if filter is larger
+ *       than 1x1.
+ *    - For more info, see this guide:
+ *     [https://www.tensorflow.org/api_guides/python/nn#Convolution](
+ *          https://www.tensorflow.org/api_guides/python/nn#Convolution)
+ * @param dimRoundingMode The rounding mode used when computing output
+ *     dimensions if pad is a number. If none is provided, it will not round
+ *     and error if the output is of fractional size.
+ */
+/** @doc {heading: 'Operations', subheading: 'Convolution'} */
+function maxPool_<T extends Tensor3D|Tensor4D>(
+    x: T|TensorLike, filterSize: [number, number]|number,
+    strides: [number, number]|number, pad: 'valid'|'same'|number,
+    dimRoundingMode?: 'floor'|'round'|'ceil'): T {
+  return maxPoolImpl_(x, filterSize, strides, 1, pad, dimRoundingMode);
+}
+
+/**
+ * Computes the 2D average pooling of an image.
+ *
+ * @param x The input tensor, of rank 4 or rank 3 of shape
+ *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is assumed.
+ * @param filterSize The filter size, a tuple `[filterHeight, filterWidth]`.
+ * @param strides The strides of the pooling: `[strideHeight, strideWidth]`.
+ * @param dilations The dilation rates: `[dilationHeight, dilationWidth]`
+ *     in which we sample input values across the height and width dimensions
+ *     in dilated pooling. Defaults to `[1, 1]`. If `dilations` is a single
+ *     number, then `dilationHeight == dilationWidth`. If it is greater than
+ *     1, then all values of `strides` must be 1.
+ * @param pad The type of padding algorithm:
+ *    - `same` and stride 1: output will be of same size as input,
+ *       regardless of filter size.
+ *    - `valid`: output will be smaller than input if filter is larger
+ *       than 1x1.
+ *    - For more info, see this guide:
+ *     [https://www.tensorflow.org/api_guides/python/nn#Convolution](
+ *         https://www.tensorflow.org/api_guides/python/nn#Convolution)
+ * @param dimRoundingMode The rounding mode used when computing output
+ *     dimensions if pad is a number. If none is provided, it will not round
+ *     and error if the output is of fractional size.
+ * @param dataFormat An optional string from: "NHWC", "NCHW". Defaults to
+ *     "NHWC". Specify the data format of the input and output data. With the
+ *     default format "NHWC", the data is stored in the order of: [batch,
+ *     height, width, channels]. Only "NHWC" is currently supported.
+ */
+/** @doc {heading: 'Operations', subheading: 'Convolution'} */
+function avgPoolImpl_<T extends Tensor3D|Tensor4D>(
+    x: T|TensorLike, filterSize: [number, number]|number,
+    strides: [number, number]|number, dilations: [number, number]|number,
+    pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil',
+    dataFormat?: 'NHWC'|'NCHW'): T {
+  const $x = convertToTensor(x, 'x', 'avgPool');
+  util.assert(
+      $x.dtype === 'float32', 'The input dtype to avgPool must be float32');
+  if (dilations == null) {
+    dilations = [1, 1];
+  }
+  util.assert(
+      conv_util.eitherStridesOrDilationsAreOne(strides, dilations),
+      'Error in avgPool: Either strides or dilations must be 1. ' +
+          `Got strides ${strides} and dilations '${dilations}'`);
+  if (dataFormat == null) {
+    dataFormat = 'NHWC';
+  }
+  util.assert(
+      dataFormat === 'NHWC',
+      `Error in conv2d: got dataFormat of ${
+          dataFormat} but only NHWC is currently supported.`);
+  let x4D = $x as Tensor4D;
+  let reshapedTo4D = false;
+  if ($x.rank === 3) {
+    reshapedTo4D = true;
+    x4D = $x.as4D(1, $x.shape[0], $x.shape[1], $x.shape[2]);
+  }
+  util.assert(
+      x4D.rank === 4,
+      `Error in avgPool: x must be rank 4 but got rank ${x4D.rank}.`);
+  if (dimRoundingMode != null) {
+    util.assert(
+        util.isInt(pad as number),
+        `Error in avgPool: pad must be an integer when using, ` +
+            `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
+  }
+
+  const convInfo = conv_util.computePool2DInfo(
+      x4D.shape, filterSize, strides, dilations, pad);
+
+  const grad = (dy: Tensor4D) => {
+    return {
+      x: () => avgPoolBackprop(dy, x4D, filterSize, strides, dilations, pad)
+    };
+  };
+  let res = ENV.engine.runKernel(
+      backend => backend.avgPool(x4D, convInfo), {x: x4D}, grad);
+  res = res.cast($x.dtype);
   if (reshapedTo4D) {
     return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as T;
   }
@@ -122,49 +250,56 @@ function maxPool_<T extends Tensor3D|Tensor4D>(
 /** @doc {heading: 'Operations', subheading: 'Convolution'} */
 function avgPool_<T extends Tensor3D|Tensor4D>(
     x: T|TensorLike, filterSize: [number, number]|number,
-    strides: [number, number]|number, dilations: [number, number]|number,
-    pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil'): T {
-  const $x = convertToTensor(x, 'x', 'avgPool');
-  util.assert(
-      $x.dtype === 'float32', 'The input dtype to avgPool must be float32');
-  if (dilations == null) {
-    dilations = [1, 1];
-  }
-  util.assert(
-      conv_util.eitherStridesOrDilationsAreOne(strides, dilations),
-      'Error in avgPool: Either strides or dilations must be 1. ' +
-          `Got strides ${strides} and dilations '${dilations}'`);
-  let x4D = $x as Tensor4D;
-  let reshapedTo4D = false;
-  if ($x.rank === 3) {
-    reshapedTo4D = true;
-    x4D = $x.as4D(1, $x.shape[0], $x.shape[1], $x.shape[2]);
-  }
-  util.assert(
-      x4D.rank === 4,
-      `Error in avgPool: x must be rank 4 but got rank ${x4D.rank}.`);
-  if (dimRoundingMode != null) {
-    util.assert(
-        util.isInt(pad as number),
-        `Error in avgPool: pad must be an integer when using, ` +
-            `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
-  }
+    strides: [number, number]|number, pad: 'valid'|'same'|number,
+    dimRoundingMode?: 'floor'|'round'|'ceil'): T {
+  return avgPoolImpl_(x, filterSize, strides, 1, pad, dimRoundingMode);
+}
 
-  const convInfo = conv_util.computePool2DInfo(
-      x4D.shape, filterSize, strides, dilations, pad);
-
-  const grad = (dy: Tensor4D) => {
-    return {
-      x: () => avgPoolBackprop(dy, x4D, filterSize, strides, dilations, pad)
-    };
-  };
-  let res = ENV.engine.runKernel(
-      backend => backend.avgPool(x4D, convInfo), {x: x4D}, grad);
-  res = res.cast($x.dtype);
-  if (reshapedTo4D) {
-    return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as T;
+/**
+ * Computes the 2D average pooling of an image.
+ *
+ * @param input The input tensor, of rank 4 or rank 3 of shape
+ *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is assumed.
+ * @param windowShape The filter size, a tuple `[filterHeight, filterWidth]`.
+ * @param poolingType The type of pooling, either 'max' or 'avg'.
+ * @param pad The type of padding algorithm:
+ *    - `same` and stride 1: output will be of same size as input,
+ *       regardless of filter size.
+ *    - `valid`: output will be smaller than input if filter is larger
+ *       than 1x1.
+ *    - For more info, see this guide:
+ *     [https://www.tensorflow.org/api_guides/python/nn#Convolution](
+ *         https://www.tensorflow.org/api_guides/python/nn#Convolution)
+ * @param dilations The dilation rates: `[dilationHeight, dilationWidth]`
+ *     in which we sample input values across the height and width dimensions
+ *     in dilated pooling. Defaults to `[1, 1]`. If `dilations` is a single
+ *     number, then `dilationHeight == dilationWidth`. If it is greater than
+ *     1, then all values of `strides` must be 1.
+ * @param strides The strides of the pooling: `[strideHeight, strideWidth]`.
+ * @param name A string name, ignored here but included for cross-compatibility.
+ * @param dataFormat An optional string from: "NHWC", "NCHW". Defaults to
+ *     "NHWC". Specify the data format of the input and output data. With the
+ *     default format "NHWC", the data is stored in the order of: [batch,
+ *     height, width, channels]. Only "NHWC" is currently supported.
+ */
+function pool_<T extends Tensor3D|Tensor4D>(
+    input: T|TensorLike, windowShape: [number, number]|number,
+    poolingType: 'avg'|'max', padding: 'valid'|'same'|number,
+    dilationRate?: [number, number]|number, strides?: [number, number]|number,
+    name?: string, dataFormat?: 'NHWC'|'NCHW') {
+  if (dilationRate == null) {
+    dilationRate = 1;
   }
-  return res as T;
+  if (strides == null) {
+    strides = 1;
+  }
+  if (poolingType === 'avg') {
+    return avgPoolImpl_(
+        input, windowShape, strides, dilationRate, padding, null, dataFormat);
+  } else {
+    return maxPoolImpl_(
+        input, windowShape, strides, dilationRate, padding, null, dataFormat);
+  }
 }
 
 /**
@@ -291,3 +426,4 @@ function avgPoolBackprop<T extends Tensor3D|Tensor4D>(
 
 export const maxPool = op({maxPool_});
 export const avgPool = op({avgPool_});
+export const pool = op({pool_});

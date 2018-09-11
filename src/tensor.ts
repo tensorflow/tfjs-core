@@ -307,12 +307,17 @@ export interface OpHandler {
       dataFormat: 'NHWC'|'NCHW'): T;
   maxPool<T extends Tensor3D|Tensor4D>(
       x: T, filterSize: [number, number]|number,
-      strides: [number, number]|number, dilations: [number, number]|number,
-      pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil'): T;
+      strides: [number, number]|number, pad: 'valid'|'same'|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T;
   avgPool<T extends Tensor3D|Tensor4D>(
       x: T, filterSize: [number, number]|number,
-      strides: [number, number]|number, dilations: [number, number]|number,
-      pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil'): T;
+      strides: [number, number]|number, pad: 'valid'|'same'|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T;
+  pool<T extends Tensor3D|Tensor4D>(
+      input: T, windowShape: [number, number]|number, poolingType: 'avg'|'max',
+      padding: 'valid'|'same'|number, diationRate?: [number, number]|number,
+      strides?: [number, number]|number, name?: string,
+      dataFormat?: 'NHWC'|'NCHW'): T;
   localResponseNormalization<T extends Tensor3D|Tensor4D>(
       x: T, depthRadius: number, bias: number, alpha: number, beta: number): T;
   unsortedSegmentSum<T extends Tensor>(
@@ -1182,24 +1187,32 @@ export class Tensor<R extends Rank = Rank> {
   // Pooling.
   avgPool<T extends Tensor3D|Tensor4D>(
       this: T, filterSize: [number, number]|number,
-      strides: [number, number]|number, dilations: [number, number]|number,
-      pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil'): T {
+      strides: [number, number]|number, pad: 'valid'|'same'|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     (this as Tensor).throwIfDisposed();
-    return opHandler.avgPool(
-        this, filterSize, strides, dilations, pad, dimRoundingMode);
+    return opHandler.avgPool(this, filterSize, strides, pad, dimRoundingMode);
   }
   maxPool<T extends Tensor3D|Tensor4D>(
       this: T, filterSize: [number, number]|number,
-      strides: [number, number]|number, dilations: [number, number]|number,
-      pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil'): T {
+      strides: [number, number]|number, pad: 'valid'|'same'|number,
+      dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     (this as Tensor).throwIfDisposed();
-    return opHandler.maxPool(
-        this, filterSize, strides, dilations, pad, dimRoundingMode);
+    return opHandler.maxPool(this, filterSize, strides, pad, dimRoundingMode);
   }
   localResponseNormalization<T extends Tensor3D|Tensor4D>(
       this: T, radius = 5, bias = 1, alpha = 1, beta = 0.5): T {
     return opHandler.localResponseNormalization(
         this, radius, bias, alpha, beta);
+  }
+  pool<T extends Tensor3D|Tensor4D>(
+      this: T, windowShape: [number, number]|number, poolingType: 'max'|'avg',
+      padding: 'valid'|'same'|number, dilationRate?: [number, number]|number,
+      strides?: [number, number]|number, name?: string,
+      dataFormat?: 'NHWC'|'NCHW'): T {
+    (this as Tensor).throwIfDisposed();
+    return opHandler.pool(
+        this, windowShape, poolingType, padding, dilationRate, strides, name,
+        dataFormat);
   }
 
   variable(trainable = true, name?: string, dtype?: DataType): Variable<R> {
