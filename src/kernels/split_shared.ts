@@ -15,11 +15,17 @@
  * =============================================================================
  */
 
-import {Environment} from './environment';
-export {customGrad, grad, grads, valueAndGrad, valueAndGrads, variableGrads} from './gradients';
+import {Tensor} from '../tensor';
 
-export const tidy = Environment.tidy;
-export const keep = Environment.keep;
-export const dispose = Environment.dispose;
-export const time = Environment.time;
-export const profile = Environment.profile;
+/** Shared implementation of the split kernel across WebGL and CPU. */
+export function split<T extends Tensor>(
+    x: T, sizeSplits: number[], axis: number): T[] {
+  const begin = Array(x.rank).fill(0);
+  const size = x.shape.slice();
+  return sizeSplits.map(s => {
+    size[axis] = s;
+    const slice = x.slice(begin, size);
+    begin[axis] += s;
+    return slice;
+  });
+}

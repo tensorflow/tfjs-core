@@ -17,7 +17,7 @@
 
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
-import {ALL_ENVS, BROWSER_ENVS, CPU_ENVS, expectArraysClose, expectArraysEqual, expectPromiseToFail, expectValuesInRange, NODE_ENVS, WEBGL_ENVS} from '../test_util';
+import {ALL_ENVS, BROWSER_ENVS, expectArraysClose, expectArraysEqual, expectPromiseToFail, expectValuesInRange, NODE_ENVS, WEBGL_ENVS, CPU_ENVS} from '../test_util';
 import * as util from '../util';
 import {expectArrayInMeanStdRange, jarqueBeraNormalityTest} from './rand_util';
 
@@ -2938,9 +2938,17 @@ describeWithFlags('split', ALL_ENVS, () => {
     expectArraysClose(res[1], [3, 4, 7, 8]);
   });
 
-  it('should have proper gradient', () => {
+  it('gradient of 1st output', () => {
     const a = tf.tensor1d([1, 2, 3]);
-    const da = tf.grad(x => tf.split(x, [ 1, 2 ])[1])(a);
+    const da = tf.grad(x => tf.split(x, [1,2])[0])(a);
+
+    expect(da.shape).toEqual([3]);
+    expectArraysClose(da, [1, 0, 0]);
+  });
+
+  it('gradient of 2nd output', () => {
+    const a = tf.tensor1d([1, 2, 3]);
+    const da = tf.grad(x => tf.split(x, [1,2])[1])(a);
 
     expect(da.shape).toEqual([3]);
     expectArraysClose(da, [0, 1, 1]);
@@ -3570,7 +3578,9 @@ describeWithFlags('depthToSpace', ALL_ENVS, () => {
             blockSize * blockSize} but is ${
             t.shape[3]} for depthToSpace with input shape ${t.shape}`);
   });
+});
 
+describeWithFlags('depthToSpace', BROWSER_ENVS, () => {
   it('throws when blocksize < 2', () => {
     const t = tf.tensor4d([1, 2, 3, 4], [1, 1, 1, 4]);
     const blockSize = 1;
