@@ -107,8 +107,6 @@ function getPackedOutputSamplingSnippet(
   switch (outShape.length) {
     case 0:
       return getOutputScalarCoords();
-    case 1:
-      return getOutput1DCoords(outShape as [number], outTexShape);
     case 2:
       return getOutputPacked2DCoords(outShape as [number, number], outTexShape);
     default:
