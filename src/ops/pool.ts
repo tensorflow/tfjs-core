@@ -55,8 +55,7 @@ import {op} from './operation';
 function maxPoolImpl_<T extends Tensor3D|Tensor4D>(
     x: T|TensorLike, filterSize: [number, number]|number,
     strides: [number, number]|number, dilations: [number, number]|number,
-    pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil',
-    dataFormat?: 'NHWC'|'NCHW'): T {
+    pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil'): T {
   const $x = convertToTensor(x, 'x', 'maxPool');
 
   let x4D = $x as Tensor4D;
@@ -75,13 +74,6 @@ function maxPoolImpl_<T extends Tensor3D|Tensor4D>(
       conv_util.eitherStridesOrDilationsAreOne(strides, dilations),
       'Error in maxPool: Either strides or dilations must be 1. ' +
           `Got strides ${strides} and dilations '${dilations}'`);
-  if (dataFormat == null) {
-    dataFormat = 'NHWC';
-  }
-  util.assert(
-      dataFormat === 'NHWC',
-      `Error in conv2d: got dataFormat of ${
-          dataFormat} but only NHWC is currently supported.`);
   if (dimRoundingMode != null) {
     util.assert(
         util.isInt(pad as number),
@@ -162,17 +154,12 @@ function maxPool_<T extends Tensor3D|Tensor4D>(
  * @param dimRoundingMode The rounding mode used when computing output
  *     dimensions if pad is a number. If none is provided, it will not round
  *     and error if the output is of fractional size.
- * @param dataFormat An optional string from: "NHWC", "NCHW". Defaults to
- *     "NHWC". Specify the data format of the input and output data. With the
- *     default format "NHWC", the data is stored in the order of: [batch,
- *     height, width, channels]. Only "NHWC" is currently supported.
  */
 /** @doc {heading: 'Operations', subheading: 'Convolution'} */
 function avgPoolImpl_<T extends Tensor3D|Tensor4D>(
     x: T|TensorLike, filterSize: [number, number]|number,
     strides: [number, number]|number, dilations: [number, number]|number,
-    pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil',
-    dataFormat?: 'NHWC'|'NCHW'): T {
+    pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil'): T {
   const $x = convertToTensor(x, 'x', 'avgPool');
   util.assert(
       $x.dtype === 'float32', 'The input dtype to avgPool must be float32');
@@ -183,13 +170,6 @@ function avgPoolImpl_<T extends Tensor3D|Tensor4D>(
       conv_util.eitherStridesOrDilationsAreOne(strides, dilations),
       'Error in avgPool: Either strides or dilations must be 1. ' +
           `Got strides ${strides} and dilations '${dilations}'`);
-  if (dataFormat == null) {
-    dataFormat = 'NHWC';
-  }
-  util.assert(
-      dataFormat === 'NHWC',
-      `Error in conv2d: got dataFormat of ${
-          dataFormat} but only NHWC is currently supported.`);
   let x4D = $x as Tensor4D;
   let reshapedTo4D = false;
   if ($x.rank === 3) {
@@ -276,17 +256,11 @@ function avgPool_<T extends Tensor3D|Tensor4D>(
  *     number, then `dilationHeight == dilationWidth`. If it is greater than
  *     1, then all values of `strides` must be 1.
  * @param strides The strides of the pooling: `[strideHeight, strideWidth]`.
- * @param name A string name, ignored here but included for cross-compatibility.
- * @param dataFormat An optional string from: "NHWC", "NCHW". Defaults to
- *     "NHWC". Specify the data format of the input and output data. With the
- *     default format "NHWC", the data is stored in the order of: [batch,
- *     height, width, channels]. Only "NHWC" is currently supported.
  */
 function pool_<T extends Tensor3D|Tensor4D>(
     input: T|TensorLike, windowShape: [number, number]|number,
     poolingType: 'avg'|'max', padding: 'valid'|'same'|number,
-    dilationRate?: [number, number]|number, strides?: [number, number]|number,
-    name?: string, dataFormat?: 'NHWC'|'NCHW') {
+    dilationRate?: [number, number]|number, strides?: [number, number]|number) {
   if (dilationRate == null) {
     dilationRate = 1;
   }
@@ -294,11 +268,9 @@ function pool_<T extends Tensor3D|Tensor4D>(
     strides = 1;
   }
   if (poolingType === 'avg') {
-    return avgPoolImpl_(
-        input, windowShape, strides, dilationRate, padding, null, dataFormat);
+    return avgPoolImpl_(input, windowShape, strides, dilationRate, padding);
   } else {
-    return maxPoolImpl_(
-        input, windowShape, strides, dilationRate, padding, null, dataFormat);
+    return maxPoolImpl_(input, windowShape, strides, dilationRate, padding);
   }
 }
 

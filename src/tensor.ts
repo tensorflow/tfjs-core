@@ -316,8 +316,7 @@ export interface OpHandler {
   pool<T extends Tensor3D|Tensor4D>(
       input: T, windowShape: [number, number]|number, poolingType: 'avg'|'max',
       padding: 'valid'|'same'|number, diationRate?: [number, number]|number,
-      strides?: [number, number]|number, name?: string,
-      dataFormat?: 'NHWC'|'NCHW'): T;
+      strides?: [number, number]|number): T;
   localResponseNormalization<T extends Tensor3D|Tensor4D>(
       x: T, depthRadius: number, bias: number, alpha: number, beta: number): T;
   unsortedSegmentSum<T extends Tensor>(
@@ -705,7 +704,7 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   matMul<T extends Tensor>(
-    this: T, b: T, transposeA = false, transposeB = false): T {
+      this: T, b: T, transposeA = false, transposeB = false): T {
     this.throwIfDisposed();
     return opHandler.matMul(this, b, transposeA, transposeB);
   }
@@ -1208,12 +1207,10 @@ export class Tensor<R extends Rank = Rank> {
   pool<T extends Tensor3D|Tensor4D>(
       this: T, windowShape: [number, number]|number, poolingType: 'max'|'avg',
       padding: 'valid'|'same'|number, dilationRate?: [number, number]|number,
-      strides?: [number, number]|number, name?: string,
-      dataFormat?: 'NHWC'|'NCHW'): T {
+      strides?: [number, number]|number): T {
     (this as Tensor).throwIfDisposed();
     return opHandler.pool(
-        this, windowShape, poolingType, padding, dilationRate, strides, name,
-        dataFormat);
+        this, windowShape, poolingType, padding, dilationRate, strides);
   }
 
   variable(trainable = true, name?: string, dtype?: DataType): Variable<R> {
