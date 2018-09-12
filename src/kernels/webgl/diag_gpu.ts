@@ -29,43 +29,23 @@ export class DiagProgram implements GPGPUProgram {
   constructor(xShape: number[], size: number) {
     this.outputShape = [...xShape, ...xShape];
     const rank = xShape.length;
-    if (rank > 4) {
+    if (rank > 2) {
       throw new Error(
           `WebGL backend: diag of rank-${rank} tensor is not yet supported`);
     }
-
-    const getOutputValue = (): string => {
-      const val = Array(size).fill(8).join(',');
-      console.log('val', val);
-      /* if (rank === 1) {
-        val = `coord`;
-      }
-      if (rank === 2) {
-        val = 'coord.x, 0, 0, coord.y';
-      }
-      if (rank === 3) {
-        val = 'coord.x, 0, 0, 0, coord.y, 0, 0, 0, coord.z';
-      }
-      if (rank === 4) {
-        val = `coord.x, 0, 0, 0, 0, coord.y, 0, 0, 0, 0,
-            coord.z, 0, 0, 0, 0, coord.w`;
-      } */
-      return val;
-    };
     const typeOut = getCoordsDataType(rank * 2);
     const typeIn = getCoordsDataType(rank);
-    getOutputValue();
-    // setOutput(getX(${getOutputValue()}));
     const coordstoIndex = (coords: string) => {
-      let index = `${coords}[0]`;
-      for (let i = rank - 1; i > 0; i--) {
-        index = `${index} + ${index} * ${coords}[${i}]`;
+      let index = `${coords}[${rank - 1}]`;
+      for (let i = 0; i < rank - 2; i++) {
+        index = `${index} + ${xShape[i]} * ${coords}[${i}]`;
       }
       return index;
     };
 
     this.userCode = `
-      void setVal1D(${typeOut} coordsOut) {
+      void setVal1D() {
+        ${typeOut} coordsOut = getOutputCoords();
         if (coordsOut[0] == coordsOut[1]) {
           setOutput(getX(coordsOut[0]));
         } else {
@@ -73,11 +53,12 @@ export class DiagProgram implements GPGPUProgram {
         }
       }
 
-      void setValTensor(${typeOut} coordsOut) {
+      void setValTensor() {
+        ${typeOut} coordsOut = getOutputCoords();
         ${rank === 1 ? typeOut : typeIn} coordsIn;
         bool setValueBool = true;
-        for (int i = 1; i < ${rank}; i++) {
-          if (coordsOut[i] != coordsOut[0]) {
+        for (int i = 0; i < ${rank}; i++) {
+          if (coordsOut[i] != coordsOut[${rank} + i]) {
             setValueBool = false;
             break;
           }
@@ -92,19 +73,11 @@ export class DiagProgram implements GPGPUProgram {
         }
       }
       void main() {
-        ${typeOut} coordsOut = getOutputCoords();
-
         if (${rank === 1}) {
-          setVal1D(coordsOut);
+          setVal1D();
         } else {
-          setValTensor(coordsOut);
+          setValTensor();
         }
-        // float x = getXAtOutCoords();
-        // int index = round(getX(coords.x));
-        // float offvalue = 0.5;
-        // float value = getX(coords.x)
-        // setOutput(mix(offvalue, offvalue,
-        // float(index * ${size} == coords.y)));
       }
     `;
   }
