@@ -1235,8 +1235,8 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   diag(x: Tensor): Tensor {
-    const program = new DiagProgram(x.shape);
-    return this.compileAndRun(program, [x]);
+    const program = new DiagProgram(x.shape, x.size);
+    return this.compileAndRun(program, [x.as1D()]);
   }
 
   nonMaxSuppression(

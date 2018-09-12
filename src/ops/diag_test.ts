@@ -28,6 +28,7 @@ describeWithFlags('diag', ALL_ENVS, () => {
   it('2d', () => {
     const m = tf.tensor2d([2, 1], [1, 2]);
     const diag = tf.diag(m);
+    diag.print();
     expectArraysEqual(diag.shape, [1, 2, 1, 2]);
     expectArraysEqual(diag, tf.tensor4d([2, 0, 0, 1], [1, 2, 1, 2]));
   });

@@ -223,6 +223,9 @@ export class MathBackendCPU implements KernelBackend {
       arr[i] = xBuffer.get(i);
       allVals.push(...arr);
     }
+    ops.buffer([...x.shape, ...x.shape], x.dtype, Float32Array.from(allVals))
+        .toTensor()
+        .print();
     return ops
         .buffer([...x.shape, ...x.shape], x.dtype, Float32Array.from(allVals))
         .toTensor();
