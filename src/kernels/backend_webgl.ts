@@ -119,7 +119,7 @@ export interface TensorHandle {
 // before we start paging. The bytes are this constant * screen area * dpi.
 const BEFORE_PAGING_CONSTANT = 300;
 // Tensors with size <= than this will be uploaded as uniforms, not textures.
-export const SIZE_UPLOAD_UNIFORM = 32;
+export const SIZE_UPLOAD_UNIFORM = 0;
 
 export class MathBackendWebGL implements KernelBackend {
   private texData = new WeakMap<DataId, TextureData>();
@@ -233,7 +233,7 @@ export class MathBackendWebGL implements KernelBackend {
       texData.texture = null;
       texData.texShape = null;
     }
-    texData.usage = TextureUsage.UPLOAD;
+    texData.usage = TextureUsage.PACK;
     texData.values = values;
 
     if (!this.delayedStorage) {
@@ -1314,7 +1314,9 @@ export class MathBackendWebGL implements KernelBackend {
 
   conv2d(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
     const program = new Conv2DProgram(convInfo);
-    return this.compileAndRun(program, [x, filter]);
+    const conv2dOutput = Tensor.make<Tensor3D>(convInfo.outShape, {});
+    this.texData.get(conv2dOutput.dataId).usage = TextureUsage.PACK;
+    return this.compileAndRun(program, [x, filter], conv2dOutput);
   }
 
   conv2dDerInput(dy: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
