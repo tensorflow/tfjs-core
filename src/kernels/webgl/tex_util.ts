@@ -133,13 +133,82 @@ export function getPackedRGBAArraySizeFromMatrixShape(
 }
 
 export function encodeMatrixToPackedRGBA(
-    matrix: Float32Array, rows: number, columns: number,
+    matrix: Float32Array, batch: number, rows: number, columns: number,
     packedRGBA: Float32Array) {
-  const requiredSize = getPackedRGBAArraySizeFromMatrixShape(rows, columns);
-  if (packedRGBA.length < requiredSize) {
-    throw new Error(
-        `packedRGBA length (${packedRGBA.length}) must be >= ${requiredSize}`);
+  let offset = 0;  // the current offset within the flattened array of data
+  for (let i = 0; i < batch; i++) {
+    let data = matrix.slice(offset, offset + (rows * columns));
+    // here texture width and height are deceptive: they do not refer to the
+    // dimensions of the physical texture to which this data will be uploaded.
+    // rather, we are pretending that the 2D matrices within a tensor are
+    // being represented so that physical shape = logical shape, so we can
+    // guarantee that any texel has entries from the same two rows / columns of
+    // the same batch
+    const [textureWidth, textureHeight] =
+        getPackedMatrixTextureShapeWidthHeight(rows, columns);
+    const oddWidth = (columns % 2) === 1;
+    const oddHeight = (rows % 2) === 1;
+    const widthInFullBlocks = Math.floor(columns / 2);
+    const heightInFullBlocks = Math.floor(rows / 2);
+
+    // loop over full 2x2 blocks
+    {
+      const dstStride = (oddWidth ? 4 : 0);
+      const oneRow = columns;
+      let dst = offset;
+      for (let blockY = 0; blockY < heightInFullBlocks; ++blockY) {
+        const matrixSrcRow = (blockY * 2 * columns);
+        for (let blockX = 0; blockX < widthInFullBlocks; ++blockX) {
+          const matrixSrcCol = blockX * 2;
+          const src = matrixSrcRow + matrixSrcCol;
+          packedRGBA[dst] = data[src];
+          packedRGBA[dst + 1] = data[src + 1];
+          packedRGBA[dst + 2] = data[src + oneRow];
+          packedRGBA[dst + 3] = data[src + oneRow + 1];
+          dst += 4;
+        }
+        dst += dstStride;
+      }
+    }
+
+    // loop down final odd column
+    if (oddWidth) {
+      let src = columns - 1;
+      let dst = offset + (textureWidth - 1) * 4;
+      const srcStride = 2 * columns;
+      const dstStride = textureWidth * 4;
+      for (let blockY = 0; blockY < heightInFullBlocks; ++blockY) {
+        packedRGBA[dst] = data[src];
+        packedRGBA[dst + 2] = data[src + columns];
+        src += srcStride;
+        dst += dstStride;
+      }
+    }
+
+    // loop across final row
+    if (oddHeight) {
+      let src = (rows - 1) * columns;
+      let dst = offset + (textureHeight - 1) * textureWidth * 4;
+      for (let blockX = 0; blockX < widthInFullBlocks; ++blockX) {
+        packedRGBA[dst++] = data[src++];
+        packedRGBA[dst++] = data[src++];
+        dst += 2;
+      }
+    }
+
+    // fill in bottom-right texel
+    if (oddWidth && oddHeight) {
+      packedRGBA[offset + packedRGBA.length - 4] = data[data.length - 1];
+    }
+
+    offset += (rows * columns);
   }
+  // const requiredSize = getPackedRGBAArraySizeFromMatrixShape(rows, columns);
+  // if (packedRGBA.length < requiredSize) {
+  //   throw new Error(
+  //       `packedRGBA length (${packedRGBA.length}) must be >=
+  //       ${requiredSize}`);
+  // }
   /*
     Unpacked matrix, row-major order in Float32Array[16]:  A B C D
                                                            E F G H
@@ -154,62 +223,9 @@ export function encodeMatrixToPackedRGBA(
                                                            IJ|KL
                                                            MN|OP
    */
-  const [textureWidth, textureHeight] =
-      getPackedMatrixTextureShapeWidthHeight(rows, columns);
-  const oddWidth = (columns % 2) === 1;
-  const oddHeight = (rows % 2) === 1;
-  const widthInFullBlocks = Math.floor(columns / 2);
-  const heightInFullBlocks = Math.floor(rows / 2);
 
-  // loop over full 2x2 blocks
-  {
-    const dstStride = (oddWidth ? 4 : 0);
-    const oneRow = columns;
-    let dst = 0;
-    for (let blockY = 0; blockY < heightInFullBlocks; ++blockY) {
-      const matrixSrcRow = (blockY * 2 * columns);
-      for (let blockX = 0; blockX < widthInFullBlocks; ++blockX) {
-        const matrixSrcCol = blockX * 2;
-        const src = matrixSrcRow + matrixSrcCol;
-        packedRGBA[dst] = matrix[src];
-        packedRGBA[dst + 1] = matrix[src + 1];
-        packedRGBA[dst + 2] = matrix[src + oneRow];
-        packedRGBA[dst + 3] = matrix[src + oneRow + 1];
-        dst += 4;
-      }
-      dst += dstStride;
-    }
-  }
-
-  // loop down final odd column
-  if (oddWidth) {
-    let src = columns - 1;
-    let dst = (textureWidth - 1) * 4;
-    const srcStride = 2 * columns;
-    const dstStride = textureWidth * 4;
-    for (let blockY = 0; blockY < heightInFullBlocks; ++blockY) {
-      packedRGBA[dst] = matrix[src];
-      packedRGBA[dst + 2] = matrix[src + columns];
-      src += srcStride;
-      dst += dstStride;
-    }
-  }
-
-  // loop across final row
-  if (oddHeight) {
-    let src = (rows - 1) * columns;
-    let dst = (textureHeight - 1) * textureWidth * 4;
-    for (let blockX = 0; blockX < widthInFullBlocks; ++blockX) {
-      packedRGBA[dst++] = matrix[src++];
-      packedRGBA[dst++] = matrix[src++];
-      dst += 2;
-    }
-  }
-
-  // fill in bottom-right texel
-  if (oddWidth && oddHeight) {
-    packedRGBA[packedRGBA.length - 4] = matrix[matrix.length - 1];
-  }
+  console.log('ENCODED');
+  console.log(packedRGBA);
 
   return packedRGBA;
 }
@@ -278,6 +294,9 @@ export function decodeMatrixFromPackedRGBA(
   if (oddWidth && oddHeight) {
     matrix[matrix.length - 1] = packedRGBA[packedRGBA.length - 4];
   }
+
+  console.log('DECODED');
+  console.log(matrix);
 
   return matrix;
 }

@@ -98,6 +98,14 @@ export function flatten<T extends number|boolean|Promise<number>>(
   return ret;
 }
 
+export function arrayProduct(arr: number[]): number {
+  let result = 1;
+  for (let i = 0; i < arr.length; i++) {
+    result *= arr[i];
+  }
+  return result;
+}
+
 export function inferShape(val: TypedArray|number|boolean|RegularArray<number>|
                            RegularArray<boolean>): number[] {
   let firstElem: typeof val = val;

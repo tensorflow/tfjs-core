@@ -1650,7 +1650,7 @@ export class MathBackendWebGL implements KernelBackend {
       if (usage === TextureUsage.PACK) {
         this.gpgpu.uploadMatrixToPackedTexture(
             newTexture, texShape[0], texShape[1],
-            typedArrayToFloat32(values, dtype));
+            typedArrayToFloat32(values, dtype), shape);
       } else {
         this.gpgpu.uploadMatrixToTexture(
             newTexture, texShape[0],

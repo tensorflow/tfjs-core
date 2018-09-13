@@ -16,6 +16,7 @@
  */
 
 import {ENV} from '../../environment';
+import * as util from '../../util';
 
 import * as tex_util from './tex_util';
 import * as webgl_util from './webgl_util';
@@ -274,11 +275,18 @@ export function uploadMatrixToTexture(
 
 export function uploadMatrixToPackedTexture(
     gl: WebGLRenderingContext, texture: WebGLTexture, rows: number,
-    columns: number, matrix: Float32Array, textureConfig: TextureConfig) {
+    columns: number, matrix: Float32Array, textureConfig: TextureConfig,
+    shape) {
+  // w and h refer to the width and height of the physical texture to which this
+  // data will be uploaded. r and c refer to the number of rows and columns in
+  // each inner matrix
   const [w, h] = tex_util.getPackedMatrixTextureShapeWidthHeight(rows, columns);
-  const packedRGBA = new Float32Array(
-      tex_util.getPackedRGBAArraySizeFromMatrixShape(rows, columns));
-  tex_util.encodeMatrixToPackedRGBA(matrix, rows, columns, packedRGBA);
+  const batch = util.arrayProduct(shape.slice(0, -2));
+  const r = shape[shape.length - 2];
+  const c = shape[shape.length - 1];
+
+  const packedRGBA = new Float32Array(batch * r * c);
+  tex_util.encodeMatrixToPackedRGBA(matrix, batch, r, c, packedRGBA);
   uploadDataToTexture(gl, texture, w, h, packedRGBA, gl.RGBA);
 }
 
