@@ -109,6 +109,9 @@ function getPackedOutputSamplingSnippet(
       return getOutputScalarCoords();
     case 2:
       return getOutputPacked2DCoords(outShape as [number, number], outTexShape);
+    case 4:
+      return getOutputPacked4DCoords(
+          outShape as [number, number, number, number], outTexShape);
     default:
       throw new Error(
           `${outShape.length}-D output packed sampling is not yet supported`);
@@ -338,6 +341,32 @@ function getOutput3DCoords(
 }
 
 function getOutput4DCoords(
+    shape: [number, number, number, number],
+    texShape: [number, number]): string {
+  const stride2 = shape[3];
+  const stride1 = shape[2] * stride2;
+  const stride0 = shape[1] * stride1;
+  return `
+    ivec4 getOutputCoords() {
+      ivec2 resTexRC = ivec2(resultUV.yx *
+        vec2(${texShape[0]}, ${texShape[1]}));
+      int index = resTexRC.x * ${texShape[1]} + resTexRC.y;
+
+      int r = index / ${stride0};
+      index -= r * ${stride0};
+
+      int c = index / ${stride1};
+      index -= c * ${stride1};
+
+      int d = index / ${stride2};
+      int d2 = index - d * ${stride2};
+
+      return ivec4(r, c, d, d2);
+    }
+  `;
+}
+
+function getOutputPacked4DCoords(
     shape: [number, number, number, number],
     texShape: [number, number]): string {
   const stride2 = shape[3];
