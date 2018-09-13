@@ -1180,7 +1180,9 @@ export class MathBackendWebGL implements KernelBackend {
 
   square<T extends Tensor>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.SQUARE);
-    return this.compileAndRun(program, [x]) as T;
+    const squareOutput = Tensor.make(x.shape, {});
+    this.texData.get(squareOutput.dataId).usage = TextureUsage.PACK;
+    return this.compileAndRun(program, [x], squareOutput) as T;
   }
 
   reciprocal<T extends Tensor>(x: T): T {
@@ -1645,11 +1647,17 @@ export class MathBackendWebGL implements KernelBackend {
     const newTexture = this.acquireTexture(dataId, texShape, usage);
     texData.texture = newTexture;
     if (values != null) {
-      this.gpgpu.uploadMatrixToTexture(
-          newTexture, texShape[0],
-          // TODO(smilkov): Propagate the original typed array to gpgpu.
-          texShape[1], typedArrayToFloat32(values, dtype));
-      // Once uploaded, don't store the values on cpu.
+      if (usage === TextureUsage.PACK) {
+        this.gpgpu.uploadMatrixToPackedTexture(
+            newTexture, texShape[0], texShape[1],
+            typedArrayToFloat32(values, dtype));
+      } else {
+        this.gpgpu.uploadMatrixToTexture(
+            newTexture, texShape[0],
+            // TODO(smilkov): Propagate the original typed array to gpgpu.
+            texShape[1], typedArrayToFloat32(values, dtype));
+        // Once uploaded, don't store the values on cpu.
+      }
       texData.values = null;
       if (shouldTimeProgram) {
         this.uploadWaitMs += performance.now() - start;
