@@ -135,6 +135,8 @@ export function getPackedRGBAArraySizeFromMatrixShape(
 export function encodeMatrixToPackedRGBA(
     matrix: Float32Array, batch: number, rows: number, columns: number,
     packedRGBA: Float32Array) {
+  console.log('encode matrix to packed');
+  console.log(matrix);
   let offset = 0;  // the current offset within the flattened array of data
   for (let i = 0; i < batch; i++) {
     let data = matrix.slice(offset, offset + (rows * columns));
@@ -231,68 +233,74 @@ export function encodeMatrixToPackedRGBA(
 }
 
 export function decodeMatrixFromPackedRGBA(
-    packedRGBA: Float32Array, rows: number, columns: number,
+    packedRGBA: Float32Array, batch: number, rows: number, columns: number,
     matrix: Float32Array): Float32Array {
-  const requiredSize = rows * columns;
-  if (requiredSize < matrix.length) {
-    throw new Error(
-        `matrix length (${matrix.length}) must be >= ${requiredSize}`);
-  }
-  const oddWidth = (columns % 2) === 1;
-  const oddHeight = (rows % 2) === 1;
-  const widthInFullBlocks = Math.floor(columns / 2);
-  const heightInFullBlocks = Math.floor(rows / 2);
-  const [textureWidth, textureHeight] =
-      getPackedMatrixTextureShapeWidthHeight(rows, columns);
+  let offset = 0;
+  for (let i = 0; i < batch; i++) {
+    let data = packedRGBA.slice(offset, offset + (rows * columns));
+    // const requiredSize = rows * columns;
+    // if (requiredSize < matrix.length) {
+    //   throw new Error(
+    //       `matrix length (${matrix.length}) must be >= ${requiredSize}`);
+    // }
+    const oddWidth = (columns % 2) === 1;
+    const oddHeight = (rows % 2) === 1;
+    const widthInFullBlocks = Math.floor(columns / 2);
+    const heightInFullBlocks = Math.floor(rows / 2);
+    const [textureWidth, textureHeight] =
+        getPackedMatrixTextureShapeWidthHeight(rows, columns);
 
-  // loop over full 2x2 blocks
-  {
-    const srcStride = oddWidth ? 4 : 0;
-    const dstStride = columns + (oddWidth ? 1 : 0);
-    let src = 0;
-    let dstRow1 = 0;
-    let dstRow2 = columns;
-    for (let blockY = 0; blockY < heightInFullBlocks; ++blockY) {
-      for (let blockX = 0; blockX < widthInFullBlocks; ++blockX) {
-        matrix[dstRow1++] = packedRGBA[src++];
-        matrix[dstRow1++] = packedRGBA[src++];
-        matrix[dstRow2++] = packedRGBA[src++];
-        matrix[dstRow2++] = packedRGBA[src++];
+    // loop over full 2x2 blocks
+    {
+      const srcStride = oddWidth ? 4 : 0;
+      const dstStride = columns + (oddWidth ? 1 : 0);
+      let src = 0;
+      let dstRow1 = offset;
+      let dstRow2 = offset + columns;
+      for (let blockY = 0; blockY < heightInFullBlocks; ++blockY) {
+        for (let blockX = 0; blockX < widthInFullBlocks; ++blockX) {
+          matrix[dstRow1++] = data[src++];
+          matrix[dstRow1++] = data[src++];
+          matrix[dstRow2++] = data[src++];
+          matrix[dstRow2++] = data[src++];
+        }
+        src += srcStride;
+        dstRow1 += dstStride;
+        dstRow2 += dstStride;
       }
-      src += srcStride;
-      dstRow1 += dstStride;
-      dstRow2 += dstStride;
     }
-  }
 
-  // loop down final column
-  if (oddWidth) {
-    let src = (textureWidth - 1) * 4;
-    let dst = columns - 1;
-    const srcStride = textureWidth * 4;
-    const dstStride = 2 * columns;
-    for (let blockY = 0; blockY < heightInFullBlocks; ++blockY) {
-      matrix[dst] = packedRGBA[src];
-      matrix[dst + columns] = packedRGBA[src + 2];
-      src += srcStride;
-      dst += dstStride;
+    // loop down final column
+    if (oddWidth) {
+      let src = (textureWidth - 1) * 4;
+      let dst = offset + columns - 1;
+      const srcStride = textureWidth * 4;
+      const dstStride = 2 * columns;
+      for (let blockY = 0; blockY < heightInFullBlocks; ++blockY) {
+        matrix[dst] = data[src];
+        matrix[dst + columns] = data[src + 2];
+        src += srcStride;
+        dst += dstStride;
+      }
     }
-  }
 
-  // loop across final row
-  if (oddHeight) {
-    let src = (textureHeight - 1) * textureWidth * 4;
-    let dst = (rows - 1) * columns;
-    for (let blockX = 0; blockX < widthInFullBlocks; ++blockX) {
-      matrix[dst++] = packedRGBA[src++];
-      matrix[dst++] = packedRGBA[src++];
-      src += 2;
+    // loop across final row
+    if (oddHeight) {
+      let src = (textureHeight - 1) * textureWidth * 4;
+      let dst = offset + (rows - 1) * columns;
+      for (let blockX = 0; blockX < widthInFullBlocks; ++blockX) {
+        matrix[dst++] = data[src++];
+        matrix[dst++] = data[src++];
+        src += 2;
+      }
     }
-  }
 
-  // fill in bottom-right cell
-  if (oddWidth && oddHeight) {
-    matrix[matrix.length - 1] = packedRGBA[packedRGBA.length - 4];
+    // fill in bottom-right cell
+    if (oddWidth && oddHeight) {
+      matrix[offset + matrix.length - 1] = data[data.length - 4];
+    }
+
+    offset += (rows * columns);
   }
 
   console.log('DECODED');

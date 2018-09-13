@@ -328,7 +328,7 @@ export class MathBackendWebGL implements KernelBackend {
     if (ENV.get('WEBGL_DOWNLOAD_FLOAT_ENABLED')) {
       if (this.texData.get(dataId).usage === TextureUsage.PACK) {
         return this.gpgpu.downloadMatrixFromPackedTexture(
-            texture, texShape[0], texShape[1]);
+            texture, texShape[0], texShape[1], shape);
       } else {
         return this.gpgpu.downloadFloat32MatrixFromOutputTexture(
             texture, texShape[0], texShape[1]);
