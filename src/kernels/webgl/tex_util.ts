@@ -135,11 +135,12 @@ export function getPackedRGBAArraySizeFromMatrixShape(
 export function encodeMatrixToPackedRGBA(
     matrix: Float32Array, batch: number, rows: number, columns: number,
     packedRGBA: Float32Array) {
-  console.log('encode matrix to packed');
-  console.log(matrix);
+  const flattenedMatrixSize = 16;
+  const dataMatrixSize = 12
   let offset = 0;  // the current offset within the flattened array of data
   for (let i = 0; i < batch; i++) {
-    let data = matrix.slice(offset, offset + (rows * columns));
+    let data =
+        matrix.slice(i * dataMatrixSize, i * dataMatrixSize + (dataMatrixSize));
     // here texture width and height are deceptive: they do not refer to the
     // dimensions of the physical texture to which this data will be uploaded.
     // rather, we are pretending that the 2D matrices within a tensor are
@@ -202,8 +203,7 @@ export function encodeMatrixToPackedRGBA(
     if (oddWidth && oddHeight) {
       packedRGBA[offset + packedRGBA.length - 4] = data[data.length - 1];
     }
-
-    offset += (rows * columns);
+    offset += (16);
   }
   // const requiredSize = getPackedRGBAArraySizeFromMatrixShape(rows, columns);
   // if (packedRGBA.length < requiredSize) {
@@ -226,9 +226,6 @@ export function encodeMatrixToPackedRGBA(
                                                            MN|OP
    */
 
-  console.log('ENCODED');
-  console.log(packedRGBA);
-
   return packedRGBA;
 }
 
@@ -236,8 +233,12 @@ export function decodeMatrixFromPackedRGBA(
     packedRGBA: Float32Array, batch: number, rows: number, columns: number,
     matrix: Float32Array): Float32Array {
   let offset = 0;
+  console.log('DECODING');
+  console.log(packedRGBA);
   for (let i = 0; i < batch; i++) {
-    let data = packedRGBA.slice(offset, offset + (rows * columns));
+    let data = packedRGBA.slice(i * 16, i * 16 + (16));
+    console.log('data');
+    console.log(data)
     // const requiredSize = rows * columns;
     // if (requiredSize < matrix.length) {
     //   throw new Error(
@@ -252,6 +253,7 @@ export function decodeMatrixFromPackedRGBA(
 
     // loop over full 2x2 blocks
     {
+      console.log('looping over 2x2');
       const srcStride = oddWidth ? 4 : 0;
       const dstStride = columns + (oddWidth ? 1 : 0);
       let src = 0;
@@ -259,6 +261,8 @@ export function decodeMatrixFromPackedRGBA(
       let dstRow2 = offset + columns;
       for (let blockY = 0; blockY < heightInFullBlocks; ++blockY) {
         for (let blockX = 0; blockX < widthInFullBlocks; ++blockX) {
+          console.log(
+              'dst', dstRow1 + 1, 'src', src + 1, 'data[src]', data[src + 1])
           matrix[dstRow1++] = data[src++];
           matrix[dstRow1++] = data[src++];
           matrix[dstRow2++] = data[src++];
@@ -300,7 +304,7 @@ export function decodeMatrixFromPackedRGBA(
       matrix[offset + matrix.length - 1] = data[data.length - 4];
     }
 
-    offset += (rows * columns);
+    offset += (12);
   }
 
   console.log('DECODED');
