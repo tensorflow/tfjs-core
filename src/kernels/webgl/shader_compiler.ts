@@ -345,18 +345,26 @@ function getOutput3DCoords(
 
 function getOutputPacked3DCoords(
     shape: [number, number, number], texShape: [number, number]): string {
-  const stride0 = shape[1] * shape[2];
-  const stride1 = shape[2];
+  console.log('GET OUTPUT PACKED COORDS');
+  console.log(texShape);
+  console.log(shape);
+  // how many values (texels * 4) are in a batch?
+  const stride0 = util.nearestEven(shape[1]) * util.nearestEven(shape[2]);
+  // how many values are in a row?
+  const stride1 = util.nearestEven(shape[2]) * 2;
+
+  console.log('stride0', stride0);
+  console.log('stride1', stride1);
   return `
     ivec3 getOutputCoords() {
       ivec2 resTexRC = ivec2(resultUV.yx *
                              vec2(${texShape[0]}, ${texShape[1]}));
-      int index = resTexRC.x * ${texShape[1]} + resTexRC.y;
+      int index = 4 * (resTexRC.x * ${texShape[1]} + resTexRC.y);
       int r = index / ${stride0};
       index -= r * ${stride0};
       int c = index / ${stride1};
-      int d = index - c * ${stride1};
-      return ivec3(r, c, d);
+      int d = (index - c * ${stride1}) / 4;
+      return ivec3(r, 2 * c, 2 * d);
     }
   `;
 }
