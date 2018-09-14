@@ -123,9 +123,6 @@ export function decodeMatrixFromUnpackedColorRGBAArray(
 
 export function getPackedMatrixTextureShapeWidthHeight(
     rows: number, columns: number): [number, number] {
-  if (rows == 4 && columns == 12) {
-    return [4, 4]
-  }
   return [Math.ceil(columns / 2), Math.ceil(rows / 2)];
 }
 
