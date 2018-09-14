@@ -40,11 +40,14 @@ export class UnaryOpProgram implements GPGPUProgram {
       void main() {
         float x = getAAtOutCoords();
         float y = unaryOperation(x);
+        ivec3 brc = getOutputCoords();
 
         setOutput(y);
 
         // testing
         gl_FragColor = texture2D(A, resultUV);
+        gl_FragColor = vec4(brc.z, brc.z, brc.z, brc.y);
+        // gl_FragColor = vec4(int(resultUV.y * 4.), int(resultUV.x * 4.), -1, -1);
       }
     `;
   }
