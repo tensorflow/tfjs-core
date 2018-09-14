@@ -367,9 +367,32 @@ function validateTextureUnit(gl: WebGLRenderingContext, textureUnit: number) {
   }
 }
 
+export function getPackedTextureShapeFromLogicalShape(
+    gl: WebGLRenderingContext, logShape: number[]) {
+  let maxTexSize = queryMaxTextureSize(gl);
+
+  if (logShape.length <= 1 && Math.ceil(logShape[0] / 2) < maxTexSize) {
+    return [Math.ceil(logShape[0]) / 2, 1];
+  }
+
+  const innerDimensionsPadded = [
+    Math.ceil(logShape[logShape.length - 2] / 2),
+    Math.ceil(logShape[logShape.length - 1] / 2)
+  ];
+
+  if (logShape.length === 2 && innerDimensionsPadded[0] <= maxTexSize &&
+      innerDimensionsPadded[1] <= maxTexSize) {
+    return innerDimensionsPadded as [number, number];
+  }
+
+  return [
+    util.arrayProduct(logShape.slice(0, -2)),
+    util.arrayProduct(innerDimensionsPadded)
+  ];
+}
+
 export function getTextureShapeFromLogicalShape(
-    gl: WebGLRenderingContext, logShape: number[],
-    packed: boolean): [number, number] {
+    gl: WebGLRenderingContext, logShape: number[]): [number, number] {
   let maxTexSize = queryMaxTextureSize(gl);
 
   // If logical shape is 2, we don't squeeze, since we want to match
@@ -377,20 +400,6 @@ export function getTextureShapeFromLogicalShape(
   if (logShape.length !== 2) {
     const squeezeResult = util.squeezeShape(logShape);
     logShape = squeezeResult.newShape;
-  }
-
-  // If packed,  map all dimensions to their nearest multiples of 2 (so,
-  // adding 1 if necessary). This accounts for the fact that each texel only
-  // contains values from the same outer dimensions, so we stuff zeros when
-  // necessary into the data that gets packed into the texture
-
-  // our handling of packed textures is still a little but un-straightforward:
-  // here we're returning 2X the actual texture size. we're not just going ahead
-  // and dividing by 2 because downstream several functions expect to be doing
-  // the work of dividing by 2. might be able to clean this up later.
-  if (packed) {
-    logShape = logShape.map(util.nearestEven);
-    maxTexSize = maxTexSize * 2;
   }
 
   const size = util.sizeFromShape(logShape);

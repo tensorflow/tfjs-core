@@ -1641,8 +1641,14 @@ export class MathBackendWebGL implements KernelBackend {
     if (shouldTimeProgram) {
       start = performance.now();
     }
-    const texShape = webgl_util.getTextureShapeFromLogicalShape(
-        this.gpgpu.gl, shape, usage === TextureUsage.PACK);
+    let texShape;
+    if (usage === TextureUsage.PACK) {
+      texShape = webgl_util.getPackedTextureShapeFromLogicalShape(
+          this.gpgpu.gl, shape);
+    } else {
+      texShape =
+          webgl_util.getTextureShapeFromLogicalShape(this.gpgpu.gl, shape);
+    }
     texData.texShape = texShape;
     const newTexture = this.acquireTexture(dataId, texShape, usage);
     texData.texture = newTexture;

@@ -124,7 +124,7 @@ export function decodeMatrixFromUnpackedColorRGBAArray(
 
 export function getPackedMatrixTextureShapeWidthHeight(
     rows: number, columns: number): [number, number] {
-  return [Math.ceil(columns / 2), Math.ceil(rows / 2)];
+  return [columns, rows];
 }
 
 export function getPackedRGBAArraySizeFromMatrixShape(
@@ -229,6 +229,8 @@ export function encodeMatrixToPackedRGBA(
                                                            MN|OP
    */
 
+  console.log('encoded');
+  console.log(packedRGBA);
   return packedRGBA;
 }
 
@@ -308,6 +310,9 @@ export function decodeMatrixFromPackedRGBA(
 
     offset += (rows * columns);
   }
+
+  console.log('DECODED');
+  console.log(matrix);
 
   return matrix;
 }
