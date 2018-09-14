@@ -370,6 +370,8 @@ function validateTextureUnit(gl: WebGLRenderingContext, textureUnit: number) {
 export function getTextureShapeFromLogicalShape(
     gl: WebGLRenderingContext, logShape: number[],
     packed: boolean): [number, number] {
+  let maxTexSize = queryMaxTextureSize(gl);
+
   // If logical shape is 2, we don't squeeze, since we want to match
   // physical.
   if (logShape.length !== 2) {
@@ -377,15 +379,20 @@ export function getTextureShapeFromLogicalShape(
     logShape = squeezeResult.newShape;
   }
 
-  // IF packed map all dimensions to their nearest multiples of 2 (so,
+  // If packed, map all dimensions to their nearest multiples of 2 (so,
   // adding 1 if necessary). This accounts for the fact that each texel only
   // contains values from the same outer dimensions, so we stuff zeros when
   // necessary into the data that gets packed into the texture
+
+  // our handling of packed textures is still a little but un-straightforward:
+  // here we're returning 2X the actual texture size. we're not just going ahead
+  // and dividing by 2 because downstream several functions expect to be doing
+  // the work of dividing by 2. might be able to clean this up later.
   if (packed) {
     logShape = logShape.map(d => d % 2 === 0 ? d : d + 1);
+    maxTexSize = maxTexSize * 2;
   }
 
-  const maxTexSize = queryMaxTextureSize(gl);
   const size = util.sizeFromShape(logShape);
   if (logShape.length <= 1 && size <= maxTexSize) {
     return [size, 1];
