@@ -393,14 +393,14 @@ function getOutput4DCoords(
 function getOutputPacked4DCoords(
     shape: [number, number, number, number],
     texShape: [number, number]): string {
-  const stride2 = shape[3];
-  const stride1 = shape[2] * stride2;
-  const stride0 = shape[1] * stride1;
+  const stride2 = util.nearestEven(shape[3]) * 2;
+  const stride1 = util.nearestEven(shape[2]) * util.nearestEven(shape[3]);
+  const stride0 = util.nearestEven(shape[1]) * stride1;
   return `
     ivec4 getOutputCoords() {
       ivec2 resTexRC = ivec2(resultUV.yx *
         vec2(${texShape[0]}, ${texShape[1]}));
-      int index = resTexRC.x * ${texShape[1]} + resTexRC.y;
+      int index = 4 * (resTexRC.x * ${texShape[1]} + resTexRC.y);
 
       int r = index / ${stride0};
       index -= r * ${stride0};
@@ -409,9 +409,9 @@ function getOutputPacked4DCoords(
       index -= c * ${stride1};
 
       int d = index / ${stride2};
-      int d2 = index - d * ${stride2};
+      int d2 = (index - d * ${stride2}) / 4;
 
-      return ivec4(r, c, d, d2);
+      return ivec4(r, c, 2 * d, 2 * d2);
     }
   `;
 }
