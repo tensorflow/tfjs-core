@@ -204,7 +204,7 @@ export function encodeMatrixToPackedRGBA(
 
     // fill in bottom-right texel
     if (oddWidth && oddHeight) {
-      packedRGBA[offset + packedRGBA.length - 4] = data[data.length - 1];
+      packedRGBA[offset + flattenedMatrixSize - 4] = data[data.length - 1];
     }
     offset += flattenedMatrixSize;
   }
@@ -229,6 +229,7 @@ export function encodeMatrixToPackedRGBA(
                                                            MN|OP
    */
 
+  console.log(packedRGBA);
   return packedRGBA;
 }
 
@@ -303,7 +304,7 @@ export function decodeMatrixFromPackedRGBA(
 
     // fill in bottom-right cell
     if (oddWidth && oddHeight) {
-      matrix[offset + matrix.length - 1] = data[data.length - 4];
+      matrix[offset + (rows * columns) - 1] = data[data.length - 4];
     }
 
     offset += (rows * columns);
