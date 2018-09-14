@@ -183,7 +183,7 @@ export function encodeMatrixToPackedRGBA(
       let dst = offset + (textureWidth - 1) * 4;
       const srcStride = 2 * columns;
       const dstStride = textureWidth * 4;
-      for (let blockY = 0; blockY < heightInFullBlocks; ++blockY) {
+      for (let blockY = 0; blockY < Math.max(1, heightInFullBlocks); ++blockY) {
         packedRGBA[dst] = data[src];
         packedRGBA[dst + 2] = data[src + columns];
         src += srcStride;
@@ -195,7 +195,7 @@ export function encodeMatrixToPackedRGBA(
     if (oddHeight) {
       let src = (rows - 1) * columns;
       let dst = offset + (textureHeight - 1) * textureWidth * 4;
-      for (let blockX = 0; blockX < widthInFullBlocks; ++blockX) {
+      for (let blockX = 0; blockX < Math.max(1, widthInFullBlocks); ++blockX) {
         packedRGBA[dst++] = data[src++];
         packedRGBA[dst++] = data[src++];
         dst += 2;
@@ -229,8 +229,6 @@ export function encodeMatrixToPackedRGBA(
                                                            MN|OP
    */
 
-  console.log('encoded');
-  console.log(packedRGBA);
   return packedRGBA;
 }
 
@@ -284,7 +282,7 @@ export function decodeMatrixFromPackedRGBA(
       let dst = offset + columns - 1;
       const srcStride = textureWidth * 4;
       const dstStride = 2 * columns;
-      for (let blockY = 0; blockY < heightInFullBlocks; ++blockY) {
+      for (let blockY = 0; blockY < Math.max(1, heightInFullBlocks); ++blockY) {
         matrix[dst] = data[src];
         matrix[dst + columns] = data[src + 2];
         src += srcStride;
@@ -296,7 +294,7 @@ export function decodeMatrixFromPackedRGBA(
     if (oddHeight) {
       let src = (textureHeight - 1) * textureWidth * 4;
       let dst = offset + (rows - 1) * columns;
-      for (let blockX = 0; blockX < widthInFullBlocks; ++blockX) {
+      for (let blockX = 0; blockX < Math.max(1, widthInFullBlocks); ++blockX) {
         matrix[dst++] = data[src++];
         matrix[dst++] = data[src++];
         src += 2;
@@ -310,9 +308,6 @@ export function decodeMatrixFromPackedRGBA(
 
     offset += (rows * columns);
   }
-
-  console.log('DECODED');
-  console.log(matrix);
 
   return matrix;
 }
