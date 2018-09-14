@@ -136,8 +136,8 @@ export function getPackedRGBAArraySizeFromMatrixShape(
 export function encodeMatrixToPackedRGBA(
     matrix: Float32Array, batch: number, rows: number, columns: number,
     packedRGBA: Float32Array) {
-  const [textureWidth, textureHeight] =
-      getPackedMatrixTextureShapeWidthHeight(rows, columns);
+  const textureWidth = Math.ceil(columns / 2);
+  const textureHeight = Math.ceil(rows / 2);
   const oddWidth = (columns % 2) === 1;
   const oddHeight = (rows % 2) === 1;
   const widthInFullBlocks = Math.floor(columns / 2);
@@ -241,8 +241,8 @@ export function decodeMatrixFromPackedRGBA(
   const oddHeight = (rows % 2) === 1;
   const widthInFullBlocks = Math.floor(columns / 2);
   const heightInFullBlocks = Math.floor(rows / 2);
-  const [textureWidth, textureHeight] =
-      getPackedMatrixTextureShapeWidthHeight(rows, columns);
+  const textureWidth = Math.ceil(columns / 2);
+  const textureHeight = Math.ceil(rows / 2);
 
   const flattenedMatrixSize =
       util.nearestEven(rows) * util.nearestEven(columns);
