@@ -44,76 +44,104 @@ export class Conv2DProgram implements GPGPUProgram {
       void main() {
         ivec4 coords = getOutputCoords();
         int batch = coords[0];
-        int d2 = coords[3];
 
-        ivec2 xRCCorner = coords.yz * strides - pads;
-        int xRCorner = xRCCorner.x;
-        int xCCorner = xRCCorner.y;
+        vec4 result = vec4(0);
 
-        // Convolve x(?, ?, d1) with w(:, :, d1, d2) to get y(yR, yC, d2).
-        // ? = to be determined. : = across all values in that axis.
-        float dotProd = 0.0;
-        for (int wR = 0; wR < ${filterHeight}; wR++) {
-          int xR = xRCorner + wR * ${dilationHeight};
+        int iter = 0;
+        int b2 = coords[1];
 
-          if (xR < 0 || xR >= ${convInfo.inHeight}) {
-            continue;
-          }
+        for(int rIter=0; rIter<=1; rIter++) { // coords.z
+          for(int cIter=0; cIter<=1; cIter++) { // coords.w
+            int r = rIter + coords.z;
+            int c = cIter + coords.w;
+            int d2 = c;
 
-          for (int wC = 0; wC < ${filterWidth}; wC++) {
-            int xC = xCCorner + wC * ${dilationWidth};
+            // ivec2 xRCCorner = coords.yz * strides - pads;
+            ivec2 xRCCorner = ivec2(b2, r) * strides - pads;
+            int xRCorner = xRCCorner.x;
+            int xCCorner = xRCCorner.y;
 
-            if (xC < 0 || xC >= ${convInfo.inWidth}) {
-              continue;
+            // Convolve x(?, ?, d1) with w(:, :, d1, d2) to get y(yR, yC, d2).
+            // ? = to be determined. : = across all values in that axis.
+            float dotProd = 0.0;
+            for (int wR = 0; wR < ${filterHeight}; wR++) {
+              int xR = xRCorner + wR * ${dilationHeight};
+
+              if (xR < 0 || xR >= ${convInfo.inHeight}) {
+                continue;
+              }
+
+              for (int wC = 0; wC < ${filterWidth}; wC++) {
+                int xC = xCCorner + wC * ${dilationWidth};
+
+                if (xC < 0 || xC >= ${convInfo.inWidth}) {
+                  continue;
+                }
+
+                for (int d1 = 0; d1 < ${inputDepthNearestVec4}; d1 += 4) {
+                  vec4 xValues = vec4(
+                    getX(batch, xR, xC, d1),
+                    getX(batch, xR, xC, d1 + 1),
+                    getX(batch, xR, xC, d1 + 2),
+                    getX(batch, xR, xC, d1 + 3)
+                  );
+                  vec4 wValues = vec4(
+                    getW(wR, wC, d1, d2),
+                    getW(wR, wC, d1 + 1, d2),
+                    getW(wR, wC, d1 + 2, d2),
+                    getW(wR, wC, d1 + 3, d2)
+                  );
+
+                  dotProd += dot(xValues, wValues);
+                }
+
+                if (${inputDepthVec4Remainder === 1}) {
+                  dotProd +=
+                    getX(batch, xR, xC, ${inputDepthNearestVec4}) *
+                    getW(wR, wC, ${inputDepthNearestVec4}, d2);
+                } else if (${inputDepthVec4Remainder === 2}) {
+                  vec2 xValues = vec2(
+                    getX(batch, xR, xC, ${inputDepthNearestVec4}),
+                    getX(batch, xR, xC, ${inputDepthNearestVec4} + 1)
+                  );
+                  vec2 wValues = vec2(
+                    getW(wR, wC, ${inputDepthNearestVec4}, d2),
+                    getW(wR, wC, ${inputDepthNearestVec4} + 1, d2)
+                  );
+                  dotProd += dot(xValues, wValues);
+                } else if (${inputDepthVec4Remainder === 3}) {
+                  vec3 xValues = vec3(
+                    getX(batch, xR, xC, ${inputDepthNearestVec4}),
+                    getX(batch, xR, xC, ${inputDepthNearestVec4} + 1),
+                    getX(batch, xR, xC, ${inputDepthNearestVec4} + 2)
+                  );
+                  vec3 wValues = vec3(
+                    getW(wR, wC, ${inputDepthNearestVec4}, d2),
+                    getW(wR, wC, ${inputDepthNearestVec4} + 1, d2),
+                    getW(wR, wC, ${inputDepthNearestVec4} + 2, d2)
+                  );
+                  dotProd += dot(xValues, wValues);
+                }
+              }
             }
 
-            for (int d1 = 0; d1 < ${inputDepthNearestVec4}; d1 += 4) {
-              vec4 xValues = vec4(
-                getX(batch, xR, xC, d1),
-                getX(batch, xR, xC, d1 + 1),
-                getX(batch, xR, xC, d1 + 2),
-                getX(batch, xR, xC, d1 + 3)
-              );
-              vec4 wValues = vec4(
-                getW(wR, wC, d1, d2),
-                getW(wR, wC, d1 + 1, d2),
-                getW(wR, wC, d1 + 2, d2),
-                getW(wR, wC, d1 + 3, d2)
-              );
-
-              dotProd += dot(xValues, wValues);
+            if(iter == 0) {
+              result.x = dotProd;
+            } else if(iter == 1) {
+              result.y = dotProd;
+            } else if(iter == 2) {
+              result.z = dotProd;
+            } else {
+              result.w = dotProd;
             }
 
-            if (${inputDepthVec4Remainder === 1}) {
-              dotProd +=
-                getX(batch, xR, xC, ${inputDepthNearestVec4}) *
-                getW(wR, wC, ${inputDepthNearestVec4}, d2);
-            } else if (${inputDepthVec4Remainder === 2}) {
-              vec2 xValues = vec2(
-                getX(batch, xR, xC, ${inputDepthNearestVec4}),
-                getX(batch, xR, xC, ${inputDepthNearestVec4} + 1)
-              );
-              vec2 wValues = vec2(
-                getW(wR, wC, ${inputDepthNearestVec4}, d2),
-                getW(wR, wC, ${inputDepthNearestVec4} + 1, d2)
-              );
-              dotProd += dot(xValues, wValues);
-            } else if (${inputDepthVec4Remainder === 3}) {
-              vec3 xValues = vec3(
-                getX(batch, xR, xC, ${inputDepthNearestVec4}),
-                getX(batch, xR, xC, ${inputDepthNearestVec4} + 1),
-                getX(batch, xR, xC, ${inputDepthNearestVec4} + 2)
-              );
-              vec3 wValues = vec3(
-                getW(wR, wC, ${inputDepthNearestVec4}, d2),
-                getW(wR, wC, ${inputDepthNearestVec4} + 1, d2),
-                getW(wR, wC, ${inputDepthNearestVec4} + 2, d2)
-              );
-              dotProd += dot(xValues, wValues);
-            }
+            iter = iter + 1;
+            // setOutput(dotProd);
+
           }
         }
-        setOutput(dotProd);
+
+        gl_FragColor = result;
       }
     `;
   }
