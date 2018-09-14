@@ -379,7 +379,7 @@ export function getTextureShapeFromLogicalShape(
     logShape = squeezeResult.newShape;
   }
 
-  // If packed, map all dimensions to their nearest multiples of 2 (so,
+  // If packed,  map all dimensions to their nearest multiples of 2 (so,
   // adding 1 if necessary). This accounts for the fact that each texel only
   // contains values from the same outer dimensions, so we stuff zeros when
   // necessary into the data that gets packed into the texture
@@ -389,7 +389,7 @@ export function getTextureShapeFromLogicalShape(
   // and dividing by 2 because downstream several functions expect to be doing
   // the work of dividing by 2. might be able to clean this up later.
   if (packed) {
-    logShape = logShape.map(d => d % 2 === 0 ? d : d + 1);
+    logShape = logShape.map(util.nearestEven);
     maxTexSize = maxTexSize * 2;
   }
 

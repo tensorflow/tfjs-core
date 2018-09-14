@@ -106,6 +106,10 @@ export function arrayProduct(arr: number[]): number {
   return result;
 }
 
+export function nearestEven(num: number): number {
+  return num % 2 === 0 ? num : num + 1;
+}
+
 export function inferShape(val: TypedArray|number|boolean|RegularArray<number>|
                            RegularArray<boolean>): number[] {
   let firstElem: typeof val = val;

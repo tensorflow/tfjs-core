@@ -17,6 +17,7 @@
 
 import {Tensor} from '../../tensor';
 import {DataType, DataTypeMap} from '../../types';
+import * as util from '../../util';
 
 export enum TextureUsage {
   RENDER,
@@ -135,8 +136,16 @@ export function getPackedRGBAArraySizeFromMatrixShape(
 export function encodeMatrixToPackedRGBA(
     matrix: Float32Array, batch: number, rows: number, columns: number,
     packedRGBA: Float32Array) {
-  const flattenedMatrixSize = 16;
-  const dataMatrixSize = 12
+  const [textureWidth, textureHeight] =
+      getPackedMatrixTextureShapeWidthHeight(rows, columns);
+  const oddWidth = (columns % 2) === 1;
+  const oddHeight = (rows % 2) === 1;
+  const widthInFullBlocks = Math.floor(columns / 2);
+  const heightInFullBlocks = Math.floor(rows / 2);
+  const flattenedMatrixSize =
+      util.nearestEven(rows) * util.nearestEven(columns);
+  const dataMatrixSize = rows * columns;
+
   let offset = 0;  // the current offset within the flattened array of data
   for (let i = 0; i < batch; i++) {
     let data =
@@ -147,12 +156,6 @@ export function encodeMatrixToPackedRGBA(
     // being represented so that physical shape = logical shape, so we can
     // guarantee that any texel has entries from the same two rows / columns of
     // the same batch
-    const [textureWidth, textureHeight] =
-        getPackedMatrixTextureShapeWidthHeight(rows, columns);
-    const oddWidth = (columns % 2) === 1;
-    const oddHeight = (rows % 2) === 1;
-    const widthInFullBlocks = Math.floor(columns / 2);
-    const heightInFullBlocks = Math.floor(rows / 2);
 
     // loop over full 2x2 blocks
     {
@@ -203,7 +206,7 @@ export function encodeMatrixToPackedRGBA(
     if (oddWidth && oddHeight) {
       packedRGBA[offset + packedRGBA.length - 4] = data[data.length - 1];
     }
-    offset += (16);
+    offset += flattenedMatrixSize;
   }
   // const requiredSize = getPackedRGBAArraySizeFromMatrixShape(rows, columns);
   // if (packedRGBA.length < requiredSize) {
@@ -232,20 +235,26 @@ export function encodeMatrixToPackedRGBA(
 export function decodeMatrixFromPackedRGBA(
     packedRGBA: Float32Array, batch: number, rows: number, columns: number,
     matrix: Float32Array): Float32Array {
+  const oddWidth = (columns % 2) === 1;
+  const oddHeight = (rows % 2) === 1;
+  const widthInFullBlocks = Math.floor(columns / 2);
+  const heightInFullBlocks = Math.floor(rows / 2);
+  const [textureWidth, textureHeight] =
+      getPackedMatrixTextureShapeWidthHeight(rows, columns);
+
+  const flattenedMatrixSize =
+      util.nearestEven(rows) * util.nearestEven(columns);
+
   let offset = 0;
   for (let i = 0; i < batch; i++) {
-    let data = packedRGBA.slice(i * 16, i * 16 + (16));
+    let data = packedRGBA.slice(
+        i * flattenedMatrixSize,
+        i * flattenedMatrixSize + (flattenedMatrixSize));
     // const requiredSize = rows * columns;
     // if (requiredSize < matrix.length) {
     //   throw new Error(
     //       `matrix length (${matrix.length}) must be >= ${requiredSize}`);
     // }
-    const oddWidth = (columns % 2) === 1;
-    const oddHeight = (rows % 2) === 1;
-    const widthInFullBlocks = Math.floor(columns / 2);
-    const heightInFullBlocks = Math.floor(rows / 2);
-    const [textureWidth, textureHeight] =
-        getPackedMatrixTextureShapeWidthHeight(rows, columns);
 
     // loop over full 2x2 blocks
     {
@@ -297,11 +306,8 @@ export function decodeMatrixFromPackedRGBA(
       matrix[offset + matrix.length - 1] = data[data.length - 4];
     }
 
-    offset += (12);
+    offset += (rows * columns);
   }
-
-  console.log('DECODED');
-  console.log(matrix);
 
   return matrix;
 }
