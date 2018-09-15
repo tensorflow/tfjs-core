@@ -124,11 +124,21 @@ export class Conv2DProgram implements GPGPUProgram {
                     getX(batch, xR, xC, ${inputDepthNearestVec4} + 1).x,
                     getX(batch, xR, xC, ${inputDepthNearestVec4} + 2).x
                   );
+
+                  if(iter == 2) {
+                    xValues = vec3(
+                      getX(batch, xR, xC, ${inputDepthNearestVec4}).z,
+                      getX(batch, xR, xC, ${inputDepthNearestVec4} + 1).x,
+                      getX(batch, xR, xC, ${inputDepthNearestVec4} + 2).x
+                    );
+                  }
+
                   vec3 wValues = vec3( // accurate
                     getW(wR, wC, ${inputDepthNearestVec4}, d2).x,
                     getW(wR, wC, ${inputDepthNearestVec4}, d2).z,
                     getW(wR, wC, ${inputDepthNearestVec4} + 1, d2).x
                   );
+
                   dotProd += dot(xValues, wValues);
                 }
               }
