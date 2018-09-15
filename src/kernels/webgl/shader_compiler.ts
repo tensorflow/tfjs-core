@@ -630,8 +630,8 @@ function getSampler3D(inputInfo: InputInfo): string {
   const shape = inputInfo.shapeInfo.logicalShape;
   const texName = inputInfo.name;
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
-  const stride0 = shape[1] * shape[2];
-  const stride1 = shape[2];
+  const stride0 = util.nearestEven(shape[1]) * util.nearestEven(shape[2]) / 4;
+  const stride1 = util.nearestEven(shape[2]) / 4;
 
   const {newShape, keptDims} = util.squeezeShape(shape);
   const squeezedShape = newShape;
@@ -662,7 +662,7 @@ function getSampler3D(inputInfo: InputInfo): string {
     return `
         vec4 ${funcName}(int row, int col, int depth) {
           int texR = row;
-          int texC = col * ${stride1} + depth;
+          int texC = col * ${stride1} + depth / 2;
           vec2 uv = (vec2(texC, texR) + halfCR) /
                      vec2(${texNumC}.0, ${texNumR}.0);
           return texture2D(${texName}, uv);
@@ -674,7 +674,7 @@ function getSampler3D(inputInfo: InputInfo): string {
     return `
     vec4 ${funcName}(int row, int col, int depth) {
       int texR = row * ${shape[1]} + col;
-      int texC = depth;
+      int texC = depth / 2;
       vec2 uv = (vec2(texC, texR) + halfCR) / vec2(${texNumC}.0, ${texNumR}.0);
       return texture2D(${texName}, uv);
     }
@@ -684,7 +684,8 @@ function getSampler3D(inputInfo: InputInfo): string {
   return `
       vec4 ${funcName}(int row, int col, int depth) {
         vec2 uv = UVfrom3D(
-            ${texNumR}, ${texNumC}, ${stride0}, ${stride1}, row, col, depth);
+            ${texNumR}, ${texNumC}, ${stride0}, ${
+      stride1}, row, col, depth / 2);
         return texture2D(${texName}, uv);
       }
   `;
