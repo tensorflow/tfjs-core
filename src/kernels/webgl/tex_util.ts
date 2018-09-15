@@ -229,6 +229,7 @@ export function encodeMatrixToPackedRGBA(
                                                            MN|OP
    */
 
+  console.log('ENCODED');
   console.log(packedRGBA);
   return packedRGBA;
 }
@@ -309,6 +310,9 @@ export function decodeMatrixFromPackedRGBA(
 
     offset += (rows * columns);
   }
+
+  console.log('DECODE');
+  console.log(packedRGBA);
 
   return matrix;
 }

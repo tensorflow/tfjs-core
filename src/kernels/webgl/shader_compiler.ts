@@ -660,32 +660,32 @@ function getSampler3D(inputInfo: InputInfo): string {
   const texNumC = texShape[1];
   if (texNumC === stride0) {
     return `
-        float ${funcName}(int row, int col, int depth) {
+        vec4 ${funcName}(int row, int col, int depth) {
           int texR = row;
           int texC = col * ${stride1} + depth;
           vec2 uv = (vec2(texC, texR) + halfCR) /
                      vec2(${texNumC}.0, ${texNumR}.0);
-          return sampleTexture(${texName}, uv);
+          return texture2D(${texName}, uv);
         }
       `;
   }
 
   if (texNumC === stride1) {
     return `
-    float ${funcName}(int row, int col, int depth) {
+    vec4 ${funcName}(int row, int col, int depth) {
       int texR = row * ${shape[1]} + col;
       int texC = depth;
       vec2 uv = (vec2(texC, texR) + halfCR) / vec2(${texNumC}.0, ${texNumR}.0);
-      return sampleTexture(${texName}, uv);
+      return texture2D(${texName}, uv);
     }
   `;
   }
 
   return `
-      float ${funcName}(int row, int col, int depth) {
+      vec4 ${funcName}(int row, int col, int depth) {
         vec2 uv = UVfrom3D(
             ${texNumR}, ${texNumC}, ${stride0}, ${stride1}, row, col, depth);
-        return sampleTexture(${texName}, uv);
+        return texture2D(${texName}, uv);
       }
   `;
 }
@@ -704,7 +704,7 @@ function getSampler4D(inputInfo: InputInfo): string {
     const params = ['row', 'col', 'depth', 'depth2'];
     return `
       ${getSamplerFromInInfo(newInputInfo)}
-      float ${funcName}(int row, int col, int depth, int depth2) {
+      vec4 ${funcName}(int row, int col, int depth, int depth2) {
         return ${funcName}(${getSqueezedParams(params, keptDims)});
       }
     `;
@@ -712,7 +712,7 @@ function getSampler4D(inputInfo: InputInfo): string {
 
   if (inputInfo.shapeInfo.isUniform) {
     return `
-      float ${funcName}(int row, int col, int depth, int depth2) {
+      vec4 ${funcName}(int row, int col, int depth, int depth2) {
         int index = row * ${stride0} + col * ${stride1} +
             depth * ${stride2} + depth2;
         return ${funcName}Flat(index);
@@ -725,7 +725,7 @@ function getSampler4D(inputInfo: InputInfo): string {
   const texNumC = texShape[1];
   if (texNumC === stride0) {
     return `
-      float ${funcName}(int row, int col, int depth, int depth2) {
+      vec4 ${funcName}(int row, int col, int depth, int depth2) {
         int texR = row;
         int texC = col * ${stride1} + depth * ${stride2} + depth2;
         vec2 uv = (vec2(texC, texR) + halfCR) /
@@ -736,7 +736,7 @@ function getSampler4D(inputInfo: InputInfo): string {
   }
   if (texNumC === stride2) {
     return `
-      float ${funcName}(int row, int col, int depth, int depth2) {
+      vec4 ${funcName}(int row, int col, int depth, int depth2) {
         int texR = row * ${shape[1] * shape[2]} + col * ${shape[2]} + depth;
         int texC = depth2;
         vec2 uv = (vec2(texC, texR) + halfCR) /
@@ -746,7 +746,7 @@ function getSampler4D(inputInfo: InputInfo): string {
     `;
   }
   return `
-    float ${funcName}(int row, int col, int depth, int depth2) {
+    vec4 ${funcName}(int row, int col, int depth, int depth2) {
       vec2 uv = UVfrom4D(${texNumR}, ${texNumC}, ${stride0}, ${stride1},
           ${stride2}, row, col, depth, depth2);
       return sampleTexture(${texName}, uv);

@@ -37,6 +37,13 @@ export class Conv2DProgram implements GPGPUProgram {
     const inputDepthNearestVec4 = Math.floor(convInfo.inChannels / 4) * 4;
     const inputDepthVec4Remainder = convInfo.inChannels % 4;
 
+    console.log(inputDepthNearestVec4);
+    console.log(inputDepthVec4Remainder);
+    console.log(this.outputShape);
+    console.log(
+        padTop, padLeft, strideHeight, strideWidth, dilationHeight,
+        dilationWidth, filterHeight, filterWidth);
+
     this.userCode = `
       const ivec2 strides = ivec2(${strideHeight}, ${strideWidth});
       const ivec2 pads = ivec2(${padTop}, ${padLeft});
@@ -49,6 +56,7 @@ export class Conv2DProgram implements GPGPUProgram {
 
         int iter = 0;
         int b2 = coords[1];
+        ivec2 xRCCorner = coords.yz * strides - pads;
 
         for(int rIter=0; rIter<=1; rIter++) { // coords.z
           for(int cIter=0; cIter<=1; cIter++) { // coords.w
@@ -56,8 +64,7 @@ export class Conv2DProgram implements GPGPUProgram {
             int c = cIter + coords.w;
             int d2 = c;
 
-            // ivec2 xRCCorner = coords.yz * strides - pads;
-            ivec2 xRCCorner = ivec2(b2, r) * strides - pads;
+            // ivec2 xRCCorner = ivec2(b2, r) * strides - pads;
             int xRCorner = xRCCorner.x;
             int xCCorner = xRCCorner.y;
 
@@ -65,6 +72,7 @@ export class Conv2DProgram implements GPGPUProgram {
             // ? = to be determined. : = across all values in that axis.
             float dotProd = 0.0;
             for (int wR = 0; wR < ${filterHeight}; wR++) {
+            // for (int wR = 0; wR < 1; wR++) {
               int xR = xRCorner + wR * ${dilationHeight};
 
               if (xR < 0 || xR >= ${convInfo.inHeight}) {
@@ -72,6 +80,7 @@ export class Conv2DProgram implements GPGPUProgram {
               }
 
               for (int wC = 0; wC < ${filterWidth}; wC++) {
+              // for (int wC = 0; wC < 1; wC++) {
                 int xC = xCCorner + wC * ${dilationWidth};
 
                 if (xC < 0 || xC >= ${convInfo.inWidth}) {
@@ -80,16 +89,16 @@ export class Conv2DProgram implements GPGPUProgram {
 
                 for (int d1 = 0; d1 < ${inputDepthNearestVec4}; d1 += 4) {
                   vec4 xValues = vec4(
-                    getX(batch, xR, xC, d1),
-                    getX(batch, xR, xC, d1 + 1),
-                    getX(batch, xR, xC, d1 + 2),
-                    getX(batch, xR, xC, d1 + 3)
+                    getX(batch, xR, xC, d1).x,
+                    getX(batch, xR, xC, d1 + 1).x,
+                    getX(batch, xR, xC, d1 + 2).x,
+                    getX(batch, xR, xC, d1 + 3).x
                   );
                   vec4 wValues = vec4(
-                    getW(wR, wC, d1, d2),
-                    getW(wR, wC, d1 + 1, d2),
-                    getW(wR, wC, d1 + 2, d2),
-                    getW(wR, wC, d1 + 3, d2)
+                    getW(wR, wC, d1, d2).x,
+                    getW(wR, wC, d1 + 1, d2).x,
+                    getW(wR, wC, d1 + 2, d2).x,
+                    getW(wR, wC, d1 + 3, d2).x
                   );
 
                   dotProd += dot(xValues, wValues);
@@ -97,28 +106,28 @@ export class Conv2DProgram implements GPGPUProgram {
 
                 if (${inputDepthVec4Remainder === 1}) {
                   dotProd +=
-                    getX(batch, xR, xC, ${inputDepthNearestVec4}) *
-                    getW(wR, wC, ${inputDepthNearestVec4}, d2);
+                    getX(batch, xR, xC, ${inputDepthNearestVec4}).x *
+                    getW(wR, wC, ${inputDepthNearestVec4}, d2).x;
                 } else if (${inputDepthVec4Remainder === 2}) {
                   vec2 xValues = vec2(
-                    getX(batch, xR, xC, ${inputDepthNearestVec4}),
-                    getX(batch, xR, xC, ${inputDepthNearestVec4} + 1)
+                    getX(batch, xR, xC, ${inputDepthNearestVec4}).x,
+                    getX(batch, xR, xC, ${inputDepthNearestVec4} + 1).x
                   );
                   vec2 wValues = vec2(
-                    getW(wR, wC, ${inputDepthNearestVec4}, d2),
-                    getW(wR, wC, ${inputDepthNearestVec4} + 1, d2)
+                    getW(wR, wC, ${inputDepthNearestVec4}, d2).x,
+                    getW(wR, wC, ${inputDepthNearestVec4} + 1, d2).x
                   );
                   dotProd += dot(xValues, wValues);
                 } else if (${inputDepthVec4Remainder === 3}) {
                   vec3 xValues = vec3(
-                    getX(batch, xR, xC, ${inputDepthNearestVec4}),
-                    getX(batch, xR, xC, ${inputDepthNearestVec4} + 1),
-                    getX(batch, xR, xC, ${inputDepthNearestVec4} + 2)
+                    getX(batch, xR, xC, ${inputDepthNearestVec4}).x,
+                    getX(batch, xR, xC, ${inputDepthNearestVec4} + 1).x,
+                    getX(batch, xR, xC, ${inputDepthNearestVec4} + 2).x
                   );
-                  vec3 wValues = vec3(
-                    getW(wR, wC, ${inputDepthNearestVec4}, d2),
-                    getW(wR, wC, ${inputDepthNearestVec4} + 1, d2),
-                    getW(wR, wC, ${inputDepthNearestVec4} + 2, d2)
+                  vec3 wValues = vec3( // accurate
+                    getW(wR, wC, ${inputDepthNearestVec4}, d2).x,
+                    getW(wR, wC, ${inputDepthNearestVec4}, d2).z,
+                    getW(wR, wC, ${inputDepthNearestVec4} + 1, d2).x
                   );
                   dotProd += dot(xValues, wValues);
                 }
