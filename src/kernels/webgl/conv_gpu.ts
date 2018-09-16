@@ -118,18 +118,18 @@ export class Conv2DProgram implements GPGPUProgram {
                     getW(wR, wC, ${inputDepthNearestVec4} + 1, d2).x
                   );
                   dotProd += dot(xValues, wValues);
-                } else if (${inputDepthVec4Remainder === 3}) {
+                } else if (${inputDepthVec4Remainder === 3}) { // accurate
                   vec3 xValues = vec3(
                     getX(batch, xR, xC, ${inputDepthNearestVec4}).x,
-                    getX(batch, xR, xC, ${inputDepthNearestVec4} + 1).x,
+                    getX(batch, xR, xC, ${inputDepthNearestVec4} + 1).y,
                     getX(batch, xR, xC, ${inputDepthNearestVec4} + 2).x
                   );
 
                   if(iter == 2) {
                     xValues = vec3(
                       getX(batch, xR, xC, ${inputDepthNearestVec4}).z,
-                      getX(batch, xR, xC, ${inputDepthNearestVec4} + 1).x,
-                      getX(batch, xR, xC, ${inputDepthNearestVec4} + 2).x
+                      getX(batch, xR, xC, ${inputDepthNearestVec4} + 1).w,
+                      getX(batch, xR, xC, ${inputDepthNearestVec4} + 2).z
                     );
                   }
 
@@ -156,7 +156,6 @@ export class Conv2DProgram implements GPGPUProgram {
 
             iter = iter + 1;
             // setOutput(dotProd);
-
           }
         }
 
