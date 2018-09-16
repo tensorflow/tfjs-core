@@ -3250,8 +3250,9 @@ describeWithFlags('batchToSpaceND', ALL_ENVS, () => {
     const crops = [[0, 0], [0, 0], [0, 0], [0, 0]];
 
     expect(() => tf.batchToSpaceND(t, blockShape, crops))
-        .toThrowError(`input rank is ${
-            t.rank} but should be > than [blockShape] ${blockShape.length}`);
+        .toThrowError(
+            `input rank is ${t.rank} but should be > than blockShape.length ${
+                blockShape.length}`);
   });
 
   it('throws when crops row dimension not equal to blockshape', () => {
@@ -3260,8 +3261,8 @@ describeWithFlags('batchToSpaceND', ALL_ENVS, () => {
     const crops = [[0, 0]];
 
     expect(() => tf.batchToSpaceND(t, blockShape, crops))
-        .toThrowError(`crops.shape[0] is ${
-            crops.length} but should be equal to [blockShape] ${
+        .toThrowError(`crops.length is ${
+            crops.length} but should be equal to blockShape.length  ${
             blockShape.length}`);
   });
 
@@ -3273,8 +3274,8 @@ describeWithFlags('batchToSpaceND', ALL_ENVS, () => {
 
     expect(() => tf.batchToSpaceND(t, blockShape, crops))
         .toThrowError(
-          `input tensor batch is ${
-            t.shape[0]} but is not divisible by prod( blockShape ) ${prod}`);
+            `input tensor batch is ${t.shape[0]} but is not divisible by ${
+                blockShape.join(' * ')} === ${prod}`);
   });
 
   it('accepts a tensor-like object', () => {
