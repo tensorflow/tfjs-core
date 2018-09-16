@@ -71,16 +71,16 @@ export class Conv2DProgram implements GPGPUProgram {
             // Convolve x(?, ?, d1) with w(:, :, d1, d2) to get y(yR, yC, d2).
             // ? = to be determined. : = across all values in that axis.
             float dotProd = 0.0;
-            for (int wR = 0; wR < ${filterHeight}; wR++) {
-            // for (int wR = 0; wR < 1; wR++) {
+            // for (int wR = 0; wR < ${filterHeight}; wR++) {
+            for (int wR = 0; wR < 1; wR++) {
               int xR = xRCorner + wR * ${dilationHeight};
 
               if (xR < 0 || xR >= ${convInfo.inHeight}) {
                 continue;
               }
 
-              for (int wC = 0; wC < ${filterWidth}; wC++) {
-              // for (int wC = 0; wC < 1; wC++) {
+              // for (int wC = 0; wC < ${filterWidth}; wC++) {
+              for (int wC = 0; wC < 1; wC++) {
                 int xC = xCCorner + wC * ${dilationWidth};
 
                 if (xC < 0 || xC >= ${convInfo.inWidth}) {
@@ -136,7 +136,7 @@ export class Conv2DProgram implements GPGPUProgram {
                   vec3 wValues = vec3( // accurate
                     getW(wR, wC, ${inputDepthNearestVec4}, d2).x,
                     getW(wR, wC, ${inputDepthNearestVec4}, d2).z,
-                    getW(wR, wC, ${inputDepthNearestVec4} + 1, d2).x
+                    getW(wR, wC, ${inputDepthNearestVec4} + 2, d2).x
                   );
 
                   dotProd += dot(xValues, wValues);
