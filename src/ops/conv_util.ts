@@ -351,8 +351,6 @@ function getPadAndOutInfo(
   return {padInfo, outHeight, outWidth};
 }
 
-// TODO: ensure that numerical values for pad do not need to be supported.
-// Support is not provided here, but is provided in conv2d workflows.
 function get3DPadAndOutInfo(
     pad: 'same'|'valid', inDepth: number, inHeight: number, inWidth: number,
     strideDepth: number, strideHeight: number, strideWidth: number,
