@@ -171,7 +171,7 @@ const SAMPLE_3D_SNIPPET = `
 vec2 UVfrom3D(int texNumR, int texNumC, int stride0,
     float stride1, int row, int col, int depth) {
   // Explicitly use integer operations as dot() only works on floats.
-  int index = row * stride0 + int(float(col) * stride1) + int(depth / 4);
+  int index = row * stride0 + int(float(col) * stride1) + int(depth / 2);
   int texR = index / texNumC;
   int texC = index - texR * texNumC;
   return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
@@ -183,7 +183,7 @@ vec2 UVfrom4D(int texNumR, int texNumC, int stride0,
     int stride1, float stride2, int row, int col, int depth,
     int depth2) {
   // Explicitly use integer operations as dot() only works on floats.
-  int index = row * stride0 + col * stride1 + int(float(depth) * stride2) + int(depth2 / 4);
+  int index = row * stride0 + col * stride1 + int(float(depth) * stride2) + int(depth2 / 2);
   int texR = index / texNumC;
   int texC = index - texR * texNumC;
   return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
@@ -685,8 +685,7 @@ function getSampler3D(inputInfo: InputInfo): string {
   return `
       vec4 ${funcName}(int row, int col, int depth) {
         vec2 uv = UVfrom3D(
-            ${texNumR}, ${texNumC}, ${stride0}, ${
-      stride1}, row, col, depth / 2);
+            ${texNumR}, ${texNumC}, ${stride0}, ${stride1}, row, col, depth);
         return texture2D(${texName}, uv);
       }
   `;
