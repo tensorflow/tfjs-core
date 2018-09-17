@@ -183,7 +183,7 @@ vec2 UVfrom4D(int texNumR, int texNumC, int stride0,
     int stride1, float stride2, int row, int col, int depth,
     int depth2) {
   // Explicitly use integer operations as dot() only works on floats.
-  int index = row * stride0 + col * stride1 + int(float(depth) * stride2) + int(depth2 / 2);
+  int index = row * stride0 + col * stride1 + int(float(int(depth / 2)) * stride2) + int(depth2 / 2);
   int texR = index / texNumC;
   int texC = index - texR * texNumC;
   return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
@@ -696,7 +696,7 @@ function getSampler4D(inputInfo: InputInfo): string {
   const shape = inputInfo.shapeInfo.logicalShape;
   const texName = inputInfo.name;
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
-  const stride2 = util.nearestEven(shape[3]) / 4;
+  const stride2 = util.nearestEven(shape[3]) / 2;
   const stride1 = util.nearestEven(shape[2]) * util.nearestEven(shape[3]) / 4;
   const stride0 = shape[1] *
       stride1;  // i feel like this doesn't need to be nearesteven because only
