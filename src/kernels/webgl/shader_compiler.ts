@@ -753,7 +753,7 @@ function getSampler4D(inputInfo: InputInfo): string {
   return `
     vec4 ${funcName}(int row, int col, int depth, int depth2) {
       vec2 uv = UVfrom4D(${texNumR}, ${texNumC}, ${stride0}, ${stride1},
-          ${stride2}, row, col, depth, depth2);
+          ${stride2.toFixed(2)}, row, col, depth, depth2);
       return texture2D(${texName}, uv);
     }
   `;
