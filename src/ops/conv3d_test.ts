@@ -17,6 +17,7 @@
 
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
+import {Tensor5D} from '../tensor';
 // tslint:disable-next-line:max-line-length
 import {ALL_ENVS, expectArraysClose} from '../test_util';
 
@@ -34,6 +35,21 @@ function generateCaseInputs(totalSizeTensor: number, totalSizeFilter: number) {
   }
   for (let i = 0; i < totalSizeFilter; i++) {
     filt[i] = 1.0 * (i + 1) / totalSizeFilter;
+  }
+
+  return {input: inp, filter: filt};
+}
+
+function generateGradientCaseInputs(
+    totalSizeTensor: number, totalSizeFilter: number) {
+  const inp = new Array(totalSizeTensor);
+  const filt = new Array(totalSizeFilter);
+
+  for (let i = 0; i < totalSizeTensor; i++) {
+    inp[i] = 1.0 * (i + 1);
+  }
+  for (let i = 0; i < totalSizeFilter; i++) {
+    filt[i] = 1.0 * (i + 1);
   }
 
   return {input: inp, filter: filt};
@@ -59,6 +75,33 @@ function runConv3DTestCase(
 
   const result = tf.conv3d(x, w, stride, pad);
   return result;
+}
+
+function runGradientConv3DTestCase(
+    batch: number, inDepth: number, inHeight: number, inWidth: number,
+    inChannels: number, outChannels: number, fDepth: number, fHeight: number,
+    fWidth: number, pad: 'valid'|'same',
+    stride: [number, number, number]|number) {
+  const inputShape: [number, number, number, number, number] =
+      [batch, inDepth, inHeight, inWidth, inChannels];
+  const filterShape: [number, number, number, number, number] =
+      [fDepth, fHeight, fWidth, inChannels, outChannels];
+
+  const totalSizeTensor = get5DTensorArea(inputShape);
+  const totalSizeFilter = get5DTensorArea(filterShape);
+  const inputs = generateGradientCaseInputs(totalSizeTensor, totalSizeFilter);
+
+  const x = tf.tensor5d(inputs.input, inputShape);
+  const w = tf.tensor5d(inputs.filter, filterShape);
+
+  const grads = tf.grads(
+      (x: Tensor5D, filter: Tensor5D) => tf.conv3d(x, filter, stride, pad));
+  const [dx, dfilter] = grads([x, w]);
+
+  expect(dx.shape).toEqual(x.shape);
+  expect(dfilter.shape).toEqual(w.shape);
+
+  return [dx, dfilter];
 }
 
 describeWithFlags('conv3d', ALL_ENVS, () => {
@@ -367,5 +410,30 @@ describeWithFlags('conv3d', ALL_ENVS, () => {
     const expectedOutput = [1.5625, 1.875];
 
     expectArraysClose(result, expectedOutput);
+  });
+
+  it('gradient check, x=[1,3,6,1,1] filter=[2,2,1,1,1] s=1 d=1 p=valid', () => {
+    const batch = 1;
+    const inDepth = 3;
+    const inHeight = 6;
+    const inWidth = 1;
+    const inChannels = 1;
+    const outChannels = 1;
+    const fDepth = 2;
+    const fHeight = 2;
+    const fWidth = 1;
+    const pad = 'valid';
+    const stride = 1;
+    const [dx, dfilter] = runGradientConv3DTestCase(
+        batch, inDepth, inHeight, inWidth, inChannels, outChannels, fDepth,
+        fHeight, fWidth, pad, stride);
+
+    const expectedFilterOutput = [60.0, 70.0, 120.0, 130.0];
+    const expectedOutput = [
+      1.0, 3.0, 3.0, 3.0, 3.0, 2.0, 4.0, 10.0, 10.0, 10.0, 10.0, 6.0, 3.0, 7.0,
+      7.0, 7.0, 7.0, 4.0
+    ];
+    expectArraysClose(dx, expectedOutput);
+    expectArraysClose(dfilter, expectedFilterOutput);
   });
 });

@@ -153,7 +153,7 @@ export class Conv3DDerFilterProgram implements GPGPUProgram {
     this.userCode = `
       void main() {
         ivec5 coords = getOutputCoords();
-        int wF = coords.x
+        int wF = coords.x;
         int wR = coords.y;
         int wC = coords.z;
         int d1 = coords.w;
@@ -223,8 +223,9 @@ export class Conv3DDerInputProgram implements GPGPUProgram {
         int batch = coords.x;
         int d1 = coords.u;
 
-        ivec3 dyCorner = ivec3(coords.x, coords.y, coords.z) - pads;
-        int dyFCorner = dyCorner.x
+
+        ivec3 dyCorner = ivec3(coords.y, coords.z, coords.w) - pads;
+        int dyFCorner = dyCorner.x;
         int dyRCorner = dyCorner.y;
         int dyCCorner = dyCorner.z;
 
