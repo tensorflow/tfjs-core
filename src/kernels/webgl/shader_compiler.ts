@@ -59,6 +59,7 @@ export function makeShader(
     FLOAT_TEXTURE_SETOUTPUT_SNIPPET, inputPrefixSnippet, outputSamplingSnippet,
     inputSamplingSnippet, userCode
   ].join('\n');
+  console.log(source);
   return source;
 }
 
@@ -168,9 +169,9 @@ vec2 UVfrom2D(int texNumR, int texNumC, int numC, int row, int col) {
 
 const SAMPLE_3D_SNIPPET = `
 vec2 UVfrom3D(int texNumR, int texNumC, int stride0,
-    int stride1, int row, int col, int depth) {
+    float stride1, int row, int col, int depth) {
   // Explicitly use integer operations as dot() only works on floats.
-  int index = row * stride0 + col * stride1 + depth;
+  int index = row * stride0 + int(float(col) * stride1) + int(depth / 4);
   int texR = index / texNumC;
   int texC = index - texR * texNumC;
   return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
@@ -179,10 +180,10 @@ vec2 UVfrom3D(int texNumR, int texNumC, int stride0,
 
 const SAMPLE_4D_SNIPPET = `
 vec2 UVfrom4D(int texNumR, int texNumC, int stride0,
-    int stride1, int stride2, int row, int col, int depth,
+    int stride1, float stride2, int row, int col, int depth,
     int depth2) {
   // Explicitly use integer operations as dot() only works on floats.
-  int index = row * stride0 + col * stride1 + depth * stride2 + depth2;
+  int index = row * stride0 + col * stride1 + int(float(depth) * stride2) + int(depth2 / 4);
   int texR = index / texNumC;
   int texC = index - texR * texNumC;
   return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
@@ -633,27 +634,27 @@ function getSampler3D(inputInfo: InputInfo): string {
   const stride0 = util.nearestEven(shape[1]) * util.nearestEven(shape[2]) / 4;
   const stride1 = util.nearestEven(shape[2]) / 4;
 
-  const {newShape, keptDims} = util.squeezeShape(shape);
-  const squeezedShape = newShape;
-  if (squeezedShape.length < shape.length) {
-    const newInputInfo = squeezeInputInfo(inputInfo, squeezedShape);
-    const params = ['row', 'col', 'depth'];
-    return `
-        ${getSamplerFromInInfo(newInputInfo)}
-        float ${funcName}(int row, int col, int depth) {
-          return ${funcName}(${getSqueezedParams(params, keptDims)});
-        }
-      `;
-  }
+  // const {newShape, keptDims} = util.squeezeShape(shape);
+  // const squeezedShape = newShape;
+  // if (squeezedShape.length < shape.length) {
+  //   const newInputInfo = squeezeInputInfo(inputInfo, squeezedShape);
+  //   const params = ['row', 'col', 'depth'];
+  //   return `
+  //       ${getSamplerFromInInfo(newInputInfo)}
+  //       float ${funcName}(int row, int col, int depth) {
+  //         return ${funcName}(${getSqueezedParams(params, keptDims)});
+  //       }
+  //     `;
+  // }
 
-  if (inputInfo.shapeInfo.isUniform) {
-    return `
-      float ${funcName}(int row, int col, int depth) {
-        int index = row * ${stride0} + col * ${stride1} + depth;
-        return ${funcName}Flat(index);
-      }
-    `;
-  }
+  // if (inputInfo.shapeInfo.isUniform) {
+  //   return `
+  //     float ${funcName}(int row, int col, int depth) {
+  //       int index = row * ${stride0} + col * ${stride1} + depth;
+  //       return ${funcName}Flat(index);
+  //     }
+  //   `;
+  // }
 
   const texShape = inputInfo.shapeInfo.texShape;
   const texNumR = texShape[0];
@@ -695,62 +696,65 @@ function getSampler4D(inputInfo: InputInfo): string {
   const shape = inputInfo.shapeInfo.logicalShape;
   const texName = inputInfo.name;
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
-  const stride2 = shape[3];
-  const stride1 = shape[2] * stride2;
-  const stride0 = shape[1] * stride1;
+  const stride2 = util.nearestEven(shape[3]) / 4;
+  const stride1 = util.nearestEven(shape[2]) * util.nearestEven(shape[3]) / 4;
+  const stride0 = shape[1] *
+      stride1;  // i feel like this doesn't need to be nearesteven because only
+                // the innermost dimensions are blocked into 2x2
 
-  const {newShape, keptDims} = util.squeezeShape(shape);
-  if (newShape.length < shape.length) {
-    const newInputInfo = squeezeInputInfo(inputInfo, newShape);
-    const params = ['row', 'col', 'depth', 'depth2'];
-    return `
-      ${getSamplerFromInInfo(newInputInfo)}
-      vec4 ${funcName}(int row, int col, int depth, int depth2) {
-        return ${funcName}(${getSqueezedParams(params, keptDims)});
-      }
-    `;
-  }
+  // const {newShape, keptDims} = util.squeezeShape(shape);
+  // if (newShape.length < shape.length) {
+  //   const newInputInfo = squeezeInputInfo(inputInfo, newShape);
+  //   const params = ['row', 'col', 'depth', 'depth2'];
+  //   return `
+  //     ${getSamplerFromInInfo(newInputInfo)}
+  //     vec4 ${funcName}(int row, int col, int depth, int depth2) {
+  //       return ${funcName}(${getSqueezedParams(params, keptDims)});
+  //     }
+  //   `;
+  // }
 
-  if (inputInfo.shapeInfo.isUniform) {
-    return `
-      vec4 ${funcName}(int row, int col, int depth, int depth2) {
-        int index = row * ${stride0} + col * ${stride1} +
-            depth * ${stride2} + depth2;
-        return ${funcName}Flat(index);
-      }
-    `;
-  }
+  // if (inputInfo.shapeInfo.isUniform) {
+  //   return `
+  //     vec4 ${funcName}(int row, int col, int depth, int depth2) {
+  //       int index = row * ${stride0} + col * ${stride1} +
+  //           depth * ${stride2} + depth2;
+  //       return ${funcName}Flat(index);
+  //     }
+  //   `;
+  // }
 
   const texShape = inputInfo.shapeInfo.texShape;
   const texNumR = texShape[0];
   const texNumC = texShape[1];
-  if (texNumC === stride0) {
-    return `
-      vec4 ${funcName}(int row, int col, int depth, int depth2) {
-        int texR = row;
-        int texC = col * ${stride1} + depth * ${stride2} + depth2;
-        vec2 uv = (vec2(texC, texR) + halfCR) /
-                   vec2(${texNumC}.0, ${texNumR}.0);
-        return sampleTexture(${texName}, uv);
-      }
-    `;
-  }
-  if (texNumC === stride2) {
-    return `
-      vec4 ${funcName}(int row, int col, int depth, int depth2) {
-        int texR = row * ${shape[1] * shape[2]} + col * ${shape[2]} + depth;
-        int texC = depth2;
-        vec2 uv = (vec2(texC, texR) + halfCR) /
-                  vec2(${texNumC}.0, ${texNumR}.0);
-        return sampleTexture(${texName}, uv);
-      }
-    `;
-  }
+  // if (texNumC === stride0) {
+  //   return `
+  //     vec4 ${funcName}(int row, int col, int depth, int depth2) {
+  //       int texR = row;
+  //       int texC = col * ${stride1} + depth * ${stride2} + depth2;
+  //       vec2 uv = (vec2(texC, texR) + halfCR) /
+  //                  vec2(${texNumC}.0, ${texNumR}.0);
+  //       return texture2D(${texName}, uv);
+  //     }
+  //   `;
+  // }
+  // if (texNumC === stride2) {
+  //   return `
+  //     vec4 ${funcName}(int row, int col, int depth, int depth2) {
+  //       int texR = row * ${shape[1] * shape[2]} + col * ${shape[2]} + depth;
+  //       int texC = depth2;
+  //       vec2 uv = (vec2(texC, texR) + halfCR) /
+  //                 vec2(${texNumC}.0, ${texNumR}.0);
+  //       return texture2D(${texName}, uv);
+  //     }
+  //   `;
+  // }
+
   return `
     vec4 ${funcName}(int row, int col, int depth, int depth2) {
       vec2 uv = UVfrom4D(${texNumR}, ${texNumC}, ${stride0}, ${stride1},
           ${stride2}, row, col, depth, depth2);
-      return sampleTexture(${texName}, uv);
+      return texture2D(${texName}, uv);
     }
   `;
 }
