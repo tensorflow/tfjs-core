@@ -16,7 +16,8 @@
  */
 import * as complex_util from './complex_util';
 import {InternalComplex} from './complex_util';
-import {expectArraysClose} from '../test_util';
+import {expectArraysClose, ALL_ENVS} from '../test_util';
+import {describeWithFlags} from '../jasmine_util';
 
 describe('complex_util', () => {
   it('mergeRealAndImagArrays', () => {
@@ -67,6 +68,9 @@ describe('complex_util', () => {
       .toEqual(new InternalComplex(3, 4));
   });
 
+});
+
+describeWithFlags('complex_util assignment', ALL_ENVS, () => {
   it('assign complex value in TypedArray', () => {
     const t = new Float32Array(4);
 
