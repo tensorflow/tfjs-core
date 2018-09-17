@@ -55,7 +55,6 @@ function generateGradientCaseInputs(
   return {input: inp, filter: filt};
 }
 
-// TODO: add case insensitivity for pad string value?
 function runConv3DTestCase(
     batch: number, inDepth: number, inHeight: number, inWidth: number,
     inChannels: number, outChannels: number, fDepth: number, fHeight: number,
@@ -435,5 +434,40 @@ describeWithFlags('conv3d', ALL_ENVS, () => {
     ];
     expectArraysClose(dx, expectedOutput);
     expectArraysClose(dfilter, expectedFilterOutput);
+  });
+
+  it('throws when passed x as a non-tensor', () => {
+    const inputDepth = 1;
+    const outputDepth = 1;
+    const fSize = 1;
+    const pad = 'valid';
+    const stride = 1;
+
+    const w = tf.tensor5d([2], [fSize, fSize, fSize, inputDepth, outputDepth]);
+
+    expect(() => tf.conv3d({} as tf.Tensor4D, w, stride, pad))
+        .toThrowError(/Argument 'x' passed to 'conv3d' must be a Tensor/);
+  });
+
+  it('throws when passed filter as a non-tensor', () => {
+    const inputDepth = 1;
+    const inputShape: [number, number, number, number] = [2, 2, 1, inputDepth];
+    const pad = 'valid';
+    const stride = 1;
+
+    const x = tf.tensor4d([1, 2, 3, 4], inputShape);
+
+    expect(() => tf.conv3d(x, {} as Tensor5D, stride, pad))
+        .toThrowError(/Argument 'filter' passed to 'conv3d' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const pad = 'valid';
+    const stride = 1;
+    const x = [[[[1], [2]], [[3], [4]]]];  // 2x2x1x1
+    const w = [[[[[2]]]]];                 // 1x1x1x1x1
+
+    const result = tf.conv3d(x, w, stride, pad);
+    expectArraysClose(result, [2, 4, 6, 8]);
   });
 });

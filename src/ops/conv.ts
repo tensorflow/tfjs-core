@@ -606,18 +606,27 @@ function separableConv2d_<T extends Tensor3D|Tensor4D>(
   return res as T;
 }
 
-function parseTupleParam(param: number|[number, number]): [number, number] {
-  return typeof param === 'number' ? [param, param] : param;
+function parseTupleParam(
+    param: number|[number, number]|[number, number, number]):
+    [number, number, number] {
+  if (typeof param === 'number') {
+    return [param, param, param];
+  }
+  if (param.length === 2) {
+    return [param[0], param[1], 1];
+  }
+  return param;
 }
 
-function tupleValuesAreOne(param: number|[number, number]): boolean {
-  const [dimA, dimB] = parseTupleParam(param);
-  return dimA === 1 && dimB === 1;
+function tupleValuesAreOne(
+    param: number|[number, number]|[number, number, number]): boolean {
+  const [dimA, dimB, dimC] = parseTupleParam(param);
+  return dimA === 1 && dimB === 1 && dimC === 1;
 }
 
 function eitherStridesOrDilationsAreOne(
-    strides: number|[number, number],
-    dilations: number|[number, number]): boolean {
+    strides: number|[number, number]|[number, number, number],
+    dilations: number|[number, number]|[number, number, number]): boolean {
   return tupleValuesAreOne(strides) || tupleValuesAreOne(dilations);
 }
 
@@ -712,19 +721,14 @@ function conv3d_<T extends Tensor4D|Tensor5D>(
       $filter.rank === 5,
       `Error in conv3d: filter must be rank 5, but got rank ` +
           `${$filter.rank}.`);
-
   util.assert(
       x5D.shape[4] === $filter.shape[3],
       `Error in conv3d: depth of input (${x5D.shape[4]}) must match ` +
           `input depth for filter ${$filter.shape[3]}.`);
-  /*
-  //TODO: Unsure if this check is required.
-  //TODO: Other checks may be required around the stride and dilation inputs.
   util.assert(
       eitherStridesOrDilationsAreOne(strides, dilations),
-      'Error in conv2D: Either strides or dilations must be 1. ' +
+      'Error in conv3D: Either strides or dilations must be 1. ' +
           `Got strides ${strides} and dilations '${dilations}'`);
-  */
   util.assert(
       dataFormat === 'NHWC',
       `Error in conv3d: got dataFormat of ${
@@ -734,13 +738,10 @@ function conv3d_<T extends Tensor4D|Tensor5D>(
       x5D.shape, $filter.shape, strides, dilations, pad);
 
   const grad = (dy: Tensor5D) => {
-    /*
-    //TODO: need to implement a check ensuring dilations values are appropriate.
     util.assert(
         tupleValuesAreOne(dilations),
-        'Error in gradient of conv2D: dilation rates greater than 1 are not' +
+        'Error in gradient of conv3D: dilation rates greater than 1 are not' +
             `yet supported in gradients. Got dilations '${dilations}'`);
-    */
 
     return {
       x: () => conv3dDerInput_(x5D.shape, dy, $filter, strides, pad),
@@ -871,7 +872,6 @@ function conv3dDerFilter_<T extends Tensor4D|Tensor5D>(
       filterShape.length === 5,
       `Error in conv3dDerFilter: filterShape must be length 5, but got ` +
           `${filterShape}.`);
-  // TODO: double check the following two assertions
   util.assert(
       x5D.shape[4] === filterShape[3],
       `Error in conv3dDerFilter: depth of input ${x5D.shape[4]}) must ` +
