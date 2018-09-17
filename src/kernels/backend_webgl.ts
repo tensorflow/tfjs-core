@@ -56,6 +56,7 @@ import {CumSumProgram} from './webgl/cumsum_gpu';
 import {DepthToSpaceProgram} from './webgl/depth_to_space_gpu';
 import {EncodeFloatProgram} from './webgl/encode_float_gpu';
 import {FFTProgram} from './webgl/fft_gpu';
+import * as fft_gpu from './webgl/fft_gpu';
 import {FromPixelsProgram} from './webgl/from_pixels_gpu';
 import {GatherProgram} from './webgl/gather_gpu';
 import {GPGPUContext} from './webgl/gpgpu_context';
@@ -1490,10 +1491,22 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   fft(x: Tensor): Tensor {
-    const program = new FFTProgram(x.shape);
-    const real = this.real(x);
-    const imag = this.imag(x);
-    return this.compileAndRun(program, [real, imag]);
+    util.assert(x.dtype === 'complex64','Only complex64 dtype is supported');
+    const xData = this.texData.get(x.dataId);
+
+    const realProgram = new FFTProgram(fft_gpu.COMPLEX_FFT.REAL, x.shape);
+    const imagProgram = new FFTProgram(fft_gpu.COMPLEX_FFT.IMAG, x.shape);
+    const inputs = [
+      this.makeComplexComponentTensorHandle(x, xData.complexTensors.real),
+      this.makeComplexComponentTensorHandle(x, xData.complexTensors.imag),
+    ];
+
+    const real = this.compileAndRun<Tensor>(realProgram, inputs);
+    const imag = this.compileAndRun<Tensor>(imagProgram, inputs);
+    const complex = this.complex(real, imag);
+    real.dispose();
+    imag.dispose();
+    return complex;
   }
 
   private makeOutputArray<T extends Tensor>(shape: number[], dtype: DataType):

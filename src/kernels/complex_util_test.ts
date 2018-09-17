@@ -15,7 +15,6 @@
  * =============================================================================
  */
 import * as complex_util from './complex_util';
-import {InternalComplex} from './complex_util';
 import {expectArraysClose, ALL_ENVS} from '../test_util';
 import {describeWithFlags} from '../jasmine_util';
 
@@ -34,48 +33,33 @@ describe('complex_util', () => {
     expect(result.imag).toEqual(new Float32Array([4, 5, 6]));
   });
 
-  it('c1 + c2', () => {
-    const c1 = new InternalComplex(1, 2);
-    const c2 = new InternalComplex(2, 3);
-
-    expect(c1.add(c2)).toEqual(new InternalComplex(3, 5));
+  it('complexWithEvenIndex', () => {
+    const complex = new Float32Array([1, 2, 3, 4, 5, 6]);
+    const result = complex_util.complexWithEvenIndex(complex);
+    expect(result.real).toEqual(new Float32Array([1, 5]));
+    expect(result.imag).toEqual(new Float32Array([2, 6]));
   });
 
-  it('c1 - c2', () => {
-    const c1 = new InternalComplex(1, 2);
-    const c2 = new InternalComplex(2, 3);
-
-    expect(c1.sub(c2)).toEqual(new InternalComplex(-1, -1));
+  it('complexWithOddIndex', () => {
+    const complex = new Float32Array([1, 2, 3, 4, 5, 6]);
+    const result = complex_util.complexWithOddIndex(complex);
+    expect(result.real).toEqual(new Float32Array([3]));
+    expect(result.imag).toEqual(new Float32Array([4]));
   });
 
-  it('c1 * c2', () => {
-    const c1 = new InternalComplex(1, 2);
-    const c2 = new InternalComplex(2, 3);
-
-    expect(c1.mul(c2)).toEqual(new InternalComplex(-4, 7));
+  it('exponents', () => {
+    const result = complex_util.exponents(5);
+    expectArraysClose(result.real, new Float32Array([1, 0.30901700258255005]));
+    expectArraysClose(result.imag, new Float32Array([0, -0.9510565400123596]));
   });
-
-  it('get complex number from TypedArray', () => {
-    const t = new Float32Array(4);
-    t[0] = 1;
-    t[1] = 2;
-    t[2] = 3;
-    t[3] = 4;
-
-    expect(complex_util.getComplexWithIndex(t, 0))
-      .toEqual(new InternalComplex(1, 2));
-    expect(complex_util.getComplexWithIndex(t, 1))
-      .toEqual(new InternalComplex(3, 4));
-  });
-
 });
 
 describeWithFlags('complex_util assignment', ALL_ENVS, () => {
   it('assign complex value in TypedArray', () => {
     const t = new Float32Array(4);
 
-    complex_util.assignToTypedArray(t, new InternalComplex(1, 2), 0);
-    complex_util.assignToTypedArray(t, new InternalComplex(3, 4), 1);
+    complex_util.assignToTypedArray(t, 1, 2, 0);
+    complex_util.assignToTypedArray(t, 3, 4, 1);
 
     expectArraysClose(t, new Float32Array([1, 2, 3, 4]));
   });

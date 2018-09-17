@@ -17,43 +17,47 @@
 
 import {GPGPUProgram} from './gpgpu_math';
 
+export const COMPLEX_FFT = {
+  REAL: 'return real * expR - imag * expI;',
+  IMAG: 'return real * expI + imag * expR;'
+};
+
 export class FFTProgram implements GPGPUProgram {
   variableNames = ['real', 'imag'];
   outputShape: number[];
   userCode: string;
 
-  constructor(inputShape: number[]) {
+  constructor(op: string, inputShape: number[]) {
     const size = inputShape[0];
-    this.outputShape = [size, 2];
+    this.outputShape = [size];
 
-    this.userCode = ` float mulMatDFT(int row, int col) {
-      // TODO: Gather constants in one place?
-      const float PI = 3.1415926535897932384626433832795;
-      float result = 0.0;
-
-      for (int i = 0; i < ${size}; i++) {
-        float x = -2.0 * PI * float(row * i) / float(${size});
-        float expR = cos(x);
-        float expI = sin(x);
-        float real = getReal(i);
-        float imag = getImag(i);
-
-        if (col == 0) {
-          // In case of real number
-          result += real * expR - imag * expI;
-        } else if (col == 1) {
-          // In case of imaginary number
-          result += real * expI + imag * expR;
-        }
+    this.userCode = `
+      float unaryOpComplex(float real, float expR, float imag, float expI) {
+        ${op}
       }
 
-      return result;
-    }
+      float mulMatDFT(int row) {
+        // TODO: Gather constants in one place?
+        const float PI = 3.1415926535897932384626433832795;
+        float result = 0.0;
 
-    void main() {
-      ivec2 resRC = getOutputCoords();
-      setOutput(mulMatDFT(resRC.x, resRC.y));
-    }
+        for (int i = 0; i < ${size}; i++) {
+          float x = -2.0 * PI * float(row * i) / float(${size});
+          float expR = cos(x);
+          float expI = sin(x);
+          float real = getReal(i);
+          float imag = getImag(i);
+
+          result += unaryOpComplex(real, expR, imag, expI);
+        }
+
+        return result;
+      }
+
+      void main() {
+        int row = getOutputCoords();
+        setOutput(mulMatDFT(row));
+      }
     `;
   }
 }

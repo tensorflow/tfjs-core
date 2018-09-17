@@ -2476,76 +2476,70 @@ export class MathBackendCPU implements KernelBackend {
 
   fft(input: Tensor): Tensor {
     util.assert(input.dtype === 'complex64', 'data type must be complex64.');
+    util.assert(input.shape.length > 0, 'input must have at least one rank.');
     const n = input.shape[0];
-    const data = input.dataSync();
-    const rawOutput = this.fftTransform(data, n) as Float32Array;
-    const output = complex_util.splitRealAndImagArrays(rawOutput);
-    return ops.complex(output.real, output.imag);
+    return this.fftTransform(input, n);
   }
 
-  private fftTransform(data: TypedArray, size: number): TypedArray {
-    if ((size & (size - 1)) === 0) {
-      return this.fftRadix2(data, size);
+  private is_exponent_of_2(size: number): boolean {
+    return (size & size - 1) === 0;
+  }
+
+  private fftTransform(input: Tensor, size: number): Tensor {
+    if (this.is_exponent_of_2(size)) {
+      return this.fftRadix2(input, size);
     } else {
       // TODO: Optimize by using Bluestein algorithm
-      return this.fourierTransformByMatmul(data, size);
+      const data = input.dataSync();
+      const rawOutput
+        = this.fourierTransformByMatmul(data, size) as Float32Array;
+      const output = complex_util.splitRealAndImagArrays(rawOutput);
+      return ops.complex(output.real, output.imag);
     }
   }
 
   // FFT using Cooley-Tukey algorithm on rarix 2 dimention input.
-  private fftRadix2(data: TypedArray, size: number): TypedArray {
+  private fftRadix2(input: Tensor, size: number): Tensor {
     if (size === 1) {
-      return data;
+      return input;
     }
-    const ret = new Float32Array(size * 2);
+    const data = input.dataSync() as Float32Array;
     const half = size / 2;
-    let even: TypedArray = new Float32Array(size);
-    let odd: TypedArray = new Float32Array(size);
-
-    let i = 0;
-    // Split the original input into even-indexed values and odd-indexed values.
-    while (i < size) {
-      const evenComplex = complex_util.getComplexWithIndex(data, i*2);
-      even[i * 2] = evenComplex.real;
-      even[i * 2 + 1] = evenComplex.imag;
-      const oddComplex = complex_util.getComplexWithIndex(data, i*2+1);
-      odd[i * 2] = oddComplex.real;
-      odd[i * 2 + 1] = oddComplex.imag;
-      i++;
-    }
+    const evenComplex = complex_util.complexWithEvenIndex(data);
+    let evenTensor = ops.complex(evenComplex.real, evenComplex.imag);
+    const oddComplex = complex_util.complexWithOddIndex(data);
+    let oddTensor = ops.complex(oddComplex.real, oddComplex.imag);
 
     // Recursive call for half part of original input.
-    even = this.fftRadix2(even, half);
-    odd = this.fftRadix2(odd, half);
+    evenTensor = this.fftRadix2(evenTensor, half);
+    oddTensor = this.fftRadix2(oddTensor, half);
 
-    for (let k = 0; k < half; k++) {
-      const c = complex_util.getComplexWithIndex(even, k);
-      const e = complex_util.exponent(k, size).mul(
-          complex_util.getComplexWithIndex(odd, k));
+    const e = complex_util.exponents(size);
+    const exponent = ops.complex(e.real, e.imag).mul(oddTensor);
 
-      // Results for first half values.
-      const addPart = c.add(e);
-      complex_util.assignToTypedArray(ret, addPart, k);
+    const addPart = evenTensor.add(exponent);
+    const subPart = evenTensor.sub(exponent);
 
-      // Results for rest half values.
-      const subPart = c.sub(e);
-      complex_util.assignToTypedArray(ret, subPart, k + half);
-    }
+    const realTensor = ops.real(addPart).concat(ops.real(subPart));
+    const imagTensor = ops.imag(addPart).concat(ops.imag(subPart));
 
-    return ret;
+    return ops.complex(realTensor, imagTensor);
   }
 
   // Calculate fourier transform by multplying sinusoid matrix.
-  private fourierTransformByMatmul(data: TypedArray, size: number) {
+  private fourierTransformByMatmul(data: TypedArray, size: number): TypedArray {
     const ret = new Float32Array(size * 2);
+    // TODO: Use matmul instead once it supports complex64 type.
     for (let r = 0; r < size; r++) {
-      let tmp = new complex_util.InternalComplex(0, 0);
+      let real = 0.0;
+      let imag = 0.0;
       for (let c = 0; c < size; c++) {
         const e = complex_util.exponent(r * c, size);
-        const term = complex_util.getComplexWithIndex(data, c).mul(e);
-        tmp = tmp.add(term);
+        const term = complex_util.getComplexWithIndex(data as Float32Array, c);
+        real += term.real * e.real - term.imag * e.imag;
+        imag += term.real * e.imag + term.imag * e.real;
       }
-      complex_util.assignToTypedArray(ret, tmp, r);
+      complex_util.assignToTypedArray(ret, real, imag, r);
     }
     return ret;
   }
