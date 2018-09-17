@@ -617,7 +617,7 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   multiply(a: Tensor, b: Tensor): Tensor {
-    if (a.dtype === 'complex64') {
+    if (a.dtype === 'complex64' && b.dtype === 'complex64') {
       const aData = this.texData.get(a.dataId);
       const bData = this.texData.get(b.dataId);
 
