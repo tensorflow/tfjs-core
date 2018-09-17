@@ -676,8 +676,8 @@ function getSampler3D(inputInfo: InputInfo): string {
     vec4 ${funcName}(int row, int col, int depth) {
       int texR = row * ${shape[1]} + col;
       int texC = depth / 2;
-      vec2 uv = (vec2(texC, texR) + halfCR) / vec2(${texNumC}.0, ${texNumR}.0);
-      return texture2D(${texName}, uv);
+      vec2 uv = (vec2(texC, texR) + halfCR) / vec2(${texNumC}.0,
+      ${texNumR}.0); return texture2D(${texName}, uv);
     }
   `;
   }
@@ -685,7 +685,8 @@ function getSampler3D(inputInfo: InputInfo): string {
   return `
       vec4 ${funcName}(int row, int col, int depth) {
         vec2 uv = UVfrom3D(
-            ${texNumR}, ${texNumC}, ${stride0}, ${stride1}, row, col, depth);
+            ${texNumR}, ${texNumC}, ${stride0}, ${
+      stride1.toFixed(2)}, row, col, depth);
         return texture2D(${texName}, uv);
       }
   `;
