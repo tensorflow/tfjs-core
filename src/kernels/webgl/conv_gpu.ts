@@ -72,7 +72,7 @@ export class Conv2DProgram implements GPGPUProgram {
             // ? = to be determined. : = across all values in that axis.
             float dotProd = 0.0;
             // for (int wR = 0; wR < ${filterHeight}; wR++) {
-            for (int wR = 0; wR < 1; wR++) {
+            for (int wR = 1; wR < 2; wR++) {
               int xR = xRCorner + wR * ${dilationHeight};
 
               if (xR < 0 || xR >= ${convInfo.inHeight}) {
@@ -80,7 +80,7 @@ export class Conv2DProgram implements GPGPUProgram {
               }
 
               // for (int wC = 0; wC < ${filterWidth}; wC++) {
-              for (int wC = 0; wC < 1; wC++) {
+              for (int wC = 1; wC < 2; wC++) {
                 int xC = xCCorner + wC * ${dilationWidth};
 
                 if (xC < 0 || xC >= ${convInfo.inWidth}) {
@@ -118,20 +118,28 @@ export class Conv2DProgram implements GPGPUProgram {
                     getW(wR, wC, ${inputDepthNearestVec4} + 1, d2).x
                   );
                   dotProd += dot(xValues, wValues);
-                } else if (${inputDepthVec4Remainder === 3}) { // accurate
+                } else if (${inputDepthVec4Remainder === 3}) {
                   vec3 xValues = vec3(
                     getX(batch, xR, xC, ${inputDepthNearestVec4}).x,
                     getX(batch, xR, xC, ${inputDepthNearestVec4} + 1).y,
                     getX(batch, xR, xC, ${inputDepthNearestVec4} + 2).x
                   );
 
-                  if(iter == 2) {
+                  if(iter == 2 && xC == 1) {
+                    xValues = vec3(
+                      getX(batch, xR, xC + 1, ${inputDepthNearestVec4}).x,
+                      getX(batch, xR, xC + 1, ${inputDepthNearestVec4} + 1).y,
+                      getX(batch, xR, xC + 1, ${inputDepthNearestVec4} + 2).x
+                    );
+                  };
+
+                  if((xC == 0 && iter == 2) || (xC == 1 && iter == 0) || (xC == 3 && iter == 0)) {
                     xValues = vec3(
                       getX(batch, xR, xC, ${inputDepthNearestVec4}).z,
                       getX(batch, xR, xC, ${inputDepthNearestVec4} + 1).w,
                       getX(batch, xR, xC, ${inputDepthNearestVec4} + 2).z
                     );
-                  }
+                  };
 
                   vec3 wValues = vec3( // accurate
                     getW(wR, wC, ${inputDepthNearestVec4}, d2).x,
