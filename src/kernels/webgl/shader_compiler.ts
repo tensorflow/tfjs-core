@@ -631,8 +631,8 @@ function getSampler3D(inputInfo: InputInfo): string {
   const shape = inputInfo.shapeInfo.logicalShape;
   const texName = inputInfo.name;
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
-  const stride0 = util.nearestEven(shape[1]) * util.nearestEven(shape[2]) / 4;
-  const stride1 = util.nearestEven(shape[2]) / 4;
+  let stride0 = util.nearestEven(shape[1]) * util.nearestEven(shape[2]) / 4;
+  let stride1 = util.nearestEven(shape[2]) / 4;
 
   // const {newShape, keptDims} = util.squeezeShape(shape);
   // const squeezedShape = newShape;
@@ -647,14 +647,17 @@ function getSampler3D(inputInfo: InputInfo): string {
   //     `;
   // }
 
-  // if (inputInfo.shapeInfo.isUniform) {
-  //   return `
-  //     float ${funcName}(int row, int col, int depth) {
-  //       int index = row * ${stride0} + col * ${stride1} + depth;
-  //       return ${funcName}Flat(index);
-  //     }
-  //   `;
-  // }
+  if (inputInfo.shapeInfo.isUniform) {
+    stride0 = shape[1] * shape[2];
+    stride1 = shape[2];
+
+    return `
+      float ${funcName}(int row, int col, int depth) {
+        int index = row * ${stride0} + col * ${stride1} + depth;
+        return ${funcName}Flat(index);
+      }
+    `;
+  }
 
   const texShape = inputInfo.shapeInfo.texShape;
   const texNumR = texShape[0];
@@ -696,9 +699,9 @@ function getSampler4D(inputInfo: InputInfo): string {
   const shape = inputInfo.shapeInfo.logicalShape;
   const texName = inputInfo.name;
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
-  const stride2 = util.nearestEven(shape[3]) / 2;
-  const stride1 = util.nearestEven(shape[2]) * util.nearestEven(shape[3]) / 4;
-  const stride0 = shape[1] *
+  let stride2 = util.nearestEven(shape[3]) / 2;
+  let stride1 = util.nearestEven(shape[2]) * util.nearestEven(shape[3]) / 4;
+  let stride0 = shape[1] *
       stride1;  // i feel like this doesn't need to be nearesteven because only
                 // the innermost dimensions are blocked into 2x2
 
@@ -714,15 +717,19 @@ function getSampler4D(inputInfo: InputInfo): string {
   //   `;
   // }
 
-  // if (inputInfo.shapeInfo.isUniform) {
-  //   return `
-  //     vec4 ${funcName}(int row, int col, int depth, int depth2) {
-  //       int index = row * ${stride0} + col * ${stride1} +
-  //           depth * ${stride2} + depth2;
-  //       return ${funcName}Flat(index);
-  //     }
-  //   `;
-  // }
+  if (inputInfo.shapeInfo.isUniform) {
+    stride2 = shape[3];
+    stride1 = shape[2] * stride2;
+    stride0 = shape[1] * stride1;
+
+    return `
+      float ${funcName}(int row, int col, int depth, int depth2) {
+        int index = row * ${stride0} + col * ${stride1} +
+            depth * ${stride2} + depth2;
+        return ${funcName}Flat(index);
+      }
+    `;
+  }
 
   const texShape = inputInfo.shapeInfo.texShape;
   const texNumR = texShape[0];
