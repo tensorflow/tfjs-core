@@ -90,6 +90,7 @@ import {UnaryOpProgram} from './webgl/unaryop_gpu';
 import {UnpackProgram} from './webgl/unpack_gpu';
 import * as webgl_util from './webgl/webgl_util';
 import {whereImpl} from './where_impl';
+import {Im2ColProgram} from './webgl/im2col_gpu';
 
 type TimerNode = RecursiveArray<Promise<number>>|Promise<number>;
 export interface CPUTimerQuery {
@@ -1313,6 +1314,14 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   conv2d(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
+    if(x.shape[0] === 1) {
+      const xSqueezed = x.as3D(x.shape[1], x.shape[2], x.shape[3]);
+      const im2ColProgram = new Im2ColProgram(xSqueezed.shape);
+
+      const im2ColOutput = Tensor.make<Tensor2D>(xSqueezed.shape, {});
+      this.texData.get(im2ColOutput.dataId).usage = TextureUsage.PACK;
+      return this.compileAndRun<Tensor2D>(im2ColProgram, [xSqueezed], im2ColOutput);
+    }
     const program = new Conv2DProgram(convInfo);
     return this.compileAndRun(program, [x, filter]);
   }
