@@ -38,34 +38,27 @@ export class Im2ColProgram implements GPGPUProgram {
       void main() {
         ivec2 rc = getOutputCoords();
 
-        // int r = rc.x;
-        // int c = rc.y;
-        // int rp1 = r + 1;
-        // int cp1 = c + 1;
+        vec4 result = vec4(0);
 
-        // bool cEdge = cp1 >= ${outputShape[1]};
-        // bool rEdge = rp1 >= ${outputShape[0]};
+        for(int row=0; row<=1; row++) {
+          for(int col=0; col<=1; col++) {
+            int blockIndex = rc.x + col;
+            int pos = rc.y + row;
 
-        // gl_FragColor = vec4(
-        //     getA(r, c),
-        //     cEdge ? 0. : getA(r, cp1),
-        //     rEdge ? 0. : getA(rp1, c),
-        //     rEdge || cEdge ? 0. : getA(rp1, cp1)
-        //   );
+            if(blockIndex >= ${outputShape[1]} || pos >= ${outputShape[0]}) continue;
 
+            int offsetY = int(blockIndex / (${numBlocksAcross}));
+            float offsetX = mod(float(blockIndex), ${numBlocksAcross}.);
 
-        int blockIndex = rc.x;
-        int pos = rc.y;
-        int offsetY = int(blockIndex / (${numBlocksAcross}));
-        float offsetX = mod(float(blockIndex), ${numBlocksAcross}.);
+            int d2 = int(mod(float(pos), ${inChannels}.));
+            int d1 = int(pos / ${itemsPerFilterRow});
+            int d0 = int((mod(float(pos), ${itemsPerFilterRow}.) / ${inChannels}.));
 
-        int d2 = int(mod(float(pos), ${inChannels}.));
-        int d1 = int(pos / ${itemsPerFilterRow});
-        int d0 = int((mod(float(pos), ${itemsPerFilterRow}.) / ${inChannels}.));
+            result[row * 2 + col] = getA(d0 + int(offsetX), d1 + int(offsetY), d2);
+          }
+        }
 
-        gl_FragColor = vec4(
-          getA(d0 + int(offsetX), d1 + int(offsetY), d2)
-        );
+        gl_FragColor = result;
       }
     `;
   }
