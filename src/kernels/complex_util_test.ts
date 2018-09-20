@@ -46,7 +46,9 @@ describe('complex_util', () => {
     expect(result.real).toEqual(new Float32Array([3]));
     expect(result.imag).toEqual(new Float32Array([4]));
   });
+});
 
+describeWithFlags('complex_util exponents', ALL_ENVS, () => {
   it('exponents', () => {
     const result = complex_util.exponents(5);
     expectArraysClose(result.real, new Float32Array([1, 0.30901700258255005]));
