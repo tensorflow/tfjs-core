@@ -32,7 +32,10 @@ export class Im2ColProgram implements GPGPUProgram {
     const inputWidth = inputShape[1];
     // const inputHeight = inputShape[0];
     const numBlocksAcross = inputWidth - filterWidth;
-    const itemsPerFilterRow = inChannels * inputWidth;
+    const itemsPerFilterRow = inChannels * filterWidth;
+
+    console.log("itrems per filter row");
+    console.log(itemsPerFilterRow)
 
     this.userCode = `
       void main() {
@@ -42,8 +45,8 @@ export class Im2ColProgram implements GPGPUProgram {
 
         for(int row=0; row<=1; row++) {
           for(int col=0; col<=1; col++) {
-            int blockIndex = rc.x + col;
-            int pos = rc.y + row;
+            int blockIndex = rc.y + col;
+            int pos = rc.x + row;
 
             if(blockIndex >= ${outputShape[1]} || pos >= ${outputShape[0]}) continue;
 
@@ -51,8 +54,8 @@ export class Im2ColProgram implements GPGPUProgram {
             float offsetX = mod(float(blockIndex), ${numBlocksAcross}.);
 
             int d2 = int(mod(float(pos), ${inChannels}.));
-            int d1 = int(pos / ${itemsPerFilterRow});
-            int d0 = int((mod(float(pos), ${itemsPerFilterRow}.) / ${inChannels}.));
+            int d0 = int(pos / ${itemsPerFilterRow});
+            int d1 = int((mod(float(pos), ${itemsPerFilterRow}.) / ${inChannels}.));
 
             result[row * 2 + col] = getA(d0 + int(offsetX), d1 + int(offsetY), d2);
           }
