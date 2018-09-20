@@ -18,6 +18,10 @@
 import {ConvGPUBenchmark, RegularConvParams} from './conv_benchmarks';
 import {MatmulGPUBenchmark} from './matmul_benchmarks';
 import {MobileNetV1GPUBenchmark} from './mobilenet_benchmarks';
+import {BatchNormalization3DGPUBenchmark} from './batchnormalization3d_benchmark';
+import {PoolGPUBenchmark} from './pool_benchmarks';
+import {ReductionOpsGPUBenchmark} from './reduction_ops_benchmark';
+import {UnaryOpsGPUBenchmark} from './unary_ops_benchmark';
 import * as test_util from './test_util';
 
 const BENCHMARK_RUNS = 100;
@@ -27,7 +31,7 @@ describe('benchmarks', () => {
     jasmine.DEFAULT_TIMEOUT_INTERVAL = 600000;
   });
 
-  it('matmul', async done => {
+  it('[default] matmul', async done => {
     const sizes = [1, 100, 400, 1000];
 
     const benchmark = new MatmulGPUBenchmark();
@@ -39,7 +43,7 @@ describe('benchmarks', () => {
     done();
   });
 
-  it('conv2d', async done => {
+  it('[default] conv2d', async done => {
     const sizes = [10, 100, 227];
     const convParams: RegularConvParams =
         {inDepth: 16, outDepth: 32, filterSize: 5, stride: 1, pad: 'same'};
@@ -52,7 +56,7 @@ describe('benchmarks', () => {
     done();
   });
 
-  it('mobilenet_v1', async done => {
+  it('[default] mobilenet_v1', async done => {
     const sizes = [1];  // MobileNet version
 
     const benchmark = new MobileNetV1GPUBenchmark();
@@ -62,5 +66,71 @@ describe('benchmarks', () => {
         size => `N=${size}_0_224`, BENCHMARK_RUNS);
 
     done();
+  });
+
+  it('batchnomalization', async done => {
+    const sizes = [1, 100, 400, 1000];
+    const benchmark = new BatchNormalization3DGPUBenchmark();
+
+    await test_util.benchmarkAndLog(
+      'batchnormalization3d', size => benchmark.run(size), sizes,
+      size => `N=${size}`, BENCHMARK_RUNS);
+
+    done();
+  });
+
+  const poolOps = ['max', 'avg'];
+  poolOps.forEach(ops => {
+    it(`pool(${ops})`, async done => {
+      const sizes = [1, 100, 400, 1000];
+      const benchmark = new PoolGPUBenchmark();
+
+      const params = {
+        depth: 1,
+        fieldSize: 5,
+        stride: 1
+      };
+
+      await test_util.benchmarkAndLog(
+        `pool(${ops})`, size => benchmark.run(size, ops, params), sizes,
+        size => `N=${size}`, BENCHMARK_RUNS);
+
+      done();
+    });
+  });
+
+  const reductionOps = ['max', 'min', 'argMax', 'argMin', 'sum', 'logSumExp'];
+  reductionOps.forEach(ops => {
+    it(`reduction(${ops})`, async done => {
+      const sizes = [1, 100, 400, 1000];
+      const benchmark = new ReductionOpsGPUBenchmark();
+
+      await test_util.benchmarkAndLog(
+        `reduction(${ops})`, size => benchmark.run(size, ops), sizes,
+        size => `N=${size}`, BENCHMARK_RUNS);
+
+      done();
+    });
+  });
+
+  const unaryOps = [
+    'abs',        'acos',  'acosh',   'asin',       'asinh', 'atan',
+    'atanh',      'ceil',  'cos',     'cosh',       'elu',   'erf',
+    'exp',        'expm1', 'floor',   'leakyRelu',  'log',   'log1p',
+    'logSigmoid', 'neg',   'prelu',   'reciprocal', 'relu',  'round',
+    'rsqrt',      'selu',  'sigmoid', 'sign',       'sin',   'sinh',
+    'softplus',   'sqrt',  'square',  'step',       'tan',   'tanh'
+  ];
+  unaryOps.forEach(ops => {
+    it(`unary(${ops})`, async done => {
+      const sizes = [1, 100, 400, 1000];
+      const benchmark = new UnaryOpsGPUBenchmark();
+
+      await test_util.benchmarkAndLog(
+        `unary(${ops})`, size => benchmark.run(size, ops), sizes,
+        size => `N=${size}`, BENCHMARK_RUNS);
+
+      done();
+    });
   });
 });

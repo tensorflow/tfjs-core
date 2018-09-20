@@ -23,6 +23,9 @@ module.exports = function(config) {
   const args = [];
   if (config.grep) {
     args.push('--grep', config.grep);
+  } else {
+    // Run the benchmark suite tagged with '[default]'
+    args.push('--grep', '[default]');
   }
   if (config.firebaseKey) {
     args.push('--firebaseKey', config.firebaseKey);
