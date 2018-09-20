@@ -1320,7 +1320,7 @@ export class MathBackendWebGL implements KernelBackend {
       const numRows = convInfo.batchSize;
       const numCols = (1 + (xSqueezed.shape[0] - convInfo.filterHeight) / convInfo.strideHeight) * (1 + (xSqueezed.shape[1] - convInfo.filterWidth) / convInfo.strideWidth);
       const x2ColShape = [sharedDim, numCols];
-      const im2ColProgram = new Im2ColProgram(x2ColShape);
+      const im2ColProgram = new Im2ColProgram(x2ColShape, xSqueezed.shape, convInfo);
 
       const im2ColOutput = Tensor.make<Tensor2D>(x2ColShape, {});
       this.texData.get(im2ColOutput.dataId).usage = TextureUsage.PACK;

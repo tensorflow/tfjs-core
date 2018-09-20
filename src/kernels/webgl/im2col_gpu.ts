@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+import {Conv2DInfo} from '../../ops/conv_util';
 import {GPGPUProgram} from './gpgpu_math';
 
 export class Im2ColProgram implements GPGPUProgram {
@@ -22,27 +23,49 @@ export class Im2ColProgram implements GPGPUProgram {
   outputShape: number[];
   userCode: string;
 
-  constructor(outputShape: number[]) {
+  constructor(outputShape: number[], inputShape: number[], convInfo: Conv2DInfo) {
     this.outputShape = outputShape;
+
+    const filterWidth = convInfo.filterWidth;
+    const inChannels = convInfo.inChannels;
+
+    const inputWidth = inputShape[1];
+    // const inputHeight = inputShape[0];
+    const numBlocksAcross = inputWidth - filterWidth;
+    const itemsPerFilterRow = inChannels * inputWidth;
 
     this.userCode = `
       void main() {
         ivec2 rc = getOutputCoords();
 
-        int r = rc.x;
-        int c = rc.y;
-        int rp1 = r + 1;
-        int cp1 = c + 1;
+        // int r = rc.x;
+        // int c = rc.y;
+        // int rp1 = r + 1;
+        // int cp1 = c + 1;
 
-        bool cEdge = cp1 >= ${outputShape[1]};
-        bool rEdge = rp1 >= ${outputShape[0]};
+        // bool cEdge = cp1 >= ${outputShape[1]};
+        // bool rEdge = rp1 >= ${outputShape[0]};
+
+        // gl_FragColor = vec4(
+        //     getA(r, c),
+        //     cEdge ? 0. : getA(r, cp1),
+        //     rEdge ? 0. : getA(rp1, c),
+        //     rEdge || cEdge ? 0. : getA(rp1, cp1)
+        //   );
+
+
+        int blockIndex = rc.x;
+        int pos = rc.y;
+        int offsetY = int(blockIndex / (${numBlocksAcross}));
+        float offsetX = mod(float(blockIndex), ${numBlocksAcross}.);
+
+        int d2 = int(mod(float(pos), ${inChannels}.));
+        int d1 = int(pos / ${itemsPerFilterRow});
+        int d0 = int((mod(float(pos), ${itemsPerFilterRow}.) / ${inChannels}.));
 
         gl_FragColor = vec4(
-            getA(r, c),
-            cEdge ? 0. : getA(r, cp1),
-            rEdge ? 0. : getA(rp1, c),
-            rEdge || cEdge ? 0. : getA(rp1, cp1)
-          );
+          getA(d0 + int(offsetX), d1 + int(offsetY), d2)
+        );
       }
     `;
   }

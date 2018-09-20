@@ -214,6 +214,8 @@ function conv2d_<T extends Tensor3D|Tensor4D>(
     res = ENV.engine.runKernel(
         backend => backend.conv2d(x4D, $filter, convInfo), {x: x4D, $filter},
         grad);
+    console.log("GOT RESULT");
+    console.log(res);
   }
   if (reshapedTo4D) {
     return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as T;
