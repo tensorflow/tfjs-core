@@ -17,13 +17,12 @@
 
 import {ENV} from '../environment';
 import {op} from '../ops/operation';
-import {Tensor} from '../tensor';
+import {Tensor1D} from '../tensor';
 import {assert} from '../util';
 
 /**
  * Compute the 1-dimentional discrete fourier transform
- * The input is expected to be the 2D tensor with the shape [n, 2].
- * Inner-most value represents a complex value.
+ * The input is expected to be the 1D tensor with dtype complex64.
  *
  * ```js
  * const real = tf.tensor1d([1, 2, 3]);
@@ -34,8 +33,9 @@ import {assert} from '../util';
  * ```
  * @param input The complex input to compute an fft over.
  */
-function fft_(input: Tensor): Tensor {
+function fft_(input: Tensor1D): Tensor1D {
   assert(input.dtype === 'complex64', 'dtype must be complex64');
+  assert(input.rank === 1, 'input rank must be 1');
   const ret = ENV.engine.runKernel(backend => backend.fft(input), {input});
   return ret;
 }

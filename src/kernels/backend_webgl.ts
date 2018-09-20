@@ -1490,8 +1490,7 @@ export class MathBackendWebGL implements KernelBackend {
     return split(x, sizeSplits, axis);
   }
 
-  fft(x: Tensor): Tensor {
-    util.assert(x.dtype === 'complex64','Only complex64 dtype is supported');
+  fft(x: Tensor1D): Tensor1D {
     const xData = this.texData.get(x.dataId);
 
     const realProgram = new FFTProgram(fft_gpu.COMPLEX_FFT.REAL, x.shape);
@@ -1503,7 +1502,7 @@ export class MathBackendWebGL implements KernelBackend {
 
     const real = this.compileAndRun<Tensor>(realProgram, inputs);
     const imag = this.compileAndRun<Tensor>(imagProgram, inputs);
-    const complex = this.complex(real, imag);
+    const complex = this.complex(real, imag).as1D();
     real.dispose();
     imag.dispose();
     return complex;

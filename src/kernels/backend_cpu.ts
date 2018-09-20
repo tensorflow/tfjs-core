@@ -2474,41 +2474,35 @@ export class MathBackendCPU implements KernelBackend {
         boxesVals, scoresVals, maxOutputSize, iouThreshold, scoreThreshold);
   }
 
-  fft(input: Tensor): Tensor {
-    util.assert(input.dtype === 'complex64', 'data type must be complex64.');
+  fft(input: Tensor1D): Tensor1D {
     util.assert(input.shape.length > 0, 'input must have at least one rank.');
     const n = input.shape[0];
-    return this.fftTransform(input, n);
+
+    if (this.is_exponent_of_2(n)) {
+      return this.fftRadix2(input, n);
+    } else {
+      const data = input.dataSync();
+      const rawOutput = this.fourierTransformByMatmul(data, n) as Float32Array;
+      const output = complex_util.splitRealAndImagArrays(rawOutput);
+      return ops.complex(output.real, output.imag).as1D();
+    }
   }
 
   private is_exponent_of_2(size: number): boolean {
     return (size & size - 1) === 0;
   }
 
-  private fftTransform(input: Tensor, size: number): Tensor {
-    if (this.is_exponent_of_2(size)) {
-      return this.fftRadix2(input, size);
-    } else {
-      // TODO: Optimize by using Bluestein algorithm
-      const data = input.dataSync();
-      const rawOutput
-        = this.fourierTransformByMatmul(data, size) as Float32Array;
-      const output = complex_util.splitRealAndImagArrays(rawOutput);
-      return ops.complex(output.real, output.imag);
-    }
-  }
-
-  // FFT using Cooley-Tukey algorithm on rarix 2 dimention input.
-  private fftRadix2(input: Tensor, size: number): Tensor {
+  // FFT using Cooley-Tukey algorithm on radix 2 dimensional input.
+  private fftRadix2(input: Tensor1D, size: number): Tensor1D {
     if (size === 1) {
       return input;
     }
     const data = input.dataSync() as Float32Array;
     const half = size / 2;
     const evenComplex = complex_util.complexWithEvenIndex(data);
-    let evenTensor = ops.complex(evenComplex.real, evenComplex.imag);
+    let evenTensor = ops.complex(evenComplex.real, evenComplex.imag).as1D();
     const oddComplex = complex_util.complexWithOddIndex(data);
-    let oddTensor = ops.complex(oddComplex.real, oddComplex.imag);
+    let oddTensor = ops.complex(oddComplex.real, oddComplex.imag).as1D();
 
     // Recursive call for half part of original input.
     evenTensor = this.fftRadix2(evenTensor, half);
@@ -2523,7 +2517,7 @@ export class MathBackendCPU implements KernelBackend {
     const realTensor = ops.real(addPart).concat(ops.real(subPart));
     const imagTensor = ops.imag(addPart).concat(ops.imag(subPart));
 
-    return ops.complex(realTensor, imagTensor);
+    return ops.complex(realTensor, imagTensor).as1D();
   }
 
   // Calculate fourier transform by multplying sinusoid matrix.

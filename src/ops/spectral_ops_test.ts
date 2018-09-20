@@ -32,17 +32,22 @@ describeWithFlags('FFT', ALL_ENVS, () => {
     const t1Imag = tf.tensor1d([0, 0, 0]);
     const t1 = tf.complex(t1Real, t1Imag);
     expectArraysClose(tf.fft(t1), [6, 0, -1.5, 0.866025, -1.5, -0.866025]);
+  });
 
-    const t2Real = tf.tensor1d([1, 2, 3]);
-    const t2Imag = tf.tensor1d([1, 2, 3]);
-    const t2 = tf.complex(t2Real, t2Imag);
+  it('should return the same value as TensorFlow with imaginary (3 elements)',
+      () => {
+    const t1Real = tf.tensor1d([1, 2, 3]);
+    const t1Imag = tf.tensor1d([1, 2, 3]);
+    const t1 = tf.complex(t1Real, t1Imag);
     expectArraysClose(
-        tf.fft(t2), [6, 6, -2.3660252, -0.63397473, -0.6339747, -2.3660254]);
+        tf.fft(t1), [6, 6, -2.3660252, -0.63397473, -0.6339747, -2.3660254]);
+  });
 
-    const t3Real = tf.tensor1d([-1, -2, -3]);
-    const t3Imag = tf.tensor1d([-1, -2, -3]);
-    const t3 = tf.complex(t3Real, t3Imag);
-    expectArraysClose(tf.fft(t3),
+  it('should return the same value as TensorFlow (negative 3 elements)', () => {
+    const t1Real = tf.tensor1d([-1, -2, -3]);
+    const t1Imag = tf.tensor1d([-1, -2, -3]);
+    const t1 = tf.complex(t1Real, t1Imag);
+    expectArraysClose(tf.fft(t1),
       [-5.9999995, -6, 2.3660252, 0.63397473, 0.6339747, 2.3660254]);
   });
 
@@ -51,16 +56,13 @@ describeWithFlags('FFT', ALL_ENVS, () => {
     const t1Imag = tf.tensor1d([0, 0, 0, 0]);
     const t1 = tf.complex(t1Real, t1Imag);
     expectArraysClose(tf.fft(t1), [10, 0, -2, 2, -2, 0, -2, -2]);
-
-    const t2Real = tf.tensor1d([1, 2, 3, 4]);
-    const t2Imag = tf.tensor1d([1, 2, 3, 4]);
-    const t2 = tf.complex(t2Real, t2Imag);
-    expectArraysClose(tf.fft(t2), [10, 10, -4, 0, -2, -2, 0, -4]);
   });
 
-  it('should throw exception with invalid complex number', () => {
-    const t = tf.tensor2d([[1], [2], [3]]);
-    expect(() => tf.fft(t))
-      .toThrowError('dtype must be complex64');
+  it('should return the same value as TensorFlow with imaginary (4 elements)',
+      () => {
+    const t1Real = tf.tensor1d([1, 2, 3, 4]);
+    const t1Imag = tf.tensor1d([1, 2, 3, 4]);
+    const t1 = tf.complex(t1Real, t1Imag);
+    expectArraysClose(tf.fft(t1), [10, 10, -4, 0, -2, -2, 0, -4]);
   });
 });
