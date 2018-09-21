@@ -1318,12 +1318,11 @@ export class MathBackendWebGL implements KernelBackend {
     if(x.shape[0] === 1) {
       const xSqueezed = x.as3D(x.shape[1], x.shape[2], x.shape[3]);
       const sharedDim = convInfo.filterWidth * convInfo.filterHeight * convInfo.inChannels;
-      const numRows = convInfo.batchSize;
       const numBlocksAcross = 1 + (xSqueezed.shape[1] - convInfo.filterWidth);
       const numBlocksDown = 1 + (xSqueezed.shape[0] - convInfo.filterHeight);
       const numCols = (numBlocksDown / convInfo.strideHeight) * (numBlocksAcross / convInfo.strideWidth);
       const x2ColShape = [sharedDim, numCols];
-      const w2RowShape = [numRows, sharedDim];
+      const w2RowShape = [convInfo.outChannels, sharedDim];
 
       const im2ColProgram = new Im2ColProgram(x2ColShape, xSqueezed.shape, convInfo);
       const im2ColOutput = Tensor.make<Tensor2D>(x2ColShape, {});
@@ -1335,7 +1334,7 @@ export class MathBackendWebGL implements KernelBackend {
       this.texData.get(w2RowOutput.dataId).usage = TextureUsage.PACK;
       const w2Row = this.compileAndRun<Tensor2D>(w2RowProgram, [filter], w2RowOutput);
 
-      const matmulProgram = new MatMulPackedProgram(w2Row.shape, im2Col.shape, [numRows, numCols]);
+      const matmulProgram = new MatMulPackedProgram(w2Row.shape, im2Col.shape, [convInfo.outChannels, numCols]);
       const matmulOutput = Tensor.make(matmulProgram.outputShape, {});
       this.texData.get(matmulOutput.dataId).usage = TextureUsage.PACK;
       const product = this.compileAndRun(matmulProgram, [w2Row, im2Col], matmulOutput);
