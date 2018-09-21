@@ -3274,7 +3274,8 @@ describeWithFlags('batchToSpaceND', ALL_ENVS, () => {
 
     expect(() => tf.batchToSpaceND(t, blockShape, crops))
         .toThrowError(
-            `input tensor batch is ${t.shape[0]} but is not divisible by ${
+            `input tensor batch is ${t.shape[0]} but is not divisible by the ` +
+            `product of the elements of blockShape ${
                 blockShape.join(' * ')} === ${prod}`);
   });
 
