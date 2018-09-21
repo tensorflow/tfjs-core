@@ -1315,13 +1315,14 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   conv2d(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
-    if(x.shape[0] === 1) {
+    const sharedDim = convInfo.filterWidth * convInfo.filterHeight * convInfo.inChannels;
+    const numBlocksAcross = 1 + (x.shape[2] - convInfo.filterWidth);
+    const numBlocksDown = 1 + (x.shape[1] - convInfo.filterHeight);
+    const numCols = (numBlocksDown / convInfo.strideHeight) * (numBlocksAcross / convInfo.strideWidth);
+    const x2ColShape = [sharedDim, numCols];
+
+    if(x.shape[0] === 1 && x2ColShape[0] * x2ColShape[1] < Math.pow(webgl_util.queryMaxTextureSize(this.gpgpu.gl), 2)) {
       const xSqueezed = x.as3D(x.shape[1], x.shape[2], x.shape[3]);
-      const sharedDim = convInfo.filterWidth * convInfo.filterHeight * convInfo.inChannels;
-      const numBlocksAcross = 1 + (xSqueezed.shape[1] - convInfo.filterWidth);
-      const numBlocksDown = 1 + (xSqueezed.shape[0] - convInfo.filterHeight);
-      const numCols = (numBlocksDown / convInfo.strideHeight) * (numBlocksAcross / convInfo.strideWidth);
-      const x2ColShape = [sharedDim, numCols];
       const w2RowShape = [convInfo.outChannels, sharedDim];
 
       const im2ColProgram = new Im2ColProgram(x2ColShape, xSqueezed.shape, convInfo);
@@ -1348,6 +1349,7 @@ export class MathBackendWebGL implements KernelBackend {
 
       return unpacked.reshape([1, numBlocksAcross, numBlocksDown, convInfo.outChannels]);
     }
+
     const program = new Conv2DProgram(convInfo);
     return this.compileAndRun(program, [x, filter]);
   }
