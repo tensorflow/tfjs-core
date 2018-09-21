@@ -1347,7 +1347,7 @@ export class MathBackendWebGL implements KernelBackend {
       w2RowOutput.dispose();
       matmulOutput.dispose();
 
-      return unpacked.reshape([numBlocksAcross, numBlocksDown, convInfo.outChannels]);
+      return unpacked.reshape([1, numBlocksAcross, numBlocksDown, convInfo.outChannels]);
     }
     const program = new Conv2DProgram(convInfo);
     return this.compileAndRun(program, [x, filter]);
