@@ -1335,7 +1335,6 @@ export class MathBackendWebGL implements KernelBackend {
       this.texData.get(w2RowOutput.dataId).usage = TextureUsage.PACK;
       const w2Row = this.compileAndRun<Tensor2D>(w2RowProgram, [filter], w2RowOutput);
 
-      // send to packed matmul
       const matmulProgram = new MatMulPackedProgram(w2Row.shape, im2Col.shape, [numRows, numCols]);
       const matmulOutput = Tensor.make(matmulProgram.outputShape, {});
       this.texData.get(matmulOutput.dataId).usage = TextureUsage.PACK;
@@ -1343,6 +1342,10 @@ export class MathBackendWebGL implements KernelBackend {
 
       const unpackProgram = new UnpackProgram(product.shape);
       const unpacked = this.compileAndRun(unpackProgram, [product]);
+
+      im2ColOutput.dispose();
+      w2RowOutput.dispose();
+      matmulOutput.dispose();
 
       return unpacked.reshape([numBlocksAcross, numBlocksDown, convInfo.outChannels]);
     }

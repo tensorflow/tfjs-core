@@ -28,9 +28,7 @@ export class Im2ColProgram implements GPGPUProgram {
 
     const filterWidth = convInfo.filterWidth;
     const inChannels = convInfo.inChannels;
-
     const inputWidth = inputShape[1];
-    // const inputHeight = inputShape[0];
     const numBlocksAcross = inputWidth - filterWidth + 1;
     const itemsPerFilterRow = inChannels * filterWidth;
 
@@ -54,7 +52,7 @@ export class Im2ColProgram implements GPGPUProgram {
             int d0 = int(pos / ${itemsPerFilterRow});
             int d1 = int((mod(float(pos), ${itemsPerFilterRow}.) / ${inChannels}.));
 
-            result[row * 2 + col] = getA(d0 + int(offsetX), d1 + int(offsetY), d2);
+            result[row * 2 + col] = getA(d0 + int(offsetY), d1 + int(offsetX), d2);
           }
         }
 

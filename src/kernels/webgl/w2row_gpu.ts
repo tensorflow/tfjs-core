@@ -28,10 +28,6 @@ export class W2RowProgram implements GPGPUProgram {
 
     const filterWidth = convInfo.filterWidth;
     const inChannels = convInfo.inChannels;
-
-    const inputWidth = inputShape[1];
-    // const inputHeight = inputShape[0];
-    const numBlocksAcross = inputWidth - filterWidth + 1;
     const itemsPerFilterRow = inChannels * filterWidth;
 
     this.userCode = `
@@ -44,6 +40,9 @@ export class W2RowProgram implements GPGPUProgram {
           for(int col=0; col<=1; col++) {
             int r = rc.x + row;
             int c = rc.y + col;
+
+            if(c >= ${outputShape[1]} || r >= ${outputShape[0]}) continue;
+
             int d0 = int(c / ${itemsPerFilterRow});
             int d0Remain = int(mod(float(c), ${itemsPerFilterRow}.));
             int d1 = int(d0Remain / ${inChannels});
