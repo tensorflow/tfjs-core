@@ -45,9 +45,9 @@ export class W2RowProgram implements GPGPUProgram {
             int r = rc.x + row;
             int c = rc.y + col;
             int d0 = int(c / ${itemsPerFilterRow});
-            int d0Remain = int(mod(float(c), ${itemsPerFilterRow}));
+            int d0Remain = int(mod(float(c), ${itemsPerFilterRow}.));
             int d1 = int(d0Remain / ${inChannels});
-            int d2 = int(mod(float(d0Remain), ${inChannels}));
+            int d2 = int(mod(float(d0Remain), ${inChannels}.));
 
             result[row * 2 + col] = getW(d0, d1, d2, r);
           }

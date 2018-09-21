@@ -91,6 +91,7 @@ import {UnpackProgram} from './webgl/unpack_gpu';
 import * as webgl_util from './webgl/webgl_util';
 import {whereImpl} from './where_impl';
 import {Im2ColProgram} from './webgl/im2col_gpu';
+import {W2RowProgram} from './webgl/w2row_gpu';
 
 type TimerNode = RecursiveArray<Promise<number>>|Promise<number>;
 export interface CPUTimerQuery {
@@ -1318,13 +1319,32 @@ export class MathBackendWebGL implements KernelBackend {
       const xSqueezed = x.as3D(x.shape[1], x.shape[2], x.shape[3]);
       const sharedDim = convInfo.filterWidth * convInfo.filterHeight * convInfo.inChannels;
       const numRows = convInfo.batchSize;
-      const numCols = (1 + (xSqueezed.shape[0] - convInfo.filterHeight) / convInfo.strideHeight) * (1 + (xSqueezed.shape[1] - convInfo.filterWidth) / convInfo.strideWidth);
+      const numBlocksAcross = 1 + (xSqueezed.shape[1] - convInfo.filterWidth);
+      const numBlocksDown = 1 + (xSqueezed.shape[0] - convInfo.filterHeight);
+      const numCols = (numBlocksDown / convInfo.strideHeight) * (numBlocksAcross / convInfo.strideWidth);
       const x2ColShape = [sharedDim, numCols];
-      const im2ColProgram = new Im2ColProgram(x2ColShape, xSqueezed.shape, convInfo);
+      const w2RowShape = [numRows, sharedDim];
 
+      const im2ColProgram = new Im2ColProgram(x2ColShape, xSqueezed.shape, convInfo);
       const im2ColOutput = Tensor.make<Tensor2D>(x2ColShape, {});
       this.texData.get(im2ColOutput.dataId).usage = TextureUsage.PACK;
-      return this.compileAndRun<Tensor2D>(im2ColProgram, [xSqueezed], im2ColOutput);
+      const im2Col = this.compileAndRun<Tensor2D>(im2ColProgram, [xSqueezed], im2ColOutput);
+
+      const w2RowProgram = new W2RowProgram(w2RowShape, filter.shape, convInfo);
+      const w2RowOutput = Tensor.make<Tensor2D>(w2RowShape, {});
+      this.texData.get(w2RowOutput.dataId).usage = TextureUsage.PACK;
+      const w2Row = this.compileAndRun<Tensor2D>(w2RowProgram, [filter], w2RowOutput);
+
+      // send to packed matmul
+      const matmulProgram = new MatMulPackedProgram(w2Row.shape, im2Col.shape, [numRows, numCols]);
+      const matmulOutput = Tensor.make(matmulProgram.outputShape, {});
+      this.texData.get(matmulOutput.dataId).usage = TextureUsage.PACK;
+      const product = this.compileAndRun(matmulProgram, [w2Row, im2Col], matmulOutput);
+
+      const unpackProgram = new UnpackProgram(product.shape);
+      const unpacked = this.compileAndRun(unpackProgram, [product]);
+
+      return unpacked.reshape([numBlocksAcross, numBlocksDown, convInfo.outChannels]);
     }
     const program = new Conv2DProgram(convInfo);
     return this.compileAndRun(program, [x, filter]);
