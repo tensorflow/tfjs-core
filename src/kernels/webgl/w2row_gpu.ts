@@ -18,8 +18,8 @@
 import {Conv2DInfo} from '../../ops/conv_util';
 import {GPGPUProgram} from './gpgpu_math';
 
-export class Im2ColProgram implements GPGPUProgram {
-  variableNames = ['A'];
+export class W2RowProgram implements GPGPUProgram {
+  variableNames = ['W'];
   outputShape: number[];
   userCode: string;
 
@@ -42,19 +42,14 @@ export class Im2ColProgram implements GPGPUProgram {
 
         for(int row=0; row<=1; row++) {
           for(int col=0; col<=1; col++) {
-            int blockIndex = rc.y + col;
-            int pos = rc.x + row;
+            int r = rc.x + row;
+            int c = rc.y + col;
+            int d0 = int(c / ${itemsPerFilterRow});
+            int d0Remain = int(mod(float(c), ${itemsPerFilterRow}));
+            int d1 = int(d0Remain / ${inChannels});
+            int d2 = int(mod(float(d0Remain), ${inChannels}));
 
-            if(blockIndex >= ${outputShape[1]} || pos >= ${outputShape[0]}) continue;
-
-            int offsetY = int(blockIndex / (${numBlocksAcross}));
-            float offsetX = mod(float(blockIndex), ${numBlocksAcross}.);
-
-            int d2 = int(mod(float(pos), ${inChannels}.));
-            int d0 = int(pos / ${itemsPerFilterRow});
-            int d1 = int((mod(float(pos), ${itemsPerFilterRow}.) / ${inChannels}.));
-
-            result[row * 2 + col] = getA(d0 + int(offsetX), d1 + int(offsetY), d2);
+            result[row * 2 + col] = getW(d0, d1, d2, r);
           }
         }
 
