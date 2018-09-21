@@ -41,18 +41,18 @@ export class Im2ColProgram implements GPGPUProgram {
         for(int row=0; row<=1; row++) {
           for(int col=0; col<=1; col++) {
             int blockIndex = rc.y + col;
-            int pos = rc.x + row;
+            float pos = float(rc.x + row);
 
-            if(blockIndex >= ${outputShape[1]} || pos >= ${outputShape[0]}) continue;
+            if(blockIndex >= ${outputShape[1]} || pos >= ${outputShape[0]}.) continue;
 
             int offsetY = int(blockIndex / (${numBlocksAcross}));
             float offsetX = mod(float(blockIndex), ${numBlocksAcross}.);
 
-            int d2 = int(mod(float(pos), ${inChannels}.));
-            int d0 = int(pos / ${itemsPerFilterRow});
-            int d1 = int((mod(float(pos), ${itemsPerFilterRow}.) / ${inChannels}.));
+            int d2 = int(mod(pos, ${inChannels}.));
+            int d0 = int(pos / ${itemsPerFilterRow}.);
+            float d1 = mod(pos, ${itemsPerFilterRow}.) / ${inChannels}.;
 
-            result[row * 2 + col] = getA(d0 + int(offsetY), d1 + int(offsetX), d2);
+            result[row * 2 + col] = getA(d0 + offsetY, int(d1 + offsetX), d2);
           }
         }
 
