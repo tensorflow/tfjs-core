@@ -26,10 +26,9 @@ export class Im2ColProgram implements GPGPUProgram {
   constructor(outputShape: number[], inputShape: number[], convInfo: Conv2DInfo) {
     this.outputShape = outputShape;
 
-    const filterWidth = convInfo.filterWidth;
-    const inChannels = convInfo.inChannels;
+    const {filterWidth, inChannels, strideWidth, strideHeight} = convInfo;
     const inputWidth = inputShape[1];
-    const numBlocksAcross = inputWidth - filterWidth + 1;
+    const numBlocksAcross = 1 + (inputWidth - filterWidth) / strideWidth;
     const itemsPerFilterRow = inChannels * filterWidth;
 
     this.userCode = `
@@ -45,8 +44,8 @@ export class Im2ColProgram implements GPGPUProgram {
 
             if(blockIndex >= ${outputShape[1]} || pos >= ${outputShape[0]}.) continue;
 
-            int offsetY = int(blockIndex / (${numBlocksAcross}));
-            float offsetX = mod(float(blockIndex), ${numBlocksAcross}.);
+            int offsetY = int(blockIndex / (${numBlocksAcross})) * ${strideHeight};
+            float offsetX = mod(float(blockIndex), ${numBlocksAcross}.) * ${strideWidth}.;
 
             int d2 = int(mod(pos, ${inChannels}.));
             int d0 = int(pos / ${itemsPerFilterRow}.);
