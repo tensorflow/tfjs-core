@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2017 Google Inc. All Rights Reserved.
+ * Copyright 2018 Google Inc. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,22 +17,29 @@
 
 import {GPGPUProgram} from './gpgpu_math';
 
-export class ClipProgram implements GPGPUProgram {
+export class UnpackProgram implements GPGPUProgram {
   variableNames = ['A'];
-  userCode: string;
   outputShape: number[];
+  userCode: string;
 
-  constructor(aShape: number[], min: number, max: number) {
-    this.outputShape = aShape;
+  constructor(outputShape: number[]) {
+    this.outputShape = outputShape;
+
     this.userCode = `
-      void main() {
-        float value = getAAtOutCoords();
-        if (isNaN(value)) {
-          setOutput(value);
-          return;
-        }
+      const vec2 onePixel = 1. / vec2(${outputShape[1]}, ${outputShape[0]});
 
-        setOutput(clamp(value, float(${min}), float(${max})));
+      void main() {
+        ivec2 rc = getOutputCoords();
+        vec2 modCoord = mod(vec2(rc.y, rc.x), 2.);
+
+        vec4 packedInput = texture2D(A,
+          resultUV - step(1., modCoord) * onePixel);
+
+        setOutput(
+          modCoord.x == 0. ?
+            (modCoord.y == 0. ? packedInput.r : packedInput.b) :
+            (modCoord.y == 0. ? packedInput.g : packedInput.a)
+        );
       }
     `;
   }

@@ -15,23 +15,31 @@
  * =============================================================================
  */
 
+import {Tensor} from '../../tensor';
 import {DataType, DataTypeMap} from '../../types';
 
 export enum TextureUsage {
   RENDER,
   UPLOAD,
   PIXELS,
-  DOWNLOAD
+  DOWNLOAD,
+  PACK
 }
 
 export enum PhysicalTextureType {
-  FLOAT16,
-  FLOAT32,
-  UNSIGNED_BYTE
+  UNPACKED_FLOAT16,
+  UNPACKED_FLOAT32,
+  PACKED_4X1_UNSIGNED_BYTE,
+  PACKED_2X2_FLOAT32
 }
 
 export interface TextureData {
   texture: WebGLTexture;
+  // For complex numbers, the real and imaginary parts are stored as their own
+  // individual tensors, with a parent joining the two with the
+  // complexTensors field. When this is defined, texture will be null.
+  complexTensors?: {real: Tensor, imag: Tensor};
+
   shape: number[];
   /** [rows, columns] shape of the texture. */
   texShape: [number, number];

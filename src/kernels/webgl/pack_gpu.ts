@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2017 Google Inc. All Rights Reserved.
+ * Copyright 2018 Google Inc. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,22 +17,32 @@
 
 import {GPGPUProgram} from './gpgpu_math';
 
-export class ClipProgram implements GPGPUProgram {
+export class PackProgram implements GPGPUProgram {
   variableNames = ['A'];
-  userCode: string;
   outputShape: number[];
+  userCode: string;
 
-  constructor(aShape: number[], min: number, max: number) {
-    this.outputShape = aShape;
+  constructor(outputShape: number[]) {
+    this.outputShape = outputShape;
+
     this.userCode = `
       void main() {
-        float value = getAAtOutCoords();
-        if (isNaN(value)) {
-          setOutput(value);
-          return;
-        }
+        ivec2 rc = getOutputCoords();
 
-        setOutput(clamp(value, float(${min}), float(${max})));
+        int r = rc.x;
+        int c = rc.y;
+        int rp1 = r + 1;
+        int cp1 = c + 1;
+
+        bool cEdge = cp1 >= ${outputShape[1]};
+        bool rEdge = rp1 >= ${outputShape[0]};
+
+        gl_FragColor = vec4(
+            getA(r, c),
+            cEdge ? 0. : getA(r, cp1),
+            rEdge ? 0. : getA(rp1, c),
+            rEdge || cEdge ? 0. : getA(rp1, cp1)
+          );
       }
     `;
   }

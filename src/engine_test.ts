@@ -17,6 +17,7 @@
 
 import * as tf from './index';
 import {describeWithFlags} from './jasmine_util';
+import {Tensor} from './tensor';
 import {ALL_ENVS, expectArraysClose, expectArraysEqual, expectNumbersClose, WEBGL_ENVS} from './test_util';
 
 describeWithFlags('fromPixels + regular math op', WEBGL_ENVS, () => {
@@ -357,6 +358,70 @@ describeWithFlags('memory', ALL_ENVS, () => {
     expect(tf.memory().numBytes).toBe(4);
     expect(sum.dtype).toBe('int32');
     expectArraysClose(sum, [1 + 1 + 0 + 1]);
+  });
+});
+
+describeWithFlags('profile', ALL_ENVS, () => {
+  it('squaring', async () => {
+    const profile = await tf.profile(() => {
+      const x = tf.tensor1d([1, 2, 3]);
+      let x2 = x.square();
+      x2.dispose();
+      x2 = x.square();
+      x2.dispose();
+      return x;
+    });
+
+    const result = profile.result as Tensor;
+
+    expect(profile.newBytes).toBe(12);
+    expect(profile.peakBytes).toBe(24);
+    expect(profile.newTensors).toBe(1);
+    expectArraysClose(result, [1, 2, 3]);
+    expect(profile.kernels).toEqual([
+      {
+        'name': 'square',
+        'bytesAdded': 12,
+        'totalBytesSnapshot': 24,
+        'tensorsAdded': 1,
+        'totalTensorsSnapshot': 2,
+        'inputShapes': [[3]],
+        'outputShape': [3]
+      },
+      {
+        'name': 'square',
+        'bytesAdded': 12,
+        'totalBytesSnapshot': 24,
+        'tensorsAdded': 1,
+        'totalTensorsSnapshot': 2,
+        'inputShapes': [[3]],
+        'outputShape': [3]
+      }
+    ]);
+  });
+
+  it('squaring without disposing', async () => {
+    const profile = await tf.profile(() => {
+      const x = tf.tensor1d([1, 2, 3]);
+      const x2 = x.square();
+      return x2;
+    });
+
+    const result = profile.result as Tensor;
+
+    expect(profile.newBytes).toBe(24);
+    expect(profile.peakBytes).toBe(24);
+    expect(profile.newTensors).toBe(2);
+    expectArraysClose(result, [1, 4, 9]);
+    expect(profile.kernels).toEqual([{
+      'name': 'square',
+      'bytesAdded': 12,
+      'totalBytesSnapshot': 24,
+      'tensorsAdded': 1,
+      'totalTensorsSnapshot': 2,
+      'inputShapes': [[3]],
+      'outputShape': [3]
+    }]);
   });
 });
 

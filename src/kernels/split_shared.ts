@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2017 Google Inc. All Rights Reserved.
+ * Copyright 2018 Google Inc. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,25 +15,17 @@
  * =============================================================================
  */
 
-import {GPGPUProgram} from './gpgpu_math';
+import {Tensor} from '../tensor';
 
-export class ClipProgram implements GPGPUProgram {
-  variableNames = ['A'];
-  userCode: string;
-  outputShape: number[];
-
-  constructor(aShape: number[], min: number, max: number) {
-    this.outputShape = aShape;
-    this.userCode = `
-      void main() {
-        float value = getAAtOutCoords();
-        if (isNaN(value)) {
-          setOutput(value);
-          return;
-        }
-
-        setOutput(clamp(value, float(${min}), float(${max})));
-      }
-    `;
-  }
+/** Shared implementation of the split kernel across WebGL and CPU. */
+export function split<T extends Tensor>(
+    x: T, sizeSplits: number[], axis: number): T[] {
+  const begin = Array(x.rank).fill(0);
+  const size = x.shape.slice();
+  return sizeSplits.map(s => {
+    size[axis] = s;
+    const slice = x.slice(begin, size);
+    begin[axis] += s;
+    return slice;
+  });
 }
