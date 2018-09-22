@@ -1316,8 +1316,8 @@ export class MathBackendWebGL implements KernelBackend {
 
   conv2d(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
     const sharedDim = convInfo.filterWidth * convInfo.filterHeight * convInfo.inChannels;
-    const numBlocksAcross = 1 + (x.shape[2] - convInfo.filterWidth) / convInfo.strideWidth;
-    const numBlocksDown = 1 + (x.shape[1] - convInfo.filterHeight) / convInfo.strideHeight;
+    const numBlocksAcross = 1 + (x.shape[2] - convInfo.padInfo.left - convInfo.padInfo.right - convInfo.filterWidth) / convInfo.strideWidth;
+    const numBlocksDown = 1 + (x.shape[1] - convInfo.padInfo.top - convInfo.padInfo.bottom - convInfo.filterHeight) / convInfo.strideHeight;
     const numCols = numBlocksDown * numBlocksAcross;
     const x2ColShape = [sharedDim, numCols];
 
