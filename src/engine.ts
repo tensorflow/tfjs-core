@@ -175,7 +175,7 @@ export class Engine implements TensorManager {
       saved.push(x);
       return x;
     };
-    const scopeName = this.activeScope.name;
+    const scopeName = this.scopeStack.map(x => x.name).join('||');
     const startingBytecount = this.numBytes;
     const startingNumTensors = this.numTensors;
 
