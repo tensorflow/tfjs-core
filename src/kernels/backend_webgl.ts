@@ -463,11 +463,14 @@ export class MathBackendWebGL implements KernelBackend {
     } else {
       this.gpgpuCreatedLocally = false;
     }
-    // Use the device screen's resolution as a heuristic to decide on the
-    // maximum memory allocated on the GPU before starting to page.
-    this.NUM_BYTES_BEFORE_PAGING =
-        (window.screen.height * window.screen.width * window.devicePixelRatio) *
-        BEFORE_PAGING_CONSTANT;
+    if (ENV.get('WEBGL_PAGING_ENABLED')) {
+      // Use the device screen's resolution as a heuristic to decide on the
+      // maximum memory allocated on the GPU before starting to page.
+      this.NUM_BYTES_BEFORE_PAGING =
+          (window.screen.height * window.screen.width *
+           window.devicePixelRatio) *
+          BEFORE_PAGING_CONSTANT;
+    }
     this.textureManager = new TextureManager(this.gpgpu);
   }
 
@@ -1679,7 +1682,7 @@ export class MathBackendWebGL implements KernelBackend {
       texType: TextureUsage) {
     const {shape, dtype} = this.texData.get(dataId);
 
-    if(ENV.get('WEBGL_PAGING_ENABLED')) {
+    if (ENV.get('WEBGL_PAGING_ENABLED')) {
       const idx = this.lruDataGPU.indexOf(dataId);
       if (idx >= 0) {
         this.lruDataGPU.splice(idx, 1);
@@ -1693,7 +1696,7 @@ export class MathBackendWebGL implements KernelBackend {
       dataId: DataId, texShape: [number, number],
       texType: TextureUsage): WebGLTexture {
     const {shape, dtype} = this.texData.get(dataId);
-    if(ENV.get('WEBGL_PAGING_ENABLED')) {
+    if (ENV.get('WEBGL_PAGING_ENABLED')) {
       this.lruDataGPU.push(dataId);
     }
     this.numBytesInGPU += this.computeBytes(shape, dtype);
