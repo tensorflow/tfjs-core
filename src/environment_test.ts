@@ -129,6 +129,16 @@ describeWithFlags(
       });
     });
 
+describeWithFlags('WEBGL_PAGING_ENABLED', WEBGL_ENVS, () => {
+  fit('should be true if in a browser', () => {
+    const env = new Environment({
+      'IS_BROWSER': true
+    });
+
+    expect(env.get('WEBGL_PAGING_ENABLED')).toBe(true);
+  });
+});
+
 describeWithFlags('WEBGL_FENCE_API_ENABLED', WEBGL_ENVS, () => {
   afterEach(() => {
     ENV.reset();
