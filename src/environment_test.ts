@@ -130,7 +130,7 @@ describeWithFlags(
     });
 
 describeWithFlags('WEBGL_PAGING_ENABLED', WEBGL_ENVS, () => {
-  fit('should be true if in a browser', () => {
+  it('should be true if in a browser', () => {
     const env = new Environment({
       'IS_BROWSER': true
     });
