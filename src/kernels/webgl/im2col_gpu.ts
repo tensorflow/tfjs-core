@@ -23,16 +23,24 @@ export class Im2ColProgram implements GPGPUProgram {
   outputShape: number[];
   userCode: string;
 
-  constructor(outputShape: number[], inputShape: number[], convInfo: Conv2DInfo) {
+  constructor(
+      outputShape: number[], inputShape: number[], convInfo: Conv2DInfo) {
     this.outputShape = outputShape;
 
-    const {filterWidth, inChannels, strideWidth, strideHeight, padInfo, dilationWidth, dilationHeight} = convInfo;
-    const {left, top, right} = padInfo;
-    const inputWidth = inputShape[1];
-    const numBlocksAcross = 1 + (inputWidth - left - right - filterWidth * dilationWidth) / strideWidth;
+    const {
+      filterWidth,
+      inChannels,
+      strideWidth,
+      strideHeight,
+      padInfo,
+      outWidth,
+      dilationWidth,
+      dilationHeight
+    } = convInfo;
+    const {left, top} = padInfo;
     const itemsPerBlockRow = inChannels * filterWidth;
 
-    console.log(convInfo)
+    console.log(convInfo);
 
     this.userCode = `
       void main() {
@@ -45,16 +53,20 @@ export class Im2ColProgram implements GPGPUProgram {
             int blockIndex = rc.y + col;
             float pos = float(rc.x + row);
 
-            if(blockIndex >= ${outputShape[1]} || pos >= ${outputShape[0]}.) continue;
+            if(blockIndex >= ${outputShape[1]} || pos >= ${
+        outputShape[0]}.) continue;
 
-            int offsetY = ${top} + int(blockIndex / (${numBlocksAcross})) * ${strideHeight};
-            float offsetX = ${left}. + mod(float(blockIndex), ${numBlocksAcross}.) * ${strideWidth}.;
+            int offsetY = ${top} + int(blockIndex / (${outWidth})) * ${
+        strideHeight};
+            float offsetX = ${left}. + mod(float(blockIndex), ${outWidth}.) * ${
+        strideWidth}.;
 
             int d2 = int(mod(pos, ${inChannels}.));
             int d0 = int(pos / ${itemsPerBlockRow}.);
             float d1 = mod(pos, ${itemsPerBlockRow}.) / ${inChannels}.;
 
-            result[row * 2 + col] = getA(${dilationHeight} * (d0 + offsetY), ${dilationWidth} * int(d1 + offsetX), d2);
+            result[row * 2 + col] = getA(${dilationHeight} * (d0 + offsetY), ${
+        dilationWidth} * int(d1 + offsetX), d2);
           }
         }
 

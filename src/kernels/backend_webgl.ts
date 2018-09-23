@@ -32,6 +32,7 @@ import {DataId, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D
 import {DataType, DataTypeMap, Rank, RecursiveArray, ShapeMap, sumOutType, TypedArray, upcastType} from '../types';
 import * as util from '../util';
 import {getTypedArrayFromDType, sizeFromShape} from '../util';
+
 import {KernelBackend} from './backend';
 import * as backend_util from './backend_util';
 import {mergeRealAndImagArrays} from './complex_util';
@@ -61,6 +62,7 @@ import {GPGPUContext} from './webgl/gpgpu_context';
 import * as gpgpu_math from './webgl/gpgpu_math';
 import {GPGPUBinary, GPGPUProgram, TensorData} from './webgl/gpgpu_math';
 import * as gpgpu_util from './webgl/gpgpu_util';
+import {Im2ColProgram} from './webgl/im2col_gpu';
 import {LRNProgram} from './webgl/lrn_gpu';
 import {LRNGradProgram} from './webgl/lrn_grad_gpu';
 import {MaxPool2DBackpropProgram} from './webgl/max_pool_backprop_gpu';
@@ -88,10 +90,9 @@ import {TransposeProgram} from './webgl/transpose_gpu';
 import * as unary_op from './webgl/unaryop_gpu';
 import {UnaryOpProgram} from './webgl/unaryop_gpu';
 import {UnpackProgram} from './webgl/unpack_gpu';
+import {W2RowProgram} from './webgl/w2row_gpu';
 import * as webgl_util from './webgl/webgl_util';
 import {whereImpl} from './where_impl';
-import {Im2ColProgram} from './webgl/im2col_gpu';
-import {W2RowProgram} from './webgl/w2row_gpu';
 
 type TimerNode = RecursiveArray<Promise<number>>|Promise<number>;
 export interface CPUTimerQuery {
@@ -1315,32 +1316,43 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   conv2d(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
-    const {filterWidth, filterHeight, inChannels, strideWidth, strideHeight, padInfo, dilationWidth, dilationHeight} = convInfo;
+    const {
+      filterWidth,
+      filterHeight,
+      inChannels,
+      outWidth,
+      outHeight,
+    } = convInfo;
 
     const sharedDim = filterWidth * filterHeight * inChannels;
-    const numBlocksAcross = 1 + (x.shape[2] - padInfo.left - padInfo.right - filterWidth * dilationWidth) / strideWidth;
-    const numBlocksDown = 1 + (x.shape[1] - padInfo.top - padInfo.bottom - filterHeight * dilationHeight) / strideHeight;
-    const numCols = numBlocksDown * numBlocksAcross;
+    const numCols = outHeight * outWidth;
     const x2ColShape = [sharedDim, numCols];
 
-    if(x.shape[0] === 1 && x2ColShape[0] * x2ColShape[1] < Math.pow(webgl_util.queryMaxTextureSize(this.gpgpu.gl), 2)) {
+    if (x.shape[0] === 1 &&
+        x2ColShape[0] * x2ColShape[1] <
+            Math.pow(webgl_util.queryMaxTextureSize(this.gpgpu.gl), 2)) {
       const xSqueezed = x.as3D(x.shape[1], x.shape[2], x.shape[3]);
       const w2RowShape = [convInfo.outChannels, sharedDim];
 
-      const im2ColProgram = new Im2ColProgram(x2ColShape, xSqueezed.shape, convInfo);
+      const im2ColProgram =
+          new Im2ColProgram(x2ColShape, xSqueezed.shape, convInfo);
       const im2ColOutput = Tensor.make<Tensor2D>(x2ColShape, {});
       this.texData.get(im2ColOutput.dataId).usage = TextureUsage.PACK;
-      const im2Col = this.compileAndRun<Tensor2D>(im2ColProgram, [xSqueezed], im2ColOutput);
+      const im2Col = this.compileAndRun<Tensor2D>(
+          im2ColProgram, [xSqueezed], im2ColOutput);
 
       const w2RowProgram = new W2RowProgram(w2RowShape, filter.shape, convInfo);
       const w2RowOutput = Tensor.make<Tensor2D>(w2RowShape, {});
       this.texData.get(w2RowOutput.dataId).usage = TextureUsage.PACK;
-      const w2Row = this.compileAndRun<Tensor2D>(w2RowProgram, [filter], w2RowOutput);
+      const w2Row =
+          this.compileAndRun<Tensor2D>(w2RowProgram, [filter], w2RowOutput);
 
-      const matmulProgram = new MatMulPackedProgram(w2Row.shape, im2Col.shape, [convInfo.outChannels, numCols]);
+      const matmulProgram = new MatMulPackedProgram(
+          w2Row.shape, im2Col.shape, [convInfo.outChannels, numCols]);
       const matmulOutput = Tensor.make(matmulProgram.outputShape, {});
       this.texData.get(matmulOutput.dataId).usage = TextureUsage.PACK;
-      const product = this.compileAndRun(matmulProgram, [w2Row, im2Col], matmulOutput);
+      const product =
+          this.compileAndRun(matmulProgram, [w2Row, im2Col], matmulOutput);
 
       const unpackProgram = new UnpackProgram(product.shape);
       const unpacked = this.compileAndRun(unpackProgram, [product]);
@@ -1349,7 +1361,7 @@ export class MathBackendWebGL implements KernelBackend {
       w2RowOutput.dispose();
       matmulOutput.dispose();
 
-      return unpacked.reshape([1, numBlocksAcross, numBlocksDown, convInfo.outChannels]);
+      return unpacked.reshape([1, outWidth, outHeight, convInfo.outChannels]);
     }
 
     const program = new Conv2DProgram(convInfo);
