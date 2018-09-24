@@ -916,41 +916,6 @@ describeWithFlags('Reduction: prod', ALL_ENVS, () => {
     expectArraysClose(res, [6]);
   });
 
-  it('gradients: prod(2d)', () => {
-    const a = tf.tensor2d([1, 2, 3, 1, 0, 1], [3, 2]);
-    const dy = tf.scalar(10);
-
-    const gradients = tf.grad(a => a.prod())(a, dy);
-
-    expect(gradients.shape).toEqual(a.shape);
-    expect(gradients.dtype).toEqual('float32');
-    expectArraysClose(gradients, [10, 10, 10, 10, 10, 10]);
-  });
-
-  it('gradients: prod(2d, axis=0)', () => {
-    const a = tf.tensor2d([[1, 2], [3, 1], [0, 1]], [3, 2]);
-    const dy = tf.tensor1d([10, 20]);
-    const axis = 0;
-
-    const gradients = tf.grad(a => a.prod(axis))(a, dy);
-
-    expect(gradients.shape).toEqual(a.shape);
-    expect(gradients.dtype).toEqual('float32');
-    expectArraysClose(gradients, [10, 20, 10, 20, 10, 20]);
-  });
-
-  it('gradients: prod(2d, axis=1)', () => {
-    const a = tf.tensor2d([[1, 2], [3, 1], [0, 1]], [3, 2]);
-    const dy = tf.tensor1d([10, 20, 30]);
-    const axis = 1;
-
-    const gradients = tf.grad(a => a.prod(axis))(a, dy);
-
-    expect(gradients.shape).toEqual(a.shape);
-    expect(gradients.dtype).toEqual('float32');
-    expectArraysClose(gradients, [10, 10, 20, 20, 30, 30]);
-  });
-
   it('throws when passed a non-tensor', () => {
     expect(() => tf.prod({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'prod' must be a Tensor/);

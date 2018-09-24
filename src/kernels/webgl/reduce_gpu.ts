@@ -65,7 +65,8 @@ export class ReduceProgram implements GPGPUProgram {
       if (${reduceType === 'sum'}) {
         sumValue += dot(values, ones);
       } else if (${reduceType === 'prod'}) {
-        prodValue *= values[0] * values[1] * values[2] * values[3];
+        vec2 tmp = vec2(values[0], values[1]) * vec2(values[2], values[3]);
+        prodValue *= tmp[0] * tmp[1];
       } else {
         minMaxValue = ${compareOp}(values, minMaxValue);
       }

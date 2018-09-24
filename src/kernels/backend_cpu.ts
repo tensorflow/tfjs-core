@@ -498,7 +498,6 @@ export class MathBackendCPU implements KernelBackend {
   prod(x: Tensor, axes: number[]): Tensor {
     this.assertNotComplex(x, 'sum');
 
-    axis_util.assertAxesAreInnerMostDims('prod', axes, x.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(x.shape, axes);
     const resultDtype = upcastType(x.dtype, 'int32');

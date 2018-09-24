@@ -148,7 +148,7 @@ function sum_<T extends Tensor>(
  * Reduces the input along the dimensions given in `axes`. Unless `keepDims`
  * is true, the rank of the `Tensor` is reduced by 1 for each entry in `axes`.
  * If `keepDims` is true, the reduced dimensions are retained with length 1.
- * If axes has no entries, all dimensions are reduced, and a `Tensor` with a
+ * If `axes` has no entries, all dimensions are reduced, and a `Tensor` with a
  * single element is returned.
  *
  * ```js
@@ -180,36 +180,21 @@ function prod_<T extends Tensor>(
   }
   const axes = axis_util.parseAxisParam(axis, $x.shape);
 
-  // Use a custom gradient to bypass 2 gradient backprops since sum is used
-  // extremely often.
-  const customOp = customGrad(x => {
-    const permutation = axis_util.getAxesPermutation(axes, x.rank);
-    let reductionAxes = axes;
-    let permutedX = x;
-    if (permutation != null) {
-      permutedX = x.transpose(permutation);
-      reductionAxes = axis_util.getInnerMostAxes(reductionAxes.length, x.rank);
-    }
-    let value = ENV.engine.runKernel(
-        backend => backend.prod(permutedX, reductionAxes), {permutedX});
-    if (keepDims) {
-      const newShape = axis_util.expandShapeToKeepDim(value.shape, axes);
-      value = value.reshape(newShape);
-    }
+  const permutation = axis_util.getAxesPermutation(axes, $x.rank);
+  let reductionAxes = axes;
+  let permutedX = $x;
+  if (permutation != null) {
+    permutedX = $x.transpose(permutation);
+    reductionAxes = axis_util.getInnerMostAxes(reductionAxes.length, $x.rank);
+  }
+  let value = ENV.engine.runKernel(
+      backend => backend.prod(permutedX, reductionAxes), {permutedX});
+  if (keepDims) {
+    const newShape = axis_util.expandShapeToKeepDim(value.shape, axes);
+    value = value.reshape(newShape);
+  }
 
-    const gradFunc = (dy: Tensor) => {
-      const expandedDyShape = x.shape.slice();
-      axes.forEach(axis => {
-        expandedDyShape[axis] = 1;
-      });
-      const expandedDy = dy.reshape(expandedDyShape);
-      const derX = expandedDy.mul(ones(x.shape, 'float32'));
-      return derX;
-    };
-    return {value, gradFunc};
-  });
-
-  return customOp($x) as T;
+  return value as T;
 }
 /**
  * Computes the mean of elements across dimensions of a `Tensor`.

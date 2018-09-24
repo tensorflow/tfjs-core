@@ -817,7 +817,6 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   prod(x: Tensor, axes: number[]): Tensor {
-    axis_util.assertAxesAreInnerMostDims('prod', axes, x.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(x.shape, axes);
     const inSize = util.sizeFromShape(reduceShape);
