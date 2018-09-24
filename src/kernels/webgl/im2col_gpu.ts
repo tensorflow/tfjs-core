@@ -40,8 +40,6 @@ export class Im2ColProgram implements GPGPUProgram {
     const {left, top} = padInfo;
     const itemsPerBlockRow = inChannels * filterWidth;
 
-    console.log(convInfo);
-
     this.userCode = `
       void main() {
         ivec2 rc = getOutputCoords();
