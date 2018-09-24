@@ -111,8 +111,7 @@
       <tbody></tbody>
     </table>
   </div>
-  <!-- <script src="https://unpkg.com/@tensorflow/tfjs-core/dist/tf-core.js"></script> -->
-  <script src="tf-core.js"></script>
+  <script src="https://unpkg.com/@tensorflow/tfjs-core/dist/tf-core.js"></script>
   <script src="https://unpkg.com/@tensorflow/tfjs-layers/dist/tf-layers.js"></script>
   <script src="https://unpkg.com/@tensorflow/tfjs-converter/dist/tf-converter.js"></script>
   <script>
@@ -121,7 +120,9 @@
       //////////////////////////////////
       // Place model loading code here.
       //////////////////////////////////
-      return await tf.loadModel('https://storage.googleapis.com/tfjs-models/tfjs/mobilenet_v1_1.0_224/model.json');
+      return await tf.loadFrozenModel(
+        'https://storage.googleapis.com/tfjs-models/savedmodel/mobilenet_v2_1.0_224/tensorflowjs_model.pb',
+        'https://storage.googleapis.com/tfjs-models/savedmodel/mobilenet_v2_1.0_224/weights_manifest.json');
     }
 
     const zeros = tf.zeros([1, 224, 224, 3]);
@@ -194,8 +195,13 @@
     async function warmUpAndRecordTime() {
       await showMsg('Warming up');
       const start = performance.now();
-      const res = predict(model);
-      await res.data();
+      let res = predict(model);
+      if (res instanceof Promise) {
+        res = await res;
+      }
+      if (res instanceof tf.Tensor) {
+        await res.data();
+      }
       const elapsed = performance.now() - start;
       await showMsg(null);
       appendRow(timeTable, 'Warmup', elapsed.toFixed(1) + ' ms');
@@ -221,7 +227,12 @@
       for (let i = 0; i < state.numRuns; i++) {
         res = predict(model);
       }
-      res.dataSync();
+      if (res instanceof Promise) {
+        res = await res;
+      }
+      if (res instanceof tf.Tensor) {
+        res.dataSync();
+      }
       const elapsed = (performance.now() - start) / state.numRuns;
       await showMsg(null);
       appendRow(timeTable, `Predict (${state.numRuns} runs)`, elapsed.toFixed(1) + ' ms');
@@ -260,7 +271,13 @@
           output: parts[2].trim()
         });
       }
-      predict(model).dataSync();
+      let res = predict(model);
+      if (res instanceof Promise) {
+        res = await res;
+      }
+      if (res instanceof tf.Tensor) {
+        res.dataSync();
+      }
       await showMsg(null);
       await sleep(10);
       kernels = kernels.sort((a, b) => b.time - a.time);
@@ -271,18 +288,11 @@
       console.log = oldLog;
     }
 
-    function checkForQueryTimerExtension() {
-      if (ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') <= 0) {
-        showMsg('Query timer extension is not available. <br/> Use Chrome 70+.');
-        return false;
-      }
-      return true;
+    function queryTimerIsEnabled() {
+      return ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') > 0;
     }
 
     async function onPageLoad() {
-      if (!checkForQueryTimerExtension()) {
-        return;
-      }
       var gui = new dat.gui.GUI();
       //gui.remember(obj);
       gui.add(state, 'numRuns').onChange(v => {
@@ -298,7 +308,12 @@
       await sleep(200);
       await measureAveragePredictTime();
       await sleep(200);
-      await profileKernelTime();
+      if (queryTimerIsEnabled()) {
+        await profileKernelTime();
+      } else {
+        showMsg('Skipping kernel times since query timer extension is not ' +
+                'available. <br/> Use Chrome 70+.');
+      };
     }
     onPageLoad();
   </script>
