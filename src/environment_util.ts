@@ -56,9 +56,6 @@ export interface Features {
   // Smallest positive value used to make ops like division and log numerically
   // stable.
   'EPSILON'?: number;
-  // True if the environment is "production". In production we disable safety
-  // checks and gain performance.
-  'PROD'?: boolean;
 }
 
 export enum Type {
@@ -76,8 +73,7 @@ export const URL_PROPERTIES: URLProperty[] = [
   {name: 'WEBGL_RENDER_FLOAT32_ENABLED', type: Type.BOOLEAN},
   {name: 'WEBGL_DOWNLOAD_FLOAT_ENABLED', type: Type.BOOLEAN},
   {name: 'WEBGL_FENCE_API_ENABLED', type: Type.BOOLEAN},
-  {name: 'BACKEND', type: Type.STRING}, {name: 'EPSILON', type: Type.NUMBER},
-  {name: 'PROD', type: Type.BOOLEAN}
+  {name: 'BACKEND', type: Type.STRING}, {name: 'EPSILON', type: Type.NUMBER}
 ];
 
 export interface URLProperty {

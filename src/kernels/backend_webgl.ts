@@ -369,7 +369,7 @@ export class MathBackendWebGL implements KernelBackend {
     }
     this.activeTimers = newActiveTimers;
 
-    await f();
+    f();
 
     const flattenedActiveTimers = util.flatten(this.activeTimers);
     this.activeTimers = oldActiveTimers;

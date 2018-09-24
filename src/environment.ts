@@ -347,8 +347,6 @@ export class Environment {
     } else if (feature === 'EPSILON') {
       return this.backend.floatPrecision() === 32 ? EPSILON_FLOAT32 :
                                                     EPSILON_FLOAT16;
-    } else if (feature === 'PROD') {
-      return false;
     }
     throw new Error(`Unknown feature ${feature}.`);
   }

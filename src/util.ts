@@ -115,7 +115,7 @@ export function inferShape(val: TypedArray|number|boolean|RegularArray<number>|
     shape.push(firstElem.length);
     firstElem = firstElem[0];
   }
-  if (!ENV.get('PROD') && val instanceof Array) {
+  if (val instanceof Array) {
     deepAssertShapeConsistency(val, shape, []);
   }
 
