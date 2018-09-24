@@ -1382,6 +1382,34 @@ export class MathBackendWebGL implements KernelBackend {
 
   depthwiseConv2D(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
       Tensor4D {
+    // const {
+    //   filterWidth,
+    //   filterHeight,
+    //   inChannels,
+    //   outWidth,
+    //   outHeight,
+    // } = convInfo;
+
+    // const sharedDim = filterWidth * filterHeight;
+    // const numCols = outHeight * outWidth;
+    // const x2ColShape = [sharedDim, numCols];
+
+    // if(false && x.shape[0] === 1 &&
+    //     x2ColShape[0] * x2ColShape[1] <
+    //         Math.pow(webgl_util.queryMaxTextureSize(this.gpgpu.gl), 2)) {
+    //   const xSqueezed = x.as3D(x.shape[1], x.shape[2], x.shape[3]);
+    //   const w2RowShape = [convInfo.outChannels, sharedDim];
+
+    //   const im2ColProgram = new Im2ColProgram(x2ColShape, xSqueezed.shape, convInfo);
+    //   const im2ColOutput = Tensor.make<Tensor2D>(x2ColShape, {});
+    //   this.texData.get(im2ColOutput.dataId).usage = TextureUsage.PACK;
+    //   const im2Col = this.compileAndRun<Tensor2D>(im2ColProgram, [xSqueezed], im2ColOutput);
+
+    //   im2Col.print();
+
+    //   return im2Col;
+    // }
+
     const program = new DepthwiseConv2DProgram(convInfo);
     return this.compileAndRun(program, [x, filter]);
   }

@@ -21,7 +21,7 @@ import {ALL_ENVS, expectArraysClose} from '../test_util';
 import {Rank} from '../types';
 
 describeWithFlags('conv2d', ALL_ENVS, () => {
-  fit('x=[2,2,1] f=[1,1,1,2] s=1 d=1 p=0', () => {
+  it('x=[2,2,1] f=[1,1,1,2] s=1 d=1 p=0', () => {
     const inputDepth = 1;
     const inputShape: [number, number, number] = [2, 2, inputDepth];
     const outputDepth = 1;
@@ -37,7 +37,7 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
     expectArraysClose(result, [2, 4, 6, 8]);
   });
 
-  fit('x=[2,2,2,1] f=[1,1,1,1] s=1 d=1 p=0', () => {
+  it('x=[2,2,2,1] f=[1,1,1,1] s=1 d=1 p=0', () => {
     const inputDepth = 1;
     const inShape: [number, number, number, number] = [2, 2, 2, inputDepth];
     const outputDepth = 1;
@@ -55,7 +55,7 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
     expectArraysClose(result, expected);
   });
 
-  fit('x=[2,2,1] f=[2,2,1,1] s=1 d=1 p=0', () => {
+  it('x=[2,2,1] f=[2,2,1,1] s=1 d=1 p=0', () => {
     const inputDepth = 1;
     const inputShape: [number, number, number] = [2, 2, inputDepth];
     const outputDepth = 1;
@@ -73,7 +73,7 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
     expectArraysClose(result, [20]);
   });
 
-  fit('x=[4,4,1] f=[2,2,1,1] s=1 d=2 p=0', () => {
+  it('x=[4,4,1] f=[2,2,1,1] s=1 d=2 p=0', () => {
     const inputDepth = 1;
     const inputShape: [number, number, number] = [4, 4, inputDepth];
     const outputDepth = 1;
