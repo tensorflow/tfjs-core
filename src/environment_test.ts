@@ -125,6 +125,20 @@ describeWithFlags(
       });
     });
 
+describeWithFlags('WEBGL_PAGING_ENABLED', WEBGL_ENVS, () => {
+  afterEach(() => {
+    ENV.reset();
+  });
+
+  it('should be true if in a browser', () => {
+    const features: Features = {'IS_BROWSER': true};
+
+    const env = new Environment(features);
+
+    expect(env.get('WEBGL_PAGING_ENABLED')).toBe(true);
+  });
+});
+
 describeWithFlags('WEBGL_FENCE_API_ENABLED', WEBGL_ENVS, () => {
   afterEach(() => {
     ENV.reset();
@@ -270,25 +284,6 @@ describe('Backend', () => {
     expect(success).toBeTruthy();
     expect(ENV.findBackend('custom')).toEqual(backend);
     ENV.removeBackend('custom');
-  });
-
-  it('should reuse backend engine if has been instantiated', () => {
-    const backend = new MathBackendCPU();
-    ENV.registerBackend('custom', () => backend);
-    const backend2 = new MathBackendCPU();
-    ENV.registerBackend('custom2', () => backend2);
-
-    Environment.setBackend('custom');
-    const engine1 = ENV.engine;
-    Environment.setBackend('custom2');
-    const engine2 = ENV.engine;
-    Environment.setBackend('custom');
-    const engine3 = ENV.engine;
-
-    expect(engine1).not.toBe(engine2);
-    expect(engine1).toBe(engine3);
-    ENV.removeBackend('custom');
-    ENV.removeBackend('custom2');
   });
 });
 
