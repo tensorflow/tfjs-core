@@ -65,8 +65,10 @@ import {LRNProgram} from './webgl/lrn_gpu';
 import {LRNGradProgram} from './webgl/lrn_grad_gpu';
 import {MaxPool2DBackpropProgram} from './webgl/max_pool_backprop_gpu';
 import {MatMulProgram} from './webgl/mulmat_gpu';
+import {MatMulPackedProgram} from './webgl/mulmat_packed_gpu';
 import {MultinomialProgram} from './webgl/multinomial_gpu';
 import {OneHotProgram} from './webgl/onehot_gpu';
+import {PackProgram} from './webgl/pack_gpu';
 import {PadProgram} from './webgl/pad_gpu';
 import {Pool2DProgram} from './webgl/pool_gpu';
 import {ReduceProgram} from './webgl/reduce_gpu';
@@ -85,6 +87,7 @@ import {TileProgram} from './webgl/tile_gpu';
 import {TransposeProgram} from './webgl/transpose_gpu';
 import * as unary_op from './webgl/unaryop_gpu';
 import {UnaryOpProgram} from './webgl/unaryop_gpu';
+import {UnpackProgram} from './webgl/unpack_gpu';
 import * as webgl_util from './webgl/webgl_util';
 import {whereImpl} from './where_impl';
 
@@ -328,8 +331,13 @@ export class MathBackendWebGL implements KernelBackend {
   private getValuesFromTexture(dataId: DataId): Float32Array {
     const {shape, dtype, texture, texShape} = this.texData.get(dataId);
     if (ENV.get('WEBGL_DOWNLOAD_FLOAT_ENABLED')) {
-      return this.gpgpu.downloadFloat32MatrixFromOutputTexture(
-          texture, texShape[0], texShape[1]);
+      if (this.texData.get(dataId).usage === TextureUsage.PACK) {
+        return this.gpgpu.downloadMatrixFromPackedTexture(
+            texture, texShape[0], texShape[1]);
+      } else {
+        return this.gpgpu.downloadFloat32MatrixFromOutputTexture(
+            texture, texShape[0], texShape[1]);
+      }
     }
 
     const tmpTarget = this.makeTensorHandle(shape, 'float32') as TensorHandle &
@@ -459,11 +467,14 @@ export class MathBackendWebGL implements KernelBackend {
     } else {
       this.gpgpuCreatedLocally = false;
     }
-    // Use the device screen's resolution as a heuristic to decide on the
-    // maximum memory allocated on the GPU before starting to page.
-    this.NUM_BYTES_BEFORE_PAGING =
-        (window.screen.height * window.screen.width * window.devicePixelRatio) *
-        BEFORE_PAGING_CONSTANT;
+    if (ENV.get('WEBGL_PAGING_ENABLED')) {
+      // Use the device screen's resolution as a heuristic to decide on the
+      // maximum memory allocated on the GPU before starting to page.
+      this.NUM_BYTES_BEFORE_PAGING =
+          (window.screen.height * window.screen.width *
+           window.devicePixelRatio) *
+          BEFORE_PAGING_CONSTANT;
+    }
     this.textureManager = new TextureManager(this.gpgpu);
   }
 
@@ -560,8 +571,55 @@ export class MathBackendWebGL implements KernelBackend {
   batchMatMul(
       a: Tensor3D, b: Tensor3D, transposeA: boolean,
       transposeB: boolean): Tensor3D {
-    const program = new MatMulProgram(a.shape, b.shape, transposeA, transposeB);
-    return this.compileAndRun<Tensor3D>(program, [a, b]);
+    const outerShapeA = transposeA ? a.shape[2] : a.shape[1];
+    const outerShapeB = transposeB ? b.shape[1] : b.shape[2];
+
+    // TODO(annxingyuan): Support 3D tensors
+    // We're restricting packed matMul to these conditions because for now, our
+    // pack shader needs its input to be a 2D matrix, and our unpack shader
+    // needs its input to be a 2D matrix whose physical dimensions match its
+    // logical dimensions.
+    if (ENV.get('WEBGL_RENDER_FLOAT32_ENABLED') && a.shape[0] === 1 &&
+        b.shape[0] === 1 &&
+        util.arraysEqual(
+            webgl_util.getTextureShapeFromLogicalShape(
+                this.gpgpu.gl, [outerShapeA, outerShapeB]),
+            [outerShapeA, outerShapeB])) {
+      const aSqueezed = a.as2D(a.shape[1], a.shape[2]);
+      const bSqueezed = b.as2D(b.shape[1], b.shape[2]);
+
+      const packProgramA = new PackProgram(aSqueezed.shape);
+      const packedAOutput = Tensor.make<Tensor2D>(aSqueezed.shape, {});
+      this.texData.get(packedAOutput.dataId).usage = TextureUsage.PACK;
+      const packedA = this.compileAndRun<Tensor2D>(
+          packProgramA, [aSqueezed], packedAOutput);
+
+      const packProgramB = new PackProgram(bSqueezed.shape);
+      const packedBOutput = Tensor.make<Tensor2D>(bSqueezed.shape, {});
+      this.texData.get(packedBOutput.dataId).usage = TextureUsage.PACK;
+      const packedB = this.compileAndRun<Tensor2D>(
+          packProgramB, [bSqueezed], packedBOutput);
+
+      const program = new MatMulPackedProgram(
+          packedA.shape, packedB.shape, [outerShapeA, outerShapeB], transposeA,
+          transposeB);
+      const packedMatMulOutput = Tensor.make(program.outputShape, {});
+      this.texData.get(packedMatMulOutput.dataId).usage = TextureUsage.PACK;
+      const result =
+          this.compileAndRun(program, [packedA, packedB], packedMatMulOutput);
+
+      const unpackProgram = new UnpackProgram(result.shape);
+      const unpacked = this.compileAndRun(unpackProgram, [result]);
+
+      packedAOutput.dispose();
+      packedBOutput.dispose();
+      packedMatMulOutput.dispose();
+
+      return unpacked.reshape([1, result.shape[0], result.shape[1]]);
+    } else {
+      return this.compileAndRun(
+          new MatMulProgram(a.shape, b.shape, transposeA, transposeB), [a, b]);
+    }
   }
 
   multiply(a: Tensor, b: Tensor): Tensor {
@@ -1501,7 +1559,8 @@ export class MathBackendWebGL implements KernelBackend {
 
     gpgpu_math.runProgram(binary, inputsData, outputData, customSetup);
 
-    if (pageToCpu && this.numBytesInGPU > this.NUM_BYTES_BEFORE_PAGING) {
+    if (ENV.get('WEBGL_PAGING_ENABLED') && pageToCpu &&
+        this.numBytesInGPU > this.NUM_BYTES_BEFORE_PAGING) {
       let numBytesToPage = this.numBytesInGPU - this.NUM_BYTES_BEFORE_PAGING;
       while (numBytesToPage > 0 && this.lruDataGPU.length > 0) {
         const dataId = this.lruDataGPU.shift();
@@ -1562,7 +1621,7 @@ export class MathBackendWebGL implements KernelBackend {
   private uploadToGPU(dataId: DataId): void {
     const texData = this.texData.get(dataId);
     const {shape, values, texture, dtype, usage} = texData;
-    if (texture != null) {
+    if (ENV.get('WEBGL_PAGING_ENABLED') && texture != null) {
       // Array is already on GPU. No-op.
       // Touching the texture.
       const index = this.lruDataGPU.indexOf(dataId);
@@ -1617,9 +1676,12 @@ export class MathBackendWebGL implements KernelBackend {
       dataId: DataId, texture: WebGLTexture, texShape: [number, number],
       texType: TextureUsage) {
     const {shape, dtype} = this.texData.get(dataId);
-    const idx = this.lruDataGPU.indexOf(dataId);
-    if (idx >= 0) {
-      this.lruDataGPU.splice(idx, 1);
+
+    if (ENV.get('WEBGL_PAGING_ENABLED')) {
+      const idx = this.lruDataGPU.indexOf(dataId);
+      if (idx >= 0) {
+        this.lruDataGPU.splice(idx, 1);
+      }
     }
     this.numBytesInGPU -= this.computeBytes(shape, dtype);
     this.textureManager.releaseTexture(texture, texShape, texType);
@@ -1629,7 +1691,9 @@ export class MathBackendWebGL implements KernelBackend {
       dataId: DataId, texShape: [number, number],
       texType: TextureUsage): WebGLTexture {
     const {shape, dtype} = this.texData.get(dataId);
-    this.lruDataGPU.push(dataId);
+    if (ENV.get('WEBGL_PAGING_ENABLED')) {
+      this.lruDataGPU.push(dataId);
+    }
     this.numBytesInGPU += this.computeBytes(shape, dtype);
     return this.textureManager.acquireTexture(texShape, texType);
   }

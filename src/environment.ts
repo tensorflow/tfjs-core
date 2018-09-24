@@ -16,7 +16,7 @@
  */
 
 import * as device_util from './device_util';
-import {Engine, MemoryInfo, ScopeFn, TimingInfo} from './engine';
+import {Engine, MemoryInfo, ProfileInfo, ScopeFn, TimingInfo} from './engine';
 import {Features, getFeaturesFromURL, getWebGLDisjointQueryTimerVersion, isChrome, isDownloadFloatTextureEnabled, isRenderToFloatTextureEnabled, isWebGLFenceEnabled, isWebGLVersionEnabled} from './environment_util';
 import {KernelBackend} from './kernels/backend';
 import {DataId, setTensorTracker, Tensor, TensorTracker} from './tensor';
@@ -110,6 +110,38 @@ export class Environment {
   /** @doc {heading: 'Performance', subheading: 'Memory'} */
   static memory(): MemoryInfo {
     return ENV.engine.memory();
+  }
+
+  /**
+   * Executes the provided function `f()` and returns a promise that resolves
+   * with information about the function's memory use:
+   * - `newBytes`: tne number of new bytes allocated
+   * - `newTensors`: the number of new tensors created
+   * - `peakBytes`: the peak number of bytes allocated
+   * - `kernels`: an array of objects for each kernel involved that reports
+   * their input and output shapes, number of bytes used, and number of new
+   * tensors created.
+   *
+   * ```js
+   * const profile = await tf.profile(() => {
+   *   const x = tf.tensor1d([1, 2, 3]);
+   *   let x2 = x.square();
+   *   x2.dispose();
+   *   x2 = x.square();
+   *   x2.dispose();
+   *   return x;
+   * });
+   *
+   * console.log(`newBytes: ${profile.newBytes}`);
+   * console.log(`newTensors: ${profile.newTensors}`);
+   * console.log(`byte usage over all kernels: ${profile.kernels.map(k =>
+   * k.totalBytesSnapshot)}`);
+   * ```
+   *
+   */
+  /** @doc {heading: 'Performance', subheading: 'Profile'} */
+  static profile(f: () => TensorContainer): Promise<ProfileInfo> {
+    return ENV.engine.profile(f);
   }
 
   /**
@@ -274,6 +306,8 @@ export class Environment {
           (typeof process.versions.node !== 'undefined');
     } else if (feature === 'IS_CHROME') {
       return isChrome();
+    } else if (feature === 'WEBGL_PAGING_ENABLED') {
+      return this.get('IS_BROWSER');
     } else if (feature === 'IS_TEST') {
       return false;
     } else if (feature === 'BACKEND') {
