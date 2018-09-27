@@ -1355,7 +1355,7 @@ export class MathBackendWebGL implements KernelBackend {
           this.compileAndRun(matmulProgram, [w2Row, im2Col], matmulOutput);
 
       const unpackProgram = new UnpackProgram(product.shape);
-      const unpacked = this.compileAndRun(unpackProgram, [product]);
+      const unpacked = this.compileAndRun(unpackProgram, [product]).transpose();
 
       im2ColOutput.dispose();
       w2RowOutput.dispose();
