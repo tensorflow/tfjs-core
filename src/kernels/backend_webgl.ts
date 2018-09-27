@@ -1348,14 +1348,14 @@ export class MathBackendWebGL implements KernelBackend {
           this.compileAndRun<Tensor2D>(w2RowProgram, [filter], w2RowOutput);
 
       const matmulProgram = new MatMulPackedProgram(
-          w2Row.shape, im2Col.shape, [convInfo.outChannels, numCols]);
+          im2Col.shape, w2Row.shape, [numCols, convInfo.outChannels], true, true);
       const matmulOutput = Tensor.make(matmulProgram.outputShape, {});
       this.texData.get(matmulOutput.dataId).usage = TextureUsage.PACK;
       const product =
-          this.compileAndRun(matmulProgram, [w2Row, im2Col], matmulOutput);
+          this.compileAndRun(matmulProgram, [im2Col, w2Row], matmulOutput);
 
       const unpackProgram = new UnpackProgram(product.shape);
-      const unpacked = this.compileAndRun(unpackProgram, [product]).transpose();
+      const unpacked = this.compileAndRun(unpackProgram, [product]);
 
       im2ColOutput.dispose();
       w2RowOutput.dispose();
