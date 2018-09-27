@@ -45,7 +45,7 @@ export class ArgMinMaxProgram implements GPGPUProgram {
         int inOffset = outIdx * ${windowSize};
 
         int bestIndex = inOffset;
-        float bestValue = getA(batch, inOffset);
+        float bestValue = getA(batch, bestIndex);
 
         for (int i = 0; i < ${windowSize}; i++) {
           int inIdx = ${indexSnippet};
