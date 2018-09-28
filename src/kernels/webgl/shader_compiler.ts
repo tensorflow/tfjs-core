@@ -433,10 +433,29 @@ function getOutput6DCoords(
 
 function getOutputPacked2DCoords(
     shape: [number, number], texShape: [number, number]): string {
+  const packedTexShape =
+      [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
+  if (util.arraysEqual(shape, texShape)) {
+    return `
+      ivec2 getOutputCoords() {
+        return 2 * ivec2(resultUV.yx * vec2(${packedTexShape[0]}, ${
+        packedTexShape[1]}));
+      }
+    `;
+  }
+
+  const howManyValuesInARow = texShape[1] * 2;
+
   return `
     ivec2 getOutputCoords() {
-      return 2 * ivec2(resultUV.yx * vec2(${Math.ceil(texShape[0] / 2)}, ${
-      Math.ceil(texShape[1] / 2)}));
+      ivec2 resTexRC = ivec2(resultUV.yx *
+                             vec2(${packedTexShape[0]}, ${packedTexShape[1]}));
+
+      int index = resTexRC.x * ${howManyValuesInARow} + (resTexRC.y * 2);
+
+      int r = index / ${shape[1]};
+      int c = index - r * ${shape[1]};
+      return ivec2(r, c);
     }
   `;
 }
