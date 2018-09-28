@@ -1331,8 +1331,10 @@ export class MathBackendWebGL implements KernelBackend {
     if (x.shape[0] === 1 &&
         x2ColShape[0] * x2ColShape[1] <
             Math.pow(webgl_util.queryMaxTextureSize(this.gpgpu.gl), 2) &&
-            util.arraysEqual(webgl_util.getTextureShapeFromLogicalShape(
-              this.gpgpu.gl, [numCols, convInfo.outChannels]), [numCols, convInfo.outChannels])) {
+        util.arraysEqual(
+            webgl_util.getTextureShapeFromLogicalShape(
+                this.gpgpu.gl, [numCols, convInfo.outChannels]),
+            [numCols, convInfo.outChannels])) {
       const xSqueezed = x.as3D(x.shape[1], x.shape[2], x.shape[3]);
       const w2RowShape = [convInfo.outChannels, sharedDim];
 
@@ -1350,7 +1352,8 @@ export class MathBackendWebGL implements KernelBackend {
           this.compileAndRun<Tensor2D>(w2RowProgram, [filter], w2RowOutput);
 
       const matmulProgram = new MatMulPackedProgram(
-          im2Col.shape, w2Row.shape, [numCols, convInfo.outChannels], true, true);
+          im2Col.shape, w2Row.shape, [numCols, convInfo.outChannels], true,
+          true);
       const matmulOutput = Tensor.make(matmulProgram.outputShape, {});
       this.texData.get(matmulOutput.dataId).usage = TextureUsage.PACK;
       const product =
@@ -1401,10 +1404,11 @@ export class MathBackendWebGL implements KernelBackend {
     //   const xSqueezed = x.as3D(x.shape[1], x.shape[2], x.shape[3]);
     //   const w2RowShape = [convInfo.outChannels, sharedDim];
 
-    //   const im2ColProgram = new Im2ColProgram(x2ColShape, xSqueezed.shape, convInfo);
-    //   const im2ColOutput = Tensor.make<Tensor2D>(x2ColShape, {});
+    //   const im2ColProgram = new Im2ColProgram(x2ColShape, xSqueezed.shape,
+    //   convInfo); const im2ColOutput = Tensor.make<Tensor2D>(x2ColShape, {});
     //   this.texData.get(im2ColOutput.dataId).usage = TextureUsage.PACK;
-    //   const im2Col = this.compileAndRun<Tensor2D>(im2ColProgram, [xSqueezed], im2ColOutput);
+    //   const im2Col = this.compileAndRun<Tensor2D>(im2ColProgram, [xSqueezed],
+    //   im2ColOutput);
 
     //   im2Col.print();
 

@@ -51,19 +51,24 @@ export class Im2ColProgram implements GPGPUProgram {
             int blockIndex = rc.y + col;
             int pos = rc.x + row;
 
-            if(blockIndex >= ${outputShape[1]} || pos >= ${outputShape[0]}) continue;
+            if(blockIndex >= ${outputShape[1]} || pos >= ${
+        outputShape[0]}) continue;
 
-            int offsetY = int(blockIndex / (${outWidth})) * ${strideHeight} - ${top};
+            int offsetY = int(blockIndex / (${outWidth})) * ${strideHeight} - ${
+        top};
             int d0 = offsetY + ${dilationHeight} * (pos / ${itemsPerBlockRow});
 
             if(d0 >= ${inputShape[0]} || d0 < 0) continue;
 
-            int offsetX = int(mod(float(blockIndex), ${outWidth}.) * ${strideWidth}. - ${left}.);
-            int d1 = offsetX + ${dilationWidth} * (int(mod(float(pos), ${itemsPerBlockRow}.) / ${inChannels}.));
+            int offsetX = int(mod(float(blockIndex), ${outWidth}.) * ${
+        strideWidth}. - ${left}.);
+            int d1 = offsetX + ${dilationWidth} * (int(mod(float(pos), ${
+        itemsPerBlockRow}.) / ${inChannels}.));
 
             if(d1 >= ${inputShape[1]} || d1 < 0) continue;
 
-            result[row * 2 + col] = getA(d0, d1, int(mod(float(pos), ${inChannels}.)));
+            result[row * 2 + col] = getA(d0, d1, int(mod(float(pos), ${
+        inChannels}.)));
           }
         }
 

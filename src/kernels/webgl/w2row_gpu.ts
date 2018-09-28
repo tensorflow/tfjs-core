@@ -23,7 +23,8 @@ export class W2RowProgram implements GPGPUProgram {
   outputShape: number[];
   userCode: string;
 
-  constructor(outputShape: number[], inputShape: number[], convInfo: Conv2DInfo) {
+  constructor(
+      outputShape: number[], inputShape: number[], convInfo: Conv2DInfo) {
     this.outputShape = outputShape;
 
     const filterWidth = convInfo.filterWidth;
