@@ -88,9 +88,7 @@ describeWithFlags('conv im2row', WEBGL_ENVS, () => {
     const result = tf.conv2d(x, w, stride, pad, dataFormat, dilation);
     expectArraysClose(result, [20]);
   });
-});
 
-describeWithFlags('conv2d', ALL_ENVS, () => {
   it('should work when texture shape does not equal physical shape', () => {
     const inputDepth = 3;
     const inputSize = 300;
@@ -116,7 +114,9 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
     expect(resultData[0]).toEqual(1);
     expect(resultData[388]).toEqual(1);
   });
+});
 
+describeWithFlags('conv2d', ALL_ENVS, () => {
   it('x=[2,2,1] f=[1,1,1,2] s=1 d=1 p=0', () => {
     const inputDepth = 1;
     const inputShape: [number, number, number] = [2, 2, inputDepth];
