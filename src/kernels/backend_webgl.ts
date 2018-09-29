@@ -1330,11 +1330,14 @@ export class MathBackendWebGL implements KernelBackend {
 
     if (x.shape[0] === 1 &&
         x2ColShape[0] * x2ColShape[1] <
-            Math.pow(webgl_util.queryMaxTextureSize(this.gpgpu.gl), 2) &&
-        util.arraysEqual(
-            webgl_util.getTextureShapeFromLogicalShape(
-                this.gpgpu.gl, [numCols, convInfo.outChannels]),
-            [numCols, convInfo.outChannels])) {
+            Math.pow(webgl_util.queryMaxTextureSize(this.gpgpu.gl), 2)) {
+      // if (x.shape[0] === 1 &&
+      //     x2ColShape[0] * x2ColShape[1] <
+      //         Math.pow(webgl_util.queryMaxTextureSize(this.gpgpu.gl), 2) &&
+      //     util.arraysEqual(
+      //         webgl_util.getTextureShapeFromLogicalShape(
+      //             this.gpgpu.gl, [numCols, convInfo.outChannels]),
+      //         [numCols, convInfo.outChannels])) {
       const xSqueezed = x.as3D(x.shape[1], x.shape[2], x.shape[3]);
       const w2RowShape = [convInfo.outChannels, sharedDim];
 
@@ -1723,7 +1726,7 @@ export class MathBackendWebGL implements KernelBackend {
       start = performance.now();
     }
     const texShape =
-        webgl_util.getTextureShapeFromLogicalShape(this.gpgpu.gl, shape);
+        webgl_util.getTextureShapeFromLogicalShape(this.gpgpu.gl, shape, usage);
     texData.texShape = texShape;
     const newTexture = this.acquireTexture(dataId, texShape, usage);
     texData.texture = newTexture;

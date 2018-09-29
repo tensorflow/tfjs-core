@@ -40,6 +40,7 @@ export function makeShader(
     return `uniform sampler2D ${x.name};`;
   });
   inputPrefixSnippet = inputPrefixSnippet.join('\n');
+
   const inputSamplingSnippet =
       inputsInfo.map(x => getInputSamplingSnippet(x, outputShape, broadcast))
           .join('\n');
@@ -54,8 +55,14 @@ export function makeShader(
         getOutputSamplingSnippet(outputShape.logicalShape, outTexShape);
   }
 
+  let samplerSnippets = SAMPLER_SNIPPETS;
+
+  if (inputsInfo[0].shapeInfo.isPacked) {
+    samplerSnippets += PACKED_SAMPLER_SNIPPETS;
+  }
+
   const source = [
-    SHADER_PREFIX, FLOAT_TEXTURE_SAMPLE_SNIPPET,
+    SHADER_PREFIX, samplerSnippets, FLOAT_TEXTURE_SAMPLE_SNIPPET,
     FLOAT_TEXTURE_SETOUTPUT_SNIPPET, inputPrefixSnippet, outputSamplingSnippet,
     inputSamplingSnippet, userCode
   ].join('\n');
@@ -86,10 +93,26 @@ function getSamplerFromInInfo(inInfo: InputInfo): string {
   }
 }
 
+function getPackedSamplerFromInInfo(inInfo: InputInfo): string {
+  const shape = inInfo.shapeInfo.logicalShape;
+  switch (shape.length) {
+    case 2:
+      return getPackedSampler2D(inInfo);
+    default:
+      throw new Error(
+          `Packed ${shape.length}-D input sampling` +
+          ` is not yet supported`);
+  }
+}
+
 function getInputSamplingSnippet(
     inInfo: InputInfo, outShapeInfo: ShapeInfo, broadcast: boolean): string {
   let res = getSamplerFlat(inInfo);
-  res += getSamplerFromInInfo(inInfo);
+  if (inInfo.shapeInfo.isPacked) {
+    res += getPackedSamplerFromInInfo(inInfo);
+  } else {
+    res += getSamplerFromInInfo(inInfo);
+  }
 
   // If input and output have matching logical shapes, add
   // getTexNameAtOutCoord() method that samples the input
@@ -157,6 +180,16 @@ vec2 UVfrom2D(int texNumR, int texNumC, int numC, int row, int col) {
   int texR = index / texNumC;
   int texC = index - texR * texNumC;
   return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
+}
+`;
+
+const SAMPLE_PACKED_2D_SNIPPET = `
+vec2 packedUVfrom2D(int valuesInRow, int texNumR, int texNumC, int numC, int row, int col) {
+  int index = row * numC + col;
+  int texR = index / valuesInRow;
+  int texC = int(mod(float(index), float(valuesInRow / 2)) / 2.);
+  vec2 uv = (vec2(texC, texR)) / vec2(texNumC, texNumR);
+  return uv;
 }
 `;
 
@@ -277,13 +310,19 @@ const SHADER_PREFIX = `
     p3 += dot(p3, p3.yzx + 19.19);
     return fract((p3.x + p3.y) * p3.z);
   }
+`;
 
+const SAMPLER_SNIPPETS = `
   ${SAMPLE_1D_SNIPPET}
   ${SAMPLE_2D_SNIPPET}
   ${SAMPLE_3D_SNIPPET}
   ${SAMPLE_4D_SNIPPET}
   ${SAMPLE_5D_SNIPPET}
   ${SAMPLE_6D_SNIPPET}
+`;
+
+const PACKED_SAMPLER_SNIPPETS = `
+  ${SAMPLE_PACKED_2D_SNIPPET}
 `;
 
 function getOutputScalarCoords() {
@@ -444,14 +483,14 @@ function getOutputPacked2DCoords(
     `;
   }
 
-  const howManyValuesInARow = texShape[1] * 2;
+  const valuesPerRow = texShape[1] * 2;
 
   return `
     ivec2 getOutputCoords() {
       ivec2 resTexRC = ivec2(resultUV.yx *
                              vec2(${packedTexShape[0]}, ${packedTexShape[1]}));
 
-      int index = resTexRC.x * ${howManyValuesInARow} + (resTexRC.y * 2);
+      int index = resTexRC.x * ${valuesPerRow} + (resTexRC.y * 2);
 
       int r = index / ${shape[1]};
       int c = index - r * ${shape[1]};
@@ -521,6 +560,37 @@ function getSampler1D(inputInfo: InputInfo): string {
   return `
     float ${funcName}(int index) {
       return ${funcName}Flat(index);
+    }
+  `;
+}
+
+function getPackedSampler2D(inputInfo: InputInfo): string {
+  const shape = inputInfo.shapeInfo.logicalShape;
+  const texName = inputInfo.name;
+  const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
+  const texShape = inputInfo.shapeInfo.texShape;
+
+  if (texShape != null && util.arraysEqual(shape, texShape)) {
+    const texNumR = texShape[0];
+    const texNumC = texShape[1];
+    return `
+      vec4 ${funcName}(int row, int col) {
+        vec2 uv = (vec2(col, row)) / vec2(${texNumC}.0, ${texNumR}.0);
+
+        return texture2D(${texName}, uv);
+      }
+    `;
+  }
+
+  const packedTexShape =
+      [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
+  const valuesPerRow = texShape[1] * 2;
+
+  return `
+    vec4 ${funcName}(int row, int col) {
+      vec2 uv = packedUVfrom2D(${valuesPerRow}, ${packedTexShape[0]}, ${
+      packedTexShape[1]}, ${shape[1]}, row, col);
+      return texture2D(${texName}, uv);
     }
   `;
 }
