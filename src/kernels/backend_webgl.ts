@@ -570,8 +570,6 @@ export class MathBackendWebGL implements KernelBackend {
       transposeB: boolean): Tensor3D {
     const outerShapeA = transposeA ? a.shape[2] : a.shape[1];
     const outerShapeB = transposeB ? b.shape[1] : b.shape[2];
-    const aSqueezed = a.as2D(a.shape[1], a.shape[2]);
-    const bSqueezed = b.as2D(b.shape[1], b.shape[2]);
 
     // TODO(annxingyuan): Support 3D tensors
     // We're restricting packed matMul to these conditions because for now, our
@@ -581,12 +579,14 @@ export class MathBackendWebGL implements KernelBackend {
         b.shape[0] === 1 &&
         util.arraysEqual(
             webgl_util.getTextureShapeFromLogicalShape(
-                this.gpgpu.gl, aSqueezed.shape),
-            aSqueezed.shape) &&
+                this.gpgpu.gl, [a.shape[1], a.shape[2]]),
+            [a.shape[1], a.shape[2]]) &&
         util.arraysEqual(
             webgl_util.getTextureShapeFromLogicalShape(
-                this.gpgpu.gl, bSqueezed.shape),
-            bSqueezed.shape)) {
+                this.gpgpu.gl, [b.shape[1], b.shape[2]]),
+            [b.shape[1], b.shape[2]])) {
+      const aSqueezed = a.as2D(a.shape[1], a.shape[2]);
+      const bSqueezed = b.as2D(b.shape[1], b.shape[2]);
       const packProgramA = new PackProgram(aSqueezed.shape);
       const packedAOutput = Tensor.make<Tensor2D>(aSqueezed.shape, {});
       this.texData.get(packedAOutput.dataId).usage = TextureUsage.PACK;

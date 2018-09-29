@@ -184,7 +184,8 @@ vec2 UVfrom2D(int texNumR, int texNumC, int numC, int row, int col) {
 `;
 
 const SAMPLE_PACKED_2D_SNIPPET = `
-vec2 packedUVfrom2D(int valuesInRow, int texNumR, int texNumC, int numC, int row, int col) {
+vec2 packedUVfrom2D(int valuesInRow, int texNumR,
+  int texNumC, int numC, int row, int col) {
   int index = row * numC + col;
   int texR = index / valuesInRow;
   int texC = int(mod(float(index), float(valuesInRow / 2)) / 2.);
