@@ -570,21 +570,23 @@ export class MathBackendWebGL implements KernelBackend {
       transposeB: boolean): Tensor3D {
     const outerShapeA = transposeA ? a.shape[2] : a.shape[1];
     const outerShapeB = transposeB ? b.shape[1] : b.shape[2];
+    const aSqueezed = a.as2D(a.shape[1], a.shape[2]);
+    const bSqueezed = b.as2D(b.shape[1], b.shape[2]);
 
     // TODO(annxingyuan): Support 3D tensors
     // We're restricting packed matMul to these conditions because for now, our
-    // pack shader needs its input to be a 2D matrix, and our unpack shader
-    // needs its input to be a 2D matrix whose physical dimensions match its
-    // logical dimensions.
+    // packed matMul shader needs its inputs to be 2D matrices whose physical
+    // dimensions match their logical dimensions.
     if (ENV.get('WEBGL_RENDER_FLOAT32_ENABLED') && a.shape[0] === 1 &&
         b.shape[0] === 1 &&
         util.arraysEqual(
             webgl_util.getTextureShapeFromLogicalShape(
-                this.gpgpu.gl, [outerShapeA, outerShapeB]),
-            [outerShapeA, outerShapeB])) {
-      const aSqueezed = a.as2D(a.shape[1], a.shape[2]);
-      const bSqueezed = b.as2D(b.shape[1], b.shape[2]);
-
+                this.gpgpu.gl, aSqueezed.shape),
+            aSqueezed.shape) &&
+        util.arraysEqual(
+            webgl_util.getTextureShapeFromLogicalShape(
+                this.gpgpu.gl, bSqueezed.shape),
+            bSqueezed.shape)) {
       const packProgramA = new PackProgram(aSqueezed.shape);
       const packedAOutput = Tensor.make<Tensor2D>(aSqueezed.shape, {});
       this.texData.get(packedAOutput.dataId).usage = TextureUsage.PACK;
@@ -1327,19 +1329,18 @@ export class MathBackendWebGL implements KernelBackend {
     const sharedDim = filterWidth * filterHeight * inChannels;
     const numCols = outHeight * outWidth;
     const x2ColShape = [sharedDim, numCols];
+    const w2RowShape = [convInfo.outChannels, sharedDim];
 
     if (x.shape[0] === 1 &&
-        x2ColShape[0] * x2ColShape[1] <
-            Math.pow(webgl_util.queryMaxTextureSize(this.gpgpu.gl), 2)) {
-      // if (x.shape[0] === 1 &&
-      //     x2ColShape[0] * x2ColShape[1] <
-      //         Math.pow(webgl_util.queryMaxTextureSize(this.gpgpu.gl), 2) &&
-      //     util.arraysEqual(
-      //         webgl_util.getTextureShapeFromLogicalShape(
-      //             this.gpgpu.gl, [numCols, convInfo.outChannels]),
-      //         [numCols, convInfo.outChannels])) {
+        util.arraysEqual(
+            webgl_util.getTextureShapeFromLogicalShape(
+                this.gpgpu.gl, x2ColShape, TextureUsage.PACK),
+            x2ColShape) &&
+        util.arraysEqual(
+            webgl_util.getTextureShapeFromLogicalShape(
+                this.gpgpu.gl, w2RowShape, TextureUsage.PACK),
+            w2RowShape)) {
       const xSqueezed = x.as3D(x.shape[1], x.shape[2], x.shape[3]);
-      const w2RowShape = [convInfo.outChannels, sharedDim];
 
       const im2ColProgram =
           new Im2ColProgram(x2ColShape, xSqueezed.shape, convInfo);
