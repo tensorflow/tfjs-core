@@ -1443,12 +1443,17 @@ describeWithFlags('toPixels no canvas', ALL_ENVS, () => {
   });
 
   it('draws a rank-3 float32 tensor, 3 channel', done => {
-    const x = tf.tensor3d([.05, .1, .15, .2, .25, .3], [2, 1, 3], 'float32');
+    // 0.1 and 0.3 are changed to 0.1001 and 0.3001 to avoid boundary conditions
+    // such as Math.round(~25.5) which on Mobile Safari gives 25 and Desktop
+    // gives 26.
+    const x =
+        tf.tensor3d([.05, .1001, .15, .2, .25, .3001], [2, 1, 3], 'float32');
 
     tf.toPixels(x).then(data => {
       const expected = new Uint8ClampedArray([
-        Math.round(.05 * 255), Math.round(.1 * 255), Math.round(.15 * 255), 255,
-        Math.round(.2 * 255), Math.round(.25 * 255), Math.round(.30 * 255), 255
+        Math.round(.05 * 255), Math.round(.1001 * 255), Math.round(.15 * 255),
+        255, Math.round(.2 * 255), Math.round(.25 * 255),
+        Math.round(.3001 * 255), 255
       ]);
       expect(data).toEqual(expected);
 
