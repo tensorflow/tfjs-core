@@ -104,10 +104,13 @@ describeWithFlags('equal', ALL_ENVS, () => {
     const b = tf.tensor2d([[2, 3, 4], [7, 8, 9]], [2, 3], 'int32');
     expectArraysClose(tf.equal(a, b), [0, 1, 0, 1, 0, 0]);
   });
-  it('broadcasting Tensor2D shapes - float32', () => {
-    const a = tf.tensor2d([[1.1], [7.1]], [2, 1], 'float32');
+  // tslint:disable-next-line:ban
+  fit('broadcasting Tensor2D shapes - float32', () => {
+    //ENV.set('WEBGL_VERSION', 1);
+    //ENV.set('WEBGL_DOWNLOAD_FLOAT_ENABLED', false);
+    const a = tf.tensor2d([[2], [8]], [2, 1], 'float32');
     const b =
-        tf.tensor2d([[0.1, 1.1, 2.1], [7.1, 8.1, 9.1]], [2, 3], 'float32');
+        tf.tensor2d([[0.1, 2, 2.1], [8, 8.1, 9.1]], [2, 3], 'float32');
     expectArraysClose(tf.equal(a, b), [0, 1, 0, 1, 0, 0]);
   });
   it('NaNs in Tensor2D - float32', () => {
