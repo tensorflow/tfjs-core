@@ -40,6 +40,7 @@ export * from './lstm';
 export * from './moving_average';
 export * from './strided_slice';
 export * from './topk';
+export * from './scatter_nd';
 
 export {op} from './operation';
 

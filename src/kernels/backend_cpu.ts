@@ -16,6 +16,7 @@
  */
 
 import * as seedrandom from 'seedrandom';
+
 import {ENV} from '../environment';
 import {warn} from '../log';
 import * as array_ops_util from '../ops/array_ops_util';
@@ -26,12 +27,14 @@ import {Conv2DInfo} from '../ops/conv_util';
 import * as erf_util from '../ops/erf_util';
 import * as ops from '../ops/ops';
 import {buffer, tensor, tensor3d, tensor4d} from '../ops/ops';
+import * as scatter_nd_util from '../ops/scatter_nd_util';
 import * as selu_util from '../ops/selu_util';
 import {getStridedSlicedInfo} from '../ops/slice_util';
-import {DataId, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
+import {DataId, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
 import {DataType, DataTypeMap, Rank, ShapeMap, TypedArray, upcastType} from '../types';
 import * as util from '../util';
 import {now} from '../util';
+
 import {BackendTimingInfo, DataMover, DataStorage, KernelBackend} from './backend';
 import * as backend_util from './backend_util';
 import * as complex_util from './complex_util';
@@ -2749,6 +2752,40 @@ export class MathBackendCPU implements KernelBackend {
       }
     }
     return output.toTensor();
+  }
+
+  scatterND<T extends Tensor<Rank>, K extends Tensor<Rank>, R extends Rank>(
+      x: T, indices: K, shape: ShapeMap[R]): Tensor<R> {
+    const [sliceDim, numUpdates, sliceSize] =
+        scatter_nd_util.prepareAndValidateScatterNDInputs(x, indices, shape);
+
+    const outputSize = shape.reduce((total, dim) => total *= dim, 1);
+    const flattenShape = [outputSize / sliceSize, sliceSize];
+    const flattenIndices = indices.reshape([numUpdates, sliceDim]);
+    const flattenX = x.reshape([numUpdates, sliceSize]);
+
+    if (outputSize === 0) {
+      return backend_util.reshapeTensor(tensor([]), shape);
+    }
+
+    const buffer = new TensorBuffer(flattenShape, x.dtype);
+    for (let i = 0; i < numUpdates; i++) {
+      const index = [];
+      for (let j = 0; j < sliceDim; j++) {
+        index.push(flattenIndices.get(i, j));
+      }
+      const flattenIndex = index.reduce((prod, dim) => prod * dim, 1);
+
+      if (flattenIndex < 0 || flattenIndex > outputSize / sliceSize) {
+        throw new Error(
+            'Invalid indices: ' + index + ' does not index into ' + shape);
+      }
+
+      for (let k = 0; k < sliceSize; k++) {
+        buffer.set(flattenX.get(i, k), flattenIndex, k);
+      }
+    }
+    return buffer.toTensor().reshape(shape);
   }
 }
 
