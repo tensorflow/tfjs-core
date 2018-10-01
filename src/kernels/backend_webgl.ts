@@ -1526,9 +1526,11 @@ export class MathBackendWebGL implements KernelBackend {
 
       const texData = this.texData.get(input.dataId);
       // Upload small tensors that live on the CPU as uniforms, not as
-      // textures.
+      // textures. Do this only when the environment supports 32bit floats due
+      // to problems when comparing 16bit floats with 32bit floats.
       if (texData.texture == null &&
-          util.sizeFromShape(input.shape) <= SIZE_UPLOAD_UNIFORM) {
+          util.sizeFromShape(input.shape) <= SIZE_UPLOAD_UNIFORM &&
+          ENV.get('WEBGL_RENDER_FLOAT32_ENABLED')) {
         return {
           shape: input.shape,
           texData: null,
