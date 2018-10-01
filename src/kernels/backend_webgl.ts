@@ -32,6 +32,7 @@ import {DataId, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D
 import {DataType, DataTypeMap, Rank, RecursiveArray, ShapeMap, sumOutType, TypedArray, upcastType} from '../types';
 import * as util from '../util';
 import {getTypedArrayFromDType, sizeFromShape} from '../util';
+
 import {DataMover, DataStorage, KernelBackend} from './backend';
 import * as backend_util from './backend_util';
 import {mergeRealAndImagArrays} from './complex_util';
@@ -89,8 +90,8 @@ import {TransposeProgram} from './webgl/transpose_gpu';
 import * as unary_op from './webgl/unaryop_gpu';
 import {UnaryOpProgram} from './webgl/unaryop_gpu';
 import {UnpackProgram} from './webgl/unpack_gpu';
-import {W2RowProgram} from './webgl/w2row_gpu';
 import {W2RowDepthwiseProgram} from './webgl/w2row_depthwise_gpu';
+import {W2RowProgram} from './webgl/w2row_gpu';
 import * as webgl_util from './webgl/webgl_util';
 import {whereImpl} from './where_impl';
 
@@ -1427,11 +1428,12 @@ export class MathBackendWebGL implements KernelBackend {
       const im2Col = this.compileAndRun<Tensor2D>(
           im2ColProgram, [xSqueezed], im2ColOutput);
 
-      const w2RowDepthwiseProgram = new W2RowDepthwiseProgram(w2RowShape, filter.shape, convInfo);
+      const w2RowDepthwiseProgram =
+          new W2RowDepthwiseProgram(w2RowShape, filter.shape, convInfo);
       const w2RowOutput = Tensor.make<Tensor2D>(w2RowShape, {});
       this.texData.get(w2RowOutput.dataId).usage = TextureUsage.PACK;
-      const w2Row =
-          this.compileAndRun<Tensor2D>(w2RowDepthwiseProgram, [filter], w2RowOutput);
+      const w2Row = this.compileAndRun<Tensor2D>(
+          w2RowDepthwiseProgram, [filter], w2RowOutput);
 
       const matmulProgram = new MatMulPackedProgram(
           im2Col.shape, w2Row.shape, [numCols, convInfo.outChannels], true,
