@@ -83,9 +83,6 @@ export class GPGPUContext {
 
     this.textureConfig =
         gpgpu_util.getTextureConfig(this.gl, this.textureHalfFloatExtension);
-
-    // Start a new loop that polls.
-    setInterval(() => this.pollItems());
   }
 
   public dispose() {
@@ -507,10 +504,6 @@ export class GPGPUContext {
   private itemsToPoll: PollItem[] = [];
 
   pollItems(): void {
-    if (this.itemsToPoll.length === 0) {
-      // Nothing to poll.
-      return;
-    }
     // Find the last query that has finished using binary search.
     // All other queries before it are also done.
     const index = binSearchLastTrue(this.itemsToPoll.map(x => x.isDoneFn));
@@ -523,6 +516,16 @@ export class GPGPUContext {
 
   private addItemToPoll(isDoneFn: () => boolean, resolveFn: () => void) {
     this.itemsToPoll.push({isDoneFn, resolveFn});
+    if (this.itemsToPoll.length > 1) {
+      // We already have a running loop that polls.
+      return;
+    }
+    // Start a new loop that polls.
+    util.repeatedTry(() => {
+      this.pollItems();
+      // End the loop if no more items to poll.
+      return this.itemsToPoll.length === 0;
+    });
   }
 
   private bindTextureToFrameBuffer(texture: WebGLTexture) {
