@@ -104,8 +104,7 @@ describeWithFlags('equal', ALL_ENVS, () => {
     const b = tf.tensor2d([[2, 3, 4], [7, 8, 9]], [2, 3], 'int32');
     expectArraysClose(tf.equal(a, b), [0, 1, 0, 1, 0, 0]);
   });
-  // tslint:disable-next-line:ban
-  fit('broadcasting Tensor2D shapes - float32', () => {
+  it('broadcasting Tensor2D shapes - float32', () => {
     //ENV.set('WEBGL_VERSION', 1);
     //ENV.set('WEBGL_DOWNLOAD_FLOAT_ENABLED', false);
     const a = tf.tensor2d([[2], [8]], [2, 1], 'float32');
