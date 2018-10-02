@@ -586,11 +586,11 @@ export class MathBackendWebGL implements KernelBackend {
         b.shape[0] === 1 &&
         util.arraysEqual(
             webgl_util.getTextureShapeFromLogicalShape(
-                this.gpgpu.gl, [a.shape[1], a.shape[2]]),
+                this.gpgpu.gl, [a.shape[1], a.shape[2]], TextureUsage.PACK),
             [a.shape[1], a.shape[2]]) &&
         util.arraysEqual(
             webgl_util.getTextureShapeFromLogicalShape(
-                this.gpgpu.gl, [b.shape[1], b.shape[2]]),
+                this.gpgpu.gl, [b.shape[1], b.shape[2]], TextureUsage.PACK),
             [b.shape[1], b.shape[2]])) {
       const aSqueezed = a.as2D(a.shape[1], a.shape[2]);
       const bSqueezed = b.as2D(b.shape[1], b.shape[2]);
