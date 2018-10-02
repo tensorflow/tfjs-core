@@ -34,6 +34,7 @@ import {DataId, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D
 import {DataType, DataTypeMap, Rank, ShapeMap, TypedArray, upcastType} from '../types';
 import * as util from '../util';
 import {now} from '../util';
+import {computeStrides} from '../util';
 
 import {BackendTimingInfo, DataMover, DataStorage, KernelBackend} from './backend';
 import * as backend_util from './backend_util';
@@ -2755,34 +2756,41 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   scatterND<T extends Tensor<Rank>, K extends Tensor<Rank>, R extends Rank>(
-      x: T, indices: K, shape: ShapeMap[R]): Tensor<R> {
+      indices: K, updates: T, shape: ShapeMap[R]): Tensor<R> {
     const [sliceDim, numUpdates, sliceSize] =
-        scatter_nd_util.prepareAndValidateScatterNDInputs(x, indices, shape);
+        scatter_nd_util.prepareAndValidateScatterNDInputs(
+            updates, indices, shape);
 
     const outputSize = shape.reduce((total, dim) => total *= dim, 1);
     const flattenShape = [outputSize / sliceSize, sliceSize];
     const flattenIndices = indices.reshape([numUpdates, sliceDim]);
-    const flattenX = x.reshape([numUpdates, sliceSize]);
+    const flattenUpdates = updates.reshape([numUpdates, sliceSize]);
+    const strides =
+        [...computeStrides(shape).map(stride => stride / sliceSize), 1];
 
     if (outputSize === 0) {
       return backend_util.reshapeTensor(tensor([]), shape);
     }
 
-    const buffer = new TensorBuffer(flattenShape, x.dtype);
+    const buffer = new TensorBuffer(flattenShape, updates.dtype);
     for (let i = 0; i < numUpdates; i++) {
       const index = [];
       for (let j = 0; j < sliceDim; j++) {
         index.push(flattenIndices.get(i, j));
       }
-      const flattenIndex = index.reduce((prod, dim) => prod * dim, 1);
+      const flattenIndex = index.reduce((sum, dim, index) => {
+        sum += dim * strides[index];
+        return sum;
+      }, 0);
 
       if (flattenIndex < 0 || flattenIndex > outputSize / sliceSize) {
         throw new Error(
-            'Invalid indices: ' + index + ' does not index into ' + shape);
+            `Invalid indices: ${index} does not index into ${shape}`);
       }
 
       for (let k = 0; k < sliceSize; k++) {
-        buffer.set(flattenX.get(i, k), flattenIndex, k);
+        const val = buffer.get(flattenIndex, k);
+        buffer.set(val + flattenUpdates.get(i, k), flattenIndex, k);
       }
     }
     return buffer.toTensor().reshape(shape);

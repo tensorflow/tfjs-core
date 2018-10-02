@@ -30,9 +30,9 @@ export function validateUpdateShape(
 
   const shapeError = new Error(
       'Must have updates.shape = indices.shape[:batchDim] + ' +
-      'shape[sliceDim:], got updates.shape: ' + updates.shape +
-      ', indices.shape: ' + indices.shape + ', shape: ' + shape +
-      ', sliceDim: ' + sliceDim + ', and batchDim: ' + batchDim);
+      `shape[sliceDim:], got updates.shape: ${updates.shape}` +
+      `, indices.shape: ${indices.shape}, shape: ${shape}` +
+      `, sliceDim: ${sliceDim}, and batchDim: ${batchDim}`);
 
   if (updates.shape.length < batchDim) {
     throw shapeError;
@@ -76,15 +76,15 @@ export function prepareAndValidateScatterNDInputs(
 
   if (!(shape.length > 0 || (indices.size === 0 && updates.size === 0))) {
     throw new Error(
-        'Indices and updates specified for empty output.  indices shape: ' +
-        indices.shape);
+        `Indices and updates specified for empty output. indices shape: ${
+            indices.shape}`);
   }
 
   if (updates.shape[0] !== indices.shape[0]) {
     throw new Error(
         'The outermost dimension of updates and indices ' +
-        'must match. Got indices.shape ' + indicesShape + ', updates.shape ' +
-        updateShape);
+        `must match. Got indices.shape ${indicesShape}, updates.shape ${
+            updateShape}`);
   }
   validateUpdateShape(shape, indices, updates);
 

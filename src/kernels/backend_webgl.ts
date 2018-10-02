@@ -1507,11 +1507,14 @@ export class MathBackendWebGL implements KernelBackend {
     const flattenShape = [outputSize / sliceSize, sliceSize];
     const flattenIndices = indices.reshape([numUpdates, sliceDim]);
     const flattenX = updates.reshape([numUpdates, sliceSize]);
+    const strides =
+        [...util.computeStrides(shape).map(stride => stride / sliceSize), 1];
 
     if (outputSize === 0) {
       return backend_util.reshapeTensor(tensor([]), shape);
     }
-    const program = new ScatterNDProgram(flattenShape);
+    const program =
+        new ScatterNDProgram(numUpdates, sliceDim, strides, flattenShape);
     return (this.compileAndRun(program, [flattenIndices, flattenX]) as Tensor)
         .reshape(shape);
   }

@@ -16,13 +16,38 @@
  */
 
 import {GPGPUProgram} from './gpgpu_math';
+import {getCoordsDataType} from './shader_compiler';
 
 export class ScatterNDProgram implements GPGPUProgram {
   variableNames = ['indices', 'updates'];
   outputShape: number[];
   userCode: string;
 
-  constructor(shape: number[]) {
+  constructor(
+      private updateSize: number, private sliceDim: number,
+      private strides: number[], shape: number[]) {
     this.outputShape = shape;
+    const stridesType = getCoordsDataType(strides.length);
+    const dtype = getCoordsDataType(shape.length);
+    const strideString = this.sliceDim > 1 ? 'int(strides[j])' : 'int(strides)';
+    this.userCode = `
+        ${stridesType} strides = ${stridesType}(${this.strides});
+
+        void main() {
+          ${dtype} coords = getOutputCoords();
+          float sum = 0.0;
+          for (int i = 0; i < ${this.updateSize}; i++) {
+            int flattenIndex = 0;
+            for (int j = 0; j < ${this.sliceDim}; j++) {
+              int index = int(getIndices(i, j));
+              flattenIndex += index * ${strideString};
+            }
+            if (flattenIndex == coords[0]) {
+              sum += getUpdates(i, coords[1]);
+            }
+          }
+          setOutput(sum);
+        }
+      `;
   }
 }
