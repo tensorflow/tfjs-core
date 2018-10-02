@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+import {ENV} from './environment';
 import {ArrayData, DataType, DataTypeMap, FlatVector, RecursiveArray, RegularArray, TensorLike, TypedArray} from './types';
 
 /** Shuffles the array using Fisher-Yates algorithm. */
@@ -114,7 +115,7 @@ export function inferShape(val: TypedArray|number|boolean|RegularArray<number>|
     shape.push(firstElem.length);
     firstElem = firstElem[0];
   }
-  if (val instanceof Array) {
+  if (val instanceof Array && ENV.get('CHECK_SHAPE_CONSISTENCY')) {
     deepAssertShapeConsistency(val, shape, []);
   }
 

@@ -307,7 +307,7 @@ export class Environment {
     } else if (feature === 'IS_CHROME') {
       return isChrome();
     } else if (feature === 'WEBGL_PAGING_ENABLED') {
-      return this.get('IS_BROWSER');
+      return this.get('IS_BROWSER') && !this.get('PROD');
     } else if (feature === 'IS_TEST') {
       return false;
     } else if (feature === 'BACKEND') {
@@ -341,12 +341,20 @@ export class Environment {
     } else if (feature === 'WEBGL_FENCE_API_ENABLED') {
       return isWebGLFenceEnabled(
           this.get('WEBGL_VERSION'), this.get('IS_BROWSER'));
+    } else if (feature === 'WEBGL_SIZE_UPLOAD_UNIFORM') {
+      const dontUseUniform =
+          this.get('PROD') || !this.get('WEBGL_RENDER_FLOAT32_ENABLED');
+      return dontUseUniform ? 0 : 4;
     } else if (feature === 'TEST_EPSILON') {
       return this.backend.floatPrecision() === 32 ? TEST_EPSILON_FLOAT32 :
                                                     TEST_EPSILON_FLOAT16;
     } else if (feature === 'EPSILON') {
       return this.backend.floatPrecision() === 32 ? EPSILON_FLOAT32 :
                                                     EPSILON_FLOAT16;
+    } else if (feature === 'PROD') {
+      return false;
+    } else if (feature === 'CHECK_SHAPE_CONSISTENCY') {
+      return !this.get('PROD');
     }
     throw new Error(`Unknown feature ${feature}.`);
   }
