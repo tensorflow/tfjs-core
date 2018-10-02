@@ -185,7 +185,7 @@ export class Engine implements TensorManager, DataMover {
       saved.push(x);
       return x;
     };
-    const scopeName = this.scopeStack.map(x => x.name).join('||');
+    const scopeName = this.activeScope.name;
     const startingBytecount = this.numBytes;
     const startingNumTensors = this.numTensors;
 
