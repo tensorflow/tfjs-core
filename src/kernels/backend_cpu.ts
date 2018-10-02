@@ -32,7 +32,7 @@ import {DataId, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D
 import {DataType, DataTypeMap, Rank, ShapeMap, TypedArray, upcastType} from '../types';
 import * as util from '../util';
 import {now} from '../util';
-import {BackendTimingInfo, KernelBackend} from './backend';
+import {BackendTimingInfo, DataMover, DataStorage, KernelBackend} from './backend';
 import * as backend_util from './backend_util';
 import * as complex_util from './complex_util';
 import {nonMaxSuppressionImpl} from './non_max_suppression_impl';
@@ -52,7 +52,7 @@ interface TensorData<T extends DataType> {
 export class MathBackendCPU implements KernelBackend {
   public blockSize = 48;
 
-  private data = new WeakMap<DataId, TensorData<DataType>>();
+  private data: DataStorage<TensorData<DataType>>;
   private canvas: HTMLCanvasElement;
   private firstUse = true;
 
@@ -60,6 +60,10 @@ export class MathBackendCPU implements KernelBackend {
     if (ENV.get('IS_BROWSER')) {
       this.canvas = document.createElement('canvas');
     }
+  }
+
+  setDataMover(dataMover: DataMover): void {
+    this.data = new DataStorage(dataMover);
   }
 
   register(dataId: DataId, shape: number[], dtype: DataType): void {
@@ -88,7 +92,6 @@ export class MathBackendCPU implements KernelBackend {
     if (values == null) {
       throw new Error('MathBackendCPU.write(): values can not be null');
     }
-    this.throwIfNoData(dataId);
     this.data.get(dataId).values = values;
   }
   fromPixels(
@@ -154,7 +157,6 @@ export class MathBackendCPU implements KernelBackend {
     return this.readSync(dataId);
   }
   readSync(dataId: DataId): TypedArray {
-    this.throwIfNoData(dataId);
     const {dtype, complexTensors} = this.data.get(dataId);
     if (dtype === 'complex64') {
       const realValues = complexTensors.real.dataSync() as Float32Array;
@@ -181,20 +183,12 @@ export class MathBackendCPU implements KernelBackend {
     const kernelMs = now() - start;
     return {kernelMs};
   }
+
   memory() {
     return {
       // Unreliable due to automatic gc. The numbers above are cumulative.
       unreliable: true
     };
-  }
-
-  private throwIfNoData(dataId: DataId) {
-    if (!this.data.has(dataId)) {
-      throw new Error(
-          `CPU backend: No data found for this tensor. ` +
-          `Did you change your backend in the middle of the program? ` +
-          `New backends can't use Tensors created with previous backends`);
-    }
   }
 
   complex<T extends Tensor>(real: T, imag: T): T {
@@ -491,6 +485,28 @@ export class MathBackendCPU implements KernelBackend {
         sum += aVals[offset + j];
       }
       vals[i] = sum;
+    }
+    return result;
+  }
+
+  prod(x: Tensor, axes: number[]): Tensor {
+    this.assertNotComplex(x, 'sum');
+
+    const [outShape, reduceShape] =
+        axis_util.computeOutAndReduceShapes(x.shape, axes);
+    const resultDtype = upcastType(x.dtype, 'int32');
+    const result = ops.zeros(outShape, resultDtype);
+    const reduceSize = util.sizeFromShape(reduceShape);
+    const vals = result.dataSync();
+
+    const aVals = x.dataSync();
+    for (let i = 0; i < vals.length; ++i) {
+      const offset = i * reduceSize;
+      let prod = 1;
+      for (let j = 0; j < reduceSize; ++j) {
+        prod *= aVals[offset + j];
+      }
+      vals[i] = prod;
     }
     return result;
   }
@@ -2474,6 +2490,70 @@ export class MathBackendCPU implements KernelBackend {
         boxesVals, scoresVals, maxOutputSize, iouThreshold, scoreThreshold);
   }
 
+  fft(input: Tensor1D): Tensor1D {
+    util.assert(input.shape.length > 0, 'input must have at least one rank.');
+    const n = input.shape[0];
+
+    if (this.is_exponent_of_2(n)) {
+      return this.fftRadix2(input, n);
+    } else {
+      const data = input.dataSync();
+      const rawOutput = this.fourierTransformByMatmul(data, n) as Float32Array;
+      const output = complex_util.splitRealAndImagArrays(rawOutput);
+      return ops.complex(output.real, output.imag).as1D();
+    }
+  }
+
+  private is_exponent_of_2(size: number): boolean {
+    return (size & size - 1) === 0;
+  }
+
+  // FFT using Cooley-Tukey algorithm on radix 2 dimensional input.
+  private fftRadix2(input: Tensor1D, size: number): Tensor1D {
+    if (size === 1) {
+      return input;
+    }
+    const data = input.dataSync() as Float32Array;
+    const half = size / 2;
+    const evenComplex = complex_util.complexWithEvenIndex(data);
+    let evenTensor = ops.complex(evenComplex.real, evenComplex.imag).as1D();
+    const oddComplex = complex_util.complexWithOddIndex(data);
+    let oddTensor = ops.complex(oddComplex.real, oddComplex.imag).as1D();
+
+    // Recursive call for half part of original input.
+    evenTensor = this.fftRadix2(evenTensor, half);
+    oddTensor = this.fftRadix2(oddTensor, half);
+
+    const e = complex_util.exponents(size);
+    const exponent = ops.complex(e.real, e.imag).mul(oddTensor);
+
+    const addPart = evenTensor.add(exponent);
+    const subPart = evenTensor.sub(exponent);
+
+    const realTensor = ops.real(addPart).concat(ops.real(subPart));
+    const imagTensor = ops.imag(addPart).concat(ops.imag(subPart));
+
+    return ops.complex(realTensor, imagTensor).as1D();
+  }
+
+  // Calculate fourier transform by multplying sinusoid matrix.
+  private fourierTransformByMatmul(data: TypedArray, size: number): TypedArray {
+    const ret = new Float32Array(size * 2);
+    // TODO: Use matmul instead once it supports complex64 type.
+    for (let r = 0; r < size; r++) {
+      let real = 0.0;
+      let imag = 0.0;
+      for (let c = 0; c < size; c++) {
+        const e = complex_util.exponent(r * c, size);
+        const term = complex_util.getComplexWithIndex(data as Float32Array, c);
+        real += term.real * e.real - term.imag * e.imag;
+        imag += term.real * e.imag + term.imag * e.real;
+      }
+      complex_util.assignToTypedArray(ret, real, imag, r);
+    }
+    return ret;
+  }
+
   depthToSpace(x: Tensor4D, blockSize: number, dataFormat: 'NHWC'|'NCHW'):
       Tensor4D {
     util.assert(
@@ -2639,8 +2719,8 @@ export class MathBackendCPU implements KernelBackend {
     const boxIndVals = boxIndex.dataSync();
     const imageVals = images.dataSync();
 
-    const inStride = images.strides; // to calculate flat indexes into image
-    const outStride = output.strides; // to calculate flat indexes into output
+    const inStride = images.strides;   // to calculate flat indexes into image
+    const outStride = output.strides;  // to calculate flat indexes into output
 
     // Reference implementation
     // tslint:disable-next-line:max-line-length
@@ -2658,14 +2738,12 @@ export class MathBackendCPU implements KernelBackend {
       }
 
       const heightScale = (cropHeight > 1) ?
-        (y2 - y1) * (imageHeight - 1) / (cropHeight - 1) :
-        0;
-      const widthScale = (cropWidth > 1) ?
-        (x2 - x1) * (imageWidth - 1) / (cropWidth - 1) :
-        0;
+          (y2 - y1) * (imageHeight - 1) / (cropHeight - 1) :
+          0;
+      const widthScale =
+          (cropWidth > 1) ? (x2 - x1) * (imageWidth - 1) / (cropWidth - 1) : 0;
 
       for (let y = 0; y < cropHeight; y++) {
-
         const yInd: number = (cropHeight > 1) ?
             y1 * (imageHeight - 1) + y * (heightScale) :
             0.5 * (y1 + y2) * (imageHeight - 1);
@@ -2673,8 +2751,8 @@ export class MathBackendCPU implements KernelBackend {
         if (yInd < 0 || yInd > imageHeight - 1) {
           for (let x = 0; x < cropWidth; x++) {
             for (let c = 0; c < numChannels; c++) {
-              const ind = c + x * outStride[2] + y * outStride[1] +
-                  b * outStride[0];
+              const ind =
+                  c + x * outStride[2] + y * outStride[1] + b * outStride[0];
               output.values[ind] = extrapolationValue;
             }
           }
@@ -2687,15 +2765,14 @@ export class MathBackendCPU implements KernelBackend {
           const yLerp = yInd - topInd;
 
           for (let x = 0; x < cropWidth; x++) {
-
             const xInd = (cropWidth > 1) ?
                 x1 * (imageWidth - 1) + x * widthScale :
                 0.5 * (x1 + x2) * (imageWidth - 1);
 
             if (xInd < 0 || xInd > imageWidth - 1) {
               for (let c = 0; c < numChannels; c++) {
-                const ind = c + x * outStride[2] + y * outStride[1] +
-                    b * outStride[0];
+                const ind =
+                    c + x * outStride[2] + y * outStride[1] + b * outStride[0];
                 output.values[ind] = extrapolationValue;
               }
               continue;
@@ -2725,8 +2802,7 @@ export class MathBackendCPU implements KernelBackend {
               const top = topLeft + (topRight - topLeft) * xLerp;
               const bottom = bottomLeft + (bottomRight - bottomLeft) * xLerp;
 
-              ind = c + x * outStride[2] + y * outStride[1] +
-                    b * outStride[0];
+              ind = c + x * outStride[2] + y * outStride[1] + b * outStride[0];
               output.values[ind] = top + ((bottom - top) * yLerp);
             }
           }
@@ -2738,8 +2814,8 @@ export class MathBackendCPU implements KernelBackend {
 
             if (xInd < 0 || xInd > imageWidth - 1) {
               for (let c = 0; c < numChannels; c++) {
-                const ind = c + x * outStride[2] + y * outStride[1] +
-                    b * outStride[0];
+                const ind =
+                    c + x * outStride[2] + y * outStride[1] + b * outStride[0];
                 output.values[ind] = extrapolationValue;
               }
               continue;
@@ -2748,10 +2824,10 @@ export class MathBackendCPU implements KernelBackend {
             const closestX = Math.round(xInd);
             const closestY = Math.round(yInd);
             for (let c = 0; c < numChannels; c++) {
-              const inInd = c + closestX * inStride[2]
-                  + closestY * inStride[1] + bInd * inStride[0];
-              const outInd = c + x * outStride[2] + y * outStride[1] +
-                  b * outStride[0];
+              const inInd = c + closestX * inStride[2] +
+                  closestY * inStride[1] + bInd * inStride[0];
+              const outInd =
+                  c + x * outStride[2] + y * outStride[1] + b * outStride[0];
               output.values[outInd] = imageVals[inInd];
             }
           }
