@@ -28,7 +28,8 @@ declare namespace java {
 declare var CACurrentMediaTime: () => number;
 interface NativeScriptGlobal {
   android?: {};
-  ios?: {};
+  NSObject?: {};
+  NSString?: {};
 }
 
 /** Shuffles the array using Fisher-Yates algorithm. */
@@ -526,7 +527,7 @@ export function now(): number {
     const g = global as NativeScriptGlobal;
     if (g.android) {
       return java.lang.System.nanoTime() / 1000000;
-    } else if (g.ios) {
+    } else if (g.NSObject && g.NSString) {
       return CACurrentMediaTime();
     }
   }
