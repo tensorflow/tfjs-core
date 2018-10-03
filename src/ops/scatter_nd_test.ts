@@ -17,7 +17,7 @@
 
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
-import {ALL_ENVS, expectArraysClose} from '../test_util';
+import {ALL_ENVS, CPU_ENVS, expectArraysClose} from '../test_util';
 
 describeWithFlags('ScatterNdTest', ALL_ENVS, () => {
   it('should work for 2d', () => {
@@ -86,22 +86,6 @@ describeWithFlags('ScatterNdTest', ALL_ENVS, () => {
     expectArraysClose(result, [70, 40, 30, 50, 20, 0, 0, 0]);
   });
 
-  it('should throw error when index out of range', () => {
-    const indices = tf.tensor2d([0, 4, 99], [3, 1], 'int32');
-    const updates = tf.tensor2d(
-        [100, 101, 102, 777, 778, 779, 10000, 10001, 10002], [3, 3], 'float32');
-    const shape = [5, 3];
-    expect(() => tf.scatterND(indices, updates, shape)).toThrow();
-  });
-
-  it('should throw error when indices has wrong dimension', () => {
-    const indices = tf.tensor2d([0, 4, 99], [3, 1], 'int32');
-    const updates = tf.tensor2d(
-        [100, 101, 102, 777, 778, 779, 10000, 10001, 10002], [3, 3], 'float32');
-    const shape = [2, 3];
-    expect(() => tf.scatterND(indices, updates, shape)).toThrow();
-  });
-
   it('should throw error when indices and update mismatch', () => {
     const indices = tf.tensor2d([0, 4, 2], [3, 1], 'int32');
     const updates = tf.tensor2d(
@@ -116,6 +100,24 @@ describeWithFlags('ScatterNdTest', ALL_ENVS, () => {
     const updates =
         tf.tensor2d([100, 101, 102, 10000, 10001, 10002], [2, 3], 'float32');
     const shape = [5, 3];
+    expect(() => tf.scatterND(indices, updates, shape)).toThrow();
+  });
+});
+
+describeWithFlags('ScatterNdTest CPU', CPU_ENVS, () => {
+  it('should throw error when index out of range', () => {
+    const indices = tf.tensor2d([0, 4, 99], [3, 1], 'int32');
+    const updates = tf.tensor2d(
+        [100, 101, 102, 777, 778, 779, 10000, 10001, 10002], [3, 3], 'float32');
+    const shape = [5, 3];
+    expect(() => tf.scatterND(indices, updates, shape)).toThrow();
+  });
+
+  it('should throw error when indices has wrong dimension', () => {
+    const indices = tf.tensor2d([0, 4, 99], [3, 1], 'int32');
+    const updates = tf.tensor2d(
+        [100, 101, 102, 777, 778, 779, 10000, 10001, 10002], [3, 3], 'float32');
+    const shape = [2, 3];
     expect(() => tf.scatterND(indices, updates, shape)).toThrow();
   });
 });
