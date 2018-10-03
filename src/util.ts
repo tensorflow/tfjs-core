@@ -508,6 +508,10 @@ export function now(): number {
   } else if (typeof process !== 'undefined') {
     const time = process.hrtime();
     return time[0] * 1000 + time[1] / 1000000;
+  } else if (global && global.android !== 'undefined') {
+    return java.lang.System.nanoTime() / 1000000;
+  } else if (global && global.ios !== 'undefined') {
+    return CACurrentMediaTime();
   } else {
     throw new Error(
         'Cannot measure time in this environment. You should run tf.js ' +
