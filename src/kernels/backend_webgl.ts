@@ -56,6 +56,8 @@ import {CropAndResizeProgram} from './webgl/crop_and_resize_gpu';
 import {CumSumProgram} from './webgl/cumsum_gpu';
 import {DepthToSpaceProgram} from './webgl/depth_to_space_gpu';
 import {EncodeFloatProgram} from './webgl/encode_float_gpu';
+import {FFTProgram} from './webgl/fft_gpu';
+import * as fft_gpu from './webgl/fft_gpu';
 import {FromPixelsProgram} from './webgl/from_pixels_gpu';
 import {GatherProgram} from './webgl/gather_gpu';
 import {GPGPUContext} from './webgl/gpgpu_context';
@@ -123,7 +125,7 @@ export interface TensorHandle {
 // before we start paging. The bytes are this constant * screen area * dpi.
 const BEFORE_PAGING_CONSTANT = 300;
 // Tensors with size <= than this will be uploaded as uniforms, not textures.
-export const SIZE_UPLOAD_UNIFORM = 32;
+export const SIZE_UPLOAD_UNIFORM = 4;
 
 export class MathBackendWebGL implements KernelBackend {
   private texData: DataStorage<TextureData>;
@@ -773,7 +775,7 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   private reduce(
-      x: Tensor2D, reduceType: 'all'|'any'|'max'|'min'|'sum',
+      x: Tensor2D, reduceType: 'all'|'any'|'max'|'min'|'sum'|'prod',
       dtype: DataType): Tensor2D {
     const batchSize = x.shape[0];
     const inSize = x.shape[1];
@@ -826,6 +828,15 @@ export class MathBackendWebGL implements KernelBackend {
     const a2D = x.as2D(-1, inSize);
     const outputDType = sumOutType(x.dtype);
     return this.reduce(a2D, 'sum', outputDType).reshape(outShape);
+  }
+
+  prod(x: Tensor, axes: number[]): Tensor {
+    const [outShape, reduceShape] =
+        axis_util.computeOutAndReduceShapes(x.shape, axes);
+    const inSize = util.sizeFromShape(reduceShape);
+    const a2D = x.as2D(-1, inSize);
+    const outputDType = sumOutType(x.dtype);
+    return this.reduce(a2D, 'prod', outputDType).reshape(outShape);
   }
 
   unsortedSegmentSum<T extends Tensor>(
@@ -1610,6 +1621,24 @@ export class MathBackendWebGL implements KernelBackend {
     return split(x, sizeSplits, axis);
   }
 
+  fft(x: Tensor1D): Tensor1D {
+    const xData = this.texData.get(x.dataId);
+
+    const realProgram = new FFTProgram(fft_gpu.COMPLEX_FFT.REAL, x.shape);
+    const imagProgram = new FFTProgram(fft_gpu.COMPLEX_FFT.IMAG, x.shape);
+    const inputs = [
+      this.makeComplexComponentTensorHandle(x, xData.complexTensors.real),
+      this.makeComplexComponentTensorHandle(x, xData.complexTensors.imag),
+    ];
+
+    const real = this.compileAndRun<Tensor>(realProgram, inputs);
+    const imag = this.compileAndRun<Tensor>(imagProgram, inputs);
+    const complex = this.complex(real, imag).as1D();
+    real.dispose();
+    imag.dispose();
+    return complex;
+  }
+
   private makeOutputArray<T extends Tensor>(shape: number[], dtype: DataType):
       T {
     return Tensor.make(shape, {}, dtype) as T;
@@ -1642,9 +1671,11 @@ export class MathBackendWebGL implements KernelBackend {
 
       const texData = this.texData.get(input.dataId);
       // Upload small tensors that live on the CPU as uniforms, not as
-      // textures.
+      // textures. Do this only when the environment supports 32bit floats due
+      // to problems when comparing 16bit floats with 32bit floats.
       if (texData.texture == null &&
-          util.sizeFromShape(input.shape) <= SIZE_UPLOAD_UNIFORM) {
+          util.sizeFromShape(input.shape) <= SIZE_UPLOAD_UNIFORM &&
+          ENV.get('WEBGL_RENDER_FLOAT32_ENABLED')) {
         return {
           shape: input.shape,
           texData: null,
