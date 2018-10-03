@@ -108,6 +108,7 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
   floorDiv(a: Tensor, b: Tensor): Tensor;
 
   sum(x: Tensor, axes: number[]): Tensor;
+  prod(x: Tensor, axes: number[]): Tensor;
 
   unsortedSegmentSum<T extends Tensor>(
       x: T, segmentIds: Tensor1D, numSegments: number): Tensor;
@@ -278,6 +279,7 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
       boxes: Tensor2D, scores: Tensor1D, maxOutputSize: number,
       iouThreshold: number, scoreThreshold?: number): Tensor1D;
 
+  fft(x: Tensor1D): Tensor1D;
   complex<T extends Tensor>(real: T, imag: T): T;
   real<T extends Tensor>(input: T): T;
   imag<T extends Tensor>(input: T): T;
