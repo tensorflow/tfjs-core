@@ -1357,7 +1357,7 @@ export class MathBackendWebGL implements KernelBackend {
         ENV.get('WEBGL_RENDER_FLOAT32_ENABLED') && x.shape[0] === 1 &&
         this.isLogicalAndPhysicalShapeSame(x2ColShape, TextureUsage.PACK) &&
         this.isLogicalAndPhysicalShapeSame(w2RowShape, TextureUsage.PACK)) {
-      const xSqueezed = x.as3D(x.shape[1], x.shape[2], x.shape[3]);
+      const xSqueezed = x.squeeze([0]);
       const w2Row = filter.reshape([sharedDim, -1]);
 
       const im2ColProgram =
