@@ -56,8 +56,8 @@ import {CropAndResizeProgram} from './webgl/crop_and_resize_gpu';
 import {CumSumProgram} from './webgl/cumsum_gpu';
 import {DepthToSpaceProgram} from './webgl/depth_to_space_gpu';
 import {EncodeFloatProgram} from './webgl/encode_float_gpu';
-import {FFTProgram} from './webgl/fft_gpu';
 import * as fft_gpu from './webgl/fft_gpu';
+import {FFTProgram} from './webgl/fft_gpu';
 import {FromPixelsProgram} from './webgl/from_pixels_gpu';
 import {GatherProgram} from './webgl/gather_gpu';
 import {GPGPUContext} from './webgl/gpgpu_context';
@@ -92,7 +92,6 @@ import {TransposeProgram} from './webgl/transpose_gpu';
 import * as unary_op from './webgl/unaryop_gpu';
 import {UnaryOpProgram} from './webgl/unaryop_gpu';
 import {UnpackProgram} from './webgl/unpack_gpu';
-import {W2RowDepthwiseProgram} from './webgl/w2row_depthwise_gpu';
 import {W2RowProgram} from './webgl/w2row_gpu';
 import * as webgl_util from './webgl/webgl_util';
 import {whereImpl} from './where_impl';
@@ -1408,61 +1407,6 @@ export class MathBackendWebGL implements KernelBackend {
 
   depthwiseConv2D(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
       Tensor4D {
-    const {
-      filterWidth,
-      filterHeight,
-      inChannels,
-      outWidth,
-      outHeight,
-    } = convInfo;
-
-    const sharedDim = filterWidth * filterHeight * inChannels;
-    const numCols = outHeight * outWidth;
-    const x2ColShape = [sharedDim, numCols];
-    const w2RowShape = [convInfo.outChannels, sharedDim];
-
-    if (ENV.get('WEBGL_RENDER_FLOAT32_ENABLED') && x.shape[0] === 1 &&
-        util.arraysEqual(
-            webgl_util.getTextureShapeFromLogicalShape(
-                this.gpgpu.gl, x2ColShape, TextureUsage.PACK),
-            x2ColShape) &&
-        util.arraysEqual(
-            webgl_util.getTextureShapeFromLogicalShape(
-                this.gpgpu.gl, w2RowShape, TextureUsage.PACK),
-            w2RowShape)) {
-      const xSqueezed = x.as3D(x.shape[1], x.shape[2], x.shape[3]);
-
-      const im2ColProgram =
-          new Im2ColProgram(x2ColShape, xSqueezed.shape, convInfo);
-      const im2ColOutput = Tensor.make<Tensor2D>(x2ColShape, {});
-      this.texData.get(im2ColOutput.dataId).usage = TextureUsage.PACK;
-      const im2Col = this.compileAndRun<Tensor2D>(
-          im2ColProgram, [xSqueezed], im2ColOutput);
-
-      const w2RowDepthwiseProgram =
-          new W2RowDepthwiseProgram(w2RowShape, filter.shape, convInfo);
-      const w2RowOutput = Tensor.make<Tensor2D>(w2RowShape, {});
-      this.texData.get(w2RowOutput.dataId).usage = TextureUsage.PACK;
-      const w2Row = this.compileAndRun<Tensor2D>(
-          w2RowDepthwiseProgram, [filter], w2RowOutput);
-
-      const matmulProgram = new MatMulPackedProgram(
-          im2Col.shape, w2Row.shape, [numCols, convInfo.outChannels], true,
-          true);
-      const matmulOutput = Tensor.make(matmulProgram.outputShape, {});
-      this.texData.get(matmulOutput.dataId).usage = TextureUsage.PACK;
-      const product =
-          this.compileAndRun(matmulProgram, [im2Col, w2Row], matmulOutput);
-
-      const unpackProgram = new UnpackProgram(product.shape);
-      const unpacked = this.compileAndRun(unpackProgram, [product]) as Tensor;
-
-      im2ColOutput.dispose();
-      w2RowOutput.dispose();
-      matmulOutput.dispose();
-
-      return unpacked.reshape([1, outHeight, outWidth, convInfo.outChannels]);
-    }
     const program = new DepthwiseConv2DProgram(convInfo);
     return this.compileAndRun(program, [x, filter]);
   }
