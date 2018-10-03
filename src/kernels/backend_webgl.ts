@@ -557,6 +557,13 @@ export class MathBackendWebGL implements KernelBackend {
     return res.reshape(outShape) as T;
   }
 
+  private isLogicalAndPhysicalShapeSame(
+      shape: number[], usage: TextureUsage = TextureUsage.UPLOAD): boolean {
+    return util.arraysEqual(
+        webgl_util.getTextureShapeFromLogicalShape(this.gpgpu.gl, shape, usage),
+        shape);
+  }
+
   concat(tensors: Tensor[], axis: number): Tensor {
     if (tensors.length === 1) {
       return tensors[0];
@@ -579,20 +586,16 @@ export class MathBackendWebGL implements KernelBackend {
     const outerShapeA = transposeA ? a.shape[2] : a.shape[1];
     const outerShapeB = transposeB ? b.shape[1] : b.shape[2];
 
-    // TODO(annxingyuan): Support 3D tensors
+    // TODO(github.com/tensorflow/tfjs/issues/693): Support 3D tensors
     // We're restricting packed matMul to these conditions because for now, our
     // packed matMul shader needs its inputs to be 2D matrices whose physical
     // dimensions match their logical dimensions.
     if (ENV.get('WEBGL_RENDER_FLOAT32_ENABLED') && a.shape[0] === 1 &&
         b.shape[0] === 1 &&
-        util.arraysEqual(
-            webgl_util.getTextureShapeFromLogicalShape(
-                this.gpgpu.gl, [a.shape[1], a.shape[2]], TextureUsage.PACK),
-            [a.shape[1], a.shape[2]]) &&
-        util.arraysEqual(
-            webgl_util.getTextureShapeFromLogicalShape(
-                this.gpgpu.gl, [b.shape[1], b.shape[2]], TextureUsage.PACK),
-            [b.shape[1], b.shape[2]])) {
+        this.isLogicalAndPhysicalShapeSame(
+            [a.shape[1], a.shape[2]], TextureUsage.PACK) &&
+        this.isLogicalAndPhysicalShapeSame(
+            [b.shape[1], b.shape[2]], TextureUsage.PACK)) {
       const aSqueezed = a.as2D(a.shape[1], a.shape[2]);
       const bSqueezed = b.as2D(b.shape[1], b.shape[2]);
       const packProgramA = new PackProgram(aSqueezed.shape);
@@ -1350,14 +1353,8 @@ export class MathBackendWebGL implements KernelBackend {
 
     if (ENV.get('WEBGL_CONV_IM2COL') &&
         ENV.get('WEBGL_RENDER_FLOAT32_ENABLED') && x.shape[0] === 1 &&
-        util.arraysEqual(
-            webgl_util.getTextureShapeFromLogicalShape(
-                this.gpgpu.gl, x2ColShape, TextureUsage.PACK),
-            x2ColShape) &&
-        util.arraysEqual(
-            webgl_util.getTextureShapeFromLogicalShape(
-                this.gpgpu.gl, w2RowShape, TextureUsage.PACK),
-            w2RowShape)) {
+        this.isLogicalAndPhysicalShapeSame(x2ColShape, TextureUsage.PACK) &&
+        this.isLogicalAndPhysicalShapeSame(w2RowShape, TextureUsage.PACK)) {
       const xSqueezed = x.as3D(x.shape[1], x.shape[2], x.shape[3]);
 
       const im2ColProgram =
