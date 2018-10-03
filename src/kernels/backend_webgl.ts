@@ -599,29 +599,28 @@ export class MathBackendWebGL implements KernelBackend {
       const aSqueezed = a.as2D(a.shape[1], a.shape[2]);
       const bSqueezed = b.as2D(b.shape[1], b.shape[2]);
       const packProgramA = new PackProgram(aSqueezed.shape);
-      const packedAOutput = this.makePackedTensor<Tensor2D>(aSqueezed.shape);
       const packedA = this.compileAndRun<Tensor2D>(
-          packProgramA, [aSqueezed], packedAOutput);
+          packProgramA, [aSqueezed],
+          this.makePackedTensor<Tensor2D>(aSqueezed.shape));
 
       const packProgramB = new PackProgram(bSqueezed.shape);
-      const packedBOutput = this.makePackedTensor<Tensor2D>(bSqueezed.shape);
       const packedB = this.compileAndRun<Tensor2D>(
-          packProgramB, [bSqueezed], packedBOutput);
+          packProgramB, [bSqueezed],
+          this.makePackedTensor<Tensor2D>(bSqueezed.shape));
 
       const program = new MatMulPackedProgram(
           packedA.shape, packedB.shape, [outerShapeA, outerShapeB], transposeA,
           transposeB);
-      const packedMatMulOutput =
-          this.makePackedTensor<Tensor2D>(program.outputShape);
-      const result =
-          this.compileAndRun(program, [packedA, packedB], packedMatMulOutput);
+      const result = this.compileAndRun(
+          program, [packedA, packedB],
+          this.makePackedTensor<Tensor2D>(program.outputShape));
 
       const unpackProgram = new UnpackProgram(result.shape);
       const unpacked = this.compileAndRun(unpackProgram, [result]) as Tensor;
 
-      packedAOutput.dispose();
-      packedBOutput.dispose();
-      packedMatMulOutput.dispose();
+      packedA.dispose();
+      packedB.dispose();
+      result.dispose();
 
       return unpacked.reshape([1, result.shape[0], result.shape[1]]);
     } else {
@@ -1363,29 +1362,27 @@ export class MathBackendWebGL implements KernelBackend {
 
       const im2ColProgram =
           new Im2ColProgram(x2ColShape, xSqueezed.shape, convInfo);
-      const im2ColOutput = this.makePackedTensor<Tensor2D>(x2ColShape);
       const im2Col = this.compileAndRun<Tensor2D>(
-          im2ColProgram, [xSqueezed], im2ColOutput);
+          im2ColProgram, [xSqueezed],
+          this.makePackedTensor<Tensor2D>(x2ColShape));
 
       const w2RowProgram = new W2RowProgram(w2RowShape, filter.shape, convInfo);
-      const w2RowOutput = this.makePackedTensor<Tensor2D>(w2RowShape);
-      const w2Row =
-          this.compileAndRun<Tensor2D>(w2RowProgram, [filter], w2RowOutput);
+      const w2Row = this.compileAndRun<Tensor2D>(
+          w2RowProgram, [filter], this.makePackedTensor<Tensor2D>(w2RowShape));
 
       const matmulProgram = new MatMulPackedProgram(
           im2Col.shape, w2Row.shape, [numCols, convInfo.outChannels], true,
           true);
-      const matmulOutput =
-          this.makePackedTensor<Tensor2D>(matmulProgram.outputShape);
-      const product =
-          this.compileAndRun(matmulProgram, [im2Col, w2Row], matmulOutput);
+      const product = this.compileAndRun(
+          matmulProgram, [im2Col, w2Row],
+          this.makePackedTensor<Tensor2D>(matmulProgram.outputShape));
 
       const unpackProgram = new UnpackProgram(product.shape);
       const unpacked = this.compileAndRun(unpackProgram, [product]) as Tensor;
 
-      im2ColOutput.dispose();
-      w2RowOutput.dispose();
-      matmulOutput.dispose();
+      im2Col.dispose();
+      w2Row.dispose();
+      product.dispose();
 
       return unpacked.reshape([1, outHeight, outWidth, convInfo.outChannels]);
     }
@@ -1591,7 +1588,7 @@ export class MathBackendWebGL implements KernelBackend {
   private makePackedTensor<T extends Tensor>(shape: number[]): T {
     const packedTensor = Tensor.make(shape, {});
     this.texData.get(packedTensor.dataId).usage = TextureUsage.PACK;
-    return packedTensor;
+    return packedTensor as T;
   }
 
   public compileAndRun<
