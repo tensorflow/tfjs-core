@@ -17,6 +17,20 @@
 
 import {ArrayData, DataType, DataTypeMap, FlatVector, RecursiveArray, RegularArray, TensorLike, TypedArray} from './types';
 
+/** Declaring variables for NativeScript support */
+declare namespace java {
+  export namespace lang {
+    export class System {
+      public static nanoTime(): number;
+    }
+  }
+}
+declare var CACurrentMediaTime: () => number;
+interface NativeScriptGlobal {
+  android?: {};
+  ios?: {};
+}
+
 /** Shuffles the array using Fisher-Yates algorithm. */
 // tslint:disable-next-line:no-any
 export function shuffle(array: any[]|Uint32Array|Int32Array|
@@ -508,13 +522,16 @@ export function now(): number {
   } else if (typeof process !== 'undefined') {
     const time = process.hrtime();
     return time[0] * 1000 + time[1] / 1000000;
-  } else if (global && global.android !== 'undefined') {
-    return java.lang.System.nanoTime() / 1000000;
-  } else if (global && global.ios !== 'undefined') {
-    return CACurrentMediaTime();
-  } else {
-    throw new Error(
-        'Cannot measure time in this environment. You should run tf.js ' +
-        'in the browser or in Node.js');
+  } else if (typeof global !== 'undefined') {
+    const g = global as NativeScriptGlobal;
+    if (g.android) {
+      return java.lang.System.nanoTime() / 1000000;
+    } else if (g.ios) {
+      return CACurrentMediaTime();
+    }
   }
+
+  throw new Error(
+      'Cannot measure time in this environment. You should run tf.js ' +
+      'in the browser or in Node.js');
 }
