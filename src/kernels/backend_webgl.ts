@@ -599,22 +599,20 @@ export class MathBackendWebGL implements KernelBackend {
       const aSqueezed = a.as2D(a.shape[1], a.shape[2]);
       const bSqueezed = b.as2D(b.shape[1], b.shape[2]);
       const packProgramA = new PackProgram(aSqueezed.shape);
-      const packedAOutput = Tensor.make<Tensor2D>(aSqueezed.shape, {});
-      this.texData.get(packedAOutput.dataId).usage = TextureUsage.PACK;
+      const packedAOutput = this.makePackedTensor<Tensor2D>(aSqueezed.shape);
       const packedA = this.compileAndRun<Tensor2D>(
           packProgramA, [aSqueezed], packedAOutput);
 
       const packProgramB = new PackProgram(bSqueezed.shape);
-      const packedBOutput = Tensor.make<Tensor2D>(bSqueezed.shape, {});
-      this.texData.get(packedBOutput.dataId).usage = TextureUsage.PACK;
+      const packedBOutput = this.makePackedTensor<Tensor2D>(bSqueezed.shape);
       const packedB = this.compileAndRun<Tensor2D>(
           packProgramB, [bSqueezed], packedBOutput);
 
       const program = new MatMulPackedProgram(
           packedA.shape, packedB.shape, [outerShapeA, outerShapeB], transposeA,
           transposeB);
-      const packedMatMulOutput = Tensor.make(program.outputShape, {});
-      this.texData.get(packedMatMulOutput.dataId).usage = TextureUsage.PACK;
+      const packedMatMulOutput =
+          this.makePackedTensor<Tensor2D>(program.outputShape);
       const result =
           this.compileAndRun(program, [packedA, packedB], packedMatMulOutput);
 
@@ -1351,30 +1349,34 @@ export class MathBackendWebGL implements KernelBackend {
     const x2ColShape = [sharedDim, numCols];
     const w2RowShape = [convInfo.outChannels, sharedDim];
 
+    // Rearranges conv2d input so each block to be convolved over forms the
+    // column of a new matrix with shape [filterWidth * filterHeight *
+    // inChannels, outHeight * outWidth]. The filter is also rearranged so each
+    // output channel forms a row of a new matrix with shape [outChannels,
+    // filterWidth * filterHeight * inChannels]. The convolution is then
+    // computed by multiplying these matrices and reshaping the result.
     if (ENV.get('WEBGL_CONV_IM2COL') &&
         ENV.get('WEBGL_RENDER_FLOAT32_ENABLED') && x.shape[0] === 1 &&
         this.isLogicalAndPhysicalShapeSame(x2ColShape, TextureUsage.PACK) &&
         this.isLogicalAndPhysicalShapeSame(w2RowShape, TextureUsage.PACK)) {
-      const xSqueezed = x.as3D(x.shape[1], x.shape[2], x.shape[3]);
+      const xSqueezed = x.squeeze();
 
       const im2ColProgram =
           new Im2ColProgram(x2ColShape, xSqueezed.shape, convInfo);
-      const im2ColOutput = Tensor.make<Tensor2D>(x2ColShape, {});
-      this.texData.get(im2ColOutput.dataId).usage = TextureUsage.PACK;
+      const im2ColOutput = this.makePackedTensor<Tensor2D>(x2ColShape);
       const im2Col = this.compileAndRun<Tensor2D>(
           im2ColProgram, [xSqueezed], im2ColOutput);
 
       const w2RowProgram = new W2RowProgram(w2RowShape, filter.shape, convInfo);
-      const w2RowOutput = Tensor.make<Tensor2D>(w2RowShape, {});
-      this.texData.get(w2RowOutput.dataId).usage = TextureUsage.PACK;
+      const w2RowOutput = this.makePackedTensor<Tensor2D>(w2RowShape);
       const w2Row =
           this.compileAndRun<Tensor2D>(w2RowProgram, [filter], w2RowOutput);
 
       const matmulProgram = new MatMulPackedProgram(
           im2Col.shape, w2Row.shape, [numCols, convInfo.outChannels], true,
           true);
-      const matmulOutput = Tensor.make(matmulProgram.outputShape, {});
-      this.texData.get(matmulOutput.dataId).usage = TextureUsage.PACK;
+      const matmulOutput =
+          this.makePackedTensor<Tensor2D>(matmulProgram.outputShape);
       const product =
           this.compileAndRun(matmulProgram, [im2Col, w2Row], matmulOutput);
 
@@ -1584,6 +1586,12 @@ export class MathBackendWebGL implements KernelBackend {
   private makeOutputArray<T extends Tensor>(shape: number[], dtype: DataType):
       T {
     return Tensor.make(shape, {}, dtype) as T;
+  }
+
+  private makePackedTensor<T extends Tensor>(shape: number[]): T {
+    const packedTensor = Tensor.make(shape, {});
+    this.texData.get(packedTensor.dataId).usage = TextureUsage.PACK;
+    return packedTensor;
   }
 
   public compileAndRun<
