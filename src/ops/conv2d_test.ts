@@ -21,54 +21,53 @@ import {ALL_ENVS, expectArraysClose, WEBGL_ENVS} from '../test_util';
 import {Rank} from '../types';
 
 describeWithFlags('conv im2row', WEBGL_ENVS, () => {
-  it('should not leak memory', () => {
-    const inputDepth = 1;
-    const fSize = 1;
-    const pad = 0;
-    const stride = 1;
+  const webglConvIm2colSavedFlag = tf.ENV.get('WEBGL_CONV_IM2COL');
 
-    const x = tf.tensor3d([1, 2, 3, 4], [2, 2, inputDepth]);
-    const w = tf.tensor4d([2], [fSize, fSize, inputDepth, 1]);
-
-    const startNumBytes = tf.memory().numBytes;
-    tf.conv2d(x, w, stride, pad);
-    const endNumBytes = tf.memory().numBytes;
-
-    expect(endNumBytes - startNumBytes).toEqual(16);
+  beforeAll(() => {
+    tf.ENV.set('WEBGL_CONV_IM2COL', true);
   });
 
-  it('x=[2,2,1] f=[1,1,1,2] s=1 d=1 p=0', () => {
+  afterAll(() => {
+    tf.ENV.set('WEBGL_CONV_IM2COL', webglConvIm2colSavedFlag);
+  });
+
+  it('should not leak memory', () => {
     const inputDepth = 1;
     const inputShape: [number, number, number] = [2, 2, inputDepth];
     const outputDepth = 1;
-    const fSize = 1;
+    const fSize = 2;
     const pad = 0;
     const stride = 1;
+    const dataFormat = 'NHWC';
+    const dilation = 1;
 
     const x = tf.tensor3d([1, 2, 3, 4], inputShape);
-    const w = tf.tensor4d([2], [fSize, fSize, inputDepth, outputDepth]);
+    const w =
+        tf.tensor4d([3, 1, 5, 0], [fSize, fSize, inputDepth, outputDepth]);
 
-    const result = tf.conv2d(x, w, stride, pad);
+    const startNumBytes = tf.memory().numBytes;
+    tf.conv2d(x, w, stride, pad, dataFormat, dilation);
+    const endNumBytes = tf.memory().numBytes;
 
-    expectArraysClose(result, [2, 4, 6, 8]);
+    expect(endNumBytes - startNumBytes).toEqual(4);
   });
 
-  it('x=[2,2,2,1] f=[1,1,1,1] s=1 d=1 p=0', () => {
+  it('x=[3,3,1] f=[2,2,1,1] s=1 d=1 p=0', () => {
     const inputDepth = 1;
-    const inShape: [number, number, number, number] = [2, 2, 2, inputDepth];
+    const inputShape: [number, number, number] = [3, 3, inputDepth];
     const outputDepth = 1;
-    const fSize = 1;
+    const fSize = 2;
     const pad = 0;
     const stride = 1;
+    const dataFormat = 'NHWC';
+    const dilation = 1;
 
-    const x = tf.tensor4d([1, 2, 3, 4, 5, 6, 7, 8], inShape);
-    const w = tf.tensor4d([2], [fSize, fSize, inputDepth, outputDepth]);
+    const x = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8, 9], inputShape);
+    const w =
+        tf.tensor4d([3, 1, 5, 0], [fSize, fSize, inputDepth, outputDepth]);
 
-    const result = tf.conv2d(x, w, stride, pad);
-    expect(result.shape).toEqual([2, 2, 2, 1]);
-    const expected = [2, 4, 6, 8, 10, 12, 14, 16];
-
-    expectArraysClose(result, expected);
+    const result = tf.conv2d(x, w, stride, pad, dataFormat, dilation);
+    expectArraysClose(result, [25, 34, 52, 61]);
   });
 
   it('x=[2,2,1] f=[2,2,1,1] s=1 d=1 p=0', () => {
