@@ -92,7 +92,6 @@ import {TransposeProgram} from './webgl/transpose_gpu';
 import * as unary_op from './webgl/unaryop_gpu';
 import {UnaryOpProgram} from './webgl/unaryop_gpu';
 import {UnpackProgram} from './webgl/unpack_gpu';
-import {W2RowProgram} from './webgl/w2row_gpu';
 import * as webgl_util from './webgl/webgl_util';
 import {whereImpl} from './where_impl';
 
@@ -1358,7 +1357,8 @@ export class MathBackendWebGL implements KernelBackend {
         ENV.get('WEBGL_RENDER_FLOAT32_ENABLED') && x.shape[0] === 1 &&
         this.isLogicalAndPhysicalShapeSame(x2ColShape, TextureUsage.PACK) &&
         this.isLogicalAndPhysicalShapeSame(w2RowShape, TextureUsage.PACK)) {
-      const xSqueezed = x.squeeze();
+      const xSqueezed = x.as3D(x.shape[1], x.shape[2], x.shape[3]);
+      const w2Row = filter.reshape([sharedDim, -1]);
 
       const im2ColProgram =
           new Im2ColProgram(x2ColShape, xSqueezed.shape, convInfo);
@@ -1366,22 +1366,23 @@ export class MathBackendWebGL implements KernelBackend {
           im2ColProgram, [xSqueezed],
           this.makePackedTensor<Tensor2D>(x2ColShape));
 
-      const w2RowProgram = new W2RowProgram(w2RowShape, filter.shape, convInfo);
-      const w2Row = this.compileAndRun<Tensor2D>(
-          w2RowProgram, [filter], this.makePackedTensor<Tensor2D>(w2RowShape));
+      const packedW2RowProgram = new PackProgram(w2Row.shape);
+      const packedW2Row = this.compileAndRun(
+          packedW2RowProgram, [w2Row],
+          this.makePackedTensor<Tensor2D>(w2Row.shape));
 
       const matmulProgram = new MatMulPackedProgram(
-          im2Col.shape, w2Row.shape, [numCols, convInfo.outChannels], true,
-          true);
+          im2Col.shape, packedW2Row.shape, [numCols, convInfo.outChannels],
+          true, false);
       const product = this.compileAndRun(
-          matmulProgram, [im2Col, w2Row],
+          matmulProgram, [im2Col, packedW2Row],
           this.makePackedTensor<Tensor2D>(matmulProgram.outputShape));
 
       const unpackProgram = new UnpackProgram(product.shape);
       const unpacked = this.compileAndRun(unpackProgram, [product]) as Tensor;
 
       im2Col.dispose();
-      w2Row.dispose();
+      packedW2Row.dispose();
       product.dispose();
 
       return unpacked.reshape([1, outHeight, outWidth, convInfo.outChannels]);
