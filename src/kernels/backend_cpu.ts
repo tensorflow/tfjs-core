@@ -16,6 +16,7 @@
  */
 
 import * as seedrandom from 'seedrandom';
+
 import {ENV} from '../environment';
 import {warn} from '../log';
 import * as array_ops_util from '../ops/array_ops_util';
@@ -24,14 +25,16 @@ import * as broadcast_util from '../ops/broadcast_util';
 import * as concat_util from '../ops/concat_util';
 import {Conv2DInfo} from '../ops/conv_util';
 import * as erf_util from '../ops/erf_util';
+import * as gather_nd_util from '../ops/gather_nd_util';
 import * as ops from '../ops/ops';
 import {buffer, tensor, tensor3d, tensor4d} from '../ops/ops';
 import * as selu_util from '../ops/selu_util';
 import {getStridedSlicedInfo} from '../ops/slice_util';
-import {DataId, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
+import {DataId, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
 import {DataType, DataTypeMap, Rank, ShapeMap, TypedArray, upcastType} from '../types';
 import * as util from '../util';
 import {now} from '../util';
+
 import {BackendTimingInfo, DataMover, DataStorage, KernelBackend} from './backend';
 import * as backend_util from './backend_util';
 import * as complex_util from './complex_util';
@@ -2835,6 +2838,53 @@ export class MathBackendCPU implements KernelBackend {
       }
     }
     return output.toTensor();
+  }
+
+  gatherND<T extends Tensor<Rank>, K extends Tensor<Rank>>(x: T, indices: K):
+      Tensor<Rank> {
+    const indicesShape = indices.shape;
+    const indicesNd = indicesShape[indicesShape.length - 1];
+
+    const paramsShape = x.shape;
+
+    const [resultShape, nResult, sliceSize] =
+        gather_nd_util.prepareAndValidateGatherNDInputs(x, indices);
+    const strides =
+        [...util.computeStrides(x.shape).map(stride => stride / sliceSize), 1];
+
+    if (nResult > 0) {
+      if (paramsShape.length === 0) {
+        throw new Error(
+            'Requested more than 0 entries, but params is empty.' +
+            ` Params shape: ${paramsShape}.DebugString()`);
+      }
+
+      const buffer = new TensorBuffer([nResult, sliceSize], 'float32');
+      const flattenIndices = indices.reshape([nResult, indicesNd]);
+      const flattenX = x.reshape([x.size / sliceSize, sliceSize]);
+
+      for (let i = 0; i < nResult; i++) {
+        const index = [];
+        for (let j = 0; j < indicesNd; j++) {
+          index.push(flattenIndices.get(i, j));
+        }
+        const flattenIndex = index.reduce((sum, dim, index) => {
+          sum += dim * strides[index];
+          return sum;
+        }, 0);
+        if (flattenIndex < 0 || flattenIndex > x.size / sliceSize) {
+          throw new Error(
+              `Invalid indices: ${index} does not index into ${x.shape}`);
+        }
+
+        for (let k = 0; k < sliceSize; k++) {
+          buffer.set(flattenX.get(flattenIndex, k), i, k);
+        }
+      }
+      return buffer.toTensor().reshape(resultShape);
+    }
+
+    return backend_util.reshapeTensor(tensor([]), resultShape);
   }
 }
 

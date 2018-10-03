@@ -23,6 +23,7 @@ import * as array_ops_util from '../ops/array_ops_util';
 import * as axis_util from '../ops/axis_util';
 import {computeOutShape} from '../ops/concat_util';
 import {Conv2DInfo} from '../ops/conv_util';
+import * as gather_nd_util from '../ops/gather_nd_util';
 import * as reduce_util from '../ops/reduce_util';
 import * as segment_util from '../ops/segment_util';
 import {getStridedSlicedInfo} from '../ops/slice_util';
@@ -32,6 +33,7 @@ import {DataId, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D
 import {DataType, DataTypeMap, Rank, RecursiveArray, ShapeMap, sumOutType, TypedArray, upcastType} from '../types';
 import * as util from '../util';
 import {getTypedArrayFromDType, sizeFromShape} from '../util';
+
 import {DataMover, DataStorage, KernelBackend} from './backend';
 import * as backend_util from './backend_util';
 import {mergeRealAndImagArrays} from './complex_util';
@@ -55,10 +57,11 @@ import {CropAndResizeProgram} from './webgl/crop_and_resize_gpu';
 import {CumSumProgram} from './webgl/cumsum_gpu';
 import {DepthToSpaceProgram} from './webgl/depth_to_space_gpu';
 import {EncodeFloatProgram} from './webgl/encode_float_gpu';
-import {FFTProgram} from './webgl/fft_gpu';
 import * as fft_gpu from './webgl/fft_gpu';
+import {FFTProgram} from './webgl/fft_gpu';
 import {FromPixelsProgram} from './webgl/from_pixels_gpu';
 import {GatherProgram} from './webgl/gather_gpu';
+import {GatherNDProgram} from './webgl/gather_nd_gpu';
 import {GPGPUContext} from './webgl/gpgpu_context';
 import * as gpgpu_math from './webgl/gpgpu_math';
 import {GPGPUBinary, GPGPUProgram, TensorData} from './webgl/gpgpu_math';
@@ -1521,6 +1524,24 @@ export class MathBackendWebGL implements KernelBackend {
     real.dispose();
     imag.dispose();
     return complex;
+  }
+
+  gatherND<T extends Tensor<Rank>, K extends Tensor<Rank>>(x: T, indices: K):
+      Tensor<Rank> {
+    const indicesShape = indices.shape;
+    const indicesNd = indicesShape[indicesShape.length - 1];
+
+    const [resultShape, nResult, sliceSize] =
+        gather_nd_util.prepareAndValidateGatherNDInputs(x, indices);
+
+    const strides =
+        [...util.computeStrides(x.shape).map(stride => stride / sliceSize), 1];
+    const flattenIndices = indices.reshape([nResult, indicesNd]);
+    const flattenX = x.reshape([x.size / sliceSize, sliceSize]);
+    const program =
+        new GatherNDProgram(indicesNd, strides, [nResult, sliceSize]);
+    return (this.compileAndRun(program, [flattenX, flattenIndices]) as Tensor)
+        .reshape(resultShape);
   }
 
   private makeOutputArray<T extends Tensor>(shape: number[], dtype: DataType):
