@@ -1526,20 +1526,17 @@ export class MathBackendWebGL implements KernelBackend {
     return complex;
   }
 
-  gatherND<T extends Tensor<Rank>, K extends Tensor<Rank>>(x: T, indices: K):
-      Tensor<Rank> {
+  gatherND(x: Tensor, indices: Tensor): Tensor<Rank> {
     const indicesShape = indices.shape;
-    const indicesNd = indicesShape[indicesShape.length - 1];
+    const sliceRank = indicesShape[indicesShape.length - 1];
 
-    const [resultShape, nResult, sliceSize] =
-        gather_nd_util.prepareAndValidateGatherNDInputs(x, indices);
+    const [resultShape, numSlices, sliceSize, strides] =
+        gather_nd_util.prepareAndValidate(x, indices);
 
-    const strides =
-        [...util.computeStrides(x.shape).map(stride => stride / sliceSize), 1];
-    const flattenIndices = indices.reshape([nResult, indicesNd]);
+    const flattenIndices = indices.reshape([numSlices, sliceRank]);
     const flattenX = x.reshape([x.size / sliceSize, sliceSize]);
     const program =
-        new GatherNDProgram(indicesNd, strides, [nResult, sliceSize]);
+        new GatherNDProgram(sliceRank, strides, [numSlices, sliceSize]);
     return (this.compileAndRun(program, [flattenX, flattenIndices]) as Tensor)
         .reshape(resultShape);
   }

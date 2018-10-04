@@ -14,6 +14,7 @@
  * limitations under the License.
  * =============================================================================
  */
+import {util} from '..';
 import {Tensor} from '../tensor';
 
 /**
@@ -24,23 +25,37 @@ import {Tensor} from '../tensor';
  *
  * @returns [resultShape, numUpdates, sliceSize]
  */
-export function prepareAndValidateGatherNDInputs(
-    tensor: Tensor, indices: Tensor): [number[], number, number] {
-  if (tensor.shape.length < 1) {
-    throw new Error('tensor can not be a scalar.');
+export function prepareAndValidate(
+    tensor: Tensor, indices: Tensor): [number[], number, number, number[]] {
+  if (tensor.rank < 1) {
+    throw new Error(
+        'tf.gatherND() expects the input to be rank 1 or higher,' +
+        ` but the rank was ${tensor.rank}.`);
   }
-  if (indices.shape.length < 1) {
-    throw new Error('indices can not be a scalar.');
+  if (indices.rank < 1) {
+    throw new Error(
+        'tf.gatherND() expects the indices to be rank 1 or higher,' +
+        ` but the rank was ${indices.rank}.`);
   }
-  if (indices.shape[indices.shape.length - 1] > tensor.shape.length) {
+  if (indices.dtype !== 'int32') {
+    throw new Error(
+        'tf.gatherND() expects the indices to be int32 type,' +
+        ` but the dtype was ${indices.dtype}.`);
+  }
+  if (indices.shape[indices.rank - 1] > tensor.rank) {
     throw new Error(
         'index innermost dimension length must be <= tensor rank; saw: ' +
-        `${indices.shape[indices.shape.length - 1]} vs. ${
-            tensor.shape.length}`);
+        `${indices.shape[indices.rank - 1]} vs. ${tensor.rank}`);
+  }
+
+  if (tensor.size === 0) {
+    throw new Error(
+        'Requested more than 0 entries, but input is empty.' +
+        ` Input shape: ${tensor.shape}.`);
   }
 
   const indicesShape = indices.shape;
-  const indicesNd = indicesShape[indicesShape.length - 1];
+  const sliceRank = indicesShape[indicesShape.length - 1];
 
   // The result shape is
   //   indices.shape[:-1] + params.shape[indices.shape[-1]:]
@@ -49,17 +64,20 @@ export function prepareAndValidateGatherNDInputs(
     nResult *= indicesShape[i];
   }
 
-  const paramsShape = tensor.shape;
-  const totalNd = paramsShape.length;
+  const inputShape = tensor.shape;
 
   const resultShape = indicesShape.slice();
   resultShape.pop();
 
   let sliceSize = 1;
-  for (let i = indicesNd; i < totalNd; ++i) {
-    sliceSize *= paramsShape[i];
-    resultShape.push(paramsShape[i]);
+  for (let i = sliceRank; i < tensor.rank; ++i) {
+    sliceSize *= inputShape[i];
+    resultShape.push(inputShape[i]);
   }
 
-  return [resultShape, nResult, sliceSize];
+  const strides = [
+    ...util.computeStrides(tensor.shape).map(stride => stride / sliceSize), 1
+  ];
+
+  return [resultShape, nResult, sliceSize, strides];
 }
