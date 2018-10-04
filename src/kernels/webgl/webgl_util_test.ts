@@ -22,7 +22,7 @@ import * as gpgpu_util from './gpgpu_util';
 import {TextureUsage} from './tex_util';
 import * as webgl_util from './webgl_util';
 
-describeWithFlags('webgl_util getTextureShapeFromLogicalShape', WEBGL_ENVS, () => {
+describeWithFlags('getTextureShapeFromLogicalShape', WEBGL_ENVS, () => {
   let gl: WebGLRenderingContext;
 
   beforeEach(() => {
@@ -89,7 +89,7 @@ describeWithFlags('webgl_util getTextureShapeFromLogicalShape', WEBGL_ENVS, () =
     expect(texShape).toEqual([3, 8]);
   });
 
-  it('packed textures that are less than 2x max texture size of platform do not get squeezed',
+  it('packed textures less than 2x max size of platform do not get squeezed',
      () => {
        const max = webgl_util.queryMaxTextureSize(gl);
        const logicalShape = [2, max + 1];
