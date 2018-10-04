@@ -10,6 +10,12 @@ When running benchmarks locally, use:
 
 `yarn benchmark`
 
+You can only run the specific benchmark suite with `--grep`.
+
+`yarn benchmark --grep='pool(avg)'`
+
+Without any grep option, `matmul`, `conv2d` and `mobilenet_v1` are default benchmark suite.
+
 This will not write to firebase, it will simply log what would have been written
 to firebase.
 
