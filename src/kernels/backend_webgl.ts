@@ -556,7 +556,15 @@ export class MathBackendWebGL implements KernelBackend {
     return res.reshape(outShape) as T;
   }
 
-  private isLogicalAndPhysicalShapeSame(
+  /**
+   * Returns a boolean indicating whether a tensor can be stored on the GPU with
+   * a texture whose physical dimensions match the tensor's logical dimensions.
+   *
+   * @param shape The tensor's shape.
+   * @param usage The tensor's TextureUsage type, which matters for deciding
+   * what the maximum texture size should be.
+   */
+  private textureCanMatchShape(
       shape: number[], usage: TextureUsage = TextureUsage.UPLOAD): boolean {
     return util.arraysEqual(
         webgl_util.getTextureShapeFromLogicalShape(this.gpgpu.gl, shape, usage),
@@ -585,15 +593,15 @@ export class MathBackendWebGL implements KernelBackend {
     const outerShapeA = transposeA ? a.shape[2] : a.shape[1];
     const outerShapeB = transposeB ? b.shape[1] : b.shape[2];
 
-    // TODO(github.com/tensorflow/tfjs/issues/693): Support 3D tensors
+    // TODO(https://github.com/tensorflow/tfjs/issues/693): Support 3D tensors
     // We're restricting packed matMul to these conditions because for now, our
     // packed matMul shader needs its inputs to be 2D matrices whose physical
     // dimensions match their logical dimensions.
     if (ENV.get('WEBGL_RENDER_FLOAT32_ENABLED') && a.shape[0] === 1 &&
         b.shape[0] === 1 &&
-        this.isLogicalAndPhysicalShapeSame(
+        this.textureCanMatchShape(
             [a.shape[1], a.shape[2]], TextureUsage.PACK) &&
-        this.isLogicalAndPhysicalShapeSame(
+        this.textureCanMatchShape(
             [b.shape[1], b.shape[2]], TextureUsage.PACK)) {
       const aSqueezed = a.as2D(a.shape[1], a.shape[2]);
       const bSqueezed = b.as2D(b.shape[1], b.shape[2]);
@@ -1333,6 +1341,57 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [x]) as T;
   }
 
+  conv2dWithIm2Row(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
+      Tensor4D {
+    // Rearranges conv2d input so each block to be convolved over forms the
+    // column of a new matrix with shape [filterWidth * filterHeight *
+    // inChannels, outHeight * outWidth]. The filter is also rearranged so each
+    // output channel forms a row of a new matrix with shape [outChannels,
+    // filterWidth * filterHeight * inChannels]. The convolution is then
+    // computed by multiplying these matrices and reshaping the result.
+    const {
+      filterWidth,
+      filterHeight,
+      inChannels,
+      outWidth,
+      outHeight,
+    } = convInfo;
+
+    const sharedDim = filterWidth * filterHeight * inChannels;
+    const numCols = outHeight * outWidth;
+    const x2ColShape = [sharedDim, numCols];
+
+    const xSqueezed = x.squeeze([0]);
+    const w2Row = filter.reshape([sharedDim, -1]);
+
+    const im2ColProgram =
+        new Im2ColProgram(x2ColShape, xSqueezed.shape, convInfo);
+    const im2Col = this.compileAndRun<Tensor2D>(
+        im2ColProgram, [xSqueezed],
+        this.makePackedTensor<Tensor2D>(x2ColShape));
+
+    const packedW2RowProgram = new PackProgram(w2Row.shape);
+    const packedW2Row = this.compileAndRun(
+        packedW2RowProgram, [w2Row],
+        this.makePackedTensor<Tensor2D>(w2Row.shape));
+
+    const matmulProgram = new MatMulPackedProgram(
+        im2Col.shape, packedW2Row.shape, [numCols, convInfo.outChannels], true,
+        false);
+    const product = this.compileAndRun(
+        matmulProgram, [im2Col, packedW2Row],
+        this.makePackedTensor<Tensor2D>(matmulProgram.outputShape));
+
+    const unpackProgram = new UnpackProgram(product.shape);
+    const unpacked = this.compileAndRun(unpackProgram, [product]) as Tensor;
+
+    im2Col.dispose();
+    packedW2Row.dispose();
+    product.dispose();
+
+    return unpacked.reshape([1, outHeight, outWidth, convInfo.outChannels]);
+  }
+
   conv2d(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
     const {
       filterWidth,
@@ -1347,47 +1406,12 @@ export class MathBackendWebGL implements KernelBackend {
     const x2ColShape = [sharedDim, numCols];
     const w2RowShape = [convInfo.outChannels, sharedDim];
 
-    // Rearranges conv2d input so each block to be convolved over forms the
-    // column of a new matrix with shape [filterWidth * filterHeight *
-    // inChannels, outHeight * outWidth]. The filter is also rearranged so each
-    // output channel forms a row of a new matrix with shape [outChannels,
-    // filterWidth * filterHeight * inChannels]. The convolution is then
-    // computed by multiplying these matrices and reshaping the result.
     if (ENV.get('WEBGL_CONV_IM2COL') &&
         ENV.get('WEBGL_RENDER_FLOAT32_ENABLED') && x.shape[0] === 1 &&
-        this.isLogicalAndPhysicalShapeSame(x2ColShape, TextureUsage.PACK) &&
-        this.isLogicalAndPhysicalShapeSame(w2RowShape, TextureUsage.PACK)) {
-      const xSqueezed = x.squeeze([0]);
-      const w2Row = filter.reshape([sharedDim, -1]);
-
-      const im2ColProgram =
-          new Im2ColProgram(x2ColShape, xSqueezed.shape, convInfo);
-      const im2Col = this.compileAndRun<Tensor2D>(
-          im2ColProgram, [xSqueezed],
-          this.makePackedTensor<Tensor2D>(x2ColShape));
-
-      const packedW2RowProgram = new PackProgram(w2Row.shape);
-      const packedW2Row = this.compileAndRun(
-          packedW2RowProgram, [w2Row],
-          this.makePackedTensor<Tensor2D>(w2Row.shape));
-
-      const matmulProgram = new MatMulPackedProgram(
-          im2Col.shape, packedW2Row.shape, [numCols, convInfo.outChannels],
-          true, false);
-      const product = this.compileAndRun(
-          matmulProgram, [im2Col, packedW2Row],
-          this.makePackedTensor<Tensor2D>(matmulProgram.outputShape));
-
-      const unpackProgram = new UnpackProgram(product.shape);
-      const unpacked = this.compileAndRun(unpackProgram, [product]) as Tensor;
-
-      im2Col.dispose();
-      packedW2Row.dispose();
-      product.dispose();
-
-      return unpacked.reshape([1, outHeight, outWidth, convInfo.outChannels]);
+        this.textureCanMatchShape(x2ColShape, TextureUsage.PACK) &&
+        this.textureCanMatchShape(w2RowShape, TextureUsage.PACK)) {
+      return this.conv2dWithIm2Row(x, filter, convInfo);
     }
-
     const program = new Conv2DProgram(convInfo);
     return this.compileAndRun(program, [x, filter]);
   }
