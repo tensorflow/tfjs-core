@@ -21,7 +21,7 @@ import {convertToTensor} from './tensor_util_env';
 import {ALL_ENVS, expectArraysClose} from './test_util';
 
 describeWithFlags('debug on', ALL_ENVS, () => {
-  beforeAll(() => {
+  beforeEach(() => {
     tf.ENV.set('DEBUG', true);
   });
 
