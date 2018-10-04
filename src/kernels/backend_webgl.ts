@@ -57,8 +57,8 @@ import {CropAndResizeProgram} from './webgl/crop_and_resize_gpu';
 import {CumSumProgram} from './webgl/cumsum_gpu';
 import {DepthToSpaceProgram} from './webgl/depth_to_space_gpu';
 import {EncodeFloatProgram} from './webgl/encode_float_gpu';
-import {FFTProgram} from './webgl/fft_gpu';
 import * as fft_gpu from './webgl/fft_gpu';
+import {FFTProgram} from './webgl/fft_gpu';
 import {FromPixelsProgram} from './webgl/from_pixels_gpu';
 import {GatherProgram} from './webgl/gather_gpu';
 import {GPGPUContext} from './webgl/gpgpu_context';
@@ -1510,23 +1510,20 @@ export class MathBackendWebGL implements KernelBackend {
 
   scatterND<T extends Tensor<Rank>, K extends Tensor<Rank>, R extends Rank>(
       indices: K, updates: T, shape: ShapeMap[R]): Tensor<R> {
-    const [sliceDim, numUpdates, sliceSize] =
-        scatter_nd_util.prepareAndValidateScatterNDInputs(
-            updates, indices, shape);
+    const [sliceDim, numUpdates, sliceSize, strides] =
+        scatter_nd_util.prepareAndValidate(updates, indices, shape);
 
     const outputSize = shape.reduce((total, dim) => total *= dim, 1);
     const flattenShape = [outputSize / sliceSize, sliceSize];
     const flattenIndices = indices.reshape([numUpdates, sliceDim]);
     const flattenX = updates.reshape([numUpdates, sliceSize]);
-    const strides =
-        [...util.computeStrides(shape).map(stride => stride / sliceSize), 1];
 
     if (outputSize === 0) {
       return backend_util.reshapeTensor(tensor([]), shape);
     }
     const program =
         new ScatterNDProgram(numUpdates, sliceDim, strides, flattenShape);
-    return (this.compileAndRun(program, [flattenIndices, flattenX]) as Tensor)
+    return (this.compileAndRun(program, [flattenX, flattenIndices]) as Tensor)
         .reshape(shape);
   }
 

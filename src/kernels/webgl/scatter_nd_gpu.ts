@@ -19,7 +19,7 @@ import {GPGPUProgram} from './gpgpu_math';
 import {getCoordsDataType} from './shader_compiler';
 
 export class ScatterNDProgram implements GPGPUProgram {
-  variableNames = ['indices', 'updates'];
+  variableNames = ['updates', 'indices'];
   outputShape: number[];
   userCode: string;
 

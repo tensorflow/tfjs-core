@@ -26,7 +26,7 @@ import * as concat_util from '../ops/concat_util';
 import {Conv2DInfo} from '../ops/conv_util';
 import * as erf_util from '../ops/erf_util';
 import * as ops from '../ops/ops';
-import {buffer, tensor, tensor3d, tensor4d} from '../ops/ops';
+import {buffer, tensor, tensor1d, tensor3d, tensor4d} from '../ops/ops';
 import * as scatter_nd_util from '../ops/scatter_nd_util';
 import * as selu_util from '../ops/selu_util';
 import {getStridedSlicedInfo} from '../ops/slice_util';
@@ -34,7 +34,6 @@ import {DataId, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D
 import {DataType, DataTypeMap, Rank, ShapeMap, TypedArray, upcastType} from '../types';
 import * as util from '../util';
 import {now} from '../util';
-import {computeStrides} from '../util';
 
 import {BackendTimingInfo, DataMover, DataStorage, KernelBackend} from './backend';
 import * as backend_util from './backend_util';
@@ -2843,26 +2842,23 @@ export class MathBackendCPU implements KernelBackend {
 
   scatterND<T extends Tensor<Rank>, K extends Tensor<Rank>, R extends Rank>(
       indices: K, updates: T, shape: ShapeMap[R]): Tensor<R> {
-    const [sliceDim, numUpdates, sliceSize] =
-        scatter_nd_util.prepareAndValidateScatterNDInputs(
-            updates, indices, shape);
+    const [sliceRank, numUpdates, sliceSize, strides] =
+        scatter_nd_util.prepareAndValidate(updates, indices, shape);
 
     const outputSize = shape.reduce((total, dim) => total *= dim, 1);
     const flattenShape = [outputSize / sliceSize, sliceSize];
-    const flattenIndices = indices.reshape([numUpdates, sliceDim]);
-    const flattenUpdates = updates.reshape([numUpdates, sliceSize]);
-    const strides =
-        [...computeStrides(shape).map(stride => stride / sliceSize), 1];
+    const indicesData = indices.dataSync();
+    const updatesData = updates.dataSync();
 
     if (outputSize === 0) {
-      return backend_util.reshapeTensor(tensor([]), shape);
+      return backend_util.reshapeTensor(tensor1d([], updates.dtype), shape);
     }
 
     const buffer = new TensorBuffer(flattenShape, updates.dtype);
     for (let i = 0; i < numUpdates; i++) {
       const index = [];
-      for (let j = 0; j < sliceDim; j++) {
-        index.push(flattenIndices.get(i, j));
+      for (let j = 0; j < sliceRank; j++) {
+        index.push(indicesData[i * sliceRank + j]);
       }
       const flattenIndex = index.reduce((sum, dim, index) => {
         sum += dim * strides[index];
@@ -2875,8 +2871,8 @@ export class MathBackendCPU implements KernelBackend {
       }
 
       for (let k = 0; k < sliceSize; k++) {
-        const val = buffer.get(flattenIndex, k);
-        buffer.set(val + flattenUpdates.get(i, k), flattenIndex, k);
+        buffer.values[flattenIndex * sliceSize + k] +=
+            updatesData[i * sliceSize + k];
       }
     }
     return buffer.toTensor().reshape(shape);

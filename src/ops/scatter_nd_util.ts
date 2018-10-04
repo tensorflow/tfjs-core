@@ -14,6 +14,7 @@
  * limitations under the License.
  * =============================================================================
  */
+import {util} from '..';
 import {Tensor} from '../tensor';
 
 /**
@@ -64,14 +65,15 @@ export function validateUpdateShape(
  *
  * @returns [sliceDim, numUpdates, sliceSize]
  */
-export function prepareAndValidateScatterNDInputs(
+export function prepareAndValidate(
     updates: Tensor, indices: Tensor,
-    shape: number[]): [number, number, number] {
+    shape: number[]): [number, number, number, number[]] {
   const indicesShape = indices.shape;
   const updateShape = updates.shape;
 
   if (shape.length < 1) {
-    throw new Error(`Output must be at least 1-D, got shape: ${shape}`);
+    throw new Error(
+        `Output rank must be greater or equal 1, got shape: ${shape}`);
   }
 
   if (!(shape.length > 0 || (indices.size === 0 && updates.size === 0))) {
@@ -104,5 +106,8 @@ export function prepareAndValidateScatterNDInputs(
 
   const safeSliceDim = (sliceDim < 1) ? 1 : sliceDim;
   const numUpdates = indices.size / safeSliceDim;
-  return [sliceDim, numUpdates, sliceSize];
+
+  const strides =
+      [...util.computeStrides(shape).map(stride => stride / sliceSize), 1];
+  return [sliceDim, numUpdates, sliceSize, strides];
 }

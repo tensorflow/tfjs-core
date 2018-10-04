@@ -27,6 +27,7 @@ describeWithFlags('ScatterNdTest', ALL_ENVS, () => {
     const shape = [5, 3];
     const result = tf.scatterND(indices, updates, shape);
     expect(result.shape).toEqual(shape);
+    expect(result.dtype).toEqual(updates.dtype);
     expectArraysClose(
         result,
         [100, 101, 102, 0, 0, 0, 1000, 1001, 1002, 0, 0, 0, 777, 778, 779]);
@@ -38,6 +39,7 @@ describeWithFlags('ScatterNdTest', ALL_ENVS, () => {
     const shape = [5];
     const result = tf.scatterND(indices, updates, shape);
     expect(result.shape).toEqual(shape);
+    expect(result.dtype).toEqual(updates.dtype);
     expectArraysClose(result, [0, 0, 0, 101, 0]);
   });
 
@@ -47,6 +49,7 @@ describeWithFlags('ScatterNdTest', ALL_ENVS, () => {
     const shape = [5];
     const result = tf.scatterND(indices, updates, shape);
     expect(result.shape).toEqual(shape);
+    expect(result.dtype).toEqual(updates.dtype);
     expectArraysClose(result, [100, 0, 102, 0, 101]);
   });
 
@@ -61,6 +64,7 @@ describeWithFlags('ScatterNdTest', ALL_ENVS, () => {
     const shape = [4, 4, 4];
     const result = tf.scatterND(indices, updates, shape);
     expect(result.shape).toEqual(shape);
+    expect(result.dtype).toEqual(updates.dtype);
     expectArraysClose(result, [
       5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 8, 0, 0, 0, 0, 0, 0,
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7,
@@ -74,6 +78,7 @@ describeWithFlags('ScatterNdTest', ALL_ENVS, () => {
     const shape = [3, 3];
     const result = tf.scatterND(indices, updates, shape);
     expect(result.shape).toEqual(shape);
+    expect(result.dtype).toEqual(updates.dtype);
     expectArraysClose(result, [0, 20, 10, 0, 0, 0, 0, 0, 0]);
   });
 
@@ -83,6 +88,7 @@ describeWithFlags('ScatterNdTest', ALL_ENVS, () => {
     const shape = [8];
     const result = tf.scatterND(indices, updates, shape);
     expect(result.shape).toEqual(shape);
+    expect(result.dtype).toEqual(updates.dtype);
     expectArraysClose(result, [70, 40, 30, 50, 20, 0, 0, 0]);
   });
 
