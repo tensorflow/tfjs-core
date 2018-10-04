@@ -125,9 +125,10 @@ describeWithFlags(
       });
     });
 
-describeWithFlags('WEBGL_PAGING_ENABLED', WEBGL_ENVS, () => {
+describeWithFlags('WEBGL_PAGING_ENABLED', WEBGL_ENVS, testEnv => {
   afterEach(() => {
     ENV.reset();
+    ENV.setFeatures(testEnv.features);
   });
 
   it('should be true if in a browser', () => {
