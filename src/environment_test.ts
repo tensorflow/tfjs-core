@@ -26,6 +26,10 @@ import {MathBackendWebGL} from './kernels/backend_webgl';
 import {expectArraysClose, WEBGL_ENVS} from './test_util';
 
 describeWithFlags('disjoint query timer enabled', WEBGL_ENVS, () => {
+  afterEach(() => {
+    ENV.reset();
+  });
+
   it('no webgl', () => {
     ENV.setFeatures({'WEBGL_VERSION': 0});
     expect(ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION')).toBe(0);
@@ -84,6 +88,10 @@ describeWithFlags('disjoint query timer enabled', WEBGL_ENVS, () => {
 
 describeWithFlags(
     'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE', WEBGL_ENVS, () => {
+      afterEach(() => {
+        ENV.reset();
+      });
+
       it('disjoint query timer disabled', () => {
         const features:
             Features = {'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION': 0};
@@ -117,7 +125,12 @@ describeWithFlags(
       });
     });
 
-describeWithFlags('WEBGL_PAGING_ENABLED', WEBGL_ENVS, () => {
+describeWithFlags('WEBGL_PAGING_ENABLED', WEBGL_ENVS, testEnv => {
+  afterEach(() => {
+    ENV.reset();
+    ENV.setFeatures(testEnv.features);
+  });
+
   it('should be true if in a browser', () => {
     const features: Features = {'IS_BROWSER': true};
 
@@ -139,6 +152,10 @@ describeWithFlags('WEBGL_PAGING_ENABLED', WEBGL_ENVS, () => {
 });
 
 describeWithFlags('WEBGL_FENCE_API_ENABLED', WEBGL_ENVS, () => {
+  afterEach(() => {
+    ENV.reset();
+  });
+
   beforeEach(() => {
     spyOn(document, 'createElement').and.returnValue({
       getContext: (context: string) => {
@@ -178,6 +195,10 @@ describeWithFlags('WEBGL_FENCE_API_ENABLED', WEBGL_ENVS, () => {
 });
 
 describeWithFlags('WebGL version', WEBGL_ENVS, () => {
+  afterEach(() => {
+    ENV.reset();
+  });
+
   it('webgl 1', () => {
     spyOn(document, 'createElement').and.returnValue({
       getContext: (context: string) => {

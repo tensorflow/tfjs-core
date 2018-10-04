@@ -74,7 +74,7 @@ export function parseKarmaFlags(args: string[]): TestEnv {
 }
 
 export function describeWithFlags(
-    name: string, constraints: Features, tests: () => void) {
+    name: string, constraints: Features, tests: (env: TestEnv) => void) {
   TEST_ENVS.forEach(testEnv => {
     ENV.setFeatures(testEnv.features);
     if (envSatisfiesConstraints(constraints)) {
@@ -122,26 +122,26 @@ export function setTestEnvs(testEnvs: TestEnv[]) {
   TEST_ENVS = testEnvs;
 }
 
-function executeTests(testName: string, tests: () => void, testEnv: TestEnv) {
+function executeTests(
+    testName: string, tests: (env: TestEnv) => void, testEnv: TestEnv) {
   describe(testName, () => {
     const backendName = 'test-' + testEnv.name;
+
     beforeAll(() => {
+      ENV.reset();
+      ENV.setFeatures(testEnv.features);
+      ENV.set('IS_TEST', true);
       ENV.registerBackend(backendName, testEnv.factory, 1000);
       Environment.setBackend(backendName);
     });
 
     beforeEach(() => {
-      ENV.reset();
-      ENV.setFeatures(testEnv.features);
-      ENV.set('IS_TEST', true);
       ENV.engine.startScope();
     });
 
     afterEach(() => {
       ENV.engine.endScope();
       Environment.disposeVariables();
-      ENV.reset();
-      ENV.setFeatures(testEnv.features);
     });
 
     afterAll(() => {
@@ -149,6 +149,6 @@ function executeTests(testName: string, tests: () => void, testEnv: TestEnv) {
       ENV.reset();
     });
 
-    tests();
+    tests(testEnv);
   });
 }
