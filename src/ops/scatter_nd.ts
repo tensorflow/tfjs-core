@@ -25,14 +25,14 @@ import {op} from './operation';
 /**
  * Creates a new tensor by applying sparse updates to individual
  * values or slices within a zero tensor of the given shape tensor according to
- * indices. This operator is the inverse of the tf.gather_nd operator which
+ * indices. This operator is the inverse of the `gatherND` operator which
  * extracts values or slices from a given tensor.
  *
  * ```js
- * indices = tf.tensor2d([[4], [3], [1], [7]]);
- * updates = tf.tensor2d([9, 10, 11, 12]);
- * shape = [8];
- * tf.scatterND(updates, indices, shape]).print() //[0, 11, 0, 10, 9, 0, 0, 12]
+ * const indices = tf.tensor2d([[4], [3], [1], [7]]);
+ * const updates = tf.tensor2d([9, 10, 11, 12]);
+ * const shape = [8];
+ * tf.scatterND(indices, updates, shape]).print() //[0, 11, 0, 10, 9, 0, 0, 12]
  * ```
  *
  * @param indices The tensor contains the indices into the output tensor.
@@ -40,8 +40,8 @@ import {op} from './operation';
  * @param shape: The shape of the output tensor.
  */
 /** @doc {heading: 'Operations', subheading: 'Slicing and Joining'} */
-function scatterND_<T extends Tensor, K extends Tensor, R extends Rank>(
-    indices: K|TensorLike, updates: T|TensorLike,
+function scatterND_<R extends Rank>(
+    indices: Tensor|TensorLike, updates: Tensor|TensorLike,
     shape: ShapeMap[R]): Tensor<R> {
   const $indices = convertToTensor(indices, 'indices', 'scatterND');
   const $updates = convertToTensor(updates, 'updates', 'scatterND');

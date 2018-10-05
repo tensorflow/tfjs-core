@@ -1508,12 +1508,11 @@ export class MathBackendWebGL implements KernelBackend {
     return split(x, sizeSplits, axis);
   }
 
-  scatterND<T extends Tensor<Rank>, K extends Tensor<Rank>, R extends Rank>(
-      indices: K, updates: T, shape: ShapeMap[R]): Tensor<R> {
-    const [sliceDim, numUpdates, sliceSize, strides] =
+  scatterND<R extends Rank>(
+      indices: Tensor, updates: Tensor, shape: ShapeMap[R]): Tensor<R> {
+    const [sliceDim, numUpdates, sliceSize, strides, outputSize] =
         scatter_nd_util.prepareAndValidate(updates, indices, shape);
 
-    const outputSize = shape.reduce((total, dim) => total *= dim, 1);
     const flattenShape = [outputSize / sliceSize, sliceSize];
     const flattenIndices = indices.reshape([numUpdates, sliceDim]);
     const flattenX = updates.reshape([numUpdates, sliceSize]);

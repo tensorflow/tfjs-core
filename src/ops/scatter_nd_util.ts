@@ -15,7 +15,7 @@
  * =============================================================================
  */
 import {Tensor} from '../tensor';
-import {computeStrides} from '../util';
+import {computeStrides, sizeFromShape} from '../util';
 
 /**
  * Check whether updates.shape = indices.shape[:batchDim] +
@@ -63,11 +63,11 @@ export function validateUpdateShape(
  * @param indices The tensor contains the indices for the update values.
  * @param shape The shape of the output tensor.
  *
- * @returns [sliceDim, numUpdates, sliceSize]
+ * @returns [sliceDim, numUpdates, sliceSize, strides, outputSize]
  */
 export function prepareAndValidate(
     updates: Tensor, indices: Tensor,
-    shape: number[]): [number, number, number, number[]] {
+    shape: number[]): [number, number, number, number[], number] {
   const indicesShape = indices.shape;
   const updateShape = updates.shape;
 
@@ -113,5 +113,5 @@ export function prepareAndValidate(
 
   const strides =
       [...computeStrides(shape).map(stride => stride / sliceSize), 1];
-  return [sliceDim, numUpdates, sliceSize, strides];
+  return [sliceDim, numUpdates, sliceSize, strides, sizeFromShape(shape)];
 }

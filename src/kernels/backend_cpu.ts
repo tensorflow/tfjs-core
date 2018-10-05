@@ -26,7 +26,7 @@ import * as concat_util from '../ops/concat_util';
 import {Conv2DInfo} from '../ops/conv_util';
 import * as erf_util from '../ops/erf_util';
 import * as ops from '../ops/ops';
-import {buffer, tensor, tensor1d, tensor3d, tensor4d} from '../ops/ops';
+import {buffer, tensor, tensor3d, tensor4d} from '../ops/ops';
 import * as scatter_nd_util from '../ops/scatter_nd_util';
 import * as selu_util from '../ops/selu_util';
 import {getStridedSlicedInfo} from '../ops/slice_util';
@@ -2840,30 +2840,28 @@ export class MathBackendCPU implements KernelBackend {
     return output.toTensor();
   }
 
-  scatterND<T extends Tensor<Rank>, K extends Tensor<Rank>, R extends Rank>(
-      indices: K, updates: T, shape: ShapeMap[R]): Tensor<R> {
-    const [sliceRank, numUpdates, sliceSize, strides] =
+  scatterND<R extends Rank>(
+      indices: Tensor, updates: Tensor, shape: ShapeMap[R]): Tensor<R> {
+    const [sliceRank, numUpdates, sliceSize, strides, outputSize] =
         scatter_nd_util.prepareAndValidate(updates, indices, shape);
 
-    const outputSize = shape.reduce((total, dim) => total *= dim, 1);
     const flattenShape = [outputSize / sliceSize, sliceSize];
     const indicesData = indices.dataSync();
     const updatesData = updates.dataSync();
 
     if (outputSize === 0) {
-      return backend_util.reshapeTensor(tensor1d([], updates.dtype), shape);
+      return tensor([], shape, updates.dtype);
     }
 
     const buffer = new TensorBuffer(flattenShape, updates.dtype);
     for (let i = 0; i < numUpdates; i++) {
       const index = [];
+      let flattenIndex = 0;
       for (let j = 0; j < sliceRank; j++) {
-        index.push(indicesData[i * sliceRank + j]);
+        const dim = indicesData[i * sliceRank + j];
+        index.push(dim);
+        flattenIndex += dim * strides[j];
       }
-      const flattenIndex = index.reduce((sum, dim, index) => {
-        sum += dim * strides[index];
-        return sum;
-      }, 0);
 
       if (flattenIndex < 0 || flattenIndex > outputSize / sliceSize) {
         throw new Error(

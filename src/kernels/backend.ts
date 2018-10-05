@@ -230,8 +230,8 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
 
   gather<T extends Tensor>(x: T, indices: Tensor1D, axis: number): T;
 
-  scatterND<T extends Tensor, K extends Tensor, R extends Rank>(
-      indices: K, updates: T, shape: ShapeMap[R]): Tensor<R>;
+  scatterND<R extends Rank>(
+      indices: Tensor, updates: Tensor, shape: ShapeMap[R]): Tensor<R>;
 
   batchToSpaceND<T extends Tensor>(
       x: T, blockShape: number[], crops: number[][]): T;

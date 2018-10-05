@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2017 Google Inc. All Rights Reserved.
+ * Copyright 2018 Google Inc. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -29,7 +29,7 @@ export class ScatterNDProgram implements GPGPUProgram {
     this.outputShape = shape;
     const stridesType = getCoordsDataType(strides.length);
     const dtype = getCoordsDataType(shape.length);
-    const strideString = this.sliceDim > 1 ? 'int(strides[j])' : 'int(strides)';
+    const strideString = this.sliceDim > 1 ? 'strides[j]' : 'int(strides)';
     this.userCode = `
         ${stridesType} strides = ${stridesType}(${this.strides});
 
@@ -39,7 +39,7 @@ export class ScatterNDProgram implements GPGPUProgram {
           for (int i = 0; i < ${this.updateSize}; i++) {
             int flattenIndex = 0;
             for (int j = 0; j < ${this.sliceDim}; j++) {
-              int index = int(getIndices(i, j));
+              int index = round(getIndices(i, j));
               flattenIndex += index * ${strideString};
             }
             if (flattenIndex == coords[0]) {
