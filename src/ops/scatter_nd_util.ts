@@ -71,6 +71,10 @@ export function prepareAndValidate(
   const indicesShape = indices.shape;
   const updateShape = updates.shape;
 
+  if (indices.dtype !== 'int32') {
+    throw new Error(
+        `Indices dtype is exected to be int32, got dtype = ${indices.dtype}`);
+  }
   if (shape.length < 1) {
     throw new Error(
         `Output rank must be greater or equal 1, got shape: ${shape}`);

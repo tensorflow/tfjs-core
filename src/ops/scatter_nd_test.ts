@@ -92,6 +92,13 @@ describeWithFlags('ScatterNdTest', ALL_ENVS, () => {
     expectArraysClose(result, [70, 40, 30, 50, 20, 0, 0, 0]);
   });
 
+  it('should throw error when indices type is not int32', () => {
+    const indices = tf.tensor2d([0, 2, 0, 1], [2, 2], 'float32');
+    const updates = tf.tensor1d([10, 20], 'float32');
+    const shape = [3, 3];
+    expect(() => tf.scatterND(indices, updates, shape)).toThrow();
+  });
+
   it('should throw error when indices and update mismatch', () => {
     const indices = tf.tensor2d([0, 4, 2], [3, 1], 'int32');
     const updates = tf.tensor2d(
