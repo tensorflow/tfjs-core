@@ -223,6 +223,7 @@ export interface OpHandler {
   logicalAnd<T extends Tensor>(a: Tensor, b: Tensor): T;
   logicalOr<T extends Tensor>(a: Tensor, b: Tensor): T;
   logicalXor<T extends Tensor>(a: Tensor, b: Tensor): T;
+  assertEqual<T extends Tensor>(a: Tensor, b: Tensor): void;
   where<T extends Tensor>(condition: Tensor, a: T, b: T): T;
   notEqual<T extends Tensor>(a: Tensor, b: Tensor): T;
   notEqualStrict<T extends Tensor>(a: T, b: T): T;
@@ -938,6 +939,13 @@ export class Tensor<R extends Rank = Rank> {
   greaterEqualStrict<T extends this>(this: T, x: T): T {
     this.throwIfDisposed();
     return opHandler.greaterEqualStrict(this, x) as T;
+  }
+
+  // Check ops.
+
+  assertEqual<T extends Tensor>(x: Tensor): void {
+    this.throwIfDisposed();
+    opHandler.assertEqual(this, x);
   }
 
   // Compare ops.
