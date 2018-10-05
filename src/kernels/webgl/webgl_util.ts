@@ -19,6 +19,7 @@ let MAX_TEXTURE_SIZE: number = null;
 
 import * as util from '../../util';
 import {ENV} from '../../environment';
+import {TextureUsage} from '../webgl/tex_util';
 
 export function createWebGLRenderingContext(attributes: WebGLContextAttributes):
     WebGLRenderingContext {
@@ -368,14 +369,18 @@ function validateTextureUnit(gl: WebGLRenderingContext, textureUnit: number) {
 }
 
 export function getTextureShapeFromLogicalShape(
-    gl: WebGLRenderingContext, logShape: number[]): [number, number] {
+    gl: WebGLRenderingContext, logShape: number[],
+    usage: TextureUsage = TextureUsage.UPLOAD): [number, number] {
   // If logical shape is 2, we don't squeeze, since we want to match physical.
   if (logShape.length !== 2) {
     const squeezeResult = util.squeezeShape(logShape);
     logShape = squeezeResult.newShape;
   }
 
-  const maxTexSize = queryMaxTextureSize(gl);
+  let maxTexSize = queryMaxTextureSize(gl);
+  if (usage === TextureUsage.PACK) {
+    maxTexSize = maxTexSize * 2;
+  }
   const size = util.sizeFromShape(logShape);
   if (logShape.length <= 1 && size <= maxTexSize) {
     return [size, 1];
@@ -384,9 +389,18 @@ export function getTextureShapeFromLogicalShape(
       logShape[1] <= maxTexSize) {
     return logShape as [number, number];
   } else if (
+      logShape.length === 3 && logShape[0] * logShape[1] <= maxTexSize &&
+      logShape[2] <= maxTexSize) {
+    return [logShape[0] * logShape[1], logShape[2]];
+  } else if (
       logShape.length === 3 && logShape[0] <= maxTexSize &&
       logShape[1] * logShape[2] <= maxTexSize) {
     return [logShape[0], logShape[1] * logShape[2]];
+  } else if (
+      logShape.length === 4 &&
+      logShape[0] * logShape[1] * logShape[2] <= maxTexSize &&
+      logShape[3] <= maxTexSize) {
+    return [logShape[0] * logShape[1] * logShape[2], logShape[3]];
   } else if (
       logShape.length === 4 && logShape[0] <= maxTexSize &&
       logShape[1] * logShape[2] * logShape[3] <= maxTexSize) {

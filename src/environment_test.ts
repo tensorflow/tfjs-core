@@ -23,7 +23,7 @@ import {describeWithFlags} from './jasmine_util';
 import {KernelBackend} from './kernels/backend';
 import {MathBackendCPU} from './kernels/backend_cpu';
 import {MathBackendWebGL} from './kernels/backend_webgl';
-import {WEBGL_ENVS} from './test_util';
+import {expectArraysClose, WEBGL_ENVS} from './test_util';
 
 describeWithFlags('disjoint query timer enabled', WEBGL_ENVS, () => {
   afterEach(() => {
@@ -57,9 +57,7 @@ describeWithFlags('disjoint query timer enabled', WEBGL_ENVS, () => {
     });
 
     ENV.setFeatures(features);
-    // TODO(nsthorat): expect to be 1 when
-    // https://github.com/tensorflow/tfjs/issues/544 is fixed.
-    expect(ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION')).toBe(0);
+    expect(ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION')).toBe(1);
   });
 
   it('webgl 2', () => {
@@ -84,9 +82,7 @@ describeWithFlags('disjoint query timer enabled', WEBGL_ENVS, () => {
     });
 
     ENV.setFeatures(features);
-    // TODO(nsthorat): expect to be 2 when
-    // https://github.com/tensorflow/tfjs/issues/544 is fixed.
-    expect(ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION')).toBe(0);
+    expect(ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION')).toBe(2);
   });
 });
 
@@ -128,6 +124,32 @@ describeWithFlags(
             .toBe(true);
       });
     });
+
+describeWithFlags('WEBGL_PAGING_ENABLED', WEBGL_ENVS, testEnv => {
+  afterEach(() => {
+    ENV.reset();
+    ENV.setFeatures(testEnv.features);
+  });
+
+  it('should be true if in a browser', () => {
+    const features: Features = {'IS_BROWSER': true};
+
+    const env = new Environment(features);
+
+    expect(env.get('WEBGL_PAGING_ENABLED')).toBe(true);
+  });
+
+  it('should not cause errors when paging is turned off', () => {
+    ENV.set('WEBGL_PAGING_ENABLED', false);
+
+    const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
+    const b = tf.tensor2d([0, 1, -3, 2, 2, 1], [3, 2]);
+
+    const c = tf.matMul(a, b);
+
+    expectArraysClose(c, [0, 8, -3, 20]);
+  });
+});
 
 describeWithFlags('WEBGL_FENCE_API_ENABLED', WEBGL_ENVS, () => {
   afterEach(() => {
@@ -274,25 +296,6 @@ describe('Backend', () => {
     expect(success).toBeTruthy();
     expect(ENV.findBackend('custom')).toEqual(backend);
     ENV.removeBackend('custom');
-  });
-
-  it('should reuse backend engine if has been instantiated', () => {
-    const backend = new MathBackendCPU();
-    ENV.registerBackend('custom', () => backend);
-    const backend2 = new MathBackendCPU();
-    ENV.registerBackend('custom2', () => backend2);
-
-    Environment.setBackend('custom');
-    const engine1 = ENV.engine;
-    Environment.setBackend('custom2');
-    const engine2 = ENV.engine;
-    Environment.setBackend('custom');
-    const engine3 = ENV.engine;
-
-    expect(engine1).not.toBe(engine2);
-    expect(engine1).toBe(engine3);
-    ENV.removeBackend('custom');
-    ENV.removeBackend('custom2');
   });
 });
 
