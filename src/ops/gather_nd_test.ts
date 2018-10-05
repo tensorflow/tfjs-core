@@ -14,124 +14,127 @@
  * limitations under the License.
  * =============================================================================
  */
-import * as tf from '../index';
+
 import {describeWithFlags} from '../jasmine_util';
 import {ALL_ENVS, CPU_ENVS, expectArraysClose} from '../test_util';
 
+import {gatherND} from './gather_nd';
+import {scalar, tensor1d, tensor2d, tensor3d} from './tensor_ops';
+
 describeWithFlags('gatherNdTest', ALL_ENVS, () => {
   it('should work for simple slice', () => {
-    const indices = tf.tensor2d([0, 4, 2], [3, 1], 'int32');
-    const input = tf.tensor1d(
-        [100, 101, 102, 777, 778, 779, 10000, 10001, 10002], 'int32');
+    const indices = tensor2d([0, 4, 2], [3, 1], 'int32');
+    const input =
+        tensor1d([100, 101, 102, 777, 778, 779, 10000, 10001, 10002], 'int32');
     const shape = [3];
-    const result = tf.gatherND(input, indices);
+    const result = gatherND(input, indices);
     expect(result.shape).toEqual(shape);
     expect(result.dtype).toEqual(input.dtype);
     expectArraysClose(result, [100, 778, 102]);
   });
 
   it('should work for indexing 2d', () => {
-    const indices = tf.tensor2d([0, 2], [2, 1], 'int32');
-    const input = tf.tensor2d(
+    const indices = tensor2d([0, 2], [2, 1], 'int32');
+    const input = tensor2d(
         [
           5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 8,
           5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 8
         ],
         [8, 4], 'float32');
     const shape = [2, 4];
-    const result = tf.gatherND(input, indices);
+    const result = gatherND(input, indices);
     expect(result.shape).toEqual(shape);
     expect(result.dtype).toEqual(input.dtype);
     expectArraysClose(result, [5, 5, 5, 5, 7, 7, 7, 7]);
   });
 
   it('should work for indexing 3d', () => {
-    const indices = tf.tensor2d([0, 2, 1, 1], [2, 2], 'int32');
-    const input = tf.tensor3d(
+    const indices = tensor2d([0, 2, 1, 1], [2, 2], 'int32');
+    const input = tensor3d(
         [
           5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 8,
           5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 8
         ],
         [2, 4, 4], 'float32');
     const shape = [2, 4];
-    const result = tf.gatherND(input, indices);
+    const result = gatherND(input, indices);
     expect(result.shape).toEqual(shape);
     expect(result.dtype).toEqual(input.dtype);
     expectArraysClose(result, [7, 7, 7, 7, 6, 6, 6, 6]);
   });
 
   it('should work for batch slice', () => {
-    const indices = tf.tensor3d([0, 4, 2], [3, 1, 1], 'int32');
-    const input = tf.tensor1d(
-        [100, 101, 102, 777, 778, 779, 10000, 10001, 10002], 'int32');
+    const indices = tensor3d([0, 4, 2], [3, 1, 1], 'int32');
+    const input =
+        tensor1d([100, 101, 102, 777, 778, 779, 10000, 10001, 10002], 'int32');
     const shape = [3, 1];
-    const result = tf.gatherND(input, indices);
+    const result = gatherND(input, indices);
     expect(result.shape).toEqual(shape);
     expect(result.dtype).toEqual(input.dtype);
     expectArraysClose(result, [100, 778, 102]);
   });
 
   it('should work for batch indexing 2d', () => {
-    const indices = tf.tensor3d([0, 2], [2, 1, 1], 'int32');
-    const input = tf.tensor2d(
+    const indices = tensor3d([0, 2], [2, 1, 1], 'int32');
+    const input = tensor2d(
         [
           5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 8,
           5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 8
         ],
         [8, 4], 'float32');
     const shape = [2, 1, 4];
-    const result = tf.gatherND(input, indices);
+    const result = gatherND(input, indices);
     expect(result.shape).toEqual(shape);
     expect(result.dtype).toEqual(input.dtype);
     expectArraysClose(result, [5, 5, 5, 5, 7, 7, 7, 7]);
   });
 
   it('should work for batch indexing 3d', () => {
-    const indices = tf.tensor3d([0, 2, 1, 1], [2, 1, 2], 'int32');
-    const input = tf.tensor3d(
+    const indices = tensor3d([0, 2, 1, 1], [2, 1, 2], 'int32');
+    const input = tensor3d(
         [
           5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 8,
           5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 8
         ],
         [2, 4, 4], 'float32');
     const shape = [2, 1, 4];
-    const result = tf.gatherND(input, indices);
+    const result = gatherND(input, indices);
     expect(result.shape).toEqual(shape);
     expect(result.dtype).toEqual(input.dtype);
     expectArraysClose(result, [7, 7, 7, 7, 6, 6, 6, 6]);
   });
 
   it('should throw error when indices are not int32', () => {
-    const indices = tf.tensor1d([1], 'float32');
-    const input = tf.tensor2d(
+    const indices = tensor1d([1], 'float32');
+    const input = tensor2d(
         [100, 101, 102, 103, 777, 778, 779, 780, 10000, 10001, 10002, 10004],
         [3, 4], 'float32');
-    expect(() => tf.gatherND(input, indices)).toThrow();
+    expect(() => gatherND(input, indices)).toThrow();
   });
   it('should throw error when indices are scalar', () => {
-    const indices = tf.scalar(1, 'int32');
-    const input = tf.tensor2d(
+    const indices = scalar(1, 'int32');
+    const input = tensor2d(
         [100, 101, 102, 103, 777, 778, 779, 780, 10000, 10001, 10002, 10004],
         [3, 4], 'float32');
-    expect(() => tf.gatherND(input, indices)).toThrow();
+    expect(() => gatherND(input, indices)).toThrow();
   });
   it('should throw error when x is scalar', () => {
-    const indices = tf.tensor2d([0, 4, 2], [3, 1], 'int32');
-    const input = tf.scalar(1.0, 'float32');
-    expect(() => tf.gatherND(input, indices)).toThrow();
+    const indices = tensor2d([0, 4, 2], [3, 1], 'int32');
+    const input = scalar(1.0, 'float32');
+    expect(() => gatherND(input, indices)).toThrow();
   });
   it('should throw error when indices inner dim > x shape length', () => {
-    const indices = tf.tensor2d([0, 4, 2], [1, 3], 'int32');
+    const indices = tensor2d([0, 4, 2], [1, 3], 'int32');
     const input =
-        tf.tensor2d([100, 101, 102, 10000, 10001, 10002], [3, 2], 'float32');
-    expect(() => tf.gatherND(input, indices)).toThrow();
+        tensor2d([100, 101, 102, 10000, 10001, 10002], [3, 2], 'float32');
+    expect(() => gatherND(input, indices)).toThrow();
   });
 });
 describeWithFlags('gatherNdTest CPU', CPU_ENVS, () => {
   it('should throw error when index out of range', () => {
-    const indices = tf.tensor2d([0, 2, 99], [3, 1], 'int32');
-    const input = tf.tensor2d(
+    const indices = tensor2d([0, 2, 99], [3, 1], 'int32');
+    const input = tensor2d(
         [100, 101, 102, 777, 778, 779, 10000, 10001, 10002], [3, 3], 'float32');
-    expect(() => tf.gatherND(input, indices)).toThrow();
+    expect(() => gatherND(input, indices)).toThrow();
   });
 });

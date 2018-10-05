@@ -14,8 +14,8 @@
  * limitations under the License.
  * =============================================================================
  */
-import {util} from '..';
 import {Tensor} from '../tensor';
+import {computeStrides} from '../util';
 
 /**
  * Validate gather nd inputs.
@@ -75,9 +75,8 @@ export function prepareAndValidate(
     resultShape.push(inputShape[i]);
   }
 
-  const strides = [
-    ...util.computeStrides(tensor.shape).map(stride => stride / sliceSize), 1
-  ];
+  const strides =
+      [...computeStrides(tensor.shape).map(stride => stride / sliceSize), 1];
 
   return [resultShape, nResult, sliceSize, strides];
 }
