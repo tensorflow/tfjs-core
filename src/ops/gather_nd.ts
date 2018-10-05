@@ -22,44 +22,43 @@ import {op} from './operation';
 
 /**
  * Gather slices from input tensor into a Tensor with shape specified by
- * indices.
+ * `indices`.
  *
- * indices is an K-dimensional integer tensor, best thought of as a
- * (K-1)-dimensional tensor of indices into params, where each element defines a
- * slice of params:
- * output[\\(i_0, ..., i_{K-2}\\)] = params[indices[\\(i_0, ..., i_{K-2}\\)]]
+ * `indices` is an K-dimensional integer tensor, best thought of as a
+ * (K-1)-dimensional tensor of indices into input, where each element defines a
+ * slice of input:
+ * output[\\(i_0, ..., i_{K-2}\\)] = input[indices[\\(i_0, ..., i_{K-2}\\)]]
  *
- * Whereas in gather indices defines slices into the first dimension of
- * params, in gatherND, indices defines slices into the first N dimensions
- * of params, where N = indices.shape[-1].
+ * Whereas in `gather` `indices` defines slices into the first dimension of
+ * input, in `gatherND`, `indices` defines slices into the first N dimensions
+ * of input, where N = indices.shape[-1].
  *
- * The last dimension of indices can be at most the rank of params:
- * indices.shape[-1] <= params.rank
+ * The last dimension of indices can be at most the rank of input:
+ * indices.shape[-1] <= input.rank
  *
- * The last dimension of indices corresponds to elements
- * (if indices.shape[-1] == params.rank) or slices
- * (if indices.shape[-1] < params.rank) along dimension indices.shape[-1] of
- * params.
+ * The last dimension of `indices` corresponds to elements
+ * (if indices.shape[-1] == input.rank) or slices
+ * (if indices.shape[-1] < input.rank) along dimension indices.shape[-1] of
+ * input.
  * The output tensor has shape
- * indices.shape[:-1] + params.shape[indices.shape[-1]:]
+ * indices.shape[:-1] + input.shape[indices.shape[-1]:]
  *
  * Note that on CPU, if an out of bound index is found, an error is returned. On
  * GPU, if an out of bound index is found, a 0 is stored in the corresponding
  * output value.
  *
  * ```js
- * indices = tf.tensor2d([0, 1, 1, 0], [2,2], 'int32');
- * input = tf.tensor2d([9, 10, 11, 12], [2, 2]);
- * tf.gatherND(indices, input]).print() //[10, 11]
+ * const indices = tf.tensor2d([0, 1, 1, 0], [2,2], 'int32');
+ * const input = tf.tensor2d([9, 10, 11, 12], [2, 2]);
+ * tf.gatherND(indices, input).print() //[10, 11]
  * ```
  *
- * @param indices The tensor contains the indices into the output tensor.
- * @param updates The tensor contains the value for the indices.
- * @param shape: The shape of the output tensor.
+ * @param x The tensor from which to gather values.
+ * @param indices Index tensor, must be of type int32.
  */
 /** @doc {heading: 'Operations', subheading: 'Slicing and Joining'} */
-function gatherND_<T extends Tensor, K extends Tensor>(
-    x: K|TensorLike, indices: T|TensorLike): Tensor<Rank> {
+function gatherND_(
+    x: Tensor|TensorLike, indices: Tensor|TensorLike): Tensor<Rank> {
   const $indices = convertToTensor(indices, 'indices', 'gatherND');
   const $x = convertToTensor(x, 'x', 'gatherND');
   return ENV.engine.runKernel(

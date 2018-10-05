@@ -23,14 +23,14 @@ import {scalar, tensor1d, tensor2d, tensor3d} from './tensor_ops';
 
 describeWithFlags('gatherNdTest', ALL_ENVS, () => {
   it('should work for simple slice', () => {
-    const indices = tensor2d([0, 4, 2], [3, 1], 'int32');
+    const indices = tensor2d([0, 4, 8], [3, 1], 'int32');
     const input =
         tensor1d([100, 101, 102, 777, 778, 779, 10000, 10001, 10002], 'int32');
     const shape = [3];
     const result = gatherND(input, indices);
     expect(result.shape).toEqual(shape);
     expect(result.dtype).toEqual(input.dtype);
-    expectArraysClose(result, [100, 778, 102]);
+    expectArraysClose(result, [100, 778, 10002]);
   });
 
   it('should work for indexing 2d', () => {

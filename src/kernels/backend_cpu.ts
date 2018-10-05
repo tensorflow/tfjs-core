@@ -27,7 +27,7 @@ import {Conv2DInfo} from '../ops/conv_util';
 import * as erf_util from '../ops/erf_util';
 import * as gather_nd_util from '../ops/gather_nd_util';
 import * as ops from '../ops/ops';
-import {buffer, tensor, tensor1d, tensor3d, tensor4d} from '../ops/ops';
+import {buffer, tensor, tensor3d, tensor4d} from '../ops/ops';
 import * as selu_util from '../ops/selu_util';
 import {getStridedSlicedInfo} from '../ops/slice_util';
 import {DataId, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
@@ -2847,7 +2847,7 @@ export class MathBackendCPU implements KernelBackend {
     const [resultShape, numSlices, sliceSize, strides] =
         gather_nd_util.prepareAndValidate(x, indices);
     if (numSlices === 0) {
-      return backend_util.reshapeTensor(tensor1d([], x.dtype), resultShape);
+      return tensor([], resultShape, x.dtype);
     }
 
     const buffer = new TensorBuffer([numSlices, sliceSize], x.dtype);
@@ -2856,13 +2856,12 @@ export class MathBackendCPU implements KernelBackend {
 
     for (let i = 0; i < numSlices; i++) {
       const index = [];
+      let flattenIndex = 0;
       for (let j = 0; j < sliceRank; j++) {
-        index.push(indicesData[i * sliceRank + j]);
+        const dim = indicesData[i * sliceRank + j];
+        flattenIndex += dim * strides[j];
+        index.push(dim);
       }
-      const flattenIndex = index.reduce((sum, dim, index) => {
-        sum += dim * strides[index];
-        return sum;
-      }, 0);
       if (flattenIndex < 0 || flattenIndex > x.size / sliceSize) {
         throw new Error(
             `Invalid indices: ${index} does not index into ${x.shape}`);

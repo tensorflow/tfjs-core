@@ -26,14 +26,14 @@ export class GatherNDProgram implements GPGPUProgram {
     this.outputShape = shape;
     const stridesType = getCoordsDataType(strides.length);
     const dtype = getCoordsDataType(shape.length);
-    const strideString = this.sliceDim > 1 ? 'int(strides[j])' : 'int(strides)';
+    const strideString = this.sliceDim > 1 ? 'strides[j]' : 'int(strides)';
     this.userCode = `
         ${stridesType} strides = ${stridesType}(${this.strides});
          void main() {
           ${dtype} coords = getOutputCoords();
           int flattenIndex = 0;
           for (int j = 0; j < ${this.sliceDim}; j++) {
-            int index = int(getIndices(coords[0], j));
+            int index = round(getIndices(coords[0], j));
             flattenIndex += index * ${strideString};
           }
           setOutput(getX(flattenIndex, coords[1]));
