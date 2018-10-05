@@ -14,8 +14,8 @@
  * limitations under the License.
  * =============================================================================
  */
-import {util} from '..';
 import {Tensor} from '../tensor';
+import {computeStrides} from '../util';
 
 /**
  * Check whether updates.shape = indices.shape[:batchDim] +
@@ -108,6 +108,6 @@ export function prepareAndValidate(
   const numUpdates = indices.size / safeSliceDim;
 
   const strides =
-      [...util.computeStrides(shape).map(stride => stride / sliceSize), 1];
+      [...computeStrides(shape).map(stride => stride / sliceSize), 1];
   return [sliceDim, numUpdates, sliceSize, strides];
 }
