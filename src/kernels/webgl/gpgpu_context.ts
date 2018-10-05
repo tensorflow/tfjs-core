@@ -253,11 +253,11 @@ export class GPGPUContext {
   }
 
   public downloadMatrixFromPackedTexture(
-      texture: WebGLTexture, rows: number, columns: number): Float32Array {
+      texture: WebGLTexture, shape: number[], rows: number, columns: number): Float32Array {
     return this.downloadMatrixDriver(
         texture,
         () => gpgpu_util.downloadMatrixFromPackedOutputTexture(
-            this.gl, rows, columns, this.textureConfig));
+            this.gl, shape, rows, columns, this.textureConfig));
   }
 
   private vertexAttrsAreBound = false;

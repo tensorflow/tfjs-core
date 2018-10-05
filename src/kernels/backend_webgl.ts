@@ -337,7 +337,7 @@ export class MathBackendWebGL implements KernelBackend {
     if (ENV.get('WEBGL_DOWNLOAD_FLOAT_ENABLED')) {
       if (this.texData.get(dataId).usage === TextureUsage.PACK) {
         return this.gpgpu.downloadMatrixFromPackedTexture(
-            texture, texShape[0], texShape[1]);
+            texture, shape, texShape[0], texShape[1]);
       } else {
         return this.gpgpu.downloadFloat32MatrixFromOutputTexture(
             texture, texShape[0], texShape[1]);
@@ -564,7 +564,7 @@ export class MathBackendWebGL implements KernelBackend {
    * @param usage The tensor's TextureUsage type, which matters for deciding
    * what the maximum texture size should be.
    */
-  private textureCanMatchShape(
+  private textureCanHaveShape(
       shape: number[], usage: TextureUsage = TextureUsage.UPLOAD): boolean {
     return util.arraysEqual(
         webgl_util.getTextureShapeFromLogicalShape(this.gpgpu.gl, shape, usage),
@@ -599,40 +599,41 @@ export class MathBackendWebGL implements KernelBackend {
     // dimensions match their logical dimensions.
     if (ENV.get('WEBGL_RENDER_FLOAT32_ENABLED') && a.shape[0] === 1 &&
         b.shape[0] === 1 &&
-        this.textureCanMatchShape(
+        this.textureCanHaveShape(
             [a.shape[1], a.shape[2]], TextureUsage.PACK) &&
-        this.textureCanMatchShape(
+        this.textureCanHaveShape(
             [b.shape[1], b.shape[2]], TextureUsage.PACK)) {
-      const aSqueezed = a.as2D(a.shape[1], a.shape[2]);
-      const bSqueezed = b.as2D(b.shape[1], b.shape[2]);
-      const packProgramA = new PackProgram(aSqueezed.shape);
-      const packedA = this.compileAndRun<Tensor2D>(
-          packProgramA, [aSqueezed],
-          this.makePackedTensor<Tensor2D>(aSqueezed.shape));
+    const aSqueezed = a.as2D(a.shape[1], a.shape[2]);
+    const bSqueezed = b.as2D(b.shape[1], b.shape[2]);
+    const packProgramA = new PackProgram(aSqueezed.shape);
+    const packedA = this.compileAndRun<Tensor2D>(
+        packProgramA, [aSqueezed],
+        this.makePackedTensor<Tensor2D>(aSqueezed.shape));
 
-      const packProgramB = new PackProgram(bSqueezed.shape);
-      const packedB = this.compileAndRun<Tensor2D>(
-          packProgramB, [bSqueezed],
-          this.makePackedTensor<Tensor2D>(bSqueezed.shape));
+    const packProgramB = new PackProgram(bSqueezed.shape);
+    const packedB = this.compileAndRun<Tensor2D>(
+        packProgramB, [bSqueezed],
+        this.makePackedTensor<Tensor2D>(bSqueezed.shape));
 
-      const program = new MatMulPackedProgram(
-          packedA.shape, packedB.shape, [outerShapeA, outerShapeB], transposeA,
-          transposeB);
-      const result = this.compileAndRun(
-          program, [packedA, packedB],
-          this.makePackedTensor<Tensor2D>(program.outputShape));
+    const program = new MatMulPackedProgram(
+        packedA.shape, packedB.shape, [outerShapeA, outerShapeB], transposeA,
+        transposeB);
+    const result = this.compileAndRun(
+        program, [packedA, packedB],
+        this.makePackedTensor<Tensor2D>(program.outputShape));
 
-      const unpackProgram = new UnpackProgram(result.shape);
-      const unpacked = this.compileAndRun(unpackProgram, [result]) as Tensor;
+    const unpackProgram = new UnpackProgram(result.shape);
+    const unpacked = this.compileAndRun(unpackProgram, [result]) as Tensor;
 
-      packedA.dispose();
-      packedB.dispose();
-      result.dispose();
+    packedA.dispose();
+    packedB.dispose();
+    result.dispose();
 
-      return unpacked.reshape([1, result.shape[0], result.shape[1]]);
+    return unpacked.reshape([1, result.shape[0], result.shape[1]]);
     } else {
       return this.compileAndRun(
-          new MatMulProgram(a.shape, b.shape, transposeA, transposeB), [a, b]);
+          new MatMulProgram(a.shape, b.shape, transposeA, transposeB), [a,
+          b]);
     }
   }
 
@@ -1408,8 +1409,8 @@ export class MathBackendWebGL implements KernelBackend {
 
     if (ENV.get('WEBGL_CONV_IM2COL') &&
         ENV.get('WEBGL_RENDER_FLOAT32_ENABLED') && x.shape[0] === 1 &&
-        this.textureCanMatchShape(x2ColShape, TextureUsage.PACK) &&
-        this.textureCanMatchShape(w2RowShape, TextureUsage.PACK)) {
+        this.textureCanHaveShape(x2ColShape, TextureUsage.PACK) &&
+        this.textureCanHaveShape(w2RowShape, TextureUsage.PACK)) {
       return this.conv2dWithIm2Row(x, filter, convInfo);
     }
     const program = new Conv2DProgram(convInfo);

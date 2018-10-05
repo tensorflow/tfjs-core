@@ -386,7 +386,7 @@ export function downloadByteEncodedFloatMatrixFromOutputTexture(
 }
 
 export function downloadMatrixFromPackedOutputTexture(
-    gl: WebGLRenderingContext, rows: number, columns: number,
+    gl: WebGLRenderingContext, shape: number[], rows: number, columns: number,
     textureConfig: TextureConfig): Float32Array {
   const [w, h] = tex_util.getPackedMatrixTextureShapeWidthHeight(rows, columns);
   const packedRGBA = new Float32Array(
@@ -394,5 +394,5 @@ export function downloadMatrixFromPackedOutputTexture(
   webgl_util.callAndCheck(
       gl, () => gl.readPixels(0, 0, w, h, gl.RGBA, gl.FLOAT, packedRGBA));
   const matrix = new Float32Array(rows * columns);
-  return tex_util.decodeMatrixFromPackedRGBA(packedRGBA, rows, columns, matrix);
+  return tex_util.decodeMatrixFromPackedRGBA(packedRGBA, shape[0], shape[1], matrix);
 }
