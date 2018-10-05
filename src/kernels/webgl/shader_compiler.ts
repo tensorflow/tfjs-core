@@ -461,17 +461,20 @@ function getOutputPacked2DCoords(
     `;
   }
 
-  const valuesPerRow = texShape[1] * 2;
+  // texels needed to accommodate a logical row
+  const texelsInLogicalRow = Math.ceil(shape[1] / 2);
 
+  // resTexRC are the rows and columns of the texels. so if you move over one texel to the right in the packed texture, you are moving over one column, not two columns
+  // index refers to the texel index
   return `
     ivec2 getOutputCoords() {
       ivec2 resTexRC = ivec2(resultUV.yx *
                              vec2(${packedTexShape[0]}, ${packedTexShape[1]}));
 
-      int index = resTexRC.x * ${valuesPerRow} + (resTexRC.y * 2);
+      int index = resTexRC.x * ${packedTexShape[1]} + resTexRC.y; // texel index
+      int r = 2 * (index / ${texelsInLogicalRow});
+      int c = int(mod(float(index), ${texelsInLogicalRow}.)) * 2;
 
-      int r = index / ${shape[1]};
-      int c = index - r * ${shape[1]};
       return ivec2(r, c);
     }
   `;
