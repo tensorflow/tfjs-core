@@ -23,14 +23,14 @@ describeWithFlags('ScatterNdTest', ALL_ENVS, () => {
   it('should work for 2d', () => {
     const indices = tf.tensor1d([0, 4, 2], 'int32');
     const updates = tf.tensor2d(
-        [100, 101, 102, 777, 778, 779, 1000, 1001, 1002], [3, 3], 'int32');
+        [100, 101, 102, 777, 778, 779, 10000, 10001, 10002], [3, 3], 'int32');
     const shape = [5, 3];
     const result = tf.scatterND(indices, updates, shape);
     expect(result.shape).toEqual(shape);
     expect(result.dtype).toEqual(updates.dtype);
     expectArraysClose(
         result,
-        [100, 101, 102, 0, 0, 0, 1000, 1001, 1002, 0, 0, 0, 777, 778, 779]);
+        [100, 101, 102, 0, 0, 0, 10000, 10001, 10002, 0, 0, 0, 777, 778, 779]);
   });
 
   it('should work for simple 1d', () => {
