@@ -30,8 +30,8 @@ export class MatMulPackedProgram implements GPGPUProgram {
     const sharedDim = transposeA ? aShape[0] : aShape[1];
     const sharedDimensionPacked = Math.ceil(sharedDim / 2);
 
-    const aSample = transposeA ? 'i * 2, rc.y' : 'rc.y, i * 2';
-    const bSample = transposeB ? 'rc.x, i * 2' : 'i * 2, rc.x';
+    const aSample = transposeA ? 'i * 2, rc.x' : 'rc.x, i * 2';
+    const bSample = transposeB ? 'rc.y, i * 2' : 'i * 2, rc.y';
     const aSwizzle = transposeA ? ['a.xxyy', 'a.zzww'] : ['a.xxzz', 'a.yyww'];
     const bSwizzle = transposeB ? ['b.xzxz', 'b.ywyw'] : ['b.xyxy', 'b.zwzw'];
 
