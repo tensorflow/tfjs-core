@@ -175,6 +175,13 @@ vec2 UVfrom2D(int texNumR, int texNumC, int numC, int row, int col) {
   int texC = index - texR * texNumC;
   return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
 }
+vec2 packedUVfrom2D(int texelsInLogicalRow, int texNumR,
+  int texNumC, int numC, int row, int col) {
+  int texelIndex = (row / 2) * texelsInLogicalRow + (col / 2);
+  int texR = texelIndex / texNumC;
+  int texC = texelIndex - texR * texNumC;
+  return (vec2(texC, texR)) / vec2(texNumC, texNumR);
+}
 `;
 
 const SAMPLE_3D_SNIPPET = `
@@ -546,6 +553,7 @@ function getSampler1D(inputInfo: InputInfo): string {
 }
 
 function getPackedSampler2D(inputInfo: InputInfo): string {
+  const shape = inputInfo.shapeInfo.logicalShape;
   const texName = inputInfo.name;
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
   const texShape = inputInfo.shapeInfo.texShape;
@@ -553,10 +561,24 @@ function getPackedSampler2D(inputInfo: InputInfo): string {
   // for now, packed texture logical shape always equals physical shape
   const texNumR = texShape[0];
   const texNumC = texShape[1];
+  if(texShape != null && util.arraysEqual(shape, texShape)) {
+    return `
+      vec4 ${funcName}(int row, int col) {
+        vec2 uv = (vec2(col, row)) / vec2(${texNumC}.0, ${texNumR}.0);
+
+        return texture2D(${texName}, uv);
+      }
+    `;
+  }
+
+  const packedTexShape =
+      [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
+  const valuesPerRow = Math.ceil(shape[1] / 2);
+
   return `
     vec4 ${funcName}(int row, int col) {
-      vec2 uv = (vec2(col, row)) / vec2(${texNumC}.0, ${texNumR}.0);
-
+      vec2 uv = packedUVfrom2D(${valuesPerRow}, ${packedTexShape[0]}, ${
+      packedTexShape[1]}, ${shape[1]}, row, col);
       return texture2D(${texName}, uv);
     }
   `;
