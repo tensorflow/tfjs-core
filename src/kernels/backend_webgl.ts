@@ -594,15 +594,8 @@ export class MathBackendWebGL implements KernelBackend {
     const outerShapeB = transposeB ? b.shape[1] : b.shape[2];
 
     // TODO(https://github.com/tensorflow/tfjs/issues/693): Support 3D tensors
-    // We're restricting packed matMul to these conditions because for now, our
-    // packed matMul shader needs its inputs to be 2D matrices whose physical
-    // dimensions match their logical dimensions.
     if (ENV.get('WEBGL_RENDER_FLOAT32_ENABLED') && a.shape[0] === 1 &&
-        b.shape[0] === 1 &&
-        this.textureCanHaveShape(
-            [a.shape[1], a.shape[2]], TextureUsage.PACK) &&
-        this.textureCanHaveShape(
-            [b.shape[1], b.shape[2]], TextureUsage.PACK)) {
+        b.shape[0] === 1) {
     const aSqueezed = a.as2D(a.shape[1], a.shape[2]);
     const bSqueezed = b.as2D(b.shape[1], b.shape[2]);
     const packProgramA = new PackProgram(aSqueezed.shape);

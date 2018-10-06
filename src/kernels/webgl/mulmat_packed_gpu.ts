@@ -30,8 +30,8 @@ export class MatMulPackedProgram implements GPGPUProgram {
     const sharedDim = transposeA ? aShape[0] : aShape[1];
     const sharedDimensionPacked = Math.ceil(sharedDim / 2);
 
-    const aSample = transposeA ? 'ii * 2, rc.y' : 'rc.y, ii * 2';
-    const bSample = transposeB ? 'rc.x, ii * 2' : 'ii * 2, rc.x';
+    const aSample = transposeA ? 'i * 2, rc.y' : 'rc.y, i * 2';
+    const bSample = transposeB ? 'rc.x, i * 2' : 'i * 2, rc.x';
     const aSwizzle = transposeA ? ['a.xxyy', 'a.zzww'] : ['a.xxzz', 'a.yyww'];
     const bSwizzle = transposeB ? ['b.xzxz', 'b.ywyw'] : ['b.xyxy', 'b.zwzw'];
 
@@ -40,7 +40,7 @@ export class MatMulPackedProgram implements GPGPUProgram {
 
       vec4 dot2x2ARowBCol(ivec2 rc) {
         vec4 result = vec4(0);
-        for (int ii = 0; ii < ${sharedDimensionPacked}; ii++) {
+        for (int i = 0; i < ${sharedDimensionPacked}; i++) {
           vec4 a = getMatrixA(${aSample});
           vec4 b = getMatrixB(${bSample});
 
