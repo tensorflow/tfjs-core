@@ -21,16 +21,16 @@ import {ALL_ENVS, CPU_ENVS, expectArraysClose} from '../test_util';
 import {gatherND} from './gather_nd';
 import {scalar, tensor1d, tensor2d, tensor3d} from './tensor_ops';
 
-describeWithFlags('gatherNdTest', ALL_ENVS, () => {
+describeWithFlags('gatherND', ALL_ENVS, () => {
   it('should work for simple slice', () => {
     const indices = tensor2d([0, 4, 8], [3, 1], 'int32');
     const input =
-        tensor1d([100, 101, 102, 777, 778, 779, 10000, 10001, 10002], 'int32');
+        tensor1d([100, 101, 102, 777, 778, 779, 1000, 1001, 1002], 'int32');
     const shape = [3];
     const result = gatherND(input, indices);
     expect(result.shape).toEqual(shape);
     expect(result.dtype).toEqual(input.dtype);
-    expectArraysClose(result, [100, 778, 10002]);
+    expectArraysClose(result, [100, 778, 1002]);
   });
 
   it('should work for indexing 2d', () => {
@@ -104,6 +104,16 @@ describeWithFlags('gatherNdTest', ALL_ENVS, () => {
     expectArraysClose(result, [7, 7, 7, 7, 6, 6, 6, 6]);
   });
 
+  it('should work for TensorLike inputs', () => {
+    const indices = [[0], [4], [8]];
+    const input = [100, 101, 102, 777, 778, 779, 1000, 1001, 1002];
+    const shape = [3];
+    const result = gatherND(input, indices);
+    expect(result.shape).toEqual(shape);
+    expect(result.dtype).toEqual('float32');
+    expectArraysClose(result, [100, 778, 1002]);
+  });
+
   it('should throw error when indices are not int32', () => {
     const indices = tensor1d([1], 'float32');
     const input = tensor2d(
@@ -130,7 +140,7 @@ describeWithFlags('gatherNdTest', ALL_ENVS, () => {
     expect(() => gatherND(input, indices)).toThrow();
   });
 });
-describeWithFlags('gatherNdTest CPU', CPU_ENVS, () => {
+describeWithFlags('gatherND CPU', CPU_ENVS, () => {
   it('should throw error when index out of range', () => {
     const indices = tensor2d([0, 2, 99], [3, 1], 'int32');
     const input = tensor2d(

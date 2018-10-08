@@ -26,7 +26,7 @@ export class GatherNDProgram implements GPGPUProgram {
     this.outputShape = shape;
     const stridesType = getCoordsDataType(strides.length);
     const dtype = getCoordsDataType(shape.length);
-    const strideString = this.sliceDim > 1 ? 'strides[j]' : 'int(strides)';
+    const strideString = this.sliceDim > 1 ? 'strides[j]' : 'strides';
     this.userCode = `
         ${stridesType} strides = ${stridesType}(${this.strides});
          void main() {

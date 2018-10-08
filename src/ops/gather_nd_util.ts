@@ -23,7 +23,7 @@ import {computeStrides} from '../util';
  * @param tensor The tensor contains the source values.
  * @param indices The tensor contains the indices to slice the source.
  *
- * @returns [resultShape, numUpdates, sliceSize]
+ * @returns [resultShape, numUpdates, sliceSize, strides]
  */
 export function prepareAndValidate(
     tensor: Tensor, indices: Tensor): [number[], number, number, number[]] {
@@ -76,7 +76,8 @@ export function prepareAndValidate(
   }
 
   const strides =
-      [...computeStrides(tensor.shape).map(stride => stride / sliceSize), 1];
+      [...computeStrides(tensor.shape).map(stride => stride / sliceSize),
+       1].slice(0, sliceRank);
 
   return [resultShape, nResult, sliceSize, strides];
 }
