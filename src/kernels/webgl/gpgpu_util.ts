@@ -385,6 +385,7 @@ export function downloadByteEncodedFloatMatrixFromOutputTexture(
   return new Float32Array(downloadTarget.buffer);
 }
 
+// The rows and columns refer to the dimensions needed to represent the tensor in a packed texture, whereas shape refers to the logical shape
 export function downloadMatrixFromPackedOutputTexture(
     gl: WebGLRenderingContext, shape: number[], rows: number, columns: number,
     textureConfig: TextureConfig): Float32Array {
@@ -393,6 +394,7 @@ export function downloadMatrixFromPackedOutputTexture(
       tex_util.getPackedRGBAArraySizeFromMatrixShape(rows, columns));
   webgl_util.callAndCheck(
       gl, () => gl.readPixels(0, 0, w, h, gl.RGBA, gl.FLOAT, packedRGBA));
-  const matrix = new Float32Array(rows * columns);
+  // matrix is the flattened tensor, so it does not need to account for texture dimensions
+  const matrix = new Float32Array(shape[0] * shape[1]);
   return tex_util.decodeMatrixFromPackedRGBA(packedRGBA, shape[0], shape[1], matrix);
 }

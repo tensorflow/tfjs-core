@@ -1387,23 +1387,8 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   conv2d(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
-    const {
-      filterWidth,
-      filterHeight,
-      inChannels,
-      outWidth,
-      outHeight,
-    } = convInfo;
-
-    const sharedDim = filterWidth * filterHeight * inChannels;
-    const numCols = outHeight * outWidth;
-    const x2ColShape = [sharedDim, numCols];
-    const w2RowShape = [convInfo.outChannels, sharedDim];
-
     if (ENV.get('WEBGL_CONV_IM2COL') &&
-        ENV.get('WEBGL_RENDER_FLOAT32_ENABLED') && x.shape[0] === 1 &&
-        this.textureCanHaveShape(x2ColShape, TextureUsage.PACK) &&
-        this.textureCanHaveShape(w2RowShape, TextureUsage.PACK)) {
+        ENV.get('WEBGL_RENDER_FLOAT32_ENABLED') && x.shape[0] === 1) {
       return this.conv2dWithIm2Row(x, filter, convInfo);
     }
     const program = new Conv2DProgram(convInfo);
