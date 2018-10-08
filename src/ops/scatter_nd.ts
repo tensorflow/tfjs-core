@@ -43,7 +43,7 @@ import {op} from './operation';
 function scatterND_<R extends Rank>(
     indices: Tensor|TensorLike, updates: Tensor|TensorLike,
     shape: ShapeMap[R]): Tensor<R> {
-  const $indices = convertToTensor(indices, 'indices', 'scatterND');
+  const $indices = convertToTensor(indices, 'indices', 'scatterND', 'int32');
   const $updates = convertToTensor(updates, 'updates', 'scatterND');
   return ENV.engine.runKernel(
              backend => backend.scatterND($indices, $updates, shape),

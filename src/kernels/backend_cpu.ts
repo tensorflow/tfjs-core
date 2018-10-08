@@ -2844,7 +2844,6 @@ export class MathBackendCPU implements KernelBackend {
       indices: Tensor, updates: Tensor, shape: ShapeMap[R]): Tensor<R> {
     const [sliceRank, numUpdates, sliceSize, strides, outputSize] =
         scatter_nd_util.prepareAndValidate(updates, indices, shape);
-
     const flattenShape = [outputSize / sliceSize, sliceSize];
     const indicesData = indices.dataSync();
     const updatesData = updates.dataSync();

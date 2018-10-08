@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2017 Google Inc. All Rights Reserved.
+ * Copyright 2018 Google Inc. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,18 +19,18 @@ import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
 import {ALL_ENVS, CPU_ENVS, expectArraysClose} from '../test_util';
 
-describeWithFlags('ScatterNdTest', ALL_ENVS, () => {
+describeWithFlags('scatterND', ALL_ENVS, () => {
   it('should work for 2d', () => {
     const indices = tf.tensor1d([0, 4, 2], 'int32');
     const updates = tf.tensor2d(
-        [100, 101, 102, 777, 778, 779, 10000, 10001, 10002], [3, 3], 'int32');
+        [100, 101, 102, 777, 778, 779, 1000, 1001, 1002], [3, 3], 'int32');
     const shape = [5, 3];
     const result = tf.scatterND(indices, updates, shape);
     expect(result.shape).toEqual(shape);
     expect(result.dtype).toEqual(updates.dtype);
     expectArraysClose(
         result,
-        [100, 101, 102, 0, 0, 0, 10000, 10001, 10002, 0, 0, 0, 777, 778, 779]);
+        [100, 101, 102, 0, 0, 0, 1000, 1001, 1002, 0, 0, 0, 777, 778, 779]);
   });
 
   it('should work for simple 1d', () => {
@@ -92,6 +92,16 @@ describeWithFlags('ScatterNdTest', ALL_ENVS, () => {
     expectArraysClose(result, [70, 40, 30, 50, 20, 0, 0, 0]);
   });
 
+  it('should work for tensorLike input', () => {
+    const indices = [0, 4, 2];
+    const updates = [100, 101, 102];
+    const shape = [5];
+    const result = tf.scatterND(indices, updates, shape);
+    expect(result.shape).toEqual(shape);
+    expect(result.dtype).toEqual('float32');
+    expectArraysClose(result, [100, 0, 102, 0, 101]);
+  });
+
   it('should throw error when indices type is not int32', () => {
     const indices = tf.tensor2d([0, 2, 0, 1], [2, 2], 'float32');
     const updates = tf.tensor1d([10, 20], 'float32');
@@ -115,9 +125,24 @@ describeWithFlags('ScatterNdTest', ALL_ENVS, () => {
     const shape = [5, 3];
     expect(() => tf.scatterND(indices, updates, shape)).toThrow();
   });
+
+  it('should throw error when indices are scalar', () => {
+    const indices = tf.scalar(1, 'int32');
+    const updates =
+        tf.tensor2d([100, 101, 102, 10000, 10001, 10002], [2, 3], 'float32');
+    const shape = [5, 3];
+    expect(() => tf.scatterND(indices, updates, shape)).toThrow();
+  });
+
+  it('should throw error when update is scalar', () => {
+    const indices = tf.tensor2d([0, 4, 2], [3, 1], 'int32');
+    const updates = tf.scalar(1, 'float32');
+    const shape = [5, 3];
+    expect(() => tf.scatterND(indices, updates, shape)).toThrow();
+  });
 });
 
-describeWithFlags('ScatterNdTest CPU', CPU_ENVS, () => {
+describeWithFlags('scatterND CPU', CPU_ENVS, () => {
   it('should throw error when index out of range', () => {
     const indices = tf.tensor2d([0, 4, 99], [3, 1], 'int32');
     const updates = tf.tensor2d(

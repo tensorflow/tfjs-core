@@ -25,33 +25,41 @@ import {computeStrides, sizeFromShape} from '../util';
  */
 export function validateUpdateShape(
     shape: number[], indices: Tensor, updates: Tensor) {
-  const sliceDim =
-      (indices.shape.length > 1) ? indices.shape[indices.shape.length - 1] : 1;
-  const batchDim = (indices.shape.length > 1) ? indices.shape.length - 1 : 1;
+  const sliceDim = (indices.rank > 1) ? indices.shape[indices.rank - 1] : 1;
+  const batchDim = (indices.rank > 1) ? indices.rank - 1 : 1;
 
-  const shapeError = new Error(
-      'Must have updates.shape = indices.shape[:batchDim] + ' +
+  const shapeError = 'Must have updates.shape = indices.shape[:batchDim] + ' +
       `shape[sliceDim:], got updates.shape: ${updates.shape}` +
       `, indices.shape: ${indices.shape}, shape: ${shape}` +
-      `, sliceDim: ${sliceDim}, and batchDim: ${batchDim}`);
+      `, sliceDim: ${sliceDim}, and batchDim: ${batchDim}.`;
 
-  if (updates.shape.length < batchDim) {
-    throw shapeError;
+  if (updates.rank < batchDim) {
+    throw new Error(shapeError + ` update.rank < ${batchDim}. `);
   }
-  if (shape.length < sliceDim + (updates.shape.length - batchDim)) {
-    throw shapeError;
+  if (shape.length < sliceDim + (updates.rank - batchDim)) {
+    throw new Error(
+        shapeError +
+        ` Output shape length < ${sliceDim + (updates.rank - batchDim)}`);
   }
-  if (updates.shape.length !== batchDim + shape.length - sliceDim) {
-    throw shapeError;
+  if (updates.rank !== batchDim + shape.length - sliceDim) {
+    throw new Error(
+        shapeError + ` update.rank != ${batchDim + shape.length - sliceDim}`);
   }
   for (let d = 0; d < batchDim; ++d) {
     if (updates.shape[d] !== indices.shape[d]) {
-      throw shapeError;
+      throw new Error(
+          shapeError +
+          ` updates.shape[${d}] (${updates.shape[d]}) != indices.shape[${d}] (${
+              indices.shape[d]}).`);
     }
   }
-  for (let d = 0; d < updates.shape.length - batchDim; ++d) {
+  for (let d = 0; d < updates.rank - batchDim; ++d) {
     if (updates.shape[d + batchDim] !== shape[d + sliceDim]) {
-      throw shapeError;
+      throw new Error(
+          shapeError +
+          ` updates.shape[${d + batchDim}] (${
+              updates.shape[d + batchDim]}) != shape[${d + batchDim}] (${
+              shape[d + batchDim]})`);
     }
   }
 }
@@ -68,35 +76,40 @@ export function validateUpdateShape(
 export function prepareAndValidate(
     updates: Tensor, indices: Tensor,
     shape: number[]): [number, number, number, number[], number] {
-  const indicesShape = indices.shape;
-  const updateShape = updates.shape;
-
-  if (indices.dtype !== 'int32') {
+  if (indices.rank < 1) {
     throw new Error(
-        `Indices dtype is exected to be int32, got dtype = ${indices.dtype}`);
+        'tf.scatterND() expects the indices to be rank 1 or higher,' +
+        ` but the rank was ${indices.rank}.`);
+  }
+  if (updates.rank < 1) {
+    throw new Error(
+        'tf.scatterND() expects the updates to be rank 1 or higher,' +
+        ` but the rank was ${updates.rank}.`);
+  }
+  if (indices.dtype !== 'int32') {
+    throw new Error(`The dtype of 'indices' should be int32, but got dtype: ${
+        indices.dtype}`);
   }
   if (shape.length < 1) {
     throw new Error(
-        `Output rank must be greater or equal 1, got shape: ${shape}`);
+        `Output rank must be greater or equal to 1, but got shape: ${shape}`);
   }
 
-  if (!(shape.length > 0 || (indices.size === 0 && updates.size === 0))) {
-    throw new Error(
-        `Indices and updates specified for empty output. indices shape: ${
-            indices.shape}`);
+  if (shape.length === 0) {
+    if (indices.size === 0) {
+      throw new Error(`Indices specified for empty output. indices shape: ${
+          indices.shape}`);
+    }
+    if (updates.size === 0) {
+      throw new Error(`Updates specified for empty output. updates shape: ${
+          updates.shape}`);
+    }
   }
 
-  if (updates.shape[0] !== indices.shape[0]) {
-    throw new Error(
-        'The outermost dimension of updates and indices ' +
-        `must match. Got indices.shape ${indicesShape}, updates.shape ${
-            updateShape}`);
-  }
   validateUpdateShape(shape, indices, updates);
 
   // Calculate the number of dimensions in indices
-  const sliceDim =
-      (indicesShape.length > 1) ? indicesShape[indicesShape.length - 1] : 1;
+  const sliceDim = (indices.rank > 1) ? indices.shape[indices.rank - 1] : 1;
 
   // Calculate the number of elements that make up each slice of our updated
   // tensor. This allows us to work with flattened tensors and copy over whole
@@ -111,7 +124,8 @@ export function prepareAndValidate(
   const safeSliceDim = (sliceDim < 1) ? 1 : sliceDim;
   const numUpdates = indices.size / safeSliceDim;
 
-  const strides =
-      [...computeStrides(shape).map(stride => stride / sliceSize), 1];
-  return [sliceDim, numUpdates, sliceSize, strides, sizeFromShape(shape)];
+  const outputStrides = [...computeStrides(shape), 1];
+  const sliceStrides = outputStrides.slice(
+      outputStrides.length - sliceDim, outputStrides.length);
+  return [sliceDim, numUpdates, sliceSize, sliceStrides, sizeFromShape(shape)];
 }
