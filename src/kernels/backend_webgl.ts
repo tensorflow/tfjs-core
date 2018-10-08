@@ -556,21 +556,6 @@ export class MathBackendWebGL implements KernelBackend {
     return res.reshape(outShape) as T;
   }
 
-  /**
-   * Returns a boolean indicating whether a tensor can be stored on the GPU with
-   * a texture whose physical dimensions match the tensor's logical dimensions.
-   *
-   * @param shape The tensor's shape.
-   * @param usage The tensor's TextureUsage type, which matters for deciding
-   * what the maximum texture size should be.
-   */
-  private textureCanHaveShape(
-      shape: number[], usage: TextureUsage = TextureUsage.UPLOAD): boolean {
-    return util.arraysEqual(
-        webgl_util.getTextureShapeFromLogicalShape(this.gpgpu.gl, shape, usage),
-        shape);
-  }
-
   concat(tensors: Tensor[], axis: number): Tensor {
     if (tensors.length === 1) {
       return tensors[0];
