@@ -27,6 +27,7 @@ import * as reduce_util from '../ops/reduce_util';
 import * as segment_util from '../ops/segment_util';
 import {getStridedSlicedInfo} from '../ops/slice_util';
 import {softmax} from '../ops/softmax';
+import * as sparse_to_dense_util from '../ops/sparse_to_dense_util';
 import {range, scalar, tensor} from '../ops/tensor_ops';
 import {DataId, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import {DataType, DataTypeMap, Rank, RecursiveArray, ShapeMap, sumOutType, TypedArray, upcastType} from '../types';
@@ -84,6 +85,7 @@ import {ReverseProgram} from './webgl/reverse_gpu';
 import {SegmentOpProgram} from './webgl/segment_gpu';
 import {SelectProgram} from './webgl/select_gpu';
 import {SliceProgram} from './webgl/slice_gpu';
+import {SparseToDenseProgram} from './webgl/sparse_to_dense_gpu';
 import {StridedSliceProgram} from './webgl/strided_slice_gpu';
 import {TextureData, TextureUsage} from './webgl/tex_util';
 import {TextureManager} from './webgl/texture_manager';
@@ -1606,9 +1608,19 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   sparseToDense(
-      sparseIndices: Tensor<Rank>, sparseValues: Tensor<Rank>,
-      outputShape: number[], defaultValue: number): Tensor<Rank> {
-    throw new Error('Method not implemented.');
+      sparseIndices: Tensor, sparseValues: Tensor, outputShape: number[],
+      defaultValue: number): Tensor {
+    const [numElems, numDims, strides] =
+        sparse_to_dense_util.prepareAndValidate(
+            sparseIndices, sparseValues, outputShape);
+
+    const outputSize = util.sizeFromShape(outputShape);
+    const program = new SparseToDenseProgram(
+        numElems, numDims, sparseIndices.rank, sparseValues.rank, strides,
+        [outputSize], defaultValue);
+    return (this.compileAndRun(program, [sparseValues, sparseIndices]) as
+            Tensor)
+        .reshape(outputShape);
   }
 
   private makeOutputArray<T extends Tensor>(shape: number[], dtype: DataType):

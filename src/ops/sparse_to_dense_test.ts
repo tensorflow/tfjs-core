@@ -15,10 +15,12 @@
  * =============================================================================
  */
 import {describeWithFlags} from '../jasmine_util';
-import {CPU_ENVS, expectArraysClose} from '../test_util';
+import {ALL_ENVS, CPU_ENVS, expectArraysClose} from '../test_util';
+
 import {sparseToDense} from './sparse_to_dense';
 import {scalar, tensor1d, tensor2d, tensor3d} from './tensor_ops';
-describeWithFlags('sparseToDense', CPU_ENVS, () => {
+
+describeWithFlags('sparseToDense', ALL_ENVS, () => {
   it('should work for scalar indices', () => {
     const indices = scalar(2, 'int32');
     const values = scalar(100, 'int32');
@@ -65,24 +67,38 @@ describeWithFlags('sparseToDense', CPU_ENVS, () => {
     expect(result.dtype).toEqual(values.dtype);
     expectArraysClose(result, [1, 5, 1, 6]);
   });
+
+  it('should support TensorLike inputs', () => {
+    const indices = [[0, 1], [1, 1]];
+    const values = [5, 6];
+    const shape = [2, 2];
+    const result = sparseToDense(indices, values, shape);
+    expect(result.shape).toEqual(shape);
+    expect(result.dtype).toEqual('float32');
+    expectArraysClose(result, [0, 5, 0, 6]);
+  });
+
   it('should throw error when indices are not int32', () => {
     const indices = scalar(2, 'float32');
     const values = scalar(100, 'int32');
     const shape = [6];
     expect(() => sparseToDense(indices, values, shape)).toThrow();
   });
+
   it('should throw error when indices rank > 2', () => {
     const indices = tensor3d([1], [1, 1, 1], 'int32');
     const values = tensor1d([100], 'float32');
     const shape = [6];
     expect(() => sparseToDense(indices, values, shape)).toThrow();
   });
+
   it('should throw error when values has rank > 1', () => {
     const indices = tensor1d([0, 4, 2], 'int32');
     const values = tensor2d([1.0, 2.0, 3.0], [3, 1], 'float32');
     const shape = [6];
     expect(() => sparseToDense(indices, values, shape)).toThrow();
   });
+
   it('should throw error when values has wrong size', () => {
     const indices = tensor1d([0, 4, 2], 'int32');
     const values = tensor1d([1.0, 2.0, 3.0, 4.0], 'float32');
@@ -90,6 +106,7 @@ describeWithFlags('sparseToDense', CPU_ENVS, () => {
     expect(() => sparseToDense(indices, values, shape)).toThrow();
   });
 });
+
 describeWithFlags('sparseToDense CPU', CPU_ENVS, () => {
   it('should throw error when index out of range', () => {
     const indices = tensor1d([0, 2, 6], 'int32');

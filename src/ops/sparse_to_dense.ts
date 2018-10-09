@@ -22,7 +22,6 @@ import {TensorLike} from '../types';
 
 import {op} from './operation';
 
-
 /**
  * Converts a sparse representation into a dense tensor.
  *
@@ -41,9 +40,12 @@ import {op} from './operation';
  *
  * ```js
  * const indices = tf.tensor1d([4, 5, 6, 1, 2, 3], 'int32');
+ * const values = tf.tensor1d([10, 11, 12, 13, 14, 15], 'float32');
+ * const shape = [8];
+ * tf.sparseToDense(indices, values, shape).print();
+ * // [0, 13, 14, 15, 10, 11, 12, 0]
+ * ```
  *
- * a.softmax().print();  // or tf.softmax(a)
- * ```*
  * @param sparseIndices: A 0-D, 1-D, or 2-D Tensor of type int32.
  * sparseIndices[i] contains the complete index where sparseValues[i] will be
  * placed.
