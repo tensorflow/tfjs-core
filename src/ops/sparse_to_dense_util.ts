@@ -26,7 +26,8 @@ import {computeStrides} from '../util';
  * corresponding to each row of sparseIndices, or a scalar value to be used for
  * all sparse indices.
  * @param outputShape: number[]. Shape of the dense output tensor.
- *
+ * @param validateIndices: indice validation is not supported, error will be
+ * thrown if it is set.
  * @returns [numElements, numDims, strides]
  */
 export function prepareAndValidate(

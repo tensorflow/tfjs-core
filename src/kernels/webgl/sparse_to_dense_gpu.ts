@@ -21,13 +21,13 @@ export class SparseToDenseProgram implements GPGPUProgram {
   outputShape: number[];
   userCode: string;
   constructor(
-      private indiceSize: number, private indiceDim: number,
-      private indiceRank: number, private valueRank: number,
-      private strides: number[], shape: number[], defaultValue: number) {
+      indiceSize: number, indiceDim: number, indiceRank: number,
+      valueRank: number, strides: number[], shape: number[],
+      defaultValue: number) {
     this.outputShape = shape;
     const stridesType = getCoordsDataType(strides.length);
     let indiceString = '';
-    switch (this.indiceRank) {
+    switch (indiceRank) {
       case 0:
         indiceString = 'getIndices()';
         break;
@@ -38,17 +38,17 @@ export class SparseToDenseProgram implements GPGPUProgram {
         indiceString = 'getIndices(i,j)';
     }
 
-    const valueString = this.valueRank === 0 ? 'getValues()' : 'getValues(i)';
+    const valueString = valueRank === 0 ? 'getValues()' : 'getValues(i)';
     const dtype = getCoordsDataType(shape.length);
-    const strideString = this.indiceRank > 1 ? 'strides[j]' : 'strides';
+    const strideString = indiceRank > 1 ? 'strides[j]' : 'strides';
     this.userCode = `
-        ${stridesType} strides = ${stridesType}(${this.strides});
+        ${stridesType} strides = ${stridesType}(${strides});
          void main() {
           ${dtype} coords = getOutputCoords();
           setOutput(float(${defaultValue}));
-          for (int i = 0; i < ${this.indiceSize}; i++) {
+          for (int i = 0; i < ${indiceSize}; i++) {
             int flattenIndex = 0;
-            for (int j = 0; j < ${this.indiceDim}; j++) {
+            for (int j = 0; j < ${indiceDim}; j++) {
               int index = round(${indiceString});
               flattenIndex += index * ${strideString};
             }
