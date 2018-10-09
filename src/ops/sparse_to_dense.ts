@@ -1,0 +1,72 @@
+/**
+ * @license
+ * Copyright 2018 Google Inc. All Rights Reserved.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * =============================================================================
+ */
+
+import {ENV} from '../environment';
+import {Tensor} from '../tensor';
+import {convertToTensor} from '../tensor_util_env';
+import {TensorLike} from '../types';
+
+import {op} from './operation';
+
+
+/**
+ * Converts a sparse representation into a dense tensor.
+ *
+ * Builds an array dense with shape outputShape such that
+ *
+ * # If sparseIndices is scalar
+ * dense[i] = (i == sparseIndices ? sparseValues : defaultValue)
+ *
+ * # If sparseIndices is a vector, then for each i
+ * dense[sparseIndices[i]] = sparseValues[i]
+ *
+ * # If sparseIndices is an n by d matrix, then for each i in [0, n)
+ * dense[sparseIndices[i][0], ..., sparseIndices[i][d-1]] = sparseValues[i]
+ * All other values in dense are set to defaultValue. If sparseValues is a
+ * scalar, all sparse indices are set to this single value.
+ *
+ * ```js
+ * const indices = tf.tensor1d([4, 5, 6, 1, 2, 3], 'int32');
+ *
+ * a.softmax().print();  // or tf.softmax(a)
+ * ```*
+ * @param sparseIndices: A 0-D, 1-D, or 2-D Tensor of type int32.
+ * sparseIndices[i] contains the complete index where sparseValues[i] will be
+ * placed.
+ * @param sparseValues: A 0-D or 1-D Tensor. Values
+ * corresponding to each row of sparseIndices, or a scalar value to be used for
+ * all sparse indices.
+ * @param outputShape: number[]. Shape of the dense output tensor.
+ * @param defaultValue: A 0-D Tensor of the same type as sparseValues. Value to
+ * set for indices not specified in sparseIndices. Defaults to zero.
+ */
+/** @doc {heading: 'Operations', subheading: 'Normalization'} */
+function sparseToDense_(
+    sparseIndices: Tensor|TensorLike, sparseValues: Tensor|TensorLike,
+    outputShape: number[], defaultValue = 0): Tensor {
+  const $sparseIndices =
+      convertToTensor(sparseIndices, 'sparseIndices', 'sparseToDense', 'int32');
+  const $sparseValues =
+      convertToTensor(sparseValues, 'sparseValues', 'sparseToDense');
+
+  return ENV.engine.runKernel(
+      backend => backend.sparseToDense(
+          $sparseIndices, $sparseValues, outputShape, defaultValue),
+      {$sparseIndices, $sparseValues});
+}
+
+export const sparseToDense = op({sparseToDense_});

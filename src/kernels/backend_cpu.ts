@@ -16,6 +16,7 @@
  */
 
 import * as seedrandom from 'seedrandom';
+
 import {ENV} from '../environment';
 import {warn} from '../log';
 import * as array_ops_util from '../ops/array_ops_util';
@@ -28,10 +29,12 @@ import * as ops from '../ops/ops';
 import {buffer, tensor, tensor3d, tensor4d} from '../ops/ops';
 import * as selu_util from '../ops/selu_util';
 import {getStridedSlicedInfo} from '../ops/slice_util';
-import {DataId, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
+import * as sparse_to_dense_util from '../ops/sparse_to_dense_util';
+import {DataId, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
 import {DataType, DataTypeMap, Rank, ShapeMap, TypedArray, upcastType} from '../types';
 import * as util from '../util';
 import {now} from '../util';
+
 import {BackendTimingInfo, DataMover, DataStorage, KernelBackend} from './backend';
 import * as backend_util from './backend_util';
 import * as complex_util from './complex_util';
@@ -2843,6 +2846,37 @@ export class MathBackendCPU implements KernelBackend {
       }
     }
     return output.toTensor();
+  }
+  sparseToDense(
+      sparseIndices: Tensor, sparseValues: Tensor, outputShape: number[],
+      defaultValue: number): Tensor {
+    const [numElems, numDims, strides] =
+        sparse_to_dense_util.prepareAndValidate(
+            sparseIndices, sparseValues, outputShape);
+
+    const outputSize = util.sizeFromShape(outputShape);
+    const buffer = new TensorBuffer([outputSize], sparseValues.dtype);
+    const indicesData = sparseIndices.dataSync();
+    const valueData = sparseValues.dataSync();
+    for (let i = 0; i < outputSize; i++) {
+      buffer.values[i] = defaultValue;
+    }
+
+    for (let i = 0; i < numElems; i++) {
+      const index = [];
+      let flattenIndex = 0;
+      for (let j = 0; j < numDims; j++) {
+        flattenIndex += indicesData[i * numDims + j] * strides[j];
+        index.push(indicesData[i * numDims + j]);
+      }
+      if (flattenIndex < 0 || flattenIndex >= outputSize) {
+        throw new Error(
+            `Invalid indices: ${index} does not index into ${outputShape}`);
+      }
+      buffer.values[flattenIndex] =
+          valueData.length === 1 ? valueData[0] : valueData[i];
+    }
+    return buffer.toTensor().reshape(outputShape);
   }
 }
 

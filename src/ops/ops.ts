@@ -41,6 +41,7 @@ export * from './moving_average';
 export * from './strided_slice';
 export * from './topk';
 export * from './spectral_ops';
+export * from './sparse_to_dense';
 
 export {op} from './operation';
 

@@ -1605,6 +1605,12 @@ export class MathBackendWebGL implements KernelBackend {
     return complex;
   }
 
+  sparseToDense(
+      sparseIndices: Tensor<Rank>, sparseValues: Tensor<Rank>,
+      outputShape: number[], defaultValue: number): Tensor<Rank> {
+    throw new Error('Method not implemented.');
+  }
+
   private makeOutputArray<T extends Tensor>(shape: number[], dtype: DataType):
       T {
     return Tensor.make(shape, {}, dtype) as T;
