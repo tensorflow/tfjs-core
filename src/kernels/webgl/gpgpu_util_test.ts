@@ -154,8 +154,8 @@ describeWithFlags(
 
         Each group of four is one texel. x's represent empty channels. To obtain
         the flattened representation in the call to gl.texSubImage2D below, one
-        moves through the texels from left to right, up to down, reading off the
-        4 channels for each texel.
+        moves through the texels from left to right, top to bottom, reading off
+        the 4 channels for each texel (x's become 0's).
          */
 
         gpgpu.gl.bindTexture(gpgpu.gl.TEXTURE_2D, tex);

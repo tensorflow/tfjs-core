@@ -80,13 +80,33 @@ describeWithFlags('getTextureShapeFromLogicalShape', WEBGL_ENVS, () => {
     const texShape = webgl_util.getTextureShapeFromLogicalShape([1, 3, 1, 8]);
     expect(texShape).toEqual([3, 8]);
   });
+});
 
-  it('packed textures less than 2x max size of platform do not get squeezed',
-     () => {
-       const max = tf.ENV.get('WEBGL_MAX_TEXTURE_SIZE');
-       const logicalShape = [2, util.nearestEven(max + 1)];
-       const texShape = webgl_util.getTextureShapeFromLogicalShape(
-           logicalShape, TextureUsage.PACK);
-       expect(texShape).toEqual(logicalShape);
-     });
+describeWithFlags('getTextureShapeFromLogicalShape packed', WEBGL_ENVS, () => {
+  it('textures less than 2x max size of platform preserve their shapes', () => {
+    const logicalShape =
+        [2, util.nearestEven(tf.ENV.get('WEBGL_MAX_TEXTURE_SIZE') + 1)];
+    const texShape = webgl_util.getTextureShapeFromLogicalShape(
+        logicalShape, TextureUsage.PACK);
+    expect(texShape).toEqual(logicalShape);
+  });
+
+  it('rows/columns do not get squeezed', () => {
+    const logicalShape = [1, 1, 1];
+    const texShape = webgl_util.getTextureShapeFromLogicalShape(
+        logicalShape, TextureUsage.PACK);
+    expect(texShape).toEqual([2, 2])
+  });
+
+  it('squarified texture shapes account for packing constraints', () => {
+    const max = tf.ENV.get('WEBGL_MAX_TEXTURE_SIZE');
+
+    tf.ENV.set('WEBGL_MAX_TEXTURE_SIZE', 5);
+    const logicalShape = [1, 12];
+    const texShape = webgl_util.getTextureShapeFromLogicalShape(
+        logicalShape, TextureUsage.PACK);
+
+    tf.ENV.set('WEBGL_MAX_TEXTURE_SIZE', max);
+    expect(texShape).toEqual([4, 6]);
+  });
 });
