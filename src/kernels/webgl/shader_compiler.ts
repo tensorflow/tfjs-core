@@ -471,14 +471,21 @@ function getOutputPacked2DCoords(
   // texels needed to accommodate a logical row
   const texelsInLogicalRow = Math.ceil(shape[1] / 2);
 
-  // resTexRC are the rows and columns of the texels. so if you move over one texel to the right in the packed texture, you are moving over one column, not two columns
-  // index refers to the texel index
+  /**
+   * getOutputCoords
+   *
+   * resTexRC: The rows and columns of the texels. If you move over one
+   * texel to the right in the packed texture, you are moving over one column
+   * (not two).
+   *
+   * index: The texel index
+   */
   return `
     ivec2 getOutputCoords() {
       ivec2 resTexRC = ivec2(resultUV.yx *
                              vec2(${packedTexShape[0]}, ${packedTexShape[1]}));
 
-      int index = resTexRC.x * ${packedTexShape[1]} + resTexRC.y; // texel index
+      int index = resTexRC.x * ${packedTexShape[1]} + resTexRC.y;
       int r = 2 * (index / ${texelsInLogicalRow});
       int c = int(mod(float(index), ${texelsInLogicalRow}.)) * 2;
 
@@ -561,7 +568,7 @@ function getPackedSampler2D(inputInfo: InputInfo): string {
   // for now, packed texture logical shape always equals physical shape
   const texNumR = texShape[0];
   const texNumC = texShape[1];
-  if(texShape != null && util.arraysEqual(shape, texShape)) {
+  if (texShape != null && util.arraysEqual(shape, texShape)) {
     return `
       vec4 ${funcName}(int row, int col) {
         vec2 uv = (vec2(col, row)) / vec2(${texNumC}.0, ${texNumR}.0);

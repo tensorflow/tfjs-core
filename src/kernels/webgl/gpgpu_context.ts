@@ -253,7 +253,8 @@ export class GPGPUContext {
   }
 
   public downloadMatrixFromPackedTexture(
-      texture: WebGLTexture, shape: number[], rows: number, columns: number): Float32Array {
+      texture: WebGLTexture, shape: number[], rows: number,
+      columns: number): Float32Array {
     return this.downloadMatrixDriver(
         texture,
         () => gpgpu_util.downloadMatrixFromPackedOutputTexture(

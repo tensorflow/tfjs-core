@@ -375,8 +375,12 @@ export function getTextureShapeFromLogicalShape(
   if (usage === TextureUsage.PACK) {
     maxTexSize = maxTexSize * 2;
 
-    // this ensures we accurately count the number of packed texels needed to accommodate the tensor (we can only pack values in the same texel if they are from the same two rows / columns)
-    logShape = logShape.map((d, i) => i >= logShape.length - 2 ? util.nearestEven(logShape[i]) : logShape[i])
+    // this ensures we accurately count the number of packed texels needed to
+    // accommodate the tensor (we can only pack values in the same texel if they
+    // are from the same two rows / columns)
+    logShape = logShape.map(
+        (d, i) => i >= logShape.length - 2 ? util.nearestEven(logShape[i]) :
+                                             logShape[i]);
   }
 
   // If logical shape is 2, we don't squeeze, since we want to match physical.
