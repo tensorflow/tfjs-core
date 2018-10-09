@@ -95,7 +95,7 @@ describeWithFlags('getTextureShapeFromLogicalShape packed', WEBGL_ENVS, () => {
     const logicalShape = [1, 1, 1];
     const texShape = webgl_util.getTextureShapeFromLogicalShape(
         logicalShape, TextureUsage.PACK);
-    expect(texShape).toEqual([2, 2])
+    expect(texShape).toEqual([2, 2]);
   });
 
   it('squarified texture shapes account for packing constraints', () => {

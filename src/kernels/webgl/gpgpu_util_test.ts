@@ -139,14 +139,14 @@ describeWithFlags(
         const tex =
             gpgpu_util.createPackedMatrixTexture(gpgpu.gl, 4, 6, textureConfig);
 
-        const mat = tf.tensor2d([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], [1, 12])
+        const mat =
+            tf.tensor2d([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], [1, 12]);
         /*
         This is how the tensor is arranged in a 2x3 packed texture
 
         0|1   2|3   4|5
         –––   –––   –––
         x|x   x|x   x|x
-
 
         6|7   8|9  10|11
         –––   –––   –––
@@ -164,7 +164,7 @@ describeWithFlags(
             new Float32Array([
               0, 1, 0, 0, 2, 3, 0, 0, 4,  5,  0, 0,
               6, 7, 0, 0, 8, 9, 0, 0, 10, 11, 0, 0
-            ]))
+            ]));
 
         const result =
             gpgpu.downloadMatrixFromPackedTexture(tex, mat.shape, 4, 6);

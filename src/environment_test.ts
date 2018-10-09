@@ -307,8 +307,9 @@ describe('environment_util.getQueryParams', () => {
 });
 
 describeWithFlags('max texture size', WEBGL_ENVS, () => {
-  it('should not throw exception',
-     () => {expect(() => ENV.get('WEBGL_MAX_TEXTURE_SIZE')).not.toThrow()});
+  it('should not throw exception', () => {
+    expect(() => ENV.get('WEBGL_MAX_TEXTURE_SIZE')).not.toThrow();
+  });
 });
 
 describeWithFlags('epsilon', {}, () => {
