@@ -55,11 +55,14 @@ import {op} from './operation';
  * @param outputShape: number[]. Shape of the dense output tensor.
  * @param defaultValue: A 0-D Tensor of the same type as sparseValues. Value to
  * set for indices not specified in sparseIndices. Defaults to zero.
+ * @param validateIndices: If true, indices are checked to make sure they are
+ * sorted in lexicographic order and that there are no repeats. Currently this
+ * is not supported.
  */
 /** @doc {heading: 'Operations', subheading: 'Normalization'} */
 function sparseToDense_(
     sparseIndices: Tensor|TensorLike, sparseValues: Tensor|TensorLike,
-    outputShape: number[], defaultValue = 0): Tensor {
+    outputShape: number[], defaultValue = 0, validateIndices = false): Tensor {
   const $sparseIndices =
       convertToTensor(sparseIndices, 'sparseIndices', 'sparseToDense', 'int32');
   const $sparseValues =
@@ -67,7 +70,8 @@ function sparseToDense_(
 
   return ENV.engine.runKernel(
       backend => backend.sparseToDense(
-          $sparseIndices, $sparseValues, outputShape, defaultValue),
+          $sparseIndices, $sparseValues, outputShape, defaultValue,
+          validateIndices),
       {$sparseIndices, $sparseValues});
 }
 

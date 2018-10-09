@@ -78,6 +78,13 @@ describeWithFlags('sparseToDense', ALL_ENVS, () => {
     expectArraysClose(result, [0, 5, 0, 6]);
   });
 
+  it('should throw error if validateIndices is set', () => {
+    const indices = scalar(2, 'float32');
+    const values = scalar(100, 'int32');
+    const shape = [6];
+    expect(() => sparseToDense(indices, values, shape, 0, true)).toThrow();
+  });
+
   it('should throw error when indices are not int32', () => {
     const indices = scalar(2, 'float32');
     const values = scalar(100, 'int32');

@@ -1609,10 +1609,10 @@ export class MathBackendWebGL implements KernelBackend {
 
   sparseToDense(
       sparseIndices: Tensor, sparseValues: Tensor, outputShape: number[],
-      defaultValue: number): Tensor {
+      defaultValue: number, validateIndices: boolean): Tensor {
     const [numElems, numDims, strides] =
         sparse_to_dense_util.prepareAndValidate(
-            sparseIndices, sparseValues, outputShape);
+            sparseIndices, sparseValues, outputShape, validateIndices);
 
     const outputSize = util.sizeFromShape(outputShape);
     const program = new SparseToDenseProgram(

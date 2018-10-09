@@ -30,8 +30,12 @@ import {computeStrides} from '../util';
  * @returns [numElements, numDims, strides]
  */
 export function prepareAndValidate(
-    sparseIndices: Tensor, sparseValues: Tensor,
-    outputShape: number[]): [number, number, number[]] {
+    sparseIndices: Tensor, sparseValues: Tensor, outputShape: number[],
+    validateIndices: boolean): [number, number, number[]] {
+  if (validateIndices) {
+    throw new Error(
+        'tf.sparseToDense() currently does not support indices validation.');
+  }
   if (sparseIndices.dtype !== 'int32') {
     throw new Error(
         'tf.sparseToDense() expects the indices to be int32 type,' +
