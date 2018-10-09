@@ -22,6 +22,10 @@ import {expectArraysClose, WEBGL_ENVS} from '../../test_util';
 import {GPGPUContext} from './gpgpu_context';
 import * as gpgpu_util from './gpgpu_util';
 
+const DOWNLOAD_FLOAT_ENVS = {
+  'WEBGL_DOWNLOAD_FLOAT_ENABLED': true
+};
+
 describeWithFlags('gpgpu_util createWebGLContext', WEBGL_ENVS, () => {
   let gpgpu: GPGPUContext;
 
@@ -131,7 +135,8 @@ describeWithFlags('gpgpu_util createPackedMatrixTexture', WEBGL_ENVS, () => {
 });
 
 describeWithFlags(
-    'gpgpu_util downloadMatrixFromPackedOutputTexture', WEBGL_ENVS, () => {
+    'gpgpu_util downloadMatrixFromPackedOutputTexture', DOWNLOAD_FLOAT_ENVS,
+    () => {
       it('should work when texture shape != logical shape', () => {
         const gpgpu = new GPGPUContext();
         const textureConfig = gpgpu_util.getTextureConfig(gpgpu.gl);
@@ -152,10 +157,10 @@ describeWithFlags(
         –––   –––   –––
         x|x   x|x   x|x
 
-        Each group of four is one texel. x's represent empty channels. To obtain
-        the flattened representation in the call to gl.texSubImage2D below, one
-        moves through the texels from left to right, top to bottom, reading off
-        the 4 channels for each texel (x's become 0's).
+        Each group of four is one texel. x's represent empty channels. To
+        obtain the flattened representation in the call to gl.texSubImage2D
+        below, one moves through the texels from left to right, top to bottom,
+        reading off the 4 channels for each texel (x's become 0's).
          */
 
         gpgpu.gl.bindTexture(gpgpu.gl.TEXTURE_2D, tex);
