@@ -2870,7 +2870,7 @@ export class MathBackendCPU implements KernelBackend {
         flattenIndex += dim * strides[j];
         index.push(dim);
       }
-      if (flattenIndex < 0 || flattenIndex > x.size / sliceSize) {
+      if (flattenIndex < 0 || flattenIndex >= x.size / sliceSize) {
         throw new Error(
             `Invalid indices: ${index} does not index into ${x.shape}`);
       }
