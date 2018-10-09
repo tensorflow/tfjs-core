@@ -565,7 +565,6 @@ function getPackedSampler2D(inputInfo: InputInfo): string {
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
   const texShape = inputInfo.shapeInfo.texShape;
 
-  // for now, packed texture logical shape always equals physical shape
   const texNumR = texShape[0];
   const texNumC = texShape[1];
   if (texShape != null && util.arraysEqual(shape, texShape)) {
