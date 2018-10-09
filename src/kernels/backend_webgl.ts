@@ -581,37 +581,36 @@ export class MathBackendWebGL implements KernelBackend {
     // TODO(https://github.com/tensorflow/tfjs/issues/693): Support 3D tensors
     if (ENV.get('WEBGL_RENDER_FLOAT32_ENABLED') && a.shape[0] === 1 &&
         b.shape[0] === 1) {
-    const aSqueezed = a.as2D(a.shape[1], a.shape[2]);
-    const bSqueezed = b.as2D(b.shape[1], b.shape[2]);
-    const packProgramA = new PackProgram(aSqueezed.shape);
-    const packedA = this.compileAndRun<Tensor2D>(
-        packProgramA, [aSqueezed],
-        this.makePackedTensor<Tensor2D>(aSqueezed.shape));
+      const aSqueezed = a.as2D(a.shape[1], a.shape[2]);
+      const bSqueezed = b.as2D(b.shape[1], b.shape[2]);
+      const packProgramA = new PackProgram(aSqueezed.shape);
+      const packedA = this.compileAndRun<Tensor2D>(
+          packProgramA, [aSqueezed],
+          this.makePackedTensor<Tensor2D>(aSqueezed.shape));
 
-    const packProgramB = new PackProgram(bSqueezed.shape);
-    const packedB = this.compileAndRun<Tensor2D>(
-        packProgramB, [bSqueezed],
-        this.makePackedTensor<Tensor2D>(bSqueezed.shape));
+      const packProgramB = new PackProgram(bSqueezed.shape);
+      const packedB = this.compileAndRun<Tensor2D>(
+          packProgramB, [bSqueezed],
+          this.makePackedTensor<Tensor2D>(bSqueezed.shape));
 
-    const program = new MatMulPackedProgram(
-        packedA.shape, packedB.shape, [outerShapeA, outerShapeB], transposeA,
-        transposeB);
-    const result = this.compileAndRun(
-        program, [packedA, packedB],
-        this.makePackedTensor<Tensor2D>(program.outputShape));
+      const program = new MatMulPackedProgram(
+          packedA.shape, packedB.shape, [outerShapeA, outerShapeB], transposeA,
+          transposeB);
+      const result = this.compileAndRun(
+          program, [packedA, packedB],
+          this.makePackedTensor<Tensor2D>(program.outputShape));
 
-    const unpackProgram = new UnpackProgram(result.shape);
-    const unpacked = this.compileAndRun(unpackProgram, [result]) as Tensor;
+      const unpackProgram = new UnpackProgram(result.shape);
+      const unpacked = this.compileAndRun(unpackProgram, [result]) as Tensor;
 
-    packedA.dispose();
-    packedB.dispose();
-    result.dispose();
+      packedA.dispose();
+      packedB.dispose();
+      result.dispose();
 
-    return unpacked.reshape([1, result.shape[0], result.shape[1]]);
+      return unpacked.reshape([1, result.shape[0], result.shape[1]]);
     } else {
       return this.compileAndRun(
-          new MatMulProgram(a.shape, b.shape, transposeA, transposeB), [a,
-          b]);
+          new MatMulProgram(a.shape, b.shape, transposeA, transposeB), [a, b]);
     }
   }
 
@@ -1721,8 +1720,7 @@ export class MathBackendWebGL implements KernelBackend {
     if (shouldTimeProgram) {
       start = performance.now();
     }
-    const texShape =
-        webgl_util.getTextureShapeFromLogicalShape(this.gpgpu.gl, shape, usage);
+    const texShape = webgl_util.getTextureShapeFromLogicalShape(shape, usage);
     texData.texShape = texShape;
     const newTexture = this.acquireTexture(dataId, texShape, usage);
     texData.texture = newTexture;

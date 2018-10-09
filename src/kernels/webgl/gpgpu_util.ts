@@ -149,7 +149,7 @@ function createAndConfigureTexture(
     gl: WebGLRenderingContext, width: number, height: number,
     internalFormat: number, textureFormat: number,
     textureType: number): WebGLTexture {
-  webgl_util.validateTextureSize(gl, width, height);
+  webgl_util.validateTextureSize(width, height);
   const texture = webgl_util.createTexture(gl);
 
   const tex2d = gl.TEXTURE_2D;
@@ -239,7 +239,7 @@ export function uploadPixelDataToTexture(
 function uploadDataToTexture(
     gl: WebGLRenderingContext, texture: WebGLTexture, width: number,
     height: number, data: Float32Array, textureFormat: number) {
-  webgl_util.validateTextureSize(gl, width, height);
+  webgl_util.validateTextureSize(width, height);
   webgl_util.callAndCheck(gl, () => gl.bindTexture(gl.TEXTURE_2D, texture));
   webgl_util.callAndCheck(
       gl,

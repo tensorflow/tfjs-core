@@ -15,10 +15,8 @@
  * =============================================================================
  */
 
-let MAX_TEXTURE_SIZE: number = null;
-
-import * as util from '../../util';
 import {ENV} from '../../environment';
+import * as util from '../../util';
 import {TextureUsage} from '../webgl/tex_util';
 
 export function createWebGLRenderingContext(attributes: WebGLContextAttributes):
@@ -203,15 +201,6 @@ export function createStaticIndexBuffer(
   return buffer;
 }
 
-export function queryMaxTextureSize(gl: WebGLRenderingContext): number {
-  if (MAX_TEXTURE_SIZE != null) {
-    return MAX_TEXTURE_SIZE;
-  }
-  MAX_TEXTURE_SIZE =
-      callAndCheck(gl, () => gl.getParameter(gl.MAX_TEXTURE_SIZE));
-  return MAX_TEXTURE_SIZE;
-}
-
 export function getNumChannels(): number {
   if (ENV.get('WEBGL_VERSION') === 2) {
     return 1;
@@ -224,9 +213,8 @@ export function createTexture(gl: WebGLRenderingContext): WebGLTexture {
       gl, () => gl.createTexture(), 'Unable to create WebGLTexture.');
 }
 
-export function validateTextureSize(
-    gl: WebGLRenderingContext, width: number, height: number) {
-  const maxTextureSize: number = queryMaxTextureSize(gl);
+export function validateTextureSize(width: number, height: number) {
+  const maxTextureSize: number = ENV.get('WEBGL_MAX_TEXTURE_SIZE');
   if ((width <= 0) || (height <= 0)) {
     const requested = `[${width}x${height}]`;
     throw new Error('Requested texture size ' + requested + ' is invalid.');
@@ -369,9 +357,9 @@ function validateTextureUnit(gl: WebGLRenderingContext, textureUnit: number) {
 }
 
 export function getTextureShapeFromLogicalShape(
-    gl: WebGLRenderingContext, logShape: number[],
+    logShape: number[],
     usage: TextureUsage = TextureUsage.UPLOAD): [number, number] {
-  let maxTexSize = queryMaxTextureSize(gl);
+  let maxTexSize = ENV.get('WEBGL_MAX_TEXTURE_SIZE');
   if (usage === TextureUsage.PACK) {
     maxTexSize = maxTexSize * 2;
 
