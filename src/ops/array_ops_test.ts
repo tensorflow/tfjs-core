@@ -1477,9 +1477,8 @@ describeWithFlags('toPixels no canvas', ALL_ENVS, () => {
   });
 
   it('draws a rank-3 float32 tensor, 4 channel', done => {
-    const x =
-      tf.tensor3d([.05, .1001, .15, .2, .25, .3001, .35, .4], [2, 1, 4],
-        'float32');
+    const x = tf.tensor3d(
+        [.05, .1001, .15, .2, .25, .3001, .35, .4], [2, 1, 4], 'float32');
 
     tf.toPixels(x).then(data => {
       const expected = new Uint8ClampedArray([
@@ -3676,4 +3675,43 @@ describeWithFlags('depthToSpace', WEBGL_ENVS, () => {
       5, 13, 6, 14, 21, 29, 22, 30, 7, 15, 8, 16, 23, 31, 24, 32
     ]);
   });
+});
+
+describeWithFlags('setDiff1DAsync', ALL_ENVS, () => {
+  it('1d int32 tensor', async () => {
+    const x = tf.tensor1d([1, 2, 3, 4], 'int32');
+    const y = tf.tensor1d([1, 2], 'int32');
+    const res = await tf.setDiff1DAsync(x, y);
+    expect(res[0].dtype).toBe('int32');
+    expect(res[1].dtype).toBe('int32');
+    expect(res[0].shape).toEqual([2]);
+    expect(res[1].shape).toEqual([2]);
+    expectArraysClose(res[0], [3, 4]);
+    expectArraysClose(res[1], [2, 3]);
+  });
+
+  it('1d float32 tensor', async () => {
+    const x = tf.tensor1d([1, 2, 3, 4], 'float32');
+    const y = tf.tensor1d([1, 3], 'int32');
+    const res = await tf.setDiff1DAsync(x, y);
+    expect(res[0].dtype).toBe('float32');
+    expect(res[1].dtype).toBe('int32');
+    expect(res[0].shape).toEqual([2]);
+    expect(res[1].shape).toEqual([2]);
+    expectArraysClose(res[0], [2, 4]);
+    expectArraysClose(res[1], [1, 3]);
+  });
+
+  it('empty output', async () => {
+    const x = tf.tensor1d([1, 2, 3, 4], 'float32');
+    const y = tf.tensor1d([1, 2, 3, 4], 'int32');
+    const res = await tf.setDiff1DAsync(x, y);
+    expect(res[0].dtype).toBe('float32');
+    expect(res[1].dtype).toBe('int32');
+    expect(res[0].shape).toEqual([0]);
+    expect(res[1].shape).toEqual([0]);
+    expectArraysClose(res[0], []);
+    expectArraysClose(res[1], []);
+  });
+
 });

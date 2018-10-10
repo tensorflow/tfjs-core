@@ -1090,6 +1090,61 @@ function depthToSpace_(
 }
 
 /**
+ * Computes the difference between two lists of numbers or strings.
+ *
+ * Given a list x and a list y, this operation returns a list out that
+ * represents all values that are in x but not in y. The returned list out is
+ * sorted in the same order that the numbers appear in x (duplicates are
+ * preserved). This operation also returns a list idx that represents the
+ * position of each out element in x. In other words:
+ *
+ * out[i] = x[idx[i]] for i in [0, 1, ..., len(out) - 1]
+ *
+ * ```js
+ * const x = [1, 2, 3, 4, 5, 6];
+ * const y = [1, 3, 5];
+ *
+ * (await tf.setDiff1DAsync(x, y)).print();
+ * // [[2, 4, 6], [1, 3, 5]]
+ * ```
+ *
+ * @param x: A Tensor. 1-D. Values to keep.
+ * @param y: A Tensor. Must have the same type as x. 1-D. Values to remove.
+ * name: A name for the operation (optional).
+ * @returns Promise<Tensor[]>: A tuple of Tensor objects (out, idx).
+ *  out: A Tensor. Has the same type as x.
+ *  idx: A Tensor of type out_idx.
+ */
+/** @doc {heading: 'Tensors', subheading: 'Transformations'} */
+async function setDiff1DAsync_(
+    x: Tensor|TensorLike, y: Tensor|TensorLike): Promise<Tensor[]> {
+  const $x = convertToTensor(x, 'x', 'setDiff1D');
+  const $y = convertToTensor(y, 'y', 'setDiff1D');
+
+  const xVals = await $x.data();
+  const yVals = await $y.data();
+  const ySet = new Set(yVals);
+
+  let outputSize = 0;
+  for (let i = 0; i < xVals.length; i++) {
+    if (!ySet.has(xVals[i])) {
+      outputSize++;
+    }
+  }
+
+  const buffer = new TensorBuffer([outputSize], $x.dtype);
+  const indices = new TensorBuffer([outputSize], 'int32');
+  for (let i = 0, p = 0; i < xVals.length; i++) {
+    if (!ySet.has(xVals[i])) {
+      buffer.values[p] = xVals[i];
+      indices.values[p] = i;
+      p++;
+    }
+  }
+  return [buffer.toTensor(), indices.toTensor()];
+}
+
+/**
  * Creates an empty `TensorBuffer` with the specified `shape` and `dtype`.
  *
  * The values are stored in CPU as `TypedArray`. Fill the buffer using
@@ -1167,3 +1222,4 @@ export const stack = op({stack_});
 export const tile = op({tile_});
 export const truncatedNormal = op({truncatedNormal_});
 export const unstack = op({unstack_});
+export const setDiff1DAsync = op({setDiff1DAsync_});
