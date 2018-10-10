@@ -85,7 +85,7 @@ describeWithFlags('getTextureShapeFromLogicalShape', WEBGL_ENVS, () => {
 describeWithFlags('getTextureShapeFromLogicalShape packed', WEBGL_ENVS, () => {
   it('textures less than 2x max size of platform preserve their shapes', () => {
     const logicalShape =
-        [2, util.nearestEven(tf.ENV.get('WEBGL_MAX_TEXTURE_SIZE') + 1)];
+        [2, util.nearestLargerEven(tf.ENV.get('WEBGL_MAX_TEXTURE_SIZE') + 1)];
     const texShape = webgl_util.getTextureShapeFromLogicalShape(
         logicalShape, TextureUsage.PACK);
     expect(texShape).toEqual(logicalShape);

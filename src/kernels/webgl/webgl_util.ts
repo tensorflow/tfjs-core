@@ -214,7 +214,7 @@ export function createTexture(gl: WebGLRenderingContext): WebGLTexture {
 }
 
 export function validateTextureSize(width: number, height: number) {
-  const maxTextureSize: number = ENV.get('WEBGL_MAX_TEXTURE_SIZE');
+  const maxTextureSize = ENV.get('WEBGL_MAX_TEXTURE_SIZE');
   if ((width <= 0) || (height <= 0)) {
     const requested = `[${width}x${height}]`;
     throw new Error('Requested texture size ' + requested + ' is invalid.');
@@ -369,8 +369,9 @@ export function getTextureShapeFromLogicalShape(
     // tensor has 3 rows, we pretend it has 4 rows in order to account for the
     // fact that the texels containing the third row are half empty.
     logShape = logShape.map(
-        (d, i) => i >= logShape.length - 2 ? util.nearestEven(logShape[i]) :
-                                             logShape[i]);
+        (d, i) => i >= logShape.length - 2 ?
+            util.nearestLargerEven(logShape[i]) :
+            logShape[i]);
   }
 
   // If logical shape is 2, we don't squeeze, since we want to match physical.

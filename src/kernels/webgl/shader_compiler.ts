@@ -176,7 +176,7 @@ vec2 UVfrom2D(int texNumR, int texNumC, int numC, int row, int col) {
   return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
 }
 vec2 packedUVfrom2D(int texelsInLogicalRow, int texNumR,
-  int texNumC, int numC, int row, int col) {
+  int texNumC, int row, int col) {
   int texelIndex = (row / 2) * texelsInLogicalRow + (col / 2);
   int texR = texelIndex / texNumC;
   int texC = texelIndex - texR * texNumC;
@@ -487,7 +487,7 @@ function getOutputPacked2DCoords(
 
       int index = resTexRC.x * ${packedTexShape[1]} + resTexRC.y;
       int r = 2 * (index / ${texelsInLogicalRow});
-      int c = int(mod(float(index), ${texelsInLogicalRow}.)) * 2;
+      int c = imod(index, ${texelsInLogicalRow}) * 2;
 
       return ivec2(r, c);
     }
@@ -584,7 +584,7 @@ function getPackedSampler2D(inputInfo: InputInfo): string {
   return `
     vec4 ${funcName}(int row, int col) {
       vec2 uv = packedUVfrom2D(${valuesPerRow}, ${packedTexShape[0]}, ${
-      packedTexShape[1]}, ${shape[1]}, row, col);
+      packedTexShape[1]}, row, col);
       return texture2D(${texName}, uv);
     }
   `;

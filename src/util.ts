@@ -42,7 +42,7 @@ export function clamp(min: number, x: number, max: number): number {
   return Math.max(min, Math.min(x, max));
 }
 
-export function nearestEven(val: number): number {
+export function nearestLargerEven(val: number): number {
   return val % 2 === 0 ? val : val + 1;
 }
 
