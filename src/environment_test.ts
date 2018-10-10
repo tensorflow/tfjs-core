@@ -306,17 +306,17 @@ describeWithFlags('epsilon', {}, () => {
   });
 });
 
-describeWithFlags('CHECK_SHAPE_CONSISTENCY', ALL_ENVS, () => {
+describeWithFlags('TENSORLIKE_CHECK_SHAPE_CONSISTENCY', ALL_ENVS, () => {
   it('disabled when prod is enabled', () => {
     const env = new Environment();
     env.set('PROD', true);
-    expect(env.get('CHECK_SHAPE_CONSISTENCY')).toBe(false);
+    expect(env.get('TENSORLIKE_CHECK_SHAPE_CONSISTENCY')).toBe(false);
   });
 
   it('enabled when prod is disabled', () => {
     const env = new Environment();
     env.set('PROD', false);
-    expect(env.get('CHECK_SHAPE_CONSISTENCY')).toBe(true);
+    expect(env.get('TENSORLIKE_CHECK_SHAPE_CONSISTENCY')).toBe(true);
   });
 });
 

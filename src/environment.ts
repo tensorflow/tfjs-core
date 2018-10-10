@@ -344,9 +344,11 @@ export class Environment {
       return isWebGLFenceEnabled(
           this.get('WEBGL_VERSION'), this.get('IS_BROWSER'));
     } else if (feature === 'WEBGL_SIZE_UPLOAD_UNIFORM') {
-      const dontUseUniform =
-          this.get('PROD') || !this.get('WEBGL_RENDER_FLOAT32_ENABLED');
-      return dontUseUniform ? 0 : 4;
+      // Use uniform uploads only when 32bit floats are supported. In 16bit
+      // environments there are problems with comparing a 16bit texture value
+      // with a 32bit uniform value.
+      const useUniforms = this.get('WEBGL_RENDER_FLOAT32_ENABLED');
+      return useUniforms ? 4 : 0;
     } else if (feature === 'TEST_EPSILON') {
       return this.backend.floatPrecision() === 32 ? TEST_EPSILON_FLOAT32 :
                                                     TEST_EPSILON_FLOAT16;
@@ -355,7 +357,7 @@ export class Environment {
                                                     EPSILON_FLOAT16;
     } else if (feature === 'PROD') {
       return false;
-    } else if (feature === 'CHECK_SHAPE_CONSISTENCY') {
+    } else if (feature === 'TENSORLIKE_CHECK_SHAPE_CONSISTENCY') {
       return !this.get('PROD');
     }
     throw new Error(`Unknown feature ${feature}.`);

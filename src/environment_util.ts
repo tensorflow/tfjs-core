@@ -65,7 +65,7 @@ export interface Features {
   'PROD'?: boolean;
   // Whether to do sanity checks when inferring a shape from user-provided
   // values, used when creating a new tensor.
-  'CHECK_SHAPE_CONSISTENCY'?: boolean;
+  'TENSORLIKE_CHECK_SHAPE_CONSISTENCY'?: boolean;
 }
 
 export enum Type {
@@ -89,7 +89,7 @@ export const URL_PROPERTIES: URLProperty[] = [
   {name: 'BACKEND', type: Type.STRING},
   {name: 'EPSILON', type: Type.NUMBER},
   {name: 'PROD', type: Type.BOOLEAN},
-  {name: 'CHECK_SHAPE_CONSISTENCY', type: Type.BOOLEAN},
+  {name: 'TENSORLIKE_CHECK_SHAPE_CONSISTENCY', type: Type.BOOLEAN},
 ];
 
 export interface URLProperty {
