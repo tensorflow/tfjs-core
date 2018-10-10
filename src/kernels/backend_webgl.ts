@@ -382,11 +382,8 @@ export class MathBackendWebGL implements KernelBackend {
       this.programTimersStack = null;
     }
 
-    const kernelMs = await Promise.all(flattenedActiveTimers).then(results => {
-      let sum = 0;
-      results.forEach(result => sum += result);
-      return sum;
-    });
+    const kernelMs = await Promise.all(flattenedActiveTimers)
+      .then(results => results.reduce((pre,cur) => pre += cur, 0));
     const res: WebGLTimingInfo = {
       uploadWaitMs: this.uploadWaitMs,
       downloadWaitMs: this.downloadWaitMs,
