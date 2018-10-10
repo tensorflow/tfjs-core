@@ -126,6 +126,9 @@ function getPackedOutputSamplingSnippet(
       return getOutputScalarCoords();
     case 2:
       return getOutputPacked2DCoords(outShape as [number, number], outTexShape);
+    case 4:
+      return getOutputPacked4DCoords(
+          outShape as [number, number, number, number], outTexShape);
     default:
       throw new Error(
           `${outShape.length}-D output packed sampling is not yet supported`);
@@ -357,6 +360,36 @@ function getOutput3DCoords(
       int c = index / ${stride1};
       int d = index - c * ${stride1};
       return ivec3(r, c, d);
+    }
+  `;
+}
+
+function getOutputPacked4DCoords(
+    shape: [number, number, number, number],
+    texShape: [number, number]): string {
+  const packedTexShape =
+      [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
+
+  const texelsInLogicalRow = Math.ceil(shape[3] / 2);
+  const texelsInBatch = texelsInLogicalRow * shape[2];
+  const texelsInBatch2 = texelsInBatch * shape[1];
+
+  return `
+    ivec4 getOutputCoords() {
+      ivec2 resTexRC = ivec2(resultUV.yx *
+                             vec2(${packedTexShape[0]}, ${packedTexShape[1]}));
+      int index = resTexRC.x * ${packedTexShape[1]} + resTexRC.y;
+
+      int b2 = index / ${texelsInBatch2};
+      index -= b2 * ${texelsInBatch2};
+
+      int b = index / ${texelsInBatch};
+      index -= b * ${texelsInBatch};
+
+      int r = 2 * (index / ${texelsInLogicalRow});
+      int c = int(mod(float(index), ${texelsInLogicalRow}.)) * 2;
+
+      return ivec4(b2, b, r, c);
     }
   `;
 }
