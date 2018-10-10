@@ -32,7 +32,7 @@ import {DataId, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D
 import {DataType, DataTypeMap, Rank, ShapeMap, TypedArray, upcastType} from '../types';
 import * as util from '../util';
 import {now} from '../util';
-import {BackendTimingInfo, KernelBackend} from './backend';
+import {BackendTimingInfo, DataMover, DataStorage, KernelBackend} from './backend';
 import * as backend_util from './backend_util';
 import * as complex_util from './complex_util';
 import {nonMaxSuppressionImpl} from './non_max_suppression_impl';
@@ -52,7 +52,7 @@ interface TensorData<T extends DataType> {
 export class MathBackendCPU implements KernelBackend {
   public blockSize = 48;
 
-  private data = new WeakMap<DataId, TensorData<DataType>>();
+  private data: DataStorage<TensorData<DataType>>;
   private canvas: HTMLCanvasElement;
   private firstUse = true;
 
@@ -60,6 +60,10 @@ export class MathBackendCPU implements KernelBackend {
     if (ENV.get('IS_BROWSER')) {
       this.canvas = document.createElement('canvas');
     }
+  }
+
+  setDataMover(dataMover: DataMover): void {
+    this.data = new DataStorage(dataMover);
   }
 
   register(dataId: DataId, shape: number[], dtype: DataType): void {
@@ -88,7 +92,6 @@ export class MathBackendCPU implements KernelBackend {
     if (values == null) {
       throw new Error('MathBackendCPU.write(): values can not be null');
     }
-    this.throwIfNoData(dataId);
     this.data.get(dataId).values = values;
   }
   fromPixels(
@@ -154,7 +157,6 @@ export class MathBackendCPU implements KernelBackend {
     return this.readSync(dataId);
   }
   readSync(dataId: DataId): TypedArray {
-    this.throwIfNoData(dataId);
     const {dtype, complexTensors} = this.data.get(dataId);
     if (dtype === 'complex64') {
       const realValues = complexTensors.real.dataSync() as Float32Array;
@@ -181,20 +183,12 @@ export class MathBackendCPU implements KernelBackend {
     const kernelMs = now() - start;
     return {kernelMs};
   }
+
   memory() {
     return {
       // Unreliable due to automatic gc. The numbers above are cumulative.
       unreliable: true
     };
-  }
-
-  private throwIfNoData(dataId: DataId) {
-    if (!this.data.has(dataId)) {
-      throw new Error(
-          `CPU backend: No data found for this tensor. ` +
-          `Did you change your backend in the middle of the program? ` +
-          `New backends can't use Tensors created with previous backends`);
-    }
   }
 
   complex<T extends Tensor>(real: T, imag: T): T {
@@ -491,6 +485,28 @@ export class MathBackendCPU implements KernelBackend {
         sum += aVals[offset + j];
       }
       vals[i] = sum;
+    }
+    return result;
+  }
+
+  prod(x: Tensor, axes: number[]): Tensor {
+    this.assertNotComplex(x, 'sum');
+
+    const [outShape, reduceShape] =
+        axis_util.computeOutAndReduceShapes(x.shape, axes);
+    const resultDtype = upcastType(x.dtype, 'int32');
+    const result = ops.zeros(outShape, resultDtype);
+    const reduceSize = util.sizeFromShape(reduceShape);
+    const vals = result.dataSync();
+
+    const aVals = x.dataSync();
+    for (let i = 0; i < vals.length; ++i) {
+      const offset = i * reduceSize;
+      let prod = 1;
+      for (let j = 0; j < reduceSize; ++j) {
+        prod *= aVals[offset + j];
+      }
+      vals[i] = prod;
     }
     return result;
   }
@@ -2047,8 +2063,9 @@ export class MathBackendCPU implements KernelBackend {
     this.assertNotComplex(x, 'resizeBilinear');
 
     const [batch, oldHeight, oldWidth, numChannels] = x.shape;
-    const output =
-        ops.buffer<Rank.R4>([batch, newHeight, newWidth, numChannels], x.dtype);
+    const xValues = x.dataSync();
+    const result = new Float32Array(
+        util.sizeFromShape([batch, newHeight, newWidth, numChannels]));
 
     const effectiveInputSize: [number, number] = [
       (alignCorners && newHeight > 1) ? oldHeight - 1 : oldHeight,
@@ -2059,44 +2076,48 @@ export class MathBackendCPU implements KernelBackend {
       (alignCorners && newHeight > 1) ? newHeight - 1 : newHeight,
       (alignCorners && newWidth > 1) ? newWidth - 1 : newWidth
     ];
-
+    let outputIdx = 0;
+    const effectiveRowSizeRatio =
+        effectiveInputSize[0] / effectiveOutputSize[0];
+    const effectiveColSizeRatio =
+        effectiveInputSize[1] / effectiveOutputSize[1];
     for (let b = 0; b < batch; b++) {
       for (let r = 0; r < newHeight; r++) {
+        const sourceFracRow = effectiveRowSizeRatio * r;
+        const sourceRowFloor = Math.floor(sourceFracRow);
+        const rowFrac = sourceFracRow - sourceRowFloor;
+        const sourceRowCeil = Math.min(oldHeight - 1, Math.ceil(sourceFracRow));
+        const topRowOffset = b * x.strides[0] + sourceRowFloor * x.strides[1];
+        const botRowOffset = b * x.strides[0] + sourceRowCeil * x.strides[1];
         for (let c = 0; c < newWidth; c++) {
+          const sourceFracCol = effectiveColSizeRatio * c;
+          const sourceColFloor = Math.floor(sourceFracCol);
+          const colFrac = sourceFracCol - sourceColFloor;
+          const sourceColCeil =
+              Math.min(oldWidth - 1, Math.ceil(sourceFracCol));
+          const topLeftOffest = topRowOffset + sourceColFloor * x.strides[2];
+          const botLeftOffset = botRowOffset + sourceColFloor * x.strides[2];
+          const topRightOffset = topRowOffset + +sourceColCeil * x.strides[2];
+          const botRightOffest = botRowOffset + sourceColCeil * x.strides[2];
           for (let d = 0; d < numChannels; d++) {
             // Begin shader.
 
             // Compute the fractional index of the source.
-            const sourceFracRow =
-                (effectiveInputSize[0]) * r / (effectiveOutputSize[0]);
-            const sourceFracCol =
-                (effectiveInputSize[1]) * c / (effectiveOutputSize[1]);
-
-            const sourceRowFloor = Math.floor(sourceFracRow);
-            const sourceRowCeil =
-                Math.min(oldHeight - 1, Math.ceil(sourceFracRow));
-            const sourceColFloor = Math.floor(sourceFracCol);
-            const sourceColCeil =
-                Math.min(oldWidth - 1, Math.ceil(sourceFracCol));
-
-            const topLeft = x.get(b, sourceRowFloor, sourceColFloor, d);
-            const bottomLeft = x.get(b, sourceRowCeil, sourceColFloor, d);
-            const topRight = x.get(b, sourceRowFloor, sourceColCeil, d);
-            const bottomRight = x.get(b, sourceRowCeil, sourceColCeil, d);
-
-            const rowFrac = sourceFracRow - sourceRowFloor;
-            const colFrac = sourceFracCol - sourceColFloor;
+            const topLeft = xValues[topLeftOffest + d];
+            const bottomLeft = xValues[botLeftOffset + d];
+            const topRight = xValues[topRightOffset + d];
+            const bottomRight = xValues[botRightOffest + d];
 
             const top = topLeft + (topRight - topLeft) * colFrac;
             const bottom = bottomLeft + (bottomRight - bottomLeft) * colFrac;
             const newValue = top + (bottom - top) * rowFrac;
 
-            output.set(newValue, b, r, c, d);
+            result[outputIdx++] = newValue;
           }
         }
       }
     }
-    return output.toTensor();
+    return ops.tensor(result, [batch, newHeight, newWidth, numChannels]);
   }
 
   resizeBilinearBackprop(dy: Tensor4D, x: Tensor4D, alignCorners: boolean) {
@@ -2105,8 +2126,7 @@ export class MathBackendCPU implements KernelBackend {
     const [batch, xHeight, xWidth, depth] = x.shape;
     const [, yHeight, yWidth] = dy.shape;
 
-    const output =
-        ops.buffer<Rank.R4>([batch, xHeight, xWidth, depth], x.dtype);
+    const output = new Float32Array(batch * xHeight * xWidth * depth);
 
     // In the backwards pass, we want to find the pixels that were generated
     // for each pixel in the input image the forward pass and add the
@@ -2130,14 +2150,20 @@ export class MathBackendCPU implements KernelBackend {
     // tslint:disable-next-line:max-line-length
     // https://github.com/tensorflow/tensorflow/blob/3039375c86a5bbc9610c7725dcaa95d635f87ba2/tensorflow/core/kernels/resize_bilinear_op.cc#L275
 
+    const dyValues = dy.dataSync();
+    let offset = 0;
     for (let b = 0; b < batch; b++) {
+      const bOffset = b * x.strides[0];
       for (let r = 0; r < yHeight; r++) {
         const dxR = r * heightScale;
         const topDxRIndex = Math.floor(dxR);
         const bottomDxRIndex = Math.min(Math.ceil(dxR), xHeight - 1);
+
+        const topDxROffset = bOffset + topDxRIndex * x.strides[1];
+        const bottomDxROffset = bOffset + bottomDxRIndex * x.strides[1];
+
         const dxRLerp = dxR - topDxRIndex;
         const inverseDxRLerp = 1.0 - dxRLerp;
-
         for (let c = 0; c < yWidth; c++) {
           const dxC = c * widthScale;
           const leftDxCIndex = Math.floor(dxC);
@@ -2145,33 +2171,31 @@ export class MathBackendCPU implements KernelBackend {
           const dxCLerp = dxC - leftDxCIndex;
           const inverseDxCLerp = 1.0 - dxCLerp;
 
+          const topLeftRCOffset = topDxROffset + leftDxCIndex * x.strides[2];
+          const topRightRCOffset = topDxROffset + rightDxCIndex * x.strides[2];
+          const bottomLeftRCOffset =
+              bottomDxROffset + leftDxCIndex * x.strides[2];
+          const bottomRightRCOffset =
+              bottomDxROffset + rightDxCIndex * x.strides[2];
+
+          const inverseDxRLerpTimesInverseDxCLerp =
+              inverseDxRLerp * inverseDxCLerp;
+          const inverseDxRLerpTimesDxCLerp = inverseDxRLerp * dxCLerp;
+          const dxRLerpTimesInverseDxCLerp = dxRLerp * inverseDxCLerp;
+          const dxRLerpTimesDxCLerp = dxRLerp * dxCLerp;
           for (let d = 0; d < depth; d++) {
-            const dyVal = dy.get(b, r, c, d);
-
-            let topLeft = output.get(b, topDxRIndex, leftDxCIndex, d) as number;
-            topLeft += dyVal * inverseDxRLerp * inverseDxCLerp;
-            output.set(topLeft, b, topDxRIndex, leftDxCIndex, d);
-
-            let topRight =
-                output.get(b, topDxRIndex, rightDxCIndex, d) as number;
-            topRight += dyVal * inverseDxRLerp * dxCLerp;
-            output.set(topRight, b, topDxRIndex, rightDxCIndex, d);
-
-            let bottomLeft =
-                output.get(b, bottomDxRIndex, leftDxCIndex, d) as number;
-            bottomLeft += dyVal * dxRLerp * inverseDxCLerp;
-            output.set(bottomLeft, b, bottomDxRIndex, leftDxCIndex, d);
-
-            let bottomRight =
-                output.get(b, bottomDxRIndex, rightDxCIndex, d) as number;
-            bottomRight += dyVal * dxRLerp * dxCLerp;
-            output.set(bottomRight, b, bottomDxRIndex, rightDxCIndex, d);
+            const dyVal = dyValues[offset++];
+            output[topLeftRCOffset + d] +=
+                dyVal * inverseDxRLerpTimesInverseDxCLerp;
+            output[topRightRCOffset + d] += dyVal * inverseDxRLerpTimesDxCLerp;
+            output[bottomLeftRCOffset + d] +=
+                dyVal * dxRLerpTimesInverseDxCLerp;
+            output[bottomRightRCOffset + d] += dyVal * dxRLerpTimesDxCLerp;
           }
         }
       }
     }
-
-    return output.toTensor();
+    return ops.tensor4d(output, [batch, xWidth, xHeight, depth], x.dtype);
   }
 
   resizeNearestNeighbor(
@@ -2494,6 +2518,70 @@ export class MathBackendCPU implements KernelBackend {
     const scoresVals = scores.dataSync();
     return nonMaxSuppressionImpl(
         boxesVals, scoresVals, maxOutputSize, iouThreshold, scoreThreshold);
+  }
+
+  fft(input: Tensor1D): Tensor1D {
+    util.assert(input.shape.length > 0, 'input must have at least one rank.');
+    const n = input.shape[0];
+
+    if (this.is_exponent_of_2(n)) {
+      return this.fftRadix2(input, n);
+    } else {
+      const data = input.dataSync();
+      const rawOutput = this.fourierTransformByMatmul(data, n) as Float32Array;
+      const output = complex_util.splitRealAndImagArrays(rawOutput);
+      return ops.complex(output.real, output.imag).as1D();
+    }
+  }
+
+  private is_exponent_of_2(size: number): boolean {
+    return (size & size - 1) === 0;
+  }
+
+  // FFT using Cooley-Tukey algorithm on radix 2 dimensional input.
+  private fftRadix2(input: Tensor1D, size: number): Tensor1D {
+    if (size === 1) {
+      return input;
+    }
+    const data = input.dataSync() as Float32Array;
+    const half = size / 2;
+    const evenComplex = complex_util.complexWithEvenIndex(data);
+    let evenTensor = ops.complex(evenComplex.real, evenComplex.imag).as1D();
+    const oddComplex = complex_util.complexWithOddIndex(data);
+    let oddTensor = ops.complex(oddComplex.real, oddComplex.imag).as1D();
+
+    // Recursive call for half part of original input.
+    evenTensor = this.fftRadix2(evenTensor, half);
+    oddTensor = this.fftRadix2(oddTensor, half);
+
+    const e = complex_util.exponents(size);
+    const exponent = ops.complex(e.real, e.imag).mul(oddTensor);
+
+    const addPart = evenTensor.add(exponent);
+    const subPart = evenTensor.sub(exponent);
+
+    const realTensor = ops.real(addPart).concat(ops.real(subPart));
+    const imagTensor = ops.imag(addPart).concat(ops.imag(subPart));
+
+    return ops.complex(realTensor, imagTensor).as1D();
+  }
+
+  // Calculate fourier transform by multplying sinusoid matrix.
+  private fourierTransformByMatmul(data: TypedArray, size: number): TypedArray {
+    const ret = new Float32Array(size * 2);
+    // TODO: Use matmul instead once it supports complex64 type.
+    for (let r = 0; r < size; r++) {
+      let real = 0.0;
+      let imag = 0.0;
+      for (let c = 0; c < size; c++) {
+        const e = complex_util.exponent(r * c, size);
+        const term = complex_util.getComplexWithIndex(data as Float32Array, c);
+        real += term.real * e.real - term.imag * e.imag;
+        imag += term.real * e.imag + term.imag * e.real;
+      }
+      complex_util.assignToTypedArray(ret, real, imag, r);
+    }
+    return ret;
   }
 
   depthToSpace(x: Tensor4D, blockSize: number, dataFormat: 'NHWC'|'NCHW'):

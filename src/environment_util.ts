@@ -22,6 +22,10 @@ export interface Features {
   'IS_BROWSER'?: boolean;
   // Whether we are in the Node.js environment.
   'IS_NODE'?: boolean;
+  // Whether we will use the im2col algorithm to speed up convolutions.
+  'WEBGL_CONV_IM2COL'?: boolean;
+  // Whether we will perform memory paging.
+  'WEBGL_PAGING_ENABLED'?: boolean;
   // The disjoint_query_timer extension version.
   // 0: disabled, 1: EXT_disjoint_timer_query, 2:
   // EXT_disjoint_timer_query_webgl2.
@@ -44,6 +48,8 @@ export interface Features {
   'WEBGL_DOWNLOAD_FLOAT_ENABLED'?: boolean;
   // Whether the fence API is available.
   'WEBGL_FENCE_API_ENABLED'?: boolean;
+  // Tensors with size <= than this will be uploaded as uniforms, not textures.
+  'WEBGL_SIZE_UPLOAD_UNIFORM'?: number;
   'BACKEND'?: string;
   // Test precision for unit tests. This is decreased when we can't render
   // float32 textures.
@@ -54,6 +60,12 @@ export interface Features {
   // Smallest positive value used to make ops like division and log numerically
   // stable.
   'EPSILON'?: number;
+  // True when the environment is "production" where we disable safety checks
+  // to gain performance.
+  'PROD'?: boolean;
+  // Whether to do sanity checks when inferring a shape from user-provided
+  // values, used when creating a new tensor.
+  'TENSORLIKE_CHECK_SHAPE_CONSISTENCY'?: boolean;
 }
 
 export enum Type {
@@ -63,14 +75,21 @@ export enum Type {
 }
 
 export const URL_PROPERTIES: URLProperty[] = [
-  {name: 'DEBUG', type: Type.BOOLEAN}, {name: 'IS_BROWSER', type: Type.BOOLEAN},
+  {name: 'DEBUG', type: Type.BOOLEAN},
+  {name: 'IS_BROWSER', type: Type.BOOLEAN},
+  {name: 'WEBGL_CONV_IM2COL', type: Type.BOOLEAN},
+  {name: 'WEBGL_PAGING_ENABLED', type: Type.BOOLEAN},
   {name: 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION', type: Type.NUMBER},
   {name: 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE', type: Type.BOOLEAN},
   {name: 'WEBGL_VERSION', type: Type.NUMBER},
   {name: 'WEBGL_RENDER_FLOAT32_ENABLED', type: Type.BOOLEAN},
   {name: 'WEBGL_DOWNLOAD_FLOAT_ENABLED', type: Type.BOOLEAN},
   {name: 'WEBGL_FENCE_API_ENABLED', type: Type.BOOLEAN},
-  {name: 'BACKEND', type: Type.STRING}, {name: 'EPSILON', type: Type.NUMBER}
+  {name: 'WEBGL_SIZE_UPLOAD_UNIFORM', type: Type.NUMBER},
+  {name: 'BACKEND', type: Type.STRING},
+  {name: 'EPSILON', type: Type.NUMBER},
+  {name: 'PROD', type: Type.BOOLEAN},
+  {name: 'TENSORLIKE_CHECK_SHAPE_CONSISTENCY', type: Type.BOOLEAN},
 ];
 
 export interface URLProperty {

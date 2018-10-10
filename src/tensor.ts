@@ -190,6 +190,8 @@ export interface OpHandler {
   logSumExp<T extends Tensor>(
       x: Tensor, axis: number|number[], keepDims: boolean): T;
   sum<T extends Tensor>(x: Tensor, axis: number|number[], keepDims: boolean): T;
+  prod<T extends Tensor>(x: Tensor, axis: number|number[], keepDims: boolean):
+      T;
   mean<T extends Tensor>(x: Tensor, axis: number|number[], keepDims: boolean):
       T;
   min<T extends Tensor>(x: Tensor, axis: number|number[], keepDims: boolean): T;
@@ -331,6 +333,7 @@ export interface OpHandler {
       x: T, begin: number[], end: number[], strides: number[],
       beginMask: number, endMask: number): T;
   depthToSpace(x: Tensor4D, blockSize: number, dataFormat: string): Tensor4D;
+  fft(x: Tensor1D): Tensor1D;
 }
 
 // For tracking tensor creation and disposal.
@@ -772,6 +775,10 @@ export class Tensor<R extends Rank = Rank> {
   sum<T extends Tensor>(axis: number|number[] = null, keepDims = false): T {
     this.throwIfDisposed();
     return opHandler.sum(this, axis, keepDims);
+  }
+  prod<T extends Tensor>(axis: number|number[] = null, keepDims = false): T {
+    this.throwIfDisposed();
+    return opHandler.prod(this, axis, keepDims);
   }
   mean<T extends Tensor>(axis: number|number[] = null, keepDims = false): T {
     this.throwIfDisposed();
@@ -1254,6 +1261,11 @@ export class Tensor<R extends Rank = Rank> {
       Tensor4D {
     this.throwIfDisposed();
     return opHandler.depthToSpace(this, blockSize, dataFormat);
+  }
+
+  fft(this: Tensor1D): Tensor1D {
+    this.throwIfDisposed();
+    return opHandler.fft(this);
   }
 }
 Object.defineProperty(Tensor, Symbol.hasInstance, {
