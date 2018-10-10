@@ -400,6 +400,9 @@ export function downloadMatrixFromPackedOutputTexture(
   // dimensions
   const matrix = new Float32Array(util.arrayProduct(logicalShape));
   return tex_util.decodeMatrixFromPackedRGBA(
-      packedRGBA, logicalShape[logicalShape.length - 2],
-      logicalShape[logicalShape.length - 1], matrix);
+      packedRGBA,
+      Math.max(
+          1, util.arrayProduct(logicalShape.slice(0, logicalShape.length - 2))),
+      logicalShape[logicalShape.length - 2],
+      logicalShape[logicalShape.length - 1], matrix, w, h);
 }

@@ -47,9 +47,9 @@ export function nearestLargerEven(val: number): number {
 }
 
 export function arrayProduct(arr: number[]): number {
-  let sum = 0;
+  let sum = 1;
   for (let i = 0; i < arr.length; i++) {
-    sum += arr[i];
+    sum *= arr[i];
   }
   return sum;
 }
