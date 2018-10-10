@@ -18,9 +18,10 @@
 import {ENV} from '../environment';
 import {Tensor} from '../tensor';
 import {convertToTensor} from '../tensor_util_env';
-import {TensorLike} from '../types';
+import {Rank, ShapeMap, TensorLike} from '../types';
 
 import {op} from './operation';
+
 
 /**
  * Converts a sparse representation into a dense tensor.
@@ -60,9 +61,10 @@ import {op} from './operation';
  * is not supported.
  */
 /** @doc {heading: 'Operations', subheading: 'Normalization'} */
-function sparseToDense_(
+function sparseToDense_<R extends Rank>(
     sparseIndices: Tensor|TensorLike, sparseValues: Tensor|TensorLike,
-    outputShape: number[], defaultValue = 0, validateIndices = false): Tensor {
+    outputShape: ShapeMap[R], defaultValue = 0,
+    validateIndices = false): Tensor<R> {
   const $sparseIndices =
       convertToTensor(sparseIndices, 'sparseIndices', 'sparseToDense', 'int32');
   const $sparseValues =

@@ -2849,9 +2849,9 @@ export class MathBackendCPU implements KernelBackend {
     return output.toTensor();
   }
 
-  sparseToDense(
-      sparseIndices: Tensor, sparseValues: Tensor, outputShape: number[],
-      defaultValue: number, validateIndices: boolean): Tensor {
+  sparseToDense<R extends Rank>(
+      sparseIndices: Tensor, sparseValues: Tensor, outputShape: ShapeMap[R],
+      defaultValue: number, validateIndices: boolean): Tensor<R> {
     const [sliceRank, numUpdates, sliceSize, strides, outputSize] =
         sparse_to_dense_util.prepareAndValidate(
             sparseIndices, sparseValues, outputShape, validateIndices);

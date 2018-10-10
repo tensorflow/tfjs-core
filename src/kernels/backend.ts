@@ -294,9 +294,9 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
   // Aligns with the "SplitV" kernel in TensorFlow.
   split<T extends Tensor>(value: T, sizeSplits: number[], axis: number): T[];
 
-  sparseToDense(
-      sparseIndices: Tensor, sparseValues: Tensor, outputShape: number[],
-      defaultValue: number, validateIndices: boolean): Tensor;
+  sparseToDense<R extends Rank>(
+      sparseIndices: Tensor, sparseValues: Tensor, outputShape: ShapeMap[R],
+      defaultValue: number, validateIndices: boolean): Tensor<R>;
   /**
    * Sets the data mover for this backend. Backends should use the mover to
    * move data from other backends to this backend.

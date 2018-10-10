@@ -1609,9 +1609,9 @@ export class MathBackendWebGL implements KernelBackend {
         .reshape(shape);
   }
 
-  sparseToDense(
-      sparseIndices: Tensor, sparseValues: Tensor, outputShape: number[],
-      defaultValue: number, validateIndices: boolean): Tensor {
+  sparseToDense<R extends Rank>(
+      sparseIndices: Tensor, sparseValues: Tensor, outputShape: ShapeMap[R],
+      defaultValue: number, validateIndices: boolean): Tensor<R> {
     const [sliceRank, numUpdates, , strides, outputSize] =
         sparse_to_dense_util.prepareAndValidate(
             sparseIndices, sparseValues, outputShape, validateIndices);
