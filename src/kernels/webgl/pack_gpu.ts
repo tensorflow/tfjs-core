@@ -16,6 +16,7 @@
  */
 
 import {GPGPUProgram} from './gpgpu_math';
+import {getCoordsDataType} from './shader_compiler';
 
 export class PackProgram implements GPGPUProgram {
   variableNames = ['A'];
@@ -24,10 +25,13 @@ export class PackProgram implements GPGPUProgram {
 
   constructor(outputShape: number[]) {
     this.outputShape = outputShape;
+    this.rank = outputShape.length;
+
+    const dtype = getCoordsDataType(this.rank);
 
     this.userCode = `
       void main() {
-        ivec2 rc = getOutputCoords();
+        ${dtype} rc = getOutputCoords();
 
         int r = rc.x;
         int c = rc.y;

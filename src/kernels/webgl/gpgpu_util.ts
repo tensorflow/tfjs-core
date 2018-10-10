@@ -16,6 +16,7 @@
  */
 
 import {ENV} from '../../environment';
+import * as util from '../../util';
 
 import * as tex_util from './tex_util';
 import * as webgl_util from './webgl_util';
@@ -395,7 +396,10 @@ export function downloadMatrixFromPackedOutputTexture(
           physicalRows, physicalCols));
   webgl_util.callAndCheck(
       gl, () => gl.readPixels(0, 0, w, h, gl.RGBA, gl.FLOAT, packedRGBA));
-  const matrix = new Float32Array(logicalShape[0] * logicalShape[1]);
+  // matrix is the flattened tensor, so it does not need to account for texture
+  // dimensions
+  const matrix = new Float32Array(util.arrayProduct(logicalShape));
   return tex_util.decodeMatrixFromPackedRGBA(
-      packedRGBA, logicalShape[0], logicalShape[1], matrix);
+      packedRGBA, logicalShape[logicalShape.length - 2],
+      logicalShape[logicalShape.length - 1], matrix);
 }
