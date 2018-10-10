@@ -236,7 +236,7 @@ export function decodeMatrixFromPackedRGBA(
   const texelsPerBatch = texelsPerRow * Math.ceil(rows / 2);
 
   const flattenedMatrixSize =
-      util.nearestEven(rows) * util.nearestEven(columns);
+      util.nearestLargerEven(rows) * util.nearestLargerEven(columns);
 
   for (let batch = 0; batch < batches; batch++) {
     const batchOffset = batch * rows * columns;
