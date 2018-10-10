@@ -15,7 +15,7 @@
  * =============================================================================
  */
 import {Tensor} from '../tensor';
-import {computeStrides} from '../util';
+import {calculateShapes} from './scatter_nd_util';
 /**
  * Validate sparseToDense inputs.
  *
@@ -28,11 +28,11 @@ import {computeStrides} from '../util';
  * @param outputShape: number[]. Shape of the dense output tensor.
  * @param validateIndices: indice validation is not supported, error will be
  * thrown if it is set.
- * @returns [numElements, numDims, strides]
+ * @returns [sliceDim, numUpdates, sliceSize, strides, outputSize]
  */
 export function prepareAndValidate(
     sparseIndices: Tensor, sparseValues: Tensor, outputShape: number[],
-    validateIndices: boolean): [number, number, number[]] {
+    validateIndices: boolean): [number, number, number, number[], number] {
   if (validateIndices) {
     throw new Error(
         'tf.sparseToDense() currently does not support indices validation.');
@@ -65,5 +65,5 @@ export function prepareAndValidate(
         `${sparseValues.shape}, should be [] or [${numElems}]`);
   }
 
-  return [numElems, numDims, [...computeStrides(outputShape), 1]];
+  return calculateShapes(sparseValues, sparseIndices, outputShape);
 }

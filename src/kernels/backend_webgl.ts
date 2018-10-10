@@ -83,11 +83,10 @@ import {ResizeBilinearProgram} from './webgl/resize_bilinear_gpu';
 import {ResizeNearestNeigborBackpropProgram} from './webgl/resize_nearest_neighbor_backprop_gpu';
 import {ResizeNearestNeighborProgram} from './webgl/resize_nearest_neighbor_gpu';
 import {ReverseProgram} from './webgl/reverse_gpu';
-import {ScatterNDProgram} from './webgl/scatter_nd_gpu';
+import {ScatterProgram} from './webgl/scatter_gpu';
 import {SegmentOpProgram} from './webgl/segment_gpu';
 import {SelectProgram} from './webgl/select_gpu';
 import {SliceProgram} from './webgl/slice_gpu';
-import {SparseToDenseProgram} from './webgl/sparse_to_dense_gpu';
 import {StridedSliceProgram} from './webgl/strided_slice_gpu';
 import {TextureData, TextureUsage} from './webgl/tex_util';
 import {TextureManager} from './webgl/texture_manager';
@@ -1603,10 +1602,26 @@ export class MathBackendWebGL implements KernelBackend {
     if (outputSize === 0) {
       return backend_util.reshapeTensor(tensor([]), shape);
     }
-    const program =
-        new ScatterNDProgram(numUpdates, sliceDim, strides, flattenShape);
+    const program = new ScatterProgram(
+        numUpdates, sliceDim, flattenIndices.rank, flattenX.rank, strides,
+        flattenShape, 0);
     return (this.compileAndRun(program, [flattenX, flattenIndices]) as Tensor)
         .reshape(shape);
+  }
+
+  sparseToDense(
+      sparseIndices: Tensor, sparseValues: Tensor, outputShape: number[],
+      defaultValue: number, validateIndices: boolean): Tensor {
+    const [sliceRank, numUpdates, , strides, outputSize] =
+        sparse_to_dense_util.prepareAndValidate(
+            sparseIndices, sparseValues, outputShape, validateIndices);
+
+    const program = new ScatterProgram(
+        numUpdates, sliceRank, sparseIndices.rank, sparseValues.rank, strides,
+        [outputSize, 1], defaultValue, false);
+    return (this.compileAndRun(program, [sparseValues, sparseIndices]) as
+            Tensor)
+        .reshape(outputShape);
   }
 
   fft(x: Tensor1D): Tensor1D {
@@ -1625,22 +1640,6 @@ export class MathBackendWebGL implements KernelBackend {
     real.dispose();
     imag.dispose();
     return complex;
-  }
-
-  sparseToDense(
-      sparseIndices: Tensor, sparseValues: Tensor, outputShape: number[],
-      defaultValue: number, validateIndices: boolean): Tensor {
-    const [numElems, numDims, strides] =
-        sparse_to_dense_util.prepareAndValidate(
-            sparseIndices, sparseValues, outputShape, validateIndices);
-
-    const outputSize = util.sizeFromShape(outputShape);
-    const program = new SparseToDenseProgram(
-        numElems, numDims, sparseIndices.rank, sparseValues.rank, strides,
-        [outputSize], defaultValue);
-    return (this.compileAndRun(program, [sparseValues, sparseIndices]) as
-            Tensor)
-        .reshape(outputShape);
   }
 
   private makeOutputArray<T extends Tensor>(shape: number[], dtype: DataType):

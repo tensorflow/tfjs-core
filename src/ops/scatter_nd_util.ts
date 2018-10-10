@@ -108,6 +108,21 @@ export function prepareAndValidate(
 
   validateUpdateShape(shape, indices, updates);
 
+  return calculateShapes(updates, indices, shape);
+}
+
+/**
+ * Calculate the shape information for the output.
+ *
+ * @param update The tensor contains the update values.
+ * @param indices The tensor contains the indices for the update values.
+ * @param shape The shape of the output tensor.
+ *
+ * @returns [sliceDim, numUpdates, sliceSize, strides, outputSize]
+ */
+export function calculateShapes(
+    updates: Tensor, indices: Tensor,
+    shape: number[]): [number, number, number, number[], number] {
   // Calculate the number of dimensions in indices
   const sliceDim = (indices.rank > 1) ? indices.shape[indices.rank - 1] : 1;
 

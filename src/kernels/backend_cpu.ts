@@ -30,10 +30,7 @@ import {buffer, tensor, tensor3d, tensor4d} from '../ops/ops';
 import * as scatter_nd_util from '../ops/scatter_nd_util';
 import * as selu_util from '../ops/selu_util';
 import {getStridedSlicedInfo} from '../ops/slice_util';
-<<<<<<< HEAD
 import * as sparse_to_dense_util from '../ops/sparse_to_dense_util';
-=======
->>>>>>> master
 import {DataId, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
 import {DataType, DataTypeMap, Rank, ShapeMap, TypedArray, upcastType} from '../types';
 import * as util from '../util';
@@ -2855,39 +2852,29 @@ export class MathBackendCPU implements KernelBackend {
   sparseToDense(
       sparseIndices: Tensor, sparseValues: Tensor, outputShape: number[],
       defaultValue: number, validateIndices: boolean): Tensor {
-    const [numElems, numDims, strides] =
+    const [sliceRank, numUpdates, sliceSize, strides, outputSize] =
         sparse_to_dense_util.prepareAndValidate(
             sparseIndices, sparseValues, outputShape, validateIndices);
 
-    const outputSize = util.sizeFromShape(outputShape);
-    const buffer = new TensorBuffer([outputSize], sparseValues.dtype);
-    const indicesData = sparseIndices.dataSync();
-    const valueData = sparseValues.dataSync();
-    for (let i = 0; i < outputSize; i++) {
-      buffer.values[i] = defaultValue;
-    }
-
-    for (let i = 0; i < numElems; i++) {
-      const index = [];
-      let flattenIndex = 0;
-      for (let j = 0; j < numDims; j++) {
-        flattenIndex += indicesData[i * numDims + j] * strides[j];
-        index.push(indicesData[i * numDims + j]);
-      }
-      if (flattenIndex < 0 || flattenIndex >= outputSize) {
-        throw new Error(
-            `Invalid indices: ${index} does not index into ${outputShape}`);
-      }
-      buffer.values[flattenIndex] =
-          valueData.length === 1 ? valueData[0] : valueData[i];
-    }
-    return buffer.toTensor().reshape(outputShape);
+    return this.scatter(
+        sparseIndices, sparseValues, outputShape, outputSize, sliceSize,
+        numUpdates, sliceRank, strides, defaultValue, true);
   }
 
   scatterND<R extends Rank>(
       indices: Tensor, updates: Tensor, shape: ShapeMap[R]): Tensor<R> {
     const [sliceRank, numUpdates, sliceSize, strides, outputSize] =
         scatter_nd_util.prepareAndValidate(updates, indices, shape);
+    return this.scatter(
+        indices, updates, shape, outputSize, sliceSize, numUpdates, sliceRank,
+        strides, 0);
+  }
+
+  private scatter<R extends Rank>(
+      indices: Tensor, updates: Tensor, shape: ShapeMap[R], outputSize: number,
+      sliceSize: number, numUpdates: number, sliceRank: number,
+      strides: number[], defaultValue: number,
+      isSparseToDense = false): Tensor<R> {
     const flattenShape = [outputSize / sliceSize, sliceSize];
     const indicesData = indices.dataSync();
     const updatesData = updates.dataSync();
@@ -2897,6 +2884,8 @@ export class MathBackendCPU implements KernelBackend {
     }
 
     const buffer = new TensorBuffer(flattenShape, updates.dtype);
+    buffer.values.fill(defaultValue, 0, buffer.values.length);
+
     for (let i = 0; i < numUpdates; i++) {
       const index = [];
       let flattenIndex = 0;
@@ -2912,8 +2901,14 @@ export class MathBackendCPU implements KernelBackend {
       }
 
       for (let k = 0; k < sliceSize; k++) {
-        buffer.values[flattenIndex * sliceSize + k] +=
-            updatesData[i * sliceSize + k];
+        if (isSparseToDense) {
+          buffer.values[flattenIndex * sliceSize + k] = updates.rank === 0 ?
+              updatesData[0] :
+              updatesData[i * sliceSize + k];
+        } else {
+          buffer.values[flattenIndex * sliceSize + k] +=
+              updatesData[i * sliceSize + k];
+        }
       }
     }
     return buffer.toTensor().reshape(shape);

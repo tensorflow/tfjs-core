@@ -14,18 +14,23 @@
  * limitations under the License.
  * =============================================================================
  */
+
 import {GPGPUProgram} from './gpgpu_math';
 import {getCoordsDataType} from './shader_compiler';
-export class SparseToDenseProgram implements GPGPUProgram {
-  variableNames = ['values', 'indices'];
+
+export class ScatterProgram implements GPGPUProgram {
+  variableNames = ['updates', 'indices'];
   outputShape: number[];
   userCode: string;
+
   constructor(
-      indiceSize: number, indiceDim: number, indiceRank: number,
-      valueRank: number, strides: number[], shape: number[],
-      defaultValue: number) {
+      private updateSize: number, private sliceDim: number, indiceRank: number,
+      updateRank: number, private strides: number[], shape: number[],
+      defaultValue: number, summingDupeIndex = true) {
     this.outputShape = shape;
     const stridesType = getCoordsDataType(strides.length);
+    const dtype = getCoordsDataType(shape.length);
+    console.log(defaultValue);
     let indiceString = '';
     switch (indiceRank) {
       case 0:
@@ -38,24 +43,40 @@ export class SparseToDenseProgram implements GPGPUProgram {
         indiceString = 'getIndices(i,j)';
     }
 
-    const valueString = valueRank === 0 ? 'getValues()' : 'getValues(i)';
-    const dtype = getCoordsDataType(shape.length);
-    const strideString = indiceRank > 1 ? 'strides[j]' : 'strides';
+    let updateString = '';
+    switch (updateRank) {
+      case 0:
+        updateString = 'getUpdates()';
+        break;
+      case 1:
+        updateString = 'getUpdates(i)';
+        break;
+      default:
+        updateString = 'getUpdates(i,coords[1])';
+    }
+
+    const strideString = this.sliceDim > 1 ? 'strides[j]' : 'strides';
     this.userCode = `
-        ${stridesType} strides = ${stridesType}(${strides});
-         void main() {
+        ${stridesType} strides = ${stridesType}(${this.strides});
+
+        void main() {
           ${dtype} coords = getOutputCoords();
           setOutput(float(${defaultValue}));
-          for (int i = 0; i < ${indiceSize}; i++) {
+          float sum = 0.0;
+          bool found = false;
+          for (int i = 0; i < ${this.updateSize}; i++) {
             int flattenIndex = 0;
-            for (int j = 0; j < ${indiceDim}; j++) {
+            for (int j = 0; j < ${this.sliceDim}; j++) {
               int index = round(${indiceString});
               flattenIndex += index * ${strideString};
             }
-            if (flattenIndex == coords) {
-              setOutput(${valueString});
-              break;
+            if (flattenIndex == coords[0]) {
+              sum += ${updateString};
+              found = true;
             }
+          }
+          if (found) {
+            setOutput(sum);
           }
         }
       `;
