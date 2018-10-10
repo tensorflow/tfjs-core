@@ -28,6 +28,7 @@ import * as erf_util from '../ops/erf_util';
 import * as gather_nd_util from '../ops/gather_nd_util';
 import * as ops from '../ops/ops';
 import {buffer, tensor, tensor3d, tensor4d} from '../ops/ops';
+import * as scatter_nd_util from '../ops/scatter_nd_util';
 import * as selu_util from '../ops/selu_util';
 import {getStridedSlicedInfo} from '../ops/slice_util';
 import {DataId, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
@@ -2866,7 +2867,7 @@ export class MathBackendCPU implements KernelBackend {
       const index = [];
       let flattenIndex = 0;
       for (let j = 0; j < sliceRank; j++) {
-        const dim = indicesData[i * sliceRank + j];
+        const dim = indicesData[i * sliceRank + j]; 
         flattenIndex += dim * strides[j];
         index.push(dim);
       }
@@ -2879,7 +2880,42 @@ export class MathBackendCPU implements KernelBackend {
         buffer.values[i * sliceSize + k] = xData[flattenIndex * sliceSize + k];
       }
     }
-    return buffer.toTensor().reshape(resultShape);
+    return buffer.toTensor().reshape(resultShape);        
+  }
+  
+  scatterND<R extends Rank>(
+      indices: Tensor, updates: Tensor, shape: ShapeMap[R]): Tensor<R> {
+    const [sliceRank, numUpdates, sliceSize, strides, outputSize] =
+        scatter_nd_util.prepareAndValidate(updates, indices, shape);
+    const flattenShape = [outputSize / sliceSize, sliceSize];
+    const indicesData = indices.dataSync();
+    const updatesData = updates.dataSync();
+
+    if (outputSize === 0) {
+      return tensor([], shape, updates.dtype);
+    }
+
+    const buffer = new TensorBuffer(flattenShape, updates.dtype);
+    for (let i = 0; i < numUpdates; i++) {
+      const index = [];
+      let flattenIndex = 0;
+      for (let j = 0; j < sliceRank; j++) {
+        const dim = indicesData[i * sliceRank + j];
+        index.push(dim);
+        flattenIndex += dim * strides[j];
+      }
+
+      if (flattenIndex < 0 || flattenIndex >= outputSize / sliceSize) {
+        throw new Error(
+            `Invalid indices: ${index} does not index into ${shape}`);
+      }
+
+      for (let k = 0; k < sliceSize; k++) {
+        buffer.values[flattenIndex * sliceSize + k] +=
+            updatesData[i * sliceSize + k];
+      }
+    }
+    return buffer.toTensor().reshape(shape);
   }
 }
 
