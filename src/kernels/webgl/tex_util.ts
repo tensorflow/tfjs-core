@@ -17,6 +17,7 @@
 
 import {Tensor} from '../../tensor';
 import {DataType, DataTypeMap} from '../../types';
+import * as util from '../../util';
 
 export enum TextureUsage {
   RENDER,
@@ -229,14 +230,26 @@ export function decodeMatrixFromPackedRGBA(
         `matrix length (${matrix.length}) must be >= ${requiredSize}`);
   }
 
+  const oddWidth = (columns % 2) === 1;
+  const oddHeight = (rows % 2) === 1;
+  const widthInFullBlocks = Math.floor(columns / 2);
+  const heightInFullBlocks = Math.floor(rows / 2);
+
+  const texelsPerRow = Math.ceil(columns / 2);
+  const texelsPerBatch = texelsPerRow * Math.ceil(rows / 2);
+
+  console.log('texels per row', texelsPerRow);
+  console.log('texels per batch', texelsPerBatch);
+
+  const flattenedMatrixSize =
+      util.nearestEven(rows) * util.nearestEven(columns);
+
   for (let batch = 0; batch < batches; batch++) {
+    let data = packedRGBA.slice(
+        batch * flattenedMatrixSize, (batch + 1) * flattenedMatrixSize);
+    console.log('data');
+    console.log(data);
     const batchOffset = batch * rows * columns;
-
-    const oddWidth = (columns % 2) === 1;
-    const oddHeight = (rows % 2) === 1;
-    const widthInFullBlocks = Math.floor(columns / 2);
-    const heightInFullBlocks = Math.floor(rows / 2);
-
     console.log('textureW', textureWidth);
     console.log('textureH', textureHeight);
 
@@ -248,14 +261,14 @@ export function decodeMatrixFromPackedRGBA(
       const srcStride = oddWidth ? 4 : 0;
       const dstStride = columns + (oddWidth ? 1 : 0);
       let src = 0;
-      let dstRow1 = 0;
-      let dstRow2 = columns;
+      let dstRow1 = batchOffset;
+      let dstRow2 = batchOffset + columns;
       for (let blockY = 0; blockY < heightInFullBlocks; ++blockY) {
         for (let blockX = 0; blockX < widthInFullBlocks; ++blockX) {
-          matrix[batchOffset + dstRow1++] = packedRGBA[batchOffset + src++];
-          matrix[batchOffset + dstRow1++] = packedRGBA[batchOffset + src++];
-          matrix[batchOffset + dstRow2++] = packedRGBA[batchOffset + src++];
-          matrix[batchOffset + dstRow2++] = packedRGBA[batchOffset + src++];
+          matrix[dstRow1++] = data[src++];
+          matrix[dstRow1++] = data[src++];
+          matrix[dstRow2++] = data[src++];
+          matrix[dstRow2++] = data[src++];
         }
         src += srcStride;
         dstRow1 += dstStride;
@@ -270,12 +283,12 @@ export function decodeMatrixFromPackedRGBA(
     if (oddWidth) {
       console.log('loop down final column');
       let src = (textureWidth - 1) * 4;
-      let dst = columns - 1;
+      let dst = batchOffset + columns - 1;
       const srcStride = textureWidth * 4;
       const dstStride = 2 * columns;
       for (let blockY = 0; blockY < heightInFullBlocks; ++blockY) {
-        matrix[dst] = packedRGBA[src];
-        matrix[dst + columns] = packedRGBA[src + 2];
+        matrix[dst] = data[src];
+        matrix[dst + columns] = data[src + 2];
         src += srcStride;
         dst += dstStride;
       }
@@ -284,19 +297,19 @@ export function decodeMatrixFromPackedRGBA(
     // loop across final row
     if (oddHeight) {
       console.log('loop across final row');
-      let src = (textureHeight - 1) * textureWidth * 4;
-      let dst = (rows - 1) * columns;
+      let src = (texelsPerBatch - texelsPerRow) * 4;
+      let dst = batchOffset + (rows - 1) * columns;
       console.log('src', src);
       console.log('dst', dst);
       for (let blockX = 0; blockX < widthInFullBlocks; ++blockX) {
-        matrix[dst++] = packedRGBA[src++];
-        matrix[dst++] = packedRGBA[src++];
+        matrix[dst++] = data[src++];
+        matrix[dst++] = data[src++];
         src += 2;
       }
 
       // fill in bottom-right cell
       if (oddWidth) {
-        matrix[dst] = packedRGBA[src];
+        matrix[batchOffset + (rows * columns) - 1] = data[src];
       }
     }
   }
