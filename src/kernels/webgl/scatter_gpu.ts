@@ -24,13 +24,12 @@ export class ScatterProgram implements GPGPUProgram {
   userCode: string;
 
   constructor(
-      private updateSize: number, private sliceDim: number, indiceRank: number,
-      updateRank: number, private strides: number[], shape: number[],
+      updateSize: number, sliceDim: number, indiceRank: number,
+      updateRank: number, strides: number[], shape: number[],
       defaultValue: number, summingDupeIndex = true) {
     this.outputShape = shape;
     const stridesType = getCoordsDataType(strides.length);
     const dtype = getCoordsDataType(shape.length);
-    console.log(defaultValue);
     let indiceString = '';
     switch (indiceRank) {
       case 0:
@@ -55,18 +54,18 @@ export class ScatterProgram implements GPGPUProgram {
         updateString = 'getUpdates(i,coords[1])';
     }
 
-    const strideString = this.sliceDim > 1 ? 'strides[j]' : 'strides';
+    const strideString = sliceDim > 1 ? 'strides[j]' : 'strides';
     this.userCode = `
-        ${stridesType} strides = ${stridesType}(${this.strides});
+        ${stridesType} strides = ${stridesType}(${strides});
 
         void main() {
           ${dtype} coords = getOutputCoords();
           setOutput(float(${defaultValue}));
           float sum = 0.0;
           bool found = false;
-          for (int i = 0; i < ${this.updateSize}; i++) {
+          for (int i = 0; i < ${updateSize}; i++) {
             int flattenIndex = 0;
-            for (int j = 0; j < ${this.sliceDim}; j++) {
+            for (int j = 0; j < ${sliceDim}; j++) {
               int index = round(${indiceString});
               flattenIndex += index * ${strideString};
             }
