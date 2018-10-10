@@ -650,6 +650,13 @@ export class MathBackendWebGL implements KernelBackend {
       offset?: Tensor4D|Tensor1D): Tensor4D {
     const inputs = [x, mean, variance];
 
+    const packXProgram = new PackProgram(x.shape);
+    const packedX = this.compileAndRun<Tensor4D>(
+        packXProgram, [x], this.makePackedTensor<Tensor4D>(x.shape));
+
+    console.log('BATCH NORM - packed X');
+    packedX.print();
+
     let offsetShape = null;
     if (offset != null) {
       offsetShape = offset.shape;
