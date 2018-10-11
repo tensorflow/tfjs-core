@@ -1407,8 +1407,7 @@ export class MathBackendWebGL implements KernelBackend {
     const x2ColShape = [sharedDim, numCols];
     const w2RowShape = [convInfo.outChannels, sharedDim];
 
-    if (ENV.get('WEBGL_CONV_IM2COL') &&
-        ENV.get('WEBGL_RENDER_FLOAT32_ENABLED') && x.shape[0] === 1 &&
+    if (ENV.get('WEBGL_CONV_IM2COL') && x.shape[0] === 1 &&
         this.textureCanMatchShape(x2ColShape, TextureUsage.PACK) &&
         this.textureCanMatchShape(w2RowShape, TextureUsage.PACK)) {
       return this.conv2dWithIm2Row(x, filter, convInfo);
