@@ -29,7 +29,7 @@ import {assert} from '../util';
  * const imag = tf.tensor1d([1, 2, 3]);
  * const x = tf.complex(real, imag);
  *
- * x.fft().print();
+ * x.fft().print();  // tf.spectral.fft(x).print();
  * ```
  * @param input The complex input to compute an fft over.
  */
