@@ -258,7 +258,7 @@ export class GPGPUContext {
     return this.downloadMatrixDriver(
         texture,
         () => gpgpu_util.downloadMatrixFromPackedOutputTexture(
-            this.gl, shape, rows, columns, this.textureConfig));
+            this.gl, shape[0], shape[1], rows, columns, this.textureConfig));
   }
 
   private vertexAttrsAreBound = false;
