@@ -30,7 +30,6 @@ import {buffer, tensor, tensor3d, tensor4d} from '../ops/ops';
 import * as scatter_nd_util from '../ops/scatter_nd_util';
 import * as selu_util from '../ops/selu_util';
 import {getStridedSlicedInfo} from '../ops/slice_util';
-import * as sparse_to_dense_util from '../ops/sparse_to_dense_util';
 import {DataId, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
 import {DataType, DataTypeMap, Rank, ShapeMap, TypedArray, upcastType} from '../types';
 import * as util from '../util';
@@ -2852,29 +2851,31 @@ export class MathBackendCPU implements KernelBackend {
   sparseToDense<R extends Rank>(
       sparseIndices: Tensor, sparseValues: Tensor, outputShape: ShapeMap[R],
       defaultValue: number, validateIndices: boolean): Tensor<R> {
-    const [sliceRank, numUpdates, sliceSize, strides, outputSize] =
-        sparse_to_dense_util.prepareAndValidate(
-            sparseIndices, sparseValues, outputShape, validateIndices);
-
+    const {sliceRank, numUpdates, sliceSize, strides, outputSize} =
+        scatter_nd_util.calculateShapes(
+            sparseValues, sparseIndices, outputShape);
+    const sumDupeIndices = false;
     return this.scatter(
         sparseIndices, sparseValues, outputShape, outputSize, sliceSize,
-        numUpdates, sliceRank, strides, defaultValue, true);
+        numUpdates, sliceRank, strides, defaultValue, sumDupeIndices);
   }
 
   scatterND<R extends Rank>(
       indices: Tensor, updates: Tensor, shape: ShapeMap[R]): Tensor<R> {
-    const [sliceRank, numUpdates, sliceSize, strides, outputSize] =
-        scatter_nd_util.prepareAndValidate(updates, indices, shape);
+    const {sliceRank, numUpdates, sliceSize, strides, outputSize} =
+        scatter_nd_util.calculateShapes(updates, indices, shape);
+    const defaultValue = 0;
+    const sumDupeIndices = true;
     return this.scatter(
         indices, updates, shape, outputSize, sliceSize, numUpdates, sliceRank,
-        strides, 0);
+        strides, defaultValue, sumDupeIndices);
   }
 
   private scatter<R extends Rank>(
       indices: Tensor, updates: Tensor, shape: ShapeMap[R], outputSize: number,
       sliceSize: number, numUpdates: number, sliceRank: number,
       strides: number[], defaultValue: number,
-      isSparseToDense = false): Tensor<R> {
+      sumDupeIndices: boolean): Tensor<R> {
     const flattenShape = [outputSize / sliceSize, sliceSize];
     const indicesData = indices.dataSync();
     const updatesData = updates.dataSync();
@@ -2884,7 +2885,7 @@ export class MathBackendCPU implements KernelBackend {
     }
 
     const buffer = new TensorBuffer(flattenShape, updates.dtype);
-    buffer.values.fill(defaultValue, 0, buffer.values.length);
+    buffer.values.fill(defaultValue);
 
     for (let i = 0; i < numUpdates; i++) {
       const index = [];
@@ -2901,12 +2902,12 @@ export class MathBackendCPU implements KernelBackend {
       }
 
       for (let k = 0; k < sliceSize; k++) {
-        if (isSparseToDense) {
-          buffer.values[flattenIndex * sliceSize + k] = updates.rank === 0 ?
-              updatesData[0] :
+        if (sumDupeIndices) {
+          buffer.values[flattenIndex * sliceSize + k] +=
               updatesData[i * sliceSize + k];
         } else {
-          buffer.values[flattenIndex * sliceSize + k] +=
+          buffer.values[flattenIndex * sliceSize + k] = updates.rank === 0 ?
+              updatesData[0] :
               updatesData[i * sliceSize + k];
         }
       }

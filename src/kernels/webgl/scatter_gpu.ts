@@ -24,35 +24,27 @@ export class ScatterProgram implements GPGPUProgram {
   userCode: string;
 
   constructor(
-      updateSize: number, sliceDim: number, indiceRank: number,
-      updateRank: number, strides: number[], shape: number[],
+      updateSize: number, sliceDim: number, indicesRank: number,
+      updatesRank: number, strides: number[], shape: number[],
       defaultValue: number, summingDupeIndex = true) {
     this.outputShape = shape;
     const stridesType = getCoordsDataType(strides.length);
     const dtype = getCoordsDataType(shape.length);
-    let indiceString = '';
-    switch (indiceRank) {
-      case 0:
-        indiceString = 'getIndices()';
-        break;
-      case 1:
-        indiceString = 'getIndices(i)';
-        break;
-      default:
-        indiceString = 'getIndices(i,j)';
+    let indicesString = '';
+    if (indicesRank === 1) {
+      indicesString = 'i';
+    } else {
+      indicesString = 'i, j';
     }
+    const indicesSnippet = `getIndices(${indicesString})`;
 
-    let updateString = '';
-    switch (updateRank) {
-      case 0:
-        updateString = 'getUpdates()';
-        break;
-      case 1:
-        updateString = 'getUpdates(i)';
-        break;
-      default:
-        updateString = 'getUpdates(i,coords[1])';
+    let updatesString = '';
+    if (updatesRank === 1) {
+      updatesString = 'i';
+    } else {
+      updatesString = 'i, coords[1]';
     }
+    const updatesSnippet = `getUpdates(${updatesString})`;
 
     const strideString = sliceDim > 1 ? 'strides[j]' : 'strides';
     this.userCode = `
@@ -60,22 +52,23 @@ export class ScatterProgram implements GPGPUProgram {
 
         void main() {
           ${dtype} coords = getOutputCoords();
-          setOutput(float(${defaultValue}));
           float sum = 0.0;
           bool found = false;
           for (int i = 0; i < ${updateSize}; i++) {
-            int flattenIndex = 0;
+            int flattenedIndex = 0;
             for (int j = 0; j < ${sliceDim}; j++) {
-              int index = round(${indiceString});
-              flattenIndex += index * ${strideString};
+              int index = round(${indicesSnippet});
+              flattenedIndex += index * ${strideString};
             }
-            if (flattenIndex == coords[0]) {
-              sum += ${updateString};
+            if (flattenedIndex == coords[0]) {
+              sum += ${updatesSnippet};
               found = true;
             }
           }
           if (found) {
             setOutput(sum);
+          } else {
+            setOutput(float(${defaultValue}));
           }
         }
       `;

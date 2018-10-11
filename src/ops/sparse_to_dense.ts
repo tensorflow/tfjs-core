@@ -16,6 +16,7 @@
  */
 
 import {ENV} from '../environment';
+import * as sparse_to_dense from '../ops/sparse_to_dense_util';
 import {Tensor} from '../tensor';
 import {convertToTensor} from '../tensor_util_env';
 import {Rank, ShapeMap, TensorLike} from '../types';
@@ -25,15 +26,15 @@ import {op} from './operation';
 /**
  * Converts a sparse representation into a dense tensor.
  *
- * Builds an array dense with shape outputShape such that
+ * Builds an array dense with shape outputShape such that:
  *
- * # If sparseIndices is scalar
+ * // If sparseIndices is scalar
  * dense[i] = (i == sparseIndices ? sparseValues : defaultValue)
  *
- * # If sparseIndices is a vector, then for each i
+ * // If sparseIndices is a vector, then for each i
  * dense[sparseIndices[i]] = sparseValues[i]
  *
- * # If sparseIndices is an n by d matrix, then for each i in [0, n)
+ * // If sparseIndices is an n by d matrix, then for each i in [0, n)
  * dense[sparseIndices[i][0], ..., sparseIndices[i][d-1]] = sparseValues[i]
  * All other values in dense are set to defaultValue. If sparseValues is a
  * scalar, all sparse indices are set to this single value.
@@ -43,21 +44,20 @@ import {op} from './operation';
  * const values = tf.tensor1d([10, 11, 12, 13, 14, 15], 'float32');
  * const shape = [8];
  * tf.sparseToDense(indices, values, shape).print();
- * // [0, 13, 14, 15, 10, 11, 12, 0]
  * ```
  *
- * @param sparseIndices: A 0-D, 1-D, or 2-D Tensor of type int32.
+ * @param sparseIndices A 0-D, 1-D, or 2-D Tensor of type int32.
  * sparseIndices[i] contains the complete index where sparseValues[i] will be
  * placed.
- * @param sparseValues: A 0-D or 1-D Tensor. Values
+ * @param sparseValues A 0-D or 1-D Tensor. Values
  * corresponding to each row of sparseIndices, or a scalar value to be used for
  * all sparse indices.
- * @param outputShape: number[]. Shape of the dense output tensor.
- * @param defaultValue: A 0-D Tensor of the same type as sparseValues. Value to
- * set for indices not specified in sparseIndices. Defaults to zero.
- * @param validateIndices: If true, indices are checked to make sure they are
- * sorted in lexicographic order and that there are no repeats. Currently this
- * is not supported.
+ * @param outputShape number[]. Shape of the dense output tensor.
+ * @param defaultValue number. Value to set for indices not specified in
+ * sparseIndices. Defaults to zero.
+ * @param validateIndices boolean. If true, indices are checked to make sure
+ * they are sorted in lexicographic order and that there are no repeats.
+ * Currently this is not supported.
  */
 /** @doc {heading: 'Operations', subheading: 'Normalization'} */
 function sparseToDense_<R extends Rank>(
@@ -68,6 +68,9 @@ function sparseToDense_<R extends Rank>(
       convertToTensor(sparseIndices, 'sparseIndices', 'sparseToDense', 'int32');
   const $sparseValues =
       convertToTensor(sparseValues, 'sparseValues', 'sparseToDense');
+
+  sparse_to_dense.validateInput(
+      $sparseIndices, $sparseValues, outputShape, validateIndices);
 
   return ENV.engine.runKernel(
       backend => backend.sparseToDense(
