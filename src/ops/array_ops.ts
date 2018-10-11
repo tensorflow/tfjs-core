@@ -1090,36 +1090,46 @@ function depthToSpace_(
 }
 
 /**
- * Computes the difference between two lists of numbers or strings.
+ * Computes the difference between two lists of numbers.
  *
- * Given a list x and a list y, this operation returns a list out that
- * represents all values that are in x but not in y. The returned list out is
- * sorted in the same order that the numbers appear in x (duplicates are
- * preserved). This operation also returns a list idx that represents the
- * position of each out element in x. In other words:
+ * Given a Tensor `x` and a Tensor `y`, this operation returns a Tensor out that
+ * represents all values that are in `x` but not in `y`. The returned Tensor out
+ * is sorted in the same order that the numbers appear in `x` (duplicates are
+ * preserved). This operation also returns a Tensor indices that represents the
+ * position of each out element in `x`. In other words:
  *
- * out[i] = x[idx[i]] for i in [0, 1, ..., len(out) - 1]
+ * `out[i] = x[idx[i]] for i in [0, 1, ..., len(out) - 1]`
  *
  * ```js
  * const x = [1, 2, 3, 4, 5, 6];
  * const y = [1, 3, 5];
  *
- * (await tf.setDiff1DAsync(x, y)).print();
- * // [[2, 4, 6], [1, 3, 5]]
+ * const [out, indices] = await tf.setdiff1dAsync(x, y);
+ * out.print(); // [2, 4, 6]
+ * indices.print(); // [1, 3, 5]
  * ```
  *
- * @param x: A Tensor. 1-D. Values to keep.
- * @param y: A Tensor. Must have the same type as x. 1-D. Values to remove.
- * name: A name for the operation (optional).
- * @returns Promise<Tensor[]>: A tuple of Tensor objects (out, idx).
+ * @param x A Tensor. 1-D. Values to keep.
+ * @param y A Tensor. Must have the same type as x. 1-D. Values to exclude in
+ * the output.
+ * @returns Promise of tuple of Tensor (out, indices).
  *  out: A Tensor. Has the same type as x.
- *  idx: A Tensor of type out_idx.
+ *  indices: A Tensor of type int32.
  */
 /** @doc {heading: 'Tensors', subheading: 'Transformations'} */
-async function setDiff1DAsync_(
-    x: Tensor|TensorLike, y: Tensor|TensorLike): Promise<Tensor[]> {
-  const $x = convertToTensor(x, 'x', 'setDiff1D');
-  const $y = convertToTensor(y, 'y', 'setDiff1D');
+async function setdiff1dAsync_(
+    x: Tensor|TensorLike, y: Tensor|TensorLike): Promise<[Tensor, Tensor]> {
+  const $x = convertToTensor(x, 'x', 'setdiff1d');
+  const $y = convertToTensor(y, 'y', 'setdiff1d');
+
+  util.assert(
+      $x.dtype === $y.dtype,
+      `x and y should have the same dtype, but got x (${$x.dtype}) and y (${
+          $y.dtype}).`);
+
+  util.assert($x.rank === 1, `x should be 1D tensor, but got x (${$x.shape}).`);
+
+  util.assert($y.rank === 1, `y should be 1D tensor, but got y (${$y.shape}).`);
 
   const xVals = await $x.data();
   const yVals = await $y.data();
@@ -1222,4 +1232,4 @@ export const stack = op({stack_});
 export const tile = op({tile_});
 export const truncatedNormal = op({truncatedNormal_});
 export const unstack = op({unstack_});
-export const setDiff1DAsync = op({setDiff1DAsync_});
+export const setdiff1dAsync = setdiff1dAsync_;
