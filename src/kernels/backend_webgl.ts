@@ -581,8 +581,7 @@ export class MathBackendWebGL implements KernelBackend {
     const outerShapeB = transposeB ? b.shape[1] : b.shape[2];
 
     // TODO(https://github.com/tensorflow/tfjs/issues/693): Support 3D tensors
-    if (ENV.get('WEBGL_RENDER_FLOAT32_ENABLED') && a.shape[0] === 1 &&
-        b.shape[0] === 1) {
+    if (a.shape[0] === 1 && b.shape[0] === 1) {
       const aSqueezed = a.as2D(a.shape[1], a.shape[2]);
       const bSqueezed = b.as2D(b.shape[1], b.shape[2]);
       const packProgramA = new PackProgram(aSqueezed.shape);
@@ -1373,8 +1372,7 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   conv2d(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
-    if (ENV.get('WEBGL_CONV_IM2COL') &&
-        ENV.get('WEBGL_RENDER_FLOAT32_ENABLED') && x.shape[0] === 1) {
+    if (ENV.get('WEBGL_CONV_IM2COL') && x.shape[0] === 1) {
       return this.conv2dWithIm2Row(x, filter, convInfo);
     }
     const program = new Conv2DProgram(convInfo);
