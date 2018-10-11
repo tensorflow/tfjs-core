@@ -33,7 +33,7 @@ export class ScatterProgram implements GPGPUProgram {
     let indicesString = '';
     if (indicesRank === 1) {
       indicesString = 'i';
-    } else {
+    } else if (indicesRank === 2) {
       indicesString = 'i, j';
     }
     const indicesSnippet = `getIndices(${indicesString})`;
