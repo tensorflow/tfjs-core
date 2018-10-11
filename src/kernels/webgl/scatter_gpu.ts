@@ -41,7 +41,7 @@ export class ScatterProgram implements GPGPUProgram {
     let updatesString = '';
     if (updatesRank === 1) {
       updatesString = 'i';
-    } else {
+    } else if (updatesRank === 2) {
       updatesString = 'i, coords[1]';
     }
     const updatesSnippet = `getUpdates(${updatesString})`;
