@@ -32,6 +32,10 @@ import {assert} from '../util';
  * x.fft().print();
  * ```
  * @param input The complex input to compute an fft over.
+ *
+ */
+/**
+ * @doc {heading: 'Operations', subheading: 'Spectral', namespace: 'spectral'}
  */
 function fft_(input: Tensor1D): Tensor1D {
   assert(input.dtype === 'complex64', 'dtype must be complex64');
