@@ -599,8 +599,7 @@ export class MathBackendWebGL implements KernelBackend {
     // We're restricting packed matMul to these conditions because for now, our
     // packed matMul shader needs its inputs to be 2D matrices whose physical
     // dimensions match their logical dimensions.
-    if (ENV.get('WEBGL_RENDER_FLOAT32_ENABLED') && a.shape[0] === 1 &&
-        b.shape[0] === 1 &&
+    if (a.shape[0] === 1 && b.shape[0] === 1 &&
         this.textureCanMatchShape(
             [a.shape[1], a.shape[2]], TextureUsage.PACK) &&
         this.textureCanMatchShape(
