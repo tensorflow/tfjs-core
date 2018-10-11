@@ -32,7 +32,6 @@ import {assert} from '../util';
  * x.fft().print();
  * ```
  * @param input The complex input to compute an fft over.
- *
  */
 /**
  * @doc {heading: 'Operations', subheading: 'Spectral', namespace: 'spectral'}
