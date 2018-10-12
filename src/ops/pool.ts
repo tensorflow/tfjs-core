@@ -46,10 +46,6 @@ import {op} from './operation';
  * @param dimRoundingMode The rounding mode used when computing output
  *     dimensions if pad is a number. If none is provided, it will not round
  *     and error if the output is of fractional size.
- * @param dataFormat An optional string from: "NHWC", "NCHW". Defaults to
- *     "NHWC". Specify the data format of the input and output data. With the
- *     default format "NHWC", the data is stored in the order of: [batch,
- *     height, width, channels]. Only "NHWC" is currently supported.
  */
 /** @doc {heading: 'Operations', subheading: 'Convolution'} */
 function maxPoolImpl_<T extends Tensor3D|Tensor4D>(
@@ -106,11 +102,6 @@ function maxPoolImpl_<T extends Tensor3D|Tensor4D>(
  *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is assumed.
  * @param filterSize The filter size, a tuple `[filterHeight, filterWidth]`.
  * @param strides The strides of the pooling: `[strideHeight, strideWidth]`.
- * @param dilations The dilation rates: `[dilationHeight, dilationWidth]`
- *     in which we sample input values across the height and width dimensions
- *     in dilated pooling. Defaults to `[1, 1]`. If `dilations` is a single
- *     number, then `dilationHeight == dilationWidth`. If it is greater than
- *     1, then all values of `strides` must be 1.
  * @param pad The type of padding algorithm.
  *    - `same` and stride 1: output will be of same size as input,
  *       regardless of filter size.
@@ -210,11 +201,6 @@ function avgPoolImpl_<T extends Tensor3D|Tensor4D>(
  *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is assumed.
  * @param filterSize The filter size, a tuple `[filterHeight, filterWidth]`.
  * @param strides The strides of the pooling: `[strideHeight, strideWidth]`.
- * @param dilations The dilation rates: `[dilationHeight, dilationWidth]`
- *     in which we sample input values across the height and width dimensions
- *     in dilated pooling. Defaults to `[1, 1]`. If `dilations` is a single
- *     number, then `dilationHeight == dilationWidth`. If it is greater than
- *     1, then all values of `strides` must be 1.
  * @param pad The type of padding algorithm:
  *    - `same` and stride 1: output will be of same size as input,
  *       regardless of filter size.

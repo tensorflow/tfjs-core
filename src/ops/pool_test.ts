@@ -479,7 +479,11 @@ describeWithFlags('pool', ALL_ENVS, () => {
 
   it('max x=[1,1,1] f=[1,1] s=1 d=1 [0] => [0]', () => {
     const x = tf.tensor3d([0], [1, 1, 1]);
-    const result = tf.pool(x, 1, 'max', 0);
+
+    const windowShape = 1;
+    const padding = 0;
+
+    const result = tf.pool(x, windowShape, 'max', padding);
     expectArraysClose(result, [0]);
   });
 
@@ -487,7 +491,13 @@ describeWithFlags('pool', ALL_ENVS, () => {
     // Feed forward.
     const x = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 9, 8], [3, 3, 1]);
 
-    const result = tf.pool(x, 2, 'max', 0);
+    const windowShape = 2;
+    const padding = 0;
+    const dilationRate: number = undefined;
+    const strides: number = undefined;
+
+    const result =
+        tf.pool(x, windowShape, 'max', padding, dilationRate, strides);
 
     expect(result.shape).toEqual([2, 2, 1]);
     expectArraysClose(result, [5, 6, 9, 9]);
@@ -498,7 +508,12 @@ describeWithFlags('pool', ALL_ENVS, () => {
     const x = tf.tensor3d(
         [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], [4, 4, 1]);
 
-    const result = tf.pool(x, 2, 'max', 0, undefined, 2);
+    const windowShape = 2;
+    const padding = 0;
+    const dilationRate: number = undefined;
+    const strides = 2;
+    const result =
+        tf.pool(x, windowShape, 'max', padding, dilationRate, strides);
 
     expect(result.shape).toEqual([2, 2, 1]);
     expectArraysClose(result, [5, 7, 13, 15]);
@@ -507,23 +522,39 @@ describeWithFlags('pool', ALL_ENVS, () => {
   it('max x=[2,2,1] f=[2,2] s=1 d=1 p=same', () => {
     // Feed forward.
     const x = tf.tensor3d([1, 2, 3, 4], [2, 2, 1]);
-    const fSize = 2;
+
+    const windowShape = 2;
+    const padding = 'same';
+    const dilationRate: number = undefined;
     const strides = 1;
-    const result = tf.pool(x, fSize, 'max', 'same', strides);
+
+    const result =
+        tf.pool(x, windowShape, 'max', padding, dilationRate, strides);
     expect(result.shape).toEqual([2, 2, 1]);
     expectArraysClose(result, [4, 4, 4, 4]);
   });
 
   it('avg x=[1,1,1] f=[1,1] s=1 d=1 [0] => [0]', () => {
     const a = tf.tensor3d([0], [1, 1, 1]);
-    const result = tf.pool(a, 1, 'avg', 0);
+
+    const windowShape = 1;
+    const padding = 0;
+
+    const result = tf.pool(a, windowShape, 'avg', padding);
     expectArraysClose(result, [0]);
   });
 
   it('avg x=[3,3,1] f=[2,2] s=1 d=1', () => {
     // Feed forward.
     const a = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 9, 8], [3, 3, 1]);
-    const result = tf.pool(a, 2, 'avg', 0);
+
+    const windowShape = 2;
+    const padding = 0;
+    const dilationRate: number = undefined;
+    const strides: number = undefined;
+
+    const result =
+        tf.pool(a, windowShape, 'avg', padding, dilationRate, strides);
 
     expect(result.shape).toEqual([2, 2, 1]);
     expect(result.dtype).toBe('float32');
@@ -534,7 +565,14 @@ describeWithFlags('pool', ALL_ENVS, () => {
     // Feed forward.
     const a = tf.tensor3d(
         [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], [4, 4, 1]);
-    const result = tf.pool(a, 2, 'avg', 0, undefined, 2);
+
+    const windowShape = 2;
+    const padding = 0;
+    const dilationRate: number = undefined;
+    const strides = 2;
+
+    const result =
+        tf.pool(a, windowShape, 'avg', padding, dilationRate, strides);
 
     expect(result.shape).toEqual([2, 2, 1]);
     expectArraysClose(result, [2.5, 4.5, 10.5, 12.5]);
@@ -543,9 +581,14 @@ describeWithFlags('pool', ALL_ENVS, () => {
   it('avg x=[2,2,1] f=[2,2] s=1 p=same', () => {
     // Feed forward.
     const a = tf.tensor3d([1, 2, 3, 4], [2, 2, 1]);
-    const fSize = 2;
+
+    const windowShape = 2;
+    const padding = 'same';
+    const dilationRate: number = undefined;
     const strides = 1;
-    const result = tf.pool(a, fSize, 'avg', 'same', strides);
+
+    const result =
+        tf.pool(a, windowShape, 'avg', padding, dilationRate, strides);
 
     expect(result.shape).toEqual([2, 2, 1]);
     expectArraysClose(result, [2.5, 3, 3.5, 4]);
@@ -557,7 +600,13 @@ describeWithFlags('pool', ALL_ENVS, () => {
     const x = tf.tensor3d(
         [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], [4, 4, 1]);
 
-    const result = tf.pool(x, 2, 'max', 0, 2);
+    const windowShape = 2;
+    const padding = 0;
+    const dilationRate = 2;
+    const strides: number = undefined;
+
+    const result =
+        tf.pool(x, windowShape, 'max', padding, dilationRate, strides);
 
     expect(result.shape).toEqual([2, 2, 1]);
     expectArraysClose(result, [11, 12, 15, 16]);
@@ -572,7 +621,13 @@ describeWithFlags('pool', ALL_ENVS, () => {
         ],
         [2, 4, 4, 1]);
 
-    const result = tf.pool(x, 2, 'max', 0, 2);
+    const windowShape = 2;
+    const padding = 0;
+    const dilationRate = 2;
+    const strides: number = undefined;
+
+    const result =
+        tf.pool(x, windowShape, 'max', padding, dilationRate, strides);
 
     expect(result.shape).toEqual([2, 2, 2, 1]);
     expectArraysClose(result, [11, 12, 15, 16, 12, 11, 16, 15]);
@@ -582,7 +637,14 @@ describeWithFlags('pool', ALL_ENVS, () => {
     // Feed forward.
     const a = tf.tensor3d(
         [1, 3, 2, 4, 6, 5, 8, 7, 9, 10, 12, 11, 16, 15, 14, 13], [4, 4, 1]);
-    const result = tf.pool(a, 2, 'avg', 0, 2);
+
+    const windowShape = 2;
+    const padding = 0;
+    const dilationRate = 2;
+    const strides: number = undefined;
+
+    const result =
+        tf.pool(a, windowShape, 'avg', padding, dilationRate, strides);
 
     expect(result.shape).toEqual([2, 2, 1]);
     expect(result.dtype).toBe('float32');
@@ -594,7 +656,13 @@ describeWithFlags('pool', ALL_ENVS, () => {
     const x = tf.tensor3d(
         [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], [4, 4, 1]);
 
-    expect(() => tf.pool(x, 2, 'max', 0, 2, 2)).toThrowError();
+    const windowShape = 2;
+    const padding = 0;
+    const dilationRate = 2;
+    const strides = 2;
+
+    expect(() => tf.pool(x, windowShape, 'max', padding, dilationRate, strides))
+        .toThrowError();
   });
 
   it('avg throws when neither s=1 nor d=1', () => {
@@ -602,7 +670,13 @@ describeWithFlags('pool', ALL_ENVS, () => {
     const x = tf.tensor3d(
         [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], [4, 4, 1]);
 
-    expect(() => tf.pool(x, 2, 'avg', 0, 2, 2)).toThrowError();
+    const windowShape = 2;
+    const padding = 0;
+    const dilationRate = 2;
+    const strides = 2;
+
+    expect(() => tf.pool(x, windowShape, 'avg', padding, dilationRate, strides))
+        .toThrowError();
   });
 });
 
@@ -612,7 +686,14 @@ describeWithFlags('poolBackprop', ALL_ENVS, () => {
     const x = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8, 9], [3, 3, 1]);
     const expected = [0, 0, 0, 0, 1, 2, 0, 3, 4];
 
-    const dx = tf.grad((x: tf.Tensor3D) => x.pool(2, 'max', 0))(x, dy);
+    const windowShape = 2;
+    const padding = 0;
+    const dilationRate: number = undefined;
+    const strides: number = undefined;
+
+    const dx = tf.grad(
+        (x: tf.Tensor3D) =>
+            x.pool(windowShape, 'max', padding, dilationRate, strides))(x, dy);
 
     expect(dx.shape).toEqual(x.shape);
     expectArraysClose(dx, expected);
@@ -625,7 +706,14 @@ describeWithFlags('poolBackprop', ALL_ENVS, () => {
            [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], [4, 4, 1]);
        const expected = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 0, 0, 3, 4];
 
-       const dx = tf.grad((x: tf.Tensor3D) => x.pool(2, 'max', 0, 2))(x, dy);
+       const windowShape = 2;
+       const padding = 0;
+       const dilationRate = 2;
+       const strides: number = undefined;
+
+       const dx = tf.grad(
+           (x: tf.Tensor3D) => x.pool(
+               windowShape, 'max', padding, dilationRate, strides))(x, dy);
 
        expect(dx.shape).toEqual(x.shape);
        expectArraysClose(dx, expected);
@@ -638,7 +726,14 @@ describeWithFlags('poolBackprop', ALL_ENVS, () => {
            [9, 5, 8, 6, 3, 1, 2, 4, 7, 3, 6, 4, 11, 15, 10, 16], [4, 4, 1]);
        const expected = [1, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 4];
 
-       const dx = tf.grad((x: tf.Tensor3D) => x.pool(2, 'max', 0, 2))(x, dy);
+       const windowShape = 2;
+       const padding = 0;
+       const dilationRate = 2;
+       const strides: number = undefined;
+
+       const dx = tf.grad(
+           (x: tf.Tensor3D) => x.pool(
+               windowShape, 'max', padding, dilationRate, strides))(x, dy);
 
        expect(dx.shape).toEqual(x.shape);
        expectArraysClose(dx, expected);
@@ -657,14 +752,20 @@ describeWithFlags('poolBackprop', ALL_ENVS, () => {
       0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0
     ];
 
-    const dx = tf.grad((x: tf.Tensor3D) => x.pool(2, 'max', 0, 2))(x, dy);
+    const windowShape = 2;
+    const padding = 0;
+    const dilationRate = 2;
+    const strides: number = undefined;
+
+    const dx = tf.grad(
+        (x: tf.Tensor3D) =>
+            x.pool(windowShape, 'max', padding, dilationRate, strides))(x, dy);
 
     expect(dx.shape).toEqual(x.shape);
     expectArraysClose(dx, expected);
   });
 
   it('avg gradient x=[4,4,1] f=[2,2] s=1 d=2', () => {
-    // Feed forward.
     const x = tf.tensor3d(
         [
           1,  3,  2,  4,  6,  5,  8,  7,  9,  10, 12, 11, 16,
@@ -674,7 +775,14 @@ describeWithFlags('poolBackprop', ALL_ENVS, () => {
     const dy = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8, 9], [3, 3, 1]);
     const f = 1 / (2 * 2);
 
-    const dx = tf.grad((x: tf.Tensor3D) => x.pool(2, 'avg', 0, 2))(x, dy);
+    const windowShape = 2;
+    const padding = 0;
+    const dilationRate = 2;
+    const strides: number = undefined;
+
+    const dx = tf.grad(
+        (x: tf.Tensor3D) =>
+            x.pool(windowShape, 'avg', padding, dilationRate, strides))(x, dy);
 
     expect(dx.shape).toEqual(x.shape);
     expectArraysClose(dx, [

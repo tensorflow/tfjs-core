@@ -57,7 +57,7 @@ export class AvgPool2DBackpropProgram implements GPGPUProgram {
         // ? = to be determined. : = across all values in that axis.
         float dotProd = 0.0;
         for (int wR = 0; wR < ${effectiveFilterHeight};
-          wR += ${dilationHeight}) {
+            wR += ${dilationHeight}) {
           float dyR = float(dyRCorner + wR) / ${strideHeight}.0;
 
           if (dyR < 0.0 || dyR >= ${convInfo.outHeight}.0 || fract(dyR) > 0.0) {
