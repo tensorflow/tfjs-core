@@ -148,6 +148,13 @@ export class GPGPUContext {
     gpgpu_util.uploadPixelDataToTexture(this.gl, texture, pixels);
   }
 
+  public createFloat16PackedMatrixTexture(rows: number, columns: number):
+      WebGLTexture {
+    this.throwIfDisposed();
+    return gpgpu_util.createFloat16PackedMatrixTexture(
+        this.gl, rows, columns, this.textureConfig);
+  }
+
   public createPackedMatrixTexture(rows: number, columns: number):
       WebGLTexture {
     this.throwIfDisposed();
@@ -253,11 +260,12 @@ export class GPGPUContext {
   }
 
   public downloadMatrixFromPackedTexture(
-      texture: WebGLTexture, rows: number, columns: number): Float32Array {
+      texture: WebGLTexture, shape: number[], rows: number,
+      columns: number): Float32Array {
     return this.downloadMatrixDriver(
         texture,
         () => gpgpu_util.downloadMatrixFromPackedOutputTexture(
-            this.gl, rows, columns, this.textureConfig));
+            this.gl, shape[0], shape[1], rows, columns, this.textureConfig));
   }
 
   private vertexAttrsAreBound = false;
