@@ -121,7 +121,7 @@ let MAX_TEXTURE_SIZE: number;
 // MAX_TEXTURE_SIZE.
 export function getWebGLMaxTextureSize(
     webGLVersion: number, isBrowser: boolean): number {
-  if (typeof MAX_TEXTURE_SIZE === 'undefined') {
+  if (MAX_TEXTURE_SIZE == null) {
     const gl = getWebGLRenderingContext(webGLVersion, isBrowser);
     MAX_TEXTURE_SIZE = gl.getParameter(gl.MAX_TEXTURE_SIZE);
   }
