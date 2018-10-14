@@ -85,8 +85,8 @@ describeWithFlags('conv2dTranspose', ALL_ENVS, () => {
   //   print(y)
   // (x_grad, filt_grad) = g.gradient(y, [x, filt])
   //
-  // print(x_grad)
-  // print(filt_grad)
+  // print("x_grad = %s" % x_grad)
+  // print("filt_grad = %s" % filt_grad)
   // ```
   it('gradient input=[1,3,3,1] f=[2,2,2,1] s=1 padding=valid', () => {
     const inputDepth = 1;
@@ -147,8 +147,8 @@ describeWithFlags('conv2dTranspose', ALL_ENVS, () => {
   //   2)) print(y)
   // (x_grad, filt_grad) = g.gradient(y, [x, filt])
   //
-  // print(x_grad)
-  // print(filt_grad)
+  // print("x_grad = %s" % x_grad)
+  // print("filt_grad = %s" % filt_grad)
   // ```
   it('gradient input=[1,3,3,1] f=[2,2,2,1] s=[2,2] padding=valid', () => {
     const inputDepth = 1;
@@ -210,7 +210,7 @@ describeWithFlags('conv2dTranspose', ALL_ENVS, () => {
   // print("x_grad = %s" % x_grad)
   // print("filt_grad = %s" % filt_grad)
   // ```
-  fit('gradient input=[1,3,3,1] f=[2,2,2,1] s=[1,1] padding=same', () => {
+  it('gradient input=[1,3,3,1] f=[2,2,2,1] s=[1,1] padding=same', () => {
     const inputDepth = 1;
     const outputDepth = 2;
     const inputShape: [number, number, number, number] = [1, 3, 3, inputDepth];
@@ -249,6 +249,42 @@ describeWithFlags('conv2dTranspose', ALL_ENVS, () => {
     expectArraysClose(filtGrad, tf.tensor4d([
       [[[2.38806788], [2.38806788]], [[2.58201847], [2.58201847]]],
       [[[2.2161221], [2.2161221]], [[3.11756406], [3.11756406]]]
+    ]));
+  });
+
+  it('gradient input=[1,3,3,1] f=[2,2,2,1] s=[2,2] padding=same', () => {
+    const inputDepth = 1;
+    const outputDepth = 2;
+    const inputShape: [number, number, number, number] = [1, 2, 2, inputDepth];
+    const filterSize = 2;
+    const stride: [number, number] = [2, 2];
+    const pad = 'same';
+
+    const filterShape: [number, number, number, number] =
+        [filterSize, filterSize, outputDepth, inputDepth];
+
+    const x = tf.tensor4d(
+        [[[[1.52433065], [-0.77053435]], [[0.77962889], [1.58413887]]]],
+        inputShape);
+    const filt = tf.tensor4d(
+        [
+          [[[0.11178388], [-0.96654977]], [[1.21021296], [0.84121729]]],
+          [[[0.34968338], [-0.42306114]], [[1.27395733], [-1.09014535]]]
+        ],
+        filterShape);
+
+    const grads = tf.grads(
+        (x: tf.Tensor4D, filter: tf.Tensor4D) =>
+            tf.conv2dTranspose(x, filter, [1, 3, 3, outputDepth], stride, pad));
+    const dy = tf.ones([1, 3, 3, outputDepth]) as tf.Tensor4D;
+    const [xGrad, filtGrad] = grads([x, filt], dy);
+
+    expectArraysClose(xGrad, tf.tensor4d([
+      [[[1.3070987], [-0.9281436]], [[1.1966643], [-0.8547659]]]
+    ]));
+    expectArraysClose(filtGrad, tf.tensor4d([
+      [[[3.117564], [3.117564]], [[2.3039594], [2.3039594]]],
+      [[[0.7537963], [0.7537963]], [[1.5243306], [1.5243306]]]
     ]));
   });
 
