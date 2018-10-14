@@ -252,6 +252,31 @@ describeWithFlags('conv2dTranspose', ALL_ENVS, () => {
     ]));
   });
 
+  // ```py
+  // import numpy as np
+  // import tensorflow as tf
+  //
+  // tf.enable_eager_execution()
+  //
+  // x = tf.constant(np.array([[
+  //     [[1.52433065], [-0.77053435]], [[0.77962889], [1.58413887]],
+  // ]]).astype(np.float32))
+  // filt = tf.constant(np.array([
+  //     [[[0.11178388], [-0.96654977]], [[1.21021296], [0.84121729]]],
+  //     [[[0.34968338], [-0.42306114]], [[1.27395733], [-1.09014535]]]
+  // ]).astype(np.float32))
+  //
+  // with tf.GradientTape() as g:
+  //   g.watch(x)
+  //   g.watch(filt)
+  //   y = tf.keras.backend.conv2d_transpose(
+  //       x, filt, [1, 3, 3, 2], strides=(2, 2), padding='same')
+  //   print(y.shape)
+  // (x_grad, filt_grad) = g.gradient(y, [x, filt])
+  //
+  // print("x_grad = %s" % x_grad)
+  // print("filt_grad = %s" % filt_grad)
+  // ```
   it('gradient input=[1,3,3,1] f=[2,2,2,1] s=[2,2] padding=same', () => {
     const inputDepth = 1;
     const outputDepth = 2;
