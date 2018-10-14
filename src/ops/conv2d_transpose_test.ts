@@ -150,7 +150,7 @@ describeWithFlags('conv2dTranspose', ALL_ENVS, () => {
   // print("x_grad = %s" % x_grad)
   // print("filt_grad = %s" % filt_grad)
   // ```
-  it('gradient input=[1,3,3,1] f=[2,2,2,1] s=[2,2] padding=valid', () => {
+  it('gradient input=[1,2,2,1] f=[2,2,2,1] s=[2,2] padding=valid', () => {
     const inputDepth = 1;
     const outputDepth = 2;
     const inputShape: [number, number, number, number] = [1, 2, 2, inputDepth];
@@ -277,7 +277,7 @@ describeWithFlags('conv2dTranspose', ALL_ENVS, () => {
   // print("x_grad = %s" % x_grad)
   // print("filt_grad = %s" % filt_grad)
   // ```
-  it('gradient input=[1,3,3,1] f=[2,2,2,1] s=[2,2] padding=same', () => {
+  it('gradient input=[1,2,2,2] f=[2,2,2,1] s=[2,2] padding=same', () => {
     const inputDepth = 2;
     const outputDepth = 2;
     const inputShape: [number, number, number, number] = [1, 2, 2, inputDepth];
