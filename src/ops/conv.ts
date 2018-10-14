@@ -292,10 +292,18 @@ function conv2dDerInput_<T extends Tensor3D|Tensor4D>(
 
   const dilations = 1;
 
+  const grad = (dy: Tensor4D) => {
+    return {
+      dy4D: () => conv2d(dy, filter, strides, pad),
+      filter: () => conv2dDerFilter_(dy, dy4D, filter.shape, strides, pad)
+    };
+  };
+
   const convInfo = conv_util.computeConv2DInfo(
       xShape4D, filter.shape, strides, dilations, pad, dimRoundingMode);
   const res = ENV.engine.runKernel(
-      backend => backend.conv2dDerInput(dy4D, filter, convInfo), {dy4D});
+      backend => backend.conv2dDerInput(dy4D, filter, convInfo), {dy4D, filter},
+      grad);
   if (reshapedTo4D) {
     return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as T;
   }
