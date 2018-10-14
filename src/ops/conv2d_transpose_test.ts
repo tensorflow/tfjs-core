@@ -60,8 +60,35 @@ describeWithFlags('conv2dTranspose', ALL_ENVS, () => {
     expectArraysClose(result, expected);
   });
 
-  fit('gradient input=[1,3,3,1] f=[2,2,2,1] s=1 p=0', () => {
-    console.log('IN test');  // DEBUG
+  // Reference (Python) TensorFlow code:
+  //
+  // ```py
+  // import numpy as np
+  // import tensorflow as tf
+  //
+  // tf.enable_eager_execution()
+  //
+  // x = tf.constant(np.array([[
+  //     [[-0.14656299], [0.32942239], [-1.90302866]],
+  //     [[-0.06487813], [-2.02637842], [-1.83669377]],
+  //     [[0.82650784], [-0.89249092], [0.01207666]]
+  // ]]).astype(np.float32))
+  // filt = tf.constant(np.array([
+  //     [[[-0.48280062], [1.26770487]], [[-0.83083738], [0.54341856]]],
+  //     [[[-0.274904], [0.73111374]], [[2.01885189], [-2.68975237]]]
+  // ]).astype(np.float32))
+  //
+  // with tf.GradientTape() as g:
+  //   g.watch(x)
+  //   g.watch(filt)
+  //   y = tf.keras.backend.conv2d_transpose(x, filt, [1, 4, 4, 2])
+  //   print(y)
+  // (x_grad, filt_grad) = g.gradient(y, [x, filt])
+  //
+  // print(x_grad)
+  // print(filt_grad)
+  // ```
+  it('gradient input=[1,3,3,1] f=[2,2,2,1] s=1 p=0', () => {
     const inputDepth = 1;
     const outputDepth = 2;
     const inputShape: [number, number, number, number] = [1, 3, 3, inputDepth];
@@ -79,7 +106,7 @@ describeWithFlags('conv2dTranspose', ALL_ENVS, () => {
           [[0.82650784], [-0.89249092], [0.01207666]]
         ]],
         inputShape);
-    const filter = tf.tensor4d(
+    const filt = tf.tensor4d(
         [
           [[[-0.48280062], [1.26770487]], [[-0.83083738], [0.54341856]]],
           [[[-0.274904], [0.73111374]], [[2.01885189], [-2.68975237]]]
@@ -90,7 +117,7 @@ describeWithFlags('conv2dTranspose', ALL_ENVS, () => {
         (x: tf.Tensor4D, filter: tf.Tensor4D) =>
             tf.conv2dTranspose(x, filter, [1, 4, 4, outputDepth], stride, pad));
     const dy = tf.ones([1, 4, 4, outputDepth]) as tf.Tensor4D;
-    const [xGrad, filterGrad] = grads([x, filter], dy);
+    const [xGrad, filterGrad] = grads([x, filt], dy);
 
     expectArraysClose(xGrad, tf.ones([1, 3, 3, 1]).mul(tf.scalar(0.2827947)));
     expectArraysClose(
