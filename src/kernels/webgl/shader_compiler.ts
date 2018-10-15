@@ -124,6 +124,8 @@ function getPackedOutputSamplingSnippet(
   switch (outShape.length) {
     case 0:
       return getOutputScalarCoords();
+    case 1:
+      return getOutputPacked1DCoords(outShape as [number], outTexShape);
     case 2:
       return getOutputPacked2DCoords(outShape as [number, number], outTexShape);
     case 4:
@@ -317,6 +319,35 @@ function getOutputScalarCoords() {
   return `
     int getOutputCoords() {
       return 0;
+    }
+  `;
+}
+
+function getOutputPacked1DCoords(
+    shape: [number], texShape: [number, number]): string {
+  const packedTexShape =
+      [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
+  if (texShape[0] === 1) {
+    return `
+      int getOutputCoords() {
+        return 2 * int(resultUV.x * ${texShape[1]}.0);
+      }
+    `;
+  }
+
+  if (texShape[1] === 1) {
+    return `
+      int getOutputCoords() {
+        return 2 * int(resultUV.y * ${texShape[0]}.0);
+      }
+    `;
+  }
+
+  return `
+    int getOutputCoords() {
+      ivec2 resTexRC = ivec2(resultUV.yx *
+                             vec2(${packedTexShape[0]}, ${packedTexShape[1]}));
+      return resTexRC.x * ${packedTexShape[1]} + resTexRC.y;
     }
   `;
 }

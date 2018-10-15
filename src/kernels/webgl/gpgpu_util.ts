@@ -413,6 +413,6 @@ export function downloadMatrixFromPackedOutputTexture(
       packedRGBA,
       Math.max(
           1, util.arrayProduct(logicalShape.slice(0, logicalShape.length - 2))),
-      logicalShape[logicalShape.length - 2],
+      logicalShape.length > 1 ? logicalShape[logicalShape.length - 2] : 1,
       logicalShape[logicalShape.length - 1], matrix, w, h);
 }

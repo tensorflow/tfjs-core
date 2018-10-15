@@ -34,31 +34,50 @@ export class PackProgram implements GPGPUProgram {
     const outOfBoundsCondition = getOutOfBoundsCondition(rank, outputShape);
     const sourceCoords = getSourceCoords(rank);
 
-    this.userCode = `
-      void main() {
-        ${dtype} rc = getOutputCoords();
+    if (rank === 1) {
+      this.userCode = `
+        void main() {
+          int index = getOutputCoords();
 
-        int r = ${innerDims[0]};
-        int c = ${innerDims[1]};
+          if(index > ${cols}) {
+            gl_FragColor = vec4(0);
+          } else {
+            gl_FragColor = vec4(
+              getA(index),
+              index + 1 >= ${cols} ? 0. : getA(index + 1),
+              0, 0);
+          }
 
-        if(${outOfBoundsCondition}) {
-          gl_FragColor = vec4(0);
-        } else {
-          int rp1 = r + 1;
-          int cp1 = c + 1;
-
-          bool cEdge = cp1 >= ${cols};
-          bool rEdge = rp1 >= ${rows};
-
-          gl_FragColor = vec4(
-            getA(${sourceCoords[0]}),
-            cEdge ? 0. : getA(${sourceCoords[1]}),
-            rEdge ? 0. : getA(${sourceCoords[2]}),
-            rEdge || cEdge ? 0. : getA(${sourceCoords[3]})
-          );
+          gl_FragColor = vec4(100);
         }
-      }
-    `;
+      `;
+    } else {
+      this.userCode = `
+        void main() {
+          ${dtype} rc = getOutputCoords();
+
+          int r = ${innerDims[0]};
+          int c = ${innerDims[1]};
+
+          if(${outOfBoundsCondition}) {
+            gl_FragColor = vec4(0);
+          } else {
+            int rp1 = r + 1;
+            int cp1 = c + 1;
+
+            bool cEdge = cp1 >= ${cols};
+            bool rEdge = rp1 >= ${rows};
+
+            gl_FragColor = vec4(
+              getA(${sourceCoords[0]}),
+              cEdge ? 0. : getA(${sourceCoords[1]}),
+              rEdge ? 0. : getA(${sourceCoords[2]}),
+              rEdge || cEdge ? 0. : getA(${sourceCoords[3]})
+            );
+          }
+        }
+      `;
+    }
   }
 }
 
