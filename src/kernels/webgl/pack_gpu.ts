@@ -26,33 +26,61 @@ export class PackProgram implements GPGPUProgram {
   constructor(outputShape: number[]) {
     this.outputShape = outputShape;
     this.rank = outputShape.length;
+    const rows = outputShape[outputShape.length - 2];
+    const cols = outputShape[outputShape.length - 1];
 
     const dtype = getCoordsDataType(this.rank);
 
-    this.userCode = `
-      void main() {
-        ${dtype} rc = getOutputCoords();
+    if (this.rank === 2) {
+      this.userCode = `
+        void main() {
+          ${dtype} rc = getOutputCoords();
 
-        int r = rc.x;
-        int c = rc.y;
+          int r = rc.x;
+          int c = rc.y;
 
-        if(r >= ${outputShape[0]} || c >= ${outputShape[1]}) {
-          gl_FragColor = vec4(0);
-        } else {
-          int rp1 = r + 1;
-          int cp1 = c + 1;
+          if(r >= ${rows} || c >= ${cols}) {
+            gl_FragColor = vec4(0);
+          } else {
+            int rp1 = r + 1;
+            int cp1 = c + 1;
 
-          bool cEdge = cp1 >= ${outputShape[1]};
-          bool rEdge = rp1 >= ${outputShape[0]};
+            bool cEdge = cp1 >= ${cols};
+            bool rEdge = rp1 >= ${rows};
 
-          gl_FragColor = vec4(
-              getA(r, c),
-              cEdge ? 0. : getA(r, cp1),
-              rEdge ? 0. : getA(rp1, c),
-              rEdge || cEdge ? 0. : getA(rp1, cp1)
-            );
-        }
-      }
-    `;
+            gl_FragColor = vec4(
+                getA(r, c),
+                cEdge ? 0. : getA(r, cp1),
+                rEdge ? 0. : getA(rp1, c),
+                rEdge || cEdge ? 0. : getA(rp1, cp1)
+              );
+          }
+        }`;
+    } else if (this.rank === 4) {
+      this.userCode = `
+          void main() {
+            ${dtype} rc = getOutputCoords();
+
+            int r = rc.z;
+            int c = rc.w;
+
+            if(r >= ${rows} || c >= ${cols}) {
+              gl_FragColor = vec4(0);
+            } else {
+              int rp1 = r + 1;
+              int cp1 = c + 1;
+
+              bool cEdge = cp1 >= ${cols};
+              bool rEdge = rp1 >= ${rows};
+
+              gl_FragColor = vec4(
+                  getA(rc.x, rc.y, r, c),
+                  cEdge ? 0. : getA(rc.x, rc.y, r, cp1),
+                  rEdge ? 0. : getA(rc.x, rc.y, rp1, c),
+                  rEdge || cEdge ? 0. : getA(rc.x, rc.y, rp1, cp1)
+                );
+            }
+          }`;
+    }
   }
 }

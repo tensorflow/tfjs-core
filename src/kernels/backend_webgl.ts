@@ -655,6 +655,7 @@ export class MathBackendWebGL implements KernelBackend {
         packXProgram, [x], this.makePackedTensor<Tensor4D>(x.shape));
 
     console.log('BATCH NORM - packed X');
+    console.log('x shape', x.shape);
     packedX.print();
 
     let offsetShape = null;
