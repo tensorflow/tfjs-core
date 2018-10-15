@@ -175,6 +175,12 @@ vec2 UVfrom1D(int texNumR, int texNumC, int index) {
   int texC = index - texR * texNumC;
   return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
 }
+vec2 packedUVfrom1D(int texNumR, int texNumC, int index) {
+  int texelIndex = index / 2;
+  int texR = texelIndex / texNumC;
+  int texC = texelIndex - texR * texNumC;
+  return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
+}
 `;
 
 const SAMPLE_2D_SNIPPET = `
@@ -628,10 +634,15 @@ function getSamplerScalar(inputInfo: InputInfo): string {
 function getPackedSampler1D(inputInfo: InputInfo): string {
   const texName = inputInfo.name;
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
+  const texShape = inputInfo.shapeInfo.texShape;
+  const packedTexShape =
+      [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
 
   return `
-    float ${funcName}(int index) {
-      return ${funcName}Flat(index);
+    vec4 ${funcName}(int index) {
+      vec2 uv = packedUVfrom1D(${packedTexShape[0]}, ${
+      packedTexShape[1]}, index);
+      return texture2D(${texName}, uv);
     }
   `;
 }
