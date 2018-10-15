@@ -26,27 +26,13 @@ export class PackProgram implements GPGPUProgram {
   constructor(outputShape: number[]) {
     this.outputShape = outputShape;
     const rank = outputShape.length;
-    const rows = outputShape[outputShape.length - 2];
-    const cols = outputShape[outputShape.length - 1];
 
     const dtype = getCoordsDataType(rank);
-    const innerDims = getInnerDims(rank);
     const outOfBoundsCondition = getOutOfBoundsCondition(rank, outputShape);
-    const sourceCoords = getSourceCoords(rank);
-    const setup = getSetup(rank, innerDims, cols, rows);
-
-    let output = '';
-
-    if (rank === 1) {
-      output = ` getA(rc),
-              rc + 1 >= ${cols} ? 0. : getA(rc + 1),
-              0, 0`;
-    } else {
-      output = `getA(${sourceCoords[0]}),
-              cEdge ? 0. : getA(${sourceCoords[1]}),
-              rEdge ? 0. : getA(${sourceCoords[2]}),
-              rEdge || cEdge ? 0. : getA(${sourceCoords[3]})`;
-    }
+    const setup = getSetup(
+        rank, outputShape[outputShape.length - 1],
+        outputShape[outputShape.length - 2]);
+    const output = getOutput(outputShape);
 
     this.userCode = `
       void main() {
@@ -103,12 +89,12 @@ function getOutOfBoundsCondition(rank: number, shape: number[]): string {
   return cond;
 }
 
-function getSetup(
-    rank: number, innerDims: [number, number], cols: number,
-    rows: number): string {
+function getSetup(rank: number, cols: number, rows: number): string {
   if (rank === 1) {
     return '';
   }
+
+  const innerDims = getInnerDims(rank);
 
   return `
     int r = ${innerDims[0]};
@@ -119,4 +105,19 @@ function getSetup(
     bool cEdge = cp1 >= ${cols};
     bool rEdge = rp1 >= ${rows};
   `;
+}
+
+function getOutput(shape: number[]): string {
+  const rank = shape.length;
+  const sourceCoords = getSourceCoords(rank);
+  if (rank === 1) {
+    return `getA(rc),
+            rc + 1 >= ${shape[0]} ? 0. : getA(rc + 1),
+            0, 0`
+  }
+
+  return `getA(${sourceCoords[0]}),
+          cEdge ? 0. : getA(${sourceCoords[1]}),
+          rEdge ? 0. : getA(${sourceCoords[2]}),
+          rEdge || cEdge ? 0. : getA(${sourceCoords[3]})`
 }
