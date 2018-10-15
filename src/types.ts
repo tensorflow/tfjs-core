@@ -50,6 +50,7 @@ export interface DataTypeMap {
 /** @docalias 'float32'|'int32'|'bool' */
 export type DataType = keyof DataTypeMap;
 export type TypedArray = Float32Array|Int32Array|Uint8Array;
+export type DataValue = DataTypeMap[keyof DataTypeMap];
 
 export enum Rank {
   R0 = 'R0',

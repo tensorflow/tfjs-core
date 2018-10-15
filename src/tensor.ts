@@ -17,7 +17,7 @@
 
 import {tensorToString} from './tensor_format';
 // tslint:disable-next-line:max-line-length
-import {DataType, DataTypeMap, Rank, ShapeMap, TypedArray, ValueMap} from './types';
+import {DataType, DataTypeMap, DataValue, Rank, ShapeMap, TypedArray, ValueMap} from './types';
 import * as util from './util';
 import {computeStrides} from './util';
 
@@ -133,9 +133,9 @@ export class TensorBuffer<R extends Rank> {
 }
 
 export interface TensorTracker {
-  registerTensor(t: Tensor): void;
-  disposeTensor(t: Tensor): void;
-  write(dataId: DataId, values: TypedArray): void;
+  registerTensor(t: Tensor<Rank, DataType>): void;
+  disposeTensor(t: Tensor<Rank, DataType>): void;
+  write(dataId: DataId, values: DataValue): void;
   read(dataId: DataId): Promise<TypedArray>;
   readSync(dataId: DataId): TypedArray;
   registerVariable(v: Variable): void;
@@ -146,9 +146,8 @@ export interface TensorTracker {
  */
 export interface OpHandler {
   cast<T extends Tensor>(x: T, dtype: DataType): T;
-  buffer<R extends Rank>(
-      shape: ShapeMap[R], dtype: DataType,
-      values?: TypedArray): TensorBuffer<R>;
+  buffer<R extends Rank, D extends DataType>(
+      shape: ShapeMap[R], dtype: D, values?: DataTypeMap[D]): TensorBuffer<R>;
   print<T extends Tensor>(x: T, verbose: boolean): void;
   reshape<R2 extends Rank>(x: Tensor, shape: ShapeMap[R2]): Tensor<R2>;
   expandDims<R2 extends Rank>(x: Tensor, axis: number): Tensor<R2>;
