@@ -23,7 +23,9 @@ import * as array_ops_util from '../ops/array_ops_util';
 import * as axis_util from '../ops/axis_util';
 import {computeOutShape} from '../ops/concat_util';
 import {Conv2DInfo} from '../ops/conv_util';
+import * as gather_nd_util from '../ops/gather_nd_util';
 import * as reduce_util from '../ops/reduce_util';
+import * as scatter_nd_util from '../ops/scatter_nd_util';
 import * as segment_util from '../ops/segment_util';
 import {getStridedSlicedInfo} from '../ops/slice_util';
 import {softmax} from '../ops/softmax';
@@ -60,6 +62,7 @@ import * as fft_gpu from './webgl/fft_gpu';
 import {FFTProgram} from './webgl/fft_gpu';
 import {FromPixelsProgram} from './webgl/from_pixels_gpu';
 import {GatherProgram} from './webgl/gather_gpu';
+import {GatherNDProgram} from './webgl/gather_nd_gpu';
 import {GPGPUContext} from './webgl/gpgpu_context';
 import * as gpgpu_math from './webgl/gpgpu_math';
 import {GPGPUBinary, GPGPUProgram, TensorData} from './webgl/gpgpu_math';
@@ -81,6 +84,7 @@ import {ResizeBilinearProgram} from './webgl/resize_bilinear_gpu';
 import {ResizeNearestNeigborBackpropProgram} from './webgl/resize_nearest_neighbor_backprop_gpu';
 import {ResizeNearestNeighborProgram} from './webgl/resize_nearest_neighbor_gpu';
 import {ReverseProgram} from './webgl/reverse_gpu';
+import {ScatterNDProgram} from './webgl/scatter_nd_gpu';
 import {SegmentOpProgram} from './webgl/segment_gpu';
 import {SelectProgram} from './webgl/select_gpu';
 import {SliceProgram} from './webgl/slice_gpu';
@@ -579,8 +583,7 @@ export class MathBackendWebGL implements KernelBackend {
     const outerShapeB = transposeB ? b.shape[1] : b.shape[2];
 
     // TODO(https://github.com/tensorflow/tfjs/issues/693): Support 3D tensors
-    if (ENV.get('WEBGL_RENDER_FLOAT32_ENABLED') && a.shape[0] === 1 &&
-        b.shape[0] === 1) {
+    if (a.shape[0] === 1 && b.shape[0] === 1) {
       const aSqueezed = a.as2D(a.shape[1], a.shape[2]);
       const bSqueezed = b.as2D(b.shape[1], b.shape[2]);
       const packProgramA = new PackProgram(aSqueezed.shape);
@@ -1379,8 +1382,7 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   conv2d(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
-    if (ENV.get('WEBGL_CONV_IM2COL') &&
-        ENV.get('WEBGL_RENDER_FLOAT32_ENABLED') && x.shape[0] === 1) {
+    if (ENV.get('WEBGL_CONV_IM2COL') && x.shape[0] === 1) {
       return this.conv2dWithIm2Row(x, filter, convInfo);
     }
     const program = new Conv2DProgram(convInfo);
@@ -1558,6 +1560,24 @@ export class MathBackendWebGL implements KernelBackend {
     return split(x, sizeSplits, axis);
   }
 
+  scatterND<R extends Rank>(
+      indices: Tensor, updates: Tensor, shape: ShapeMap[R]): Tensor<R> {
+    const [sliceDim, numUpdates, sliceSize, strides, outputSize] =
+        scatter_nd_util.prepareAndValidate(updates, indices, shape);
+
+    const flattenShape = [outputSize / sliceSize, sliceSize];
+    const flattenIndices = indices.reshape([numUpdates, sliceDim]);
+    const flattenX = updates.reshape([numUpdates, sliceSize]);
+
+    if (outputSize === 0) {
+      return backend_util.reshapeTensor(tensor([]), shape);
+    }
+    const program =
+        new ScatterNDProgram(numUpdates, sliceDim, strides, flattenShape);
+    return (this.compileAndRun(program, [flattenX, flattenIndices]) as Tensor)
+        .reshape(shape);
+  }
+
   fft(x: Tensor1D): Tensor1D {
     const xData = this.texData.get(x.dataId);
 
@@ -1574,6 +1594,21 @@ export class MathBackendWebGL implements KernelBackend {
     real.dispose();
     imag.dispose();
     return complex;
+  }
+
+  gatherND(x: Tensor, indices: Tensor): Tensor<Rank> {
+    const indicesShape = indices.shape;
+    const sliceRank = indicesShape[indicesShape.length - 1];
+
+    const [resultShape, numSlices, sliceSize, strides] =
+        gather_nd_util.prepareAndValidate(x, indices);
+
+    const flattenIndices = indices.reshape([numSlices, sliceRank]);
+    const flattenX = x.reshape([x.size / sliceSize, sliceSize]);
+    const program =
+        new GatherNDProgram(sliceRank, strides, [numSlices, sliceSize]);
+    return (this.compileAndRun(program, [flattenX, flattenIndices]) as Tensor)
+        .reshape(resultShape);
   }
 
   private makeOutputArray<T extends Tensor>(shape: number[], dtype: DataType):
@@ -1617,8 +1652,8 @@ export class MathBackendWebGL implements KernelBackend {
       // textures. Do this only when the environment supports 32bit floats due
       // to problems when comparing 16bit floats with 32bit floats.
       if (texData.texture == null &&
-          util.sizeFromShape(input.shape) <= SIZE_UPLOAD_UNIFORM &&
-          ENV.get('WEBGL_RENDER_FLOAT32_ENABLED')) {
+          util.sizeFromShape(input.shape) <=
+              ENV.get('WEBGL_SIZE_UPLOAD_UNIFORM')) {
         return {
           shape: input.shape,
           texData: null,

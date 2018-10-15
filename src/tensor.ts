@@ -315,6 +315,10 @@ export interface OpHandler {
       x: T, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): T;
+  pool<T extends Tensor3D|Tensor4D>(
+      input: T, windowShape: [number, number]|number, poolingType: 'avg'|'max',
+      padding: 'valid'|'same'|number, diationRate?: [number, number]|number,
+      strides?: [number, number]|number): T;
   localResponseNormalization<T extends Tensor3D|Tensor4D>(
       x: T, depthRadius: number, bias: number, alpha: number, beta: number): T;
   unsortedSegmentSum<T extends Tensor>(
@@ -329,7 +333,7 @@ export interface OpHandler {
       x: T, begin: number[], end: number[], strides: number[],
       beginMask: number, endMask: number): T;
   depthToSpace(x: Tensor4D, blockSize: number, dataFormat: string): Tensor4D;
-  fft(x: Tensor1D): Tensor1D;
+  spectral: {fft(x: Tensor1D): Tensor1D;};
 }
 
 // For tracking tensor creation and disposal.
@@ -1207,6 +1211,14 @@ export class Tensor<R extends Rank = Rank> {
     return opHandler.localResponseNormalization(
         this, radius, bias, alpha, beta);
   }
+  pool<T extends Tensor3D|Tensor4D>(
+      this: T, windowShape: [number, number]|number, poolingType: 'max'|'avg',
+      padding: 'valid'|'same'|number, dilationRate?: [number, number]|number,
+      strides?: [number, number]|number): T {
+    (this as Tensor).throwIfDisposed();
+    return opHandler.pool(
+        this, windowShape, poolingType, padding, dilationRate, strides);
+  }
 
   variable(trainable = true, name?: string, dtype?: DataType): Variable<R> {
     this.throwIfDisposed();
@@ -1253,7 +1265,7 @@ export class Tensor<R extends Rank = Rank> {
 
   fft(this: Tensor1D): Tensor1D {
     this.throwIfDisposed();
-    return opHandler.fft(this);
+    return opHandler.spectral.fft(this);
   }
 }
 Object.defineProperty(Tensor, Symbol.hasInstance, {

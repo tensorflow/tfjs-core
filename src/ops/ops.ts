@@ -40,7 +40,9 @@ export * from './lstm';
 export * from './moving_average';
 export * from './strided_slice';
 export * from './topk';
+export * from './scatter_nd';
 export * from './spectral_ops';
+export * from './gather_nd';
 
 export {op} from './operation';
 
@@ -48,4 +50,6 @@ export {op} from './operation';
 import * as losses from './loss_ops';
 import * as linalg from './linalg_ops';
 import * as image from './image_ops';
-export {image, linalg, losses};
+import * as spectral from './spectral_ops';
+
+export {image, linalg, losses, spectral};
