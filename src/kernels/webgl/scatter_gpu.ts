@@ -19,14 +19,14 @@ import {GPGPUProgram} from './gpgpu_math';
 import {getCoordsDataType} from './shader_compiler';
 
 export class ScatterProgram implements GPGPUProgram {
-  variableNames = ['updates', 'indices'];
+  variableNames = ['updates', 'indices', 'defaultValue'];
   outputShape: number[];
   userCode: string;
 
   constructor(
       updateSize: number, sliceDim: number, indicesRank: number,
       updatesRank: number, strides: number[], shape: number[],
-      defaultValue: number, summingDupeIndex = true) {
+      summingDupeIndex = true) {
     this.outputShape = shape;
     const stridesType = getCoordsDataType(strides.length);
     const dtype = getCoordsDataType(shape.length);
@@ -65,11 +65,7 @@ export class ScatterProgram implements GPGPUProgram {
               found = true;
             }
           }
-          if (found) {
-            setOutput(sum);
-          } else {
-            setOutput(float(${defaultValue}));
-          }
+          setOutput(mix(getDefaultValue(), sum, float(found)));
         }
       `;
   }

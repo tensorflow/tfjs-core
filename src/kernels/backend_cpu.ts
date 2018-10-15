@@ -27,11 +27,11 @@ import {Conv2DInfo} from '../ops/conv_util';
 import * as erf_util from '../ops/erf_util';
 import * as gather_nd_util from '../ops/gather_nd_util';
 import * as ops from '../ops/ops';
-import {buffer, tensor, tensor3d, tensor4d} from '../ops/ops';
+import {buffer, scalar, tensor, tensor3d, tensor4d} from '../ops/ops';
 import * as scatter_nd_util from '../ops/scatter_nd_util';
 import * as selu_util from '../ops/selu_util';
 import {getStridedSlicedInfo} from '../ops/slice_util';
-import {DataId, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
+import {DataId, Scalar, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
 import {DataType, DataTypeMap, Rank, ShapeMap, TypedArray, upcastType} from '../types';
 import * as util from '../util';
 import {now} from '../util';
@@ -2851,7 +2851,7 @@ export class MathBackendCPU implements KernelBackend {
 
   sparseToDense<R extends Rank>(
       sparseIndices: Tensor, sparseValues: Tensor, outputShape: ShapeMap[R],
-      defaultValue: number, validateIndices: boolean): Tensor<R> {
+      defaultValue: Scalar): Tensor<R> {
     const {sliceRank, numUpdates, sliceSize, strides, outputSize} =
         scatter_nd_util.calculateShapes(
             sparseValues, sparseIndices, outputShape);
@@ -2899,7 +2899,7 @@ export class MathBackendCPU implements KernelBackend {
       indices: Tensor, updates: Tensor, shape: ShapeMap[R]): Tensor<R> {
     const {sliceRank, numUpdates, sliceSize, strides, outputSize} =
         scatter_nd_util.calculateShapes(updates, indices, shape);
-    const defaultValue = 0;
+    const defaultValue = scalar(0);
     const sumDupeIndices = true;
     return this.scatter(
         indices, updates, shape, outputSize, sliceSize, numUpdates, sliceRank,
@@ -2909,7 +2909,7 @@ export class MathBackendCPU implements KernelBackend {
   private scatter<R extends Rank>(
       indices: Tensor, updates: Tensor, shape: ShapeMap[R], outputSize: number,
       sliceSize: number, numUpdates: number, sliceRank: number,
-      strides: number[], defaultValue: number,
+      strides: number[], defaultValue: Scalar,
       sumDupeIndices: boolean): Tensor<R> {
     const flattenShape = [outputSize / sliceSize, sliceSize];
     const indicesData = indices.dataSync();
@@ -2920,7 +2920,7 @@ export class MathBackendCPU implements KernelBackend {
     }
 
     const buffer = new TensorBuffer(flattenShape, updates.dtype);
-    buffer.values.fill(defaultValue);
+    buffer.values.fill(defaultValue.dataSync()[0]);
 
     for (let i = 0; i < numUpdates; i++) {
       const index = [];

@@ -30,7 +30,7 @@ import * as segment_util from '../ops/segment_util';
 import {getStridedSlicedInfo} from '../ops/slice_util';
 import {softmax} from '../ops/softmax';
 import {range, scalar, tensor} from '../ops/tensor_ops';
-import {DataId, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
+import {DataId, Scalar, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import {DataType, DataTypeMap, Rank, RecursiveArray, ShapeMap, sumOutType, TypedArray, upcastType} from '../types';
 import * as util from '../util';
 import {getTypedArrayFromDType, sizeFromShape} from '../util';
@@ -1601,17 +1601,18 @@ export class MathBackendWebGL implements KernelBackend {
     if (outputSize === 0) {
       return backend_util.reshapeTensor(tensor([]), shape);
     }
-    const defaultValue = 0;
+    const defaultValue = scalar(0);
     const program = new ScatterProgram(
         numUpdates, sliceRank, flattenIndices.rank, flattenX.rank, strides,
-        flattenShape, defaultValue);
-    return (this.compileAndRun(program, [flattenX, flattenIndices]) as Tensor)
+        flattenShape);
+    return (this.compileAndRun(
+                program, [flattenX, flattenIndices, defaultValue]) as Tensor)
         .reshape(shape);
   }
 
   sparseToDense<R extends Rank>(
       sparseIndices: Tensor, sparseValues: Tensor, outputShape: ShapeMap[R],
-      defaultValue: number, validateIndices: boolean): Tensor<R> {
+      defaultValue: Scalar): Tensor<R> {
     const {sliceRank, numUpdates, strides, outputSize} =
         scatter_nd_util.calculateShapes(
             sparseValues, sparseIndices, outputShape);
@@ -1619,9 +1620,9 @@ export class MathBackendWebGL implements KernelBackend {
     const sumDupeIndices = false;
     const program = new ScatterProgram(
         numUpdates, sliceRank, sparseIndices.rank, sparseValues.rank, strides,
-        [outputSize, 1], defaultValue, sumDupeIndices);
-    return (this.compileAndRun(program, [sparseValues, sparseIndices]) as
-            Tensor)
+        [outputSize, 1], sumDupeIndices);
+    return (this.compileAndRun(
+                program, [sparseValues, sparseIndices, defaultValue]) as Tensor)
         .reshape(outputShape);
   }
 

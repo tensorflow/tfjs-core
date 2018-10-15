@@ -17,7 +17,7 @@
 
 import {ENV} from '../environment';
 import * as sparse_to_dense from '../ops/sparse_to_dense_util';
-import {Tensor} from '../tensor';
+import {Scalar, Tensor} from '../tensor';
 import {convertToTensor} from '../tensor_util_env';
 import {Rank, ShapeMap, TensorLike} from '../types';
 
@@ -53,30 +53,26 @@ import {op} from './operation';
  * corresponding to each row of sparseIndices, or a scalar value to be used for
  * all sparse indices.
  * @param outputShape Shape of the dense output tensor. the type is inferred.
- * @param defaultValue number. Value to set for indices not specified in
+ * @param defaultValue Scalar. Value to set for indices not specified in
  * sparseIndices. Defaults to zero.
- * @param validateIndices boolean. If true, indices are checked to make sure
- * they are sorted in lexicographic order and that there are no repeats.
- * Currently this is not supported.
  */
 /** @doc {heading: 'Operations', subheading: 'Normalization'} */
 function sparseToDense_<R extends Rank>(
     sparseIndices: Tensor|TensorLike, sparseValues: Tensor|TensorLike,
-    outputShape: ShapeMap[R], defaultValue = 0,
-    validateIndices = false): Tensor<R> {
+    outputShape: ShapeMap[R], defaultValue: Scalar|TensorLike): Tensor<R> {
   const $sparseIndices =
       convertToTensor(sparseIndices, 'sparseIndices', 'sparseToDense', 'int32');
   const $sparseValues =
       convertToTensor(sparseValues, 'sparseValues', 'sparseToDense');
+  const $defaultValue =
+      convertToTensor(defaultValue, 'defaultValue', 'sparseToDense');
 
-  sparse_to_dense.validateInput(
-      $sparseIndices, $sparseValues, outputShape, validateIndices);
+  sparse_to_dense.validateInput($sparseIndices, $sparseValues, outputShape);
 
   return ENV.engine.runKernel(
       backend => backend.sparseToDense(
-          $sparseIndices, $sparseValues, outputShape, defaultValue,
-          validateIndices),
-      {$sparseIndices, $sparseValues});
+          $sparseIndices, $sparseValues, outputShape, $defaultValue),
+      {$sparseIndices, $sparseValues, $defaultValue});
 }
 
 export const sparseToDense = op({sparseToDense_});

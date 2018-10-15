@@ -30,12 +30,7 @@ import {Tensor} from '../tensor';
  * will be thrown if it is set.
  */
 export function validateInput(
-    sparseIndices: Tensor, sparseValues: Tensor, outputShape: number[],
-    validateIndices: boolean) {
-  if (validateIndices) {
-    throw new Error(
-        'tf.sparseToDense() currently does not support indices validation.');
-  }
+    sparseIndices: Tensor, sparseValues: Tensor, outputShape: number[]) {
   if (sparseIndices.dtype !== 'int32') {
     throw new Error(
         'tf.sparseToDense() expects the indices to be int32 type,' +
