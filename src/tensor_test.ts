@@ -17,7 +17,7 @@
 
 import * as tf from './index';
 import {describeWithFlags} from './jasmine_util';
-import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
+import {Scalar, StringTensor, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, BaseTensor} from './tensor';
 import {ALL_ENVS, expectArraysClose, expectArraysEqual, expectNumbersClose} from './test_util';
 import {DType, Rank} from './types';
 
@@ -642,7 +642,7 @@ describeWithFlags('tensor', ALL_ENVS, () => {
 
   it('float32 dtype from boolean[]', () => {
     const a = tf.tensor3d(
-      [[[false], [false]], [[true], [false]]], [2, 2, 1], 'float32');
+        [[[false], [false]], [[true], [false]]], [2, 2, 1], 'float32');
     expect(a.dtype).toBe('float32');
     expectArraysClose(a, [0, 0, 1, 0]);
   });
@@ -1697,5 +1697,12 @@ describeWithFlags('buffer', ALL_ENVS, () => {
     expect(buff.get(0, 1, 1)).toEqual(0);
     expect(buff.get(0, 1, 2)).toEqual(0);
     expectArraysClose(buff.toTensor(), [1, 0, 0, 2, 0, 0]);
+  });
+});
+
+describeWithFlags('buffer', ALL_ENVS, () => {
+  it('string tensor', () => {
+    const a = tf.tensor([1, 2, 3], ) as BaseTensor;
+    console.log((a as StringTensor).dataSync());
   });
 });
