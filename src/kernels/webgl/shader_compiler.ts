@@ -330,7 +330,7 @@ function getOutputPacked1DCoords(
   if (texShape[0] === 1) {
     return `
       int getOutputCoords() {
-        return 2 * int(resultUV.x * ${texShape[1]}.0);
+        return 2 * int(resultUV.x * ${packedTexShape[1]}.0);
       }
     `;
   }
@@ -338,7 +338,7 @@ function getOutputPacked1DCoords(
   if (texShape[1] === 1) {
     return `
       int getOutputCoords() {
-        return 2 * int(resultUV.y * ${texShape[0]}.0);
+        return 2 * int(resultUV.y * ${packedTexShape[0]}.0);
       }
     `;
   }
