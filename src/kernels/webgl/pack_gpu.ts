@@ -33,51 +33,34 @@ export class PackProgram implements GPGPUProgram {
     const innerDims = getInnerDims(rank);
     const outOfBoundsCondition = getOutOfBoundsCondition(rank, outputShape);
     const sourceCoords = getSourceCoords(rank);
+    const setup = getSetup(rank, innerDims, cols, rows);
+
+    let output = '';
 
     if (rank === 1) {
-      this.userCode = `
-        void main() {
-          int index = getOutputCoords();
-
-          if(index > ${cols}) {
-            gl_FragColor = vec4(0);
-          } else {
-            gl_FragColor = vec4(
-              getA(index),
-              index + 1 >= ${cols} ? 0. : getA(index + 1),
-              0, 0);
-          }
-
-          gl_FragColor = vec4(100);
-        }
-      `;
+      output = ` getA(rc),
+              rc + 1 >= ${cols} ? 0. : getA(rc + 1),
+              0, 0`;
     } else {
-      this.userCode = `
-        void main() {
-          ${dtype} rc = getOutputCoords();
-
-          int r = ${innerDims[0]};
-          int c = ${innerDims[1]};
-
-          if(${outOfBoundsCondition}) {
-            gl_FragColor = vec4(0);
-          } else {
-            int rp1 = r + 1;
-            int cp1 = c + 1;
-
-            bool cEdge = cp1 >= ${cols};
-            bool rEdge = rp1 >= ${rows};
-
-            gl_FragColor = vec4(
-              getA(${sourceCoords[0]}),
+      output = `getA(${sourceCoords[0]}),
               cEdge ? 0. : getA(${sourceCoords[1]}),
               rEdge ? 0. : getA(${sourceCoords[2]}),
-              rEdge || cEdge ? 0. : getA(${sourceCoords[3]})
-            );
-          }
-        }
-      `;
+              rEdge || cEdge ? 0. : getA(${sourceCoords[3]})`;
     }
+
+    this.userCode = `
+      void main() {
+        ${dtype} rc = getOutputCoords();
+
+        if(${outOfBoundsCondition}) {
+          gl_FragColor = vec4(0);
+        } else {
+          ${setup}
+
+          gl_FragColor = vec4(${output});
+        }
+      }
+    `;
   }
 }
 
@@ -105,6 +88,10 @@ function getSourceCoords(rank: number): string[] {
 }
 
 function getOutOfBoundsCondition(rank: number, shape: number[]): string {
+  if (rank === 1) {
+    return `rc > ${shape[0]}`;
+  }
+
   let cond = '';
   for (let i = 0; i < rank; i++) {
     cond += `${dims[i]} >= ${shape[i]}`;
@@ -114,4 +101,22 @@ function getOutOfBoundsCondition(rank: number, shape: number[]): string {
   }
 
   return cond;
+}
+
+function getSetup(
+    rank: number, innerDims: [number, number], cols: number,
+    rows: number): string {
+  if (rank === 1) {
+    return '';
+  }
+
+  return `
+    int r = ${innerDims[0]};
+    int c = ${innerDims[1]};
+    int rp1 = r + 1;
+    int cp1 = c + 1;
+
+    bool cEdge = cp1 >= ${cols};
+    bool rEdge = rp1 >= ${rows};
+  `;
 }
