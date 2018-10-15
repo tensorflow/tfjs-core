@@ -232,28 +232,28 @@ describeWithFlags('tex_util decodeMatrixFromPackedRGBA', WEBGL_ENVS, () => {
   it('1x1 matrix only loads R component from only texel', () => {
     const packedRGBA = new Float32Array([1, 0, 0, 0]);
     const matrix = new Float32Array(1);
-    tex_util.decodeMatrixFromPackedRGBA(packedRGBA, 1, 1, matrix);
+    tex_util.decodeMatrixFromPackedRGBA(packedRGBA, 1, 1, 1, matrix, 1, 1);
     expect(matrix[0]).toEqual(1);
   });
 
   it('1x2 matrix loads RG from only texel', () => {
     const packedRGBA = new Float32Array([1, 2, 0, 0]);
     const matrix = new Float32Array(2);
-    tex_util.decodeMatrixFromPackedRGBA(packedRGBA, 1, 2, matrix);
+    tex_util.decodeMatrixFromPackedRGBA(packedRGBA, 1, 1, 2, matrix, 1, 1);
     expectArraysClose(matrix, new Float32Array([1, 2]));
   });
 
   it('2x1 matrix loads RB from only texel', () => {
     const packedRGBA = new Float32Array([1, 0, 2, 0]);
     const matrix = new Float32Array(2);
-    tex_util.decodeMatrixFromPackedRGBA(packedRGBA, 2, 1, matrix);
+    tex_util.decodeMatrixFromPackedRGBA(packedRGBA, 1, 2, 1, matrix, 1, 1);
     expectArraysClose(matrix, new Float32Array([1, 2]));
   });
 
   it('2x2 matrix loads RGBA from only texel', () => {
     const packedRGBA = new Float32Array([1, 2, 3, 4]);
     const matrix = new Float32Array(4);
-    tex_util.decodeMatrixFromPackedRGBA(packedRGBA, 2, 2, matrix);
+    tex_util.decodeMatrixFromPackedRGBA(packedRGBA, 1, 2, 2, matrix, 1, 1);
     expectArraysClose(matrix, new Float32Array([1, 2, 3, 4]));
   });
 
@@ -267,7 +267,7 @@ describeWithFlags('tex_util decodeMatrixFromPackedRGBA', WEBGL_ENVS, () => {
     const packedRGBA =
         new Float32Array([1, 2, 4, 5, 3, 0, 6, 0, 7, 8, 10, 11, 9, 0, 12, 0]);
     const matrix = new Float32Array(12);
-    tex_util.decodeMatrixFromPackedRGBA(packedRGBA, 4, 3, matrix);
+    tex_util.decodeMatrixFromPackedRGBA(packedRGBA, 1, 4, 3, matrix, 2, 2);
     expectArraysClose(
         matrix, new Float32Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]));
   });
@@ -281,7 +281,7 @@ describeWithFlags('tex_util decodeMatrixFromPackedRGBA', WEBGL_ENVS, () => {
     const packedRGBA =
         new Float32Array([1, 2, 5, 6, 3, 4, 7, 8, 9, 10, 0, 0, 11, 12, 0, 0]);
     const matrix = new Float32Array(12);
-    tex_util.decodeMatrixFromPackedRGBA(packedRGBA, 3, 4, matrix);
+    tex_util.decodeMatrixFromPackedRGBA(packedRGBA, 1, 3, 4, matrix, 2, 2);
     expectArraysClose(
         matrix, new Float32Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]));
   });
@@ -295,7 +295,7 @@ describeWithFlags('tex_util decodeMatrixFromPackedRGBA', WEBGL_ENVS, () => {
     const packedRGBA =
         new Float32Array([1, 2, 4, 5, 3, 0, 6, 0, 7, 8, 0, 0, 9, 0, 0, 0]);
     const matrix = new Float32Array(9);
-    tex_util.decodeMatrixFromPackedRGBA(packedRGBA, 3, 3, matrix);
+    tex_util.decodeMatrixFromPackedRGBA(packedRGBA, 1, 3, 3, matrix, 2, 2);
     expectArraysClose(matrix, new Float32Array([1, 2, 3, 4, 5, 6, 7, 8, 9]));
   });
 });

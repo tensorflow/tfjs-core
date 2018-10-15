@@ -25,15 +25,14 @@ export class PackProgram implements GPGPUProgram {
 
   constructor(outputShape: number[]) {
     this.outputShape = outputShape;
-    this.rank = outputShape.length;
+    const rank = outputShape.length;
     const rows = outputShape[outputShape.length - 2];
     const cols = outputShape[outputShape.length - 1];
 
-    const dtype = getCoordsDataType(this.rank);
-    const innerDims = getInnerDims(this.rank);
-    const outOfBoundsCondition =
-        getOutOfBoundsCondition(this.rank, outputShape);
-    const sourceCoords = getSourceCoords(this.rank);
+    const dtype = getCoordsDataType(rank);
+    const innerDims = getInnerDims(rank);
+    const outOfBoundsCondition = getOutOfBoundsCondition(rank, outputShape);
+    const sourceCoords = getSourceCoords(rank);
 
     this.userCode = `
       void main() {
@@ -65,12 +64,12 @@ export class PackProgram implements GPGPUProgram {
 
 const dims = ['rc.x', 'rc.y', 'rc.z', 'rc.w'];
 
-function getInnerDims(rank: number): string {
-  return dims.slice(-2);
+function getInnerDims(rank: number): string[] {
+  return dims.slice(0, rank).slice(-2);
 }
 
-function getSourceCoords(rank: number): string {
-  let coords = [];
+function getSourceCoords(rank: number): string[] {
+  const coords = [];
 
   for (let row = 0; row <= 1; row++) {
     for (let col = 0; col <= 1; col++) {
