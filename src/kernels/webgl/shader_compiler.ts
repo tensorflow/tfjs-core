@@ -90,8 +90,12 @@ function getSamplerFromInInfo(inInfo: InputInfo): string {
 function getPackedSamplerFromInInfo(inInfo: InputInfo): string {
   const shape = inInfo.shapeInfo.logicalShape;
   switch (shape.length) {
+    case 1:
+      return getPackedSampler1D(inInfo);
     case 2:
       return getPackedSampler2D(inInfo);
+    case 4:
+      return getPackedSampler4D(inInfo);
     default:
       throw new Error(
           `Packed ${shape.length}-D input sampling` +
@@ -206,6 +210,15 @@ vec2 UVfrom4D(int texNumR, int texNumC, int stride0,
     int depth2) {
   // Explicitly use integer operations as dot() only works on floats.
   int index = row * stride0 + col * stride1 + depth * stride2 + depth2;
+  int texR = index / texNumC;
+  int texC = index - texR * texNumC;
+  return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
+}
+vec2 packedUVfrom4D(int texNumR, int texNumC, int texelsInBatch2,
+    int texelsInBatch, int texelsInLogicalRow, int b2, int b,
+    int row, int col) {
+  int index = b2 * texelsInBatch2 + b * texelsInBatch +
+    (row / 2) * texelsInLogicalRow + (col / 2);
   int texR = index / texNumC;
   int texC = index - texR * texNumC;
   return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
@@ -612,6 +625,17 @@ function getSamplerScalar(inputInfo: InputInfo): string {
   `;
 }
 
+function getPackedSampler1D(inputInfo: InputInfo): string {
+  const texName = inputInfo.name;
+  const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
+
+  return `
+    float ${funcName}(int index) {
+      return ${funcName}Flat(index);
+    }
+  `;
+}
+
 function getSampler1D(inputInfo: InputInfo): string {
   const texName = inputInfo.name;
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
@@ -789,6 +813,30 @@ function getSampler3D(inputInfo: InputInfo): string {
             ${texNumR}, ${texNumC}, ${stride0}, ${stride1}, row, col, depth);
         return sampleTexture(${texName}, uv);
       }
+  `;
+}
+
+function getPackedSampler4D(inputInfo: InputInfo): string {
+  const shape = inputInfo.shapeInfo.logicalShape;
+  const texName = inputInfo.name;
+  const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
+  const texShape = inputInfo.shapeInfo.texShape;
+
+  const texNumR = texShape[0];
+  const texNumC = texShape[1];
+
+  const packedTexShape =
+      [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
+  const valuesPerRow = Math.ceil(shape[3] / 2);
+  const texelsInBatch = valuesPerRow * shape[2];
+  const texelsInBatch2 = texelsInBatch * shape[1];
+
+  return `
+    vec4 ${funcName}(int b2, int b, int row, int col) {
+      vec2 uv = packedUVfrom4D(${texNumR}, ${texNumC}, ${texelsInBatch2}, ${
+      texelsInBatch}, ${valuesPerRow}, b2, b, row, col);
+      return texture2D(${texName}, uv);
+    }
   `;
 }
 
