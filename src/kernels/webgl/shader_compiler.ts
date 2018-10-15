@@ -821,12 +821,11 @@ function getPackedSampler4D(inputInfo: InputInfo): string {
   const texName = inputInfo.name;
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
   const texShape = inputInfo.shapeInfo.texShape;
-
-  const texNumR = texShape[0];
-  const texNumC = texShape[1];
-
   const packedTexShape =
       [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
+  const texNumR = packedTexShape[0];
+  const texNumC = packedTexShape[1];
+
   const valuesPerRow = Math.ceil(shape[3] / 2);
   const texelsInBatch = valuesPerRow * shape[2];
   const texelsInBatch2 = texelsInBatch * shape[1];
