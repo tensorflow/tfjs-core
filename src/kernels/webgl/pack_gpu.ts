@@ -30,57 +30,70 @@ export class PackProgram implements GPGPUProgram {
     const cols = outputShape[outputShape.length - 1];
 
     const dtype = getCoordsDataType(this.rank);
+    const innerDims = getInnerDims(this.rank);
+    const outOfBoundsCondition =
+        getOutOfBoundsCondition(this.rank, outputShape);
+    const sourceCoords = getSourceCoords(this.rank);
 
-    if (this.rank === 2) {
-      this.userCode = `
-        void main() {
-          ${dtype} rc = getOutputCoords();
+    this.userCode = `
+      void main() {
+        ${dtype} rc = getOutputCoords();
 
-          int r = rc.x;
-          int c = rc.y;
+        int r = ${innerDims[0]};
+        int c = ${innerDims[1]};
 
-          if(r >= ${rows} || c >= ${cols}) {
-            gl_FragColor = vec4(0);
-          } else {
-            int rp1 = r + 1;
-            int cp1 = c + 1;
+        if(${outOfBoundsCondition}) {
+          gl_FragColor = vec4(0);
+        } else {
+          int rp1 = r + 1;
+          int cp1 = c + 1;
 
-            bool cEdge = cp1 >= ${cols};
-            bool rEdge = rp1 >= ${rows};
+          bool cEdge = cp1 >= ${cols};
+          bool rEdge = rp1 >= ${rows};
 
-            gl_FragColor = vec4(
-                getA(r, c),
-                cEdge ? 0. : getA(r, cp1),
-                rEdge ? 0. : getA(rp1, c),
-                rEdge || cEdge ? 0. : getA(rp1, cp1)
-              );
-          }
-        }`;
-    } else if (this.rank === 4) {
-      this.userCode = `
-          void main() {
-            ${dtype} rc = getOutputCoords();
+          gl_FragColor = vec4(
+            getA(${sourceCoords[0]}),
+            cEdge ? 0. : getA(${sourceCoords[1]}),
+            rEdge ? 0. : getA(${sourceCoords[2]}),
+            rEdge || cEdge ? 0. : getA(${sourceCoords[3]})
+          );
+        }
+      }
+    `;
+  }
+}
 
-            int r = rc.z;
-            int c = rc.w;
+const dims = ['rc.x', 'rc.y', 'rc.z', 'rc.w'];
 
-            if(r >= ${rows} || c >= ${cols}) {
-              gl_FragColor = vec4(0);
-            } else {
-              int rp1 = r + 1;
-              int cp1 = c + 1;
+function getInnerDims(rank: number): string {
+  return dims.slice(-2);
+}
 
-              bool cEdge = cp1 >= ${cols};
-              bool rEdge = rp1 >= ${rows};
+function getSourceCoords(rank: number): string {
+  let coords = [];
 
-              gl_FragColor = vec4(
-                  getA(rc.x, rc.y, r, c),
-                  cEdge ? 0. : getA(rc.x, rc.y, r, cp1),
-                  rEdge ? 0. : getA(rc.x, rc.y, rp1, c),
-                  rEdge || cEdge ? 0. : getA(rc.x, rc.y, rp1, cp1)
-                );
-            }
-          }`;
+  for (let row = 0; row <= 1; row++) {
+    for (let col = 0; col <= 1; col++) {
+      let coord = `${row === 0 ? 'r' : 'rp1'}, ${col === 0 ? 'c' : 'cp1'}`;
+
+      for (let d = 2; d < rank; d++) {
+        coord = `${dims[dims.length - 1 - d]},` + coord;
+      }
+
+      coords.push(coord);
     }
   }
+  return coords;
+}
+
+function getOutOfBoundsCondition(rank: number, shape: number[]): string {
+  let cond = '';
+  for (let i = 0; i < rank; i++) {
+    cond += `${dims[i]} >= ${shape[i]}`;
+    if (i < rank - 1) {
+      cond += '||';
+    }
+  }
+
+  return cond;
 }
