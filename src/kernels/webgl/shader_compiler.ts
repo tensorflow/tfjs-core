@@ -421,7 +421,7 @@ function getOutputPacked4DCoords(
       [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
 
   const texelsInLogicalRow = Math.ceil(shape[3] / 2);
-  const texelsInBatch = texelsInLogicalRow * shape[2];
+  const texelsInBatch = texelsInLogicalRow * Math.ceil(shape[2] / 2);
   const texelsInBatch2 = texelsInBatch * shape[1];
 
   return `
