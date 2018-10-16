@@ -292,10 +292,14 @@ function conv2dDerInput_<T extends Tensor3D|Tensor4D>(
 
   const dilations = 1;
 
-  const grad = (dy: Tensor4D) => {
+
+  const grad = (ddx: Tensor4D) => {
+    const dataFormat = 'NHWC';
     return {
-      dy4D: () => conv2d(dy, filter, strides, pad),
-      filter: () => conv2dDerFilter_(dy, dy4D, filter.shape, strides, pad)
+      dy4D: () => conv2d(
+          ddx, filter, strides, pad, dataFormat, dilations, dimRoundingMode),
+      filter: () => conv2dDerFilter_(
+          ddx, dy4D, filter.shape, strides, pad, dimRoundingMode)
     };
   };
 

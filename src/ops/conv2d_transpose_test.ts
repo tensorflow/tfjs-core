@@ -147,8 +147,8 @@ describeWithFlags('conv2dTranspose', ALL_ENVS, () => {
   //   2)) print(y)
   // (x_grad, filt_grad) = g.gradient(y, [x, filt])
   //
-  // print("x_grad = %s" % x_grad)
-  // print("filt_grad = %s" % filt_grad)
+  // print("x_grad = %s" % -x_grad)
+  // print("filt_grad = %s" % -filt_grad)
   // ```
   it('gradient input=[1,2,2,1] f=[2,2,2,1] s=[2,2] padding=valid', () => {
     const inputDepth = 1;
@@ -174,12 +174,13 @@ describeWithFlags('conv2dTranspose', ALL_ENVS, () => {
     const grads = tf.grads(
         (x: tf.Tensor4D, filter: tf.Tensor4D) =>
             tf.conv2dTranspose(x, filter, [1, 4, 4, outputDepth], stride, pad));
-    const dy = tf.ones([1, 4, 4, outputDepth]) as tf.Tensor4D;
+    const dy =
+        tf.ones([1, 4, 4, outputDepth]).mul(tf.scalar(-1)) as tf.Tensor4D;
     const [xGrad, filtGrad] = grads([x, filt], dy);
 
-    expectArraysClose(xGrad, tf.ones([1, 2, 2, 1]).mul(tf.scalar(0.03454196)));
+    expectArraysClose(xGrad, tf.ones([1, 2, 2, 1]).mul(tf.scalar(-0.03454196)));
     expectArraysClose(
-        filtGrad, tf.ones([2, 2, 2, 1]).mul(tf.scalar(0.01444618)));
+        filtGrad, tf.ones([2, 2, 2, 1]).mul(tf.scalar(-0.01444618)));
   });
 
   // Reference (Python) TensorFlow code:
@@ -252,6 +253,8 @@ describeWithFlags('conv2dTranspose', ALL_ENVS, () => {
     ]));
   });
 
+  // Reference (Python) TensorFlow code:
+  //
   // ```py
   // import numpy as np
   // import tensorflow as tf
