@@ -24,6 +24,7 @@ import {getTensorsInContainer, isTensorInList} from './tensor_util';
 import {DataType, TypedArray} from './types';
 import * as util from './util';
 import {makeOnesTypedArray, now, sizeFromShape} from './util';
+import {PackCache} from './environment_util';
 
 /**
  * A function that computes an output. The save function is for saving tensors
@@ -410,10 +411,9 @@ export class Engine implements TensorManager, DataMover {
     // Dispose the arrays tracked in this scope.
     for (let i = 0; i < this.activeScope.track.length; i++) {
       const tensor = this.activeScope.track[i];
-      if (tensorsToKeep.has(tensor.id)) {
+      if (tensorsToKeep.has(tensor.id) || PackCache.keepPackedTensorIDs.indexOf(tensor.id) > -1) {
         continue;
       }
-
       if (this.activeTape != null) {
         tensorsToTrackInParent.push(tensor);
       } else {

@@ -337,3 +337,8 @@ function decodeParam(
     params: {[key: string]: string}, name: string, value?: string) {
   params[decodeURIComponent(name)] = decodeURIComponent(value || '');
 }
+
+export const PackCache = {
+  // tslint:disable-next-line:no-any
+  packedTensorMap: {}, keepPackedTensorIDs: []
+}

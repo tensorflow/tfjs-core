@@ -2,7 +2,7 @@
   "compilerOptions": {
     "module": "commonjs",
     "moduleResolution": "node",
-    "noImplicitAny": true,
+    // "noImplicitAny": true,
     "sourceMap": true,
     "removeComments": true,
     "preserveConstEnums": true,

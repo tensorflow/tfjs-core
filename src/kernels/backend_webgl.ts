@@ -17,6 +17,7 @@
 
 import {MemoryInfo, TimingInfo} from '../engine';
 import {ENV} from '../environment';
+import {PackCache} from '../environment_util';
 import {tidy} from '../globals';
 import {warn} from '../log';
 import * as array_ops_util from '../ops/array_ops_util';
@@ -656,30 +657,50 @@ export class MathBackendWebGL implements KernelBackend {
     const packedX =
         this.compileAndRun(packXProgram, [x], this.makePackedTensor(x.shape));
 
-    const packMeanProgram = new PackProgram(mean.shape);
-    const packedMean = this.compileAndRun(
-        packMeanProgram, [mean], this.makePackedTensor(mean.shape));
+    let packedMean = PackCache.packedTensorMap[mean.id];
+    if(!packedMean) {
+      const packMeanProgram = new PackProgram(mean.shape);
+      packedMean = this.compileAndRun(
+          packMeanProgram, [mean], this.makePackedTensor(mean.shape));
+      PackCache.packedTensorMap[mean.id] = packedMean;
+      PackCache.keepPackedTensorIDs.push(packedMean.id);
+    }
 
-    const packVarianceProgram = new PackProgram(variance.shape);
-    const packedVariance = this.compileAndRun(
-        packVarianceProgram, [variance], this.makePackedTensor(variance.shape));
+    let packedVariance = PackCache.packedTensorMap[variance.id];
+    if(!packedVariance) {
+      const packVarianceProgram = new PackProgram(variance.shape);
+      packedVariance = this.compileAndRun(
+          packVarianceProgram, [variance], this.makePackedTensor(variance.shape));
+      PackCache.packedTensorMap[variance.id] = packedVariance;
+      PackCache.keepPackedTensorIDs.push(packedVariance.id);
+    }
 
     const packedInputs = [packedX, packedMean, packedVariance];
 
     let offsetShape = null;
     if (offset != null) {
-      const packOffsetProgram = new PackProgram(offset.shape);
-      const packedOffset = this.compileAndRun(
-          packOffsetProgram, [offset], this.makePackedTensor(offset.shape));
+      let packedOffset = PackCache.packedTensorMap[offset.id];
+      if(!packedOffset) {
+        const packOffsetProgram = new PackProgram(offset.shape);
+        packedOffset = this.compileAndRun(
+            packOffsetProgram, [offset], this.makePackedTensor(offset.shape));
+        PackCache.packedTensorMap[offset.id] = packedOffset;
+        PackCache.keepPackedTensorIDs.push(packedOffset.id);
+      }
       packedInputs.push(packedOffset);
       offsetShape = packedOffset.shape;
     }
 
     let scaleShape = null;
     if (scale != null) {
-      const packScaleProgram = new PackProgram(scale.shape);
-      const packedScale = this.compileAndRun(
-          packScaleProgram, [scale], this.makePackedTensor(scale.shape));
+      let packedScale = PackCache.packedTensorMap[scale.id];
+      if(!packedScale) {
+        const packScaleProgram = new PackProgram(scale.shape);
+        packedScale = this.compileAndRun(
+            packScaleProgram, [scale], this.makePackedTensor(scale.shape));
+        PackCache.packedTensorMap[scale.id] = packedScale;
+        PackCache.keepPackedTensorIDs.push(packedScale.id);
+      }
       packedInputs.push(packedScale);
       scaleShape = packedScale.shape;
     }
@@ -1403,10 +1424,15 @@ export class MathBackendWebGL implements KernelBackend {
         im2ColProgram, [xSqueezed],
         this.makePackedTensor<Tensor2D>(x2ColShape));
 
-    const packedW2RowProgram = new PackProgram(w2Row.shape);
-    const packedW2Row = this.compileAndRun(
-        packedW2RowProgram, [w2Row],
-        this.makePackedTensor<Tensor2D>(w2Row.shape));
+    let packedW2Row = PackCache.packedTensorMap[w2Row.id];
+    if(!packedW2Row) {
+      const packedW2RowProgram = new PackProgram(w2Row.shape);
+      packedW2Row = this.compileAndRun(
+          packedW2RowProgram, [w2Row],
+          this.makePackedTensor<Tensor2D>(w2Row.shape));
+      PackCache.packedTensorMap[w2Row.id] = packedW2Row;
+      PackCache.keepPackedTensorIDs.push(packedW2Row.id);
+    }
 
     const matmulProgram = new MatMulPackedProgram(
         im2Col.shape, packedW2Row.shape, [numCols, convInfo.outChannels], true,

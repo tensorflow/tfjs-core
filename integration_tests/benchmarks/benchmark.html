@@ -111,11 +111,16 @@
       <tbody></tbody>
     </table>
   </div>
-  <script src="https://unpkg.com/@tensorflow/tfjs-core/dist/tf-core.js"></script>
-  <script src="https://unpkg.com/@tensorflow/tfjs-layers/dist/tf-layers.js"></script>
-  <script src="https://unpkg.com/@tensorflow/tfjs-converter/dist/tf-converter.js"></script>
+  <!-- <script src="https://unpkg.com/@tensorflow/tfjs-core/dist/tf-core.js"></script> -->
+  <script src="tf-core.js"></script>
+  <!-- <script src="https://unpkg.com/@tensorflow/tfjs-converter/dist/tf-converter.js"></script> -->
+  <script src="tf-converter.js"></script>
   <script>
     'use strict';
+
+    tf.ENV.set('WEBGL_PACK_BATCHNORM', true);
+    tf.ENV.set('WEBGL_CONV_IM2COL', true);
+
     async function load() {
       //////////////////////////////////
       // Place model loading code here.
@@ -136,7 +141,7 @@
   <script>
     'use strict';
     const state = {
-      numRuns: 20,
+      numRuns: 30,
 
     };
     const modalDiv = document.getElementById('modal-msg');
