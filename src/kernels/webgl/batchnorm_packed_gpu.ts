@@ -32,18 +32,18 @@ export class BatchNormPackedProgram implements GPGPUProgram {
     broadcast_util.assertAndGetBroadcastShape(xShape, meanShape);
     broadcast_util.assertAndGetBroadcastShape(xShape, varianceShape);
 
-    let offsetSnippet = 'vec4(0.0)';
+    let offsetSnippet = 'vec4 offset = vec4(0.0)';
     if (offsetShape != null) {
       broadcast_util.assertAndGetBroadcastShape(xShape, offsetShape);
       this.variableNames.push('offset');
-      offsetSnippet = `getOffset(${getBroadcastCoords(offsetShape.length)})`;
+      offsetSnippet = sampleAndBroadcast('offset', offsetShape.length);
     }
 
-    let scaleSnippet = 'vec4(1.0)';
+    let scaleSnippet = 'vec4 scale = vec4(1.0)';
     if (scaleShape != null) {
       broadcast_util.assertAndGetBroadcastShape(xShape, scaleShape);
       this.variableNames.push('scale');
-      scaleSnippet = `getScale(${getBroadcastCoords(scaleShape.length)})`;
+      scaleSnippet = sampleAndBroadcast('scale', scaleShape.length);
     }
 
     this.outputShape = xShape;
@@ -51,13 +51,13 @@ export class BatchNormPackedProgram implements GPGPUProgram {
       void main() {
         ivec4 rc = getOutputCoords();
 
-        vec4 offset = ${offsetSnippet};
-        vec4 scale = ${scaleSnippet};
+        ${offsetSnippet};
+        ${scaleSnippet};
 
         vec4 x = getX(rc.x, rc.y, rc.z, rc.w);
-        vec4 mean = getMean(${getBroadcastCoords(meanShape.length)});
-        vec4 variance = getVariance(${
-        getBroadcastCoords(varianceShape.length)});
+        ${sampleAndBroadcast('mean', meanShape.length)};
+        ${sampleAndBroadcast('variance', varianceShape.length)};
+
         vec4 inv = scale * inversesqrt(variance + vec4(${varianceEpsilon}));
 
         gl_FragColor = (x - mean) * inv + offset;
@@ -66,6 +66,13 @@ export class BatchNormPackedProgram implements GPGPUProgram {
   }
 }
 
-function getBroadcastCoords(rank: number): string {
-  return rank === 1 ? 'rc.w' : 'rc.x, rc.y, rc.z, rc.w';
+function sampleAndBroadcast(texName: string, rank: number): string {
+  const texSampler = `get${texName.charAt(0).toUpperCase()}${texName.slice(1)}`;
+  if(rank === 1) {
+    return `
+      vec4 ${texName}Sample = ${texSampler}(rc.w);
+      vec4 ${texName} = vec4(${texName}Sample.xy, ${texName}Sample.xy);
+    `;
+  }
+  return `${texSampler}(rc.x, rc.y, rc.z, rc.w)`;
 }
