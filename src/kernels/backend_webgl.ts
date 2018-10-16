@@ -713,11 +713,8 @@ export class MathBackendWebGL implements KernelBackend {
     const program = new BatchNormPackedProgram(
         packedX.shape, packedMean.shape, packedVariance.shape, offsetShape,
         scaleShape, varianceEpsilon);
-    const output = this.compileAndRun(
+    return this.compileAndRun(
         program, packedInputs, this.makePackedTensor<Tensor4D>(packedX.shape));
-
-    const unpackProgram = new UnpackProgram(output.shape);
-    return this.compileAndRun(unpackProgram, [output]);
   }
 
   batchNormalization(
@@ -1446,14 +1443,7 @@ export class MathBackendWebGL implements KernelBackend {
         matmulProgram, [im2Col, packedW2Row],
         this.makePackedTensor<Tensor2D>(matmulProgram.outputShape));
 
-    const unpackProgram = new UnpackProgram(product.shape);
-    const unpacked = this.compileAndRun(unpackProgram, [product]) as Tensor;
-
-    im2Col.dispose();
-    packedW2Row.dispose();
-    product.dispose();
-
-    return unpacked.reshape([1, outHeight, outWidth, convInfo.outChannels]);
+    return product.reshape([1, outHeight, outWidth, convInfo.outChannels]);
   }
 
   conv2d(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
