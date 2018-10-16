@@ -656,9 +656,11 @@ export class MathBackendWebGL implements KernelBackend {
       x: Tensor4D, mean: Tensor4D|Tensor1D, variance: Tensor4D|Tensor1D,
       varianceEpsilon: number, scale?: Tensor4D|Tensor1D,
       offset?: Tensor4D|Tensor1D): Tensor4D {
-    const packXProgram = new PackProgram(x.shape);
-    const packedX =
-        this.compileAndRun(packXProgram, [x], this.makePackedTensor(x.shape));
+    let packedX = x;
+    if(this.texData.get(x.dataId).usage !== TextureUsage.PACK) {
+      const packXProgram = new PackProgram(x.shape);
+      packedX = this.compileAndRun(packXProgram, [x], this.makePackedTensor(x.shape));
+    }
 
     let packedMean = PackCache.packedTensorMap[mean.id];
     if(!packedMean) {
