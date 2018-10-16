@@ -35,7 +35,7 @@ export class UnpackProgram implements GPGPUProgram {
     this.userCode = `
       void main() {
         ${dtype} rc = getOutputCoords();
-        vec2 modCoord = mod(vec2(${innerDims.join(',')}), 2.);
+        vec2 modCoord = mod(vec2(${rank === 1 ? 'rc' : innerDims.join(',')}), 2.);
         vec4 packedInput = getA(${sourceCoords});
 
         setOutput(
@@ -55,6 +55,10 @@ function getInnerDims(rank: number): string[] {
 }
 
 function getSourceCoords(rank: number): string {
+  if(rank === 1) {
+    return 'rc';
+  }
+
   let coords = '';
   for (let i = 0; i < rank; i++) {
     coords += dims[i];
