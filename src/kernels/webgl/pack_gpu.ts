@@ -56,7 +56,7 @@ function getInnerDims(rank: number): string[] {
   return dims.slice(0, rank).slice(-2);
 }
 
-function getSourceCoords(rank: number): string[] {
+function getSourceCoordsArr(rank: number): string[] {
   const coords = [];
 
   for (let row = 0; row <= 1; row++) {
@@ -109,7 +109,7 @@ function getSetup(rank: number, cols: number, rows: number): string {
 
 function getOutput(shape: number[]): string {
   const rank = shape.length;
-  const sourceCoords = getSourceCoords(rank);
+  const sourceCoords = getSourceCoordsArr(rank);
   if (rank === 1) {
     return `getA(rc),
             rc + 1 >= ${shape[0]} ? 0. : getA(rc + 1),
