@@ -1720,7 +1720,7 @@ export class MathBackendWebGL implements KernelBackend {
             `parts.`);
       }
 
-      const texData = this.texData.get(input.dataId);
+      let texData = this.texData.get(input.dataId);
       // Upload small tensors that live on the CPU as uniforms, not as
       // textures. Do this only when the environment supports 32bit floats due
       // to problems when comparing 16bit floats with 32bit floats.
@@ -1734,6 +1734,13 @@ export class MathBackendWebGL implements KernelBackend {
           uniformValues: this.readSync(input.dataId)
         };
       }
+
+      if(texData.usage === TextureUsage.PACK && program.packedInputs !== true) {
+        const unpackProgram = new UnpackProgram(input.shape);
+        input = this.compileAndRun(unpackProgram, [input]);
+        texData = this.texData.get(input.dataId);
+      }
+
       this.uploadToGPU(input.dataId);
       return {shape: input.shape, texData, isUniform: false};
     });
