@@ -36,31 +36,36 @@ export class BatchNormPackedProgram implements GPGPUProgram {
     if (offsetShape != null) {
       broadcast_util.assertAndGetBroadcastShape(xShape, offsetShape);
       this.variableNames.push('offset');
-      offsetSnippet = 'getOffset(resRC.w)';
+      offsetSnippet = `getOffset(${getBroadcastCoords(offsetShape.length)})`;
     }
 
     let scaleSnippet = 'vec4(1.0)';
     if (scaleShape != null) {
       broadcast_util.assertAndGetBroadcastShape(xShape, scaleShape);
       this.variableNames.push('scale');
-      scaleSnippet = 'getScale(resRC.w)';
+      scaleSnippet = `getScale(${getBroadcastCoords(scaleShape.length)})`;
     }
 
     this.outputShape = xShape;
     this.userCode = `
       void main() {
-        ivec4 resRC = getOutputCoords();
+        ivec4 rc = getOutputCoords();
 
         vec4 offset = ${offsetSnippet};
         vec4 scale = ${scaleSnippet};
 
-        vec4 x = getX(resRC.x, resRC.y, resRC.z, resRC.w);
-        vec4 mean = getMean(resRC.w);
-        vec4 variance = getVariance(resRC.w);
+        vec4 x = getX(rc.x, rc.y, rc.z, rc.w);
+        vec4 mean = getMean(${getBroadcastCoords(meanShape.length)});
+        vec4 variance = getVariance(${
+        getBroadcastCoords(varianceShape.length)});
         vec4 inv = scale * inversesqrt(variance + vec4(${varianceEpsilon}));
 
         gl_FragColor = (x - mean) * inv + offset;
       }
     `;
   }
+}
+
+function getBroadcastCoords(rank: number): string {
+  return rank === 1 ? 'rc.w' : 'rc.x, rc.y, rc.z, rc.w';
 }

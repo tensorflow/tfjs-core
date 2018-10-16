@@ -653,26 +653,24 @@ export class MathBackendWebGL implements KernelBackend {
       varianceEpsilon: number, scale?: Tensor4D|Tensor1D,
       offset?: Tensor4D|Tensor1D): Tensor4D {
     const packXProgram = new PackProgram(x.shape);
-    const packedX = this.compileAndRun<Tensor4D>(
-        packXProgram, [x], this.makePackedTensor<Tensor4D>(x.shape));
+    const packedX =
+        this.compileAndRun(packXProgram, [x], this.makePackedTensor(x.shape));
 
     const packMeanProgram = new PackProgram(mean.shape);
-    const packedMean = this.compileAndRun<Tensor1D>(
-        packMeanProgram, [mean], this.makePackedTensor<Tensor1D>(mean.shape));
+    const packedMean = this.compileAndRun(
+        packMeanProgram, [mean], this.makePackedTensor(mean.shape));
 
     const packVarianceProgram = new PackProgram(variance.shape);
-    const packedVariance = this.compileAndRun<Tensor1D>(
-        packVarianceProgram, [variance],
-        this.makePackedTensor<Tensor1D>(variance.shape));
+    const packedVariance = this.compileAndRun(
+        packVarianceProgram, [variance], this.makePackedTensor(variance.shape));
 
     const packedInputs = [packedX, packedMean, packedVariance];
 
     let offsetShape = null;
     if (offset != null) {
       const packOffsetProgram = new PackProgram(offset.shape);
-      const packedOffset = this.compileAndRun<Tensor1D>(
-          packOffsetProgram, [offset],
-          this.makePackedTensor<Tensor1D>(offset.shape));
+      const packedOffset = this.compileAndRun(
+          packOffsetProgram, [offset], this.makePackedTensor(offset.shape));
       packedInputs.push(packedOffset);
       offsetShape = packedOffset.shape;
     }
@@ -680,9 +678,8 @@ export class MathBackendWebGL implements KernelBackend {
     let scaleShape = null;
     if (scale != null) {
       const packScaleProgram = new PackProgram(scale.shape);
-      const packedScale = this.compileAndRun<Tensor1D>(
-          packScaleProgram, [scale],
-          this.makePackedTensor<Tensor1D>(scale.shape));
+      const packedScale = this.compileAndRun(
+          packScaleProgram, [scale], this.makePackedTensor(scale.shape));
       packedInputs.push(packedScale);
       scaleShape = packedScale.shape;
     }
