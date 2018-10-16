@@ -7,7 +7,9 @@ import {op} from './operation';
 
 function diag_(x: Tensor): Tensor {
   const $x = convertToTensor(x, 'x', 'diag');
-  return ENV.engine.runKernel(backend => backend.diag($x), {$x});
+  return ENV.engine.runKernel(backend => backend.diag($x), {$x}).reshape([
+    ...x.shape, ...x.shape
+  ]);
 }
 
 export const diag = op({diag_});
