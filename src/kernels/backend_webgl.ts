@@ -669,8 +669,12 @@ export class MathBackendWebGL implements KernelBackend {
 
     let offsetShape = null;
     if (offset != null) {
-      offsetShape = offset.shape;
-      packedInputs.push(offset);
+      const packOffsetProgram = new PackProgram(offset.shape);
+      const packedOffset = this.compileAndRun<Tensor1D>(
+          packOffsetProgram, [offset],
+          this.makePackedTensor<Tensor1D>(offset.shape));
+      packedInputs.push(packedOffset);
+      offsetShape = packedOffset.shape;
     }
 
     let scaleShape = null;

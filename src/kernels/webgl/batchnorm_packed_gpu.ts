@@ -32,11 +32,11 @@ export class BatchNormPackedProgram implements GPGPUProgram {
     broadcast_util.assertAndGetBroadcastShape(xShape, meanShape);
     broadcast_util.assertAndGetBroadcastShape(xShape, varianceShape);
 
-    let offsetSnippet = '0.0';
+    let offsetSnippet = 'vec4(0.0)';
     if (offsetShape != null) {
       broadcast_util.assertAndGetBroadcastShape(xShape, offsetShape);
       this.variableNames.push('offset');
-      offsetSnippet = 'getOffsetAtOutCoords()';
+      offsetSnippet = 'getOffset(resRC.w)';
     }
 
     let scaleSnippet = '1.0';
@@ -49,16 +49,17 @@ export class BatchNormPackedProgram implements GPGPUProgram {
     this.outputShape = xShape;
     this.userCode = `
       void main() {
-        float offset = ${offsetSnippet};
+        ivec4 resRC = getOutputCoords();
+
+        vec4 offset = ${offsetSnippet};
         float scale = ${scaleSnippet};
 
-        ivec4 resRC = getOutputCoords();
         vec4 x = getX(resRC.x, resRC.y, resRC.z, resRC.w);
         vec4 mean = getMean(resRC.w);
         vec4 variance = getVariance(resRC.w);
         vec4 inv = scale * inversesqrt(variance + vec4(${varianceEpsilon}));
 
-        gl_FragColor = (x - mean) * inv;
+        gl_FragColor = (x - mean) * inv + offset;
       }
     `;
   }
