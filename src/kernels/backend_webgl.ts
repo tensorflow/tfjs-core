@@ -44,6 +44,7 @@ import {topkImpl} from './topk_impl';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
 import {AvgPool2DBackpropProgram} from './webgl/avg_pool_backprop_gpu';
 import {BatchNormProgram} from './webgl/batchnorm_gpu';
+import {BatchNormPackedProgram} from './webgl/batchnorm_packed_gpu';
 import * as binaryop_complex_gpu from './webgl/binaryop_complex_gpu';
 import {BinaryOpComplexProgram} from './webgl/binaryop_complex_gpu';
 import * as binaryop_gpu from './webgl/binaryop_gpu';
@@ -647,19 +648,57 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [a, b], output) as Tensor;
   }
 
-  batchNormalization(
+  packBatchNormalization(
       x: Tensor4D, mean: Tensor4D|Tensor1D, variance: Tensor4D|Tensor1D,
       varianceEpsilon: number, scale?: Tensor4D|Tensor1D,
       offset?: Tensor4D|Tensor1D): Tensor4D {
-    const inputs = [x, mean, variance];
-
     const packXProgram = new PackProgram(x.shape);
     const packedX = this.compileAndRun<Tensor4D>(
         packXProgram, [x], this.makePackedTensor<Tensor4D>(x.shape));
 
-    console.log('BATCH NORM - packed X');
-    console.log('x shape', x.shape);
-    packedX.print();
+    const packMeanProgram = new PackProgram(mean.shape);
+    const packedMean = this.compileAndRun<Tensor1D>(
+        packMeanProgram, [mean], this.makePackedTensor<Tensor1D>(mean.shape));
+
+    const packVarianceProgram = new PackProgram(variance.shape);
+    const packedVariance = this.compileAndRun<Tensor1D>(
+        packVarianceProgram, [variance],
+        this.makePackedTensor<Tensor1D>(variance.shape));
+
+    const packedInputs = [packedX, packedMean, packedVariance];
+
+    let offsetShape = null;
+    if (offset != null) {
+      offsetShape = offset.shape;
+      packedInputs.push(offset);
+    }
+
+    let scaleShape = null;
+    if (scale != null) {
+      scaleShape = scale.shape;
+      packedInputs.push(scale);
+    }
+
+    const program = new BatchNormPackedProgram(
+        packedX.shape, packedMean.shape, packedVariance.shape, offsetShape,
+        scaleShape, varianceEpsilon);
+    const output = this.compileAndRun(
+        program, packedInputs, this.makePackedTensor<Tensor4D>(packedX.shape));
+
+    const unpackProgram = new UnpackProgram(output.shape);
+    return this.compileAndRun(unpackProgram, [output]);
+  }
+
+  batchNormalization(
+      x: Tensor4D, mean: Tensor4D|Tensor1D, variance: Tensor4D|Tensor1D,
+      varianceEpsilon: number, scale?: Tensor4D|Tensor1D,
+      offset?: Tensor4D|Tensor1D): Tensor4D {
+    if (ENV.get('WEBGL_PACK_BATCHNORM')) {
+      return this.packBatchNormalization(
+          x, mean, variance, varianceEpsilon, scale, offset);
+    }
+
+    const inputs = [x, mean, variance];
 
     let offsetShape = null;
     if (offset != null) {

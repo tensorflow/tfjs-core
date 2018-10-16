@@ -18,7 +18,7 @@
 import * as broadcast_util from '../../ops/broadcast_util';
 import {GPGPUProgram} from './gpgpu_math';
 
-export class BatchNormProgram implements GPGPUProgram {
+export class BatchNormPackedProgram implements GPGPUProgram {
   variableNames: string[];
   outputShape: number[] = [];
   userCode: string;
@@ -49,13 +49,16 @@ export class BatchNormProgram implements GPGPUProgram {
     this.outputShape = xShape;
     this.userCode = `
       void main() {
-        float x = getXAtOutCoords();
-        float mean = getMeanAtOutCoords();
-        float variance = getVarianceAtOutCoords();
         float offset = ${offsetSnippet};
         float scale = ${scaleSnippet};
-        float inv = scale * inversesqrt(variance + float(${varianceEpsilon}));
-        setOutput(dot(vec3(x, -mean, offset), vec3(inv, inv, 1)));
+
+        ivec4 resRC = getOutputCoords();
+        vec4 x = getX(resRC.x, resRC.y, resRC.z, resRC.w);
+        vec4 mean = getMean(resRC.w);
+        vec4 variance = getVariance(resRC.w);
+        vec4 inv = scale * inversesqrt(variance + vec4(${varianceEpsilon}));
+
+        gl_FragColor = (x - mean) * inv;
       }
     `;
   }

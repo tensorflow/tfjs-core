@@ -24,6 +24,8 @@ export interface Features {
   'IS_NODE'?: boolean;
   // Whether we will use the im2col algorithm to speed up convolutions.
   'WEBGL_CONV_IM2COL'?: boolean;
+  // Whether to pack batch normalization.
+  'WEBGL_PACK_BATCHNORM'?: boolean;
   // Whether we will perform memory paging.
   'WEBGL_PAGING_ENABLED'?: boolean;
   // The maximum texture dimension.
@@ -80,6 +82,7 @@ export const URL_PROPERTIES: URLProperty[] = [
   {name: 'DEBUG', type: Type.BOOLEAN},
   {name: 'IS_BROWSER', type: Type.BOOLEAN},
   {name: 'WEBGL_CONV_IM2COL', type: Type.BOOLEAN},
+  {name: 'WEBGL_PACK_BATCHNORM', type: Type.BOOLEAN},
   {name: 'WEBGL_MAX_TEXTURE_SIZE', type: Type.NUMBER},
   {name: 'WEBGL_PAGING_ENABLED', type: Type.BOOLEAN},
   {name: 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION', type: Type.NUMBER},

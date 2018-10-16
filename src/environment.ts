@@ -308,6 +308,8 @@ export class Environment {
       return isChrome();
     } else if (feature === 'WEBGL_CONV_IM2COL') {
       return false;
+    } else if (feature === 'WEBGL_PACK_BATCHNORM') {
+      return false;
     } else if (feature === 'WEBGL_PAGING_ENABLED') {
       return this.get('IS_BROWSER') && !this.get('PROD');
     } else if (feature === 'WEBGL_MAX_TEXTURE_SIZE') {
