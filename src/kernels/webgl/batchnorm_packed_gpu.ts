@@ -74,5 +74,5 @@ function sampleAndBroadcast(texName: string, rank: number): string {
       vec4 ${texName} = vec4(${texName}Sample.xy, ${texName}Sample.xy);
     `;
   }
-  return `${texSampler}(rc.x, rc.y, rc.z, rc.w)`;
+  return `vec4 ${texName} = ${texSampler}(rc.x, rc.y, rc.z, rc.w)`;
 }
