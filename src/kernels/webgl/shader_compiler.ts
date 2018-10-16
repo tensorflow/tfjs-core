@@ -838,7 +838,7 @@ function getPackedSampler4D(inputInfo: InputInfo): string {
   const texNumC = packedTexShape[1];
 
   const valuesPerRow = Math.ceil(shape[3] / 2);
-  const texelsInBatch = valuesPerRow * shape[2];
+  const texelsInBatch = valuesPerRow * Math.ceil(shape[2] / 2);
   const texelsInBatch2 = texelsInBatch * shape[1];
 
   return `
