@@ -16,68 +16,54 @@
  */
 
 import {GPGPUProgram} from './gpgpu_math';
-import {getCoordsDataType} from './shader_compiler';
 
 export class DiagProgram implements GPGPUProgram {
   variableNames = ['X'];
   outputShape: number[];
   userCode: string;
 
-  // Caching uniform location for speed.
-  seedLoc: WebGLUniformLocation;
-
   constructor(xShape: number[], size: number) {
-    this.outputShape = [...xShape, ...xShape];
+    const outputSize = size ** 2;
+    this.outputShape = [outputSize];
     const rank = xShape.length;
-    if (rank > 2) {
-      throw new Error(
-          `WebGL backend: diag of rank-${rank} tensor is not yet supported`);
-    }
-    const typeOut = getCoordsDataType(rank * 2);
-    const typeIn = getCoordsDataType(rank);
+    const helper = (a: number[]) =>
+        a.map((_, b, c) => c.slice(b + 1).reduce((a, b) => a * b, 1));
     const coordstoIndex = (coords: string) => {
-      let index = `${coords}[${rank - 1}]`;
-      for (let i = 0; i < rank - 2; i++) {
-        index = `${index} + ${xShape[i]} * ${coords}[${i}]`;
+      const pseudoShape = helper([...xShape]);
+      let index = `${pseudoShape[rank - 1]} * ${coords}[${rank - 1}]`;
+      for (let i = 0; i < rank - 1; i++) {
+        index = `${index} + ${pseudoShape[i]} * ${coords}[${i}]`;
       }
       return index;
     };
+    const indextoCoords = (index: string): string => {
+      const pseudoShape = helper([...xShape, ...xShape]);
+      let coords = '';
+      for (let i = 0; i < pseudoShape.length; i++) {
+        coords = `${coords}
+        coords[${i}] = ${index} / ${pseudoShape[i]};
+        ${index} = ${index} - ${pseudoShape[i]} * coords[${i}];`;
+      }
+      return coords;
+    };
 
     this.userCode = `
-      void setVal1D() {
-        ${typeOut} coordsOut = getOutputCoords();
-        if (coordsOut[0] == coordsOut[1]) {
-          setOutput(getX(coordsOut[0]));
-        } else {
-          setOutput(0.0);
-        }
-      }
-
-      void setValTensor() {
-        ${typeOut} coordsOut = getOutputCoords();
-        ${rank === 1 ? typeOut : typeIn} coordsIn;
-        bool setValueBool = true;
-        for (int i = 0; i < ${rank}; i++) {
-          if (coordsOut[i] != coordsOut[${rank} + i]) {
-            setValueBool = false;
-            break;
-          }
-        }
-        for (int i = 0; i < ${rank}; i++) {
-          coordsIn[i] = coordsOut[i];
-        }
-        if (setValueBool) {
-          setOutput(getX(${rank === 1 ? 0 : coordstoIndex('coordsIn')}));
-        } else {
-          setOutput(0.0);
-        }
-      }
       void main() {
-        if (${rank === 1}) {
-          setVal1D();
-        } else {
-          setValTensor();
-        }
+          int coords[${2 * xShape.length}];
+          int index = getOutputCoords();
+          ${indextoCoords('index')}
+          bool setValueBool = true;
+          for (int i = 0; i < ${rank}; i++) {
+            if (coords[i] != coords[${rank} + i]) {
+              setValueBool = false;
+              break;
+            }
+          }
+          if (setValueBool) {
+            setOutput(getX(${coordstoIndex('coords')}));
+          } else {
+            setOutput(0.0);
+          }
       }
     `;
   }
