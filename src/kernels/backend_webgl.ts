@@ -679,8 +679,12 @@ export class MathBackendWebGL implements KernelBackend {
 
     let scaleShape = null;
     if (scale != null) {
-      scaleShape = scale.shape;
-      packedInputs.push(scale);
+      const packScaleProgram = new PackProgram(scale.shape);
+      const packedScale = this.compileAndRun<Tensor1D>(
+          packScaleProgram, [scale],
+          this.makePackedTensor<Tensor1D>(scale.shape));
+      packedInputs.push(packedScale);
+      scaleShape = packedScale.shape;
     }
 
     const program = new BatchNormPackedProgram(

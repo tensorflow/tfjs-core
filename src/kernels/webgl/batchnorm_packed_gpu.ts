@@ -39,11 +39,11 @@ export class BatchNormPackedProgram implements GPGPUProgram {
       offsetSnippet = 'getOffset(resRC.w)';
     }
 
-    let scaleSnippet = '1.0';
+    let scaleSnippet = 'vec4(1.0)';
     if (scaleShape != null) {
       broadcast_util.assertAndGetBroadcastShape(xShape, scaleShape);
       this.variableNames.push('scale');
-      scaleSnippet = 'getScaleAtOutCoords()';
+      scaleSnippet = 'getScale(resRC.w)';
     }
 
     this.outputShape = xShape;
@@ -52,7 +52,7 @@ export class BatchNormPackedProgram implements GPGPUProgram {
         ivec4 resRC = getOutputCoords();
 
         vec4 offset = ${offsetSnippet};
-        float scale = ${scaleSnippet};
+        vec4 scale = ${scaleSnippet};
 
         vec4 x = getX(resRC.x, resRC.y, resRC.z, resRC.w);
         vec4 mean = getMean(resRC.w);
