@@ -106,6 +106,7 @@
           <th>Kernel</th>
           <th>Time(ms)</th>
           <th>Output</th>
+          <th>Subkernels</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -118,8 +119,8 @@
   <script>
     'use strict';
 
-    tf.ENV.set('WEBGL_PACK_BATCHNORM', true);
-    tf.ENV.set('WEBGL_CONV_IM2COL', true);
+    // tf.ENV.set('WEBGL_PACK_BATCHNORM', true);
+    // tf.ENV.set('WEBGL_CONV_IM2COL', true);
 
     async function load() {
       //////////////////////////////////
@@ -141,7 +142,7 @@
   <script>
     'use strict';
     const state = {
-      numRuns: 30,
+      numRuns: 50,
 
     };
     const modalDiv = document.getElementById('modal-msg');
@@ -256,7 +257,7 @@
         const nameSpan = document.createElement('span');
         nameSpan.setAttribute('title', k.scopes.slice(0, -1).join(' --> '));
         nameSpan.textContent = k.scopes[k.scopes.length - 1];
-        appendRow(tbody, nameSpan, k.time.toFixed(2), k.output);
+        appendRow(tbody, nameSpan, k.time.toFixed(2), k.output, k.subKernels);
       });
     }
 
@@ -273,7 +274,8 @@
         kernels.push({
           scopes: scopes,
           time: Number.parseFloat(parts[1]),
-          output: parts[2].trim()
+          output: parts[2].trim(),
+          subKernels: parts[4]
         });
       }
       let res = predict(model);

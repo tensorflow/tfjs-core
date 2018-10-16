@@ -152,7 +152,7 @@ export class MathBackendWebGL implements KernelBackend {
   private fromPixelsCanvas: HTMLCanvasElement;
 
   private programTimersStack: TimerNode[];
-  private activeTimers: TimerNode[];
+  private activeTimers;
   // Accumulated time spent (including blocking) in uploading data to webgl.
   private uploadWaitMs = 0;
   // Accumulated time spent (including blocking in downloading data from webgl.
@@ -388,15 +388,18 @@ export class MathBackendWebGL implements KernelBackend {
       this.programTimersStack = null;
     }
 
-    const kernelMs = await Promise.all(flattenedActiveTimers).then(results => {
-      let sum = 0;
-      results.forEach(result => sum += result);
-      return sum;
-    });
+    const kernelMs = await Promise.all(flattenedActiveTimers.map(d => d.query));
+
     const res: WebGLTimingInfo = {
       uploadWaitMs: this.uploadWaitMs,
       downloadWaitMs: this.downloadWaitMs,
-      kernelMs,
+      kernelMs: kernelMs.reduce((acc, curr) => acc + curr, 0),
+      subKernels: kernelMs.map((d, i) => {
+        return {
+          name: flattenedActiveTimers[i].name,
+          ms: d
+        }
+      }),
       wallMs: null  // will be filled by the engine
     };
     this.uploadWaitMs = 0;
@@ -1767,7 +1770,10 @@ export class MathBackendWebGL implements KernelBackend {
 
     if (shouldTimeProgram) {
       query = this.endTimer(query);
-      this.activeTimers.push(this.getQueryTime(query));
+      this.activeTimers.push({
+        name: program.constructor.name,
+        query: this.getQueryTime(query)
+      });
     }
     return output;
   }

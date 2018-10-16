@@ -531,7 +531,7 @@
                 var vals = r.dataSync();
                 checkComputationForNaN(vals, r.dtype, name);
                 timer.then(function (timing) {
-                    _this.logger.logKernelProfile(name, r, vals, timing.kernelMs);
+                    _this.logger.logKernelProfile(name, r, vals, timing.kernelMs, timing.subKernels);
                 });
             });
             return result;
@@ -541,13 +541,13 @@
     var Logger = (function () {
         function Logger() {
         }
-        Logger.prototype.logKernelProfile = function (name, result, vals, timeMs) {
+        Logger.prototype.logKernelProfile = function (name, result, vals, timeMs, subKernels) {
             var time = rightPad(timeMs + "ms", 9);
             var paddedName = rightPad(name, 25);
             var rank = result.rank;
             var size = result.size;
             var shape = rightPad(result.shape.toString(), 14);
-            console.log("%c" + paddedName + "\t%c" + time + "\t%c" + rank + "D " + shape + "\t%c" + size, 'font-weight:bold', 'color:red', 'color:blue', 'color: orange');
+            console.log("%c" + paddedName + "\t%c" + time + "\t%c" + rank + "D " + shape + "\t%c" + size + "\t%c" + subKernels.reduce(function (acc, curr) { return acc + curr.name.substring(0, curr.name.length - 7) + ' ' + curr.ms + 'ms '; }, ''), 'font-weight:bold', 'color:red', 'color:blue', 'color: orange', 'color: black');
         };
         return Logger;
     }());
@@ -8681,17 +8681,19 @@
                             if (outerMostTime) {
                                 this.programTimersStack = null;
                             }
-                            return [4, Promise.all(flattenedActiveTimers).then(function (results) {
-                                    var sum = 0;
-                                    results.forEach(function (result) { return sum += result; });
-                                    return sum;
-                                })];
+                            return [4, Promise.all(flattenedActiveTimers.map(function (d) { return d.query; }))];
                         case 1:
                             kernelMs = _a.sent();
                             res = {
                                 uploadWaitMs: this.uploadWaitMs,
                                 downloadWaitMs: this.downloadWaitMs,
-                                kernelMs: kernelMs,
+                                kernelMs: kernelMs.reduce(function (acc, curr) { return acc + curr; }, 0),
+                                subKernels: kernelMs.map(function (d, i) {
+                                    return {
+                                        name: flattenedActiveTimers[i].name,
+                                        ms: d
+                                    };
+                                }),
                                 wallMs: null
                             };
                             this.uploadWaitMs = 0;
@@ -9659,7 +9661,10 @@
             }
             if (shouldTimeProgram) {
                 query = this.endTimer(query);
-                this.activeTimers.push(this.getQueryTime(query));
+                this.activeTimers.push({
+                    name: program.constructor.name,
+                    query: this.getQueryTime(query)
+                });
             }
             return output;
         };
