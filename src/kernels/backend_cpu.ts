@@ -216,11 +216,11 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   diag(x: Tensor): Tensor {
-    const xBuffer = x.buffer();
+    const xVals = x.dataSync();
     const allVals = [];
     for (let i = 0; i < x.size; i++) {
       const arr = Array(x.size).fill(0);
-      arr[i] = xBuffer.get(i);
+      arr[i] = xVals[i];
       allVals.push(...arr);
     }
     return ops
