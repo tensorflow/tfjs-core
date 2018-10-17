@@ -43,7 +43,7 @@ export class Profiler {
 
       timer.then(timing => {
         // this.logger.logKernelProfile(name, r, vals, timing.kernelMs, timing.subKernels);
-        this.logger.logKernelProfile(name, r, [], timing.kernelMs, timing.subKernels);
+        this.logger.logKernelProfile(name, r, new Float32Array(0), timing.kernelMs, timing.subKernels);
       });
     });
 

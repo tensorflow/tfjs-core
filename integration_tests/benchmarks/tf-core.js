@@ -528,10 +528,8 @@
             var timer = this.backendTimer.time(holdResultWrapperFn);
             var results = Array.isArray(result) ? result : [result];
             results.forEach(function (r) {
-                // var vals = r.dataSync();
-                // checkComputationForNaN(vals, r.dtype, name);
                 timer.then(function (timing) {
-                    _this.logger.logKernelProfile(name, r, [], timing.kernelMs, timing.subKernels);
+                    _this.logger.logKernelProfile(name, r, new Float32Array(0), timing.kernelMs, timing.subKernels);
                 });
             });
             return result;
@@ -3903,158 +3901,6 @@
         return BinaryOpProgram;
     }());
 
-    var ClipProgram = (function () {
-        function ClipProgram(aShape, min, max) {
-            this.variableNames = ['A'];
-            this.outputShape = aShape;
-            this.userCode = "\n      void main() {\n        float value = getAAtOutCoords();\n        if (isNaN(value)) {\n          setOutput(value);\n          return;\n        }\n\n        setOutput(clamp(value, float(" + min + "), float(" + max + ")));\n      }\n    ";
-        }
-        return ClipProgram;
-    }());
-
-    var ConcatProgram = (function () {
-        function ConcatProgram(aShape, bShape) {
-            this.variableNames = ['A', 'B'];
-            this.outputShape = [];
-            this.outputShape =
-                computeOutShape([aShape, bShape], 1);
-            this.userCode = "\n      void main() {\n        ivec2 coords = getOutputCoords();\n        int yR = coords.x;\n        int yC = coords.y;\n\n        float value = 0.0;\n        if (yC < " + aShape[1] + ") {\n          value = getA(yR, yC);\n        } else {\n          yC -= " + aShape[1] + ";\n          value = getB(yR, yC);\n        }\n\n        setOutput(value);\n      }\n    ";
-        }
-        return ConcatProgram;
-    }());
-
-    var Conv2DDerFilterProgram = (function () {
-        function Conv2DDerFilterProgram(convInfo) {
-            this.variableNames = ['x', 'dy'];
-            this.outputShape = convInfo.filterShape;
-            var strideHeight = convInfo.strideHeight;
-            var strideWidth = convInfo.strideWidth;
-            var padTop = convInfo.padInfo.top;
-            var padLeft = convInfo.padInfo.left;
-            this.userCode = "\n      void main() {\n        ivec4 coords = getOutputCoords();\n        int wR = coords.x;\n        int wC = coords.y;\n        int d1 = coords.z;\n        int d2 = coords.w;\n\n        // Convolve x(?, ?, d1) with dy(:, :, d2) to get dw(wR, wC, d1, d2).\n        // ? = to be determined. : = across all values in that axis.\n        float dotProd = 0.0;\n\n        for (int b = 0; b < " + convInfo.batchSize + "; b++) {\n          for (int yR = 0; yR < " + convInfo.outHeight + "; yR++) {\n            int xR = wR + yR * " + strideHeight + " - " + padTop + ";\n\n            if (xR < 0 || xR >= " + convInfo.inHeight + ") {\n              continue;\n            }\n\n            for (int yC = 0; yC < " + convInfo.outWidth + "; yC++) {\n              int xC = wC + yC * " + strideWidth + " - " + padLeft + ";\n\n              if (xC < 0 || xC >= " + convInfo.inWidth + ") {\n                continue;\n              }\n\n              float dyValue = getDy(b, yR, yC, d2);\n              float xValue = getX(b, xR, xC, d1);\n              dotProd += (xValue * dyValue);\n            }\n          }\n        }\n        setOutput(dotProd);\n      }\n    ";
-        }
-        return Conv2DDerFilterProgram;
-    }());
-    var Conv2DDerInputProgram = (function () {
-        function Conv2DDerInputProgram(convInfo) {
-            this.variableNames = ['dy', 'W'];
-            this.outputShape = convInfo.inShape;
-            var filterHeight = convInfo.filterHeight;
-            var filterWidth = convInfo.filterWidth;
-            var strideHeight = convInfo.strideHeight;
-            var strideWidth = convInfo.strideWidth;
-            var padTop = filterHeight - 1 - convInfo.padInfo.top;
-            var padLeft = filterWidth - 1 - convInfo.padInfo.left;
-            this.userCode = "\n      const ivec2 pads = ivec2(" + padTop + ", " + padLeft + ");\n\n      void main() {\n        ivec4 coords = getOutputCoords();\n        int batch = coords[0];\n        int d1 = coords[3];\n\n        ivec2 dyCorner = coords.yz - pads;\n        int dyRCorner = dyCorner.x;\n        int dyCCorner = dyCorner.y;\n\n        // Convolve dy(?, ?, d2) with w(:, :, d1, d2) to compute dx(xR, xC, d1).\n        // ? = to be determined. : = across all values in that axis.\n        float dotProd = 0.0;\n        for (int wR = 0; wR < " + filterHeight + "; wR++) {\n          float dyR = float(dyRCorner + wR) / " + strideHeight + ".0;\n\n          if (dyR < 0.0 || dyR >= " + convInfo.outHeight + ".0 || fract(dyR) > 0.0) {\n            continue;\n          }\n          int idyR = int(dyR);\n\n          int wRPerm = " + filterHeight + " - 1 - wR;\n\n          for (int wC = 0; wC < " + filterWidth + "; wC++) {\n            float dyC = float(dyCCorner + wC) / " + strideWidth + ".0;\n\n            if (dyC < 0.0 || dyC >= " + convInfo.outWidth + ".0 ||\n                fract(dyC) > 0.0) {\n              continue;\n            }\n            int idyC = int(dyC);\n\n            int wCPerm = " + filterWidth + " - 1 - wC;\n\n            for (int d2 = 0; d2 < " + convInfo.outChannels + "; d2++) {\n              float xValue = getDy(batch, idyR, idyC, d2);\n              float wValue = getW(wRPerm, wCPerm, d1, d2);\n              dotProd += xValue * wValue;\n            }\n          }\n        }\n        setOutput(dotProd);\n      }\n    ";
-        }
-        return Conv2DDerInputProgram;
-    }());
-
-    var DepthwiseConv2DDerFilterProgram = (function () {
-        function DepthwiseConv2DDerFilterProgram(convInfo) {
-            this.variableNames = ['x', 'dy'];
-            this.outputShape = convInfo.filterShape;
-            var strideHeight = convInfo.strideHeight;
-            var strideWidth = convInfo.strideWidth;
-            var padTop = convInfo.padInfo.top;
-            var padLeft = convInfo.padInfo.left;
-            var channelMul = convInfo.outChannels / convInfo.inChannels;
-            this.userCode = "\n      void main() {\n        ivec4 coords = getOutputCoords();\n        int wR = coords.x;\n        int wC = coords.y;\n        int d1 = coords.z;\n        int dm = coords.w;\n        int d2 = d1 * " + channelMul + " + dm;\n\n        float dotProd = 0.0;\n\n        // TODO: Vec4 over the batch size\n        for (int b = 0; b < " + convInfo.batchSize + "; b++) {\n          for (int yR = 0; yR < " + convInfo.outHeight + "; yR++) {\n            int xR = wR + yR * " + strideHeight + " - " + padTop + ";\n\n            if (xR < 0 || xR >= " + convInfo.inHeight + ") {\n              continue;\n            }\n\n            for (int yC = 0; yC < " + convInfo.outWidth + "; yC++) {\n              int xC = wC + yC * " + strideWidth + " - " + padLeft + ";\n\n              if (xC < 0 || xC >= " + convInfo.inWidth + ") {\n                continue;\n              }\n\n              float dyValue = getDy(b, yR, yC, d2);\n              float xValue = getX(b, xR, xC, d1);\n              dotProd += (xValue * dyValue);\n            }\n          }\n        }\n        setOutput(dotProd);\n      }\n    ";
-        }
-        return DepthwiseConv2DDerFilterProgram;
-    }());
-    var DepthwiseConv2DDerInputProgram = (function () {
-        function DepthwiseConv2DDerInputProgram(convInfo) {
-            this.variableNames = ['dy', 'W'];
-            this.outputShape = convInfo.inShape;
-            var filterHeight = convInfo.filterHeight;
-            var filterWidth = convInfo.filterWidth;
-            var strideHeight = convInfo.strideHeight;
-            var strideWidth = convInfo.strideWidth;
-            var padTop = filterHeight - 1 - convInfo.padInfo.top;
-            var padLeft = filterWidth - 1 - convInfo.padInfo.left;
-            var channelMul = convInfo.outChannels / convInfo.inChannels;
-            this.userCode = "\n      const ivec2 pads = ivec2(" + padTop + ", " + padLeft + ");\n\n      void main() {\n        ivec4 coords = getOutputCoords();\n        int batch = coords[0];\n        int d1 = coords[3];\n        ivec2 dyCorner = coords.yz - pads;\n        int dyRCorner = dyCorner.x;\n        int dyCCorner = dyCorner.y;\n\n        float dotProd = 0.0;\n\n        for (int wR = 0; wR < " + filterHeight + "; wR++) {\n          float dyR = float(dyRCorner + wR) / " + strideHeight + ".0;\n\n          if (dyR < 0.0 || dyR >= " + convInfo.outHeight + ".0 || fract(dyR) > 0.0) {\n            continue;\n          }\n          int idyR = int(dyR);\n\n          int wRPerm = " + filterHeight + " - 1 - wR;\n\n          for (int wC = 0; wC < " + filterWidth + "; wC++) {\n            float dyC = float(dyCCorner + wC) / " + strideWidth + ".0;\n\n            if (dyC < 0.0 || dyC >= " + convInfo.outWidth + ".0 ||\n                fract(dyC) > 0.0) {\n              continue;\n            }\n            int idyC = int(dyC);\n\n            int wCPerm = " + filterWidth + " - 1 - wC;\n\n            // TODO: Vec4 over the channelMul\n            for (int dm = 0; dm < " + channelMul + "; dm++) {\n              int d2 = d1 * " + channelMul + " + dm;\n              float xValue = getDy(batch, idyR, idyC, d2);\n              float wValue = getW(wRPerm, wCPerm, d1, dm);\n              dotProd += xValue * wValue;\n            }\n          }\n        }\n        setOutput(dotProd);\n      }\n    ";
-        }
-        return DepthwiseConv2DDerInputProgram;
-    }());
-
-    var Conv2DProgram = (function () {
-        function Conv2DProgram(convInfo) {
-            this.variableNames = ['x', 'W'];
-            this.outputShape = convInfo.outShape;
-            var padTop = convInfo.padInfo.top;
-            var padLeft = convInfo.padInfo.left;
-            var strideHeight = convInfo.strideHeight;
-            var strideWidth = convInfo.strideWidth;
-            var dilationHeight = convInfo.dilationHeight;
-            var dilationWidth = convInfo.dilationWidth;
-            var filterHeight = convInfo.filterHeight;
-            var filterWidth = convInfo.filterWidth;
-            var inputDepthNearestVec4 = Math.floor(convInfo.inChannels / 4) * 4;
-            var inputDepthVec4Remainder = convInfo.inChannels % 4;
-            this.userCode = "\n      const ivec2 strides = ivec2(" + strideHeight + ", " + strideWidth + ");\n      const ivec2 pads = ivec2(" + padTop + ", " + padLeft + ");\n\n      void main() {\n        ivec4 coords = getOutputCoords();\n        int batch = coords[0];\n        int d2 = coords[3];\n\n        ivec2 xRCCorner = coords.yz * strides - pads;\n        int xRCorner = xRCCorner.x;\n        int xCCorner = xRCCorner.y;\n\n        // Convolve x(?, ?, d1) with w(:, :, d1, d2) to get y(yR, yC, d2).\n        // ? = to be determined. : = across all values in that axis.\n        float dotProd = 0.0;\n        for (int wR = 0; wR < " + filterHeight + "; wR++) {\n          int xR = xRCorner + wR * " + dilationHeight + ";\n\n          if (xR < 0 || xR >= " + convInfo.inHeight + ") {\n            continue;\n          }\n\n          for (int wC = 0; wC < " + filterWidth + "; wC++) {\n            int xC = xCCorner + wC * " + dilationWidth + ";\n\n            if (xC < 0 || xC >= " + convInfo.inWidth + ") {\n              continue;\n            }\n\n            for (int d1 = 0; d1 < " + inputDepthNearestVec4 + "; d1 += 4) {\n              vec4 xValues = vec4(\n                getX(batch, xR, xC, d1),\n                getX(batch, xR, xC, d1 + 1),\n                getX(batch, xR, xC, d1 + 2),\n                getX(batch, xR, xC, d1 + 3)\n              );\n              vec4 wValues = vec4(\n                getW(wR, wC, d1, d2),\n                getW(wR, wC, d1 + 1, d2),\n                getW(wR, wC, d1 + 2, d2),\n                getW(wR, wC, d1 + 3, d2)\n              );\n\n              dotProd += dot(xValues, wValues);\n            }\n\n            if (" + (inputDepthVec4Remainder === 1) + ") {\n              dotProd +=\n                getX(batch, xR, xC, " + inputDepthNearestVec4 + ") *\n                getW(wR, wC, " + inputDepthNearestVec4 + ", d2);\n            } else if (" + (inputDepthVec4Remainder === 2) + ") {\n              vec2 xValues = vec2(\n                getX(batch, xR, xC, " + inputDepthNearestVec4 + "),\n                getX(batch, xR, xC, " + inputDepthNearestVec4 + " + 1)\n              );\n              vec2 wValues = vec2(\n                getW(wR, wC, " + inputDepthNearestVec4 + ", d2),\n                getW(wR, wC, " + inputDepthNearestVec4 + " + 1, d2)\n              );\n              dotProd += dot(xValues, wValues);\n            } else if (" + (inputDepthVec4Remainder === 3) + ") {\n              vec3 xValues = vec3(\n                getX(batch, xR, xC, " + inputDepthNearestVec4 + "),\n                getX(batch, xR, xC, " + inputDepthNearestVec4 + " + 1),\n                getX(batch, xR, xC, " + inputDepthNearestVec4 + " + 2)\n              );\n              vec3 wValues = vec3(\n                getW(wR, wC, " + inputDepthNearestVec4 + ", d2),\n                getW(wR, wC, " + inputDepthNearestVec4 + " + 1, d2),\n                getW(wR, wC, " + inputDepthNearestVec4 + " + 2, d2)\n              );\n              dotProd += dot(xValues, wValues);\n            }\n          }\n        }\n        setOutput(dotProd);\n      }\n    ";
-        }
-        return Conv2DProgram;
-    }());
-
-    var DepthwiseConv2DProgram = (function () {
-        function DepthwiseConv2DProgram(convInfo) {
-            this.variableNames = ['x', 'W'];
-            this.outputShape = convInfo.outShape;
-            var xNumRows = convInfo.inHeight;
-            var xNumCols = convInfo.inWidth;
-            var padTop = convInfo.padInfo.top;
-            var padLeft = convInfo.padInfo.left;
-            var strideHeight = convInfo.strideHeight;
-            var strideWidth = convInfo.strideWidth;
-            var dilationHeight = convInfo.dilationHeight;
-            var dilationWidth = convInfo.dilationWidth;
-            var filterHeight = convInfo.filterHeight;
-            var filterWidth = convInfo.filterWidth;
-            var channelMul = convInfo.outChannels / convInfo.inChannels;
-            this.userCode = "\n      const ivec2 strides = ivec2(" + strideHeight + ", " + strideWidth + ");\n      const ivec2 pads = ivec2(" + padTop + ", " + padLeft + ");\n\n      void main() {\n        ivec4 coords = getOutputCoords();\n        int batch = coords.x;\n        ivec2 xRCCorner = coords.yz * strides - pads;\n        int d2 = coords.w;\n        int d1 = d2 / " + channelMul + ";\n        int q = d2 - d1 * " + channelMul + ";\n\n        int xRCorner = xRCCorner.x;\n        int xCCorner = xRCCorner.y;\n\n        // Convolve x(?, ?, d1) with w(:, :, d1, q) to get y(yR, yC, d2).\n        // ? = to be determined. : = across all values in that axis.\n        float dotProd = 0.0;\n        // TODO(dsmilkov): Flatten the two for loops and vec4 the operations.\n        for (int wR = 0; wR < " + filterHeight + "; wR++) {\n          int xR = xRCorner + wR * " + dilationHeight + ";\n\n          if (xR < 0 || xR >= " + xNumRows + ") {\n            continue;\n          }\n\n          for (int wC = 0; wC < " + filterWidth + "; wC++) {\n            int xC = xCCorner + wC * " + dilationWidth + ";\n\n            if (xC < 0 || xC >= " + xNumCols + ") {\n              continue;\n            }\n\n            float xVal = getX(batch, xR, xC, d1);\n            float wVal = getW(wR, wC, d1, q);\n            dotProd += xVal * wVal;\n          }\n        }\n        setOutput(dotProd);\n      }\n    ";
-        }
-        return DepthwiseConv2DProgram;
-    }());
-
-    var CropAndResizeProgram = (function () {
-        function CropAndResizeProgram(imageShape, boxShape, cropSize, method, extrapolationValue) {
-            this.variableNames = ['Image', 'Boxes', 'BoxInd'];
-            this.outputShape = [];
-            var batch = imageShape[0], imageHeight = imageShape[1], imageWidth = imageShape[2], depth = imageShape[3];
-            var numBoxes = boxShape[0];
-            var cropHeight = cropSize[0], cropWidth = cropSize[1];
-            this.outputShape = [numBoxes, cropHeight, cropWidth, depth];
-            var methodId = method === 'bilinear' ? 1 : 0;
-            var _a = [imageHeight - 1 + ".0", imageWidth - 1 + ".0"], inputHeightFloat = _a[0], inputWidthFloat = _a[1];
-            var _b = cropHeight > 1 ?
-                [
-                    "" + (imageHeight - 1) / (cropHeight - 1),
-                    '(y2-y1) * height_ratio',
-                    "y1*" + inputHeightFloat + " + float(y)*(height_scale)",
-                ] :
-                [
-                    '0.0',
-                    '0.0',
-                    "0.5 * (y1+y2) * " + inputHeightFloat,
-                ], heightRatio = _b[0], heightScale = _b[1], inY = _b[2];
-            var _c = cropWidth > 1 ?
-                [
-                    "" + (imageWidth - 1) / (cropWidth - 1),
-                    '(x2-x1) * width_ratio',
-                    "x1*" + inputWidthFloat + " + float(x)*(width_scale)",
-                ] :
-                [
-                    '0.0',
-                    '0.0',
-                    "0.5 * (x1+x2) * " + inputWidthFloat,
-                ], widthRatio = _c[0], widthScale = _c[1], inX = _c[2];
-            this.userCode = "\n      const float height_ratio = float(" + heightRatio + ");\n      const float width_ratio = float(" + widthRatio + ");\n      void main() {\n        ivec4 coords = getOutputCoords();\n        int b = coords[0];\n        int y = coords[1];\n        int x = coords[2];\n        int d = coords[3];\n\n        // get box vals\n        float y1 = getBoxes(b,0);\n        float x1 = getBoxes(b,1);\n        float y2 = getBoxes(b,2);\n        float x2 = getBoxes(b,3);\n\n        // get image in batch index\n        int bInd = round(getBoxInd(b));\n        if(bInd < 0 || bInd >= " + batch + ") {\n          return;\n        }\n\n        float height_scale = " + heightScale + ";\n        float width_scale = " + widthScale + ";\n\n        float in_y = " + inY + ";\n        if( in_y < 0.0 || in_y > " + inputHeightFloat + " ) {\n          setOutput(float(" + extrapolationValue + "));\n          return;\n        }\n        float in_x = " + inX + ";\n        if( in_x < 0.0 || in_x > " + inputWidthFloat + " ) {\n          setOutput(float(" + extrapolationValue + "));\n          return;\n        }\n\n        vec2 sourceFracIndexRC = vec2(in_y,in_x);\n        if(" + methodId + " == 1) {\n          // Compute the four integer indices.\n          ivec2 sourceFloorRC = ivec2(sourceFracIndexRC);\n          ivec2 sourceCeilRC = ivec2(ceil(sourceFracIndexRC));\n\n          float topLeft = getImage(b, sourceFloorRC.x, sourceFloorRC.y, d);\n          float bottomLeft = getImage(b, sourceCeilRC.x, sourceFloorRC.y, d);\n          float topRight = getImage(b, sourceFloorRC.x, sourceCeilRC.y, d);\n          float bottomRight = getImage(b, sourceCeilRC.x, sourceCeilRC.y, d);\n\n          vec2 fracRC = sourceFracIndexRC - vec2(sourceFloorRC);\n\n          float top = topLeft + (topRight - topLeft) * fracRC.y;\n          float bottom = bottomLeft + (bottomRight - bottomLeft) * fracRC.y;\n          float newValue = top + (bottom - top) * fracRC.x;\n          setOutput(newValue);\n        } else {\n          // Compute the coordinators of nearest neighbor point.\n          ivec2 sourceNearestRC = ivec2(floor(\n            sourceFracIndexRC + vec2(0.5,0.5)));\n          float newValue = getImage(b, sourceNearestRC.x, sourceNearestRC.y, d);\n          setOutput(newValue);\n        }\n      }\n    ";
-        }
-        return CropAndResizeProgram;
-    }());
-
     function makeShader(inputsInfo, outputShape, userCode, broadcast) {
         var inputPrefixSnippet = inputsInfo.map(function (x) {
             var size = sizeFromShape(x.shapeInfo.logicalShape);
@@ -4563,6 +4409,176 @@
         return keptDims.map(function (d) { return params[d]; }).join(', ');
     }
 
+    var ClipProgram = (function () {
+        function ClipProgram(aShape, min, max) {
+            this.variableNames = ['A'];
+            this.packedInputs = true;
+            this.outputShape = aShape;
+            var rank = aShape.length;
+            var dtype = getCoordsDataType(rank);
+            var sourceCoords = getSourceCoords(rank);
+            this.userCode = "\n      void main() {\n        " + dtype + " rc = getOutputCoords();\n        vec4 value = getA(" + sourceCoords + ");\n        // float value = getAAtOutCoords();\n        // if (isNaN(value)) {\n        //   setOutput(value);\n        //   return;\n        // }\n\n        // setOutput(clamp(value, float(" + min + "), float(" + max + ")));\n\n        gl_FragColor = clamp(value, vec4(" + min + "), vec4(" + max + "));\n      }\n    ";
+        }
+        return ClipProgram;
+    }());
+    var dims = ['rc.x', 'rc.y', 'rc.z', 'rc.w'];
+    function getSourceCoords(rank) {
+        if (rank === 1) {
+            return 'rc';
+        }
+        var coords = '';
+        for (var i = 0; i < rank; i++) {
+            coords += dims[i];
+            if (i < rank - 1) {
+                coords += ',';
+            }
+        }
+        return coords;
+    }
+
+    var ConcatProgram = (function () {
+        function ConcatProgram(aShape, bShape) {
+            this.variableNames = ['A', 'B'];
+            this.outputShape = [];
+            this.outputShape =
+                computeOutShape([aShape, bShape], 1);
+            this.userCode = "\n      void main() {\n        ivec2 coords = getOutputCoords();\n        int yR = coords.x;\n        int yC = coords.y;\n\n        float value = 0.0;\n        if (yC < " + aShape[1] + ") {\n          value = getA(yR, yC);\n        } else {\n          yC -= " + aShape[1] + ";\n          value = getB(yR, yC);\n        }\n\n        setOutput(value);\n      }\n    ";
+        }
+        return ConcatProgram;
+    }());
+
+    var Conv2DDerFilterProgram = (function () {
+        function Conv2DDerFilterProgram(convInfo) {
+            this.variableNames = ['x', 'dy'];
+            this.outputShape = convInfo.filterShape;
+            var strideHeight = convInfo.strideHeight;
+            var strideWidth = convInfo.strideWidth;
+            var padTop = convInfo.padInfo.top;
+            var padLeft = convInfo.padInfo.left;
+            this.userCode = "\n      void main() {\n        ivec4 coords = getOutputCoords();\n        int wR = coords.x;\n        int wC = coords.y;\n        int d1 = coords.z;\n        int d2 = coords.w;\n\n        // Convolve x(?, ?, d1) with dy(:, :, d2) to get dw(wR, wC, d1, d2).\n        // ? = to be determined. : = across all values in that axis.\n        float dotProd = 0.0;\n\n        for (int b = 0; b < " + convInfo.batchSize + "; b++) {\n          for (int yR = 0; yR < " + convInfo.outHeight + "; yR++) {\n            int xR = wR + yR * " + strideHeight + " - " + padTop + ";\n\n            if (xR < 0 || xR >= " + convInfo.inHeight + ") {\n              continue;\n            }\n\n            for (int yC = 0; yC < " + convInfo.outWidth + "; yC++) {\n              int xC = wC + yC * " + strideWidth + " - " + padLeft + ";\n\n              if (xC < 0 || xC >= " + convInfo.inWidth + ") {\n                continue;\n              }\n\n              float dyValue = getDy(b, yR, yC, d2);\n              float xValue = getX(b, xR, xC, d1);\n              dotProd += (xValue * dyValue);\n            }\n          }\n        }\n        setOutput(dotProd);\n      }\n    ";
+        }
+        return Conv2DDerFilterProgram;
+    }());
+    var Conv2DDerInputProgram = (function () {
+        function Conv2DDerInputProgram(convInfo) {
+            this.variableNames = ['dy', 'W'];
+            this.outputShape = convInfo.inShape;
+            var filterHeight = convInfo.filterHeight;
+            var filterWidth = convInfo.filterWidth;
+            var strideHeight = convInfo.strideHeight;
+            var strideWidth = convInfo.strideWidth;
+            var padTop = filterHeight - 1 - convInfo.padInfo.top;
+            var padLeft = filterWidth - 1 - convInfo.padInfo.left;
+            this.userCode = "\n      const ivec2 pads = ivec2(" + padTop + ", " + padLeft + ");\n\n      void main() {\n        ivec4 coords = getOutputCoords();\n        int batch = coords[0];\n        int d1 = coords[3];\n\n        ivec2 dyCorner = coords.yz - pads;\n        int dyRCorner = dyCorner.x;\n        int dyCCorner = dyCorner.y;\n\n        // Convolve dy(?, ?, d2) with w(:, :, d1, d2) to compute dx(xR, xC, d1).\n        // ? = to be determined. : = across all values in that axis.\n        float dotProd = 0.0;\n        for (int wR = 0; wR < " + filterHeight + "; wR++) {\n          float dyR = float(dyRCorner + wR) / " + strideHeight + ".0;\n\n          if (dyR < 0.0 || dyR >= " + convInfo.outHeight + ".0 || fract(dyR) > 0.0) {\n            continue;\n          }\n          int idyR = int(dyR);\n\n          int wRPerm = " + filterHeight + " - 1 - wR;\n\n          for (int wC = 0; wC < " + filterWidth + "; wC++) {\n            float dyC = float(dyCCorner + wC) / " + strideWidth + ".0;\n\n            if (dyC < 0.0 || dyC >= " + convInfo.outWidth + ".0 ||\n                fract(dyC) > 0.0) {\n              continue;\n            }\n            int idyC = int(dyC);\n\n            int wCPerm = " + filterWidth + " - 1 - wC;\n\n            for (int d2 = 0; d2 < " + convInfo.outChannels + "; d2++) {\n              float xValue = getDy(batch, idyR, idyC, d2);\n              float wValue = getW(wRPerm, wCPerm, d1, d2);\n              dotProd += xValue * wValue;\n            }\n          }\n        }\n        setOutput(dotProd);\n      }\n    ";
+        }
+        return Conv2DDerInputProgram;
+    }());
+
+    var DepthwiseConv2DDerFilterProgram = (function () {
+        function DepthwiseConv2DDerFilterProgram(convInfo) {
+            this.variableNames = ['x', 'dy'];
+            this.outputShape = convInfo.filterShape;
+            var strideHeight = convInfo.strideHeight;
+            var strideWidth = convInfo.strideWidth;
+            var padTop = convInfo.padInfo.top;
+            var padLeft = convInfo.padInfo.left;
+            var channelMul = convInfo.outChannels / convInfo.inChannels;
+            this.userCode = "\n      void main() {\n        ivec4 coords = getOutputCoords();\n        int wR = coords.x;\n        int wC = coords.y;\n        int d1 = coords.z;\n        int dm = coords.w;\n        int d2 = d1 * " + channelMul + " + dm;\n\n        float dotProd = 0.0;\n\n        // TODO: Vec4 over the batch size\n        for (int b = 0; b < " + convInfo.batchSize + "; b++) {\n          for (int yR = 0; yR < " + convInfo.outHeight + "; yR++) {\n            int xR = wR + yR * " + strideHeight + " - " + padTop + ";\n\n            if (xR < 0 || xR >= " + convInfo.inHeight + ") {\n              continue;\n            }\n\n            for (int yC = 0; yC < " + convInfo.outWidth + "; yC++) {\n              int xC = wC + yC * " + strideWidth + " - " + padLeft + ";\n\n              if (xC < 0 || xC >= " + convInfo.inWidth + ") {\n                continue;\n              }\n\n              float dyValue = getDy(b, yR, yC, d2);\n              float xValue = getX(b, xR, xC, d1);\n              dotProd += (xValue * dyValue);\n            }\n          }\n        }\n        setOutput(dotProd);\n      }\n    ";
+        }
+        return DepthwiseConv2DDerFilterProgram;
+    }());
+    var DepthwiseConv2DDerInputProgram = (function () {
+        function DepthwiseConv2DDerInputProgram(convInfo) {
+            this.variableNames = ['dy', 'W'];
+            this.outputShape = convInfo.inShape;
+            var filterHeight = convInfo.filterHeight;
+            var filterWidth = convInfo.filterWidth;
+            var strideHeight = convInfo.strideHeight;
+            var strideWidth = convInfo.strideWidth;
+            var padTop = filterHeight - 1 - convInfo.padInfo.top;
+            var padLeft = filterWidth - 1 - convInfo.padInfo.left;
+            var channelMul = convInfo.outChannels / convInfo.inChannels;
+            this.userCode = "\n      const ivec2 pads = ivec2(" + padTop + ", " + padLeft + ");\n\n      void main() {\n        ivec4 coords = getOutputCoords();\n        int batch = coords[0];\n        int d1 = coords[3];\n        ivec2 dyCorner = coords.yz - pads;\n        int dyRCorner = dyCorner.x;\n        int dyCCorner = dyCorner.y;\n\n        float dotProd = 0.0;\n\n        for (int wR = 0; wR < " + filterHeight + "; wR++) {\n          float dyR = float(dyRCorner + wR) / " + strideHeight + ".0;\n\n          if (dyR < 0.0 || dyR >= " + convInfo.outHeight + ".0 || fract(dyR) > 0.0) {\n            continue;\n          }\n          int idyR = int(dyR);\n\n          int wRPerm = " + filterHeight + " - 1 - wR;\n\n          for (int wC = 0; wC < " + filterWidth + "; wC++) {\n            float dyC = float(dyCCorner + wC) / " + strideWidth + ".0;\n\n            if (dyC < 0.0 || dyC >= " + convInfo.outWidth + ".0 ||\n                fract(dyC) > 0.0) {\n              continue;\n            }\n            int idyC = int(dyC);\n\n            int wCPerm = " + filterWidth + " - 1 - wC;\n\n            // TODO: Vec4 over the channelMul\n            for (int dm = 0; dm < " + channelMul + "; dm++) {\n              int d2 = d1 * " + channelMul + " + dm;\n              float xValue = getDy(batch, idyR, idyC, d2);\n              float wValue = getW(wRPerm, wCPerm, d1, dm);\n              dotProd += xValue * wValue;\n            }\n          }\n        }\n        setOutput(dotProd);\n      }\n    ";
+        }
+        return DepthwiseConv2DDerInputProgram;
+    }());
+
+    var Conv2DProgram = (function () {
+        function Conv2DProgram(convInfo) {
+            this.variableNames = ['x', 'W'];
+            this.outputShape = convInfo.outShape;
+            var padTop = convInfo.padInfo.top;
+            var padLeft = convInfo.padInfo.left;
+            var strideHeight = convInfo.strideHeight;
+            var strideWidth = convInfo.strideWidth;
+            var dilationHeight = convInfo.dilationHeight;
+            var dilationWidth = convInfo.dilationWidth;
+            var filterHeight = convInfo.filterHeight;
+            var filterWidth = convInfo.filterWidth;
+            var inputDepthNearestVec4 = Math.floor(convInfo.inChannels / 4) * 4;
+            var inputDepthVec4Remainder = convInfo.inChannels % 4;
+            this.userCode = "\n      const ivec2 strides = ivec2(" + strideHeight + ", " + strideWidth + ");\n      const ivec2 pads = ivec2(" + padTop + ", " + padLeft + ");\n\n      void main() {\n        ivec4 coords = getOutputCoords();\n        int batch = coords[0];\n        int d2 = coords[3];\n\n        ivec2 xRCCorner = coords.yz * strides - pads;\n        int xRCorner = xRCCorner.x;\n        int xCCorner = xRCCorner.y;\n\n        // Convolve x(?, ?, d1) with w(:, :, d1, d2) to get y(yR, yC, d2).\n        // ? = to be determined. : = across all values in that axis.\n        float dotProd = 0.0;\n        for (int wR = 0; wR < " + filterHeight + "; wR++) {\n          int xR = xRCorner + wR * " + dilationHeight + ";\n\n          if (xR < 0 || xR >= " + convInfo.inHeight + ") {\n            continue;\n          }\n\n          for (int wC = 0; wC < " + filterWidth + "; wC++) {\n            int xC = xCCorner + wC * " + dilationWidth + ";\n\n            if (xC < 0 || xC >= " + convInfo.inWidth + ") {\n              continue;\n            }\n\n            for (int d1 = 0; d1 < " + inputDepthNearestVec4 + "; d1 += 4) {\n              vec4 xValues = vec4(\n                getX(batch, xR, xC, d1),\n                getX(batch, xR, xC, d1 + 1),\n                getX(batch, xR, xC, d1 + 2),\n                getX(batch, xR, xC, d1 + 3)\n              );\n              vec4 wValues = vec4(\n                getW(wR, wC, d1, d2),\n                getW(wR, wC, d1 + 1, d2),\n                getW(wR, wC, d1 + 2, d2),\n                getW(wR, wC, d1 + 3, d2)\n              );\n\n              dotProd += dot(xValues, wValues);\n            }\n\n            if (" + (inputDepthVec4Remainder === 1) + ") {\n              dotProd +=\n                getX(batch, xR, xC, " + inputDepthNearestVec4 + ") *\n                getW(wR, wC, " + inputDepthNearestVec4 + ", d2);\n            } else if (" + (inputDepthVec4Remainder === 2) + ") {\n              vec2 xValues = vec2(\n                getX(batch, xR, xC, " + inputDepthNearestVec4 + "),\n                getX(batch, xR, xC, " + inputDepthNearestVec4 + " + 1)\n              );\n              vec2 wValues = vec2(\n                getW(wR, wC, " + inputDepthNearestVec4 + ", d2),\n                getW(wR, wC, " + inputDepthNearestVec4 + " + 1, d2)\n              );\n              dotProd += dot(xValues, wValues);\n            } else if (" + (inputDepthVec4Remainder === 3) + ") {\n              vec3 xValues = vec3(\n                getX(batch, xR, xC, " + inputDepthNearestVec4 + "),\n                getX(batch, xR, xC, " + inputDepthNearestVec4 + " + 1),\n                getX(batch, xR, xC, " + inputDepthNearestVec4 + " + 2)\n              );\n              vec3 wValues = vec3(\n                getW(wR, wC, " + inputDepthNearestVec4 + ", d2),\n                getW(wR, wC, " + inputDepthNearestVec4 + " + 1, d2),\n                getW(wR, wC, " + inputDepthNearestVec4 + " + 2, d2)\n              );\n              dotProd += dot(xValues, wValues);\n            }\n          }\n        }\n        setOutput(dotProd);\n      }\n    ";
+        }
+        return Conv2DProgram;
+    }());
+
+    var DepthwiseConv2DProgram = (function () {
+        function DepthwiseConv2DProgram(convInfo) {
+            this.variableNames = ['x', 'W'];
+            this.outputShape = convInfo.outShape;
+            var xNumRows = convInfo.inHeight;
+            var xNumCols = convInfo.inWidth;
+            var padTop = convInfo.padInfo.top;
+            var padLeft = convInfo.padInfo.left;
+            var strideHeight = convInfo.strideHeight;
+            var strideWidth = convInfo.strideWidth;
+            var dilationHeight = convInfo.dilationHeight;
+            var dilationWidth = convInfo.dilationWidth;
+            var filterHeight = convInfo.filterHeight;
+            var filterWidth = convInfo.filterWidth;
+            var channelMul = convInfo.outChannels / convInfo.inChannels;
+            this.userCode = "\n      const ivec2 strides = ivec2(" + strideHeight + ", " + strideWidth + ");\n      const ivec2 pads = ivec2(" + padTop + ", " + padLeft + ");\n\n      void main() {\n        ivec4 coords = getOutputCoords();\n        int batch = coords.x;\n        ivec2 xRCCorner = coords.yz * strides - pads;\n        int d2 = coords.w;\n        int d1 = d2 / " + channelMul + ";\n        int q = d2 - d1 * " + channelMul + ";\n\n        int xRCorner = xRCCorner.x;\n        int xCCorner = xRCCorner.y;\n\n        // Convolve x(?, ?, d1) with w(:, :, d1, q) to get y(yR, yC, d2).\n        // ? = to be determined. : = across all values in that axis.\n        float dotProd = 0.0;\n        // TODO(dsmilkov): Flatten the two for loops and vec4 the operations.\n        for (int wR = 0; wR < " + filterHeight + "; wR++) {\n          int xR = xRCorner + wR * " + dilationHeight + ";\n\n          if (xR < 0 || xR >= " + xNumRows + ") {\n            continue;\n          }\n\n          for (int wC = 0; wC < " + filterWidth + "; wC++) {\n            int xC = xCCorner + wC * " + dilationWidth + ";\n\n            if (xC < 0 || xC >= " + xNumCols + ") {\n              continue;\n            }\n\n            float xVal = getX(batch, xR, xC, d1);\n            float wVal = getW(wR, wC, d1, q);\n            dotProd += xVal * wVal;\n          }\n        }\n        setOutput(dotProd);\n      }\n    ";
+        }
+        return DepthwiseConv2DProgram;
+    }());
+
+    var CropAndResizeProgram = (function () {
+        function CropAndResizeProgram(imageShape, boxShape, cropSize, method, extrapolationValue) {
+            this.variableNames = ['Image', 'Boxes', 'BoxInd'];
+            this.outputShape = [];
+            var batch = imageShape[0], imageHeight = imageShape[1], imageWidth = imageShape[2], depth = imageShape[3];
+            var numBoxes = boxShape[0];
+            var cropHeight = cropSize[0], cropWidth = cropSize[1];
+            this.outputShape = [numBoxes, cropHeight, cropWidth, depth];
+            var methodId = method === 'bilinear' ? 1 : 0;
+            var _a = [imageHeight - 1 + ".0", imageWidth - 1 + ".0"], inputHeightFloat = _a[0], inputWidthFloat = _a[1];
+            var _b = cropHeight > 1 ?
+                [
+                    "" + (imageHeight - 1) / (cropHeight - 1),
+                    '(y2-y1) * height_ratio',
+                    "y1*" + inputHeightFloat + " + float(y)*(height_scale)",
+                ] :
+                [
+                    '0.0',
+                    '0.0',
+                    "0.5 * (y1+y2) * " + inputHeightFloat,
+                ], heightRatio = _b[0], heightScale = _b[1], inY = _b[2];
+            var _c = cropWidth > 1 ?
+                [
+                    "" + (imageWidth - 1) / (cropWidth - 1),
+                    '(x2-x1) * width_ratio',
+                    "x1*" + inputWidthFloat + " + float(x)*(width_scale)",
+                ] :
+                [
+                    '0.0',
+                    '0.0',
+                    "0.5 * (x1+x2) * " + inputWidthFloat,
+                ], widthRatio = _c[0], widthScale = _c[1], inX = _c[2];
+            this.userCode = "\n      const float height_ratio = float(" + heightRatio + ");\n      const float width_ratio = float(" + widthRatio + ");\n      void main() {\n        ivec4 coords = getOutputCoords();\n        int b = coords[0];\n        int y = coords[1];\n        int x = coords[2];\n        int d = coords[3];\n\n        // get box vals\n        float y1 = getBoxes(b,0);\n        float x1 = getBoxes(b,1);\n        float y2 = getBoxes(b,2);\n        float x2 = getBoxes(b,3);\n\n        // get image in batch index\n        int bInd = round(getBoxInd(b));\n        if(bInd < 0 || bInd >= " + batch + ") {\n          return;\n        }\n\n        float height_scale = " + heightScale + ";\n        float width_scale = " + widthScale + ";\n\n        float in_y = " + inY + ";\n        if( in_y < 0.0 || in_y > " + inputHeightFloat + " ) {\n          setOutput(float(" + extrapolationValue + "));\n          return;\n        }\n        float in_x = " + inX + ";\n        if( in_x < 0.0 || in_x > " + inputWidthFloat + " ) {\n          setOutput(float(" + extrapolationValue + "));\n          return;\n        }\n\n        vec2 sourceFracIndexRC = vec2(in_y,in_x);\n        if(" + methodId + " == 1) {\n          // Compute the four integer indices.\n          ivec2 sourceFloorRC = ivec2(sourceFracIndexRC);\n          ivec2 sourceCeilRC = ivec2(ceil(sourceFracIndexRC));\n\n          float topLeft = getImage(b, sourceFloorRC.x, sourceFloorRC.y, d);\n          float bottomLeft = getImage(b, sourceCeilRC.x, sourceFloorRC.y, d);\n          float topRight = getImage(b, sourceFloorRC.x, sourceCeilRC.y, d);\n          float bottomRight = getImage(b, sourceCeilRC.x, sourceCeilRC.y, d);\n\n          vec2 fracRC = sourceFracIndexRC - vec2(sourceFloorRC);\n\n          float top = topLeft + (topRight - topLeft) * fracRC.y;\n          float bottom = bottomLeft + (bottomRight - bottomLeft) * fracRC.y;\n          float newValue = top + (bottom - top) * fracRC.x;\n          setOutput(newValue);\n        } else {\n          // Compute the coordinators of nearest neighbor point.\n          ivec2 sourceNearestRC = ivec2(floor(\n            sourceFracIndexRC + vec2(0.5,0.5)));\n          float newValue = getImage(b, sourceNearestRC.x, sourceNearestRC.y, d);\n          setOutput(newValue);\n        }\n      }\n    ";
+        }
+        return CropAndResizeProgram;
+    }());
+
     var CumSumProgram = (function () {
         function CumSumProgram(shape, exclusive, reverse) {
             this.variableNames = ['x'];
@@ -4702,12 +4718,12 @@
             this.outputShape = outputShape;
             this.rank = outputShape.length;
             var dtype = getCoordsDataType(this.rank);
-            var sourceCoords = getSourceCoords(aShape, axis);
+            var sourceCoords = getSourceCoords$1(aShape, axis);
             this.userCode = "\n      void main() {\n        " + dtype + " resRC = getOutputCoords();\n        setOutput(getA(" + sourceCoords + "));\n      }\n    ";
         }
         return GatherProgram;
     }());
-    function getSourceCoords(aShape, axis) {
+    function getSourceCoords$1(aShape, axis) {
         var rank = aShape.length;
         if (rank > 4) {
             throw Error("Gather for rank " + rank + " is not yet supported");
@@ -6161,9 +6177,9 @@
         }
         return PackProgram;
     }());
-    var dims = ['rc.x', 'rc.y', 'rc.z', 'rc.w'];
+    var dims$1 = ['rc.x', 'rc.y', 'rc.z', 'rc.w'];
     function getInnerDims(rank) {
-        return dims.slice(0, rank).slice(-2);
+        return dims$1.slice(0, rank).slice(-2);
     }
     function getSourceCoordsArr(rank) {
         var coords = [];
@@ -6171,7 +6187,7 @@
             for (var col = 0; col <= 1; col++) {
                 var coord = (row === 0 ? 'r' : 'rp1') + ", " + (col === 0 ? 'c' : 'cp1');
                 for (var d = 2; d < rank; d++) {
-                    coord = dims[dims.length - 1 - d] + "," + coord;
+                    coord = dims$1[dims$1.length - 1 - d] + "," + coord;
                 }
                 coords.push(coord);
             }
@@ -6184,7 +6200,7 @@
         }
         var cond = '';
         for (var i = 0; i < rank; i++) {
-            cond += dims[i] + " >= " + shape[i];
+            cond += dims$1[i] + " >= " + shape[i];
             if (i < rank - 1) {
                 cond += '||';
             }
@@ -6746,12 +6762,12 @@
             this.outputShape = outputShape;
             this.rank = outputShape.length;
             var dtype = getCoordsDataType(this.rank);
-            var sourceCoords = getSourceCoords$1(aShape);
+            var sourceCoords = getSourceCoords$2(aShape);
             this.userCode = "\n      void main() {\n        " + dtype + " resRC = getOutputCoords();\n        setOutput(getA(" + sourceCoords + "));\n      }\n    ";
         }
         return TileProgram;
     }());
-    function getSourceCoords$1(aShape) {
+    function getSourceCoords$2(aShape) {
         var rank = aShape.length;
         if (rank > 5) {
             throw Error("Tile for rank " + rank + " is not yet supported");
@@ -6872,23 +6888,23 @@
             this.outputShape = outputShape;
             var rank = outputShape.length;
             var dtype = getCoordsDataType(rank);
-            var sourceCoords = getSourceCoords$2(rank);
+            var sourceCoords = getSourceCoords$3(rank);
             var innerDims = getInnerDims$1(rank);
             this.userCode = "\n      void main() {\n        " + dtype + " rc = getOutputCoords();\n        vec2 modCoord = mod(vec2(" + (rank === 1 ? 'rc' : innerDims.join(',')) + "), 2.);\n        vec4 packedInput = getA(" + sourceCoords + ");\n\n        setOutput(\n          modCoord.x == 0. ?\n            (modCoord.y == 0. ? packedInput.r : packedInput.g) :\n            (modCoord.y == 0. ? packedInput.b : packedInput.a)\n        );\n      }\n    ";
         }
         return UnpackProgram;
     }());
-    var dims$1 = ['rc.x', 'rc.y', 'rc.z', 'rc.w'];
+    var dims$2 = ['rc.x', 'rc.y', 'rc.z', 'rc.w'];
     function getInnerDims$1(rank) {
-        return dims$1.slice(0, rank).slice(-2);
+        return dims$2.slice(0, rank).slice(-2);
     }
-    function getSourceCoords$2(rank) {
+    function getSourceCoords$3(rank) {
         if (rank === 1) {
             return 'rc';
         }
         var coords = '';
         for (var i = 0; i < rank; i++) {
-            coords += dims$1[i];
+            coords += dims$2[i];
             if (i < rank - 1) {
                 coords += ',';
             }
@@ -9346,8 +9362,13 @@
             return this.compileAndRun(program, [x], output);
         };
         MathBackendWebGL.prototype.clip = function (x, min, max) {
+            var packedX = x;
+            if (this.texData.get(x.dataId).usage !== TextureUsage.PACK) {
+                var packProgram = new PackProgram(x.shape);
+                packedX = this.compileAndRun(packProgram, [x], this.makePackedTensor(x.shape));
+            }
             var program = new ClipProgram(x.shape, min, max);
-            return this.compileAndRun(program, [x]);
+            return this.compileAndRun(program, [packedX]);
         };
         MathBackendWebGL.prototype.abs = function (x) {
             var program = new UnaryOpProgram(x.shape, ABS);

@@ -16,24 +16,51 @@
  */
 
 import {GPGPUProgram} from './gpgpu_math';
+import {getCoordsDataType} from './shader_compiler';
 
 export class ClipProgram implements GPGPUProgram {
   variableNames = ['A'];
+  packedInputs = true;
   userCode: string;
   outputShape: number[];
 
   constructor(aShape: number[], min: number, max: number) {
     this.outputShape = aShape;
+    const rank = aShape.length;
+
+    const dtype = getCoordsDataType(rank);
+    const sourceCoords = getSourceCoords(rank);
+
     this.userCode = `
       void main() {
-        float value = getAAtOutCoords();
-        if (isNaN(value)) {
-          setOutput(value);
-          return;
-        }
+        ${dtype} rc = getOutputCoords();
+        vec4 value = getA(${sourceCoords});
 
-        setOutput(clamp(value, float(${min}), float(${max})));
+        // float value = getAAtOutCoords();
+        // if (isNaN(value)) {
+        //   setOutput(value);
+        //   return;
+        // }
+
+        gl_FragColor = clamp(value, vec4(${min}), vec4(${max}));
       }
     `;
   }
+}
+
+const dims = ['rc.x', 'rc.y', 'rc.z', 'rc.w'];
+
+function getSourceCoords(rank: number): string {
+  if(rank === 1) {
+    return 'rc';
+  }
+
+  let coords = '';
+  for (let i = 0; i < rank; i++) {
+    coords += dims[i];
+    if (i < rank - 1) {
+      coords += ',';
+    }
+  }
+  return coords;
 }
