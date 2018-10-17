@@ -268,15 +268,17 @@
       let kernels = [];
       console.log = msg => {
         const parts = msg.split('\t').map(x => x.slice(2));
-        const scopes = parts[0].trim()
-          .split('||')
-          .filter(s => s !== 'unnamed scope');
-        kernels.push({
-          scopes: scopes,
-          time: Number.parseFloat(parts[1]),
-          output: parts[2].trim(),
-          subKernels: parts[4]
-        });
+        if(parts.length) {
+          const scopes = parts[0].trim()
+            .split('||')
+            .filter(s => s !== 'unnamed scope');
+          kernels.push({
+            scopes: scopes,
+            time: Number.parseFloat(parts[1]),
+            output: parts[2].trim(),
+            subKernels: parts[4]
+          });
+        }
       }
       let res = predict(model);
       if (res instanceof Promise) {

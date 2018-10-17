@@ -528,10 +528,10 @@
             var timer = this.backendTimer.time(holdResultWrapperFn);
             var results = Array.isArray(result) ? result : [result];
             results.forEach(function (r) {
-                var vals = r.dataSync();
-                checkComputationForNaN(vals, r.dtype, name);
+                // var vals = r.dataSync();
+                // checkComputationForNaN(vals, r.dtype, name);
                 timer.then(function (timing) {
-                    _this.logger.logKernelProfile(name, r, vals, timing.kernelMs, timing.subKernels);
+                    _this.logger.logKernelProfile(name, r, [], timing.kernelMs, timing.subKernels);
                 });
             });
             return result;
