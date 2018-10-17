@@ -178,7 +178,7 @@ export function encodeMatrixToPackedRGBA(
       let dst = batchOffset + (texelsPerRow - 1) * 4;
       const srcStride = 2 * columns;
       const dstStride = texelsPerRow * 4;
-      for (let blockY = 0; blockY < Math.max(1, heightInFullBlocks); ++blockY) {
+      for (let blockY = 0; blockY < heightInFullBlocks; ++blockY) {
         packedRGBA[dst] = matrix[src];
         packedRGBA[dst + 2] = matrix[src + columns];
         src += srcStride;
@@ -190,7 +190,7 @@ export function encodeMatrixToPackedRGBA(
     if (oddHeight) {
       let src = sourceOffset + (rows - 1) * columns;
       let dst = batchOffset + (texelsPerBatch - texelsPerRow) * 4;
-      for (let blockX = 0; blockX < Math.max(1, widthInFullBlocks); ++blockX) {
+      for (let blockX = 0; blockX < widthInFullBlocks; ++blockX) {
         packedRGBA[dst++] = matrix[src++];
         packedRGBA[dst++] = matrix[src++];
         dst += 2;
