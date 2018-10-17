@@ -227,7 +227,7 @@ describeWithFlags('tex_util encodeMatrixToPackedRGBA', WEBGL_ENVS, () => {
         new Float32Array([1, 2, 4, 5, 3, 0, 6, 0, 7, 8, 0, 0, 9, 0, 0, 0]));
   });
 
-  fit('2x3x4', () => {
+  it('2x3x4 texels in the last row of each batch are RG00', () => {
     const matrix = new Float32Array([
       1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12,
       13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24
@@ -238,6 +238,32 @@ describeWithFlags('tex_util encodeMatrixToPackedRGBA', WEBGL_ENVS, () => {
         packedRGBA, new Float32Array([
           1,  2,  5,  6,  3,  4,  7,  8,  9,  10, 0, 0, 11, 12, 0, 0,
           13, 14, 17, 18, 15, 16, 19, 20, 21, 22, 0, 0, 23, 24, 0, 0
+        ]));
+  });
+
+  it('2x4x3 texels in the last column of each batch are R0B0', () => {
+    const matrix = new Float32Array([
+      1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12,
+      13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24
+    ]);
+    const packedRGBA = new Float32Array(32);
+    tex_util.encodeMatrixToPackedRGBA(matrix, 2, 4, 3, packedRGBA);
+    expectArraysClose(
+        packedRGBA, new Float32Array([
+          1,  2,  4,  5,  3,  0, 6,  0, 7,  8,  10, 11, 9,  0, 12, 0,
+          13, 14, 16, 17, 15, 0, 18, 0, 19, 20, 22, 23, 21, 0, 24, 0
+        ]));
+  });
+
+  it('2x3x3 bottom right texel in each batch is R000', () => {
+    const matrix = new Float32Array(
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]);
+    const packedRGBA = new Float32Array(32);
+    tex_util.encodeMatrixToPackedRGBA(matrix, 2, 3, 3, packedRGBA);
+    expectArraysClose(
+        packedRGBA, new Float32Array([
+          1,  2,  4,  5,  3,  0, 6,  0, 7,  8,  0, 0, 9,  0, 0, 0,
+          10, 11, 13, 14, 12, 0, 15, 0, 16, 17, 0, 0, 18, 0, 0, 0
         ]));
   });
 });
@@ -311,5 +337,44 @@ describeWithFlags('tex_util decodeMatrixFromPackedRGBA', WEBGL_ENVS, () => {
     const matrix = new Float32Array(9);
     tex_util.decodeMatrixFromPackedRGBA(packedRGBA, 1, 3, 3, matrix);
     expectArraysClose(matrix, new Float32Array([1, 2, 3, 4, 5, 6, 7, 8, 9]));
+  });
+
+  it('2x3x4 bottom row in each batch only reads RG', () => {
+    const packedRGBA = new Float32Array([
+      1,  2,  5,  6,  3,  4,  7,  8,  9,  10, 0, 0, 11, 12, 0, 0,
+      13, 14, 17, 18, 15, 16, 19, 20, 21, 22, 0, 0, 23, 24, 0, 0
+    ]);
+    const matrix = new Float32Array(24);
+    tex_util.decodeMatrixFromPackedRGBA(packedRGBA, 2, 3, 4, matrix);
+    expectArraysClose(matrix, new Float32Array([
+                        1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12,
+                        13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24
+                      ]));
+  });
+
+  it('2x4x3 final column in each batch only reads RB', () => {
+    const packedRGBA = new Float32Array([
+      1,  2,  4,  5,  3,  0, 6,  0, 7,  8,  10, 11, 9,  0, 12, 0,
+      13, 14, 16, 17, 15, 0, 18, 0, 19, 20, 22, 23, 21, 0, 24, 0
+    ]);
+    const matrix = new Float32Array(24);
+    tex_util.decodeMatrixFromPackedRGBA(packedRGBA, 2, 4, 3, matrix);
+    expectArraysClose(matrix, new Float32Array([
+                        1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12,
+                        13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24
+                      ]));
+  });
+
+  fit('2x3x3 bottom right texel in each batch only reads R', () => {
+    const packedRGBA = new Float32Array([
+      1,  2,  4,  5,  3,  0, 6,  0, 7,  8,  0, 0, 9,  0, 0, 0,
+      10, 11, 13, 14, 12, 0, 15, 0, 16, 17, 0, 0, 18, 0, 0, 0
+    ]);
+    const matrix = new Float32Array(18);
+    tex_util.decodeMatrixFromPackedRGBA(packedRGBA, 2, 3, 3, matrix);
+    expectArraysClose(
+        matrix,
+        new Float32Array(
+            [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]))
   });
 });
