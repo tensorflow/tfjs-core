@@ -38,11 +38,12 @@ export class Profiler {
     const results: Tensor[] =
         Array.isArray(result) ? result : [result] as Tensor[];
     results.forEach(r => {
-      const vals = r.dataSync();
-      util.checkComputationForNaN(vals, r.dtype, name);
+      // const vals = r.dataSync(); // somehow this causes all inputs to be unpacked
+      // util.checkComputationForNaN(vals, r.dtype, name);
 
       timer.then(timing => {
-        this.logger.logKernelProfile(name, r, vals, timing.kernelMs, timing.subKernels);
+        // this.logger.logKernelProfile(name, r, vals, timing.kernelMs, timing.subKernels);
+        this.logger.logKernelProfile(name, r, [], timing.kernelMs, timing.subKernels);
       });
     });
 
