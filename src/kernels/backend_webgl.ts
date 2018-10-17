@@ -603,14 +603,7 @@ export class MathBackendWebGL implements KernelBackend {
           program, [packedA, packedB],
           this.makePackedTensor<Tensor2D>(program.outputShape));
 
-      const unpackProgram = new UnpackProgram(result.shape);
-      const unpacked = this.compileAndRun(unpackProgram, [result]) as Tensor;
-
-      packedA.dispose();
-      packedB.dispose();
-      result.dispose();
-
-      return unpacked.reshape([1, result.shape[0], result.shape[1]]);
+      return result.reshape([1, result.shape[0], result.shape[1]]);
     } else {
       return this.compileAndRun(
           new MatMulProgram(a.shape, b.shape, transposeA, transposeB), [a, b]);
@@ -1363,14 +1356,7 @@ export class MathBackendWebGL implements KernelBackend {
         matmulProgram, [im2Col, packedW2Row],
         this.makePackedTensor<Tensor2D>(matmulProgram.outputShape));
 
-    const unpackProgram = new UnpackProgram(product.shape);
-    const unpacked = this.compileAndRun(unpackProgram, [product]) as Tensor;
-
-    im2Col.dispose();
-    packedW2Row.dispose();
-    product.dispose();
-
-    return unpacked.reshape([1, outHeight, outWidth, convInfo.outChannels]);
+    return product.reshape([1, outHeight, outWidth, convInfo.outChannels]);
   }
 
   conv2d(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
@@ -1672,6 +1658,14 @@ export class MathBackendWebGL implements KernelBackend {
           uniformValues: this.readSync(input.dataId)
         };
       }
+
+      if (texData.usage === TextureUsage.PACK &&
+          program.packedInputs !== true) {
+        const unpackProgram = new UnpackProgram(input.shape);
+        input = this.compileAndRun(unpackProgram, [input]);
+        texData = this.texData.get(input.dataId);
+      }
+
       this.uploadToGPU(input.dataId);
       return {shape: input.shape, texData, isUniform: false};
     });

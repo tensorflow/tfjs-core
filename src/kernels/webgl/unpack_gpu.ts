@@ -19,6 +19,7 @@ import {GPGPUProgram} from './gpgpu_math';
 
 export class UnpackProgram implements GPGPUProgram {
   variableNames = ['A'];
+  packedInputs = true;
   outputShape: number[];
   userCode: string;
 
