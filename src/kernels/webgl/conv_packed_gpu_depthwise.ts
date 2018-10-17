@@ -46,16 +46,17 @@ export class DepthwiseConv2DPackedProgram implements GPGPUProgram {
       void main() {
         ivec4 coords = getOutputCoords();
         int batch = coords.x;
-        int d2 = coords.w;
-        int d1 = d2 / ${channelMul};
-        int q = d2 - d1 * ${channelMul};
 
         vec4 result = vec4(0);
 
         for(int row=0; row<=1; row++) {
           for(int col=0; col<=1; col++) {
             // one channel
-            vec2 xRCCorner = dot(vec2(coords.y, coords.z + col), strides) - pads;
+            int d2 = coords.w + col;
+            int d1 = d2 / ${channelMul};
+            int q = d2 - d1 * ${channelMul};
+
+            vec2 xRCCorner = dot(vec2(coords.y, coords.z + row), strides) - pads;
             int xRCorner = int(xRCCorner.x);
             int xCCorner = int(xRCCorner.y);
 
