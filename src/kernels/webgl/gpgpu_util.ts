@@ -16,6 +16,7 @@
  */
 
 import {ENV} from '../../environment';
+import * as util from '../../util';
 
 import * as tex_util from './tex_util';
 import * as webgl_util from './webgl_util';
@@ -283,12 +284,15 @@ export function uploadMatrixToTexture(
 }
 
 export function uploadMatrixToPackedTexture(
-    gl: WebGLRenderingContext, texture: WebGLTexture, rows: number,
-    columns: number, matrix: Float32Array, textureConfig: TextureConfig) {
+    gl: WebGLRenderingContext, texture: WebGLTexture, shape: number[],
+    matrix: Float32Array, textureConfig: TextureConfig) {
+  const rows = shape[shape.length - 2];
+  const columns = shape[shape.length - 1];
   const [w, h] = tex_util.getPackedMatrixTextureShapeWidthHeight(rows, columns);
+  const batch = util.arrayProduct(shape.slice(0, -2));
   const packedRGBA = new Float32Array(
       tex_util.getPackedRGBAArraySizeFromMatrixShape(rows, columns));
-  tex_util.encodeMatrixToPackedRGBA(matrix, rows, columns, packedRGBA);
+  tex_util.encodeMatrixToPackedRGBA(matrix, batch, rows, columns, packedRGBA);
   uploadDataToTexture(gl, texture, w, h, packedRGBA, gl.RGBA);
 }
 
@@ -396,9 +400,8 @@ export function downloadByteEncodedFloatMatrixFromOutputTexture(
 }
 
 export function downloadMatrixFromPackedOutputTexture(
-    gl: WebGLRenderingContext, logicalRows: number, logicalCols: number,
-    physicalRows: number, physicalCols: number,
-    textureConfig: TextureConfig): Float32Array {
+    gl: WebGLRenderingContext, logicalShape: number[], physicalRows: number,
+    physicalCols: number, textureConfig: TextureConfig): Float32Array {
   const [w, h] = tex_util.getPackedMatrixTextureShapeWidthHeight(
       physicalRows, physicalCols);
   const packedRGBA =
@@ -406,7 +409,11 @@ export function downloadMatrixFromPackedOutputTexture(
           physicalRows, physicalCols));
   webgl_util.callAndCheck(
       gl, () => gl.readPixels(0, 0, w, h, gl.RGBA, gl.FLOAT, packedRGBA));
-  const matrix = new Float32Array(logicalRows * logicalCols);
+  const matrix = new Float32Array(util.arrayProduct(logicalShape));
   return tex_util.decodeMatrixFromPackedRGBA(
-      packedRGBA, logicalRows, logicalCols, matrix);
+      packedRGBA,
+      Math.max(
+          1, util.arrayProduct(logicalShape.slice(0, logicalShape.length - 2))),
+      logicalShape.length > 1 ? logicalShape[logicalShape.length - 2] : 1,
+      logicalShape[logicalShape.length - 1], matrix);
 }

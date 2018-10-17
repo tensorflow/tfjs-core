@@ -182,11 +182,10 @@ export class GPGPUContext {
   }
 
   public uploadMatrixToPackedTexture(
-      texture: WebGLTexture, rows: number, columns: number,
-      matrix: Float32Array) {
+      texture: WebGLTexture, shape: number[], matrix: Float32Array) {
     this.throwIfDisposed();
     return gpgpu_util.uploadMatrixToPackedTexture(
-        this.gl, texture, rows, columns, matrix, this.textureConfig);
+        this.gl, texture, shape, matrix, this.textureConfig);
   }
 
   public downloadFloat32MatrixFromOutputTexture(
@@ -265,7 +264,7 @@ export class GPGPUContext {
     return this.downloadMatrixDriver(
         texture,
         () => gpgpu_util.downloadMatrixFromPackedOutputTexture(
-            this.gl, shape[0], shape[1], rows, columns, this.textureConfig));
+            this.gl, shape, rows, columns, this.textureConfig));
   }
 
   private vertexAttrsAreBound = false;
