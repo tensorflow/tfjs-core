@@ -40,8 +40,8 @@ export class DepthwiseConv2DPackedProgram implements GPGPUProgram {
     const channelMul = convInfo.outChannels / convInfo.inChannels;
 
     this.userCode = `
-      const ivec2 strides = ivec2(${strideHeight}, ${strideWidth});
-      const ivec2 pads = ivec2(${padTop}, ${padLeft});
+      const vec2 strides = vec2(${strideHeight}, ${strideWidth});
+      const vec2 pads = vec2(${padTop}, ${padLeft});
 
       void main() {
         ivec4 coords = getOutputCoords();
@@ -55,9 +55,9 @@ export class DepthwiseConv2DPackedProgram implements GPGPUProgram {
         for(int row=0; row<=1; row++) {
           for(int col=0; col<=1; col++) {
             // one channel
-            ivec2 xRCCorner = vec2(coords.yz + vec2(0, col)) * strides - pads;
-            int xRCorner = xRCCorner.x;
-            int xCCorner = xRCCorner.y;
+            vec2 xRCCorner = dot(vec2(coords.y, coords.z + col), strides) - pads;
+            int xRCorner = int(xRCCorner.x);
+            int xCCorner = int(xRCCorner.y);
 
             float dotProd = 0.0;
 
