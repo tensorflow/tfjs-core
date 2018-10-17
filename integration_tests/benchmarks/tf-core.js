@@ -3815,6 +3815,7 @@
         function BatchNormPackedProgram(xShape, meanShape, varianceShape, offsetShape, scaleShape, varianceEpsilon) {
             this.outputShape = [];
             this.supportsBroadcasting = true;
+            this.packedInputs = true;
             this.variableNames = ['x', 'mean', 'variance'];
             assertAndGetBroadcastShape(xShape, meanShape);
             assertAndGetBroadcastShape(xShape, varianceShape);
@@ -6107,6 +6108,7 @@
             if (transposeA === void 0) { transposeA = false; }
             if (transposeB === void 0) { transposeB = false; }
             this.variableNames = ['matrixA', 'matrixB'];
+            this.packedInputs = true;
             this.outputShape = outputShape;
             var sharedDim = transposeA ? aShape[0] : aShape[1];
             var sharedDimensionPacked = Math.ceil(sharedDim / 2);
@@ -6866,12 +6868,13 @@
     var UnpackProgram = (function () {
         function UnpackProgram(outputShape) {
             this.variableNames = ['A'];
+            this.packedInputs = true;
             this.outputShape = outputShape;
             var rank = outputShape.length;
             var dtype = getCoordsDataType(rank);
             var sourceCoords = getSourceCoords$2(rank);
             var innerDims = getInnerDims$1(rank);
-            this.userCode = "\n      void main() {\n        " + dtype + " rc = getOutputCoords();\n        vec2 modCoord = mod(vec2(" + innerDims.join(',') + "), 2.);\n        vec4 packedInput = getA(" + sourceCoords + ");\n\n        setOutput(\n          modCoord.x == 0. ?\n            (modCoord.y == 0. ? packedInput.r : packedInput.g) :\n            (modCoord.y == 0. ? packedInput.b : packedInput.a)\n        );\n      }\n    ";
+            this.userCode = "\n      void main() {\n        " + dtype + " rc = getOutputCoords();\n        vec2 modCoord = mod(vec2(" + (rank === 1 ? 'rc' : innerDims.join(',')) + "), 2.);\n        vec4 packedInput = getA(" + sourceCoords + ");\n\n        setOutput(\n          modCoord.x == 0. ?\n            (modCoord.y == 0. ? packedInput.r : packedInput.g) :\n            (modCoord.y == 0. ? packedInput.b : packedInput.a)\n        );\n      }\n    ";
         }
         return UnpackProgram;
     }());
@@ -6880,6 +6883,9 @@
         return dims$1.slice(0, rank).slice(-2);
     }
     function getSourceCoords$2(rank) {
+        if (rank === 1) {
+            return 'rc';
+        }
         var coords = '';
         for (var i = 0; i < rank; i++) {
             coords += dims$1[i];
@@ -8825,18 +8831,19 @@
             if (a.shape[0] === 1 && b.shape[0] === 1) {
                 var aSqueezed = a.as2D(a.shape[1], a.shape[2]);
                 var bSqueezed = b.as2D(b.shape[1], b.shape[2]);
-                var packProgramA = new PackProgram(aSqueezed.shape);
-                var packedA = this.compileAndRun(packProgramA, [aSqueezed], this.makePackedTensor(aSqueezed.shape));
-                var packProgramB = new PackProgram(bSqueezed.shape);
-                var packedB = this.compileAndRun(packProgramB, [bSqueezed], this.makePackedTensor(bSqueezed.shape));
+                var packedA = aSqueezed;
+                if (this.texData.get(aSqueezed.dataId).usage !== TextureUsage.PACK) {
+                    var packProgramA = new PackProgram(aSqueezed.shape);
+                    packedA = this.compileAndRun(packProgramA, [aSqueezed], this.makePackedTensor(aSqueezed.shape));
+                }
+                var packedB = bSqueezed;
+                if (this.texData.get(bSqueezed.dataId).usage !== TextureUsage.PACK) {
+                    var packProgramB = new PackProgram(bSqueezed.shape);
+                    packedB = this.compileAndRun(packProgramB, [bSqueezed], this.makePackedTensor(bSqueezed.shape));
+                }
                 var program = new MatMulPackedProgram(packedA.shape, packedB.shape, [outerShapeA, outerShapeB], transposeA, transposeB);
                 var result = this.compileAndRun(program, [packedA, packedB], this.makePackedTensor(program.outputShape));
-                var unpackProgram = new UnpackProgram(result.shape);
-                var unpacked = this.compileAndRun(unpackProgram, [result]);
-                packedA.dispose();
-                packedB.dispose();
-                result.dispose();
-                return unpacked.reshape([1, result.shape[0], result.shape[1]]);
+                return result.reshape([1, result.shape[0], result.shape[1]]);
             }
             else {
                 return this.compileAndRun(new MatMulProgram(a.shape, b.shape, transposeA, transposeB), [a, b]);
@@ -8866,8 +8873,11 @@
             return this.compileAndRun(program, [a, b], output);
         };
         MathBackendWebGL.prototype.packBatchNormalization = function (x, mean, variance, varianceEpsilon, scale, offset) {
-            var packXProgram = new PackProgram(x.shape);
-            var packedX = this.compileAndRun(packXProgram, [x], this.makePackedTensor(x.shape));
+            var packedX = x;
+            if (this.texData.get(x.dataId).usage !== TextureUsage.PACK) {
+                var packXProgram = new PackProgram(x.shape);
+                packedX = this.compileAndRun(packXProgram, [x], this.makePackedTensor(x.shape));
+            }
             var packedMean = PackCache.packedTensorMap[mean.id];
             if (!packedMean) {
                 var packMeanProgram = new PackProgram(mean.shape);
@@ -8908,9 +8918,7 @@
                 scaleShape = packedScale.shape;
             }
             var program = new BatchNormPackedProgram(packedX.shape, packedMean.shape, packedVariance.shape, offsetShape, scaleShape, varianceEpsilon);
-            var output = this.compileAndRun(program, packedInputs, this.makePackedTensor(packedX.shape));
-            var unpackProgram = new UnpackProgram(output.shape);
-            return this.compileAndRun(unpackProgram, [output]);
+            return this.compileAndRun(program, packedInputs, this.makePackedTensor(packedX.shape));
         };
         MathBackendWebGL.prototype.batchNormalization = function (x, mean, variance, varianceEpsilon, scale, offset) {
             if (ENV.get('WEBGL_PACK_BATCHNORM')) {
@@ -9433,12 +9441,7 @@
             }
             var matmulProgram = new MatMulPackedProgram(im2Col.shape, packedW2Row.shape, [numCols, convInfo.outChannels], true, false);
             var product = this.compileAndRun(matmulProgram, [im2Col, packedW2Row], this.makePackedTensor(matmulProgram.outputShape));
-            var unpackProgram = new UnpackProgram(product.shape);
-            var unpacked = this.compileAndRun(unpackProgram, [product]);
-            im2Col.dispose();
-            packedW2Row.dispose();
-            product.dispose();
-            return unpacked.reshape([1, outHeight, outWidth, convInfo.outChannels]);
+            return product.reshape([1, outHeight, outWidth, convInfo.outChannels]);
         };
         MathBackendWebGL.prototype.conv2d = function (x, filter, convInfo) {
             if (ENV.get('WEBGL_CONV_IM2COL') && x.shape[0] === 1) {
@@ -9629,6 +9632,11 @@
                         isUniform: true,
                         uniformValues: _this.readSync(input.dataId)
                     };
+                }
+                if (texData.usage === TextureUsage.PACK && program.packedInputs !== true) {
+                    var unpackProgram = new UnpackProgram(input.shape);
+                    input = _this.compileAndRun(unpackProgram, [input]);
+                    texData = _this.texData.get(input.dataId);
                 }
                 _this.uploadToGPU(input.dataId);
                 return { shape: input.shape, texData: texData, isUniform: false };
