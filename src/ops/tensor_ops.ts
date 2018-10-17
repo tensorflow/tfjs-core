@@ -53,7 +53,7 @@ import {op} from './operation';
 /** @doc {heading: 'Tensors', subheading: 'Creation'} */
 function tensor<R extends Rank>(
     values: TensorLike, shape?: ShapeMap[R],
-    dtype: DataType = 'float32'): Tensor<R> {
+    dtype: DataType = 'float32', packed: boolean = false): Tensor<R> {
   if (dtype === 'complex64') {
     throw new Error(
         `Cannot construct a complex64 tensor directly. ` +
@@ -82,7 +82,7 @@ function tensor<R extends Rank>(
         values:
             toTypedArray(values as ArrayData<DataType>, dtype, ENV.get('DEBUG'))
       },
-      dtype);
+      dtype, packed);
 }
 
 /**

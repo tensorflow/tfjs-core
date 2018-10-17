@@ -142,7 +142,7 @@ export class TensorBuffer<R extends Rank> {
 export interface TensorTracker {
   registerTensor(t: Tensor): void;
   disposeTensor(t: Tensor): void;
-  write(dataId: DataId, values: TypedArray): void;
+  write(dataId: DataId, values: TypedArray, packed?: boolean): void;
   read(dataId: DataId): Promise<TypedArray>;
   readSync(dataId: DataId): TypedArray;
   registerVariable(v: Variable): void;
@@ -403,7 +403,7 @@ export class Tensor<R extends Rank = Rank> {
 
   protected constructor(
       shape: ShapeMap[R], dtype: DataType, values?: TypedArray,
-      dataId?: DataId) {
+      dataId?: DataId, packed?: boolean) {
     this.shape = shape.slice();
     this.dtype = dtype || 'float32';
     this.size = util.sizeFromShape(shape);
@@ -421,7 +421,7 @@ export class Tensor<R extends Rank = Rank> {
     this.rankType = (this.rank < 5 ? this.rank.toString() : 'higher') as R;
     trackerFn().registerTensor(this);
     if (values != null) {
-      trackerFn().write(this.dataId, values);
+      trackerFn().write(this.dataId, values, packed);
     }
   }
 
@@ -431,8 +431,8 @@ export class Tensor<R extends Rank = Rank> {
    */
   static make<T extends Tensor<R>, D extends DataType = 'float32',
                                              R extends Rank = Rank>(
-      shape: ShapeMap[R], data: TensorData, dtype?: D): T {
-    return new Tensor(shape, dtype, data.values, data.dataId) as T;
+      shape: ShapeMap[R], data: TensorData, dtype?: D, packed?: boolean): T {
+    return new Tensor(shape, dtype, data.values, data.dataId, packed) as T;
   }
 
   /** Flatten a Tensor to a 1D array. */

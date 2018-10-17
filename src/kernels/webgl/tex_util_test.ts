@@ -159,28 +159,28 @@ describeWithFlags('tex_util encodeMatrixToPackedRGBA', WEBGL_ENVS, () => {
   it('1x1 loads the element into R and 0\'s into GBA', () => {
     const matrix = new Float32Array([1]);
     const packedRGBA = new Float32Array(4);
-    tex_util.encodeMatrixToPackedRGBA(matrix, 1, 1, packedRGBA);
+    tex_util.encodeMatrixToPackedRGBA(matrix, 1, 1, 1, packedRGBA);
     expectArraysClose(packedRGBA, new Float32Array([1, 0, 0, 0]));
   });
 
   it('1x2 loads the second element into G and 0\'s into BA', () => {
     const matrix = new Float32Array([1, 2]);
     const packedRGBA = new Float32Array(4);
-    tex_util.encodeMatrixToPackedRGBA(matrix, 1, 2, packedRGBA);
+    tex_util.encodeMatrixToPackedRGBA(matrix, 1, 1, 2, packedRGBA);
     expectArraysClose(packedRGBA, new Float32Array([1, 2, 0, 0]));
   });
 
   it('2x1 loads the second element into G and 0\'s into BA', () => {
     const matrix = new Float32Array([1, 2]);
     const packedRGBA = new Float32Array(4);
-    tex_util.encodeMatrixToPackedRGBA(matrix, 2, 1, packedRGBA);
+    tex_util.encodeMatrixToPackedRGBA(matrix, 1, 2, 1, packedRGBA);
     expectArraysClose(packedRGBA, new Float32Array([1, 0, 2, 0]));
   });
 
   it('2x2 exactly fills one texel', () => {
     const matrix = new Float32Array([1, 2, 3, 4]);
     const packedRGBA = new Float32Array(4);
-    tex_util.encodeMatrixToPackedRGBA(matrix, 2, 2, packedRGBA);
+    tex_util.encodeMatrixToPackedRGBA(matrix, 1, 2, 2, packedRGBA);
     expectArraysClose(packedRGBA, new Float32Array([1, 2, 3, 4]));
   });
 
@@ -193,7 +193,7 @@ describeWithFlags('tex_util encodeMatrixToPackedRGBA', WEBGL_ENVS, () => {
      */
     const matrix = new Float32Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
     const packedRGBA = new Float32Array(16);
-    tex_util.encodeMatrixToPackedRGBA(matrix, 4, 3, packedRGBA);
+    tex_util.encodeMatrixToPackedRGBA(matrix, 1, 4, 3, packedRGBA);
     expectArraysClose(
         packedRGBA,
         new Float32Array([1, 2, 4, 5, 3, 0, 6, 0, 7, 8, 10, 11, 9, 0, 12, 0]));
@@ -207,7 +207,7 @@ describeWithFlags('tex_util encodeMatrixToPackedRGBA', WEBGL_ENVS, () => {
      */
     const matrix = new Float32Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
     const packedRGBA = new Float32Array(16);
-    tex_util.encodeMatrixToPackedRGBA(matrix, 3, 4, packedRGBA);
+    tex_util.encodeMatrixToPackedRGBA(matrix, 1, 3, 4, packedRGBA);
     expectArraysClose(
         packedRGBA,
         new Float32Array([1, 2, 5, 6, 3, 4, 7, 8, 9, 10, 0, 0, 11, 12, 0, 0]));
@@ -221,7 +221,7 @@ describeWithFlags('tex_util encodeMatrixToPackedRGBA', WEBGL_ENVS, () => {
      */
     const matrix = new Float32Array([1, 2, 3, 4, 5, 6, 7, 8, 9]);
     const packedRGBA = new Float32Array(16);
-    tex_util.encodeMatrixToPackedRGBA(matrix, 3, 3, packedRGBA);
+    tex_util.encodeMatrixToPackedRGBA(matrix, 1, 3, 3, packedRGBA);
     expectArraysClose(
         packedRGBA,
         new Float32Array([1, 2, 4, 5, 3, 0, 6, 0, 7, 8, 0, 0, 9, 0, 0, 0]));

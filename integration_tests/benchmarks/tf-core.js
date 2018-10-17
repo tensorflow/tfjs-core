@@ -771,7 +771,7 @@
         opHandler = handler;
     }
     var Tensor = (function () {
-        function Tensor(shape, dtype, values, dataId) {
+        function Tensor(shape, dtype, values, dataId, packed) {
             this.isDisposedInternal = false;
             this.shape = shape.slice();
             this.dtype = dtype || 'float32';
@@ -787,11 +787,11 @@
             this.rankType = (this.rank < 5 ? this.rank.toString() : 'higher');
             trackerFn().registerTensor(this);
             if (values != null) {
-                trackerFn().write(this.dataId, values);
+                trackerFn().write(this.dataId, values, packed);
             }
         }
-        Tensor.make = function (shape, data, dtype) {
-            return new Tensor(shape, dtype, data.values, data.dataId);
+        Tensor.make = function (shape, data, dtype, packed) {
+            return new Tensor(shape, dtype, data.values, data.dataId, packed);
         };
         Tensor.prototype.flatten = function () {
             this.throwIfDisposed();
@@ -2214,14 +2214,14 @@
                 return result;
             };
         };
-        Engine.prototype.write = function (dataId, values) {
+        Engine.prototype.write = function (dataId, values, packed) {
             var info = this.tensorInfo.get(dataId);
             if (this.backend !== info.backend) {
                 info.backend.disposeData(dataId);
                 info.backend = this.backend;
                 this.backend.register(dataId, info.shape, info.dtype);
             }
-            this.backend.write(dataId, values);
+            this.backend.write(dataId, values, packed);
         };
         Engine.prototype.readSync = function (dataId) {
             var info = this.tensorInfo.get(dataId);
@@ -3202,8 +3202,9 @@
     var real = op({ real_: real_ });
     var imag = op({ imag_: imag_ });
 
-    function tensor(values, shape, dtype) {
+    function tensor(values, shape, dtype, packed) {
         if (dtype === void 0) { dtype = 'float32'; }
+        if (packed === void 0) { packed = false; }
         if (dtype === 'complex64') {
             throw new Error("Cannot construct a complex64 tensor directly. " +
                 "Please use tf.complex(real, imag).");
@@ -3225,7 +3226,7 @@
         shape = shape || inferredShape;
         return Tensor.make(shape, {
             values: toTypedArray(values, dtype, ENV.get('DEBUG'))
-        }, dtype);
+        }, dtype, packed);
     }
     function scalar(value, dtype) {
         if (dtype === void 0) { dtype = 'float32'; }
@@ -4417,7 +4418,7 @@
             var rank = aShape.length;
             var dtype = getCoordsDataType(rank);
             var sourceCoords = getSourceCoords(rank);
-            this.userCode = "\n      void main() {\n        " + dtype + " rc = getOutputCoords();\n        vec4 value = getA(" + sourceCoords + ");\n        // float value = getAAtOutCoords();\n        // if (isNaN(value)) {\n        //   setOutput(value);\n        //   return;\n        // }\n\n        // setOutput(clamp(value, float(" + min + "), float(" + max + ")));\n\n        gl_FragColor = clamp(value, vec4(" + min + "), vec4(" + max + "));\n      }\n    ";
+            this.userCode = "\n      void main() {\n        " + dtype + " rc = getOutputCoords();\n        vec4 value = getA(" + sourceCoords + ");\n\n        // float value = getAAtOutCoords();\n        // if (isNaN(value)) {\n        //   setOutput(value);\n        //   return;\n        // }\n\n        gl_FragColor = clamp(value, vec4(" + min + "), vec4(" + max + "));\n      }\n    ";
         }
         return ClipProgram;
     }());
@@ -4816,57 +4817,61 @@
         var _a = getPackedMatrixTextureShapeWidthHeight(rows, columns), w = _a[0], h = _a[1];
         return w * h * 4;
     }
-    function encodeMatrixToPackedRGBA(matrix, rows, columns, packedRGBA) {
-        var requiredSize = getPackedRGBAArraySizeFromMatrixShape(rows, columns);
-        if (packedRGBA.length < requiredSize) {
-            throw new Error("packedRGBA length (" + packedRGBA.length + ") must be >= " + requiredSize);
-        }
-        var _a = getPackedMatrixTextureShapeWidthHeight(rows, columns), textureWidth = _a[0], textureHeight = _a[1];
+    function encodeMatrixToPackedRGBA(matrix, batch, rows, columns, packedRGBA) {
+        var textureWidth = Math.ceil(columns / 2);
+        var textureHeight = Math.ceil(rows / 2);
         var oddWidth = (columns % 2) === 1;
         var oddHeight = (rows % 2) === 1;
         var widthInFullBlocks = Math.floor(columns / 2);
         var heightInFullBlocks = Math.floor(rows / 2);
-        {
-            var dstStride = (oddWidth ? 4 : 0);
-            var oneRow = columns;
-            var dst = 0;
-            for (var blockY = 0; blockY < heightInFullBlocks; ++blockY) {
-                var matrixSrcRow = (blockY * 2 * columns);
-                for (var blockX = 0; blockX < widthInFullBlocks; ++blockX) {
-                    var matrixSrcCol = blockX * 2;
-                    var src = matrixSrcRow + matrixSrcCol;
-                    packedRGBA[dst] = matrix[src];
-                    packedRGBA[dst + 1] = matrix[src + 1];
-                    packedRGBA[dst + 2] = matrix[src + oneRow];
-                    packedRGBA[dst + 3] = matrix[src + oneRow + 1];
-                    dst += 4;
+        var flattenedMatrixSize = nearestLargerEven(rows) * nearestLargerEven(columns);
+        var dataMatrixSize = rows * columns;
+        var offset = 0;
+        for (var i = 0; i < batch; i++) {
+            var data = matrix.slice(i * dataMatrixSize, i * dataMatrixSize + (dataMatrixSize));
+            {
+                var dstStride = (oddWidth ? 4 : 0);
+                var oneRow = columns;
+                var dst = offset;
+                for (var blockY = 0; blockY < heightInFullBlocks; ++blockY) {
+                    var matrixSrcRow = (blockY * 2 * columns);
+                    for (var blockX = 0; blockX < widthInFullBlocks; ++blockX) {
+                        var matrixSrcCol = blockX * 2;
+                        var src = matrixSrcRow + matrixSrcCol;
+                        packedRGBA[dst] = data[src];
+                        packedRGBA[dst + 1] = data[src + 1];
+                        packedRGBA[dst + 2] = data[src + oneRow];
+                        packedRGBA[dst + 3] = data[src + oneRow + 1];
+                        dst += 4;
+                    }
+                    dst += dstStride;
                 }
-                dst += dstStride;
             }
-        }
-        if (oddWidth) {
-            var src = columns - 1;
-            var dst = (textureWidth - 1) * 4;
-            var srcStride = 2 * columns;
-            var dstStride = textureWidth * 4;
-            for (var blockY = 0; blockY < heightInFullBlocks; ++blockY) {
-                packedRGBA[dst] = matrix[src];
-                packedRGBA[dst + 2] = matrix[src + columns];
-                src += srcStride;
-                dst += dstStride;
+            if (oddWidth) {
+                var src = columns - 1;
+                var dst = offset + (textureWidth - 1) * 4;
+                var srcStride = 2 * columns;
+                var dstStride = textureWidth * 4;
+                for (var blockY = 0; blockY < Math.max(1, heightInFullBlocks); ++blockY) {
+                    packedRGBA[dst] = data[src];
+                    packedRGBA[dst + 2] = data[src + columns];
+                    src += srcStride;
+                    dst += dstStride;
+                }
             }
-        }
-        if (oddHeight) {
-            var src = (rows - 1) * columns;
-            var dst = (textureHeight - 1) * textureWidth * 4;
-            for (var blockX = 0; blockX < widthInFullBlocks; ++blockX) {
-                packedRGBA[dst++] = matrix[src++];
-                packedRGBA[dst++] = matrix[src++];
-                dst += 2;
+            if (oddHeight) {
+                var src = (rows - 1) * columns;
+                var dst = offset + (textureHeight - 1) * textureWidth * 4;
+                for (var blockX = 0; blockX < Math.max(1, widthInFullBlocks); ++blockX) {
+                    packedRGBA[dst++] = data[src++];
+                    packedRGBA[dst++] = data[src++];
+                    dst += 2;
+                }
             }
-        }
-        if (oddWidth && oddHeight) {
-            packedRGBA[packedRGBA.length - 4] = matrix[matrix.length - 1];
+            if (oddWidth && oddHeight) {
+                packedRGBA[offset + flattenedMatrixSize - 4] = data[data.length - 1];
+            }
+            offset += flattenedMatrixSize;
         }
         return packedRGBA;
     }
@@ -5397,10 +5402,13 @@
         }
         uploadDataToTexture(gl, texture, w, h, unpackedArray, textureConfig.textureFormatFloat);
     }
-    function uploadMatrixToPackedTexture(gl, texture, rows, columns, matrix, textureConfig) {
+    function uploadMatrixToPackedTexture(gl, texture, rows, columns, matrix, textureConfig, shape) {
         var _a = getPackedMatrixTextureShapeWidthHeight(rows, columns), w = _a[0], h = _a[1];
+        var batch = arrayProduct(shape.slice(0, -2));
+        var r = shape[shape.length - 2];
+        var c = shape[shape.length - 1];
         var packedRGBA = new Float32Array(getPackedRGBAArraySizeFromMatrixShape(rows, columns));
-        encodeMatrixToPackedRGBA(matrix, rows, columns, packedRGBA);
+        encodeMatrixToPackedRGBA(matrix, batch, r, c, packedRGBA);
         uploadDataToTexture(gl, texture, w, h, packedRGBA, gl.RGBA);
     }
     function maybeCreateBufferFromOutputTexture(gl, texture, rows, columns, textureConfig) {
@@ -5582,9 +5590,9 @@
             var numChannels = getNumChannels();
             return uploadMatrixToTexture(this.gl, texture, rows, columns, matrix, numChannels, this.textureConfig);
         };
-        GPGPUContext.prototype.uploadMatrixToPackedTexture = function (texture, rows, columns, matrix) {
+        GPGPUContext.prototype.uploadMatrixToPackedTexture = function (texture, rows, columns, matrix, shape) {
             this.throwIfDisposed();
-            return uploadMatrixToPackedTexture(this.gl, texture, rows, columns, matrix, this.textureConfig);
+            return uploadMatrixToPackedTexture(this.gl, texture, rows, columns, matrix, this.textureConfig, shape);
         };
         GPGPUContext.prototype.downloadFloat32MatrixFromOutputTexture = function (texture, rows, columns) {
             var _this = this;
@@ -8566,7 +8574,7 @@
             this.register(dataId, shape, dtype);
             return { dataId: dataId, shape: shape, dtype: dtype };
         };
-        MathBackendWebGL.prototype.write = function (dataId, values) {
+        MathBackendWebGL.prototype.write = function (dataId, values, packed) {
             if (values == null) {
                 throw new Error('MathBackendWebGL.write(): values can not be null');
             }
@@ -8581,7 +8589,12 @@
                 texData.texture = null;
                 texData.texShape = null;
             }
-            texData.usage = TextureUsage.UPLOAD;
+            if (packed) {
+                texData.usage = TextureUsage.PACK;
+            }
+            else {
+                texData.usage = TextureUsage.UPLOAD;
+            }
             texData.values = values;
             if (!this.delayedStorage) {
                 this.uploadToGPU(dataId);
@@ -8894,41 +8907,33 @@
                 var packXProgram = new PackProgram(x.shape);
                 packedX = this.compileAndRun(packXProgram, [x], this.makePackedTensor(x.shape));
             }
-            var packedMean = PackCache.packedTensorMap[mean.id];
-            if (!packedMean) {
+            var packedMean = mean;
+            if (this.texData.get(mean.dataId).usage !== TextureUsage.PACK) {
                 var packMeanProgram = new PackProgram(mean.shape);
                 packedMean = this.compileAndRun(packMeanProgram, [mean], this.makePackedTensor(mean.shape));
-                PackCache.packedTensorMap[mean.id] = packedMean;
-                PackCache.keepPackedTensorIDs.push(packedMean.id);
             }
-            var packedVariance = PackCache.packedTensorMap[variance.id];
-            if (!packedVariance) {
+            var packedVariance = variance;
+            if (this.texData.get(variance.dataId).usage !== TextureUsage.PACK) {
                 var packVarianceProgram = new PackProgram(variance.shape);
                 packedVariance = this.compileAndRun(packVarianceProgram, [variance], this.makePackedTensor(variance.shape));
-                PackCache.packedTensorMap[variance.id] = packedVariance;
-                PackCache.keepPackedTensorIDs.push(packedVariance.id);
             }
             var packedInputs = [packedX, packedMean, packedVariance];
             var offsetShape = null;
             if (offset != null) {
-                var packedOffset = PackCache.packedTensorMap[offset.id];
-                if (!packedOffset) {
+                var packedOffset = offset;
+                if (this.texData.get(variance.dataId).usage !== TextureUsage.PACK) {
                     var packOffsetProgram = new PackProgram(offset.shape);
                     packedOffset = this.compileAndRun(packOffsetProgram, [offset], this.makePackedTensor(offset.shape));
-                    PackCache.packedTensorMap[offset.id] = packedOffset;
-                    PackCache.keepPackedTensorIDs.push(packedOffset.id);
                 }
                 packedInputs.push(packedOffset);
                 offsetShape = packedOffset.shape;
             }
             var scaleShape = null;
             if (scale != null) {
-                var packedScale = PackCache.packedTensorMap[scale.id];
-                if (!packedScale) {
+                var packedScale = scale;
+                if (this.texData.get(scale.dataId).usage !== TextureUsage.PACK) {
                     var packScaleProgram = new PackProgram(scale.shape);
                     packedScale = this.compileAndRun(packScaleProgram, [scale], this.makePackedTensor(scale.shape));
-                    PackCache.packedTensorMap[scale.id] = packedScale;
-                    PackCache.keepPackedTensorIDs.push(packedScale.id);
                 }
                 packedInputs.push(packedScale);
                 scaleShape = packedScale.shape;
@@ -9368,7 +9373,7 @@
                 packedX = this.compileAndRun(packProgram, [x], this.makePackedTensor(x.shape));
             }
             var program = new ClipProgram(x.shape, min, max);
-            return this.compileAndRun(program, [packedX]);
+            return this.compileAndRun(program, [packedX], this.makePackedTensor(x.shape));
         };
         MathBackendWebGL.prototype.abs = function (x) {
             var program = new UnaryOpProgram(x.shape, ABS);
@@ -9755,7 +9760,12 @@
             var newTexture = this.acquireTexture(dataId, texShape, usage);
             texData.texture = newTexture;
             if (values != null) {
-                this.gpgpu.uploadMatrixToTexture(newTexture, texShape[0], texShape[1], typedArrayToFloat32(values, dtype));
+                if (usage === TextureUsage.PACK) {
+                    this.gpgpu.uploadMatrixToPackedTexture(newTexture, texShape[0], texShape[1], typedArrayToFloat32(values, dtype), shape);
+                }
+                else {
+                    this.gpgpu.uploadMatrixToTexture(newTexture, texShape[0], texShape[1], typedArrayToFloat32(values, dtype));
+                }
                 texData.values = null;
                 if (shouldTimeProgram) {
                     this.uploadWaitMs += performance.now() - start;
@@ -15277,14 +15287,15 @@
                 offset += size * dtypeFactor;
             }
             var value = void 0;
+            var packed = name_2.indexOf('BatchNorm') > -1;
             if (dtype === 'float32') {
-                value = tensor(typedArray, shape, 'float32');
+                value = tensor(typedArray, shape, 'float32', packed);
             }
             else if (dtype === 'int32') {
-                value = tensor(typedArray, shape, 'int32');
+                value = tensor(typedArray, shape, 'int32', packed);
             }
             else if (dtype === 'bool') {
-                value = tensor(typedArray, shape, 'bool');
+                value = tensor(typedArray, shape, 'bool', packed);
             }
             else {
                 throw new Error("Unsupported dtype in weight '" + name_2 + "': " + dtype);

@@ -234,7 +234,7 @@ export class MathBackendWebGL implements KernelBackend {
     return {dataId, shape, dtype};
   }
 
-  write(dataId: DataId, values: TypedArray): void {
+  write(dataId: DataId, values: TypedArray, packed?: boolean): void {
     if (values == null) {
       throw new Error('MathBackendWebGL.write(): values can not be null');
     }
@@ -252,7 +252,12 @@ export class MathBackendWebGL implements KernelBackend {
       texData.texture = null;
       texData.texShape = null;
     }
-    texData.usage = TextureUsage.UPLOAD;
+
+    if(packed) {
+      texData.usage = TextureUsage.PACK;
+    } else {
+      texData.usage = TextureUsage.UPLOAD;
+    }
     texData.values = values;
 
     if (!this.delayedStorage) {
@@ -662,35 +667,29 @@ export class MathBackendWebGL implements KernelBackend {
       packedX = this.compileAndRun(packXProgram, [x], this.makePackedTensor(x.shape));
     }
 
-    let packedMean = PackCache.packedTensorMap[mean.id];
-    if(!packedMean) {
+    let packedMean = mean;
+    if(this.texData.get(mean.dataId).usage !== TextureUsage.PACK) {
       const packMeanProgram = new PackProgram(mean.shape);
       packedMean = this.compileAndRun(
           packMeanProgram, [mean], this.makePackedTensor(mean.shape));
-      PackCache.packedTensorMap[mean.id] = packedMean;
-      PackCache.keepPackedTensorIDs.push(packedMean.id);
     }
 
-    let packedVariance = PackCache.packedTensorMap[variance.id];
-    if(!packedVariance) {
+    let packedVariance = variance;
+    if(this.texData.get(variance.dataId).usage !== TextureUsage.PACK) {
       const packVarianceProgram = new PackProgram(variance.shape);
       packedVariance = this.compileAndRun(
           packVarianceProgram, [variance], this.makePackedTensor(variance.shape));
-      PackCache.packedTensorMap[variance.id] = packedVariance;
-      PackCache.keepPackedTensorIDs.push(packedVariance.id);
     }
 
     const packedInputs = [packedX, packedMean, packedVariance];
 
     let offsetShape = null;
     if (offset != null) {
-      let packedOffset = PackCache.packedTensorMap[offset.id];
-      if(!packedOffset) {
+      let packedOffset = offset;
+      if(this.texData.get(variance.dataId).usage !== TextureUsage.PACK) {
         const packOffsetProgram = new PackProgram(offset.shape);
         packedOffset = this.compileAndRun(
             packOffsetProgram, [offset], this.makePackedTensor(offset.shape));
-        PackCache.packedTensorMap[offset.id] = packedOffset;
-        PackCache.keepPackedTensorIDs.push(packedOffset.id);
       }
       packedInputs.push(packedOffset);
       offsetShape = packedOffset.shape;
@@ -698,13 +697,11 @@ export class MathBackendWebGL implements KernelBackend {
 
     let scaleShape = null;
     if (scale != null) {
-      let packedScale = PackCache.packedTensorMap[scale.id];
-      if(!packedScale) {
+      let packedScale = scale;
+      if(this.texData.get(scale.dataId).usage !== TextureUsage.PACK) {
         const packScaleProgram = new PackProgram(scale.shape);
         packedScale = this.compileAndRun(
             packScaleProgram, [scale], this.makePackedTensor(scale.shape));
-        PackCache.packedTensorMap[scale.id] = packedScale;
-        PackCache.keepPackedTensorIDs.push(packedScale.id);
       }
       packedInputs.push(packedScale);
       scaleShape = packedScale.shape;
@@ -1848,10 +1845,14 @@ export class MathBackendWebGL implements KernelBackend {
     const newTexture = this.acquireTexture(dataId, texShape, usage);
     texData.texture = newTexture;
     if (values != null) {
-      this.gpgpu.uploadMatrixToTexture(
-          newTexture, texShape[0],
-          // TODO(smilkov): Propagate the original typed array to gpgpu.
-          texShape[1], typedArrayToFloat32(values, dtype));
+      if(usage === TextureUsage.PACK) {
+        this.gpgpu.uploadMatrixToPackedTexture(newTexture, texShape[0], texShape[1], typedArrayToFloat32(values, dtype), shape);
+      } else {
+        this.gpgpu.uploadMatrixToTexture(
+            newTexture, texShape[0],
+            // TODO(smilkov): Propagate the original typed array to gpgpu.
+            texShape[1], typedArrayToFloat32(values, dtype));
+      }
       // Once uploaded, don't store the values on cpu.
       texData.values = null;
       if (shouldTimeProgram) {

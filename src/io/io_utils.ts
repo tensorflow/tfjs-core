@@ -125,12 +125,13 @@ export function decodeWeights(
     }
 
     let value: Tensor;
+    let packed = name.indexOf('BatchNorm') > -1;
     if (dtype === 'float32') {
-      value = tensor(typedArray, shape, 'float32');
+      value = tensor(typedArray, shape, 'float32', packed);
     } else if (dtype === 'int32') {
-      value = tensor(typedArray, shape, 'int32');
+      value = tensor(typedArray, shape, 'int32', packed);
     } else if (dtype === 'bool') {
-      value = tensor(typedArray, shape, 'bool');
+      value = tensor(typedArray, shape, 'bool', packed);
     } else {
       throw new Error(`Unsupported dtype in weight '${name}': ${dtype}`);
     }

@@ -527,7 +527,7 @@ export class Engine implements TensorManager, DataMover {
   }
 
   // Forwarding to backend.
-  write(dataId: DataId, values: TypedArray): void {
+  write(dataId: DataId, values: TypedArray, packed?: boolean): void {
     const info = this.tensorInfo.get(dataId);
     if (this.backend !== info.backend) {
       // Delete the tensor from the old backend and move it to the new backend.
@@ -535,7 +535,7 @@ export class Engine implements TensorManager, DataMover {
       info.backend = this.backend;
       this.backend.register(dataId, info.shape, info.dtype);
     }
-    this.backend.write(dataId, values);
+    this.backend.write(dataId, values, packed);
   }
   readSync(dataId: DataId): TypedArray {
     // Route the read to the correct backend.

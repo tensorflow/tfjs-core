@@ -285,11 +285,14 @@ export function uploadMatrixToTexture(
 
 export function uploadMatrixToPackedTexture(
     gl: WebGLRenderingContext, texture: WebGLTexture, rows: number,
-    columns: number, matrix: Float32Array, textureConfig: TextureConfig) {
+    columns: number, matrix: Float32Array, textureConfig: TextureConfig, shape) {
   const [w, h] = tex_util.getPackedMatrixTextureShapeWidthHeight(rows, columns);
+  const batch = util.arrayProduct(shape.slice(0, -2));
+  const r = shape[shape.length - 2];
+  const c = shape[shape.length - 1];
   const packedRGBA = new Float32Array(
       tex_util.getPackedRGBAArraySizeFromMatrixShape(rows, columns));
-  tex_util.encodeMatrixToPackedRGBA(matrix, rows, columns, packedRGBA);
+  tex_util.encodeMatrixToPackedRGBA(matrix, batch, r, c, packedRGBA);
   uploadDataToTexture(gl, texture, w, h, packedRGBA, gl.RGBA);
 }
 

@@ -183,10 +183,10 @@ export class GPGPUContext {
 
   public uploadMatrixToPackedTexture(
       texture: WebGLTexture, rows: number, columns: number,
-      matrix: Float32Array) {
+      matrix: Float32Array, shape) {
     this.throwIfDisposed();
     return gpgpu_util.uploadMatrixToPackedTexture(
-        this.gl, texture, rows, columns, matrix, this.textureConfig);
+        this.gl, texture, rows, columns, matrix, this.textureConfig, shape);
   }
 
   public downloadFloat32MatrixFromOutputTexture(

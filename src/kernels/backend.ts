@@ -29,7 +29,7 @@ export interface TensorStorage {
   read(dataId: DataId): Promise<TypedArray>;
   readSync(dataId: DataId): TypedArray;
   disposeData(dataId: DataId): void;
-  write(dataId: DataId, values: TypedArray): void;
+  write(dataId: DataId, values: TypedArray, packed?: boolean): void;
   fromPixels(
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
       numChannels: number): Tensor3D;
