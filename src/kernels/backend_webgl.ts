@@ -587,8 +587,8 @@ export class MathBackendWebGL implements KernelBackend {
       const aSqueezed = a.as2D(a.shape[1], a.shape[2]);
       const bSqueezed = b.as2D(b.shape[1], b.shape[2]);
 
-      const packedA = this.packTensor(aSqueezed);
-      const packedB = this.packTensor(bSqueezed);
+      const packedA = this.packTensor<Tensor2D>(aSqueezed);
+      const packedB = this.packTensor<Tensor2D>(bSqueezed);
 
       const program = new MatMulPackedProgram(
           packedA.shape, packedB.shape, [outerShapeA, outerShapeB], transposeA,
@@ -1330,7 +1330,7 @@ export class MathBackendWebGL implements KernelBackend {
     const x2ColShape = [sharedDim, numCols];
 
     const xSqueezed = x.squeeze([0]);
-    const w2Row = filter.reshape([sharedDim, -1]);
+    const w2Row = filter.reshape([sharedDim, -1]) as Tensor2D;
 
     const im2ColProgram =
         new Im2ColProgram(x2ColShape, xSqueezed.shape, convInfo);
@@ -1338,7 +1338,7 @@ export class MathBackendWebGL implements KernelBackend {
         im2ColProgram, [xSqueezed],
         this.makePackedTensor<Tensor2D>(x2ColShape));
 
-    const packedW2Row = this.packTensor(w2Row);
+    const packedW2Row = this.packTensor<Tensor2D>(w2Row);
 
     const matmulProgram = new MatMulPackedProgram(
         im2Col.shape, packedW2Row.shape, [numCols, convInfo.outChannels], true,
@@ -1645,7 +1645,7 @@ export class MathBackendWebGL implements KernelBackend {
             `parts.`);
       }
 
-      const texData = this.texData.get(input.dataId);
+      let texData = this.texData.get(input.dataId);
       // Upload small tensors that live on the CPU as uniforms, not as
       // textures. Do this only when the environment supports 32bit floats due
       // to problems when comparing 16bit floats with 32bit floats.
