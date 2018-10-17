@@ -1803,7 +1803,8 @@ export class MathBackendWebGL implements KernelBackend {
       texData.texture = null;
       texData.texShape = null;
     }
-    texData.usage = TextureUsage.UPLOAD;
+    texData.usage =
+        usage === TextureUsage.PACK ? TextureUsage.PACK : TextureUsage.UPLOAD;
     if (float32Values != null) {
       texData.values = float32ToTypedArray(float32Values, dtype);
     }
