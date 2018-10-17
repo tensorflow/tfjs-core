@@ -199,6 +199,12 @@ describeWithFlags(
                  109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120
                ],
                [2, 20, 3]);
+           /*
+           Here we pretend that gl.MAX_TEXTURE_SIZE is so small that the 3D
+           tensor texture dimensions must be squarified such that values from
+           different batches are encoded in the same physical row of the texture
+           (specifically, row 3 of 5 will be split between the two batches).
+            */
 
            gpgpu.gl.bindTexture(gpgpu.gl.TEXTURE_2D, tex);
            gpgpu.gl.texSubImage2D(
