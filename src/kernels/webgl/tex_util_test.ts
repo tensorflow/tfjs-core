@@ -266,6 +266,26 @@ describeWithFlags('tex_util encodeMatrixToPackedRGBA', WEBGL_ENVS, () => {
           10, 11, 13, 14, 12, 0, 15, 0, 16, 17, 0, 0, 18, 0, 0, 0
         ]));
   });
+
+  it('4D (2x3x3x4) is properly encoded', () => {
+    const matrix = new Float32Array([
+      1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15, 16, 17, 18,
+      19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36,
+      37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54,
+      55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72
+    ]);
+    const packedRGBA = new Float32Array(96);
+    tex_util.encodeMatrixToPackedRGBA(matrix, 6, 3, 4, packedRGBA);
+    expectArraysClose(
+        packedRGBA, new Float32Array([
+          1,  2,  5,  6,  3,  4,  7,  8,  9,  10, 0, 0, 11, 12, 0, 0,
+          13, 14, 17, 18, 15, 16, 19, 20, 21, 22, 0, 0, 23, 24, 0, 0,
+          25, 26, 29, 30, 27, 28, 31, 32, 33, 34, 0, 0, 35, 36, 0, 0,
+          37, 38, 41, 42, 39, 40, 43, 44, 45, 46, 0, 0, 47, 48, 0, 0,
+          49, 50, 53, 54, 51, 52, 55, 56, 57, 58, 0, 0, 59, 60, 0, 0,
+          61, 62, 65, 66, 63, 64, 67, 68, 69, 70, 0, 0, 71, 72, 0, 0
+        ]));
+  });
 });
 
 describeWithFlags('tex_util decodeMatrixFromPackedRGBA', WEBGL_ENVS, () => {
@@ -365,7 +385,7 @@ describeWithFlags('tex_util decodeMatrixFromPackedRGBA', WEBGL_ENVS, () => {
                       ]));
   });
 
-  fit('2x3x3 bottom right texel in each batch only reads R', () => {
+  it('2x3x3 bottom right texel in each batch only reads R', () => {
     const packedRGBA = new Float32Array([
       1,  2,  4,  5,  3,  0, 6,  0, 7,  8,  0, 0, 9,  0, 0, 0,
       10, 11, 13, 14, 12, 0, 15, 0, 16, 17, 0, 0, 18, 0, 0, 0
@@ -376,5 +396,26 @@ describeWithFlags('tex_util decodeMatrixFromPackedRGBA', WEBGL_ENVS, () => {
         matrix,
         new Float32Array(
             [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]))
+  });
+
+  it('4D (2x3x3x4) is properly decoded', () => {
+    const packedRGBA = new Float32Array([
+      1,  2,  5,  6,  3,  4,  7,  8,  9,  10, 0, 0, 11, 12, 0, 0,
+      13, 14, 17, 18, 15, 16, 19, 20, 21, 22, 0, 0, 23, 24, 0, 0,
+      25, 26, 29, 30, 27, 28, 31, 32, 33, 34, 0, 0, 35, 36, 0, 0,
+      37, 38, 41, 42, 39, 40, 43, 44, 45, 46, 0, 0, 47, 48, 0, 0,
+      49, 50, 53, 54, 51, 52, 55, 56, 57, 58, 0, 0, 59, 60, 0, 0,
+      61, 62, 65, 66, 63, 64, 67, 68, 69, 70, 0, 0, 71, 72, 0, 0
+    ]);
+    const matrix = new Float32Array(72);
+    tex_util.decodeMatrixFromPackedRGBA(packedRGBA, 6, 3, 4, matrix);
+    expectArraysClose(
+        matrix, new Float32Array([
+          1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15,
+          16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+          31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45,
+          46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60,
+          61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72
+        ]));
   });
 });
