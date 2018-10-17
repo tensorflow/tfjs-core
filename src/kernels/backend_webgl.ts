@@ -54,8 +54,9 @@ import {ClipProgram} from './webgl/clip_gpu';
 import {ConcatProgram} from './webgl/concat_gpu';
 import {Conv2DDerFilterProgram, Conv2DDerInputProgram} from './webgl/conv_backprop_gpu';
 import {DepthwiseConv2DDerFilterProgram, DepthwiseConv2DDerInputProgram} from './webgl/conv_backprop_gpu_depthwise';
+import {DepthwiseConv2DPackedProgram} from './webgl/conv_packed_gpu_depthwise';
 import {Conv2DProgram} from './webgl/conv_gpu';
-import {DepthwiseConv2DProgram} from './webgl/conv_gpu_depthwise';
+// import {DepthwiseConv2DProgram} from './webgl/conv_gpu_depthwise';
 import {CropAndResizeProgram} from './webgl/crop_and_resize_gpu';
 import {CumSumProgram} from './webgl/cumsum_gpu';
 import {DepthToSpaceProgram} from './webgl/depth_to_space_gpu';
@@ -1472,8 +1473,21 @@ export class MathBackendWebGL implements KernelBackend {
 
   depthwiseConv2D(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
       Tensor4D {
-    const program = new DepthwiseConv2DProgram(convInfo);
-    return this.compileAndRun(program, [x, filter]);
+    let packedX = x;
+    if(this.texData.get(x.dataId).usage !== TextureUsage.PACK) {
+      const packXProgram = new PackProgram(x.shape);
+      packedX = this.compileAndRun(packXProgram, [x], this.makePackedTensor(x.shape));
+    }
+
+    let packedFilter = PackCache.packedTensorMap[filter.id];
+    if(!packedFilter) {
+      const packFilterProgram = new PackProgram(filter.shape);
+      packedFilter = this.compileAndRun(packFilterProgram, [filter], this.makePackedTensor(filter.shape));
+      PackCache.packedTensorMap[filter.id] = packedFilter;
+      PackCache.keepPackedTensorIDs.push(packedFilter.id);
+    }
+    const program = new DepthwiseConv2DPackedProgram(convInfo);
+    return this.compileAndRun(program, [packedX, packedFilter]);
   }
 
   depthwiseConv2DDerInput(dy: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):

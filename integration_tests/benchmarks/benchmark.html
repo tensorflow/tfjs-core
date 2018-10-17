@@ -289,7 +289,7 @@
       }
       await showMsg(null);
       await sleep(10);
-      kernels = kernels.sort((a, b) => b.time - a.time);
+      // kernels = kernels.sort((a, b) => b.time - a.time);
       appendRow(timeTable, 'Number of kernels', kernels.length);
       showKernelTime(kernels);
       ENV.set('DEBUG', false);
