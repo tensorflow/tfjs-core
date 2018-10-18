@@ -131,7 +131,7 @@ describeWithFlags('packed matmul', WEBGL_ENVS, () => {
     expectArraysClose(d, [1, 9, -2, 21]);
   });
 
-  fit('should work when preceded by an op that requires packed inputs', () => {
+  it('should work when preceded by an op that requires packed inputs', () => {
     const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
     const b = tf.tensor2d([0, 1, -3, 2, 2, 1], [3, 2]);
 
