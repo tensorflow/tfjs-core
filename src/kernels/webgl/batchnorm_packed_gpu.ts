@@ -34,7 +34,7 @@ export class BatchNormPackedProgram implements GPGPUProgram {
     broadcast_util.assertAndGetBroadcastShape(xShape, varianceShape);
 
     const meanSnippet = broadcastSample('mean', meanShape.length);
-    const varianceSnippet = broadcastSample('variance', varianceShape.length)
+    const varianceSnippet = broadcastSample('variance', varianceShape.length);
 
     let offsetSnippet = 'vec4 offset = vec4(0.0)';
     if (offsetShape != null) {

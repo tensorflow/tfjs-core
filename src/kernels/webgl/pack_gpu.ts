@@ -113,11 +113,11 @@ function getOutput(shape: number[], dims: string[]): string {
   if (rank === 1) {
     return `getA(rc),
             rc + 1 >= ${shape[0]} ? 0. : getA(rc + 1),
-            0, 0`
+            0, 0`;
   }
 
   return `getA(${sourceCoords[0]}),
           cEdge ? 0. : getA(${sourceCoords[1]}),
           rEdge ? 0. : getA(${sourceCoords[2]}),
-          rEdge || cEdge ? 0. : getA(${sourceCoords[3]})`
+          rEdge || cEdge ? 0. : getA(${sourceCoords[3]})`;
 }
