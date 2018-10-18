@@ -16,29 +16,56 @@
  */
 
 import {GPGPUProgram} from './gpgpu_math';
+import {getCoordsDataType} from './shader_compiler';
 
 export class UnpackProgram implements GPGPUProgram {
   variableNames = ['A'];
+  packedInputs = true;
   outputShape: number[];
   userCode: string;
 
   constructor(outputShape: number[]) {
     this.outputShape = outputShape;
+    const rank = outputShape.length;
+
+    const dtype = getCoordsDataType(rank);
+    const sourceCoords = getSourceCoords(rank);
+    const innerDims = getInnerDims(rank);
 
     this.userCode = `
-      const vec2 onePixel = 1. / vec2(${outputShape[1]}, ${outputShape[0]});
-
       void main() {
-        ivec2 rc = getOutputCoords();
-        vec2 modCoord = mod(vec2(rc.y, rc.x), 2.);
-        vec4 packedInput = getA(rc.x, rc.y);
+        ${dtype} rc = getOutputCoords();
+        vec2 modCoord = mod(vec2(${
+        rank === 1 ? 'rc' : innerDims.join(',')}), 2.);
+        vec4 packedInput = getA(${sourceCoords});
 
         setOutput(
           modCoord.x == 0. ?
-            (modCoord.y == 0. ? packedInput.r : packedInput.b) :
-            (modCoord.y == 0. ? packedInput.g : packedInput.a)
+            (modCoord.y == 0. ? packedInput.r : packedInput.g) :
+            (modCoord.y == 0. ? packedInput.b : packedInput.a)
         );
       }
     `;
   }
+}
+
+const dims = ['rc.x', 'rc.y', 'rc.z', 'rc.w'];
+
+function getInnerDims(rank: number): string[] {
+  return dims.slice(0, rank).slice(-2);
+}
+
+function getSourceCoords(rank: number): string {
+  if (rank === 1) {
+    return 'rc';
+  }
+
+  let coords = '';
+  for (let i = 0; i < rank; i++) {
+    coords += dims[i];
+    if (i < rank - 1) {
+      coords += ',';
+    }
+  }
+  return coords;
 }

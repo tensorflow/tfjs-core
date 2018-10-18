@@ -16,6 +16,7 @@
  */
 
 import {GPGPUProgram} from './gpgpu_math';
+import {getCoordsDataType} from './shader_compiler';
 
 export class PackProgram implements GPGPUProgram {
   variableNames = ['A'];
@@ -24,31 +25,99 @@ export class PackProgram implements GPGPUProgram {
 
   constructor(outputShape: number[]) {
     this.outputShape = outputShape;
+    const rank = outputShape.length;
+
+    const dtype = getCoordsDataType(rank);
+    const outOfBoundsCondition = getOutOfBoundsCondition(rank, outputShape);
+    const setup = getSetup(
+        rank, outputShape[outputShape.length - 1],
+        outputShape[outputShape.length - 2]);
+    const output = getOutput(outputShape);
 
     this.userCode = `
       void main() {
-        ivec2 rc = getOutputCoords();
+        ${dtype} rc = getOutputCoords();
 
-        int r = rc.x;
-        int c = rc.y;
-
-        if(r >= ${outputShape[0]} || c >= ${outputShape[1]}) {
+        if(${outOfBoundsCondition}) {
           gl_FragColor = vec4(0);
         } else {
-          int rp1 = r + 1;
-          int cp1 = c + 1;
+          ${setup}
 
-          bool cEdge = cp1 >= ${outputShape[1]};
-          bool rEdge = rp1 >= ${outputShape[0]};
-
-          gl_FragColor = vec4(
-              getA(r, c),
-              cEdge ? 0. : getA(r, cp1),
-              rEdge ? 0. : getA(rp1, c),
-              rEdge || cEdge ? 0. : getA(rp1, cp1)
-            );
+          gl_FragColor = vec4(${output});
         }
       }
     `;
   }
+}
+
+const dims = ['rc.x', 'rc.y', 'rc.z', 'rc.w'];
+
+function getInnerDims(rank: number): string[] {
+  return dims.slice(0, rank).slice(-2);
+}
+
+function getSourceCoordsArr(rank: number): string[] {
+  const coords = [];
+
+  for (let row = 0; row <= 1; row++) {
+    for (let col = 0; col <= 1; col++) {
+      let coord = `${row === 0 ? 'r' : 'rp1'}, ${col === 0 ? 'c' : 'cp1'}`;
+
+      for (let d = 2; d < rank; d++) {
+        coord = `${dims[dims.length - 1 - d]},` + coord;
+      }
+
+      coords.push(coord);
+    }
+  }
+  return coords;
+}
+
+function getOutOfBoundsCondition(rank: number, shape: number[]): string {
+  if (rank === 1) {
+    return `rc > ${shape[0]}`;
+  }
+
+  let cond = '';
+  for (let i = 0; i < rank; i++) {
+    cond += `${dims[i]} >= ${shape[i]}`;
+    if (i < rank - 1) {
+      cond += '||';
+    }
+  }
+
+  return cond;
+}
+
+function getSetup(rank: number, cols: number, rows: number): string {
+  if (rank === 1) {
+    return '';
+  }
+
+  const innerDims = getInnerDims(rank);
+
+  return `
+    int r = ${innerDims[0]};
+    int c = ${innerDims[1]};
+    int rp1 = r + 1;
+    int cp1 = c + 1;
+
+    bool cEdge = cp1 >= ${cols};
+    bool rEdge = rp1 >= ${rows};
+  `;
+}
+
+function getOutput(shape: number[]): string {
+  const rank = shape.length;
+  const sourceCoords = getSourceCoordsArr(rank);
+  if (rank === 1) {
+    return `getA(rc),
+            rc + 1 >= ${shape[0]} ? 0. : getA(rc + 1),
+            0, 0`
+  }
+
+  return `getA(${sourceCoords[0]}),
+          cEdge ? 0. : getA(${sourceCoords[1]}),
+          rEdge ? 0. : getA(${sourceCoords[2]}),
+          rEdge || cEdge ? 0. : getA(${sourceCoords[3]})`
 }
