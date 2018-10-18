@@ -61,7 +61,7 @@ export class BatchNormPackedProgram implements GPGPUProgram {
 
         vec4 inv = scale * inversesqrt(variance + vec4(${varianceEpsilon}));
 
-        gl_FragColor = dot((x - mean), inv) + offset;
+        gl_FragColor = (x - mean) * inv + offset;
       }
     `;
   }
