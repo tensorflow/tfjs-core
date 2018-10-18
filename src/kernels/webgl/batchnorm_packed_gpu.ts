@@ -37,14 +37,14 @@ export class BatchNormPackedProgram implements GPGPUProgram {
     if (offsetShape != null) {
       broadcast_util.assertAndGetBroadcastShape(xShape, offsetShape);
       this.variableNames.push('offset');
-      offsetSnippet = sampleAndBroadcast('offset', offsetShape.length);
+      offsetSnippet = broadcastSample('offset', offsetShape.length);
     }
 
     let scaleSnippet = 'vec4 scale = vec4(1.0)';
     if (scaleShape != null) {
       broadcast_util.assertAndGetBroadcastShape(xShape, scaleShape);
       this.variableNames.push('scale');
-      scaleSnippet = sampleAndBroadcast('scale', scaleShape.length);
+      scaleSnippet = broadcastSample('scale', scaleShape.length);
     }
 
     this.outputShape = xShape;
@@ -56,18 +56,18 @@ export class BatchNormPackedProgram implements GPGPUProgram {
         ${scaleSnippet};
 
         vec4 x = getX(rc.x, rc.y, rc.z, rc.w);
-        ${sampleAndBroadcast('mean', meanShape.length)};
-        ${sampleAndBroadcast('variance', varianceShape.length)};
+        ${broadcastSample('mean', meanShape.length)};
+        ${broadcastSample('variance', varianceShape.length)};
 
         vec4 inv = scale * inversesqrt(variance + vec4(${varianceEpsilon}));
 
-        gl_FragColor = (x - mean) * inv + offset;
+        gl_FragColor = dot((x - mean), inv) + offset;
       }
     `;
   }
 }
 
-function sampleAndBroadcast(texName: string, rank: number): string {
+function broadcastSample(texName: string, rank: number): string {
   const texSampler = `get${texName.charAt(0).toUpperCase()}${texName.slice(1)}`;
   if (rank === 1) {
     return `
