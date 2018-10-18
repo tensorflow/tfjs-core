@@ -28,8 +28,9 @@ export class ComplexAbsProgram implements GPGPUProgram {
       void main() {
         float real = getRealAtOutCoords();
         float imag = getImagAtOutCoords();
+        vec2 v = vec2(real, imag);
 
-        setOutput(sqrt(real * real + imag * imag));
+        setOutput(sqrt(dot(v, v)));
       }
     `;
   }
