@@ -14,39 +14,29 @@
  * limitations under the License.
  * =============================================================================
  */
-
 import {GPGPUProgram} from './gpgpu_math';
 import {getCoordsDataType} from './shader_compiler';
 
-export class ScatterNDProgram implements GPGPUProgram {
-  variableNames = ['updates', 'indices'];
+export class GatherNDProgram implements GPGPUProgram {
+  variableNames = ['x', 'indices'];
   outputShape: number[];
   userCode: string;
-
   constructor(
-      private updateSize: number, private sliceDim: number,
-      private strides: number[], shape: number[]) {
+      private sliceDim: number, private strides: number[], shape: number[]) {
     this.outputShape = shape;
     const stridesType = getCoordsDataType(strides.length);
     const dtype = getCoordsDataType(shape.length);
     const strideString = this.sliceDim > 1 ? 'strides[j]' : 'strides';
     this.userCode = `
         ${stridesType} strides = ${stridesType}(${this.strides});
-
-        void main() {
+         void main() {
           ${dtype} coords = getOutputCoords();
-          float sum = 0.0;
-          for (int i = 0; i < ${this.updateSize}; i++) {
-            int flattenIndex = 0;
-            for (int j = 0; j < ${this.sliceDim}; j++) {
-              int index = round(getIndices(i, j));
-              flattenIndex += index * ${strideString};
-            }
-            if (flattenIndex == coords[0]) {
-              sum += getUpdates(i, coords[1]);
-            }
+          int flattenIndex = 0;
+          for (int j = 0; j < ${this.sliceDim}; j++) {
+            int index = round(getIndices(coords[0], j));
+            flattenIndex += index * ${strideString};
           }
-          setOutput(sum);
+          setOutput(getX(flattenIndex, coords[1]));
         }
       `;
   }

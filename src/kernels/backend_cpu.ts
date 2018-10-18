@@ -25,12 +25,13 @@ import * as broadcast_util from '../ops/broadcast_util';
 import * as concat_util from '../ops/concat_util';
 import {Conv2DInfo} from '../ops/conv_util';
 import * as erf_util from '../ops/erf_util';
+import * as gather_nd_util from '../ops/gather_nd_util';
 import * as ops from '../ops/ops';
-import {buffer, tensor, tensor3d, tensor4d} from '../ops/ops';
+import {buffer, scalar, tensor, tensor3d, tensor4d} from '../ops/ops';
 import * as scatter_nd_util from '../ops/scatter_nd_util';
 import * as selu_util from '../ops/selu_util';
 import {getStridedSlicedInfo} from '../ops/slice_util';
-import {DataId, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
+import {DataId, Scalar, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
 import {DataType, DataTypeMap, Rank, ShapeMap, TypedArray, upcastType} from '../types';
 import * as util from '../util';
 import {now} from '../util';
@@ -1841,8 +1842,10 @@ export class MathBackendCPU implements KernelBackend {
 
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
-    const filterHeight = convInfo.filterHeight;
-    const filterWidth = convInfo.filterWidth;
+    const dilationHeight = convInfo.dilationHeight;
+    const dilationWidth = convInfo.dilationWidth;
+    const effectiveFilterHeight = convInfo.effectiveFilterHeight;
+    const effectiveFilterWidth = convInfo.effectiveFilterWidth;
     const y = ops.buffer<Rank.R4>(convInfo.outShape, 'float32');
     const padTop = convInfo.padInfo.top;
     const padLeft = convInfo.padInfo.left;
@@ -1856,16 +1859,18 @@ export class MathBackendCPU implements KernelBackend {
         for (let yR = 0; yR < convInfo.outHeight; ++yR) {
           const xRCorner = yR * strideHeight - padTop;
           const xRMin = Math.max(0, xRCorner);
-          const xRMax = Math.min(convInfo.inHeight, filterHeight + xRCorner);
+          const xRMax =
+              Math.min(convInfo.inHeight, effectiveFilterHeight + xRCorner);
           for (let yC = 0; yC < convInfo.outWidth; ++yC) {
             const xCCorner = yC * strideWidth - padLeft;
             const xCMin = Math.max(0, xCCorner);
-            const xCMax = Math.min(convInfo.inWidth, filterWidth + xCCorner);
+            const xCMax =
+                Math.min(convInfo.inWidth, effectiveFilterWidth + xCCorner);
             let minMaxValue = initialValue;
             let avgValue = 0;
             let count = 0;
-            for (let xR = xRMin; xR < xRMax; ++xR) {
-              for (let xC = xCMin; xC < xCMax; ++xC) {
+            for (let xR = xRMin; xR < xRMax; xR += dilationHeight) {
+              for (let xC = xCMin; xC < xCMax; xC += dilationWidth) {
                 const pixel = x.get(b, xR, xC, d);
                 if ((poolType === 'max' && pixel > minMaxValue)) {
                   minMaxValue = pixel;
@@ -1896,8 +1901,10 @@ export class MathBackendCPU implements KernelBackend {
     const maxPositions = ops.buffer<Rank.R4>(convInfo.outShape, 'int32');
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
-    const filterHeight = convInfo.filterHeight;
-    const filterWidth = convInfo.filterWidth;
+    const dilationHeight = convInfo.dilationHeight;
+    const dilationWidth = convInfo.dilationWidth;
+    const effectiveFilterHeight = convInfo.effectiveFilterHeight;
+    const effectiveFilterWidth = convInfo.effectiveFilterWidth;
     const padTop = convInfo.padInfo.top;
     const padLeft = convInfo.padInfo.left;
 
@@ -1905,22 +1912,32 @@ export class MathBackendCPU implements KernelBackend {
       for (let d = 0; d < convInfo.inChannels; ++d) {
         for (let yR = 0; yR < convInfo.outHeight; ++yR) {
           const xRCorner = yR * strideHeight - padTop;
-          const xRMin = Math.max(0, xRCorner);
-          const xRMax = Math.min(convInfo.inHeight, filterHeight + xRCorner);
+          let xRMin = xRCorner;
+          while (xRMin < 0) {
+            xRMin += dilationHeight;
+          }
+          // const xRMin = Math.max(0, xRCorner);
+          const xRMax =
+              Math.min(convInfo.inHeight, effectiveFilterHeight + xRCorner);
           for (let yC = 0; yC < convInfo.outWidth; ++yC) {
             const xCCorner = yC * strideWidth - padLeft;
-            const xCMin = Math.max(0, xCCorner);
-            const xCMax = Math.min(convInfo.inWidth, filterWidth + xCCorner);
+            let xCMin = xCCorner;
+            while (xCMin < 0) {
+              xCMin += dilationWidth;
+            }
+            const xCMax =
+                Math.min(convInfo.inWidth, effectiveFilterWidth + xCCorner);
             let maxValue = Number.NEGATIVE_INFINITY;
             let maxPosition = -1;
-            for (let xR = xRMin; xR < xRMax; ++xR) {
+
+            for (let xR = xRMin; xR < xRMax; xR += dilationHeight) {
               const wR = xR - xRCorner;
-              for (let xC = xCMin; xC < xCMax; ++xC) {
+              for (let xC = xCMin; xC < xCMax; xC += dilationWidth) {
                 const wC = xC - xCCorner;
                 const pixel = x.get(b, xR, xC, d);
                 if (pixel > maxValue) {
                   maxValue = pixel;
-                  maxPosition = wR * filterWidth + wC;
+                  maxPosition = wR * effectiveFilterWidth + wC;
                 }
               }
             }
@@ -1939,10 +1956,12 @@ export class MathBackendCPU implements KernelBackend {
     const maxPositions = this.maxPoolPositions(x, convInfo);
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
-    const filterHeight = convInfo.filterHeight;
-    const filterWidth = convInfo.filterWidth;
-    const padLeft = filterWidth - 1 - convInfo.padInfo.left;
-    const padTop = filterHeight - 1 - convInfo.padInfo.top;
+    const dilationHeight = convInfo.dilationHeight;
+    const dilationWidth = convInfo.dilationWidth;
+    const effectiveFilterHeight = convInfo.effectiveFilterHeight;
+    const effectiveFilterWidth = convInfo.effectiveFilterWidth;
+    const padLeft = effectiveFilterWidth - 1 - convInfo.padInfo.left;
+    const padTop = effectiveFilterHeight - 1 - convInfo.padInfo.top;
     const dx = ops.buffer<Rank.R4>(x.shape, 'float32');
 
     for (let b = 0; b < convInfo.batchSize; ++b) {
@@ -1953,21 +1972,21 @@ export class MathBackendCPU implements KernelBackend {
             const dyRCorner = dxR - padTop;
             const dyCCorner = dxC - padLeft;
             let dotProd = 0;
-            for (let wR = 0; wR < filterHeight; ++wR) {
+            for (let wR = 0; wR < effectiveFilterHeight; wR += dilationHeight) {
               const dyR = (dyRCorner + wR) / strideHeight;
               if (dyR < 0 || dyR >= convInfo.outHeight ||
                   Math.floor(dyR) !== dyR) {
                 continue;
               }
-              for (let wC = 0; wC < filterWidth; ++wC) {
+              for (let wC = 0; wC < effectiveFilterWidth; wC += dilationWidth) {
                 const dyC = (dyCCorner + wC) / strideWidth;
                 if (dyC < 0 || dyC >= convInfo.outWidth ||
                     Math.floor(dyC) !== dyC) {
                   continue;
                 }
-                const maxPos = filterHeight * filterWidth - 1 -
-                    maxPositions.get(b, dyR, dyC, d);
-                const curPos = wR * filterWidth + wC;
+                const maxPos = effectiveFilterHeight * effectiveFilterWidth -
+                    1 - maxPositions.get(b, dyR, dyC, d);
+                const curPos = wR * effectiveFilterWidth + wC;
 
                 const mask = maxPos === curPos ? 1 : 0;
                 if (mask === 0) {
@@ -1993,8 +2012,12 @@ export class MathBackendCPU implements KernelBackend {
     const strideWidth = convInfo.strideWidth;
     const filterHeight = convInfo.filterHeight;
     const filterWidth = convInfo.filterWidth;
-    const padLeft = filterWidth - 1 - convInfo.padInfo.left;
-    const padTop = filterHeight - 1 - convInfo.padInfo.top;
+    const dilationHeight = convInfo.dilationHeight;
+    const dilationWidth = convInfo.dilationWidth;
+    const effectiveFilterHeight = convInfo.effectiveFilterHeight;
+    const effectiveFilterWidth = convInfo.effectiveFilterWidth;
+    const padLeft = effectiveFilterWidth - 1 - convInfo.padInfo.left;
+    const padTop = effectiveFilterHeight - 1 - convInfo.padInfo.top;
     const dx = ops.buffer<Rank.R4>(x.shape, 'float32');
 
     const avgMultiplier = 1 / (filterHeight * filterWidth);
@@ -2007,13 +2030,13 @@ export class MathBackendCPU implements KernelBackend {
             const dyRCorner = dxR - padTop;
             const dyCCorner = dxC - padLeft;
             let dotProd = 0;
-            for (let wR = 0; wR < filterHeight; ++wR) {
+            for (let wR = 0; wR < effectiveFilterHeight; wR += dilationHeight) {
               const dyR = (dyRCorner + wR) / strideHeight;
               if (dyR < 0 || dyR >= convInfo.outHeight ||
                   Math.floor(dyR) !== dyR) {
                 continue;
               }
-              for (let wC = 0; wC < filterWidth; ++wC) {
+              for (let wC = 0; wC < effectiveFilterWidth; wC += dilationWidth) {
                 const dyC = (dyCCorner + wC) / strideWidth;
                 if (dyC < 0 || dyC >= convInfo.outWidth ||
                     Math.floor(dyC) !== dyC) {
@@ -2193,8 +2216,8 @@ export class MathBackendCPU implements KernelBackend {
     this.assertNotComplex(x, 'resizeNearestNeighbor');
 
     const [batch, oldHeight, oldWidth, numChannels] = x.shape;
-    const output =
-        ops.buffer<Rank.R4>([batch, newHeight, newWidth, numChannels], x.dtype);
+    const xValues = x.dataSync();
+    const output = new Float32Array(batch * newHeight * newWidth * numChannels);
 
     const effectiveInputSize: [number, number] = [
       (alignCorners && newHeight > 1) ? oldHeight - 1 : oldHeight,
@@ -2206,32 +2229,39 @@ export class MathBackendCPU implements KernelBackend {
       (alignCorners && newWidth > 1) ? newWidth - 1 : newWidth
     ];
 
+    const effectiveRowSizeRatio =
+        effectiveInputSize[0] / effectiveOutputSize[0];
+    const effectiveColSizeRatio =
+        effectiveInputSize[1] / effectiveOutputSize[1];
+
+    let outputOffset = 0;
     for (let b = 0; b < batch; b++) {
+      const batchOffset = b * x.strides[0];
       for (let r = 0; r < newHeight; r++) {
+        const sourceFracRow = effectiveRowSizeRatio * r;
+        const sourceNearestRow = Math.min(
+            oldHeight - 1,
+            alignCorners ? Math.round(sourceFracRow) :
+                           Math.floor(sourceFracRow));
+        const rowOffset = batchOffset + sourceNearestRow * x.strides[1];
         for (let c = 0; c < newWidth; c++) {
+          const sourceFracCol = effectiveColSizeRatio * c;
+          const sourceNearestCol = Math.min(
+              oldWidth - 1,
+              alignCorners ? Math.round(sourceFracCol) :
+                             Math.floor(sourceFracCol));
+          const colOffset = rowOffset + sourceNearestCol * x.strides[2];
           for (let d = 0; d < numChannels; d++) {
             // Begin shader.
             // Compute the fractional index of the source.
-            const sourceFracRow =
-                (effectiveInputSize[0]) * r / (effectiveOutputSize[0]);
-            const sourceFracCol =
-                (effectiveInputSize[1]) * c / (effectiveOutputSize[1]);
-            const sourceNearestRow = Math.min(
-                oldHeight - 1,
-                alignCorners ? Math.round(sourceFracRow) :
-                               Math.floor(sourceFracRow));
-            const sourceNearestCol = Math.min(
-                oldWidth - 1,
-                alignCorners ? Math.round(sourceFracCol) :
-                               Math.floor(sourceFracCol));
-            const newValue = x.get(b, sourceNearestRow, sourceNearestCol, d);
-            output.set(newValue, b, r, c, d);
+            const newVal = xValues[colOffset + d];
+            output[outputOffset++] = newVal;
           }
         }
       }
     }
-
-    return output.toTensor();
+    return ops.tensor(
+        output, [batch, newHeight, newWidth, numChannels], x.dtype);
   }
 
   resizeNearestNeighborBackprop(
@@ -2856,10 +2886,68 @@ export class MathBackendCPU implements KernelBackend {
     return output.toTensor();
   }
 
+  sparseToDense<R extends Rank>(
+      sparseIndices: Tensor, sparseValues: Tensor, outputShape: ShapeMap[R],
+      defaultValue: Scalar): Tensor<R> {
+    const {sliceRank, numUpdates, sliceSize, strides, outputSize} =
+        scatter_nd_util.calculateShapes(
+            sparseValues, sparseIndices, outputShape);
+    const sumDupeIndices = false;
+    return this.scatter(
+        sparseIndices, sparseValues, outputShape, outputSize, sliceSize,
+        numUpdates, sliceRank, strides, defaultValue, sumDupeIndices);
+  }
+
+  gatherND(x: Tensor, indices: Tensor): Tensor<Rank> {
+    const indicesShape = indices.shape;
+    const sliceRank = indicesShape[indicesShape.length - 1];
+
+    const [resultShape, numSlices, sliceSize, strides] =
+        gather_nd_util.prepareAndValidate(x, indices);
+    if (numSlices === 0) {
+      return tensor([], resultShape, x.dtype);
+    }
+
+    const buffer = new TensorBuffer([numSlices, sliceSize], x.dtype);
+    const indicesData = indices.dataSync();
+    const xData = x.dataSync();
+
+    for (let i = 0; i < numSlices; i++) {
+      const index = [];
+      let flattenIndex = 0;
+      for (let j = 0; j < sliceRank; j++) {
+        const dim = indicesData[i * sliceRank + j];
+        flattenIndex += dim * strides[j];
+        index.push(dim);
+      }
+      if (flattenIndex < 0 || flattenIndex >= x.size / sliceSize) {
+        throw new Error(
+            `Invalid indices: ${index} does not index into ${x.shape}`);
+      }
+
+      for (let k = 0; k < sliceSize; k++) {
+        buffer.values[i * sliceSize + k] = xData[flattenIndex * sliceSize + k];
+      }
+    }
+    return buffer.toTensor().reshape(resultShape);
+  }
+
   scatterND<R extends Rank>(
       indices: Tensor, updates: Tensor, shape: ShapeMap[R]): Tensor<R> {
-    const [sliceRank, numUpdates, sliceSize, strides, outputSize] =
-        scatter_nd_util.prepareAndValidate(updates, indices, shape);
+    const {sliceRank, numUpdates, sliceSize, strides, outputSize} =
+        scatter_nd_util.calculateShapes(updates, indices, shape);
+    const defaultValue = scalar(0);
+    const sumDupeIndices = true;
+    return this.scatter(
+        indices, updates, shape, outputSize, sliceSize, numUpdates, sliceRank,
+        strides, defaultValue, sumDupeIndices);
+  }
+
+  private scatter<R extends Rank>(
+      indices: Tensor, updates: Tensor, shape: ShapeMap[R], outputSize: number,
+      sliceSize: number, numUpdates: number, sliceRank: number,
+      strides: number[], defaultValue: Scalar,
+      sumDupeIndices: boolean): Tensor<R> {
     const flattenShape = [outputSize / sliceSize, sliceSize];
     const indicesData = indices.dataSync();
     const updatesData = updates.dataSync();
@@ -2869,6 +2957,8 @@ export class MathBackendCPU implements KernelBackend {
     }
 
     const buffer = new TensorBuffer(flattenShape, updates.dtype);
+    buffer.values.fill(defaultValue.dataSync()[0]);
+
     for (let i = 0; i < numUpdates; i++) {
       const index = [];
       let flattenIndex = 0;
@@ -2884,8 +2974,14 @@ export class MathBackendCPU implements KernelBackend {
       }
 
       for (let k = 0; k < sliceSize; k++) {
-        buffer.values[flattenIndex * sliceSize + k] +=
-            updatesData[i * sliceSize + k];
+        if (sumDupeIndices) {
+          buffer.values[flattenIndex * sliceSize + k] +=
+              updatesData[i * sliceSize + k];
+        } else {
+          buffer.values[flattenIndex * sliceSize + k] = updates.rank === 0 ?
+              updatesData[0] :
+              updatesData[i * sliceSize + k];
+        }
       }
     }
     return buffer.toTensor().reshape(shape);
