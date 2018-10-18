@@ -33,6 +33,9 @@ export class BatchNormPackedProgram implements GPGPUProgram {
     broadcast_util.assertAndGetBroadcastShape(xShape, meanShape);
     broadcast_util.assertAndGetBroadcastShape(xShape, varianceShape);
 
+    const meanSnippet = broadcastSample('mean', meanShape.length);
+    const varianceSnippet = broadcastSample('variance', varianceShape.length)
+
     let offsetSnippet = 'vec4 offset = vec4(0.0)';
     if (offsetShape != null) {
       broadcast_util.assertAndGetBroadcastShape(xShape, offsetShape);
@@ -56,8 +59,8 @@ export class BatchNormPackedProgram implements GPGPUProgram {
         ${scaleSnippet};
 
         vec4 x = getX(rc.x, rc.y, rc.z, rc.w);
-        ${broadcastSample('mean', meanShape.length)};
-        ${broadcastSample('variance', varianceShape.length)};
+        ${meanSnippet};
+        ${varianceSnippet};
 
         vec4 inv = scale * inversesqrt(variance + vec4(${varianceEpsilon}));
 
