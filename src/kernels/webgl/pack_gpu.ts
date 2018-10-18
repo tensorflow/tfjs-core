@@ -15,6 +15,8 @@
  * =============================================================================
  */
 
+import {getChannels, getInnerDims} from '../packing_util';
+
 import {GPGPUProgram} from './gpgpu_math';
 import {getCoordsDataType} from './shader_compiler';
 
@@ -27,12 +29,14 @@ export class PackProgram implements GPGPUProgram {
     this.outputShape = outputShape;
     const rank = outputShape.length;
 
+    const channels = getChannels('rc');
     const dtype = getCoordsDataType(rank);
-    const outOfBoundsCondition = getOutOfBoundsCondition(rank, outputShape);
+    const outOfBoundsCondition =
+        getOutOfBoundsCondition(rank, outputShape, channels);
     const setup = getSetup(
         rank, outputShape[outputShape.length - 1],
-        outputShape[outputShape.length - 2]);
-    const output = getOutput(outputShape);
+        outputShape[outputShape.length - 2], channels);
+    const output = getOutput(outputShape, channels);
 
     this.userCode = `
       void main() {
@@ -50,13 +54,7 @@ export class PackProgram implements GPGPUProgram {
   }
 }
 
-const dims = ['rc.x', 'rc.y', 'rc.z', 'rc.w'];
-
-function getInnerDims(rank: number): string[] {
-  return dims.slice(0, rank).slice(-2);
-}
-
-function getSourceCoordsArr(rank: number): string[] {
+function getSourceCoordsArr(rank: number, dims: string[]): string[] {
   const coords = [];
 
   for (let row = 0; row <= 1; row++) {
@@ -73,7 +71,8 @@ function getSourceCoordsArr(rank: number): string[] {
   return coords;
 }
 
-function getOutOfBoundsCondition(rank: number, shape: number[]): string {
+function getOutOfBoundsCondition(
+    rank: number, shape: number[], dims: string[]): string {
   if (rank === 1) {
     return `rc > ${shape[0]}`;
   }
@@ -89,12 +88,13 @@ function getOutOfBoundsCondition(rank: number, shape: number[]): string {
   return cond;
 }
 
-function getSetup(rank: number, cols: number, rows: number): string {
+function getSetup(
+    rank: number, cols: number, rows: number, dims: string[]): string {
   if (rank === 1) {
     return '';
   }
 
-  const innerDims = getInnerDims(rank);
+  const innerDims = getInnerDims(rank, dims);
 
   return `
     int r = ${innerDims[0]};
@@ -107,9 +107,9 @@ function getSetup(rank: number, cols: number, rows: number): string {
   `;
 }
 
-function getOutput(shape: number[]): string {
+function getOutput(shape: number[], dims: string[]): string {
   const rank = shape.length;
-  const sourceCoords = getSourceCoordsArr(rank);
+  const sourceCoords = getSourceCoordsArr(rank, dims);
   if (rank === 1) {
     return `getA(rc),
             rc + 1 >= ${shape[0]} ? 0. : getA(rc + 1),

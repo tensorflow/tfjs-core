@@ -15,6 +15,8 @@
  * =============================================================================
  */
 
+import {getChannels, getInnerDims, getSourceCoords} from '../packing_util';
+
 import {GPGPUProgram} from './gpgpu_math';
 import {getCoordsDataType} from './shader_compiler';
 
@@ -28,9 +30,10 @@ export class UnpackProgram implements GPGPUProgram {
     this.outputShape = outputShape;
     const rank = outputShape.length;
 
+    const channels = getChannels('rc');
     const dtype = getCoordsDataType(rank);
-    const sourceCoords = getSourceCoords(rank);
-    const innerDims = getInnerDims(rank);
+    const sourceCoords = getSourceCoords(rank, channels);
+    const innerDims = getInnerDims(rank, channels);
 
     this.userCode = `
       void main() {
@@ -47,25 +50,4 @@ export class UnpackProgram implements GPGPUProgram {
       }
     `;
   }
-}
-
-const dims = ['rc.x', 'rc.y', 'rc.z', 'rc.w'];
-
-function getInnerDims(rank: number): string[] {
-  return dims.slice(0, rank).slice(-2);
-}
-
-function getSourceCoords(rank: number): string {
-  if (rank === 1) {
-    return 'rc';
-  }
-
-  let coords = '';
-  for (let i = 0; i < rank; i++) {
-    coords += dims[i];
-    if (i < rank - 1) {
-      coords += ',';
-    }
-  }
-  return coords;
 }
