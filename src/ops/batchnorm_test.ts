@@ -33,7 +33,7 @@ describeWithFlags('packed batchNormalization', WEBGL_ENVS, () => {
         webglPackedBatchNormalizationSavedFlag);
   });
 
-  fit('should not leak memory', () => {
+  it('should not leak memory', () => {
     const x = tf.tensor4d([2, 4, 9, 23], [2, 1, 1, 2]);
     const mean = tf.tensor1d([1, 2]);
     const variance = tf.tensor1d([2, 3]);
