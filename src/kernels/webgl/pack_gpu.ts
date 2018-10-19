@@ -47,7 +47,7 @@ export class PackProgram implements GPGPUProgram {
         } else {
           ${setup}
 
-          gl_FragColor = vec4(${output});
+          setOutput(vec4(${output}));
         }
       }
     `;

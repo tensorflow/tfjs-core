@@ -46,19 +46,21 @@ export function makeShader(
           .join('\n');
   const outTexShape = outputShape.texShape;
   let outputSamplingSnippet: string;
+  let floatTextureSetOutputSnippet: string;
 
   if (outputShape.isPacked) {
     outputSamplingSnippet =
         getPackedOutputSamplingSnippet(outputShape.logicalShape, outTexShape);
+    floatTextureSetOutputSnippet = FLOAT_TEXTURE_SET_RGBA_SNIPPET;
   } else {
     outputSamplingSnippet =
         getOutputSamplingSnippet(outputShape.logicalShape, outTexShape);
+    floatTextureSetOutputSnippet = FLOAT_TEXTURE_SET_R_SNIPPET;
   }
 
   const source = [
-    SHADER_PREFIX, FLOAT_TEXTURE_SAMPLE_SNIPPET,
-    FLOAT_TEXTURE_SETOUTPUT_SNIPPET, inputPrefixSnippet, outputSamplingSnippet,
-    inputSamplingSnippet, userCode
+    SHADER_PREFIX, FLOAT_TEXTURE_SAMPLE_SNIPPET, floatTextureSetOutputSnippet,
+    inputPrefixSnippet, outputSamplingSnippet, inputSamplingSnippet, userCode
   ].join('\n');
   return source;
 }
@@ -263,9 +265,15 @@ const FLOAT_TEXTURE_SAMPLE_SNIPPET = `
   }
 `;
 
-const FLOAT_TEXTURE_SETOUTPUT_SNIPPET = `
+const FLOAT_TEXTURE_SET_R_SNIPPET = `
   void setOutput(float val) {
     gl_FragColor = vec4(val, 0, 0, 0);
+  }
+`;
+
+const FLOAT_TEXTURE_SET_RGBA_SNIPPET = `
+  void setOutput(vec4 val) {
+    gl_FragColor = val;
   }
 `;
 

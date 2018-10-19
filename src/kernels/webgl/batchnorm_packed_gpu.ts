@@ -23,7 +23,6 @@ export class BatchNormPackedProgram implements GPGPUProgram {
   outputShape: number[] = [];
   userCode: string;
   supportsBroadcasting = true;
-  packedInputs = true;
 
   constructor(
       xShape: number[], meanShape: number[], varianceShape: number[],
@@ -64,7 +63,7 @@ export class BatchNormPackedProgram implements GPGPUProgram {
 
         vec4 inv = scale * inversesqrt(variance + vec4(${varianceEpsilon}));
 
-        gl_FragColor = (x - mean) * inv + offset;
+        setOutput((x - mean) * inv + offset);
       }
     `;
   }
