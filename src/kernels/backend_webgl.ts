@@ -1662,8 +1662,11 @@ export class MathBackendWebGL implements KernelBackend {
 
       if (texData.packed && program.packedInputs !== true) {
         const unpackProgram = new UnpackProgram(input.shape);
-        input = this.compileAndRun(unpackProgram, [input]);
-        texData = this.texData.get(input.dataId);
+        const unpackedInput = this.compileAndRun(unpackProgram, [input]);
+        texData = this.texData.get(unpackedInput.dataId);
+
+        (input as Tensor).dispose();
+        input = unpackedInput;
       }
 
       this.uploadToGPU(input.dataId);

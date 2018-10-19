@@ -20,6 +20,25 @@ import {describeWithFlags} from '../jasmine_util';
 import {expectArraysClose, expectArraysEqual, WEBGL_ENVS} from '../test_util';
 import {MathBackendWebGL, SIZE_UPLOAD_UNIFORM, WebGLMemoryInfo} from './backend_webgl';
 
+describeWithFlags('lazy packing and unpacking', WEBGL_ENVS, () => {
+  it('should not leak memory when lazily unpacking', () => {
+    const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
+    const b = tf.tensor2d([0, 1, -3, 2, 2, 1], [3, 2]);
+
+    const c = tf.matMul(a, b);
+
+    const startNumBytes = tf.memory().numBytes;
+    const startNumTensors = tf.memory().numTensors;
+
+    tf.add(c, 1);
+
+    const endNumBytes = tf.memory().numBytes;
+    const endNumTensors = tf.memory().numTensors;
+    expect(endNumBytes - startNumBytes).toEqual(0);
+    expect(endNumTensors - startNumTensors).toEqual(0);
+  });
+});
+
 describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
   let prevBackend: string;
 
