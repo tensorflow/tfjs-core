@@ -47,6 +47,7 @@ import {oneHot} from './array_ops';
  *   row `r` and column `c` is the number of times examples of actual class
  *   `r` were predicted as class `c`.
  */
+/** @doc {heading: 'Environment'} */
 export function confusionMatrix(
     labels: Tensor1D, predictions: Tensor1D, numClasses: number): Tensor2D {
   util.assert(
