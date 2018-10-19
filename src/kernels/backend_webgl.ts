@@ -1646,7 +1646,7 @@ export class MathBackendWebGL implements KernelBackend {
         };
       }
 
-      if (texData.packed !== !!program.packedInputs) {
+      if (texData.packed !== !!program.isPacked) {
         let preProcessProgram: UnpackProgram|PackProgram;
         let processedInput: Tensor;
         if (texData.packed) {
