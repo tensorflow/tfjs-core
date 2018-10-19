@@ -23,17 +23,29 @@ import {oneHot} from './array_ops';
 /**
  * Calcualte the confusion matrix.
  *
- * @param {tf.Tensor} labels The target labels, assumed to be 0-based integers
+ * ```js
+ * const labels = tf.tensor1d([0, 1, 2, 1, 0], 'int32');
+ * const predictions = tf.tensor1d([0, 2, 2, 1, 0], 'int32');
+ * const numClasses = 3;
+ * const out = tf.math.confusionMatrix(labels, predictions, numClasses);
+ * out.print();
+ * // Expected output matrix:
+ * // [[2, 0, 0],
+ * //  [0, 1, 1],
+ * //  [0, 0, 1]]
+ * ```
+ *
+ * @param {tf.Tensor1D} labels The target labels, assumed to be 0-based integers
  *   for the categories. The shape is `[numExamples]`, where
  *   `numExamples` is the number of examples included.
- * @param {tf.Tensor} predictions The predicted probabilities, assumed to be
+ * @param {tf.Tensor1D} predictions The predicted probabilities, assumed to be
  *   0-based integers for the categories. Must have the same shape as `labels`.
  * @param {number} numClasses Number of all classes, as an integer.
  *   Its value must be larger than the largest element in `labels` and
  *   `predictions`.
- * @return {tf.Tensor} The confusion matrix as a 2D tf.Tensor. The value at row
- *   `r` and column `c` istf. the number of times examples of actual class `r`
- *   were predicted as class `c`.
+ * @return {tf.Tensor2D} The confusion matrix as a 2D tensor. The value at
+ *   row `r` and column `c` is the number of times examples of actual class
+ *   `r` were predicted as class `c`.
  */
 export function confusionMatrix(
     labels: Tensor1D, predictions: Tensor1D, numClasses: number): Tensor2D {
