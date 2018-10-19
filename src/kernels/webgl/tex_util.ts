@@ -46,7 +46,7 @@ export interface TextureData {
   dtype: DataType;
   values: DataTypeMap[DataType];
   usage: TextureUsage;
-  packed: boolean
+  packed: boolean;
 }
 
 export function getUnpackedMatrixTextureShapeWidthHeight(
