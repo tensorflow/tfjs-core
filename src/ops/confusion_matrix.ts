@@ -18,7 +18,7 @@
 import {tidy} from '../globals';
 import {Tensor1D, Tensor2D} from '../tensor';
 import * as util from '../util';
-import { oneHot } from './array_ops';
+import {oneHot} from './array_ops';
 
 /**
  * Calcualte the confusion matrix.
@@ -53,8 +53,8 @@ export function confusionMatrix(
       `Mismatch in the number of examples: ` +
           `${labels.shape[0]} vs. ${predictions.shape[0]}`);
   util.assert(
-    numClasses > 0 && Number.isInteger(numClasses),
-    `numClasses is required to be a positive integer, but got ${numClasses}`);
+      numClasses > 0 && Number.isInteger(numClasses),
+      `numClasses is required to be a positive integer, but got ${numClasses}`);
   // TODO(cais): In the future, if oneHot supports tensors inputs for
   //   `numClasses`, `confusionMatrix` can make `numClasses` optional.
 
