@@ -32,10 +32,23 @@ describeWithFlags('lazy packing and unpacking', WEBGL_ENVS, () => {
 
     tf.add(c, 1);
 
-    const endNumBytes = tf.memory().numBytes;
-    const endNumTensors = tf.memory().numTensors;
-    expect(endNumBytes - startNumBytes).toEqual(0);
-    expect(endNumTensors - startNumTensors).toEqual(0);
+    expect(startNumBytes).toEqual(tf.memory().numBytes);
+    expect(startNumTensors).toEqual(tf.memory().numTensors);
+  });
+
+  it('should not leak memory when lazily packing', () => {
+    const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
+    const b = tf.tensor2d([0, 1, -3, 2, 2, 1], [3, 2]);
+
+    const c = tf.add(a, 1);
+
+    const startNumBytes = tf.memory().numBytes;
+    const startNumTensors = tf.memory().numTensors;
+
+    tf.matMul(b, c);
+
+    expect(tf.memory().numBytes - startNumBytes).toEqual(36);
+    expect(tf.memory().numTensors - startNumTensors).toEqual(1);
   });
 });
 

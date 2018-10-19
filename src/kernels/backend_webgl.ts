@@ -587,14 +587,12 @@ export class MathBackendWebGL implements KernelBackend {
     if (a.shape[0] === 1 && b.shape[0] === 1) {
       const aSqueezed = a.as2D(a.shape[1], a.shape[2]);
       const bSqueezed = b.as2D(b.shape[1], b.shape[2]);
-      const packedA = this.packTensor<Tensor2D>(aSqueezed);
-      const packedB = this.packTensor<Tensor2D>(bSqueezed);
 
       const program = new MatMulPackedProgram(
-          packedA.shape, packedB.shape, [outerShapeA, outerShapeB], transposeA,
-          transposeB);
+          aSqueezed.shape, bSqueezed.shape, [outerShapeA, outerShapeB],
+          transposeA, transposeB);
       const result = this.compileAndRun(
-          program, [packedA, packedB],
+          program, [aSqueezed, bSqueezed],
           this.makePackedTensor<Tensor2D>(program.outputShape));
 
       return result.reshape([1, result.shape[0], result.shape[1]]);
@@ -1338,13 +1336,11 @@ export class MathBackendWebGL implements KernelBackend {
         im2ColProgram, [xSqueezed],
         this.makePackedTensor<Tensor2D>(x2ColShape));
 
-    const packedW2Row = this.packTensor<Tensor2D>(w2Row);
-
     const matmulProgram = new MatMulPackedProgram(
-        im2Col.shape, packedW2Row.shape, [numCols, convInfo.outChannels], true,
+        im2Col.shape, w2Row.shape, [numCols, convInfo.outChannels], true,
         false);
     const product = this.compileAndRun(
-        matmulProgram, [im2Col, packedW2Row],
+        matmulProgram, [im2Col, w2Row],
         this.makePackedTensor<Tensor2D>(matmulProgram.outputShape));
 
     return product.reshape([1, outHeight, outWidth, convInfo.outChannels]);
@@ -1610,16 +1606,6 @@ export class MathBackendWebGL implements KernelBackend {
     return packedTensor as T;
   }
 
-  private packTensor<T extends Tensor>(x: T): T {
-    if (this.texData.get(x.dataId).packed) {
-      return x;
-    }
-
-    const packProgram = new PackProgram(x.shape);
-    return this.compileAndRun(
-               packProgram, [x], this.makePackedTensor(x.shape)) as T;
-  }
-
   public compileAndRun<
       K extends {dtype: DataType, size: number, dataId: {}, shape: number[]}>(
       program: GPGPUProgram, inputs: TensorHandle[], output?: K,
@@ -1660,13 +1646,22 @@ export class MathBackendWebGL implements KernelBackend {
         };
       }
 
-      if (texData.packed && program.packedInputs !== true) {
-        const unpackProgram = new UnpackProgram(input.shape);
-        const unpackedInput = this.compileAndRun(unpackProgram, [input]);
-        texData = this.texData.get(unpackedInput.dataId);
+      if (texData.packed !== !!program.packedInputs) {
+        let preProcessProgram: UnpackProgram|PackProgram;
+        let processedInput: Tensor;
+        if (texData.packed) {
+          preProcessProgram = new UnpackProgram(input.shape);
+          processedInput = this.compileAndRun(preProcessProgram, [input]);
+        } else {
+          preProcessProgram = new PackProgram(input.shape);
+          processedInput = this.compileAndRun(
+              preProcessProgram, [input], this.makePackedTensor(input.shape));
+        }
+
+        texData = this.texData.get(processedInput.dataId);
 
         (input as Tensor).dispose();
-        input = unpackedInput;
+        input = processedInput;
       }
 
       this.uploadToGPU(input.dataId);
