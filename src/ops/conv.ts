@@ -292,7 +292,6 @@ function conv2dDerInput_<T extends Tensor3D|Tensor4D>(
 
   const dilations = 1;
 
-
   const grad = (ddx: Tensor4D) => {
     const dataFormat = 'NHWC';
     return {
