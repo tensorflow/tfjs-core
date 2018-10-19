@@ -1611,7 +1611,7 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   private packTensor<T extends Tensor>(x: T): T {
-    if (this.texData.get(x.dataId).usage === TextureUsage.PACK) {
+    if (this.texData.get(x.dataId).packed) {
       return x;
     }
 
@@ -1660,8 +1660,7 @@ export class MathBackendWebGL implements KernelBackend {
         };
       }
 
-      if (texData.usage === TextureUsage.PACK &&
-          program.packedInputs !== true) {
+      if (texData.packed && program.packedInputs !== true) {
         const unpackProgram = new UnpackProgram(input.shape);
         input = this.compileAndRun(unpackProgram, [input]);
         texData = this.texData.get(input.dataId);
