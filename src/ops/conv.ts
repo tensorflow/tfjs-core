@@ -297,7 +297,7 @@ function conv2dDerInput_<T extends Tensor3D|Tensor4D>(
     return {
       dy4D: () => conv2d(
           ddx, filter, strides, pad, dataFormat, dilations, dimRoundingMode),
-      filter: () => conv2dDerFilter_(
+      filter: () => conv2dDerFilter(
           ddx, dy4D, filter.shape, strides, pad, dimRoundingMode)
     };
   };
@@ -666,6 +666,7 @@ function depthwiseConv2dDerFilter<T extends Tensor3D|Tensor4D>(
 
 export const conv1d = op({conv1d_});
 export const conv2d = op({conv2d_});
+export const conv2dDerFilter = op({conv2dDerFilter_});
 export const depthwiseConv2d = op({depthwiseConv2d_});
 export const separableConv2d = op({separableConv2d_});
 export const conv2dTranspose = op({conv2dTranspose_});
