@@ -27,11 +27,11 @@ import {Conv2DInfo} from '../ops/conv_util';
 import * as erf_util from '../ops/erf_util';
 import * as gather_nd_util from '../ops/gather_nd_util';
 import * as ops from '../ops/ops';
-import {buffer, tensor, tensor3d, tensor4d} from '../ops/ops';
+import {buffer, scalar, tensor, tensor3d, tensor4d} from '../ops/ops';
 import * as scatter_nd_util from '../ops/scatter_nd_util';
 import * as selu_util from '../ops/selu_util';
 import {getStridedSlicedInfo} from '../ops/slice_util';
-import {DataId, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
+import {DataId, Scalar, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
 import {DataType, DataTypeMap, Rank, ShapeMap, TypedArray, upcastType} from '../types';
 import * as util from '../util';
 import {now} from '../util';
@@ -1107,13 +1107,21 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   abs<T extends Tensor>(x: T): T {
-    this.assertNotComplex(x, 'abs');
-
     const resultValues = new Float32Array(x.size);
     const values = x.dataSync();
-    for (let i = 0; i < values.length; ++i) {
-      resultValues[i] = Math.abs(values[i]);
+
+    if (x.dtype === 'complex64') {
+      for (let i = 0; i < x.size; ++i) {
+        const real = values[i * 2];
+        const imag = values[i * 2 + 1];
+        resultValues[i] = Math.sqrt(real * real + imag * imag);
+      }
+    } else {
+      for (let i = 0; i < values.length; ++i) {
+        resultValues[i] = Math.abs(values[i]);
+      }
     }
+
     return Tensor.make(x.shape, {values: resultValues}) as T;
   }
 
@@ -2208,8 +2216,8 @@ export class MathBackendCPU implements KernelBackend {
     this.assertNotComplex(x, 'resizeNearestNeighbor');
 
     const [batch, oldHeight, oldWidth, numChannels] = x.shape;
-    const output =
-        ops.buffer<Rank.R4>([batch, newHeight, newWidth, numChannels], x.dtype);
+    const xValues = x.dataSync();
+    const output = new Float32Array(batch * newHeight * newWidth * numChannels);
 
     const effectiveInputSize: [number, number] = [
       (alignCorners && newHeight > 1) ? oldHeight - 1 : oldHeight,
@@ -2221,32 +2229,39 @@ export class MathBackendCPU implements KernelBackend {
       (alignCorners && newWidth > 1) ? newWidth - 1 : newWidth
     ];
 
+    const effectiveRowSizeRatio =
+        effectiveInputSize[0] / effectiveOutputSize[0];
+    const effectiveColSizeRatio =
+        effectiveInputSize[1] / effectiveOutputSize[1];
+
+    let outputOffset = 0;
     for (let b = 0; b < batch; b++) {
+      const batchOffset = b * x.strides[0];
       for (let r = 0; r < newHeight; r++) {
+        const sourceFracRow = effectiveRowSizeRatio * r;
+        const sourceNearestRow = Math.min(
+            oldHeight - 1,
+            alignCorners ? Math.round(sourceFracRow) :
+                           Math.floor(sourceFracRow));
+        const rowOffset = batchOffset + sourceNearestRow * x.strides[1];
         for (let c = 0; c < newWidth; c++) {
+          const sourceFracCol = effectiveColSizeRatio * c;
+          const sourceNearestCol = Math.min(
+              oldWidth - 1,
+              alignCorners ? Math.round(sourceFracCol) :
+                             Math.floor(sourceFracCol));
+          const colOffset = rowOffset + sourceNearestCol * x.strides[2];
           for (let d = 0; d < numChannels; d++) {
             // Begin shader.
             // Compute the fractional index of the source.
-            const sourceFracRow =
-                (effectiveInputSize[0]) * r / (effectiveOutputSize[0]);
-            const sourceFracCol =
-                (effectiveInputSize[1]) * c / (effectiveOutputSize[1]);
-            const sourceNearestRow = Math.min(
-                oldHeight - 1,
-                alignCorners ? Math.round(sourceFracRow) :
-                               Math.floor(sourceFracRow));
-            const sourceNearestCol = Math.min(
-                oldWidth - 1,
-                alignCorners ? Math.round(sourceFracCol) :
-                               Math.floor(sourceFracCol));
-            const newValue = x.get(b, sourceNearestRow, sourceNearestCol, d);
-            output.set(newValue, b, r, c, d);
+            const newVal = xValues[colOffset + d];
+            output[outputOffset++] = newVal;
           }
         }
       }
     }
-
-    return output.toTensor();
+    return ops.tensor(
+        output, [batch, newHeight, newWidth, numChannels], x.dtype);
   }
 
   resizeNearestNeighborBackprop(
@@ -2871,6 +2886,18 @@ export class MathBackendCPU implements KernelBackend {
     return output.toTensor();
   }
 
+  sparseToDense<R extends Rank>(
+      sparseIndices: Tensor, sparseValues: Tensor, outputShape: ShapeMap[R],
+      defaultValue: Scalar): Tensor<R> {
+    const {sliceRank, numUpdates, sliceSize, strides, outputSize} =
+        scatter_nd_util.calculateShapes(
+            sparseValues, sparseIndices, outputShape);
+    const sumDupeIndices = false;
+    return this.scatter(
+        sparseIndices, sparseValues, outputShape, outputSize, sliceSize,
+        numUpdates, sliceRank, strides, defaultValue, sumDupeIndices);
+  }
+
   gatherND(x: Tensor, indices: Tensor): Tensor<Rank> {
     const indicesShape = indices.shape;
     const sliceRank = indicesShape[indicesShape.length - 1];
@@ -2889,7 +2916,7 @@ export class MathBackendCPU implements KernelBackend {
       const index = [];
       let flattenIndex = 0;
       for (let j = 0; j < sliceRank; j++) {
-        const dim = indicesData[i * sliceRank + j]; 
+        const dim = indicesData[i * sliceRank + j];
         flattenIndex += dim * strides[j];
         index.push(dim);
       }
@@ -2902,13 +2929,25 @@ export class MathBackendCPU implements KernelBackend {
         buffer.values[i * sliceSize + k] = xData[flattenIndex * sliceSize + k];
       }
     }
-    return buffer.toTensor().reshape(resultShape);        
+    return buffer.toTensor().reshape(resultShape);
   }
-  
+
   scatterND<R extends Rank>(
       indices: Tensor, updates: Tensor, shape: ShapeMap[R]): Tensor<R> {
-    const [sliceRank, numUpdates, sliceSize, strides, outputSize] =
-        scatter_nd_util.prepareAndValidate(updates, indices, shape);
+    const {sliceRank, numUpdates, sliceSize, strides, outputSize} =
+        scatter_nd_util.calculateShapes(updates, indices, shape);
+    const defaultValue = scalar(0);
+    const sumDupeIndices = true;
+    return this.scatter(
+        indices, updates, shape, outputSize, sliceSize, numUpdates, sliceRank,
+        strides, defaultValue, sumDupeIndices);
+  }
+
+  private scatter<R extends Rank>(
+      indices: Tensor, updates: Tensor, shape: ShapeMap[R], outputSize: number,
+      sliceSize: number, numUpdates: number, sliceRank: number,
+      strides: number[], defaultValue: Scalar,
+      sumDupeIndices: boolean): Tensor<R> {
     const flattenShape = [outputSize / sliceSize, sliceSize];
     const indicesData = indices.dataSync();
     const updatesData = updates.dataSync();
@@ -2918,6 +2957,8 @@ export class MathBackendCPU implements KernelBackend {
     }
 
     const buffer = new TensorBuffer(flattenShape, updates.dtype);
+    buffer.values.fill(defaultValue.dataSync()[0]);
+
     for (let i = 0; i < numUpdates; i++) {
       const index = [];
       let flattenIndex = 0;
@@ -2933,8 +2974,14 @@ export class MathBackendCPU implements KernelBackend {
       }
 
       for (let k = 0; k < sliceSize; k++) {
-        buffer.values[flattenIndex * sliceSize + k] +=
-            updatesData[i * sliceSize + k];
+        if (sumDupeIndices) {
+          buffer.values[flattenIndex * sliceSize + k] +=
+              updatesData[i * sliceSize + k];
+        } else {
+          buffer.values[flattenIndex * sliceSize + k] = updates.rank === 0 ?
+              updatesData[0] :
+              updatesData[i * sliceSize + k];
+        }
       }
     }
     return buffer.toTensor().reshape(shape);
