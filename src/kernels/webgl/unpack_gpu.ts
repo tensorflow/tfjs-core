@@ -34,12 +34,12 @@ export class UnpackProgram implements GPGPUProgram {
     const dtype = getCoordsDataType(rank);
     const sourceCoords = getSourceCoords(rank, channels);
     const innerDims = getInnerDims(rank, channels);
+    const coords = rank === 1 ? 'rc' : innerDims.join(',');
 
     this.userCode = `
       void main() {
         ${dtype} rc = getOutputCoords();
-        vec2 modCoord = mod(vec2(${
-        rank === 1 ? 'rc' : innerDims.join(',')}), 2.);
+        vec2 modCoord = mod(vec2(${coords}), 2.);
         vec4 packedInput = getA(${sourceCoords});
 
         setOutput(

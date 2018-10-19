@@ -20,7 +20,7 @@ import {GPGPUProgram} from './gpgpu_math';
 
 export class BatchNormPackedProgram implements GPGPUProgram {
   variableNames: string[];
-  outputShape: number[] = [];
+  outputShape: number[];
   userCode: string;
   supportsBroadcasting = true;
 

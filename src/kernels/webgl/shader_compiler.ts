@@ -648,8 +648,8 @@ function getPackedSampler1D(inputInfo: InputInfo): string {
 
   return `
     vec4 ${funcName}(int index) {
-      vec2 uv = packedUVfrom1D(${packedTexShape[0]}, ${
-      packedTexShape[1]}, index);
+      vec2 uv = packedUVfrom1D(
+        ${packedTexShape[0]}, ${packedTexShape[1]}, index);
       return texture2D(${texName}, uv);
     }
   `;
@@ -851,8 +851,9 @@ function getPackedSampler4D(inputInfo: InputInfo): string {
 
   return `
     vec4 ${funcName}(int b2, int b, int row, int col) {
-      vec2 uv = packedUVfrom4D(${texNumR}, ${texNumC}, ${texelsInBatch2}, ${
-      texelsInBatch}, ${valuesPerRow}, b2, b, row, col);
+      vec2 uv = packedUVfrom4D(
+        ${texNumR}, ${texNumC}, ${texelsInBatch2},
+        ${texelsInBatch}, ${valuesPerRow}, b2, b, row, col);
       return texture2D(${texName}, uv);
     }
   `;
