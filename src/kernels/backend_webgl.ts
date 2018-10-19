@@ -597,8 +597,7 @@ export class MathBackendWebGL implements KernelBackend {
           program, [packedA, packedB],
           this.makePackedTensor<Tensor2D>(program.outputShape));
 
-      const unpackProgram = new UnpackProgram(result.shape);
-      const unpacked = this.compileAndRun(unpackProgram, [result]) as Tensor;
+      const unpacked = this.unpackTensor(result);
 
       packedA.dispose();
       packedB.dispose();
@@ -672,8 +671,7 @@ export class MathBackendWebGL implements KernelBackend {
         batchNormProgram, packedInputs,
         this.makePackedTensor<Tensor4D>(packedX.shape));
 
-    const unpackProgram = new UnpackProgram(batchNorm.shape);
-    const unpacked = this.compileAndRun<Tensor4D>(unpackProgram, [batchNorm]);
+    const unpacked = this.unpackTensor(batchNorm);
 
     packedInputs.forEach(d => d.dispose());
     batchNorm.dispose();
@@ -1399,8 +1397,7 @@ export class MathBackendWebGL implements KernelBackend {
         matmulProgram, [im2Col, packedW2Row],
         this.makePackedTensor<Tensor2D>(matmulProgram.outputShape));
 
-    const unpackProgram = new UnpackProgram(product.shape);
-    const unpacked = this.compileAndRun(unpackProgram, [product]) as Tensor;
+    const unpacked = this.unpackTensor(product);
 
     im2Col.dispose();
     packedW2Row.dispose();
@@ -1673,6 +1670,11 @@ export class MathBackendWebGL implements KernelBackend {
     const packProgram = new PackProgram(x.shape);
     return this.compileAndRun(
                packProgram, [x], this.makePackedTensor(x.shape)) as T;
+  }
+
+  private unpackTensor<T extends Tensor>(x: T): T {
+    const unpackProgram = new UnpackProgram(x.shape);
+    return this.compileAndRun(unpackProgram, [x]) as T;
   }
 
   public compileAndRun<
