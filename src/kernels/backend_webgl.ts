@@ -587,15 +587,8 @@ export class MathBackendWebGL implements KernelBackend {
     if (a.shape[0] === 1 && b.shape[0] === 1) {
       const aSqueezed = a.as2D(a.shape[1], a.shape[2]);
       const bSqueezed = b.as2D(b.shape[1], b.shape[2]);
-      const packProgramA = new PackProgram(aSqueezed.shape);
-      const packedA = this.compileAndRun<Tensor2D>(
-          packProgramA, [aSqueezed],
-          this.makePackedTensor<Tensor2D>(aSqueezed.shape));
-
-      const packProgramB = new PackProgram(bSqueezed.shape);
-      const packedB = this.compileAndRun<Tensor2D>(
-          packProgramB, [bSqueezed],
-          this.makePackedTensor<Tensor2D>(bSqueezed.shape));
+      const packedA = this.packTensor(aSqueezed);
+      const packedB = this.packTensor(bSqueezed);
 
       const program = new MatMulPackedProgram(
           packedA.shape, packedB.shape, [outerShapeA, outerShapeB], transposeA,
@@ -652,34 +645,22 @@ export class MathBackendWebGL implements KernelBackend {
       x: Tensor4D, mean: Tensor4D|Tensor1D, variance: Tensor4D|Tensor1D,
       varianceEpsilon: number, scale?: Tensor4D|Tensor1D,
       offset?: Tensor4D|Tensor1D): Tensor4D {
-    const packXProgram = new PackProgram(x.shape);
-    const packedX = this.compileAndRun<Tensor4D>(
-        packXProgram, [x], this.makePackedTensor<Tensor4D>(x.shape));
-
-    const packMeanProgram = new PackProgram(mean.shape);
-    const packedMean = this.compileAndRun(
-        packMeanProgram, [mean], this.makePackedTensor(mean.shape));
-
-    const packVarianceProgram = new PackProgram(variance.shape);
-    const packedVariance = this.compileAndRun(
-        packVarianceProgram, [variance], this.makePackedTensor(variance.shape));
+    const packedX = this.packTensor(x);
+    const packedMean = this.packTensor(mean);
+    const packedVariance = this.packTensor(variance);
 
     const packedInputs = [packedX, packedMean, packedVariance];
 
     let offsetShape = null;
     if (offset != null) {
-      const packOffsetProgram = new PackProgram(offset.shape);
-      const packedOffset = this.compileAndRun(
-          packOffsetProgram, [offset], this.makePackedTensor(offset.shape));
+      const packedOffset = this.packTensor(offset);
       packedInputs.push(packedOffset);
       offsetShape = packedOffset.shape;
     }
 
     let scaleShape = null;
     if (scale != null) {
-      const packScaleProgram = new PackProgram(scale.shape);
-      const packedScale = this.compileAndRun(
-          packScaleProgram, [scale], this.makePackedTensor(scale.shape));
+      const packedScale = this.packTensor(scale);
       packedInputs.push(packedScale);
       scaleShape = packedScale.shape;
     }
@@ -692,7 +673,12 @@ export class MathBackendWebGL implements KernelBackend {
         this.makePackedTensor<Tensor4D>(packedX.shape));
 
     const unpackProgram = new UnpackProgram(batchNorm.shape);
-    return this.compileAndRun<Tensor4D>(unpackProgram, [batchNorm]);
+    const unpacked = this.compileAndRun<Tensor4D>(unpackProgram, [batchNorm]);
+
+    packedInputs.forEach(d => d.dispose());
+    batchNorm.dispose();
+
+    return unpacked;
   }
 
   batchNormalization(
@@ -1396,7 +1382,7 @@ export class MathBackendWebGL implements KernelBackend {
     const x2ColShape = [sharedDim, numCols];
 
     const xSqueezed = x.squeeze([0]);
-    const w2Row = filter.reshape([sharedDim, -1]);
+    const w2Row = filter.reshape([sharedDim, -1]) as Tensor2D;
 
     const im2ColProgram =
         new Im2ColProgram(x2ColShape, xSqueezed.shape, convInfo);
@@ -1404,10 +1390,7 @@ export class MathBackendWebGL implements KernelBackend {
         im2ColProgram, [xSqueezed],
         this.makePackedTensor<Tensor2D>(x2ColShape));
 
-    const packedW2RowProgram = new PackProgram(w2Row.shape);
-    const packedW2Row = this.compileAndRun(
-        packedW2RowProgram, [w2Row],
-        this.makePackedTensor<Tensor2D>(w2Row.shape));
+    const packedW2Row = this.packTensor<Tensor2D>(w2Row);
 
     const matmulProgram = new MatMulPackedProgram(
         im2Col.shape, packedW2Row.shape, [numCols, convInfo.outChannels], true,
@@ -1684,6 +1667,12 @@ export class MathBackendWebGL implements KernelBackend {
     const packedTensor = Tensor.make(shape, {});
     this.texData.get(packedTensor.dataId).usage = TextureUsage.PACK;
     return packedTensor as T;
+  }
+
+  private packTensor<T extends Tensor>(x: T): T {
+    const packProgram = new PackProgram(x.shape);
+    return this.compileAndRun(
+               packProgram, [x], this.makePackedTensor(x.shape)) as T;
   }
 
   public compileAndRun<
