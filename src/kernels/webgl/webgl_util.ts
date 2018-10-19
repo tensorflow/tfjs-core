@@ -356,7 +356,7 @@ function validateTextureUnit(gl: WebGLRenderingContext, textureUnit: number) {
 }
 
 export function getTextureShapeFromLogicalShape(
-    logShape: number[], packed: false): [number, number] {
+    logShape: number[], packed = false): [number, number] {
   let maxTexSize = ENV.get('WEBGL_MAX_TEXTURE_SIZE');
   if (packed) {
     maxTexSize = maxTexSize * 2;
