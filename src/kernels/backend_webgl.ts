@@ -167,7 +167,8 @@ export class MathBackendWebGL implements KernelBackend {
       texture: null,
       complexTensors: null,
       texShape: null,
-      usage: TextureUsage.RENDER
+      usage: TextureUsage.RENDER,
+      packed: false
     });
   }
 
@@ -237,7 +238,7 @@ export class MathBackendWebGL implements KernelBackend {
       throw new Error('MathBackendWebGL.write(): values can not be null');
     }
     const texData = this.texData.get(dataId);
-    const {texture, texShape, usage, dtype} = texData;
+    const {texture, texShape, usage, dtype, packed} = texData;
     if (dtype === 'complex64') {
       throw new Error(
           `Cannot write to a complex64 dtype. ` +
@@ -246,7 +247,7 @@ export class MathBackendWebGL implements KernelBackend {
 
     if (texture != null) {
       // Release the old texture.
-      this.releaseTexture(dataId, texture, texShape, usage);
+      this.releaseTexture(dataId, texture, texShape, usage, packed);
       texData.texture = null;
       texData.texShape = null;
     }
@@ -339,7 +340,7 @@ export class MathBackendWebGL implements KernelBackend {
   private getValuesFromTexture(dataId: DataId): Float32Array {
     const {shape, dtype, texture, texShape} = this.texData.get(dataId);
     if (ENV.get('WEBGL_DOWNLOAD_FLOAT_ENABLED')) {
-      if (this.texData.get(dataId).usage === TextureUsage.PACK) {
+      if (this.texData.get(dataId).packed) {
         return this.gpgpu.downloadMatrixFromPackedTexture(
             texture, shape, texShape[0], texShape[1]);
       } else {
@@ -440,10 +441,10 @@ export class MathBackendWebGL implements KernelBackend {
       return;
     }
     if (this.texData.has(dataId)) {
-      const {texture, texShape, usage, complexTensors} =
+      const {texture, texShape, usage, complexTensors, packed} =
           this.texData.get(dataId);
       if (texture != null) {
-        this.releaseTexture(dataId, texture, texShape, usage);
+        this.releaseTexture(dataId, texture, texShape, usage, packed);
       }
       if (complexTensors != null) {
         complexTensors.real.dispose();
@@ -586,7 +587,6 @@ export class MathBackendWebGL implements KernelBackend {
     if (a.shape[0] === 1 && b.shape[0] === 1) {
       const aSqueezed = a.as2D(a.shape[1], a.shape[2]);
       const bSqueezed = b.as2D(b.shape[1], b.shape[2]);
-
       const packedA = this.packTensor<Tensor2D>(aSqueezed);
       const packedB = this.packTensor<Tensor2D>(bSqueezed);
 
@@ -1606,7 +1606,7 @@ export class MathBackendWebGL implements KernelBackend {
 
   private makePackedTensor<T extends Tensor>(shape: number[]): T {
     const packedTensor = Tensor.make(shape, {});
-    this.texData.get(packedTensor.dataId).usage = TextureUsage.PACK;
+    this.texData.get(packedTensor.dataId).packed = true;
     return packedTensor as T;
   }
 
@@ -1751,7 +1751,7 @@ export class MathBackendWebGL implements KernelBackend {
 
   private uploadToGPU(dataId: DataId): void {
     const texData = this.texData.get(dataId);
-    const {shape, values, texture, dtype, usage} = texData;
+    const {shape, values, texture, dtype, usage, packed} = texData;
     if (texture != null) {
       // Array is already on GPU. No-op.
       // Touching the texture.
@@ -1769,9 +1769,9 @@ export class MathBackendWebGL implements KernelBackend {
     if (shouldTimeProgram) {
       start = performance.now();
     }
-    const texShape = webgl_util.getTextureShapeFromLogicalShape(shape, usage);
+    const texShape = webgl_util.getTextureShapeFromLogicalShape(shape, packed);
     texData.texShape = texShape;
-    const newTexture = this.acquireTexture(dataId, texShape, usage);
+    const newTexture = this.acquireTexture(dataId, texShape, usage, packed);
     texData.texture = newTexture;
     if (values != null) {
       this.gpgpu.uploadMatrixToTexture(
@@ -1792,9 +1792,9 @@ export class MathBackendWebGL implements KernelBackend {
     // to gpu the next time a gpgpu program needs the texture.
     const dontKeepCopyOnGPU = this.delayedStorage;
     const texData = this.texData.get(dataId);
-    const {texture, texShape, dtype, usage} = texData;
+    const {texture, texShape, dtype, usage, packed} = texData;
     if (dontKeepCopyOnGPU && texture != null) {
-      this.releaseTexture(dataId, texture, texShape, usage);
+      this.releaseTexture(dataId, texture, texShape, usage, packed);
       texData.texture = null;
       texData.texShape = null;
     }
@@ -1806,7 +1806,7 @@ export class MathBackendWebGL implements KernelBackend {
 
   private releaseTexture(
       dataId: DataId, texture: WebGLTexture, texShape: [number, number],
-      texType: TextureUsage) {
+      texType: TextureUsage, packed: boolean) {
     const {shape, dtype} = this.texData.get(dataId);
 
     if (ENV.get('WEBGL_PAGING_ENABLED')) {
@@ -1816,18 +1816,18 @@ export class MathBackendWebGL implements KernelBackend {
       }
     }
     this.numBytesInGPU -= this.computeBytes(shape, dtype);
-    this.textureManager.releaseTexture(texture, texShape, texType);
+    this.textureManager.releaseTexture(texture, texShape, texType, packed);
   }
 
   private acquireTexture(
-      dataId: DataId, texShape: [number, number],
-      texType: TextureUsage): WebGLTexture {
+      dataId: DataId, texShape: [number, number], texType: TextureUsage,
+      packed: boolean): WebGLTexture {
     const {shape, dtype} = this.texData.get(dataId);
     if (ENV.get('WEBGL_PAGING_ENABLED')) {
       this.lruDataGPU.push(dataId);
     }
     this.numBytesInGPU += this.computeBytes(shape, dtype);
-    return this.textureManager.acquireTexture(texShape, texType);
+    return this.textureManager.acquireTexture(texShape, texType, packed);
   }
 
   private computeBytes(shape: number[], dtype: DataType) {
