@@ -25,10 +25,10 @@ function generateCaseInputs(totalSizeTensor: number, totalSizeFilter: number) {
   const filt = new Array(totalSizeFilter);
 
   for (let i = 0; i < totalSizeTensor; i++) {
-    inp[i] = 1.0 * (i + 1);
+    inp[i] = i + 1;
   }
   for (let i = 0; i < totalSizeFilter; i++) {
-    filt[i] = 1.0 * (i + 1);
+    filt[i] = i + 1;
   }
 
   return {input: inp, filter: filt};

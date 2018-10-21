@@ -680,11 +680,11 @@ function depthwiseConv2dDerFilter<T extends Tensor3D|Tensor4D>(
  * Computes a 3D convolution over the input x.
  *
  * @param x The input tensor, of rank 5 or rank 4, of shape
- *     `[batch, in_depth, in_height, in_width, in_channels]`. If rank 4,
+ *     `[batch, depth, height, width, channels]`. If rank 4,
  * batch of 1 is assumed.
  * @param filter The filter, rank 5, of shape
- *     `[filter_depth, filter_height, filter_width, in_channels, out_channels]`.
- *      in_channels must match between input and filter.
+ *     `[filterDepth, filterHeight, filterWidth, inChannels, outChannels]`.
+ *      inChannels must match between input and filter.
  * @param strides The strides of the convolution: `[strideDepth, strideHeight,
  * strideWidth]`.
  * @param pad The type of padding algorithm.
@@ -705,9 +705,6 @@ function depthwiseConv2dDerFilter<T extends Tensor3D|Tensor4D>(
  *     If `dilations` is a single number, then
  *     `dilationDepth == dilationHeight == dilationWidth`. If it is greater
  *     than 1, then all values of `strides` must be 1.
- * @param dimRoundingMode The rounding mode used when computing output
- *     dimensions if pad is a number. If none is provided, it will not round
- *     and error if the output is of fractional size.
  */
 
 /** @doc {heading: 'Operations', subheading: 'Convolution'} */
@@ -846,7 +843,7 @@ function conv3dDerInput_<T extends Tensor4D|Tensor5D>(
 }
 
 /**
- * Computes the derivative of the filter of a 2D convolution.
+ * Computes the derivative of the filter of a 3D convolution.
  *
  * @param x The input tensor, of rank 5 or rank 4 of shape
  *     [batch, depth, height, width, inChannels]. If rank 4, batch of 1 is

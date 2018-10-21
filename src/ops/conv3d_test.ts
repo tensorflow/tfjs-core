@@ -18,12 +18,8 @@
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
 import {Tensor5D} from '../tensor';
-// tslint:disable-next-line:max-line-length
 import {ALL_ENVS, expectArraysClose} from '../test_util';
-
-function get5DTensorArea(tensor: [number, number, number, number, number]) {
-  return tensor[0] * tensor[1] * tensor[2] * tensor[3] * tensor[4];
-}
+import {sizeFromShape} from '../util';
 
 // Generates small floating point inputs to avoid overflows
 function generateCaseInputs(totalSizeTensor: number, totalSizeFilter: number) {
@@ -31,10 +27,10 @@ function generateCaseInputs(totalSizeTensor: number, totalSizeFilter: number) {
   const filt = new Array(totalSizeFilter);
 
   for (let i = 0; i < totalSizeTensor; i++) {
-    inp[i] = 1.0 * (i + 1) / totalSizeTensor;
+    inp[i] = (i + 1) / totalSizeTensor;
   }
   for (let i = 0; i < totalSizeFilter; i++) {
-    filt[i] = 1.0 * (i + 1) / totalSizeFilter;
+    filt[i] = (i + 1) / totalSizeFilter;
   }
 
   return {input: inp, filter: filt};
@@ -46,10 +42,10 @@ function generateGradientCaseInputs(
   const filt = new Array(totalSizeFilter);
 
   for (let i = 0; i < totalSizeTensor; i++) {
-    inp[i] = 1.0 * (i + 1);
+    inp[i] = i + 1;
   }
   for (let i = 0; i < totalSizeFilter; i++) {
-    filt[i] = 1.0 * (i + 1);
+    filt[i] = i + 1;
   }
 
   return {input: inp, filter: filt};
@@ -65,8 +61,8 @@ function runConv3DTestCase(
   const filterShape: [number, number, number, number, number] =
       [fDepth, fHeight, fWidth, inChannels, outChannels];
 
-  const totalSizeTensor = get5DTensorArea(inputShape);
-  const totalSizeFilter = get5DTensorArea(filterShape);
+  const totalSizeTensor = sizeFromShape(inputShape);
+  const totalSizeFilter = sizeFromShape(filterShape);
   const inputs = generateCaseInputs(totalSizeTensor, totalSizeFilter);
 
   const x = tf.tensor5d(inputs.input, inputShape);
@@ -86,8 +82,8 @@ function runGradientConv3DTestCase(
   const filterShape: [number, number, number, number, number] =
       [fDepth, fHeight, fWidth, inChannels, outChannels];
 
-  const totalSizeTensor = get5DTensorArea(inputShape);
-  const totalSizeFilter = get5DTensorArea(filterShape);
+  const totalSizeTensor = sizeFromShape(inputShape);
+  const totalSizeFilter = sizeFromShape(filterShape);
   const inputs = generateGradientCaseInputs(totalSizeTensor, totalSizeFilter);
 
   const x = tf.tensor5d(inputs.input, inputShape);

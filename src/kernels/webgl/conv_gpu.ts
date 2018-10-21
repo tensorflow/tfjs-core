@@ -139,8 +139,8 @@ export class Conv3DProgram implements GPGPUProgram {
     const filterHeight = convInfo.filterHeight;
     const filterWidth = convInfo.filterWidth;
 
-    const inputDepthNearestVec5 = Math.floor(convInfo.inChannels / 5) * 5;
-    const inputDepthVec5Remainder = convInfo.inChannels % 5;
+    const inputDepthNearestVec4 = Math.floor(convInfo.inChannels / 4) * 4;
+    const inputDepthVec4Remainder = convInfo.inChannels % 4;
 
     this.userCode = `
       const ivec3 strides = ivec3(${strideDepth}, ${strideHeight}, ${
@@ -182,63 +182,47 @@ export class Conv3DProgram implements GPGPUProgram {
                 continue;
               }
 
-              for (int d1 = 0; d1 < ${inputDepthNearestVec5}; d1 += 5) {
-                vec5 xValues = vec5(
+              for (int d1 = 0; d1 < ${inputDepthNearestVec4}; d1 += 4) {
+                vec4 xValues = vec4(
                   getX(batch, xF, xR, xC, d1),
                   getX(batch, xF, xR, xC, d1 + 1),
                   getX(batch, xF, xR, xC, d1 + 2),
-                  getX(batch, xF, xR, xC, d1 + 3),
-                  getX(batch, xF, xR, xC, d1 + 4)
+                  getX(batch, xF, xR, xC, d1 + 3)
                 );
-                vec5 wValues = vec5(
+                vec4 wValues = vec4(
                   getW(wF, wR, wC, d1, d2),
                   getW(wF, wR, wC, d1 + 1, d2),
                   getW(wF, wR, wC, d1 + 2, d2),
-                  getW(wF, wR, wC, d1 + 3, d2),
-                  getW(wF, wR, wC, d1 + 4, d2)
+                  getW(wF, wR, wC, d1 + 3, d2)
                 );
 
                 dotProd += dot(xValues, wValues);
               }
 
-              if (${inputDepthVec5Remainder === 1}) {
+              if (${inputDepthVec4Remainder === 1}) {
                 dotProd +=
-                  getX(batch, xF, xR, xC, ${inputDepthNearestVec5}) *
-                  getW(wF, wR, wC, ${inputDepthNearestVec5}, d2);
-              } else if (${inputDepthVec5Remainder === 2}) {
+                  getX(batch, xF, xR, xC, ${inputDepthNearestVec4}) *
+                  getW(wF, wR, wC, ${inputDepthNearestVec4}, d2);
+              } else if (${inputDepthVec4Remainder === 2}) {
                 vec2 xValues = vec2(
-                  getX(batch, xF, xR, xC, ${inputDepthNearestVec5}),
-                  getX(batch, xF, xR, xC, ${inputDepthNearestVec5} + 1)
+                  getX(batch, xF, xR, xC, ${inputDepthNearestVec4}),
+                  getX(batch, xF, xR, xC, ${inputDepthNearestVec4} + 1)
                 );
                 vec2 wValues = vec2(
-                  getW(wF, wR, wC, ${inputDepthNearestVec5}, d2),
-                  getW(wF, wR, wC, ${inputDepthNearestVec5} + 1, d2)
+                  getW(wF, wR, wC, ${inputDepthNearestVec4}, d2),
+                  getW(wF, wR, wC, ${inputDepthNearestVec4} + 1, d2)
                 );
                 dotProd += dot(xValues, wValues);
-              } else if (${inputDepthVec5Remainder === 3}) {
+              } else if (${inputDepthVec4Remainder === 3}) {
                 vec3 xValues = vec3(
-                  getX(batch, xF, xR, xC, ${inputDepthNearestVec5}),
-                  getX(batch, xF, xR, xC, ${inputDepthNearestVec5} + 1),
-                  getX(batch, xF, xR, xC, ${inputDepthNearestVec5} + 2)
+                  getX(batch, xF, xR, xC, ${inputDepthNearestVec4}),
+                  getX(batch, xF, xR, xC, ${inputDepthNearestVec4} + 1),
+                  getX(batch, xF, xR, xC, ${inputDepthNearestVec4} + 2)
                 );
                 vec3 wValues = vec3(
-                  getW(wF, wR, wC, ${inputDepthNearestVec5}, d2),
-                  getW(wF, wR, wC, ${inputDepthNearestVec5} + 1, d2),
-                  getW(wF, wR, wC, ${inputDepthNearestVec5} + 2, d2)
-                );
-                dotProd += dot(xValues, wValues);
-              } else if (${inputDepthVec5Remainder === 4}) {
-                vec4 xValues = vec4(
-                  getX(batch, xF, xR, xC, ${inputDepthNearestVec5}),
-                  getX(batch, xF, xR, xC, ${inputDepthNearestVec5} + 1),
-                  getX(batch, xF, xR, xC, ${inputDepthNearestVec5} + 2),
-                  getX(batch, xF, xR, xC, ${inputDepthNearestVec5} + 3)
-                );
-                vec4 wValues = vec4(
-                  getW(wF, wR, wC, ${inputDepthNearestVec5}, d2),
-                  getW(wF, wR, wC, ${inputDepthNearestVec5} + 1, d2),
-                  getW(wF, wR, wC, ${inputDepthNearestVec5} + 2, d2),
-                  getW(wF, wR, wC, ${inputDepthNearestVec5} + 3, d2)
+                  getW(wF, wR, wC, ${inputDepthNearestVec4}, d2),
+                  getW(wF, wR, wC, ${inputDepthNearestVec4} + 1, d2),
+                  getW(wF, wR, wC, ${inputDepthNearestVec4} + 2, d2)
                 );
                 dotProd += dot(xValues, wValues);
               }

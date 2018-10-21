@@ -28,7 +28,6 @@ import * as ops from '../ops/ops';
 import {buffer, tensor, tensor3d, tensor4d} from '../ops/ops';
 import * as selu_util from '../ops/selu_util';
 import {getStridedSlicedInfo} from '../ops/slice_util';
-// tslint:disable-next-line:max-line-length
 import {DataId, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D} from '../tensor';
 import {DataType, DataTypeMap, Rank, ShapeMap, TypedArray, upcastType} from '../types';
 import * as util from '../util';
@@ -1658,7 +1657,14 @@ export class MathBackendCPU implements KernelBackend {
     const filterDepth = convInfo.filterDepth;
     const filterHeight = convInfo.filterHeight;
     const filterWidth = convInfo.filterWidth;
-    const dW = ops.buffer<Rank.R5>(convInfo.filterShape, 'float32');
+
+    const dw = ops.buffer<Rank.R5>(convInfo.filterShape, 'float32');
+    const dwValues = dw.values;
+    const [dwS0, dwS1, dwS2, dwS3] = dw.strides;
+    const dyValues = dy.dataSync();
+    const [dyS0, dyS1, dyS2, dyS3] = dy.strides;
+    const xValues = x.dataSync();
+    const [xS0, xS1, xS2, xS3] = x.strides;
 
     const frontPad = convInfo.padInfo.front;
     const leftPad = convInfo.padInfo.left;
@@ -1668,43 +1674,59 @@ export class MathBackendCPU implements KernelBackend {
       const yFMin = Math.max(0, Math.ceil((frontPad - wF) / strideDepth));
       const yFMax = Math.min(
           convInfo.outDepth, (convInfo.inDepth + frontPad - wF) / strideDepth);
+      const wOffset1 = wF * dwS0;
 
       for (let wR = 0; wR < filterHeight; ++wR) {
         const yRMin = Math.max(0, Math.ceil((topPad - wR) / strideHeight));
         const yRMax = Math.min(
             convInfo.outHeight,
             (convInfo.inHeight + topPad - wR) / strideHeight);
+        const wOffset2 = wR * dwS1 + wOffset1;
 
         for (let wC = 0; wC < filterWidth; ++wC) {
           const yCMin = Math.max(0, Math.ceil((leftPad - wC) / strideWidth));
           const yCMax = Math.min(
               convInfo.outWidth,
               (convInfo.inWidth + leftPad - wC) / strideWidth);
+          const wOffset3 = wC * dwS2 + wOffset2;
 
           for (let d1 = 0; d1 < convInfo.inChannels; ++d1) {
+            const wOffset4 = d1 * dwS3 + wOffset3;
+
             for (let d2 = 0; d2 < convInfo.outChannels; ++d2) {
-              // Need to convolve.
               let dotProd = 0;
               for (let b = 0; b < convInfo.batchSize; ++b) {
+                const xOffset1 = b * xS0;
+                const yOffset1 = b * dyS0;
+
                 for (let yF = yFMin; yF < yFMax; ++yF) {
                   const xF = wF + yF * strideDepth - frontPad;
+                  const xOffset2 = xF * xS1 + xOffset1;
+                  const yOffset2 = yF * dyS1 + yOffset1;
+
                   for (let yR = yRMin; yR < yRMax; ++yR) {
                     const xR = wR + yR * strideHeight - topPad;
+                    const xOffset3 = xR * xS2 + xOffset2;
+                    const yOffset3 = yR * dyS2 + yOffset2;
+
                     for (let yC = yCMin; yC < yCMax; ++yC) {
                       const xC = wC + yC * strideWidth - leftPad;
+                      const xOffset4 = xC * xS3 + xOffset3;
+                      const yOffset4 = yC * dyS3 + yOffset3;
+
                       dotProd +=
-                          x.get(b, xF, xR, xC, d1) * dy.get(b, yF, yR, yC, d2);
+                          xValues[xOffset4 + d1] * dyValues[yOffset4 + d2];
                     }
                   }
                 }
               }
-              dW.set(dotProd, wF, wR, wC, d1, d2);
+              dwValues[wOffset4 + d2] = dotProd;
             }
           }
         }
       }
     }
-    return dW.toTensor();
+    return dw.toTensor();
   }
 
   depthwiseConv2D(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
