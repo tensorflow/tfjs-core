@@ -55,6 +55,8 @@ export type Conv2DInfo = {
   dilationWidth: number,
   filterHeight: number,
   filterWidth: number,
+  effectiveFilterHeight: number,
+  effectiveFilterWidth: number,
   padInfo: PadInfo,
   inShape: [number, number, number, number],
   outShape: [number, number, number, number],
@@ -64,7 +66,8 @@ export type Conv2DInfo = {
 export function computePool2DInfo(
     inShape: [number, number, number, number],
     filterSize: [number, number]|number, strides: number|[number, number],
-    pad: 'same'|'valid'|number, roundingMode?: 'floor'|'round'|'ceil',
+    dilations: number|[number, number], pad: 'same'|'valid'|number,
+    roundingMode?: 'floor'|'round'|'ceil',
     dataFormat: 'channelsFirst'|'channelsLast' = 'channelsLast'): Conv2DInfo {
   const [filterHeight, filterWidth] = parseTupleParam(filterSize);
 
@@ -76,7 +79,6 @@ export function computePool2DInfo(
   } else {
     throw new Error(`Unknown dataFormat ${dataFormat}`);
   }
-  const dilations = 1;
 
   return computeConv2DInfo(
       inShape, filterShape, strides, dilations, pad, roundingMode, false,
@@ -138,6 +140,8 @@ export function computeConv2DInfo(
     strideWidth,
     filterHeight,
     filterWidth,
+    effectiveFilterHeight,
+    effectiveFilterWidth,
     dilationHeight,
     dilationWidth,
     inShape,
@@ -422,4 +426,15 @@ function conditionalRound(
     default:
       throw new Error(`Unknown roundingMode ${roundingMode}`);
   }
+}
+
+export function tupleValuesAreOne(param: number|[number, number]): boolean {
+  const [dimA, dimB] = parseTupleParam(param);
+  return dimA === 1 && dimB === 1;
+}
+
+export function eitherStridesOrDilationsAreOne(
+    strides: number|[number, number],
+    dilations: number|[number, number]): boolean {
+  return tupleValuesAreOne(strides) || tupleValuesAreOne(dilations);
 }

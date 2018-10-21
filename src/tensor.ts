@@ -190,6 +190,8 @@ export interface OpHandler {
   logSumExp<T extends Tensor>(
       x: Tensor, axis: number|number[], keepDims: boolean): T;
   sum<T extends Tensor>(x: Tensor, axis: number|number[], keepDims: boolean): T;
+  prod<T extends Tensor>(x: Tensor, axis: number|number[], keepDims: boolean):
+      T;
   mean<T extends Tensor>(x: Tensor, axis: number|number[], keepDims: boolean):
       T;
   min<T extends Tensor>(x: Tensor, axis: number|number[], keepDims: boolean): T;
@@ -313,6 +315,10 @@ export interface OpHandler {
       x: T, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): T;
+  pool<T extends Tensor3D|Tensor4D>(
+      input: T, windowShape: [number, number]|number, poolingType: 'avg'|'max',
+      padding: 'valid'|'same'|number, diationRate?: [number, number]|number,
+      strides?: [number, number]|number): T;
   localResponseNormalization<T extends Tensor3D|Tensor4D>(
       x: T, depthRadius: number, bias: number, alpha: number, beta: number): T;
   unsortedSegmentSum<T extends Tensor>(
@@ -327,6 +333,7 @@ export interface OpHandler {
       x: T, begin: number[], end: number[], strides: number[],
       beginMask: number, endMask: number): T;
   depthToSpace(x: Tensor4D, blockSize: number, dataFormat: string): Tensor4D;
+  spectral: {fft(x: Tensor1D): Tensor1D;};
 }
 
 // For tracking tensor creation and disposal.
@@ -786,6 +793,10 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return opHandler.sum(this, axis, keepDims);
   }
+  prod<T extends Tensor>(axis: number|number[] = null, keepDims = false): T {
+    this.throwIfDisposed();
+    return opHandler.prod(this, axis, keepDims);
+  }
   mean<T extends Tensor>(axis: number|number[] = null, keepDims = false): T {
     this.throwIfDisposed();
     return opHandler.mean(this, axis, keepDims);
@@ -1217,6 +1228,14 @@ export class Tensor<R extends Rank = Rank> {
     return opHandler.localResponseNormalization(
         this, radius, bias, alpha, beta);
   }
+  pool<T extends Tensor3D|Tensor4D>(
+      this: T, windowShape: [number, number]|number, poolingType: 'max'|'avg',
+      padding: 'valid'|'same'|number, dilationRate?: [number, number]|number,
+      strides?: [number, number]|number): T {
+    (this as Tensor).throwIfDisposed();
+    return opHandler.pool(
+        this, windowShape, poolingType, padding, dilationRate, strides);
+  }
 
   variable(trainable = true, name?: string, dtype?: DataType): Variable<R> {
     this.throwIfDisposed();
@@ -1259,6 +1278,11 @@ export class Tensor<R extends Rank = Rank> {
       Tensor4D {
     this.throwIfDisposed();
     return opHandler.depthToSpace(this, blockSize, dataFormat);
+  }
+
+  fft(this: Tensor1D): Tensor1D {
+    this.throwIfDisposed();
+    return opHandler.spectral.fft(this);
   }
 }
 Object.defineProperty(Tensor, Symbol.hasInstance, {

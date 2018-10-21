@@ -42,6 +42,10 @@ export function clamp(min: number, x: number, max: number): number {
   return Math.max(min, Math.min(x, max));
 }
 
+export function nearestLargerEven(val: number): number {
+  return val % 2 === 0 ? val : val + 1;
+}
+
 /**
  * Returns a sample from a uniform [a, b) distribution.
  *
@@ -98,54 +102,6 @@ export function flatten<T extends number|boolean|Promise<number>>(
   return ret;
 }
 
-export function inferShape(val: TypedArray|number|boolean|RegularArray<number>|
-                           RegularArray<boolean>): number[] {
-  let firstElem: typeof val = val;
-
-  if (isTypedArray(val)) {
-    return [(val as TypedArray).length];
-  }
-  if (!Array.isArray(val)) {
-    return [];  // Scalar.
-  }
-  const shape: number[] = [];
-
-  while (firstElem instanceof Array) {
-    shape.push(firstElem.length);
-    firstElem = firstElem[0];
-  }
-  if (val instanceof Array) {
-    deepAssertShapeConsistency(val, shape, []);
-  }
-
-  return shape;
-}
-
-function deepAssertShapeConsistency(
-    val: number|boolean|RegularArray<number>|RegularArray<boolean>,
-    shape: number[], indices: number[]) {
-  indices = indices || [];
-  if (!(val instanceof Array)) {
-    assert(
-        shape.length === 0,
-        () => `Element arr[${indices.join('][')}] is a primitive, ` +
-            `but should be an array of ${shape[0]} elements`);
-    return;
-  }
-  assert(
-      shape.length > 0,
-      () => `Element arr[${indices.join('][')}] should be a primitive, ` +
-          `but is an array of ${val.length} elements`);
-  assert(
-      val.length === shape[0],
-      () => `Element arr[${indices.join('][')}] should have ${shape[0]} ` +
-          `elements, but has ${val.length} elements`);
-  const subShape = shape.slice(1);
-  for (let i = 0; i < val.length; ++i) {
-    deepAssertShapeConsistency(val[i], subShape, indices.concat(i));
-  }
-}
-
 export function sizeFromShape(shape: number[]): number {
   if (shape.length === 0) {
     // Scalar.
@@ -163,6 +119,13 @@ export function isScalarShape(shape: number[]): boolean {
 }
 
 export function arraysEqual(n1: FlatVector, n2: FlatVector) {
+  if (n1 === n2) {
+    return true;
+  }
+  if (n1 == null || n2 == null) {
+    return false;
+  }
+
   if (n1.length !== n2.length) {
     return false;
   }

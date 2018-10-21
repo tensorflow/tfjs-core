@@ -16,7 +16,7 @@
  */
 
 import {Conv2DInfo, Conv3DInfo} from '../ops/conv_util';
-import {DataId, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D} from '../tensor';
+import {DataId, Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D} from '../tensor';
 import {DataType, Rank, ShapeMap, TypedArray} from '../types';
 
 // Required information for all backends.
@@ -34,6 +34,41 @@ export interface TensorStorage {
       numChannels: number): Tensor3D;
   register(dataId: DataId, shape: number[], dtype: DataType): void;
   memory(): {unreliable: boolean;};  // Backend-specific information.
+}
+
+/** Convenient class for storing tensor-related data. */
+export class DataStorage<T> {
+  private data = new WeakMap<DataId, T>();
+
+  constructor(private dataMover: DataMover) {}
+
+  get(dataId: DataId) {
+    if (!this.data.has(dataId)) {
+      this.dataMover.moveData(dataId);
+    }
+    return this.data.get(dataId);
+  }
+
+  set(dataId: DataId, value: T): void {
+    this.data.set(dataId, value);
+  }
+
+  has(dataId: DataId): boolean {
+    return this.data.has(dataId);
+  }
+
+  delete(dataId: DataId): boolean {
+    return this.data.delete(dataId);
+  }
+}
+
+export interface DataMover {
+  /**
+   * To be called by backends whenever they see a dataId that they don't own.
+   * Upon calling this method, the mover will fetch the tensor from another
+   * backend and register it with the current active backend.
+   */
+  moveData(dataId: DataId): void;
 }
 
 export interface BackendTimer {
@@ -73,6 +108,7 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
   floorDiv(a: Tensor, b: Tensor): Tensor;
 
   sum(x: Tensor, axes: number[]): Tensor;
+  prod(x: Tensor, axes: number[]): Tensor;
 
   unsortedSegmentSum<T extends Tensor>(
       x: T, segmentIds: Tensor1D, numSegments: number): Tensor;
@@ -199,6 +235,11 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
 
   gather<T extends Tensor>(x: T, indices: Tensor1D, axis: number): T;
 
+  gatherND(x: Tensor, indices: Tensor): Tensor;
+
+  scatterND<R extends Rank>(
+      indices: Tensor, updates: Tensor, shape: ShapeMap[R]): Tensor<R>;
+
   batchToSpaceND<T extends Tensor>(
       x: T, blockShape: number[], crops: number[][]): T;
 
@@ -245,6 +286,7 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
       boxes: Tensor2D, scores: Tensor1D, maxOutputSize: number,
       iouThreshold: number, scoreThreshold?: number): Tensor1D;
 
+  fft(x: Tensor1D): Tensor1D;
   complex<T extends Tensor>(real: T, imag: T): T;
   real<T extends Tensor>(input: T): T;
   imag<T extends Tensor>(input: T): T;
@@ -258,6 +300,15 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
 
   // Aligns with the "SplitV" kernel in TensorFlow.
   split<T extends Tensor>(value: T, sizeSplits: number[], axis: number): T[];
+
+  sparseToDense<R extends Rank>(
+      sparseIndices: Tensor, sparseValues: Tensor, outputShape: ShapeMap[R],
+      defaultValue: Scalar): Tensor<R>;
+  /**
+   * Sets the data mover for this backend. Backends should use the mover to
+   * move data from other backends to this backend.
+   */
+  setDataMover(dataMover: DataMover): void;
 
   dispose(): void;
 }

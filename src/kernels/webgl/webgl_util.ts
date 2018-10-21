@@ -15,10 +15,9 @@
  * =============================================================================
  */
 
-let MAX_TEXTURE_SIZE: number = null;
-
-import * as util from '../../util';
 import {ENV} from '../../environment';
+import * as util from '../../util';
+import {TextureUsage} from '../webgl/tex_util';
 
 export function createWebGLRenderingContext(attributes: WebGLContextAttributes):
     WebGLRenderingContext {
@@ -202,15 +201,6 @@ export function createStaticIndexBuffer(
   return buffer;
 }
 
-export function queryMaxTextureSize(gl: WebGLRenderingContext): number {
-  if (MAX_TEXTURE_SIZE != null) {
-    return MAX_TEXTURE_SIZE;
-  }
-  MAX_TEXTURE_SIZE =
-      callAndCheck(gl, () => gl.getParameter(gl.MAX_TEXTURE_SIZE));
-  return MAX_TEXTURE_SIZE;
-}
-
 export function getNumChannels(): number {
   if (ENV.get('WEBGL_VERSION') === 2) {
     return 1;
@@ -223,9 +213,8 @@ export function createTexture(gl: WebGLRenderingContext): WebGLTexture {
       gl, () => gl.createTexture(), 'Unable to create WebGLTexture.');
 }
 
-export function validateTextureSize(
-    gl: WebGLRenderingContext, width: number, height: number) {
-  const maxTextureSize: number = queryMaxTextureSize(gl);
+export function validateTextureSize(width: number, height: number) {
+  const maxTextureSize = ENV.get('WEBGL_MAX_TEXTURE_SIZE');
   if ((width <= 0) || (height <= 0)) {
     const requested = `[${width}x${height}]`;
     throw new Error('Requested texture size ' + requested + ' is invalid.');
@@ -368,14 +357,29 @@ function validateTextureUnit(gl: WebGLRenderingContext, textureUnit: number) {
 }
 
 export function getTextureShapeFromLogicalShape(
-    gl: WebGLRenderingContext, logShape: number[]): [number, number] {
+    logShape: number[],
+    usage: TextureUsage = TextureUsage.UPLOAD): [number, number] {
+  let maxTexSize = ENV.get('WEBGL_MAX_TEXTURE_SIZE');
+  if (usage === TextureUsage.PACK) {
+    maxTexSize = maxTexSize * 2;
+
+    // This logic ensures we accurately count the number of packed texels needed
+    // to accommodate the tensor. We can only pack values in the same texel if
+    // they are from adjacent pairs of rows/cols within the same batch. So if a
+    // tensor has 3 rows, we pretend it has 4 rows in order to account for the
+    // fact that the texels containing the third row are half empty.
+    logShape = logShape.map(
+        (d, i) => i >= logShape.length - 2 ?
+            util.nearestLargerEven(logShape[i]) :
+            logShape[i]);
+  }
+
   // If logical shape is 2, we don't squeeze, since we want to match physical.
   if (logShape.length !== 2) {
     const squeezeResult = util.squeezeShape(logShape);
     logShape = squeezeResult.newShape;
   }
 
-  const maxTexSize = queryMaxTextureSize(gl);
   const size = util.sizeFromShape(logShape);
   if (logShape.length <= 1 && size <= maxTexSize) {
     return [size, 1];
@@ -384,9 +388,18 @@ export function getTextureShapeFromLogicalShape(
       logShape[1] <= maxTexSize) {
     return logShape as [number, number];
   } else if (
+      logShape.length === 3 && logShape[0] * logShape[1] <= maxTexSize &&
+      logShape[2] <= maxTexSize) {
+    return [logShape[0] * logShape[1], logShape[2]];
+  } else if (
       logShape.length === 3 && logShape[0] <= maxTexSize &&
       logShape[1] * logShape[2] <= maxTexSize) {
     return [logShape[0], logShape[1] * logShape[2]];
+  } else if (
+      logShape.length === 4 &&
+      logShape[0] * logShape[1] * logShape[2] <= maxTexSize &&
+      logShape[3] <= maxTexSize) {
+    return [logShape[0] * logShape[1] * logShape[2], logShape[3]];
   } else if (
       logShape.length === 4 && logShape[0] <= maxTexSize &&
       logShape[1] * logShape[2] * logShape[3] <= maxTexSize) {

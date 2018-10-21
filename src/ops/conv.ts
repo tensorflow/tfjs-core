@@ -85,7 +85,7 @@ function conv1d_<T extends Tensor2D|Tensor3D>(
       `Error in conv1d: depth of input (${x3D.shape[2]}) must match ` +
           `input depth for filter ${$filter.shape[1]}.`);
   util.assert(
-      eitherStridesOrDilationsAreOne(stride, dilation),
+      conv_util.eitherStridesOrDilationsAreOne(stride, dilation),
       'Error in conv1D: Either stride or dilation must be 1. ' +
           `Got stride ${stride} and dilation '${dilation}'`);
   util.assert(
@@ -178,7 +178,7 @@ function conv2d_<T extends Tensor3D|Tensor4D>(
       `Error in conv2d: depth of input (${x4D.shape[3]}) must match ` +
           `input depth for filter ${$filter.shape[2]}.`);
   util.assert(
-      eitherStridesOrDilationsAreOne(strides, dilations),
+      conv_util.eitherStridesOrDilationsAreOne(strides, dilations),
       'Error in conv2D: Either strides or dilations must be 1. ' +
           `Got strides ${strides} and dilations '${dilations}'`);
   util.assert(
@@ -193,15 +193,16 @@ function conv2d_<T extends Tensor3D|Tensor4D>(
   if (convInfo.filterHeight === 1 && convInfo.filterWidth === 1 &&
       convInfo.dilationHeight === 1 && convInfo.dilationWidth === 1 &&
       convInfo.strideHeight === 1 && convInfo.strideWidth === 1 &&
-      convInfo.padInfo.type === 'SAME') {
+      (convInfo.padInfo.type === 'SAME' || convInfo.padInfo.type === 'VALID')) {
     const x2d = x4D.reshape([-1, convInfo.inChannels]) as Tensor2D;
     const w2d = $filter.reshape([convInfo.inChannels, convInfo.outChannels]) as
         Tensor2D;
+
     res = matMul(x2d, w2d).reshape<Rank.R4>(convInfo.outShape);
   } else {
     const grad = (dy: Tensor4D) => {
       util.assert(
-          tupleValuesAreOne(dilations),
+          conv_util.tupleValuesAreOne(dilations),
           'Error in gradient of conv2D: dilation rates greater than 1 are not' +
               `yet supported in gradients. Got dilations '${dilations}'`);
 
@@ -291,10 +292,21 @@ function conv2dDerInput_<T extends Tensor3D|Tensor4D>(
 
   const dilations = 1;
 
+  const grad = (ddx: Tensor4D) => {
+    const dataFormat = 'NHWC';
+    return {
+      dy4D: () => conv2d(
+          ddx, filter, strides, pad, dataFormat, dilations, dimRoundingMode),
+      filter: () => conv2dDerFilter(
+          ddx, dy4D, filter.shape, strides, pad, dimRoundingMode)
+    };
+  };
+
   const convInfo = conv_util.computeConv2DInfo(
       xShape4D, filter.shape, strides, dilations, pad, dimRoundingMode);
   const res = ENV.engine.runKernel(
-      backend => backend.conv2dDerInput(dy4D, filter, convInfo), {dy4D});
+      backend => backend.conv2dDerInput(dy4D, filter, convInfo), {dy4D, filter},
+      grad);
   if (reshapedTo4D) {
     return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as T;
   }
@@ -475,7 +487,7 @@ function depthwiseConv2d_<T extends Tensor3D|Tensor4D>(
     dilations = [1, 1];
   }
   util.assert(
-      eitherStridesOrDilationsAreOne(strides, dilations),
+      conv_util.eitherStridesOrDilationsAreOne(strides, dilations),
       'Error in depthwiseConv2d: Either strides or dilations must be 1. ' +
           `Got strides ${strides} and dilations '${dilations}'`);
 
@@ -492,7 +504,7 @@ function depthwiseConv2d_<T extends Tensor3D|Tensor4D>(
 
   const grad = (dy: Tensor4D) => {
     util.assert(
-        tupleValuesAreOne(dilations),
+        conv_util.tupleValuesAreOne(dilations),
         'Error in gradient of depthwiseConv2d: dilation rates greater than ' +
             `1 are not yet supported. Got dilations '${dilations}'`);
     return {
@@ -901,6 +913,7 @@ function conv3dDerFilter_<T extends Tensor4D|Tensor5D>(
 export const conv1d = op({conv1d_});
 export const conv2d = op({conv2d_});
 export const conv3d = op({conv3d_});
+export const conv2dDerFilter = op({conv2dDerFilter_});
 export const depthwiseConv2d = op({depthwiseConv2d_});
 export const separableConv2d = op({separableConv2d_});
 export const conv2dTranspose = op({conv2dTranspose_});
