@@ -101,8 +101,8 @@ import * as webgl_util from './webgl/webgl_util';
 import {whereImpl} from './where_impl';
 
 type KernelInfo = {
-  name: string; query: Promise<number>
-}
+  name: string; query: Promise<number>;
+};
 
 export type TimerNode = RecursiveArray<KernelInfo>|KernelInfo;
 export interface CPUTimerQuery {
@@ -369,6 +369,18 @@ export class MathBackendWebGL implements KernelBackend {
     return vals;
   }
 
+  private flattenTimers(timers: TimerNode, ret: KernelInfo[] = []):
+      KernelInfo[] {
+    if (Array.isArray(timers)) {
+      for (let i = 0; i < timers.length; ++i) {
+        this.flattenTimers(timers[i], ret);
+      }
+    } else {
+      ret.push(timers as T);
+    }
+    return ret;
+  }
+
   async time(f: () => void): Promise<WebGLTimingInfo> {
     const oldActiveTimers = this.activeTimers;
     const newActiveTimers: TimerNode[] = [];
@@ -384,7 +396,7 @@ export class MathBackendWebGL implements KernelBackend {
 
     f();
 
-    const flattenedActiveTimers = util.flatten(this.activeTimers);
+    const flattenedActiveTimers = this.flattenTimers(this.activeTimers);
     this.activeTimers = oldActiveTimers;
 
     if (outerMostTime) {

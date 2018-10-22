@@ -15,8 +15,7 @@
  * =============================================================================
  */
 
-import {SubKernelInfo} from '../engine';
-import {BackendTimer} from './kernels/backend';
+import {BackendTimer, SubKernelInfo} from './kernels/backend';
 import {Tensor} from './tensor';
 import {TypedArray} from './types';
 import * as util from './util';
