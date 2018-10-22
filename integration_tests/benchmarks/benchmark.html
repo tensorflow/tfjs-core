@@ -252,8 +252,7 @@
         const nameSpan = document.createElement('span');
         nameSpan.setAttribute('title', k.scopes.slice(0, -1).join(' --> '));
         nameSpan.textContent = k.scopes[k.scopes.length - 1];
-        let subKernelsInfo = k.subKernelsInfo;
-        appendRow(tbody, nameSpan, k.time.toFixed(2), k.output, subKernelsInfo);
+        appendRow(tbody, nameSpan, k.time.toFixed(2), k.output, k.subKernelsInfo);
       });
     }
 
