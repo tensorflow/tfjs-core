@@ -100,7 +100,12 @@ import {UnpackProgram} from './webgl/unpack_gpu';
 import * as webgl_util from './webgl/webgl_util';
 import {whereImpl} from './where_impl';
 
-type TimerNode = RecursiveArray<Promise<number>>|Promise<number>;
+interface KernelInfo {
+  name: string;
+  query: Promise<number>
+}
+
+export type TimerNode = RecursiveArray<KernelInfo>|KernelInfo;
 export interface CPUTimerQuery {
   startMs: number;
   endMs?: number;
@@ -387,7 +392,9 @@ export class MathBackendWebGL implements KernelBackend {
       this.programTimersStack = null;
     }
 
-    const kernelMs = await Promise.all(flattenedActiveTimers.map(d => d.query));
+    const kernelMs =
+        await Promise.all(flattenedActiveTimers.map((d) => d.query));
+
     const res: WebGLTimingInfo = {
       uploadWaitMs: this.uploadWaitMs,
       downloadWaitMs: this.downloadWaitMs,
