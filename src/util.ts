@@ -46,6 +46,14 @@ export function nearestLargerEven(val: number): number {
   return val % 2 === 0 ? val : val + 1;
 }
 
+export function sum(arr: number[]): number {
+  let sum = 0;
+  for (let i = 0; i < arr.length; i++) {
+    sum += arr[i];
+  }
+  return sum;
+}
+
 /**
  * Returns a sample from a uniform [a, b) distribution.
  *

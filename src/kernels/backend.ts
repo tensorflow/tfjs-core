@@ -22,6 +22,8 @@ import {DataType, Rank, ShapeMap, TypedArray} from '../types';
 // Required information for all backends.
 export interface BackendTimingInfo {
   kernelMs: number;
+  subKernelsInfo?: string;  // a field for additional timing information about
+                            // subkernels, e.g. packing / unpacking
 }
 
 export interface TensorStorage {
