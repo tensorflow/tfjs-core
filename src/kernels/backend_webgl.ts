@@ -369,18 +369,6 @@ export class MathBackendWebGL implements KernelBackend {
     return vals;
   }
 
-  private flattenTimers(timers: TimerNode, ret: KernelInfo[] = []):
-      KernelInfo[] {
-    if (Array.isArray(timers)) {
-      for (let i = 0; i < timers.length; ++i) {
-        this.flattenTimers(timers[i], ret);
-      }
-    } else {
-      ret.push(timers as T);
-    }
-    return ret;
-  }
-
   async time(f: () => void): Promise<WebGLTimingInfo> {
     const oldActiveTimers = this.activeTimers;
     const newActiveTimers: TimerNode[] = [];
@@ -396,22 +384,24 @@ export class MathBackendWebGL implements KernelBackend {
 
     f();
 
-    const flattenedActiveTimers = this.flattenTimers(this.activeTimers);
+    const flattenedActiveTimerQueries =
+        util.flatten(this.activeTimers.map(d => d.query));
+    const flattenedActiveTimerNames =
+        util.flatten(this.activeTimers.map(d => d.name));
     this.activeTimers = oldActiveTimers;
 
     if (outerMostTime) {
       this.programTimersStack = null;
     }
 
-    const kernelMs =
-        await Promise.all(flattenedActiveTimers.map((d) => d.query));
+    const kernelMs = await Promise.all(flattenedActiveTimerQueries);
 
     const res: WebGLTimingInfo = {
       uploadWaitMs: this.uploadWaitMs,
       downloadWaitMs: this.downloadWaitMs,
       kernelMs: util.sum(kernelMs),
-      subKernelsInfo: kernelMs.map(
-          (d, i) => ({name: flattenedActiveTimers[i].name, ms: d})),
+      subKernelsInfo:
+          kernelMs.map((d, i) => ({name: flattenedActiveTimerNames[i], ms: d})),
       wallMs: null  // will be filled by the engine
     };
     this.uploadWaitMs = 0;
