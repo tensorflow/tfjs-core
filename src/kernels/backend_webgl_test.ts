@@ -32,8 +32,8 @@ describeWithFlags('lazy packing and unpacking', WEBGL_ENVS, () => {
 
     tf.add(c, 1);
 
-    expect(startNumBytes).toEqual(tf.memory().numBytes);
-    expect(startNumTensors).toEqual(tf.memory().numTensors);
+    expect(tf.memory().numBytes - startNumBytes).toEqual(16);
+    expect(tf.memory().numTensors - startNumTensors).toEqual(1);
   });
 
   it('should not leak memory when lazily packing', () => {

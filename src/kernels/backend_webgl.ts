@@ -1659,8 +1659,6 @@ export class MathBackendWebGL implements KernelBackend {
         }
 
         texData = this.texData.get(processedInput.dataId);
-
-        (input as Tensor).dispose();
         input = processedInput;
       }
 
