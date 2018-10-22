@@ -385,9 +385,10 @@ export class MathBackendWebGL implements KernelBackend {
     f();
 
     const flattenedActiveTimerQueries =
-        util.flatten(this.activeTimers.map(d => d.query));
+        util.flatten(this.activeTimers.map(d => d.query))
+            .filter(util.isDefined);
     const flattenedActiveTimerNames =
-        util.flatten(this.activeTimers.map(d => d.name));
+        util.flatten(this.activeTimers.map(d => d.name)).filter(util.isDefined);
     this.activeTimers = oldActiveTimers;
 
     if (outerMostTime) {
