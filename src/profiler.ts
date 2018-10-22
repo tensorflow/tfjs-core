@@ -60,8 +60,9 @@ export class Logger {
     const rank = result.rank;
     const size = result.size;
     const shape = util.rightPad(result.shape.toString(), 14);
-    const subKernelsDescription =
-        subKernels ? subKernels.map(d => `${d.name}: ${d.ms}`).join(', ') : '';
+    const subKernelsDescription = subKernels.length > 1 ?
+        subKernels.map(d => `${d.name}: ${d.ms}`).join(', ') :
+        '';
 
     console.log(
         `%c${paddedName}\t%c${time}\t%c${rank}D ${shape}\t%c${size}\t%c${
