@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {BackendTimingInfo, DataMover, KernelBackend, SubKernelInfo} from './kernels/backend';
+import {BackendTimingInfo, DataMover, KernelBackend} from './kernels/backend';
 import {Profiler} from './profiler';
 import {backpropagateGradients, getFilteredNodesXToY, NamedGradientMap, TapeNode} from './tape';
 import {DataId, Tensor, Tensor3D, Variable} from './tensor';
