@@ -385,10 +385,10 @@ export class MathBackendWebGL implements KernelBackend {
     f();
 
     // needing to split these up because util.flatten only accepts certain types
-    const flattenedActiveTimerQueries: Promise<number>[] =
+    const flattenedActiveTimerQueries =
         util.flatten(this.activeTimers.map((d: KernelInfo) => d.query))
             .filter(util.isDefined);
-    const flattenedActiveTimerNames: string[] =
+    const flattenedActiveTimerNames =
         util.flatten(this.activeTimers.map((d: KernelInfo) => d.name))
             .filter(util.isDefined);
 

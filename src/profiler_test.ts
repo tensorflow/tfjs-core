@@ -44,7 +44,7 @@ class TestLogger extends Logger {
 }
 
 describe('profiler.Profiler', () => {
-  fit('profiles simple function', doneFn => {
+  it('profiles simple function', doneFn => {
     const delayMs = 5;
     const queryTimeMs = 10;
     const subKernels = [{name: '', ms: 0}];
@@ -82,7 +82,7 @@ describe('profiler.Profiler', () => {
     }, delayMs * 2);
   });
 
-  fit('profiles nested kernel', doneFn => {
+  it('profiles nested kernel', doneFn => {
     const delayMs = 5;
     const queryTimeMs = 10;
     const subKernels = [{name: '', ms: 0}];
