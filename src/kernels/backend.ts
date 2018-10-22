@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+import {SubKernelInfo} from '../engine';
 import {Conv2DInfo} from '../ops/conv_util';
 import {DataId, Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import {DataType, Rank, ShapeMap, TypedArray} from '../types';
@@ -22,8 +23,9 @@ import {DataType, Rank, ShapeMap, TypedArray} from '../types';
 // Required information for all backends.
 export interface BackendTimingInfo {
   kernelMs: number;
-  subKernelsInfo?: string;  // a field for additional timing information about
-                            // subkernels, e.g. packing / unpacking
+  subKernelsInfo?:
+      SubKernelInfo[];  // a field for additional timing information
+                        // about subkernels, e.g. packing / unpacking
 }
 
 export interface TensorStorage {

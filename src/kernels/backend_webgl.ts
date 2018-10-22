@@ -100,9 +100,8 @@ import {UnpackProgram} from './webgl/unpack_gpu';
 import * as webgl_util from './webgl/webgl_util';
 import {whereImpl} from './where_impl';
 
-interface KernelInfo {
-  name: string;
-  query: Promise<number>
+type KernelInfo = {
+  name: string; query: Promise<number>
 }
 
 export type TimerNode = RecursiveArray<KernelInfo>|KernelInfo;
@@ -399,10 +398,8 @@ export class MathBackendWebGL implements KernelBackend {
       uploadWaitMs: this.uploadWaitMs,
       downloadWaitMs: this.downloadWaitMs,
       kernelMs: util.sum(kernelMs),
-      subKernelsInfo:
-          kernelMs
-              .map((d, i) => `name: ${flattenedActiveTimers[i].name}, ms: ${d}`)
-              .join(', '),
+      subKernelsInfo: kernelMs.map(
+          (d, i) => ({name: flattenedActiveTimers[i].name, ms: d})),
       wallMs: null  // will be filled by the engine
     };
     this.uploadWaitMs = 0;

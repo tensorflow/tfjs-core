@@ -63,6 +63,10 @@ export interface TimingInfo extends BackendTimingInfo {
   wallMs: number;
 }
 
+export type SubKernelInfo = {
+  name: string; ms: number;
+};
+
 /** @docalias Function */
 export type ScopeFn<T extends TensorContainer> = () => T;
 
