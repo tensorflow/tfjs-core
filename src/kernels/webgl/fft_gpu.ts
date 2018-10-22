@@ -27,26 +27,26 @@ export class FFTProgram implements GPGPUProgram {
   outputShape: number[];
   userCode: string;
 
-  constructor(op: string, inputShape: number[]) {
-    const size = inputShape[0];
-    this.outputShape = [size];
+  constructor(op: string, inputShape: [number, number]) {
+    const innerDim = inputShape[1];
+    this.outputShape = inputShape;
 
     this.userCode = `
       float unaryOpComplex(float real, float expR, float imag, float expI) {
         ${op}
       }
 
-      float mulMatDFT(int row) {
+      float mulMatDFT(int batch, int index) {
         // TODO: Gather constants in one place?
         const float PI = 3.1415926535897932384626433832795;
         float result = 0.0;
 
-        for (int i = 0; i < ${size}; i++) {
-          float x = -2.0 * PI * float(row * i) / float(${size});
+        for (int i = 0; i < ${innerDim}; i++) {
+          float x = -2.0 * PI * float(index * i) / float(${innerDim});
           float expR = cos(x);
           float expI = sin(x);
-          float real = getReal(i);
-          float imag = getImag(i);
+          float real = getReal(batch, i);
+          float imag = getImag(batch, i);
 
           result += unaryOpComplex(real, expR, imag, expI);
         }
@@ -55,8 +55,8 @@ export class FFTProgram implements GPGPUProgram {
       }
 
       void main() {
-        int row = getOutputCoords();
-        setOutput(mulMatDFT(row));
+        vec2 coords = getOutputCoords();
+        setOutput(mulMatDFT(coords[0], coords[1]));
       }
     `;
   }
