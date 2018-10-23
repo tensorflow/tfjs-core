@@ -16,9 +16,9 @@
  */
 
 /**
- * Exports under the tf.math.*
+ * Exports under the tf.math.* namespace.
  */
 
 import {confusionMatrix} from './ops/confusion_matrix';
 
-export const math = {confusionMatrix};
+export {confusionMatrix};

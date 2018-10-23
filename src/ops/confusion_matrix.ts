@@ -15,13 +15,16 @@
  * =============================================================================
  */
 
-import {tidy} from '../globals';
 import {Tensor1D, Tensor2D} from '../tensor';
+import {convertToTensor} from '../tensor_util_env';
+import {TensorLike} from '../types';
 import * as util from '../util';
+
 import {oneHot} from './array_ops';
+import {op} from './operation';
 
 /**
- * Calcualte the confusion matrix.
+ * Computes the confusion matrix from true labels and predicted labels.
  *
  * ```js
  * const labels = tf.tensor1d([0, 1, 2, 1, 0], 'int32');
@@ -35,45 +38,51 @@ import {oneHot} from './array_ops';
  * //  [0, 0, 1]]
  * ```
  *
- * @param {tf.Tensor1D} labels The target labels, assumed to be 0-based integers
- *   for the categories. The shape is `[numExamples]`, where
+ * @param labels The target labels, assumed to be 0-based integers
+ *   for the classes. The shape is `[numExamples]`, where
  *   `numExamples` is the number of examples included.
- * @param {tf.Tensor1D} predictions The predicted probabilities, assumed to be
- *   0-based integers for the categories. Must have the same shape as `labels`.
- * @param {number} numClasses Number of all classes, as an integer.
+ * @param predictions The predicted classes, assumed to be
+ *   0-based integers for the classes. Must have the same shape as `labels`.
+ * @param numClasses Number of all classes, as an integer.
  *   Its value must be larger than the largest element in `labels` and
  *   `predictions`.
- * @return {tf.Tensor2D} The confusion matrix as a 2D tensor. The value at
+ * @returns The confusion matrix as a 2D tensor. The value at
  *   row `r` and column `c` is the number of times examples of actual class
  *   `r` were predicted as class `c`.
  */
-/** @doc {heading: 'Environment'} */
-export function confusionMatrix(
-    labels: Tensor1D, predictions: Tensor1D, numClasses: number): Tensor2D {
+/** @doc {heading: 'Operations', subheading: 'Evaluation'} */
+export function confusionMatrix_(
+    labels: Tensor1D|TensorLike, predictions: Tensor1D|TensorLike,
+    numClasses: number): Tensor2D {
+  const $labels = convertToTensor(labels, 'label', 'confusionMatrix', 'int32');
+  const $predictions =
+      convertToTensor(predictions, 'label', 'confusionMatrix', 'int32');
+
   util.assert(
       numClasses == null || numClasses > 0 && Number.isInteger(numClasses),
       `If provided, numClasses must be a positive integer, ` +
           `but got ${numClasses}`);
   util.assert(
-      labels.rank === 1,
-      `Expected the rank of labels to be 1, but got ${labels.rank}`);
+      $labels.rank === 1,
+      `Expected the rank of labels to be 1, but got ${$labels.rank}`);
   util.assert(
-      predictions.rank === 1,
+      $predictions.rank === 1,
       `Expected the rank of predictions to be 1, ` +
-          `but got ${predictions.rank}`);
+          `but got ${$predictions.rank}`);
   util.assert(
-      labels.shape[0] === predictions.shape[0],
+      $labels.shape[0] === $predictions.shape[0],
       `Mismatch in the number of examples: ` +
-          `${labels.shape[0]} vs. ${predictions.shape[0]}`);
+          `${$labels.shape[0]} vs. ${$predictions.shape[0]}. ` +
+          `Labels and predictions should have the same number of elements.`);
   util.assert(
       numClasses > 0 && Number.isInteger(numClasses),
       `numClasses is required to be a positive integer, but got ${numClasses}`);
   // TODO(cais): In the future, if oneHot supports tensors inputs for
   //   `numClasses`, `confusionMatrix` can make `numClasses` optional.
 
-  return tidy(() => {
-    const oneHotLabels = oneHot(labels, numClasses);
-    const oneHotPredictions = oneHot(predictions, numClasses);
-    return oneHotLabels.transpose().matMul(oneHotPredictions);
-  });
+  const oneHotLabels = oneHot($labels, numClasses);
+  const oneHotPredictions = oneHot($predictions, numClasses);
+  return oneHotLabels.transpose().matMul(oneHotPredictions);
 }
+
+export const confusionMatrix = op({confusionMatrix_});

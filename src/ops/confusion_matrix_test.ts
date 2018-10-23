@@ -78,6 +78,26 @@ describeWithFlags('confusionMatrix', ALL_ENVS, () => {
         tf.tensor2d([[2, 2, 0, 0], [0, 0, 0, 0], [0, 0, 2, 2], [0, 0, 0, 0]]));
   });
 
+  it('Plain arrays as inputs', () => {
+    const labels: number[] = [3, 3, 2, 2, 1, 1, 0, 0];
+    const predictions: number[] = [2, 2, 2, 2, 0, 0, 0, 0];
+    const numClasses = 4;
+    const out = tf.math.confusionMatrix(labels, predictions, numClasses);
+    expectArraysEqual(
+        out,
+        tf.tensor2d([[2, 0, 0, 0], [2, 0, 0, 0], [0, 0, 2, 0], [0, 0, 2, 0]]));
+  });
+
+  it('Int32Arrays as inputs', () => {
+    const labels = new Int32Array([3, 3, 2, 2, 1, 1, 0, 0]);
+    const predictions = new Int32Array([2, 2, 2, 2, 0, 0, 0, 0]);
+    const numClasses = 4;
+    const out = tf.math.confusionMatrix(labels, predictions, numClasses);
+    expectArraysEqual(
+        out,
+        tf.tensor2d([[2, 0, 0, 0], [2, 0, 0, 0], [0, 0, 2, 0], [0, 0, 2, 0]]));
+  });
+
   // Reference (Python) TensorFlow code:
   //
   // ```py
