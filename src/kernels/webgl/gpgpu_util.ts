@@ -408,7 +408,7 @@ export function downloadMatrixFromPackedOutputTexture(
       tex_util.getPackedRGBAArraySizeFromMatrixShape(batch, rows, cols));
   webgl_util.callAndCheck(
       gl, () => gl.readPixels(0, 0, w, h, gl.RGBA, gl.FLOAT, packedRGBA));
-  const matrix = new Float32Array(util.sizeFromShape(logicalShape));
+  const matrix = new Float32Array(util.sizeFromShape([batch, rows, cols]));
   return tex_util.decodeMatrixFromPackedRGBA(
       packedRGBA, batch, rows, cols, matrix);
 }
