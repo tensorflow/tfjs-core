@@ -56,7 +56,7 @@
   },
   "dependencies": {
     "@types/seedrandom": "2.4.27",
-    "@types/webgl-ext": "0.0.30",
+    "@types/webgl-ext": "0.0.29",
     "@types/webgl2": "0.0.4",
     "seedrandom": "2.4.3"
   }
