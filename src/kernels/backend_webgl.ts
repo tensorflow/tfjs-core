@@ -16,9 +16,8 @@
  */
 
 import {MemoryInfo, TimingInfo} from '../engine';
-import {ENV} from '../environment';
+import {ENV, Environment} from '../environment';
 import {tidy} from '../globals';
-import * as tf from '../index';
 import {warn} from '../log';
 import * as array_ops_util from '../ops/array_ops_util';
 import * as axis_util from '../ops/axis_util';
@@ -675,7 +674,7 @@ export class MathBackendWebGL implements KernelBackend {
 
     const unpacked = this.unpackTensor(batchNorm);
 
-    tf.dispose([packedInputs, batchNorm]);
+    Environment.dispose([packedInputs, batchNorm]);
 
     return unpacked;
   }
