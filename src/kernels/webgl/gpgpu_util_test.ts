@@ -182,8 +182,11 @@ describeWithFlags(
            const gpgpu = new GPGPUContext();
            const textureConfig = gpgpu_util.getTextureConfig(gpgpu.gl);
 
+           // these dimensions will be halved to create the packed texture
+           const physicalRows = 10;
+           const physicalCols = 16;
            const tex = gpgpu_util.createPackedMatrixTexture(
-               gpgpu.gl, 10, 16, textureConfig);
+               gpgpu.gl, physicalRows, physicalCols, textureConfig);
 
            const mat = tf.tensor3d(
                [
@@ -200,10 +203,38 @@ describeWithFlags(
                ],
                [2, 20, 3]);
            /*
-           Here we pretend that gl.MAX_TEXTURE_SIZE is so small that the 3D
-           tensor texture dimensions must be squarified such that values from
-           different batches are encoded in the same physical row of the texture
-           (specifically, row 3 of 5 will be split between the two batches).
+           Here we pretend that gl.MAX_TEXTURE_SIZE is small enough that the
+          texture dimensions must be squarified. This way, values from different
+          batches are encoded in the same physical row of the texture
+
+
+           Physical row 1:
+            1| 2   3| x   7| 8   9| x  13|14  15| x  19|20  21| x
+           -----  -----  -----  -----  -----  -----  -----  -----
+            4| 5   6| x  10|11  12| x  16|17  18| x  22|23  24| x
+
+           Row 2:
+           25|26  27| x  31|32  33| x  37|38  39| x  43|44  45| x
+           -----  -----  -----  -----  -----  -----  -----  -----
+           28|29  30| x  34|35  36| x  40|41  42| x  46|47  48| x
+
+           Row 3:
+           49|50  51| x  55|56  57| x  61|62  63| x  67|68  69| x
+           -----  -----  -----  -----  -----  -----  -----  -----
+           52|53  54| x  58|59  60| x  64|65  66| x  70|71  72| x
+
+           Row 4:
+           73|74  75| x  79|80  81| x  85|86  87| x  91|92  93| x
+           -----  -----  -----  -----  -----  -----  -----  -----
+           76|77  78| x  82|83  84| x  88|89  90| x  94|95  96| x
+
+           Row 5:
+           97|98  99| x 103|104105| x 109|110111| x 115|116117| x
+           -----  -----  -----  -----  -----  -----  -----  -----
+          100|101102| x 106|107108| x 112|113114| x 118|119120| x
+
+
+           Note that physical row 3 is split between the two batches.
             */
 
            gpgpu.gl.bindTexture(gpgpu.gl.TEXTURE_2D, tex);
@@ -226,8 +257,8 @@ describeWithFlags(
                  117, 0,   120, 0
                ]));
 
-           const result =
-               gpgpu.downloadMatrixFromPackedTexture(tex, mat.shape, 10, 16);
+           const result = gpgpu.downloadMatrixFromPackedTexture(
+               tex, mat.shape, physicalRows, physicalCols);
            expectArraysClose(result, mat.dataSync());
          });
     });

@@ -134,6 +134,23 @@ export function getPackedRGBAArraySizeFromMatrixShape(
   return w * h * 4;
 }
 
+/*
+This is how encodeMatrixToPackedRGBA encodes a tensor with shape = [2, 3, 5]
+(the indices are the [batch, row, col]).
+
+000|001   002|003   004|xxx   020|021   022|023   024|xxx
+-------   -------   -------   -------   -------   -------
+010|011   012|013   014|xxx   xxx|xxx   xxx|xxx   xxx|xxx
+
+
+100|101   102|103   104|xxx   120|121   122|123   124|xxx
+-------   -------   -------   -------   -------   -------
+110|111   112|113   114|xxx   xxx|xxx   xxx|xxx   xxx|xxx
+
+Note the batch dimension is needed so xxx's are inserted below 020, 021, 022,
+023, and 024.
+ */
+
 export function encodeMatrixToPackedRGBA(
     matrix: Float32Array, batches: number, rows: number, columns: number,
     packedRGBA: Float32Array) {
