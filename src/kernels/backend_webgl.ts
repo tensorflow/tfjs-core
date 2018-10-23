@@ -656,7 +656,8 @@ export class MathBackendWebGL implements KernelBackend {
         BatchNormPackedProgram :
         BatchNormProgram;
     const program = new batchNormProgram(
-        x.shape, mean.shape, variance.shape, offsetShape, scaleShape);
+        x.shape, mean.shape, variance.shape, offsetShape, scaleShape,
+        varianceEpsilon);
     return this.compileAndRun(program, inputs);
   }
 
