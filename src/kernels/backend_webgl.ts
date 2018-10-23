@@ -16,7 +16,7 @@
  */
 
 import {MemoryInfo, TimingInfo} from '../engine';
-import {ENV, Environment} from '../environment';
+import {ENV} from '../environment';
 import {tidy} from '../globals';
 import {warn} from '../log';
 import * as array_ops_util from '../ops/array_ops_util';
@@ -652,11 +652,11 @@ export class MathBackendWebGL implements KernelBackend {
       inputs.push(scale);
     }
 
-    const inputShapes = [...inputs.map(d => d.shape), offsetShape, scaleShape];
-
-    const program = ENV.get('WEBGL_PACK_BATCHNORMALIZATION') ?
-        new BatchNormPackedProgram(...inputShapes) :
-        new BatchNormProgram(...inputShapes);
+    const batchNormProgram = ENV.get('WEBGL_PACK_BATCHNORMALIZATION') ?
+        BatchNormPackedProgram :
+        BatchNormProgram;
+    const program = new batchNormProgram(
+        x.shape, mean.shape, variance.shape, offsetShape, scaleShape);
     return this.compileAndRun(program, inputs);
   }
 
