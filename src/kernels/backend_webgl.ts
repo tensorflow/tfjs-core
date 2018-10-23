@@ -1658,7 +1658,8 @@ export class MathBackendWebGL implements KernelBackend {
       // to problems when comparing 16bit floats with 32bit floats.
       // TODO(https://github.com/tensorflow/tfjs/issues/821): Make it possible
       // for packed shaders to sample from uniforms.
-      if (texData.texture == null && !(!texData.isPacked && program.isPacked) &&
+      if (texData.texture == null &&
+          !(!texData.isPacked && program.usesPackedTextures) &&
           util.sizeFromShape(input.shape) <=
               ENV.get('WEBGL_SIZE_UPLOAD_UNIFORM')) {
         return {
@@ -1669,7 +1670,7 @@ export class MathBackendWebGL implements KernelBackend {
         };
       }
 
-      if (texData.isPacked !== !!program.isPacked) {
+      if (texData.isPacked !== !!program.usesPackedTextures) {
         let preProcessProgram: UnpackProgram|PackProgram;
         let processedInput: Tensor;
         if (texData.isPacked) {

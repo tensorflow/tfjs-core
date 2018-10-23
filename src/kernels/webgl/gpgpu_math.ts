@@ -28,7 +28,7 @@ export interface GPGPUProgram {
   variableNames: string[];
   outputShape: number[];
   userCode: string;
-  isPacked?: boolean;
+  usesPackedTextures?: boolean;
   supportsBroadcasting?: boolean;
 }
 
