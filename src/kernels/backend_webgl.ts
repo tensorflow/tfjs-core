@@ -653,16 +653,16 @@ export class MathBackendWebGL implements KernelBackend {
     }
 
     let output = null;
-    let EnvSpecificBatchNormProgram: BatchNormProgram|BatchNormPackedProgram;
+    let envSpecificBatchNormProgram: BatchNormProgram|BatchNormPackedProgram;
 
     if (ENV.get('WEBGL_PACK_BATCHNORMALIZATION')) {
       output = this.makePackedTensor(x.shape);
-      EnvSpecificBatchNormProgram = BatchNormPackedProgram;
+      envSpecificBatchNormProgram = BatchNormPackedProgram;
     } else {
-      EnvSpecificBatchNormProgram = BatchNormProgram;
+      envSpecificBatchNormProgram = BatchNormProgram;
     }
 
-    const program = new EnvSpecificBatchNormProgram(
+    const program = new envSpecificBatchNormProgram(
         x.shape, mean.shape, variance.shape, offsetShape, scaleShape,
         varianceEpsilon);
     return this.compileAndRun(program, inputs, output);
