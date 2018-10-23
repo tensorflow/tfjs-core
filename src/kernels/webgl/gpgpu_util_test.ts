@@ -205,7 +205,8 @@ describeWithFlags(
            /*
            Here we pretend that gl.MAX_TEXTURE_SIZE is small enough that the
            texture dimensions must be squarified. This way, values from
-           different batches are encoded in the same physical row of the texture
+           different batches are encoded in the same physical row of the
+           texture
 
             Physical row 1:
              1| 2   3| x   7| 8   9| x  13|14  15| x  19|20  21| x

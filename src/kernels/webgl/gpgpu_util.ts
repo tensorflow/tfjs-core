@@ -289,7 +289,7 @@ export function uploadMatrixToPackedTexture(
     textureConfig: TextureConfig) {
   const [w, h] = tex_util.getPackedMatrixTextureShapeWidthHeight(rows, columns);
   const packedRGBA = new Float32Array(
-      tex_util.getPackedRGBAArraySizeFromMatrixShape(batch, rows, columns));
+      tex_util.getPackedRGBAArraySizeFromMatrixShape(rows, columns));
   tex_util.encodeMatrixToPackedRGBA(matrix, batch, rows, columns, packedRGBA);
   uploadDataToTexture(gl, texture, w, h, packedRGBA, gl.RGBA);
 }
@@ -406,7 +406,7 @@ export function downloadMatrixFromPackedOutputTexture(
 
   const packedRGBA =
       new Float32Array(tex_util.getPackedRGBAArraySizeFromMatrixShape(
-          batch, physicalRows, physicalCols));
+          physicalRows, physicalCols));
   webgl_util.callAndCheck(
       gl, () => gl.readPixels(0, 0, w, h, gl.RGBA, gl.FLOAT, packedRGBA));
   const matrix = new Float32Array(util.sizeFromShape([batch, rows, cols]));

@@ -129,9 +129,9 @@ export function getPackedMatrixTextureShapeWidthHeight(
 }
 
 export function getPackedRGBAArraySizeFromMatrixShape(
-    batch: number, rows: number, columns: number): number {
+    rows: number, columns: number): number {
   const [w, h] = getPackedMatrixTextureShapeWidthHeight(rows, columns);
-  return batch * w * h * 4;
+  return w * h * 4;
 }
 
 /*
@@ -153,8 +153,7 @@ Note the batch dimension is needed so xxx's are inserted below 020, 021, 022,
 export function encodeMatrixToPackedRGBA(
     matrix: Float32Array, batches: number, rows: number, columns: number,
     packedRGBA: Float32Array) {
-  const requiredSize =
-      getPackedRGBAArraySizeFromMatrixShape(batches, rows, columns);
+  const requiredSize = getPackedRGBAArraySizeFromMatrixShape(rows, columns);
   if (packedRGBA.length < requiredSize) {
     throw new Error(`packedRGBA length (${packedRGBA.length}) must be >=
         ${requiredSize}`);
