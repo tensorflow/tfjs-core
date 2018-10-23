@@ -55,7 +55,7 @@ export class FFTProgram implements GPGPUProgram {
       }
 
       void main() {
-        vec2 coords = getOutputCoords();
+        ivec2 coords = getOutputCoords();
         setOutput(mulMatDFT(coords[0], coords[1]));
       }
     `;
