@@ -17,7 +17,7 @@
 
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
-import {ALL_ENVS, CPU_ENVS, expectArraysClose, WEBGL_ENVS} from '../test_util';
+import {ALL_ENVS, expectArraysClose, WEBGL_ENVS} from '../test_util';
 
 describeWithFlags('1D FFT', ALL_ENVS, () => {
   it('should return the same value with TensorFlow (2 elements)', () => {
@@ -99,7 +99,7 @@ describeWithFlags('FFT', WEBGL_ENVS, () => {
 });
 
 // TODO: Remove this once we support higher-dimensional FFTs on CPU.
-describeWithFlags('FFT CPU', CPU_ENVS, () => {
+describeWithFlags('FFT CPU', BROWSER_CPU_ENVS, () => {
   it('2D throws', () => {
     const t1Real = tf.tensor2d([1, 2, 3, 4], [2, 2]);
     const t1Imag = tf.tensor2d([5, 6, 7, 8], [2, 2]);
