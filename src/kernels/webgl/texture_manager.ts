@@ -31,10 +31,10 @@ export class TextureManager {
 
   acquireTexture(
       shapeRC: [number, number], usage: TextureUsage,
-      packed: boolean): WebGLTexture {
-    const physicalTexType = getPhysicalFromLogicalTextureType(usage, packed);
+      isPacked: boolean): WebGLTexture {
+    const physicalTexType = getPhysicalFromLogicalTextureType(usage, isPacked);
 
-    const shapeKey = getKeyFromTextureShape(shapeRC, physicalTexType, packed);
+    const shapeKey = getKeyFromTextureShape(shapeRC, physicalTexType, isPacked);
     if (!(shapeKey in this.freeTextures)) {
       this.freeTextures[shapeKey] = [];
     }
@@ -78,14 +78,14 @@ export class TextureManager {
 
   releaseTexture(
       texture: WebGLTexture, shape: [number, number],
-      logicalTexType: TextureUsage, packed: boolean): void {
+      logicalTexType: TextureUsage, isPacked: boolean): void {
     if (this.freeTextures == null) {
       // Already disposed.
       return;
     }
     const physicalTexType =
-        getPhysicalFromLogicalTextureType(logicalTexType, packed);
-    const shapeKey = getKeyFromTextureShape(shape, physicalTexType, packed);
+        getPhysicalFromLogicalTextureType(logicalTexType, isPacked);
+    const shapeKey = getKeyFromTextureShape(shape, physicalTexType, isPacked);
     if (!(shapeKey in this.freeTextures)) {
       this.freeTextures[shapeKey] = [];
     }
@@ -144,8 +144,8 @@ export class TextureManager {
 }
 
 function getPhysicalFromLogicalTextureType(
-    logicalTexType: TextureUsage, packed: boolean): PhysicalTextureType {
-  if (packed) {
+    logicalTexType: TextureUsage, isPacked: boolean): PhysicalTextureType {
+  if (isPacked) {
     return ENV.get('WEBGL_RENDER_FLOAT32_ENABLED') ?
         PhysicalTextureType.PACKED_2X2_FLOAT32 :
         PhysicalTextureType.PACKED_2X2_FLOAT16;
@@ -165,7 +165,6 @@ function getPhysicalFromLogicalTextureType(
 
 function getKeyFromTextureShape(
     shapeRowsCol: [number, number], physicalTexType: PhysicalTextureType,
-    packed: boolean): string {
-  return `${shapeRowsCol[0]}_${shapeRowsCol[1]}_${physicalTexType}${
-      packed ? '_packed' : ''}`;
+    isPacked: boolean): string {
+  return `${shapeRowsCol[0]}_${shapeRowsCol[1]}_${physicalTexType}_${isPacked}`;
 }

@@ -356,9 +356,9 @@ function validateTextureUnit(gl: WebGLRenderingContext, textureUnit: number) {
 }
 
 export function getTextureShapeFromLogicalShape(
-    logShape: number[], packed = false): [number, number] {
+    logShape: number[], isPacked = false): [number, number] {
   let maxTexSize = ENV.get('WEBGL_MAX_TEXTURE_SIZE');
-  if (packed) {
+  if (isPacked) {
     maxTexSize = maxTexSize * 2;
 
     // This logic ensures we accurately count the number of packed texels needed
