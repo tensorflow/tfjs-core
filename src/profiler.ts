@@ -60,7 +60,7 @@ export class Logger {
     const rank = result.rank;
     const size = result.size;
     const shape = util.rightPad(result.shape.toString(), 14);
-    const subKernelsDescription = subKernels && subKernels.length > 1 ?
+    const subKernelsDescription = subKernels != null && subKernels.length > 1 ?
         subKernels.map(d => `${d.name}: ${d.ms}`).join(', ') :
         '';
 

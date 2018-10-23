@@ -54,11 +54,6 @@ export function sum(arr: number[]): number {
   return sum;
 }
 
-// tslint:disable-next-line:no-any
-export function isDefined(val: any): boolean {
-  return typeof val !== 'undefined';
-}
-
 /**
  * Returns a sample from a uniform [a, b) distribution.
  *
