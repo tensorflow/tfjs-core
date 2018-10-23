@@ -16,7 +16,7 @@
  */
 
 import {MemoryInfo, TimingInfo} from '../engine';
-import {ENV} from '../environment';
+import {ENV, Environment} from '../environment';
 import {tidy} from '../globals';
 import {warn} from '../log';
 import * as array_ops_util from '../ops/array_ops_util';
@@ -44,6 +44,7 @@ import {topkImpl} from './topk_impl';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
 import {AvgPool2DBackpropProgram} from './webgl/avg_pool_backprop_gpu';
 import {BatchNormProgram} from './webgl/batchnorm_gpu';
+import {BatchNormPackedProgram} from './webgl/batchnorm_packed_gpu';
 import * as binaryop_complex_gpu from './webgl/binaryop_complex_gpu';
 import {BinaryOpComplexProgram} from './webgl/binaryop_complex_gpu';
 import * as binaryop_gpu from './webgl/binaryop_gpu';
@@ -633,10 +634,53 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [a, b], output) as Tensor;
   }
 
+  batchNormalizationPacked(
+      x: Tensor4D, mean: Tensor4D|Tensor1D, variance: Tensor4D|Tensor1D,
+      varianceEpsilon: number, scale?: Tensor4D|Tensor1D,
+      offset?: Tensor4D|Tensor1D): Tensor4D {
+    const packedX = this.packTensor(x);
+    const packedMean = this.packTensor(mean);
+    const packedVariance = this.packTensor(variance);
+
+    const packedInputs = [packedX, packedMean, packedVariance];
+
+    let offsetShape = null;
+    if (offset != null) {
+      const packedOffset = this.packTensor(offset);
+      packedInputs.push(packedOffset);
+      offsetShape = packedOffset.shape;
+    }
+
+    let scaleShape = null;
+    if (scale != null) {
+      const packedScale = this.packTensor(scale);
+      packedInputs.push(packedScale);
+      scaleShape = packedScale.shape;
+    }
+
+    const batchNormProgram = new BatchNormPackedProgram(
+        packedX.shape, packedMean.shape, packedVariance.shape, offsetShape,
+        scaleShape, varianceEpsilon);
+    const batchNorm = this.compileAndRun(
+        batchNormProgram, packedInputs,
+        this.makePackedTensor<Tensor4D>(packedX.shape));
+
+    const unpacked = this.unpackTensor(batchNorm);
+
+    Environment.dispose([packedInputs, batchNorm]);
+
+    return unpacked;
+  }
+
   batchNormalization(
       x: Tensor4D, mean: Tensor4D|Tensor1D, variance: Tensor4D|Tensor1D,
       varianceEpsilon: number, scale?: Tensor4D|Tensor1D,
       offset?: Tensor4D|Tensor1D): Tensor4D {
+    if (ENV.get('WEBGL_PACK_BATCHNORMALIZATION')) {
+      return this.batchNormalizationPacked(
+          x, mean, variance, varianceEpsilon, scale, offset);
+    }
+
     const inputs = [x, mean, variance];
 
     let offsetShape = null;
@@ -1616,6 +1660,17 @@ export class MathBackendWebGL implements KernelBackend {
     const packedTensor = Tensor.make(shape, {});
     this.texData.get(packedTensor.dataId).isPacked = true;
     return packedTensor as T;
+  }
+
+  private packTensor<T extends Tensor>(x: T): T {
+    const packProgram = new PackProgram(x.shape);
+    return this.compileAndRun(
+               packProgram, [x], this.makePackedTensor(x.shape)) as T;
+  }
+
+  private unpackTensor<T extends Tensor>(x: T): T {
+    const unpackProgram = new UnpackProgram(x.shape);
+    return this.compileAndRun(unpackProgram, [x]) as T;
   }
 
   public compileAndRun<
