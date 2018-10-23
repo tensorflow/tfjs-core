@@ -39,7 +39,8 @@ import {assert} from '../util';
 function fft_(input: Tensor): Tensor {
   assert(
       input.dtype === 'complex64',
-      `The dtype for tf.fft() must be complex64 but got ${input.dtype}.`);
+      `The dtype for tf.spectral.fft() must be complex64 ` +
+          `but got ${input.dtype}.`);
 
   // Collapse all outer dimensions to a single batch dimension.
   const innerDimensionSize = input.shape[input.shape.length - 1];
