@@ -28,11 +28,6 @@ export interface FenceContext {
   isFencePassed(): boolean;
 }
 
-interface WebGLLoseContext {
-  loseContext(): void;
-  restoreContext(): void;
-}
-
 export class GPGPUContext {
   gl: WebGLRenderingContext;
   textureFloatExtension: {};
