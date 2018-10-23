@@ -634,53 +634,10 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [a, b], output) as Tensor;
   }
 
-  batchNormalizationPacked(
-      x: Tensor4D, mean: Tensor4D|Tensor1D, variance: Tensor4D|Tensor1D,
-      varianceEpsilon: number, scale?: Tensor4D|Tensor1D,
-      offset?: Tensor4D|Tensor1D): Tensor4D {
-    const packedX = this.packTensor(x);
-    const packedMean = this.packTensor(mean);
-    const packedVariance = this.packTensor(variance);
-
-    const packedInputs = [packedX, packedMean, packedVariance];
-
-    let offsetShape = null;
-    if (offset != null) {
-      const packedOffset = this.packTensor(offset);
-      packedInputs.push(packedOffset);
-      offsetShape = packedOffset.shape;
-    }
-
-    let scaleShape = null;
-    if (scale != null) {
-      const packedScale = this.packTensor(scale);
-      packedInputs.push(packedScale);
-      scaleShape = packedScale.shape;
-    }
-
-    const batchNormProgram = new BatchNormPackedProgram(
-        packedX.shape, packedMean.shape, packedVariance.shape, offsetShape,
-        scaleShape, varianceEpsilon);
-    const batchNorm = this.compileAndRun(
-        batchNormProgram, packedInputs,
-        this.makePackedTensor<Tensor4D>(packedX.shape));
-
-    const unpacked = this.unpackTensor(batchNorm);
-
-    Environment.dispose([packedInputs, batchNorm]);
-
-    return unpacked;
-  }
-
   batchNormalization(
       x: Tensor4D, mean: Tensor4D|Tensor1D, variance: Tensor4D|Tensor1D,
       varianceEpsilon: number, scale?: Tensor4D|Tensor1D,
       offset?: Tensor4D|Tensor1D): Tensor4D {
-    if (ENV.get('WEBGL_PACK_BATCHNORMALIZATION')) {
-      return this.batchNormalizationPacked(
-          x, mean, variance, varianceEpsilon, scale, offset);
-    }
-
     const inputs = [x, mean, variance];
 
     let offsetShape = null;
@@ -695,9 +652,11 @@ export class MathBackendWebGL implements KernelBackend {
       inputs.push(scale);
     }
 
-    const program = new BatchNormProgram(
-        x.shape, mean.shape, variance.shape, offsetShape, scaleShape,
-        varianceEpsilon);
+    const inputShapes = [...inputs.map(d => d.shape), offsetShape, scaleShape];
+
+    const program = ENV.get('WEBGL_PACK_BATCHNORMALIZATION') ?
+        new BatchNormPackedProgram(...inputShapes) :
+        new BatchNormProgram(...inputShapes);
     return this.compileAndRun(program, inputs);
   }
 
