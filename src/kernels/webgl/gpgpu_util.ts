@@ -291,7 +291,7 @@ export function uploadMatrixToPackedTexture(
   const [w, h] = tex_util.getPackedMatrixTextureShapeWidthHeight(rows, columns);
   const batch = util.sizeFromShape(shape.slice(0, -2));
   const packedRGBA = new Float32Array(
-      tex_util.getPackedRGBAArraySizeFromMatrixShape(rows, columns));
+      tex_util.getPackedRGBAArraySizeFromMatrixShape(batch, rows, columns));
   tex_util.encodeMatrixToPackedRGBA(matrix, batch, rows, columns, packedRGBA);
   uploadDataToTexture(gl, texture, w, h, packedRGBA, gl.RGBA);
 }
@@ -404,17 +404,17 @@ export function downloadMatrixFromPackedOutputTexture(
     physicalCols: number, textureConfig: TextureConfig): Float32Array {
   const [w, h] = tex_util.getPackedMatrixTextureShapeWidthHeight(
       physicalRows, physicalCols);
-  const packedRGBA =
-      new Float32Array(tex_util.getPackedRGBAArraySizeFromMatrixShape(
-          physicalRows, physicalCols));
-  webgl_util.callAndCheck(
-      gl, () => gl.readPixels(0, 0, w, h, gl.RGBA, gl.FLOAT, packedRGBA));
-  const matrix = new Float32Array(util.sizeFromShape(logicalShape));
   const batchDim =
       util.sizeFromShape(logicalShape.slice(0, logicalShape.length - 2));
   const rows =
       logicalShape.length > 1 ? logicalShape[logicalShape.length - 2] : 1;
   const cols = logicalShape[logicalShape.length - 1];
+
+  const packedRGBA = new Float32Array(
+      tex_util.getPackedRGBAArraySizeFromMatrixShape(batchDim, rows, cols));
+  webgl_util.callAndCheck(
+      gl, () => gl.readPixels(0, 0, w, h, gl.RGBA, gl.FLOAT, packedRGBA));
+  const matrix = new Float32Array(util.sizeFromShape(logicalShape));
   return tex_util.decodeMatrixFromPackedRGBA(
-      packedRGBA, Math.max(1, batchDim), rows, cols, matrix);
+      packedRGBA, batchDim, rows, cols, matrix);
 }

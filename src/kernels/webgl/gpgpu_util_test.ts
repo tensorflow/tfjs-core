@@ -207,7 +207,6 @@ describeWithFlags(
           texture dimensions must be squarified. This way, values from different
           batches are encoded in the same physical row of the texture
 
-
            Physical row 1:
             1| 2   3| x   7| 8   9| x  13|14  15| x  19|20  21| x
            -----  -----  -----  -----  -----  -----  -----  -----
@@ -232,7 +231,6 @@ describeWithFlags(
            97|98  99| x 103|104105| x 109|110111| x 115|116117| x
            -----  -----  -----  -----  -----  -----  -----  -----
           100|101102| x 106|107108| x 112|113114| x 118|119120| x
-
 
            Note that physical row 3 is split between the two batches.
             */

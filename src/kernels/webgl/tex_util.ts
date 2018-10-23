@@ -129,19 +129,18 @@ export function getPackedMatrixTextureShapeWidthHeight(
 }
 
 export function getPackedRGBAArraySizeFromMatrixShape(
-    rows: number, columns: number): number {
+    batch: number, rows: number, columns: number): number {
   const [w, h] = getPackedMatrixTextureShapeWidthHeight(rows, columns);
-  return w * h * 4;
+  return batch * w * h * 4;
 }
 
 /*
 This is how encodeMatrixToPackedRGBA encodes a tensor with shape = [2, 3, 5]
-(the indices are the [batch, row, col]).
+(indices are [batch, row, col]).
 
 000|001   002|003   004|xxx   020|021   022|023   024|xxx
 -------   -------   -------   -------   -------   -------
 010|011   012|013   014|xxx   xxx|xxx   xxx|xxx   xxx|xxx
-
 
 100|101   102|103   104|xxx   120|121   122|123   124|xxx
 -------   -------   -------   -------   -------   -------
@@ -154,6 +153,13 @@ Note the batch dimension is needed so xxx's are inserted below 020, 021, 022,
 export function encodeMatrixToPackedRGBA(
     matrix: Float32Array, batches: number, rows: number, columns: number,
     packedRGBA: Float32Array) {
+  // const requiredSize = getPackedRGBAArraySizeFromMatrixShape(rows, columns);
+  // if (packedRGBA.length < requiredSize) {
+  //   throw new Error(
+  //       `packedRGBA length (${packedRGBA.length}) must be >=
+  //       ${requiredSize}`);
+  // }
+
   const oddWidth = (columns % 2) === 1;
   const oddHeight = (rows % 2) === 1;
   const widthInFullBlocks = Math.floor(columns / 2);
@@ -219,26 +225,6 @@ export function encodeMatrixToPackedRGBA(
       }
     }
   }
-  // const requiredSize = getPackedRGBAArraySizeFromMatrixShape(rows, columns);
-  // if (packedRGBA.length < requiredSize) {
-  //   throw new Error(
-  //       `packedRGBA length (${packedRGBA.length}) must be >=
-  //       ${requiredSize}`);
-  // }
-  /*
-    Unpacked matrix, row-major order in Float32Array[16]:  A B C D
-                                                           E F G H
-                                                           I J K L
-                                                           M N O P
-
-    Packed matrix, 2x2 RGBA32 texture (memory view):       ABEF CDGH IJMN KLOP
-
-    Packed matrix, 2x2 RGBA32 texture (matrix view):       AB|CD
-                                                           EF|GH
-                                                           --+--
-                                                           IJ|KL
-                                                           MN|OP
-   */
 
   return packedRGBA;
 }
