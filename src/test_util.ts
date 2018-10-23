@@ -38,7 +38,7 @@ export const CPU_ENVS: Features = {
   'HAS_WEBGL': false
 };
 export const BROWSER_CPU_ENVS: Features = {
-  'BACKEND': 'cpu'
+  'BACKEND': 'test-cpu'
 };
 
 export const ALL_ENVS: Features = {};

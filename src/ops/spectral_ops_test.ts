@@ -17,7 +17,7 @@
 
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
-import {ALL_ENVS, expectArraysClose, WEBGL_ENVS} from '../test_util';
+import {ALL_ENVS, BROWSER_CPU_ENVS, expectArraysClose, WEBGL_ENVS} from '../test_util';
 
 describeWithFlags('1D FFT', ALL_ENVS, () => {
   it('should return the same value with TensorFlow (2 elements)', () => {
