@@ -32,17 +32,21 @@ export class FFTProgram implements GPGPUProgram {
     this.outputShape = inputShape;
 
     this.userCode = `
+      const float negativeTwoPi = -2.0 * 3.1415926535897932384626433832795;
+
       float unaryOpComplex(float real, float expR, float imag, float expI) {
         ${op}
       }
 
       float mulMatDFT(int batch, int index) {
-        // TODO: Gather constants in one place?
-        const float PI = 3.1415926535897932384626433832795;
+        float indexRatio = float(index) / float(${innerDim});
+        float negativeTwoPiTimesIndexRatio = negativeTwoPi * indexRatio;
+
         float result = 0.0;
 
         for (int i = 0; i < ${innerDim}; i++) {
-          float x = -2.0 * PI * float(index * i) / float(${innerDim});
+          // x = (-2 * PI / N) * index * i;
+          float x = negativeTwoPiTimesIndexRatio * float(i);
           float expR = cos(x);
           float expI = sin(x);
           float real = getReal(batch, i);
