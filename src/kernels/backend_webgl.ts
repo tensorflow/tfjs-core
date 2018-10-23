@@ -1621,17 +1621,6 @@ export class MathBackendWebGL implements KernelBackend {
     return packedTensor as T;
   }
 
-  private packTensor<T extends Tensor>(x: T): T {
-    const packProgram = new PackProgram(x.shape);
-    return this.compileAndRun(
-               packProgram, [x], this.makePackedTensor(x.shape)) as T;
-  }
-
-  private unpackTensor<T extends Tensor>(x: T): T {
-    const unpackProgram = new UnpackProgram(x.shape);
-    return this.compileAndRun(unpackProgram, [x]) as T;
-  }
-
   public compileAndRun<
       K extends {dtype: DataType, size: number, dataId: {}, shape: number[]}>(
       program: GPGPUProgram, inputs: TensorHandle[], output?: K,
