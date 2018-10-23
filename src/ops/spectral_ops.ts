@@ -20,7 +20,6 @@ import {op} from '../ops/operation';
 import {Tensor} from '../tensor';
 import {assert} from '../util';
 
-
 /**
  * Compute the 1-dimentional discrete fourier transform
  * The input is expected to be the 1D tensor with dtype complex64.
