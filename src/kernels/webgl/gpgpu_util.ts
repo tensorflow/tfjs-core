@@ -284,12 +284,10 @@ export function uploadMatrixToTexture(
 }
 
 export function uploadMatrixToPackedTexture(
-    gl: WebGLRenderingContext, texture: WebGLTexture, shape: number[],
-    matrix: Float32Array, textureConfig: TextureConfig) {
-  const rows = shape[shape.length - 2];
-  const columns = shape[shape.length - 1];
+    gl: WebGLRenderingContext, texture: WebGLTexture, batch: number,
+    rows: number, columns: number, matrix: Float32Array,
+    textureConfig: TextureConfig) {
   const [w, h] = tex_util.getPackedMatrixTextureShapeWidthHeight(rows, columns);
-  const batch = util.sizeFromShape(shape.slice(0, -2));
   const packedRGBA = new Float32Array(
       tex_util.getPackedRGBAArraySizeFromMatrixShape(batch, rows, columns));
   tex_util.encodeMatrixToPackedRGBA(matrix, batch, rows, columns, packedRGBA);
