@@ -146,6 +146,9 @@ This is how encodeMatrixToPackedRGBA encodes a tensor with shape = [2, 3, 5]
 -------   -------   -------   -------   -------   -------
 110|111   112|113   114|xxx   xxx|xxx   xxx|xxx   xxx|xxx
 
+Single texels contain only values from the same batch, and from adjacent rows
+and columns.
+
 Note the batch dimension is needed so xxx's are inserted below 020, 021, 022,
 023, and 024.
  */
