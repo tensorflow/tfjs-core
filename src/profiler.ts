@@ -43,7 +43,7 @@ export class Profiler {
 
       timer.then(timing => {
         let extraInfo = '';
-        if (timing.getExtraProfileInfo) {
+        if (timing.getExtraProfileInfo != null) {
           extraInfo = timing.getExtraProfileInfo();
         }
 
