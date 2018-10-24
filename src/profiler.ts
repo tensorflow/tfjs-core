@@ -15,8 +15,8 @@
  * =============================================================================
  */
 
-import {BackendTimer, SubKernelInfo} from './kernels/backend';
-import {GPUProgramsInfo} from './kernels/backend_webgl';
+import {BackendTimer} from './kernels/backend';
+import {GPUProgramsInfo, WebGLTimingInfo} from './kernels/backend_webgl';
 import {Tensor} from './tensor';
 import {TypedArray} from './types';
 import * as util from './util';
@@ -44,7 +44,8 @@ export class Profiler {
 
       timer.then(timing => {
         this.logger.logKernelProfile(
-            name, r, vals, timing.kernelMs, timing.gpuProgramsInfo);
+            name, r, vals, timing.kernelMs,
+            (timing as WebGLTimingInfo).gpuProgramsInfo);
       });
     });
 
