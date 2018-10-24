@@ -67,7 +67,7 @@ function fft_(input: Tensor): Tensor {
  *
  * x.ifft().print();  // tf.spectral.ifft(x).print();
  * ```
- * @param input The complex input to compute an fft over.
+ * @param input The complex input to compute an ifft over.
  */
 /**
  * @doc {heading: 'Operations', subheading: 'Spectral', namespace: 'spectral'}
