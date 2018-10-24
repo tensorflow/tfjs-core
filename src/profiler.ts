@@ -16,7 +16,6 @@
  */
 
 import {BackendTimer} from './kernels/backend';
-import {GPUProgramsInfo, WebGLTimingInfo} from './kernels/backend_webgl';
 import {Tensor} from './tensor';
 import {TypedArray} from './types';
 import * as util from './util';
@@ -44,8 +43,7 @@ export class Profiler {
 
       timer.then(timing => {
         this.logger.logKernelProfile(
-            name, r, vals, timing.kernelMs,
-            (timing as WebGLTimingInfo).gpuProgramsInfo);
+            name, r, vals, timing.kernelMs, timing.getExtraProfileInfo());
       });
     });
 
@@ -56,20 +54,16 @@ export class Profiler {
 export class Logger {
   logKernelProfile(
       name: string, result: Tensor, vals: TypedArray, timeMs: number,
-      gpuProgramsInfo?: GPUProgramsInfo[]) {
+      extraInfo?: string) {
     const time = util.rightPad(`${timeMs}ms`, 9);
     const paddedName = util.rightPad(name, 25);
     const rank = result.rank;
     const size = result.size;
     const shape = util.rightPad(result.shape.toString(), 14);
-    const gpuProgramsDescription =
-        gpuProgramsInfo != null && gpuProgramsInfo.length > 1 ?
-        gpuProgramsInfo.map(d => `${d.name}: ${d.ms}`).join(', ') :
-        '';
 
     console.log(
         `%c${paddedName}\t%c${time}\t%c${rank}D ${shape}\t%c${size}\t%c${
-            gpuProgramsDescription}`,
+            extraInfo}`,
         'font-weight:bold', 'color:red', 'color:blue', 'color: orange',
         'color: green');
   }

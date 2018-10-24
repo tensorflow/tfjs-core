@@ -116,16 +116,9 @@ export interface WebGLMemoryInfo extends MemoryInfo {
   unreliable: boolean;
 }
 
-export type GPUProgramsInfo = {
-  name: string; ms: number;
-};
-
 export interface WebGLTimingInfo extends TimingInfo {
   uploadWaitMs: number;
   downloadWaitMs: number;
-  gpuProgramsInfo?:
-      GPUProgramsInfo[];  // a field for additional timing information
-                          // about GPU programs, e.g. packing / unpacking
 }
 
 // Combines a dataId, a shape, and a dtype without a Tensor object so that
@@ -416,8 +409,10 @@ export class MathBackendWebGL implements KernelBackend {
       uploadWaitMs: this.uploadWaitMs,
       downloadWaitMs: this.downloadWaitMs,
       kernelMs: util.sum(kernelMs),
-      gpuProgramsInfo:
-          kernelMs.map((d, i) => ({name: flattenedActiveTimerNames[i], ms: d})),
+      getExtraProfileInfo: () =>
+          kernelMs.map((d, i) => ({name: flattenedActiveTimerNames[i], ms: d}))
+              .map(d => `${d.name}: ${d.ms}`)
+              .join(', '),
       wallMs: null  // will be filled by the engine
     };
     this.uploadWaitMs = 0;
@@ -1820,8 +1815,7 @@ export class MathBackendWebGL implements KernelBackend {
         const rows = shape.length > 1 ? shape[shape.length - 2] : 1;
         const cols = shape[shape.length - 1];
         this.gpgpu.uploadMatrixToPackedTexture(
-            newTexture, batch, rows, cols,
-            typedArrayToFloat32(values, dtype));
+            newTexture, batch, rows, cols, typedArrayToFloat32(values, dtype));
       } else {
         this.gpgpu.uploadMatrixToTexture(
             newTexture, texShape[0], texShape[1],
