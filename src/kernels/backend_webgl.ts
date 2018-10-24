@@ -116,9 +116,16 @@ export interface WebGLMemoryInfo extends MemoryInfo {
   unreliable: boolean;
 }
 
+export type SubKernelInfo = {
+  name: string; ms: number;
+};
+
 export interface WebGLTimingInfo extends TimingInfo {
   uploadWaitMs: number;
   downloadWaitMs: number;
+  subKernelsInfo?:
+      SubKernelInfo[];  // a field for additional timing information
+                        // about subkernels, e.g. packing / unpacking
 }
 
 // Combines a dataId, a shape, and a dtype without a Tensor object so that
