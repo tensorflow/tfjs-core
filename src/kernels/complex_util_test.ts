@@ -49,12 +49,18 @@ describe('complex_util', () => {
   });
 });
 
-describeWithFlags('complex_util exponents inverse=false', ALL_ENVS, () => {
-  it('exponents', () => {
+describeWithFlags('complex_util exponents', ALL_ENVS, () => {
+  it('exponents inverse=false', () => {
     const inverse = false;
     const result = complex_util.exponents(5, inverse);
     expectArraysClose(result.real, new Float32Array([1, 0.30901700258255005]));
     expectArraysClose(result.imag, new Float32Array([0, -0.9510565400123596]));
+  });
+  it('exponents inverse=true', () => {
+    const inverse = true;
+    const result = complex_util.exponents(5, inverse);
+    expectArraysClose(result.real, new Float32Array([1, 0.30901700258255005]));
+    expectArraysClose(result.imag, new Float32Array([0, 0.9510565400123596]));
   });
 });
 
