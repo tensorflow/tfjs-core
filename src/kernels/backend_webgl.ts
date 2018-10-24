@@ -116,16 +116,16 @@ export interface WebGLMemoryInfo extends MemoryInfo {
   unreliable: boolean;
 }
 
-export type SubKernelInfo = {
+export type GPUProgramsInfo = {
   name: string; ms: number;
 };
 
 export interface WebGLTimingInfo extends TimingInfo {
   uploadWaitMs: number;
   downloadWaitMs: number;
-  subKernelsInfo?:
-      SubKernelInfo[];  // a field for additional timing information
-                        // about subkernels, e.g. packing / unpacking
+  gpuProgramsInfo?:
+      GPUProgramsInfo[];  // a field for additional timing information
+                          // about subkernels, e.g. packing / unpacking
 }
 
 // Combines a dataId, a shape, and a dtype without a Tensor object so that
@@ -416,7 +416,7 @@ export class MathBackendWebGL implements KernelBackend {
       uploadWaitMs: this.uploadWaitMs,
       downloadWaitMs: this.downloadWaitMs,
       kernelMs: util.sum(kernelMs),
-      subKernelsInfo:
+      gpuProgramsInfo:
           kernelMs.map((d, i) => ({name: flattenedActiveTimerNames[i], ms: d})),
       wallMs: null  // will be filled by the engine
     };

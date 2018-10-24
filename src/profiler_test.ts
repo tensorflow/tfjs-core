@@ -17,7 +17,7 @@
 
 import * as tf from './index';
 import {BackendTimer, BackendTimingInfo} from './kernels/backend';
-import {SubKernelInfo} from './kernels/backend';
+import {GPUProgramsInfo} from './kernels/backend_webgl';
 import {TypedArray} from './kernels/webgl/tex_util';
 import {Logger, Profiler} from './profiler';
 import {Tensor} from './tensor';
@@ -26,29 +26,29 @@ class TestBackendTimer implements BackendTimer {
   private counter = 1;
   constructor(
       private delayMs: number, private queryTimeMs: number,
-      private subKernelsInfo: SubKernelInfo[]) {}
+      private gpuProgramsInfo: GPUProgramsInfo[]) {}
 
   async time(query: () => void): Promise<BackendTimingInfo> {
     query();
     const kernelMs = await new Promise<number>(
         resolve => setTimeout(
             resolve(this.queryTimeMs * this.counter++), this.delayMs));
-    return {kernelMs, subKernelsInfo: this.subKernelsInfo};
+    return {kernelMs, gpuProgramsInfo: this.gpuProgramsInfo};
   }
 }
 
 class TestLogger extends Logger {
   logKernelProfile(
       name: string, result: Tensor, vals: TypedArray, timeMs: number,
-      subKernels?: SubKernelInfo[]) {}
+      gpuProgramsInfo?: GPUProgramsInfo[]) {}
 }
 
 describe('profiler.Profiler', () => {
   it('profiles simple function', doneFn => {
     const delayMs = 5;
     const queryTimeMs = 10;
-    const subKernels = [{name: '', ms: 0}];
-    const timer = new TestBackendTimer(delayMs, queryTimeMs, subKernels);
+    const gpuProgramsInfo = [{name: '', ms: 0}];
+    const timer = new TestBackendTimer(delayMs, queryTimeMs, gpuProgramsInfo);
     const logger = new TestLogger();
     const profiler = new Profiler(timer, logger);
 
@@ -74,7 +74,7 @@ describe('profiler.Profiler', () => {
 
       expect(logKernelProfileSpy.calls.first().args).toEqual([
         'MatMul', resultScalar, new Float32Array([result]), queryTimeMs,
-        subKernels
+        gpuProgramsInfo
       ]);
 
       expect(kernelCalled).toBe(true);
@@ -85,8 +85,8 @@ describe('profiler.Profiler', () => {
   it('profiles nested kernel', doneFn => {
     const delayMs = 5;
     const queryTimeMs = 10;
-    const subKernels = [{name: '', ms: 0}];
-    const timer = new TestBackendTimer(delayMs, queryTimeMs, subKernels);
+    const gpuProgramsInfo = [{name: '', ms: 0}];
+    const timer = new TestBackendTimer(delayMs, queryTimeMs, gpuProgramsInfo);
     const logger = new TestLogger();
     const profiler = new Profiler(timer, logger);
 
@@ -114,11 +114,12 @@ describe('profiler.Profiler', () => {
 
       expect(logKernelProfileSpy.calls.count()).toBe(2);
       expect(logKernelProfileSpy.calls.first().args).toEqual([
-        'Max', resultScalar, new Float32Array([result]), queryTimeMs, subKernels
+        'Max', resultScalar, new Float32Array([result]), queryTimeMs,
+        gpuProgramsInfo
       ]);
       expect(logKernelProfileSpy.calls.argsFor(1)).toEqual([
         'MatMul', resultScalar, new Float32Array([result]), queryTimeMs * 2,
-        subKernels
+        gpuProgramsInfo
       ]);
 
       expect(matmulKernelCalled).toBe(true);
