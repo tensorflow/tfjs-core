@@ -1814,10 +1814,17 @@ export class MathBackendWebGL implements KernelBackend {
     const newTexture = this.acquireTexture(dataId, texShape, usage, isPacked);
     texData.texture = newTexture;
     if (values != null) {
-      this.gpgpu.uploadMatrixToTexture(
-          newTexture, texShape[0],
-          // TODO(smilkov): Propagate the original typed array to gpgpu.
-          texShape[1], typedArrayToFloat32(values, dtype));
+      // TODO(smilkov): Propagate the original typed array to gpgpu.
+      if (isPacked) {
+        const batch = util.sizeFromShape(shape.slice(0, shape.length - 2));
+        this.gpgpu.uploadMatrixToPackedTexture(
+            newTexture, batch, texShape[0], texShape[1],
+            typedArrayToFloat32(values, dtype));
+      } else {
+        this.gpgpu.uploadMatrixToTexture(
+            newTexture, texShape[0], texShape[1],
+            typedArrayToFloat32(values, dtype));
+      }
       // Once uploaded, don't store the values on cpu.
       texData.values = null;
       if (shouldTimeProgram) {
