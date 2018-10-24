@@ -15,15 +15,14 @@
  * =============================================================================
  */
 
-import {describeWithFlags} from '../jasmine_util';
-import {WEBGL_ENVS} from '../test_util';
-
 import * as tf from './index';
+import {describeWithFlags} from './jasmine_util';
 import {BackendTimer, BackendTimingInfo} from './kernels/backend';
 import {GPUProgramsInfo, WebGLTimingInfo} from './kernels/backend_webgl';
 import {TypedArray} from './kernels/webgl/tex_util';
 import {Logger, Profiler} from './profiler';
 import {Tensor} from './tensor';
+import {WEBGL_ENVS} from './test_util';
 
 class TestBackendTimer implements BackendTimer {
   private counter = 1;
@@ -130,16 +129,22 @@ class TestBackendWebGLTimer implements BackendTimer {
       private delayMs: number, private queryTimeMs: number,
       private gpuProgramsInfo: GPUProgramsInfo[]) {}
 
-  async time(query: () => void): Promise<BackendTimingInfo> {
+  async time(query: () => void): Promise<WebGLTimingInfo> {
     query();
     const kernelMs = await new Promise<number>(
         resolve => setTimeout(
             resolve(this.queryTimeMs * this.counter++), this.delayMs));
-    return {kernelMs, gpuProgramsInfo: this.gpuProgramsInfo};
+    return {
+      uploadWaitMs: 0,
+      downloadWaitMs: 0,
+      wallMs: 0,
+      kernelMs,
+      gpuProgramsInfo: this.gpuProgramsInfo
+    };
   }
 }
 
-class TestLogger extends Logger {
+class TestWebGLLogger extends Logger {
   logKernelProfile(
       name: string, result: Tensor, vals: TypedArray, timeMs: number,
       gpuProgramsInfo?: GPUProgramsInfo[]) {}
@@ -150,8 +155,9 @@ describeWithFlags('profiler.Profiler', WEBGL_ENVS, () => {
     const delayMs = 5;
     const queryTimeMs = 10;
     const gpuProgramsInfo = [{name: '', ms: 0}];
-    const timer = new TestBackendTimer(delayMs, queryTimeMs, gpuProgramsInfo);
-    const logger = new TestLogger();
+    const timer =
+        new TestBackendWebGLTimer(delayMs, queryTimeMs, gpuProgramsInfo);
+    const logger = new TestWebGLLogger();
     const profiler = new Profiler(timer, logger);
 
     spyOn(timer, 'time').and.callThrough();
