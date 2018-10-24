@@ -71,7 +71,8 @@ describe('profiler.Profiler', () => {
       expect(logKernelProfileSpy.calls.count()).toBe(1);
 
       expect(logKernelProfileSpy.calls.first().args).toEqual([
-        'MatMul', resultScalar, new Float32Array([result]), queryTimeMs
+        'MatMul', resultScalar, new Float32Array([result]), queryTimeMs,
+        undefined
       ]);
 
       expect(kernelCalled).toBe(true);
@@ -110,10 +111,11 @@ describe('profiler.Profiler', () => {
 
       expect(logKernelProfileSpy.calls.count()).toBe(2);
       expect(logKernelProfileSpy.calls.first().args).toEqual([
-        'Max', resultScalar, new Float32Array([result]), queryTimeMs
+        'Max', resultScalar, new Float32Array([result]), queryTimeMs, undefined
       ]);
       expect(logKernelProfileSpy.calls.argsFor(1)).toEqual([
-        'MatMul', resultScalar, new Float32Array([result]), queryTimeMs * 2
+        'MatMul', resultScalar, new Float32Array([result]), queryTimeMs * 2,
+        undefined
       ]);
 
       expect(matmulKernelCalled).toBe(true);
@@ -150,7 +152,7 @@ class TestWebGLLogger extends Logger {
       gpuProgramsInfo?: GPUProgramsInfo[]) {}
 }
 
-describeWithFlags('profiler.Profiler', WEBGL_ENVS, () => {
+describeWithFlags('webgl profiler.Profiler', WEBGL_ENVS, () => {
   it('profiles simple function', doneFn => {
     const delayMs = 5;
     const queryTimeMs = 10;
