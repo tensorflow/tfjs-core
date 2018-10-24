@@ -343,8 +343,11 @@ export class MathBackendWebGL implements KernelBackend {
     const {shape, dtype, texture, texShape} = this.texData.get(dataId);
     if (ENV.get('WEBGL_DOWNLOAD_FLOAT_ENABLED')) {
       if (this.texData.get(dataId).isPacked) {
+        const batch = util.sizeFromShape(shape.slice(0, shape.length - 2));
+        const rows = shape.length > 1 ? shape[shape.length - 2] : 1;
+        const cols = shape[shape.length - 1];
         return this.gpgpu.downloadMatrixFromPackedTexture(
-            texture, shape, texShape[0], texShape[1]);
+            texture, batch, rows, cols, texShape[0], texShape[1]);
       } else {
         return this.gpgpu.downloadFloat32MatrixFromOutputTexture(
             texture, texShape[0], texShape[1]);
@@ -416,8 +419,7 @@ export class MathBackendWebGL implements KernelBackend {
     return {startMs: performance.now(), endMs: null};
   }
 
-  private endTimer(query: WebGLQuery|CPUTimerQuery): WebGLQuery|
-      {startMs: number, endMs: number} {
+  private endTimer(query: WebGLQuery|CPUTimerQuery): WebGLQuery|CPUTimerQuery {
     if (ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') > 0) {
       this.gpgpu.endQuery();
       return query;
@@ -428,7 +430,7 @@ export class MathBackendWebGL implements KernelBackend {
 
   private async getQueryTime(query: WebGLQuery|CPUTimerQuery): Promise<number> {
     if (ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') > 0) {
-      return this.gpgpu.waitForQueryAndGetTime(query);
+      return this.gpgpu.waitForQueryAndGetTime(query as WebGLQuery);
     }
     const timerQuery = query as CPUTimerQuery;
     return timerQuery.endMs - timerQuery.startMs;
@@ -1583,7 +1585,7 @@ export class MathBackendWebGL implements KernelBackend {
         .reshape(outputShape);
   }
 
-  fft(x: Tensor1D): Tensor1D {
+  fft(x: Tensor2D): Tensor2D {
     const xData = this.texData.get(x.dataId);
 
     const realProgram = new FFTProgram(fft_gpu.COMPLEX_FFT.REAL, x.shape);
@@ -1595,7 +1597,7 @@ export class MathBackendWebGL implements KernelBackend {
 
     const real = this.compileAndRun<Tensor>(realProgram, inputs);
     const imag = this.compileAndRun<Tensor>(imagProgram, inputs);
-    const complex = this.complex(real, imag).as1D();
+    const complex = this.complex(real, imag).as2D(x.shape[0], x.shape[1]);
     real.dispose();
     imag.dispose();
     return complex;
