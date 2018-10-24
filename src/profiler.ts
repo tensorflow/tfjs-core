@@ -42,8 +42,12 @@ export class Profiler {
       util.checkComputationForNaN(vals, r.dtype, name);
 
       timer.then(timing => {
-        this.logger.logKernelProfile(
-            name, r, vals, timing.kernelMs, timing.getExtraProfileInfo());
+        let extraInfo = '';
+        if (timing.getExtraProfileInfo) {
+          extraInfo = timing.getExtraProfileInfo();
+        }
+
+        this.logger.logKernelProfile(name, r, vals, timing.kernelMs, extraInfo);
       });
     });
 
