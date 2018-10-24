@@ -125,7 +125,7 @@ export interface WebGLTimingInfo extends TimingInfo {
   downloadWaitMs: number;
   gpuProgramsInfo?:
       GPUProgramsInfo[];  // a field for additional timing information
-                          // about subkernels, e.g. packing / unpacking
+                          // about GPU programs, e.g. packing / unpacking
 }
 
 // Combines a dataId, a shape, and a dtype without a Tensor object so that
