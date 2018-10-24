@@ -58,10 +58,11 @@ export class FFTProgram implements GPGPUProgram {
           float real = getReal(batch, i);
           float imag = getImag(batch, i);
 
-          result += unaryOpComplex(real, expR, imag, expI);
+          result += (
+            unaryOpComplex(real, expR, imag, expI) / ${resultDenominator});
         }
 
-        return result / ${resultDenominator};
+        return result;
       }
 
       void main() {
