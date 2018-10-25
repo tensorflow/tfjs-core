@@ -35,7 +35,7 @@ export class GPGPUContext {
   colorBufferFloatExtension: {};
   colorBufferHalfFloatExtension: {};
   getBufferSubDataAsyncExtension: {};
-  loseContextExtension: WebGLLoseContext;
+  loseContextExtension: WEBGL_lose_context;
   disjointQueryTimerExtension: WebGL2DisjointQueryTimerExtension|
       WebGL1DisjointQueryTimerExtension;
   vertexBuffer: WebGLBuffer;
@@ -75,7 +75,7 @@ export class GPGPUContext {
 
     this.loseContextExtension =
         webgl_util.getExtensionOrThrow(this.gl, 'WEBGL_lose_context') as
-        WebGLLoseContext;
+        WEBGL_lose_context;
 
     this.vertexBuffer = gpgpu_util.createVertexBuffer(this.gl);
     this.indexBuffer = gpgpu_util.createIndexBuffer(this.gl);
@@ -182,11 +182,11 @@ export class GPGPUContext {
   }
 
   public uploadMatrixToPackedTexture(
-      texture: WebGLTexture, rows: number, columns: number,
+      texture: WebGLTexture, batch: number, rows: number, columns: number,
       matrix: Float32Array) {
     this.throwIfDisposed();
     return gpgpu_util.uploadMatrixToPackedTexture(
-        this.gl, texture, rows, columns, matrix, this.textureConfig);
+        this.gl, texture, batch, rows, columns, matrix, this.textureConfig);
   }
 
   public downloadFloat32MatrixFromOutputTexture(
@@ -260,12 +260,13 @@ export class GPGPUContext {
   }
 
   public downloadMatrixFromPackedTexture(
-      texture: WebGLTexture, shape: number[], rows: number,
-      columns: number): Float32Array {
+      texture: WebGLTexture, batch: number, rows: number, columns: number,
+      physicalRows: number, physicalCols: number): Float32Array {
     return this.downloadMatrixDriver(
         texture,
         () => gpgpu_util.downloadMatrixFromPackedOutputTexture(
-            this.gl, shape[0], shape[1], rows, columns, this.textureConfig));
+            this.gl, batch, rows, columns, physicalRows, physicalCols,
+            this.textureConfig));
   }
 
   private vertexAttrsAreBound = false;
@@ -428,7 +429,7 @@ export class GPGPUContext {
       return query;
     }
     const ext = this.getQueryTimerExtensionWebGL1();
-    const query = ext.createQueryEXT();
+    const query = ext.createQueryEXT() as WebGLQuery;
     ext.beginQueryEXT(ext.TIME_ELAPSED_EXT, query);
     return query;
   }

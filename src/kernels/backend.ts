@@ -22,6 +22,8 @@ import {DataType, Rank, ShapeMap, TypedArray} from '../types';
 // Required information for all backends.
 export interface BackendTimingInfo {
   kernelMs: number;
+  getExtraProfileInfo?(): string;  // a field for additional timing information
+                                   // e.g. packing / unpacking for WebGL backend
 }
 
 export interface TensorStorage {
@@ -281,7 +283,7 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
       boxes: Tensor2D, scores: Tensor1D, maxOutputSize: number,
       iouThreshold: number, scoreThreshold?: number): Tensor1D;
 
-  fft(x: Tensor1D): Tensor1D;
+  fft(x: Tensor2D): Tensor2D;
   complex<T extends Tensor>(real: T, imag: T): T;
   real<T extends Tensor>(input: T): T;
   imag<T extends Tensor>(input: T): T;
