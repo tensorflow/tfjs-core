@@ -35,14 +35,32 @@ export class SliceProgram implements GPGPUProgram {
     const dtype = getCoordsDataType(this.rank);
     const sourceCoords = getCoords(this.rank);
 
-    this.userCode = `
-      uniform ${dtype} start;
+    if (this.rank <= 4) {
+      this.userCode = `
+        uniform ${dtype} start;
 
-      void main() {
-        ${dtype} sourceLoc = start + getOutputCoords();
-        setOutput(getSource(${sourceCoords}));
-      }
-    `;
+        void main() {
+          ${dtype} sourceLoc = start + getOutputCoords();
+          setOutput(getSource(${sourceCoords}));
+        }
+      `;
+    } else {
+      const vecCombineMembers = ['x', 'y', 'z', 'w', 'u', 'v']
+        .slice(0, this.rank)
+        .map(a => `start.${a} + outC.${a}`)
+        .join(',');
+
+      this.userCode = `
+        uniform ${dtype} start;
+
+        void main() {
+          ${dtype} outC = getOutputCoords();
+          ${dtype} sourceLoc = ${dtype}(${vecCombineMembers});
+
+          setOutput(getSource(${sourceCoords}));
+        }
+      `;
+    }
   }
 
   getCustomSetupFunc(start: number[]) {
@@ -69,6 +87,14 @@ export class SliceProgram implements GPGPUProgram {
       } else if (this.rank === 4) {
         gpgpu.gl.uniform4i(
             this.startLoc, start[0], start[1], start[2], start[3]);
+      } else if (this.rank === 5) {
+        gpgpu.gl.uniform4i(
+            this.startLoc, start[0], start[1], start[2], start[3]);
+        gpgpu.gl.uniform1i(this.startLoc, start[4]);
+      } else if (this.rank === 6) {
+        gpgpu.gl.uniform4i(
+            this.startLoc, start[0], start[1], start[2], start[3]);
+        gpgpu.gl.uniform2i(this.startLoc, start[4], start[5]);
       } else {
         throw Error(`Slicing for rank ${this.rank} is not yet supported`);
       }
@@ -85,6 +111,10 @@ function getCoords(rank: number): string {
     return 'sourceLoc.x, sourceLoc.y, sourceLoc.z';
   } else if (rank === 4) {
     return 'sourceLoc.x, sourceLoc.y, sourceLoc.z, sourceLoc.w';
+  } else if (rank === 5) {
+    return 'sourceLoc.x, sourceLoc.y, sourceLoc.z, sourceLoc.w, sourceLoc.u';
+  } else if (rank === 6) {
+    return 'sourceLoc.x, sourceLoc.y, sourceLoc.z, sourceLoc.w, sourceLoc.u, sourceLoc.v';
   } else {
     throw Error(`Slicing for rank ${rank} is not yet supported`);
   }
