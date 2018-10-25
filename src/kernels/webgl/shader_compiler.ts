@@ -307,7 +307,7 @@ const SHADER_PREFIX = `
   };
 
   bool isNaN(float val) {
-    return (val < 1.0 || val > 0.0) ? false : true;
+    return (val < 1.0 || 0.0 < val || val == 0.0) ? false : true;
   }
 
   bool hasNaN(vec4 values) {
