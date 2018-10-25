@@ -146,8 +146,8 @@ export interface TensorTracker {
   read(dataId: DataId): Promise<TypedArray>;
   readSync(dataId: DataId): TypedArray;
   registerVariable(v: Variable): void;
-  nextTensorID(): number;
-  nextVariableID(): number;
+  nextTensorId(): number;
+  nextVariableId(): number;
 }
 
 /**
@@ -417,7 +417,7 @@ export class Tensor<R extends Rank = Rank> {
 
     this.strides = computeStrides(shape);
     this.dataId = dataId != null ? dataId : {};
-    this.id = trackerFn().nextTensorID();
+    this.id = trackerFn().nextTensorId();
     this.rankType = (this.rank < 5 ? this.rank.toString() : 'higher') as R;
     trackerFn().registerTensor(this);
     if (values != null) {
@@ -1308,7 +1308,7 @@ export class Variable<R extends Rank = Rank> extends Tensor<R> {
         initialValue.dataId);
     this.name = name;
     if (this.name == null) {
-      this.name = trackerFn().nextVariableID().toString();
+      this.name = trackerFn().nextVariableId().toString();
     }
     try {
       trackerFn().registerVariable(this);

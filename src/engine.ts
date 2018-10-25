@@ -175,12 +175,12 @@ export class Engine implements TensorManager, DataMover {
   }
 
   private static nextTensorId = 0;
-  nextTensorID(): number {
+  nextTensorId(): number {
     return Engine.nextTensorId++;
   }
 
   private static nextVariableId = 0;
-  nextVariableID(): number {
+  nextVariableId(): number {
     return Engine.nextVariableId++;
   }
 
