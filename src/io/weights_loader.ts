@@ -49,7 +49,8 @@ export async function loadWeightsAsArrayBuffer(
  * @param weightNames The names of the weights to be fetched.
  */
 export async function loadWeights(
-    manifest: WeightsManifestConfig, filePathPrefix = '',
+    manifest: WeightsManifestConfig,
+    filePathPrefix = '',
     weightNames?: string[],
     requestOptions?: RequestInit): Promise<NamedTensorMap> {
   // TODO(nsthorat): Groups are currently fetched atomically. If you need a
@@ -58,119 +59,138 @@ export async function loadWeights(
   // group that are needed to reconstruct the requested weight.
   // TODO(cais): Use `decodeWeights` for implementation.
 
-  // Collect all the groups, weights, and their relative offsets to be
-  // fetched.
-  const groupIndicesToFetchMap = manifest.map(() => false);
-  const groupWeightsToFetch: {
-    [group: number]: Array<{
-      manifestEntry: WeightsManifestEntry; groupOffset: number;
-      sizeBytes: number;
-    }>
-  } = {};
-  const weightsFound = weightNames != null ? weightNames.map(() => false) : [];
-  const allManifestWeightNames: string[] = [];
-  manifest.forEach((manifestGroupConfig, groupIndex) => {
-    let groupOffset = 0;
-    manifestGroupConfig.weights.forEach(weightsEntry => {
-      const rawDtype = ('quantization' in weightsEntry) ?
-          weightsEntry.quantization.dtype :
-          weightsEntry.dtype;
+  const fetchWeightsFunction = (fetchUrls: string[]) =>
+    loadWeightsAsArrayBuffer(fetchUrls, requestOptions);
+  const loadWeights = loadWeightsFactory(fetchWeightsFunction);
 
-      const weightsBytes = DTYPE_VALUE_SIZE_MAP[rawDtype] *
-          util.sizeFromShape(weightsEntry.shape);
+  return loadWeights(manifest, filePathPrefix, weightNames);
+}
 
-      const enqueueWeightsForFetchingFn = () => {
-        groupIndicesToFetchMap[groupIndex] = true;
-        if (groupWeightsToFetch[groupIndex] == null) {
-          groupWeightsToFetch[groupIndex] = [];
-        }
+export function loadWeightsFactory(
+  fetchWeightsFunction: (fetchUrls: string[]) => Promise<ArrayBuffer[]>
+) {
+  return async (
+    manifest: WeightsManifestConfig,
+    filePathPrefix = '',
+    weightNames?: string[]
+  ): Promise<NamedTensorMap> => {
 
-        groupWeightsToFetch[groupIndex].push({
-          manifestEntry: weightsEntry,
-          groupOffset,
-          sizeBytes: weightsBytes
-        });
-      };
+    // Collect all the groups, weights, and their relative offsets to be
+    // fetched.
+    const groupIndicesToFetchMap = manifest.map(() => false);
+    const groupWeightsToFetch: {
+      [group: number]: Array<{
+        manifestEntry: WeightsManifestEntry; groupOffset: number;
+        sizeBytes: number;
+      }>
+    } = {};
+    const weightsFound = weightNames != null
+      ? weightNames.map(() => false)
+      : [];
+    const allManifestWeightNames: string[] = [];
+    manifest.forEach((manifestGroupConfig, groupIndex) => {
+      let groupOffset = 0;
+      manifestGroupConfig.weights.forEach(weightsEntry => {
+        const rawDtype = ('quantization' in weightsEntry) ?
+            weightsEntry.quantization.dtype :
+            weightsEntry.dtype;
 
-      if (weightNames != null) {
-        weightNames.forEach((weightName, weightIndex) => {
-          if (weightName === weightsEntry.name) {
-            enqueueWeightsForFetchingFn();
-            weightsFound[weightIndex] = true;
+        const weightsBytes = DTYPE_VALUE_SIZE_MAP[rawDtype] *
+            util.sizeFromShape(weightsEntry.shape);
+
+        const enqueueWeightsForFetchingFn = () => {
+          groupIndicesToFetchMap[groupIndex] = true;
+          if (groupWeightsToFetch[groupIndex] == null) {
+            groupWeightsToFetch[groupIndex] = [];
           }
-        });
-      } else {
-        enqueueWeightsForFetchingFn();
-      }
 
-      allManifestWeightNames.push(weightsEntry.name);
-      groupOffset += weightsBytes;
-    });
-  });
+          groupWeightsToFetch[groupIndex].push({
+            manifestEntry: weightsEntry,
+            groupOffset,
+            sizeBytes: weightsBytes
+          });
+        };
 
-  if (!weightsFound.every(found => found)) {
-    const weightsNotFound = weightNames.filter((weight, i) => !weightsFound[i]);
-    throw new Error(
-        `Could not find weights in manifest with names: ` +
-        `${weightsNotFound.join(', ')}. \n` +
-        `Manifest JSON has weights with names: ` +
-        `${allManifestWeightNames.join(', ')}.`);
-  }
-
-  // Convert the one-hot boolean groupId => shouldFetch map to a list of group
-  // IDs.
-  const groupIndicesToFetch =
-      groupIndicesToFetchMap.reduce((accumulator, shouldFetch, i) => {
-        if (shouldFetch) {
-          accumulator.push(i);
+        if (weightNames != null) {
+          weightNames.forEach((weightName, weightIndex) => {
+            if (weightName === weightsEntry.name) {
+              enqueueWeightsForFetchingFn();
+              weightsFound[weightIndex] = true;
+            }
+          });
+        } else {
+          enqueueWeightsForFetchingFn();
         }
-        return accumulator;
-      }, []);
 
-  const fetchUrls: string[] = [];
-  groupIndicesToFetch.forEach(i => {
-    manifest[i].paths.forEach(filepath => {
-      const fetchUrl = filePathPrefix +
-          (!filePathPrefix.endsWith('/') ? '/' : '') + filepath;
-      fetchUrls.push(fetchUrl);
+        allManifestWeightNames.push(weightsEntry.name);
+        groupOffset += weightsBytes;
+      });
     });
-  });
-  const buffers = await loadWeightsAsArrayBuffer(fetchUrls, requestOptions);
 
-  const weightsTensorMap: NamedTensorMap = {};
-  let bufferIndexOffset = 0;
-  groupIndicesToFetch.forEach(i => {
-    const numBuffers = manifest[i].paths.length;
-
-    let groupBytes = 0;
-    for (let i = 0; i < numBuffers; i++) {
-      groupBytes += buffers[bufferIndexOffset + i].byteLength;
+    if (!weightsFound.every(found => found)) {
+      const weightsNotFound = weightNames.filter((_, i) => !weightsFound[i]);
+      throw new Error(
+          `Could not find weights in manifest with names: ` +
+          `${weightsNotFound.join(', ')}. \n` +
+          `Manifest JSON has weights with names: ` +
+          `${allManifestWeightNames.join(', ')}.`);
     }
 
-    // Create a buffer for the whole group.
-    const groupBuffer = new ArrayBuffer(groupBytes);
-    const groupByteBuffer = new Uint8Array(groupBuffer);
-    let groupBufferOffset = 0;
-    for (let i = 0; i < numBuffers; i++) {
-      const buffer = new Uint8Array(buffers[bufferIndexOffset + i]);
-      groupByteBuffer.set(buffer, groupBufferOffset);
-      groupBufferOffset += buffer.byteLength;
-    }
+    // Convert the one-hot boolean groupId => shouldFetch map to a list of group
+    // IDs.
+    const groupIndicesToFetch =
+        groupIndicesToFetchMap.reduce((accumulator, shouldFetch, i) => {
+          if (shouldFetch) {
+            accumulator.push(i);
+          }
+          return accumulator;
+        }, []);
 
-    const weightsEntries = groupWeightsToFetch[i];
-    weightsEntries.forEach(weightsEntry => {
-      const byteBuffer = groupBuffer.slice(
-          weightsEntry.groupOffset,
-          weightsEntry.groupOffset + weightsEntry.sizeBytes);
-      const nameToTensorMap =
-          decodeWeights(byteBuffer, [weightsEntry.manifestEntry]);
-      for (const name in nameToTensorMap) {
-        weightsTensorMap[name] = nameToTensorMap[name];
+    const fetchUrls: string[] = [];
+    groupIndicesToFetch.forEach(i => {
+      manifest[i].paths.forEach(filepath => {
+        const fetchUrl = filePathPrefix +
+            (!filePathPrefix.endsWith('/') ? '/' : '') + filepath;
+        fetchUrls.push(fetchUrl);
+      });
+    });
+    const buffers = await fetchWeightsFunction(fetchUrls);
+
+    const weightsTensorMap: NamedTensorMap = {};
+    let bufferIndexOffset = 0;
+    groupIndicesToFetch.forEach(i => {
+      const numBuffers = manifest[i].paths.length;
+
+      let groupBytes = 0;
+      for (let i = 0; i < numBuffers; i++) {
+        groupBytes += buffers[bufferIndexOffset + i].byteLength;
       }
+
+      // Create a buffer for the whole group.
+      const groupBuffer = new ArrayBuffer(groupBytes);
+      const groupByteBuffer = new Uint8Array(groupBuffer);
+      let groupBufferOffset = 0;
+      for (let i = 0; i < numBuffers; i++) {
+        const buffer = new Uint8Array(buffers[bufferIndexOffset + i]);
+        groupByteBuffer.set(buffer, groupBufferOffset);
+        groupBufferOffset += buffer.byteLength;
+      }
+
+      const weightsEntries = groupWeightsToFetch[i];
+      weightsEntries.forEach(weightsEntry => {
+        const byteBuffer = groupBuffer.slice(
+            weightsEntry.groupOffset,
+            weightsEntry.groupOffset + weightsEntry.sizeBytes);
+        const nameToTensorMap =
+            decodeWeights(byteBuffer, [weightsEntry.manifestEntry]);
+        for (const name in nameToTensorMap) {
+          weightsTensorMap[name] = nameToTensorMap[name];
+        }
+      });
+
+      bufferIndexOffset += numBuffers;
     });
 
-    bufferIndexOffset += numBuffers;
-  });
-
-  return weightsTensorMap;
+    return weightsTensorMap;
+  };
 }
