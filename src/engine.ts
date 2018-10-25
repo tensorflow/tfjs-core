@@ -174,6 +174,16 @@ export class Engine implements TensorManager, DataMover {
     }
   }
 
+  private static nextTensorId = 0;
+  nextTensorID(): number {
+    return Engine.nextTensorId++;
+  }
+
+  private static nextVariableId = 0;
+  nextVariableID(): number {
+    return Engine.nextVariableId++;
+  }
+
   runKernel<T extends Tensor|Tensor[], I extends NamedTensorMap>(
       forwardFunc: ForwardFunc<T>,
       inputs: I,
