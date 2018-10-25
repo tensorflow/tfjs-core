@@ -31,9 +31,8 @@ export class FFTProgram implements GPGPUProgram {
     const innerDim = inputShape[1];
     this.outputShape = inputShape;
 
-    const pi = '3.1415926535897932384626433832795';
-
-    const exponentMultiplierSnippet = inverse ? `2.0 * ${pi}` : `-2.0 * ${pi}`;
+    const exponentMultiplierSnippet =
+        inverse ? `2.0 * ${Math.PI}` : `-2.0 * ${Math.PI}`;
     const resultDenominator = inverse ? `${innerDim}.0` : '1.0';
 
     this.userCode = `
@@ -58,8 +57,8 @@ export class FFTProgram implements GPGPUProgram {
           float real = getReal(batch, i);
           float imag = getImag(batch, i);
 
-          result += (
-            unaryOpComplex(real, expR, imag, expI) / ${resultDenominator});
+          result +=
+              unaryOpComplex(real, expR, imag, expI) / ${resultDenominator};
         }
 
         return result;
