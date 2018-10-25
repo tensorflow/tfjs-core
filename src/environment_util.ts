@@ -104,16 +104,13 @@ export interface URLProperty {
 }
 
 export function isWebGLVersionEnabled(webGLVersion: 1|2, isBrowser: boolean) {
-  let gl;
   try {
-    gl = getWebGLRenderingContext(webGLVersion, isBrowser);
+    const gl = getWebGLRenderingContext(webGLVersion, isBrowser);
+    if (gl != null) {
+      return true;
+    }
   } catch (e) {
     return false;
-  }
-
-  if (gl != null) {
-    loseContext(gl);
-    return true;
   }
   return false;
 }
@@ -148,10 +145,6 @@ export function getWebGLDisjointQueryTimerVersion(
   } else {
     queryTimerVersion = 0;
   }
-
-  if (gl != null) {
-    loseContext(gl);
-  }
   return queryTimerVersion;
 }
 
@@ -175,7 +168,6 @@ export function isRenderToFloatTextureEnabled(
 
   const isFrameBufferComplete =
       createFloatTextureAndBindToFramebuffer(gl, webGLVersion);
-  loseContext(gl);
   return isFrameBufferComplete;
 }
 
@@ -202,7 +194,6 @@ export function isDownloadFloatTextureEnabled(
 
   const isFrameBufferComplete =
       createFloatTextureAndBindToFramebuffer(gl, webGLVersion);
-  loseContext(gl);
   return isFrameBufferComplete;
 }
 
@@ -214,7 +205,6 @@ export function isWebGLFenceEnabled(webGLVersion: number, isBrowser: boolean) {
 
   // tslint:disable-next-line:no-any
   const isEnabled = (gl as any).fenceSync != null;
-  loseContext(gl);
   return isEnabled;
 }
 
@@ -270,31 +260,28 @@ function hasExtension(gl: WebGLRenderingContext, extensionName: string) {
   return ext != null;
 }
 
+// Cache the canvases for faster evaluation of webgl capabilities.
+let canvasWebgl: HTMLCanvasElement;
+let canvasWebgl2: HTMLCanvasElement;
+
 function getWebGLRenderingContext(
     webGLVersion: number, isBrowser: boolean): WebGLRenderingContext {
   if (webGLVersion === 0 || !isBrowser) {
     throw new Error('Cannot get WebGL rendering context, WebGL is disabled.');
   }
 
-  const tempCanvas = document.createElement('canvas');
-
   if (webGLVersion === 1) {
-    return (tempCanvas.getContext('webgl') ||
-            tempCanvas.getContext('experimental-webgl')) as
+    if (canvasWebgl == null) {
+      canvasWebgl = document.createElement('canvas');
+    }
+    return (canvasWebgl.getContext('webgl') ||
+            canvasWebgl.getContext('experimental-webgl')) as
         WebGLRenderingContext;
   }
-  return tempCanvas.getContext('webgl2') as WebGLRenderingContext;
-}
-
-function loseContext(gl: WebGLRenderingContext) {
-  if (gl != null) {
-    const loseContextExtension = gl.getExtension('WEBGL_lose_context');
-    if (loseContextExtension == null) {
-      throw new Error(
-          'Extension WEBGL_lose_context not supported on this browser.');
-    }
-    loseContextExtension.loseContext();
+  if (canvasWebgl2 == null) {
+    canvasWebgl2 = document.createElement('canvas');
   }
+  return canvasWebgl2.getContext('webgl2') as WebGLRenderingContext;
 }
 
 function createFloatTextureAndBindToFramebuffer(

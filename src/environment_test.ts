@@ -187,53 +187,6 @@ describeWithFlags('WEBGL_FENCE_API_ENABLED', WEBGL_ENVS, () => {
   });
 });
 
-describeWithFlags('WebGL version', WEBGL_ENVS, () => {
-  it('webgl 1', () => {
-    spyOn(document, 'createElement').and.returnValue({
-      getContext: (context: string) => {
-        if (context === 'webgl') {
-          return {
-            getExtension: (a: string) => {
-              return {loseContext: () => {}};
-            }
-          };
-        }
-        return null;
-      }
-    });
-
-    const env = new Environment();
-    expect(env.get('WEBGL_VERSION')).toBe(1);
-  });
-
-  it('webgl 2', () => {
-    spyOn(document, 'createElement').and.returnValue({
-      getContext: (context: string) => {
-        if (context === 'webgl2') {
-          return {
-            getExtension: (a: string) => {
-              return {loseContext: () => {}};
-            }
-          };
-        }
-        return null;
-      }
-    });
-
-    const env = new Environment();
-    expect(env.get('WEBGL_VERSION')).toBe(2);
-  });
-
-  it('no webgl', () => {
-    spyOn(document, 'createElement').and.returnValue({
-      getContext: (context: string): WebGLRenderingContext => null
-    });
-
-    const env = new Environment();
-    expect(env.get('WEBGL_VERSION')).toBe(0);
-  });
-});
-
 describe('Backend', () => {
   beforeAll(() => {
     // Silences backend registration warnings.
