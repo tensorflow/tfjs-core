@@ -15,8 +15,6 @@
  * =============================================================================
  */
 
-import {callAndCheck} from './kernels/webgl/webgl_util';
-
 const contexes:
     {[key: string]: {canvas: HTMLCanvasElement,
                      gl: WebGLRenderingContext}} = {};
@@ -47,15 +45,15 @@ export function getWebGLCanvas(webGLVersion: number): HTMLCanvasElement {
     return getWebGLCanvas(webGLVersion);
   }
 
-  callAndCheck(gl, () => gl.disable(gl.DEPTH_TEST));
-  callAndCheck(gl, () => gl.disable(gl.STENCIL_TEST));
-  callAndCheck(gl, () => gl.disable(gl.BLEND));
-  callAndCheck(gl, () => gl.disable(gl.DITHER));
-  callAndCheck(gl, () => gl.disable(gl.POLYGON_OFFSET_FILL));
-  callAndCheck(gl, () => gl.disable(gl.SAMPLE_COVERAGE));
-  callAndCheck(gl, () => gl.enable(gl.SCISSOR_TEST));
-  callAndCheck(gl, () => gl.enable(gl.CULL_FACE));
-  callAndCheck(gl, () => gl.cullFace(gl.BACK));
+  gl.disable(gl.DEPTH_TEST);
+  gl.disable(gl.STENCIL_TEST);
+  gl.disable(gl.BLEND);
+  gl.disable(gl.DITHER);
+  gl.disable(gl.POLYGON_OFFSET_FILL);
+  gl.disable(gl.SAMPLE_COVERAGE);
+  gl.enable(gl.SCISSOR_TEST);
+  gl.enable(gl.CULL_FACE);
+  gl.cullFace(gl.BACK);
 
   return contexes[webGLVersion].canvas;
 }
