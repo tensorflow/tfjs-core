@@ -269,6 +269,39 @@ export function inferFromImplicitShape(
   return newShape;
 }
 
+function isEven(n: number): boolean {
+  return n % 2 === 0;
+}
+
+export function cheapReshape(shape1: number[], shape2: number[]): boolean {
+  const inner1 = shape1.slice(-2);
+  const inner2 = shape2.slice(-2);
+
+  if(arraysEqual(inner1, inner2)) {
+    return true;
+  }
+
+  if(inner1.length !== inner2.length) {
+    if(inner1.length === 2 && inner1[0] === 1) {
+      return true;
+    }
+    if(inner2.length === 2 && inner2[0] === 1) {
+      return true;
+    }
+  } else {
+    if(isEven(inner1[0]) && isEven(inner2[0])) {
+      if(isEven(inner1[1]) && isEven(inner2[1])) {
+        return true;
+      }
+      if(inner1[1] === inner2[1]) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
 /** Reduces the shape by removing all dimensions of shape 1. */
 export function squeezeShape(shape: number[], axis?: number[]):
     {newShape: number[], keptDims: number[]} {
