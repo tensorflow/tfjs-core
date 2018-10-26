@@ -103,7 +103,6 @@ export class GPGPUContext {
     webgl_util.callAndCheck(gl, () => gl.bindFramebuffer(gl.FRAMEBUFFER, null));
     webgl_util.callAndCheck(gl, () => gl.deleteFramebuffer(this.framebuffer));
     webgl_util.callAndCheck(gl, () => gl.bindBuffer(gl.ARRAY_BUFFER, null));
-    // webgl_util.callAndCheck(gl, () => gl.deleteBuffer(this.vertexBuffer));
     webgl_util.callAndCheck(
         gl, () => gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null));
     webgl_util.callAndCheck(gl, () => gl.deleteBuffer(this.indexBuffer));
