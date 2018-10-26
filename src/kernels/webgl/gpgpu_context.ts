@@ -46,8 +46,6 @@ export class GPGPUContext {
   private disposed = false;
   private autoDebugValidate = false;
   private disjoint: boolean;
-  private checkedAvailability: boolean;
-
   private textureConfig: TextureConfig;
 
   constructor(gl?: WebGLRenderingContext) {
@@ -447,12 +445,13 @@ export class GPGPUContext {
   }
 
   public async waitForQueryAndGetTime(query: WebGLQuery): Promise<number> {
-    if (this.checkedAvailability == null) {
-      await util.repeatedTry(
-          () => this.isQueryAvailable(
-              query, ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION')));
-      this.checkedAvailability = true;
-    }
+    await util.repeatedTry(
+        () => this.disposed ||  // while testing contexts are created / disposed
+                                // in rapid succession, so without this check we
+                                // may poll for the query timer indefinitely
+            this.isQueryAvailable(
+                query,
+                ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION')));
     return this.getQueryTime(
         query, ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION'));
   }
