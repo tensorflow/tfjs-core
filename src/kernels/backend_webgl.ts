@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {getWebGLCanvas, getWebGLContext} from '../canvas_util';
+import {getWebGLContext} from '../canvas_util';
 import {MemoryInfo, TimingInfo} from '../engine';
 import {ENV} from '../environment';
 import {tidy} from '../globals';
@@ -484,14 +484,14 @@ export class MathBackendWebGL implements KernelBackend {
       throw new Error('WebGL is not supported on this device');
     }
 
-    if (ENV.get('IS_BROWSER')) {
-      this.canvas = getWebGLCanvas(ENV.get('WEBGL_VERSION'));
-    }
     if (gpgpu == null) {
-      this.gpgpu = new GPGPUContext(getWebGLContext(ENV.get('WEBGL_VERSION')));
+      const gl = getWebGLContext(ENV.get('WEBGL_VERSION'));
+      this.gpgpu = new GPGPUContext(gl);
+      this.canvas = gl.canvas;
       this.gpgpuCreatedLocally = true;
     } else {
       this.gpgpuCreatedLocally = false;
+      this.canvas = gpgpu.gl.canvas;
     }
     if (ENV.get('WEBGL_PAGING_ENABLED')) {
       // Use the device screen's resolution as a heuristic to decide on the

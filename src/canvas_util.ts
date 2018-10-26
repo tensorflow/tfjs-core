@@ -15,9 +15,7 @@
  * =============================================================================
  */
 
-const contexts:
-    {[key: string]: {canvas: HTMLCanvasElement,
-                     gl: WebGLRenderingContext}} = {};
+const contexts: {[key: string]: WebGLRenderingContext} = {};
 
 const WEBGL_ATTRIBUTES: WebGLContextAttributes = {
   alpha: false,
@@ -29,20 +27,19 @@ const WEBGL_ATTRIBUTES: WebGLContextAttributes = {
   failIfMajorPerformanceCaveat: true
 };
 
-export function getWebGLCanvas(webGLVersion: number): HTMLCanvasElement {
+export function getWebGLContext(webGLVersion: number): WebGLRenderingContext {
   if (!(webGLVersion in contexts)) {
     const canvas = document.createElement('canvas');
     canvas.addEventListener('webglcontextlost', ev => {
       ev.preventDefault();
       delete contexts[webGLVersion];
     }, false);
-    const gl = getWebGLRenderingContext(webGLVersion);
-    contexts[webGLVersion] = {canvas, gl};
+    contexts[webGLVersion] = getWebGLRenderingContext(webGLVersion);
   }
-  const gl = contexts[webGLVersion].gl;
+  const gl = contexts[webGLVersion];
   if (gl.isContextLost()) {
     delete contexts[webGLVersion];
-    return getWebGLCanvas(webGLVersion);
+    return getWebGLContext(webGLVersion);
   }
 
   gl.disable(gl.DEPTH_TEST);
@@ -55,12 +52,7 @@ export function getWebGLCanvas(webGLVersion: number): HTMLCanvasElement {
   gl.enable(gl.CULL_FACE);
   gl.cullFace(gl.BACK);
 
-  return contexts[webGLVersion].canvas;
-}
-
-export function getWebGLContext(webGLVersion: number): WebGLRenderingContext {
-  getWebGLCanvas(webGLVersion);
-  return contexts[webGLVersion].gl;
+  return contexts[webGLVersion];
 }
 
 function getWebGLRenderingContext(webGLVersion: number): WebGLRenderingContext {

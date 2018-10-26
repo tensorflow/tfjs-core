@@ -15,14 +15,14 @@
  * =============================================================================
  */
 
-import {getWebGLCanvas, getWebGLContext} from './canvas_util';
+import {getWebGLContext} from './canvas_util';
 import {ENV} from './environment';
 import {describeWithFlags} from './jasmine_util';
 import {BROWSER_ENVS} from './test_util';
 
 describeWithFlags('canvas_util', BROWSER_ENVS, () => {
   it('Returns a valid canvas', () => {
-    const canvas = getWebGLCanvas(ENV.get('WEBGL_VERSION'));
+    const canvas = getWebGLContext(ENV.get('WEBGL_VERSION')).canvas;
     expect(canvas instanceof HTMLCanvasElement).toBe(true);
   });
 
@@ -30,17 +30,11 @@ describeWithFlags('canvas_util', BROWSER_ENVS, () => {
     const gl = getWebGLContext(ENV.get('WEBGL_VERSION'));
     expect(gl.isContextLost()).toBe(false);
   });
-
-  it('The canvas and the gl are bounded', () => {
-    const canvas = getWebGLCanvas(ENV.get('WEBGL_VERSION'));
-    const gl = getWebGLContext(ENV.get('WEBGL_VERSION'));
-    expect(gl.canvas.isEqualNode(canvas)).toBe(true);
-  });
 });
 
 describeWithFlags('canvas_util webgl2', {WEBGL_VERSION: 2}, () => {
   it('is ok when the user requests webgl 1 canvas', () => {
-    const canvas = getWebGLCanvas(1);
+    const canvas = getWebGLContext(1).canvas;
     expect(canvas instanceof HTMLCanvasElement).toBe(true);
   });
 });
