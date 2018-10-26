@@ -269,11 +269,25 @@ export function inferFromImplicitShape(
   return newShape;
 }
 
+function divisibleBy4(n) {
+  return n % 4 === 0;
+}
+
+export function cheap4x1Reshape(shape1: number[], shape2: number[]): boolean {
+  let inner1 = shape1[shape1.length - 1], inner2 = shape2[shape2.length - 1];
+
+  if((inner1 === inner2) || (divisibleBy4(inner1) && divisibleBy4(inner2)) || (inner1 < 4 && inner2 < 4)) {
+    return true;
+  }
+
+  return false;
+}
+
 function isEven(n: number): boolean {
   return n % 2 === 0;
 }
 
-export function cheapReshape(shape1: number[], shape2: number[]): boolean {
+export function cheap2x2Reshape(shape1: number[], shape2: number[]): boolean {
   const inner1 = shape1.slice(-2);
   const inner2 = shape2.slice(-2);
 
