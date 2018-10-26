@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {getContext} from './canvas_util';
+import {getWebGLContext} from './canvas_util';
 
 export interface Features {
   // Whether to enable debug mode.
@@ -105,9 +105,9 @@ export interface URLProperty {
   type: Type;
 }
 
-export function isWebGLVersionEnabled(webGLVersion: 1|2, isBrowser: boolean) {
+export function isWebGLVersionEnabled(webGLVersion: 1|2) {
   try {
-    const gl = getContext(webGLVersion);
+    const gl = getWebGLContext(webGLVersion);
     if (gl != null) {
       return true;
     }
@@ -121,23 +121,22 @@ let MAX_TEXTURE_SIZE: number;
 // Caching MAX_TEXTURE_SIZE here because the environment gets reset between
 // unit tests and we don't want to constantly query the WebGLContext for
 // MAX_TEXTURE_SIZE.
-export function getWebGLMaxTextureSize(
-    webGLVersion: number, isBrowser: boolean): number {
+export function getWebGLMaxTextureSize(webGLVersion: number): number {
   if (MAX_TEXTURE_SIZE == null) {
-    const gl = getContext(webGLVersion);
+    const gl = getWebGLContext(webGLVersion);
     MAX_TEXTURE_SIZE = gl.getParameter(gl.MAX_TEXTURE_SIZE);
   }
   return MAX_TEXTURE_SIZE;
 }
 
-export function getWebGLDisjointQueryTimerVersion(
-    webGLVersion: number, isBrowser: boolean): number {
+export function getWebGLDisjointQueryTimerVersion(webGLVersion: number):
+    number {
   if (webGLVersion === 0) {
     return 0;
   }
 
   let queryTimerVersion: number;
-  const gl = getContext(webGLVersion);
+  const gl = getWebGLContext(webGLVersion);
 
   if (hasExtension(gl, 'EXT_disjoint_timer_query_webgl2') &&
       webGLVersion === 2) {
@@ -150,13 +149,12 @@ export function getWebGLDisjointQueryTimerVersion(
   return queryTimerVersion;
 }
 
-export function isRenderToFloatTextureEnabled(
-    webGLVersion: number, isBrowser: boolean): boolean {
+export function isRenderToFloatTextureEnabled(webGLVersion: number): boolean {
   if (webGLVersion === 0) {
     return false;
   }
 
-  const gl = getContext(webGLVersion);
+  const gl = getWebGLContext(webGLVersion);
 
   if (webGLVersion === 1) {
     if (!hasExtension(gl, 'OES_texture_float')) {
@@ -173,13 +171,12 @@ export function isRenderToFloatTextureEnabled(
   return isFrameBufferComplete;
 }
 
-export function isDownloadFloatTextureEnabled(
-    webGLVersion: number, isBrowser: boolean): boolean {
+export function isDownloadFloatTextureEnabled(webGLVersion: number): boolean {
   if (webGLVersion === 0) {
     return false;
   }
 
-  const gl = getContext(webGLVersion);
+  const gl = getWebGLContext(webGLVersion);
 
   if (webGLVersion === 1) {
     if (!hasExtension(gl, 'OES_texture_float')) {
@@ -199,11 +196,11 @@ export function isDownloadFloatTextureEnabled(
   return isFrameBufferComplete;
 }
 
-export function isWebGLFenceEnabled(webGLVersion: number, isBrowser: boolean) {
+export function isWebGLFenceEnabled(webGLVersion: number) {
   if (webGLVersion !== 2) {
     return false;
   }
-  const gl = getContext(webGLVersion);
+  const gl = getWebGLContext(webGLVersion);
 
   // tslint:disable-next-line:no-any
   const isEnabled = (gl as any).fenceSync != null;

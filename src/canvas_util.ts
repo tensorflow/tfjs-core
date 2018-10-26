@@ -15,11 +15,23 @@
  * =============================================================================
  */
 
-const contexes: {
-  [version: number]: {canvas: HTMLCanvasElement, gl: WebGLRenderingContext}
-} = {};
+import {callAndCheck} from './kernels/webgl/webgl_util';
 
-export function getCanvas(webGLVersion: number): HTMLCanvasElement {
+const contexes:
+    {[key: string]: {canvas: HTMLCanvasElement,
+                     gl: WebGLRenderingContext}} = {};
+
+const WEBGL_ATTRIBUTES: WebGLContextAttributes = {
+  alpha: false,
+  antialias: false,
+  premultipliedAlpha: false,
+  preserveDrawingBuffer: false,
+  depth: false,
+  stencil: false,
+  failIfMajorPerformanceCaveat: true
+};
+
+export function getWebGLCanvas(webGLVersion: number): HTMLCanvasElement {
   if (!(webGLVersion in contexes)) {
     const canvas = document.createElement('canvas');
     canvas.addEventListener('webglcontextlost', ev => {
@@ -30,15 +42,26 @@ export function getCanvas(webGLVersion: number): HTMLCanvasElement {
     contexes[webGLVersion] = {canvas, gl};
   }
   const gl = contexes[webGLVersion].gl;
+
+  callAndCheck(gl, () => gl.disable(gl.DEPTH_TEST));
+  callAndCheck(gl, () => gl.disable(gl.STENCIL_TEST));
+  callAndCheck(gl, () => gl.disable(gl.BLEND));
+  callAndCheck(gl, () => gl.disable(gl.DITHER));
+  callAndCheck(gl, () => gl.disable(gl.POLYGON_OFFSET_FILL));
+  callAndCheck(gl, () => gl.disable(gl.SAMPLE_COVERAGE));
+  callAndCheck(gl, () => gl.enable(gl.SCISSOR_TEST));
+  callAndCheck(gl, () => gl.enable(gl.CULL_FACE));
+  callAndCheck(gl, () => gl.cullFace(gl.BACK));
+
   if (gl.isContextLost()) {
     delete contexes[webGLVersion];
-    return getCanvas(webGLVersion);
+    return getWebGLCanvas(webGLVersion);
   }
   return contexes[webGLVersion].canvas;
 }
 
-export function getContext(webGLVersion: number): WebGLRenderingContext {
-  getCanvas(webGLVersion);
+export function getWebGLContext(webGLVersion: number): WebGLRenderingContext {
+  getWebGLCanvas(webGLVersion);
   return contexes[webGLVersion].gl;
 }
 
@@ -49,8 +72,9 @@ function getWebGLRenderingContext(webGLVersion: number): WebGLRenderingContext {
 
   const canvas = document.createElement('canvas');
   if (webGLVersion === 1) {
-    return (canvas.getContext('webgl') ||
-            canvas.getContext('experimental-webgl')) as WebGLRenderingContext;
+    return (canvas.getContext('webgl', WEBGL_ATTRIBUTES) ||
+            canvas.getContext('experimental-webgl', WEBGL_ATTRIBUTES)) as
+        WebGLRenderingContext;
   }
-  return canvas.getContext('webgl2') as WebGLRenderingContext;
+  return canvas.getContext('webgl2', WEBGL_ATTRIBUTES) as WebGLRenderingContext;
 }
