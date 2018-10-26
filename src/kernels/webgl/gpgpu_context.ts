@@ -46,6 +46,7 @@ export class GPGPUContext {
   private disposed = false;
   private autoDebugValidate = false;
   private disjoint: boolean;
+  private checkedAvailability: boolean;
 
   private textureConfig: TextureConfig;
 
@@ -446,9 +447,12 @@ export class GPGPUContext {
   }
 
   public async waitForQueryAndGetTime(query: WebGLQuery): Promise<number> {
-    await util.repeatedTry(
-        () => this.isQueryAvailable(
-            query, ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION')));
+    if (this.checkedAvailability == null) {
+      await util.repeatedTry(
+          () => this.isQueryAvailable(
+              query, ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION')));
+      this.checkedAvailability = true;
+    }
     return this.getQueryTime(
         query, ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION'));
   }
