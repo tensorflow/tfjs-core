@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-const contexes:
+const contexts:
     {[key: string]: {canvas: HTMLCanvasElement,
                      gl: WebGLRenderingContext}} = {};
 
@@ -30,18 +30,18 @@ const WEBGL_ATTRIBUTES: WebGLContextAttributes = {
 };
 
 export function getWebGLCanvas(webGLVersion: number): HTMLCanvasElement {
-  if (!(webGLVersion in contexes)) {
+  if (!(webGLVersion in contexts)) {
     const canvas = document.createElement('canvas');
     canvas.addEventListener('webglcontextlost', ev => {
       ev.preventDefault();
-      delete contexes[webGLVersion];
+      delete contexts[webGLVersion];
     }, false);
     const gl = getWebGLRenderingContext(webGLVersion);
-    contexes[webGLVersion] = {canvas, gl};
+    contexts[webGLVersion] = {canvas, gl};
   }
-  const gl = contexes[webGLVersion].gl;
+  const gl = contexts[webGLVersion].gl;
   if (gl.isContextLost()) {
-    delete contexes[webGLVersion];
+    delete contexts[webGLVersion];
     return getWebGLCanvas(webGLVersion);
   }
 
@@ -55,12 +55,12 @@ export function getWebGLCanvas(webGLVersion: number): HTMLCanvasElement {
   gl.enable(gl.CULL_FACE);
   gl.cullFace(gl.BACK);
 
-  return contexes[webGLVersion].canvas;
+  return contexts[webGLVersion].canvas;
 }
 
 export function getWebGLContext(webGLVersion: number): WebGLRenderingContext {
   getWebGLCanvas(webGLVersion);
-  return contexes[webGLVersion].gl;
+  return contexts[webGLVersion].gl;
 }
 
 function getWebGLRenderingContext(webGLVersion: number): WebGLRenderingContext {
