@@ -56,6 +56,7 @@ export function getWebGLCanvas(webGLVersion: number): HTMLCanvasElement {
   callAndCheck(gl, () => gl.enable(gl.SCISSOR_TEST));
   callAndCheck(gl, () => gl.enable(gl.CULL_FACE));
   callAndCheck(gl, () => gl.cullFace(gl.BACK));
+
   return contexes[webGLVersion].canvas;
 }
 
