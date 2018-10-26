@@ -42,6 +42,10 @@ export function getWebGLCanvas(webGLVersion: number): HTMLCanvasElement {
     contexes[webGLVersion] = {canvas, gl};
   }
   const gl = contexes[webGLVersion].gl;
+  if (gl.isContextLost()) {
+    delete contexes[webGLVersion];
+    return getWebGLCanvas(webGLVersion);
+  }
 
   callAndCheck(gl, () => gl.disable(gl.DEPTH_TEST));
   callAndCheck(gl, () => gl.disable(gl.STENCIL_TEST));
@@ -52,11 +56,6 @@ export function getWebGLCanvas(webGLVersion: number): HTMLCanvasElement {
   callAndCheck(gl, () => gl.enable(gl.SCISSOR_TEST));
   callAndCheck(gl, () => gl.enable(gl.CULL_FACE));
   callAndCheck(gl, () => gl.cullFace(gl.BACK));
-
-  if (gl.isContextLost()) {
-    delete contexes[webGLVersion];
-    return getWebGLCanvas(webGLVersion);
-  }
   return contexes[webGLVersion].canvas;
 }
 
