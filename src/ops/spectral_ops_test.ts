@@ -215,3 +215,34 @@ describeWithFlags('IFFT CPU', BROWSER_CPU_ENVS, () => {
     expect(() => tf.spectral.ifft(t1)).toThrow();
   });
 });
+
+describeWithFlags('1D RFFT', ALL_ENVS, () => {
+  it('should return the same value with TensorFlow (3 elements)', () => {
+    const t1Real = tf.tensor1d([1, 2, 3]);
+    expectArraysClose(
+      tf.spectral.rfft(t1Real), [6, 1.1920929e-07, -1.4999999, 8.6602521e-01]);
+  });
+
+  it('should return the same value with TensorFlow (6 elements)', () => {
+    const t1Real = tf.tensor1d([-3, -2, -1, 1, 2, 3]);
+    expectArraysClose(
+      tf.spectral.rfft(t1Real),
+      [-5.8859587e-07, 1.1920929e-07, -3.9999995, 6.9282026e+00,
+        -2.9999998, 1.7320497, -4.0000000, -2.3841858e-07]);
+  });
+});
+
+describeWithFlags('2D RFFT', WEBGL_ENVS, () => {
+  it('should return the same value with TensorFlow (2x2 elements)', () => {
+    const t1Real = tf.tensor2d([1, 2, 3, 4], [2, 2]);
+    expectArraysClose(
+      tf.spectral.rfft(t1Real), [3, 0, -1, 0, 7, 0, -1, 0]);
+  });
+
+  it('should return the same value with TensorFlow (2x2x2 elements)', () => {
+    const t1Real = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2]);
+    expectArraysClose(
+      tf.spectral.rfft(t1Real),
+      [3, 0, -1, 0, 7, 0, -1, 0, 11, 0, -1, 0, 15, 0, -1, 0]);
+  });
+});
