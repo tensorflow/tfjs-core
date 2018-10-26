@@ -303,6 +303,10 @@ export function cheap2x2Reshape(shape1: number[], shape2: number[]): boolean {
     return true;
   }
 
+  if(inner1[0] === 0 || inner1[1] === 0 || inner2[0] === 0 || inner2[1] === 0) {
+    return true;
+  }
+
   if(inner1.length !== inner2.length) {
     if(inner1.length === 2 && inner1[0] === 1) {
       return true;
