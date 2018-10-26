@@ -18,8 +18,9 @@
 import {getWebGLCanvas, getWebGLContext} from './canvas_util';
 import {ENV} from './environment';
 import {describeWithFlags} from './jasmine_util';
+import {BROWSER_ENVS} from './test_util';
 
-describeWithFlags('canvas_util', {}, () => {
+describeWithFlags('canvas_util', BROWSER_ENVS, () => {
   it('Returns a valid canvas', () => {
     const canvas = getWebGLCanvas(ENV.get('WEBGL_VERSION'));
     expect(canvas instanceof HTMLCanvasElement).toBe(true);
