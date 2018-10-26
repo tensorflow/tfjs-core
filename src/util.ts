@@ -276,6 +276,10 @@ function divisibleBy4(n) {
 export function cheap4x1Reshape(shape1: number[], shape2: number[]): boolean {
   let inner1 = shape1[shape1.length - 1], inner2 = shape2[shape2.length - 1];
 
+  if(!shape1.length || !shape2.length) {
+    return true;
+  }
+
   if((inner1 === inner2) || (divisibleBy4(inner1) && divisibleBy4(inner2)) || (inner1 < 4 && inner2 < 4)) {
     return true;
   }
@@ -292,6 +296,10 @@ export function cheap2x2Reshape(shape1: number[], shape2: number[]): boolean {
   const inner2 = shape2.slice(-2);
 
   if(arraysEqual(inner1, inner2)) {
+    return true;
+  }
+
+  if(!inner1.length || !inner2.length) { // scalar
     return true;
   }
 
