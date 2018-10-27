@@ -20,6 +20,7 @@ import {describeWithFlags} from '../jasmine_util';
 import {Scalar, Tensor, Tensor1D, Tensor2D} from '../tensor';
 import {broadcastMatrices} from './linalg_util';
 import {CPU_ENVS, ALL_ENVS, expectArraysClose, expectArraysEqual, WEBGL_ENVS, numDiff} from '../test_util';
+import {permuteRows_, permuteRowsInv_} from './linalg_ops';
 
 import {scalar, tensor1d, tensor2d, tensor3d, tensor4d} from './ops';
 
@@ -109,32 +110,48 @@ describeWithFlags('lu', CPU_ENVS, () => {
       let u =             la.bandPart(lu,  0,-1);
       let A = tf.matMul(l,u);
 
+      expectArraysEqual( l.abs().max(), tf.scalar(1) );
+
       expectArraysEqual(lu.shape, a.shape             );
       expectArraysEqual( p.shape, a.shape.slice(0,-1) );
 
-      const stride = a.shape[a.rank-2];
-
-      A = A.reshape(  [-1].concat( A.shape.slice(-1) )  );
-      a = a.reshape(  [-1].concat( a.shape.slice(-1) )  );
-
-      p = p.reshape(  [-1].concat( p.shape.slice(-1) )  );
-      p = p.add(
-        tf.range(0,p.shape[0]*stride,stride,'int32').reshape([-1,1])
-      );
-
-      a = a.gather( p.flatten() );
-
-      expectArraysClose(A,a);
+      expectArraysClose( A, permuteRows_(a,p) );
+      expectArraysClose( permuteRowsInv_(A,p), a );
     };
     test_decomp(a);
 
     // TEST GRADIENTS
+    const perm: Int32Array[] = [];
     const w = tf.randomUniform(a.shape,-1,+1),
-          f = (a: Tensor) => la.lu(a)[0].mul(w).mean() as Scalar,
+          f = (a: Tensor) => {
+            const [lu,p] = la.lu(a);
+            perm.push( p.dataSync() as Int32Array );
+            return lu.mul(w).mean() as Scalar;
+          },
           g = numDiff(f),
           h = tf.grad(f);
 
-    expectArraysClose( g(a), h(a) );
+    try {
+      const g_a = g(a);
+      const noChangeInPerm = perm.slice(1).every(
+        p => perm[0].every( (q,i) => q == p[i] )
+      );
+      // if the permutation changes due to the finite difference this may drastically change the gradients
+      if( noChangeInPerm )
+        expectArraysClose( g_a, h(a) );
+      else
+        console.log(
+            "lu(): p changed during finite difference calculation. Skipping test."
+          + "\nIt's perfectly normal for this to happend once or twice."
+        );
+    }
+    catch(err) {
+      console.log('A' );       a .print();
+      console.log('LU'); la.lu(a)[0].print();
+      console.log('G' );     g(a).print();
+      console.log('H' );     h(a).print();
+      throw err;
+    }
   };
 
   it('2x2', () => testWith( tf.tensor2d([[1,2],
@@ -153,8 +170,11 @@ describeWithFlags('lu', CPU_ENVS, () => {
       const [q1] = la.qr( tf.randomUniform(A_shape,-1,+1) ),
             [q2] = la.qr( tf.randomUniform(A_shape,-1,+1) );
 
-      const sign = tf.randomUniform(A_shape.slice(0,-1),0,2,'int32').cast('float32').mul(TWO).sub(ONE),
-            magn = tf.randomNormal (A_shape.slice(0,-1),/*mean=*/1,/*stdDev=*/0.1);
+      const magn = tf.randomNormal (A_shape.slice(0,-1),/*mean=*/1,/*stdDev=*/0.2),
+            sign = tf.randomUniform(A_shape.slice(0,-1),0,2,'int32')
+                     .cast('float32')
+                     .mul(TWO)
+                     .sub(ONE);
 
       const s = la.setDiag( tf.zeros(A_shape), tf.mul(sign,magn) );
 
@@ -205,7 +225,7 @@ describeWithFlags('luSolve', CPU_ENVS, () => {
       const [q1] = la.qr( tf.randomUniform(A_shape,-1,+1) );
       const [q2] = la.qr( tf.randomUniform(A_shape,-1,+1) );
       const sign = tf.randomUniform(A_shape.slice(0,-1),0,2,'int32').cast('float32').mul(TWO).sub(ONE);
-      const magn = tf.randomNormal (A_shape.slice(0,-1),/*mean=*/1,/*stdDev=*/0.2);
+      const magn = tf.randomNormal (A_shape.slice(0,-1),/*mean=*/1,/*stdDev=*/0.1);
 
       const s = la.setDiag( tf.zeros(A_shape), tf.mul(sign,magn) );
 

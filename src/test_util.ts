@@ -33,7 +33,7 @@ export const numDiff = (f: (_: Tensor) => Scalar) => (a: Tensor) => {
 
   const dA_shape = a.shape,
          A = Float32Array.from( a.dataSync() ),
-         d  = 2**-10;
+         d  = 2**-11;
 
   function val( scalar: Tensor ): number
   {

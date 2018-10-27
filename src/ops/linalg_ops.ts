@@ -145,9 +145,10 @@ function lu_p_decomp_( a: Tensor ): [Tensor,Tensor]
       {
         let p=i;
         for( let j=i+1; j < N; j++ )
-          if( Math.abs( LU[LU_off+P[P_off+j]*N+i] )
-            > Math.abs( LU[LU_off+P[P_off+p]*N+i] ) )
+          if( Math.abs( LU[LU_off + N*j+i] )
+            > Math.abs( LU[LU_off + N*p+i] ) )
             p=j;
+
         if( i != p ) {
           const P_p = P[P_off+i];
                       P[P_off+i] = P[P_off+p];
@@ -1078,7 +1079,7 @@ function qr_( a: Tensor, fullMatrices = false ): [Tensor, Tensor] {
   * 
   * @returns b Tensor of shape [...,M,N], such that: `b[...,p[...,i],j] == a[...,i,j]`.
   */
-function permuteRowsInv_( a: Tensor, p: Tensor ): Tensor // <- TODO: export this?
+export function permuteRowsInv_( a: Tensor, p: Tensor ): Tensor // <- TODO: export this?
 {
   if( a.rank != p.rank+1 ) throw new Error(`permuteRows(): a.rank and p.rank do not match.`);
   for( let i=p.rank; i-- > 0; )
@@ -1090,9 +1091,8 @@ function permuteRowsInv_( a: Tensor, p: Tensor ): Tensor // <- TODO: export this
          P_inv = new Int32Array(P.length);
 
   for( let off=0; off < P.length; off += N )
-  for( let  i =0; i < N; i++ ) {
+  for( let  i =0;  i  < N       ; i++ )
     P_inv[off + P[off+i]] = off+i;
-  }
 
   return gather(
     a.reshape( [-1].concat( a.shape.slice(-1) ) ),
@@ -1107,7 +1107,7 @@ function permuteRowsInv_( a: Tensor, p: Tensor ): Tensor // <- TODO: export this
   * 
   * @returns b Tensor of shape [...,M,N], such that: `b[...,i,j] == a[...,p[...,i],j]`.
   */
-function permuteRows_( a: Tensor, p: Tensor ): Tensor // <- TODO: export this?
+export function permuteRows_( a: Tensor, p: Tensor ): Tensor // <- TODO: export this?
 {
   if( a.rank != p.rank+1 ) throw new Error(`permuteRows(): a.rank and p.rank do not match.`);
   for( let i=p.rank; i-- > 0; )
