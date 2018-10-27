@@ -68,7 +68,12 @@ export async function loadWeights(
 
 export function loadWeightsFactory(
   fetchWeightsFunction: (fetchUrls: string[]) => Promise<ArrayBuffer[]>
-) {
+): (
+  manifest: WeightsManifestConfig,
+  filePathPrefix?: string,
+  weightNames?: string[]
+) => Promise<NamedTensorMap> {
+
   return async (
     manifest: WeightsManifestConfig,
     filePathPrefix = '',
