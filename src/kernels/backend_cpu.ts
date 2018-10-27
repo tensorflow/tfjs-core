@@ -385,6 +385,101 @@ export class MathBackendCPU implements KernelBackend {
         T;
   }
 
+  matrixSetDiag<T extends Tensor>( a: T, d: Tensor ): T
+  {
+    if( a.dtype != d.dtype ) throw new Error(`setDiag(): Both tensors must have the same dtype.`);
+    if( a.rank < 2 ) throw new Error(`setDiag(): a.rank=${a.rank} < 2`);
+    if( d.rank < 1 ) throw new Error(`setDiag(): d.rank=${d.rank} < 1`);
+    if( a.shape.some( d => d < 0 || d%1 !== 0 ) ) throw new Error(`setDiag(): Invalid input a.shape [${a.shape}].`);
+    if( d.shape.some( d => d < 0 || d%1 !== 0 ) ) throw new Error(`setDiag(): Invalid input d.shape [${d.shape}].`);
+    if( a.shape.length != d.shape.length+1 )
+      throw new Error(`setDiag(): Incompatible shapes for a and d [${a.shape}] [${d.shape}]`)
+
+    for( let i=a.rank-2; i-- > 0; )
+      if( a.shape[i] != d.shape[i] )
+        throw new Error(`setDiag(): Incompatible shapes for a and d [${a.shape}] [${d.shape}]`)
+
+    if( d.shape[d.rank-1] != Math.min( ...a.shape.slice(-2) ) )
+      throw new Error(`setDiag(): Incompatible shapes for a and d [${a.shape}] [${d.shape}]`)
+
+    const [M,N]    = a.shape.slice(-2),
+           L       = Math.min(M,N),
+           dtype   = a.dtype;
+           
+    const  wordsPerElem = dtype.startsWith('complex') ? 2 : 1,
+           A_shape = a.shape,
+           A       = a.dataSync().slice(); a=undefined;
+    const  D       = d.dataSync()        ; d=undefined;
+
+    for( let A_off=0,
+             D_off=0; D_off < D.length; D_off += L,
+                                        A_off += M*N )
+    {
+      for( let i=0; i < M; i++ )
+      for( let k=0; k < wordsPerElem; k++ )
+        A[wordsPerElem*(A_off + N*i+i)+k] = D[wordsPerElem*(D_off + i)+k];
+    }
+    
+    return Tensor.make(A_shape,{values: A},dtype);
+  }
+
+  matrixDiagPart( a: Tensor ): Tensor
+  {
+    if( a.rank < 2 )                     throw new Error('diagPart(): Input a.rank must be at least 2.');
+    if( a.shape.some( d => d < 0 ||
+                           d%1 !== 0 ) ) throw new Error(`diagPart(): Invalid input shape [${a.shape}].`);
+    
+    const D_shape = a.shape.slice(0,-1),
+         [M,N]    = a.shape.slice(-2),
+          L       = Math.min(M,N),
+          dtype   = a.dtype,
+          wordsPerElem = dtype.startsWith('complex') ? 2 : 1,
+          A       = a.dataSync();
+
+    D_shape[D_shape.length-1] = Math.min( ...a.shape.slice(-2) );
+    Object.freeze(D_shape);
+
+    const D: TypedArray = new (<any>A).constructor( D_shape.reduce( (a,b) => a*b ) ); a = undefined;
+
+    for( let A_off=0,
+             D_off=0; D_off < D.length; D_off += L,
+                                        A_off += M*N )
+    {
+      for( let i=0; i < L; i++ )
+      for( let k=0; k < wordsPerElem; k++ )
+        D[wordsPerElem*(D_off + i) + k] = A[wordsPerElem*(A_off + N*i+i) + k];
+    }
+
+    return Tensor.make(D_shape, {values: D}, dtype);
+  }
+
+  matrixBandPart<T extends Tensor>( a: T, numLower: number, numUpper: number ): T
+  {
+    util.assert( numLower%1 == 0, `Error in bandPart: numLower=${numLower} is no integer.`);
+    util.assert( numUpper%1 == 0, `Error in bandPart: numUpper=${numUpper} is no integer.`);
+    util.assert( numLower >= 0, `Error in bandPart: numLower=${numLower} is negative.`);
+    util.assert( numUpper >= 0, `Error in bandPart: numUpper=${numUpper} is negative.`);
+    util.assert( a.rank >= 2, `Error in bandPart: a.rank=${a.rank} must not be less than 2.`);
+
+    const B_shape = Array.from(a.shape),
+         [M,N]   = a.shape.slice(-2),
+          dtype  = a.dtype,
+          wordsPerElem = dtype.startsWith('complex') ? 2 : 1,
+          B = a.dataSync().slice(); a = undefined;
+
+    Object.freeze(B_shape);
+
+    for( let off=0; off < B.length; off += M*N )
+    for( let i=0; i < M; i++ )
+    for( let j=0; j < N; j++ )
+    if( j-i > numUpper ||
+        i-j > numLower )
+      for( let k=0; k < wordsPerElem; k++ )
+        B[wordsPerElem*(off + N*i+j) + k] = 0;
+
+    return Tensor.make(B_shape,{values: B},dtype);
+  }
+
   batchMatMul(
       a: Tensor3D, b: Tensor3D, transposeA: boolean,
       transposeB: boolean): Tensor3D {

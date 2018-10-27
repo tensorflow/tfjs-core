@@ -52,6 +52,23 @@ function complex_<T extends Tensor>(real: T|TensorLike, imag: T|TensorLike): T {
              backend => backend.complex($real, $imag), {$real, $imag}) as T;
 }
 
+/** Computes the complex conjucate element-wise.
+  *
+  * @param x The input tensor.
+  * @returns The complex conjugate of `x`.
+  */
+/** @doc {heading: 'Operations', subheading: 'Basic math'} */
+function conj_<T extends Tensor>( x: T ) : T {
+  if( ! x.dtype.startsWith('complex') )
+    return x;
+
+  return ENV.engine.runKernel(
+    backend => complex( real(x), imag(x).neg() ),
+    {x},
+    dy => ({ x: () => conj(dy) })
+  );
+}
+
 /**
  * Returns the real part of a complex (or real) tensor.
  *
@@ -92,5 +109,6 @@ function imag_<T extends Tensor>(input: T|TensorLike): T {
 }
 
 export const complex = op({complex_});
+export const conj = op({conj_});
 export const real = op({real_});
 export const imag = op({imag_});

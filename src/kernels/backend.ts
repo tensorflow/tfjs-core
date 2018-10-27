@@ -87,6 +87,11 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
   /** Returns the highest precision for floats in bits (e.g. 16 or 32) */
   floatPrecision(): number;
 
+  matrixSetDiag<T extends Tensor>( a: T, d: Tensor ): T;
+
+  matrixDiagPart( a: Tensor ): Tensor;
+  matrixBandPart<T extends Tensor>( a: T, numLower: number, numUpper: number ): T;
+
   batchMatMul(
       a: Tensor3D, b: Tensor3D, transposeA: boolean,
       transposeB: boolean): Tensor3D;

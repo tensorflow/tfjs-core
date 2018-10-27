@@ -103,6 +103,58 @@ function eye_(
   }
 }
 
+/** Broadcast an array to a compatible shape NumPy-style.
+  *
+  * The tensor's shape is compared to the broadcast shape from end to beginning.
+  * Ones are prepended to the tensor's shape until is has the same length as
+  * the broadcast shape. If input.shape[i]==shape[i], they (i+1)-th axis is
+  * already broadcast-compatible. If input.shape[i]==1 and shape[i]==N, then
+  * the input tensor is tiled N times along that axis (using tf.tile).
+  *
+  * @param input The tensor that is to be broadcasted.
+  * @param shape The input is to be broadcast to this shape.
+  */
+/** @doc {heading: 'Tensors', subheading: 'Transformations'} */
+function broadcastTo_<R extends Rank>( x: Tensor|TensorLike, shape: ShapeMap[R] ): Tensor<R>
+{
+  let input = convertToTensor(x, 'broadcastTo', 'x');
+  const x_shape = input.shape;
+
+  if( shape.some( d => d < 0 ) )
+    throw new Error(`broadcastTo(): Invalid broadcast shape [${shape}].`);
+
+  if( shape.length < input.rank ) throw new Error(`broadcastTo(): shape.length=${shape.length} < input.rank=${input.rank}.`);
+  if( shape.length > input.rank )
+  {
+    const newShape = input.shape.slice();
+    while( newShape.length < shape.length )
+      newShape.unshift(1);
+    input = input.reshape(newShape);
+  }
+
+  const reps: number[] = Array.from(shape);
+  for( let i=shape.length; i-- > 0; )
+  {
+    if( input.shape[i] === shape[i] )
+      reps[i] = 1;
+    else if( input.shape[i] !== 1 )
+      throw new Error(`broadcastTo(): [${x_shape}] cannot be not broadcast to [${shape}].`);
+  }
+
+  const axes = reps.map( ( n,i)  => n > 1 ? i : -1 ).filter( i => i >= 0 );
+
+  if( axes.length === 0 )
+    return input as Tensor<R>;
+
+  return ENV.engine.runKernel(
+    backend => backend.tile(input,reps),
+    {input},
+    (dy: Tensor) => ({
+      input: () => dy.sum(axes,/*keepDims=*/true)
+    })
+  ) as Tensor<R>;
+}
+
 /**
  * Creates a `Tensor` with values sampled from a normal distribution.
  *
@@ -545,6 +597,10 @@ function tile_<T extends Tensor>(x: T|TensorLike, reps: number[]): T {
       $x.rank === reps.length,
       `Error in transpose: rank of input ${$x.rank} ` +
           `must match length of reps ${reps}.`);
+
+  if( reps.every( d => d === 1 ) )
+    return $x;
+
   const grad = (dy: T) => {
     const derX = () => {
       let xGrad = zerosLike($x);
@@ -1149,6 +1205,7 @@ export const cumsum = op({cumsum_});
 export const depthToSpace = op({depthToSpace_});
 export const expandDims = op({expandDims_});
 export const eye = op({eye_});
+export const broadcastTo = op({broadcastTo_});
 export const fromPixels = op({fromPixels_});
 export const multinomial = op({multinomial_});
 export const oneHot = op({oneHot_});

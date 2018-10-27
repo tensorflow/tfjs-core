@@ -17,10 +17,13 @@
 
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
-import {Tensor1D, Tensor2D} from '../tensor';
-import {ALL_ENVS, expectArraysClose, WEBGL_ENVS} from '../test_util';
+import {Scalar, Tensor, Tensor1D, Tensor2D} from '../tensor';
+import {broadcastMatrices} from './linalg_util';
+import {CPU_ENVS, ALL_ENVS, expectArraysClose, expectArraysEqual, WEBGL_ENVS, numDiff} from '../test_util';
 
 import {scalar, tensor1d, tensor2d, tensor3d, tensor4d} from './ops';
+
+const randInt = (from: number, until: number) => Math.floor(Math.random()*(until-from)) + from;
 
 describeWithFlags('gramSchmidt-tiny', ALL_ENVS, () => {
   it('2x2, Array of Tensor1D', () => {
@@ -94,137 +97,573 @@ describeWithFlags('gramSchmidt-non-tiny', WEBGL_ENVS, () => {
   });
 });
 
-describeWithFlags('qr', ALL_ENVS, () => {
-  it('1x1', () => {
-    const x = tensor2d([[10]], [1, 1]);
-    const [q, r] = tf.linalg.qr(x);
-    expectArraysClose(q, tensor2d([[-1]], [1, 1]));
-    expectArraysClose(r, tensor2d([[-10]], [1, 1]));
-  });
+describeWithFlags('lu', CPU_ENVS, () => {
+  const la = tf.linalg;
 
-  it('2x2', () => {
-    const x = tensor2d([[1, 3], [-2, -4]], [2, 2]);
-    const [q, r] = tf.linalg.qr(x);
-    expectArraysClose(
-        q, tensor2d([[-0.4472, -0.8944], [0.8944, -0.4472]], [2, 2]));
-    expectArraysClose(r, tensor2d([[-2.2361, -4.9193], [0, -0.8944]], [2, 2]));
-  });
+  const testWith = (a: Tensor) => {
 
-  it('2x2x2', () => {
-    const x = tensor3d([[[-1, -3], [2, 4]], [[1, 3], [-2, -4]]], [2, 2, 2]);
-    const [q, r] = tf.linalg.qr(x);
-    expectArraysClose(
-        q,
-        tensor3d(
-            [
-              [[-0.4472, -0.8944], [0.8944, -0.4472]],
-              [[-0.4472, -0.8944], [0.8944, -0.4472]]
-            ],
-            [2, 2, 2]));
-    expectArraysClose(
-        r,
-        tensor3d(
-            [
-              [[2.2361, 4.9193], [0, 0.8944]],
-              [[-2.2361, -4.9193], [0, -0.8944]]
-            ],
-            [2, 2, 2]));
-  });
+    function test_decomp( a: Tensor )
+    {
+      let [lu,p] = la.lu(a);
+      let l = la.setDiag( la.bandPart(lu, -1, 0), tf.ones(lu.shape.slice(0,-1) ) );
+      let u =             la.bandPart(lu,  0,-1);
+      let A = tf.matMul(l,u);
 
-  it('2x1x2x2', () => {
-    const x =
-        tensor4d([[[[-1, -3], [2, 4]]], [[[1, 3], [-2, -4]]]], [2, 1, 2, 2]);
-    const [q, r] = tf.linalg.qr(x);
-    expectArraysClose(
-        q,
-        tensor4d(
-            [
-              [[[-0.4472, -0.8944], [0.8944, -0.4472]]],
-              [[[-0.4472, -0.8944], [0.8944, -0.4472]]],
-            ],
-            [2, 1, 2, 2]));
-    expectArraysClose(
-        r,
-        tensor4d(
-            [
-              [[[2.2361, 4.9193], [0, 0.8944]]],
-              [[[-2.2361, -4.9193], [0, -0.8944]]]
-            ],
-            [2, 1, 2, 2]));
-  });
+      expectArraysEqual(lu.shape, a.shape             );
+      expectArraysEqual( p.shape, a.shape.slice(0,-1) );
 
+      const stride = a.shape[a.rank-2];
+
+      A = A.reshape(  [-1].concat( A.shape.slice(-1) )  );
+      a = a.reshape(  [-1].concat( a.shape.slice(-1) )  );
+
+      p = p.reshape(  [-1].concat( p.shape.slice(-1) )  );
+      p = p.add(
+        tf.range(0,p.shape[0]*stride,stride,'int32').reshape([-1,1])
+      );
+
+      a = a.gather( p.flatten() );
+
+      expectArraysClose(A,a);
+    };
+    test_decomp(a);
+
+    // TEST GRADIENTS
+    const w = tf.randomUniform(a.shape,-1,+1),
+          f = (a: Tensor) => la.lu(a)[0].mul(w).mean() as Scalar,
+          g = numDiff(f),
+          h = tf.grad(f);
+
+    expectArraysClose( g(a), h(a) );
+  };
+
+  it('2x2', () => testWith( tf.tensor2d([[1,2],
+                                         [3,4]], [2,2]) ) );
+
+  for( let run=32; run-- > 0; )
+  {
+    let A_shape = Array.from({ length: randInt(2,5) }, () => randInt(1,5) );
+    A_shape[A_shape.length-1] = A_shape[A_shape.length-2];
+
+    it(`random#${run}_${A_shape.join('x')}`, () => {
+      const ONE = tf.scalar(1),
+            TWO = tf.scalar(2);
+      // create a random matrix starting from a random singular value decomposition
+      // (this way we control condition number)
+      const [q1] = la.qr( tf.randomUniform(A_shape,-1,+1) ),
+            [q2] = la.qr( tf.randomUniform(A_shape,-1,+1) );
+
+      const sign = tf.randomUniform(A_shape.slice(0,-1),0,2,'int32').cast('float32').mul(TWO).sub(ONE),
+            magn = tf.randomNormal (A_shape.slice(0,-1),/*mean=*/1,/*stdDev=*/0.1);
+
+      const s = la.setDiag( tf.zeros(A_shape), tf.mul(sign,magn) );
+
+      const a = [q1,s,q2].reduce( (a,b) => tf.matMul(a,b) );
+      testWith(a);
+    });
+  }
+});
+
+describeWithFlags('luSolve', CPU_ENVS, () => {
+  const la = tf.linalg;
+
+  const testWith = (a: Tensor, y: Tensor) => {
+    let [lu,p] = la.lu(a);
+
+    let x = la.luSolve(lu,p,y);
+
+    const Y = tf.matMul(a,x);
+
+    expectArraysClose(Y, tf.broadcastTo(y,Y.shape) );
+  };
+
+  it('2x2', () => testWith( tf.tensor2d([[1,2],
+                                         [3,4]]), tf.tensor2d([[5, 6, 7],
+                                                               [8, 9,10]]) ) );
+
+  for( let run=32; run-- > 0; )
+  {
+    let A_shape = Array.from({ length: randInt(2,5) }, () => randInt(1,5) ),
+        y_shape = A_shape.slice( randInt(0,A_shape.length-2) );
+    if( Math.random() < 0.5 )
+      [A_shape,y_shape] = [y_shape,A_shape];
+    A_shape[A_shape.length-1] = A_shape[A_shape.length-2];
+
+    for( let L=A_shape.length-2, y=y_shape.length-2; L-- > 0 && y-- > 0; )
+      switch( randInt(0,3) )
+      {
+        case 0: break;
+        case 1: A_shape[L] = 1; break;
+        case 2: y_shape[y] = 1; break;
+      }
+
+    it(`random#${run}_${A_shape.join('x')}`, () => {
+      const ONE = tf.scalar(1);
+      const TWO = tf.scalar(2);
+      // create a random matrix starting from a random singular value decomposition
+      // (this way we control condition number)
+      const [q1] = la.qr( tf.randomUniform(A_shape,-1,+1) );
+      const [q2] = la.qr( tf.randomUniform(A_shape,-1,+1) );
+      const sign = tf.randomUniform(A_shape.slice(0,-1),0,2,'int32').cast('float32').mul(TWO).sub(ONE);
+      const magn = tf.randomNormal (A_shape.slice(0,-1),/*mean=*/1,/*stdDev=*/0.2);
+
+      const s = la.setDiag( tf.zeros(A_shape), tf.mul(sign,magn) );
+
+      const a = [q1,s,q2].reduce( (a,b) => tf.matMul(a,b) );
+      const y = tf.randomUniform(y_shape, -1, +1);
+      testWith(a,y);
+    });
+  }
+});
+
+describeWithFlags('adjoint', ALL_ENVS, () => {
+  it('2x3', () => {
+    const a   = tf.tensor2d([[1,2,3],
+                             [4,5,6]], [2,3]),
+          a_T = tf.tensor2d([[1,4],
+                             [2,5],
+                             [3,6]],[3,2]);
+    expectArraysEqual( tf.linalg.adjoint(a), a_T );
+  });
+  it('3x2x1', () => {
+    const a   = tf.tensor3d([[[1],[2]],
+                             [[3],[4]],
+                             [[5],[6]]], [3,2,1]),
+          a_T = tf.tensor3d([[[1,2]],
+                             [[3,4]],
+                             [[5,6]]], [3,1,2]);
+    expectArraysEqual( tf.linalg.adjoint(a), a_T );
+  });
+});
+
+
+describeWithFlags('diagPart', ALL_ENVS, () => {
+  const la = tf.linalg;
+
+  function testWith( a: Tensor, d: Tensor ): void
+  {
+    for( a of [la.adjoint(a),a] )
+    {
+      expectArraysEqual(la.diagPart(a), d);
+
+      const w = tf.randomUniform(d.shape,-1,+1),
+            f = (a: Tensor) => la.diagPart(a).mul(w).mean() as Scalar,
+            g = numDiff(f),
+            h = tf.grad(f);
+      expectArraysClose( g(a), h(a) );
+    }
+  }
+
+  it('3x4', () => {
+    let a = tf.tensor2d([
+      [1, 2, 3, 4],
+      [5, 6, 7, 8],
+      [9,10,11,12]
+    ]);
+    const d =  tf.tensor1d([1,6,11]);
+    testWith(a,d);
+  });
   it('3x3', () => {
-    const x = tensor2d([[1, 3, 2], [-2, 0, 7], [8, -9, 4]], [3, 3]);
-    const [q, r] = tf.linalg.qr(x);
-    expectArraysClose(
-        q,
-        tensor2d(
-            [
-              [-0.1204, 0.8729, 0.4729], [0.2408, -0.4364, 0.8669],
-              [-0.9631, -0.2182, 0.1576]
-            ],
-            [3, 3]));
-    expectArraysClose(
-        r,
-        tensor2d(
-            [[-8.3066, 8.3066, -2.4077], [0, 4.5826, -2.1822], [0, 0, 7.6447]],
-            [3, 3]));
+    let a = tf.tensor2d([
+      [1, 2, 3],
+      [5, 6, 7],
+      [9,10,11]
+    ]);
+    const d =  tf.tensor1d([1,6,11]);
+    testWith(a,d);
   });
-
-  it('3x2, fullMatrices = default false', () => {
-    const x = tensor2d([[1, 2], [3, -3], [-2, 1]], [3, 2]);
-    const [q, r] = tf.linalg.qr(x);
-    expectArraysClose(
-        q,
-        tensor2d(
-            [[-0.2673, 0.9221], [-0.8018, -0.3738], [0.5345, -0.0997]],
-            [3, 2]));
-    expectArraysClose(r, tensor2d([[-3.7417, 2.4054], [0, 2.8661]], [2, 2]));
-  });
-
-  it('3x2, fullMatrices = true', () => {
-    const x = tensor2d([[1, 2], [3, -3], [-2, 1]], [3, 2]);
-    const [q, r] = tf.linalg.qr(x, true);
-    expectArraysClose(
-        q,
-        tensor2d(
-            [
-              [-0.2673, 0.9221, 0.2798], [-0.8018, -0.3738, 0.4663],
-              [0.5345, -0.0997, 0.8393]
-            ],
-            [3, 3]));
-    expectArraysClose(
-        r, tensor2d([[-3.7417, 2.4054], [0, 2.8661], [0, 0]], [3, 2]));
-  });
-
-  it('2x3, fullMatrices = default false', () => {
-    const x = tensor2d([[1, 2, 3], [-3, -2, 1]], [2, 3]);
-    const [q, r] = tf.linalg.qr(x);
-    expectArraysClose(
-        q,
-        tensor2d([[-0.3162278, -0.9486833], [0.9486833, -0.31622773]], [2, 2]));
-    expectArraysClose(
-        r,
-        tensor2d(
-            [[-3.162, -2.5298, -2.3842e-07], [0, -1.2649, -3.162]], [2, 3]),
+  it('2x2x3', () => {
+    let a = tf.tensor3d(
+      [[[ 1, 2, 3],
+        [ 4, 5, 6]],
+       [[ 7, 8, 9],
+        [10,11,12]]]
     );
+    const d =  tf.tensor2d([[1,5],[7,11]]);
+    testWith(a,d);
   });
+})
 
-  it('2x3, fullMatrices = true', () => {
-    const x = tensor2d([[1, 2, 3], [-3, -2, 1]], [2, 3]);
-    const [q, r] = tf.linalg.qr(x, true);
-    expectArraysClose(
-        q,
-        tensor2d([[-0.3162278, -0.9486833], [0.9486833, -0.31622773]], [2, 2]));
-    expectArraysClose(
-        r,
-        tensor2d(
-            [[-3.162, -2.5298, -2.3842e-07], [0, -1.2649, -3.162]], [2, 3]),
+
+describeWithFlags('setDiag', ALL_ENVS, () => {
+  const la = tf.linalg;
+
+  function testWith( a: Tensor, d: Tensor, b: Tensor ): void
+  {
+    for( let i=2; i-- > 0; )
+    {
+      expectArraysEqual(la.setDiag(a,d), b);
+
+      const w = tf.randomUniform(a.shape,-1,+1),
+            f = (a: Tensor, d: Tensor) => la.setDiag(a,d).mul(w).mean() as Scalar,
+            g1 = numDiff( a => f(a,d) )(a),
+            g2 = numDiff( d => f(a,d) )(d),
+           [h1,h2] = tf.grads(f)([a,d]);
+      expectArraysClose(g1,h1);
+      expectArraysClose(g2,h2);
+
+      a = la.adjoint(a);
+      b = la.adjoint(b);
+    }
+  }
+
+  it('3x4', () => {
+    const a = tf.tensor2d([
+      [1, 2, 3, 4],
+      [5, 6, 7, 8],
+      [9,10,11,12]
+    ]);
+    const d =  tf.tensor1d([13,14,15]);
+    const b = tf.tensor2d([
+      [13, 2, 3, 4],
+      [5, 14, 7, 8],
+      [9, 10,15,12]
+    ]);
+    testWith(a,d,b);
+  });
+  it('3x3', () => {
+    const a = tf.tensor2d([
+      [1, 2, 3],
+      [5, 6, 7],
+      [9,10,11]
+    ]);
+    const d =  tf.tensor1d([12,13,14]);
+    const b = tf.tensor2d([
+      [12, 2, 3],
+      [5, 13, 7],
+      [9, 10,14]
+    ]);
+    testWith(a,d,b);
+  });
+  it('2x2x3', () => {
+    const a = tf.tensor3d(
+      [[[ 1, 2, 3],
+        [ 4, 5, 6]],
+       [[ 7, 8, 9],
+        [10,11,12]]]
     );
+    const d =  tf.tensor2d([[13,14],
+                            [15,16]]);
+    const b = tf.tensor3d(
+      [[[13, 2, 3],
+        [ 4,14, 6]],
+       [[15, 8, 9],
+        [10,16,12]]]
+    );
+    testWith(a,d,b);
+  });
+})
+
+
+describeWithFlags('bandPart', ALL_ENVS, () => {
+  it('3x4', () => {
+    const a = tf.tensor2d([
+      [1, 2, 3, 4],
+      [5, 6, 7, 8],
+      [9,10,11,12]
+    ]);
+    expectArraysEqual( tf.linalg.bandPart(a,0,0), tf.tensor2d([[1,0, 0, 0],
+                                                               [0,6, 0, 0],
+                                                               [0,0,11, 0]]) );
+    expectArraysEqual( tf.linalg.bandPart(a,0,1), tf.tensor2d([[1,2, 0, 0],
+                                                               [0,6, 7, 0],
+                                                               [0,0,11,12]]) );
+    expectArraysEqual( tf.linalg.bandPart(a,0,2), tf.tensor2d([[1,2, 3, 0],
+                                                               [0,6, 7, 8],
+                                                               [0,0,11,12]]) );
+    expectArraysEqual( tf.linalg.bandPart(a,0,2), tf.tensor2d([[1,2, 3, 0],
+                                                               [0,6, 7, 8],
+                                                               [0,0,11,12]]) );
+    for( const numUpper of [3,4,-1,-2] )
+      expectArraysEqual( tf.linalg.bandPart(a,0,numUpper), tf.tensor2d([[1,2, 3, 4],
+                                                                        [0,6, 7, 8],
+                                                                        [0,0,11,12]]) );
+
+
+    expectArraysEqual( tf.linalg.bandPart(a,1,0), tf.tensor2d([[1, 0, 0, 0],
+                                                               [5, 6, 0, 0],
+                                                               [0,10,11, 0]]) );
+    expectArraysEqual( tf.linalg.bandPart(a,1,1), tf.tensor2d([[1, 2, 0, 0],
+                                                               [5, 6, 7, 0],
+                                                               [0,10,11,12]]) );
+    expectArraysEqual( tf.linalg.bandPart(a,1,2), tf.tensor2d([[1, 2, 3, 0],
+                                                               [5, 6, 7, 8],
+                                                               [0,10,11,12]]) );
+    expectArraysEqual( tf.linalg.bandPart(a,1,2), tf.tensor2d([[1, 2, 3, 0],
+                                                               [5, 6, 7, 8],
+                                                               [0,10,11,12]]) );
+    for( const numUpper of [3,4,-1,-2] )
+      expectArraysEqual( tf.linalg.bandPart(a,1,numUpper), tf.tensor2d([[1, 2, 3, 4],
+                                                                        [5, 6, 7, 8],
+                                                                        [0,10,11,12]]) );
+
+
+    for( const numLower of [2,3,-1,-2])
+    {
+      expectArraysEqual( tf.linalg.bandPart(a,numLower,0), tf.tensor2d([[1, 0, 0, 0],
+                                                                        [5, 6, 0, 0],
+                                                                        [9,10,11, 0]]) );
+      expectArraysEqual( tf.linalg.bandPart(a,numLower,1), tf.tensor2d([[1, 2, 0, 0],
+                                                                        [5, 6, 7, 0],
+                                                                        [9,10,11,12]]) );
+      expectArraysEqual( tf.linalg.bandPart(a,numLower,2), tf.tensor2d([[1, 2, 3, 0],
+                                                                        [5, 6, 7, 8],
+                                                                        [9,10,11,12]]) );
+      expectArraysEqual( tf.linalg.bandPart(a,numLower,2), tf.tensor2d([[1, 2, 3, 0],
+                                                                        [5, 6, 7, 8],
+                                                                        [9,10,11,12]]) );
+      for( const numUpper of [3,4,-1,-2] )
+        expectArraysEqual( tf.linalg.bandPart(a,numLower,numUpper), tf.tensor2d([[1, 2, 3, 4],
+                                                                                 [5, 6, 7, 8],
+                                                                                 [9,10,11,12]]) );
+    }
+
+    for( const numUpper of [0,1,2,3,4,-1,-2] )
+    for( const numLower of [0,1,2,3,  -1,-2] ) {
+      const w = tf.randomUniform(a.shape),
+            f = (x: Tensor) => tf.linalg.bandPart(x,numLower,numUpper).mul(w).mean() as Scalar,
+            g = numDiff(f),
+            h = tf.grad(f);
+      expectArraysClose( g(a), h(a) );
+    };
+  });
+});
+
+
+describeWithFlags('cholesky', ALL_ENVS, () => {
+  const la = tf.linalg;
+
+  function testWith( l: Tensor ) {
+    const a = tf.matMul(l,l,false,true);
+    const L = la.cholesky(a);
+    expectArraysClose(L,l);
+
+    const w = tf.randomUniform(a.shape,-1,+1),
+          f = (a: Tensor) => la.cholesky(a).mul(w).mean() as Scalar,
+          g = numDiff(f),
+          h = tf.grad(f);
+
+    expectArraysClose( h(a), g(a) );
+  };
+
+  for( let run=128; run-- > 0; )
+  {
+    let L_shape = Array.from({ length: randInt(2,5) }, () => randInt(1,5) ),
+        d_shape = L_shape.slice(0,-1);
+    L_shape[L_shape.length-1] = L_shape[L_shape.length-2];
+
+    // RUN TEST
+    it(`random#${run}_${L_shape.join('x')}`, () => {
+      let l = tf.randomUniform(L_shape,-0.2,+0.2)
+      l = la.bandPart(l,-1, 0);
+      l = la.setDiag( l, tf.randomNormal(d_shape,/*mean=*/1,/*stdDev=*/0.2) );
+      testWith(l);
+    });
+  }
+})
+
+
+describeWithFlags('triangularSolve', ALL_ENVS, () => {
+  const testWith = (L: Tensor, y: Tensor) => {
+    const test = (adjoint: boolean) =>
+    {
+      let tril = tf.linalg.bandPart(L,-1, 0),
+          triu = tf.linalg.bandPart(L, 0,-1);
+      if( adjoint ) {
+        tril = tf.linalg.adjoint(tril);
+        triu = tf.linalg.adjoint(triu);
+      }
+      for( const lower of [true,undefined] )
+      {
+        const x = tf.linalg.triangularSolve(L,y, lower, adjoint);
+        const [a,b] = broadcastMatrices( y, tril.matMul(x) );
+        expectArraysClose(a,b);
+      }
+      const x = tf.linalg.triangularSolve(L,y, /*lower=*/false, adjoint);
+      const [a,b] = broadcastMatrices( y, triu.matMul(x) );
+      expectArraysClose(a,b);
+
+      for( const lower of [false,true,undefined] )
+      {
+        const w = tf.randomUniform(y.shape,-1,+1),
+              f = (L: Tensor, y: Tensor) => {
+                return tf.linalg.triangularSolve(L,y,lower).mul(w).mean() as Scalar
+              },
+              [g1,g2] = tf.grads(f)([L,y]),
+              h1 = numDiff( (L: Tensor) => f(L,y) )(L),
+              h2 = numDiff( (y: Tensor) => f(L,y) )(y);
+        expectArraysClose(g1,h1);
+        expectArraysClose(g2,h2);
+      }
+    }
+    test(undefined);
+    test(false);
+    test(true);
+  };
+
+  it('3x3', () => testWith(
+    tf.tensor2d(
+      [[1,2,3],
+       [4,5,6],
+       [7,8,9]]
+    ),
+    tf.tensor2d(
+      [[10,11],
+       [12,13],
+       [14,15]]
+    )
+  ));
+
+  for( let run=0; run < 16; run++ )
+  { // RANDOMLY GENERATE BROADCAST-COMPATIBLE SHAPES
+    let L_shape = Array.from({ length: randInt(2,5) }, () => randInt(1,4) ),
+        y_shape = L_shape.slice( randInt(0,L_shape.length-2) );
+
+    if( Math.random() < 0.5 )
+    {
+      y_shape = Array.from({ length: randInt(2,5) }, () => randInt(1,4) );
+      L_shape = y_shape.slice( randInt(0,y_shape.length-2) );
+    }
+    L_shape[L_shape.length-1] = L_shape[L_shape.length-2];
+
+    for( let L=L_shape.length-2, y=y_shape.length-2; L-- > 0 && y-- > 0; )
+      switch( randInt(0,3) )
+      {
+        case 0: break;
+        case 1: L_shape[L] = 1; break;
+        case 2: y_shape[y] = 1; break;
+      }
+
+    // RUN TEST
+    it(`random#${run}_${L_shape.join('x')}_${y_shape.join('x')}`, () => {
+      const ONE = tf.scalar(1),
+            TWO = tf.scalar(2);
+      const y         = tf.randomUniform(y_shape,-1,+1);
+      let   L: Tensor = tf.randomUniform(L_shape,-1,+1);
+      // SET THE DIAGONAL TO BE FAR FROM ZERO
+      const i = tf.range(0,L_shape[L_shape.length-2]).reshape([-1,1]),
+            j = tf.range(0,L_shape[L_shape.length-1]),
+            diag = tf.equal(i,j).cast('float32'),
+            sign = tf.randomUniform(L_shape,0,2,'int32').cast('float32').mul(TWO).sub(ONE),
+            magn = tf.randomNormal (L_shape, /*mean=*/1,/*stdDev=*/0.1);
+      L = tf.add(
+        diag.sub(ONE).mul(L),    // <- off-diagonal
+        diag.mul(sign).mul(magn) // <-     diagonal
+      );
+      L = tf.clone(L);
+      testWith(L,y);
+    });
+  }
+});
+
+
+describeWithFlags('qr', ALL_ENVS, () => {
+  const testWith = (a: Tensor) => {
+    const [m,n] = a.shape.slice(-2),
+           l = Math.min(m,n),
+           T = Array.from({ length: a.rank }, (_,i) => i );
+    T[T.length-2] = T.length-1;
+    T[T.length-1] = T.length-2;
+
+    for( const fullMatrices of [undefined,false,true] )
+    {
+      const tril = function(){
+        const [p,q] = fullMatrices ? [m,n] : [l,n],
+          i = tf.range(0,p).reshape([p,1]),
+          j = tf.range(0,q).reshape([1,q]);
+        return i.greater(j).cast('float32');
+      }();
+      const EYE = function(){
+        const d = fullMatrices ? m : l;
+        return tf.stack(
+          Array.from(
+            { length: a.shape.slice(0,-2).reduce( (x,y) => x*y, 1 ) },
+            () => tf.eye(d)
+          )
+        ).reshape([...a.shape.slice(0,-2),d,d]);
+      }();
+      let [q,r] = tf.linalg.qr(a,fullMatrices);
+      const q_T = q.transpose(T);
+
+      // TEST SHAPE OF Q
+      expectArraysEqual( q.shape.slice(0,-1), a.shape.slice(0,-1) );
+      expectArraysClose( q.shape.slice(  -1), fullMatrices ? [m  ] : [l  ] );
+
+      // TEST SHAPE OF R
+      expectArraysEqual( r.shape.slice(0,-2), a.shape.slice(0,-2) );
+      expectArraysClose( r.shape.slice(  -2), fullMatrices ? [m,n] : [l,n] );
+      
+      // TEST DECOMPOSITION (Q @ R == A)
+      expectArraysClose( q.matMul(r), a );
+
+      // TEST ORTHOGONALITY OF Q
+                                   expectArraysClose( q_T.matMul(q  ), EYE );
+      if( fullMatrices || n >= m ) expectArraysClose( q  .matMul(q_T), EYE );
+
+      // TEST TRIANGULARITY OF R
+      expectArraysEqual( tril.mul(r), tf.zeros(r.shape) );
+
+      // TEST GRADIENTS
+      const wQ = tf.randomUniform(q.shape,-1,+1),
+            wR = tf.randomUniform(r.shape,-1,+1),
+            f = (a: Tensor) => {
+              const [q,r] = tf.linalg.qr(a,fullMatrices);
+              return q.mul(wQ).mean().add( r.mul(wR).mean() ) as Scalar; // <= FIXME: use some weights
+            };
+      const g = numDiff(f);
+      const h = tf.grad(f);
+      expectArraysClose( g(a), h(a) );
+    }
+  };
+
+  it('1x1', () => testWith( tensor2d([[10]], [1, 1]) ) );
+
+  it('2x2', () => testWith( tensor2d([[ 1, 3],
+                                      [-2,-4]], [2, 2]) ) );
+
+  it('2x2x2', () => testWith( tensor3d([[[-1,-3],
+                                         [ 2, 4]],
+                                        [[ 1, 3],
+                                         [-2,-4]]], [2, 2, 2]) ) );
+
+  it('2x1x2x2', () => testWith( tensor4d([[[[-1,-3],
+                                            [ 2, 4]]],
+                                          [[[ 1, 3],
+                                            [-2,-4]]]], [2, 1, 2, 2]) ) );
+
+  it('3x3', () => testWith( tensor2d([[ 1, 3, 2],
+                                      [-2, 0, 7],
+                                      [ 8,-9, 4]], [3, 3]) ) );
+
+  it('3x2', () => testWith( tensor2d([[ 1, 2],
+                                      [ 3,-3],
+                                      [-2, 1]], [3, 2]) ) );
+
+  it('2x3', () => testWith( tensor2d([[ 1, 2, 3],
+                                      [-3,-2, 1]], [2, 3]) ) );
+
+  for( let run=0; run < 16; run++ )
+  {
+    const A_shape = Array.from({ length: randInt(2,5) }, () => randInt(1,4) );
+    it(`random#${run}_${A_shape.join('x')}`, () => testWith( tf.randomUniform(A_shape,-1,+1) ));
+  }
+
+  it('Is reasonably fast', () => { // <- TODO is there a better way to test this with a timeout?
+    const N = 128,
+          A = tf.randomUniform([N,N],-1,+1),
+         wQ = tf.randomUniform([N,N],-1,+1),
+         wR = tf.randomUniform([N,N],-1,+1),
+          f = (a: Tensor) => {
+            const [q,r] = tf.linalg.qr(a);
+            return q.mul(wQ).mean().add( r.mul(wR).mean() ); // <= FIXME: use some weights
+          };
+    const g = tf.grad(f);
+    expectArraysClose( g(A), g(A) ); // <- this hopefully prevent g(A) from being JITes/Optimized away...
   });
 
   it('Does not leak memory', () => {
-    const x = tensor2d([[1, 3], [-2, -4]], [2, 2]);
+    const x = tensor2d([[ 1, 3],
+                        [-2,-4]], [2, 2]);
     // The first call to qr creates and keeps internal singleton tensors.
     // Subsequent calls should always create exactly two tensors.
     tf.linalg.qr(x);
