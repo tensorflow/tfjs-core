@@ -118,7 +118,7 @@ function rfft_(input: Tensor): Tensor {
     const complexInput = complex(input, zeros).as2D(batch, innerDimensionSize);
 
     const ret = ENV.engine.runKernel(
-      backend => backend.fft(complexInput), {input});
+      backend => backend.fft(complexInput), {complexInput});
 
     // Exclude complex conjugations. These conjugations are put symmetrically.
     const half = Math.floor(innerDimensionSize / 2) + 1;

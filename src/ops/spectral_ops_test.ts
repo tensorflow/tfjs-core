@@ -239,6 +239,13 @@ describeWithFlags('2D RFFT', WEBGL_ENVS, () => {
       tf.spectral.rfft(t1Real), [3, 0, -1, 0, 7, 0, -1, 0]);
   });
 
+  it('should return the same value with TensorFlow (2x3 elements)', () => {
+    const t1Real = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
+    expectArraysClose(
+      tf.spectral.rfft(t1Real), [6, 1.1920929e-07, -1.4999999, 8.6602521e-01,
+        15, -5.9604645e-08, -1.4999998, 8.6602545e-01]);
+  });
+
   it('should return the same value with TensorFlow (2x2x2 elements)', () => {
     const t1Real = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2]);
     expectArraysClose(
