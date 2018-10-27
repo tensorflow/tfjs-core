@@ -16,7 +16,6 @@
  */
 
 import * as seedrandom from 'seedrandom';
-
 import {ENV} from '../environment';
 import {warn} from '../log';
 import * as array_ops_util from '../ops/array_ops_util';
@@ -35,7 +34,6 @@ import {DataId, Scalar, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, 
 import {DataType, DataTypeMap, Rank, ShapeMap, TypedArray, upcastType} from '../types';
 import * as util from '../util';
 import {now} from '../util';
-
 import {BackendTimingInfo, DataMover, DataStorage, KernelBackend} from './backend';
 import * as backend_util from './backend_util';
 import * as complex_util from './complex_util';
@@ -57,12 +55,13 @@ export class MathBackendCPU implements KernelBackend {
   public blockSize = 48;
 
   private data: DataStorage<TensorData<DataType>>;
-  private canvas: HTMLCanvasElement;
+  private fromPixels2DContext: CanvasRenderingContext2D;
   private firstUse = true;
 
   constructor() {
     if (ENV.get('IS_BROWSER')) {
-      this.canvas = document.createElement('canvas');
+      this.fromPixels2DContext =
+          document.createElement('canvas').getContext('2d');
     }
   }
 
@@ -123,16 +122,16 @@ export class MathBackendCPU implements KernelBackend {
     } else if (
         pixels instanceof HTMLImageElement ||
         pixels instanceof HTMLVideoElement) {
-      if (this.canvas == null) {
+      if (this.fromPixels2DContext == null) {
         throw new Error(
             'Can\'t read pixels from HTMLImageElement outside ' +
             'the browser.');
       }
-      this.canvas.width = pixels.width;
-      this.canvas.height = pixels.height;
-      this.canvas.getContext('2d').drawImage(
+      this.fromPixels2DContext.canvas.width = pixels.width;
+      this.fromPixels2DContext.canvas.height = pixels.height;
+      this.fromPixels2DContext.drawImage(
           pixels, 0, 0, pixels.width, pixels.height);
-      vals = this.canvas.getContext('2d')
+      vals = this.fromPixels2DContext
                  .getImageData(0, 0, pixels.width, pixels.height)
                  .data;
     } else {
@@ -1204,19 +1203,22 @@ export class MathBackendCPU implements KernelBackend {
   abs<T extends Tensor>(x: T): T {
     const resultValues = new Float32Array(x.size);
     const values = x.dataSync();
-
-    if (x.dtype === 'complex64') {
-      for (let i = 0; i < x.size; ++i) {
-        const real = values[i * 2];
-        const imag = values[i * 2 + 1];
-        resultValues[i] = Math.sqrt(real * real + imag * imag);
-      }
-    } else {
-      for (let i = 0; i < values.length; ++i) {
-        resultValues[i] = Math.abs(values[i]);
-      }
+    for (let i = 0; i < values.length; ++i) {
+      resultValues[i] = Math.abs(values[i]);
     }
 
+    return Tensor.make(x.shape, {values: resultValues}) as T;
+  }
+
+  complexAbs<T extends Tensor>(x: T): T {
+    const resultValues = new Float32Array(x.size);
+    const values = x.dataSync();
+
+    for (let i = 0; i < x.size; ++i) {
+      const real = values[i * 2];
+      const imag = values[i * 2 + 1];
+      resultValues[i] = Math.sqrt(real * real + imag * imag);
+    }
     return Tensor.make(x.shape, {values: resultValues}) as T;
   }
 
@@ -2639,22 +2641,41 @@ export class MathBackendCPU implements KernelBackend {
         boxesVals, scoresVals, maxOutputSize, iouThreshold, scoreThreshold);
   }
 
-  fft(input: Tensor2D): Tensor2D {
-    if (input.shape[0] !== 1) {
+  fft(x: Tensor2D): Tensor2D {
+    if (x.shape[0] !== 1) {
       throw new Error(`tf.fft() on CPU only supports vectors.`);
     }
-    const input1D = input.as1D();
+    const inverse = false;
+    return this.fftImpl(x, inverse);
+  }
 
-    const n = input1D.size;
+  ifft(x: Tensor2D): Tensor2D {
+    if (x.shape[0] !== 1) {
+      throw new Error(`tf.ifft() on CPU only supports vectors.`);
+    }
+    const inverse = true;
+    return this.fftImpl(x, inverse);
+  }
+
+  private fftImpl(x: Tensor2D, inverse: boolean): Tensor2D {
+    const x1D = x.as1D();
+
+    const n = x1D.size;
 
     if (this.isExponentOf2(n)) {
-      return this.fftRadix2(input1D, n).as2D(input.shape[0], input.shape[1]);
+      let result = this.fftRadix2(x1D, n, inverse).as2D(x.shape[0], x.shape[1]);
+      if (inverse) {
+        result = ops.complex(
+                     ops.real(result).div(scalar(n)),
+                     ops.imag(result).div(scalar(n))) as Tensor2D;
+      }
+      return result;
     } else {
-      const data = input.dataSync();
-      const rawOutput = this.fourierTransformByMatmul(data, n) as Float32Array;
+      const data = x.dataSync();
+      const rawOutput =
+          this.fourierTransformByMatmul(data, n, inverse) as Float32Array;
       const output = complex_util.splitRealAndImagArrays(rawOutput);
-      return ops.complex(output.real, output.imag)
-          .as2D(input.shape[0], input.shape[1]);
+      return ops.complex(output.real, output.imag).as2D(x.shape[0], x.shape[1]);
     }
   }
 
@@ -2663,7 +2684,7 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   // FFT using Cooley-Tukey algorithm on radix 2 dimensional input.
-  private fftRadix2(input: Tensor1D, size: number): Tensor1D {
+  private fftRadix2(input: Tensor1D, size: number, inverse: boolean): Tensor1D {
     if (size === 1) {
       return input;
     }
@@ -2675,10 +2696,10 @@ export class MathBackendCPU implements KernelBackend {
     let oddTensor = ops.complex(oddComplex.real, oddComplex.imag).as1D();
 
     // Recursive call for half part of original input.
-    evenTensor = this.fftRadix2(evenTensor, half);
-    oddTensor = this.fftRadix2(oddTensor, half);
+    evenTensor = this.fftRadix2(evenTensor, half, inverse);
+    oddTensor = this.fftRadix2(oddTensor, half, inverse);
 
-    const e = complex_util.exponents(size);
+    const e = complex_util.exponents(size, inverse);
     const exponent = ops.complex(e.real, e.imag).mul(oddTensor);
 
     const addPart = evenTensor.add(exponent);
@@ -2691,17 +2712,22 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   // Calculate fourier transform by multplying sinusoid matrix.
-  private fourierTransformByMatmul(data: TypedArray, size: number): TypedArray {
+  private fourierTransformByMatmul(
+      data: TypedArray, size: number, inverse: boolean): TypedArray {
     const ret = new Float32Array(size * 2);
     // TODO: Use matmul instead once it supports complex64 type.
     for (let r = 0; r < size; r++) {
       let real = 0.0;
       let imag = 0.0;
       for (let c = 0; c < size; c++) {
-        const e = complex_util.exponent(r * c, size);
+        const e = complex_util.exponent(r * c, size, inverse);
         const term = complex_util.getComplexWithIndex(data as Float32Array, c);
         real += term.real * e.real - term.imag * e.imag;
         imag += term.real * e.imag + term.imag * e.real;
+      }
+      if (inverse) {
+        real /= size;
+        imag /= size;
       }
       complex_util.assignToTypedArray(ret, real, imag, r);
     }

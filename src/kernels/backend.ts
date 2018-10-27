@@ -180,6 +180,7 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
   clip<T extends Tensor>(x: T, min: number, max: number): T;
 
   abs<T extends Tensor>(x: T): T;
+  complexAbs<T extends Tensor>(x: T): T;
 
   sigmoid<T extends Tensor>(x: T): T;
 
@@ -289,6 +290,7 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
       iouThreshold: number, scoreThreshold?: number): Tensor1D;
 
   fft(x: Tensor2D): Tensor2D;
+  ifft(x: Tensor2D): Tensor2D;
   complex<T extends Tensor>(real: T, imag: T): T;
   real<T extends Tensor>(input: T): T;
   imag<T extends Tensor>(input: T): T;
