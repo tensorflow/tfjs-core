@@ -28,8 +28,10 @@ import {op} from './operation';
  *
  * @param x The input tensor, of rank 4 or rank 3 of shape
  *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is assumed.
- * @param filterSize The filter size, a tuple `[filterHeight, filterWidth]`.
- * @param strides The strides of the pooling: `[strideHeight, strideWidth]`.
+ * @param filterSize The filter size: `[filterHeight, filterWidth]`. If
+ *     `filterSize` is a single number, then `filterHeight == filterWidth`.
+ * @param strides The strides of the pooling: `[strideHeight, strideWidth]`. If
+ *     `strides` is a single number, then `strideHeight == strideWidth`.
  * @param dilations The dilation rates: `[dilationHeight, dilationWidth]`
  *     in which we sample input values across the height and width dimensions
  *     in dilated pooling. Defaults to `[1, 1]`. If `dilations` is a single
@@ -99,8 +101,10 @@ function maxPoolImpl_<T extends Tensor3D|Tensor4D>(
  *
  * @param x The input tensor, of rank 4 or rank 3 of shape
  *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is assumed.
- * @param filterSize The filter size, a tuple `[filterHeight, filterWidth]`.
- * @param strides The strides of the pooling: `[strideHeight, strideWidth]`.
+ * @param filterSize The filter size: `[filterHeight, filterWidth]`. If
+ *     `filterSize` is a single number, then `filterHeight == filterWidth`.
+ * @param strides The strides of the pooling: `[strideHeight, strideWidth]`. If
+ *     `strides` is a single number, then `strideHeight == strideWidth`.
  * @param pad The type of padding algorithm.
  *    - `same` and stride 1: output will be of same size as input,
  *       regardless of filter size.
@@ -126,8 +130,10 @@ function maxPool_<T extends Tensor3D|Tensor4D>(
  *
  * @param x The input tensor, of rank 4 or rank 3 of shape
  *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is assumed.
- * @param filterSize The filter size, a tuple `[filterHeight, filterWidth]`.
- * @param strides The strides of the pooling: `[strideHeight, strideWidth]`.
+ * @param filterSize The filter size: `[filterHeight, filterWidth]`. If
+ *     `filterSize` is a single number, then `filterHeight == filterWidth`.
+ * @param strides The strides of the pooling: `[strideHeight, strideWidth]`. If
+ *     `strides` is a single number, then `strideHeight == strideWidth`.
  * @param dilations The dilation rates: `[dilationHeight, dilationWidth]`
  *     in which we sample input values across the height and width dimensions
  *     in dilated pooling. Defaults to `[1, 1]`. If `dilations` is a single
@@ -197,8 +203,10 @@ function avgPoolImpl_<T extends Tensor3D|Tensor4D>(
  *
  * @param x The input tensor, of rank 4 or rank 3 of shape
  *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is assumed.
- * @param filterSize The filter size, a tuple `[filterHeight, filterWidth]`.
- * @param strides The strides of the pooling: `[strideHeight, strideWidth]`.
+ * @param filterSize The filter size: `[filterHeight, filterWidth]`. If
+ *     `filterSize` is a single number, then `filterHeight == filterWidth`.
+ * @param strides The strides of the pooling: `[strideHeight, strideWidth]`. If
+ *     `strides` is a single number, then `strideHeight == strideWidth`.
  * @param pad The type of padding algorithm:
  *    - `same` and stride 1: output will be of same size as input,
  *       regardless of filter size.
@@ -224,7 +232,8 @@ function avgPool_<T extends Tensor3D|Tensor4D>(
  *
  * @param input The input tensor, of rank 4 or rank 3 of shape
  *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is assumed.
- * @param windowShape The filter size, a tuple `[filterHeight, filterWidth]`.
+ * @param windowShape The filter size: `[filterHeight, filterWidth]`. If
+ *     `filterSize` is a single number, then `filterHeight == filterWidth`.
  * @param poolingType The type of pooling, either 'max' or 'avg'.
  * @param pad The type of padding algorithm:
  *    - `same` and stride 1: output will be of same size as input,
@@ -239,7 +248,8 @@ function avgPool_<T extends Tensor3D|Tensor4D>(
  *     in dilated pooling. Defaults to `[1, 1]`. If `dilationRate` is a single
  *     number, then `dilationHeight == dilationWidth`. If it is greater than
  *     1, then all values of `strides` must be 1.
- * @param strides The strides of the pooling: `[strideHeight, strideWidth]`.
+ * @param strides The strides of the pooling: `[strideHeight, strideWidth]`. If
+ *     `strides` is a single number, then `strideHeight == strideWidth`.
  */
 /** @doc {heading: 'Operations', subheading: 'Convolution'} */
 function pool_<T extends Tensor3D|Tensor4D>(
@@ -269,8 +279,10 @@ function pool_<T extends Tensor3D|Tensor4D>(
  *     [batchSize, height, width, channels].
  * @param output The original output image, of rank 4, of shape
  *     [batchSize, outHeight, outWidth, channels].
- * @param filterSize The filter size, a tuple [filterHeight, filterWidth].
- * @param strides The strides of the pooling: [strideHeight, strideWidth].
+ * @param filterSize The filter size: `[filterHeight, filterWidth]`. If
+ *     `filterSize` is a single number, then `filterHeight == filterWidth`.
+ * @param strides The strides of the pooling: `[strideHeight, strideWidth]`. If
+ *     `strides` is a single number, then `strideHeight == strideWidth`.
  * @param pad A string from: 'same', 'valid'. The type of padding algorithm
  *     used in the forward prop of the op.
  * @param dimRoundingMode A string from: 'ceil', 'round', 'floor'. The
@@ -330,8 +342,10 @@ function maxPoolBackprop(
  * @param input The input image, of rank 4 or rank 3 of shape
  *     [batchSize, height, width, channels]. If rank 3, batch of 1 is
  * assumed.
- * @param filterSize The filter size, a tuple [filterHeight, filterWidth].
- * @param strides The strides of the pooling: [strideHeight, strideWidth].
+ * @param filterSize The filter size: `[filterHeight, filterWidth]`. If
+ *     `filterSize` is a single number, then `filterHeight == filterWidth`.
+ * @param strides The strides of the pooling: `[strideHeight, strideWidth]`. If
+ *     `strides` is a single number, then `strideHeight == strideWidth`.
  * @param pad A string from: 'same', 'valid'. The type of padding algorithm
  *     used in the forward prop of the op.
  */
