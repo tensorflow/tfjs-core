@@ -47,7 +47,6 @@ import {op} from './operation';
  *     dimensions if pad is a number. If none is provided, it will not round
  *     and error if the output is of fractional size.
  */
-/** @doc {heading: 'Operations', subheading: 'Convolution'} */
 function maxPoolImpl_<T extends Tensor3D|Tensor4D>(
     x: T|TensorLike, filterSize: [number, number]|number,
     strides: [number, number]|number, dilations: [number, number]|number,
@@ -146,7 +145,6 @@ function maxPool_<T extends Tensor3D|Tensor4D>(
  *     dimensions if pad is a number. If none is provided, it will not round
  *     and error if the output is of fractional size.
  */
-/** @doc {heading: 'Operations', subheading: 'Convolution'} */
 function avgPoolImpl_<T extends Tensor3D|Tensor4D>(
     x: T|TensorLike, filterSize: [number, number]|number,
     strides: [number, number]|number, dilations: [number, number]|number,
@@ -222,7 +220,7 @@ function avgPool_<T extends Tensor3D|Tensor4D>(
 }
 
 /**
- * Computes the 2D average pooling of an image.
+ * Performs an N-D pooling operation
  *
  * @param input The input tensor, of rank 4 or rank 3 of shape
  *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is assumed.
@@ -236,13 +234,14 @@ function avgPool_<T extends Tensor3D|Tensor4D>(
  *    - For more info, see this guide:
  *     [https://www.tensorflow.org/api_guides/python/nn#Convolution](
  *         https://www.tensorflow.org/api_guides/python/nn#Convolution)
- * @param dilations The dilation rates: `[dilationHeight, dilationWidth]`
+ * @param dilationRate The dilation rates: `[dilationHeight, dilationWidth]`
  *     in which we sample input values across the height and width dimensions
- *     in dilated pooling. Defaults to `[1, 1]`. If `dilations` is a single
+ *     in dilated pooling. Defaults to `[1, 1]`. If `dilationRate` is a single
  *     number, then `dilationHeight == dilationWidth`. If it is greater than
  *     1, then all values of `strides` must be 1.
  * @param strides The strides of the pooling: `[strideHeight, strideWidth]`.
  */
+/** @doc {heading: 'Operations', subheading: 'Convolution'} */
 function pool_<T extends Tensor3D|Tensor4D>(
     input: T|TensorLike, windowShape: [number, number]|number,
     poolingType: 'avg'|'max', padding: 'valid'|'same'|number,
