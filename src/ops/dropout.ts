@@ -1,36 +1,49 @@
-import {keep, tidy} from '../globals';
+/**
+ * @license
+ * Copyright 2018 Google Inc. All Rights Reserved.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * =============================================================================
+ */
+
 import {Scalar, Tensor} from '../tensor';
 import {DataType} from '../types';
 import {arraysEqual} from '../util';
 
 import {randomUniform} from './array_ops';
-import {add, div, mul, sub} from './binary_ops';
+import {div, sub} from './binary_ops';
 import {op} from './operation';
 import {scalar} from './tensor_ops';
-import {neg, step} from './unary_ops';
+import {step} from './unary_ops';
 
-const scalarCache: {[typeKey: string]: {[key: number]: Scalar}} = {
-  float32: {},
-  int32: {}
-};
 const DEFAULT_DTYPE: DataType = 'float32';
 /**
  * Get scalar, with caching.
  */
-function getScalar_(value: number, dtype?: DataType): Scalar {
+function getScalar(value: number, dtype?: DataType): Scalar {
   if (dtype === undefined) {
     dtype = DEFAULT_DTYPE;
   }
-  if (scalarCache[dtype][value] == null) {
-    scalarCache[dtype][value] = scalar(value, dtype);
-    keep(scalarCache[dtype][value]);
-  }
-  return scalarCache[dtype][value];
+  return scalar(value, dtype);
 }
 
 /**
  * Sets entries in `x` to zero at random, while scaling the entire tensor.
- *
+ * ```js
+ * const x = tf.dropout([1, 2, 3, 4]);
+ * const rate = 0.5;
+ * const noiseShape = null || x.shape;
+ * const tensor = tf.dropout(x, rate, noiseShape);
+ * ```
  * @param x input tensor.
  * @param level fraction of the entries in the tensor that will be set to 0.
  * @param noiseShape shape of randomly generated keep/drop flags, must be
@@ -38,28 +51,21 @@ function getScalar_(value: number, dtype?: DataType): Scalar {
  * @param seed random seed to ensure determinism.
  * @returns Result of the dropout operation.
  */
-
 function dropout_(
     x: Tensor, level: Scalar, noiseShape?: number[], seed?: number): Tensor {
-  return tidy(() => {
-    // TODO(cais): Switch to deeplearn.js implementation of dropout when it
-    //   becomes avaialable.
-    if (noiseShape != null && !arraysEqual(x.shape, noiseShape)) {
-      throw new Error(
-          'Non-default noise shape is not implemented yet: ' +
-          JSON.stringify(noiseShape));
-    }
-    if (seed != null) {
-      throw new Error('seed is not implemented for dropout yet.');
-    }
-    let multiplier = step(
-        add(neg(level) as Scalar, randomUniform(x.shape, 0, 1, 'float32')));
-    // Scale the kept elements, so the expected sum is unchanged.
-    multiplier =
-        mul(div(getScalar(1), sub(getScalar(1), level)) as Scalar, multiplier);
-    return mul(x, multiplier);
-  });
+  if (noiseShape != null && !arraysEqual(x.shape, noiseShape)) {
+    // TODO: implement non default noise shape (VariableVasasMT)
+    throw new Error(
+        'Non-default noise shape is not implemented yet: ' +
+        JSON.stringify(noiseShape));
+  }
+  if (seed != null) {
+    throw new Error('seed is not implemented for dropout yet.');
+  }
+  let multiplier = step(sub(randomUniform(x.shape, 0, 1, 'float32'), level));
+  // Scale the kept elements, so the expected sum is unchanged.
+  multiplier = (div(1, sub(1, level)) as Scalar).mul(multiplier);
+  return x.mul(multiplier);
 }
 
 export const dropout = op({dropout_});
-export const getScalar = op({getScalar_});
