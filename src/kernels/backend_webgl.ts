@@ -1657,11 +1657,6 @@ export class MathBackendWebGL implements KernelBackend {
     return packedTensor as T;
   }
 
-  private unpackTensor<T extends Tensor>(input: T): T {
-    const program = new UnpackProgram(input.shape);
-    return this.compileAndRun(program, [input]);
-  }
-
   private packedReshape<T extends Tensor>(input: T, afterShape: number[]): T {
     if(util.cheap2x2Reshape(input.shape, afterShape)) {
       return input;

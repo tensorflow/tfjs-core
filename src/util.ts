@@ -269,7 +269,7 @@ export function inferFromImplicitShape(
   return newShape;
 }
 
-function divisibleBy4(n) {
+function divisibleBy4(n: number) {
   return n % 4 === 0;
 }
 
