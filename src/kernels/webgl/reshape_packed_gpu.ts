@@ -19,7 +19,7 @@ import {GPGPUProgram} from './gpgpu_math';
 import {getCoordsDataType} from './shader_compiler';
 import {getChannels, getInnerDims} from '../packing_util';
 
-export class ReshapeProgram implements GPGPUProgram {
+export class ReshapePackedProgram implements GPGPUProgram {
   variableNames = ['A'];
   usesPackedTextures = true;
   outputShape: number[];

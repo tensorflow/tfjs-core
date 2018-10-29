@@ -98,6 +98,7 @@ import {TransposeProgram} from './webgl/transpose_gpu';
 import * as unary_op from './webgl/unaryop_gpu';
 import {UnaryOpProgram} from './webgl/unaryop_gpu';
 import {UnpackProgram} from './webgl/unpack_gpu';
+import {ReshapePackedProgram} from './webgl/reshape_packed_gpu';
 import * as webgl_util from './webgl/webgl_util';
 import {whereImpl} from './where_impl';
 
@@ -607,11 +608,13 @@ export class MathBackendWebGL implements KernelBackend {
       const program = new MatMulPackedProgram(
           aSqueezed.shape, bSqueezed.shape, [outerShapeA, outerShapeB],
           transposeA, transposeB);
-      const result = this.unpackTensor(this.compileAndRun(
+      let result = this.compileAndRun(
           program, [aSqueezed, bSqueezed],
-          this.makePackedTensor<Tensor2D>(program.outputShape)));
+          this.makePackedTensor<Tensor2D>(program.outputShape));
 
-      return result.reshape([1, result.shape[0], result.shape[1]]);
+      const resultShape = [1, result.shape[0], result.shape[1]] as [number, number, number];
+      result = this.packedReshape(result, resultShape, program.outputShape);
+      return result.reshape(resultShape);
     } else {
       return this.compileAndRun(
           new MatMulProgram(a.shape, b.shape, transposeA, transposeB), [a, b]);
@@ -1656,6 +1659,15 @@ export class MathBackendWebGL implements KernelBackend {
   private unpackTensor<T extends Tensor>(input: T): T {
     const program = new UnpackProgram(input.shape);
     return this.compileAndRun(program, [input]);
+  }
+
+  private packedReshape<T extends Tensor>(input: T, beforeShape: number[], afterShape: number[]): T {
+    if(util.cheap2x2Reshape(beforeShape, afterShape)) {
+      return input;
+    }
+
+    const program = new ReshapePackedProgram(afterShape, beforeShape);
+    return this.compileAndRun(program, [input], this.makePackedTensor(afterShape));
   }
 
   public compileAndRun<
