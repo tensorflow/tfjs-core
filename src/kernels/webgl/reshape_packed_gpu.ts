@@ -58,7 +58,13 @@ export class ReshapePackedProgram implements GPGPUProgram {
         ${dtype} rc = getOutputCoords();
 
         vec4 result = vec4(0.);
-        int offset = 0;
+        ${inputDtype} originalInputRC = inputCoordsFromReshapedOutCoords(getFlatIndex(rc));
+        vec2 inputInnerDims = vec2(float(originalInputRC.x), float(originalInputRC.y));
+        vec2 modInputInnerDims = mod(inputInnerDims, 2.);
+
+        int offset = modInputInnerDims.x == 0. ?
+          (modInputInnerDims.y == 0. ? 0 : 1) :
+          (modInputInnerDims.y == 0. ? 2 : 3);
 
         for(int row=0; row<=1; row++) {
           for(int col=0; col<=1; col++) {
