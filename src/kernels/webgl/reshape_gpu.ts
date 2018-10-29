@@ -37,7 +37,7 @@ export class ReshapeProgram implements GPGPUProgram {
     const inputChannels = getChannels('inputRC').slice(0, inputRank);
 
     this.userCode = `
-      ${getReshapedInputCoords(inputRank)}
+      ${getReshapedInputCoords(inputShape)}
       ${getFlatIndex(outputShape)}
 
       void main() {
@@ -113,24 +113,66 @@ function getFlatIndex(shape: number[]): string {
   }
 }
 
-function getReshaped1DInputCoords(): string {
-  return ``;
-}
-
-function getReshaped2DInputCoords(): string {
-  return `vec2 inputCoordsFromReshapedOutCoords(int flatIndex) {
-
+function getReshaped1DInputCoords(shape: [number]): string {
+  return `int inputCoordsFromReshapedOutCoords(int index) {
+    return index;
   }`;
 }
 
-function getReshapedInputCoords(inputRank: number): string {
-  switch(inputRank) {
+function getReshaped2DInputCoords(shape: [number, number]): string {
+  return `ivec2 inputCoordsFromReshapedOutCoords(int index) {
+    int r = index / ${shape[1]};
+    int c = index - r * ${shape[1]};
+    return ivec2(r, c);
+  }`;
+}
+
+function getReshaped3DInputCoords(shape: [number, number, number]): string {
+  const stride0 = shape[1] * shape[2];
+  const stride1 = shape[2];
+
+  return `ivec3 inputCoordsFromReshapedOutCoords(int index) {
+    int r = index / ${stride0};
+    index -= r * ${stride0};
+    int c = index / ${stride1};
+    int d = index - c * ${stride1};
+    return ivec3(r, c, d);
+  }`;
+}
+
+function getReshaped4DInputCoords(shape: [number, number, number, number]): string {
+  const stride2 = shape[3];
+  const stride1 = shape[2] * stride2;
+  const stride0 = shape[1] * stride1;
+
+  return `
+    ivec4 inputCoordsFromReshapedOutCoords(int index) {
+      int r = index / ${stride0};
+      index -= r * ${stride0};
+
+      int c = index / ${stride1};
+      index -= c * ${stride1};
+
+      int d = index / ${stride2};
+      int d2 = index - d * ${stride2};
+
+      return ivec4(r, c, d, d2);
+    }
+  `;
+}
+
+function getReshapedInputCoords(shape: number[]): string {
+  switch(shape.length) {
     case 1:
-      return getReshaped1DInputCoords(inputRank);
+      return getReshaped1DInputCoords(shape as [number]);
     case 2:
-      return getReshaped2DInputCoords(inputRank);
+      return getReshaped2DInputCoords(shape as [number, number]);
+    case 3:
+      return getReshaped3DInputCoords(shape as [number, number, number]);
+    case 4:
+      return getReshaped4DInputCoords(shape as [number, number, number, number]);
     default:
-      throw new Error(`Packed ${inputRank}-D reshaping` +
+      throw new Error(`Packed ${shape.length}-D reshaping` +
           ` is not yet supported`);
   }
 }
