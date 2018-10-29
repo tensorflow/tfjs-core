@@ -608,13 +608,11 @@ export class MathBackendWebGL implements KernelBackend {
       const program = new MatMulPackedProgram(
           aSqueezed.shape, bSqueezed.shape, [outerShapeA, outerShapeB],
           transposeA, transposeB);
-      let result = this.compileAndRun(
+      const result = this.compileAndRun(
           program, [aSqueezed, bSqueezed],
           this.makePackedTensor<Tensor2D>(program.outputShape));
 
-      const resultShape = [1, result.shape[0], result.shape[1]] as [number, number, number];
-      result = this.packedReshape(result, resultShape, program.outputShape);
-      return result.reshape(resultShape);
+      return result.reshape([1, result.shape[0], result.shape[1]]);
     } else {
       return this.compileAndRun(
           new MatMulProgram(a.shape, b.shape, transposeA, transposeB), [a, b]);
@@ -1463,6 +1461,9 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   reshape<R extends Rank>(x: Tensor, shape: ShapeMap[R]): Tensor<R> {
+    if(this.texData.get(x.dataId).isPacked) {
+      x = this.packedReshape(x, shape);
+    }
     return backend_util.reshapeTensor(x, shape);
   }
 
@@ -1661,12 +1662,12 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [input]);
   }
 
-  private packedReshape<T extends Tensor>(input: T, beforeShape: number[], afterShape: number[]): T {
-    if(util.cheap2x2Reshape(beforeShape, afterShape)) {
+  private packedReshape<T extends Tensor>(input: T, afterShape: number[]): T {
+    if(util.cheap2x2Reshape(input.shape, afterShape)) {
       return input;
     }
 
-    const program = new ReshapePackedProgram(afterShape, beforeShape);
+    const program = new ReshapePackedProgram(afterShape, input.shape);
     return this.compileAndRun(program, [input], this.makePackedTensor(afterShape));
   }
 

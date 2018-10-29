@@ -57,7 +57,7 @@ export class ReshapePackedProgram implements GPGPUProgram {
 
             ${inputDtype} inputRC = inputCoordsFromReshapedOutCoords(flatIndex);
 
-            result[row * 2 + col] = getA(${inputChannels});
+            result[row * 2 + col] = getA(${inputChannels}).x;
           }
         }
 
@@ -74,7 +74,7 @@ function getFlat1DIndex(): string {
 }
 
 function getFlat2DIndex(shape: number[]): string {
-  return `int getFlatIndex(vec2 coords) {
+  return `int getFlatIndex(ivec2 coords) {
     return coords.x * ${shape[1]} + coords.y;
   }`;
 }
@@ -83,7 +83,7 @@ function getFlat3DIndex(shape: number[]): string {
   const stride1 = shape[2];
   const stride0 = shape[1] * stride1;
 
-  return `int getFlatIndex(vec3 coords) {
+  return `int getFlatIndex(ivec3 coords) {
     return coords.x * ${stride0} + coords.y * ${stride1} + coords.z;
   }`;
 }
@@ -93,7 +93,7 @@ function getFlat4DIndex(shape: number[]): string {
   const stride1 = shape[2] * stride2;
   const stride0 = shape[1] * stride1;
 
-  return `int getFlatIndex(vec4 coords) {
+  return `int getFlatIndex(ivec4 coords) {
     return coords.x * ${stride0} + coords.y * ${stride1} + coords.z * ${stride2} + coords.w;
   }`;
 }
