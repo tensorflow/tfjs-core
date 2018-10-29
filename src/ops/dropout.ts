@@ -16,25 +16,12 @@
  */
 
 import {Scalar, Tensor} from '../tensor';
-import {DataType} from '../types';
 import {arraysEqual} from '../util';
 
 import {randomUniform} from './array_ops';
 import {div, sub} from './binary_ops';
 import {op} from './operation';
-import {scalar} from './tensor_ops';
 import {step} from './unary_ops';
-
-const DEFAULT_DTYPE: DataType = 'float32';
-/**
- * Get scalar, with caching.
- */
-function getScalar(value: number, dtype?: DataType): Scalar {
-  if (dtype === undefined) {
-    dtype = DEFAULT_DTYPE;
-  }
-  return scalar(value, dtype);
-}
 
 /**
  * Sets entries in `x` to zero at random, while scaling the entire tensor.
