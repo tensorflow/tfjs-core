@@ -70,11 +70,19 @@ function deepAssertShapeConsistency(
 
 export function convertToTensor<T extends Tensor>(
     x: T|TensorLike, argName: string, functionName: string,
-    dtype: DataType = 'float32'): T {
-  dtype = dtype || 'float32';
+    dtype?: DataType): T {
   if (x instanceof Tensor) {
+    if (dtype && x.dtype !== dtype) {
+      // If dtype is supplied, ensure the resulting tensor is of the correct
+      // type:
+      x = x.cast(dtype);
+    }
     return x;
   }
+
+  // When creating a new Tensor, use the supplied dtype or default to 'float32':
+  dtype = dtype || 'float32';
+
   if (!isTypedArray(x) && !Array.isArray(x) && typeof x !== 'number' &&
       typeof x !== 'boolean') {
     throw new Error(
