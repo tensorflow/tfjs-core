@@ -40,10 +40,25 @@ export class ReshapePackedProgram implements GPGPUProgram {
       ${getReshapedInputCoords(inputShape)}
       ${getFlatIndex(outputShape)}
 
+      float getChannel(vec4 frag, int index) {
+        int mod = int(mod(float(index), 4.));
+        if(mod == 0) {
+          return frag.x;
+        }
+        if(mod == 1) {
+          return frag.y;
+        }
+        if(mod == 2) {
+          return frag.z;
+        }
+        return frag.w;
+      }
+
       void main() {
         ${dtype} rc = getOutputCoords();
 
         vec4 result = vec4(0.);
+        int offset = 0;
 
         for(int row=0; row<=1; row++) {
           for(int col=0; col<=1; col++) {
@@ -57,7 +72,7 @@ export class ReshapePackedProgram implements GPGPUProgram {
 
             ${inputDtype} inputRC = inputCoordsFromReshapedOutCoords(flatIndex);
 
-            result[row * 2 + col] = getA(${inputChannels}).x;
+            result[row * 2 + col] = getChannel(getA(${inputChannels}), offset + row * 2 + col);
           }
         }
 
