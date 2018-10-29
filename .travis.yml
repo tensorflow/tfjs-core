@@ -14,3 +14,4 @@ notifications:
       - tensorflowjs-build@google.com
     on_success: never
     on_failure: always
+    on_pull_requests: false
