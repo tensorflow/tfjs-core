@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+import {getWebGLContext} from '../canvas_util';
 import {MemoryInfo, TimingInfo} from '../engine';
 import {ENV} from '../environment';
 import {tidy} from '../globals';
@@ -34,7 +35,6 @@ import {DataId, Scalar, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, 
 import {DataType, DataTypeMap, Rank, RecursiveArray, ShapeMap, sumOutType, TypedArray, upcastType} from '../types';
 import * as util from '../util';
 import {getTypedArrayFromDType, sizeFromShape} from '../util';
-
 import {DataMover, DataStorage, KernelBackend} from './backend';
 import * as backend_util from './backend_util';
 import {mergeRealAndImagArrays} from './complex_util';
@@ -68,7 +68,6 @@ import {GatherNDProgram} from './webgl/gather_nd_gpu';
 import {GPGPUContext} from './webgl/gpgpu_context';
 import * as gpgpu_math from './webgl/gpgpu_math';
 import {GPGPUBinary, GPGPUProgram, TensorData} from './webgl/gpgpu_math';
-import * as gpgpu_util from './webgl/gpgpu_util';
 import {Im2ColProgram} from './webgl/im2col_gpu';
 import {LRNProgram} from './webgl/lrn_gpu';
 import {LRNGradProgram} from './webgl/lrn_grad_gpu';
@@ -153,7 +152,7 @@ export class MathBackendWebGL implements KernelBackend {
   private NUM_BYTES_BEFORE_PAGING: number;
 
   private canvas: HTMLCanvasElement;
-  private fromPixelsCanvas: HTMLCanvasElement;
+  private fromPixels2DContext: CanvasRenderingContext2D;
 
   private programTimersStack: TimerNode[];
   private activeTimers: TimerNode[];
@@ -201,7 +200,7 @@ export class MathBackendWebGL implements KernelBackend {
           `ImageData, but was ${(pixels as {}).constructor.name}`);
     }
     if (pixels instanceof HTMLVideoElement) {
-      if (this.fromPixelsCanvas == null) {
+      if (this.fromPixels2DContext == null) {
         if (!ENV.get('IS_BROWSER')) {
           throw new Error(
               'Can\'t read pixels from HTMLImageElement outside the browser.');
@@ -212,13 +211,14 @@ export class MathBackendWebGL implements KernelBackend {
               'once the DOM is ready. One way to do that is to add an event ' +
               'listener for `DOMContentLoaded` on the document object');
         }
-        this.fromPixelsCanvas = document.createElement('canvas');
+        this.fromPixels2DContext =
+            document.createElement('canvas').getContext('2d');
       }
-      this.fromPixelsCanvas.width = pixels.width;
-      this.fromPixelsCanvas.height = pixels.height;
-      this.fromPixelsCanvas.getContext('2d').drawImage(
+      this.fromPixels2DContext.canvas.width = pixels.width;
+      this.fromPixels2DContext.canvas.height = pixels.height;
+      this.fromPixels2DContext.drawImage(
           pixels, 0, 0, pixels.width, pixels.height);
-      pixels = this.fromPixelsCanvas;
+      pixels = this.fromPixels2DContext.canvas;
     }
     const tempPixelHandle = this.makeTensorHandle(texShape, 'int32');
     // This is a byte texture with pixels.
@@ -483,14 +483,15 @@ export class MathBackendWebGL implements KernelBackend {
     if (ENV.get('WEBGL_VERSION') < 1) {
       throw new Error('WebGL is not supported on this device');
     }
-    if (ENV.get('IS_BROWSER')) {
-      this.canvas = document.createElement('canvas');
-    }
+
     if (gpgpu == null) {
-      this.gpgpu = new GPGPUContext(gpgpu_util.createWebGLContext(this.canvas));
+      const gl = getWebGLContext(ENV.get('WEBGL_VERSION'));
+      this.gpgpu = new GPGPUContext(gl);
+      this.canvas = gl.canvas;
       this.gpgpuCreatedLocally = true;
     } else {
       this.gpgpuCreatedLocally = false;
+      this.canvas = gpgpu.gl.canvas;
     }
     if (ENV.get('WEBGL_PAGING_ENABLED')) {
       // Use the device screen's resolution as a heuristic to decide on the
@@ -607,9 +608,9 @@ export class MathBackendWebGL implements KernelBackend {
       const program = new MatMulPackedProgram(
           aSqueezed.shape, bSqueezed.shape, [outerShapeA, outerShapeB],
           transposeA, transposeB);
-      const result = this.compileAndRun(
+      const result = this.unpackTensor(this.compileAndRun(
           program, [aSqueezed, bSqueezed],
-          this.makePackedTensor<Tensor2D>(program.outputShape));
+          this.makePackedTensor<Tensor2D>(program.outputShape)));
 
       return result.reshape([1, result.shape[0], result.shape[1]]);
     } else {
@@ -1240,19 +1241,20 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   abs<T extends Tensor>(x: T): T {
-    if (x.dtype === 'complex64') {
-      const xData = this.texData.get(x.dataId);
-
-      const program = new ComplexAbsProgram(x.shape);
-      const inputs = [
-        this.makeComplexComponentTensorHandle(x, xData.complexTensors.real),
-        this.makeComplexComponentTensorHandle(x, xData.complexTensors.imag),
-      ];
-
-      return this.compileAndRun<Tensor>(program, inputs) as T;
-    }
     const program = new UnaryOpProgram(x.shape, unary_op.ABS);
     return this.compileAndRun(program, [x]) as T;
+  }
+
+  complexAbs<T extends Tensor>(x: T): T {
+    const xData = this.texData.get(x.dataId);
+
+    const program = new ComplexAbsProgram(x.shape);
+    const inputs = [
+      this.makeComplexComponentTensorHandle(x, xData.complexTensors.real),
+      this.makeComplexComponentTensorHandle(x, xData.complexTensors.imag),
+    ];
+
+    return this.compileAndRun<Tensor>(program, inputs) as T;
   }
 
   sigmoid<T extends Tensor>(x: T): T {
@@ -1374,9 +1376,9 @@ export class MathBackendWebGL implements KernelBackend {
     const matmulProgram = new MatMulPackedProgram(
         im2Col.shape, w2Row.shape, [numCols, convInfo.outChannels], true,
         false);
-    const product = this.compileAndRun(
+    const product = this.unpackTensor(this.compileAndRun(
         matmulProgram, [im2Col, w2Row],
-        this.makePackedTensor<Tensor2D>(matmulProgram.outputShape));
+        this.makePackedTensor<Tensor2D>(matmulProgram.outputShape)));
 
     return product.reshape([1, outHeight, outWidth, convInfo.outChannels]);
   }
@@ -1598,10 +1600,22 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   fft(x: Tensor2D): Tensor2D {
+    const inverse = false;
+    return this.fftImpl(x, inverse);
+  }
+
+  ifft(x: Tensor2D): Tensor2D {
+    const inverse = true;
+    return this.fftImpl(x, inverse);
+  }
+
+  private fftImpl(x: Tensor2D, inverse: boolean): Tensor2D {
     const xData = this.texData.get(x.dataId);
 
-    const realProgram = new FFTProgram(fft_gpu.COMPLEX_FFT.REAL, x.shape);
-    const imagProgram = new FFTProgram(fft_gpu.COMPLEX_FFT.IMAG, x.shape);
+    const realProgram =
+        new FFTProgram(fft_gpu.COMPLEX_FFT.REAL, x.shape, inverse);
+    const imagProgram =
+        new FFTProgram(fft_gpu.COMPLEX_FFT.IMAG, x.shape, inverse);
     const inputs = [
       this.makeComplexComponentTensorHandle(x, xData.complexTensors.real),
       this.makeComplexComponentTensorHandle(x, xData.complexTensors.imag),
@@ -1639,6 +1653,11 @@ export class MathBackendWebGL implements KernelBackend {
     const packedTensor = Tensor.make(shape, {});
     this.texData.get(packedTensor.dataId).isPacked = true;
     return packedTensor as T;
+  }
+
+  private unpackTensor<T extends Tensor>(input: T): T {
+    const program = new UnpackProgram(input.shape);
+    return this.compileAndRun(program, [input]);
   }
 
   public compileAndRun<
@@ -1765,8 +1784,8 @@ export class MathBackendWebGL implements KernelBackend {
     }
     this.textureManager.dispose();
     this.canvas.remove();
-    if (this.fromPixelsCanvas != null) {
-      this.fromPixelsCanvas.remove();
+    if (this.fromPixels2DContext != null) {
+      this.fromPixels2DContext.canvas.remove();
     }
     if (this.gpgpuCreatedLocally) {
       this.gpgpu.dispose();

@@ -1,6 +1,6 @@
 {
   "name": "@tensorflow/tfjs-core",
-  "version": "0.13.7",
+  "version": "0.13.8",
   "description": "Hardware-accelerated JavaScript library for machine intelligence",
   "private": false,
   "main": "dist/index.js",
@@ -46,7 +46,7 @@
     "build": "tsc",
     "build-npm": "./scripts/build-npm.sh",
     "link-local": "yalc link",
-    "publish-local": "yarn build-npm && yalc push",
+    "publish-local": "rimraf dist/ && yarn build && yalc push",
     "lint": "tslint -p . -t verbose",
     "coverage": "KARMA_COVERAGE=1 karma start --browsers='Chrome' --singleRun",
     "test": "karma start",
