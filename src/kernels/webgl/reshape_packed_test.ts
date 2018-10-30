@@ -31,25 +31,32 @@ describeWithFlags('expensive reshape', WEBGL_ENVS, () => {
   });
 
   it('6d --> 1d', () => {
-    // const cAs6D = tf.reshape(c, [1, 1, 1, 3, 1, 5]);
-    // const cAs1D = tf.reshape(cAs6D, [-1, cValues.length]);
-    // expectArraysClose(cAs1D, cValues);
+    const cAs6D = tf.reshape(c, [1, 1, 1, 3, 1, 5]);
+    const cAs1D = tf.reshape(cAs6D, [-1, cValues.length]);
+    expectArraysClose(cAs1D, cValues);
   });
-  fit('1d --> 2d', () => {
+  it('1d --> 2d', () => {
     const cAs1D = tf.reshape(c, [cValues.length]);
     const cAs2D = tf.reshape(cAs1D, [5, -1]);
     expectArraysClose(cAs2D, cValues);
   });
   it('2d --> 3d', () => {
-
+    const cAs3D = tf.reshape(c, [3, 1, 5]);
+    expectArraysClose(cAs3D, cValues);
   });
   it('3d --> 4d', () => {
-
+    const cAs3D = tf.reshape(c, [3, 1, 5]);
+    const cAs4D = tf.reshape(cAs3D, [3, 5, 1, 1]);
+    expectArraysClose(cAs4D, cValues);
   });
   it('4d --> 5d', () => {
-
+    const cAs4D = tf.reshape(c, [3, 5, 1, 1]);
+    const cAs5D = tf.reshape(cAs4D, [1, 1, 1, 5, 3]);
+    expectArraysClose(cAs5D, cValues);
   });
   it('5d --> 6d', () => {
-
+    const cAs5D = tf.reshape(c, [1, 1, 1, 5, 3]);
+    const cAs6D = tf.reshape(cAs5D, [3, 5, 1, 1, 1, 1]);
+    expectArraysClose(cAs6D, cValues);
   });
 });
