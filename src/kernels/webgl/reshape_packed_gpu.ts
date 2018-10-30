@@ -150,6 +150,29 @@ function getFlat4DIndex(shape: number[]): string {
   }`;
 }
 
+function getFlat5DIndex(shape: number[]): string {
+  const stride3 = shape[4];
+  const stride2 = shape[3] * stride3;
+  const stride1 = shape[2] * stride2;
+  const stride0 = shape[1] * stride1;
+
+  return `int getFlatIndex(ivec5 coords) {
+    return coords.x * ${stride0} + coords.y * ${stride1} + coords.z * ${stride2} + coords.w * ${stride3} + coords.u;
+  }`;
+}
+
+function getFlat6DIndex(shape: number[]): string {
+  const stride4 = shape[5];
+  const stride3 = shape[4] * stride4;
+  const stride2 = shape[3] * stride3;
+  const stride1 = shape[2] * stride2;
+  const stride0 = shape[1] * stride1;
+
+  return `int getFlatIndex(ivec5 coords) {
+    return coords.x * ${stride0} + coords.y * ${stride1} + coords.z * ${stride2} + coords.w * ${stride3} + coords.u * ${stride4} + coords.v;
+  }`;
+}
+
 function getFlatIndex(shape: number[]): string {
   switch(shape.length) {
     case 1:
@@ -160,6 +183,10 @@ function getFlatIndex(shape: number[]): string {
       return getFlat3DIndex(shape);
     case 4:
       return getFlat4DIndex(shape);
+    case 5:
+      return getFlat5DIndex(shape);
+    case 6:
+      return getFlat6DIndex(shape);
     default:
       throw new Error(`Packed ${shape.length}-D flat indexing is not yet supported`);
   }
@@ -213,6 +240,61 @@ function getReshaped4DInputCoords(shape: [number, number, number, number]): stri
   `;
 }
 
+function getReshaped5DInputCoords(
+    shape: [number, number, number, number, number]): string {
+  const stride3 = shape[4];
+  const stride2 = shape[3] * stride3;
+  const stride1 = shape[2] * stride2;
+  const stride0 = shape[1] * stride1;
+  return `
+    ivec5 inputCoordsFromReshapedOutCoords(int index) {
+      int r = index / ${stride0};
+      index -= r * ${stride0};
+
+      int c = index / ${stride1};
+      index -= c * ${stride1};
+
+      int d = index / ${stride2};
+      index -= d * ${stride2};
+
+      int d2 = index  / ${stride3};
+      int d3 = index - d2 * ${stride3};
+
+      return ivec5(r, c, d, d2, d3);
+    }
+  `;
+}
+
+function getReshaped6DInputCoords(
+    shape: [number, number, number, number, number, number]): string {
+  const stride4 = shape[5];
+  const stride3 = shape[4] * stride4;
+  const stride2 = shape[3] * stride3;
+  const stride1 = shape[2] * stride2;
+  const stride0 = shape[1] * stride1;
+
+  return `
+    ivec6 inputCoordsFromReshapedOutCoords(int index) {
+      int r = index / ${stride0};
+      index -= r * ${stride0};
+
+      int c = index / ${stride1};
+      index -= c * ${stride1};
+
+      int d = index / ${stride2};
+      index -= d * ${stride2};
+
+      int d2 = index / ${stride3};
+      index -= d2 * ${stride3};
+
+      int d3 = index / ${stride4};
+      int d4 = index - d3 * ${stride4};
+
+      return ivec6(r, c, d, d2, d3, d4);
+    }
+  `;
+}
+
 function getReshapedInputCoords(shape: number[]): string {
   switch(shape.length) {
     case 1:
@@ -223,6 +305,10 @@ function getReshapedInputCoords(shape: number[]): string {
       return getReshaped3DInputCoords(shape as [number, number, number]);
     case 4:
       return getReshaped4DInputCoords(shape as [number, number, number, number]);
+    case 5:
+      return getReshaped5DInputCoords(shape as [number, number, number, number, number]);
+    case 5:
+      return getReshaped6DInputCoords(shape as [number, number, number, number, number, number]);
     default:
       throw new Error(`Packed ${shape.length}-D reshaping` +
           ` is not yet supported`);
