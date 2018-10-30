@@ -1664,6 +1664,8 @@ export class MathBackendWebGL implements KernelBackend {
       return input;
     }
 
+    console.log("EXPENSIVE PACKED RESHAPE", input.shape, afterShape);
+
     const program = new ReshapePackedProgram(afterShape, input.shape);
     return this.compileAndRun(program, [input], this.makePackedTensor(afterShape));
   }
