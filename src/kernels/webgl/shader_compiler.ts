@@ -96,6 +96,8 @@ function getPackedSamplerFromInInfo(inInfo: InputInfo): string {
       return getPackedSampler1D(inInfo);
     case 2:
       return getPackedSampler2D(inInfo);
+    case 3:
+      return getPackedSampler3D(inInfo);
     case 4:
       return getPackedSampler4D(inInfo);
     default:
@@ -214,6 +216,14 @@ vec2 UVfrom3D(int texNumR, int texNumC, int stride0,
     int stride1, int row, int col, int depth) {
   // Explicitly use integer operations as dot() only works on floats.
   int index = row * stride0 + col * stride1 + depth;
+  int texR = index / texNumC;
+  int texC = index - texR * texNumC;
+  return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
+}
+vec2 packedUVfrom3D(int texNumR, int texNumC,
+    int texelsInBatch, int texelsInLogicalRow, int b,
+    int row, int col) {
+  int index = b * texelsInBatch + (row / 2) * texelsInLogicalRow + (col / 2);
   int texR = index / texNumC;
   int texC = index - texR * texNumC;
   return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
@@ -875,6 +885,28 @@ function getSampler2D(inputInfo: InputInfo): string {
     return sampleTexture(${texName}, uv);
   }
 `;
+}
+
+function getPackedSampler3D(inputInfo: InputInfo): string {
+  const shape = inputInfo.shapeInfo.logicalShape;
+  const texName = inputInfo.name;
+  const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
+  const texShape = inputInfo.shapeInfo.texShape;
+  const packedTexShape =
+      [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
+  const texNumR = packedTexShape[0];
+  const texNumC = packedTexShape[1];
+
+  const valuesPerRow = Math.ceil(shape[2] / 2);
+  const texelsInBatch = valuesPerRow * Math.ceil(shape[1] / 2);
+
+  return `
+    vec3 ${funcName}(int b, int row, int col) {
+      vec2 uv = packedUVfrom3D(
+        ${texNumR}, ${texNumC}, ${texelsInBatch}, ${valuesPerRow}, b, row, col);
+      return texture2D(${texName}, uv);
+    }
+  `;
 }
 
 function getSampler3D(inputInfo: InputInfo): string {
