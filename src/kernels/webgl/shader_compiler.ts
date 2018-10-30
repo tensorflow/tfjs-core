@@ -901,7 +901,7 @@ function getPackedSampler3D(inputInfo: InputInfo): string {
   const texelsInBatch = valuesPerRow * Math.ceil(shape[1] / 2);
 
   return `
-    vec3 ${funcName}(int b, int row, int col) {
+    vec4 ${funcName}(int b, int row, int col) {
       vec2 uv = packedUVfrom3D(
         ${texNumR}, ${texNumC}, ${texelsInBatch}, ${valuesPerRow}, b, row, col);
       return texture2D(${texName}, uv);
