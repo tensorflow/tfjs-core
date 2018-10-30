@@ -100,6 +100,8 @@ function getPackedSamplerFromInInfo(inInfo: InputInfo): string {
       return getPackedSampler3D(inInfo);
     case 4:
       return getPackedSampler4D(inInfo);
+    case 5:
+      return getPackedSampler5D(inInfo);
     default:
       throw new Error(
           `Packed ${shape.length}-D input sampling` +
@@ -258,6 +260,15 @@ vec2 UVfrom5D(int texNumR, int texNumC, int stride0,
   // Explicitly use integer operations as dot() only works on floats.
   int index = row * stride0 + col * stride1 +
               depth * stride2 + depth2 * stride3 + depth3;
+  int texR = index / texNumC;
+  int texC = index - texR * texNumC;
+  return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
+}
+vec2 packedUVfrom5D(int texNumR, int texNumC, int texelsInBatch3, int texelsInBatch2,
+    int texelsInBatch, int texelsInLogicalRow, int b3, int b2, int b,
+    int row, int col) {
+  int index = b3 * texelsInBatch3 + b2 * texelsInBatch2 + b * texelsInBatch +
+    (row / 2) * texelsInLogicalRow + (col / 2);
   int texR = index / texNumC;
   int texC = index - texR * texNumC;
   return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
@@ -1066,6 +1077,31 @@ function getSampler4D(inputInfo: InputInfo): string {
       vec2 uv = UVfrom4D(${texNumR}, ${texNumC}, ${stride0}, ${stride1},
           ${stride2}, row, col, depth, depth2);
       return sampleTexture(${texName}, uv);
+    }
+  `;
+}
+
+function getPackedSampler5D(inputInfo: InputInfo): string {
+  const shape = inputInfo.shapeInfo.logicalShape;
+  const texName = inputInfo.name;
+  const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
+  const texShape = inputInfo.shapeInfo.texShape;
+  const packedTexShape =
+      [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
+  const texNumR = packedTexShape[0];
+  const texNumC = packedTexShape[1];
+
+  const valuesPerRow = Math.ceil(shape[4] / 2);
+  const texelsInBatch = valuesPerRow * Math.ceil(shape[3] / 2);
+  const texelsInBatch2 = texelsInBatch * shape[2];
+  const texelsInBatch3 = texelsInBatch2 * shape[1];
+
+  return `
+    vec4 ${funcName}(int b3, int b2, int b, int row, int col) {
+      vec2 uv = packedUVfrom5D(
+        ${texNumR}, ${texNumC}, ${texelsInBatch3}, ${texelsInBatch2},
+        ${texelsInBatch}, ${valuesPerRow}, b3, b2, b, row, col);
+      return texture2D(${texName}, uv);
     }
   `;
 }
