@@ -87,7 +87,7 @@ function getMainLoop(dtype: string, innerDims: string[], shapeInnerDims: number[
         int flatIndex = getFlatIndex(thisRC);
 
         ${inputDtype} inputRC = inputCoordsFromReshapedOutCoords(flatIndex);
-        result[col] = getChannel(getA(${inputChannels}), offset + col);
+        result[col] = getChannel(getA(${inputChannels}), offset + (inputRC.x - originalInputRC.x) * 2 + (inputRC.y - originalInputRC.y));
       }
     `;
   }
@@ -104,7 +104,7 @@ function getMainLoop(dtype: string, innerDims: string[], shapeInnerDims: number[
 
         ${inputDtype} inputRC = inputCoordsFromReshapedOutCoords(flatIndex);
 
-        result[row * 2 + col] = getChannel(getA(${inputChannels}), offset + row * 2 + col);
+        result[row * 2 + col] = getChannel(getA(${inputChannels}), offset + (inputRC.x - originalInputRC.x) * 2 + (inputRC.y - originalInputRC.y));
       }
     }
   `;
