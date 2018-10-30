@@ -34,48 +34,49 @@ export class ReshapePackedProgram implements GPGPUProgram {
     const inputRank = inputShape.length;
     const inputDtype = getCoordsDataType(inputRank);
     const inputChannels = getChannels('inputRC', inputRank);
-    const inputInnerDimsDtype = inputRank === 1 ? 'float' : 'vec2';
 
-    let inputInnerDimsString = '', offset = '', inputChannelOffset = '', input = '';
+    let inputInnerDimsString = '', offset = '', input = '', getChannel = '';
     if(inputRank === 1) {
+      getChannel = `float getChannel(vec4 frag, int index) {
+        int mod = int(mod(float(index), 2.));
+        if(mod == 0) return frag.x;
+        return frag.y;
+      }`;
+
       inputInnerDimsString = 'float(inputRCTopLeft)';
-      inputChannelOffset = `inputRC - inputRCTopLeft`;
-      input = `getA(${inputChannels})`;
+      offset = `float modInputRC = mod(float(inputRC), 2.);int offset = modInputRC == 0. ? 0 : 1`;
+
+      input = `getChannel(getA(${inputChannels}), offset)`;
     } else {
-      const inputTopLeftInnerDims = getChannels('inputRCTopLeft', inputRank).slice(-2);
-      inputInnerDimsString = `vec2(float(${inputTopLeftInnerDims[0]}), float(${inputTopLeftInnerDims[1]}))`;
-      offset = `int offset = modInputInnerDims.x == 0. ?
-          (modInputInnerDims.y == 0. ? 0 : 1) :
-          (modInputInnerDims.y == 0. ? 2 : 3)`;
-
-      const inputInnerDims = inputChannels.slice(-2);
-      inputChannelOffset = `(${inputInnerDims[0]} - ${inputTopLeftInnerDims[0]}) * 2 + (${inputInnerDims[1]} - ${inputTopLeftInnerDims[1]})`;
-      input = `getChannel(getA(${inputChannels}), offset + ${inputChannelOffset})`;
-    }
-
-    const mainLoop = getMainLoop(dtype, innerDims, outputShape.slice(-2), inputDtype, input);
-
-    this.userCode = `
-      ${getReshapedInputCoords(inputShape)}
-      ${getFlatIndex(outputShape)}
-
-      float getChannel(vec4 frag, int index) {
+      getChannel = `float getChannel(vec4 frag, int index) {
         int mod = int(mod(float(index), 4.));
         if(mod == 0) return frag.x;
         if(mod == 1) return frag.y;
         if(mod == 2) return frag.z;
         return frag.w;
-      }
+      }`;
+
+      const inputTopLeftInnerDims = getChannels('inputRC', inputRank).slice(-2);
+      inputInnerDimsString = `vec2(float(${inputTopLeftInnerDims[0]}), float(${inputTopLeftInnerDims[1]}))`;
+      offset = `vec2 inputRCInnerDims = ${inputInnerDimsString}; vec2 modInputRC = mod(inputRCInnerDims, 2.); int offset = modInputRC.x == 0. ?
+          (modInputRC.y == 0. ? 0 : 1) :
+          (modInputRC.y == 0. ? 2 : 3)`;
+
+      input = `getChannel(getA(${inputChannels}), offset)`;
+    }
+
+    const mainLoop = getMainLoop(dtype, innerDims, outputShape.slice(-2), inputDtype, input, offset);
+
+    this.userCode = `
+      ${getReshapedInputCoords(inputShape)}
+      ${getFlatIndex(outputShape)}
+      ${getChannel}
 
       void main() {
         ${dtype} rc = getOutputCoords();
 
         vec4 result = vec4(0.);
         ${inputDtype} inputRCTopLeft = inputCoordsFromReshapedOutCoords(getFlatIndex(rc));
-        ${inputInnerDimsDtype} inputInnerDims = ${inputInnerDimsString};
-        ${inputInnerDimsDtype} modInputInnerDims = mod(inputInnerDims, 2.);
-
-        ${offset};
 
         ${mainLoop}
 
@@ -85,7 +86,7 @@ export class ReshapePackedProgram implements GPGPUProgram {
   }
 }
 
-function getMainLoop(dtype: string, innerDims: string[], shapeInnerDims: number[], inputDtype: string, input: string) {
+function getMainLoop(dtype: string, innerDims: string[], shapeInnerDims: number[], inputDtype: string, input: string, offset: string) {
   if(dtype === 'int') {
     return `
       for(int col=0; col<=1; col++) {
@@ -96,6 +97,8 @@ function getMainLoop(dtype: string, innerDims: string[], shapeInnerDims: number[
         int flatIndex = getFlatIndex(thisRC);
 
         ${inputDtype} inputRC = inputCoordsFromReshapedOutCoords(flatIndex);
+        ${offset};
+
         result[col] = ${input};
       }
     `;
@@ -112,6 +115,7 @@ function getMainLoop(dtype: string, innerDims: string[], shapeInnerDims: number[
         int flatIndex = getFlatIndex(thisRC);
 
         ${inputDtype} inputRC = inputCoordsFromReshapedOutCoords(flatIndex);
+        ${offset};
 
         result[row * 2 + col] = ${input};
       }
@@ -307,7 +311,7 @@ function getReshapedInputCoords(shape: number[]): string {
       return getReshaped4DInputCoords(shape as [number, number, number, number]);
     case 5:
       return getReshaped5DInputCoords(shape as [number, number, number, number, number]);
-    case 5:
+    case 6:
       return getReshaped6DInputCoords(shape as [number, number, number, number, number, number]);
     default:
       throw new Error(`Packed ${shape.length}-D reshaping` +
