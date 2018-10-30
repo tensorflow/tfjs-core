@@ -528,21 +528,15 @@ function getOutput4DCoords(
   const stride2 = shape[3];
   const stride1 = shape[2] * stride2;
   const stride0 = shape[1] * stride1;
+
+  const coordsFromIndexSnippet = shader_util.getLogicalCoordinatesFromFlatIndex(['r', 'c', 'd', 'd2'], [stride0, stride1, stride2]);
+
   return `
     ivec4 getOutputCoords() {
       ivec2 resTexRC = ivec2(resultUV.yx *
         vec2(${texShape[0]}, ${texShape[1]}));
       int index = resTexRC.x * ${texShape[1]} + resTexRC.y;
-
-      int r = index / ${stride0};
-      index -= r * ${stride0};
-
-      int c = index / ${stride1};
-      index -= c * ${stride1};
-
-      int d = index / ${stride2};
-      int d2 = index - d * ${stride2};
-
+      ${coordsFromIndexSnippet}
       return ivec4(r, c, d, d2);
     }
   `;
@@ -555,6 +549,9 @@ function getOutput5DCoords(
   const stride2 = shape[3] * stride3;
   const stride1 = shape[2] * stride2;
   const stride0 = shape[1] * stride1;
+
+  const coordsFromIndexSnippet = shader_util.getLogicalCoordinatesFromFlatIndex(['r', 'c', 'd', 'd2', 'd3'], [stride0, stride1, stride2, stride3]);
+
   return `
     ivec5 getOutputCoords() {
       ivec2 resTexRC = ivec2(resultUV.yx * vec2(${texShape[0]},
@@ -562,17 +559,7 @@ function getOutput5DCoords(
 
       int index = resTexRC.x * ${texShape[1]} + resTexRC.y;
 
-      int r = index / ${stride0};
-      index -= r * ${stride0};
-
-      int c = index / ${stride1};
-      index -= c * ${stride1};
-
-      int d = index / ${stride2};
-      index -= d * ${stride2};
-
-      int d2 = index  / ${stride3};
-      int d3 = index - d2 * ${stride3};
+      ${coordsFromIndexSnippet}
 
       ivec5 outShape = ivec5(r, c, d, d2, d3);
       return outShape;
