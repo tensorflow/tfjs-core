@@ -16,6 +16,7 @@
  */
 import * as broadcast_util from '../../ops/broadcast_util';
 import * as util from '../../util';
+import * as shader_util from './shader_compiler_util';
 
 export type ShapeInfo = {
   logicalShape: number[],
@@ -453,7 +454,6 @@ function getOutputPacked3DCoords(
     texShape: [number, number]): string {
   const packedTexShape =
       [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
-
   const texelsInLogicalRow = Math.ceil(shape[2] / 2);
   const texelsInBatch = texelsInLogicalRow * Math.ceil(shape[1] / 2);
 
@@ -478,15 +478,15 @@ function getOutput3DCoords(
     shape: [number, number, number], texShape: [number, number]): string {
   const stride0 = shape[1] * shape[2];
   const stride1 = shape[2];
+
+  const coordsFromIndexSnippet = shader_util.getLogicalCoordinatesFromFlatIndex(['r', 'c', 'd'], [stride0, stride1]);
+
   return `
     ivec3 getOutputCoords() {
       ivec2 resTexRC = ivec2(resultUV.yx *
                              vec2(${texShape[0]}, ${texShape[1]}));
       int index = resTexRC.x * ${texShape[1]} + resTexRC.y;
-      int r = index / ${stride0};
-      index -= r * ${stride0};
-      int c = index / ${stride1};
-      int d = index - c * ${stride1};
+      ${coordsFromIndexSnippet}
       return ivec3(r, c, d);
     }
   `;
