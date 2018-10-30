@@ -26,7 +26,7 @@ import {step} from './unary_ops';
 /**
  * Sets entries in `x` to zero at random, while scaling the entire tensor.
  * ```js
- * const x = tf.dropout([1, 2, 3, 4]);
+ * const x = tf.range(1, 21).reshape([10, 2]);
  * const rate = 0.5;
  * const noiseShape = null || x.shape;
  * const tensor = tf.dropout(x, rate, noiseShape);
