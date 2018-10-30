@@ -73,19 +73,19 @@ export async function loadWeights(
  *
  * ```js
  * // example for creating a nodejs weight loader, which reads the weight files
- * // from disk using fs.readFile
+ * // from disk using fs.readFileSync
  *
  * import * as fs from 'fs'
  *
- * const fetchWeightsFromDisk = (filePaths: string[]) => Promise.all(
- *   filePaths.map(filePath => fs.readFile(filePath).then(buf => buf.buffer))
- * )
+ * const fetchWeightsFromDisk = (filePaths: string[]) =>
+ *   filePaths.map(filePath => fs.readFileSync(filePath).buffer)
+ *
  * const loadWeights = tf.io.weightsLoaderFactory(fetchWeightsFromDisk)
  *
  * const manifest = JSON.parse(
  *   fs.readFileSync('./my_model-weights_manifest').toString()
  * )
- * const weightMap = loadWeights(manifest, './')
+ * const weightMap = await loadWeights(manifest, './')
  * ```
  * @param fetchWeightsFunction The function used for fetching the weight files.
  * @returns Weight loading function.
