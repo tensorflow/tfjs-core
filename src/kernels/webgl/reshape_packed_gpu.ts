@@ -44,7 +44,9 @@ export class ReshapePackedProgram implements GPGPUProgram {
       }`;
 
       inputInnerDimsString = 'float(inputRCTopLeft)';
-      offset = `float modInputRC = mod(float(inputRC), 2.);int offset = modInputRC == 0. ? 0 : 1`;
+      offset = `
+        float modInputRC = mod(float(inputRC), 2.);
+        int offset = modInputRC == 0. ? 0 : 1`;
 
       input = `getChannel(getA(${inputChannels}), offset)`;
     } else {
@@ -58,7 +60,10 @@ export class ReshapePackedProgram implements GPGPUProgram {
 
       const inputTopLeftInnerDims = getChannels('inputRC', inputRank).slice(-2);
       inputInnerDimsString = `vec2(float(${inputTopLeftInnerDims[0]}), float(${inputTopLeftInnerDims[1]}))`;
-      offset = `vec2 inputRCInnerDims = ${inputInnerDimsString}; vec2 modInputRC = mod(inputRCInnerDims, 2.); int offset = modInputRC.x == 0. ?
+      offset = `
+        vec2 inputRCInnerDims = ${inputInnerDimsString};
+        vec2 modInputRC = mod(inputRCInnerDims, 2.);
+        int offset = modInputRC.x == 0. ?
           (modInputRC.y == 0. ? 0 : 1) :
           (modInputRC.y == 0. ? 2 : 3)`;
 
