@@ -88,7 +88,6 @@ export class BrowserDownloads implements IOHandler {
       jsonAnchor.href = modelTopologyAndWeightManifestURL;
       // Trigger downloads by calling the `click` methods on the download
       // anchors.
-      
       jsonAnchor.dispatchEvent(new MouseEvent('click'));
 
       if (modelArtifacts.weightData != null) {
