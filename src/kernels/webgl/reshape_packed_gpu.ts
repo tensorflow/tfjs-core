@@ -39,18 +39,24 @@ export class ReshapePackedProgram implements GPGPUProgram {
 
     let inputInnerDimsString: string;
     let offset: string;
+    let inputChannelOffset: string;
+    let inputChannel: string;
     if(inputRank === 1) {
       inputInnerDimsString = 'float(originalInputRC)';
       offset = `modInputInnerDims == 0. ? 0 : 1`;
+      inputChannelOffset = `inputRC - originalInputRC`;
+      inputChannel = `getA(${inputChannels})`;
     } else {
       const inputInnerDims = getChannels('originalInputRC', inputRank).slice(-2);
       inputInnerDimsString = `vec2(float(${inputInnerDims[0]}), float(${inputInnerDims[1]}))`;
       offset = `modInputInnerDims.x == 0. ?
           (modInputInnerDims.y == 0. ? 0 : 1) :
           (modInputInnerDims.y == 0. ? 2 : 3)`;
+      inputChannelOffset = `(inputRC.x - originalInputRC.x) * 2 + (inputRC.y - originalInputRC.y)`;
+      inputChannel = `getChannel(getA(${inputChannels}), offset + ${inputChannelOffset})`;
     }
 
-    const mainLoop = getMainLoop(dtype, innerDims, shapeInnerDims, inputDtype, inputChannels);
+    const mainLoop = getMainLoop(dtype, innerDims, shapeInnerDims, inputDtype, inputChannel);
 
     this.userCode = `
       ${getReshapedInputCoords(inputShape)}
@@ -88,7 +94,7 @@ export class ReshapePackedProgram implements GPGPUProgram {
   }
 }
 
-function getMainLoop(dtype: string, innerDims: string[], shapeInnerDims: number[], inputDtype: string, inputChannels: string[]) {
+function getMainLoop(dtype: string, innerDims: string[], shapeInnerDims: number[], inputDtype: string, inputChannel: string) {
   if(dtype === 'int') {
     return `
       for(int col=0; col<=1; col++) {
@@ -99,7 +105,7 @@ function getMainLoop(dtype: string, innerDims: string[], shapeInnerDims: number[
         int flatIndex = getFlatIndex(thisRC);
 
         ${inputDtype} inputRC = inputCoordsFromReshapedOutCoords(flatIndex);
-        result[col] = getChannel(getA(${inputChannels}), offset + (inputRC.x - originalInputRC.x) * 2 + (inputRC.y - originalInputRC.y));
+        result[col] = ${inputChannel};
       }
     `;
   }
@@ -116,7 +122,7 @@ function getMainLoop(dtype: string, innerDims: string[], shapeInnerDims: number[
 
         ${inputDtype} inputRC = inputCoordsFromReshapedOutCoords(flatIndex);
 
-        result[row * 2 + col] = getChannel(getA(${inputChannels}), offset + (inputRC.x - originalInputRC.x) * 2 + (inputRC.y - originalInputRC.y));
+        result[row * 2 + col] = ${inputChannel};
       }
     }
   `;
