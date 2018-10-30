@@ -26,7 +26,7 @@ import {concatenateArrayBuffers, decodeWeights, encodeWeights, getModelArtifacts
 import {fromMemory, withSaveHandler} from './passthrough';
 import {IORouterRegistry} from './router_registry';
 import {IOHandler, LoadHandler, ModelArtifacts, ModelStoreManager, SaveConfig, SaveHandler, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
-import {loadWeights, loadWeightsFactory} from './weights_loader';
+import {loadWeights, weightsLoaderFactory} from './weights_loader';
 
 const registerSaveRouter = IORouterRegistry.registerSaveRouter;
 const registerLoadRouter = IORouterRegistry.registerLoadRouter;
@@ -48,7 +48,6 @@ export {
   IOHandler,
   LoadHandler,
   loadWeights,
-  loadWeightsFactory,
   ModelArtifacts,
   ModelStoreManager,
   registerLoadRouter,
@@ -58,5 +57,6 @@ export {
   SaveResult,
   WeightsManifestConfig,
   WeightsManifestEntry,
+  weightsLoaderFactory,
   withSaveHandler
 };

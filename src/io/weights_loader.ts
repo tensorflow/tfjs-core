@@ -59,14 +59,38 @@ export async function loadWeights(
   // group that are needed to reconstruct the requested weight.
   // TODO(cais): Use `decodeWeights` for implementation.
 
-  const fetchWeightsFunction = (fetchUrls: string[]) =>
+  const fetchWeights = (fetchUrls: string[]) =>
     loadWeightsAsArrayBuffer(fetchUrls, requestOptions);
-  const loadWeights = loadWeightsFactory(fetchWeightsFunction);
+  const loadWeights = weightsLoaderFactory(fetchWeights);
 
   return loadWeights(manifest, filePathPrefix, weightNames);
 }
 
-export function loadWeightsFactory(
+/**
+ * Creates a function, which reads a weights manifest JSON configuration,
+ * fetches the weight files using the specified function and returns them as
+ * `Tensor`s.
+ *
+ * ```js
+ * // example for creating a nodejs weight loader, which reads the weight files
+ * // from disk using fs.readFile
+ *
+ * import * as fs from 'fs'
+ *
+ * const fetchWeightsFromDisk = (filePaths: string[]) => Promise.all(
+ *   filePaths.map(filePath => fs.readFile(filePath).then(buf => buf.buffer))
+ * )
+ * const loadWeights = tf.io.weightsLoaderFactory(fetchWeightsFromDisk)
+ *
+ * const manifest = JSON.parse(
+ *   fs.readFileSync('./my_model-weights_manifest').toString()
+ * )
+ * const weightMap = loadWeights(manifest, './')
+ * ```
+ * @param fetchWeightsFunction The function used for fetching the weight files.
+ * @returns Weight loading function.
+ */
+export function weightsLoaderFactory(
   fetchWeightsFunction: (fetchUrls: string[]) => Promise<ArrayBuffer[]>
 ): (
   manifest: WeightsManifestConfig,
