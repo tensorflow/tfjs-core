@@ -15,8 +15,13 @@
  * =============================================================================
  */
 
-export function getLogicalCoordinatesFromFlatIndex(coords: string[], strides: number[], index: string = 'index'): string {
-  return strides.map((stride, i) => {
+export function getLogicalCoordinatesFromFlatIndex(coords: string[], shape: number[], index: string = 'index'): string {
+  const strides: number[] = [];
+  for(let i=shape.length - 1; i>0; i--) {
+    strides.push(shape[i] * (i === shape.length - 1 ? 1 : strides[strides.length - 1]));
+  }
+
+  return strides.reverse().map((stride, i) => {
     const line1 = `int ${coords[i]} = ${index} / ${stride}`;
     const line2 = i === strides.length - 1 ?
       `int ${coords[i + 1]} = ${index} - ${coords[i]} * ${stride}` :

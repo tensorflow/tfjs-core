@@ -217,9 +217,7 @@ function getReshaped2DInputCoords(shape: [number, number]): string {
 }
 
 function getReshaped3DInputCoords(shape: [number, number, number]): string {
-  const stride0 = shape[1] * shape[2];
-  const stride1 = shape[2];
-  const coordsFromIndexSnippet = shader_util.getLogicalCoordinatesFromFlatIndex(['r', 'c', 'd'], [stride0, stride1]);
+  const coordsFromIndexSnippet = shader_util.getLogicalCoordinatesFromFlatIndex(['r', 'c', 'd'], shape);
 
   return `ivec3 inputCoordsFromReshapedOutCoords(int index) {
     ${coordsFromIndexSnippet}
@@ -228,10 +226,7 @@ function getReshaped3DInputCoords(shape: [number, number, number]): string {
 }
 
 function getReshaped4DInputCoords(shape: [number, number, number, number]): string {
-  const stride2 = shape[3];
-  const stride1 = shape[2] * stride2;
-  const stride0 = shape[1] * stride1;
-  const coordsFromIndexSnippet = shader_util.getLogicalCoordinatesFromFlatIndex(['r', 'c', 'd', 'd2'], [stride0, stride1, stride2]);
+  const coordsFromIndexSnippet = shader_util.getLogicalCoordinatesFromFlatIndex(['r', 'c', 'd', 'd2'], shape);
 
   return `
     ivec4 inputCoordsFromReshapedOutCoords(int index) {
@@ -243,11 +238,7 @@ function getReshaped4DInputCoords(shape: [number, number, number, number]): stri
 
 function getReshaped5DInputCoords(
     shape: [number, number, number, number, number]): string {
-  const stride3 = shape[4];
-  const stride2 = shape[3] * stride3;
-  const stride1 = shape[2] * stride2;
-  const stride0 = shape[1] * stride1;
-  const coordsFromIndexSnippet = shader_util.getLogicalCoordinatesFromFlatIndex(['r', 'c', 'd', 'd2', 'd3'], [stride0, stride1, stride2, stride3]);
+  const coordsFromIndexSnippet = shader_util.getLogicalCoordinatesFromFlatIndex(['r', 'c', 'd', 'd2', 'd3'], shape);
 
   return `
     ivec5 inputCoordsFromReshapedOutCoords(int index) {
@@ -259,13 +250,7 @@ function getReshaped5DInputCoords(
 
 function getReshaped6DInputCoords(
     shape: [number, number, number, number, number, number]): string {
-  const stride4 = shape[5];
-  const stride3 = shape[4] * stride4;
-  const stride2 = shape[3] * stride3;
-  const stride1 = shape[2] * stride2;
-  const stride0 = shape[1] * stride1;
-
-  const coordsFromIndexSnippet = shader_util.getLogicalCoordinatesFromFlatIndex(['r', 'c', 'd', 'd2', 'd3', 'd4'], [stride0, stride1, stride2, stride3, stride4]);
+  const coordsFromIndexSnippet = shader_util.getLogicalCoordinatesFromFlatIndex(['r', 'c', 'd', 'd2', 'd3', 'd4'], shape);
 
   return `
     ivec6 inputCoordsFromReshapedOutCoords(int index) {
