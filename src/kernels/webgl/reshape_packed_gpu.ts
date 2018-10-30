@@ -18,6 +18,7 @@
 import {GPGPUProgram} from './gpgpu_math';
 import {getCoordsDataType} from './shader_compiler';
 import {getChannels} from '../packing_util';
+import * as shader_util from './shader_compiler_util';
 
 export class ReshapePackedProgram implements GPGPUProgram {
   variableNames = ['A'];
@@ -218,12 +219,10 @@ function getReshaped2DInputCoords(shape: [number, number]): string {
 function getReshaped3DInputCoords(shape: [number, number, number]): string {
   const stride0 = shape[1] * shape[2];
   const stride1 = shape[2];
+  const coordsFromIndexSnippet = shader_util.getLogicalCoordinatesFromFlatIndex(['r', 'c', 'd'], [stride0, stride1]);
 
   return `ivec3 inputCoordsFromReshapedOutCoords(int index) {
-    int r = index / ${stride0};
-    index -= r * ${stride0};
-    int c = index / ${stride1};
-    int d = index - c * ${stride1};
+    ${coordsFromIndexSnippet}
     return ivec3(r, c, d);
   }`;
 }
@@ -232,18 +231,11 @@ function getReshaped4DInputCoords(shape: [number, number, number, number]): stri
   const stride2 = shape[3];
   const stride1 = shape[2] * stride2;
   const stride0 = shape[1] * stride1;
+  const coordsFromIndexSnippet = shader_util.getLogicalCoordinatesFromFlatIndex(['r', 'c', 'd', 'd2'], [stride0, stride1, stride2]);
 
   return `
     ivec4 inputCoordsFromReshapedOutCoords(int index) {
-      int r = index / ${stride0};
-      index -= r * ${stride0};
-
-      int c = index / ${stride1};
-      index -= c * ${stride1};
-
-      int d = index / ${stride2};
-      int d2 = index - d * ${stride2};
-
+      ${coordsFromIndexSnippet}
       return ivec4(r, c, d, d2);
     }
   `;
@@ -255,20 +247,11 @@ function getReshaped5DInputCoords(
   const stride2 = shape[3] * stride3;
   const stride1 = shape[2] * stride2;
   const stride0 = shape[1] * stride1;
+  const coordsFromIndexSnippet = shader_util.getLogicalCoordinatesFromFlatIndex(['r', 'c', 'd', 'd2', 'd3'], [stride0, stride1, stride2, stride3]);
+
   return `
     ivec5 inputCoordsFromReshapedOutCoords(int index) {
-      int r = index / ${stride0};
-      index -= r * ${stride0};
-
-      int c = index / ${stride1};
-      index -= c * ${stride1};
-
-      int d = index / ${stride2};
-      index -= d * ${stride2};
-
-      int d2 = index  / ${stride3};
-      int d3 = index - d2 * ${stride3};
-
+      ${coordsFromIndexSnippet}
       return ivec5(r, c, d, d2, d3);
     }
   `;
@@ -282,23 +265,11 @@ function getReshaped6DInputCoords(
   const stride1 = shape[2] * stride2;
   const stride0 = shape[1] * stride1;
 
+  const coordsFromIndexSnippet = shader_util.getLogicalCoordinatesFromFlatIndex(['r', 'c', 'd', 'd2', 'd3', 'd4'], [stride0, stride1, stride2, stride3, stride4]);
+
   return `
     ivec6 inputCoordsFromReshapedOutCoords(int index) {
-      int r = index / ${stride0};
-      index -= r * ${stride0};
-
-      int c = index / ${stride1};
-      index -= c * ${stride1};
-
-      int d = index / ${stride2};
-      index -= d * ${stride2};
-
-      int d2 = index / ${stride3};
-      index -= d2 * ${stride3};
-
-      int d3 = index / ${stride4};
-      int d4 = index - d3 * ${stride4};
-
+      ${coordsFromIndexSnippet}
       return ivec6(r, c, d, d2, d3, d4);
     }
   `;
