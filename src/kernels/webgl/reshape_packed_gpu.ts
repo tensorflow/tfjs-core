@@ -19,6 +19,7 @@ import {GPGPUProgram} from './gpgpu_math';
 import {getCoordsDataType} from './shader_compiler';
 import {getChannels} from '../packing_util';
 import * as shader_util from './shader_compiler_util';
+import * as util from '../../util';
 
 export class ReshapePackedProgram implements GPGPUProgram {
   variableNames = ['A'];
@@ -202,80 +203,28 @@ function getFlatIndex(shape: number[]): string {
   }
 }
 
-function getReshaped1DInputCoords(shape: [number]): string {
-  return `int inputCoordsFromReshapedOutCoords(int index) {
-    return index;
-  }`;
-}
-
-function getReshaped2DInputCoords(shape: [number, number]): string {
-  return `ivec2 inputCoordsFromReshapedOutCoords(int index) {
-    int r = index / ${shape[1]};
-    int c = index - r * ${shape[1]};
-    return ivec2(r, c);
-  }`;
-}
-
-function getReshaped3DInputCoords(shape: [number, number, number]): string {
-  const coordsFromIndexSnippet = shader_util.getLogicalCoordinatesFromFlatIndex(['r', 'c', 'd'], shape);
-
-  return `ivec3 inputCoordsFromReshapedOutCoords(int index) {
-    ${coordsFromIndexSnippet}
-    return ivec3(r, c, d);
-  }`;
-}
-
-function getReshaped4DInputCoords(shape: [number, number, number, number]): string {
-  const coordsFromIndexSnippet = shader_util.getLogicalCoordinatesFromFlatIndex(['r', 'c', 'd', 'd2'], shape);
-
-  return `
-    ivec4 inputCoordsFromReshapedOutCoords(int index) {
-      ${coordsFromIndexSnippet}
-      return ivec4(r, c, d, d2);
-    }
-  `;
-}
-
-function getReshaped5DInputCoords(
-    shape: [number, number, number, number, number]): string {
-  const coordsFromIndexSnippet = shader_util.getLogicalCoordinatesFromFlatIndex(['r', 'c', 'd', 'd2', 'd3'], shape);
-
-  return `
-    ivec5 inputCoordsFromReshapedOutCoords(int index) {
-      ${coordsFromIndexSnippet}
-      return ivec5(r, c, d, d2, d3);
-    }
-  `;
-}
-
-function getReshaped6DInputCoords(
-    shape: [number, number, number, number, number, number]): string {
-  const coordsFromIndexSnippet = shader_util.getLogicalCoordinatesFromFlatIndex(['r', 'c', 'd', 'd2', 'd3', 'd4'], shape);
-
-  return `
-    ivec6 inputCoordsFromReshapedOutCoords(int index) {
-      ${coordsFromIndexSnippet}
-      return ivec6(r, c, d, d2, d3, d4);
-    }
-  `;
-}
-
 function getReshapedInputCoords(shape: number[]): string {
-  switch(shape.length) {
-    case 1:
-      return getReshaped1DInputCoords(shape as [number]);
-    case 2:
-      return getReshaped2DInputCoords(shape as [number, number]);
-    case 3:
-      return getReshaped3DInputCoords(shape as [number, number, number]);
-    case 4:
-      return getReshaped4DInputCoords(shape as [number, number, number, number]);
-    case 5:
-      return getReshaped5DInputCoords(shape as [number, number, number, number, number]);
-    case 6:
-      return getReshaped6DInputCoords(shape as [number, number, number, number, number, number]);
-    default:
-      throw new Error(`Packed ${shape.length}-D reshaping` +
+  const rank = shape.length;
+  util.assert(rank < 7, `Packed ${shape.length}-D reshaping` +
           ` is not yet supported`);
+
+  const funcName = 'inputCoordsFromReshapedOutCoords';
+
+  if(rank === 1) {
+    return `
+      int ${funcName}(int index) {
+        return index;
+      }
+    `;
   }
+
+  const dims = ['r', 'c', 'd', 'd2', 'd3', 'd4'].slice(0, rank);
+  const coordsFromIndexSnippet = shader_util.getLogicalCoordinatesFromFlatIndex(dims, shape);
+
+  return `
+    ivec${rank} ${funcName}(int index) {
+      ${coordsFromIndexSnippet}
+      return ivec${rank}(${dims.join(',')});
+    }
+  `;
 }
