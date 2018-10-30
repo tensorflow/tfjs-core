@@ -30,11 +30,13 @@ export class ReshapePackedProgram implements GPGPUProgram {
     const rank = outputShape.length;
     const dtype = getCoordsDataType(rank);
     const shapeInnerDims = outputShape.slice(-2);
-    const innerDims = getInnerDims(rank, getChannels('thisRC'));
+    const innerDims = getInnerDims(rank, getChannels('thisRC', rank));
 
     const inputRank = inputShape.length;
     const inputDtype = getCoordsDataType(inputRank);
-    const inputChannels = getChannels('inputRC').slice(0, inputRank);
+    const inputChannels = getChannels('inputRC', inputRank);
+
+    const mainLoop = getMainLoop(dtype, innerDims, shapeInnerDims, inputDtype, inputChannels);
 
     this.userCode = `
       ${getReshapedInputCoords(inputShape)}
@@ -66,26 +68,46 @@ export class ReshapePackedProgram implements GPGPUProgram {
           (modInputInnerDims.y == 0. ? 0 : 1) :
           (modInputInnerDims.y == 0. ? 2 : 3);
 
-        for(int row=0; row<=1; row++) {
-          for(int col=0; col<=1; col++) {
-            ${dtype} thisRC = rc;
-            ${innerDims[0]} += row;
-            ${innerDims[1]} += col;
-
-            if(${innerDims[0]} >= ${shapeInnerDims[0]} || ${innerDims[1]} >= ${shapeInnerDims[1]}) continue;
-
-            int flatIndex = getFlatIndex(thisRC);
-
-            ${inputDtype} inputRC = inputCoordsFromReshapedOutCoords(flatIndex);
-
-            result[row * 2 + col] = getChannel(getA(${inputChannels}), offset + row * 2 + col);
-          }
-        }
+        ${mainLoop}
 
         setOutput(result);
       }
     `;
   }
+}
+
+function getMainLoop(dtype: string, innerDims: string[], shapeInnerDims: number[], inputDtype: string, inputChannels: string[]) {
+  if(dtype === 'int') {
+    return `
+      for(int col=0; col<=1; col++) {
+        ${dtype} thisRC = rc + col;
+
+        if(${innerDims[0]} >= ${shapeInnerDims[0]}) continue;
+
+        int flatIndex = getFlatIndex(thisRC);
+
+        ${inputDtype} inputRC = inputCoordsFromReshapedOutCoords(flatIndex);
+        result[col] = getChannel(getA(${inputChannels}), offset + col);
+      }
+    `;
+  }
+  return `
+    for(int row=0; row<=1; row++) {
+      for(int col=0; col<=1; col++) {
+        ${dtype} thisRC = rc;
+        ${innerDims[0]} += row;
+        ${innerDims[1]} += col;
+
+        if(${innerDims[0]} >= ${shapeInnerDims[0]} || ${innerDims[1]} >= ${shapeInnerDims[1]}) continue;
+
+        int flatIndex = getFlatIndex(thisRC);
+
+        ${inputDtype} inputRC = inputCoordsFromReshapedOutCoords(flatIndex);
+
+        result[row * 2 + col] = getChannel(getA(${inputChannels}), offset + row * 2 + col);
+      }
+    }
+  `;
 }
 
 function getFlat1DIndex(): string {

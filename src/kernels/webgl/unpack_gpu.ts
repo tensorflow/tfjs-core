@@ -30,7 +30,7 @@ export class UnpackProgram implements GPGPUProgram {
     this.outputShape = outputShape;
     const rank = outputShape.length;
 
-    const channels = getChannels('rc');
+    const channels = getChannels('rc', rank);
     const dtype = getCoordsDataType(rank);
     const sourceCoords = getSourceCoords(rank, channels);
     const innerDims = getInnerDims(rank, channels);
