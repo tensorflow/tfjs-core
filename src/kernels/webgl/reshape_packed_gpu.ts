@@ -168,7 +168,7 @@ function getFlat6DIndex(shape: number[]): string {
   const stride1 = shape[2] * stride2;
   const stride0 = shape[1] * stride1;
 
-  return `int getFlatIndex(ivec5 coords) {
+  return `int getFlatIndex(ivec6 coords) {
     return coords.x * ${stride0} + coords.y * ${stride1} + coords.z * ${stride2} + coords.w * ${stride3} + coords.u * ${stride4} + coords.v;
   }`;
 }

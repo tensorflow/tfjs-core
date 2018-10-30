@@ -19,7 +19,7 @@ export function getChannels(name: string, rank: number): string[] {
   if(rank === 1) {
     return [name];
   }
-  return ['x', 'y', 'z', 'w'].slice(0, rank).map(d => `${name}.${d}`);
+  return ['x', 'y', 'z', 'w', 'u', 'v'].slice(0, rank).map(d => `${name}.${d}`);
 }
 
 export function getSourceCoords(rank: number, dims: string[]): string {
