@@ -338,6 +338,15 @@ function sigmoidCrossEntropy_<T extends Tensor, O extends Tensor>(
 }
 
 /**
+ *
+ * @param labels
+ * @param logits
+ */
+function
+sparseSoftmaxCrossEntropyWithLogits_<T extends Tensor, O extends Tensor>(
+    labels: T|TensorLike, logits: T|TensorLike): O {}
+
+/**
  * Computes the huber loss between two tensors.
  *
  * @param labels The ground truth output tensor, same dimensions as
