@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {getChannels, getInnerDims, getSourceCoords} from '../packing_util';
+import {getChannels, getSourceCoords} from '../packing_util';
 
 import {GPGPUProgram} from './gpgpu_math';
 import {getCoordsDataType} from './shader_compiler';
@@ -33,7 +33,7 @@ export class UnpackProgram implements GPGPUProgram {
     const channels = getChannels('rc', rank);
     const dtype = getCoordsDataType(rank);
     const sourceCoords = getSourceCoords(rank, channels);
-    const innerDims = getInnerDims(rank, channels);
+    const innerDims = channels.slice(-2);
     const coords = rank === 1 ? 'rc' : innerDims.join(',');
 
     this.userCode = `

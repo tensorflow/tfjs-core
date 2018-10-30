@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {getChannels, getInnerDims} from '../packing_util';
+import {getChannels} from '../packing_util';
 
 import {GPGPUProgram} from './gpgpu_math';
 import {getCoordsDataType} from './shader_compiler';
@@ -94,7 +94,7 @@ function getSetup(
     return '';
   }
 
-  const innerDims = getInnerDims(rank, dims);
+  const innerDims = dims.slice(-2);
 
   return `
     int r = ${innerDims[0]};

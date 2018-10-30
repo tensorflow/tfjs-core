@@ -22,10 +22,6 @@ export function getChannels(name: string, rank: number): string[] {
   return ['x', 'y', 'z', 'w'].slice(0, rank).map(d => `${name}.${d}`);
 }
 
-export function getInnerDims(rank: number, dims: string[]): string[] {
-  return dims.slice(0, rank).slice(-2);
-}
-
 export function getSourceCoords(rank: number, dims: string[]): string {
   if (rank === 1) {
     return 'rc';

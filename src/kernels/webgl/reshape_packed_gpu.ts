@@ -17,7 +17,7 @@
 
 import {GPGPUProgram} from './gpgpu_math';
 import {getCoordsDataType} from './shader_compiler';
-import {getChannels, getInnerDims} from '../packing_util';
+import {getChannels} from '../packing_util';
 
 export class ReshapePackedProgram implements GPGPUProgram {
   variableNames = ['A'];
@@ -30,11 +30,20 @@ export class ReshapePackedProgram implements GPGPUProgram {
     const rank = outputShape.length;
     const dtype = getCoordsDataType(rank);
     const shapeInnerDims = outputShape.slice(-2);
-    const innerDims = getInnerDims(rank, getChannels('thisRC', rank));
+    const innerDims = getChannels('thisRC', rank).slice(-2);
 
     const inputRank = inputShape.length;
     const inputDtype = getCoordsDataType(inputRank);
     const inputChannels = getChannels('inputRC', inputRank);
+    const inputInnerDimsDtype = inputRank === 1 ? 'float' : 'vec2';
+
+    let inputInnerDimsString: string;
+    if(inputRank === 1) {
+      inputInnerDimsString = 'float(originalInputRC)';
+    } else {
+      const inputInnerDims = getChannels('originalInputRC', inputRank).slice(-2);
+      inputInnerDimsString = `vec2(float(${inputInnerDims[0]}), float(${inputInnerDims[1]}))`;
+    }
 
     const mainLoop = getMainLoop(dtype, innerDims, shapeInnerDims, inputDtype, inputChannels);
 
@@ -61,8 +70,8 @@ export class ReshapePackedProgram implements GPGPUProgram {
 
         vec4 result = vec4(0.);
         ${inputDtype} originalInputRC = inputCoordsFromReshapedOutCoords(getFlatIndex(rc));
-        vec2 inputInnerDims = vec2(float(originalInputRC.x), float(originalInputRC.y));
-        vec2 modInputInnerDims = mod(inputInnerDims, 2.);
+        ${inputInnerDimsDtype} inputInnerDims = ${inputInnerDimsString};
+        ${inputInnerDimsDtype} modInputInnerDims = mod(inputInnerDims, 2.);
 
         int offset = modInputInnerDims.x == 0. ?
           (modInputInnerDims.y == 0. ? 0 : 1) :
