@@ -45,7 +45,6 @@ export class ReshapePackedProgram implements GPGPUProgram {
         return frag.y;
       }`;
 
-      inputInnerDimsString = 'float(inputRCTopLeft)';
       offset = `
         float modInputRC = mod(float(inputRC), 2.);
         int offset = modInputRC == 0. ? 0 : 1`;
@@ -83,7 +82,6 @@ export class ReshapePackedProgram implements GPGPUProgram {
         ${dtype} rc = getOutputCoords();
 
         vec4 result = vec4(0.);
-        ${inputDtype} inputRCTopLeft = inputCoordsFromReshapedOutCoords(getFlatIndex(rc));
 
         ${mainLoop}
 
