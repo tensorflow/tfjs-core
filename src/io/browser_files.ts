@@ -88,7 +88,9 @@ export class BrowserDownloads implements IOHandler {
       jsonAnchor.href = modelTopologyAndWeightManifestURL;
       // Trigger downloads by calling the `click` methods on the download
       // anchors.
-      jsonAnchor.dispatchEvent(new MouseEvent('click'));
+      document.body.appendChild(jsonAnchor);
+      jsonAnchor.click();
+      document.body.removeChild(jsonAnchor);
 
       if (modelArtifacts.weightData != null) {
         const weightDataAnchor = this.weightDataAnchor == null ?
@@ -96,7 +98,9 @@ export class BrowserDownloads implements IOHandler {
             this.weightDataAnchor;
         weightDataAnchor.download = this.weightDataFileName;
         weightDataAnchor.href = weightsURL;
-        weightDataAnchor.dispatchEvent(new MouseEvent('click'));
+        document.body.appendChild(weightDataAnchor);
+        weightDataAnchor.click();
+        document.body.removeChild(weightDataAnchor);
       }
 
       return {modelArtifactsInfo: getModelArtifactsInfoForJSON(modelArtifacts)};
