@@ -15,8 +15,9 @@
  * =============================================================================
  */
 
-import {MPRandGauss} from './rand';
+import {MPRandGauss, RandGamma} from './rand';
 import {expectArrayInMeanStdRange, jarqueBeraNormalityTest} from './rand_util';
+import {expectValuesInRange} from '../test_util';
 
 function isFloat(n: number): boolean {
   return Number(n) === n && n % 1 !== 0;
@@ -61,10 +62,44 @@ describe('MPRandGauss', () => {
 
   it('Should not have a more than 2x std-d from mean for truncated values',
      () => {
-       const stdv = 1.5;
-       const rand = new MPRandGauss(0, stdv, 'float32', true /* truncated */);
-       for (let i = 0; i < 1000; i++) {
-         expect(Math.abs(rand.nextValue())).toBeLessThan(stdv * 2);
-       }
-     });
+    const stdv = 1.5;
+    const rand = new MPRandGauss(0, stdv, 'float32', true /* truncated */);
+    for (let i = 0; i < 1000; i++) {
+      expect(Math.abs(rand.nextValue())).toBeLessThan(stdv * 2);
+    }
+  });
+});
+
+describe('RandGamma', () => {
+  const SEED = 2002;
+
+  it('should default to float32 numbers', () => {
+    const rand = new RandGamma(2, 2);
+    expect(isFloat(rand.nextValue())).toBe(true);
+  });
+
+  it('should handle create an alpha/beta of float32 numbers', () => {
+    const rand = new RandGamma(2, 2, 'float32', SEED);
+    const values = [];
+    const size = 10000;
+    for (let i = 0; i < size; i++) {
+      values.push(rand.nextValue());
+    }
+    expectValuesInRange(values, 0, 30);
+  });
+
+  it('should handle int32 numbers', () => {
+    const rand = new RandGamma(2, 2, 'int32');
+    expect(isFloat(rand.nextValue())).toBe(false);
+  });
+
+  it('should handle create an alpha/beta of int32 numbers', () => {
+    const rand = new RandGamma(2, 2, 'int32', SEED);
+    const values = [];
+    const size = 10000;
+    for (let i = 0; i < size; i++) {
+      values.push(rand.nextValue());
+    }
+    expectValuesInRange(values, 0, 30);
+  });
 });
