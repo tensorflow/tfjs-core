@@ -128,82 +128,34 @@ function getMainLoop(dtype: string, innerDims: string[], shapeInnerDims: number[
   `;
 }
 
-function getFlat1DIndex(): string {
-  return `int getFlatIndex(int coords) {
-    return coords;
-  }`;
-}
-
-function getFlat2DIndex(shape: number[]): string {
-  return `int getFlatIndex(ivec2 coords) {
-    return coords.x * ${shape[1]} + coords.y;
-  }`;
-}
-
-function getFlat3DIndex(shape: number[]): string {
-  const stride1 = shape[2];
-  const stride0 = shape[1] * stride1;
-
-  return `int getFlatIndex(ivec3 coords) {
-    return coords.x * ${stride0} + coords.y * ${stride1} + coords.z;
-  }`;
-}
-
-function getFlat4DIndex(shape: number[]): string {
-  const stride2 = shape[3];
-  const stride1 = shape[2] * stride2;
-  const stride0 = shape[1] * stride1;
-
-  return `int getFlatIndex(ivec4 coords) {
-    return coords.x * ${stride0} + coords.y * ${stride1} + coords.z * ${stride2} + coords.w;
-  }`;
-}
-
-function getFlat5DIndex(shape: number[]): string {
-  const stride3 = shape[4];
-  const stride2 = shape[3] * stride3;
-  const stride1 = shape[2] * stride2;
-  const stride0 = shape[1] * stride1;
-
-  return `int getFlatIndex(ivec5 coords) {
-    return coords.x * ${stride0} + coords.y * ${stride1} + coords.z * ${stride2} + coords.w * ${stride3} + coords.u;
-  }`;
-}
-
-function getFlat6DIndex(shape: number[]): string {
-  const stride4 = shape[5];
-  const stride3 = shape[4] * stride4;
-  const stride2 = shape[3] * stride3;
-  const stride1 = shape[2] * stride2;
-  const stride0 = shape[1] * stride1;
-
-  return `int getFlatIndex(ivec6 coords) {
-    return coords.x * ${stride0} + coords.y * ${stride1} + coords.z * ${stride2} + coords.w * ${stride3} + coords.u * ${stride4} + coords.v;
-  }`;
-}
-
 function getFlatIndex(shape: number[]): string {
-  switch(shape.length) {
-    case 1:
-      return getFlat1DIndex();
-    case 2:
-      return getFlat2DIndex(shape);
-    case 3:
-      return getFlat3DIndex(shape);
-    case 4:
-      return getFlat4DIndex(shape);
-    case 5:
-      return getFlat5DIndex(shape);
-    case 6:
-      return getFlat6DIndex(shape);
-    default:
-      throw new Error(`Packed ${shape.length}-D flat indexing is not yet supported`);
+  const rank = shape.length;
+  util.assert(rank < 7, `Packed ${rank}-D flat indexing is not yet supported`);
+
+  const funcName = 'getFlatIndex';
+
+  if(rank === 1) {
+    return `
+      int ${funcName}(int coords) {
+        return coords;
+      }
+    `;
   }
+
+  const strides = shader_util.getStrides(shape);
+  let coords = ['x', 'y', 'z', 'w', 'u', 'v'].slice(0, rank).map(d => `coords.${d}`);
+  const dotCoordsWithStrides = shader_util.dotify(coords, strides.map(d => d.toString()).concat(['1.']));
+
+  return `
+    int ${funcName}(ivec${rank} coords) {
+      return round(${dotCoordsWithStrides});
+    }
+  `;
 }
 
 function getReshapedInputCoords(shape: number[]): string {
   const rank = shape.length;
-  util.assert(rank < 7, `Packed ${shape.length}-D reshaping` +
+  util.assert(rank < 7, `Packed ${rank}-D reshaping` +
           ` is not yet supported`);
 
   const funcName = 'inputCoordsFromReshapedOutCoords';
