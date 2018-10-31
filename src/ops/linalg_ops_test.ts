@@ -173,7 +173,7 @@ describeWithFlags('adjoint', ALL_ENVS, () => {
   });
 });
 
-describeWithFlags('bandPart', ALL_ENVS, () => {
+describeWithFlags('bandPart', CPU_ENVS, () => {
   const la = tf.linalg;
 
   it('3x4', () => {
