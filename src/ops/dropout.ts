@@ -41,7 +41,7 @@ import {step} from './unary_ops';
 function dropout_(
     x: Tensor, level: Scalar, noiseShape?: number[], seed?: number): Tensor {
   if (noiseShape != null && !arraysEqual(x.shape, noiseShape)) {
-    // TODO: implement non default noise shape (VariableVasasMT)
+    // TODO(VariableVasasMT): implement non default noise shape
     throw new Error(
         'Non-default noise shape is not implemented yet: ' +
         JSON.stringify(noiseShape));
