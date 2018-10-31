@@ -186,8 +186,7 @@ function randomGamma_<R extends Rank>(
   if (dtype != null && (dtype as DataType) === 'bool') {
     throw new Error(`Unsupported data type ${dtype}`);
   }
-  const rgamma =
-      new RandGamma(alpha, beta, dtype, seed);
+  const rgamma = new RandGamma(alpha, beta, dtype, seed);
   const res = buffer(shape, dtype);
   for (let i = 0; i < res.values.length; i++) {
     res.values[i] = rgamma.nextValue();
