@@ -94,6 +94,12 @@ export class ReshapePackedProgram implements GPGPUProgram {
       }
 
       vec4 getACached1(${inputDtype} coords) {
+        aCoords1 = topLeftify(ivec2(${inputCachedInnerDims.join(',')}));
+        if(aCoords1 == aCoords0) {
+          aCached1 = aCached0;
+        } else {
+          aCached1 = getA(${inputChannels});
+        }
         return getA(${inputChannels});
       }
 
