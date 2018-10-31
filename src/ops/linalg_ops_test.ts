@@ -19,7 +19,7 @@ import * as tf from '../index';
 import {ENV} from '../environment';
 import {describeWithFlags} from '../jasmine_util';
 import {Scalar, Tensor, Tensor1D, Tensor2D} from '../tensor';
-import {ALL_ENVS, expectArraysClose, expectArraysEqual, WEBGL_ENVS} from '../test_util';
+import {ALL_ENVS, CPU_ENVS, expectArraysClose, expectArraysEqual, WEBGL_ENVS} from '../test_util';
 
 import {scalar, tensor1d, tensor2d, tensor3d, tensor4d} from './ops';
 
@@ -297,7 +297,7 @@ describeWithFlags('bandPart', ALL_ENVS, () => {
   });
 });
 
-describeWithFlags('triangularSolve', ALL_ENVS, () => {
+describeWithFlags('triangularSolve', CPU_ENVS, () => {
   const la = tf.linalg;
 
   const testWith = (L: Tensor, y: Tensor) => {
@@ -376,7 +376,7 @@ describeWithFlags('triangularSolve', ALL_ENVS, () => {
   }
 });
 
-describeWithFlags('qr', ALL_ENVS, () => {
+describeWithFlags('qr', CPU_ENVS, () => {
   const testWith = (a: Tensor) => {
     const [m,n] = a.shape.slice(-2),
            l = Math.min(m,n),
