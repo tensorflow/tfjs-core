@@ -42,6 +42,18 @@ export function clamp(min: number, x: number, max: number): number {
   return Math.max(min, Math.min(x, max));
 }
 
+export function nearestLargerEven(val: number): number {
+  return val % 2 === 0 ? val : val + 1;
+}
+
+export function sum(arr: number[]): number {
+  let sum = 0;
+  for (let i = 0; i < arr.length; i++) {
+    sum += arr[i];
+  }
+  return sum;
+}
+
 /**
  * Returns a sample from a uniform [a, b) distribution.
  *
@@ -51,7 +63,7 @@ export function clamp(min: number, x: number, max: number): number {
  */
 export function randUniform(a: number, b: number) {
   const r = Math.random();
-  return (b*r) + (1-r)*a;
+  return (b * r) + (1 - r) * a;
 }
 
 /** Returns the squared Euclidean distance between two vectors. */
@@ -86,7 +98,7 @@ export function assertNonNull(a: TensorLike): void {
 // NOTE: We explicitly type out what T extends instead of any so that
 // util.flatten on a nested array of number doesn't try to infer T as a
 // number[][], causing us to explicitly type util.flatten<number>().
-export function flatten<T extends number|boolean|Promise<number>>(
+export function flatten<T extends number|boolean|Promise<number>|string>(
     arr: T|RecursiveArray<T>, ret: T[] = []): T[] {
   if (Array.isArray(arr)) {
     for (let i = 0; i < arr.length; ++i) {
@@ -96,53 +108,6 @@ export function flatten<T extends number|boolean|Promise<number>>(
     ret.push(arr as T);
   }
   return ret;
-}
-
-export function inferShape(val: TypedArray|number|boolean|RegularArray<number>|
-                           RegularArray<boolean>): number[] {
-  let firstElem: typeof val = val;
-
-  if (isTypedArray(val)) {
-    return [(val as TypedArray).length];
-  }
-  if (!Array.isArray(val)) {
-    return [];  // Scalar.
-  }
-  const shape: number[] = [];
-
-  while (firstElem instanceof Array) {
-    shape.push(firstElem.length);
-    firstElem = firstElem[0];
-  }
-  if (val instanceof Array) {
-    deepAssertShapeConsistency(val, shape, []);
-  }
-  return shape;
-}
-
-function deepAssertShapeConsistency(
-    val: number|boolean|RegularArray<number>|RegularArray<boolean>,
-    shape: number[], indices?: number[]) {
-  indices = indices || [];
-  if (!(val instanceof Array)) {
-    assert(
-        shape.length === 0,
-        () => `Element arr[${indices.join('][')}] is a primitive, ` +
-            `but should be an array of ${shape[0]} elements`);
-    return;
-  }
-  assert(
-      shape.length > 0,
-      () => `Element arr[${indices.join('][')}] should be a primitive, ` +
-          `but is an array of ${val.length} elements`);
-  assert(
-      val.length === shape[0],
-      () => `Element arr[${indices.join('][')}] should have ${shape[0]} ` +
-          `elements, but has ${val.length} elements`);
-  const subShape = shape.slice(1);
-  for (let i = 0; i < val.length; ++i) {
-    deepAssertShapeConsistency(val[i], subShape, indices.concat(i));
-  }
 }
 
 export function sizeFromShape(shape: number[]): number {
@@ -162,6 +127,13 @@ export function isScalarShape(shape: number[]): boolean {
 }
 
 export function arraysEqual(n1: FlatVector, n2: FlatVector) {
+  if (n1 === n2) {
+    return true;
+  }
+  if (n1 == null || n2 == null) {
+    return false;
+  }
+
   if (n1.length !== n2.length) {
     return false;
   }
@@ -372,10 +344,13 @@ export function checkConversionForNaN<D extends DataType>(
  * precision.
  */
 export function hasEncodingLoss(oldType: DataType, newType: DataType): boolean {
-  if (newType === 'float32') {
+  if (newType === 'complex64') {
     return false;
   }
-  if (newType === 'int32' && oldType !== 'float32') {
+  if (newType === 'float32' && oldType !== 'complex64') {
+    return false;
+  }
+  if (newType === 'int32' && oldType !== 'float32' && oldType !== 'complex64') {
     return false;
   }
   if (newType === 'bool' && oldType === 'bool') {
@@ -387,7 +362,7 @@ export function hasEncodingLoss(oldType: DataType, newType: DataType): boolean {
 function copyTypedArray<D extends DataType>(
     array: DataTypeMap[D]|number[]|boolean[], dtype: D,
     debugMode: boolean): DataTypeMap[D] {
-  if (dtype == null || dtype === 'float32') {
+  if (dtype == null || dtype === 'float32' || dtype === 'complex64') {
     return new Float32Array(array as number[]);
   } else if (dtype === 'int32') {
     if (debugMode) {
@@ -416,6 +391,8 @@ export function isTypedArray(a: TypedArray|number|boolean|RegularArray<number>|
 export function bytesPerElement(dtype: DataType): number {
   if (dtype === 'float32' || dtype === 'int32') {
     return 4;
+  } else if (dtype === 'complex64') {
+    return 8;
   } else if (dtype === 'bool') {
     return 1;
   } else {
@@ -481,7 +458,7 @@ export function makeOnesTypedArray<D extends DataType>(
 
 export function makeZerosTypedArray<D extends DataType>(
     size: number, dtype: D): DataTypeMap[D] {
-  if (dtype == null || dtype === 'float32') {
+  if (dtype == null || dtype === 'float32' || dtype === 'complex64') {
     return new Float32Array(size);
   } else if (dtype === 'int32') {
     return new Int32Array(size);

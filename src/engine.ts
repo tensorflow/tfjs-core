@@ -15,13 +15,13 @@
  * =============================================================================
  */
 
-import {BackendTimingInfo, KernelBackend} from './kernels/backend';
+import {BackendTimingInfo, DataMover, KernelBackend} from './kernels/backend';
 import {Profiler} from './profiler';
 import {backpropagateGradients, getFilteredNodesXToY, NamedGradientMap, TapeNode} from './tape';
 import {DataId, Tensor, Tensor3D, Variable} from './tensor';
 import {NamedTensorMap, NamedVariableMap, TensorContainer} from './tensor_types';
 import {getTensorsInContainer, isTensorInList} from './tensor_util';
-import {TypedArray} from './types';
+import {DataType, TypedArray} from './types';
 import * as util from './util';
 import {makeOnesTypedArray, now, sizeFromShape} from './util';
 
@@ -45,6 +45,20 @@ export type MemoryInfo = {
   unreliable?: boolean;
 };
 
+type KernelProfile = {
+  name: string; bytesAdded: number; totalBytesSnapshot: number;
+  tensorsAdded: number;
+  totalTensorsSnapshot: number;
+  inputShapes: number[][];
+  outputShape: number[] | number[][];
+};
+
+export type ProfileInfo = {
+  newBytes: number; newTensors: number; peakBytes: number;
+  kernels: KernelProfile[];
+  result: TensorContainer;
+};
+
 export interface TimingInfo extends BackendTimingInfo {
   wallMs: number;
 }
@@ -64,15 +78,17 @@ interface ScopeState {
   name: string;
 }
 
-export class Engine implements TensorManager {
+export class Engine implements TensorManager, DataMover {
   // Public since optimizers will use it.
   registeredVariables: NamedVariableMap = {};
 
-  private refCounter = new WeakMap<DataId, number>();
   private nextTapeNodeId = 0;
   private numBytes = 0;
   private numTensors = 0;
   private numDataBuffers = 0;
+
+  private profiling = false;
+  private activeProfile: ProfileInfo;
 
   private activeTape: TapeNode[];
   private gradientScopeCount = 0;
@@ -84,6 +100,13 @@ export class Engine implements TensorManager {
   private keepTensors: Set<number> = new Set();
   private profiler: Profiler;
 
+  private tensorInfo = new WeakMap<DataId, {
+    backend: KernelBackend,
+    dtype: DataType,
+    shape: number[],
+    refCount: number
+  }>();
+
   constructor(
       public backend: KernelBackend, public safeMode: boolean,
       private debugMode: () => boolean) {
@@ -91,6 +114,12 @@ export class Engine implements TensorManager {
     this.activeScope = {track: [], name: 'default scope'};
     this.scopeStack = [this.activeScope];
     this.profiler = new Profiler(backend);
+    this.activeProfile =
+        {newBytes: 0, newTensors: 0, peakBytes: 0, kernels: [], result: null};
+  }
+
+  moveData(dataId: DataId) {
+    this.write(dataId, this.readSync(dataId));
   }
 
   tidy<T extends TensorContainer>(
@@ -145,6 +174,16 @@ export class Engine implements TensorManager {
     }
   }
 
+  private static nextTensorId = 0;
+  nextTensorId(): number {
+    return Engine.nextTensorId++;
+  }
+
+  private static nextVariableId = 0;
+  nextVariableId(): number {
+    return Engine.nextVariableId++;
+  }
+
   runKernel<T extends Tensor|Tensor[], I extends NamedTensorMap>(
       forwardFunc: ForwardFunc<T>,
       inputs: I,
@@ -157,6 +196,8 @@ export class Engine implements TensorManager {
       return x;
     };
     const scopeName = this.activeScope.name;
+    const startingBytecount = this.numBytes;
+    const startingNumTensors = this.numTensors;
 
     // Stop recording to a tape when running a kernel.
     this.scopedRun(
@@ -175,8 +216,7 @@ export class Engine implements TensorManager {
         id: this.nextTapeNodeId++,
         name: scopeName,
         inputs,
-        // Keep gradient records only for the first output.
-        output: Array.isArray(result) ? result[0] : result
+        outputs: Array.isArray(result) ? result : [result] as Tensor[]
       };
       if (backwardsFunc != null) {
         tapeNode.gradient =
@@ -185,22 +225,46 @@ export class Engine implements TensorManager {
       }
       this.activeTape.push(tapeNode);
     }
+
+    if (this.profiling) {
+      this.activeProfile.kernels.push({
+        name: scopeName,
+        bytesAdded: this.numBytes - startingBytecount,
+        totalBytesSnapshot: this.numBytes,
+        tensorsAdded: this.numTensors - startingNumTensors,
+        totalTensorsSnapshot: this.numTensors,
+        inputShapes: Object.keys(inputs).map(key => inputs[key].shape),
+        outputShape: Array.isArray(result) ?
+            (result as Tensor[]).map(item => (item as Tensor).shape) :
+            (result as Tensor).shape
+      });
+    }
+
     return result;
   }
 
   // TensorManager implementation.
 
   registerTensor(a: Tensor|Variable): void {
-    const refCount =
-        this.refCounter.has(a.dataId) ? this.refCounter.get(a.dataId) : 0;
+    const refCount = this.tensorInfo.has(a.dataId) ?
+        this.tensorInfo.get(a.dataId).refCount :
+        0;
     this.numTensors++;
     if (refCount === 0) {
       this.numDataBuffers++;
-      this.numBytes +=
-          util.sizeFromShape(a.shape) * util.bytesPerElement(a.dtype);
+
+      // Don't count bytes for complex numbers as they are counted by their
+      // components.
+      if (a.dtype !== 'complex64') {
+        this.numBytes +=
+            util.sizeFromShape(a.shape) * util.bytesPerElement(a.dtype);
+      }
+      this.tensorInfo.set(
+          a.dataId,
+          {backend: this.backend, dtype: a.dtype, shape: a.shape, refCount: 0});
       this.backend.register(a.dataId, a.shape, a.dtype);
     }
-    this.refCounter.set(a.dataId, refCount + 1);
+    this.tensorInfo.get(a.dataId).refCount++;
     if (!(a instanceof Variable)) {
       this.track(a);
     }
@@ -214,22 +278,27 @@ export class Engine implements TensorManager {
   }
 
   disposeTensor(a: Tensor): void {
-    if (!this.refCounter.has(a.dataId)) {
+    if (!this.tensorInfo.has(a.dataId)) {
       return;
     }
     if (this.keepTensors.has(a.id)) {
       this.keepTensors.delete(a.id);
     }
     this.numTensors--;
-    const refCount = this.refCounter.get(a.dataId);
+    const refCount = this.tensorInfo.get(a.dataId).refCount;
     if (refCount <= 1) {
-      this.refCounter.delete(a.dataId);
-      this.backend.disposeData(a.dataId);
+      const info = this.tensorInfo.get(a.dataId);
+      info.backend.disposeData(a.dataId);
       this.numDataBuffers--;
-      this.numBytes -=
-          util.sizeFromShape(a.shape) * util.bytesPerElement(a.dtype);
+      // Don't count bytes for complex numbers as they are counted by their
+      // components.
+      if (a.dtype !== 'complex64') {
+        this.numBytes -=
+            util.sizeFromShape(a.shape) * util.bytesPerElement(a.dtype);
+      }
+      this.tensorInfo.delete(a.dataId);
     } else {
-      this.refCounter.set(a.dataId, refCount - 1);
+      this.tensorInfo.get(a.dataId).refCount--;
     }
     // TODO(nsthorat): Construct an error and save the stack trace for
     // debugging when in debug mode. Creating a stack trace is too expensive
@@ -250,6 +319,24 @@ export class Engine implements TensorManager {
     info.numDataBuffers = this.numDataBuffers;
     info.numBytes = this.numBytes;
     return info;
+  }
+
+  async profile(query: () => TensorContainer): Promise<ProfileInfo> {
+    this.profiling = true;
+
+    const startBytes = this.numBytes;
+    const startNumTensors = this.numTensors;
+
+    this.activeProfile.kernels = [];
+    this.activeProfile.result = query();
+
+    this.profiling = false;
+
+    this.activeProfile.peakBytes =
+        Math.max(...this.activeProfile.kernels.map(d => d.totalBytesSnapshot));
+    this.activeProfile.newBytes = this.numBytes - startBytes;
+    this.activeProfile.newTensors = this.numTensors - startNumTensors;
+    return this.activeProfile;
   }
 
   private shouldRecord(): boolean {
@@ -277,7 +364,7 @@ export class Engine implements TensorManager {
       id: this.nextTapeNodeId++,
       name: this.activeScope.name,
       inputs: inputsMap,
-      output: result,
+      outputs: [result],
       gradient
     };
     this.activeTape.push(tapeNode);
@@ -451,13 +538,24 @@ export class Engine implements TensorManager {
 
   // Forwarding to backend.
   write(dataId: DataId, values: TypedArray): void {
+    const info = this.tensorInfo.get(dataId);
+    if (this.backend !== info.backend) {
+      // Delete the tensor from the old backend and move it to the new backend.
+      info.backend.disposeData(dataId);
+      info.backend = this.backend;
+      this.backend.register(dataId, info.shape, info.dtype);
+    }
     this.backend.write(dataId, values);
   }
   readSync(dataId: DataId): TypedArray {
-    return this.backend.readSync(dataId);
+    // Route the read to the correct backend.
+    const info = this.tensorInfo.get(dataId);
+    return info.backend.readSync(dataId);
   }
   read(dataId: DataId): Promise<TypedArray> {
-    return this.backend.read(dataId);
+    // Route the read to the correct backend.
+    const info = this.tensorInfo.get(dataId);
+    return info.backend.read(dataId);
   }
   fromPixels(
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,

@@ -16,10 +16,10 @@
  */
 
 import * as device_util from './device_util';
-import {Engine, MemoryInfo, ScopeFn, TimingInfo} from './engine';
-import {Features, getFeaturesFromURL, getWebGLDisjointQueryTimerVersion, isChrome, isDownloadFloatTextureEnabled, isRenderToFloatTextureEnabled, isWebGLFenceEnabled, isWebGLVersionEnabled} from './environment_util';
+import {Engine, MemoryInfo, ProfileInfo, ScopeFn, TimingInfo} from './engine';
+import {Features, getFeaturesFromURL, getWebGLDisjointQueryTimerVersion, getWebGLMaxTextureSize, isChrome, isDownloadFloatTextureEnabled, isRenderToFloatTextureEnabled, isWebGLFenceEnabled, isWebGLVersionEnabled} from './environment_util';
 import {KernelBackend} from './kernels/backend';
-import {setTensorTracker, Tensor, TensorTracker} from './tensor';
+import {DataId, setTensorTracker, Tensor, TensorTracker} from './tensor';
 import {TensorContainer} from './tensor_types';
 import {getTensorsInContainer} from './tensor_util';
 
@@ -31,7 +31,6 @@ const TEST_EPSILON_FLOAT32 = 1e-3;
 
 export class Environment {
   private features: Features = {};
-  private engines: {[id: string]: Engine} = {};
   private globalEngine: Engine;
   private registry:
       {[id: string]: {backend: KernelBackend, priority: number}} = {};
@@ -70,7 +69,8 @@ export class Environment {
     if (!(backendName in ENV.registry)) {
       throw new Error(`Backend name '${backendName}' not found in registry`);
     }
-    ENV.initBackend(backendName, safeMode);
+    ENV.engine.backend = ENV.findBackend(backendName);
+    ENV.backendName = backendName;
   }
 
   /**
@@ -79,7 +79,7 @@ export class Environment {
    */
   /** @doc {heading: 'Environment'} */
   static getBackend(): string {
-    ENV.initDefaultBackend();
+    ENV.initEngine();
     return ENV.backendName;
   }
 
@@ -113,12 +113,42 @@ export class Environment {
   }
 
   /**
+   * Executes the provided function `f()` and returns a promise that resolves
+   * with information about the function's memory use:
+   * - `newBytes`: tne number of new bytes allocated
+   * - `newTensors`: the number of new tensors created
+   * - `peakBytes`: the peak number of bytes allocated
+   * - `kernels`: an array of objects for each kernel involved that reports
+   * their input and output shapes, number of bytes used, and number of new
+   * tensors created.
+   *
+   * ```js
+   * const profile = await tf.profile(() => {
+   *   const x = tf.tensor1d([1, 2, 3]);
+   *   let x2 = x.square();
+   *   x2.dispose();
+   *   x2 = x.square();
+   *   x2.dispose();
+   *   return x;
+   * });
+   *
+   * console.log(`newBytes: ${profile.newBytes}`);
+   * console.log(`newTensors: ${profile.newTensors}`);
+   * console.log(`byte usage over all kernels: ${profile.kernels.map(k =>
+   * k.totalBytesSnapshot)}`);
+   * ```
+   *
+   */
+  /** @doc {heading: 'Performance', subheading: 'Profile'} */
+  static profile(f: () => TensorContainer): Promise<ProfileInfo> {
+    return ENV.engine.profile(f);
+  }
+
+  /**
    * Executes the provided function `fn` and after it is executed, cleans up all
    * intermediate tensors allocated by `fn` except those returned by `fn`.
-   * `f` must not return a Promise (async functions not allowed).
-   * The returned result can be a complex object, however tidy only walks the
-   * top-level properties (depth 1) of that object to search for tensors, or
-   * lists of tensors that need to be tracked in the parent scope.
+   * `fn` must not return a Promise (async functions not allowed). The returned
+   * result can be a complex object.
    *
    * Using this method helps avoid memory leaks. In general, wrap calls to
    * operations in `tidy` for automatic memory cleanup.
@@ -276,6 +306,14 @@ export class Environment {
           (typeof process.versions.node !== 'undefined');
     } else if (feature === 'IS_CHROME') {
       return isChrome();
+    } else if (feature === 'WEBGL_PACK_BATCHNORMALIZATION') {
+      return false;
+    } else if (feature === 'WEBGL_CONV_IM2COL') {
+      return false;
+    } else if (feature === 'WEBGL_PAGING_ENABLED') {
+      return this.get('IS_BROWSER') && !this.get('PROD');
+    } else if (feature === 'WEBGL_MAX_TEXTURE_SIZE') {
+      return getWebGLMaxTextureSize(this.get('WEBGL_VERSION'));
     } else if (feature === 'IS_TEST') {
       return false;
     } else if (feature === 'BACKEND') {
@@ -286,41 +324,41 @@ export class Environment {
       if (webGLVersion === 0) {
         return 0;
       }
-      // Remove this and reenable this extension when the
-      // EXT_disjoint_query_timer extension is reenabled in chrome.
-      // https://github.com/tensorflow/tfjs/issues/544
-      if (webGLVersion > 0) {
-        return 0;
-      }
-      return getWebGLDisjointQueryTimerVersion(
-          webGLVersion, this.get('IS_BROWSER'));
+      return getWebGLDisjointQueryTimerVersion(webGLVersion);
     } else if (feature === 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE') {
       return this.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') > 0 &&
           !device_util.isMobile();
     } else if (feature === 'HAS_WEBGL') {
       return this.get('WEBGL_VERSION') > 0;
     } else if (feature === 'WEBGL_VERSION') {
-      if (isWebGLVersionEnabled(2, this.get('IS_BROWSER'))) {
+      if (isWebGLVersionEnabled(2)) {
         return 2;
-      } else if (isWebGLVersionEnabled(1, this.get('IS_BROWSER'))) {
+      } else if (isWebGLVersionEnabled(1)) {
         return 1;
       }
       return 0;
     } else if (feature === 'WEBGL_RENDER_FLOAT32_ENABLED') {
-      return isRenderToFloatTextureEnabled(
-          this.get('WEBGL_VERSION'), this.get('IS_BROWSER'));
+      return isRenderToFloatTextureEnabled(this.get('WEBGL_VERSION'));
     } else if (feature === 'WEBGL_DOWNLOAD_FLOAT_ENABLED') {
-      return isDownloadFloatTextureEnabled(
-          this.get('WEBGL_VERSION'), this.get('IS_BROWSER'));
+      return isDownloadFloatTextureEnabled(this.get('WEBGL_VERSION'));
     } else if (feature === 'WEBGL_FENCE_API_ENABLED') {
-      return isWebGLFenceEnabled(
-          this.get('WEBGL_VERSION'), this.get('IS_BROWSER'));
+      return isWebGLFenceEnabled(this.get('WEBGL_VERSION'));
+    } else if (feature === 'WEBGL_SIZE_UPLOAD_UNIFORM') {
+      // Use uniform uploads only when 32bit floats are supported. In 16bit
+      // environments there are problems with comparing a 16bit texture value
+      // with a 32bit uniform value.
+      const useUniforms = this.get('WEBGL_RENDER_FLOAT32_ENABLED');
+      return useUniforms ? 4 : 0;
     } else if (feature === 'TEST_EPSILON') {
       return this.backend.floatPrecision() === 32 ? TEST_EPSILON_FLOAT32 :
                                                     TEST_EPSILON_FLOAT16;
     } else if (feature === 'EPSILON') {
       return this.backend.floatPrecision() === 32 ? EPSILON_FLOAT32 :
                                                     EPSILON_FLOAT16;
+    } else if (feature === 'PROD') {
+      return false;
+    } else if (feature === 'TENSORLIKE_CHECK_SHAPE_CONSISTENCY') {
+      return !this.get('PROD');
     }
     throw new Error(`Unknown feature ${feature}.`);
   }
@@ -333,18 +371,6 @@ export class Environment {
     this.features = getFeaturesFromURL();
     if (this.globalEngine != null) {
       this.globalEngine = null;
-    }
-  }
-
-  private initBackend(backendName?: string, safeMode = false) {
-    this.backendName = backendName;
-    if (this.engines[backendName]) {
-      this.globalEngine = this.engines[backendName];
-    } else {
-      const backend = this.findBackend(backendName);
-      this.globalEngine =
-          new Engine(backend, safeMode, () => this.get('DEBUG'));
-      this.engines[backendName] = this.globalEngine;
     }
   }
 
@@ -384,6 +410,8 @@ export class Environment {
     }
     try {
       const backend = factory();
+      backend.setDataMover(
+          {moveData: (dataId: DataId) => this.engine.moveData(dataId)});
       this.registry[name] = {backend, priority};
       return true;
     } catch (err) {
@@ -399,20 +427,19 @@ export class Environment {
     }
     this.registry[name].backend.dispose();
     delete this.registry[name];
-
-    if (name in this.engines) {
-      delete this.engines[name];
-    }
   }
 
   get engine(): Engine {
-    this.initDefaultBackend();
+    this.initEngine();
     return this.globalEngine;
   }
 
-  private initDefaultBackend() {
+  private initEngine() {
     if (this.globalEngine == null) {
-      this.initBackend(this.get('BACKEND'), false /* safeMode */);
+      this.backendName = this.get('BACKEND');
+      const backend = this.findBackend(this.backendName);
+      this.globalEngine =
+          new Engine(backend, false /* safeMode */, () => this.get('DEBUG'));
     }
   }
 }

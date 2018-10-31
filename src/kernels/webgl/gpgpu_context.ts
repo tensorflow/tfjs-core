@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+import {getWebGLContext} from '../../canvas_util';
 import {ENV} from '../../environment';
 import * as util from '../../util';
 import * as gpgpu_util from './gpgpu_util';
@@ -35,7 +36,6 @@ export class GPGPUContext {
   colorBufferFloatExtension: {};
   colorBufferHalfFloatExtension: {};
   getBufferSubDataAsyncExtension: {};
-  loseContextExtension: WebGLLoseContext;
   disjointQueryTimerExtension: WebGL2DisjointQueryTimerExtension|
       WebGL1DisjointQueryTimerExtension;
   vertexBuffer: WebGLBuffer;
@@ -46,14 +46,13 @@ export class GPGPUContext {
   private disposed = false;
   private autoDebugValidate = false;
   private disjoint: boolean;
-
   private textureConfig: TextureConfig;
 
   constructor(gl?: WebGLRenderingContext) {
     if (gl != null) {
       this.gl = gl;
     } else {
-      this.gl = gpgpu_util.createWebGLContext();
+      this.gl = getWebGLContext(ENV.get('WEBGL_VERSION'));
     }
     // WebGL 2.0 enables texture floats without an extension.
     if (ENV.get('WEBGL_VERSION') === 1) {
@@ -72,10 +71,6 @@ export class GPGPUContext {
       this.colorBufferFloatExtension =
           webgl_util.getExtensionOrThrow(this.gl, 'EXT_color_buffer_float');
     }
-
-    this.loseContextExtension =
-        webgl_util.getExtensionOrThrow(this.gl, 'WEBGL_lose_context') as
-        WebGLLoseContext;
 
     this.vertexBuffer = gpgpu_util.createVertexBuffer(this.gl);
     this.indexBuffer = gpgpu_util.createIndexBuffer(this.gl);
@@ -107,11 +102,9 @@ export class GPGPUContext {
     webgl_util.callAndCheck(gl, () => gl.bindFramebuffer(gl.FRAMEBUFFER, null));
     webgl_util.callAndCheck(gl, () => gl.deleteFramebuffer(this.framebuffer));
     webgl_util.callAndCheck(gl, () => gl.bindBuffer(gl.ARRAY_BUFFER, null));
-    webgl_util.callAndCheck(gl, () => gl.deleteBuffer(this.vertexBuffer));
     webgl_util.callAndCheck(
         gl, () => gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null));
     webgl_util.callAndCheck(gl, () => gl.deleteBuffer(this.indexBuffer));
-    this.loseContextExtension.loseContext();
     this.disposed = true;
   }
 
@@ -148,6 +141,13 @@ export class GPGPUContext {
     gpgpu_util.uploadPixelDataToTexture(this.gl, texture, pixels);
   }
 
+  public createFloat16PackedMatrixTexture(rows: number, columns: number):
+      WebGLTexture {
+    this.throwIfDisposed();
+    return gpgpu_util.createFloat16PackedMatrixTexture(
+        this.gl, rows, columns, this.textureConfig);
+  }
+
   public createPackedMatrixTexture(rows: number, columns: number):
       WebGLTexture {
     this.throwIfDisposed();
@@ -175,11 +175,11 @@ export class GPGPUContext {
   }
 
   public uploadMatrixToPackedTexture(
-      texture: WebGLTexture, rows: number, columns: number,
+      texture: WebGLTexture, batch: number, rows: number, columns: number,
       matrix: Float32Array) {
     this.throwIfDisposed();
     return gpgpu_util.uploadMatrixToPackedTexture(
-        this.gl, texture, rows, columns, matrix, this.textureConfig);
+        this.gl, texture, batch, rows, columns, matrix, this.textureConfig);
   }
 
   public downloadFloat32MatrixFromOutputTexture(
@@ -253,11 +253,13 @@ export class GPGPUContext {
   }
 
   public downloadMatrixFromPackedTexture(
-      texture: WebGLTexture, rows: number, columns: number): Float32Array {
+      texture: WebGLTexture, batch: number, rows: number, columns: number,
+      physicalRows: number, physicalCols: number): Float32Array {
     return this.downloadMatrixDriver(
         texture,
         () => gpgpu_util.downloadMatrixFromPackedOutputTexture(
-            this.gl, rows, columns, this.textureConfig));
+            this.gl, batch, rows, columns, physicalRows, physicalCols,
+            this.textureConfig));
   }
 
   private vertexAttrsAreBound = false;
@@ -420,7 +422,7 @@ export class GPGPUContext {
       return query;
     }
     const ext = this.getQueryTimerExtensionWebGL1();
-    const query = ext.createQueryEXT();
+    const query = ext.createQueryEXT() as WebGLQuery;
     ext.beginQueryEXT(ext.TIME_ELAPSED_EXT, query);
     return query;
   }
@@ -438,8 +440,12 @@ export class GPGPUContext {
 
   public async waitForQueryAndGetTime(query: WebGLQuery): Promise<number> {
     await util.repeatedTry(
-        () => this.isQueryAvailable(
-            query, ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION')));
+        () => this.disposed ||  // while testing contexts are created / disposed
+                                // in rapid succession, so without this check we
+                                // may poll for the query timer indefinitely
+            this.isQueryAvailable(
+                query,
+                ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION')));
     return this.getQueryTime(
         query, ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION'));
   }
@@ -527,6 +533,7 @@ export class GPGPUContext {
       return this.itemsToPoll.length === 0;
     });
   }
+
   private bindTextureToFrameBuffer(texture: WebGLTexture) {
     this.throwIfDisposed();
     webgl_util.bindColorTextureToFramebuffer(

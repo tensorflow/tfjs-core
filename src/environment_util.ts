@@ -15,6 +15,8 @@
  * =============================================================================
  */
 
+import {getWebGLContext} from './canvas_util';
+
 export interface Features {
   // Whether to enable debug mode.
   'DEBUG'?: boolean;
@@ -22,6 +24,14 @@ export interface Features {
   'IS_BROWSER'?: boolean;
   // Whether we are in the Node.js environment.
   'IS_NODE'?: boolean;
+  // Whether we will pack the batchnormalization op.
+  'WEBGL_PACK_BATCHNORMALIZATION'?: boolean;
+  // Whether we will use the im2col algorithm to speed up convolutions.
+  'WEBGL_CONV_IM2COL'?: boolean;
+  // Whether we will perform memory paging.
+  'WEBGL_PAGING_ENABLED'?: boolean;
+  // The maximum texture dimension.
+  'WEBGL_MAX_TEXTURE_SIZE'?: number;
   // The disjoint_query_timer extension version.
   // 0: disabled, 1: EXT_disjoint_timer_query, 2:
   // EXT_disjoint_timer_query_webgl2.
@@ -44,6 +54,8 @@ export interface Features {
   'WEBGL_DOWNLOAD_FLOAT_ENABLED'?: boolean;
   // Whether the fence API is available.
   'WEBGL_FENCE_API_ENABLED'?: boolean;
+  // Tensors with size <= than this will be uploaded as uniforms, not textures.
+  'WEBGL_SIZE_UPLOAD_UNIFORM'?: number;
   'BACKEND'?: string;
   // Test precision for unit tests. This is decreased when we can't render
   // float32 textures.
@@ -54,6 +66,12 @@ export interface Features {
   // Smallest positive value used to make ops like division and log numerically
   // stable.
   'EPSILON'?: number;
+  // True when the environment is "production" where we disable safety checks
+  // to gain performance.
+  'PROD'?: boolean;
+  // Whether to do sanity checks when inferring a shape from user-provided
+  // values, used when creating a new tensor.
+  'TENSORLIKE_CHECK_SHAPE_CONSISTENCY'?: boolean;
 }
 
 export enum Type {
@@ -63,14 +81,23 @@ export enum Type {
 }
 
 export const URL_PROPERTIES: URLProperty[] = [
-  {name: 'DEBUG', type: Type.BOOLEAN}, {name: 'IS_BROWSER', type: Type.BOOLEAN},
+  {name: 'DEBUG', type: Type.BOOLEAN},
+  {name: 'IS_BROWSER', type: Type.BOOLEAN},
+  {name: 'WEBGL_PACK_BATCHNORMALIZATION', type: Type.BOOLEAN},
+  {name: 'WEBGL_CONV_IM2COL', type: Type.BOOLEAN},
+  {name: 'WEBGL_MAX_TEXTURE_SIZE', type: Type.NUMBER},
+  {name: 'WEBGL_PAGING_ENABLED', type: Type.BOOLEAN},
   {name: 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION', type: Type.NUMBER},
   {name: 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE', type: Type.BOOLEAN},
   {name: 'WEBGL_VERSION', type: Type.NUMBER},
   {name: 'WEBGL_RENDER_FLOAT32_ENABLED', type: Type.BOOLEAN},
   {name: 'WEBGL_DOWNLOAD_FLOAT_ENABLED', type: Type.BOOLEAN},
   {name: 'WEBGL_FENCE_API_ENABLED', type: Type.BOOLEAN},
-  {name: 'BACKEND', type: Type.STRING}, {name: 'EPSILON', type: Type.NUMBER}
+  {name: 'WEBGL_SIZE_UPLOAD_UNIFORM', type: Type.NUMBER},
+  {name: 'BACKEND', type: Type.STRING},
+  {name: 'EPSILON', type: Type.NUMBER},
+  {name: 'PROD', type: Type.BOOLEAN},
+  {name: 'TENSORLIKE_CHECK_SHAPE_CONSISTENCY', type: Type.BOOLEAN},
 ];
 
 export interface URLProperty {
@@ -78,29 +105,38 @@ export interface URLProperty {
   type: Type;
 }
 
-export function isWebGLVersionEnabled(webGLVersion: 1|2, isBrowser: boolean) {
-  let gl;
+export function isWebGLVersionEnabled(webGLVersion: 1|2) {
   try {
-    gl = getWebGLRenderingContext(webGLVersion, isBrowser);
+    const gl = getWebGLContext(webGLVersion);
+    if (gl != null) {
+      return true;
+    }
   } catch (e) {
     return false;
-  }
-
-  if (gl != null) {
-    loseContext(gl);
-    return true;
   }
   return false;
 }
 
-export function getWebGLDisjointQueryTimerVersion(
-    webGLVersion: number, isBrowser: boolean): number {
+let MAX_TEXTURE_SIZE: number;
+// Caching MAX_TEXTURE_SIZE here because the environment gets reset between
+// unit tests and we don't want to constantly query the WebGLContext for
+// MAX_TEXTURE_SIZE.
+export function getWebGLMaxTextureSize(webGLVersion: number): number {
+  if (MAX_TEXTURE_SIZE == null) {
+    const gl = getWebGLContext(webGLVersion);
+    MAX_TEXTURE_SIZE = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+  }
+  return MAX_TEXTURE_SIZE;
+}
+
+export function getWebGLDisjointQueryTimerVersion(webGLVersion: number):
+    number {
   if (webGLVersion === 0) {
     return 0;
   }
 
   let queryTimerVersion: number;
-  const gl = getWebGLRenderingContext(webGLVersion, isBrowser);
+  const gl = getWebGLContext(webGLVersion);
 
   if (hasExtension(gl, 'EXT_disjoint_timer_query_webgl2') &&
       webGLVersion === 2) {
@@ -110,20 +146,15 @@ export function getWebGLDisjointQueryTimerVersion(
   } else {
     queryTimerVersion = 0;
   }
-
-  if (gl != null) {
-    loseContext(gl);
-  }
   return queryTimerVersion;
 }
 
-export function isRenderToFloatTextureEnabled(
-    webGLVersion: number, isBrowser: boolean): boolean {
+export function isRenderToFloatTextureEnabled(webGLVersion: number): boolean {
   if (webGLVersion === 0) {
     return false;
   }
 
-  const gl = getWebGLRenderingContext(webGLVersion, isBrowser);
+  const gl = getWebGLContext(webGLVersion);
 
   if (webGLVersion === 1) {
     if (!hasExtension(gl, 'OES_texture_float')) {
@@ -137,17 +168,15 @@ export function isRenderToFloatTextureEnabled(
 
   const isFrameBufferComplete =
       createFloatTextureAndBindToFramebuffer(gl, webGLVersion);
-  loseContext(gl);
   return isFrameBufferComplete;
 }
 
-export function isDownloadFloatTextureEnabled(
-    webGLVersion: number, isBrowser: boolean): boolean {
+export function isDownloadFloatTextureEnabled(webGLVersion: number): boolean {
   if (webGLVersion === 0) {
     return false;
   }
 
-  const gl = getWebGLRenderingContext(webGLVersion, isBrowser);
+  const gl = getWebGLContext(webGLVersion);
 
   if (webGLVersion === 1) {
     if (!hasExtension(gl, 'OES_texture_float')) {
@@ -164,19 +193,17 @@ export function isDownloadFloatTextureEnabled(
 
   const isFrameBufferComplete =
       createFloatTextureAndBindToFramebuffer(gl, webGLVersion);
-  loseContext(gl);
   return isFrameBufferComplete;
 }
 
-export function isWebGLFenceEnabled(webGLVersion: number, isBrowser: boolean) {
+export function isWebGLFenceEnabled(webGLVersion: number) {
   if (webGLVersion !== 2) {
     return false;
   }
-  const gl = getWebGLRenderingContext(webGLVersion, isBrowser);
+  const gl = getWebGLContext(webGLVersion);
 
   // tslint:disable-next-line:no-any
   const isEnabled = (gl as any).fenceSync != null;
-  loseContext(gl);
   return isEnabled;
 }
 
@@ -230,33 +257,6 @@ export function getFeaturesFromURL(): Features {
 function hasExtension(gl: WebGLRenderingContext, extensionName: string) {
   const ext = gl.getExtension(extensionName);
   return ext != null;
-}
-
-function getWebGLRenderingContext(
-    webGLVersion: number, isBrowser: boolean): WebGLRenderingContext {
-  if (webGLVersion === 0 || !isBrowser) {
-    throw new Error('Cannot get WebGL rendering context, WebGL is disabled.');
-  }
-
-  const tempCanvas = document.createElement('canvas');
-
-  if (webGLVersion === 1) {
-    return (tempCanvas.getContext('webgl') ||
-            tempCanvas.getContext('experimental-webgl')) as
-        WebGLRenderingContext;
-  }
-  return tempCanvas.getContext('webgl2') as WebGLRenderingContext;
-}
-
-function loseContext(gl: WebGLRenderingContext) {
-  if (gl != null) {
-    const loseContextExtension = gl.getExtension('WEBGL_lose_context');
-    if (loseContextExtension == null) {
-      throw new Error(
-          'Extension WEBGL_lose_context not supported on this browser.');
-    }
-    loseContextExtension.loseContext();
-  }
 }
 
 function createFloatTextureAndBindToFramebuffer(

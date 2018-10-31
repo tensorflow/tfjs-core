@@ -20,6 +20,38 @@ import {describeWithFlags} from '../jasmine_util';
 import {expectArraysClose, expectArraysEqual, WEBGL_ENVS} from '../test_util';
 import {MathBackendWebGL, SIZE_UPLOAD_UNIFORM, WebGLMemoryInfo} from './backend_webgl';
 
+describeWithFlags('lazy packing and unpacking', WEBGL_ENVS, () => {
+  it('should not leak memory when lazily unpacking', () => {
+    const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
+    const b = tf.tensor2d([0, 1, -3, 2, 2, 1], [3, 2]);
+
+    const c = tf.matMul(a, b);
+
+    const startNumBytes = tf.memory().numBytes;
+    const startNumTensors = tf.memory().numTensors;
+
+    tf.add(c, 1);
+
+    expect(tf.memory().numBytes - startNumBytes).toEqual(16);
+    expect(tf.memory().numTensors - startNumTensors).toEqual(1);
+  });
+
+  it('should not leak memory when lazily packing', () => {
+    const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
+    const b = tf.tensor2d([0, 1, -3, 2, 2, 1], [3, 2]);
+
+    const c = tf.add(a, 1);
+
+    const startNumBytes = tf.memory().numBytes;
+    const startNumTensors = tf.memory().numTensors;
+
+    tf.matMul(b, c);
+
+    expect(tf.memory().numBytes - startNumBytes).toEqual(36);
+    expect(tf.memory().numTensors - startNumTensors).toEqual(1);
+  });
+});
+
 describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
   let prevBackend: string;
 
@@ -150,7 +182,10 @@ describeWithFlags('Custom window size', WEBGL_ENVS, () => {
   });
 });
 
-describeWithFlags('upload tensors as uniforms', WEBGL_ENVS, () => {
+// Run only for environments that have 32bit floating point support.
+const FLOAT32_WEBGL_ENVS =
+    Object.assign({'WEBGL_RENDER_FLOAT32_ENABLED': true}, WEBGL_ENVS);
+describeWithFlags('upload tensors as uniforms', FLOAT32_WEBGL_ENVS, () => {
   it('small tensor gets uploaded as scalar', () => {
     let m = tf.memory() as WebGLMemoryInfo;
     expect(m.numBytesInGPU).toBe(0);

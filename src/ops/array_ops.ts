@@ -14,13 +14,14 @@
  * limitations under the License.
  * =============================================================================
  */
+
 import {ENV} from '../environment';
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
 import {convertToTensor, convertToTensorArray} from '../tensor_util_env';
-import {DataType, Rank, ShapeMap, TensorLike, TensorLike1D, TypedArray} from '../types';
+import {DataType, Rank, ShapeMap, TensorLike, TensorLike1D, TensorLike4D, TypedArray} from '../types';
 import * as util from '../util';
-import {getAxesPermutation, getInnerMostAxes, parseAxisParam} from './axis_util';
-import {concat} from './concat';
+import {getAxesPermutation, getInnerMostAxes} from './axis_util';
+import {concat} from './concat_split';
 import {op} from './operation';
 import {MPRandGauss, RandGamma} from './rand';
 import {zerosLike} from './tensor_ops';
@@ -326,8 +327,8 @@ function oneHot_(
     return {$indices: () => zerosLike($indices)};
   };
   return ENV.engine.runKernel(
-      backend => backend.oneHot($indices, depth, onValue, offValue),
-      {$indices}, grad);
+      backend => backend.oneHot($indices, depth, onValue, offValue), {$indices},
+      grad);
 }
 
 /**
@@ -823,15 +824,20 @@ function batchToSpaceND_<T extends Tensor>(
 
   util.assert(
       $x.rank >= 1 + blockShape.length,
-      `input rank should be > than [blockShape] but got ${$x.rank}`);
+      `input rank is ${$x.rank} but should be > than blockShape.length ${
+          blockShape.length}`);
 
   util.assert(
       crops.length === blockShape.length,
-      `crops.shape[0] must be equal to [blockShape] but got ${crops.length}`);
+      `crops.length is ${
+          crops.length} but should be equal to blockShape.length  ${
+          blockShape.length}`);
 
   util.assert(
       $x.shape[0] % prod === 0,
-      `input tensor batch must be divisible by prod( blockShape )`);
+      `input tensor batch is ${
+          $x.shape[0]} but is not divisible by the product of ` +
+          `the elements of blockShape ${blockShape.join(' * ')} === ${prod}`);
 
   const grad = (dy: T) => {
     return {$x: () => dy.spaceToBatchND(blockShape, crops)};
@@ -896,19 +902,29 @@ function spaceToBatchND_<T extends Tensor>(
 
   util.assert(
       $x.rank >= 1 + blockShape.length,
-      `input rank should be > than [blockShape] but got ${$x.rank}`);
+      `input rank ${$x.rank} should be > than [blockShape] ${
+          blockShape.length}`);
 
   util.assert(
       paddings.length === blockShape.length,
-      `paddings.shape[0] must be equal to [blockShape], got ${
-          paddings.length}`);
+      `paddings.shape[0] ${paddings.length} must be equal to [blockShape] ${
+          blockShape.length}`);
 
-  util.assert($x.shape.reduce((a, b, i) => {
-    if (i > 0 && i <= blockShape.length) {
-      return a && (b % blockShape[i - 1] === 0);
-    }
-    return a;
-  }, true), `input spatial dimensions must be divisible by blockShapes`);
+  util.assert(
+      $x.shape.reduce(
+          (a, b, i) => {
+            if (i > 0 && i <= blockShape.length) {
+              return a &&
+                  ((b + paddings[i - 1][0] + paddings[i - 1][1]) %
+                       blockShape[i - 1] ===
+                   0);
+            }
+            return a;
+          },
+          true),
+      `input spatial dimensions ${$x.shape.slice(1)} with paddings ${
+          paddings.toString()} must be divisible by blockShapes ${
+          blockShape.toString()}`);
 
   const grad = (dy: T) => {
     return {$x: () => dy.batchToSpaceND(blockShape, paddings)};
@@ -952,66 +968,6 @@ function unstack_<T extends Tensor>(x: T|TensorLike, axis = 0): Tensor[] {
     const slice = $x.slice(begin, size);
     begin[axis] += s;
     return slice.reshape(outputShape);
-  });
-}
-
-/**
- * Splits a `Tensor` into sub tensors.
- *
- * If `numOrSizeSplits` is a number, splits `x` along dimension `axis`
- * into `numOrSizeSplits` smaller tensors.
- * Requires that `numOrSizeSplits` evenly divides `x.shape[axis]`.
- *
- * If `numOrSizeSplits` is a number array, splits `x` into
- * `(numOrSizeSplits.length` pieces. The shape of the `i`-th piece has the
- * same size as `x` except along dimension `axis` where the size is
- * `numOrSizeSplits[i]`.
- *
- * ```js
- * const x = tf.tensor2d([1, 2, 3, 4, 5, 6, 7, 8], [2, 4]);
- * const [a, b] = tf.split(x, 2, 1);
- * a.print();
- * b.print();
- *
- * const [c, d, e] = tf.split(x, [1, 2, 1], 1);
- * c.print();
- * d.print();
- * e.print();
- * ```
- *
- * @param x The input tensor to split.
- * @param numOrSizeSplits Either an integer indicating the number of
- * splits along the axis or an array of integers containing the sizes of
- * each output tensor along the axis. If a number then it must evenly divide
- * `x.shape[axis]`; otherwise the sum of sizes must match `x.shape[axis]`.
- * @param axis The dimension along which to split. Defaults to 0 (the first
- * dim).
- */
-/** @doc {heading: 'Tensors', subheading: 'Slicing and Joining'} */
-function split_<T extends Tensor>(
-    x: T|TensorLike, numOrSizeSplits: number[]|number, axis = 0): T[] {
-  const $x = convertToTensor(x, 'x', 'split');
-
-  axis = parseAxisParam(axis, $x.shape)[0];
-  let splitSizes: number[];
-  if (typeof (numOrSizeSplits) === 'number') {
-    util.assert(
-        $x.shape[axis] % numOrSizeSplits === 0,
-        'Number of splits must evenly divide the axis.');
-    splitSizes = Array(numOrSizeSplits).fill($x.shape[axis] / numOrSizeSplits);
-  } else {
-    util.assert(
-        $x.shape[axis] === numOrSizeSplits.reduce((a, b) => a + b),
-        'The sum of sizes must match the size of the axis dimension.');
-    splitSizes = numOrSizeSplits;
-  }
-  const begin = Array($x.rank).fill(0);
-  const size = $x.shape.slice();
-  return splitSizes.map(s => {
-    size[axis] = s;
-    const slice = $x.slice(begin, size);
-    begin[axis] += s;
-    return slice;
   });
 }
 
@@ -1096,6 +1052,73 @@ function expandDims_<R2 extends Rank>(
 }
 
 /**
+ * Rearranges data from depth into blocks of spatial data. More specifically,
+ * this op outputs a copy of the input tensor where values from the `depth`
+ * dimension are moved in spatial blocks to the `height` and `width` dimensions.
+ * The attr `blockSize` indicates the input block size and how the data is
+ * moved.
+ *
+ *  - Chunks of data of size `blockSize * blockSize` from depth are rearranged
+ * into non-overlapping blocks of size `blockSize x blockSize`
+ *
+ *  - The width the output tensor is `inputWidth * blockSize`, whereas the
+ * height is `inputHeight * blockSize`
+ *
+ *  - The Y, X coordinates within each block of the output image are determined
+ * by the high order component of the input channel index
+ *
+ *  - The depth of the input tensor must be divisible by `blockSize *
+ * blockSize`
+ *
+ * The `dataFormat` attr specifies the layout of the input and output tensors
+ * with the following options: "NHWC": [ `batch, height, width, channels` ]
+ * "NCHW": [ `batch, channels, height, width` ]
+ *
+ * ```js
+ * const x = tf.tensor4d([1, 2, 3, 4], [1, 1, 1, 4]);
+ * const blockSize = 2;
+ * const dataFormat = "NHWC";
+ *
+ * tf.depthToSpace(x, blockSize, dataFormat).print();
+ * ```
+ *
+ * @param x The input tensor of rank 4
+ * @param blockSIze  An `int` that is `>= 2`. The size of the spatial block
+ * @param dataFormat An optional string from: "NHWC", "NCHW". Defaults to "NHWC"
+ */
+/** @doc {heading: 'Tensors', subheading: 'Transformations'} */
+function depthToSpace_(
+    x: Tensor4D|TensorLike4D, blockSize: number,
+    dataFormat: 'NHWC'|'NCHW' = 'NHWC'): Tensor4D {
+  const $x = convertToTensor(x, 'x', 'depthToSpace');
+
+  const inputHeight = (dataFormat === 'NHWC') ? $x.shape[1] : $x.shape[2];
+  const inputWidth = (dataFormat === 'NHWC') ? $x.shape[2] : $x.shape[3];
+  const inputDepth = (dataFormat === 'NHWC') ? $x.shape[3] : $x.shape[1];
+
+  util.assert(
+      inputHeight * blockSize >= 0,
+      `Negative dimension size caused by overflow when multiplying
+      ${inputHeight} and ${blockSize}  for depthToSpace with input shape
+      ${$x.shape}`);
+
+  util.assert(
+      inputWidth * blockSize >= 0,
+      `Negative dimension size caused by overflow when multiplying
+      ${inputWidth} and ${blockSize} for depthToSpace with input shape
+          ${$x.shape}`);
+
+  util.assert(
+      (inputDepth % (blockSize * blockSize) === 0),
+      `Dimension size must be evenly divisible by ${
+          blockSize * blockSize} but is ${
+          inputDepth} for depthToSpace with input shape ${$x.shape}`);
+
+  return ENV.engine.runKernel(
+      backend => backend.depthToSpace($x, blockSize, dataFormat), {$x});
+}
+
+/**
  * Creates an empty `TensorBuffer` with the specified `shape` and `dtype`.
  *
  * The values are stored in CPU as `TypedArray`. Fill the buffer using
@@ -1148,9 +1171,11 @@ export {
   print      // Not wrapped in op() since no need to increase stack trace.
 };
 
+export const batchToSpaceND = op({batchToSpaceND_});
 export const cast = op({cast_});
 export const clone = op({clone_});
 export const cumsum = op({cumsum_});
+export const depthToSpace = op({depthToSpace_});
 export const expandDims = op({expandDims_});
 export const eye = op({eye_});
 export const fromPixels = op({fromPixels_});
@@ -1166,11 +1191,9 @@ export const randomNormal = op({randomNormal_});
 export const randomGamma = op({randomGamma_});
 export const randomUniform = op({randomUniform_});
 export const reshape = op({reshape_});
-export const split = op({split_});
+export const spaceToBatchND = op({spaceToBatchND_});
 export const squeeze = op({squeeze_});
 export const stack = op({stack_});
 export const tile = op({tile_});
 export const truncatedNormal = op({truncatedNormal_});
 export const unstack = op({unstack_});
-export const batchToSpaceND = op({batchToSpaceND_});
-export const spaceToBatchND = op({spaceToBatchND_});

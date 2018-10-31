@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+import {inferShape} from './tensor_util_env';
 import * as util from './util';
 
 describe('Util', () => {
@@ -64,20 +65,20 @@ describe('Util', () => {
   });
 
   it('infer shape single number', () => {
-    expect(util.inferShape(4)).toEqual([]);
+    expect(inferShape(4)).toEqual([]);
   });
 
   it('infer shape 1d array', () => {
-    expect(util.inferShape([1, 2, 5])).toEqual([3]);
+    expect(inferShape([1, 2, 5])).toEqual([3]);
   });
 
   it('infer shape 2d array', () => {
-    expect(util.inferShape([[1, 2, 5], [5, 4, 1]])).toEqual([2, 3]);
+    expect(inferShape([[1, 2, 5], [5, 4, 1]])).toEqual([2, 3]);
   });
 
   it('infer shape 3d array', () => {
     const a = [[[1, 2], [2, 3], [5, 6]], [[5, 6], [4, 5], [1, 2]]];
-    expect(util.inferShape(a)).toEqual([2, 3, 2]);
+    expect(inferShape(a)).toEqual([2, 3, 2]);
   });
 
   it('infer shape 4d array', () => {
@@ -85,12 +86,12 @@ describe('Util', () => {
       [[[1], [2]], [[2], [3]], [[5], [6]]],
       [[[5], [6]], [[4], [5]], [[1], [2]]]
     ];
-    expect(util.inferShape(a)).toEqual([2, 3, 2, 1]);
+    expect(inferShape(a)).toEqual([2, 3, 2, 1]);
   });
 
   it('infer shape of typed array', () => {
     const a = new Float32Array([1, 2, 3, 4, 5]);
-    expect(util.inferShape(a)).toEqual([5]);
+    expect(inferShape(a)).toEqual([5]);
   });
 });
 
@@ -235,16 +236,32 @@ describe('util.checkConversionForNaN', () => {
 });
 
 describe('util.hasEncodingLoss', () => {
+  it('complex64 to any', () => {
+    expect(util.hasEncodingLoss('complex64', 'complex64')).toBe(false);
+    expect(util.hasEncodingLoss('complex64', 'float32')).toBe(true);
+    expect(util.hasEncodingLoss('complex64', 'int32')).toBe(true);
+    expect(util.hasEncodingLoss('complex64', 'bool')).toBe(true);
+  });
+
+  it('any to complex64', () => {
+    expect(util.hasEncodingLoss('bool', 'complex64')).toBe(false);
+    expect(util.hasEncodingLoss('int32', 'complex64')).toBe(false);
+    expect(util.hasEncodingLoss('float32', 'complex64')).toBe(false);
+    expect(util.hasEncodingLoss('complex64', 'complex64')).toBe(false);
+  });
+
   it('any to float32', () => {
     expect(util.hasEncodingLoss('bool', 'float32')).toBe(false);
     expect(util.hasEncodingLoss('int32', 'float32')).toBe(false);
     expect(util.hasEncodingLoss('float32', 'float32')).toBe(false);
+    expect(util.hasEncodingLoss('complex64', 'float32')).toBe(true);
   });
 
   it('float32 to any', () => {
     expect(util.hasEncodingLoss('float32', 'float32')).toBe(false);
     expect(util.hasEncodingLoss('float32', 'int32')).toBe(true);
     expect(util.hasEncodingLoss('float32', 'bool')).toBe(true);
+    expect(util.hasEncodingLoss('float32', 'complex64')).toBe(false);
   });
 
   it('int32 to lower', () => {

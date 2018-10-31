@@ -39,20 +39,26 @@ export class TensorBuffer<R extends Rank> {
   strides: number[];
   values: TypedArray;
 
-  constructor(shape: ShapeMap[R], public dtype: DataType, values: TypedArray) {
+  constructor(shape: ShapeMap[R], public dtype: DataType, values?: TypedArray) {
+    this.shape = shape.slice();
+    this.size = util.sizeFromShape(shape);
+
     if (values != null) {
       const n = values.length;
-      const size = util.sizeFromShape(shape);
       util.assert(
-          n === size,
+          n === this.size,
           `Length of values '${n}' does not match the size ` +
-              `inferred by the shape '${size}'`);
+              `inferred by the shape '${this.size}'.`);
     }
-    this.shape = shape.slice();
-    this.values =
-        values || util.getTypedArrayFromDType(dtype, util.sizeFromShape(shape));
+    if (dtype === 'complex64') {
+      throw new Error(
+          `complex64 dtype TensorBuffers are not supported. Please create ` +
+          `a TensorBuffer for the real and imaginary parts separately and ` +
+          `call tf.complex(real, imag).`);
+    }
+    this.values = values ||
+        util.getTypedArrayFromDType(dtype, util.sizeFromShape(this.shape));
     this.strides = computeStrides(shape);
-    this.size = util.sizeFromShape(shape);
   }
 
   /**
@@ -70,6 +76,7 @@ export class TensorBuffer<R extends Rank> {
         locs.length === this.rank,
         `The number of provided coordinates (${locs.length}) must ` +
             `match the rank (${this.rank})`);
+
     const index = this.locToIndex(locs);
     this.values[index] = value;
   }
@@ -139,6 +146,8 @@ export interface TensorTracker {
   read(dataId: DataId): Promise<TypedArray>;
   readSync(dataId: DataId): TypedArray;
   registerVariable(v: Variable): void;
+  nextTensorId(): number;
+  nextVariableId(): number;
 }
 
 /**
@@ -158,8 +167,8 @@ export interface OpHandler {
   clone<T extends Tensor>(x: T): T;
   tile<T extends Tensor>(x: T, reps: number[]): T;
   gather<T extends Tensor>(x: T, indices: Tensor1D, axis: number): T;
-  matMul(a: Tensor2D, b: Tensor2D, transposeA: boolean, transposeB: boolean):
-      Tensor2D;
+  matMul<T extends Tensor>(
+      a: T, b: T, transposeA: boolean, transposeB: boolean): T;
   dot(t1: Tensor, t2: Tensor): Tensor;
   norm(
       x: Tensor, ord: number|'euclidean'|'fro', axis: number|number[],
@@ -183,6 +192,8 @@ export interface OpHandler {
   logSumExp<T extends Tensor>(
       x: Tensor, axis: number|number[], keepDims: boolean): T;
   sum<T extends Tensor>(x: Tensor, axis: number|number[], keepDims: boolean): T;
+  prod<T extends Tensor>(x: Tensor, axis: number|number[], keepDims: boolean):
+      T;
   mean<T extends Tensor>(x: Tensor, axis: number|number[], keepDims: boolean):
       T;
   min<T extends Tensor>(x: Tensor, axis: number|number[], keepDims: boolean): T;
@@ -306,6 +317,10 @@ export interface OpHandler {
       x: T, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): T;
+  pool<T extends Tensor3D|Tensor4D>(
+      input: T, windowShape: [number, number]|number, poolingType: 'avg'|'max',
+      padding: 'valid'|'same'|number, diationRate?: [number, number]|number,
+      strides?: [number, number]|number): T;
   localResponseNormalization<T extends Tensor3D|Tensor4D>(
       x: T, depthRadius: number, bias: number, alpha: number, beta: number): T;
   unsortedSegmentSum<T extends Tensor>(
@@ -319,6 +334,8 @@ export interface OpHandler {
   stridedSlice<T extends Tensor>(
       x: T, begin: number[], end: number[], strides: number[],
       beginMask: number, endMask: number): T;
+  depthToSpace(x: Tensor4D, blockSize: number, dataFormat: string): Tensor4D;
+  spectral: {fft(x: Tensor): Tensor; ifft(x: Tensor): Tensor;};
 }
 
 // For tracking tensor creation and disposal.
@@ -361,8 +378,6 @@ export type DataId = object;  // object instead of {} to force non-primitive.
  */
 /** @doc {heading: 'Tensors', subheading: 'Classes'} */
 export class Tensor<R extends Rank = Rank> {
-  private static nextId = 0;
-
   /** Unique id of this tensor. */
   readonly id: number;
   /**
@@ -389,18 +404,20 @@ export class Tensor<R extends Rank = Rank> {
   protected constructor(
       shape: ShapeMap[R], dtype: DataType, values?: TypedArray,
       dataId?: DataId) {
+    this.shape = shape.slice();
+    this.dtype = dtype || 'float32';
     this.size = util.sizeFromShape(shape);
     if (values != null) {
       util.assert(
           this.size === values.length,
-          `Based on the provided shape, [${shape}], the tensor should have ` +
+          `Based on the provided shape, [${shape}], and dtype ` +
+              `${this.dtype}, the tensor should have ` +
               `${this.size} values but has ${values.length}`);
     }
-    this.shape = shape.slice();
-    this.dtype = dtype || 'float32';
+
     this.strides = computeStrides(shape);
     this.dataId = dataId != null ? dataId : {};
-    this.id = Tensor.nextId++;
+    this.id = trackerFn().nextTensorId();
     this.rankType = (this.rank < 5 ? this.rank.toString() : 'higher') as R;
     trackerFn().registerTensor(this);
     if (values != null) {
@@ -505,6 +522,9 @@ export class Tensor<R extends Rank = Rank> {
     util.assert(
         locs.length === this.rank,
         'Number of coordinates in get() must match the rank of the tensor');
+    util.assert(
+        this.dtype !== 'complex64',
+        'Tensor.get() is not supported for complex64 tensors yet.');
     this.throwIfDisposed();
     if (locs.length === 0) {
       locs = [0];
@@ -686,9 +706,10 @@ export class Tensor<R extends Rank = Rank> {
     return opHandler.gather(this, indices, axis) as T;
   }
 
-  matMul(b: Tensor2D, transposeA = false, transposeB = false): Tensor2D {
+  matMul<T extends Tensor>(
+      this: T, b: T, transposeA = false, transposeB = false): T {
     this.throwIfDisposed();
-    return opHandler.matMul(this as Tensor2D, b, transposeA, transposeB);
+    return opHandler.matMul(this, b, transposeA, transposeB);
   }
   dot(b: Tensor): Tensor {
     this.throwIfDisposed();
@@ -754,6 +775,10 @@ export class Tensor<R extends Rank = Rank> {
   sum<T extends Tensor>(axis: number|number[] = null, keepDims = false): T {
     this.throwIfDisposed();
     return opHandler.sum(this, axis, keepDims);
+  }
+  prod<T extends Tensor>(axis: number|number[] = null, keepDims = false): T {
+    this.throwIfDisposed();
+    return opHandler.prod(this, axis, keepDims);
   }
   mean<T extends Tensor>(axis: number|number[] = null, keepDims = false): T {
     this.throwIfDisposed();
@@ -1186,6 +1211,14 @@ export class Tensor<R extends Rank = Rank> {
     return opHandler.localResponseNormalization(
         this, radius, bias, alpha, beta);
   }
+  pool<T extends Tensor3D|Tensor4D>(
+      this: T, windowShape: [number, number]|number, poolingType: 'max'|'avg',
+      padding: 'valid'|'same'|number, dilationRate?: [number, number]|number,
+      strides?: [number, number]|number): T {
+    (this as Tensor).throwIfDisposed();
+    return opHandler.pool(
+        this, windowShape, poolingType, padding, dilationRate, strides);
+  }
 
   variable(trainable = true, name?: string, dtype?: DataType): Variable<R> {
     this.throwIfDisposed();
@@ -1223,6 +1256,22 @@ export class Tensor<R extends Rank = Rank> {
     return opHandler.stridedSlice(
         this, begin, end, strides, beginMask, endMask);
   }
+
+  depthToSpace(this: Tensor4D, blockSize: number, dataFormat: 'NHWC'|'NCHW'):
+      Tensor4D {
+    this.throwIfDisposed();
+    return opHandler.depthToSpace(this, blockSize, dataFormat);
+  }
+
+  fft(this: Tensor): Tensor {
+    this.throwIfDisposed();
+    return opHandler.spectral.fft(this);
+  }
+
+  ifft(this: Tensor): Tensor {
+    this.throwIfDisposed();
+    return opHandler.spectral.ifft(this);
+  }
 }
 Object.defineProperty(Tensor, Symbol.hasInstance, {
   value: (instance: Tensor) => {
@@ -1250,7 +1299,6 @@ export type Tensor6D = Tensor<Rank.R6>;
  */
 /** @doc {heading: 'Tensors', subheading: 'Classes'} */
 export class Variable<R extends Rank = Rank> extends Tensor<R> {
-  private static nextVarId = 0;
   name: string;
 
   /**
@@ -1265,8 +1313,7 @@ export class Variable<R extends Rank = Rank> extends Tensor<R> {
         initialValue.dataId);
     this.name = name;
     if (this.name == null) {
-      this.name = Variable.nextVarId.toString();
-      Variable.nextVarId++;
+      this.name = trackerFn().nextVariableId().toString();
     }
     try {
       trackerFn().registerVariable(this);
