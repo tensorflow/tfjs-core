@@ -117,7 +117,7 @@ export class ReshapePackedProgram implements GPGPUProgram {
         } else {
           aCached1 = getA(${inputChannels});
         }
-        return getA(${inputChannels});
+        return aCached1;
       }
 
       vec4 getACached2(${inputDtype} coords) {
@@ -129,7 +129,7 @@ export class ReshapePackedProgram implements GPGPUProgram {
         } else {
           aCached2 = getA(${inputChannels});
         }
-        return getA(${inputChannels});
+        return aCached2;
       }
 
       vec4 getACached3(${inputDtype} coords) {
