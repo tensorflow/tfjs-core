@@ -160,7 +160,7 @@ describeWithFlags('adjoint', ALL_ENVS, () => {
           aT = tf.tensor2d([[1,4],
                             [2,5],
                             [3,6]],[3,2]);
-    expectArraysEqual( tf.linalg.adjoint(a), aT );
+    expectArraysClose( tf.linalg.adjoint(a), aT );
   });
   it('3x2x1', () => {
     const a   = tf.tensor3d([[[1],[2]],
@@ -169,7 +169,7 @@ describeWithFlags('adjoint', ALL_ENVS, () => {
           aT = tf.tensor3d([[[1,2]],
                             [[3,4]],
                             [[5,6]]], [3,1,2]);
-    expectArraysEqual( tf.linalg.adjoint(a), aT );
+    expectArraysClose( tf.linalg.adjoint(a), aT );
   });
 });
 
@@ -182,32 +182,32 @@ describeWithFlags('bandPart', ALL_ENVS, () => {
       [5, 6, 7, 8],
       [9,10,11,12]
     ]);
-    expectArraysEqual(
+    expectArraysClose(
       la.bandPart(a,0,0),
       tf.tensor2d([[1, 0, 0, 0],
                    [0, 6, 0, 0],
                    [0, 0,11, 0]])
     );
-    expectArraysEqual(
+    expectArraysClose(
       la.bandPart(a,0,1),
       tf.tensor2d([[1, 2, 0, 0],
                    [0, 6, 7, 0],
                    [0, 0,11,12]])
     );
-    expectArraysEqual(
+    expectArraysClose(
       la.bandPart(a,0,2),
       tf.tensor2d([[1, 2, 3, 0],
                    [0, 6, 7, 8],
                    [0, 0,11,12]])
     );
-    expectArraysEqual(
+    expectArraysClose(
       la.bandPart(a,0,2),
       tf.tensor2d([[1, 2, 3, 0],
                    [0, 6, 7, 8],
                    [0, 0,11,12]])
     );
     for( const numUpper of [3,4,-1,-2] ) {
-      expectArraysEqual(
+      expectArraysClose(
         la.bandPart(a,0,numUpper),
         tf.tensor2d([[1, 2, 3, 4],
                      [0, 6, 7, 8],
@@ -215,32 +215,32 @@ describeWithFlags('bandPart', ALL_ENVS, () => {
       );
     }
 
-    expectArraysEqual(
+    expectArraysClose(
       la.bandPart(a,1,0),
       tf.tensor2d([[1, 0, 0, 0],
                    [5, 6, 0, 0],
                    [0,10,11, 0]])
     );
-    expectArraysEqual(
+    expectArraysClose(
       la.bandPart(a,1,1),
       tf.tensor2d([[1, 2, 0, 0],
                    [5, 6, 7, 0],
                    [0,10,11,12]])
     );
-    expectArraysEqual(
+    expectArraysClose(
       la.bandPart(a,1,2),
       tf.tensor2d([[1, 2, 3, 0],
                    [5, 6, 7, 8],
                    [0,10,11,12]])
     );
-    expectArraysEqual(
+    expectArraysClose(
       la.bandPart(a,1,2),
       tf.tensor2d([[1, 2, 3, 0],
                    [5, 6, 7, 8],
                    [0,10,11,12]])
     );
     for( const numUpper of [3,4,-1,-2] ) {
-      expectArraysEqual(
+      expectArraysClose(
         la.bandPart(a,1,numUpper),
         tf.tensor2d([[1, 2, 3, 4],
                      [5, 6, 7, 8],
@@ -250,32 +250,32 @@ describeWithFlags('bandPart', ALL_ENVS, () => {
 
     for( const numLower of [2,3,-1,-2])
     {
-      expectArraysEqual(
+      expectArraysClose(
         la.bandPart(a,numLower,0),
         tf.tensor2d([[1, 0, 0, 0],
                      [5, 6, 0, 0],
                      [9,10,11, 0]])
       );
-      expectArraysEqual(
+      expectArraysClose(
         la.bandPart(a,numLower,1),
         tf.tensor2d([[1, 2, 0, 0],
                      [5, 6, 7, 0],
                      [9,10,11,12]])
       );
-      expectArraysEqual(
+      expectArraysClose(
         la.bandPart(a,numLower,2),
         tf.tensor2d([[1, 2, 3, 0],
                      [5, 6, 7, 8],
                      [9,10,11,12]])
       );
-      expectArraysEqual(
+      expectArraysClose(
         la.bandPart(a,numLower,2),
         tf.tensor2d([[1, 2, 3, 0],
                      [5, 6, 7, 8],
                      [9,10,11,12]])
       );
       for( const numUpper of [3,4,-1,-2] ) {
-        expectArraysEqual(
+        expectArraysClose(
           la.bandPart(a,numLower,numUpper),
           tf.tensor2d([[1, 2, 3, 4],
                        [5, 6, 7, 8],
@@ -405,11 +405,11 @@ describeWithFlags('qr', ALL_ENVS, () => {
 
       // TEST SHAPE OF Q
       expectArraysEqual( q.shape.slice(0,-1), a.shape.slice(0,-1) );
-      expectArraysClose( q.shape.slice(  -1), fullMatrices ? [m  ] : [l  ] );
+      expectArraysEqual( q.shape.slice(  -1), fullMatrices ? [m  ] : [l  ] );
 
       // TEST SHAPE OF R
       expectArraysEqual( r.shape.slice(0,-2), a.shape.slice(0,-2) );
-      expectArraysClose( r.shape.slice(  -2), fullMatrices ? [m,n] : [l,n] );
+      expectArraysEqual( r.shape.slice(  -2), fullMatrices ? [m,n] : [l,n] );
       
       // TEST DECOMPOSITION (Q @ R == A)
       expectArraysClose( q.matMul(r), a );
