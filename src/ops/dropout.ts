@@ -19,7 +19,7 @@ import {Scalar, Tensor} from '../tensor';
 import {arraysEqual} from '../util';
 
 import {randomUniform} from './array_ops';
-import {div, sub} from './binary_ops';
+import {sub} from './binary_ops';
 import {op} from './operation';
 import {step} from './unary_ops';
 
@@ -51,7 +51,7 @@ function dropout_(
   }
   let multiplier = step(sub(randomUniform(x.shape, 0, 1, 'float32'), level));
   // Scale the kept elements, so the expected sum is unchanged.
-  multiplier = (div(1, sub(1, level)) as Scalar).mul(multiplier);
+  multiplier = multiplier.div(sub(1, level) as Scalar);
   return x.mul(multiplier);
 }
 
