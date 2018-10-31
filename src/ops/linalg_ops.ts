@@ -578,8 +578,8 @@ function qrFullDecompKernel( a: Tensor ): [Tensor,Tensor,Tensor]
       // DETERMINE GIVENS ROTATION cos AND sin
       const rIJ = R[rOff + N*i+j]; if( 0.0 === rIJ ) { CS[l++]=1.0;
                                                        CS[l++]=0.0; continue; }
-      const rJJ = R[rOff + N*j+j];
-      let         norm = Math.hypot(rJJ,rIJ),
+      const rJJ = R[rOff + N*j+j],
+                  norm = Math.hypot(rJJ,rIJ),
         c = rJJ / norm,
         s = rIJ / norm;
       CS[l++] = c;
