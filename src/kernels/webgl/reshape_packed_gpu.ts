@@ -92,40 +92,48 @@ export class ReshapePackedProgram implements GPGPUProgram {
 }
 
 function getMainLoop(dtype: string, innerDims: string[], shapeInnerDims: number[], inputDtype: string, input: string, offset: string) {
+  let channels: number, outputCoordRows: string, outputCoordCols: string, inBoundsCheck: string;
   if(dtype === 'int') {
-    return `
-      for(int col=0; col<=1; col++) {
-        ${dtype} thisRC = rc + col;
+    channels = 2;
+    outputCoordCols = innerDims[0];
+    inBoundsCheck = `${outputCoordCols} < ${shapeInnerDims[0]}`;
+  } else {
+    channels = 4;
+    outputCoordRows = innerDims[0];
+    outputCoordCols = innerDims[1];
+    inBoundsCheck = `${outputCoordRows} < ${shapeInnerDims[0]} && ${outputCoordCols} < ${shapeInnerDims[1]}`;
+  }
 
-        if(${innerDims[0]} >= ${shapeInnerDims[0]}) continue;
+  let result = `
+    int flatIndex;
+    ${inputDtype} inputRC;
+    ${dtype} thisRC;
+  `;
 
-        int flatIndex = getFlatIndex(thisRC);
+  for(let i=0; i<channels; i++) {
+    let thisRC = `thisRC = rc;`;
+    if(i % 2 === 1) {
+      thisRC += `${outputCoordCols} += 1;`;
+    }
+    if(i > 1) {
+      thisRC += `${outputCoordRows} += 1;`;
+    }
 
-        ${inputDtype} inputRC = inputCoordsFromReshapedOutCoords(flatIndex);
+    result += `
+      ${thisRC}
+
+      if(${inBoundsCheck}) {
+        flatIndex = getFlatIndex(thisRC);
+
+        inputRC = inputCoordsFromReshapedOutCoords(flatIndex);
         ${offset};
 
-        result[col] = ${input};
+        result[${i}] = ${input};
       }
     `;
   }
-  return `
-    for(int row=0; row<=1; row++) {
-      for(int col=0; col<=1; col++) {
-        ${dtype} thisRC = rc;
-        ${innerDims[0]} += row;
-        ${innerDims[1]} += col;
 
-        if(${innerDims[0]} >= ${shapeInnerDims[0]} || ${innerDims[1]} >= ${shapeInnerDims[1]}) continue;
-
-        int flatIndex = getFlatIndex(thisRC);
-
-        ${inputDtype} inputRC = inputCoordsFromReshapedOutCoords(flatIndex);
-        ${offset};
-
-        result[row * 2 + col] = ${input};
-      }
-    }
-  `;
+  return result;
 }
 
 function getFlatIndex(shape: number[]): string {
