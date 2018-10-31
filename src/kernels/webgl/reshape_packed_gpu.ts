@@ -87,6 +87,13 @@ export class ReshapePackedProgram implements GPGPUProgram {
 
     const mainLoop = getMainLoop(dtype, innerDims, outputShape.slice(-2), inputDtype, offset);
 
+    // initializing coords to -1 so they will not be matched unless cached entry was created
+    const coordsInitialValue: number[] = [];
+    for(let i=0; i<inputRank; i++) {
+      coordsInitialValue.push(-1);
+    }
+    const coordsInitialValueJoined = coordsInitialValue.join(',');
+
     this.userCode = `
       ${getReshapedInputCoords(inputShape)}
       ${getFlatIndex(outputShape)}
@@ -96,9 +103,9 @@ export class ReshapePackedProgram implements GPGPUProgram {
       vec4 aCached1;
       vec4 aCached2;
 
-      ${inputDtype} aCoords0;
-      ${inputDtype} aCoords1;
-      ${inputDtype} aCoords2;
+      ${inputDtype} aCoords0 = ${inputDtype}(${coordsInitialValueJoined});
+      ${inputDtype} aCoords1 = ${inputDtype}(${coordsInitialValueJoined});
+      ${inputDtype} aCoords2 = ${inputDtype}(${coordsInitialValueJoined});
 
       ${inputDtype} topLeftify(${inputDtype} coords) {
         ${topLeftifyString}
