@@ -441,7 +441,7 @@ function avgPoolBackprop<T extends Tensor3D|Tensor4D>(
 
 // Helper function to compute crops and paddings for pool with dilation > 1.
 // tslint:disable-next-line:max-line-length
-// https://github.com/tensorflow/tensorflow/blob/50f6bb67dc98c9b74630b6047aae7a4f8a40fd02/tensorflow/python/ops/nn_ops.py#L1037
+// https://github.com/tensorflow/tensorflow/blob/50f6bb67dc98c9b74630b6047aae7a4f8a40fd02/tensorflow/python/ops/array_ops.py#L2184
 function requiredSpaceToBatchPaddings(
     inputShape: [number, number], blockShape: [number, number],
     basePadding: number[][]) {
@@ -457,7 +457,7 @@ function requiredSpaceToBatchPaddings(
 
 // Helper function to compute base paddings for pool with dilation > 1.
 // tslint:disable-next-line:max-line-length
-// https://github.com/tensorflow/tensorflow/blob/50f6bb67dc98c9b74630b6047aae7a4f8a40fd02/tensorflow/python/ops/nn_ops.py#L1037
+// https://github.com/tensorflow/tensorflow/blob/50f6bb67dc98c9b74630b6047aae7a4f8a40fd02/tensorflow/python/ops/nn_ops.py#L524
 function withSpaceToBatchBasePaddings(
     filterShape: [number, number], dilation: [number, number]) {
   // Spatial dimensions of the filters and the upsampled filters in which we
