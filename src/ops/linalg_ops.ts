@@ -20,15 +20,21 @@
  */
 
 import {ENV} from '../environment';
-import {dispose} from '../globals';
+import {range, scalar} from './tensor_ops';
 import {Tensor, Tensor1D, Tensor2D} from '../tensor';
+import {TensorLike, TypedArray} from '../types';
+import {add, mul, sub} from './binary_ops';
+import {logicalAnd} from './logical_ops';
+import {complex, real, imag} from './complex_ops';
 import {assert} from '../util';
-import {eye, squeeze, stack, unstack} from './array_ops';
+import {convertToTensor} from '../tensor_util_env';
+import {squeeze, stack} from './array_ops';
 import {split} from './concat_split';
+import {matMul} from './matmul';
 import {norm} from './norm';
 import {op} from './operation';
 import {sum} from './reduction_ops';
-import {tensor2d} from './tensor_ops';
+import {upcastType} from '../types';
 
 /**
  * Gram-Schmidt orthogonalization.
@@ -106,12 +112,694 @@ function gramSchmidt_(xs: Tensor1D[]|Tensor2D): Tensor1D[]|Tensor2D {
   }
 }
 
-/**
- * Compute QR decomposition of m-by-n matrix using Householder transformation.
+/** 
+ * Conjugates a tensor of matrices and then transposes the last two dimensions.
+ * The adjoint is also commonly known as the Hermitian Transpose. Does not yet
+ * work for complex data types.
  *
- * Implementation based on
- *   [http://www.cs.cornell.edu/~bindel/class/cs6210-f09/lec18.pdf]
- * (http://www.cs.cornell.edu/~bindel/class/cs6210-f09/lec18.pdf)
+ * @param a Tensor of shape [...,M,N]. The tensor of matrices that is to be
+ *          tranposed.
+ *
+ * @returns Tensor of shape [...,N,M]. The transpose of `a`.
+ */
+/** 
+ * @doc {heading:'Operations',
+ *       subheading:'Linear Algebra',
+ *       namespace:'linalg'}
+ */
+function adjoint_<T extends Tensor>( a: T|TensorLike ): T
+{
+  let $a = convertToTensor(a,'a','bandPart');
+
+  const axes = Array.from( $a.shape, (_,i) => i );
+  axes[axes.length-2] = axes.length-1;
+  axes[axes.length-1] = axes.length-2;
+
+  if( $a.dtype.startsWith('complex') ) {
+    $a = complex( real($a), imag($a).neg() ); // <- TODO: implement tf.conj
+  }
+
+  return $a.transpose(axes);
+}
+
+/** 
+ * Copies a tensor of matrices, setting everything outside a central band
+ * in each matrix to zero.
+ */
+/** 
+ * @doc {heading:'Operations',
+ *       subheading:'Linear Algebra',
+ *       namespace:'linalg'}
+ */
+function bandPart_<T extends Tensor>(
+  a: T|TensorLike, numLower: number, numUpper: number
+): T
+{
+  if( numLower%1 !== 0 ){
+    throw new Error(`bandPart(): numLower=${numLower} not an integer.`);
+  }
+  if( numUpper%1 !== 0 ){
+    throw new Error(`bandPart(): numUpper=${numUpper} not an integer.`);
+  }
+
+  const $a = convertToTensor(a,'a','bandPart');
+
+  const [M,N] = $a.shape.slice(-2);
+
+  if( !(numLower <= M) ) {
+    throw new Error(`bandPart() check failed: numLower <= #rows.`   );
+  }
+  if( !(numUpper <= N) ) {
+    throw new Error(`bandPart() check failed: numUpper <= #columns.`);
+  }
+
+  if( numLower < 0 ) { numLower = M; }
+  if( numUpper < 0 ) { numUpper = N; }
+
+  const i = range(0,M, 1, 'int32').reshape([-1,1]),
+        j = range(0,N, 1, 'int32');
+
+  const inBand = logicalAnd(
+    sub(i,j).lessEqual( scalar(numLower,'int32') ),
+    sub(j,i).lessEqual( scalar(numUpper,'int32') )
+  ).cast($a.dtype);
+
+  return mul($a,inBand);
+}
+
+function triangularSolveKernel(
+  l: Tensor, y: Tensor, lower: boolean, adjoint: boolean
+): Tensor
+{
+  if( ! l.dtype.startsWith('float') ) {
+    throw new Error(`triangularSolve(): l.dtype=${l.dtype} not supported.`);
+  }
+  if( ! y.dtype.startsWith('float') ) {
+    throw new Error(`triangularSolve(): y.dtype=${y.dtype} not supported.`);
+  }
+  if( l.rank < 2 ) {
+    throw new Error('triangularSolve(): l must be at least 2D.');
+  }
+  if( y.rank < 2 ) {
+    throw new Error('triangularSolve(): y must be at least 2D.');
+  }
+  if( l.rank !== y.rank ) {
+    throw new Error('triangularSolve(): l and y must have same rank.');
+  }
+  for( let i=l.rank-2; i-- > 0; ) {
+    if( l.shape[i] !== y.shape[i] ) {
+      throw new Error('triangularSolve(): leading dimensions do not match.');
+    }
+  }
+
+  const [N,M] = l.shape.slice(-2),
+        [I,J] = y.shape.slice(-2);
+  if( N !== M ) {
+    throw new Error('triangularSolve(): Last two axes of L not square.');
+  }
+  if( I !== M ) {
+    throw new Error('triangularSolve(): L and y do not match.');
+  }
+
+  const
+    rank = Math.max(l.rank, y.rank),
+    xShape = Array.from(l.shape);
+  xShape[rank-2] = I;
+  xShape[rank-1] = J;
+
+  // GENERATE RESULT DATA
+  const
+    dtype = 'float32',
+//    dtype =  ( l.dtype === 'float64' ||
+//               y.dtype === 'float64' ) ? 'float64' : 'float32',
+    // tslint:disable
+    DTypeArray = Float32Array,
+    // tslint:enable
+//    DTypeArray = dtype === 'float32' ? Float32Array
+//                                     : Float64Array,
+    L = l.dataSync(),
+    X = DTypeArray.from( y.dataSync() ) as TypedArray;
+  l = undefined;
+  y = undefined;
+
+  for( let lOff = 0,
+           xOff = 0; xOff < X.length; xOff += N*J,
+                                      lOff += N*N )
+  {
+    if( ! adjoint )
+    {
+      if(lower)
+      { // FORWARD SUBSTITUTION
+        for( let i=0; i < I; i++ ) {
+          for( let k=0; k < i; k++ ) {
+          for( let j=0; j < J; j++ ) {
+            X[xOff + J*i+j] -= L[lOff + N*i+k] * X[xOff + J*k+j];
+          }}
+
+          for( let j=0; j < J; j++ ) {
+            X[xOff + J*i+j] /= L[lOff + N*i+i];
+          }
+        }
+      }
+      else
+      { // BACKWARD SUBSTITUTION
+        for( let i=I; i-- > 0; ) {
+          for( let j=J; j-- > 0; ) {
+            X[xOff + J*i+j] /= L[lOff + N*i+i];
+          }
+
+          for( let k=i; k-- > 0; ) {
+          for( let j=J; j-- > 0; ) {
+            X[xOff + J*k+j] -= L[lOff + N*k+i] * X[xOff + J*i+j];
+          }}
+        }
+      }
+    }
+    else
+    {
+      if(lower)
+      { // BACKWARD SUBSTITUTION (TRANSPOSED)
+        for( let i=I; i-- > 0; ) {
+          for( let j=J; j-- > 0; ) {
+            X[xOff + J*i+j] /= L[lOff + N*i+i];
+          }
+
+          for( let k=i; k-- > 0; ) {
+          for( let j=J; j-- > 0; ) {
+            X[xOff + J*k+j] -= L[lOff + N*i+k] * X[xOff + J*i+j];
+          }}
+        }
+      }
+      else
+      { // FORWARD SUBSTITUTION (TRANSPOSED)
+        for( let i=0; i < I; i++ ) {
+          for( let k=0; k < i; k++ ) {
+          for( let j=0; j < J; j++ ) {
+            X[xOff + J*i+j] -= L[lOff + N*k+i] * X[xOff + J*k+j];
+          }}
+
+          for( let j=0; j < J; j++ ) {
+            X[xOff + J*i+j] /= L[lOff + N*i+i];
+          }
+        }
+      }
+    }
+  }
+
+  return Tensor.make(xShape,{values: X},dtype);
+}
+
+/**
+ * Solves a triangular linear equation system (LES).
+ *
+ * @param l The triangular matrix of the .
+ * @param y The right-hand-side of the LES.
+ * @param lower If set to `true`, `l` is interpreted as lower triangular
+ *              matrix. The strict upper triangular entries are ignore.
+ *              If set to `false`, `l` is interpreted as upper triangular
+ *              matrix and the strict lower triangular entries are ignored.
+ * @param adjoint If set to `true`, the hermitian transpose of `l` is used in
+ *                the LES.
+ *
+ * @returns The solution of one of the following LES:
+ *   <dl>
+ *     <dt>lower=false, adjoint=false <dd>tril(l) ∙x == y
+ *     <dt>lower=true,  adjoint=false <dd>triu(l) ∙x == y
+ *     <dt>lower=false, adjoint=true  <dd>tril(l)ᴴ∙x == y
+ *     <dt>lower=true,  adjoint=true  <dd>triu(l)ᴴ∙x == y
+ *   </dl>
+ */ 
+/** 
+ * @doc {heading:'Operations',
+ *       subheading:'Linear Algebra',
+ *       namespace:'linalg'}
+ */
+function triangularSolve_(
+  l: Tensor|TensorLike, y: Tensor|TensorLike, lower=true, adjoint=false
+): Tensor
+{
+  // FIXME: if `l` is singular the right hand side could be
+  // checked for 0 and then some/any solution could be used
+
+//  let [$l,$y] = broadcastMatrices(
+//    convertToTensor(l,'l','triangularSolve'),
+//    convertToTensor(y,'y','triangularSolve')
+//  );
+  let $l = convertToTensor(l,'l','triangularSolve'),
+      $y = convertToTensor(y,'y','triangularSolve');
+  l=undefined;
+  y=undefined;
+  if( $l.rank < 2 ){
+    throw new Error(`triangularSolve(): l.rank must be at least 2.`);
+  }
+  if( $y.rank < 2 ){
+    throw new Error(`triangularSolve(): y.rank must be at least 2.`);
+  }
+
+  const dtype = upcastType($l.dtype, $y.dtype);
+  if( $l.dtype !== dtype ) { $l = $l.cast(dtype); }
+  if( $y.dtype !== dtype ) { $y = $y.cast(dtype); }
+
+  // WHERE THE BACKPROP COMES FROM:
+  //     x = L⁻¹∙y
+  // => dx = d(L⁻¹)∙y + L⁻¹∙dy = L⁻¹∙dy  -  L⁻¹∙dL∙L⁻¹∙y = L⁻¹∙dy  -  L⁻¹∙dL∙x
+  // => df = tr( (∂f/∂x)∙dxᵀ )
+  //       = tr( (∂f/∂x)∙dyᵀ∙L⁻ᵀ )  -  tr( (∂f/∂x)∙yᵀ∙L⁻ᵀ∙dLᵀ∙L⁻ᵀ )
+  //       = tr( (∂f/∂x)ᵀ∙L⁻¹∙dy )  -  tr( (∂f/∂x)∙yᵀ∙L⁻ᵀ∙(L⁻¹∙dL)ᵀ )
+  //       = tr( L⁻ᵀ∙(∂f/∂x) ∙dyᵀ)  -  tr( L⁻¹∙y∙(∂f/∂x)ᵀ∙ L⁻¹∙dL   )
+  //       = tr( L⁻ᵀ∙(∂f/∂x) ∙dyᵀ)  -  tr(     x∙(∂f/∂x)ᵀ∙ L⁻¹∙dL   )
+  //       = tr( L⁻ᵀ∙(∂f/∂x) ∙dyᵀ)  -  tr( L⁻ᵀ  ∙(∂f/∂x) ∙ xᵀ ∙dLᵀ   )
+  // =>                           ∂f/∂y =  L⁻ᵀ∙(∂f/∂x)
+  //    ∂f/∂L = -L⁻ᵀ∙(∂f/∂x)∙xᵀ = ∂f/∂L =     -(∂f/∂y)∙xᵀ
+
+  // tslint:disable
+  // SEE: https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/ops/linalg_grad.py#L218
+  // tslint:enable
+  return ENV.engine.runKernel(
+    (backend,saveFn) => {
+      const x = triangularSolveKernel($l,$y,lower,adjoint);
+      saveFn(x);
+      return x;
+    },
+    {$l,$y},
+    (dx,[x]) => {
+      const dy = triangularSolve($l, dx, lower, !adjoint);
+      return {
+        $l: () => {
+          let dl = adjoint ? matMul( x, dy, false, true)
+                           : matMul(dy,  x, false, true);
+          dl = dl.neg();
+          dl = lower ? bandPart(dl,-1, 0)
+                     : bandPart(dl, 0,-1);
+          return dl;
+        },
+        $y: () => dy
+      };
+    }
+  );
+}
+
+/** Computes the economic QR Decomposition.
+ */
+function qrEcoDecompKernel( a: Tensor ): [Tensor,Tensor]
+{
+  assert(
+    a.rank >= 2,
+    `qr(): input must have rank >= 2, got rank ${a.rank}.`
+  );
+  assert(
+    ! a.dtype.startsWith('complex'),
+    `qr(): complex dtype not supported.`
+  );
+  assert(
+    a.shape[a.rank-2] >= a.shape[a.rank-1],
+    `qr(): a.shape[-2] = ${a.shape[a.rank-2]}`
+    +                ` < ${a.shape[a.rank-1]} = a.shape[-1].`
+  );
+
+  const dtype = 'float32',
+        // tslint:disable
+        DTypeArray = Float32Array,
+        // tslint:enable
+        qShape = Array.from( a.shape ),
+        rShape = Array.from(  qShape ),
+       [N,M] = qShape.slice(-2);
+  rShape[rShape.length-2] = M;
+  Object.freeze(qShape);
+  Object.freeze(rShape);
+
+  const Q = DTypeArray.from( a.dataSync() ); a = undefined;
+  const R = new DTypeArray(Q.length/N*M),
+       cs = new DTypeArray(M*2),// <- APPLY M ROTATIONS TO Q AT ONCE
+        r = (() => {
+          try      { return    cs.subarray(M); }
+          catch(e) { return new DTypeArray(M); }
+        })();  // <- space to temp. store rows of R not contained in result
+
+  for(
+    let rOff=0,
+        qOff=0; qOff < Q.length; qOff += N*M,
+                                 rOff += M*M
+  )
+  {
+    // HANDLE ENTRIES CONTAINED IN THE RESULT
+    for( let i=0; i < M; i++ )
+    {
+      // COPY FROM Q TO R AND INIT Q
+      for( let j=0; j < M; j++ ) {
+        R[rOff+M*i+j] = Q[qOff+M*i+j];
+                        Q[qOff+M*i+j] = i !== j ? 0.0 : 1.0;
+      }
+
+      for( let j=0; j < i; j++ )
+      { // USE GIVENS ROTATION TO ELIMINATE ELEMENT R_ji
+        const rIJ = R[rOff+M*i+j]; if( rIJ === 0.0 ){cs[2*j+0]=1.0;
+                                                     cs[2*j+1]=0.0; continue;}
+        const rJJ = R[rOff+M*j+j],
+                     norm = Math.hypot(rJJ,rIJ),
+          c = rJJ / norm,
+          s = rIJ / norm;
+        cs[2*j+0] = c;
+        cs[2*j+1] = s;
+        R[rOff + M*i+j] = 0.0;
+        R[rOff + M*j+j] = norm;
+        // ROTATE ROW i AND j IN R
+        for( let k=j; ++k < M; ) {
+          const ik = rOff + M*i+k, rIK = R[ik],
+                jk = rOff + M*j+k, rJK = R[jk];
+          R[ik] = c*rIK - s*rJK;
+          R[jk] = s*rIK + c*rJK;
+        }
+      }
+
+      // ROTATE COLUMNS IN Q (BUNDLED FOR BETTER CACHE LOCALITY)
+      for( let k=0; k <= i; k++ ) {
+      for( let j=0; j <  i; j++ ) {
+        const c = cs[2*j+0],
+              s = cs[2*j+1],
+             ki = qOff + M*k+i, qKI = Q[ki],
+             kj = qOff + M*k+j, qKJ = Q[kj];
+        Q[ki] = c*qKI - s*qKJ;
+        Q[kj] = s*qKI + c*qKJ;
+      }}
+    }
+    // HANDLE REMAINING ENTRIES NOT CONTAINED IN THE RESULT
+    for( let i=M; i < N; i++ )
+    {
+      // INIT r
+      for( let j=0; j < M; j++ ) {
+        r[j] = Q[qOff+M*i+j]; Q[qOff+M*i+j] = 0.0;
+      }
+
+      // USE GIVENS ROTATIONS TO ELIMINATE ELEMENT r completely
+      for( let j=0; j < M; j++ )
+      {
+        const rJ  = r[j]; if( rJ === 0.0 ) { cs[2*j+0]=1.0;
+                                             cs[2*j+1]=0.0; continue; }
+        const rJJ = R[rOff+M*j+j],
+                    norm = Math.hypot(rJJ,rJ),
+          c = rJJ / norm,
+          s = rJ  / norm;
+        R[rOff+M*j+j] = norm;
+        // ROTATE ROW i AND j IN R
+        for( let k=j; ++k < M; ) {
+          const jk = rOff + M*j+k, rJK = R[jk];
+          R[jk] = s*r[k] + c*rJK;
+          r[ k] = c*r[k] - s*rJK;
+        }
+        cs[2*j+0] = c;
+        cs[2*j+1] = s;
+      }
+
+      // ROTATE COLUMNS IN Q
+      for( let k=0; k <= i; k++ ) { let QK = i !== k ? 0.0 : 1.0;
+      for( let j=0; j <  M; j++ ) {
+        const c = cs[2*j+0],
+              s = cs[2*j+1],     qK  = QK,
+              kj = qOff + M*k+j, qKJ = Q[kj];
+        QK   = c*qK - s*qKJ;
+        Q[kj]= s*qK + c*qKJ;
+      }}
+    }
+  }
+
+  {
+    const q = Tensor.make(qShape, { values: Q }, dtype);
+    const r = Tensor.make(rShape, { values: R }, dtype);
+
+    return [q,r];
+  }
+}
+
+/** Computes the full QR Decomposition an memoizes the
+ *  Givens rotation angles in the process.
+ */
+function qrFullDecompKernel( a: Tensor ): [Tensor,Tensor,Tensor]
+{
+  assert(
+    a.rank >= 2,
+    `Error in linalg.qr: input must have rank >= 2, got rank ${a.rank}.`
+  );
+  assert(
+    ! a.dtype.startsWith('complex'),
+    `Error in linalg.qr: complex dtype not supported.`
+  );
+
+  const dtype      ='float32',
+        // tslint:disable
+        DTypeArray = Float32Array,
+        // tslint:enable
+        rShape = Array.from( a.shape ),
+        qShape = Array.from( a.shape ),
+       [M,N] =               a.shape.slice(-2),
+        R = DTypeArray.from( a.dataSync() );
+  a = undefined;
+  const L = Math.min(M,N),
+        Q = new DTypeArray( R.length/N*M  ),
+       CS = new DTypeArray( R.length/N/M * 2 * (
+              (L*(L-1) >>> 1) + Math.max(0,M-N)*N
+            ));
+  qShape[qShape.length-1] = M;
+  Object.freeze(qShape);
+  Object.freeze(rShape);
+
+  let l = 0;
+  for( let qOff=0,
+           rOff=0; qOff < Q.length; qOff += M*M,
+                                    rOff += M*N )
+  {
+    // INIT Q TO IDENTITY
+    for( let i=0; i < M; i++ ) { Q[qOff + M*i+i] = 1; }
+
+    // BEGIN QR DECOMPOSITION
+    for( let i=1; i < M; i++ ) { const J = Math.min(i,N);
+    for( let j=0; j < J; j++ )
+    {
+      // DETERMINE GIVENS ROTATION cos AND sin
+      const rIJ = R[rOff + N*i+j]; if( 0.0 === rIJ ) { CS[l++]=1.0;
+                                                       CS[l++]=0.0; continue; }
+      const rJJ = R[rOff + N*j+j];
+      let         norm = Math.hypot(rJJ,rIJ),
+        c = rJJ / norm,
+        s = rIJ / norm;
+      CS[l++] = c;
+      CS[l++] = s;
+      R[rOff + N*j+j] = norm;
+      R[rOff + N*i+j] = 0;
+      // ROTATE ROWS IN R
+      for( let k=j; ++k < N; )
+      { const rJK = R[rOff + N*j+k],
+              rIK = R[rOff + N*i+k];
+        R[rOff + N*j+k] = s*rIK + c*rJK;
+        R[rOff + N*i+k] = c*rIK - s*rJK;
+      }
+      // ROTATE ROWS IN Qᵀ
+      for( let k=0; k <= i; k++ )
+      { const qJK = Q[qOff + M*j+k],
+              qIK = Q[qOff + M*i+k];
+        Q[qOff + M*j+k] = s*qIK + c*qJK;
+        Q[qOff + M*i+k] = c*qIK - s*qJK;
+      }
+    }} // END QR DECOMPOSITION
+
+    // TRANSPOSE Q (was transposed for cache locality)
+    for( let i=0; i < M; i++ ) {
+    for( let j=0; j < i; j++ ) {
+      const qIJ = Q[qOff + M*i+j];
+                  Q[qOff + M*i+j] = Q[qOff + M*j+i];
+                                    Q[qOff + M*j+i] = qIJ;
+    }}
+  }
+  assert( l === CS.length, `WTF: ${l} != ${CS.length}` );
+
+  const  q = Tensor.make(qShape, {values: Q}, dtype);
+  const  r = Tensor.make(rShape, {values: R}, dtype);
+  const cs = Tensor.make([CS.length], {values: CS}, dtype);
+
+  return [q,r,cs];
+}
+
+/** Computes the backpropagation full QR Decomposition using
+ *  memoized Givens rotation angles in the process.
+ */
+function qrFullBackpropKernel(
+  q: Tensor, dq: Tensor, r: Tensor, dr: Tensor, cs: Tensor
+): Tensor
+{
+  assert( q.rank === dq.rank, `q.rank == ${q.rank} != ${dq.rank} == dq.rank` );
+  assert( q.rank === dr.rank, `q.rank == ${q.rank} != ${dr.rank} == dr.rank` );
+  assert( q.rank ===  r.rank, `q.rank == ${q.rank} != ${ r.rank} ==  r.rank` );
+
+  assert( cs.rank === 1, `cs.rank == ${cs.rank} != 1` );
+
+  for( let i=q.rank-2; i-- > 0; )
+  {
+    assert(
+      q.shape[i] === dq.shape[i],
+      `q.shape[${i}] == ${q.shape[i]} != ${dq.shape[i]} == dq.shape[${i}]`
+    );
+    assert(
+      q.shape[i] === dr.shape[i],
+      `q.shape[${i}] == ${q.shape[i]} != ${dr.shape[i]} == dr.shape[${i}]`
+    );
+    assert(
+      q.shape[i] ===  r.shape[i],
+      `q.shape[${i}] == ${q.shape[i]} != ${ r.shape[i]} ==  r.shape[${i}]`
+    );
+  }
+  const rank = q.rank;
+  assert(
+    q.shape[rank-2] ===  q.shape[rank-1],
+    `q.shape[-2] == ${q.shape[rank-2]} != ${ q.shape[rank-1]} ==  q.shape[-1]`
+  );
+  assert(
+    q.shape[rank-2] === dq.shape[rank-1],
+    `q.shape[-2] == ${q.shape[rank-2]} != ${dq.shape[rank-1]} == dq.shape[-1]`
+  );
+  assert(
+    q.shape[rank-2] === dq.shape[rank-2],
+    `q.shape[-2] == ${q.shape[rank-2]} != ${dq.shape[rank-2]} == dq.shape[-2]`
+  );
+
+  assert(
+    r.shape[rank-2] ===  q.shape[rank-1],
+    `r.shape[-2] == ${r.shape[rank-2]} != ${ q.shape[rank-1]} ==  q.shape[-1]`
+  );
+  assert(
+    r.shape[rank-1] === dr.shape[rank-1],
+    `r.shape[-1] == ${r.shape[rank-1]} != ${dr.shape[rank-1]} == dr.shape[-1]`
+  );
+  assert(
+    r.shape[rank-2] === dr.shape[rank-2],
+    `r.shape[-2] == ${r.shape[rank-2]} != ${dr.shape[rank-2]} == dr.shape[-2]`
+  );
+
+  assert(
+    q.dtype ===  dq.dtype, `q.dtype == ${q.dtype} == ${ dq.dtype} ==  dq.dtype`
+  );
+  assert(
+    q.dtype ===  dr.dtype, `q.dtype == ${q.dtype} == ${ dr.dtype} ==  dr.dtype`
+  );
+  assert(
+    q.dtype ===   r.dtype, `q.dtype == ${q.dtype} == ${  r.dtype} ==   r.dtype`
+  );
+  assert(
+    q.dtype === cs.dtype, `q.dtype == ${q.dtype} == ${cs.dtype} == cs.dtype`
+  );
+
+  assert( ! q.dtype.startsWith('complex'), `Complex dtype not supported.`);
+
+  const dtype      ='float32',
+        // tslint:disable
+        DTypeArray = Float32Array,
+        // tslint:enable
+       dAShape = Array.from( r.shape ),
+       [M,N] = dAShape.slice(-2);
+  const  Q = DTypeArray.from(  q.dataSync() );  q = undefined;
+  const dQ = DTypeArray.from( dq.dataSync() ); dq = undefined;
+  const  R = DTypeArray.from(  r.dataSync() );  r = undefined;
+  const dR = DTypeArray.from( dr.dataSync() ); dr = undefined;
+  const CS =                  cs.dataSync();
+  Object.freeze(dAShape);
+
+  let l = CS.length;
+  for( let rOff=R.length,
+           qOff=Q.length; qOff > 0; )
+  {
+    qOff -= M*M;
+    rOff -= M*N;
+
+    // TRANSPOSE  Q (for cache locality)
+    for( let i=0; i < M; i++ ) {
+    for( let j=0; j < i; j++ ) {
+      const qIJ = Q[qOff + M*i+j];
+                  Q[qOff + M*i+j] = Q[qOff + M*j+i];
+                                    Q[qOff + M*j+i] = qIJ;
+    }}
+
+    // TRANSPOSE dQ (for cache locality)
+    for( let i=0; i < M; i++ ) {
+    for( let j=0; j < i; j++ ) {
+      const dQij = dQ[qOff + M*i+j];
+                   dQ[qOff + M*i+j] = dQ[qOff + M*j+i];
+                                      dQ[qOff + M*j+i] = dQij;
+    }}
+
+    // BEGIN QR DECOMPOSITION
+    for( let i=M; --i > 0; ) { const J = Math.min(i,N);
+    for( let j=J; j-- > 0; )
+    {
+      // DETERMINE GIVENS ROTATION cos AND sin
+      const s = CS[--l]; if( 0 === s ) { continue; }
+      const c = CS[--l],
+         norm = R[rOff + N*j+j];
+
+      // ROTATE ROWS IN R
+      for( let k=j; k < N; k++ )
+      { const rJK = R[rOff + N*j+k],
+              rIK = R[rOff + N*i+k];
+        R[rOff + N*j+k] = c*rJK - s*rIK;
+        R[rOff + N*i+k] = s*rJK + c*rIK;
+      }
+
+      // ROTATE ROWS IN Qᵀ
+      for( let k=0; k <= i; k++ )
+      { const qJK = Q[qOff + M*j+k],
+              qIK = Q[qOff + M*i+k];
+        Q[qOff + M*j+k] = c*qJK - s*qIK;
+        Q[qOff + M*i+k] = s*qJK + c*qIK;
+      }
+
+      const rIJ = R[rOff + N*i+j],
+            rJJ = R[rOff + N*j+j],
+           dCdJ = + rIJ / norm  *  rIJ / norm**2,
+           dCdI = - rIJ / norm  *  rJJ / norm**2,
+           dSdJ = - rJJ / norm  *  rIJ / norm**2,
+           dSdI = + rJJ / norm  *  rJJ / norm**2;
+      let dj = 0.0,
+          di = 0.0;
+
+      // ROTATE ROWS IN dR
+      for( let k=j; k < N; k++ )
+      { const dRjk = dR[rOff + N*j+k],
+              dRik = dR[rOff + N*i+k];
+        dR[rOff + N*j+k] = c*dRjk - s*dRik;
+        dR[rOff + N*i+k] = s*dRjk + c*dRik;
+
+        const rJK =  R[rOff + N*j+k],
+              rIK =  R[rOff + N*i+k];
+
+        dj += dRjk*(rIK*dSdJ + rJK*dCdJ)  +  dRik*(rIK*dCdJ - rJK*dSdJ);
+        di += dRjk*(rIK*dSdI + rJK*dCdI)  +  dRik*(rIK*dCdI - rJK*dSdI);
+      }
+
+      // ROTATE ROWS IN dQᵀ
+      for( let k=0; k <= i; k++ )
+      { const dQjk = dQ[qOff + M*j+k],
+              dQik = dQ[qOff + M*i+k];
+        dQ[qOff + M*j+k] = c*dQjk - s*dQik;
+        dQ[qOff + M*i+k] = s*dQjk + c*dQik;
+
+        const qJK = Q[qOff + M*j+k],
+              qIK = Q[qOff + M*i+k];
+
+        dj += dQjk*(qIK*dSdJ + qJK*dCdJ)  +  dQik*(qIK*dCdJ - qJK*dSdJ);
+        di += dQjk*(qIK*dSdI + qJK*dCdI)  +  dQik*(qIK*dCdI - qJK*dSdI);
+      }
+
+      dR[rOff + N*j+j] += dj;
+      dR[rOff + N*i+j] += di;
+    }} // END QR DECOMPOSITION
+  }
+  assert( 0 === l, `WTF: ${l} != 0` );
+
+  return Tensor.make(dAShape,{values: dR},dtype);
+}
+
+/**
+ * Compute QR decomposition of m-by-n matrix using Givens rotations.
+ *
+ * See: http://www.math.usm.edu/lambers/mat610/sum10/lecture9.pdf
  *
  * ```js
  * const a = tf.tensor2d([[1, 2], [3, 4]]);
@@ -150,114 +838,82 @@ function gramSchmidt_(xs: Tensor1D[]|Tensor2D): Tensor1D[]|Tensor2D {
  *       subheading:'Linear Algebra',
  *       namespace:'linalg'}
  */
-function qr_(x: Tensor, fullMatrices = false): [Tensor, Tensor] {
-  if (x.rank < 2) {
+function qr_( a: Tensor, fullMatrices = false ): [Tensor, Tensor] {
+  if( a.rank < 2 ) {
     throw new Error(
-        `qr() requires input tensor to have a rank >= 2, but got rank ${
-            x.rank}`);
-  } else if (x.rank === 2) {
-    return qr2d(x as Tensor2D, fullMatrices);
-  } else {
-    // Rank > 2.
-    // TODO(cais): Below we split the input into individual 2D tensors,
-    //   perform QR decomposition on them and then stack the results back
-    //   together. We should explore whether this can be parallelized.
-    const outerDimsProd = x.shape.slice(0, x.shape.length - 2)
-                              .reduce((value, prev) => value * prev);
-    const x2ds = unstack(
-        x.reshape([
-          outerDimsProd, x.shape[x.shape.length - 2],
-          x.shape[x.shape.length - 1]
-        ]),
-        0);
-    const q2ds: Tensor2D[] = [];
-    const r2ds: Tensor2D[] = [];
-    x2ds.forEach(x2d => {
-      const [q2d, r2d] = qr2d(x2d as Tensor2D, fullMatrices);
-      q2ds.push(q2d);
-      r2ds.push(r2d);
-    });
-    const q = stack(q2ds, 0).reshape(x.shape);
-    const r = stack(r2ds, 0).reshape(x.shape);
-    return [q, r];
+      `qr() requires input tensor to have a rank >= 2, but got rank ${a.rank}`
+    );
   }
+  if( a.dtype.startsWith('complex') ) {
+    throw new Error(`qr() not yet supported for complex tensors.`);
+  }
+
+  const [m,n] = a.shape.slice(-2);
+
+  if( m === n || m > n && !fullMatrices )
+  {
+    // FIXME: What if R is (nearly) singular?
+    return ENV.engine.runKernel(
+      (backend,saveFunc) => {
+        const [q,r] = qrEcoDecompKernel(a);
+        saveFunc(q);
+        saveFunc(r);
+        return [q,r];
+      },
+      {a},
+      ([dq,dr], [q,r]) => ({
+        a: () => {
+          // TODO: is tidy required here?
+          // tslint:disable
+          // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/ops/linalg_grad.py#L160
+          // tslint:enable
+          const qdq  = matMul(q,dq, true, false),
+                rdr  = matMul(r,dr, false, true),
+                qdq_ = qdq.sub( adjoint(qdq) ),
+                rdr_ = rdr.sub( adjoint(rdr) ),
+                tril = bandPart( add(qdq_,rdr_), -1, 0 );
+
+          const triSolv = (x: Tensor,r: Tensor) => adjoint(
+            triangularSolve(r, adjoint(x), /*lower=*/false, /*adjoint_r*/false)
+          );
+
+          const gradA = matMul( q, dr.add( triSolv(tril,r) ) ),
+                gradB = triSolv( dq.sub( matMul(q,qdq) ), r );
+
+          return add(gradA,gradB);
+        }
+      })
+    ) as [Tensor, Tensor];
+  }
+
+  let [q,r] = ENV.engine.runKernel(
+    (backend,saveFunc) => {
+      const [q,r,cs] = qrFullDecompKernel(a);
+      saveFunc(q);
+      saveFunc(r);
+      saveFunc(cs);
+      return [q,r];
+    },
+    {a},
+    ([dq,dr], [q,r,cs]) => ({
+      a: () => ENV.engine.runKernel(
+        (backend,saveFunc) => qrFullBackpropKernel(q,dq, r,dr, cs),
+        { $dq: dq, $dr: dr }
+      )
+    })
+  );
+
+  if( ! fullMatrices  &&  m > n ) {
+    const end = a.shape.slice(); 
+    q = q.slice([0, 0], end); end[end.length-2] = n;
+    r = r.slice([0, 0], end);
+  }
+
+  return [q,r];
 }
 
-function qr2d(x: Tensor2D, fullMatrices = false): [Tensor2D, Tensor2D] {
-  return ENV.engine.tidy(() => {
-    if (x.shape.length !== 2) {
-      throw new Error(
-          `qr2d() requires a 2D Tensor, but got a ${x.shape.length}D Tensor.`);
-    }
-
-    const m = x.shape[0];
-    const n = x.shape[1];
-
-    let q = eye(m) as Tensor2D;  // Orthogonal transform so far.
-    let r = x.clone();           // Transformed matrix so far.
-
-    const one2D = tensor2d([[1]], [1, 1]);
-    let w: Tensor2D = one2D.clone();
-
-    const iters = m >= n ? n : m;
-    for (let j = 0; j < iters; ++j) {
-      // This tidy within the for-loop ensures we clean up temporary
-      // tensors as soon as they are no longer needed.
-      const rTemp = r;
-      const wTemp = w;
-      const qTemp = q;
-      [w, r, q] = ENV.engine.tidy((): [Tensor2D, Tensor2D, Tensor2D] => {
-        // Find H = I - tau * w * w', to put zeros below R(j, j).
-        const rjEnd1 = r.slice([j, j], [m - j, 1]);
-        const normX = rjEnd1.norm();
-        const rjj = r.slice([j, j], [1, 1]);
-        const s = rjj.sign().neg() as Tensor2D;
-        const u1 = rjj.sub(s.mul(normX)) as Tensor2D;
-        const wPre = rjEnd1.div(u1);
-        if (wPre.shape[0] === 1) {
-          w = one2D.clone();
-        } else {
-          w = one2D.concat(
-                  wPre.slice([1, 0], [wPre.shape[0] - 1, wPre.shape[1]]), 0) as
-              Tensor2D;
-        }
-        const tau = s.matMul(u1).div(normX).neg() as Tensor2D;
-
-        // -- R := HR, Q := QH.
-        const rjEndAll = r.slice([j, 0], [m - j, n]);
-        const tauTimesW = tau.mul(w) as Tensor2D;
-        if (j === 0) {
-          r = rjEndAll.sub(tauTimesW.matMul(w.transpose().matMul(rjEndAll)));
-        } else {
-          r = r.slice([0, 0], [j, n])
-                  .concat(
-                      rjEndAll.sub(
-                          tauTimesW.matMul(w.transpose().matMul(rjEndAll))),
-                      0) as Tensor2D;
-        }
-        const qAllJEnd = q.slice([0, j], [m, q.shape[1] - j]);
-        if (j === 0) {
-          q = qAllJEnd.sub(qAllJEnd.matMul(w).matMul(tauTimesW.transpose()));
-        } else {
-          q = q.slice([0, 0], [m, j])
-                  .concat(
-                      qAllJEnd.sub(
-                          qAllJEnd.matMul(w).matMul(tauTimesW.transpose())),
-                      1) as Tensor2D;
-        }
-        return [w, r, q];
-      });
-      dispose([rTemp, wTemp, qTemp]);
-    }
-
-    if (!fullMatrices && m > n) {
-      q = q.slice([0, 0], [m, n]);
-      r = r.slice([0, 0], [n, n]);
-    }
-
-    return [q, r];
-  }) as [Tensor2D, Tensor2D];
-}
-
+export const adjoint = op({adjoint_});
+export const bandPart = op({bandPart_});
 export const gramSchmidt = op({gramSchmidt_});
 export const qr = op({qr_});
+export const triangularSolve = op({triangularSolve_});
