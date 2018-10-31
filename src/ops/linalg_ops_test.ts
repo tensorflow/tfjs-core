@@ -81,6 +81,48 @@ const numDiff = (f: (_: Tensor) => Scalar) => (a: Tensor) => {
   });
 };
 
+function expectTensorsRelativelyClose(
+  actual: Tensor, expected: Tensor, rtol?: number, atol?: number
+): void
+{
+  if( expected.shape.some( (s,i) => s !== actual.shape[i] ) ) {
+    throw new Error(
+      `Shapes [${actual.shape}] and [${expected.shape}] do not match.`
+    );
+  }
+
+  if( null == atol ) { atol = ENV.get('TEST_EPSILON'); }
+  if( null == rtol ) { rtol = ENV.get('TEST_EPSILON'); }
+
+  const act =   actual.dataSync(),
+        exp = expected.dataSync();
+
+  const isClose = (x: number, y: number) => {
+    x = Math.abs(x);
+    y = Math.abs(y);
+    return Math.abs(x-y) <= atol + rtol/2*(x+y);
+  };
+
+  for( let i=act.length; i-- > 0; ) {
+    if( ! isClose(act[i],exp[i]) )
+    {
+      console.log(  'actual:');   actual.print();
+      console.log('expected:'); expected.print();
+      const idx = [],
+          shape = actual.shape;
+      for( let j=i, d=shape.length; d-- > 0; )
+      {
+        const size = shape[d];
+        idx.unshift(j % size);
+        j = Math.trunc(j / size);
+      }
+      throw new Error(
+        `actual[${idx}] = ${act[i]} != ${exp[i]} = expected[${idx}]`
+      );
+    }
+  }
+}
+
 describeWithFlags('gramSchmidt-tiny', ALL_ENVS, () => {
   it('2x2, Array of Tensor1D', () => {
     const xs: Tensor1D[] = [
@@ -438,7 +480,9 @@ describeWithFlags('qr', CPU_ENVS, () => {
       const g = numDiff(f);
       const h = tf.grad(f);
       try {
-        expectArraysClose( g(a), h(a) );
+        // since we're already losing precision on numDiff,
+        // this is the best we can do
+        expectTensorsRelativelyClose(g(a), h(a), /*rtol=*/1e-2, /*atol=*/1e-2);
       }
       catch(err) {
         console.log('fullMatrices:', fullMatrices);
