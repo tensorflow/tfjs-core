@@ -121,15 +121,16 @@ function getMainLoop(dtype: string, innerDims: string[], shapeInnerDims: number[
 
     result += `
       ${thisRC}
+      ${i > 0 ? `if(${inBoundsCheck}){` : ''}
 
-      if(${inBoundsCheck}) {
         flatIndex = getFlatIndex(thisRC);
 
         inputRC = inputCoordsFromReshapedOutCoords(flatIndex);
         ${offset};
 
         result[${i}] = ${input};
-      }
+
+      ${i > 0 ? '}' : ''}
     `;
   }
 
