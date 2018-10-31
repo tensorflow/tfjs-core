@@ -35,9 +35,10 @@ export class ReshapePackedProgram implements GPGPUProgram {
 
     const inputRank = inputShape.length;
     const inputDtype = getCoordsDataType(inputRank);
-    const inputChannels = getChannels('inputRC', inputRank);
+    const inputChannels = getChannels('coords', inputRank);
+    const inputCachedInnerDims = getChannels('coords', inputRank).slice(-2);
 
-    let inputInnerDimsString = '', offset = '', input = '', getChannel = '';
+    let inputInnerDimsString = '', offset = '', getChannel = '';
     if(inputRank === 1) {
       getChannel = `float getChannel(vec4 frag, int index) {
         int mod = int(mod(float(index), 2.));
@@ -48,8 +49,6 @@ export class ReshapePackedProgram implements GPGPUProgram {
       offset = `
         float modInputRC = mod(float(inputRC), 2.);
         int offset = modInputRC == 0. ? 0 : 1`;
-
-      input = `getChannel(getA(${inputChannels}), offset)`;
     } else {
       getChannel = `float getChannel(vec4 frag, int index) {
         int mod = int(mod(float(index), 4.));
@@ -67,16 +66,44 @@ export class ReshapePackedProgram implements GPGPUProgram {
         int offset = modInputRC.x == 0. ?
           (modInputRC.y == 0. ? 0 : 1) :
           (modInputRC.y == 0. ? 2 : 3)`;
-
-      input = `getChannel(getA(${inputChannels}), offset)`;
     }
 
-    const mainLoop = getMainLoop(dtype, innerDims, outputShape.slice(-2), inputDtype, input, offset);
+    const mainLoop = getMainLoop(dtype, innerDims, outputShape.slice(-2), inputDtype, offset);
 
     this.userCode = `
       ${getReshapedInputCoords(inputShape)}
       ${getFlatIndex(outputShape)}
       ${getChannel}
+
+      vec4 aCached0 = vec4(0.);
+      vec4 aCached1 = vec4(0.);
+      vec4 aCached2 = vec4(0.);
+
+      ivec2 aCoords0 = ivec2(0);
+      ivec2 aCoords1 = ivec2(0);
+      ivec2 aCoords2 = ivec2(0);
+
+      ivec2 topLeftify(ivec2 rowCol) {
+        return ivec2(rowCol / 2);
+      }
+
+      vec4 getACached0(${inputDtype} coords) {
+        aCoords0 = topLeftify(ivec2(${inputCachedInnerDims.join(',')}));
+        aCached0 = getA(${inputChannels});
+        return aCached0;
+      }
+
+      vec4 getACached1(${inputDtype} coords) {
+        return getA(${inputChannels});
+      }
+
+      vec4 getACached2(${inputDtype} coords) {
+        return getA(${inputChannels});
+      }
+
+      vec4 getACached3(${inputDtype} coords) {
+        return getA(${inputChannels});
+      }
 
       void main() {
         ${dtype} rc = getOutputCoords();
@@ -91,7 +118,7 @@ export class ReshapePackedProgram implements GPGPUProgram {
   }
 }
 
-function getMainLoop(dtype: string, innerDims: string[], shapeInnerDims: number[], inputDtype: string, input: string, offset: string) {
+function getMainLoop(dtype: string, innerDims: string[], shapeInnerDims: number[], inputDtype: string, offset: string) {
   let channels: number, outputCoordRows: string, outputCoordCols: string, inBoundsCheck: string;
   if(dtype === 'int') {
     channels = 2;
@@ -128,7 +155,7 @@ function getMainLoop(dtype: string, innerDims: string[], shapeInnerDims: number[
         inputRC = inputCoordsFromReshapedOutCoords(flatIndex);
         ${offset};
 
-        result[${i}] = ${input};
+        result[${i}] = getChannel(getACached${i}(inputRC), offset);
 
       ${i > 0 ? '}' : ''}
     `;
