@@ -17,7 +17,7 @@
 
 import {GPGPUProgram} from './gpgpu_math';
 import {getCoordsDataType} from './shader_compiler';
-import {getChannels} from '../packing_util';
+import {getChannels, getVecChannels} from '../packing_util';
 import * as shader_util from './shader_compiler_util';
 import * as util from '../../util';
 
@@ -38,7 +38,7 @@ export class ReshapePackedProgram implements GPGPUProgram {
     const inputChannels = getChannels('coords', inputRank);
     const inputCachedInnerDims = getChannels('coords', inputRank).slice(-2);
 
-    let inputInnerDimsString = '', offset = '', getChannel = '';
+    let inputInnerDimsString = '', offset = '', getChannel = '', topLeftifyString = '';
     if(inputRank === 1) {
       getChannel = `float getChannel(vec4 frag, int index) {
         int mod = int(mod(float(index), 2.));
@@ -49,6 +49,8 @@ export class ReshapePackedProgram implements GPGPUProgram {
       offset = `
         float modInputRC = mod(float(inputRC), 2.);
         int offset = modInputRC == 0. ? 0 : 1`;
+
+      topLeftifyString = `return int(coords / 2) * 2;`;
     } else {
       getChannel = `float getChannel(vec4 frag, int index) {
         int mod = int(mod(float(index), 4.));
@@ -66,6 +68,21 @@ export class ReshapePackedProgram implements GPGPUProgram {
         int offset = modInputRC.x == 0. ?
           (modInputRC.y == 0. ? 0 : 1) :
           (modInputRC.y == 0. ? 2 : 3)`;
+
+      if(inputRank === 2) {
+        topLeftifyString = `
+          vec2 rowCol = vec2(${inputCachedInnerDims.join(',')});
+          return ivec2(int(rowCol.x / 2.) * 2, int(rowCol.y / 2.) * 2);
+        `;
+      } else {
+        const inputBatchChannelsJoined = getVecChannels('coords', inputRank - 2).join(',');
+
+        topLeftifyString = `
+          vec2 rowCol = vec2(${inputCachedInnerDims.join(',')});
+          ivec2 topLeft = ivec2(int(rowCol.x / 2.) * 2, int(rowCol.y / 2.) * 2);
+          return ${inputDtype}(${inputBatchChannelsJoined}, topLeft.x, topLeft.y);
+        `;
+      }
     }
 
     const mainLoop = getMainLoop(dtype, innerDims, outputShape.slice(-2), inputDtype, offset);
@@ -75,26 +92,26 @@ export class ReshapePackedProgram implements GPGPUProgram {
       ${getFlatIndex(outputShape)}
       ${getChannel}
 
-      vec4 aCached0 = vec4(0.);
-      vec4 aCached1 = vec4(0.);
-      vec4 aCached2 = vec4(0.);
+      vec4 aCached0;
+      vec4 aCached1;
+      vec4 aCached2;
 
-      ivec2 aCoords0 = ivec2(0);
-      ivec2 aCoords1 = ivec2(0);
-      ivec2 aCoords2 = ivec2(0);
+      ${inputDtype} aCoords0;
+      ${inputDtype} aCoords1;
+      ${inputDtype} aCoords2;
 
-      ivec2 topLeftify(ivec2 rowCol) {
-        return ivec2(rowCol / 2);
+      ${inputDtype} topLeftify(${inputDtype} coords) {
+        ${topLeftifyString}
       }
 
       vec4 getACached0(${inputDtype} coords) {
-        aCoords0 = topLeftify(ivec2(${inputCachedInnerDims.join(',')}));
+        aCoords0 = topLeftify(coords);
         aCached0 = getA(${inputChannels});
         return aCached0;
       }
 
       vec4 getACached1(${inputDtype} coords) {
-        aCoords1 = topLeftify(ivec2(${inputCachedInnerDims.join(',')}));
+        aCoords1 = topLeftify(coords);
         if(aCoords1 == aCoords0) {
           aCached1 = aCached0;
         } else {
@@ -104,7 +121,7 @@ export class ReshapePackedProgram implements GPGPUProgram {
       }
 
       vec4 getACached2(${inputDtype} coords) {
-        aCoords2 = topLeftify(ivec2(${inputCachedInnerDims.join(',')}));
+        aCoords2 = topLeftify(coords);
         if(aCoords2 == aCoords0) {
           aCached2 = aCached0;
         } else if(aCoords2 == aCoords1) {
@@ -116,6 +133,16 @@ export class ReshapePackedProgram implements GPGPUProgram {
       }
 
       vec4 getACached3(${inputDtype} coords) {
+        ${inputDtype} aCoords3 = topLeftify(coords);
+
+        if(aCoords3 == aCoords0) {
+          return aCached0;
+        } else if(aCoords3 == aCoords1) {
+          return aCached1;
+        } else if(aCoords3 == aCoords2) {
+          return aCached2;
+        }
+
         return getA(${inputChannels});
       }
 
