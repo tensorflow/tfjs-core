@@ -32,7 +32,7 @@ describe('MPRandGauss', () => {
     expect(isFloat(rand.nextValue())).toBe(true);
   });
 
-  it('should handle create a mean/stdv of float32 numbers', () => {
+  it('should handle a mean/stdv of float32 numbers', () => {
     const rand =
         new MPRandGauss(0, 1.5, 'float32', false /* truncated */, SEED);
     const values = [];
@@ -49,7 +49,7 @@ describe('MPRandGauss', () => {
     expect(isFloat(rand.nextValue())).toBe(false);
   });
 
-  it('should handle create a mean/stdv of int32 numbers', () => {
+  it('should handle a mean/stdv of int32 numbers', () => {
     const rand = new MPRandGauss(0, 2, 'int32', false /* truncated */, SEED);
     const values = [];
     const size = 10000;
@@ -78,7 +78,7 @@ describe('RandGamma', () => {
     expect(isFloat(rand.nextValue())).toBe(true);
   });
 
-  it('should handle create an alpha/beta of float32 numbers', () => {
+  it('should handle an alpha/beta of float32 numbers', () => {
     const rand = new RandGamma(2, 2, 'float32', SEED);
     const values = [];
     const size = 10000;
@@ -93,7 +93,7 @@ describe('RandGamma', () => {
     expect(isFloat(rand.nextValue())).toBe(false);
   });
 
-  it('should handle create an alpha/beta of int32 numbers', () => {
+  it('should handle an alpha/beta of int32 numbers', () => {
     const rand = new RandGamma(2, 2, 'int32', SEED);
     const values = [];
     const size = 10000;
