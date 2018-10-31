@@ -814,6 +814,19 @@ function qrFullBackpropKernel(
  * q.dot(r).print(); // should be nearly [[1, 2], [3, 4]];
  * ```
  *
+ * ```js
+ * const a = tf.tensor2d([[1, 2], [3, 4]]);
+ * let [q, r] = tf.linalg.qr(a);
+ * console.log('Q');
+ * q.print();
+ * console.log('R');
+ * r.print();
+ * console.log('Orthogonalized');
+ * q.dot(q.transpose()).print()  // should be nearly the identity matrix.
+ * console.log('Reconstructed');
+ * q.dot(r).print(); // should be nearly [[1, 2], [3, 4]];
+ * ```
+ *
  * @param x The `Tensor` to be QR-decomposed. Must have rank >= 2. Suppose
  *   it has the shape `[..., M, N]`.
  * @param fullMatrices An optional boolean parameter. Defaults to `false`.
