@@ -505,7 +505,10 @@ export class MathBackendWebGL implements KernelBackend {
           BEFORE_PAGING_CONSTANT;
     }
     this.textureManager = new TextureManager(this.gpgpu);
-    this.cpuBackend = ENV.findBackend('cpu');
+
+    if (ENV.get('WEBGL_CPU_FORWARD')) {
+      this.cpuBackend = ENV.findBackend('cpu');
+    }
   }
 
   /*
