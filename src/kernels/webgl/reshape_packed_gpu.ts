@@ -150,46 +150,39 @@ export class ReshapePackedProgram implements GPGPUProgram {
 function getMainLoop(
     dtype: string, innerDims: string[], shapeInnerDims: number[],
     inputDtype: string, inputRCInnerDims: string) {
-  let channels: number, outputCoordRows: string, outputCoordCols: string,
+  let channels: number, outCoordRow: string, outCoordCol: string,
       inBoundsCheck: string;
   if (dtype === 'int') {
     channels = 2;
-    outputCoordCols = innerDims[0];
-    inBoundsCheck = `${outputCoordCols} < ${shapeInnerDims[0]}`;
+    outCoordCol = innerDims[0];
+    inBoundsCheck = `${outCoordCol} < ${shapeInnerDims[0]}`;
   } else {
     channels = 4;
-    outputCoordRows = innerDims[0];
-    outputCoordCols = innerDims[1];
-    inBoundsCheck = `${outputCoordRows} < ${shapeInnerDims[0]} && ${
-        outputCoordCols} < ${shapeInnerDims[1]}`;
+    outCoordRow = innerDims[0];
+    outCoordCol = innerDims[1];
+    inBoundsCheck = `${outCoordRow} < ${shapeInnerDims[0]} && ${
+        outCoordCol} < ${shapeInnerDims[1]}`;
   }
 
-  let result = `
-    int flatIndex;
-    ${inputDtype} inputRC;
-    ${dtype} thisRC;
-  `;
-
+  let result = `${dtype} thisRC;`;
   for (let i = 0; i < channels; i++) {
     let thisRC = `thisRC = rc;`;
     if (i % 2 === 1) {
-      thisRC += `${outputCoordCols} += 1;`;
+      thisRC += `${outCoordCol} += 1;`;
     }
     if (i > 1) {
-      thisRC += `${outputCoordRows} += 1;`;
+      thisRC += `${outCoordRow} += 1;`;
     }
 
     result += `
       ${thisRC}
       ${i > 0 ? `if(${inBoundsCheck}){` : ''}
+        int flatIndex = getFlatIndex(thisRC);
 
-        flatIndex = getFlatIndex(thisRC);
-
-        inputRC = inputCoordsFromReshapedOutCoords(flatIndex);
+        ${inputDtype} inputRC = inputCoordsFromReshapedOutCoords(flatIndex);
         vec2 inputRCInnerDims = ${inputRCInnerDims};
 
         result[${i}] = getChannel(getACached${i}(inputRC), inputRCInnerDims);
-
       ${i > 0 ? '}' : ''}
     `;
   }
@@ -212,7 +205,7 @@ function getFlatIndex(shape: number[]): string {
   }
 
   const strides = shader_util.getStrides(shape);
-  let coords =
+  const coords =
       ['x', 'y', 'z', 'w', 'u', 'v'].slice(0, rank).map(d => `coords.${d}`);
   const dotCoordsWithStrides =
       shader_util.dotify(coords, strides.map(d => d.toString()).concat(['1.']));
@@ -226,10 +219,7 @@ function getFlatIndex(shape: number[]): string {
 
 function getReshapedInputCoords(shape: number[]): string {
   const rank = shape.length;
-  util.assert(
-      rank < 7,
-      `Packed ${rank}-D reshaping` +
-          ` is not yet supported`);
+  util.assert(rank < 7, `Packed ${rank}-D reshaping is not yet supported`);
 
   const funcName = 'inputCoordsFromReshapedOutCoords';
 
