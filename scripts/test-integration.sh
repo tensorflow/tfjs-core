@@ -32,7 +32,7 @@ function test () {
 }
 
 
-readarray -t files_changed <<<"$(git diff --name-only HEAD HEAD~1)"
+readarray -t files_changed <<< "$(git diff --name-only $TRAVIS_COMMIT_RANGE)"
 
 for file in "${files_changed[@]}"
 do
