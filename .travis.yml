@@ -8,8 +8,9 @@ script:
 cache: yarn
 git:
   depth: 5
-env: TO_TEST=regular
-env: TO_TEST=integration
+env:
+  - TO_TEST=regular
+  - TO_TEST=integration
 notifications:
   email:
     recipients:
