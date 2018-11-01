@@ -20,7 +20,18 @@ import {describeWithFlags} from '../../jasmine_util';
 import {expectArraysClose, WEBGL_ENVS} from '../../test_util';
 
 describeWithFlags('expensive reshape', WEBGL_ENVS, () => {
-  const cValues = [46, 52, 58, 64, 70, 100, 115, 130, 145, 160, 154, 178, 202, 226, 250];
+  const webglLazilyUnpackFlagSaved = tf.ENV.get('WEBGL_LAZILY_UNPACK');
+
+  beforeAll(() => {
+    tf.ENV.set('WEBGL_LAZILY_UNPACK', true);
+  });
+
+  afterAll(() => {
+    tf.ENV.set('WEBGL_LAZILY_UNPACK', webglLazilyUnpackFlagSaved);
+  });
+
+  const cValues =
+      [46, 52, 58, 64, 70, 100, 115, 130, 145, 160, 154, 178, 202, 226, 250];
   let c: tf.Tensor;
 
   beforeEach(() => {
