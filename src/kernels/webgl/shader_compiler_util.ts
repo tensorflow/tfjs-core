@@ -25,7 +25,7 @@ export function getStrides(shape: number[]): number[] {
 }
 
 export function getLogicalCoordinatesFromFlatIndex(
-    coords: string[], shape: number[], index: string = 'index'): string {
+    coords: string[], shape: number[], index = 'index'): string {
   const strides = getStrides(shape);
   return strides
       .map((stride, i) => {

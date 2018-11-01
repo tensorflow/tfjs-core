@@ -160,9 +160,9 @@ function getPackedOutputSamplingSnippet(
           outShape as [number, number, number, number, number, number],
           outTexShape);
     default:
-      throw new Error(`${
-          outShape
-              .length}-D packed output coordinate fetching is not yet supported`);
+      throw new Error(
+          `${outShape.length}-D packed output ` +
+          `coordinate fetching is not yet supported`);
   }
 }
 
@@ -275,9 +275,9 @@ vec2 UVfrom5D(int texNumR, int texNumC, int stride0,
   int texC = index - texR * texNumC;
   return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
 }
-vec2 packedUVfrom5D(int texNumR, int texNumC, int texelsInBatch3, int texelsInBatch2,
-    int texelsInBatch, int texelsInLogicalRow, int b3, int b2, int b,
-    int row, int col) {
+vec2 packedUVfrom5D(int texNumR, int texNumC, int texelsInBatch3,
+    int texelsInBatch2, int texelsInBatch, int texelsInLogicalRow,
+    int b3, int b2, int b, int row, int col) {
   int index = b3 * texelsInBatch3 + b2 * texelsInBatch2 + b * texelsInBatch +
     (row / 2) * texelsInLogicalRow + (col / 2);
   int texR = index / texNumC;
@@ -297,11 +297,12 @@ vec2 UVfrom6D(int texNumR, int texNumC, int stride0,
   int texC = index - texR * texNumC;
   return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
 }
-vec2 packedUVfrom6D(int texNumR, int texNumC, int texelsInBatch4, int texelsInBatch3, int texelsInBatch2,
-    int texelsInBatch, int texelsInLogicalRow, int b4, int b3, int b2, int b,
+vec2 packedUVfrom6D(int texNumR, int texNumC, int texelsInBatch4,
+    int texelsInBatch3, int texelsInBatch2, int texelsInBatch,
+    int texelsInLogicalRow, int b4, int b3, int b2, int b,
     int row, int col) {
-  int index = b4 * texelsInBatch4 + b3 * texelsInBatch3 + b2 * texelsInBatch2 + b * texelsInBatch +
-    (row / 2) * texelsInLogicalRow + (col / 2);
+  int index = b4 * texelsInBatch4 + b3 * texelsInBatch3 + b2 * texelsInBatch2 +
+    b * texelsInBatch + (row / 2) * texelsInLogicalRow + (col / 2);
   int texR = index / texNumC;
   int texC = index - texR * texNumC;
   return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);

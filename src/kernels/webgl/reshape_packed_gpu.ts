@@ -69,7 +69,7 @@ export class ReshapePackedProgram implements GPGPUProgram {
     const mainLoop = getMainLoop(
         dtype, innerDims, outputShape.slice(-2), inputDtype, inputRCInnerDims);
 
-    let coordsInitialValue: string = '-1';
+    let coordsInitialValue = '-1';
     for (let i = 0; i < inputRank - 1; i++) {
       coordsInitialValue += ',-1';
     }
