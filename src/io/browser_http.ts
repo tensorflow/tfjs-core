@@ -186,7 +186,7 @@ export class BrowserHTTPRequest implements IOHandler {
   private async loadWeights(weightsManifest: WeightsManifestConfig):
       Promise<[WeightsManifestEntry[], ArrayBuffer]> {
     let pathPrefix = this.weightPathPrefix;
-    if (!pathPrefix) {
+    if (pathPrefix == null) {
       const weightPath = Array.isArray(this.path) ? this.path[1] : this.path;
 
       pathPrefix = weightPath.substring(0, weightPath.lastIndexOf('/'));
@@ -194,17 +194,17 @@ export class BrowserHTTPRequest implements IOHandler {
         pathPrefix = pathPrefix + '/';
       }
     }
+    const weightSpecs = [];
+    for (const entry of weightsManifest) {
+      weightSpecs.push(...entry.weights);
+    }
+
     const fetchURLs: string[] = [];
     weightsManifest.forEach(weightsGroup => {
       weightsGroup.paths.forEach(path => {
         fetchURLs.push(pathPrefix + path);
       });
     });
-
-    const weightSpecs = [];
-    for (const entry of weightsManifest) {
-      weightSpecs.push(...entry.weights);
-    }
 
     return [
       weightSpecs,
