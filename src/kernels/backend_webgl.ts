@@ -35,6 +35,7 @@ import {DataId, Scalar, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, 
 import {DataType, DataTypeMap, Rank, RecursiveArray, ShapeMap, sumOutType, TypedArray, upcastType} from '../types';
 import * as util from '../util';
 import {getTypedArrayFromDType, sizeFromShape} from '../util';
+
 import {DataMover, DataStorage, KernelBackend} from './backend';
 import * as backend_util from './backend_util';
 import {mergeRealAndImagArrays} from './complex_util';
@@ -80,6 +81,7 @@ import {PackProgram} from './webgl/pack_gpu';
 import {PadProgram} from './webgl/pad_gpu';
 import {Pool2DProgram} from './webgl/pool_gpu';
 import {ReduceProgram} from './webgl/reduce_gpu';
+import {ReshapePackedProgram} from './webgl/reshape_packed_gpu';
 import {ResizeBilinearBackpropProgram} from './webgl/resize_bilinear_backprop_gpu';
 import {ResizeBilinearProgram} from './webgl/resize_bilinear_gpu';
 import {ResizeNearestNeigborBackpropProgram} from './webgl/resize_nearest_neighbor_backprop_gpu';
@@ -97,7 +99,6 @@ import {TransposeProgram} from './webgl/transpose_gpu';
 import * as unary_op from './webgl/unaryop_gpu';
 import {UnaryOpProgram} from './webgl/unaryop_gpu';
 import {UnpackProgram} from './webgl/unpack_gpu';
-import {ReshapePackedProgram} from './webgl/reshape_packed_gpu';
 import * as webgl_util from './webgl/webgl_util';
 import {whereImpl} from './where_impl';
 
@@ -609,9 +610,13 @@ export class MathBackendWebGL implements KernelBackend {
       const program = new MatMulPackedProgram(
           aSqueezed.shape, bSqueezed.shape, [outerShapeA, outerShapeB],
           transposeA, transposeB);
-      const result = this.compileAndRun(
+      let result = this.compileAndRun(
           program, [aSqueezed, bSqueezed],
           this.makePackedTensor<Tensor2D>(program.outputShape));
+
+      if (ENV.get('WEBGL_LAZILY_UNPACK') === false) {
+        result = this.unpackTensor(result);
+      }
 
       return result.reshape([1, result.shape[0], result.shape[1]]);
     } else {
@@ -1377,9 +1382,13 @@ export class MathBackendWebGL implements KernelBackend {
     const matmulProgram = new MatMulPackedProgram(
         im2Col.shape, w2Row.shape, [numCols, convInfo.outChannels], true,
         false);
-    const product = this.compileAndRun(
+    let product = this.compileAndRun(
         matmulProgram, [im2Col, w2Row],
         this.makePackedTensor<Tensor2D>(matmulProgram.outputShape));
+
+    if (ENV.get('WEBGL_LAZILY_UNPACK') === false) {
+      product = this.unpackTensor(product);
+    }
 
     return product.reshape([1, outHeight, outWidth, convInfo.outChannels]);
   }
@@ -1463,7 +1472,8 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   reshape<R extends Rank>(x: Tensor, shape: ShapeMap[R]): Tensor<R> {
-    if(this.texData.get(x.dataId).isPacked) {
+    if (this.texData.get(x.dataId).isPacked &&
+        util.cheap2x2Reshape(x.shape, shape)) {
       x = this.packedReshape(x, shape);
     }
     return backend_util.reshapeTensor(x, shape);
@@ -1659,15 +1669,16 @@ export class MathBackendWebGL implements KernelBackend {
     return packedTensor as T;
   }
 
+  private unpackTensor<T extends Tensor>(input: T): T {
+    const program = new UnpackProgram(input.shape);
+    return this.compileAndRun(program, [input]);
+  }
+
   private packedReshape<T extends Tensor>(input: T, afterShape: number[]): T {
-    if(util.cheap2x2Reshape(input.shape, afterShape)) {
-      return input;
-    }
-
-    console.log("EXPENSIVE PACKED RESHAPE", input.shape, afterShape);
-
+    console.warn(`Expensive reshape: ${input.shape} to ${afterShape}`);
     const program = new ReshapePackedProgram(afterShape, input.shape);
-    return this.compileAndRun(program, [input], this.makePackedTensor(afterShape));
+    return this.compileAndRun(
+        program, [input], this.makePackedTensor(afterShape));
   }
 
   public compileAndRun<
