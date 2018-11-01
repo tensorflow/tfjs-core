@@ -20,7 +20,7 @@ export function getVecChannels(name: string, rank: number): string[] {
 }
 
 export function getChannels(name: string, rank: number): string[] {
-  if(rank === 1) {
+  if (rank === 1) {
     return [name];
   }
   return getVecChannels(name, rank);

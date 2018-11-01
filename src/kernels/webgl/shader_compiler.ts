@@ -60,7 +60,7 @@ export function makeShader(
     floatTextureSetOutputSnippet = FLOAT_TEXTURE_SET_R_SNIPPET;
   }
 
-  if(usesPackedTextures) {
+  if (usesPackedTextures) {
     shaderPrefix += SHADER_PACKED_PREFIX;
   }
 
@@ -147,7 +147,8 @@ function getPackedOutputSamplingSnippet(
     case 2:
       return getOutputPacked2DCoords(outShape as [number, number], outTexShape);
     case 3:
-      return getOutputPacked3DCoords(outShape as [number, number, number], outTexShape);
+      return getOutputPacked3DCoords(
+          outShape as [number, number, number], outTexShape);
     case 4:
       return getOutputPacked4DCoords(
           outShape as [number, number, number, number], outTexShape);
@@ -156,10 +157,12 @@ function getPackedOutputSamplingSnippet(
           outShape as [number, number, number, number, number], outTexShape);
     case 6:
       return getOutputPacked6DCoords(
-          outShape as [number, number, number, number, number, number], outTexShape);
+          outShape as [number, number, number, number, number, number],
+          outTexShape);
     default:
-      throw new Error(
-          `${outShape.length}-D packed output coordinate fetching is not yet supported`);
+      throw new Error(`${
+          outShape
+              .length}-D packed output coordinate fetching is not yet supported`);
   }
 }
 
@@ -464,8 +467,7 @@ function getOutput1DCoords(
 }
 
 function getOutputPacked3DCoords(
-    shape: [number, number, number],
-    texShape: [number, number]): string {
+    shape: [number, number, number], texShape: [number, number]): string {
   const packedTexShape =
       [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
   const texelsInLogicalRow = Math.ceil(shape[2] / 2);
@@ -490,7 +492,8 @@ function getOutputPacked3DCoords(
 
 function getOutput3DCoords(
     shape: [number, number, number], texShape: [number, number]): string {
-  const coordsFromIndexSnippet = shader_util.getLogicalCoordinatesFromFlatIndex(['r', 'c', 'd'], shape);
+  const coordsFromIndexSnippet =
+      shader_util.getLogicalCoordinatesFromFlatIndex(['r', 'c', 'd'], shape);
 
   return `
     ivec3 getOutputCoords() {
@@ -536,7 +539,8 @@ function getOutputPacked4DCoords(
 function getOutput4DCoords(
     shape: [number, number, number, number],
     texShape: [number, number]): string {
-  const coordsFromIndexSnippet = shader_util.getLogicalCoordinatesFromFlatIndex(['r', 'c', 'd', 'd2'], shape);
+  const coordsFromIndexSnippet = shader_util.getLogicalCoordinatesFromFlatIndex(
+      ['r', 'c', 'd', 'd2'], shape);
 
   return `
     ivec4 getOutputCoords() {
@@ -552,7 +556,8 @@ function getOutput4DCoords(
 function getOutput5DCoords(
     shape: [number, number, number, number, number],
     texShape: [number, number]): string {
-  const coordsFromIndexSnippet = shader_util.getLogicalCoordinatesFromFlatIndex(['r', 'c', 'd', 'd2', 'd3'], shape);
+  const coordsFromIndexSnippet = shader_util.getLogicalCoordinatesFromFlatIndex(
+      ['r', 'c', 'd', 'd2', 'd3'], shape);
 
   return `
     ivec5 getOutputCoords() {
@@ -606,7 +611,8 @@ function getOutputPacked5DCoords(
 function getOutput6DCoords(
     shape: [number, number, number, number, number, number],
     texShape: [number, number]): string {
-  const coordsFromIndexSnippet = shader_util.getLogicalCoordinatesFromFlatIndex(['r', 'c', 'd', 'd2', 'd3', 'd4'], shape);
+  const coordsFromIndexSnippet = shader_util.getLogicalCoordinatesFromFlatIndex(
+      ['r', 'c', 'd', 'd2', 'd3', 'd4'], shape);
 
   return `
     ivec6 getOutputCoords() {
@@ -1186,7 +1192,8 @@ function getPackedSampler6D(inputInfo: InputInfo): string {
   return `
     vec4 ${funcName}(int b4, int b3, int b2, int b, int row, int col) {
       vec2 uv = packedUVfrom6D(
-        ${texNumR}, ${texNumC}, ${texelsInBatch4}, ${texelsInBatch3}, ${texelsInBatch2},
+        ${texNumR}, ${texNumC}, ${texelsInBatch4}, ${texelsInBatch3}, ${
+      texelsInBatch2},
         ${texelsInBatch}, ${valuesPerRow}, b4, b3, b2, b, row, col);
       return texture2D(${texName}, uv);
     }

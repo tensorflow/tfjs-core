@@ -276,11 +276,12 @@ function divisibleBy4(n: number) {
 export function cheap4x1Reshape(shape1: number[], shape2: number[]): boolean {
   let inner1 = shape1[shape1.length - 1], inner2 = shape2[shape2.length - 1];
 
-  if(!shape1.length || !shape2.length) {
+  if (!shape1.length || !shape2.length) {
     return true;
   }
 
-  if((inner1 === inner2) || (divisibleBy4(inner1) && divisibleBy4(inner2)) || (inner1 < 4 && inner2 < 4)) {
+  if ((inner1 === inner2) || (divisibleBy4(inner1) && divisibleBy4(inner2)) ||
+      (inner1 < 4 && inner2 < 4)) {
     return true;
   }
 
@@ -295,31 +296,32 @@ export function cheap2x2Reshape(shape1: number[], shape2: number[]): boolean {
   const inner1 = shape1.slice(-2);
   const inner2 = shape2.slice(-2);
 
-  if(arraysEqual(inner1, inner2)) {
+  if (arraysEqual(inner1, inner2)) {
     return true;
   }
 
-  if(!inner1.length || !inner2.length) { // scalar
+  if (!inner1.length || !inner2.length) {  // scalar
     return true;
   }
 
-  if(inner1[0] === 0 || inner1[1] === 0 || inner2[0] === 0 || inner2[1] === 0) {
+  if (inner1[0] === 0 || inner1[1] === 0 || inner2[0] === 0 ||
+      inner2[1] === 0) {
     return true;
   }
 
-  if(inner1.length !== inner2.length) {
-    if(inner1.length === 2 && inner1[0] === 1) {
+  if (inner1.length !== inner2.length) {
+    if (inner1.length === 2 && inner1[0] === 1) {
       return true;
     }
-    if(inner2.length === 2 && inner2[0] === 1) {
+    if (inner2.length === 2 && inner2[0] === 1) {
       return true;
     }
   } else {
-    if(isEven(inner1[0]) && isEven(inner2[0])) {
-      if(isEven(inner1[1]) && isEven(inner2[1])) {
+    if (isEven(inner1[0]) && isEven(inner2[0])) {
+      if (isEven(inner1[1]) && isEven(inner2[1])) {
         return true;
       }
-      if(inner1[1] === inner2[1]) {
+      if (inner1[1] === inner2[1]) {
         return true;
       }
     }
