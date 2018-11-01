@@ -27,8 +27,8 @@ yarn test-travis --browsers=bs_safari_mac --backend webgl
 # already downloaded binary.
 npm-run-all -p -c --aggregate-output \
   "test-travis --browsers=bs_safari_mac --features '{\"HAS_WEBGL\": false}' --backend cpu" \
-  "test-travis --browsers=bs_ios_11 --backend webgl" \
+  "test-travis --browsers=bs_ios_11 --features '{\"WEBGL_CPU_FORWARD\": false}' --backend webgl" \
   "test-travis --browsers=bs_ios_11 --features '{\"HAS_WEBGL\": false}' --backend cpu" \
-  "test-travis --browsers=bs_firefox_mac --features '{\"WEBGL_CPU_FORWARD\": false}'" \
-  "test-travis --browsers=bs_chrome_mac --features '{\"WEBGL_CPU_FORWARD\": false}'" \
-  "test-travis --browsers=bs_chrome_mac --features '{\"WEBGL_CPU_FORWARD\": true}'"
+  "test-travis --browsers=bs_firefox_mac" \
+  "test-travis --browsers=bs_chrome_mac" \
+  "test-travis --browsers=bs_chrome_mac --features '{\"WEBGL_CPU_FORWARD\": true}' --backend webgl"
