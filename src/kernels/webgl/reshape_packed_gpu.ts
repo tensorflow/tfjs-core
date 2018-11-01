@@ -15,11 +15,12 @@
  * =============================================================================
  */
 
+import * as util from '../../util';
+import {getChannels, getVecChannels} from '../packing_util';
+
 import {GPGPUProgram} from './gpgpu_math';
 import {getCoordsDataType} from './shader_compiler';
-import {getChannels, getVecChannels} from '../packing_util';
 import * as shader_util from './shader_compiler_util';
-import * as util from '../../util';
 
 export class ReshapePackedProgram implements GPGPUProgram {
   variableNames = ['A'];
@@ -39,37 +40,42 @@ export class ReshapePackedProgram implements GPGPUProgram {
     const inputCachedInnerDims = getChannels('coords', inputRank).slice(-2);
 
     let inputRCInnerDims = '', topLeftifyString = '';
-    if(inputRank === 1) {
+    if (inputRank === 1) {
       inputRCInnerDims = `vec2 inputRCInnerDims = vec2(0, inputRC);`;
 
       topLeftifyString = `return int(coords / 2) * 2;`;
     } else {
       const inputTopLeftInnerDims = getChannels('inputRC', inputRank).slice(-2);
       inputRCInnerDims = `
-        vec2 inputRCInnerDims = vec2(float(${inputTopLeftInnerDims[0]}), float(${inputTopLeftInnerDims[1]}));
+        vec2 inputRCInnerDims = vec2(float(${
+          inputTopLeftInnerDims[0]}), float(${inputTopLeftInnerDims[1]}));
       `;
 
-      if(inputRank === 2) {
+      if (inputRank === 2) {
         topLeftifyString = `
           vec2 rowCol = vec2(${inputCachedInnerDims.join(',')});
           return ivec2(int(rowCol.x / 2.) * 2, int(rowCol.y / 2.) * 2);
         `;
       } else {
-        const inputBatchChannelsJoined = getVecChannels('coords', inputRank - 2).join(',');
+        const inputBatchChannelsJoined =
+            getVecChannels('coords', inputRank - 2).join(',');
 
         topLeftifyString = `
           vec2 rowCol = vec2(${inputCachedInnerDims.join(',')});
           ivec2 topLeft = ivec2(int(rowCol.x / 2.) * 2, int(rowCol.y / 2.) * 2);
-          return ${inputDtype}(${inputBatchChannelsJoined}, topLeft.x, topLeft.y);
+          return ${inputDtype}(${
+            inputBatchChannelsJoined}, topLeft.x, topLeft.y);
         `;
       }
     }
 
-    const mainLoop = getMainLoop(dtype, innerDims, outputShape.slice(-2), inputDtype, inputRCInnerDims);
+    const mainLoop = getMainLoop(
+        dtype, innerDims, outputShape.slice(-2), inputDtype, inputRCInnerDims);
 
-    // initializing coords to -1 so they will not be matched unless cached entry was created
+    // initializing coords to -1 so they will not be matched unless cached entry
+    // was created
     const coordsInitialValue: number[] = [];
-    for(let i=0; i<inputRank; i++) {
+    for (let i = 0; i < inputRank; i++) {
       coordsInitialValue.push(-1);
     }
     const coordsInitialValueJoined = coordsInitialValue.join(',');
@@ -145,9 +151,12 @@ export class ReshapePackedProgram implements GPGPUProgram {
   }
 }
 
-function getMainLoop(dtype: string, innerDims: string[], shapeInnerDims: number[], inputDtype: string, inputRCInnerDims: string) {
-  let channels: number, outputCoordRows: string, outputCoordCols: string, inBoundsCheck: string;
-  if(dtype === 'int') {
+function getMainLoop(
+    dtype: string, innerDims: string[], shapeInnerDims: number[],
+    inputDtype: string, inputRCInnerDims: string) {
+  let channels: number, outputCoordRows: string, outputCoordCols: string,
+      inBoundsCheck: string;
+  if (dtype === 'int') {
     channels = 2;
     outputCoordCols = innerDims[0];
     inBoundsCheck = `${outputCoordCols} < ${shapeInnerDims[0]}`;
@@ -155,7 +164,8 @@ function getMainLoop(dtype: string, innerDims: string[], shapeInnerDims: number[
     channels = 4;
     outputCoordRows = innerDims[0];
     outputCoordCols = innerDims[1];
-    inBoundsCheck = `${outputCoordRows} < ${shapeInnerDims[0]} && ${outputCoordCols} < ${shapeInnerDims[1]}`;
+    inBoundsCheck = `${outputCoordRows} < ${shapeInnerDims[0]} && ${
+        outputCoordCols} < ${shapeInnerDims[1]}`;
   }
 
   let result = `
@@ -164,12 +174,12 @@ function getMainLoop(dtype: string, innerDims: string[], shapeInnerDims: number[
     ${dtype} thisRC;
   `;
 
-  for(let i=0; i<channels; i++) {
+  for (let i = 0; i < channels; i++) {
     let thisRC = `thisRC = rc;`;
-    if(i % 2 === 1) {
+    if (i % 2 === 1) {
       thisRC += `${outputCoordCols} += 1;`;
     }
-    if(i > 1) {
+    if (i > 1) {
       thisRC += `${outputCoordRows} += 1;`;
     }
 
@@ -197,7 +207,7 @@ function getFlatIndex(shape: number[]): string {
 
   const funcName = 'getFlatIndex';
 
-  if(rank === 1) {
+  if (rank === 1) {
     return `
       int ${funcName}(int coords) {
         return coords;
@@ -206,8 +216,10 @@ function getFlatIndex(shape: number[]): string {
   }
 
   const strides = shader_util.getStrides(shape);
-  let coords = ['x', 'y', 'z', 'w', 'u', 'v'].slice(0, rank).map(d => `coords.${d}`);
-  const dotCoordsWithStrides = shader_util.dotify(coords, strides.map(d => d.toString()).concat(['1.']));
+  let coords =
+      ['x', 'y', 'z', 'w', 'u', 'v'].slice(0, rank).map(d => `coords.${d}`);
+  const dotCoordsWithStrides =
+      shader_util.dotify(coords, strides.map(d => d.toString()).concat(['1.']));
 
   return `
     int ${funcName}(ivec${rank} coords) {
@@ -218,12 +230,14 @@ function getFlatIndex(shape: number[]): string {
 
 function getReshapedInputCoords(shape: number[]): string {
   const rank = shape.length;
-  util.assert(rank < 7, `Packed ${rank}-D reshaping` +
+  util.assert(
+      rank < 7,
+      `Packed ${rank}-D reshaping` +
           ` is not yet supported`);
 
   const funcName = 'inputCoordsFromReshapedOutCoords';
 
-  if(rank === 1) {
+  if (rank === 1) {
     return `
       int ${funcName}(int index) {
         return index;
@@ -232,7 +246,8 @@ function getReshapedInputCoords(shape: number[]): string {
   }
 
   const dims = ['r', 'c', 'd', 'd2', 'd3', 'd4'].slice(0, rank);
-  const coordsFromIndexSnippet = shader_util.getLogicalCoordinatesFromFlatIndex(dims, shape);
+  const coordsFromIndexSnippet =
+      shader_util.getLogicalCoordinatesFromFlatIndex(dims, shape);
 
   return `
     ivec${rank} ${funcName}(int index) {
