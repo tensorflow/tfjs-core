@@ -37,7 +37,6 @@ import * as util from '../util';
 import {getTypedArrayFromDType, sizeFromShape} from '../util';
 
 import {DataMover, DataStorage, KernelBackend} from './backend';
-import {MathBackendCPU} from './backend_cpu';
 import * as backend_util from './backend_util';
 import {mergeRealAndImagArrays} from './complex_util';
 import {nonMaxSuppressionImpl} from './non_max_suppression_impl';
@@ -130,6 +129,7 @@ export interface TensorHandle {
   dtype: DataType;
 }
 
+const CPU_HANDOFF_SIZE_THRESHOLD = 10;
 // Empirically determined constant used to decide the number of bytes on GPU
 // before we start paging. The bytes are this constant * screen area * dpi.
 const BEFORE_PAGING_CONSTANT = 300;
@@ -505,14 +505,22 @@ export class MathBackendWebGL implements KernelBackend {
           BEFORE_PAGING_CONSTANT;
     }
     this.textureManager = new TextureManager(this.gpgpu);
-    this.cpuBackend = new MathBackendCPU();
+    this.cpuBackend = ENV.findBackend('cpu');
   }
 
-  private shouldExecuteOnCPU(inputs: Tensor[], sizeThreshold = 10):
-      boolean {
-    return inputs.every(
-        input => this.texData.get(input.dataId).texture == null &&
-            util.sizeFromShape(input.shape) < sizeThreshold);
+  /*
+  This is a heuristic for determing when it would be faster to execute a kernel
+  on the CPU. WebGL kernels opt into running this check and forwarding when
+  appropriate.
+  TODO(https://github.com/tensorflow/tfjs/issues/872): Develop a more
+  sustainable strategy for optimizing backend execution of ops.
+   */
+  private shouldExecuteOnCPU(
+      inputs: Tensor[], sizeThreshold = CPU_HANDOFF_SIZE_THRESHOLD): boolean {
+    return this.cpuBackend != null &&
+        inputs.every(
+            input => this.texData.get(input.dataId).texture == null &&
+                input.size < sizeThreshold);
   }
 
   getGPGPUContext(): GPGPUContext {
