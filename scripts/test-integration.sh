@@ -14,9 +14,6 @@
 # limitations under the License.
 # =============================================================================
 
-set -e
-
-
 function test () {
   echo '######################'
   echo 'version.ts was modified.'
