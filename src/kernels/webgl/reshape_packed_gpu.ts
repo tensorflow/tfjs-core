@@ -38,16 +38,15 @@ export class ReshapePackedProgram implements GPGPUProgram {
     const inputChannels = getChannels('coords', inputRank);
     const inputCachedInnerDims = getChannels('coords', inputRank).slice(-2);
 
-    let inputInnerDimsString = '', offset = '', topLeftifyString = '';
+    let inputRCInnerDims = '', topLeftifyString = '';
     if(inputRank === 1) {
-      offset = `vec2 inputRCInnerDims = vec2(0, inputRC);`;
+      inputRCInnerDims = `vec2 inputRCInnerDims = vec2(0, inputRC);`;
 
       topLeftifyString = `return int(coords / 2) * 2;`;
     } else {
       const inputTopLeftInnerDims = getChannels('inputRC', inputRank).slice(-2);
-      inputInnerDimsString = `vec2(float(${inputTopLeftInnerDims[0]}), float(${inputTopLeftInnerDims[1]}))`;
-      offset = `
-        vec2 inputRCInnerDims = ${inputInnerDimsString};
+      inputRCInnerDims = `
+        vec2 inputRCInnerDims = vec2(float(${inputTopLeftInnerDims[0]}), float(${inputTopLeftInnerDims[1]}));
       `;
 
       if(inputRank === 2) {
@@ -66,7 +65,7 @@ export class ReshapePackedProgram implements GPGPUProgram {
       }
     }
 
-    const mainLoop = getMainLoop(dtype, innerDims, outputShape.slice(-2), inputDtype, offset);
+    const mainLoop = getMainLoop(dtype, innerDims, outputShape.slice(-2), inputDtype, inputRCInnerDims);
 
     // initializing coords to -1 so they will not be matched unless cached entry was created
     const coordsInitialValue: number[] = [];
@@ -146,7 +145,7 @@ export class ReshapePackedProgram implements GPGPUProgram {
   }
 }
 
-function getMainLoop(dtype: string, innerDims: string[], shapeInnerDims: number[], inputDtype: string, offset: string) {
+function getMainLoop(dtype: string, innerDims: string[], shapeInnerDims: number[], inputDtype: string, inputRCInnerDims: string) {
   let channels: number, outputCoordRows: string, outputCoordCols: string, inBoundsCheck: string;
   if(dtype === 'int') {
     channels = 2;
@@ -181,7 +180,7 @@ function getMainLoop(dtype: string, innerDims: string[], shapeInnerDims: number[
         flatIndex = getFlatIndex(thisRC);
 
         inputRC = inputCoordsFromReshapedOutCoords(flatIndex);
-        ${offset}
+        ${inputRCInnerDims}
 
         result[${i}] = getChannel(getACached${i}(inputRC), inputRCInnerDims);
 
