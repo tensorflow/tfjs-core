@@ -508,7 +508,7 @@ export class MathBackendWebGL implements KernelBackend {
     this.cpuBackend = new MathBackendCPU();
   }
 
-  private shouldExecuteOnCPU(inputs: Tensor[], sizeThreshold: number = 10):
+  private shouldExecuteOnCPU(inputs: Tensor[], sizeThreshold = 10):
       boolean {
     return inputs.every(
         input => this.texData.get(input.dataId).texture == null &&
