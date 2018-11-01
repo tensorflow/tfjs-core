@@ -129,7 +129,7 @@ function rfft_(input: Tensor): Tensor {
     const imagComplexConjugate = imagValues.split(
       [half, innerDimensionSize - half], imagValues.shape.length-1);
 
-    const outputShape = input.shape;
+    const outputShape = input.shape.slice();
     outputShape[input.shape.length - 1] = half;
 
     return complex(realComplexConjugate[0], imagComplexConjugate[0])
