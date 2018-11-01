@@ -17,8 +17,9 @@
 
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
-import {ALL_ENVS, BROWSER_ENVS, CPU_ENVS, expectArraysClose, expectArraysEqual, expectPromiseToFail, expectValuesInRange, NODE_ENVS, WEBGL_ENVS} from '../test_util';
+import {numDiff, ALL_ENVS, BROWSER_ENVS, CPU_ENVS, expectArraysClose, expectArraysEqual, expectPromiseToFail, expectValuesInRange, NODE_ENVS, WEBGL_ENVS} from '../test_util';
 import * as util from '../util';
+import {Tensor, Scalar} from '../tensor';
 
 import {expectArrayInMeanStdRange, jarqueBeraNormalityTest} from './rand_util';
 
@@ -1920,6 +1921,63 @@ describeWithFlags('clone', ALL_ENVS, () => {
     expect(() => tf.clone({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'clone' must be a Tensor/);
   });
+});
+
+describeWithFlags('broadcastTo', ALL_ENVS, () => {
+
+  it('[] -> [3,2]', () => {
+    const a = tf.scalar(2);
+    const A = tf.tensor2d([[2,2],
+                           [2,2],
+                           [2,2]]);
+
+    const w = tf.randomUniform(A.shape);
+    const f = (a: Tensor) => tf.broadcastTo(a,A.shape).mul(w).mean() as Scalar;
+
+    expectArraysEqual( A, tf.broadcastTo(a,A.shape) );
+
+    const g = tf.grad(f),
+          h = numDiff(f);
+
+    expectArraysClose( g(a), h(a) );
+  });
+
+  it('[2] -> [3,2]', () => {
+    const a = tf.tensor1d([1,2]);
+    const A = tf.tensor2d([[1,2],
+                           [1,2],
+                           [1,2]]);
+
+    const w = tf.randomUniform(A.shape);
+    const f = (a: Tensor) => tf.broadcastTo(a,A.shape).mul(w).mean() as Scalar;
+
+    expectArraysEqual( A, tf.broadcastTo(a,A.shape) );
+
+    const g = tf.grad(f),
+          h = numDiff(f);
+
+    expectArraysClose( g(a), h(a) );
+  });
+
+  it('[3,1] -> [3,2]', () => {
+    const a = tf.tensor2d([[1],
+                           [2],
+                           [3]]);
+    const A = tf.tensor2d([[1,1],
+                           [2,2],
+                           [3,3]]);
+
+    const w = tf.randomUniform(A.shape);
+    const f = (a: Tensor) => tf.broadcastTo(a,A.shape).mul(w).mean() as Scalar;
+
+    expectArraysEqual( A, tf.broadcastTo(a,A.shape) );
+
+    const g = tf.grad(f),
+          h = numDiff(f);
+
+    expectArraysClose( g(a), h(a) );
+  });
+
 });
 
 describeWithFlags('tile', ALL_ENVS, () => {

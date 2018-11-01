@@ -17,9 +17,52 @@
 
 import {ENV} from './environment';
 import {Features} from './environment_util';
-import {Tensor} from './tensor';
+import {Scalar, Tensor} from './tensor';
 import {TypedArray} from './types';
 import * as util from './util';
+
+/** Computes the gradients using finite differences.
+  *
+  * SEE: https://en.wikipedia.org/wiki/Finite_difference#Forward,_backward,_and_central_differences
+  *
+  * FIXME this is terribly imprecise... wish there was double precision support *hint hint*.
+  */
+export const numDiff = (f: (_: Tensor) => Scalar) => (a: Tensor) => {
+  if( a.dtype !== 'float32' )
+    throw new Error(`numDiff(): dtype=${a.dtype} not supported.`);
+
+  const dA_shape = a.shape,
+         A = Float32Array.from( a.dataSync() ),
+         d  = 2**-11;
+
+  function val( scalar: Tensor ): number
+  {
+    if( scalar.rank !== 0 )
+      throw new Error('f() returned a non-scalar value.');
+    return scalar.dataSync()[0];
+  }
+
+  return ENV.engine.tidy(() => {
+    a = Tensor.make(dA_shape,{values: A});
+
+    const dA = new Float32Array( A.length );
+
+    for( let i=0; i < A.length; i++ )
+    { // use central difference
+      const A_i = A[i],
+            A_hi = A_i + d,
+            A_lo = A_i - d;
+
+      // DISPOSAL (HOPEFULLY) REMOVES DATA FROM GPU AND FORCES REUPLOAD
+      A[i] = A_lo; a.dispose(); a = Tensor.make(dA_shape,{values: A}); const F_lo = val(f(a));
+      A[i] = A_hi; a.dispose(); a = Tensor.make(dA_shape,{values: A}); const F_hi = val(f(a));
+      dA[i] = (F_hi - F_lo) / (A_hi - A_lo);
+       A[i] = A_i;
+    }
+
+    return Tensor.make(dA_shape,{values: dA});
+  });
+};
 
 // TODO(smilkov): Move these constants to jasmine_util.
 export const WEBGL_ENVS: Features = {

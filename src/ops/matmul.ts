@@ -21,6 +21,7 @@ import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import * as util from '../util';
 import {op} from './operation';
+import {broadcastMatrices} from './linalg_util';
 
 /**
  * Computes the dot product of two matrices, A * B. These must be matrices.
@@ -40,8 +41,10 @@ import {op} from './operation';
 function matMul_<T extends Tensor>(
     a: T|TensorLike, b: T|TensorLike, transposeA = false,
     transposeB = false): T {
-  const $a = convertToTensor(a, 'a', 'matMul');
-  const $b = convertToTensor(b, 'b', 'matMul');
+  const [$a,$b] = broadcastMatrices(
+    convertToTensor(a, 'a', 'matMul'),
+    convertToTensor(b, 'b', 'matMul')
+  );
 
   const innerShapeA =
       transposeA ? $a.shape[$a.rank - 2] : $a.shape[$a.rank - 1];

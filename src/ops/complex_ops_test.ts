@@ -57,6 +57,35 @@ describeWithFlags('complex64', ALL_ENVS, () => {
   });
 });
 
+describeWithFlags('conj', ALL_ENVS, () => {
+  it('1D non-complex', () => {
+    const a = tf.tensor1d([1, -3, 2, 7, -4]);
+    expectArraysClose( tf.conj(a), a );
+  });
+
+  it('2D non-complex', () => {
+    const a = tf.tensor2d([[1, -3,  2],
+                           [-8, 7, -4]]);
+    expectArraysClose( tf.conj(a), a );
+  });
+
+  it('1D', () => {
+    const a = tf.complex([1,2,7],[-3,+8,-4]),
+          b = tf.complex([1,2,7],[+3,-8,+4]);
+    expectArraysClose( tf.conj(a), b );
+  });
+
+  it('2D', () => {
+    const a = tf.complex([[ 1, -3, 2],
+                          [-8,  7, 0]], [[42,-1, 2],
+                                         [ 3, 0,-4]]);
+    const b = tf.complex([[ 1, -3, 2],
+                          [-8,  7, 0]], [[-42,+1,-2],
+                                         [ -3,-0,+4]]);
+    expectArraysClose( tf.conj(a), b );
+  });
+});
+
 const BYTES_PER_COMPLEX_ELEMENT = 4 * 2;
 describeWithFlags('complex64 memory', BROWSER_ENVS, () => {
   it('usage', () => {

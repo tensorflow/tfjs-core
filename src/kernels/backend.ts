@@ -117,6 +117,11 @@ export class KernelBackend implements TensorStorage, BackendTimer {
     throw new Error('Not yet implemented');
   }
 
+  matrixSetDiag<T extends Tensor>( a: T, d: Tensor ): T;
+
+  matrixDiagPart( a: Tensor ): Tensor;
+  matrixBandPart<T extends Tensor>( a: T, numLower: number, numUpper: number ): T;
+
   batchMatMul(
       a: Tensor3D, b: Tensor3D, transposeA: boolean,
       transposeB: boolean): Tensor3D {

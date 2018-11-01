@@ -49,6 +49,9 @@ import * as binaryop_complex_gpu from './webgl/binaryop_complex_gpu';
 import {BinaryOpComplexProgram} from './webgl/binaryop_complex_gpu';
 import * as binaryop_gpu from './webgl/binaryop_gpu';
 import {BinaryOpProgram} from './webgl/binaryop_gpu';
+import {SetDiagProgram} from './webgl/set_diag_gpu';
+import {BandPartProgram} from './webgl/band_part_gpu';
+import {DiagPartProgram} from './webgl/diag_part_gpu';
 import {ClipProgram} from './webgl/clip_gpu';
 import {ComplexAbsProgram} from './webgl/complex_abs_gpu';
 import {ConcatProgram} from './webgl/concat_gpu';
@@ -592,6 +595,25 @@ export class MathBackendWebGL implements KernelBackend {
   neg<T extends Tensor>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.NEG);
     return this.compileAndRun(program, [x]) as T;
+  }
+
+  matrixSetDiag<T extends Tensor>( a: T, d: Tensor ): T
+  {
+    if( a.dtype != d.dtype ) throw new Error(`setDiag(): Both tensors must have the same dtype.`);
+    const program = new SetDiagProgram(a.shape,d.shape);
+    return this.compileAndRun(program, [a,d]);
+  }
+
+  matrixDiagPart( a: Tensor ): Tensor
+  {
+    const program = new DiagPartProgram(a.shape);
+    return this.compileAndRun(program, [a]);
+  }
+
+  matrixBandPart<T extends Tensor>( a: T, numLower: number, numUpper: number ): T
+  {
+    const program = new BandPartProgram(a.shape, numLower, numUpper);
+    return this.compileAndRun(program, [a]);
   }
 
   batchMatMul(
