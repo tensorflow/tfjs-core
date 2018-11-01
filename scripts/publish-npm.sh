@@ -16,7 +16,7 @@
 
 # Before you run this script, do this:
 # 1) Update the version in package.json
-# 2) Run ./scripts/make-version.js from the base dir of the project.
+# 2) Run ./scripts/make-version from the base dir of the project.
 # 3) Run `yarn` to update `yarn.lock`, in case you updated dependencies
 # 4) Commit to the master branch.
 
@@ -40,7 +40,7 @@ if ! [[ "$ORIGIN" =~ tensorflow/tfjs-core ]]; then
 fi
 
 yarn build-npm
-./scripts/make-version.js # This is for safety in case you forgot to do 2).
+./scripts/make-version # This is for safety in case you forgot to do 2).
 ./scripts/tag-version
 npm publish
 echo 'Yay! Published a new package to npm.'
