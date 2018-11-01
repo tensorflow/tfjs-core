@@ -32,7 +32,7 @@ export type InputInfo = {
 
 export function makeShader(
     inputsInfo: InputInfo[], outputShape: ShapeInfo, userCode: string,
-    broadcast: boolean): string {
+    broadcast: boolean, usesPackedTextures: boolean): string {
   let inputPrefixSnippet: string[]|string = inputsInfo.map(x => {
     const size = util.sizeFromShape(x.shapeInfo.logicalShape);
     if (x.shapeInfo.isUniform) {
@@ -48,6 +48,7 @@ export function makeShader(
   const outTexShape = outputShape.texShape;
   let outputSamplingSnippet: string;
   let floatTextureSetOutputSnippet: string;
+  let shaderPrefix = SHADER_PREFIX;
 
   if (outputShape.isPacked) {
     outputSamplingSnippet =
@@ -59,8 +60,12 @@ export function makeShader(
     floatTextureSetOutputSnippet = FLOAT_TEXTURE_SET_R_SNIPPET;
   }
 
+  if(usesPackedTextures) {
+    shaderPrefix += SHADER_PACKED_PREFIX;
+  }
+
   const source = [
-    SHADER_PREFIX, FLOAT_TEXTURE_SAMPLE_SNIPPET, floatTextureSetOutputSnippet,
+    shaderPrefix, FLOAT_TEXTURE_SAMPLE_SNIPPET, floatTextureSetOutputSnippet,
     inputPrefixSnippet, outputSamplingSnippet, inputSamplingSnippet, userCode
   ].join('\n');
   return source;
@@ -385,6 +390,15 @@ const SHADER_PREFIX = `
   ${SAMPLE_4D_SNIPPET}
   ${SAMPLE_5D_SNIPPET}
   ${SAMPLE_6D_SNIPPET}
+`;
+
+const SHADER_PACKED_PREFIX = `
+  float getChannel(vec4 frag, vec2 innerDims) {
+    vec2 modCoord = mod(innerDims, 2.);
+    return modCoord.x == 0. ?
+      (modCoord.y == 0. ? frag.r : frag.g) :
+      (modCoord.y == 0. ? frag.b : frag.a);
+  }
 `;
 
 function getOutputScalarCoords() {

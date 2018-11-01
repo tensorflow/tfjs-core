@@ -39,14 +39,9 @@ export class UnpackProgram implements GPGPUProgram {
     this.userCode = `
       void main() {
         ${dtype} rc = getOutputCoords();
-        vec2 modCoord = mod(vec2(${coords}), 2.);
         vec4 packedInput = getA(${sourceCoords});
 
-        setOutput(
-          modCoord.x == 0. ?
-            (modCoord.y == 0. ? packedInput.r : packedInput.g) :
-            (modCoord.y == 0. ? packedInput.b : packedInput.a)
-        );
+        setOutput(getChannel(packedInput, vec2(${coords})));
       }
     `;
   }

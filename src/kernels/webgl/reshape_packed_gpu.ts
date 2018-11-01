@@ -38,36 +38,17 @@ export class ReshapePackedProgram implements GPGPUProgram {
     const inputChannels = getChannels('coords', inputRank);
     const inputCachedInnerDims = getChannels('coords', inputRank).slice(-2);
 
-    let inputInnerDimsString = '', offset = '', getChannel = '', topLeftifyString = '';
+    let inputInnerDimsString = '', offset = '', topLeftifyString = '';
     if(inputRank === 1) {
-      getChannel = `float getChannel(vec4 frag, int index) {
-        int mod = int(mod(float(index), 2.));
-        if(mod == 0) return frag.x;
-        return frag.y;
-      }`;
-
-      offset = `
-        float modInputRC = mod(float(inputRC), 2.);
-        int offset = modInputRC == 0. ? 0 : 1`;
+      offset = `vec2 inputRCInnerDims = vec2(0, inputRC);`;
 
       topLeftifyString = `return int(coords / 2) * 2;`;
     } else {
-      getChannel = `float getChannel(vec4 frag, int index) {
-        int mod = int(mod(float(index), 4.));
-        if(mod == 0) return frag.x;
-        if(mod == 1) return frag.y;
-        if(mod == 2) return frag.z;
-        return frag.w;
-      }`;
-
       const inputTopLeftInnerDims = getChannels('inputRC', inputRank).slice(-2);
       inputInnerDimsString = `vec2(float(${inputTopLeftInnerDims[0]}), float(${inputTopLeftInnerDims[1]}))`;
       offset = `
         vec2 inputRCInnerDims = ${inputInnerDimsString};
-        vec2 modInputRC = mod(inputRCInnerDims, 2.);
-        int offset = modInputRC.x == 0. ?
-          (modInputRC.y == 0. ? 0 : 1) :
-          (modInputRC.y == 0. ? 2 : 3)`;
+      `;
 
       if(inputRank === 2) {
         topLeftifyString = `
@@ -97,7 +78,6 @@ export class ReshapePackedProgram implements GPGPUProgram {
     this.userCode = `
       ${getReshapedInputCoords(inputShape)}
       ${getFlatIndex(outputShape)}
-      ${getChannel}
 
       vec4 aCached0;
       vec4 aCached1;
@@ -201,9 +181,9 @@ function getMainLoop(dtype: string, innerDims: string[], shapeInnerDims: number[
         flatIndex = getFlatIndex(thisRC);
 
         inputRC = inputCoordsFromReshapedOutCoords(flatIndex);
-        ${offset};
+        ${offset}
 
-        result[${i}] = getChannel(getACached${i}(inputRC), offset);
+        result[${i}] = getChannel(getACached${i}(inputRC), inputRCInnerDims);
 
       ${i > 0 ? '}' : ''}
     `;

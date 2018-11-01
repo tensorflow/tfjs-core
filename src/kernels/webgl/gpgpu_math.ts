@@ -71,7 +71,7 @@ export function compileProgram<T extends Tensor, K extends Tensor>(
   };
   const source = shader_compiler.makeShader(
       inputInfos, outShapeInfo, userCode,
-      program.supportsBroadcasting === true);
+      program.supportsBroadcasting === true, program.usesPackedTextures);
 
   const webGLProgram = gpgpu.createProgram(source);
 
