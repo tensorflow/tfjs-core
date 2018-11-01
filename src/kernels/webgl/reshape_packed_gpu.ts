@@ -36,13 +36,12 @@ export class ReshapePackedProgram implements GPGPUProgram {
 
     const inputRank = inputShape.length;
     const inputDtype = getCoordsDataType(inputRank);
-    const inputCoordsDims = getChannels('coords', inputRank);
+    const inputRCDims = getChannels('inputRC', inputRank);
 
     let inputRCInnerDims: string, topLeftifyLogic: string;
     if (inputRank === 1) {
       inputRCInnerDims = `vec2 inputRCInnerDims = vec2(0, inputRC);`;
-
-      topLeftifyLogic = `return int(coords / 2) * 2;`;
+      topLeftifyLogic = `return int(inputRC / 2) * 2;`;
     } else {
       inputRCInnerDims = `
         vec2 inputRCInnerDims = vec2(${
@@ -52,7 +51,7 @@ export class ReshapePackedProgram implements GPGPUProgram {
               .join(',')});
       `;
 
-      const coordsInnerDims = getChannels('coords', inputRank).slice(-2);
+      const coordsInnerDims = getChannels('inputRC', inputRank).slice(-2);
       if (inputRank === 2) {
         topLeftifyLogic = `
           vec2 rowCol = vec2(${coordsInnerDims.join(',')});
@@ -60,7 +59,7 @@ export class ReshapePackedProgram implements GPGPUProgram {
         `;
       } else {
         const inputBatchChannelsJoined =
-            getVecChannels('coords', inputRank - 2).join(',');
+            getVecChannels('inputRC', inputRank - 2).join(',');
 
         topLeftifyLogic = `
           vec2 rowCol = vec2(${coordsInnerDims.join(',')});
@@ -74,8 +73,8 @@ export class ReshapePackedProgram implements GPGPUProgram {
     const mainLoop = getMainLoop(
         dtype, innerDims, outputShape.slice(-2), inputDtype, inputRCInnerDims);
 
-    // initializing coords to -1 so they will not be matched unless cached entry
-    // was created
+    // initializing inputRC to -1 so they will not be matched unless
+    // cached entry was created
     const coordsInitialValue: number[] = [];
     for (let i = 0; i < inputRank; i++) {
       coordsInitialValue.push(-1);
@@ -94,40 +93,40 @@ export class ReshapePackedProgram implements GPGPUProgram {
       ${inputDtype} aCoords1 = ${inputDtype}(${coordsInitialValueJoined});
       ${inputDtype} aCoords2 = ${inputDtype}(${coordsInitialValueJoined});
 
-      ${inputDtype} topLeftify(${inputDtype} coords) {
+      ${inputDtype} topLeftify(${inputDtype} inputRC) {
         ${topLeftifyLogic}
       }
 
-      vec4 getACached0(${inputDtype} coords) {
-        aCoords0 = topLeftify(coords);
-        aCached0 = getA(${inputCoordsDims});
+      vec4 getACached0(${inputDtype} inputRC) {
+        aCoords0 = topLeftify(inputRC);
+        aCached0 = getA(${inputRCDims});
         return aCached0;
       }
 
-      vec4 getACached1(${inputDtype} coords) {
-        aCoords1 = topLeftify(coords);
+      vec4 getACached1(${inputDtype} inputRC) {
+        aCoords1 = topLeftify(inputRC);
         if(aCoords1 == aCoords0) {
           aCached1 = aCached0;
         } else {
-          aCached1 = getA(${inputCoordsDims});
+          aCached1 = getA(${inputRCDims});
         }
         return aCached1;
       }
 
-      vec4 getACached2(${inputDtype} coords) {
-        aCoords2 = topLeftify(coords);
+      vec4 getACached2(${inputDtype} inputRC) {
+        aCoords2 = topLeftify(inputRC);
         if(aCoords2 == aCoords0) {
           aCached2 = aCached0;
         } else if(aCoords2 == aCoords1) {
           aCached2 = aCached1;
         } else {
-          aCached2 = getA(${inputCoordsDims});
+          aCached2 = getA(${inputRCDims});
         }
         return aCached2;
       }
 
-      vec4 getACached3(${inputDtype} coords) {
-        ${inputDtype} aCoords3 = topLeftify(coords);
+      vec4 getACached3(${inputDtype} inputRC) {
+        ${inputDtype} aCoords3 = topLeftify(inputRC);
 
         if(aCoords3 == aCoords0) {
           return aCached0;
@@ -137,7 +136,7 @@ export class ReshapePackedProgram implements GPGPUProgram {
           return aCached2;
         }
 
-        return getA(${inputCoordsDims});
+        return getA(${inputRCDims});
       }
 
       void main() {
