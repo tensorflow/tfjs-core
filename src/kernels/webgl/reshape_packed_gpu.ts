@@ -59,7 +59,7 @@ export class ReshapePackedProgram implements GPGPUProgram {
         topLeftifyLogic += `return topLeft;`;
       } else {
         const inputRCBatchDims = getVecChannels('inputRC', inputRank - 2);
-        topLeftifyLogic = `
+        topLeftifyLogic += `
           return ${inputDtype}(${
             inputRCBatchDims.join(',')}, topLeft.x, topLeft.y);
         `;
