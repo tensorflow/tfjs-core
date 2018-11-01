@@ -50,16 +50,16 @@ export class ReshapePackedProgram implements GPGPUProgram {
               .join(',')});
       `;
 
+      topLeftifyLogic = `
+        vec2 rowCol = ${inputRCInnerDims};
+        ivec2 topLeft = ivec2(int(rowCol.x / 2.) * 2, int(rowCol.y / 2.) * 2);
+      `;
+
       if (inputRank === 2) {
-        topLeftifyLogic = `
-          vec2 rowCol = ${inputRCInnerDims};
-          return ivec2(int(rowCol.x / 2.) * 2, int(rowCol.y / 2.) * 2);
-        `;
+        topLeftifyLogic += `return topLeft;`;
       } else {
         const inputRCBatchDims = getVecChannels('inputRC', inputRank - 2);
         topLeftifyLogic = `
-          vec2 rowCol = ${inputRCInnerDims};
-          ivec2 topLeft = ivec2(int(rowCol.x / 2.) * 2, int(rowCol.y / 2.) * 2);
           return ${inputDtype}(${
             inputRCBatchDims.join(',')}, topLeft.x, topLeft.y);
         `;
@@ -69,8 +69,6 @@ export class ReshapePackedProgram implements GPGPUProgram {
     const mainLoop = getMainLoop(
         dtype, innerDims, outputShape.slice(-2), inputDtype, inputRCInnerDims);
 
-    // initializing coords to -1 so they will not be matched unless
-    // cached entry was created
     let coordsInitialValue: string = '-1';
     for (let i = 0; i < inputRank - 1; i++) {
       coordsInitialValue += ',-1';
