@@ -645,10 +645,6 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   multiply(a: Tensor, b: Tensor): Tensor {
-    if (this.shouldExecuteOnCPU([a, b])) {
-      return this.cpuBackend.multiply(a, b);
-    }
-
     if (a.dtype === 'complex64') {
       const aData = this.texData.get(a.dataId);
       const bData = this.texData.get(b.dataId);
@@ -671,6 +667,10 @@ export class MathBackendWebGL implements KernelBackend {
       real.dispose();
       imag.dispose();
       return complex;
+    }
+
+    if (this.shouldExecuteOnCPU([a, b])) {
+      return this.cpuBackend.multiply(a, b);
     }
 
     const program = new BinaryOpProgram(binaryop_gpu.MUL, a.shape, b.shape);
@@ -1173,12 +1173,12 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   subtract(a: Tensor, b: Tensor): Tensor {
-    if (this.shouldExecuteOnCPU([a, b])) {
-      return this.cpuBackend.subtract(a, b);
-    }
-
     if (a.dtype === 'complex64' && b.dtype === 'complex64') {
       return this.complexSeparableBinaryOp(a, b, binaryop_gpu.SUB);
+    }
+
+    if (this.shouldExecuteOnCPU([a, b])) {
+      return this.cpuBackend.subtract(a, b);
     }
 
     const program = new BinaryOpProgram(binaryop_gpu.SUB, a.shape, b.shape);
