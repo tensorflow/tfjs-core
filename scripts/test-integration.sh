@@ -18,13 +18,23 @@ set -e
 
 
 function test () {
-  echo 'testing'
+  # Simulates a cron job, which uses tfjs-core@master.
+  export TRAVIS_EVENT_TYPE=cron
+
+  echo 'Cloning layers'
+  git clone https://github.com/tensorflow/tfjs-layers.git --depth 5
+  cd tfjs-layers && yarn && ./scripts/test-travis.sh
+
+  cd ..
+  echo 'Cloning node'
+  git clone https://github.com/tensorflow/tfjs-node.git --depth 5
+  cd tfjs-node && yarn && ./scripts/test-travis.sh
 }
 
 
-readarray -t y <<<"$(git diff --name-only HEAD HEAD~1)"
+readarray -t files_changed <<<"$(git diff --name-only HEAD HEAD~1)"
 
-for file in "${y[@]}"
+for file in "${files_changed[@]}"
 do
-   if [ "$file" = "src/version.ts" ]; then test; fi
+   if [ "$file" = "src/version.ts" ]; then test; break; fi
 done
