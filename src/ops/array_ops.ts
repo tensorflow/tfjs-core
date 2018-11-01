@@ -277,7 +277,7 @@ function multinomial_(
  * tf.oneHot(tf.tensor1d([0, 1], 'int32'), 3).print();
  * ```
  *
- * @param indices `Tensor1D` of indices with dtype `int32`.
+ * @param indices `tf.Tensor1D` of indices with dtype `int32`.
  * @param depth The depth of the one hot dimension.
  * @param onValue A number used to fill in the output when the index matches
  * the location.
@@ -600,7 +600,7 @@ function tile_<T extends Tensor>(x: T|TensorLike, reps: number[]): T {
 }
 
 /**
- * Pads a `Tensor1D` with a given value and paddings. See `pad` for details.
+ * Pads a `tf.Tensor1D` with a given value and paddings. See `pad` for details.
  */
 function pad1d_(
     x: Tensor1D|TensorLike, paddings: [number, number],
@@ -612,7 +612,7 @@ function pad1d_(
 }
 
 /**
- * Pads a `Tensor2D` with a given value and paddings. See `pad` for details.
+ * Pads a `tf.Tensor2D` with a given value and paddings. See `pad` for details.
  */
 function pad2d_(
     x: Tensor2D|TensorLike, paddings: [[number, number], [number, number]],
@@ -625,7 +625,7 @@ function pad2d_(
 }
 
 /**
- * Pads a `Tensor3D` with a given value and paddings. See `pad` for details.
+ * Pads a `tf.Tensor3D` with a given value and paddings. See `pad` for details.
  */
 function pad3d_(
     x: Tensor3D|TensorLike,
@@ -639,7 +639,7 @@ function pad3d_(
 }
 
 /**
- * Pads a `Tensor4D` with a given value and paddings. See `pad` for details.
+ * Pads a `tf.Tensor4D` with a given value and paddings. See `pad` for details.
  */
 function pad4d_(
     x: Tensor4D|TensorLike,
@@ -1089,7 +1089,7 @@ function depthToSpace_(
 }
 
 /**
- * Creates an empty `TensorBuffer` with the specified `shape` and `dtype`.
+ * Creates an empty `tf.TensorBuffer` with the specified `shape` and `dtype`.
  *
  * The values are stored in CPU as `TypedArray`. Fill the buffer using
  * `buffer.set()`, or by modifying directly `buffer.values`.
