@@ -21,4 +21,4 @@ notifications:
 matrix:
   exclude:
   - node_js: 8
-  - env: TO_TEST=integration
+    env: TO_TEST=integration
