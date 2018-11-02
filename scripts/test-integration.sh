@@ -14,6 +14,12 @@
 # limitations under the License.
 # =============================================================================
 
+function print_status() {
+  name=$1
+  code=$2
+  echo -e "$name:" $([[ $code -eq 0 ]] && echo 'PASS' || echo 'FAIL') $3
+}
+
 function test () {
   echo '######################'
   echo 'version.ts was modified.'
@@ -42,11 +48,17 @@ function test () {
   yarn build && yarn lint && yarn test-travis
   CONVERTER_EXIT_CODE=$?
 
-  if [ $LAYERS_EXIT_CODE -ne 0 ]; then echo 'Layers build failed'; fi
-  if [ $CONVERTER_EXIT_CODE -ne 0 ]; then echo 'Converter build failed'; fi
-  if [ $NODE_EXIT_CODE -ne 0 ]; then echo 'Node build failed'; fi
-  FINAL_CODE=$(($LAYERS_EXIT_CODE+$CONVERTER_EXIT_CODE+$NODE_EXIT_CODE))
-  exit $FINAL_CODE
+  echo '==== INTEGRATION TEST RESULTS ===='
+  print_status "tfjs-layers" "$LAYERS_EXIT_CODE"
+  print_status "tfjs-node" "$NODE_EXIT_CODE"
+  print_status "tfjs-converter" "$CONVERTER_EXIT_CODE"
+  echo '=================================='
+
+  RED='\033[0;31m'
+  NC='\033[0m' # No Color
+  FINAL_EXIT_CODE=$(($LAYERS_EXIT_CODE+$NODE_EXIT_CODE+$CONVERTER_EXIT_CODE))
+  print_status "${RED}Final result" "$FINAL_EXIT_CODE" "${NC}"
+  exit $FINAL_EXIT_CODE
 }
 
 
@@ -54,5 +66,5 @@ readarray -t files_changed <<< "$(git diff --name-only $TRAVIS_COMMIT_RANGE)"
 
 for file in "${files_changed[@]}"
 do
-   if [ "$file" = "src/version.ts" ]; then test; break; fi
+  if [ "$file" = "src/version.ts" ]; then test; break; fi
 done
