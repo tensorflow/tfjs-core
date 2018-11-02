@@ -5774,7 +5774,7 @@
         uploadDataToTexture(gl, texture, w, h, unpackedArray, textureConfig.textureFormatFloat);
     }
     function uploadMatrixToPackedTexture(gl, texture, batch, rows, columns, matrix, textureConfig) {
-        var _a = getPackedMatrixTextureShapeWidthHeight(rows, columns), w = _a[1], h = _a[0];
+        var _a = getPackedMatrixTextureShapeWidthHeight(rows, columns), w = _a[0], h = _a[1];
         var packedRGBA = new Float32Array(getPackedRGBAArraySizeFromMatrixShape(rows, columns));
         encodeMatrixToPackedRGBA(matrix, batch, rows, columns, packedRGBA);
         uploadDataToTexture(gl, texture, w, h, packedRGBA, gl.RGBA);
@@ -10127,15 +10127,11 @@
             texData.texShape = texShape;
             var newTexture = this.acquireTexture(dataId, texShape, usage, isPacked);
             texData.texture = newTexture;
-            // if(window.compileBatchnorm) {
-                console.log("uploading to gpu");
-                console.log(isPacked + ' ' + sizeFromShape(shape))
-            // }
             if (values != null) {
                 if (isPacked) {
                     var batch = sizeFromShape(shape.slice(0, shape.length - 2));
-                    var rows = shape.length > 1 ? shape[shape.length - 2] : 1;
-                    var cols = shape[shape.length - 1];
+                    var rows = shape[Math.max(0, shape.length - 2)];
+                    var cols = shape.length > 1 ? shape[shape.length - 1] : 1;
                     this.gpgpu.uploadMatrixToPackedTexture(newTexture, batch, rows, cols, typedArrayToFloat32(values, dtype));
                 }
                 else {
