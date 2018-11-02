@@ -195,7 +195,7 @@ function randomGamma_<R extends Rank>(
 }
 
 /**
- * Creates a `t.fTensor` with values sampled from a uniform distribution.
+ * Creates a `tf.Tensor` with values sampled from a uniform distribution.
  *
  * The generated values follow a uniform distribution in the range [minval,
  * maxval). The lower bound minval is included in the range, while the upper
