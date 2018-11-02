@@ -129,11 +129,14 @@
 
     const zeros = tf.zeros([1, 224, 224, 3]);
     function predict(model) {
+      console.log("predict");
       //////////////////////////////////
       // Place model prediction code here.
       //////////////////////////////////
       return model.predict(zeros);
     }
+
+    tf.ENV.set('WEBGL_PACK_BATCHNORMALIZATION', true);
   </script>
   <script>
     'use strict';
@@ -264,7 +267,7 @@
       let kernels = [];
       console.log = msg => {
         const parts = msg.split('\t').map(x => x.slice(2));
-        if(parts.length) {
+        if(parts.length > 2) {
           const scopes = parts[0].trim()
             .split('||')
             .filter(s => s !== 'unnamed scope');
@@ -306,19 +309,19 @@
       showVersions();
       await showEnvironment();
       await loadAndRecordTime();
-      await warmUpAndRecordTime();
-      await showMsg('Waiting for GC');
-      await sleep(1000);
-      await profileMemory();
-      await sleep(200);
-      await measureAveragePredictTime();
-      await sleep(200);
-      if (queryTimerIsEnabled()) {
+      // await warmUpAndRecordTime();
+      // await showMsg('Waiting for GC');
+      // await sleep(1000);
+      // await profileMemory();
+      // await sleep(200);
+      // await measureAveragePredictTime();
+      // await sleep(200);
+      // if (queryTimerIsEnabled()) {
         await profileKernelTime();
-      } else {
-        showMsg('Skipping kernel times since query timer extension is not ' +
-                'available. <br/> Use Chrome 70+.');
-      };
+      // } else {
+      //   showMsg('Skipping kernel times since query timer extension is not ' +
+      //           'available. <br/> Use Chrome 70+.');
+      // };
     }
     onPageLoad();
   </script>
