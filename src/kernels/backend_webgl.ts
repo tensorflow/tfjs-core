@@ -505,10 +505,18 @@ export class MathBackendWebGL implements KernelBackend {
           BEFORE_PAGING_CONSTANT;
     }
     this.textureManager = new TextureManager(this.gpgpu);
+  }
 
-    if (ENV.get('WEBGL_CPU_FORWARD')) {
+  private getCPUBackend() {
+    if (!ENV.get('WEBGL_CPU_FORWARD')) {
+      return null;
+    }
+
+    if (this.cpuBackend == null) {
       this.cpuBackend = ENV.findBackend('cpu');
     }
+
+    return this.cpuBackend;
   }
 
   /*
@@ -520,7 +528,7 @@ export class MathBackendWebGL implements KernelBackend {
    */
   private shouldExecuteOnCPU(
       inputs: Tensor[], sizeThreshold = CPU_HANDOFF_SIZE_THRESHOLD): boolean {
-    return this.cpuBackend != null &&
+    return this.getCPUBackend() != null &&
         inputs.every(
             input => this.texData.get(input.dataId).texture == null &&
                 input.size < sizeThreshold);
