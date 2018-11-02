@@ -25,12 +25,14 @@ function test () {
   git clone https://github.com/tensorflow/tfjs-layers.git --depth 5
   cd tfjs-layers
   yarn && yarn link-local '@tensorflow/tfjs-core' && ./scripts/test-travis.sh
+  LAYERS_EXIT_CODE=$?
 
   cd ..
   echo 'Cloning node'
   git clone https://github.com/tensorflow/tfjs-node.git --depth 5
   cd tfjs-node
   yarn && yarn link-local '@tensorflow/tfjs-core' && ./scripts/test-travis.sh
+  NODE_EXIT_CODE=$?
 
   cd ..
   echo 'Cloning converter'
@@ -38,6 +40,13 @@ function test () {
   cd tfjs-converter
   yarn && yarn link-local '@tensorflow/tfjs-core'
   yarn build && yarn lint && yarn test-travis
+  CONVERTER_EXIT_CODE=$?
+
+  if [ $LAYERS_EXIT_CODE -ne 0 ]; then echo 'Layers build failed'; fi
+  if [ $CONVERTER_EXIT_CODE -ne 0 ]; then echo 'Converter build failed'; fi
+  if [ $NODE_EXIT_CODE -ne 0 ]; then echo 'Node build failed'; fi
+  FINAL_CODE=$(($LAYERS_EXIT_CODE+$CONVERTER_EXIT_CODE+$NODE_EXIT_CODE))
+  exit $FINAL_CODE
 }
 
 
