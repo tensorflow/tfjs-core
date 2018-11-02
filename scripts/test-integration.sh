@@ -55,9 +55,11 @@ function test () {
   echo '=================================='
 
   RED='\033[0;31m'
+  BLUE='\e[34m'
   NC='\033[0m' # No Color
   FINAL_EXIT_CODE=$(($LAYERS_EXIT_CODE+$NODE_EXIT_CODE+$CONVERTER_EXIT_CODE))
-  print_status "${RED}Final result" "$FINAL_EXIT_CODE" "${NC}"
+  [[ $FINAL_EXIT_CODE -eq 0 ]] && COLOR=$BLUE || COLOR=$RED
+  print_status "${COLOR}Final result" "$FINAL_EXIT_CODE" "$NC"
   exit $FINAL_EXIT_CODE
 }
 
