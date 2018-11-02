@@ -44,37 +44,33 @@ const numDiff = (f: (_: Tensor) => Scalar) => (a: Tensor) => {
 
   const aData = Float32Array.from( a.dataSync() );
 
-  const fVal = () => {
-    const scalar = f(a);
-    if( scalar.rank !== 0 ) {
-      throw new Error('f() returned a non-scalar value.');  
-    }
-    return scalar.dataSync()[0];
-  };
+  const eps = Math.sqrt( ENV.get('EPSILON') );
 
   return ENV.engine.tidy(() => {
-    a = Tensor.make(a.shape, {values: aData});
 
     const dA = new Float32Array( aData.length );
 
     for( let i=0; i < aData.length; i++ )
     { // use central difference
-      const aI = aData[i],
-         delta = Math.max( Math.abs(aI) * 2**-12, 2**-12 ),
-           aHi = aI + delta,
-           aLo = aI - delta;
+      const x = aData[i],
+            h = Math.max( Math.abs(x)*eps, eps );
 
-      // DISPOSAL (HOPEFULLY) REMOVES DATA FROM GPU AND FORCES REUPLOAD
-      aData[i] = aLo; a.dispose();
-      a = Tensor.make(a.shape, {values: aData});
-      const fLo = fVal();
+      const g = ( x: number ) => ENV.engine.tidy( () => {
+        aData[i] = x;
 
-      aData[i] = aHi; a.dispose();
-      a = Tensor.make(a.shape, {values: aData});
-      const fHi = fVal();
+        const b = Tensor.make(a.shape, {values: aData});
+        const scalar = f(b);
 
-      dA[i] = (fHi - fLo) / (aHi - aLo);
-      aData[i] = aI;
+        if( scalar.rank !== 0 ) {
+          throw new Error('f() returned a non-scalar value.');  
+        }
+
+        return scalar.dataSync()[0];
+      });
+
+      // https://www.geometrictools.com/Documentation/FiniteDifferences.pdf
+      dA[i] = (-g(x+2*h) + 8*g(x+h) - 8*g(x-h) + g(x-2*h) ) / (12*h);
+      aData[i] = x; // <- undo modifications
     }
 
     return Tensor.make(a.shape,{values: dA});
@@ -202,7 +198,7 @@ describeWithFlags('adjoint', ALL_ENVS, () => {
           aT = tf.tensor2d([[1,4],
                             [2,5],
                             [3,6]],[3,2]);
-    expectArraysClose( tf.linalg.adjoint(a), aT );
+    expectArraysEqual( tf.linalg.adjoint(a), aT );
   });
   it('3x2x1', () => {
     const a   = tf.tensor3d([[[1],[2]],
@@ -211,7 +207,7 @@ describeWithFlags('adjoint', ALL_ENVS, () => {
           aT = tf.tensor3d([[[1,2]],
                             [[3,4]],
                             [[5,6]]], [3,1,2]);
-    expectArraysClose( tf.linalg.adjoint(a), aT );
+    expectArraysEqual( tf.linalg.adjoint(a), aT );
   });
 });
 
@@ -224,32 +220,32 @@ describeWithFlags('bandPart', CPU_ENVS, () => {
       [5, 6, 7, 8],
       [9,10,11,12]
     ]);
-    expectArraysClose(
+    expectArraysEqual(
       la.bandPart(a,0,0),
       tf.tensor2d([[1, 0, 0, 0],
                    [0, 6, 0, 0],
                    [0, 0,11, 0]])
     );
-    expectArraysClose(
+    expectArraysEqual(
       la.bandPart(a,0,1),
       tf.tensor2d([[1, 2, 0, 0],
                    [0, 6, 7, 0],
                    [0, 0,11,12]])
     );
-    expectArraysClose(
+    expectArraysEqual(
       la.bandPart(a,0,2),
       tf.tensor2d([[1, 2, 3, 0],
                    [0, 6, 7, 8],
                    [0, 0,11,12]])
     );
-    expectArraysClose(
+    expectArraysEqual(
       la.bandPart(a,0,2),
       tf.tensor2d([[1, 2, 3, 0],
                    [0, 6, 7, 8],
                    [0, 0,11,12]])
     );
     for( const numUpper of [3,4,-1,-2] ) {
-      expectArraysClose(
+      expectArraysEqual(
         la.bandPart(a,0,numUpper),
         tf.tensor2d([[1, 2, 3, 4],
                      [0, 6, 7, 8],
@@ -257,32 +253,32 @@ describeWithFlags('bandPart', CPU_ENVS, () => {
       );
     }
 
-    expectArraysClose(
+    expectArraysEqual(
       la.bandPart(a,1,0),
       tf.tensor2d([[1, 0, 0, 0],
                    [5, 6, 0, 0],
                    [0,10,11, 0]])
     );
-    expectArraysClose(
+    expectArraysEqual(
       la.bandPart(a,1,1),
       tf.tensor2d([[1, 2, 0, 0],
                    [5, 6, 7, 0],
                    [0,10,11,12]])
     );
-    expectArraysClose(
+    expectArraysEqual(
       la.bandPart(a,1,2),
       tf.tensor2d([[1, 2, 3, 0],
                    [5, 6, 7, 8],
                    [0,10,11,12]])
     );
-    expectArraysClose(
+    expectArraysEqual(
       la.bandPart(a,1,2),
       tf.tensor2d([[1, 2, 3, 0],
                    [5, 6, 7, 8],
                    [0,10,11,12]])
     );
     for( const numUpper of [3,4,-1,-2] ) {
-      expectArraysClose(
+      expectArraysEqual(
         la.bandPart(a,1,numUpper),
         tf.tensor2d([[1, 2, 3, 4],
                      [5, 6, 7, 8],
@@ -292,32 +288,32 @@ describeWithFlags('bandPart', CPU_ENVS, () => {
 
     for( const numLower of [2,3,-1,-2])
     {
-      expectArraysClose(
+      expectArraysEqual(
         la.bandPart(a,numLower,0),
         tf.tensor2d([[1, 0, 0, 0],
                      [5, 6, 0, 0],
                      [9,10,11, 0]])
       );
-      expectArraysClose(
+      expectArraysEqual(
         la.bandPart(a,numLower,1),
         tf.tensor2d([[1, 2, 0, 0],
                      [5, 6, 7, 0],
                      [9,10,11,12]])
       );
-      expectArraysClose(
+      expectArraysEqual(
         la.bandPart(a,numLower,2),
         tf.tensor2d([[1, 2, 3, 0],
                      [5, 6, 7, 8],
                      [9,10,11,12]])
       );
-      expectArraysClose(
+      expectArraysEqual(
         la.bandPart(a,numLower,2),
         tf.tensor2d([[1, 2, 3, 0],
                      [5, 6, 7, 8],
                      [9,10,11,12]])
       );
       for( const numUpper of [3,4,-1,-2] ) {
-        expectArraysClose(
+        expectArraysEqual(
           la.bandPart(a,numLower,numUpper),
           tf.tensor2d([[1, 2, 3, 4],
                        [5, 6, 7, 8],
@@ -389,9 +385,9 @@ describeWithFlags('triangularSolve', CPU_ENVS, () => {
                  [14,15]])
   ));
 
-  for( let run=0; run < 16; run++ )
+  for( let run=0; run < 128; run++ )
   {
-    const lShape = Array.from({ length: randInt(2,5) }, () => randInt(1,4) ),
+    const lShape = Array.from({ length: randInt(2,5) }, () => randInt(1,7) ),
           yShape = lShape.slice();
     lShape[lShape.length-1] = lShape[lShape.length-2];
 
@@ -454,7 +450,14 @@ describeWithFlags('qr', CPU_ENVS, () => {
       expectArraysEqual( r.shape.slice(  -2), fullMatrices ? [m,n] : [l,n] );
       
       // TEST DECOMPOSITION (Q @ R == A)
-      expectArraysClose( q.matMul(r), a );
+      try {
+        expectArraysClose( q.matMul(r), a );
+      } catch(err) {
+        console.log('A'); a.print();
+        console.log('Q'); q.print();
+        console.log('R'); r.print();
+        throw err;
+      }
 
       const qT = q.transpose(T);
 
@@ -480,8 +483,6 @@ describeWithFlags('qr', CPU_ENVS, () => {
       const g = numDiff(f);
       const h = tf.grad(f);
       try {
-        // since we're already losing precision on numDiff,
-        // this is the best we can do
         expectTensorsRelativelyClose(g(a), h(a), /*rtol=*/1e-2, /*atol=*/1e-2);
       }
       catch(err) {
@@ -525,7 +526,7 @@ describeWithFlags('qr', CPU_ENVS, () => {
 
   for( let run=0; run < 128; run++ )
   {
-    const shape = Array.from({ length: randInt(2,5) }, () => randInt(1,4) );
+    const shape = Array.from({ length: randInt(2,5) }, () => randInt(1,7) );
     it(
       `random#${run}_${shape.join('x')}`,
       () => testWith( tf.randomUniform(shape,-1,+1) )

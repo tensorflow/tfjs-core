@@ -162,29 +162,31 @@ function bandPart_<T extends Tensor>(
     throw new Error(`bandPart(): numUpper=${numUpper} not an integer.`);
   }
 
-  const $a = convertToTensor(a,'a','bandPart');
+  return ENV.engine.tidy( () => {
+    const $a = convertToTensor(a,'a','bandPart');
 
-  const [M,N] = $a.shape.slice(-2);
+    const [M,N] = $a.shape.slice(-2);
 
-  if( !(numLower <= M) ) {
-    throw new Error(`bandPart() check failed: numLower <= #rows.`   );
-  }
-  if( !(numUpper <= N) ) {
-    throw new Error(`bandPart() check failed: numUpper <= #columns.`);
-  }
+    if( !(numLower <= M) ) {
+      throw new Error(`bandPart() check failed: numLower <= #rows.`   );
+    }
+    if( !(numUpper <= N) ) {
+      throw new Error(`bandPart() check failed: numUpper <= #columns.`);
+    }
 
-  if( numLower < 0 ) { numLower = M; }
-  if( numUpper < 0 ) { numUpper = N; }
+    if( numLower < 0 ) { numLower = M; }
+    if( numUpper < 0 ) { numUpper = N; }
 
-  const i = range(0,M, 1, 'int32').reshape([-1,1]),
-        j = range(0,N, 1, 'int32');
+    const i = range(0,M, 1, 'int32').reshape([-1,1]),
+          j = range(0,N, 1, 'int32');
 
-  const inBand = logicalAnd(
-    sub(i,j).lessEqual( scalar(numLower,'int32') ),
-    sub(j,i).lessEqual( scalar(numUpper,'int32') )
-  ).cast($a.dtype);
+    const inBand = logicalAnd(
+      sub(i,j).lessEqual( scalar(numLower,'int32') ),
+      sub(j,i).lessEqual( scalar(numUpper,'int32') )
+    ).cast($a.dtype);
 
-  return mul($a,inBand);
+    return mul($a,inBand);
+  });
 }
 
 function triangularSolveKernel(
@@ -423,112 +425,75 @@ function qrEcoDecompKernel( a: Tensor ): [Tensor,Tensor]
         // tslint:enable
         qShape = Array.from( a.shape ),
         rShape = Array.from(  qShape ),
-       [N,M] = qShape.slice(-2);
-  rShape[rShape.length-2] = M;
+       [M,N] = qShape.slice(-2);
+  rShape[rShape.length-2] = N;
   Object.freeze(qShape);
   Object.freeze(rShape);
 
   const Q = DTypeArray.from( a.dataSync() ); a = undefined;
-  const R = new DTypeArray(Q.length/N*M),
-       cs = new DTypeArray(M*2),// <- APPLY M ROTATIONS TO Q AT ONCE
-        r = (() => {
-          try      { return    cs.subarray(M); }
-          catch(e) { return new DTypeArray(M); }
-        })();  // <- space to temp. store rows of R not contained in result
+  const R = new DTypeArray( Q.length/M*N ),
+       cs = new DTypeArray( 2*M*N - N*(N+1) );// <- MEMOIZE ROTATIONS
 
   for(
     let rOff=0,
-        qOff=0; qOff < Q.length; qOff += N*M,
-                                 rOff += M*M
+        qOff=0; qOff < Q.length; qOff += M*N,
+                                 rOff += N*N
   )
   {
-    // HANDLE ENTRIES CONTAINED IN THE RESULT
-    for( let i=0; i < M; i++ )
-    {
-      // COPY FROM Q TO R AND INIT Q
-      for( let j=0; j < M; j++ ) {
-        R[rOff+M*i+j] = Q[qOff+M*i+j];
-                        Q[qOff+M*i+j] = i !== j ? 0.0 : 1.0;
-      }
+    let csi = 0;
 
-      for( let j=0; j < i; j++ )
-      { // USE GIVENS ROTATION TO ELIMINATE ELEMENT R_ji
-        const rIJ = R[rOff+M*i+j]; if( rIJ === 0.0 ){cs[2*j+0]=1.0;
-                                                     cs[2*j+1]=0.0; continue;}
-        const rJJ = R[rOff+M*j+j],
-                     norm = Math.hypot(rJJ,rIJ),
-          c = rJJ / norm,
-          s = rIJ / norm;
-        cs[2*j+0] = c;
-        cs[2*j+1] = s;
-        R[rOff + M*i+j] = 0.0;
-        R[rOff + M*j+j] = norm;
-        // ROTATE ROW i AND j IN R
-        for( let k=j; ++k < M; ) {
-          const ik = rOff + M*i+k, rIK = R[ik],
-                jk = rOff + M*j+k, rJK = R[jk];
-          R[ik] = c*rIK - s*rJK;
-          R[jk] = s*rIK + c*rJK;
-        }
+    for( let i=1; i < M; i++ ) { const J = Math.min(i,N);
+    for( let j=0; j < J; j++ )
+    { // DETERMINE GIVENS ROTATION cos AND sin
+      const rIJ = Q[qOff + N*i+j]; if( 0.0 === rIJ ) {cs[csi++]=1.0;
+                                                      cs[csi++]=0.0; continue;}
+      const rJJ = Q[qOff + N*j+j],
+                  norm = Math.hypot(rJJ,rIJ),
+        c = rJJ / norm,
+        s = rIJ / norm;
+      cs[csi++] = c;
+      cs[csi++] = s;
+      Q[qOff + N*j+j] = norm;
+      Q[qOff + N*i+j] = 0;
+      // ROTATE ROWS IN R (WHICH IS CURRENTLY STORED IN Q)
+      for( let k=j; ++k < N; )
+      { const rJK = Q[qOff + N*j+k],
+              rIK = Q[qOff + N*i+k];
+        Q[qOff + N*j+k] = s*rIK + c*rJK;
+        Q[qOff + N*i+k] = c*rIK - s*rJK;
       }
+    }}
 
-      // ROTATE COLUMNS IN Q (BUNDLED FOR BETTER CACHE LOCALITY)
-      for( let k=0; k <= i; k++ ) {
-      for( let j=0; j <  i; j++ ) {
-        const c = cs[2*j+0],
-              s = cs[2*j+1],
-             ki = qOff + M*k+i, qKI = Q[ki],
-             kj = qOff + M*k+j, qKJ = Q[kj];
-        Q[ki] = c*qKI - s*qKJ;
-        Q[kj] = s*qKI + c*qKJ;
-      }}
-    }
-    // HANDLE REMAINING ENTRIES NOT CONTAINED IN THE RESULT
-    for( let i=M; i < N; i++ )
-    {
-      // INIT r
-      for( let j=0; j < M; j++ ) {
-        r[j] = Q[qOff+M*i+j]; Q[qOff+M*i+j] = 0.0;
+    assert( csi === cs.length, `WTF: ${csi} !== ${cs.length}` );
+
+    // COPY R FROM Q -> R
+    for( let i=0; i < N; i++ ) {
+    for( let j=i; j < N; j++ ) {
+      R[rOff + N*i+j] = Q[qOff + N*i+j];
+                        Q[qOff + N*i+j] = i !== j ? 0.0 : 1.0;
+    }}
+
+    // COMPUTE Q
+    for( let i=M; --i > 0; ) { const J = Math.min(i,N);
+    for( let j=J; j-- > 0; )
+    { const s = cs[--csi],
+            c = cs[--csi];
+      // ROTATE ROWS IN Q
+      for( let k=N; k-- > 0; )
+      { const qJK = Q[qOff + N*j+k],
+              qIK = Q[qOff + N*i+k];
+        Q[qOff + N*j+k] = c*qJK - s*qIK;
+        Q[qOff + N*i+k] = s*qJK + c*qIK;
       }
+    }}
 
-      // USE GIVENS ROTATIONS TO ELIMINATE ELEMENT r completely
-      for( let j=0; j < M; j++ )
-      {
-        const rJ  = r[j]; if( rJ === 0.0 ) { cs[2*j+0]=1.0;
-                                             cs[2*j+1]=0.0; continue; }
-        const rJJ = R[rOff+M*j+j],
-                    norm = Math.hypot(rJJ,rJ),
-          c = rJJ / norm,
-          s = rJ  / norm;
-        R[rOff+M*j+j] = norm;
-        // ROTATE ROW i AND j IN R
-        for( let k=j; ++k < M; ) {
-          const jk = rOff + M*j+k, rJK = R[jk];
-          R[jk] = s*r[k] + c*rJK;
-          r[ k] = c*r[k] - s*rJK;
-        }
-        cs[2*j+0] = c;
-        cs[2*j+1] = s;
-      }
-
-      // ROTATE COLUMNS IN Q
-      for( let k=0; k <= i; k++ ) { let QK = i !== k ? 0.0 : 1.0;
-      for( let j=0; j <  M; j++ ) {
-        const c = cs[2*j+0],
-              s = cs[2*j+1],     qK  = QK,
-              kj = qOff + M*k+j, qKJ = Q[kj];
-        QK   = c*qK - s*qKJ;
-        Q[kj]= s*qK + c*qKJ;
-      }}
-    }
+    assert( csi === 0, `WTF: ${csi} !== 0` );
   }
 
-  {
-    const q = Tensor.make(qShape, { values: Q }, dtype);
-    const r = Tensor.make(rShape, { values: R }, dtype);
+  const q = Tensor.make(qShape, { values: Q }, dtype);
+  const r = Tensor.make(rShape, { values: R }, dtype);
 
-    return [q,r];
-  }
+  return [q,r];
 }
 
 /** Computes the full QR Decomposition an memoizes the
@@ -545,7 +510,7 @@ function qrFullDecompKernel( a: Tensor ): [Tensor,Tensor,Tensor]
     `Error in linalg.qr: complex dtype not supported.`
   );
 
-  const dtype      ='float32',
+  const dtype      = 'float32',
         // tslint:disable
         DTypeArray = Float32Array,
         // tslint:enable
@@ -750,12 +715,12 @@ function qrFullBackpropKernel(
         Q[qOff + M*i+k] = s*qJK + c*qIK;
       }
 
-      const rIJ = R[rOff + N*i+j],
-            rJJ = R[rOff + N*j+j],
-           dCdJ = + rIJ / norm  *  rIJ / norm**2,
-           dCdI = - rIJ / norm  *  rJJ / norm**2,
-           dSdJ = - rJJ / norm  *  rIJ / norm**2,
-           dSdI = + rJJ / norm  *  rJJ / norm**2;
+      const rIJ = R[rOff + N*i+j] / norm,
+            rJJ = R[rOff + N*j+j] / norm,
+           dCdJ = +rIJ*rIJ / norm,
+           dCdI = -rIJ*rJJ / norm,
+           dSdJ = -rJJ*rIJ / norm,
+           dSdI = +rJJ*rJJ / norm;
       let dj = 0.0,
           di = 0.0;
 
