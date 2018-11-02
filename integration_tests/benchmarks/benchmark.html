@@ -277,6 +277,8 @@
             output: parts[2].trim(),
             gpuProgramsInfo: parts[4]
           });
+        } else {
+          oldLog.call(oldLog, msg);
         }
       }
       let res = predict(model);
