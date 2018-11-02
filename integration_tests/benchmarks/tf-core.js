@@ -5355,7 +5355,7 @@
         checkWebGLError(gl);
         return returnValue;
     }
-    var webGLDebugErrorCheckingEnabled = false;
+    var webGLDebugErrorCheckingEnabled = true;
     function enableDebugWebGLErrorChecking(enabled) {
         webGLDebugErrorCheckingEnabled = enabled;
     }
@@ -5698,6 +5698,8 @@
     }
     function createAndConfigureTexture(gl, width, height, internalFormat, textureFormat, textureType) {
         validateTextureSize(width, height);
+        console.log("CREATE AND CONFIGURE TEXTURE");
+        console.log(`${width}, ${height}, ${internalFormat}, ${textureFormat}, ${textureType}`);
         var texture = createTexture(gl);
         var tex2d = gl.TEXTURE_2D;
         callAndCheck(gl, function () { return gl.bindTexture(tex2d, texture); });
@@ -5746,7 +5748,16 @@
     function uploadDataToTexture(gl, texture, width, height, data, textureFormat) {
         validateTextureSize(width, height);
         callAndCheck(gl, function () { return gl.bindTexture(gl.TEXTURE_2D, texture); });
-        callAndCheck(gl, function () { return gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, width, height, textureFormat, gl.FLOAT, data); });
+        callAndCheck(gl, function () {
+            console.log("texSubImage2D");
+            console.log(`${width}, ${height}, ${textureFormat}, ${data.length}`)
+            if(data.length < 100 && textureFormat === 6408 && width === 16 && height === 1) {
+                // console.log("ISOLATING FAULTY CALL");
+                // console.log(data);
+                // data = data.slice(0, 16)
+                // return gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 1, 16, textureFormat, gl.FLOAT, new Float32Array(64));
+            }
+            return gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, width, height, textureFormat, gl.FLOAT, data); });
         callAndCheck(gl, function () { return gl.bindTexture(gl.TEXTURE_2D, null); });
     }
     function uploadMatrixToTexture(gl, texture, rows, columns, matrix, numChannels, textureConfig) {
@@ -5763,7 +5774,7 @@
         uploadDataToTexture(gl, texture, w, h, unpackedArray, textureConfig.textureFormatFloat);
     }
     function uploadMatrixToPackedTexture(gl, texture, batch, rows, columns, matrix, textureConfig) {
-        var _a = getPackedMatrixTextureShapeWidthHeight(rows, columns), w = _a[0], h = _a[1];
+        var _a = getPackedMatrixTextureShapeWidthHeight(rows, columns), w = _a[1], h = _a[0];
         var packedRGBA = new Float32Array(getPackedRGBAArraySizeFromMatrixShape(rows, columns));
         encodeMatrixToPackedRGBA(matrix, batch, rows, columns, packedRGBA);
         uploadDataToTexture(gl, texture, w, h, packedRGBA, gl.RGBA);
@@ -9273,7 +9284,8 @@
                 inputs.push(scale);
             }
             console.log("BATCHNORM");
-            console.log(this.texData.get(offset.dataId).texture + ' ' + offset.size);
+            console.log(this.texData.get(offset.dataId).texture + ' ' + offset.size + ' ' + this.texData.get(offset.dataId).isPacked);
+            window.compileBatchnorm = true;
             var output = null;
             var envSpecificBatchNormProgram = BatchNormProgram;
             if (ENV.get('WEBGL_PACK_BATCHNORMALIZATION')) {
@@ -9282,7 +9294,8 @@
             }
             var program = new envSpecificBatchNormProgram(x.shape, mean.shape, variance.shape, offsetShape, scaleShape, varianceEpsilon);
             var result = this.compileAndRun(program, inputs, output);
-            console.log(this.texData.get(offset.dataId).texture);
+            console.log(this.texData.get(offset.dataId).texture + ' ' + this.texData.get(offset.dataId).isPacked);
+            window.compileBatchnorm = false;
             return result;
         };
         MathBackendWebGL.prototype.localResponseNormalization4D = function (x, radius, bias, alpha, beta) {
@@ -9974,6 +9987,7 @@
             return this.compileAndRun(program, [input]);
         };
         MathBackendWebGL.prototype.compileAndRun = function (program, inputs, output, customSetup, pageToCpu) {
+            console.log(program.constructor.name);
             var _this = this;
             if (pageToCpu === void 0) { pageToCpu = true; }
             if (output == null) {
@@ -9992,18 +10006,22 @@
                         "parts.");
                 }
                 var texData = _this.texData.get(input.dataId);
-                if (texData.texture == null &&
-                    !(!texData.isPacked && program.usesPackedTextures) &&
-                    sizeFromShape(input.shape) <=
-                        ENV.get('WEBGL_SIZE_UPLOAD_UNIFORM')) {
-                    return {
-                        shape: input.shape,
-                        texData: null,
-                        isUniform: true,
-                        uniformValues: _this.readSync(input.dataId)
-                    };
-                }
-                if (texData.isPacked !== !!program.usesPackedTextures) {
+
+                if(texData.texture == null) {
+                    if(!(!texData.isPacked && program.usesPackedTextures) && sizeFromShape(input.shape) <= ENV.get('WEBGL_SIZE_UPLOAD_UNIFORM')) {
+                        return {
+                            shape: input.shape,
+                            texData: null,
+                            isUniform: true,
+                            uniformValues: _this.readSync(input.dataId)
+                        };
+                    }
+                    if(program.usesPackedTextures) {
+                        console.log("TEXTURE DOES NOT EXIST YET - SETTING PACKED TO TRUE FOR UPLOAD")
+                        _this.texData.get(input.dataId).isPacked = true;
+                    }
+
+                } else if (texData.isPacked !== !!program.usesPackedTextures) {
                     var preProcessProgram = void 0;
                     var processedInput = void 0;
                     if (texData.isPacked) {
@@ -10109,6 +10127,10 @@
             texData.texShape = texShape;
             var newTexture = this.acquireTexture(dataId, texShape, usage, isPacked);
             texData.texture = newTexture;
+            // if(window.compileBatchnorm) {
+                console.log("uploading to gpu");
+                console.log(isPacked + ' ' + sizeFromShape(shape))
+            // }
             if (values != null) {
                 if (isPacked) {
                     var batch = sizeFromShape(shape.slice(0, shape.length - 2));
