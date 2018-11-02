@@ -266,7 +266,11 @@
       const oldLog = console.log;
       let kernels = [];
       console.log = msg => {
-        const parts = msg.split('\t').map(x => x.slice(2));
+        let parts = [];
+        if(typeof msg === 'string') {
+          parts = msg.split('\t').map(x => x.slice(2));
+        }
+
         if(parts.length > 2) {
           const scopes = parts[0].trim()
             .split('||')

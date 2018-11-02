@@ -9272,6 +9272,8 @@
                 scaleShape = scale.shape;
                 inputs.push(scale);
             }
+            console.log("BATCHNORM");
+            console.log(this.texData.get(offset.dataId).texture + ' ' + offset.size);
             var output = null;
             var envSpecificBatchNormProgram = BatchNormProgram;
             if (ENV.get('WEBGL_PACK_BATCHNORMALIZATION')) {
@@ -9279,7 +9281,9 @@
                 envSpecificBatchNormProgram = BatchNormPackedProgram;
             }
             var program = new envSpecificBatchNormProgram(x.shape, mean.shape, variance.shape, offsetShape, scaleShape, varianceEpsilon);
-            return this.compileAndRun(program, inputs, output);
+            var result = this.compileAndRun(program, inputs, output);
+            console.log(this.texData.get(offset.dataId).texture);
+            return result;
         };
         MathBackendWebGL.prototype.localResponseNormalization4D = function (x, radius, bias, alpha, beta) {
             var program = new LRNProgram(x.shape, radius, bias, alpha, beta);
