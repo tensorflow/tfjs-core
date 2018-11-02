@@ -131,6 +131,10 @@ function adjoint_<T extends Tensor>( a: T|TensorLike ): T
 {
   let $a = convertToTensor(a,'a','bandPart');
 
+  if( $a.rank < 2 ) {
+    throw new Error(`adjoint(): a.rank = ${$a.rank} < 2.`);
+  }
+
   const axes = Array.from( $a.shape, (_,i) => i );
   axes[axes.length-2] = axes.length-1;
   axes[axes.length-1] = axes.length-2;
@@ -164,6 +168,14 @@ function bandPart_<T extends Tensor>(
 
   return ENV.engine.tidy( () => {
     const $a = convertToTensor(a,'a','bandPart');
+
+    if( $a.rank < 2 ) {
+      throw new Error(`bandPart(): a.rank = ${$a.rank} < 2.`);
+    }
+
+    if( ! isFinite($a.abs().max().dataSync()[0]) ) {
+      throw new Error(`bandPart(): NaN and Infinity not yet supported.`);
+    }
 
     const [M,N] = $a.shape.slice(-2);
 
