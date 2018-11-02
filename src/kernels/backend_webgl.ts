@@ -129,6 +129,8 @@ export interface TensorHandle {
   dtype: DataType;
 }
 
+// Empirically determined constant used to determine size threshold for handing
+// off execution to the CPU.
 const CPU_HANDOFF_SIZE_THRESHOLD = 10;
 // Empirically determined constant used to decide the number of bytes on GPU
 // before we start paging. The bytes are this constant * screen area * dpi.
@@ -520,9 +522,9 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   /*
-  This is a heuristic for determing when it would be faster to execute a kernel
-  on the CPU. WebGL kernels opt into running this check and forwarding when
-  appropriate.
+  Tests whether all the inputs to an op are small and on the CPU. This heuristic
+  determines when it would be faster to execute a kernel on the CPU. WebGL
+  kernels opt into running this check and forwarding when appropriate.
   TODO(https://github.com/tensorflow/tfjs/issues/872): Develop a more
   sustainable strategy for optimizing backend execution of ops.
    */
