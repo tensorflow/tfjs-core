@@ -16,6 +16,7 @@
  */
 
 import * as seedrandom from 'seedrandom';
+
 import {ENV} from '../environment';
 import {warn} from '../log';
 import * as array_ops_util from '../ops/array_ops_util';
@@ -30,8 +31,8 @@ import {buffer, scalar, tensor, tensor3d, tensor4d} from '../ops/ops';
 import * as scatter_nd_util from '../ops/scatter_nd_util';
 import * as selu_util from '../ops/selu_util';
 import {getStridedSlicedInfo} from '../ops/slice_util';
-import {DataId, Scalar, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
-import {DataType, DataTypeMap, Rank, ShapeMap, TypedArray, upcastType} from '../types';
+import {DataId, NumericTensor, Scalar, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
+import {DataType, DataTypeMap, DataValues, Rank, ShapeMap, TypedArray, upcastType} from '../types';
 import * as util from '../util';
 import {now} from '../util';
 import {BackendTimingInfo, DataMover, DataStorage, KernelBackend} from './backend';
@@ -42,9 +43,9 @@ import {split} from './split_shared';
 import {topkImpl} from './topk_impl';
 import {whereImpl} from './where_impl';
 
-interface TensorData<T extends DataType> {
-  values?: DataTypeMap[T];
-  dtype: T;
+interface TensorData<D extends DataType> {
+  values?: DataTypeMap[D];
+  dtype: D;
   // For complex numbers, the real and imaginary parts are stored as their own
   // individual tensors, with a parent joining the two with the
   // complexTensors field. When this is defined, texture will be null.
@@ -91,7 +92,7 @@ export class MathBackendCPU implements KernelBackend {
     }
     this.data.set(dataId, {dtype});
   }
-  write(dataId: DataId, values: TypedArray): void {
+  write(dataId: DataId, values: DataValues): void {
     if (values == null) {
       throw new Error('MathBackendCPU.write(): values can not be null');
     }
@@ -156,10 +157,10 @@ export class MathBackendCPU implements KernelBackend {
         [pixels.height, pixels.width, numChannels];
     return tensor3d(values, outShape, 'int32');
   }
-  async read(dataId: DataId): Promise<TypedArray> {
+  async read(dataId: DataId): Promise<DataValues> {
     return this.readSync(dataId);
   }
-  readSync(dataId: DataId): TypedArray {
+  readSync(dataId: DataId): DataValues {
     const {dtype, complexTensors} = this.data.get(dataId);
     if (dtype === 'complex64') {
       const realValues = complexTensors.real.dataSync() as Float32Array;
@@ -703,7 +704,6 @@ export class MathBackendCPU implements KernelBackend {
 
   select(condition: Tensor, a: Tensor, b: Tensor): Tensor {
     this.assertNotComplex([condition, a, b], 'select');
-
     const values = condition.dataSync();
     const aValues = a.dataSync();
     const bValues = b.dataSync();
@@ -733,9 +733,8 @@ export class MathBackendCPU implements KernelBackend {
     return whereImpl(condition.shape, condVals);
   }
 
-  topk<T extends Tensor>(x: T, k: number, sorted: boolean): [T, T] {
+  topk<T extends NumericTensor>(x: T, k: number, sorted: boolean): [T, T] {
     this.assertNotComplex(x, 'topk');
-
     const xVals = x.dataSync();
     return topkImpl(xVals, x.shape, x.dtype, k, sorted);
   }

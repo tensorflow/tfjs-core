@@ -16,7 +16,7 @@
  */
 
 import {tensorToString} from './tensor_format';
-import {DataType, Rank, ShapeMap, TensorLike, TypedArray} from './types';
+import {DataType, DataTypeMap, DataValues, Rank, ShapeMap, TensorLike, TypedArray} from './types';
 import * as util from './util';
 import {computeStrides} from './util';
 
@@ -142,9 +142,9 @@ export class TensorBuffer<R extends Rank> {
 export interface TensorTracker {
   registerTensor(t: Tensor): void;
   disposeTensor(t: Tensor): void;
-  write(dataId: DataId, values: TypedArray): void;
-  read(dataId: DataId): Promise<TypedArray>;
-  readSync(dataId: DataId): TypedArray;
+  write(dataId: DataId, values: DataValues): void;
+  read(dataId: DataId): Promise<DataValues>;
+  readSync(dataId: DataId): DataValues;
   registerVariable(v: Variable): void;
   nextTensorId(): number;
   nextVariableId(): number;
@@ -547,7 +547,8 @@ export class Tensor<R extends Rank = Rank> {
    * of `TypedArray` that resolves when the computation has finished.
    */
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
-  async data(): Promise<TypedArray> {
+  async data<D extends DataType = 'float32' | 'int32' | 'bool'>(dtype?: D):
+      Promise<DataTypeMap[D]> {
     this.throwIfDisposed();
     return trackerFn().read(this.dataId);
   }
@@ -557,7 +558,8 @@ export class Tensor<R extends Rank = Rank> {
    * thread until the values are ready, which can cause performance issues.
    */
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
-  dataSync(): TypedArray {
+  dataSync<D extends DataType = 'float32' | 'int32' | 'bool'>(dtype?: D):
+      DataTypeMap[D] {
     this.throwIfDisposed();
     return trackerFn().readSync(this.dataId);
   }
@@ -1278,6 +1280,14 @@ Object.defineProperty(Tensor, Symbol.hasInstance, {
     return !!instance && instance.shape != null && instance.dtype != null;
   }
 });
+
+export interface NumericTensor<R extends Rank = Rank> extends Tensor<R> {
+  dtype: 'float32'|'int32'|'bool'|'complex64';
+}
+
+export interface StringTensor extends Tensor {
+  dtype: 'string';
+}
 
 /** @doclink Tensor */
 export type Scalar = Tensor<Rank.R0>;

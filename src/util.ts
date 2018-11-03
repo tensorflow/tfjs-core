@@ -297,7 +297,8 @@ export function squeezeShape(shape: number[], axis?: number[]):
   return {newShape, keptDims};
 }
 
-export function getTypedArrayFromDType<D extends DataType>(
+export function
+getTypedArrayFromDType<D extends 'float32'|'int32'|'bool'|'complex64'>(
     dtype: D, size: number): DataTypeMap[D] {
   let values = null;
   if (dtype == null || dtype === 'float32') {
@@ -312,6 +313,23 @@ export function getTypedArrayFromDType<D extends DataType>(
   return values;
 }
 
+export function getArrayFromDType<D extends DataType>(
+    dtype: D, size: number): DataTypeMap[D] {
+  let values = null;
+  if (dtype == null || dtype === 'float32') {
+    values = new Float32Array(size);
+  } else if (dtype === 'int32') {
+    values = new Int32Array(size);
+  } else if (dtype === 'bool') {
+    values = new Uint8Array(size);
+  } else if (dtype === 'string') {
+    values = new Array(size);
+  } else {
+    throw new Error(`Unknown data type ${dtype}`);
+  }
+  return values;
+}
+
 export function checkComputationForNaN<D extends DataType>(
     vals: DataTypeMap[D], dtype: D, name: string): void {
   if (dtype !== 'float32') {
@@ -319,7 +337,7 @@ export function checkComputationForNaN<D extends DataType>(
     return;
   }
   for (let i = 0; i < vals.length; i++) {
-    if (isNaN(vals[i])) {
+    if (isNaN(vals[i] as number)) {
       throw Error(`The result of the '${name}' has NaNs.`);
     }
   }
@@ -333,7 +351,7 @@ export function checkConversionForNaN<D extends DataType>(
   }
 
   for (let i = 0; i < vals.length; i++) {
-    if (isNaN(vals[i])) {
+    if (isNaN(vals[i] as number)) {
       throw Error(`NaN is not a valid value for dtype: '${dtype}'.`);
     }
   }

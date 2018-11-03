@@ -15,12 +15,6 @@
  * =============================================================================
  */
 
-export enum DType {
-  float32 = 'float32',
-  int32 = 'int32',
-  bool = 'bool'
-}
-
 /** @docalias number[] */
 export interface ShapeMap {
   R0: number[];
@@ -38,10 +32,12 @@ export interface DataTypeMap {
   int32: Int32Array;
   bool: Uint8Array;
   complex64: Float32Array;
+  string: string[];
 }
-/** @docalias 'float32'|'int32'|'bool'|'complex64' */
+/** @docalias 'float32'|'int32'|'bool'|'complex64'|'string' */
 export type DataType = keyof DataTypeMap;
-export type TypedArray = DataTypeMap[DataType];
+export type TypedArray = Float32Array|Int32Array|Uint8Array;
+export type DataValues = DataTypeMap[DataType];
 
 export enum Rank {
   R0 = 'R0',
@@ -102,6 +98,12 @@ const upcastTypeMap = {
 };
 
 export function upcastType(typeA: DataType, typeB: DataType): DataType {
+  if (typeA === 'string' || typeB === 'string') {
+    if (typeA === 'string' && typeB === 'string') {
+      return 'string';
+    }
+    throw new Error(`Can not upcast ${typeA} with ${typeB}`);
+  }
   return upcastTypeMap[typeA][typeB];
 }
 

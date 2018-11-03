@@ -16,8 +16,8 @@
  */
 
 import {Conv2DInfo} from '../ops/conv_util';
-import {DataId, Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
-import {DataType, Rank, ShapeMap, TypedArray} from '../types';
+import {DataId, NumericTensor, Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
+import {DataType, DataValues, Rank, ShapeMap} from '../types';
 
 // Required information for all backends.
 export interface BackendTimingInfo {
@@ -27,10 +27,10 @@ export interface BackendTimingInfo {
 }
 
 export interface TensorStorage {
-  read(dataId: DataId): Promise<TypedArray>;
-  readSync(dataId: DataId): TypedArray;
+  read(dataId: DataId): Promise<DataValues>;
+  readSync(dataId: DataId): DataValues;
   disposeData(dataId: DataId): void;
-  write(dataId: DataId, values: TypedArray): void;
+  write(dataId: DataId, values: DataValues): void;
   fromPixels(
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
       numChannels: number): Tensor3D;
@@ -87,16 +87,16 @@ export class KernelBackend implements TensorStorage, BackendTimer {
   time(f: () => void): Promise<BackendTimingInfo> {
     throw new Error('Not yet implemented.');
   }
-  read(dataId: object): Promise<Float32Array|Int32Array|Uint8Array> {
+  read(dataId: object): Promise<DataValues> {
     throw new Error('Not yet implemented.');
   }
-  readSync(dataId: object): Float32Array|Int32Array|Uint8Array {
+  readSync(dataId: object): DataValues {
     throw new Error('Not yet implemented.');
   }
   disposeData(dataId: object): void {
     throw new Error('Not yet implemented.');
   }
-  write(dataId: object, values: Float32Array|Int32Array|Uint8Array): void {
+  write(dataId: object, values: DataValues): void {
     throw new Error('Not yet implemented.');
   }
   fromPixels(
@@ -104,9 +104,7 @@ export class KernelBackend implements TensorStorage, BackendTimer {
       numChannels: number): Tensor<Rank.R3> {
     throw new Error('Not yet implemented.');
   }
-  register(
-      dataId: object, shape: number[],
-      dtype: 'float32'|'int32'|'bool'|'complex64'): void {
+  register(dataId: object, shape: number[], dtype: DataType): void {
     throw new Error('Not yet implemented.');
   }
   memory(): {unreliable: boolean;} {
@@ -220,7 +218,7 @@ export class KernelBackend implements TensorStorage, BackendTimer {
     throw new Error('Not yet implemented');
   }
 
-  topk<T extends Tensor>(x: T, k: number, sorted: boolean): [T, T] {
+  topk<T extends NumericTensor>(x: T, k: number, sorted: boolean): [T, T] {
     throw new Error('Not yet implemented');
   }
 

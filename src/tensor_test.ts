@@ -19,7 +19,7 @@ import * as tf from './index';
 import {describeWithFlags} from './jasmine_util';
 import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
 import {ALL_ENVS, expectArraysClose, expectArraysEqual, expectNumbersClose} from './test_util';
-import {DType, Rank} from './types';
+import {Rank} from './types';
 
 describeWithFlags('tensor', ALL_ENVS, () => {
   it('Tensors of arbitrary size', () => {
@@ -642,7 +642,7 @@ describeWithFlags('tensor', ALL_ENVS, () => {
 
   it('float32 dtype from boolean[]', () => {
     const a = tf.tensor3d(
-      [[[false], [false]], [[true], [false]]], [2, 2, 1], 'float32');
+        [[[false], [false]], [[true], [false]]], [2, 2, 1], 'float32');
     expect(a.dtype).toBe('float32');
     expectArraysClose(a, [0, 0, 1, 0]);
   });
@@ -1038,7 +1038,7 @@ describeWithFlags('tensor', ALL_ENVS, () => {
   });
 
   it('Tensor2D float32 -> bool', () => {
-    const a = tf.tensor2d([1.1, 3.9, -2.9, 0], [2, 2]).asType(DType.bool);
+    const a = tf.tensor2d([1.1, 3.9, -2.9, 0], [2, 2]).asType('bool');
     expect(a.dtype).toBe('bool');
     expect(a.get(0, 0)).toBe(1);
     expect(a.get(0, 1)).toBe(1);

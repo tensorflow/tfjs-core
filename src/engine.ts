@@ -21,7 +21,7 @@ import {backpropagateGradients, getFilteredNodesXToY, NamedGradientMap, TapeNode
 import {DataId, Tensor, Tensor3D, Variable} from './tensor';
 import {NamedTensorMap, NamedVariableMap, TensorContainer} from './tensor_types';
 import {getTensorsInContainer, isTensorInList} from './tensor_util';
-import {DataType, TypedArray} from './types';
+import {DataType, DataValues} from './types';
 import * as util from './util';
 import {makeOnesTypedArray, now, sizeFromShape} from './util';
 
@@ -537,7 +537,7 @@ export class Engine implements TensorManager, DataMover {
   }
 
   // Forwarding to backend.
-  write(dataId: DataId, values: TypedArray): void {
+  write(dataId: DataId, values: DataValues): void {
     const info = this.tensorInfo.get(dataId);
     if (this.backend !== info.backend) {
       // Delete the tensor from the old backend and move it to the new backend.
@@ -547,12 +547,12 @@ export class Engine implements TensorManager, DataMover {
     }
     this.backend.write(dataId, values);
   }
-  readSync(dataId: DataId): TypedArray {
+  readSync(dataId: DataId): DataValues {
     // Route the read to the correct backend.
     const info = this.tensorInfo.get(dataId);
     return info.backend.readSync(dataId);
   }
-  read(dataId: DataId): Promise<TypedArray> {
+  read(dataId: DataId): Promise<DataValues> {
     // Route the read to the correct backend.
     const info = this.tensorInfo.get(dataId);
     return info.backend.read(dataId);

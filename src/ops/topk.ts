@@ -16,7 +16,8 @@
  */
 
 import {ENV} from '../environment';
-import {Tensor} from '../tensor';
+import {NumericTensor, Tensor} from '../tensor';
+import {assertNotString} from '../tensor_util';
 import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import {op} from './operation';
@@ -47,6 +48,7 @@ import {op} from './operation';
 function topk_<T extends Tensor>(
     x: T|TensorLike, k = 1, sorted = true): {values: T, indices: T} {
   const $x = convertToTensor(x, 'x', 'topk');
+  assertNotString($x, 'topk');
   if ($x.rank === 0) {
     throw new Error('topk() expects the input to be of rank 1 or higher');
   }
@@ -58,8 +60,8 @@ function topk_<T extends Tensor>(
   }
 
   const [values, indices] =
-      ENV.engine.runKernel(b => b.topk($x, k, sorted), {$x});
-  return {values, indices};
+      ENV.engine.runKernel(b => b.topk($x as NumericTensor, k, sorted), {$x});
+  return {values, indices} as {values: T, indices: T};
 }
 
 export const topk = op({topk_});

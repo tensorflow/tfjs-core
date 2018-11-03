@@ -16,7 +16,7 @@
  */
 
 import {Tensor} from '../../tensor';
-import {DataType, DataTypeMap} from '../../types';
+import {DataType, TypedArray} from '../../types';
 import * as util from '../../util';
 
 export enum TextureUsage {
@@ -45,7 +45,7 @@ export interface TextureData {
   /** [rows, columns] shape of the texture. */
   texShape: [number, number];
   dtype: DataType;
-  values: DataTypeMap[DataType];
+  values: TypedArray;
   usage: TextureUsage;
   isPacked: boolean;
 }
@@ -75,10 +75,9 @@ export function getMatrixSizeFromUnpackedArraySize(
   return unpackedSize / channelsPerTexture;
 }
 
-export type TypedArray = Float32Array|Uint8Array;
-
 export function encodeMatrixToUnpackedArray(
-    matrix: TypedArray, unpackedArray: TypedArray, channelsPerTexture: number) {
+    matrix: Float32Array|Uint8Array, unpackedArray: Float32Array|Uint8Array,
+    channelsPerTexture: number) {
   const requiredSize =
       getUnpackedArraySizeFromMatrixSize(matrix.length, channelsPerTexture);
   if (unpackedArray.length < requiredSize) {

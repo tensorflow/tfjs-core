@@ -76,7 +76,9 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
     expect(texManager.getNumUsedTextures()).toBe(0);
     backend.getTexture(t.dataId);
     expect(texManager.getNumUsedTextures()).toBe(1);
-    expectArraysClose(backend.readSync(t.dataId), new Float32Array([1, 2, 3]));
+    expectArraysClose(
+        backend.readSync(t.dataId) as Float32Array,
+        new Float32Array([1, 2, 3]));
     expect(texManager.getNumUsedTextures()).toBe(0);
     backend.getTexture(t.dataId);
     expect(texManager.getNumUsedTextures()).toBe(1);
@@ -98,10 +100,14 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
     // overwrite.
     backend.write(t.dataId, new Float32Array([4, 5, 6]));
     expect(texManager.getNumUsedTextures()).toBe(0);
-    expectArraysClose(backend.readSync(t.dataId), new Float32Array([4, 5, 6]));
+    expectArraysClose(
+        backend.readSync(t.dataId) as Float32Array,
+        new Float32Array([4, 5, 6]));
     backend.getTexture(t.dataId);
     expect(texManager.getNumUsedTextures()).toBe(1);
-    expectArraysClose(backend.readSync(t.dataId), new Float32Array([4, 5, 6]));
+    expectArraysClose(
+        backend.readSync(t.dataId) as Float32Array,
+        new Float32Array([4, 5, 6]));
     expect(texManager.getNumUsedTextures()).toBe(0);
   });
 
@@ -115,7 +121,9 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
     const t = tf.Tensor.make([3], {}, 'float32');
     backend.write(t.dataId, new Float32Array([1, 2, 3]));
     expect(texManager.getNumUsedTextures()).toBe(1);
-    expectArraysClose(backend.readSync(t.dataId), new Float32Array([1, 2, 3]));
+    expectArraysClose(
+        backend.readSync(t.dataId) as Float32Array,
+        new Float32Array([1, 2, 3]));
     expect(texManager.getNumUsedTextures()).toBe(1);
     backend.disposeData(t.dataId);
     expect(texManager.getNumUsedTextures()).toBe(0);
@@ -133,7 +141,9 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
     expect(texManager.getNumUsedTextures()).toBe(1);
     backend.write(t.dataId, new Float32Array([4, 5, 6]));
     expect(texManager.getNumUsedTextures()).toBe(1);
-    expectArraysClose(backend.readSync(t.dataId), new Float32Array([4, 5, 6]));
+    expectArraysClose(
+        backend.readSync(t.dataId) as Float32Array,
+        new Float32Array([4, 5, 6]));
     expect(texManager.getNumUsedTextures()).toBe(1);
     backend.disposeData(t.dataId);
     expect(texManager.getNumUsedTextures()).toBe(0);
