@@ -1837,8 +1837,8 @@ export class MathBackendWebGL implements KernelBackend {
       // TODO(smilkov): Propagate the original typed array to gpgpu.
       if (isPacked) {
         const batch = util.sizeFromShape(shape.slice(0, shape.length - 2));
-        const rows = shape[Math.max(0, shape.length - 2)];
-        const cols = shape.length > 1 ? shape[shape.length - 1] : 1;
+        const rows = shape.length > 1 ? shape[shape.length - 2] : 1;
+        const cols = shape[shape.length - 1];
         this.gpgpu.uploadMatrixToPackedTexture(
             newTexture, batch, rows, cols, typedArrayToFloat32(values, dtype));
       } else {

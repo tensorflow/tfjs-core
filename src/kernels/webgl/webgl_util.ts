@@ -352,6 +352,9 @@ export function getTextureShapeFromLogicalShape(
 
   const size = util.sizeFromShape(logShape);
   if (logShape.length <= 1 && size <= maxTexSize) {
+    if (isPacked) {
+      return [1, size];
+    }
     return [size, 1];
   } else if (
       logShape.length === 2 && logShape[0] <= maxTexSize &&
