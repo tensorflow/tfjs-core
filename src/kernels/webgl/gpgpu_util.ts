@@ -255,10 +255,9 @@ export function uploadMatrixToPackedTexture(
     rows: number, columns: number, matrix: Float32Array,
     textureConfig: TextureConfig) {
   const [w, h] = tex_util.getPackedMatrixTextureShapeWidthHeight(rows, columns);
-  const packedRGBA = new Float32Array(
-      tex_util.getPackedRGBAArraySizeFromMatrixShape(rows, columns));
+  const packedRGBA = new Float32Array(batch * tex_util.getPackedRGBAArraySizeFromMatrixShape(rows, columns));
   tex_util.encodeMatrixToPackedRGBA(matrix, batch, rows, columns, packedRGBA);
-  uploadDataToTexture(gl, texture, w, h, packedRGBA, gl.RGBA);
+  uploadDataToTexture(gl, texture, w, batch * h, packedRGBA, gl.RGBA);
 }
 
 export function maybeCreateBufferFromOutputTexture(
