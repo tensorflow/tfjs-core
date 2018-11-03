@@ -16,7 +16,7 @@
  */
 
 import {Tensor} from '../../tensor';
-import {DataType, TypedArray} from '../../types';
+import {DataType, DataValues} from '../../types';
 import * as util from '../../util';
 
 export enum TextureUsage {
@@ -35,19 +35,21 @@ export enum PhysicalTextureType {
 }
 
 export interface TextureData {
-  texture: WebGLTexture;
+  // Required.
+  shape: number[];
+  dtype: DataType;
+
+  // Optional.
+  values?: DataValues;
+  texture?: WebGLTexture;
   // For complex numbers, the real and imaginary parts are stored as their own
   // individual tensors, with a parent joining the two with the
   // complexTensors field. When this is defined, texture will be null.
   complexTensors?: {real: Tensor, imag: Tensor};
-
-  shape: number[];
   /** [rows, columns] shape of the texture. */
-  texShape: [number, number];
-  dtype: DataType;
-  values: TypedArray;
-  usage: TextureUsage;
-  isPacked: boolean;
+  texShape?: [number, number];
+  usage?: TextureUsage;
+  isPacked?: boolean;
 }
 
 export function getUnpackedMatrixTextureShapeWidthHeight(

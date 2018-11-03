@@ -155,7 +155,7 @@ function getPhysicalFromLogicalTextureType(
     return PhysicalTextureType.PACKED_4X1_UNSIGNED_BYTE;
   } else if (logicalTexType === TextureUsage.UPLOAD) {
     return PhysicalTextureType.UNPACKED_FLOAT32;
-  } else if (logicalTexType === TextureUsage.RENDER) {
+  } else if (logicalTexType === TextureUsage.RENDER || logicalTexType == null) {
     return ENV.get('WEBGL_RENDER_FLOAT32_ENABLED') ?
         PhysicalTextureType.UNPACKED_FLOAT32 :
         PhysicalTextureType.UNPACKED_FLOAT16;
