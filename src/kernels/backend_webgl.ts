@@ -1708,6 +1708,7 @@ export class MathBackendWebGL implements KernelBackend {
         // uploaded to the GPU, they get uploaded as packed right off the bat
         if (program.usesPackedTextures) {
           texData.isPacked = true;
+          texData.shape = input.shape;
         }
       } else if (texData.isPacked !== !!program.usesPackedTextures) {
         let preProcessProgram: UnpackProgram|PackProgram;
