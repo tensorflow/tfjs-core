@@ -129,7 +129,6 @@
 
     const zeros = tf.zeros([1, 224, 224, 3]);
     function predict(model) {
-      console.log("PREDICT ============");
       //////////////////////////////////
       // Place model prediction code here.
       //////////////////////////////////
@@ -318,23 +317,17 @@
       await warmUpAndRecordTime();
       await showMsg('Waiting for GC');
       await sleep(1000);
-      // await profileMemory();
-      // await sleep(200);
-      // await measureAveragePredictTime();
-      // await sleep(200);
-      // if (queryTimerIsEnabled()) {
+      await profileMemory();
+      await sleep(200);
+      await measureAveragePredictTime();
+      await sleep(200);
+      if (queryTimerIsEnabled()) {
         await profileKernelTime();
-      // } else {
-      //   showMsg('Skipping kernel times since query timer extension is not ' +
-      //           'available. <br/> Use Chrome 70+.');
-      // };
+      } else {
+        showMsg('Skipping kernel times since query timer extension is not ' +
+                'available. <br/> Use Chrome 70+.');
+      };
     }
-    const a = tf.tensor2d([1, 2, 3, 4, 5, 6, 7, 8, 9], [3, 3]);
-    const b = tf.tensor2d(
-        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], [3, 5]);
-
-    const c = tf.matMul(a, b);
-    console.log("END MATMUL TEST ========");
     onPageLoad();
   </script>
 </body>
