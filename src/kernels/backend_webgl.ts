@@ -1840,7 +1840,7 @@ export class MathBackendWebGL implements KernelBackend {
         const rows = shape.length > 1 ? shape[shape.length - 2] : 1;
         const cols = shape[shape.length - 1];
         this.gpgpu.uploadMatrixToPackedTexture(
-            newTexture, batch, rows, cols, typedArrayToFloat32(values, dtype));
+            newTexture, batch, rows, cols, texShape[0], texShape[1], typedArrayToFloat32(values, dtype));
       } else {
         this.gpgpu.uploadMatrixToTexture(
             newTexture, texShape[0], texShape[1],
