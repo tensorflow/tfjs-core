@@ -509,7 +509,7 @@ export class MathBackendWebGL implements KernelBackend {
     this.textureManager = new TextureManager(this.gpgpu);
   }
 
-  private getCPUBackend(): KernelBackend {
+  private getCPUBackend(): KernelBackend|null {
     if (!ENV.get('WEBGL_CPU_FORWARD')) {
       return null;
     }
