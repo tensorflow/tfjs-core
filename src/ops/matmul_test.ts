@@ -290,6 +290,15 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     expectArraysClose(result, expected);
   });
 
+  it('matmul forwards to dot product', () => {
+    const batch = 3;
+    const sharedDim = 10;
+    const a = tf.ones([batch, 1, sharedDim]);
+    const b = tf.ones([batch, sharedDim, 1]);
+    const result = tf.matMul(a, b);
+    expectArraysClose(result, [10, 10, 10]);
+  });
+
   it('Matrix * vector propagates NaNs', () => {
     const matrix = tf.tensor2d([1, 2, 3, 4], [2, 2]);
     const v = tf.tensor1d([2, NaN]);
