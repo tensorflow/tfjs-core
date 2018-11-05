@@ -600,14 +600,15 @@ export class MathBackendWebGL implements KernelBackend {
     const outerShapeA = transposeA ? a.shape[2] : a.shape[1];
     const outerShapeB = transposeB ? b.shape[1] : b.shape[2];
 
-    const [batch, firstDim, ] = a.shape;
+    const [batch, firstDim, sharedDim] = a.shape;
     const [, , secondDim] = b.shape;
 
-    if (firstDim === 1 && secondDim === 1) {
+    // Since the matrices are vectors, it is faster to call mul().sum()
+    // because sum() is O(sqrt(N)) due to divide-and-conquer.
+    if (firstDim === 1 && secondDim === 1 &&
+        sharedDim > reduce_util.PARALLELIZE_THRESHOLD) {
       const a2D = a.as2D(batch, -1);
       const b2D = b.as2D(batch, -1);
-      // Since the matrices are vectors, it is faster to call mul().sum()
-      // because sum() is O(sqrt(N)) due to divide-and-conquer.
       return this.multiply(a2D, b2D).sum(1 /* axis */).as3D(batch, 1, 1);
     }
 

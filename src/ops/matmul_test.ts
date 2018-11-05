@@ -290,7 +290,7 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     expectArraysClose(result, expected);
   });
 
-  it('matmul forwards to dot product', () => {
+  it('batched matmul with the matrices being vectors', () => {
     const batch = 3;
     const sharedDim = 10;
     const a = tf.ones([batch, 1, sharedDim]);
