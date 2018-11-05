@@ -1188,7 +1188,7 @@ function getPackedSampler6D(inputInfo: InputInfo): string {
   const texelsInBatch = valuesPerRow * Math.ceil(shape[4] / 2);
   const texelsInBatch2 = texelsInBatch * shape[3];
   const texelsInBatch3 = texelsInBatch2 * shape[2];
-  const texelsInBatch4 = texelsInBatch3 * shape[2];
+  const texelsInBatch4 = texelsInBatch3 * shape[1];
 
   return `
     vec4 ${funcName}(int b4, int b3, int b2, int b, int row, int col) {
