@@ -1710,6 +1710,24 @@ export class MathBackendWebGL implements KernelBackend {
           texData.isPacked = true;
           texData.shape = input.shape;
         }
+      } else if (
+          texData.isPacked && !util.isReshapeFree(texData.shape, input.shape)) {
+        // This is a special, temporary case where a texture exists for a tensor
+        // but the shapes are incompatible (due to packing constraints) because
+        // the tensor did not have a chance to go through the packed reshape
+        // shader. This only happens when we reshape the *same* tensor to form
+        // *distinct* inputs to an op, e.g. dotting a vector with itself. This
+        // case will disappear once packed uploading is the default.
+
+        // Temporarily disable delayedStorage so the texture isn't removed from
+        // the original input
+        this.delayedStorage = false;
+        const inputValues = input.dataSync();
+        this.delayedStorage = true;
+
+        input = Tensor.make(input.shape, {values: inputValues}, input.dtype);
+        texData = this.texData.get(input.dataId);
+        texData.isPacked = true;
       } else if (texData.isPacked !== !!program.usesPackedTextures) {
         let preProcessProgram: UnpackProgram|PackProgram;
         let processedInput: Tensor;
@@ -1841,7 +1859,8 @@ export class MathBackendWebGL implements KernelBackend {
         const rows = shape.length > 1 ? shape[shape.length - 2] : 1;
         const cols = shape[shape.length - 1];
         this.gpgpu.uploadMatrixToPackedTexture(
-            newTexture, batch, rows, cols, texShape[0], texShape[1], typedArrayToFloat32(values, dtype));
+            newTexture, batch, rows, cols, texShape[0], texShape[1],
+            typedArrayToFloat32(values, dtype));
       } else {
         this.gpgpu.uploadMatrixToTexture(
             newTexture, texShape[0], texShape[1],
