@@ -605,11 +605,12 @@ export class MathBackendWebGL implements KernelBackend {
 
     // Since the matrices are vectors, it is faster to call mul().sum()
     // because sum() is O(sqrt(N)) due to divide-and-conquer.
-    if (firstDim === 1 && secondDim === 1 &&
+    if ((firstDim === 1 || secondDim === 1) &&
         sharedDim > reduce_util.PARALLELIZE_THRESHOLD) {
-      const a2D = a.as2D(batch, -1);
-      const b2D = b.as2D(batch, -1);
-      return this.multiply(a2D, b2D).sum(1 /* axis */).as3D(batch, 1, 1);
+      const a3D = secondDim === 1 ? a : a.as3D(batch, sharedDim, 1);
+      const axis = secondDim === 1 ? 2 : 1;
+      const b3D = secondDim === 1 ? b.as3D(batch, 1, sharedDim) : b;
+      return this.multiply(a3D, b3D).sum(axis, true /* keepDims */);
     }
 
     // TODO(https://github.com/tensorflow/tfjs/issues/693): Support 3D tensors
