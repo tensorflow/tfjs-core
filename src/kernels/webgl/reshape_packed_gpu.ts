@@ -51,7 +51,8 @@ export class ReshapePackedProgram implements GPGPUProgram {
     }
 
     const mainLoop = getMainLoop(
-        dtype, innerDims, outputShape.slice(-2), inputDtype, inputRCInnerDims, inputRCDims);
+        dtype, innerDims, outputShape.slice(-2), inputDtype, inputRCInnerDims,
+        inputRCDims);
 
     this.userCode = `
       ${getReshapedInputCoords(inputShape)}
