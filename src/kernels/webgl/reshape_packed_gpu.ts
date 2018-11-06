@@ -16,7 +16,7 @@
  */
 
 import * as util from '../../util';
-import {getChannels, getVecChannels} from '../packing_util';
+import {getChannels} from '../packing_util';
 
 import {GPGPUProgram} from './gpgpu_math';
 import {getCoordsDataType} from './shader_compiler';
@@ -38,10 +38,9 @@ export class ReshapePackedProgram implements GPGPUProgram {
     const inputDtype = getCoordsDataType(inputRank);
     const inputRCDims = getChannels('inputRC', inputRank);
 
-    let inputRCInnerDims: string, topLeftifyLogic: string;
+    let inputRCInnerDims: string;
     if (inputRank === 1) {
       inputRCInnerDims = `vec2(0, inputRC)`;
-      topLeftifyLogic = `return int(inputRC / 2) * 2;`;
     } else {
       inputRCInnerDims = `vec2(${
           getChannels('inputRC', inputRank)
@@ -49,88 +48,14 @@ export class ReshapePackedProgram implements GPGPUProgram {
               .map(d => `float(${d})`)
               .join(',')});
       `;
-
-      topLeftifyLogic = `
-        vec2 rowCol = ${inputRCInnerDims};
-        ivec2 topLeft = ivec2(int(rowCol.x / 2.) * 2, int(rowCol.y / 2.) * 2);
-      `;
-
-      if (inputRank === 2) {
-        topLeftifyLogic += `return topLeft;`;
-      } else {
-        const inputRCBatchDims = getVecChannels('inputRC', inputRank - 2);
-        topLeftifyLogic += `
-          return ${inputDtype}(${
-            inputRCBatchDims.join(',')}, topLeft.x, topLeft.y);
-        `;
-      }
     }
 
     const mainLoop = getMainLoop(
-        dtype, innerDims, outputShape.slice(-2), inputDtype, inputRCInnerDims);
-
-    let coordsInitialValue = '-1';
-    for (let i = 0; i < inputRank - 1; i++) {
-      coordsInitialValue += ',-1';
-    }
+        dtype, innerDims, outputShape.slice(-2), inputDtype, inputRCInnerDims, inputRCDims);
 
     this.userCode = `
       ${getReshapedInputCoords(inputShape)}
       ${getFlatIndex(outputShape)}
-
-      vec4 aCached0;
-      vec4 aCached1;
-      vec4 aCached2;
-
-      ${inputDtype} aCoords0 = ${inputDtype}(${coordsInitialValue});
-      ${inputDtype} aCoords1 = ${inputDtype}(${coordsInitialValue});
-      ${inputDtype} aCoords2 = ${inputDtype}(${coordsInitialValue});
-
-      ${inputDtype} topLeftify(${inputDtype} inputRC) {
-        ${topLeftifyLogic}
-      }
-
-      vec4 getACached0(${inputDtype} inputRC) {
-        aCoords0 = topLeftify(inputRC);
-        aCached0 = getA(${inputRCDims});
-        return aCached0;
-      }
-
-      vec4 getACached1(${inputDtype} inputRC) {
-        aCoords1 = topLeftify(inputRC);
-        if(aCoords1 == aCoords0) {
-          aCached1 = aCached0;
-        } else {
-          aCached1 = getA(${inputRCDims});
-        }
-        return aCached1;
-      }
-
-      vec4 getACached2(${inputDtype} inputRC) {
-        aCoords2 = topLeftify(inputRC);
-        if(aCoords2 == aCoords0) {
-          aCached2 = aCached0;
-        } else if(aCoords2 == aCoords1) {
-          aCached2 = aCached1;
-        } else {
-          aCached2 = getA(${inputRCDims});
-        }
-        return aCached2;
-      }
-
-      vec4 getACached3(${inputDtype} inputRC) {
-        ${inputDtype} aCoords3 = topLeftify(inputRC);
-
-        if(aCoords3 == aCoords0) {
-          return aCached0;
-        } else if(aCoords3 == aCoords1) {
-          return aCached1;
-        } else if(aCoords3 == aCoords2) {
-          return aCached2;
-        }
-
-        return getA(${inputRCDims});
-      }
 
       void main() {
         ${dtype} rc = getOutputCoords();
@@ -147,7 +72,7 @@ export class ReshapePackedProgram implements GPGPUProgram {
 
 function getMainLoop(
     dtype: string, innerDims: string[], shapeInnerDims: number[],
-    inputDtype: string, inputRCInnerDims: string) {
+    inputDtype: string, inputRCInnerDims: string, inputRCDims: string[]) {
   let channels: number, outCoordRow: string, outCoordCol: string,
       inBoundsCheck: string;
   if (dtype === 'int') {
@@ -180,7 +105,7 @@ function getMainLoop(
         ${inputDtype} inputRC = inputCoordsFromReshapedOutCoords(flatIndex);
         vec2 inputRCInnerDims = ${inputRCInnerDims};
 
-        result[${i}] = getChannel(getACached${i}(inputRC), inputRCInnerDims);
+        result[${i}] = getChannel(getA(${inputRCDims}), inputRCInnerDims);
       ${i > 0 ? '}' : ''}
     `;
   }
