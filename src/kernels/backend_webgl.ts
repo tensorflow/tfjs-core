@@ -1745,10 +1745,15 @@ export class MathBackendWebGL implements KernelBackend {
 
   private packedReshape<R extends Rank>(input: Tensor, afterShape: ShapeMap[R]):
       Tensor<R> {
-    console.warn(`Expensive reshape: ${input.shape} to ${afterShape}`);
-    const program = new ReshapePackedProgram(afterShape, input.shape);
-    return this.compileAndRun(
-        program, [input], this.makePackedTensor(afterShape));
+    const inputAs3D = input.reshape(
+        [util.getBatchDim(input.shape), ...util.getRowsCols(input.shape)]);
+    const afterShapeAs3D =
+        [util.getBatchDim(afterShape), ...util.getRowsCols(afterShape)];
+    const program = new ReshapePackedProgram(afterShapeAs3D, inputAs3D.shape);
+    return this
+        .compileAndRun(
+            program, [inputAs3D], this.makePackedTensor(afterShapeAs3D))
+        .reshape(afterShape);
   }
 
   public compileAndRun<
