@@ -1749,7 +1749,9 @@ export class MathBackendWebGL implements KernelBackend {
         [util.getBatchDim(input.shape), ...util.getRowsCols(input.shape)]);
     const afterShapeAs3D =
         [util.getBatchDim(afterShape), ...util.getRowsCols(afterShape)];
-    const program = new ReshapePackedProgram(afterShapeAs3D, inputAs3D.shape);
+    const program = new ReshapePackedProgram(
+        afterShapeAs3D as [number, number, number],
+        inputAs3D.shape as [number, number, number]);
     return this
         .compileAndRun(
             program, [inputAs3D], this.makePackedTensor(afterShapeAs3D))

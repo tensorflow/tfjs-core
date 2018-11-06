@@ -15,8 +15,6 @@
  * =============================================================================
  */
 
-import * as util from '../../util';
-
 import {GPGPUProgram} from './gpgpu_math';
 import * as shader_util from './shader_compiler_util';
 
@@ -32,8 +30,7 @@ export class ReshapePackedProgram implements GPGPUProgram {
     this.outputShape = outputShape;
     const shapeInnerDims = outputShape.slice(-2);
 
-    let mainLoop = `ivec3 thisRC;`;
-
+    let mainLoop = ``;
     for (let i = 0; i < 4; i++) {
       let thisRC = `thisRC = rc;`;
       if (i % 2 === 1) {
@@ -69,6 +66,8 @@ export class ReshapePackedProgram implements GPGPUProgram {
 
         vec4 result = vec4(0.);
 
+        ivec3 thisRC;
+
         ${mainLoop}
 
         setOutput(result);
@@ -77,55 +76,26 @@ export class ReshapePackedProgram implements GPGPUProgram {
   }
 }
 
-function getFlatIndex(shape: number[]): string {
-  const rank = shape.length;
-  util.assert(rank < 7, `Packed ${rank}-D flat indexing is not yet supported`);
-
-  const funcName = 'getFlatIndex';
-
-  if (rank === 1) {
-    return `
-      int ${funcName}(int coords) {
-        return coords;
-      }
-    `;
-  }
-
-  const strides = shader_util.getStrides(shape);
-  const coords =
-      ['x', 'y', 'z', 'w', 'u', 'v'].slice(0, rank).map(d => `coords.${d}`);
-  const dotCoordsWithStrides =
-      shader_util.dotify(coords, strides.map(d => d.toString()).concat(['1.']));
+function getFlatIndex(shape: [number, number, number]): string {
+  const dotCoordsWithStrides = shader_util.dotify(
+      ['coords.x', 'coords.y', 'coords.z'],
+      shader_util.getStrides(shape).map(d => d.toString()).concat(['1.']));
 
   return `
-    int ${funcName}(ivec3 coords) {
+    int getFlatIndex(ivec3 coords) {
       return round(${dotCoordsWithStrides});
     }
   `;
 }
 
-function getReshapedInputCoords(shape: number[]): string {
-  const rank = shape.length;
-  util.assert(rank < 7, `Packed ${rank}-D reshaping is not yet supported`);
-
-  const funcName = 'inputCoordsFromReshapedOutCoords';
-
-  if (rank === 1) {
-    return `
-      int ${funcName}(int index) {
-        return index;
-      }
-    `;
-  }
-
-  const dims = ['r', 'c', 'd', 'd2', 'd3', 'd4'].slice(0, rank);
+function getReshapedInputCoords(shape: [number, number, number]): string {
   const coordsFromIndexSnippet =
-      shader_util.getLogicalCoordinatesFromFlatIndex(dims, shape);
+      shader_util.getLogicalCoordinatesFromFlatIndex(['r', 'c', 'd'], shape);
 
   return `
-    ivec${rank} ${funcName}(int index) {
+    ivec3 inputCoordsFromReshapedOutCoords(int index) {
       ${coordsFromIndexSnippet}
-      return ivec${rank}(${dims.join(',')});
+      return ivec3(r, c, d);
     }
   `;
 }
