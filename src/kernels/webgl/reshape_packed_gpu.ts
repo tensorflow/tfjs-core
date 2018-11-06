@@ -28,7 +28,6 @@ export class ReshapePackedProgram implements GPGPUProgram {
     number, number, number
   ]) {
     this.outputShape = outputShape;
-    const shapeInnerDims = outputShape.slice(-2);
 
     let mainLoop = ``;
     for (let i = 0; i < 4; i++) {
@@ -42,10 +41,7 @@ export class ReshapePackedProgram implements GPGPUProgram {
 
       mainLoop += `
         ${thisRC}
-        ${
-          i > 0 ? `if(thisRC.y < ${shapeInnerDims[0]} && thisRC.z < ${
-                      shapeInnerDims[1]}){` :
-                  ''}
+        ${i > 0 ? `if(thisRC.y < rows && thisRC.z < cols){` : ''}
           int flatIndex = getFlatIndex(thisRC);
 
           ivec3 inputRC = inputCoordsFromReshapedOutCoords(flatIndex);
@@ -67,6 +63,8 @@ export class ReshapePackedProgram implements GPGPUProgram {
         vec4 result = vec4(0.);
 
         ivec3 thisRC;
+        int rows = ${outputShape[1]};
+        int cols = ${outputShape[2]};
 
         ${mainLoop}
 
