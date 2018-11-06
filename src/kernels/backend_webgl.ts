@@ -1543,7 +1543,7 @@ export class MathBackendWebGL implements KernelBackend {
   reshape<R extends Rank>(x: Tensor, shape: ShapeMap[R]): Tensor<R> {
     if (this.texData.get(x.dataId).isPacked &&
         !util.isReshapeFree(x.shape, shape)) {
-      x = this.packedReshape(x, shape);
+      return this.packedReshape(x, shape);
     }
     return backend_util.reshapeTensor(x, shape);
   }
@@ -1743,7 +1743,8 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [input]);
   }
 
-  private packedReshape<T extends Tensor>(input: T, afterShape: number[]): T {
+  private packedReshape<R extends Rank>(input: Tensor, afterShape: ShapeMap[R]):
+      Tensor<R> {
     console.warn(`Expensive reshape: ${input.shape} to ${afterShape}`);
     const program = new ReshapePackedProgram(afterShape, input.shape);
     return this.compileAndRun(
