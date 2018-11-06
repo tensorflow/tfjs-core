@@ -19,7 +19,6 @@ import * as util from '../../util';
 import {getChannels} from '../packing_util';
 
 import {GPGPUProgram} from './gpgpu_math';
-import {getCoordsDataType} from './shader_compiler';
 import * as shader_util from './shader_compiler_util';
 
 export class ReshapePackedProgram implements GPGPUProgram {
@@ -32,22 +31,11 @@ export class ReshapePackedProgram implements GPGPUProgram {
     number, number, number
   ]) {
     this.outputShape = outputShape;
-    const rank = outputShape.length;
-    const dtype = getCoordsDataType(rank);
-    const innerDims = ['thisRC.y', 'thisRC.z'];
-
-    const inputRank = inputShape.length;
-    const inputDtype = getCoordsDataType(inputRank);
-
-    let inputRCInnerDims = `vec2(${
-        getChannels('inputRC', inputRank)
-            .slice(-2)
-            .map(d => `float(${d})`)
-            .join(',')});
+    const inputRCInnerDims = `vec2(${
+        getChannels('inputRC', 3).slice(-2).map(d => `float(${d})`).join(',')});
     `;
 
-    const mainLoop = getMainLoop(
-        dtype, innerDims, outputShape.slice(-2), inputDtype, inputRCInnerDims);
+    const mainLoop = getMainLoop(outputShape.slice(-2), inputRCInnerDims);
 
     this.userCode = `
       ${getReshapedInputCoords(inputShape)}
@@ -66,28 +54,23 @@ export class ReshapePackedProgram implements GPGPUProgram {
   }
 }
 
-function getMainLoop(
-    dtype: string, innerDims: string[], shapeInnerDims: number[],
-    inputDtype: string, inputRCInnerDims: string) {
-  const channels = 4;
-  const outCoordRow = innerDims[0];
-  const outCoordCol = innerDims[1];
-  const inBoundsCheck = `${outCoordRow} < ${shapeInnerDims[0]} && ${
-      outCoordCol} < ${shapeInnerDims[1]}`;
-
+function getMainLoop(shapeInnerDims: number[], inputRCInnerDims: string) {
   let result = `ivec3 thisRC;`;
-  for (let i = 0; i < channels; i++) {
+  for (let i = 0; i < 4; i++) {
     let thisRC = `thisRC = rc;`;
     if (i % 2 === 1) {
-      thisRC += `${outCoordCol} += 1;`;
+      thisRC += `thisRC.z += 1;`;
     }
     if (i > 1) {
-      thisRC += `${outCoordRow} += 1;`;
+      thisRC += `thisRC.y += 1;`;
     }
 
     result += `
       ${thisRC}
-      ${i > 0 ? `if(${inBoundsCheck}){` : ''}
+      ${
+        i > 0 ? `if(thisRC.y < ${shapeInnerDims[0]} && thisRC.z < ${
+                    shapeInnerDims[1]}){` :
+                ''}
         int flatIndex = getFlatIndex(thisRC);
 
         ivec3 inputRC = inputCoordsFromReshapedOutCoords(flatIndex);
