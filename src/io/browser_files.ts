@@ -89,9 +89,9 @@ export class BrowserDownloads implements IOHandler {
       // Trigger downloads by calling the `click` methods on the download
       // anchors.
       if(navigator.userAgent.indexOf('Firefox') !== -1) {
-        var evt = document.createEvent('MouseEvents')
+        const evt = document.createEvent('MouseEvents');
         evt.initMouseEvent('click', true, true, window, 0, 0, 0, 80,
-                              20, false, false, false, false, 0, null)
+                              20, false, false, false, false, 0, null);
         jsonAnchor.dispatchEvent(evt);
       }
       else {
@@ -105,9 +105,9 @@ export class BrowserDownloads implements IOHandler {
         weightDataAnchor.download = this.weightDataFileName;
         weightDataAnchor.href = weightsURL;
         if(navigator.userAgent.indexOf('Firefox') !== -1) {
-          var evt = document.createEvent('MouseEvents')
+          const evt = document.createEvent('MouseEvents');
           evt.initMouseEvent('click', true, true, window, 0, 0, 0, 80,
-                                20, false, false, false, false, 0, null)
+                                20, false, false, false, false, 0, null);
           weightDataAnchor.dispatchEvent(evt);
         }
         else {
