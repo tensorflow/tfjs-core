@@ -15,18 +15,11 @@
  * =============================================================================
  */
 
-export function getStrides(shape: number[]): number[] {
-  const strides: number[] = [];
-  for (let i = shape.length - 1; i > 0; i--) {
-    strides.push(
-        shape[i] * (i === shape.length - 1 ? 1 : strides[strides.length - 1]));
-  }
-  return strides.reverse();
-}
+import * as util from '../../util';
 
 export function getLogicalCoordinatesFromFlatIndex(
     coords: string[], shape: number[], index = 'index'): string {
-  const strides = getStrides(shape);
+  const strides = util.computeStrides(shape);
   return strides
       .map((stride, i) => {
         const line1 = `int ${coords[i]} = ${index} / ${stride}`;
