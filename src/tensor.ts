@@ -21,9 +21,9 @@ import * as util from './util';
 import {computeStrides} from './util';
 
 /** @hidden */
-export interface TensorData {
+export interface TensorData<D extends DataType> {
   dataId?: DataId;
-  values?: TypedArray;
+  values?: DataTypeMap[D];
 }
 
 /**
@@ -37,7 +37,7 @@ export class TensorBuffer<R extends Rank> {
   size: number;
   shape: ShapeMap[R];
   strides: number[];
-  values: TypedArray;
+  values: DataValues;
 
   constructor(shape: ShapeMap[R], public dtype: DataType, values?: TypedArray) {
     this.shape = shape.slice();
@@ -56,8 +56,8 @@ export class TensorBuffer<R extends Rank> {
           `a TensorBuffer for the real and imaginary parts separately and ` +
           `call tf.complex(real, imag).`);
     }
-    this.values = values ||
-        util.getTypedArrayFromDType(dtype, util.sizeFromShape(this.shape));
+    this.values =
+        values || util.getArrayFromDType(dtype, util.sizeFromShape(this.shape));
     this.strides = computeStrides(shape);
   }
 
@@ -402,7 +402,7 @@ export class Tensor<R extends Rank = Rank> {
   readonly strides: number[];
 
   protected constructor(
-      shape: ShapeMap[R], dtype: DataType, values?: TypedArray,
+      shape: ShapeMap[R], dtype: DataType, values?: DataValues,
       dataId?: DataId) {
     this.shape = shape.slice();
     this.dtype = dtype || 'float32';
@@ -431,7 +431,7 @@ export class Tensor<R extends Rank = Rank> {
    */
   static make<T extends Tensor<R>, D extends DataType = 'float32',
                                              R extends Rank = Rank>(
-      shape: ShapeMap[R], data: TensorData, dtype?: D): T {
+      shape: ShapeMap[R], data: TensorData<D>, dtype?: D): T {
     return new Tensor(shape, dtype, data.values, data.dataId) as T;
   }
 

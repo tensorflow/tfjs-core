@@ -21,7 +21,7 @@ import {convertToTensor} from '../tensor_util_env';
 import {inferShape} from '../tensor_util_env';
 import {TensorLike, TensorLike1D, TensorLike2D, TensorLike3D, TensorLike4D, TensorLike5D, TensorLike6D} from '../types';
 import {ArrayData, DataType, Rank, ShapeMap} from '../types';
-import {assertNonNull, assertShapesMatch, getTypedArrayFromDType, isTypedArray, makeOnesTypedArray, makeZerosTypedArray, sizeFromShape, toTypedArray} from '../util';
+import {assertNonNull, assertShapesMatch, getArrayFromDType, isTypedArray, makeOnesTypedArray, makeZerosTypedArray, sizeFromShape, toTypedArray} from '../util';
 import {complex} from './complex_ops';
 import {op} from './operation';
 
@@ -411,9 +411,11 @@ function zeros<R extends Rank>(
  * 'float'.
  */
 /** @doc {heading: 'Tensors', subheading: 'Creation'} */
-function fill<R extends Rank>(
-    shape: ShapeMap[R], value: number, dtype: DataType = 'float32'): Tensor<R> {
-  const values = getTypedArrayFromDType(dtype, sizeFromShape(shape));
+function fill<R extends Rank, D extends DataType = 'float32'>(
+    shape: ShapeMap[R], value: number|string, dtype?: D): Tensor<R> {
+  dtype = dtype || 'float32' as D;
+  const values = getArrayFromDType(dtype, sizeFromShape(shape));
+  // @ts-ignore
   values.fill(value);
   return Tensor.make(shape, {values}, dtype);
 }
