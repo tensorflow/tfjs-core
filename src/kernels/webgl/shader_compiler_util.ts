@@ -17,6 +17,11 @@
 
 import * as util from '../../util';
 
+/**
+ * Produces GLSL code that derives logical coordinates from a flat
+ * index. The code performs integer division with each stride and decrements
+ * the index until the index equals the final dimension coordinate.
+ */
 export function getLogicalCoordinatesFromFlatIndex(
     coords: string[], shape: number[], index = 'index'): string {
   const strides = util.computeStrides(shape);
@@ -38,10 +43,15 @@ function buildVec(x: string[]): string {
   return `vec${x.length}(${x.join(',')})`;
 }
 
+/**
+ * Produces GLSL code that computes the dot product of the input x and y
+ * vectors. Handles splitting inputs into increments of vec4s when necessary.
+ */
 export function dotify(x: string[], y: string[]): string {
   if (x.length !== y.length) {
-    throw new Error(`Vectors to be dotted must be of the same length - got ${
-        x.length} and ${y.length}`);
+    throw new Error(
+        `Vectors to be dotted must be of the same length -` +
+        `got ${x.length} and ${y.length}`);
   }
 
   const slices: string[] = [];
