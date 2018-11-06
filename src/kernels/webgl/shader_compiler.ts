@@ -68,6 +68,7 @@ export function makeShader(
     shaderPrefix, FLOAT_TEXTURE_SAMPLE_SNIPPET, floatTextureSetOutputSnippet,
     inputPrefixSnippet, outputSamplingSnippet, inputSamplingSnippet, userCode
   ].join('\n');
+  console.log(source);
   return source;
 }
 
@@ -983,7 +984,6 @@ function getSampler4D(inputInfo: InputInfo): string {
   `;
 }
 
-
 function getSampler5D(inputInfo: InputInfo): string {
   const shape = inputInfo.shapeInfo.logicalShape;
   const texName = inputInfo.name;
@@ -1061,8 +1061,6 @@ function getSampler5D(inputInfo: InputInfo): string {
     }
   `;
 }
-
-
 
 function getSampler6D(inputInfo: InputInfo): string {
   const shape = inputInfo.shapeInfo.logicalShape;
