@@ -133,6 +133,10 @@ export interface TensorHandle {
 const BEFORE_PAGING_CONSTANT = 300;
 // Tensors with size <= than this will be uploaded as uniforms, not textures.
 export const SIZE_UPLOAD_UNIFORM = 4;
+// Empirically determined minimal shared dimension in matmul before we forward
+// to a.mul(b).sum() in order to take advantage of GPU parallelism. See
+// https://github.com/tensorflow/tfjs-core/pull/1379 for benchmarks.
+const MATMUL_SHARED_DIM_THRESHOLD = 1000;
 
 export class MathBackendWebGL implements KernelBackend {
   private texData: DataStorage<TextureData>;
@@ -606,7 +610,7 @@ export class MathBackendWebGL implements KernelBackend {
     // Since the matrices are vectors, it is faster to call mul().sum()
     // because sum() is O(sqrt(N)) due to divide-and-conquer.
     if ((firstDim === 1 || secondDim === 1) &&
-        sharedDim > reduce_util.PARALLELIZE_THRESHOLD) {
+        sharedDim > MATMUL_SHARED_DIM_THRESHOLD) {
       const a3D = secondDim === 1 ? a : a.as3D(batch, sharedDim, 1);
       const axis = secondDim === 1 ? 2 : 1;
       const b3D = secondDim === 1 ? b.as3D(batch, 1, sharedDim) : b;
