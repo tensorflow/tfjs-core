@@ -28,38 +28,33 @@ export class ReshapePackedProgram implements GPGPUProgram {
   outputShape: number[];
   userCode: string;
 
-  constructor(outputShape: number[], inputShape: number[]) {
+  constructor(outputShape: [number, number, number], inputShape: [
+    number, number, number
+  ]) {
     this.outputShape = outputShape;
     const rank = outputShape.length;
     const dtype = getCoordsDataType(rank);
-    const innerDims = getChannels('thisRC', rank).slice(-2);
+    const innerDims = ['thisRC.y', 'thisRC.z'];
 
     const inputRank = inputShape.length;
     const inputDtype = getCoordsDataType(inputRank);
-    const inputRCDims = getChannels('inputRC', inputRank);
 
-    let inputRCInnerDims: string;
-    if (inputRank === 1) {
-      inputRCInnerDims = `vec2(0, inputRC)`;
-    } else {
-      inputRCInnerDims = `vec2(${
-          getChannels('inputRC', inputRank)
-              .slice(-2)
-              .map(d => `float(${d})`)
-              .join(',')});
-      `;
-    }
+    let inputRCInnerDims = `vec2(${
+        getChannels('inputRC', inputRank)
+            .slice(-2)
+            .map(d => `float(${d})`)
+            .join(',')});
+    `;
 
     const mainLoop = getMainLoop(
-        dtype, innerDims, outputShape.slice(-2), inputDtype, inputRCInnerDims,
-        inputRCDims);
+        dtype, innerDims, outputShape.slice(-2), inputDtype, inputRCInnerDims);
 
     this.userCode = `
       ${getReshapedInputCoords(inputShape)}
       ${getFlatIndex(outputShape)}
 
       void main() {
-        ${dtype} rc = getOutputCoords();
+        ivec3 rc = getOutputCoords();
 
         vec4 result = vec4(0.);
 
@@ -73,22 +68,14 @@ export class ReshapePackedProgram implements GPGPUProgram {
 
 function getMainLoop(
     dtype: string, innerDims: string[], shapeInnerDims: number[],
-    inputDtype: string, inputRCInnerDims: string, inputRCDims: string[]) {
-  let channels: number, outCoordRow: string, outCoordCol: string,
-      inBoundsCheck: string;
-  if (dtype === 'int') {
-    channels = 2;
-    outCoordCol = innerDims[0];
-    inBoundsCheck = `${outCoordCol} < ${shapeInnerDims[0]}`;
-  } else {
-    channels = 4;
-    outCoordRow = innerDims[0];
-    outCoordCol = innerDims[1];
-    inBoundsCheck = `${outCoordRow} < ${shapeInnerDims[0]} && ${
-        outCoordCol} < ${shapeInnerDims[1]}`;
-  }
+    inputDtype: string, inputRCInnerDims: string) {
+  const channels = 4;
+  const outCoordRow = innerDims[0];
+  const outCoordCol = innerDims[1];
+  const inBoundsCheck = `${outCoordRow} < ${shapeInnerDims[0]} && ${
+      outCoordCol} < ${shapeInnerDims[1]}`;
 
-  let result = `${dtype} thisRC;`;
+  let result = `ivec3 thisRC;`;
   for (let i = 0; i < channels; i++) {
     let thisRC = `thisRC = rc;`;
     if (i % 2 === 1) {
@@ -103,10 +90,11 @@ function getMainLoop(
       ${i > 0 ? `if(${inBoundsCheck}){` : ''}
         int flatIndex = getFlatIndex(thisRC);
 
-        ${inputDtype} inputRC = inputCoordsFromReshapedOutCoords(flatIndex);
+        ivec3 inputRC = inputCoordsFromReshapedOutCoords(flatIndex);
         vec2 inputRCInnerDims = ${inputRCInnerDims};
 
-        result[${i}] = getChannel(getA(${inputRCDims}), inputRCInnerDims);
+        result[${
+        i}] = getChannel(getA(inputRC.x, inputRC.y, inputRC.z), inputRCInnerDims);
       ${i > 0 ? '}' : ''}
     `;
   }
@@ -135,7 +123,7 @@ function getFlatIndex(shape: number[]): string {
       shader_util.dotify(coords, strides.map(d => d.toString()).concat(['1.']));
 
   return `
-    int ${funcName}(ivec${rank} coords) {
+    int ${funcName}(ivec3 coords) {
       return round(${dotCoordsWithStrides});
     }
   `;
