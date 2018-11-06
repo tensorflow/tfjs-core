@@ -296,7 +296,32 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     const a = tf.ones([batch, 1, sharedDim]);
     const b = tf.ones([batch, sharedDim, 1]);
     const result = tf.matMul(a, b);
+    expect(result.shape).toEqual([batch, 1, 1]);
     expectArraysClose(result, [sharedDim, sharedDim, sharedDim]);
+  });
+
+  it('batched matmul with matrix x vector', () => {
+    const batch = 3;
+    const sharedDim = 10000;
+    const a = tf.ones([batch, 2, sharedDim]);
+    const b = tf.ones([batch, sharedDim, 1]);
+    const result = tf.matMul(a, b);
+    expect(result.shape).toEqual([batch, 2, 1]);
+    expectArraysClose(
+        result,
+        [sharedDim, sharedDim, sharedDim, sharedDim, sharedDim, sharedDim]);
+  });
+
+  it('batched matmul with vector x matrix', () => {
+    const batch = 3;
+    const sharedDim = 10000;
+    const a = tf.ones([batch, 1, sharedDim]);
+    const b = tf.ones([batch, sharedDim, 2]);
+    const result = tf.matMul(a, b);
+    expect(result.shape).toEqual([batch, 1, 2]);
+    expectArraysClose(
+        result,
+        [sharedDim, sharedDim, sharedDim, sharedDim, sharedDim, sharedDim]);
   });
 
   it('Matrix * vector propagates NaNs', () => {
