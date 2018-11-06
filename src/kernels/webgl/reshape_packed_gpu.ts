@@ -16,7 +16,6 @@
  */
 
 import * as util from '../../util';
-import {getChannels} from '../packing_util';
 
 import {GPGPUProgram} from './gpgpu_math';
 import * as shader_util from './shader_compiler_util';
@@ -31,11 +30,35 @@ export class ReshapePackedProgram implements GPGPUProgram {
     number, number, number
   ]) {
     this.outputShape = outputShape;
-    const inputRCInnerDims = `vec2(${
-        getChannels('inputRC', 3).slice(-2).map(d => `float(${d})`).join(',')});
-    `;
+    const shapeInnerDims = outputShape.slice(-2);
 
-    const mainLoop = getMainLoop(outputShape.slice(-2), inputRCInnerDims);
+    let mainLoop = `ivec3 thisRC;`;
+
+    for (let i = 0; i < 4; i++) {
+      let thisRC = `thisRC = rc;`;
+      if (i % 2 === 1) {
+        thisRC += `thisRC.z += 1;`;
+      }
+      if (i > 1) {
+        thisRC += `thisRC.y += 1;`;
+      }
+
+      mainLoop += `
+        ${thisRC}
+        ${
+          i > 0 ? `if(thisRC.y < ${shapeInnerDims[0]} && thisRC.z < ${
+                      shapeInnerDims[1]}){` :
+                  ''}
+          int flatIndex = getFlatIndex(thisRC);
+
+          ivec3 inputRC = inputCoordsFromReshapedOutCoords(flatIndex);
+          vec2 inputRCInnerDims = vec2(float(inputRC.y),float(inputRC.z));;
+
+          result[${
+          i}] = getChannel(getA(inputRC.x, inputRC.y, inputRC.z), inputRCInnerDims);
+        ${i > 0 ? '}' : ''}
+      `;
+    }
 
     this.userCode = `
       ${getReshapedInputCoords(inputShape)}
@@ -52,37 +75,6 @@ export class ReshapePackedProgram implements GPGPUProgram {
       }
     `;
   }
-}
-
-function getMainLoop(shapeInnerDims: number[], inputRCInnerDims: string) {
-  let result = `ivec3 thisRC;`;
-  for (let i = 0; i < 4; i++) {
-    let thisRC = `thisRC = rc;`;
-    if (i % 2 === 1) {
-      thisRC += `thisRC.z += 1;`;
-    }
-    if (i > 1) {
-      thisRC += `thisRC.y += 1;`;
-    }
-
-    result += `
-      ${thisRC}
-      ${
-        i > 0 ? `if(thisRC.y < ${shapeInnerDims[0]} && thisRC.z < ${
-                    shapeInnerDims[1]}){` :
-                ''}
-        int flatIndex = getFlatIndex(thisRC);
-
-        ivec3 inputRC = inputCoordsFromReshapedOutCoords(flatIndex);
-        vec2 inputRCInnerDims = ${inputRCInnerDims};
-
-        result[${
-        i}] = getChannel(getA(inputRC.x, inputRC.y, inputRC.z), inputRCInnerDims);
-      ${i > 0 ? '}' : ''}
-    `;
-  }
-
-  return result;
 }
 
 function getFlatIndex(shape: number[]): string {
