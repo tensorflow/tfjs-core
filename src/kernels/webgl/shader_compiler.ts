@@ -793,6 +793,20 @@ function getPackedSampler3D(inputInfo: InputInfo): string {
   const texShape = inputInfo.shapeInfo.texShape;
   const packedTexShape =
       [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
+
+  if (shape[0] === 1) {
+    const squeezedShape = shape.slice(1);
+    const keptDims = [1, 2];
+    const newInputInfo = squeezeInputInfo(inputInfo, squeezedShape);
+    const params = ['b', 'row', 'col'];
+    return `
+        ${getPackedSamplerFromInInfo(newInputInfo)}
+        vec4 ${funcName}(int b, int row, int col) {
+          return ${funcName}(${getSqueezedParams(params, keptDims)});
+        }
+      `;
+  }
+
   const texNumR = packedTexShape[0];
   const texNumC = packedTexShape[1];
 
