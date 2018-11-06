@@ -292,11 +292,11 @@ describeWithFlags('matmul', ALL_ENVS, () => {
 
   it('batched matmul with the matrices being vectors', () => {
     const batch = 3;
-    const sharedDim = 10;
+    const sharedDim = 10000;
     const a = tf.ones([batch, 1, sharedDim]);
     const b = tf.ones([batch, sharedDim, 1]);
     const result = tf.matMul(a, b);
-    expectArraysClose(result, [10, 10, 10]);
+    expectArraysClose(result, [sharedDim, sharedDim, sharedDim]);
   });
 
   it('Matrix * vector propagates NaNs', () => {
