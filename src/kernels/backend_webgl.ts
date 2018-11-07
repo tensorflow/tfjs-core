@@ -344,12 +344,12 @@ export class MathBackendWebGL implements KernelBackend {
     this.pendingRead.delete(dataId);
 
     // Notify all pending reads.
-    subscribers.forEach(resolve => resolve(vals));
+    subscribers.forEach(resolve => resolve(texData.values));
     if (this.pendingDisposal.has(dataId)) {
       this.pendingDisposal.delete(dataId);
       this.disposeData(dataId);
     }
-    return vals;
+    return texData.values;
   }
 
   private getValuesFromTexture(dataId: DataId): Float32Array {
