@@ -29,11 +29,11 @@ if [[ $(node -v) = *v10* ]]; then
 
   # Run the rest of the karma tests in parallel. These runs will reuse the
   # already downloaded binary.
-  npm-run-all -p -c --aggregate-output \
-    "run-browserstack --browsers=bs_safari_mac --features '{\"HAS_WEBGL\": false}' --backend cpu" \
-    "run-browserstack --browsers=bs_ios_11 --backend webgl --features '{\"WEBGL_CPU_FORWARD\": false}'" \
-    "run-browserstack --browsers=bs_ios_11 --features '{\"HAS_WEBGL\": false}' --backend cpu" \
-    "run-browserstack --browsers=bs_firefox_mac" \ # Implicitly has WEBGL_CPU_FORWARD: false
-    "run-browserstack --browsers=bs_chrome_mac" \ # Implicitly has WEBGL_CPU_FORWARD: false
-    "run-browserstack --browsers=bs_chrome_mac --features '{\"WEBGL_CPU_FORWARD\": true}' --backend webgl"
+npm-run-all -p -c --aggregate-output \
+  "run-browserstack --browsers=bs_safari_mac --features '{\"HAS_WEBGL\": false}' --backend cpu" \
+  "run-browserstack --browsers=bs_ios_11 --backend webgl --features '{\"WEBGL_CPU_FORWARD\": false}'" \
+  "run-browserstack --browsers=bs_ios_11 --features '{\"HAS_WEBGL\": false}' --backend cpu" \
+  "run-browserstack --browsers=bs_firefox_mac" \
+  "run-browserstack --browsers=bs_chrome_mac" \
+  "run-browserstack --browsers=bs_chrome_mac --features '{\"WEBGL_CPU_FORWARD\": true}' --backend webgl"
 fi
