@@ -75,7 +75,7 @@ function broadcastSample(texName: string, rank: number): string {
   if (rank === 1) {
     return `
       vec4 ${texName}Sample = ${texSampler}(rc.w);
-      vec4 ${texName} = vec4(${texName}Sample.xz, ${texName}Sample.xz);
+      vec4 ${texName} = vec4(${texName}Sample.xy, ${texName}Sample.xy);
     `;
   }
   return `vec4 ${texName} = ${texSampler}(rc.x, rc.y, rc.z, rc.w)`;
