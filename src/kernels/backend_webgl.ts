@@ -335,7 +335,7 @@ export class MathBackendWebGL implements KernelBackend {
       vals = this.gpgpu.downloadFloat32MatrixFromBuffer(
           bufferOrTexture, texShape[0], texShape[1]);
     }
-    const dTypeVals: TypedArray = this.convertAndCacheOnCPU(dataId, vals);
+    const dTypeVals = this.convertAndCacheOnCPU(dataId, vals);
 
     const subscribers = this.pendingRead.get(dataId);
     this.pendingRead.delete(dataId);
