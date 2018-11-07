@@ -671,8 +671,12 @@ export class MathBackendWebGL implements KernelBackend {
       const batchNormPackedProgram = new BatchNormPackedProgram(
           x.shape, mean.shape, variance.shape, offsetShape, scaleShape,
           varianceEpsilon);
-      return this.unpackTensor(this.compileAndRun(
-          batchNormPackedProgram, inputs, this.makePackedTensor(x.shape)));
+      let result = this.compileAndRun(
+          batchNormPackedProgram, inputs, this.makePackedTensor(x.shape));
+      if (ENV.get('WEBGL_LAZILY_UNPACK') === false) {
+        result = this.unpackTensor(result);
+      }
+      return result as Tensor4D;
     }
 
     const batchNormProgram = new BatchNormProgram(
