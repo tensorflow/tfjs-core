@@ -373,6 +373,10 @@ const SHADER_PACKED_PREFIX = `
       (modCoord.y == 0. ? frag.r : frag.g) :
       (modCoord.y == 0. ? frag.b : frag.a);
   }
+  float getChannel(vec4 frag, int dim) {
+    float modCoord = mod(float(dim), 2.);
+    return modCoord == 0. ? frag.r : frag.g;
+  }
 `;
 
 function getOutputScalarCoords() {
