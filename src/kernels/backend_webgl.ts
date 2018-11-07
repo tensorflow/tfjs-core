@@ -1714,6 +1714,20 @@ export class MathBackendWebGL implements KernelBackend {
           texData.isPacked = true;
           texData.shape = input.shape;
         }
+      } else if (texData.isPacked !== !!program.usesPackedTextures) {
+        let preProcessProgram: UnpackProgram|PackProgram;
+        let processedInput: Tensor;
+        if (texData.isPacked) {
+          preProcessProgram = new UnpackProgram(input.shape);
+          processedInput = this.compileAndRun(preProcessProgram, [input]);
+        } else {
+          preProcessProgram = new PackProgram(input.shape);
+          processedInput = this.compileAndRun(
+              preProcessProgram, [input], this.makePackedTensor(input.shape));
+        }
+
+        texData = this.texData.get(processedInput.dataId);
+        input = processedInput;
       } else if (
           texData.isPacked && !util.isReshapeFree(texData.shape, input.shape)) {
         // This is a special, temporary case where a texture exists for a tensor
@@ -1732,20 +1746,6 @@ export class MathBackendWebGL implements KernelBackend {
         input = Tensor.make(input.shape, {values: inputValues}, input.dtype);
         texData = this.texData.get(input.dataId);
         texData.isPacked = true;
-      } else if (texData.isPacked !== !!program.usesPackedTextures) {
-        let preProcessProgram: UnpackProgram|PackProgram;
-        let processedInput: Tensor;
-        if (texData.isPacked) {
-          preProcessProgram = new UnpackProgram(input.shape);
-          processedInput = this.compileAndRun(preProcessProgram, [input]);
-        } else {
-          preProcessProgram = new PackProgram(input.shape);
-          processedInput = this.compileAndRun(
-              preProcessProgram, [input], this.makePackedTensor(input.shape));
-        }
-
-        texData = this.texData.get(processedInput.dataId);
-        input = processedInput;
       }
 
       this.uploadToGPU(input.dataId);
