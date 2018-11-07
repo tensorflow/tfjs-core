@@ -112,8 +112,7 @@
       <tbody></tbody>
     </table>
   </div>
-  <!-- <script src="https://unpkg.com/@tensorflow/tfjs-core/dist/tf-core.js"></script> -->
-  <script src="tf-core.js"></script>
+  <script src="https://unpkg.com/@tensorflow/tfjs-core/dist/tf-core.js"></script>
   <script src="https://unpkg.com/@tensorflow/tfjs-layers/dist/tf-layers.js"></script>
   <script src="https://unpkg.com/@tensorflow/tfjs-converter/dist/tf-converter.js"></script>
   <script>
@@ -134,8 +133,6 @@
       //////////////////////////////////
       return model.predict(zeros);
     }
-
-    tf.ENV.set('WEBGL_PACK_BATCHNORMALIZATION', true);
   </script>
   <script>
     'use strict';
@@ -271,6 +268,8 @@
         }
 
         if(parts.length > 2) {
+          // heuristic for determining whether we've caught a profiler
+          // log statement as opposed to a regular console.log
           const scopes = parts[0].trim()
             .split('||')
             .filter(s => s !== 'unnamed scope');
