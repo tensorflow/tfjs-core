@@ -278,8 +278,7 @@ export class MathBackendWebGL implements KernelBackend {
     const texData = this.texData.get(dataId);
     const {values, dtype, complexTensors} = texData;
     if (values != null) {
-      this.cacheOnCPU(dataId);
-      return values;
+      return this.convertAndCacheOnCPU(dataId);
     }
     const shouldTimeProgram = this.activeTimers != null;
     let start: number;
@@ -299,8 +298,7 @@ export class MathBackendWebGL implements KernelBackend {
     if (shouldTimeProgram) {
       this.downloadWaitMs += performance.now() - start;
     }
-    this.cacheOnCPU(dataId, result);
-    return texData.values;
+    return this.convertAndCacheOnCPU(dataId, result);
   }
 
   async read(dataId: DataId): Promise<TypedArray> {
@@ -311,8 +309,7 @@ export class MathBackendWebGL implements KernelBackend {
     const texData = this.texData.get(dataId);
     const {texture, values, texShape} = texData;
     if (values != null) {
-      this.cacheOnCPU(dataId);
-      return values;
+      return this.convertAndCacheOnCPU(dataId);
     }
 
     this.pendingRead.set(dataId, []);
@@ -339,18 +336,18 @@ export class MathBackendWebGL implements KernelBackend {
       vals = this.gpgpu.downloadFloat32MatrixFromBuffer(
           bufferOrTexture, texShape[0], texShape[1]);
     }
-    this.cacheOnCPU(dataId, vals);
+    const dTypeVals = this.convertAndCacheOnCPU(dataId, vals);
 
     const subscribers = this.pendingRead.get(dataId);
     this.pendingRead.delete(dataId);
 
     // Notify all pending reads.
-    subscribers.forEach(resolve => resolve(vals));
+    subscribers.forEach(resolve => resolve(dTypeVals));
     if (this.pendingDisposal.has(dataId)) {
       this.pendingDisposal.delete(dataId);
       this.disposeData(dataId);
     }
-    return vals;
+    return dTypeVals;
   }
 
   private getValuesFromTexture(dataId: DataId): Float32Array {
@@ -1963,7 +1960,8 @@ export class MathBackendWebGL implements KernelBackend {
     }
   }
 
-  private cacheOnCPU(dataId: DataId, float32Values?: Float32Array) {
+  private convertAndCacheOnCPU(dataId: DataId, float32Values?: Float32Array):
+      TypedArray {
     // In delayed storage mode, when the user reads data, we don't keep a
     // copy on the gpu, to minimize likelihood of memory leak. We re-upload
     // to gpu the next time a gpgpu program needs the texture.
@@ -1979,6 +1977,7 @@ export class MathBackendWebGL implements KernelBackend {
     if (float32Values != null) {
       texData.values = float32ToTypedArray(float32Values, dtype);
     }
+    return texData.values;
   }
 
   private releaseTexture(
