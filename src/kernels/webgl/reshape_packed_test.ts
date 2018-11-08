@@ -20,9 +20,10 @@ import {describeWithFlags} from '../../jasmine_util';
 import {expectArraysClose, WEBGL_ENVS} from '../../test_util';
 
 describeWithFlags('expensive reshape', WEBGL_ENVS, () => {
-  const webglLazilyUnpackFlagSaved = tf.ENV.get('WEBGL_LAZILY_UNPACK');
+  let webglLazilyUnpackFlagSaved: boolean;
 
   beforeAll(() => {
+    webglLazilyUnpackFlagSaved = tf.ENV.get('WEBGL_LAZILY_UNPACK');
     tf.ENV.set('WEBGL_LAZILY_UNPACK', true);
   });
 
