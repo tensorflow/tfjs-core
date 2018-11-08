@@ -1855,7 +1855,8 @@ export class MathBackendWebGL implements KernelBackend {
         texData = this.texData.get(processedInput.dataId);
         input = processedInput;
       } else if (
-          texData.isPacked && !util.isReshapeFree(texData.shape, input.shape)) {
+          texData.isPacked &&
+          !webgl_util.isReshapeFree(texData.shape, input.shape)) {
         // This is a special, temporary case where a texture exists for a tensor
         // but the shapes are incompatible (due to packing constraints) because
         // the tensor did not have a chance to go through the packed reshape
