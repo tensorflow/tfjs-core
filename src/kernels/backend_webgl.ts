@@ -1757,12 +1757,26 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [input]);
   }
 
+  private getBatchDim(shape: number[], dimsToSkip = 2): number {
+    return util.sizeFromShape(shape.slice(0, shape.length - dimsToSkip));
+  }
+
+  private getRowsCols(shape: number[]): [number, number] {
+    if (shape.length === 0) {
+      throw Error('Cannot get rows and columns of an empty shape array.')
+    }
+
+    return [
+      shape.length > 1 ? shape[shape.length - 2] : 1, shape[shape.length - 1]
+    ];
+  }
+
   private packedReshape<R extends Rank>(input: Tensor, afterShape: ShapeMap[R]):
       Tensor<R> {
     const inputAs3D = input.reshape(
-        [util.getBatchDim(input.shape), ...util.getRowsCols(input.shape)]);
+        [this.getBatchDim(input.shape), ...this.getRowsCols(input.shape)]);
     const afterShapeAs3D =
-        [util.getBatchDim(afterShape), ...util.getRowsCols(afterShape)];
+        [this.getBatchDim(afterShape), ...this.getRowsCols(afterShape)];
     const program = new ReshapePackedProgram(
         afterShapeAs3D as [number, number, number],
         inputAs3D.shape as [number, number, number]);

@@ -379,6 +379,10 @@ export function getTextureShapeFromLogicalShape(
   }
 }
 
+function isEven(n: number): boolean {
+  return n % 2 === 0;
+}
+
 /*
 This determines whether reshaping a packed texture requires rearranging the data
 within the texture, assuming 2x2 packing.
@@ -408,8 +412,8 @@ export function isReshapeFree(shape1: number[], shape2: number[]): boolean {
       return true;
     }
   } else {
-    if (util.isEven(shape1[0]) && util.isEven(shape2[0])) {
-      if (util.isEven(shape1[1]) && util.isEven(shape2[1])) {
+    if (isEven(shape1[0]) && isEven(shape2[0])) {
+      if (isEven(shape1[1]) && isEven(shape2[1])) {
         return true;
       }
       if (shape1[1] === shape2[1]) {

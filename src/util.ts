@@ -269,20 +269,6 @@ export function inferFromImplicitShape(
   return newShape;
 }
 
-export function getBatchDim(shape: number[]): number {
-  return sizeFromShape(shape.slice(0, shape.length - 2));
-}
-
-export function getRowsCols(shape: number[]): [number, number] {
-  return [
-    shape.length > 1 ? shape[shape.length - 2] : 1, shape[shape.length - 1]
-  ];
-}
-
-export function isEven(n: number): boolean {
-  return n % 2 === 0;
-}
-
 /** Reduces the shape by removing all dimensions of shape 1. */
 export function squeezeShape(shape: number[], axis?: number[]):
     {newShape: number[], keptDims: number[]} {
