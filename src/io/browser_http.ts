@@ -132,7 +132,9 @@ export class BrowserHTTPRequest implements IOHandler {
     try {
       const response = await fetch(this.path[0], this.requestInit);
       if (!response.ok) {
-        throw (response.statusText);
+        throw new Error(
+            `BrowserHTTPRequest.load() failed due to HTTP response: ${
+                response.statusText}`);
       }
       return await response.arrayBuffer();
     } catch (error) {
@@ -144,7 +146,8 @@ export class BrowserHTTPRequest implements IOHandler {
     const graphPromise = this.loadBinaryTopology();
     const manifestPromise = await fetch(this.path[1], this.requestInit);
     if (!manifestPromise.ok) {
-      throw (manifestPromise.statusText);
+      throw new Error(`BrowserHTTPRequest.load() failed due to HTTP response: ${
+          manifestPromise.statusText}`);
     }
 
     const results = await Promise.all([graphPromise, manifestPromise]);
@@ -167,7 +170,8 @@ export class BrowserHTTPRequest implements IOHandler {
     const modelConfigRequest =
         await fetch(this.path as string, this.requestInit);
     if (!modelConfigRequest.ok) {
-      throw (modelConfigRequest.statusText);
+      throw new Error(`BrowserHTTPRequest.load() failed due to HTTP response: ${
+          modelConfigRequest.statusText}`);
     }
     const modelConfig = await modelConfigRequest.json();
     const modelTopology = modelConfig['modelTopology'];
