@@ -306,7 +306,11 @@ export class Environment {
           (typeof process.versions.node !== 'undefined');
     } else if (feature === 'IS_CHROME') {
       return isChrome();
+    } else if (feature === 'WEBGL_CPU_FORWARD') {
+      return true;
     } else if (feature === 'WEBGL_PACK_BATCHNORMALIZATION') {
+      return false;
+    } else if (feature === 'WEBGL_LAZILY_UNPACK') {
       return false;
     } else if (feature === 'WEBGL_CONV_IM2COL') {
       return false;
