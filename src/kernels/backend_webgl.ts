@@ -1763,7 +1763,7 @@ export class MathBackendWebGL implements KernelBackend {
 
   private getRowsCols(shape: number[]): [number, number] {
     if (shape.length === 0) {
-      throw Error('Cannot get rows and columns of an empty shape array.')
+      throw Error('Cannot get rows and columns of an empty shape array.');
     }
 
     return [

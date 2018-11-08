@@ -132,7 +132,7 @@ describeWithFlags('isReshapeFree', WEBGL_ENVS, () => {
     expect(webgl_util.isReshapeFree(before, after)).toBe(true);
   });
 
-  it('is free when one of the shapes is a vector and the final dimensions match',
+  it('is free when one shape is a vector and the final dimensions match',
      () => {
        const before = [9];
        const after = [2, 1, 9];
