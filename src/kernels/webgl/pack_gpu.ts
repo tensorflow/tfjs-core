@@ -25,7 +25,8 @@ export class PackProgram implements GPGPUProgram {
   outputShape: number[];
   userCode: string;
 
-  constructor(outputShape: number[]) {
+  constructor(outputShape: number[]) {  // TODO(https://github.com/tensorflow/tfjs/issues/893):
+                                        // Only input / output 2D tensors.
     this.outputShape = outputShape;
     const rank = outputShape.length;
 
