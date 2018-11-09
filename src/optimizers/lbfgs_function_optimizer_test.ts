@@ -102,7 +102,7 @@ describeWithFlags('rosenbrock', ALL_ENVS, () => {
       // this should so not be necessary...
       const atol = scalar( Math.sqrt(ENV.get('EPSILON')) );
 
-      for( let i=0; i < 1024; i++ )
+      for( let i=0; i < 128; i++ )
       {
         const x = randomUniform([l],-2,+2),
               f = rosenbrock(x);
@@ -110,7 +110,7 @@ describeWithFlags('rosenbrock', ALL_ENVS, () => {
       }
 
       {
-        const x = randomUniform([1024,1024,l],-2,+2),
+        const x = randomUniform([128,128,l],-2,+2),
               f = rosenbrock(x);
         expectArraysEqual(
           fMin.sub(atol).lessEqual(f).all(),
@@ -137,7 +137,7 @@ describeWithFlags('rastrigin', ALL_ENVS, () => {
       // this should so not be necessary...
       const atol = scalar( Math.sqrt(ENV.get('EPSILON')) );
 
-      for( let i=0; i < 1024; i++ )
+      for( let i=0; i < 128; i++ )
       {
         const x = randomUniform([l],-6,+6),
               f = rastrigin(x);
@@ -145,7 +145,7 @@ describeWithFlags('rastrigin', ALL_ENVS, () => {
       }
 
       {
-        const x = randomUniform([1024,1024,l],-6,+6),
+        const x = randomUniform([128,128,l],-6,+6),
               f = rastrigin(x);
         try {
           expectArraysEqual(
