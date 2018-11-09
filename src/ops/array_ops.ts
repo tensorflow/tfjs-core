@@ -1091,13 +1091,13 @@ function depthToSpace_(
 /**
  * Computes the difference between two lists of numbers.
  *
- * Given a Tensor `x` and a Tensor `y`, this operation returns a Tensor out that
- * represents all values that are in `x` but not in `y`. The returned Tensor out
- * is sorted in the same order that the numbers appear in `x` (duplicates are
- * preserved). This operation also returns a Tensor indices that represents the
- * position of each out element in `x`. In other words:
+ * Given a Tensor `x` and a Tensor `y`, this operation returns a Tensor `out`
+ * that represents all values that are in `x` but not in `y`. The returned
+ * Tensor `out` is sorted in the same order that the numbers appear in `x`
+ * (duplicates are preserved). This operation also returns a Tensor indices that
+ * represents the position of each out element in `x`. In other words:
  *
- * `out[i] = x[idx[i]] for i in [0, 1, ..., len(out) - 1]`
+ * `out[i] = x[idx[i]] for i in [0, 1, ..., out.length - 1]`
  *
  * ```js
  * const x = [1, 2, 3, 4, 5, 6];
@@ -1108,11 +1108,11 @@ function depthToSpace_(
  * indices.print(); // [1, 3, 5]
  * ```
  *
- * @param x A Tensor. 1-D. Values to keep.
- * @param y A Tensor. Must have the same type as x. 1-D. Values to exclude in
- * the output.
- * @returns Promise of tuple of Tensor (out, indices).
- *  out: A Tensor. Has the same type as x.
+ * @param x 1-D Tensor. Values to keep.
+ * @param y 1-D Tensor. Must have the same type as x. Values to exclude in the
+ *     output.
+ * @returns Promise of Tensor tuple [out, indices].
+ *  out: Tensor with the same type as x.
  *  indices: A Tensor of type int32.
  */
 /** @doc {heading: 'Tensors', subheading: 'Transformations'} */
