@@ -110,7 +110,10 @@ describeWithFlags('rosenbrock', ALL_ENVS, () => {
       {
         const x = randomUniform([1024,1024,l],-2,+2),
               f = rosenbrock(x);
-        expectArraysEqual( fMin.sub(atol).lessEqual(f).all(), scalar(true,'bool') );
+        expectArraysEqual(
+          fMin.sub(atol).lessEqual(f).all(),
+          scalar(true,'bool')
+        );
       }
     });
   }
@@ -143,7 +146,10 @@ describeWithFlags('rastrigin', ALL_ENVS, () => {
         const x = randomUniform([1024,1024,l],-6,+6),
               f = rastrigin(x);
         try {
-          expectArraysEqual( fMin.sub(atol).lessEqual(f).all(), scalar(true,'bool') );
+          expectArraysEqual(
+            fMin.sub(atol).lessEqual(f).all(),
+            scalar(true,'bool')
+          );
         }
         catch(err) {
           const i = f.flatten().argMin().dataSync()[0];
