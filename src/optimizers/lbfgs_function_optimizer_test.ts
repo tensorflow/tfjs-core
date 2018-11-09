@@ -271,7 +271,7 @@ describeWithFlags('lbfgs', ALL_ENVS, () => {
           if( err instanceof LineSearchNoProgressError ) {
             break opt_loop;
           }
-          else throw err;
+          throw err;
         }
       }
 
