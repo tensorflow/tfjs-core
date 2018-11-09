@@ -35,7 +35,9 @@ export class BrowserHTTPRequest implements IOHandler {
 
   static readonly URL_SCHEME_REGEX = /^https?:\/\//;
 
-  constructor(path: string|string[], requestInit?: RequestInit) {
+  constructor(
+      path: string|string[], requestInit?: RequestInit,
+      private readonly weightPathPrefix?: string) {
     if (typeof fetch === 'undefined') {
       throw new Error(
           // tslint:disable-next-line:max-line-length
@@ -98,7 +100,7 @@ export class BrowserHTTPRequest implements IOHandler {
 
     const response = await fetch(this.path as string, init);
 
-    if (response.status === 200) {
+    if (response.ok) {
       return {
         modelArtifactsInfo: getModelArtifactsInfoForJSON(modelArtifacts),
         responses: [response],
@@ -129,6 +131,11 @@ export class BrowserHTTPRequest implements IOHandler {
   private async loadBinaryTopology(): Promise<ArrayBuffer> {
     try {
       const response = await fetch(this.path[0], this.requestInit);
+      if (!response.ok) {
+        throw new Error(
+            `BrowserHTTPRequest.load() failed due to HTTP response: ${
+                response.statusText}`);
+      }
       return await response.arrayBuffer();
     } catch (error) {
       throw new Error(`${this.path[0]} not found. ${error}`);
@@ -138,6 +145,10 @@ export class BrowserHTTPRequest implements IOHandler {
   protected async loadBinaryModel(): Promise<ModelArtifacts> {
     const graphPromise = this.loadBinaryTopology();
     const manifestPromise = await fetch(this.path[1], this.requestInit);
+    if (!manifestPromise.ok) {
+      throw new Error(`BrowserHTTPRequest.load() failed due to HTTP response: ${
+          manifestPromise.statusText}`);
+    }
 
     const results = await Promise.all([graphPromise, manifestPromise]);
     const [modelTopology, weightsManifestResponse] = results;
@@ -158,6 +169,10 @@ export class BrowserHTTPRequest implements IOHandler {
   protected async loadJSONModel(): Promise<ModelArtifacts> {
     const modelConfigRequest =
         await fetch(this.path as string, this.requestInit);
+    if (!modelConfigRequest.ok) {
+      throw new Error(`BrowserHTTPRequest.load() failed due to HTTP response: ${
+          modelConfigRequest.statusText}`);
+    }
     const modelConfig = await modelConfigRequest.json();
     const modelTopology = modelConfig['modelTopology'];
     const weightsManifest = modelConfig['weightsManifest'];
@@ -183,23 +198,27 @@ export class BrowserHTTPRequest implements IOHandler {
 
   private async loadWeights(weightsManifest: WeightsManifestConfig):
       Promise<[WeightsManifestEntry[], ArrayBuffer]> {
-    const weightPath = Array.isArray(this.path) ? this.path[1] : this.path;
+    let pathPrefix = this.weightPathPrefix;
+    if (pathPrefix == null) {
+      const weightPath = Array.isArray(this.path) ? this.path[1] : this.path;
 
+      pathPrefix = weightPath.substring(0, weightPath.lastIndexOf('/'));
+      if (!pathPrefix.endsWith('/')) {
+        pathPrefix = pathPrefix + '/';
+      }
+    }
     const weightSpecs = [];
     for (const entry of weightsManifest) {
       weightSpecs.push(...entry.weights);
     }
 
-    let pathPrefix = weightPath.substring(0, weightPath.lastIndexOf('/'));
-    if (!pathPrefix.endsWith('/')) {
-      pathPrefix = pathPrefix + '/';
-    }
     const fetchURLs: string[] = [];
     weightsManifest.forEach(weightsGroup => {
       weightsGroup.paths.forEach(path => {
         fetchURLs.push(pathPrefix + path);
       });
     });
+
     return [
       weightSpecs,
       concatenateArrayBuffers(
@@ -369,9 +388,12 @@ IORouterRegistry.registerLoadRouter(httpRequestRouter);
  * topology (filename: 'model.json') and the weights of the model (filename:
  * 'model.weights.bin') will be appended to the body. If `requestInit` has a
  * `body`, an Error will be thrown.
+ * @param weightPathPrefix Optional, this specifies the path prefix for weight
+ * files, by default this is calculated from the path param.
  * @returns An instance of `IOHandler`.
  */
 export function browserHTTPRequest(
-    path: string|string[], requestInit?: RequestInit): IOHandler {
-  return new BrowserHTTPRequest(path, requestInit);
+    path: string|string[], requestInit?: RequestInit,
+    weightPathPrefix?: string): IOHandler {
+  return new BrowserHTTPRequest(path, requestInit, weightPathPrefix);
 }
