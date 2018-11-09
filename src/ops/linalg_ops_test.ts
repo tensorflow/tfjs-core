@@ -538,7 +538,7 @@ describeWithFlags('qr', CPU_ENVS, () => {
   it('2x3', () => testWith( tensor2d([[ 1, 2, 3],
                                       [-3,-2, 1]], [2, 3]) ) );
 
-  for( let run=0; run < 128*1024; run++ )
+  for( let run=0; run < 128; run++ )
   {
     const shape = Array.from({ length: randInt(2,5) }, () => randInt(1,7) );
     it(
