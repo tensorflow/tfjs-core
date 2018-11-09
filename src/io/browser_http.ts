@@ -100,7 +100,7 @@ export class BrowserHTTPRequest implements IOHandler {
 
     const response = await fetch(this.path as string, init);
 
-    if (response.type === 'opaque' || response.ok) {
+    if (response.ok) {
       return {
         modelArtifactsInfo: getModelArtifactsInfoForJSON(modelArtifacts),
         responses: [response],
@@ -131,7 +131,7 @@ export class BrowserHTTPRequest implements IOHandler {
   private async loadBinaryTopology(): Promise<ArrayBuffer> {
     try {
       const response = await fetch(this.path[0], this.requestInit);
-      if (response.type !== 'opaque' && !response.ok) {
+      if (!response.ok) {
         throw new Error(
             `BrowserHTTPRequest.load() failed due to HTTP response: ${
                 response.statusText}`);
@@ -145,7 +145,7 @@ export class BrowserHTTPRequest implements IOHandler {
   protected async loadBinaryModel(): Promise<ModelArtifacts> {
     const graphPromise = this.loadBinaryTopology();
     const manifestPromise = await fetch(this.path[1], this.requestInit);
-    if (manifestPromise.type !== 'opaque' && !manifestPromise.ok) {
+    if (!manifestPromise.ok) {
       throw new Error(`BrowserHTTPRequest.load() failed due to HTTP response: ${
           manifestPromise.statusText}`);
     }
@@ -169,7 +169,7 @@ export class BrowserHTTPRequest implements IOHandler {
   protected async loadJSONModel(): Promise<ModelArtifacts> {
     const modelConfigRequest =
         await fetch(this.path as string, this.requestInit);
-    if (modelConfigRequest.type !== 'opaque' && !modelConfigRequest.ok) {
+    if (!modelConfigRequest.ok) {
       throw new Error(`BrowserHTTPRequest.load() failed due to HTTP response: ${
           modelConfigRequest.statusText}`);
     }
