@@ -275,8 +275,8 @@ describeWithFlags('lbfgs', ALL_ENVS, () => {
         }
       }
 
-      expect(nCalls).toBeLessThan(256);
-      expect(nSteps).toBeLessThan(128);
+      expect(nCalls).toBeLessThan(512);
+      expect(nSteps).toBeLessThan(256);
       expectArraysClose(opt.x,  ones([n]) );
       expectArraysClose(opt.f, zeros([ ]) );
       expectArraysClose(opt.g, zeros([n]) );
