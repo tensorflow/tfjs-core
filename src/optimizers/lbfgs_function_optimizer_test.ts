@@ -174,7 +174,7 @@ function val( t: Tensor ) {
 describeWithFlags('strongWolfeLineSearch', ALL_ENVS, () => {
 
   const testWith = ( name: string, func: (x: Tensor) => Tensor ) => {
-    for( let test=0; test < 8; test++ ) {
+    for( let test=0; test < 32; test++ ) {
     for( const l of [2,3,4] ) {
       it(`should work on ${l}d ${name} (test ${test})`, () => {
 
@@ -191,7 +191,7 @@ describeWithFlags('strongWolfeLineSearch', ALL_ENVS, () => {
               })(),
               linSearch = strongWolfeLineSearch(c1,c2,c3);
 
-        for( let run=0; run < 32; run++ )
+        for( let run=0; run < 8; run++ )
         {
           ENV.engine.tidy( () =>  {
 
