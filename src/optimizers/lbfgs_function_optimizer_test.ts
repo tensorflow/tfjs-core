@@ -20,7 +20,7 @@ import {add, mul, sub, squaredDifference} from '../ops/binary_ops';
 import {cos} from '../ops/unary_ops';
 import {Scalar, Tensor1D, Tensor} from '../tensor';
 import {zeros, ones, scalar, tensor1d} from '../ops/ops';
-import {ALL_ENVS, expectArraysClose, expectArraysEqual} from '../test_util';
+import {ALL_ENVS, CPU_ENVS, expectArraysClose, expectArraysEqual} from '../test_util';
 import {TensorLike} from '../types';
 import {convertToTensor} from '../tensor_util_env';
 import {valueAndGrad} from '../gradients';
@@ -71,17 +71,14 @@ function rastrigin( x: Tensor|TensorLike ): Tensor
       throw new Error('rosenbrock(x): x.shape[-1] must be at least 1.');
     }
 
-    const π2 = scalar(Math.PI*2),
-          n  = $x.shape[$x.rank-1],
-          nA = scalar(10*n),
-           A = scalar(10);
+    const π2  = scalar(Math.PI*2),
+          ONE = scalar(1),
+          A   = scalar(10);
 
-    return nA.add(
-      sub(
-        mul($x,$x),
-        A.mul( cos(mul(π2,$x)) )
-      ).sum(/*axis=*/-1)
-    );
+    return sub(
+      mul($x,$x),
+      cos( mul(π2,$x) ).sub(ONE).mul(A)
+    ).sum(/*axis=*/-1);
   });
 }
 
@@ -171,10 +168,10 @@ function val( t: Tensor ) {
   return t.dataSync()[0];
 }
 
-describeWithFlags('strongWolfeLineSearch', ALL_ENVS, () => {
+describeWithFlags('strongWolfeLineSearch', CPU_ENVS, () => {
 
   const testWith = ( name: string, func: (x: Tensor) => Tensor ) => {
-    for( let test=0; test < 32; test++ ) {
+    for( let test=0; test < 128; test++ ) {
     for( const l of [2,3,4] ) {
       it(`should work on ${l}d ${name} (test ${test})`, () => {
 
@@ -191,7 +188,7 @@ describeWithFlags('strongWolfeLineSearch', ALL_ENVS, () => {
               })(),
               linSearch = strongWolfeLineSearch(c1,c2,c3);
 
-        for( let run=0; run < 8; run++ )
+        for( let run=0; run < 2; run++ )
         {
           ENV.engine.tidy( () =>  {
 
@@ -206,7 +203,8 @@ describeWithFlags('strongWolfeLineSearch', ALL_ENVS, () => {
                 ) as Tensor1D,
                 p0 = - val(dot(G0,negDir));
 
-            if( Math.abs(p0) <= 1e-5 ) { return; }
+            const atol = Math.sqrt(ENV.get('EPSILON'));
+            if( Math.abs(p0) <= atol ) { return; }
             if( p0  >  0 ) {
                 p0 *= -1;
               negDir = negDir.neg();
@@ -231,7 +229,7 @@ describeWithFlags('strongWolfeLineSearch', ALL_ENVS, () => {
   testWith('rastrigin' , rastrigin );
 });
 
-describeWithFlags('lbfgs', ALL_ENVS, () => {
+describeWithFlags('lbfgs', CPU_ENVS, () => {
 
   for( let test=0; test < 128; test++ ) {
   for( const n of [2,3] )

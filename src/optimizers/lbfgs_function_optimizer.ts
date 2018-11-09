@@ -224,7 +224,7 @@ export function strongWolfeLineSearch(
 
       if( αMin === αMax ) {
         const msg = 'strongWolfeLineSearch(): bisection failed.';
-        if( αMin === 0) {
+        if( αMin === 0 ) {
           throw new LineSearchNoProgressError(msg);
         }
         throw new LineSearchError(msg);
