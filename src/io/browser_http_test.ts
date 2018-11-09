@@ -23,7 +23,7 @@ import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
 import {BROWSER_ENVS, CHROME_ENVS, NODE_ENVS} from '../test_util';
 
-import {BrowserHTTPRequest, httpRequestRouter} from './browser_http';
+import {BrowserHTTPRequest, httpRequestRouter, parseUrl} from './browser_http';
 
 // Test data.
 const modelTopology1: {} = {
@@ -398,7 +398,29 @@ describeWithFlags('browserHTTPRequest-save', CHROME_ENVS, () => {
   });
 });
 
+describeWithFlags('parseUrl', BROWSER_ENVS, () => {
+  it('should parse url with no suffix', () => {
+    const url = 'http://google.com/file';
+    const [prefix, suffix] = parseUrl(url);
+    expect(prefix).toEqual('http://google.com/');
+    expect(suffix).toEqual('');
+  });
+  it('should parse url with suffix', () => {
+    const url = 'http://google.com/file?param=1';
+    const [prefix, suffix] = parseUrl(url);
+    expect(prefix).toEqual('http://google.com/');
+    expect(suffix).toEqual('?param=1');
+  });
+  it('should parse url with multiple serach params', () => {
+    const url = 'http://google.com/a?x=1/file?param=1';
+    const [prefix, suffix] = parseUrl(url);
+    expect(prefix).toEqual('http://google.com/a?x=1/');
+    expect(suffix).toEqual('?param=1');
+  });
+});
+
 describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
+
   describe('JSON model', () => {
     let requestInits: RequestInit[];
 

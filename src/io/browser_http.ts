@@ -100,7 +100,7 @@ export class BrowserHTTPRequest implements IOHandler {
 
     const response = await fetch(this.path as string, init);
 
-    if (response.ok) {
+    if (response.type === 'opaque' || response.ok) {
       return {
         modelArtifactsInfo: getModelArtifactsInfoForJSON(modelArtifacts),
         responses: [response],
@@ -131,7 +131,7 @@ export class BrowserHTTPRequest implements IOHandler {
   private async loadBinaryTopology(): Promise<ArrayBuffer> {
     try {
       const response = await fetch(this.path[0], this.requestInit);
-      if (!response.ok) {
+      if (response.type !== 'opaque' && !response.ok) {
         throw new Error(
             `BrowserHTTPRequest.load() failed due to HTTP response: ${
                 response.statusText}`);
@@ -145,7 +145,7 @@ export class BrowserHTTPRequest implements IOHandler {
   protected async loadBinaryModel(): Promise<ModelArtifacts> {
     const graphPromise = this.loadBinaryTopology();
     const manifestPromise = await fetch(this.path[1], this.requestInit);
-    if (!manifestPromise.ok) {
+    if (manifestPromise.type !== 'opaque' && !manifestPromise.ok) {
       throw new Error(`BrowserHTTPRequest.load() failed due to HTTP response: ${
           manifestPromise.statusText}`);
     }
@@ -169,7 +169,7 @@ export class BrowserHTTPRequest implements IOHandler {
   protected async loadJSONModel(): Promise<ModelArtifacts> {
     const modelConfigRequest =
         await fetch(this.path as string, this.requestInit);
-    if (!modelConfigRequest.ok) {
+    if (modelConfigRequest.type !== 'opaque' && !modelConfigRequest.ok) {
       throw new Error(`BrowserHTTPRequest.load() failed due to HTTP response: ${
           modelConfigRequest.statusText}`);
     }
@@ -198,15 +198,10 @@ export class BrowserHTTPRequest implements IOHandler {
 
   private async loadWeights(weightsManifest: WeightsManifestConfig):
       Promise<[WeightsManifestEntry[], ArrayBuffer]> {
-    let pathPrefix = this.weightPathPrefix;
-    if (pathPrefix == null) {
-      const weightPath = Array.isArray(this.path) ? this.path[1] : this.path;
+    const weightPath = Array.isArray(this.path) ? this.path[1] : this.path;
+    const [prefix, suffix] = parseUrl(weightPath);
+    const pathPrefix = this.weightPathPrefix || prefix;
 
-      pathPrefix = weightPath.substring(0, weightPath.lastIndexOf('/'));
-      if (!pathPrefix.endsWith('/')) {
-        pathPrefix = pathPrefix + '/';
-      }
-    }
     const weightSpecs = [];
     for (const entry of weightsManifest) {
       weightSpecs.push(...entry.weights);
@@ -215,7 +210,7 @@ export class BrowserHTTPRequest implements IOHandler {
     const fetchURLs: string[] = [];
     weightsManifest.forEach(weightsGroup => {
       weightsGroup.paths.forEach(path => {
-        fetchURLs.push(pathPrefix + path);
+        fetchURLs.push(pathPrefix + path + suffix);
       });
     });
 
@@ -225,6 +220,15 @@ export class BrowserHTTPRequest implements IOHandler {
           await loadWeightsAsArrayBuffer(fetchURLs, this.requestInit))
     ];
   }
+}
+
+export function parseUrl(url: string): [string, string] {
+  const lastSlice = url.lastIndexOf('/');
+  const lastSearchParam = url.lastIndexOf('?');
+  const prefix = url.substring(0, lastSlice);
+  const suffix =
+      lastSearchParam > lastSlice ? url.substring(lastSearchParam) : '';
+  return [prefix + '/', suffix];
 }
 
 function isHTTPScheme(url: string): boolean {
