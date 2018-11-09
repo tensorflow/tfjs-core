@@ -245,9 +245,9 @@ export class LBFGSFunctionOptimizer {
 
   /** A function that returns the negative "initial" search direction. In
    *  other words this function returns the result matrix-vector `H₀•g`,
-   *  where `H₀` is the inverse of the initial inverse Hessian and `g` is
-   *  the current (gradient) vector. The length of the returned vector
-   *  stronly influences how far the `LineSearchMethod` looks.
+   *  where `H₀` is the initial inverse Hessian and `g` is the current
+   *  (gradient) vector. The length of the returned vector stronly
+   *  influences how far the `LineSearchMethod` looks.
    * 
    *  @param g The gradient vector for which the (initial) search direction
    *           is to be determined.

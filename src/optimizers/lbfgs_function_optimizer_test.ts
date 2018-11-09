@@ -140,8 +140,8 @@ describeWithFlags('rastrigin', ALL_ENVS, () => {
           expectArraysEqual( fMin.lessEqual(f).all(), scalar(true,'bool') );
         }
         catch(err) {
-          const iMax = f.flatten().argMin().dataSync()[0];
-          console.log('x_min:'); x.reshape([-1,l]).slice( [iMax,0], [1,l] ).print();
+          const i = f.flatten().argMin().dataSync()[0];
+          console.log('x_min:'); x.reshape([-1,l]).slice([i,0], [1,l]).print();
           console.log('f.min:'); f.min().print();
           console.log('fMin'); fMin.print();
           throw err;
