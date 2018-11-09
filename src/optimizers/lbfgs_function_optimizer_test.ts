@@ -97,17 +97,20 @@ describeWithFlags('rosenbrock', ALL_ENVS, () => {
       expectArraysClose( fMin, scalar(0) );
       expectArraysClose( gMin, zeros([l]) );
 
+      // this should so not be necessary...
+      const atol = scalar( Math.sqrt(ENV.get('EPSILON')) );
+
       for( let i=0; i < 1024; i++ )
       {
         const x = randomUniform([l],-2,+2),
               f = rosenbrock(x);
-        expectArraysEqual( fMin.lessEqual(f), scalar(true,'bool') );
+        expectArraysEqual( fMin.sub(atol).lessEqual(f), scalar(true,'bool') );
       }
 
       {
         const x = randomUniform([1024,1024,l],-2,+2),
               f = rosenbrock(x);
-        expectArraysEqual( fMin.lessEqual(f).all(), scalar(true,'bool') );
+        expectArraysEqual( fMin.sub(atol).lessEqual(f).all(), scalar(true,'bool') );
       }
     });
   }
@@ -126,18 +129,21 @@ describeWithFlags('rastrigin', ALL_ENVS, () => {
       expectArraysClose( fMin, scalar(0) );
       expectArraysClose( gMin, zeros );
 
+      // this should so not be necessary...
+      const atol = scalar( Math.sqrt(ENV.get('EPSILON')) );
+
       for( let i=0; i < 1024; i++ )
       {
         const x = randomUniform([l],-6,+6),
               f = rastrigin(x);
-        expectArraysEqual( fMin.lessEqual(f), scalar(true,'bool') );
+        expectArraysEqual( fMin.sub(atol).lessEqual(f), scalar(true,'bool') );
       }
 
       {
         const x = randomUniform([1024,1024,l],-6,+6),
               f = rastrigin(x);
         try {
-          expectArraysEqual( fMin.lessEqual(f).all(), scalar(true,'bool') );
+          expectArraysEqual( fMin.sub(atol).lessEqual(f).all(), scalar(true,'bool') );
         }
         catch(err) {
           const i = f.flatten().argMin().dataSync()[0];
