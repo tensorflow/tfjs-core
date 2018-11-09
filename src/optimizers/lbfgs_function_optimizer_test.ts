@@ -260,17 +260,18 @@ describeWithFlags('lbfgs', ALL_ENVS, () => {
       );
 
       const atol = scalar( Math.sqrt(ENV.get('EPSILON')) );
-      while( ! opt.g.abs().lessEqual(atol).all().dataSync()[0] )
+      opt_loop:while( ! opt.g.abs().lessEqual(atol).all().dataSync()[0] )
       {
         ++nSteps;
         try {
           opt.step();
         }
         catch(err) {
+          console.log('NAME: ', err.constructor.name);
           if( err instanceof LineSearchNoProgressError ) {
-            break;
+            break opt_loop;
           }
-          throw err;
+          else throw err;
         }
       }
 

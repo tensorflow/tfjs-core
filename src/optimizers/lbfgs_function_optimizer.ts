@@ -48,12 +48,14 @@ function dotProd( x: Tensor1D, y: Tensor1D ) {
 export class LineSearchError extends Error {
   constructor( msg: string ) {
     super(msg);
+    Object.setPrototypeOf(this, LineSearchError.prototype);
   }
 }
 
 export class LineSearchNoProgressError extends LineSearchError {
   constructor( msg: string ) {
     super(msg);
+    Object.setPrototypeOf(this, LineSearchNoProgressError.prototype);
   }
 }
 
