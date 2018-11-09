@@ -114,8 +114,21 @@ function gramSchmidt_(xs: Tensor1D[]|Tensor2D): Tensor1D[]|Tensor2D {
 
 /** 
  * Conjugates a tensor of matrices and then transposes the last two dimensions.
- * The adjoint is also commonly known as the Hermitian Transpose. Does not yet
- * work for complex data types.
+ * The adjoint is also commonly known as the Hermitian Transpose.
+ * 
+ * ```js
+ * const a = tf.tensor3d([[[1, 2],
+ *                         [3, 4]],
+ *                        [[5, 6],
+ *                         [7, 8]]]);
+ * const aT = tf.linalg.adjoint(a);
+ * aT.print();
+ * // Output:
+ * //   [[[1, 3],
+ * //     [2, 4]],
+ * //    [[5, 7],
+ * //     [6, 8]]]
+ * ```
  *
  * @param a Tensor of shape [...,M,N]. The tensor of matrices that is to be
  *          tranposed.
@@ -148,7 +161,35 @@ function adjoint_<T extends Tensor>( a: T|TensorLike ): T
 
 /** 
  * Copies a tensor of matrices, setting everything outside a central band
- * in each matrix to zero.
+ * in each matrix to zero. Does not yet support Infinity or NaN entries.
+ *
+ * ```js
+ * const a = tf.tensor2d([[11, 12, 13, 14],
+ *                        [21, 22, 23, 24],
+ *                        [31, 32, 33, 34],
+ *                        [41, 42, 43, 44]]);
+ * tf.linalg.bandPart(a,0,2);
+ * // Output:
+ * // [[11, 12, 13,  0], 
+ * //  [ 0, 22, 23, 24],
+ * //  [ 0,  0, 33, 34],
+ * //  [ 0,  0,  0, 44]]
+ * 
+ * tf.linalg.bandPart(a,1,-1);
+ * // Output:
+ * // [[11, 12, 13, 14], 
+ * //  [21, 22, 23, 24],
+ * //  [ 0, 32, 33, 34],
+ * //  [ 0,  0, 43, 44]]
+ * ```
+ *
+ * @param a Tensor of matrices from which the band part is extracted.
+ * @param numLower The number of subdiagonal lines to be copied.
+ *                 If set to `-1`, all entries below the diagonal are
+ *                 copied.
+ * @param numUpper The number of superdiagonal lines to be copied.
+ *                 If set to `-1`, all entries above the diagonal are
+ *                 copied.
  */
 /** 
  * @doc {heading:'Operations',
@@ -236,7 +277,7 @@ function triangularSolveKernel(
   }
 
   const
-    rank = Math.max(l.rank, y.rank),
+    rank = l.rank,
     xShape = Array.from(l.shape);
   xShape[rank-2] = I;
   xShape[rank-1] = J;
@@ -326,7 +367,7 @@ function triangularSolveKernel(
 /**
  * Solves a triangular linear equation system (LES).
  *
- * @param l The triangular matrix of the .
+ * @param l The triangular matrix of the LES.
  * @param y The right-hand-side of the LES.
  * @param lower If set to `true`, `l` is interpreted as lower triangular
  *              matrix. The strict upper triangular entries are ignore.
@@ -417,19 +458,15 @@ function triangularSolve_(
  */
 function qrEcoDecompKernel( a: Tensor ): [Tensor,Tensor]
 {
-  assert(
-    a.rank >= 2,
-    `qr(): input must have rank >= 2, got rank ${a.rank}.`
-  );
-  assert(
-    ! a.dtype.startsWith('complex'),
-    `qr(): complex dtype not supported.`
-  );
-  assert(
-    a.shape[a.rank-2] >= a.shape[a.rank-1],
-    `qr(): a.shape[-2] = ${a.shape[a.rank-2]}`
-    +                ` < ${a.shape[a.rank-1]} = a.shape[-1].`
-  );
+  if( a.rank < 2 ) {
+    throw new Error(`qrEco(): input must have rank >= 2, got rank ${a.rank}.`);
+  }
+  if( a.dtype !== 'float32' ) {
+    throw new Error(`qrEco(): only float32 currently supported as dtype.`);
+  }
+  if( a.shape[a.rank-2] < a.shape[a.rank-1] ) {
+    throw new Error(`qrEco(): a must have at least as many rows as columns`);
+  }
 
   const dtype = 'float32',
         // tslint:disable
@@ -513,14 +550,12 @@ function qrEcoDecompKernel( a: Tensor ): [Tensor,Tensor]
  */
 function qrFullDecompKernel( a: Tensor ): [Tensor,Tensor,Tensor]
 {
-  assert(
-    a.rank >= 2,
-    `Error in linalg.qr: input must have rank >= 2, got rank ${a.rank}.`
-  );
-  assert(
-    ! a.dtype.startsWith('complex'),
-    `Error in linalg.qr: complex dtype not supported.`
-  );
+  if( a.rank < 2 ) {
+    throw new Error(`qrEco(): input must have rank >= 2, got rank ${a.rank}.`);
+  }
+  if( a.dtype !== 'float32' ) {
+    throw new Error(`qrEco(): only float32 currently supported as dtype.`);
+  }
 
   const dtype      = 'float32',
         // tslint:disable
@@ -603,68 +638,119 @@ function qrFullBackpropKernel(
   q: Tensor, dq: Tensor, r: Tensor, dr: Tensor, cs: Tensor
 ): Tensor
 {
-  assert( q.rank === dq.rank, `q.rank == ${q.rank} != ${dq.rank} == dq.rank` );
-  assert( q.rank === dr.rank, `q.rank == ${q.rank} != ${dr.rank} == dr.rank` );
-  assert( q.rank ===  r.rank, `q.rank == ${q.rank} != ${ r.rank} ==  r.rank` );
-
-  assert( cs.rank === 1, `cs.rank == ${cs.rank} != 1` );
-
-  for( let i=q.rank-2; i-- > 0; )
-  {
-    assert(
-      q.shape[i] === dq.shape[i],
-      `q.shape[${i}] == ${q.shape[i]} != ${dq.shape[i]} == dq.shape[${i}]`
-    );
-    assert(
-      q.shape[i] === dr.shape[i],
-      `q.shape[${i}] == ${q.shape[i]} != ${dr.shape[i]} == dr.shape[${i}]`
-    );
-    assert(
-      q.shape[i] ===  r.shape[i],
-      `q.shape[${i}] == ${q.shape[i]} != ${ r.shape[i]} ==  r.shape[${i}]`
+  if( q.rank !== dq.rank ) {
+    throw new Error(
+      `qrFullBackprop(): q.rank == ${q.rank} != ${dq.rank} == dq.rank`
     );
   }
+  if( q.rank !== dr.rank ) {
+    throw new Error(
+      `qrFullBackprop(): q.rank == ${q.rank} != ${dr.rank} == dr.rank`
+    );
+  }
+  if( q.rank !==  r.rank ) {
+    throw new Error(
+      `qrFullBackprop(): q.rank == ${q.rank} != ${ r.rank} ==  r.rank`
+    );
+  }
+
+  if( cs.rank !== 1 ) {
+    throw new Error(`qrFullBackprop(): cs.rank == ${cs.rank} != 1`);
+  }
+
   const rank = q.rank;
-  assert(
-    q.shape[rank-2] ===  q.shape[rank-1],
-    `q.shape[-2] == ${q.shape[rank-2]} != ${ q.shape[rank-1]} ==  q.shape[-1]`
-  );
-  assert(
-    q.shape[rank-2] === dq.shape[rank-1],
-    `q.shape[-2] == ${q.shape[rank-2]} != ${dq.shape[rank-1]} == dq.shape[-1]`
-  );
-  assert(
-    q.shape[rank-2] === dq.shape[rank-2],
-    `q.shape[-2] == ${q.shape[rank-2]} != ${dq.shape[rank-2]} == dq.shape[-2]`
-  );
 
-  assert(
-    r.shape[rank-2] ===  q.shape[rank-1],
-    `r.shape[-2] == ${r.shape[rank-2]} != ${ q.shape[rank-1]} ==  q.shape[-1]`
-  );
-  assert(
-    r.shape[rank-1] === dr.shape[rank-1],
-    `r.shape[-1] == ${r.shape[rank-1]} != ${dr.shape[rank-1]} == dr.shape[-1]`
-  );
-  assert(
-    r.shape[rank-2] === dr.shape[rank-2],
-    `r.shape[-2] == ${r.shape[rank-2]} != ${dr.shape[rank-2]} == dr.shape[-2]`
-  );
+  if( rank < 2 ) {
+    throw new Error(
+      `qrFullBackprop(): input must have rank >= 2, got rank ${rank}.`
+    );
+  }
 
-  assert(
-    q.dtype ===  dq.dtype, `q.dtype == ${q.dtype} == ${ dq.dtype} ==  dq.dtype`
-  );
-  assert(
-    q.dtype ===  dr.dtype, `q.dtype == ${q.dtype} == ${ dr.dtype} ==  dr.dtype`
-  );
-  assert(
-    q.dtype ===   r.dtype, `q.dtype == ${q.dtype} == ${  r.dtype} ==   r.dtype`
-  );
-  assert(
-    q.dtype === cs.dtype, `q.dtype == ${q.dtype} == ${cs.dtype} == cs.dtype`
-  );
+  for( let i=rank-2; i-- > 0; )
+  {
+    if( q.shape[i] !== dq.shape[i] ) {
+      throw new Error(
+          'qrFullBackprop(): '
+        + `q.shape[${i}] == ${q.shape[i]} != ${dq.shape[i]} == dq.shape[${i}]`
+      );
+    }
+    if( q.shape[i] !== dr.shape[i] ) {
+      throw new Error(
+          'qrFullBackprop(): '
+        + `q.shape[${i}] == ${q.shape[i]} != ${dr.shape[i]} == dr.shape[${i}]`
+      );
+    }
+    if( q.shape[i] !==  r.shape[i] ) {
+      throw new Error(
+          'qrFullBackprop(): '
+        + `q.shape[${i}] == ${q.shape[i]} != ${ r.shape[i]} ==  r.shape[${i}]`
+      );
+    }
+  }
 
-  assert( ! q.dtype.startsWith('complex'), `Complex dtype not supported.`);
+  if( q.shape[rank-2] !==  q.shape[rank-1] ) {
+    throw new Error(
+      'qrFullBackprop(): ' +
+      `q.shape[-2] == ${q.shape[rank-2]} != ${ q.shape[rank-1]} == q.shape[-1]`
+    );
+  }
+  if( q.shape[rank-2] !== dq.shape[rank-1] ) {
+    throw new Error(
+     'qrFullBackprop(): ' +
+     `q.shape[-2] == ${q.shape[rank-2]} != ${dq.shape[rank-1]} == dq.shape[-1]`
+    );
+  }
+  if( q.shape[rank-2] !== dq.shape[rank-2] ) {
+    throw new Error(
+     'qrFullBackprop(): ' +
+     `q.shape[-2] == ${q.shape[rank-2]} != ${dq.shape[rank-2]} == dq.shape[-2]`
+    );
+  }
+  if( r.shape[rank-2] !==  q.shape[rank-1] ) {
+    throw new Error(
+     'qrFullBackprop(): ' +
+     `r.shape[-2] == ${r.shape[rank-2]} != ${ q.shape[rank-1]} ==  q.shape[-1]`
+    );
+  }
+  if( r.shape[rank-1] !== dr.shape[rank-1] ) {
+    throw new Error(
+     'qrFullBackprop(): ' +
+     `r.shape[-1] == ${r.shape[rank-1]} != ${dr.shape[rank-1]} == dr.shape[-1]`
+    );
+  }
+  if( r.shape[rank-2] !== dr.shape[rank-2] ) {
+    throw new Error(
+     'qrFullBackprop(): ' +
+     `r.shape[-2] == ${r.shape[rank-2]} != ${dr.shape[rank-2]} == dr.shape[-2]`
+    );
+  }
+
+  if( q.dtype !== dq.dtype ) {
+    throw new Error(
+      `qrFullBackprop(): q.dtype == ${q.dtype} != ${dq.dtype} == dq.dtype`
+    );
+  }
+  if( q.dtype !== dr.dtype ) {
+    throw new Error(
+      `qrFullBackprop(): q.dtype == ${q.dtype} != ${dr.dtype} == dr.dtype`
+    );
+  }
+  if( q.dtype !== r.dtype ) {
+    throw new Error(
+      `qrFullBackprop(): q.dtype == ${q.dtype} != ${r.dtype} == r.dtype`
+    );
+  }
+  if( q.dtype !== cs.dtype ) {
+    throw new Error(
+      `qrFullBackprop(): q.dtype == ${q.dtype} != ${cs.dtype} == cs.dtype`
+    );
+  }
+
+  if( q.dtype !== 'float32' ) {
+    throw new Error(
+      `qrFullBackprop(): only float32 currently supported as dtype.`
+    );
+  }
 
   const dtype      ='float32',
         // tslint:disable

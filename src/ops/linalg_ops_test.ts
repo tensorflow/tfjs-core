@@ -30,14 +30,15 @@ const randInt = (from: number, until: number) => {
 };
 
 /**
- * Computes the gradients using finite differences.
+ * Computes the gradients using finite differences. Current
+ * implmentation uses an O(h⁴) central difference.
  *
  * SEE: https://en.wikipedia.org/wiki/Finite_difference
  *
  * FIXME this is terribly imprecise... wish there was
  *       double precision support *hint hint*.
  */
-const numDiff = (f: (_: Tensor) => Scalar) => (a: Tensor) => {
+const numDiff = (f: (x: Tensor) => Scalar) => (a: Tensor) => {
   if( a.dtype !== 'float32' ) {
     throw new Error(`numDiff(): dtype=${a.dtype} not supported.`);
   }
@@ -77,6 +78,10 @@ const numDiff = (f: (_: Tensor) => Scalar) => (a: Tensor) => {
   });
 };
 
+/**
+ *  An tensor equivalency assertion that uses a comparison operator
+ *  that is very similar to NumPy's `is_close()` function.
+ */
 function expectTensorsRelativelyClose(
   actual: Tensor, expected: Tensor, rtol?: number, atol?: number
 ): void
@@ -199,6 +204,7 @@ describeWithFlags('adjoint', ALL_ENVS, () => {
                             [2,5],
                             [3,6]],[3,2]);
     // FIXME: shouldn't tf.transpose be lossless?
+    // Yet this fails on Travis with `expectArraysEqual`...
     expectArraysClose( tf.linalg.adjoint(a), aT );
   });
   it('3x2x1', () => {
@@ -208,7 +214,6 @@ describeWithFlags('adjoint', ALL_ENVS, () => {
           aT = tf.tensor3d([[[1,2]],
                             [[3,4]],
                             [[5,6]]], [3,1,2]);
-    // FIXME: shouldn't tf.transpose be lossless?
     expectArraysClose( tf.linalg.adjoint(a), aT );
   });
 });
@@ -216,7 +221,9 @@ describeWithFlags('adjoint', ALL_ENVS, () => {
 describeWithFlags('bandPart', ALL_ENVS, () => {
   const la = tf.linalg;
 
-  // FIXME: shouldn't 1*x be lossless? It's even in the IEEE spec somewhere...
+  // FIXME: shouldn't 1*x be lossless?
+  // It's even in the IEEE spec somewhere...
+  // Yet this fails on Travis with `expectArraysEqual`...
   const expectArraysEqual = expectArraysClose;
 
   it('3x4', () => {
@@ -357,11 +364,11 @@ describeWithFlags('triangularSolve', CPU_ENVS, () => {
       {
         const x = la.triangularSolve(L,y, lower, adjoint);
         const [a,b] = [y,tril.matMul(x)];
-//        const [a,b] = broadcastMatrices( y, tril.matMul(x) );
         expectArraysClose(a,b);
       }
       const x = la.triangularSolve(L,y, /*lower=*/false, adjoint);
-      const [a,b] = [y,triu.matMul(x)];//broadcastMatrices( y, triu.matMul(x) );
+      const [a,b] = [y,triu.matMul(x)];
+//      const [a,b] = broadcastMatrices( y, triu.matMul(x) );
       expectArraysClose(a,b);
 
       for( const lower of [false,true,undefined] )
@@ -424,6 +431,7 @@ describeWithFlags('qr', CPU_ENVS, () => {
   const testWith = (a: Tensor) => {
     const [m,n] = a.shape.slice(-2),
            l = Math.min(m,n),
+          // Indices of matrix transpose.
            T = Array.from({ length: a.rank }, (_,i) => i );
     T[T.length-2] = T.length-1;
     T[T.length-1] = T.length-2;
@@ -493,8 +501,8 @@ describeWithFlags('qr', CPU_ENVS, () => {
       }
       catch(err) {
         console.log('fullMatrices:', fullMatrices);
-//        const [q,r] = tf.linalg.qr(a,fullMatrices);
         console.log('A:'); a   .print();
+//        const [q,r] = tf.linalg.qr(a,fullMatrices);
 //        console.log('Q:'); q   .print();
 //        console.log('R:'); r   .print();
 //        console.log('G:'); g(a).print();
@@ -530,7 +538,7 @@ describeWithFlags('qr', CPU_ENVS, () => {
   it('2x3', () => testWith( tensor2d([[ 1, 2, 3],
                                       [-3,-2, 1]], [2, 3]) ) );
 
-  for( let run=0; run < 128; run++ )
+  for( let run=0; run < 128*1024; run++ )
   {
     const shape = Array.from({ length: randInt(2,5) }, () => randInt(1,7) );
     it(
