@@ -151,10 +151,10 @@ export class Environment {
    * result can be a complex object.
    *
    * Using this method helps avoid memory leaks. In general, wrap calls to
-   * operations in `tidy` for automatic memory cleanup.
+   * operations in `tf.tidy` for automatic memory cleanup.
    *
-   * When in safe mode, you must enclose all `Tensor` creation and ops
-   * inside a `tidy` to prevent memory leaks.
+   * When in safe mode, you must enclose all `tf.Tensor` creation and ops
+   * inside a `tf.tidy` to prevent memory leaks.
    *
    * ```js
    * // y = 2 ^ 2 + 1
@@ -188,11 +188,11 @@ export class Environment {
   }
 
   /**
-   * Disposes any `Tensor`s found within the provided object.
+   * Disposes any `tf.Tensor`s found within the provided object.
    *
-   * @param container an object that may be a `Tensor` or may directly contain
-   *     `Tensor`s, such as a `Tensor[]` or `{key: Tensor, ...}`. If the
-   *     object is not a `Tensor` or does not contain `Tensors`, nothing
+   * @param container an object that may be a `tf.Tensor` or may directly
+   *     contain `tf.Tensor`s, such as a `Tensor[]` or `{key: Tensor, ...}`. If
+   *     the object is not a `tf.Tensor` or does not contain `Tensors`, nothing
    *     happens. In general it is safe to pass any object here, except that
    *     `Promise`s are not supported.
    */
@@ -203,7 +203,7 @@ export class Environment {
   }
 
   /**
-   * Keeps a `Tensor` generated inside a `tidy` from being disposed
+   * Keeps a `tf.Tensor` generated inside a `tf.tidy` from being disposed
    * automatically.
    *
    * ```js
@@ -306,13 +306,18 @@ export class Environment {
           (typeof process.versions.node !== 'undefined');
     } else if (feature === 'IS_CHROME') {
       return isChrome();
+    } else if (feature === 'WEBGL_CPU_FORWARD') {
+      return true;
+    } else if (feature === 'WEBGL_PACK_BATCHNORMALIZATION') {
+      return false;
+    } else if (feature === 'WEBGL_LAZILY_UNPACK') {
+      return false;
     } else if (feature === 'WEBGL_CONV_IM2COL') {
       return false;
     } else if (feature === 'WEBGL_PAGING_ENABLED') {
       return this.get('IS_BROWSER') && !this.get('PROD');
     } else if (feature === 'WEBGL_MAX_TEXTURE_SIZE') {
-      return getWebGLMaxTextureSize(
-          this.get('WEBGL_VERSION'), this.get('IS_BROWSER'));
+      return getWebGLMaxTextureSize(this.get('WEBGL_VERSION'));
     } else if (feature === 'IS_TEST') {
       return false;
     } else if (feature === 'BACKEND') {
@@ -323,29 +328,25 @@ export class Environment {
       if (webGLVersion === 0) {
         return 0;
       }
-      return getWebGLDisjointQueryTimerVersion(
-          webGLVersion, this.get('IS_BROWSER'));
+      return getWebGLDisjointQueryTimerVersion(webGLVersion);
     } else if (feature === 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE') {
       return this.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') > 0 &&
           !device_util.isMobile();
     } else if (feature === 'HAS_WEBGL') {
       return this.get('WEBGL_VERSION') > 0;
     } else if (feature === 'WEBGL_VERSION') {
-      if (isWebGLVersionEnabled(2, this.get('IS_BROWSER'))) {
+      if (isWebGLVersionEnabled(2)) {
         return 2;
-      } else if (isWebGLVersionEnabled(1, this.get('IS_BROWSER'))) {
+      } else if (isWebGLVersionEnabled(1)) {
         return 1;
       }
       return 0;
     } else if (feature === 'WEBGL_RENDER_FLOAT32_ENABLED') {
-      return isRenderToFloatTextureEnabled(
-          this.get('WEBGL_VERSION'), this.get('IS_BROWSER'));
+      return isRenderToFloatTextureEnabled(this.get('WEBGL_VERSION'));
     } else if (feature === 'WEBGL_DOWNLOAD_FLOAT_ENABLED') {
-      return isDownloadFloatTextureEnabled(
-          this.get('WEBGL_VERSION'), this.get('IS_BROWSER'));
+      return isDownloadFloatTextureEnabled(this.get('WEBGL_VERSION'));
     } else if (feature === 'WEBGL_FENCE_API_ENABLED') {
-      return isWebGLFenceEnabled(
-          this.get('WEBGL_VERSION'), this.get('IS_BROWSER'));
+      return isWebGLFenceEnabled(this.get('WEBGL_VERSION'));
     } else if (feature === 'WEBGL_SIZE_UPLOAD_UNIFORM') {
       // Use uniform uploads only when 32bit floats are supported. In 16bit
       // environments there are problems with comparing a 16bit texture value

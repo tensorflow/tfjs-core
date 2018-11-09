@@ -21,11 +21,12 @@ import {convertToTensor} from '../tensor_util_env';
 import {Rank, ShapeMap, TensorLike} from '../types';
 
 import {op} from './operation';
+import * as scatter_nd_util from './scatter_nd_util';
 
 /**
  * Creates a new tensor by applying sparse updates to individual
  * values or slices within a zero tensor of the given shape tensor according to
- * indices. This operator is the inverse of the `gatherND` operator which
+ * indices. This operator is the inverse of the `tf.gatherND` operator which
  * extracts values or slices from a given tensor.
  *
  * ```js
@@ -45,6 +46,8 @@ function scatterND_<R extends Rank>(
     shape: ShapeMap[R]): Tensor<R> {
   const $indices = convertToTensor(indices, 'indices', 'scatterND', 'int32');
   const $updates = convertToTensor(updates, 'updates', 'scatterND');
+  scatter_nd_util.validateInput($updates, $indices, shape);
+
   return ENV.engine.runKernel(
              backend => backend.scatterND($indices, $updates, shape),
              {$indices, $updates}) as Tensor<R>;
