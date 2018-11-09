@@ -136,7 +136,16 @@ describeWithFlags('rastrigin', ALL_ENVS, () => {
       {
         const x = randomUniform([1024,1024,l],-6,+6),
               f = rastrigin(x);
-        expectArraysEqual( fMin.lessEqual(f).all(), scalar(true,'bool') );
+        try {
+          expectArraysEqual( fMin.lessEqual(f).all(), scalar(true,'bool') );
+        }
+        catch(err) {
+          const iMax = f.flatten().argMin().dataSync()[0];
+          console.log('x_min:'); x.reshape([-1,l]).slice( [iMax,0], [1,l] ).print();
+          console.log('f.min:'); f.min().print();
+          console.log('fMin'); fMin.print();
+          throw err;
+        }
       }
     });
   }
