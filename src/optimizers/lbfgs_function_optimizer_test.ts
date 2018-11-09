@@ -267,7 +267,6 @@ describeWithFlags('lbfgs', ALL_ENVS, () => {
           opt.step();
         }
         catch(err) {
-          console.log('NAME: ', err.constructor.name);
           if( err instanceof LineSearchNoProgressError ) {
             break opt_loop;
           }
