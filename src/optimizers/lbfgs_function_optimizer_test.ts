@@ -26,7 +26,9 @@ import {convertToTensor} from '../tensor_util_env';
 import {valueAndGrad} from '../gradients';
 import {ENV} from '../environment';
 import {randomUniform} from '../ops/array_ops';
-import {strongWolfeLineSearch, LBFGSFunctionOptimizer} from './lbfgs_function_optimizer';
+import {strongWolfeLineSearch,
+        LBFGSFunctionOptimizer,
+        LineSearchNoProgressError} from './lbfgs_function_optimizer';
 import {dot} from '../ops/matmul';
 
 function rosenbrock( x: Tensor|TensorLike ): Tensor
@@ -257,10 +259,19 @@ describeWithFlags('lbfgs', ALL_ENVS, () => {
         { initNegDir: g => g.div(DENOM) }
       );
 
-      while( ! opt.g.abs().lessEqual( scalar(2**-12) ).all().dataSync()[0] )
+      const atol = scalar( Math.sqrt(ENV.get('EPSILON')) );
+      while( ! opt.g.abs().lessEqual(atol).all().dataSync()[0] )
       {
         ++nSteps;
-        opt.step();
+        try {
+          opt.step();
+        }
+        catch(err) {
+          if( err instanceof LineSearchNoProgressError ) {
+            break;
+          }
+          throw err;
+        }
       }
 
       expect(nCalls).toBeLessThan(256);

@@ -45,6 +45,18 @@ function dotProd( x: Tensor1D, y: Tensor1D ) {
   return z;
 }
 
+export class LineSearchError extends Error {
+  constructor( msg: string ) {
+    super(msg);
+  }
+}
+
+export class LineSearchNoProgressError extends LineSearchError {
+  constructor( msg: string ) {
+    super(msg);
+  }
+}
+
 /** The function type of a linesearch method.
  *
  *  @param fg A function that returns both the value and gradients of the
@@ -151,7 +163,7 @@ export function strongWolfeLineSearch(
       }
 
       if( ! (α < αMax) ) {
-        throw new Error(
+        throw new LineSearchError(
             'strongWolfeLineSearch(): '
           + 'Strong Wolfe condition not satisfiable in range.'
         );
@@ -162,7 +174,7 @@ export function strongWolfeLineSearch(
     }
 
     if( αMin === αMax ) {
-      throw new Error('strongWolfeLineSearch: bracketing failed.');
+      throw new LineSearchError('strongWolfeLineSearch: bracketing failed.');
     }
 
     // STEP 2: BISECTION PHASE
@@ -181,7 +193,9 @@ export function strongWolfeLineSearch(
 
       if( f - f0 > c1*α*p0 || f >= fMin ) {
         if( αMax === α ) {
-          throw new Error('strongWolfeLineSearch(): bisection failed.');
+          throw new LineSearchError(
+            'strongWolfeLineSearch(): bisection failed.'
+          );
         }
         αMax = α;
       }
@@ -198,14 +212,20 @@ export function strongWolfeLineSearch(
         }
 
         if( αMin === α ) {
-          throw new Error('strongWolfeLineSearch(): bisection failed.');
+          throw new LineSearchError(
+            'strongWolfeLineSearch(): bisection failed.'
+          );
         }
         αMin = α;
         fMin = f;
       }
 
       if( αMin === αMax ) {
-        throw new Error('strongWolfeLineSearch(): bisection failed.');
+        const msg = 'strongWolfeLineSearch(): bisection failed.';
+        if( αMin === 0) {
+          throw new LineSearchNoProgressError(msg);
+        }
+        throw new LineSearchError(msg);
       }
     }
   };
@@ -396,15 +416,33 @@ export class LBFGSFunctionOptimizer {
         dGdX = this.dGdX,
         dG   = this.dG;
 
-    const [x,f,g] = ENV.engine.tidy(
-      () => this.lineSearch(
+    const [x,f,g] = ( () => {
+      const stepFunc = () => this.lineSearch(
         this.fg,
         this.x,
         this.f,
         this.g,
         this.negDir(this.g)
-      )
-    );
+      );
+      try {
+        return ENV.engine.tidy(stepFunc);
+      }
+      catch( err ) {
+        if( err instanceof LineSearchNoProgressError ) {
+          // reset line search
+          while( dX.length > 0 ) {
+              dX.pop().dispose();
+            dGdX.pop().dispose();
+            dG  .pop().dispose();
+          }
+          // try one last time
+          return ENV.engine.tidy(stepFunc);
+        }
+        else {
+          throw err;
+        }
+      }
+    })();
 
     const dXi = sub(x,this.x) as Tensor1D,
           dGi = sub(g,this.g) as Tensor1D;
