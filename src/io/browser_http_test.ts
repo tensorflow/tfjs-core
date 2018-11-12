@@ -283,10 +283,8 @@ describeWithFlags('browserHTTPRequest-save', CHROME_ENVS, () => {
     const testStartDate = new Date();
     const handler = tf.io.browserHTTPRequest('model-upload-test', {
       method: 'PUT',
-      headers: {
-        'header_key_1': 'header_value_1',
-        'header_key_2': 'header_value_2'
-      }
+      headers:
+          {'header_key_1': 'header_value_1', 'header_key_2': 'header_value_2'}
     });
     handler.save(artifacts1)
         .then(saveResult => {
@@ -420,7 +418,6 @@ describeWithFlags('parseUrl', BROWSER_ENVS, () => {
 });
 
 describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
-
   describe('JSON model', () => {
     let requestInits: RequestInit[];
 
@@ -761,6 +758,47 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
 
       const handler =
           tf.io.browserHTTPRequest(['./model.pb', './weights_manifest.json']);
+      handler.load()
+          .then(modelArtifacts => {
+            expect(modelArtifacts.modelTopology).toEqual(modelData);
+            expect(modelArtifacts.weightSpecs)
+                .toEqual(weightManifest1[0].weights);
+            expect(new Float32Array(modelArtifacts.weightData))
+                .toEqual(floatData);
+            expect(requestInits).toEqual([{}, {}, {}]);
+            done();
+          })
+          .catch(err => done.fail(err.stack));
+    });
+
+    it('1 group, 2 weights, 1 path with suffix', (done: DoneFn) => {
+      const weightManifest1: tf.io.WeightsManifestConfig = [{
+        paths: ['weightfile0'],
+        weights: [
+          {
+            name: 'dense/kernel',
+            shape: [3, 1],
+            dtype: 'float32',
+          },
+          {
+            name: 'dense/bias',
+            shape: [2],
+            dtype: 'float32',
+          }
+        ]
+      }];
+      const floatData = new Float32Array([1, 3, 3, 7, 4]);
+      setupFakeWeightFiles({
+        './model.pb?tfjs-format=file': modelData,
+        './weights_manifest.json?tfjs-format=file':
+            JSON.stringify(weightManifest1),
+        './weightfile0?tfjs-format=file': floatData,
+      });
+
+      const handler = tf.io.browserHTTPRequest([
+        './model.pb?tfjs-format=file',
+        './weights_manifest.json?tfjs-format=file'
+      ]);
       handler.load()
           .then(modelArtifacts => {
             expect(modelArtifacts.modelTopology).toEqual(modelData);

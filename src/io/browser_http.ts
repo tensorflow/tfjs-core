@@ -222,12 +222,23 @@ export class BrowserHTTPRequest implements IOHandler {
   }
 }
 
+/**
+ * Extract the prefix and suffix of the url, where the prefix is the path before
+ * the last file, and suffix is the search params after the last file.
+ * ```
+ * const url = 'http://tfhub.dev/model/1/tensorflowjs_model.pb?tfjs-format=file'
+ * [prefix, suffix] = parseUrl(url)
+ * // prefix = 'http://tfhub.dev/model/1/'
+ * // suffix = '?tfjs-format=file'
+ * ```
+ * @param url the model url to be parsed.
+ */
 export function parseUrl(url: string): [string, string] {
-  const lastSlice = url.lastIndexOf('/');
+  const lastSlash = url.lastIndexOf('/');
   const lastSearchParam = url.lastIndexOf('?');
-  const prefix = url.substring(0, lastSlice);
+  const prefix = url.substring(0, lastSlash);
   const suffix =
-      lastSearchParam > lastSlice ? url.substring(lastSearchParam) : '';
+      lastSearchParam > lastSlash ? url.substring(lastSearchParam) : '';
   return [prefix + '/', suffix];
 }
 
