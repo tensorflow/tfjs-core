@@ -168,6 +168,21 @@ describeWithFlags('abs', ALL_ENVS, () => {
     expect(result.shape).toEqual([2, 2, 2]);
   });
 
+  it('is underflow-safe for complex64', () => {
+    const a = tf.complex(
+       /*re=*/[ 1e-30, 0     ],
+       /*im=*/[ 1e-30, 1e-30 ]
+    );
+    const result = tf.abs(a);
+    expectArraysClose(
+      result,
+      [ Math.hypot(1e-30, 1e-30),
+        Math.hypot(0,     1e-30) ], 
+      /*tolerance=*/1e-32
+    );
+    expect(result.shape).toEqual([2]);
+  });
+
   it('propagates NaNs', () => {
     const a = tf.tensor1d([1, -2, 0, 3, -0.1, NaN]);
     const result = tf.abs(a);
