@@ -34,7 +34,7 @@ export class ComplexAbsProgram implements GPGPUProgram {
         // (at least not on Intel GPUs). So the safe solution is
         // to ensure underflow-safety in all cases.
         setOutput(
-          mx * length(vec2(1, min(re, im)/mx))
+          mx == 0.0 ? 0.0 : mx * length(vec2(1, min(re, im)/mx))
         );
       }
     `;

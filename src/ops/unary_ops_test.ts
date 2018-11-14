@@ -175,25 +175,26 @@ describeWithFlags('abs', ALL_ENVS, () => {
     let small;
     switch(floatBits) {
       case 32: small = 1e-30; break;
-      case 16: small = 1e-5;  break;
+      case 16: small = 1e-4;  break;
       default: throw new Error(
         `Test not implemented for ENV.engine.floatPrecision()=${floatBits}.`
       );
     }
 
     const a = tf.complex(
-       [small,     0, small],
-       [small, small,     0]
+       [small,     0, small, 0],
+       [small, small,     0, 0]
     );
     const result = tf.abs(a);
     expectArraysClose(
       result,
       [Math.hypot(small, small),
        Math.hypot(    0, small),
-       Math.hypot(small,     0)], 
+       Math.hypot(small,     0),
+       Math.hypot(    0,     0)], 
       /*tolerance=*/small/100
     );
-    expect(result.shape).toEqual([3]);
+    expect(result.shape).toEqual([4]);
   });
 
   it('propagates NaNs', () => {
