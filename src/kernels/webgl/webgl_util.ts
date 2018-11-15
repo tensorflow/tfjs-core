@@ -18,34 +18,6 @@
 import {ENV} from '../../environment';
 import * as util from '../../util';
 
-export function createWebGLRenderingContext(attributes: WebGLContextAttributes):
-    WebGLRenderingContext {
-  const canvas = document.createElement('canvas');
-  canvas.width = 1;
-  canvas.height = 1;
-  return createWebGLRenderingContextFromCanvas(canvas, attributes);
-}
-
-export function createWebGLRenderingContextFromCanvas(
-    canvas: HTMLCanvasElement,
-    attributes: WebGLContextAttributes): WebGLRenderingContext {
-  let gl: WebGLRenderingContext;
-
-  const webglVersion = ENV.get('WEBGL_VERSION');
-  if (webglVersion === 2) {
-    gl = canvas.getContext('webgl2', attributes) as WebGLRenderingContext;
-  } else if (webglVersion === 1) {
-    gl = (canvas.getContext('webgl', attributes) ||
-          canvas.getContext('experimental-webgl', attributes)) as
-        WebGLRenderingContext;
-  }
-
-  if (webglVersion === 0 || gl == null) {
-    throw new Error('This browser does not support WebGL.');
-  }
-  return gl;
-}
-
 export function callAndCheck<T>(gl: WebGLRenderingContext, func: () => T): T {
   const returnValue = func();
   checkWebGLError(gl);
@@ -405,4 +377,49 @@ export function getTextureShapeFromLogicalShape(
   } else {
     return util.sizeToSquarishShape(size);
   }
+}
+
+function isEven(n: number): boolean {
+  return n % 2 === 0;
+}
+
+/**
+ * This determines whether reshaping a packed texture requires rearranging
+ * the data within the texture, assuming 2x2 packing.
+ */
+export function isReshapeFree(shape1: number[], shape2: number[]): boolean {
+  shape1 = shape1.slice(-2);
+  shape2 = shape2.slice(-2);
+
+  if (util.arraysEqual(shape1, shape2)) {
+    return true;
+  }
+
+  if (!shape1.length || !shape2.length) {  // One of the shapes is a scalar.
+    return true;
+  }
+
+  if (shape1[0] === 0 || shape1[1] === 0 || shape2[0] === 0 ||
+      shape2[1] === 0) {
+    return true;
+  }
+
+  if (shape1.length !== shape2.length) {  // One of the shapes is a vector.
+    if (util.arraysEqual(
+            util.squeezeShape(shape1).newShape,
+            util.squeezeShape(shape2).newShape)) {
+      return true;
+    }
+  } else {
+    if (isEven(shape1[0]) && isEven(shape2[0])) {
+      if (isEven(shape1[1]) && isEven(shape2[1])) {
+        return true;
+      }
+      if (shape1[1] === shape2[1]) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }

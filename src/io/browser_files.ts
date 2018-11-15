@@ -180,21 +180,16 @@ class BrowserFiles implements IOHandler {
                 });
               }
             };
-            weightFileReader.onerror = (error: FileReaderProgressEvent) => {
-              reject(`Failed to weights data from file of path '${path}'.`);
-              return;
-            };
+            weightFileReader.onerror = error =>
+                reject(`Failed to weights data from file of path '${path}'.`);
             weightFileReader.readAsArrayBuffer(pathToFile[path]);
           });
         });
       };
-      jsonReader.onerror = (error: FileReaderProgressEvent) => {
-        reject(
-            `Failed to read model topology and weights manifest JSON ` +
-            `from file '${jsonFile.name}'. BrowserFiles supports loading ` +
-            `Keras-style tf.Model artifacts only.`);
-        return;
-      };
+      jsonReader.onerror = error => reject(
+          `Failed to read model topology and weights manifest JSON ` +
+          `from file '${jsonFile.name}'. BrowserFiles supports loading ` +
+          `Keras-style tf.Model artifacts only.`);
       jsonReader.readAsText(jsonFile);
     });
   }
@@ -280,6 +275,7 @@ IORouterRegistry.registerSaveRouter(browserDownloadsRouter);
  * @param config Additional configuration for triggering downloads.
  * @returns An instance of `DownloadTrigger` `IOHandler`.
  */
+/** @doc {heading: 'Models', subheading: 'Loading', namespace: 'io'} */
 export function browserDownloads(fileNamePrefix = 'model'): IOHandler {
   return new BrowserDownloads(fileNamePrefix);
 }
@@ -317,6 +313,7 @@ export function browserDownloads(fileNamePrefix = 'model'): IOHandler {
  *     topology will be loaded from the JSON file above.
  * @returns An instance of `Files` `IOHandler`.
  */
+/** @doc {heading: 'Models', subheading: 'Loading', namespace: 'io'} */
 export function browserFiles(files: File[]): IOHandler {
   return new BrowserFiles(files);
 }
