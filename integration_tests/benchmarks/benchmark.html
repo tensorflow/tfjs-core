@@ -18,6 +18,10 @@
       margin: 20px 100px;
     }
 
+    h2 {
+      margin-bottom: 30px;
+    }
+
     #container {
       display: flex;
       flex-direction: row;
@@ -25,8 +29,8 @@
     }
 
     .box {
-      margin-right: 20px;
-      margin-bottom: 20px;
+      margin-right: 30px;
+      margin-bottom: 30px;
     }
 
     .box pre {
@@ -106,8 +110,7 @@
         </tbody>
       </table>
       <div class="box" id="trendline-container">
-        <div></div>
-        trendline
+        <div class="label"></div>
       </div>
     </div>
     <table class="table" id="kernels">
@@ -148,7 +151,6 @@
     'use strict';
     const state = {
       numRuns: 50,
-
     };
     const modalDiv = document.getElementById('modal-msg');
     const timeTable = document.querySelector('#timings tbody');
@@ -236,6 +238,7 @@
     }
 
     async function measureAveragePredictTime() {
+      document.querySelector("#trendline-container .label").textContent = `Inference times over ${state.numRuns} runs`;
       await showMsg(`Running predict ${state.numRuns} times`);
       const start = performance.now();
       let res;
