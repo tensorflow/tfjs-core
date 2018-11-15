@@ -18,11 +18,10 @@ set -e
 
 yarn build
 yarn lint
+# Test in node (headless environment).
+yarn test-node
 
 if [[ $(node -v) = *v10* ]]; then
-  # Test in node (headless environment).
-  yarn test-node
-
   # Run the first karma separately so it can download the BrowserStack binary
   # without conflicting with others.
   yarn run-browserstack --browsers=bs_safari_mac --backend webgl --features '{"WEBGL_CPU_FORWARD": false, "WEBGL_SIZE_UPLOAD_UNIFORM": 0}'
