@@ -40,8 +40,14 @@
       font-size: 10px;
     }
 
-    #trendline-container {
+    #trendline-container svg {
+      overflow: visible;
+      margin-top: 20px;
+    }
 
+    #trendline-container path {
+      fill: none;
+      stroke: #222;
     }
 
     #modal-msg {
@@ -56,8 +62,8 @@
     }
 
     .table {
-      margin-right: 20px;
-      margin-bottom: 20px;
+      margin-right: 30px;
+      margin-bottom: 30px;
       border: 1px solid #ccc;
       border-collapse: collapse;
       border-spacing: 0;
@@ -111,6 +117,7 @@
       </table>
       <div class="box" id="trendline-container">
         <div class="label"></div>
+        <svg><path></path></svg>
       </div>
     </div>
     <table class="table" id="kernels">
@@ -241,14 +248,24 @@
     async function measureAveragePredictTime() {
       document.querySelector("#trendline-container .label").textContent = `Inference times over ${state.numRuns} runs`;
       await showMsg(`Running predict ${state.numRuns} times`);
+      const chartHeight = 150;
+      const chartWidth = document.querySelector("#trendline-container").getBoundingClientRect().width;
       const times = [];
+
       let res;
       for (let i = 0; i < state.numRuns; i++) {
         const start = performance.now();
         res = awaitResult(predict(model));
         times.push(performance.now() - start);
       }
+
       const average = times.reduce((acc, curr) => acc + curr, 0) / times.length;
+      const max = times.reduce((acc, curr) => curr > acc ? curr : acc, 0);
+      const xIncrement = chartWidth / times.length;
+
+      document.querySelector("#trendline-container path")
+        .setAttribute("d", `M${times.map((d, i) => `${i * xIncrement},${chartHeight - (d / max) * chartHeight}`).join('L')}`);
+
       await showMsg(null);
       appendRow(timeTable, `Subsequent average (${state.numRuns} runs)`, printTime(average));
     }
