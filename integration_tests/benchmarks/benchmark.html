@@ -106,6 +106,7 @@
         </tbody>
       </table>
       <div class="box" id="trendline-container">
+        <div></div>
         trendline
       </div>
     </div>
@@ -178,6 +179,10 @@
       envDiv.innerHTML += `<br/>${JSON.stringify(tf.ENV.features, null, 2)}`;
     }
 
+    function printElapsed(elapsed) {
+      return elapsed.toFixed(1) + ' ms';
+    }
+
     function printMemory(bytes) {
       if (bytes < 1024) {
         return bytes + ' B';
@@ -214,7 +219,7 @@
       }
       const elapsed = performance.now() - start;
       await showMsg(null);
-      appendRow(timeTable, 'Warmup', elapsed.toFixed(1) + ' ms');
+      appendRow(timeTable, '1st inference', printElapsed(start));
     }
 
     function sleep(timeMs) {
@@ -227,7 +232,7 @@
       model = await load();
       const elapsed = performance.now() - start;
       await showMsg(null);
-      appendRow(timeTable, 'Model load', elapsed.toFixed(1) + ' ms');
+      appendRow(timeTable, 'Model load', printElapsed(elapsed));
     }
 
     async function measureAveragePredictTime() {
@@ -245,14 +250,24 @@
       }
       const elapsed = (performance.now() - start) / state.numRuns;
       await showMsg(null);
-      appendRow(timeTable, `Predict (${state.numRuns} runs)`, elapsed.toFixed(1) + ' ms');
+      appendRow(timeTable, `Subsequent average (${state.numRuns} runs)`, printElapsed(elapsed));
     }
 
     async function profileMemory() {
       await showMsg('Profile memory');
-      const data = await tf.profile(() => predict(model));
+      const start = performance.now();
+      let res;
+      const data = await tf.profile(() => res = predict(model));
+      if (res instanceof Promise) {
+        res = await res;
+      }
+      if (res instanceof tf.Tensor) {
+        await res.data();
+      }
+      const elapsed = performance.now() - start;
       await showMsg(null);
       appendRow(timeTable, 'Peak memory', printMemory(data.peakBytes));
+      appendRow(timeTable, '2nd inference', printElapsed(elapsed));
     }
 
     function showKernelTime(kernels) {
