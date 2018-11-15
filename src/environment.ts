@@ -23,7 +23,7 @@ import {DataId, setTensorTracker, Tensor, TensorTracker} from './tensor';
 import {TensorContainer} from './tensor_types';
 import {getTensorsInContainer} from './tensor_util';
 
-const EPSILON_FLOAT16 = 1e-3;
+const EPSILON_FLOAT16 = 1e-4;
 const TEST_EPSILON_FLOAT16 = 1e-1;
 
 const EPSILON_FLOAT32 = 1e-7;
