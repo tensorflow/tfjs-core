@@ -42,7 +42,6 @@
 
     #trendline-container svg {
       overflow: visible;
-      margin-top: 20px;
       border-bottom: 1px solid #ccc;
       border-left: 1px solid #ccc;
     }
@@ -57,24 +56,24 @@
       stroke: #222;
     }
 
-    #trendline-container {
+    #trendline {
       position: relative;
+      margin-top: 20px;
     }
 
-    #trendline-container #yMax, #trendline-container #yMin {
+    #trendline #yMax, #trendline #yMin {
       position: absolute;
       right: calc(100% + 6px);
       font-size: 11px;
       white-space: nowrap;
     }
 
-    #trendline-container #yMin {
+    #trendline #yMin {
       bottom: 0;
     }
 
-    #trendline-container #yMax {
-      top: 20px;
-      transform: translateY(100%);
+    #trendline #yMax {
+      top: 0;
     }
 
     #modal-msg {
@@ -144,9 +143,11 @@
       </table>
       <div class="box" id="trendline-container">
         <div class="label"></div>
-        <div id="yMax"></div>
-        <div id="yMin">0ms</div>
-        <svg><path></path></svg>
+        <div id="trendline">
+          <div id="yMax"></div>
+          <div id="yMin">0ms</div>
+          <svg><path></path></svg>
+        </div>
       </div>
     </div>
     <table class="table" id="kernels">
@@ -290,7 +291,8 @@
       }
 
       const average = times.reduce((acc, curr) => acc + curr, 0) / times.length;
-      const max = times.reduce((acc, curr) => curr > acc ? curr : acc, 0);
+      const max = Math.max(...times);
+      const min = Math.min(...times);
       const xIncrement = chartWidth / times.length;
 
       document.querySelector("#trendline-container #yMax").textContent = printTime(max);
@@ -299,6 +301,7 @@
 
       await showMsg(null);
       appendRow(timeTable, `Subsequent average (${state.numRuns} runs)`, printTime(average));
+      appendRow(timeTable, 'Best time', printTime(min));
     }
 
     async function profileMemory() {
