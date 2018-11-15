@@ -15,7 +15,7 @@
     }
 
     body {
-      margin: 30px 0 0 30px;
+      margin: 20px 100px;
     }
 
     #container {
@@ -34,6 +34,10 @@
       border: 1px solid #ccc;
       padding: 8px;
       font-size: 10px;
+    }
+
+    #trendline-container {
+
     }
 
     #modal-msg {
@@ -87,19 +91,24 @@
   <h2>TensorFlow.js Model Benchmark</h2>
   <div id="modal-msg"></div>
   <div id="container">
-    <div class="box">
-      <pre id="env"></pre>
+    <div id="stats">
+      <div class="box">
+        <pre id="env"></pre>
+      </div>
+      <table class="table" id="timings">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+        <tbody>
+        </tbody>
+      </table>
+      <div class="box" id="trendline-container">
+        trendline
+      </div>
     </div>
-    <table class="table" id="timings">
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Value</th>
-        </tr>
-      </thead>
-      <tbody>
-      </tbody>
-    </table>
     <table class="table" id="kernels">
       <thead>
         <tr>
@@ -137,7 +146,7 @@
   <script>
     'use strict';
     const state = {
-      numRuns: 20,
+      numRuns: 50,
 
     };
     const modalDiv = document.getElementById('modal-msg');
