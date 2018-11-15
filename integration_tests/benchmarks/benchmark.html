@@ -209,16 +209,17 @@
       tbody.appendChild(tr);
     }
 
+    async function awaitResult(res) {
+      if (res instanceof Promise) {
+        return await res;
+      }
+      return await res.dataSync(); // res is a tensor
+    }
+
     async function warmUpAndRecordTime() {
       await showMsg('Warming up');
       const start = performance.now();
-      let res = predict(model);
-      if (res instanceof Promise) {
-        res = await res;
-      }
-      if (res instanceof tf.Tensor) {
-        await res.data();
-      }
+      let res = awaitResult(predict(model));
       const elapsed = performance.now() - start;
       await showMsg(null);
       appendRow(timeTable, '1st inference', printElapsed(start));
@@ -245,12 +246,7 @@
       for (let i = 0; i < state.numRuns; i++) {
         res = predict(model);
       }
-      if (res instanceof Promise) {
-        res = await res;
-      }
-      if (res instanceof tf.Tensor) {
-        res.dataSync();
-      }
+      res = awaitResult(res);
       const elapsed = (performance.now() - start) / state.numRuns;
       await showMsg(null);
       appendRow(timeTable, `Subsequent average (${state.numRuns} runs)`, printElapsed(elapsed));
@@ -261,12 +257,7 @@
       const start = performance.now();
       let res;
       const data = await tf.profile(() => res = predict(model));
-      if (res instanceof Promise) {
-        res = await res;
-      }
-      if (res instanceof tf.Tensor) {
-        await res.data();
-      }
+      res = awaitResult(res);
       const elapsed = performance.now() - start;
       await showMsg(null);
       appendRow(timeTable, 'Peak memory', printMemory(data.peakBytes));
@@ -302,13 +293,7 @@
           });
         }
       }
-      let res = predict(model);
-      if (res instanceof Promise) {
-        res = await res;
-      }
-      if (res instanceof tf.Tensor) {
-        res.dataSync();
-      }
+      let res = awaitResult(predict(model));
       await showMsg(null);
       await sleep(10);
       kernels = kernels.sort((a, b) => b.time - a.time);
