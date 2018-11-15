@@ -181,7 +181,7 @@
       envDiv.innerHTML += `<br/>${JSON.stringify(tf.ENV.features, null, 2)}`;
     }
 
-    function printElapsed(elapsed) {
+    function printTime(elapsed) {
       return elapsed.toFixed(1) + ' ms';
     }
 
@@ -222,7 +222,7 @@
       let res = awaitResult(predict(model));
       const elapsed = performance.now() - start;
       await showMsg(null);
-      appendRow(timeTable, '1st inference', printElapsed(start));
+      appendRow(timeTable, '1st inference', printTime(start));
     }
 
     function sleep(timeMs) {
@@ -235,21 +235,22 @@
       model = await load();
       const elapsed = performance.now() - start;
       await showMsg(null);
-      appendRow(timeTable, 'Model load', printElapsed(elapsed));
+      appendRow(timeTable, 'Model load', printTime(elapsed));
     }
 
     async function measureAveragePredictTime() {
       document.querySelector("#trendline-container .label").textContent = `Inference times over ${state.numRuns} runs`;
       await showMsg(`Running predict ${state.numRuns} times`);
-      const start = performance.now();
+      const times = [];
       let res;
       for (let i = 0; i < state.numRuns; i++) {
-        res = predict(model);
+        const start = performance.now();
+        res = awaitResult(predict(model));
+        times.push(performance.now() - start);
       }
-      res = awaitResult(res);
-      const elapsed = (performance.now() - start) / state.numRuns;
+      const average = times.reduce((acc, curr) => acc + curr, 0) / times.length;
       await showMsg(null);
-      appendRow(timeTable, `Subsequent average (${state.numRuns} runs)`, printElapsed(elapsed));
+      appendRow(timeTable, `Subsequent average (${state.numRuns} runs)`, printTime(average));
     }
 
     async function profileMemory() {
@@ -261,7 +262,7 @@
       const elapsed = performance.now() - start;
       await showMsg(null);
       appendRow(timeTable, 'Peak memory', printMemory(data.peakBytes));
-      appendRow(timeTable, '2nd inference', printElapsed(elapsed));
+      appendRow(timeTable, '2nd inference', printTime(elapsed));
     }
 
     function showKernelTime(kernels) {
