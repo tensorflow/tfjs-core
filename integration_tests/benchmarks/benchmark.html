@@ -43,11 +43,38 @@
     #trendline-container svg {
       overflow: visible;
       margin-top: 20px;
+      border-bottom: 1px solid #ccc;
+      border-left: 1px solid #ccc;
+    }
+
+    #trendline-container .label {
+      font-size: 14px;
+      font-weight: bold;
     }
 
     #trendline-container path {
       fill: none;
       stroke: #222;
+    }
+
+    #trendline-container {
+      position: relative;
+    }
+
+    #trendline-container #yMax, #trendline-container #yMin {
+      position: absolute;
+      right: calc(100% + 6px);
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    #trendline-container #yMin {
+      bottom: 0;
+    }
+
+    #trendline-container #yMax {
+      top: 20px;
+      transform: translateY(100%);
     }
 
     #modal-msg {
@@ -117,6 +144,8 @@
       </table>
       <div class="box" id="trendline-container">
         <div class="label"></div>
+        <div id="yMax"></div>
+        <div id="yMin">0ms</div>
         <svg><path></path></svg>
       </div>
     </div>
@@ -250,12 +279,13 @@
       await showMsg(`Running predict ${state.numRuns} times`);
       const chartHeight = 150;
       const chartWidth = document.querySelector("#trendline-container").getBoundingClientRect().width;
-      const times = [];
+      document.querySelector("#trendline-container svg").setAttribute("width", chartWidth);
+      document.querySelector("#trendline-container svg").setAttribute("height", chartHeight);
 
-      let res;
+      const times = [];
       for (let i = 0; i < state.numRuns; i++) {
         const start = performance.now();
-        res = awaitResult(predict(model));
+        awaitResult(predict(model));
         times.push(performance.now() - start);
       }
 
@@ -263,6 +293,7 @@
       const max = times.reduce((acc, curr) => curr > acc ? curr : acc, 0);
       const xIncrement = chartWidth / times.length;
 
+      document.querySelector("#trendline-container #yMax").textContent = printTime(max);
       document.querySelector("#trendline-container path")
         .setAttribute("d", `M${times.map((d, i) => `${i * xIncrement},${chartHeight - (d / max) * chartHeight}`).join('L')}`);
 
