@@ -175,12 +175,12 @@
       //////////////////////////////////
       // Place model loading code here.
       //////////////////////////////////
-      // return await tf.loadFrozenModel(
-      //   'https://storage.googleapis.com/tfjs-models/savedmodel/mobilenet_v2_1.0_224/tensorflowjs_model.pb',
-      //   'https://storage.googleapis.com/tfjs-models/savedmodel/mobilenet_v2_1.0_224/weights_manifest.json');
       return await tf.loadFrozenModel(
-        'https://storage.googleapis.com/tfjs-models/savedmodel/coco-ssd-mobilenet_v1/tensorflowjs_model.pb',
-        'https://storage.googleapis.com/tfjs-models/savedmodel/coco-ssd-mobilenet_v1/weights_manifest.json');
+        'https://storage.googleapis.com/tfjs-models/savedmodel/mobilenet_v2_1.0_224/tensorflowjs_model.pb',
+        'https://storage.googleapis.com/tfjs-models/savedmodel/mobilenet_v2_1.0_224/weights_manifest.json');
+      // return await tf.loadFrozenModel(
+      //   'https://storage.googleapis.com/tfjs-models/savedmodel/coco-ssd-mobilenet_v1/tensorflowjs_model.pb',
+      //   'https://storage.googleapis.com/tfjs-models/savedmodel/coco-ssd-mobilenet_v1/weights_manifest.json');
     }
 
     const zeros = tf.zeros([1, 224, 224, 3]);
@@ -264,8 +264,10 @@
       if(isAsync) {
         res = await predict(model);
       } else {
-        res = predict(model).dataSync();
+        res = predict(model);
       }
+      res.dataSync();
+
       const elapsed = performance.now() - start;
       await showMsg(null);
       appendRow(timeTable, '1st inference', printTime(start));
@@ -302,8 +304,10 @@
         if(isAsync) {
           res = await predict(model);
         } else {
-          res = predict(model).dataSync();
+          res = predict(model);
         }
+        res.dataSync();
+
         times.push(performance.now() - start);
       }
 
@@ -327,13 +331,9 @@
       let res;
       const data = await tf.profile(() => res = predict(model));
       if(isAsync) {
-        await res;
-        // console.log("execute async");
-        // res = await predict(model);
-      } else {
-        res.dataSync();
-        // res = execute(model);
+        res = await res;
       }
+      res.dataSync();
       const elapsed = performance.now() - start;
       await showMsg(null);
       appendRow(timeTable, 'Peak memory', printMemory(data.peakBytes));
@@ -373,8 +373,10 @@
       if(isAsync) {
         res = await predict(model);
       } else {
-        res = predict(model).dataSync();
+        res = predict(model);
       }
+      res.dataSync();
+
       await showMsg(null);
       await sleep(10);
       kernels = kernels.sort((a, b) => b.time - a.time);
