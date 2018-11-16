@@ -178,9 +178,6 @@
       return await tf.loadFrozenModel(
         'https://storage.googleapis.com/tfjs-models/savedmodel/mobilenet_v2_1.0_224/tensorflowjs_model.pb',
         'https://storage.googleapis.com/tfjs-models/savedmodel/mobilenet_v2_1.0_224/weights_manifest.json');
-      // return await tf.loadFrozenModel(
-      //   'https://storage.googleapis.com/tfjs-models/savedmodel/coco-ssd-mobilenet_v1/tensorflowjs_model.pb',
-      //   'https://storage.googleapis.com/tfjs-models/savedmodel/coco-ssd-mobilenet_v1/weights_manifest.json');
     }
 
     const zeros = tf.zeros([1, 224, 224, 3]);
@@ -199,11 +196,10 @@
     const state = {
       numRuns: 50,
     };
-    let isAsync = false;
     const modalDiv = document.getElementById('modal-msg');
     const timeTable = document.querySelector('#timings tbody');
     const envDiv = document.getElementById('env');
-    let model;
+    let model, isAsync;
 
     async function showMsg(message) {
       if (message != null) {
@@ -281,9 +277,8 @@
       await showMsg('Loading the model');
       const start = performance.now();
       model = await load();
-      if(model.executor.isControlFlowModel) {
-        isAsync = true;
-      }
+      isAsync = model.executor.isControlFlowModel;
+
       const elapsed = performance.now() - start;
       await showMsg(null);
       appendRow(timeTable, 'Model load', printTime(elapsed));
