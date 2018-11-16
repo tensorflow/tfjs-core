@@ -250,7 +250,7 @@
       if (res instanceof Promise) {
         return await res;
       }
-      return await res.dataSync(); // res is a tensor
+      return res.dataSync(); // res is a tensor
     }
 
     async function warmUpAndRecordTime() {
