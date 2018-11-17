@@ -18,13 +18,22 @@
 import {ENV} from '../environment';
 import {keep, tidy} from '../globals';
 import {scalar, zerosLike} from '../ops/ops';
-import {ConfigDict, registerClass, Serializable, SerializableConstructor} from '../serialization';
 import {Scalar} from '../tensor';
 import {NamedVariableMap} from '../tensor_types';
+import {ConfigDict, registerClass} from '../typed_serialization';
+
 import {Optimizer} from './optimizer';
 
+export interface RMSPropOptimizerConfig extends ConfigDict {
+  learningRate: number;
+  decay?: number;
+  momentum?: number;
+  epsilon?: number;
+  centered?: boolean;
+}
+
 /** @doclink Optimizer */
-export class RMSPropOptimizer extends Optimizer {
+export class RMSPropOptimizer extends Optimizer<RMSPropOptimizerConfig> {
   static className = 'RMSPropOptimizer';
   private c: Scalar;
   private epsilonScalar: Scalar;
@@ -155,7 +164,7 @@ export class RMSPropOptimizer extends Optimizer {
     }
   }
 
-  getConfig(): ConfigDict {
+  getConfig(): RMSPropOptimizerConfig {
     return {
       learningRate: this.learningRate,
       decay: this.decay,
@@ -164,11 +173,12 @@ export class RMSPropOptimizer extends Optimizer {
       centered: this.centered
     };
   }
-  static fromConfig<T extends Serializable>(
-      cls: SerializableConstructor<T>, config: ConfigDict): T {
-    return new cls(
+
+  static fromConfig(config: RMSPropOptimizerConfig): RMSPropOptimizer {
+    return new RMSPropOptimizer(
         config.learningRate, config.decay, config.momentum, config.epsilon,
         config.centered);
   }
 }
+
 registerClass(RMSPropOptimizer);

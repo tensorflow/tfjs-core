@@ -18,12 +18,20 @@
 import {ENV} from '../environment';
 import {keep, tidy} from '../globals';
 import {scalar, zerosLike} from '../ops/ops';
-import {ConfigDict, registerClass, Serializable, SerializableConstructor} from '../serialization';
 import {Scalar, Variable} from '../tensor';
 import {NamedVariableMap} from '../tensor_types';
+import {ConfigDict, registerClass} from '../typed_serialization';
+
 import {Optimizer} from './optimizer';
 
-export class AdamOptimizer extends Optimizer {
+export interface AdamOptimizerConfig extends ConfigDict {
+  learningRate: number;
+  beta1: number;
+  beta2: number;
+  epsilon: number;
+}
+
+export class AdamOptimizer extends Optimizer<AdamOptimizerConfig> {
   static className = 'AdamOptimizer';
   private c: Scalar;
   private epsScalar: Scalar;
@@ -130,7 +138,7 @@ export class AdamOptimizer extends Optimizer {
           .forEach(name => this.accumulatedSecondMoment[name].dispose());
     }
   }
-  getConfig(): ConfigDict {
+  getConfig(): AdamOptimizerConfig {
     return {
       learningRate: this.learningRate,
       beta1: this.beta1,
@@ -138,10 +146,11 @@ export class AdamOptimizer extends Optimizer {
       epsilon: this.epsilon,
     };
   }
-  static fromConfig<T extends Serializable>(
-      cls: SerializableConstructor<T>, config: ConfigDict): T {
-    return new cls(
+
+  static fromConfig(config: AdamOptimizerConfig): AdamOptimizer {
+    return new AdamOptimizer(
         config.learningRate, config.beta1, config.beta2, config.epsilon);
   }
 }
+
 registerClass(AdamOptimizer);

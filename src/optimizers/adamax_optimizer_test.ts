@@ -112,8 +112,7 @@ describeWithFlags('AdamaxOptimizer', ALL_ENVS, () => {
   });
   it('serialization round-trip', () => {
     const originalOpt = tf.train.adamax(0.1, 0.2, 0.3, 2e-8, 0.1);
-    const reserialized = tf.AdamaxOptimizer.fromConfig(
-        tf.AdamaxOptimizer, originalOpt.getConfig());
+    const reserialized = tf.AdamaxOptimizer.fromConfig(originalOpt.getConfig());
     expect(reserialized.getConfig()).toEqual(originalOpt.getConfig());
   });
 });

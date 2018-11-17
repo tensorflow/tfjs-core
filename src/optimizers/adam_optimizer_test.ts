@@ -81,8 +81,7 @@ describeWithFlags('AdamOptimizer', ALL_ENVS, () => {
   });
   it('serialization round-trip', () => {
     const originalOpt = tf.train.adam(0.1, 0.2, 0.3, 2e-8);
-    const reserialized =
-        tf.AdamOptimizer.fromConfig(tf.AdamOptimizer, originalOpt.getConfig());
+    const reserialized = tf.AdamOptimizer.fromConfig(originalOpt.getConfig());
     expect(reserialized.getConfig()).toEqual(originalOpt.getConfig());
   });
 });

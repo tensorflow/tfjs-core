@@ -18,13 +18,19 @@
 import {ENV} from '../environment';
 import {keep, tidy} from '../globals';
 import {scalar, zerosLike} from '../ops/ops';
-import {ConfigDict, registerClass, Serializable, SerializableConstructor} from '../serialization';
 import {Scalar} from '../tensor';
 import {NamedVariableMap} from '../tensor_types';
+import {ConfigDict, registerClass} from '../typed_serialization';
 import {Optimizer} from './optimizer';
 
+export interface AdadeltaOptimizerConfig extends ConfigDict {
+  learningRate: number;
+  rho: number;
+  epsilon: number;
+}
+
 /** @doclink Optimizer */
-export class AdadeltaOptimizer extends Optimizer {
+export class AdadeltaOptimizer extends Optimizer<AdadeltaOptimizerConfig> {
   static className = 'AdadeltaOptimizer';
   private c: Scalar;
   private epsilonScalar: Scalar;
@@ -107,16 +113,19 @@ export class AdadeltaOptimizer extends Optimizer {
           .forEach(name => this.accumulatedGrads[name].dispose());
     }
   }
-  getConfig(): ConfigDict {
+
+  getConfig(): AdadeltaOptimizerConfig {
     return {
       learningRate: this.learningRate,
       rho: this.rho,
       epsilon: this.epsilon
     };
   }
-  static fromConfig<T extends Serializable>(
-      cls: SerializableConstructor<T>, config: ConfigDict): T {
-    return new cls(config.learningRate, config.rho, config.epsilon);
+
+  static fromConfig(config: AdadeltaOptimizerConfig): AdadeltaOptimizer {
+    return new AdadeltaOptimizer(
+        config.learningRate, config.rho, config.epsilon);
   }
 }
+
 registerClass(AdadeltaOptimizer);

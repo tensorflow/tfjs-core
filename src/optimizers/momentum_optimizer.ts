@@ -18,13 +18,18 @@
 import {ENV} from '../environment';
 import {tidy} from '../globals';
 import {scalar, zerosLike} from '../ops/ops';
-import {ConfigDict, registerClass, Serializable, SerializableConstructor} from '../serialization';
 import {Scalar, Tensor} from '../tensor';
 import {NamedVariableMap} from '../tensor_types';
-import {SGDOptimizer} from './sgd_optimizer';
+import {registerClass} from '../typed_serialization';
+import {SGDOptimizer, SGDOptimizerConfig} from './sgd_optimizer';
+
+export interface MomentumOptimizerConfig extends SGDOptimizerConfig {
+  momentum: number;
+  useNesterov: boolean;
+}
 
 /** @doclink Optimizer */
-export class MomentumOptimizer extends SGDOptimizer {
+export class MomentumOptimizer extends SGDOptimizer<MomentumOptimizerConfig> {
   static className = 'MomentumOptimizer';
   private m: Scalar;
   private accumulations: NamedVariableMap;
@@ -85,16 +90,17 @@ export class MomentumOptimizer extends SGDOptimizer {
     this.momentum = momentum;
   }
 
-  getConfig(): ConfigDict {
+  getConfig(): MomentumOptimizerConfig {
     return {
-      learningRate: this.learningRate,
+      ...super.getConfig(),
       momentum: this.momentum,
       useNesterov: this.useNesterov
     };
   }
-  static fromConfig<T extends Serializable>(
-      cls: SerializableConstructor<T>, config: ConfigDict): T {
-    return new cls(config.learningRate, config.momentum, config.useNesterov);
+  static fromConfig(config: MomentumOptimizerConfig): MomentumOptimizer {
+    return new MomentumOptimizer(
+        config.learningRate, config.momentum, config.useNesterov);
   }
 }
+
 registerClass(MomentumOptimizer);

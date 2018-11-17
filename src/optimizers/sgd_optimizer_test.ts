@@ -57,8 +57,7 @@ describeWithFlags('SGDOptimizer', ALL_ENVS, () => {
   it('serialization round-trip', () => {
     const learningRate = .1;
     const originalOpt = tf.train.sgd(learningRate);
-    const reserialized =
-        tf.SGDOptimizer.fromConfig(tf.SGDOptimizer, originalOpt.getConfig());
+    const reserialized = tf.SGDOptimizer.fromConfig(originalOpt.getConfig());
     expect(reserialized.getConfig()).toEqual(originalOpt.getConfig());
   });
 });

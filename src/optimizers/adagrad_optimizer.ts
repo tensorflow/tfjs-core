@@ -18,13 +18,18 @@
 import {ENV} from '../environment';
 import {keep, tidy} from '../globals';
 import {fill, scalar} from '../ops/ops';
-import {ConfigDict, registerClass, Serializable, SerializableConstructor} from '../serialization';
 import {Scalar} from '../tensor';
 import {NamedVariableMap} from '../tensor_types';
+import {ConfigDict, registerClass} from '../typed_serialization';
 import {Optimizer} from './optimizer';
 
+export interface AdagradOptimizerConfig extends ConfigDict {
+  learningRate: number;
+  initialAccumulatorValue: number;
+}
+
 /** @doclink Optimizer */
-export class AdagradOptimizer extends Optimizer {
+export class AdagradOptimizer extends Optimizer<AdagradOptimizerConfig> {
   static className = 'AdagradOptimizer';
   private c: Scalar;
   private epsilon: Scalar;
@@ -75,15 +80,18 @@ export class AdagradOptimizer extends Optimizer {
           .forEach(name => this.accumulatedGrads[name].dispose());
     }
   }
-  getConfig(): ConfigDict {
+
+  getConfig(): AdagradOptimizerConfig {
     return {
       learningRate: this.learningRate,
       initialAccumulatorValue: this.initialAccumulatorValue,
     };
   }
-  static fromConfig<T extends Serializable>(
-      cls: SerializableConstructor<T>, config: ConfigDict): T {
-    return new cls(config.learningRate, config.initialAccumulatorValue);
+
+  static fromConfig(config: AdagradOptimizerConfig): AdagradOptimizer {
+    return new AdagradOptimizer(
+        config.learningRate, config.initialAccumulatorValue);
   }
 }
+
 registerClass(AdagradOptimizer);

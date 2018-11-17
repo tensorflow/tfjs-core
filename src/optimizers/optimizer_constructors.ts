@@ -21,7 +21,7 @@ import {AdamOptimizer} from './adam_optimizer';
 import {AdamaxOptimizer} from './adamax_optimizer';
 import {MomentumOptimizer} from './momentum_optimizer';
 import {RMSPropOptimizer} from './rmsprop_optimizer';
-import {SGDOptimizer} from './sgd_optimizer';
+import {SGDOptimizer, SGDOptimizerConfig} from './sgd_optimizer';
 
 export class OptimizerConstructors {
   /**
@@ -62,7 +62,7 @@ export class OptimizerConstructors {
   /**
    * @doc {heading: 'Training', subheading: 'Optimizers', namespace: 'train'}
    */
-  static sgd(learningRate: number): SGDOptimizer {
+  static sgd(learningRate: number): SGDOptimizer<SGDOptimizerConfig> {
     return new SGDOptimizer(learningRate);
   }
 

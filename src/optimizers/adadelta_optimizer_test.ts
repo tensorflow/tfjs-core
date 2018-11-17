@@ -77,8 +77,8 @@ describeWithFlags('AdadeltaOptimizer', ALL_ENVS, () => {
   });
   it('serialization round-trip', () => {
     const originalOpt = tf.train.adadelta(0.1, 0.2, 2e-8);
-    const reserialized = tf.AdadeltaOptimizer.fromConfig(
-        tf.AdadeltaOptimizer, originalOpt.getConfig());
+    const reserialized =
+        tf.AdadeltaOptimizer.fromConfig(originalOpt.getConfig());
     expect(reserialized.getConfig()).toEqual(originalOpt.getConfig());
   });
 });

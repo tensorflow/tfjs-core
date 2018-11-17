@@ -119,8 +119,8 @@ describeWithFlags('MomentumOptimizer', ALL_ENVS, () => {
   });
   it('serialization round-trip', () => {
     const originalOpt = tf.train.momentum(0.1, 0.2, true);
-    const reserialized = tf.MomentumOptimizer.fromConfig(
-        tf.MomentumOptimizer, originalOpt.getConfig());
+    const reserialized =
+        tf.MomentumOptimizer.fromConfig(originalOpt.getConfig());
     expect(reserialized.getConfig()).toEqual(originalOpt.getConfig());
   });
 });

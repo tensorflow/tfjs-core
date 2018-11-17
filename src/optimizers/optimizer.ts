@@ -16,12 +16,15 @@
  */
 
 import {variableGrads} from '../globals';
-import {Serializable} from '../serialization';
 import {Scalar, Variable} from '../tensor';
 import {NamedTensorMap} from '../tensor_types';
+import {ConfigDict, TypedSerializable} from '../typed_serialization';
+
+export interface OptimizerConfig extends ConfigDict {}
 
 /** @doc {heading: 'Training', subheading: 'Classes', namespace: 'train'} */
-export abstract class Optimizer extends Serializable {
+export abstract class Optimizer<T extends OptimizerConfig> extends
+    TypedSerializable<T> {
   /**
    * Executes `f()` and minimizes the scalar output of `f()` by computing
    * gradients of y with respect to the list of trainable variables provided by

@@ -16,12 +16,12 @@
  */
 
 import {Optimizer} from './optimizers/optimizer';
-import {ConfigDict, registerClass, SerializationMap} from './serialization';
 import {NamedVariableMap} from './tensor_types';
+import {ConfigDict, registerClass, SerializationMap} from './typed_serialization';
 
 describe('registerClass', () => {
   const randomClassName = `OptimizerForTest${Math.random()}`;
-  class OptimizerForTest extends Optimizer {
+  class OptimizerForTest extends Optimizer<ConfigDict> {
     static className = randomClassName;
     constructor() {
       super();
@@ -31,14 +31,19 @@ describe('registerClass', () => {
     getConfig(): ConfigDict {
       return {};
     }
+
+    static fromConfig(config: ConfigDict): OptimizerForTest {
+      return null;
+    }
   }
+
   it('registerClass succeeds', () => {
     registerClass(OptimizerForTest);
     expect(SerializationMap.getMap().classNameMap[randomClassName] != null)
         .toEqual(true);
   });
 
-  class OptimizerWithoutClassName extends Optimizer {
+  class OptimizerWithoutClassName extends Optimizer<ConfigDict> {
     constructor() {
       super();
     }
@@ -48,13 +53,14 @@ describe('registerClass', () => {
       return {};
     }
   }
+
   it('registerClass fails on missing className', () => {
     // tslint:disable-next-line:no-any
     expect(() => registerClass(OptimizerWithoutClassName as any))
         .toThrowError(/does not have the static className property/);
   });
 
-  class OptimizerWithEmptyClassName extends Optimizer {
+  class OptimizerWithEmptyClassName extends Optimizer<ConfigDict> {
     static className = '';
     constructor() {
       super();
@@ -64,13 +70,18 @@ describe('registerClass', () => {
     getConfig(): ConfigDict {
       return {};
     }
+
+    static fromConfig(config: ConfigDict): OptimizerWithEmptyClassName {
+      return null;
+    }
   }
+
   it('registerClass fails on missing className', () => {
     expect(() => registerClass(OptimizerWithEmptyClassName))
         .toThrowError(/has an empty-string as its className/);
   });
 
-  class OptimizerWithNonStringClassName extends Optimizer {
+  class OptimizerWithNonStringClassName extends Optimizer<ConfigDict> {
     static className = 42;
     constructor() {
       super();
@@ -81,6 +92,7 @@ describe('registerClass', () => {
       return {};
     }
   }
+
   it('registerClass fails on missing className', () => {
     // tslint:disable-next-line:no-any
     expect(() => registerClass(OptimizerWithNonStringClassName as any))

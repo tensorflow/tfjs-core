@@ -149,8 +149,8 @@ describeWithFlags('RMSPropOptimizer', ALL_ENVS, () => {
   });
   it('serialization round-trip', () => {
     const originalOpt = tf.train.rmsprop(0.1, 0.5, 0.1, 1e-7, true);
-    const reserialized = tf.RMSPropOptimizer.fromConfig(
-        tf.RMSPropOptimizer, originalOpt.getConfig());
+    const reserialized =
+        tf.RMSPropOptimizer.fromConfig(originalOpt.getConfig());
     expect(reserialized.getConfig()).toEqual(originalOpt.getConfig());
   });
 });

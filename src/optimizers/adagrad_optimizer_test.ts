@@ -71,8 +71,8 @@ describeWithFlags('AdagradOptimizer', ALL_ENVS, () => {
   });
   it('serialization round-trip', () => {
     const originalOpt = tf.train.adagrad(0.1, 0.2);
-    const reserialized = tf.AdagradOptimizer.fromConfig(
-        tf.AdagradOptimizer, originalOpt.getConfig());
+    const reserialized =
+        tf.AdagradOptimizer.fromConfig(originalOpt.getConfig());
     expect(reserialized.getConfig()).toEqual(originalOpt.getConfig());
   });
 });

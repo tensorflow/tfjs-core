@@ -18,12 +18,21 @@
 import {ENV} from '../environment';
 import {keep, tidy} from '../globals';
 import {scalar, zerosLike} from '../ops/ops';
-import {ConfigDict, registerClass, Serializable, SerializableConstructor} from '../serialization';
 import {Scalar, Variable} from '../tensor';
 import {NamedVariableMap} from '../tensor_types';
+import {ConfigDict, registerClass} from '../typed_serialization';
+
 import {Optimizer} from './optimizer';
 
-export class AdamaxOptimizer extends Optimizer {
+export interface AdamaxOptimizerConfig extends ConfigDict {
+  learningRate: number;
+  beta1: number;
+  beta2: number;
+  epsilon: number;
+  decay?: number;
+}
+
+export class AdamaxOptimizer extends Optimizer<AdamaxOptimizerConfig> {
   static className = 'AdamaxOptimizer';
   private c: Scalar;
   private epsScalar: Scalar;
@@ -136,7 +145,8 @@ export class AdamaxOptimizer extends Optimizer {
           .forEach(name => this.accumulatedWeightedInfNorm[name].dispose());
     }
   }
-  getConfig(): ConfigDict {
+
+  getConfig(): AdamaxOptimizerConfig {
     return {
       learningRate: this.learningRate,
       beta1: this.beta1,
@@ -145,11 +155,12 @@ export class AdamaxOptimizer extends Optimizer {
       decay: this.decay
     };
   }
-  static fromConfig<T extends Serializable>(
-      cls: SerializableConstructor<T>, config: ConfigDict): T {
-    return new cls(
+
+  static fromConfig(config: AdamaxOptimizerConfig): AdamaxOptimizer {
+    return new AdamaxOptimizer(
         config.learningRate, config.beta1, config.beta2, config.epsilon,
         config.decay);
   }
 }
+
 registerClass(AdamaxOptimizer);
