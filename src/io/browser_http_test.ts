@@ -23,7 +23,7 @@ import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
 import {BROWSER_ENVS, CHROME_ENVS, NODE_ENVS} from '../test_util';
 
-import {BrowserHTTPRequest, httpRequestRouter} from './browser_http';
+import {BrowserHTTPRequest, httpRequestRouter, parseUrl} from './browser_http';
 
 // Test data.
 const modelTopology1: {} = {
@@ -76,6 +76,7 @@ describeWithFlags('browserHTTPRequest-load fetch-polyfill', NODE_ENVS, () => {
   type TypedArrays = Float32Array|Int32Array|Uint8Array|Uint16Array;
 
   const fakeResponse = (body: string|TypedArrays|ArrayBuffer) => ({
+    ok: true,
     json() {
       return Promise.resolve(JSON.parse(body as string));
     },
@@ -282,10 +283,8 @@ describeWithFlags('browserHTTPRequest-save', CHROME_ENVS, () => {
     const testStartDate = new Date();
     const handler = tf.io.browserHTTPRequest('model-upload-test', {
       method: 'PUT',
-      headers: {
-        'header_key_1': 'header_value_1',
-        'header_key_2': 'header_value_2'
-      }
+      headers:
+          {'header_key_1': 'header_value_1', 'header_key_2': 'header_value_2'}
     });
     handler.save(artifacts1)
         .then(saveResult => {
@@ -362,10 +361,10 @@ describeWithFlags('browserHTTPRequest-save', CHROME_ENVS, () => {
     expect(handlers.length).toEqual(1);
     expect(handlers[0] instanceof BrowserHTTPRequest).toEqual(true);
   });
-  
+
   it('getLoadHandlers with two URL strings', () => {
-    const handlers = tf.io.getLoadHandlers([
-        'https://foo/graph.pb', 'https://foo/weights_manifest.json']);
+    const handlers = tf.io.getLoadHandlers(
+        ['https://foo/graph.pb', 'https://foo/weights_manifest.json']);
     expect(handlers.length).toEqual(1);
     expect(handlers[0] instanceof BrowserHTTPRequest).toEqual(true);
   });
@@ -394,6 +393,27 @@ describeWithFlags('browserHTTPRequest-save', CHROME_ENVS, () => {
         .toEqual(true);
     expect(httpRequestRouter('localhost://foo')).toBeNull();
     expect(httpRequestRouter('foo:5000/bar')).toBeNull();
+  });
+});
+
+describeWithFlags('parseUrl', BROWSER_ENVS, () => {
+  it('should parse url with no suffix', () => {
+    const url = 'http://google.com/file';
+    const [prefix, suffix] = parseUrl(url);
+    expect(prefix).toEqual('http://google.com/');
+    expect(suffix).toEqual('');
+  });
+  it('should parse url with suffix', () => {
+    const url = 'http://google.com/file?param=1';
+    const [prefix, suffix] = parseUrl(url);
+    expect(prefix).toEqual('http://google.com/');
+    expect(suffix).toEqual('?param=1');
+  });
+  it('should parse url with multiple serach params', () => {
+    const url = 'http://google.com/a?x=1/file?param=1';
+    const [prefix, suffix] = parseUrl(url);
+    expect(prefix).toEqual('http://google.com/a?x=1/');
+    expect(suffix).toEqual('?param=1');
   });
 });
 
@@ -751,6 +771,47 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
           .catch(err => done.fail(err.stack));
     });
 
+    it('1 group, 2 weights, 1 path with suffix', (done: DoneFn) => {
+      const weightManifest1: tf.io.WeightsManifestConfig = [{
+        paths: ['weightfile0'],
+        weights: [
+          {
+            name: 'dense/kernel',
+            shape: [3, 1],
+            dtype: 'float32',
+          },
+          {
+            name: 'dense/bias',
+            shape: [2],
+            dtype: 'float32',
+          }
+        ]
+      }];
+      const floatData = new Float32Array([1, 3, 3, 7, 4]);
+      setupFakeWeightFiles({
+        './model.pb?tfjs-format=file': modelData,
+        './weights_manifest.json?tfjs-format=file':
+            JSON.stringify(weightManifest1),
+        './weightfile0?tfjs-format=file': floatData,
+      });
+
+      const handler = tf.io.browserHTTPRequest([
+        './model.pb?tfjs-format=file',
+        './weights_manifest.json?tfjs-format=file'
+      ]);
+      handler.load()
+          .then(modelArtifacts => {
+            expect(modelArtifacts.modelTopology).toEqual(modelData);
+            expect(modelArtifacts.weightSpecs)
+                .toEqual(weightManifest1[0].weights);
+            expect(new Float32Array(modelArtifacts.weightData))
+                .toEqual(floatData);
+            expect(requestInits).toEqual([{}, {}, {}]);
+            done();
+          })
+          .catch(err => done.fail(err.stack));
+    });
+
     it('1 group, 2 weights, 1 path, with requestInit', (done: DoneFn) => {
       const weightManifest1: tf.io.WeightsManifestConfig = [{
         paths: ['weightfile0'],
@@ -922,6 +983,51 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
           .catch(err => done.fail(err.stack));
     });
 
+    it('2 groups, 2 weight, weight path prefix, Int32 and Uint8 Data',
+       (done: DoneFn) => {
+         const weightsManifest: tf.io.WeightsManifestConfig = [
+           {
+             paths: ['weightfile0'],
+             weights: [{
+               name: 'fooWeight',
+               shape: [3, 1],
+               dtype: 'int32',
+             }]
+           },
+           {
+             paths: ['weightfile1'],
+             weights: [{
+               name: 'barWeight',
+               shape: [2],
+               dtype: 'bool',
+             }],
+           }
+         ];
+         const floatData1 = new Int32Array([1, 3, 3]);
+         const floatData2 = new Uint8Array([7, 4]);
+         setupFakeWeightFiles({
+           'path1/model.pb': modelData,
+           'path2/weights_manifest.json': JSON.stringify(weightsManifest),
+           'path3/weightfile0': floatData1,
+           'path3/weightfile1': floatData2,
+         });
+
+         const handler = tf.io.browserHTTPRequest(
+             ['path1/model.pb', 'path2/weights_manifest.json'], {}, 'path3/');
+         handler.load()
+             .then(modelArtifacts => {
+               expect(modelArtifacts.modelTopology).toEqual(modelData);
+               expect(modelArtifacts.weightSpecs)
+                   .toEqual(weightsManifest[0].weights.concat(
+                       weightsManifest[1].weights));
+               expect(new Int32Array(modelArtifacts.weightData.slice(0, 12)))
+                   .toEqual(new Int32Array([1, 3, 3]));
+               expect(new Uint8Array(modelArtifacts.weightData.slice(12, 14)))
+                   .toEqual(new Uint8Array([7, 4]));
+               done();
+             })
+             .catch(err => done.fail(err.stack));
+       });
     it('the url path length is not 2 should leads to error', () => {
       expect(() => tf.io.browserHTTPRequest(['path1/model.pb'])).toThrow();
     });

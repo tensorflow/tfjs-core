@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2018 Google Inc. All Rights Reserved.
+ * Copyright 2018 Google LLC. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,29 +15,33 @@
  * =============================================================================
  */
 
+import {getChannels, getSourceCoords} from '../packing_util';
+
 import {GPGPUProgram} from './gpgpu_math';
+import {getCoordsDataType} from './shader_compiler';
 
 export class UnpackProgram implements GPGPUProgram {
   variableNames = ['A'];
+  usesPackedTextures = true;
   outputShape: number[];
   userCode: string;
 
   constructor(outputShape: number[]) {
     this.outputShape = outputShape;
+    const rank = outputShape.length;
+
+    const channels = getChannels('rc', rank);
+    const dtype = getCoordsDataType(rank);
+    const sourceCoords = getSourceCoords(rank, channels);
+    const innerDims = channels.slice(-2);
+    const coords = rank === 1 ? 'rc' : `vec2(${innerDims.join(',')})`;
 
     this.userCode = `
-      const vec2 onePixel = 1. / vec2(${outputShape[1]}, ${outputShape[0]});
-
       void main() {
-        ivec2 rc = getOutputCoords();
-        vec2 modCoord = mod(vec2(rc.y, rc.x), 2.);
-        vec4 packedInput = getA(rc.x, rc.y);
+        ${dtype} rc = getOutputCoords();
+        vec4 packedInput = getA(${sourceCoords});
 
-        setOutput(
-          modCoord.x == 0. ?
-            (modCoord.y == 0. ? packedInput.r : packedInput.b) :
-            (modCoord.y == 0. ? packedInput.g : packedInput.a)
-        );
+        setOutput(getChannel(packedInput, ${coords}));
       }
     `;
   }

@@ -16,21 +16,10 @@
  */
 
 import {ENV} from '../../environment';
+import * as util from '../../util';
 
 import * as tex_util from './tex_util';
 import * as webgl_util from './webgl_util';
-
-export function getWebGLContextAttributes(): WebGLContextAttributes {
-  return {
-    alpha: false,
-    antialias: false,
-    premultipliedAlpha: false,
-    preserveDrawingBuffer: false,
-    depth: false,
-    stencil: false,
-    failIfMajorPerformanceCaveat: true
-  };
-}
 
 export interface TextureConfig {
   internalFormatFloat: number;
@@ -45,27 +34,6 @@ export interface TextureConfig {
 
   defaultNumChannels: number;
   textureTypeHalfFloat: number;
-}
-
-export function createWebGLContext(canvas?: HTMLCanvasElement) {
-  const attributes = getWebGLContextAttributes();
-  let gl: WebGLRenderingContext;
-  if (canvas != null) {
-    gl = webgl_util.createWebGLRenderingContextFromCanvas(canvas, attributes);
-  } else {
-    gl = webgl_util.createWebGLRenderingContext(attributes);
-  }
-  webgl_util.callAndCheck(gl, () => gl.disable(gl.DEPTH_TEST));
-  webgl_util.callAndCheck(gl, () => gl.disable(gl.STENCIL_TEST));
-  webgl_util.callAndCheck(gl, () => gl.disable(gl.BLEND));
-  webgl_util.callAndCheck(gl, () => gl.disable(gl.DITHER));
-  webgl_util.callAndCheck(gl, () => gl.disable(gl.POLYGON_OFFSET_FILL));
-  webgl_util.callAndCheck(gl, () => gl.disable(gl.SAMPLE_COVERAGE));
-  webgl_util.callAndCheck(gl, () => gl.enable(gl.SCISSOR_TEST));
-  webgl_util.callAndCheck(gl, () => gl.enable(gl.CULL_FACE));
-  webgl_util.callAndCheck(gl, () => gl.cullFace(gl.BACK));
-
-  return gl;
 }
 
 export function createVertexShader(gl: WebGLRenderingContext): WebGLShader {
@@ -283,12 +251,13 @@ export function uploadMatrixToTexture(
 }
 
 export function uploadMatrixToPackedTexture(
-    gl: WebGLRenderingContext, texture: WebGLTexture, rows: number,
-    columns: number, matrix: Float32Array, textureConfig: TextureConfig) {
+    gl: WebGLRenderingContext, texture: WebGLTexture, batch: number,
+    rows: number, columns: number, matrix: Float32Array,
+    textureConfig: TextureConfig) {
   const [w, h] = tex_util.getPackedMatrixTextureShapeWidthHeight(rows, columns);
   const packedRGBA = new Float32Array(
       tex_util.getPackedRGBAArraySizeFromMatrixShape(rows, columns));
-  tex_util.encodeMatrixToPackedRGBA(matrix, rows, columns, packedRGBA);
+  tex_util.encodeMatrixToPackedRGBA(matrix, batch, rows, columns, packedRGBA);
   uploadDataToTexture(gl, texture, w, h, packedRGBA, gl.RGBA);
 }
 
@@ -396,17 +365,18 @@ export function downloadByteEncodedFloatMatrixFromOutputTexture(
 }
 
 export function downloadMatrixFromPackedOutputTexture(
-    gl: WebGLRenderingContext, logicalRows: number, logicalCols: number,
+    gl: WebGLRenderingContext, batch: number, rows: number, cols: number,
     physicalRows: number, physicalCols: number,
     textureConfig: TextureConfig): Float32Array {
   const [w, h] = tex_util.getPackedMatrixTextureShapeWidthHeight(
       physicalRows, physicalCols);
+
   const packedRGBA =
       new Float32Array(tex_util.getPackedRGBAArraySizeFromMatrixShape(
           physicalRows, physicalCols));
   webgl_util.callAndCheck(
       gl, () => gl.readPixels(0, 0, w, h, gl.RGBA, gl.FLOAT, packedRGBA));
-  const matrix = new Float32Array(logicalRows * logicalCols);
+  const matrix = new Float32Array(util.sizeFromShape([batch, rows, cols]));
   return tex_util.decodeMatrixFromPackedRGBA(
-      packedRGBA, logicalRows, logicalCols, matrix);
+      packedRGBA, batch, rows, cols, matrix);
 }

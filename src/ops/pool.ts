@@ -20,6 +20,7 @@ import {Tensor, Tensor3D, Tensor4D} from '../tensor';
 import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import * as util from '../util';
+import {batchToSpaceND, spaceToBatchND} from './array_ops';
 import * as conv_util from './conv_util';
 import {op} from './operation';
 
@@ -28,8 +29,10 @@ import {op} from './operation';
  *
  * @param x The input tensor, of rank 4 or rank 3 of shape
  *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is assumed.
- * @param filterSize The filter size, a tuple `[filterHeight, filterWidth]`.
- * @param strides The strides of the pooling: `[strideHeight, strideWidth]`.
+ * @param filterSize The filter size: `[filterHeight, filterWidth]`. If
+ *     `filterSize` is a single number, then `filterHeight == filterWidth`.
+ * @param strides The strides of the pooling: `[strideHeight, strideWidth]`. If
+ *     `strides` is a single number, then `strideHeight == strideWidth`.
  * @param dilations The dilation rates: `[dilationHeight, dilationWidth]`
  *     in which we sample input values across the height and width dimensions
  *     in dilated pooling. Defaults to `[1, 1]`. If `dilations` is a single
@@ -47,7 +50,6 @@ import {op} from './operation';
  *     dimensions if pad is a number. If none is provided, it will not round
  *     and error if the output is of fractional size.
  */
-/** @doc {heading: 'Operations', subheading: 'Convolution'} */
 function maxPoolImpl_<T extends Tensor3D|Tensor4D>(
     x: T|TensorLike, filterSize: [number, number]|number,
     strides: [number, number]|number, dilations: [number, number]|number,
@@ -100,8 +102,10 @@ function maxPoolImpl_<T extends Tensor3D|Tensor4D>(
  *
  * @param x The input tensor, of rank 4 or rank 3 of shape
  *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is assumed.
- * @param filterSize The filter size, a tuple `[filterHeight, filterWidth]`.
- * @param strides The strides of the pooling: `[strideHeight, strideWidth]`.
+ * @param filterSize The filter size: `[filterHeight, filterWidth]`. If
+ *     `filterSize` is a single number, then `filterHeight == filterWidth`.
+ * @param strides The strides of the pooling: `[strideHeight, strideWidth]`. If
+ *     `strides` is a single number, then `strideHeight == strideWidth`.
  * @param pad The type of padding algorithm.
  *    - `same` and stride 1: output will be of same size as input,
  *       regardless of filter size.
@@ -127,8 +131,10 @@ function maxPool_<T extends Tensor3D|Tensor4D>(
  *
  * @param x The input tensor, of rank 4 or rank 3 of shape
  *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is assumed.
- * @param filterSize The filter size, a tuple `[filterHeight, filterWidth]`.
- * @param strides The strides of the pooling: `[strideHeight, strideWidth]`.
+ * @param filterSize The filter size: `[filterHeight, filterWidth]`. If
+ *     `filterSize` is a single number, then `filterHeight == filterWidth`.
+ * @param strides The strides of the pooling: `[strideHeight, strideWidth]`. If
+ *     `strides` is a single number, then `strideHeight == strideWidth`.
  * @param dilations The dilation rates: `[dilationHeight, dilationWidth]`
  *     in which we sample input values across the height and width dimensions
  *     in dilated pooling. Defaults to `[1, 1]`. If `dilations` is a single
@@ -146,7 +152,6 @@ function maxPool_<T extends Tensor3D|Tensor4D>(
  *     dimensions if pad is a number. If none is provided, it will not round
  *     and error if the output is of fractional size.
  */
-/** @doc {heading: 'Operations', subheading: 'Convolution'} */
 function avgPoolImpl_<T extends Tensor3D|Tensor4D>(
     x: T|TensorLike, filterSize: [number, number]|number,
     strides: [number, number]|number, dilations: [number, number]|number,
@@ -199,8 +204,10 @@ function avgPoolImpl_<T extends Tensor3D|Tensor4D>(
  *
  * @param x The input tensor, of rank 4 or rank 3 of shape
  *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is assumed.
- * @param filterSize The filter size, a tuple `[filterHeight, filterWidth]`.
- * @param strides The strides of the pooling: `[strideHeight, strideWidth]`.
+ * @param filterSize The filter size: `[filterHeight, filterWidth]`. If
+ *     `filterSize` is a single number, then `filterHeight == filterWidth`.
+ * @param strides The strides of the pooling: `[strideHeight, strideWidth]`. If
+ *     `strides` is a single number, then `strideHeight == strideWidth`.
  * @param pad The type of padding algorithm:
  *    - `same` and stride 1: output will be of same size as input,
  *       regardless of filter size.
@@ -222,11 +229,12 @@ function avgPool_<T extends Tensor3D|Tensor4D>(
 }
 
 /**
- * Computes the 2D average pooling of an image.
+ * Performs an N-D pooling operation
  *
  * @param input The input tensor, of rank 4 or rank 3 of shape
  *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is assumed.
- * @param windowShape The filter size, a tuple `[filterHeight, filterWidth]`.
+ * @param windowShape The filter size: `[filterHeight, filterWidth]`. If
+ *     `filterSize` is a single number, then `filterHeight == filterWidth`.
  * @param poolingType The type of pooling, either 'max' or 'avg'.
  * @param pad The type of padding algorithm:
  *    - `same` and stride 1: output will be of same size as input,
@@ -238,26 +246,71 @@ function avgPool_<T extends Tensor3D|Tensor4D>(
  *         https://www.tensorflow.org/api_guides/python/nn#Convolution)
  * @param dilations The dilation rates: `[dilationHeight, dilationWidth]`
  *     in which we sample input values across the height and width dimensions
- *     in dilated pooling. Defaults to `[1, 1]`. If `dilations` is a single
+ *     in dilated pooling. Defaults to `[1, 1]`. If `dilationRate` is a single
  *     number, then `dilationHeight == dilationWidth`. If it is greater than
  *     1, then all values of `strides` must be 1.
- * @param strides The strides of the pooling: `[strideHeight, strideWidth]`.
+ * @param strides The strides of the pooling: `[strideHeight, strideWidth]`. If
+ *     `strides` is a single number, then `strideHeight == strideWidth`.
  */
+/** @doc {heading: 'Operations', subheading: 'Convolution'} */
 function pool_<T extends Tensor3D|Tensor4D>(
     input: T|TensorLike, windowShape: [number, number]|number,
-    poolingType: 'avg'|'max', padding: 'valid'|'same'|number,
-    dilationRate?: [number, number]|number, strides?: [number, number]|number) {
-  if (dilationRate == null) {
-    dilationRate = 1;
+    poolingType: 'avg'|'max', pad: 'valid'|'same'|number,
+    dilations?: [number, number]|number, strides?: [number, number]|number) {
+  if (dilations == null) {
+    dilations = [1, 1];
   }
   if (strides == null) {
     strides = 1;
   }
-  if (poolingType === 'avg') {
-    return avgPoolImpl_(input, windowShape, strides, dilationRate, padding);
-  } else {
-    return maxPoolImpl_(input, windowShape, strides, dilationRate, padding);
+  if (pad === 0) {
+    pad = 'valid';
   }
+  const $x = convertToTensor(input, 'x', 'maxPool');
+  let x4D = $x as Tensor4D;
+  let reshapedTo4D = false;
+  if ($x.rank === 3) {
+    reshapedTo4D = true;
+    x4D = $x.as4D(1, $x.shape[0], $x.shape[1], $x.shape[2]);
+  }
+  util.assert(
+      conv_util.eitherStridesOrDilationsAreOne(strides, dilations),
+      'Error in pool: Either strides or dilations must be 1. ' +
+          `Got strides ${strides} and dilations '${dilations}'`);
+  const convInfo = conv_util.computePool2DInfo(
+      x4D.shape, windowShape, strides, dilations, pad);
+  const dilation: [number, number] =
+      [convInfo.dilationHeight, convInfo.dilationWidth];
+
+  // The following implementation does batchToSpace(pool(spaceToBatch(x)))
+  // whenever dilation > 1 since the TF kernels do not support dilation > 1.
+  // tslint:disable-next-line:max-line-length
+  // https://github.com/tensorflow/tensorflow/blob/50f6bb67dc98c9b74630b6047aae7a4f8a40fd02/tensorflow/python/ops/nn_ops.py#L1037
+
+  let basePadding: number[][];
+  if (pad === 'same') {
+    basePadding = withSpaceToBatchBasePaddings(
+        [convInfo.filterHeight, convInfo.filterWidth], dilation);
+  } else {
+    basePadding = [[0, 0], [0, 0]];
+  }
+  const isDilationOne = dilation[0] === 1 && dilation[1] === 1;
+  const [adjustedPadding, adjustedCrops] = requiredSpaceToBatchPaddings(
+      [convInfo.inHeight, convInfo.inWidth], dilation, basePadding);
+  const convertedPad = isDilationOne ? pad : 'valid';
+  const convertedX =
+      isDilationOne ? x4D : spaceToBatchND(x4D, dilation, adjustedPadding);
+  const forwardOp = poolingType === 'avg' ?
+      () => avgPoolImpl_(
+          convertedX, windowShape, strides, 1 /* dilation */, convertedPad) :
+      () => maxPoolImpl_(
+          convertedX, windowShape, strides, 1 /* dilation */, convertedPad);
+  const y = forwardOp();
+  const res = isDilationOne ? y : batchToSpaceND(y, dilation, adjustedCrops);
+  if (reshapedTo4D) {
+    return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as T;
+  }
+  return res as T;
 }
 
 /**
@@ -270,8 +323,10 @@ function pool_<T extends Tensor3D|Tensor4D>(
  *     [batchSize, height, width, channels].
  * @param output The original output image, of rank 4, of shape
  *     [batchSize, outHeight, outWidth, channels].
- * @param filterSize The filter size, a tuple [filterHeight, filterWidth].
- * @param strides The strides of the pooling: [strideHeight, strideWidth].
+ * @param filterSize The filter size: `[filterHeight, filterWidth]`. If
+ *     `filterSize` is a single number, then `filterHeight == filterWidth`.
+ * @param strides The strides of the pooling: `[strideHeight, strideWidth]`. If
+ *     `strides` is a single number, then `strideHeight == strideWidth`.
  * @param pad A string from: 'same', 'valid'. The type of padding algorithm
  *     used in the forward prop of the op.
  * @param dimRoundingMode A string from: 'ceil', 'round', 'floor'. The
@@ -331,8 +386,10 @@ function maxPoolBackprop(
  * @param input The input image, of rank 4 or rank 3 of shape
  *     [batchSize, height, width, channels]. If rank 3, batch of 1 is
  * assumed.
- * @param filterSize The filter size, a tuple [filterHeight, filterWidth].
- * @param strides The strides of the pooling: [strideHeight, strideWidth].
+ * @param filterSize The filter size: `[filterHeight, filterWidth]`. If
+ *     `filterSize` is a single number, then `filterHeight == filterWidth`.
+ * @param strides The strides of the pooling: `[strideHeight, strideWidth]`. If
+ *     `strides` is a single number, then `strideHeight == strideWidth`.
  * @param pad A string from: 'same', 'valid'. The type of padding algorithm
  *     used in the forward prop of the op.
  */
@@ -380,6 +437,43 @@ function avgPoolBackprop<T extends Tensor3D|Tensor4D>(
     return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as T;
   }
   return res as T;
+}
+
+// Helper function to compute crops and paddings for pool with dilation > 1.
+// tslint:disable-next-line:max-line-length
+// https://github.com/tensorflow/tensorflow/blob/50f6bb67dc98c9b74630b6047aae7a4f8a40fd02/tensorflow/python/ops/array_ops.py#L2184
+function requiredSpaceToBatchPaddings(
+    inputShape: [number, number], blockShape: [number, number],
+    basePadding: number[][]) {
+  const padStart = basePadding.map(b => b[0]);
+  const origPadEnd = basePadding.map(b => b[1]);
+  const fullInputShape = inputShape.concat(padStart, origPadEnd);
+  const padEndExtra = blockShape.map((b, i) => (b - fullInputShape[i] % b) % b);
+  const padEnd = origPadEnd.map((s, i) => s + padEndExtra[i]);
+  const paddings = blockShape.map((_, i) => [padStart[i], padEnd[i]]);
+  const crops = blockShape.map((_, i) => [0, padEndExtra[i]]);
+  return [paddings, crops];
+}
+
+// Helper function to compute base paddings for pool with dilation > 1.
+// tslint:disable-next-line:max-line-length
+// https://github.com/tensorflow/tensorflow/blob/50f6bb67dc98c9b74630b6047aae7a4f8a40fd02/tensorflow/python/ops/nn_ops.py#L524
+function withSpaceToBatchBasePaddings(
+    filterShape: [number, number], dilation: [number, number]) {
+  // Spatial dimensions of the filters and the upsampled filters in which we
+  // introduce (rate - 1) zeros between consecutive filter values.
+  const dilatedFilterShape = filterShape.map((s, i) => {
+    return s + (s - 1) * (dilation[i] - 1);
+  });
+  const padExtraShape = dilatedFilterShape.map(s => s - 1);
+
+  // When padding is odd, we pad more at end, following the same
+  // convention as conv2d.
+  const padExtraStart = padExtraShape.map(s => Math.floor(s / 2));
+  const padExtraEnd = padExtraShape.map((s, i) => s - padExtraStart[i]);
+  return padExtraShape.map((_, i) => {
+    return [padExtraStart[i], padExtraEnd[i]];
+  });
 }
 
 export const maxPool = op({maxPool_});
