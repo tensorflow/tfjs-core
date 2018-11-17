@@ -20,7 +20,7 @@
 import './indexed_db';
 import './local_storage';
 
-import {browserFiles} from './browser_files';
+import {BrowserFiles, browserFiles} from './browser_files';
 import {browserHTTPRequest} from './browser_http';
 import {concatenateArrayBuffers, decodeWeights, encodeWeights, getModelArtifactsInfoForJSON} from './io_utils';
 import {fromMemory, withSaveHandler} from './passthrough';
@@ -36,6 +36,7 @@ const getLoadHandlers = IORouterRegistry.getLoadHandlers;
 export {copyModel, listModels, moveModel, removeModel} from './model_management';
 
 export {
+  BrowserFiles,
   browserFiles,
   browserHTTPRequest,
   concatenateArrayBuffers,

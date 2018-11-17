@@ -111,15 +111,29 @@ export interface SaveResult {
   modelArtifactsInfo: ModelArtifactsInfo;
 
   /**
-   * HTTP responses from the server that handled the model-saving request (if
-   * any). This is applicable only to server-based saving routes.
-   */
-  responses?: Response[];
-
-  /**
    * Error messages and related data (if any).
    */
   errors?: Array<{}|string>;
+}
+
+/**
+ * Result of a saving to browser HTTP operation.
+ */
+export interface BrowserHTTPRequestSaveResult extends SaveResult {
+  /**
+   * HTTP responses from the server that handled the model-saving request.
+   */
+  responses: Response[];
+}
+
+/**
+ * Result of a saving to browser files operation.
+ */
+export interface BrowserFilesSaveResult extends SaveResult {
+  /**
+   * Model artifacts as files.
+   */
+  files: File[];
 }
 
 export declare interface ModelArtifactsInfo {

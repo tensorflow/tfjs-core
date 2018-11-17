@@ -21,9 +21,10 @@
  */
 
 import {ENV} from '../environment';
-import {basename, concatenateArrayBuffers, getModelArtifactsInfoForJSON} from './io_utils';
+
+import {basename, concatenateArrayBuffers, getModelArtifactsAsFiles, getModelArtifactsInfoForJSON} from './io_utils';
 import {IORouter, IORouterRegistry} from './router_registry';
-import {IOHandler, ModelArtifacts, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
+import {BrowserFilesSaveResult, IOHandler, ModelArtifacts, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
 
 const DEFAULT_FILE_NAME_PREFIX = 'model';
 const DEFAULT_JSON_EXTENSION_NAME = '.json';
@@ -59,33 +60,20 @@ export class BrowserDownloads implements IOHandler {
   }
 
   async save(modelArtifacts: ModelArtifacts): Promise<SaveResult> {
-    const weightsURL = window.URL.createObjectURL(new Blob(
-        [modelArtifacts.weightData], {type: 'application/octet-stream'}));
-
     if (modelArtifacts.modelTopology instanceof ArrayBuffer) {
       throw new Error(
           'DownloadTrigger.save() does not support saving model topology ' +
           'in binary formats yet.');
     } else {
-      const weightsManifest: WeightsManifestConfig = [{
-        paths: ['./' + this.weightDataFileName],
-        weights: modelArtifacts.weightSpecs
-      }];
-      const modelTopologyAndWeightManifest = {
-        modelTopology: modelArtifacts.modelTopology,
-        weightsManifest
-      };
-      const modelTopologyAndWeightManifestURL =
-          window.URL.createObjectURL(new Blob(
-              [JSON.stringify(modelTopologyAndWeightManifest)],
-              {type: 'application/json'}));
+      const [modelTopologyFile, weightDataFile] = getModelArtifactsAsFiles(
+          modelArtifacts, this.modelTopologyFileName, this.weightDataFileName);
 
       // If anchor elements are not provided, create them without attaching them
       // to parents, so that the downloaded file names can be controlled.
       const jsonAnchor = this.jsonAnchor == null ? document.createElement('a') :
                                                    this.jsonAnchor;
-      jsonAnchor.download = this.modelTopologyFileName;
-      jsonAnchor.href = modelTopologyAndWeightManifestURL;
+      jsonAnchor.download = modelTopologyFile.name;
+      jsonAnchor.href = window.URL.createObjectURL(modelTopologyFile);
       // Trigger downloads by calling the `click` methods on the download
       // anchors.
       jsonAnchor.click();
@@ -94,8 +82,8 @@ export class BrowserDownloads implements IOHandler {
         const weightDataAnchor = this.weightDataAnchor == null ?
             document.createElement('a') :
             this.weightDataAnchor;
-        weightDataAnchor.download = this.weightDataFileName;
-        weightDataAnchor.href = weightsURL;
+        weightDataAnchor.download = weightDataFile.name;
+        weightDataAnchor.href = window.URL.createObjectURL(weightDataFile);
         weightDataAnchor.click();
       }
 
@@ -104,7 +92,7 @@ export class BrowserDownloads implements IOHandler {
   }
 }
 
-class BrowserFiles implements IOHandler {
+export class BrowserFiles implements IOHandler {
   private readonly files: File[];
 
   constructor(files: File[]) {
@@ -192,6 +180,17 @@ class BrowserFiles implements IOHandler {
           `Keras-style tf.Model artifacts only.`);
       jsonReader.readAsText(jsonFile);
     });
+  }
+
+  static async save(modelArtifacts: ModelArtifacts):
+      Promise<BrowserFilesSaveResult> {
+    const files = getModelArtifactsAsFiles(
+        modelArtifacts, 'model.json', 'model.weights.bin');
+
+    return {
+      modelArtifactsInfo: getModelArtifactsInfoForJSON(modelArtifacts),
+      files,
+    };
   }
 
   /**

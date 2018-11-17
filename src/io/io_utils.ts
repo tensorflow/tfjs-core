@@ -20,7 +20,7 @@ import {Tensor} from '../tensor';
 import {NamedTensorMap} from '../tensor_types';
 import {TypedArray} from '../types';
 import {sizeFromShape} from '../util';
-import {DTYPE_VALUE_SIZE_MAP, ModelArtifacts, ModelArtifactsInfo, WeightsManifestEntry} from './types';
+import {DTYPE_VALUE_SIZE_MAP, ModelArtifacts, ModelArtifactsInfo, WeightsManifestConfig, WeightsManifestEntry} from './types';
 
 /**
  * Encode a map from names to weight values as an ArrayBuffer, along with an
@@ -296,4 +296,30 @@ export function getModelArtifactsInfoForJSON(modelArtifacts: ModelArtifacts):
         0 :
         modelArtifacts.weightData.byteLength,
   };
+}
+
+/**
+ * Get ModelArtifacts as File objects.
+ * @param modelArtifacts
+ * @returns Model artifact Files
+ */
+export function getModelArtifactsAsFiles(
+    modelArtifacts: ModelArtifacts, modelTopologyFileName: string,
+    weightDataFileName: string): File[] {
+  const weightsManifest: WeightsManifestConfig = [
+    {paths: ['./' + weightDataFileName], weights: modelArtifacts.weightSpecs}
+  ];
+  const modelTopologyAndWeightManifest = {
+    modelTopology: modelArtifacts.modelTopology,
+    weightsManifest
+  };
+
+  return [
+    new File(
+        [JSON.stringify(modelTopologyAndWeightManifest)], modelTopologyFileName,
+        {type: 'application/json'}),
+    new File(
+        [modelArtifacts.weightData], weightDataFileName,
+        {type: 'application/octet-stream'})
+  ];
 }

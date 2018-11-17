@@ -801,4 +801,12 @@ describeWithFlags('browserFiles', BROWSER_ENVS, () => {
     expect(() => tf.io.browserFiles(null)).toThrowError(/at least 1 file/);
     expect(() => tf.io.browserFiles([])).toThrowError(/at least 1 file/);
   });
+
+  it('Save to files', async () => {
+    const saveResult = await tf.io.BrowserFiles.save(artifacts1);
+
+    expect(saveResult.files.length).toEqual(2);
+    expect(saveResult.files[0].name).toEqual('model.json');
+    expect(saveResult.files[1].name).toEqual('model.weights.bin');
+  });
 });

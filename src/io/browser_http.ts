@@ -22,9 +22,10 @@
  */
 
 import {assert} from '../util';
-import {concatenateArrayBuffers, getModelArtifactsInfoForJSON} from './io_utils';
+
+import {concatenateArrayBuffers, getModelArtifactsAsFiles, getModelArtifactsInfoForJSON} from './io_utils';
 import {IORouter, IORouterRegistry} from './router_registry';
-import {IOHandler, ModelArtifacts, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
+import {BrowserHTTPRequestSaveResult, IOHandler, ModelArtifacts, WeightsManifestConfig, WeightsManifestEntry} from './types';
 import {loadWeightsAsArrayBuffer} from './weights_loader';
 
 export class BrowserHTTPRequest implements IOHandler {
@@ -64,7 +65,8 @@ export class BrowserHTTPRequest implements IOHandler {
     this.requestInit = requestInit || {};
   }
 
-  async save(modelArtifacts: ModelArtifacts): Promise<SaveResult> {
+  async save(modelArtifacts: ModelArtifacts):
+      Promise<BrowserHTTPRequestSaveResult> {
     if (modelArtifacts.modelTopology instanceof ArrayBuffer) {
       throw new Error(
           'BrowserHTTPRequest.save() does not support saving model topology ' +
@@ -74,28 +76,14 @@ export class BrowserHTTPRequest implements IOHandler {
     const init = Object.assign({method: this.DEFAULT_METHOD}, this.requestInit);
     init.body = new FormData();
 
-    const weightsManifest: WeightsManifestConfig = [{
-      paths: ['./model.weights.bin'],
-      weights: modelArtifacts.weightSpecs,
-    }];
-    const modelTopologyAndWeightManifest = {
-      modelTopology: modelArtifacts.modelTopology,
-      weightsManifest
-    };
+    const [modelTopologyFile, weightDataFile] = getModelArtifactsAsFiles(
+        modelArtifacts, 'model.json', 'model.weights.bin');
 
-    init.body.append(
-        'model.json',
-        new Blob(
-            [JSON.stringify(modelTopologyAndWeightManifest)],
-            {type: 'application/json'}),
-        'model.json');
+    init.body.append('model.json', modelTopologyFile, 'model.json');
 
     if (modelArtifacts.weightData != null) {
       init.body.append(
-          'model.weights.bin',
-          new Blob(
-              [modelArtifacts.weightData], {type: 'application/octet-stream'}),
-          'model.weights.bin');
+          'model.weights.bin', weightDataFile, 'model.weights.bin');
     }
 
     const response = await fetch(this.path as string, init);
