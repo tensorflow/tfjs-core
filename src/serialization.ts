@@ -45,7 +45,7 @@ export type TypedFromConfigMethod<T extends TypedSerializable<C>,
                                             C extends ConfigDict> =
     (config: C) => T;
 
-export interface Wrapper<T> {
+export interface Spec<T> {
   className: string;
   config: T;
 }
@@ -68,7 +68,7 @@ export abstract class TypedSerializable<C extends ConfigDict> {
         .className;
   }
 
-  getWrapper(): Wrapper<C> {
+  getSpec(): Spec<C> {
     return {
       className: this.getClassName(),
       config: this.getConfig(),
