@@ -17,26 +17,13 @@
 
 import {assert} from './util';
 
-/**
- * Types to support JSON-esque data structures internally.
- *
- * Internally ConfigDict's use camelCase keys and values where the
- * values are class names to be instantiated.  On the python side, these
- * will be snake_case.  Internally we allow Enums into the values for better
- * type safety, but these need to be converted to raw primitives (usually
- * strings) for round-tripping with python.
- *
- * toConfig returns the TS-friendly representation. model.toJSON() returns
- * the pythonic version as that's the portable format.  If you need to
- * python-ify a non-model level toConfig output, you'll need to use a
- * convertTsToPythonic from serialization_utils in -Layers.
- *
- */
 export type ConfigDictValue =
     boolean|number|string|null|ConfigDictArray|ConfigDict;
+
 export interface ConfigDict {
   [key: string]: ConfigDictValue;
 }
+
 export interface ConfigDictArray extends Array<ConfigDictValue> {}
 
 /**
@@ -47,20 +34,23 @@ export interface ConfigDictArray extends Array<ConfigDictValue> {}
  *
  * Source for this idea: https://stackoverflow.com/a/43607255
  */
-export type SerializableConstructor<T extends Serializable> = {
+export type TypedSerializableConstructor<T extends TypedSerializable<C>,
+                                                   C extends ConfigDict> = {
   // tslint:disable-next-line:no-any
-  new (...args: any[]): T; className: string; fromConfig: FromConfigMethod<T>;
+  new (...args: any[]): T; className: string;
+  fromConfig: TypedFromConfigMethod<T, C>;
 };
-export type FromConfigMethod<T extends Serializable> =
-    (cls: SerializableConstructor<T>, config: ConfigDict) => T;
 
-/**
- * Serializable defines the serialization contract.
- *
- * TFJS requires serializable classes to return their className when asked
- * to avoid issues with minification.
- */
-export abstract class Serializable {
+export type TypedFromConfigMethod<T extends TypedSerializable<C>,
+                                            C extends ConfigDict> =
+    (config: C) => T;
+
+export interface Wrapper<T> {
+  className: string;
+  config: T;
+}
+
+export abstract class TypedSerializable<C extends ConfigDict> {
   /**
    * Return the class name for this class to use in serialization contexts.
    *
@@ -73,27 +63,19 @@ export abstract class Serializable {
    * class hierarchies and a non-leaf node is used for serialization purposes.
    */
   getClassName(): string {
-    return (this.constructor as SerializableConstructor<Serializable>)
+    return (this.constructor as
+            TypedSerializableConstructor<TypedSerializable<C>, C>)
         .className;
   }
 
-  /**
-   * Return all the non-weight state needed to serialize this object.
-   */
-  abstract getConfig(): ConfigDict;
-
-  /**
-   * Creates an instance of T from a ConfigDict.
-   *
-   * This works for most descendants of serializable.  A few need to
-   * provide special handling.
-   * @param cls A Constructor for the class to instantiate.
-   * @param config The Configuration for the object.
-   */
-  static fromConfig<T extends Serializable>(
-      cls: SerializableConstructor<T>, config: ConfigDict): T {
-    return new cls(config);
+  getWrapper(): Wrapper<C> {
+    return {
+      className: this.getClassName(),
+      config: this.getConfig(),
+    };
   }
+
+  abstract getConfig(): C;
 }
 
 /**
@@ -108,7 +90,9 @@ export class SerializationMap {
   classNameMap: {
     [className: string]:
         [
-          SerializableConstructor<Serializable>, FromConfigMethod<Serializable>
+          TypedSerializableConstructor<
+              TypedSerializable<ConfigDict>, ConfigDict>,
+          TypedFromConfigMethod<TypedSerializable<ConfigDict>, ConfigDict>
         ]
   };
 
@@ -129,7 +113,8 @@ export class SerializationMap {
   /**
    * Registers the class as serializable.
    */
-  static register<T extends Serializable>(cls: SerializableConstructor<T>) {
+  static register<T extends TypedSerializable<C>, C extends ConfigDict>(
+      cls: TypedSerializableConstructor<T, C>) {
     SerializationMap.getMap().classNameMap[cls.className] =
         [cls, cls.fromConfig];
   }
@@ -137,33 +122,34 @@ export class SerializationMap {
 
 /**
  * Register a class with the serialization map of TensorFlow.js.
- * 
+ *
  * This is often used for registering custom Layers, so they can be
  * serialized and deserialized.
- * 
+ *
  * Example:
- * 
+ *
  * ```js
  * class MyCustomLayer extends tf.layers.Layer {
  *   static className = 'MyCustomLayer';
- * 
+ *
  *   constructor(config) {
  *     super(config);
  *   }
  * }
  * tf.serialization.registerClass(MyCustomLayer);
  * ```
- * 
+ *
  * @param cls The class to be registered. It must have a public static member
  *   called `className` defined and the value must be a non-empty string.
  */
 /** @doc {heading: 'Models', subheading: 'Serialization'} */
-export function registerClass<T extends Serializable>(
-    cls: SerializableConstructor<T>) {
+export function
+registerClass<T extends TypedSerializable<C>, C extends ConfigDict>(
+    cls: TypedSerializableConstructor<T, C>) {
   assert(
       cls.className != null,
       `Class being registered does not have the static className property ` +
-      `defined.`);
+          `defined.`);
   assert(
       typeof cls.className === 'string',
       `className is required to be a string, but got type ` +

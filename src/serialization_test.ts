@@ -16,8 +16,8 @@
  */
 
 import {Optimizer} from './optimizers/optimizer';
+import {ConfigDict, registerClass, SerializationMap} from './serialization';
 import {NamedVariableMap} from './tensor_types';
-import {ConfigDict, registerClass, SerializationMap} from './typed_serialization';
 
 describe('registerClass', () => {
   const randomClassName = `OptimizerForTest${Math.random()}`;

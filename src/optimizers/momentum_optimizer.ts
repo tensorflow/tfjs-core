@@ -18,9 +18,10 @@
 import {ENV} from '../environment';
 import {tidy} from '../globals';
 import {scalar, zerosLike} from '../ops/ops';
+import {registerClass} from '../serialization';
 import {Scalar, Tensor} from '../tensor';
 import {NamedVariableMap} from '../tensor_types';
-import {registerClass} from '../typed_serialization';
+
 import {SGDOptimizer, SGDOptimizerConfig} from './sgd_optimizer';
 
 export interface MomentumOptimizerConfig extends SGDOptimizerConfig {

@@ -16,9 +16,9 @@
  */
 
 import {variableGrads} from '../globals';
+import {ConfigDict, TypedSerializable} from '../serialization';
 import {Scalar, Variable} from '../tensor';
 import {NamedTensorMap} from '../tensor_types';
-import {ConfigDict, TypedSerializable} from '../typed_serialization';
 
 export interface OptimizerConfig extends ConfigDict {}
 

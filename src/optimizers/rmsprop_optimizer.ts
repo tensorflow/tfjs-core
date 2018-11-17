@@ -18,9 +18,9 @@
 import {ENV} from '../environment';
 import {keep, tidy} from '../globals';
 import {scalar, zerosLike} from '../ops/ops';
+import {ConfigDict, registerClass} from '../serialization';
 import {Scalar} from '../tensor';
 import {NamedVariableMap} from '../tensor_types';
-import {ConfigDict, registerClass} from '../typed_serialization';
 
 import {Optimizer} from './optimizer';
 
