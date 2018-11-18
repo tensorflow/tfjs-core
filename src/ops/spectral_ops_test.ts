@@ -249,7 +249,7 @@ describeWithFlags('1D IRFFT', ALL_ENVS, () => {
      });
 });
 
-describeWithFlags('2D IRFFT', WEBGL_ENVS, () => {
+describeWithFlags('2D IRFFT', ALL_ENVS, () => {
   it('should return the same value with TensorFlow (2x2 elements)', () => {
     const t1Real = tf.tensor2d([1, 2, 3, 4], [2, 2]);
     const t1Imag = tf.tensor2d([0, 0, 0, 0], [2, 2]);
@@ -274,7 +274,7 @@ describeWithFlags('2D IRFFT', WEBGL_ENVS, () => {
      });
 });
 
-describeWithFlags('3D IRFFT', WEBGL_ENVS, () => {
+describeWithFlags('3D IRFFT', ALL_ENVS, () => {
   it('should return the same value with TensorFlow (2x2x2 elements)', () => {
     const t1Real = tf.tensor3d([1, 2, 3, 4, 1, 2, 3, 4], [2, 2, 2]);
     const t1Imag = tf.tensor3d([0, 0, 0, 0, 0, 0, 0, 0], [2, 2, 2]);
