@@ -16,8 +16,17 @@
  */
 
 import * as tf from '../index';
-import {describeWithFlags} from '../jasmine_util';
+import {describeWithFlags, TEST_ENVS} from '../jasmine_util';
 import {ALL_ENVS, expectArraysClose, expectArraysEqual} from '../test_util';
+import {MathBackendWebGL} from '../kernels/backend_webgl';
+
+// Append additional testing environment to test packed binary operations.
+TEST_ENVS.push(  {
+  name: 'test-webgl2-packedBinary',
+  factory: () => new MathBackendWebGL(),
+  features: {'WEBGL_VERSION': 2, 'WEBGL_CPU_FORWARD': false,
+             'WEBGL_PACK_BINARY_OPERATIONS': true}
+});
 
 describeWithFlags('div', ALL_ENVS, () => {
   it('same shape', () => {
@@ -1546,3 +1555,8 @@ describeWithFlags('sub', ALL_ENVS, () => {
     expectArraysClose(result, [-2, 3, 2]);
   });
 });
+
+// Remove the added packed operation testing environent.
+if (TEST_ENVS.pop().features['WEBGL_PACK_BINARY_OPERATIONS'] !== true) {
+  throw new Error('Error with WEBGL_PACK_BINARY_OPERATIONS setup in tests.');
+}

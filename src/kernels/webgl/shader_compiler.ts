@@ -376,6 +376,10 @@ const SHADER_PREFIX = `
     return int(floor(value + 0.5));
   }
 
+  ivec4 round(vec4 value) {
+    return ivec4(floor(value + vec4(0.5)));
+  }
+
   int imod(int x, int y) {
     return x - y * (x / y);
   }
