@@ -1834,8 +1834,8 @@ export class MathBackendWebGL implements KernelBackend {
           };
         }
 
-        // this ensures that if a packed program's inputs have not yet been
-        // uploaded to the GPU, they get uploaded as packed right off the bat
+        // This ensures that if a packed program's inputs have not yet been
+        // uploaded to the GPU, they get uploaded as packed right off the bat.
         if (program.usesPackedTextures) {
           texData.isPacked = true;
           texData.shape = input.shape;

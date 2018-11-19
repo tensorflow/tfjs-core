@@ -270,6 +270,7 @@
         if(parts.length > 2) {
           // heuristic for determining whether we've caught a profiler
           // log statement as opposed to a regular console.log
+          // TODO(https://github.com/tensorflow/tfjs/issues/563): return timing information as part of tf.profile
           const scopes = parts[0].trim()
             .split('||')
             .filter(s => s !== 'unnamed scope');
