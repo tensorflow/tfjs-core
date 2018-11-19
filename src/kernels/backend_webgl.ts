@@ -1992,9 +1992,11 @@ export class MathBackendWebGL implements KernelBackend {
     if (values != null) {
       // TODO(smilkov): Propagate the original typed array to gpgpu.
       if (isPacked) {
-        const batch = util.sizeFromShape(shape.slice(0, shape.length - 2));
-        const rows = shape.length > 1 ? shape[shape.length - 2] : 1;
-        const cols = shape[shape.length - 1];
+        const batch = this.getBatchDim(shape);
+        let rows = 1, cols = 1;
+        if(shape.length) {
+          [rows, cols] = this.getRowsCols(shape);
+        }
         this.gpgpu.uploadMatrixToPackedTexture(
             newTexture, batch, rows, cols, texShape[0], texShape[1],
             typedArrayToFloat32(values, dtype));
