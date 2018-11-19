@@ -41,11 +41,11 @@ function minify() {
   return uglify({output: {preamble: PREAMBLE}});
 }
 
-function config({plugins = [], output = {}, external = []}) {
+function config({plugins = [], output = {}, external = [], target = 'es5'}) {
   return {
     input: 'src/index.ts',
     plugins: [
-      typescript({tsconfigOverride: {compilerOptions: {module: 'ES2015'}}}),
+      typescript({tsconfigOverride: {compilerOptions: {module: 'ES2015', target}}}),
       node(),
       // Polyfill require() from dependencies.
       commonjs({
@@ -93,10 +93,12 @@ export default [
     }
   }),
   config({
-    plugins: [minify()],
+    plugins: [],
     output: {
       format: 'es',
       file: 'dist/tf-core.esm.js',
-    }
+    },
+    target: 'es2017',
+    external: ['tslib'],
   })
 ];
