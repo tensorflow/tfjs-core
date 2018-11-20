@@ -23,10 +23,10 @@ import {DataId, setTensorTracker, Tensor, TensorTracker} from './tensor';
 import {TensorContainer} from './tensor_types';
 import {getTensorsInContainer} from './tensor_util';
 
-const EPSILON_FLOAT16 = 1e-3;
+export const EPSILON_FLOAT16 = 1e-4;
 const TEST_EPSILON_FLOAT16 = 1e-1;
 
-const EPSILON_FLOAT32 = 1e-7;
+export const EPSILON_FLOAT32 = 1e-7;
 const TEST_EPSILON_FLOAT32 = 1e-3;
 
 export class Environment {
@@ -303,10 +303,15 @@ export class Environment {
       return typeof window !== 'undefined';
     } else if (feature === 'IS_NODE') {
       return (typeof process !== 'undefined') &&
+          (typeof process.versions !== 'undefined') &&
           (typeof process.versions.node !== 'undefined');
     } else if (feature === 'IS_CHROME') {
       return isChrome();
+    } else if (feature === 'WEBGL_CPU_FORWARD') {
+      return true;
     } else if (feature === 'WEBGL_PACK_BATCHNORMALIZATION') {
+      return false;
+    } else if (feature === 'WEBGL_LAZILY_UNPACK') {
       return false;
     } else if (feature === 'WEBGL_CONV_IM2COL') {
       return false;
