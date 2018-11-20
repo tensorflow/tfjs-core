@@ -16,7 +16,7 @@
  */
 
 import {tensorToString} from './tensor_format';
-import {DataType, DataTypeMap, DataValues, Rank, ShapeMap, SingleValueMap, TensorLike} from './types';
+import {DataType, DataTypeMap, DataValues, NumericDataType, Rank, ShapeMap, SingleValueMap, TensorLike} from './types';
 import * as util from './util';
 import {computeStrides} from './util';
 
@@ -547,8 +547,7 @@ export class Tensor<R extends Rank = Rank> {
    * of `TypedArray` that resolves when the computation has finished.
    */
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
-  async data<D extends DataType = 'float32' | 'int32' | 'bool'>():
-      Promise<DataTypeMap[D]> {
+  async data<D extends DataType = NumericDataType>(): Promise<DataTypeMap[D]> {
     this.throwIfDisposed();
     return trackerFn().read(this.dataId);
   }
@@ -558,8 +557,7 @@ export class Tensor<R extends Rank = Rank> {
    * thread until the values are ready, which can cause performance issues.
    */
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
-  dataSync<D extends DataType = 'float32' | 'int32' | 'bool'>():
-      DataTypeMap[D] {
+  dataSync<D extends DataType = NumericDataType>(): DataTypeMap[D] {
     this.throwIfDisposed();
     return trackerFn().readSync(this.dataId);
   }
@@ -1286,7 +1284,7 @@ Object.defineProperty(Tensor, Symbol.hasInstance, {
 });
 
 export interface NumericTensor<R extends Rank = Rank> extends Tensor<R> {
-  dtype: 'float32'|'int32'|'bool'|'complex64';
+  dtype: NumericDataType;
 }
 
 export interface StringTensor extends Tensor {

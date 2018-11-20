@@ -81,16 +81,13 @@ export function getTensorsInContainer(result: TensorContainer): Tensor[] {
   return list;
 }
 
-export function assertNotString(t: Tensor, opName: string): NumericTensor {
-  // if (!Array.isArray(tensors)) {
-  //   tensors = [tensors];
-  // }
-  // tensors.forEach(t => {
-  //   if (t != null) {
-  assert(t.dtype !== 'string', `${opName} does not support string tensors.`);
-  return t as NumericTensor;
-  //   }
-  // });
+export function assertNotString(tensor: Tensor, opName: string): NumericTensor {
+  if (tensor != null) {
+    assert(
+        tensor.dtype !== 'string',
+        `${opName} does not support string tensors.`);
+  }
+  return tensor as NumericTensor;
 }
 
 function walkTensorContainer(

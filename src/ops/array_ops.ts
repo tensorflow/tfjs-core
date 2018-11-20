@@ -1178,7 +1178,9 @@ async function setdiff1dAsync_(
  */
 /** @doc {heading: 'Tensors', subheading: 'Creation'} */
 function buffer<R extends Rank, D extends DataType = 'float32'>(
-    shape: ShapeMap[R], dtype: D, values?: DataTypeMap[D]): TensorBuffer<R, D> {
+    shape: ShapeMap[R], dtype: D = 'float32' as D,
+    values?: DataTypeMap[D]): TensorBuffer<R, D> {
+  dtype = dtype || 'float32' as D;
   return new TensorBuffer<R, D>(shape, dtype, values);
 }
 
