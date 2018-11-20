@@ -18,7 +18,7 @@
 import {ENV} from '../environment';
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
 import {convertToTensor, convertToTensorArray} from '../tensor_util_env';
-import {DataType, Rank, ShapeMap, TensorLike, TensorLike1D, TensorLike4D, TypedArray} from '../types';
+import {DataType, DataTypeMap, Rank, ShapeMap, TensorLike, TensorLike1D, TensorLike4D} from '../types';
 import * as util from '../util';
 import {getAxesPermutation, getInnerMostAxes} from './axis_util';
 import {concat} from './concat_split';
@@ -1113,10 +1113,9 @@ function depthToSpace_(
  * zeros.
  */
 /** @doc {heading: 'Tensors', subheading: 'Creation'} */
-function buffer<R extends Rank>(
-    shape: ShapeMap[R], dtype: DataType = 'float32',
-    values?: TypedArray): TensorBuffer<R> {
-  return new TensorBuffer<R>(shape, dtype, values);
+function buffer<R extends Rank, D extends DataType = 'float32'>(
+    shape: ShapeMap[R], dtype: D, values?: DataTypeMap[D]): TensorBuffer<R, D> {
+  return new TensorBuffer<R, D>(shape, dtype, values);
 }
 
 /**

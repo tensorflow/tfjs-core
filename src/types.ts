@@ -26,7 +26,6 @@ export interface ShapeMap {
   R6: [number, number, number, number, number, number];
 }
 
-/** @hidden */
 export interface DataTypeMap {
   float32: Float32Array;
   int32: Int32Array;
@@ -34,6 +33,15 @@ export interface DataTypeMap {
   complex64: Float32Array;
   string: string[];
 }
+
+export interface SingleValueMap {
+  float32: number;
+  int32: number;
+  bool: number;
+  complex64: number;
+  string: string;
+}
+
 /** @docalias 'float32'|'int32'|'bool'|'complex64'|'string' */
 export type DataType = keyof DataTypeMap;
 export type TypedArray = Float32Array|Int32Array|Uint8Array;

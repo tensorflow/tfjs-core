@@ -16,11 +16,10 @@
  */
 
 import {tensorToString} from './tensor_format';
-import {DataType, DataTypeMap, DataValues, Rank, ShapeMap, TensorLike, TypedArray} from './types';
+import {DataType, DataTypeMap, DataValues, Rank, ShapeMap, SingleValueMap, TensorLike, TypedArray} from './types';
 import * as util from './util';
 import {computeStrides} from './util';
 
-/** @hidden */
 export interface TensorData<D extends DataType> {
   dataId?: DataId;
   values?: DataTypeMap[D];
@@ -33,13 +32,13 @@ export interface TensorData<D extends DataType> {
  * See `tf.buffer` for creating a tensor buffer.
  */
 /** @doc {heading: 'Tensors', subheading: 'Classes'} */
-export class TensorBuffer<R extends Rank> {
+export class TensorBuffer<R extends Rank, D extends DataType> {
   size: number;
   shape: ShapeMap[R];
   strides: number[];
-  values: DataValues;
+  values: DataTypeMap[D];
 
-  constructor(shape: ShapeMap[R], public dtype: DataType, values?: TypedArray) {
+  constructor(shape: ShapeMap[R], public dtype: D, values?: DataTypeMap[D]) {
     this.shape = shape.slice();
     this.size = util.sizeFromShape(shape);
 
@@ -68,7 +67,7 @@ export class TensorBuffer<R extends Rank> {
    * @param locs  The location indices.
    */
   /** @doc {heading: 'Tensors', subheading: 'Creation'} */
-  set(value: number, ...locs: number[]) {
+  set(value: SingleValueMap[D], ...locs: number[]): void {
     if (locs.length === 0) {
       locs = [0];
     }
@@ -87,7 +86,7 @@ export class TensorBuffer<R extends Rank> {
    * @param locs The location indices.
    */
   /** @doc {heading: 'Tensors', subheading: 'Creation'} */
-  get(...locs: number[]): number {
+  get(...locs: number[]): SingleValueMap[D] {
     if (locs.length === 0) {
       locs = [0];
     }
@@ -155,9 +154,8 @@ export interface TensorTracker {
  */
 export interface OpHandler {
   cast<T extends Tensor>(x: T, dtype: DataType): T;
-  buffer<R extends Rank>(
-      shape: ShapeMap[R], dtype: DataType,
-      values?: TypedArray): TensorBuffer<R>;
+  buffer<R extends Rank, D extends DataType>(
+      shape: ShapeMap[R], dtype: D, values?: TypedArray): TensorBuffer<R, D>;
   print<T extends Tensor>(x: T, verbose: boolean): void;
   reshape<R2 extends Rank>(x: Tensor, shape: ShapeMap[R2]): Tensor<R2>;
   expandDims<R2 extends Rank>(x: Tensor, axis: number): Tensor<R2>;
@@ -538,8 +536,8 @@ export class Tensor<R extends Rank = Rank> {
 
   /** Returns a `tf.TensorBuffer` that holds the underlying data. */
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
-  buffer(): TensorBuffer<R> {
-    return opHandler.buffer(this.shape, this.dtype, this.dataSync());
+  buffer<D extends DataType>(): TensorBuffer<R, D> {
+    return opHandler.buffer(this.shape, this.dtype as D, this.dataSync());
   }
 
   /**
@@ -547,7 +545,7 @@ export class Tensor<R extends Rank = Rank> {
    * of `TypedArray` that resolves when the computation has finished.
    */
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
-  async data<D extends DataType = 'float32' | 'int32' | 'bool'>(dtype?: D):
+  async data<D extends DataType = 'float32' | 'int32' | 'bool'>():
       Promise<DataTypeMap[D]> {
     this.throwIfDisposed();
     return trackerFn().read(this.dataId);
@@ -558,7 +556,7 @@ export class Tensor<R extends Rank = Rank> {
    * thread until the values are ready, which can cause performance issues.
    */
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
-  dataSync<D extends DataType = 'float32' | 'int32' | 'bool'>(dtype?: D):
+  dataSync<D extends DataType = 'float32' | 'int32' | 'bool'>():
       DataTypeMap[D] {
     this.throwIfDisposed();
     return trackerFn().readSync(this.dataId);

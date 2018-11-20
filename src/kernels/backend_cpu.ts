@@ -299,7 +299,7 @@ export class MathBackendCPU implements KernelBackend {
     const outShape =
         concat_util.computeOutShape(tensors2D.map(t => t.shape), 1 /* axis */);
     const values =
-        ops.buffer<Rank.R2>(outShape as [number, number], tensors[0].dtype)
+        ops.buffer(outShape as [number, number], tensors[0].dtype as 'float32')
             .values;
     if (tensors2D[0].shape[0] === 1) {
       // Use built-in TypedArray.set() method for speed.
@@ -351,7 +351,7 @@ export class MathBackendCPU implements KernelBackend {
     this.assertNotComplex(tensors, 'addN');
 
     const vals = tensors.map(t => t.dataSync());
-    const result = ops.buffer(tensors[0].shape, tensors[0].dtype);
+    const result = ops.buffer(tensors[0].shape, tensors[0].dtype as 'float32');
     const resultVals = result.values;
     for (let i = 0; i < tensors.length; i++) {
       const currVals = vals[i];
@@ -678,7 +678,7 @@ export class MathBackendCPU implements KernelBackend {
     this.assertNotComplex(x, 'logicalNot');
 
     const values = x.dataSync();
-    const newValues = new Int32Array(values.length);
+    const newValues = new Uint8Array(values.length);
     for (let i = 0; i < values.length; ++i) {
       newValues[i] = values[i] ? 0 : 1;
     }
@@ -1371,7 +1371,7 @@ export class MathBackendCPU implements KernelBackend {
     const dilationWidth = convInfo.dilationWidth;
     const padLeft = convInfo.padInfo.left;
     const padTop = convInfo.padInfo.top;
-    const y = ops.buffer<Rank.R4>(convInfo.outShape, x.dtype);
+    const y = ops.buffer(convInfo.outShape, x.dtype as 'float32');
 
     const xVals = x.dataSync();
     const wVals = filter.dataSync();
@@ -1413,7 +1413,7 @@ export class MathBackendCPU implements KernelBackend {
         }
       }
     }
-    return y.toTensor();
+    return y.toTensor() as Tensor4D;
   }
 
   conv2dDerInput(dy: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
@@ -1536,7 +1536,7 @@ export class MathBackendCPU implements KernelBackend {
     const padLeft = convInfo.padInfo.left;
     const padTop = convInfo.padInfo.top;
     const chMul = convInfo.outChannels / convInfo.inChannels;
-    const y = ops.buffer<Rank.R4>(convInfo.outShape, x.dtype);
+    const y = ops.buffer(convInfo.outShape, x.dtype as 'float32');
     const xVals = x.dataSync();
     const wVals = filter.dataSync();
     const yVals = y.values;
@@ -1580,7 +1580,7 @@ export class MathBackendCPU implements KernelBackend {
       }
     }
 
-    return y.toTensor();
+    return y.toTensor() as Tensor4D;
   }
 
   depthwiseConv2DDerInput(dy: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
@@ -1728,7 +1728,7 @@ export class MathBackendCPU implements KernelBackend {
         (p, i) => p[0] /* beforePad */ + x.shape[i] + p[1] /* afterPad */);
     const start = paddings.map(p => p[0]);
     const xBuffer = x.buffer();
-    const buffer = ops.buffer(outShape, x.dtype);
+    const buffer = ops.buffer(outShape, x.dtype as 'float32');
     if (constantValue !== 0) {
       buffer.values.fill(constantValue);
     }
@@ -1898,7 +1898,7 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   private maxPoolPositions(x: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
-    const maxPositions = ops.buffer<Rank.R4>(convInfo.outShape, 'int32');
+    const maxPositions = ops.buffer(convInfo.outShape, 'int32');
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
     const dilationHeight = convInfo.dilationHeight;
@@ -1946,7 +1946,7 @@ export class MathBackendCPU implements KernelBackend {
         }
       }
     }
-    return maxPositions.toTensor();
+    return maxPositions.toTensor() as Tensor4D;
   }
 
   maxPoolBackprop(dy: Tensor4D, x: Tensor4D, y: Tensor4D, convInfo: Conv2DInfo):
@@ -2795,8 +2795,8 @@ export class MathBackendCPU implements KernelBackend {
     const numBoxes = boxes.shape[0];
 
     const [cropHeight, cropWidth] = cropSize;
-    const output =
-        ops.buffer<Rank.R4>([numBoxes, cropHeight, cropWidth, numChannels]);
+    const output = ops.buffer(
+        [numBoxes, cropHeight, cropWidth, numChannels], images.dtype);
 
     const boxVals = boxes.dataSync();
     const boxIndVals = boxIndex.dataSync();
@@ -2917,7 +2917,7 @@ export class MathBackendCPU implements KernelBackend {
         }
       }
     }
-    return output.toTensor();
+    return output.toTensor() as Tensor4D;
   }
 
   sparseToDense<R extends Rank>(
@@ -2990,7 +2990,7 @@ export class MathBackendCPU implements KernelBackend {
       return tensor([], shape, updates.dtype);
     }
 
-    const buffer = new TensorBuffer(flattenShape, updates.dtype);
+    const buffer = new TensorBuffer(flattenShape, updates.dtype as 'float32');
     buffer.values.fill(defaultValue.dataSync()[0]);
 
     for (let i = 0; i < numUpdates; i++) {
