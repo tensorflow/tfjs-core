@@ -90,122 +90,90 @@ describeWithFlags('IndexedDB', BROWSER_ENVS, () => {
     }
   ];
 
-  beforeEach(done => {
-    deleteDatabase().then(() => {
-      done();
-    });
+  beforeEach(deleteDatabase);
+
+  afterEach(deleteDatabase);
+
+  it('Save-load round trip', async () => {
+    try {
+      const testStartDate = new Date();
+      const handler = tf.io.getSaveHandlers('indexeddb://FooModel')[0];
+
+      const saveResult = await handler.save(artifacts1);
+      expect(saveResult.modelArtifactsInfo.dateSaved.getTime())
+          .toBeGreaterThanOrEqual(testStartDate.getTime());
+      // Note: The following two assertions work only because there is no
+      //   non-ASCII characters in `modelTopology1` and `weightSpecs1`.
+      expect(saveResult.modelArtifactsInfo.modelTopologyBytes)
+          .toEqual(JSON.stringify(modelTopology1).length);
+      expect(saveResult.modelArtifactsInfo.weightSpecsBytes)
+          .toEqual(JSON.stringify(weightSpecs1).length);
+      expect(saveResult.modelArtifactsInfo.weightDataBytes)
+          .toEqual(weightData1.byteLength);
+
+      const loadedArtifacts = await handler.load();
+      expect(loadedArtifacts.modelTopology).toEqual(modelTopology1);
+      expect(loadedArtifacts.weightSpecs).toEqual(weightSpecs1);
+      expectArrayBuffersEqual(loadedArtifacts.weightData, weightData1);
+    } catch (err) {
+      fail(err.stack);
+    }
   });
 
-  afterEach(done => {
-    deleteDatabase().then(() => {
-      done();
-    });
+  it('Save two models and load one', async () => {
+    try {
+      const weightData2 = new ArrayBuffer(24);
+      const artifacts2: tf.io.ModelArtifacts = {
+        modelTopology: modelTopology1,
+        weightSpecs: weightSpecs2,
+        weightData: weightData2,
+      };
+      const handler1 = tf.io.getSaveHandlers('indexeddb://Model/1')[0];
+      const saveResult1 = await handler1.save(artifacts1);
+      // Note: The following two assertions work only because there is no
+      // non-ASCII characters in `modelTopology1` and `weightSpecs1`.
+      expect(saveResult1.modelArtifactsInfo.modelTopologyBytes)
+          .toEqual(JSON.stringify(modelTopology1).length);
+      expect(saveResult1.modelArtifactsInfo.weightSpecsBytes)
+          .toEqual(JSON.stringify(weightSpecs1).length);
+      expect(saveResult1.modelArtifactsInfo.weightDataBytes)
+          .toEqual(weightData1.byteLength);
+
+      const handler2 = tf.io.getSaveHandlers('indexeddb://Model/2')[0];
+      const saveResult2 = await handler2.save(artifacts2);
+      expect(saveResult2.modelArtifactsInfo.dateSaved.getTime())
+          .toBeGreaterThanOrEqual(
+              saveResult1.modelArtifactsInfo.dateSaved.getTime());
+      // Note: The following two assertions work only because there is
+      // no non-ASCII characters in `modelTopology1` and
+      // `weightSpecs1`.
+      expect(saveResult2.modelArtifactsInfo.modelTopologyBytes)
+          .toEqual(JSON.stringify(modelTopology1).length);
+      expect(saveResult2.modelArtifactsInfo.weightSpecsBytes)
+          .toEqual(JSON.stringify(weightSpecs2).length);
+      expect(saveResult2.modelArtifactsInfo.weightDataBytes)
+          .toEqual(weightData2.byteLength);
+
+      const loadedArtifacts = await handler1.load();
+      expect(loadedArtifacts.modelTopology).toEqual(modelTopology1);
+      expect(loadedArtifacts.weightSpecs).toEqual(weightSpecs1);
+      expectArrayBuffersEqual(loadedArtifacts.weightData, weightData1);
+    } catch (err) {
+      fail(err.stack);
+    }
   });
 
-  it('Save-load round trip', done => {
-    const testStartDate = new Date();
-    const handler = tf.io.getSaveHandlers('indexeddb://FooModel')[0];
-    handler.save(artifacts1)
-        .then(saveResult => {
-          expect(saveResult.modelArtifactsInfo.dateSaved.getTime())
-              .toBeGreaterThanOrEqual(testStartDate.getTime());
-          // Note: The following two assertions work only because there is no
-          //   non-ASCII characters in `modelTopology1` and `weightSpecs1`.
-          expect(saveResult.modelArtifactsInfo.modelTopologyBytes)
-              .toEqual(JSON.stringify(modelTopology1).length);
-          expect(saveResult.modelArtifactsInfo.weightSpecsBytes)
-              .toEqual(JSON.stringify(weightSpecs1).length);
-          expect(saveResult.modelArtifactsInfo.weightDataBytes)
-              .toEqual(weightData1.byteLength);
-
-          handler.load()
-              .then(loadedArtifacts => {
-                expect(loadedArtifacts.modelTopology).toEqual(modelTopology1);
-                expect(loadedArtifacts.weightSpecs).toEqual(weightSpecs1);
-                expectArrayBuffersEqual(
-                    loadedArtifacts.weightData, weightData1);
-                done();
-              })
-              .catch(err => {
-                console.error(err.stack);
-              });
-        })
-        .catch(err => {
-          console.error(err.stack);
-        });
-  });
-
-  it('Save two models and load one', done => {
-    const weightData2 = new ArrayBuffer(24);
-    const artifacts2: tf.io.ModelArtifacts = {
-      modelTopology: modelTopology1,
-      weightSpecs: weightSpecs2,
-      weightData: weightData2,
-    };
-    const handler1 = tf.io.getSaveHandlers('indexeddb://Model/1')[0];
-    handler1.save(artifacts1)
-        .then(saveResult1 => {
-          // Note: The following two assertions work only because there is no
-          // non-ASCII characters in `modelTopology1` and `weightSpecs1`.
-          expect(saveResult1.modelArtifactsInfo.modelTopologyBytes)
-              .toEqual(JSON.stringify(modelTopology1).length);
-          expect(saveResult1.modelArtifactsInfo.weightSpecsBytes)
-              .toEqual(JSON.stringify(weightSpecs1).length);
-          expect(saveResult1.modelArtifactsInfo.weightDataBytes)
-              .toEqual(weightData1.byteLength);
-
-          const handler2 = tf.io.getSaveHandlers('indexeddb://Model/2')[0];
-          handler2.save(artifacts2)
-              .then(saveResult2 => {
-                expect(saveResult2.modelArtifactsInfo.dateSaved.getTime())
-                    .toBeGreaterThanOrEqual(
-                        saveResult1.modelArtifactsInfo.dateSaved.getTime());
-                // Note: The following two assertions work only because there is
-                // no non-ASCII characters in `modelTopology1` and
-                // `weightSpecs1`.
-                expect(saveResult2.modelArtifactsInfo.modelTopologyBytes)
-                    .toEqual(JSON.stringify(modelTopology1).length);
-                expect(saveResult2.modelArtifactsInfo.weightSpecsBytes)
-                    .toEqual(JSON.stringify(weightSpecs2).length);
-                expect(saveResult2.modelArtifactsInfo.weightDataBytes)
-                    .toEqual(weightData2.byteLength);
-
-                handler1.load()
-                    .then(loadedArtifacts => {
-                      expect(loadedArtifacts.modelTopology)
-                          .toEqual(modelTopology1);
-                      expect(loadedArtifacts.weightSpecs).toEqual(weightSpecs1);
-                      expectArrayBuffersEqual(
-                          loadedArtifacts.weightData, weightData1);
-                      done();
-                    })
-                    .catch(err => {
-                      console.error(err.stack);
-                    });
-              })
-              .catch(err => {
-                console.error(err.stack);
-              });
-        })
-        .catch(err => {
-          console.error(err.stack);
-        });
-  });
-
-  it('Loading nonexistent model fails', done => {
+  it('Loading nonexistent model fails', async () => {
     const handler = tf.io.getSaveHandlers('indexeddb://NonexistentModel')[0];
-    handler.load()
-        .then(modelArtifacts => {
-          done.fail(
-              'Loading nonexistent model from IndexedDB succeeded unexpectly');
-        })
-        .catch(err => {
-          expect(err.message)
-              .toEqual(
-                  'Cannot find model with path \'NonexistentModel\' in ' +
-                  'IndexedDB.');
-          done();
-        });
+
+    try {
+      await handler.load();
+      fail('Loading nonexistent model from IndexedDB succeeded unexpectly');
+    } catch (err) {
+      expect(err.message)
+          .toEqual(
+              'Cannot find model with path \'NonexistentModel\' in IndexedDB.');
+    }
   });
 
   it('Null, undefined or empty modelPath throws Error', () => {
@@ -227,167 +195,126 @@ describeWithFlags('IndexedDB', BROWSER_ENVS, () => {
     expect(indexedDBRouter('qux')).toBeNull();
   });
 
-  it('Manager: List models: 0 result', done => {
-    // Before any model is saved, listModels should return empty result.
-    new BrowserIndexedDBManager()
-        .listModels()
-        .then(out => {
-          expect(out).toEqual({});
-          done();
-        })
-        .catch(err => done.fail(err.stack));
+  it('Manager: List models: 0 result', async () => {
+    try {
+      // Before any model is saved, listModels should return empty result.
+      const models = await new BrowserIndexedDBManager().listModels();
+      expect(models).toEqual({});
+    } catch (err) {
+      fail(err.stack);
+    }
   });
 
-  it('Manager: List models: 1 result', done => {
-    const handler = tf.io.getSaveHandlers('indexeddb://baz/QuxModel')[0];
-    handler.save(artifacts1)
-        .then(saveResult => {
-          // After successful saving, there should be one model.
-          new BrowserIndexedDBManager()
-              .listModels()
-              .then(out => {
-                expect(Object.keys(out).length).toEqual(1);
-                expect(out['baz/QuxModel'].modelTopologyType)
-                    .toEqual(saveResult.modelArtifactsInfo.modelTopologyType);
-                expect(out['baz/QuxModel'].modelTopologyBytes)
-                    .toEqual(saveResult.modelArtifactsInfo.modelTopologyBytes);
-                expect(out['baz/QuxModel'].weightSpecsBytes)
-                    .toEqual(saveResult.modelArtifactsInfo.weightSpecsBytes);
-                expect(out['baz/QuxModel'].weightDataBytes)
-                    .toEqual(saveResult.modelArtifactsInfo.weightDataBytes);
-                done();
-              })
-              .catch(err => done.fail(err.stack));
-        })
-        .catch(err => done.fail(err.stack));
+  it('Manager: List models: 1 result', async () => {
+    try {
+      const handler = tf.io.getSaveHandlers('indexeddb://baz/QuxModel')[0];
+      const saveResult = await handler.save(artifacts1);
+
+      // After successful saving, there should be one model.
+      const models = await new BrowserIndexedDBManager().listModels();
+      expect(Object.keys(models).length).toEqual(1);
+      expect(models['baz/QuxModel'].modelTopologyType)
+          .toEqual(saveResult.modelArtifactsInfo.modelTopologyType);
+      expect(models['baz/QuxModel'].modelTopologyBytes)
+          .toEqual(saveResult.modelArtifactsInfo.modelTopologyBytes);
+      expect(models['baz/QuxModel'].weightSpecsBytes)
+          .toEqual(saveResult.modelArtifactsInfo.weightSpecsBytes);
+      expect(models['baz/QuxModel'].weightDataBytes)
+          .toEqual(saveResult.modelArtifactsInfo.weightDataBytes);
+    } catch (err) {
+      fail(err.stack);
+    }
   });
 
-  it('Manager: List models: 2 results', done => {
-    // First, save a model.
-    const handler1 = tf.io.getSaveHandlers('indexeddb://QuxModel')[0];
-    handler1.save(artifacts1)
-        .then(saveResult1 => {
-          // Then, save the model under another path.
-          const handler2 =
-              tf.io.getSaveHandlers('indexeddb://repeat/QuxModel')[0];
-          handler2.save(artifacts1)
-              .then(saveResult2 => {
-                // After successful saving, there should be two models.
-                new BrowserIndexedDBManager()
-                    .listModels()
-                    .then(out => {
-                      expect(Object.keys(out).length).toEqual(2);
-                      expect(out['QuxModel'].modelTopologyType)
-                          .toEqual(
-                              saveResult1.modelArtifactsInfo.modelTopologyType);
-                      expect(out['QuxModel'].modelTopologyBytes)
-                          .toEqual(saveResult1.modelArtifactsInfo
-                                       .modelTopologyBytes);
-                      expect(out['QuxModel'].weightSpecsBytes)
-                          .toEqual(
-                              saveResult1.modelArtifactsInfo.weightSpecsBytes);
-                      expect(out['QuxModel'].weightDataBytes)
-                          .toEqual(
-                              saveResult1.modelArtifactsInfo.weightDataBytes);
-                      expect(out['repeat/QuxModel'].modelTopologyType)
-                          .toEqual(
-                              saveResult2.modelArtifactsInfo.modelTopologyType);
-                      expect(out['repeat/QuxModel'].modelTopologyBytes)
-                          .toEqual(saveResult2.modelArtifactsInfo
-                                       .modelTopologyBytes);
-                      expect(out['repeat/QuxModel'].weightSpecsBytes)
-                          .toEqual(
-                              saveResult2.modelArtifactsInfo.weightSpecsBytes);
-                      expect(out['repeat/QuxModel'].weightDataBytes)
-                          .toEqual(
-                              saveResult2.modelArtifactsInfo.weightDataBytes);
-                      done();
-                    })
-                    .catch(err => done.fail(err.stack));
-              })
-              .catch(err => done.fail(err.stack));
-        })
-        .catch(err => done.fail(err.stack));
+  it('Manager: List models: 2 results', async () => {
+    try {
+      // First, save a model.
+      const handler1 = tf.io.getSaveHandlers('indexeddb://QuxModel')[0];
+      const saveResult1 = await handler1.save(artifacts1);
+
+      // Then, save the model under another path.
+      const handler2 = tf.io.getSaveHandlers('indexeddb://repeat/QuxModel')[0];
+      const saveResult2 = await handler2.save(artifacts1);
+
+      // After successful saving, there should be two models.
+      const models = await new BrowserIndexedDBManager().listModels();
+      expect(Object.keys(models).length).toEqual(2);
+      expect(models['QuxModel'].modelTopologyType)
+          .toEqual(saveResult1.modelArtifactsInfo.modelTopologyType);
+      expect(models['QuxModel'].modelTopologyBytes)
+          .toEqual(saveResult1.modelArtifactsInfo.modelTopologyBytes);
+      expect(models['QuxModel'].weightSpecsBytes)
+          .toEqual(saveResult1.modelArtifactsInfo.weightSpecsBytes);
+      expect(models['QuxModel'].weightDataBytes)
+          .toEqual(saveResult1.modelArtifactsInfo.weightDataBytes);
+      expect(models['repeat/QuxModel'].modelTopologyType)
+          .toEqual(saveResult2.modelArtifactsInfo.modelTopologyType);
+      expect(models['repeat/QuxModel'].modelTopologyBytes)
+          .toEqual(saveResult2.modelArtifactsInfo.modelTopologyBytes);
+      expect(models['repeat/QuxModel'].weightSpecsBytes)
+          .toEqual(saveResult2.modelArtifactsInfo.weightSpecsBytes);
+      expect(models['repeat/QuxModel'].weightDataBytes)
+          .toEqual(saveResult2.modelArtifactsInfo.weightDataBytes);
+    } catch (err) {
+      fail(err.stack);
+    }
   });
 
-  it('Manager: Successful removeModel', done => {
-    // First, save a model.
-    const handler1 = tf.io.getSaveHandlers('indexeddb://QuxModel')[0];
-    handler1.save(artifacts1)
-        .then(saveResult1 => {
-          // Then, save the model under another path.
-          const handler2 =
-              tf.io.getSaveHandlers('indexeddb://repeat/QuxModel')[0];
-          handler2.save(artifacts1)
-              .then(saveResult2 => {
-                // After successful saving, delete the first save, and then
-                // `listModel` should give only one result.
-                const manager = new BrowserIndexedDBManager();
+  it('Manager: Successful removeModel', async () => {
+    try {
+      // First, save a model.
+      const handler1 = tf.io.getSaveHandlers('indexeddb://QuxModel')[0];
+      await handler1.save(artifacts1);
 
-                manager.removeModel('QuxModel')
-                    .then(deletedInfo => {
-                      manager.listModels()
-                          .then(out => {
-                            expect(Object.keys(out)).toEqual([
-                              'repeat/QuxModel'
-                            ]);
-                            done();
-                          })
-                          .catch(err => done.fail(err.stack));
-                    })
-                    .catch(err => done.fail(err.stack));
-              })
-              .catch(err => done.fail(err.stack));
-        })
-        .catch(err => done.fail(err.stack));
+      // Then, save the model under another path.
+      const handler2 = tf.io.getSaveHandlers('indexeddb://repeat/QuxModel')[0];
+      await handler2.save(artifacts1);
+
+      // After successful saving, delete the first save, and then
+      // `listModel` should give only one result.
+      const manager = new BrowserIndexedDBManager();
+      await manager.removeModel('QuxModel');
+
+      const models = await manager.listModels();
+      expect(Object.keys(models)).toEqual(['repeat/QuxModel']);
+    } catch (err) {
+      fail(err.stack);
+    }
   });
 
-  it('Manager: Successful removeModel with URL scheme', done => {
-    // First, save a model.
-    const handler1 = tf.io.getSaveHandlers('indexeddb://QuxModel')[0];
-    handler1.save(artifacts1)
-        .then(saveResult1 => {
-          // Then, save the model under another path.
-          const handler2 =
-              tf.io.getSaveHandlers('indexeddb://repeat/QuxModel')[0];
-          handler2.save(artifacts1)
-              .then(saveResult2 => {
-                // After successful saving, delete the first save, and then
-                // `listModel` should give only one result.
-                const manager = new BrowserIndexedDBManager();
+  it('Manager: Successful removeModel with URL scheme', async () => {
+    try {
+      // First, save a model.
+      const handler1 = tf.io.getSaveHandlers('indexeddb://QuxModel')[0];
+      await handler1.save(artifacts1);
 
-                // Delete a model specified with a path that includes the
-                // indexeddb:// scheme prefix should work.
-                manager.removeModel('indexeddb://QuxModel')
-                    .then(deletedInfo => {
-                      manager.listModels()
-                          .then(out => {
-                            expect(Object.keys(out)).toEqual([
-                              'repeat/QuxModel'
-                            ]);
-                            done();
-                          })
-                          .catch(err => done.fail(err));
-                    })
-                    .catch(err => done.fail(err.stack));
-              })
-              .catch(err => done.fail(err.stack));
-        })
-        .catch(err => done.fail(err.stack));
+      // Then, save the model under another path.
+      const handler2 = tf.io.getSaveHandlers('indexeddb://repeat/QuxModel')[0];
+      await handler2.save(artifacts1);
+
+      // After successful saving, delete the first save, and then
+      // `listModel` should give only one result.
+      const manager = new BrowserIndexedDBManager();
+
+      // Delete a model specified with a path that includes the
+      // indexeddb:// scheme prefix should work.
+      manager.removeModel('indexeddb://QuxModel');
+
+      const models = await manager.listModels();
+      expect(Object.keys(models)).toEqual(['repeat/QuxModel']);
+    } catch (err) {
+      fail(err.stack);
+    }
   });
 
-  it('Manager: Failed removeModel', done => {
-    // Attempt to delete a nonexistent model is expected to fail.
-    new BrowserIndexedDBManager()
-        .removeModel('nonexistent')
-        .then(out => {
-          done.fail('Deleting nonexistent model succeeded unexpectedly.');
-        })
-        .catch(err => {
-          expect(err.message)
-              .toEqual(
-                  'Cannot find model with path \'nonexistent\' in IndexedDB.');
-          done();
-        });
+  it('Manager: Failed removeModel', async () => {
+    try {
+      // Attempt to delete a nonexistent model is expected to fail.
+      await new BrowserIndexedDBManager().removeModel('nonexistent');
+      fail('Deleting nonexistent model succeeded unexpectedly.');
+    } catch (err) {
+      expect(err.message)
+          .toEqual('Cannot find model with path \'nonexistent\' in IndexedDB.');
+    }
   });
 });
