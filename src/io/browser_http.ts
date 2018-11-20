@@ -24,7 +24,7 @@
 import {assert} from '../util';
 import {concatenateArrayBuffers, getModelArtifactsInfoForJSON} from './io_utils';
 import {IORouter, IORouterRegistry} from './router_registry';
-import {IOHandler, ModelArtifacts, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
+import {BrowserHTTPRequestSaveResult, IOHandler, ModelArtifacts, WeightsManifestConfig, WeightsManifestEntry} from './types';
 import {loadWeightsAsArrayBuffer} from './weights_loader';
 
 export class BrowserHTTPRequest implements IOHandler {
@@ -64,7 +64,8 @@ export class BrowserHTTPRequest implements IOHandler {
     this.requestInit = requestInit || {};
   }
 
-  async save(modelArtifacts: ModelArtifacts): Promise<SaveResult> {
+  async save(modelArtifacts: ModelArtifacts):
+      Promise<BrowserHTTPRequestSaveResult> {
     if (modelArtifacts.modelTopology instanceof ArrayBuffer) {
       throw new Error(
           'BrowserHTTPRequest.save() does not support saving model topology ' +

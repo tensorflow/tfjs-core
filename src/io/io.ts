@@ -25,7 +25,7 @@ import {browserHTTPRequest} from './browser_http';
 import {concatenateArrayBuffers, decodeWeights, encodeWeights, getModelArtifactsInfoForJSON} from './io_utils';
 import {fromMemory, withSaveHandler} from './passthrough';
 import {IORouterRegistry} from './router_registry';
-import {IOHandler, LoadHandler, ModelArtifacts, ModelStoreManager, SaveConfig, SaveHandler, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
+import {BrowserHTTPRequestSaveResult, IOHandler, LoadHandler, ModelArtifacts, ModelStoreManager, SaveConfig, SaveHandler, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
 import {loadWeights, weightsLoaderFactory} from './weights_loader';
 
 const registerSaveRouter = IORouterRegistry.registerSaveRouter;
@@ -38,6 +38,7 @@ export {copyModel, listModels, moveModel, removeModel} from './model_management'
 export {
   browserFiles,
   browserHTTPRequest,
+  BrowserHTTPRequestSaveResult,
   concatenateArrayBuffers,
   decodeWeights,
   encodeWeights,
