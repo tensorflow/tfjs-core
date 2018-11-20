@@ -703,6 +703,7 @@ export class MathBackendCPU implements KernelBackend {
 
   select(condition: Tensor, a: Tensor, b: Tensor): Tensor {
     this.assertNotComplex([condition, a, b], 'select');
+
     const values = condition.dataSync();
     const aValues = a.dataSync();
     const bValues = b.dataSync();
@@ -734,6 +735,7 @@ export class MathBackendCPU implements KernelBackend {
 
   topk<T extends Tensor>(x: T, k: number, sorted: boolean): [T, T] {
     this.assertNotComplex(x, 'topk');
+
     const xVals = x.dataSync();
     return topkImpl(xVals, x.shape, x.dtype as NumericDataType, k, sorted);
   }
