@@ -19,7 +19,7 @@ import {ENV} from '../environment';
 import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D, Tensor6D} from '../tensor';
 import {convertToTensor} from '../tensor_util_env';
 import {inferShape} from '../tensor_util_env';
-import {TensorLike, TensorLike1D, TensorLike2D, TensorLike3D, TensorLike4D, TensorLike5D, TensorLike6D} from '../types';
+import {TensorLike, TensorLike1D, TensorLike2D, TensorLike3D, TensorLike4D, TensorLike5D, TensorLike6D, TypedArray} from '../types';
 import {ArrayData, DataType, Rank, ShapeMap} from '../types';
 import {assertNonNull, assertShapesMatch, getArrayFromDType, isTypedArray, makeOnesTypedArray, makeZerosTypedArray, sizeFromShape, toTypedArray} from '../util';
 import {complex} from './complex_ops';
@@ -411,12 +411,11 @@ function zeros<R extends Rank>(
  * 'float'.
  */
 /** @doc {heading: 'Tensors', subheading: 'Creation'} */
-function fill<R extends Rank, D extends DataType = 'float32'>(
-    shape: ShapeMap[R], value: number|string, dtype?: D): Tensor<R> {
-  dtype = dtype || 'float32' as D;
-  const values = getArrayFromDType(dtype, sizeFromShape(shape));
-  // @ts-ignore
-  values.fill(value);
+function fill<R extends Rank>(
+    shape: ShapeMap[R], value: number|string, dtype?: DataType): Tensor<R> {
+  dtype = dtype || 'float32';
+  const values = getArrayFromDType(dtype, sizeFromShape(shape)) as TypedArray;
+  values.fill(value as number);
   return Tensor.make(shape, {values}, dtype);
 }
 

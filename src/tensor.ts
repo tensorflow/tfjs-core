@@ -16,7 +16,7 @@
  */
 
 import {tensorToString} from './tensor_format';
-import {DataType, DataTypeMap, DataValues, Rank, ShapeMap, SingleValueMap, TensorLike, TypedArray} from './types';
+import {DataType, DataTypeMap, DataValues, Rank, ShapeMap, SingleValueMap, TensorLike} from './types';
 import * as util from './util';
 import {computeStrides} from './util';
 
@@ -32,7 +32,7 @@ export interface TensorData<D extends DataType> {
  * See `tf.buffer` for creating a tensor buffer.
  */
 /** @doc {heading: 'Tensors', subheading: 'Classes'} */
-export class TensorBuffer<R extends Rank, D extends DataType> {
+export class TensorBuffer<R extends Rank, D extends DataType = 'float32'> {
   size: number;
   shape: ShapeMap[R];
   strides: number[];
@@ -155,7 +155,8 @@ export interface TensorTracker {
 export interface OpHandler {
   cast<T extends Tensor>(x: T, dtype: DataType): T;
   buffer<R extends Rank, D extends DataType>(
-      shape: ShapeMap[R], dtype: D, values?: TypedArray): TensorBuffer<R, D>;
+      shape: ShapeMap[R], dtype: D,
+      values?: DataTypeMap[D]): TensorBuffer<R, D>;
   print<T extends Tensor>(x: T, verbose: boolean): void;
   reshape<R2 extends Rank>(x: Tensor, shape: ShapeMap[R2]): Tensor<R2>;
   expandDims<R2 extends Rank>(x: Tensor, axis: number): Tensor<R2>;

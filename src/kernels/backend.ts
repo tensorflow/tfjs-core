@@ -16,7 +16,7 @@
  */
 
 import {Conv2DInfo} from '../ops/conv_util';
-import {DataId, NumericTensor, Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
+import {DataId, Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import {DataType, DataValues, Rank, ShapeMap} from '../types';
 
 // Required information for all backends.
@@ -218,7 +218,7 @@ export class KernelBackend implements TensorStorage, BackendTimer {
     throw new Error('Not yet implemented');
   }
 
-  topk<T extends NumericTensor>(x: T, k: number, sorted: boolean): [T, T] {
+  topk<T extends Tensor>(x: T, k: number, sorted: boolean): [T, T] {
     throw new Error('Not yet implemented');
   }
 

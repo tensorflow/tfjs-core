@@ -44,6 +44,7 @@ export interface SingleValueMap {
 
 /** @docalias 'float32'|'int32'|'bool'|'complex64'|'string' */
 export type DataType = keyof DataTypeMap;
+export type NumericDataType = 'float32'|'int32'|'bool'|'complex64';
 export type TypedArray = Float32Array|Int32Array|Uint8Array;
 export type DataValues = DataTypeMap[DataType];
 

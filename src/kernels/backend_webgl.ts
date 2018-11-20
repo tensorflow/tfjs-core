@@ -31,8 +31,8 @@ import * as segment_util from '../ops/segment_util';
 import {getStridedSlicedInfo} from '../ops/slice_util';
 import {softmax} from '../ops/softmax';
 import {range, scalar, tensor} from '../ops/tensor_ops';
-import {DataId, NumericTensor, Scalar, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
-import {DataType, DataValues, Rank, RecursiveArray, ShapeMap, sumOutType, TypedArray, upcastType} from '../types';
+import {DataId, Scalar, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
+import {DataType, DataValues, NumericDataType, Rank, RecursiveArray, ShapeMap, sumOutType, TypedArray, upcastType} from '../types';
 import * as util from '../util';
 import {getTypedArrayFromDType, sizeFromShape} from '../util';
 
@@ -525,7 +525,7 @@ export class MathBackendWebGL implements KernelBackend {
       inputs: Tensor[], sizeThreshold = CPU_HANDOFF_SIZE_THRESHOLD): boolean {
     return this.getCPUBackend() != null &&
         inputs.every(
-            input => this.texData.get(input.dataId).texture == null &&
+            input => this.data.get(input.dataId).texture == null &&
                 input.size < sizeThreshold);
   }
 
@@ -1059,9 +1059,9 @@ export class MathBackendWebGL implements KernelBackend {
     return whereImpl(condition.shape, condVals);
   }
 
-  topk<T extends NumericTensor>(x: T, k: number, sorted: boolean): [T, T] {
+  topk<T extends Tensor>(x: T, k: number, sorted: boolean): [T, T] {
     const xVals = x.dataSync();
-    return topkImpl(xVals, x.shape, x.dtype, k, sorted);
+    return topkImpl(xVals, x.shape, x.dtype as NumericDataType, k, sorted);
   }
 
   min(x: Tensor, axes: number[]): Tensor {
@@ -1552,7 +1552,7 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   reshape<R extends Rank>(x: Tensor, shape: ShapeMap[R]): Tensor<R> {
-    if (this.texData.get(x.dataId).isPacked &&
+    if (this.data.get(x.dataId).isPacked &&
         !webgl_util.isReshapeFree(x.shape, shape)) {
       return this.packedReshape(x, shape);
     }
@@ -1826,7 +1826,7 @@ export class MathBackendWebGL implements KernelBackend {
         };
       }
 
-      if (texData.isPacked !== !!program.usesPackedTextures) {
+      if (!!texData.isPacked !== !!program.usesPackedTextures) {
         let preProcessProgram: UnpackProgram|PackProgram;
         let processedInput: Tensor;
         if (texData.isPacked) {
@@ -1989,7 +1989,7 @@ export class MathBackendWebGL implements KernelBackend {
     if (float32Values != null) {
       texData.values = float32ToTypedArray(float32Values, dtype);
     }
-    return texData.values;
+    return texData.values as TypedArray;
   }
 
   private releaseTexture(

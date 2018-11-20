@@ -30,8 +30,8 @@ import {buffer, scalar, tensor, tensor3d, tensor4d} from '../ops/ops';
 import * as scatter_nd_util from '../ops/scatter_nd_util';
 import * as selu_util from '../ops/selu_util';
 import {getStridedSlicedInfo} from '../ops/slice_util';
-import {DataId, NumericTensor, Scalar, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
-import {DataType, DataTypeMap, DataValues, Rank, ShapeMap, TypedArray, upcastType} from '../types';
+import {DataId, Scalar, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
+import {DataType, DataTypeMap, DataValues, NumericDataType, Rank, ShapeMap, TypedArray, upcastType} from '../types';
 import * as util from '../util';
 import {now} from '../util';
 import {BackendTimingInfo, DataMover, DataStorage, KernelBackend} from './backend';
@@ -732,10 +732,10 @@ export class MathBackendCPU implements KernelBackend {
     return whereImpl(condition.shape, condVals);
   }
 
-  topk<T extends NumericTensor>(x: T, k: number, sorted: boolean): [T, T] {
+  topk<T extends Tensor>(x: T, k: number, sorted: boolean): [T, T] {
     this.assertNotComplex(x, 'topk');
     const xVals = x.dataSync();
-    return topkImpl(xVals, x.shape, x.dtype, k, sorted);
+    return topkImpl(xVals, x.shape, x.dtype as NumericDataType, k, sorted);
   }
 
   min(x: Tensor, axes: number[]): Tensor {
@@ -1854,7 +1854,7 @@ export class MathBackendCPU implements KernelBackend {
                               Number.POSITIVE_INFINITY);
 
     const xValues = x.dataSync();
-    const output = ops.buffer<Rank.R4>(convInfo.outShape, x.dtype);
+    const output = ops.buffer(convInfo.outShape, x.dtype);
     const outputVals = output.values;
 
     const outputBatchStrides =
@@ -1903,7 +1903,7 @@ export class MathBackendCPU implements KernelBackend {
         }
       }
     }
-    return output.toTensor();
+    return output.toTensor() as Tensor4D;
   }
 
   maxPool(x: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
