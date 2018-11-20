@@ -15,10 +15,10 @@
  * =============================================================================
  */
 
-// Importing local_storage and indexed_db is necessary for the routers to be
+// Importing browser_storage and indexed_db is necessary for the routers to be
 // registered.
 import './indexed_db';
-import './local_storage';
+import './browser_storage';
 
 import {browserFiles} from './browser_files';
 import {browserHTTPRequest} from './browser_http';

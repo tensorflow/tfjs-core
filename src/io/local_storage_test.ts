@@ -18,8 +18,10 @@
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
 import {BROWSER_ENVS} from '../test_util';
+
 import {arrayBufferToBase64String, base64StringToArrayBuffer} from './io_utils';
-import {browserLocalStorage, BrowserLocalStorage, BrowserLocalStorageManager, localStorageRouter, purgeLocalStorageArtifacts} from './local_storage';
+import {browserLocalStorage, BrowserStorage, BrowserStorageManager, browserStorageRouter, purgeLocalStorageArtifacts} from './browser_storage';
+import {BrowserStorageType} from './types';
 
 describeWithFlags('LocalStorage', BROWSER_ENVS, () => {
   // Test data.
@@ -299,16 +301,15 @@ describeWithFlags('LocalStorage', BROWSER_ENVS, () => {
   });
 
   it('router', () => {
-    expect(
-        localStorageRouter('localstorage://bar') instanceof BrowserLocalStorage)
+    expect(browserStorageRouter('localstorage://bar') instanceof BrowserStorage)
         .toEqual(true);
-    expect(localStorageRouter('indexeddb://bar')).toBeNull();
-    expect(localStorageRouter('qux')).toBeNull();
+    expect(browserStorageRouter('indexeddb://bar')).toBeNull();
+    expect(browserStorageRouter('qux')).toBeNull();
   });
 
   it('Manager: List models: 0 result', done => {
     // Before any model is saved, listModels should return empty result.
-    new BrowserLocalStorageManager()
+    new BrowserStorageManager(BrowserStorageType.local)
         .listModels()
         .then(out => {
           expect(out).toEqual({});
@@ -322,7 +323,7 @@ describeWithFlags('LocalStorage', BROWSER_ENVS, () => {
     handler.save(artifacts1)
         .then(saveResult => {
           // After successful saving, there should be one model.
-          new BrowserLocalStorageManager()
+          new BrowserStorageManager(BrowserStorageType.local)
               .listModels()
               .then(out => {
                 expect(Object.keys(out).length).toEqual(1);
@@ -352,7 +353,7 @@ describeWithFlags('LocalStorage', BROWSER_ENVS, () => {
           handler2.save(artifacts1)
               .then(saveResult2 => {
                 // After successful saving, there should be two models.
-                new BrowserLocalStorageManager()
+                new BrowserStorageManager(BrowserStorageType.local)
                     .listModels()
                     .then(out => {
                       expect(Object.keys(out).length).toEqual(2);
@@ -401,7 +402,8 @@ describeWithFlags('LocalStorage', BROWSER_ENVS, () => {
               .then(saveResult2 => {
                 // After successful saving, delete the first save, and then
                 // `listModel` should give only one result.
-                const manager = new BrowserLocalStorageManager();
+                const manager =
+                    new BrowserStorageManager(BrowserStorageType.local);
 
                 manager.removeModel('QuxModel')
                     .then(deletedInfo => {

@@ -17,10 +17,11 @@
 
 import {ENV} from '../environment';
 import {assert} from '../util';
+
 import {arrayBufferToBase64String, base64StringToArrayBuffer, getModelArtifactsInfoForJSON} from './io_utils';
 import {ModelStoreManagerRegistry} from './model_management';
 import {IORouter, IORouterRegistry} from './router_registry';
-import {IOHandler, ModelArtifacts, ModelArtifactsInfo, ModelStoreManager, SaveResult} from './types';
+import {BrowserStorageType, IOHandler, ModelArtifacts, ModelArtifactsInfo, ModelStoreManager, SaveResult} from './types';
 
 const PATH_SEPARATOR = '/';
 const PATH_PREFIX = 'tensorflowjs_models';
@@ -28,6 +29,9 @@ const INFO_SUFFIX = 'info';
 const MODEL_TOPOLOGY_SUFFIX = 'model_topology';
 const WEIGHT_SPECS_SUFFIX = 'weight_specs';
 const WEIGHT_DATA_SUFFIX = 'weight_data';
+
+const LOCAL_STORAGE_URL_SCHEME = 'localstorage://';
+const SESSION_STORAGE_URL_SCHEME = 'sessionstorage://';
 
 /**
  * Purge all tensorflow.js-saved model artifacts from local storage.
@@ -67,7 +71,7 @@ function getModelKeys(path: string):
 }
 
 /**
- * Get model path from a local-storage key.
+ * Get model path from a storage key.
  *
  * E.g., 'tensorflowjs_models/my/model/1/info' --> 'my/model/1'
  *
@@ -81,45 +85,69 @@ function getModelPathFromKey(key: string) {
   return items.slice(1, items.length - 1).join(PATH_SEPARATOR);
 }
 
-function maybeStripScheme(key: string) {
-  return key.startsWith(BrowserLocalStorage.URL_SCHEME) ?
-      key.slice(BrowserLocalStorage.URL_SCHEME.length) :
-      key;
+function maybeStripScheme(storageType: BrowserStorageType, key: string) {
+  let scheme;
+
+  if (storageType === BrowserStorageType.local) {
+    scheme = LOCAL_STORAGE_URL_SCHEME;
+  } else if (storageType === BrowserStorageType.session) {
+    scheme = SESSION_STORAGE_URL_SCHEME;
+  } else {
+    throw new Error('Unsupported storage type');
+  }
+
+  return key.startsWith(scheme) ? key.slice(scheme.length) : key;
 }
 
 /**
- * IOHandler subclass: Browser Local Storage.
+ * IOHandler subclass: Browser Storage.
  *
  * See the doc string to `browserLocalStorage` for more details.
  */
-export class BrowserLocalStorage implements IOHandler {
-  protected readonly LS: Storage;
+export class BrowserStorage implements IOHandler {
+  protected readonly storage: Storage;
+  protected readonly storageType: BrowserStorageType;
   protected readonly modelPath: string;
   protected readonly keys: {[key: string]: string};
 
-  static readonly URL_SCHEME = 'localstorage://';
-
-  constructor(modelPath: string) {
-    if (!ENV.get('IS_BROWSER') || typeof window.localStorage === 'undefined') {
-      // TODO(cais): Add more info about what IOHandler subtypes are
-      // available.
-      //   Maybe point to a doc page on the web and/or automatically determine
-      //   the available IOHandlers and print them in the error message.
-      throw new Error(
-          'The current environment does not support local storage.');
+  constructor(storageType: BrowserStorageType, modelPath: string) {
+    if (!ENV.get('IS_BROWSER')) {
+      throw new Error('Current environment is not a web browser');
     }
-    this.LS = window.localStorage;
+
+    this.storageType = storageType;
+
+    if (storageType === BrowserStorageType.local) {
+      if (typeof window.localStorage === 'undefined') {
+        // TODO(cais): Add more info about what IOHandler subtypes are
+        // available.
+        //   Maybe point to a doc page on the web and/or automatically determine
+        //   the available IOHandlers and print them in the error message.
+        throw new Error(
+            'The current environment does not support local storage.');
+      }
+      this.storage = window.localStorage;
+    } else if (storageType === BrowserStorageType.session) {
+      if (typeof window.sessionStorage === 'undefined') {
+        throw new Error(
+            'The current environment does not support session storage.');
+      }
+      this.storage = window.sessionStorage;
+    } else {
+      throw new Error('Unsupported storage type');
+    }
 
     if (modelPath == null || !modelPath) {
       throw new Error(
-          'For local storage, modelPath must not be null, undefined or empty.');
+          `For ${storageType} storage, modelPath must not be null, undefined ` +
+          'or empty.');
     }
     this.modelPath = modelPath;
     this.keys = getModelKeys(this.modelPath);
   }
 
   /**
-   * Save model artifacts to browser local storage.
+   * Save model artifacts to browser storage.
    *
    * See the documentation to `browserLocalStorage` for details on the saved
    * artifacts.
@@ -130,7 +158,7 @@ export class BrowserLocalStorage implements IOHandler {
   async save(modelArtifacts: ModelArtifacts): Promise<SaveResult> {
     if (modelArtifacts.modelTopology instanceof ArrayBuffer) {
       throw new Error(
-          'BrowserLocalStorage.save() does not support saving model topology ' +
+          'BrowserStorage.save() does not support saving model topology ' +
           'in binary formats yet.');
     } else {
       const topology = JSON.stringify(modelArtifacts.modelTopology);
@@ -140,10 +168,11 @@ export class BrowserLocalStorage implements IOHandler {
           getModelArtifactsInfoForJSON(modelArtifacts);
 
       try {
-        this.LS.setItem(this.keys.info, JSON.stringify(modelArtifactsInfo));
-        this.LS.setItem(this.keys.topology, topology);
-        this.LS.setItem(this.keys.weightSpecs, weightSpecs);
-        this.LS.setItem(
+        this.storage.setItem(
+            this.keys.info, JSON.stringify(modelArtifactsInfo));
+        this.storage.setItem(this.keys.topology, topology);
+        this.storage.setItem(this.keys.weightSpecs, weightSpecs);
+        this.storage.setItem(
             this.keys.weightData,
             arrayBufferToBase64String(modelArtifacts.weightData));
 
@@ -151,11 +180,12 @@ export class BrowserLocalStorage implements IOHandler {
       } catch (err) {
         // If saving failed, clean up all items saved so far.
         for (const key in this.keys) {
-          this.LS.removeItem(this.keys[key]);
+          this.storage.removeItem(this.keys[key]);
         }
 
         throw new Error(
-            `Failed to save model '${this.modelPath}' to local storage: ` +
+            `Failed to save model '${this.modelPath}' to ${
+                this.storageType} storage: ` +
             `size quota being exceeded is a possible cause of this failure: ` +
             `modelTopologyBytes=${modelArtifactsInfo.modelTopologyBytes}, ` +
             `weightSpecsBytes=${modelArtifactsInfo.weightSpecsBytes}, ` +
@@ -165,7 +195,7 @@ export class BrowserLocalStorage implements IOHandler {
   }
 
   /**
-   * Load a model from local storage.
+   * Load a model from storage.
    *
    * See the documentation to `browserLocalStorage` for details on the saved
    * artifacts.
@@ -174,43 +204,44 @@ export class BrowserLocalStorage implements IOHandler {
    */
   async load(): Promise<ModelArtifacts> {
     const info =
-        JSON.parse(this.LS.getItem(this.keys.info)) as ModelArtifactsInfo;
+        JSON.parse(this.storage.getItem(this.keys.info)) as ModelArtifactsInfo;
     if (info == null) {
       throw new Error(
-          `In local storage, there is no model with name '${this.modelPath}'`);
+          `In ${this.storageType} storage, there is no model with name ` +
+          `'${this.modelPath}'`);
     }
 
     if (info.modelTopologyType !== 'JSON') {
       throw new Error(
-          'BrowserLocalStorage does not support loading non-JSON model ' +
+          'BrowserStorage does not support loading non-JSON model ' +
           'topology yet.');
     }
 
     const out: ModelArtifacts = {};
 
     // Load topology.
-    const topology = JSON.parse(this.LS.getItem(this.keys.topology));
+    const topology = JSON.parse(this.storage.getItem(this.keys.topology));
     if (topology == null) {
       throw new Error(
-          `In local storage, the topology of model '${this.modelPath}' ` +
-          `is missing.`);
+          `In ${this.storageType} storage, the topology of model ` +
+          `'${this.modelPath}' is missing.`);
     }
     out.modelTopology = topology;
 
     // Load weight specs.
-    const weightSpecs = JSON.parse(this.LS.getItem(this.keys.weightSpecs));
+    const weightSpecs = JSON.parse(this.storage.getItem(this.keys.weightSpecs));
     if (weightSpecs == null) {
       throw new Error(
-          `In local storage, the weight specs of model '${this.modelPath}' ` +
-          `are missing.`);
+          `In ${this.storageType} storage, the weight specs of model ` +
+          `'${this.modelPath}' are missing.`);
     }
     out.weightSpecs = weightSpecs;
 
     // Load weight data.
-    const weightDataBase64 = this.LS.getItem(this.keys.weightData);
+    const weightDataBase64 = this.storage.getItem(this.keys.weightData);
     if (weightDataBase64 == null) {
       throw new Error(
-          `In local storage, the binary weight values of model ` +
+          `In ${this.storageType} storage, the binary weight values of model ` +
           `'${this.modelPath}' are missing.`);
     }
     out.weightData = base64StringToArrayBuffer(weightDataBase64);
@@ -219,21 +250,25 @@ export class BrowserLocalStorage implements IOHandler {
   }
 }
 
-export const localStorageRouter: IORouter = (url: string|string[]) => {
+export const browserStorageRouter: IORouter = (url: string|string[]) => {
   if (!ENV.get('IS_BROWSER')) {
     return null;
   } else {
-    if (!Array.isArray(url) &&
-        url.startsWith(BrowserLocalStorage.URL_SCHEME)) {
-      return browserLocalStorage(
-          url.slice(BrowserLocalStorage.URL_SCHEME.length));
+    if (!Array.isArray(url)) {
+      if (url.startsWith(LOCAL_STORAGE_URL_SCHEME)) {
+        return browserLocalStorage(url.slice(LOCAL_STORAGE_URL_SCHEME.length));
+      } else if (url.startsWith(SESSION_STORAGE_URL_SCHEME)) {
+        return browserSessionStorage(
+            url.slice(SESSION_STORAGE_URL_SCHEME.length));
+      }
+      return null;
     } else {
       return null;
     }
   }
 };
-IORouterRegistry.registerSaveRouter(localStorageRouter);
-IORouterRegistry.registerLoadRouter(localStorageRouter);
+IORouterRegistry.registerSaveRouter(browserStorageRouter);
+IORouterRegistry.registerLoadRouter(browserStorageRouter);
 
 /**
  * Factory function for local storage IOHandler.
@@ -260,46 +295,74 @@ IORouterRegistry.registerLoadRouter(localStorageRouter);
  *   `tf.Model.save`.
  */
 export function browserLocalStorage(modelPath: string): IOHandler {
-  return new BrowserLocalStorage(modelPath);
+  return new BrowserStorage(BrowserStorageType.local, modelPath);
 }
 
-export class BrowserLocalStorageManager implements ModelStoreManager {
-  private readonly LS: Storage;
+/**
+ * Factory function for session storage IOHandler.
+ *
+ * See the doc string to `browserLocalStorage` for more details.
+ *
+ * @param modelPath A unique identifier for the model to be saved. Must be a
+ *   non-empty string.
+ * @returns An instance of `IOHandler`, which can be used with, e.g.,
+ *   `tf.Model.save`.
+ */
+export function browserSessionStorage(modelPath: string): IOHandler {
+  return new BrowserStorage(BrowserStorageType.session, modelPath);
+}
 
-  constructor() {
+export class BrowserStorageManager implements ModelStoreManager {
+  private readonly storage: Storage;
+  private readonly storageType: BrowserStorageType;
+
+  constructor(storageType: BrowserStorageType) {
     assert(ENV.get('IS_BROWSER'), 'Current environment is not a web browser');
-    assert(
-        typeof window.localStorage !== 'undefined',
-        'Current browser does not appear to support localStorage');
-    this.LS = window.localStorage;
+    this.storageType = storageType;
+
+    if (storageType === BrowserStorageType.local) {
+      assert(
+          typeof window.localStorage !== 'undefined',
+          'Current browser does not appear to support localStorage');
+      this.storage = window.localStorage;
+    } else if (storageType === BrowserStorageType.session) {
+      assert(
+          typeof window.sessionStorage !== 'undefined',
+          'Current browser does not appear to support sessionStorage');
+      this.storage = window.sessionStorage;
+    } else {
+      throw new Error('Unsupported storage type');
+    }
   }
 
   async listModels(): Promise<{[path: string]: ModelArtifactsInfo}> {
     const out: {[path: string]: ModelArtifactsInfo} = {};
     const prefix = PATH_PREFIX + PATH_SEPARATOR;
     const suffix = PATH_SEPARATOR + INFO_SUFFIX;
-    for (let i = 0; i < this.LS.length; ++i) {
-      const key = this.LS.key(i);
+    for (let i = 0; i < this.storage.length; ++i) {
+      const key = this.storage.key(i);
       if (key.startsWith(prefix) && key.endsWith(suffix)) {
         const modelPath = getModelPathFromKey(key);
-        out[modelPath] = JSON.parse(this.LS.getItem(key)) as ModelArtifactsInfo;
+        out[modelPath] =
+            JSON.parse(this.storage.getItem(key)) as ModelArtifactsInfo;
       }
     }
     return out;
   }
 
   async removeModel(path: string): Promise<ModelArtifactsInfo> {
-    path = maybeStripScheme(path);
+    path = maybeStripScheme(this.storageType, path);
     const keys = getModelKeys(path);
-    if (this.LS.getItem(keys.info) == null) {
+    if (this.storage.getItem(keys.info) == null) {
       throw new Error(`Cannot find model at path '${path}'`);
     }
-    const info = JSON.parse(this.LS.getItem(keys.info)) as ModelArtifactsInfo;
+    const info =
+        JSON.parse(this.storage.getItem(keys.info)) as ModelArtifactsInfo;
 
-    this.LS.removeItem(keys.info);
-    this.LS.removeItem(keys.topology);
-    this.LS.removeItem(keys.weightSpecs);
-    this.LS.removeItem(keys.weightData);
+    this.storage.removeItem(keys.info);
+    this.storage.removeItem(keys.topology);
+    this.storage.removeItem(keys.weightSpecs);
+    this.storage.removeItem(keys.weightData);
     return info;
   }
 }
@@ -309,7 +372,14 @@ if (ENV.get('IS_BROWSER')) {
   // don't support Local Storage.
   try {
     ModelStoreManagerRegistry.registerManager(
-        BrowserLocalStorage.URL_SCHEME, new BrowserLocalStorageManager());
+        LOCAL_STORAGE_URL_SCHEME,
+        new BrowserStorageManager(BrowserStorageType.local));
+  } catch (err) {
+  }
+  try {
+    ModelStoreManagerRegistry.registerManager(
+        SESSION_STORAGE_URL_SCHEME,
+        new BrowserStorageManager(BrowserStorageType.session));
   } catch (err) {
   }
 }

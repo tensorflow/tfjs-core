@@ -239,3 +239,8 @@ export interface ModelStoreManager {
    */
   removeModel(path: string): Promise<ModelArtifactsInfo>;
 }
+
+export enum BrowserStorageType {
+  local = 'local',
+  session = 'session'
+}

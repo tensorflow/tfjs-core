@@ -19,7 +19,7 @@ import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
 import {CHROME_ENVS} from '../test_util';
 import {deleteDatabase} from './indexed_db';
-import {purgeLocalStorageArtifacts} from './local_storage';
+import {purgeLocalStorageArtifacts} from './browser_storage';
 
 // Disabled for non-Chrome browsers due to:
 // https://github.com/tensorflow/tfjs/issues/427

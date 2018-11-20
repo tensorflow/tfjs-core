@@ -18,8 +18,9 @@
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
 import {BROWSER_ENVS} from '../test_util';
+
 import {BrowserIndexedDB, browserIndexedDB} from './indexed_db';
-import {BrowserLocalStorage, browserLocalStorage} from './local_storage';
+import {browserLocalStorage, browserSessionStorage, BrowserStorage} from './browser_storage';
 import {IORouterRegistry} from './router_registry';
 import {IOHandler} from './types';
 
@@ -28,6 +29,15 @@ describeWithFlags('IORouterRegistry', BROWSER_ENVS, () => {
     const scheme = 'localstorage://';
     if (url.startsWith(scheme)) {
       return browserLocalStorage(url.slice(scheme.length));
+    } else {
+      return null;
+    }
+  };
+
+  const sessionStorageRouter = (url: string) => {
+    const scheme = 'sessionstorage://';
+    if (url.startsWith(scheme)) {
+      return browserSessionStorage(url.slice(scheme.length));
     } else {
       return null;
     }
@@ -75,26 +85,34 @@ describeWithFlags('IORouterRegistry', BROWSER_ENVS, () => {
 
   it('getSaveHandler succeeds', () => {
     IORouterRegistry.registerSaveRouter(localStorageRouter);
+    IORouterRegistry.registerSaveRouter(sessionStorageRouter);
     IORouterRegistry.registerSaveRouter(indexedDBRouter);
 
     const out1 = tf.io.getSaveHandlers('localstorage://foo-model');
     expect(out1.length).toEqual(1);
-    expect(out1[0] instanceof BrowserLocalStorage).toEqual(true);
-    const out2 = tf.io.getSaveHandlers('indexeddb://foo-model');
+    expect(out1[0] instanceof BrowserStorage).toEqual(true);
+    const out2 = tf.io.getSaveHandlers('sessionstorage://foo-model');
     expect(out2.length).toEqual(1);
-    expect(out2[0] instanceof BrowserIndexedDB).toEqual(true);
+    expect(out2[0] instanceof BrowserStorage).toEqual(true);
+    const out3 = tf.io.getSaveHandlers('indexeddb://foo-model');
+    expect(out3.length).toEqual(1);
+    expect(out3[0] instanceof BrowserIndexedDB).toEqual(true);
   });
 
   it('getLoadHandler succeeds', () => {
     IORouterRegistry.registerLoadRouter(localStorageRouter);
+    IORouterRegistry.registerLoadRouter(sessionStorageRouter);
     IORouterRegistry.registerLoadRouter(indexedDBRouter);
 
     const out1 = tf.io.getLoadHandlers('localstorage://foo-model');
     expect(out1.length).toEqual(1);
-    expect(out1[0] instanceof BrowserLocalStorage).toEqual(true);
-    const out2 = tf.io.getLoadHandlers('indexeddb://foo-model');
+    expect(out1[0] instanceof BrowserStorage).toEqual(true);
+    const out2 = tf.io.getLoadHandlers('sessionstorage://foo-model');
     expect(out2.length).toEqual(1);
-    expect(out2[0] instanceof BrowserIndexedDB).toEqual(true);
+    expect(out2[0] instanceof BrowserStorage).toEqual(true);
+    const out3 = tf.io.getLoadHandlers('indexeddb://foo-model');
+    expect(out3.length).toEqual(1);
+    expect(out3[0] instanceof BrowserIndexedDB).toEqual(true);
   });
 
   it('getLoadHandler with string array argument succeeds', () => {
@@ -103,8 +121,9 @@ describeWithFlags('IORouterRegistry', BROWSER_ENVS, () => {
         IORouterRegistry.getLoadHandlers(['foo:///123', 'foo:///456']);
     expect(loadHandler[0] instanceof FakeIOHandler).toEqual(true);
 
-    expect(IORouterRegistry.getLoadHandlers(['foo:///123', 'bar:///456']))
-        .toEqual([]);
+    expect(IORouterRegistry.getLoadHandlers([
+      'foo:///123', 'bar:///456'
+    ])).toEqual([]);
     expect(IORouterRegistry.getLoadHandlers(['foo:///123'])).toEqual([]);
     expect(IORouterRegistry.getLoadHandlers('foo:///123')).toEqual([]);
   });
