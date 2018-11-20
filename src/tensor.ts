@@ -16,7 +16,7 @@
  */
 
 import {tensorToString} from './tensor_format';
-import {DataType, DataTypeMap, DataValues, NumericDataType, Rank, ShapeMap, SingleValueMap, TensorLike} from './types';
+import {DataType, DataTypeMap, DataValues, NumericDataType, Rank, ShapeMap, SingleValueMap, TensorLike, TypedArray} from './types';
 import * as util from './util';
 import {computeStrides} from './util';
 
@@ -1285,10 +1285,14 @@ Object.defineProperty(Tensor, Symbol.hasInstance, {
 
 export interface NumericTensor<R extends Rank = Rank> extends Tensor<R> {
   dtype: NumericDataType;
+  data(): Promise<TypedArray>;
+  dataSync(): TypedArray;
 }
 
-export interface StringTensor extends Tensor {
+export interface StringTensor<R extends Rank = Rank> extends Tensor<R> {
   dtype: 'string';
+  dataSync(): string[];
+  data(): Promise<string[]>;
 }
 
 /** @doclink Tensor */

@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {NumericTensor, Tensor} from './tensor';
+import {Tensor} from './tensor';
 import {NamedTensorMap, TensorContainer, TensorContainerArray} from './tensor_types';
 import {assert} from './util';
 
@@ -79,15 +79,6 @@ export function getTensorsInContainer(result: TensorContainer): Tensor[] {
   const seen = new Set<{}|void>();
   walkTensorContainer(result, list, seen);
   return list;
-}
-
-export function assertNotString(tensor: Tensor, opName: string): NumericTensor {
-  if (tensor != null) {
-    assert(
-        tensor.dtype !== 'string',
-        `${opName} does not support string tensors.`);
-  }
-  return tensor as NumericTensor;
 }
 
 function walkTensorContainer(
