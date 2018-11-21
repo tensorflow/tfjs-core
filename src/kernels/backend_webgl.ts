@@ -271,6 +271,9 @@ export class MathBackendWebGL implements KernelBackend {
     if (values != null) {
       return this.convertAndCacheOnCPU(dataId);
     }
+    if (dtype === 'string') {
+      return values;
+    }
     const shouldTimeProgram = this.activeTimers != null;
     let start: number;
     if (shouldTimeProgram) {

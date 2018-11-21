@@ -417,6 +417,21 @@ export function bytesPerElement(dtype: DataType): number {
   }
 }
 
+/** Returns the number of bytes allocated in the string array. */
+export function bytesFromStringArray(arr: string[]): number {
+  if (arr == null) {
+    return 0;
+  }
+  let bytes = 0;
+  arr.forEach(x => bytes += x.length * 2);
+  return bytes;
+}
+
+/** Returns true if the value is a string. */
+export function isString(value: {}): boolean {
+  return typeof value === 'string' || value instanceof String;
+}
+
 export function isFunction(f: Function) {
   return !!(f && f.constructor && f.call && f.apply);
 }

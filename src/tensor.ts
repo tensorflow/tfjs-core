@@ -77,7 +77,7 @@ export class TensorBuffer<R extends Rank, D extends DataType = 'float32'> {
             `match the rank (${this.rank})`);
 
     const index = this.locToIndex(locs);
-    this.values[index] = value;
+    this.values[index] = value as number;
   }
 
   /**

@@ -1711,18 +1711,3 @@ describeWithFlags('tensor with 0 in shape', ALL_ENVS, () => {
     expectArraysEqual(a, []);
   });
 });
-
-describeWithFlags('buffer', ALL_ENVS, () => {
-  it('float32', () => {
-    const buff = tf.buffer([1, 2, 3], 'float32');
-    buff.set(1, 0, 0, 0);
-    buff.set(2, 0, 1, 0);
-    expect(buff.get(0, 0, 0)).toEqual(1);
-    expect(buff.get(0, 0, 1)).toEqual(0);
-    expect(buff.get(0, 0, 2)).toEqual(0);
-    expect(buff.get(0, 1, 0)).toEqual(2);
-    expect(buff.get(0, 1, 1)).toEqual(0);
-    expect(buff.get(0, 1, 2)).toEqual(0);
-    expectArraysClose(buff.toTensor(), [1, 0, 0, 2, 0, 0]);
-  });
-});

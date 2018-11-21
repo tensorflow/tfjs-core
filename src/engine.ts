@@ -23,7 +23,7 @@ import {NamedTensorMap, NamedVariableMap, TensorContainer} from './tensor_types'
 import {getTensorsInContainer, isTensorInList} from './tensor_util';
 import {DataType, DataValues} from './types';
 import * as util from './util';
-import {makeOnesTypedArray, now, sizeFromShape} from './util';
+import {bytesFromStringArray, makeOnesTypedArray, now, sizeFromShape} from './util';
 
 /**
  * A function that computes an output. The save function is for saving tensors
@@ -253,11 +253,11 @@ export class Engine implements TensorManager, DataMover {
     if (refCount === 0) {
       this.numDataBuffers++;
 
-      // Don't count bytes for complex numbers as they are counted by their
-      // components.
-      if (a.dtype !== 'complex64') {
-        this.numBytes +=
-            util.sizeFromShape(a.shape) * util.bytesPerElement(a.dtype);
+      // Bytes for complex numbers are counted by their
+      // components. Bytes for string tensors are counted when someone
+      // writes values.
+      if (a.dtype !== 'complex64' && a.dtype !== 'string') {
+        this.numBytes += a.size * util.bytesPerElement(a.dtype);
       }
       this.tensorInfo.set(
           a.dataId,
@@ -287,15 +287,17 @@ export class Engine implements TensorManager, DataMover {
     this.numTensors--;
     const refCount = this.tensorInfo.get(a.dataId).refCount;
     if (refCount <= 1) {
-      const info = this.tensorInfo.get(a.dataId);
-      info.backend.disposeData(a.dataId);
-      this.numDataBuffers--;
-      // Don't count bytes for complex numbers as they are counted by their
-      // components.
-      if (a.dtype !== 'complex64') {
+      if (a.dtype === 'string') {
+        this.numBytes -= bytesFromStringArray(a.dataSync<'string'>());
+      } else if (a.dtype !== 'complex64') {
+        // Don't count bytes for complex numbers as they are counted by their
+        // components.
         this.numBytes -=
             util.sizeFromShape(a.shape) * util.bytesPerElement(a.dtype);
       }
+      this.numDataBuffers--;
+      const info = this.tensorInfo.get(a.dataId);
+      info.backend.disposeData(a.dataId);
       this.tensorInfo.delete(a.dataId);
     } else {
       this.tensorInfo.get(a.dataId).refCount--;
@@ -539,6 +541,12 @@ export class Engine implements TensorManager, DataMover {
   // Forwarding to backend.
   write(dataId: DataId, values: DataValues): void {
     const info = this.tensorInfo.get(dataId);
+    if (info.dtype === 'string') {
+      const oldBytes =
+          bytesFromStringArray(info.backend.readSync(dataId) as string[]);
+      const newBytes = bytesFromStringArray(values as string[]);
+      this.numBytes += newBytes - oldBytes;
+    }
     if (this.backend !== info.backend) {
       // Delete the tensor from the old backend and move it to the new backend.
       info.backend.disposeData(dataId);

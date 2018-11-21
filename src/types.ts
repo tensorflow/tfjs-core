@@ -37,7 +37,7 @@ export interface DataTypeMap {
 export interface SingleValueMap {
   float32: number;
   int32: number;
-  bool: number;
+  bool: boolean;
   complex64: number;
   string: string;
 }

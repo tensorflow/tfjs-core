@@ -64,6 +64,53 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
     tf.ENV.removeBackend('test-storage');
   });
 
+  it('register empty string tensor', () => {
+    const backend = new MathBackendWebGL();
+    tf.ENV.registerBackend('test-storage', () => backend);
+    tf.setBackend('test-storage');
+
+    const t = tf.Tensor.make([3], {}, 'string');
+    expect(backend.readSync(t.dataId) == null).toBe(true);
+  });
+
+  it('register empty string tensor and write', () => {
+    const backend = new MathBackendWebGL();
+    tf.ENV.registerBackend('test-storage', () => backend);
+    tf.setBackend('test-storage');
+
+    const t = tf.Tensor.make([3], {}, 'string');
+    backend.write(t.dataId, ['c', 'a', 'b']);
+    expectArraysEqual(backend.readSync(t.dataId), ['c', 'a', 'b']);
+  });
+
+  it('register string tensor with values', () => {
+    const backend = new MathBackendWebGL();
+    tf.ENV.registerBackend('test-storage', () => backend);
+    tf.setBackend('test-storage');
+
+    const t = tf.Tensor.make([3], {values: ['a', 'b', 'c']}, 'string');
+    expectArraysEqual(backend.readSync(t.dataId), ['a', 'b', 'c']);
+  });
+
+  it('register string tensor with values and overwrite', () => {
+    const backend = new MathBackendWebGL();
+    tf.ENV.registerBackend('test-storage', () => backend);
+    tf.setBackend('test-storage');
+
+    const t = tf.Tensor.make([3], {values: ['a', 'b', 'c']}, 'string');
+    backend.write(t.dataId, ['c', 'a', 'b']);
+    expectArraysEqual(backend.readSync(t.dataId), ['c', 'a', 'b']);
+  });
+
+  it('register string tensor with values and wrong shape throws error', () => {
+    const backend = new MathBackendWebGL();
+    tf.ENV.registerBackend('test-storage', () => backend);
+    tf.setBackend('test-storage');
+
+    expect(() => tf.Tensor.make([4], {values: ['a', 'b', 'c']}, 'string'))
+        .toThrowError();
+  });
+
   it('delayed storage, reading', () => {
     const delayedStorage = true;
     const backend = new MathBackendWebGL(null, delayedStorage);
