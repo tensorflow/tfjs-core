@@ -105,11 +105,16 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
         }
 
         if (col < filterWidth) {
-          mainLoop += `wR${r}C${col} = getW(${r}, ${col}, d1, q);`;
+          mainLoop += `
+            vec4 wTexel${r}C${col} = getW(${r}, ${col}, d1, q);
+            wR${r}C${col} = vec4(wTexel${r}C${col}.xz, wTexel${r}C${col}.xz);
+          `;
 
           if (col + 1 < filterWidth) {
             mainLoop += `
-              wR${r}C${col + 1} = getW(${r}, ${col + 1}, d1, q);`;
+              vec4 wTexelR${r}C${col + 1} = getW(${r}, ${col + 1}, d1, q);
+              wR${r}C${col + 1} = vec4(
+                wTexelR${r}C${col + 1}.xz, wTexelR${r}C${col + 1}.xz);`;
           }
         }
       }
@@ -117,8 +122,7 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
 
     for (let r = 0; r < filterHeight; r++) {
       for (let c = 0; c < filterWidth; c++) {
-        mainLoop += `result += xR${r}C${c} *
-            vec4(wR${r}C${c}.xz, wR${r}C${c}.xz);`;
+        mainLoop += `result += xR${r}C${c} * wR${r}C${c};`;
       }
     }
 
