@@ -64,23 +64,42 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
           xR = xRCorner + ${r};
           xC = xCCorner + ${col};`;
 
-        if (padLeft % 2 === 0) {
+        if (padLeft === 0) {
           mainLoop += `
             if(xR >= 0 && xR < ${xNumRows} && xC >= 0 && xC < ${xNumCols}) {
               xTexelR${r}C${col} = getX(batch, xR, xC, d1);
             }`;
 
-          if (col > 0) {
-            mainLoop += `
-              xR${r}C${col - 2} = xTexelR${r}C${col - 2};
-              xR${r}C${col - 1} = vec4(
-                xTexelR${r}C${col - 2}.zw, xTexelR${r}C${col}.xy);`;
-          }
+          if (strideWidth === 1) {
+            if (col > 0) {
+              mainLoop += `
+                xR${r}C${col - 2} = xTexelR${r}C${col - 2};
+                xR${r}C${col - 1} = vec4(
+                  xTexelR${r}C${col - 2}.zw, xTexelR${r}C${col}.xy);`;
+            }
 
-          if (col < filterWidth && c === texelsAcross - 1) {
-            mainLoop += `
-              xR${r}C${col} = xTexelR${r}C${col};
-            `;
+            if (col < filterWidth && c === texelsAcross - 1) {
+              mainLoop += `
+                xR${r}C${col} = xTexelR${r}C${col};
+              `;
+            }
+          } else {
+            if (col > 0) {
+              mainLoop += `
+                xR${r}C${col - 2} = vec4(
+                  xTexelR${r}C${col - 2}.xy, xTexelR${r}C${col}.xy);
+                xR${r}C${col - 1} = vec4(
+                  xTexelR${r}C${col - 2}.zw, xTexelR${r}C${col}.zw);
+              `;
+            }
+
+            if (col < filterWidth && c === texelsAcross - 1) {
+              mainLoop += `
+                xR${r}C${col} = vec4(
+                  xTexelR${r}C${col}.xy,
+                  getX(batch, xR, xC + 2, d1).xy);
+              `;
+            }
           }
         } else {
           if (c === 0) {  // first in a row
