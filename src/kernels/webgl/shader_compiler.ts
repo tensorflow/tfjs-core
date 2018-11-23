@@ -68,6 +68,7 @@ export function makeShader(
     shaderPrefix, FLOAT_TEXTURE_SAMPLE_SNIPPET, floatTextureSetOutputSnippet,
     inputPrefixSnippet, outputSamplingSnippet, inputSamplingSnippet, userCode
   ].join('\n');
+  // console.log(source);
   return source;
 }
 
