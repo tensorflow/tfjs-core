@@ -61,8 +61,6 @@ export enum Rank {
 export type FlatVector = boolean[]|number[]|TypedArray;
 export type RegularArray<T> =
     T[]|T[][]|T[][][]|T[][][][]|T[][][][][]|T[][][][][][];
-export type ArrayData<D extends DataType> =
-    DataTypeMap[D]|RegularArray<number>|RegularArray<boolean>;
 
 // tslint:disable-next-line:no-any
 export interface RecursiveArray<T extends any> {
@@ -122,23 +120,22 @@ export function sumOutType(type: DataType): DataType {
 }
 
 /** @docalias TypedArray|Array */
-export type TensorLike =
-    TypedArray|number|boolean|number[]|number[][]|number[][][]|number[][][][]|
-    number[][][][][]|number[][][][][][]|boolean[]|boolean[][]|boolean[][][]|
-    boolean[][][][]|boolean[][][][][]|boolean[][][][][][];
+export type TensorLike = TypedArray|number|boolean|string|RegularArray<number>|
+    RegularArray<boolean>|RegularArray<string>;
 /** @docalias TypedArray|Array */
-export type TensorLike1D = TypedArray|number[]|boolean[];
+export type TensorLike1D = TypedArray|number[]|boolean[]|string[];
 /** @docalias TypedArray|Array */
-export type TensorLike2D = TypedArray|number[]|number[][]|boolean[]|boolean[][];
+export type TensorLike2D =
+    TypedArray|number[]|number[][]|boolean[]|boolean[][]|string[]|string[][];
 /** @docalias TypedArray|Array */
-export type TensorLike3D =
-    TypedArray|number[]|number[][][]|boolean[]|boolean[][][];
+export type TensorLike3D = TypedArray|number[]|number[][][]|boolean[]|
+    boolean[][][]|string[]|string[][][];
 /** @docalias TypedArray|Array */
-export type TensorLike4D =
-    TypedArray|number[]|number[][][][]|boolean[]|boolean[][][][];
+export type TensorLike4D = TypedArray|number[]|number[][][][]|boolean[]|
+    boolean[][][][]|string[]|string[][][][];
 /** @docalias TypedArray|Array */
-export type TensorLike5D =
-    TypedArray|number[]|number[][][][][]|boolean[]|boolean[][][][][];
+export type TensorLike5D = TypedArray|number[]|number[][][][][]|boolean[]|
+    boolean[][][][][]|string[]|string[][][][][];
 /** @docalias TypedArray|Array */
-export type TensorLike6D =
-    TypedArray|number[]|number[][][][][][]|boolean[]|boolean[][][][][][];
+export type TensorLike6D = TypedArray|number[]|number[][][][][][]|boolean[]|
+    boolean[][][][][][]|string[]|string[][][][][][];

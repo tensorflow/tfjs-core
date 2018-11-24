@@ -19,7 +19,6 @@ import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
 import {ALL_ENVS, BROWSER_ENVS, CPU_ENVS, expectArraysClose, expectArraysEqual, expectPromiseToFail, expectValuesInRange, NODE_ENVS, WEBGL_ENVS} from '../test_util';
 import * as util from '../util';
-
 import {expectArrayInMeanStdRange, jarqueBeraNormalityTest} from './rand_util';
 
 describeWithFlags('zeros', ALL_ENVS, () => {
@@ -1764,6 +1763,14 @@ describeWithFlags('clone', ALL_ENVS, () => {
     expectArraysEqual(b, [1, 1]);
   });
 
+  it('1D string dtype', () => {
+    const a = tf.tensor1d(['a', 'b', 'c'], 'string');
+    const b = tf.clone(a);
+    expect(b.dtype).toBe('string');
+    expect(b.shape).toEqual([3]);
+    expectArraysEqual(b, ['a', 'b', 'c']);
+  });
+
   it('2D default dtype', () => {
     const a = tf.tensor2d([1, 2, 3, 4], [2, 2]);
     const b = tf.clone(a);
@@ -1804,6 +1811,14 @@ describeWithFlags('clone', ALL_ENVS, () => {
     expectArraysEqual(b, [1, 2, 3, 4, 5, 6, 7, 8]);
   });
 
+  it('2D string dtype', () => {
+    const a = tf.tensor2d(['a', 'b', 'c', 'd'], [2, 2], 'string');
+    const b = tf.clone(a);
+    expect(b.dtype).toBe('string');
+    expect(b.shape).toEqual([2, 2]);
+    expectArraysEqual(b, ['a', 'b', 'c', 'd']);
+  });
+
   it('3D default dtype', () => {
     const a = tf.tensor3d([1, 2, 3, 4], [2, 2, 1]);
     const b = tf.clone(a);
@@ -1842,6 +1857,14 @@ describeWithFlags('clone', ALL_ENVS, () => {
     expect(b.dtype).toBe('complex64');
     expect(b.shape).toEqual([2, 2, 1]);
     expectArraysEqual(b, [1, 2, 3, 4, 5, 6, 7, 8]);
+  });
+
+  it('3D string dtype', () => {
+    const a = tf.tensor3d(['a', 'b', 'c', 'd'], [2, 2, 1], 'string');
+    const b = tf.clone(a);
+    expect(b.dtype).toBe('string');
+    expect(b.shape).toEqual([2, 2, 1]);
+    expectArraysEqual(b, ['a', 'b', 'c', 'd']);
   });
 
   it('4D default dtype', () => {
@@ -1885,8 +1908,32 @@ describeWithFlags('clone', ALL_ENVS, () => {
     expectArraysEqual(b, [1, 2, 3, 4, 5, 6, 7, 8]);
   });
 
+  it('4D string dtype', () => {
+    const a = tf.tensor4d(['a', 'b', 'c', 'd'], [2, 2, 1, 1], 'string');
+    const b = tf.clone(a);
+    expect(b.dtype).toBe('string');
+    expect(b.shape).toEqual([2, 2, 1, 1]);
+    expectArraysEqual(b, ['a', 'b', 'c', 'd']);
+  });
+
   it('gradient: 1D', () => {
     const a = tf.tensor1d([1, 2, 3]);
+    const dy = tf.tensor1d([4, 5, 6]);
+    const da = tf.grad(x => tf.clone(x))(a, dy);
+
+    expect(da.dtype).toBe('float32');
+    expect(da.shape).toEqual([3]);
+    expectArraysClose(da, [4, 5, 6]);
+  });
+
+  it('gradient: 1D string throws error with non-numeric dy', () => {
+    const a = tf.tensor1d(['a', 'b', 'c'], 'string');
+    const dy = tf.tensor1d(['d', 'e', 'f']);
+    expect(() => tf.grad(x => tf.clone(x))(a, dy)).toThrowError();
+  });
+
+  it('gradient: 1D string works with numeric dy', () => {
+    const a = tf.tensor1d(['a', 'b', 'c'], 'string');
     const dy = tf.tensor1d([4, 5, 6]);
     const da = tf.grad(x => tf.clone(x))(a, dy);
 
@@ -2429,7 +2476,7 @@ describeWithFlags('oneHot', ALL_ENVS, () => {
     const dy = tf.ones([3, 3], 'float32') as tf.Tensor2D;
     const da = tf.grad((x: tf.Tensor1D) => tf.oneHot(x, 3))(a, dy);
 
-    expect(da.dtype).toBe('int32');
+    expect(da.dtype).toBe('float32');
     expect(da.shape).toEqual([3]);
     expectArraysClose(da, [0, 0, 0]);
   });
@@ -2619,11 +2666,25 @@ describeWithFlags('fill', ALL_ENVS, () => {
     expectArraysClose(a, [2, 2, 2]);
   });
 
+  it('1D fill string', () => {
+    const a = tf.fill([3], 'aa');
+    expect(a.dtype).toBe('string');
+    expect(a.shape).toEqual([3]);
+    expectArraysEqual(a, ['aa', 'aa', 'aa']);
+  });
+
   it('2D fill', () => {
     const a = tf.fill([3, 2], 2);
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([3, 2]);
     expectArraysClose(a, [2, 2, 2, 2, 2, 2]);
+  });
+
+  it('2D fill string', () => {
+    const a = tf.fill([3, 2], 'a');
+    expect(a.dtype).toBe('string');
+    expect(a.shape).toEqual([3, 2]);
+    expectArraysEqual(a, ['a', 'a', 'a', 'a', 'a', 'a']);
   });
 
   it('3D fill', () => {

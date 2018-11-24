@@ -87,8 +87,7 @@ describe('getTensorsInContainer', () => {
 
   it('can extract from arbitrary depth', () => {
     const container = [
-      {x: tf.scalar(1), y: tf.scalar(2)},
-      [[[tf.scalar(3)]], {z: tf.scalar(4)}]
+      {x: tf.scalar(1), y: tf.scalar(2)}, [[[tf.scalar(3)]], {z: tf.scalar(4)}]
     ];
     const results = getTensorsInContainer(container);
     expect(results.length).toBe(4);
@@ -129,14 +128,14 @@ describeWithFlags('convertToTensor', ALL_ENVS, () => {
     expectNumbersClose(a.get(), 0);
   });
 
-  it('primitive boolean, parsed as float', () => {
+  it('primitive boolean, auto-parsed as bool tensor', () => {
     const a = convertToTensor(true, 'a', 'test');
     expect(a.rank).toBe(0);
-    expect(a.dtype).toBe('float32');
+    expect(a.dtype).toBe('bool');
     expectNumbersClose(a.get(), 1);
   });
 
-  it('primitive boolean, parsed as bool', () => {
+  it('primitive boolean, forced to be parsed as bool tensor', () => {
     const a = convertToTensor(true, 'a', 'test', 'bool');
     expect(a.rank).toBe(0);
     expect(a.dtype).toBe('bool');
@@ -187,20 +186,30 @@ describeWithFlags('convertToTensor', ALL_ENVS, () => {
     expect(res).toBe(s);
   });
 
+  it('primitive string, allows numeric', () => {
+    const t = convertToTensor('hello', 'p', 'test', null, false);
+    expect(t.dtype).toBe('string');
+    expect(t.shape).toEqual([]);
+  });
+
+  it('string[], allows numeric', () => {
+    const t = convertToTensor(['a', 'b', 'c'], 'p', 'test', null, false);
+    expect(t.dtype).toBe('string');
+    expect(t.shape).toEqual([3]);
+  });
+
   it('fails to convert a dict to tensor', () => {
-    // tslint:disable-next-line:no-any
-    expect(() => convertToTensor({} as any, 'a', 'test'))
+    expect(() => convertToTensor({} as number, 'a', 'test'))
         .toThrowError(
             'Argument \'a\' passed to \'test\' must be a Tensor ' +
-            'or TensorLike, but got Object');
+            'or TensorLike, but got \'Object\'');
   });
 
   it('fails to convert a string to tensor', () => {
-    // tslint:disable-next-line:no-any
-    expect(() => convertToTensor('asdf' as any, 'a', 'test'))
+    expect(() => convertToTensor('asdf', 'a', 'test'))
         .toThrowError(
-            'Argument \'a\' passed to \'test\' must be a Tensor ' +
-            'or TensorLike, but got String');
+            'Argument \'a\' passed to \'test\' must be a numeric tensor, ' +
+            'but got tensor with dtype \'string\'');
   });
 
   it('fails to convert a non-valid shape array to tensor', () => {

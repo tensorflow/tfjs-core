@@ -361,6 +361,18 @@ describeWithFlags('memory', ALL_ENVS, () => {
     expect(sum.dtype).toBe('int32');
     expectArraysClose(sum, [1 + 1 + 0 + 1]);
   });
+
+  it('string tensor', () => {
+    const a = tf.tensor([['a', 'bb'], ['c', 'd']]);
+
+    expect(tf.memory().numTensors).toBe(1);
+    expect(tf.memory().numBytes).toBe(10);  // 10 letters, each 2 bytes.
+
+    a.dispose();
+
+    expect(tf.memory().numTensors).toBe(0);
+    expect(tf.memory().numBytes).toBe(0);
+  });
 });
 
 describeWithFlags('profile', ALL_ENVS, () => {

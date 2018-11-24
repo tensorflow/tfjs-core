@@ -17,11 +17,10 @@
 
 import {ENV} from './environment';
 import {Tensor} from './tensor';
-import {ArrayData, DataType, RegularArray, TensorLike, TypedArray} from './types';
-import {assert, isTypedArray, toTypedArray} from './util';
+import {DataType, TensorLike, TypedArray} from './types';
+import {assert, flatten, inferDtype, isTypedArray, toTypedArray} from './util';
 
-export function inferShape(val: TypedArray|number|boolean|RegularArray<number>|
-                           RegularArray<boolean>): number[] {
+export function inferShape(val: TensorLike): number[] {
   let firstElem: typeof val = val;
 
   if (isTypedArray(val)) {
@@ -44,8 +43,7 @@ export function inferShape(val: TypedArray|number|boolean|RegularArray<number>|
 }
 
 function deepAssertShapeConsistency(
-    val: number|boolean|RegularArray<number>|RegularArray<boolean>,
-    shape: number[], indices: number[]) {
+    val: TensorLike, shape: number[], indices: number[]) {
   indices = indices || [];
   if (!(val instanceof Array)) {
     assert(
@@ -68,27 +66,43 @@ function deepAssertShapeConsistency(
   }
 }
 
+function assertNumericDtype(
+    dtype: DataType, argName: string, functionName: string) {
+  if (dtype === 'string') {
+    throw new Error(
+        `Argument '${argName}' passed to '${functionName}' must ` +
+        `be a numeric tensor, but got tensor with dtype 'string'`);
+  }
+}
+
 export function convertToTensor<T extends Tensor>(
-    x: T|TensorLike, argName: string, functionName: string,
-    dtype: DataType = 'float32'): T {
-  dtype = dtype || 'float32';
+    x: T|TensorLike, argName: string, functionName: string, dtype?: DataType,
+    forceNumeric = true): T {
   if (x instanceof Tensor) {
+    if (forceNumeric) {
+      assertNumericDtype(x.dtype, argName, functionName);
+    }
     return x;
   }
+  if (dtype == null) {
+    dtype = inferDtype(x);
+  }
+  if (forceNumeric) {
+    assertNumericDtype(dtype, argName, functionName);
+  }
   if (!isTypedArray(x) && !Array.isArray(x) && typeof x !== 'number' &&
-      typeof x !== 'boolean') {
+      typeof x !== 'boolean' && typeof x !== 'string') {
     throw new Error(
         `Argument '${argName}' passed to '${functionName}' must be a ` +
-        `Tensor or TensorLike, but got ${x.constructor.name}`);
+        `Tensor or TensorLike, but got '${x.constructor.name}'`);
   }
   const inferredShape = inferShape(x);
   if (!isTypedArray(x) && !Array.isArray(x)) {
     x = [x] as number[];
   }
-  return Tensor.make(
-      inferredShape,
-      {values: toTypedArray(x as ArrayData<DataType>, dtype, ENV.get('DEBUG'))},
-      dtype);
+  const values = dtype !== 'string' ? toTypedArray(x, dtype, ENV.get('DEBUG')) :
+                                      flatten(x) as string[];
+  return Tensor.make(inferredShape, {values}, dtype);
 }
 
 export function convertToTensorArray<T extends Tensor>(

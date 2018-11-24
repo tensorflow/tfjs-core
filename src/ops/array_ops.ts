@@ -24,7 +24,7 @@ import {getAxesPermutation, getInnerMostAxes} from './axis_util';
 import {concat} from './concat_split';
 import {op} from './operation';
 import {MPRandGauss} from './rand';
-import {zerosLike} from './tensor_ops';
+import {zeros, zerosLike} from './tensor_ops';
 
 /**
  * Creates a new tensor with the same values and shape as the specified
@@ -40,7 +40,7 @@ import {zerosLike} from './tensor_ops';
  */
 /** @doc {heading: 'Tensors', subheading: 'Creation'} */
 function clone_<T extends Tensor>(x: T|TensorLike): T {
-  const $x = convertToTensor(x, 'x', 'clone');
+  const $x = convertToTensor(x, 'x', 'clone', null, false /* forceNumeric */);
   const der = (dy: T) => {
     return {$x: () => dy.toFloat()};
   };
@@ -295,7 +295,7 @@ function oneHot_(
     throw new Error(`Error in oneHot: depth must be >=2, but it is ${depth}`);
   }
   const grad = (dy: Tensor2D) => {
-    return {$indices: () => zerosLike($indices)};
+    return {$indices: () => zeros($indices.shape, 'float32') as Tensor1D};
   };
   return ENV.engine.runKernel(
       backend => backend.oneHot($indices, depth, onValue, offValue), {$indices},
@@ -461,7 +461,7 @@ async function toPixels(
 /** @doc {heading: 'Tensors', subheading: 'Transformations'} */
 function reshape_<R2 extends Rank>(
     x: Tensor|TensorLike, shape: ShapeMap[R2]): Tensor<R2> {
-  const $x = convertToTensor(x, 'x', 'reshape');
+  const $x = convertToTensor(x, 'x', 'reshape', null, false);
   shape = util.inferFromImplicitShape(shape, $x.size);
   util.assert(
       $x.size === util.sizeFromShape(shape),

@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {ArrayData, DataType, DataTypeMap, FlatVector, NumericDataType, RecursiveArray, RegularArray, TensorLike, TypedArray} from './types';
+import {DataType, DataTypeMap, FlatVector, NumericDataType, RecursiveArray, TensorLike, TypedArray} from './types';
 
 /** Shuffles the array using Fisher-Yates algorithm. */
 // tslint:disable-next-line:no-any
@@ -98,7 +98,7 @@ export function assertNonNull(a: TensorLike): void {
 // NOTE: We explicitly type out what T extends instead of any so that
 // util.flatten on a nested array of number doesn't try to infer T as a
 // number[][], causing us to explicitly type util.flatten<number>().
-export function flatten<T extends number|boolean|Promise<number>|string>(
+export function flatten<T extends number|boolean|string|Promise<number>>(
     arr: T|RecursiveArray<T>, ret: T[] = []): T[] {
   if (Array.isArray(arr)) {
     for (let i = 0; i < arr.length; ++i) {
@@ -376,31 +376,7 @@ export function hasEncodingLoss(oldType: DataType, newType: DataType): boolean {
   return true;
 }
 
-function copyTypedArray<D extends DataType>(
-    array: DataTypeMap[D]|number[]|boolean[], dtype: D,
-    debugMode: boolean): DataTypeMap[D] {
-  if (dtype == null || dtype === 'float32' || dtype === 'complex64') {
-    return new Float32Array(array as number[]);
-  } else if (dtype === 'int32') {
-    if (debugMode) {
-      checkConversionForNaN(array as number[], dtype);
-    }
-    return new Int32Array(array as number[]);
-  } else if (dtype === 'bool') {
-    const bool = new Uint8Array(array.length);
-    for (let i = 0; i < bool.length; ++i) {
-      if (Math.round(array[i] as number) !== 0) {
-        bool[i] = 1;
-      }
-    }
-    return bool;
-  } else {
-    throw new Error(`Unknown data type ${dtype}`);
-  }
-}
-
-export function isTypedArray(a: TypedArray|number|boolean|RegularArray<number>|
-                             RegularArray<boolean>): boolean {
+export function isTypedArray(a: TensorLike): boolean {
   return a instanceof Float32Array || a instanceof Int32Array ||
       a instanceof Uint8Array;
 }
@@ -428,8 +404,47 @@ export function bytesFromStringArray(arr: string[]): number {
 }
 
 /** Returns true if the value is a string. */
-export function isString(value: {}): boolean {
+export function isString(value: {}): value is string {
   return typeof value === 'string' || value instanceof String;
+}
+
+export function isBoolean(value: {}): boolean {
+  return typeof value === 'boolean';
+}
+
+export function isNumber(value: {}): boolean {
+  return typeof value === 'number';
+}
+
+export function getFirstElemFromNestedArray(arr: TensorLike): {} {
+  while (arr instanceof Array) {
+    arr = arr[0];
+  }
+  return arr;
+}
+
+export function inferDtype(values: TensorLike): DataType {
+  if (values instanceof Float32Array) {
+    return 'float32';
+  } else if (values instanceof Int32Array || values instanceof Uint8Array) {
+    return 'int32';
+  } else if (
+      isNumber(values) ||
+      values instanceof Array &&
+          isNumber(getFirstElemFromNestedArray(values))) {
+    return 'float32';
+  } else if (
+      isString(values) ||
+      values instanceof Array &&
+          isString(getFirstElemFromNestedArray(values))) {
+    return 'string';
+  } else if (
+      isBoolean(values) ||
+      values instanceof Array &&
+          isBoolean(getFirstElemFromNestedArray(values))) {
+    return 'bool';
+  }
+  return 'float32';
 }
 
 export function isFunction(f: Function) {
@@ -461,19 +476,38 @@ export function computeStrides(shape: number[]): number[] {
   return strides;
 }
 
-export function toTypedArray<D extends DataType>(
-    a: ArrayData<D>, dtype: D, debugMode: boolean): DataTypeMap[D] {
+export function toTypedArray(
+    a: TensorLike, dtype: DataType, debugMode: boolean): TypedArray {
+  if (dtype === 'string') {
+    throw new Error('Cannot convert a string[] to a TypedArray');
+  }
   if (noConversionNeeded(a, dtype)) {
-    return a as DataTypeMap[D];
+    return a as TypedArray;
   }
   if (Array.isArray(a)) {
     a = flatten(a as number[]);
   }
-  return copyTypedArray(a, dtype, debugMode);
+  if (dtype == null || dtype === 'float32' || dtype === 'complex64') {
+    return new Float32Array(a as number[]);
+  } else if (dtype === 'int32') {
+    if (debugMode) {
+      checkConversionForNaN(a as number[], dtype);
+    }
+    return new Int32Array(a as number[]);
+  } else if (dtype === 'bool') {
+    const bool = new Uint8Array((a as number[]).length);
+    for (let i = 0; i < bool.length; ++i) {
+      if (Math.round((a as number[])[i] as number) !== 0) {
+        bool[i] = 1;
+      }
+    }
+    return bool;
+  } else {
+    throw new Error(`Unknown data type ${dtype}`);
+  }
 }
 
-function noConversionNeeded<D extends DataType>(
-    a: ArrayData<D>, dtype: D): boolean {
+function noConversionNeeded(a: TensorLike, dtype: DataType): boolean {
   return (a instanceof Float32Array && dtype === 'float32') ||
       (a instanceof Int32Array && dtype === 'int32') ||
       (a instanceof Uint8Array && dtype === 'bool');
