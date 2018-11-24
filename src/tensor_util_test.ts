@@ -186,14 +186,31 @@ describeWithFlags('convertToTensor', ALL_ENVS, () => {
     expect(res).toBe(s);
   });
 
-  it('primitive string, allows numeric', () => {
-    const t = convertToTensor('hello', 'p', 'test', null, false);
+  it('fails when passed a string and force numeric is true', () => {
+    const forceNumeric = true;
+    const dtype: tf.DataType = null;  // Infer the dtype.
+    expect(() => convertToTensor('hello', 'p', 'test', dtype, forceNumeric))
+        .toThrowError();
+  });
+
+  it('force numeric is true by default', () => {
+    // Should fail to parse a string tensor since force numeric is true.
+    expect(() => convertToTensor('hello', 'p', 'test')).toThrowError();
+  });
+
+  it('primitive string, do not force numeric', () => {
+    const forceNumeric = false;
+    const dtype: tf.DataType = null;  // Infer the dtype.
+    const t = convertToTensor('hello', 'p', 'test', dtype, forceNumeric);
     expect(t.dtype).toBe('string');
     expect(t.shape).toEqual([]);
   });
 
-  it('string[], allows numeric', () => {
-    const t = convertToTensor(['a', 'b', 'c'], 'p', 'test', null, false);
+  it('string[], do not force numeric', () => {
+    const forceNumeric = false;
+    const dtype: tf.DataType = null;  // Infer the dtype.
+    const t =
+        convertToTensor(['a', 'b', 'c'], 'p', 'test', dtype, forceNumeric);
     expect(t.dtype).toBe('string');
     expect(t.shape).toEqual([3]);
   });

@@ -416,13 +416,6 @@ export function isNumber(value: {}): boolean {
   return typeof value === 'number';
 }
 
-export function getFirstElemFromNestedArray(arr: TensorLike): {} {
-  while (arr instanceof Array) {
-    arr = arr[0];
-  }
-  return arr;
-}
-
 export function inferDtype(values: TensorLike): DataType {
   if (values instanceof Float32Array) {
     return 'float32';
@@ -550,4 +543,11 @@ export function now(): number {
         'Cannot measure time in this environment. You should run tf.js ' +
         'in the browser or in Node.js');
   }
+}
+
+function getFirstElemFromNestedArray(arr: TensorLike): {} {
+  while (arr instanceof Array) {
+    arr = arr[0];
+  }
+  return arr;
 }
