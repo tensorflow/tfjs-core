@@ -1904,6 +1904,14 @@ describeWithFlags('tensor with 0 in shape', ALL_ENVS, () => {
     expectArraysEqual(a, []);
   });
 
+  it('1d string tensor of shape [0]', () => {
+    const a = tf.tensor1d([], 'string');
+    expect(a.dtype).toBe('string');
+    expect(a.rank).toBe(1);
+    expect(a.shape).toEqual([0]);
+    expectArraysEqual(a, []);
+  });
+
   it('1d throws when values are not empty', () => {
     const values = new Float32Array([1, 2, 3]);
     // Have to use Tensor.make since tensor1d() does not let us provide a shape.
@@ -1916,6 +1924,14 @@ describeWithFlags('tensor with 0 in shape', ALL_ENVS, () => {
   it('2d of shape [0, 5]', () => {
     const a = tf.tensor2d([], [0, 5]);
     expect(a.dtype).toBe('float32');
+    expect(a.rank).toBe(2);
+    expect(a.shape).toEqual([0, 5]);
+    expectArraysEqual(a, []);
+  });
+
+  it('2d string tensor of shape [0, 5]', () => {
+    const a = tf.tensor2d([], [0, 5], 'string');
+    expect(a.dtype).toBe('string');
     expect(a.rank).toBe(2);
     expect(a.shape).toEqual([0, 5]);
     expectArraysEqual(a, []);

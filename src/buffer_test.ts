@@ -20,7 +20,7 @@ import {describeWithFlags} from './jasmine_util';
 import {ALL_ENVS, expectArraysClose, expectArraysEqual} from './test_util';
 
 describeWithFlags('tf.buffer', ALL_ENVS, () => {
-  it('float32 initially empty', () => {
+  it('float32', () => {
     const buff = tf.buffer([1, 2, 3], 'float32');
     buff.set(1, 0, 0, 0);
     buff.set(2, 0, 1, 0);
@@ -34,7 +34,7 @@ describeWithFlags('tf.buffer', ALL_ENVS, () => {
     expectArraysClose(buff.values, new Float32Array([1, 0, 0, 2, 0, 0]));
   });
 
-  it('int32 initially empty', () => {
+  it('int32', () => {
     const buff = tf.buffer([2, 3], 'int32');
     buff.set(1.3, 0, 0);
     buff.set(2.1, 1, 1);
@@ -48,7 +48,7 @@ describeWithFlags('tf.buffer', ALL_ENVS, () => {
     expectArraysClose(buff.values, new Int32Array([1, 0, 0, 0, 2, 0]));
   });
 
-  it('bool initially empty', () => {
+  it('bool', () => {
     const buff = tf.buffer([4], 'bool');
     buff.set(true, 1);
     buff.set(true, 2);
@@ -60,7 +60,7 @@ describeWithFlags('tf.buffer', ALL_ENVS, () => {
     expectArraysClose(buff.values, new Uint8Array([0, 1, 1, 0]));
   });
 
-  it('string initially empty', () => {
+  it('string', () => {
     const buff = tf.buffer([2, 2], 'string');
     buff.set('first', 0, 0);
     buff.set('third', 1, 0);

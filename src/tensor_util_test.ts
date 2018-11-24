@@ -128,7 +128,7 @@ describeWithFlags('convertToTensor', ALL_ENVS, () => {
     expectNumbersClose(a.get(), 0);
   });
 
-  it('primitive boolean, auto-parsed as bool tensor', () => {
+  it('primitive boolean, parsed as bool tensor', () => {
     const a = convertToTensor(true, 'a', 'test');
     expect(a.rank).toBe(0);
     expect(a.dtype).toBe('bool');
