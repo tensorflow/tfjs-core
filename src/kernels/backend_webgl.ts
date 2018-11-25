@@ -678,10 +678,6 @@ export class MathBackendWebGL implements KernelBackend {
       let result =
           this.compileAndRun<Tensor2D>(program, [aSqueezed, bSqueezed]);
 
-      if (ENV.get('WEBGL_LAZILY_UNPACK') === false) {
-        result = this.unpackTensor(result);
-      }
-
       return result.reshape([1, result.shape[0], result.shape[1]]);
     } else {
       return this.compileAndRun(
@@ -745,11 +741,7 @@ export class MathBackendWebGL implements KernelBackend {
       const batchNormPackedProgram = new BatchNormPackedProgram(
           x.shape, mean.shape, variance.shape, offsetShape, scaleShape,
           varianceEpsilon);
-      let result = this.compileAndRun<Tensor4D>(batchNormPackedProgram, inputs);
-      if (ENV.get('WEBGL_LAZILY_UNPACK') === false) {
-        result = this.unpackTensor(result);
-      }
-      return result;
+      return this.compileAndRun<Tensor4D>(batchNormPackedProgram, inputs);
     }
 
     const batchNormProgram = new BatchNormProgram(
@@ -1473,10 +1465,6 @@ export class MathBackendWebGL implements KernelBackend {
         false);
     let product = this.compileAndRun<Tensor4D>(matmulProgram, [im2Col, w2Row]);
 
-    if (ENV.get('WEBGL_LAZILY_UNPACK') === false) {
-      product = this.unpackTensor(product);
-    }
-
     return product.reshape([1, outHeight, outWidth, convInfo.outChannels]);
   }
 
@@ -1921,6 +1909,12 @@ export class MathBackendWebGL implements KernelBackend {
       query = this.endTimer(query);
       this.activeTimers.push(
           {name: program.constructor.name, query: this.getQueryTime(query)});
+    }
+
+    if (ENV.get('WEBGL_LAZILY_UNPACK') === false &&
+        this.texData.get(output.dataId).isPacked &&
+        program.constructor.name !== 'PackProgram') {
+      return this.unpackTensor(output as {} as Tensor) as {} as K;
     }
     return output;
   }
