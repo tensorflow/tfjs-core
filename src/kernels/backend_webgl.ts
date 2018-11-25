@@ -675,7 +675,7 @@ export class MathBackendWebGL implements KernelBackend {
       const program = new MatMulPackedProgram(
           aSqueezed.shape, bSqueezed.shape, [outerShapeA, outerShapeB],
           transposeA, transposeB);
-      let result =
+      const result =
           this.compileAndRun<Tensor2D>(program, [aSqueezed, bSqueezed]);
 
       return result.reshape([1, result.shape[0], result.shape[1]]);
@@ -1463,7 +1463,8 @@ export class MathBackendWebGL implements KernelBackend {
     const matmulProgram = new MatMulPackedProgram(
         im2Col.shape, w2Row.shape, [numCols, convInfo.outChannels], true,
         false);
-    let product = this.compileAndRun<Tensor4D>(matmulProgram, [im2Col, w2Row]);
+    const product =
+        this.compileAndRun<Tensor4D>(matmulProgram, [im2Col, w2Row]);
 
     return product.reshape([1, outHeight, outWidth, convInfo.outChannels]);
   }
