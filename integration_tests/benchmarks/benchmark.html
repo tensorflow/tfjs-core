@@ -176,8 +176,8 @@
       // Place model loading code here.
       //////////////////////////////////
       return await tf.loadFrozenModel(
-        'https://storage.googleapis.com/tfjs-models/savedmodel/mobilenet_v2_1.0_224/tensorflowjs_model.pb',
-        'https://storage.googleapis.com/tfjs-models/savedmodel/mobilenet_v2_1.0_224/weights_manifest.json');
+        'https://storage.googleapis.com/tfjs-models/savedmodel/coco-ssd-mobilenet_v1/tensorflowjs_model.pb',
+        'https://storage.googleapis.com/tfjs-models/savedmodel/coco-ssd-mobilenet_v1/weights_manifest.json');
     }
 
     const zeros = tf.zeros([1, 224, 224, 3]);
@@ -256,13 +256,14 @@
     async function warmUpAndRecordTime() {
       await showMsg('Warming up');
       const start = performance.now();
-      let res;
-      if(isAsync) {
-        res = await predict(model);
-      } else {
-        res = predict(model);
+      let res = predict(model);
+      if(res instanceof Promise) {
+        res = await res;
       }
-      res.dataSync();
+
+      if(res instanceof tf.Tensor) {
+        res.dataSync();
+      }
 
       const elapsed = performance.now() - start;
       await showMsg(null);
@@ -277,7 +278,7 @@
       await showMsg('Loading the model');
       const start = performance.now();
       model = await load();
-      isAsync = model.executor.isControlFlowModel;
+      isAsync = model.executor && model.executor.isControlFlowModel;
 
       const elapsed = performance.now() - start;
       await showMsg(null);
@@ -295,13 +296,14 @@
       const times = [];
       for (let i = 0; i < state.numRuns; i++) {
         const start = performance.now();
-        let res;
-        if(isAsync) {
-          res = await predict(model);
-        } else {
-          res = predict(model);
+        let res = predict(model);
+        if(res instanceof Promise) {
+          res = await res;
         }
-        res.dataSync();
+
+        if(res instanceof tf.Tensor) {
+          res.dataSync();
+        }
 
         times.push(performance.now() - start);
       }
@@ -325,10 +327,13 @@
       const start = performance.now();
       let res;
       const data = await tf.profile(() => res = predict(model));
-      if(isAsync) {
+      if(res instanceof Promise) {
         res = await res;
       }
-      res.dataSync();
+
+      if(res instanceof tf.Tensor) {
+        res.dataSync();
+      }
       const elapsed = performance.now() - start;
       await showMsg(null);
       appendRow(timeTable, 'Peak memory', printMemory(data.peakBytes));
@@ -364,13 +369,14 @@
           });
         }
       }
-      let res;
-      if(isAsync) {
+      let res = predict(model);
+      if(res instanceof Promise) {
         res = await predict(model);
-      } else {
-        res = predict(model);
       }
-      res.dataSync();
+
+      if(res instanceof tf.Tensor) {
+        res.dataSync();
+      }
 
       await showMsg(null);
       await sleep(10);
