@@ -675,9 +675,8 @@ export class MathBackendWebGL implements KernelBackend {
       const program = new MatMulPackedProgram(
           aSqueezed.shape, bSqueezed.shape, [outerShapeA, outerShapeB],
           transposeA, transposeB);
-      let result = this.compileAndRun(
-          program, [aSqueezed, bSqueezed],
-          this.makePackedTensor<Tensor2D>(program.outputShape));
+      let result =
+          this.compileAndRun<Tensor2D>(program, [aSqueezed, bSqueezed]);
 
       if (ENV.get('WEBGL_LAZILY_UNPACK') === false) {
         result = this.unpackTensor(result);
@@ -746,12 +745,11 @@ export class MathBackendWebGL implements KernelBackend {
       const batchNormPackedProgram = new BatchNormPackedProgram(
           x.shape, mean.shape, variance.shape, offsetShape, scaleShape,
           varianceEpsilon);
-      let result = this.compileAndRun(
-          batchNormPackedProgram, inputs, this.makePackedTensor(x.shape));
+      let result = this.compileAndRun<Tensor4D>(batchNormPackedProgram, inputs);
       if (ENV.get('WEBGL_LAZILY_UNPACK') === false) {
         result = this.unpackTensor(result);
       }
-      return result as Tensor4D;
+      return result;
     }
 
     const batchNormProgram = new BatchNormProgram(
@@ -1468,16 +1466,12 @@ export class MathBackendWebGL implements KernelBackend {
 
     const im2ColProgram =
         new Im2ColProgram(x2ColShape, xSqueezed.shape, convInfo);
-    const im2Col = this.compileAndRun<Tensor2D>(
-        im2ColProgram, [xSqueezed],
-        this.makePackedTensor<Tensor2D>(x2ColShape));
+    const im2Col = this.compileAndRun<Tensor2D>(im2ColProgram, [xSqueezed]);
 
     const matmulProgram = new MatMulPackedProgram(
         im2Col.shape, w2Row.shape, [numCols, convInfo.outChannels], true,
         false);
-    let product = this.compileAndRun(
-        matmulProgram, [im2Col, w2Row],
-        this.makePackedTensor<Tensor2D>(matmulProgram.outputShape));
+    let product = this.compileAndRun<Tensor4D>(matmulProgram, [im2Col, w2Row]);
 
     if (ENV.get('WEBGL_LAZILY_UNPACK') === false) {
       product = this.unpackTensor(product);
@@ -1764,7 +1758,8 @@ export class MathBackendWebGL implements KernelBackend {
 
   private unpackTensor<T extends Tensor>(input: T): T {
     const program = new UnpackProgram(input.shape);
-    return this.compileAndRun(program, [input]);
+    return this.compileAndRun(
+        program, [input], Tensor.make(program.outputShape, {}));
   }
 
   private getBatchDim(shape: number[], dimsToSkip = 2): number {
@@ -1790,9 +1785,7 @@ export class MathBackendWebGL implements KernelBackend {
     const program = new ReshapePackedProgram(
         afterShapeAs3D as [number, number, number],
         inputAs3D.shape as [number, number, number]);
-    return this
-        .compileAndRun(
-            program, [inputAs3D], this.makePackedTensor(afterShapeAs3D))
+    return this.compileAndRun<Tensor<R>>(program, [inputAs3D])
         .reshape(afterShape);
   }
 
@@ -1802,8 +1795,12 @@ export class MathBackendWebGL implements KernelBackend {
       customSetup?: (gpgpu: GPGPUContext, webGLProgram: WebGLProgram) => void,
       pageToCpu = true): K {
     if (output == null) {
-      output =
-          this.makeOutputArray(program.outputShape, inputs[0].dtype) as {} as K;
+      if (program.usesPackedTextures) {
+        output = this.makePackedTensor(program.outputShape) as {} as K;
+      } else {
+        output = this.makeOutputArray(program.outputShape, inputs[0].dtype) as
+            {} as K;
+      }
     }
     if (output.size === 0) {
       // Short-circuit the computation since the result is empty (has 0 in its
@@ -1849,9 +1846,14 @@ export class MathBackendWebGL implements KernelBackend {
       } else if (texData.isPacked !== !!program.usesPackedTextures) {
         let preProcessProgram: UnpackProgram|PackProgram;
         let processedInput: Tensor;
+
+        // Explicitly specifying output tensors because compileAndRun assumes
+        // that programs that take packed inputs produce a packed output.
         if (texData.isPacked) {
           preProcessProgram = new UnpackProgram(input.shape);
-          processedInput = this.compileAndRun(preProcessProgram, [input]);
+          processedInput = this.compileAndRun(
+              preProcessProgram, [input],
+              Tensor.make(preProcessProgram.outputShape, {}));
         } else {
           preProcessProgram = new PackProgram(input.shape);
           processedInput = this.compileAndRun(
@@ -1994,7 +1996,7 @@ export class MathBackendWebGL implements KernelBackend {
       if (isPacked) {
         const batch = this.getBatchDim(shape);
         let rows = 1, cols = 1;
-        if(shape.length) {
+        if (shape.length) {
           [rows, cols] = this.getRowsCols(shape);
         }
         this.gpgpu.uploadMatrixToPackedTexture(
