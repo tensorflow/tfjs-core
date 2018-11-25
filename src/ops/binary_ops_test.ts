@@ -52,8 +52,7 @@ describeWithFlags('prelu', ALL_ENVS, () => {
 
   it('throws for string tensor', () => {
     expect(() => tf.prelu(['a'], 0.1))
-        .toThrowError(
-            /Argument \'x\' passed to \'prelu\' must be numeric tensor/);
+        .toThrowError(/Argument 'x' passed to 'prelu' must be numeric tensor/);
   });
 });
 
@@ -211,11 +210,11 @@ describeWithFlags('maximum', ALL_ENVS, () => {
   it('throws for string tensor', () => {
     expect(() => tf.maximum('q', 3))
         .toThrowError(
-            /Argument \'a\' passed to \'maximum\' must be numeric tensor/);
+            /Argument 'a' passed to 'maximum' must be numeric tensor/);
 
     expect(() => tf.maximum(3, 'q'))
         .toThrowError(
-            /Argument \'b\' passed to \'maximum\' must be numeric tensor/);
+            /Argument 'b' passed to 'maximum' must be numeric tensor/);
   });
 });
 
@@ -399,11 +398,11 @@ describeWithFlags('squaredDifference', ALL_ENVS, () => {
   it('throws for string tensor', () => {
     expect(() => tf.squaredDifference('q', 3))
         .toThrowError(
-            /Argument \'a\' passed to \'squaredDifference\' must be numeric/);
+            /Argument 'a' passed to 'squaredDifference' must be numeric/);
 
     expect(() => tf.squaredDifference(3, 'q'))
         .toThrowError(
-            /Argument \'b\' passed to \'squaredDifference\' must be numeric/);
+            /Argument 'b' passed to 'squaredDifference' must be numeric/);
   });
 });
 
@@ -560,10 +559,10 @@ describeWithFlags('minimum', ALL_ENVS, () => {
 
   it('throws for string tensor', () => {
     expect(() => tf.minimum('q', 3))
-        .toThrowError(/Argument \'a\' passed to \'minimum\' must be numeric/);
+        .toThrowError(/Argument 'a' passed to 'minimum' must be numeric/);
 
     expect(() => tf.minimum(3, 'q'))
-        .toThrowError(/Argument \'b\' passed to \'minimum\' must be numeric/);
+        .toThrowError(/Argument 'b' passed to 'minimum' must be numeric/);
   });
 });
 
@@ -753,6 +752,14 @@ describeWithFlags('mod', ALL_ENVS, () => {
 
     expect(result.shape).toEqual([2, 2]);
     expectArraysClose(result, [0.1, 0.2, 0.15, 0.05]);
+  });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.mod('q', 3))
+        .toThrowError(/Argument 'a' passed to 'mod' must be numeric/);
+
+    expect(() => tf.mod(3, 'q'))
+        .toThrowError(/Argument 'b' passed to 'mod' must be numeric/);
   });
 });
 
@@ -980,6 +987,14 @@ describeWithFlags('atan2', ALL_ENVS, () => {
     }
     expectArraysClose(r, expected);
   });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.atan2('q', 3))
+        .toThrowError(/Argument 'a' passed to 'atan2' must be numeric/);
+
+    expect(() => tf.atan2(3, 'q'))
+        .toThrowError(/Argument 'b' passed to 'atan2' must be numeric/);
+  });
 });
 
 describeWithFlags('div', ALL_ENVS, () => {
@@ -1009,5 +1024,13 @@ describeWithFlags('div', ALL_ENVS, () => {
 
     expect(result.shape).toEqual(a.shape);
     expectArraysClose(result, [1, 1, -3, -8]);
+  });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.div('q', 3))
+        .toThrowError(/Argument 'a' passed to 'div' must be numeric/);
+
+    expect(() => tf.div(3, 'q'))
+        .toThrowError(/Argument 'b' passed to 'div' must be numeric/);
   });
 });

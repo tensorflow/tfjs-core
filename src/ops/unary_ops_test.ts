@@ -15,12 +15,11 @@
  * =============================================================================
  */
 
+import {ENV} from '../environment';
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
 import {ALL_ENVS, expectArraysClose, expectNumbersClose} from '../test_util';
 import * as util from '../util';
-import {ENV} from '../environment';
-
 import * as selu_util from './selu_util';
 
 describeWithFlags('relu', ALL_ENVS, () => {
@@ -112,6 +111,11 @@ describeWithFlags('relu', ALL_ENVS, () => {
     const result = tf.relu([1, -2, 0, 3, -0.1]);
     expectArraysClose(result, [1, 0, 0, 3, 0]);
   });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.relu('q'))
+        .toThrowError(/Argument 'x' passed to 'relu' must be numeric/);
+  });
 });
 
 describeWithFlags('abs', ALL_ENVS, () => {
@@ -170,30 +174,29 @@ describeWithFlags('abs', ALL_ENVS, () => {
   });
 
   it('is underflow-safe for complex64', () => {
-
     const floatBits = ENV.backend.floatPrecision();
     let small;
-    switch(floatBits) {
-      case 32: small = 1e-30; break;
-      case 16: small = 1e-4;  break;
-      default: throw new Error(
-        `Test not implemented for ENV.engine.floatPrecision()=${floatBits}.`
-      );
+    switch (floatBits) {
+      case 32:
+        small = 1e-30;
+        break;
+      case 16:
+        small = 1e-4;
+        break;
+      default:
+        throw new Error(`Test not implemented for ENV.engine.floatPrecision()=${
+            floatBits}.`);
     }
 
-    const a = tf.complex(
-       [small,     0, small, 0],
-       [small, small,     0, 0]
-    );
+    const a = tf.complex([small, 0, small, 0], [small, small, 0, 0]);
     const result = tf.abs(a);
     expectArraysClose(
-      result,
-      [Math.hypot(small, small),
-       Math.hypot(    0, small),
-       Math.hypot(small,     0),
-       Math.hypot(    0,     0)], 
-      /*tolerance=*/small/100
-    );
+        result,
+        [
+          Math.hypot(small, small), Math.hypot(0, small), Math.hypot(small, 0),
+          Math.hypot(0, 0)
+        ],
+        /*tolerance=*/small / 100);
     expect(result.shape).toEqual([4]);
   });
 
