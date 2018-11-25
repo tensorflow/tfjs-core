@@ -3221,6 +3221,12 @@ describeWithFlags('cumsum', ALL_ENVS, () => {
     expect(res.shape).toEqual([4]);
     expectArraysClose(res, [1, 3, 6, 10]);
   });
+
+  it('throws error for string tensor', () => {
+    expect(() => tf.cumsum(['a', 'b', 'c']))
+        .toThrowError(
+            /Argument \'x\' passed to \'cumsum\' must be a numeric tensor/);
+  });
 });
 
 describeWithFlags('batchToSpaceND', ALL_ENVS, () => {

@@ -1471,6 +1471,12 @@ describeWithFlags('Reduction: norm', ALL_ENVS, () => {
     expect(norm.dtype).toBe('float32');
     expectNumbersClose(norm.get(), 10);
   });
+
+  it('throws error for string tensors', () => {
+    expect(() => tf.norm(['a', 'b']))
+        .toThrowError(
+            /Argument \'x\' passed to \'norm\' must be a numeric tensor/);
+  });
 });
 
 describeWithFlags('Reduction: all', ALL_ENVS, () => {

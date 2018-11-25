@@ -678,6 +678,12 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     expect(res.shape).toEqual([0, 3]);
     expectArraysClose(res, []);
   });
+
+  it('throws error for string tensor', () => {
+    expect(() => tf.matMul([['a']], [['b']]))
+        .toThrowError(
+            /Argument \'a\' passed to \'matMul\' must be a numeric tensor/);
+  });
 });
 
 describeWithFlags('matmulBatch', ALL_ENVS, () => {
@@ -1244,5 +1250,11 @@ describeWithFlags('dot', ALL_ENVS, () => {
     const res = tf.dot(a, a);
     expectArraysClose(res, [14]);
     expect(res.shape).toEqual([]);
+  });
+
+  it('throws error for string tensors', () => {
+    expect(() => tf.dot('a', 'b'))
+        .toThrowError(
+            /Argument \'t1\' passed to \'dot\' must be a numeric tensor/);
   });
 });
