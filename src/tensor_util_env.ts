@@ -66,30 +66,36 @@ function deepAssertShapeConsistency(
   }
 }
 
-function assertNumericDtype(
-    dtype: DataType, argName: string, functionName: string) {
-  if (dtype === 'string') {
+function assertDtype(
+    expectedDtype: DataType|'numeric', actualDType: DataType, argName: string,
+    functionName: string) {
+  if (expectedDtype == null) {
+    return;
+  }
+  if (expectedDtype !== 'numeric' && expectedDtype !== actualDType ||
+      expectedDtype === 'numeric' && actualDType === 'string') {
     throw new Error(
         `Argument '${argName}' passed to '${functionName}' must ` +
-        `be a numeric tensor, but got tensor with dtype 'string'`);
+        `be ${expectedDtype} tensor, but got ${actualDType} tensor`);
   }
 }
 
 export function convertToTensor<T extends Tensor>(
-    x: T|TensorLike, argName: string, functionName: string, dtype?: DataType,
-    forceNumeric = true): T {
+    x: T|TensorLike, argName: string, functionName: string,
+    parseAsDtype: DataType|'numeric' = 'numeric'): T {
   if (x instanceof Tensor) {
-    if (forceNumeric) {
-      assertNumericDtype(x.dtype, argName, functionName);
-    }
+    assertDtype(parseAsDtype, x.dtype, argName, functionName);
     return x;
   }
-  if (dtype == null) {
-    dtype = inferDtype(x);
+  let inferredDtype = inferDtype(x);
+  // If the user expects a bool/int/float, use that info to update the
+  // inferredDtype when it is not a string.
+  if (inferredDtype !== 'string' &&
+      ['bool', 'int32', 'float32'].indexOf(parseAsDtype) >= 0) {
+    inferredDtype = parseAsDtype as DataType;
   }
-  if (forceNumeric) {
-    assertNumericDtype(dtype, argName, functionName);
-  }
+  assertDtype(parseAsDtype, inferredDtype, argName, functionName);
+
   if (!isTypedArray(x) && !Array.isArray(x) && typeof x !== 'number' &&
       typeof x !== 'boolean' && typeof x !== 'string') {
     throw new Error(
@@ -100,9 +106,10 @@ export function convertToTensor<T extends Tensor>(
   if (!isTypedArray(x) && !Array.isArray(x)) {
     x = [x] as number[];
   }
-  const values = dtype !== 'string' ? toTypedArray(x, dtype, ENV.get('DEBUG')) :
-                                      flatten(x) as string[];
-  return Tensor.make(inferredShape, {values}, dtype);
+  const values = inferredDtype !== 'string' ?
+      toTypedArray(x, inferredDtype as DataType, ENV.get('DEBUG')) :
+      flatten(x) as string[];
+  return Tensor.make(inferredShape, {values}, inferredDtype);
 }
 
 export function convertToTensorArray<T extends Tensor>(

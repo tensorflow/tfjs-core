@@ -40,7 +40,7 @@ import {zeros, zerosLike} from './tensor_ops';
  */
 /** @doc {heading: 'Tensors', subheading: 'Creation'} */
 function clone_<T extends Tensor>(x: T|TensorLike): T {
-  const $x = convertToTensor(x, 'x', 'clone', null, false /* forceNumeric */);
+  const $x = convertToTensor(x, 'x', 'clone', null);
   const der = (dy: T) => {
     return {$x: () => dy.toFloat()};
   };
@@ -353,7 +353,11 @@ function fromPixels_(
 async function toPixels(
     img: Tensor2D|Tensor3D|TensorLike,
     canvas?: HTMLCanvasElement): Promise<Uint8ClampedArray> {
-  const $img = convertToTensor(img, 'img', 'toPixels', 'int32');
+  let $img = convertToTensor(img, 'img', 'toPixels');
+  if (!(img instanceof Tensor)) {
+    // Assume int32 if user passed a native array.
+    $img = $img.toInt();
+  }
   if ($img.rank !== 2 && $img.rank !== 3) {
     throw new Error(
         `toPixels only supports rank 2 or 3 tensors, got rank ${$img.rank}.`);
@@ -461,7 +465,7 @@ async function toPixels(
 /** @doc {heading: 'Tensors', subheading: 'Transformations'} */
 function reshape_<R2 extends Rank>(
     x: Tensor|TensorLike, shape: ShapeMap[R2]): Tensor<R2> {
-  const $x = convertToTensor(x, 'x', 'reshape', null, false);
+  const $x = convertToTensor(x, 'x', 'reshape', null);
   shape = util.inferFromImplicitShape(shape, $x.size);
   util.assert(
       $x.size === util.sizeFromShape(shape),

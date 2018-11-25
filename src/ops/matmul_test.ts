@@ -682,7 +682,7 @@ describeWithFlags('matmul', ALL_ENVS, () => {
   it('throws error for string tensor', () => {
     expect(() => tf.matMul([['a']], [['b']]))
         .toThrowError(
-            /Argument \'a\' passed to \'matMul\' must be a numeric tensor/);
+            /Argument \'a\' passed to \'matMul\' must be numeric tensor/);
   });
 });
 
@@ -1255,6 +1255,6 @@ describeWithFlags('dot', ALL_ENVS, () => {
   it('throws error for string tensors', () => {
     expect(() => tf.dot('a', 'b'))
         .toThrowError(
-            /Argument \'t1\' passed to \'dot\' must be a numeric tensor/);
+            /Argument \'t1\' passed to \'dot\' must be numeric tensor/);
   });
 });

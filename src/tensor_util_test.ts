@@ -180,16 +180,16 @@ describeWithFlags('convertToTensor', ALL_ENVS, () => {
     expect(res).toBe(s);
   });
 
-  it('passing a tensor with casting returns the tensor itself', () => {
+  it('passing a tensor with wrong type errors', () => {
     const s = tf.scalar(3);
-    const res = convertToTensor(s, 'a', 'test', 'bool');
-    expect(res).toBe(s);
+    expect(() => convertToTensor(s, 'p', 'f', 'bool'))
+        .toThrowError(
+            /Argument 'p' passed to 'f' must be bool tensor, but got float32/);
   });
 
   it('fails when passed a string and force numeric is true', () => {
-    const forceNumeric = true;
-    const dtype: tf.DataType = null;  // Infer the dtype.
-    expect(() => convertToTensor('hello', 'p', 'test', dtype, forceNumeric))
+    const expectedDtype = 'numeric';
+    expect(() => convertToTensor('hello', 'p', 'test', expectedDtype))
         .toThrowError();
   });
 
@@ -199,20 +199,23 @@ describeWithFlags('convertToTensor', ALL_ENVS, () => {
   });
 
   it('primitive string, do not force numeric', () => {
-    const forceNumeric = false;
-    const dtype: tf.DataType = null;  // Infer the dtype.
-    const t = convertToTensor('hello', 'p', 'test', dtype, forceNumeric);
+    const t = convertToTensor('hello', 'p', 'test', null /* Allow any dtype */);
     expect(t.dtype).toBe('string');
     expect(t.shape).toEqual([]);
   });
 
   it('string[], do not force numeric', () => {
-    const forceNumeric = false;
-    const dtype: tf.DataType = null;  // Infer the dtype.
-    const t =
-        convertToTensor(['a', 'b', 'c'], 'p', 'test', dtype, forceNumeric);
+    const t = convertToTensor(
+        ['a', 'b', 'c'], 'p', 'test', null /* Allow any dtype */);
     expect(t.dtype).toBe('string');
     expect(t.shape).toEqual([3]);
+  });
+
+  it('string, explicitly parse as bool', () => {
+    expect(() => convertToTensor('a', 'argName', 'func', 'bool'))
+        .toThrowError(
+            'Argument \'argName\' passed to \'func\' must be bool tensor' +
+            ', but got string tensor');
   });
 
   it('fails to convert a dict to tensor', () => {
@@ -225,8 +228,8 @@ describeWithFlags('convertToTensor', ALL_ENVS, () => {
   it('fails to convert a string to tensor', () => {
     expect(() => convertToTensor('asdf', 'a', 'test'))
         .toThrowError(
-            'Argument \'a\' passed to \'test\' must be a numeric tensor, ' +
-            'but got tensor with dtype \'string\'');
+            'Argument \'a\' passed to \'test\' must be numeric tensor, ' +
+            'but got string tensor');
   });
 
   it('fails to convert a non-valid shape array to tensor', () => {
