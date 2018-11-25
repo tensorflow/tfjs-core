@@ -289,7 +289,6 @@ function oneHot_(
     indices: Tensor1D|TensorLike1D, depth: number, onValue = 1,
     offValue = 0): Tensor2D {
   const $indices = convertToTensor(indices, 'indices', 'oneHot', 'int32');
-  util.assert($indices.dtype === 'int32', 'Indices must be of dtype `int32`');
 
   if (depth < 2) {
     throw new Error(`Error in oneHot: depth must be >=2, but it is ${depth}`);
