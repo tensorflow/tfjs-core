@@ -1912,9 +1912,8 @@ export class MathBackendWebGL implements KernelBackend {
           {name: program.constructor.name, query: this.getQueryTime(query)});
     }
 
-    if (ENV.get('WEBGL_LAZILY_UNPACK') === false &&
-        this.texData.get(output.dataId).isPacked &&
-        program.constructor.name !== 'PackProgram') {
+    if (!ENV.get('WEBGL_LAZILY_UNPACK') &&
+        this.texData.get(output.dataId).isPacked && !program.isPackShader) {
       return this.unpackTensor(output as {} as Tensor) as {} as K;
     }
     return output;
