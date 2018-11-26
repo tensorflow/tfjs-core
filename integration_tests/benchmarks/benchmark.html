@@ -185,7 +185,7 @@
       //////////////////////////////////
       // Place model prediction code here.
       //////////////////////////////////
-      if(isAsync) {
+      if (isAsync) {
         return model.executeAsync(zeros);
       }
       return model.predict(zeros);
@@ -257,11 +257,11 @@
       await showMsg('Warming up');
       const start = performance.now();
       let res = predict(model);
-      if(res instanceof Promise) {
+      if (res instanceof Promise) {
         res = await res;
       }
 
-      if(res instanceof tf.Tensor) {
+      if (res instanceof tf.Tensor) {
         res.dataSync();
       }
 
@@ -278,7 +278,7 @@
       await showMsg('Loading the model');
       const start = performance.now();
       model = await load();
-      isAsync = model.executor && model.executor.isControlFlowModel;
+      isAsync = model.executor != null && model.executor.isControlFlowModel;
 
       const elapsed = performance.now() - start;
       await showMsg(null);
@@ -297,11 +297,11 @@
       for (let i = 0; i < state.numRuns; i++) {
         const start = performance.now();
         let res = predict(model);
-        if(res instanceof Promise) {
+        if (res instanceof Promise) {
           res = await res;
         }
 
-        if(res instanceof tf.Tensor) {
+        if (res instanceof tf.Tensor) {
           res.dataSync();
         }
 
@@ -327,11 +327,11 @@
       const start = performance.now();
       let res;
       const data = await tf.profile(() => res = predict(model));
-      if(res instanceof Promise) {
+      if (res instanceof Promise) {
         res = await res;
       }
 
-      if(res instanceof tf.Tensor) {
+      if (res instanceof tf.Tensor) {
         res.dataSync();
       }
       const elapsed = performance.now() - start;
@@ -371,7 +371,7 @@
       }
       let res = predict(model);
       if(res instanceof Promise) {
-        res = await predict(model);
+        res = await res;
       }
 
       if(res instanceof tf.Tensor) {
