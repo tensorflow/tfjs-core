@@ -331,9 +331,12 @@ const SHADER_PREFIX = `
   }
 
   bool hasNaN(vec4 values) {
-    vec4 v1 = values * values;
-    vec4 v2 = values * values;
-    return any(notEqual(v1, v2));
+    return any(bvec4(
+      (values.x < 1.0 || 0.0 < values.x || values.x == 0.0) ? false : true,
+      (values.y < 1.0 || 0.0 < values.y || values.y == 0.0) ? false : true,
+      (values.z < 1.0 || 0.0 < values.z || values.z == 0.0) ? false : true,
+      (values.w < 1.0 || 0.0 < values.w || values.w == 0.0) ? false : true
+    ));
   }
 
   float getNaN(vec4 values) {

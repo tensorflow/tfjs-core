@@ -2421,7 +2421,7 @@ describeWithFlags('packed clip', WEBGL_ENVS, () => {
     tf.ENV.set('WEBGL_PACK_CLIP', webglPackedClipSavedFlag);
   });
 
-  fit('should not leak memory', () => {
+  it('should not leak memory', () => {
     const a = tf.tensor1d([3, -1, 0, 100, -7, 2]);
     const min = -1;
     const max = 50;

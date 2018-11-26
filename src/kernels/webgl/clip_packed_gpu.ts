@@ -36,6 +36,20 @@ export class ClipPackedProgram implements GPGPUProgram {
         ${dtype} rc = getOutputCoords();
         vec4 value = getA(${sourceCoords});
 
+        if(hasNaN(value)) {
+          setOutput(vec4(
+            isNaN(value.x) ? value.x : clamp(value.x, float(${min}), float(${
+        max})),
+            isNaN(value.y) ? value.y : clamp(value.y, float(${min}), float(${
+        max})),
+            isNaN(value.z) ? value.z : clamp(value.z, float(${min}), float(${
+        max})),
+            isNaN(value.w) ? value.w : clamp(value.w, float(${min}), float(${
+        max}))
+          ));
+          return;
+        }
+
         setOutput(clamp(value, vec4(${min}), vec4(${max})));
       }
     `;
