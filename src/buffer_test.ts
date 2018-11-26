@@ -22,16 +22,16 @@ import {ALL_ENVS, expectArraysClose, expectArraysEqual} from './test_util';
 describeWithFlags('tf.buffer', ALL_ENVS, () => {
   it('float32', () => {
     const buff = tf.buffer([1, 2, 3], 'float32');
-    buff.set(1, 0, 0, 0);
-    buff.set(2, 0, 1, 0);
-    expect(buff.get(0, 0, 0)).toEqual(1);
-    expect(buff.get(0, 0, 1)).toEqual(0);
-    expect(buff.get(0, 0, 2)).toEqual(0);
-    expect(buff.get(0, 1, 0)).toEqual(2);
-    expect(buff.get(0, 1, 1)).toEqual(0);
-    expect(buff.get(0, 1, 2)).toEqual(0);
-    expectArraysClose(buff.toTensor(), [1, 0, 0, 2, 0, 0]);
-    expectArraysClose(buff.values, new Float32Array([1, 0, 0, 2, 0, 0]));
+    buff.set(1.3, 0, 0, 0);
+    buff.set(2.9, 0, 1, 0);
+    expect(buff.get(0, 0, 0)).toBeCloseTo(1.3);
+    expect(buff.get(0, 0, 1)).toBeCloseTo(0);
+    expect(buff.get(0, 0, 2)).toBeCloseTo(0);
+    expect(buff.get(0, 1, 0)).toBeCloseTo(2.9);
+    expect(buff.get(0, 1, 1)).toBeCloseTo(0);
+    expect(buff.get(0, 1, 2)).toBeCloseTo(0);
+    expectArraysClose(buff.toTensor(), [1.3, 0, 0, 2.9, 0, 0]);
+    expectArraysClose(buff.values, new Float32Array([1.3, 0, 0, 2.9, 0, 0]));
   });
 
   it('int32', () => {

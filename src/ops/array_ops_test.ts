@@ -1902,13 +1902,25 @@ describeWithFlags('clone', ALL_ENVS, () => {
     expectArraysClose(da, [4, 5, 6]);
   });
 
-  it('gradient: 1D string throws error with non-numeric dy', () => {
+  it('gradient: 1D string throws error with string dy', () => {
     const a = tf.tensor1d(['a', 'b', 'c'], 'string');
     const dy = tf.tensor1d(['d', 'e', 'f']);
     expect(() => tf.grad(x => tf.clone(x))(a, dy)).toThrowError();
   });
 
-  it('gradient: 1D string works with numeric dy', () => {
+  it('gradient: 1D string throws error with bool dy', () => {
+    const a = tf.tensor1d(['a', 'b', 'c'], 'string');
+    const dy = tf.tensor1d([false, true, false], 'bool');
+    expect(() => tf.grad(x => tf.clone(x))(a, dy)).toThrowError();
+  });
+
+  it('gradient: 1D string throws error with int32 dy', () => {
+    const a = tf.tensor1d(['a', 'b', 'c'], 'string');
+    const dy = tf.tensor1d([4, 5, 6], 'int32');
+    expect(() => tf.grad(x => tf.clone(x))(a, dy)).toThrowError();
+  });
+
+  it('gradient: 1D string works with float32 dy', () => {
     const a = tf.tensor1d(['a', 'b', 'c'], 'string');
     const dy = tf.tensor1d([4, 5, 6]);
     const da = tf.grad(x => tf.clone(x))(a, dy);
