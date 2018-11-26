@@ -18,7 +18,7 @@
 import {GPGPUProgram} from './gpgpu_math';
 import {getCoordsDataType} from './shader_compiler';
 
-export class ClipProgram implements GPGPUProgram {
+export class ClipPackedProgram implements GPGPUProgram {
   variableNames = ['A'];
   usesPackedTextures = true;
   userCode: string;
@@ -45,7 +45,7 @@ export class ClipProgram implements GPGPUProgram {
 const dims = ['rc.x', 'rc.y', 'rc.z', 'rc.w'];
 
 function getSourceCoords(rank: number): string {
-  if(rank === 1) {
+  if (rank === 1) {
     return 'rc';
   }
 
