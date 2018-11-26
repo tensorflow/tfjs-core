@@ -1331,7 +1331,12 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   clip<T extends Tensor>(x: T, min: number, max: number): T {
-    const program = new ClipProgram(x.shape, min, max);
+    let program;
+    if (ENV.get('WEBGL_PACK_CLIP')) {
+      program = new ClipPackedProgram(x.shape, min, max);
+    } else {
+      program = new ClipProgram(x.shape, min, max);
+    }
     return this.compileAndRun(program, [x]) as T;
   }
 
