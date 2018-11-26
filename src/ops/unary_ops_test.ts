@@ -15,11 +15,11 @@
  * =============================================================================
  */
 
+import {ENV} from '../environment';
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
-import {ALL_ENVS, expectArraysClose, expectNumbersClose} from '../test_util';
+import {ALL_ENVS, expectArraysClose, expectNumbersClose, WEBGL_ENVS} from '../test_util';
 import * as util from '../util';
-import {ENV} from '../environment';
 
 import * as selu_util from './selu_util';
 
@@ -170,30 +170,29 @@ describeWithFlags('abs', ALL_ENVS, () => {
   });
 
   it('is underflow-safe for complex64', () => {
-
     const floatBits = ENV.backend.floatPrecision();
     let small;
-    switch(floatBits) {
-      case 32: small = 1e-30; break;
-      case 16: small = 1e-4;  break;
-      default: throw new Error(
-        `Test not implemented for ENV.engine.floatPrecision()=${floatBits}.`
-      );
+    switch (floatBits) {
+      case 32:
+        small = 1e-30;
+        break;
+      case 16:
+        small = 1e-4;
+        break;
+      default:
+        throw new Error(`Test not implemented for ENV.engine.floatPrecision()=${
+            floatBits}.`);
     }
 
-    const a = tf.complex(
-       [small,     0, small, 0],
-       [small, small,     0, 0]
-    );
+    const a = tf.complex([small, 0, small, 0], [small, small, 0, 0]);
     const result = tf.abs(a);
     expectArraysClose(
-      result,
-      [Math.hypot(small, small),
-       Math.hypot(    0, small),
-       Math.hypot(small,     0),
-       Math.hypot(    0,     0)], 
-      /*tolerance=*/small/100
-    );
+        result,
+        [
+          Math.hypot(small, small), Math.hypot(0, small), Math.hypot(small, 0),
+          Math.hypot(0, 0)
+        ],
+        /*tolerance=*/small / 100);
     expect(result.shape).toEqual([4]);
   });
 
@@ -2408,6 +2407,55 @@ describeWithFlags('selu', ALL_ENVS, () => {
     const result = tf.selu([1, -1, 0]);
     expect(result.shape).toEqual([3]);
     expectArraysClose(result, [1.0507, -1.1113, 0]);
+  });
+});
+
+describeWithFlags('packed clip', WEBGL_ENVS, () => {
+  const webglPackedClipSavedFlag = tf.ENV.get('WEBGL_PACK_CLIP');
+
+  beforeAll(() => {
+    tf.ENV.set('WEBGL_PACK_CLIP', true);
+  });
+
+  afterAll(() => {
+    tf.ENV.set('WEBGL_PACK_CLIP', webglPackedClipSavedFlag);
+  });
+
+  fit('should not leak memory', () => {
+    const a = tf.tensor1d([3, -1, 0, 100, -7, 2]);
+    const min = -1;
+    const max = 50;
+
+    const startNumBytes = tf.memory().numBytes;
+    const startNumTensors = tf.memory().numTensors;
+    tf.clipByValue(a, min, max);
+    const endNumBytes = tf.memory().numBytes;
+    const endNumTensors = tf.memory().numTensors;
+
+    expect(endNumBytes - startNumBytes).toEqual(24);
+    expect(endNumTensors - startNumTensors).toEqual(1);
+  });
+
+  it('basic', () => {
+    const a = tf.tensor1d([3, -1, 0, 100, -7, 2]);
+    const min = -1;
+    const max = 50;
+
+    const result = tf.clipByValue(a, min, max);
+
+    expectArraysClose(result, [3, -1, 0, 50, -1, 2]);
+  });
+
+  it('derivative: 1D tensor with max or min value', () => {
+    const min = -1;
+    const max = 2;
+    const x = tf.tensor1d([-1, 1, 2, 3]);
+    const dy = tf.tensor1d([1, 10, 100, 1000]);
+    const gradients = tf.grad(x => x.clipByValue(min, max))(x, dy);
+
+    expect(gradients.shape).toEqual(x.shape);
+    expect(gradients.dtype).toEqual('float32');
+    expectArraysClose(gradients, [1, 10, 100, 0]);
   });
 });
 
