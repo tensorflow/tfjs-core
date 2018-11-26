@@ -311,6 +311,10 @@ export class Environment {
       return true;
     } else if (feature === 'WEBGL_PACK_BATCHNORMALIZATION') {
       return false;
+    } else if (feature === 'WEBGL_PACK_CLIP') {
+      return false;
+    } else if (feature === 'WEBGL_PACK_DEPTHWISECONV') {
+      return false;
     } else if (feature === 'WEBGL_LAZILY_UNPACK') {
       return false;
     } else if (feature === 'WEBGL_CONV_IM2COL') {
