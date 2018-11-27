@@ -1039,6 +1039,18 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     expect(b.shape).toEqual([3, 2]);
   });
 
+  it('.dataSync() with casting, string tensor', () => {
+    const a = tf.tensor(['a', 'b']);
+    const data: string[] = a.dataSync<'string'>();
+    expect(data).toEqual(['a', 'b']);
+  });
+
+  it('.data() with casting, string tensor', async () => {
+    const a = tf.tensor(['a', 'b']);
+    const data: string[] = await a.data<'string'>();
+    expect(data).toEqual(['a', 'b']);
+  });
+
   it('reshape is functional', () => {
     const a = tf.scalar(2.4);
     const b = a.reshape([]);
