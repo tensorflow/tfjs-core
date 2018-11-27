@@ -569,11 +569,25 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     expectArraysClose(a, [1, 5, 2]);
   });
 
-  it('default dtype from string', () => {
+  it('default dtype from ascii string', () => {
     const a = tf.tensor('hello');
     expect(a.dtype).toBe('string');
     expect(a.shape).toEqual([]);
     expectArraysEqual(a, ['hello']);
+  });
+
+  it('default dtype from utf-8 string', () => {
+    const a = tf.tensor('даниел');
+    expect(a.dtype).toBe('string');
+    expect(a.shape).toEqual([]);
+    expectArraysEqual(a, ['даниел']);
+  });
+
+  it('default dtype from unicode escaped string', () => {
+    const a = tf.tensor('\u0434\u0430\u043d\u0438\u0435\u043b');
+    expect(a.dtype).toBe('string');
+    expect(a.shape).toEqual([]);
+    expectArraysEqual(a, ['даниел']);
   });
 
   it('default dtype from string[]', () => {

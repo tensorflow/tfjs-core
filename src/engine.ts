@@ -102,6 +102,7 @@ export class Engine implements TensorManager, DataMover {
 
   private tensorInfo = new WeakMap<DataId, {
     backend: KernelBackend,
+    bytes: number,
     dtype: DataType,
     shape: number[],
     refCount: number
@@ -253,15 +254,13 @@ export class Engine implements TensorManager, DataMover {
     if (refCount === 0) {
       this.numDataBuffers++;
 
-      // Bytes for complex numbers are counted by their
-      // components. Bytes for string tensors are counted when someone
-      // writes values.
-      if (a.dtype !== 'complex64' && a.dtype !== 'string') {
-        this.numBytes += a.size * util.bytesPerElement(a.dtype);
-      }
-      this.tensorInfo.set(
-          a.dataId,
-          {backend: this.backend, dtype: a.dtype, shape: a.shape, refCount: 0});
+      this.tensorInfo.set(a.dataId, {
+        backend: this.backend,
+        dtype: a.dtype,
+        shape: a.shape,
+        bytes: 0,
+        refCount: 0
+      });
       this.backend.register(a.dataId, a.shape, a.dtype);
     }
     this.tensorInfo.get(a.dataId).refCount++;
@@ -285,18 +284,15 @@ export class Engine implements TensorManager, DataMover {
       this.keepTensors.delete(a.id);
     }
     this.numTensors--;
-    const refCount = this.tensorInfo.get(a.dataId).refCount;
+    const info = this.tensorInfo.get(a.dataId);
+    const refCount = info.refCount;
     if (refCount <= 1) {
-      if (a.dtype === 'string') {
-        this.numBytes -= bytesFromStringArray(a.dataSync<'string'>());
-      } else if (a.dtype !== 'complex64') {
-        // Don't count bytes for complex numbers as they are counted by their
-        // components.
-        this.numBytes -=
-            util.sizeFromShape(a.shape) * util.bytesPerElement(a.dtype);
+      // Don't count bytes for complex numbers as they are counted by their
+      // components.
+      if (a.dtype !== 'complex64') {
+        this.numBytes -= info.bytes;
       }
       this.numDataBuffers--;
-      const info = this.tensorInfo.get(a.dataId);
       info.backend.disposeData(a.dataId);
       this.tensorInfo.delete(a.dataId);
     } else {
@@ -459,6 +455,9 @@ export class Engine implements TensorManager, DataMover {
       f: () => T, xs: Tensor[], dy?: T,
       allowNoGradients = false): {value: T, grads: Tensor[]} {
     util.assert(xs.length > 0, 'gradients() received an empty list of xs.');
+    if (dy != null && dy.dtype !== 'float32') {
+      throw new Error(`dy must have 'float32' dtype, but has '${dy.dtype}'`);
+    }
 
     return this.tidy('gradients', () => {
       const y = f();
@@ -541,12 +540,15 @@ export class Engine implements TensorManager, DataMover {
   // Forwarding to backend.
   write(dataId: DataId, values: DataValues): void {
     const info = this.tensorInfo.get(dataId);
-    if (info.dtype === 'string') {
-      const oldBytes =
-          bytesFromStringArray(info.backend.readSync(dataId) as string[]);
-      const newBytes = bytesFromStringArray(values as string[]);
-      this.numBytes += newBytes - oldBytes;
+    // Bytes for complex numbers are counted by their components.
+    if (info.dtype !== 'complex64') {
+      const newBytes = info.dtype === 'string' ?
+          bytesFromStringArray(values as string[]) :
+          util.sizeFromShape(info.shape) * util.bytesPerElement(info.dtype);
+      this.numBytes += newBytes - info.bytes;
+      info.bytes = newBytes;
     }
+
     if (this.backend !== info.backend) {
       // Delete the tensor from the old backend and move it to the new backend.
       info.backend.disposeData(dataId);
