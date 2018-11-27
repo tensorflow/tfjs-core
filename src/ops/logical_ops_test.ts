@@ -720,8 +720,7 @@ describeWithFlags('whereAsync', ALL_ENVS, () => {
       throw new Error('The line above should have thrown an error');
     } catch (ex) {
       expect(ex.message)
-          .toMatch(
-              /Argument 'condition' passed to 'whereAsync' must be bool/);
+          .toMatch(/Argument 'condition' passed to 'whereAsync' must be bool/);
     }
   });
 
