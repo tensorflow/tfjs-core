@@ -352,7 +352,7 @@ export function getTextureShapeFromLogicalShape(
 
   const size = util.sizeFromShape(logShape);
   if (logShape.length <= 1 && size <= maxTexSize) {
-    return [size, 1];
+    return [1, size];
   } else if (
       logShape.length === 2 && logShape[0] <= maxTexSize &&
       logShape[1] <= maxTexSize) {
@@ -377,4 +377,55 @@ export function getTextureShapeFromLogicalShape(
   } else {
     return util.sizeToSquarishShape(size);
   }
+}
+
+function isEven(n: number): boolean {
+  return n % 2 === 0;
+}
+
+/**
+ * This determines whether reshaping a packed texture requires rearranging
+ * the data within the texture, assuming 2x2 packing.
+ */
+export function isReshapeFree(shape1: number[], shape2: number[]): boolean {
+  shape1 = shape1.slice(-2);
+  shape2 = shape2.slice(-2);
+
+  if (util.arraysEqual(shape1, shape2)) {
+    return true;
+  }
+
+  if (!shape1.length || !shape2.length) {  // One of the shapes is a scalar.
+    return true;
+  }
+
+  if (shape1[0] === 0 || shape1[1] === 0 || shape2[0] === 0 ||
+      shape2[1] === 0) {
+    return true;
+  }
+
+  if (shape1.length !== shape2.length) {  // One of the shapes is a vector.
+    const shape1Cols = shape1.slice(-1)[0];
+    const shape2Cols = shape2.slice(-1)[0];
+    if (shape1Cols === shape2Cols) {
+      return true;
+    }
+
+    if (isEven(shape1Cols) && isEven(shape2Cols) &&
+        (shape1[0] === 1 || shape2[0] === 1)) {
+      return true;
+    }
+  } else {
+    if (isEven(shape1[0]) && isEven(shape2[0])) {
+      if (isEven(shape1[1]) && isEven(shape2[1])) {
+        return true;
+      }
+
+      if (shape1[1] === shape2[1]) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }

@@ -984,6 +984,33 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     expect(a.cast('int32').dtype).toEqual('int32');
   });
 
+  it('cast float32 -> int32. async download', async () => {
+    const a = tf.tensor1d([1, 2]);
+    const aInt = a.cast('int32');
+    expect(aInt.dtype).toEqual('int32');
+
+    const asyncData = await aInt.data();
+    expect(asyncData instanceof Int32Array).toEqual(true);
+  });
+
+  it('cast float32 -> int32. queued async download', async () => {
+    const a = tf.tensor1d([1, 2]);
+    const aInt = a.cast('int32');
+    expect(aInt.dtype).toEqual('int32');
+
+    const [first, second] = await Promise.all([aInt.data(), aInt.data()]);
+    expect(first instanceof Int32Array).toEqual(true);
+    expect(second instanceof Int32Array).toEqual(true);
+  });
+
+  it('cast float32 -> int32. sync download', () => {
+    const a = tf.tensor1d([1, 2]).cast('int32');
+    expect(a.dtype).toEqual('int32');
+
+    const data = a.dataSync();
+    expect(data instanceof Int32Array).toEqual(true);
+  });
+
   it('cast float32 -> float32', () => {
     const a = tf.tensor1d([1.0, 2.0]);
     expect(a.cast('float32').dtype).toEqual('float32');
