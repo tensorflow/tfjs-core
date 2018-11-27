@@ -16,7 +16,6 @@
  */
 
 import {GPGPUProgram} from './gpgpu_math';
-import {getCoordsDataType} from './shader_compiler';
 
 export class ClipPackedProgram implements GPGPUProgram {
   variableNames = ['A'];
@@ -26,15 +25,9 @@ export class ClipPackedProgram implements GPGPUProgram {
 
   constructor(aShape: number[], min: number, max: number) {
     this.outputShape = aShape;
-    const rank = aShape.length;
-
-    const dtype = getCoordsDataType(rank);
-    const sourceCoords = getSourceCoords(rank);
-
     this.userCode = `
       void main() {
-        ${dtype} rc = getOutputCoords();
-        vec4 value = getA(${sourceCoords});
+        vec4 value = getAAtOutCoords();
 
         if(hasNaN(value)) {
           setOutput(vec4(
@@ -54,21 +47,4 @@ export class ClipPackedProgram implements GPGPUProgram {
       }
     `;
   }
-}
-
-const dims = ['rc.x', 'rc.y', 'rc.z', 'rc.w'];
-
-function getSourceCoords(rank: number): string {
-  if (rank === 1) {
-    return 'rc';
-  }
-
-  let coords = '';
-  for (let i = 0; i < rank; i++) {
-    coords += dims[i];
-    if (i < rank - 1) {
-      coords += ',';
-    }
-  }
-  return coords;
 }

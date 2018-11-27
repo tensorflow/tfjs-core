@@ -128,7 +128,11 @@ function getInputSamplingSnippet(
   if (broadcast ||
       util.arraysEqual(
           inInfo.shapeInfo.logicalShape, outShapeInfo.logicalShape)) {
-    res += getSamplerAtOutputCoords(inInfo, outShapeInfo, broadcast);
+    if (inInfo.shapeInfo.isPacked) {
+      res += getPackedSamplerAtOutputCoords(inInfo, outShapeInfo, broadcast);
+    } else {
+      res += getSamplerAtOutputCoords(inInfo, outShapeInfo, broadcast);
+    }
   }
   return res;
 }
@@ -327,7 +331,7 @@ const SHADER_PREFIX = `
   };
 
   bool isNaN(float val) {
-    return (val < 1.0 || 0.0 < val || val == 0.0) ? false : true;
+    return false;
   }
 
   bool hasNaN(vec4 values) {
@@ -1247,6 +1251,49 @@ function getBroadcastOutputCoordsSampler(
       ${type} coords = getOutputCoords();
       ${coordsSnippet}
       return get${texFuncSnippet}(${unpackedCoordsSnippet});
+    }
+  `;
+}
+
+function getPackedSamplerAtOutputCoords(
+    inputInfo: InputInfo, outShapeInfo: ShapeInfo,
+    supportsBroadcasting: boolean) {
+  const texName = inputInfo.name;
+  const texFuncSnippet = texName.charAt(0).toUpperCase() + texName.slice(1);
+  const texShape = inputInfo.shapeInfo.texShape;
+  const funcName = 'get' + texFuncSnippet + 'AtOutCoords';
+  const outTexShape = outShapeInfo.texShape;
+
+  const packedTexShape =
+      [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
+
+  const texNumR = packedTexShape[0];
+  const texNumC = packedTexShape[1];
+
+  let broadcastSnippet = '';
+
+  const inTexShape = inputInfo.shapeInfo.texShape;
+  if (util.arraysEqual(inTexShape, outTexShape)) {
+    return `
+      vec4 ${funcName}() {
+        return texture2D(${texName}, resultUV);
+      }
+    `;
+  }
+
+  return `
+    vec4 ${funcName}() {
+      ivec2 resTexRC = ivec2(resultUV.yx *
+                             vec2(${packedTexShape[0]}, ${packedTexShape[1]}));
+      int index = resTexRC.x * ${packedTexShape[1]} + resTexRC.y;
+
+      ${broadcastSnippet}
+
+      int texR = index / ${texNumC};
+      int texC = index - texR * ${texNumC};
+      vec2 uv = (vec2(texC, texR) + halfCR) / vec2(${texNumC}, ${texNumR});
+
+      return texture2D(${texName}, uv);
     }
   `;
 }
