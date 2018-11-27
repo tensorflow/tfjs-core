@@ -642,7 +642,7 @@ describeWithFlags('tensor', ALL_ENVS, () => {
 
   it('float32 dtype from boolean[]', () => {
     const a = tf.tensor3d(
-      [[[false], [false]], [[true], [false]]], [2, 2, 1], 'float32');
+        [[[false], [false]], [[true], [false]]], [2, 2, 1], 'float32');
     expect(a.dtype).toBe('float32');
     expectArraysClose(a, [0, 0, 1, 0]);
   });
