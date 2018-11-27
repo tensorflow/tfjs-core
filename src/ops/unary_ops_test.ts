@@ -2446,6 +2446,16 @@ describeWithFlags('packed clip', WEBGL_ENVS, () => {
     expectArraysClose(result, [3, -1, 0, 50, -1, 2]);
   });
 
+  fit('should work for scalars', () => {
+    const a = tf.scalar(-4);
+    const min = -1;
+    const max = 50;
+
+    const result = tf.clipByValue(a, min, max);
+
+    expectArraysClose(result, [min]);
+  });
+
   it('derivative: 1D tensor with max or min value', () => {
     const min = -1;
     const max = 2;
