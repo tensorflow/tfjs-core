@@ -309,16 +309,16 @@ export class Environment {
       return isChrome();
     } else if (feature === 'WEBGL_CPU_FORWARD') {
       return true;
+    } else if (feature === 'WEBGL_PACK') {
+      return false;
     } else if (feature === 'WEBGL_PACK_BATCHNORMALIZATION') {
-      return false;
+      return this.get('WEBGL_PACK');
     } else if (feature === 'WEBGL_PACK_CLIP') {
-      return false;
-    } else if (feature === 'WEBGL_PACK_DEPTHWISECONV') {
-      return false;
+      return this.get('WEBGL_PACK');
     } else if (feature === 'WEBGL_LAZILY_UNPACK') {
-      return false;
+      return this.get('WEBGL_PACK');
     } else if (feature === 'WEBGL_CONV_IM2COL') {
-      return false;
+      return this.get('WEBGL_PACK');
     } else if (feature === 'WEBGL_PAGING_ENABLED') {
       return this.get('IS_BROWSER') && !this.get('PROD');
     } else if (feature === 'WEBGL_MAX_TEXTURE_SIZE') {
