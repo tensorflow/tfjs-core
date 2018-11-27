@@ -2446,7 +2446,7 @@ describeWithFlags('packed clip', WEBGL_ENVS, () => {
     expectArraysClose(result, [3, -1, 0, 50, -1, 2]);
   });
 
-  fit('should work for scalars', () => {
+  it('should work for scalars', () => {
     const a = tf.scalar(-4);
     const min = -1;
     const max = 50;
