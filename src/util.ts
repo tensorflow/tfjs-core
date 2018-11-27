@@ -393,7 +393,12 @@ export function bytesPerElement(dtype: DataType): number {
   }
 }
 
-/** Returns the number of bytes allocated in the string array. */
+/**
+ * Returns the approximate number of bytes allocated in the string array - 2
+ * bytes per character. Computing the exact bytes for a native string in JS is
+ * not possible since it depends on the encoding of the html page that serves
+ * the website.
+ */
 export function bytesFromStringArray(arr: string[]): number {
   if (arr == null) {
     return 0;

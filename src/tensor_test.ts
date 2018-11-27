@@ -1396,7 +1396,7 @@ describe('tensor.toString', () => {
         '  rank: 1\n' +
         '  shape: [3]\n' +
         '  values:\n' +
-        '    [a, bb, ccc]');
+        '    [\'a\', \'bb\', \'ccc\']');
   });
 
   it('2d tensor verbose', () => {
@@ -1427,9 +1427,9 @@ describe('tensor.toString', () => {
         '  rank: 2\n' +
         '  shape: [3,3]\n' +
         '  values:\n' +
-        '    [[a, bb, ccc],\n' +
-        '     [d, e , f  ],\n' +
-        '     [g, h , i  ]]');
+        '    [[\'a\', \'bb\', \'ccc\'],\n' +
+        '     [\'d\', \'e\' , \'f\'  ],\n' +
+        '     [\'g\', \'h\' , \'i\'  ]]');
   });
 
   it('3d tensor verbose', () => {
@@ -1466,12 +1466,12 @@ describe('tensor.toString', () => {
         '  rank: 3\n' +
         '  shape: [3,2,2]\n' +
         '  values:\n' +
-        '    [[[a  , bb  ],\n' +
-        '      [ccc, dddd]],\n\n' +
-        '     [[e  , ff  ],\n' +
-        '      [ggg, hhhh]],\n\n' +
-        '     [[i  , jj  ],\n' +
-        '      [kkk, llll]]]');
+        '    [[[\'a\'  , \'bb\'  ],\n' +
+        '      [\'ccc\', \'dddd\']],\n\n' +
+        '     [[\'e\'  , \'ff\'  ],\n' +
+        '      [\'ggg\', \'hhhh\']],\n\n' +
+        '     [[\'i\'  , \'jj\'  ],\n' +
+        '      [\'kkk\', \'llll\']]]');
   });
 
   it('1d long tensor verbose', () => {
@@ -1495,7 +1495,7 @@ describe('tensor.toString', () => {
         '  rank: 1\n' +
         '  shape: [100]\n' +
         '  values:\n' +
-        '    [hi, hi, hi, ..., hi, hi, hi]');
+        '    [\'hi\', \'hi\', \'hi\', ..., \'hi\', \'hi\', \'hi\']');
   });
 
   it('2d long tensor verbose', () => {
@@ -1525,13 +1525,13 @@ describe('tensor.toString', () => {
         '  rank: 2\n' +
         '  shape: [100,100]\n' +
         '  values:\n' +
-        '    [[a, a, a, ..., a, a, a],\n' +
-        '     [a, a, a, ..., a, a, a],\n' +
-        '     [a, a, a, ..., a, a, a],\n' +
+        '    [[\'a\', \'a\', \'a\', ..., \'a\', \'a\', \'a\'],\n' +
+        '     [\'a\', \'a\', \'a\', ..., \'a\', \'a\', \'a\'],\n' +
+        '     [\'a\', \'a\', \'a\', ..., \'a\', \'a\', \'a\'],\n' +
         '     ...,\n' +
-        '     [a, a, a, ..., a, a, a],\n' +
-        '     [a, a, a, ..., a, a, a],\n' +
-        '     [a, a, a, ..., a, a, a]]');
+        '     [\'a\', \'a\', \'a\', ..., \'a\', \'a\', \'a\'],\n' +
+        '     [\'a\', \'a\', \'a\', ..., \'a\', \'a\', \'a\'],\n' +
+        '     [\'a\', \'a\', \'a\', ..., \'a\', \'a\', \'a\']]');
   });
 
   it('2d with padding to align columns verbose', () => {
@@ -1564,9 +1564,9 @@ describe('tensor.toString', () => {
         '  rank: 2\n' +
         '  shape: [3,3]\n' +
         '  values:\n' +
-        '    [[abcdef, a     , abcdef],\n' +
-        '     [abcdef, abcdef, abc   ],\n' +
-        '     [abcd  , abcdef, abcdef]]');
+        '    [[\'abcdef\', \'a\'     , \'abcdef\'],\n' +
+        '     [\'abcdef\', \'abcdef\', \'abc\'   ],\n' +
+        '     [\'abcd\'  , \'abcdef\', \'abcdef\']]');
   });
 
   it('scalar', () => {

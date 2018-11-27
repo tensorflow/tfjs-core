@@ -42,7 +42,7 @@ export type CustomGradientFunc<T extends Tensor> = (...args: Tensor[]) => {
 
 export type MemoryInfo = {
   numTensors: number; numDataBuffers: number; numBytes: number;
-  unreliable?: boolean;
+  unreliable?: boolean; reasons: string[];
 };
 
 type KernelProfile = {
@@ -85,6 +85,7 @@ export class Engine implements TensorManager, DataMover {
   private nextTapeNodeId = 0;
   private numBytes = 0;
   private numTensors = 0;
+  private numStringTensors = 0;
   private numDataBuffers = 0;
 
   private profiling = false;
@@ -251,6 +252,9 @@ export class Engine implements TensorManager, DataMover {
         this.tensorInfo.get(a.dataId).refCount :
         0;
     this.numTensors++;
+    if (a.dtype === 'string') {
+      this.numStringTensors++;
+    }
     if (refCount === 0) {
       this.numDataBuffers++;
 
@@ -284,6 +288,9 @@ export class Engine implements TensorManager, DataMover {
       this.keepTensors.delete(a.id);
     }
     this.numTensors--;
+    if (a.dtype === 'string') {
+      this.numStringTensors--;
+    }
     const info = this.tensorInfo.get(a.dataId);
     const refCount = info.refCount;
     if (refCount <= 1) {
@@ -316,6 +323,15 @@ export class Engine implements TensorManager, DataMover {
     info.numTensors = this.numTensors;
     info.numDataBuffers = this.numDataBuffers;
     info.numBytes = this.numBytes;
+    if (this.numStringTensors > 0) {
+      info.unreliable = true;
+      if (info.reasons == null) {
+        info.reasons = [];
+      }
+      info.reasons.push(
+          'Memory usage by string tensors is approximate ' +
+          '(2 bytes per character)');
+    }
     return info;
   }
 

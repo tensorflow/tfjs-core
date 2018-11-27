@@ -107,7 +107,7 @@ export class KernelBackend implements TensorStorage, BackendTimer {
   register(dataId: object, shape: number[], dtype: DataType): void {
     throw new Error('Not yet implemented.');
   }
-  memory(): {unreliable: boolean;} {
+  memory(): {unreliable: boolean; reasons?: string[]} {
     throw new Error('Not yet implemented.');
   }
   /** Returns the highest precision for floats in bits (e.g. 16 or 32) */

@@ -71,7 +71,7 @@ function valToString(val: number|string|[number, number], pad: number) {
     valStr = `${parseFloat(val[0].toFixed(FORMAT_NUM_SIG_DIGITS))} + ` +
         `${parseFloat(val[1].toFixed(FORMAT_NUM_SIG_DIGITS))}j`;
   } else if (isString(val)) {
-    valStr = val;
+    valStr = `'${val}'`;
   } else {
     valStr = parseFloat(val.toFixed(FORMAT_NUM_SIG_DIGITS)).toString();
   }

@@ -190,7 +190,10 @@ export class MathBackendCPU implements KernelBackend {
   memory() {
     return {
       // Unreliable due to automatic gc. The numbers above are cumulative.
-      unreliable: true
+      unreliable: true,
+      reasons:
+          ['The reported memory is an upper bound. Due to automatic garbage ' +
+           'collection, the true allocated memory may be less.']
     };
   }
 
