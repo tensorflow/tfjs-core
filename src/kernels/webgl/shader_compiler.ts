@@ -1271,7 +1271,27 @@ function getPackedSamplerAtOutputCoords(
   const texNumR = packedTexShape[0];
   const texNumC = packedTexShape[1];
 
+  const broadcastDims = broadcast_util.getBroadcastDims(
+      inputInfo.shapeInfo.logicalShape, outShapeInfo.logicalShape);
+  const inRank = inputInfo.shapeInfo.logicalShape.length;
+  const outRank = outShapeInfo.logicalShape.length;
+  const doBroadcast =
+      supportsBroadcasting && ((outRank > inRank) || broadcastDims.length > 0);
+  const broadcastOverOuter =
+      broadcast_util.broadcastDimsAreOuter(broadcastDims);
+
+  if (doBroadcast && !broadcastOverOuter) {
+    throw Error('not implemented yet');
+  }
+
+  const inSize = util.sizeFromShape(packedTexShape);
   let broadcastSnippet = '';
+  if (doBroadcast && broadcastOverOuter) {
+    broadcastSnippet = `
+        int mainPart = index / ${inSize};
+        index -= mainPart * ${inSize};
+      `;
+  }
 
   const inTexShape = inputInfo.shapeInfo.texShape;
   if (util.arraysEqual(inTexShape, outTexShape)) {
@@ -1280,6 +1300,27 @@ function getPackedSamplerAtOutputCoords(
         return texture2D(${texName}, resultUV);
       }
     `;
+  }
+
+  let output = `return texture2D(${texName}, uv)`;
+
+  if (inRank === 1 && outRank > 1) {
+    output = `
+      vec4 sample = texture2D(${texName}, uv);
+      return vec4(sample.xy, sample.xy);
+    `;
+  } else if (inRank === 0 && outRank > 0) {
+    if (outRank === 1) {
+      output = `
+        vec4 sample = texture2D(${texName}, uv);
+        return vec4(sample.x, sample.x, 0., 0.);
+      `;
+    } else {
+      output = `
+        vec4 sample = texture2D(${texName}, uv);
+        return vec4(sample.x);
+      `;
+    }
   }
 
   return `
@@ -1294,7 +1335,7 @@ function getPackedSamplerAtOutputCoords(
       int texC = index - texR * ${texNumC};
       vec2 uv = (vec2(texC, texR) + halfCR) / vec2(${texNumC}, ${texNumR});
 
-      return texture2D(${texName}, uv);
+      ${output};
     }
   `;
 }
