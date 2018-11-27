@@ -1281,7 +1281,7 @@ function getPackedSamplerAtOutputCoords(
       broadcast_util.broadcastDimsAreOuter(broadcastDims);
 
   if (doBroadcast && !broadcastOverOuter) {
-    throw Error('not implemented yet');
+    throw Error('Packed broadcast sampling is not implemented yet.');
   }
 
   const inSize = util.sizeFromShape(packedTexShape);
