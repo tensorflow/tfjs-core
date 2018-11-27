@@ -281,19 +281,19 @@ vec2 UVfrom6D(int texNumR, int texNumC, int stride0,
 
 const FLOAT_TEXTURE_SAMPLE_SNIPPET = `
   float sampleTexture(sampler2D textureSampler, vec2 uv) {
-    return texture2D(textureSampler, uv).r;
+    return texture(textureSampler, uv).r;
   }
 `;
 
 const FLOAT_TEXTURE_SET_R_SNIPPET = `
   void setOutput(float val) {
-    gl_FragColor = vec4(val, 0, 0, 0);
+    outputColor = vec4(val, 0, 0, 0);
   }
 `;
 
 const FLOAT_TEXTURE_SET_RGBA_SNIPPET = `
   void setOutput(vec4 val) {
-    gl_FragColor = val;
+    outputColor = val;
   }
 `;
 
@@ -301,10 +301,13 @@ const FLOAT_TEXTURE_SET_RGBA_SNIPPET = `
 Previous NaN check '(val < 0.0 || 0.0 < val || val == 0.0) ? false : true' does
 not work on iOS 12
  */
-const SHADER_PREFIX = `
+const SHADER_PREFIX = `#version 300 es
   precision highp float;
   precision highp int;
-  varying vec2 resultUV;
+  precision highp sampler2D;
+
+  in vec2 resultUV;
+  out vec4 outputColor;
   const vec2 halfCR = vec2(0.5, 0.5);
 
   struct ivec5
@@ -340,9 +343,9 @@ const SHADER_PREFIX = `
     return dot(vec4(1), values);
   }
 
-  int round(float value) {
-    return int(floor(value + 0.5));
-  }
+  // int round(float value) {
+  //   return int(floor(value + 0.5));
+  // }
 
   int imod(int x, int y) {
     return x - y * (x / y);
@@ -673,7 +676,7 @@ function getPackedSampler1D(inputInfo: InputInfo): string {
     vec4 ${funcName}(int index) {
       vec2 uv = packedUVfrom1D(
         ${packedTexShape[0]}, ${packedTexShape[1]}, index);
-      return texture2D(${texName}, uv);
+      return texture(${texName}, uv);
     }
   `;
 }
@@ -702,7 +705,7 @@ function getPackedSampler2D(inputInfo: InputInfo): string {
       vec4 ${funcName}(int row, int col) {
         vec2 uv = (vec2(col, row) + halfCR) / vec2(${texNumC}.0, ${texNumR}.0);
 
-        return texture2D(${texName}, uv);
+        return texture(${texName}, uv);
       }
     `;
   }
@@ -715,7 +718,7 @@ function getPackedSampler2D(inputInfo: InputInfo): string {
     vec4 ${funcName}(int row, int col) {
       vec2 uv = packedUVfrom2D(${valuesPerRow}, ${packedTexShape[0]}, ${
       packedTexShape[1]}, row, col);
-      return texture2D(${texName}, uv);
+      return texture(${texName}, uv);
     }
   `;
 }
@@ -755,7 +758,7 @@ function getSampler2D(inputInfo: InputInfo): string {
     return `
       float ${funcName}(int row, int col) {
         float index = dot(vec2(row, col), vec2(${shape[1]}, 1));
-        return ${funcName}Flat(round(index));
+        return ${funcName}Flat(int(round(index)));
       }
     `;
   }
@@ -821,7 +824,7 @@ function getPackedSampler3D(inputInfo: InputInfo): string {
     vec4 ${funcName}(int b, int row, int col) {
       vec2 uv = packedUVfrom3D(
         ${texNumR}, ${texNumC}, ${texelsInBatch}, ${valuesPerRow}, b, row, col);
-      return texture2D(${texName}, uv);
+      return texture(${texName}, uv);
     }
   `;
 }
@@ -852,7 +855,7 @@ function getSampler3D(inputInfo: InputInfo): string {
       float ${funcName}(int row, int col, int depth) {
         float index = dot(vec3(row, col, depth),
                           vec3(${stride0}, ${stride1}, 1));
-        return ${funcName}Flat(round(index));
+        return ${funcName}Flat(int(round(index)));
       }
     `;
   }
@@ -913,7 +916,7 @@ function getPackedSampler4D(inputInfo: InputInfo): string {
       vec2 uv = packedUVfrom4D(
         ${texNumR}, ${texNumC}, ${texelsInBatch2},
         ${texelsInBatch}, ${valuesPerRow}, b2, b, row, col);
-      return texture2D(${texName}, uv);
+      return texture(${texName}, uv);
     }
   `;
 }
@@ -944,7 +947,7 @@ function getSampler4D(inputInfo: InputInfo): string {
       float ${funcName}(int row, int col, int depth, int depth2) {
         float index = dot(vec4(row, col, depth, depth2),
                           vec4(${stride0}, ${stride1}, ${stride2}, 1));
-        return ${funcName}Flat(round(index));
+        return ${funcName}Flat(int(round(index)));
       }
     `;
   }

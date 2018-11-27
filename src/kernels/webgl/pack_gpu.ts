@@ -46,7 +46,7 @@ export class PackProgram implements GPGPUProgram {
         ${dtype} rc = getOutputCoords();
 
         if(${outOfBoundsCondition}) {
-          gl_FragColor = vec4(0);
+          outputColor = vec4(0);
         } else {
           ${setup}
 

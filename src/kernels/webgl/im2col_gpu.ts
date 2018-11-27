@@ -72,7 +72,7 @@ export class Im2ColProgram implements GPGPUProgram {
           }
         }
 
-        gl_FragColor = result;
+        outputColor = result;
       }
     `;
   }

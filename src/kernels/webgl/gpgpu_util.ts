@@ -37,11 +37,12 @@ export interface TextureConfig {
 }
 
 export function createVertexShader(gl: WebGLRenderingContext): WebGLShader {
-  const vertexShaderSource = `
+  const vertexShaderSource = `#version 300 es
     precision highp float;
-    attribute vec3 clipSpacePos;
-    attribute vec2 uv;
-    varying vec2 resultUV;
+
+    in vec3 clipSpacePos;
+    in vec2 uv;
+    out vec2 resultUV;
 
     void main() {
       gl_Position = vec4(clipSpacePos, 1);

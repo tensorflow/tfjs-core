@@ -66,7 +66,7 @@ export class EncodeFloatProgram implements GPGPUProgram {
 
       void main() {
         float x = getAAtOutCoords();
-        gl_FragColor = encode_float(x);
+        outputColor = encode_float(x);
       }
     `;
   }

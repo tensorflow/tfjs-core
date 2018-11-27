@@ -206,7 +206,7 @@ describeWithFlags(
         gpgpu = new GPGPUContext();
         gpgpu.enableAutomaticDebugValidation(true);
         const src =
-            'precision highp float; void main(){gl_FragColor = vec4(2,0,0,0);}';
+            'precision highp float; void main(){outputColor = vec4(2,0,0,0);}';
         program = gpgpu.createProgram(src);
         output = gpgpu.createFloat32MatrixTexture(4, 4);
         gpgpu.uploadMatrixToTexture(output, 4, 4, new Float32Array(16));
