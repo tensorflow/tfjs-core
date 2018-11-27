@@ -14,8 +14,10 @@
  * limitations under the License.
  * =============================================================================
  */
+import {ENV} from '../../environment';
 import * as broadcast_util from '../../ops/broadcast_util';
 import * as util from '../../util';
+
 import * as shader_util from './shader_compiler_util';
 
 export type ShapeInfo = {
@@ -311,10 +313,38 @@ const FLOAT_TEXTURE_SET_RGBA_SNIPPET = `
   }
 `;
 
-/*
-Previous NaN check '(val < 0.0 || 0.0 < val || val == 0.0) ? false : true' does
-not work on iOS 12
- */
+let NAN_CHECKS = '';
+if (ENV.get('PROD')) {
+  NAN_CHECKS = `
+    bool isNaN(float val) {
+      return false;
+    }
+
+    bool hasNaN(vec4 values) {
+      return false;
+    }
+  `;
+} else {
+  /*
+  Previous NaN check '(val < 0.0 || 0.0 < val || val == 0.0) ? false : true'
+  does not work on iOS 12
+   */
+  NAN_CHECKS = `
+    bool isNaN(float val) {
+      return (val < 1.0 || 0.0 < val || val == 0.0) ? false : true;
+    }
+
+    bool hasNaN(vec4 values) {
+      return any(bvec4(
+        (values.x < 1.0 || 0.0 < values.x || values.x == 0.0) ? false : true,
+        (values.y < 1.0 || 0.0 < values.y || values.y == 0.0) ? false : true,
+        (values.z < 1.0 || 0.0 < values.z || values.z == 0.0) ? false : true,
+        (values.w < 1.0 || 0.0 < values.w || values.w == 0.0) ? false : true
+      ));
+    }
+  `;
+}
+
 const SHADER_PREFIX = `
   precision highp float;
   precision highp int;
@@ -340,18 +370,7 @@ const SHADER_PREFIX = `
     int v;
   };
 
-  bool isNaN(float val) {
-    return (val < 1.0 || 0.0 < val || val == 0.0) ? false : true;
-  }
-
-  bool hasNaN(vec4 values) {
-    return any(bvec4(
-      (values.x < 1.0 || 0.0 < values.x || values.x == 0.0) ? false : true,
-      (values.y < 1.0 || 0.0 < values.y || values.y == 0.0) ? false : true,
-      (values.z < 1.0 || 0.0 < values.z || values.z == 0.0) ? false : true,
-      (values.w < 1.0 || 0.0 < values.w || values.w == 0.0) ? false : true
-    ));
-  }
+  ${NAN_CHECKS}
 
   float getNaN(vec4 values) {
     return dot(vec4(1), values);
