@@ -17,63 +17,53 @@
 
 import * as tf from '../index';
 import {expectArraysEqual} from '../test_util';
+
+import {KernelBackend} from './backend';
 import {MathBackendCPU} from './backend_cpu';
 
 describe('backendCPU', () => {
   let prevBackend: string;
+  let backend: KernelBackend;
 
   beforeAll(() => {
     prevBackend = tf.getBackend();
   });
 
+  beforeEach(() => {
+    backend = new MathBackendCPU();
+    tf.ENV.registerBackend('test-storage', () => backend);
+    tf.setBackend('test-storage');
+  });
+
   afterEach(() => {
+    backend.dispose();
     tf.setBackend(prevBackend);
     tf.ENV.removeBackend('test-storage');
   });
 
   it('register empty string tensor', () => {
-    const backend = new MathBackendCPU();
-    tf.ENV.registerBackend('test-storage', () => backend);
-    tf.setBackend('test-storage');
-
     const t = tf.Tensor.make([3], {}, 'string');
     expect(backend.readSync(t.dataId) == null).toBe(true);
   });
 
   it('register empty string tensor and write', () => {
-    const backend = new MathBackendCPU();
-    tf.ENV.registerBackend('test-storage', () => backend);
-    tf.setBackend('test-storage');
-
     const t = tf.Tensor.make([3], {}, 'string');
     backend.write(t.dataId, ['c', 'a', 'b']);
     expectArraysEqual(backend.readSync(t.dataId), ['c', 'a', 'b']);
   });
 
   it('register string tensor with values', () => {
-    const backend = new MathBackendCPU();
-    tf.ENV.registerBackend('test-storage', () => backend);
-    tf.setBackend('test-storage');
-
     const t = tf.Tensor.make([3], {values: ['a', 'b', 'c']}, 'string');
     expectArraysEqual(backend.readSync(t.dataId), ['a', 'b', 'c']);
   });
 
   it('register string tensor with values and overwrite', () => {
-    const backend = new MathBackendCPU();
-    tf.ENV.registerBackend('test-storage', () => backend);
-    tf.setBackend('test-storage');
-
     const t = tf.Tensor.make([3], {values: ['a', 'b', 'c']}, 'string');
     backend.write(t.dataId, ['c', 'a', 'b']);
     expectArraysEqual(backend.readSync(t.dataId), ['c', 'a', 'b']);
   });
 
   it('register string tensor with values and mismatched shape', () => {
-    const backend = new MathBackendCPU();
-    tf.ENV.registerBackend('test-storage', () => backend);
-    tf.setBackend('test-storage');
-
     expect(() => tf.Tensor.make([4], {values: ['a', 'b', 'c']}, 'string'))
         .toThrowError();
   });

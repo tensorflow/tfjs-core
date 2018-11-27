@@ -322,7 +322,7 @@ export function getArrayFromDType<D extends DataType>(
   } else if (dtype === 'bool') {
     values = new Uint8Array(size);
   } else if (dtype === 'string') {
-    values = new Array(size);
+    values = new Array<'string'>(size);
   } else {
     throw new Error(`Unknown data type ${dtype}`);
   }

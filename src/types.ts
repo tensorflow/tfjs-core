@@ -35,9 +35,9 @@ export interface DataTypeMap {
 }
 
 export interface SingleValueMap {
-  float32: number;
-  int32: number;
   bool: boolean;
+  int32: number;
+  float32: number;
   complex64: number;
   string: string;
 }
