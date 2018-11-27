@@ -32,7 +32,7 @@ import {getStridedSlicedInfo} from '../ops/slice_util';
 import {softmax} from '../ops/softmax';
 import {range, scalar, tensor} from '../ops/tensor_ops';
 import {DataId, Scalar, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
-import {DataType, DataTypeMap, Rank, RecursiveArray, ShapeMap, sumOutType, TypedArray, upcastType} from '../types';
+import {DataType, DataTypeMap, DataValues, NumericDataType, Rank, RecursiveArray, ShapeMap, sumOutType, TypedArray, upcastType} from '../types';
 import * as util from '../util';
 import {getTypedArrayFromDType, sizeFromShape} from '../util';
 
@@ -176,16 +176,7 @@ export class MathBackendWebGL implements KernelBackend {
     if (this.texData.has(dataId)) {
       throw new Error('Data buffer is already registered');
     }
-    this.texData.set(dataId, {
-      shape,
-      dtype,
-      values: null,
-      texture: null,
-      complexTensors: null,
-      texShape: null,
-      usage: TextureUsage.RENDER,
-      isPacked: false
-    });
+    this.texData.set(dataId, {shape, dtype});
   }
 
   setDataMover(dataMover: DataMover): void {
@@ -250,7 +241,7 @@ export class MathBackendWebGL implements KernelBackend {
     return {dataId, shape, dtype};
   }
 
-  write(dataId: DataId, values: TypedArray): void {
+  write(dataId: DataId, values: DataValues): void {
     if (values == null) {
       throw new Error('MathBackendWebGL.write(): values can not be null');
     }
@@ -275,11 +266,14 @@ export class MathBackendWebGL implements KernelBackend {
       this.uploadToGPU(dataId);
     }
   }
-  readSync(dataId: DataId): TypedArray {
+  readSync(dataId: DataId): DataValues {
     const texData = this.texData.get(dataId);
     const {values, dtype, complexTensors} = texData;
     if (values != null) {
       return this.convertAndCacheOnCPU(dataId);
+    }
+    if (dtype === 'string') {
+      return values;
     }
     const shouldTimeProgram = this.activeTimers != null;
     let start: number;
@@ -302,7 +296,7 @@ export class MathBackendWebGL implements KernelBackend {
     return this.convertAndCacheOnCPU(dataId, result);
   }
 
-  async read(dataId: DataId): Promise<TypedArray> {
+  async read(dataId: DataId): Promise<DataValues> {
     if (this.pendingRead.has(dataId)) {
       const subscribers = this.pendingRead.get(dataId);
       return new Promise<TypedArray>(resolve => subscribers.push(resolve));
@@ -1067,7 +1061,7 @@ export class MathBackendWebGL implements KernelBackend {
 
   topk<T extends Tensor>(x: T, k: number, sorted: boolean): [T, T] {
     const xVals = x.dataSync();
-    return topkImpl(xVals, x.shape, x.dtype, k, sorted);
+    return topkImpl(xVals, x.shape, x.dtype as NumericDataType, k, sorted);
   }
 
   min(x: Tensor, axes: number[]): Tensor {
@@ -1803,7 +1797,7 @@ export class MathBackendWebGL implements KernelBackend {
       // Short-circuit the computation since the result is empty (has 0 in its
       // shape).
       this.texData.get(output.dataId).values =
-          getTypedArrayFromDType(output.dtype, 0);
+          getTypedArrayFromDType(output.dtype as 'float32', 0);
       return output;
     }
 
@@ -1830,7 +1824,7 @@ export class MathBackendWebGL implements KernelBackend {
             shape: input.shape,
             texData: null,
             isUniform: true,
-            uniformValues: this.readSync(input.dataId)
+            uniformValues: this.readSync(input.dataId) as TypedArray
           };
         }
 
@@ -1840,7 +1834,7 @@ export class MathBackendWebGL implements KernelBackend {
           texData.isPacked = true;
           texData.shape = input.shape;
         }
-      } else if (texData.isPacked !== !!program.usesPackedTextures) {
+      } else if (!!texData.isPacked !== !!program.usesPackedTextures) {
         let preProcessProgram: UnpackProgram|PackProgram;
         let processedInput: Tensor;
 
@@ -1970,7 +1964,7 @@ export class MathBackendWebGL implements KernelBackend {
 
   private uploadToGPU(dataId: DataId): void {
     const texData = this.texData.get(dataId);
-    const {shape, values, texture, dtype, usage, isPacked} = texData;
+    const {shape, values, texture, usage, isPacked} = texData;
     if (texture != null) {
       // Array is already on GPU. No-op.
       // Touching the texture.
@@ -2003,11 +1997,11 @@ export class MathBackendWebGL implements KernelBackend {
         }
         this.gpgpu.uploadMatrixToPackedTexture(
             newTexture, batch, rows, cols, texShape[0], texShape[1],
-            typedArrayToFloat32(values, dtype));
+            typedArrayToFloat32(values as Float32Array));
       } else {
         this.gpgpu.uploadMatrixToTexture(
             newTexture, texShape[0], texShape[1],
-            typedArrayToFloat32(values, dtype));
+            typedArrayToFloat32(values as Float32Array));
       }
       // Once uploaded, don't store the values on cpu.
       texData.values = null;
@@ -2032,9 +2026,9 @@ export class MathBackendWebGL implements KernelBackend {
     }
     texData.usage = TextureUsage.UPLOAD;
     if (float32Values != null) {
-      texData.values = float32ToTypedArray(float32Values, dtype);
+      texData.values = float32ToTypedArray(float32Values, dtype as 'float32');
     }
-    return texData.values;
+    return texData.values as TypedArray;
   }
 
   private releaseTexture(
@@ -2074,7 +2068,7 @@ if (ENV.get('IS_BROWSER')) {
       setTensorTracker);
 }
 
-function float32ToTypedArray<D extends DataType>(
+function float32ToTypedArray<D extends NumericDataType>(
     a: Float32Array, dtype: D): DataTypeMap[D] {
   if (dtype === 'float32' || dtype === 'complex64') {
     return a;
@@ -2090,7 +2084,6 @@ function float32ToTypedArray<D extends DataType>(
   }
 }
 
-function typedArrayToFloat32<D extends DataType>(
-    a: DataTypeMap[D], dtype: D): Float32Array {
+function typedArrayToFloat32(a: TypedArray): Float32Array {
   return (a instanceof Float32Array) ? a : new Float32Array(a);
 }
