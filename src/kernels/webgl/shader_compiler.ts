@@ -133,9 +133,6 @@ function getInputSamplingSnippet(
   // If input and output have the same packed status and have matching logical
   // shapes, add getTexNameAtOutCoord() method that samples the input
   // textureSampler using the output coordinates.
-
-  // Checking against usesPackedTextures rather than inInfo in order to catch
-  // uniforms going into packed ops.
   if (usesPackedTextures === outShapeInfo.isPacked &&
       (broadcast ||
        util.arraysEqual(
@@ -688,9 +685,6 @@ function getOutput2DCoords(
 function getPackedSamplerScalar(inputInfo: InputInfo): string {
   const texName = inputInfo.name;
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
-  if (inputInfo.shapeInfo.isUniform) {
-    return `vec4 ${funcName}() {return vec4(${texName}, 0., 0., 0.);}`;
-  }
   return `
     vec4 ${funcName}() {
       return texture2D(${texName}, halfCR);
@@ -1306,15 +1300,10 @@ function getPackedSamplerAtOutputCoords(
   const funcName = 'get' + texFuncSnippet + 'AtOutCoords';
   const outTexShape = outShapeInfo.texShape;
 
-  const isUniform = inputInfo.shapeInfo.isUniform;
-  let packedTexShape: number[] = [];
-  let texNumR = 0;
-  let texNumC = 0;
-  if (!isUniform) {
-    packedTexShape = [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
-    texNumR = packedTexShape[0];
-    texNumC = packedTexShape[1];
-  }
+  const packedTexShape =
+      [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
+  const texNumR = packedTexShape[0];
+  const texNumC = packedTexShape[1];
 
   const broadcastDims = broadcast_util.getBroadcastDims(
       inputInfo.shapeInfo.logicalShape, outShapeInfo.logicalShape);
@@ -1336,12 +1325,6 @@ function getPackedSamplerAtOutputCoords(
         int mainPart = index / ${inSize};
         index -= mainPart * ${inSize};
       `;
-  }
-
-  if (isUniform) {
-    if (inSize === 1) {
-      return `vec4 ${funcName}() {return vec4(${texName});}`;
-    }
   }
 
   const inTexShape = inputInfo.shapeInfo.texShape;

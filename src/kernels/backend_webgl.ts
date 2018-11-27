@@ -1821,8 +1821,11 @@ export class MathBackendWebGL implements KernelBackend {
         // Upload small tensors that live on the CPU as uniforms, not as
         // textures. Do this only when the environment supports 32bit floats due
         // to problems when comparing 16bit floats with 32bit floats.
-        if (util.sizeFromShape(input.shape) <=
-            ENV.get('WEBGL_SIZE_UPLOAD_UNIFORM')) {
+        // TODO(https://github.com/tensorflow/tfjs/issues/821): Make it possible
+        // for packed shaders to sample from uniforms.
+        if (!(!texData.isPacked && program.usesPackedTextures) &&
+            util.sizeFromShape(input.shape) <=
+                ENV.get('WEBGL_SIZE_UPLOAD_UNIFORM')) {
           return {
             shape: input.shape,
             texData: null,
