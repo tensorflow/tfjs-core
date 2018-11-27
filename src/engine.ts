@@ -258,13 +258,20 @@ export class Engine implements TensorManager, DataMover {
     if (refCount === 0) {
       this.numDataBuffers++;
 
+      // Bytes for complex numbers are counted by their components. Bytes for
+      // string tensors are counted when writing values.
+      let bytes = 0;
+      if (a.dtype !== 'complex64' && a.dtype !== 'string') {
+        bytes = util.sizeFromShape(a.shape) * util.bytesPerElement(a.dtype);
+      }
       this.tensorInfo.set(a.dataId, {
         backend: this.backend,
         dtype: a.dtype,
         shape: a.shape,
-        bytes: 0,
+        bytes,
         refCount: 0
       });
+      this.numBytes += bytes;
       this.backend.register(a.dataId, a.shape, a.dtype);
     }
     this.tensorInfo.get(a.dataId).refCount++;
@@ -556,11 +563,9 @@ export class Engine implements TensorManager, DataMover {
   // Forwarding to backend.
   write(dataId: DataId, values: DataValues): void {
     const info = this.tensorInfo.get(dataId);
-    // Bytes for complex numbers are counted by their components.
-    if (info.dtype !== 'complex64') {
-      const newBytes = info.dtype === 'string' ?
-          bytesFromStringArray(values as string[]) :
-          util.sizeFromShape(info.shape) * util.bytesPerElement(info.dtype);
+    // Bytes for string tensors are counted when writing.
+    if (info.dtype === 'string') {
+      const newBytes = bytesFromStringArray(values as string[]);
       this.numBytes += newBytes - info.bytes;
       info.bytes = newBytes;
     }
