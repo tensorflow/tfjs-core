@@ -355,9 +355,11 @@ export class MathBackendWebGL implements KernelBackend {
     const {shape, dtype, texture, texShape} = this.texData.get(dataId);
     if (ENV.get('WEBGL_DOWNLOAD_FLOAT_ENABLED')) {
       if (this.texData.get(dataId).isPacked) {
-        const batch = util.sizeFromShape(shape.slice(0, shape.length - 2));
-        const rows = shape.length > 1 ? shape[shape.length - 2] : 1;
-        const cols = shape[shape.length - 1];
+        const batch = this.getBatchDim(shape);
+        let rows = 1, cols = 1;
+        if (shape.length) {
+          [rows, cols] = this.getRowsCols(shape);
+        }
         return this.gpgpu.downloadMatrixFromPackedTexture(
             texture, batch, rows, cols, texShape[0], texShape[1]);
       } else {
@@ -1819,11 +1821,8 @@ export class MathBackendWebGL implements KernelBackend {
         // Upload small tensors that live on the CPU as uniforms, not as
         // textures. Do this only when the environment supports 32bit floats due
         // to problems when comparing 16bit floats with 32bit floats.
-        // TODO(https://github.com/tensorflow/tfjs/issues/821): Make it possible
-        // for packed shaders to sample from uniforms.
-        if (!(!texData.isPacked && program.usesPackedTextures) &&
-            util.sizeFromShape(input.shape) <=
-                ENV.get('WEBGL_SIZE_UPLOAD_UNIFORM')) {
+        if (util.sizeFromShape(input.shape) <=
+            ENV.get('WEBGL_SIZE_UPLOAD_UNIFORM')) {
           return {
             shape: input.shape,
             texData: null,
