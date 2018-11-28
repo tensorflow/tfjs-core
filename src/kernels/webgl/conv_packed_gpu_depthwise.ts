@@ -44,7 +44,7 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
 
     for (let r = 0; r < filterHeight; r++) {
       for (let c = -padLeft; c < texelsAcross * 2; c++) {
-        mainLoop += `vec4 xTexelR${r}C${c < 0 ? 'minus1' : c} = vec4(0.);`;
+        mainLoop += `vec4 ${xTexelName(r, c)} = vec4(0.);`;
       }
     }
 
@@ -67,36 +67,36 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
         if (padLeft === 0) {
           mainLoop += `
             if(xR >= 0 && xR < ${xNumRows} && xC >= 0 && xC < ${xNumCols}) {
-              xTexelR${r}C${col} = getX(batch, xR, xC, d1);
+              ${xTexelName(r, col)} = getX(batch, xR, xC, d1);
             }`;
 
           if (strideWidth === 1) {
             if (col > 0) {
               mainLoop += `
-                xR${r}C${col - 2} = xTexelR${r}C${col - 2};
+                xR${r}C${col - 2} = ${xTexelName(r, col - 2)};
                 xR${r}C${col - 1} = vec4(
-                  xTexelR${r}C${col - 2}.zw, xTexelR${r}C${col}.xy);`;
+                  ${xTexelName(r, col - 2)}.zw, ${xTexelName(r, col)}.xy);`;
             }
 
             if (col < filterWidth && c === texelsAcross - 1) {
               mainLoop += `
-                xR${r}C${col} = xTexelR${r}C${col};
+                xR${r}C${col} = ${xTexelName(r, col)};
               `;
             }
           } else {
             if (col > 0) {
               mainLoop += `
                 xR${r}C${col - 2} = vec4(
-                  xTexelR${r}C${col - 2}.xy, xTexelR${r}C${col}.xy);
+                  ${xTexelName(r, col - 2)}.xy, ${xTexelName(r, col)}.xy);
                 xR${r}C${col - 1} = vec4(
-                  xTexelR${r}C${col - 2}.zw, xTexelR${r}C${col}.zw);
+                  ${xTexelName(r, col - 2)}.zw, ${xTexelName(r, col)}.zw);
               `;
             }
 
             if (col < filterWidth && c === texelsAcross - 1) {
               mainLoop += `
                 xR${r}C${col} = vec4(
-                  xTexelR${r}C${col}.xy,
+                  ${xTexelName(r, col)}.xy,
                   getX(batch, xR, xC + 2, d1).xy);
               `;
             }
@@ -106,37 +106,36 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
             mainLoop += `
               if(xR >= 0 && xR < ${xNumRows}
                 && xC - 1 >= 0 && xC - 1 < ${xNumCols}) {
-                xTexelR${r}C${col - 1 < 0 ? 'minus1' : col - 1} =
-                  getX(batch, xR, xC - 1, d1);
+                ${xTexelName(r, col - 1)} = getX(batch, xR, xC - 1, d1);
               }`;
           }
 
           mainLoop += `
             if(xR >= 0 && xR < ${xNumRows}
               && xC + 1 >= 0 && xC + 1 < ${xNumCols}) {
-              xTexelR${r}C${col + 1} = getX(batch, xR, xC + 1, d1);
+              ${xTexelName(r, col + 1)} = getX(batch, xR, xC + 1, d1);
             }`;
 
           if (strideWidth === 1) {
             if (col > 0) {
-              mainLoop += `xR${r}C${col - 1} = xTexelR${r}C${col - 1};`;
+              mainLoop += `xR${r}C${col - 1} = ${xTexelName(r, col - 1)};`;
             }
 
             mainLoop += `
               xR${r}C${col} = vec4(
-                xTexelR${r}C${col - 1 < 0 ? 'minus1' : col - 1}.zw,
-                xTexelR${r}C${col + 1}.xy);`;
+                ${xTexelName(r, col - 1)}.zw,
+                ${xTexelName(r, col + 1)}.xy);`;
           } else {
             if(col > 0) {
               mainLoop += `xR${r}C${col - 1} = vec4(
-                xTexelR${r}C${col - 1 < 0 ? 'minus1' : col - 1}.xy,
-                xTexelR${r}C${col + 1}.xy);`;
+                ${xTexelName(r, col - 1)}.xy,
+                ${xTexelName(r, col + 1)}.xy);`;
             }
 
             mainLoop += `
               xR${r}C${col} = vec4(
-                xTexelR${r}C${col - 1 < 0 ? 'minus1' : col - 1}.zw,
-                xTexelR${r}C${col + 1}.zw);`;
+                ${xTexelName(r, col - 1)}.zw,
+                ${xTexelName(r, col + 1)}.zw);`;
           }
         }
 
@@ -184,4 +183,8 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
       }
     `;
   }
+}
+
+function xTexelName(r: number, c: number) {
+  return `xTexelR${r}C${c < 0 ? 'minus' + Math.abs(c) : c}`;
 }
