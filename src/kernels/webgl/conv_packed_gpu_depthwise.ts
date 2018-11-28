@@ -38,7 +38,7 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
     const filterHeight = convInfo.filterHeight;
     const filterWidth = convInfo.filterWidth;
     const channelMul = convInfo.outChannels / convInfo.inChannels;
-    const texelsAcross = Math.ceil((filterWidth + 1) / 2);
+    const texelsAcross = Math.max(2, Math.ceil(filterWidth / 2)); // we only start accumulating xRC values when col > 0, so there need to be at least two iterations
 
     let mainLoop = `int xR; int xC;`;
 
