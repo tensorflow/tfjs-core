@@ -38,7 +38,7 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
     const filterHeight = convInfo.filterHeight;
     const filterWidth = convInfo.filterWidth;
     const channelMul = convInfo.outChannels / convInfo.inChannels;
-    const texelsAcross = Math.max(2, Math.ceil(filterWidth / 2)); // we only start accumulating xRC values when col > 0, so there need to be at least two iterations
+    const texelsAcross = Math.ceil((filterWidth + 1) / 2);
 
     let mainLoop = `int xR; int xC;`;
 
@@ -121,10 +121,12 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
               mainLoop += `xR${r}C${col - 1} = ${xTexelName(r, col - 1)};`;
             }
 
-            mainLoop += `
-              xR${r}C${col} = vec4(
-                ${xTexelName(r, col - 1)}.zw,
-                ${xTexelName(r, col + 1)}.xy);`;
+            if(col < filterWidth) {
+              mainLoop += `
+                xR${r}C${col} = vec4(
+                  ${xTexelName(r, col - 1)}.zw,
+                  ${xTexelName(r, col + 1)}.xy);`;
+            }
           } else {
             if(col > 0) {
               mainLoop += `xR${r}C${col - 1} = vec4(
@@ -132,10 +134,12 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
                 ${xTexelName(r, col + 1)}.xy);`;
             }
 
-            mainLoop += `
-              xR${r}C${col} = vec4(
-                ${xTexelName(r, col - 1)}.zw,
-                ${xTexelName(r, col + 1)}.zw);`;
+            if(col < filterWidth) {
+              mainLoop += `
+                xR${r}C${col} = vec4(
+                  ${xTexelName(r, col - 1)}.zw,
+                  ${xTexelName(r, col + 1)}.zw);`;
+            }
           }
         }
 
