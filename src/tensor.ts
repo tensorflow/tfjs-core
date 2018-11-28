@@ -16,7 +16,7 @@
  */
 
 import {tensorToString} from './tensor_format';
-import {DataType, DataTypeMap, DataValues, NumericDataType, Rank, ShapeMap, SingleValueMap, TensorLike, TypedArray} from './types';
+import {DataType, DataTypeMap, DataValues, NumericDataType, Rank, ShapeMap, SingleValueMap, TensorLike, TensorLike1D, TensorLike3D, TensorLike4D, TypedArray} from './types';
 import * as util from './util';
 import {computeStrides} from './util';
 

@@ -344,8 +344,8 @@ function clipByValue_<T extends Tensor>(
   const grad = (dy: T) => {
     return {
       $x: () => dy.where(
-                    $x.greaterEqual(scalar(clipValueMin))
-                        .logicalAnd($x.lessEqual(scalar(clipValueMax))),
+                    $x.greaterEqual(clipValueMin)
+                        .logicalAnd($x.lessEqual(clipValueMax)),
                     zerosLike(dy)) as T,
     };
   };
@@ -693,9 +693,7 @@ function erf_<T extends Tensor>(x: T|TensorLike): T {
 
   const grad = (dy: T) => {
     return {
-      $x: () =>
-          dy.mul(scalar(2 / Math.sqrt(Math.PI)).mul($x.square().neg().exp())) as
-          T
+      $x: () => dy.mul($x.square().neg().exp().mul(2 / Math.sqrt(Math.PI))) as T
     };
   };
   return ENV.engine.runKernel(backend => backend.erf($x), {$x}, grad);
