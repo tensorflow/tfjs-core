@@ -33,8 +33,6 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
     const padLeft = convInfo.padInfo.left;
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
-    // const dilationHeight = convInfo.dilationHeight;
-    // const dilationWidth = convInfo.dilationWidth;
     const filterHeight = convInfo.filterHeight;
     const filterWidth = convInfo.filterWidth;
     const channelMul = convInfo.outChannels / convInfo.inChannels;
@@ -57,91 +55,85 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
     for (let r = 0; r < filterHeight; r++) {
       for (let c = 0; c < texelsAcross; c++) {
         const col = c * 2;
+        const left = c * 2 + padLeft;
 
         mainLoop += `
           xR = xRCorner + ${r};
-          xC = xCCorner + ${col};`;
+          xC = xCCorner + ${left};
+
+          if(xR >= 0 && xR < ${xNumRows} && xC >= 0 && xC < ${xNumCols}) {
+            ${xTexelName(r, left)} = getX(batch, xR, xC, d1);
+          }`;
 
         if (padLeft === 0) {
-          mainLoop += `
-            if(xR >= 0 && xR < ${xNumRows} && xC >= 0 && xC < ${xNumCols}) {
-              ${xTexelName(r, col)} = getX(batch, xR, xC, d1);
-            }`;
-
           if (strideWidth === 1) {
             if (col > 0) {
               mainLoop += `
-                xR${r}C${col - 2} = ${xTexelName(r, col - 2)};
-                xR${r}C${col - 1} = vec4(
-                  ${xTexelName(r, col - 2)}.zw, ${xTexelName(r, col)}.xy);`;
+                xR${r}C${left - 2} = ${xTexelName(r, left - 2)};
+                xR${r}C${left - 1} = vec4(
+                  ${xTexelName(r, left - 2)}.zw, ${xTexelName(r, left)}.xy);`;
             }
 
             if (col < filterWidth && c === texelsAcross - 1) {
               mainLoop += `
-                xR${r}C${col} = ${xTexelName(r, col)};
+                xR${r}C${left} = ${xTexelName(r, left)};
               `;
             }
           } else {
             if (col > 0) {
               mainLoop += `
-                xR${r}C${col - 2} = vec4(
-                  ${xTexelName(r, col - 2)}.xy, ${xTexelName(r, col)}.xy);
-                xR${r}C${col - 1} = vec4(
-                  ${xTexelName(r, col - 2)}.zw, ${xTexelName(r, col)}.zw);
+                xR${r}C${left - 2} = vec4(
+                  ${xTexelName(r, left - 2)}.xy, ${xTexelName(r, left)}.xy);
+                xR${r}C${left - 1} = vec4(
+                  ${xTexelName(r, left - 2)}.zw, ${xTexelName(r, left)}.zw);
               `;
             }
 
             if (col < filterWidth && c === texelsAcross - 1) {
               mainLoop += `
-                vec4 ${xTexelName(r, col + 2)} = vec4(0.);
+                vec4 ${xTexelName(r, left + 2)} = vec4(0.);
 
                 if(xR >= 0 && xR < ${xNumRows} && xC + 2 < ${xNumCols}) {
-                  ${xTexelName(r, col + 2)} = getX(batch, xR, xC + 2, d1);
+                  ${xTexelName(r, left + 2)} = getX(batch, xR, xC + 2, d1);
                 }
 
-                xR${r}C${col} = vec4(
-                  ${xTexelName(r, col)}.xy,
-                  ${xTexelName(r, col + 2)}.xy);
+                xR${r}C${left} = vec4(
+                  ${xTexelName(r, left)}.xy,
+                  ${xTexelName(r, left + 2)}.xy);
               `;
             }
           }
         } else {
           if (c === 0) {  // first in a row
             mainLoop += `
-              if(xR >= 0 && xR < ${xNumRows} && xC - 1 >= 0) {
-                ${xTexelName(r, col - 1)} = getX(batch, xR, xC - 1, d1);
+              if(xR >= 0 && xR < ${xNumRows} && xC - 2 >= 0) {
+                ${xTexelName(r, left - 2)} = getX(batch, xR, xC - 2, d1);
               }`;
           }
 
-          mainLoop += `
-            if(xR >= 0 && xR < ${xNumRows}
-              && xC + 1 >= 0 && xC + 1 < ${xNumCols}) {
-              ${xTexelName(r, col + 1)} = getX(batch, xR, xC + 1, d1);
-            }`;
-
           if (strideWidth === 1) {
             if (col > 0) {
-              mainLoop += `xR${r}C${col - 1} = ${xTexelName(r, col - 1)};`;
+              mainLoop += `xR${r}C${left - 2} = ${xTexelName(r, left - 2)};`;
             }
 
             if(col < filterWidth) {
               mainLoop += `
-                xR${r}C${col} = vec4(
-                  ${xTexelName(r, col - 1)}.zw,
-                  ${xTexelName(r, col + 1)}.xy);`;
+                xR${r}C${left - 1} = vec4(
+                  ${xTexelName(r, left - 2)}.zw,
+                  ${xTexelName(r, left)}.xy);`;
             }
           } else {
             if(col > 0) {
-              mainLoop += `xR${r}C${col - 1} = vec4(
-                ${xTexelName(r, col - 1)}.xy,
-                ${xTexelName(r, col + 1)}.xy);`;
+              mainLoop += `xR${r}C${left - 2} = vec4(
+                ${xTexelName(r, left - 2)}.xy,
+                ${xTexelName(r, left)}.xy);`;
             }
 
             if(col < filterWidth) {
               mainLoop += `
-                xR${r}C${col} = vec4(
-                  ${xTexelName(r, col - 1)}.zw,
-                  ${xTexelName(r, col + 1)}.zw);`;
+                xR${r}C${left - 1} = vec4(
+                  ${xTexelName(r, left - 2)}.zw,
+                  ${xTexelName(r, left)}.zw);`;
             }
           }
         }
