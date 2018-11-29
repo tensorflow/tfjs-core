@@ -301,7 +301,7 @@ export class MathBackendWebGL implements KernelBackend {
       return new Promise<TypedArray>(resolve => subscribers.push(resolve));
     }
     const texData = this.texData.get(dataId);
-    const {texture, values, texShape} = texData;
+    const {texture, values, texShape, isPacked, shape} = texData;
     if (values != null) {
       return this.convertAndCacheOnCPU(dataId);
     }
@@ -327,8 +327,18 @@ export class MathBackendWebGL implements KernelBackend {
     if (bufferOrTexture instanceof WebGLTexture) {
       vals = this.getValuesFromTexture(dataId);
     } else {
-      vals = this.gpgpu.downloadFloat32MatrixFromBuffer(
-          bufferOrTexture, texShape[0], texShape[1]);
+      if (isPacked) {
+        const batch = this.getBatchDim(shape);
+        let rows = 1, cols = 1;
+        if (shape.length) {
+          [rows, cols] = this.getRowsCols(shape);
+        }
+        vals = this.gpgpu.downloadMatrixFromPackedTexture(
+            texture, batch, rows, cols, texShape[0], texShape[1]);
+      } else {
+        vals = this.gpgpu.downloadFloat32MatrixFromBuffer(
+            bufferOrTexture, texShape[0], texShape[1]);
+      }
     }
     const dTypeVals = this.convertAndCacheOnCPU(dataId, vals);
 
