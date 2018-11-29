@@ -144,7 +144,7 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
 }
 
 function xTexelName(r: number, c: number): string {
-  return `xTexelR${r}C${c < 0 ? 'minus' + Math.abs(c) : c}`;
+  return `xTexelR${r}C${c < 0 ? 'minus' + Math.abs(c).toString() : c}`;
 }
 
 function constructTexel(
