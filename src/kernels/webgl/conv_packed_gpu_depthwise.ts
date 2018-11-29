@@ -68,8 +68,8 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
         if (padLeft === 0) {
           if (col > 0) {
             mainLoop += `
-              xR${r}C${left - 2} = ${constructTexel(r, left - 2, strideWidth)};
-              xR${r}C${left - 1} = ${constructTexel(r, left - 1, strideWidth)};`;
+              xR${r}C${left - 2} = ${constructTexel(r, left - 2, strideWidth, padLeft)};
+              xR${r}C${left - 1} = ${constructTexel(r, left - 1, strideWidth, padLeft)};`;
           }
 
           if (col < filterWidth && c === texelsAcross - 1) {
@@ -83,7 +83,7 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
             }
 
             mainLoop += `
-              xR${r}C${left} = ${constructTexel(r, left, strideWidth)};
+              xR${r}C${left} = ${constructTexel(r, left, strideWidth, padLeft)};
             `;
           }
         } else {
@@ -94,30 +94,13 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
               }`;
           }
 
-          if (strideWidth === 1) {
-            if (col > 0) {
-              mainLoop += `xR${r}C${left - 2} = ${xTexelName(r, left - 2)};`;
-            }
+          if (col > 0) {
+            mainLoop += `xR${r}C${left - 2} = ${constructTexel(r, left - 2, strideWidth, padLeft)};`;
+          }
 
-            if(col < filterWidth) {
-              mainLoop += `
-                xR${r}C${left - 1} = vec4(
-                  ${xTexelName(r, left - 2)}.zw,
-                  ${xTexelName(r, left)}.xy);`;
-            }
-          } else {
-            if(col > 0) {
-              mainLoop += `xR${r}C${left - 2} = vec4(
-                ${xTexelName(r, left - 2)}.xy,
-                ${xTexelName(r, left)}.xy);`;
-            }
-
-            if(col < filterWidth) {
-              mainLoop += `
-                xR${r}C${left - 1} = vec4(
-                  ${xTexelName(r, left - 2)}.zw,
-                  ${xTexelName(r, left)}.zw);`;
-            }
+          if(col < filterWidth) {
+            mainLoop += `
+              xR${r}C${left - 1} = ${constructTexel(r, left - 1, strideWidth, padLeft)};`;
           }
         }
 
@@ -171,15 +154,15 @@ function xTexelName(r: number, c: number) {
   return `xTexelR${r}C${c < 0 ? 'minus' + Math.abs(c) : c}`;
 }
 
-function constructTexel(r, c, stride) {
+function constructTexel(r, c, stride, padLeft) {
   if(stride === 1) {
-    if(c % 2 === 0) {
+    if(padLeft % 2 === c % 2) {
       return xTexelName(r, c);
     }
     return `vec4(${xTexelName(r, c - 1)}.zw, ${xTexelName(r, c + 1)}.xy)`;
   }
 
-  if(c % 2 === 0) {
+  if(padLeft % 2 === c % 2) {
     return `vec4(${xTexelName(r, c)}.xy, ${xTexelName(r, c + 2)}.xy)`;
   }
   return `vec4(${xTexelName(r, c - 1)}.zw, ${xTexelName(r, c + 1)}.zw)`;
