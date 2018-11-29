@@ -66,11 +66,6 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
           }`;
 
         if (padLeft === 0) {
-          if (col > 0) {
-            mainLoop += `
-              xR${r}C${left - 1} = ${constructTexel(r, left - 1, strideWidth, padLeft)};`;
-          }
-
           if (col < filterWidth && c === texelsAcross - 1) {
             if(strideWidth > 1) {
               mainLoop += `
@@ -86,21 +81,21 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
             `;
           }
         } else {
-          if (c === 0) {  // first in a row
+          if (c === 0) {
             mainLoop += `
               if(xR >= 0 && xR < ${xNumRows} && xC - 2 >= 0) {
                 ${xTexelName(r, left - 2)} = getX(batch, xR, xC - 2, d1);
               }`;
           }
-
-          if(col < filterWidth) {
-            mainLoop += `
-              xR${r}C${left - 1} = ${constructTexel(r, left - 1, strideWidth, padLeft)};`;
-          }
         }
 
         if (col > 0) {
           mainLoop += `xR${r}C${left - 2} = ${constructTexel(r, left - 2, strideWidth, padLeft)};`;
+        }
+
+        if(left - 1 >= 0 && left - 1 < filterWidth) {
+          mainLoop += `
+            xR${r}C${left - 1} = ${constructTexel(r, left - 1, strideWidth, padLeft)};`;
         }
 
         if (col < filterWidth) {
