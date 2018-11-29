@@ -52,6 +52,14 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
       }
     }
 
+    /*
+    This vectorized implementation of depthwiseConv works by gathering the
+    values needed for each output channel's dot product into vec4's and then
+    multiplying them all together (this happens in the final double for-loop
+    below). Most of the main loop consists of constructing these vec4's with the
+    minimum number of texture2D calls as possible, which entails logic for
+    making use of all four returned values from a texture2D call at once.
+     */
     for (let r = 0; r < filterHeight; r++) {
       for (let c = 0; c < texelsAcross; c++) {
         const col = c * 2;
@@ -147,6 +155,12 @@ function xTexelName(r: number, c: number): string {
   return `xTexelR${r}C${c < 0 ? 'minus' + Math.abs(c).toString() : c}`;
 }
 
+/*
+Given a 2x2 filter, we want to multiply xR0C0, wR0C0, xR0C1, wR0C1, xR1C0,
+wR1C0, xR1C1, xR1C1. To get there, the xRC's must be constructed out of
+xTexelRC's, which are the vec4's returned from sampling calls. Sometimes this
+means mixing channels from adjacent samples, which constructTexel handles.
+ */
 function constructTexel(
     r: number, c: number, stride: number, padLeft: number): string {
   if (stride === 1) {
