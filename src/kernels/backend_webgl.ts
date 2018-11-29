@@ -1814,17 +1814,21 @@ export class MathBackendWebGL implements KernelBackend {
       let texData = this.texData.get(input.dataId);
 
       if (texData.texture == null) {
-        // Upload small tensors that live on the CPU as uniforms, not as
-        // textures. Do this only when the environment supports 32bit floats due
-        // to problems when comparing 16bit floats with 32bit floats.
-        // TODO(https://github.com/tensorflow/tfjs/issues/821): Make it possible
-        // for packed shaders to sample from uniforms.
-        return {
-          shape: input.shape,
-          texData: null,
-          isUniform: true,
-          uniformValues: this.readSync(input.dataId) as TypedArray
-        };
+        if (!(!texData.isPacked && program.usesPackedTextures) &&
+            util.sizeFromShape(input.shape) <=
+                ENV.get('WEBGL_SIZE_UPLOAD_UNIFORM')) {
+          // Upload small tensors that live on the CPU as uniforms, not as
+          // textures. Do this only when the environment supports 32bit floats
+          // due to problems when comparing 16bit floats with 32bit floats.
+          // TODO(https://github.com/tensorflow/tfjs/issues/821): Make it
+          // possible for packed shaders to sample from uniforms.
+          return {
+            shape: input.shape,
+            texData: null,
+            isUniform: true,
+            uniformValues: this.readSync(input.dataId) as TypedArray
+          };
+        }
 
         // This ensures that if a packed program's inputs have not yet been
         // uploaded to the GPU, they get uploaded as packed right off the bat.
