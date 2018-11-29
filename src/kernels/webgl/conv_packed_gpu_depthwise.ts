@@ -46,9 +46,7 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
       for (let c = -padLeft; c < texelsAcross * 2; c++) {
         mainLoop += `vec4 ${xTexelName(r, c)} = vec4(0.);`;
       }
-    }
 
-    for (let r = 0; r < filterHeight; r++) {
       for (let c = 0; c < filterWidth; c++) {
         mainLoop += `
           vec4 wR${r}C${c} = vec4(0.);
@@ -110,8 +108,7 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
         } else {
           if (c === 0) {  // first in a row
             mainLoop += `
-              if(xR >= 0 && xR < ${xNumRows}
-                && xC - 1 >= 0 && xC - 1 < ${xNumCols}) {
+              if(xR >= 0 && xR < ${xNumRows} && xC - 1 >= 0) {
                 ${xTexelName(r, col - 1)} = getX(batch, xR, xC - 1, d1);
               }`;
           }
