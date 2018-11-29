@@ -80,13 +80,11 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
               xR${r}C${left} = ${constructTexel(r, left, strideWidth, padLeft)};
             `;
           }
-        } else {
-          if (c === 0) {
-            mainLoop += `
-              if(xR >= 0 && xR < ${xNumRows} && xC - 2 >= 0) {
-                ${xTexelName(r, left - 2)} = getX(batch, xR, xC - 2, d1);
-              }`;
-          }
+        } else if (c === 0) {
+          mainLoop += `
+            if(xR >= 0 && xR < ${xNumRows} && xC - 2 >= 0) {
+              ${xTexelName(r, left - 2)} = getX(batch, xR, xC - 2, d1);
+            }`;
         }
 
         if (col > 0) {
