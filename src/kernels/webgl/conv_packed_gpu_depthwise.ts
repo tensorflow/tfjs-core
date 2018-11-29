@@ -136,8 +136,8 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
         int batch = coords.x;
         ivec2 xRCCorner = coords.yz * strides - pads;
         int d2 = coords.w;
-        int d1 = d2 / ${channelMul};
-        int q = d2 - d1 * ${channelMul};
+        int d1 = d2;
+        int q = 0;
         int xRCorner = xRCCorner.x;
         int xCCorner = xRCCorner.y;
 
@@ -157,9 +157,9 @@ function xTexelName(r: number, c: number): string {
 
 /*
 Given a 2x2 filter, we want to multiply xR0C0, wR0C0, xR0C1, wR0C1, xR1C0,
-wR1C0, xR1C1, xR1C1. To get there, the xRC's must be constructed out of
-xTexelRC's, which are the vec4's returned from sampling calls. Sometimes this
-means mixing channels from adjacent samples, which constructTexel handles.
+wR1C0, xR1C1, xR1C1. The xRC's are constructed out of xTexelRC's, which are the
+vec4's returned from sampling calls. Sometimes this means mixing channels from
+adjacent samples, which constructTexel handles.
  */
 function constructTexel(
     r: number, c: number, stride: number, padLeft: number): string {
