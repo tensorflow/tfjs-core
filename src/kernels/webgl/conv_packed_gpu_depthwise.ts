@@ -35,7 +35,6 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
     const strideWidth = convInfo.strideWidth;
     const filterHeight = convInfo.filterHeight;
     const filterWidth = convInfo.filterWidth;
-    const channelMul = convInfo.outChannels / convInfo.inChannels;
     const texelsAcross = Math.ceil((filterWidth + 1) / 2);
 
     let mainLoop = `int xR; int xC;`;
