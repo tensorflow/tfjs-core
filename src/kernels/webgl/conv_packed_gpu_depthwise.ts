@@ -66,42 +66,25 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
           }`;
 
         if (padLeft === 0) {
-          if (strideWidth === 1) {
-            if (col > 0) {
-              mainLoop += `
-                xR${r}C${left - 2} = ${xTexelName(r, left - 2)};
-                xR${r}C${left - 1} = vec4(
-                  ${xTexelName(r, left - 2)}.zw, ${xTexelName(r, left)}.xy);`;
-            }
+          if (col > 0) {
+            mainLoop += `
+              xR${r}C${left - 2} = ${constructTexel(r, left - 2, strideWidth)};
+              xR${r}C${left - 1} = ${constructTexel(r, left - 1, strideWidth)};`;
+          }
 
-            if (col < filterWidth && c === texelsAcross - 1) {
-              mainLoop += `
-                xR${r}C${left} = ${xTexelName(r, left)};
-              `;
-            }
-          } else {
-            if (col > 0) {
-              mainLoop += `
-                xR${r}C${left - 2} = vec4(
-                  ${xTexelName(r, left - 2)}.xy, ${xTexelName(r, left)}.xy);
-                xR${r}C${left - 1} = vec4(
-                  ${xTexelName(r, left - 2)}.zw, ${xTexelName(r, left)}.zw);
-              `;
-            }
-
-            if (col < filterWidth && c === texelsAcross - 1) {
+          if (col < filterWidth && c === texelsAcross - 1) {
+            if(strideWidth > 1) {
               mainLoop += `
                 vec4 ${xTexelName(r, left + 2)} = vec4(0.);
 
                 if(xR >= 0 && xR < ${xNumRows} && xC + 2 < ${xNumCols}) {
                   ${xTexelName(r, left + 2)} = getX(batch, xR, xC + 2, d1);
-                }
-
-                xR${r}C${left} = vec4(
-                  ${xTexelName(r, left)}.xy,
-                  ${xTexelName(r, left + 2)}.xy);
-              `;
+                }`;
             }
+
+            mainLoop += `
+              xR${r}C${left} = ${constructTexel(r, left, strideWidth)};
+            `;
           }
         } else {
           if (c === 0) {  // first in a row
@@ -186,4 +169,18 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
 
 function xTexelName(r: number, c: number) {
   return `xTexelR${r}C${c < 0 ? 'minus' + Math.abs(c) : c}`;
+}
+
+function constructTexel(r, c, stride) {
+  if(stride === 1) {
+    if(c % 2 === 0) {
+      return xTexelName(r, c);
+    }
+    return `vec4(${xTexelName(r, c - 1)}.zw, ${xTexelName(r, c + 1)}.xy)`;
+  }
+
+  if(c % 2 === 0) {
+    return `vec4(${xTexelName(r, c)}.xy, ${xTexelName(r, c + 2)}.xy)`;
+  }
+  return `vec4(${xTexelName(r, c - 1)}.zw, ${xTexelName(r, c + 1)}.zw)`;
 }
