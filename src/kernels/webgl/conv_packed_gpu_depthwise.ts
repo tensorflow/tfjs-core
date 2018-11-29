@@ -67,7 +67,7 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
 
         if (padLeft === 0) {
           if (col < filterWidth && c === texelsAcross - 1) {
-            if(strideWidth > 1) {
+            if (strideWidth > 1) {
               mainLoop += `
                 vec4 ${xTexelName(r, left + 2)} = vec4(0.);
 
@@ -88,12 +88,13 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
         }
 
         if (col > 0) {
-          mainLoop += `xR${r}C${left - 2} = ${constructTexel(r, left - 2, strideWidth, padLeft)};`;
+          mainLoop += `xR${r}C${left - 2} =
+            ${constructTexel(r, left - 2, strideWidth, padLeft)};`;
         }
 
-        if(left - 1 >= 0 && left - 1 < filterWidth) {
-          mainLoop += `
-            xR${r}C${left - 1} = ${constructTexel(r, left - 1, strideWidth, padLeft)};`;
+        if (left - 1 >= 0 && left - 1 < filterWidth) {
+          mainLoop += `xR${r}C${left - 1} =
+              ${constructTexel(r, left - 1, strideWidth, padLeft)};`;
         }
 
         if (col < filterWidth) {
@@ -105,8 +106,8 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
           if (col + 1 < filterWidth) {
             mainLoop += `
               vec4 wTexelR${r}C${col + 1} = getW(${r}, ${col + 1}, d1, q);
-              wR${r}C${col + 1} = vec4(
-                wTexelR${r}C${col + 1}.xz, wTexelR${r}C${col + 1}.xz);`;
+              wR${r}C${col + 1} =
+                vec4(wTexelR${r}C${col + 1}.xz, wTexelR${r}C${col + 1}.xz);`;
           }
         }
       }
@@ -142,19 +143,20 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
   }
 }
 
-function xTexelName(r: number, c: number) {
+function xTexelName(r: number, c: number): string {
   return `xTexelR${r}C${c < 0 ? 'minus' + Math.abs(c) : c}`;
 }
 
-function constructTexel(r, c, stride, padLeft) {
-  if(stride === 1) {
-    if(padLeft % 2 === c % 2) {
+function constructTexel(
+    r: number, c: number, stride: number, padLeft: number): string {
+  if (stride === 1) {
+    if (padLeft % 2 === c % 2) {
       return xTexelName(r, c);
     }
     return `vec4(${xTexelName(r, c - 1)}.zw, ${xTexelName(r, c + 1)}.xy)`;
   }
 
-  if(padLeft % 2 === c % 2) {
+  if (padLeft % 2 === c % 2) {
     return `vec4(${xTexelName(r, c)}.xy, ${xTexelName(r, c + 2)}.xy)`;
   }
   return `vec4(${xTexelName(r, c - 1)}.zw, ${xTexelName(r, c + 1)}.zw)`;

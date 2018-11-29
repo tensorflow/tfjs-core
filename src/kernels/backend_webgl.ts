@@ -1486,7 +1486,10 @@ export class MathBackendWebGL implements KernelBackend {
   depthwiseConv2D(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
       Tensor4D {
     let program: DepthwiseConv2DProgram|DepthwiseConvPacked2DProgram;
-    if (!window.testDepthwise && ENV.get('WEBGL_PACK_DEPTHWISECONV')) {
+    if (ENV.get('WEBGL_PACK_DEPTHWISECONV') && convInfo.dilationWidth === 1 &&
+        convInfo.dilationHeight === 1 && convInfo.padInfo.padLeft <= 1 &&
+        convInfo.strideWidth <= 2 &&
+        convInfo.outChannels / convInfo.inChannels === 1) {
       program = new DepthwiseConvPacked2DProgram(convInfo);
       return this.compileAndRun(
           program, [x, filter], this.makePackedTensor(convInfo.outShape));
