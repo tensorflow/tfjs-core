@@ -130,13 +130,12 @@ function getInputSamplingSnippet(
     res += getSamplerFromInInfo(inInfo);
   }
 
-  // If input and output have the same packed status and have matching logical
-  // shapes, add getTexNameAtOutCoord() method that samples the input
-  // textureSampler using the output coordinates.
-  if (usesPackedTextures === outShapeInfo.isPacked &&
-      (broadcast ||
-       util.arraysEqual(
-           inInfo.shapeInfo.logicalShape, outShapeInfo.logicalShape))) {
+  // If input and output have matching logical shapes, add
+  // getTexNameAtOutCoord() method that samples the input textureSampler using
+  // the output coordinates.
+  if (broadcast ||
+      util.arraysEqual(
+          inInfo.shapeInfo.logicalShape, outShapeInfo.logicalShape)) {
     if (usesPackedTextures) {
       res += getPackedSamplerAtOutputCoords(inInfo, outShapeInfo, broadcast);
     } else {
