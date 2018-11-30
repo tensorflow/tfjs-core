@@ -32,7 +32,7 @@ import {getStridedSlicedInfo} from '../ops/slice_util';
 import {softmax} from '../ops/softmax';
 import {range, scalar, tensor} from '../ops/tensor_ops';
 import {DataId, Scalar, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
-import {DataType, DataTypeMap, Rank, RecursiveArray, ShapeMap, sumOutType, TypedArray, upcastType} from '../types';
+import {DataType, DataTypeMap, DataValues, NumericDataType, Rank, RecursiveArray, ShapeMap, sumOutType, TypedArray, upcastType} from '../types';
 import * as util from '../util';
 import {getTypedArrayFromDType, sizeFromShape} from '../util';
 
@@ -175,16 +175,7 @@ export class MathBackendWebGL implements KernelBackend {
     if (this.texData.has(dataId)) {
       throw new Error('Data buffer is already registered');
     }
-    this.texData.set(dataId, {
-      shape,
-      dtype,
-      values: null,
-      texture: null,
-      complexTensors: null,
-      texShape: null,
-      usage: TextureUsage.RENDER,
-      isPacked: false
-    });
+    this.texData.set(dataId, {shape, dtype});
   }
 
   setDataMover(dataMover: DataMover): void {
@@ -249,7 +240,7 @@ export class MathBackendWebGL implements KernelBackend {
     return {dataId, shape, dtype};
   }
 
-  write(dataId: DataId, values: TypedArray): void {
+  write(dataId: DataId, values: DataValues): void {
     if (values == null) {
       throw new Error('MathBackendWebGL.write(): values can not be null');
     }
@@ -274,11 +265,14 @@ export class MathBackendWebGL implements KernelBackend {
       this.uploadToGPU(dataId);
     }
   }
-  readSync(dataId: DataId): TypedArray {
+  readSync(dataId: DataId): DataValues {
     const texData = this.texData.get(dataId);
     const {values, dtype, complexTensors} = texData;
     if (values != null) {
       return this.convertAndCacheOnCPU(dataId);
+    }
+    if (dtype === 'string') {
+      return values;
     }
     const shouldTimeProgram = this.activeTimers != null;
     let start: number;
@@ -301,7 +295,7 @@ export class MathBackendWebGL implements KernelBackend {
     return this.convertAndCacheOnCPU(dataId, result);
   }
 
-  async read(dataId: DataId): Promise<TypedArray> {
+  async read(dataId: DataId): Promise<DataValues> {
     if (this.pendingRead.has(dataId)) {
       const subscribers = this.pendingRead.get(dataId);
       return new Promise<TypedArray>(resolve => subscribers.push(resolve));
@@ -675,13 +669,8 @@ export class MathBackendWebGL implements KernelBackend {
       const program = new MatMulPackedProgram(
           aSqueezed.shape, bSqueezed.shape, [outerShapeA, outerShapeB],
           transposeA, transposeB);
-      let result = this.compileAndRun(
-          program, [aSqueezed, bSqueezed],
-          this.makePackedTensor<Tensor2D>(program.outputShape));
-
-      if (ENV.get('WEBGL_LAZILY_UNPACK') === false) {
-        result = this.unpackTensor(result);
-      }
+      const result =
+          this.compileAndRun<Tensor2D>(program, [aSqueezed, bSqueezed]);
 
       return result.reshape([1, result.shape[0], result.shape[1]]);
     } else {
@@ -742,18 +731,17 @@ export class MathBackendWebGL implements KernelBackend {
       inputs.push(scale);
     }
 
-    let output = null;
-    let envSpecificBatchNormProgram = BatchNormProgram;
-
     if (ENV.get('WEBGL_PACK_BATCHNORMALIZATION')) {
-      output = this.makePackedTensor(x.shape);
-      envSpecificBatchNormProgram = BatchNormPackedProgram;
+      const batchNormPackedProgram = new BatchNormPackedProgram(
+          x.shape, mean.shape, variance.shape, offsetShape, scaleShape,
+          varianceEpsilon);
+      return this.compileAndRun<Tensor4D>(batchNormPackedProgram, inputs);
     }
 
-    const program = new envSpecificBatchNormProgram(
+    const batchNormProgram = new BatchNormProgram(
         x.shape, mean.shape, variance.shape, offsetShape, scaleShape,
         varianceEpsilon);
-    return this.compileAndRun(program, inputs, output);
+    return this.compileAndRun(batchNormProgram, inputs);
   }
 
   localResponseNormalization4D(
@@ -1070,7 +1058,7 @@ export class MathBackendWebGL implements KernelBackend {
 
   topk<T extends Tensor>(x: T, k: number, sorted: boolean): [T, T] {
     const xVals = x.dataSync();
-    return topkImpl(xVals, x.shape, x.dtype, k, sorted);
+    return topkImpl(xVals, x.shape, x.dtype as NumericDataType, k, sorted);
   }
 
   min(x: Tensor, axes: number[]): Tensor {
@@ -1464,20 +1452,13 @@ export class MathBackendWebGL implements KernelBackend {
 
     const im2ColProgram =
         new Im2ColProgram(x2ColShape, xSqueezed.shape, convInfo);
-    const im2Col = this.compileAndRun<Tensor2D>(
-        im2ColProgram, [xSqueezed],
-        this.makePackedTensor<Tensor2D>(x2ColShape));
+    const im2Col = this.compileAndRun<Tensor2D>(im2ColProgram, [xSqueezed]);
 
     const matmulProgram = new MatMulPackedProgram(
         im2Col.shape, w2Row.shape, [numCols, convInfo.outChannels], true,
         false);
-    let product = this.compileAndRun(
-        matmulProgram, [im2Col, w2Row],
-        this.makePackedTensor<Tensor2D>(matmulProgram.outputShape));
-
-    if (ENV.get('WEBGL_LAZILY_UNPACK') === false) {
-      product = this.unpackTensor(product);
-    }
+    const product =
+        this.compileAndRun<Tensor4D>(matmulProgram, [im2Col, w2Row]);
 
     return product.reshape([1, outHeight, outWidth, convInfo.outChannels]);
   }
@@ -1760,7 +1741,8 @@ export class MathBackendWebGL implements KernelBackend {
 
   private unpackTensor<T extends Tensor>(input: T): T {
     const program = new UnpackProgram(input.shape);
-    return this.compileAndRun(program, [input]);
+    return this.compileAndRun(
+        program, [input], Tensor.make(program.outputShape, {}));
   }
 
   private getBatchDim(shape: number[], dimsToSkip = 2): number {
@@ -1786,9 +1768,7 @@ export class MathBackendWebGL implements KernelBackend {
     const program = new ReshapePackedProgram(
         afterShapeAs3D as [number, number, number],
         inputAs3D.shape as [number, number, number]);
-    return this
-        .compileAndRun(
-            program, [inputAs3D], this.makePackedTensor(afterShapeAs3D))
+    return this.compileAndRun<Tensor<R>>(program, [inputAs3D])
         .reshape(afterShape);
   }
 
@@ -1798,14 +1778,18 @@ export class MathBackendWebGL implements KernelBackend {
       customSetup?: (gpgpu: GPGPUContext, webGLProgram: WebGLProgram) => void,
       pageToCpu = true): K {
     if (output == null) {
-      output =
-          this.makeOutputArray(program.outputShape, inputs[0].dtype) as {} as K;
+      if (program.usesPackedTextures) {
+        output = this.makePackedTensor(program.outputShape) as {} as K;
+      } else {
+        output = this.makeOutputArray(program.outputShape, inputs[0].dtype) as
+            {} as K;
+      }
     }
     if (output.size === 0) {
       // Short-circuit the computation since the result is empty (has 0 in its
       // shape).
       this.texData.get(output.dataId).values =
-          getTypedArrayFromDType(output.dtype, 0);
+          getTypedArrayFromDType(output.dtype as 'float32', 0);
       return output;
     }
 
@@ -1818,29 +1802,43 @@ export class MathBackendWebGL implements KernelBackend {
       }
 
       let texData = this.texData.get(input.dataId);
-      // Upload small tensors that live on the CPU as uniforms, not as
-      // textures. Do this only when the environment supports 32bit floats due
-      // to problems when comparing 16bit floats with 32bit floats.
-      // TODO(https://github.com/tensorflow/tfjs/issues/821): Make it possible
-      // for packed shaders to sample from uniforms.
+
       if (texData.texture == null &&
           !(!texData.isPacked && program.usesPackedTextures) &&
           util.sizeFromShape(input.shape) <=
               ENV.get('WEBGL_SIZE_UPLOAD_UNIFORM')) {
+        // Upload small tensors that live on the CPU as uniforms, not as
+        // textures. Do this only when the environment supports 32bit floats due
+        // to problems when comparing 16bit floats with 32bit floats.
+        // TODO(https://github.com/tensorflow/tfjs/issues/821): Make it possible
+        // for packed shaders to sample from uniforms.
         return {
           shape: input.shape,
           texData: null,
           isUniform: true,
-          uniformValues: this.readSync(input.dataId)
+          uniformValues: this.readSync(input.dataId) as TypedArray
         };
-      }
 
-      if (texData.isPacked !== !!program.usesPackedTextures) {
+        // TODO(annyuan): Revive this block once uploading to packed textures is
+        // fixed.
+
+        // This ensures that if a packed program's inputs have not yet been
+        // uploaded to the GPU, they get uploaded as packed right off the bat.
+        // if (program.usesPackedTextures) {
+        // texData.isPacked = true;
+        // texData.shape = input.shape;
+        //}
+      } else if (!!texData.isPacked !== !!program.usesPackedTextures) {
         let preProcessProgram: UnpackProgram|PackProgram;
         let processedInput: Tensor;
+
+        // Explicitly specifying output tensors because compileAndRun assumes
+        // that programs that take packed inputs produce a packed output.
         if (texData.isPacked) {
           preProcessProgram = new UnpackProgram(input.shape);
-          processedInput = this.compileAndRun(preProcessProgram, [input]);
+          processedInput = this.compileAndRun(
+              preProcessProgram, [input],
+              Tensor.make(preProcessProgram.outputShape, {}));
         } else {
           preProcessProgram = new PackProgram(input.shape);
           processedInput = this.compileAndRun(
@@ -1849,6 +1847,25 @@ export class MathBackendWebGL implements KernelBackend {
 
         texData = this.texData.get(processedInput.dataId);
         input = processedInput;
+      } else if (
+          texData.isPacked &&
+          !webgl_util.isReshapeFree(texData.shape, input.shape)) {
+        // This is a special, temporary case where a texture exists for a tensor
+        // but the shapes are incompatible (due to packing constraints) because
+        // the tensor did not have a chance to go through the packed reshape
+        // shader. This only happens when we reshape the *same* tensor to form
+        // *distinct* inputs to an op, e.g. dotting a vector with itself. This
+        // case will disappear once packed uploading is the default.
+
+        // Temporarily disable delayedStorage so the texture isn't removed from
+        // the original input
+        this.delayedStorage = false;
+        const inputValues = (input as Tensor).dataSync();
+        this.delayedStorage = true;
+
+        input = Tensor.make(input.shape, {values: inputValues}, input.dtype);
+        texData = this.texData.get(input.dataId);
+        texData.isPacked = true;
       }
 
       this.uploadToGPU(input.dataId);
@@ -1889,6 +1906,11 @@ export class MathBackendWebGL implements KernelBackend {
       query = this.endTimer(query);
       this.activeTimers.push(
           {name: program.constructor.name, query: this.getQueryTime(query)});
+    }
+
+    if (!ENV.get('WEBGL_LAZILY_UNPACK') &&
+        this.texData.get(output.dataId).isPacked && !program.isPackShader) {
+      return this.unpackTensor(output as {} as Tensor) as {} as K;
     }
     return output;
   }
@@ -1936,7 +1958,7 @@ export class MathBackendWebGL implements KernelBackend {
 
   private uploadToGPU(dataId: DataId): void {
     const texData = this.texData.get(dataId);
-    const {shape, values, texture, dtype, usage, isPacked} = texData;
+    const {shape, values, texture, usage, isPacked} = texData;
     if (texture != null) {
       // Array is already on GPU. No-op.
       // Touching the texture.
@@ -1962,15 +1984,18 @@ export class MathBackendWebGL implements KernelBackend {
     if (values != null) {
       // TODO(smilkov): Propagate the original typed array to gpgpu.
       if (isPacked) {
-        const batch = util.sizeFromShape(shape.slice(0, shape.length - 2));
-        const rows = shape.length > 1 ? shape[shape.length - 2] : 1;
-        const cols = shape[shape.length - 1];
+        const batch = this.getBatchDim(shape);
+        let rows = 1, cols = 1;
+        if (shape.length) {
+          [rows, cols] = this.getRowsCols(shape);
+        }
         this.gpgpu.uploadMatrixToPackedTexture(
-            newTexture, batch, rows, cols, typedArrayToFloat32(values, dtype));
+            newTexture, batch, rows, cols, texShape[0], texShape[1],
+            typedArrayToFloat32(values as Float32Array));
       } else {
         this.gpgpu.uploadMatrixToTexture(
             newTexture, texShape[0], texShape[1],
-            typedArrayToFloat32(values, dtype));
+            typedArrayToFloat32(values as Float32Array));
       }
       // Once uploaded, don't store the values on cpu.
       texData.values = null;
@@ -1995,9 +2020,9 @@ export class MathBackendWebGL implements KernelBackend {
     }
     texData.usage = TextureUsage.UPLOAD;
     if (float32Values != null) {
-      texData.values = float32ToTypedArray(float32Values, dtype);
+      texData.values = float32ToTypedArray(float32Values, dtype as 'float32');
     }
-    return texData.values;
+    return texData.values as TypedArray;
   }
 
   private releaseTexture(
@@ -2037,7 +2062,7 @@ if (ENV.get('IS_BROWSER')) {
       setTensorTracker);
 }
 
-function float32ToTypedArray<D extends DataType>(
+function float32ToTypedArray<D extends NumericDataType>(
     a: Float32Array, dtype: D): DataTypeMap[D] {
   if (dtype === 'float32' || dtype === 'complex64') {
     return a;
@@ -2053,7 +2078,6 @@ function float32ToTypedArray<D extends DataType>(
   }
 }
 
-function typedArrayToFloat32<D extends DataType>(
-    a: DataTypeMap[D], dtype: D): Float32Array {
+function typedArrayToFloat32(a: TypedArray): Float32Array {
   return (a instanceof Float32Array) ? a : new Float32Array(a);
 }
