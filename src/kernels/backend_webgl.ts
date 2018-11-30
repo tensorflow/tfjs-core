@@ -92,6 +92,7 @@ import {SegmentOpProgram} from './webgl/segment_gpu';
 import {SelectProgram} from './webgl/select_gpu';
 import {SliceProgram} from './webgl/slice_gpu';
 import {StridedSliceProgram} from './webgl/strided_slice_gpu';
+import * as tex_util from './webgl/tex_util';
 import {TextureData, TextureUsage} from './webgl/tex_util';
 import {TextureManager} from './webgl/texture_manager';
 import {TileProgram} from './webgl/tile_gpu';
@@ -316,8 +317,14 @@ export class MathBackendWebGL implements KernelBackend {
     }
 
     // Possibly copy the texture into a buffer before inserting a fence.
-    const bufferOrTexture = this.gpgpu.maybeCreateBufferFromTexture(
-        texture, texShape[0], texShape[1]);
+    let width = texShape[1];
+    let height = texShape[0];
+    if (isPacked) {
+      [width, height] = tex_util.getPackedMatrixTextureShapeWidthHeight(
+          texShape[0], texShape[1]);
+    }
+    const bufferOrTexture =
+        this.gpgpu.maybeCreateBufferFromTexture(texture, height, width);
 
     // Create a fence and wait for it to resolve.
     await this.gpgpu.createAndWaitForFence();
@@ -333,8 +340,8 @@ export class MathBackendWebGL implements KernelBackend {
         if (shape.length) {
           [rows, cols] = this.getRowsCols(shape);
         }
-        vals = this.gpgpu.downloadMatrixFromPackedTexture(
-            texture, batch, rows, cols, texShape[0], texShape[1]);
+        vals = this.gpgpu.downloadPackedMatrixFromBuffer(
+            bufferOrTexture, batch, rows, cols, texShape[0], texShape[1]);
       } else {
         vals = this.gpgpu.downloadFloat32MatrixFromBuffer(
             bufferOrTexture, texShape[0], texShape[1]);
