@@ -16,7 +16,7 @@
  */
 
 import {getChannels} from '../packing_util';
-
+import {getGlslDifferences} from './glsl_version';
 import {GPGPUProgram} from './gpgpu_math';
 import {getCoordsDataType} from './shader_compiler';
 
@@ -40,13 +40,14 @@ export class PackProgram implements GPGPUProgram {
         rank, outputShape[outputShape.length - 1],
         outputShape[outputShape.length - 2], channels);
     const output = getOutput(outputShape, channels);
+    const glsl = getGlslDifferences();
 
     this.userCode = `
       void main() {
         ${dtype} rc = getOutputCoords();
 
         if(${outOfBoundsCondition}) {
-          outputColor = vec4(0);
+          ${glsl.output} = vec4(0);
         } else {
           ${setup}
 

@@ -17,6 +17,8 @@
 import * as broadcast_util from '../../ops/broadcast_util';
 import * as util from '../../util';
 import * as shader_util from './shader_compiler_util';
+import {ENV} from '../../environment';
+import {getGlslDifferences} from './glsl_version';
 
 export type ShapeInfo = {
   logicalShape: number[],
@@ -48,26 +50,54 @@ export function makeShader(
   const outTexShape = outputShape.texShape;
   let outputSamplingSnippet: string;
   let floatTextureSetOutputSnippet: string;
-  let shaderPrefix = SHADER_PREFIX;
+  let shaderPrefix: string;
+  let source: string;
 
-  if (outputShape.isPacked) {
-    outputSamplingSnippet =
-        getPackedOutputSamplingSnippet(outputShape.logicalShape, outTexShape);
-    floatTextureSetOutputSnippet = FLOAT_TEXTURE_SET_RGBA_SNIPPET;
+  if (ENV.get('WEBGL_VERSION') === 2) {
+    shaderPrefix = SHADER_PREFIX_ES300;
+
+    if (outputShape.isPacked) {
+      outputSamplingSnippet =
+          getPackedOutputSamplingSnippet(outputShape.logicalShape, outTexShape);
+      floatTextureSetOutputSnippet = FLOAT_TEXTURE_SET_RGBA_SNIPPET_ES300;
+    } else {
+      outputSamplingSnippet =
+          getOutputSamplingSnippet(outputShape.logicalShape, outTexShape);
+      floatTextureSetOutputSnippet = FLOAT_TEXTURE_SET_R_SNIPPET_ES300;
+    }
+
+    if (usesPackedTextures) {
+      shaderPrefix += SHADER_PACKED_PREFIX;
+    }
+
+    source = [
+      shaderPrefix, FLOAT_TEXTURE_SAMPLE_SNIPPET_ES300,
+      floatTextureSetOutputSnippet, inputPrefixSnippet, outputSamplingSnippet,
+      inputSamplingSnippet, userCode
+    ].join('\n');
   } else {
-    outputSamplingSnippet =
-        getOutputSamplingSnippet(outputShape.logicalShape, outTexShape);
-    floatTextureSetOutputSnippet = FLOAT_TEXTURE_SET_R_SNIPPET;
-  }
+    shaderPrefix = SHADER_PREFIX_ES100;
 
-  if (usesPackedTextures) {
-    shaderPrefix += SHADER_PACKED_PREFIX;
-  }
+    if (outputShape.isPacked) {
+      outputSamplingSnippet =
+          getPackedOutputSamplingSnippet(outputShape.logicalShape, outTexShape);
+      floatTextureSetOutputSnippet = FLOAT_TEXTURE_SET_RGBA_SNIPPET_ES100;
+    } else {
+      outputSamplingSnippet =
+          getOutputSamplingSnippet(outputShape.logicalShape, outTexShape);
+      floatTextureSetOutputSnippet = FLOAT_TEXTURE_SET_R_SNIPPET_ES100;
+    }
 
-  const source = [
-    shaderPrefix, FLOAT_TEXTURE_SAMPLE_SNIPPET, floatTextureSetOutputSnippet,
-    inputPrefixSnippet, outputSamplingSnippet, inputSamplingSnippet, userCode
-  ].join('\n');
+    if (usesPackedTextures) {
+      shaderPrefix += SHADER_PACKED_PREFIX;
+    }
+
+    source = [
+      shaderPrefix, FLOAT_TEXTURE_SAMPLE_SNIPPET_ES100,
+      floatTextureSetOutputSnippet, inputPrefixSnippet, outputSamplingSnippet,
+      inputSamplingSnippet, userCode
+    ].join('\n');
+  }
   return source;
 }
 
@@ -279,19 +309,37 @@ vec2 UVfrom6D(int texNumR, int texNumC, int stride0,
 }
 `;
 
-const FLOAT_TEXTURE_SAMPLE_SNIPPET = `
+const FLOAT_TEXTURE_SAMPLE_SNIPPET_ES100 = `
+  float sampleTexture(sampler2D textureSampler, vec2 uv) {
+    return texture2D(textureSampler, uv).r;
+  }
+`;
+
+const FLOAT_TEXTURE_SAMPLE_SNIPPET_ES300 = `
   float sampleTexture(sampler2D textureSampler, vec2 uv) {
     return texture(textureSampler, uv).r;
   }
 `;
 
-const FLOAT_TEXTURE_SET_R_SNIPPET = `
+const FLOAT_TEXTURE_SET_R_SNIPPET_ES100 = `
+  void setOutput(float val) {
+    gl_FragColor = vec4(val, 0, 0, 0);
+  }
+`;
+
+const FLOAT_TEXTURE_SET_R_SNIPPET_ES300 = `
   void setOutput(float val) {
     outputColor = vec4(val, 0, 0, 0);
   }
 `;
 
-const FLOAT_TEXTURE_SET_RGBA_SNIPPET = `
+const FLOAT_TEXTURE_SET_RGBA_SNIPPET_ES100 = `
+  void setOutput(vec4 val) {
+    gl_FragColor = val;
+  }
+`;
+
+const FLOAT_TEXTURE_SET_RGBA_SNIPPET_ES300 = `
   void setOutput(vec4 val) {
     outputColor = val;
   }
@@ -301,7 +349,74 @@ const FLOAT_TEXTURE_SET_RGBA_SNIPPET = `
 Previous NaN check '(val < 0.0 || 0.0 < val || val == 0.0) ? false : true' does
 not work on iOS 12
  */
-const SHADER_PREFIX = `#version 300 es
+const SHADER_PREFIX_ES100 = `
+  precision highp float;
+  precision highp int;
+  precision highp sampler2D;
+
+  varying vec2 resultUV;
+  const vec2 halfCR = vec2(0.5, 0.5);
+
+  struct ivec5
+  {
+    int x;
+    int y;
+    int z;
+    int w;
+    int u;
+  };
+
+  struct ivec6
+  {
+    int x;
+    int y;
+    int z;
+    int w;
+    int u;
+    int v;
+  };
+
+  bool isNaN(float val) {
+    return (val < 1.0 || 0.0 < val || val == 0.0) ? false : true;
+  }
+
+  bool hasNaN(vec4 values) {
+    vec4 v1 = values * values;
+    vec4 v2 = values * values;
+    return any(notEqual(v1, v2));
+  }
+
+  float getNaN(vec4 values) {
+    return dot(vec4(1), values);
+  }
+
+  int round(float value) {
+    return int(floor(value + 0.5));
+  }
+
+  int imod(int x, int y) {
+    return x - y * (x / y);
+  }
+
+  //Based on the work of Dave Hoskins
+  //https://www.shadertoy.com/view/4djSRW
+  #define HASHSCALE1 443.8975
+  float random(float seed){
+    vec2 p = resultUV * seed;
+    vec3 p3  = fract(vec3(p.xyx) * HASHSCALE1);
+    p3 += dot(p3, p3.yzx + 19.19);
+    return fract((p3.x + p3.y) * p3.z);
+  }
+
+  ${SAMPLE_1D_SNIPPET}
+  ${SAMPLE_2D_SNIPPET}
+  ${SAMPLE_3D_SNIPPET}
+  ${SAMPLE_4D_SNIPPET}
+  ${SAMPLE_5D_SNIPPET}
+  ${SAMPLE_6D_SNIPPET}
+`;
+
+const SHADER_PREFIX_ES300 = `#version 300 es
   precision highp float;
   precision highp int;
   precision highp sampler2D;
@@ -343,16 +458,10 @@ const SHADER_PREFIX = `#version 300 es
     return dot(vec4(1), values);
   }
 
-  // int round(float value) {
-  //   return int(floor(value + 0.5));
-  // }
-
   int imod(int x, int y) {
     return x - y * (x / y);
   }
 
-  //Based on the work of Dave Hoskins
-  //https://www.shadertoy.com/view/4djSRW
   #define HASHSCALE1 443.8975
   float random(float seed){
     vec2 p = resultUV * seed;
@@ -671,12 +780,13 @@ function getPackedSampler1D(inputInfo: InputInfo): string {
   const texShape = inputInfo.shapeInfo.texShape;
   const packedTexShape =
       [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
+  const glsl = getGlslDifferences();
 
   return `
     vec4 ${funcName}(int index) {
       vec2 uv = packedUVfrom1D(
         ${packedTexShape[0]}, ${packedTexShape[1]}, index);
-      return texture(${texName}, uv);
+      return ${glsl.texture2D}(${texName}, uv);
     }
   `;
 }
@@ -700,12 +810,14 @@ function getPackedSampler2D(inputInfo: InputInfo): string {
 
   const texNumR = texShape[0];
   const texNumC = texShape[1];
+  const glsl = getGlslDifferences();
+
   if (texShape != null && util.arraysEqual(shape, texShape)) {
     return `
       vec4 ${funcName}(int row, int col) {
         vec2 uv = (vec2(col, row) + halfCR) / vec2(${texNumC}.0, ${texNumR}.0);
 
-        return texture(${texName}, uv);
+        return ${glsl.texture2D}(${texName}, uv);
       }
     `;
   }
@@ -718,7 +830,7 @@ function getPackedSampler2D(inputInfo: InputInfo): string {
     vec4 ${funcName}(int row, int col) {
       vec2 uv = packedUVfrom2D(${valuesPerRow}, ${packedTexShape[0]}, ${
       packedTexShape[1]}, row, col);
-      return texture(${texName}, uv);
+      return ${glsl.texture2D}(${texName}, uv);
     }
   `;
 }
@@ -819,12 +931,13 @@ function getPackedSampler3D(inputInfo: InputInfo): string {
 
   const valuesPerRow = Math.ceil(shape[2] / 2);
   const texelsInBatch = valuesPerRow * Math.ceil(shape[1] / 2);
+  const glsl = getGlslDifferences();
 
   return `
     vec4 ${funcName}(int b, int row, int col) {
       vec2 uv = packedUVfrom3D(
         ${texNumR}, ${texNumC}, ${texelsInBatch}, ${valuesPerRow}, b, row, col);
-      return texture(${texName}, uv);
+      return ${glsl.texture2D}(${texName}, uv);
     }
   `;
 }
@@ -910,13 +1023,14 @@ function getPackedSampler4D(inputInfo: InputInfo): string {
   const valuesPerRow = Math.ceil(shape[3] / 2);
   const texelsInBatch = valuesPerRow * Math.ceil(shape[2] / 2);
   const texelsInBatch2 = texelsInBatch * shape[1];
+  const glsl = getGlslDifferences();
 
   return `
     vec4 ${funcName}(int b2, int b, int row, int col) {
       vec2 uv = packedUVfrom4D(
         ${texNumR}, ${texNumC}, ${texelsInBatch2},
         ${texelsInBatch}, ${valuesPerRow}, b2, b, row, col);
-      return texture(${texName}, uv);
+      return ${glsl.texture2D}(${texName}, uv);
     }
   `;
 }
