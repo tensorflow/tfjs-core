@@ -111,6 +111,19 @@ describeWithFlags('getTextureShapeFromLogicalShape packed', WEBGL_ENVS, () => {
     tf.ENV.set('WEBGL_MAX_TEXTURE_SIZE', max);
     expect(texShape).toEqual([4, 6]);
   });
+
+  it('squarified texture shapes have even number of rows and columns', () => {
+    const isPacked = true;
+    const max = tf.ENV.get('WEBGL_MAX_TEXTURE_SIZE');
+
+    tf.ENV.set('WEBGL_MAX_TEXTURE_SIZE', 5);
+    const logicalShape = [6, 12];
+    const texShape =
+        webgl_util.getTextureShapeFromLogicalShape(logicalShape, isPacked);
+
+    tf.ENV.set('WEBGL_MAX_TEXTURE_SIZE', max);
+    expect(texShape).toEqual([8, 10]);
+  });
 });
 
 describeWithFlags('isReshapeFree', WEBGL_ENVS, () => {

@@ -375,7 +375,14 @@ export function getTextureShapeFromLogicalShape(
       logShape[1] * logShape[2] * logShape[3] <= maxTexSize) {
     return [logShape[0], logShape[1] * logShape[2] * logShape[3]];
   } else {
-    return util.sizeToSquarishShape(size);
+    const texShape = util.sizeToSquarishShape(size);
+    if (isPacked) {
+      // Ensure that packed texture has even width and height, even it could
+      // exceed maxTexSize - e.g. 6x12 shape is sizeToSquarishShape-ed to 8x9.
+      texShape[0] = util.nearestLargerEven(texShape[0]);
+      texShape[1] = util.nearestLargerEven(texShape[1]);
+    }
+    return texShape;
   }
 }
 
