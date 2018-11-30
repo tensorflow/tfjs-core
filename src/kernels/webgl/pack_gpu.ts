@@ -36,7 +36,7 @@ export class PackProgram implements GPGPUProgram {
     if (rank === 0) {
       this.userCode = `
         void main() {
-          setOutput(vec4(A, 0., 0., 0.));
+          setOutput(vec4(getA(), 0., 0., 0.));
         }
       `;
     } else {
