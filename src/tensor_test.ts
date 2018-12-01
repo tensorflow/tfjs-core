@@ -575,6 +575,47 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     expectArraysClose(a, [1, 5, 2]);
   });
 
+  it('tf.tensor() from Float32Array and number[]', () => {
+    const a = tf.tensor([
+      new Float32Array([1, 2]), new Float32Array([3, 4]),
+      new Float32Array([5, 6]), [7, 8]
+    ]);
+    expect(a.dtype).toBe('float32');
+    expect(a.shape).toEqual([4, 2]);
+    expectArraysClose(a, [1, 2, 3, 4, 5, 6, 7, 8]);
+  });
+
+  it('tf.tensor() from Int32Array and number[]', () => {
+    const a = tf.tensor([
+      new Int32Array([1, 2]), new Int32Array([3, 4]), new Int32Array([5, 6]),
+      [7, 8]
+    ]);
+    expect(a.dtype).toBe('int32');
+    expect(a.shape).toEqual([4, 2]);
+    expectArraysClose(a, [1, 2, 3, 4, 5, 6, 7, 8]);
+  });
+
+  it('tf.tensor() from mixed TypedArray', () => {
+    const a = tf.tensor([
+      new Float32Array([1, 2]), new Int32Array([3, 4]), new Uint8Array([5, 6]),
+      [7, 8]
+    ]);
+    expect(a.dtype).toBe('float32');
+    expect(a.shape).toEqual([4, 2]);
+    expectArraysClose(a, [1, 2, 3, 4, 5, 6, 7, 8]);
+  });
+
+  it('tf.tensor() from TypedArray + number[] fails due to wrong shape', () => {
+    expect(() => tf.tensor([
+      new Float32Array([1, 2]),
+      new Float32Array([3, 4]),
+      new Float32Array([5, 6]),
+      [7, 8, 9, 10], // Should be of length 4
+    ]))
+        .toThrowError(
+            /Element arr\[3\] should have 2 elements, but has 4 elements/);
+  });
+
   it('default dtype from ascii string', () => {
     const a = tf.tensor('hello');
     expect(a.dtype).toBe('string');
