@@ -277,6 +277,16 @@ export class MathBackendCPU implements KernelBackend {
     return buffer.toTensor().reshape(shape) as T;
   }
 
+  diag(x: Tensor): Tensor {
+    const xVals = x.dataSync();
+    const buffer = ops.buffer([x.size, x.size], x.dtype);
+    const vals = buffer.values;
+    for (let i = 0; i < xVals.length; i++) {
+      vals[i * x.size + i] = xVals[i];
+    }
+    return buffer.toTensor();
+  }
+
   reverse<T extends Tensor>(x: T, axis: number[]): T {
     this.assertNotComplex(x, 'reverse');
 
