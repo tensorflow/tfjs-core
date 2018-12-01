@@ -21,7 +21,7 @@ import './indexed_db';
 import './local_storage';
 
 import {browserFiles} from './browser_files';
-import {browserHTTPRequest} from './browser_http';
+import {BrowserHTTPRequest, browserHTTPRequest} from './browser_http';
 import {concatenateArrayBuffers, decodeWeights, encodeWeights, getModelArtifactsInfoForJSON} from './io_utils';
 import {fromMemory, withSaveHandler} from './passthrough';
 import {IORouterRegistry} from './router_registry';
@@ -37,6 +37,7 @@ export {copyModel, listModels, moveModel, removeModel} from './model_management'
 
 export {
   browserFiles,
+  BrowserHTTPRequest,
   browserHTTPRequest,
   concatenateArrayBuffers,
   decodeWeights,
