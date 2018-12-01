@@ -251,7 +251,7 @@ export function parseUrl(url: string): [string, string] {
   return [prefix + '/', suffix];
 }
 
-function isHTTPScheme(url: string): boolean {
+export function isHTTPScheme(url: string): boolean {
   return url.match(BrowserHTTPRequest.URL_SCHEME_REGEX) != null;
 }
 
