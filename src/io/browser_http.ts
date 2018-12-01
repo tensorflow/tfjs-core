@@ -31,6 +31,8 @@ export class BrowserHTTPRequest implements IOHandler {
   protected readonly path: string|string[];
   protected readonly requestInit: RequestInit;
 
+  private readonly fetchFunc: Function;
+
   readonly DEFAULT_METHOD = 'POST';
 
   static readonly URL_SCHEME_REGEX = /^https?:\/\//;
@@ -38,11 +40,7 @@ export class BrowserHTTPRequest implements IOHandler {
   constructor(
       path: string|string[], requestInit?: RequestInit,
       private readonly weightPathPrefix?: string) {
-    if (typeof fetch === 'undefined') {
-      throw new Error(
-          // tslint:disable-next-line:max-line-length
-          'browserHTTPRequest is not supported outside the web browser without a fetch polyfill.');
-    }
+    this.fetchFunc = this.getFetchFunc();
 
     assert(
         path != null && path.length > 0,
@@ -62,6 +60,16 @@ export class BrowserHTTPRequest implements IOHandler {
           'requestInit is expected to have no pre-existing body, but has one.');
     }
     this.requestInit = requestInit || {};
+  }
+
+  protected getFetchFunc(): Function {
+    if (typeof window === 'undefined' || typeof window.fetch === 'undefined') {
+      throw new Error(
+          // tslint:disable-next-line:max-line-length
+          'browserHTTPRequest is not supported outside the web browser ' +
+          'without a fetch polyfill.');
+    }
+    return window.fetch;
   }
 
   async save(modelArtifacts: ModelArtifacts): Promise<SaveResult> {
@@ -98,7 +106,7 @@ export class BrowserHTTPRequest implements IOHandler {
           'model.weights.bin');
     }
 
-    const response = await fetch(this.path as string, init);
+    const response = await this.fetchFunc(this.path as string, init);
 
     if (response.ok) {
       return {
@@ -130,7 +138,7 @@ export class BrowserHTTPRequest implements IOHandler {
    */
   private async loadBinaryTopology(): Promise<ArrayBuffer> {
     try {
-      const response = await fetch(this.path[0], this.requestInit);
+      const response = await this.fetchFunc(this.path[0], this.requestInit);
       if (!response.ok) {
         throw new Error(
             `BrowserHTTPRequest.load() failed due to HTTP response: ${
@@ -144,7 +152,8 @@ export class BrowserHTTPRequest implements IOHandler {
 
   protected async loadBinaryModel(): Promise<ModelArtifacts> {
     const graphPromise = this.loadBinaryTopology();
-    const manifestPromise = await fetch(this.path[1], this.requestInit);
+    const manifestPromise =
+        await this.fetchFunc(this.path[1], this.requestInit);
     if (!manifestPromise.ok) {
       throw new Error(`BrowserHTTPRequest.load() failed due to HTTP response: ${
           manifestPromise.statusText}`);
@@ -168,7 +177,7 @@ export class BrowserHTTPRequest implements IOHandler {
 
   protected async loadJSONModel(): Promise<ModelArtifacts> {
     const modelConfigRequest =
-        await fetch(this.path as string, this.requestInit);
+        await this.fetchFunc(this.path as string, this.requestInit);
     if (!modelConfigRequest.ok) {
       throw new Error(`BrowserHTTPRequest.load() failed due to HTTP response: ${
           modelConfigRequest.statusText}`);
@@ -216,8 +225,8 @@ export class BrowserHTTPRequest implements IOHandler {
 
     return [
       weightSpecs,
-      concatenateArrayBuffers(
-          await loadWeightsAsArrayBuffer(fetchURLs, this.requestInit))
+      concatenateArrayBuffers(await loadWeightsAsArrayBuffer(
+          fetchURLs, this.requestInit, this.fetchFunc))
     ];
   }
 }
@@ -247,7 +256,7 @@ function isHTTPScheme(url: string): boolean {
 }
 
 export const httpRequestRouter: IORouter = (url: string|string[]) => {
-  if (typeof fetch === 'undefined') {
+  if (typeof window === 'undefined' || typeof window.fetch === 'undefined') {
     // browserHTTPRequest uses `fetch`, if one wants to use it in node.js
     // they have to setup a global fetch polyfill.
     return null;
