@@ -41,6 +41,8 @@ export class BrowserHTTPRequest implements IOHandler {
       path: string|string[], requestInit?: RequestInit,
       private readonly weightPathPrefix?: string) {
     this.fetchFunc = this.getFetchFunc();
+    assert(
+        this.fetchFunc != null,  'Failed to find a proper fetch function.');
 
     assert(
         path != null && path.length > 0,
