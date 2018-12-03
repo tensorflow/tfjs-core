@@ -1308,22 +1308,8 @@ function getPackedSamplerAtOutputCoords(
       inputInfo.shapeInfo.logicalShape, outShapeInfo.logicalShape);
   const inRank = inputInfo.shapeInfo.logicalShape.length;
   const outRank = outShapeInfo.logicalShape.length;
-  const doBroadcast =
-      supportsBroadcasting && ((outRank > inRank) || broadcastDims.length > 0);
-  const broadcastOverOuter =
-      broadcast_util.broadcastDimsAreOuter(broadcastDims);
-
-  if (doBroadcast && !broadcastOverOuter) {
+  if (broadcastDims.length) {
     throw Error('Packed broadcast sampling is not implemented yet.');
-  }
-
-  const inSize = util.sizeFromShape(packedTexShape);
-  let broadcastSnippet = '';
-  if (doBroadcast && broadcastOverOuter) {
-    broadcastSnippet = `
-        int mainPart = index / ${inSize};
-        index -= mainPart * ${inSize};
-      `;
   }
 
   const inTexShape = inputInfo.shapeInfo.texShape;
@@ -1361,8 +1347,6 @@ function getPackedSamplerAtOutputCoords(
       ivec2 resTexRC = ivec2(resultUV.yx *
                              vec2(${packedTexShape[0]}, ${packedTexShape[1]}));
       int index = resTexRC.x * ${packedTexShape[1]} + resTexRC.y;
-
-      ${broadcastSnippet}
 
       int texR = index / ${texNumC};
       int texC = index - texR * ${texNumC};
