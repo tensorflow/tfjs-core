@@ -65,12 +65,12 @@ export class BrowserHTTPRequest implements IOHandler {
   }
 
   protected getFetchFunc(): Function {
-    if (typeof window === 'undefined' || typeof window.fetch === 'undefined') {
+    if (typeof fetch === 'undefined') {
       throw new Error(
           'browserHTTPRequest is not supported outside the web browser ' +
           'without a fetch polyfill.');
     }
-    return window.fetch;
+    return fetch;
   }
 
   async save(modelArtifacts: ModelArtifacts): Promise<SaveResult> {
@@ -257,7 +257,7 @@ export function isHTTPScheme(url: string): boolean {
 }
 
 export const httpRequestRouter: IORouter = (url: string|string[]) => {
-  if (typeof window === 'undefined' || typeof window.fetch === 'undefined') {
+  if (typeof fetch === 'undefined') {
     // browserHTTPRequest uses `fetch`, if one wants to use it in node.js
     // they have to setup a global fetch polyfill.
     return null;
