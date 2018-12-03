@@ -660,10 +660,8 @@ describeWithFlags('Switching WebGL + CPU backends', WEBGL_ENVS, () => {
 describe('Memory allocation outside a test scope', () => {
   it('constructing a tensor works', () => {
     tf.setBackend('cpu');
-    console.log(tf.ENV.getFeatures());
     const a = tf.tensor1d([1, 2, 3]);
     expectArraysClose(a, [1, 2, 3]);
     a.dispose();
-    console.log(tf.ENV.getFeatures());
   });
 });
