@@ -67,7 +67,6 @@ export class BrowserHTTPRequest implements IOHandler {
   protected getFetchFunc(): Function {
     if (typeof window === 'undefined' || typeof window.fetch === 'undefined') {
       throw new Error(
-          // tslint:disable-next-line:max-line-length
           'browserHTTPRequest is not supported outside the web browser ' +
           'without a fetch polyfill.');
     }
