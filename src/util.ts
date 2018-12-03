@@ -423,24 +423,18 @@ export function isNumber(value: {}): boolean {
 }
 
 export function inferDtype(values: TensorLike): DataType {
+  if (values instanceof Array) {
+    return inferDtype(values[0]);
+  }
   if (values instanceof Float32Array) {
     return 'float32';
   } else if (values instanceof Int32Array || values instanceof Uint8Array) {
     return 'int32';
-  } else if (
-      isNumber(values) ||
-      values instanceof Array &&
-          isNumber(getFirstElemFromNestedArray(values))) {
+  } else if (isNumber(values)) {
     return 'float32';
-  } else if (
-      isString(values) ||
-      values instanceof Array &&
-          isString(getFirstElemFromNestedArray(values))) {
+  } else if (isString(values)) {
     return 'string';
-  } else if (
-      isBoolean(values) ||
-      values instanceof Array &&
-          isBoolean(getFirstElemFromNestedArray(values))) {
+  } else if (isBoolean(values)) {
     return 'bool';
   }
   return 'float32';
@@ -549,11 +543,4 @@ export function now(): number {
         'Cannot measure time in this environment. You should run tf.js ' +
         'in the browser or in Node.js');
   }
-}
-
-function getFirstElemFromNestedArray(arr: TensorLike): {} {
-  while (arr instanceof Array) {
-    arr = arr[0];
-  }
-  return arr;
 }
