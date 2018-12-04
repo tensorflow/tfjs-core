@@ -95,7 +95,7 @@ function tensor<R extends Rank>(
   }
   shape = shape || inferredShape;
   values = dtype !== 'string' ? toTypedArray(values, dtype, ENV.get('DEBUG')) :
-                                flatten(values) as string[];
+                                flatten(values as string[]) as string[];
   return Tensor.make(shape, {values}, dtype);
 }
 
