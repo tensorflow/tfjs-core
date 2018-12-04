@@ -19,7 +19,8 @@
  * Linear algebra resolution.
  */
 
-import {scalar, split, tensor1d} from '..';
+import { scalar, tensor1d } from './tensor_ops';
+import { split } from './array_ops';
 import {ENV} from '../environment';
 import {Scalar, Tensor, Tensor2D} from '../tensor';
 import {assert} from '../util';
