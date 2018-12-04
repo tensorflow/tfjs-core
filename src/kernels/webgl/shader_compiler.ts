@@ -124,7 +124,7 @@ function getInputSamplingSnippet(
     inInfo: InputInfo, outShapeInfo: ShapeInfo, broadcast: boolean,
     usesPackedTextures = false): string {
   let res = getSamplerFlat(inInfo);
-  if (inInfo.shapeInfo.isPacked) {
+  if (usesPackedTextures) {
     res += getPackedSamplerFromInInfo(inInfo);
   } else {
     res += getSamplerFromInInfo(inInfo);
