@@ -32,6 +32,9 @@ export type InputInfo = {
   shapeInfo: ShapeInfo
 };
 
+const ivec5StructMembers = [`x`, `y`, `z`, `w`, `u`];
+const ivec6StructMembers = [`x`, `y`, `z`, `w`, `u`, `v`];
+
 export function makeShader(
     inputsInfo: InputInfo[], outputShape: ShapeInfo, userCode: string,
     broadcast: boolean, usesPackedTextures: boolean): string {
@@ -349,21 +352,21 @@ const SHADER_PREFIX = `
 
   struct ivec5
   {
-    int x;
-    int y;
-    int z;
-    int w;
-    int u;
+    int ${ivec5StructMembers[0]};
+    int ${ivec5StructMembers[1]};
+    int ${ivec5StructMembers[2]};
+    int ${ivec5StructMembers[3]};
+    int ${ivec5StructMembers[4]};
   };
 
   struct ivec6
   {
-    int x;
-    int y;
-    int z;
-    int w;
-    int u;
-    int v;
+    int ${ivec5StructMembers[0]};
+    int ${ivec6StructMembers[1]};
+    int ${ivec6StructMembers[2]};
+    int ${ivec6StructMembers[3]};
+    int ${ivec6StructMembers[4]};
+    int ${ivec6StructMembers[5]};
   };
 
   ${NAN_CHECKS}
@@ -1260,27 +1263,17 @@ function getBroadcastOutputCoordsSampler(
     type = 'ivec3';
   } else if (outRank === 4) {
     type = 'ivec4';
+  } else if (outRank === 5) {
+    type = 'ivec5';
+  } else if (outRank === 6) {
+    type = 'ivec6';
   }
   const broadcastDims = broadcast_util.getBroadcastDims(
       inputInfo.shapeInfo.logicalShape, outShapeInfo.logicalShape);
-  const rankDiff = outRank - inRank;
-  let coordsSnippet: string;
-  if (inRank === 0) {
-    coordsSnippet = '';
-  } else if (outRank < 2 && broadcastDims.length >= 1) {
-    coordsSnippet = 'coords = 0;';
-  } else {
-    coordsSnippet =
-        broadcastDims.map(d => `coords[${d + rankDiff}] = 0;`).join('\n');
-  }
-  let unpackedCoordsSnippet = '';
-  if (outRank < 2 && inRank > 0) {
-    unpackedCoordsSnippet = 'coords';
-  } else {
-    unpackedCoordsSnippet = inputInfo.shapeInfo.logicalShape
-                                .map((s, i) => `coords[${i + rankDiff}]`)
-                                .join(', ');
-  }
+  const coordsSnippet =
+      getBroadcastOutputCoordsSnippet(inRank, outRank, broadcastDims);
+  const unpackedCoordsSnippet = getBroadcastOutputUnpackedCoordsSnippet(
+      inRank, outRank, inputInfo.shapeInfo.logicalShape);
   return `
     float ${funcName}() {
       ${type} coords = getOutputCoords();
@@ -1288,6 +1281,59 @@ function getBroadcastOutputCoordsSampler(
       return get${texFuncSnippet}(${unpackedCoordsSnippet});
     }
   `;
+}
+
+function getBroadcastOutputCoordsSnippet(
+    inRank: number, outRank: number, broadcastDims: number[]): string {
+  let coordsSnippet: string;
+  const rankDiff = outRank - inRank;
+  if (inRank === 0) {
+    coordsSnippet = '';
+  } else if (outRank < 2 && broadcastDims.length >= 1) {
+    coordsSnippet = 'coords = 0;';
+  } else {
+    if (outRank <= 4) {
+      coordsSnippet =
+          broadcastDims.map(d => `coords[${d + rankDiff}] = 0;`).join('\n');
+    } else {
+      let structMembers: string[];
+      if (outRank === 5) {
+        structMembers = ivec5StructMembers;
+      } else if (outRank === 6) {
+        structMembers = ivec6StructMembers;
+      }
+      coordsSnippet =
+          broadcastDims.map(d => `coords.${structMembers[d + rankDiff]} = 0;`)
+              .join('\n');
+    }
+  }
+  return coordsSnippet;
+}
+
+function getBroadcastOutputUnpackedCoordsSnippet(
+    inRank: number, outRank: number, inputLogicalShape: number[]): string {
+  let unpackedCoordsSnippet = '';
+  const rankDiff = outRank - inRank;
+  if (outRank < 2 && inRank > 0) {
+    unpackedCoordsSnippet = 'coords';
+  } else {
+    if (outRank <= 4) {
+      unpackedCoordsSnippet =
+          inputLogicalShape.map((s, i) => `coords[${i + rankDiff}]`).join(', ');
+    } else {
+      let structMembers: string[];
+      if (outRank === 5) {
+        structMembers = ivec5StructMembers;
+      } else if (outRank === 6) {
+        structMembers = ivec6StructMembers;
+      }
+      unpackedCoordsSnippet =
+          inputLogicalShape
+              .map((s, i) => `coords.${structMembers[i + rankDiff]}`)
+              .join(', ');
+    }
+  }
+  return unpackedCoordsSnippet;
 }
 
 function getPackedSamplerAtOutputCoords(
