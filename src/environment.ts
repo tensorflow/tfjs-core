@@ -314,6 +314,8 @@ export class Environment {
       return this.get('WEBGL_PACK');
     } else if (feature === 'WEBGL_PACK_CLIP') {
       return this.get('WEBGL_PACK');
+    } else if (feature === 'WEBGL_PACK_DEPTHWISECONV') {
+      return this.get('WEBGL_PACK');
     } else if (feature === 'WEBGL_LAZILY_UNPACK') {
       return this.get('WEBGL_PACK');
     } else if (feature === 'WEBGL_CONV_IM2COL') {
