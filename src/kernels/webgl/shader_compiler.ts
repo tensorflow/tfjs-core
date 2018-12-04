@@ -321,9 +321,9 @@ if (ENV.get('PROD')) {
     }
   `;
 } else {
-  /*
-  Previous NaN check '(val < 0.0 || 0.0 < val || val == 0.0) ? false : true'
-  does not work on iOS 12
+  /**
+   * Previous NaN check '(val < 0.0 || 0.0 < val || val == 0.0) ? false : true'
+   * does not work on iOS 12
    */
   NAN_CHECKS = `
     bool isNaN(float val) {
