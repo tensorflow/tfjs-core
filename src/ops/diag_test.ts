@@ -101,4 +101,22 @@ describeWithFlags('diag', ALL_ENVS, () => {
             ],
             [2, 2, 3, 2, 2, 2, 3, 2]));
   });
+  it('int32', () => {
+    const m = tf.tensor1d([5, 3], 'int32');
+    const diag = tf.diag(m);
+    expectArraysEqual(diag.shape, [2, 2]);
+    expectArraysEqual(diag, tf.tensor2d([5, 0, 0, 3], [2, 2], 'int32'));
+  });
+  it('bool', () => {
+    const m = tf.tensor1d([5, 3], 'bool');
+    const diag = tf.diag(m);
+    expectArraysEqual(diag.shape, [2, 2]);
+    expectArraysEqual(diag, tf.tensor2d([1, 0, 0, 1], [2, 2], 'bool'));
+  });
+  it('complex', () => {
+    const real = tf.tensor1d([2.25]);
+    const imag = tf.tensor1d([4.75]);
+    const m = tf.complex(real, imag);
+    expect(() => tf.diag(m)).toThrowError();
+  });
 });
