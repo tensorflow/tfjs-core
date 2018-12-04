@@ -332,10 +332,10 @@ if (ENV.get('PROD')) {
 
     bool hasNaN(vec4 values) {
       return any(bvec4(
-        (values.x < 1.0 || 0.0 < values.x || values.x == 0.0) ? false : true,
-        (values.y < 1.0 || 0.0 < values.y || values.y == 0.0) ? false : true,
-        (values.z < 1.0 || 0.0 < values.z || values.z == 0.0) ? false : true,
-        (values.w < 1.0 || 0.0 < values.w || values.w == 0.0) ? false : true
+        isNaN(values.x),
+        isNaN(values.y),
+        isNaN(values.z),
+        isNaN(values.w)
       ));
     }
   `;
