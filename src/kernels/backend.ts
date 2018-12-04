@@ -84,6 +84,9 @@ export interface BackendTimer {
  * methods).
  */
 export class KernelBackend implements TensorStorage, BackendTimer {
+  diagPart($x: Tensor<Rank.R1>): any {
+    throw new Error('Method not implemented.');
+  }
   time(f: () => void): Promise<BackendTimingInfo> {
     throw new Error('Not yet implemented.');
   }
