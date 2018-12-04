@@ -19,14 +19,24 @@ import * as tf from '../index';
 import {describeWithFlags, TEST_ENVS} from '../jasmine_util';
 import {ALL_ENVS, expectArraysClose, expectArraysEqual} from '../test_util';
 import {MathBackendWebGL} from '../kernels/backend_webgl';
+import {ENV} from '../environment';
 
-// Append additional testing environment to test packed binary operations.
-TEST_ENVS.push(  {
-  name: 'test-webgl2-packedBinary',
-  factory: () => new MathBackendWebGL(),
-  features: {'WEBGL_VERSION': 2, 'WEBGL_CPU_FORWARD': false,
-             'WEBGL_PACK_BINARY_OPERATIONS': true}
-});
+if (!ENV.get('IS_NODE')) {
+  // When not running in node (headless environment), append additional testing
+  // environment in order to test packed binary operations. This way we run the
+  // same set of tests, specified in this file, both with packed and non-packed
+  // operations. At the bottom of the file, the added test environment is
+  // removed and it doesn't affect other tests.
+  TEST_ENVS.push(
+    {
+      name: 'webgl2-packedBinary',
+      factory: () => new MathBackendWebGL(),
+      features: {'WEBGL_VERSION': ENV.get('WEBGL_VERSION'),
+                 'WEBGL_CPU_FORWARD': false,
+                 'WEBGL_PACK_BINARY_OPERATIONS': true}
+    }
+  );
+}
 
 describeWithFlags('div', ALL_ENVS, () => {
   it('same shape', () => {
@@ -1556,7 +1566,10 @@ describeWithFlags('sub', ALL_ENVS, () => {
   });
 });
 
-// Remove the added packed operation testing environent.
-if (TEST_ENVS.pop().features['WEBGL_PACK_BINARY_OPERATIONS'] !== true) {
-  throw new Error('Error with WEBGL_PACK_BINARY_OPERATIONS setup in tests.');
+if (!ENV.get('IS_NODE')) {
+  // Additional packed operation testing environent is appended above: remove it
+  // as it is required only for tests specified in this file.
+  if (TEST_ENVS.pop().features['WEBGL_PACK_BINARY_OPERATIONS'] !== true) {
+    throw new Error('Error with WEBGL_PACK_BINARY_OPERATIONS setup in tests.'); 
+  }
 }
