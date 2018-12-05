@@ -18,9 +18,6 @@
 import * as broadcast_util from '../../ops/broadcast_util';
 import {GPGPUContext} from './gpgpu_context';
 import {GPGPUProgram} from './gpgpu_math';
-import {getCoordsDataType} from './shader_compiler';
-import {getChannels} from '../packing_util';
-import {arraysEqual} from '../../util';
 
 // We do the same as in ./binaryop_gpu, with vec4 and ivec4. 
 export const PACKED_DIV = `return a / b;`;
@@ -40,16 +37,18 @@ export const PACKED_INT_DIV = `
 `;
 
 export const PACKED_POW = `
-const vec4 zero = vec4(0.0);
-vec4 isNAN = vec4(lessThan(a, zero)) * vec4(lessThan(floor(b), b));
-isNAN.r = isNAN.r == 1.0 ? NAN : 0.0;
-isNAN.g = isNAN.g == 1.0 ? NAN : 0.0;
-isNAN.b = isNAN.b == 1.0 ? NAN : 0.0;
-isNAN.a = isNAN.a == 1.0 ? NAN : 0.0;
-// isModRound1 has 1 for components with round(mod(b, 2.0)) == 1, 0 otherwise.
-vec4 isModRound1 = vec4(equal(round(mod(b, 2.0)), ivec4(1)));
-vec4 multiplier = sign(a) * isModRound1 + (vec4(1.0) - isModRound1);
-return multiplier * pow(abs(a), b) + isNAN;
+  // isModRound1 has 1 for components with round(mod(b, 2.0)) == 1, 0 otherwise.
+  vec4 isModRound1 = vec4(equal(round(mod(b, 2.0)), ivec4(1)));
+  vec4 multiplier = sign(a) * isModRound1 + (vec4(1.0) - isModRound1);
+  vec4 result = multiplier * pow(abs(a), b);
+
+  vec4 isNaN = vec4(lessThan(a, vec4(0.0))) * vec4(lessThan(floor(b), b));
+  result.r = isNaN.r == 1.0 ? NAN : result.r;
+  result.g = isNaN.g == 1.0 ? NAN : result.g;
+  result.b = isNaN.b == 1.0 ? NAN : result.b;
+  result.a = isNaN.a == 1.0 ? NAN : result.a;
+  
+  return result;
 `;
 
 export class BinaryOpPackedProgram implements GPGPUProgram {
@@ -65,12 +64,6 @@ export class BinaryOpPackedProgram implements GPGPUProgram {
   constructor(op: string, aShape: number[], bShape: number[]) {
     this.outputShape =
         broadcast_util.assertAndGetBroadcastShape(aShape, bShape);
-    // Broadcasting is implemented only for 1-D and scalar.
-    if (!arraysEqual(aShape, bShape) && aShape.length > 1 &&
-        bShape.length > 1) {
-      throw new Error(`Broadcasting is supported only for 1-D tensors.`);
-    }
-    const dtype = getCoordsDataType(this.outputShape.length);
     this.userCode = `
       uniform float NAN;
       vec4 binaryOperation(vec4 a, vec4 b) {
@@ -78,9 +71,8 @@ export class BinaryOpPackedProgram implements GPGPUProgram {
       }
 
       void main() {
-        ${dtype} rc = getOutputCoords();
-        ${broadcastSample('a', aShape.length, this.outputShape.length)};
-        ${broadcastSample('b', bShape.length, this.outputShape.length)};
+        vec4 a = getAAtOutCoords();
+        vec4 b = getBAtOutCoords();
         setOutput(binaryOperation(a, b));
       }
     `;
@@ -98,31 +90,5 @@ export class BinaryOpPackedProgram implements GPGPUProgram {
       }
       gpgpu.gl.uniform1f(this.startLoc, NaN);
     };
-  }
-}
-
-function broadcastSample(
-    texName: string, rank: number, outputRank: number): string {
-  const channels = getChannels('rc', outputRank);
-  const texSampler = `get${texName.charAt(0).toUpperCase()}${texName.slice(1)}`;
-  switch (rank) {
-    case 0:
-      return `
-        vec4 ${texName} = vec4(${texSampler}());
-      `;
-    case 1:
-      return `
-        vec4 ${texName}Sample = ${texSampler}(${channels.slice(-1)[0]});
-        vec4 ${texName} = vec4(${texName}Sample.xy, ${texName}Sample.xy);
-      `;
-    case 2:
-    case 3:
-    case 4:
-      const coords = channels.join();    
-      return `
-        vec4 ${texName} = ${texSampler}(${coords});
-      `;
-    default:
-      throw new Error(`${rank}-D packed input sampling is not yet supported.`);
   }
 }

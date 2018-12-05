@@ -1199,8 +1199,7 @@ export class MathBackendWebGL implements KernelBackend {
     const outputShape =
         broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     // 5-D and 6-D are not yet supported. See getPackedOutputSamplingSnippet.
-    // Don't do it for scalars.
-    if (outputShape.length > 4 || outputShape.length < 1) {
+    if (outputShape.length > 4) {
       return false;
     }
     // Broadcasting is implemented only for 1-D and scalar.
@@ -1924,14 +1923,11 @@ export class MathBackendWebGL implements KernelBackend {
 
         // This ensures that if a packed program's inputs have not yet been
         // uploaded to the GPU, they get uploaded as packed right off the bat.
-        // Don't pack constants.
-        if (program.usesPackedTextures && input.shape.length !== 0) {
+        if (program.usesPackedTextures) {
           texData.isPacked = true;
           texData.shape = input.shape;
         }
-      } else if (
-          !!texData.isPacked !== !!program.usesPackedTextures &&
-          input.shape.length !== 0) {
+      } else if (!!texData.isPacked !== !!program.usesPackedTextures) {
         let preProcessProgram: UnpackProgram|PackProgram;
         let processedInput: Tensor;
 
