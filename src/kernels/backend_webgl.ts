@@ -1202,9 +1202,10 @@ export class MathBackendWebGL implements KernelBackend {
     if (outputShape.length > 4) {
       return false;
     }
-    // Broadcasting is implemented only for 1-D and scalar.
-    if (!util.arraysEqual(a.shape, b.shape) && a.shape.length > 1 &&
-        b.shape.length > 1) {
+    // Packed broadcast sampling is not yet supported.
+    // See getPackedSamplerAtOutputCoords.
+    if (broadcast_util.getBroadcastDims(a.shape, outputShape).length ||
+        broadcast_util.getBroadcastDims(b.shape, outputShape).length) {
       return false;
     }
     return true;
