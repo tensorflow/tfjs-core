@@ -37,7 +37,6 @@ export {copyModel, listModels, moveModel, removeModel} from './model_management'
 
 export {
   browserFiles,
-  BrowserHTTPRequest,
   browserHTTPRequest,
   concatenateArrayBuffers,
   decodeWeights,

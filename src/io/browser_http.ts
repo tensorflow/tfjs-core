@@ -39,11 +39,19 @@ export class BrowserHTTPRequest implements IOHandler {
 
   constructor(
       path: string|string[], requestInit?: RequestInit,
-      private readonly weightPathPrefix?: string) {
-    this.fetchFunc = this.getFetchFunc();
-    assert(
-        this.fetchFunc != null,  'Failed to find a proper fetch function.');
-
+      private readonly weightPathPrefix?: string, fetchFunc?: Function) {
+    if (fetchFunc == null) {
+      if (typeof fetch === 'undefined') {
+        throw new Error(
+            'browserHTTPRequest is not supported outside the web browser ' +
+            'without a fetch polyfill.');
+      }
+      this.fetchFunc = fetch;
+    } else {
+      assert(typeof fetchFunc === 'function',  'Not a proper fetch function.');
+      this.fetchFunc = fetchFunc;
+    }
+    
     assert(
         path != null && path.length > 0,
         'URL path for browserHTTPRequest must not be null, undefined or ' +
@@ -62,15 +70,6 @@ export class BrowserHTTPRequest implements IOHandler {
           'requestInit is expected to have no pre-existing body, but has one.');
     }
     this.requestInit = requestInit || {};
-  }
-
-  protected getFetchFunc(): Function {
-    if (typeof fetch === 'undefined') {
-      throw new Error(
-          'browserHTTPRequest is not supported outside the web browser ' +
-          'without a fetch polyfill.');
-    }
-    return fetch;
   }
 
   async save(modelArtifacts: ModelArtifacts): Promise<SaveResult> {
@@ -414,11 +413,14 @@ IORouterRegistry.registerLoadRouter(httpRequestRouter);
  * 'model.weights.bin') will be appended to the body. If `requestInit` has a
  * `body`, an Error will be thrown.
  * @param weightPathPrefix Optional, this specifies the path prefix for weight
- * files, by default this is calculated from the path param.
+ *   files, by default this is calculated from the path param.
+ * @param fetchFunc Optional, custom `fetch` function. E.g., in Node.js,
+ *   the `fetch` from node-fetch can be used here.
  * @returns An instance of `IOHandler`.
  */
 export function browserHTTPRequest(
     path: string|string[], requestInit?: RequestInit,
-    weightPathPrefix?: string): IOHandler {
-  return new BrowserHTTPRequest(path, requestInit, weightPathPrefix);
+    weightPathPrefix?: string, fetchFunc?: Function): IOHandler {
+  return new BrowserHTTPRequest(
+      path, requestInit, weightPathPrefix, fetchFunc);
 }

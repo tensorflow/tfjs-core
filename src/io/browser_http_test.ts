@@ -1070,14 +1070,8 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
       }
     }
 
-    class CustomFetchHTTPRequest extends BrowserHTTPRequest {
-      protected getFetchFunc(): Function {
-        return customFetch;
-      }
-    }
-
-    const handler = new CustomFetchHTTPRequest(
-        './model.json', {credentials: 'include'});
+    const handler = tf.io.browserHTTPRequest(
+        './model.json', {credentials: 'include'}, null, customFetch);
     const modelArtifacts = await handler.load();
     expect(modelArtifacts.modelTopology).toEqual(modelTopology1);
     expect(modelArtifacts.weightSpecs)
