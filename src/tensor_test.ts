@@ -1356,16 +1356,27 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     expect(b.shape).toEqual([3, 1]);
   });
 
+  it('squeeze with negative axis', () => {
+    const a = tf.tensor3d([4, 2, 1], [3, 1, 1], 'bool');
+    const b = a.squeeze([-1]);
+    expect(b.shape).toEqual([3, 1]);
+  });
+
   it('squeeze wrong axis', () => {
     const a = tf.tensor3d([4, 2, 1], [3, 1, 1], 'bool');
     expect(() => a.squeeze([0, 1])).toThrowError();
+  });
+
+  it('squeeze wrong negative axis', () => {
+    const a = tf.tensor3d([4, 2, 1], [3, 1, 1], 'bool');
+    expect(() => a.squeeze([-3, -2])).toThrowError();
   });
 
   it('squeeze throws when passed a non-tensor', () => {
     expect(() => tf.squeeze({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'squeeze' must be a Tensor/);
   });
-
+  
   it('squeeze accepts a tensor-like object', () => {
     const res = tf.squeeze([[[4]], [[2]], [[1]]] /* shape is [3, 1, 1] */);
     expect(res.shape).toEqual([3]);
