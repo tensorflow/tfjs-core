@@ -16,7 +16,7 @@
  */
 
 import {Scalar, Tensor} from '../tensor';
-import {assertTypesMatch} from '../tensor_util';
+import {makeTypesMatch} from '../tensor_util';
 import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import * as util from '../util';
@@ -54,11 +54,11 @@ import {scalar} from './tensor_ops';
 function movingAverage_<T extends Tensor>(
     v: T|TensorLike, x: T|TensorLike, decay: number|Scalar,
     step?: number|Scalar, zeroDebias = true): T {
-  const $v = convertToTensor(v, 'v', 'movingAverage');
-  const $x = convertToTensor(x, 'x', 'movingAverage');
+  let $v = convertToTensor(v, 'v', 'movingAverage');
+  let $x = convertToTensor(x, 'x', 'movingAverage');
   const $decay = convertToTensor(decay, 'decay', 'movingAverage');
 
-  assertTypesMatch($v, $x);
+  [$v, $x] = makeTypesMatch($v, $x);
   util.assert(
       util.arraysEqual($v.shape, $x.shape), 'Shape mismatch in v and x');
 
