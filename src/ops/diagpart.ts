@@ -1,6 +1,5 @@
 import {util} from '..';
 import {ENV} from '../environment';
-// import {tensor} from '../ops/tensor_ops';
 import {Tensor} from '../tensor';
 import {convertToTensor} from '../tensor_util_env';
 
