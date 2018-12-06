@@ -273,6 +273,14 @@ describe('util.squeezeShape', () => {
     it('throws error when specified negative axis is not squeezable', () => {
       expect(() => util.squeezeShape([1, 1, 2, 1, 4], [-1, -2])).toThrowError();
     });
+    it('throws error when specified axis is out of range', () => {
+      expect(
+        () => util.squeezeShape([1, 1, 2, 1, 4], [11, 22])).toThrowError();
+    });
+    it('throws error when specified negative axis is out of range', () => {
+      expect(
+        () => util.squeezeShape([1, 1, 2, 1, 4], [-11, -22])).toThrowError();
+    });
   });
 });
 

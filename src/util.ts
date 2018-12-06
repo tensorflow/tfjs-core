@@ -277,7 +277,11 @@ export function squeezeShape(shape: number[], axis?: number[]):
   const keptDims: number[] = [];
   if (axis != null) {
     for (let i = 0; i < axis.length; ++i) {
-      if (axis[i] < 0){
+      if (axis[i] < -shape.length || axis[i] >= shape.length) {
+        throw new Error(
+          `Can't squeeze axis ${axis[i]} since its not in [-${shape.length}, ${shape.length}) for shape ${shape}`); // tslint:disable-line
+      } 
+      if (axis[i] < 0) {
         axis[i] = shape.length + axis[i];
       }
     }

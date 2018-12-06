@@ -1372,6 +1372,16 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     expect(() => a.squeeze([-3, -2])).toThrowError();
   });
 
+  it('squeeze axis out of range', () => {
+    const a = tf.tensor3d([4, 2, 1], [3, 1, 1], 'bool');
+    expect(() => a.squeeze([10, 11])).toThrowError();
+  });
+
+  it('squeeze negative axis out of range', () => {
+    const a = tf.tensor3d([4, 2, 1], [3, 1, 1], 'bool');
+    expect(() => a.squeeze([-13, -12])).toThrowError();
+  });
+
   it('squeeze throws when passed a non-tensor', () => {
     expect(() => tf.squeeze({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'squeeze' must be a Tensor/);
