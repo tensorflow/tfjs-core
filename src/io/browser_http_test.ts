@@ -1033,7 +1033,7 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
     });
   });
 
-  it('Subclassing BrowserHTTPRequest and overriding fetchFunc', async () => {
+  it('Overriding BrowserHTTPRequest fetchFunc', async () => {
     const weightManifest1: tf.io.WeightsManifestConfig = [{
       paths: ['weightfile0'],
       weights: [
@@ -1053,16 +1053,18 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
 
     const fetchInputs: RequestInfo[] = [];
     const fetchInits: RequestInit[] = [];
-    async function customFetch(input: RequestInfo, init?: RequestInit):
-        Promise<Response> {
+    async function customFetch(
+        input: RequestInfo, init?: RequestInit): Promise<Response> {
       fetchInputs.push(input);
       fetchInits.push(init);
 
       if (input === './model.json') {
-        return new Response(JSON.stringify({
-          modelTopology: modelTopology1,
-          weightsManifest: weightManifest1
-        }), {status: 200});
+        return new Response(
+            JSON.stringify({
+              modelTopology: modelTopology1,
+              weightsManifest: weightManifest1
+            }),
+            {status: 200});
       } else if (input === './weightfile0') {
         return new Response(floatData, {status: 200});
       } else {
@@ -1074,13 +1076,12 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
         './model.json', {credentials: 'include'}, null, customFetch);
     const modelArtifacts = await handler.load();
     expect(modelArtifacts.modelTopology).toEqual(modelTopology1);
-    expect(modelArtifacts.weightSpecs)
-        .toEqual(weightManifest1[0].weights);
-    expect(new Float32Array(modelArtifacts.weightData))
-        .toEqual(floatData);
+    expect(modelArtifacts.weightSpecs).toEqual(weightManifest1[0].weights);
+    expect(new Float32Array(modelArtifacts.weightData)).toEqual(floatData);
 
     expect(fetchInputs).toEqual(['./model.json', './weightfile0']);
     expect(fetchInits).toEqual([
-        {credentials: 'include'}, {credentials: 'include'}]);
+      {credentials: 'include'}, {credentials: 'include'}
+    ]);
   });
 });

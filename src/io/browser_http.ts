@@ -48,10 +48,14 @@ export class BrowserHTTPRequest implements IOHandler {
       }
       this.fetchFunc = fetch;
     } else {
-      assert(typeof fetchFunc === 'function',  'Not a proper fetch function.');
+      assert(
+          typeof fetchFunc === 'function',
+          'Must pass a function that matches the signature of ' +
+              '`fetch` (see ' +
+              'https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)');
       this.fetchFunc = fetchFunc;
     }
-    
+
     assert(
         path != null && path.length > 0,
         'URL path for browserHTTPRequest must not be null, undefined or ' +
@@ -419,8 +423,7 @@ IORouterRegistry.registerLoadRouter(httpRequestRouter);
  * @returns An instance of `IOHandler`.
  */
 export function browserHTTPRequest(
-    path: string|string[], requestInit?: RequestInit,
-    weightPathPrefix?: string, fetchFunc?: Function): IOHandler {
-  return new BrowserHTTPRequest(
-      path, requestInit, weightPathPrefix, fetchFunc);
+    path: string|string[], requestInit?: RequestInit, weightPathPrefix?: string,
+    fetchFunc?: Function): IOHandler {
+  return new BrowserHTTPRequest(path, requestInit, weightPathPrefix, fetchFunc);
 }
