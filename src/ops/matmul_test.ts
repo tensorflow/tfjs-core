@@ -182,14 +182,6 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     expect(c.shape).toEqual([2, 2]);
     expect(c.dtype).toBe('int32');
     expectArraysClose(c, [5, 6, 11, 15]);
-
-    c = tf.matMul(
-        tf.tensor([[true, true], [true, true]]),
-        tf.tensor([[true, true], [true, true]]));
-
-    expect(c.shape).toEqual([2, 2]);
-    expect(c.dtype).toBe('bool');
-    expectArraysClose(c, [2, 2, 2, 2]);
   });
 
   it('A x B^t', () => {
