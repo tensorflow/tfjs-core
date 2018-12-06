@@ -18,10 +18,18 @@
 import {Tensor} from './tensor';
 import {NamedTensorMap, TensorContainer, TensorContainerArray} from './tensor_types';
 import {upcastType} from './types';
+import {assert} from './util';
 
 export function makeTypesMatch<T extends Tensor>(a: T, b: T): [T, T] {
   const dtype = upcastType(a.dtype, b.dtype);
   return [a.cast(dtype), b.cast(dtype)];
+}
+
+export function assertTypesMatch(a: Tensor, b: Tensor): void {
+  assert(
+      a.dtype === b.dtype,
+      `The dtypes of the first(${a.dtype}) and` +
+          ` second(${b.dtype}) input must match`);
 }
 
 export function isTensorInList(tensor: Tensor, tensorList: Tensor[]): boolean {
