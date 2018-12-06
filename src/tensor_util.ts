@@ -21,6 +21,9 @@ import {upcastType} from './types';
 import {assert} from './util';
 
 export function makeTypesMatch<T extends Tensor>(a: T, b: T): [T, T] {
+  if (a.dtype === b.dtype) {
+    return [a, b];
+  }
   const dtype = upcastType(a.dtype, b.dtype);
   return [a.cast(dtype), b.cast(dtype)];
 }
