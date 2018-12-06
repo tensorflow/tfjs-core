@@ -59,7 +59,6 @@ function movingAverage_<T extends Tensor>(
   const $decay = convertToTensor(decay, 'decay', 'movingAverage');
 
   assertTypesMatch($v, $x);
-
   util.assert(
       util.arraysEqual($v.shape, $x.shape), 'Shape mismatch in v and x');
 
