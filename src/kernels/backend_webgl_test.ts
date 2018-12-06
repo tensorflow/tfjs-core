@@ -21,6 +21,17 @@ import {expectArraysClose, expectArraysEqual, WEBGL_ENVS} from '../test_util';
 import {MathBackendWebGL, SIZE_UPLOAD_UNIFORM, WebGLMemoryInfo} from './backend_webgl';
 
 describeWithFlags('lazy packing and unpacking', WEBGL_ENVS, () => {
+  let webglLazilyUnpackFlagSaved: boolean;
+
+  beforeAll(() => {
+    webglLazilyUnpackFlagSaved = tf.ENV.get('WEBGL_LAZILY_UNPACK');
+    tf.ENV.set('WEBGL_LAZILY_UNPACK', true);
+  });
+
+  afterAll(() => {
+    tf.ENV.set('WEBGL_LAZILY_UNPACK', webglLazilyUnpackFlagSaved);
+  });
+
   it('should not leak memory when lazily unpacking', () => {
     const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
     const b = tf.tensor2d([0, 1, -3, 2, 2, 1], [3, 2]);
@@ -50,6 +61,14 @@ describeWithFlags('lazy packing and unpacking', WEBGL_ENVS, () => {
     expect(tf.memory().numBytes - startNumBytes).toEqual(36);
     expect(tf.memory().numTensors - startNumTensors).toEqual(1);
   });
+
+  it('should work when the same input must be represented by' +
+         'different textures',
+     () => {
+       const a = tf.tensor1d([1, 2]);
+       const res = tf.dot(a, a);
+       expectArraysClose(res, [5]);
+     });
 });
 
 describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
@@ -64,6 +83,51 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
     tf.ENV.removeBackend('test-storage');
   });
 
+  it('register empty string tensor', () => {
+    const backend = new MathBackendWebGL();
+    tf.ENV.registerBackend('test-storage', () => backend);
+    tf.setBackend('test-storage');
+
+    const t = tf.Tensor.make([3], {}, 'string');
+    expect(backend.readSync(t.dataId) == null).toBe(true);
+  });
+
+  it('register empty string tensor and write', () => {
+    const backend = new MathBackendWebGL();
+    tf.ENV.registerBackend('test-storage', () => backend);
+    tf.setBackend('test-storage');
+
+    const t = tf.Tensor.make([3], {}, 'string');
+    backend.write(t.dataId, ['c', 'a', 'b']);
+    expectArraysEqual(backend.readSync(t.dataId), ['c', 'a', 'b']);
+  });
+
+  it('register string tensor with values', () => {
+    const backend = new MathBackendWebGL();
+    tf.ENV.registerBackend('test-storage', () => backend);
+    tf.setBackend('test-storage');
+
+    const t = tf.Tensor.make([3], {values: ['a', 'b', 'c']}, 'string');
+    expectArraysEqual(backend.readSync(t.dataId), ['a', 'b', 'c']);
+  });
+
+  it('register string tensor with values and overwrite', () => {
+    const backend = new MathBackendWebGL();
+    tf.ENV.registerBackend('test-storage', () => backend);
+    tf.setBackend('test-storage');
+
+    const t = tf.Tensor.make([3], {values: ['a', 'b', 'c']}, 'string');
+    backend.write(t.dataId, ['c', 'a', 'b']);
+    expectArraysEqual(backend.readSync(t.dataId), ['c', 'a', 'b']);
+  });
+
+  it('register string tensor with values and wrong shape throws error', () => {
+    const backend = new MathBackendWebGL();
+    tf.ENV.registerBackend('test-storage', () => backend);
+    tf.setBackend('test-storage');
+    expect(() => tf.tensor(['a', 'b', 'c'], [4], 'string')).toThrowError();
+  });
+
   it('delayed storage, reading', () => {
     const delayedStorage = true;
     const backend = new MathBackendWebGL(null, delayedStorage);
@@ -76,7 +140,9 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
     expect(texManager.getNumUsedTextures()).toBe(0);
     backend.getTexture(t.dataId);
     expect(texManager.getNumUsedTextures()).toBe(1);
-    expectArraysClose(backend.readSync(t.dataId), new Float32Array([1, 2, 3]));
+    expectArraysClose(
+        backend.readSync(t.dataId) as Float32Array,
+        new Float32Array([1, 2, 3]));
     expect(texManager.getNumUsedTextures()).toBe(0);
     backend.getTexture(t.dataId);
     expect(texManager.getNumUsedTextures()).toBe(1);
@@ -98,10 +164,14 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
     // overwrite.
     backend.write(t.dataId, new Float32Array([4, 5, 6]));
     expect(texManager.getNumUsedTextures()).toBe(0);
-    expectArraysClose(backend.readSync(t.dataId), new Float32Array([4, 5, 6]));
+    expectArraysClose(
+        backend.readSync(t.dataId) as Float32Array,
+        new Float32Array([4, 5, 6]));
     backend.getTexture(t.dataId);
     expect(texManager.getNumUsedTextures()).toBe(1);
-    expectArraysClose(backend.readSync(t.dataId), new Float32Array([4, 5, 6]));
+    expectArraysClose(
+        backend.readSync(t.dataId) as Float32Array,
+        new Float32Array([4, 5, 6]));
     expect(texManager.getNumUsedTextures()).toBe(0);
   });
 
@@ -115,7 +185,9 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
     const t = tf.Tensor.make([3], {}, 'float32');
     backend.write(t.dataId, new Float32Array([1, 2, 3]));
     expect(texManager.getNumUsedTextures()).toBe(1);
-    expectArraysClose(backend.readSync(t.dataId), new Float32Array([1, 2, 3]));
+    expectArraysClose(
+        backend.readSync(t.dataId) as Float32Array,
+        new Float32Array([1, 2, 3]));
     expect(texManager.getNumUsedTextures()).toBe(1);
     backend.disposeData(t.dataId);
     expect(texManager.getNumUsedTextures()).toBe(0);
@@ -133,7 +205,9 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
     expect(texManager.getNumUsedTextures()).toBe(1);
     backend.write(t.dataId, new Float32Array([4, 5, 6]));
     expect(texManager.getNumUsedTextures()).toBe(1);
-    expectArraysClose(backend.readSync(t.dataId), new Float32Array([4, 5, 6]));
+    expectArraysClose(
+        backend.readSync(t.dataId) as Float32Array,
+        new Float32Array([4, 5, 6]));
     expect(texManager.getNumUsedTextures()).toBe(1);
     backend.disposeData(t.dataId);
     expect(texManager.getNumUsedTextures()).toBe(0);
@@ -183,8 +257,12 @@ describeWithFlags('Custom window size', WEBGL_ENVS, () => {
 });
 
 // Run only for environments that have 32bit floating point support.
-const FLOAT32_WEBGL_ENVS =
-    Object.assign({'WEBGL_RENDER_FLOAT32_ENABLED': true}, WEBGL_ENVS);
+const FLOAT32_WEBGL_ENVS = Object.assign(
+    {
+      'WEBGL_RENDER_FLOAT32_ENABLED': true,
+      'WEBGL_SIZE_UPLOAD_UNIFORM': SIZE_UPLOAD_UNIFORM
+    },
+    WEBGL_ENVS);
 describeWithFlags('upload tensors as uniforms', FLOAT32_WEBGL_ENVS, () => {
   it('small tensor gets uploaded as scalar', () => {
     let m = tf.memory() as WebGLMemoryInfo;

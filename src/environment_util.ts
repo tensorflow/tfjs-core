@@ -24,10 +24,18 @@ export interface Features {
   'IS_BROWSER'?: boolean;
   // Whether we are in the Node.js environment.
   'IS_NODE'?: boolean;
+  // Whether packed WebGL kernels lazily unpack their outputs.
+  'WEBGL_LAZILY_UNPACK'?: boolean;
   // Whether the WebGL backend will sometimes forward ops to the CPU.
   'WEBGL_CPU_FORWARD'?: boolean;
+  // Whether to turn all packing related flags on.
+  'WEBGL_PACK'?: boolean;
   // Whether we will pack the batchnormalization op.
   'WEBGL_PACK_BATCHNORMALIZATION'?: boolean;
+  // Whether we will pack the clipping op.
+  'WEBGL_PACK_CLIP'?: boolean;
+  // Whether we pack the depthwise convolution op.
+  'WEBGL_PACK_DEPTHWISECONV'?: boolean;
   // Whether we will use the im2col algorithm to speed up convolutions.
   'WEBGL_CONV_IM2COL'?: boolean;
   // Whether we will perform memory paging.
@@ -85,8 +93,12 @@ export enum Type {
 export const URL_PROPERTIES: URLProperty[] = [
   {name: 'DEBUG', type: Type.BOOLEAN},
   {name: 'IS_BROWSER', type: Type.BOOLEAN},
+  {name: 'WEBGL_LAZILY_UNPACK', type: Type.BOOLEAN},
   {name: 'WEBGL_CPU_FORWARD', type: Type.BOOLEAN},
+  {name: 'WEBGL_PACK', type: Type.BOOLEAN},
   {name: 'WEBGL_PACK_BATCHNORMALIZATION', type: Type.BOOLEAN},
+  {name: 'WEBGL_PACK_CLIP', type: Type.BOOLEAN},
+  {name: 'WEBGL_PACK_DEPTHWISECONV', type: Type.BOOLEAN},
   {name: 'WEBGL_CONV_IM2COL', type: Type.BOOLEAN},
   {name: 'WEBGL_MAX_TEXTURE_SIZE', type: Type.NUMBER},
   {name: 'WEBGL_PAGING_ENABLED', type: Type.BOOLEAN},
@@ -221,7 +233,8 @@ const TENSORFLOWJS_FLAGS_PREFIX = 'tfjsflags';
 export function getFeaturesFromURL(): Features {
   const features: Features = {};
 
-  if (typeof window === 'undefined' || typeof window.location === 'undefined') {
+  if (typeof window === 'undefined' || typeof window.location === 'undefined' ||
+      typeof window.location.search === 'undefined') {
     return features;
   }
 

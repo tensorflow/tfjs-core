@@ -1,6 +1,6 @@
 {
   "name": "@tensorflow/tfjs-core",
-  "version": "0.13.10",
+  "version": "0.14.0",
   "description": "Hardware-accelerated JavaScript library for machine intelligence",
   "private": false,
   "main": "dist/index.js",
@@ -50,7 +50,7 @@
     "coverage": "KARMA_COVERAGE=1 karma start --browsers='Chrome' --singleRun",
     "test": "karma start",
     "run-browserstack": "karma start --singleRun --reporters='dots,karma-typescript,BrowserStack' --hostname='bs-local.com'",
-    "test-benchmark": "cd integration_tests/benchmarks && yarn && yarn lint && yarn benchmark-travis && cd ../../",
+    "test-benchmark": "cd integration_tests/benchmarks && yarn benchmark-travis && cd ../../",
     "test-node": "ts-node src/test_node.ts",
     "test-integration": "./scripts/test-integration.sh",
     "test-travis": "./scripts/test-travis.sh"

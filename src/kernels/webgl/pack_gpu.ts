@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2018 Google Inc. All Rights Reserved.
+ * Copyright 2018 Google LLC. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,42 +15,54 @@
  * =============================================================================
  */
 
-import {getChannels, getInnerDims} from '../packing_util';
+import {getChannels} from '../packing_util';
 
 import {GPGPUProgram} from './gpgpu_math';
 import {getCoordsDataType} from './shader_compiler';
 
 export class PackProgram implements GPGPUProgram {
   variableNames = ['A'];
+  isPackShader = true;
   outputShape: number[];
   userCode: string;
 
-  constructor(outputShape: number[]) {
+  constructor(
+      outputShape:
+          number[]) {  // TODO(https://github.com/tensorflow/tfjs/issues/893):
+                       // Only input / output 3D tensors.
     this.outputShape = outputShape;
     const rank = outputShape.length;
 
-    const channels = getChannels('rc');
-    const dtype = getCoordsDataType(rank);
-    const outOfBoundsCondition =
-        getOutOfBoundsCondition(rank, outputShape, channels);
-    const setup = getSetup(
-        rank, outputShape[outputShape.length - 1],
-        outputShape[outputShape.length - 2], channels);
-    const output = getOutput(outputShape, channels);
-
-    this.userCode = `
-      void main() {
-        ${dtype} rc = getOutputCoords();
-
-        if(${outOfBoundsCondition}) {
-          gl_FragColor = vec4(0);
-        } else {
-          ${setup}
-
-          setOutput(vec4(${output}));
+    if (rank === 0) {
+      this.userCode = `
+        void main() {
+          setOutput(vec4(getA(), 0., 0., 0.));
         }
-      }
-    `;
+      `;
+    } else {
+      const channels = getChannels('rc', rank);
+      const dtype = getCoordsDataType(rank);
+      const outOfBoundsCondition =
+          getOutOfBoundsCondition(rank, outputShape, channels);
+      const setup = getSetup(
+          rank, outputShape[outputShape.length - 1],
+          outputShape[outputShape.length - 2], channels);
+      const output = getOutput(outputShape, channels);
+
+      this.userCode = `
+        void main() {
+          ${dtype} rc = getOutputCoords();
+
+          if(${outOfBoundsCondition}) {
+            setOutput(vec4(0));
+          } else {
+            ${setup}
+
+            setOutput(vec4(${output}));
+          }
+        }
+      `;
+    }
   }
 }
 
@@ -78,7 +90,7 @@ function getOutOfBoundsCondition(
   }
 
   let cond = '';
-  for (let i = 0; i < rank; i++) {
+  for (let i = rank - 2; i < rank; i++) {
     cond += `${dims[i]} >= ${shape[i]}`;
     if (i < rank - 1) {
       cond += '||';
@@ -94,7 +106,7 @@ function getSetup(
     return '';
   }
 
-  const innerDims = getInnerDims(rank, dims);
+  const innerDims = dims.slice(-2);
 
   return `
     int r = ${innerDims[0]};

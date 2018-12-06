@@ -30,7 +30,7 @@ describeWithFlags('getTextureShapeFromLogicalShape', WEBGL_ENVS, () => {
 
   it('1d', () => {
     const texShape = webgl_util.getTextureShapeFromLogicalShape([4]);
-    expect(texShape).toEqual([4, 1]);
+    expect(texShape).toEqual([1, 4]);
   });
 
   it('2d stays same', () => {
@@ -111,4 +111,67 @@ describeWithFlags('getTextureShapeFromLogicalShape packed', WEBGL_ENVS, () => {
     tf.ENV.set('WEBGL_MAX_TEXTURE_SIZE', max);
     expect(texShape).toEqual([4, 6]);
   });
+});
+
+describeWithFlags('isReshapeFree', WEBGL_ENVS, () => {
+  it('is free when shapes have the same inner dimensions', () => {
+    const before = [1, 2, 3];
+    const after = [5, 2, 3];
+    expect(webgl_util.isReshapeFree(before, after)).toBe(true);
+  });
+
+  it('is free when one of the shapes is a scalar', () => {
+    const before: number[] = [];
+    const after = [1, 2, 3];
+    expect(webgl_util.isReshapeFree(before, after)).toBe(true);
+  });
+
+  it('is free when one of the dimensions equals 0', () => {
+    const before = [1, 0];
+    const after = [1, 2, 3];
+    expect(webgl_util.isReshapeFree(before, after)).toBe(true);
+  });
+
+  it('is free when one shape is a vector and the final dimensions match',
+     () => {
+       const before = [9];
+       const after = [1, 1, 9];
+       expect(webgl_util.isReshapeFree(before, after)).toBe(true);
+     });
+
+  it('is free when one shape is a vector and the other has 1 row' +
+         'in every batch and the final dimensions are even',
+     () => {
+       const before = [10];
+       const after = [5, 1, 2];
+       expect(webgl_util.isReshapeFree(before, after)).toBe(true);
+     });
+
+  it('is not free when one shape is a vector and the final dimensions' +
+         'do not match and are not even',
+     () => {
+       const before = [18];
+       const after = [2, 1, 9];
+       expect(webgl_util.isReshapeFree(before, after)).toBe(false);
+     });
+
+  it('is free when the inner dimensions are divisible by 2', () => {
+    const before = [1, 2, 4];
+    const after = [1, 8, 10];
+    expect(webgl_util.isReshapeFree(before, after)).toBe(true);
+  });
+
+  it('is free if the rows are divisible by two and the columns are the same',
+     () => {
+       const before = [1, 2, 3];
+       const after = [1, 4, 3];
+       expect(webgl_util.isReshapeFree(before, after)).toBe(true);
+     });
+
+  it('is not free when the inner dimensions are different and not all even',
+     () => {
+       const before = [1, 2, 3];
+       const after = [1, 3, 2];
+       expect(webgl_util.isReshapeFree(before, after)).toBe(false);
+     });
 });
