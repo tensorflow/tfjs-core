@@ -2,7 +2,6 @@ import {util} from '..';
 import {ENV} from '../environment';
 import {Tensor} from '../tensor';
 import {convertToTensor} from '../tensor_util_env';
-
 import {op} from './operation';
 
 /**
