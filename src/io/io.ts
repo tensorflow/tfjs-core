@@ -21,12 +21,12 @@ import './indexed_db';
 import './local_storage';
 
 import {browserFiles} from './browser_files';
-import {browserHTTPRequest} from './browser_http';
+import {browserHTTPRequest, isHTTPScheme} from './browser_http';
 import {concatenateArrayBuffers, decodeWeights, encodeWeights, getModelArtifactsInfoForJSON} from './io_utils';
 import {fromMemory, withSaveHandler} from './passthrough';
 import {IORouterRegistry} from './router_registry';
 import {IOHandler, LoadHandler, ModelArtifacts, ModelStoreManager, SaveConfig, SaveHandler, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
-import {loadWeights} from './weights_loader';
+import {loadWeights, weightsLoaderFactory} from './weights_loader';
 
 const registerSaveRouter = IORouterRegistry.registerSaveRouter;
 const registerLoadRouter = IORouterRegistry.registerLoadRouter;
@@ -46,6 +46,7 @@ export {
   getModelArtifactsInfoForJSON,
   getSaveHandlers,
   IOHandler,
+  isHTTPScheme,
   LoadHandler,
   loadWeights,
   ModelArtifacts,
@@ -57,5 +58,6 @@ export {
   SaveResult,
   WeightsManifestConfig,
   WeightsManifestEntry,
+  weightsLoaderFactory,
   withSaveHandler
 };

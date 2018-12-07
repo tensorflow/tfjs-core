@@ -15,6 +15,8 @@
  * =============================================================================
  */
 
+import {getWebGLContext} from './canvas_util';
+
 export interface Features {
   // Whether to enable debug mode.
   'DEBUG'?: boolean;
@@ -22,6 +24,18 @@ export interface Features {
   'IS_BROWSER'?: boolean;
   // Whether we are in the Node.js environment.
   'IS_NODE'?: boolean;
+  // Whether packed WebGL kernels lazily unpack their outputs.
+  'WEBGL_LAZILY_UNPACK'?: boolean;
+  // Whether the WebGL backend will sometimes forward ops to the CPU.
+  'WEBGL_CPU_FORWARD'?: boolean;
+  // Whether to turn all packing related flags on.
+  'WEBGL_PACK'?: boolean;
+  // Whether we will pack the batchnormalization op.
+  'WEBGL_PACK_BATCHNORMALIZATION'?: boolean;
+  // Whether we will pack the clipping op.
+  'WEBGL_PACK_CLIP'?: boolean;
+  // Whether we pack the depthwise convolution op.
+  'WEBGL_PACK_DEPTHWISECONV'?: boolean;
   // Whether we will use the im2col algorithm to speed up convolutions.
   'WEBGL_CONV_IM2COL'?: boolean;
   // Whether we will perform memory paging.
@@ -79,6 +93,12 @@ export enum Type {
 export const URL_PROPERTIES: URLProperty[] = [
   {name: 'DEBUG', type: Type.BOOLEAN},
   {name: 'IS_BROWSER', type: Type.BOOLEAN},
+  {name: 'WEBGL_LAZILY_UNPACK', type: Type.BOOLEAN},
+  {name: 'WEBGL_CPU_FORWARD', type: Type.BOOLEAN},
+  {name: 'WEBGL_PACK', type: Type.BOOLEAN},
+  {name: 'WEBGL_PACK_BATCHNORMALIZATION', type: Type.BOOLEAN},
+  {name: 'WEBGL_PACK_CLIP', type: Type.BOOLEAN},
+  {name: 'WEBGL_PACK_DEPTHWISECONV', type: Type.BOOLEAN},
   {name: 'WEBGL_CONV_IM2COL', type: Type.BOOLEAN},
   {name: 'WEBGL_MAX_TEXTURE_SIZE', type: Type.NUMBER},
   {name: 'WEBGL_PAGING_ENABLED', type: Type.BOOLEAN},
@@ -100,17 +120,14 @@ export interface URLProperty {
   type: Type;
 }
 
-export function isWebGLVersionEnabled(webGLVersion: 1|2, isBrowser: boolean) {
-  let gl;
+export function isWebGLVersionEnabled(webGLVersion: 1|2) {
   try {
-    gl = getWebGLRenderingContext(webGLVersion, isBrowser);
+    const gl = getWebGLContext(webGLVersion);
+    if (gl != null) {
+      return true;
+    }
   } catch (e) {
     return false;
-  }
-
-  if (gl != null) {
-    loseContext(gl);
-    return true;
   }
   return false;
 }
@@ -119,23 +136,22 @@ let MAX_TEXTURE_SIZE: number;
 // Caching MAX_TEXTURE_SIZE here because the environment gets reset between
 // unit tests and we don't want to constantly query the WebGLContext for
 // MAX_TEXTURE_SIZE.
-export function getWebGLMaxTextureSize(
-    webGLVersion: number, isBrowser: boolean): number {
+export function getWebGLMaxTextureSize(webGLVersion: number): number {
   if (MAX_TEXTURE_SIZE == null) {
-    const gl = getWebGLRenderingContext(webGLVersion, isBrowser);
+    const gl = getWebGLContext(webGLVersion);
     MAX_TEXTURE_SIZE = gl.getParameter(gl.MAX_TEXTURE_SIZE);
   }
   return MAX_TEXTURE_SIZE;
 }
 
-export function getWebGLDisjointQueryTimerVersion(
-    webGLVersion: number, isBrowser: boolean): number {
+export function getWebGLDisjointQueryTimerVersion(webGLVersion: number):
+    number {
   if (webGLVersion === 0) {
     return 0;
   }
 
   let queryTimerVersion: number;
-  const gl = getWebGLRenderingContext(webGLVersion, isBrowser);
+  const gl = getWebGLContext(webGLVersion);
 
   if (hasExtension(gl, 'EXT_disjoint_timer_query_webgl2') &&
       webGLVersion === 2) {
@@ -145,20 +161,15 @@ export function getWebGLDisjointQueryTimerVersion(
   } else {
     queryTimerVersion = 0;
   }
-
-  if (gl != null) {
-    loseContext(gl);
-  }
   return queryTimerVersion;
 }
 
-export function isRenderToFloatTextureEnabled(
-    webGLVersion: number, isBrowser: boolean): boolean {
+export function isRenderToFloatTextureEnabled(webGLVersion: number): boolean {
   if (webGLVersion === 0) {
     return false;
   }
 
-  const gl = getWebGLRenderingContext(webGLVersion, isBrowser);
+  const gl = getWebGLContext(webGLVersion);
 
   if (webGLVersion === 1) {
     if (!hasExtension(gl, 'OES_texture_float')) {
@@ -172,17 +183,15 @@ export function isRenderToFloatTextureEnabled(
 
   const isFrameBufferComplete =
       createFloatTextureAndBindToFramebuffer(gl, webGLVersion);
-  loseContext(gl);
   return isFrameBufferComplete;
 }
 
-export function isDownloadFloatTextureEnabled(
-    webGLVersion: number, isBrowser: boolean): boolean {
+export function isDownloadFloatTextureEnabled(webGLVersion: number): boolean {
   if (webGLVersion === 0) {
     return false;
   }
 
-  const gl = getWebGLRenderingContext(webGLVersion, isBrowser);
+  const gl = getWebGLContext(webGLVersion);
 
   if (webGLVersion === 1) {
     if (!hasExtension(gl, 'OES_texture_float')) {
@@ -199,19 +208,17 @@ export function isDownloadFloatTextureEnabled(
 
   const isFrameBufferComplete =
       createFloatTextureAndBindToFramebuffer(gl, webGLVersion);
-  loseContext(gl);
   return isFrameBufferComplete;
 }
 
-export function isWebGLFenceEnabled(webGLVersion: number, isBrowser: boolean) {
+export function isWebGLFenceEnabled(webGLVersion: number) {
   if (webGLVersion !== 2) {
     return false;
   }
-  const gl = getWebGLRenderingContext(webGLVersion, isBrowser);
+  const gl = getWebGLContext(webGLVersion);
 
   // tslint:disable-next-line:no-any
   const isEnabled = (gl as any).fenceSync != null;
-  loseContext(gl);
   return isEnabled;
 }
 
@@ -226,7 +233,8 @@ const TENSORFLOWJS_FLAGS_PREFIX = 'tfjsflags';
 export function getFeaturesFromURL(): Features {
   const features: Features = {};
 
-  if (typeof window === 'undefined' || typeof window.location === 'undefined') {
+  if (typeof window === 'undefined' || typeof window.location === 'undefined' ||
+      typeof window.location.search === 'undefined') {
     return features;
   }
 
@@ -265,33 +273,6 @@ export function getFeaturesFromURL(): Features {
 function hasExtension(gl: WebGLRenderingContext, extensionName: string) {
   const ext = gl.getExtension(extensionName);
   return ext != null;
-}
-
-function getWebGLRenderingContext(
-    webGLVersion: number, isBrowser: boolean): WebGLRenderingContext {
-  if (webGLVersion === 0 || !isBrowser) {
-    throw new Error('Cannot get WebGL rendering context, WebGL is disabled.');
-  }
-
-  const tempCanvas = document.createElement('canvas');
-
-  if (webGLVersion === 1) {
-    return (tempCanvas.getContext('webgl') ||
-            tempCanvas.getContext('experimental-webgl')) as
-        WebGLRenderingContext;
-  }
-  return tempCanvas.getContext('webgl2') as WebGLRenderingContext;
-}
-
-function loseContext(gl: WebGLRenderingContext) {
-  if (gl != null) {
-    const loseContextExtension = gl.getExtension('WEBGL_lose_context');
-    if (loseContextExtension == null) {
-      throw new Error(
-          'Extension WEBGL_lose_context not supported on this browser.');
-    }
-    loseContextExtension.loseContext();
-  }
 }
 
 function createFloatTextureAndBindToFramebuffer(

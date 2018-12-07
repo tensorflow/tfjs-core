@@ -45,8 +45,8 @@ import {tensor2d} from './tensor_ops';
  *
  * @param xs The vectors to be orthogonalized, in one of the two following
  *   formats:
- *   - An Array of `Tensor1D`.
- *   - A `Tensor2D`, i.e., a matrix, in which case the vectors are the rows
+ *   - An Array of `tf.Tensor1D`.
+ *   - A `tf.Tensor2D`, i.e., a matrix, in which case the vectors are the rows
  *     of `xs`.
  *   In each case, all the vectors must have the same length and the length
  *   must be greater than or equal to the number of vectors.
@@ -126,12 +126,12 @@ function gramSchmidt_(xs: Tensor1D[]|Tensor2D): Tensor1D[]|Tensor2D {
  * q.dot(r).print(); // should be nearly [[1, 2], [3, 4]];
  * ```
  *
- * @param x The `Tensor` to be QR-decomposed. Must have rank >= 2. Suppose
+ * @param x The `tf.Tensor` to be QR-decomposed. Must have rank >= 2. Suppose
  *   it has the shape `[..., M, N]`.
  * @param fullMatrices An optional boolean parameter. Defaults to `false`.
  *   If `true`, compute full-sized `Q`. If `false` (the default),
  *   compute only the leading N columns of `Q` and `R`.
- * @returns An `Array` of two `Tensor`s: `[Q, R]`. `Q` is a unitary matrix,
+ * @returns An `Array` of two `tf.Tensor`s: `[Q, R]`. `Q` is a unitary matrix,
  *   i.e., its columns all have unit norm and are mutually orthogonal.
  *   If `M >= N`,
  *     If `fullMatrices` is `false` (default),
@@ -218,8 +218,9 @@ function qr2d(x: Tensor2D, fullMatrices = false): [Tensor2D, Tensor2D] {
           w = one2D.clone();
         } else {
           w = one2D.concat(
-                  wPre.slice([1, 0], [wPre.shape[0] - 1, wPre.shape[1]]), 0) as
-              Tensor2D;
+              wPre.slice([1, 0], [wPre.shape[0] - 1, wPre.shape[1]]) as
+                  Tensor2D,
+              0);
         }
         const tau = s.matMul(u1).div(normX).neg() as Tensor2D;
 
@@ -231,8 +232,8 @@ function qr2d(x: Tensor2D, fullMatrices = false): [Tensor2D, Tensor2D] {
         } else {
           r = r.slice([0, 0], [j, n])
                   .concat(
-                      rjEndAll.sub(
-                          tauTimesW.matMul(w.transpose().matMul(rjEndAll))),
+                      rjEndAll.sub(tauTimesW.matMul(
+                          w.transpose().matMul(rjEndAll))) as Tensor2D,
                       0) as Tensor2D;
         }
         const qAllJEnd = q.slice([0, j], [m, q.shape[1] - j]);
@@ -241,8 +242,8 @@ function qr2d(x: Tensor2D, fullMatrices = false): [Tensor2D, Tensor2D] {
         } else {
           q = q.slice([0, 0], [m, j])
                   .concat(
-                      qAllJEnd.sub(
-                          qAllJEnd.matMul(w).matMul(tauTimesW.transpose())),
+                      qAllJEnd.sub(qAllJEnd.matMul(w).matMul(
+                          tauTimesW.transpose())) as Tensor2D,
                       1) as Tensor2D;
         }
         return [w, r, q];

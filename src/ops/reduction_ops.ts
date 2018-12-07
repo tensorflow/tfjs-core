@@ -73,13 +73,13 @@ function logSumExp_<T extends Tensor>(
 }
 
 /**
- * Computes the sum of elements across dimensions of a `Tensor`.
+ * Computes the sum of elements across dimensions of a `tf.Tensor`.
  *
  * Reduces the input along the dimensions given in `axes`. Unless `keepDims`
- * is true, the rank of the `Tensor` is reduced by 1 for each entry in `axes`.
- * If `keepDims` is true, the reduced dimensions are retained with length 1.
- * If axes has no entries, all dimensions are reduced, and a `Tensor` with a
- * single element is returned.
+ * is true, the rank of the `tf.Tensor` is reduced by 1 for each entry in
+ * `axes`. If `keepDims` is true, the reduced dimensions are retained with
+ * length 1. If axes has no entries, all dimensions are reduced, and a
+ * `tf.Tensor` with a single element is returned.
  *
  * ```js
  * const x = tf.tensor1d([1, 2, 3]);
@@ -143,13 +143,13 @@ function sum_<T extends Tensor>(
 }
 
 /**
- * Computes the product of elements across dimensions of a `Tensor`.
+ * Computes the product of elements across dimensions of a `tf.Tensor`.
  *
  * Reduces the input along the dimensions given in `axes`. Unless `keepDims`
- * is true, the rank of the `Tensor` is reduced by 1 for each entry in `axes`.
- * If `keepDims` is true, the reduced dimensions are retained with length 1.
- * If `axes` has no entries, all dimensions are reduced, and a `Tensor` with a
- * single element is returned.
+ * is true, the rank of the `tf.Tensor` is reduced by 1 for each entry in
+ * `axes`. If `keepDims` is true, the reduced dimensions are retained with
+ * length 1. If `axes` has no entries, all dimensions are reduced, and a
+ * `tf.Tensor` with a single element is returned.
  *
  * ```js
  * const x = tf.tensor1d([1, 2, 3]);
@@ -197,12 +197,12 @@ function prod_<T extends Tensor>(
   return value as T;
 }
 /**
- * Computes the mean of elements across dimensions of a `Tensor`.
+ * Computes the mean of elements across dimensions of a `tf.Tensor`.
  *
  * Reduces `x` along the dimensions given in `axis`. Unless `keepDims` is
- * true, the rank of the `Tensor` is reduced by 1 for each entry in `axis`.
+ * true, the rank of the `tf.Tensor` is reduced by 1 for each entry in `axis`.
  * If `keepDims` is true, the reduced dimensions are retained with length 1.
- * If `axis` has no entries, all dimensions are reduced, and a `Tensor` with
+ * If `axis` has no entries, all dimensions are reduced, and a `tf.Tensor` with
  * a single element is returned.
  *
  * ```js
@@ -333,13 +333,13 @@ function min_<T extends Tensor>(
 }
 
 /**
- * Computes the maximum of elements across dimensions of a `Tensor`.
+ * Computes the maximum of elements across dimensions of a `tf.Tensor`.
  *
  * Reduces the input along the dimensions given in `axes`. Unless `keepDims`
- * is true, the rank of the `Tensor` is reduced by 1 for each entry in `axes`.
- * If `keepDims` is true, the reduced dimensions are retained with length 1.
- * If `axes` has no entries, all dimensions are reduced, and an `Tensor` with
- * a single element is returned.
+ * is true, the rank of the `tf.Tensor` is reduced by 1 for each entry in
+ * `axes`. If `keepDims` is true, the reduced dimensions are retained with
+ * length 1. If `axes` has no entries, all dimensions are reduced, and an
+ * `tf.Tensor` with a single element is returned.
  *
  * ```js
  * const x = tf.tensor1d([1, 2, 3]);
@@ -470,13 +470,13 @@ function argMax_<T extends Tensor>(x: Tensor|TensorLike, axis = 0): T {
 }
 
 /**
- * Computes the logical and of elements across dimensions of a `Tensor`.
+ * Computes the logical and of elements across dimensions of a `tf.Tensor`.
  *
  * Reduces the input along the dimensions given in `axes`. Unless `keepDims`
- * is true, the rank of the `Tensor` is reduced by 1 for each entry in `axes`.
- * If `keepDims` is true, the reduced dimensions are retained with length 1.
- * If `axes` has no entries, all dimensions are reduced, and an `Tensor` with
- * a single element is returned.
+ * is true, the rank of the `tf.Tensor` is reduced by 1 for each entry in
+ * `axes`. If `keepDims` is true, the reduced dimensions are retained with
+ * length 1. If `axes` has no entries, all dimensions are reduced, and an
+ * `tf.Tensor` with a single element is returned.
  *
  * ```js
  * const x = tf.tensor1d([1, 1, 1]);
@@ -500,9 +500,6 @@ function argMax_<T extends Tensor>(x: Tensor|TensorLike, axis = 0): T {
 function all_<T extends Tensor>(
     x: Tensor|TensorLike, axis: number|number[] = null, keepDims = false): T {
   let $x = convertToTensor(x, 'x', 'all', 'bool');
-  util.assert(
-      $x.dtype === 'bool',
-      `Error Tensor must be of type bool. Got: ${$x.dtype}`);
 
   const origAxes = axis_util.parseAxisParam(axis, $x.shape);
   let axes = origAxes;
@@ -520,13 +517,13 @@ function all_<T extends Tensor>(
 }
 
 /**
- * Computes the logical or of elements across dimensions of a `Tensor`.
+ * Computes the logical or of elements across dimensions of a `tf.Tensor`.
  *
  * Reduces the input along the dimensions given in `axes`. Unless `keepDims`
- * is true, the rank of the `Tensor` is reduced by 1 for each entry in `axes`.
- * If `keepDims` is true, the reduced dimensions are retained with length 1.
- * If `axes` has no entries, all dimensions are reduced, and an `Tensor` with
- * a single element is returned.
+ * is true, the rank of the `tf.Tensor` is reduced by 1 for each entry in
+ * `axes`. If `keepDims` is true, the reduced dimensions are retained with
+ * length 1. If `axes` has no entries, all dimensions are reduced, and an
+ * `tf.Tensor` with a single element is returned.
  *
  * ```js
  * const x = tf.tensor1d([1, 1, 1]);
@@ -550,9 +547,6 @@ function all_<T extends Tensor>(
 function any_<T extends Tensor>(
     x: Tensor|TensorLike, axis: number|number[] = null, keepDims = false): T {
   let $x = convertToTensor(x, 'x', 'any', 'bool');
-  util.assert(
-      $x.dtype === 'bool',
-      `Error Tensor must be of type bool. Got: ${$x.dtype}`);
 
   const origAxes = axis_util.parseAxisParam(axis, $x.shape);
   let axes = origAxes;

@@ -19,7 +19,7 @@ import {ENV} from '../environment';
 import {KernelBackend} from '../kernels/backend';
 import {Tensor} from '../tensor';
 import {NamedTensorMap} from '../tensor_types';
-import {assertTypesMatch} from '../tensor_util';
+import {makeTypesMatch} from '../tensor_util';
 import {convertToTensor} from '../tensor_util_env';
 import {TensorLike, upcastType} from '../types';
 import * as util from '../util';
@@ -29,9 +29,9 @@ import {scalar} from './tensor_ops';
 import {neg} from './unary_ops';
 
 /**
- * Adds two `Tensor`s element-wise, A + B. Supports broadcasting.
+ * Adds two `tf.Tensor`s element-wise, A + B. Supports broadcasting.
  *
- * We also expose `addStrict` which has the same signature as this op and
+ * We also expose `tf.addStrict` which has the same signature as this op and
  * asserts that `a` and `b` are the same shape (does not broadcast).
  *
  * ```js
@@ -48,14 +48,14 @@ import {neg} from './unary_ops';
  *
  * a.add(b).print();  // or tf.add(a, b)
  * ```
- * @param a The first `Tensor` to add.
- * @param b The second `Tensor` to add. Must have the same type as `a`.
+ * @param a The first `tf.Tensor` to add.
+ * @param b The second `tf.Tensor` to add. Must have the same type as `a`.
  */
 /** @doc {heading: 'Operations', subheading: 'Arithmetic'} */
 function add_<T extends Tensor>(a: Tensor|TensorLike, b: Tensor|TensorLike): T {
-  const $a = convertToTensor(a, 'a', 'add');
-  const $b = convertToTensor(b, 'b', 'add');
-  assertTypesMatch($a, $b);
+  let $a = convertToTensor(a, 'a', 'add');
+  let $b = convertToTensor(b, 'b', 'add');
+  [$a, $b] = makeTypesMatch($a, $b);
 
   const outShape =
       broadcast_util.assertAndGetBroadcastShape($a.shape, $b.shape);
@@ -84,7 +84,7 @@ function add_<T extends Tensor>(a: Tensor|TensorLike, b: Tensor|TensorLike): T {
 }
 
 /**
- * Adds a list of `Tensor`s element-wise, each with the same shape and dtype.
+ * Adds a list of `tf.Tensor`s element-wise, each with the same shape and dtype.
  *
  * ```js
  * const a = tf.tensor1d([1, 2]);
@@ -132,22 +132,24 @@ function addN_<T extends Tensor>(tensors: Array<T|TensorLike>): T {
 }
 
 /**
- * Adds two `Tensor`s element-wise, A + B.
+ * Adds two `tf.Tensor`s element-wise, A + B.
  *
  * Inputs must be the same shape. For broadcasting support, use add() instead.
  *
  * @param a The first Tensor to add element-wise.
  * @param b The second Tensor to add element-wise.
  */
-function addStrict_<T extends Tensor>(a: T, b: T): T {
-  util.assertShapesMatch(a.shape, b.shape, 'Error in addStrict: ');
-  return a.add(b);
+function addStrict_<T extends Tensor>(a: T|TensorLike, b: T|TensorLike): T {
+  const $a = convertToTensor(a, 'a', 'addStrict');
+  const $b = convertToTensor(b, 'b', 'addStrict');
+  util.assertShapesMatch($a.shape, $b.shape, 'Error in addStrict: ');
+  return $a.add($b);
 }
 
 /**
- * Subtracts two `Tensor`s element-wise, A - B. Supports broadcasting.
+ * Subtracts two `tf.Tensor`s element-wise, A - B. Supports broadcasting.
  *
- * We also expose `subStrict` which has the same signature as this op and
+ * We also expose `tf.subStrict` which has the same signature as this op and
  * asserts that `a` and `b` are the same shape (does not broadcast).
  *
  * ```js
@@ -164,15 +166,15 @@ function addStrict_<T extends Tensor>(a: T, b: T): T {
  *
  * a.sub(b).print();  // or tf.sub(a, b)
  * ```
- * @param a The first `Tensor` to subtract from.
- * @param b The second `Tensor` to be subtracted. Must have the same dtype as
+ * @param a The first `tf.Tensor` to subtract from.
+ * @param b The second `tf.Tensor` to be subtracted. Must have the same dtype as
  * `a`.
  */
 /** @doc {heading: 'Operations', subheading: 'Arithmetic'} */
 function sub_<T extends Tensor>(a: Tensor|TensorLike, b: Tensor|TensorLike): T {
-  const $a = convertToTensor(a, 'a', 'sub');
-  const $b = convertToTensor(b, 'b', 'sub');
-  assertTypesMatch($a, $b);
+  let $a = convertToTensor(a, 'a', 'sub');
+  let $b = convertToTensor(b, 'b', 'sub');
+  [$a, $b] = makeTypesMatch($a, $b);
 
   const outShape =
       broadcast_util.assertAndGetBroadcastShape($a.shape, $b.shape);
@@ -201,23 +203,25 @@ function sub_<T extends Tensor>(a: Tensor|TensorLike, b: Tensor|TensorLike): T {
 }
 
 /**
- * Subtracts two `Tensor`s element-wise, A - B. Inputs must
+ * Subtracts two `tf.Tensor`s element-wise, A - B. Inputs must
  * be the same shape.
  *
- * For broadcasting support, use sub() instead.
+ * For broadcasting support, use `tf.sub` instead.
  *
  * @param a The first Tensor to subtract element-wise.
  * @param b The second Tensor to subtract element-wise.
  */
-function subStrict_<T extends Tensor>(a: T, b: T): T {
-  util.assertShapesMatch(a.shape, b.shape, 'Error in subStrict: ');
-  return a.sub(b);
+function subStrict_<T extends Tensor>(a: T|TensorLike, b: T|TensorLike): T {
+  const $a = convertToTensor(a, 'a', 'subStrict');
+  const $b = convertToTensor(b, 'b', 'subStrict');
+  util.assertShapesMatch($a.shape, $b.shape, 'Error in subStrict: ');
+  return $a.sub($b);
 }
 
 /**
- * Computes the power of one `Tensor` to another. Supports broadcasting.
+ * Computes the power of one `tf.Tensor` to another. Supports broadcasting.
  *
- * Given a `Tensor` x and a `Tensor` y, this operation computes x^y for
+ * Given a `tf.Tensor` x and a `tf.Tensor` y, this operation computes x^y for
  * corresponding elements in x and y. The result's dtype will be the upcasted
  * type of the `base` and `exp` dtypes.
  *
@@ -237,8 +241,8 @@ function subStrict_<T extends Tensor>(a: T, b: T): T {
  * We also expose `powStrict` which has the same signature as this op and
  * asserts that `base` and `exp` are the same shape (does not broadcast).
  *
- * @param base The base `Tensor` to pow element-wise.
- * @param exp The exponent `Tensor` to pow element-wise.
+ * @param base The base `tf.Tensor` to pow element-wise.
+ * @param exp The exponent `tf.Tensor` to pow element-wise.
  */
 /** @doc {heading: 'Operations', subheading: 'Arithmetic'} */
 function pow_<T extends Tensor>(base: T|TensorLike, exp: Tensor|TensorLike): T {
@@ -252,7 +256,8 @@ function pow_<T extends Tensor>(base: T|TensorLike, exp: Tensor|TensorLike): T {
   const grad = (dy: Tensor, saved: Tensor[]) => {
     const [y] = saved;
     const derBase = () => {
-      let res = dy.mul($exp.toFloat().mul(y.div($base)));
+      const expFloat = $exp.toFloat();
+      let res = dy.mul(expFloat.mul($base.pow(expFloat.sub(scalar(1)))));
       const reduceAxes = broadcast_util.getReductionAxes($base.shape, outShape);
       if (reduceAxes.length > 0) {
         res = res.sum(reduceAxes);
@@ -275,10 +280,10 @@ function pow_<T extends Tensor>(base: T|TensorLike, exp: Tensor|TensorLike): T {
 }
 
 /**
- * Computes the power of one `Tensor` to another. Inputs must
+ * Computes the power of one `tf.Tensor` to another. Inputs must
  * be the same shape.
  *
- * For broadcasting support, use pow() instead.
+ * For broadcasting support, use `tf.pow` instead.
  *
  * @param base The base tensor to pow element-wise.
  * @param exp The exponent tensor to pow element-wise.
@@ -289,9 +294,9 @@ function powStrict_<T extends Tensor>(base: T, exp: Tensor): T {
 }
 
 /**
- * Multiplies two `Tensor`s element-wise, A * B. Supports broadcasting.
+ * Multiplies two `tf.Tensor`s element-wise, A * B. Supports broadcasting.
  *
- * We also expose `mulStrict` which has the same signature as this op and
+ * We also expose `tf.mulStrict` which has the same signature as this op and
  * asserts that `a` and `b` are the same shape (does not broadcast).
  *
  * ```js
@@ -313,9 +318,9 @@ function powStrict_<T extends Tensor>(base: T, exp: Tensor): T {
  */
 /** @doc {heading: 'Operations', subheading: 'Arithmetic'} */
 function mul_<T extends Tensor>(a: Tensor|TensorLike, b: Tensor|TensorLike): T {
-  const $a = convertToTensor(a, 'a', 'mul');
-  const $b = convertToTensor(b, 'b', 'mul');
-  assertTypesMatch($a, $b);
+  let $a = convertToTensor(a, 'a', 'mul');
+  let $b = convertToTensor(b, 'b', 'mul');
+  [$a, $b] = makeTypesMatch($a, $b);
 
   const outShape =
       broadcast_util.assertAndGetBroadcastShape($a.shape, $b.shape);
@@ -344,23 +349,25 @@ function mul_<T extends Tensor>(a: Tensor|TensorLike, b: Tensor|TensorLike): T {
 }
 
 /**
- * Multiplies two `Tensor`s element-wise, A * B.
+ * Multiplies two `tf.Tensor`s element-wise, A * B.
  *
- * Inputs must be the same shape. For broadcasting support, use mul().
+ * Inputs must be the same shape. For broadcasting support, use `tf.mul`.
  *
  * @param a The first tensor to multiply.
  * @param b The first tensor to multiply. Must have the same
  *    dtype as `a`.
  */
-function mulStrict_<T extends Tensor>(a: T, b: T): T {
-  util.assertShapesMatch(a.shape, b.shape, 'Error in multiplyStrict: ');
-  return a.mul(b) as T;
+function mulStrict_<T extends Tensor>(a: T|TensorLike, b: T|TensorLike): T {
+  const $a = convertToTensor(a, 'a', 'mul');
+  const $b = convertToTensor(b, 'b', 'mul');
+  util.assertShapesMatch($a.shape, $b.shape, 'Error in multiplyStrict: ');
+  return $a.mul($b) as T;
 }
 
 /**
- * Divides two `Tensor`s element-wise, A / B. Supports broadcasting.
+ * Divides two `tf.Tensor`s element-wise, A / B. Supports broadcasting.
  *
- * We also expose `divStrict` which has the same signature as this op and
+ * We also expose `tf.divStrict` which has the same signature as this op and
  * asserts that `a` and `b` are the same shape (does not broadcast).
  *
  * ```js
@@ -384,9 +391,9 @@ function mulStrict_<T extends Tensor>(a: T, b: T): T {
  */
 /** @doc {heading: 'Operations', subheading: 'Arithmetic'} */
 function div_<T extends Tensor>(a: Tensor|TensorLike, b: Tensor|TensorLike): T {
-  const $a = convertToTensor(a, 'a', 'div');
-  const $b = convertToTensor(b, 'b', 'div');
-  assertTypesMatch($a, $b);
+  let $a = convertToTensor(a, 'a', 'div');
+  let $b = convertToTensor(b, 'b', 'div');
+  [$a, $b] = makeTypesMatch($a, $b);
 
   let forwardFunc: (backend: KernelBackend) => Tensor;
   if ($a.dtype === 'int32' && $b.dtype === 'int32') {
@@ -421,7 +428,7 @@ function div_<T extends Tensor>(a: Tensor|TensorLike, b: Tensor|TensorLike): T {
 }
 
 /**
- * Divides two `Tensor`s element-wise, A / B. Supports broadcasting.
+ * Divides two `tf.Tensor`s element-wise, A / B. Supports broadcasting.
  * The result is rounded with floor function.
  *
  *
@@ -447,9 +454,9 @@ function div_<T extends Tensor>(a: Tensor|TensorLike, b: Tensor|TensorLike): T {
 /** @doc {heading: 'Operations', subheading: 'Arithmetic'} */
 function floorDiv_<T extends Tensor>(
     a: Tensor|TensorLike, b: Tensor|TensorLike): T {
-  const $a = convertToTensor(a, 'a', 'floorDiv');
-  const $b = convertToTensor(b, 'b', 'floorDiv');
-  assertTypesMatch($a, $b);
+  let $a = convertToTensor(a, 'a', 'floorDiv');
+  let $b = convertToTensor(b, 'b', 'floorDiv');
+  [$a, $b] = makeTypesMatch($a, $b);
 
   const forwardFunc = (backend: KernelBackend) => backend.floorDiv($a, $b);
   const outShape =
@@ -478,15 +485,17 @@ function floorDiv_<T extends Tensor>(
 }
 
 /**
- * Divides two `Tensor`s element-wise, A / B. Inputs must
+ * Divides two `tf.Tensor`s element-wise, A / B. Inputs must
  * be the same shape.
  *
  * @param a The first tensor as the numerator for element-wise division.
  * @param b The second tensor as the denominator for element-wise division.
  */
-function divStrict_<T extends Tensor>(a: T, b: T): T {
-  util.assertShapesMatch(a.shape, b.shape, 'Error in divideStrict: ');
-  return a.div(b) as T;
+function divStrict_<T extends Tensor>(a: T|TensorLike, b: T|TensorLike): T {
+  const $a = convertToTensor(a, 'a', 'div');
+  const $b = convertToTensor(b, 'b', 'div');
+  util.assertShapesMatch($a.shape, $b.shape, 'Error in divideStrict: ');
+  return $a.div($b) as T;
 }
 
 /**
@@ -494,7 +503,7 @@ function divStrict_<T extends Tensor>(a: T, b: T): T {
  * `floor(x / y) * y + mod(x, y) = x`
  * Supports broadcasting.
  *
- * We also expose `modStrict` which has the same signature as this op and
+ * We also expose `tf.modStrict` which has the same signature as this op and
  * asserts that `a` and `b` are the same shape (does not broadcast).
  *
  * ```js
@@ -517,9 +526,9 @@ function divStrict_<T extends Tensor>(a: T, b: T): T {
  */
 /** @doc {heading: 'Operations', subheading: 'Arithmetic'} */
 function mod_<T extends Tensor>(a: Tensor|TensorLike, b: Tensor|TensorLike): T {
-  const $a = convertToTensor(a, 'a', 'mod');
-  const $b = convertToTensor(b, 'b', 'mod');
-  assertTypesMatch($a, $b);
+  let $a = convertToTensor(a, 'a', 'mod');
+  let $b = convertToTensor(b, 'b', 'mod');
+  [$a, $b] = makeTypesMatch($a, $b);
 
   const outShape =
       broadcast_util.assertAndGetBroadcastShape($a.shape, $b.shape);
@@ -552,9 +561,11 @@ function mod_<T extends Tensor>(a: Tensor|TensorLike, b: Tensor|TensorLike): T {
  * @param a The first tensor.
  * @param b The second tensor. Must have the same dtype as `a`.
  */
-function modStrict_<T extends Tensor>(a: T, b: T): T {
-  util.assertShapesMatch(a.shape, b.shape, 'Error in modStrict: ');
-  return a.mod(b);
+function modStrict_<T extends Tensor>(a: T|TensorLike, b: T|TensorLike): T {
+  const $a = convertToTensor(a, 'a', 'modStrict');
+  const $b = convertToTensor(b, 'b', 'modStrict');
+  util.assertShapesMatch($a.shape, $b.shape, 'Error in modStrict: ');
+  return $a.mod($b);
 }
 
 /**
@@ -587,14 +598,13 @@ function minimum_<T extends Tensor>(
     a: Tensor|TensorLike, b: Tensor|TensorLike): T {
   let $a = convertToTensor(a, 'a', 'minimum');
   let $b = convertToTensor(b, 'b', 'minimum');
-  assertTypesMatch($a, $b);
+  [$a, $b] = makeTypesMatch($a, $b);
 
   if ($a.dtype === 'bool') {
     $a = $a.toInt();
-  }
-  if ($b.dtype === 'bool') {
     $b = $b.toInt();
   }
+
   broadcast_util.assertAndGetBroadcastShape($a.shape, $b.shape);
   const der = (dy: Tensor) => {
     const derA = () => dy.mul($a.lessEqual($b).toFloat());
@@ -612,16 +622,18 @@ function minimum_<T extends Tensor>(
  * @param a The first tensor.
  * @param b The second tensor. Must have the same dtype as `a`.
  */
-function minimumStrict_<T extends Tensor>(a: T, b: T): T {
-  util.assertShapesMatch(a.shape, b.shape, 'Error in minimumStrict: ');
-  return a.minimum(b);
+function minimumStrict_<T extends Tensor>(a: T|TensorLike, b: T|TensorLike): T {
+  const $a = convertToTensor(a, 'a', 'minimumStrict');
+  const $b = convertToTensor(b, 'b', 'minimumStrict');
+  util.assertShapesMatch($a.shape, $b.shape, 'Error in minimumStrict: ');
+  return $a.minimum($b);
 }
 
 /**
  * Returns the max of a and b (`a > b ? a : b`) element-wise.
  * Supports broadcasting.
  *
- * We also expose `maximumStrict` which has the same signature as this op and
+ * We also expose `tf.maximumStrict` which has the same signature as this op and
  * asserts that `a` and `b` are the same shape (does not broadcast).
  *
  * ```js
@@ -647,14 +659,13 @@ function maximum_<T extends Tensor>(
     a: Tensor|TensorLike, b: Tensor|TensorLike): T {
   let $a = convertToTensor(a, 'a', 'maximum');
   let $b = convertToTensor(b, 'b', 'maximum');
-  assertTypesMatch($a, $b);
+  [$a, $b] = makeTypesMatch($a, $b);
 
   if ($a.dtype === 'bool') {
     $a = $a.toInt();
-  }
-  if ($b.dtype === 'bool') {
     $b = $b.toInt();
   }
+
   broadcast_util.assertAndGetBroadcastShape($a.shape, $b.shape);
   const der = (dy: Tensor) => {
     const derA = () => dy.mul($a.greaterEqual($b).toFloat());
@@ -672,16 +683,18 @@ function maximum_<T extends Tensor>(
  * @param a The first tensor.
  * @param b The second tensor. Must have the same dtype as `a`.
  */
-function maximumStrict_<T extends Tensor>(a: T, b: T): T {
-  util.assertShapesMatch(a.shape, b.shape, 'Error in maximumStrict: ');
-  return a.maximum(b);
+function maximumStrict_<T extends Tensor>(a: T|TensorLike, b: T|TensorLike): T {
+  const $a = convertToTensor(a, 'a', 'maximumStrict');
+  const $b = convertToTensor(b, 'b', 'maximumStrict');
+  util.assertShapesMatch($a.shape, $b.shape, 'Error in maximumStrict: ');
+  return $a.maximum($b);
 }
 
 /**
  * Returns (a - b) * (a - b) element-wise.
  * Supports broadcasting.
  *
- * We also expose `squaredDifferenceStrict` which has the same signature as
+ * We also expose `tf.squaredDifferenceStrict` which has the same signature as
  * this op and asserts that `a` and `b` are the same shape (does not
  * broadcast).
  *
@@ -706,9 +719,9 @@ function maximumStrict_<T extends Tensor>(a: T, b: T): T {
 /** @doc {heading: 'Operations', subheading: 'Arithmetic'} */
 function squaredDifference_<T extends Tensor>(
     a: Tensor|TensorLike, b: Tensor|TensorLike): T {
-  const $a = convertToTensor(a, 'a', 'squaredDifference');
-  const $b = convertToTensor(b, 'b', 'squaredDifference');
-  assertTypesMatch($a, $b);
+  let $a = convertToTensor(a, 'a', 'squaredDifference');
+  let $b = convertToTensor(b, 'b', 'squaredDifference');
+  [$a, $b] = makeTypesMatch($a, $b);
 
   broadcast_util.assertAndGetBroadcastShape($a.shape, $b.shape);
   const der = (dy: Tensor) => {
@@ -725,19 +738,22 @@ function squaredDifference_<T extends Tensor>(
  * Returns (a - b) * (a - b) element-wise.
  *
  * Inputs must be the same shape. For broadcasting support, use
- * squaredDifference() instead.
+ * `tf.squaredDifference` instead.
  *
  * @param a The first tensor.
  * @param b The second tensor. Must have the same type as `a`.
  */
-function squaredDifferenceStrict_<T extends Tensor>(a: T, b: T): T {
+function squaredDifferenceStrict_<T extends Tensor>(
+    a: T|TensorLike, b: T|TensorLike): T {
+  const $a = convertToTensor(a, 'a', 'squaredDifferenceStrict');
+  const $b = convertToTensor(b, 'b', 'squaredDifferenceStrict');
   util.assertShapesMatch(
-      a.shape, b.shape, 'Error in squaredDifferenceStrict: ');
-  return a.squaredDifference(b);
+      $a.shape, $b.shape, 'Error in squaredDifferenceStrict: ');
+  return $a.squaredDifference($b);
 }
 
 /**
- * Computes arctangent of `Tensor`s a / b element-wise: `atan2(a, b)`.
+ * Computes arctangent of `tf.Tensor`s a / b element-wise: `atan2(a, b)`.
  * Supports broadcasting.
  *
  * ```js
@@ -754,9 +770,9 @@ function squaredDifferenceStrict_<T extends Tensor>(a: T, b: T): T {
 /** @doc {heading: 'Operations', subheading: 'Basic math'} */
 function atan2_<T extends Tensor>(
     a: Tensor|TensorLike, b: Tensor|TensorLike): T {
-  const $a = convertToTensor(a, 'a', 'atan2');
-  const $b = convertToTensor(b, 'b', 'atan2');
-  assertTypesMatch($a, $b);
+  let $a = convertToTensor(a, 'a', 'atan2');
+  let $b = convertToTensor(b, 'b', 'atan2');
+  [$a, $b] = makeTypesMatch($a, $b);
 
   const outShape =
       broadcast_util.assertAndGetBroadcastShape($a.shape, $b.shape);

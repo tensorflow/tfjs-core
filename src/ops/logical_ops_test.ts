@@ -170,6 +170,18 @@ describeWithFlags('logicalAnd', ALL_ENVS, () => {
     expectArraysClose(tf.logicalAnd(a, b), [1, 0, 0, 0, 0, 0, 0, 0]);
   });
 
+  it('TensorLike', () => {
+    const a = [true, false, false];
+    const b = [false, true, false];
+    expectArraysClose(tf.logicalAnd(a, b), [0, 0, 0]);
+  });
+
+  it('TensorLike Chained', () => {
+    const a = tf.tensor1d([1, 0, 0], 'bool');
+    const b = [false, true, false];
+    expectArraysClose(a.logicalAnd(b), [0, 0, 0]);
+  });
+
   it('throws when passed a as a non-tensor', () => {
     expect(() => tf.logicalAnd({} as tf.Tensor, tf.scalar(1, 'bool')))
         .toThrowError(/Argument 'a' passed to 'logicalAnd' must be a Tensor/);
@@ -260,6 +272,18 @@ describeWithFlags('logicalOr', ALL_ENVS, () => {
     const b = tf.tensor4d(
         [[[[1, 0]], [[0, 0]]], [[[0, 0]], [[1, 1]]]], [2, 2, 1, 2], 'bool');
     expectArraysClose(tf.logicalOr(a, b), [1, 1, 0, 0, 1, 1, 1, 1]);
+  });
+
+  it('TensorLike', () => {
+    const a = [true, false, false];
+    const b = [false, true, false];
+    expectArraysClose(tf.logicalOr(a, b), [1, 1, 0]);
+  });
+
+  it('TensorLike Chained', () => {
+    const a = tf.tensor1d([1, 0, 0], 'bool');
+    const b = [false, true, false];
+    expectArraysClose(a.logicalOr(b), [1, 1, 0]);
   });
 
   it('throws when passed a as a non-tensor', () => {
@@ -356,6 +380,18 @@ describeWithFlags('logicalXor', ALL_ENVS, () => {
     const b = tf.tensor4d(
         [[[[1, 0]], [[0, 0]]], [[[0, 0]], [[1, 1]]]], [2, 2, 1, 2], 'bool');
     expectArraysClose(tf.logicalXor(a, b), [0, 1, 0, 0, 1, 1, 1, 1]);
+  });
+
+  it('TensorLike', () => {
+    const a = [true, false, false];
+    const b = [false, true, false];
+    expectArraysClose(tf.logicalXor(a, b), [1, 1, 0]);
+  });
+
+  it('TensorLike Chained', () => {
+    const a = tf.tensor1d([1, 0, 0], 'bool');
+    const b = [false, true, false];
+    expectArraysClose(a.logicalXor(b), [1, 1, 0]);
   });
 
   it('throws when passed a as a non-tensor', () => {
@@ -587,6 +623,15 @@ describeWithFlags('where', ALL_ENVS, () => {
     expectArraysClose(tf.where(c, a, b), [7, 7, 3, 3, 7, 7, 3, 3]);
   });
 
+  it('TensorLike', () => {
+    expectArraysClose(tf.where(true, 10, 20), [10]);
+  });
+
+  it('TensorLike Chained', () => {
+    const a = tf.scalar(10);
+    expectArraysClose(a.where(true, 20), [10]);
+  });
+
   it('throws when passed condition as a non-tensor', () => {
     expect(
         () => tf.where(
@@ -719,7 +764,8 @@ describeWithFlags('whereAsync', ALL_ENVS, () => {
       await tf.whereAsync(condition);
       throw new Error('The line above should have thrown an error');
     } catch (ex) {
-      expect(ex.message).toBe('Condition must be of type bool.');
+      expect(ex.message)
+          .toMatch(/Argument 'condition' passed to 'whereAsync' must be bool/);
     }
   });
 

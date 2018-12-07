@@ -16,7 +16,7 @@
  */
 
 import {ENV} from '../environment';
-import {Tensor} from '../tensor';
+import {NumericTensor, Tensor} from '../tensor';
 import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import {op} from './operation';
@@ -38,7 +38,7 @@ import {op} from './operation';
  * values.print();
  * indices.print();
  * ```
- * @param x 1-D or higher `Tensor` with last dimension being at least `k`.
+ * @param x 1-D or higher `tf.Tensor` with last dimension being at least `k`.
  * @param k Number of top elements to look for along the last dimension.
  * @param sorted If true, the resulting `k` elements will be sorted by the
  *     values in descending order.
@@ -58,8 +58,8 @@ function topk_<T extends Tensor>(
   }
 
   const [values, indices] =
-      ENV.engine.runKernel(b => b.topk($x, k, sorted), {$x});
-  return {values, indices};
+      ENV.engine.runKernel(b => b.topk($x as NumericTensor, k, sorted), {$x});
+  return {values, indices} as {values: T, indices: T};
 }
 
 export const topk = op({topk_});

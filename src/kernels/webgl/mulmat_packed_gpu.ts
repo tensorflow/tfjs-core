@@ -19,6 +19,7 @@ import {GPGPUProgram} from './gpgpu_math';
 
 export class MatMulPackedProgram implements GPGPUProgram {
   variableNames = ['matrixA', 'matrixB'];
+  usesPackedTextures = true;
   outputShape: number[];
   userCode: string;
 
@@ -52,7 +53,7 @@ export class MatMulPackedProgram implements GPGPUProgram {
 
       void main() {
         ivec2 rc = getOutputCoords();
-        gl_FragColor = dot2x2ARowBCol(rc);
+        setOutput(dot2x2ARowBCol(rc));
       }
     `;
   }

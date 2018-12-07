@@ -39,13 +39,11 @@ import {zerosLike} from './tensor_ops';
 /** @doc {heading: 'Operations', subheading: 'Logical'} */
 function logicalNot_<T extends Tensor>(x: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'logicalNot', 'bool');
-  assert($x.dtype === 'bool', 'Error Array must be of type bool.');
-
   return ENV.engine.runKernel(backend => backend.logicalNot($x), {$x});
 }
 
 /**
- * Returns the truth value of a AND b element-wise. Supports broadcasting.
+ * Returns the truth value of `a AND b` element-wise. Supports broadcasting.
  *
  * ```js
  * const a = tf.tensor1d([false, false, true, true], 'bool');
@@ -62,9 +60,6 @@ function logicalAnd_<T extends Tensor>(
     a: Tensor|TensorLike, b: Tensor|TensorLike): T {
   const $a = convertToTensor(a, 'a', 'logicalAnd', 'bool');
   const $b = convertToTensor(b, 'b', 'logicalAnd', 'bool');
-  assert(
-      $a.dtype === 'bool' && $b.dtype === 'bool',
-      'Error Array must be of type bool.');
   assertAndGetBroadcastShape($a.shape, $b.shape);
 
   return ENV.engine.runKernel(
@@ -88,9 +83,6 @@ function logicalOr_<T extends Tensor>(
     a: Tensor|TensorLike, b: Tensor|TensorLike): T {
   const $a = convertToTensor(a, 'a', 'logicalOr', 'bool');
   const $b = convertToTensor(b, 'b', 'logicalOr', 'bool');
-  assert(
-      $a.dtype === 'bool' && $b.dtype === 'bool',
-      'Error Array must be of type bool.');
   assertAndGetBroadcastShape($a.shape, $b.shape);
 
   return ENV.engine.runKernel(backend => backend.logicalOr($a, $b), {$a, $b}) as
@@ -115,9 +107,6 @@ function logicalXor_<T extends Tensor>(
     a: Tensor|TensorLike, b: Tensor|TensorLike): T {
   const $a = convertToTensor(a, 'a', 'logicalXor', 'bool');
   const $b = convertToTensor(b, 'b', 'logicalXor', 'bool');
-  assert(
-      $a.dtype === 'bool' && $b.dtype === 'bool',
-      'Error Array must be of type bool.');
   assertAndGetBroadcastShape($a.shape, $b.shape);
 
   // x ^ y = (x | y) & ~(x & y)
@@ -149,7 +138,6 @@ function where_<T extends Tensor>(
   const $b = convertToTensor(b, 'b', 'where');
   const $condition = convertToTensor(condition, 'condition', 'where', 'bool');
 
-  assert($condition.dtype === 'bool', 'Error Condition must be of type bool.');
   assertShapesMatch($a.shape, $b.shape, 'Error in where: ');
 
   if ($condition.rank === 1) {
@@ -166,9 +154,9 @@ function where_<T extends Tensor>(
   // TODO(julianoks): Return null for condition gradient
   // when backprop supports it.
   const grad = (dy: T) => ({
-    $condition: () => zerosLike($condition),
-    $a: () => dy.mul($condition.cast($a.dtype)) as T,
-    $b: () => dy.mul($condition.logicalNot().cast($b.dtype)) as T
+    $condition: () => zerosLike($condition).toFloat(),
+    $a: () => dy.mul($condition.cast(dy.dtype)) as T,
+    $b: () => dy.mul($condition.logicalNot().cast(dy.dtype)) as T
   });
 
   return ENV.engine.runKernel(
@@ -185,10 +173,18 @@ function where_<T extends Tensor>(
  * the output tensor can vary depending on how many true values there are in
  * input. Indices are output in row-major order. The resulting tensor has the
  * shape `[numTrueElems, condition.rank]`.
+ *
+ * This is analogous to calling the python `tf.where(cond)` without an x or y.
+ *
+ * ```js
+ * const cond = tf.tensor1d([false, false, true], 'bool');
+ * tf.whereAsync(cond).then(result => result.print());
+ * ```
  */
+/** @doc {heading: 'Operations', subheading: 'Logical'} */
 async function whereAsync_(condition: Tensor|TensorLike): Promise<Tensor2D> {
-  const $condition = convertToTensor(condition, 'condition', 'where', 'bool');
-  assert($condition.dtype === 'bool', 'Condition must be of type bool.');
+  const $condition =
+      convertToTensor(condition, 'condition', 'whereAsync', 'bool');
   const vals = await $condition.data();
   const res = whereImpl($condition.shape, vals);
   if (condition !== $condition) {

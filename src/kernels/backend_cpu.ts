@@ -16,7 +16,6 @@
  */
 
 import * as seedrandom from 'seedrandom';
-
 import {ENV} from '../environment';
 import {warn} from '../log';
 import * as array_ops_util from '../ops/array_ops_util';
@@ -32,10 +31,9 @@ import * as scatter_nd_util from '../ops/scatter_nd_util';
 import * as selu_util from '../ops/selu_util';
 import {getStridedSlicedInfo} from '../ops/slice_util';
 import {DataId, Scalar, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D, TensorBuffer} from '../tensor';
-import {DataType, DataTypeMap, Rank, ShapeMap, TypedArray, upcastType} from '../types';
+import {DataType, DataTypeMap, DataValues, NumericDataType, Rank, ShapeMap, TypedArray, upcastType} from '../types';
 import * as util from '../util';
 import {now} from '../util';
-
 import {BackendTimingInfo, DataMover, DataStorage, KernelBackend} from './backend';
 import * as backend_util from './backend_util';
 import * as complex_util from './complex_util';
@@ -44,9 +42,9 @@ import {split} from './split_shared';
 import {topkImpl} from './topk_impl';
 import {whereImpl} from './where_impl';
 
-interface TensorData<T extends DataType> {
-  values?: DataTypeMap[T];
-  dtype: T;
+interface TensorData<D extends DataType> {
+  values?: DataTypeMap[D];
+  dtype: D;
   // For complex numbers, the real and imaginary parts are stored as their own
   // individual tensors, with a parent joining the two with the
   // complexTensors field. When this is defined, texture will be null.
@@ -57,12 +55,13 @@ export class MathBackendCPU implements KernelBackend {
   public blockSize = 48;
 
   private data: DataStorage<TensorData<DataType>>;
-  private canvas: HTMLCanvasElement;
+  private fromPixels2DContext: CanvasRenderingContext2D;
   private firstUse = true;
 
   constructor() {
     if (ENV.get('IS_BROWSER')) {
-      this.canvas = document.createElement('canvas');
+      this.fromPixels2DContext =
+          document.createElement('canvas').getContext('2d');
     }
   }
 
@@ -92,7 +91,7 @@ export class MathBackendCPU implements KernelBackend {
     }
     this.data.set(dataId, {dtype});
   }
-  write(dataId: DataId, values: TypedArray): void {
+  write(dataId: DataId, values: DataValues): void {
     if (values == null) {
       throw new Error('MathBackendCPU.write(): values can not be null');
     }
@@ -123,16 +122,16 @@ export class MathBackendCPU implements KernelBackend {
     } else if (
         pixels instanceof HTMLImageElement ||
         pixels instanceof HTMLVideoElement) {
-      if (this.canvas == null) {
+      if (this.fromPixels2DContext == null) {
         throw new Error(
             'Can\'t read pixels from HTMLImageElement outside ' +
             'the browser.');
       }
-      this.canvas.width = pixels.width;
-      this.canvas.height = pixels.height;
-      this.canvas.getContext('2d').drawImage(
+      this.fromPixels2DContext.canvas.width = pixels.width;
+      this.fromPixels2DContext.canvas.height = pixels.height;
+      this.fromPixels2DContext.drawImage(
           pixels, 0, 0, pixels.width, pixels.height);
-      vals = this.canvas.getContext('2d')
+      vals = this.fromPixels2DContext
                  .getImageData(0, 0, pixels.width, pixels.height)
                  .data;
     } else {
@@ -157,10 +156,10 @@ export class MathBackendCPU implements KernelBackend {
         [pixels.height, pixels.width, numChannels];
     return tensor3d(values, outShape, 'int32');
   }
-  async read(dataId: DataId): Promise<TypedArray> {
+  async read(dataId: DataId): Promise<DataValues> {
     return this.readSync(dataId);
   }
-  readSync(dataId: DataId): TypedArray {
+  readSync(dataId: DataId): DataValues {
     const {dtype, complexTensors} = this.data.get(dataId);
     if (dtype === 'complex64') {
       const realValues = complexTensors.real.dataSync() as Float32Array;
@@ -191,7 +190,10 @@ export class MathBackendCPU implements KernelBackend {
   memory() {
     return {
       // Unreliable due to automatic gc. The numbers above are cumulative.
-      unreliable: true
+      unreliable: true,
+      reasons:
+          ['The reported memory is an upper bound. Due to automatic garbage ' +
+           'collection, the true allocated memory may be less.']
     };
   }
 
@@ -300,7 +302,7 @@ export class MathBackendCPU implements KernelBackend {
     const outShape =
         concat_util.computeOutShape(tensors2D.map(t => t.shape), 1 /* axis */);
     const values =
-        ops.buffer<Rank.R2>(outShape as [number, number], tensors[0].dtype)
+        ops.buffer(outShape as [number, number], tensors[0].dtype as 'float32')
             .values;
     if (tensors2D[0].shape[0] === 1) {
       // Use built-in TypedArray.set() method for speed.
@@ -352,7 +354,7 @@ export class MathBackendCPU implements KernelBackend {
     this.assertNotComplex(tensors, 'addN');
 
     const vals = tensors.map(t => t.dataSync());
-    const result = ops.buffer(tensors[0].shape, tensors[0].dtype);
+    const result = ops.buffer(tensors[0].shape, tensors[0].dtype as 'float32');
     const resultVals = result.values;
     for (let i = 0; i < tensors.length; i++) {
       const currVals = vals[i];
@@ -405,8 +407,8 @@ export class MathBackendCPU implements KernelBackend {
         [b.strides[1], 1, b.strides[0]];
 
     const size = leftDim * rightDim;
-    const result = new Float32Array(batchDim * size);
-
+    const result = buffer([batchDim, leftDim, rightDim], a.dtype);
+    const resVals = result.values as TypedArray;
     const blockSize = this.blockSize;
 
     for (let b = 0; b < batchDim; b++) {
@@ -426,15 +428,14 @@ export class MathBackendCPU implements KernelBackend {
                   sum += aValues[b * aBatch + i * aOuterStep + k * aInnerStep] *
                       bValues[k * bInnerStep + j * bOuterStep + b * bBatch];
                 }
-                result[b * size + (i * rightDim + j)] += sum;
+                resVals[b * size + (i * rightDim + j)] += sum;
               }
             }
           }
         }
       }
     }
-
-    return ops.tensor3d(result, [batchDim, leftDim, rightDim]);
+    return result.toTensor() as Tensor3D;
   }
 
   multiply(a: Tensor, b: Tensor): Tensor {
@@ -679,7 +680,7 @@ export class MathBackendCPU implements KernelBackend {
     this.assertNotComplex(x, 'logicalNot');
 
     const values = x.dataSync();
-    const newValues = new Int32Array(values.length);
+    const newValues = new Uint8Array(values.length);
     for (let i = 0; i < values.length; ++i) {
       newValues[i] = values[i] ? 0 : 1;
     }
@@ -738,7 +739,7 @@ export class MathBackendCPU implements KernelBackend {
     this.assertNotComplex(x, 'topk');
 
     const xVals = x.dataSync();
-    return topkImpl(xVals, x.shape, x.dtype, k, sorted);
+    return topkImpl(xVals, x.shape, x.dtype as NumericDataType, k, sorted);
   }
 
   min(x: Tensor, axes: number[]): Tensor {
@@ -1109,19 +1110,22 @@ export class MathBackendCPU implements KernelBackend {
   abs<T extends Tensor>(x: T): T {
     const resultValues = new Float32Array(x.size);
     const values = x.dataSync();
-
-    if (x.dtype === 'complex64') {
-      for (let i = 0; i < x.size; ++i) {
-        const real = values[i * 2];
-        const imag = values[i * 2 + 1];
-        resultValues[i] = Math.sqrt(real * real + imag * imag);
-      }
-    } else {
-      for (let i = 0; i < values.length; ++i) {
-        resultValues[i] = Math.abs(values[i]);
-      }
+    for (let i = 0; i < values.length; ++i) {
+      resultValues[i] = Math.abs(values[i]);
     }
 
+    return Tensor.make(x.shape, {values: resultValues}) as T;
+  }
+
+  complexAbs<T extends Tensor>(x: T): T {
+    const resultValues = new Float32Array(x.size);
+    const values = x.dataSync();
+
+    for (let i = 0; i < x.size; ++i) {
+      const real = values[i * 2];
+      const imag = values[i * 2 + 1];
+      resultValues[i] = Math.hypot(real, imag);
+    }
     return Tensor.make(x.shape, {values: resultValues}) as T;
   }
 
@@ -1371,7 +1375,7 @@ export class MathBackendCPU implements KernelBackend {
     const dilationWidth = convInfo.dilationWidth;
     const padLeft = convInfo.padInfo.left;
     const padTop = convInfo.padInfo.top;
-    const y = ops.buffer<Rank.R4>(convInfo.outShape, x.dtype);
+    const y = ops.buffer(convInfo.outShape, x.dtype as 'float32');
 
     const xVals = x.dataSync();
     const wVals = filter.dataSync();
@@ -1413,7 +1417,7 @@ export class MathBackendCPU implements KernelBackend {
         }
       }
     }
-    return y.toTensor();
+    return y.toTensor() as Tensor4D;
   }
 
   conv3d(x: Tensor5D, filter: Tensor5D, convInfo: Conv3DInfo): Tensor5D {
@@ -1426,7 +1430,7 @@ export class MathBackendCPU implements KernelBackend {
     const padFront = convInfo.padInfo.front;
     const padLeft = convInfo.padInfo.left;
     const padTop = convInfo.padInfo.top;
-    const y = ops.buffer<Rank.R5>(convInfo.outShape, x.dtype);
+    const y = ops.buffer<Rank.R5>(convInfo.outShape, x.dtype as 'float32');
 
     const xVals = x.dataSync();
     const wVals = filter.dataSync();
@@ -1768,7 +1772,7 @@ export class MathBackendCPU implements KernelBackend {
     const padLeft = convInfo.padInfo.left;
     const padTop = convInfo.padInfo.top;
     const chMul = convInfo.outChannels / convInfo.inChannels;
-    const y = ops.buffer<Rank.R4>(convInfo.outShape, x.dtype);
+    const y = ops.buffer(convInfo.outShape, x.dtype as 'float32');
     const xVals = x.dataSync();
     const wVals = filter.dataSync();
     const yVals = y.values;
@@ -1812,7 +1816,7 @@ export class MathBackendCPU implements KernelBackend {
       }
     }
 
-    return y.toTensor();
+    return y.toTensor() as Tensor4D;
   }
 
   depthwiseConv2DDerInput(dy: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
@@ -1960,7 +1964,7 @@ export class MathBackendCPU implements KernelBackend {
         (p, i) => p[0] /* beforePad */ + x.shape[i] + p[1] /* afterPad */);
     const start = paddings.map(p => p[0]);
     const xBuffer = x.buffer();
-    const buffer = ops.buffer(outShape, x.dtype);
+    const buffer = ops.buffer(outShape, x.dtype as 'float32');
     if (constantValue !== 0) {
       buffer.values.fill(constantValue);
     }
@@ -2078,7 +2082,6 @@ export class MathBackendCPU implements KernelBackend {
     const dilationWidth = convInfo.dilationWidth;
     const effectiveFilterHeight = convInfo.effectiveFilterHeight;
     const effectiveFilterWidth = convInfo.effectiveFilterWidth;
-    const y = ops.buffer<Rank.R4>(convInfo.outShape, 'float32');
     const padTop = convInfo.padInfo.top;
     const padLeft = convInfo.padInfo.left;
 
@@ -2086,13 +2089,25 @@ export class MathBackendCPU implements KernelBackend {
         (poolType === 'max' ? Number.NEGATIVE_INFINITY :
                               Number.POSITIVE_INFINITY);
 
+    const xValues = x.dataSync();
+    const output = ops.buffer(convInfo.outShape, x.dtype);
+    const outputVals = output.values;
+
+    const outputBatchStrides =
+        convInfo.outShape[1] * convInfo.outShape[2] * convInfo.outShape[3];
+    const outputRowStrides = convInfo.outShape[2] * convInfo.outShape[3];
+    const outputColStrides = convInfo.outShape[3];
+
     for (let b = 0; b < convInfo.batchSize; ++b) {
+      const outputBatchOffset = b * outputBatchStrides;
+      const inputBatchOffset = b * x.strides[0];
       for (let d = 0; d < convInfo.inChannels; ++d) {
         for (let yR = 0; yR < convInfo.outHeight; ++yR) {
           const xRCorner = yR * strideHeight - padTop;
           const xRMin = Math.max(0, xRCorner);
           const xRMax =
               Math.min(convInfo.inHeight, effectiveFilterHeight + xRCorner);
+          const outputRowOffset = outputBatchOffset + yR * outputRowStrides;
           for (let yC = 0; yC < convInfo.outWidth; ++yC) {
             const xCCorner = yC * strideWidth - padLeft;
             const xCMin = Math.max(0, xCCorner);
@@ -2102,8 +2117,10 @@ export class MathBackendCPU implements KernelBackend {
             let avgValue = 0;
             let count = 0;
             for (let xR = xRMin; xR < xRMax; xR += dilationHeight) {
+              const xROffset = inputBatchOffset + xR * x.strides[1];
               for (let xC = xCMin; xC < xCMax; xC += dilationWidth) {
-                const pixel = x.get(b, xR, xC, d);
+                const xCOffset = xROffset + xC * x.strides[2];
+                const pixel = xValues[xCOffset + d];
                 if ((poolType === 'max' && pixel > minMaxValue)) {
                   minMaxValue = pixel;
                 } else if (poolType === 'avg') {
@@ -2115,14 +2132,14 @@ export class MathBackendCPU implements KernelBackend {
                 break;
               }
             }
-            y.set(
-                poolType === 'avg' ? avgValue / count : minMaxValue, b, yR, yC,
-                d);
+            const outputOffset = outputRowOffset + yC * outputColStrides + d;
+            outputVals[outputOffset] =
+                poolType === 'avg' ? avgValue / count : minMaxValue;
           }
         }
       }
     }
-    return y.toTensor();
+    return output.toTensor() as Tensor4D;
   }
 
   maxPool(x: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
@@ -2130,7 +2147,7 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   private maxPoolPositions(x: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
-    const maxPositions = ops.buffer<Rank.R4>(convInfo.outShape, 'int32');
+    const maxPositions = ops.buffer(convInfo.outShape, 'int32');
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
     const dilationHeight = convInfo.dilationHeight;
@@ -2178,7 +2195,7 @@ export class MathBackendCPU implements KernelBackend {
         }
       }
     }
-    return maxPositions.toTensor();
+    return maxPositions.toTensor() as Tensor4D;
   }
 
   maxPoolBackprop(dy: Tensor4D, x: Tensor4D, y: Tensor4D, convInfo: Conv2DInfo):
@@ -2503,8 +2520,8 @@ export class MathBackendCPU implements KernelBackend {
     const [batch, xHeight, xWidth, depth] = x.shape;
     const [, yHeight, yWidth] = dy.shape;
 
-    const output =
-        ops.buffer<Rank.R4>([batch, xHeight, xWidth, depth], x.dtype);
+    const output = new Float32Array(batch * xHeight * xWidth * depth);
+    const dyValues = dy.dataSync();
 
     // In the backwards pass, we want to find the pixels that were generated
     // for each pixel in the input image the forward pass
@@ -2532,12 +2549,17 @@ export class MathBackendCPU implements KernelBackend {
 
     // Loop over the output space.
     for (let b = 0; b < batch; b++) {
+      const batchOffset = b * x.strides[0];
       for (let r = 0; r < xHeight; r++) {
-        for (let c = 0; c < xWidth; c++) {
-          // Compute bounds for where in dy we will look
-          const startRLerp = Math.floor(r * invHeightScale);
-          const startDyR = Math.floor(startRLerp - (winHeight / 2));
+        const rowOffset = batchOffset + r * x.strides[1];
 
+        // Compute bounds for where in dy we will look
+        const startRLerp = Math.floor(r * invHeightScale);
+        const startDyR = Math.floor(startRLerp - (winHeight / 2));
+        for (let c = 0; c < xWidth; c++) {
+          const colOffset = rowOffset + c * x.strides[2];
+
+          // Compute bounds for where in dy we will look
           const startCLerp = Math.floor(c * invWidthScale);
           const startDyC = Math.floor(startCLerp - (winWidth / 2));
 
@@ -2545,47 +2567,47 @@ export class MathBackendCPU implements KernelBackend {
             let accum = 0;
             // loop over dy
 
-            for (let dyROffset = 0; dyROffset < winHeight; dyROffset++) {
-              const dyR = dyROffset + startDyR;
+            for (let dyRIndex = 0; dyRIndex < winHeight; dyRIndex++) {
+              const dyR = dyRIndex + startDyR;
               // Guard against the window exceeding the bounds of dy
               if (dyR < 0 || dyR >= yHeight) {
                 continue;
               }
 
-              for (let dyCOffSet = 0; dyCOffSet < winWidth; dyCOffSet++) {
-                const dyC = dyCOffSet + startDyC;
+              const dyROffset = batchOffset + dyR * dy.strides[1];
+              const sourceFracRow = dyR * heightScale;
+              const sourceNearestRow = Math.min(
+                  xHeight - 1,
+                  alignCorners ? Math.round(sourceFracRow) :
+                                 Math.floor(sourceFracRow));
+              if (r !== sourceNearestRow) {
+                continue;
+              }
+              for (let dyCIndex = 0; dyCIndex < winWidth; dyCIndex++) {
+                const dyC = dyCIndex + startDyC;
                 // Guard against the window exceeding the bounds of dy
                 if (dyC < 0 || dyC >= yWidth) {
                   continue;
                 }
 
-                const sourceFracRow =
-                    effectiveXSize[0] * (dyR / effectiveYSize[0]);
-                const sourceFracCol =
-                    effectiveXSize[1] * (dyC / effectiveYSize[1]);
-
-                const sourceNearestRow = Math.min(
-                    xHeight - 1,
-                    alignCorners ? Math.round(sourceFracRow) :
-                                   Math.floor(sourceFracRow));
-
+                const dyCOffset = dyROffset + dyC * dy.strides[2];
+                const sourceFracCol = dyC * widthScale;
                 const sourceNearestCol = Math.min(
                     xWidth - 1,
                     alignCorners ? Math.round(sourceFracCol) :
                                    Math.floor(sourceFracCol));
 
-                if (r === sourceNearestRow && c === sourceNearestCol) {
-                  accum += dy.get(b, dyR, dyC, d);
+                if (c === sourceNearestCol) {
+                  accum += dyValues[dyCOffset + d];
                 }
               }
             }
-
-            output.set(accum, b, r, c, d);
+            output[colOffset + d] = accum;
           }
         }
       }
     }
-    return output.toTensor();
+    return ops.tensor4d(output, x.shape, x.dtype);
   }
 
   batchNormalization(
@@ -2771,26 +2793,73 @@ export class MathBackendCPU implements KernelBackend {
         boxesVals, scoresVals, maxOutputSize, iouThreshold, scoreThreshold);
   }
 
-  fft(input: Tensor1D): Tensor1D {
-    util.assert(input.shape.length > 0, 'input must have at least one rank.');
-    const n = input.shape[0];
+  fft(x: Tensor2D): Tensor2D {
+    return this.fftBatch(x, false);
+  }
 
-    if (this.is_exponent_of_2(n)) {
-      return this.fftRadix2(input, n);
+  ifft(x: Tensor2D): Tensor2D {
+    return this.fftBatch(x, true);
+  }
+
+  /**
+   * Calculate FFT of inner most elements of batch tensor.
+   */
+  private fftBatch(x: Tensor2D, inverse: boolean): Tensor2D {
+    const batch = x.shape[0];
+    const innerDim = x.shape[1];
+    // Collects real and imaginary values separately.
+    const realResult = ops.buffer(x.shape, 'float32');
+    const imagResult = ops.buffer(x.shape, 'float32');
+
+    const real = ops.real(x).as2D(batch, innerDim);
+    const imag = ops.imag(x).as2D(batch, innerDim);
+
+    for (let b = 0; b < batch; b++) {
+      // TODO: Support slice ops for complex type.
+      const r = real.slice([b, 0], [1, innerDim]);
+      const i = imag.slice([b, 0], [1, innerDim]);
+      const input = ops.complex(r, i);
+      // Run FFT by batch element.
+      const res = this.fftImpl(input, inverse).dataSync() as Float32Array;
+      for (let d = 0; d < innerDim; d++) {
+        const c = complex_util.getComplexWithIndex(res, d);
+        realResult.values[b * innerDim + d] = c.real;
+        imagResult.values[b * innerDim + d] = c.imag;
+      }
+    }
+
+    const t = ops.complex(realResult.toTensor(), imagResult.toTensor());
+    return t.as2D(batch, innerDim);
+  }
+
+  private fftImpl(x: Tensor2D, inverse: boolean): Tensor2D {
+    const x1D = x.as1D();
+
+    const n = x1D.size;
+
+    if (this.isExponentOf2(n)) {
+      let result = this.fftRadix2(x1D, n, inverse).as2D(x.shape[0], x.shape[1]);
+      if (inverse) {
+        result = ops.complex(
+                     ops.real(result).div(scalar(n)),
+                     ops.imag(result).div(scalar(n))) as Tensor2D;
+      }
+      return result;
     } else {
-      const data = input.dataSync();
-      const rawOutput = this.fourierTransformByMatmul(data, n) as Float32Array;
+      const data = x.dataSync();
+      const rawOutput =
+          this.fourierTransformByMatmul(data, n, inverse) as Float32Array;
       const output = complex_util.splitRealAndImagArrays(rawOutput);
-      return ops.complex(output.real, output.imag).as1D();
+      return ops.complex(output.real, output.imag).as2D(x.shape[0], x.shape[1]);
     }
   }
 
-  private is_exponent_of_2(size: number): boolean {
+  private isExponentOf2(size: number): boolean {
     return (size & size - 1) === 0;
   }
 
   // FFT using Cooley-Tukey algorithm on radix 2 dimensional input.
-  private fftRadix2(input: Tensor1D, size: number): Tensor1D {
+  private fftRadix2(input: Tensor1D, size: number, inverse: boolean): Tensor1D {
     if (size === 1) {
       return input;
     }
@@ -2802,10 +2871,10 @@ export class MathBackendCPU implements KernelBackend {
     let oddTensor = ops.complex(oddComplex.real, oddComplex.imag).as1D();
 
     // Recursive call for half part of original input.
-    evenTensor = this.fftRadix2(evenTensor, half);
-    oddTensor = this.fftRadix2(oddTensor, half);
+    evenTensor = this.fftRadix2(evenTensor, half, inverse);
+    oddTensor = this.fftRadix2(oddTensor, half, inverse);
 
-    const e = complex_util.exponents(size);
+    const e = complex_util.exponents(size, inverse);
     const exponent = ops.complex(e.real, e.imag).mul(oddTensor);
 
     const addPart = evenTensor.add(exponent);
@@ -2818,17 +2887,22 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   // Calculate fourier transform by multplying sinusoid matrix.
-  private fourierTransformByMatmul(data: TypedArray, size: number): TypedArray {
+  private fourierTransformByMatmul(
+      data: TypedArray, size: number, inverse: boolean): TypedArray {
     const ret = new Float32Array(size * 2);
     // TODO: Use matmul instead once it supports complex64 type.
     for (let r = 0; r < size; r++) {
       let real = 0.0;
       let imag = 0.0;
       for (let c = 0; c < size; c++) {
-        const e = complex_util.exponent(r * c, size);
+        const e = complex_util.exponent(r * c, size, inverse);
         const term = complex_util.getComplexWithIndex(data as Float32Array, c);
         real += term.real * e.real - term.imag * e.imag;
         imag += term.real * e.imag + term.imag * e.real;
+      }
+      if (inverse) {
+        real /= size;
+        imag /= size;
       }
       complex_util.assignToTypedArray(ret, real, imag, r);
     }
@@ -2993,8 +3067,8 @@ export class MathBackendCPU implements KernelBackend {
     const numBoxes = boxes.shape[0];
 
     const [cropHeight, cropWidth] = cropSize;
-    const output =
-        ops.buffer<Rank.R4>([numBoxes, cropHeight, cropWidth, numChannels]);
+    const output = ops.buffer(
+        [numBoxes, cropHeight, cropWidth, numChannels], images.dtype);
 
     const boxVals = boxes.dataSync();
     const boxIndVals = boxIndex.dataSync();
@@ -3115,7 +3189,7 @@ export class MathBackendCPU implements KernelBackend {
         }
       }
     }
-    return output.toTensor();
+    return output.toTensor() as Tensor4D;
   }
 
   sparseToDense<R extends Rank>(
@@ -3188,7 +3262,7 @@ export class MathBackendCPU implements KernelBackend {
       return tensor([], shape, updates.dtype);
     }
 
-    const buffer = new TensorBuffer(flattenShape, updates.dtype);
+    const buffer = new TensorBuffer(flattenShape, updates.dtype as 'float32');
     buffer.values.fill(defaultValue.dataSync()[0]);
 
     for (let i = 0; i < numUpdates; i++) {

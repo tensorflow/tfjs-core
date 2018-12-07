@@ -27,36 +27,46 @@ export class FFTProgram implements GPGPUProgram {
   outputShape: number[];
   userCode: string;
 
-  constructor(op: string, inputShape: number[]) {
-    const size = inputShape[0];
-    this.outputShape = [size];
+  constructor(op: string, inputShape: [number, number], inverse: boolean) {
+    const innerDim = inputShape[1];
+    this.outputShape = inputShape;
+
+    const exponentMultiplierSnippet =
+        inverse ? `2.0 * ${Math.PI}` : `-2.0 * ${Math.PI}`;
+    const resultDenominator = inverse ? `${innerDim}.0` : '1.0';
 
     this.userCode = `
+      const float exponentMultiplier = ${exponentMultiplierSnippet};
+
       float unaryOpComplex(float real, float expR, float imag, float expI) {
         ${op}
       }
 
-      float mulMatDFT(int row) {
-        // TODO: Gather constants in one place?
-        const float PI = 3.1415926535897932384626433832795;
+      float mulMatDFT(int batch, int index) {
+        float indexRatio = float(index) / float(${innerDim});
+        float exponentMultiplierTimesIndexRatio =
+            exponentMultiplier * indexRatio;
+
         float result = 0.0;
 
-        for (int i = 0; i < ${size}; i++) {
-          float x = -2.0 * PI * float(row * i) / float(${size});
+        for (int i = 0; i < ${innerDim}; i++) {
+          // x = (-2|2 * PI / N) * index * i;
+          float x = exponentMultiplierTimesIndexRatio * float(i);
           float expR = cos(x);
           float expI = sin(x);
-          float real = getReal(i);
-          float imag = getImag(i);
+          float real = getReal(batch, i);
+          float imag = getImag(batch, i);
 
-          result += unaryOpComplex(real, expR, imag, expI);
+          result +=
+              unaryOpComplex(real, expR, imag, expI) / ${resultDenominator};
         }
 
         return result;
       }
 
       void main() {
-        int row = getOutputCoords();
-        setOutput(mulMatDFT(row));
+        ivec2 coords = getOutputCoords();
+        setOutput(mulMatDFT(coords[0], coords[1]));
       }
     `;
   }
