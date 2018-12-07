@@ -21,7 +21,7 @@
 
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
-import {BROWSER_ENVS, CHROME_ENVS, NODE_ENVS} from '../test_util';
+import {BROWSER_ENVS, CHROME_ENVS} from '../test_util';
 
 import {BrowserHTTPRequest, httpRequestRouter, parseUrl} from './browser_http';
 
@@ -59,7 +59,7 @@ const modelTopology1: {} = {
   'backend': 'tensorflow'
 };
 
-describeWithFlags('browserHTTPRequest-load fetch-polyfill', NODE_ENVS, () => {
+describeWithFlags('browserHTTPRequest-load fetch', BROWSER_ENVS, () => {
   let requestInits: RequestInit[];
 
   // simulate a fetch polyfill, this needs to be non-null for spyOn to work
