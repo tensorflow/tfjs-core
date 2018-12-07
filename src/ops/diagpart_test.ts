@@ -43,16 +43,18 @@ describeWithFlags('diagpart', ALL_ENVS, () => {
     const m = tf.tensor(Array.from(Array(36).keys()), [3, 3, 4]);
     expect(() => tf.diagPart(m)).toThrowError();
   });
-  it('diag4d 3*2*3*2', () => {
+  it('diag4d 3*2*3*2 int32', () => {
     const m = tf.tensor(Array.from(Array(36).keys()), [3, 2, 3, 2], 'int32');
     const d = tf.diagPart(m);
     expectArraysEqual(d.shape, [3, 2]);
+    expect(d.dtype).toBe('int32');
     expectArraysEqual(d, tf.tensor([0, 7, 14, 21, 28, 35], [3, 2], 'int32'));
   });
-  it('diag4d 3*2*3*2', () => {
+  it('diag4d 3*2*3*2 bool', () => {
     const m = tf.tensor(Array.from(Array(36).keys()), [3, 2, 3, 2], 'bool');
     const d = tf.diagPart(m);
     expectArraysEqual(d.shape, [3, 2]);
+    expect(d.dtype).toBe('bool');
     expectArraysEqual(d, tf.tensor([0, 1, 1, 1, 1, 1], [3, 2], 'bool'));
   });
 });
