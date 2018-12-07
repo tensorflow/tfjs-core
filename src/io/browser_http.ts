@@ -46,8 +46,10 @@ export class BrowserHTTPRequest implements IOHandler {
             'browserHTTPRequest is not supported outside the web browser ' +
             'without a fetch polyfill.');
       }
-      // Make sure window.fetch is always bound to window.
-      this.fetchFunc = fetch.bind(window);
+      // Make sure fetch is always bound to window (the
+      // original object) when available.
+      this.fetchFunc =
+          fetch.bind(typeof window === 'undefined' ? null : window);
     } else {
       assert(
           typeof fetchFunc === 'function',
@@ -244,7 +246,7 @@ export class BrowserHTTPRequest implements IOHandler {
    * the function will be bound to `window`, instead of `this`.
    */
   private getFetchFunc() {
-    return this.fetchFunc || fetch;
+    return this.fetchFunc;
   }
 }
 
