@@ -1772,25 +1772,43 @@ export class MathBackendCPU implements KernelBackend {
     return result.toTensor() as T;
   }
 
-  gather<T extends Tensor>(x: T, indices: Tensor1D, axis: number): T {
+  gather<T extends Tensor>(x: T, indices: Tensor, axis: number): T {
     this.assertNotComplex([x, indices], 'gather');
 
-    const newShape: number[] = x.shape.slice();
+    const gatherDimSize = x.shape[axis];
+    const indicesSize = indices.size;
+
+    const newShape: number[] = [];
+    let outerSize = 1;
+    let innerSize = 1;
+    for (let i = 0; i < axis; i++) {
+      newShape.push(x.shape[i]);
+      outerSize *= x.shape[i];
+    }
+
+    for (let i = 0; i < indices.rank; i++) {
+      newShape.push(indices.shape[i]);
+    }
+
+    for (let i = axis + 1; i < x.rank; i++) {
+      newShape.push(x.shape[i]);
+      innerSize *= x.shape[i];
+    }
+    const result = buffer([outerSize, indicesSize, innerSize], x.dtype);
+    const flattenX = x.reshape([outerSize, gatherDimSize, innerSize]);
+    const xBuf = flattenX.buffer();
     const indicesValues = indices.dataSync();
-    newShape[axis] = indicesValues.length;
-    const result = buffer(newShape, x.dtype);
-    const xBuf = x.buffer();
 
     for (let i = 0; i < result.size; ++i) {
       const newLoc = result.indexToLoc(i);
 
       const originalLoc: number[] = newLoc.slice();
-      originalLoc[axis] = indicesValues[newLoc[axis]];
+      originalLoc[1] = indicesValues[newLoc[1]];
 
       const originalIndex = xBuf.locToIndex(originalLoc);
       result.values[i] = xBuf.values[originalIndex];
     }
-    return result.toTensor() as T;
+    return result.toTensor().reshape(newShape) as T;
   }
 
   batchToSpaceND<T extends Tensor>(

@@ -1396,9 +1396,8 @@ describeWithFlags('toPixels no canvas', ALL_ENVS, () => {
 
     const data = await tf.toPixels(x);
     const expected = new Uint8ClampedArray([
-      Math.round(.15 * 255), Math.round(.15 * 255), Math.round(.15 * 255),
-      255, Math.round(.2 * 255), Math.round(.2 * 255), Math.round(.2 * 255),
-      255
+      Math.round(.15 * 255), Math.round(.15 * 255), Math.round(.15 * 255), 255,
+      Math.round(.2 * 255), Math.round(.2 * 255), Math.round(.2 * 255), 255
     ]);
     expect(data).toEqual(expected);
   });
@@ -1406,8 +1405,7 @@ describeWithFlags('toPixels no canvas', ALL_ENVS, () => {
   it('draws a rank-2 int32 tensor', async () => {
     const x = tf.tensor2d([10, 20], [2, 1], 'int32');
     const data = await tf.toPixels(x);
-    const expected =
-        new Uint8ClampedArray([10, 10, 10, 255, 20, 20, 20, 255]);
+    const expected = new Uint8ClampedArray([10, 10, 10, 255, 20, 20, 20, 255]);
     expect(data).toEqual(expected);
   });
 
@@ -1416,9 +1414,8 @@ describeWithFlags('toPixels no canvas', ALL_ENVS, () => {
 
     const data = await tf.toPixels(x);
     const expected = new Uint8ClampedArray([
-      Math.round(.15 * 255), Math.round(.15 * 255), Math.round(.15 * 255),
-      255, Math.round(.2 * 255), Math.round(.2 * 255), Math.round(.2 * 255),
-      255
+      Math.round(.15 * 255), Math.round(.15 * 255), Math.round(.15 * 255), 255,
+      Math.round(.2 * 255), Math.round(.2 * 255), Math.round(.2 * 255), 255
     ]);
     expect(data).toEqual(expected);
   });
@@ -1427,8 +1424,7 @@ describeWithFlags('toPixels no canvas', ALL_ENVS, () => {
     const x = tf.tensor3d([10, 20], [2, 1, 1], 'int32');
 
     const data = await tf.toPixels(x);
-    const expected =
-        new Uint8ClampedArray([10, 10, 10, 255, 20, 20, 20, 255]);
+    const expected = new Uint8ClampedArray([10, 10, 10, 255, 20, 20, 20, 255]);
     expect(data).toEqual(expected);
   });
 
@@ -1442,8 +1438,8 @@ describeWithFlags('toPixels no canvas', ALL_ENVS, () => {
     const data = await tf.toPixels(x);
     const expected = new Uint8ClampedArray([
       Math.round(.05 * 255), Math.round(.1001 * 255), Math.round(.15 * 255),
-      255, Math.round(.2 * 255), Math.round(.25 * 255),
-      Math.round(.3001 * 255), 255
+      255, Math.round(.2 * 255), Math.round(.25 * 255), Math.round(.3001 * 255),
+      255
     ]);
     expect(data).toEqual(expected);
   });
@@ -1452,8 +1448,7 @@ describeWithFlags('toPixels no canvas', ALL_ENVS, () => {
     const x = tf.tensor3d([10, 20, 30, 40, 50, 60], [2, 1, 3], 'int32');
 
     const data = await tf.toPixels(x);
-    const expected =
-        new Uint8ClampedArray([10, 20, 30, 255, 40, 50, 60, 255]);
+    const expected = new Uint8ClampedArray([10, 20, 30, 255, 40, 50, 60, 255]);
     expect(data).toEqual(expected);
   });
 
@@ -2141,7 +2136,16 @@ describeWithFlags('tile', ALL_ENVS, () => {
 });
 
 describeWithFlags('gather', ALL_ENVS, () => {
-  it('1D (gather)', () => {
+  it('1D (gather), scalar indices', () => {
+    const t = tf.tensor1d([1, 2, 3]);
+
+    const t2 = tf.gather(t, tf.scalar(1, 'int32'), 0);
+
+    expect(t2.shape).toEqual([]);
+    expectArraysClose(t2, [2]);
+  });
+
+  it('1D (gather), 1D indices', () => {
     const t = tf.tensor1d([1, 2, 3]);
 
     const t2 = tf.gather(t, tf.tensor1d([0, 2, 0, 1], 'int32'), 0);
@@ -2150,7 +2154,27 @@ describeWithFlags('gather', ALL_ENVS, () => {
     expectArraysClose(t2, [1, 3, 1, 2]);
   });
 
-  it('2D (gather)', () => {
+  it('1D (gather), 2D indices', () => {
+    const t = tf.tensor1d([1, 2, 3]);
+
+    const t2 = tf.gather(t, tf.tensor2d([0, 2, 0, 1], [1, 4], 'int32'), 0);
+
+    expect(t2.shape).toEqual([1, 4]);
+    expectArraysClose(t2, [1, 3, 1, 2]);
+  });
+
+  it('2D (gather), scalar indices', () => {
+    const t = tf.tensor2d([1, 11, 2, 22], [2, 2]);
+    let t2 = tf.gather(t, tf.scalar(1, 'int32'), 0);
+    expect(t2.shape).toEqual([2]);
+    expectArraysClose(t2, [2, 22]);
+
+    t2 = tf.gather(t, tf.scalar(1, 'int32'), 1);
+    expect(t2.shape).toEqual([2]);
+    expectArraysClose(t2, [11, 22]);
+  });
+
+  it('2D (gather), 1D indices', () => {
     const t = tf.tensor2d([1, 11, 2, 22], [2, 2]);
     let t2 = tf.gather(t, tf.tensor1d([1, 0, 0, 1], 'int32'), 0);
     expect(t2.shape).toEqual([4, 2]);
@@ -2158,6 +2182,17 @@ describeWithFlags('gather', ALL_ENVS, () => {
 
     t2 = tf.gather(t, tf.tensor1d([1, 0, 0, 1], 'int32'), 1);
     expect(t2.shape).toEqual([2, 4]);
+    expectArraysClose(t2, [11, 1, 1, 11, 22, 2, 2, 22]);
+  });
+
+  it('2D (gather), 2D indices', () => {
+    const t = tf.tensor2d([1, 11, 2, 22], [2, 2]);
+    let t2 = tf.gather(t, tf.tensor2d([1,0,0,1], [2,2], 'int32'), 0);
+    expect(t2.shape).toEqual([2, 2, 2]);
+    expectArraysClose(t2, [2,2,2,2, 22, 1, 11, 1, 11, 2, 22]);
+
+    t2 = tf.gather(t, tf.tensor2d([1, 0, 0, 1], [2,2], 'int32'), 1);
+    expect(t2.shape).toEqual([2, 2, 2]);
     expectArraysClose(t2, [11, 1, 1, 11, 22, 2, 2, 22]);
   });
 
@@ -3211,9 +3246,9 @@ describeWithFlags('cumsum', ALL_ENVS, () => {
   });
 
   it('throws error for string tensor', () => {
-    expect(() => tf.cumsum(['a', 'b', 'c']))
-        .toThrowError(
-            /Argument 'x' passed to 'cumsum' must be numeric tensor/);
+    expect(() => tf.cumsum([
+      'a', 'b', 'c'
+    ])).toThrowError(/Argument 'x' passed to 'cumsum' must be numeric tensor/);
   });
 });
 

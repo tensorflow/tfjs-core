@@ -46,7 +46,7 @@ import {ones, scalar, zerosLike} from './tensor_ops';
  */
 /** @doc {heading: 'Operations', subheading: 'Segment'} */
 function unsortedSegmentSum_<T extends Tensor>(
-    x: T|TensorLike, segmentIds: Tensor1D|TensorLike, numSegments: number): T {
+    x: T|TensorLike, segmentIds: Tensor|TensorLike, numSegments: number): T {
   const $x = convertToTensor(x, 'x', 'unsortedSegmentSum');
   const $segmentIds =
       convertToTensor(segmentIds, 'segmentIds', 'unsortedSegmentSum', 'int32');
@@ -86,7 +86,7 @@ function unsortedSegmentSum_<T extends Tensor>(
  */
 /** @doc {heading: 'Tensors', subheading: 'Slicing and Joining'} */
 function gather_<T extends Tensor>(
-    x: T|TensorLike, indices: Tensor1D|TensorLike, axis = 0): T {
+    x: T|TensorLike, indices: Tensor|TensorLike, axis = 0): T {
   const $x = convertToTensor(x, 'x', 'gather');
   const $indices = convertToTensor(indices, 'indices', 'gather', 'int32');
   axis = parseAxisParam(axis, $x.shape)[0];
@@ -149,7 +149,7 @@ function arrayConcat(arrays: number[][]): number[] {
   return result;
 }
 
-function gatherDropNegatives<T extends Tensor>(x: T, indices: Tensor1D) {
+function gatherDropNegatives<T extends Tensor>(x: T, indices: Tensor) {
   // Helper function for unsorted segment ops. Gathers params for
   // positive segment ids and gathers 0 for inputs with negative segment id.
   // Mirrors _GatherDropNegatives from tensorflow/python/ops/math_grad.py

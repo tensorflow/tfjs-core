@@ -169,7 +169,7 @@ export class KernelBackend implements TensorStorage, BackendTimer {
   }
 
   unsortedSegmentSum<T extends Tensor>(
-      x: T, segmentIds: Tensor1D, numSegments: number): Tensor {
+      x: T, segmentIds: Tensor, numSegments: number): Tensor {
     throw new Error('Not yet implemented');
   }
 
@@ -439,7 +439,7 @@ export class KernelBackend implements TensorStorage, BackendTimer {
     throw new Error('Not yet implemented');
   }
 
-  gather<T extends Tensor>(x: T, indices: Tensor1D, axis: number): T {
+  gather<T extends Tensor>(x: T, indices: Tensor, axis: number): T {
     throw new Error('Not yet implemented');
   }
 
