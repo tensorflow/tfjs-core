@@ -16,6 +16,7 @@
  */
 
 import * as seedrandom from 'seedrandom';
+
 import {ENV} from '../environment';
 import {warn} from '../log';
 import * as array_ops_util from '../ops/array_ops_util';
@@ -28,12 +29,14 @@ import * as gather_nd_util from '../ops/gather_nd_util';
 import * as ops from '../ops/ops';
 import {buffer, scalar, tensor, tensor3d, tensor4d} from '../ops/ops';
 import * as scatter_nd_util from '../ops/scatter_nd_util';
+import {collectGatherOpShapeInfo} from '../ops/segment_util';
 import * as selu_util from '../ops/selu_util';
 import {getStridedSlicedInfo} from '../ops/slice_util';
 import {DataId, Scalar, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
 import {DataType, DataTypeMap, DataValues, NumericDataType, Rank, ShapeMap, TypedArray, upcastType} from '../types';
 import * as util from '../util';
 import {now} from '../util';
+
 import {BackendTimingInfo, DataMover, DataStorage, KernelBackend} from './backend';
 import * as backend_util from './backend_util';
 import * as complex_util from './complex_util';
@@ -1774,27 +1777,13 @@ export class MathBackendCPU implements KernelBackend {
   gather<T extends Tensor>(x: T, indices: Tensor, axis: number): T {
     this.assertNotComplex([x, indices], 'gather');
 
-    const gatherDimSize = x.shape[axis];
+    const shapeInfo = collectGatherOpShapeInfo(x, indices, axis);
     const indicesSize = indices.size;
 
-    const newShape: number[] = [];
-    let outerSize = 1;
-    let innerSize = 1;
-    for (let i = 0; i < axis; i++) {
-      newShape.push(x.shape[i]);
-      outerSize *= x.shape[i];
-    }
-
-    for (let i = 0; i < indices.rank; i++) {
-      newShape.push(indices.shape[i]);
-    }
-
-    for (let i = axis + 1; i < x.rank; i++) {
-      newShape.push(x.shape[i]);
-      innerSize *= x.shape[i];
-    }
-    const result = buffer([outerSize, indicesSize, innerSize], x.dtype);
-    const flattenX = x.reshape([outerSize, gatherDimSize, innerSize]);
+    const result = buffer(
+        [shapeInfo.batchSize, indicesSize, shapeInfo.sliceSize], x.dtype);
+    const flattenX = x.reshape(
+        [shapeInfo.batchSize, shapeInfo.dimSize, shapeInfo.sliceSize]);
     const xBuf = flattenX.buffer();
     const indicesValues = indices.dataSync();
 
@@ -1807,7 +1796,7 @@ export class MathBackendCPU implements KernelBackend {
       const originalIndex = xBuf.locToIndex(originalLoc);
       result.values[i] = xBuf.values[originalIndex];
     }
-    return result.toTensor().reshape(newShape) as T;
+    return result.toTensor().reshape(shapeInfo.outputShape) as T;
   }
 
   batchToSpaceND<T extends Tensor>(

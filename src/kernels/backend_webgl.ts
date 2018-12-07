@@ -803,8 +803,16 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   gather<T extends Tensor>(x: T, indices: Tensor1D, axis: number): T {
-    const program = new GatherProgram(x.shape, indices.size, axis);
-    return this.compileAndRun(program, [x, indices]);
+    const shapeInfo = segment_util.collectGatherOpShapeInfo(x, indices, axis);
+    const flattenedX = x.reshape(
+        [shapeInfo.batchSize, shapeInfo.dimSize, shapeInfo.sliceSize]);
+    const flattenedIndices = indices.flatten();
+    const program = new GatherProgram(
+        [shapeInfo.batchSize, shapeInfo.dimSize, shapeInfo.sliceSize],
+        indices.size, 1);
+    return (this.compileAndRun(program, [flattenedX, flattenedIndices]) as
+            Tensor)
+               .reshape(shapeInfo.outputShape) as T;
   }
 
   batchToSpaceND<T extends Tensor>(

@@ -2187,16 +2187,16 @@ describeWithFlags('gather', ALL_ENVS, () => {
 
   it('2D (gather), 2D indices', () => {
     const t = tf.tensor2d([1, 11, 2, 22], [2, 2]);
-    let t2 = tf.gather(t, tf.tensor2d([1,0,0,1], [2,2], 'int32'), 0);
+    let t2 = tf.gather(t, tf.tensor2d([1, 0, 0, 1], [2, 2], 'int32'), 0);
     expect(t2.shape).toEqual([2, 2, 2]);
-    expectArraysClose(t2, [2,2,2,2, 22, 1, 11, 1, 11, 2, 22]);
+    expectArraysClose(t2, [2, 22, 1, 11, 1, 11, 2, 22]);
 
-    t2 = tf.gather(t, tf.tensor2d([1, 0, 0, 1], [2,2], 'int32'), 1);
+    t2 = tf.gather(t, tf.tensor2d([1, 0, 0, 1], [2, 2], 'int32'), 1);
     expect(t2.shape).toEqual([2, 2, 2]);
     expectArraysClose(t2, [11, 1, 1, 11, 22, 2, 2, 22]);
   });
 
-  it('3D (gather)', () => {
+  it('3D (gather), 1D indices', () => {
     const t = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2]);
 
     const t2 = tf.gather(t, tf.tensor1d([1, 0, 0, 1], 'int32'), 2);
@@ -2205,7 +2205,16 @@ describeWithFlags('gather', ALL_ENVS, () => {
     expectArraysClose(t2, [2, 1, 1, 2, 4, 3, 3, 4, 6, 5, 5, 6, 8, 7, 7, 8]);
   });
 
-  it('bool (gather)', () => {
+  it('3D (gather), 2D indices', () => {
+    const t = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2]);
+
+    const t2 = tf.gather(t, tf.tensor2d([1, 0, 0, 1], [2, 2], 'int32'), 2);
+
+    expect(t2.shape).toEqual([2, 2, 2, 2]);
+    expectArraysClose(t2, [2, 1, 1, 2, 4, 3, 3, 4, 6, 5, 5, 6, 8, 7, 7, 8]);
+  });
+
+  it('bool (gather), 1D indices', () => {
     const t = tf.tensor1d([true, false, true], 'bool');
 
     const t2 = tf.gather(t, tf.tensor1d([0, 2, 0, 1], 'int32'), 0);
@@ -2215,12 +2224,32 @@ describeWithFlags('gather', ALL_ENVS, () => {
     expect(t2.dataSync()).toEqual(new Uint8Array([1, 1, 1, 0]));
   });
 
-  it('int32 (gather)', () => {
+  it('bool (gather), 2D indices', () => {
+    const t = tf.tensor1d([true, false, true], 'bool');
+
+    const t2 = tf.gather(t, tf.tensor2d([0, 2, 0, 1], [2, 2], 'int32'), 0);
+
+    expect(t2.shape).toEqual([2, 2]);
+    expect(t2.dtype).toBe('bool');
+    expect(t2.dataSync()).toEqual(new Uint8Array([1, 1, 1, 0]));
+  });
+
+  it('int32 (gather), 1D indices', () => {
     const t = tf.tensor1d([1, 2, 5], 'int32');
 
     const t2 = tf.gather(t, tf.tensor1d([0, 2, 0, 1], 'int32'), 0);
 
     expect(t2.shape).toEqual([4]);
+    expect(t2.dtype).toBe('int32');
+    expect(t2.dataSync()).toEqual(new Int32Array([1, 5, 1, 2]));
+  });
+
+  it('int32 (gather), 2D indices', () => {
+    const t = tf.tensor1d([1, 2, 5], 'int32');
+
+    const t2 = tf.gather(t, tf.tensor2d([0, 2, 0, 1], [2, 2], 'int32'), 0);
+
+    expect(t2.shape).toEqual([2, 2]);
     expect(t2.dtype).toBe('int32');
     expect(t2.dataSync()).toEqual(new Int32Array([1, 5, 1, 2]));
   });
@@ -2267,7 +2296,7 @@ describeWithFlags('gather', ALL_ENVS, () => {
     expectArraysClose(res, [1, 3, 1, 2]);
   });
 
-  it('gradient 1D (gather)', () => {
+  it('gradient 1D (gather), 1D indices', () => {
     const t = tf.tensor1d([1, 2, 3]);
     const indices = tf.tensor1d([0, 2, 0, 1], 'int32');
     const dy = tf.tensor([3, 4, 5, 6]);
@@ -2278,7 +2307,18 @@ describeWithFlags('gather', ALL_ENVS, () => {
     expectArraysClose(gradients, [8, 6, 4]);
   });
 
-  it('gradient 2D (gather) axis=0 shape=[2, 2]', () => {
+  it('gradient 1D (gather), 2D indices', () => {
+    const t = tf.tensor1d([1, 2, 3]);
+    const indices = tf.tensor2d([0, 2, 0, 1], [2, 2], 'int32');
+    const dy = tf.tensor2d([3, 4, 5, 6], [2, 2]);
+
+    const gradients = tf.grad(t => tf.gather(t, indices))(t, dy);
+
+    expect(gradients.shape).toEqual(t.shape);
+    expectArraysClose(gradients, [8, 6, 4]);
+  });
+
+  it('gradient 2D (gather) axis=0 shape=[2, 2] 1D indices', () => {
     const t = tf.tensor2d([1, 11, 2, 22], [2, 2]);
     const indices = tf.tensor1d([1, 0, 0, 1], 'int32');
     const dy = tf.tensor([3, 4, 5, 6, 7, 8, 9, 10], [4, 2]);
@@ -2290,7 +2330,19 @@ describeWithFlags('gather', ALL_ENVS, () => {
     expectArraysClose(gradients, [12, 14, 12, 14]);
   });
 
-  it('gradient 2D (gather) axis=0 shape=[4, 1]', () => {
+  it('gradient 2D (gather) axis=0 shape=[2, 2] 2D indices', () => {
+    const t = tf.tensor2d([1, 11, 2, 22], [2, 2]);
+    const indices = tf.tensor2d([1, 0, 0, 1], [2, 2], 'int32');
+    const dy = tf.tensor([3, 4, 5, 6, 7, 8, 9, 10], [2, 2, 2]);
+    const axis = 0;
+
+    const gradients = tf.grad(t => tf.gather(t, indices, axis))(t, dy);
+
+    expect(gradients.shape).toEqual(t.shape);
+    expectArraysClose(gradients, [12, 14, 12, 14]);
+  });
+
+  it('gradient 2D (gather) axis=0 shape=[4, 1] 1D indices', () => {
     const t = tf.tensor2d([1, 11, 2, 22], [4, 1]);
     const indices = tf.tensor1d([1, 0, 0, 1], 'int32');
     const dy = tf.tensor([23, 7, 19, 13], [4, 1]);
@@ -2302,7 +2354,19 @@ describeWithFlags('gather', ALL_ENVS, () => {
     expectArraysClose(gradients, [26, 36, 0, 0]);
   });
 
-  it('gradient 2D (gather) axis=1 shape=[2, 2]', () => {
+  it('gradient 2D (gather) axis=0 shape=[4, 1] 2D indices', () => {
+    const t = tf.tensor2d([1, 11, 2, 22], [4, 1]);
+    const indices = tf.tensor2d([1, 0, 0, 1], [2, 2], 'int32');
+    const dy = tf.tensor([23, 7, 19, 13], [2, 2, 1]);
+    const axis = 0;
+
+    const gradients = tf.grad(t => tf.gather(t, indices, axis))(t, dy);
+
+    expect(gradients.shape).toEqual(t.shape);
+    expectArraysClose(gradients, [26, 36, 0, 0]);
+  });
+
+  it('gradient 2D (gather) axis=1 shape=[2, 2] 1D indices', () => {
     const t = tf.tensor2d([1, 11, 2, 22], [2, 2]);
     const indices = tf.tensor1d([1, 0, 0, 1], 'int32');
     const dy = tf.tensor([3, 4, 5, 6, 7, 8, 9, 10], [2, 4]);
@@ -2314,7 +2378,19 @@ describeWithFlags('gather', ALL_ENVS, () => {
     expectArraysClose(gradients, [9, 9, 17, 17]);
   });
 
-  it('gradient 2D (gather) axis=1 shape=[4, 1]', () => {
+  it('gradient 2D (gather) axis=1 shape=[2, 2] 2D indices', () => {
+    const t = tf.tensor2d([1, 11, 2, 22], [2, 2]);
+    const indices = tf.tensor2d([1, 0, 0, 1], [2, 2], 'int32');
+    const dy = tf.tensor([3, 4, 5, 6, 7, 8, 9, 10], [2, 2, 2]);
+    const axis = 1;
+
+    const gradients = tf.grad(t => tf.gather(t, indices, axis))(t, dy);
+
+    expect(gradients.shape).toEqual(t.shape);
+    expectArraysClose(gradients, [9, 9, 17, 17]);
+  });
+
+  it('gradient 2D (gather) axis=1 shape=[4, 1] 1D indices', () => {
     const t = tf.tensor2d([1, 11, 2, 22], [4, 1]);
     const indices = tf.tensor1d([0, 0, 0, 0], 'int32');
     const dy = tf.tensor(
@@ -2327,7 +2403,20 @@ describeWithFlags('gather', ALL_ENVS, () => {
     expectArraysClose(gradients, [18, 34, 50, 66]);
   });
 
-  it('gradient 3D (gather) axis=0 shape=[2, 3, 2]', () => {
+  it('gradient 2D (gather) axis=1 shape=[4, 1] 2D indices', () => {
+    const t = tf.tensor2d([1, 11, 2, 22], [4, 1]);
+    const indices = tf.tensor2d([0, 0, 0, 0], [2, 2], 'int32');
+    const dy = tf.tensor(
+        [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18], [4, 2, 2]);
+    const axis = 1;
+
+    const gradients = tf.grad(t => tf.gather(t, indices, axis))(t, dy);
+
+    expect(gradients.shape).toEqual(t.shape);
+    expectArraysClose(gradients, [18, 34, 50, 66]);
+  });
+
+  it('gradient 3D (gather) axis=0 shape=[2, 3, 2] 1D indices', () => {
     const t = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [2, 3, 2]);
     const indices = tf.tensor1d([1, 0, 0, 1], 'int32');
     const dy = tf.tensor(
@@ -2336,6 +2425,24 @@ describeWithFlags('gather', ALL_ENVS, () => {
           4, 15, 12, -7, 18, 19,  2, 21, 6,    23, 24, 25
         ],
         [4, 3, 2]);
+    const axis = 0;
+
+    const gradients = tf.grad(t => tf.gather(t, indices, axis))(t, dy);
+
+    expect(gradients.shape).toEqual(t.shape);
+    expectArraysClose(
+        gradients, [5, 33, 12.01, -7, 30, 32, 4, 18, 10, 38, 30, 25.7]);
+  });
+
+  it('gradient 3D (gather) axis=0 shape=[2, 3, 2] 2D indices', () => {
+    const t = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [2, 3, 2]);
+    const indices = tf.tensor2d([1, 0, 0, 1], [2, 2], 'int32');
+    const dy = tf.tensor(
+        [
+          2, -3, 4,  15, 6,  0.7, 1, 18, 0.01, 0,  12, 13,
+          4, 15, 12, -7, 18, 19,  2, 21, 6,    23, 24, 25
+        ],
+        [2, 2, 3, 2]);
     const axis = 0;
 
     const gradients = tf.grad(t => tf.gather(t, indices, axis))(t, dy);
@@ -2365,12 +2472,32 @@ describeWithFlags('gather', ALL_ENVS, () => {
         [20, 16, 6, 36, 12, 23.7, 25, 43, 101.01, 31, 46, 67, 5, 15, 9, -11]);
   });
 
-  it('gradient 3D (gather) axis=1 shape=[2, 3, 2]', () => {
+  it('gradient 3D (gather) axis=0 shape=[1, 4, 4] 1D indices', () => {
+    const t = tf.tensor3d(
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], [1, 4, 4]);
+    const indices = tf.tensor1d([0, 0], 'int32');
+    const dy = tf.tensor(
+        [
+          2,  -3, 4, 15, 6, 0.7, 1,  18, 0.01, 0,  12, 13, 4, 15, 12, -7,
+          18, 19, 2, 21, 6, 23,  24, 25, 101,  31, 34, 54, 1, 0,  -3, -4
+        ],
+        [2, 4, 4]);
+    const axis = 0;
+
+    const gradients = tf.grad(t => tf.gather(t, indices, axis))(t, dy);
+
+    expect(gradients.shape).toEqual(t.shape);
+    expectArraysClose(
+        gradients,
+        [20, 16, 6, 36, 12, 23.7, 25, 43, 101.01, 31, 46, 67, 5, 15, 9, -11]);
+  });
+
+  it('gradient 3D (gather) axis=1 shape=[2, 3, 2] 2D indices', () => {
     const t = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [2, 3, 2]);
-    const indices = tf.tensor1d([1, 2, 2, 1], 'int32');
+    const indices = tf.tensor2d([1, 2, 2, 1], [2, 2], 'int32');
     const dy = tf.tensor(
         [2, -3, 4, 15, 6, 0.7, 1, 18, 0.01, 0, 12, 13, 4, 15, 12, -7],
-        [2, 4, 2]);
+        [2, 2, 2, 2]);
     const axis = 1;
 
     const gradients = tf.grad(t => tf.gather(t, indices, axis))(t, dy);
@@ -2380,7 +2507,7 @@ describeWithFlags('gather', ALL_ENVS, () => {
         gradients, [0, 0, 3, 15, 10, 15.7, 0, 0, 12.01, -7, 16, 28]);
   });
 
-  it('gradient 3D (gather) axis=1 shape=[1, 4, 4]', () => {
+  it('gradient 3D (gather) axis=1 shape=[1, 4, 4] 1D indices', () => {
     const t = tf.tensor3d(
         [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], [1, 4, 4]);
     const indices = tf.tensor1d([1, 2, 2, 1], 'int32');
@@ -2396,7 +2523,23 @@ describeWithFlags('gather', ALL_ENVS, () => {
         gradients, [0, 0, 0, 0, 6, 12, 16, 8, 6.01, .7, 13, 31, 0, 0, 0, 0]);
   });
 
-  it('gradient 3D (gather) axis=2 shape=[2, 3, 2]', () => {
+  it('gradient 3D (gather) axis=1 shape=[1, 4, 4] 2D indices', () => {
+    const t = tf.tensor3d(
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], [1, 4, 4]);
+    const indices = tf.tensor2d([1, 2, 2, 1], [2, 2], 'int32');
+    const dy = tf.tensor(
+        [2, -3, 4, 15, 6, 0.7, 1, 18, 0.01, 0, 12, 13, 4, 15, 12, -7],
+        [1, 2, 2, 4]);
+    const axis = 1;
+
+    const gradients = tf.grad(t => tf.gather(t, indices, axis))(t, dy);
+
+    expect(gradients.shape).toEqual(t.shape);
+    expectArraysClose(
+        gradients, [0, 0, 0, 0, 6, 12, 16, 8, 6.01, .7, 13, 31, 0, 0, 0, 0]);
+  });
+
+  it('gradient 3D (gather) axis=2 shape=[2, 3, 2] 1D indices', () => {
     const t = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [2, 3, 2]);
     const indices = tf.tensor1d([1, 0, 1, 0], 'int32');
     const dy = tf.tensor(
@@ -2414,12 +2557,45 @@ describeWithFlags('gather', ALL_ENVS, () => {
         gradients, [12, 6, 18.7, 7, 13, 12.01, 8, 16, 40, 20, 48, 30]);
   });
 
-  it('gradient 3D (gather) axis=2 shape=[4, 1, 4]', () => {
+  it('gradient 3D (gather) axis=2 shape=[2, 3, 2] 2D indices', () => {
+    const t = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [2, 3, 2]);
+  const indices = tf.tensor2d([1, 0, 1, 0], [2, 2], 'int32');
+    const dy = tf.tensor(
+        [
+          2, -3, 4,  15, 6,  0.7, 1, 18, 0.01, 0,  12, 13,
+          4, 15, 12, -7, 18, 19,  2, 21, 6,    23, 24, 25
+        ],
+        [2, 3, 2, 2]);
+    const axis = 2;
+
+    const gradients = tf.grad(t => tf.gather(t, indices, axis))(t, dy);
+
+    expect(gradients.shape).toEqual(t.shape);
+    expectArraysClose(
+        gradients, [12, 6, 18.7, 7, 13, 12.01, 8, 16, 40, 20, 48, 30]);
+  });
+
+  it('gradient 3D (gather) axis=2 shape=[4, 1, 4] 1D indices', () => {
     const t = tf.tensor3d(
         [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], [4, 1, 4]);
     const indices = tf.tensor1d([1, 3, 1], 'int32');
     const dy =
         tf.tensor([2, -3, 4, 15, 6, 0.7, 1, 18, 0.01, 0, 4, 15], [4, 1, 3]);
+    const axis = 2;
+
+    const gradients = tf.grad(t => tf.gather(t, indices, axis))(t, dy);
+
+    expect(gradients.shape).toEqual(t.shape);
+    expectArraysClose(
+        gradients, [0, 6, 0, -3, 0, 15.7, 0, 6, 0, 1.01, 0, 18, 0, 15, 0, 4]);
+  });
+
+  it('gradient 3D (gather) axis=2 shape=[4, 1, 4] 2D indices', () => {
+    const t = tf.tensor3d(
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], [4, 1, 4]);
+    const indices = tf.tensor2d([1, 3, 1], [1, 3], 'int32');
+    const dy =
+        tf.tensor([2, -3, 4, 15, 6, 0.7, 1, 18, 0.01, 0, 4, 15], [4, 1, 1, 3]);
     const axis = 2;
 
     const gradients = tf.grad(t => tf.gather(t, indices, axis))(t, dy);

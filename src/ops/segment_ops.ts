@@ -92,9 +92,6 @@ function gather_<T extends Tensor>(
   axis = parseAxisParam(axis, $x.shape)[0];
   const grad = (dy: T) => {
     const derX = () => {
-      if (axis === 0) {
-        return unsortedSegmentSum(dy, $indices, $x.shape[axis]);
-      }
       const paramsShape = $x.shape;
       const indicesSize = $indices.size;
 
@@ -115,9 +112,8 @@ function gather_<T extends Tensor>(
       const transposeDims =
           arrayConcat([[outerDims], outerAxesIndices, innerAxesIndices]);
       const valuesTranspose = values.transpose(transposeDims);
-
-      let paramsGrad = unsortedSegmentSum(
-          valuesTranspose, reshapedIndices as Tensor1D, $x.shape[axis]);
+      let paramsGrad =
+          unsortedSegmentSum(valuesTranspose, reshapedIndices, $x.shape[axis]);
 
       const invertTransposeDims = getUndoAxesPermutation(transposeDims);
       paramsGrad = paramsGrad.transpose(invertTransposeDims);
@@ -127,8 +123,7 @@ function gather_<T extends Tensor>(
     return {$x: derX};
   };
   return ENV.engine.runKernel(
-             backend => backend.gather($x, $indices as Tensor1D, axis), {$x},
-             grad) as T;
+             backend => backend.gather($x, $indices, axis), {$x}, grad) as T;
 }
 
 function arrayRange(start: number, stop: number): number[] {
