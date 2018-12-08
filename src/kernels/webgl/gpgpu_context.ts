@@ -219,7 +219,6 @@ export class GPGPUContext {
     this.bindTextureToFrameBuffer(texture);
     const result = gpgpu_util.maybeCreateBufferFromOutputTexture(
         this.gl, texture, rows, columns, this.textureConfig);
-    this.unbindTextureToFrameBuffer();
     return result;
   }
 
@@ -345,8 +344,7 @@ export class GPGPUContext {
     this.throwIfDisposed();
     this.throwIfNoProgram();
     webgl_util.bindTextureToProgramUniformSampler(
-        this.gl, this.program, inputMatrixTexture, uniformLocation,
-        textureUnit);
+        this.gl, inputMatrixTexture, uniformLocation, textureUnit);
   }
 
   public setOutputMatrixTexture(
@@ -552,26 +550,11 @@ export class GPGPUContext {
     }
   }
 
-  private unbindTextureToFrameBuffer() {
-    if (this.outputTexture != null) {
-      webgl_util.bindColorTextureToFramebuffer(
-          this.gl, this.outputTexture, this.framebuffer);
-      if (this.autoDebugValidate) {
-        webgl_util.validateFramebuffer(this.gl);
-      }
-    } else {
-      webgl_util.unbindColorTextureFromFramebuffer(this.gl, this.framebuffer);
-    }
-  }
-
   private downloadMatrixDriver(
       texture: WebGLTexture,
       downloadAndDecode: () => Float32Array): Float32Array {
     this.bindTextureToFrameBuffer(texture);
-    const result = downloadAndDecode();
-    this.unbindTextureToFrameBuffer();
-
-    return result;
+    return downloadAndDecode();
   }
 
   private setOutputMatrixTextureDriver(
@@ -579,11 +562,7 @@ export class GPGPUContext {
       height: number) {
     this.throwIfDisposed();
     const gl = this.gl;
-    webgl_util.bindColorTextureToFramebuffer(
-        gl, outputMatrixTextureMaybePacked, this.framebuffer);
-    if (this.autoDebugValidate) {
-      webgl_util.validateFramebuffer(gl);
-    }
+    this.bindTextureToFrameBuffer(outputMatrixTextureMaybePacked);
     this.outputTexture = outputMatrixTextureMaybePacked;
     webgl_util.callAndCheck(gl, () => gl.viewport(0, 0, width, height));
     webgl_util.callAndCheck(gl, () => gl.scissor(0, 0, width, height));

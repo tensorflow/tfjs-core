@@ -327,7 +327,6 @@ export function downloadFloat32MatrixFromBuffer(
 
   gl2.bindBuffer(gl.ARRAY_BUFFER, buffer);
   gl2.getBufferSubData(gl.ARRAY_BUFFER, 0, downloadTarget);
-  gl2.bindBuffer(gl.ARRAY_BUFFER, null);
 
   const matrix = new Float32Array(rows * columns);
   tex_util.decodeMatrixFromUnpackedArray(
@@ -393,7 +392,6 @@ export function downloadPackedMatrixFromBuffer(
 
   gl2.bindBuffer(gl.ARRAY_BUFFER, buffer);
   gl2.getBufferSubData(gl.ARRAY_BUFFER, 0, downloadTarget);
-  gl2.bindBuffer(gl.ARRAY_BUFFER, null);
 
   const matrix = new Float32Array(util.sizeFromShape([batch, rows, cols]));
   tex_util.decodeMatrixFromPackedRGBA(

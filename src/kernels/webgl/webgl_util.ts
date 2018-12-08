@@ -224,18 +224,10 @@ export function bindVertexBufferToProgramAttribute(
   return true;
 }
 
-export function bindTextureUnit(
+function bindTextureUnit(
     gl: WebGLRenderingContext, texture: WebGLTexture, textureUnit: number) {
-  validateTextureUnit(gl, textureUnit);
   callAndCheck(gl, () => gl.activeTexture(gl.TEXTURE0 + textureUnit));
   callAndCheck(gl, () => gl.bindTexture(gl.TEXTURE_2D, texture));
-}
-
-export function unbindTextureUnit(
-    gl: WebGLRenderingContext, textureUnit: number) {
-  validateTextureUnit(gl, textureUnit);
-  callAndCheck(gl, () => gl.activeTexture(gl.TEXTURE0 + textureUnit));
-  callAndCheck(gl, () => gl.bindTexture(gl.TEXTURE_2D, null));
 }
 
 export function getProgramUniformLocationOrThrow(
@@ -253,16 +245,10 @@ export function getProgramUniformLocation(
 }
 
 export function bindTextureToProgramUniformSampler(
-    gl: WebGLRenderingContext, program: WebGLProgram, texture: WebGLTexture,
+    gl: WebGLRenderingContext, texture: WebGLTexture,
     uniformSamplerLocation: WebGLUniformLocation, textureUnit: number) {
   callAndCheck(gl, () => bindTextureUnit(gl, texture, textureUnit));
   callAndCheck(gl, () => gl.uniform1i(uniformSamplerLocation, textureUnit));
-}
-
-export function bindCanvasToFramebuffer(gl: WebGLRenderingContext) {
-  callAndCheck(gl, () => gl.bindFramebuffer(gl.FRAMEBUFFER, null));
-  callAndCheck(gl, () => gl.viewport(0, 0, gl.canvas.width, gl.canvas.height));
-  callAndCheck(gl, () => gl.scissor(0, 0, gl.canvas.width, gl.canvas.height));
 }
 
 export function bindColorTextureToFramebuffer(
@@ -316,15 +302,6 @@ function throwIfNull<T>(
     throw new Error(failureMessage);
   }
   return tOrNull as T;
-}
-
-function validateTextureUnit(gl: WebGLRenderingContext, textureUnit: number) {
-  const maxTextureUnit = gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS - 1;
-  const glTextureUnit = textureUnit + gl.TEXTURE0;
-  if (glTextureUnit < gl.TEXTURE0 || glTextureUnit > maxTextureUnit) {
-    const textureUnitRange = `[gl.TEXTURE0, gl.TEXTURE${maxTextureUnit}]`;
-    throw new Error(`textureUnit must be in ${textureUnitRange}.`);
-  }
 }
 
 export function getTextureShapeFromLogicalShape(
