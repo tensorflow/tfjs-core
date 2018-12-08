@@ -75,6 +75,7 @@ export class GPGPUContext {
     this.vertexBuffer = gpgpu_util.createVertexBuffer(this.gl);
     this.indexBuffer = gpgpu_util.createIndexBuffer(this.gl);
     this.framebuffer = webgl_util.createFramebuffer(this.gl);
+    webgl_util.bindFramebuffer(this.gl, this.framebuffer);
 
     this.textureConfig =
         gpgpu_util.getTextureConfig(this.gl, this.textureHalfFloatExtension);
@@ -99,7 +100,7 @@ export class GPGPUContext {
     }
     const gl = this.gl;
     webgl_util.callAndCheck(gl, () => gl.finish());
-    webgl_util.callAndCheck(gl, () => gl.bindFramebuffer(gl.FRAMEBUFFER, null));
+    webgl_util.bindFramebuffer(gl, null);
     webgl_util.callAndCheck(gl, () => gl.deleteFramebuffer(this.framebuffer));
     webgl_util.callAndCheck(gl, () => gl.bindBuffer(gl.ARRAY_BUFFER, null));
     webgl_util.callAndCheck(
@@ -158,7 +159,6 @@ export class GPGPUContext {
   public deleteMatrixTexture(texture: WebGLTexture) {
     this.throwIfDisposed();
     if (this.outputTexture === texture) {
-      webgl_util.unbindColorTextureFromFramebuffer(this.gl, this.framebuffer);
       this.outputTexture = null;
     }
     webgl_util.callAndCheck(this.gl, () => this.gl.deleteTexture(texture));
@@ -282,9 +282,6 @@ export class GPGPUContext {
     webgl_util.callAndCheck(gl, () => gl.attachShader(program, vertexShader));
     webgl_util.callAndCheck(gl, () => gl.attachShader(program, fragmentShader));
     webgl_util.linkProgram(gl, program);
-    if (this.autoDebugValidate) {
-      webgl_util.validateProgram(gl, program);
-    }
     if (!this.vertexAttrsAreBound) {
       this.setProgram(program);
       this.vertexAttrsAreBound = gpgpu_util.bindVertexProgramAttributeStreams(
@@ -306,9 +303,6 @@ export class GPGPUContext {
   public setProgram(program: WebGLProgram|null) {
     this.throwIfDisposed();
     this.program = program;
-    if ((this.program != null) && this.autoDebugValidate) {
-      webgl_util.validateProgram(this.gl, this.program);
-    }
     webgl_util.callAndCheck(this.gl, () => this.gl.useProgram(program));
   }
 
@@ -373,19 +367,13 @@ export class GPGPUContext {
     throw new Error('setOutputPackedMatrixWriteRegion not implemented.');
   }
 
-  public debugValidate() {
-    if (this.program != null) {
-      webgl_util.validateProgram(this.gl, this.program);
-    }
-    webgl_util.validateFramebuffer(this.gl);
-  }
-
   public executeProgram() {
     this.throwIfDisposed();
     this.throwIfNoProgram();
     const gl = this.gl;
     if (this.autoDebugValidate) {
-      this.debugValidate();
+      webgl_util.validateProgram(this.gl, this.program);
+      webgl_util.validateFramebuffer(this.gl);
     }
     webgl_util.callAndCheck(
         gl, () => gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0));
@@ -543,8 +531,7 @@ export class GPGPUContext {
 
   private bindTextureToFrameBuffer(texture: WebGLTexture) {
     this.throwIfDisposed();
-    webgl_util.bindColorTextureToFramebuffer(
-        this.gl, texture, this.framebuffer);
+    webgl_util.bindColorTextureToFramebuffer(this.gl, texture);
     if (this.autoDebugValidate) {
       webgl_util.validateFramebuffer(this.gl);
     }

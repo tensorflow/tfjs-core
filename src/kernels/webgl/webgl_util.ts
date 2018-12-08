@@ -252,22 +252,16 @@ export function bindTextureToProgramUniformSampler(
 }
 
 export function bindColorTextureToFramebuffer(
-    gl: WebGLRenderingContext, texture: WebGLTexture,
-    framebuffer: WebGLFramebuffer) {
-  callAndCheck(gl, () => gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer));
+    gl: WebGLRenderingContext, texture: WebGLTexture) {
   callAndCheck(
       gl,
       () => gl.framebufferTexture2D(
           gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0));
 }
 
-export function unbindColorTextureFromFramebuffer(
+export function bindFramebuffer(
     gl: WebGLRenderingContext, framebuffer: WebGLFramebuffer) {
   callAndCheck(gl, () => gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer));
-  callAndCheck(
-      gl,
-      () => gl.framebufferTexture2D(
-          gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0));
 }
 
 export function validateFramebuffer(gl: WebGLRenderingContext) {

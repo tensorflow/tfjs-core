@@ -277,17 +277,20 @@ function hasExtension(gl: WebGLRenderingContext, extensionName: string) {
 
 function createFloatTextureAndBindToFramebuffer(
     gl: WebGLRenderingContext, webGLVersion: number): boolean {
-  const frameBuffer = gl.createFramebuffer();
+  let frameBuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING);
+  let cleanupFrameBuffer = false;
+  if (frameBuffer == null) {
+    frameBuffer = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
+    cleanupFrameBuffer = true;
+  }
+
   const texture = gl.createTexture();
-
   gl.bindTexture(gl.TEXTURE_2D, texture);
-
   // tslint:disable-next-line:no-any
   const internalFormat = webGLVersion === 2 ? (gl as any).RGBA32F : gl.RGBA;
   gl.texImage2D(
       gl.TEXTURE_2D, 0, internalFormat, 1, 1, 0, gl.RGBA, gl.FLOAT, null);
-
-  gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
   gl.framebufferTexture2D(
       gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
 
@@ -295,9 +298,10 @@ function createFloatTextureAndBindToFramebuffer(
       gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
 
   gl.bindTexture(gl.TEXTURE_2D, null);
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.deleteTexture(texture);
-  gl.deleteFramebuffer(frameBuffer);
+  if (cleanupFrameBuffer) {
+    gl.deleteFramebuffer(frameBuffer);
+  }
 
   return isFrameBufferComplete;
 }
