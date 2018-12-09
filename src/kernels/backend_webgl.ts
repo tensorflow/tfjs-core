@@ -23,7 +23,7 @@ import {warn} from '../log';
 import * as array_ops_util from '../ops/array_ops_util';
 import * as axis_util from '../ops/axis_util';
 import {computeOutShape} from '../ops/concat_util';
-import {Conv2DInfo} from '../ops/conv_util';
+import {Conv2DInfo, Conv3DInfo} from '../ops/conv_util';
 import * as gather_nd_util from '../ops/gather_nd_util';
 import * as reduce_util from '../ops/reduce_util';
 import * as scatter_nd_util from '../ops/scatter_nd_util';
@@ -31,11 +31,10 @@ import * as segment_util from '../ops/segment_util';
 import {getStridedSlicedInfo} from '../ops/slice_util';
 import {softmax} from '../ops/softmax';
 import {range, scalar, tensor} from '../ops/tensor_ops';
-import {DataId, Scalar, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
+import {DataId, Scalar, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D} from '../tensor';
 import {DataType, DataTypeMap, DataValues, NumericDataType, Rank, RecursiveArray, ShapeMap, sumOutType, TypedArray, upcastType} from '../types';
 import * as util from '../util';
 import {getTypedArrayFromDType, sizeFromShape} from '../util';
-
 import {DataMover, DataStorage, KernelBackend} from './backend';
 import * as backend_util from './backend_util';
 import {mergeRealAndImagArrays} from './complex_util';
@@ -54,9 +53,9 @@ import {ClipProgram} from './webgl/clip_gpu';
 import {ClipPackedProgram} from './webgl/clip_packed_gpu';
 import {ComplexAbsProgram} from './webgl/complex_abs_gpu';
 import {ConcatProgram} from './webgl/concat_gpu';
-import {Conv2DDerFilterProgram, Conv2DDerInputProgram} from './webgl/conv_backprop_gpu';
+import {Conv2DDerFilterProgram, Conv2DDerInputProgram, Conv3DDerFilterProgram, Conv3DDerInputProgram} from './webgl/conv_backprop_gpu';
 import {DepthwiseConv2DDerFilterProgram, DepthwiseConv2DDerInputProgram} from './webgl/conv_backprop_gpu_depthwise';
-import {Conv2DProgram} from './webgl/conv_gpu';
+import {Conv2DProgram, Conv3DProgram} from './webgl/conv_gpu';
 import {DepthwiseConv2DProgram} from './webgl/conv_gpu_depthwise';
 import {DepthwiseConvPacked2DProgram} from './webgl/conv_packed_gpu_depthwise';
 import {CropAndResizeProgram} from './webgl/crop_and_resize_gpu';
@@ -682,6 +681,8 @@ export class MathBackendWebGL implements KernelBackend {
       return this.multiply(a3D, b3D).sum(axis, true /* keepDims */);
     }
 
+    const dtype = upcastType(a.dtype, b.dtype);
+
     // TODO(https://github.com/tensorflow/tfjs/issues/693): Support 3D tensors
     if (batch === 1) {
       const aSqueezed = a.as2D(a.shape[1], a.shape[2]);
@@ -690,13 +691,17 @@ export class MathBackendWebGL implements KernelBackend {
       const program = new MatMulPackedProgram(
           aSqueezed.shape, bSqueezed.shape, [outerShapeA, outerShapeB],
           transposeA, transposeB);
+      const output =
+          this.makePackedTensor(program.outputShape, dtype) as Tensor2D;
       const result =
-          this.compileAndRun<Tensor2D>(program, [aSqueezed, bSqueezed]);
-
+          this.compileAndRun<Tensor2D>(program, [aSqueezed, bSqueezed], output);
       return result.reshape([1, result.shape[0], result.shape[1]]);
     } else {
-      return this.compileAndRun(
-          new MatMulProgram(a.shape, b.shape, transposeA, transposeB), [a, b]);
+      const program =
+          new MatMulProgram(a.shape, b.shape, transposeA, transposeB);
+      const output =
+          this.makeOutputArray(program.outputShape, dtype) as Tensor3D;
+      return this.compileAndRun(program, [a, b], output);
     }
   }
 
@@ -1517,7 +1522,8 @@ export class MathBackendWebGL implements KernelBackend {
         convInfo.outChannels / convInfo.inChannels === 1) {
       program = new DepthwiseConvPacked2DProgram(convInfo);
       return this.compileAndRun(
-          program, [x, filter], this.makePackedTensor(convInfo.outShape));
+          program, [x, filter],
+          this.makePackedTensor(convInfo.outShape, x.dtype));
     }
 
     program = new DepthwiseConv2DProgram(convInfo);
@@ -1533,6 +1539,22 @@ export class MathBackendWebGL implements KernelBackend {
   depthwiseConv2DDerFilter(x: Tensor4D, dy: Tensor4D, convInfo: Conv2DInfo):
       Tensor4D {
     const program = new DepthwiseConv2DDerFilterProgram(convInfo);
+    return this.compileAndRun(program, [x, dy]);
+  }
+
+  conv3d(x: Tensor5D, filter: Tensor5D, convInfo: Conv3DInfo): Tensor5D {
+    const program = new Conv3DProgram(convInfo);
+    return this.compileAndRun(program, [x, filter]);
+  }
+
+  conv3dDerInput(dy: Tensor5D, filter: Tensor5D, convInfo: Conv3DInfo):
+      Tensor5D {
+    const program = new Conv3DDerInputProgram(convInfo);
+    return this.compileAndRun(program, [dy, filter]);
+  }
+
+  conv3dDerFilter(x: Tensor5D, dy: Tensor5D, convInfo: Conv3DInfo): Tensor5D {
+    const program = new Conv3DDerFilterProgram(convInfo);
     return this.compileAndRun(program, [x, dy]);
   }
 
@@ -1769,8 +1791,9 @@ export class MathBackendWebGL implements KernelBackend {
     return Tensor.make(shape, {}, dtype) as T;
   }
 
-  private makePackedTensor<T extends Tensor>(shape: number[]): T {
-    const packedTensor = Tensor.make(shape, {});
+  private makePackedTensor<T extends Tensor>(shape: number[], dtype: DataType):
+      T {
+    const packedTensor = Tensor.make(shape, {}, dtype);
     this.texData.get(packedTensor.dataId).isPacked = true;
     return packedTensor as T;
   }
@@ -1778,7 +1801,7 @@ export class MathBackendWebGL implements KernelBackend {
   private unpackTensor<T extends Tensor>(input: T): T {
     const program = new UnpackProgram(input.shape);
     return this.compileAndRun(
-        program, [input], Tensor.make(program.outputShape, {}));
+        program, [input], Tensor.make(program.outputShape, {}, input.dtype));
   }
 
   private getBatchDim(shape: number[], dimsToSkip = 2): number {
@@ -1815,7 +1838,8 @@ export class MathBackendWebGL implements KernelBackend {
       pageToCpu = true): K {
     if (output == null) {
       if (program.usesPackedTextures) {
-        output = this.makePackedTensor(program.outputShape) as {} as K;
+        output = this.makePackedTensor(program.outputShape, inputs[0].dtype) as
+            {} as K;
       } else {
         output = this.makeOutputArray(program.outputShape, inputs[0].dtype) as
             {} as K;
@@ -1872,11 +1896,12 @@ export class MathBackendWebGL implements KernelBackend {
           preProcessProgram = new UnpackProgram(input.shape);
           processedInput = this.compileAndRun(
               preProcessProgram, [input],
-              Tensor.make(preProcessProgram.outputShape, {}));
+              Tensor.make(preProcessProgram.outputShape, {}, input.dtype));
         } else {
           preProcessProgram = new PackProgram(input.shape);
           processedInput = this.compileAndRun(
-              preProcessProgram, [input], this.makePackedTensor(input.shape));
+              preProcessProgram, [input],
+              this.makePackedTensor(input.shape, input.dtype));
         }
 
         texData = this.texData.get(processedInput.dataId);
