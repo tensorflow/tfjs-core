@@ -429,7 +429,8 @@ async function toPixels(
     canvas.width = width;
     canvas.height = height;
     const ctx = canvas.getContext('2d');
-    const imageData = new ImageData(bytes, width, height);
+    const imageData = ctx.createImageData(width, height);
+    imageData.data.set(bytes);
     ctx.putImageData(imageData, 0, 0);
   }
   if ($img !== img) {
