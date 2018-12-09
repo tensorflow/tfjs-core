@@ -1362,6 +1362,12 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     expect(b.shape).toEqual([3, 1]);
   });
 
+  it('squeeze with multiple negative axis', () => {
+    const a = tf.tensor3d([4, 2, 1], [3, 1, 1], 'bool');
+    const b = a.squeeze([-1, -2]);
+    expect(b.shape).toEqual([3]);
+  });
+
   it('squeeze wrong axis', () => {
     const a = tf.tensor3d([4, 2, 1], [3, 1, 1], 'bool');
     expect(() => a.squeeze([0, 1])).toThrowError();
