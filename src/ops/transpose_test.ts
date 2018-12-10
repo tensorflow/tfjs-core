@@ -16,8 +16,11 @@
  */
 
 import * as tf from '../index';
-import {describeWithFlags} from '../jasmine_util';
+import {describeWithFlags, activateWebGLPackedTestEnv, deactivateWebGLPackedTestEnv} from '../jasmine_util';
 import {ALL_ENVS, expectArraysClose} from '../test_util';
+
+
+activateWebGLPackedTestEnv();
 
 describeWithFlags('transpose', ALL_ENVS, () => {
   it('of scalar is no-op', () => {
@@ -153,3 +156,5 @@ describeWithFlags('transpose', ALL_ENVS, () => {
     expectArraysClose(res, [1, 3, 11, 33, 2, 4, 22, 44]);
   });
 });
+
+deactivateWebGLPackedTestEnv();

@@ -98,6 +98,7 @@ import {TextureData, TextureUsage} from './webgl/tex_util';
 import {TextureManager} from './webgl/texture_manager';
 import {TileProgram} from './webgl/tile_gpu';
 import {TransposeProgram} from './webgl/transpose_gpu';
+import {TransposePackedProgram} from './webgl/transpose_packed_gpu';
 import * as unary_op from './webgl/unaryop_gpu';
 import {UnaryOpProgram} from './webgl/unaryop_gpu';
 import {UnpackProgram} from './webgl/unpack_gpu';
@@ -798,7 +799,9 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   transpose<T extends Tensor>(x: T, perm: number[]): T {
-    const program = new TransposeProgram(x.shape, perm);
+    const program = ENV.get('WEBGL_PACK') ?
+        new TransposePackedProgram(x.shape, perm) :
+        new TransposeProgram(x.shape, perm);
     return this.compileAndRun(program, [x]);
   }
 
