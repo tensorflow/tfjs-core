@@ -1300,7 +1300,7 @@ function getPackedSamplerAtOutputCoords(
   const outTexShape = outShapeInfo.texShape;
 
   const packedTexShape =
-      [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
+      [Math.ceil(outTexShape[0] / 2), Math.ceil(outTexShape[1] / 2)];
   const texNumR = packedTexShape[0];
   const texNumC = packedTexShape[1];
 
@@ -1313,6 +1313,7 @@ function getPackedSamplerAtOutputCoords(
   }
 
   const inTexShape = inputInfo.shapeInfo.texShape;
+  const packedInTexShape = [Math.ceil(inTexShape[0] / 2), Math.ceil(inTexShape[1] / 2)];
   if (util.arraysEqual(inTexShape, outTexShape)) {
     return `
       vec4 ${funcName}() {
@@ -1342,15 +1343,16 @@ function getPackedSamplerAtOutputCoords(
     }
   }
 
+  // index below refers to texel index
   return `
     vec4 ${funcName}() {
       ivec2 resTexRC = ivec2(resultUV.yx *
                              vec2(${packedTexShape[0]}, ${packedTexShape[1]}));
       int index = resTexRC.x * ${packedTexShape[1]} + resTexRC.y;
 
-      int texR = index / ${texNumC};
-      int texC = index - texR * ${texNumC};
-      vec2 uv = (vec2(texC, texR) + halfCR) / vec2(${texNumC}, ${texNumR});
+      int texR = index / ${packedInTexShape[1]};
+      int texC = index - texR * ${packedInTexShape[1]};
+      vec2 uv = (vec2(texC, texR) + halfCR) / vec2(${packedInTexShape[1]}, ${packedInTexShape[0]});
 
       ${output};
     }
