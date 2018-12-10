@@ -117,6 +117,40 @@ export let TEST_ENVS: TestEnv[] = [
   }
 ];
 
+// When not running in node (headless environment), append additional WebGL
+// testing environment in order to test packed operations. This way, we specify
+// a subset of tests to run, both with packed and non-packed operations. Calling
+// this method needs to be coupled with deactivateWebGLPackedTestEnv to remove
+// packed testing environment. Only the tests specified between
+// activateWebGLPackedTestEnv and deactivateWebGLPackedTestEnv are run in
+// additional packed operations mode.
+export function activateWebGLPackedTestEnv() {
+  if (!ENV.get('IS_NODE')) {
+    TEST_ENVS.push(
+      {
+        name: 'webgl-packed',
+        factory: () => new MathBackendWebGL(),
+        features: {'WEBGL_VERSION': ENV.get('WEBGL_VERSION'),
+                   'WEBGL_CPU_FORWARD': false,
+                   'WEBGL_PACK': true}
+      }
+    );
+  }
+}
+
+// With activateWebGLPackedTestEnv, delimits set of tests to be run in both
+// packed and non-packed environment mode.
+export function deactivateWebGLPackedTestEnv() {
+  if (!ENV.get('IS_NODE')) {
+    // Additional packed operation testing environent is appended: remove it
+    // to affect only the tests specified between activateWebGLPackedTestEnv and
+    // deactivateWebGLPackedTestEnv.
+    if (TEST_ENVS.pop().features['WEBGL_PACK'] !== true) {
+      throw new Error('Error with WEBGL_PACK setup in tests.'); 
+    }
+  }
+}
+
 export const CPU_FACTORY = () => new MathBackendCPU();
 
 if (typeof __karma__ !== 'undefined') {
