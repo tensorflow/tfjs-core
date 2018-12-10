@@ -85,24 +85,24 @@ describeWithFlags('expensive reshape with even columns', WEBGL_ENVS, () => {
     tf.ENV.set('WEBGL_LAZILY_UNPACK', webglLazilyUnpackFlagSaved);
   });
 
-  it('texture shape != physical shape, 2 --> 4 columns', () => {
+  it('2 --> 4 columns', () => {
     const maxTextureSize = tf.ENV.get('WEBGL_MAX_TEXTURE_SIZE');
 
-    let values: number[] = new Array<number>(32).fill(0);
+    let values: number[] = new Array<number>(16).fill(0);
     values = values.map((d, i) => i + 1);
-    const a = tf.tensor2d(values, [16, 2]);
+    const a = tf.tensor2d(values, [8, 2]);
     const b = tf.tensor2d([1, 2, 3, 4], [2, 2]);
 
-    tf.ENV.set('WEBGL_MAX_TEXTURE_SIZE', 4);
-    // Setting WEBGL_MAX_TEXTURE_SIZE to 4 makes that [16, 2] tensor is packed
-    // to texture of width 4 by height 2. Indices are packed as:
-    // -------------------------
-    // | 0 1 | 4 5 | 8 9 |12 13|       // First row's four 
-    // | 2 4 | 6 7 |10 11|14 15|       // pixels.
-    // -------------------------
+    tf.ENV.set('WEBGL_MAX_TEXTURE_SIZE', 2);
+    // Setting WEBGL_MAX_TEXTURE_SIZE to 2 makes that [8, 2] tensor is packed
+    // to texture of width 2 by height 2. Indices are packed as:
+    // -------------
+    // | 0 1 | 4 5 |       // First row's four 
+    // | 2 3 | 6 7 |       // pixels.
+    // -------------
     // ...    
     const c = tf.matMul(a, b);
-    let cAs4D = c.reshape([2, 2, 2, 4]);    
+    let cAs4D = c.reshape([2, 1, 2, 4]);    
     tf.ENV.set('WEBGL_MAX_TEXTURE_SIZE', maxTextureSize);
 
     //Execute non-packed operations to unpack tensor.
@@ -113,9 +113,7 @@ describeWithFlags('expensive reshape with even columns', WEBGL_ENVS, () => {
     tf.ENV.set('WEBGL_PACK', webglPackFlagSaved);    
 
     const result = [7, 10, 15, 22, 23, 34, 31, 46,
-                    39, 58, 47, 70, 55, 82, 63, 94,
-                    71, 106, 79, 118, 87, 130, 95, 142,
-                    103, 154, 111, 166, 119, 178, 127, 190];
+                    39, 58, 47, 70, 55, 82, 63, 94];
     expectArraysClose(cAs4D, result);
   });
 });
