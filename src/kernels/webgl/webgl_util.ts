@@ -366,6 +366,7 @@ export function getTextureShapeFromLogicalShape(
 
   let size = util.sizeFromShape(logShape);
   if (logShape.length <= 1 && size <= maxTexSize) {
+    // For packed textures the minimum channel height is 2.
     return [isPacked ? 2 : 1, size];
   } else if (
       logShape.length === 2 && logShape[0] <= maxTexSize &&
