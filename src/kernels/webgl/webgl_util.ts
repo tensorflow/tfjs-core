@@ -365,44 +365,44 @@ export function getTextureShapeFromLogicalShape(
   }
 
   let size = util.sizeFromShape(logShape);
+  if (logShape.length <= 1 && size <= maxTexSize) {
+    return [isPacked ? 2 : 1, size];
+  } else if (
+      logShape.length === 2 && logShape[0] <= maxTexSize &&
+      logShape[1] <= maxTexSize) {
+    return logShape as [number, number];
+  } else if (
+      logShape.length === 3 && logShape[0] * logShape[1] <= maxTexSize &&
+      logShape[2] <= maxTexSize) {
+    return [logShape[0] * logShape[1], logShape[2]];
+  } else if (
+      logShape.length === 3 && logShape[0] <= maxTexSize &&
+      logShape[1] * logShape[2] <= maxTexSize) {
+    return [logShape[0], logShape[1] * logShape[2]];
+  } else if (
+      logShape.length === 4 &&
+      logShape[0] * logShape[1] * logShape[2] <= maxTexSize &&
+      logShape[3] <= maxTexSize) {
+    return [logShape[0] * logShape[1] * logShape[2], logShape[3]];
+  } else if (
+      logShape.length === 4 && logShape[0] <= maxTexSize &&
+      logShape[1] * logShape[2] * logShape[3] <= maxTexSize) {
+    return [logShape[0], logShape[1] * logShape[2] * logShape[3]];
+  } else {
+    if (isPacked) {
+      // For packed textures size equals the number of channels required to
+      // accommodate the texture data. However in order to squarify such that
+      // inner dimensions stay even, we rewrite size to equal the number of
+      // texels. Then in the return statement we rehydrate the squarified
+      // dimensions to channel units.
 
-  if(isPacked) {
-    if(logShape.length <= 1 && size <= maxTexSize) {
-      return [2, size];
+      const batchDim = getBatchDim(logShape);
+      const [rows, cols] = getRowsCols(logShape);
+      size = batchDim * (rows / 2) * (cols / 2);
+      return util.sizeToSquarishShape(size).map(d => d * 2) as [number, number];
     }
-
-    const batchDim = getBatchDim(logShape);
-    const [rows, cols] = getRowsCols(logShape);
-    size = batchDim * (rows / 2) * (cols / 2);
-    return util.sizeToSquarishShape(size).map(d => d * 2) as [number, number];
+    return util.sizeToSquarishShape(size);
   }
-  return util.sizeToSquarishShape(size);
-  // if (logShape.length <= 1 && size <= maxTexSize) {
-  //   return [1, size];
-  // } else if (
-  //     logShape.length === 2 && logShape[0] <= maxTexSize &&
-  //     logShape[1] <= maxTexSize) {
-  //   return logShape as [number, number];
-  // } else if (
-  //     logShape.length === 3 && logShape[0] * logShape[1] <= maxTexSize &&
-  //     logShape[2] <= maxTexSize) {
-  //   return [logShape[0] * logShape[1], logShape[2]];
-  // } else if (
-  //     logShape.length === 3 && logShape[0] <= maxTexSize &&
-  //     logShape[1] * logShape[2] <= maxTexSize) {
-  //   return [logShape[0], logShape[1] * logShape[2]];
-  // } else if (
-  //     logShape.length === 4 &&
-  //     logShape[0] * logShape[1] * logShape[2] <= maxTexSize &&
-  //     logShape[3] <= maxTexSize) {
-  //   return [logShape[0] * logShape[1] * logShape[2], logShape[3]];
-  // } else if (
-  //     logShape.length === 4 && logShape[0] <= maxTexSize &&
-  //     logShape[1] * logShape[2] * logShape[3] <= maxTexSize) {
-  //   return [logShape[0], logShape[1] * logShape[2] * logShape[3]];
-  // } else {
-  //   return util.sizeToSquarishShape(size);
-  // }
 }
 
 function isEven(n: number): boolean {
