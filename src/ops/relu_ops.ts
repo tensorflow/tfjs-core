@@ -19,7 +19,7 @@ import {ENV} from '../environment';
 import {Tensor} from '../tensor';
 import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
-import {maximum, minimum} from './binary_ops';
+import {maximum} from './binary_ops';
 import {where} from './logical_ops';
 import {op} from './operation';
 import {SELU_SCALE, SELU_SCALEALPHA} from './selu_util';
@@ -149,8 +149,8 @@ function prelu_<T extends Tensor>(x: T|TensorLike, alpha: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'prelu');
   const $alpha = convertToTensor(alpha, 'alpha', 'prelu');
 
-  const zero = scalar(0);
-  return maximum(zero, $x).add($alpha.mul(minimum(zero, $x)));
+  return ENV.engine.runKernel(
+      backend => backend.prelu($x, $alpha), {x: $x, alpha: $alpha});
 }
 
 export const elu = op({elu_});
