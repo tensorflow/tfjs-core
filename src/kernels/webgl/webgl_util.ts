@@ -356,6 +356,12 @@ export function getTextureShapeFromLogicalShape(
         (d, i) => i >= logShape.length - 2 ?
             util.nearestLargerEven(logShape[i]) :
             logShape[i]);
+
+    // Packed texture height is at least 2 (the channel height of a single
+    // texel).
+    if (logShape.length === 1) {
+      logShape = [2, logShape[0]];
+    }
   }
 
   // If logical shape is 2, we don't squeeze, since we want to match physical.
@@ -366,8 +372,7 @@ export function getTextureShapeFromLogicalShape(
 
   let size = util.sizeFromShape(logShape);
   if (logShape.length <= 1 && size <= maxTexSize) {
-    // For packed textures the minimum channel height is 2.
-    return [isPacked ? 2 : 1, size];
+    return [1, size];
   } else if (
       logShape.length === 2 && logShape[0] <= maxTexSize &&
       logShape[1] <= maxTexSize) {
@@ -398,7 +403,10 @@ export function getTextureShapeFromLogicalShape(
       // dimensions to channel units.
 
       const batchDim = getBatchDim(logShape);
-      const [rows, cols] = getRowsCols(logShape);
+      let rows = 2, cols = 2;
+      if (logShape.length) {
+        [rows, cols] = getRowsCols(logShape);
+      }
       size = batchDim * (rows / 2) * (cols / 2);
       return util.sizeToSquarishShape(size).map(d => d * 2) as [number, number];
     }
