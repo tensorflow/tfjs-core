@@ -1806,10 +1806,13 @@ export class MathBackendWebGL implements KernelBackend {
 
   private packedReshape<R extends Rank>(input: Tensor, afterShape: ShapeMap[R]):
       Tensor<R> {
-    const inputAs3D = input.reshape(
-        [webgl_util.getBatchDim(input.shape), ...webgl_util.getRowsCols(input.shape)]);
-    const afterShapeAs3D =
-        [webgl_util.getBatchDim(afterShape), ...webgl_util.getRowsCols(afterShape)];
+    const inputAs3D = input.reshape([
+      webgl_util.getBatchDim(input.shape),
+      ...webgl_util.getRowsCols(input.shape)
+    ]);
+    const afterShapeAs3D = [
+      webgl_util.getBatchDim(afterShape), ...webgl_util.getRowsCols(afterShape)
+    ];
     const program = new ReshapePackedProgram(
         afterShapeAs3D as [number, number, number],
         inputAs3D.shape as [number, number, number]);
