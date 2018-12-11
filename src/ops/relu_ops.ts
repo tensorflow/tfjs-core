@@ -23,7 +23,7 @@ import {maximum} from './binary_ops';
 import {where} from './logical_ops';
 import {op} from './operation';
 import {SELU_SCALE, SELU_SCALEALPHA} from './selu_util';
-import {scalar} from './tensor_ops';
+import {scalar, zerosLike} from './tensor_ops';
 
 /**
  * Computes rectified linear element-wise: `max(x, 0)`.
@@ -149,8 +149,19 @@ function prelu_<T extends Tensor>(x: T|TensorLike, alpha: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'prelu');
   const $alpha = convertToTensor(alpha, 'alpha', 'prelu');
 
+  const zero = scalar(0);
+
+  const grad = (dy: Tensor) => {
+    const mask = $x.greater(zero);
+
+    return {
+      $x: () => where(mask, dy, dy.mul($alpha)) as T,
+      $alpha: () => where(mask, zerosLike(dy), dy.mul($x)) as T
+    };
+  };
+
   return ENV.engine.runKernel(
-      backend => backend.prelu($x, $alpha), {x: $x, alpha: $alpha});
+             backend => backend.prelu($x, $alpha), {$x, $alpha}, grad) as T;
 }
 
 export const elu = op({elu_});
