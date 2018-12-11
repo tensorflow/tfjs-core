@@ -19,7 +19,6 @@ import * as tf from '../index';
 import {describeWithFlags, activateWebGLPackedTestEnv, deactivateWebGLPackedTestEnv} from '../jasmine_util';
 import {ALL_ENVS, expectArraysClose} from '../test_util';
 
-
 activateWebGLPackedTestEnv();
 
 describeWithFlags('transpose', ALL_ENVS, () => {
