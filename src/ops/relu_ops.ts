@@ -149,10 +149,8 @@ function prelu_<T extends Tensor>(x: T|TensorLike, alpha: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'prelu');
   const $alpha = convertToTensor(alpha, 'alpha', 'prelu');
 
-  const zero = scalar(0);
-
   const grad = (dy: Tensor) => {
-    const mask = $x.greater(zero);
+    const mask = $x.greater(0);
 
     return {
       $x: () => where(mask, dy, dy.mul($alpha)) as T,
