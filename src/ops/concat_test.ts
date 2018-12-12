@@ -300,7 +300,7 @@ describeWithFlags('concat3d', ALL_ENVS, () => {
     const res = tf.concat(tensors, axis);
     expect(res.shape).toEqual([100]);
     expect(res.dtype).toBe('float32');
-    expectArraysEqual(res, expected);
+    expectArraysClose(res, expected);
   });
 
   it('concat a large number of tensors, axis=1', () => {
@@ -314,7 +314,7 @@ describeWithFlags('concat3d', ALL_ENVS, () => {
     const res = tf.concat(tensors, axis);
     expect(res.shape).toEqual([1, 100]);
     expect(res.dtype).toBe('float32');
-    expectArraysEqual(res, expected);
+    expectArraysClose(res, expected);
   });
 
   it('concat axis=2', () => {
