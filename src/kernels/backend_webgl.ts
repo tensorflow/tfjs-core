@@ -629,7 +629,7 @@ export class MathBackendWebGL implements KernelBackend {
       return tensors[0];
     }
     if (tensors.length > ENV.get('WEBGL_MAX_TEXTURES_IN_SHADER')) {
-      const midIndex = tensors.length >> 2;
+      const midIndex = Math.floor(tensors.length / 2);
       const leftSide = this.concat(tensors.slice(0, midIndex), axis);
       const rightSide = this.concat(tensors.slice(midIndex), axis);
       return this.concat([leftSide, rightSide], axis);
