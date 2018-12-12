@@ -109,11 +109,11 @@ function downloadFile(anchor: HTMLAnchorElement) {
     evt.initMouseEvent(
         'click', true, true, window, 0, 0, 0, 0, 0, false, false, false, false,
         0, null);
-    if (anchor != null) anchor.dispatchEvent(evt);
+    anchor.dispatchEvent(evt);
   } else {
     anchor.click();
   }
-};
+}
 class BrowserFiles implements IOHandler {
   private readonly files: File[];
 
