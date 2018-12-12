@@ -24,9 +24,23 @@ export class ConcatProgram implements GPGPUProgram {
   userCode: string;
 
   // Concats 2d tensors along axis=1. See comments in MathBackendWebGL.concat().
-  constructor(aShape: [number, number], bShape: [number, number]) {
-    this.outputShape =
-        concat_util.computeOutShape([aShape, bShape], 1 /* axis */);
+  constructor(shapes: Array<[number, number]>) {
+    this.outputShape = concat_util.computeOutShape(shapes, 1 /* axis */);
+    this.variableNames = shapes.map((_, i) => i + '');
+    const offsets = new Array(shapes.length);
+    offsets[0] = 0;
+    for (let i = 1; i < offsets.length; i++) {
+      offsets[i] = offsets[i - 1] + shapes[i - 1];
+    }
+
+    let snippet = '';
+    for (let i = 0; i < offsets.length - 1; i++) {
+      const shift = offsets[i];
+      snippet +=
+          `if (yC < ${offsets[i + 1]}) setOutput(get${i}(yR, yC-${shift}));\n`;
+    }
+    const lastIndex = offsets.length - 1;
+    snippet += `setOutput(get${lastIndex}(yR, yC-${offsets[lastIndex]}));\n`;
 
     this.userCode = `
       void main() {
@@ -34,15 +48,7 @@ export class ConcatProgram implements GPGPUProgram {
         int yR = coords.x;
         int yC = coords.y;
 
-        float value = 0.0;
-        if (yC < ${aShape[1]}) {
-          value = getA(yR, yC);
-        } else {
-          yC -= ${aShape[1]};
-          value = getB(yR, yC);
-        }
-
-        setOutput(value);
+        ${snippet};
       }
     `;
   }
