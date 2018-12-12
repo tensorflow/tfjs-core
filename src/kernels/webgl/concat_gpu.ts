@@ -26,9 +26,9 @@ export class ConcatProgram implements GPGPUProgram {
   // Concats 2d tensors along axis=1. See comments in MathBackendWebGL.concat().
   constructor(shapes: Array<[number, number]>) {
     this.outputShape = concat_util.computeOutShape(shapes, 1 /* axis */);
-    this.variableNames = shapes.map((_, i) => 'T' + i);
+    this.variableNames = shapes.map((_, i) => `T${i}`);
 
-    const offsets = new Array(shapes.length - 1);
+    const offsets: number[] = new Array(shapes.length - 1);
     offsets[0] = shapes[0][1];
     for (let i = 1; i < offsets.length; i++) {
       offsets[i] = offsets[i - 1] + shapes[i][1];
