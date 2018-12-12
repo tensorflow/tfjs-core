@@ -49,7 +49,7 @@
     "lint": "tslint -p . -t verbose",
     "coverage": "KARMA_COVERAGE=1 karma start --browsers='Chrome' --singleRun",
     "test": "karma start",
-    "run-browserstack": "karma start --singleRun --reporters='dots,karma-typescript,BrowserStack' --hostname='bs-local.com'",
+    "run-browserstack": "karma start --singleRun --reporters='dots,karma-typescript' --hostname='bs-local.com'",
     "test-benchmark": "cd integration_tests/benchmarks && yarn benchmark-travis && cd ../../",
     "test-node": "ts-node src/test_node.ts",
     "test-integration": "./scripts/test-integration.sh",
