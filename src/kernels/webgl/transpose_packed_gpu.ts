@@ -45,19 +45,21 @@ export class TransposePackedProgram implements GPGPUProgram {
       switchedOrder[newDim[i]] = outputOrder[i];
     }
     const innerDims = `vec2(${switchedOrder.slice(-2).join()})`;
-    let main = ``;
+    const cLimit =
+        `${outputOrder[this.rank - 1]} < ${outputShape[this.rank - 1]}`;
+    let main = '';
     
     const componentSetup = [
       `${dtype} rc = resRC;`,
       `${outputOrder[this.rank - 1]} += 1;
-       if(${outputOrder[this.rank - 1]} < ${outputShape[this.rank - 1]}) {
+       if(${cLimit}) {
       `,
       `}
        rc = resRC;
        ${outputOrder[this.rank - 2]} += 1;
        if(${outputOrder[this.rank - 2]} < ${outputShape[this.rank - 2]}) {`,
       `  ${outputOrder[this.rank - 1]} += 1;
-         if(${outputOrder[this.rank - 1]} < ${outputShape[this.rank - 1]}) {`
+         if(${cLimit}) {`
     ];
     for (let i = 0; i < 4; i++) {
       main += `

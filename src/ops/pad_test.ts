@@ -17,8 +17,10 @@
 
 import {Environment} from '../environment';
 import * as tf from '../index';
-import {describeWithFlags} from '../jasmine_util';
+import {describeWithFlags, activateWebGLPackedTestEnv, deactivateWebGLPackedTestEnv} from '../jasmine_util';
 import {ALL_ENVS, expectArraysClose} from '../test_util';
+
+activateWebGLPackedTestEnv();
 
 describeWithFlags('pad1d', ALL_ENVS, () => {
   it('Should pad 1D arrays', () => {
@@ -230,3 +232,5 @@ describeWithFlags('pad', ALL_ENVS, () => {
     expectArraysClose(res, [0, 0, 0, 0, 1, 0, 0, 2, 0, 0, 0, 0]);
   });
 });
+
+deactivateWebGLPackedTestEnv();

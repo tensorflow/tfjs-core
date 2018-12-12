@@ -131,8 +131,8 @@ export function activateWebGLPackedTestEnv() {
         name: 'webgl-packed',
         factory: () => new MathBackendWebGL(),
         features: {'WEBGL_VERSION': ENV.get('WEBGL_VERSION'),
-                   'WEBGL_CPU_FORWARD': false,
-                   'WEBGL_PACK': true}
+                   'WEBGL_CPU_FORWARD': false, 'WEBGL_LAZILY_UNPACK': true,
+                   'WEBGL_PACK': true, 'WEBGL_SIZE_UPLOAD_UNIFORM': 0}
       }
     );
   }

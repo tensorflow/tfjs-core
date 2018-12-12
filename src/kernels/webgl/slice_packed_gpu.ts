@@ -18,7 +18,7 @@
 import {GPGPUContext} from './gpgpu_context';
 import {GPGPUProgram} from './gpgpu_math';
 import {getCoordsDataType} from './shader_compiler';
-import { getChannels } from '../packing_util';
+import {getChannels} from '../packing_util';
 
 export class SlicePackedProgram implements GPGPUProgram {
   variableNames = ['source'];
@@ -38,29 +38,26 @@ export class SlicePackedProgram implements GPGPUProgram {
     const coords = getChannels('loc', this.rank);
     const range = getChannels('range', this.rank);
 
-    const columnLimit = `${coords[this.rank - 1]} < ${range[this.rank - 1]}`;
-    const rowLimit = this.rank === 1 ? '' :
-        `${coords[this.rank - 2]} < ${range[this.rank - 2]}`;
-
+    const cLimit = `${coords[this.rank - 1]} < ${range[this.rank - 1]}`;
     const innerDims =
         this.rank === 1 ? 'loc' : `vec2(${coords.slice(-2).join()})`;
 
     const componentSetup = [
       `${dtype} loc = sourceLoc;`,
       `${coords[this.rank - 1]} += 1;
-       if(${columnLimit}) {
+       if(${cLimit}) {
       `,
-      this.rank === 1 ? `` : 
+      this.rank === 1 ? '' : 
       `}
        loc = sourceLoc;
        ${coords[this.rank - 2]} += 1;
-       if(${rowLimit}) {`,
+       if(${coords[this.rank - 2]} < ${range[this.rank - 2]}) {`,
       this.rank === 1 ? '' :
       `  ${coords[this.rank - 1]} += 1;
-         if(${columnLimit}) {`
+         if(${cLimit}) {`
     ];
 
-    let mainLoop = ``;
+    let mainLoop = '';
     for (let i = 0, j = this.rank === 1 ? 2 : 4; i < j; i++) {
       mainLoop += `
         ${componentSetup[i]}
