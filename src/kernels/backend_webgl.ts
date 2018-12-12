@@ -108,8 +108,6 @@ type KernelInfo = {
   name: string; query: Promise<number>;
 };
 
-const CONCAT_THRESHOLD = 4;
-
 export type TimerNode = RecursiveArray<KernelInfo>|KernelInfo;
 export interface CPUTimerQuery {
   startMs: number;
@@ -630,7 +628,7 @@ export class MathBackendWebGL implements KernelBackend {
     if (tensors.length === 1) {
       return tensors[0];
     }
-    if (tensors.length > CONCAT_THRESHOLD) {
+    if (tensors.length > ENV.get('WEBGL_MAX_TEXTURES_IN_SHADER')) {
       const midIndex = tensors.length >> 2;
       const leftSide = this.concat(tensors.slice(0, midIndex), axis);
       const rightSide = this.concat(tensors.slice(midIndex), axis);
