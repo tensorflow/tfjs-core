@@ -88,7 +88,11 @@ export class BrowserDownloads implements IOHandler {
       jsonAnchor.href = modelTopologyAndWeightManifestURL;
       // Trigger downloads by calling the `click` methods on the download
       // anchors.
-      downloadFile(jsonAnchor);
+      if (navigator.userAgent.toLowerCase().indexOf('firefox') > -1) {
+        jsonAnchor.dispatchEvent(firefoxevt());
+      } else {
+        jsonAnchor.click();
+      }
 
       if (modelArtifacts.weightData != null) {
         const weightDataAnchor = this.weightDataAnchor == null ?
@@ -96,23 +100,23 @@ export class BrowserDownloads implements IOHandler {
             this.weightDataAnchor;
         weightDataAnchor.download = this.weightDataFileName;
         weightDataAnchor.href = weightsURL;
-        downloadFile(weightDataAnchor);
+        if (navigator.userAgent.toLowerCase().indexOf('firefox') > -1) {
+          weightDataAnchor.dispatchEvent(firefoxevt());
+        } else {
+          weightDataAnchor.click();
+        }
       }
 
       return {modelArtifactsInfo: getModelArtifactsInfoForJSON(modelArtifacts)};
     }
   }
 }
-function downloadFile(anchor: HTMLAnchorElement) {
-  if (navigator.userAgent.toLowerCase().indexOf('firefox') > -1) {
-    const evt = document.createEvent('MouseEvents');
-    evt.initMouseEvent(
-        'click', true, true, window, 0, 0, 0, 0, 0, false, false, false, false,
-        0, null);
-    anchor.dispatchEvent(evt);
-  } else {
-    anchor.click();
-  }
+function firefoxevt(): MouseEvent {
+  const evt = document.createEvent('MouseEvents');
+  evt.initMouseEvent(
+      'click', true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0,
+      null);
+  return evt;
 }
 class BrowserFiles implements IOHandler {
   private readonly files: File[];
