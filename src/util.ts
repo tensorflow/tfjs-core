@@ -276,17 +276,14 @@ export function squeezeShape(shape: number[], axis?: number[]):
   const newShape: number[] = [];
   const keptDims: number[] = [];
   if (axis != null) {
-    for (let i = 0; i < axis.length; ++i) {
-      if (axis[i] < -shape.length || axis[i] >= shape.length) {
+    axis = axis.map((i) => {
+      if (i < -shape.length || i >= shape.length) {
         throw new Error(
           `Can't squeeze axis ${axis[i]} since its not in ` +
           `[-${shape.length}, ${shape.length}) for shape ${shape}`);
-      } 
-      if (axis[i] < 0) {
-        axis[i] = shape.length + axis[i];
       }
-    }
-    axis.sort();
+      return i >= 0? i: shape.length + i; 
+    }).sort();
   }
   let j = 0;
   for (let i = 0; i < shape.length; ++i) {
