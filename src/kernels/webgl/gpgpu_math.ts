@@ -62,7 +62,7 @@ export function compileProgram<T extends Tensor, K extends Tensor>(
       texShape: input.isUniform ? null : input.texData.texShape,
       isUniform: input.isUniform,
       isPacked: input.isUniform ? false : input.texData.isPacked,
-      offsets: input.texData.offsets
+      offsets: input.texData ? input.texData.offsets : null
     };
     return {name: program.variableNames[i], shapeInfo};
   });

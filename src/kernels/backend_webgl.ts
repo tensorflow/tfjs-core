@@ -268,7 +268,12 @@ export class MathBackendWebGL implements KernelBackend {
   }
   readSync(dataId: DataId): DataValues {
     const texData = this.texData.get(dataId);
-    const {values, dtype, complexTensors} = texData;
+    const {values, dtype, complexTensors, offsets, shape} = texData;
+    if (offsets != null) {
+      const program = new UnaryOpProgram(shape, unary_op.CLONE);
+      const res = this.compileAndRun(program, [{dataId, shape, dtype}]);
+      return this.readSync(res.dataId);
+    }
     if (values != null) {
       return this.convertAndCacheOnCPU(dataId);
     }
@@ -584,9 +589,16 @@ export class MathBackendWebGL implements KernelBackend {
     if (this.shouldExecuteOnCPU([x])) {
       return this.cpuBackend.slice(x, begin, size);
     }
-
-    const slicedTensor = Tensor.make(size, {dataId: x.dataId}, x.dtype);
-    this.texData.get(slicedTensor.dataId).offsets = begin;
+    this.uploadToGPU(x.dataId);
+    const slicedTensor = Tensor.make(size, {}, x.dtype);
+    const xTexData = this.texData.get(x.dataId);
+    const slicedTexData = this.texData.get(slicedTensor.dataId);
+    slicedTexData.isPacked = xTexData.isPacked;
+    slicedTexData.offsets = begin;
+    slicedTexData.texShape = xTexData.texShape;
+    slicedTexData.texture = xTexData.texture;
+    slicedTexData.usage = xTexData.usage;
+    slicedTexData.values = xTexData.values;
     return slicedTensor as T;
   }
 

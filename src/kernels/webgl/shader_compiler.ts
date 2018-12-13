@@ -1218,6 +1218,9 @@ function getSamplerFlat(inputInfo: InputInfo): string {
   const texShape = inputInfo.shapeInfo.texShape;
   const tNumR = texShape[0];
   const tNumC = texShape[1];
+  const offsets = inputInfo.shapeInfo.offsets;
+  const offset = offsets != null ? offsets[0].toString() : '0';
+
   if (tNumC === 1 && tNumR === 1) {
     return `
       float ${funcName}(int index) {
@@ -1228,7 +1231,7 @@ function getSamplerFlat(inputInfo: InputInfo): string {
   if (tNumC === 1) {
     return `
       float ${funcName}(int index) {
-        vec2 uv = vec2(0.5, (float(index) + 0.5) / ${tNumR}.0);
+        vec2 uv = vec2(0.5, (float(index + ${offset}) + 0.5) / ${tNumR}.0);
         return sampleTexture(${texName}, uv);
       }
     `;
@@ -1236,14 +1239,14 @@ function getSamplerFlat(inputInfo: InputInfo): string {
   if (tNumR === 1) {
     return `
       float ${funcName}(int index) {
-        vec2 uv = vec2((float(index) + 0.5) / ${tNumC}.0, 0.5);
+        vec2 uv = vec2((float(index + ${offset}) + 0.5) / ${tNumC}.0, 0.5);
         return sampleTexture(${texName}, uv);
       }
     `;
   }
   return `
     float ${funcName}(int index) {
-      vec2 uv = UVfrom1D(${tNumR}, ${tNumC}, index);
+      vec2 uv = UVfrom1D(${tNumR}, ${tNumC}, index + ${offset});
       return sampleTexture(${texName}, uv);
     }
   `;
@@ -1409,7 +1412,8 @@ function getSamplerAtOutputCoords(
 
   // At this point, the input is not a uniform.
   const inTexShape = inputInfo.shapeInfo.texShape;
-  if (util.arraysEqual(inTexShape, outTexShape)) {
+  if (util.arraysEqual(inTexShape, outTexShape) &&
+      inputInfo.shapeInfo.offsets == null) {
     return `
       float ${funcName}() {
         return sampleTexture(${texName}, resultUV);
@@ -1423,12 +1427,13 @@ function getSamplerAtOutputCoords(
                              vec2(${outTexShape[0]}, ${outTexShape[1]}));
       int index = resTexRC.x * ${outTexShape[1]} + resTexRC.y;
       ${broadcastSnippet}
-      int texR = index / ${inTexShape[1]};
-      int texC = index - texR * ${inTexShape[1]};
-      vec2 uv = (vec2(texC, texR) + halfCR) /
-                 vec2(${inTexShape[1]}.0, ${inTexShape[0]}.0);
+      return get${texFuncSnippet}Flat(index);
+      // int texR = index / ${inTexShape[1]};
+      // int texC = index - texR * ${inTexShape[1]};
+      // vec2 uv = (vec2(texC, texR) + halfCR) /
+      //            vec2(${inTexShape[1]}.0, ${inTexShape[0]}.0);
 
-      return sampleTexture(${texName}, uv);
+      // return sampleTexture(${texName}, uv);
     }
   `;
 }
