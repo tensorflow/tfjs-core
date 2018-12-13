@@ -1928,7 +1928,7 @@ export class MathBackendWebGL implements KernelBackend {
 
     gpgpu_math.runProgram(binary, inputsData, outputData, customSetup);
 
-    const numBytesBeforePaging = ENV.get('WEBGL_NUM_MB_BEFORE_PAGING') / 1000;
+    const numBytesBeforePaging = ENV.get('WEBGL_NUM_MB_BEFORE_PAGING') * 1024;
     if (pageToCpu && this.numBytesInGPU > numBytesBeforePaging) {
       let numBytesToPage = this.numBytesInGPU - numBytesBeforePaging;
       while (numBytesToPage > 0 && this.lruDataGPU.length > 0) {
