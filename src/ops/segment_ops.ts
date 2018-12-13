@@ -150,7 +150,7 @@ function arrayConcat(arrays: number[][]): number[] {
   return result;
 }
 
-function gatherDropNegatives<T extends Tensor>(x: T, indices: Tensor) {
+function gatherDropNegatives<T extends Tensor>(x: T, indices: Tensor1D) {
   // Helper function for unsorted segment ops. Gathers params for
   // positive segment ids and gathers 0 for inputs with negative segment id.
   // Mirrors _GatherDropNegatives from tensorflow/python/ops/math_grad.py
