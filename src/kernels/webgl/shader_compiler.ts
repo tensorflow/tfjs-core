@@ -425,7 +425,7 @@ function getOutputPacked1DCoords(
     shape: [number], texShape: [number, number]): string {
   const packedTexShape =
       [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
-  if (texShape[0] === 1) {
+  if (packedTexShape[0] === 1) {
     return `
       int getOutputCoords() {
         return 2 * int(resultUV.x * ${packedTexShape[1]}.0);
@@ -433,7 +433,7 @@ function getOutputPacked1DCoords(
     `;
   }
 
-  if (texShape[1] === 1) {
+  if (packedTexShape[1] === 1) {
     return `
       int getOutputCoords() {
         return 2 * int(resultUV.y * ${packedTexShape[0]}.0);
