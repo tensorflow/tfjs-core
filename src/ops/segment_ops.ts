@@ -20,7 +20,6 @@ import {Tensor, Tensor1D} from '../tensor';
 import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import {assert, isInt} from '../util';
-
 import {expandDims} from './array_ops';
 import {getUndoAxesPermutation, parseAxisParam} from './axis_util';
 import {maximum} from './binary_ops';
