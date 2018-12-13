@@ -338,10 +338,10 @@ export class MathBackendWebGL implements KernelBackend {
       vals = this.getValuesFromTexture(dataId);
     } else {
       if (isPacked) {
-        const batch = this.getBatchDim(shape);
+        const batch = webgl_util.getBatchDim(shape);
         let rows = 1, cols = 1;
         if (shape.length) {
-          [rows, cols] = this.getRowsCols(shape);
+          [rows, cols] = webgl_util.getRowsCols(shape);
         }
         vals = this.gpgpu.downloadPackedMatrixFromBuffer(
             bufferOrTexture, batch, rows, cols, texShape[0], texShape[1]);
@@ -368,10 +368,10 @@ export class MathBackendWebGL implements KernelBackend {
     const {shape, dtype, texture, texShape} = this.texData.get(dataId);
     if (ENV.get('WEBGL_DOWNLOAD_FLOAT_ENABLED')) {
       if (this.texData.get(dataId).isPacked) {
-        const batch = this.getBatchDim(shape);
+        const batch = webgl_util.getBatchDim(shape);
         let rows = 1, cols = 1;
         if (shape.length) {
-          [rows, cols] = this.getRowsCols(shape);
+          [rows, cols] = webgl_util.getRowsCols(shape);
         }
         return this.gpgpu.downloadMatrixFromPackedTexture(
             texture, batch, rows, cols, texShape[0], texShape[1]);
@@ -622,22 +622,6 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [x]);
   }
 
-  private concat2Tensors<T extends Tensor>(a: T, b: T, axis: number): T {
-    // Any concat of n-dimensional tensors across any axis can be reduced to
-    // a concatenation of two-dimensional tensors across the axis 1 by first
-    // partitioning the axes of the original tensors into those less than the
-    // axis to be concatenated and the rest. Then reshape the tensors
-    // into a two-dimensional tensor by collapsing these two sets of axes and
-    // concatenate the resulting matrices across the axis 1, finally reshaping
-    // the result to have the proper shape.
-    const outShape = computeOutShape([a.shape, b.shape], axis);
-    const a2D = a.as2D(-1, sizeFromShape(a.shape.slice(axis)));
-    const b2D = b.as2D(-1, sizeFromShape(b.shape.slice(axis)));
-    const program = new ConcatProgram(a2D.shape, b2D.shape);
-    const res = this.compileAndRun(program, [a2D, b2D]) as Tensor;
-    return res.reshape(outShape) as T;
-  }
-
   concat(tensors: Tensor[], axis: number): Tensor {
     if (this.shouldExecuteOnCPU(tensors)) {
       return this.cpuBackend.concat(tensors, axis);
@@ -646,11 +630,25 @@ export class MathBackendWebGL implements KernelBackend {
     if (tensors.length === 1) {
       return tensors[0];
     }
-    let result = tensors[0];
-    for (let i = 1; i < tensors.length; ++i) {
-      result = this.concat2Tensors(result, tensors[i], axis);
+    if (tensors.length > ENV.get('WEBGL_MAX_TEXTURES_IN_SHADER')) {
+      const midIndex = Math.floor(tensors.length / 2);
+      const leftSide = this.concat(tensors.slice(0, midIndex), axis);
+      const rightSide = this.concat(tensors.slice(midIndex), axis);
+      return this.concat([leftSide, rightSide], axis);
     }
-    return result;
+    // Any concat of n-dimensional tensors across any axis can be reduced to
+    // a concatenation of two-dimensional tensors across the axis 1 by first
+    // partitioning the axes of the original tensors into those less than the
+    // axis to be concatenated and the rest. Then reshape the tensors
+    // into a two-dimensional tensor by collapsing these two sets of axes and
+    // concatenate the resulting matrices across the axis 1, finally reshaping
+    // the result to have the proper shape.
+    const outShape = computeOutShape(tensors.map(t => t.shape), axis);
+    const tensors2D =
+        tensors.map(t => t.as2D(-1, sizeFromShape(t.shape.slice(axis))));
+    const program = new ConcatProgram(tensors2D.map(t => t.shape));
+    const res = this.compileAndRun(program, tensors2D) as Tensor;
+    return res.reshape(outShape);
   }
 
   neg<T extends Tensor>(x: T): T {
@@ -1364,6 +1362,12 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [x]) as T;
   }
 
+  prelu<T extends Tensor>(x: T, alpha: T): T {
+    const program =
+        new BinaryOpProgram(binaryop_gpu.PRELU, x.shape, alpha.shape);
+    return this.compileAndRun(program, [x, alpha]) as T;
+  }
+
   elu<T extends Tensor>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.ELU);
     return this.compileAndRun(program, [x]) as T;
@@ -1846,26 +1850,15 @@ export class MathBackendWebGL implements KernelBackend {
         program, [input], Tensor.make(program.outputShape, {}, input.dtype));
   }
 
-  private getBatchDim(shape: number[], dimsToSkip = 2): number {
-    return util.sizeFromShape(shape.slice(0, shape.length - dimsToSkip));
-  }
-
-  private getRowsCols(shape: number[]): [number, number] {
-    if (shape.length === 0) {
-      throw Error('Cannot get rows and columns of an empty shape array.');
-    }
-
-    return [
-      shape.length > 1 ? shape[shape.length - 2] : 1, shape[shape.length - 1]
-    ];
-  }
-
   private packedReshape<R extends Rank>(input: Tensor, afterShape: ShapeMap[R]):
       Tensor<R> {
-    const inputAs3D = input.reshape(
-        [this.getBatchDim(input.shape), ...this.getRowsCols(input.shape)]);
-    const afterShapeAs3D =
-        [this.getBatchDim(afterShape), ...this.getRowsCols(afterShape)];
+    const inputAs3D = input.reshape([
+      webgl_util.getBatchDim(input.shape),
+      ...webgl_util.getRowsCols(input.shape)
+    ]);
+    const afterShapeAs3D = [
+      webgl_util.getBatchDim(afterShape), ...webgl_util.getRowsCols(afterShape)
+    ];
     const program = new ReshapePackedProgram(
         afterShapeAs3D as [number, number, number],
         inputAs3D.shape as [number, number, number]);
@@ -2085,10 +2078,10 @@ export class MathBackendWebGL implements KernelBackend {
     if (values != null) {
       // TODO(smilkov): Propagate the original typed array to gpgpu.
       if (isPacked) {
-        const batch = this.getBatchDim(shape);
+        const batch = webgl_util.getBatchDim(shape);
         let rows = 1, cols = 1;
         if (shape.length) {
-          [rows, cols] = this.getRowsCols(shape);
+          [rows, cols] = webgl_util.getRowsCols(shape);
         }
         this.gpgpu.uploadMatrixToPackedTexture(
             newTexture, batch, rows, cols, texShape[0], texShape[1],
