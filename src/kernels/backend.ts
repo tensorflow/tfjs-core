@@ -15,8 +15,8 @@
  * =============================================================================
  */
 
-import {Conv2DInfo} from '../ops/conv_util';
-import {DataId, Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
+import {Conv2DInfo, Conv3DInfo} from '../ops/conv_util';
+import {DataId, Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D} from '../tensor';
 import {DataType, DataValues, Rank, ShapeMap} from '../types';
 
 // Required information for all backends.
@@ -297,6 +297,9 @@ export class KernelBackend implements TensorStorage, BackendTimer {
   relu<T extends Tensor>(x: T): T {
     throw new Error('Not yet implemented');
   }
+  prelu<T extends Tensor>(x: T, a: T): T {
+    throw new Error('Not yet implemented');
+  }
   elu<T extends Tensor>(x: T): T {
     throw new Error('Not yet implemented');
   }
@@ -403,7 +406,16 @@ export class KernelBackend implements TensorStorage, BackendTimer {
       Tensor4D {
     throw new Error('Not yet implemented');
   }
-
+  conv3d(x: Tensor5D, filter: Tensor5D, convInfo: Conv3DInfo): Tensor5D {
+    throw new Error('Not yet implemented');
+  }
+  conv3dDerInput(dy: Tensor5D, filter: Tensor5D, convInfo: Conv3DInfo):
+      Tensor5D {
+    throw new Error('Not yet implemented');
+  }
+  conv3dDerFilter(x: Tensor5D, dY: Tensor5D, convInfo: Conv3DInfo): Tensor5D {
+    throw new Error('Not yet implemented');
+  }
   maxPool(x: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
     throw new Error('Not yet implemented');
   }

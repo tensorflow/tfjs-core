@@ -20,6 +20,20 @@ import {describeWithFlags} from '../jasmine_util';
 import {ALL_ENVS, expectArraysClose, WEBGL_ENVS} from '../test_util';
 import {Rank} from '../types';
 
+function generateCaseInputs(totalSizeTensor: number, totalSizeFilter: number) {
+  const inp = new Array(totalSizeTensor);
+  const filt = new Array(totalSizeFilter);
+
+  for (let i = 0; i < totalSizeTensor; i++) {
+    inp[i] = i + 1;
+  }
+  for (let i = 0; i < totalSizeFilter; i++) {
+    filt[i] = i + 1;
+  }
+
+  return {input: inp, filter: filt};
+}
+
 describeWithFlags('conv im2row', WEBGL_ENVS, () => {
   const webglConvIm2colSavedFlag = tf.ENV.get('WEBGL_CONV_IM2COL');
 
@@ -118,10 +132,10 @@ describeWithFlags('conv im2row', WEBGL_ENVS, () => {
   it('should work when input texture shapes do not equal logical shapes',
      () => {
        const webglMaxTextureSize = tf.ENV.get('WEBGL_MAX_TEXTURE_SIZE');
-       tf.ENV.set('WEBGL_MAX_TEXTURE_SIZE', 10);
+       tf.ENV.set('WEBGL_MAX_TEXTURE_SIZE', 13);
 
        const inputDepth = 1;
-       const inputSize = 5;
+       const inputSize = 6;
        const filterSize = 2;
        const outputDepth = 1;
 
@@ -129,7 +143,8 @@ describeWithFlags('conv im2row', WEBGL_ENVS, () => {
            [
              0.4,  0.75, 0.65, 0.98, 0.1,  0.41, 0.01, 0.46, 0.49,
              0.4,  0.11, 0.76, 0.73, 0.86, 0.34, 0.34, 0.71, 0.68,
-             0.62, 0.87, 0.64, 0.38, 0.29, 0.55, 0.95
+             0.62, 0.87, 0.64, 0.38, 0.29, 0.55, 0.95, 0.4,  0.75,
+             0.65, 0.98, 0.1,  0.41, 0.01, 0.46, 0.49, 0.4,  0.11
            ],
            [inputSize, inputSize, inputDepth]);
        const w = tf.tensor4d(
@@ -141,9 +156,11 @@ describeWithFlags('conv im2row', WEBGL_ENVS, () => {
        tf.ENV.set('WEBGL_MAX_TEXTURE_SIZE', webglMaxTextureSize);
 
        expectArraysClose(result, [
-         0.7836, 0.9281, 1.1687, 0.7828, 0.129,  0.3967, 0.5683, 0.862,  0.7513,
-         0.2892, 0.7381, 1.1506, 1.2005, 0.976,  0.3504, 0.8318, 0.9605, 0.9356,
-         1.1802, 0.6669, 0.608,  0.4022, 0.5173, 0.9215, 0.5415
+         0.79260, 1.01450, 1.15790, 0.71440, 0.47600, 0.37050, 0.58630, 0.79180,
+         0.65770, 0.48740, 0.79930, 0.55560, 1.23470, 0.97960, 0.59500, 0.76880,
+         0.99110, 0.48660, 1.15320, 1.11250, 0.86000, 0.69560, 0.71170, 0.33150,
+         0.87310, 0.79260, 1.01450, 1.15790, 0.71440, 0.07680, 0.24010, 0.30010,
+         0.57580, 0.53530, 0.29840, 0.06270
        ]);
      });
 });
@@ -229,6 +246,23 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
 
     expect(result.shape).toEqual(expectedResult.shape);
     expectArraysClose(result, expectedResult);
+  });
+
+  it('x=[1,3,6,1] f=[2,2,1,1] s=[1,2] d=1 p=valid', () => {
+    const inputDepth = 1;
+    const inputShape: [number, number, number, number] = [1, 3, 6, inputDepth];
+    const outputDepth = 1;
+    const fSize = 2;
+    const pad = 'valid';
+    const stride: [number, number] = [1, 2];
+
+    const inputs = generateCaseInputs(1 * 3 * 6 * inputDepth, fSize * fSize);
+    const x = tf.tensor4d(inputs.input, inputShape);
+    const w =
+        tf.tensor4d(inputs.filter, [fSize, fSize, inputDepth, outputDepth]);
+
+    const result = tf.conv2d(x, w, stride, pad);
+    expectArraysClose(result, [58.0, 78.0, 98.0, 118.0, 138.0, 158.0]);
   });
 
   it('throws when x is not rank 3', () => {
