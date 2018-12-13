@@ -439,7 +439,7 @@ export class KernelBackend implements TensorStorage, BackendTimer {
     throw new Error('Not yet implemented');
   }
 
-  gather<T extends Tensor>(x: T, indices: Tensor, axis: number): T {
+  gather<T extends Tensor>(x: T, indices: Tensor1D, axis: number): T {
     throw new Error('Not yet implemented');
   }
 

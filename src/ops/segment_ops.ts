@@ -20,13 +20,17 @@ import {Tensor, Tensor1D} from '../tensor';
 import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import {assert, isInt} from '../util';
+
 import {expandDims} from './array_ops';
 import {getUndoAxesPermutation, parseAxisParam} from './axis_util';
 import {maximum} from './binary_ops';
 import {greaterEqual} from './compare';
 import {logicalAnd, where} from './logical_ops';
 import {op} from './operation';
+import {collectGatherOpShapeInfo} from './segment_util';
 import {ones, scalar, zerosLike} from './tensor_ops';
+
+
 
 /**
  * Computes the sum along segments of a `tf.Tensor`.
@@ -46,7 +50,7 @@ import {ones, scalar, zerosLike} from './tensor_ops';
  */
 /** @doc {heading: 'Operations', subheading: 'Segment'} */
 function unsortedSegmentSum_<T extends Tensor>(
-    x: T|TensorLike, segmentIds: Tensor|TensorLike, numSegments: number): T {
+    x: T|TensorLike, segmentIds: Tensor1D|TensorLike, numSegments: number): T {
   const $x = convertToTensor(x, 'x', 'unsortedSegmentSum');
   const $segmentIds =
       convertToTensor(segmentIds, 'segmentIds', 'unsortedSegmentSum', 'int32');
@@ -90,6 +94,8 @@ function gather_<T extends Tensor>(
   const $x = convertToTensor(x, 'x', 'gather');
   const $indices = convertToTensor(indices, 'indices', 'gather', 'int32');
   axis = parseAxisParam(axis, $x.shape)[0];
+  const shapeInfo = collectGatherOpShapeInfo($x, $indices, axis);
+
   const grad = (dy: T) => {
     const derX = () => {
       const paramsShape = $x.shape;
@@ -112,8 +118,8 @@ function gather_<T extends Tensor>(
       const transposeDims =
           arrayConcat([[outerDims], outerAxesIndices, innerAxesIndices]);
       const valuesTranspose = values.transpose(transposeDims);
-      let paramsGrad =
-          unsortedSegmentSum(valuesTranspose, reshapedIndices, $x.shape[axis]);
+      let paramsGrad = unsortedSegmentSum(
+          valuesTranspose, reshapedIndices as Tensor1D, $x.shape[axis]);
 
       const invertTransposeDims = getUndoAxesPermutation(transposeDims);
       paramsGrad = paramsGrad.transpose(invertTransposeDims);
@@ -122,8 +128,10 @@ function gather_<T extends Tensor>(
     };
     return {$x: derX};
   };
-  return ENV.engine.runKernel(
-             backend => backend.gather($x, $indices, axis), {$x}, grad) as T;
+  return (ENV.engine.runKernel(
+              backend => backend.gather($x, $indices.flatten(), axis), {$x},
+              grad) as
+          T).reshape(shapeInfo.outputShape) as T;
 }
 
 function arrayRange(start: number, stop: number): number[] {

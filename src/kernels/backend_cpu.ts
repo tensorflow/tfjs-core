@@ -29,7 +29,6 @@ import * as gather_nd_util from '../ops/gather_nd_util';
 import * as ops from '../ops/ops';
 import {buffer, scalar, tensor, tensor3d, tensor4d} from '../ops/ops';
 import * as scatter_nd_util from '../ops/scatter_nd_util';
-import {collectGatherOpShapeInfo} from '../ops/segment_util';
 import * as selu_util from '../ops/selu_util';
 import {getStridedSlicedInfo} from '../ops/slice_util';
 import {DataId, Scalar, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
@@ -1774,29 +1773,25 @@ export class MathBackendCPU implements KernelBackend {
     return result.toTensor() as T;
   }
 
-  gather<T extends Tensor>(x: T, indices: Tensor, axis: number): T {
+  gather<T extends Tensor>(x: T, indices: Tensor1D, axis: number): T {
     this.assertNotComplex([x, indices], 'gather');
 
-    const shapeInfo = collectGatherOpShapeInfo(x, indices, axis);
-    const indicesSize = indices.size;
-
-    const result = buffer(
-        [shapeInfo.batchSize, indicesSize, shapeInfo.sliceSize], x.dtype);
-    const flattenX = x.reshape(
-        [shapeInfo.batchSize, shapeInfo.dimSize, shapeInfo.sliceSize]);
-    const xBuf = flattenX.buffer();
+    const newShape: number[] = x.shape.slice();
     const indicesValues = indices.dataSync();
+    newShape[axis] = indicesValues.length;
+    const result = buffer(newShape, x.dtype);
+    const xBuf = x.buffer();
 
     for (let i = 0; i < result.size; ++i) {
       const newLoc = result.indexToLoc(i);
 
       const originalLoc: number[] = newLoc.slice();
-      originalLoc[1] = indicesValues[newLoc[1]];
+      originalLoc[axis] = indicesValues[newLoc[axis]];
 
       const originalIndex = xBuf.locToIndex(originalLoc);
       result.values[i] = xBuf.values[originalIndex];
     }
-    return result.toTensor().reshape(shapeInfo.outputShape) as T;
+    return result.toTensor() as T;
   }
 
   batchToSpaceND<T extends Tensor>(
