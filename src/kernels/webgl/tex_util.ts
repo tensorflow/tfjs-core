@@ -50,6 +50,7 @@ export interface TextureData {
   texShape?: [number, number];
   usage?: TextureUsage;
   isPacked?: boolean;
+  offsets?: number[];
 }
 
 export function getUnpackedMatrixTextureShapeWidthHeight(
