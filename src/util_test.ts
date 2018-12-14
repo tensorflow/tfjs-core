@@ -267,6 +267,11 @@ describe('util.squeezeShape', () => {
       expect(newShape).toEqual([1, 1, 4]);
       expect(keptDims).toEqual([0, 1, 4]);
     });
+    it('should only reduce dimensions specified by negative axis', () => {
+      const axis = [-2, -3];
+      util.squeezeShape([1, 1, 1, 1, 4], axis);
+      expect(axis).toEqual([-2, -3]);
+    });
     it('throws error when specified axis is not squeezable', () => {
       expect(() => util.squeezeShape([1, 1, 2, 1, 4], [1, 2])).toThrowError();
     });

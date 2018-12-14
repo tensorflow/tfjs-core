@@ -16,6 +16,7 @@
  */
 
 import {DataType, DataTypeMap, FlatVector, NumericDataType, RecursiveArray, TensorLike, TypedArray} from './types';
+import {parseAxisParam} from './ops/axis_util';
 
 /** Shuffles the array using Fisher-Yates algorithm. */
 // tslint:disable-next-line:no-any
@@ -275,28 +276,19 @@ export function squeezeShape(shape: number[], axis?: number[]):
     {newShape: number[], keptDims: number[]} {
   const newShape: number[] = [];
   const keptDims: number[] = [];
-  if (axis != null) {
-    axis = axis.map((i) => {
-      if (i < -shape.length || i >= shape.length) {
-        throw new Error(
-          `Can't squeeze axis ${axis[i]} since its not in ` +
-          `[-${shape.length}, ${shape.length}) for shape ${shape}`);
-      }
-      return i >= 0? i: shape.length + i; 
-    }).sort();
-  }
+  const axes = axis == null? null: parseAxisParam(axis, shape).sort();
   let j = 0;
   for (let i = 0; i < shape.length; ++i) {
-    if (axis != null) {
-      if (axis[j] === i && shape[i] !== 1) {
+    if (axes != null) {
+      if (axes[j] === i && shape[i] !== 1) {
         throw new Error(
             `Can't squeeze axis ${i} since its dim '${shape[i]}' is not 1`);
       }
-      if ((axis[j] == null || axis[j] > i) && shape[i] === 1) {
+      if ((axes[j] == null || axes[j] > i) && shape[i] === 1) {
         newShape.push(shape[i]);
         keptDims.push(i);
       }
-      if (axis[j] <= i) {
+      if (axes[j] <= i) {
         j++;
       }
     }
