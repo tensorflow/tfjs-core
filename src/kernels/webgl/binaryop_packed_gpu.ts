@@ -20,7 +20,10 @@ import {GPGPUContext} from './gpgpu_context';
 import {GPGPUProgram} from './gpgpu_math';
 
 // We do the same as in ./binaryop_gpu, with vec4 and ivec4. 
-export const PACKED_DIV = `return a / b;`;
+export const PACKED_DIV = `
+  vec4 one = vec4(equal(a, b));
+  return one + (vec4(1.0) - one) * a / b;
+`;
 
 export const PACKED_INT_DIV = `
   vec4 resultSign = sign(a) * sign(b);

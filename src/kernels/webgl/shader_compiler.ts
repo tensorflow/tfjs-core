@@ -1306,10 +1306,11 @@ function getPackedSamplerAtOutputCoords(
   const packedTexShape = [...tex_util.getPackedMatrixTextureShapeWidthHeight(
       outTexShape[1], outTexShape[0])];
 
-  const broadcastDims = broadcast_util.getBroadcastDims(
-      inputInfo.shapeInfo.logicalShape, outShapeInfo.logicalShape);
-  const inRank = inputInfo.shapeInfo.logicalShape.length;
-  const outRank = outShapeInfo.logicalShape.length;
+  const inShape = inputInfo.shapeInfo.logicalShape;
+  const outShape = outShapeInfo.logicalShape;
+  const broadcastDims = broadcast_util.getBroadcastDims(inShape, outShape);
+  const inRank = inShape.length;
+  const outRank = outShape.length;
   if (broadcastDims.length) {
     throw Error('Packed broadcast sampling is not implemented yet.');
   }
@@ -1317,7 +1318,9 @@ function getPackedSamplerAtOutputCoords(
   const inTexShape = inputInfo.shapeInfo.texShape;
   const packedInTexShape = [...tex_util.getPackedMatrixTextureShapeWidthHeight(
       inTexShape[1], inTexShape[0])];
-  if (util.arraysEqual(inTexShape, outTexShape)) {
+  // Check sizes are equal as 1 is padded to 2.
+  if (util.arraysEqual(inTexShape, outTexShape) &&
+      util.sizeFromShape(inShape) === util.sizeFromShape(outShape)) {
     return `
       vec4 ${funcName}() {
         return texture2D(${texName}, resultUV);
