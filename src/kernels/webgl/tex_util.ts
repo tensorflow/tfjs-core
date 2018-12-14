@@ -16,7 +16,7 @@
  */
 
 import {Tensor} from '../../tensor';
-import {DataType, DataTypeMap} from '../../types';
+import {DataType, DataValues} from '../../types';
 import * as util from '../../util';
 
 export enum TextureUsage {
@@ -35,19 +35,21 @@ export enum PhysicalTextureType {
 }
 
 export interface TextureData {
-  texture: WebGLTexture;
+  // Required.
+  shape: number[];
+  dtype: DataType;
+
+  // Optional.
+  values?: DataValues;
+  texture?: WebGLTexture;
   // For complex numbers, the real and imaginary parts are stored as their own
   // individual tensors, with a parent joining the two with the
   // complexTensors field. When this is defined, texture will be null.
   complexTensors?: {real: Tensor, imag: Tensor};
-
-  shape: number[];
   /** [rows, columns] shape of the texture. */
-  texShape: [number, number];
-  dtype: DataType;
-  values: DataTypeMap[DataType];
-  usage: TextureUsage;
-  isPacked: boolean;
+  texShape?: [number, number];
+  usage?: TextureUsage;
+  isPacked?: boolean;
 }
 
 export function getUnpackedMatrixTextureShapeWidthHeight(
@@ -75,10 +77,9 @@ export function getMatrixSizeFromUnpackedArraySize(
   return unpackedSize / channelsPerTexture;
 }
 
-export type TypedArray = Float32Array|Uint8Array;
-
 export function encodeMatrixToUnpackedArray(
-    matrix: TypedArray, unpackedArray: TypedArray, channelsPerTexture: number) {
+    matrix: Float32Array|Uint8Array, unpackedArray: Float32Array|Uint8Array,
+    channelsPerTexture: number) {
   const requiredSize =
       getUnpackedArraySizeFromMatrixSize(matrix.length, channelsPerTexture);
   if (unpackedArray.length < requiredSize) {
@@ -125,7 +126,9 @@ export function decodeMatrixFromUnpackedColorRGBAArray(
 
 export function getPackedMatrixTextureShapeWidthHeight(
     rows: number, columns: number): [number, number] {
-  return [Math.ceil(columns / 2), Math.ceil(rows / 2)];
+  return [
+    Math.max(1, Math.ceil(columns / 2)), Math.max(1, Math.ceil(rows / 2))
+  ];
 }
 
 export function getPackedRGBAArraySizeFromMatrixShape(
@@ -156,12 +159,6 @@ Note the batch dimension is needed so xxx's are inserted below 020, 021, 022,
 export function encodeMatrixToPackedRGBA(
     matrix: Float32Array, batches: number, rows: number, columns: number,
     packedRGBA: Float32Array) {
-  const requiredSize = getPackedRGBAArraySizeFromMatrixShape(rows, columns);
-  if (packedRGBA.length < requiredSize) {
-    throw new Error(`packedRGBA length (${packedRGBA.length}) must be >=
-        ${requiredSize}`);
-  }
-
   const oddWidth = (columns % 2) === 1;
   const oddHeight = (rows % 2) === 1;
   const widthInFullBlocks = Math.floor(columns / 2);

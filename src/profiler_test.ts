@@ -17,9 +17,9 @@
 
 import * as tf from './index';
 import {BackendTimer, BackendTimingInfo} from './kernels/backend';
-import {TypedArray} from './kernels/webgl/tex_util';
 import {Logger, Profiler} from './profiler';
 import {Tensor} from './tensor';
+import {TypedArray} from './types';
 
 class TestBackendTimer implements BackendTimer {
   private counter = 1;
@@ -31,7 +31,7 @@ class TestBackendTimer implements BackendTimer {
     query();
     const kernelMs = await new Promise<number>(
         resolve => setTimeout(
-            resolve(this.queryTimeMs * this.counter++), this.delayMs));
+            () => resolve(this.queryTimeMs * this.counter++), this.delayMs));
     return {kernelMs, getExtraProfileInfo: () => this.extraInfo};
   }
 }

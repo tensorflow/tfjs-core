@@ -22,6 +22,7 @@ import {getCoordsDataType} from './shader_compiler';
 
 export class PackProgram implements GPGPUProgram {
   variableNames = ['A'];
+  isPackShader = true;
   outputShape: number[];
   userCode: string;
 
@@ -32,28 +33,36 @@ export class PackProgram implements GPGPUProgram {
     this.outputShape = outputShape;
     const rank = outputShape.length;
 
-    const channels = getChannels('rc', rank);
-    const dtype = getCoordsDataType(rank);
-    const outOfBoundsCondition =
-        getOutOfBoundsCondition(rank, outputShape, channels);
-    const setup = getSetup(
-        rank, outputShape[outputShape.length - 1],
-        outputShape[outputShape.length - 2], channels);
-    const output = getOutput(outputShape, channels);
-
-    this.userCode = `
-      void main() {
-        ${dtype} rc = getOutputCoords();
-
-        if(${outOfBoundsCondition}) {
-          gl_FragColor = vec4(0);
-        } else {
-          ${setup}
-
-          setOutput(vec4(${output}));
+    if (rank === 0) {
+      this.userCode = `
+        void main() {
+          setOutput(vec4(getA(), 0., 0., 0.));
         }
-      }
-    `;
+      `;
+    } else {
+      const channels = getChannels('rc', rank);
+      const dtype = getCoordsDataType(rank);
+      const outOfBoundsCondition =
+          getOutOfBoundsCondition(rank, outputShape, channels);
+      const setup = getSetup(
+          rank, outputShape[outputShape.length - 1],
+          outputShape[outputShape.length - 2], channels);
+      const output = getOutput(outputShape, channels);
+
+      this.userCode = `
+        void main() {
+          ${dtype} rc = getOutputCoords();
+
+          if(${outOfBoundsCondition}) {
+            setOutput(vec4(0));
+          } else {
+            ${setup}
+
+            setOutput(vec4(${output}));
+          }
+        }
+      `;
+    }
   }
 }
 

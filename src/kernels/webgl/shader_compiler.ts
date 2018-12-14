@@ -14,9 +14,12 @@
  * limitations under the License.
  * =============================================================================
  */
+import {ENV} from '../../environment';
 import * as broadcast_util from '../../ops/broadcast_util';
 import * as util from '../../util';
+
 import * as shader_util from './shader_compiler_util';
+import * as tex_util from './tex_util';
 
 export type ShapeInfo = {
   logicalShape: number[],
@@ -43,7 +46,10 @@ export function makeShader(
   inputPrefixSnippet = inputPrefixSnippet.join('\n');
 
   const inputSamplingSnippet =
-      inputsInfo.map(x => getInputSamplingSnippet(x, outputShape, broadcast))
+      inputsInfo
+          .map(
+              x => getInputSamplingSnippet(
+                  x, outputShape, broadcast, usesPackedTextures))
           .join('\n');
   const outTexShape = outputShape.texShape;
   let outputSamplingSnippet: string;
@@ -98,6 +104,8 @@ function getSamplerFromInInfo(inInfo: InputInfo): string {
 function getPackedSamplerFromInInfo(inInfo: InputInfo): string {
   const shape = inInfo.shapeInfo.logicalShape;
   switch (shape.length) {
+    case 0:
+      return getPackedSamplerScalar(inInfo);
     case 1:
       return getPackedSampler1D(inInfo);
     case 2:
@@ -114,21 +122,26 @@ function getPackedSamplerFromInInfo(inInfo: InputInfo): string {
 }
 
 function getInputSamplingSnippet(
-    inInfo: InputInfo, outShapeInfo: ShapeInfo, broadcast: boolean): string {
+    inInfo: InputInfo, outShapeInfo: ShapeInfo, broadcast: boolean,
+    usesPackedTextures = false): string {
   let res = getSamplerFlat(inInfo);
-  if (inInfo.shapeInfo.isPacked) {
+  if (usesPackedTextures) {
     res += getPackedSamplerFromInInfo(inInfo);
   } else {
     res += getSamplerFromInInfo(inInfo);
   }
 
   // If input and output have matching logical shapes, add
-  // getTexNameAtOutCoord() method that samples the input
-  // textureSampler using the output coordinates.
+  // getTexNameAtOutCoord() method that samples the input textureSampler using
+  // the output coordinates.
   if (broadcast ||
       util.arraysEqual(
           inInfo.shapeInfo.logicalShape, outShapeInfo.logicalShape)) {
-    res += getSamplerAtOutputCoords(inInfo, outShapeInfo, broadcast);
+    if (usesPackedTextures) {
+      res += getPackedSamplerAtOutputCoords(inInfo, outShapeInfo, broadcast);
+    } else {
+      res += getSamplerAtOutputCoords(inInfo, outShapeInfo, broadcast);
+    }
   }
   return res;
 }
@@ -297,10 +310,38 @@ const FLOAT_TEXTURE_SET_RGBA_SNIPPET = `
   }
 `;
 
-/*
-Previous NaN check '(val < 0.0 || 0.0 < val || val == 0.0) ? false : true' does
-not work on iOS 12
- */
+let NAN_CHECKS = '';
+if (ENV.get('PROD')) {
+  NAN_CHECKS = `
+    bool isNaN(float val) {
+      return false;
+    }
+
+    bool hasNaN(vec4 values) {
+      return false;
+    }
+  `;
+} else {
+  /**
+   * Previous NaN check '(val < 0.0 || 0.0 < val || val == 0.0) ? false : true'
+   * does not work on iOS 12
+   */
+  NAN_CHECKS = `
+    bool isNaN(float val) {
+      return (val < 1.0 || 0.0 < val || val == 0.0) ? false : true;
+    }
+
+    bool hasNaN(vec4 values) {
+      return any(bvec4(
+        isNaN(values.x),
+        isNaN(values.y),
+        isNaN(values.z),
+        isNaN(values.w)
+      ));
+    }
+  `;
+}
+
 const SHADER_PREFIX = `
   precision highp float;
   precision highp int;
@@ -326,15 +367,7 @@ const SHADER_PREFIX = `
     int v;
   };
 
-  bool isNaN(float val) {
-    return (val < 1.0 || 0.0 < val || val == 0.0) ? false : true;
-  }
-
-  bool hasNaN(vec4 values) {
-    vec4 v1 = values * values;
-    vec4 v2 = values * values;
-    return any(notEqual(v1, v2));
-  }
+  ${NAN_CHECKS}
 
   float getNaN(vec4 values) {
     return dot(vec4(1), values);
@@ -391,7 +424,7 @@ function getOutputPacked1DCoords(
     shape: [number], texShape: [number, number]): string {
   const packedTexShape =
       [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
-  if (texShape[0] === 1) {
+  if (packedTexShape[0] === 1) {
     return `
       int getOutputCoords() {
         return 2 * int(resultUV.x * ${packedTexShape[1]}.0);
@@ -399,7 +432,7 @@ function getOutputPacked1DCoords(
     `;
   }
 
-  if (texShape[1] === 1) {
+  if (packedTexShape[1] === 1) {
     return `
       int getOutputCoords() {
         return 2 * int(resultUV.y * ${packedTexShape[0]}.0);
@@ -645,6 +678,16 @@ function getOutput2DCoords(
       int r = index / ${shape[1]};
       int c = index - r * ${shape[1]};
       return ivec2(r, c);
+    }
+  `;
+}
+
+function getPackedSamplerScalar(inputInfo: InputInfo): string {
+  const texName = inputInfo.name;
+  const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
+  return `
+    vec4 ${funcName}() {
+      return texture2D(${texName}, halfCR);
     }
   `;
 }
@@ -1244,6 +1287,74 @@ function getBroadcastOutputCoordsSampler(
       ${type} coords = getOutputCoords();
       ${coordsSnippet}
       return get${texFuncSnippet}(${unpackedCoordsSnippet});
+    }
+  `;
+}
+
+function getPackedSamplerAtOutputCoords(
+    inputInfo: InputInfo, outShapeInfo: ShapeInfo,
+    supportsBroadcasting: boolean) {
+  const texName = inputInfo.name;
+  const texFuncSnippet = texName.charAt(0).toUpperCase() + texName.slice(1);
+  const funcName = 'get' + texFuncSnippet + 'AtOutCoords';
+
+  const outTexShape = outShapeInfo.texShape;
+  const packedTexShape = [...tex_util.getPackedMatrixTextureShapeWidthHeight(
+      outTexShape[1], outTexShape[0])];
+
+  const broadcastDims = broadcast_util.getBroadcastDims(
+      inputInfo.shapeInfo.logicalShape, outShapeInfo.logicalShape);
+  const inRank = inputInfo.shapeInfo.logicalShape.length;
+  const outRank = outShapeInfo.logicalShape.length;
+  if (broadcastDims.length) {
+    throw Error('Packed broadcast sampling is not implemented yet.');
+  }
+
+  const inTexShape = inputInfo.shapeInfo.texShape;
+  const packedInTexShape = [...tex_util.getPackedMatrixTextureShapeWidthHeight(
+      inTexShape[1], inTexShape[0])];
+  if (util.arraysEqual(inTexShape, outTexShape)) {
+    return `
+      vec4 ${funcName}() {
+        return texture2D(${texName}, resultUV);
+      }
+    `;
+  }
+
+  let output = `return texture2D(${texName}, uv)`;
+
+  if (inRank === 1 && outRank > 1) {
+    output = `
+      vec4 sample = texture2D(${texName}, uv);
+      return vec4(sample.xy, sample.xy);
+    `;
+  } else if (inRank === 0 && outRank > 0) {
+    if (outRank === 1) {
+      output = `
+        vec4 sample = texture2D(${texName}, uv);
+        return vec4(sample.x, sample.x, 0., 0.);
+      `;
+    } else {
+      output = `
+        vec4 sample = texture2D(${texName}, uv);
+        return vec4(sample.x);
+      `;
+    }
+  }
+
+  // index below refers to texel index
+  return `
+    vec4 ${funcName}() {
+      ivec2 resTexRC = ivec2(resultUV.yx *
+                             vec2(${packedTexShape[0]}, ${packedTexShape[1]}));
+      int index = resTexRC.x * ${packedTexShape[1]} + resTexRC.y;
+
+      int texR = index / ${packedInTexShape[1]};
+      int texC = index - texR * ${packedInTexShape[1]};
+      vec2 uv = (vec2(texC, texR) + halfCR) / vec2(${packedInTexShape[1]}, ${
+      packedInTexShape[0]});
+
+      ${output};
     }
   `;
 }

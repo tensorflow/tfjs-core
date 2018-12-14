@@ -166,6 +166,24 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     expectArraysClose(c, [0, 8, -3, 20]);
   });
 
+  it('upcasts when dtypes dont match', () => {
+    const a = [1, 2, 3, 4, 5, 6];
+    const b = [0, 1, -3, 2, 2, 1];
+
+    let c = tf.matMul(
+        tf.tensor(a, [2, 3], 'float32'), tf.tensor(b, [3, 2], 'int32'));
+
+    expect(c.shape).toEqual([2, 2]);
+    expect(c.dtype).toBe('float32');
+    expectArraysClose(c, [0, 8, -3, 20]);
+
+    c = tf.matMul(tf.tensor(a, [2, 3], 'int32'), tf.tensor(b, [3, 2], 'bool'));
+
+    expect(c.shape).toEqual([2, 2]);
+    expect(c.dtype).toBe('int32');
+    expectArraysClose(c, [5, 6, 11, 15]);
+  });
+
   it('A x B^t', () => {
     const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
     const b = tf.tensor2d([1, 0, 2, 4, 3, 0], [2, 3]);
@@ -657,6 +675,15 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     expectArraysClose(c, [0, 8, -3, 20]);
   });
 
+  it('accepts a tensor-like object chained', () => {
+    const a = tf.tensor2d([[1, 2, 3], [4, 5, 6]], [2, 3]);  // 2x3
+    const b = [[0, 1], [-3, 2], [2, 1]];                    // 3x2
+    const c = a.matMul(b);
+
+    expect(c.shape).toEqual([2, 2]);
+    expectArraysClose(c, [0, 8, -3, 20]);
+  });
+
   it('a * b where a has zero in its shape', () => {
     const a = tf.tensor2d([], [0, 3]);
     const b = tf.tensor2d([1, 2, 3, 4, 5, 6], [3, 2]);
@@ -677,6 +704,11 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     const res = tf.matMul(ab, c);
     expect(res.shape).toEqual([0, 3]);
     expectArraysClose(res, []);
+  });
+
+  it('throws error for string tensor', () => {
+    expect(() => tf.matMul([['a']], [['b']]))
+        .toThrowError(/Argument 'a' passed to 'matMul' must be numeric tensor/);
   });
 });
 
@@ -1244,5 +1276,10 @@ describeWithFlags('dot', ALL_ENVS, () => {
     const res = tf.dot(a, a);
     expectArraysClose(res, [14]);
     expect(res.shape).toEqual([]);
+  });
+
+  it('throws error for string tensors', () => {
+    expect(() => tf.dot('a', 'b'))
+        .toThrowError(/Argument 't1' passed to 'dot' must be numeric tensor/);
   });
 });

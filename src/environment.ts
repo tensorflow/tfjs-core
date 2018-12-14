@@ -17,7 +17,7 @@
 
 import * as device_util from './device_util';
 import {Engine, MemoryInfo, ProfileInfo, ScopeFn, TimingInfo} from './engine';
-import {Features, getFeaturesFromURL, getWebGLDisjointQueryTimerVersion, getWebGLMaxTextureSize, isChrome, isDownloadFloatTextureEnabled, isRenderToFloatTextureEnabled, isWebGLFenceEnabled, isWebGLVersionEnabled} from './environment_util';
+import {Features, getFeaturesFromURL, getMaxTexturesInShader, getWebGLDisjointQueryTimerVersion, getWebGLMaxTextureSize, isChrome, isDownloadFloatTextureEnabled, isRenderToFloatTextureEnabled, isWebGLFenceEnabled, isWebGLVersionEnabled} from './environment_util';
 import {KernelBackend} from './kernels/backend';
 import {DataId, setTensorTracker, Tensor, TensorTracker} from './tensor';
 import {TensorContainer} from './tensor_types';
@@ -101,11 +101,10 @@ export class Environment {
    *   (undisposed) at this time, which is ≤ the number of tensors
    *   (e.g. `a.reshape(newShape)` makes a new Tensor that shares the same
    *   data buffer with `a`).
-   * - `unreliable`: `Optional` `boolean`:
-   *    - On WebGL, not present (always reliable).
-   *    - On CPU, true. Due to automatic garbage collection, these numbers
-   *     represent undisposed tensors, i.e. not wrapped in `tidy()`, or
-   *     lacking a call to `tensor.dispose()`.
+   * - `unreliable`: True if the memory usage is unreliable. See `reasons` when
+   *    `unrealible` is true.
+   * - `reasons`: `string[]`, reasons why the memory is unreliable, present if
+   *    `unreliable` is true.
    */
   /** @doc {heading: 'Performance', subheading: 'Memory'} */
   static memory(): MemoryInfo {
@@ -183,8 +182,8 @@ export class Environment {
    */
   /** @doc {heading: 'Performance', subheading: 'Memory'} */
   static tidy<T extends TensorContainer>(
-      nameOrFn: string|ScopeFn<T>, fn?: ScopeFn<T>, gradMode = false): T {
-    return ENV.engine.tidy(nameOrFn, fn, gradMode);
+      nameOrFn: string|ScopeFn<T>, fn?: ScopeFn<T>): T {
+    return ENV.engine.tidy(nameOrFn, fn);
   }
 
   /**
@@ -309,16 +308,24 @@ export class Environment {
       return isChrome();
     } else if (feature === 'WEBGL_CPU_FORWARD') {
       return true;
+    } else if (feature === 'WEBGL_PACK') {
+      return false;
     } else if (feature === 'WEBGL_PACK_BATCHNORMALIZATION') {
-      return false;
+      return this.get('WEBGL_PACK');
+    } else if (feature === 'WEBGL_PACK_CLIP') {
+      return this.get('WEBGL_PACK');
+    } else if (feature === 'WEBGL_PACK_DEPTHWISECONV') {
+      return this.get('WEBGL_PACK');
     } else if (feature === 'WEBGL_LAZILY_UNPACK') {
-      return false;
+      return this.get('WEBGL_PACK');
     } else if (feature === 'WEBGL_CONV_IM2COL') {
-      return false;
+      return this.get('WEBGL_PACK');
     } else if (feature === 'WEBGL_PAGING_ENABLED') {
       return this.get('IS_BROWSER') && !this.get('PROD');
     } else if (feature === 'WEBGL_MAX_TEXTURE_SIZE') {
       return getWebGLMaxTextureSize(this.get('WEBGL_VERSION'));
+    } else if (feature === 'WEBGL_MAX_TEXTURES_IN_SHADER') {
+      return getMaxTexturesInShader(this.get('WEBGL_VERSION'));
     } else if (feature === 'IS_TEST') {
       return false;
     } else if (feature === 'BACKEND') {

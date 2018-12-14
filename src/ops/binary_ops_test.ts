@@ -29,6 +29,24 @@ describeWithFlags('prelu', ALL_ENVS, () => {
     expectArraysClose(result, [0, 1, -0.5, -0.6]);
   });
 
+  it('basic TensorLike', () => {
+    const x = [0, 1, -2, -4];
+    const a = [0.15, 0.2, 0.25, 0.15];
+    const result = tf.prelu(x, a);
+
+    expect(result.shape).toEqual([4]);
+    expectArraysClose(result, [0, 1, -0.5, -0.6]);
+  });
+
+  it('basic TensorLike chained', () => {
+    const x = tf.tensor1d([0, 1, -2, -4]);
+    const a = [0.15, 0.2, 0.25, 0.15];
+    const result = x.prelu(a);
+
+    expect(result.shape).toEqual(x.shape);
+    expectArraysClose(result, [0, 1, -0.5, -0.6]);
+  });
+
   it('derivative', () => {
     const x = tf.tensor1d([0.5, 3, -0.1, -4]);
     const a = tf.tensor1d([0.2, 0.4, 0.25, 0.15]);
@@ -49,6 +67,11 @@ describeWithFlags('prelu', ALL_ENVS, () => {
     expect(() => tf.prelu(tf.scalar(1), {} as tf.Tensor))
         .toThrowError(/Argument 'alpha' passed to 'prelu' must be a Tensor/);
   });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.prelu(['a'], 0.1))
+        .toThrowError(/Argument 'x' passed to 'prelu' must be numeric tensor/);
+  });
 });
 
 describeWithFlags('maximum', ALL_ENVS, () => {
@@ -58,6 +81,24 @@ describeWithFlags('maximum', ALL_ENVS, () => {
     const result = tf.maximum(a, b);
 
     expect(result.shape).toEqual(a.shape);
+    expectArraysClose(result, [0.5, 3, 0.25, 0.15]);
+  });
+
+  it('TensorLike', () => {
+    const a = [0.5, 3, -0.1, -4];
+    const b = [0.2, 0.4, 0.25, 0.15];
+    const result = tf.maximum(a, b);
+
+    expect(result.shape).toEqual([4]);
+    expectArraysClose(result, [0.5, 3, 0.25, 0.15]);
+  });
+
+  it('TensorLike chained', () => {
+    const a = tf.tensor1d([0.5, 3, -0.1, -4]);
+    const b = [0.2, 0.4, 0.25, 0.15];
+    const result = a.maximum(b);
+
+    expect(result.shape).toEqual([4]);
     expectArraysClose(result, [0.5, 3, 0.25, 0.15]);
   });
 
@@ -81,11 +122,13 @@ describeWithFlags('maximum', ALL_ENVS, () => {
     expectArraysEqual(result, [1, 0, 1, 1]);
   });
 
-  it('different dtypes throws error', () => {
-    const a = tf.tensor1d([true, false, false, true], 'float32');
-    const b = tf.tensor1d([false, false, true, true], 'int32');
-    // tslint:disable-next-line:no-any
-    expect(() => tf.maximum(a, b as any)).toThrowError();
+  it('upcasts when dtypes dont match', () => {
+    const a = tf.tensor1d([1, 0, 0, 1], 'float32');
+    const b = tf.tensor1d([0, 0, 1, 1], 'int32');
+    const res = tf.maximum(a, b);
+    expect(res.shape).toEqual(a.shape);
+    expect(res.dtype).toBe('float32');
+    expectArraysEqual(res, [1, 0, 1, 1]);
   });
 
   it('propagates NaN', () => {
@@ -201,6 +244,16 @@ describeWithFlags('maximum', ALL_ENVS, () => {
     expect(result.shape).toEqual([2, 2]);
     expectArraysClose(result, [0.5, 3, 0.25, 0.15]);
   });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.maximum('q', 3))
+        .toThrowError(
+            /Argument 'a' passed to 'maximum' must be numeric tensor/);
+
+    expect(() => tf.maximum(3, 'q'))
+        .toThrowError(
+            /Argument 'b' passed to 'maximum' must be numeric tensor/);
+  });
 });
 
 describeWithFlags('squaredDifference', ALL_ENVS, () => {
@@ -208,6 +261,30 @@ describeWithFlags('squaredDifference', ALL_ENVS, () => {
     const a = tf.tensor1d([0.5, 3, -0.1, -4]);
     const b = tf.tensor1d([0.2, 0.4, 0.25, 0.15]);
     const result = tf.squaredDifference(a, b);
+
+    expect(result.shape).toEqual(a.shape);
+    expectArraysClose(result, [
+      Math.pow(0.5 - 0.2, 2), Math.pow(3 - 0.4, 2), Math.pow(-0.1 - 0.25, 2),
+      Math.pow(-4 - 0.15, 2)
+    ]);
+  });
+
+  it('TensorLike', () => {
+    const a = [0.5, 3, -0.1, -4];
+    const b = [0.2, 0.4, 0.25, 0.15];
+    const result = tf.squaredDifference(a, b);
+
+    expect(result.shape).toEqual([4]);
+    expectArraysClose(result, [
+      Math.pow(0.5 - 0.2, 2), Math.pow(3 - 0.4, 2), Math.pow(-0.1 - 0.25, 2),
+      Math.pow(-4 - 0.15, 2)
+    ]);
+  });
+
+  it('TensorLike chained', () => {
+    const a = tf.tensor1d([0.5, 3, -0.1, -4]);
+    const b = [0.2, 0.4, 0.25, 0.15];
+    const result = a.squaredDifference(b);
 
     expect(result.shape).toEqual(a.shape);
     expectArraysClose(result, [
@@ -229,11 +306,19 @@ describeWithFlags('squaredDifference', ALL_ENVS, () => {
     ]);
   });
 
-  it('different dtypes throws error', () => {
-    const a = tf.tensor1d([0.5, 3, -0.1, -4], 'float32');
-    const b = tf.tensor1d([2, 3, 1, 4], 'int32');
-    // tslint:disable-next-line:no-any
-    expect(() => tf.squaredDifference(a, b as any)).toThrowError();
+  it('upcasts when dtypes dont match', () => {
+    let res =
+        tf.squaredDifference(tf.scalar(5, 'int32'), tf.scalar(2, 'float32'));
+    expect(res.dtype).toBe('float32');
+    expectArraysClose(res, [9]);
+
+    res = tf.squaredDifference(tf.scalar(5, 'int32'), tf.scalar(true, 'bool'));
+    expect(res.dtype).toBe('int32');
+    expectArraysClose(res, [16]);
+
+    res = tf.squaredDifference(tf.scalar(5, 'int32'), tf.scalar(false, 'bool'));
+    expect(res.dtype).toBe('int32');
+    expectArraysClose(res, [25]);
   });
 
   it('propagates NaN', () => {
@@ -379,6 +464,16 @@ describeWithFlags('squaredDifference', ALL_ENVS, () => {
       Math.pow(-4 - 0.6, 2)
     ]);
   });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.squaredDifference('q', 3))
+        .toThrowError(
+            /Argument 'a' passed to 'squaredDifference' must be numeric/);
+
+    expect(() => tf.squaredDifference(3, 'q'))
+        .toThrowError(
+            /Argument 'b' passed to 'squaredDifference' must be numeric/);
+  });
 });
 
 describeWithFlags('minimum', ALL_ENVS, () => {
@@ -386,6 +481,24 @@ describeWithFlags('minimum', ALL_ENVS, () => {
     const a = tf.tensor1d([0.5, 3, -0.1, -4]);
     const b = tf.tensor1d([0.2, 0.4, 0.25, 0.15]);
     const result = tf.minimum(a, b);
+
+    expect(result.shape).toEqual(a.shape);
+    expectArraysClose(result, [0.2, 0.4, -0.1, -4]);
+  });
+
+  it('TensorLike', () => {
+    const a = [0.5, 3, -0.1, -4];
+    const b = [0.2, 0.4, 0.25, 0.15];
+    const result = tf.minimum(a, b);
+
+    expect(result.shape).toEqual([4]);
+    expectArraysClose(result, [0.2, 0.4, -0.1, -4]);
+  });
+
+  it('TensorLike chained', () => {
+    const a = tf.tensor1d([0.5, 3, -0.1, -4]);
+    const b = [0.2, 0.4, 0.25, 0.15];
+    const result = a.minimum(b);
 
     expect(result.shape).toEqual(a.shape);
     expectArraysClose(result, [0.2, 0.4, -0.1, -4]);
@@ -411,11 +524,13 @@ describeWithFlags('minimum', ALL_ENVS, () => {
     expectArraysEqual(result, [0, 0, 0, 1]);
   });
 
-  it('different dtypes throws error', () => {
-    const a = tf.tensor1d([true, false, false, true], 'float32');
-    const b = tf.tensor1d([false, false, true, true], 'int32');
-    // tslint:disable-next-line:no-any
-    expect(() => tf.minimum(a, b as any)).toThrowError();
+  it('upcasts when dtypes dont match', () => {
+    const a = tf.tensor1d([1, 0, 0, 1], 'float32');
+    const b = tf.tensor1d([0, 0, 1, 1], 'int32');
+    const res = tf.minimum(a, b);
+    expect(res.shape).toEqual(a.shape);
+    expect(res.dtype).toBe('float32');
+    expectArraysEqual(res, [0, 0, 0, 1]);
   });
 
   it('propagates NaN', () => {
@@ -531,6 +646,14 @@ describeWithFlags('minimum', ALL_ENVS, () => {
     expect(result.shape).toEqual([2, 2]);
     expectArraysClose(result, [0.2, 0.4, -0.1, -4]);
   });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.minimum('q', 3))
+        .toThrowError(/Argument 'a' passed to 'minimum' must be numeric/);
+
+    expect(() => tf.minimum(3, 'q'))
+        .toThrowError(/Argument 'b' passed to 'minimum' must be numeric/);
+  });
 });
 
 describeWithFlags('mod', ALL_ENVS, () => {
@@ -538,6 +661,24 @@ describeWithFlags('mod', ALL_ENVS, () => {
     const a = tf.tensor1d([0.5, 3, -0.1, -4]);
     const b = tf.tensor1d([0.2, 0.4, 0.25, 0.15]);
     const result = tf.mod(a, b);
+
+    expect(result.shape).toEqual(a.shape);
+    expectArraysClose(result, [0.1, 0.2, 0.15, 0.05]);
+  });
+
+  it('TensorLike', () => {
+    const a = [0.5, 3, -0.1, -4];
+    const b = [0.2, 0.4, 0.25, 0.15];
+    const result = tf.mod(a, b);
+
+    expect(result.shape).toEqual([4]);
+    expectArraysClose(result, [0.1, 0.2, 0.15, 0.05]);
+  });
+
+  it('TensorLike chained', () => {
+    const a = tf.tensor1d([0.5, 3, -0.1, -4]);
+    const b = [0.2, 0.4, 0.25, 0.15];
+    const result = a.mod(b);
 
     expect(result.shape).toEqual(a.shape);
     expectArraysClose(result, [0.1, 0.2, 0.15, 0.05]);
@@ -553,11 +694,14 @@ describeWithFlags('mod', ALL_ENVS, () => {
     expectArraysEqual(result, [1, 2, 0, 3]);
   });
 
-  it('different dtypes throws error', () => {
-    const a = tf.tensor1d([1.1, 2.2, 3.3, 4.4], 'float32');
-    const b = tf.tensor1d([1, 2, 3, 4], 'int32');
-    // tslint:disable-next-line:no-any
-    expect(() => tf.mod(a, b as any)).toThrowError();
+  it('upcasts when dtypes dont match', () => {
+    let res = tf.mod(tf.scalar(5, 'int32'), tf.scalar(2, 'float32'));
+    expect(res.dtype).toBe('float32');
+    expectArraysClose(res, [1]);
+
+    res = tf.mod(tf.scalar(5, 'int32'), tf.scalar(true, 'bool'));
+    expect(res.dtype).toBe('int32');
+    expectArraysClose(res, [0]);
   });
 
   it('propagates NaN', () => {
@@ -720,6 +864,14 @@ describeWithFlags('mod', ALL_ENVS, () => {
     expect(result.shape).toEqual([2, 2]);
     expectArraysClose(result, [0.1, 0.2, 0.15, 0.05]);
   });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.mod('q', 3))
+        .toThrowError(/Argument 'a' passed to 'mod' must be numeric/);
+
+    expect(() => tf.mod(3, 'q'))
+        .toThrowError(/Argument 'b' passed to 'mod' must be numeric/);
+  });
 });
 
 describeWithFlags('atan2', ALL_ENVS, () => {
@@ -789,12 +941,22 @@ describeWithFlags('atan2', ALL_ENVS, () => {
     expect(() => tf.atan2(b, a)).toThrowError();
   });
 
-  it('throws when passed tensors of different types', () => {
-    const a = tf.tensor2d([1, 2, -3, -4, 5, 6], [2, 3]);
-    const b = tf.tensor2d([5.0, 3.0, 4.0, -7.0], [2, 2]);
+  it('upcasts when dtypes dont match', () => {
+    const aValues = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
+    const bValues = [1, 2, 3, 4, 2, 5];
 
-    expect(() => tf.atan2(a, b)).toThrowError();
-    expect(() => tf.atan2(b, a)).toThrowError();
+    const a = tf.tensor2d(aValues, [2, 3], 'float32');
+    const c = tf.tensor2d(bValues, [2, 3], 'int32');
+
+    const r = tf.atan2(a, c);
+    const expected = [];
+
+    for (let i = 0; i < a.size; i++) {
+      expected[i] = Math.atan2(aValues[i], bValues[i]);
+    }
+    expect(r.shape).toEqual([2, 3]);
+    expect(r.dtype).toBe('float32');
+    expectArraysClose(r, expected);
   });
 
   it('atan2 of scalar and array propagates NaNs', () => {
@@ -946,34 +1108,12 @@ describeWithFlags('atan2', ALL_ENVS, () => {
     }
     expectArraysClose(r, expected);
   });
-});
 
-describeWithFlags('div', ALL_ENVS, () => {
-  it('basic', () => {
-    const a = tf.tensor1d([0, 1, -2, -4, 4, -4]);
-    const b = tf.tensor1d([0.15, 0.2, 0.25, 0.5, 0.7, 1.2]);
-    const result = tf.div(a, b);
+  it('throws for string tensor', () => {
+    expect(() => tf.atan2('q', 3))
+        .toThrowError(/Argument 'a' passed to 'atan2' must be numeric/);
 
-    expect(result.shape).toEqual(a.shape);
-    expectArraysClose(
-        result, [0, 5.0, -8.0, -8.0, 5.714285850524902, -3.3333332538604736]);
-  });
-
-  it('floored internally', () => {
-    const a = tf.tensor1d([10, 20, -20, -40], 'int32');
-    const b = tf.tensor1d([10, 12, 8, 5], 'int32');
-    const result = tf.div(a, b);
-
-    expect(result.shape).toEqual(a.shape);
-    expectArraysClose(result, [1, 1, -3, -8]);
-  });
-
-  it('floorDiv', () => {
-    const a = tf.tensor1d([10, 20, -20, -40], 'int32');
-    const b = tf.tensor1d([10, 12, 8, 5], 'int32');
-    const result = tf.floorDiv(a, b);
-
-    expect(result.shape).toEqual(a.shape);
-    expectArraysClose(result, [1, 1, -3, -8]);
+    expect(() => tf.atan2(3, 'q'))
+        .toThrowError(/Argument 'b' passed to 'atan2' must be numeric/);
   });
 });

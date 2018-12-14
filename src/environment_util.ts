@@ -28,14 +28,22 @@ export interface Features {
   'WEBGL_LAZILY_UNPACK'?: boolean;
   // Whether the WebGL backend will sometimes forward ops to the CPU.
   'WEBGL_CPU_FORWARD'?: boolean;
+  // Whether to turn all packing related flags on.
+  'WEBGL_PACK'?: boolean;
   // Whether we will pack the batchnormalization op.
   'WEBGL_PACK_BATCHNORMALIZATION'?: boolean;
+  // Whether we will pack the clipping op.
+  'WEBGL_PACK_CLIP'?: boolean;
+  // Whether we pack the depthwise convolution op.
+  'WEBGL_PACK_DEPTHWISECONV'?: boolean;
   // Whether we will use the im2col algorithm to speed up convolutions.
   'WEBGL_CONV_IM2COL'?: boolean;
   // Whether we will perform memory paging.
   'WEBGL_PAGING_ENABLED'?: boolean;
   // The maximum texture dimension.
   'WEBGL_MAX_TEXTURE_SIZE'?: number;
+  // The maximum number of textures in a single shader program.
+  'WEBGL_MAX_TEXTURES_IN_SHADER'?: number;
   // The disjoint_query_timer extension version.
   // 0: disabled, 1: EXT_disjoint_timer_query, 2:
   // EXT_disjoint_timer_query_webgl2.
@@ -89,9 +97,13 @@ export const URL_PROPERTIES: URLProperty[] = [
   {name: 'IS_BROWSER', type: Type.BOOLEAN},
   {name: 'WEBGL_LAZILY_UNPACK', type: Type.BOOLEAN},
   {name: 'WEBGL_CPU_FORWARD', type: Type.BOOLEAN},
+  {name: 'WEBGL_PACK', type: Type.BOOLEAN},
   {name: 'WEBGL_PACK_BATCHNORMALIZATION', type: Type.BOOLEAN},
+  {name: 'WEBGL_PACK_CLIP', type: Type.BOOLEAN},
+  {name: 'WEBGL_PACK_DEPTHWISECONV', type: Type.BOOLEAN},
   {name: 'WEBGL_CONV_IM2COL', type: Type.BOOLEAN},
   {name: 'WEBGL_MAX_TEXTURE_SIZE', type: Type.NUMBER},
+  {name: 'WEBGL_MAX_TEXTURES_IN_SHADER', type: Type.NUMBER},
   {name: 'WEBGL_PAGING_ENABLED', type: Type.BOOLEAN},
   {name: 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION', type: Type.NUMBER},
   {name: 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE', type: Type.BOOLEAN},
@@ -123,16 +135,26 @@ export function isWebGLVersionEnabled(webGLVersion: 1|2) {
   return false;
 }
 
-let MAX_TEXTURE_SIZE: number;
-// Caching MAX_TEXTURE_SIZE here because the environment gets reset between
+// We cache webgl params because the environment gets reset between
 // unit tests and we don't want to constantly query the WebGLContext for
 // MAX_TEXTURE_SIZE.
+let MAX_TEXTURE_SIZE: number;
+let MAX_TEXTURES_IN_SHADER: number;
+
 export function getWebGLMaxTextureSize(webGLVersion: number): number {
   if (MAX_TEXTURE_SIZE == null) {
     const gl = getWebGLContext(webGLVersion);
     MAX_TEXTURE_SIZE = gl.getParameter(gl.MAX_TEXTURE_SIZE);
   }
   return MAX_TEXTURE_SIZE;
+}
+
+export function getMaxTexturesInShader(webGLVersion: number): number {
+  if (MAX_TEXTURES_IN_SHADER == null) {
+    const gl = getWebGLContext(webGLVersion);
+    MAX_TEXTURES_IN_SHADER = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS);
+  }
+  return MAX_TEXTURES_IN_SHADER;
 }
 
 export function getWebGLDisjointQueryTimerVersion(webGLVersion: number):
