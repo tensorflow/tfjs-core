@@ -2078,6 +2078,7 @@ export class MathBackendWebGL implements KernelBackend {
       this.releaseTexture(dataId, texture, texShape, usage, isPacked);
       texData.texture = null;
       texData.texShape = null;
+      texData.isPacked = false;
     }
     texData.usage = TextureUsage.UPLOAD;
     if (float32Values != null) {
