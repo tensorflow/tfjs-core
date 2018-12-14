@@ -158,6 +158,8 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
     
     const webglPackFlagSaved = tf.ENV.get('WEBGL_PACK');
     tf.ENV.set('WEBGL_PACK', true);
+    const webglSizeUploadUniformSaved = tf.ENV.get('WEBGL_SIZE_UPLOAD_UNIFORM');
+    tf.ENV.set('WEBGL_SIZE_UPLOAD_UNIFORM', 0);
     const a = tf.tensor2d([1, 2], [2, 1]);
     const b = tf.tensor2d([1], [1, 1]);  
     const c = tf.matMul(a, b);
@@ -165,6 +167,7 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
     tf.ENV.set('WEBGL_PACK', false);
     const d = tf.add(c, 1);
     tf.ENV.set('WEBGL_PACK', webglPackFlagSaved);
+    tf.ENV.set('WEBGL_SIZE_UPLOAD_UNIFORM', webglSizeUploadUniformSaved);
     expectArraysClose(d, [2, 3]);
   });
 
