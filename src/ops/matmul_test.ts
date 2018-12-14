@@ -140,7 +140,7 @@ describeWithFlags('packed matmul', WEBGL_ENVS, () => {
   it('works when followed by a packed reshape that changes texture layout, and then an unpacked op',
      () => {
        const webglLazilyUnpackSaved = tf.ENV.get('WEBGL_LAZILY_UNPACK');
-       tf.ENV.set('WEBGL_LAZILY_UNPACK', false);
+       tf.ENV.set('WEBGL_LAZILY_UNPACK', true);
   
        const a = tf.tensor2d([1, 2, 3, 4, 5, 6, 7, 8, 9], [9, 1]);
        const b = tf.tensor2d([1], [1, 1]);
