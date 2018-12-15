@@ -478,4 +478,8 @@ function getOrMakeEnvironment(): Environment {
   return ns.ENV;
 }
 
+export function enableProdMode(): void {
+  ENV.set('PROD', true);
+}
+
 export let ENV = getOrMakeEnvironment();

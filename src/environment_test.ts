@@ -147,6 +147,17 @@ describe('environment_util.getQueryParams', () => {
   });
 });
 
+describe('enableProdMode', () => {
+  afterEach(() => {
+    ENV.reset();
+  });
+
+  it('tf.enableProdMode', () => {
+    tf.enableProdMode();
+    expect(ENV.get('PROD')).toBe(true);
+  });
+});
+
 describeWithFlags('max texture size', WEBGL_ENVS, () => {
   it('should not throw exception', () => {
     expect(() => ENV.get('WEBGL_MAX_TEXTURE_SIZE')).not.toThrow();
