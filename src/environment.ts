@@ -268,8 +268,6 @@ export class Environment {
       return false;
     } else if (feature === 'IS_BROWSER') {
       return typeof window !== 'undefined';
-    } else if (feature === 'IS_WORKER') {
-      return typeof importScripts !== 'undefined';
     } else if (feature === 'IS_NODE') {
       return (typeof process !== 'undefined') &&
           (typeof process.versions.node !== 'undefined');
@@ -292,33 +290,28 @@ export class Environment {
         return 0;
       }
       return getWebGLDisjointQueryTimerVersion(
-          webGLVersion, this.get('IS_BROWSER'), this.get('IS_WORKER'));
+          webGLVersion, this.get('IS_BROWSER'));
     } else if (feature === 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE') {
       return this.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') > 0 &&
           !device_util.isMobile();
     } else if (feature === 'HAS_WEBGL') {
       return this.get('WEBGL_VERSION') > 0;
     } else if (feature === 'WEBGL_VERSION') {
-      if (isWebGLVersionEnabled(
-              2, this.get('IS_BROWSER'), this.get('IS_WORKER'))) {
+      if (isWebGLVersionEnabled(2, this.get('IS_BROWSER'))) {
         return 2;
-      } else if (isWebGLVersionEnabled(
-                     1, this.get('IS_BROWSER'), this.get('IS_WORKER'))) {
+      } else if (isWebGLVersionEnabled(1, this.get('IS_BROWSER'))) {
         return 1;
       }
       return 0;
     } else if (feature === 'WEBGL_RENDER_FLOAT32_ENABLED') {
       return isRenderToFloatTextureEnabled(
-          this.get('WEBGL_VERSION'), this.get('IS_BROWSER'),
-          this.get('IS_WORKER'));
+          this.get('WEBGL_VERSION'), this.get('IS_BROWSER'));
     } else if (feature === 'WEBGL_DOWNLOAD_FLOAT_ENABLED') {
       return isDownloadFloatTextureEnabled(
-          this.get('WEBGL_VERSION'), this.get('IS_BROWSER'),
-          this.get('IS_WORKER'));
+          this.get('WEBGL_VERSION'), this.get('IS_BROWSER'));
     } else if (feature === 'WEBGL_FENCE_API_ENABLED') {
       return isWebGLFenceEnabled(
-          this.get('WEBGL_VERSION'), this.get('IS_BROWSER'),
-          this.get('IS_WORKER'));
+          this.get('WEBGL_VERSION'), this.get('IS_BROWSER'));
     } else if (feature === 'TEST_EPSILON') {
       if (this.get('WEBGL_RENDER_FLOAT32_ENABLED')) {
         return TEST_EPSILON_FLOAT32_ENABLED;

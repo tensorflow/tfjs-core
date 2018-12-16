@@ -412,17 +412,19 @@ export class MathBackendWebGL implements KernelBackend {
     if (ENV.get('WEBGL_VERSION') < 1) {
       throw new Error('WebGL is not supported on this device');
     }
-    if (ENV.get('IS_WORKER')) {
-      this.canvas = new OffscreenCanvas(1, 1);
-      this.NUM_BYTES_BEFORE_PAGING = (1280 * 720 * 1) * BEFORE_PAGING_CONSTANT;
-    } else if (ENV.get('IS_BROWSER')) {
-      this.canvas = document.createElement('canvas');
-      // Use the device screen's resolution as a heuristic to decide on the
-      // maximum memory allocated on the GPU before starting to page.
-      this.NUM_BYTES_BEFORE_PAGING =
-          (window.screen.height * window.screen.width *
-           window.devicePixelRatio) *
-          BEFORE_PAGING_CONSTANT;
+    if (ENV.get('IS_BROWSER')) {
+      if (window && ('OffscreenCanvas' in window)) {
+        this.canvas = new OffscreenCanvas(1, 1);
+        this.NUM_BYTES_BEFORE_PAGING = Infinity;
+      } else {
+        this.canvas = document.createElement('canvas');
+        // Use the device screen's resolution as a heuristic to decide on the
+        // maximum memory allocated on the GPU before starting to page.
+        this.NUM_BYTES_BEFORE_PAGING =
+            (window.screen.height * window.screen.width *
+             window.devicePixelRatio) *
+            BEFORE_PAGING_CONSTANT;
+      }
     }
     if (gpgpu == null) {
       this.gpgpu = new GPGPUContext(gpgpu_util.createWebGLContext(this.canvas));
@@ -1434,7 +1436,7 @@ export class MathBackendWebGL implements KernelBackend {
   }
 }
 
-if (ENV.get('IS_BROWSER') || ENV.get('IS_WORKER')) {
+if (ENV.get('IS_BROWSER')) {
   ENV.registerBackend(
       'webgl', () => new MathBackendWebGL(), 2 /* priority */,
       setTensorTracker);

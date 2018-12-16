@@ -20,8 +20,6 @@ export interface Features {
   'DEBUG'?: boolean;
   // Whether we are in a browser (as versus, say, node.js) environment.
   'IS_BROWSER'?: boolean;
-  // Whether we are in a web worker environment
-  'IS_WORKER'?: boolean;
   // Whether we are in the Node.js environment.
   'IS_NODE'?: boolean;
   // The disjoint_query_timer extension version.
@@ -63,7 +61,6 @@ export enum Type {
 
 export const URL_PROPERTIES: URLProperty[] = [
   {name: 'DEBUG', type: Type.BOOLEAN}, {name: 'IS_BROWSER', type: Type.BOOLEAN},
-  {name: 'IS_WORKER', type: Type.BOOLEAN},
   {name: 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION', type: Type.NUMBER},
   {name: 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE', type: Type.BOOLEAN},
   {name: 'WEBGL_VERSION', type: Type.NUMBER},
@@ -78,11 +75,10 @@ export interface URLProperty {
   type: Type;
 }
 
-export function isWebGLVersionEnabled(
-    webGLVersion: 1|2, isBrowser: boolean, isWorker: boolean) {
+export function isWebGLVersionEnabled(webGLVersion: 1|2, isBrowser: boolean) {
   let gl;
   try {
-    gl = getWebGLRenderingContext(webGLVersion, isBrowser, isWorker);
+    gl = getWebGLRenderingContext(webGLVersion, isBrowser);
   } catch (e) {
     return false;
   }
@@ -95,13 +91,13 @@ export function isWebGLVersionEnabled(
 }
 
 export function getWebGLDisjointQueryTimerVersion(
-    webGLVersion: number, isBrowser: boolean, isWorker: boolean): number {
+    webGLVersion: number, isBrowser: boolean): number {
   if (webGLVersion === 0) {
     return 0;
   }
 
   let queryTimerVersion: number;
-  const gl = getWebGLRenderingContext(webGLVersion, isBrowser, isWorker);
+  const gl = getWebGLRenderingContext(webGLVersion, isBrowser);
 
   if (hasExtension(gl, 'EXT_disjoint_timer_query_webgl2') &&
       webGLVersion === 2) {
@@ -119,12 +115,12 @@ export function getWebGLDisjointQueryTimerVersion(
 }
 
 export function isRenderToFloatTextureEnabled(
-    webGLVersion: number, isBrowser: boolean, isWorker: boolean): boolean {
+    webGLVersion: number, isBrowser: boolean): boolean {
   if (webGLVersion === 0) {
     return false;
   }
 
-  const gl = getWebGLRenderingContext(webGLVersion, isBrowser, isWorker);
+  const gl = getWebGLRenderingContext(webGLVersion, isBrowser);
 
   if (webGLVersion === 1) {
     if (!hasExtension(gl, 'OES_texture_float')) {
@@ -146,12 +142,12 @@ export function isRenderToFloatTextureEnabled(
 }
 
 export function isDownloadFloatTextureEnabled(
-    webGLVersion: number, isBrowser: boolean, isWorker: boolean): boolean {
+    webGLVersion: number, isBrowser: boolean): boolean {
   if (webGLVersion === 0) {
     return false;
   }
 
-  const gl = getWebGLRenderingContext(webGLVersion, isBrowser, isWorker);
+  const gl = getWebGLRenderingContext(webGLVersion, isBrowser);
 
   if (webGLVersion === 1) {
     if (!hasExtension(gl, 'OES_texture_float')) {
@@ -173,12 +169,11 @@ export function isDownloadFloatTextureEnabled(
   return readPixelsNoError;
 }
 
-export function isWebGLFenceEnabled(
-    webGLVersion: number, isBrowser: boolean, isWorker: boolean) {
+export function isWebGLFenceEnabled(webGLVersion: number, isBrowser: boolean) {
   if (webGLVersion !== 2) {
     return false;
   }
-  const gl = getWebGLRenderingContext(webGLVersion, isBrowser, isWorker);
+  const gl = getWebGLRenderingContext(webGLVersion, isBrowser);
 
   // tslint:disable-next-line:no-any
   const isEnabled = (gl as any).fenceSync != null;
@@ -239,18 +234,14 @@ function hasExtension(gl: WebGLRenderingContext, extensionName: string) {
 }
 
 function getWebGLRenderingContext(
-    webGLVersion: number, isBrowser: boolean,
-    isWorker: boolean): WebGLRenderingContext {
-  if (webGLVersion === 0 || !(isBrowser || isWorker)) {
+    webGLVersion: number, isBrowser: boolean): WebGLRenderingContext {
+  if (webGLVersion === 0 || !isBrowser) {
     throw new Error('Cannot get WebGL rendering context, WebGL is disabled.');
   }
 
-  let tempCanvas;
-  if (isBrowser) {
-    tempCanvas = document.createElement('canvas');
-  } else {
-    tempCanvas = new OffscreenCanvas(1, 1);
-  }
+  const tempCanvas = (window && ('OffscreenCanvas' in window)) ?
+      new OffscreenCanvas(1, 1) :
+      document.createElement('canvas');
 
   if (webGLVersion === 1) {
     return (tempCanvas.getContext('webgl') ||
