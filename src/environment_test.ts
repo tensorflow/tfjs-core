@@ -147,7 +147,11 @@ describe('environment_util.getQueryParams', () => {
   });
 });
 
-describe('enableProdMode', () => {
+describe('public api tf.*', () => {
+  beforeEach(() => {
+    ENV.reset();
+  });
+
   afterEach(() => {
     ENV.reset();
   });
