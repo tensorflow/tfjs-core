@@ -14,15 +14,11 @@
  * limitations under the License.
  * =============================================================================
  */
-import {ENV} from '../environment';
 
-const DEFAULT_FLOAT32_EPSILON = 1e-8;
-const DEFAULT_FLOAT16_EPSILON = 1e-4;
+/**
+ * Exports under the tf.math.* namespace.
+ */
 
-export function getOptimizerDefaultEpsilonValue() {
-  if (ENV.get('WEBGL_RENDER_FLOAT32_ENABLED')) {
-    return DEFAULT_FLOAT32_EPSILON;
-  }
+import {confusionMatrix} from './ops/confusion_matrix';
 
-  return DEFAULT_FLOAT16_EPSILON;
-}
+export {confusionMatrix};

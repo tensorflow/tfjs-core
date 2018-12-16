@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {ArrayData, DataType, DataTypeMap, FlatVector, RecursiveArray, RegularArray, TensorLike, TypedArray} from './types';
+import {DataType, DataTypeMap, FlatVector, NumericDataType, RecursiveArray, TensorLike, TypedArray} from './types';
 
 /** Shuffles the array using Fisher-Yates algorithm. */
 // tslint:disable-next-line:no-any
@@ -42,12 +42,31 @@ export function clamp(min: number, x: number, max: number): number {
   return Math.max(min, Math.min(x, max));
 }
 
-/** Returns a sample from a uniform [a, b] distribution. */
-export function randUniform(a: number, b: number) {
-  return Math.random() * (b - a) + a;
+export function nearestLargerEven(val: number): number {
+  return val % 2 === 0 ? val : val + 1;
 }
 
-/** Returns squared eucledian distance between two vectors. */
+export function sum(arr: number[]): number {
+  let sum = 0;
+  for (let i = 0; i < arr.length; i++) {
+    sum += arr[i];
+  }
+  return sum;
+}
+
+/**
+ * Returns a sample from a uniform [a, b) distribution.
+ *
+ * @param a The minimum support (inclusive).
+ * @param b The maximum support (exclusive).
+ * @return A pseudorandom number on the half-open interval [a,b).
+ */
+export function randUniform(a: number, b: number) {
+  const r = Math.random();
+  return (b * r) + (1 - r) * a;
+}
+
+/** Returns the squared Euclidean distance between two vectors. */
 export function distSquared(a: FlatVector, b: FlatVector): number {
   let result = 0;
   for (let i = 0; i < a.length; i++) {
@@ -79,9 +98,10 @@ export function assertNonNull(a: TensorLike): void {
 // NOTE: We explicitly type out what T extends instead of any so that
 // util.flatten on a nested array of number doesn't try to infer T as a
 // number[][], causing us to explicitly type util.flatten<number>().
-export function flatten<T extends number|boolean|Promise<number>>(
+export function
+flatten<T extends number|boolean|string|Promise<number>|TypedArray>(
     arr: T|RecursiveArray<T>, ret: T[] = []): T[] {
-  if (Array.isArray(arr)) {
+  if (Array.isArray(arr) || isTypedArray(arr)) {
     for (let i = 0; i < arr.length; ++i) {
       flatten(arr[i], ret);
     }
@@ -89,53 +109,6 @@ export function flatten<T extends number|boolean|Promise<number>>(
     ret.push(arr as T);
   }
   return ret;
-}
-
-export function inferShape(val: TypedArray|number|boolean|RegularArray<number>|
-                           RegularArray<boolean>): number[] {
-  let firstElem: typeof val = val;
-
-  if (isTypedArray(val)) {
-    return [(val as TypedArray).length];
-  }
-  if (!Array.isArray(val)) {
-    return [];  // Scalar.
-  }
-  const shape: number[] = [];
-
-  while (firstElem instanceof Array) {
-    shape.push(firstElem.length);
-    firstElem = firstElem[0];
-  }
-  if (val instanceof Array) {
-    deepAssertShapeConsistency(val, shape, []);
-  }
-  return shape;
-}
-
-function deepAssertShapeConsistency(
-    val: number|boolean|RegularArray<number>|RegularArray<boolean>,
-    shape: number[], indices?: number[]) {
-  indices = indices || [];
-  if (!(val instanceof Array)) {
-    assert(
-        shape.length === 0,
-        () => `Element arr[${indices.join('][')}] is a primitive, ` +
-            `but should be an array of ${shape[0]} elements`);
-    return;
-  }
-  assert(
-      shape.length > 0,
-      () => `Element arr[${indices.join('][')}] should be a primitive, ` +
-          `but is an array of ${val.length} elements`);
-  assert(
-      val.length === shape[0],
-      () => `Element arr[${indices.join('][')}] should have ${shape[0]} ` +
-          `elements, but has ${val.length} elements`);
-  const subShape = shape.slice(1);
-  for (let i = 0; i < val.length; ++i) {
-    deepAssertShapeConsistency(val[i], subShape, indices.concat(i));
-  }
 }
 
 export function sizeFromShape(shape: number[]): number {
@@ -155,6 +128,13 @@ export function isScalarShape(shape: number[]): boolean {
 }
 
 export function arraysEqual(n1: FlatVector, n2: FlatVector) {
+  if (n1 === n2) {
+    return true;
+  }
+  if (n1 == null || n2 == null) {
+    return false;
+  }
+
   if (n1.length !== n2.length) {
     return false;
   }
@@ -295,6 +275,19 @@ export function squeezeShape(shape: number[], axis?: number[]):
     {newShape: number[], keptDims: number[]} {
   const newShape: number[] = [];
   const keptDims: number[] = [];
+  if (axis != null) {
+    for (let i = 0; i < axis.length; ++i) {
+      if (axis[i] < -shape.length || axis[i] >= shape.length) {
+        throw new Error(
+          `Can't squeeze axis ${axis[i]} since its not in ` +
+          `[-${shape.length}, ${shape.length}) for shape ${shape}`);
+      } 
+      if (axis[i] < 0) {
+        axis[i] = shape.length + axis[i];
+      }
+    }
+    axis.sort();
+  }
   let j = 0;
   for (let i = 0; i < shape.length; ++i) {
     if (axis != null) {
@@ -318,7 +311,7 @@ export function squeezeShape(shape: number[], axis?: number[]):
   return {newShape, keptDims};
 }
 
-export function getTypedArrayFromDType<D extends DataType>(
+export function getTypedArrayFromDType<D extends NumericDataType>(
     dtype: D, size: number): DataTypeMap[D] {
   let values = null;
   if (dtype == null || dtype === 'float32') {
@@ -333,6 +326,23 @@ export function getTypedArrayFromDType<D extends DataType>(
   return values;
 }
 
+export function getArrayFromDType<D extends DataType>(
+    dtype: D, size: number): DataTypeMap[D] {
+  let values = null;
+  if (dtype == null || dtype === 'float32') {
+    values = new Float32Array(size);
+  } else if (dtype === 'int32') {
+    values = new Int32Array(size);
+  } else if (dtype === 'bool') {
+    values = new Uint8Array(size);
+  } else if (dtype === 'string') {
+    values = new Array<'string'>(size);
+  } else {
+    throw new Error(`Unknown data type ${dtype}`);
+  }
+  return values;
+}
+
 export function checkComputationForNaN<D extends DataType>(
     vals: DataTypeMap[D], dtype: D, name: string): void {
   if (dtype !== 'float32') {
@@ -340,7 +350,7 @@ export function checkComputationForNaN<D extends DataType>(
     return;
   }
   for (let i = 0; i < vals.length; i++) {
-    if (isNaN(vals[i])) {
+    if (isNaN(vals[i] as number)) {
       throw Error(`The result of the '${name}' has NaNs.`);
     }
   }
@@ -354,7 +364,7 @@ export function checkConversionForNaN<D extends DataType>(
   }
 
   for (let i = 0; i < vals.length; i++) {
-    if (isNaN(vals[i])) {
+    if (isNaN(vals[i] as number)) {
       throw Error(`NaN is not a valid value for dtype: '${dtype}'.`);
     }
   }
@@ -365,10 +375,13 @@ export function checkConversionForNaN<D extends DataType>(
  * precision.
  */
 export function hasEncodingLoss(oldType: DataType, newType: DataType): boolean {
-  if (newType === 'float32') {
+  if (newType === 'complex64') {
     return false;
   }
-  if (newType === 'int32' && oldType !== 'float32') {
+  if (newType === 'float32' && oldType !== 'complex64') {
+    return false;
+  }
+  if (newType === 'int32' && oldType !== 'float32' && oldType !== 'complex64') {
     return false;
   }
   if (newType === 'bool' && oldType === 'bool') {
@@ -377,31 +390,7 @@ export function hasEncodingLoss(oldType: DataType, newType: DataType): boolean {
   return true;
 }
 
-function copyTypedArray<D extends DataType>(
-    array: DataTypeMap[D]|number[]|boolean[], dtype: D,
-    debugMode: boolean): DataTypeMap[D] {
-  if (dtype == null || dtype === 'float32') {
-    return new Float32Array(array as number[]);
-  } else if (dtype === 'int32') {
-    if (debugMode) {
-      checkConversionForNaN(array as number[], dtype);
-    }
-    return new Int32Array(array as number[]);
-  } else if (dtype === 'bool') {
-    const bool = new Uint8Array(array.length);
-    for (let i = 0; i < bool.length; ++i) {
-      if (Math.round(array[i] as number) !== 0) {
-        bool[i] = 1;
-      }
-    }
-    return bool;
-  } else {
-    throw new Error(`Unknown data type ${dtype}`);
-  }
-}
-
-export function isTypedArray(a: TypedArray|number|boolean|RegularArray<number>|
-                             RegularArray<boolean>): boolean {
+export function isTypedArray(a: {}): a is Float32Array|Int32Array|Uint8Array {
   return a instanceof Float32Array || a instanceof Int32Array ||
       a instanceof Uint8Array;
 }
@@ -409,11 +398,59 @@ export function isTypedArray(a: TypedArray|number|boolean|RegularArray<number>|
 export function bytesPerElement(dtype: DataType): number {
   if (dtype === 'float32' || dtype === 'int32') {
     return 4;
+  } else if (dtype === 'complex64') {
+    return 8;
   } else if (dtype === 'bool') {
     return 1;
   } else {
     throw new Error(`Unknown dtype ${dtype}`);
   }
+}
+
+/**
+ * Returns the approximate number of bytes allocated in the string array - 2
+ * bytes per character. Computing the exact bytes for a native string in JS is
+ * not possible since it depends on the encoding of the html page that serves
+ * the website.
+ */
+export function bytesFromStringArray(arr: string[]): number {
+  if (arr == null) {
+    return 0;
+  }
+  let bytes = 0;
+  arr.forEach(x => bytes += x.length * 2);
+  return bytes;
+}
+
+/** Returns true if the value is a string. */
+export function isString(value: {}): value is string {
+  return typeof value === 'string' || value instanceof String;
+}
+
+export function isBoolean(value: {}): boolean {
+  return typeof value === 'boolean';
+}
+
+export function isNumber(value: {}): boolean {
+  return typeof value === 'number';
+}
+
+export function inferDtype(values: TensorLike): DataType {
+  if (values instanceof Array) {
+    return inferDtype(values[0]);
+  }
+  if (values instanceof Float32Array) {
+    return 'float32';
+  } else if (values instanceof Int32Array || values instanceof Uint8Array) {
+    return 'int32';
+  } else if (isNumber(values)) {
+    return 'float32';
+  } else if (isString(values)) {
+    return 'string';
+  } else if (isBoolean(values)) {
+    return 'bool';
+  }
+  return 'float32';
 }
 
 export function isFunction(f: Function) {
@@ -445,19 +482,38 @@ export function computeStrides(shape: number[]): number[] {
   return strides;
 }
 
-export function toTypedArray<D extends DataType>(
-    a: ArrayData<D>, dtype: D, debugMode: boolean): DataTypeMap[D] {
+export function toTypedArray(
+    a: TensorLike, dtype: DataType, debugMode: boolean): TypedArray {
+  if (dtype === 'string') {
+    throw new Error('Cannot convert a string[] to a TypedArray');
+  }
   if (noConversionNeeded(a, dtype)) {
-    return a as DataTypeMap[D];
+    return a as TypedArray;
   }
   if (Array.isArray(a)) {
     a = flatten(a as number[]);
   }
-  return copyTypedArray(a, dtype, debugMode);
+  if (dtype == null || dtype === 'float32' || dtype === 'complex64') {
+    return new Float32Array(a as number[]);
+  } else if (dtype === 'int32') {
+    if (debugMode) {
+      checkConversionForNaN(a as number[], dtype);
+    }
+    return new Int32Array(a as number[]);
+  } else if (dtype === 'bool') {
+    const bool = new Uint8Array((a as number[]).length);
+    for (let i = 0; i < bool.length; ++i) {
+      if (Math.round((a as number[])[i] as number) !== 0) {
+        bool[i] = 1;
+      }
+    }
+    return bool;
+  } else {
+    throw new Error(`Unknown data type ${dtype}`);
+  }
 }
 
-function noConversionNeeded<D extends DataType>(
-    a: ArrayData<D>, dtype: D): boolean {
+function noConversionNeeded(a: TensorLike, dtype: DataType): boolean {
   return (a instanceof Float32Array && dtype === 'float32') ||
       (a instanceof Int32Array && dtype === 'int32') ||
       (a instanceof Uint8Array && dtype === 'bool');
@@ -474,7 +530,7 @@ export function makeOnesTypedArray<D extends DataType>(
 
 export function makeZerosTypedArray<D extends DataType>(
     size: number, dtype: D): DataTypeMap[D] {
-  if (dtype == null || dtype === 'float32') {
+  if (dtype == null || dtype === 'float32' || dtype === 'complex64') {
     return new Float32Array(size);
   } else if (dtype === 'int32') {
     return new Int32Array(size);
@@ -497,7 +553,7 @@ export function now(): number {
     return time[0] * 1000 + time[1] / 1000000;
   } else {
     throw new Error(
-        'Can not measure time in this environment. You should run tf.js ' +
+        'Cannot measure time in this environment. You should run tf.js ' +
         'in the browser or in Node.js');
   }
 }

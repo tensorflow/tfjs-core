@@ -18,14 +18,14 @@
 import {ENV} from '../environment';
 import {keep, tidy} from '../globals';
 import {scalar, zerosLike} from '../ops/ops';
-import {ConfigDict, Serializable, SerializableConstructor, SerializationMap} from '../serialization';
+import {ConfigDict, registerClass, Serializable, SerializableConstructor} from '../serialization';
 import {Scalar} from '../tensor';
 import {NamedVariableMap} from '../tensor_types';
 import {Optimizer} from './optimizer';
-import * as optimizer_utils from './optimizer_utils';
 
 /** @doclink Optimizer */
 export class RMSPropOptimizer extends Optimizer {
+  /** @nocollapse */
   static className = 'RMSPropOptimizer';
   private c: Scalar;
   private epsilonScalar: Scalar;
@@ -51,7 +51,7 @@ export class RMSPropOptimizer extends Optimizer {
     this.centered = centered;
 
     if (epsilon === null) {
-      epsilon = optimizer_utils.getOptimizerDefaultEpsilonValue();
+      epsilon = ENV.get('EPSILON');
     }
 
     this.epsilonScalar = keep(scalar(epsilon));
@@ -172,4 +172,4 @@ export class RMSPropOptimizer extends Optimizer {
         config.centered);
   }
 }
-SerializationMap.register(RMSPropOptimizer);
+registerClass(RMSPropOptimizer);

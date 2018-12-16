@@ -17,7 +17,10 @@
 
 import * as tf from './index';
 import {describeWithFlags} from './jasmine_util';
-import {ALL_ENVS, expectArraysClose, expectArraysEqual, expectNumbersClose, WEBGL_ENVS} from './test_util';
+import {MathBackendCPU} from './kernels/backend_cpu';
+import {MathBackendWebGL} from './kernels/backend_webgl';
+import {Tensor} from './tensor';
+import {ALL_ENVS, CPU_ENVS, expectArraysClose, expectArraysEqual, expectNumbersClose, WEBGL_ENVS} from './test_util';
 
 describeWithFlags('fromPixels + regular math op', WEBGL_ENVS, () => {
   it('debug mode does not error when no nans', () => {
@@ -358,6 +361,138 @@ describeWithFlags('memory', ALL_ENVS, () => {
     expect(sum.dtype).toBe('int32');
     expectArraysClose(sum, [1 + 1 + 0 + 1]);
   });
+
+  it('string tensor', () => {
+    const a = tf.tensor([['a', 'bb'], ['c', 'd']]);
+
+    expect(tf.memory().numTensors).toBe(1);
+    expect(tf.memory().numBytes).toBe(10);  // 5 letters, each 2 bytes.
+
+    a.dispose();
+
+    expect(tf.memory().numTensors).toBe(0);
+    expect(tf.memory().numBytes).toBe(0);
+  });
+
+  it('unreliable is true for string tensors', () => {
+    tf.tensor('a');
+    const mem = tf.memory();
+    expect(mem.unreliable).toBe(true);
+    const expectedReason = 'Memory usage by string tensors is approximate ' +
+        '(2 bytes per character)';
+    expect(mem.reasons.indexOf(expectedReason) >= 0).toBe(true);
+  });
+});
+
+describeWithFlags('memory webgl', WEBGL_ENVS, () => {
+  it('unreliable is falsy/not present when all tensors are numeric', () => {
+    tf.tensor(1);
+    const mem = tf.memory();
+    expect(mem.numTensors).toBe(1);
+    expect(mem.numDataBuffers).toBe(1);
+    expect(mem.numBytes).toBe(4);
+    expect(mem.unreliable).toBeFalsy();
+  });
+});
+
+describeWithFlags('memory cpu', CPU_ENVS, () => {
+  it('unreliable is true due to auto gc', () => {
+    tf.tensor(1);
+    const mem = tf.memory();
+    expect(mem.numTensors).toBe(1);
+    expect(mem.numDataBuffers).toBe(1);
+    expect(mem.numBytes).toBe(4);
+    expect(mem.unreliable).toBe(true);
+
+    const expectedReason =
+        'The reported memory is an upper bound. Due to automatic garbage ' +
+        'collection, the true allocated memory may be less.';
+    expect(mem.reasons.indexOf(expectedReason) >= 0).toBe(true);
+  });
+
+  it('unreliable is true due to both auto gc and string tensors', () => {
+    tf.tensor(1);
+    tf.tensor('a');
+
+    const mem = tf.memory();
+    expect(mem.numTensors).toBe(2);
+    expect(mem.numDataBuffers).toBe(2);
+    expect(mem.numBytes).toBe(6);
+    expect(mem.unreliable).toBe(true);
+
+    const expectedReasonGC =
+        'The reported memory is an upper bound. Due to automatic garbage ' +
+        'collection, the true allocated memory may be less.';
+    expect(mem.reasons.indexOf(expectedReasonGC) >= 0).toBe(true);
+    const expectedReasonString =
+        'Memory usage by string tensors is approximate ' +
+        '(2 bytes per character)';
+    expect(mem.reasons.indexOf(expectedReasonString) >= 0).toBe(true);
+  });
+});
+
+describeWithFlags('profile', ALL_ENVS, () => {
+  it('squaring', async () => {
+    const profile = await tf.profile(() => {
+      const x = tf.tensor1d([1, 2, 3]);
+      let x2 = x.square();
+      x2.dispose();
+      x2 = x.square();
+      x2.dispose();
+      return x;
+    });
+
+    const result = profile.result as Tensor;
+
+    expect(profile.newBytes).toBe(12);
+    expect(profile.peakBytes).toBe(24);
+    expect(profile.newTensors).toBe(1);
+    expectArraysClose(result, [1, 2, 3]);
+    expect(profile.kernels).toEqual([
+      {
+        'name': 'square',
+        'bytesAdded': 12,
+        'totalBytesSnapshot': 24,
+        'tensorsAdded': 1,
+        'totalTensorsSnapshot': 2,
+        'inputShapes': [[3]],
+        'outputShape': [3]
+      },
+      {
+        'name': 'square',
+        'bytesAdded': 12,
+        'totalBytesSnapshot': 24,
+        'tensorsAdded': 1,
+        'totalTensorsSnapshot': 2,
+        'inputShapes': [[3]],
+        'outputShape': [3]
+      }
+    ]);
+  });
+
+  it('squaring without disposing', async () => {
+    const profile = await tf.profile(() => {
+      const x = tf.tensor1d([1, 2, 3]);
+      const x2 = x.square();
+      return x2;
+    });
+
+    const result = profile.result as Tensor;
+
+    expect(profile.newBytes).toBe(24);
+    expect(profile.peakBytes).toBe(24);
+    expect(profile.newTensors).toBe(2);
+    expectArraysClose(result, [1, 4, 9]);
+    expect(profile.kernels).toEqual([{
+      'name': 'square',
+      'bytesAdded': 12,
+      'totalBytesSnapshot': 24,
+      'tensorsAdded': 1,
+      'totalTensorsSnapshot': 2,
+      'inputShapes': [[3]],
+      'outputShape': [3]
+    }]);
+  });
 });
 
 describeWithFlags('disposeVariables', ALL_ENVS, () => {
@@ -370,5 +505,163 @@ describeWithFlags('disposeVariables', ALL_ENVS, () => {
     tf.disposeVariables();
     tf.tensor1d([1, 2, 3]).variable(true, 'v1');
     tf.tensor1d([1, 2, 3]).variable(true, 'v2');
+  });
+});
+
+describe('Switching cpu backends', () => {
+  beforeEach(() => {
+    tf.ENV.registerBackend('cpu1', () => new MathBackendCPU());
+    tf.ENV.registerBackend('cpu2', () => new MathBackendCPU());
+  });
+
+  afterEach(() => {
+    tf.ENV.removeBackend('cpu1');
+    tf.ENV.removeBackend('cpu2');
+  });
+
+  it('Move data from cpu1 to cpu2 backend', () => {
+    tf.setBackend('cpu1');
+    // This scalar lives in cpu1.
+    const a = tf.scalar(5);
+
+    tf.setBackend('cpu2');
+    // This scalar lives in cpu2.
+    const b = tf.scalar(3);
+
+    expect(tf.memory().numDataBuffers).toBe(2);
+    expect(tf.memory().numTensors).toBe(2);
+    expect(tf.memory().numBytes).toBe(8);
+
+    // Make sure you can read both tensors.
+    expectArraysClose(a, [5]);
+    expectArraysClose(b, [3]);
+
+    // Switch back to cpu1.
+    tf.setBackend('cpu1');
+    // Again make sure you can read both tensors.
+    expectArraysClose(a, [5]);
+    expectArraysClose(b, [3]);
+
+    tf.dispose([a, b]);
+
+    expect(tf.memory().numDataBuffers).toBe(0);
+    expect(tf.memory().numTensors).toBe(0);
+    expect(tf.memory().numBytes).toBe(0);
+  });
+
+  it('can execute op with data from mixed backends', () => {
+    tf.setBackend('cpu1');
+    // This scalar lives in cpu1.
+    const a = tf.scalar(5);
+
+    tf.setBackend('cpu2');
+    // This scalar lives in cpu2.
+    const b = tf.scalar(3);
+
+    // Verify that ops can execute with mixed backend data.
+    tf.tidy(() => {
+      tf.setBackend('cpu1');
+      expectArraysClose(tf.add(a, b), [8]);
+
+      tf.setBackend('cpu2');
+      expectArraysClose(tf.add(a, b), [8]);
+    });
+    expect(tf.memory().numTensors).toBe(2);
+    expect(tf.memory().numDataBuffers).toBe(2);
+
+    tf.dispose([a, b]);
+
+    expect(tf.memory().numTensors).toBe(0);
+    expect(tf.memory().numDataBuffers).toBe(0);
+  });
+});
+
+describeWithFlags('Switching WebGL + CPU backends', WEBGL_ENVS, () => {
+  beforeEach(() => {
+    tf.ENV.registerBackend('webgl1', () => new MathBackendWebGL());
+    tf.ENV.registerBackend('webgl2', () => new MathBackendWebGL());
+    tf.ENV.registerBackend('cpu1', () => new MathBackendCPU());
+  });
+
+  afterEach(() => {
+    tf.ENV.removeBackend('webgl1');
+    tf.ENV.removeBackend('webgl2');
+    tf.ENV.removeBackend('cpu1');
+  });
+
+  it('can execute op with data from mixed backends', () => {
+    tf.setBackend('webgl1');
+    const a = tf.scalar(5);
+
+    tf.setBackend('webgl2');
+    const b = tf.scalar(3);
+
+    tf.setBackend('cpu1');
+    const c = tf.scalar(2);
+
+    // Verify that ops can execute with mixed backend data.
+    tf.tidy(() => {
+      tf.setBackend('webgl1');
+      expectArraysClose(tf.addN([a, b, c]), [10]);
+
+      tf.setBackend('webgl2');
+      expectArraysClose(tf.addN([a, b, c]), [10]);
+
+      tf.setBackend('cpu1');
+      expectArraysClose(tf.addN([a, b, c]), [10]);
+    });
+
+    expect(tf.memory().numTensors).toBe(3);
+    expect(tf.memory().numDataBuffers).toBe(3);
+
+    tf.dispose([a, b, c]);
+
+    expect(tf.memory().numTensors).toBe(0);
+    expect(tf.memory().numDataBuffers).toBe(0);
+  });
+
+  it('fromPixels with mixed backends works', () => {
+    tf.setBackend('webgl1');
+    const a =
+        tf.fromPixels(new ImageData(new Uint8ClampedArray([1, 2, 3, 4]), 1, 1));
+
+    tf.setBackend('webgl2');
+    const b =
+        tf.fromPixels(new ImageData(new Uint8ClampedArray([5, 6, 7, 8]), 1, 1));
+
+    expectArraysClose(tf.add(a, b), [6, 8, 10]);
+  });
+
+  it('single tidy multiple backends', () => {
+    expect(tf.memory().numTensors).toBe(0);
+
+    tf.tidy(() => {
+      tf.setBackend('webgl1');
+      const a = tf.scalar(1);
+      a.square();  // Uploads to GPU.
+
+      tf.setBackend('webgl2');
+      const b = tf.scalar(1);
+      b.square();  // Uploads to GPU.
+
+      expect(tf.memory().numTensors).toBe(4);
+    });
+    expect(tf.memory().numTensors).toBe(0);
+  });
+});
+
+// NOTE: This describe is purposefully not a describeWithFlags so that we test
+// tensor allocation where no scopes have been created. The backend here must be
+// set to CPU because we cannot allocate GPU tensors outside a
+// describeWithFlags because the default webgl backend and the test backends
+// share a WebGLContext. When backends get registered, global WebGL state is
+// initialized, which causes the two backends to step on each other and get in a
+// bad state.
+describe('Memory allocation outside a test scope', () => {
+  it('constructing a tensor works', () => {
+    tf.setBackend('cpu');
+    const a = tf.tensor1d([1, 2, 3]);
+    expectArraysClose(a, [1, 2, 3]);
+    a.dispose();
   });
 });

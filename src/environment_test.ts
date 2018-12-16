@@ -16,85 +16,17 @@
  */
 
 import * as device_util from './device_util';
-import {ENV, Environment} from './environment';
+import {ENV, Environment, EPSILON_FLOAT16, EPSILON_FLOAT32} from './environment';
 import {Features, getQueryParams} from './environment_util';
+import * as tf from './index';
 import {describeWithFlags} from './jasmine_util';
 import {KernelBackend} from './kernels/backend';
 import {MathBackendCPU} from './kernels/backend_cpu';
 import {MathBackendWebGL} from './kernels/backend_webgl';
-import {WEBGL_ENVS} from './test_util';
-
-describeWithFlags('disjoint query timer enabled', WEBGL_ENVS, () => {
-  afterEach(() => {
-    ENV.reset();
-  });
-
-  it('no webgl', () => {
-    ENV.setFeatures({'WEBGL_VERSION': 0});
-    expect(ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION')).toBe(0);
-  });
-
-  it('webgl 1', () => {
-    const features: Features = {'WEBGL_VERSION': 1};
-
-    spyOn(document, 'createElement').and.returnValue({
-      getContext: (context: string) => {
-        if (context === 'webgl' || context === 'experimental-webgl') {
-          return {
-            getExtension: (extensionName: string) => {
-              if (extensionName === 'EXT_disjoint_timer_query') {
-                return {};
-              } else if (extensionName === 'WEBGL_lose_context') {
-                return {loseContext: () => {}};
-              }
-              return null;
-            }
-          };
-        }
-        return null;
-      }
-    });
-
-    ENV.setFeatures(features);
-    // TODO(nsthorat): expect to be 1 when
-    // https://github.com/tensorflow/tfjs/issues/544 is fixed.
-    expect(ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION')).toBe(0);
-  });
-
-  it('webgl 2', () => {
-    const features: Features = {'WEBGL_VERSION': 2};
-
-    spyOn(document, 'createElement').and.returnValue({
-      getContext: (context: string) => {
-        if (context === 'webgl2') {
-          return {
-            getExtension: (extensionName: string) => {
-              if (extensionName === 'EXT_disjoint_timer_query_webgl2') {
-                return {};
-              } else if (extensionName === 'WEBGL_lose_context') {
-                return {loseContext: () => {}};
-              }
-              return null;
-            }
-          };
-        }
-        return null;
-      }
-    });
-
-    ENV.setFeatures(features);
-    // TODO(nsthorat): expect to be 2 when
-    // https://github.com/tensorflow/tfjs/issues/544 is fixed.
-    expect(ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION')).toBe(0);
-  });
-});
+import {ALL_ENVS, expectArraysClose, WEBGL_ENVS} from './test_util';
 
 describeWithFlags(
     'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE', WEBGL_ENVS, () => {
-      afterEach(() => {
-        ENV.reset();
-      });
-
       it('disjoint query timer disabled', () => {
         const features:
             Features = {'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION': 0};
@@ -128,97 +60,29 @@ describeWithFlags(
       });
     });
 
-describeWithFlags('WEBGL_FENCE_API_ENABLED', WEBGL_ENVS, () => {
-  afterEach(() => {
-    ENV.reset();
-  });
-
-  beforeEach(() => {
-    spyOn(document, 'createElement').and.returnValue({
-      getContext: (context: string) => {
-        if (context === 'webgl2') {
-          return {
-            getExtension: (extensionName: string) => {
-              if (extensionName === 'WEBGL_get_buffer_sub_data_async') {
-                return {};
-              } else if (extensionName === 'WEBGL_lose_context') {
-                return {loseContext: () => {}};
-              }
-              return null;
-            },
-            fenceSync: () => 1
-          };
-        }
-        return null;
-      }
-    });
-  });
-
-  it('WebGL 2 enabled', () => {
-    const features: Features = {'WEBGL_VERSION': 2};
-
+describeWithFlags('WEBGL_PAGING_ENABLED', WEBGL_ENVS, testEnv => {
+  it('should be true if in a browser', () => {
+    const features: Features = {'IS_BROWSER': true};
     const env = new Environment(features);
-
-    expect(env.get('WEBGL_FENCE_API_ENABLED')).toBe(true);
+    expect(env.get('WEBGL_PAGING_ENABLED')).toBe(true);
   });
 
-  it('WebGL 1 disabled', () => {
-    const features: Features = {'WEBGL_VERSION': 1};
+  it('should not cause errors when paging is turned off', () => {
+    ENV.set('WEBGL_PAGING_ENABLED', false);
 
+    const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
+    const b = tf.tensor2d([0, 1, -3, 2, 2, 1], [3, 2]);
+
+    const c = tf.matMul(a, b);
+
+    expectArraysClose(c, [0, 8, -3, 20]);
+  });
+
+  it('should be false when the environment is prod', () => {
+    const features: Features = {'IS_BROWSER': true};
     const env = new Environment(features);
-
-    expect(env.get('WEBGL_FENCE_API_ENABLED')).toBe(false);
-  });
-});
-
-describeWithFlags('WebGL version', WEBGL_ENVS, () => {
-  afterEach(() => {
-    ENV.reset();
-  });
-
-  it('webgl 1', () => {
-    spyOn(document, 'createElement').and.returnValue({
-      getContext: (context: string) => {
-        if (context === 'webgl') {
-          return {
-            getExtension: (a: string) => {
-              return {loseContext: () => {}};
-            }
-          };
-        }
-        return null;
-      }
-    });
-
-    const env = new Environment();
-    expect(env.get('WEBGL_VERSION')).toBe(1);
-  });
-
-  it('webgl 2', () => {
-    spyOn(document, 'createElement').and.returnValue({
-      getContext: (context: string) => {
-        if (context === 'webgl2') {
-          return {
-            getExtension: (a: string) => {
-              return {loseContext: () => {}};
-            }
-          };
-        }
-        return null;
-      }
-    });
-
-    const env = new Environment();
-    expect(env.get('WEBGL_VERSION')).toBe(2);
-  });
-
-  it('no webgl', () => {
-    spyOn(document, 'createElement').and.returnValue({
-      getContext: (context: string): WebGLRenderingContext => null
-    });
-
-    const env = new Environment();
-    expect(env.get('WEBGL_VERSION')).toBe(0);
+    env.set('PROD', true);
+    expect(env.get('WEBGL_PAGING_ENABLED')).toBe(false);
   });
 });
 
@@ -301,5 +165,51 @@ describe('environment_util.getQueryParams', () => {
   it('basic', () => {
     expect(getQueryParams('?a=1&b=hi&f=animal'))
         .toEqual({'a': '1', 'b': 'hi', 'f': 'animal'});
+  });
+});
+
+describeWithFlags('max texture size', WEBGL_ENVS, () => {
+  it('should not throw exception', () => {
+    expect(() => ENV.get('WEBGL_MAX_TEXTURE_SIZE')).not.toThrow();
+  });
+});
+
+describeWithFlags('epsilon', {}, () => {
+  it('Epsilon is a function of float precision', () => {
+    const epsilonValue =
+        ENV.backend.floatPrecision() === 32 ? EPSILON_FLOAT32 : EPSILON_FLOAT16;
+    expect(ENV.get('EPSILON')).toBe(epsilonValue);
+  });
+
+  it('abs(epsilon) > 0', () => {
+    expect(tf.abs(ENV.get('EPSILON')).get()).toBeGreaterThan(0);
+  });
+});
+
+describeWithFlags('TENSORLIKE_CHECK_SHAPE_CONSISTENCY', ALL_ENVS, () => {
+  it('disabled when prod is enabled', () => {
+    const env = new Environment();
+    env.set('PROD', true);
+    expect(env.get('TENSORLIKE_CHECK_SHAPE_CONSISTENCY')).toBe(false);
+  });
+
+  it('enabled when prod is disabled', () => {
+    const env = new Environment();
+    env.set('PROD', false);
+    expect(env.get('TENSORLIKE_CHECK_SHAPE_CONSISTENCY')).toBe(true);
+  });
+});
+
+describeWithFlags('WEBGL_SIZE_UPLOAD_UNIFORM', WEBGL_ENVS, () => {
+  it('is 0 when there is no float32 bit support', () => {
+    const env = new Environment();
+    env.set('WEBGL_RENDER_FLOAT32_ENABLED', false);
+    expect(env.get('WEBGL_SIZE_UPLOAD_UNIFORM')).toBe(0);
+  });
+
+  it('is > 0 when there is float32 bit support', () => {
+    const env = new Environment();
+    env.set('WEBGL_RENDER_FLOAT32_ENABLED', true);
+    expect(env.get('WEBGL_SIZE_UPLOAD_UNIFORM')).toBeGreaterThan(0);
   });
 });

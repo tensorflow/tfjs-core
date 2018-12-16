@@ -28,6 +28,7 @@ set -e
 
 BRANCH=`git rev-parse --abbrev-ref HEAD`
 ORIGIN=`git config --get remote.origin.url`
+CHANGES=`git status --porcelain`
 
 if [ "$BRANCH" != "master" ]; then
   echo "Error: Switch to the master branch before publishing."
@@ -39,8 +40,15 @@ if ! [[ "$ORIGIN" =~ tensorflow/tfjs-core ]]; then
   exit
 fi
 
+if [ ! -z "$CHANGES" ];
+then
+    echo "Make sure the master branch is clean. Found changes:"
+    echo $CHANGES
+    exit 1
+fi
+
 yarn build-npm
 ./scripts/make-version # This is for safety in case you forgot to do 2).
-npm publish
 ./scripts/tag-version
+npm publish
 echo 'Yay! Published a new package to npm.'

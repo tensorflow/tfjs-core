@@ -18,13 +18,14 @@
 import {ENV} from '../environment';
 import {tidy} from '../globals';
 import {scalar, zerosLike} from '../ops/ops';
-import {ConfigDict, Serializable, SerializableConstructor, SerializationMap} from '../serialization';
+import {ConfigDict, registerClass, Serializable, SerializableConstructor} from '../serialization';
 import {Scalar, Tensor} from '../tensor';
 import {NamedVariableMap} from '../tensor_types';
 import {SGDOptimizer} from './sgd_optimizer';
 
 /** @doclink Optimizer */
 export class MomentumOptimizer extends SGDOptimizer {
+  /** @nocollapse */
   static className = 'MomentumOptimizer';
   private m: Scalar;
   private accumulations: NamedVariableMap;
@@ -97,4 +98,4 @@ export class MomentumOptimizer extends SGDOptimizer {
     return new cls(config.learningRate, config.momentum, config.useNesterov);
   }
 }
-SerializationMap.register(MomentumOptimizer);
+registerClass(MomentumOptimizer);

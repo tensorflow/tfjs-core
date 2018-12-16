@@ -48,6 +48,37 @@ describeWithFlags('equal', ALL_ENVS, () => {
     b = tf.tensor1d([3.123, 3.321], 'float32');
     expectArraysClose(tf.equal(a, b), [0, 0]);
   });
+
+  it('upcasts when dtypes dont match', () => {
+    const a = [1.1, 4.1, 5];
+    const b = [2.2, 3.2, 5];
+
+    let res =
+        tf.equal(tf.tensor(a, [3], 'float32'), tf.tensor(b, [3], 'int32'));
+    expect(res.dtype).toBe('bool');
+    expect(res.shape).toEqual([3]);
+    expectArraysClose(res, [0, 0, 1]);
+
+    res =
+        tf.equal(tf.tensor(a, [3], 'int32'), tf.tensor(b, [3], 'bool'));
+    expect(res.dtype).toBe('bool');
+    expect(res.shape).toEqual([3]);
+    expectArraysClose(res, [1, 0, 0]);
+  });
+
+  it('TensorLike', () => {
+    const a = [1.1, 4.1, 5.1];
+    const b = [2.2, 3.2, 5.1];
+
+    expectArraysClose(tf.equal(a, b), [0, 0, 1]);
+  });
+  it('TensorLike chained', () => {
+    const a = tf.tensor1d([1.1, 4.1, 5.1], 'float32');
+    const b = [2.2, 3.2, 5.1];
+
+    expectArraysClose(a.equal( b), [0, 0, 1]);
+  });
+
   it('mismatched Tensor1D shapes - int32', () => {
     const a = tf.tensor1d([1, 2], 'int32');
     const b = tf.tensor1d([1, 2, 3], 'int32');
@@ -519,6 +550,36 @@ describeWithFlags('notEqual', ALL_ENVS, () => {
     a = tf.tensor1d([0.45, 0.123], 'float32');
     b = tf.tensor1d([3.123, 3.321], 'float32');
     expectArraysClose(tf.notEqual(a, b), [1, 1]);
+  });
+
+  it('upcasts when dtypes dont match', () => {
+    const a = [1.1, 4.1, 5];
+    const b = [2.2, 3.2, 5];
+
+    let res =
+        tf.notEqual(tf.tensor(a, [3], 'float32'), tf.tensor(b, [3], 'int32'));
+    expect(res.dtype).toBe('bool');
+    expect(res.shape).toEqual([3]);
+    expectArraysClose(res, [1, 1, 0]);
+
+    res =
+        tf.notEqual(tf.tensor(a, [3], 'int32'), tf.tensor(b, [3], 'bool'));
+    expect(res.dtype).toBe('bool');
+    expect(res.shape).toEqual([3]);
+    expectArraysClose(res, [0, 1, 1]);
+  });
+
+  it('TensorLike', () => {
+    const a = [1.1, 4.1, 5.1];
+    const b = [2.2, 3.2, 5.1];
+
+    expectArraysClose(tf.notEqual(a, b), [1, 1, 0]);
+  });
+  it('TensorLike Chained', () => {
+    const a = tf.tensor1d([1.1, 4.1, 5.1], 'float32');
+    const b = [2.2, 3.2, 5.1];
+
+    expectArraysClose(a.notEqual(b), [1, 1, 0]);
   });
   it('mismatched Tensor1D shapes - int32', () => {
     const a = tf.tensor1d([1, 2], 'int32');
@@ -1039,6 +1100,40 @@ describeWithFlags('less', ALL_ENVS, () => {
     expect(res.dtype).toBe('bool');
     expectArraysClose(res, [1, 1]);
   });
+  it('TensorLike', () => {
+    const a = [1.1, 4.1, 5.1];
+    const b = [2.2, 3.2, 5.1];
+    const res = tf.less(a, b);
+
+    expect(res.dtype).toBe('bool');
+    expectArraysClose(res, [1, 0, 0]);
+  });
+  it('TensorLike Chained', () => {
+    const a = tf.tensor1d([1.1, 4.1, 5.1], 'float32');
+    const b = [2.2, 3.2, 5.1];
+    const res = a.less(b);
+
+    expect(res.dtype).toBe('bool');
+    expectArraysClose(res, [1, 0, 0]);
+  });
+
+  it('upcasts when dtypes dont match', () => {
+    const a = [1.1, 4.1, 5.2];
+    const b = [2.2, 3.2, 5.1];
+
+    let res =
+        tf.less(tf.tensor(a, [3], 'float32'), tf.tensor(b, [3], 'int32'));
+    expect(res.dtype).toBe('bool');
+    expect(res.shape).toEqual([3]);
+    expectArraysClose(res, [1, 0, 0]);
+
+    res =
+        tf.less(tf.tensor(a, [3], 'int32'), tf.tensor(b, [3], 'bool'));
+    expect(res.dtype).toBe('bool');
+    expect(res.shape).toEqual([3]);
+    expectArraysClose(res, [0, 0, 0]);
+  });
+
   it('mismatched Tensor1D shapes - int32', () => {
     const a = tf.tensor1d([1, 2], 'int32');
     const b = tf.tensor1d([1, 2, 3], 'int32');
@@ -1407,6 +1502,40 @@ describeWithFlags('lessEqual', ALL_ENVS, () => {
     expect(res.dtype).toBe('bool');
     expectArraysClose(res, [1, 1]);
   });
+
+  it('upcasts when dtypes dont match', () => {
+    const a = [1.1, 4.1, 5];
+    const b = [2.2, 3.2, 5];
+
+    let res =
+        tf.lessEqual(tf.tensor(a, [3], 'float32'), tf.tensor(b, [3], 'int32'));
+    expect(res.dtype).toBe('bool');
+    expect(res.shape).toEqual([3]);
+    expectArraysClose(res, [1, 0, 1]);
+
+    res =
+        tf.lessEqual(tf.tensor(a, [3], 'int32'), tf.tensor(b, [3], 'bool'));
+    expect(res.dtype).toBe('bool');
+    expect(res.shape).toEqual([3]);
+    expectArraysClose(res, [1, 0, 0]);
+  });
+
+  it('TensorLike', () => {
+    const a = [1.1, 4.1, 5.1];
+    const b = [2.2, 3.2, 5.1];
+    const res = tf.lessEqual(a, b);
+
+    expect(res.dtype).toBe('bool');
+    expectArraysClose(res, [1, 0, 1]);
+  });
+  it('TensorLike Chained', () => {
+    const a = tf.tensor1d([1.1, 4.1, 5.1], 'float32');
+    const b = [2.2, 3.2, 5.1];
+    const res = a.lessEqual(b);
+
+    expect(res.dtype).toBe('bool');
+    expectArraysClose(res, [1, 0, 1]);
+  });
   it('mismatched Tensor1D shapes - int32', () => {
     const a = tf.tensor1d([1, 2], 'int32');
     const b = tf.tensor1d([1, 2, 3], 'int32');
@@ -1772,6 +1901,40 @@ describeWithFlags('greater', ALL_ENVS, () => {
 
     expect(res.dtype).toBe('bool');
     expectArraysClose(res, [1, 1]);
+  });
+
+  it('upcasts when dtypes dont match', () => {
+    const a = [1.1, 4.1, 5.2];
+    const b = [2.2, 3.2, 5.1];
+
+    let res =
+        tf.greater(tf.tensor(a, [3], 'float32'), tf.tensor(b, [3], 'int32'));
+    expect(res.dtype).toBe('bool');
+    expect(res.shape).toEqual([3]);
+    expectArraysClose(res, [0, 1, 1]);
+
+    res =
+        tf.greater(tf.tensor(a, [3], 'int32'), tf.tensor(b, [3], 'bool'));
+    expect(res.dtype).toBe('bool');
+    expect(res.shape).toEqual([3]);
+    expectArraysClose(res, [0, 1, 1]);
+  });
+
+  it('TensorLike', () => {
+    const a = [1.1, 4.1, 5.1];
+    const b = [2.2, 3.2, 5.1];
+    const res = tf.greater(a, b);
+
+    expect(res.dtype).toBe('bool');
+    expectArraysClose(res, [0, 1, 0]);
+  });
+  it('TensorLike Chained', () => {
+    const a = tf.tensor1d([1.1, 4.1, 5.1], 'float32');
+    const b = [2.2, 3.2, 5.1];
+    const res = a.greater(b);
+
+    expect(res.dtype).toBe('bool');
+    expectArraysClose(res, [0, 1, 0]);
   });
   it('mismatched Tensor1D shapes - int32', () => {
     const a = tf.tensor1d([1, 2], 'int32');
@@ -2149,6 +2312,24 @@ describeWithFlags('greaterEqual', ALL_ENVS, () => {
     expect(res.dtype).toBe('bool');
     expectArraysClose(res, [0, 0]);
   });
+
+  it('upcasts when dtypes dont match', () => {
+    const a = [1.1, 4.1, 5];
+    const b = [2.2, 3.2, 5];
+
+    let res =
+      tf.greaterEqual(tf.tensor(a, [3], 'float32'), tf.tensor(b, [3], 'int32'));
+    expect(res.dtype).toBe('bool');
+    expect(res.shape).toEqual([3]);
+    expectArraysClose(res, [0, 1, 1]);
+
+    res =
+      tf.greaterEqual(tf.tensor(a, [3], 'int32'), tf.tensor(b, [3], 'bool'));
+    expect(res.dtype).toBe('bool');
+    expect(res.shape).toEqual([3]);
+    expectArraysClose(res, [1, 1, 1]);
+  });
+
   it('mismatched Tensor1D shapes - int32', () => {
     const a = tf.tensor1d([1, 2], 'int32');
     const b = tf.tensor1d([1, 2, 3], 'int32');
@@ -2404,6 +2585,17 @@ describeWithFlags('greaterEqual', ALL_ENVS, () => {
 
     expect(res.dtype).toBe('bool');
     expectArraysClose(res, [0, 1, 1]);
+  });
+
+  it('has gradient', () => {
+    const a = tf.tensor1d([3, 2, 5]);
+    const b = tf.tensor1d([4, 1, 5]);
+    const dy = tf.ones([3], 'float32') as tf.Tensor1D;
+    const da = tf.grad((a: tf.Tensor1D) => tf.greaterEqual(a, b))(a, dy);
+
+    expect(da.dtype).toBe('float32');
+    expect(da.shape).toEqual([3]);
+    expectArraysClose(da, [0, 0, 0]);
   });
 });
 

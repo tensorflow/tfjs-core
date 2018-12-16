@@ -18,13 +18,13 @@
 import {ENV} from '../environment';
 import {keep, tidy} from '../globals';
 import {scalar, zerosLike} from '../ops/ops';
-import {ConfigDict, Serializable, SerializableConstructor, SerializationMap} from '../serialization';
+import {ConfigDict, registerClass, Serializable, SerializableConstructor} from '../serialization';
 import {Scalar, Variable} from '../tensor';
 import {NamedVariableMap} from '../tensor_types';
 import {Optimizer} from './optimizer';
-import * as optimizer_utils from './optimizer_utils';
 
 export class AdamaxOptimizer extends Optimizer {
+  /** @nocollapse */
   static className = 'AdamaxOptimizer';
   private c: Scalar;
   private epsScalar: Scalar;
@@ -61,7 +61,7 @@ export class AdamaxOptimizer extends Optimizer {
     this.one = keep(scalar(1));
 
     if (epsilon === null) {
-      epsilon = optimizer_utils.getOptimizerDefaultEpsilonValue();
+      epsilon = ENV.get('EPSILON');
     }
 
     this.epsScalar = keep(scalar(epsilon));
@@ -153,4 +153,4 @@ export class AdamaxOptimizer extends Optimizer {
         config.decay);
   }
 }
-SerializationMap.register(AdamaxOptimizer);
+registerClass(AdamaxOptimizer);

@@ -15,19 +15,19 @@
  * =============================================================================
  */
 
-import {BackendTimingInfo, KernelBackend} from './kernels/backend';
+import {BackendTimingInfo, DataMover, KernelBackend} from './kernels/backend';
 import {Profiler} from './profiler';
 import {backpropagateGradients, getFilteredNodesXToY, NamedGradientMap, TapeNode} from './tape';
 import {DataId, Tensor, Tensor3D, Variable} from './tensor';
 import {NamedTensorMap, NamedVariableMap, TensorContainer} from './tensor_types';
 import {getTensorsInContainer, isTensorInList} from './tensor_util';
-import {TypedArray} from './types';
+import {DataType, DataValues} from './types';
 import * as util from './util';
-import {makeOnesTypedArray, now, sizeFromShape} from './util';
+import {bytesFromStringArray, makeOnesTypedArray, now, sizeFromShape} from './util';
 
 /**
  * A function that computes an output. The save function is for saving tensors
- * computed in the forward pass, that we need in the backwards pass.
+ * computed in the forward pass, that we need in the backward pass.
  */
 export type ForwardFunc<T> =
     (backend: KernelBackend, save?: <S extends Tensor>(tensor: S) => S) => T;
@@ -42,7 +42,21 @@ export type CustomGradientFunc<T extends Tensor> = (...args: Tensor[]) => {
 
 export type MemoryInfo = {
   numTensors: number; numDataBuffers: number; numBytes: number;
-  unreliable?: boolean;
+  unreliable?: boolean; reasons: string[];
+};
+
+type KernelProfile = {
+  name: string; bytesAdded: number; totalBytesSnapshot: number;
+  tensorsAdded: number;
+  totalTensorsSnapshot: number;
+  inputShapes: number[][];
+  outputShape: number[] | number[][];
+};
+
+export type ProfileInfo = {
+  newBytes: number; newTensors: number; peakBytes: number;
+  kernels: KernelProfile[];
+  result: TensorContainer;
 };
 
 export interface TimingInfo extends BackendTimingInfo {
@@ -64,15 +78,18 @@ interface ScopeState {
   name: string;
 }
 
-export class Engine implements TensorManager {
+export class Engine implements TensorManager, DataMover {
   // Public since optimizers will use it.
   registeredVariables: NamedVariableMap = {};
 
-  private refCounter = new WeakMap<DataId, number>();
   private nextTapeNodeId = 0;
   private numBytes = 0;
   private numTensors = 0;
+  private numStringTensors = 0;
   private numDataBuffers = 0;
+
+  private profiling = false;
+  private activeProfile: ProfileInfo;
 
   private activeTape: TapeNode[];
   private gradientScopeCount = 0;
@@ -80,17 +97,28 @@ export class Engine implements TensorManager {
 
   // Keep Tensors that parallel the tapes.
   private activeScope: ScopeState;
-  private scopeStack: ScopeState[];
+  private scopeStack: ScopeState[] = [];
   private keepTensors: Set<number> = new Set();
   private profiler: Profiler;
 
+  private tensorInfo = new WeakMap<DataId, {
+    backend: KernelBackend,
+    bytes: number,
+    dtype: DataType,
+    shape: number[],
+    refCount: number
+  }>();
+
   constructor(
-      private backend: KernelBackend, public safeMode: boolean,
+      public backend: KernelBackend, public safeMode: boolean,
       private debugMode: () => boolean) {
-    // Create a default outer scope.
-    this.activeScope = {track: [], name: 'default scope'};
-    this.scopeStack = [this.activeScope];
     this.profiler = new Profiler(backend);
+    this.activeProfile =
+        {newBytes: 0, newTensors: 0, peakBytes: 0, kernels: [], result: null};
+  }
+
+  moveData(dataId: DataId) {
+    this.write(dataId, this.readSync(dataId));
   }
 
   tidy<T extends TensorContainer>(
@@ -145,6 +173,16 @@ export class Engine implements TensorManager {
     }
   }
 
+  private static nextTensorId = 0;
+  nextTensorId(): number {
+    return Engine.nextTensorId++;
+  }
+
+  private static nextVariableId = 0;
+  nextVariableId(): number {
+    return Engine.nextVariableId++;
+  }
+
   runKernel<T extends Tensor|Tensor[], I extends NamedTensorMap>(
       forwardFunc: ForwardFunc<T>,
       inputs: I,
@@ -157,6 +195,8 @@ export class Engine implements TensorManager {
       return x;
     };
     const scopeName = this.activeScope.name;
+    const startingBytecount = this.numBytes;
+    const startingNumTensors = this.numTensors;
 
     // Stop recording to a tape when running a kernel.
     this.scopedRun(
@@ -175,8 +215,7 @@ export class Engine implements TensorManager {
         id: this.nextTapeNodeId++,
         name: scopeName,
         inputs,
-        // Keep gradient records only for the first output.
-        output: Array.isArray(result) ? result[0] : result
+        outputs: Array.isArray(result) ? result : [result] as Tensor[]
       };
       if (backwardsFunc != null) {
         tapeNode.gradient =
@@ -185,22 +224,54 @@ export class Engine implements TensorManager {
       }
       this.activeTape.push(tapeNode);
     }
+
+    if (this.profiling) {
+      this.activeProfile.kernels.push({
+        name: scopeName,
+        bytesAdded: this.numBytes - startingBytecount,
+        totalBytesSnapshot: this.numBytes,
+        tensorsAdded: this.numTensors - startingNumTensors,
+        totalTensorsSnapshot: this.numTensors,
+        inputShapes: Object.keys(inputs).map(key => inputs[key].shape),
+        outputShape: Array.isArray(result) ?
+            (result as Tensor[]).map(item => (item as Tensor).shape) :
+            (result as Tensor).shape
+      });
+    }
+
     return result;
   }
 
   // TensorManager implementation.
 
   registerTensor(a: Tensor|Variable): void {
-    const refCount =
-        this.refCounter.has(a.dataId) ? this.refCounter.get(a.dataId) : 0;
+    const refCount = this.tensorInfo.has(a.dataId) ?
+        this.tensorInfo.get(a.dataId).refCount :
+        0;
     this.numTensors++;
+    if (a.dtype === 'string') {
+      this.numStringTensors++;
+    }
     if (refCount === 0) {
       this.numDataBuffers++;
-      this.numBytes +=
-          util.sizeFromShape(a.shape) * util.bytesPerElement(a.dtype);
+
+      // Bytes for complex numbers are counted by their components. Bytes for
+      // string tensors are counted when writing values.
+      let bytes = 0;
+      if (a.dtype !== 'complex64' && a.dtype !== 'string') {
+        bytes = util.sizeFromShape(a.shape) * util.bytesPerElement(a.dtype);
+      }
+      this.tensorInfo.set(a.dataId, {
+        backend: this.backend,
+        dtype: a.dtype,
+        shape: a.shape,
+        bytes,
+        refCount: 0
+      });
+      this.numBytes += bytes;
       this.backend.register(a.dataId, a.shape, a.dtype);
     }
-    this.refCounter.set(a.dataId, refCount + 1);
+    this.tensorInfo.get(a.dataId).refCount++;
     if (!(a instanceof Variable)) {
       this.track(a);
     }
@@ -214,22 +285,29 @@ export class Engine implements TensorManager {
   }
 
   disposeTensor(a: Tensor): void {
-    if (!this.refCounter.has(a.dataId)) {
+    if (!this.tensorInfo.has(a.dataId)) {
       return;
     }
     if (this.keepTensors.has(a.id)) {
       this.keepTensors.delete(a.id);
     }
     this.numTensors--;
-    const refCount = this.refCounter.get(a.dataId);
+    if (a.dtype === 'string') {
+      this.numStringTensors--;
+    }
+    const info = this.tensorInfo.get(a.dataId);
+    const refCount = info.refCount;
     if (refCount <= 1) {
-      this.refCounter.delete(a.dataId);
-      this.backend.disposeData(a.dataId);
+      // Don't count bytes for complex numbers as they are counted by their
+      // components.
+      if (a.dtype !== 'complex64') {
+        this.numBytes -= info.bytes;
+      }
       this.numDataBuffers--;
-      this.numBytes -=
-          util.sizeFromShape(a.shape) * util.bytesPerElement(a.dtype);
+      info.backend.disposeData(a.dataId);
+      this.tensorInfo.delete(a.dataId);
     } else {
-      this.refCounter.set(a.dataId, refCount - 1);
+      this.tensorInfo.get(a.dataId).refCount--;
     }
     // TODO(nsthorat): Construct an error and save the stack trace for
     // debugging when in debug mode. Creating a stack trace is too expensive
@@ -249,7 +327,34 @@ export class Engine implements TensorManager {
     info.numTensors = this.numTensors;
     info.numDataBuffers = this.numDataBuffers;
     info.numBytes = this.numBytes;
+    if (this.numStringTensors > 0) {
+      info.unreliable = true;
+      if (info.reasons == null) {
+        info.reasons = [];
+      }
+      info.reasons.push(
+          'Memory usage by string tensors is approximate ' +
+          '(2 bytes per character)');
+    }
     return info;
+  }
+
+  async profile(query: () => TensorContainer): Promise<ProfileInfo> {
+    this.profiling = true;
+
+    const startBytes = this.numBytes;
+    const startNumTensors = this.numTensors;
+
+    this.activeProfile.kernels = [];
+    this.activeProfile.result = query();
+
+    this.profiling = false;
+
+    this.activeProfile.peakBytes =
+        Math.max(...this.activeProfile.kernels.map(d => d.totalBytesSnapshot));
+    this.activeProfile.newBytes = this.numBytes - startBytes;
+    this.activeProfile.newTensors = this.numTensors - startNumTensors;
+    return this.activeProfile;
   }
 
   private shouldRecord(): boolean {
@@ -277,7 +382,7 @@ export class Engine implements TensorManager {
       id: this.nextTapeNodeId++,
       name: this.activeScope.name,
       inputs: inputsMap,
-      output: result,
+      outputs: [result],
       gradient
     };
     this.activeTape.push(tapeNode);
@@ -346,7 +451,7 @@ export class Engine implements TensorManager {
 
     const oldScope = this.scopeStack.pop();
     this.activeScope = this.scopeStack.length === 0 ?
-        {track: [], name: 'default scope'} :
+        null :
         this.scopeStack[this.scopeStack.length - 1];
 
     // Track the current result in the parent scope.
@@ -370,6 +475,9 @@ export class Engine implements TensorManager {
       f: () => T, xs: Tensor[], dy?: T,
       allowNoGradients = false): {value: T, grads: Tensor[]} {
     util.assert(xs.length > 0, 'gradients() received an empty list of xs.');
+    if (dy != null && dy.dtype !== 'float32') {
+      throw new Error(`dy must have 'float32' dtype, but has '${dy.dtype}'`);
+    }
 
     return this.tidy('gradients', () => {
       const y = f();
@@ -450,14 +558,32 @@ export class Engine implements TensorManager {
   }
 
   // Forwarding to backend.
-  write(dataId: DataId, values: TypedArray): void {
+  write(dataId: DataId, values: DataValues): void {
+    const info = this.tensorInfo.get(dataId);
+    // Bytes for string tensors are counted when writing.
+    if (info.dtype === 'string') {
+      const newBytes = bytesFromStringArray(values as string[]);
+      this.numBytes += newBytes - info.bytes;
+      info.bytes = newBytes;
+    }
+
+    if (this.backend !== info.backend) {
+      // Delete the tensor from the old backend and move it to the new backend.
+      info.backend.disposeData(dataId);
+      info.backend = this.backend;
+      this.backend.register(dataId, info.shape, info.dtype);
+    }
     this.backend.write(dataId, values);
   }
-  readSync(dataId: DataId): TypedArray {
-    return this.backend.readSync(dataId);
+  readSync(dataId: DataId): DataValues {
+    // Route the read to the correct backend.
+    const info = this.tensorInfo.get(dataId);
+    return info.backend.readSync(dataId);
   }
-  read(dataId: DataId): Promise<TypedArray> {
-    return this.backend.read(dataId);
+  read(dataId: DataId): Promise<DataValues> {
+    // Route the read to the correct backend.
+    const info = this.tensorInfo.get(dataId);
+    return info.backend.read(dataId);
   }
   fromPixels(
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
@@ -483,7 +609,9 @@ export class Engine implements TensorManager {
           'Safe mode is ON. Enclose all tensor operations inside tf.tidy(): ' +
           'tf.tidy(() => {op();...}); to avoid memory leaks.');
     }
-    this.activeScope.track.push(result);
+    if (this.activeScope != null) {
+      this.activeScope.track.push(result);
+    }
     return result;
   }
 }

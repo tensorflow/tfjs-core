@@ -14,16 +14,17 @@
  * limitations under the License.
  * =============================================================================
  */
+
 import {ENV} from '../environment';
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
 import {convertToTensor, convertToTensorArray} from '../tensor_util_env';
-import {DataType, Rank, ShapeMap, TensorLike, TensorLike1D, TypedArray} from '../types';
+import {DataType, DataTypeMap, Rank, ShapeMap, TensorLike, TensorLike1D, TensorLike4D} from '../types';
 import * as util from '../util';
-import {getAxesPermutation, getInnerMostAxes, parseAxisParam} from './axis_util';
-import {concat} from './concat';
+import {getAxesPermutation, getInnerMostAxes} from './axis_util';
+import {concat} from './concat_split';
 import {op} from './operation';
 import {MPRandGauss} from './rand';
-import {zerosLike} from './tensor_ops';
+import {zeros, zerosLike} from './tensor_ops';
 
 /**
  * Creates a new tensor with the same values and shape as the specified
@@ -39,7 +40,7 @@ import {zerosLike} from './tensor_ops';
  */
 /** @doc {heading: 'Tensors', subheading: 'Creation'} */
 function clone_<T extends Tensor>(x: T|TensorLike): T {
-  const $x = convertToTensor(x, 'x', 'clone');
+  const $x = convertToTensor(x, 'x', 'clone', null);
   const der = (dy: T) => {
     return {$x: () => dy.toFloat()};
   };
@@ -56,7 +57,7 @@ function clone_<T extends Tensor>(x: T|TensorLike): T {
  * @param numRows Number of rows.
  * @param numColumns Number of columns. Defaults to `numRows`.
  * @param batchShape If provided, will add the batch shape to the beginning
- *   of the shape of the returned `Tensor` by repeating the identity
+ *   of the shape of the returned `tf.Tensor` by repeating the identity
  *   matrix.
  * @param dtype Data type.
  * @returns Identity matrix of the specified size and data type, possibly
@@ -103,7 +104,7 @@ function eye_(
 }
 
 /**
- * Creates a `Tensor` with values sampled from a normal distribution.
+ * Creates a `tf.Tensor` with values sampled from a normal distribution.
  *
  * ```js
  * tf.randomNormal([2, 2]).print();
@@ -132,7 +133,7 @@ function randomNormal_<R extends Rank>(
 }
 
 /**
- * Creates a `Tensor` with values sampled from a truncated normal
+ * Creates a `tf.Tensor` with values sampled from a truncated normal
  * distribution.
  *
  * ```js
@@ -166,7 +167,7 @@ function truncatedNormal_<R extends Rank>(
 }
 
 /**
- * Creates a `Tensor` with values sampled from a uniform distribution.
+ * Creates a `tf.Tensor` with values sampled from a uniform distribution.
  *
  * The generated values follow a uniform distribution in the range [minval,
  * maxval). The lower bound minval is included in the range, while the upper
@@ -195,7 +196,7 @@ function randomUniform_<R extends Rank>(
 }
 
 /**
- * Creates a `Tensor` with values sampled from a random number generator
+ * Creates a `tf.Tensor` with values sampled from a random number generator
  * function defined by the user.
  *
  * @param shape An array of integers defining the output tensor shape.
@@ -226,7 +227,7 @@ function rand_<R extends Rank>(
 }
 
 /**
- * Creates a `Tensor` with values drawn from a multinomial distribution.
+ * Creates a `tf.Tensor` with values drawn from a multinomial distribution.
  *
  * ```js
  * const probs = tf.tensor([.75, .25]);
@@ -268,7 +269,7 @@ function multinomial_(
 }
 
 /**
- * Creates a one-hot `Tensor`. The locations represented by `indices` take
+ * Creates a one-hot `tf.Tensor`. The locations represented by `indices` take
  * value `onValue` (defaults to 1), while all other locations take value
  * `offValue` (defaults to 0).
  *
@@ -276,9 +277,9 @@ function multinomial_(
  * tf.oneHot(tf.tensor1d([0, 1], 'int32'), 3).print();
  * ```
  *
- * @param indices `Tensor1D` of indices with dtype `int32`.
+ * @param indices `tf.Tensor1D` of indices with dtype `int32`.
  * @param depth The depth of the one hot dimension.
- * @param onValue A number used to fill in output when the index matches
+ * @param onValue A number used to fill in the output when the index matches
  * the location.
  * @param offValue A number used to fill in the output when the index does
  *     not match the location.
@@ -287,19 +288,22 @@ function multinomial_(
 function oneHot_(
     indices: Tensor1D|TensorLike1D, depth: number, onValue = 1,
     offValue = 0): Tensor2D {
-  const $indices = convertToTensor(indices, 'indices', 'oneHot', 'int32');
-  util.assert($indices.dtype === 'int32', 'Indices must be of dtype `int32`');
+  const $indices =
+      convertToTensor(indices, 'indices', 'oneHot', 'int32') as Tensor1D;
 
   if (depth < 2) {
     throw new Error(`Error in oneHot: depth must be >=2, but it is ${depth}`);
   }
+  const grad = (dy: Tensor2D) => {
+    return {$indices: () => zeros($indices.shape, 'float32') as Tensor1D};
+  };
   return ENV.engine.runKernel(
-      backend => backend.oneHot($indices, depth, onValue, offValue),
-      {$indices});
+      backend => backend.oneHot($indices, depth, onValue, offValue), {$indices},
+      grad);
 }
 
 /**
- * Creates a `Tensor` from an image.
+ * Creates a `tf.Tensor` from an image.
  *
  * ```js
  * const image = new ImageData(1, 1);
@@ -329,7 +333,7 @@ function fromPixels_(
 }
 
 /**
- * Draws a `Tensor` of pixel values to a byte array or optionally a
+ * Draws a `tf.Tensor` of pixel values to a byte array or optionally a
  * canvas.
  *
  * When the dtype of the input is 'float32', we assume values in the range
@@ -349,7 +353,11 @@ function fromPixels_(
 async function toPixels(
     img: Tensor2D|Tensor3D|TensorLike,
     canvas?: HTMLCanvasElement): Promise<Uint8ClampedArray> {
-  const $img = convertToTensor(img, 'img', 'toPixels', 'int32');
+  let $img = convertToTensor(img, 'img', 'toPixels');
+  if (!(img instanceof Tensor)) {
+    // Assume int32 if user passed a native array.
+    $img = $img.toInt();
+  }
   if ($img.rank !== 2 && $img.rank !== 3) {
     throw new Error(
         `toPixels only supports rank 2 or 3 tensors, got rank ${$img.rank}.`);
@@ -431,9 +439,9 @@ async function toPixels(
 }
 
 /**
- * Reshapes a `Tensor` to a given shape.
+ * Reshapes a `tf.Tensor` to a given shape.
  *
- * Given a input tensor, returns a new tensor with the same values as the
+ * Given an input tensor, returns a new tensor with the same values as the
  * input tensor with shape `shape`.
  *
  * If one component of shape is the special value -1, the size of that
@@ -457,7 +465,7 @@ async function toPixels(
 /** @doc {heading: 'Tensors', subheading: 'Transformations'} */
 function reshape_<R2 extends Rank>(
     x: Tensor|TensorLike, shape: ShapeMap[R2]): Tensor<R2> {
-  const $x = convertToTensor(x, 'x', 'reshape');
+  const $x = convertToTensor(x, 'x', 'reshape', null);
   shape = util.inferFromImplicitShape(shape, $x.size);
   util.assert(
       $x.size === util.sizeFromShape(shape),
@@ -471,7 +479,7 @@ function reshape_<R2 extends Rank>(
 }
 
 /**
- * Removes dimensions of size 1 from the shape of a `Tensor`.
+ * Removes dimensions of size 1 from the shape of a `tf.Tensor`.
  *
  * ```js
  * const x = tf.tensor([1, 2, 3, 4], [1, 1, 4]);
@@ -490,7 +498,7 @@ function squeeze_<T extends Tensor>(x: Tensor|TensorLike, axis?: number[]): T {
 }
 
 /**
- * Casts a `Tensor` to a new dtype.
+ * Casts a `tf.Tensor` to a new dtype.
  *
  * ```js
  * const x = tf.tensor1d([1.5, 2.5, 3]);
@@ -511,7 +519,7 @@ function cast_<T extends Tensor>(x: T|TensorLike, dtype: DataType): T {
 }
 
 /**
- * Construct an tensor by repeating it the number of times given by reps.
+ * Construct a tensor by repeating it the number of times given by reps.
  *
  * This operation creates a new tensor by replicating `input` `reps`
  * times. The output tensor's i'th dimension has `input.shape[i] *
@@ -596,7 +604,7 @@ function tile_<T extends Tensor>(x: T|TensorLike, reps: number[]): T {
 }
 
 /**
- * Pads a `Tensor1D` with a given value and paddings. See `pad` for details.
+ * Pads a `tf.Tensor1D` with a given value and paddings. See `pad` for details.
  */
 function pad1d_(
     x: Tensor1D|TensorLike, paddings: [number, number],
@@ -608,7 +616,7 @@ function pad1d_(
 }
 
 /**
- * Pads a `Tensor2D` with a given value and paddings. See `pad` for details.
+ * Pads a `tf.Tensor2D` with a given value and paddings. See `pad` for details.
  */
 function pad2d_(
     x: Tensor2D|TensorLike, paddings: [[number, number], [number, number]],
@@ -621,7 +629,7 @@ function pad2d_(
 }
 
 /**
- * Pads a `Tensor3D` with a given value and paddings. See `pad` for details.
+ * Pads a `tf.Tensor3D` with a given value and paddings. See `pad` for details.
  */
 function pad3d_(
     x: Tensor3D|TensorLike,
@@ -635,14 +643,13 @@ function pad3d_(
 }
 
 /**
- * Pads a `Tensor4D` with a given value and paddings. See `pad` for details.
+ * Pads a `tf.Tensor4D` with a given value and paddings. See `pad` for details.
  */
 function pad4d_(
     x: Tensor4D|TensorLike,
     paddings:
         [
-          [number, number], [number, number], [number, number],
-          [number, number]
+          [number, number], [number, number], [number, number], [number, number]
         ],
     constantValue = 0): Tensor4D {
   util.assert(
@@ -654,7 +661,7 @@ function pad4d_(
 }
 
 /**
- * Pads a `Tensor` with a given value and paddings.
+ * Pads a `tf.Tensor` with a given value and paddings.
  *
  * This operation currently only implements the `CONSTANT` mode.
  *
@@ -695,7 +702,7 @@ function pad_<T extends Tensor>(
 }
 
 /**
- * Stacks a list of rank-`R` `Tensor`s into one rank-`(R+1)` `Tensor`.
+ * Stacks a list of rank-`R` `tf.Tensor`s into one rank-`(R+1)` `tf.Tensor`.
  *
  * ```js
  * const a = tf.tensor1d([1, 2]);
@@ -708,7 +715,8 @@ function pad_<T extends Tensor>(
  * @param axis The axis to stack along. Defaults to 0 (the first dim).
  */
 /** @doc {heading: 'Tensors', subheading: 'Slicing and Joining'} */
-function stack_<T extends Tensor>(tensors: T[]|TensorLike[], axis = 0): Tensor {
+function stack_<T extends Tensor>(
+    tensors: Array<T|TensorLike>, axis = 0): Tensor {
   const $tensors = convertToTensorArray(tensors, 'tensors', 'stack');
 
   util.assert($tensors.length >= 1, 'Pass at least one tensor to tf.stack');
@@ -742,7 +750,7 @@ function stack_<T extends Tensor>(tensors: T[]|TensorLike[], axis = 0): Tensor {
  * defined by the spatial dimensions `[1, ..., M]`, to obtain a result with
  * the same rank as the input. The spatial dimensions of this intermediate
  * result are then optionally cropped according to `crops` to produce the
- * output. This is the reverse of `spaceToBatchND`. See below for a precise
+ * output. This is the reverse of `tf.spaceToBatchND`. See below for a precise
  * description.
  *
  * ```js
@@ -753,15 +761,14 @@ function stack_<T extends Tensor>(tensors: T[]|TensorLike[], axis = 0): Tensor {
  * x.batchToSpaceND(blockShape, crops).print();
  * ```
  *
- * @param x A `Tensor`. N-D with `x.shape` = `[batch] + spatialShape +
+ * @param x A `tf.Tensor`. N-D with `x.shape` = `[batch] + spatialShape +
  * remainingShape`, where spatialShape has `M` dimensions.
- * @param blockShape A 1-D array. Must be one of the following types: `int32`,
- * `int64`. Must have shape `[M]`, all values must be >= 1.
- * @param crops A 2-D array.  Must be one of the following types: `int32`,
- * `int64`. Must have shape `[M, 2]`, all values must be >= 0. `crops[i] =
- * [cropStart, cropEnd]` specifies the amount to crop from input dimension `i
- * + 1`, which corresponds to spatial dimension `i`. It is required that
- * `cropStart[i] + cropEnd[i] <= blockShape[i] * inputShape[i + 1]`
+ * @param blockShape A 1-D array. Must have shape `[M]`, all values must
+ * be >= 1.
+ * @param crops A 2-D array.  Must have shape `[M, 2]`, all values must be >= 0.
+ * `crops[i] = [cropStart, cropEnd]` specifies the amount to crop from input
+ * dimension `i + 1`, which corresponds to spatial dimension `i`. It is required
+ * that `cropStart[i] + cropEnd[i] <= blockShape[i] * inputShape[i + 1]`
  *
  * This operation is equivalent to the following steps:
  *
@@ -791,15 +798,20 @@ function batchToSpaceND_<T extends Tensor>(
 
   util.assert(
       $x.rank >= 1 + blockShape.length,
-      `input rank should be > than [blockShape] but got ${$x.rank}`);
+      `input rank is ${$x.rank} but should be > than blockShape.length ${
+          blockShape.length}`);
 
   util.assert(
       crops.length === blockShape.length,
-      `crops.shape[0] must be equal to [blockShape] but got ${crops.length}`);
+      `crops.length is ${
+          crops.length} but should be equal to blockShape.length  ${
+          blockShape.length}`);
 
   util.assert(
       $x.shape[0] % prod === 0,
-      `input tensor batch must be divisible by prod( blockShape )`);
+      `input tensor batch is ${
+          $x.shape[0]} but is not divisible by the product of ` +
+          `the elements of blockShape ${blockShape.join(' * ')} === ${prod}`);
 
   const grad = (dy: T) => {
     return {$x: () => dy.spaceToBatchND(blockShape, crops)};
@@ -810,52 +822,50 @@ function batchToSpaceND_<T extends Tensor>(
 }
 
 /**
- * This operation divides "spatial" dimensions [1, ..., M] of the input into
- * a grid of blocks of shape block_shape, and interleaves these blocks with
+ * This operation divides "spatial" dimensions `[1, ..., M]` of the input into
+ * a grid of blocks of shape `blockShape`, and interleaves these blocks with
  * the "batch" dimension (0) such that in the output, the spatial
- * dimensions [1, ..., M] correspond to the position within the grid,
+ * dimensions `[1, ..., M]` correspond to the position within the grid,
  * and the batch dimension combines both the position within a spatial block
  * and the original batch position. Prior to division into blocks,
  * the spatial dimensions of the input are optionally zero padded
- * according to paddings. See below for a precise description.
+ * according to `paddings`. See below for a precise description.
  *
  * ```js
- * const x = tf.tensor4d([1, 2, 3, 4], [4, 1, 1, 1]);
+ * const x = tf.tensor4d([1, 2, 3, 4], [1, 2, 2, 1]);
  * const blockShape = [2, 2];
  * const paddings = [[0, 0], [0, 0]];
  *
  * x.spaceToBatchND(blockShape, paddings).print();
  * ```
  *
- * @param x A `Tensor`. N-D with `x.shape` = `[batch] + spatialShape +
+ * @param x A `tf.Tensor`. N-D with `x.shape` = `[batch] + spatialShape +
  * remainingShape`, where spatialShape has `M` dimensions.
- * @param blockShape A 1-D array. Must be one of the following types: `int32`,
- * `int64`. Must have shape `[M]`, all values must be >= 1.
- * @param paddings A 2-D array.  Must be one of the following types: `int32`,
- * `int64`. Must have shape `[M, 2]`, all values must be >= 0. `paddings[i] =
- * [padStart, padEnd]` specifies the amount to zero-pad from input dimension
- * `i + 1`, which corresponds to spatial dimension `i`.
- * It is required that
+ * @param blockShape A 1-D array. Must have shape `[M]`, all values must
+ * be >= 1.
+ * @param paddings A 2-D array. Must have shape `[M, 2]`, all values must be >=
+ *     0. `paddings[i] = [padStart, padEnd]` specifies the amount to zero-pad
+ * from input dimension `i + 1`, which corresponds to spatial dimension `i`. It
+ * is required that
  * `(inputShape[i + 1] + padStart + padEnd) % blockShape[i] === 0`
  *
  * This operation is equivalent to the following steps:
  *
- * 1. Zero-pad the start and end of dimensions [1, ..., M] of the input
- * according to paddings to produce padded of shape padded_shape.
+ * 1. Zero-pad the start and end of dimensions `[1, ..., M]` of the input
+ * according to `paddings` to produce `padded` of shape paddedShape.
  *
- * 2. Reshape padded to reshaped_padded of shape:
- * [batch] + [padded_shape[1] / block_shape[0], block_shape[0], ...,
- * padded_shape[M] / block_shape[M-1], block_shape[M-1]] + remaining_shape
+ * 2. Reshape `padded` to `reshapedPadded` of shape:
+ * `[batch] + [paddedShape[1] / blockShape[0], blockShape[0], ...,
+ * paddedShape[M] / blockShape[M-1], blockShape[M-1]] + remainingShape`
  *
- * 3. Permute dimensions of reshaped_padded to produce permuted_
- * reshaped_padded of shape:
- * block_shape + [batch] + [padded_shape[1] / block_shape[0], ...,
- * padded_shape[M] / block_shape[M-1]] + remaining_shape
+ * 3. Permute dimensions of `reshapedPadded` to produce `permutedReshapedPadded`
+ * of shape: `blockShape + [batch] + [paddedShape[1] / blockShape[0], ...,
+ * paddedShape[M] / blockShape[M-1]] + remainingShape`
  *
- * 4. Reshape permuted_reshaped_padded to flatten block_shape into the
+ * 4. Reshape `permutedReshapedPadded` to flatten `blockShape` into the
  * batch dimension, producing an output tensor of shape:
- * [batch * prod(block_shape)] + [padded_shape[1] / block_shape[0], ...,
- * padded_shape[M] / block_shape[M-1]] + remaining_shape
+ * `[batch * prod(blockShape)] + [paddedShape[1] / blockShape[0], ...,
+ * paddedShape[M] / blockShape[M-1]] + remainingShape`
  */
 /** @doc {heading: 'Tensors', subheading: 'Transformations'} */
 function spaceToBatchND_<T extends Tensor>(
@@ -864,19 +874,29 @@ function spaceToBatchND_<T extends Tensor>(
 
   util.assert(
       $x.rank >= 1 + blockShape.length,
-      `input rank should be > than [blockShape] but got ${$x.rank}`);
+      `input rank ${$x.rank} should be > than [blockShape] ${
+          blockShape.length}`);
 
   util.assert(
       paddings.length === blockShape.length,
-      `paddings.shape[0] must be equal to [blockShape], got ${
-          paddings.length}`);
+      `paddings.shape[0] ${paddings.length} must be equal to [blockShape] ${
+          blockShape.length}`);
 
-  util.assert($x.shape.reduce((a, b, i) => {
-    if (i > 0 && i <= blockShape.length) {
-      return a && (b % blockShape[i - 1] === 0);
-    }
-    return a;
-  }, true), `input spatial dimensions must be divisible by blockShapes`);
+  util.assert(
+      $x.shape.reduce(
+          (a, b, i) => {
+            if (i > 0 && i <= blockShape.length) {
+              return a &&
+                  ((b + paddings[i - 1][0] + paddings[i - 1][1]) %
+                       blockShape[i - 1] ===
+                   0);
+            }
+            return a;
+          },
+          true),
+      `input spatial dimensions ${$x.shape.slice(1)} with paddings ${
+          paddings.toString()} must be divisible by blockShapes ${
+          blockShape.toString()}`);
 
   const grad = (dy: T) => {
     return {$x: () => dy.batchToSpaceND(blockShape, paddings)};
@@ -887,7 +907,7 @@ function spaceToBatchND_<T extends Tensor>(
 }
 
 /**
- * Unstacks a `Tensor` of rank-`R` into a list of rank-`(R-1)` `Tensor`s.
+ * Unstacks a `tf.Tensor` of rank-`R` into a list of rank-`(R-1)` `tf.Tensor`s.
  *
  * ```js
  * const a = tf.tensor2d([1, 2, 3, 4], [2, 2]);
@@ -924,67 +944,7 @@ function unstack_<T extends Tensor>(x: T|TensorLike, axis = 0): Tensor[] {
 }
 
 /**
- * Splits a `Tensor` into sub tensors.
- *
- * If `numOrSizeSplits` is a number, splits `x` along dimension `axis`
- * into `numOrSizeSplits` smaller tensors.
- * Requires that `numOrSizeSplits` evenly divides `x.shape[axis]`.
- *
- * If `numOrSizeSplits` is a number array, splits `x` into
- * `(numOrSizeSplits.length` pieces. The shape of the `i`-th piece has the
- * same size as `x` except along dimension `axis` where the size is
- * `numOrSizeSplits[i]`.
- *
- * ```js
- * const x = tf.tensor2d([1, 2, 3, 4, 5, 6, 7, 8], [2, 4]);
- * const [a, b] = tf.split(x, 2, 1);
- * a.print();
- * b.print();
- *
- * const [c, d, e] = tf.split(x, [1, 2, 1], 1);
- * c.print();
- * d.print();
- * e.print();
- * ```
- *
- * @param x The input tensor to split.
- * @param numOrSizeSplits Either an integer indicating the number of
- * splits along the axis or an array of integers containing the sizes of
- * each output tensor along the axis. If a number then it must evenly divide
- * `x.shape[axis]`; otherwise the sum of sizes must match `x.shape[axis]`.
- * @param axis The dimension along which to split. Defaults to 0 (the first
- * dim).
- */
-/** @doc {heading: 'Tensors', subheading: 'Slicing and Joining'} */
-function split_<T extends Tensor>(
-    x: T|TensorLike, numOrSizeSplits: number[]|number, axis = 0): T[] {
-  const $x = convertToTensor(x, 'x', 'split');
-
-  axis = parseAxisParam(axis, $x.shape)[0];
-  let splitSizes: number[];
-  if (typeof (numOrSizeSplits) === 'number') {
-    util.assert(
-        $x.shape[axis] % numOrSizeSplits === 0,
-        'Number of splits must evenly divide the axis.');
-    splitSizes = Array(numOrSizeSplits).fill($x.shape[axis] / numOrSizeSplits);
-  } else {
-    util.assert(
-        $x.shape[axis] === numOrSizeSplits.reduce((a, b) => a + b),
-        'The sum of sizes must match the size of the axis dimension.');
-    splitSizes = numOrSizeSplits;
-  }
-  const begin = Array($x.rank).fill(0);
-  const size = $x.shape.slice();
-  return splitSizes.map(s => {
-    size[axis] = s;
-    const slice = $x.slice(begin, size);
-    begin[axis] += s;
-    return slice;
-  });
-}
-
-/**
- * Computes the cumulative sum of a `Tensor` along `axis`.
+ * Computes the cumulative sum of a `tf.Tensor` along `axis`.
  *
  * ```js
  * const x = tf.tensor([1, 2, 3, 4]);
@@ -1032,7 +992,7 @@ function cumsum_<T extends Tensor>(
 }
 
 /**
- * Returns a `Tensor` that has expanded rank, by inserting a dimension
+ * Returns a `tf.Tensor` that has expanded rank, by inserting a dimension
  * into the tensor's shape.
  *
  * ```js
@@ -1064,12 +1024,144 @@ function expandDims_<R2 extends Rank>(
 }
 
 /**
- * Creates an empty `TensorBuffer` with the specified `shape` and `dtype`.
+ * Rearranges data from depth into blocks of spatial data. More specifically,
+ * this op outputs a copy of the input tensor where values from the `depth`
+ * dimension are moved in spatial blocks to the `height` and `width` dimensions.
+ * The attr `blockSize` indicates the input block size and how the data is
+ * moved.
  *
- * The values are stored in cpu as `TypedArray`. Fill the buffer using
+ *  - Chunks of data of size `blockSize * blockSize` from depth are rearranged
+ * into non-overlapping blocks of size `blockSize x blockSize`
+ *
+ *  - The width the output tensor is `inputWidth * blockSize`, whereas the
+ * height is `inputHeight * blockSize`
+ *
+ *  - The Y, X coordinates within each block of the output image are determined
+ * by the high order component of the input channel index
+ *
+ *  - The depth of the input tensor must be divisible by `blockSize *
+ * blockSize`
+ *
+ * The `dataFormat` attr specifies the layout of the input and output tensors
+ * with the following options: "NHWC": [ `batch, height, width, channels` ]
+ * "NCHW": [ `batch, channels, height, width` ]
+ *
+ * ```js
+ * const x = tf.tensor4d([1, 2, 3, 4], [1, 1, 1, 4]);
+ * const blockSize = 2;
+ * const dataFormat = "NHWC";
+ *
+ * tf.depthToSpace(x, blockSize, dataFormat).print();
+ * ```
+ *
+ * @param x The input tensor of rank 4
+ * @param blockSIze  An `int` that is `>= 2`. The size of the spatial block
+ * @param dataFormat An optional string from: "NHWC", "NCHW". Defaults to "NHWC"
+ */
+/** @doc {heading: 'Tensors', subheading: 'Transformations'} */
+function depthToSpace_(
+    x: Tensor4D|TensorLike4D, blockSize: number,
+    dataFormat: 'NHWC'|'NCHW' = 'NHWC'): Tensor4D {
+  const $x = convertToTensor(x, 'x', 'depthToSpace') as Tensor4D;
+
+  const inputHeight = (dataFormat === 'NHWC') ? $x.shape[1] : $x.shape[2];
+  const inputWidth = (dataFormat === 'NHWC') ? $x.shape[2] : $x.shape[3];
+  const inputDepth = (dataFormat === 'NHWC') ? $x.shape[3] : $x.shape[1];
+
+  util.assert(
+      inputHeight * blockSize >= 0,
+      `Negative dimension size caused by overflow when multiplying
+      ${inputHeight} and ${blockSize}  for depthToSpace with input shape
+      ${$x.shape}`);
+
+  util.assert(
+      inputWidth * blockSize >= 0,
+      `Negative dimension size caused by overflow when multiplying
+      ${inputWidth} and ${blockSize} for depthToSpace with input shape
+          ${$x.shape}`);
+
+  util.assert(
+      (inputDepth % (blockSize * blockSize) === 0),
+      `Dimension size must be evenly divisible by ${
+          blockSize * blockSize} but is ${
+          inputDepth} for depthToSpace with input shape ${$x.shape}`);
+
+  return ENV.engine.runKernel(
+      backend => backend.depthToSpace($x, blockSize, dataFormat), {$x});
+}
+
+/**
+ * Computes the difference between two lists of numbers.
+ *
+ * Given a Tensor `x` and a Tensor `y`, this operation returns a Tensor `out`
+ * that represents all values that are in `x` but not in `y`. The returned
+ * Tensor `out` is sorted in the same order that the numbers appear in `x`
+ * (duplicates are preserved). This operation also returns a Tensor indices that
+ * represents the position of each out element in `x`. In other words:
+ *
+ * `out[i] = x[idx[i]] for i in [0, 1, ..., out.length - 1]`
+ *
+ * ```js
+ * const x = [1, 2, 3, 4, 5, 6];
+ * const y = [1, 3, 5];
+ *
+ * const [out, indices] = await tf.setdiff1dAsync(x, y);
+ * out.print(); // [2, 4, 6]
+ * indices.print(); // [1, 3, 5]
+ * ```
+ *
+ * @param x 1-D Tensor. Values to keep.
+ * @param y 1-D Tensor. Must have the same type as x. Values to exclude in the
+ *     output.
+ * @returns Promise of Tensor tuple [out, indices].
+ *  out: Tensor with the same type as x.
+ *  indices: A Tensor of type int32.
+ */
+/** @doc {heading: 'Tensors', subheading: 'Transformations'} */
+async function setdiff1dAsync_(
+    x: Tensor|TensorLike, y: Tensor|TensorLike): Promise<[Tensor, Tensor]> {
+  const $x = convertToTensor(x, 'x', 'setdiff1d');
+  const $y = convertToTensor(y, 'y', 'setdiff1d');
+
+  util.assert(
+      $x.dtype === $y.dtype,
+      `x and y should have the same dtype, but got x (${$x.dtype}) and y (${
+          $y.dtype}).`);
+
+  util.assert($x.rank === 1, `x should be 1D tensor, but got x (${$x.shape}).`);
+
+  util.assert($y.rank === 1, `y should be 1D tensor, but got y (${$y.shape}).`);
+
+  const xVals = await $x.data();
+  const yVals = await $y.data();
+  const ySet = new Set(yVals);
+
+  let outputSize = 0;
+  for (let i = 0; i < xVals.length; i++) {
+    if (!ySet.has(xVals[i])) {
+      outputSize++;
+    }
+  }
+
+  const buffer = new TensorBuffer([outputSize], $x.dtype);
+  const indices = new TensorBuffer([outputSize], 'int32');
+  for (let i = 0, p = 0; i < xVals.length; i++) {
+    if (!ySet.has(xVals[i])) {
+      buffer.values[p] = xVals[i];
+      indices.values[p] = i;
+      p++;
+    }
+  }
+  return [buffer.toTensor(), indices.toTensor()];
+}
+
+/**
+ * Creates an empty `tf.TensorBuffer` with the specified `shape` and `dtype`.
+ *
+ * The values are stored in CPU as `TypedArray`. Fill the buffer using
  * `buffer.set()`, or by modifying directly `buffer.values`.
  *
- * When done, call `buffer.toTensor()` to get an immutable `Tensor` with
+ * When done, call `buffer.toTensor()` to get an immutable `tf.Tensor` with
  * those values.
  *
  * ```js
@@ -1088,14 +1180,15 @@ function expandDims_<R2 extends Rank>(
  * zeros.
  */
 /** @doc {heading: 'Tensors', subheading: 'Creation'} */
-function buffer<R extends Rank>(
-    shape: ShapeMap[R], dtype: DataType = 'float32',
-    values?: TypedArray): TensorBuffer<R> {
-  return new TensorBuffer<R>(shape, dtype, values);
+function buffer<R extends Rank, D extends DataType = 'float32'>(
+    shape: ShapeMap[R], dtype: D = 'float32' as D,
+    values?: DataTypeMap[D]): TensorBuffer<R, D> {
+  dtype = dtype || 'float32' as D;
+  return new TensorBuffer<R, D>(shape, dtype, values);
 }
 
 /**
- * Prints information about the `Tensor` including its data.
+ * Prints information about the `tf.Tensor` including its data.
  *
  * ```js
  * const verbose = true;
@@ -1116,9 +1209,11 @@ export {
   print      // Not wrapped in op() since no need to increase stack trace.
 };
 
+export const batchToSpaceND = op({batchToSpaceND_});
 export const cast = op({cast_});
 export const clone = op({clone_});
 export const cumsum = op({cumsum_});
+export const depthToSpace = op({depthToSpace_});
 export const expandDims = op({expandDims_});
 export const eye = op({eye_});
 export const fromPixels = op({fromPixels_});
@@ -1133,11 +1228,10 @@ export const rand = op({rand_});
 export const randomNormal = op({randomNormal_});
 export const randomUniform = op({randomUniform_});
 export const reshape = op({reshape_});
-export const split = op({split_});
+export const spaceToBatchND = op({spaceToBatchND_});
 export const squeeze = op({squeeze_});
 export const stack = op({stack_});
 export const tile = op({tile_});
 export const truncatedNormal = op({truncatedNormal_});
 export const unstack = op({unstack_});
-export const batchToSpaceND = op({batchToSpaceND_});
-export const spaceToBatchND = op({spaceToBatchND_});
+export const setdiff1dAsync = setdiff1dAsync_;

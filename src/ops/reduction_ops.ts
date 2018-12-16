@@ -23,7 +23,7 @@ import {TensorLike} from '../types';
 import * as util from '../util';
 import * as axis_util from './axis_util';
 import {op} from './operation';
-import {ones, scalar} from './tensor_ops';
+import {ones, scalar, zerosLike} from './tensor_ops';
 
 /**
  * Computes the log(sum(exp(elements across the reduction dimensions)).
@@ -73,13 +73,13 @@ function logSumExp_<T extends Tensor>(
 }
 
 /**
- * Computes the sum of elements across dimensions of a `Tensor`.
+ * Computes the sum of elements across dimensions of a `tf.Tensor`.
  *
  * Reduces the input along the dimensions given in `axes`. Unless `keepDims`
- * is true, the rank of the `Tensor` is reduced by 1 for each entry in `axes`.
- * If `keepDims` is true, the reduced dimensions are retained with length 1.
- * If axes has no entries, all dimensions are reduced, and a `Tensor` with a
- * single element is returned.
+ * is true, the rank of the `tf.Tensor` is reduced by 1 for each entry in
+ * `axes`. If `keepDims` is true, the reduced dimensions are retained with
+ * length 1. If axes has no entries, all dimensions are reduced, and a
+ * `tf.Tensor` with a single element is returned.
  *
  * ```js
  * const x = tf.tensor1d([1, 2, 3]);
@@ -143,12 +143,66 @@ function sum_<T extends Tensor>(
 }
 
 /**
- * Computes the mean of elements across dimensions of a `Tensor`.
+ * Computes the product of elements across dimensions of a `tf.Tensor`.
+ *
+ * Reduces the input along the dimensions given in `axes`. Unless `keepDims`
+ * is true, the rank of the `tf.Tensor` is reduced by 1 for each entry in
+ * `axes`. If `keepDims` is true, the reduced dimensions are retained with
+ * length 1. If `axes` has no entries, all dimensions are reduced, and a
+ * `tf.Tensor` with a single element is returned.
+ *
+ * ```js
+ * const x = tf.tensor1d([1, 2, 3]);
+ *
+ * x.prod().print();  // or tf.prod(x)
+ * ```
+ *
+ * ```js
+ * const x = tf.tensor2d([1, 2, 3, 4], [2, 2]);
+ *
+ * const axis = 1;
+ * x.prod(axis).print();  // or tf.prod(x, axis)
+ * ```
+ *
+ * @param x The input tensor to compute the product over. If the dtype is `bool`
+ *   it will be converted to `int32` and the output dtype will be `int32`.
+ * @param axis The dimension(s) to reduce. By default it reduces
+ *     all dimensions.
+ * @param keepDims If true, retains reduced dimensions with size 1.
+ */
+/** @doc {heading: 'Operations', subheading: 'Reduction'} */
+function prod_<T extends Tensor>(
+    x: Tensor|TensorLike, axis: number|number[] = null, keepDims = false): T {
+  let $x = convertToTensor(x, 'x', 'prod');
+
+  if ($x.dtype === 'bool') {
+    $x = $x.toInt();
+  }
+  const axes = axis_util.parseAxisParam(axis, $x.shape);
+
+  const permutation = axis_util.getAxesPermutation(axes, $x.rank);
+  let reductionAxes = axes;
+  let permutedX = $x;
+  if (permutation != null) {
+    permutedX = $x.transpose(permutation);
+    reductionAxes = axis_util.getInnerMostAxes(reductionAxes.length, $x.rank);
+  }
+  let value = ENV.engine.runKernel(
+      backend => backend.prod(permutedX, reductionAxes), {permutedX});
+  if (keepDims) {
+    const newShape = axis_util.expandShapeToKeepDim(value.shape, axes);
+    value = value.reshape(newShape);
+  }
+
+  return value as T;
+}
+/**
+ * Computes the mean of elements across dimensions of a `tf.Tensor`.
  *
  * Reduces `x` along the dimensions given in `axis`. Unless `keepDims` is
- * true, the rank of the `Tensor` is reduced by 1 for each entry in `axis`.
+ * true, the rank of the `tf.Tensor` is reduced by 1 for each entry in `axis`.
  * If `keepDims` is true, the reduced dimensions are retained with length 1.
- * If `axis` has no entries, all dimensions are reduced, and a `Tensor` with
+ * If `axis` has no entries, all dimensions are reduced, and a `tf.Tensor` with
  * a single element is returned.
  *
  * ```js
@@ -206,6 +260,27 @@ function mean_<T extends Tensor>(
 }
 
 /**
+ * Gradient helper function for the min and max operations.
+ */
+function gradForMinAndMax<T extends Tensor>(
+    dy: T, saved: Tensor[], xOrig: Tensor, origAxes: number[],
+    permutedAxes: number[]) {
+  let [y] = saved;
+  if (y.rank < xOrig.rank) {
+    y = y.reshape(axis_util.expandShapeToKeepDim(y.shape, origAxes)) as T;
+  }
+  if (dy.rank < xOrig.rank) {
+    dy = dy.reshape(axis_util.expandShapeToKeepDim(dy.shape, origAxes)) as T;
+  }
+  return {
+    $x: () => {
+      const dx = dy.mul(xOrig.equal(y).cast(dy.dtype));
+      return permutedAxes == null ? dx : dx.transpose(permutedAxes);
+    }
+  };
+}
+
+/**
  * Computes the minimum value from the input.
  *
  * Reduces the input along the dimensions given in `axes`. Unless `keepDims`
@@ -236,6 +311,7 @@ function mean_<T extends Tensor>(
 function min_<T extends Tensor>(
     x: Tensor|TensorLike, axis: number|number[] = null, keepDims = false): T {
   let $x = convertToTensor(x, 'x', 'min');
+  const xOrig = $x;
 
   const origAxes = axis_util.parseAxisParam(axis, $x.shape);
   let axes = origAxes;
@@ -244,22 +320,26 @@ function min_<T extends Tensor>(
     $x = $x.transpose(permutedAxes);
     axes = axis_util.getInnerMostAxes(axes.length, $x.rank);
   }
-  const res = ENV.engine.runKernel(backend => backend.min($x, axes), {$x});
+
+  const grad = (dy: T, saved: Tensor[]) =>
+      gradForMinAndMax(dy, saved, xOrig, origAxes, permutedAxes);
+  let res = ENV.engine.runKernel(
+      (backend, save) => save(backend.min($x, axes)), {$x}, grad);
   if (keepDims) {
     const newShape = axis_util.expandShapeToKeepDim(res.shape, origAxes);
-    return res.reshape(newShape) as T;
+    res = res.reshape(newShape) as T;
   }
   return res as T;
 }
 
 /**
- * Computes the maximum of elements across dimensions of a `Tensor`.
+ * Computes the maximum of elements across dimensions of a `tf.Tensor`.
  *
  * Reduces the input along the dimensions given in `axes`. Unless `keepDims`
- * is true, the rank of the `Tensor` is reduced by 1 for each entry in `axes`.
- * If `keepDims` is true, the reduced dimensions are retained with length 1.
- * If `axes` has no entries, all dimensions are reduced, and an `Tensor` with
- * a single element is returned.
+ * is true, the rank of the `tf.Tensor` is reduced by 1 for each entry in
+ * `axes`. If `keepDims` is true, the reduced dimensions are retained with
+ * length 1. If `axes` has no entries, all dimensions are reduced, and an
+ * `tf.Tensor` with a single element is returned.
  *
  * ```js
  * const x = tf.tensor1d([1, 2, 3]);
@@ -283,6 +363,7 @@ function min_<T extends Tensor>(
 function max_<T extends Tensor>(
     x: Tensor|TensorLike, axis: number|number[] = null, keepDims = false): T {
   let $x = convertToTensor(x, 'x', 'max');
+  const xOrig = $x;
 
   const origAxes = axis_util.parseAxisParam(axis, $x.shape);
   let axes = origAxes;
@@ -291,10 +372,14 @@ function max_<T extends Tensor>(
     $x = $x.transpose(permutedAxes);
     axes = axis_util.getInnerMostAxes(axes.length, $x.rank);
   }
-  const res = ENV.engine.runKernel(backend => backend.max($x, axes), {$x});
+
+  const grad = (dy: T, saved: Tensor[]) =>
+      gradForMinAndMax(dy, saved, xOrig, origAxes, permutedAxes);
+  let res = ENV.engine.runKernel(
+      (backend, save) => save(backend.max($x, axes)), {$x}, grad);
   if (keepDims) {
     const newShape = axis_util.expandShapeToKeepDim(res.shape, origAxes);
-    return res.reshape(newShape) as T;
+    res = res.reshape(newShape) as T;
   }
   return res as T;
 }
@@ -335,8 +420,11 @@ function argMin_<T extends Tensor>(x: Tensor|TensorLike, axis = 0): T {
     $x = $x.transpose(permutedAxes);
     axes = axis_util.getInnerMostAxes(axes.length, $x.rank);
   }
-  return ENV.engine.runKernel(backend => backend.argMin($x, axes[0]), {$x}) as
-      T;
+  const grad = (dy: T) => {
+    return {$x: () => zerosLike($x)};
+  };
+  return ENV.engine.runKernel(
+             backend => backend.argMin($x, axes[0]), {$x}, grad) as T;
 }
 
 /**
@@ -374,18 +462,21 @@ function argMax_<T extends Tensor>(x: Tensor|TensorLike, axis = 0): T {
     $x = $x.transpose(permutedAxes);
     axes = axis_util.getInnerMostAxes(axes.length, $x.rank);
   }
-  return ENV.engine.runKernel(backend => backend.argMax($x, axes[0]), {$x}) as
-      T;
+  const grad = (dy: T) => {
+    return {$x: () => zerosLike($x)};
+  };
+  return ENV.engine.runKernel(
+             backend => backend.argMax($x, axes[0]), {$x}, grad) as T;
 }
 
 /**
- * Computes the logical and of elements across dimensions of a `Tensor`.
+ * Computes the logical and of elements across dimensions of a `tf.Tensor`.
  *
  * Reduces the input along the dimensions given in `axes`. Unless `keepDims`
- * is true, the rank of the `Tensor` is reduced by 1 for each entry in `axes`.
- * If `keepDims` is true, the reduced dimensions are retained with length 1.
- * If `axes` has no entries, all dimensions are reduced, and an `Tensor` with
- * a single element is returned.
+ * is true, the rank of the `tf.Tensor` is reduced by 1 for each entry in
+ * `axes`. If `keepDims` is true, the reduced dimensions are retained with
+ * length 1. If `axes` has no entries, all dimensions are reduced, and an
+ * `tf.Tensor` with a single element is returned.
  *
  * ```js
  * const x = tf.tensor1d([1, 1, 1]);
@@ -409,9 +500,6 @@ function argMax_<T extends Tensor>(x: Tensor|TensorLike, axis = 0): T {
 function all_<T extends Tensor>(
     x: Tensor|TensorLike, axis: number|number[] = null, keepDims = false): T {
   let $x = convertToTensor(x, 'x', 'all', 'bool');
-  util.assert(
-      $x.dtype === 'bool',
-      `Error Tensor must be of type bool. Got: ${$x.dtype}`);
 
   const origAxes = axis_util.parseAxisParam(axis, $x.shape);
   let axes = origAxes;
@@ -429,13 +517,13 @@ function all_<T extends Tensor>(
 }
 
 /**
- * Computes the logical or of elements across dimensions of a `Tensor`.
+ * Computes the logical or of elements across dimensions of a `tf.Tensor`.
  *
  * Reduces the input along the dimensions given in `axes`. Unless `keepDims`
- * is true, the rank of the `Tensor` is reduced by 1 for each entry in `axes`.
- * If `keepDims` is true, the reduced dimensions are retained with length 1.
- * If `axes` has no entries, all dimensions are reduced, and an `Tensor` with
- * a single element is returned.
+ * is true, the rank of the `tf.Tensor` is reduced by 1 for each entry in
+ * `axes`. If `keepDims` is true, the reduced dimensions are retained with
+ * length 1. If `axes` has no entries, all dimensions are reduced, and an
+ * `tf.Tensor` with a single element is returned.
  *
  * ```js
  * const x = tf.tensor1d([1, 1, 1]);
@@ -459,9 +547,6 @@ function all_<T extends Tensor>(
 function any_<T extends Tensor>(
     x: Tensor|TensorLike, axis: number|number[] = null, keepDims = false): T {
   let $x = convertToTensor(x, 'x', 'any', 'bool');
-  util.assert(
-      $x.dtype === 'bool',
-      `Error Tensor must be of type bool. Got: ${$x.dtype}`);
 
   const origAxes = axis_util.parseAxisParam(axis, $x.shape);
   let axes = origAxes;
@@ -517,3 +602,4 @@ export const mean = op({mean_});
 export const min = op({min_});
 export const moments = op({moments_});
 export const sum = op({sum_});
+export const prod = op({prod_});

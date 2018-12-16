@@ -29,6 +29,26 @@ describeWithFlags('div', ALL_ENVS, () => {
     expectArraysClose(r, [1, 1, 1, 1, 2.5, 6 / 5]);
   });
 
+  it('TensorLike', () => {
+    const a = [0, 1, -2, -4, 4, -4];
+    const b = [0.15, 0.2, 0.25, 0.5, 0.7, 1.2];
+    const result = tf.div(a, b);
+
+    expect(result.shape).toEqual([6]);
+    expectArraysClose(
+        result, [0, 5.0, -8.0, -8.0, 5.714285850524902, -3.3333332538604736]);
+  });
+
+  it('TensorLike chained', () => {
+    const a = tf.tensor1d([0, 1, -2, -4, 4, -4]);
+    const b = [0.15, 0.2, 0.25, 0.5, 0.7, 1.2];
+    const result = a.div(b);
+
+    expect(result.shape).toEqual(a.shape);
+    expectArraysClose(
+        result, [0, 5.0, -8.0, -8.0, 5.714285850524902, -3.3333332538604736]);
+  });
+
   it('integer division implements floor divide', () => {
     const a = tf.tensor1d([-6, -6, -5, -4, -3, -3, 3, 3, 2], 'int32');
     const c = tf.tensor1d([-2, 2, 3, 2, -3, 3, 2, 3, 2], 'int32');
@@ -82,12 +102,14 @@ describeWithFlags('div', ALL_ENVS, () => {
     expectArraysClose(result, expected);
   });
 
-  it('throws when passed tensors of different types', () => {
-    const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
-    const b = tf.tensor2d([1, 2, 3, 4, 2, 5], [2, 3], 'int32');
+  it('upcasts when dtypes dont match', () => {
+    let res = tf.div(tf.scalar(6, 'int32'), tf.scalar(3, 'float32'));
+    expect(res.dtype).toBe('float32');
+    expectArraysClose(res, [2]);
 
-    expect(() => tf.div(a, b)).toThrowError();
-    expect(() => tf.div(b, a)).toThrowError();
+    res = tf.div(tf.scalar(6, 'int32'), tf.scalar(true, 'bool'));
+    expect(res.dtype).toBe('int32');
+    expectArraysClose(res, [6]);
   });
 
   it('throws when passed tensors of different shapes', () => {
@@ -344,6 +366,26 @@ describeWithFlags('mul', ALL_ENVS, () => {
     expectArraysClose(result, expected);
   });
 
+  it('TensorLike', () => {
+    const a = [[1, 2], [-3, -4]];
+    const b = [[5, 3], [4, -7]];
+    const expected = [5, 6, -12, 28];
+    const result = tf.mul(a, b);
+
+    expect(result.shape).toEqual([2, 2]);
+    expectArraysClose(result, expected);
+  });
+
+  it('TensorLike chained', () => {
+    const a = tf.tensor2d([1, 2, -3, -4], [2, 2]);
+    const b = [[5, 3], [4, -7]];
+    const expected = [5, 6, -12, 28];
+    const result = a.mul(b);
+
+    expect(result.shape).toEqual([2, 2]);
+    expectArraysClose(result, expected);
+  });
+
   it('broadcasting tensors', () => {
     const a = tf.tensor2d([1, 2, -3, -4], [2, 2]);
     const b = tf.scalar(2);
@@ -497,6 +539,41 @@ describeWithFlags('mul', ALL_ENVS, () => {
     expectArraysClose(db, [6 * 3, 7 * 3, 8 * 4, 9 * 4]);
   });
 
+  it('complex number multiplication', () => {
+    const real1 = tf.tensor1d([2]);
+    const imag1 = tf.tensor1d([3]);
+    const complex1 = tf.complex(real1, imag1);
+
+    const real2 = tf.tensor1d([4]);
+    const imag2 = tf.tensor1d([5]);
+    const complex2 = tf.complex(real2, imag2);
+
+    const result = complex1.mul(complex2);
+
+    expect(result.dtype).toBe('complex64');
+    expect(result.shape).toEqual([1]);
+    expectArraysClose(result, [2 * 4 - 3 * 5, 2 * 5 + 3 * 4]);
+  });
+
+  it('complex number broadcasting multiplication', () => {
+    const real1 = tf.tensor2d([1, 2, -3, -4], [2, 2]);
+    const imag1 = tf.tensor2d([10, 20, -30, -40], [2, 2]);
+    const complex1 = tf.complex(real1, imag1);
+
+    const real2 = tf.tensor1d([4]);
+    const imag2 = tf.tensor1d([5]);
+    const complex2 = tf.complex(real2, imag2);
+
+    const result = tf.mul(complex1, complex2);
+
+    expect(result.dtype).toEqual('complex64');
+    expect(result.shape).toEqual([2, 2]);
+    expectArraysClose(result, [
+      1 * 4 - 10 * 5, 1 * 5 + 10 * 4, 2 * 4 - 20 * 5, 2 * 5 + 20 * 4,
+      -3 * 4 + 30 * 5, -3 * 5 + -30 * 4, -4 * 4 + 40 * 5, -4 * 5 + -40 * 4
+    ]);
+  });
+
   it('throws when passed a as a non-tensor', () => {
     expect(() => tf.mul({} as tf.Tensor, tf.scalar(1)))
         .toThrowError(/Argument 'a' passed to 'mul' must be a Tensor/);
@@ -504,6 +581,19 @@ describeWithFlags('mul', ALL_ENVS, () => {
   it('throws when passed b as a non-tensor', () => {
     expect(() => tf.mul(tf.scalar(1), {} as tf.Tensor))
         .toThrowError(/Argument 'b' passed to 'mul' must be a Tensor/);
+  });
+  it('upcasts when dtypes dont match', () => {
+    let res = tf.mul(tf.scalar(2, 'int32'), tf.scalar(3, 'float32'));
+    expect(res.dtype).toBe('float32');
+    expectArraysClose(res, [6]);
+
+    res = tf.mul(tf.scalar(2, 'int32'), tf.scalar(true, 'bool'));
+    expect(res.dtype).toBe('int32');
+    expectArraysClose(res, [2]);
+
+    res = tf.mul(tf.scalar(2, 'int32'), tf.scalar(false, 'bool'));
+    expect(res.dtype).toBe('int32');
+    expectArraysClose(res, [0]);
   });
 
   it('accepts a tensor-like object', () => {
@@ -522,6 +612,28 @@ describeWithFlags('pow', ALL_ENVS, () => {
 
     expect(result.shape).toEqual([2, 3]);
     expectArraysClose(result, expected, 0.01);
+  });
+
+  it('TensorLike', () => {
+    const a = [1, 2, 3];
+    const exp = 2;
+
+    const result = tf.pow(a, exp);
+
+    expect(result.shape).toEqual([3]);
+    expect(result.dtype).toBe('float32');
+    expectArraysEqual(result, [1, 4, 9]);
+  });
+
+  it('TensorLike chained', () => {
+    const a = tf.tensor1d([1, 2, 3]);
+    const exp = 2;
+
+    const result = a.pow(exp);
+
+    expect(result.shape).toEqual([3]);
+    expect(result.dtype).toBe('float32');
+    expectArraysEqual(result, [1, 4, 9]);
   });
 
   it('int32^int32 returns int32', () => {
@@ -627,6 +739,13 @@ describeWithFlags('pow', ALL_ENVS, () => {
     expect(db.shape).toEqual(b.shape);
     expect(db.dtype).toEqual('float32');
     expectArraysClose(db, [3 * Math.pow(5, 2) * Math.log(5)]);
+  });
+
+  it('gradients: x ^ 2 where x = 0', () => {
+    const f = (x: tf.Scalar) => x.pow(tf.scalar(2)).asScalar();
+    const g = tf.grad(f)(tf.scalar(0));
+
+    expectArraysClose(g, [0]);
   });
 
   it('gradients: Scalar ^ Scalar fractional exponent', () => {
@@ -769,7 +888,7 @@ describeWithFlags('pow', ALL_ENVS, () => {
 
   it('negative base and fract exponent NaN', () => {
     const a = tf.tensor1d([-2, -3, -4], 'float32');
-    const b = tf.tensor1d([2.1, -3.01, 4.001], 'float32');
+    const b = tf.tensor1d([2.1, -3.01, 4.1], 'float32');
 
     const expected = [NaN, NaN, NaN];
     const result = tf.pow(a, b);
@@ -826,6 +945,26 @@ describeWithFlags('add', ALL_ENVS, () => {
     const b = tf.tensor1d([4, 2, -1]);
 
     const result = tf.add(a, b);
+
+    const expected = [6, 7, 0];
+    expectArraysClose(result, expected);
+  });
+
+  it('TensorLike', () => {
+    const a = [2, 5, 1];
+    const b = [4, 2, -1];
+
+    const result = tf.add(a, b);
+
+    const expected = [6, 7, 0];
+    expectArraysClose(result, expected);
+  });
+
+  it('TensorLike chained', () => {
+    const a = tf.tensor1d([2, 5, 1]);
+    const b = [4, 2, -1];
+
+    const result = a.add(b);
 
     const expected = [6, 7, 0];
     expectArraysClose(result, expected);
@@ -957,6 +1096,59 @@ describeWithFlags('add', ALL_ENVS, () => {
     expectArraysClose(db, [5, 4, 3, 2]);
   });
 
+  it('complex number addition', () => {
+    const real1 = tf.tensor1d([1]);
+    const imag1 = tf.tensor1d([2]);
+    const complex1 = tf.complex(real1, imag1);
+
+    const real2 = tf.tensor1d([3]);
+    const imag2 = tf.tensor1d([4]);
+    const complex2 = tf.complex(real2, imag2);
+
+    const result = complex1.add(complex2);
+
+    expect(result.dtype).toBe('complex64');
+    expect(result.shape).toEqual([1]);
+    expectArraysClose(result, [4, 6]);
+  });
+
+  it('complex number reshape and then addition', () => {
+    const real1 = tf.tensor1d([1]);
+    const imag1 = tf.tensor1d([2]);
+    const complex1 = tf.complex(real1, imag1);
+
+    const real2 = tf.tensor1d([3]);
+    const imag2 = tf.tensor1d([4]);
+    const complex2 = tf.complex(real2, imag2);
+
+    const complex1Reshaped = complex1.reshape([1, 1, 1]);
+    const complex2Reshaped = complex2.reshape([1, 1, 1]);
+
+    const result = complex1Reshaped.add(complex2Reshaped);
+
+    expect(result.dtype).toBe('complex64');
+    expect(result.shape).toEqual([1, 1, 1]);
+    expectArraysClose(result, [4, 6]);
+  });
+
+  it('complex number broadcasting addition', () => {
+    const real1 = tf.tensor2d([1, 2, -3, -4], [2, 2]);
+    const imag1 = tf.tensor2d([10, 20, -30, -40], [2, 2]);
+    const complex1 = tf.complex(real1, imag1);
+
+    const real2 = tf.tensor1d([4]);
+    const imag2 = tf.tensor1d([5]);
+    const complex2 = tf.complex(real2, imag2);
+
+    const result = tf.add(complex1, complex2);
+
+    expect(result.dtype).toEqual('complex64');
+    expect(result.shape).toEqual([2, 2]);
+    expectArraysClose(
+        result,
+        [1 + 4, 10 + 5, 2 + 4, 20 + 5, -3 + 4, -30 + 5, -4 + 4, -40 + 5]);
+  });
+
   it('throws when passed a as a non-tensor', () => {
     expect(() => tf.add({} as tf.Tensor, tf.scalar(1)))
         .toThrowError(/Argument 'a' passed to 'add' must be a Tensor/);
@@ -964,6 +1156,28 @@ describeWithFlags('add', ALL_ENVS, () => {
   it('throws when passed b as a non-tensor', () => {
     expect(() => tf.add(tf.scalar(1), {} as tf.Tensor))
         .toThrowError(/Argument 'b' passed to 'add' must be a Tensor/);
+  });
+
+  it('upcasts when dtypes dont match', () => {
+    let res = tf.add(tf.scalar(1, 'int32'), tf.scalar(1, 'float32'));
+    expect(res.dtype).toBe('float32');
+    expectArraysClose(res, [2]);
+
+    res = tf.add(tf.scalar(1, 'int32'), tf.scalar(true, 'bool'));
+    expect(res.dtype).toBe('int32');
+    expectArraysClose(res, [2]);
+
+    res = tf.add(tf.scalar(1, 'int32'), tf.scalar(false, 'bool'));
+    expect(res.dtype).toBe('int32');
+    expectArraysClose(res, [1]);
+
+    res = tf.add(tf.complex(4, 7), tf.scalar(1, 'float32'));
+    expect(res.dtype).toBe('complex64');
+    expectArraysClose(res, [5, 7]);
+
+    res = tf.add(tf.complex(4, 7), tf.scalar(1, 'int32'));
+    expect(res.dtype).toBe('complex64');
+    expectArraysClose(res, [5, 7]);
   });
 
   it('accepts a tensor-like object', () => {
@@ -1023,7 +1237,7 @@ describeWithFlags('addN', ALL_ENVS, () => {
     // tslint:disable-next-line:no-any
     expect(() => tf.addN(tf.scalar(3) as any))
         .toThrowError(
-            /The param passed to tf.addN\(\) must be a list of tensors/);
+            /The argument passed to tf.addN\(\) must be a list of tensors/);
   });
 
   it('errors if arguments not of same dtype', () => {
@@ -1072,6 +1286,26 @@ describeWithFlags('sub', ALL_ENVS, () => {
     const b = tf.tensor1d([4, 2, -1]);
 
     const result = tf.sub(a, b);
+
+    const expected = [-2, 3, 2];
+    expectArraysClose(result, expected);
+  });
+
+  it('TensorLike', () => {
+    const a = [2, 5, 1];
+    const b = [4, 2, -1];
+
+    const result = tf.sub(a, b);
+
+    const expected = [-2, 3, 2];
+    expectArraysClose(result, expected);
+  });
+
+  it('TensorLike chained', () => {
+    const a = tf.tensor1d([2, 5, 1]);
+    const b = [4, 2, -1];
+
+    const result = a.sub(b);
 
     const expected = [-2, 3, 2];
     expectArraysClose(result, expected);
@@ -1243,6 +1477,40 @@ describeWithFlags('sub', ALL_ENVS, () => {
     expectArraysClose(db, [-5 - 4, -3 - 2]);
   });
 
+  it('complex number subtraction', () => {
+    const real1 = tf.tensor1d([3]);
+    const imag1 = tf.tensor1d([5]);
+    const complex1 = tf.complex(real1, imag1);
+
+    const real2 = tf.tensor1d([1]);
+    const imag2 = tf.tensor1d([0]);
+    const complex2 = tf.complex(real2, imag2);
+
+    const result = complex1.sub(complex2);
+
+    expect(result.dtype).toBe('complex64');
+    expect(result.shape).toEqual([1]);
+    expectArraysClose(result, [2, 5]);
+  });
+
+  it('complex number broadcasting subtraction', () => {
+    const real1 = tf.tensor2d([1, 2, -3, -4], [2, 2]);
+    const imag1 = tf.tensor2d([10, 20, -30, -40], [2, 2]);
+    const complex1 = tf.complex(real1, imag1);
+
+    const real2 = tf.tensor1d([4]);
+    const imag2 = tf.tensor1d([5]);
+    const complex2 = tf.complex(real2, imag2);
+
+    const result = tf.sub(complex1, complex2);
+
+    expect(result.dtype).toEqual('complex64');
+    expect(result.shape).toEqual([2, 2]);
+    expectArraysClose(
+        result,
+        [1 - 4, 10 - 5, 2 - 4, 20 - 5, -3 - 4, -30 - 5, -4 - 4, -40 - 5]);
+  });
+
   it('throws when passed a as a non-tensor', () => {
     expect(() => tf.sub({} as tf.Tensor, tf.scalar(1)))
         .toThrowError(/Argument 'a' passed to 'sub' must be a Tensor/);
@@ -1250,6 +1518,27 @@ describeWithFlags('sub', ALL_ENVS, () => {
   it('throws when passed b as a non-tensor', () => {
     expect(() => tf.sub(tf.scalar(1), {} as tf.Tensor))
         .toThrowError(/Argument 'b' passed to 'sub' must be a Tensor/);
+  });
+  it('upcasts when dtypes dont match', () => {
+    let res = tf.sub(tf.scalar(1, 'int32'), tf.scalar(1, 'float32'));
+    expect(res.dtype).toBe('float32');
+    expectArraysClose(res, [0]);
+
+    res = tf.sub(tf.scalar(1, 'int32'), tf.scalar(true, 'bool'));
+    expect(res.dtype).toBe('int32');
+    expectArraysClose(res, [0]);
+
+    res = tf.sub(tf.scalar(1, 'int32'), tf.scalar(false, 'bool'));
+    expect(res.dtype).toBe('int32');
+    expectArraysClose(res, [1]);
+
+    res = tf.sub(tf.complex(4, 7), tf.scalar(1, 'float32'));
+    expect(res.dtype).toBe('complex64');
+    expectArraysClose(res, [3, 7]);
+
+    res = tf.sub(tf.complex(4, 7), tf.scalar(1, 'int32'));
+    expect(res.dtype).toBe('complex64');
+    expectArraysClose(res, [3, 7]);
   });
 
   it('accepts a tensor-like object', () => {

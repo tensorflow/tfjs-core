@@ -14,8 +14,12 @@
 # limitations under the License.
 # =============================================================================
 
-if [ "$TRAVIS_EVENT_TYPE" = cron ] && [[ $(node -v) = *v10* ]]
+set -e
+
+if [ "$TRAVIS_EVENT_TYPE" = cron ] && [[ $(node -v) = *v8* ]]
 then
+  yarn
+  yarn lint
   karma start --firebaseKey $FIREBASE_KEY --travis \
     --singleRun --reporters='dots,karma-typescript,BrowserStack' \
     --hostname='bs-local.com' --browsers=bs_chrome_mac

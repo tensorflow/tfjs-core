@@ -17,31 +17,31 @@
 
 import {ENV} from '../environment';
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
-import {convertToTensorArray} from '../tensor_util_env';
+import {convertToTensor, convertToTensorArray} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import {assert, sizeFromShape} from '../util';
 import {parseAxisParam} from './axis_util';
-import {assertParams, computeGradientSliceShapes, computeOutShape} from './concat_util';
+import {assertParamsConsistent, computeOutShape} from './concat_util';
 import {op} from './operation';
 import {tensor} from './tensor_ops';
 
 /**
- * Concatenates a list of `Tensor1D`s along an axis. See `concat` for details.
+ * Concatenates a list of`tf.Tensor1D`s along an axis. See `concat` for details.
  *
  * For example, if:
  * A: shape(3) = |r1, g1, b1|
  * B: shape(2) = |r2, g2|
  * C = tf.concat1d([A, B]) == |r1, g1, b1, r2, g2|
  *
- * @param tensors A list of `Tensor`s to concatenate.
+ * @param tensors A list of`tf.Tensor`s to concatenate.
  * @return The concatenated array.
  */
-function concat1d_(tensors: Tensor1D[]|TensorLike[]): Tensor1D {
+function concat1d_(tensors: Array<Tensor1D|TensorLike>): Tensor1D {
   return concat(tensors, 0 /* axis */);
 }
 
 /**
- * Concatenates a list of `Tensor2D`s along an axis. See `concat` for details.
+ * Concatenates a list of`tf.Tensor2D`s along an axis. See `concat` for details.
  *
  * For example, if:
  * A: shape(2, 3) = | r1, g1, b1 |
@@ -63,16 +63,17 @@ function concat1d_(tensors: Tensor1D[]|TensorLike[]): Tensor1D {
  *                   | r2, g2, b2, r4, g4, b4 |
  *
  *
- * @param tensors A list of `Tensor`s to concatenate.
+ * @param tensors A list of`tf.Tensor`s to concatenate.
  * @param axis The axis to concatenate along.
  * @return The concatenated array.
  */
-function concat2d_(tensors: Tensor2D[]|TensorLike[], axis: number): Tensor2D {
+function concat2d_(
+    tensors: Array<Tensor2D|TensorLike>, axis: number): Tensor2D {
   return concat(tensors, axis);
 }
 
 /**
- * Concatenates a list of `Tensor3D`s along an axis. See `concat` for details.
+ * Concatenates a list of`tf.Tensor3D`s along an axis. See `concat` for details.
  *
  * For example, if:
  * A: shape(2, 1, 3) = | r1, g1, b1 |
@@ -97,27 +98,29 @@ function concat2d_(tensors: Tensor2D[]|TensorLike[], axis: number): Tensor2D {
  * C = shape(2, 1, 6) = | r1, g1, b1, r3, g3, b3 |
  *                      | r2, g2, b2, r4, g4, b4 |
  *
- * @param tensors A list of `Tensor`s to concatenate.
+ * @param tensors A list of`tf.Tensor`s to concatenate.
  * @param axis The axis to concate along.
  * @return The concatenated array.
  */
-function concat3d_(tensors: Tensor3D[]|TensorLike[], axis: number): Tensor3D {
+function concat3d_(
+    tensors: Array<Tensor3D|TensorLike>, axis: number): Tensor3D {
   return concat(tensors, axis);
 }
 
 /**
- * Concatenates a list of `Tensor4D`s along an axis. See `concat` for details.
+ * Concatenates a list of`tf.Tensor4D`s along an axis. See `concat` for details.
  *
- * @param tensors A list of `Tensor`s to concatenate.
+ * @param tensors A list of`tf.Tensor`s to concatenate.
  * @param axis The axis to concate along.
  * @return The concatenated array.
  */
-function concat4d_(tensors: Tensor4D[]|TensorLike[], axis: number): Tensor4D {
+function concat4d_(
+    tensors: Array<Tensor4D|TensorLike>, axis: number): Tensor4D {
   return concat(tensors, axis);
 }
 
 /**
- * Concatenates a list of `Tensor`s along a given axis.
+ * Concatenates a list of`tf.Tensor`s along a given axis.
  *
  * The tensors ranks and types must match, and their sizes must match in all
  * dimensions except `axis`.
@@ -155,43 +158,85 @@ function concat4d_(tensors: Tensor4D[]|TensorLike[], axis: number): Tensor4D {
  * @param axis The axis to concate along. Defaults to 0 (the first dim).
  */
 /** @doc {heading: 'Tensors', subheading: 'Slicing and Joining'} */
-function concat_<T extends Tensor>(tensors: T[]|TensorLike[], axis = 0): T {
+function concat_<T extends Tensor>(tensors: Array<T|TensorLike>, axis = 0): T {
   assert(tensors.length >= 1, 'Pass at least one tensor to concat');
   let $tensors = convertToTensorArray(tensors, 'tensors', 'concat');
+  axis = parseAxisParam(axis, $tensors[0].shape)[0];
   const outShape = computeOutShape($tensors.map(t => t.shape), axis);
   if (sizeFromShape(outShape) === 0) {
     return tensor([], outShape) as T;
   }
   // Keep only non-empty tensors (ignore tensors with 0 in their shape).
   $tensors = $tensors.filter(t => t.size > 0);
-  let result = $tensors[0] as T;
   if ($tensors.length === 1) {
-    return result;
+    return $tensors[0];
   }
-  const axes = parseAxisParam(axis, result.shape);
 
-  for (let i = 1; i < $tensors.length; ++i) {
-    result = concat2Tensors(result, $tensors[i], axes[0]) as T;
-  }
-  return result;
+  const shapes = $tensors.map(t => t.shape);
+  assertParamsConsistent(shapes, axis);
+  const der = (dy: T) => {
+    const sizeSplits = shapes.map(s => s[axis]);
+    const derTensors = split(dy, sizeSplits, axis);
+    return derTensors.map(t => () => t) as {};
+  };
+  const inputs = $tensors as {};
+  return ENV.engine.runKernel(
+      backend => backend.concat($tensors, axis) as T, inputs, der);
 }
 
-function concat2Tensors<T extends Tensor>(a: T, b: T, axis: number): T {
-  assertParams(a.shape, b.shape, axis);
-  const outShape = computeOutShape([a.shape, b.shape], axis);
+/**
+ * Splits a`tf.Tensor` into sub tensors.
+ *
+ * If `numOrSizeSplits` is a number, splits `x` along dimension `axis`
+ * into `numOrSizeSplits` smaller tensors.
+ * Requires that `numOrSizeSplits` evenly divides `x.shape[axis]`.
+ *
+ * If `numOrSizeSplits` is a number array, splits `x` into
+ * `(numOrSizeSplits.length` pieces. The shape of the `i`-th piece has the
+ * same size as `x` except along dimension `axis` where the size is
+ * `numOrSizeSplits[i]`.
+ *
+ * ```js
+ * const x = tf.tensor2d([1, 2, 3, 4, 5, 6, 7, 8], [2, 4]);
+ * const [a, b] = tf.split(x, 2, 1);
+ * a.print();
+ * b.print();
+ *
+ * const [c, d, e] = tf.split(x, [1, 2, 1], 1);
+ * c.print();
+ * d.print();
+ * e.print();
+ * ```
+ *
+ * @param x The input tensor to split.
+ * @param numOrSizeSplits Either an integer indicating the number of
+ * splits along the axis or an array of integers containing the sizes of
+ * each output tensor along the axis. If a number then it must evenly divide
+ * `x.shape[axis]`; otherwise the sum of sizes must match `x.shape[axis]`.
+ * @param axis The dimension along which to split. Defaults to 0 (the first
+ * dim).
+ */
+/** @doc {heading: 'Tensors', subheading: 'Slicing and Joining'} */
+function split_<T extends Tensor>(
+    x: T|TensorLike, numOrSizeSplits: number[]|number, axis = 0): T[] {
+  const $x = convertToTensor(x, 'x', 'split');
 
-  // Do the reshape.
-  const a2D = a.as2D(-1, sizeFromShape(a.shape.slice(axis)));
-  const b2D = b.as2D(-1, sizeFromShape(b.shape.slice(axis)));
-  // Concats 2d tensors along axis=1. See comments in MathBackend.concat().
-  const {aBegin, aSize, bBegin, bSize} =
-      computeGradientSliceShapes(a2D.shape, b2D.shape);
-  const der = (dy: Tensor2D) => {
-    return {a: () => dy.slice(aBegin, aSize), b: () => dy.slice(bBegin, bSize)};
-  };
-  const res = ENV.engine.runKernel(
-      backend => backend.concat(a2D, b2D), {a: a2D, b: b2D}, der);
-  return res.reshape(outShape) as T;
+  axis = parseAxisParam(axis, $x.shape)[0];
+  let splitSizes: number[];
+  if (typeof (numOrSizeSplits) === 'number') {
+    assert(
+        $x.shape[axis] % numOrSizeSplits === 0,
+        'Number of splits must evenly divide the axis.');
+    splitSizes = Array(numOrSizeSplits).fill($x.shape[axis] / numOrSizeSplits);
+  } else {
+    assert(
+        $x.shape[axis] === numOrSizeSplits.reduce((a, b) => a + b),
+        'The sum of sizes must match the size of the axis dimension.');
+    splitSizes = numOrSizeSplits;
+  }
+  const der = (dy: T[]) => ({$x: () => concat(dy, axis)});
+  return ENV.engine.runKernel(
+      backend => backend.split($x, splitSizes, axis), {$x}, der);
 }
 
 export const concat = op({concat_});
@@ -199,3 +244,4 @@ export const concat1d = op({concat1d_});
 export const concat2d = op({concat2d_});
 export const concat3d = op({concat3d_});
 export const concat4d = op({concat4d_});
+export const split = op({split_});

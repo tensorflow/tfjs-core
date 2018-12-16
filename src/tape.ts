@@ -22,10 +22,10 @@ import * as util from './util';
 export interface TapeNode {
   id: number;
   name: string;
-  output: Tensor;
+  outputs: Tensor[];
   inputs: NamedTensorMap;
   // Optional params, defined only for ops with gradient impl.
-  gradient?: (dy: Tensor|NamedTensorMap) => NamedGradientMap;
+  gradient?: (dy: Tensor|Tensor[]) => NamedGradientMap;
 }
 
 export type NamedGradientMap = {
@@ -35,6 +35,7 @@ export type NamedGradientMap = {
 /**
  * Computes a list of TapeNodes that connect x to y, filtering everything else
  * out and preserving the order of the original tape elements.
+ *
  * @param tape The tape elements to filter.
  * @param xs The input Tensors.
  * @param y The output Tensor.
@@ -58,7 +59,7 @@ export function getFilteredNodesXToY(
       let anyInputFromX = false;
       for (let j = 0; j < xs.length; j++) {
         if (tensorsFromX[input.id]) {
-          tensorsFromX[node.output.id] = true;
+          node.outputs.forEach(output => tensorsFromX[output.id] = true);
           anyInputFromX = true;
           nodesFromX[node.id] = true;
           break;
@@ -71,7 +72,7 @@ export function getFilteredNodesXToY(
     }
   }
 
-  // Backwards pass to find all of the nodes and Tensors that lead to y.
+  // Backward pass to find all of the nodes and Tensors that lead to y.
   const tensorsLeadToY: {[tensorId: number]: boolean} = {};
   tensorsLeadToY[y.id] = true;
   const nodesToY: {[nodeId: number]: boolean} = {};
@@ -80,12 +81,9 @@ export function getFilteredNodesXToY(
     const node = tape[i];
     const nodeInputs = node.inputs;
 
-    const outputs: Tensor[] = [];
-    outputs.push(node.output);
-
     // If any of the outputs lead to y, mark all of the inputs as leading to y.
-    for (let j = 0; j < outputs.length; j++) {
-      if (tensorsLeadToY[outputs[j].id]) {
+    for (let j = 0; j < node.outputs.length; j++) {
+      if (tensorsLeadToY[node.outputs[j].id]) {
         for (const inputName in nodeInputs) {
           tensorsLeadToY[nodeInputs[inputName].id] = true;
           nodesToY[node.id] = true;
@@ -113,7 +111,7 @@ export function getFilteredNodesXToY(
       // Copy the node and overwrite inputsAndArgs to the pruned version.
       const prunedNode = Object.assign({}, node) as TapeNode;
       prunedNode.inputs = prunedInputs;
-      prunedNode.output = node.output;
+      prunedNode.outputs = node.outputs;
 
       filteredTape.push(prunedNode);
     }
@@ -124,6 +122,7 @@ export function getFilteredNodesXToY(
 
 /**
  * Backpropagate gradients through the filtered TapeNodes.
+ *
  * @param tensorAccumulatedGradientMap A map of Tensor to its gradient. This map
  * is mutated by this method.
  * @param filteredTape The filtered TapeNodes to backprop through.
@@ -131,11 +130,24 @@ export function getFilteredNodesXToY(
 export function backpropagateGradients(
     tensorAccumulatedGradientMap: {[tensorId: number]: Tensor},
     filteredTape: TapeNode[]) {
-  // Walk the tape backwards and keep a map of Tensor to its gradient.
+  // Walk the tape backward and keep a map of Tensor to its gradient.
   for (let i = filteredTape.length - 1; i >= 0; i--) {
     const node = filteredTape[i];
 
-    const dy = tensorAccumulatedGradientMap[node.output.id];
+    const dys: Tensor[] = [];
+    node.outputs.forEach(o => {
+      const gradTensor = tensorAccumulatedGradientMap[o.id];
+      if (gradTensor != null) {
+        dys.push(gradTensor);
+      } else {
+        // This particular output is not in the back-propagation subgraph, so it
+        // does not affect the final output, thus we put zeros for its dy.
+        const dy = Tensor.make(
+            o.shape, {values: util.makeZerosTypedArray(o.size, o.dtype)},
+            o.dtype);
+        dys.push(dy);
+      }
+    });
 
     if (node.gradient == null) {
       throw new Error(
@@ -144,7 +156,10 @@ export function backpropagateGradients(
     }
 
     // Backprop dy through this node and accumulate gradients over the inputs.
-    const inputGradients = node.gradient(dy);
+    const inputGradients =
+        // Grad functions of ops with single outputs expect a dy, while ops
+        // with multiple outputs expect dys (array of dy).
+        node.gradient(node.outputs.length === 1 ? dys[0] : dys);
     for (const inputName in node.inputs) {
       if (!(inputName in inputGradients)) {
         throw new Error(
@@ -154,6 +169,11 @@ export function backpropagateGradients(
 
       // Call the gradient function.
       const dx = inputGradients[inputName]();
+      if (dx.dtype !== 'float32') {
+        throw new Error(
+            `Error in gradient for op ${node.name}. The gradient of input ` +
+            `${inputName} must have 'float32' dtype, but has '${dx.dtype}'`);
+      }
       const x = node.inputs[inputName];
       if (!util.arraysEqual(dx.shape, x.shape)) {
         throw new Error(

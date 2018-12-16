@@ -16,43 +16,48 @@
  */
 
 import {tensorToString} from './tensor_format';
-import {DataType, Rank, ShapeMap, TypedArray} from './types';
+import {DataType, DataTypeMap, DataValues, NumericDataType, Rank, ShapeMap, SingleValueMap, TensorLike, TensorLike1D, TensorLike3D, TensorLike4D, TypedArray} from './types';
 import * as util from './util';
 import {computeStrides} from './util';
 
-/** @hidden */
-export interface TensorData {
+export interface TensorData<D extends DataType> {
   dataId?: DataId;
-  values?: TypedArray;
+  values?: DataTypeMap[D];
 }
 
 /**
- * A mutable object, similar to `Tensor`, that allows users to set values
- * at locations before converting to an immutable `Tensor`.
+ * A mutable object, similar to `tf.Tensor`, that allows users to set values
+ * at locations before converting to an immutable `tf.Tensor`.
  *
- * See `buffer` for creating a tensor buffer.
+ * See `tf.buffer` for creating a tensor buffer.
  */
 /** @doc {heading: 'Tensors', subheading: 'Classes'} */
-export class TensorBuffer<R extends Rank> {
+export class TensorBuffer<R extends Rank, D extends DataType = 'float32'> {
   size: number;
   shape: ShapeMap[R];
   strides: number[];
-  values: TypedArray;
+  values: DataTypeMap[D];
 
-  constructor(shape: ShapeMap[R], public dtype: DataType, values: TypedArray) {
+  constructor(shape: ShapeMap[R], public dtype: D, values?: DataTypeMap[D]) {
+    this.shape = shape.slice();
+    this.size = util.sizeFromShape(shape);
+
     if (values != null) {
       const n = values.length;
-      const size = util.sizeFromShape(shape);
       util.assert(
-          n === size,
+          n === this.size,
           `Length of values '${n}' does not match the size ` +
-              `inferred by the shape '${size}'`);
+              `inferred by the shape '${this.size}'.`);
     }
-    this.shape = shape.slice();
+    if (dtype === 'complex64') {
+      throw new Error(
+          `complex64 dtype TensorBuffers are not supported. Please create ` +
+          `a TensorBuffer for the real and imaginary parts separately and ` +
+          `call tf.complex(real, imag).`);
+    }
     this.values =
-        values || util.getTypedArrayFromDType(dtype, util.sizeFromShape(shape));
+        values || util.getArrayFromDType(dtype, util.sizeFromShape(this.shape));
     this.strides = computeStrides(shape);
-    this.size = util.sizeFromShape(shape);
   }
 
   /**
@@ -62,7 +67,7 @@ export class TensorBuffer<R extends Rank> {
    * @param locs  The location indices.
    */
   /** @doc {heading: 'Tensors', subheading: 'Creation'} */
-  set(value: number, ...locs: number[]) {
+  set(value: SingleValueMap[D], ...locs: number[]): void {
     if (locs.length === 0) {
       locs = [0];
     }
@@ -70,8 +75,9 @@ export class TensorBuffer<R extends Rank> {
         locs.length === this.rank,
         `The number of provided coordinates (${locs.length}) must ` +
             `match the rank (${this.rank})`);
+
     const index = this.locToIndex(locs);
-    this.values[index] = value;
+    this.values[index] = value as number;
   }
 
   /**
@@ -80,7 +86,7 @@ export class TensorBuffer<R extends Rank> {
    * @param locs The location indices.
    */
   /** @doc {heading: 'Tensors', subheading: 'Creation'} */
-  get(...locs: number[]): number {
+  get(...locs: number[]): SingleValueMap[D] {
     if (locs.length === 0) {
       locs = [0];
     }
@@ -124,7 +130,7 @@ export class TensorBuffer<R extends Rank> {
   }
 
   /**
-   * Creates an immutable `Tensor` object from the buffer.
+   * Creates an immutable `tf.Tensor` object from the buffer.
    */
   /** @doc {heading: 'Tensors', subheading: 'Creation'} */
   toTensor(): Tensor<R> {
@@ -135,10 +141,12 @@ export class TensorBuffer<R extends Rank> {
 export interface TensorTracker {
   registerTensor(t: Tensor): void;
   disposeTensor(t: Tensor): void;
-  write(dataId: DataId, values: TypedArray): void;
-  read(dataId: DataId): Promise<TypedArray>;
-  readSync(dataId: DataId): TypedArray;
+  write(dataId: DataId, values: DataValues): void;
+  read(dataId: DataId): Promise<DataValues>;
+  readSync(dataId: DataId): DataValues;
   registerVariable(v: Variable): void;
+  nextTensorId(): number;
+  nextVariableId(): number;
 }
 
 /**
@@ -146,9 +154,9 @@ export interface TensorTracker {
  */
 export interface OpHandler {
   cast<T extends Tensor>(x: T, dtype: DataType): T;
-  buffer<R extends Rank>(
-      shape: ShapeMap[R], dtype: DataType,
-      values?: TypedArray): TensorBuffer<R>;
+  buffer<R extends Rank, D extends DataType>(
+      shape: ShapeMap[R], dtype: D,
+      values?: DataTypeMap[D]): TensorBuffer<R, D>;
   print<T extends Tensor>(x: T, verbose: boolean): void;
   reshape<R2 extends Rank>(x: Tensor, shape: ShapeMap[R2]): Tensor<R2>;
   expandDims<R2 extends Rank>(x: Tensor, axis: number): Tensor<R2>;
@@ -157,73 +165,81 @@ export interface OpHandler {
   squeeze<T extends Tensor>(x: Tensor, axis?: number[]): T;
   clone<T extends Tensor>(x: T): T;
   tile<T extends Tensor>(x: T, reps: number[]): T;
-  gather<T extends Tensor>(x: T, indices: Tensor1D, axis: number): T;
-  matMul(a: Tensor2D, b: Tensor2D, transposeA: boolean, transposeB: boolean):
-      Tensor2D;
-  dot(t1: Tensor, t2: Tensor): Tensor;
+  gather<T extends Tensor>(x: T, indices: Tensor1D|TensorLike1D, axis: number):
+      T;
+  matMul<T extends Tensor>(
+      a: T, b: T|TensorLike, transposeA: boolean, transposeB: boolean): T;
+  dot(t1: Tensor, t2: Tensor|TensorLike): Tensor;
   norm(
       x: Tensor, ord: number|'euclidean'|'fro', axis: number|number[],
       keepDims: boolean): Tensor;
   slice<R extends Rank, T extends Tensor<R>>(
       x: T, begin: number|number[], size?: number|number[]): T;
+  split<T extends Tensor>(
+      x: T, numOrSizeSplits: number[]|number, axis?: number): T[];
   reverse<T extends Tensor>(x: T, axis?: number|number[]): T;
-  concat<T extends Tensor>(tensors: T[], axis: number): T;
-  stack<T extends Tensor>(tensors: T[], axis: number): Tensor;
+  concat<T extends Tensor>(tensors: Array<T|TensorLike>, axis: number): T;
+  stack<T extends Tensor>(tensors: Array<T|TensorLike>, axis: number): Tensor;
   unstack<T extends Tensor>(value: T, axis: number): Tensor[];
   pad<T extends Tensor>(
       x: T, paddings: Array<[number, number]>, constantValue: number): T;
   batchNormalization<R extends Rank>(
-      x: Tensor<R>, mean: Tensor<R>|Tensor1D, variance: Tensor<R>|Tensor1D,
-      varianceEpsilon: number, scale?: Tensor<R>|Tensor1D,
-      offset?: Tensor<R>|Tensor1D): Tensor<R>;
+      x: Tensor<R>, mean: Tensor<R>|Tensor1D|TensorLike,
+      variance: Tensor<R>|Tensor1D|TensorLike, varianceEpsilon: number,
+      scale?: Tensor<R>|Tensor1D|TensorLike,
+      offset?: Tensor<R>|Tensor1D|TensorLike): Tensor<R>;
   all<T extends Tensor>(x: Tensor, axis: number|number[], keepDims: boolean): T;
   any<T extends Tensor>(x: Tensor, axis: number|number[], keepDims: boolean): T;
   logSumExp<T extends Tensor>(
       x: Tensor, axis: number|number[], keepDims: boolean): T;
   sum<T extends Tensor>(x: Tensor, axis: number|number[], keepDims: boolean): T;
+  prod<T extends Tensor>(x: Tensor, axis: number|number[], keepDims: boolean):
+      T;
   mean<T extends Tensor>(x: Tensor, axis: number|number[], keepDims: boolean):
       T;
   min<T extends Tensor>(x: Tensor, axis: number|number[], keepDims: boolean): T;
   max<T extends Tensor>(x: Tensor, axis: number|number[], keepDims: boolean): T;
   argMin<T extends Tensor>(x: Tensor, axis: number): T;
   argMax<T extends Tensor>(x: Tensor, axis: number): T;
-  add<T extends Tensor>(a: Tensor, b: Tensor): T;
-  addStrict<T extends Tensor>(a: T, b: T): T;
-  sub<T extends Tensor>(a: Tensor, b: Tensor): T;
-  subStrict<T extends Tensor>(a: T, b: T): T;
-  pow<T extends Tensor>(base: T, exp: Tensor): T;
-  powStrict<T extends Tensor>(base: T, exp: Tensor): T;
-  mul<T extends Tensor>(a: Tensor, b: Tensor): T;
-  mulStrict<T extends Tensor>(a: T, b: T): T;
-  div<T extends Tensor>(a: Tensor, b: Tensor): T;
-  floorDiv<T extends Tensor>(a: Tensor, b: Tensor): T;
-  divStrict<T extends Tensor>(a: T, b: T): T;
-  mod<T extends Tensor>(a: Tensor, b: Tensor): T;
-  modStrict<T extends Tensor>(a: T, b: T): T;
-  minimum<T extends Tensor>(a: Tensor, b: Tensor): T;
-  minimumStrict<T extends Tensor>(a: T, b: T): T;
-  maximum<T extends Tensor>(a: Tensor, b: Tensor): T;
-  maximumStrict<T extends Tensor>(a: T, b: T): T;
-  squaredDifference<T extends Tensor>(a: Tensor, b: Tensor): T;
-  squaredDifferenceStrict<T extends Tensor>(a: T, b: T): T;
+  add<T extends Tensor>(a: Tensor, b: Tensor|TensorLike): T;
+  addStrict<T extends Tensor>(a: T, b: T|TensorLike): T;
+  atan2<T extends Tensor>(a: Tensor, b: Tensor|TensorLike): T;
+  sub<T extends Tensor>(a: Tensor, b: Tensor|TensorLike): T;
+  subStrict<T extends Tensor>(a: T, b: T|TensorLike): T;
+  pow<T extends Tensor>(base: T, exp: Tensor|TensorLike): T;
+  powStrict<T extends Tensor>(base: T, exp: Tensor|TensorLike): T;
+  mul<T extends Tensor>(a: Tensor, b: Tensor|TensorLike): T;
+  mulStrict<T extends Tensor>(a: T, b: T|TensorLike): T;
+  div<T extends Tensor>(a: Tensor, b: Tensor|TensorLike): T;
+  floorDiv<T extends Tensor>(a: Tensor, b: Tensor|TensorLike): T;
+  divStrict<T extends Tensor>(a: T, b: T|TensorLike): T;
+  mod<T extends Tensor>(a: Tensor, b: Tensor|TensorLike): T;
+  modStrict<T extends Tensor>(a: T, b: T|TensorLike): T;
+  minimum<T extends Tensor>(a: Tensor, b: Tensor|TensorLike): T;
+  minimumStrict<T extends Tensor>(a: T, b: T|TensorLike): T;
+  maximum<T extends Tensor>(a: Tensor, b: Tensor|TensorLike): T;
+  maximumStrict<T extends Tensor>(a: T, b: T|TensorLike): T;
+  squaredDifference<T extends Tensor>(a: Tensor, b: Tensor|TensorLike): T;
+  squaredDifferenceStrict<T extends Tensor>(a: T, b: T|TensorLike): T;
   transpose<T extends Tensor>(x: T, perm?: number[]): T;
   logicalNot<T extends Tensor>(x: T): T;
-  logicalAnd<T extends Tensor>(a: Tensor, b: Tensor): T;
-  logicalOr<T extends Tensor>(a: Tensor, b: Tensor): T;
-  logicalXor<T extends Tensor>(a: Tensor, b: Tensor): T;
-  where<T extends Tensor>(condition: Tensor, a: T, b: T): T;
-  notEqual<T extends Tensor>(a: Tensor, b: Tensor): T;
-  notEqualStrict<T extends Tensor>(a: T, b: T): T;
-  less<T extends Tensor>(a: Tensor, b: Tensor): T;
-  lessStrict<T extends Tensor>(a: T, b: T): T;
-  equal<T extends Tensor>(a: Tensor, b: Tensor): T;
-  equalStrict<T extends Tensor>(a: T, b: T): T;
-  lessEqual<T extends Tensor>(a: Tensor, b: Tensor): T;
-  lessEqualStrict<T extends Tensor>(a: T, b: T): T;
-  greater<T extends Tensor>(a: Tensor, b: Tensor): T;
-  greaterStrict<T extends Tensor>(a: T, b: T): T;
-  greaterEqual<T extends Tensor>(a: Tensor, b: Tensor): T;
-  greaterEqualStrict<T extends Tensor>(a: T, b: T): T;
+  logicalAnd<T extends Tensor>(a: Tensor, b: Tensor|TensorLike): T;
+  logicalOr<T extends Tensor>(a: Tensor, b: Tensor|TensorLike): T;
+  logicalXor<T extends Tensor>(a: Tensor, b: Tensor|TensorLike): T;
+  where<T extends Tensor>(condition: Tensor|TensorLike, a: T, b: T|TensorLike):
+      T;
+  notEqual<T extends Tensor>(a: Tensor, b: Tensor|TensorLike): T;
+  notEqualStrict<T extends Tensor>(a: T, b: T|TensorLike): T;
+  less<T extends Tensor>(a: Tensor, b: Tensor|TensorLike): T;
+  lessStrict<T extends Tensor>(a: T, b: T|TensorLike): T;
+  equal<T extends Tensor>(a: Tensor, b: Tensor|TensorLike): T;
+  equalStrict<T extends Tensor>(a: T, b: T|TensorLike): T;
+  lessEqual<T extends Tensor>(a: Tensor, b: Tensor|TensorLike): T;
+  lessEqualStrict<T extends Tensor>(a: T, b: T|TensorLike): T;
+  greater<T extends Tensor>(a: Tensor, b: Tensor|TensorLike): T;
+  greaterStrict<T extends Tensor>(a: T, b: T|TensorLike): T;
+  greaterEqual<T extends Tensor>(a: Tensor, b: Tensor|TensorLike): T;
+  greaterEqualStrict<T extends Tensor>(a: T, b: T|TensorLike): T;
   neg<T extends Tensor>(x: T): T;
   ceil<T extends Tensor>(x: T): T;
   floor<T extends Tensor>(x: T): T;
@@ -243,6 +259,8 @@ export interface OpHandler {
   sigmoid<T extends Tensor>(x: T): T;
   logSigmoid<T extends Tensor>(x: T): T;
   softplus<T extends Tensor>(x: T): T;
+  zerosLike<T extends Tensor>(x: T): T;
+  onesLike<T extends Tensor>(x: T): T;
   sin<T extends Tensor>(x: T): T;
   cos<T extends Tensor>(x: T): T;
   tan<T extends Tensor>(x: T): T;
@@ -261,8 +279,9 @@ export interface OpHandler {
   elu<T extends Tensor>(x: T): T;
   selu<T extends Tensor>(x: T): T;
   leakyRelu<T extends Tensor>(x: T, alpha: number): T;
-  prelu<T extends Tensor>(x: T, alpha: T): T;
+  prelu<T extends Tensor>(x: T, alpha: T|TensorLike): T;
   softmax<T extends Tensor>(logits: T, dim: number): T;
+  logSoftmax<T extends Tensor>(logits: T, axis: number): T;
   image: {
     resizeBilinear<T extends Tensor3D|Tensor4D>(
         images: T, size: [number, number], alignCorners: boolean): T;
@@ -270,24 +289,29 @@ export interface OpHandler {
         images: T, size: [number, number], alignCorners: boolean): T;
   };
   conv1d<T extends Tensor2D|Tensor3D>(
-      x: T, filter: Tensor3D, stride: number, pad: 'valid'|'same'|number,
-      dataFormat: 'NWC'|'NCW', dilation: number,
+      x: T, filter: Tensor3D|TensorLike3D, stride: number,
+      pad: 'valid'|'same'|number, dataFormat: 'NWC'|'NCW', dilation: number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): T;
   conv2d<T extends Tensor3D|Tensor4D>(
-      x: T, filter: Tensor4D, strides: [number, number]|number,
+      x: T, filter: Tensor4D|TensorLike4D, strides: [number, number]|number,
       pad: 'valid'|'same'|number, dataFormat: 'NHWC'|'NCHW',
       dilations: [number, number]|number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): T;
   conv2dTranspose<T extends Tensor3D|Tensor4D>(
-      x: T, filter: Tensor4D,
+      x: T, filter: Tensor4D|TensorLike4D,
       outputShape: [number, number, number, number]|[number, number, number],
       strides: [number, number]|number, pad: 'valid'|'same'|number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): T;
   depthwiseConv2d<T extends Tensor3D|Tensor4D>(
-      x: T, filter: Tensor4D, strides: [number, number]|number,
+      x: T, filter: Tensor4D|TensorLike4D, strides: [number, number]|number,
       pad: 'valid'|'same'|number, dataFormat: 'NHWC'|'NCHW',
       dilations: [number, number]|number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): T;
+  separableConv2d<T extends Tensor3D|Tensor4D>(
+      x: T|TensorLike, depthwiseFilter: Tensor4D|TensorLike4D,
+      pointwiseFilter: Tensor4D|TensorLike, strides: [number, number]|number,
+      pad: 'valid'|'same', dilation: [number, number]|number,
+      dataFormat: 'NHWC'|'NCHW'): T;
   maxPool<T extends Tensor3D|Tensor4D>(
       x: T, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number,
@@ -296,10 +320,14 @@ export interface OpHandler {
       x: T, filterSize: [number, number]|number,
       strides: [number, number]|number, pad: 'valid'|'same'|number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): T;
+  pool<T extends Tensor3D|Tensor4D>(
+      input: T, windowShape: [number, number]|number, poolingType: 'avg'|'max',
+      padding: 'valid'|'same'|number, diationRate?: [number, number]|number,
+      strides?: [number, number]|number): T;
   localResponseNormalization<T extends Tensor3D|Tensor4D>(
       x: T, depthRadius: number, bias: number, alpha: number, beta: number): T;
   unsortedSegmentSum<T extends Tensor>(
-      x: T, segmentIds: Tensor1D, numSegments: number): T;
+      x: T, segmentIds: Tensor1D|TensorLike1D, numSegments: number): T;
   batchToSpaceND<T extends Tensor>(
       x: T, blockShape: number[], crops: number[][]): T;
   spaceToBatchND<T extends Tensor>(
@@ -309,6 +337,8 @@ export interface OpHandler {
   stridedSlice<T extends Tensor>(
       x: T, begin: number[], end: number[], strides: number[],
       beginMask: number, endMask: number): T;
+  depthToSpace(x: Tensor4D, blockSize: number, dataFormat: string): Tensor4D;
+  spectral: {fft(x: Tensor): Tensor; ifft(x: Tensor): Tensor;};
 }
 
 // For tracking tensor creation and disposal.
@@ -344,15 +374,13 @@ export function setOpHandler(handler: OpHandler) {
 export type DataId = object;  // object instead of {} to force non-primitive.
 
 /**
- * A `Tensor` object represents an immutable, multidimensional array of numbers
- * that has a shape and a data type.
+ * A `tf.Tensor` object represents an immutable, multidimensional array of
+ * numbers that has a shape and a data type.
  *
- * See `tensor` for details on how to create a `Tensor`.
+ * See `tf.tensor` for details on how to create a `tf.Tensor`.
  */
 /** @doc {heading: 'Tensors', subheading: 'Classes'} */
 export class Tensor<R extends Rank = Rank> {
-  private static nextId = 0;
-
   /** Unique id of this tensor. */
   readonly id: number;
   /**
@@ -377,20 +405,14 @@ export class Tensor<R extends Rank = Rank> {
   readonly strides: number[];
 
   protected constructor(
-      shape: ShapeMap[R], dtype: DataType, values?: TypedArray,
+      shape: ShapeMap[R], dtype: DataType, values?: DataValues,
       dataId?: DataId) {
-    this.size = util.sizeFromShape(shape);
-    if (values != null) {
-      util.assert(
-          this.size === values.length,
-          `Based on the provided shape, [${shape}], the tensor should have ` +
-              `${this.size} values but has ${values.length}`);
-    }
     this.shape = shape.slice();
     this.dtype = dtype || 'float32';
+    this.size = util.sizeFromShape(shape);
     this.strides = computeStrides(shape);
     this.dataId = dataId != null ? dataId : {};
-    this.id = Tensor.nextId++;
+    this.id = trackerFn().nextTensorId();
     this.rankType = (this.rank < 5 ? this.rank.toString() : 'higher') as R;
     trackerFn().registerTensor(this);
     if (values != null) {
@@ -404,7 +426,7 @@ export class Tensor<R extends Rank = Rank> {
    */
   static make<T extends Tensor<R>, D extends DataType = 'float32',
                                              R extends Rank = Rank>(
-      shape: ShapeMap[R], data: TensorData, dtype?: D): T {
+      shape: ShapeMap[R], data: TensorData<D>, dtype?: D): T {
     return new Tensor(shape, dtype, data.values, data.dataId) as T;
   }
 
@@ -415,7 +437,7 @@ export class Tensor<R extends Rank = Rank> {
     return this.as1D();
   }
 
-  /** Converts a size-1 `Tensor` to a `Scalar`. */
+  /** Converts a size-1 `tf.Tensor` to a `tf.Scalar`. */
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
   asScalar(): Scalar {
     this.throwIfDisposed();
@@ -423,7 +445,7 @@ export class Tensor<R extends Rank = Rank> {
     return this.reshape<Rank.R0>([]);
   }
 
-  /** Converts a `Tensor` to a `Tensor1D`. */
+  /** Converts a `tf.Tensor` to a `tf.Tensor1D`. */
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
   as1D(): Tensor1D {
     this.throwIfDisposed();
@@ -431,10 +453,10 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   /**
-   * Converts a `Tensor` to a `Tensor2D`.
+   * Converts a `tf.Tensor` to a `tf.Tensor2D`.
    *
-   * @param rows Number of rows in `Tensor2D`.
-   * @param columns Number of columns in `Tensor2D`.
+   * @param rows Number of rows in `tf.Tensor2D`.
+   * @param columns Number of columns in `tf.Tensor2D`.
    */
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
   as2D(rows: number, columns: number): Tensor2D {
@@ -443,11 +465,11 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   /**
-   * Converts a `Tensor` to a `Tensor3D`.
+   * Converts a `tf.Tensor` to a `tf.Tensor3D`.
    *
-   * @param rows Number of rows in `Tensor3D`.
-   * @param columns Number of columns in `Tensor3D`.
-   * @param depth Depth of `Tensor3D`.
+   * @param rows Number of rows in `tf.Tensor3D`.
+   * @param columns Number of columns in `tf.Tensor3D`.
+   * @param depth Depth of `tf.Tensor3D`.
    */
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
   as3D(rows: number, columns: number, depth: number): Tensor3D {
@@ -456,12 +478,12 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   /**
-   * Converts a `Tensor` to a `Tensor4D`.
+   * Converts a `tf.Tensor` to a `tf.Tensor4D`.
    *
-   * @param rows Number of rows in `Tensor4D`.
-   * @param columns Number of columns in `Tensor4D`.
-   * @param depth Depth of `Tensor4D`.
-   * @param depth2 4th dimension of `Tensor4D`.
+   * @param rows Number of rows in `tf.Tensor4D`.
+   * @param columns Number of columns in `tf.Tensor4D`.
+   * @param depth Depth of `tf.Tensor4D`.
+   * @param depth2 4th dimension of `tf.Tensor4D`.
    */
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
   as4D(rows: number, columns: number, depth: number, depth2: number): Tensor4D {
@@ -470,7 +492,24 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   /**
-   * Casts a `Tensor` to a specified dtype.
+   * Converts a `tf.Tensor` to a `tf.Tensor5D`.
+   *
+   * @param rows Number of rows in `tf.Tensor5D`.
+   * @param columns Number of columns in `tf.Tensor5D`.
+   * @param depth Depth of `tf.Tensor5D`.
+   * @param depth2 4th dimension of `tf.Tensor5D`.
+   * @param depth3 5th dimension of 'tf.Tensor5D'
+   */
+  /** @doc {heading: 'Tensors', subheading: 'Classes'} */
+  as5D(
+      rows: number, columns: number, depth: number, depth2: number,
+      depth3: number): Tensor5D {
+    this.throwIfDisposed();
+    return this.reshape<Rank.R5>([rows, columns, depth, depth2, depth3]);
+  }
+
+  /**
+   * Casts a `tf.Tensor` to a specified dtype.
    *
    * @param dtype Data-type to cast the tensor to.
    */
@@ -495,6 +534,9 @@ export class Tensor<R extends Rank = Rank> {
     util.assert(
         locs.length === this.rank,
         'Number of coordinates in get() must match the rank of the tensor');
+    util.assert(
+        this.dtype !== 'complex64',
+        'Tensor.get() is not supported for complex64 tensors yet.');
     this.throwIfDisposed();
     if (locs.length === 0) {
       locs = [0];
@@ -506,34 +548,34 @@ export class Tensor<R extends Rank = Rank> {
     return this.dataSync()[index];
   }
 
-  /** Returns a `TensorBuffer` that holds the underlying data. */
+  /** Returns a `tf.TensorBuffer` that holds the underlying data. */
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
-  buffer(): TensorBuffer<R> {
-    return opHandler.buffer(this.shape, this.dtype, this.dataSync());
+  buffer<D extends DataType>(): TensorBuffer<R, D> {
+    return opHandler.buffer(this.shape, this.dtype as D, this.dataSync());
   }
 
   /**
-   * Asynchronously downloads the values from the `Tensor`. Returns a promise of
-   * `TypedArray` that resolves when the computation has finished.
+   * Asynchronously downloads the values from the `tf.Tensor`. Returns a promise
+   * of `TypedArray` that resolves when the computation has finished.
    */
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
-  async data(): Promise<TypedArray> {
+  async data<D extends DataType = NumericDataType>(): Promise<DataTypeMap[D]> {
     this.throwIfDisposed();
     return trackerFn().read(this.dataId);
   }
 
   /**
-   * Synchronously downloads the values from the `Tensor`. This blocks the UI
+   * Synchronously downloads the values from the `tf.Tensor`. This blocks the UI
    * thread until the values are ready, which can cause performance issues.
    */
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
-  dataSync(): TypedArray {
+  dataSync<D extends DataType = NumericDataType>(): DataTypeMap[D] {
     this.throwIfDisposed();
     return trackerFn().readSync(this.dataId);
   }
 
   /**
-   * Disposes `Tensor` from memory.
+   * Disposes `tf.Tensor` from memory.
    */
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
   dispose(): void {
@@ -574,7 +616,7 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   /**
-   * Prints the `Tensor`. See `print` for details.
+   * Prints the `tf.Tensor`. See `tf.print` for details.
    *
    * @param verbose Whether to print verbose information about the tensor,
    *    including dtype and size.
@@ -586,7 +628,7 @@ export class Tensor<R extends Rank = Rank> {
 
   /**
    * Reshapes the tensor into the provided shape.
-   * See `reshape` for more details.
+   * See `tf.reshape` for more details.
    *
    * @param newShape An array of integers defining the output tensor shape.
    */
@@ -608,8 +650,8 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   /**
-   * Returns a `Tensor` that has expanded rank, by inserting a dimension
-   * into the tensor's shape. See `expandDims` for details.
+   * Returns a `tf.Tensor` that has expanded rank, by inserting a dimension
+   * into the tensor's shape. See `tf.expandDims` for details.
    *
    * @param axis The dimension index at which to insert shape of 1. Defaults to
    *    0 (the first dimension).
@@ -620,7 +662,7 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   /**
-   * Returns the cumulative sum of the `Tensor` along `axis`.
+   * Returns the cumulative sum of the `tf.Tensor` along `axis`.
    *
    * @param axis The axis along which to sum. Optional. Defaults to 0.
    * @param exclusive Whether to perform exclusive cumulative sum. Defaults to
@@ -636,8 +678,8 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   /**
-   * Returns a `Tensor` with dimensions of size 1 removed from the shape.
-   * See `squeeze` for more details.
+   * Returns a `tf.Tensor` with dimensions of size 1 removed from the shape.
+   * See `tf.squeeze` for more details.
    *
    * @param axis A list of numbers. If specified, only squeezes the
    *    dimensions listed. The dimension index starts at 0. It is an error to
@@ -649,7 +691,7 @@ export class Tensor<R extends Rank = Rank> {
     return opHandler.squeeze(this, axis);
   }
 
-  /** Returns a copy of the tensor. See `clone` for details. */
+  /** Returns a copy of the tensor. See `tf.clone` for details. */
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
   clone<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
@@ -671,16 +713,17 @@ export class Tensor<R extends Rank = Rank> {
     return opHandler.tile(this, reps) as T;
   }
 
-  gather<T extends this>(this: T, indices: Tensor1D, axis = 0): T {
+  gather<T extends this>(this: T, indices: Tensor1D|TensorLike1D, axis = 0): T {
     this.throwIfDisposed();
     return opHandler.gather(this, indices, axis) as T;
   }
 
-  matMul(b: Tensor2D, transposeA = false, transposeB = false): Tensor2D {
+  matMul<T extends Tensor>(
+      this: T, b: T|TensorLike, transposeA = false, transposeB = false): T {
     this.throwIfDisposed();
-    return opHandler.matMul(this as Tensor2D, b, transposeA, transposeB);
+    return opHandler.matMul(this, b, transposeA, transposeB);
   }
-  dot(b: Tensor): Tensor {
+  dot(b: Tensor|TensorLike): Tensor {
     this.throwIfDisposed();
     return opHandler.dot(this, b);
   }
@@ -699,9 +742,17 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return opHandler.reverse(this, axis);
   }
-  concat<T extends Tensor>(this: T, x: T, axis = 0): T {
+  concat<T extends Tensor>(this: T, x: T|Array<T|TensorLike>, axis = 0): T {
     this.throwIfDisposed();
-    return opHandler.concat([this, x], axis);
+    if (x instanceof Tensor) {
+      x = [x];
+    }
+    return opHandler.concat([this, ...x], axis);
+  }
+  split<T extends Tensor>(this: T, numOrSizeSplits: number[]|number, axis = 0):
+      T[] {
+    this.throwIfDisposed();
+    return opHandler.split(this, numOrSizeSplits, axis);
   }
   stack(x: Tensor, axis = 0): Tensor {
     return opHandler.stack([this, x], axis);
@@ -714,9 +765,10 @@ export class Tensor<R extends Rank = Rank> {
     return opHandler.pad(this, paddings, constantValue);
   }
   batchNormalization(
-      mean: Tensor<R>|Tensor1D, variance: Tensor<R>|Tensor1D,
-      varianceEpsilon = .001, scale?: Tensor<R>|Tensor1D,
-      offset?: Tensor<R>|Tensor1D): Tensor<R> {
+      mean: Tensor<R>|Tensor1D|TensorLike,
+      variance: Tensor<R>|Tensor1D|TensorLike, varianceEpsilon = .001,
+      scale?: Tensor<R>|Tensor1D|TensorLike,
+      offset?: Tensor<R>|Tensor1D|TensorLike): Tensor<R> {
     this.throwIfDisposed();
     return opHandler.batchNormalization(
         this, mean, variance, varianceEpsilon, scale, offset);
@@ -739,6 +791,10 @@ export class Tensor<R extends Rank = Rank> {
   sum<T extends Tensor>(axis: number|number[] = null, keepDims = false): T {
     this.throwIfDisposed();
     return opHandler.sum(this, axis, keepDims);
+  }
+  prod<T extends Tensor>(axis: number|number[] = null, keepDims = false): T {
+    this.throwIfDisposed();
+    return opHandler.prod(this, axis, keepDims);
   }
   mean<T extends Tensor>(axis: number|number[] = null, keepDims = false): T {
     this.throwIfDisposed();
@@ -769,79 +825,83 @@ export class Tensor<R extends Rank = Rank> {
 
   // Binary ops.
 
-  add<T extends Tensor>(x: Tensor): T {
+  add<T extends Tensor>(x: Tensor|TensorLike): T {
     this.throwIfDisposed();
     return opHandler.add(this, x);
   }
-  addStrict<T extends this>(this: T, x: T): T {
+  addStrict<T extends this>(this: T, x: T|TensorLike): T {
     this.throwIfDisposed();
     return opHandler.addStrict(this, x) as T;
   }
-  sub<T extends Tensor>(x: Tensor): T {
+  atan2<T extends this>(this: T, x: T|TensorLike): T {
+    this.throwIfDisposed();
+    return opHandler.atan2(this, x) as T;
+  }
+  sub<T extends Tensor>(x: Tensor|TensorLike): T {
     this.throwIfDisposed();
     return opHandler.sub(this, x);
   }
-  subStrict<T extends this>(this: T, x: T): T {
+  subStrict<T extends this>(this: T, x: T|TensorLike): T {
     this.throwIfDisposed();
     return opHandler.subStrict(this, x) as T;
   }
-  pow<T extends Tensor>(this: T, exp: Tensor): T {
+  pow<T extends Tensor>(this: T, exp: Tensor|TensorLike): T {
     this.throwIfDisposed();
     return opHandler.pow(this, exp);
   }
-  powStrict(exp: Tensor): Tensor<R> {
+  powStrict(exp: Tensor|TensorLike): Tensor<R> {
     this.throwIfDisposed();
     return opHandler.powStrict(this, exp);
   }
-  mul<T extends Tensor>(x: Tensor): T {
+  mul<T extends Tensor>(x: Tensor|TensorLike): T {
     this.throwIfDisposed();
     return opHandler.mul(this, x);
   }
-  mulStrict<T extends this>(this: T, x: T): T {
+  mulStrict<T extends this>(this: T, x: T|TensorLike): T {
     this.throwIfDisposed();
     return opHandler.mulStrict(this, x) as T;
   }
-  div<T extends Tensor>(x: Tensor): T {
+  div<T extends Tensor>(x: Tensor|TensorLike): T {
     this.throwIfDisposed();
     return opHandler.div(this, x);
   }
-  floorDiv<T extends Tensor>(x: Tensor): T {
+  floorDiv<T extends Tensor>(x: Tensor|TensorLike): T {
     this.throwIfDisposed();
     return opHandler.floorDiv(this, x);
   }
-  divStrict<T extends this>(this: T, x: T): T {
+  divStrict<T extends this>(this: T, x: T|TensorLike): T {
     this.throwIfDisposed();
     return opHandler.divStrict(this, x) as T;
   }
-  minimum<T extends Tensor>(x: Tensor): T {
+  minimum<T extends Tensor>(x: Tensor|TensorLike): T {
     this.throwIfDisposed();
     return opHandler.minimum(this, x);
   }
-  minimumStrict<T extends this>(this: T, x: T): T {
+  minimumStrict<T extends this>(this: T, x: T|TensorLike): T {
     this.throwIfDisposed();
     return opHandler.minimumStrict(this, x) as T;
   }
-  maximum<T extends Tensor>(x: Tensor): T {
+  maximum<T extends Tensor>(x: Tensor|TensorLike): T {
     this.throwIfDisposed();
     return opHandler.maximum(this, x);
   }
-  maximumStrict<T extends this>(this: T, x: T): T {
+  maximumStrict<T extends this>(this: T, x: T|TensorLike): T {
     this.throwIfDisposed();
     return opHandler.maximumStrict(this, x) as T;
   }
-  mod<T extends Tensor>(x: Tensor): T {
+  mod<T extends Tensor>(x: Tensor|TensorLike): T {
     this.throwIfDisposed();
     return opHandler.mod(this, x);
   }
-  modStrict<T extends this>(this: T, x: T): T {
+  modStrict<T extends this>(this: T, x: T|TensorLike): T {
     this.throwIfDisposed();
     return opHandler.modStrict(this, x) as T;
   }
-  squaredDifference<T extends Tensor>(x: Tensor): T {
+  squaredDifference<T extends Tensor>(x: Tensor|TensorLike): T {
     this.throwIfDisposed();
     return opHandler.squaredDifference(this, x);
   }
-  squaredDifferenceStrict<T extends this>(this: T, x: T): T {
+  squaredDifferenceStrict<T extends this>(this: T, x: T|TensorLike): T {
     this.throwIfDisposed();
     return opHandler.squaredDifferenceStrict(this, x) as T;
   }
@@ -852,61 +912,61 @@ export class Tensor<R extends Rank = Rank> {
 
   // Compare ops.
 
-  notEqual<T extends Tensor>(x: Tensor): T {
+  notEqual<T extends Tensor>(x: Tensor|TensorLike): T {
     this.throwIfDisposed();
     return opHandler.notEqual(this, x);
   }
-  notEqualStrict<T extends this>(this: T, x: T): T {
+  notEqualStrict<T extends this>(this: T, x: T|TensorLike): T {
     this.throwIfDisposed();
     return opHandler.notEqualStrict(this, x) as T;
   }
-  less<T extends Tensor>(x: Tensor): T {
+  less<T extends Tensor>(x: Tensor|TensorLike): T {
     this.throwIfDisposed();
     return opHandler.less(this, x);
   }
-  lessStrict<T extends this>(this: T, x: T): T {
+  lessStrict<T extends this>(this: T, x: T|TensorLike): T {
     this.throwIfDisposed();
     return opHandler.lessStrict(this, x) as T;
   }
-  equal<T extends Tensor>(x: Tensor): T {
+  equal<T extends Tensor>(x: Tensor|TensorLike): T {
     this.throwIfDisposed();
     return opHandler.equal(this, x);
   }
-  equalStrict<T extends this>(this: T, x: T): T {
+  equalStrict<T extends this>(this: T, x: T|TensorLike): T {
     this.throwIfDisposed();
     return opHandler.equalStrict(this, x) as T;
   }
-  lessEqual<T extends Tensor>(x: Tensor): T {
+  lessEqual<T extends Tensor>(x: Tensor|TensorLike): T {
     this.throwIfDisposed();
     return opHandler.lessEqual(this, x);
   }
-  lessEqualStrict<T extends this>(this: T, x: T): T {
+  lessEqualStrict<T extends this>(this: T, x: T|TensorLike): T {
     this.throwIfDisposed();
     return opHandler.lessEqualStrict(this, x) as T;
   }
-  greater<T extends Tensor>(x: Tensor): T {
+  greater<T extends Tensor>(x: Tensor|TensorLike): T {
     this.throwIfDisposed();
     return opHandler.greater(this, x);
   }
-  greaterStrict<T extends this>(this: T, x: T): T {
+  greaterStrict<T extends this>(this: T, x: T|TensorLike): T {
     this.throwIfDisposed();
     return opHandler.greaterStrict(this, x) as T;
   }
-  greaterEqual<T extends Tensor>(x: Tensor): T {
+  greaterEqual<T extends Tensor>(x: Tensor|TensorLike): T {
     this.throwIfDisposed();
     return opHandler.greaterEqual(this, x);
   }
-  greaterEqualStrict<T extends this>(this: T, x: T): T {
+  greaterEqualStrict<T extends this>(this: T, x: T|TensorLike): T {
     this.throwIfDisposed();
     return opHandler.greaterEqualStrict(this, x) as T;
   }
 
   // Compare ops.
-  logicalAnd(x: Tensor): Tensor {
+  logicalAnd(x: Tensor|TensorLike): Tensor {
     this.throwIfDisposed();
     return opHandler.logicalAnd(this, x);
   }
-  logicalOr(x: Tensor): Tensor {
+  logicalOr(x: Tensor|TensorLike): Tensor {
     this.throwIfDisposed();
     return opHandler.logicalOr(this, x);
   }
@@ -914,11 +974,11 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return opHandler.logicalNot(this);
   }
-  logicalXor(x: Tensor): Tensor {
+  logicalXor(x: Tensor|TensorLike): Tensor {
     this.throwIfDisposed();
     return opHandler.logicalXor(this, x);
   }
-  where(condition: Tensor, x: Tensor): Tensor {
+  where(condition: Tensor|TensorLike, x: Tensor|TensorLike): Tensor {
     this.throwIfDisposed();
     return opHandler.where(condition, this, x);
   }
@@ -996,7 +1056,7 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return opHandler.leakyRelu(this, alpha);
   }
-  prelu(alpha: Tensor<R>): Tensor<R> {
+  prelu(alpha: Tensor<R>|TensorLike): Tensor<R> {
     this.throwIfDisposed();
     return opHandler.prelu(this, alpha);
   }
@@ -1011,6 +1071,14 @@ export class Tensor<R extends Rank = Rank> {
   softplus<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return opHandler.softplus(this);
+  }
+  zerosLike<T extends Tensor>(this: T): T {
+    this.throwIfDisposed();
+    return opHandler.zerosLike(this);
+  }
+  onesLike<T extends Tensor>(this: T): T {
+    this.throwIfDisposed();
+    return opHandler.onesLike(this);
   }
   sin<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
@@ -1076,6 +1144,10 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return opHandler.softmax(this, dim) as T;
   }
+  logSoftmax<T extends this>(this: T, axis = -1): T {
+    this.throwIfDisposed();
+    return opHandler.logSoftmax(this, axis) as T;
+  }
 
   // Image ops.
   resizeBilinear<T extends Tensor3D|Tensor4D>(
@@ -1093,15 +1165,15 @@ export class Tensor<R extends Rank = Rank> {
 
   // Convolutions.
   conv1d<T extends Tensor2D|Tensor3D>(
-      this: T, filter: Tensor3D, stride: number, pad: 'valid'|'same'|number,
-      dataFormat: 'NWC'|'NCW' = 'NWC', dilation = 1,
+      this: T, filter: Tensor3D|TensorLike3D, stride: number,
+      pad: 'valid'|'same'|number, dataFormat: 'NWC'|'NCW' = 'NWC', dilation = 1,
       dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     (this as Tensor).throwIfDisposed();
     return opHandler.conv1d(
         this, filter, stride, pad, dataFormat, dilation, dimRoundingMode);
   }
   conv2d<T extends Tensor3D|Tensor4D>(
-      this: T, filter: Tensor4D, strides: [number, number]|number,
+      this: T, filter: Tensor4D|TensorLike4D, strides: [number, number]|number,
       pad: 'valid'|'same'|number, dataFormat: 'NHWC'|'NCHW' = 'NHWC',
       dilations: [number, number]|number = [1, 1],
       dimRoundingMode?: 'floor'|'round'|'ceil'): T {
@@ -1110,7 +1182,7 @@ export class Tensor<R extends Rank = Rank> {
         this, filter, strides, pad, dataFormat, dilations, dimRoundingMode);
   }
   conv2dTranspose<T extends Tensor3D|Tensor4D>(
-      this: T, filter: Tensor4D,
+      this: T, filter: Tensor4D|TensorLike4D,
       outputShape: [number, number, number, number]|[number, number, number],
       strides: [number, number]|number, pad: 'valid'|'same'|number,
       dimRoundingMode?: 'floor'|'round'|'ceil'): T {
@@ -1119,13 +1191,24 @@ export class Tensor<R extends Rank = Rank> {
         this, filter, outputShape, strides, pad, dimRoundingMode);
   }
   depthwiseConv2D<T extends Tensor3D|Tensor4D>(
-      this: T, filter: Tensor4D, strides: [number, number]|number,
+      this: T, filter: Tensor4D|TensorLike4D, strides: [number, number]|number,
       pad: 'valid'|'same'|number, dataFormat: 'NHWC'|'NCHW' = 'NHWC',
       dilations: [number, number]|number = [1, 1],
       dimRoundingMode?: 'floor'|'round'|'ceil'): T {
     (this as Tensor).throwIfDisposed();
     return opHandler.depthwiseConv2d(
         this, filter, strides, pad, dataFormat, dilations, dimRoundingMode);
+  }
+
+  separableConv2d<T extends Tensor3D|Tensor4D>(
+      this: T|TensorLike, depthwiseFilter: Tensor4D|TensorLike4D,
+      pointwiseFilter: Tensor4D|TensorLike, strides: [number, number]|number,
+      pad: 'valid'|'same', dilation: [number, number]|number = [1, 1],
+      dataFormat: 'NHWC'|'NCHW' = 'NHWC'): T {
+    (this as Tensor).throwIfDisposed();
+    return opHandler.separableConv2d(
+        this, depthwiseFilter, pointwiseFilter, strides, pad, dilation,
+        dataFormat);
   }
 
   // Pooling.
@@ -1148,6 +1231,14 @@ export class Tensor<R extends Rank = Rank> {
     return opHandler.localResponseNormalization(
         this, radius, bias, alpha, beta);
   }
+  pool<T extends Tensor3D|Tensor4D>(
+      this: T, windowShape: [number, number]|number, poolingType: 'max'|'avg',
+      padding: 'valid'|'same'|number, dilationRate?: [number, number]|number,
+      strides?: [number, number]|number): T {
+    (this as Tensor).throwIfDisposed();
+    return opHandler.pool(
+        this, windowShape, poolingType, padding, dilationRate, strides);
+  }
 
   variable(trainable = true, name?: string, dtype?: DataType): Variable<R> {
     this.throwIfDisposed();
@@ -1155,7 +1246,7 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   unsortedSegmentSum<T extends Tensor>(
-      this: T, segmentIds: Tensor1D, numSegments: number): T {
+      this: T, segmentIds: Tensor1D|TensorLike1D, numSegments: number): T {
     this.throwIfDisposed();
     return opHandler.unsortedSegmentSum(this, segmentIds, numSegments);
   }
@@ -1185,12 +1276,40 @@ export class Tensor<R extends Rank = Rank> {
     return opHandler.stridedSlice(
         this, begin, end, strides, beginMask, endMask);
   }
+
+  depthToSpace(this: Tensor4D, blockSize: number, dataFormat: 'NHWC'|'NCHW'):
+      Tensor4D {
+    this.throwIfDisposed();
+    return opHandler.depthToSpace(this, blockSize, dataFormat);
+  }
+
+  fft(this: Tensor): Tensor {
+    this.throwIfDisposed();
+    return opHandler.spectral.fft(this);
+  }
+
+  ifft(this: Tensor): Tensor {
+    this.throwIfDisposed();
+    return opHandler.spectral.ifft(this);
+  }
 }
 Object.defineProperty(Tensor, Symbol.hasInstance, {
   value: (instance: Tensor) => {
     return !!instance && instance.shape != null && instance.dtype != null;
   }
 });
+
+export interface NumericTensor<R extends Rank = Rank> extends Tensor<R> {
+  dtype: NumericDataType;
+  data(): Promise<TypedArray>;
+  dataSync(): TypedArray;
+}
+
+export interface StringTensor<R extends Rank = Rank> extends Tensor<R> {
+  dtype: 'string';
+  dataSync(): string[];
+  data(): Promise<string[]>;
+}
 
 /** @doclink Tensor */
 export type Scalar = Tensor<Rank.R0>;
@@ -1208,15 +1327,14 @@ export type Tensor5D = Tensor<Rank.R5>;
 export type Tensor6D = Tensor<Rank.R6>;
 
 /**
- * A mutable `Tensor`, useful for persisting state, e.g. for training.
+ * A mutable `tf.Tensor`, useful for persisting state, e.g. for training.
  */
 /** @doc {heading: 'Tensors', subheading: 'Classes'} */
 export class Variable<R extends Rank = Rank> extends Tensor<R> {
-  private static nextVarId = 0;
   name: string;
 
   /**
-   * Private constructor since we can not add logic before calling `super()`.
+   * Private constructor since we cannot add logic before calling `super()`.
    * Instead, we expose static `Variable.variable` method below, which will be
    * added to global namespace.
    */
@@ -1227,8 +1345,7 @@ export class Variable<R extends Rank = Rank> extends Tensor<R> {
         initialValue.dataId);
     this.name = name;
     if (this.name == null) {
-      this.name = Variable.nextVarId.toString();
-      Variable.nextVarId++;
+      this.name = trackerFn().nextVariableId().toString();
     }
     try {
       trackerFn().registerVariable(this);
@@ -1263,8 +1380,8 @@ export class Variable<R extends Rank = Rank> extends Tensor<R> {
   }
 
   /**
-   * Assign a new `Tensor` to this variable. The new `Tensor` must have the
-   * same shape and dtype as the old `Tensor`.
+   * Assign a new `tf.Tensor` to this variable. The new `tf.Tensor` must have
+   * the same shape and dtype as the old `tf.Tensor`.
    *
    * @param newValue New tensor to be assigned to this variable.
    */

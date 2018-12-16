@@ -29,7 +29,7 @@ import {op} from './operation';
 import {ones, scalar, zerosLike} from './tensor_ops';
 
 /**
- * Computes the sum along segments of a `Tensor`.
+ * Computes the sum along segments of a `tf.Tensor`.
  *
  * ```js
  * const x = tf.tensor1d([1, 2, 3, 4]);
@@ -39,10 +39,10 @@ import {ones, scalar, zerosLike} from './tensor_ops';
  * x.unsortedSegmentSum(segmentIds, numSegments).print()
  * //or tf.unsortedSegmentSum(x, segmentIds, numSegments)
  * ```
- * @param x The `Tensor` that will be summed along its segments
- * @param segmentIds A `Tensor1D` whose rank is equal to the rank of `x`'s
+ * @param x The `tf.Tensor` that will be summed along its segments.
+ * @param segmentIds A `tf.Tensor1D` whose rank is equal to the rank of `x`'s
  * dimension along the `axis`.  Maps each element of `x` to a segment.
- * @param numSegments The number of distinct `segmentIds`
+ * @param numSegments The number of distinct `segmentIds`.
  */
 /** @doc {heading: 'Operations', subheading: 'Segment'} */
 function unsortedSegmentSum_<T extends Tensor>(
@@ -50,7 +50,6 @@ function unsortedSegmentSum_<T extends Tensor>(
   const $x = convertToTensor(x, 'x', 'unsortedSegmentSum');
   const $segmentIds =
       convertToTensor(segmentIds, 'segmentIds', 'unsortedSegmentSum', 'int32');
-  assert($segmentIds.dtype === 'int32', 'segmentIds must be of dtype `int32`');
   assert(isInt(numSegments), 'numSegments must be of dtype int');
 
   const gradFunc = (dy: T) => {
@@ -90,8 +89,6 @@ function gather_<T extends Tensor>(
     x: T|TensorLike, indices: Tensor1D|TensorLike, axis = 0): T {
   const $x = convertToTensor(x, 'x', 'gather');
   const $indices = convertToTensor(indices, 'indices', 'gather', 'int32');
-
-  assert($indices.dtype === 'int32', 'Indices must be of dtype `int32`');
   axis = parseAxisParam(axis, $x.shape)[0];
   const grad = (dy: T) => {
     const derX = () => {

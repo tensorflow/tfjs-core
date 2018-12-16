@@ -15,17 +15,10 @@
  * =============================================================================
  */
 
+import {inferShape} from './tensor_util_env';
 import * as util from './util';
 
 describe('Util', () => {
-  it('Flatten arrays', () => {
-    expect(util.flatten([[1, 2, 3], [4, 5, 6]])).toEqual([1, 2, 3, 4, 5, 6]);
-    expect(util.flatten([[[1, 2], [3, 4], [5, 6], [7, 8]]])).toEqual([
-      1, 2, 3, 4, 5, 6, 7, 8
-    ]);
-    expect(util.flatten([1, 2, 3, 4, 5, 6])).toEqual([1, 2, 3, 4, 5, 6]);
-  });
-
   it('Correctly gets size from shape', () => {
     expect(util.sizeFromShape([1, 2, 3, 4])).toEqual(24);
   });
@@ -64,33 +57,106 @@ describe('Util', () => {
   });
 
   it('infer shape single number', () => {
-    expect(util.inferShape(4)).toEqual([]);
+    expect(inferShape(4)).toEqual([]);
   });
 
   it('infer shape 1d array', () => {
-    expect(util.inferShape([1, 2, 5])).toEqual([3]);
+    expect(inferShape([1, 2, 5])).toEqual([3]);
   });
 
   it('infer shape 2d array', () => {
-    expect(util.inferShape([[1, 2, 5], [5, 4, 1]])).toEqual([2, 3]);
+    expect(inferShape([[1, 2, 5], [5, 4, 1]])).toEqual([2, 3]);
   });
 
   it('infer shape 3d array', () => {
     const a = [[[1, 2], [2, 3], [5, 6]], [[5, 6], [4, 5], [1, 2]]];
-    expect(util.inferShape(a)).toEqual([2, 3, 2]);
+    expect(inferShape(a)).toEqual([2, 3, 2]);
   });
 
   it('infer shape 4d array', () => {
     const a = [
-      [[[1], [2]], [[2], [3]], [[5], [6]]],
-      [[[5], [6]], [[4], [5]], [[1], [2]]]
+      [[[1], [2]], [[2], [3]], [[5], [6]]], [[[5], [6]], [[4], [5]], [[1], [2]]]
     ];
-    expect(util.inferShape(a)).toEqual([2, 3, 2, 1]);
+    expect(inferShape(a)).toEqual([2, 3, 2, 1]);
   });
 
   it('infer shape of typed array', () => {
     const a = new Float32Array([1, 2, 3, 4, 5]);
-    expect(util.inferShape(a)).toEqual([5]);
+    expect(inferShape(a)).toEqual([5]);
+  });
+});
+
+describe('util.flatten', () => {
+  it('nested number arrays', () => {
+    expect(util.flatten([[1, 2, 3], [4, 5, 6]])).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(util.flatten([[[1, 2], [3, 4], [5, 6], [7, 8]]])).toEqual([
+      1, 2, 3, 4, 5, 6, 7, 8
+    ]);
+    expect(util.flatten([1, 2, 3, 4, 5, 6])).toEqual([1, 2, 3, 4, 5, 6]);
+  });
+
+  it('nested string arrays', () => {
+    expect(util.flatten([['a', 'b'], ['c', [['d']]]])).toEqual([
+      'a', 'b', 'c', 'd'
+    ]);
+    expect(util.flatten([['a', ['b']], ['c', [['d']], 'e']])).toEqual([
+      'a', 'b', 'c', 'd', 'e'
+    ]);
+  });
+
+  it('mixed TypedArray and number[]', () => {
+    const data =
+        [new Float32Array([1, 2]), 3, [4, 5, new Float32Array([6, 7])]];
+    expect(util.flatten(data)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+  });
+});
+
+describe('util.bytesFromStringArray', () => {
+  it('count each character as 2 bytes', () => {
+    expect(util.bytesFromStringArray(['a', 'bb', 'ccc'])).toBe(6 * 2);
+    expect(util.bytesFromStringArray(['a', 'bb', 'cccddd'])).toBe(9 * 2);
+    expect(util.bytesFromStringArray(['даниел'])).toBe(6 * 2);
+  });
+});
+
+describe('util.inferDtype', () => {
+  it('a single string => string', () => {
+    expect(util.inferDtype('hello')).toBe('string');
+  });
+
+  it('a single boolean => bool', () => {
+    expect(util.inferDtype(true)).toBe('bool');
+    expect(util.inferDtype(false)).toBe('bool');
+  });
+
+  it('a single number => float32', () => {
+    expect(util.inferDtype(0)).toBe('float32');
+    expect(util.inferDtype(34)).toBe('float32');
+  });
+
+  it('a list of strings => string', () => {
+    // Flat.
+    expect(util.inferDtype(['a', 'b', 'c'])).toBe('string');
+    // Nested.
+    expect(util.inferDtype([
+      [['a']], [['b']], [['c']], [['d']]
+    ])).toBe('string');
+  });
+
+  it('a list of bools => float32', () => {
+    // Flat.
+    expect(util.inferDtype([false, true, false])).toBe('bool');
+    // Nested.
+    expect(util.inferDtype([
+      [[true]], [[false]], [[true]], [[true]]
+    ])).toBe('bool');
+  });
+
+  it('a list of numbers => float32', () => {
+    // Flat.
+    expect(util.inferDtype([0, 1, 2])).toBe('float32');
+    // Nested.
+    expect(util.inferDtype([[[0]], [[1]], [[2]], [[3]]])).toBe('float32');
   });
 });
 
@@ -196,8 +262,24 @@ describe('util.squeezeShape', () => {
       expect(newShape).toEqual([1, 1, 4]);
       expect(keptDims).toEqual([0, 3, 4]);
     });
+    it('should only reduce dimensions specified by negative axis', () => {
+      const {newShape, keptDims} = util.squeezeShape([1, 1, 1, 1, 4], [-2, -3]);
+      expect(newShape).toEqual([1, 1, 4]);
+      expect(keptDims).toEqual([0, 1, 4]);
+    });
     it('throws error when specified axis is not squeezable', () => {
       expect(() => util.squeezeShape([1, 1, 2, 1, 4], [1, 2])).toThrowError();
+    });
+    it('throws error when specified negative axis is not squeezable', () => {
+      expect(() => util.squeezeShape([1, 1, 2, 1, 4], [-1, -2])).toThrowError();
+    });
+    it('throws error when specified axis is out of range', () => {
+      expect(
+        () => util.squeezeShape([1, 1, 2, 1, 4], [11, 22])).toThrowError();
+    });
+    it('throws error when specified negative axis is out of range', () => {
+      expect(
+        () => util.squeezeShape([1, 1, 2, 1, 4], [-11, -22])).toThrowError();
     });
   });
 });
@@ -235,16 +317,32 @@ describe('util.checkConversionForNaN', () => {
 });
 
 describe('util.hasEncodingLoss', () => {
+  it('complex64 to any', () => {
+    expect(util.hasEncodingLoss('complex64', 'complex64')).toBe(false);
+    expect(util.hasEncodingLoss('complex64', 'float32')).toBe(true);
+    expect(util.hasEncodingLoss('complex64', 'int32')).toBe(true);
+    expect(util.hasEncodingLoss('complex64', 'bool')).toBe(true);
+  });
+
+  it('any to complex64', () => {
+    expect(util.hasEncodingLoss('bool', 'complex64')).toBe(false);
+    expect(util.hasEncodingLoss('int32', 'complex64')).toBe(false);
+    expect(util.hasEncodingLoss('float32', 'complex64')).toBe(false);
+    expect(util.hasEncodingLoss('complex64', 'complex64')).toBe(false);
+  });
+
   it('any to float32', () => {
     expect(util.hasEncodingLoss('bool', 'float32')).toBe(false);
     expect(util.hasEncodingLoss('int32', 'float32')).toBe(false);
     expect(util.hasEncodingLoss('float32', 'float32')).toBe(false);
+    expect(util.hasEncodingLoss('complex64', 'float32')).toBe(true);
   });
 
   it('float32 to any', () => {
     expect(util.hasEncodingLoss('float32', 'float32')).toBe(false);
     expect(util.hasEncodingLoss('float32', 'int32')).toBe(true);
     expect(util.hasEncodingLoss('float32', 'bool')).toBe(true);
+    expect(util.hasEncodingLoss('float32', 'complex64')).toBe(false);
   });
 
   it('int32 to lower', () => {

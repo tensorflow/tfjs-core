@@ -25,7 +25,7 @@ import {SGDOptimizer} from './sgd_optimizer';
 
 export class OptimizerConstructors {
   /**
-   * Constructs a `SGDOptimizer` that uses stochastic gradient descent.
+   * Constructs a `tf.SGDOptimizer` that uses stochastic gradient descent.
    *
    * ```js
    * // Fit a quadratic function by learning the coefficients a, b, c.
@@ -67,7 +67,7 @@ export class OptimizerConstructors {
   }
 
   /**
-   * Constructs a `MomentumOptimizer` that uses momentum gradient
+   * Constructs a `tf.MomentumOptimizer` that uses momentum gradient
    * descent.
    *
    * See
@@ -88,7 +88,7 @@ export class OptimizerConstructors {
   }
 
   /**
-   * Constructs a `RMSPropOptimizer` that uses RMSProp gradient
+   * Constructs a `tf.RMSPropOptimizer` that uses RMSProp gradient
    * descent. This implementation uses plain momentum and is not centered
    * version of RMSProp.
    *
@@ -116,7 +116,7 @@ export class OptimizerConstructors {
   }
 
   /**
-   * Constructs a `AdamOptimizer` that uses the Adam algorithm.
+   * Constructs a `tf.AdamOptimizer` that uses the Adam algorithm.
    * See [https://arxiv.org/abs/1412.6980](https://arxiv.org/abs/1412.6980)
    *
    * @param learningRate The learning rate to use for the Adam gradient
@@ -135,7 +135,7 @@ export class OptimizerConstructors {
   }
 
   /**
-   * Constructs a `AdadeltaOptimizer` that uses the Adadelta algorithm.
+   * Constructs a `tf.AdadeltaOptimizer` that uses the Adadelta algorithm.
    * See [https://arxiv.org/abs/1212.5701](https://arxiv.org/abs/1212.5701)
    *
    * @param learningRate The learning rate to use for the Adadelta gradient
@@ -153,7 +153,7 @@ export class OptimizerConstructors {
   }
 
   /**
-   * Constructs a `AdamaxOptimizer` that uses the Adamax algorithm.
+   * Constructs a `tf.AdamaxOptimizer` that uses the Adamax algorithm.
    * See [https://arxiv.org/abs/1412.6980](https://arxiv.org/abs/1412.6980)
    *
    * @param learningRate The learning rate to use for the Adamax gradient
@@ -173,7 +173,7 @@ export class OptimizerConstructors {
   }
 
   /**
-   * Constructs a `AdagradOptimizer` that uses the Adagrad algorithm.
+   * Constructs a `tf.AdagradOptimizer` that uses the Adagrad algorithm.
    * See
    * [http://www.jmlr.org/papers/volume12/duchi11a/duchi11a.pdf](
    * http://www.jmlr.org/papers/volume12/duchi11a/duchi11a.pdf)

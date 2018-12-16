@@ -16,7 +16,7 @@
  */
 
 // backend_cpu.ts and backend_webgl.ts are standalone files and should be
-// explicily included here. Below, there is an export from backend_webgl, but
+// explicitly included here. Below, there is an export from backend_webgl, but
 // that doesn't count since it's exporting a Typescript interface.
 import './kernels/backend_webgl';
 import './kernels/backend_cpu';
@@ -27,6 +27,7 @@ import {Environment} from './environment';
 
 // Serialization.
 import * as io from './io/io';
+import * as math from './math';
 import * as serialization from './serialization';
 import {setOpHandler} from './tensor';
 import * as test_util from './test_util';
@@ -47,7 +48,7 @@ export {RMSPropOptimizer} from './optimizers/rmsprop_optimizer';
 export {SGDOptimizer} from './optimizers/sgd_optimizer';
 export {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer, variable, Variable} from './tensor';
 export {NamedTensorMap} from './tensor_types';
-export {DataType, Rank, ShapeMap} from './types';
+export {DataType, DataTypeMap, DataValues, Rank, ShapeMap} from './types';
 
 export * from './ops/ops';
 export {LSTMCellFunc} from './ops/lstm';
@@ -69,10 +70,10 @@ export {version as version_core};
 export {nextFrame};
 
 // Second level exports.
-export {environment, io, serialization, test_util, util, webgl};
+export {environment, io, math, serialization, test_util, util, webgl};
 
 // Backend specific.
-export {KernelBackend, BackendTimingInfo} from './kernels/backend';
+export {KernelBackend, BackendTimingInfo, DataMover, DataStorage} from './kernels/backend';
 
 import * as ops from './ops/ops';
 setOpHandler(ops);
