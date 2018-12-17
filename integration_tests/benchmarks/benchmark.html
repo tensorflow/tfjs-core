@@ -166,8 +166,7 @@
       <tbody></tbody>
     </table>
   </div>
-  <script src="../../dist/tf-core.js"></script>
-  <!---<script src="https://unpkg.com/@tensorflow/tfjs-core/dist/tf-core.js"></script>-->
+  <script src="https://unpkg.com/@tensorflow/tfjs-core/dist/tf-core.js"></script>
   <script src="https://unpkg.com/@tensorflow/tfjs-layers/dist/tf-layers.js"></script>
   <script src="https://unpkg.com/@tensorflow/tfjs-converter/dist/tf-converter.js"></script>
   <script>
@@ -268,7 +267,7 @@
 
       const elapsed = performance.now() - start;
       await showMsg(null);
-      appendRow(timeTable, '1st inference', printTime(start));
+      appendRow(timeTable, '1st inference', printTime(elapsed));
     }
 
     function sleep(timeMs) {

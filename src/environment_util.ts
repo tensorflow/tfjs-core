@@ -334,7 +334,7 @@ function decodeParam(
 }
 
 // Empirically determined constant used to decide the number of bytes on GPU
-// before we start paging. The bytes are this constant * screen area * dpi.
+// before we start paging. The MB are this constant * screen area * dpi / 1024.
 export const BEFORE_PAGING_CONSTANT = 600;
 export function getNumMBBeforePaging(): number {
   return (window.screen.height * window.screen.width *
