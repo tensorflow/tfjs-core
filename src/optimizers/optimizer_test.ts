@@ -208,12 +208,10 @@ describeWithFlags('optimizer', ALL_ENVS, () => {
   });
 
   it('instanceof Optimizer', () => {
-    it('x: SGDOptimizer', () => {
-      const learningRate = .1;
-      const optimizer = new SGDOptimizer(learningRate);
+    const learningRate = .1;
+    const optimizer = new SGDOptimizer(learningRate);
 
-      expect(optimizer instanceof Optimizer).toBe(true);
-    });
+    expect(optimizer instanceof Optimizer).toBe(true);
   });
 
   it('throws error when f returns a non-scalar', () => {
