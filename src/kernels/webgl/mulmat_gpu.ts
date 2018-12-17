@@ -24,7 +24,7 @@ export class MatMulProgram implements GPGPUProgram {
 
   constructor(
       aShape: [number, number, number], bShape: [number, number, number],
-      transposeA = false, transposeB = false) {
+      transposeA = false, transposeB = false, activation = 'return x;') {
     const batchSize = aShape[0];
     const outerShapeA = transposeA ? aShape[2] : aShape[1];
     const outerShapeB = transposeB ? bShape[1] : bShape[2];
@@ -41,7 +41,11 @@ export class MatMulProgram implements GPGPUProgram {
     const sharedDimNearestVec4 = Math.floor(sharedDim / 4) * 4;
     const sharedDimVec4Remainder = sharedDim % 4;
 
-    this.userCode = ` float dotARowBCol(int batch, int aRow, int bCol) {
+    this.userCode = `float activation(float x) {
+      ${activation}
+    }
+
+    float dotARowBCol(int batch, int aRow, int bCol) {
       float result = 0.0;
       for (int i = 0; i < ${sharedDimNearestVec4}; i += 4) {
         vec4 a = vec4(
@@ -92,7 +96,9 @@ export class MatMulProgram implements GPGPUProgram {
 
     void main() {
       ivec3 resBRC = getOutputCoords();
-      setOutput(dotARowBCol(resBRC.x, resBRC.y, resBRC.z));
+      float result = dotARowBCol(resBRC.x, resBRC.y, resBRC.z);
+
+      setOutput(activation(result));
     }
     `;
   }

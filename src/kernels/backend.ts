@@ -121,6 +121,11 @@ export class KernelBackend implements TensorStorage, BackendTimer {
     throw new Error('Not yet implemented');
   }
 
+  batchMatMulWithActivation(a: Tensor3D, b: Tensor3D, transposeA: boolean,
+      transposeB: boolean, activation: string): Tensor3D {
+    throw new Error('Not yet implemented');
+  }
+
   slice<T extends Tensor>(x: T, begin: number[], size: number[]): T {
     throw new Error('Not yet implemented');
   }

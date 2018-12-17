@@ -99,6 +99,7 @@ import {TextureManager} from './webgl/texture_manager';
 import {TileProgram} from './webgl/tile_gpu';
 import {TransposeProgram} from './webgl/transpose_gpu';
 import * as unary_op from './webgl/unaryop_gpu';
+import * as unary_packed_op from './webgl/unaryop_packed_gpu';
 import {UnaryOpProgram} from './webgl/unaryop_gpu';
 import {UnpackProgram} from './webgl/unpack_gpu';
 import * as webgl_util from './webgl/webgl_util';
@@ -697,6 +698,36 @@ export class MathBackendWebGL implements KernelBackend {
     } else {
       const program =
           new MatMulProgram(a.shape, b.shape, transposeA, transposeB);
+      const output =
+          this.makeOutputArray(program.outputShape, dtype) as Tensor3D;
+      return this.compileAndRun(program, [a, b], output);
+    }
+  }
+
+  batchMatMulWithActivation(a: Tensor3D, b: Tensor3D, transposeA: boolean,
+      transposeB: boolean, activation: string): Tensor3D {
+    const outerShapeA = transposeA ? a.shape[2] : a.shape[1];
+    const outerShapeB = transposeB ? b.shape[1] : b.shape[2];
+    const [batch, , ] = a.shape;
+
+    const dtype = upcastType(a.dtype, b.dtype);
+
+    // TODO(https://github.com/tensorflow/tfjs/issues/693): Support 3D tensors
+    if (batch === 1) {
+      const aSqueezed = a.as2D(a.shape[1], a.shape[2]);
+      const bSqueezed = b.as2D(b.shape[1], b.shape[2]);
+
+      const program = new MatMulPackedProgram(
+          aSqueezed.shape, bSqueezed.shape, [outerShapeA, outerShapeB],
+          transposeA, transposeB, unary_packed_op[activation]);
+      const output =
+          this.makePackedTensor(program.outputShape, dtype) as Tensor2D;
+      const result =
+          this.compileAndRun<Tensor2D>(program, [aSqueezed, bSqueezed], output);
+      return result.reshape([1, result.shape[0], result.shape[1]]);
+    } else {
+      const program =
+          new MatMulProgram(a.shape, b.shape, transposeA, transposeB, unary_op[activation]);
       const output =
           this.makeOutputArray(program.outputShape, dtype) as Tensor3D;
       return this.compileAndRun(program, [a, b], output);

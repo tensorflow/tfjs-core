@@ -25,7 +25,7 @@ export class MatMulPackedProgram implements GPGPUProgram {
 
   constructor(
       aShape: [number, number], bShape: [number, number],
-      outputShape: [number, number], transposeA = false, transposeB = false) {
+      outputShape: [number, number], transposeA = false, transposeB = false, activation = 'return x;') {
     this.outputShape = outputShape;
 
     const sharedDim = transposeA ? aShape[0] : aShape[1];
@@ -37,6 +37,10 @@ export class MatMulPackedProgram implements GPGPUProgram {
     const bSwizzle = transposeB ? ['b.xzxz', 'b.ywyw'] : ['b.xyxy', 'b.zwzw'];
 
     this.userCode = `
+      vec4 activation(vec4 x) {
+        ${activation}
+      }
+
       const float sharedDimension = ${sharedDimensionPacked}.0;
 
       vec4 dot2x2ARowBCol(ivec2 rc) {
@@ -53,7 +57,9 @@ export class MatMulPackedProgram implements GPGPUProgram {
 
       void main() {
         ivec2 rc = getOutputCoords();
-        setOutput(dot2x2ARowBCol(rc));
+        vec4 result = dot2x2ARowBCol(rc);
+
+        setOutput(activation(result));
       }
     `;
   }
