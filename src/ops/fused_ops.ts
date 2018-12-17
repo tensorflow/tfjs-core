@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-const supportedActivations = ['LINEAR', 'RELU'];
+export const supportedActivations = ['LINEAR', 'RELU'];
 
 import {ENV} from '../environment';
 import * as util from '../util';
