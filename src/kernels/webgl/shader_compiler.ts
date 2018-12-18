@@ -37,14 +37,25 @@ export type InputInfo = {
 export function makeShader(
     inputsInfo: InputInfo[], outputShape: ShapeInfo, userCode: string,
     usesPackedTextures: boolean): string {
-  let inputPrefixSnippet: string[]|string = inputsInfo.map(x => {
+  const prefixSnippets: string[] = [];
+  inputsInfo.forEach(x => {
     const size = util.sizeFromShape(x.shapeInfo.logicalShape);
+    const rank = x.shapeInfo.logicalShape.length;
+
+    // Snippet when we decided to upload the values as uniform.
     if (x.shapeInfo.isUniform) {
-      return `uniform float ${x.name}${size > 1 ? `[${size}]` : ''};`;
+      prefixSnippets.push(
+          `uniform float ${x.name}${size > 1 ? `[${size}]` : ''};`);
     }
-    return `uniform sampler2D ${x.name};`;
+
+    // Snippet when the texture has offsets.
+    if (x.shapeInfo.offsets != null) {
+      prefixSnippets.push(
+          ...[`uniform sampler2D ${x.name};`,
+              `uniform float offset${x.name}[${rank}];`]);
+    }
   });
-  inputPrefixSnippet = inputPrefixSnippet.join('\n');
+  const inputPrefixSnippet = prefixSnippets.join('\n');
 
   const inputSamplingSnippet =
       inputsInfo

@@ -80,10 +80,15 @@ export function compileProgram<T extends Tensor, K extends Tensor>(
 
   const uniformLocations: {[name: string]: WebGLUniformLocation} = {};
   for (let i = 0; i < program.variableNames.length; i++) {
-    const uniformName = program.variableNames[i];
+    const varName = program.variableNames[i];
     const shouldThrow = false;
-    uniformLocations[uniformName] =
-        gpgpu.getUniformLocation(webGLProgram, uniformName, shouldThrow);
+    uniformLocations[varName] =
+        gpgpu.getUniformLocation(webGLProgram, varName, shouldThrow);
+    const offsets = inputInfos[i].shapeInfo.offsets;
+    if (offsets != null) {
+      uniformLocations[`offset${varName}`] = gpgpu.getUniformLocation(
+          webGLProgram, `offset${varName}`, shouldThrow);
+    }
   }
 
   return {
@@ -147,24 +152,36 @@ export function runProgram<T extends Tensor, K extends Tensor>(
   }
   gpgpu.setProgram(binary.webGLProgram);
   inputs.forEach((input, i) => {
-    const variableName = binary.program.variableNames[i];
-    const variableUniformLocation = binary.uniformLocations[variableName];
-    if (variableUniformLocation != null) {
-      if (input.isUniform) {
-        if (util.sizeFromShape(input.shape) === 1) {
-          gpgpu.gl.uniform1f(variableUniformLocation, input.uniformValues[0]);
-        } else {
-          let vals = input.uniformValues;
-          if (!(vals instanceof Float32Array)) {
-            vals = new Float32Array(vals);
-          }
-          gpgpu.gl.uniform1fv(variableUniformLocation, vals);
-        }
-        return;
-      }
-      const tex = input.texData.texture;
-      gpgpu.setInputMatrixTexture(tex, variableUniformLocation, i);
+    const varName = binary.program.variableNames[i];
+    const varLoc = binary.uniformLocations[varName];
+    const varOffsetLoc = binary.uniformLocations[`offset${varName}`];
+
+    if (varLoc == null) {
+      // The compiler inferred that this variable is not used in this shader.
+      return;
     }
+
+    if (input.isUniform) {
+      // Upload the values of the tensor as uniform.
+      if (util.sizeFromShape(input.shape) === 1) {
+        gpgpu.gl.uniform1f(varLoc, input.uniformValues[0]);
+      } else {
+        let vals = input.uniformValues;
+        if (!(vals instanceof Float32Array)) {
+          vals = new Float32Array(vals);
+        }
+        gpgpu.gl.uniform1fv(varLoc, vals);
+      }
+      return;
+    }
+
+    // If there are offsets, upload the coordinates.
+    const offsets = input.texData.offsets;
+    if (offsets != null) {
+      gpgpu.gl.uniform1fv(varOffsetLoc, offsets);
+    }
+
+    gpgpu.setInputMatrixTexture(input.texData.texture, varLoc, i);
   });
 
   if (customSetup != null) {
