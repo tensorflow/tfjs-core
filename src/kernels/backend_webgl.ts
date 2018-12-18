@@ -35,6 +35,7 @@ import {DataId, Scalar, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, 
 import {DataType, DataTypeMap, DataValues, NumericDataType, Rank, RecursiveArray, ShapeMap, sumOutType, TypedArray, upcastType} from '../types';
 import * as util from '../util';
 import {getTypedArrayFromDType, sizeFromShape} from '../util';
+
 import {DataMover, DataStorage, KernelBackend} from './backend';
 import * as backend_util from './backend_util';
 import {mergeRealAndImagArrays} from './complex_util';
@@ -99,8 +100,8 @@ import {TextureManager} from './webgl/texture_manager';
 import {TileProgram} from './webgl/tile_gpu';
 import {TransposeProgram} from './webgl/transpose_gpu';
 import * as unary_op from './webgl/unaryop_gpu';
-import * as unary_packed_op from './webgl/unaryop_packed_gpu';
 import {UnaryOpProgram} from './webgl/unaryop_gpu';
+import * as unary_packed_op from './webgl/unaryop_packed_gpu';
 import {UnpackProgram} from './webgl/unpack_gpu';
 import * as webgl_util from './webgl/webgl_util';
 import {whereImpl} from './where_impl';
@@ -704,11 +705,13 @@ export class MathBackendWebGL implements KernelBackend {
     }
   }
 
-  batchMatMulWithActivation(a: Tensor3D, b: Tensor3D, transposeA: boolean,
-      transposeB: boolean, activation: string): Tensor3D {
+  batchMatMulWithActivation(
+      a: Tensor3D, b: Tensor3D, transposeA: boolean, transposeB: boolean,
+      activation: string): Tensor3D {
     const outerShapeA = transposeA ? a.shape[2] : a.shape[1];
     const outerShapeB = transposeB ? b.shape[1] : b.shape[2];
     const [batch, , ] = a.shape;
+    const activationKernel = activation.toUpperCase();
 
     const dtype = upcastType(a.dtype, b.dtype);
 
@@ -719,15 +722,15 @@ export class MathBackendWebGL implements KernelBackend {
 
       const program = new MatMulPackedProgram(
           aSqueezed.shape, bSqueezed.shape, [outerShapeA, outerShapeB],
-          transposeA, transposeB, unary_packed_op[activation]);
+          transposeA, transposeB, unary_packed_op[activationKernel]);
       const output =
           this.makePackedTensor(program.outputShape, dtype) as Tensor2D;
       const result =
           this.compileAndRun<Tensor2D>(program, [aSqueezed, bSqueezed], output);
       return result.reshape([1, result.shape[0], result.shape[1]]);
     } else {
-      const program =
-          new MatMulProgram(a.shape, b.shape, transposeA, transposeB, unary_op[activation]);
+      const program = new MatMulProgram(
+          a.shape, b.shape, transposeA, transposeB, unary_op[activationKernel]);
       const output =
           this.makeOutputArray(program.outputShape, dtype) as Tensor3D;
       return this.compileAndRun(program, [a, b], output);

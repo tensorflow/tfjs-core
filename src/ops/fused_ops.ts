@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-export const supportedActivations = ['LINEAR', 'RELU'];
+export const supportedActivations = ['linear', 'relu'];
 
 import {ENV} from '../environment';
 import * as util from '../util';
@@ -28,7 +28,7 @@ import {convertToTensor} from '../tensor_util_env';
 function matMul_<T extends Tensor>(
     a: T|TensorLike, b: T|TensorLike, transposeA = false, transposeB = false,
     activation: string): T {
-  const activationKernel = activation.toUpperCase();
+  const activationKernel = activation.toLowerCase();
 
   util.assert(
       supportedActivations.indexOf(activationKernel) > -1,
@@ -83,7 +83,7 @@ function matMul_<T extends Tensor>(
     const [y] = saved;
 
     let dyActivation = dy;
-    if (activationKernel === 'RELU') {
+    if (activationKernel === 'relu') {
       dyActivation = dy.mul(y.step()) as Tensor3D;
     }
 
@@ -110,9 +110,11 @@ function matMul_<T extends Tensor>(
     }
   };
 
+  const kernel = activationKernel === 'linear' ? 'batchMatMul' :
+                                                 'batchMatMulWithActivation';
   const res = ENV.engine.runKernel(
-      (backend, save) => save(backend.batchMatMulWithActivation(
-          a3D, b3D, transposeA, transposeB, activationKernel)),
+      (backend, save) => save(
+          backend[kernel](a3D, b3D, transposeA, transposeB, activationKernel)),
       {$a: a3D, $b: b3D}, grad);
   return res.reshape(outShape) as T;
 }

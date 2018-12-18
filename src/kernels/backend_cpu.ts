@@ -438,6 +438,17 @@ export class MathBackendCPU implements KernelBackend {
     return result.toTensor() as Tensor3D;
   }
 
+  batchMatMulWithActivation(
+      a: Tensor3D, b: Tensor3D, transposeA: boolean, transposeB: boolean,
+      activation: string): Tensor3D {
+    if (this[activation] == null) {
+      throw new Error(`The activation kernel ${
+          activation} has not been implemented yet for the CPU backend.`);
+    }
+
+    return this[activation](this.batchMatMul(a, b, transposeA, transposeB));
+  }
+
   multiply(a: Tensor, b: Tensor): Tensor {
     if (a.dtype === 'complex64' || b.dtype === 'complex64') {
       return this.broadcastedBinaryComplexOp(
