@@ -25,11 +25,15 @@ import {TensorLike} from '../types';
 import {makeTypesMatch} from '../tensor_util';
 import {convertToTensor} from '../tensor_util_env';
 
-function matMul_<T extends Tensor>(a: T|TensorLike, b: T|TensorLike, transposeA = false,
-    transposeB = false, activation: string): T {
+function matMul_<T extends Tensor>(
+    a: T|TensorLike, b: T|TensorLike, transposeA = false, transposeB = false,
+    activation: string): T {
   const activationKernel = activation.toUpperCase();
 
-  util.assert(supportedActivations.indexOf(activationKernel) > -1, `Error in fused matMul: activation must be one of ${supportedActivations.join(', ')} - got ${activationKernel}`);
+  util.assert(
+      supportedActivations.indexOf(activationKernel) > -1,
+      `Error in fused matMul: activation must be one of ${
+          supportedActivations.join(', ')} - got ${activationKernel}`);
 
   let $a = convertToTensor(a, 'a', 'matMul');
   let $b = convertToTensor(b, 'b', 'matMul');
@@ -75,32 +79,40 @@ function matMul_<T extends Tensor>(a: T|TensorLike, b: T|TensorLike, transposeA 
   const b3D = transposeB ? $b.as3D(batchDimB, outerShapeB, innerShapeB) :
                            $b.as3D(batchDimB, innerShapeB, outerShapeB);
 
-  const grad = (dy: Tensor3D) => {
+  const grad = (dy: Tensor3D, saved: Tensor[]) => {
+    const [y] = saved;
+
+    let dyActivation = dy;
+    if (activationKernel === 'RELU') {
+      dyActivation = dy.mul(y.step()) as Tensor3D;
+    }
+
     if (!transposeA && !transposeB) {
       return {
-        $a: () => dy.matMul(b3D, false, true),
-        $b: () => a3D.matMul(dy, true, false)
+        $a: () => dyActivation.matMul(b3D, false, true),
+        $b: () => a3D.matMul(dyActivation, true, false)
       };
     } else if (!transposeA && transposeB) {
       return {
-        $a: () => dy.matMul(b3D, false, false),
-        $b: () => dy.matMul(a3D, true, false)
+        $a: () => dyActivation.matMul(b3D, false, false),
+        $b: () => dyActivation.matMul(a3D, true, false)
       };
     } else if (transposeA && !transposeB) {
       return {
-        $a: () => b3D.matMul(dy, false, true),
-        $b: () => a3D.matMul(dy, false, false)
+        $a: () => b3D.matMul(dyActivation, false, true),
+        $b: () => a3D.matMul(dyActivation, false, false)
       };
     } else {
       return {
-        $a: () => b3D.matMul(dy, true, true),
-        $b: () => dy.matMul(a3D, true, true)
+        $a: () => b3D.matMul(dyActivation, true, true),
+        $b: () => dyActivation.matMul(a3D, true, true)
       };
     }
   };
 
   const res = ENV.engine.runKernel(
-      backend => backend.batchMatMulWithActivation(a3D, b3D, transposeA, transposeB, activationKernel),
+      (backend, save) => save(backend.batchMatMulWithActivation(
+          a3D, b3D, transposeA, transposeB, activationKernel)),
       {$a: a3D, $b: b3D}, grad);
   return res.reshape(outShape) as T;
 }
