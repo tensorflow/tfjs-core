@@ -475,16 +475,23 @@ export class MathBackendWebGL implements KernelBackend {
       return;
     }
     if (this.texData.has(dataId)) {
-      const {texture, texShape, usage, complexTensors, isPacked} =
+      const {texture, texShape, usage, complexTensors, isPacked, origDataId} =
           this.texData.get(dataId);
       if (texture != null) {
-        this.releaseTexture(dataId, texture, texShape, usage, isPacked);
+        const key = origDataId || dataId;
+        const refCount = this.dataRefCount.get(key);
+        if (refCount > 1) {
+          this.dataRefCount.set(key, refCount - 1);
+        } else {
+          this.dataRefCount.delete(key);
+          this.releaseTexture(dataId, texture, texShape, usage, isPacked);
+          this.texData.delete(dataId);
+        }
       }
       if (complexTensors != null) {
         complexTensors.real.dispose();
         complexTensors.imag.dispose();
       }
-      this.texData.delete(dataId);
     }
   }
 
@@ -575,16 +582,29 @@ export class MathBackendWebGL implements KernelBackend {
       return this.cpuBackend.slice(x, begin, size);
     }
     this.uploadToGPU(x.dataId);
-    const slicedTensor = Tensor.make(size, {}, x.dtype);
+    return this.sliceTensor(x, begin, size) as T;
+  }
+
+  private dataRefCount = new WeakMap<DataId, number>();
+
+  private sliceTensor(x: Tensor, begin: number[], size: number[]): Tensor {
+    const t = Tensor.make(size, {}, x.dtype);
     const xTexData = this.texData.get(x.dataId);
-    const slicedTexData = this.texData.get(slicedTensor.dataId);
-    slicedTexData.isPacked = xTexData.isPacked;
-    slicedTexData.offsets = begin;
-    slicedTexData.texShape = xTexData.texShape;
-    slicedTexData.texture = xTexData.texture;
-    slicedTexData.usage = xTexData.usage;
-    slicedTexData.values = xTexData.values;
-    return slicedTensor as T;
+    const texData = this.texData.get(t.dataId);
+    texData.isPacked = xTexData.isPacked;
+    texData.offsets = begin;
+    texData.texShape = xTexData.texShape;
+    texData.texture = xTexData.texture;
+    texData.usage = xTexData.usage;
+    texData.values = xTexData.values;
+    // Point to the original dataId, which is used to do ref counting.
+    texData.origDataId = x.dataId;
+
+    // Increase the ref count to that texture.
+    const refCount = this.dataRefCount.get(x.dataId) || 1;
+    this.dataRefCount.set(x.dataId, refCount + 1);
+
+    return t;
   }
 
   stridedSlice<T extends Tensor>(
@@ -1917,11 +1937,15 @@ export class MathBackendWebGL implements KernelBackend {
       }
 
       this.uploadToGPU(input.dataId);
-      return {shape: input.shape, texData, isUniform: false};
+      let origShape: number[];
+      if (texData.origDataId) {
+        origShape = this.texData.get(texData.origDataId).shape;
+      }
+      return {shape: input.shape, texData, isUniform: false, origShape};
     });
 
     this.uploadToGPU(output.dataId);
-    const outputData = {
+    const outputData: TensorData = {
       shape: output.shape,
       texData: this.texData.get(output.dataId),
       isUniform: false

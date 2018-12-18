@@ -48,7 +48,10 @@ export interface TensorData {
   shape: number[];
   texData: TextureData;
   isUniform: boolean;
+  // Available when we decide to upload as uniform instead of texture.
   uniformValues?: TypedArray;
+  // Available when we slice a tensor.
+  origShape?: number[];
 }
 
 export function compileProgram<T extends Tensor, K extends Tensor>(
@@ -56,22 +59,28 @@ export function compileProgram<T extends Tensor, K extends Tensor>(
     output: TensorData): GPGPUBinary {
   const userCode = program.userCode;
   const inputInfos: InputInfo[] = inputs.map((input, i) => {
-    const shapeInfo = {
+    const shapeInfo: ShapeInfo = {
       logicalShape: input.shape,
       texShape: input.isUniform ? null : input.texData.texShape,
       isUniform: input.isUniform,
       isPacked: input.isUniform ? false : input.texData.isPacked,
-      offsets: input.texData ? input.texData.offsets : null
+      slice: null,
     };
+    if (input.texData.offsets != null) {
+      shapeInfo.slice = {
+        offsets: input.texData.offsets,
+        origShape: input.origShape
+      };
+    }
     return {name: program.variableNames[i], shapeInfo};
   });
   const inShapeInfos = inputInfos.map(x => x.shapeInfo);
-  const outShapeInfo = {
+  const outShapeInfo: ShapeInfo = {
     logicalShape: output.shape,
     texShape: output.texData.texShape,
     isUniform: false,
     isPacked: output.texData.isPacked,
-    offsets: output.texData.offsets
+    slice: null,
   };
   const source = shader_compiler.makeShader(
       inputInfos, outShapeInfo, userCode, program.usesPackedTextures);
@@ -84,8 +93,7 @@ export function compileProgram<T extends Tensor, K extends Tensor>(
     const shouldThrow = false;
     uniformLocations[varName] =
         gpgpu.getUniformLocation(webGLProgram, varName, shouldThrow);
-    const offsets = inputInfos[i].shapeInfo.offsets;
-    if (offsets != null) {
+    if (inputInfos[i].shapeInfo.slice != null) {
       uniformLocations[`offset${varName}`] = gpgpu.getUniformLocation(
           webGLProgram, `offset${varName}`, shouldThrow);
     }
@@ -178,7 +186,7 @@ export function runProgram<T extends Tensor, K extends Tensor>(
     // If there are offsets, upload the coordinates.
     const offsets = input.texData.offsets;
     if (offsets != null) {
-      gpgpu.gl.uniform1fv(varOffsetLoc, offsets);
+      gpgpu.gl.uniform1iv(varOffsetLoc, offsets);
     }
 
     gpgpu.setInputMatrixTexture(input.texData.texture, varLoc, i);

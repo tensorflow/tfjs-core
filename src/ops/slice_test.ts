@@ -29,8 +29,7 @@ describeWithFlags('slice1d', ALL_ENVS, () => {
     expectNumbersClose(result.get(0), 5);
   });
 
-  // tslint:disable-next-line:ban
-  fit('slices 5x1 into shape 2x1 starting at 3', () => {
+  it('slices 5x1 into shape 2x1 starting at 3', () => {
     const a = tf.tensor1d([1, 2, 3, 4, 5]);
     const result = tf.slice1d(a, 3, 2);
 

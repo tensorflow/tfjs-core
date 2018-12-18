@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {Tensor} from '../../tensor';
+import {DataId, Tensor} from '../../tensor';
 import {DataType, DataValues} from '../../types';
 import * as util from '../../util';
 
@@ -50,7 +50,11 @@ export interface TextureData {
   texShape?: [number, number];
   usage?: TextureUsage;
   isPacked?: boolean;
+  // Available when the texture has been sliced.
   offsets?: number[];
+  // Available when the texture has been sliced. Used to refCount how many
+  // tensors point to the same texture.
+  origDataId?: DataId;
 }
 
 export function getUnpackedMatrixTextureShapeWidthHeight(
