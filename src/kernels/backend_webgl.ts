@@ -707,7 +707,7 @@ export class MathBackendWebGL implements KernelBackend {
 
   batchMatMulWithActivation(
       a: Tensor3D, b: Tensor3D, transposeA: boolean, transposeB: boolean,
-      activation: string): Tensor3D {
+      activation: string, bias: Tensor): Tensor3D {
     const outerShapeA = transposeA ? a.shape[2] : a.shape[1];
     const outerShapeB = transposeB ? b.shape[1] : b.shape[2];
     const [batch, , ] = a.shape;
@@ -722,18 +722,19 @@ export class MathBackendWebGL implements KernelBackend {
 
       const program = new MatMulPackedProgram(
           aSqueezed.shape, bSqueezed.shape, [outerShapeA, outerShapeB],
-          transposeA, transposeB, unary_packed_op[activationKernel]);
+          transposeA, transposeB, unary_packed_op[activationKernel], !!bias);
       const output =
           this.makePackedTensor(program.outputShape, dtype) as Tensor2D;
-      const result =
-          this.compileAndRun<Tensor2D>(program, [aSqueezed, bSqueezed], output);
+      const result = this.compileAndRun<Tensor2D>(
+          program, [aSqueezed, bSqueezed, bias], output);
       return result.reshape([1, result.shape[0], result.shape[1]]);
     } else {
       const program = new MatMulProgram(
-          a.shape, b.shape, transposeA, transposeB, unary_op[activationKernel]);
+          a.shape, b.shape, transposeA, transposeB, unary_op[activationKernel],
+          !!bias);
       const output =
           this.makeOutputArray(program.outputShape, dtype) as Tensor3D;
-      return this.compileAndRun(program, [a, b], output);
+      return this.compileAndRun(program, [a, b, bias], output);
     }
   }
 

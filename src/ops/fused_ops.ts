@@ -27,7 +27,7 @@ import {convertToTensor} from '../tensor_util_env';
 
 function matMul_<T extends Tensor>(
     a: T|TensorLike, b: T|TensorLike, transposeA = false, transposeB = false,
-    activation: string): T {
+    activation: string, bias: Tensor): T {
   const activationKernel = activation.toLowerCase();
 
   util.assert(
@@ -113,8 +113,8 @@ function matMul_<T extends Tensor>(
   const kernel = activationKernel === 'linear' ? 'batchMatMul' :
                                                  'batchMatMulWithActivation';
   const res = ENV.engine.runKernel(
-      (backend, save) => save(
-          backend[kernel](a3D, b3D, transposeA, transposeB, activationKernel)),
+      (backend, save) => save(backend[kernel](
+          a3D, b3D, transposeA, transposeB, activationKernel, bias)),
       {$a: a3D, $b: b3D}, grad);
   return res.reshape(outShape) as T;
 }

@@ -24,7 +24,8 @@ export class MatMulProgram implements GPGPUProgram {
 
   constructor(
       aShape: [number, number, number], bShape: [number, number, number],
-      transposeA = false, transposeB = false, activation = 'return x;') {
+      transposeA = false, transposeB = false, activation = 'return x;',
+      addBias = false) {
     const batchSize = aShape[0];
     const outerShapeA = transposeA ? aShape[2] : aShape[1];
     const outerShapeB = transposeB ? bShape[1] : bShape[2];
@@ -40,6 +41,11 @@ export class MatMulProgram implements GPGPUProgram {
 
     const sharedDimNearestVec4 = Math.floor(sharedDim / 4) * 4;
     const sharedDimVec4Remainder = sharedDim % 4;
+
+    const addBiasSnippet = addBias ? 'result += getBiasAtOutCoords();' : '';
+    if (addBias) {
+      this.variableNames.push('bias');
+    }
 
     this.userCode = `float activation(float x) {
       ${activation}
@@ -98,7 +104,11 @@ export class MatMulProgram implements GPGPUProgram {
       ivec3 resBRC = getOutputCoords();
       float result = dotARowBCol(resBRC.x, resBRC.y, resBRC.z);
 
-      setOutput(activation(result));
+      result = activation(result);
+
+      ${addBiasSnippet}
+
+      setOutput(result);
     }
     `;
   }
