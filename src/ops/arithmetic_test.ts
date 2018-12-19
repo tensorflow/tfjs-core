@@ -818,16 +818,16 @@ describeWithFlags('pow', ALL_ENVS, () => {
   });
 
   it('gradient wrt exponent with non-positive base', () => {
-    const a = tf.tensor1d([-1, .5, -2.7, 0]);
-    const b = tf.tensor1d([3, 2, -1, 0], 'int32');
-    const dy = tf.tensor1d([1, 1, 1, 1]);
+    const a = tf.tensor1d([-1, -.5, -2.7]);
+    const b = tf.tensor1d([3, 2, -1], 'int32');
+    const dy = tf.tensor1d([1, 1, 1]);
 
     const grads = tf.grads((a, b) => tf.pow(a, b));
     const [, db] = grads([a, b], dy);
 
     expect(db.shape).toEqual(b.shape);
     expect(db.dtype).toEqual('float32');
-    expectArraysClose(db, [0, Math.pow(.5, 2) * Math.log(.5), 0, 0]);
+    expectArraysClose(db, [0, 0, 0]);
   });
 
   it('gradient: scalar / Tensor1D', () => {
