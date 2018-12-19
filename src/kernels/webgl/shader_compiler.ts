@@ -1299,19 +1299,19 @@ function getPackedSamplerAtOutputCoords(
 
   if (inRank === 1 && outRank > 1) {
     output = `
-      vec4 sample = ${glsl.texture2D}(${texName}, uv);
-      return vec4(sample.xy, sample.xy);
+      vec4 values = ${glsl.texture2D}(${texName}, uv);
+      return vec4(values.xy, values.xy);
     `;
   } else if (inRank === 0 && outRank > 0) {
     if (outRank === 1) {
       output = `
-        vec4 sample = ${glsl.texture2D}(${texName}, uv);
-        return vec4(sample.x, sample.x, 0., 0.);
+        vec4 values = ${glsl.texture2D}(${texName}, uv);
+        return vec4(values.x, values.x, 0., 0.);
       `;
     } else {
       output = `
-        vec4 sample = ${glsl.texture2D}(${texName}, uv);
-        return vec4(sample.x);
+        vec4 values = ${glsl.texture2D}(${texName}, uv);
+        return vec4(values.x);
       `;
     }
   }

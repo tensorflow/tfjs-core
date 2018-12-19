@@ -207,8 +207,12 @@ describeWithFlags(
         gpgpu = new GPGPUContext();
         gpgpu.enableAutomaticDebugValidation(true);
         const glsl = getGlslDifferences();
-        const src = `
-          precision highp float; void main(){${glsl.output} = vec4(2,0,0,0);}
+        const src = `${glsl.version}
+          precision highp float;
+          ${glsl.defineOutput}
+          void main() {
+            ${glsl.output} = vec4(2,0,0,0);
+          }
         `;
         program = gpgpu.createProgram(src);
         output = gpgpu.createFloat32MatrixTexture(4, 4);
@@ -297,7 +301,11 @@ describeWithFlags('GPGPUContext', DOWNLOAD_FLOAT_ENVS, () => {
   });
 
   it('throws an error if validation is on and framebuffer incomplete', () => {
-    const src = `precision highp float; void main() {}`;
+    const glsl = getGlslDifferences();
+    const src = `${glsl.version}
+      precision highp float;
+      void main() {}
+    `;
     const program = gpgpu.createProgram(src);
     const result = gpgpu.createFloat32MatrixTexture(1, 1);
     gpgpu.setOutputMatrixTexture(result, 1, 1);
