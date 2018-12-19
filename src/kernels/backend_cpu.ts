@@ -440,14 +440,14 @@ export class MathBackendCPU implements KernelBackend {
 
   batchMatMulWithActivation(
       a: Tensor3D, b: Tensor3D, transposeA: boolean, transposeB: boolean,
-      activation: string, bias: Tensor): Tensor3D {
-    if (this[activation] == null) {
+      activation: Activation, bias: Tensor): Tensor3D {
+    if (this[activation.kernelKey] == null) {
       throw new Error(`The activation kernel ${
           activation} has not been implemented yet for the CPU backend.`);
     }
 
     let result =
-        this[activation](this.batchMatMul(a, b, transposeA, transposeB));
+        this[activation.kernelKey](this.batchMatMul(a, b, transposeA, transposeB));
     if (bias) {
       result = this.add(result, bias);
     }
