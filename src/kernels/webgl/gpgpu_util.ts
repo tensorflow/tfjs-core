@@ -16,6 +16,7 @@
  */
 
 import {ENV} from '../../environment';
+import {getGlslDifferences} from './glsl_version';
 import * as util from '../../util';
 
 import * as tex_util from './tex_util';
@@ -37,11 +38,12 @@ export interface TextureConfig {
 }
 
 export function createVertexShader(gl: WebGLRenderingContext): WebGLShader {
-  const vertexShaderSource = `
+  const glsl = getGlslDifferences();
+  const vertexShaderSource = `${glsl.version}
     precision highp float;
-    attribute vec3 clipSpacePos;
-    attribute vec2 uv;
-    varying vec2 resultUV;
+    ${glsl.attribute} vec3 clipSpacePos;
+    ${glsl.attribute} vec2 uv;
+    ${glsl.varyingVs} vec2 resultUV;
 
     void main() {
       gl_Position = vec4(clipSpacePos, 1);
