@@ -16,9 +16,8 @@
  */
 
 import {ENV} from '../../environment';
-import {getGlslDifferences} from './glsl_version';
 import * as util from '../../util';
-
+import {getGlslDifferences} from './glsl_version';
 import * as tex_util from './tex_util';
 import * as webgl_util from './webgl_util';
 

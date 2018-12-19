@@ -17,8 +17,8 @@
 
 import {ENV} from '../../environment';
 import {getBroadcastDims} from '../../ops/broadcast_util';
-import {getGlslDifferences, GLSL} from './glsl_version';
 import * as util from '../../util';
+import {getGlslDifferences, GLSL} from './glsl_version';
 import * as shader_util from './shader_compiler_util';
 import * as tex_util from './tex_util';
 

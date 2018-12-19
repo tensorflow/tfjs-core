@@ -15,8 +15,8 @@
  * =============================================================================
  */
 
-import {GPGPUProgram} from './gpgpu_math';
 import {getGlslDifferences} from './glsl_version';
+import {GPGPUProgram} from './gpgpu_math';
 
 export class EncodeFloatProgram implements GPGPUProgram {
   variableNames = ['A'];

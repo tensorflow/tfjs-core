@@ -17,8 +17,8 @@
 
 import {describeWithFlags} from '../../jasmine_util';
 import {expectArraysClose, expectNumbersClose} from '../../test_util';
-import {binSearchLastTrue, GPGPUContext} from './gpgpu_context';
 import {getGlslDifferences} from './glsl_version';
+import {binSearchLastTrue, GPGPUContext} from './gpgpu_context';
 import * as tex_util from './tex_util';
 
 const DOWNLOAD_FLOAT_ENVS = {
@@ -207,7 +207,7 @@ describeWithFlags(
         gpgpu = new GPGPUContext();
         gpgpu.enableAutomaticDebugValidation(true);
         const glsl = getGlslDifferences();
-        const src =`
+        const src = `
           precision highp float; void main(){${glsl.output} = vec4(2,0,0,0);}
         `;
         program = gpgpu.createProgram(src);
