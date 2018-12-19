@@ -265,7 +265,7 @@ function pow_<T extends Tensor>(base: T|TensorLike, exp: Tensor|TensorLike): T {
       return res.reshape($base.shape) as T;
     };
     const derExp = () => {
-      const condition = $base.greater(scalar(1e-1));
+      const condition = $base.greater(scalar(0));
       const logBase = $base.log().toFloat().where(condition, zerosLike($base));
       let res = dy.mul(y.mul(logBase));
       const reduceAxes = broadcast_util.getReductionAxes($exp.shape, outShape);
