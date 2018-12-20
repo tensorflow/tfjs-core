@@ -391,18 +391,23 @@ describe('util.checkComputationForErrors', () => {
   });
 });
 
-describe('util.checkConversionForNaN', () => {
-  // NaN is a valid value for type Float32
+describe('util.checkConversionForErrors', () => {
   it('Float32Array has NaN', () => {
-    expect(
-        () => util.checkConversionForNaN(
-            new Float32Array([1, 2, 3, NaN, 4, 255]), 'float32'))
-        .not.toThrowError();
+    expect(() => util.checkConversionForErrors(new Float32Array([
+      1, 2, 3, NaN, 4, 255
+    ]))).toThrowError();
   });
-  // NaN should not be present in other types. Error should be thrown.
+
+  it('Float32Array has Infinity', () => {
+    expect(() => util.checkConversionForErrors(new Float32Array([
+      1, 2, 3, Infinity, 4, 255
+    ]))).toThrowError();
+  });
+
   it('Int32Array has NaN', () => {
-    expect(() => util.checkConversionForNaN([1, 2, 3, 4, NaN], 'int32'))
-        .toThrowError();
+    expect(() => util.checkConversionForErrors([
+      1, 2, 3, 4, NaN
+    ])).toThrowError();
   });
 });
 

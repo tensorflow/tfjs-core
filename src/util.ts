@@ -368,16 +368,12 @@ export function checkComputationForErrors<D extends DataType>(
   }
 }
 
-export function checkConversionForNaN<D extends DataType>(
-    vals: DataTypeMap[D]|number[], dtype: D): void {
-  if (dtype === 'float32') {
-    // NaN is valid for floating point conversions
-    return;
-  }
-
+export function checkConversionForErrors<D extends DataType>(
+    vals: DataTypeMap[D]|number[]): void {
   for (let i = 0; i < vals.length; i++) {
-    if (isNaN(vals[i] as number)) {
-      throw Error(`NaN is not a valid value for dtype: '${dtype}'.`);
+    const num = vals[i] as number;
+    if (isNaN(num) || !isFinite(num)) {
+      throw Error(`A tensor being uploaded contains ${num}.`);
     }
   }
 }
@@ -505,12 +501,12 @@ export function toTypedArray(
   if (Array.isArray(a)) {
     a = flatten(a as number[]);
   }
+  if (debugMode) {
+    checkConversionForErrors(a as number[]);
+  }
   if (dtype == null || dtype === 'float32' || dtype === 'complex64') {
     return new Float32Array(a as number[]);
   } else if (dtype === 'int32') {
-    if (debugMode) {
-      checkConversionForNaN(a as number[], dtype);
-    }
     return new Int32Array(a as number[]);
   } else if (dtype === 'bool') {
     const bool = new Uint8Array((a as number[]).length);
