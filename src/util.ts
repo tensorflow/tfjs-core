@@ -15,7 +15,6 @@
  * =============================================================================
  */
 
-import {ENV} from './environment';
 import {DataType, DataTypeMap, FlatVector, NumericDataType, RecursiveArray, TensorLike, TypedArray} from './types';
 
 /** Shuffles the array using Fisher-Yates algorithm. */
@@ -369,30 +368,12 @@ export function checkComputationForErrors<D extends DataType>(
   }
 }
 
-// https://en.wikipedia.org/wiki/Half-precision_floating-point_format
-const MIN_FLOAT16: number = 5.96e-8;
-const MAX_FLOAT16: number = 65504;
-
-export function canBeRepresented(num: number): boolean {
-  if (ENV.get('BACKEND') !== 'webgl' ||
-      ENV.get('WEBGL_RENDER_FLOAT32_ENABLED') || num === 0 ||
-      (MIN_FLOAT16 < Math.abs(num) && Math.abs(num) < MAX_FLOAT16)) {
-    return true;
-  }
-  return false;
-}
-
 export function checkConversionForErrors<D extends DataType>(
     vals: DataTypeMap[D]|number[], dtype: D): void {
   for (let i = 0; i < vals.length; i++) {
     const num = vals[i] as number;
     if (isNaN(num) || !isFinite(num)) {
       throw Error(`A tensor of type ${dtype} being uploaded contains ${num}.`);
-    }
-
-    if (!canBeRepresented(num)) {
-      throw Error(`A tensor of type ${
-          dtype} being uploaded cannot be represented on this device.`);
     }
   }
 }
