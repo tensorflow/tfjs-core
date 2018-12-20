@@ -46,7 +46,7 @@ export function getGlslDifferences(): GLSL {
     texture2D = 'texture';
     output = 'outputColor';
     defineOutput = 'out vec4 outputColor;';
-    defineRound = '#define round(x) int(round(x))';
+    defineRound = '#define round(value) int(floor((value) + 0.5))';
   } else {
     version = '';
     attribute = 'attribute';
