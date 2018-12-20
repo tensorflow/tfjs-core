@@ -15,7 +15,6 @@
  * =============================================================================
  */
 
-import * as tf from './index';
 import {inferShape} from './tensor_util_env';
 import * as util from './util';
 
@@ -410,16 +409,6 @@ describe('util.checkConversionForErrors', () => {
   it('Int32Array has NaN', () => {
     expect(() => util.checkConversionForErrors([1, 2, 3, 4, NaN], 'int32'))
         .toThrowError();
-  });
-
-  it('Float32Array has values that would underflow with half precision', () => {
-    const savedFlag = tf.ENV.get('WEBGL_RENDER_FLOAT32_ENABLED');
-    tf.ENV.set('WEBGL_RENDER_FLOAT32_ENABLED', false);
-
-    expect(() => util.checkConversionForErrors([1, 2, 3, 4, 1e-10], 'float32'))
-        .toThrowError();
-
-    tf.ENV.set('WEBGL_RENDER_FLOAT32_ENABLED', savedFlag);
   });
 });
 

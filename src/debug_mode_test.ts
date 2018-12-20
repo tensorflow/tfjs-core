@@ -60,6 +60,15 @@ describeWithFlags('debug on', ALL_ENVS, () => {
     expect(a).toThrowError();
   });
 
+  it('debug mode errors when trying to upload values that would underflow', () => {
+    const savedFlag = tf.ENV.get('WEBGL_RENDER_FLOAT32_ENABLED');
+    tf.ENV.set('WEBGL_RENDER_FLOAT32_ENABLED', false);
+
+    const a = () => tf.tensor1d([2, 1e-10], 'float32');
+    expect(a).toThrowError();
+    tf.ENV.set('WEBGL_RENDER_FLOAT32_ENABLED', savedFlag);
+  });
+
   it('A x B', () => {
     const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
     const b = tf.tensor2d([0, 1, -3, 2, 2, 1], [3, 2]);
