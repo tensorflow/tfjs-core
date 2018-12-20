@@ -35,10 +35,9 @@ describeWithFlags('debug on', ALL_ENVS, () => {
     expectArraysClose(res, [2, 0, 0, 3]);
   });
 
-  it('debug mode errors when there are nans, float32', () => {
-    const a = tf.tensor1d([2, NaN]);
-    const f = () => tf.relu(a);
-    expect(f).toThrowError();
+  it('debug mode errors when nans in tensor construction, float32', () => {
+    const a = () => tf.tensor1d([2, NaN], 'float32');
+    expect(a).toThrowError();
   });
 
   it('debug mode errors when nans in tensor construction, int32', () => {
