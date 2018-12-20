@@ -26,7 +26,7 @@ import {getTensorsInContainer} from './tensor_util';
 export const EPSILON_FLOAT16 = 0.00006104;
 const TEST_EPSILON_FLOAT16 = 1e-1;
 
-export const EPSILON_FLOAT32 = 1e-37;
+export const EPSILON_FLOAT32 = 1e-8;
 const TEST_EPSILON_FLOAT32 = 1e-3;
 
 export class Environment {
