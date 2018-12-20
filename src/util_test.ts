@@ -75,7 +75,8 @@ describe('Util', () => {
 
   it('infer shape 4d array', () => {
     const a = [
-      [[[1], [2]], [[2], [3]], [[5], [6]]], [[[5], [6]], [[4], [5]], [[1], [2]]]
+      [[[1], [2]], [[2], [3]], [[5], [6]]],
+      [[[5], [6]], [[4], [5]], [[1], [2]]]
     ];
     expect(inferShape(a)).toEqual([2, 3, 2, 1]);
   });
@@ -356,28 +357,35 @@ describe('util.squeezeShape', () => {
       expect(() => util.squeezeShape([1, 1, 2, 1, 4], [-1, -2])).toThrowError();
     });
     it('throws error when specified axis is out of range', () => {
-      expect(
-        () => util.squeezeShape([1, 1, 2, 1, 4], [11, 22])).toThrowError();
+      expect(() => util.squeezeShape([1, 1, 2, 1, 4], [11, 22])).toThrowError();
     });
     it('throws error when specified negative axis is out of range', () => {
-      expect(
-        () => util.squeezeShape([1, 1, 2, 1, 4], [-11, -22])).toThrowError();
+      expect(() => util.squeezeShape([1, 1, 2, 1, 4], [
+        -11, -22
+      ])).toThrowError();
     });
   });
 });
 
-describe('util.checkComputationForNaN', () => {
+describe('util.checkComputationForErrors', () => {
   it('Float32Array has NaN', () => {
     expect(
-        () => util.checkComputationForNaN(
+        () => util.checkComputationForErrors(
             new Float32Array([1, 2, 3, NaN, 4, 255]), 'float32', ''))
+        .toThrowError();
+  });
+
+  it('Float32Array has Infinity', () => {
+    expect(
+        () => util.checkComputationForErrors(
+            new Float32Array([1, 2, 3, Infinity, 4, 255]), 'float32', ''))
         .toThrowError();
   });
 
   it('Float32Array no NaN', () => {
     // Int32 and Bool NaNs should not trigger an error.
     expect(
-        () => util.checkComputationForNaN(
+        () => util.checkComputationForErrors(
             new Float32Array([1, 2, 3, 4, -1, 255]), 'float32', ''))
         .not.toThrowError();
   });
