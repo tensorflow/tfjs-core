@@ -495,14 +495,14 @@ export function toTypedArray(
   if (dtype === 'string') {
     throw new Error('Cannot convert a string[] to a TypedArray');
   }
-  if (noConversionNeeded(a, dtype)) {
-    return a as TypedArray;
-  }
   if (Array.isArray(a)) {
     a = flatten(a as number[]);
   }
   if (debugMode) {
     checkConversionForErrors(a as number[]);
+  }
+  if (noConversionNeeded(a, dtype)) {
+    return a as TypedArray;
   }
   if (dtype == null || dtype === 'float32' || dtype === 'complex64') {
     return new Float32Array(a as number[]);
