@@ -1037,14 +1037,16 @@ function getPackedSampler4D(inputInfo: InputInfo): string {
 
 function getSampler4D(inputInfo: InputInfo): string {
   const shape = inputInfo.shapeInfo.logicalShape;
+  const slice = inputInfo.shapeInfo.slice;
+  const origShape = slice ? slice.origShape : shape;
   const texName = inputInfo.name;
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
-  const stride2 = shape[3];
-  const stride1 = shape[2] * stride2;
-  const stride0 = shape[1] * stride1;
+  const stride2 = origShape[3];
+  const stride1 = origShape[2] * stride2;
+  const stride0 = origShape[1] * stride1;
 
   const {newShape, keptDims} = util.squeezeShape(shape);
-  if (newShape.length < shape.length) {
+  if (newShape.length < shape.length && slice == null) {
     const newInputInfo = squeezeInputInfo(inputInfo, newShape);
     const params = ['row', 'col', 'depth', 'depth2'];
     return `
@@ -1066,6 +1068,8 @@ function getSampler4D(inputInfo: InputInfo): string {
     `;
   }
 
+  const [offsetRow, offsetCol, offsetDepth, offsetDepth2] =
+      getOffsetUniformNames(texName, inputInfo.shapeInfo);
   const texShape = inputInfo.shapeInfo.texShape;
   const texNumR = texShape[0];
   const texNumC = texShape[1];
@@ -1073,9 +1077,10 @@ function getSampler4D(inputInfo: InputInfo): string {
     // texC is used directly as physical (no risk of float16 overflow).
     return `
       float ${funcName}(int row, int col, int depth, int depth2) {
-        float texR = float(row);
+        float texR = float(row + ${offsetRow});
         float texC =
-            dot(vec3(col, depth, depth2), vec3(${stride1}, ${stride2}, 1));
+            dot(vec3(col + ${offsetCol}, depth + ${offsetDepth},
+                depth2 + ${offsetDepth2}), vec3(${stride1}, ${stride2}, 1));
         vec2 uv = (vec2(texC, texR) + halfCR) /
                    vec2(${texNumC}.0, ${texNumR}.0);
         return sampleTexture(${texName}, uv);
@@ -1086,9 +1091,11 @@ function getSampler4D(inputInfo: InputInfo): string {
     // texR is used directly as physical (no risk of float16 overflow).
     return `
       float ${funcName}(int row, int col, int depth, int depth2) {
-        float texR = dot(vec3(row, col, depth),
-                         vec3(${shape[1] * shape[2]}, ${shape[2]}, 1));
-        float texC = float(depth2);
+        float texR = dot(vec3(row + ${offsetRow}, col + ${offsetCol},
+                         depth + ${offsetDepth}),
+                         vec3(${origShape[1] * origShape[2]},
+                              ${origShape[2]}, 1));
+        float texC = float(depth2 + ${offsetDepth2});
         vec2 uv = (vec2(texC, texR) + halfCR) /
                   vec2(${texNumC}.0, ${texNumR}.0);
         return sampleTexture(${texName}, uv);
@@ -1098,7 +1105,8 @@ function getSampler4D(inputInfo: InputInfo): string {
   return `
     float ${funcName}(int row, int col, int depth, int depth2) {
       vec2 uv = UVfrom4D(${texNumR}, ${texNumC}, ${stride0}, ${stride1},
-          ${stride2}, row, col, depth, depth2);
+          ${stride2}, row + ${offsetRow}, col + ${offsetCol},
+           depth + ${offsetDepth}, depth2 + ${offsetDepth2});
       return sampleTexture(${texName}, uv);
     }
   `;
@@ -1106,15 +1114,17 @@ function getSampler4D(inputInfo: InputInfo): string {
 
 function getSampler5D(inputInfo: InputInfo): string {
   const shape = inputInfo.shapeInfo.logicalShape;
+  const slice = inputInfo.shapeInfo.slice;
+  const origShape = slice ? slice.origShape : shape;
   const texName = inputInfo.name;
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
-  const stride3 = shape[4];
-  const stride2 = shape[3] * stride3;
-  const stride1 = shape[2] * stride2;
-  const stride0 = shape[1] * stride1;
+  const stride3 = origShape[4];
+  const stride2 = origShape[3] * stride3;
+  const stride1 = origShape[2] * stride2;
+  const stride0 = origShape[1] * stride1;
 
   const {newShape, keptDims} = util.squeezeShape(shape);
-  if (newShape.length < shape.length) {
+  if (newShape.length < shape.length && slice == null) {
     const newInputInfo = squeezeInputInfo(inputInfo, newShape);
     const params = ['row', 'col', 'depth', 'depth2', 'depth3'];
     return `
@@ -1138,6 +1148,8 @@ function getSampler5D(inputInfo: InputInfo): string {
     `;
   }
 
+  const [offsetRow, offsetCol, offsetDepth, offsetDepth2, offsetDepth3] =
+      getOffsetUniformNames(texName, inputInfo.shapeInfo);
   const texShape = inputInfo.shapeInfo.texShape;
   const texNumR = texShape[0];
   const texNumC = texShape[1];
@@ -1146,9 +1158,10 @@ function getSampler5D(inputInfo: InputInfo): string {
     // texC is used directly as physical (no risk of float16 overflow).
     return `
       float ${funcName}(int row, int col, int depth, int depth2, int depth3) {
-        int texR = row;
+        int texR = row + ${offsetRow};
         float texC = dot(
-          vec4(col, depth, depth2, depth3),
+          vec4(col + ${offsetCol}, depth + ${offsetDepth},
+               depth2 + ${offsetDepth2}, depth3 + ${offsetDepth3}),
           vec4(${stride1}, ${stride2}, ${stride3}, 1));
         vec2 uv = (vec2(texC, texR) + halfCR) /
                    vec2(${texNumC}.0, ${texNumR}.0);
@@ -1162,10 +1175,11 @@ function getSampler5D(inputInfo: InputInfo): string {
     return `
       float ${funcName}(int row, int col, int depth, int depth2, int depth3) {
         float texR = dot(
-          vec4(row, col, depth, depth2),
-          vec4(${shape[1] * shape[2] * shape[3]}, ${shape[2] * shape[3]},
-            ${shape[3]}, 1));
-        int texC = depth3;
+          vec4(row + ${offsetRow}, col + ${offsetCol}, depth + ${offsetDepth},
+               depth2 + ${offsetDepth2}),
+          vec4(${origShape[1] * origShape[2] * origShape[3]},
+               ${origShape[2] * origShape[3]}, ${origShape[3]}, 1));
+        int texC = depth3 + ${offsetDepth3};
         vec2 uv = (vec2(texC, texR) + halfCR) /
                   vec2(${texNumC}.0, ${texNumR}.0);
         return sampleTexture(${texName}, uv);
@@ -1176,7 +1190,9 @@ function getSampler5D(inputInfo: InputInfo): string {
   return `
     float ${funcName}(int row, int col, int depth, int depth2, int depth3) {
       vec2 uv = UVfrom5D(${texNumR}, ${texNumC}, ${stride0}, ${stride1},
-          ${stride2}, ${stride3}, row, col, depth, depth2, depth3);
+          ${stride2}, ${stride3}, row + ${offsetRow}, col + ${offsetCol},
+          depth + ${offsetDepth}, depth2 + ${offsetDepth2},
+          depth3 + ${offsetDepth3});
       return sampleTexture(${texName}, uv);
     }
   `;
