@@ -751,7 +751,7 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
              .then(modelTopology1 => {
                done.fail(
                    'Loading from missing modelTopology and weightsManifest ' +
-                   'succeeded expectedly.');
+                   'succeeded unexpectedly.');
              })
              .catch(err => {
                expect(err.message)
@@ -771,8 +771,8 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
       handler.load()
           .then(modelTopology1 => {
             done.fail(
-                'Loading from with wrong content-type ' +
-                'succeeded expectedly.');
+                'Loading with wrong content-type ' +
+                'succeeded unexpectedly.');
           })
           .catch(err => {
             expect(err.message).toMatch(/Wrong content type/);
@@ -1183,8 +1183,8 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
       handler.load()
           .then(modelTopology1 => {
             done.fail(
-                'Loading from with wrong content-type ' +
-                'succeeded expectedly.');
+                'Loading with wrong content-type ' +
+                'succeeded unexpectedly.');
           })
           .catch(err => {
             expect(err.message).toMatch(/Wrong content type/);
@@ -1233,8 +1233,8 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
          handler.load()
              .then(modelTopology1 => {
                done.fail(
-                   'Loading from with wrong content-type ' +
-                   'succeeded expectedly.');
+                   'Loading with wrong content-type ' +
+                   'succeeded unexpectedly.');
              })
              .catch(err => {
                expect(err.message).toMatch(/Wrong content type/);
@@ -1283,8 +1283,8 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
          handler.load()
              .then(modelTopology1 => {
                done.fail(
-                   'Loading from with wrong content-type ' +
-                   'succeeded expectedly.');
+                   'Loading with wrong content-type ' +
+                   'succeeded unexpectedly.');
              })
              .catch(err => {
                expect(err.message).toMatch(/Wrong content type/);
