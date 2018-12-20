@@ -71,25 +71,6 @@ describeWithFlags('debug on', ALL_ENVS, () => {
   });
 });
 
-describeWithFlags('debug on', WEBGL_ENVS, () => {
-  beforeAll(() => {
-    tf.ENV.set('DEBUG', true);
-  });
-
-  afterAll(() => {
-    tf.ENV.set('DEBUG', false);
-  });
-
-  it('debug mode errors when uploading values that would underflow', () => {
-    const savedFlag = tf.ENV.get('WEBGL_RENDER_FLOAT32_ENABLED');
-    tf.ENV.set('WEBGL_RENDER_FLOAT32_ENABLED', false);
-
-    const a = () => tf.tensor1d([2, 1e-10], 'float32');
-    expect(a).toThrowError();
-    tf.ENV.set('WEBGL_RENDER_FLOAT32_ENABLED', savedFlag);
-  });
-});
-
 describeWithFlags('debug off', ALL_ENVS, () => {
   beforeAll(() => {
     tf.ENV.set('DEBUG', false);

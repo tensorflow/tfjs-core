@@ -111,7 +111,7 @@ function tensor<R extends Rank>(
     for(let i=0; i<values.length; i++) {
       const num = values[i] as number;
       if(!canBeRepresented(num)) {
-        throw Error(`The value ${num} cannot be represented on this device.`);
+        console.warn(`The value ${num} cannot be precisely represented on this device.`);
       }
     }
   }
