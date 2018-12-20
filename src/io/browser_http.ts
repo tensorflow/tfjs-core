@@ -145,28 +145,45 @@ export class BrowserHTTPRequest implements IOHandler {
    */
   private async loadBinaryTopology(): Promise<ArrayBuffer> {
     try {
-      const response =
-          await this.getFetchFunc()(this.path[0], this.requestInit);
+      const response = await this.getFetchFunc()(
+          this.path[0], this.addAcceptHeader('application/octet-stream'));
+      this.verifyContentType(response, 'application/octet-stream');
+
       if (!response.ok) {
-        throw new Error(
-            `BrowserHTTPRequest.load() failed due to HTTP response: ${
-                response.statusText}`);
+        throw new Error(`Request to ${this.path[0]} failed with error: ${
+            response.statusText}`);
       }
       return await response.arrayBuffer();
     } catch (error) {
-      throw new Error(`${this.path[0]} not found. ${error}`);
+      throw new Error(`Failed to load ${this.path[0]}. ${error}`);
+    }
+  }
+
+  private addAcceptHeader(mimeType: string): RequestInit {
+    const requestOptions = Object.assign({}, this.requestInit || {});
+    const headers = new Headers(requestOptions.headers);
+    headers.append('Accept', mimeType);
+    requestOptions.headers = headers;
+    return requestOptions;
+  }
+
+  private verifyContentType(response: Response, target: string) {
+    const contentType = response.headers.get('content-type');
+    if (!contentType || contentType.indexOf(target) === -1) {
+      throw new Error(`Wrong content type (${contentType}) for ${
+          response.url}, should be (${target}).`);
     }
   }
 
   protected async loadBinaryModel(): Promise<ModelArtifacts> {
     try {
       const graphPromise = this.loadBinaryTopology();
-      const manifestPromise =
-          await this.getFetchFunc()(this.path[1], this.requestInit);
+      const manifestPromise = await this.getFetchFunc()(
+          this.path[1], this.addAcceptHeader('application/json'));
+      this.verifyContentType(manifestPromise, 'application/json');
       if (!manifestPromise.ok) {
-        throw new Error(
-            `BrowserHTTPRequest.load() failed due to HTTP response: ${
-                manifestPromise.statusText}`);
+        throw new Error(`Request to ${this.path[1]} failed with error: ${
+            manifestPromise.statusText}`);
       }
 
       const results = await Promise.all([graphPromise, manifestPromise]);
@@ -184,18 +201,19 @@ export class BrowserHTTPRequest implements IOHandler {
 
       return {modelTopology, weightSpecs, weightData};
     } catch (error) {
-      throw new Error(`Failed to load binary model: ${error}`);
+      throw new Error(`Request to ${this.path[1]} failed with error: ${error}`);
     }
   }
 
   protected async loadJSONModel(): Promise<ModelArtifacts> {
     try {
-      const modelConfigRequest =
-          await this.getFetchFunc()(this.path as string, this.requestInit);
+      const modelConfigRequest = await this.getFetchFunc()(
+          this.path as string, this.addAcceptHeader('application/json'));
+      this.verifyContentType(modelConfigRequest, 'application/json');
+
       if (!modelConfigRequest.ok) {
-        throw new Error(
-            `BrowserHTTPRequest.load() failed due to HTTP response: ${
-                modelConfigRequest.statusText}`);
+        throw new Error(`Request to ${this.path} failed with error: ${
+            modelConfigRequest.statusText}`);
       }
       const modelConfig = await modelConfigRequest.json();
       const modelTopology = modelConfig['modelTopology'];
@@ -219,7 +237,7 @@ export class BrowserHTTPRequest implements IOHandler {
 
       return {modelTopology, weightSpecs, weightData};
     } catch (error) {
-      throw new Error(`Failed to load json model: ${error}`);
+      throw new Error(`Request to ${this.path} failed with error: ${error}`);
     }
   }
 
