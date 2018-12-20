@@ -369,11 +369,11 @@ export function checkComputationForErrors<D extends DataType>(
 }
 
 export function checkConversionForErrors<D extends DataType>(
-    vals: DataTypeMap[D]|number[]): void {
+    vals: DataTypeMap[D]|number[], dtype: D): void {
   for (let i = 0; i < vals.length; i++) {
     const num = vals[i] as number;
     if (isNaN(num) || !isFinite(num)) {
-      throw Error(`A tensor being uploaded contains ${num}.`);
+      throw Error(`A tensor of type ${dType} being uploaded contains ${num}.`);
     }
   }
 }
@@ -499,7 +499,7 @@ export function toTypedArray(
     a = flatten(a as number[]);
   }
   if (debugMode) {
-    checkConversionForErrors(a as number[]);
+    checkConversionForErrors(a as number[], dtype);
   }
   if (noConversionNeeded(a, dtype)) {
     return a as TypedArray;

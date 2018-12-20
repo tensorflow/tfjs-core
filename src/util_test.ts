@@ -393,21 +393,22 @@ describe('util.checkComputationForErrors', () => {
 
 describe('util.checkConversionForErrors', () => {
   it('Float32Array has NaN', () => {
-    expect(() => util.checkConversionForErrors(new Float32Array([
-      1, 2, 3, NaN, 4, 255
-    ]))).toThrowError();
+    expect(
+        () => util.checkConversionForErrors(
+            new Float32Array([1, 2, 3, NaN, 4, 255], 'float32')))
+        .toThrowError();
   });
 
   it('Float32Array has Infinity', () => {
-    expect(() => util.checkConversionForErrors(new Float32Array([
-      1, 2, 3, Infinity, 4, 255
-    ]))).toThrowError();
+    expect(
+        () => util.checkConversionForErrors(
+            new Float32Array([1, 2, 3, Infinity, 4, 255], 'int32')))
+        .toThrowError();
   });
 
   it('Int32Array has NaN', () => {
-    expect(() => util.checkConversionForErrors([
-      1, 2, 3, 4, NaN
-    ])).toThrowError();
+    expect(() => util.checkConversionForErrors([1, 2, 3, 4, NaN], 'int32'))
+        .toThrowError();
   });
 });
 
