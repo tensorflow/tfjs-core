@@ -60,7 +60,7 @@ describeWithFlags('debug on', ALL_ENVS, () => {
     expect(a).toThrowError();
   });
 
-  it('debug mode errors when trying to upload values that would underflow', () => {
+  it('debug mode errors when uploading values that would underflow', () => {
     const savedFlag = tf.ENV.get('WEBGL_RENDER_FLOAT32_ENABLED');
     tf.ENV.set('WEBGL_RENDER_FLOAT32_ENABLED', false);
 
