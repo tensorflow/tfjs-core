@@ -63,22 +63,21 @@ let windowFetchSpy: jasmine.Spy;
 
 type TypedArrays = Float32Array|Int32Array|Uint8Array|Uint16Array;
 const fakeResponse =
-    (body: string|TypedArrays|ArrayBuffer, contentType: string,
-     path: string) => ({
-      ok: true,
-      json() {
-        return Promise.resolve(JSON.parse(body as string));
-      },
-      arrayBuffer() {
-        const buf: ArrayBuffer = (body as TypedArrays).buffer ?
-            (body as TypedArrays).buffer :
-            body as ArrayBuffer;
-        return Promise.resolve(buf);
-      },
-      headers:
-          new Response('', {headers: {'content-type': contentType}}).headers,
-      url: path
-    });
+    (body: string|TypedArrays|ArrayBuffer, contentType: string, path: string) =>
+        ({
+          ok: true,
+          json() {
+            return Promise.resolve(JSON.parse(body as string));
+          },
+          arrayBuffer() {
+            const buf: ArrayBuffer = (body as TypedArrays).buffer ?
+                (body as TypedArrays).buffer :
+                body as ArrayBuffer;
+            return Promise.resolve(buf);
+          },
+          headers: {get: (key: string) => contentType},
+          url: path
+        });
 
 const setupFakeWeightFiles =
     (fileBufferMap: {
