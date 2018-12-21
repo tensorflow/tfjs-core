@@ -163,7 +163,7 @@ export class BrowserHTTPRequest implements IOHandler {
 
   private addAcceptHeader(mimeType: string): RequestInit {
     const requestOptions = Object.assign({}, this.requestInit || {});
-    const headers = requestOptions.headers || {};
+    const headers = Object.assign({}, requestOptions.headers || {});
     // tslint:disable-next-line:no-any
     (headers as any)['Accept'] = mimeType;
     requestOptions.headers = headers;
