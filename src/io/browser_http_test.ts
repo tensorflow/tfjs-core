@@ -63,21 +63,22 @@ let windowFetchSpy: jasmine.Spy;
 
 type TypedArrays = Float32Array|Int32Array|Uint8Array|Uint16Array;
 const fakeResponse =
-    (body: string|TypedArrays|ArrayBuffer, contentType: string, path: string) =>
-        ({
-          ok: true,
-          json() {
-            return Promise.resolve(JSON.parse(body as string));
-          },
-          arrayBuffer() {
-            const buf: ArrayBuffer = (body as TypedArrays).buffer ?
-                (body as TypedArrays).buffer :
-                body as ArrayBuffer;
-            return Promise.resolve(buf);
-          },
-          headers: new Headers({'content-type': contentType}),
-          url: path
-        });
+    (body: string|TypedArrays|ArrayBuffer, contentType: string,
+     path: string) => ({
+      ok: true,
+      json() {
+        return Promise.resolve(JSON.parse(body as string));
+      },
+      arrayBuffer() {
+        const buf: ArrayBuffer = (body as TypedArrays).buffer ?
+            (body as TypedArrays).buffer :
+            body as ArrayBuffer;
+        return Promise.resolve(buf);
+      },
+      headers:
+          new Response('', {headers: {'content-type': contentType}}).headers,
+      url: path
+    });
 
 const setupFakeWeightFiles =
     (fileBufferMap: {
@@ -103,7 +104,7 @@ const setupFakeWeightFiles =
     };
 
 describeWithFlags('browserHTTPRequest-load fetch', NODE_ENVS, () => {
-    let requestInits: {[key: string]: {headers: {[key: string]: string}}};
+  let requestInits: {[key: string]: {headers: {[key: string]: string}}};
 
   // simulate a fetch polyfill, this needs to be non-null for spyOn to work
   beforeEach(() => {
@@ -535,11 +536,9 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
       expect(requestInits['./weightfile0'].headers['Accept'])
           .toEqual('application/octet-stream');
       expect(Object.keys(requestInits).length).toEqual(2);
-      expect(
-          requestInits['./model.json'].headers['header_key_1'])
+      expect(requestInits['./model.json'].headers['header_key_1'])
           .toEqual('header_value_1');
-      expect(new Headers(requestInits['./weightfile0'].headers)
-                 .get('header_key_1'))
+      expect(requestInits['./weightfile0'].headers['header_key_1'])
           .toEqual('header_value_1');
 
       expect(windowFetchSpy.calls.mostRecent().object).toEqual(window);
@@ -855,14 +854,11 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
             expect(new Float32Array(modelArtifacts.weightData))
                 .toEqual(floatData);
             expect(Object.keys(requestInits).length).toEqual(3);
-            expect(
-                requestInits['./model.pb'].headers['Accept'])
+            expect(requestInits['./model.pb'].headers['Accept'])
                 .toEqual('application/octet-stream');
-            expect(new Headers(requestInits['./weights_manifest.json'].headers)
-                       .get('Accept'))
+            expect(requestInits['./weights_manifest.json'].headers['Accept'])
                 .toEqual('application/json');
-            expect(new Headers(requestInits['./weightfile0'].headers)
-                       .get('Accept'))
+            expect(requestInits['./weightfile0'].headers['Accept'])
                 .toEqual('application/octet-stream');
             done();
           })
@@ -908,16 +904,12 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
       expect(modelArtifacts.weightSpecs).toEqual(weightManifest1[0].weights);
       expect(new Float32Array(modelArtifacts.weightData)).toEqual(floatData);
       expect(Object.keys(requestInits).length).toEqual(3);
-      expect(new Headers(requestInits['./model.pb?tfjs-format=file'].headers)
-                 .get('Accept'))
+      expect(requestInits['./model.pb?tfjs-format=file'].headers['Accept'])
           .toEqual('application/octet-stream');
-      expect(
-          new Headers(
-              requestInits['./weights_manifest.json?tfjs-format=file'].headers)
-              .get('Accept'))
+      expect(requestInits['./weights_manifest.json?tfjs-format=file']
+                 .headers['Accept'])
           .toEqual('application/json');
-      expect(new Headers(requestInits['./weightfile0?tfjs-format=file'].headers)
-                 .get('Accept'))
+      expect(requestInits['./weightfile0?tfjs-format=file'].headers['Accept'])
           .toEqual('application/octet-stream');
     });
 
@@ -962,19 +954,15 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
       expect(Object.keys(requestInits).length).toEqual(3);
       expect(requestInits['./model.pb'].headers['Accept'])
           .toEqual('application/octet-stream');
-      expect(
-          requestInits['./model.pb'].headers['header_key_1'])
+      expect(requestInits['./model.pb'].headers['header_key_1'])
           .toEqual('header_value_1');
-      expect(new Headers(requestInits['./weights_manifest.json'].headers)
-                 .get('Accept'))
+      expect(requestInits['./weights_manifest.json'].headers['Accept'])
           .toEqual('application/json');
-      expect(new Headers(requestInits['./weights_manifest.json'].headers)
-                 .get('header_key_1'))
+      expect(requestInits['./weights_manifest.json'].headers['header_key_1'])
           .toEqual('header_value_1');
       expect(requestInits['./weightfile0'].headers['Accept'])
           .toEqual('application/octet-stream');
-      expect(new Headers(requestInits['./weightfile0'].headers)
-                 .get('header_key_1'))
+      expect(requestInits['./weightfile0'].headers['header_key_1'])
           .toEqual('header_value_1');
     });
 

@@ -50,6 +50,7 @@ export async function loadWeightsAsArrayBuffer(
   const responses = await Promise.all(requests);
 
   const badContentType = responses.filter(response => {
+    // tslint:disable-next-line:no-any
     const contentType = response.headers.get('content-type');
     return !contentType ||
         contentType.indexOf('application/octet-stream') === -1;
