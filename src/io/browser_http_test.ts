@@ -91,10 +91,14 @@ const setupFakeWeightFiles =
           // tslint:disable-next-line:no-any
           spyOn(global as any, 'fetch')
               .and.callFake((path: string, init: RequestInit) => {
-                requestInits[path] = init;
-                return fakeResponse(
-                    fileBufferMap[path].data, fileBufferMap[path].contentType,
-                    path);
+                if (fileBufferMap[path]) {
+                  requestInits[path] = init;
+                  return Promise.resolve(fakeResponse(
+                      fileBufferMap[path].data, fileBufferMap[path].contentType,
+                      path));
+                } else {
+                  return Promise.reject('path not found');
+                }
               });
     };
 
@@ -198,9 +202,9 @@ describeWithFlags('browserHTTPRequest-save', CHROME_ENVS, () => {
     spyOn(window, 'fetch').and.callFake((path: string, init: RequestInit) => {
       if (path === 'model-upload-test' || path === 'http://model-upload-test') {
         requestInits.push(init);
-        return new Response(null, {status: 200});
+        return Promise.resolve(new Response(null, {status: 200}));
       } else {
-        return new Response(null, {status: 404});
+        return Promise.reject(new Response(null, {status: 404}));
       }
     });
   });
@@ -775,9 +779,30 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
                 'succeeded unexpectedly.');
           })
           .catch(err => {
-            expect(err.message).toMatch(/Wrong content type/);
+            expect(err.message)
+                .toMatch(/Expected content type application\/json/);
             done();
           });
+    });
+
+    it('with fetch rejection leads to error', async (done: DoneFn) => {
+      setupFakeWeightFiles(
+          {
+            'path1/model.json':
+                {data: JSON.stringify({}), contentType: 'text/html'}
+          },
+          requestInits);
+      const handler = tf.io.browserHTTPRequest('path2/model.json');
+      try {
+        const data = await handler.load();
+        expect(data).toBeDefined();
+        done.fail(
+            'Loading with fetch rejection ' +
+            'succeeded unexpectedly.');
+      } catch (err) {
+        expect(err.message).toMatch(/Request for path2\/model.json failed /);
+        done();
+      }
     });
   });
 
@@ -1187,7 +1212,8 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
                 'succeeded unexpectedly.');
           })
           .catch(err => {
-            expect(err.message).toMatch(/Wrong content type/);
+            expect(err.message)
+                .toMatch(/Expected content type application\/octet-stream/);
             done();
           });
     });
@@ -1237,7 +1263,8 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
                    'succeeded unexpectedly.');
              })
              .catch(err => {
-               expect(err.message).toMatch(/Wrong content type/);
+               expect(err.message)
+                   .toMatch(/Expected content type application\/json/);
                done();
              });
        });
@@ -1287,10 +1314,33 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
                    'succeeded unexpectedly.');
              })
              .catch(err => {
-               expect(err.message).toMatch(/Wrong content type/);
+               expect(err.message)
+                   .toMatch(/Expected content type application\/octet-stream/);
                done();
              });
        });
+
+    it('with fetch rejection leads to error', async (done: DoneFn) => {
+      setupFakeWeightFiles(
+          {
+            'path1/model.pb':
+                {data: JSON.stringify({}), contentType: 'text/html'}
+          },
+          requestInits);
+      const handler = tf.io.browserHTTPRequest(
+          ['path1/model.pb', 'path2/weights_manifest.json']);
+      try {
+        const data = await handler.load();
+        expect(data).toBeDefined();
+        done.fail(
+            'Loading with fetch rejection ' +
+            'succeeded unexpectedly.');
+      } catch (err) {
+        expect(err.message)
+            .toMatch(/Request for path2\/weights_manifest.json failed /);
+        done();
+      }
+    });
   });
 
   it('Overriding BrowserHTTPRequest fetchFunc', async () => {

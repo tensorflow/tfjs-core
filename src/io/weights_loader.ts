@@ -39,8 +39,9 @@ export async function loadWeightsAsArrayBuffer(
 
   // Add accept header
   requestOptions = requestOptions || {};
-  const headers = new Headers(requestOptions.headers);
-  headers.append('Accept', 'application/octet-stream');
+  const headers = requestOptions.headers || {};
+  // tslint:disable-next-line:no-any
+  (headers as any)['Accept'] = 'application/octet-stream';
   requestOptions.headers = headers;
 
   // Create the requests for all of the weights in parallel.
@@ -57,9 +58,9 @@ export async function loadWeightsAsArrayBuffer(
     throw new Error(
         badContentType
             .map(
-                resp => `Wrong content type (${
-                    resp.headers.get('content-type')}) for ${
-                    resp.url}, expecting (application/octet-stream).`)
+                resp => `Request to ${resp.url} for weight file failed.` +
+                    ` Expected content type application/octet-stream but got ${
+                            resp.headers.get('content-type')}.`)
             .join(', '));
   }
   const buffers =

@@ -48,16 +48,21 @@ export class BrowserHTTPRequest implements IOHandler {
       }
       // Make sure fetch is always bound to window (the
       // original object) when available.
-      this.fetchFunc =
-          fetch.bind(typeof window === 'undefined' ? null : window);
+      fetchFunc = fetch.bind(typeof window === 'undefined' ? null : window);
     } else {
       assert(
           typeof fetchFunc === 'function',
           'Must pass a function that matches the signature of ' +
               '`fetch` (see ' +
               'https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)');
-      this.fetchFunc = fetchFunc;
     }
+
+    this.fetchFunc = (path: string, requestInits: RequestInit) => {
+      // tslint:disable-next-line:no-any
+      return fetchFunc(path, requestInits).catch((error: any) => {
+        throw new Error(`Request for ${path} failed due to error: ${error}`);
+      });
+    };
 
     assert(
         path != null && path.length > 0,
@@ -144,101 +149,94 @@ export class BrowserHTTPRequest implements IOHandler {
    * Loads the model topology file and build the in memory graph of the model.
    */
   private async loadBinaryTopology(): Promise<ArrayBuffer> {
-    try {
-      const response = await this.getFetchFunc()(
-          this.path[0], this.addAcceptHeader('application/octet-stream'));
-      this.verifyContentType(response, 'application/octet-stream');
+    const response = await this.getFetchFunc()(
+        this.path[0], this.addAcceptHeader('application/octet-stream'));
+    this.verifyContentType(
+        response, 'model topology', 'application/octet-stream');
 
-      if (!response.ok) {
-        throw new Error(`Request to ${this.path[0]} failed with error: ${
-            response.statusText}`);
-      }
-      return await response.arrayBuffer();
-    } catch (error) {
-      throw new Error(`Failed to load ${this.path[0]}. ${error}`);
+    if (!response.ok) {
+      throw new Error(`Request to ${this.path[0]} failed with error: ${
+          response.statusText}`);
     }
+    return await response.arrayBuffer();
   }
 
   private addAcceptHeader(mimeType: string): RequestInit {
     const requestOptions = Object.assign({}, this.requestInit || {});
-    const headers = new Headers(requestOptions.headers);
-    headers.append('Accept', mimeType);
+    const headers = requestOptions.headers || {};
+    // tslint:disable-next-line:no-any
+    (headers as any)['Accept'] = mimeType;
     requestOptions.headers = headers;
     return requestOptions;
   }
 
-  private verifyContentType(response: Response, target: string) {
+  private verifyContentType(response: Response, target: string, type: string) {
     const contentType = response.headers.get('content-type');
-    if (!contentType || contentType.indexOf(target) === -1) {
-      throw new Error(`Wrong content type (${contentType}) for ${
-          response.url}, should be (${target}).`);
+    if (!contentType || contentType.indexOf(type) === -1) {
+      throw new Error(`Request to ${response.url} for ${
+          target} failed. Expected content type ${type}) but got ${
+          contentType}.`);
     }
   }
 
   protected async loadBinaryModel(): Promise<ModelArtifacts> {
-    try {
-      const graphPromise = this.loadBinaryTopology();
-      const manifestPromise = await this.getFetchFunc()(
-          this.path[1], this.addAcceptHeader('application/json'));
-      this.verifyContentType(manifestPromise, 'application/json');
-      if (!manifestPromise.ok) {
-        throw new Error(`Request to ${this.path[1]} failed with error: ${
-            manifestPromise.statusText}`);
-      }
-
-      const results = await Promise.all([graphPromise, manifestPromise]);
-      const [modelTopology, weightsManifestResponse] = results;
-
-      const weightsManifest =
-          await weightsManifestResponse.json() as WeightsManifestConfig;
-
-      let weightSpecs: WeightsManifestEntry[];
-      let weightData: ArrayBuffer;
-      if (weightsManifest != null) {
-        const results = await this.loadWeights(weightsManifest);
-        [weightSpecs, weightData] = results;
-      }
-
-      return {modelTopology, weightSpecs, weightData};
-    } catch (error) {
-      throw new Error(`Request to ${this.path[1]} failed with error: ${error}`);
+    const graphPromise = this.loadBinaryTopology();
+    const manifestPromise = await this.getFetchFunc()(
+        this.path[1], this.addAcceptHeader('application/json'));
+    this.verifyContentType(
+        manifestPromise, 'weight manifest', 'application/json');
+    if (!manifestPromise.ok) {
+      throw new Error(`Request to ${this.path[1]} failed with error: ${
+          manifestPromise.statusText}`);
     }
+
+    const results = await Promise.all([graphPromise, manifestPromise]);
+    const [modelTopology, weightsManifestResponse] = results;
+
+    const weightsManifest =
+        await weightsManifestResponse.json() as WeightsManifestConfig;
+
+    let weightSpecs: WeightsManifestEntry[];
+    let weightData: ArrayBuffer;
+    if (weightsManifest != null) {
+      const results = await this.loadWeights(weightsManifest);
+      [weightSpecs, weightData] = results;
+    }
+
+    return {modelTopology, weightSpecs, weightData};
   }
 
   protected async loadJSONModel(): Promise<ModelArtifacts> {
-    try {
-      const modelConfigRequest = await this.getFetchFunc()(
-          this.path as string, this.addAcceptHeader('application/json'));
-      this.verifyContentType(modelConfigRequest, 'application/json');
+    const modelConfigRequest = await this.getFetchFunc()(
+        this.path as string, this.addAcceptHeader('application/json'));
+    this.verifyContentType(
+        modelConfigRequest, 'model topology', 'application/json');
 
-      if (!modelConfigRequest.ok) {
-        throw new Error(`Request to ${this.path} failed with error: ${
-            modelConfigRequest.statusText}`);
-      }
-      const modelConfig = await modelConfigRequest.json();
-      const modelTopology = modelConfig['modelTopology'];
-      const weightsManifest = modelConfig['weightsManifest'];
-
-      // We do not allow both modelTopology and weightsManifest to be missing.
-      if (modelTopology == null && weightsManifest == null) {
-        throw new Error(
-            `The JSON from HTTP path ${this.path} contains neither model ` +
-            `topology or manifest for weights.`);
-      }
-
-      let weightSpecs: WeightsManifestEntry[];
-      let weightData: ArrayBuffer;
-      if (weightsManifest != null) {
-        const weightsManifest =
-            modelConfig['weightsManifest'] as WeightsManifestConfig;
-        const results = await this.loadWeights(weightsManifest);
-        [weightSpecs, weightData] = results;
-      }
-
-      return {modelTopology, weightSpecs, weightData};
-    } catch (error) {
-      throw new Error(`Request to ${this.path} failed with error: ${error}`);
+    if (!modelConfigRequest.ok) {
+      throw new Error(`Request to ${this.path} failed with error: ${
+          modelConfigRequest.statusText}`);
     }
+    const modelConfig = await modelConfigRequest.json();
+    const modelTopology = modelConfig['modelTopology'];
+    const weightsManifest = modelConfig['weightsManifest'];
+
+    // We do not allow both modelTopology and weightsManifest to be missing.
+    if (modelTopology == null && weightsManifest == null) {
+      throw new Error(
+          `The JSON from HTTP path ${this.path} contains neither model ` +
+          `topology or manifest for weights.`);
+    }
+
+    let weightSpecs: WeightsManifestEntry[];
+    let weightData: ArrayBuffer;
+    if (weightsManifest != null) {
+      const weightsManifest =
+          modelConfig['weightsManifest'] as WeightsManifestConfig;
+      const results = await this.loadWeights(weightsManifest);
+      [weightSpecs, weightData] = results;
+    }
+
+    return {modelTopology, weightSpecs, weightData};
   }
 
   private async loadWeights(weightsManifest: WeightsManifestConfig):
@@ -258,15 +256,11 @@ export class BrowserHTTPRequest implements IOHandler {
         fetchURLs.push(pathPrefix + path + suffix);
       });
     });
-    try {
-      return [
-        weightSpecs,
-        concatenateArrayBuffers(await loadWeightsAsArrayBuffer(
-            fetchURLs, this.requestInit, this.getFetchFunc()))
-      ];
-    } catch (error) {
-      throw new Error(`Failed to load weights: ${error}`);
-    }
+    return [
+      weightSpecs,
+      concatenateArrayBuffers(await loadWeightsAsArrayBuffer(
+          fetchURLs, this.requestInit, this.getFetchFunc()))
+    ];
   }
 
   /**
