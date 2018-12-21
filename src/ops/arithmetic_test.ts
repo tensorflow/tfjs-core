@@ -817,7 +817,7 @@ describeWithFlags('pow', ALL_ENVS, () => {
     ]);
   });
 
-  it('gradient wrt exponent with non-positive base', () => {
+  it('gradient wrt exponent with negative base', () => {
     const a = tf.tensor1d([-1, -.5, -2.7]);
     const b = tf.tensor1d([3, 2, -1], 'int32');
     const dy = tf.tensor1d([1, 1, 1]);
