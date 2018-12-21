@@ -103,7 +103,7 @@ const setupFakeWeightFiles =
     };
 
 describeWithFlags('browserHTTPRequest-load fetch', NODE_ENVS, () => {
-  let requestInits: {[key: string]: RequestInit};
+    let requestInits: {[key: string]: {headers: {[key: string]: string}}};
 
   // simulate a fetch polyfill, this needs to be non-null for spyOn to work
   beforeEach(() => {
@@ -153,9 +153,9 @@ describeWithFlags('browserHTTPRequest-load fetch', NODE_ENVS, () => {
     expect(modelArtifacts.modelTopology).toEqual(modelTopology1);
     expect(modelArtifacts.weightSpecs).toEqual(weightManifest1[0].weights);
     expect(new Float32Array(modelArtifacts.weightData)).toEqual(floatData);
-    expect(new Headers(requestInits['./model.json'].headers).get('Accept'))
+    expect(requestInits['./model.json'].headers['Accept'])
         .toEqual('application/json');
-    expect(new Headers(requestInits['./weightfile0'].headers).get('Accept'))
+    expect(requestInits['./weightfile0'].headers['Accept'])
         .toEqual('application/octet-stream');
   });
 
@@ -441,7 +441,7 @@ describeWithFlags('parseUrl', BROWSER_ENVS, () => {
 
 describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
   describe('JSON model', () => {
-    let requestInits: {[key: string]: RequestInit};
+    let requestInits: {[key: string]: {headers: {[key: string]: string}}};
 
     beforeEach(() => {
       requestInits = {};
@@ -484,9 +484,9 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
       expect(modelArtifacts.weightSpecs).toEqual(weightManifest1[0].weights);
       expect(new Float32Array(modelArtifacts.weightData)).toEqual(floatData);
       expect(Object.keys(requestInits).length).toEqual(2);
-      expect(new Headers(requestInits['./model.json'].headers).get('Accept'))
+      expect(requestInits['./model.json'].headers['Accept'])
           .toEqual('application/json');
-      expect(new Headers(requestInits['./weightfile0'].headers).get('Accept'))
+      expect(requestInits['./weightfile0'].headers['Accept'])
           .toEqual('application/octet-stream');
       // Assert that fetch is invoked with `window` as the context.
       expect(windowFetchSpy.calls.mostRecent().object).toEqual(window);
@@ -530,13 +530,13 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
       expect(modelArtifacts.weightSpecs).toEqual(weightManifest1[0].weights);
       expect(new Float32Array(modelArtifacts.weightData)).toEqual(floatData);
       expect(Object.keys(requestInits).length).toEqual(2);
-      expect(new Headers(requestInits['./model.json'].headers).get('Accept'))
+      expect(requestInits['./model.json'].headers['Accept'])
           .toEqual('application/json');
-      expect(new Headers(requestInits['./weightfile0'].headers).get('Accept'))
+      expect(requestInits['./weightfile0'].headers['Accept'])
           .toEqual('application/octet-stream');
       expect(Object.keys(requestInits).length).toEqual(2);
       expect(
-          new Headers(requestInits['./model.json'].headers).get('header_key_1'))
+          requestInits['./model.json'].headers['header_key_1'])
           .toEqual('header_value_1');
       expect(new Headers(requestInits['./weightfile0'].headers)
                  .get('header_key_1'))
@@ -807,7 +807,7 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
   });
 
   describe('Binary model', () => {
-    let requestInits: {[key: string]: RequestInit};
+    let requestInits: {[key: string]: {headers: {[key: string]: string}}};
     let modelData: ArrayBuffer;
 
     beforeEach(() => {
@@ -856,7 +856,7 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
                 .toEqual(floatData);
             expect(Object.keys(requestInits).length).toEqual(3);
             expect(
-                new Headers(requestInits['./model.pb'].headers).get('Accept'))
+                requestInits['./model.pb'].headers['Accept'])
                 .toEqual('application/octet-stream');
             expect(new Headers(requestInits['./weights_manifest.json'].headers)
                        .get('Accept'))
@@ -960,10 +960,10 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
       expect(modelArtifacts.weightSpecs).toEqual(weightManifest1[0].weights);
       expect(new Float32Array(modelArtifacts.weightData)).toEqual(floatData);
       expect(Object.keys(requestInits).length).toEqual(3);
-      expect(new Headers(requestInits['./model.pb'].headers).get('Accept'))
+      expect(requestInits['./model.pb'].headers['Accept'])
           .toEqual('application/octet-stream');
       expect(
-          new Headers(requestInits['./model.pb'].headers).get('header_key_1'))
+          requestInits['./model.pb'].headers['header_key_1'])
           .toEqual('header_value_1');
       expect(new Headers(requestInits['./weights_manifest.json'].headers)
                  .get('Accept'))
@@ -971,7 +971,7 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
       expect(new Headers(requestInits['./weights_manifest.json'].headers)
                  .get('header_key_1'))
           .toEqual('header_value_1');
-      expect(new Headers(requestInits['./weightfile0'].headers).get('Accept'))
+      expect(requestInits['./weightfile0'].headers['Accept'])
           .toEqual('application/octet-stream');
       expect(new Headers(requestInits['./weightfile0'].headers)
                  .get('header_key_1'))
