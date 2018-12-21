@@ -232,7 +232,7 @@ describeWithFlags('slice5d', ALL_ENVS, () => {
 
 describeWithFlags('slice6d', ALL_ENVS, () => {
   it('slices 1x1x1x1x1x1 into shape 1x1x1x1x1x1 (effectively a copy)', () => {
-    const a = tf.tensor6d([[[[[5]]]]], [1, 1, 1, 1, 1, 1]);
+    const a = tf.tensor6d([[[[[[5]]]]]], [1, 1, 1, 1, 1, 1]);
     const result = tf.slice(a, [0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1]);
 
     expect(result.shape).toEqual([1, 1, 1, 1, 1, 1]);
@@ -243,40 +243,49 @@ describeWithFlags('slice6d', ALL_ENVS, () => {
      () => {
        const a = tf.tensor6d(
            [
-             1,  2,  3,   4,   5,   6,   7,   8,   9,   10, 11,
-             12, 13, 14,  15,  16,  11,  22,  33,  44,  55, 66,
-             77, 88, 111, 222, 333, 444, 555, 666, 777, 888
+             31,  32,  33,   34,   35,   36,   37,   38,   39,   310,  311,
+             312, 313, 314,  315,  316,  311,  322,  333,  344,  355,  366,
+             377, 388, 3111, 3222, 3333, 3444, 3555, 3666, 3777, 3888,
+
+             1,   2,   3,    4,    5,    6,    7,    8,    9,    10,   11,
+             12,  13,  14,   15,   16,   11,   22,   33,   44,   55,   66,
+             77,  88,  111,  222,  333,  444,  555,  666,  777,  888
            ],
            [2, 2, 2, 2, 2, 2]);
-       const result = tf.slice(a, [1, 0, 0, 0, 0], [1, 2, 2, 2, 2]);
+       const result = tf.slice(a, [1, 0, 0, 0, 0, 0], [1, 2, 2, 2, 2, 2]);
 
-       expect(result.shape).toEqual([1, 2, 2, 2, 2]);
+       expect(result.shape).toEqual([1, 2, 2, 2, 2, 2]);
        expectArraysClose(result, [
-         11, 22, 33, 44, 55, 66, 77, 88, 111, 222, 333, 444, 555, 666, 777, 888
+         1,  2,  3,   4,   5,   6,   7,   8,   9,   10, 11,
+         12, 13, 14,  15,  16,  11,  22,  33,  44,  55, 66,
+         77, 88, 111, 222, 333, 444, 555, 666, 777, 888
        ]);
      });
 
+  it('slices 2x2x2x2x2x2 array into 2x1x1x1x1x1 starting at [0,1,1,1,1,1]',
+     () => {
+       const a = tf.tensor6d(
+           [
+             31,  32,  33,   34,   35,   36,   37,   38,   39,   310,  311,
+             312, 313, 314,  315,  316,  311,  322,  333,  344,  355,  366,
+             377, 388, 3111, 3222, 3333, 3444, 3555, 3666, 3777, 3888,
 
-  // NOT FIXED.
-  it('slices 2x2x2x2x2 array into 2x1x1x1x1 starting at [0,1,1,1,1]', () => {
-    const a = tf.tensor5d(
-        [
-          1,  2,  3,   4,   5,   6,   7,   8,   9,   10, 11,
-          12, 13, 14,  15,  16,  11,  22,  33,  44,  55, 66,
-          77, 88, 111, 222, 333, 444, 555, 666, 777, 888
-        ],
-        [2, 2, 2, 2, 2]);
-    const result = tf.slice(a, [0, 1, 1, 1, 1], [2, 1, 1, 1, 1]);
+             1,   2,   3,    4,    5,    6,    7,    8,    9,    10,   11,
+             12,  13,  14,   15,   16,   11,   22,   33,   44,   55,   66,
+             77,  88,  111,  222,  333,  444,  555,  666,  777,  888
+           ],
+           [2, 2, 2, 2, 2, 2]);
+       const result = tf.slice(a, [0, 1, 1, 1, 1, 1], [2, 1, 1, 1, 1, 1]);
 
-    expect(result.shape).toEqual([2, 1, 1, 1, 1]);
-    expectArraysClose(result, [16, 888]);
-  });
+       expect(result.shape).toEqual([2, 1, 1, 1, 1, 1]);
+       expectArraysClose(result, [3888, 888]);
+     });
 
   it('accepts a tensor-like object', () => {
-    const a = [[[[[5]]]]];  // 1x1x1x1x1
-    const result = tf.slice(a, [0, 0, 0, 0, 0], [1, 1, 1, 1, 1]);
+    const a = [[[[[[5]]]]]];  // 1x1x1x1x1x1
+    const result = tf.slice(a, [0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1]);
 
-    expect(result.shape).toEqual([1, 1, 1, 1, 1]);
+    expect(result.shape).toEqual([1, 1, 1, 1, 1, 1]);
     expectArraysClose(result, [5]);
   });
 });

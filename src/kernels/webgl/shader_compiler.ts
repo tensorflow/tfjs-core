@@ -1200,15 +1200,12 @@ function getSampler5D(inputInfo: InputInfo): string {
 
 function getSampler6D(inputInfo: InputInfo): string {
   const shape = inputInfo.shapeInfo.logicalShape;
+  const slice = inputInfo.shapeInfo.slice;
   const texName = inputInfo.name;
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
-  const stride4 = shape[5];
-  const stride3 = shape[4] * stride4;
-  const stride2 = shape[3] * stride3;
-  const stride1 = shape[2] * stride2;
-  const stride0 = shape[1] * stride1;
+
   const {newShape, keptDims} = util.squeezeShape(shape);
-  if (newShape.length < shape.length) {
+  if (newShape.length < shape.length && slice == null) {
     const newInputInfo = squeezeInputInfo(inputInfo, newShape);
     const params = ['row', 'col', 'depth', 'depth2', 'depth3', 'depth4'];
     return `
@@ -1219,6 +1216,13 @@ function getSampler6D(inputInfo: InputInfo): string {
       }
     `;
   }
+
+  const origShape = slice ? slice.origShape : shape;
+  const stride4 = origShape[5];
+  const stride3 = origShape[4] * stride4;
+  const stride2 = origShape[3] * stride3;
+  const stride1 = origShape[2] * stride2;
+  const stride0 = origShape[1] * stride1;
 
   if (inputInfo.shapeInfo.isUniform) {
     // Uniform arrays will be less than 65505 (no risk of float16 overflow).
@@ -1236,6 +1240,8 @@ function getSampler6D(inputInfo: InputInfo): string {
     `;
   }
 
+  const [offRow, offCol, offDepth, offDepth2, offDepth3, offDepth4] =
+      getOffsetUniformNames(texName, inputInfo.shapeInfo);
   const texShape = inputInfo.shapeInfo.texShape;
   const texNumR = texShape[0];
   const texNumC = texShape[1];
@@ -1244,10 +1250,12 @@ function getSampler6D(inputInfo: InputInfo): string {
     return `
       float ${funcName}(int row, int col, int depth,
                     int depth2, int depth3, int depth4) {
-        int texR = row;
+        int texR = row + ${offRow};
         float texC = dot(
-          vec4(col, depth, depth2, depth3),
-          vec4(${stride1}, ${stride2}, ${stride3}, ${stride4})) + depth4;
+          vec4(col + ${offCol}, depth + ${offDepth}, depth2 + ${offDepth2},
+               depth3 + ${offDepth3}),
+          vec4(${stride1}, ${stride2}, ${stride3}, ${stride4})) +
+               float(depth4 + ${offDepth4});
         vec2 uv = (vec2(texC, texR) + halfCR) /
                    vec2(${texNumC}.0, ${texNumR}.0);
         return sampleTexture(${texName}, uv);
@@ -1260,12 +1268,13 @@ function getSampler6D(inputInfo: InputInfo): string {
       float ${funcName}(int row, int col, int depth,
                     int depth2, int depth3, int depth4) {
         float texR = dot(
-          vec4(row, col, depth, depth2),
-          vec4(${shape[1] * shape[2] * shape[3] * shape[4]},
-               ${shape[2] * shape[3] * shape[4]},
-               ${shape[3] * shape[4]},
-               ${shape[4]})) + depth3;
-        int texC = depth4;
+          vec4(row + ${offRow}, col + ${offCol}, depth + ${offDepth},
+               depth2 + ${offDepth2}),
+          vec4(${origShape[1] * origShape[2] * origShape[3] * origShape[4]},
+               ${origShape[2] * origShape[3] * origShape[4]},
+               ${origShape[3] * origShape[4]},
+               ${origShape[4]})) + float(depth3 + ${offDepth3});
+        int texC = depth4 + ${offDepth4};
         vec2 uv = (vec2(texC, texR) + halfCR) /
                   vec2(${texNumC}.0, ${texNumR}.0);
         return sampleTexture(${texName}, uv);
@@ -1277,7 +1286,8 @@ function getSampler6D(inputInfo: InputInfo): string {
                   int depth2, int depth3, int depth4) {
       vec2 uv = UVfrom6D(${texNumR}, ${texNumC}, ${stride0}, ${stride1},
           ${stride2}, ${stride3}, ${stride4}
-          ,row, col, depth, depth2, depth3, depth4);
+          ,row + ${offRow}, col + ${offCol}, depth + ${offDepth},
+          depth2 + ${offDepth2}, depth3 + ${offDepth3}, depth4 + ${offDepth4});
       return sampleTexture(${texName}, uv);
     }
   `;
