@@ -55,6 +55,7 @@ export interface TextureData {
   // Available when the texture has been sliced. Used to refCount how many
   // tensors point to the same texture.
   origDataId?: DataId;
+  origShape?: number[];
 }
 
 export function getUnpackedMatrixTextureShapeWidthHeight(

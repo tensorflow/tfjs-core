@@ -453,3 +453,37 @@ export function isReshapeFree(shape1: number[], shape2: number[]): boolean {
   }
   return shape1[1] === shape2[1] && isEven(shape1[0]) && isEven(shape2[0]);
 }
+
+export function isSliceContinous(
+    begin: number[], size: number[], shape: number[]) {
+  for (let i = 1; i < size.length; i++) {
+    if (begin[i] > 0 || size[i] !== shape[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+export function computeOffsets(
+    newSize: number[], oldBegin: number[], oldSize: number[],
+    oldShape: number[]): number[] {
+  if (!isSliceContinous(oldBegin, oldSize, oldShape)) {
+    return null;
+  }
+  const oldStride = util.sizeFromShape(oldSize.slice(1));
+  const flatBegin = oldBegin[0] * oldStride;
+  const stride = util.sizeFromShape(newSize.slice(1));
+  if (flatBegin % stride !== 0) {
+    return null;
+  }
+  const newBegin = newSize.map(v => 0);
+  newBegin[0] = flatBegin / stride;
+  return newBegin;
+}
+
+export function computeOrigShape(size: number[], totalSize: number): number[] {
+  const origShape = size.slice();
+  const sliceSize = util.sizeFromShape(size);
+  origShape[0] *= totalSize / sliceSize;
+  return origShape;
+}

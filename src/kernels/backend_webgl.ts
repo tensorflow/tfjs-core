@@ -101,6 +101,7 @@ import * as unary_op from './webgl/unaryop_gpu';
 import {UnaryOpProgram} from './webgl/unaryop_gpu';
 import {UnpackProgram} from './webgl/unpack_gpu';
 import * as webgl_util from './webgl/webgl_util';
+import {computeOffsets, computeOrigShape} from './webgl/webgl_util';
 import {whereImpl} from './where_impl';
 
 type KernelInfo = {
@@ -586,28 +587,38 @@ export class MathBackendWebGL implements KernelBackend {
   private dataRefCount = new WeakMap<DataId, number>();
 
   private sliceTensor(x: Tensor, begin: number[], size: number[]): Tensor {
-    const t = Tensor.make(size, {}, x.dtype);
-    const xTexData = this.texData.get(x.dataId);
-    const texData = this.texData.get(t.dataId);
-    texData.isPacked = xTexData.isPacked;
-    texData.offsets = begin.slice();
-    if (xTexData.offsets) {
+    const {
+      dtype,
+      isPacked,
+      offsets,
+      texShape,
+      texture,
+      usage,
+      values,
+      origDataId,
+      origShape
+    } = this.texData.get(x.dataId);
+    const t = Tensor.make(size, {}, dtype);
+    const newTexData = this.texData.get(t.dataId);
+    newTexData.isPacked = isPacked;
+    newTexData.offsets = begin.slice();
+    if (offsets) {
       // We are slicing an already sliced tensor, so we have to accumulate
       // the offsets.
-      for (let i = 0; i < texData.offsets.length; i++) {
-        texData.offsets[i] += xTexData.offsets[i];
+      for (let i = 0; i < newTexData.offsets.length; i++) {
+        newTexData.offsets[i] += offsets[i];
       }
     }
-    texData.texShape = xTexData.texShape;
-    texData.texture = xTexData.texture;
-    texData.usage = xTexData.usage;
-    texData.values = xTexData.values;
+    newTexData.texShape = texShape;
+    newTexData.texture = texture;
+    newTexData.usage = usage;
+    newTexData.values = values;
     // Point to the original dataId, which is used to do ref counting.
-    texData.origDataId = xTexData.origDataId || x.dataId;
-
+    newTexData.origDataId = origDataId || x.dataId;
+    newTexData.origShape = origShape || x.shape;
     // Increase the ref count to that texture.
-    const refCount = this.dataRefCount.get(texData.origDataId) || 1;
-    this.dataRefCount.set(texData.origDataId, refCount + 1);
+    const refCount = this.dataRefCount.get(newTexData.origDataId) || 1;
+    this.dataRefCount.set(newTexData.origDataId, refCount + 1);
 
     return t;
   }
@@ -1624,18 +1635,21 @@ export class MathBackendWebGL implements KernelBackend {
     return backend_util.castTensor(x, dtype, this);
   }
 
-  private onlyOthermostDimWasSliced(offsets: number[]): boolean {
-    return offsets.slice(1).every(v => v === 0);
-  }
-
   reshape<R extends Rank>(x: Tensor, shape: ShapeMap[R]): Tensor<R> {
-    const {isPacked, offsets} = this.texData.get(x.dataId);
+    const {isPacked, offsets, origShape} = this.texData.get(x.dataId);
     if (isPacked && !webgl_util.isReshapeFree(x.shape, shape)) {
       return this.packedReshape(x, shape);
     }
     if (offsets != null) {
-      if (this.onlyOthermostDimWasSliced(offsets)) {
-        return null;
+      const newOffsets = computeOffsets(shape, offsets, x.shape, origShape);
+      if (newOffsets != null) {
+        // Slice the tensor with the new offsets.
+        const res = this.sliceTensor(x, newOffsets, shape) as Tensor<R>;
+        const resTexData = this.texData.get(res.dataId);
+        resTexData.offsets = newOffsets;
+        resTexData.origShape =
+            computeOrigShape(shape, sizeFromShape(origShape));
+        return res;
       } else {
         const program = new UnaryOpProgram(x.shape, unary_op.CLONE);
         const res = this.compileAndRun(program, [x]) as Tensor<R>;
@@ -1955,11 +1969,12 @@ export class MathBackendWebGL implements KernelBackend {
       }
 
       this.uploadToGPU(input.dataId);
-      let origShape: number[];
-      if (texData.origDataId) {
-        origShape = this.texData.get(texData.origDataId).shape;
-      }
-      return {shape: input.shape, texData, isUniform: false, origShape};
+      return {
+        shape: input.shape,
+        texData,
+        isUniform: false,
+        origShape: texData.origShape
+      };
     });
 
     this.uploadToGPU(output.dataId);

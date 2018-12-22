@@ -202,7 +202,8 @@ export function makeShaderKey(
     program: GPGPUProgram, inputs: TensorData[], output: TensorData): string {
   let keyInputs = '';
   inputs.concat(output).forEach(x => {
-    keyInputs += `${x.shape}_${x.isUniform ? 'uniform' : x.texData.texShape}`;
+    const shape = x.origShape || x.shape;
+    keyInputs += `${shape}_${x.isUniform ? 'uniform' : x.texData.texShape}`;
   });
   const keyUserCode = program.userCode;
   let key = program.constructor.name;
