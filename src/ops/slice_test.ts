@@ -108,6 +108,63 @@ describeWithFlags('slice2d', ALL_ENVS, () => {
     const b = tf.slice2d(a, [0, 0], [1, 1]);
     expect(b.shape).toEqual([1, 1]);
   });
+
+  it('slice an already sliced tensor', () => {
+    const a = [
+      [1, 2, 3, 4],
+      [5, 6, 7, 8],
+      [9, 10, 11, 12],
+    ];  // 3x4.
+    const b = tf.slice(a, [0, 1]);
+    expect(b.shape).toEqual([3, 3]);
+    expectArraysClose(b, [2, 3, 4, 6, 7, 8, 10, 11, 12]);
+
+    const c = tf.slice(b, [1, 1], [1, 1]);
+    expect(c.shape).toEqual([1, 1]);
+    expectArraysClose(c, [7]);
+  });
+
+  it('flatten a sliced tensor that was continous in memory', () => {
+    const a = [
+      [1, 2, 3, 4],
+      [5, 6, 7, 8],
+      [9, 10, 11, 12],
+    ];  // 3x4.
+    const b = tf.slice(a, [1, 0]).flatten();
+    expect(b.shape).toEqual([8]);
+    expectArraysClose(b, [5, 6, 7, 8, 9, 10, 11, 12]);
+  });
+
+  it('flatten a sliced tensor that was not continous in memory', () => {
+    const a = [
+      [1, 2, 3, 4],
+      [5, 6, 7, 8],
+      [9, 10, 11, 12],
+    ];  // 3x4.
+    const b = tf.slice(a, [0, 1]).flatten();
+    expect(b.shape).toEqual([9]);
+    expectArraysClose(b, [2, 3, 4, 6, 7, 8, 10, 11, 12]);
+  });
+
+  it('flatten a sliced tensor not continous in memory and run program', () => {
+    const a = [
+      [1, 2, 3, 4],
+      [5, 6, 7, 8],
+      [9, 10, 11, 12],
+    ];  // 3x4.
+    const b = tf.slice(a, [0, 1]).flatten();
+    const c = tf.square(b);
+    expectArraysClose(c, [4, 9, 16, 36, 49, 64, 100, 121, 144]);
+  });
+
+  // tslint:disable-next-line:ban
+  fit('reshape a sliced 1d into a 2d tensor and run program', () => {
+    const a = [1, 2, 3, 4, 5];
+    const b = tf.slice(a, 1).as2D(2, 2);
+    const c = b.square();
+    expect(c.shape).toEqual([2, 2]);
+    expectArraysClose(c, [4, 9, 16, 25]);
+  });
 });
 
 describeWithFlags('slice3d', ALL_ENVS, () => {

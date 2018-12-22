@@ -135,8 +135,6 @@ export interface TensorHandle {
 // off execution to the CPU.
 const CPU_HANDOFF_SIZE_THRESHOLD = 10;
 
-// Tensors with size <= than this will be uploaded as uniforms, not textures.
-export const SIZE_UPLOAD_UNIFORM = 4;
 // Empirically determined minimal shared dimension in matmul before we forward
 // to a.mul(b).sum() in order to take advantage of GPU parallelism. See
 // https://github.com/tensorflow/tfjs-core/pull/1379 for benchmarks.
@@ -592,17 +590,24 @@ export class MathBackendWebGL implements KernelBackend {
     const xTexData = this.texData.get(x.dataId);
     const texData = this.texData.get(t.dataId);
     texData.isPacked = xTexData.isPacked;
-    texData.offsets = begin;
+    texData.offsets = begin.slice();
+    if (xTexData.offsets) {
+      // We are slicing an already sliced tensor, so we have to accumulate
+      // the offsets.
+      for (let i = 0; i < texData.offsets.length; i++) {
+        texData.offsets[i] += xTexData.offsets[i];
+      }
+    }
     texData.texShape = xTexData.texShape;
     texData.texture = xTexData.texture;
     texData.usage = xTexData.usage;
     texData.values = xTexData.values;
     // Point to the original dataId, which is used to do ref counting.
-    texData.origDataId = x.dataId;
+    texData.origDataId = xTexData.origDataId || x.dataId;
 
     // Increase the ref count to that texture.
-    const refCount = this.dataRefCount.get(x.dataId) || 1;
-    this.dataRefCount.set(x.dataId, refCount + 1);
+    const refCount = this.dataRefCount.get(texData.origDataId) || 1;
+    this.dataRefCount.set(texData.origDataId, refCount + 1);
 
     return t;
   }
@@ -1619,10 +1624,23 @@ export class MathBackendWebGL implements KernelBackend {
     return backend_util.castTensor(x, dtype, this);
   }
 
+  private onlyOthermostDimWasSliced(offsets: number[]): boolean {
+    return offsets.slice(1).every(v => v === 0);
+  }
+
   reshape<R extends Rank>(x: Tensor, shape: ShapeMap[R]): Tensor<R> {
-    if (this.texData.get(x.dataId).isPacked &&
-        !webgl_util.isReshapeFree(x.shape, shape)) {
+    const {isPacked, offsets} = this.texData.get(x.dataId);
+    if (isPacked && !webgl_util.isReshapeFree(x.shape, shape)) {
       return this.packedReshape(x, shape);
+    }
+    if (offsets != null) {
+      if (this.onlyOthermostDimWasSliced(offsets)) {
+        return null;
+      } else {
+        const program = new UnaryOpProgram(x.shape, unary_op.CLONE);
+        const res = this.compileAndRun(program, [x]) as Tensor<R>;
+        return res.reshape(shape);
+      }
     }
     return backend_util.reshapeTensor(x, shape);
   }
