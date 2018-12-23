@@ -1,6 +1,38 @@
+=== TODO ===
 - Unit test the new webgl utils
+- Optimize strided slice when stride is 1.
+- Make unstack a kernel with gradients
 - Do profiling with many slices
 - Make it work with uniforms
 - Optimize CPU slice
 - Make slice work for packed textures, and packedReshape
 - Improve isSliceContinous to account for squeezable shapes
+- Replace sliceAlongAxis with unstack in tfjs-layers
+
+=== BENCMARKING ===
+// tslint:disable-next-line:ban
+fit('bechmark unstack', () => {
+  const a = tf.zeros([1000, 100]);
+  // Warmup.
+  tf.unstack(a).slice(-1)[0].dataSync();
+
+  const start = performance.now();
+  const b = tf.unstack(a);
+  const scheduleTime = performance.now() - start;
+  b[b.length - 1].dataSync();
+  const totalTime = performance.now() - start;
+  console.log('scheduling took', scheduleTime, 'ms');
+  console.log('computation took', totalTime, 'ms');
+});
+
+= SLICE BRANCH =
+No warmup
+LOG: 'scheduling took', 34.09999993164092, 'ms'
+LOG: 'computation took', 44.49999995995313, 'ms'
+With warmup
+LOG: 'scheduling took', 16.00000006146729, 'ms'
+LOG: 'computation took', 17.80000003054738, 'ms'
+
+= MASTER BRANCH =
+LOG: 'scheduling took', 123.4000000404194, 'ms'
+LOG: 'computation took', 140.8000000519678, 'ms'

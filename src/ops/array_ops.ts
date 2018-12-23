@@ -920,27 +920,9 @@ function spaceToBatchND_<T extends Tensor>(
  */
 /** @doc {heading: 'Tensors', subheading: 'Slicing and Joining'} */
 function unstack_<T extends Tensor>(x: T|TensorLike, axis = 0): Tensor[] {
+  axis = axis || 0;
   const $x = convertToTensor(x, 'x', 'unstack');
-  const num = $x.shape[axis];
-  const outputShape: number[] = Array($x.rank - 1).fill(0);
-  let outIndex = 0;
-  for (let i = 0; i < $x.rank; i++) {
-    if (i !== axis) {
-      outputShape[outIndex] = $x.shape[i];
-      outIndex++;
-    }
-  }
-
-  let splitSizes: number[];
-  splitSizes = Array(num).fill(1);
-  const begin = Array($x.rank).fill(0);
-  const size = $x.shape.slice();
-  return splitSizes.map(s => {
-    size[axis] = s;
-    const slice = $x.slice(begin, size);
-    begin[axis] += s;
-    return slice.reshape(outputShape);
-  });
+  return ENV.engine.runKernel(backend => backend.unstack($x, axis), {$x});
 }
 
 /**

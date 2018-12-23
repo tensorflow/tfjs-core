@@ -1638,6 +1638,27 @@ export class MathBackendWebGL implements KernelBackend {
     return backend_util.castTensor(x, dtype, this);
   }
 
+  unstack(x: Tensor, axis: number): Tensor[] {
+    const num = x.shape[axis];
+    const outShape: number[] = new Array(x.rank - 1);
+    let outIndex = 0;
+    for (let i = 0; i < x.rank; i++) {
+      if (i !== axis) {
+        outShape[outIndex++] = x.shape[i];
+      }
+    }
+
+    const begin = new Array(x.rank).fill(0);
+    const size = x.shape.slice();
+    size[axis] = 1;
+    const res = new Array(num);
+    for (let i = 0; i < res.length; i++) {
+      begin[axis] = i;
+      res[i] = this.slice(x, begin, size).reshape(outShape);
+    }
+    return res;
+  }
+
   reshape<R extends Rank>(x: Tensor, shape: ShapeMap[R]): Tensor<R> {
     const {isPacked, slice} = this.texData.get(x.dataId);
     if (isPacked && !webgl_util.isReshapeFree(x.shape, shape)) {

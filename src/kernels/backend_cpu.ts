@@ -277,6 +277,10 @@ export class MathBackendCPU implements KernelBackend {
     return buffer.toTensor().reshape(shape) as T;
   }
 
+  unstack(x: Tensor, axis: number): Tensor[] {
+    return null;
+  }
+
   reverse<T extends Tensor>(x: T, axis: number[]): T {
     this.assertNotComplex(x, 'reverse');
 
