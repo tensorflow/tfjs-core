@@ -27,12 +27,16 @@ fit('bechmark unstack', () => {
 
 = SLICE BRANCH =
 No warmup
-LOG: 'scheduling took', 34.09999993164092, 'ms'
-LOG: 'computation took', 44.49999995995313, 'ms'
+  LOG: 'scheduling took', 34, 'ms'
+  LOG: 'computation took', 44, 'ms'
 With warmup
-LOG: 'scheduling took', 16.00000006146729, 'ms'
-LOG: 'computation took', 17.80000003054738, 'ms'
+  LOG: 'scheduling took', 16, 'ms'
+  LOG: 'computation took', 18, 'ms'
 
 = MASTER BRANCH =
-LOG: 'scheduling took', 123.4000000404194, 'ms'
-LOG: 'computation took', 140.8000000519678, 'ms'
+No warmup
+  LOG: 'scheduling took', 123, 'ms'
+  LOG: 'computation took', 141, 'ms'
+With warmup
+  LOG: 'scheduling took', 72, 'ms'
+  LOG: 'computation took', 113, 'ms'
