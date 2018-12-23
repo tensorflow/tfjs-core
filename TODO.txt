@@ -1,0 +1,9 @@
+- Rename offset to begin (to align with slice)
+- Delete SliceProgram
+- Unit test the new webgl utils
+- Do profiling with many slices
+- Make it work with uniforms
+- Optimize CPU slice
+- Improve isSliceContinous to account for squeezable shapes
+- Test with async reads (.data() calls)
+- Test shader cache collisions with/without presense of 'offset' uniforms.
