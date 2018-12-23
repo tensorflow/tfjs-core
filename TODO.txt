@@ -1,5 +1,3 @@
-- Rename offset to begin (to align with slice)
-- Delete SliceProgram
 - Unit test the new webgl utils
 - Do profiling with many slices
 - Make it work with uniforms

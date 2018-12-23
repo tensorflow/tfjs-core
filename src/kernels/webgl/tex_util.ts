@@ -51,7 +51,7 @@ export interface TextureData {
   usage?: TextureUsage;
   isPacked?: boolean;
   // Available when the texture has been sliced.
-  offsets?: number[];
+  begin?: number[];
   // Available when the texture has been sliced. Used to refCount how many
   // tensors point to the same texture.
   origDataId?: DataId;

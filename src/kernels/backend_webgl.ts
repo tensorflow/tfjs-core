@@ -101,7 +101,7 @@ import * as unary_op from './webgl/unaryop_gpu';
 import {UnaryOpProgram} from './webgl/unaryop_gpu';
 import {UnpackProgram} from './webgl/unpack_gpu';
 import * as webgl_util from './webgl/webgl_util';
-import {computeOffsets, computeOrigShape} from './webgl/webgl_util';
+import {computeBeginOfSlice, computeOrigShape} from './webgl/webgl_util';
 import {whereImpl} from './where_impl';
 
 type KernelInfo = {
@@ -260,8 +260,8 @@ export class MathBackendWebGL implements KernelBackend {
   }
   readSync(dataId: DataId): DataValues {
     const texData = this.texData.get(dataId);
-    const {values, dtype, complexTensors, offsets, shape} = texData;
-    if (offsets != null) {
+    const {values, dtype, complexTensors, begin, shape} = texData;
+    if (begin != null) {
       const program = new UnaryOpProgram(shape, unary_op.CLONE);
       const res = this.compileAndRun(program, [{dataId, shape, dtype}]);
       return this.readSync(res.dataId);
@@ -590,7 +590,7 @@ export class MathBackendWebGL implements KernelBackend {
     const {
       dtype,
       isPacked,
-      offsets,
+      begin: xBegin,
       texShape,
       texture,
       usage,
@@ -601,12 +601,12 @@ export class MathBackendWebGL implements KernelBackend {
     const t = Tensor.make(size, {}, dtype);
     const newTexData = this.texData.get(t.dataId);
     newTexData.isPacked = isPacked;
-    newTexData.offsets = begin.slice();
-    if (offsets) {
+    newTexData.begin = begin.slice();
+    if (xBegin) {
       // We are slicing an already sliced tensor, so we have to accumulate
-      // the offsets.
-      for (let i = 0; i < newTexData.offsets.length; i++) {
-        newTexData.offsets[i] += offsets[i];
+      // the begin.
+      for (let i = 0; i < newTexData.begin.length; i++) {
+        newTexData.begin[i] += xBegin[i];
       }
     }
     newTexData.texShape = texShape;
@@ -1636,17 +1636,17 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   reshape<R extends Rank>(x: Tensor, shape: ShapeMap[R]): Tensor<R> {
-    const {isPacked, offsets, origShape} = this.texData.get(x.dataId);
+    const {isPacked, begin, origShape} = this.texData.get(x.dataId);
     if (isPacked && !webgl_util.isReshapeFree(x.shape, shape)) {
       return this.packedReshape(x, shape);
     }
-    if (offsets != null) {
-      const newOffsets = computeOffsets(shape, offsets, x.shape, origShape);
-      if (newOffsets != null) {
-        // Slice the tensor with the new offsets.
-        const res = this.sliceTensor(x, newOffsets, shape) as Tensor<R>;
+    if (begin != null) {
+      const newBegin = computeBeginOfSlice(shape, begin, x.shape, origShape);
+      if (newBegin != null) {
+        // Slice the tensor with the new coordinates.
+        const res = this.sliceTensor(x, newBegin, shape) as Tensor<R>;
         const resTexData = this.texData.get(res.dataId);
-        resTexData.offsets = newOffsets;
+        resTexData.begin = newBegin;
         resTexData.origShape =
             computeOrigShape(shape, sizeFromShape(origShape));
         return res;

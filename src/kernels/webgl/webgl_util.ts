@@ -464,7 +464,7 @@ export function isSliceContinous(
   return true;
 }
 
-export function computeOffsets(
+export function computeBeginOfSlice(
     newSize: number[], oldBegin: number[], oldSize: number[],
     oldShape: number[]): number[] {
   if (!isSliceContinous(oldBegin, oldSize, oldShape)) {

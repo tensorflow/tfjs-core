@@ -66,9 +66,9 @@ export function compileProgram<T extends Tensor, K extends Tensor>(
       isPacked: input.isUniform ? false : input.texData.isPacked,
       slice: null,
     };
-    if (input.texData.offsets != null) {
+    if (input.texData.begin != null) {
       shapeInfo.slice = {
-        offsets: input.texData.offsets,
+        begin: input.texData.begin,
         origShape: input.origShape
       };
     }
@@ -94,8 +94,8 @@ export function compileProgram<T extends Tensor, K extends Tensor>(
     uniformLocations[varName] =
         gpgpu.getUniformLocation(webGLProgram, varName, shouldThrow);
     if (inputInfos[i].shapeInfo.slice != null) {
-      uniformLocations[`offset${varName}`] = gpgpu.getUniformLocation(
-          webGLProgram, `offset${varName}`, shouldThrow);
+      uniformLocations[`begin${varName}`] = gpgpu.getUniformLocation(
+          webGLProgram, `begin${varName}`, shouldThrow);
     }
   }
 
@@ -162,7 +162,7 @@ export function runProgram<T extends Tensor, K extends Tensor>(
   inputs.forEach((input, i) => {
     const varName = binary.program.variableNames[i];
     const varLoc = binary.uniformLocations[varName];
-    const varOffsetLoc = binary.uniformLocations[`offset${varName}`];
+    const varBeginLoc = binary.uniformLocations[`begin${varName}`];
 
     if (varLoc == null) {
       // The compiler inferred that this variable is not used in this shader.
@@ -183,10 +183,10 @@ export function runProgram<T extends Tensor, K extends Tensor>(
       return;
     }
 
-    // If there are offsets, upload the coordinates.
-    const offsets = input.texData.offsets;
-    if (offsets != null) {
-      gpgpu.gl.uniform1iv(varOffsetLoc, offsets);
+    // If the input was sliced, upload the coordinates.
+    const begin = input.texData.begin;
+    if (begin != null) {
+      gpgpu.gl.uniform1iv(varBeginLoc, begin);
     }
 
     gpgpu.setInputMatrixTexture(input.texData.texture, varLoc, i);
