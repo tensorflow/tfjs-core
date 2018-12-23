@@ -50,12 +50,16 @@ export interface TextureData {
   texShape?: [number, number];
   usage?: TextureUsage;
   isPacked?: boolean;
-  // Available when the texture has been sliced.
-  begin?: number[];
-  // Available when the texture has been sliced. Used to refCount how many
-  // tensors point to the same texture.
-  origDataId?: DataId;
-  origShape?: number[];
+
+  // Available when the tensor has been sliced.
+  slice?: {
+    // Begin coordinates of the new tensor (offsets).
+    begin: number[];
+    // Used for counting how many sliced tensors point to the same texture.
+    origDataId: DataId;
+    // Used in samplers to do correct coordinate mapping.
+    origShape: number[];
+  };
 }
 
 export function getUnpackedMatrixTextureShapeWidthHeight(

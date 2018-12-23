@@ -50,8 +50,6 @@ export interface TensorData {
   isUniform: boolean;
   // Available when we decide to upload as uniform instead of texture.
   uniformValues?: TypedArray;
-  // Available when we slice a tensor.
-  origShape?: number[];
 }
 
 export function compileProgram<T extends Tensor, K extends Tensor>(
@@ -66,10 +64,10 @@ export function compileProgram<T extends Tensor, K extends Tensor>(
       isPacked: input.isUniform ? false : input.texData.isPacked,
       slice: null,
     };
-    if (input.texData.begin != null) {
+    if (input.texData.slice != null) {
       shapeInfo.slice = {
-        begin: input.texData.begin,
-        origShape: input.origShape
+        begin: input.texData.slice.begin,
+        origShape: input.texData.slice.origShape
       };
     }
     return {name: program.variableNames[i], shapeInfo};
@@ -184,9 +182,8 @@ export function runProgram<T extends Tensor, K extends Tensor>(
     }
 
     // If the input was sliced, upload the coordinates.
-    const begin = input.texData.begin;
-    if (begin != null) {
-      gpgpu.gl.uniform1iv(varBeginLoc, begin);
+    if (input.texData.slice != null) {
+      gpgpu.gl.uniform1iv(varBeginLoc, input.texData.slice.begin);
     }
 
     gpgpu.setInputMatrixTexture(input.texData.texture, varLoc, i);
@@ -202,7 +199,7 @@ export function makeShaderKey(
     program: GPGPUProgram, inputs: TensorData[], output: TensorData): string {
   let keyInputs = '';
   inputs.concat(output).forEach(x => {
-    const shape = x.origShape || x.shape;
+    const shape = x.texData.slice && x.texData.slice.origShape || x.shape;
     keyInputs += `${shape}_${x.isUniform ? 'uniform' : x.texData.texShape}`;
   });
   const keyUserCode = program.userCode;

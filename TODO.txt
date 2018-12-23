@@ -2,6 +2,7 @@
 - Do profiling with many slices
 - Make it work with uniforms
 - Optimize CPU slice
+- Make slice work for packed textures, and packedReshape
 - Improve isSliceContinous to account for squeezable shapes
 - Test with async reads (.data() calls)
 - Test shader cache collisions with/without presense of 'offset' uniforms.

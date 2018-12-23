@@ -260,8 +260,8 @@ export class MathBackendWebGL implements KernelBackend {
   }
   readSync(dataId: DataId): DataValues {
     const texData = this.texData.get(dataId);
-    const {values, dtype, complexTensors, begin, shape} = texData;
-    if (begin != null) {
+    const {values, dtype, complexTensors, slice, shape} = texData;
+    if (slice != null) {
       const program = new UnaryOpProgram(shape, unary_op.CLONE);
       const res = this.compileAndRun(program, [{dataId, shape, dtype}]);
       return this.readSync(res.dataId);
@@ -474,10 +474,10 @@ export class MathBackendWebGL implements KernelBackend {
       return;
     }
     if (this.texData.has(dataId)) {
-      const {texture, texShape, usage, complexTensors, isPacked, origDataId} =
+      const {texture, texShape, usage, complexTensors, isPacked, slice} =
           this.texData.get(dataId);
       if (texture != null) {
-        const key = origDataId || dataId;
+        const key = slice && slice.origDataId || dataId;
         const refCount = this.dataRefCount.get(key);
         if (refCount > 1) {
           this.dataRefCount.set(key, refCount - 1);
@@ -587,38 +587,34 @@ export class MathBackendWebGL implements KernelBackend {
   private dataRefCount = new WeakMap<DataId, number>();
 
   private sliceTensor(x: Tensor, begin: number[], size: number[]): Tensor {
-    const {
-      dtype,
-      isPacked,
-      begin: xBegin,
-      texShape,
-      texture,
-      usage,
-      values,
-      origDataId,
-      origShape
-    } = this.texData.get(x.dataId);
+    const {dtype, isPacked, slice: xSlice, texShape, texture, usage, values} =
+        this.texData.get(x.dataId);
     const t = Tensor.make(size, {}, dtype);
     const newTexData = this.texData.get(t.dataId);
     newTexData.isPacked = isPacked;
-    newTexData.begin = begin.slice();
-    if (xBegin) {
-      // We are slicing an already sliced tensor, so we have to accumulate
-      // the begin.
-      for (let i = 0; i < newTexData.begin.length; i++) {
-        newTexData.begin[i] += xBegin[i];
-      }
-    }
     newTexData.texShape = texShape;
     newTexData.texture = texture;
     newTexData.usage = usage;
     newTexData.values = values;
-    // Point to the original dataId, which is used to do ref counting.
-    newTexData.origDataId = origDataId || x.dataId;
-    newTexData.origShape = origShape || x.shape;
-    // Increase the ref count to that texture.
-    const refCount = this.dataRefCount.get(newTexData.origDataId) || 1;
-    this.dataRefCount.set(newTexData.origDataId, refCount + 1);
+
+    newTexData.slice = {
+      begin: begin.slice(),
+      // Point to the original shape, which is used in samplers.
+      origShape: xSlice && xSlice.origShape || x.shape,
+      // Point to the original dataId, which is used to do ref counting.
+      origDataId: xSlice && xSlice.origDataId || x.dataId
+    };
+    if (xSlice) {
+      // We are slicing an already sliced tensor, so we have to accumulate
+      // the begin.
+      for (let i = 0; i < newTexData.slice.begin.length; i++) {
+        newTexData.slice.begin[i] += xSlice.begin[i];
+      }
+    }
+
+    // Increase the ref count for that data bucket.
+    const refCount = this.dataRefCount.get(newTexData.slice.origDataId) || 1;
+    this.dataRefCount.set(newTexData.slice.origDataId, refCount + 1);
 
     return t;
   }
@@ -1636,19 +1632,20 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   reshape<R extends Rank>(x: Tensor, shape: ShapeMap[R]): Tensor<R> {
-    const {isPacked, begin, origShape} = this.texData.get(x.dataId);
+    const {isPacked, slice} = this.texData.get(x.dataId);
     if (isPacked && !webgl_util.isReshapeFree(x.shape, shape)) {
       return this.packedReshape(x, shape);
     }
-    if (begin != null) {
-      const newBegin = computeBeginOfSlice(shape, begin, x.shape, origShape);
+    if (slice != null) {
+      const newBegin =
+          computeBeginOfSlice(shape, slice.begin, x.shape, slice.origShape);
       if (newBegin != null) {
         // Slice the tensor with the new coordinates.
         const res = this.sliceTensor(x, newBegin, shape) as Tensor<R>;
         const resTexData = this.texData.get(res.dataId);
-        resTexData.begin = newBegin;
-        resTexData.origShape =
-            computeOrigShape(shape, sizeFromShape(origShape));
+        resTexData.slice.begin = newBegin;
+        resTexData.slice.origShape =
+            computeOrigShape(shape, sizeFromShape(slice.origShape));
         return res;
       } else {
         const program = new UnaryOpProgram(x.shape, unary_op.CLONE);
@@ -1969,12 +1966,7 @@ export class MathBackendWebGL implements KernelBackend {
       }
 
       this.uploadToGPU(input.dataId);
-      return {
-        shape: input.shape,
-        texData,
-        isUniform: false,
-        origShape: texData.origShape
-      };
+      return {shape: input.shape, texData, isUniform: false};
     });
 
     this.uploadToGPU(output.dataId);
