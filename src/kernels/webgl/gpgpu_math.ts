@@ -117,9 +117,10 @@ function validateBinaryAndProgram(
   }
 
   shapeInfos.forEach((s, i) => {
-    const shapeA = s.logicalShape;
+    const shapeA = s.slice && s.slice.origShape || s.logicalShape;
     const input = inputs[i];
-    const shapeB = input.shape;
+    const shapeB =
+        input.texData.slice && input.texData.slice.origShape || input.shape;
 
     if (!util.arraysEqual(shapeA, shapeB)) {
       throw Error(
