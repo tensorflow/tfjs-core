@@ -299,7 +299,14 @@ export class MathBackendWebGL implements KernelBackend {
       return new Promise<TypedArray>(resolve => subscribers.push(resolve));
     }
     const texData = this.texData.get(dataId);
-    const {texture, values, texShape, isPacked, shape} = texData;
+    const {texture, values, texShape, isPacked, shape, slice, dtype} = texData;
+
+    if (slice != null) {
+      const program = new UnaryOpProgram(shape, unary_op.CLONE);
+      const res = this.compileAndRun(program, [{dataId, shape, dtype}]);
+      return this.read(res.dataId);
+    }
+
     if (values != null) {
       return this.convertAndCacheOnCPU(dataId);
     }

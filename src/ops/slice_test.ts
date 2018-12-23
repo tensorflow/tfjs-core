@@ -116,12 +116,33 @@ describeWithFlags('slice2d', ALL_ENVS, () => {
       [9, 10, 11, 12],
     ];  // 3x4.
     const b = tf.slice(a, [0, 1]);
-    expect(b.shape).toEqual([3, 3]);
-    expectArraysClose(b, [2, 3, 4, 6, 7, 8, 10, 11, 12]);
-
     const c = tf.slice(b, [1, 1], [1, 1]);
     expect(c.shape).toEqual([1, 1]);
     expectArraysClose(c, [7]);
+  });
+
+  it('slice an already sliced tensor and do async read', async () => {
+    const a = [
+      [1, 2, 3, 4],
+      [5, 6, 7, 8],
+      [9, 10, 11, 12],
+    ];  // 3x4.
+    const b = tf.slice(a, [0, 1]);
+    const c = tf.slice(b, [1, 1], [1, 1]);
+    expect(c.shape).toEqual([1, 1]);
+    expectArraysClose(await c.data(), new Float32Array([7]));
+  });
+
+  it('slice a tensor and do async read', async () => {
+    const a = [
+      [1, 2, 3, 4],
+      [5, 6, 7, 8],
+      [9, 10, 11, 12],
+    ];  // 3x4.
+    const b = tf.slice(a, [0, 1], [3, 2]);
+    expect(b.shape).toEqual([3, 2]);
+    const vals = await b.data();
+    expectArraysClose(vals, new Float32Array([2, 3, 6, 7, 10, 11]));
   });
 
   it('flatten a sliced tensor that was continous in memory', () => {
