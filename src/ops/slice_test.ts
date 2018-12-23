@@ -133,6 +133,33 @@ describeWithFlags('slice2d', ALL_ENVS, () => {
     expectArraysClose(await c.data(), new Float32Array([7]));
   });
 
+  it('square a sliced texture, followed by non-sliced texture of same shape',
+     () => {  // Tests collisions in the shader cache.
+       // Make a 2x3 tensor, upload to gpu and reshape to 3x2.
+       const input = tf.tensor([[1, 2, 3], [4, 5, 6]]).abs().as2D(3, 2);
+       const slicedInput = tf.slice(input, [0, 0], [3, 2]);
+       // First square program takes the sliced input.
+       const a = slicedInput.square();
+       expectArraysClose(a, [1, 4, 9, 16, 25, 36]);
+       // Second square program takes the non-sliced input.
+       const b = tf.square(input);
+       expectArraysClose(b, [1, 4, 9, 16, 25, 36]);
+     });
+
+  it('square a non-sliced texture, followed by a sliced texture of same shape',
+     () => {  // Tests collisions in the shader cache.
+       // Make a 2x3 tensor, upload to gpu and reshape to 3x2.
+       const input = tf.tensor([[1, 2, 3], [4, 5, 6]]).abs().as2D(3, 2);
+       // Make a sliced version of the same tensor with the same shape.
+       const slicedInput = tf.slice(input, [0, 0], [3, 2]);
+       // First square program takes the non-sliced input.
+       const a = input.square();
+       expectArraysClose(a, [1, 4, 9, 16, 25, 36]);
+       // Second square program takes the sliced input.
+       const b = tf.square(slicedInput);
+       expectArraysClose(b, [1, 4, 9, 16, 25, 36]);
+     });
+
   it('slice a tensor and do async read', async () => {
     const a = [
       [1, 2, 3, 4],

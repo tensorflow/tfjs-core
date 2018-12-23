@@ -182,7 +182,7 @@ export function runProgram<T extends Tensor, K extends Tensor>(
     }
 
     // If the input was sliced, upload the coordinates.
-    if (input.texData.slice != null) {
+    if (input.texData.slice != null && varBeginLoc != null) {
       gpgpu.gl.uniform1iv(varBeginLoc, input.texData.slice.begin);
     }
 
