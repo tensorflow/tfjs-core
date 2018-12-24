@@ -919,10 +919,13 @@ function spaceToBatchND_<T extends Tensor>(
  * @param axis The axis to unstack along. Defaults to 0 (the first dim).
  */
 /** @doc {heading: 'Tensors', subheading: 'Slicing and Joining'} */
-function unstack_<T extends Tensor>(x: T|TensorLike, axis = 0): Tensor[] {
+function unstack_(x: Tensor|TensorLike, axis = 0): Tensor[] {
   axis = axis || 0;
   const $x = convertToTensor(x, 'x', 'unstack');
-  return ENV.engine.runKernel(backend => backend.unstack($x, axis), {$x});
+  const grad = (dy: Tensor[]) => {
+    return {$x: () => stack(dy, axis)};
+  };
+  return ENV.engine.runKernel(backend => backend.unstack($x, axis), {$x}, grad);
 }
 
 /**

@@ -1,7 +1,6 @@
 === TODO ===
 - Unit test the new webgl utils
 - Optimize strided slice when stride is 1.
-- Make unstack a kernel with gradients
 - Make it work with uniforms
 - Optimize CPU slice
 - Make slice work for packed textures, and packedReshape
