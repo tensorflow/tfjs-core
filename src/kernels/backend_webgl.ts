@@ -91,6 +91,7 @@ import {ReverseProgram} from './webgl/reverse_gpu';
 import {ScatterProgram} from './webgl/scatter_gpu';
 import {SegmentOpProgram} from './webgl/segment_gpu';
 import {SelectProgram} from './webgl/select_gpu';
+import {SliceProgram} from './webgl/slice_gpu';
 import {StridedSliceProgram} from './webgl/strided_slice_gpu';
 import * as tex_util from './webgl/tex_util';
 import {TextureData, TextureUsage} from './webgl/tex_util';
@@ -586,6 +587,12 @@ export class MathBackendWebGL implements KernelBackend {
   slice<T extends Tensor>(x: T, begin: number[], size: number[]): T {
     if (this.shouldExecuteOnCPU([x])) {
       return this.cpuBackend.slice(x, begin, size);
+    }
+    const {isPacked} = this.texData.get(x.dataId);
+    if (isPacked) {
+      const program = new SliceProgram(size);
+      const customSetup = program.getCustomSetupFunc(begin);
+      return this.compileAndRun(program, [x], null, customSetup);
     }
     this.uploadToGPU(x.dataId);
     return this.sliceTensor(x, begin, size) as T;

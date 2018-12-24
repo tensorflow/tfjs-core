@@ -694,6 +694,12 @@ function getOutput2DCoords(
   `;
 }
 
+function getBeginUniformNames(texName: string, shapeInfo: ShapeInfo): string[] {
+  return shapeInfo.logicalShape.map((s, i) => {
+    return shapeInfo.slice ? `begin${texName}[${i}]` : '0';
+  });
+}
+
 function getPackedSamplerScalar(inputInfo: InputInfo): string {
   const texName = inputInfo.name;
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
@@ -725,12 +731,12 @@ function getPackedSampler1D(inputInfo: InputInfo): string {
       [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
 
   return `
-    vec4 ${funcName}(int index) {
-      vec2 uv = packedUVfrom1D(
-        ${packedTexShape[0]}, ${packedTexShape[1]}, index);
-      return texture2D(${texName}, uv);
-    }
-  `;
+      vec4 ${funcName}(int index) {
+        vec2 uv = packedUVfrom1D(
+          ${packedTexShape[0]}, ${packedTexShape[1]}, index);
+        return texture2D(${texName}, uv);
+      }
+    `;
 }
 
 function getSampler1D(inputInfo: InputInfo): string {
@@ -757,7 +763,7 @@ function getSampler1D(inputInfo: InputInfo): string {
       }
     `;
   }
-  const begin = inputInfo.shapeInfo.slice ? `begin${texName}[0]` : '0';
+  const [begin] = getBeginUniformNames(texName, inputInfo.shapeInfo);
   if (tNumC === 1) {
     return `
       float ${funcName}(int index) {
@@ -811,12 +817,6 @@ function getPackedSampler2D(inputInfo: InputInfo): string {
       return texture2D(${texName}, uv);
     }
   `;
-}
-
-function getBeginUniformNames(texName: string, shapeInfo: ShapeInfo): string[] {
-  return shapeInfo.logicalShape.map((s, i) => {
-    return shapeInfo.slice ? `begin${texName}[${i}]` : '0';
-  });
 }
 
 function getSampler2D(inputInfo: InputInfo): string {
@@ -1333,48 +1333,48 @@ function getPackedSamplerAtOutputCoords(
       inTexShape[1], inTexShape[0])];
   if (util.arraysEqual(inTexShape, outTexShape)) {
     return `
-      vec4 ${funcName}() {
-        return texture2D(${texName}, resultUV);
-      }
-    `;
+    vec4 ${funcName}() {
+      return texture2D(${texName}, resultUV);
+    }
+  `;
   }
 
   let output = `return texture2D(${texName}, uv)`;
 
   if (inRank === 1 && outRank > 1) {
     output = `
-      vec4 sample = texture2D(${texName}, uv);
-      return vec4(sample.xy, sample.xy);
-    `;
+    vec4 sample = texture2D(${texName}, uv);
+    return vec4(sample.xy, sample.xy);
+  `;
   } else if (inRank === 0 && outRank > 0) {
     if (outRank === 1) {
       output = `
-        vec4 sample = texture2D(${texName}, uv);
-        return vec4(sample.x, sample.x, 0., 0.);
-      `;
+      vec4 sample = texture2D(${texName}, uv);
+      return vec4(sample.x, sample.x, 0., 0.);
+    `;
     } else {
       output = `
-        vec4 sample = texture2D(${texName}, uv);
-        return vec4(sample.x);
-      `;
+      vec4 sample = texture2D(${texName}, uv);
+      return vec4(sample.x);
+    `;
     }
   }
 
   // index below refers to texel index
   return `
-    vec4 ${funcName}() {
-      ivec2 resTexRC = ivec2(resultUV.yx *
-                             vec2(${packedTexShape[0]}, ${packedTexShape[1]}));
-      int index = resTexRC.x * ${packedTexShape[1]} + resTexRC.y;
+  vec4 ${funcName}() {
+    ivec2 resTexRC = ivec2(resultUV.yx *
+                           vec2(${packedTexShape[0]}, ${packedTexShape[1]}));
+    int index = resTexRC.x * ${packedTexShape[1]} + resTexRC.y;
 
-      int texR = index / ${packedInTexShape[1]};
-      int texC = index - texR * ${packedInTexShape[1]};
-      vec2 uv = (vec2(texC, texR) + halfCR) / vec2(${packedInTexShape[1]}, ${
+    int texR = index / ${packedInTexShape[1]};
+    int texC = index - texR * ${packedInTexShape[1]};
+    vec2 uv = (vec2(texC, texR) + halfCR) / vec2(${packedInTexShape[1]}, ${
       packedInTexShape[0]});
 
-      ${output};
-    }
-  `;
+    ${output};
+  }
+`;
 }
 
 function getSamplerAtOutputCoords(
@@ -1384,7 +1384,7 @@ function getSamplerAtOutputCoords(
   const funcName = 'get' + texFuncSnippet + 'AtOutCoords';
   const outTexShape = outShapeInfo.texShape;
   const inTexShape = inputInfo.shapeInfo.texShape;
-  if (!inputInfo.shapeInfo.isUniform &&
+  if (!inputInfo.shapeInfo.isUniform && inputInfo.shapeInfo.slice == null &&
       util.arraysEqual(inTexShape, outTexShape)) {
     return `
       float ${funcName}() {

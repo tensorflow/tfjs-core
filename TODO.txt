@@ -3,11 +3,10 @@
 - Optimize strided slice when stride is 1.
 - Make it work with uniforms
 - Optimize CPU slice
-- Make slice work for packed textures, and packedReshape
 - Improve isSliceContinous to account for squeezable shapes
 - Replace sliceAlongAxis with unstack in tfjs-layers
 
-=== BENCMARKING ===
+=== BENCHMARKING ===
 // tslint:disable-next-line:ban
 fit('bechmark unstack', () => {
   const a = tf.zeros([1000, 100]);

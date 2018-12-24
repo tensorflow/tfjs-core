@@ -17,7 +17,7 @@
 
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
-import {ALL_ENVS, expectArraysClose, expectNumbersClose} from '../test_util';
+import {ALL_ENVS, expectArraysClose, expectNumbersClose, WEBGL_ENVS} from '../test_util';
 import {Rank} from '../types';
 
 describeWithFlags('slice1d', ALL_ENVS, () => {
@@ -228,6 +228,33 @@ describeWithFlags('slice2d', ALL_ENVS, () => {
     const b = tf.slice(a, 1).as2D(2, 2).square();
     expect(b.shape).toEqual([2, 2]);
     expectArraysClose(b, [4, 9, 16, 25]);
+  });
+
+  it('broadcast the original with the sliced tensor', () => {
+    const a = [[1, 2], [3, 4]];
+    const b = tf.slice(a, [0, 1]);
+    const c = tf.add(a, b);
+    expect(c.shape).toEqual([2, 2]);
+    expectArraysClose(c, [3, 4, 7, 8]);
+  });
+});
+
+describeWithFlags('slice a packed texture', WEBGL_ENVS, () => {
+  beforeAll(() => {
+    tf.ENV.set('WEBGL_PACK', true);
+  });
+
+  it('slice after a matmul', () => {
+    const a = [[1, 2], [3, 4]];
+    const b = [[5, 6], [7, 8]];
+    // Matmul gives a packed tensor in webgl.
+    //  [19, 22]
+    //  [43, 50]
+    const c = tf.matMul(a, b);
+    expectArraysClose(c.slice([0, 0]), [19, 22, 43, 50]);
+    expectArraysClose(c.slice([0, 1]), [22, 50]);
+    expectArraysClose(c.slice([1, 0]), [43, 50]);
+    expectArraysClose(c.slice([1, 1]), [50]);
   });
 });
 
