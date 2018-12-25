@@ -48,7 +48,7 @@ export function shuffle(array: any[]|Uint32Array|Int32Array|
  * console.log(tf.util.range(0, 6, 2));
  * // Gives [0, 2, 4]
  *
- * console.log(tf.util.range(0, 6, -2));
+ * console.log(tf.util.range(0, -6, -2));
  * // Gives [0, -2, -4]
  * ```
  *

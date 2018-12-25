@@ -441,7 +441,7 @@ describe('util.hasEncodingLoss', () => {
   });
 });
 
-fdescribe('range', () => {
+describe('range', () => {
   it('stop > start, positive step', () => {
     expect(util.range(0, 5, 1)).toEqual([0, 1, 2, 3, 4]);
     expect(util.range(-1, 1, 0.5)).toEqual([-1, -0.5, 0, 0.5]);
