@@ -40,9 +40,22 @@ export function shuffle(array: any[]|Uint32Array|Int32Array|
 /**
  * Create an array of equally spaced numbers.
  *
+ * Example:
+ * ```
+ * console.log(tf.util.range(0, 6));
+ * // Gives [0, 1, 2, 3, 4, 5]
+ *
+ * console.log(tf.util.range(0, 6, 2));
+ * // Gives [0, 2, 4]
+ *
+ * console.log(tf.util.range(0, 6, -2));
+ * // Gives [0, -2, -4]
+ * ```
+ *
  * @param start The starting value (inclusive).
  * @param stop The ending value (exclusive).
  * @param step The spacing between adjacent values in the array.
+ *   Defaults to `1`.
  * @returns Output array of equally spaced numbers.
  */
 export function range(start: number, stop: number, step?: number): number[] {
@@ -50,7 +63,7 @@ export function range(start: number, stop: number, step?: number): number[] {
   assert(Number.isFinite(stop), `Invalid stop for range(): ${stop}`);
   if (step != null) {
     assert(
-        typeof step === 'number' && step !== 0,
+        typeof step === 'number' && step !== 0 && !Number.isNaN(step),
         `If specified, step is expected to be a non-zero number, ` +
         `but got ${step}`);
   }

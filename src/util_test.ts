@@ -444,9 +444,60 @@ describe('util.hasEncodingLoss', () => {
 fdescribe('range', () => {
   it('stop > start, positive step', () => {
     expect(util.range(0, 5, 1)).toEqual([0, 1, 2, 3, 4]);
+    expect(util.range(-1, 1, 0.5)).toEqual([-1, -0.5, 0, 0.5]);
+    expect(util.range(-1.2, 1.2, 2.4)).toEqual([-1.2]);
+  });
+
+  it('stop >= start, negative step', () => {
+    expect(util.range(0, 5, -1)).toEqual([]);
+    expect(util.range(5, 5, -10)).toEqual([]);
+    expect(util.range(5, 5, -Infinity)).toEqual([]);
   });
 
   it('stop > start, implicit step 1', () => {
     expect(util.range(0, 5)).toEqual([0, 1, 2, 3, 4]);
+    expect(util.range(-1, 1)).toEqual([-1, 0]);
+    expect(util.range(-1.2, 1.2, 2.4)).toEqual([-1.2]);
+  });
+
+  it('stop = start', () => {
+    expect(util.range(0, 0)).toEqual([]);
+    expect(util.range(-2, -2, 8)).toEqual([]);
+    expect(util.range(3.2, 3.2, -1)).toEqual([]);
+    expect(util.range(3.2, 3.2, Infinity)).toEqual([]);
+  });
+
+  it('stop < start', () => {
+    expect(util.range(-5, -10)).toEqual([]);
+    expect(util.range(0, -1, 0.2)).toEqual([]);
+    expect(util.range(0, -10, -2)).toEqual([0, -2, -4, -6, -8]);
+    expect(util.range(0, -1, Infinity)).toEqual([]);
+  });
+
+  it('step = 0', () => {
+    expect(() => util.range(0, 1, 0)).toThrowError(/non-zero number/);
+    expect(() => util.range(0, 0, 0)).toThrowError(/non-zero number/);
+    expect(() => util.range(0, -1, 0)).toThrowError(/non-zero number/);
+  });
+
+  it('step = NaN', () => {
+    expect(() => util.range(0, 1, NaN)).toThrowError(/non-zero number/);
+    expect(() => util.range(0, 0, NaN)).toThrowError(/non-zero number/);
+    expect(() => util.range(0, -1, NaN)).toThrowError(/non-zero number/);
+  });
+
+  it('Infinity or NaN start/stop', () => {
+    expect(() => util.range(Infinity, 0)).toThrowError(/Invalid start/);
+    expect(() => util.range(Infinity, Infinity)).toThrowError(/Invalid start/);
+    expect(() => util.range(0, Infinity)).toThrowError(/Invalid stop/);
+    expect(() => util.range(NaN, 0)).toThrowError(/Invalid start/);
+    expect(() => util.range(NaN, NaN)).toThrowError(/Invalid start/);
+    expect(() => util.range(0, NaN)).toThrowError(/Invalid stop/);
+    // tslint:disable:no-any
+    expect(() => util.range('foo' as any, 100)).toThrowError(/Invalid start/);
+    expect(() => util.range('foo' as any, 'bar' as any))
+        .toThrowError(/Invalid start/);
+    expect(() => util.range(0, 'bar' as any)).toThrowError(/Invalid stop/);
+    // tslint:enable:no-any
   });
 });
