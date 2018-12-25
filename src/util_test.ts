@@ -440,3 +440,13 @@ describe('util.hasEncodingLoss', () => {
     expect(util.hasEncodingLoss('bool', 'bool')).toBe(false);
   });
 });
+
+fdescribe('range', () => {
+  it('stop > start, positive step', () => {
+    expect(util.range(0, 5, 1)).toEqual([0, 1, 2, 3, 4]);
+  });
+
+  it('stop > start, implicit step 1', () => {
+    expect(util.range(0, 5)).toEqual([0, 1, 2, 3, 4]);
+  });
+});

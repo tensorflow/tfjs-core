@@ -37,6 +37,52 @@ export function shuffle(array: any[]|Uint32Array|Int32Array|
   }
 }
 
+/**
+ * Create an array of equally spaced numbers.
+ *
+ * @param start The starting value (inclusive).
+ * @param stop The ending value (exclusive).
+ * @param step The spacing between adjacent values in the array.
+ * @returns Output array of equally spaced numbers.
+ */
+export function range(start: number, stop: number, step?: number): number[] {
+  assert(Number.isFinite(start), `Invalid start for range(): ${start}`);
+  assert(Number.isFinite(stop), `Invalid stop for range(): ${stop}`);
+  if (step != null) {
+    assert(
+        typeof step === 'number' && step !== 0,
+        `If specified, step is expected to be a non-zero number, ` +
+        `but got ${step}`);
+  }
+
+  if (stop > start) {
+    if (step == null) {
+      step = 1;
+    } else if (step < 0) {
+      return [];
+    }
+    let y = start;
+    const output = [];
+    while (y < stop) {
+      output.push(y);
+      y += step;
+    }
+    return output;
+  } else {  // stop <= start
+    if (step == null || step > 0) {
+      return [];
+    }
+    // Now we know step < 0.
+    let y = start;
+    const output = [];
+    while (y > stop) {
+      output.push(y);
+      y += step;
+    }
+    return output;
+  }
+}
+
 /** Clamps a value to a specified range. */
 export function clamp(min: number, x: number, max: number): number {
   return Math.max(min, Math.min(x, max));
