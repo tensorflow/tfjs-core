@@ -102,7 +102,7 @@ import * as unary_op from './webgl/unaryop_gpu';
 import {UnaryOpProgram} from './webgl/unaryop_gpu';
 import {UnpackProgram} from './webgl/unpack_gpu';
 import * as webgl_util from './webgl/webgl_util';
-import {computeBeginOfSlice, computeOrigShape} from './webgl/webgl_util';
+import {reshapeSlice} from './webgl/webgl_util';
 import {whereImpl} from './where_impl';
 
 type KernelInfo = {
@@ -1672,15 +1672,15 @@ export class MathBackendWebGL implements KernelBackend {
       return this.packedReshape(x, shape);
     }
     if (slice != null) {
-      const newBegin =
-          computeBeginOfSlice(shape, slice.begin, x.shape, slice.origShape);
-      if (newBegin != null) {
+      const reshapeInfo =
+          reshapeSlice(shape, slice.begin, x.shape, slice.origShape);
+      if (reshapeInfo != null) {
+        const {newBegin, newShape} = reshapeInfo;
         // Slice the tensor with the new coordinates.
         const res = this.sliceTensor(x, newBegin, shape) as Tensor<R>;
         const resTexData = this.texData.get(res.dataId);
         resTexData.slice.begin = newBegin;
-        resTexData.slice.origShape =
-            computeOrigShape(shape, sizeFromShape(slice.origShape));
+        resTexData.slice.origShape = newShape;
         return res;
       } else {
         const program = new UnaryOpProgram(x.shape, unary_op.CLONE);
