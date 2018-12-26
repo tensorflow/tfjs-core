@@ -45,6 +45,20 @@ describeWithFlags('debug on', ALL_ENVS, () => {
     expect(a).toThrowError();
   });
 
+  it('debug mode errors when infinities in op output', () => {
+    const a = tf.tensor1d([1, 2, 3, 4]);
+    const b = tf.tensor1d([2, -1, 0, 3]);
+    const c = () => a.div(b);
+    expect(c).toThrowError();
+  });
+
+  it('debug mode errors when nans in op output', () => {
+    const a = tf.tensor1d([-1, 2]);
+    const b = tf.tensor1d([0.5, 1]);
+    const c = () => a.pow(b);
+    expect(c).toThrowError();
+  });
+
   it('debug mode errors when nans in oneHot op (tensorlike), int32', () => {
     const f = () => tf.oneHot([2, NaN], 3);
     expect(f).toThrowError();
