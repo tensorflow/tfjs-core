@@ -136,6 +136,10 @@ export interface TensorHandle {
 // off execution to the CPU.
 const CPU_HANDOFF_SIZE_THRESHOLD = 10;
 
+// https://en.wikipedia.org/wiki/Half-precision_floating-point_format
+const MIN_FLOAT16 = 5.96e-8;
+const MAX_FLOAT16 = 65504;
+
 // Tensors with size <= than this will be uploaded as uniforms, not textures.
 export const SIZE_UPLOAD_UNIFORM = 4;
 // Empirically determined minimal shared dimension in matmul before we forward
@@ -235,10 +239,29 @@ export class MathBackendWebGL implements KernelBackend {
     return {dataId, shape, dtype};
   }
 
+  private canBeRepresented(num: number): boolean {
+    if (ENV.get('WEBGL_RENDER_FLOAT32_ENABLED') || num === 0 ||
+        (MIN_FLOAT16 < Math.abs(num) && Math.abs(num) < MAX_FLOAT16)) {
+      return true;
+    }
+    return false;
+  }
+
   write(dataId: DataId, values: DataValues): void {
     if (values == null) {
       throw new Error('MathBackendWebGL.write(): values can not be null');
     }
+
+    if (ENV.get('DEBUG')) {
+      for (let i = 0; i < values.length; i++) {
+        const num = values[i] as number;
+        if (!this.canBeRepresented(num)) {
+          console.warn(
+              `The value ${num} cannot be represented on this device.`);
+        }
+      }
+    }
+
     const texData = this.texData.get(dataId);
     const {texture, texShape, usage, dtype, isPacked} = texData;
     if (dtype === 'complex64') {

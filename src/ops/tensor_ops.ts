@@ -25,19 +25,6 @@ import {assert, assertNonNull, flatten, getArrayFromDType, inferDtype, isTypedAr
 import {complex} from './complex_ops';
 import {op} from './operation';
 
-// https://en.wikipedia.org/wiki/Half-precision_floating-point_format
-const MIN_FLOAT16 = 5.96e-8;
-const MAX_FLOAT16 = 65504;
-
-function canBeRepresented(num: number): boolean {
-  if (!ENV.get('BACKEND').includes('webgl') ||
-      ENV.get('WEBGL_RENDER_FLOAT32_ENABLED') || num === 0 ||
-      (MIN_FLOAT16 < Math.abs(num) && Math.abs(num) < MAX_FLOAT16)) {
-    return true;
-  }
-  return false;
-}
-
 /**
  * Creates a `tf.Tensor` with the provided values, shape and dtype.
  *
@@ -103,17 +90,9 @@ function tensor<R extends Rank>(
               `shape (${shape}). `);
     }
   }
+
   if (!isTypedArray(values) && !Array.isArray(values)) {
     values = [values] as number[];
-  }
-
-  if(ENV.get('DEBUG')) {
-    for(let i=0; i<values.length; i++) {
-      const num = values[i] as number;
-      if(!canBeRepresented(num)) {
-        console.warn(`The value ${num} cannot be represented on this device.`);
-      }
-    }
   }
 
   shape = shape || inferredShape;
