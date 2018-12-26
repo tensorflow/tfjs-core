@@ -45,6 +45,11 @@ describeWithFlags('debug on', ALL_ENVS, () => {
     expect(a).toThrowError();
   });
 
+  it('debug mode errors when nans in tensor created from TypedArray', () => {
+    const a = () => tf.tensor1d(new Float32Array([1, 2, NaN]), 'float32');
+    expect(a).toThrowError();
+  });
+
   it('debug mode errors when infinities in op output', () => {
     const a = tf.tensor1d([1, 2, 3, 4]);
     const b = tf.tensor1d([2, -1, 0, 3]);
