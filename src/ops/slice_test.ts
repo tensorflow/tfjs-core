@@ -109,7 +109,7 @@ describeWithFlags('slice2d', ALL_ENVS, () => {
     expect(b.shape).toEqual([1, 1]);
   });
 
-  it('slice an already sliced tensor', () => {
+  it('slice an already sliced tensor, first was not continous', () => {
     const a = [
       [1, 2, 3, 4],
       [5, 6, 7, 8],
@@ -119,6 +119,18 @@ describeWithFlags('slice2d', ALL_ENVS, () => {
     const c = tf.slice(b, [1, 1], [1, 1]);
     expect(c.shape).toEqual([1, 1]);
     expectArraysClose(c, [7]);
+  });
+
+  it('slice an already sliced tensor, first was continous', () => {
+    const a = [
+      [1, 2, 3, 4],
+      [5, 6, 7, 8],
+      [9, 10, 11, 12],
+    ];  // 3x4.
+    const b = tf.slice(a, [1, 0]);
+    const c = tf.slice(b, [1, 0]);
+    expect(c.shape).toEqual([1, 4]);
+    expectArraysClose(c, [9, 10, 11, 12]);
   });
 
   it('slice an already sliced tensor and do async read', async () => {

@@ -102,7 +102,7 @@ import * as unary_op from './webgl/unaryop_gpu';
 import {UnaryOpProgram} from './webgl/unaryop_gpu';
 import {UnpackProgram} from './webgl/unpack_gpu';
 import * as webgl_util from './webgl/webgl_util';
-import {reshapeSlice} from './webgl/webgl_util';
+import {isSliceContinous} from './webgl/webgl_util';
 import {whereImpl} from './where_impl';
 
 type KernelInfo = {
@@ -589,7 +589,8 @@ export class MathBackendWebGL implements KernelBackend {
       return this.cpuBackend.slice(x, begin, size);
     }
     const {isPacked} = this.texData.get(x.dataId);
-    if (isPacked) {
+    const isContinous = isSliceContinous(x.shape, begin, size);
+    if (isPacked || !isContinous) {
       const program = new SliceProgram(size);
       const customSetup = program.getCustomSetupFunc(begin);
       return this.compileAndRun(program, [x], null, customSetup);
@@ -611,20 +612,20 @@ export class MathBackendWebGL implements KernelBackend {
     newTexData.usage = usage;
     newTexData.values = values;
 
+    let flatOffset = begin.length > 0 ? begin[begin.length - 1] : 1;
+    for (let i = 0; i < begin.length - 1; i++) {
+      flatOffset += begin[i] * x.strides[i];
+    }
+    if (xSlice) {
+      // We are slicing an already sliced tensor, so we have to accumulate
+      // the offset.
+      flatOffset += xSlice.flatOffset;
+    }
     newTexData.slice = {
-      begin: begin.slice(),
-      // Point to the original shape, which is used in samplers.
-      origShape: xSlice && xSlice.origShape || x.shape,
+      flatOffset,
       // Point to the original dataId, which is used to do ref counting.
       origDataId: xSlice && xSlice.origDataId || x.dataId
     };
-    if (xSlice) {
-      // We are slicing an already sliced tensor, so we have to accumulate
-      // the begin.
-      for (let i = 0; i < newTexData.slice.begin.length; i++) {
-        newTexData.slice.begin[i] += xSlice.begin[i];
-      }
-    }
 
     // Increase the ref count for that data bucket.
     const refCount = this.dataRefCount.get(newTexData.slice.origDataId) || 1;
@@ -1667,26 +1668,9 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   reshape<R extends Rank>(x: Tensor, shape: ShapeMap[R]): Tensor<R> {
-    const {isPacked, slice} = this.texData.get(x.dataId);
+    const {isPacked} = this.texData.get(x.dataId);
     if (isPacked && !webgl_util.isReshapeFree(x.shape, shape)) {
       return this.packedReshape(x, shape);
-    }
-    if (slice != null) {
-      const reshapeInfo =
-          reshapeSlice(shape, slice.begin, x.shape, slice.origShape);
-      if (reshapeInfo != null) {
-        const {newBegin, newShape} = reshapeInfo;
-        // Slice the tensor with the new coordinates.
-        const res = this.sliceTensor(x, newBegin, shape) as Tensor<R>;
-        const resTexData = this.texData.get(res.dataId);
-        resTexData.slice.begin = newBegin;
-        resTexData.slice.origShape = newShape;
-        return res;
-      } else {
-        const program = new UnaryOpProgram(x.shape, unary_op.CLONE);
-        const res = this.compileAndRun(program, [x]) as Tensor<R>;
-        return res.reshape(shape);
-      }
     }
     return backend_util.reshapeTensor(x, shape);
   }

@@ -53,12 +53,10 @@ export interface TextureData {
 
   // Available when the tensor has been sliced.
   slice?: {
-    // Begin coordinates of the new tensor (offsets).
-    begin: number[];
+    // Offset in the 'flat index' space.
+    flatOffset: number;
     // Used for counting how many sliced tensors point to the same texture.
     origDataId: DataId;
-    // Used in samplers to do correct coordinate mapping.
-    origShape: number[];
   };
 }
 

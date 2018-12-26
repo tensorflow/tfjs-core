@@ -33,13 +33,31 @@ export class SliceProgram implements GPGPUProgram {
     this.rank = destSize.length;
 
     const dtype = getCoordsDataType(this.rank);
+    let uniformPart: string;
+    if (this.rank <= 4) {
+      uniformPart = `uniform ${dtype} start;`;
+    } else {
+      uniformPart = `uniform int start[${this.rank}];`;
+    }
     const sourceCoords = getCoords(this.rank);
 
+    let body: string;
+    if (this.rank <= 4) {
+      body = `${dtype} sourceLoc = start + getOutputCoords();`;
+    } else {
+      const coordSum = destSize.map((_, i) => {
+        return `sourceLoc.${coords[i]} = start[${i}] + coords.${coords[i]};`;
+      });
+      body = `
+        ${dtype} sourceLoc;
+        ${dtype} coords = getOutputCoords();
+        ${coordSum.join('\n')}
+      `;
+    }
     this.userCode = `
-      uniform ${dtype} start;
-
+      ${uniformPart}
       void main() {
-        ${dtype} sourceLoc = start + getOutputCoords();
+        ${body}
         setOutput(getSource(${sourceCoords}));
       }
     `;
@@ -69,6 +87,10 @@ export class SliceProgram implements GPGPUProgram {
       } else if (this.rank === 4) {
         gpgpu.gl.uniform4i(
             this.startLoc, start[0], start[1], start[2], start[3]);
+      } else if (this.rank === 5) {
+        gpgpu.gl.uniform1iv(this.startLoc, start);
+      } else if (this.rank === 6) {
+        gpgpu.gl.uniform1iv(this.startLoc, start);
       } else {
         throw Error(`Slicing for rank ${this.rank} is not yet supported`);
       }
@@ -76,15 +98,13 @@ export class SliceProgram implements GPGPUProgram {
   }
 }
 
+const coords = ['x', 'y', 'z', 'w', 'u', 'v'];
+
 function getCoords(rank: number): string {
   if (rank === 1) {
     return 'sourceLoc';
-  } else if (rank === 2) {
-    return 'sourceLoc.x, sourceLoc.y';
-  } else if (rank === 3) {
-    return 'sourceLoc.x, sourceLoc.y, sourceLoc.z';
-  } else if (rank === 4) {
-    return 'sourceLoc.x, sourceLoc.y, sourceLoc.z, sourceLoc.w';
+  } else if (rank <= 6) {
+    return coords.slice(0, rank).map(x => 'sourceLoc.' + x).join(',');
   } else {
     throw Error(`Slicing for rank ${rank} is not yet supported`);
   }

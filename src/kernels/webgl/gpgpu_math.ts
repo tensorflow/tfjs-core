@@ -62,13 +62,10 @@ export function compileProgram<T extends Tensor, K extends Tensor>(
       texShape: input.isUniform ? null : input.texData.texShape,
       isUniform: input.isUniform,
       isPacked: input.isUniform ? false : input.texData.isPacked,
-      slice: null,
+      flatOffset: null,
     };
-    if (input.texData.slice != null) {
-      shapeInfo.slice = {
-        begin: input.texData.slice.begin,
-        origShape: input.texData.slice.origShape
-      };
+    if (input.texData.slice != null && input.texData.slice.flatOffset > 0) {
+      shapeInfo.flatOffset = input.texData.slice.flatOffset;
     }
     return {name: program.variableNames[i], shapeInfo};
   });
@@ -78,7 +75,7 @@ export function compileProgram<T extends Tensor, K extends Tensor>(
     texShape: output.texData.texShape,
     isUniform: false,
     isPacked: output.texData.isPacked,
-    slice: null,
+    flatOffset: null,
   };
   const source = shader_compiler.makeShader(
       inputInfos, outShapeInfo, userCode, program.usesPackedTextures);
@@ -91,10 +88,8 @@ export function compileProgram<T extends Tensor, K extends Tensor>(
     const shouldThrow = false;
     uniformLocations[varName] =
         gpgpu.getUniformLocation(webGLProgram, varName, shouldThrow);
-    if (inputInfos[i].shapeInfo.slice != null) {
-      uniformLocations[`begin${varName}`] = gpgpu.getUniformLocation(
-          webGLProgram, `begin${varName}`, shouldThrow);
-    }
+    uniformLocations[`offset${varName}`] =
+        gpgpu.getUniformLocation(webGLProgram, `offset${varName}`, shouldThrow);
   }
 
   return {
@@ -117,10 +112,9 @@ function validateBinaryAndProgram(
   }
 
   shapeInfos.forEach((s, i) => {
-    const shapeA = s.slice && s.slice.origShape || s.logicalShape;
+    const shapeA = s.logicalShape;
     const input = inputs[i];
-    const shapeB =
-        input.texData.slice && input.texData.slice.origShape || input.shape;
+    const shapeB = input.shape;
 
     if (!util.arraysEqual(shapeA, shapeB)) {
       throw Error(
@@ -161,7 +155,7 @@ export function runProgram<T extends Tensor, K extends Tensor>(
   inputs.forEach((input, i) => {
     const varName = binary.program.variableNames[i];
     const varLoc = binary.uniformLocations[varName];
-    const varBeginLoc = binary.uniformLocations[`begin${varName}`];
+    const varOffsetLoc = binary.uniformLocations[`offset${varName}`];
 
     if (varLoc == null) {
       // The compiler inferred that this variable is not used in this shader.
@@ -183,8 +177,8 @@ export function runProgram<T extends Tensor, K extends Tensor>(
     }
 
     // If the input was sliced, upload the coordinates.
-    if (input.texData.slice != null && varBeginLoc != null) {
-      gpgpu.gl.uniform1iv(varBeginLoc, input.texData.slice.begin);
+    if (input.texData.slice != null && varOffsetLoc != null) {
+      gpgpu.gl.uniform1i(varOffsetLoc, input.texData.slice.flatOffset);
     }
 
     gpgpu.setInputMatrixTexture(input.texData.texture, varLoc, i);
@@ -200,8 +194,9 @@ export function makeShaderKey(
     program: GPGPUProgram, inputs: TensorData[], output: TensorData): string {
   let keyInputs = '';
   inputs.concat(output).forEach(x => {
-    const shape = x.texData.slice && x.texData.slice.origShape || x.shape;
-    keyInputs += `${shape}_${x.isUniform ? 'uniform' : x.texData.texShape}`;
+    const hasOffset = x.texData.slice != null && x.texData.slice.flatOffset > 0;
+    const texShape = x.isUniform ? 'uniform' : x.texData.texShape;
+    keyInputs += `${x.shape}_${texShape}_${hasOffset}`;
   });
   const keyUserCode = program.userCode;
   let key = program.constructor.name;

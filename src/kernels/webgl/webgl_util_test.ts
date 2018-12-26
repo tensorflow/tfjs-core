@@ -20,7 +20,7 @@ import {describeWithFlags} from '../../jasmine_util';
 import {WEBGL_ENVS} from '../../test_util';
 import * as util from '../../util';
 import * as webgl_util from './webgl_util';
-import {reshapeSlice} from './webgl_util';
+import {isSliceContinous} from './webgl_util';
 
 describeWithFlags('getTextureShapeFromLogicalShape', WEBGL_ENVS, () => {
   it('scalar', () => {
@@ -176,75 +176,53 @@ describeWithFlags('isReshapeFree', WEBGL_ENVS, () => {
      });
 });
 
-describeWithFlags('reshapeSlice', WEBGL_ENVS, () => {
+describeWithFlags('isSliceContinous', WEBGL_ENVS, () => {
   it('[] => []', () => {
-    const oldShape: number[] = [];
-    const oldSize: number[] = [];
-    const oldBegin: number[] = [];
-    const newSize: number[] = [];
-    const {newBegin, newShape} =
-        reshapeSlice(newSize, oldBegin, oldSize, oldShape);
-    expect(newShape).toEqual([]);
-    expect(newBegin).toEqual([]);
+    const shape: number[] = [];
+    const size: number[] = [];
+    const begin: number[] = [];
+    expect(isSliceContinous(shape, begin, size)).toBeTruthy();
   });
 
-  it('[5] sliced to [3] reshaped to [3, 1]', () => {
-    const oldShape = [5];
-    const oldSize = [3];
-    const oldBegin = [1];
-    const newSize = [3, 1];
-    const {newBegin, newShape} =
-        reshapeSlice(newSize, oldBegin, oldSize, oldShape);
-    expect(newShape).toEqual([5, 1]);
-    expect(newBegin).toEqual([1, 0]);
+  it('[5] sliced to [3]', () => {
+    const shape = [5];
+    const size = [3];
+    const begin = [1];
+    expect(isSliceContinous(shape, begin, size)).toBeTruthy();
   });
 
-  it('[5, 3] sliced to [2, 3], reshaped to [6]', () => {
-    const oldShape = [5, 3];
-    const oldSize = [2, 3];
-    const oldBegin = [1, 0];
-    const newSize = [6];
-    const {newBegin, newShape} =
-        reshapeSlice(newSize, oldBegin, oldSize, oldShape);
-    expect(newShape).toEqual([15]);
-    expect(newBegin).toEqual([3]);
+  it('[5, 3] sliced to [2, 3] skipping a row', () => {
+    const shape = [5, 3];
+    const size = [2, 3];
+    const begin = [1, 0];
+    expect(isSliceContinous(shape, begin, size)).toBeTruthy();
   });
 
-  it('[5, 3] sliced to [2, 3], reshaped to [3, 2]', () => {
-    const oldShape = [5, 3];
-    const oldSize = [2, 3];
-    const oldBegin = [1, 0];
-    const newSize = [3, 2];
-    const res = reshapeSlice(newSize, oldBegin, oldSize, oldShape);
-    expect(res).toBeNull();
+  it('[5, 3] sliced to [5, 2] skipping a column', () => {
+    const shape = [5, 3];
+    const size = [5, 2];
+    const begin = [0, 1];
+    expect(isSliceContinous(shape, begin, size)).toBeFalsy();
   });
 
-  it('[5, 3] sliced to [5, 2], reshaped to [10]', () => {
-    const oldShape = [5, 3];
-    const oldSize = [5, 2];
-    const oldBegin = [0, 1];
-    const newSize = [10];
-    const res = reshapeSlice(newSize, oldBegin, oldSize, oldShape);
-    expect(res).toBeNull();
+  it('[5, 3] sliced to [1, 2] skipping a row and column', () => {
+    const shape = [5, 3];
+    const size = [1, 2];
+    const begin = [2, 1];
+    expect(isSliceContinous(shape, begin, size)).toBeTruthy();
   });
 
-  it('[5, 3] sliced to [1, 2], reshaped to [2]', () => {
-    const oldShape = [5, 3];
-    const oldSize = [1, 2];
-    const oldBegin = [1, 1];
-    const newSize = [2];
-    const res = reshapeSlice(newSize, oldBegin, oldSize, oldShape);
-    expect(res).toBeNull();
+  it('[1, 5, 3] sliced to [1, 2, 3], skipping middle axis', () => {
+    const shape = [1, 5, 3];
+    const size = [1, 2, 3];
+    const begin = [0, 2, 0];
+    expect(isSliceContinous(shape, begin, size)).toBeTruthy();
   });
 
-  it('[1, 5, 3] sliced to [1, 2, 3], reshaped to [6]', () => {
-    const oldShape = [1, 5, 3];
-    const oldSize = [1, 2, 3];
-    const oldBegin = [0, 1, 0];
-    const newSize = [6];
-    const {newBegin, newShape} =
-        reshapeSlice(newSize, oldBegin, oldSize, oldShape);
-    expect(newShape).toEqual([15]);
-    expect(newBegin).toEqual([3]);
+  it('[2, 5, 3] sliced to [2, 2, 3], skipping middle axis', () => {
+    const shape = [2, 5, 3];
+    const size = [2, 2, 3];
+    const begin = [0, 2, 0];
+    expect(isSliceContinous(shape, begin, size)).toBeFalsy();
   });
 });

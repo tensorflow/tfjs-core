@@ -455,15 +455,15 @@ export function isReshapeFree(shape1: number[], shape2: number[]): boolean {
 }
 
 /**
- * Returns true if the slice is along the outermost axis, which means
- * that reshapes of slices tensors can be computed cheaply.
+ * Returns true if the slice occupies a continous set of elements in the
+ * 'flat' space.
  */
-function isSliceAlongOutermostAxis(
-    begin: number[], size: number[], shape: number[]) {
+export function isSliceContinous(
+    shape: number[], begin: number[], size: number[]) {
   // Index of the first axis that has size > 1.
   let firstNonOneAxis = size.length;
-  for (let i = 0; i < shape.length; i++) {
-    if (shape[i] > 1) {
+  for (let i = 0; i < size.length; i++) {
+    if (size[i] > 1) {
       firstNonOneAxis = i;
       break;
     }
@@ -475,36 +475,4 @@ function isSliceAlongOutermostAxis(
     }
   }
   return true;
-}
-
-/**
- * Gives an information for how to reshape an already sliced tensor.
- * Given the original 1) begin, 2) size, 3) shape, and the 4) new size of
- * the slice, it returns the 5) new begin and the 6) new shape.
- * If the reshape cannot be done 'cheaply', it returns null.
- */
-export function reshapeSlice(
-    newSize: number[], oldBegin: number[], oldSize: number[],
-    oldShape: number[]): {newBegin: number[], newShape: number[]} {
-  if (!isSliceAlongOutermostAxis(oldBegin, oldSize, oldShape)) {
-    return null;
-  }
-  const sliceSize = util.sizeFromShape(oldSize);
-  const oldStride = oldSize.length > 1 ? sliceSize / oldSize[0] : 1;
-  const newStride = newSize.length > 1 ? sliceSize / newSize[0] : 1;
-  const flatBegin = oldBegin.length >= 1 ? oldBegin[0] * oldStride : oldStride;
-  if (flatBegin % newStride !== 0) {
-    return null;
-  }
-  const newBegin = newSize.map(v => 0);
-  if (newBegin.length >= 1) {
-    newBegin[0] = flatBegin / newStride;
-  }
-
-  const newShape = newSize.slice();
-  if (newShape.length >= 1) {
-    newShape[0] *= util.sizeFromShape(oldShape) / sliceSize;
-  }
-
-  return {newBegin, newShape};
 }

@@ -1,9 +1,7 @@
 === TODO ===
-- Unit test the new webgl utils
 - Optimize strided slice when stride is 1.
 - Make it work with uniforms
 - Optimize CPU slice
-- Improve isSliceContinous to account for squeezable shapes
 - Replace sliceAlongAxis with unstack in tfjs-layers
 
 === BENCHMARKING ===
