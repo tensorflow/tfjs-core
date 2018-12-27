@@ -28,7 +28,7 @@ import * as gather_nd_util from '../ops/gather_nd_util';
 import * as reduce_util from '../ops/reduce_util';
 import * as scatter_nd_util from '../ops/scatter_nd_util';
 import * as segment_util from '../ops/segment_util';
-import {getStridedSlicedInfo} from '../ops/slice_util';
+import {computeFlatOffset, getStridedSlicedInfo, isSliceContinous} from '../ops/slice_util';
 import {softmax} from '../ops/softmax';
 import {range, scalar, tensor} from '../ops/tensor_ops';
 import {DataId, Scalar, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D} from '../tensor';
@@ -102,7 +102,6 @@ import * as unary_op from './webgl/unaryop_gpu';
 import {UnaryOpProgram} from './webgl/unaryop_gpu';
 import {UnpackProgram} from './webgl/unpack_gpu';
 import * as webgl_util from './webgl/webgl_util';
-import {isSliceContinous} from './webgl/webgl_util';
 import {whereImpl} from './where_impl';
 
 type KernelInfo = {
@@ -612,10 +611,7 @@ export class MathBackendWebGL implements KernelBackend {
     newTexData.usage = usage;
     newTexData.values = values;
 
-    let flatOffset = begin.length > 0 ? begin[begin.length - 1] : 1;
-    for (let i = 0; i < begin.length - 1; i++) {
-      flatOffset += begin[i] * x.strides[i];
-    }
+    let flatOffset = computeFlatOffset(begin, x.strides);
     if (xSlice) {
       // We are slicing an already sliced tensor, so we have to accumulate
       // the offset.

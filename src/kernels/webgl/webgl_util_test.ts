@@ -20,7 +20,6 @@ import {describeWithFlags} from '../../jasmine_util';
 import {WEBGL_ENVS} from '../../test_util';
 import * as util from '../../util';
 import * as webgl_util from './webgl_util';
-import {isSliceContinous} from './webgl_util';
 
 describeWithFlags('getTextureShapeFromLogicalShape', WEBGL_ENVS, () => {
   it('scalar', () => {
@@ -174,55 +173,4 @@ describeWithFlags('isReshapeFree', WEBGL_ENVS, () => {
        const after = [1, 3, 2];
        expect(webgl_util.isReshapeFree(before, after)).toBe(false);
      });
-});
-
-describeWithFlags('isSliceContinous', WEBGL_ENVS, () => {
-  it('[] => []', () => {
-    const shape: number[] = [];
-    const size: number[] = [];
-    const begin: number[] = [];
-    expect(isSliceContinous(shape, begin, size)).toBeTruthy();
-  });
-
-  it('[5] sliced to [3]', () => {
-    const shape = [5];
-    const size = [3];
-    const begin = [1];
-    expect(isSliceContinous(shape, begin, size)).toBeTruthy();
-  });
-
-  it('[5, 3] sliced to [2, 3] skipping a row', () => {
-    const shape = [5, 3];
-    const size = [2, 3];
-    const begin = [1, 0];
-    expect(isSliceContinous(shape, begin, size)).toBeTruthy();
-  });
-
-  it('[5, 3] sliced to [5, 2] skipping a column', () => {
-    const shape = [5, 3];
-    const size = [5, 2];
-    const begin = [0, 1];
-    expect(isSliceContinous(shape, begin, size)).toBeFalsy();
-  });
-
-  it('[5, 3] sliced to [1, 2] skipping a row and column', () => {
-    const shape = [5, 3];
-    const size = [1, 2];
-    const begin = [2, 1];
-    expect(isSliceContinous(shape, begin, size)).toBeTruthy();
-  });
-
-  it('[1, 5, 3] sliced to [1, 2, 3], skipping middle axis', () => {
-    const shape = [1, 5, 3];
-    const size = [1, 2, 3];
-    const begin = [0, 2, 0];
-    expect(isSliceContinous(shape, begin, size)).toBeTruthy();
-  });
-
-  it('[2, 5, 3] sliced to [2, 2, 3], skipping middle axis', () => {
-    const shape = [2, 5, 3];
-    const size = [2, 2, 3];
-    const begin = [0, 2, 0];
-    expect(isSliceContinous(shape, begin, size)).toBeFalsy();
-  });
 });

@@ -64,7 +64,8 @@ export function compileProgram<T extends Tensor, K extends Tensor>(
       isPacked: input.isUniform ? false : input.texData.isPacked,
       flatOffset: null,
     };
-    if (input.texData.slice != null && input.texData.slice.flatOffset > 0) {
+    if (input.texData != null && input.texData.slice != null &&
+        input.texData.slice.flatOffset > 0) {
       shapeInfo.flatOffset = input.texData.slice.flatOffset;
     }
     return {name: program.variableNames[i], shapeInfo};
@@ -194,7 +195,8 @@ export function makeShaderKey(
     program: GPGPUProgram, inputs: TensorData[], output: TensorData): string {
   let keyInputs = '';
   inputs.concat(output).forEach(x => {
-    const hasOffset = x.texData.slice != null && x.texData.slice.flatOffset > 0;
+    const hasOffset = x.texData != null && x.texData.slice != null &&
+        x.texData.slice.flatOffset > 0;
     const texShape = x.isUniform ? 'uniform' : x.texData.texShape;
     keyInputs += `${x.shape}_${texShape}_${hasOffset}`;
   });

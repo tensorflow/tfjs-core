@@ -453,26 +453,3 @@ export function isReshapeFree(shape1: number[], shape2: number[]): boolean {
   }
   return shape1[1] === shape2[1] && isEven(shape1[0]) && isEven(shape2[0]);
 }
-
-/**
- * Returns true if the slice occupies a continous set of elements in the
- * 'flat' space.
- */
-export function isSliceContinous(
-    shape: number[], begin: number[], size: number[]) {
-  // Index of the first axis that has size > 1.
-  let firstNonOneAxis = size.length;
-  for (let i = 0; i < size.length; i++) {
-    if (size[i] > 1) {
-      firstNonOneAxis = i;
-      break;
-    }
-  }
-
-  for (let i = firstNonOneAxis + 1; i < size.length; i++) {
-    if (begin[i] > 0 || size[i] !== shape[i]) {
-      return false;
-    }
-  }
-  return true;
-}

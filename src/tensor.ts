@@ -334,9 +334,9 @@ export interface OpHandler {
       x: T, blockShape: number[], paddings: number[][]): T;
   topk<T extends Tensor>(x: T, k: number, sorted: boolean):
       {values: T, indices: T};
-  stridedSlice<T extends Tensor>(
-      x: T, begin: number[], end: number[], strides: number[],
-      beginMask: number, endMask: number): T;
+  stridedSlice(
+      x: Tensor, begin: number[], end: number[], strides: number[],
+      beginMask: number, endMask: number): Tensor;
   depthToSpace(x: Tensor4D, blockSize: number, dataFormat: string): Tensor4D;
   spectral: {fft(x: Tensor): Tensor; ifft(x: Tensor): Tensor;};
 }
@@ -1269,9 +1269,9 @@ export class Tensor<R extends Rank = Rank> {
     return opHandler.topk(this, k, sorted);
   }
 
-  stridedSlice<T extends Tensor>(
-      this: T, begin: number[], end: number[], strides: number[], beginMask = 0,
-      endMask = 0): T {
+  stridedSlice(
+      this: Tensor, begin: number[], end: number[], strides: number[],
+      beginMask = 0, endMask = 0): Tensor {
     this.throwIfDisposed();
     return opHandler.stridedSlice(
         this, begin, end, strides, beginMask, endMask);

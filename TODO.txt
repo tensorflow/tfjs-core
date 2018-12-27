@@ -1,7 +1,4 @@
 === TODO ===
-- Optimize strided slice when stride is 1.
-- Make it work with uniforms
-- Optimize CPU slice
 - Replace sliceAlongAxis with unstack in tfjs-layers
 
 === BENCHMARKING ===
