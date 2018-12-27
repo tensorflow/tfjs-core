@@ -246,7 +246,7 @@ export class MathBackendWebGL implements KernelBackend {
       for (let i = 0; i < values.length; i++) {
         const num = values[i] as number;
         if (!webgl_util.canBeRepresented(num)) {
-          console.warn(
+          throw Error(
               `The value ${num} cannot be represented on this device.`);
         }
       }
