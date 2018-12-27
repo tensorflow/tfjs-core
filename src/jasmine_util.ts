@@ -99,6 +99,7 @@ export let TEST_ENVS: TestEnv[] = [
       'WEBGL_VERSION': 1,
       'WEBGL_CPU_FORWARD': false,
       'WEBGL_SIZE_UPLOAD_UNIFORM': 0,
+      'WEBGL_PACK': false
     }
   },
   {
@@ -108,6 +109,27 @@ export let TEST_ENVS: TestEnv[] = [
       'WEBGL_VERSION': 2,
       'WEBGL_CPU_FORWARD': false,
       'WEBGL_SIZE_UPLOAD_UNIFORM': 0,
+      'WEBGL_PACK': false
+    }
+  },
+  {
+    name: 'webgl1',
+    factory: () => new MathBackendWebGL(),
+    features: {
+      'WEBGL_VERSION': 1,
+      'WEBGL_CPU_FORWARD': false,
+      'WEBGL_SIZE_UPLOAD_UNIFORM': 0,
+      'WEBGL_PACK': true
+    }
+  },
+  {
+    name: 'webgl2',
+    factory: () => new MathBackendWebGL(),
+    features: {
+      'WEBGL_VERSION': 2,
+      'WEBGL_CPU_FORWARD': false,
+      'WEBGL_SIZE_UPLOAD_UNIFORM': 0,
+      'WEBGL_PACK': true
     }
   },
   {
