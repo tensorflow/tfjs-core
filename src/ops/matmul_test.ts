@@ -18,10 +18,10 @@
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
 import {MATMUL_SHARED_DIM_THRESHOLD} from '../kernels/backend_webgl';
-import {ALL_ENVS, expectArraysClose, expectNumbersClose, WEBGL_ENVS} from '../test_util';
+import {ALL_ENVS, expectArraysClose, expectNumbersClose, WEBGL_ENVS, PACKED_ENVS} from '../test_util';
 import {Rank} from '../types';
 
-describeWithFlags('packed matmul', WEBGL_ENVS, () => {
+describeWithFlags('matmul', PACKED_ENVS, () => {
   it('should not leak memory', () => {
     const a = tf.tensor2d([1, 2, 3, 4, 5, 6, 7, 8, 9], [3, 3]);
     const b = tf.tensor2d(
@@ -32,94 +32,6 @@ describeWithFlags('packed matmul', WEBGL_ENVS, () => {
     const endNumBytes = tf.memory().numBytes;
 
     expect(endNumBytes - startNumBytes).toEqual(60);
-  });
-
-  it('should work when input matrix dimensions are not divisible by 2', () => {
-    const a = tf.tensor2d([1, 2, 3, 4, 5, 6, 7, 8, 9], [3, 3]);
-    const b = tf.tensor2d(
-        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], [3, 5]);
-
-    const c = tf.matMul(a, b);
-
-    expect(c.shape).toEqual([3, 5]);
-    expectArraysClose(
-        c,
-        [46, 52, 58, 64, 70, 100, 115, 130, 145, 160, 154, 178, 202, 226, 250]);
-  });
-
-  it('should work when output texture shape != physical shape', () => {
-    const sharedDim = 16000;
-    const a = tf.buffer<Rank.R2>([2, sharedDim], 'float32');
-    const b = tf.buffer<Rank.R2>([sharedDim, 2], 'float32');
-
-    a.set(1, 0, sharedDim - 1);
-    a.set(1, 0, sharedDim - 2);
-    a.set(1, 1, sharedDim - 1);
-    b.set(1, sharedDim - 1, 0);
-    b.set(1, sharedDim - 2, 0);
-
-    const c = tf.matMul(a.toTensor(), b.toTensor());
-    const expected = [2, 0, 1, 0];
-    expectArraysClose(c, expected);
-  });
-
-  it('should work when input texture shapes != physical shape', () => {
-    const maxTextureSize = tf.ENV.get('WEBGL_MAX_TEXTURE_SIZE');
-    tf.ENV.set('WEBGL_MAX_TEXTURE_SIZE', 5);
-    const a = tf.tensor2d([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], [1, 12]);
-    const b = tf.tensor2d([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [12, 1]);
-
-    const c = tf.matMul(a, b);
-
-    tf.ENV.set('WEBGL_MAX_TEXTURE_SIZE', maxTextureSize);
-
-    expectArraysClose(c, [572]);
-  });
-
-  it('A x B', () => {
-    const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
-    const b = tf.tensor2d([0, 1, -3, 2, 2, 1], [3, 2]);
-
-    const c = tf.matMul(a, b);
-
-    expect(c.shape).toEqual([2, 2]);
-    expectArraysClose(c, [0, 8, -3, 20]);
-  });
-
-  it('A x B^t', () => {
-    const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
-    const b = tf.tensor2d([1, 0, 2, 4, 3, 0], [2, 3]);
-
-    const transposeA = false;
-    const transposeB = true;
-    const c = tf.matMul(a, b, transposeA, transposeB);
-
-    const expected = [7, 10, 16, 31];
-    expectArraysClose(c, expected);
-  });
-
-  it('A^t x B', () => {
-    const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
-    const b = tf.tensor2d([1, 0, 2, 4, 3, 0], [2, 3]);
-
-    const transposeA = true;
-    const transposeB = false;
-    const c = tf.matMul(a, b, transposeA, transposeB);
-
-    const expected = [17, 12, 2, 22, 15, 4, 27, 18, 6];
-    expectArraysClose(c, expected);
-  });
-
-  it('A^t x B^t', () => {
-    const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [3, 2]);
-    const b = tf.tensor2d([1, 0, 2, 4, 3, 0], [2, 3]);
-
-    const transposeA = true;
-    const transposeB = true;
-    const c = tf.matMul(a, b, transposeA, transposeB);
-
-    const expected = [11, 13, 14, 20];
-    expectArraysClose(c, expected);
   });
 
   it('works when followed by an op that requires unpacked inputs', () => {
@@ -139,23 +51,19 @@ describeWithFlags('packed matmul', WEBGL_ENVS, () => {
   // tslint:disable-next-line:max-line-length
   it('works when followed by a packed reshape that changes texture layout, and then an unpacked op',
      () => {
-       const webglLazilyUnpackSaved = tf.ENV.get('WEBGL_LAZILY_UNPACK');
-       tf.ENV.set('WEBGL_LAZILY_UNPACK', true);
-  
-       const a = tf.tensor2d([1, 2, 3, 4, 5, 6, 7, 8, 9], [9, 1]);
-       const b = tf.tensor2d([1], [1, 1]);
-       const c = tf.matMul(a, b);
+     const a = tf.tensor2d([1, 2, 3, 4, 5, 6, 7, 8, 9], [9, 1]);
+     const b = tf.tensor2d([1], [1, 1]);
+     const c = tf.matMul(a, b);
 
-       const d = tf.reshape(c, [1, 3, 3, 1]);
+     const d = tf.reshape(c, [1, 3, 3, 1]);
 
-       const webglPackBinarySaved = tf.ENV.get('WEBGL_PACK_BINARY_OPERATIONS');
-       tf.ENV.set('WEBGL_PACK_BINARY_OPERATIONS', false);
-       const e = tf.add(d, 1);
-       tf.ENV.set('WEBGL_PACK_BINARY_OPERATIONS', webglPackBinarySaved);
-       tf.ENV.set('WEBGL_LAZILY_UNPACK', webglLazilyUnpackSaved);
+     const webglPackBinarySaved = tf.ENV.get('WEBGL_PACK_BINARY_OPERATIONS');
+     tf.ENV.set('WEBGL_PACK_BINARY_OPERATIONS', false);
+     const e = tf.add(d, 1);
+     tf.ENV.set('WEBGL_PACK_BINARY_OPERATIONS', webglPackBinarySaved);
 
-       expectArraysClose(e, [2, 3, 4, 5, 6, 7, 8, 9, 10]);
-     });
+     expectArraysClose(e, [2, 3, 4, 5, 6, 7, 8, 9, 10]);
+   });
 
   it('works when preceded by an op that requires packed inputs', () => {
     const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
