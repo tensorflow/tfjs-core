@@ -177,7 +177,7 @@ export function runProgram<T extends Tensor, K extends Tensor>(
       return;
     }
 
-    // If the input was sliced, upload the coordinates.
+    // If the input was sliced, upload the flat offset index.
     if (input.texData.slice != null && varOffsetLoc != null) {
       gpgpu.gl.uniform1i(varOffsetLoc, input.texData.slice.flatOffset);
     }
