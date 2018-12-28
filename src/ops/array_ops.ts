@@ -16,15 +16,17 @@
  */
 
 import {ENV} from '../environment';
-import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
+import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
 import {convertToTensor, convertToTensorArray} from '../tensor_util_env';
-import {DataType, DataTypeMap, Rank, ShapeMap, TensorLike, TensorLike1D, TensorLike4D} from '../types';
+import {DataType, DataTypeMap, Rank, ScalarLike, ShapeMap, TensorLike, TensorLike1D, TensorLike4D} from '../types';
 import * as util from '../util';
+
 import {getAxesPermutation, getInnerMostAxes} from './axis_util';
 import {concat} from './concat_split';
 import {op} from './operation';
 import {MPRandGauss} from './rand';
 import {zeros, zerosLike} from './tensor_ops';
+
 
 /**
  * Creates a new tensor with the same values and shape as the specified
@@ -286,20 +288,27 @@ function multinomial_(
  */
 /** @doc {heading: 'Tensors', subheading: 'Creation'} */
 function oneHot_(
-    indices: Tensor1D|TensorLike1D, depth: number, onValue = 1,
-    offValue = 0): Tensor2D {
-  const $indices =
-      convertToTensor(indices, 'indices', 'oneHot', 'int32') as Tensor1D;
-
+    indices: Scalar|ScalarLike|Tensor1D|TensorLike1D, depth: number,
+    onValue = 1, offValue = 0): Tensor2D {
   if (depth < 2) {
     throw new Error(`Error in oneHot: depth must be >=2, but it is ${depth}`);
+  }
+  const $indicesAsT = convertToTensor(indices, 'indices', 'oneHot', 'int32');
+  let $indices: Tensor1D;
+  let indicesWasScalar = false;
+  if ($indicesAsT.rank === 0) {
+    $indices = $indicesAsT.expandDims() as Tensor1D;
+    indicesWasScalar = true;
+  } else {
+    $indices = $indicesAsT as Tensor1D;
   }
   const grad = (dy: Tensor2D) => {
     return {$indices: () => zeros($indices.shape, 'float32') as Tensor1D};
   };
-  return ENV.engine.runKernel(
+  const returnT = ENV.engine.runKernel(
       backend => backend.oneHot($indices, depth, onValue, offValue), {$indices},
       grad);
+  return indicesWasScalar ? returnT.squeeze([0]) : returnT;
 }
 
 /**

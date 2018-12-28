@@ -124,6 +124,8 @@ export type TensorLike =
     TypedArray|number|boolean|string|RegularArray<number|number[]|TypedArray>|
     RegularArray<boolean>|RegularArray<string>;
 /** @docalias TypedArray|Array */
+export type ScalarLike = number|boolean|string;
+/** @docalias TypedArray|Array */
 export type TensorLike1D = TypedArray|number[]|boolean[]|string[];
 /** @docalias TypedArray|Array */
 export type TensorLike2D =
