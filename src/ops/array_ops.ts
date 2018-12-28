@@ -288,26 +288,20 @@ function multinomial_(
 /** @doc {heading: 'Tensors', subheading: 'Creation'} */
 function oneHot_(
     indices: Scalar|ScalarLike|Tensor1D|TensorLike1D, depth: number,
-    onValue = 1, offValue = 0): Tensor2D {
+    onValue = 1, offValue = 0): Tensor1D|Tensor2D {
   if (depth < 2) {
     throw new Error(`Error in oneHot: depth must be >=2, but it is ${depth}`);
   }
-  const $indicesAsT = convertToTensor(indices, 'indices', 'oneHot', 'int32');
-  let $indices: Tensor1D;
-  let indicesWasScalar = false;
-  if ($indicesAsT.rank === 0) {
-    $indices = $indicesAsT.expandDims() as Tensor1D;
-    indicesWasScalar = true;
-  } else {
-    $indices = $indicesAsT as Tensor1D;
-  }
+  const $indicesND = convertToTensor(indices, 'indices', 'oneHot', 'int32');
+  const indicesWasScalar = $indicesND.rank === 0;
+  const $indices = $indicesND.as1D() as Tensor1D;
   const grad = (dy: Tensor2D) => {
     return {$indices: () => zeros($indices.shape, 'float32') as Tensor1D};
   };
   const returnT = ENV.engine.runKernel(
       backend => backend.oneHot($indices, depth, onValue, offValue), {$indices},
       grad);
-  return indicesWasScalar ? returnT.squeeze([0]) : returnT;
+  return indicesWasScalar ? returnT.as1D() : returnT;
 }
 
 /**
