@@ -39,6 +39,18 @@ export function checkWebGLError(gl: WebGLRenderingContext) {
   }
 }
 
+// https://en.wikipedia.org/wiki/Half-precision_floating-point_format
+const MIN_FLOAT16 = 5.96e-8;
+const MAX_FLOAT16 = 65504;
+
+export function canBeRepresented(num: number): boolean {
+  if (ENV.get('WEBGL_RENDER_FLOAT32_ENABLED') || num === 0 ||
+      (MIN_FLOAT16 < Math.abs(num) && Math.abs(num) < MAX_FLOAT16)) {
+    return true;
+  }
+  return false;
+}
+
 export function getWebGLErrorMessage(
     gl: WebGLRenderingContext, status: number): string {
   switch (status) {
@@ -327,6 +339,20 @@ function validateTextureUnit(gl: WebGLRenderingContext, textureUnit: number) {
   }
 }
 
+export function getBatchDim(shape: number[], dimsToSkip = 2): number {
+  return util.sizeFromShape(shape.slice(0, shape.length - dimsToSkip));
+}
+
+export function getRowsCols(shape: number[]): [number, number] {
+  if (shape.length === 0) {
+    throw Error('Cannot get rows and columns of an empty shape array.');
+  }
+
+  return [
+    shape.length > 1 ? shape[shape.length - 2] : 1, shape[shape.length - 1]
+  ];
+}
+
 export function getTextureShapeFromLogicalShape(
     logShape: number[], isPacked = false): [number, number] {
   let maxTexSize = ENV.get('WEBGL_MAX_TEXTURE_SIZE');
@@ -342,6 +368,12 @@ export function getTextureShapeFromLogicalShape(
         (d, i) => i >= logShape.length - 2 ?
             util.nearestLargerEven(logShape[i]) :
             logShape[i]);
+
+    // Packed texture height is at least 2 (the channel height of a single
+    // texel).
+    if (logShape.length === 1) {
+      logShape = [2, logShape[0]];
+    }
   }
 
   // If logical shape is 2, we don't squeeze, since we want to match physical.
@@ -350,7 +382,7 @@ export function getTextureShapeFromLogicalShape(
     logShape = squeezeResult.newShape;
   }
 
-  const size = util.sizeFromShape(logShape);
+  let size = util.sizeFromShape(logShape);
   if (logShape.length <= 1 && size <= maxTexSize) {
     return [1, size];
   } else if (
@@ -375,6 +407,21 @@ export function getTextureShapeFromLogicalShape(
       logShape[1] * logShape[2] * logShape[3] <= maxTexSize) {
     return [logShape[0], logShape[1] * logShape[2] * logShape[3]];
   } else {
+    if (isPacked) {
+      // For packed textures size equals the number of channels required to
+      // accommodate the texture data. However in order to squarify such that
+      // inner dimensions stay even, we rewrite size to equal the number of
+      // texels. Then in the return statement we rehydrate the squarified
+      // dimensions to channel units.
+
+      const batchDim = getBatchDim(logShape);
+      let rows = 2, cols = 2;
+      if (logShape.length) {
+        [rows, cols] = getRowsCols(logShape);
+      }
+      size = batchDim * (rows / 2) * (cols / 2);
+      return util.sizeToSquarishShape(size).map(d => d * 2) as [number, number];
+    }
     return util.sizeToSquarishShape(size);
   }
 }
@@ -415,17 +462,6 @@ export function isReshapeFree(shape1: number[], shape2: number[]): boolean {
         (shape1[0] === 1 || shape2[0] === 1)) {
       return true;
     }
-  } else {
-    if (isEven(shape1[0]) && isEven(shape2[0])) {
-      if (isEven(shape1[1]) && isEven(shape2[1])) {
-        return true;
-      }
-
-      if (shape1[1] === shape2[1]) {
-        return true;
-      }
-    }
   }
-
-  return false;
+  return shape1[1] === shape2[1] && isEven(shape1[0]) && isEven(shape2[0]);
 }
