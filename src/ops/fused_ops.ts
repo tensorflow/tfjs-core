@@ -37,7 +37,7 @@ export const activationMap = new Map<FusableActivation, Activation>([
 import {ENV} from '../environment';
 import * as util from '../util';
 import {op} from '../ops/operation';
-import {Tensor, Tensor1D, Tensor2D, Tensor3D} from '../tensor';
+import {Tensor, Tensor3D} from '../tensor';
 import {TensorLike} from '../types';
 import {makeTypesMatch} from '../tensor_util';
 import {convertToTensor} from '../tensor_util_env';
@@ -133,14 +133,19 @@ function matMul_<T extends Tensor>(
     }
   };
 
-  const kernel = fusedMatch === FusableActivation.LINEAR ?
-      'batchMatMul' :
-      'batchMatMulWithActivation';
-  const res = ENV.engine.runKernel(
-      (backend, save) => save(backend[kernel](
-          a3D, b3D, transposeA, transposeB, activationMap.get(fusedMatch),
-          bias)),
-      {$a: a3D, $b: b3D}, grad);
+  let res;
+  if (fusedMatch === FusableActivation.LINEAR) {
+    res = ENV.engine.runKernel(
+        (backend, save) =>
+            save(backend.batchMatMul(a3D, b3D, transposeA, transposeB)),
+        {$a: a3D, $b: b3D}, grad);
+  } else {
+    res = ENV.engine.runKernel(
+        (backend, save) => save(backend.batchMatMulWithActivation(
+            a3D, b3D, transposeA, transposeB, activationMap.get(fusedMatch),
+            bias)),
+        {$a: a3D, $b: b3D}, grad);
+  }
   return res.reshape(outShape) as T;
 }
 

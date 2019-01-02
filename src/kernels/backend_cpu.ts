@@ -16,6 +16,7 @@
  */
 
 import * as seedrandom from 'seedrandom';
+
 import {ENV} from '../environment';
 import {warn} from '../log';
 import * as array_ops_util from '../ops/array_ops_util';
@@ -24,6 +25,7 @@ import * as broadcast_util from '../ops/broadcast_util';
 import * as concat_util from '../ops/concat_util';
 import {Conv2DInfo, Conv3DInfo} from '../ops/conv_util';
 import * as erf_util from '../ops/erf_util';
+import {Activation} from '../ops/fused_ops';
 import * as gather_nd_util from '../ops/gather_nd_util';
 import * as ops from '../ops/ops';
 import {buffer, scalar, tensor, tensor3d, tensor4d} from '../ops/ops';
@@ -34,6 +36,7 @@ import {DataId, Scalar, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, 
 import {DataType, DataTypeMap, DataValues, NumericDataType, Rank, ShapeMap, TypedArray, upcastType} from '../types';
 import * as util from '../util';
 import {now} from '../util';
+
 import {BackendTimingInfo, DataMover, DataStorage, KernelBackend} from './backend';
 import * as backend_util from './backend_util';
 import * as complex_util from './complex_util';
@@ -441,13 +444,13 @@ export class MathBackendCPU implements KernelBackend {
   batchMatMulWithActivation(
       a: Tensor3D, b: Tensor3D, transposeA: boolean, transposeB: boolean,
       activation: Activation, bias: Tensor): Tensor3D {
-    if (this[activation.kernelKey] == null) {
+    if (this[activation.kernelKey as keyof this] == null) {
       throw new Error(`The activation kernel ${
           activation} has not been implemented yet for the CPU backend.`);
     }
-
-    let result =
-        this[activation.kernelKey](this.batchMatMul(a, b, transposeA, transposeB));
+    // tslint:disable-next-line:no-any
+    let result = (this as any)[activation.kernelKey](
+        this.batchMatMul(a, b, transposeA, transposeB));
     if (bias) {
       result = this.add(result, bias);
     }
