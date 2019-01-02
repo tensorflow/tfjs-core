@@ -1274,10 +1274,9 @@ function getPackedSamplerAtOutputCoords(
 
   const inShape = inputInfo.shapeInfo.logicalShape;
   const outShape = outShapeInfo.logicalShape;
-
   const broadcastDims = getBroadcastDims(inShape, outShape);
-  const inRank = inputInfo.shapeInfo.logicalShape.length;
-  const outRank = outShapeInfo.logicalShape.length;
+  const inRank = inShape.length;
+  const outRank = outShape.length;
   if (broadcastDims.length) {
     throw Error('Packed broadcast sampling is not implemented yet.');
   }
@@ -1287,7 +1286,9 @@ function getPackedSamplerAtOutputCoords(
       inTexShape[1], inTexShape[0])];
   const glsl = getGlslDifferences();
 
-  if (util.arraysEqual(inTexShape, outTexShape)) {
+  // Check sizes are equal as 1 is padded to 2.
+  if (util.arraysEqual(inTexShape, outTexShape) &&
+      util.sizeFromShape(inShape) === util.sizeFromShape(outShape)) {
     return `
       vec4 ${funcName}() {
         return ${glsl.texture2D}(${texName}, resultUV);

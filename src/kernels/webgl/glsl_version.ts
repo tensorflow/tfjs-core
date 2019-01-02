@@ -46,7 +46,16 @@ export function getGlslDifferences(): GLSL {
     texture2D = 'texture';
     output = 'outputColor';
     defineOutput = 'out vec4 outputColor;';
-    defineRound = '#define round(value) int(floor((value) + 0.5))';
+    defineRound = `
+      #define round(value) newRound(value)
+      int newRound(float value) {
+        return int(floor(value + 0.5));
+      }
+
+      ivec4 newRound(vec4 value) {
+        return ivec4(floor(value + vec4(0.5)));
+      }
+    `;
   } else {
     version = '';
     attribute = 'attribute';
@@ -58,6 +67,10 @@ export function getGlslDifferences(): GLSL {
     defineRound = `
       int round(float value) {
         return int(floor(value + 0.5));
+      }
+
+      ivec4 round(vec4 value) {
+        return ivec4(floor(value + vec4(0.5)));
       }
     `;
   }
