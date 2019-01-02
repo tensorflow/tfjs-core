@@ -27,19 +27,12 @@ export enum FusableActivation {
 }
 
 export const activationMap = new Map<FusableActivation, Activation>([
-  [FusableActivation.RELU, { layersKey: 'ReLU', webglBackendUnaryopKey: 'RELU', kernelKey: 'relu' }],
-  [FusableActivation.LINEAR, { layersKey: 'linear' }]
+  [
+    FusableActivation.RELU,
+    {layersKey: 'ReLU', webglBackendUnaryopKey: 'RELU', kernelKey: 'relu'}
+  ],
+  [FusableActivation.LINEAR, {layersKey: 'linear'}]
 ]);
-
-// export const supportedActivations: Activation[] = [{ layersKey: 'linear' }, { layersKey: 'ReLU', webglBackendUnaryopKey: 'RELU', kernelKey: 'relu'}]
-
-/*
-type activation {
-  layersKey: 'ReLU',
-  unaryOpName: 'RELU',
-  kernelName: 'relu'
-}
- */
 
 import {ENV} from '../environment';
 import * as util from '../util';
@@ -51,13 +44,19 @@ import {convertToTensor} from '../tensor_util_env';
 
 function matMul_<T extends Tensor>(
     a: T|TensorLike, b: T|TensorLike, transposeA = false, transposeB = false,
-    activation: FusableActivation, bias: Tensor): T {
-  const fusedMatch = activationMap.get(activation);
+    activation: string, bias: Tensor): T {
+  let fusedMatch: FusableActivation;
+  for (let [key, value] of activationMap) {
+    if (activation === value.kernelKey) {
+      fusedMatch = key;
+      break;
+    }
+  }
 
   util.assert(
       fusedMatch != null,
-      `Error in fused matMul: activation must be one of ${
-          supportedActivations.map(d => d.layersKey).join(', ')} - got ${activation}`);
+      `Error in fused matMul: activation ${activation}` +
+          `has not been implemented.`);
 
   let $a = convertToTensor(a, 'a', 'matMul');
   let $b = convertToTensor(b, 'b', 'matMul');
@@ -107,7 +106,7 @@ function matMul_<T extends Tensor>(
     const [y] = saved;
 
     let dyActivation = dy;
-    if (activation === FusableActivation.RELU) { // should be enum?
+    if (fusedMatch === FusableActivation.RELU) {
       dyActivation = dy.mul(y.step()) as Tensor3D;
     }
 
@@ -134,11 +133,13 @@ function matMul_<T extends Tensor>(
     }
   };
 
-  const kernel = activation === FusableActivation.LINEAR ? 'batchMatMul' :
-                                                 'batchMatMulWithActivation';
+  const kernel = fusedMatch === FusableActivation.LINEAR ?
+      'batchMatMul' :
+      'batchMatMulWithActivation';
   const res = ENV.engine.runKernel(
       (backend, save) => save(backend[kernel](
-          a3D, b3D, transposeA, transposeB, fusedMatch, bias)),
+          a3D, b3D, transposeA, transposeB, activationMap.get(fusedMatch),
+          bias)),
       {$a: a3D, $b: b3D}, grad);
   return res.reshape(outShape) as T;
 }
