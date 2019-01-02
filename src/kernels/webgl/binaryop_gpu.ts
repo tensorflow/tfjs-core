@@ -52,7 +52,7 @@ export const POW = `
 if(a < 0.0 && floor(b) < b){
   return NAN;
 }
-return (round(mod(b, 2.0)) == 0 || round(mod(b, 2.0)) == 2) ?
+return (round(mod(b, 2.0)) != 1) ?
     pow(abs(a), b) : sign(a) * pow(abs(a), b);
 `;
 export const SQUARED_DIFFERENCE = 'return (a - b) * (a - b);';
@@ -88,11 +88,12 @@ export const ATAN2 = CHECK_NAN_SNIPPET + `
 
 export const ELU_DER = `return (b >= 1.0) ? a : a * (b + 1.0);`;
 
+export const PRELU = `return (a < 0.) ? b * a : a;`;
+
 export class BinaryOpProgram implements GPGPUProgram {
   variableNames = ['A', 'B'];
   outputShape: number[];
   userCode: string;
-  supportsBroadcasting = true;
 
   // Caching uniform location for speed.
   startLoc: WebGLUniformLocation;
