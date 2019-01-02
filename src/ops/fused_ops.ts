@@ -29,7 +29,7 @@ export enum FusableActivation {
 export const activationMap = new Map<FusableActivation, Activation>([
   [
     FusableActivation.RELU,
-    {layersKey: 'ReLU', webglBackendUnaryopKey: 'RELU', kernelKey: 'relu'}
+    {layersKey: 'Relu', webglBackendUnaryopKey: 'RELU', kernelKey: 'relu'}
   ],
   [FusableActivation.LINEAR, {layersKey: 'linear'}]
 ]);
