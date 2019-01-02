@@ -57,6 +57,7 @@ module.exports = function(config) {
     captureTimeout: 120000,
     reportSlowerThan: 500,
     browserNoActivityTimeout: 1000000,
+    browserDisconnectTimeout: 2000000,
     customLaunchers: {
       bs_chrome_mac: {
         base: 'BrowserStack',
