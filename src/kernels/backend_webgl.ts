@@ -22,6 +22,7 @@ import {tidy} from '../globals';
 import {warn} from '../log';
 import * as array_ops_util from '../ops/array_ops_util';
 import * as axis_util from '../ops/axis_util';
+import * as broadcast_util from '../ops/broadcast_util';
 import {computeOutShape} from '../ops/concat_util';
 import {Conv2DInfo, Conv3DInfo} from '../ops/conv_util';
 import * as gather_nd_util from '../ops/gather_nd_util';
@@ -50,6 +51,7 @@ import * as binaryop_complex_gpu from './webgl/binaryop_complex_gpu';
 import {BinaryOpComplexProgram} from './webgl/binaryop_complex_gpu';
 import * as binaryop_gpu from './webgl/binaryop_gpu';
 import {BinaryOpProgram} from './webgl/binaryop_gpu';
+import {BinaryOpPackedProgram, PACKED_DIV, PACKED_INT_DIV, PACKED_POW} from './webgl/binaryop_packed_gpu';
 import {ClipProgram} from './webgl/clip_gpu';
 import {ClipPackedProgram} from './webgl/clip_packed_gpu';
 import {ComplexAbsProgram} from './webgl/complex_abs_gpu';
@@ -242,6 +244,16 @@ export class MathBackendWebGL implements KernelBackend {
     if (values == null) {
       throw new Error('MathBackendWebGL.write(): values can not be null');
     }
+
+    if (ENV.get('DEBUG')) {
+      for (let i = 0; i < values.length; i++) {
+        const num = values[i] as number;
+        if (!webgl_util.canBeRepresented(num)) {
+          throw Error(`The value ${num} cannot be represented on this device.`);
+        }
+      }
+    }
+
     const texData = this.texData.get(dataId);
     const {texture, texShape, usage, dtype, isPacked} = texData;
     if (dtype === 'complex64') {
@@ -751,7 +763,9 @@ export class MathBackendWebGL implements KernelBackend {
     if (this.shouldExecuteOnCPU([a, b])) {
       return this.cpuBackend.multiply(a, b);
     }
-
+    if (this.usePackedBinaryOp(a, b)) {
+      return this.packedBinaryOp(a, b, binaryop_gpu.MUL, a.dtype);
+    }
     const program = new BinaryOpProgram(binaryop_gpu.MUL, a.shape, b.shape);
     const output = this.makeOutputArray(program.outputShape, a.dtype) as Tensor;
     return this.compileAndRun(program, [a, b], output) as Tensor;
@@ -1174,6 +1188,9 @@ export class MathBackendWebGL implements KernelBackend {
   realDivide(a: Tensor, b: Tensor): Tensor {
     const op = binaryop_gpu.DIV;
     const outputDtype = 'float32';
+    if (this.usePackedBinaryOp(a, b)) {
+      return this.packedBinaryOp(a, b, PACKED_DIV, outputDtype);
+    }
     const program = new BinaryOpProgram(op, a.shape, b.shape);
     const output = this.makeOutputArray(program.outputShape, outputDtype);
     return this.compileAndRun<Tensor>(program, [a, b], output);
@@ -1182,6 +1199,9 @@ export class MathBackendWebGL implements KernelBackend {
   floorDiv(a: Tensor, b: Tensor): Tensor {
     const op = binaryop_gpu.INT_DIV;
     const outputDtype = 'int32';
+    if (this.usePackedBinaryOp(a, b)) {
+      return this.packedBinaryOp(a, b, PACKED_INT_DIV, outputDtype);
+    }
     const program = new BinaryOpProgram(op, a.shape, b.shape);
     const output = this.makeOutputArray(program.outputShape, outputDtype);
     return this.compileAndRun<Tensor>(program, [a, b], output);
@@ -1191,11 +1211,37 @@ export class MathBackendWebGL implements KernelBackend {
     if (a.dtype === 'complex64' && b.dtype === 'complex64') {
       return this.complexSeparableBinaryOp(a, b, binaryop_gpu.ADD);
     }
-
+    const dtype = upcastType(a.dtype, b.dtype);
+    if (this.usePackedBinaryOp(a, b)) {
+      return this.packedBinaryOp(a, b, binaryop_gpu.ADD, dtype);
+    }
     const program = new BinaryOpProgram(binaryop_gpu.ADD, a.shape, b.shape);
-    const output =
-        this.makeOutputArray(
-            program.outputShape, upcastType(a.dtype, b.dtype)) as Tensor;
+    const output = this.makeOutputArray(program.outputShape, dtype) as Tensor;
+    return this.compileAndRun<Tensor>(program, [a, b], output);
+  }
+
+  private usePackedBinaryOp(a: Tensor, b: Tensor) {
+    if (!ENV.get('WEBGL_PACK_BINARY_OPERATIONS')) {
+      return false;
+    }
+    const outputShape =
+        broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+    // 5-D and 6-D are not yet supported. See getPackedOutputSamplingSnippet.
+    if (outputShape.length > 4) {
+      return false;
+    }
+    // Packed broadcast sampling is not yet supported.
+    // See getPackedSamplerAtOutputCoords.
+    if (broadcast_util.getBroadcastDims(a.shape, outputShape).length ||
+        broadcast_util.getBroadcastDims(b.shape, outputShape).length) {
+      return false;
+    }
+    return true;
+  }
+
+  private packedBinaryOp(a: Tensor, b: Tensor, op: string, dtype: DataType) {
+    const program = new BinaryOpPackedProgram(op, a.shape, b.shape);
+    const output = this.makePackedTensor(program.outputShape, dtype) as Tensor;
     return this.compileAndRun<Tensor>(program, [a, b], output);
   }
 
@@ -1258,19 +1304,25 @@ export class MathBackendWebGL implements KernelBackend {
     if (this.shouldExecuteOnCPU([a, b])) {
       return this.cpuBackend.subtract(a, b);
     }
-
+    const dtype = upcastType(a.dtype, b.dtype);
+    if (this.usePackedBinaryOp(a, b)) {
+      return this.packedBinaryOp(a, b, binaryop_gpu.SUB, a.dtype);
+    }
     const program = new BinaryOpProgram(binaryop_gpu.SUB, a.shape, b.shape);
-    const output =
-        this.makeOutputArray(
-            program.outputShape, upcastType(a.dtype, b.dtype)) as Tensor;
+    const output = this.makeOutputArray(program.outputShape, dtype) as Tensor;
     return this.compileAndRun<Tensor>(program, [a, b], output);
   }
 
   pow<T extends Tensor>(a: T, b: Tensor): T {
-    const program = new BinaryOpProgram(binaryop_gpu.POW, a.shape, b.shape);
+    const usePackedOp = this.usePackedBinaryOp(a, b);
+    const program = usePackedOp ?
+        new BinaryOpPackedProgram(PACKED_POW, a.shape, b.shape) :
+        new BinaryOpProgram(binaryop_gpu.POW, a.shape, b.shape);
+    const dtype = upcastType(a.dtype, b.dtype);
+    const output = usePackedOp ?
+        this.makePackedTensor(program.outputShape, dtype) as T :
+        this.makeOutputArray(program.outputShape, dtype) as T;
     const customSetup = program.getCustomSetupFunc();
-    const output = this.makeOutputArray(
-                       program.outputShape, upcastType(a.dtype, b.dtype)) as T;
     return this.compileAndRun<T>(program, [a, b], output, customSetup);
   }
 
@@ -1815,8 +1867,8 @@ export class MathBackendWebGL implements KernelBackend {
     return Tensor.make(shape, {}, dtype) as T;
   }
 
-  private makePackedTensor<T extends Tensor>(shape: number[], dtype: DataType):
-      T {
+  private makePackedTensor<T extends Tensor, D extends DataType = 'float32'>(
+      shape: number[], dtype?: D): T {
     const packedTensor = Tensor.make(shape, {}, dtype);
     this.texData.get(packedTensor.dataId).isPacked = true;
     return packedTensor as T;
@@ -2021,7 +2073,14 @@ export class MathBackendWebGL implements KernelBackend {
 
   floatPrecision(): number {
     return tidy(() => {
-      if (this.abs(scalar(1e-8)).get() > 0) {
+      // Momentarily switching DEBUG flag to false so we don't throw an error
+      // trying to upload a small value.
+      const debugFlag = ENV.get('DEBUG');
+      ENV.set('DEBUG', false);
+      const underflowCheckVluae = this.abs(scalar(1e-8)).get();
+      ENV.set('DEBUG', debugFlag);
+
+      if (underflowCheckVluae > 0) {
         return 32;
       }
       return 16;
