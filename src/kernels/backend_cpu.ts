@@ -1048,6 +1048,10 @@ export class MathBackendCPU implements KernelBackend {
     return Tensor.make(x.shape, {values: newValues}) as T;
   }
 
+  linear<T extends Tensor>(x: T): T {
+    return x;
+  }
+
   relu<T extends Tensor>(x: T): T {
     this.assertNotComplex(x, 'relu');
 

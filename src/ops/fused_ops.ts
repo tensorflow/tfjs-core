@@ -63,7 +63,7 @@ import {convertToTensor} from '../tensor_util_env';
  * @param b Second matrix in dot product operation.
  * @param transposeA If true, `a` is transposed before multiplication.
  * @param transposeB If true, `b` is transposed before multiplication.
- * @param activation Name of activation kernel.
+ * @param activation Name of activation kernel (defaults to `linear`).
  * @param bias Matrix to be added to the result.
  */
 /** @doc {heading: 'Operations', subheading: 'Matrices'} */
@@ -175,19 +175,11 @@ function matMul_<T extends Tensor>(
     }
   };
 
-  let res;
-  if (fusedMatch === FusableActivation.LINEAR) {
-    res = ENV.engine.runKernel(
-        (backend, save) =>
-            save(backend.batchMatMul(a3D, b3D, transposeA, transposeB)),
-        {$a: a3D, $b: b3D}, grad);
-  } else {
-    res = ENV.engine.runKernel(
-        (backend, save) => save(backend.batchMatMulWithActivationBias(
-            a3D, b3D, transposeA, transposeB, activationMap.get(fusedMatch),
-            bias3D)),
-        {$a: a3D, $b: b3D}, grad);
-  }
+  let res = ENV.engine.runKernel(
+      (backend, save) => save(backend.batchMatMulWithActivationBias(
+          a3D, b3D, transposeA, transposeB, activationMap.get(fusedMatch),
+          bias3D)),
+      {$a: a3D, $b: b3D}, grad);
   return res.reshape(outShape) as T;
 }
 
