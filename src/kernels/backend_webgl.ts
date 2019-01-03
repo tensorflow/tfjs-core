@@ -25,7 +25,7 @@ import * as axis_util from '../ops/axis_util';
 import * as broadcast_util from '../ops/broadcast_util';
 import {computeOutShape} from '../ops/concat_util';
 import {Conv2DInfo, Conv3DInfo} from '../ops/conv_util';
-import {Activation} from '../ops/fused_ops';
+import {Activation} from '../ops/fused_util';
 import * as gather_nd_util from '../ops/gather_nd_util';
 import * as reduce_util from '../ops/reduce_util';
 import * as scatter_nd_util from '../ops/scatter_nd_util';
