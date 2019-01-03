@@ -15,37 +15,15 @@
  * =============================================================================
  */
 
-export type Activation = {
-  layersKey: string; webglBackendUnaryopKey: string; kernelKey: string;
-};
-
-export enum FusableActivation {
-  RELU,
-  LINEAR
-}
-
-function createActivation(
-    layersKey: string, webglBackendUnaryopKey?: string,
-    kernelKey?: string): Activation {
-  return {
-    layersKey,
-    webglBackendUnaryopKey: webglBackendUnaryopKey || layersKey.toUpperCase(),
-    kernelKey: kernelKey || layersKey.toLowerCase()
-  };
-}
-
-export const activationMap = new Map<FusableActivation, Activation>([
-  [FusableActivation.RELU, createActivation('Relu', 'RELU', 'relu')],
-  [FusableActivation.LINEAR, createActivation('linear')]
-]);
-
 import {ENV} from '../environment';
-import * as util from '../util';
 import {op} from '../ops/operation';
 import {Tensor, Tensor3D} from '../tensor';
-import {TensorLike} from '../types';
 import {makeTypesMatch} from '../tensor_util';
 import {convertToTensor} from '../tensor_util_env';
+import {TensorLike} from '../types';
+import * as util from '../util';
+
+import {activationMap, FusableActivation} from './fused_util';
 
 /**
  * Computes the dot product of two matrices with optional activation and bias.
@@ -182,3 +160,5 @@ function matMul_<T extends Tensor>(
 }
 
 export const matMul = op({matMul_});
+
+export {activationMap};
