@@ -44,7 +44,7 @@ import {convertToTensor} from '../tensor_util_env';
 
 function matMul_<T extends Tensor>(
     a: T|TensorLike, b: T|TensorLike, transposeA = false, transposeB = false,
-    activation = 'linear', bias?: Tensor): T {
+    activation = 'linear', bias?: T|TensorLike): T {
   let fusedMatch: FusableActivation;
   for (let [key, value] of activationMap) {
     if (activation === value.kernelKey) {
@@ -58,8 +58,8 @@ function matMul_<T extends Tensor>(
       `Error in fused matMul: activation ${activation}` +
           `has not been implemented.`);
 
-  let $a = convertToTensor(a, 'a', 'matMul');
-  let $b = convertToTensor(b, 'b', 'matMul');
+  let $a = convertToTensor(a, 'a', 'fused matMul');
+  let $b = convertToTensor(b, 'b', 'fused matMul');
   [$a, $b] = makeTypesMatch($a, $b);
 
   const innerShapeA =
@@ -79,21 +79,22 @@ function matMul_<T extends Tensor>(
 
   util.assert(
       $a.rank >= 2 && $b.rank >= 2 && $a.rank === $b.rank,
-      `Error in matMul: inputs must have the same rank of at least 2, ` +
+      `Error in fused matMul: inputs must have the same rank of at least 2, ` +
           `got ranks ${$a.rank} and ${$b.rank}.`);
 
   util.assert(
       util.arraysEqual(outerDimsA, outerDimsB),
-      `Error in matMul: outer dimensions (${outerDimsA}) and (` +
+      `Error in fused matMul: outer dimensions (${outerDimsA}) and (` +
           `${outerDimsB}) of Tensors with shapes ${$a.shape} and ` +
           `${$b.shape} must match.`);
 
   util.assert(
       innerShapeA === innerShapeB,
-      `Error in matMul: inner shapes (${innerShapeA}) and (` +
+      `Error in fused matMul: inner shapes (${innerShapeA}) and (` +
           `${innerShapeB}) of Tensors with shapes ${$a.shape} and ` +
           `${$b.shape} and transposeA=${transposeA}` +
           ` and transposeB=${transposeB} must match.`);
+
 
   const outShape = $a.shape.slice(0, -2).concat([outerShapeA, outerShapeB]);
 
@@ -101,6 +102,22 @@ function matMul_<T extends Tensor>(
                            $a.as3D(batchDimA, outerShapeA, innerShapeA);
   const b3D = transposeB ? $b.as3D(batchDimB, outerShapeB, innerShapeB) :
                            $b.as3D(batchDimB, innerShapeB, outerShapeB);
+  let bias3D: Tensor3D;
+  if (bias) {
+    let $bias = convertToTensor(bias, 'bias', 'fused matMul');
+    [$bias] = makeTypesMatch($bias, $a);
+
+    const rowsBias = $bias.shape[$bias.rank - 2];
+    const colsBias = $bias.shape[$bias.rank - 1];
+
+    util.assert(
+        outerShapeA === rowsBias && outerShapeB === colsBias,
+        `Error in fused matMul: inner dimensions of bias shape ${
+            $bias.shape} must match outer shapes (${outerShapeA}) and (${
+            outerShapeB}) of Tensors with shapes ${$a.shape} and ${$b.shape}`);
+
+    bias3D = $bias.as3D(batchDimA, rowsBias, colsBias);
+  }
 
   const grad = (dy: Tensor3D, saved: Tensor[]) => {
     const [y] = saved;
@@ -143,7 +160,7 @@ function matMul_<T extends Tensor>(
     res = ENV.engine.runKernel(
         (backend, save) => save(backend.batchMatMulWithActivationBias(
             a3D, b3D, transposeA, transposeB, activationMap.get(fusedMatch),
-            bias)),
+            bias3D)),
         {$a: a3D, $b: b3D}, grad);
   }
   return res.reshape(outShape) as T;

@@ -443,7 +443,7 @@ export class MathBackendCPU implements KernelBackend {
 
   batchMatMulWithActivationBias(
       a: Tensor3D, b: Tensor3D, transposeA: boolean, transposeB: boolean,
-      activation: Activation, bias?: Tensor): Tensor3D {
+      activation: Activation, bias?: Tensor3D): Tensor3D {
     if (this[activation.kernelKey as keyof this] == null) {
       throw new Error(`The activation kernel ${
           activation} has not been implemented yet for the CPU backend.`);
