@@ -214,7 +214,7 @@ function qr2d(x: Tensor2D, fullMatrices = false): [Tensor2D, Tensor2D] {
         
         // The sign() function returns 0 on 0, which causes division by zero.
         const s = tensor2d([[-1]]).where(
-            rjj.greater(tensor2d([[0]])),
+            rjj.greater(0),
             tensor2d([[1]]));
         
         const u1 = rjj.sub(s.mul(normX)) as Tensor2D;
