@@ -48,6 +48,25 @@ import {TensorLike} from '../types';
 import {makeTypesMatch} from '../tensor_util';
 import {convertToTensor} from '../tensor_util_env';
 
+/**
+ * Computes the dot product of two matrices with optional activation and bias.
+ *
+ * ```js
+ * const a = tf.tensor2d([-1, -2], [1, 2]);
+ * const b = tf.tensor2d([1, 2, 3, 4], [2, 2]);
+ * const c = tf.tensor2d([1, 2], [1, 2]);
+ *
+ * tf.fused.matMul(a, b, false, false, 'relu', c);
+ * ```
+ *
+ * @param a First matrix in dot product operation.
+ * @param b Second matrix in dot product operation.
+ * @param transposeA If true, `a` is transposed before multiplication.
+ * @param transposeB If true, `b` is transposed before multiplication.
+ * @param activation Name of activation kernel.
+ * @param bias Matrix to be added to the result.
+ */
+/** @doc {heading: 'Operations', subheading: 'Matrices'} */
 function matMul_<T extends Tensor>(
     a: T|TensorLike, b: T|TensorLike, transposeA = false, transposeB = false,
     activation = 'linear', bias?: T|TensorLike): T {
