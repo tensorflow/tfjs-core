@@ -44,7 +44,7 @@ import {convertToTensor} from '../tensor_util_env';
 
 function matMul_<T extends Tensor>(
     a: T|TensorLike, b: T|TensorLike, transposeA = false, transposeB = false,
-    activation: string, bias: Tensor): T {
+    activation = 'linear', bias?: Tensor): T {
   let fusedMatch: FusableActivation;
   for (let [key, value] of activationMap) {
     if (activation === value.kernelKey) {
