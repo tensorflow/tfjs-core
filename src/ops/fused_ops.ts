@@ -16,9 +16,7 @@
  */
 
 export type Activation = {
-  layersKey: string;
-  webglBackendUnaryopKey?: string;
-  kernelKey?: string;
+  layersKey: string; webglBackendUnaryopKey: string; kernelKey: string;
 }
 
 export enum FusableActivation {
@@ -26,12 +24,20 @@ export enum FusableActivation {
   LINEAR
 }
 
+function createActivation(
+    layersKey: string, webglBackendUnaryopKey?: string,
+    kernelKey?: string): Activation {
+  return {
+    layersKey,
+        webglBackendUnaryopKey: webglBackendUnaryopKey ||
+        layersKey.toUpperCase(),
+        kernelKey: kernelKey || layersKey.toLowerCase()
+  }
+}
+
 export const activationMap = new Map<FusableActivation, Activation>([
-  [
-    FusableActivation.RELU,
-    {layersKey: 'Relu', webglBackendUnaryopKey: 'RELU', kernelKey: 'relu'}
-  ],
-  [FusableActivation.LINEAR, {layersKey: 'linear'}]
+  [FusableActivation.RELU, createActivation('Relu', 'RELU', 'relu')],
+  [FusableActivation.LINEAR, createActivation('linear')]
 ]);
 
 import {ENV} from '../environment';
@@ -56,7 +62,7 @@ function matMul_<T extends Tensor>(
   util.assert(
       fusedMatch != null,
       `Error in fused matMul: activation ${activation}` +
-          `has not been implemented.`);
+          ` has not been implemented.`);
 
   let $a = convertToTensor(a, 'a', 'fused matMul');
   let $b = convertToTensor(b, 'b', 'fused matMul');
