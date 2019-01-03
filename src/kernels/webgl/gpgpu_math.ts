@@ -62,7 +62,7 @@ export function compileProgram<T extends Tensor, K extends Tensor>(
       texShape: input.isUniform ? null : input.texData.texShape,
       isUniform: input.isUniform,
       isPacked: input.isUniform ? false : input.texData.isPacked,
-      flatOffset: null,
+      flatOffset: null
     };
     if (input.texData != null && input.texData.slice != null &&
         input.texData.slice.flatOffset > 0) {
@@ -76,7 +76,7 @@ export function compileProgram<T extends Tensor, K extends Tensor>(
     texShape: output.texData.texShape,
     isUniform: false,
     isPacked: output.texData.isPacked,
-    flatOffset: null,
+    flatOffset: null
   };
   const source = shader_compiler.makeShader(
       inputInfos, outShapeInfo, userCode, program.usesPackedTextures);

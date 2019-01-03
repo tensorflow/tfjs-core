@@ -33,27 +33,18 @@ export class SliceProgram implements GPGPUProgram {
     this.rank = destSize.length;
 
     const dtype = getCoordsDataType(this.rank);
-    let uniformPart: string;
-    if (this.rank <= 4) {
-      uniformPart = `uniform ${dtype} start;`;
-    } else {
-      uniformPart = `uniform int start[${this.rank}];`;
-    }
+    const uniformPart = `uniform int start[${this.rank}];`;
     const sourceCoords = getCoords(this.rank);
 
     let body: string;
-    if (this.rank <= 4) {
-      body = `${dtype} sourceLoc = start + getOutputCoords();`;
-    } else {
-      const coordSum = destSize.map((_, i) => {
-        return `sourceLoc.${coords[i]} = start[${i}] + coords.${coords[i]};`;
-      });
-      body = `
+    const coordSum = destSize.map((_, i) => {
+      return `sourceLoc.${coords[i]} = start[${i}] + coords.${coords[i]};`;
+    });
+    body = `
         ${dtype} sourceLoc;
         ${dtype} coords = getOutputCoords();
         ${coordSum.join('\n')}
       `;
-    }
     this.userCode = `
       ${uniformPart}
       void main() {
@@ -78,22 +69,7 @@ export class SliceProgram implements GPGPUProgram {
           return;
         }
       }
-      if (this.rank === 1) {
-        gpgpu.gl.uniform1i(this.startLoc, start[0]);
-      } else if (this.rank === 2) {
-        gpgpu.gl.uniform2i(this.startLoc, start[0], start[1]);
-      } else if (this.rank === 3) {
-        gpgpu.gl.uniform3i(this.startLoc, start[0], start[1], start[2]);
-      } else if (this.rank === 4) {
-        gpgpu.gl.uniform4i(
-            this.startLoc, start[0], start[1], start[2], start[3]);
-      } else if (this.rank === 5) {
-        gpgpu.gl.uniform1iv(this.startLoc, start);
-      } else if (this.rank === 6) {
-        gpgpu.gl.uniform1iv(this.startLoc, start);
-      } else {
-        throw Error(`Slicing for rank ${this.rank} is not yet supported`);
-      }
+      gpgpu.gl.uniform1iv(this.startLoc, start);
     };
   }
 }

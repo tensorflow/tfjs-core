@@ -336,10 +336,13 @@ export interface OpHandler {
       {values: T, indices: T};
   stridedSlice(
       x: Tensor, begin: number[], end: number[], strides: number[],
-      beginMask: number, endMask: number): Tensor;
+      beginMask: number, endMask: number, ellipsisMask: number,
+      newAxisMask: number, shrinkAxisMask: number): Tensor;
   depthToSpace(x: Tensor4D, blockSize: number, dataFormat: string): Tensor4D;
-  spectral: {fft(x: Tensor): Tensor; ifft(x: Tensor): Tensor;
-    rfft(x: Tensor): Tensor; irfft(x: Tensor): Tensor};
+  spectral: {
+    fft(x: Tensor): Tensor; ifft(x: Tensor): Tensor; rfft(x: Tensor): Tensor;
+    irfft(x: Tensor): Tensor
+  };
 }
 
 // For tracking tensor creation and disposal.
@@ -1272,10 +1275,12 @@ export class Tensor<R extends Rank = Rank> {
 
   stridedSlice(
       this: Tensor, begin: number[], end: number[], strides: number[],
-      beginMask = 0, endMask = 0): Tensor {
+      beginMask = 0, endMask = 0, ellipsisMask = 0, newAxisMask = 0,
+      shrinkAxisMask = 0): Tensor {
     this.throwIfDisposed();
     return opHandler.stridedSlice(
-        this, begin, end, strides, beginMask, endMask);
+        this, begin, end, strides, beginMask, endMask, ellipsisMask,
+        newAxisMask, shrinkAxisMask);
   }
 
   depthToSpace(this: Tensor4D, blockSize: number, dataFormat: 'NHWC'|'NCHW'):

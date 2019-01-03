@@ -151,6 +151,9 @@ export class MathBackendWebGL implements KernelBackend {
   // List of data ids that are scheduled for disposal, but are waiting on a
   // pending read operation.
   private pendingDisposal = new WeakSet<DataId>();
+  // Used to count the number of 'shallow' sliced tensors that point to the
+  // same data id.
+  private dataRefCount = new WeakMap<DataId, number>();
   // List of data ids that are currently residing on gpu memory. Sorted with
   // least recently used being first.
   private lruDataGPU: DataId[] = [];
@@ -608,32 +611,26 @@ export class MathBackendWebGL implements KernelBackend {
       return this.compileAndRun(program, [x], null, customSetup);
     }
     this.uploadToGPU(x.dataId);
-    return this.sliceTensor(x, begin, size) as T;
+    return this.shallowSlice(x, begin, size) as T;
   }
 
-  private dataRefCount = new WeakMap<DataId, number>();
-
-  private sliceTensor(x: Tensor, begin: number[], size: number[]): Tensor {
-    const {dtype, isPacked, slice: xSlice, texShape, texture, usage, values} =
-        this.texData.get(x.dataId);
-    const t = Tensor.make(size, {}, dtype);
+  private shallowSlice(x: Tensor, begin: number[], size: number[]): Tensor {
+    const xTexData = this.texData.get(x.dataId);
+    const t = Tensor.make(size, {}, xTexData.dtype);
     const newTexData = this.texData.get(t.dataId);
-    newTexData.isPacked = isPacked;
-    newTexData.texShape = texShape;
-    newTexData.texture = texture;
-    newTexData.usage = usage;
-    newTexData.values = values;
-
+    // Copy texture data from the original tensor.
+    Object.assign(newTexData, xTexData);
+    newTexData.shape = size;
     let flatOffset = computeFlatOffset(begin, x.strides);
-    if (xSlice) {
+    if (xTexData.slice) {
       // We are slicing an already sliced tensor, so we have to accumulate
       // the offset.
-      flatOffset += xSlice.flatOffset;
+      flatOffset += xTexData.slice.flatOffset;
     }
     newTexData.slice = {
       flatOffset,
       // Point to the original dataId, which is used to do ref counting.
-      origDataId: xSlice && xSlice.origDataId || x.dataId
+      origDataId: xTexData.slice && xTexData.slice.origDataId || x.dataId
     };
 
     // Increase the ref count for that data bucket.

@@ -20,6 +20,7 @@ import {Tensor} from '../tensor';
 import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import {op} from './operation';
+import {slice} from './slice';
 import {getStridedSlicedInfo} from './slice_util';
 
 /**
@@ -72,9 +73,7 @@ function stridedSlice_(
         newAxisMask, shrinkAxisMask);
     const outShape =
         size.filter((_, index) => shrinkAxis.indexOf(index) === -1);
-    const res = ENV.engine.runKernel(
-        backend => backend.slice($x, beginIndex, size), {$x});
-    return res.reshape(outShape);
+    return slice($x, beginIndex, size).reshape(outShape);
   }
   return ENV.engine.runKernel(
       backend => backend.stridedSlice(
