@@ -706,7 +706,7 @@ export class MathBackendWebGL implements KernelBackend {
     }
   }
 
-  batchMatMulWithActivation(
+  batchMatMulWithActivationBias(
       a: Tensor3D, b: Tensor3D, transposeA: boolean, transposeB: boolean,
       activation: Activation, bias: Tensor): Tensor3D {
     const outerShapeA = transposeA ? a.shape[2] : a.shape[1];

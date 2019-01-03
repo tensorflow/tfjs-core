@@ -141,7 +141,7 @@ function matMul_<T extends Tensor>(
         {$a: a3D, $b: b3D}, grad);
   } else {
     res = ENV.engine.runKernel(
-        (backend, save) => save(backend.batchMatMulWithActivation(
+        (backend, save) => save(backend.batchMatMulWithActivationBias(
             a3D, b3D, transposeA, transposeB, activationMap.get(fusedMatch),
             bias)),
         {$a: a3D, $b: b3D}, grad);
