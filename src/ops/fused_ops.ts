@@ -161,4 +161,4 @@ function matMul_<T extends Tensor>(
 
 export const matMul = op({matMul_});
 
-export {activationMap};
+export {activationMap, FusableActivation};
