@@ -2491,6 +2491,16 @@ describeWithFlags('oneHot', ALL_ENVS, () => {
     expectArraysClose(da, [0, 0, 0]);
   });
 
+  it('gradient when indices is 3d', () => {
+    const a = tf.tensor3d([1, 2, 3, 4], [1, 2, 2], 'int32');
+    const dy = tf.ones([1, 2, 2, 3], 'float32');
+    const depth = 3;
+    const da = tf.grad(x => tf.oneHot(x, depth))(a, dy);
+    expect(da.dtype).toBe('float32');
+    expect(da.shape).toEqual(a.shape);
+    expectArraysClose(da, [0, 0, 0, 0]);
+  });
+
   it('oneHot with indices as 2d', () => {
     const indices = tf.tensor2d([[1, 3], [2, 3]], [2, 2], 'int32');
     const depth = 4;
