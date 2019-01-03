@@ -17,7 +17,7 @@
 
 export type Activation = {
   layersKey: string; webglBackendUnaryopKey: string; kernelKey: string;
-}
+};
 
 export enum FusableActivation {
   RELU,
@@ -29,10 +29,9 @@ function createActivation(
     kernelKey?: string): Activation {
   return {
     layersKey,
-        webglBackendUnaryopKey: webglBackendUnaryopKey ||
-        layersKey.toUpperCase(),
-        kernelKey: kernelKey || layersKey.toLowerCase()
-  }
+    webglBackendUnaryopKey: webglBackendUnaryopKey || layersKey.toUpperCase(),
+    kernelKey: kernelKey || layersKey.toLowerCase()
+  };
 }
 
 export const activationMap = new Map<FusableActivation, Activation>([
@@ -71,7 +70,7 @@ function matMul_<T extends Tensor>(
     a: T|TensorLike, b: T|TensorLike, transposeA = false, transposeB = false,
     activation = 'linear', bias?: T|TensorLike): T {
   let fusedMatch: FusableActivation;
-  for (let [key, value] of activationMap) {
+  for (const [key, value] of activationMap) {
     if (activation === value.kernelKey) {
       fusedMatch = key;
       break;
@@ -119,7 +118,6 @@ function matMul_<T extends Tensor>(
           `${innerShapeB}) of Tensors with shapes ${$a.shape} and ` +
           `${$b.shape} and transposeA=${transposeA}` +
           ` and transposeB=${transposeB} must match.`);
-
 
   const outShape = $a.shape.slice(0, -2).concat([outerShapeA, outerShapeB]);
 
@@ -175,7 +173,7 @@ function matMul_<T extends Tensor>(
     }
   };
 
-  let res = ENV.engine.runKernel(
+  const res = ENV.engine.runKernel(
       (backend, save) => save(backend.batchMatMulWithActivationBias(
           a3D, b3D, transposeA, transposeB, activationMap.get(fusedMatch),
           bias3D)),
