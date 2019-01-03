@@ -61,4 +61,24 @@ describeWithFlags('fused matmul', ALL_ENVS, () => {
     expect(d.shape).toEqual([2, 2]);
     expectArraysClose(d, [1, 9, -2, 21]);
   });
+
+  it('A x B with relu gradient', () => {
+    const a = tf.tensor2d([1, 2, 3, 10, 20, -30], [2, 3]);
+    const b = tf.tensor2d([2, 3, 4, -1, 2, 3], [3, 2]);
+    const dy = tf.tensor2d([1, 10, 20, 30], [2, 2]);
+
+    const grads = tf.grads((a, b) => {
+      const prod = tf.matMul(a, b, false, false);
+      return tf.relu(prod);
+    });
+
+    const fusedGrads = tf.grads((a, b) => {
+      return tf.fused.matMul(a, b, false, false, 'relu');
+    });
+
+    const [da, db] = grads([a, b], dy);
+    const [fusedDa, fusedDb] = fusedGrads([a, b], dy);
+    expectArraysClose(da, fusedDa);
+    expectArraysClose(db, fusedDb);
+  });
 });
