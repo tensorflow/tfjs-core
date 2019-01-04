@@ -33,6 +33,8 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
     const padLeft = convInfo.padInfo.left;
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
+    const dilationHeight = convInfo.dilationHeight;
+    const dilationWidth = convInfo.dilationWidth;
     const filterHeight = convInfo.filterHeight;
     const filterWidth = convInfo.filterWidth;
     const texelsAcross = Math.ceil((filterWidth + 1) / 2);
@@ -65,8 +67,8 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
         const left = c * 2 + padLeft;
 
         mainLoop += `
-          xR = xRCorner + ${r};
-          xC = xCCorner + ${left};
+          xR = xRCorner + ${r * dilationHeight};
+          xC = xCCorner + ${c * dilationWidth};
 
           if(xR >= 0 && xR < ${xNumRows} && xC >= 0 && xC < ${xNumCols}) {
             ${xTexelName(r, left)} = getX(batch, xR, xC, d1);
@@ -101,13 +103,13 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
 
         if (left - 1 >= 0 && left - 1 < filterWidth) {
           mainLoop += `xR${r}C${left - 1} =
-              ${constructTexel(r, left - 1, strideWidth, padLeft)};`;
+              ${constructTexel(r, left - 2 + dilationWidth, strideWidth, padLeft)};`;
         }
 
         if (col < filterWidth) {
           mainLoop += `
-            vec4 wTexel${r}C${col} = getW(${r}, ${col}, d1, q);
-            wR${r}C${col} = vec4(wTexel${r}C${col}.xz, wTexel${r}C${col}.xz);
+            vec4 wTexelR${r}C${col} = getW(${r}, ${col}, d1, q);
+            wR${r}C${col} = vec4(wTexelR${r}C${col}.xz, wTexelR${r}C${col}.xz);
           `;
 
           if (col + 1 < filterWidth) {
