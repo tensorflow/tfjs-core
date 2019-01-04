@@ -25,6 +25,7 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
   userCode: string;
 
   constructor(convInfo: Conv2DInfo) {
+    console.log("USING PACKED DEPTHWISECONV");
     this.outputShape = convInfo.outShape;
 
     const xNumRows = convInfo.inHeight;
@@ -42,11 +43,11 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
     let mainLoop = `int xR; int xC;`;
 
     for (let r = 0; r < filterHeight; r++) {
-      for (let c = -padLeft; c < texelsAcross * 2; c++) {
+      for (let c = -padLeft; c <= texelsAcross * 2; c++) {
         mainLoop += `vec4 ${xTexelName(r, c)} = vec4(0.);`;
       }
 
-      for (let c = 0; c < filterWidth; c++) {
+      for (let c = 0; c <= filterWidth; c++) {
         mainLoop += `
           vec4 wR${r}C${c} = vec4(0.);
           vec4 xR${r}C${c} = vec4(0.);`;
@@ -68,17 +69,17 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
 
         mainLoop += `
           xR = xRCorner + ${r * dilationHeight};
-          xC = xCCorner + ${c * dilationWidth};
+          xC = xCCorner + ${c * Math.max(dilationWidth, 2) + padLeft};
 
           if(xR >= 0 && xR < ${xNumRows} && xC >= 0 && xC < ${xNumCols}) {
             ${xTexelName(r, left)} = getX(batch, xR, xC, d1);
           }`;
 
         if (padLeft === 0) {
-          if (col < filterWidth && c === texelsAcross - 1) {
-            if (strideWidth > 1) {
+          if (c === texelsAcross - 1) {
+            if (strideWidth > 1 || dilationWidth > 1) {
               mainLoop += `
-                vec4 ${xTexelName(r, left + 2)} = vec4(0.);
+                ${xTexelName(r, left + 2)} = vec4(0.);
 
                 if(xR >= 0 && xR < ${xNumRows} && xC + 2 < ${xNumCols}) {
                   ${xTexelName(r, left + 2)} = getX(batch, xR, xC + 2, d1);
@@ -86,7 +87,7 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
             }
 
             mainLoop += `
-              xR${r}C${left} = ${constructTexel(r, left, strideWidth, padLeft)};
+              xR${r}C${left} = ${constructTexel(r, left, strideWidth, padLeft, dilationWidth)};
             `;
           }
         } else if (c === 0) {
@@ -98,12 +99,12 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
 
         if (col > 0) {
           mainLoop += `xR${r}C${left - 2} =
-            ${constructTexel(r, left - 2, strideWidth, padLeft)};`;
+            ${constructTexel(r, left - 2, strideWidth, padLeft, dilationWidth)};`;
         }
 
         if (left - 1 >= 0 && left - 1 < filterWidth) {
           mainLoop += `xR${r}C${left - 1} =
-              ${constructTexel(r, left - 2 + dilationWidth, strideWidth, padLeft)};`;
+              ${constructTexel(r, left - 2 + dilationWidth, strideWidth, padLeft, dilationWidth)};`;
         }
 
         if (col < filterWidth) {
@@ -147,6 +148,7 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
         ${mainLoop}
 
         setOutput(result);
+        // setOutput(vec4(xR0C3.x));
       }
     `;
   }
@@ -163,9 +165,9 @@ function xTexelName(r: number, c: number): string {
  * from adjacent samples, which constructTexel handles.
  */
 function constructTexel(
-    r: number, c: number, stride: number, padLeft: number): string {
+    r: number, c: number, stride: number, padLeft: number, dilationWidth: number): string {
   if (stride === 1) {
-    if (padLeft % 2 === c % 2) {
+    if (dilationWidth % 2 === 0 || padLeft % 2 === c % 2) {
       return xTexelName(r, c);
     }
     return `vec4(${xTexelName(r, c - 1)}.zw, ${xTexelName(r, c + 1)}.xy)`;
