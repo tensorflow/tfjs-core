@@ -31,6 +31,9 @@ export class ClipPackedProgram implements GPGPUProgram {
   constructor(aShape: number[]) {
     this.outputShape = aShape;
     this.userCode = `
+      uniform float min;
+      uniform float max;
+
       void main() {
         vec4 value = getAAtOutCoords();
 
