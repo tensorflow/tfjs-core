@@ -100,12 +100,12 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
 
         if (col > 0) {
           mainLoop += `xR${r}C${left - 2} =
-            ${constructTexel(r, left - 2, strideWidth, padLeft, dilationWidth)};`;
+            ${constructTexel(r, (left - 2) * dilationWidth, strideWidth, padLeft, dilationWidth)};`;
         }
 
         if (left - 1 >= 0 && left - 1 < filterWidth) {
           mainLoop += `xR${r}C${left - 1} =
-              ${constructTexel(r, left - 2 + dilationWidth, strideWidth, padLeft, dilationWidth)};`;
+              ${constructTexel(r, (left - 1) * dilationWidth, strideWidth, padLeft, dilationWidth)};`;
         }
 
         if (col < filterWidth) {
@@ -149,7 +149,6 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
         ${mainLoop}
 
         setOutput(result);
-        // setOutput(vec4(xR0C2.x));
       }
     `;
   }
