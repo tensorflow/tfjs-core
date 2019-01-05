@@ -68,7 +68,7 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
       for (let c = 0; c < texelsAcross; c++) {
         const col = c * 2;
         const left = c * Math.max(dilationWidth, 2) + padLeft;
-        const originalLeft = c * 2 + padLeft;
+        const filterRelativeC = c * 2 + padLeft;
 
         mainLoop += `
           xR = xRCorner + ${r * dilationHeight};
@@ -89,9 +89,11 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
                 }`;
             }
 
-            mainLoop += `
-              xR${r}C${originalLeft} = ${constructTexel(r, originalLeft * dilationWidth, strideWidth, padLeft, dilationWidth)};
-            `;
+            if(dilationWidth === 1) {
+              mainLoop += `
+                xR${r}C${filterRelativeC} = ${constructTexel(r, filterRelativeC * dilationWidth, strideWidth, padLeft)};
+              `;
+            }
           }
         } else if (c === 0) {
           mainLoop += `
@@ -100,19 +102,19 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
             }`;
         }
 
-        if (col > 0) {
-          mainLoop += `xR${r}C${originalLeft - 2} =
-            ${constructTexel(r, (originalLeft - 2) * dilationWidth, strideWidth, padLeft, dilationWidth)};`;
-        }
-
         if(dilationWidth === 1) {
-          if (originalLeft - 1 >= 0 && originalLeft - 1 < filterWidth) {
-            mainLoop += `xR${r}C${originalLeft - 1} =
-                ${constructTexel(r, (originalLeft - 1) * dilationWidth, strideWidth, padLeft, dilationWidth)};`;
+          if (col > 0) {
+            mainLoop += `xR${r}C${filterRelativeC - 2} =
+              ${constructTexel(r, (filterRelativeC - 2) * dilationWidth, strideWidth, padLeft)};`;
+          }
+
+          if (filterRelativeC - 1 >= 0 && filterRelativeC - 1 < filterWidth) {
+            mainLoop += `xR${r}C${filterRelativeC - 1} =
+                ${constructTexel(r, (filterRelativeC - 1) * dilationWidth, strideWidth, padLeft)};`;
           }
         } else {
           mainLoop += `xR${r}C${c} =
-                ${constructTexel(r, c * dilationWidth, strideWidth, padLeft, dilationWidth)};`;
+                ${constructTexel(r, c * dilationWidth, strideWidth, padLeft)};`;
         }
 
 
@@ -174,9 +176,9 @@ function xTexelName(r: number, c: number): string {
  * from adjacent samples, which constructTexel handles.
  */
 function constructTexel(
-    r: number, c: number, stride: number, padLeft: number, dilationWidth: number): string {
+    r: number, c: number, stride: number, padLeft: number): string {
   if (stride === 1) {
-    if (dilationWidth % 2 === 0 || padLeft % 2 === c % 2) {
+    if (padLeft % 2 === c % 2) {
       return xTexelName(r, c);
     }
     return `vec4(${xTexelName(r, c - 1)}.zw, ${xTexelName(r, c + 1)}.xy)`;
