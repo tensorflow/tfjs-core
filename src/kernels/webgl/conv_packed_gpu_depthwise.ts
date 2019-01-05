@@ -105,10 +105,16 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
             ${constructTexel(r, (originalLeft - 2) * dilationWidth, strideWidth, padLeft, dilationWidth)};`;
         }
 
-        if (originalLeft - 1 >= 0 && originalLeft - 1 < filterWidth) {
-          mainLoop += `xR${r}C${originalLeft - 1} =
-              ${constructTexel(r, (originalLeft - 1) * dilationWidth, strideWidth, padLeft, dilationWidth)};`;
+        if(dilationWidth === 1) {
+          if (originalLeft - 1 >= 0 && originalLeft - 1 < filterWidth) {
+            mainLoop += `xR${r}C${originalLeft - 1} =
+                ${constructTexel(r, (originalLeft - 1) * dilationWidth, strideWidth, padLeft, dilationWidth)};`;
+          }
+        } else {
+          mainLoop += `xR${r}C${c} =
+                ${constructTexel(r, c * dilationWidth, strideWidth, padLeft, dilationWidth)};`;
         }
+
 
         if (col < filterWidth) {
           mainLoop += `
@@ -152,7 +158,6 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
         ${mainLoop}
 
         setOutput(result);
-        // setOutput(vec4(xR0C2.x));
       }
     `;
   }
