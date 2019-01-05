@@ -25,7 +25,6 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
   userCode: string;
 
   constructor(convInfo: Conv2DInfo) {
-    console.log("USING PACKED DEPTHWISECONV");
     this.outputShape = convInfo.outShape;
 
     const xNumRows = convInfo.inHeight;
@@ -38,8 +37,6 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
     const dilationWidth = convInfo.dilationWidth;
     const filterHeight = convInfo.filterHeight;
     const filterWidth = convInfo.filterWidth;
-    // let texelsAcross = Math.ceil((filterWidth + 1) / 2);
-    console.log(dilationWidth, dilationHeight);
     const texelsAcross = filterWidth;
 
     let mainLoop = `int xR; int xC;`;
@@ -71,14 +68,14 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
 
         mainLoop += `
           xR = xRCorner + ${r * dilationHeight};
-          xC = xCCorner + ${c * Math.max(dilationWidth, 2) + padLeft};
+          xC = xCCorner + ${left};
 
           if(xR >= 0 && xR < ${xNumRows} && xC >= 0 && xC < ${xNumCols}) {
             ${xTexelName(r, left)} = getX(batch, xR, xC, d1);
           }`;
 
         if (padLeft === 0) {
-          if (col < (filterWidth * dilationWidth) && c === texelsAcross - 1) {
+          if (col < filterWidth && c === texelsAcross - 1) {
             if (strideWidth > 1 || dilationWidth > 1) {
               mainLoop += `
                 ${xTexelName(r, left + 2)} = vec4(0.);
