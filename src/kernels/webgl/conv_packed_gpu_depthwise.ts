@@ -46,7 +46,7 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
         mainLoop += `vec4 ${xTexelName(r, c)} = vec4(0.);`;
       }
 
-      for (let c = 0; c <= filterWidth + 2; c++) {
+      for (let c = 0; c <= filterWidth; c++) {
         mainLoop += `
           vec4 wR${r}C${c} = vec4(0.);
           vec4 xR${r}C${c} = vec4(0.);`;
