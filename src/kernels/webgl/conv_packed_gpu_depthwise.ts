@@ -66,9 +66,8 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
      */
     for (let r = 0; r < filterHeight; r++) {
       for (let c = 0; c < texelsAcross; c++) {
-        const col = c * 2;
+        const col = c * 2; // this is the column within the filter - range 0 to filterWidth
         const left = c * Math.max(dilationWidth, 2) + padLeft;
-        const filterRelativeC = c * 2 + padLeft;
 
         mainLoop += `
           xR = xRCorner + ${r * dilationHeight};
@@ -91,7 +90,7 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
 
             if(dilationWidth === 1) {
               mainLoop += `
-                xR${r}C${filterRelativeC} = ${constructTexel(r, filterRelativeC * dilationWidth, strideWidth, padLeft)};
+                xR${r}C${col} = ${constructTexel(r, col, strideWidth, padLeft)};
               `;
             }
           }
@@ -104,19 +103,18 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
 
         if(dilationWidth === 1) {
           if (col > 0) {
-            mainLoop += `xR${r}C${filterRelativeC - 2} =
-              ${constructTexel(r, (filterRelativeC - 2) * dilationWidth, strideWidth, padLeft)};`;
+            mainLoop += `xR${r}C${col - 2} =
+              ${constructTexel(r, col - 2, strideWidth, padLeft)};`;
           }
 
-          if (filterRelativeC - 1 >= 0 && filterRelativeC - 1 < filterWidth) {
-            mainLoop += `xR${r}C${filterRelativeC - 1} =
-                ${constructTexel(r, (filterRelativeC - 1) * dilationWidth, strideWidth, padLeft)};`;
+          if (col - 1 >= 0 && col - 1 < filterWidth) {
+            mainLoop += `xR${r}C${col - 1} =
+                ${constructTexel(r, col - 1, strideWidth, padLeft)};`;
           }
         } else {
           mainLoop += `xR${r}C${c} =
                 ${constructTexel(r, c * dilationWidth, strideWidth, padLeft)};`;
         }
-
 
         if (col < filterWidth) {
           mainLoop += `
