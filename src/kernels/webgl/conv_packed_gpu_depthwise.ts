@@ -37,7 +37,7 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
     const dilationWidth = convInfo.dilationWidth;
     const filterHeight = convInfo.filterHeight;
     const filterWidth = convInfo.filterWidth;
-    const texelsAcross = dilationWidth === 1 ? Math.ceil((filterWidth + 1 + padLeft) / 2) : filterWidth;
+    const texelsAcross = dilationWidth === 1 ? Math.ceil((filterWidth + 1 + padLeft % 2) / 2) : filterWidth;
 
     let mainLoop = `int xR; int xC;`;
 
