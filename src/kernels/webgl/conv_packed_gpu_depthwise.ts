@@ -75,8 +75,8 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
           }`;
 
         if (padLeft === 0) {
-          if (col < filterWidth && c === texelsAcross - 1) {
-            if (strideWidth > 1 || dilationWidth > 1) {
+          if (dilationWidth === 1 && col < filterWidth && c === texelsAcross - 1) {
+            if (strideWidth > 1) {
               mainLoop += `
                 ${xTexelName(r, left + 2)} = vec4(0.);
 
@@ -85,11 +85,9 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
                 }`;
             }
 
-            if(dilationWidth === 1) {
-              mainLoop += `
-                xR${r}C${col} = ${constructTexel(r, col, strideWidth, padLeft)};
-              `;
-            }
+            mainLoop += `
+              xR${r}C${col} = ${constructTexel(r, col, strideWidth, padLeft)};
+            `;
           }
         } else if (c === 0) {
           mainLoop += `
