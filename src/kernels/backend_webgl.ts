@@ -354,6 +354,7 @@ export class MathBackendWebGL implements KernelBackend {
     if (bufferOrTexture instanceof WebGLTexture) {
       vals = this.getValuesFromTexture(dataId);
     } else {
+      const size = util.sizeFromShape(shape);
       if (isPacked) {
         const batch = webgl_util.getBatchDim(shape);
         let rows = 1, cols = 1;
@@ -361,10 +362,10 @@ export class MathBackendWebGL implements KernelBackend {
           [rows, cols] = webgl_util.getRowsCols(shape);
         }
         vals = this.gpgpu.downloadPackedMatrixFromBuffer(
-            bufferOrTexture, batch, rows, cols, texShape[0], texShape[1]);
+            bufferOrTexture, batch, rows, cols, texShape[0], texShape[1]).subarray(0, size);
       } else {
         vals = this.gpgpu.downloadFloat32MatrixFromBuffer(
-            bufferOrTexture, texShape[0], texShape[1]);
+            bufferOrTexture, texShape[0], texShape[1]).subarray(0, size);
       }
     }
     const dTypeVals = this.convertAndCacheOnCPU(dataId, vals);
@@ -383,6 +384,7 @@ export class MathBackendWebGL implements KernelBackend {
 
   private getValuesFromTexture(dataId: DataId): Float32Array {
     const {shape, dtype, texture, texShape} = this.texData.get(dataId);
+    const size = util.sizeFromShape(shape);
     if (ENV.get('WEBGL_DOWNLOAD_FLOAT_ENABLED')) {
       if (this.texData.get(dataId).isPacked) {
         const batch = webgl_util.getBatchDim(shape);
@@ -391,10 +393,10 @@ export class MathBackendWebGL implements KernelBackend {
           [rows, cols] = webgl_util.getRowsCols(shape);
         }
         return this.gpgpu.downloadMatrixFromPackedTexture(
-            texture, batch, rows, cols, texShape[0], texShape[1]);
+            texture, batch, rows, cols, texShape[0], texShape[1]).subarray(0, size);
       } else {
         return this.gpgpu.downloadFloat32MatrixFromOutputTexture(
-            texture, texShape[0], texShape[1]);
+            texture, texShape[0], texShape[1]).subarray(0, size);
       }
     }
 
@@ -408,7 +410,7 @@ export class MathBackendWebGL implements KernelBackend {
         program, [{shape, dtype, dataId}], tmpTarget, null, pageToCpu);
     const tmpData = this.texData.get(tmpTarget.dataId);
     const vals = this.gpgpu.downloadByteEncodedFloatMatrixFromOutputTexture(
-        tmpData.texture, tmpData.texShape[0], tmpData.texShape[1]);
+        tmpData.texture, tmpData.texShape[0], tmpData.texShape[1]).subarray(0, size);
     this.disposeData(tmpTarget.dataId);
 
     return vals;
