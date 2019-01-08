@@ -569,7 +569,7 @@ export function now(): number {
 /**
  * Monitor Promise.all progress, fire onprogress callback function.
  *
- * @param {Array<Promise<D | Function | {}>>} promises,
+ * @param {Array<Promise<D | Function | {} | void>>} promises,
  *    Promise list going to be monitored
  * @param {Function} onprogress, callback function.
  *    Fired when a promise resolved.
@@ -584,13 +584,14 @@ export function monitorPromisesProgress<D extends DataType>(
     startPercentage = startPercentage == null ? 0 : startPercentage;
     endPercentage = endPercentage == null ? 1 : endPercentage;
     let resolvedPromise = 0;
-    function registerMonitor(promise: Promise<D>) {
-        promise.then(() => {
+    function registerMonitor(promise: Promise<D | Function | {} | void>) {
+        promise.then((value: D | Function | {} | void) => {
             const percentage = startPercentage +
                 ++resolvedPromise / promises.length *
                 (endPercentage - startPercentage);
             // pass percentage as parameter to callback function.
             onprogress(percentage);
+            return value;
         });
         return promise;
     }
