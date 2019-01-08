@@ -579,7 +579,7 @@ export function now(): number {
  *    Default to 1.
  */
 export function monitorPromisesProgress<D extends DataType>(
-    promises: Array<Promise<D | Function | {}>>, onprogress: Function,
+    promises: Array<Promise<D | Function | {} | void>>, onprogress: Function,
     startPercentage?: number, endPercentage?: number) {
     startPercentage = startPercentage == null ? 0 : startPercentage;
     endPercentage = endPercentage == null ? 1 : endPercentage;

@@ -460,9 +460,7 @@ describe('util.monitorPromisesProgress', () => {
         const expectPercentages: number[] = [0.25, 0.50, 0.75, 1.00];
         const percentageList: number[] = [];
         const tasks = Array(4).fill(0).map(()=>{
-            return new Promise((done) => {
-                setTimeout(done, Math.random() * 100);
-            });
+            return Promise.resolve();
         });
         util.monitorPromisesProgress(tasks, (progress:number)=>{
             percentageList.push(parseFloat(progress.toFixed(2)));
@@ -478,9 +476,7 @@ describe('util.monitorPromisesProgress', () => {
         const expectPercentages: number[] = [0.35, 0.50, 0.65, 0.80];
         const percentageList: number[] = [];
         const tasks = Array(4).fill(0).map(()=>{
-            return new Promise((done) => {
-                setTimeout(done, Math.random() * 100);
-            });
+            return Promise.resolve();
         });
         util.monitorPromisesProgress(tasks, (progress:number)=>{
             percentageList.push(parseFloat(progress.toFixed(2)));
