@@ -383,30 +383,30 @@ export function getTextureShapeFromLogicalShape(
   }
 
   let size = util.sizeFromShape(logShape);
-  if (logShape.length <= 1 && size <= maxTexSize) {
-    return [1, size];
-  } else if (
-      logShape.length === 2 && logShape[0] <= maxTexSize &&
-      logShape[1] <= maxTexSize) {
-    return logShape as [number, number];
-  } else if (
-      logShape.length === 3 && logShape[0] * logShape[1] <= maxTexSize &&
-      logShape[2] <= maxTexSize) {
-    return [logShape[0] * logShape[1], logShape[2]];
-  } else if (
-      logShape.length === 3 && logShape[0] <= maxTexSize &&
-      logShape[1] * logShape[2] <= maxTexSize) {
-    return [logShape[0], logShape[1] * logShape[2]];
-  } else if (
-      logShape.length === 4 &&
-      logShape[0] * logShape[1] * logShape[2] <= maxTexSize &&
-      logShape[3] <= maxTexSize) {
-    return [logShape[0] * logShape[1] * logShape[2], logShape[3]];
-  } else if (
-      logShape.length === 4 && logShape[0] <= maxTexSize &&
-      logShape[1] * logShape[2] * logShape[3] <= maxTexSize) {
-    return [logShape[0], logShape[1] * logShape[2] * logShape[3]];
-  } else {
+  // if (logShape.length <= 1 && size <= maxTexSize) {
+  //   return [1, size];
+  // } else if (
+  //     logShape.length === 2 && logShape[0] <= maxTexSize &&
+  //     logShape[1] <= maxTexSize) {
+  //   return logShape as [number, number];
+  // } else if (
+  //     logShape.length === 3 && logShape[0] * logShape[1] <= maxTexSize &&
+  //     logShape[2] <= maxTexSize) {
+  //   return [logShape[0] * logShape[1], logShape[2]];
+  // } else if (
+  //     logShape.length === 3 && logShape[0] <= maxTexSize &&
+  //     logShape[1] * logShape[2] <= maxTexSize) {
+  //   return [logShape[0], logShape[1] * logShape[2]];
+  // } else if (
+  //     logShape.length === 4 &&
+  //     logShape[0] * logShape[1] * logShape[2] <= maxTexSize &&
+  //     logShape[3] <= maxTexSize) {
+  //   return [logShape[0] * logShape[1] * logShape[2], logShape[3]];
+  // } else if (
+  //     logShape.length === 4 && logShape[0] <= maxTexSize &&
+  //     logShape[1] * logShape[2] * logShape[3] <= maxTexSize) {
+  //   return [logShape[0], logShape[1] * logShape[2] * logShape[3]];
+  // } else {
     if (isPacked) {
       // For packed textures size equals the number of channels required to
       // accommodate the texture data. However in order to squarify such that
@@ -423,7 +423,7 @@ export function getTextureShapeFromLogicalShape(
       return util.sizeToSquarishShape(size).map(d => d * 2) as [number, number];
     }
     return util.sizeToSquarishShape(size);
-  }
+  // }
 }
 
 function isEven(n: number): boolean {
