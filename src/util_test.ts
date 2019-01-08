@@ -454,3 +454,39 @@ describe('util.hasEncodingLoss', () => {
     expect(util.hasEncodingLoss('bool', 'bool')).toBe(false);
   });
 });
+
+describe('util.monitorPromisesProgress', () => {
+    it('Progress from 0 to 1', (done) => {
+        const expectPercentages: number[] = [0.25, 0.50, 0.75, 1.00];
+        const percentageList: number[] = [];
+        const tasks = Array(4).fill(0).map(()=>{
+            return new Promise((done) => {
+                setTimeout(done, Math.random() * 100);
+            });
+        });
+        util.monitorPromisesProgress(tasks, (progress:number)=>{
+            percentageList.push(parseFloat(progress.toFixed(2)));
+        }).then(()=>{
+            expect(percentageList).toEqual(expectPercentages);
+            done();
+        });
+    });
+
+    it('Progress with pre-defined range', (done) => {
+        const startPercentage = 0.2;
+        const endPercentage = 0.8;
+        const expectPercentages: number[] = [0.35, 0.50, 0.65, 0.80];
+        const percentageList: number[] = [];
+        const tasks = Array(4).fill(0).map(()=>{
+            return new Promise((done) => {
+                setTimeout(done, Math.random() * 100);
+            });
+        });
+        util.monitorPromisesProgress(tasks, (progress:number)=>{
+            percentageList.push(parseFloat(progress.toFixed(2)));
+        }, startPercentage, endPercentage).then(()=>{
+            expect(percentageList).toEqual(expectPercentages);
+            done();
+        });
+    });
+});

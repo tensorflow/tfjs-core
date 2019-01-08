@@ -565,3 +565,34 @@ export function now(): number {
         'in the browser or in Node.js');
   }
 }
+
+/**
+ * Monitor Promise.all progress, fire onprogress callback function.
+ *
+ * @param {Array<Promise<D | Function | {}>>} promises,
+ *    Promise list going to be monitored
+ * @param {Function} onprogress, callback function.
+ *    Fired when a promise resolved.
+ * @param {number} startPercentage, Optional percentage start.
+ *    Default to 0.
+ * @param {number} endPercentage, Optional percentage end.
+ *    Default to 1.
+ */
+export function monitorPromisesProgress<D extends DataType>(
+    promises: Array<Promise<D | Function | {}>>, onprogress: Function,
+    startPercentage?: number, endPercentage?: number) {
+    startPercentage = startPercentage == null ? 0 : startPercentage;
+    endPercentage = endPercentage == null ? 1 : endPercentage;
+    let resolvedPromise = 0;
+    function registerMonitor(promise: Promise<D>) {
+        promise.then(() => {
+            const percentage = startPercentage +
+                ++resolvedPromise / promises.length *
+                (endPercentage - startPercentage);
+            // pass percentage as parameter to callback function.
+            onprogress(percentage);
+        });
+        return promise;
+    }
+    return Promise.all(promises.map(registerMonitor));
+}
