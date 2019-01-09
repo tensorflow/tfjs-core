@@ -573,45 +573,40 @@ export function now(): number {
  *    Promise list going to be monitored
  * @param {Function} onprogress, callback function.
  *    Fired when a promise resolved.
- * @param {number} startPercentage, Optional percentage start.
- *    Default to 0.
- * @param {number} endPercentage, Optional percentage end.
- *    Default to 1.
+ * @param {number} startFraction, Optional fraction start. Default to 0.
+ * @param {number} endFraction, Optional fraction end. Default to 1.
  */
 export function monitorPromisesProgress<D extends DataType>(
     promises: Array<Promise<D | Function | {} | void>>, onprogress: Function,
-    startPercentage?: number, endPercentage?: number) {
-  startPercentage = startPercentage == null ? 0 : startPercentage;
-  endPercentage = endPercentage == null ? 1 : endPercentage;
-  checkPercentage(startPercentage, endPercentage);
+    startFraction?: number, endFraction?: number) {
+  startFraction = startFraction == null ? 0 : startFraction;
+  endFraction = endFraction == null ? 1 : endFraction;
+  checkFraction(startFraction, endFraction);
   let resolvedPromise = 0;
 
   function registerMonitor(promise: Promise<D | Function | {} | void>) {
     promise.then((value: D | Function | {} | void) => {
-      const percentage = startPercentage +
-          ++resolvedPromise / promises.length *
-          (endPercentage - startPercentage);
-      // pass percentage as parameter to callback function.
-      onprogress(percentage);
+      const fraction = startFraction + ++resolvedPromise / promises.length *
+          (endFraction - startFraction);
+      // pass fraction as parameter to callback function.
+      onprogress(fraction);
       return value;
     });
     return promise;
   }
 
-  function checkPercentage(startPercentage: number,
-                           endPercentage: number): void {
-    if (startPercentage < 0 || startPercentage > 1) {
-      throw new Error(`Progress percentage should in range [0, 1], ` +
-          `got startPercentage ${startPercentage}`);
+  function checkFraction(startFraction: number, endFraction: number): void {
+    if (startFraction < 0 || startFraction > 1) {
+      throw new Error(`Progress fraction should be in range [0, 1], ` +
+          `got startFraction ${startFraction}`);
     }
-    if (endPercentage < 0 || endPercentage > 1) {
-      throw new Error(`Progress percentage should in range [0, 1], ` +
-          `got endPercentage ${endPercentage}`);
+    if (endFraction < 0 || endFraction > 1) {
+      throw new Error(`Progress fraction should be in range [0, 1], ` +
+          `got endFraction ${endFraction}`);
     }
-    if (endPercentage < startPercentage) {
-      throw new Error(`startPercentage should no more than endPercentage, ` +
-          `got startPercentage ${startPercentage} ` +
-          `and endPercentage ${endPercentage}`);
+    if (endFraction < startFraction) {
+      throw new Error(`startFraction should be no more than endFraction, ` +
+          `got startFraction ${startFraction} and endFraction ${endFraction}`);
     }
   }
 

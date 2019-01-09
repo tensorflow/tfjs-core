@@ -457,56 +457,56 @@ describe('util.hasEncodingLoss', () => {
 
 describe('util.monitorPromisesProgress', () => {
   it('Default progress from 0 to 1', (done) => {
-    const expectPercentages: number[] = [0.25, 0.50, 0.75, 1.00];
-    const percentageList: number[] = [];
+    const expectFractions: number[] = [0.25, 0.50, 0.75, 1.00];
+    const fractionList: number[] = [];
     const tasks = Array(4).fill(0).map(()=>{
       return Promise.resolve();
     });
     util.monitorPromisesProgress(tasks, (progress: number)=>{
-      percentageList.push(parseFloat(progress.toFixed(2)));
+      fractionList.push(parseFloat(progress.toFixed(2)));
     }).then(()=>{
-      expect(percentageList).toEqual(expectPercentages);
+      expect(fractionList).toEqual(expectFractions);
       done();
     });
   });
 
   it('Progress with pre-defined range', (done) => {
-    const startPercentage = 0.2;
-    const endPercentage = 0.8;
-    const expectPercentages: number[] = [0.35, 0.50, 0.65, 0.80];
-    const percentageList: number[] = [];
+    const startFraction = 0.2;
+    const endFraction = 0.8;
+    const expectFractions: number[] = [0.35, 0.50, 0.65, 0.80];
+    const fractionList: number[] = [];
     const tasks = Array(4).fill(0).map(()=>{
       return Promise.resolve();
     });
     util.monitorPromisesProgress(tasks, (progress: number)=>{
-      percentageList.push(parseFloat(progress.toFixed(2)));
-      }, startPercentage, endPercentage).then(()=>{
-      expect(percentageList).toEqual(expectPercentages);
+      fractionList.push(parseFloat(progress.toFixed(2)));
+      }, startFraction, endFraction).then(()=>{
+      expect(fractionList).toEqual(expectFractions);
       done();
     });
   });
 
-  it('throws error when progress percentage is out of range', () => {
+  it('throws error when progress fraction is out of range', () => {
     expect(() => {
-      const startPercentage = -1;
-      const endPercentage = 1;
+      const startFraction = -1;
+      const endFraction = 1;
       const tasks = Array(4).fill(0).map(()=>{
         return Promise.resolve();
       });
       util.monitorPromisesProgress(tasks, (progress: number)=>{},
-          startPercentage, endPercentage);
+          startFraction, endFraction);
     }).toThrowError();
   });
 
-  it('throws error when startPercentage more than endPercentage', () => {
+  it('throws error when startFraction more than endFraction', () => {
     expect(() => {
-      const startPercentage = 0.8;
-      const endPercentage = 0.2;
+      const startFraction = 0.8;
+      const endFraction = 0.2;
       const tasks = Array(4).fill(0).map(()=>{
         return Promise.resolve();
       });
       util.monitorPromisesProgress(tasks, (progress: number)=>{},
-          startPercentage, endPercentage);
+          startFraction, endFraction);
     }).toThrowError();
   });
 });
