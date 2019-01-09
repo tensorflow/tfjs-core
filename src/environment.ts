@@ -361,12 +361,11 @@ export class Environment {
     } else if (feature === 'WEBGL_FENCE_API_ENABLED') {
       return isWebGLFenceEnabled(this.get('WEBGL_VERSION'));
     } else if (feature === 'WEBGL_SIZE_UPLOAD_UNIFORM') {
-      return 0;
       // Use uniform uploads only when 32bit floats are supported. In 16bit
       // environments there are problems with comparing a 16bit texture value
       // with a 32bit uniform value.
-      // const useUniforms = this.get('WEBGL_RENDER_FLOAT32_ENABLED');
-      // return useUniforms ? 4 : 0;
+      const useUniforms = this.get('WEBGL_RENDER_FLOAT32_ENABLED');
+      return useUniforms ? 4 : 0;
     } else if (feature === 'TEST_EPSILON') {
       return this.backend.floatPrecision() === 32 ? TEST_EPSILON_FLOAT32 :
                                                     TEST_EPSILON_FLOAT16;
