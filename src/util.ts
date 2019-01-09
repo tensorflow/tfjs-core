@@ -583,7 +583,9 @@ export function monitorPromisesProgress<D extends DataType>(
     startPercentage?: number, endPercentage?: number) {
     startPercentage = startPercentage == null ? 0 : startPercentage;
     endPercentage = endPercentage == null ? 1 : endPercentage;
+    checkPercentage(startPercentage, endPercentage);
     let resolvedPromise = 0;
+
     function registerMonitor(promise: Promise<D | Function | {} | void>) {
         promise.then((value: D | Function | {} | void) => {
             const percentage = startPercentage +
@@ -595,5 +597,23 @@ export function monitorPromisesProgress<D extends DataType>(
         });
         return promise;
     }
+
+    function checkPercentage(startPercentage: number,
+                             endPercentage: number): void {
+      if (startPercentage < 0 || startPercentage > 1) {
+        throw new Error(`Progress percentage should in range [0, 1], ` +
+            `got startPercentage ${startPercentage}`);
+      }
+      if (endPercentage < 0 || endPercentage > 1) {
+        throw new Error(`Progress percentage should in range [0, 1], ` +
+            `got endPercentage ${endPercentage}`);
+      }
+      if (endPercentage < startPercentage) {
+        throw new Error(`startPercentage should no more than endPercentage, ` +
+            `got startPercentage ${startPercentage} ` +
+            `and endPercentage ${endPercentage}`);
+      }
+    }
+
     return Promise.all(promises.map(registerMonitor));
 }
