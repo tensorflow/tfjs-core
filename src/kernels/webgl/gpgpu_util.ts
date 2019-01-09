@@ -236,21 +236,13 @@ export function uploadMatrixToTexture(
   const [w, h] =
       tex_util.getUnpackedMatrixTextureShapeWidthHeight(rows, columns);
 
-  // let unpackedArray: Float32Array;
-  let unpackedArray = new Float32Array(rows * columns * numChannels);
-  if (textureConfig.defaultNumChannels === 1) {
-    for(let i=0; i<matrix.length; i++) {
-      unpackedArray[i] = matrix[i];
-    }
+  let unpackedArray: Float32Array;
+  const numTexels = rows * columns;
+  if (textureConfig.defaultNumChannels === 1 && numTexels === matrix.length) {
     // No need to allocate a temporary array.
-    // unpackedArray = matrix;
-    // unpackedArray = new Float32Array(rows * columns * numChannels);
+    unpackedArray = matrix;
   } else {
-    // unpackedArray =
-    //     new Float32Array(tex_util.getUnpackedArraySizeFromMatrixSize(
-    //         matrix.length, numChannels));
-    // unpackedArray = new Float32Array(rows * columns * numChannels);
-    // console.log("lol", unpackedArray);
+    unpackedArray = new Float32Array(numTexels * numChannels);
     tex_util.encodeMatrixToUnpackedArray(matrix, unpackedArray, numChannels);
   }
 
