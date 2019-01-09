@@ -307,7 +307,7 @@ export class Environment {
     } else if (feature === 'IS_CHROME') {
       return isChrome();
     } else if (feature === 'WEBGL_CPU_FORWARD') {
-      return false;
+      return true;
     } else if (feature === 'WEBGL_PACK') {
       return false;
     } else if (feature === 'WEBGL_PACK_BATCHNORMALIZATION') {
