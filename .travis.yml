@@ -8,9 +8,14 @@ script:
 cache: yarn
 git:
   depth: 5
+os:
+  - linux
+  - osx
+  - windows
 env:
   - TO_TEST=regular
   - TO_TEST=integration
+  - YARN_GPG=no
 notifications:
   email:
     recipients:
