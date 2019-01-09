@@ -46,16 +46,15 @@ export async function loadWeightsAsArrayBuffer(
       fetchURL => fetchFunc(fetchURL, requestOptions));
 
   if (onprogress != null) {
-    util.monitorPromisesProgress(requests, onprogress,
-        0, fetchEndProgress);
+    util.monitorPromisesProgress(requests, onprogress, 0, fetchEndProgress);
   }
 
   const responses = await Promise.all(requests);
   const bufferPromises = responses.map(response => response.arrayBuffer());
 
   if (onprogress != null) {
-    util.monitorPromisesProgress(bufferPromises, onprogress,
-        fetchEndProgress, bufferEndProgress);
+    util.monitorPromisesProgress(bufferPromises, onprogress, fetchEndProgress,
+        bufferEndProgress);
   }
 
   const buffers = await Promise.all(bufferPromises);
