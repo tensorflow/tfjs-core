@@ -1311,6 +1311,10 @@ function getPackedSamplerAtOutputCoords(
   let coordsSnippet: string;
   const fields = ['x', 'y', 'z', 'w', 'u', 'v'];
 
+  if (broadcastDims.length) {
+    throw Error('Packed broadcast sampling is not implemented yet.');
+  }
+
   if (inRank === 0) {
     coordsSnippet = '';
   } else if (outRank < 2 && broadcastDims.length >= 1) {
