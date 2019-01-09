@@ -20,7 +20,6 @@ import {getBroadcastDims} from '../../ops/broadcast_util';
 import * as util from '../../util';
 import {getGlslDifferences, GLSL} from './glsl_version';
 import * as shader_util from './shader_compiler_util';
-import * as tex_util from './tex_util';
 
 export type ShapeInfo = {
   logicalShape: number[],
@@ -1292,7 +1291,10 @@ function getPackedSamplerAtOutputCoords(
   const outTexShape = outShapeInfo.texShape;
   const inTexShape = inputInfo.shapeInfo.texShape;
   const glsl = getGlslDifferences();
-  if (!inputInfo.shapeInfo.isUniform &&
+  const inRank = inputInfo.shapeInfo.logicalShape.length;
+  const outRank = outShapeInfo.logicalShape.length;
+
+  if (!inputInfo.shapeInfo.isUniform && inRank === outRank &&
       inputInfo.shapeInfo.flatOffset == null &&
       util.arraysEqual(inTexShape, outTexShape)) {
     return `
@@ -1302,8 +1304,6 @@ function getPackedSamplerAtOutputCoords(
     `;
   }
 
-  const inRank = inputInfo.shapeInfo.logicalShape.length;
-  const outRank = outShapeInfo.logicalShape.length;
   const type = getCoordsDataType(outRank);
   const broadcastDims = getBroadcastDims(
       inputInfo.shapeInfo.logicalShape, outShapeInfo.logicalShape);
@@ -1364,7 +1364,10 @@ function getSamplerAtOutputCoords(
   const funcName = 'get' + texFuncSnippet + 'AtOutCoords';
   const outTexShape = outShapeInfo.texShape;
   const inTexShape = inputInfo.shapeInfo.texShape;
-  if (!inputInfo.shapeInfo.isUniform &&
+  const inRank = inputInfo.shapeInfo.logicalShape.length;
+  const outRank = outShapeInfo.logicalShape.length;
+
+  if (!inputInfo.shapeInfo.isUniform && inRank === outRank &&
       inputInfo.shapeInfo.flatOffset == null &&
       util.arraysEqual(inTexShape, outTexShape)) {
     return `
@@ -1374,8 +1377,6 @@ function getSamplerAtOutputCoords(
     `;
   }
 
-  const inRank = inputInfo.shapeInfo.logicalShape.length;
-  const outRank = outShapeInfo.logicalShape.length;
   const type = getCoordsDataType(outRank);
   const broadcastDims = getBroadcastDims(
       inputInfo.shapeInfo.logicalShape, outShapeInfo.logicalShape);
