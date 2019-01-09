@@ -80,7 +80,8 @@ describeWithFlags('packed matmul', WEBGL_ENVS, () => {
     const maxTextureSize = tf.ENV.get('WEBGL_MAX_TEXTURE_SIZE');
     tf.ENV.set('WEBGL_MAX_TEXTURE_SIZE', 3);
     const a = tf.tensor2d([1, 2], [1, 2]);
-    const b = tf.tensor2d([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17], [2, 9]);
+    const b = tf.tensor2d(
+        [[0, 1, 2, 3, 4, 5, 6, 7, 8], [9, 10, 11, 12, 13, 14, 15, 16, 17]]);
 
     const c = tf.matMul(a, b);
 

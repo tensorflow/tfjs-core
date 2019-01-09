@@ -361,11 +361,16 @@ export class MathBackendWebGL implements KernelBackend {
         if (shape.length) {
           [rows, cols] = webgl_util.getRowsCols(shape);
         }
-        vals = this.gpgpu.downloadPackedMatrixFromBuffer(
-            bufferOrTexture, batch, rows, cols, texShape[0], texShape[1]).subarray(0, size);
+        vals = this.gpgpu
+                   .downloadPackedMatrixFromBuffer(
+                       bufferOrTexture, batch, rows, cols, texShape[0],
+                       texShape[1])
+                   .subarray(0, size);
       } else {
-        vals = this.gpgpu.downloadFloat32MatrixFromBuffer(
-            bufferOrTexture, texShape[0], texShape[1]).subarray(0, size);
+        vals = this.gpgpu
+                   .downloadFloat32MatrixFromBuffer(
+                       bufferOrTexture, texShape[0], texShape[1])
+                   .subarray(0, size);
       }
     }
     const dTypeVals = this.convertAndCacheOnCPU(dataId, vals);
@@ -392,11 +397,15 @@ export class MathBackendWebGL implements KernelBackend {
         if (shape.length) {
           [rows, cols] = webgl_util.getRowsCols(shape);
         }
-        return this.gpgpu.downloadMatrixFromPackedTexture(
-            texture, batch, rows, cols, texShape[0], texShape[1]).subarray(0, size);
+        return this.gpgpu
+            .downloadMatrixFromPackedTexture(
+                texture, batch, rows, cols, texShape[0], texShape[1])
+            .subarray(0, size);
       } else {
-        return this.gpgpu.downloadFloat32MatrixFromOutputTexture(
-            texture, texShape[0], texShape[1]).subarray(0, size);
+        return this.gpgpu
+            .downloadFloat32MatrixFromOutputTexture(
+                texture, texShape[0], texShape[1])
+            .subarray(0, size);
       }
     }
 
@@ -409,8 +418,11 @@ export class MathBackendWebGL implements KernelBackend {
     this.compileAndRun(
         program, [{shape, dtype, dataId}], tmpTarget, null, pageToCpu);
     const tmpData = this.texData.get(tmpTarget.dataId);
-    const vals = this.gpgpu.downloadByteEncodedFloatMatrixFromOutputTexture(
-        tmpData.texture, tmpData.texShape[0], tmpData.texShape[1]).subarray(0, size);
+    const vals =
+        this.gpgpu
+            .downloadByteEncodedFloatMatrixFromOutputTexture(
+                tmpData.texture, tmpData.texShape[0], tmpData.texShape[1])
+            .subarray(0, size);
     this.disposeData(tmpTarget.dataId);
 
     return vals;
