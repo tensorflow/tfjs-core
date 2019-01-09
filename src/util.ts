@@ -596,18 +596,21 @@ export function monitorPromisesProgress<D extends DataType>(
   }
 
   function checkFraction(startFraction: number, endFraction: number): void {
-    if (startFraction < 0 || startFraction > 1) {
-      throw new Error(`Progress fraction should be in range [0, 1], ` +
-          `got startFraction ${startFraction}`);
-    }
-    if (endFraction < 0 || endFraction > 1) {
-      throw new Error(`Progress fraction should be in range [0, 1], ` +
-          `got endFraction ${endFraction}`);
-    }
-    if (endFraction < startFraction) {
-      throw new Error(`startFraction should be no more than endFraction, ` +
-          `got startFraction ${startFraction} and endFraction ${endFraction}`);
-    }
+    assert(
+        startFraction >= 0 && startFraction <= 1,
+        `Progress fraction should be in range [0, 1], ` +
+        `got startFraction ${startFraction}`
+    );
+    assert(
+        endFraction >= 0 && endFraction <= 1,
+        `Progress fraction should be in range [0, 1], ` +
+        `got endFraction ${endFraction}`
+    );
+    assert(
+        endFraction >= startFraction,
+        `startFraction should be no more than endFraction, ` +
+        `got startFraction ${startFraction} and endFraction ${endFraction}`
+    );
   }
 
   return Promise.all(promises.map(registerMonitor));
