@@ -39,22 +39,28 @@ export async function loadWeightsAsArrayBuffer(
   if (fetchFunc == null) {
     fetchFunc = fetch;
   }
-  const fetchEndProgress = 0.5;
-  const bufferEndProgress = 1;
+
   // Create the requests for all of the weights in parallel.
   const requests = fetchURLs.map(
       fetchURL => fetchFunc(fetchURL, requestOptions));
 
+  const fetchStartFraction = 0;
+  const fetchEndFraction = 0.5;
+
   if (onProgress != null) {
-    util.monitorPromisesProgress(requests, onProgress, 0, fetchEndProgress);
+    util.monitorPromisesProgress(requests, onProgress,
+        fetchStartFraction, fetchEndFraction);
   }
 
   const responses = await Promise.all(requests);
   const bufferPromises = responses.map(response => response.arrayBuffer());
 
+  const bufferStartFraction = 0.5;
+  const bufferEndFraction = 1;
+
   if (onProgress != null) {
-    util.monitorPromisesProgress(bufferPromises, onProgress, fetchEndProgress,
-        bufferEndProgress);
+    util.monitorPromisesProgress(bufferPromises, onProgress,
+        bufferStartFraction, bufferEndFraction);
   }
 
   const buffers = await Promise.all(bufferPromises);
