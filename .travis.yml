@@ -15,7 +15,6 @@ os:
 env:
   - TO_TEST=regular
   - TO_TEST=integration
-  - YARN_GPG=no
 notifications:
   email:
     recipients:
@@ -27,3 +26,5 @@ matrix:
   exclude:
   - node_js: '10'
     env: TO_TEST=integration
+  include:
+    env: YARN_GPG=no
