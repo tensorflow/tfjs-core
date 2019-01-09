@@ -579,6 +579,7 @@ export function now(): number {
 export function monitorPromisesProgress<D extends DataType>(
     promises: Array<Promise<D | Function | {} | void>>, onProgress: Function,
     startFraction?: number, endFraction?: number) {
+  checkPromises(promises);
   startFraction = startFraction == null ? 0 : startFraction;
   endFraction = endFraction == null ? 1 : endFraction;
   checkFraction(startFraction, endFraction);
@@ -595,20 +596,28 @@ export function monitorPromisesProgress<D extends DataType>(
     return promise;
   }
 
+  function checkPromises(
+      promises: Array<Promise<D | Function | {} | void>>): void {
+    assert(
+        promises != null && Array.isArray(promises) && promises.length > 0,
+        'promises must be a none empty array'
+    );
+  }
+
   function checkFraction(startFraction: number, endFraction: number): void {
     assert(
         startFraction >= 0 && startFraction <= 1,
-        `Progress fraction should be in range [0, 1], ` +
+        `Progress fraction must be in range [0, 1], but ` +
         `got startFraction ${startFraction}`
     );
     assert(
         endFraction >= 0 && endFraction <= 1,
-        `Progress fraction should be in range [0, 1], ` +
+        `Progress fraction must be in range [0, 1], but ` +
         `got endFraction ${endFraction}`
     );
     assert(
         endFraction >= startFraction,
-        `startFraction should be no more than endFraction, ` +
+        `startFraction must be no more than endFraction, but ` +
         `got startFraction ${startFraction} and endFraction ${endFraction}`
     );
   }

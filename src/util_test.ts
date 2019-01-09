@@ -509,4 +509,16 @@ describe('util.monitorPromisesProgress', () => {
           startFraction, endFraction);
     }).toThrowError();
   });
+
+  it('throws error when promises is null', () => {
+    expect(() => {
+      util.monitorPromisesProgress(null, (progress: number)=>{});
+    }).toThrowError();
+  });
+
+  it('throws error when promises is empty array', () => {
+    expect(() => {
+      util.monitorPromisesProgress([], (progress: number)=>{});
+    }).toThrowError();
+  });
 });
