@@ -567,17 +567,17 @@ export function now(): number {
 }
 
 /**
- * Monitor Promise.all progress, fire onprogress callback function.
+ * Monitor Promise.all progress, fire onProgress callback function.
  *
  * @param {Array<Promise<D | Function | {} | void>>} promises,
  *    Promise list going to be monitored
- * @param {Function} onprogress, callback function.
+ * @param {Function} onProgress, callback function.
  *    Fired when a promise resolved.
  * @param {number} startFraction, Optional fraction start. Default to 0.
  * @param {number} endFraction, Optional fraction end. Default to 1.
  */
 export function monitorPromisesProgress<D extends DataType>(
-    promises: Array<Promise<D | Function | {} | void>>, onprogress: Function,
+    promises: Array<Promise<D | Function | {} | void>>, onProgress: Function,
     startFraction?: number, endFraction?: number) {
   startFraction = startFraction == null ? 0 : startFraction;
   endFraction = endFraction == null ? 1 : endFraction;
@@ -589,7 +589,7 @@ export function monitorPromisesProgress<D extends DataType>(
       const fraction = startFraction + ++resolvedPromise / promises.length *
           (endFraction - startFraction);
       // pass fraction as parameter to callback function.
-      onprogress(fraction);
+      onProgress(fraction);
       return value;
     });
     return promise;

@@ -27,14 +27,14 @@ import {DTYPE_VALUE_SIZE_MAP, WeightsManifestConfig, WeightsManifestEntry} from 
  * @param fetchURLs URLs to send the HTTP requests at, using `fetch` calls.
  * @param requestOptions RequestInit (options) for the HTTP requests.
  * @param fetchFunc Optional overriding value for the `window.fetch` function.
- * @param onprogress Optional, progress callback function, fired periodically
+ * @param onProgress Optional, progress callback function, fired periodically
  *   before the load is completed.
  * @returns A `Promise` of an Array of `ArrayBuffer`. The Array has the same
  *   length as `fetchURLs`.
  */
 export async function loadWeightsAsArrayBuffer(
     fetchURLs: string[], requestOptions?: RequestInit, fetchFunc?: Function,
-    onprogress?: Function):
+    onProgress?: Function):
   Promise<ArrayBuffer[]> {
   if (fetchFunc == null) {
     fetchFunc = fetch;
@@ -45,15 +45,15 @@ export async function loadWeightsAsArrayBuffer(
   const requests = fetchURLs.map(
       fetchURL => fetchFunc(fetchURL, requestOptions));
 
-  if (onprogress != null) {
-    util.monitorPromisesProgress(requests, onprogress, 0, fetchEndProgress);
+  if (onProgress != null) {
+    util.monitorPromisesProgress(requests, onProgress, 0, fetchEndProgress);
   }
 
   const responses = await Promise.all(requests);
   const bufferPromises = responses.map(response => response.arrayBuffer());
 
-  if (onprogress != null) {
-    util.monitorPromisesProgress(bufferPromises, onprogress, fetchEndProgress,
+  if (onProgress != null) {
+    util.monitorPromisesProgress(bufferPromises, onProgress, fetchEndProgress,
         bufferEndProgress);
   }
 

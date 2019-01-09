@@ -17,7 +17,7 @@
 
 import {IOHandler} from './types';
 
-export type IORouter = (url: string|string[], onprogress?: Function) => IOHandler;
+export type IORouter = (url: string|string[], onProgress?: Function) => IOHandler;
 
 export class IORouterRegistry {
   // Singleton instance.
@@ -74,23 +74,23 @@ export class IORouterRegistry {
    * Look up IOHandler for loading, given a URL-like string.
    *
    * @param url
-   * @param onprogress Optional, progress callback function, fired periodically
+   * @param onProgress Optional, progress callback function, fired periodically
    *   before the load is completed.
    * @returns All valid handlers for `url`, given the currently registered
    *   handler routers.
    */
   static getLoadHandlers(url: string|string[],
-                         onprogress?: Function): IOHandler[] {
-    return IORouterRegistry.getHandlers(url, 'load', onprogress);
+                         onProgress?: Function): IOHandler[] {
+    return IORouterRegistry.getHandlers(url, 'load', onProgress);
   }
 
   private static getHandlers(url: string|string[], handlerType: 'save'|'load',
-                             onprogress?: Function): IOHandler[] {
+                             onProgress?: Function): IOHandler[] {
     const validHandlers: IOHandler[] = [];
     const routers = handlerType === 'load' ? this.getInstance().loadRouters :
                                              this.getInstance().saveRouters;
     routers.forEach(router => {
-      const handler = router(url, onprogress);
+      const handler = router(url, onProgress);
       if (handler !== null) {
         validHandlers.push(handler);
       }
