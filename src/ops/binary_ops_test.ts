@@ -17,7 +17,7 @@
 
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
-import {ALL_ENVS, expectArraysClose, expectArraysEqual} from '../test_util';
+import {ALL_ENVS, expectArraysClose, expectArraysEqual, WEBGL_ENVS} from '../test_util';
 
 describeWithFlags('prelu', ALL_ENVS, () => {
   it('basic', () => {
@@ -264,7 +264,9 @@ describeWithFlags('maximum', ALL_ENVS, () => {
         .toThrowError(
             /Argument 'b' passed to 'maximum' must be numeric tensor/);
   });
+});
 
+describeWithFlags('maximum', WEBGL_ENVS, () => {
   it('works with squarification for large dimension', () => {
     const maxTextureSize = tf.ENV.get('WEBGL_MAX_TEXTURE_SIZE');
     tf.ENV.set('WEBGL_MAX_TEXTURE_SIZE', 5);

@@ -66,16 +66,6 @@ describeWithFlags('relu', ALL_ENVS, () => {
     expectArraysClose(result, [1, 0, 0, 3, 0, NaN]);
   });
 
-  it('works with squarification for prime number length vector', () => {
-    const maxTextureSize = tf.ENV.get('WEBGL_MAX_TEXTURE_SIZE');
-    tf.ENV.set('WEBGL_MAX_TEXTURE_SIZE', 5);
-    const a = tf.tensor1d([1, -2, 5, -3, -1, 4, 7]);
-    const result = tf.relu(a);
-
-    tf.ENV.set('WEBGL_MAX_TEXTURE_SIZE', maxTextureSize);
-    expectArraysClose(result, [1, 0, 5, 0, 0, 4, 7]);
-  });
-
   it('gradients: positive scalar', () => {
     const a = tf.scalar(3);
     const dy = tf.scalar(5);
@@ -125,6 +115,18 @@ describeWithFlags('relu', ALL_ENVS, () => {
   it('throws for string tensor', () => {
     expect(() => tf.relu('q'))
         .toThrowError(/Argument 'x' passed to 'relu' must be numeric/);
+  });
+});
+
+describeWithFlags('relu', WEBGL_ENVS, () => {
+  it('works with squarification for prime number length vector', () => {
+    const maxTextureSize = tf.ENV.get('WEBGL_MAX_TEXTURE_SIZE');
+    tf.ENV.set('WEBGL_MAX_TEXTURE_SIZE', 5);
+    const a = tf.tensor1d([1, -2, 5, -3, -1, 4, 7]);
+    const result = tf.relu(a);
+
+    tf.ENV.set('WEBGL_MAX_TEXTURE_SIZE', maxTextureSize);
+    expectArraysClose(result, [1, 0, 5, 0, 0, 4, 7]);
   });
 });
 
