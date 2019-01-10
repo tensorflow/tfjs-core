@@ -104,9 +104,12 @@ const setupFakeWeightFiles =
 
 describeWithFlags('browserHTTPRequest-load fetch', NODE_ENVS, () => {
   let requestInits: {[key: string]: {headers: {[key: string]: string}}};
-
+  // tslint:disable-next-line:no-any
+  let originalFetch: any;
   // simulate a fetch polyfill, this needs to be non-null for spyOn to work
   beforeEach(() => {
+    // tslint:disable-next-line:no-any
+    originalFetch = (global as any).fetch;
     // tslint:disable-next-line:no-any
     (global as any).fetch = () => {};
     requestInits = {};
@@ -114,7 +117,7 @@ describeWithFlags('browserHTTPRequest-load fetch', NODE_ENVS, () => {
 
   afterAll(() => {
     // tslint:disable-next-line:no-any
-    delete (global as any).fetch;
+    (global as any).fetch = originalFetch;
   });
 
   it('1 group, 2 weights, 1 path', async () => {

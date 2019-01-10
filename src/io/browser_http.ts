@@ -59,7 +59,7 @@ export class BrowserHTTPRequest implements IOHandler {
 
     this.fetchFunc = (path: string, requestInits: RequestInit) => {
       // tslint:disable-next-line:no-any
-      return fetchFunc(path, requestInits).catch((error: any) => {
+      return fetchFunc(path, requestInits).catch((error) => {
         throw new Error(`Request for ${path} failed due to error: ${error}`);
       });
     };
