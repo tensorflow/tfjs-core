@@ -1,5 +1,6 @@
 import { Tensor } from '../tensor';
 import { op } from './operation';
+import * as ops from './ops';
 import { Tensor1D } from '../tensor';
 
 // function choleskey(a: tf.Tensor) : tf.Tensor {
@@ -39,8 +40,16 @@ function level2partition(A: Tensor, j: number): [Tensor, Tensor, Tensor, Tensor]
 
 function cholesky_unblocked_(A: Tensor): Tensor {
   let n = A.shape[0]
-  const res = A.clone();
+
+  const Adata = A.dataSync()
+  const res = ops.zerosLike(A);
   const resData = res.buffer();
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n; j++) {
+      resData.values[i * n + j] = Adata[i * n + j];
+    }
+  }
+
 
   for (let j = 0; j < n; j++) {
     let [rr, dd, B, cc] = level2partition(res, j);
@@ -64,10 +73,17 @@ function cholesky_unblocked_(A: Tensor): Tensor {
 }
 
 
-function cholesky_unblocked_grad(L: Tensor, Abar: Tensor) {
-  let res = Abar.clone();
-  let resData = res.buffer();
+function cholesky_unblocked_grad_(L: Tensor, Abar: Tensor) {
   let n = L.shape[0];
+
+  const Adata = Abar.dataSync()
+  const res = ops.zerosLike(Abar);
+  const resData = res.buffer();
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n; j++) {
+      resData.values[i * n + j] = Adata[i * n + j];
+    }
+  }
 
   for (let j = n - 1; j > -1; j--) {
 
@@ -80,8 +96,7 @@ function cholesky_unblocked_grad(L: Tensor, Abar: Tensor) {
 
     rbar = rbar.sub(dbar.mul(rr));
     rbar = rbar.sub(B.transpose().dot(cbar));
-    Bbar = Bbar.sub(
-      tf.outerProduct(cbar as Tensor1D, rr as Tensor1D));
+    Bbar = Bbar.sub(ops.outerProduct(cbar as Tensor1D, rr as Tensor1D));
     dbar = dbar.div(2);
 
     // Copy into result
@@ -105,7 +120,12 @@ function cholesky_unblocked_grad(L: Tensor, Abar: Tensor) {
       }
     }
   }
+
+  for (let i = 0; i < n; i++)
+    for (let j = i + 1; j < n; j++)
+      resData.values[i * n + j] = 0;
   return resData.toTensor();
 }
 
 export const cholesky = op({ cholesky_unblocked_ })
+export const cholesky_grad = op({ cholesky_unblocked_grad_ })
