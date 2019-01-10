@@ -27,7 +27,7 @@ describeWithFlags('loadWeights', BROWSER_ENVS, () => {
     spyOn(window, 'fetch').and.callFake((path: string) => {
       return new Response(
           fileBufferMap[path],
-          {headers: {'content-type': 'application/octet-stream'}});
+          {headers: {'Content-type': 'application/octet-stream'}});
     });
   };
 

@@ -209,7 +209,7 @@ describeWithFlags('browserHTTPRequest-save', CHROME_ENVS, () => {
     });
   });
 
-  it('Save topology and weights, default POST method', (done: DoneFn) => {
+  it('Save topology and weights, default POST method', (done) => {
     const testStartDate = new Date();
     const handler = tf.io.getSaveHandlers('http://model-upload-test')[0];
     handler.save(artifacts1)
@@ -262,7 +262,7 @@ describeWithFlags('browserHTTPRequest-save', CHROME_ENVS, () => {
         });
   });
 
-  it('Save topology only, default POST method', (done: DoneFn) => {
+  it('Save topology only, default POST method', (done) => {
     const testStartDate = new Date();
     const handler = tf.io.getSaveHandlers('http://model-upload-test')[0];
     const topologyOnlyArtifacts = {modelTopology: modelTopology1};
@@ -301,7 +301,7 @@ describeWithFlags('browserHTTPRequest-save', CHROME_ENVS, () => {
         });
   });
 
-  it('Save topology and weights, PUT method, extra headers', (done: DoneFn) => {
+  it('Save topology and weights, PUT method, extra headers', (done) => {
     const testStartDate = new Date();
     const handler = tf.io.browserHTTPRequest('model-upload-test', {
       method: 'PUT',
@@ -365,7 +365,7 @@ describeWithFlags('browserHTTPRequest-save', CHROME_ENVS, () => {
         });
   });
 
-  it('404 response causes Error', (done: DoneFn) => {
+  it('404 response causes Error', (done) => {
     const handler = tf.io.getSaveHandlers('http://invalid/path')[0];
     handler.save(artifacts1)
         .then(saveResult => {
@@ -741,7 +741,7 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
     });
 
     it('Missing modelTopology and weightsManifest leads to error',
-       async (done: DoneFn) => {
+       async (done) => {
          setupFakeWeightFiles(
              {
                'path1/model.json':
@@ -762,7 +762,7 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
              });
        });
 
-    it('with wrong content type leads to error', async (done: DoneFn) => {
+    it('with wrong content type leads to error', async (done) => {
       setupFakeWeightFiles(
           {
             'path1/model.json':
@@ -773,17 +773,19 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
       handler.load()
           .then(modelTopology1 => {
             done.fail(
-                'Loading with wrong content-type ' +
-                'succeeded unexpectedly.');
+                'Loading with wrong content-type succeeded unexpectedly.');
           })
           .catch(err => {
             expect(err.message)
-                .toMatch(/Expected content type application\/json/);
+                .toEqual(
+                    'Request to path1/model.json for model topology failed. ' +
+                    'Expected content type application/json) ' +
+                    'but got text/html.');
             done();
           });
     });
 
-    it('with fetch rejection leads to error', async (done: DoneFn) => {
+    it('with fetch rejection leads to error', async (done) => {
       setupFakeWeightFiles(
           {
             'path1/model.json':
@@ -794,9 +796,7 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
       try {
         const data = await handler.load();
         expect(data).toBeDefined();
-        done.fail(
-            'Loading with fetch rejection ' +
-            'succeeded unexpectedly.');
+        done.fail('Loading with fetch rejection succeeded unexpectedly.');
       } catch (err) {
         expect(err.message).toMatch(/Request for path2\/model.json failed /);
         done();
@@ -813,7 +813,7 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
       modelData = new ArrayBuffer(5);
     });
 
-    it('1 group, 2 weights, 1 path', (done: DoneFn) => {
+    it('1 group, 2 weights, 1 path', (done) => {
       const weightManifest1: tf.io.WeightsManifestConfig = [{
         paths: ['weightfile0'],
         weights: [
@@ -1156,7 +1156,7 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
       expect(() => tf.io.browserHTTPRequest(['path1/model.pb'])).toThrow();
     });
 
-    it('with wrong model content type leads to error', async (done: DoneFn) => {
+    it('with wrong model content type leads to error', async (done) => {
       const weightsManifest: tf.io.WeightsManifestConfig = [
         {
           paths: ['weightfile0'],
@@ -1195,119 +1195,123 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
       handler.load()
           .then(modelTopology1 => {
             done.fail(
-                'Loading with wrong content-type ' +
-                'succeeded unexpectedly.');
+                'Loading with wrong content-type succeeded unexpectedly.');
           })
           .catch(err => {
             expect(err.message)
-                .toMatch(/Expected content type application\/octet-stream/);
+                .toEqual(
+                    'Request to path1/model.pb for model topology failed. ' +
+                    'Expected content type application/octet-stream) ' +
+                    'but got text/html.');
             done();
           });
     });
 
-    it('with wrong manifest content type leads to error',
-       async (done: DoneFn) => {
-         const weightsManifest: tf.io.WeightsManifestConfig = [
-           {
-             paths: ['weightfile0'],
-             weights: [{
-               name: 'fooWeight',
-               shape: [3, 1],
-               dtype: 'int32',
-             }]
-           },
-           {
-             paths: ['weightfile1'],
-             weights: [{
-               name: 'barWeight',
-               shape: [2],
-               dtype: 'bool',
-             }],
-           }
-         ];
-         const floatData1 = new Int32Array([1, 3, 3]);
-         const floatData2 = new Uint8Array([7, 4]);
-         setupFakeWeightFiles(
-             {
-               'path1/model.pb':
-                   {data: modelData, contentType: 'application/octet-stream'},
-               'path2/weights_manifest.json': {
-                 data: JSON.stringify(weightsManifest),
-                 contentType: 'application/octet-stream'
-               },
-               'path3/weightfile0':
-                   {data: floatData1, contentType: 'application/octet-stream'},
-               'path3/weightfile1':
-                   {data: floatData2, contentType: 'application/octet-stream'},
-             },
-             requestInits);
-         const handler = tf.io.browserHTTPRequest(
-             ['path1/model.pb', 'path2/weights_manifest.json'], {}, 'path3/');
-         handler.load()
-             .then(modelTopology1 => {
-               done.fail(
-                   'Loading with wrong content-type ' +
-                   'succeeded unexpectedly.');
-             })
-             .catch(err => {
-               expect(err.message)
-                   .toMatch(/Expected content type application\/json/);
-               done();
-             });
-       });
+    it('with wrong manifest content type leads to error', async (done) => {
+      const weightsManifest: tf.io.WeightsManifestConfig = [
+        {
+          paths: ['weightfile0'],
+          weights: [{
+            name: 'fooWeight',
+            shape: [3, 1],
+            dtype: 'int32',
+          }]
+        },
+        {
+          paths: ['weightfile1'],
+          weights: [{
+            name: 'barWeight',
+            shape: [2],
+            dtype: 'bool',
+          }],
+        }
+      ];
+      const floatData1 = new Int32Array([1, 3, 3]);
+      const floatData2 = new Uint8Array([7, 4]);
+      setupFakeWeightFiles(
+          {
+            'path1/model.pb':
+                {data: modelData, contentType: 'application/octet-stream'},
+            'path2/weights_manifest.json': {
+              data: JSON.stringify(weightsManifest),
+              contentType: 'application/octet-stream'
+            },
+            'path3/weightfile0':
+                {data: floatData1, contentType: 'application/octet-stream'},
+            'path3/weightfile1':
+                {data: floatData2, contentType: 'application/octet-stream'},
+          },
+          requestInits);
+      const handler = tf.io.browserHTTPRequest(
+          ['path1/model.pb', 'path2/weights_manifest.json'], {}, 'path3/');
+      handler.load()
+          .then(modelTopology1 => {
+            done.fail(
+                'Loading with wrong content-type succeeded unexpectedly.');
+          })
+          .catch(err => {
+            expect(err.message)
+                .toEqual(
+                    'Request to path2/weights_manifest.json for weight ' +
+                    'manifest failed. Expected content type application/json)' +
+                    ' but got application/octet-stream.');
+            done();
+          });
+    });
 
-    it('with wrong weight content type leads to error',
-       async (done: DoneFn) => {
-         const weightsManifest: tf.io.WeightsManifestConfig = [
-           {
-             paths: ['weightfile0'],
-             weights: [{
-               name: 'fooWeight',
-               shape: [3, 1],
-               dtype: 'int32',
-             }]
-           },
-           {
-             paths: ['weightfile1'],
-             weights: [{
-               name: 'barWeight',
-               shape: [2],
-               dtype: 'bool',
-             }],
-           }
-         ];
-         const floatData1 = new Int32Array([1, 3, 3]);
-         const floatData2 = new Uint8Array([7, 4]);
-         setupFakeWeightFiles(
-             {
-               'path1/model.pb':
-                   {data: modelData, contentType: 'application/octet-stream'},
-               'path2/weights_manifest.json': {
-                 data: JSON.stringify(weightsManifest),
-                 contentType: 'application/json'
-               },
-               'path3/weightfile0':
-                   {data: floatData1, contentType: 'application/json'},
-               'path3/weightfile1':
-                   {data: floatData2, contentType: 'application/octet-stream'},
-             },
-             requestInits);
-         const handler = tf.io.browserHTTPRequest(
-             ['path1/model.pb', 'path2/weights_manifest.json'], {}, 'path3/');
-         handler.load()
-             .then(modelTopology1 => {
-               done.fail(
-                   'Loading with wrong content-type ' +
-                   'succeeded unexpectedly.');
-             })
-             .catch(err => {
-               expect(err.message)
-                   .toMatch(/Expected content type application\/octet-stream/);
-               done();
-             });
-       });
+    it('with wrong weight content type leads to error', async (done) => {
+      const weightsManifest: tf.io.WeightsManifestConfig = [
+        {
+          paths: ['weightfile0'],
+          weights: [{
+            name: 'fooWeight',
+            shape: [3, 1],
+            dtype: 'int32',
+          }]
+        },
+        {
+          paths: ['weightfile1'],
+          weights: [{
+            name: 'barWeight',
+            shape: [2],
+            dtype: 'bool',
+          }],
+        }
+      ];
+      const floatData1 = new Int32Array([1, 3, 3]);
+      const floatData2 = new Uint8Array([7, 4]);
+      setupFakeWeightFiles(
+          {
+            'path1/model.pb':
+                {data: modelData, contentType: 'application/octet-stream'},
+            'path2/weights_manifest.json': {
+              data: JSON.stringify(weightsManifest),
+              contentType: 'application/json'
+            },
+            'path3/weightfile0':
+                {data: floatData1, contentType: 'application/json'},
+            'path3/weightfile1':
+                {data: floatData2, contentType: 'application/octet-stream'},
+          },
+          requestInits);
+      const handler = tf.io.browserHTTPRequest(
+          ['path1/model.pb', 'path2/weights_manifest.json'], {}, 'path3/');
+      handler.load()
+          .then(modelTopology1 => {
+            done.fail(
+                'Loading with wrong content-type succeeded unexpectedly.');
+          })
+          .catch(err => {
+            expect(err.message)
+                .toEqual(
+                    'Request to path3/weightfile0 for weight file failed. ' +
+                    'Expected content type application/octet-stream but ' +
+                    'got application/json.');
+            done();
+          });
+    });
 
-    it('with fetch rejection leads to error', async (done: DoneFn) => {
+    it('with fetch rejection leads to error', async (done) => {
       setupFakeWeightFiles(
           {
             'path1/model.pb':

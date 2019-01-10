@@ -21,6 +21,8 @@ import * as util from '../util';
 import {decodeWeights} from './io_utils';
 import {DTYPE_VALUE_SIZE_MAP, WeightsManifestConfig, WeightsManifestEntry} from './types';
 
+const OCTET_STREAM_TYPE = 'application/octet-stream';
+const CONTENT_TYPE = 'Content-type';
 /**
  * Reads binary weights data from a number of URLs.
  *
@@ -41,7 +43,7 @@ export async function loadWeightsAsArrayBuffer(
   requestOptions = requestOptions || {};
   const headers = requestOptions.headers || {};
   // tslint:disable-next-line:no-any
-  (headers as any)['Accept'] = 'application/octet-stream';
+  (headers as any)['Accept'] = OCTET_STREAM_TYPE;
   requestOptions.headers = headers;
 
   // Create the requests for all of the weights in parallel.
@@ -50,18 +52,17 @@ export async function loadWeightsAsArrayBuffer(
   const responses = await Promise.all(requests);
 
   const badContentType = responses.filter(response => {
-    const contentType = response.headers.get('content-type');
-    return !contentType ||
-        contentType.indexOf('application/octet-stream') === -1;
+    const contentType = response.headers.get(CONTENT_TYPE);
+    return !contentType || contentType.indexOf(OCTET_STREAM_TYPE) === -1;
   });
   if (badContentType.length > 0) {
     throw new Error(
         badContentType
             .map(
                 resp => `Request to ${resp.url} for weight file failed.` +
-                    ` Expected content type application/octet-stream but got ${
-                            resp.headers.get('content-type')}.`)
-            .join(', '));
+                    ` Expected content type ${OCTET_STREAM_TYPE} but got ${
+                            resp.headers.get(CONTENT_TYPE)}.`)
+            .join('\n'));
   }
   const buffers =
       await Promise.all(responses.map(response => response.arrayBuffer()));
