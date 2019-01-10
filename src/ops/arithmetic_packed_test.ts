@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2017 Google Inc. All Rights Reserved.
+ * Copyright 2018 Google Inc. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,7 +19,24 @@ import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
 import {ALL_ENVS, expectArraysClose, expectArraysEqual} from '../test_util';
 
+// TODO(https://github.com/tensorflow/tfjs/issues/1050):
+// Remove this file as it contains a full copy of src/ops/arithmetic_test.js
+// content with WEBGL_PACK_BINARY_OPERATIONS set for all tests. Once
+// https://github.com/tensorflow/tfjs/issues/1050 is done, there is no further
+// need for this file.
 describeWithFlags('div', ALL_ENVS, () => {
+  const webglPackBinaryOperationsSavedFlag =
+      tf.ENV.get('WEBGL_PACK_BINARY_OPERATIONS');
+
+  beforeAll(() => {
+    tf.ENV.set('WEBGL_PACK_BINARY_OPERATIONS', true);
+  });
+
+  afterAll(() => {
+    tf.ENV.set(
+        'WEBGL_PACK_BINARY_OPERATIONS', webglPackBinaryOperationsSavedFlag);
+  });
+
   it('same shape', () => {
     const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
     const c = tf.tensor2d([1, 2, 3, 4, 2, 5], [2, 3]);
@@ -310,6 +327,18 @@ describeWithFlags('div', ALL_ENVS, () => {
 });
 
 describeWithFlags('mul', ALL_ENVS, () => {
+  const webglPackBinaryOperationsSavedFlag =
+      tf.ENV.get('WEBGL_PACK_BINARY_OPERATIONS');
+
+  beforeAll(() => {
+    tf.ENV.set('WEBGL_PACK_BINARY_OPERATIONS', true);
+  });
+
+  afterAll(() => {
+    tf.ENV.set(
+        'WEBGL_PACK_BINARY_OPERATIONS', webglPackBinaryOperationsSavedFlag);
+  });
+
   it('strict same-shaped tensors', () => {
     const a = tf.tensor2d([1, 2, -3, -4], [2, 2]);
     const b = tf.tensor2d([5, 3, 4, -7], [2, 2]);
@@ -417,33 +446,6 @@ describeWithFlags('mul', ALL_ENVS, () => {
     expect(result.shape).toEqual([2, 2]);
     const expected = [1, 4, -3, -8];
 
-    expectArraysClose(result, expected);
-  });
-
-  it('broadcast 5D + 2D', () => {
-    const a = tf.range(1, 33).reshape([2, 2, 2, 2, 2]);
-    const b = tf.tensor([2, 3], [2, 1]);
-    const result = tf.mul(a, b);
-    expect(result.shape).toEqual([2, 2, 2, 2, 2]);
-    const expected = [
-      2,  4,  9,  12, 10, 12, 21, 24, 18, 20, 33, 36, 26, 28, 45, 48,
-      34, 36, 57, 60, 42, 44, 69, 72, 50, 52, 81, 84, 58, 60, 93, 96
-    ];
-    expectArraysClose(result, expected);
-  });
-
-  it('broadcast 6D + 2D', () => {
-    const a = tf.range(1, 65).reshape([2, 2, 2, 2, 2, 2]);
-    const b = tf.tensor([2, 3], [2, 1]);
-    const result = tf.mul(a, b);
-    expect(result.shape).toEqual([2, 2, 2, 2, 2, 2]);
-    const expected = [
-      2,   4,   9,   12,  10,  12,  21,  24,  18,  20,  33,  36,  26,
-      28,  45,  48,  34,  36,  57,  60,  42,  44,  69,  72,  50,  52,
-      81,  84,  58,  60,  93,  96,  66,  68,  105, 108, 74,  76,  117,
-      120, 82,  84,  129, 132, 90,  92,  141, 144, 98,  100, 153, 156,
-      106, 108, 165, 168, 114, 116, 177, 180, 122, 124, 189, 192
-    ];
     expectArraysClose(result, expected);
   });
 
@@ -631,6 +633,18 @@ describeWithFlags('mul', ALL_ENVS, () => {
 });
 
 describeWithFlags('pow', ALL_ENVS, () => {
+  const webglPackBinaryOperationsSavedFlag =
+      tf.ENV.get('WEBGL_PACK_BINARY_OPERATIONS');
+
+  beforeAll(() => {
+    tf.ENV.set('WEBGL_PACK_BINARY_OPERATIONS', true);
+  });
+
+  afterAll(() => {
+    tf.ENV.set(
+        'WEBGL_PACK_BINARY_OPERATIONS', webglPackBinaryOperationsSavedFlag);
+  });
+
   it('same-shaped tensors', () => {
     const a = tf.tensor2d([1, -2, -3, 0, 7, 1], [2, 3]);
     const b = tf.tensor2d([5, 3, 4, 5, 2, -3], [2, 3], 'int32');
@@ -817,19 +831,6 @@ describeWithFlags('pow', ALL_ENVS, () => {
     ]);
   });
 
-  it('gradient wrt exponent with negative base', () => {
-    const a = tf.tensor1d([-1, -.5, -2.7]);
-    const b = tf.tensor1d([3, 2, -1], 'int32');
-    const dy = tf.tensor1d([1, 1, 1]);
-
-    const grads = tf.grads((a, b) => tf.pow(a, b));
-    const [, db] = grads([a, b], dy);
-
-    expect(db.shape).toEqual(b.shape);
-    expect(db.dtype).toEqual('float32');
-    expectArraysClose(db, [0, 0, 0]);
-  });
-
   it('gradient: scalar / Tensor1D', () => {
     const a = tf.scalar(2);
     const b = tf.tensor1d([3, 4, 5]);
@@ -937,6 +938,18 @@ describeWithFlags('pow', ALL_ENVS, () => {
 });
 
 describeWithFlags('add', ALL_ENVS, () => {
+  const webglPackBinaryOperationsSavedFlag =
+      tf.ENV.get('WEBGL_PACK_BINARY_OPERATIONS');
+
+  beforeAll(() => {
+    tf.ENV.set('WEBGL_PACK_BINARY_OPERATIONS', true);
+  });
+
+  afterAll(() => {
+    tf.ENV.set(
+        'WEBGL_PACK_BINARY_OPERATIONS', webglPackBinaryOperationsSavedFlag);
+  });
+
   it('c + A', () => {
     const c = tf.scalar(5);
     const a = tf.tensor1d([1, 2, 3]);
@@ -1226,6 +1239,18 @@ describeWithFlags('add', ALL_ENVS, () => {
 });
 
 describeWithFlags('addN', ALL_ENVS, () => {
+  const webglPackBinaryOperationsSavedFlag =
+      tf.ENV.get('WEBGL_PACK_BINARY_OPERATIONS');
+
+  beforeAll(() => {
+    tf.ENV.set('WEBGL_PACK_BINARY_OPERATIONS', true);
+  });
+
+  afterAll(() => {
+    tf.ENV.set(
+        'WEBGL_PACK_BINARY_OPERATIONS', webglPackBinaryOperationsSavedFlag);
+  });
+
   it('a single tensor', () => {
     const res = tf.addN([tf.tensor1d([1, 2, 3])]);
     expectArraysClose(res, [1, 2, 3]);
@@ -1293,6 +1318,18 @@ describeWithFlags('addN', ALL_ENVS, () => {
 });
 
 describeWithFlags('sub', ALL_ENVS, () => {
+  const webglPackBinaryOperationsSavedFlag =
+      tf.ENV.get('WEBGL_PACK_BINARY_OPERATIONS');
+
+  beforeAll(() => {
+    tf.ENV.set('WEBGL_PACK_BINARY_OPERATIONS', true);
+  });
+
+  afterAll(() => {
+    tf.ENV.set(
+        'WEBGL_PACK_BINARY_OPERATIONS', webglPackBinaryOperationsSavedFlag);
+  });
+
   it('c - A', () => {
     const c = tf.scalar(5);
     const a = tf.tensor1d([7, 2, 3]);
