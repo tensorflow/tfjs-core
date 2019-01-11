@@ -127,8 +127,8 @@ function gather_<T extends Tensor>(
   };
   return (ENV.engine.runKernel(
               backend => backend.gather($x, $indices.flatten(), axis), {$x},
-              grad) as
-          T).reshape(shapeInfo.outputShape) as T;
+              grad))
+             .reshape(shapeInfo.outputShape) as T;
 }
 
 function arrayRange(start: number, stop: number): number[] {
