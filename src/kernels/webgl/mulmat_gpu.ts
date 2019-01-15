@@ -24,7 +24,7 @@ export class MatMulProgram implements GPGPUProgram {
 
   constructor(
       aShape: [number, number, number], bShape: [number, number, number],
-      transposeA = false, transposeB = false, activation = 'return x;',
+      transposeA = false, transposeB = false, activation = null,
       addBias = false) {
     const batchSize = aShape[0];
     const outerShapeA = transposeA ? aShape[2] : aShape[1];
@@ -42,74 +42,82 @@ export class MatMulProgram implements GPGPUProgram {
     const sharedDimNearestVec4 = Math.floor(sharedDim / 4) * 4;
     const sharedDimVec4Remainder = sharedDim % 4;
 
+    let activationSnippet = '', applyActivationSnippet = '';
+    if (activation) {
+      activationSnippet = `float activation(float x) {
+        ${activation}
+      }`;
+
+      applyActivationSnippet = `result = activation(result);`;
+    }
+
     const addBiasSnippet = addBias ? 'result += getBiasAtOutCoords();' : '';
     if (addBias) {
       this.variableNames.push('bias');
     }
 
-    this.userCode = `float activation(float x) {
-      ${activation}
-    }
+    this.userCode = `
+      ${activationSnippet}
 
-    float dotARowBCol(int batch, int aRow, int bCol) {
-      float result = 0.0;
-      for (int i = 0; i < ${sharedDimNearestVec4}; i += 4) {
-        vec4 a = vec4(
-          getMatrixA(${aSnippetFromOffset(0, 'i')}),
-          getMatrixA(${aSnippetFromOffset(1, 'i')}),
-          getMatrixA(${aSnippetFromOffset(2, 'i')}),
-          getMatrixA(${aSnippetFromOffset(3, 'i')})
-        );
-        vec4 b = vec4(
-          getMatrixB(${bSnippetFromOffset(0, 'i')}),
-          getMatrixB(${bSnippetFromOffset(1, 'i')}),
-          getMatrixB(${bSnippetFromOffset(2, 'i')}),
-          getMatrixB(${bSnippetFromOffset(3, 'i')})
-        );
+      float dotARowBCol(int batch, int aRow, int bCol) {
+        float result = 0.0;
+        for (int i = 0; i < ${sharedDimNearestVec4}; i += 4) {
+          vec4 a = vec4(
+            getMatrixA(${aSnippetFromOffset(0, 'i')}),
+            getMatrixA(${aSnippetFromOffset(1, 'i')}),
+            getMatrixA(${aSnippetFromOffset(2, 'i')}),
+            getMatrixA(${aSnippetFromOffset(3, 'i')})
+          );
+          vec4 b = vec4(
+            getMatrixB(${bSnippetFromOffset(0, 'i')}),
+            getMatrixB(${bSnippetFromOffset(1, 'i')}),
+            getMatrixB(${bSnippetFromOffset(2, 'i')}),
+            getMatrixB(${bSnippetFromOffset(3, 'i')})
+          );
 
-        result += dot(a, b);
+          result += dot(a, b);
+        }
+
+        if (${sharedDimVec4Remainder === 1}) {
+          result += getMatrixA(${aSnippetFromOffset(0, sharedDimNearestVec4)}) *
+            getMatrixB(${bSnippetFromOffset(0, sharedDimNearestVec4)});
+        } else if (${sharedDimVec4Remainder === 2}) {
+          vec2 a = vec2(
+            getMatrixA(${aSnippetFromOffset(0, sharedDimNearestVec4)}),
+            getMatrixA(${aSnippetFromOffset(1, sharedDimNearestVec4)})
+          );
+          vec2 b = vec2(
+            getMatrixB(${bSnippetFromOffset(0, sharedDimNearestVec4)}),
+            getMatrixB(${bSnippetFromOffset(1, sharedDimNearestVec4)})
+          );
+          result += dot(a, b);
+        } else if (${sharedDimVec4Remainder === 3}) {
+          vec3 a = vec3(
+            getMatrixA(${aSnippetFromOffset(0, sharedDimNearestVec4)}),
+            getMatrixA(${aSnippetFromOffset(1, sharedDimNearestVec4)}),
+            getMatrixA(${aSnippetFromOffset(2, sharedDimNearestVec4)})
+          );
+          vec3 b = vec3(
+            getMatrixB(${bSnippetFromOffset(0, sharedDimNearestVec4)}),
+            getMatrixB(${bSnippetFromOffset(1, sharedDimNearestVec4)}),
+            getMatrixB(${bSnippetFromOffset(2, sharedDimNearestVec4)})
+          );
+          result += dot(a, b);
+        }
+
+        return result;
       }
 
-      if (${sharedDimVec4Remainder === 1}) {
-        result += getMatrixA(${aSnippetFromOffset(0, sharedDimNearestVec4)}) *
-          getMatrixB(${bSnippetFromOffset(0, sharedDimNearestVec4)});
-      } else if (${sharedDimVec4Remainder === 2}) {
-        vec2 a = vec2(
-          getMatrixA(${aSnippetFromOffset(0, sharedDimNearestVec4)}),
-          getMatrixA(${aSnippetFromOffset(1, sharedDimNearestVec4)})
-        );
-        vec2 b = vec2(
-          getMatrixB(${bSnippetFromOffset(0, sharedDimNearestVec4)}),
-          getMatrixB(${bSnippetFromOffset(1, sharedDimNearestVec4)})
-        );
-        result += dot(a, b);
-      } else if (${sharedDimVec4Remainder === 3}) {
-        vec3 a = vec3(
-          getMatrixA(${aSnippetFromOffset(0, sharedDimNearestVec4)}),
-          getMatrixA(${aSnippetFromOffset(1, sharedDimNearestVec4)}),
-          getMatrixA(${aSnippetFromOffset(2, sharedDimNearestVec4)})
-        );
-        vec3 b = vec3(
-          getMatrixB(${bSnippetFromOffset(0, sharedDimNearestVec4)}),
-          getMatrixB(${bSnippetFromOffset(1, sharedDimNearestVec4)}),
-          getMatrixB(${bSnippetFromOffset(2, sharedDimNearestVec4)})
-        );
-        result += dot(a, b);
+      void main() {
+        ivec3 resBRC = getOutputCoords();
+        float result = dotARowBCol(resBRC.x, resBRC.y, resBRC.z);
+
+        ${applyActivationSnippet}
+
+        ${addBiasSnippet}
+
+        setOutput(result);
       }
-
-      return result;
-    }
-
-    void main() {
-      ivec3 resBRC = getOutputCoords();
-      float result = dotARowBCol(resBRC.x, resBRC.y, resBRC.z);
-
-      result = activation(result);
-
-      ${addBiasSnippet}
-
-      setOutput(result);
-    }
     `;
   }
 }

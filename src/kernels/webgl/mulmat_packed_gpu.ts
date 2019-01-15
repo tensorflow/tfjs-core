@@ -26,7 +26,7 @@ export class MatMulPackedProgram implements GPGPUProgram {
   constructor(
       aShape: [number, number], bShape: [number, number],
       outputShape: [number, number], transposeA = false, transposeB = false,
-      activation = 'return x;', addBias = false) {
+      activation = null, addBias = false) {
     this.outputShape = outputShape;
 
     const sharedDim = transposeA ? aShape[0] : aShape[1];
@@ -37,15 +37,22 @@ export class MatMulPackedProgram implements GPGPUProgram {
     const aSwizzle = transposeA ? ['a.xxyy', 'a.zzww'] : ['a.xxzz', 'a.yyww'];
     const bSwizzle = transposeB ? ['b.xzxz', 'b.ywyw'] : ['b.xyxy', 'b.zwzw'];
 
+    let activationSnippet = '', applyActivationSnippet = '';
+    if (activation) {
+      activationSnippet = `vec4 activation(vec4 x) {
+        ${activation}
+      }`;
+
+      applyActivationSnippet = `result = activation(result);`;
+    }
+
     const addBiasSnippet = addBias ? 'result += getBiasAtOutCoords();' : '';
     if (addBias) {
       this.variableNames.push('bias');
     }
 
     this.userCode = `
-      vec4 activation(vec4 x) {
-        ${activation}
-      }
+      ${activationSnippet}
 
       const float sharedDimension = ${sharedDimensionPacked}.0;
 
@@ -65,7 +72,7 @@ export class MatMulPackedProgram implements GPGPUProgram {
         ivec2 rc = getOutputCoords();
         vec4 result = dot2x2ARowBCol(rc);
 
-        result = activation(result);
+        ${applyActivationSnippet}
 
         ${addBiasSnippet}
 
