@@ -23,7 +23,7 @@ import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import * as util from '../util';
 
-import {activationMap, FusableActivation} from './fused_util';
+import {fusableActivations} from './fused_util';
 
 /**
  * Computes the dot product of two matrices with optional activation and bias.
@@ -47,16 +47,8 @@ import {activationMap, FusableActivation} from './fused_util';
 function matMul_<T extends Tensor>(
     a: T|TensorLike, b: T|TensorLike, transposeA = false, transposeB = false,
     activation = 'linear', bias?: T|TensorLike): T {
-  let fusedMatch: FusableActivation;
-  for (const [key, value] of activationMap) {
-    if (activation === value.kernelKey) {
-      fusedMatch = key;
-      break;
-    }
-  }
-
   util.assert(
-      fusedMatch != null,
+      fusableActivations.find(d => d === activation) != null,
       `Error in fused matMul: activation ${activation}` +
           ` has not been implemented.`);
 
@@ -124,7 +116,7 @@ function matMul_<T extends Tensor>(
     const [y] = saved;
 
     let dyActivation = dy;
-    if (fusedMatch === FusableActivation.RELU) {
+    if (activation === 'relu') {
       dyActivation = dy.mul(y.step()) as Tensor3D;
     }
 
@@ -153,12 +145,10 @@ function matMul_<T extends Tensor>(
 
   const res = ENV.engine.runKernel(
       (backend, save) => save(backend.fusedBatchMatMul(
-          a3D, b3D, transposeA, transposeB, activationMap.get(fusedMatch),
+          a3D, b3D, transposeA, transposeB, activation,
           bias3D)),
       {$a: a3D, $b: b3D}, grad);
   return res.reshape(outShape) as T;
 }
 
 export const matMul = op({matMul_});
-
-export {activationMap, FusableActivation};

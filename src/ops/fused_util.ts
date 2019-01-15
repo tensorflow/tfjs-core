@@ -24,6 +24,8 @@ export enum FusableActivation {
   LINEAR
 }
 
+export const fusableActivations = ['linear', 'relu'];
+
 export function createActivation(
     layersKey: string, webglBackendUnaryopKey?: string,
     kernelKey?: string): Activation {
