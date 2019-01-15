@@ -798,7 +798,7 @@ export class MathBackendWebGL implements KernelBackend {
       const program = new MatMulPackedProgram(
           aSqueezed.shape, bSqueezed.shape, [outerShapeA, outerShapeB],
           transposeA, transposeB,
-          unary_packed_op[mapActivationToShaderProgram[activation]] as keyof UnaryPackedOp],
+          unary_packed_op[mapActivationToShaderProgram[activation]] as keyof UnaryPackedOp,
           !!bias);
       const output =
           this.makePackedTensor(program.outputShape, dtype) as Tensor2D;
@@ -811,7 +811,7 @@ export class MathBackendWebGL implements KernelBackend {
     } else {
       const program = new MatMulProgram(
           a.shape, b.shape, transposeA, transposeB,
-          unary_op[mapActivationToShaderProgram[activation]] as keyof UnaryOp],
+          unary_op[mapActivationToShaderProgram[activation]] as keyof UnaryOp,
           !!bias);
       const inputs = [a, b];
       if (bias) {

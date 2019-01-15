@@ -474,7 +474,7 @@ export class MathBackendCPU implements KernelBackend {
   fusedBatchMatMul(
       a: Tensor3D, b: Tensor3D, transposeA: boolean, transposeB: boolean,
       activation: FusableActivations, bias?: Tensor3D): Tensor3D {
-    let result = mapActivation(this, activation, this.batchMatMul(a, b));
+    let result = mapActivation(this, activation, this.batchMatMul(a, b, transposeA, transposeB));
     if (bias) {
       result = this.add(result, bias);
     }

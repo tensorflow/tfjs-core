@@ -17,5 +17,7 @@
 
 const CHECK_NAN_SNIPPET = `if (hasNaN(x)) return x;`;
 
+export const LINEAR = `return x;`;
+
 export const RELU =
     CHECK_NAN_SNIPPET + `return x * vec4(greaterThanEqual(x, vec4(0.0)));`;
