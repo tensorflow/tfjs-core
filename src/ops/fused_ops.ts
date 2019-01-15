@@ -23,7 +23,7 @@ import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import * as util from '../util';
 
-export type FusableActivations = 'linear' | 'relu';
+export type FusableActivations = 'linear'|'relu';
 
 /**
  * Computes the dot product of two matrices with optional activation and bias.
@@ -116,8 +116,9 @@ function matMul_<T extends Tensor>(
     } else if (activation === 'relu') {
       dyActivation = dy.mul(y.step()) as Tensor3D;
     } else {
-      throw new Error(`Gradient for activation ${activation} has not been ` +
-        `implemented yet.`);
+      throw new Error(
+          `Gradient for activation ${activation} has not been ` +
+          `implemented yet.`);
     }
 
     if (!transposeA && !transposeB) {
@@ -145,8 +146,7 @@ function matMul_<T extends Tensor>(
 
   const res = ENV.engine.runKernel(
       (backend, save) => save(backend.fusedBatchMatMul(
-          a3D, b3D, transposeA, transposeB, activation,
-          bias3D)),
+          a3D, b3D, transposeA, transposeB, activation, bias3D)),
       {$a: a3D, $b: b3D}, grad);
   return res.reshape(outShape) as T;
 }

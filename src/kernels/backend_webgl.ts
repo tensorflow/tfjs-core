@@ -132,10 +132,11 @@ export interface WebGLTimingInfo extends TimingInfo {
   downloadWaitMs: number;
 }
 
-const mapActivationToShaderProgram: {[activation in FusableActivations]: string} = {
-  'linear': 'LINEAR',
-  'relu': 'RELU'
-}
+const mapActivationToShaderProgram:
+    {[activation in FusableActivations]: string} = {
+      'linear': 'LINEAR',
+      'relu': 'RELU'
+    };
 
 // Combines a dataId, a shape, and a dtype without a Tensor object so that
 // programs can be executed without a full Tensor object.
@@ -779,9 +780,9 @@ export class MathBackendWebGL implements KernelBackend {
   fusedBatchMatMul(
       a: Tensor3D, b: Tensor3D, transposeA: boolean, transposeB: boolean,
       activation: FusableActivations, bias?: Tensor3D): Tensor3D {
-    if(mapActivationToShaderProgram[activation] == null) {
+    if (mapActivationToShaderProgram[activation] == null) {
       throw new Error(`The activation kernel ${
-          activation} has not been implemented yet for the WebGL backend.`)
+          activation} has not been implemented yet for the WebGL backend.`);
     }
 
     const outerShapeA = transposeA ? a.shape[2] : a.shape[1];
@@ -798,7 +799,8 @@ export class MathBackendWebGL implements KernelBackend {
       const program = new MatMulPackedProgram(
           aSqueezed.shape, bSqueezed.shape, [outerShapeA, outerShapeB],
           transposeA, transposeB,
-          unary_packed_op[mapActivationToShaderProgram[activation] as keyof UnaryPackedOp],
+          unary_packed_op
+              [mapActivationToShaderProgram[activation] as keyof UnaryPackedOp],
           !!bias);
       const output =
           this.makePackedTensor(program.outputShape, dtype) as Tensor2D;
@@ -811,7 +813,8 @@ export class MathBackendWebGL implements KernelBackend {
     } else {
       const program = new MatMulProgram(
           a.shape, b.shape, transposeA, transposeB,
-          unary_op[mapActivationToShaderProgram[activation] as keyof UnaryOp] as string,
+          unary_op[mapActivationToShaderProgram[activation] as keyof UnaryOp] as
+              string,
           !!bias);
       const inputs = [a, b];
       if (bias) {

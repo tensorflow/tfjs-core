@@ -45,14 +45,17 @@ import {split} from './split_shared';
 import {topkImpl} from './topk_impl';
 import {whereImpl} from './where_impl';
 
-const mapActivation = (backend: MathBackendCPU, activation: FusableActivations, x: Tensor) => {
-  if(activation === 'linear') {
-    return ENV.engine.runKernel(backend => (backend as MathBackendCPU).linear(x), {$x: x});
-  } else if(activation === 'relu') {
-    return ENV.engine.runKernel(backend => backend.relu(x), {$x: x});
-  }
-  throw new Error(`Activation ${activation} has not been implemented for the CPU backend.`);
-}
+const mapActivation =
+    (backend: MathBackendCPU, activation: FusableActivations, x: Tensor) => {
+      if (activation === 'linear') {
+        return ENV.engine.runKernel(
+            backend => (backend as MathBackendCPU).linear(x), {$x: x});
+      } else if (activation === 'relu') {
+        return ENV.engine.runKernel(backend => backend.relu(x), {$x: x});
+      }
+      throw new Error(`Activation ${
+          activation} has not been implemented for the CPU backend.`);
+    };
 
 interface TensorData<D extends DataType> {
   values?: DataTypeMap[D];
@@ -483,7 +486,8 @@ export class MathBackendCPU implements KernelBackend {
   fusedBatchMatMul(
       a: Tensor3D, b: Tensor3D, transposeA: boolean, transposeB: boolean,
       activation: FusableActivations, bias?: Tensor3D): Tensor3D {
-    let result = mapActivation(this, activation, this.batchMatMul(a, b, transposeA, transposeB));
+    let result = mapActivation(
+        this, activation, this.batchMatMul(a, b, transposeA, transposeB));
     if (bias) {
       result = this.add(result, bias);
     }
