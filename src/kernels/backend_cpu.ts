@@ -471,7 +471,7 @@ export class MathBackendCPU implements KernelBackend {
     return result.toTensor() as Tensor3D;
   }
 
-  batchMatMulWithActivationBias(
+  fusedBatchMatMul(
       a: Tensor3D, b: Tensor3D, transposeA: boolean, transposeB: boolean,
       activation: Activation, bias?: Tensor3D): Tensor3D {
     if (this[activation.kernelKey as keyof this] == null) {
