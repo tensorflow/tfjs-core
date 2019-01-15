@@ -1603,6 +1603,20 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   conv2d(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
+    if (convInfo.filterHeight === 1 && convInfo.filterWidth === 1 &&
+        convInfo.dilationHeight === 1 && convInfo.dilationWidth === 1 &&
+        convInfo.strideHeight === 1 && convInfo.strideWidth === 1 &&
+        (convInfo.padInfo.type === 'SAME' ||
+         convInfo.padInfo.type === 'VALID')) {
+      util.assert(x.shape[3] == convInfo.inChannels,
+          'conv2d is implemented only for channelsLast dataFormat.');
+      const x2d = this.reshape(x, [1, x.shape[0] * x.shape[1] * x.shape[2],
+          convInfo.inChannels]) as Tensor3D;
+      const w2d = this.reshape(filter,
+          [1, convInfo.inChannels, convInfo.outChannels]) as Tensor3D;
+      return this.batchMatMul(x2d, w2d, false, false).reshape<Rank.R4>(
+          convInfo.outShape);
+    }
     if (ENV.get('WEBGL_CONV_IM2COL') && x.shape[0] === 1) {
       return this.conv2dWithIm2Row(x, filter, convInfo);
     }
