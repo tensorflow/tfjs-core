@@ -25,7 +25,7 @@ import * as broadcast_util from '../ops/broadcast_util';
 import * as concat_util from '../ops/concat_util';
 import {Conv2DInfo, Conv3DInfo} from '../ops/conv_util';
 import * as erf_util from '../ops/erf_util';
-import {FusableActivations} from '../ops/fused_util';
+import {FusableActivations, mapActivation} from '../ops/fused_util';
 import * as gather_nd_util from '../ops/gather_nd_util';
 import * as ops from '../ops/ops';
 import {buffer, scalar, tensor, tensor3d, tensor4d} from '../ops/ops';
@@ -474,13 +474,7 @@ export class MathBackendCPU implements KernelBackend {
   fusedBatchMatMul(
       a: Tensor3D, b: Tensor3D, transposeA: boolean, transposeB: boolean,
       activation: FusableActivations, bias?: Tensor3D): Tensor3D {
-    if (this[activation as keyof this] == null) {
-      throw new Error(`The activation kernel ${
-          activation} has not been implemented yet for the CPU backend.`);
-    }
-    // tslint:disable-next-line:no-any
-    let result = (this as any)[activation](
-        this.batchMatMul(a, b, transposeA, transposeB));
+    let result = mapActivation(this, activation, this.batchMatMul(a, b));
     if (bias) {
       result = this.add(result, bias);
     }

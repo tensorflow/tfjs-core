@@ -15,29 +15,16 @@
  * =============================================================================
  */
 
-export type Activation = {
-  layersKey: string; webglBackendUnaryopKey: string; kernelKey: string;
-};
-
-export enum FusableActivation {
-  RELU,
-  LINEAR
-}
-
-export const fusableActivations = ['linear', 'relu'];
+import {KernelBackend} from '../kernels/backend';
+import {Tensor} from '../tensor';
+import {ENV} from '../environment';
 export type FusableActivations = 'linear' | 'relu';
 
-export function createActivation(
-    layersKey: string, webglBackendUnaryopKey?: string,
-    kernelKey?: string): Activation {
-  return {
-    layersKey,
-    webglBackendUnaryopKey: webglBackendUnaryopKey || layersKey.toUpperCase(),
-    kernelKey: kernelKey || layersKey.toLowerCase()
-  };
+export const mapActivation = (backend: KernelBackend, activation: FusableActivations, x: Tensor) => {
+  if(activation === 'linear') {
+    return ENV.engine.runKernel(backend => backend.linear(x));
+  } else if(activation === 'relu') {
+    return ENV.engine.runKernel(backend => backend.relu(x));
+  }
+  throw new Error(`Activation ${activation} has not been implemented for ${backend}.`);
 }
-
-export const activationMap = new Map<FusableActivation, Activation>([
-  [FusableActivation.RELU, createActivation('Relu', 'RELU', 'relu')],
-  [FusableActivation.LINEAR, createActivation('linear')]
-]);
