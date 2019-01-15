@@ -23,7 +23,7 @@ import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import * as util from '../util';
 
-import {fusableActivations} from './fused_util';
+import {FusableActivations} from './fused_util';
 
 /**
  * Computes the dot product of two matrices with optional activation and bias.
@@ -46,12 +46,7 @@ import {fusableActivations} from './fused_util';
 /** @doc {heading: 'Operations', subheading: 'Matrices'} */
 function matMul_<T extends Tensor>(
     a: T|TensorLike, b: T|TensorLike, transposeA = false, transposeB = false,
-    activation = 'linear', bias?: T|TensorLike): T {
-  util.assert(
-      fusableActivations.find(d => d === activation) != null,
-      `Error in fused matMul: activation ${activation}` +
-          ` has not been implemented.`);
-
+    activation: FusableActivations = 'linear', bias?: T|TensorLike): T {
   let $a = convertToTensor(a, 'a', 'fused matMul');
   let $b = convertToTensor(b, 'b', 'fused matMul');
   [$a, $b] = makeTypesMatch($a, $b);
@@ -115,9 +110,14 @@ function matMul_<T extends Tensor>(
   const grad = (dy: Tensor3D, saved: Tensor[]) => {
     const [y] = saved;
 
-    let dyActivation = dy;
-    if (activation === 'relu') {
+    let dyActivation: Tensor;
+    if (activation === 'linear') {
+      dyActivation = dy;
+    } else if (activation === 'relu') {
       dyActivation = dy.mul(y.step()) as Tensor3D;
+    } else {
+      throw new Error(`Gradient for activation ${activation} has not been ` +
+        `implemented yet.`);
     }
 
     if (!transposeA && !transposeB) {

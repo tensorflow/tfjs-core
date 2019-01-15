@@ -25,7 +25,7 @@ import * as axis_util from '../ops/axis_util';
 import * as broadcast_util from '../ops/broadcast_util';
 import {computeOutShape} from '../ops/concat_util';
 import {Conv2DInfo, Conv3DInfo} from '../ops/conv_util';
-import {Activation} from '../ops/fused_util';
+import {FusableActivations} from '../ops/fused_util';
 import * as gather_nd_util from '../ops/gather_nd_util';
 import * as reduce_util from '../ops/reduce_util';
 import * as scatter_nd_util from '../ops/scatter_nd_util';
@@ -130,6 +130,11 @@ export interface WebGLMemoryInfo extends MemoryInfo {
 export interface WebGLTimingInfo extends TimingInfo {
   uploadWaitMs: number;
   downloadWaitMs: number;
+}
+
+const mapActivation: {[activation in FusableActivations]: string} = {
+  'linear': 'LINEAR',
+  'relu': 'RELU'
 }
 
 // Combines a dataId, a shape, and a dtype without a Tensor object so that
@@ -773,7 +778,12 @@ export class MathBackendWebGL implements KernelBackend {
 
   fusedBatchMatMul(
       a: Tensor3D, b: Tensor3D, transposeA: boolean, transposeB: boolean,
-      activation: Activation, bias?: Tensor3D): Tensor3D {
+      activation: FusableActivations, bias?: Tensor3D): Tensor3D {
+    if(mapActivation[activation] == null) {
+      throw new Error(`The activation kernel ${
+          activation} has not been implemented yet for the WebGL backend.`)
+    }
+
     const outerShapeA = transposeA ? a.shape[2] : a.shape[1];
     const outerShapeB = transposeB ? b.shape[1] : b.shape[2];
     const [batch, , ] = a.shape;
@@ -788,8 +798,7 @@ export class MathBackendWebGL implements KernelBackend {
       const program = new MatMulPackedProgram(
           aSqueezed.shape, bSqueezed.shape, [outerShapeA, outerShapeB],
           transposeA, transposeB,
-          unary_packed_op
-              [activation.webglBackendUnaryopKey as keyof UnaryPackedOp],
+          unary_packed_op[mapActivation[activation]] as keyof UnaryPackedOp],
           !!bias);
       const output =
           this.makePackedTensor(program.outputShape, dtype) as Tensor2D;
@@ -802,8 +811,7 @@ export class MathBackendWebGL implements KernelBackend {
     } else {
       const program = new MatMulProgram(
           a.shape, b.shape, transposeA, transposeB,
-          unary_op[activation.webglBackendUnaryopKey as keyof UnaryOp] as
-              string,
+          unary_op[mapActivation[activation]] as keyof UnaryOp],
           !!bias);
       const inputs = [a, b];
       if (bias) {
