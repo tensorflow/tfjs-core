@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2018 Google LLC. All Rights Reserved.
+ * Copyright 2019 Google LLC. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -43,7 +43,7 @@ export type FusableActivations = 'linear'|'relu';
  * @param activation Name of activation kernel (defaults to `linear`).
  * @param bias Matrix to be added to the result.
  */
-/** @doc {heading: 'Operations', subheading: 'Matrices'} */
+/** @doc {heading: 'Operations', subheading: 'Matrices', namespace: 'fused'} */
 function matMul_<T extends Tensor>(
     a: T|TensorLike, b: T|TensorLike, transposeA = false, transposeB = false,
     activation: FusableActivations = 'linear', bias?: T|TensorLike): T {
