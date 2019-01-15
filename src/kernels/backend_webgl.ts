@@ -25,7 +25,7 @@ import * as axis_util from '../ops/axis_util';
 import * as broadcast_util from '../ops/broadcast_util';
 import {computeOutShape} from '../ops/concat_util';
 import {Conv2DInfo, Conv3DInfo} from '../ops/conv_util';
-import {FusableActivations} from '../ops/fused_util';
+import {FusableActivation} from '../ops/fused_util';
 import * as gather_nd_util from '../ops/gather_nd_util';
 import * as reduce_util from '../ops/reduce_util';
 import * as scatter_nd_util from '../ops/scatter_nd_util';
@@ -133,7 +133,7 @@ export interface WebGLTimingInfo extends TimingInfo {
 }
 
 const mapActivationToShaderProgram:
-    {[activation in FusableActivations]: string} = {
+    {[activation in FusableActivation]: string} = {
       'linear': 'LINEAR',
       'relu': 'RELU'
     };
@@ -779,7 +779,7 @@ export class MathBackendWebGL implements KernelBackend {
 
   fusedBatchMatMul(
       a: Tensor3D, b: Tensor3D, transposeA: boolean, transposeB: boolean,
-      activation: FusableActivations, bias?: Tensor3D): Tensor3D {
+      activation: FusableActivation, bias?: Tensor3D): Tensor3D {
     if (mapActivationToShaderProgram[activation] == null) {
       throw new Error(`The activation kernel ${
           activation} has not been implemented yet for the WebGL backend.`);
