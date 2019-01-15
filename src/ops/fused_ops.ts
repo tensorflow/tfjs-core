@@ -22,8 +22,7 @@ import {makeTypesMatch} from '../tensor_util';
 import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import * as util from '../util';
-
-export type FusableActivations = 'linear'|'relu';
+import {FusableActivations} from './fused_util';
 
 /**
  * Computes the dot product of two matrices with optional activation and bias.

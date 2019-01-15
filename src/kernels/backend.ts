@@ -16,6 +16,7 @@
  */
 
 import {Conv2DInfo, Conv3DInfo} from '../ops/conv_util';
+import {FusableActivations} from '../ops/fused_util';
 import {DataId, Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D} from '../tensor';
 import {DataType, DataValues, Rank, ShapeMap} from '../types';
 
@@ -123,7 +124,7 @@ export class KernelBackend implements TensorStorage, BackendTimer {
 
   fusedBatchMatMul(
       a: Tensor3D, b: Tensor3D, transposeA: boolean, transposeB: boolean,
-      activation: 'linear'|'relu', bias?: Tensor3D): Tensor3D {
+      activation: FusableActivations, bias?: Tensor3D): Tensor3D {
     throw new Error('Not yet implemented');
   }
 
