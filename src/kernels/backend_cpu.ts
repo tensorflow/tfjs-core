@@ -25,7 +25,7 @@ import * as broadcast_util from '../ops/broadcast_util';
 import * as concat_util from '../ops/concat_util';
 import {Conv2DInfo, Conv3DInfo} from '../ops/conv_util';
 import * as erf_util from '../ops/erf_util';
-import {FusableActivations, mapActivation} from '../ops/fused_util';
+import {FusableActivations} from '../ops/fused_ops';
 import * as gather_nd_util from '../ops/gather_nd_util';
 import * as ops from '../ops/ops';
 import {buffer, scalar, tensor, tensor3d, tensor4d} from '../ops/ops';
@@ -44,6 +44,15 @@ import {nonMaxSuppressionImpl} from './non_max_suppression_impl';
 import {split} from './split_shared';
 import {topkImpl} from './topk_impl';
 import {whereImpl} from './where_impl';
+
+const mapActivation = (backend: MathBackendCPU, activation: FusableActivations, x: Tensor) => {
+  if(activation === 'linear') {
+    return ENV.engine.runKernel(backend => (backend as MathBackendCPU).linear(x), {$x: x});
+  } else if(activation === 'relu') {
+    return ENV.engine.runKernel(backend => backend.relu(x), {$x: x});
+  }
+  throw new Error(`Activation ${activation} has not been implemented for the CPU backend.`);
+}
 
 interface TensorData<D extends DataType> {
   values?: DataTypeMap[D];
@@ -478,7 +487,7 @@ export class MathBackendCPU implements KernelBackend {
     if (bias) {
       result = this.add(result, bias);
     }
-    return result;
+    return result as Tensor3D;
   }
 
   multiply(a: Tensor, b: Tensor): Tensor {

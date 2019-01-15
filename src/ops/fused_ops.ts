@@ -23,7 +23,7 @@ import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import * as util from '../util';
 
-import {FusableActivations} from './fused_util';
+export type FusableActivations = 'linear' | 'relu';
 
 /**
  * Computes the dot product of two matrices with optional activation and bias.
@@ -110,7 +110,7 @@ function matMul_<T extends Tensor>(
   const grad = (dy: Tensor3D, saved: Tensor[]) => {
     const [y] = saved;
 
-    let dyActivation: Tensor;
+    let dyActivation: Tensor3D;
     if (activation === 'linear') {
       dyActivation = dy;
     } else if (activation === 'relu') {

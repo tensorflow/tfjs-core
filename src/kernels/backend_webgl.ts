@@ -25,7 +25,7 @@ import * as axis_util from '../ops/axis_util';
 import * as broadcast_util from '../ops/broadcast_util';
 import {computeOutShape} from '../ops/concat_util';
 import {Conv2DInfo, Conv3DInfo} from '../ops/conv_util';
-import {FusableActivations} from '../ops/fused_util';
+import {FusableActivations} from '../ops/fused_ops';
 import * as gather_nd_util from '../ops/gather_nd_util';
 import * as reduce_util from '../ops/reduce_util';
 import * as scatter_nd_util from '../ops/scatter_nd_util';
@@ -798,7 +798,7 @@ export class MathBackendWebGL implements KernelBackend {
       const program = new MatMulPackedProgram(
           aSqueezed.shape, bSqueezed.shape, [outerShapeA, outerShapeB],
           transposeA, transposeB,
-          unary_packed_op[mapActivationToShaderProgram[activation]] as keyof UnaryPackedOp,
+          unary_packed_op[mapActivationToShaderProgram[activation] as keyof UnaryPackedOp],
           !!bias);
       const output =
           this.makePackedTensor(program.outputShape, dtype) as Tensor2D;
@@ -811,7 +811,7 @@ export class MathBackendWebGL implements KernelBackend {
     } else {
       const program = new MatMulProgram(
           a.shape, b.shape, transposeA, transposeB,
-          unary_op[mapActivationToShaderProgram[activation]] as keyof UnaryOp,
+          unary_op[mapActivationToShaderProgram[activation] as keyof UnaryOp] as string,
           !!bias);
       const inputs = [a, b];
       if (bias) {
