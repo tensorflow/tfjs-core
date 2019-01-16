@@ -18,8 +18,9 @@
 import {ENV} from '../environment';
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
-import {ALL_ENVS, expectArraysClose, expectNumbersClose, PACKED_ENVS} from '../test_util';
+import {ALL_ENVS, expectArraysClose, expectNumbersClose, PACKED_ENVS, WEBGL_ENVS} from '../test_util';
 import * as util from '../util';
+
 import * as selu_util from './selu_util';
 
 describeWithFlags('relu', ALL_ENVS, () => {
