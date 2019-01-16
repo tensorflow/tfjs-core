@@ -45,7 +45,7 @@ import {FusableActivation} from './fused_util';
 /** @doc {heading: 'Operations', subheading: 'Matrices', namespace: 'fused'} */
 function matMul_<T extends Tensor>(
     a: T|TensorLike, b: T|TensorLike, transposeA = false, transposeB = false,
-    activation: FusableActivation = 'linear', bias?: T|TensorLike): T {
+    bias?: T|TensorLike, activation: FusableActivation = 'linear'): T {
   let $a = convertToTensor(a, 'a', 'fused matMul');
   let $b = convertToTensor(b, 'b', 'fused matMul');
   [$a, $b] = makeTypesMatch($a, $b);
@@ -110,7 +110,7 @@ function matMul_<T extends Tensor>(
     const [y] = saved;
 
     let dyActivation: Tensor3D;
-    if (activation === 'linear') {
+    if (activation == null || activation === 'linear') {
       dyActivation = dy;
     } else if (activation === 'relu') {
       dyActivation = dy.mul(y.step()) as Tensor3D;
@@ -120,33 +120,49 @@ function matMul_<T extends Tensor>(
           `implemented yet.`);
     }
 
+    const biasGradient = bias ? {$bias: () => dyActivation} : {};
+
     if (!transposeA && !transposeB) {
-      return {
-        $a: () => dyActivation.matMul(b3D, false, true),
-        $b: () => a3D.matMul(dyActivation, true, false)
-      };
+      return Object.assign(
+          {
+            $a: () => dyActivation.matMul(b3D, false, true),
+            $b: () => a3D.matMul(dyActivation, true, false)
+          },
+          biasGradient);
     } else if (!transposeA && transposeB) {
-      return {
-        $a: () => dyActivation.matMul(b3D, false, false),
-        $b: () => dyActivation.matMul(a3D, true, false)
-      };
+      return Object.assign(
+          {
+            $a: () => dyActivation.matMul(b3D, false, false),
+            $b: () => dyActivation.matMul(a3D, true, false)
+          },
+          biasGradient);
     } else if (transposeA && !transposeB) {
-      return {
-        $a: () => b3D.matMul(dyActivation, false, true),
-        $b: () => a3D.matMul(dyActivation, false, false)
-      };
+      return Object.assign(
+          {
+            $a: () => b3D.matMul(dyActivation, false, true),
+            $b: () => a3D.matMul(dyActivation, false, false)
+          },
+          biasGradient);
     } else {
-      return {
-        $a: () => b3D.matMul(dyActivation, true, true),
-        $b: () => dyActivation.matMul(a3D, true, true)
-      };
+      return Object.assign(
+          {
+            $a: () => b3D.matMul(dyActivation, true, true),
+            $b: () => dyActivation.matMul(a3D, true, true)
+          },
+          biasGradient);
     }
   };
+
+  const inputs = {$a: a3D, $b: b3D};
+  if (bias) {
+    // tslint:disable-next-line:no-any
+    (inputs as any).$bias = bias3D;
+  }
 
   const res = ENV.engine.runKernel(
       (backend, save) => save(backend.fusedBatchMatMul(
           a3D, b3D, transposeA, transposeB, bias3D, activation)),
-      {$a: a3D, $b: b3D}, grad);
+      inputs, grad);
   return res.reshape(outShape) as T;
 }
 
