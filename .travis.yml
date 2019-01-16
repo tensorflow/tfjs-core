@@ -3,7 +3,7 @@ node_js:
   - '8'
   - '10'
 script:
-  - if [ "$TO_TEST" = "regular" ]; then travis_wait 30 yarn test-benchmark && yarn test-travis; fi
+  - if [ "$TO_TEST" = "regular" ]; then travis_wait 30 yarn test-benchmark && travis_wait 30 yarn test-travis; fi
   - if [ "$TO_TEST" = "integration" ]; then travis_wait 30 yarn test-integration; fi
 cache: yarn
 git:
