@@ -109,9 +109,6 @@ import {UnpackProgram} from './webgl/unpack_gpu';
 import * as webgl_util from './webgl/webgl_util';
 import {whereImpl} from './where_impl';
 
-type UnaryPackedOp = typeof unary_packed_op;
-type UnaryOp = typeof unary_op;
-
 type KernelInfo = {
   name: string; query: Promise<number>;
 };
@@ -132,11 +129,22 @@ export interface WebGLTimingInfo extends TimingInfo {
   downloadWaitMs: number;
 }
 
-const mapActivationToShaderProgram:
-    {[activation in FusableActivation]: string} = {
-      'linear': 'LINEAR',
-      'relu': 'RELU'
-    };
+function mapActivationToShaderProgram(
+    activation: FusableActivation, packed = false): string {
+  if (activation === 'linear') {
+    if (packed) {
+      return unary_packed_op.LINEAR;
+    }
+    return unary_op.LINEAR;
+  } else if (activation === 'relu') {
+    if (packed) {
+      return unary_packed_op.RELU;
+    }
+    return unary_op.RELU;
+  }
+  throw new Error(`Activation ${
+      activation} has not been implemented for the WebGL backend.`);
+}
 
 // Combines a dataId, a shape, and a dtype without a Tensor object so that
 // programs can be executed without a full Tensor object.
@@ -780,11 +788,6 @@ export class MathBackendWebGL implements KernelBackend {
   fusedBatchMatMul(
       a: Tensor3D, b: Tensor3D, transposeA: boolean, transposeB: boolean,
       bias?: Tensor3D, activation?: FusableActivation): Tensor3D {
-    if (mapActivationToShaderProgram[activation] == null) {
-      throw new Error(`The activation kernel ${
-          activation} has not been implemented yet for the WebGL backend.`);
-    }
-
     const outerShapeA = transposeA ? a.shape[2] : a.shape[1];
     const outerShapeB = transposeB ? b.shape[1] : b.shape[2];
     const [batch, , ] = a.shape;
@@ -799,10 +802,7 @@ export class MathBackendWebGL implements KernelBackend {
       const program = new MatMulPackedProgram(
           aSqueezed.shape, bSqueezed.shape, [outerShapeA, outerShapeB],
           transposeA, transposeB, !!bias,
-          activation ? unary_packed_op
-                           [mapActivationToShaderProgram[activation] as
-                            keyof UnaryPackedOp] :
-                       null);
+          activation ? mapActivationToShaderProgram(activation, true) : null);
       const output =
           this.makePackedTensor(program.outputShape, dtype) as Tensor2D;
       const inputs = [aSqueezed, bSqueezed];
@@ -814,10 +814,7 @@ export class MathBackendWebGL implements KernelBackend {
     } else {
       const program = new MatMulProgram(
           a.shape, b.shape, transposeA, transposeB, !!bias,
-          activation ? unary_op
-                           [mapActivationToShaderProgram[activation] as
-                            keyof UnaryOp] as string :
-                       null);
+          activation ? mapActivationToShaderProgram(activation) : null);
       const inputs = [a, b];
       if (bias) {
         inputs.push(bias);
