@@ -26,7 +26,7 @@ export class MatMulPackedProgram implements GPGPUProgram {
   constructor(
       aShape: [number, number], bShape: [number, number],
       outputShape: [number, number], transposeA = false, transposeB = false,
-      activation: string = null, addBias = false) {
+      addBias = false, activation: string = null) {
     this.outputShape = outputShape;
 
     const sharedDim = transposeA ? aShape[0] : aShape[1];
@@ -72,9 +72,9 @@ export class MatMulPackedProgram implements GPGPUProgram {
         ivec2 rc = getOutputCoords();
         vec4 result = dot2x2ARowBCol(rc);
 
-        ${applyActivationSnippet}
-
         ${addBiasSnippet}
+
+        ${applyActivationSnippet}
 
         setOutput(result);
       }

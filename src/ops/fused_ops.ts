@@ -145,7 +145,7 @@ function matMul_<T extends Tensor>(
 
   const res = ENV.engine.runKernel(
       (backend, save) => save(backend.fusedBatchMatMul(
-          a3D, b3D, transposeA, transposeB, activation, bias3D)),
+          a3D, b3D, transposeA, transposeB, bias3D, activation)),
       {$a: a3D, $b: b3D}, grad);
   return res.reshape(outShape) as T;
 }

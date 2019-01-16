@@ -24,8 +24,8 @@ export class MatMulProgram implements GPGPUProgram {
 
   constructor(
       aShape: [number, number, number], bShape: [number, number, number],
-      transposeA = false, transposeB = false, activation: string = null,
-      addBias = false) {
+      transposeA = false, transposeB = false, addBias = false,
+      activation: string = null) {
     const batchSize = aShape[0];
     const outerShapeA = transposeA ? aShape[2] : aShape[1];
     const outerShapeB = transposeB ? bShape[1] : bShape[2];
@@ -112,9 +112,9 @@ export class MatMulProgram implements GPGPUProgram {
         ivec3 resBRC = getOutputCoords();
         float result = dotARowBCol(resBRC.x, resBRC.y, resBRC.z);
 
-        ${applyActivationSnippet}
-
         ${addBiasSnippet}
+
+        ${applyActivationSnippet}
 
         setOutput(result);
       }
