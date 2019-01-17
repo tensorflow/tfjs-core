@@ -1599,8 +1599,8 @@ export class MathBackendWebGL implements KernelBackend {
     const $filter = this.reshape(filter,
         [1, convInfo.inChannels, convInfo.outChannels]) as Tensor3D;
     
-    let xf = this.batchMatMul($x, $filter, false, false);
-    let xfTexData = this.texData.get(xf.dataId);
+    const xf = this.batchMatMul($x, $filter, false, false);
+    const xfTexData = this.texData.get(xf.dataId);
     util.assert(xfTexData.isPacked, 'expected packed result of batchMatMul');
 
     if (packedXRowPad) {
