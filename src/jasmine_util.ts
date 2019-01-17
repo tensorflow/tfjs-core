@@ -113,25 +113,15 @@ export let TEST_ENVS: TestEnv[] = [
     }
   },
   {
-    name: 'webgl1',
+    name: 'webgl2',
     factory: () => new MathBackendWebGL(),
     features: {
-      'WEBGL_VERSION': 1,
+      'WEBGL_VERSION': 2,
       'WEBGL_CPU_FORWARD': false,
       'WEBGL_SIZE_UPLOAD_UNIFORM': 0,
       'WEBGL_PACK': true
     }
   },
-  // {
-  //   name: 'webgl2',
-  //   factory: () => new MathBackendWebGL(),
-  //   features: {
-  //     'WEBGL_VERSION': 2,
-  //     'WEBGL_CPU_FORWARD': false,
-  //     'WEBGL_SIZE_UPLOAD_UNIFORM': 0,
-  //     'WEBGL_PACK': true
-  //   }
-  // },
   {
     name: 'cpu',
     factory: () => new MathBackendCPU(),
