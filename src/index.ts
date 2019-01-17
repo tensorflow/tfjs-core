@@ -23,8 +23,7 @@ import './kernels/backend_cpu';
 
 import {nextFrame} from './browser_util';
 import * as environment from './environment';
-import {Environment, enableProdMode} from './environment';
-
+import {enableProdMode, Environment} from './environment';
 // Serialization.
 import * as io from './io/io';
 import * as math from './math';
@@ -36,7 +35,6 @@ import {version} from './version';
 import * as webgl from './webgl';
 
 export {InferenceModel, ModelPredictConfig} from './model_types';
-
 // Optimizers.
 export {AdadeltaOptimizer} from './optimizers/adadelta_optimizer';
 export {AdagradOptimizer} from './optimizers/adagrad_optimizer';
@@ -46,7 +44,7 @@ export {MomentumOptimizer} from './optimizers/momentum_optimizer';
 export {Optimizer} from './optimizers/optimizer';
 export {RMSPropOptimizer} from './optimizers/rmsprop_optimizer';
 export {SGDOptimizer} from './optimizers/sgd_optimizer';
-export {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer, variable, Variable} from './tensor';
+export {Scalar, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer, variable, Variable} from './tensor';
 export {NamedTensorMap} from './tensor_types';
 export {DataType, DataTypeMap, DataValues, Rank, ShapeMap} from './types';
 
@@ -70,7 +68,16 @@ export {version as version_core};
 export {nextFrame};
 
 // Second level exports.
-export {environment, io, math, serialization, test_util, util, webgl, enableProdMode};
+export {
+  environment,
+  io,
+  math,
+  serialization,
+  test_util,
+  util,
+  webgl,
+  enableProdMode
+};
 
 // Backend specific.
 export {KernelBackend, BackendTimingInfo, DataMover, DataStorage} from './kernels/backend';

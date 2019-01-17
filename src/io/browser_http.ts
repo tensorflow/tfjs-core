@@ -21,7 +21,9 @@
  * Uses [`fetch`](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API).
  */
 
+import {getGlobalNamespace} from '../environment';
 import {assert} from '../util';
+
 import {concatenateArrayBuffers, getModelArtifactsInfoForJSON} from './io_utils';
 import {IORouter, IORouterRegistry} from './router_registry';
 import {IOHandler, ModelArtifacts, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
@@ -40,6 +42,8 @@ export class BrowserHTTPRequest implements IOHandler {
   constructor(
       path: string|string[], requestInit?: RequestInit,
       private readonly weightPathPrefix?: string, fetchFunc?: Function) {
+    // tslint:disable-next-line:no-any
+    const fetch = (getGlobalNamespace() as any).fetch;
     if (fetchFunc == null) {
       if (typeof fetch === 'undefined') {
         throw new Error(
@@ -347,7 +351,9 @@ IORouterRegistry.registerLoadRouter(httpRequestRouter);
  * import tensorflow as tf
  * import tensorflowjs as tfjs
  * import werkzeug.formparser
- *
+ *import { ENV } from '../environment';
+import { Environment } from '../environment';
+
  *
  * class ModelReceiver(object):
  *

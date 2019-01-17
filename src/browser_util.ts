@@ -16,8 +16,9 @@
  */
 
 const delayCallback: Function = typeof requestAnimationFrame !== 'undefined' ?
-    requestAnimationFrame :  // Browsers
-    setImmediate;            // Node.js
+    requestAnimationFrame :                               // Browsers
+    typeof setImmediate !== 'undefined' ? setImmediate :  // Node.js
+        (f: Function) => f();                             // No delayed
 
 /**
  * Returns a promise that resolve when a requestAnimationFrame has completed.

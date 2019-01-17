@@ -461,11 +461,13 @@ export class Environment {
   }
 }
 
-function getGlobalNamespace(): {ENV: Environment} {
+export function getGlobalNamespace(): {ENV: Environment} {
   // tslint:disable-next-line:no-any
   let ns: any;
   if (typeof (window) !== 'undefined') {
     ns = window;
+  } else if (typeof (global) !== 'undefined') {
+    ns = global;
   } else if (typeof (process) !== 'undefined') {
     ns = process;
   } else {
