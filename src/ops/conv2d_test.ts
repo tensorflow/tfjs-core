@@ -191,9 +191,20 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
     const x = tf.tensor3d([1, 2, 3, 4], inputShape);
     const w = tf.tensor4d([1, 2, 3, 4], [fSize, fSize, 2, 2]);
 
+    const webglLazilyUnpackFlagSaved = tf.ENV.get('WEBGL_LAZILY_UNPACK');
+    tf.ENV.set('WEBGL_LAZILY_UNPACK', true);
+    const webglLazilyPackBinaryOperationsFlagSaved =
+        tf.ENV.get('WEBGL_PACK_BINARY_OPERATIONS');
+    tf.ENV.set('WEBGL_PACK_BINARY_OPERATIONS', true);
+    
+    // |result| is packed for WebGL backends.
     const result = tf.conv2d(x, w, stride, pad);
-    // result would be packed for webGL backends.
     const result1 = tf.conv2d(result, w, stride, pad);
+
+    tf.ENV.set('WEBGL_LAZILY_UNPACK', webglLazilyUnpackFlagSaved);
+    tf.ENV.set('WEBGL_PACK_BINARY_OPERATIONS',
+        webglLazilyPackBinaryOperationsFlagSaved);
+
     expectArraysClose(result, [7, 10, 15, 22]);
     expectArraysClose(result1, [37, 54, 81, 118]);
   });

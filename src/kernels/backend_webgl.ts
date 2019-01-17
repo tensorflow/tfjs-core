@@ -1570,37 +1570,44 @@ export class MathBackendWebGL implements KernelBackend {
       Tensor4D {
     // Reshapes conv2D input to 2D tensors, uses matMul and then reshape the
     // result from 2D to 4D.
-    util.assert(x.shape[3] === convInfo.inChannels,
-        'only channelsLast dataFormat is supported.');
+    if (!ENV.get('WEBGL_LAZILY_UNPACK') ||
+        !ENV.get('WEBGL_PACK_BINARY_OPERATIONS')) {
+      const $x = this.reshape(x, [1, x.shape[0] * x.shape[1] * x.shape[2],
+          convInfo.inChannels]) as Tensor3D;
+      const $filter = this.reshape(filter,
+          [1, convInfo.inChannels, convInfo.outChannels]) as Tensor3D;
+      return this.batchMatMul($x, $filter, false, false).reshape<Rank.R4>(
+          convInfo.outShape);
+    }
+    
     const xshape = x.shape;
     const xTexData = this.texData.get(x.dataId);
-    // We avoid expensive packed reshape by padding to even row count while
-    // keeping the column count the same. This is based on 2x2 packed texture
-    // layout: when x.shape[2] is odd, the result is the same as it would be for
-    // x.shape[2] + 1 as row count - batch has padding of one row to make even
-    // number of rows. 
+    // We avoid expensive packed reshape by padding row count to next even
+    // number. When number of rows in batch, x.shape[2]), in 2x2 packed texture
+    // layout is odd, the result of packed batchMatMul is the same as it is for
+    // next, even, number of rows in the batch - x.shape[2] + 1.
     const packedXRowPad = xshape[2] % 2 === 1 && xTexData.isPacked ? 1 : 0;
+
     const $x = Tensor.make(
-        [1, xshape[0] * xshape[1] * (xshape[2] + packedXRowPad), xshape[3]],
-        {dataId: x.dataId}, x.dtype) as Tensor3D;
+        [1, xshape[0] * xshape[1] * (xshape[2] + packedXRowPad),
+         convInfo.inChannels], {dataId: x.dataId}, x.dtype) as Tensor3D;
     if (packedXRowPad) {
         xTexData.shape[xTexData.shape.length - 2]++;
         util.assert(webgl_util.isReshapeFree(xTexData.shape, $x.shape),
-            `free packed reshape expected for ${xTexData.shape}`);
+            `packed reshape from ${xTexData.shape} to ${$x.shape} isn't free`,);
     }
     const $filter = this.reshape(filter,
         [1, convInfo.inChannels, convInfo.outChannels]) as Tensor3D;
+    
     let xf = this.batchMatMul($x, $filter, false, false);
     let xfTexData = this.texData.get(xf.dataId);
+    util.assert(xfTexData.isPacked, 'expected packed result of batchMatMul');
+
     if (packedXRowPad) {
+      // Restore the input shape.
       xTexData.shape[xTexData.shape.length - 2]--;
-      // In (unlikelly) case that batchMatMul produced unpacked result for
-      // packed input, we need to resolve added padding by packing the result.
-      if (!xfTexData.isPacked) {
-        xf = this.packTensor(xf);
-        xfTexData = this.texData.get(xf.dataId);
-      }
-      // Finally, set the shapes with no need for expensive reshape.
+      // Set the output shape - there is no need for expensive reshape as data
+      // layout is already correct.
       xfTexData.shape = convInfo.outShape;
       return Tensor.make(convInfo.outShape, {dataId: xf.dataId}, xf.dtype) as
           Tensor4D;
