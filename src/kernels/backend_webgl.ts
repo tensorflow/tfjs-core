@@ -1566,6 +1566,48 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [x]) as T;
   }
 
+  conv2dByMatMul(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
+      Tensor4D {
+    // Reshapes conv2D input to 2D tensors, uses matMul and then reshape the
+    // result from 2D to 4D.
+    util.assert(x.shape[3] === convInfo.inChannels,
+        'only channelsLast dataFormat is supported.');
+    const xshape = x.shape;
+    const xTexData = this.texData.get(x.dataId);
+    // We avoid expensive packed reshape by padding to even row count while
+    // keeping the column count the same. This is based on 2x2 packed texture
+    // layout: when x.shape[2] is odd, the result is the same as it would be for
+    // x.shape[2] + 1 as row count - batch has padding of one row to make even
+    // number of rows. 
+    const packedXRowPad = xshape[2] % 2 === 1 && xTexData.isPacked ? 1 : 0;
+    const $x = Tensor.make(
+        [1, xshape[0] * xshape[1] * (xshape[2] + packedXRowPad), xshape[3]],
+        {dataId: x.dataId}, x.dtype) as Tensor3D;
+    if (packedXRowPad) {
+        xTexData.shape[xTexData.shape.length - 2]++;
+        util.assert(webgl_util.isReshapeFree(xTexData.shape, $x.shape),
+            `free packed reshape expected for ${xTexData.shape}`);
+    }
+    const $filter = this.reshape(filter,
+        [1, convInfo.inChannels, convInfo.outChannels]) as Tensor3D;
+    let xf = this.batchMatMul($x, $filter, false, false);
+    let xfTexData = this.texData.get(xf.dataId);
+    if (packedXRowPad) {
+      xTexData.shape[xTexData.shape.length - 2]--;
+      // In (unlikelly) case that batchMatMul produced unpacked result for
+      // packed input, we need to resolve added padding by packing the result.
+      if (!xfTexData.isPacked) {
+        xf = this.packTensor(xf);
+        xfTexData = this.texData.get(xf.dataId);
+      }
+      // Finally, set the shapes with no need for expensive reshape.
+      xfTexData.shape = convInfo.outShape;
+      return Tensor.make(convInfo.outShape, {dataId: xf.dataId}, xf.dtype) as
+          Tensor4D;
+    }
+    return this.reshape<Rank.R4>(xf, convInfo.outShape);
+  }
+
   conv2dWithIm2Row(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
       Tensor4D {
     // Rearranges conv2d input so each block to be convolved over forms the
@@ -1608,14 +1650,7 @@ export class MathBackendWebGL implements KernelBackend {
         convInfo.strideHeight === 1 && convInfo.strideWidth === 1 &&
         (convInfo.padInfo.type === 'SAME' ||
          convInfo.padInfo.type === 'VALID')) {
-      util.assert(x.shape[3] == convInfo.inChannels,
-          'conv2d is implemented only for channelsLast dataFormat.');
-      const x2d = this.reshape(x, [1, x.shape[0] * x.shape[1] * x.shape[2],
-          convInfo.inChannels]) as Tensor3D;
-      const w2d = this.reshape(filter,
-          [1, convInfo.inChannels, convInfo.outChannels]) as Tensor3D;
-      return this.batchMatMul(x2d, w2d, false, false).reshape<Rank.R4>(
-          convInfo.outShape);
+      return this.conv2dByMatMul(x, filter, convInfo);
     }
     if (ENV.get('WEBGL_CONV_IM2COL') && x.shape[0] === 1) {
       return this.conv2dWithIm2Row(x, filter, convInfo);
@@ -1941,10 +1976,16 @@ export class MathBackendWebGL implements KernelBackend {
     return packedTensor as T;
   }
 
-  private unpackTensor<T extends Tensor>(input: T): T {
+  private unpackTensor<T extends Tensor>(input: T|TensorHandle): T {
     const program = new UnpackProgram(input.shape);
     return this.compileAndRun(
         program, [input], Tensor.make(program.outputShape, {}, input.dtype));
+  }
+
+  private packTensor<T extends Tensor>(input: T|TensorHandle): T {
+    const program = new PackProgram(input.shape);
+    return this.compileAndRun(
+        program, [input], this.makePackedTensor(input.shape, input.dtype));
   }
 
   private packedReshape<R extends Rank>(input: Tensor, afterShape: ShapeMap[R]):
@@ -2019,25 +2060,9 @@ export class MathBackendWebGL implements KernelBackend {
           texData.shape = input.shape;
         }
       } else if (!!texData.isPacked !== !!program.usesPackedTextures) {
-        let preProcessProgram: UnpackProgram|PackProgram;
-        let processedInput: Tensor;
-
-        // Explicitly specifying output tensors because compileAndRun assumes
-        // that programs that take packed inputs produce a packed output.
-        if (texData.isPacked) {
-          preProcessProgram = new UnpackProgram(input.shape);
-          processedInput = this.compileAndRun(
-              preProcessProgram, [input],
-              Tensor.make(preProcessProgram.outputShape, {}, input.dtype));
-        } else {
-          preProcessProgram = new PackProgram(input.shape);
-          processedInput = this.compileAndRun(
-              preProcessProgram, [input],
-              this.makePackedTensor(input.shape, input.dtype));
-        }
-
-        texData = this.texData.get(processedInput.dataId);
-        input = processedInput;
+        input = texData.isPacked ?
+            this.unpackTensor(input) : this.packTensor(input);
+        texData = this.texData.get(input.dataId);
       } else if (
           texData.isPacked &&
           !webgl_util.isReshapeFree(texData.shape, input.shape)) {

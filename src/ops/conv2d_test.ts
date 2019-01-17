@@ -182,6 +182,22 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
     expectArraysClose(result, [2, 4, 6, 8]);
   });
 
+  it('packed x=[2,1,2] f=[1,1,2,2] s=1 d=1 p=0', () => {
+    const inputShape: [number, number, number] = [2, 1, 2];
+    const fSize = 1;
+    const pad = 0;
+    const stride = 1;
+
+    const x = tf.tensor3d([1, 2, 3, 4], inputShape);
+    const w = tf.tensor4d([1, 2, 3, 4], [fSize, fSize, 2, 2]);
+
+    const result = tf.conv2d(x, w, stride, pad);
+    // result would be packed for webGL backends.
+    const result1 = tf.conv2d(result, w, stride, pad);
+    expectArraysClose(result, [7, 10, 15, 22]);
+    expectArraysClose(result1, [37, 54, 81, 118]);
+  });
+
   it('x=[2,2,2,1] f=[1,1,1,1] s=1 d=1 p=0', () => {
     const inputDepth = 1;
     const inShape: [number, number, number, number] = [2, 2, 2, inputDepth];
