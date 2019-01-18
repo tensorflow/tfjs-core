@@ -19,7 +19,6 @@ import * as tf from '../../index';
 import {describeWithFlags} from '../../jasmine_util';
 import {WEBGL_ENVS} from '../../test_util';
 import * as util from '../../util';
-
 import * as webgl_util from './webgl_util';
 
 describeWithFlags('getTextureShapeFromLogicalShape', WEBGL_ENVS, () => {
@@ -109,7 +108,7 @@ describeWithFlags('getTextureShapeFromLogicalShape packed', WEBGL_ENVS, () => {
         webgl_util.getTextureShapeFromLogicalShape(logicalShape, isPacked);
 
     tf.ENV.set('WEBGL_MAX_TEXTURE_SIZE', max);
-    expect(texShape).toEqual([4, 6]);
+    expect(texShape).toEqual([6, 4]);
   });
 });
 
