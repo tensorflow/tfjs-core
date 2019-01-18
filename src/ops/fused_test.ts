@@ -40,6 +40,16 @@ describeWithFlags('fused matmul', ALL_ENVS, () => {
     expectArraysClose(c, [0, 8, 0, 20]);
   });
 
+  it('A x B with relu transpose', () => {
+    const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
+    const b = tf.tensor2d([0, 1, -3, 2, 2, 1], [2, 3]);
+
+    const c = tf.fused.matMul(a, b, false, true, null, 'relu');
+
+    expect(c.shape).toEqual([2, 2]);
+    expectArraysClose(c, [0, 9, 0, 24]);
+  });
+
   it('A x B with relu and bias', () => {
     const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
     const b = tf.tensor2d([0, 1, -3, 2, 2, 1], [3, 2]);
@@ -48,7 +58,7 @@ describeWithFlags('fused matmul', ALL_ENVS, () => {
     const d = tf.fused.matMul(a, b, false, false, c, 'relu');
 
     expect(d.shape).toEqual([2, 2]);
-    expectArraysClose(d, [1, 9, 1, 21]);
+    expectArraysClose(d, [1, 9, 0, 21]);
   });
 
   it('A x B with bias only', () => {
@@ -97,6 +107,31 @@ describeWithFlags('fused matmul', ALL_ENVS, () => {
 
     const fusedGrads = tf.grads((a, b, c) => {
       return tf.fused.matMul(a, b, false, false, c, 'relu');
+    });
+
+    const [da, db, dc] = grads([a, b, c], dy);
+    const [fusedDa, fusedDb, fusedDc] = fusedGrads([a, b, c], dy);
+
+    expectArraysClose(da, fusedDa);
+    expectArraysClose(db, fusedDb);
+    expectArraysClose(dc, fusedDc);
+  });
+
+  it('A x B with relu bias gradient transpose', () => {
+    const a = tf.tensor2d([1, 2, 3, 10, 20, -30], [3, 2]);
+    const b = tf.tensor2d([2, 3, 4, -1, 2, 3], [3, 2]);
+    const c = tf.tensor2d([1, 1, 1, 1], [2, 2]);
+
+    const dy = tf.tensor2d([1, 10, 20, 30], [2, 2]);
+
+    const grads = tf.grads((a, b, c) => {
+      const prod = tf.matMul(a, b, true, false);
+      const sum = tf.add(prod, c);
+      return tf.relu(sum);
+    });
+
+    const fusedGrads = tf.grads((a, b, c) => {
+      return tf.fused.matMul(a, b, true, false, c, 'relu');
     });
 
     const [da, db, dc] = grads([a, b, c], dy);

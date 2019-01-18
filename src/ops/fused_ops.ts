@@ -90,7 +90,7 @@ function matMul_<T extends Tensor>(
   const b3D = transposeB ? $b.as3D(batchDimB, outerShapeB, innerShapeB) :
                            $b.as3D(batchDimB, innerShapeB, outerShapeB);
   let bias3D: Tensor3D;
-  if (bias) {
+  if (bias != null) {
     let $bias = convertToTensor(bias, 'bias', 'fused matMul');
     [$bias] = makeTypesMatch($bias, $a);
 
@@ -120,7 +120,7 @@ function matMul_<T extends Tensor>(
           `implemented yet.`);
     }
 
-    const biasGradient = bias ? {$bias: () => dyActivation} : {};
+    const biasGradient = bias != null ? {$bias: () => dyActivation} : {};
 
     if (!transposeA && !transposeB) {
       return Object.assign(
@@ -153,10 +153,9 @@ function matMul_<T extends Tensor>(
     }
   };
 
-  const inputs = {$a: a3D, $b: b3D};
-  if (bias) {
-    // tslint:disable-next-line:no-any
-    (inputs as any).$bias = bias3D;
+  const inputs: {$a: Tensor, $b: Tensor, $bias?: Tensor} = {$a: a3D, $b: b3D};
+  if (bias != null) {
+    inputs.$bias = bias3D;
   }
 
   const res = ENV.engine.runKernel(
