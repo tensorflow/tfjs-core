@@ -20,7 +20,7 @@ import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import {convertToTensor, convertToTensorArray} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import {assert, sizeFromShape} from '../util';
-import {parseAxisParam} from './axis_util';
+import {parseAxisParam} from '../util';
 import {assertParamsConsistent, computeOutShape} from './concat_util';
 import {op} from './operation';
 import {tensor} from './tensor_ops';
@@ -227,7 +227,8 @@ function split_<T extends Tensor>(
     assert(
         $x.shape[axis] % numOrSizeSplits === 0,
         'Number of splits must evenly divide the axis.');
-    splitSizes = Array(numOrSizeSplits).fill($x.shape[axis] / numOrSizeSplits);
+    splitSizes =
+        new Array(numOrSizeSplits).fill($x.shape[axis] / numOrSizeSplits);
   } else {
     assert(
         $x.shape[axis] === numOrSizeSplits.reduce((a, b) => a + b),

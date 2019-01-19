@@ -18,7 +18,7 @@
 import {ENV} from '../environment';
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
 import {convertToTensor, convertToTensorArray} from '../tensor_util_env';
-import {DataType, DataTypeMap, Rank, ShapeMap, TensorLike, TensorLike1D, TensorLike4D} from '../types';
+import {DataType, DataTypeMap, Rank, ShapeMap, TensorLike, TensorLike4D} from '../types';
 import * as util from '../util';
 import {getAxesPermutation, getInnerMostAxes} from './axis_util';
 import {concat} from './concat_split';
@@ -271,13 +271,14 @@ function multinomial_(
 /**
  * Creates a one-hot `tf.Tensor`. The locations represented by `indices` take
  * value `onValue` (defaults to 1), while all other locations take value
- * `offValue` (defaults to 0).
+ * `offValue` (defaults to 0). If `indices` is rank `R`, the output has rank
+ * `R+1` with the last axis of size `depth`.
  *
  * ```js
  * tf.oneHot(tf.tensor1d([0, 1], 'int32'), 3).print();
  * ```
  *
- * @param indices `tf.Tensor1D` of indices with dtype `int32`.
+ * @param indices `tf.Tensor` of indices with dtype `int32`.
  * @param depth The depth of the one hot dimension.
  * @param onValue A number used to fill in the output when the index matches
  * the location.
@@ -286,20 +287,22 @@ function multinomial_(
  */
 /** @doc {heading: 'Tensors', subheading: 'Creation'} */
 function oneHot_(
-    indices: Tensor1D|TensorLike1D, depth: number, onValue = 1,
-    offValue = 0): Tensor2D {
-  const $indices =
-      convertToTensor(indices, 'indices', 'oneHot', 'int32') as Tensor1D;
-
+    indices: Tensor|TensorLike, depth: number, onValue = 1,
+    offValue = 0): Tensor {
   if (depth < 2) {
     throw new Error(`Error in oneHot: depth must be >=2, but it is ${depth}`);
   }
+  let $indices = convertToTensor(indices, 'indices', 'oneHot', 'int32');
+  const outShape = [...$indices.shape, depth];
+  $indices = $indices.flatten();
+
   const grad = (dy: Tensor2D) => {
-    return {$indices: () => zeros($indices.shape, 'float32') as Tensor1D};
+    return {$indices: () => zeros($indices.shape, 'float32')};
   };
-  return ENV.engine.runKernel(
-      backend => backend.oneHot($indices, depth, onValue, offValue), {$indices},
-      grad);
+  const result = ENV.engine.runKernel(
+      backend => backend.oneHot($indices as Tensor1D, depth, onValue, offValue),
+      {$indices}, grad);
+  return result.reshape(outShape);
 }
 
 /**
@@ -919,28 +922,16 @@ function spaceToBatchND_<T extends Tensor>(
  * @param axis The axis to unstack along. Defaults to 0 (the first dim).
  */
 /** @doc {heading: 'Tensors', subheading: 'Slicing and Joining'} */
-function unstack_<T extends Tensor>(x: T|TensorLike, axis = 0): Tensor[] {
+function unstack_(x: Tensor|TensorLike, axis = 0): Tensor[] {
+  axis = axis || 0;
   const $x = convertToTensor(x, 'x', 'unstack');
-  const num = $x.shape[axis];
-  const outputShape: number[] = Array($x.rank - 1).fill(0);
-  let outIndex = 0;
-  for (let i = 0; i < $x.rank; i++) {
-    if (i !== axis) {
-      outputShape[outIndex] = $x.shape[i];
-      outIndex++;
-    }
-  }
-
-  let splitSizes: number[];
-  splitSizes = Array(num).fill(1);
-  const begin = Array($x.rank).fill(0);
-  const size = $x.shape.slice();
-  return splitSizes.map(s => {
-    size[axis] = s;
-    const slice = $x.slice(begin, size);
-    begin[axis] += s;
-    return slice.reshape(outputShape);
-  });
+  util.assert(
+      axis < $x.shape.length,
+      `Axis ${axis} is >= to tensor shape length ${$x.shape.length}`);
+  const grad = (dy: Tensor[]) => {
+    return {$x: () => stack(dy, axis)};
+  };
+  return ENV.engine.runKernel(backend => backend.unstack($x, axis), {$x}, grad);
 }
 
 /**

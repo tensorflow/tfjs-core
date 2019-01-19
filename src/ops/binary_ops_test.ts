@@ -17,7 +17,7 @@
 
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
-import {ALL_ENVS, expectArraysClose, expectArraysEqual} from '../test_util';
+import {ALL_ENVS, expectArraysClose, expectArraysEqual, WEBGL_ENVS} from '../test_util';
 
 describeWithFlags('prelu', ALL_ENVS, () => {
   it('basic', () => {
@@ -57,6 +57,16 @@ describeWithFlags('prelu', ALL_ENVS, () => {
     expect(dx.shape).toEqual(x.shape);
     expect(dx.dtype).toEqual('float32');
     expectArraysClose(dx, [1, 1, 0.25, 0.15]);
+  });
+
+  it('derivative where alpha got broadcasted', () => {
+    const x = tf.tensor2d([[0.5, 3, -0.1, -4]]);
+    const a = tf.tensor2d([[0.2]]);
+    const dy = tf.tensor2d([[1, 1, 1, 1]]);
+
+    const da = tf.grad(a => tf.prelu(x, a))(a, dy);
+    expect(da.shape).toEqual(a.shape);
+    expectArraysClose(da, [-4.1]);
   });
 
   it('throws when passed x as a non-tensor', () => {
@@ -253,6 +263,21 @@ describeWithFlags('maximum', ALL_ENVS, () => {
     expect(() => tf.maximum(3, 'q'))
         .toThrowError(
             /Argument 'b' passed to 'maximum' must be numeric tensor/);
+  });
+});
+
+describeWithFlags('maximum', WEBGL_ENVS, () => {
+  it('works with squarification for large dimension', () => {
+    const maxTextureSize = tf.ENV.get('WEBGL_MAX_TEXTURE_SIZE');
+    tf.ENV.set('WEBGL_MAX_TEXTURE_SIZE', 5);
+    const a =
+        tf.tensor2d([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13], [2, 7]);
+    const b =
+        tf.tensor2d([-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [2, 7]);
+
+    const result = tf.maximum(a, b);
+    tf.ENV.set('WEBGL_MAX_TEXTURE_SIZE', maxTextureSize);
+    expectArraysClose(result, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]);
   });
 });
 

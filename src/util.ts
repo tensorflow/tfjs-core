@@ -167,12 +167,8 @@ export function tanh(x: number): number {
 }
 
 export function sizeToSquarishShape(size: number): [number, number] {
-  for (let a = Math.floor(Math.sqrt(size)); a > 1; --a) {
-    if (size % a === 0) {
-      return [a, size / a];
-    }
-  }
-  return [1, size];
+  const width = Math.ceil(Math.sqrt(size));
+  return [width, Math.ceil(size / width)];
 }
 
 export function createShuffledIndices(n: number): Uint32Array {
@@ -270,36 +266,47 @@ export function inferFromImplicitShape(
   return newShape;
 }
 
+export function parseAxisParam(
+    axis: number|number[], shape: number[]): number[] {
+  const rank = shape.length;
+
+  // Normalize input
+  axis = axis == null ? shape.map((s, i) => i) : [].concat(axis);
+
+  // Check for valid range
+  assert(
+      axis.every(ax => ax >= -rank && ax < rank),
+      `All values in axis param must be in range [-${rank}, ${rank}) but ` +
+          `got axis ${axis}`);
+
+  // Check for only integers
+  assert(
+      axis.every(ax => isInt(ax)),
+      `All values in axis param must be integers but ` +
+          `got axis ${axis}`);
+
+  // Handle negative axis.
+  return axis.map(a => a < 0 ? rank + a : a);
+}
+
 /** Reduces the shape by removing all dimensions of shape 1. */
 export function squeezeShape(shape: number[], axis?: number[]):
     {newShape: number[], keptDims: number[]} {
   const newShape: number[] = [];
   const keptDims: number[] = [];
-  if (axis != null) {
-    for (let i = 0; i < axis.length; ++i) {
-      if (axis[i] < -shape.length || axis[i] >= shape.length) {
-        throw new Error(
-          `Can't squeeze axis ${axis[i]} since its not in ` +
-          `[-${shape.length}, ${shape.length}) for shape ${shape}`);
-      } 
-      if (axis[i] < 0) {
-        axis[i] = shape.length + axis[i];
-      }
-    }
-    axis.sort();
-  }
+  const axes = axis == null ? null : parseAxisParam(axis, shape).sort();
   let j = 0;
   for (let i = 0; i < shape.length; ++i) {
-    if (axis != null) {
-      if (axis[j] === i && shape[i] !== 1) {
+    if (axes != null) {
+      if (axes[j] === i && shape[i] !== 1) {
         throw new Error(
             `Can't squeeze axis ${i} since its dim '${shape[i]}' is not 1`);
       }
-      if ((axis[j] == null || axis[j] > i) && shape[i] === 1) {
+      if ((axes[j] == null || axes[j] > i) && shape[i] === 1) {
         newShape.push(shape[i]);
         keptDims.push(i);
       }
-      if (axis[j] <= i) {
+      if (axes[j] <= i) {
         j++;
       }
     }
@@ -343,29 +350,26 @@ export function getArrayFromDType<D extends DataType>(
   return values;
 }
 
-export function checkComputationForNaN<D extends DataType>(
+export function checkComputationForErrors<D extends DataType>(
     vals: DataTypeMap[D], dtype: D, name: string): void {
   if (dtype !== 'float32') {
     // Only floating point computations will generate NaN values
     return;
   }
   for (let i = 0; i < vals.length; i++) {
-    if (isNaN(vals[i] as number)) {
-      throw Error(`The result of the '${name}' has NaNs.`);
+    const num = vals[i] as number;
+    if (isNaN(num) || !isFinite(num)) {
+      throw Error(`The result of the '${name}' is ${num}.`);
     }
   }
 }
 
-export function checkConversionForNaN<D extends DataType>(
+export function checkConversionForErrors<D extends DataType>(
     vals: DataTypeMap[D]|number[], dtype: D): void {
-  if (dtype === 'float32') {
-    // NaN is valid for floating point conversions
-    return;
-  }
-
   for (let i = 0; i < vals.length; i++) {
-    if (isNaN(vals[i] as number)) {
-      throw Error(`NaN is not a valid value for dtype: '${dtype}'.`);
+    const num = vals[i] as number;
+    if (isNaN(num) || !isFinite(num)) {
+      throw Error(`A tensor of type ${dtype} being uploaded contains ${num}.`);
     }
   }
 }
@@ -487,18 +491,18 @@ export function toTypedArray(
   if (dtype === 'string') {
     throw new Error('Cannot convert a string[] to a TypedArray');
   }
-  if (noConversionNeeded(a, dtype)) {
-    return a as TypedArray;
-  }
   if (Array.isArray(a)) {
     a = flatten(a as number[]);
+  }
+  if (debugMode) {
+    checkConversionForErrors(a as number[], dtype);
+  }
+  if (noConversionNeeded(a, dtype)) {
+    return a as TypedArray;
   }
   if (dtype == null || dtype === 'float32' || dtype === 'complex64') {
     return new Float32Array(a as number[]);
   } else if (dtype === 'int32') {
-    if (debugMode) {
-      checkConversionForNaN(a as number[], dtype);
-    }
     return new Int32Array(a as number[]);
   } else if (dtype === 'bool') {
     const bool = new Uint8Array((a as number[]).length);
@@ -556,4 +560,63 @@ export function now(): number {
         'Cannot measure time in this environment. You should run tf.js ' +
         'in the browser or in Node.js');
   }
+}
+
+/**
+ * Monitor Promise.all progress, fire onProgress callback function.
+ *
+ * @param {Array<Promise<D | Function | {} | void>>} promises,
+ *    Promise list going to be monitored
+ * @param {Function} onProgress, callback function.
+ *    Fired when a promise resolved.
+ * @param {number} startFraction, Optional fraction start. Default to 0.
+ * @param {number} endFraction, Optional fraction end. Default to 1.
+ */
+export function monitorPromisesProgress<D extends DataType>(
+    promises: Array<Promise<D | Function | {} | void>>, onProgress: Function,
+    startFraction?: number, endFraction?: number) {
+  checkPromises(promises);
+  startFraction = startFraction == null ? 0 : startFraction;
+  endFraction = endFraction == null ? 1 : endFraction;
+  checkFraction(startFraction, endFraction);
+  let resolvedPromise = 0;
+
+  function registerMonitor(promise: Promise<D | Function | {} | void>) {
+    promise.then((value: D | Function | {} | void) => {
+      const fraction = startFraction + ++resolvedPromise / promises.length *
+          (endFraction - startFraction);
+      // pass fraction as parameter to callback function.
+      onProgress(fraction);
+      return value;
+    });
+    return promise;
+  }
+
+  function checkPromises(
+      promises: Array<Promise<D | Function | {} | void>>): void {
+    assert(
+        promises != null && Array.isArray(promises) && promises.length > 0,
+        'promises must be a none empty array'
+    );
+  }
+
+  function checkFraction(startFraction: number, endFraction: number): void {
+    assert(
+        startFraction >= 0 && startFraction <= 1,
+        `Progress fraction must be in range [0, 1], but ` +
+        `got startFraction ${startFraction}`
+    );
+    assert(
+        endFraction >= 0 && endFraction <= 1,
+        `Progress fraction must be in range [0, 1], but ` +
+        `got endFraction ${endFraction}`
+    );
+    assert(
+        endFraction >= startFraction,
+        `startFraction must be no more than endFraction, but ` +
+        `got startFraction ${startFraction} and endFraction ${endFraction}`
+    );
+  }
+
+  return Promise.all(promises.map(registerMonitor));
 }

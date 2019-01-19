@@ -17,7 +17,7 @@
 
 import {ENV} from '../../environment';
 import * as util from '../../util';
-
+import {getGlslDifferences} from './glsl_version';
 import * as tex_util from './tex_util';
 import * as webgl_util from './webgl_util';
 
@@ -37,11 +37,12 @@ export interface TextureConfig {
 }
 
 export function createVertexShader(gl: WebGLRenderingContext): WebGLShader {
-  const vertexShaderSource = `
+  const glsl = getGlslDifferences();
+  const vertexShaderSource = `${glsl.version}
     precision highp float;
-    attribute vec3 clipSpacePos;
-    attribute vec2 uv;
-    varying vec2 resultUV;
+    ${glsl.attribute} vec3 clipSpacePos;
+    ${glsl.attribute} vec2 uv;
+    ${glsl.varyingVs} vec2 resultUV;
 
     void main() {
       gl_Position = vec4(clipSpacePos, 1);
@@ -236,13 +237,12 @@ export function uploadMatrixToTexture(
       tex_util.getUnpackedMatrixTextureShapeWidthHeight(rows, columns);
 
   let unpackedArray: Float32Array;
-  if (textureConfig.defaultNumChannels === 1) {
+  const numTexels = rows * columns;
+  if (textureConfig.defaultNumChannels === 1 && numTexels === matrix.length) {
     // No need to allocate a temporary array.
     unpackedArray = matrix;
   } else {
-    unpackedArray =
-        new Float32Array(tex_util.getUnpackedArraySizeFromMatrixSize(
-            matrix.length, numChannels));
+    unpackedArray = new Float32Array(numTexels * numChannels);
     tex_util.encodeMatrixToUnpackedArray(matrix, unpackedArray, numChannels);
   }
 
@@ -301,7 +301,7 @@ export function maybeCreateBufferFromOutputTexture(
     webgl_util.callAndCheck(
         gl,
         () => gl.bufferData(
-            gl2.PIXEL_PACK_BUFFER, bufferSizeBytes, gl.STATIC_DRAW));
+            gl2.PIXEL_PACK_BUFFER, bufferSizeBytes, gl2.STREAM_READ));
 
     // Enqueue a command on the GPU command queue to copy of texture into the
     // buffer.
@@ -326,9 +326,9 @@ export function downloadFloat32MatrixFromBuffer(
       new Float32Array(tex_util.getUnpackedArraySizeFromMatrixSize(
           rows * columns, textureConfig.downloadUnpackNumChannels));
 
-  gl2.bindBuffer(gl.ARRAY_BUFFER, buffer);
-  gl2.getBufferSubData(gl.ARRAY_BUFFER, 0, downloadTarget);
-  gl2.bindBuffer(gl.ARRAY_BUFFER, null);
+  gl2.bindBuffer(gl2.PIXEL_PACK_BUFFER, buffer);
+  gl2.getBufferSubData(gl2.PIXEL_PACK_BUFFER, 0, downloadTarget);
+  gl2.bindBuffer(gl2.PIXEL_PACK_BUFFER, null);
 
   const matrix = new Float32Array(rows * columns);
   tex_util.decodeMatrixFromUnpackedArray(
@@ -392,9 +392,9 @@ export function downloadPackedMatrixFromBuffer(
       new Float32Array(tex_util.getPackedRGBAArraySizeFromMatrixShape(
           physicalRows, physicalCols));
 
-  gl2.bindBuffer(gl.ARRAY_BUFFER, buffer);
-  gl2.getBufferSubData(gl.ARRAY_BUFFER, 0, downloadTarget);
-  gl2.bindBuffer(gl.ARRAY_BUFFER, null);
+  gl2.bindBuffer(gl2.PIXEL_PACK_BUFFER, buffer);
+  gl2.getBufferSubData(gl2.PIXEL_PACK_BUFFER, 0, downloadTarget);
+  gl2.bindBuffer(gl2.PIXEL_PACK_BUFFER, null);
 
   const matrix = new Float32Array(util.sizeFromShape([batch, rows, cols]));
   tex_util.decodeMatrixFromPackedRGBA(

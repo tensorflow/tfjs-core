@@ -45,11 +45,11 @@ describe('Util', () => {
   });
 
   it('Size to squarish shape (prime number)', () => {
-    expect(util.sizeToSquarishShape(11)).toEqual([1, 11]);
+    expect(util.sizeToSquarishShape(11)).toEqual([4, 3]);
   });
 
   it('Size to squarish shape (almost square)', () => {
-    expect(util.sizeToSquarishShape(35)).toEqual([5, 7]);
+    expect(util.sizeToSquarishShape(35)).toEqual([6, 6]);
   });
 
   it('Size of 1 to squarish shape', () => {
@@ -75,7 +75,8 @@ describe('Util', () => {
 
   it('infer shape 4d array', () => {
     const a = [
-      [[[1], [2]], [[2], [3]], [[5], [6]]], [[[5], [6]], [[4], [5]], [[1], [2]]]
+      [[[1], [2]], [[2], [3]], [[5], [6]]],
+      [[[5], [6]], [[4], [5]], [[1], [2]]]
     ];
     expect(inferShape(a)).toEqual([2, 3, 2, 1]);
   });
@@ -225,6 +226,83 @@ describe('util.inferFromImplicitShape', () => {
   });
 });
 
+describe('util parseAxisParam', () => {
+  it('axis=null returns no axes for scalar', () => {
+    const axis: number = null;
+    const shape: number[] = [];
+    expect(util.parseAxisParam(axis, shape)).toEqual([]);
+  });
+
+  it('axis=null returns 0 axis for Tensor1D', () => {
+    const axis: number = null;
+    const shape = [4];
+    expect(util.parseAxisParam(axis, shape)).toEqual([0]);
+  });
+
+  it('axis=null returns all axes for Tensor3D', () => {
+    const axis: number[] = null;
+    const shape = [3, 1, 2];
+    expect(util.parseAxisParam(axis, shape)).toEqual([0, 1, 2]);
+  });
+
+  it('axis as a single number', () => {
+    const axis = 1;
+    const shape = [3, 1, 2];
+    expect(util.parseAxisParam(axis, shape)).toEqual([1]);
+  });
+
+  it('axis as single negative number', () => {
+    const axis = -1;
+    const shape = [3, 1, 2];
+    expect(util.parseAxisParam(axis, shape)).toEqual([2]);
+
+    const axis2 = -2;
+    expect(util.parseAxisParam(axis2, shape)).toEqual([1]);
+
+    const axis3 = -3;
+    expect(util.parseAxisParam(axis3, shape)).toEqual([0]);
+  });
+
+  it('axis as list of negative numbers', () => {
+    const axis = [-1, -3];
+    const shape = [3, 1, 2];
+    expect(util.parseAxisParam(axis, shape)).toEqual([2, 0]);
+  });
+
+  it('axis as list of positive numbers', () => {
+    const axis = [0, 2];
+    const shape = [3, 1, 2];
+    expect(util.parseAxisParam(axis, shape)).toEqual([0, 2]);
+  });
+
+  it('axis as combo of positive and negative numbers', () => {
+    const axis = [0, -1];
+    const shape = [3, 1, 2];
+    expect(util.parseAxisParam(axis, shape)).toEqual([0, 2]);
+  });
+
+  it('axis out of range throws error', () => {
+    const axis = -4;
+    const shape = [3, 1, 2];
+    expect(() => util.parseAxisParam(axis, shape)).toThrowError();
+
+    const axis2 = 4;
+    expect(() => util.parseAxisParam(axis2, shape)).toThrowError();
+  });
+
+  it('axis a list with one number out of range throws error', () => {
+    const axis = [0, 4];
+    const shape = [3, 1, 2];
+    expect(() => util.parseAxisParam(axis, shape)).toThrowError();
+  });
+
+  it('axis with decimal value throws error', () => {
+    const axis = 0.5;
+    const shape = [3, 1, 2];
+    expect(() => util.parseAxisParam(axis, shape)).toThrowError();
+  });
+});
+
 describe('util.squeezeShape', () => {
   it('scalar', () => {
     const {newShape, keptDims} = util.squeezeShape([]);
@@ -267,6 +345,11 @@ describe('util.squeezeShape', () => {
       expect(newShape).toEqual([1, 1, 4]);
       expect(keptDims).toEqual([0, 1, 4]);
     });
+    it('should only reduce dimensions specified by negative axis', () => {
+      const axis = [-2, -3];
+      util.squeezeShape([1, 1, 1, 1, 4], axis);
+      expect(axis).toEqual([-2, -3]);
+    });
     it('throws error when specified axis is not squeezable', () => {
       expect(() => util.squeezeShape([1, 1, 2, 1, 4], [1, 2])).toThrowError();
     });
@@ -274,44 +357,57 @@ describe('util.squeezeShape', () => {
       expect(() => util.squeezeShape([1, 1, 2, 1, 4], [-1, -2])).toThrowError();
     });
     it('throws error when specified axis is out of range', () => {
-      expect(
-        () => util.squeezeShape([1, 1, 2, 1, 4], [11, 22])).toThrowError();
+      expect(() => util.squeezeShape([1, 1, 2, 1, 4], [11, 22])).toThrowError();
     });
     it('throws error when specified negative axis is out of range', () => {
-      expect(
-        () => util.squeezeShape([1, 1, 2, 1, 4], [-11, -22])).toThrowError();
+      expect(() => util.squeezeShape([1, 1, 2, 1, 4], [
+        -11, -22
+      ])).toThrowError();
     });
   });
 });
 
-describe('util.checkComputationForNaN', () => {
+describe('util.checkComputationForErrors', () => {
   it('Float32Array has NaN', () => {
     expect(
-        () => util.checkComputationForNaN(
+        () => util.checkComputationForErrors(
             new Float32Array([1, 2, 3, NaN, 4, 255]), 'float32', ''))
+        .toThrowError();
+  });
+
+  it('Float32Array has Infinity', () => {
+    expect(
+        () => util.checkComputationForErrors(
+            new Float32Array([1, 2, 3, Infinity, 4, 255]), 'float32', ''))
         .toThrowError();
   });
 
   it('Float32Array no NaN', () => {
     // Int32 and Bool NaNs should not trigger an error.
     expect(
-        () => util.checkComputationForNaN(
+        () => util.checkComputationForErrors(
             new Float32Array([1, 2, 3, 4, -1, 255]), 'float32', ''))
         .not.toThrowError();
   });
 });
 
-describe('util.checkConversionForNaN', () => {
-  // NaN is a valid value for type Float32
+describe('util.checkConversionForErrors', () => {
   it('Float32Array has NaN', () => {
     expect(
-        () => util.checkConversionForNaN(
+        () => util.checkConversionForErrors(
             new Float32Array([1, 2, 3, NaN, 4, 255]), 'float32'))
-        .not.toThrowError();
+        .toThrowError();
   });
-  // NaN should not be present in other types. Error should be thrown.
+
+  it('Float32Array has Infinity', () => {
+    expect(
+        () => util.checkConversionForErrors(
+            new Float32Array([1, 2, 3, Infinity, 4, 255]), 'float32'))
+        .toThrowError();
+  });
+
   it('Int32Array has NaN', () => {
-    expect(() => util.checkConversionForNaN([1, 2, 3, 4, NaN], 'int32'))
+    expect(() => util.checkConversionForErrors([1, 2, 3, 4, NaN], 'int32'))
         .toThrowError();
   });
 });
@@ -356,5 +452,73 @@ describe('util.hasEncodingLoss', () => {
 
   it('bool to bool', () => {
     expect(util.hasEncodingLoss('bool', 'bool')).toBe(false);
+  });
+});
+
+describe('util.monitorPromisesProgress', () => {
+  it('Default progress from 0 to 1', (done) => {
+    const expectFractions: number[] = [0.25, 0.50, 0.75, 1.00];
+    const fractionList: number[] = [];
+    const tasks = Array(4).fill(0).map(()=>{
+      return Promise.resolve();
+    });
+    util.monitorPromisesProgress(tasks, (progress: number)=>{
+      fractionList.push(parseFloat(progress.toFixed(2)));
+    }).then(()=>{
+      expect(fractionList).toEqual(expectFractions);
+      done();
+    });
+  });
+
+  it('Progress with pre-defined range', (done) => {
+    const startFraction = 0.2;
+    const endFraction = 0.8;
+    const expectFractions: number[] = [0.35, 0.50, 0.65, 0.80];
+    const fractionList: number[] = [];
+    const tasks = Array(4).fill(0).map(()=>{
+      return Promise.resolve();
+    });
+    util.monitorPromisesProgress(tasks, (progress: number)=>{
+      fractionList.push(parseFloat(progress.toFixed(2)));
+      }, startFraction, endFraction).then(()=>{
+      expect(fractionList).toEqual(expectFractions);
+      done();
+    });
+  });
+
+  it('throws error when progress fraction is out of range', () => {
+    expect(() => {
+      const startFraction = -1;
+      const endFraction = 1;
+      const tasks = Array(4).fill(0).map(()=>{
+        return Promise.resolve();
+      });
+      util.monitorPromisesProgress(tasks, (progress: number)=>{},
+          startFraction, endFraction);
+    }).toThrowError();
+  });
+
+  it('throws error when startFraction more than endFraction', () => {
+    expect(() => {
+      const startFraction = 0.8;
+      const endFraction = 0.2;
+      const tasks = Array(4).fill(0).map(()=>{
+        return Promise.resolve();
+      });
+      util.monitorPromisesProgress(tasks, (progress: number)=>{},
+          startFraction, endFraction);
+    }).toThrowError();
+  });
+
+  it('throws error when promises is null', () => {
+    expect(() => {
+      util.monitorPromisesProgress(null, (progress: number)=>{});
+    }).toThrowError();
+  });
+
+  it('throws error when promises is empty array', () => {
+    expect(() => {
+      util.monitorPromisesProgress([], (progress: number)=>{});
+    }).toThrowError();
   });
 });
