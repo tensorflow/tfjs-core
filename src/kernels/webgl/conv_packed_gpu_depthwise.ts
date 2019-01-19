@@ -62,7 +62,7 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
 
         // gather input values
         if(c < filterWidth) {
-          if(padLeft % 2 == 1) { // if the outer texels have to be composed
+          if(padLeft % 2 == 1) { // if padding is odd, the outer texels have to be composed
             // TODO: Ensure that vec4 previous is not a redundant sample
             mainLoop += `
               if(xR >= 0 && xR < ${xNumRows} && xC + 1 >= 0 && xC + 1 < ${xNumCols}) {
@@ -87,42 +87,25 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
           }
 
           if(c + 1 < filterWidth) {
-            if(dilationWidth % 2 == 0) { // match previous
-              if(padLeft % 2 == 1) { // previous is composed
-                mainLoop += `
-                  if(xR >= 0 && xR < ${xNumRows} && xC + 1 + ${dilationWidth} < ${xNumCols}) {
-                    xTexelR${r}C${c + 2} = getX(batch, xR, xC + 1 + ${dilationWidth}, d1);
-                  }
 
-                  xR${r}C${c + 1} = vec4(xTexelR${r}C${c}.zw, xTexelR${r}C${c + 2}.xy);
-                `;
-              } else {
-                mainLoop += `
-                  if(xR >= 0 && xR < ${xNumRows} && xC + ${dilationWidth} < ${xNumCols}) {
-                    xTexelR${r}C${c + 2} = getX(batch, xR, xC + ${dilationWidth}, d1);
-                  }
+            // If dilation is even, then we want the second entry to match the first (either both are composed or both are single samples). But if dilation is odd, then we want the second entry to be the opposite of the first (if the first is composed, the second is a single sample, and vice versa.)
 
-                  xR${r}C${c + 1} = xTexelR${r}C${c + 2};
-                `;
-              }
-            } else { // oppose previous
-              if(padLeft % 2 == 1) { // previous is composed
-                mainLoop += `
-                  if(xR >= 0 && xR < ${xNumRows} && xC + 1 + ${dilationWidth} < ${xNumCols}) {
-                    xTexelR${r}C${c + 2} = getX(batch, xR, xC + 1 + ${dilationWidth}, d1);
-                  }
+            if((dilationWidth % 2 == 0 && padLeft % 2 == 1) || (dilationWidth % 2 !== 0 && padLeft % 2 !== 1)) {
+              mainLoop += `
+                if(xR >= 0 && xR < ${xNumRows} && xC + ${padLeft % 2} + ${Math.max(2, dilationWidth)} < ${xNumCols}) {
+                  xTexelR${r}C${c + 2} = getX(batch, xR, xC + ${padLeft % 2} + ${Math.max(2, dilationWidth)}, d1);
+                }
 
-                  xR${r}C${c + 1} = xTexelR${r}C${c + 2};
-                `;
-              } else {
-                mainLoop += `
-                  if(xR >= 0 && xR < ${xNumRows} && xC + ${Math.max(2, dilationWidth)} < ${xNumCols}) {
-                    xTexelR${r}C${c + 2} = getX(batch, xR, xC + ${Math.max(2, dilationWidth)}, d1);
-                  }
+                xR${r}C${c + 1} = vec4(xTexelR${r}C${c}.zw, xTexelR${r}C${c + 2}.xy);
+              `;
+            } else {
+              mainLoop += `
+                if(xR >= 0 && xR < ${xNumRows} && xC + ${padLeft % 2} + ${Math.max(2, dilationWidth)} < ${xNumCols}) {
+                  xTexelR${r}C${c + 2} = getX(batch, xR, xC + ${padLeft % 2} + ${Math.max(2, dilationWidth)}, d1);
+                }
 
-                  xR${r}C${c + 1} = vec4(xTexelR${r}C${c}.zw, xTexelR${r}C${c + 2}.xy);
-                `;
-              }
+                xR${r}C${c + 1} = xTexelR${r}C${c + 2};
+              `;
             }
           }
         }
