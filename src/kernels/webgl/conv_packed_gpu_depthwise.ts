@@ -57,41 +57,54 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
 
         mainLoop += `
           xR = xRCorner + ${r * dilationHeight};
-          xC = xCCorner + ${c * dilationWidth + padLeft};
+          xC = xCCorner + ${c * dilationWidth};
         `;
 
         // gather input values
         if(c < filterWidth) {
-          mainLoop += `
-            if(xR >= 0 && xR < ${xNumRows} && xC >= 0 && xC < ${xNumCols}) {
-              xTexelR${r}C${c} = getX(batch, xR, xC, d1);
-            }
-          `;
-
           if(padLeft % 2 == 1) { // if the outer texels have to be composed
-            // TODO: Ensure that previous is not a redundant sample
+            // TODO: Ensure that vec4 previous is not a redundant sample
             mainLoop += `
-              if(xR >= 0 && xR < ${xNumRows} && xC - 2 >= 0) {
-                vec4 previous = getX(batch, xR, xC - 2, d1);
+              if(xR >= 0 && xR < ${xNumRows} && xC + 1 >= 0 && xC + 1 < ${xNumCols}) {
+                xTexelR${r}C${c} = getX(batch, xR, xC + 1, d1);
+              }
+
+              if(xR >= 0 && xR < ${xNumRows} && xC + 1 - ${dilationWidth} >= 0) {
+                vec4 previous = getX(batch, xR, xC + 1 - ${dilationWidth}, d1);
                 xR${r}C${c} = vec4(previous.zw, xTexelR${r}C${c}.xy);
               } else {
                 xR${r}C${c} = vec4(0, 0, xTexelR${r}C${c}.xy);
               }
             `;
           } else {
-            mainLoop += `xR${r}C${c} = xTexelR${r}C${c};`;
+            mainLoop += `
+              if(xR >= 0 && xR < ${xNumRows} && xC >= 0 && xC < ${xNumCols}) {
+                xTexelR${r}C${c} = getX(batch, xR, xC, d1);
+              }
+
+              xR${r}C${c} = xTexelR${r}C${c};
+            `;
           }
 
           if(c + 1 < filterWidth) {
-            mainLoop += `
-              if(xR >= 0 && xR < ${xNumRows} && xC + 2 < ${xNumCols}) {
-                xTexelR${r}C${c + 2} = getX(batch, xR, xC + 2, d1);
-              }
-            `;
 
-            mainLoop += `
-              xR${r}C${c + 1} = vec4(xTexelR${r}C${c}.zw, xTexelR${r}C${c + 2}.xy);
-            `;
+            if(padLeft % 2 == 1) {
+              mainLoop += `
+                if(xR >= 0 && xR < ${xNumRows} && xC + 1 + ${dilationWidth} < ${xNumCols}) {
+                  xTexelR${r}C${c + 2} = getX(batch, xR, xC + 1 + ${dilationWidth}, d1);
+                }
+
+                xR${r}C${c + 1} = vec4(xTexelR${r}C${c}.zw, xTexelR${r}C${c + 2}.xy);
+              `;
+            } else {
+              mainLoop += `
+                if(xR >= 0 && xR < ${xNumRows} && xC + ${dilationWidth} < ${xNumCols}) {
+                  xTexelR${r}C${c + 2} = getX(batch, xR, xC + ${dilationWidth}, d1);
+                }
+
+                xR${r}C${c + 1} = xTexelR${r}C${c + 2};
+              `;
+            }
           }
         }
 
@@ -138,6 +151,7 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
         ${mainLoop}
 
         setOutput(result);
+        // setOutput(xR1C1);
       }
     `;
   }
