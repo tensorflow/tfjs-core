@@ -16,6 +16,7 @@
  */
 
 import {Conv2DInfo, Conv3DInfo} from '../ops/conv_util';
+import {FusableActivation} from '../ops/fused_util';
 import {DataId, Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D} from '../tensor';
 import {DataType, DataValues, Rank, ShapeMap} from '../types';
 
@@ -121,6 +122,12 @@ export class KernelBackend implements TensorStorage, BackendTimer {
     throw new Error('Not yet implemented');
   }
 
+  fusedBatchMatMul(
+      a: Tensor3D, b: Tensor3D, transposeA: boolean, transposeB: boolean,
+      bias?: Tensor3D, activation?: FusableActivation): Tensor3D {
+    throw new Error('Not yet implemented');
+  }
+
   slice<T extends Tensor>(x: T, begin: number[], size: number[]): T {
     throw new Error('Not yet implemented');
   }
@@ -128,6 +135,9 @@ export class KernelBackend implements TensorStorage, BackendTimer {
       x: T, begin: number[], end: number[], strides: number[],
       beginMask: number, endMask: number, ellipsisMask: number,
       newAxisMask: number, shrinkAxisMask: number): T {
+    throw new Error('Not yet implemented');
+  }
+  unstack(x: Tensor, axis: number): Tensor[] {
     throw new Error('Not yet implemented');
   }
   reverse<T extends Tensor>(a: T, axis: number[]): T {
@@ -293,7 +303,6 @@ export class KernelBackend implements TensorStorage, BackendTimer {
   reciprocal<T extends Tensor>(x: T): T {
     throw new Error('Not yet implemented');
   }
-
   relu<T extends Tensor>(x: T): T {
     throw new Error('Not yet implemented');
   }

@@ -16,6 +16,7 @@
  */
 
 import * as seedrandom from 'seedrandom';
+
 import {ENV} from '../environment';
 import {warn} from '../log';
 import * as array_ops_util from '../ops/array_ops_util';
@@ -24,16 +25,18 @@ import * as broadcast_util from '../ops/broadcast_util';
 import * as concat_util from '../ops/concat_util';
 import {Conv2DInfo, Conv3DInfo} from '../ops/conv_util';
 import * as erf_util from '../ops/erf_util';
+import {FusableActivation} from '../ops/fused_util';
 import * as gather_nd_util from '../ops/gather_nd_util';
 import * as ops from '../ops/ops';
 import {buffer, scalar, tensor, tensor3d, tensor4d} from '../ops/ops';
 import * as scatter_nd_util from '../ops/scatter_nd_util';
 import * as selu_util from '../ops/selu_util';
-import {getStridedSlicedInfo} from '../ops/slice_util';
+import {computeFlatOffset, getStridedSlicedInfo, isSliceContinous} from '../ops/slice_util';
 import {DataId, Scalar, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D, TensorBuffer} from '../tensor';
 import {DataType, DataTypeMap, DataValues, NumericDataType, Rank, ShapeMap, TypedArray, upcastType} from '../types';
 import * as util from '../util';
 import {now} from '../util';
+
 import {BackendTimingInfo, DataMover, DataStorage, KernelBackend} from './backend';
 import * as backend_util from './backend_util';
 import * as complex_util from './complex_util';
@@ -41,6 +44,17 @@ import {nonMaxSuppressionImpl} from './non_max_suppression_impl';
 import {split} from './split_shared';
 import {topkImpl} from './topk_impl';
 import {whereImpl} from './where_impl';
+
+function mapActivation(
+    backend: MathBackendCPU, activation: FusableActivation, x: Tensor): Tensor {
+  if (activation === 'linear') {
+    return backend.linear(x);
+  } else if (activation === 'relu') {
+    return backend.relu(x);
+  }
+  throw new Error(
+      `Activation ${activation} has not been implemented for the CPU backend.`);
+}
 
 interface TensorData<D extends DataType> {
   values?: DataTypeMap[D];
@@ -236,12 +250,21 @@ export class MathBackendCPU implements KernelBackend {
   slice<T extends Tensor>(x: T, begin: number[], size: number[]): T {
     this.assertNotComplex(x, 'slice');
 
-    const buffer = ops.buffer(size, x.dtype);
+    const isContinous = isSliceContinous(x.shape, begin, size);
+    if (isContinous) {
+      const flatOffset = computeFlatOffset(begin, x.strides);
+      const length = util.sizeFromShape(size);
+      const vals = x.dataSync();
+      return tensor(
+                 vals.subarray(flatOffset, flatOffset + length), size,
+                 x.dtype) as T;
+    }
 
+    const buffer = ops.buffer(size, x.dtype);
     for (let i = 0; i < buffer.size; ++i) {
       const loc = buffer.indexToLoc(i);
       const xLoc = loc.map((idx, j) => idx + begin[j]);
-      buffer.set(x.get(...xLoc), ...loc);
+      buffer.values[i] = x.get(...xLoc);
     }
     return buffer.toTensor() as T;
   }
@@ -275,6 +298,27 @@ export class MathBackendCPU implements KernelBackend {
     }
 
     return buffer.toTensor().reshape(shape) as T;
+  }
+
+  unstack(x: Tensor, axis: number): Tensor[] {
+    const num = x.shape[axis];
+    const outShape: number[] = new Array(x.rank - 1);
+    let outIndex = 0;
+    for (let i = 0; i < x.rank; i++) {
+      if (i !== axis) {
+        outShape[outIndex++] = x.shape[i];
+      }
+    }
+
+    const begin = new Array(x.rank).fill(0);
+    const size = x.shape.slice();
+    size[axis] = 1;
+    const res = new Array(num);
+    for (let i = 0; i < res.length; i++) {
+      begin[axis] = i;
+      res[i] = this.slice(x, begin, size).reshape(outShape);
+    }
+    return res;
   }
 
   reverse<T extends Tensor>(x: T, axis: number[]): T {
@@ -436,6 +480,19 @@ export class MathBackendCPU implements KernelBackend {
       }
     }
     return result.toTensor() as Tensor3D;
+  }
+
+  fusedBatchMatMul(
+      a: Tensor3D, b: Tensor3D, transposeA: boolean, transposeB: boolean,
+      bias?: Tensor3D, activation?: FusableActivation): Tensor3D {
+    let result = this.batchMatMul(a, b, transposeA, transposeB);
+    if (bias) {
+      result = this.add(result, bias) as Tensor3D;
+    }
+    if (activation) {
+      result = mapActivation(this, activation, result) as Tensor3D;
+    }
+    return result;
   }
 
   multiply(a: Tensor, b: Tensor): Tensor {
@@ -1027,6 +1084,10 @@ export class MathBackendCPU implements KernelBackend {
       newValues[i] = 1 / values[i];
     }
     return Tensor.make(x.shape, {values: newValues}) as T;
+  }
+
+  linear<T extends Tensor>(x: T): T {
+    return x;
   }
 
   relu<T extends Tensor>(x: T): T {
