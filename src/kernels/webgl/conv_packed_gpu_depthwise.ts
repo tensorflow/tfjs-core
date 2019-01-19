@@ -56,8 +56,8 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
         const c = texelC * 2; // this is the column within the filter - range 0 to filterWidth
 
         mainLoop += `
-          xR = xRCorner + ${r};
-          xC = xCCorner + ${c};
+          xR = xRCorner + ${r * dilationHeight};
+          xC = xCCorner + ${c * dilationWidth + padLeft};
         `;
 
         // gather input values
@@ -66,8 +66,21 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
             if(xR >= 0 && xR < ${xNumRows} && xC >= 0 && xC < ${xNumCols}) {
               xTexelR${r}C${c} = getX(batch, xR, xC, d1);
             }
-            xR${r}C${c} = xTexelR${r}C${c};
           `;
+
+          if(padLeft % 2 == 1) { // if the outer texels have to be composed
+            // TODO: Ensure that previous is not a redundant sample
+            mainLoop += `
+              if(xR >= 0 && xR < ${xNumRows} && xC - 2 >= 0) {
+                vec4 previous = getX(batch, xR, xC - 2, d1);
+                xR${r}C${c} = vec4(previous.zw, xTexelR${r}C${c}.xy);
+              } else {
+                xR${r}C${c} = vec4(0, 0, xTexelR${r}C${c}.xy);
+              }
+            `;
+          } else {
+            mainLoop += `xR${r}C${c} = xTexelR${r}C${c};`;
+          }
 
           if(c + 1 < filterWidth) {
             mainLoop += `
