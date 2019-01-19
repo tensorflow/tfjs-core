@@ -63,13 +63,15 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
         // gather input values
         if(c < filterWidth) {
           mainLoop += `
-            xTexelR${r}C${c} = getX(batch, xR, xC, d1);
+            if(xR >= 0 && xR < ${xNumRows} && xC >= 0 && xC < ${xNumCols}) {
+              xTexelR${r}C${c} = getX(batch, xR, xC, d1);
+            }
             xR${r}C${c} = xTexelR${r}C${c};
           `;
 
           if(c + 1 < filterWidth) {
             mainLoop += `
-              if(xC + 2 < ${xNumCols}) {
+              if(xR >= 0 && xR < ${xNumRows} && xC + 2 < ${xNumCols}) {
                 xTexelR${r}C${c + 2} = getX(batch, xR, xC + 2, d1);
               }
             `;
