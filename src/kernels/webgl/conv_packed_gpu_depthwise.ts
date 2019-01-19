@@ -37,91 +37,56 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
     const dilationWidth = convInfo.dilationWidth;
     const filterHeight = convInfo.filterHeight;
     const filterWidth = convInfo.filterWidth;
-    const texelsAcross = dilationWidth === 1 ? Math.ceil((filterWidth + 1 + padLeft % 2) / 2) : filterWidth;
+    const texelsAcross = filterWidth;
 
     let mainLoop = `int xR; int xC;`;
 
     for (let r = 0; r < filterHeight; r++) {
-      for (let c = -padLeft; c <= texelsAcross * 2 * dilationWidth; c++) {
-        mainLoop += `vec4 ${xTexelName(r, c)} = vec4(0.);`;
-      }
-
       for (let c = 0; c < filterWidth; c++) {
+        mainLoop += `vec4 xTexelR${r}C${c * 2} = vec4(0.);`;
+
         mainLoop += `
           vec4 wR${r}C${c} = vec4(0.);
           vec4 xR${r}C${c} = vec4(0.);`;
       }
     }
 
-    /**
-     * This vectorized implementation of depthwiseConv works by gathering the
-     * values needed for each output channel's dot product into vec4's and then
-     * multiplying them all together (this happens in the final double for-loop
-     * below). Most of the main loop consists of constructing these vec4's with
-     * the minimum number of texture2D calls as possible, which entails logic
-     * for making use of all four returned values from a texture2D call at once.
-     */
     for (let r = 0; r < filterHeight; r++) {
-      for (let c = 0; c < texelsAcross; c++) {
-        const col = c * 2; // this is the column within the filter - range 0 to filterWidth
-        const left = c * Math.max(dilationWidth, 2) + padLeft;
+      for (let texelC = 0; texelC < texelsAcross; texelC++) {
+        const c = texelC * 2; // this is the column within the filter - range 0 to filterWidth
 
         mainLoop += `
-          xR = xRCorner + ${r * dilationHeight};
-          xC = xCCorner + ${left};
+          xR = xRCorner + ${r};
+          xC = xCCorner + ${c};
+        `;
 
-          if(xR >= 0 && xR < ${xNumRows} && xC >= 0 && xC < ${xNumCols}) {
-            ${xTexelName(r, left)} = getX(batch, xR, xC, d1);
-          }`;
-
-        if (padLeft === 0) {
-          if (dilationWidth === 1 && col < filterWidth && c === texelsAcross - 1) {
-            if (strideWidth > 1) {
-              mainLoop += `
-                ${xTexelName(r, left + 2)} = vec4(0.);
-
-                if(xR >= 0 && xR < ${xNumRows} && xC + 2 < ${xNumCols}) {
-                  ${xTexelName(r, left + 2)} = getX(batch, xR, xC + 2, d1);
-                }`;
-            }
-
-            mainLoop += `
-              xR${r}C${col} = ${constructTexel(r, col, strideWidth, padLeft)};
-            `;
-          }
-        } else if (c === 0) {
+        // gather input values
+        if(c < filterWidth) {
           mainLoop += `
-            if(xR >= 0 && xR < ${xNumRows} && xC - 2 >= 0) {
-              ${xTexelName(r, left - 2)} = getX(batch, xR, xC - 2, d1);
-            }`;
-        }
-
-        if(dilationWidth === 1) {
-          if (col > 0) {
-            mainLoop += `xR${r}C${col - 2} =
-              ${constructTexel(r, col - 2, strideWidth, padLeft)};`;
-          }
-
-          if (col - 1 >= 0 && col - 1 < filterWidth) {
-            mainLoop += `xR${r}C${col - 1} =
-                ${constructTexel(r, col - 1, strideWidth, padLeft)};`;
-          }
-        } else {
-          mainLoop += `xR${r}C${c} =
-                ${constructTexel(r, c * dilationWidth, strideWidth, padLeft)};`;
-        }
-
-        if (col < filterWidth) {
-          mainLoop += `
-            vec4 wTexelR${r}C${col} = getW(${r}, ${col}, d1, q);
-            wR${r}C${col} = vec4(wTexelR${r}C${col}.xz, wTexelR${r}C${col}.xz);
+            xTexelR${r}C${c} = getX(batch, xR, xC, d1);
+            xR${r}C${c} = xTexelR${r}C${c};
           `;
 
-          if (col + 1 < filterWidth) {
+          if(c + 1 < filterWidth) {
             mainLoop += `
-              vec4 wTexelR${r}C${col + 1} = getW(${r}, ${col + 1}, d1, q);
-              wR${r}C${col + 1} =
-                vec4(wTexelR${r}C${col + 1}.xz, wTexelR${r}C${col + 1}.xz);`;
+              xTexelR${r}C${c + 2} = getX(batch, xR, xC + 2, d1);
+              xR${r}C${c + 1} = vec4(xTexelR${r}C${c}.zw, xTexelR${r}C${c + 2}.xy);
+            `;
+          }
+        }
+
+        // gather filter values
+        if (c < filterWidth) {
+          mainLoop += `
+            vec4 wTexelR${r}C${c} = getW(${r}, ${c}, d1, q);
+            wR${r}C${c} = vec4(wTexelR${r}C${c}.xz, wTexelR${r}C${c}.xz);
+          `;
+
+          if (c + 1 < filterWidth) {
+            mainLoop += `
+              vec4 wTexelR${r}C${c + 1} = getW(${r}, ${c + 1}, d1, q);
+              wR${r}C${c + 1} =
+                vec4(wTexelR${r}C${c + 1}.xz, wTexelR${r}C${c + 1}.xz);`;
           }
         }
       }
@@ -156,29 +121,4 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
       }
     `;
   }
-}
-
-function xTexelName(r: number, c: number): string {
-  return `xTexelR${r}C${c < 0 ? 'minus' + Math.abs(c).toString() : c}`;
-}
-
-/**
- * Given a 2x2 filter, we want to multiply xR0C0, wR0C0, xR0C1, wR0C1, xR1C0,
- * wR1C0, xR1C1, xR1C1. The xRC's are constructed out of xTexelRC's, which are
- * the vec4's returned from sampling calls. Sometimes this means mixing channels
- * from adjacent samples, which constructTexel handles.
- */
-function constructTexel(
-    r: number, c: number, stride: number, padLeft: number): string {
-  if (stride === 1) {
-    if (padLeft % 2 === c % 2) {
-      return xTexelName(r, c);
-    }
-    return `vec4(${xTexelName(r, c - 1)}.zw, ${xTexelName(r, c + 1)}.xy)`;
-  }
-
-  if (padLeft % 2 === c % 2) {
-    return `vec4(${xTexelName(r, c)}.xy, ${xTexelName(r, c + 2)}.xy)`;
-  }
-  return `vec4(${xTexelName(r, c - 1)}.zw, ${xTexelName(r, c + 1)}.zw)`;
 }
