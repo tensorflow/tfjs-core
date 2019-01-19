@@ -28,8 +28,9 @@ import {step} from './unary_ops';
  * ```js
  * const x = tf.range(1, 21).reshape([10, 2]);
  * const rate = 0.5;
+ * const seed = 23;
  * const noiseShape = null || x.shape;
- * const tensor = tf.dropout(x, rate, noiseShape);
+ * const tensor = tf.dropout(x, rate, noiseShape, seed);
  * ```
  * @param x input tensor.
  * @param level fraction of the entries in the tensor that will be set to 0.
@@ -46,10 +47,9 @@ function dropout_(
         'Non-default noise shape is not implemented yet: ' +
         JSON.stringify(noiseShape));
   }
-  if (seed != null) {
-    throw new Error('seed is not implemented for dropout yet.');
-  }
-  let multiplier = step(sub(randomUniform(x.shape, 0, 1, 'float32'), level));
+
+  let multiplier =
+      step(sub(randomUniform(x.shape, 0, 1, 'float32', seed), level));
   // Scale the kept elements, so the expected sum is unchanged.
   multiplier = multiplier.div(sub(1, level) as Scalar);
   return x.mul(multiplier);

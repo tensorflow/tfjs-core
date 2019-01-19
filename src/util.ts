@@ -63,7 +63,7 @@ export function sum(arr: number[]): number {
  */
 export function randUniform(a: number, b: number) {
   const r = Math.random();
-  return (b * r) + (1 - r) * a;
+  return b * r + (1 - r) * a;
 }
 
 /** Returns the squared Euclidean distance between two vectors. */
@@ -286,12 +286,12 @@ export function parseAxisParam(
           `got axis ${axis}`);
 
   // Handle negative axis.
-  return axis.map(a => a < 0 ? rank + a : a);
+  return axis.map(a => (a < 0 ? rank + a : a));
 }
 
 /** Reduces the shape by removing all dimensions of shape 1. */
 export function squeezeShape(shape: number[], axis?: number[]):
-    {newShape: number[], keptDims: number[]} {
+    {newShape: number[]; keptDims: number[]} {
   const newShape: number[] = [];
   const keptDims: number[] = [];
   const axes = axis == null ? null : parseAxisParam(axis, shape).sort();
@@ -394,9 +394,10 @@ export function hasEncodingLoss(oldType: DataType, newType: DataType): boolean {
   return true;
 }
 
-export function isTypedArray(a: {}): a is Float32Array|Int32Array|Uint8Array {
-  return a instanceof Float32Array || a instanceof Int32Array ||
-      a instanceof Uint8Array;
+export function isTypedArray(a: {}): a is|Float32Array|Int32Array|Uint8Array {
+  return (
+      a instanceof Float32Array || a instanceof Int32Array ||
+      a instanceof Uint8Array);
 }
 
 export function bytesPerElement(dtype: DataType): number {
@@ -422,7 +423,7 @@ export function bytesFromStringArray(arr: string[]): number {
     return 0;
   }
   let bytes = 0;
-  arr.forEach(x => bytes += x.length * 2);
+  arr.forEach(x => (bytes += x.length * 2));
   return bytes;
 }
 
@@ -518,9 +519,10 @@ export function toTypedArray(
 }
 
 function noConversionNeeded(a: TensorLike, dtype: DataType): boolean {
-  return (a instanceof Float32Array && dtype === 'float32') ||
+  return (
+      (a instanceof Float32Array && dtype === 'float32') ||
       (a instanceof Int32Array && dtype === 'int32') ||
-      (a instanceof Uint8Array && dtype === 'bool');
+      (a instanceof Uint8Array && dtype === 'bool'));
 }
 
 export function makeOnesTypedArray<D extends DataType>(
@@ -573,7 +575,7 @@ export function now(): number {
  * @param {number} endFraction, Optional fraction end. Default to 1.
  */
 export function monitorPromisesProgress<D extends DataType>(
-    promises: Array<Promise<D | Function | {} | void>>, onProgress: Function,
+    promises: Array<Promise<D|Function|{}|void>>, onProgress: Function,
     startFraction?: number, endFraction?: number) {
   checkPromises(promises);
   startFraction = startFraction == null ? 0 : startFraction;
@@ -581,10 +583,10 @@ export function monitorPromisesProgress<D extends DataType>(
   checkFraction(startFraction, endFraction);
   let resolvedPromise = 0;
 
-  function registerMonitor(promise: Promise<D | Function | {} | void>) {
-    promise.then((value: D | Function | {} | void) => {
-      const fraction = startFraction + ++resolvedPromise / promises.length *
-          (endFraction - startFraction);
+  function registerMonitor(promise: Promise<D|Function|{}|void>) {
+    promise.then((value: D|Function|{}|void) => {
+      const fraction = startFraction +
+          (++resolvedPromise / promises.length) * (endFraction - startFraction);
       // pass fraction as parameter to callback function.
       onProgress(fraction);
       return value;
@@ -592,30 +594,26 @@ export function monitorPromisesProgress<D extends DataType>(
     return promise;
   }
 
-  function checkPromises(
-      promises: Array<Promise<D | Function | {} | void>>): void {
+  function checkPromises(promises: Array<Promise<D|Function|{}|void>>): void {
     assert(
         promises != null && Array.isArray(promises) && promises.length > 0,
-        'promises must be a none empty array'
-    );
+        'promises must be a none empty array');
   }
 
   function checkFraction(startFraction: number, endFraction: number): void {
     assert(
         startFraction >= 0 && startFraction <= 1,
         `Progress fraction must be in range [0, 1], but ` +
-        `got startFraction ${startFraction}`
-    );
+            `got startFraction ${startFraction}`);
     assert(
         endFraction >= 0 && endFraction <= 1,
         `Progress fraction must be in range [0, 1], but ` +
-        `got endFraction ${endFraction}`
-    );
+            `got endFraction ${endFraction}`);
     assert(
         endFraction >= startFraction,
         `startFraction must be no more than endFraction, but ` +
-        `got startFraction ${startFraction} and endFraction ${endFraction}`
-    );
+            `got startFraction ${startFraction} and endFraction ${
+                endFraction}`);
   }
 
   return Promise.all(promises.map(registerMonitor));
