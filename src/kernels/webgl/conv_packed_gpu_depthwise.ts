@@ -68,9 +68,12 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
             // the +1 is for padding, the -2 is for previousness
             // previous is always -2, regardless of dilation.
 
+            // TODO: Rather than resetting this ensure that it never gets sampled.
             mainLoop += `
               if(xR >= 0 && xR < ${xNumRows} && xC + 1 >= 0 && xC + 1 < ${xNumCols}) {
                 xTexelR${r}C${c} = getX(batch, xR, xC + 1, d1);
+              } else {
+                xTexelR${r}C${c} = vec4(0.);
               }
 
               if(xR >= 0 && xR < ${xNumRows} && xC + 1 - 2 >= 0) {
