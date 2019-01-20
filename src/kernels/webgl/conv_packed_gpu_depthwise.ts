@@ -127,7 +127,31 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
             `;
 
             if(padLeft % 2 == 1) {
+              mainLoop += `
+                if(xC + 1 - ${strideWidth} >= 0 && xC + 1 - ${strideWidth} < ${xNumCols}) {
+                  xTexelR${r}C${c} = getX(batch, xR, xC + 1 - ${strideWidth}, d1);
+                } else {
+                  xTexelR${r}C${c} = vec4(0.);
+                }
 
+                if(xC + 1 >= 0 && xC + 1 < ${xNumCols}) {
+                  next = getX(batch, xR, xC + 1, d1);
+                } else {
+                  next = vec4(0.);
+                }
+
+                xR${r}C${c} = vec4(xTexelR${r}C${c}.zw, next.zw);
+              `;
+
+              if(c + 1 < filterWidth) {
+                mainLoop += `
+                  vec4 final = vec4(0.);
+                  if(xC + 1 + ${strideWidth} >= 0 && xC + 1 + ${strideWidth} < ${xNumCols}) {
+                    final = getX(batch, xR, xC + 1 + ${strideWidth}, d1);
+                  }
+                  xR${r}C${c + 1} = vec4(next.xy, final.xy);
+                `;
+              }
             } else {
               mainLoop += `
                 if(xC >= 0 && xC < ${xNumCols}) {
@@ -136,7 +160,7 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
                   xTexelR${r}C${c} = vec4(0.);
                 }
 
-                if(xC >= 0 && xC + ${strideWidth} < ${xNumCols}) {
+                if(xC + ${strideWidth} >= 0 && xC + ${strideWidth} < ${xNumCols}) {
                   next = getX(batch, xR, xC + ${strideWidth}, d1);
                 } else {
                   next = vec4(0.);
@@ -144,12 +168,12 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
 
                 xR${r}C${c} = vec4(xTexelR${r}C${c}.xy, next.xy);
               `;
-            }
 
-            if(c + 1 < filterWidth) {
-              mainLoop += `
-                xR${r}C${c + 1} = vec4(xTexelR${r}C${c}.zw, next.zw);
-              `;
+              if(c + 1 < filterWidth) {
+                mainLoop += `
+                  xR${r}C${c + 1} = vec4(xTexelR${r}C${c}.zw, next.zw);
+                `;
+              }
             }
 
             mainLoop += `}`;
