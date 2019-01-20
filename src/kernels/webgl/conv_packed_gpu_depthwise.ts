@@ -94,18 +94,19 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
 
             // If dilation is even, then we want the second entry to match the first (either both are composed or both are single samples). But if dilation is odd, then we want the second entry to be the opposite of the first (if the first is composed, the second is a single sample, and vice versa.)
 
+            const nextTexelOffset = padLeft % 2 === 0 ? dilationWidth + 1 : dilationWidth;
             if((dilationWidth % 2 == 0 && padLeft % 2 == 1) || (dilationWidth % 2 !== 0 && padLeft % 2 !== 1)) {
               mainLoop += `
-                if(xR >= 0 && xR < ${xNumRows} && xC + ${padLeft % 2} + ${dilationWidth} < ${xNumCols}) {
-                  xTexelR${r}C${c + 2} = getX(batch, xR, xC + ${padLeft % 2} + ${dilationWidth}, d1);
+                if(xR >= 0 && xR < ${xNumRows} && xC + ${padLeft % 2} + ${nextTexelOffset} < ${xNumCols}) {
+                  xTexelR${r}C${c + 2} = getX(batch, xR, xC + ${padLeft % 2} + ${nextTexelOffset}, d1);
                 }
 
                 xR${r}C${c + 1} = vec4(xTexelR${r}C${c}.zw, xTexelR${r}C${c + 2}.xy);
               `;
             } else {
               mainLoop += `
-                if(xR >= 0 && xR < ${xNumRows} && xC + ${padLeft % 2} + ${dilationWidth} < ${xNumCols}) {
-                  xTexelR${r}C${c + 2} = getX(batch, xR, xC + ${padLeft % 2} + ${dilationWidth}, d1);
+                if(xR >= 0 && xR < ${xNumRows} && xC + ${padLeft % 2} + ${nextTexelOffset} < ${xNumCols}) {
+                  xTexelR${r}C${c + 2} = getX(batch, xR, xC + ${padLeft % 2} + ${nextTexelOffset}, d1);
                 }
 
                 xR${r}C${c + 1} = xTexelR${r}C${c + 2};
