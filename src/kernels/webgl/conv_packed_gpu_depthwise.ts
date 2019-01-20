@@ -62,15 +62,19 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
 
         // gather input values
         if(c < filterWidth) {
-          if(padLeft % 2 !== c % 2) { // if padding is odd, the outer texels have to be composed
+          if(padLeft % 2 == 1) { // if padding is odd, the outer texels have to be composed
             // TODO: Ensure that vec4 previous is not a redundant sample
+
+            // the +1 is for padding, the -2 is for previousness
+            // previous is always -2, regardless of dilation.
+
             mainLoop += `
               if(xR >= 0 && xR < ${xNumRows} && xC + 1 >= 0 && xC + 1 < ${xNumCols}) {
                 xTexelR${r}C${c} = getX(batch, xR, xC + 1, d1);
               }
 
-              if(xR >= 0 && xR < ${xNumRows} && xC + 1 - ${dilationWidth} >= 0) {
-                vec4 previous = getX(batch, xR, xC + 1 - ${dilationWidth}, d1);
+              if(xR >= 0 && xR < ${xNumRows} && xC + 1 - 2 >= 0) {
+                vec4 previous = getX(batch, xR, xC + 1 - 2, d1);
                 xR${r}C${c} = vec4(previous.zw, xTexelR${r}C${c}.xy);
               } else {
                 xR${r}C${c} = vec4(0, 0, xTexelR${r}C${c}.xy);
@@ -92,16 +96,16 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
 
             if((dilationWidth % 2 == 0 && padLeft % 2 == 1) || (dilationWidth % 2 !== 0 && padLeft % 2 !== 1)) {
               mainLoop += `
-                if(xR >= 0 && xR < ${xNumRows} && xC + ${padLeft % 2} + ${Math.max(2, dilationWidth)} < ${xNumCols}) {
-                  xTexelR${r}C${c + 2} = getX(batch, xR, xC + ${padLeft % 2} + ${Math.max(2, dilationWidth)}, d1);
+                if(xR >= 0 && xR < ${xNumRows} && xC + ${padLeft % 2} + ${dilationWidth} < ${xNumCols}) {
+                  xTexelR${r}C${c + 2} = getX(batch, xR, xC + ${padLeft % 2} + ${dilationWidth}, d1);
                 }
 
                 xR${r}C${c + 1} = vec4(xTexelR${r}C${c}.zw, xTexelR${r}C${c + 2}.xy);
               `;
             } else {
               mainLoop += `
-                if(xR >= 0 && xR < ${xNumRows} && xC + ${padLeft % 2} + ${Math.max(2, dilationWidth)} < ${xNumCols}) {
-                  xTexelR${r}C${c + 2} = getX(batch, xR, xC + ${padLeft % 2} + ${Math.max(2, dilationWidth)}, d1);
+                if(xR >= 0 && xR < ${xNumRows} && xC + ${padLeft % 2} + ${dilationWidth} < ${xNumCols}) {
+                  xTexelR${r}C${c + 2} = getX(batch, xR, xC + ${padLeft % 2} + ${dilationWidth}, d1);
                 }
 
                 xR${r}C${c + 1} = xTexelR${r}C${c + 2};
