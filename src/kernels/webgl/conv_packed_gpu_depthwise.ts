@@ -103,7 +103,7 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
               const nextTexelOffset = padLeft % 2 === 0 ? dilationWidth + 1 : dilationWidth;
               if((dilationWidth % 2 == 0 && padLeft % 2 == 1) || (dilationWidth % 2 !== 0 && padLeft % 2 !== 1)) {
                 mainLoop += `
-                  if(xR >= 0 && xR < ${xNumRows} && xC + ${padLeft % 2} + ${nextTexelOffset} < ${xNumCols}) {
+                  if(xR >= 0 && xR < ${xNumRows} && xC + ${padLeft % 2} + ${nextTexelOffset} >= 0 && xC + ${padLeft % 2} + ${nextTexelOffset} < ${xNumCols}) {
                     xTexelR${r}C${c + 2} = getX(batch, xR, xC + ${padLeft % 2} + ${nextTexelOffset}, d1);
                   }
 
@@ -111,7 +111,7 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
                 `;
               } else {
                 mainLoop += `
-                  if(xR >= 0 && xR < ${xNumRows} && xC + ${padLeft % 2} + ${nextTexelOffset} < ${xNumCols}) {
+                  if(xR >= 0 && xR < ${xNumRows} && xC + ${padLeft % 2} + ${nextTexelOffset} >= 0 && xC + ${padLeft % 2} + ${nextTexelOffset} < ${xNumCols}) {
                     xTexelR${r}C${c + 2} = getX(batch, xR, xC + ${padLeft % 2} + ${nextTexelOffset}, d1);
                   }
 
