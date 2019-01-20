@@ -62,7 +62,7 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
 
         // gather input values
         if(c < filterWidth) {
-          if(padLeft % 2 == 1) { // if padding is odd, the outer texels have to be composed
+          if(padLeft % 2 !== c % 2) { // if padding is odd, the outer texels have to be composed
             // TODO: Ensure that vec4 previous is not a redundant sample
             mainLoop += `
               if(xR >= 0 && xR < ${xNumRows} && xC + 1 >= 0 && xC + 1 < ${xNumCols}) {
