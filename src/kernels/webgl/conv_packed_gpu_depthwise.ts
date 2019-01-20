@@ -132,10 +132,14 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
               mainLoop += `
                 if(xC >= 0 && xC < ${xNumCols}) {
                   xTexelR${r}C${c} = getX(batch, xR, xC, d1);
+                } else {
+                  xTexelR${r}C${c} = vec4(0.);
                 }
 
                 if(xC >= 0 && xC + ${strideWidth} < ${xNumCols}) {
                   next = getX(batch, xR, xC + ${strideWidth}, d1);
+                } else {
+                  next = vec4(0.);
                 }
 
                 xR${r}C${c} = vec4(xTexelR${r}C${c}.xy, next.xy);
@@ -196,7 +200,6 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
         ${mainLoop}
 
         setOutput(result);
-        // setOutput(xR2C1);
       }
     `;
   }
