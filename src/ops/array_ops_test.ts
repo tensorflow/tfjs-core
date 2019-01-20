@@ -16,7 +16,7 @@
  */
 
 import * as tf from '../index';
-import {describeWithFlags, activateWebGLPackedTestEnv, deactivateWebGLPackedTestEnv} from '../jasmine_util';
+import {describeWithFlags} from '../jasmine_util';
 import {ALL_ENVS, BROWSER_ENVS, CPU_ENVS, expectArraysClose, expectArraysEqual, expectPromiseToFail, expectValuesInRange, NODE_ENVS, WEBGL_ENVS} from '../test_util';
 import * as util from '../util';
 import {expectArrayInMeanStdRange, jarqueBeraNormalityTest} from './rand_util';
@@ -3534,8 +3534,6 @@ describeWithFlags('cumsum', ALL_ENVS, () => {
   });
 });
 
-activateWebGLPackedTestEnv();
-
 describeWithFlags('batchToSpaceND', ALL_ENVS, () => {
   it('tensor4d, input shape=[4, 1, 1, 1], blockShape=[2, 2]', () => {
     const t = tf.tensor4d([1, 2, 3, 4], [4, 1, 1, 1]);
@@ -3929,8 +3927,6 @@ describeWithFlags('batchToSpaceND X spaceToBatchND', ALL_ENVS, () => {
         gradient, [2, 8, 3, 9, 14, 20, 15, 21, 5, 11, 6, 12, 17, 23, 18, 24]);
   });
 });
-
-deactivateWebGLPackedTestEnv();
 
 describeWithFlags('depthToSpace', ALL_ENVS, () => {
   it('tensor4d, input shape=[1, 1, 1, 4], blockSize=2, format=NHWC', () => {

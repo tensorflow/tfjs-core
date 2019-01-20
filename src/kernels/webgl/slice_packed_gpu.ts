@@ -35,44 +35,47 @@ export class SlicePackedProgram implements GPGPUProgram {
     this.rank = destSize.length;
 
     const dtype = getCoordsDataType(this.rank);
-    const coords = getChannels('loc', this.rank);
-    const range = getChannels('range', this.rank);
+    const coords = getChannels('coords', this.rank);
+    const sourceLoc = getChannels('sourceLoc', this.rank);
 
-    const cLimit = `${coords[this.rank - 1]} < ${range[this.rank - 1]}`;
     const innerDims =
-        this.rank === 1 ? 'loc' : `vec2(${coords.slice(-2).join()})`;
+        this.rank === 1 ? 'sourceLoc' : `vec2(${sourceLoc.slice(-2).join()})`;
+    const getChannel = 
+        `getChannel(getSource(${sourceLoc.join()}), ${innerDims})`;
+    const upperRow = `
+      result.x = ${getChannel};
+      if (++${coords[this.rank - 1]} < ${destSize[this.rank - 1]}) {
+        ++${sourceLoc[this.rank - 1]};
+        result.y = ${getChannel};
+        --${sourceLoc[this.rank - 1]};
+      }
+    `;
+    const lowerRow = this.rank === 1 ? '' : `
+      --${coords[this.rank - 1]};
+      if (++${coords[this.rank - 2]} < ${destSize[this.rank - 2]}) {
+        ++${sourceLoc[this.rank - 2]};
+        result.z = ${getChannel};
+        if (++${coords[this.rank - 1]} < ${destSize[this.rank - 1]}) {
+          ++${sourceLoc[this.rank - 1]};
+          result.w = ${getChannel};
+        }
+      }
+    `;
 
-    const componentSetup = [
-      `${dtype} loc = sourceLoc;`,
-      `${coords[this.rank - 1]} += 1;
-       if(${cLimit}) {
-      `,
-      this.rank === 1 ? '' : 
-      `}
-       loc = sourceLoc;
-       ${coords[this.rank - 2]} += 1;
-       if(${coords[this.rank - 2]} < ${range[this.rank - 2]}) {`,
-      this.rank === 1 ? '' :
-      `  ${coords[this.rank - 1]} += 1;
-         if(${cLimit}) {`
-    ];
-
-    let mainLoop = '';
-    for (let i = 0, j = this.rank === 1 ? 2 : 4; i < j; i++) {
-      mainLoop += `
-        ${componentSetup[i]}
-        result[${i}] = getChannel(getSource(${coords.join()}), ${innerDims});
-      `;
-    }
-    mainLoop += (this.rank === 1 ? `} ` : `}}`);
- 
+    const sourceLocSetup = this.rank <= 4 ?
+        `sourceLoc = coords +
+            ${dtype}(${destSize.map((_, i) => `start[${i}]`).join()});` :
+        destSize.map((_, i) => `${sourceLoc[i]} = ${coords[i]} + start[${i}];`)
+            .join('\n');
     this.userCode = `
-      uniform ${dtype} start;
+      uniform int start[${this.rank}];
       void main() {
-        ${dtype} sourceLoc = start + getOutputCoords();
-        ${dtype} range = start + ${dtype}(${destSize.join()}); 
+        ${dtype} coords = getOutputCoords();
+        ${dtype} sourceLoc;
+        ${sourceLocSetup} 
         vec4 result = vec4(0.);
-        ${mainLoop}
+        ${upperRow}
+        ${lowerRow}
         setOutput(result);
       }
     `;
@@ -93,18 +96,7 @@ export class SlicePackedProgram implements GPGPUProgram {
           return;
         }
       }
-      if (this.rank === 1) {
-        gpgpu.gl.uniform1i(this.startLoc, start[0]);
-      } else if (this.rank === 2) {
-        gpgpu.gl.uniform2i(this.startLoc, start[0], start[1]);
-      } else if (this.rank === 3) {
-        gpgpu.gl.uniform3i(this.startLoc, start[0], start[1], start[2]);
-      } else if (this.rank === 4) {
-        gpgpu.gl.uniform4i(
-            this.startLoc, start[0], start[1], start[2], start[3]);
-      } else {
-        throw Error(`Slicing for rank ${this.rank} is not yet supported`);
-      }
+      gpgpu.gl.uniform1iv(this.startLoc, start);
     };
   }
 }

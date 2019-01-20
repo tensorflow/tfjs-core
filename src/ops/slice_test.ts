@@ -16,11 +16,9 @@
  */
 
 import * as tf from '../index';
-import {describeWithFlags, activateWebGLPackedTestEnv, deactivateWebGLPackedTestEnv} from '../jasmine_util';
+import {describeWithFlags} from '../jasmine_util';
 import {ALL_ENVS, expectArraysClose, expectNumbersClose, WEBGL_ENVS} from '../test_util';
 import {Rank} from '../types';
-
-activateWebGLPackedTestEnv();
 
 describeWithFlags('slice1d', ALL_ENVS, () => {
   it('slices 1x1 into 1x1 (effectively a copy)', () => {
@@ -500,5 +498,3 @@ describeWithFlags('slice ergonomics', ALL_ENVS, () => {
     expectArraysClose(result, [4, 8]);
   });
 });
-
-deactivateWebGLPackedTestEnv();
