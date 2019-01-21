@@ -16,6 +16,8 @@
  */
 
 import {Conv2DInfo} from '../../ops/conv_util';
+import * as util from '../../util';
+
 import {GPGPUProgram} from './gpgpu_math';
 
 export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
@@ -109,8 +111,9 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
               // of the first (if the first is composed, the second is a single
               // sample, and vice versa.)
 
-              const nextTexelOffset =
-                  padLeft % 2 === 0 ? dilationWidth + 1 : dilationWidth;
+              const nextTexelOffset = padLeft % 2 === 0 ?
+                  util.nearestLargerEven(dilationWidth) :
+                  dilationWidth;
 
               mainLoop +=
                   `xCOffset = xC + ${padLeft % 2} + ${nextTexelOffset};`;
