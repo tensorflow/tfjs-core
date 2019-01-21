@@ -62,7 +62,7 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
         if (strideWidth === 1) {
           if (c < filterWidth) {
             // If padding is odd, the outer texels have to be composed.
-            if (padLeft % 2 == 1) {
+            if (padLeft % 2 === 1) {
               // TODO: Ensure vec4 previous does not result in redundant sample,
               // and avoid setting xTexelRC's that exceed the boundary in the
               // first place rather than resetting them to vec4(0)).
@@ -115,7 +115,7 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
               mainLoop +=
                   `xCOffset = xC + ${padLeft % 2} + ${nextTexelOffset};`;
 
-              if ((dilationWidth % 2 == 0 && padLeft % 2 == 1) ||
+              if ((dilationWidth % 2 === 0 && padLeft % 2 === 1) ||
                   (dilationWidth % 2 !== 0 && padLeft % 2 !== 1)) {
                 mainLoop += `
                   if(xR >= 0 && xR < ${xNumRows} &&
@@ -158,7 +158,7 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
               if(xR >= 0 && xR < ${xNumRows}) {
             `;
 
-            if (padLeft % 2 == 1) {
+            if (padLeft % 2 === 1) {
               mainLoop += `
                 xCOffset = xC + 1 - ${strideWidth};
                 if(xCOffset >= 0 && xCOffset < ${xNumCols}) {
