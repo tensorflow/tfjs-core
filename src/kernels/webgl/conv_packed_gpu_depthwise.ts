@@ -45,7 +45,6 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
       for (let c = 0; c < filterWidth; c++) {
         mainLoop += `
           vec4 xTexelR${r}C${c * 2} = vec4(0.);
-
           vec4 wR${r}C${c} = vec4(0.);
           vec4 xR${r}C${c} = vec4(0.);`;
       }
@@ -68,10 +67,10 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
               // and avoid setting xTexelRC's that exceed the boundary in the
               // first place rather than resetting them to vec4(0)).
 
-              // If padding is odd, we must add 1 to ensure we ask for an
+              // To compute xCOffset:
+              // - If padding is odd, we must add 1 to ensure we ask for an
               // even-numbered row.
-
-              // We subtract 2 to access the previous texel.
+              // - We subtract 2 to access the previous texel.
 
               mainLoop += `
                 xCOffset = xC + 1;
