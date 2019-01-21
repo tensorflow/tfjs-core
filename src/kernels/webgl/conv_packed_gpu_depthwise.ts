@@ -155,12 +155,13 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
                 }
 
                 if(xC + 1 >= 0 && xC + 1 < ${xNumCols}) {
-                  next = getX(batch, xR, xC + 1, d1);
+                  xTexelR${r}C${c + 2} = getX(batch, xR, xC + 1, d1);
                 } else {
-                  next = vec4(0.);
+                  xTexelR${r}C${c + 2} = vec4(0.);
                 }
 
-                xR${r}C${c} = vec4(xTexelR${r}C${c}.zw, next.zw);
+                xR${r}C${c} = vec4(
+                  xTexelR${r}C${c}.zw, xTexelR${r}C${c + 2}.zw);
               `;
 
               if (c + 1 < filterWidth) {
@@ -170,7 +171,7 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
                   if(xCOffset >= 0 && xCOffset < ${xNumCols}) {
                     final = getX(batch, xR, xCOffset, d1);
                   }
-                  xR${r}C${c + 1} = vec4(next.xy, final.xy);
+                  xR${r}C${c + 1} = vec4(xTexelR${r}C${c + 2}.xy, final.xy);
                 `;
               }
             } else {
@@ -242,7 +243,6 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
         int xCCorner = xRCCorner.y;
 
         vec4 result = vec4(0.);
-        vec4 next = vec4(0.);
 
         ${mainLoop}
 
