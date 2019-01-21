@@ -122,7 +122,21 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
                     xCOffset >= 0 && xCOffset < ${xNumCols}) {
                     xTexelR${r}C${c + 2} = getX(batch, xR, xCOffset, d1);
                   }
+                `;
 
+                if (dilationWidth > 1) {
+                  mainLoop += `
+                    xCOffset -= 2;
+                    if(xR >= 0 && xR < ${xNumRows} &&
+                      xCOffset >= 0 && xCOffset < ${xNumCols}) {
+                      xTexelR${r}C${c} = getX(batch, xR, xCOffset, d1);
+                    } else {
+                      xTexelR${r}C${c} = vec4(0.);
+                    }
+                  `;
+                }
+
+                mainLoop += `
                   xR${r}C${c + 1} = vec4(
                     xTexelR${r}C${c}.zw, xTexelR${r}C${c + 2}.xy);
                 `;

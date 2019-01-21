@@ -1688,17 +1688,12 @@ export class MathBackendWebGL implements KernelBackend {
     let program: DepthwiseConv2DProgram|DepthwiseConvPacked2DProgram;
     if (ENV.get('WEBGL_PACK_DEPTHWISECONV') && convInfo.strideWidth <= 2 &&
         convInfo.outChannels / convInfo.inChannels === 1) {
-    // if (ENV.get('WEBGL_PACK_DEPTHWISECONV') && convInfo.padInfo.left <= 1 &&
-    //     convInfo.strideWidth <= 2 &&
-    //     convInfo.outChannels / convInfo.inChannels === 1) {
-      console.log("using packed implementation");
       program = new DepthwiseConvPacked2DProgram(convInfo);
       return this.compileAndRun(
           program, [x, filter],
           this.makePackedTensor(convInfo.outShape, x.dtype));
     }
 
-    console.log("using unpacked implementation");
     program = new DepthwiseConv2DProgram(convInfo);
     return this.compileAndRun(program, [x, filter]);
   }

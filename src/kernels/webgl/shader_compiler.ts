@@ -81,7 +81,6 @@ export function makeShader(
     shaderPrefix, floatTextureSampleSnippet, floatTextureSetOutputSnippet,
     inputPrefixSnippet, outputSamplingSnippet, inputSamplingSnippet, userCode
   ].join('\n');
-  // console.log(source);
   return source;
 }
 
