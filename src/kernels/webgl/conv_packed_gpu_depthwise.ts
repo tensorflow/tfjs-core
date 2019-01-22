@@ -52,6 +52,14 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
       }
     }
 
+    /**
+     * This vectorized implementation works by gathering the values needed for
+     * each output channel's dot product into vec4's and then multiplying them
+     * all together (this happens in the final double for-loop below). Most of
+     * the main loop consists of constructing these vec4's with the minimum
+     * number of texture2D calls, which means making use of all four returned
+     * values from a texture2D call at once.
+     */
     for (let r = 0; r < filterHeight; r++) {
       for (let texelC = 0; texelC < texelsAcross; texelC++) {
         const c = texelC * 2;
@@ -93,6 +101,7 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
                 }
               `;
             } else {
+              // Padding is even, so xRC corresponds to a single texel.
               mainLoop += `
                 if(xR >= 0 && xR < ${xNumRows} && xC >= 0 && xC < ${xNumCols}) {
                   xTexelR${r}C${c} = getX(batch, xR, xC, d1);
@@ -127,6 +136,8 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
                   }
                 `;
 
+                // If dilation > 1 then the xRC's will not be able to share any
+                // values, so each xRC will require two unique calls to getX.
                 if (dilationWidth > 1) {
                   mainLoop += `
                     xCOffset -= 2;
@@ -161,6 +172,12 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
               if(xR >= 0 && xR < ${xNumRows}) {
             `;
 
+            // Depending on whether padLeft is even or odd, we want either the
+            // xy or zw channels from X texels for xR${r}C${c}. If padLeft is
+            // even, xR${r}C${c + 1} is simply the zw channels of texels we've
+            // already sampled. But if padLeft is odd, xR${r}C{$c + 1}.zw will
+            // need to come from a new texel, hence the `vec4 final` initialized
+            // below.
             if (padLeft % 2 === 1) {
               mainLoop += `
                 xCOffset = xC + 1 - ${strideWidth};
