@@ -787,7 +787,7 @@ export class MathBackendWebGL implements KernelBackend {
 
   fusedBatchMatMul(
       a: Tensor3D, b: Tensor3D, transposeA: boolean, transposeB: boolean,
-      bias?: Tensor3D, activation?: FusableActivation): Tensor3D {
+      bias?: Tensor, activation?: FusableActivation): Tensor3D {
     const outerShapeA = transposeA ? a.shape[2] : a.shape[1];
     const outerShapeB = transposeB ? b.shape[1] : b.shape[2];
     const [batch, , ] = a.shape;
@@ -805,9 +805,9 @@ export class MathBackendWebGL implements KernelBackend {
           activation ? mapActivationToShaderProgram(activation, true) : null);
       const output =
           this.makePackedTensor(program.outputShape, dtype) as Tensor2D;
-      const inputs = [aSqueezed, bSqueezed];
+      const inputs: TensorHandle[] = [aSqueezed, bSqueezed];
       if (bias) {
-        inputs.push(bias.as2D(bias.shape[1], bias.shape[2]));
+        inputs.push(bias);
       }
       const result = this.compileAndRun<Tensor2D>(program, inputs, output);
       return result.reshape([1, result.shape[0], result.shape[1]]);
@@ -815,7 +815,7 @@ export class MathBackendWebGL implements KernelBackend {
       const program = new MatMulProgram(
           a.shape, b.shape, transposeA, transposeB, !!bias,
           activation ? mapActivationToShaderProgram(activation) : null);
-      const inputs = [a, b];
+      const inputs: TensorHandle[] = [a, b];
       if (bias) {
         inputs.push(bias);
       }

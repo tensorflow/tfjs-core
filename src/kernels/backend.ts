@@ -124,7 +124,7 @@ export class KernelBackend implements TensorStorage, BackendTimer {
 
   fusedBatchMatMul(
       a: Tensor3D, b: Tensor3D, transposeA: boolean, transposeB: boolean,
-      bias?: Tensor3D, activation?: FusableActivation): Tensor3D {
+      bias?: Tensor, activation?: FusableActivation): Tensor3D {
     throw new Error('Not yet implemented');
   }
 
