@@ -124,12 +124,11 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
                   util.nearestLargerEven(dilationWidth) :
                   dilationWidth;
 
-              mainLoop +=
-                  `xCOffset = xC + ${padLeft % 2} + ${nextTexelOffset};`;
-
               if ((dilationWidth % 2 === 0 && padLeft % 2 === 1) ||
                   (dilationWidth % 2 !== 0 && padLeft % 2 !== 1)) {
                 mainLoop += `
+                  xCOffset = xC + ${padLeft % 2} + ${nextTexelOffset};
+
                   if(xR >= 0 && xR < ${xNumRows} &&
                     xCOffset >= 0 && xCOffset < ${xNumCols}) {
                     xTexelR${r}C${c + 2} = getX(batch, xR, xCOffset, d1);
@@ -156,6 +155,8 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
                 `;
               } else {
                 mainLoop += `
+                  xCOffset = xC + ${nextTexelOffset};
+
                   if(xR >= 0 && xR < ${xNumRows} &&
                     xCOffset >= 0 && xCOffset < ${xNumCols}) {
                     xTexelR${r}C${c + 2} = getX(batch, xR, xCOffset, d1);
@@ -176,8 +177,8 @@ export class DepthwiseConvPacked2DProgram implements GPGPUProgram {
             // xy or zw channels from X texels for xR${r}C${c}. If padLeft is
             // even, xR${r}C${c + 1} is simply the zw channels of texels we've
             // already sampled. But if padLeft is odd, xR${r}C{$c + 1}.zw will
-            // need to come from a new texel, hence the `vec4 final` initialized
-            // below.
+            // need to come from the xy channels of a new texel, hence the `vec4
+            // final` initialized below.
             if (padLeft % 2 === 1) {
               mainLoop += `
                 xCOffset = xC + 1 - ${strideWidth};
