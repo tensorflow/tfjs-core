@@ -18,8 +18,6 @@
 import {GPGPUContext} from './gpgpu_context';
 import {GPGPUProgram} from './gpgpu_math';
 
-const CHECK_NAN_SNIPPET = `if (hasNaN(x)) return x;`;
-
 export const LINEAR = `return x;`;
 
 export const LOG = `
@@ -35,10 +33,11 @@ export const LOG = `
 
 export const RELU = `
   vec4 result = x * vec4(greaterThanEqual(x, vec4(0.0)));
-  result.r = isNaN(x.r) ? NAN : result.r;
-  result.g = isNaN(x.g) ? NAN : result.g;
-  result.b = isNaN(x.b) ? NAN : result.b;
-  result.a = isNaN(x.a) ? NAN : result.a;
+
+  result.r = isNaN(x.r) ? x.r : result.r;
+  result.g = isNaN(x.g) ? x.g : result.g;
+  result.b = isNaN(x.b) ? x.b : result.b;
+  result.a = isNaN(x.a) ? x.a : result.a;
 
   return result;
 `;
