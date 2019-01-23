@@ -60,9 +60,10 @@ describeWithFlags('relu', ALL_ENVS, () => {
     expectNumbersClose(result.get(), 0);
   });
 
-  it('propagates NaNs, float32', () => {
+  fit('propagates NaNs, float32', () => {
     const a = tf.tensor1d([1, -2, 0, 3, -0.1, NaN]);
     const result = tf.relu(a);
+    result.print();
     expect(result.dtype).toBe('float32');
     expectArraysClose(result, [1, 0, 0, 3, 0, NaN]);
   });

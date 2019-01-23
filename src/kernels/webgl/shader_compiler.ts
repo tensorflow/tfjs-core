@@ -257,6 +257,15 @@ function getShaderPrefix(glsl: GLSL): string {
           isNaN(values.w)
         ));
       }
+
+      bvec4 checkNaN(vec4 values) {
+        return bvec4(
+          isNaN(values.x),
+          isNaN(values.y),
+          isNaN(values.z),
+          isNaN(values.w)
+        );
+      }
     `;
   }
 
