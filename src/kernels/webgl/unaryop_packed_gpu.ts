@@ -33,8 +33,15 @@ export const LOG = `
   return result;
 `;
 
-export const RELU =
-    CHECK_NAN_SNIPPET + `return x * vec4(greaterThanEqual(x, vec4(0.0)));`;
+export const RELU = `
+  vec4 result = x * vec4(greaterThanEqual(x, vec4(0.0)));
+  result.r = isNaN(x.r) ? NAN : result.r;
+  result.g = isNaN(x.g) ? NAN : result.g;
+  result.b = isNaN(x.b) ? NAN : result.b;
+  result.a = isNaN(x.a) ? NAN : result.a;
+
+  return result;
+`;
 
 export class UnaryOpPackedProgram implements GPGPUProgram {
   variableNames = ['A'];
