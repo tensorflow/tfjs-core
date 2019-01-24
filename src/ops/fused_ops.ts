@@ -128,7 +128,7 @@ function matMul_<T extends Tensor>(
           }
           return res.reshape($bias.shape);
         }
-      }
+      };
     }
 
     if (!transposeA && !transposeB) {
