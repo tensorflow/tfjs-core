@@ -48,7 +48,6 @@ export async function loadWeightsAsArrayBuffer(
   // Add accept header
   requestOptions = requestOptions || {};
   const headers = (requestOptions.headers || {}) as RequestHeader;
-  // tslint:disable-next-line:no-any
   headers['Accept'] = OCTET_STREAM_TYPE;
   requestOptions.headers = headers;
 
