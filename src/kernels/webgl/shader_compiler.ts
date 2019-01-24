@@ -1280,9 +1280,6 @@ function getPackedSamplerAtOutputCoords(
   const texName = inputInfo.name;
   const texFuncSnippet = texName.charAt(0).toUpperCase() + texName.slice(1);
   const funcName = 'get' + texFuncSnippet + 'AtOutCoords';
-  const outTexShape = outShapeInfo.texShape;
-  const inTexShape = inputInfo.shapeInfo.texShape;
-  const glsl = getGlslDifferences();
   const inRank = inputInfo.shapeInfo.logicalShape.length;
   const outRank = outShapeInfo.logicalShape.length;
 
