@@ -84,6 +84,7 @@ import {MultinomialProgram} from './webgl/multinomial_gpu';
 import {OneHotProgram} from './webgl/onehot_gpu';
 import {PackProgram} from './webgl/pack_gpu';
 import {PadProgram} from './webgl/pad_gpu';
+import {PadPackedProgram} from './webgl/pad_packed_gpu';
 import {Pool2DProgram} from './webgl/pool_gpu';
 import {ReduceProgram} from './webgl/reduce_gpu';
 import {ReshapePackedProgram} from './webgl/reshape_packed_gpu';
@@ -105,6 +106,7 @@ import {TransposeProgram} from './webgl/transpose_gpu';
 import * as unary_op from './webgl/unaryop_gpu';
 import {UnaryOpProgram} from './webgl/unaryop_gpu';
 import * as unary_packed_op from './webgl/unaryop_packed_gpu';
+import {UnaryOpPackedProgram} from './webgl/unaryop_packed_gpu';
 import {UnpackProgram} from './webgl/unpack_gpu';
 import * as webgl_util from './webgl/webgl_util';
 import {whereImpl} from './where_impl';
@@ -915,7 +917,9 @@ export class MathBackendWebGL implements KernelBackend {
 
   pad<T extends Tensor>(
       x: T, paddings: Array<[number, number]>, constantValue: number): T {
-    const program = new PadProgram(x.shape, paddings, constantValue);
+    const program = ENV.get('WEBGL_PACK_ARRAY_OPERATIONS') ?
+        new PadPackedProgram(x.shape, paddings, constantValue) :
+        new PadProgram(x.shape, paddings, constantValue);
     return this.compileAndRun(program, [x]);
   }
 
@@ -1437,7 +1441,12 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   exp<T extends Tensor>(x: T): T {
-    const program = new UnaryOpProgram(x.shape, unary_op.EXP);
+    let program: UnaryOpProgram | UnaryOpPackedProgram;
+    if(ENV.get('WEBGL_PACK')) {
+      program = new UnaryOpPackedProgram(x.shape, unary_op.EXP);
+    } else {
+      program = new UnaryOpProgram(x.shape, unary_op.EXP);
+    }
     return this.compileAndRun(program, [x]) as T;
   }
 
@@ -1447,7 +1456,12 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   log<T extends Tensor>(x: T): T {
-    const program = new UnaryOpProgram(x.shape, unary_op.LOG);
+    let program: UnaryOpProgram | UnaryOpPackedProgram;
+    if(ENV.get('WEBGL_PACK')) {
+      program = new UnaryOpPackedProgram(x.shape, unary_packed_op.LOG);
+    } else {
+      program = new UnaryOpProgram(x.shape, unary_op.LOG);
+    }
     const customSetup = program.getCustomSetupFunc();
     return this.compileAndRun(program, [x], null, customSetup) as T;
   }
@@ -1478,7 +1492,12 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   relu<T extends Tensor>(x: T): T {
-    const program = new UnaryOpProgram(x.shape, unary_op.RELU);
+    let program: UnaryOpProgram | UnaryOpPackedProgram;
+    if(ENV.get('WEBGL_PACK')) {
+      program = new UnaryOpPackedProgram(x.shape, unary_packed_op.RELU);
+    } else {
+      program = new UnaryOpProgram(x.shape, unary_op.RELU);
+    }
     return this.compileAndRun(program, [x]) as T;
   }
 
@@ -1683,9 +1702,7 @@ export class MathBackendWebGL implements KernelBackend {
   depthwiseConv2D(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
       Tensor4D {
     let program: DepthwiseConv2DProgram|DepthwiseConvPacked2DProgram;
-    if (ENV.get('WEBGL_PACK_DEPTHWISECONV') && convInfo.dilationWidth === 1 &&
-        convInfo.dilationHeight === 1 && convInfo.padInfo.left <= 1 &&
-        convInfo.strideWidth <= 2 &&
+    if (ENV.get('WEBGL_PACK_DEPTHWISECONV') && convInfo.strideWidth <= 2 &&
         convInfo.outChannels / convInfo.inChannels === 1) {
       program = new DepthwiseConvPacked2DProgram(convInfo);
       return this.compileAndRun(
