@@ -1318,18 +1318,6 @@ export class MathBackendWebGL implements KernelBackend {
     if (!ENV.get('WEBGL_PACK_BINARY_OPERATIONS')) {
       return false;
     }
-    const outputShape =
-        broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    // 5-D and 6-D are not yet supported. See getPackedOutputSamplingSnippet.
-    if (outputShape.length > 4) {
-      return false;
-    }
-    // Packed broadcast sampling is not yet supported.
-    // See getPackedSamplerAtOutputCoords.
-    if (broadcast_util.getBroadcastDims(a.shape, outputShape).length ||
-        broadcast_util.getBroadcastDims(b.shape, outputShape).length) {
-      return false;
-    }
     return true;
   }
 
