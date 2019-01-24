@@ -175,7 +175,7 @@ export class BrowserHTTPRequest implements IOHandler {
     const contentType = response.headers.get('content-type');
     if (!contentType || contentType.indexOf(type) === -1) {
       throw new Error(`Request to ${response.url} for ${
-          target} failed. Expected content type ${type}) but got ${
+          target} failed. Expected content type ${type} but got ${
           contentType}.`);
     }
   }
@@ -185,7 +185,7 @@ export class BrowserHTTPRequest implements IOHandler {
     const manifestPromise = await this.getFetchFunc()(
         this.path[1], this.addAcceptHeader('application/json'));
     this.verifyContentType(
-        manifestPromise, 'weight manifest', 'application/json');
+        manifestPromise, 'weights manifest', 'application/json');
     if (!manifestPromise.ok) {
       throw new Error(`Request to ${this.path[1]} failed with error: ${
           manifestPromise.statusText}`);
@@ -260,8 +260,7 @@ export class BrowserHTTPRequest implements IOHandler {
     return [
       weightSpecs,
       concatenateArrayBuffers(await loadWeightsAsArrayBuffer(
-          fetchURLs, this.requestInit, this.getFetchFunc(),
-          this.onProgress))
+          fetchURLs, this.requestInit, this.getFetchFunc(), this.onProgress))
     ];
   }
 
@@ -301,24 +300,25 @@ export function isHTTPScheme(url: string): boolean {
   return url.match(BrowserHTTPRequest.URL_SCHEME_REGEX) != null;
 }
 
-export const httpRequestRouter: IORouter = (url: string|string[], onProgress?: Function) => {
-  if (typeof fetch === 'undefined') {
-    // browserHTTPRequest uses `fetch`, if one wants to use it in node.js
-    // they have to setup a global fetch polyfill.
-    return null;
-  } else {
-    let isHTTP = true;
-    if (Array.isArray(url)) {
-      isHTTP = url.every(urlItem => isHTTPScheme(urlItem));
-    } else {
-      isHTTP = isHTTPScheme(url);
-    }
-    if (isHTTP) {
-      return browserHTTPRequest(url, null, null, null, onProgress);
-    }
-  }
-  return null;
-};
+export const httpRequestRouter: IORouter =
+    (url: string|string[], onProgress?: Function) => {
+      if (typeof fetch === 'undefined') {
+        // browserHTTPRequest uses `fetch`, if one wants to use it in node.js
+        // they have to setup a global fetch polyfill.
+        return null;
+      } else {
+        let isHTTP = true;
+        if (Array.isArray(url)) {
+          isHTTP = url.every(urlItem => isHTTPScheme(urlItem));
+        } else {
+          isHTTP = isHTTPScheme(url);
+        }
+        if (isHTTP) {
+          return browserHTTPRequest(url, null, null, null, onProgress);
+        }
+      }
+      return null;
+    };
 IORouterRegistry.registerSaveRouter(httpRequestRouter);
 IORouterRegistry.registerLoadRouter(httpRequestRouter);
 
@@ -469,6 +469,6 @@ IORouterRegistry.registerLoadRouter(httpRequestRouter);
 export function browserHTTPRequest(
     path: string|string[], requestInit?: RequestInit, weightPathPrefix?: string,
     fetchFunc?: Function, onProgress?: Function): IOHandler {
-  return new BrowserHTTPRequest(path, requestInit, weightPathPrefix, fetchFunc,
-      onProgress);
+  return new BrowserHTTPRequest(
+      path, requestInit, weightPathPrefix, fetchFunc, onProgress);
 }

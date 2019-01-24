@@ -782,7 +782,7 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
             expect(err.message)
                 .toEqual(
                     'Request to path1/model.json for model topology failed. ' +
-                    'Expected content type application/json) ' +
+                    'Expected content type application/json ' +
                     'but got text/html.');
             done();
           });
@@ -1204,7 +1204,7 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
             expect(err.message)
                 .toEqual(
                     'Request to path1/model.pb for model topology failed. ' +
-                    'Expected content type application/octet-stream) ' +
+                    'Expected content type application/octet-stream ' +
                     'but got text/html.');
             done();
           });
@@ -1255,8 +1255,8 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
           .catch(err => {
             expect(err.message)
                 .toEqual(
-                    'Request to path2/weights_manifest.json for weight ' +
-                    'manifest failed. Expected content type application/json)' +
+                    'Request to path2/weights_manifest.json for weights ' +
+                    'manifest failed. Expected content type application/json' +
                     ' but got application/octet-stream.');
             done();
           });

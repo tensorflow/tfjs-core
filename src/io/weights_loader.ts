@@ -21,6 +21,10 @@ import * as util from '../util';
 import {decodeWeights} from './io_utils';
 import {DTYPE_VALUE_SIZE_MAP, WeightsManifestConfig, WeightsManifestEntry} from './types';
 
+type RequestHeader = {
+  [key: string]: string
+};
+
 const OCTET_STREAM_TYPE = 'application/octet-stream';
 const CONTENT_TYPE = 'Content-type';
 /**
@@ -36,29 +40,28 @@ const CONTENT_TYPE = 'Content-type';
  */
 export async function loadWeightsAsArrayBuffer(
     fetchURLs: string[], requestOptions?: RequestInit, fetchFunc?: Function,
-    onProgress?: Function):
-  Promise<ArrayBuffer[]> {
+    onProgress?: Function): Promise<ArrayBuffer[]> {
   if (fetchFunc == null) {
     fetchFunc = fetch;
   }
 
   // Add accept header
   requestOptions = requestOptions || {};
-  const headers = requestOptions.headers || {};
+  const headers = (requestOptions.headers || {}) as RequestHeader;
   // tslint:disable-next-line:no-any
-  (headers as any)['Accept'] = OCTET_STREAM_TYPE;
+  headers['Accept'] = OCTET_STREAM_TYPE;
   requestOptions.headers = headers;
 
   // Create the requests for all of the weights in parallel.
-  const requests = fetchURLs.map(
-      fetchURL => fetchFunc(fetchURL, requestOptions));
+  const requests =
+      fetchURLs.map(fetchURL => fetchFunc(fetchURL, requestOptions));
 
   const fetchStartFraction = 0;
   const fetchEndFraction = 0.5;
 
   if (onProgress != null) {
-    util.monitorPromisesProgress(requests, onProgress,
-        fetchStartFraction, fetchEndFraction);
+    util.monitorPromisesProgress(
+        requests, onProgress, fetchStartFraction, fetchEndFraction);
   }
 
   const responses = await Promise.all(requests);
@@ -74,15 +77,15 @@ export async function loadWeightsAsArrayBuffer(
                     ` Expected content type ${OCTET_STREAM_TYPE} but got ${
                             resp.headers.get(CONTENT_TYPE)}.`)
             .join('\n'));
-  }  
+  }
   const bufferPromises = responses.map(response => response.arrayBuffer());
 
   const bufferStartFraction = 0.5;
   const bufferEndFraction = 1;
 
   if (onProgress != null) {
-    util.monitorPromisesProgress(bufferPromises, onProgress,
-        bufferStartFraction, bufferEndFraction);
+    util.monitorPromisesProgress(
+        bufferPromises, onProgress, bufferStartFraction, bufferEndFraction);
   }
 
   const buffers = await Promise.all(bufferPromises);
