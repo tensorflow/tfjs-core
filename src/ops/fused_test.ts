@@ -65,8 +65,9 @@ describeWithFlags('fused matmul', ALL_ENVS, () => {
     const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
     const b = tf.tensor2d([0, 1, -3, 2, 2, 1], [3, 2]);
     const c = tf.tensor1d([1, 1]);
+    const act: tf.fused.Activation = 'relu';
 
-    const d = tf.fused.matMul(a, b, false, false, c, 'relu');
+    const d = tf.fused.matMul(a, b, false, false, c, act);
 
     expect(d.shape).toEqual([2, 2]);
     expectArraysClose(d, [1, 9, 0, 21]);

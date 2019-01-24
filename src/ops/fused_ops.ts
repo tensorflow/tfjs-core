@@ -24,7 +24,7 @@ import {TensorLike} from '../types';
 import * as util from '../util';
 
 import * as broadcast_util from './broadcast_util';
-import {FusableActivation} from './fused_util';
+import {Activation} from './fused_util';
 
 /**
  * Computes the dot product of two matrices with optional activation and bias.
@@ -47,7 +47,7 @@ import {FusableActivation} from './fused_util';
 /** @doc {heading: 'Operations', subheading: 'Matrices', namespace: 'fused'} */
 function matMul_<T extends Tensor>(
     a: T|TensorLike, b: T|TensorLike, transposeA = false, transposeB = false,
-    bias?: Tensor|TensorLike, activation: FusableActivation = 'linear'): T {
+    bias?: Tensor|TensorLike, activation: Activation = 'linear'): T {
   let $a = convertToTensor(a, 'a', 'fused matMul');
   let $b = convertToTensor(b, 'b', 'fused matMul');
   [$a, $b] = makeTypesMatch($a, $b);
@@ -176,4 +176,4 @@ function matMul_<T extends Tensor>(
 
 export const matMul = op({matMul_});
 
-export {FusableActivation};
+export {Activation};
