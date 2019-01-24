@@ -116,7 +116,20 @@ function matMul_<T extends Tensor>(
           `implemented yet.`);
     }
 
-    const biasGradient = bias != null ? {$bias: () => dyActivation} : {};
+    let biasGradient = {};
+    if (bias != null) {
+      biasGradient = {
+        $bias: () => {
+          let res = dyActivation;
+          const reduceAxes =
+              broadcast_util.getReductionAxes($bias.shape, outShape);
+          if (reduceAxes.length > 0) {
+            res = res.sum(reduceAxes);
+          }
+          return res.reshape($bias.shape);
+        }
+      }
+    }
 
     if (!transposeA && !transposeB) {
       return Object.assign(
