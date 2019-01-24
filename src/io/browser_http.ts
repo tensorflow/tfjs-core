@@ -21,7 +21,6 @@
  * Uses [`fetch`](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API).
  */
 
-import {getGlobalNamespace} from '../environment';
 import {assert} from '../util';
 
 import {concatenateArrayBuffers, getModelArtifactsInfoForJSON} from './io_utils';
@@ -376,9 +375,6 @@ IORouterRegistry.registerLoadRouter(httpRequestRouter);
  * import tensorflow as tf
  * import tensorflowjs as tfjs
  * import werkzeug.formparser
- *import { ENV } from '../environment';
-import { Environment } from '../environment';
-
  *
  * class ModelReceiver(object):
  *
