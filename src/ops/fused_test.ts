@@ -61,7 +61,7 @@ describeWithFlags('fused matmul', ALL_ENVS, () => {
     expectArraysClose(d, [1, 9, 0, 21]);
   });
 
-  fit('A x B with relu and broadcasted bias', () => {
+  it('A x B with relu and broadcasted bias', () => {
     const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
     const b = tf.tensor2d([0, 1, -3, 2, 2, 1], [3, 2]);
     const c = tf.tensor1d([1, 1]);

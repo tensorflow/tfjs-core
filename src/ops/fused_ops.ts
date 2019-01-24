@@ -26,7 +26,6 @@ import * as util from '../util';
 import * as broadcast_util from './broadcast_util';
 import {FusableActivation} from './fused_util';
 
-
 /**
  * Computes the dot product of two matrices with optional activation and bias.
  *
@@ -100,7 +99,7 @@ function matMul_<T extends Tensor>(
 
     util.assert(
         broadcast_util.getBroadcastDims(outShape, $bias.shape).length === 0,
-        `Error in fused matMul: broadcasting is not yet supported for bias add.`);
+        `Error in fused matMul: broadcasting is not supported for bias add.`);
   }
 
   const grad = (dy: Tensor3D, saved: Tensor[]) => {
