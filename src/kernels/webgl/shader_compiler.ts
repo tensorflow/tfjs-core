@@ -1332,8 +1332,8 @@ function getPackedSamplerAtOutputCoords(
     if (broadcastDims.indexOf(rows) > -1 && broadcastDims.indexOf(cols) > -1) {
       output = `return vec4(outputValue.x);`;
     } else if (broadcastDims.indexOf(rows) > -1) {
-      output =
-          `return vec4(outputValue.x, outputValue.y, outputValue.x, outputValue.y);`;
+      output = `return vec4(outputValue.x, outputValue.y, ` +
+          `outputValue.x, outputValue.y);`;
     } else if (broadcastDims.indexOf(cols) > -1) {
       output = `return vec4(outputValue.xx, outputValue.zz);`;
     }
