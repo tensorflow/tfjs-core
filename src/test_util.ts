@@ -26,6 +26,9 @@ import {isString} from './util';
 export const WEBGL_ENVS: Features = {
   'HAS_WEBGL': true
 };
+export const PACKED_ENVS: Features = {
+  'WEBGL_PACK': true
+};
 export const NODE_ENVS: Features = {
   'IS_NODE': true
 };
@@ -124,8 +127,8 @@ export function expectArraysEqual(
     expected: Tensor|TypedArray|number[]|boolean[]|string[]) {
   if (actual instanceof Tensor && actual.dtype === 'string' ||
       expected instanceof Tensor && expected.dtype === 'string' ||
-      actual instanceof Array && isString(actual[0]) ||
-      expected instanceof Array && isString(expected[0])) {
+      Array.isArray(actual) && isString(actual[0]) ||
+      Array.isArray(expected) && isString(expected[0])) {
     // tslint:disable-next-line:triple-equals
     return expectArraysPredicate(actual, expected, (a, b) => a == b);
   }

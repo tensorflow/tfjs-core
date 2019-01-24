@@ -51,16 +51,21 @@ export class BrowserHTTPRequest implements IOHandler {
       }
       // Make sure fetch is always bound to window (the
       // original object) when available.
-      this.fetchFunc =
-          fetch.bind(typeof window === 'undefined' ? null : window);
+      fetchFunc = fetch.bind(typeof window === 'undefined' ? null : window);
     } else {
       assert(
           typeof fetchFunc === 'function',
           'Must pass a function that matches the signature of ' +
               '`fetch` (see ' +
               'https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)');
-      this.fetchFunc = fetchFunc;
     }
+
+    this.fetchFunc = (path: string, requestInits: RequestInit) => {
+      // tslint:disable-next-line:no-any
+      return fetchFunc(path, requestInits).catch((error: any) => {
+        throw new Error(`Request for ${path} failed due to error: ${error}`);
+      });
+    };
 
     assert(
         path != null && path.length > 0,
@@ -147,26 +152,44 @@ export class BrowserHTTPRequest implements IOHandler {
    * Loads the model topology file and build the in memory graph of the model.
    */
   private async loadBinaryTopology(): Promise<ArrayBuffer> {
-    try {
-      const response =
-          await this.getFetchFunc()(this.path[0], this.requestInit);
-      if (!response.ok) {
-        throw new Error(
-            `BrowserHTTPRequest.load() failed due to HTTP response: ${
-                response.statusText}`);
-      }
-      return await response.arrayBuffer();
-    } catch (error) {
-      throw new Error(`${this.path[0]} not found. ${error}`);
+    const response = await this.getFetchFunc()(
+        this.path[0], this.addAcceptHeader('application/octet-stream'));
+    this.verifyContentType(
+        response, 'model topology', 'application/octet-stream');
+
+    if (!response.ok) {
+      throw new Error(`Request to ${this.path[0]} failed with error: ${
+          response.statusText}`);
+    }
+    return await response.arrayBuffer();
+  }
+
+  private addAcceptHeader(mimeType: string): RequestInit {
+    const requestOptions = Object.assign({}, this.requestInit || {});
+    const headers = Object.assign({}, requestOptions.headers || {});
+    // tslint:disable-next-line:no-any
+    (headers as any)['Accept'] = mimeType;
+    requestOptions.headers = headers;
+    return requestOptions;
+  }
+
+  private verifyContentType(response: Response, target: string, type: string) {
+    const contentType = response.headers.get('content-type');
+    if (!contentType || contentType.indexOf(type) === -1) {
+      throw new Error(`Request to ${response.url} for ${
+          target} failed. Expected content type ${type} but got ${
+          contentType}.`);
     }
   }
 
   protected async loadBinaryModel(): Promise<ModelArtifacts> {
     const graphPromise = this.loadBinaryTopology();
-    const manifestPromise =
-        await this.getFetchFunc()(this.path[1], this.requestInit);
+    const manifestPromise = await this.getFetchFunc()(
+        this.path[1], this.addAcceptHeader('application/json'));
+    this.verifyContentType(
+        manifestPromise, 'weights manifest', 'application/json');
     if (!manifestPromise.ok) {
-      throw new Error(`BrowserHTTPRequest.load() failed due to HTTP response: ${
+      throw new Error(`Request to ${this.path[1]} failed with error: ${
           manifestPromise.statusText}`);
     }
 
@@ -187,10 +210,13 @@ export class BrowserHTTPRequest implements IOHandler {
   }
 
   protected async loadJSONModel(): Promise<ModelArtifacts> {
-    const modelConfigRequest =
-        await this.getFetchFunc()(this.path as string, this.requestInit);
+    const modelConfigRequest = await this.getFetchFunc()(
+        this.path as string, this.addAcceptHeader('application/json'));
+    this.verifyContentType(
+        modelConfigRequest, 'model topology', 'application/json');
+
     if (!modelConfigRequest.ok) {
-      throw new Error(`BrowserHTTPRequest.load() failed due to HTTP response: ${
+      throw new Error(`Request to ${this.path} failed with error: ${
           modelConfigRequest.statusText}`);
     }
     const modelConfig = await modelConfigRequest.json();
@@ -233,7 +259,6 @@ export class BrowserHTTPRequest implements IOHandler {
         fetchURLs.push(pathPrefix + path + suffix);
       });
     });
-
     return [
       weightSpecs,
       concatenateArrayBuffers(await loadWeightsAsArrayBuffer(
