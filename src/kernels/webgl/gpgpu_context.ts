@@ -35,7 +35,6 @@ export class GPGPUContext {
   textureHalfFloatExtension: {};
   colorBufferFloatExtension: {};
   colorBufferHalfFloatExtension: {};
-  getBufferSubDataAsyncExtension: {};
   disjointQueryTimerExtension: WebGL2DisjointQueryTimerExtension|
       WebGL1DisjointQueryTimerExtension;
   vertexBuffer: WebGLBuffer;
@@ -176,10 +175,11 @@ export class GPGPUContext {
 
   public uploadMatrixToPackedTexture(
       texture: WebGLTexture, batch: number, rows: number, columns: number,
-      matrix: Float32Array) {
+      physicalRows: number, physicalCols: number, matrix: Float32Array) {
     this.throwIfDisposed();
     return gpgpu_util.uploadMatrixToPackedTexture(
-        this.gl, texture, batch, rows, columns, matrix, this.textureConfig);
+        this.gl, texture, batch, rows, columns, physicalRows, physicalCols,
+        matrix, this.textureConfig);
   }
 
   public downloadFloat32MatrixFromOutputTexture(
@@ -196,6 +196,14 @@ export class GPGPUContext {
         texture,
         () => gpgpu_util.downloadByteEncodedFloatMatrixFromOutputTexture(
             this.gl, rows, columns, this.textureConfig));
+  }
+
+  public downloadPackedMatrixFromBuffer(
+      buffer: WebGLBuffer, batch: number, rows: number, columns: number,
+      physicalRows: number, physicalCols: number): Float32Array {
+    return gpgpu_util.downloadPackedMatrixFromBuffer(
+        this.gl, buffer, batch, rows, columns, physicalRows, physicalCols,
+        this.textureConfig);
   }
 
   public downloadFloat32MatrixFromBuffer(

@@ -17,16 +17,16 @@
 
 import * as device_util from './device_util';
 import {Engine, MemoryInfo, ProfileInfo, ScopeFn, TimingInfo} from './engine';
-import {Features, getFeaturesFromURL, getWebGLDisjointQueryTimerVersion, getWebGLMaxTextureSize, isChrome, isDownloadFloatTextureEnabled, isRenderToFloatTextureEnabled, isWebGLFenceEnabled, isWebGLVersionEnabled} from './environment_util';
+import {Features, getFeaturesFromURL, getMaxTexturesInShader, getNumMBBeforePaging, getWebGLDisjointQueryTimerVersion, getWebGLMaxTextureSize, isChrome, isDownloadFloatTextureEnabled, isRenderToFloatTextureEnabled, isWebGLFenceEnabled, isWebGLVersionEnabled} from './environment_util';
 import {KernelBackend} from './kernels/backend';
 import {DataId, setTensorTracker, Tensor, TensorTracker} from './tensor';
 import {TensorContainer} from './tensor_types';
 import {getTensorsInContainer} from './tensor_util';
 
-const EPSILON_FLOAT16 = 1e-3;
+export const EPSILON_FLOAT16 = 1e-4;
 const TEST_EPSILON_FLOAT16 = 1e-1;
 
-const EPSILON_FLOAT32 = 1e-7;
+export const EPSILON_FLOAT32 = 1e-7;
 const TEST_EPSILON_FLOAT32 = 1e-3;
 
 export class Environment {
@@ -101,11 +101,10 @@ export class Environment {
    *   (undisposed) at this time, which is ≤ the number of tensors
    *   (e.g. `a.reshape(newShape)` makes a new Tensor that shares the same
    *   data buffer with `a`).
-   * - `unreliable`: `Optional` `boolean`:
-   *    - On WebGL, not present (always reliable).
-   *    - On CPU, true. Due to automatic garbage collection, these numbers
-   *     represent undisposed tensors, i.e. not wrapped in `tidy()`, or
-   *     lacking a call to `tensor.dispose()`.
+   * - `unreliable`: True if the memory usage is unreliable. See `reasons` when
+   *    `unrealible` is true.
+   * - `reasons`: `string[]`, reasons why the memory is unreliable, present if
+   *    `unreliable` is true.
    */
   /** @doc {heading: 'Performance', subheading: 'Memory'} */
   static memory(): MemoryInfo {
@@ -183,8 +182,8 @@ export class Environment {
    */
   /** @doc {heading: 'Performance', subheading: 'Memory'} */
   static tidy<T extends TensorContainer>(
-      nameOrFn: string|ScopeFn<T>, fn?: ScopeFn<T>, gradMode = false): T {
-    return ENV.engine.tidy(nameOrFn, fn, gradMode);
+      nameOrFn: string|ScopeFn<T>, fn?: ScopeFn<T>): T {
+    return ENV.engine.tidy(nameOrFn, fn);
   }
 
   /**
@@ -303,21 +302,37 @@ export class Environment {
       return typeof window !== 'undefined';
     } else if (feature === 'IS_NODE') {
       return (typeof process !== 'undefined') &&
+          (typeof process.versions !== 'undefined') &&
           (typeof process.versions.node !== 'undefined');
     } else if (feature === 'IS_CHROME') {
       return isChrome();
     } else if (feature === 'WEBGL_CPU_FORWARD') {
       return true;
+    } else if (feature === 'WEBGL_PACK') {
+      return false;
     } else if (feature === 'WEBGL_PACK_BATCHNORMALIZATION') {
-      return false;
+      return this.get('WEBGL_PACK');
+    } else if (feature === 'WEBGL_PACK_CLIP') {
+      return this.get('WEBGL_PACK');
+    } else if (feature === 'WEBGL_PACK_DEPTHWISECONV') {
+      return this.get('WEBGL_PACK');
+    } else if (feature === 'WEBGL_PACK_BINARY_OPERATIONS') {
+      return this.get('WEBGL_PACK');
+    } else if (feature === 'WEBGL_PACK_ARRAY_OPERATIONS') {
+      return this.get('WEBGL_PACK');
     } else if (feature === 'WEBGL_LAZILY_UNPACK') {
-      return false;
+      return this.get('WEBGL_PACK');
     } else if (feature === 'WEBGL_CONV_IM2COL') {
-      return false;
-    } else if (feature === 'WEBGL_PAGING_ENABLED') {
-      return this.get('IS_BROWSER') && !this.get('PROD');
+      return this.get('WEBGL_PACK');
+    } else if (feature === 'WEBGL_NUM_MB_BEFORE_PAGING') {
+      if (this.get('PROD') || !this.get('IS_BROWSER')) {
+        return Number.POSITIVE_INFINITY;
+      }
+      return getNumMBBeforePaging();
     } else if (feature === 'WEBGL_MAX_TEXTURE_SIZE') {
       return getWebGLMaxTextureSize(this.get('WEBGL_VERSION'));
+    } else if (feature === 'WEBGL_MAX_TEXTURES_IN_SHADER') {
+      return getMaxTexturesInShader(this.get('WEBGL_VERSION'));
     } else if (feature === 'IS_TEST') {
       return false;
     } else if (feature === 'BACKEND') {
@@ -468,6 +483,11 @@ function getOrMakeEnvironment(): Environment {
     setTensorTracker(() => ns.ENV.engine);
   }
   return ns.ENV;
+}
+
+/** Enables production mode which disables safety checks to gain performance */
+export function enableProdMode(): void {
+  ENV.set('PROD', true);
 }
 
 export let ENV = getOrMakeEnvironment();

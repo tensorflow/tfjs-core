@@ -18,12 +18,12 @@
 import {BackendTimingInfo, DataMover, KernelBackend} from './kernels/backend';
 import {Profiler} from './profiler';
 import {backpropagateGradients, getFilteredNodesXToY, NamedGradientMap, TapeNode} from './tape';
-import {DataId, Tensor, Tensor3D, Variable} from './tensor';
+import {DataId, Tensor, Tensor3D, TensorTracker, Variable} from './tensor';
 import {NamedTensorMap, NamedVariableMap, TensorContainer} from './tensor_types';
 import {getTensorsInContainer, isTensorInList} from './tensor_util';
-import {DataType, TypedArray} from './types';
+import {DataType, DataValues} from './types';
 import * as util from './util';
-import {makeOnesTypedArray, now, sizeFromShape} from './util';
+import {bytesFromStringArray, makeOnesTypedArray, now, sizeFromShape} from './util';
 
 /**
  * A function that computes an output. The save function is for saving tensors
@@ -42,7 +42,7 @@ export type CustomGradientFunc<T extends Tensor> = (...args: Tensor[]) => {
 
 export type MemoryInfo = {
   numTensors: number; numDataBuffers: number; numBytes: number;
-  unreliable?: boolean;
+  unreliable?: boolean; reasons: string[];
 };
 
 type KernelProfile = {
@@ -78,13 +78,14 @@ interface ScopeState {
   name: string;
 }
 
-export class Engine implements TensorManager, DataMover {
+export class Engine implements TensorManager, TensorTracker, DataMover {
   // Public since optimizers will use it.
   registeredVariables: NamedVariableMap = {};
 
   private nextTapeNodeId = 0;
   private numBytes = 0;
   private numTensors = 0;
+  private numStringTensors = 0;
   private numDataBuffers = 0;
 
   private profiling = false;
@@ -96,12 +97,13 @@ export class Engine implements TensorManager, DataMover {
 
   // Keep Tensors that parallel the tapes.
   private activeScope: ScopeState;
-  private scopeStack: ScopeState[];
+  private scopeStack: ScopeState[] = [];
   private keepTensors: Set<number> = new Set();
   private profiler: Profiler;
 
   private tensorInfo = new WeakMap<DataId, {
     backend: KernelBackend,
+    bytes: number,
     dtype: DataType,
     shape: number[],
     refCount: number
@@ -110,9 +112,6 @@ export class Engine implements TensorManager, DataMover {
   constructor(
       public backend: KernelBackend, public safeMode: boolean,
       private debugMode: () => boolean) {
-    // Create a default outer scope.
-    this.activeScope = {track: [], name: 'default scope'};
-    this.scopeStack = [this.activeScope];
     this.profiler = new Profiler(backend);
     this.activeProfile =
         {newBytes: 0, newTensors: 0, peakBytes: 0, kernels: [], result: null};
@@ -195,7 +194,7 @@ export class Engine implements TensorManager, DataMover {
       saved.push(x);
       return x;
     };
-    const scopeName = this.activeScope.name;
+    const scopeName = this.activeScope != null ? this.activeScope.name : '';
     const startingBytecount = this.numBytes;
     const startingNumTensors = this.numTensors;
 
@@ -250,18 +249,26 @@ export class Engine implements TensorManager, DataMover {
         this.tensorInfo.get(a.dataId).refCount :
         0;
     this.numTensors++;
+    if (a.dtype === 'string') {
+      this.numStringTensors++;
+    }
     if (refCount === 0) {
       this.numDataBuffers++;
 
-      // Don't count bytes for complex numbers as they are counted by their
-      // components.
-      if (a.dtype !== 'complex64') {
-        this.numBytes +=
-            util.sizeFromShape(a.shape) * util.bytesPerElement(a.dtype);
+      // Bytes for complex numbers are counted by their components. Bytes for
+      // string tensors are counted when writing values.
+      let bytes = 0;
+      if (a.dtype !== 'complex64' && a.dtype !== 'string') {
+        bytes = util.sizeFromShape(a.shape) * util.bytesPerElement(a.dtype);
       }
-      this.tensorInfo.set(
-          a.dataId,
-          {backend: this.backend, dtype: a.dtype, shape: a.shape, refCount: 0});
+      this.tensorInfo.set(a.dataId, {
+        backend: this.backend,
+        dtype: a.dtype,
+        shape: a.shape,
+        bytes,
+        refCount: 0
+      });
+      this.numBytes += bytes;
       this.backend.register(a.dataId, a.shape, a.dtype);
     }
     this.tensorInfo.get(a.dataId).refCount++;
@@ -285,17 +292,19 @@ export class Engine implements TensorManager, DataMover {
       this.keepTensors.delete(a.id);
     }
     this.numTensors--;
-    const refCount = this.tensorInfo.get(a.dataId).refCount;
+    if (a.dtype === 'string') {
+      this.numStringTensors--;
+    }
+    const info = this.tensorInfo.get(a.dataId);
+    const refCount = info.refCount;
     if (refCount <= 1) {
-      const info = this.tensorInfo.get(a.dataId);
-      info.backend.disposeData(a.dataId);
-      this.numDataBuffers--;
       // Don't count bytes for complex numbers as they are counted by their
       // components.
       if (a.dtype !== 'complex64') {
-        this.numBytes -=
-            util.sizeFromShape(a.shape) * util.bytesPerElement(a.dtype);
+        this.numBytes -= info.bytes;
       }
+      this.numDataBuffers--;
+      info.backend.disposeData(a.dataId);
       this.tensorInfo.delete(a.dataId);
     } else {
       this.tensorInfo.get(a.dataId).refCount--;
@@ -318,6 +327,15 @@ export class Engine implements TensorManager, DataMover {
     info.numTensors = this.numTensors;
     info.numDataBuffers = this.numDataBuffers;
     info.numBytes = this.numBytes;
+    if (this.numStringTensors > 0) {
+      info.unreliable = true;
+      if (info.reasons == null) {
+        info.reasons = [];
+      }
+      info.reasons.push(
+          'Memory usage by string tensors is approximate ' +
+          '(2 bytes per character)');
+    }
     return info;
   }
 
@@ -433,7 +451,7 @@ export class Engine implements TensorManager, DataMover {
 
     const oldScope = this.scopeStack.pop();
     this.activeScope = this.scopeStack.length === 0 ?
-        {track: [], name: 'default scope'} :
+        null :
         this.scopeStack[this.scopeStack.length - 1];
 
     // Track the current result in the parent scope.
@@ -457,6 +475,9 @@ export class Engine implements TensorManager, DataMover {
       f: () => T, xs: Tensor[], dy?: T,
       allowNoGradients = false): {value: T, grads: Tensor[]} {
     util.assert(xs.length > 0, 'gradients() received an empty list of xs.');
+    if (dy != null && dy.dtype !== 'float32') {
+      throw new Error(`dy must have 'float32' dtype, but has '${dy.dtype}'`);
+    }
 
     return this.tidy('gradients', () => {
       const y = f();
@@ -537,8 +558,15 @@ export class Engine implements TensorManager, DataMover {
   }
 
   // Forwarding to backend.
-  write(dataId: DataId, values: TypedArray): void {
+  write(dataId: DataId, values: DataValues): void {
     const info = this.tensorInfo.get(dataId);
+    // Bytes for string tensors are counted when writing.
+    if (info.dtype === 'string') {
+      const newBytes = bytesFromStringArray(values as string[]);
+      this.numBytes += newBytes - info.bytes;
+      info.bytes = newBytes;
+    }
+
     if (this.backend !== info.backend) {
       // Delete the tensor from the old backend and move it to the new backend.
       info.backend.disposeData(dataId);
@@ -547,12 +575,12 @@ export class Engine implements TensorManager, DataMover {
     }
     this.backend.write(dataId, values);
   }
-  readSync(dataId: DataId): TypedArray {
+  readSync(dataId: DataId): DataValues {
     // Route the read to the correct backend.
     const info = this.tensorInfo.get(dataId);
     return info.backend.readSync(dataId);
   }
-  read(dataId: DataId): Promise<TypedArray> {
+  read(dataId: DataId): Promise<DataValues> {
     // Route the read to the correct backend.
     const info = this.tensorInfo.get(dataId);
     return info.backend.read(dataId);
@@ -581,7 +609,9 @@ export class Engine implements TensorManager, DataMover {
           'Safe mode is ON. Enclose all tensor operations inside tf.tidy(): ' +
           'tf.tidy(() => {op();...}); to avoid memory leaks.');
     }
-    this.activeScope.track.push(result);
+    if (this.activeScope != null) {
+      this.activeScope.track.push(result);
+    }
     return result;
   }
 }

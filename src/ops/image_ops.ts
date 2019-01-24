@@ -279,10 +279,6 @@ function cropAndResize_(
       `Error in cropAndResize: boxInd must be have size [${numBoxes}] ` +
           `but had shape ${$boxes.shape}.`);
   util.assert(
-      $boxInd.dtype === 'int32',
-      `Error in cropAndResize: boxInd must be of dtype int32, but got dtype ` +
-          `${$boxInd.dtype}.`);
-  util.assert(
       cropSize.length === 2,
       `Error in cropAndResize: cropSize must be of length 2, but got length ` +
           `${cropSize.length}.`);
@@ -305,4 +301,4 @@ export const resizeBilinear = op({resizeBilinear_});
 export const resizeNearestNeighbor = op({resizeNearestNeighbor_});
 export const nonMaxSuppression = op({nonMaxSuppression_});
 export const nonMaxSuppressionAsync = nonMaxSuppressionAsync_;
-export const cropAndResize = cropAndResize_;
+export const cropAndResize = op({cropAndResize_});

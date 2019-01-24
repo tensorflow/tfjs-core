@@ -15,9 +15,10 @@
  * =============================================================================
  */
 
+import {ENV} from '../environment';
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
-import {ALL_ENVS, expectArraysClose, expectNumbersClose} from '../test_util';
+import {ALL_ENVS, expectArraysClose, expectNumbersClose, PACKED_ENVS, WEBGL_ENVS} from '../test_util';
 import * as util from '../util';
 
 import * as selu_util from './selu_util';
@@ -111,6 +112,23 @@ describeWithFlags('relu', ALL_ENVS, () => {
     const result = tf.relu([1, -2, 0, 3, -0.1]);
     expectArraysClose(result, [1, 0, 0, 3, 0]);
   });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.relu('q'))
+        .toThrowError(/Argument 'x' passed to 'relu' must be numeric/);
+  });
+});
+
+describeWithFlags('relu', WEBGL_ENVS, () => {
+  it('works with squarification for prime number length vector', () => {
+    const maxTextureSize = tf.ENV.get('WEBGL_MAX_TEXTURE_SIZE');
+    tf.ENV.set('WEBGL_MAX_TEXTURE_SIZE', 5);
+    const a = tf.tensor1d([1, -2, 5, -3, -1, 4, 7]);
+    const result = tf.relu(a);
+
+    tf.ENV.set('WEBGL_MAX_TEXTURE_SIZE', maxTextureSize);
+    expectArraysClose(result, [1, 0, 5, 0, 0, 4, 7]);
+  });
 });
 
 describeWithFlags('abs', ALL_ENVS, () => {
@@ -168,6 +186,33 @@ describeWithFlags('abs', ALL_ENVS, () => {
     expect(result.shape).toEqual([2, 2, 2]);
   });
 
+  it('is underflow-safe for complex64', () => {
+    const floatBits = ENV.backend.floatPrecision();
+    let small;
+    switch (floatBits) {
+      case 32:
+        small = 1e-30;
+        break;
+      case 16:
+        small = 1e-4;
+        break;
+      default:
+        throw new Error(`Test not implemented for ENV.engine.floatPrecision()=${
+            floatBits}.`);
+    }
+
+    const a = tf.complex([small, 0, small, 0], [small, small, 0, 0]);
+    const result = tf.abs(a);
+    expectArraysClose(
+        result,
+        [
+          Math.hypot(small, small), Math.hypot(0, small), Math.hypot(small, 0),
+          Math.hypot(0, 0)
+        ],
+        /*tolerance=*/small / 100);
+    expect(result.shape).toEqual([4]);
+  });
+
   it('propagates NaNs', () => {
     const a = tf.tensor1d([1, -2, 0, 3, -0.1, NaN]);
     const result = tf.abs(a);
@@ -215,6 +260,11 @@ describeWithFlags('abs', ALL_ENVS, () => {
   it('accepts a tensor-like object', () => {
     const result = tf.abs([1, -2, 0, 3, -0.1]);
     expectArraysClose(result, [1, 2, 0, 3, 0.1]);
+  });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.abs('q'))
+        .toThrowError(/Argument 'x' passed to 'abs' must be numeric/);
   });
 });
 
@@ -286,6 +336,11 @@ describeWithFlags('step', ALL_ENVS, () => {
     const result = tf.step([1, -2, -.01, 3, -0.1]);
     expectArraysClose(result, [1, 0, 0, 1, 0]);
   });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.step('q'))
+        .toThrowError(/Argument 'x' passed to 'step' must be numeric/);
+  });
 });
 
 describeWithFlags('neg', ALL_ENVS, () => {
@@ -343,6 +398,11 @@ describeWithFlags('neg', ALL_ENVS, () => {
   it('accepts a tensor-like object', () => {
     const result = tf.neg([1, -3, 2, 7, -4]);
     expectArraysClose(result, [-1, 3, -2, -7, 4]);
+  });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.neg('q'))
+        .toThrowError(/Argument 'x' passed to 'neg' must be numeric/);
   });
 });
 
@@ -406,6 +466,11 @@ describeWithFlags('sigmoid', ALL_ENVS, () => {
       expected[i] = 1 / (1 + Math.exp(-values[i]));
     }
     expectArraysClose(result, expected);
+  });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.sigmoid('q'))
+        .toThrowError(/Argument 'x' passed to 'sigmoid' must be numeric/);
   });
 });
 
@@ -523,6 +588,11 @@ describeWithFlags('logSigmoid', ALL_ENVS, () => {
     const result = tf.logSigmoid(-2);
     const expected = [Math.log(1 / (1 + Math.exp(2)))];
     expectArraysClose(result, expected);
+  });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.logSigmoid('q'))
+        .toThrowError(/Argument 'x' passed to 'logSigmoid' must be numeric/);
   });
 });
 
@@ -643,6 +713,11 @@ describeWithFlags('softplus', ALL_ENVS, () => {
     const expected = [Math.log((1 + Math.exp(-2)))];
     expectArraysClose(result, expected);
   });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.softplus('q'))
+        .toThrowError(/Argument 'x' passed to 'softplus' must be numeric/);
+  });
 });
 
 describeWithFlags('sqrt', ALL_ENVS, () => {
@@ -714,6 +789,11 @@ describeWithFlags('sqrt', ALL_ENVS, () => {
     expectNumbersClose(r.get(0), Math.sqrt(2));
     expectNumbersClose(r.get(1), Math.sqrt(4));
   });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.sqrt('q'))
+        .toThrowError(/Argument 'x' passed to 'sqrt' must be numeric/);
+  });
 });
 
 describeWithFlags('rsqrt', ALL_ENVS, () => {
@@ -784,6 +864,11 @@ describeWithFlags('rsqrt', ALL_ENVS, () => {
     const r = tf.rsqrt([2, 4]);
     expectNumbersClose(r.get(0), 1 / Math.sqrt(2));
     expectNumbersClose(r.get(1), 1 / Math.sqrt(4));
+  });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.rsqrt('q'))
+        .toThrowError(/Argument 'x' passed to 'rsqrt' must be numeric/);
   });
 });
 
@@ -889,6 +974,11 @@ describeWithFlags('square', ALL_ENVS, () => {
     const r = tf.square([2, 4, Math.sqrt(2)]);
     expectArraysClose(r, [4, 16, 2]);
   });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.square('q'))
+        .toThrowError(/Argument 'x' passed to 'square' must be numeric/);
+  });
 });
 
 describeWithFlags('reciprocal', ALL_ENVS, () => {
@@ -958,6 +1048,11 @@ describeWithFlags('reciprocal', ALL_ENVS, () => {
   it('accepts a tensor-like object', () => {
     const r = tf.reciprocal([2, 3, 0, NaN]);
     expectArraysClose(r, [1 / 2, 1 / 3, Infinity, NaN]);
+  });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.reciprocal('q'))
+        .toThrowError(/Argument 'x' passed to 'reciprocal' must be numeric/);
   });
 });
 
@@ -1030,6 +1125,11 @@ describeWithFlags('log', ALL_ENVS, () => {
     expectNumbersClose(r.get(0), Math.log(1));
     expectNumbersClose(r.get(1), Math.log(2));
   });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.log('q'))
+        .toThrowError(/Argument 'x' passed to 'log' must be numeric/);
+  });
 });
 
 describeWithFlags('log1p', ALL_ENVS, () => {
@@ -1091,6 +1191,11 @@ describeWithFlags('log1p', ALL_ENVS, () => {
     expectNumbersClose(r.get(0), Math.log1p(1));
     expectNumbersClose(r.get(1), Math.log1p(2));
   });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.log1p('q'))
+        .toThrowError(/Argument 'x' passed to 'log1p' must be numeric/);
+  });
 });
 
 describeWithFlags('ceil', ALL_ENVS, () => {
@@ -1151,6 +1256,11 @@ describeWithFlags('ceil', ALL_ENVS, () => {
     expectNumbersClose(r.get(0), 2);
     expectNumbersClose(r.get(1), 3);
     expectNumbersClose(r.get(2), -1);
+  });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.ceil('q'))
+        .toThrowError(/Argument 'x' passed to 'ceil' must be numeric/);
   });
 });
 
@@ -1214,6 +1324,11 @@ describeWithFlags('floor', ALL_ENVS, () => {
     expectNumbersClose(r.get(1), 2);
     expectNumbersClose(r.get(2), -2);
   });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.floor('q'))
+        .toThrowError(/Argument 'x' passed to 'floor' must be numeric/);
+  });
 });
 
 describeWithFlags('sign', ALL_ENVS, () => {
@@ -1276,6 +1391,11 @@ describeWithFlags('sign', ALL_ENVS, () => {
     expectNumbersClose(r.get(1), 0);
     expectNumbersClose(r.get(2), 0);
     expectNumbersClose(r.get(3), -1);
+  });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.sign('q'))
+        .toThrowError(/Argument 'x' passed to 'sign' must be numeric/);
   });
 });
 
@@ -1346,6 +1466,11 @@ describeWithFlags('exp', ALL_ENVS, () => {
     expectNumbersClose(r.get(1), Math.exp(2));
     expectNumbersClose(r.get(2), 1);
   });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.exp('q'))
+        .toThrowError(/Argument 'x' passed to 'exp' must be numeric/);
+  });
 });
 
 describeWithFlags('expm1', ALL_ENVS, () => {
@@ -1414,6 +1539,11 @@ describeWithFlags('expm1', ALL_ENVS, () => {
     expectNumbersClose(r.get(0), Math.expm1(1));
     expectNumbersClose(r.get(1), Math.expm1(2));
     expectNumbersClose(r.get(2), Math.expm1(0));
+  });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.expm1('q'))
+        .toThrowError(/Argument 'x' passed to 'expm1' must be numeric/);
   });
 });
 
@@ -1489,6 +1619,11 @@ describeWithFlags('sin', ALL_ENVS, () => {
       expected[i] = Math.sin(values[i]);
     }
     expectArraysClose(result, expected);
+  });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.sin('q'))
+        .toThrowError(/Argument 'x' passed to 'sin' must be numeric/);
   });
 });
 
@@ -1570,6 +1705,11 @@ describeWithFlags('cos', ALL_ENVS, () => {
       expected[i] = Math.cos(values[i]);
     }
     expectArraysClose(result, expected);
+  });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.cos('q'))
+        .toThrowError(/Argument 'x' passed to 'cos' must be numeric/);
   });
 });
 
@@ -1654,6 +1794,11 @@ describeWithFlags('tan', ALL_ENVS, () => {
     }
     expectArraysClose(result, expected);
   });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.tan('q'))
+        .toThrowError(/Argument 'x' passed to 'tan' must be numeric/);
+  });
 });
 
 describeWithFlags('asin', ALL_ENVS, () => {
@@ -1736,6 +1881,11 @@ describeWithFlags('asin', ALL_ENVS, () => {
       expected[i] = Math.asin(values[i]);
     }
     expectArraysClose(result, expected);
+  });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.asin('q'))
+        .toThrowError(/Argument 'x' passed to 'asin' must be numeric/);
   });
 });
 
@@ -1821,6 +1971,11 @@ describeWithFlags('acos', ALL_ENVS, () => {
       expected[i] = Math.acos(values[i]);
     }
     expectArraysClose(result, expected);
+  });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.acos('q'))
+        .toThrowError(/Argument 'x' passed to 'acos' must be numeric/);
   });
 });
 
@@ -1916,6 +2071,11 @@ describeWithFlags('atan', ALL_ENVS, () => {
     }
     expectArraysClose(result, expected);
   });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.atan('q'))
+        .toThrowError(/Argument 'x' passed to 'atan' must be numeric/);
+  });
 });
 
 describeWithFlags('sinh', ALL_ENVS, () => {
@@ -1998,6 +2158,11 @@ describeWithFlags('sinh', ALL_ENVS, () => {
       expected[i] = Math.sinh(values[i]);
     }
     expectArraysClose(result, expected);
+  });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.sinh('q'))
+        .toThrowError(/Argument 'x' passed to 'sinh' must be numeric/);
   });
 });
 
@@ -2084,6 +2249,11 @@ describeWithFlags('cosh', ALL_ENVS, () => {
 
     expectArraysClose(result, expected);
   });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.cosh('q'))
+        .toThrowError(/Argument 'x' passed to 'cosh' must be numeric/);
+  });
 });
 
 describeWithFlags('tanh', ALL_ENVS, () => {
@@ -2169,6 +2339,11 @@ describeWithFlags('tanh', ALL_ENVS, () => {
     }
     expectArraysClose(result, expected);
   });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.tanh('q'))
+        .toThrowError(/Argument 'x' passed to 'tanh' must be numeric/);
+  });
 });
 
 describeWithFlags('leakyRelu', ALL_ENVS, () => {
@@ -2243,6 +2418,11 @@ describeWithFlags('leakyRelu', ALL_ENVS, () => {
     expect(result.shape).toEqual([3]);
     expectArraysClose(result, [0, 1, -0.4]);
   });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.leakyRelu('q'))
+        .toThrowError(/Argument 'x' passed to 'leakyRelu' must be numeric/);
+  });
 });
 
 describeWithFlags('elu', ALL_ENVS, () => {
@@ -2280,6 +2460,11 @@ describeWithFlags('elu', ALL_ENVS, () => {
     const result = tf.elu([1, -1, 0]);
     expect(result.shape).toEqual(result.shape);
     expectArraysClose(result, [1, -0.6321, 0]);
+  });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.elu('q'))
+        .toThrowError(/Argument 'x' passed to 'elu' must be numeric/);
   });
 });
 
@@ -2380,6 +2565,72 @@ describeWithFlags('selu', ALL_ENVS, () => {
     expect(result.shape).toEqual([3]);
     expectArraysClose(result, [1.0507, -1.1113, 0]);
   });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.selu('q'))
+        .toThrowError(/Argument 'x' passed to 'selu' must be numeric/);
+  });
+});
+
+describeWithFlags('packed clip', PACKED_ENVS, () => {
+  it('should not leak memory', () => {
+    const a = tf.tensor1d([3, -1, 0, 100, -7, 2]);
+    const min = -1;
+    const max = 50;
+
+    const startNumBytes = tf.memory().numBytes;
+    const startNumTensors = tf.memory().numTensors;
+    tf.clipByValue(a, min, max);
+    const endNumBytes = tf.memory().numBytes;
+    const endNumTensors = tf.memory().numTensors;
+
+    expect(endNumBytes - startNumBytes).toEqual(24);
+    expect(endNumTensors - startNumTensors).toEqual(1);
+  });
+
+  it('basic', () => {
+    const a = tf.tensor1d([3, -1, 0, 100, -7, 2]);
+    const min = -1;
+    const max = 50;
+
+    const result = tf.clipByValue(a, min, max);
+
+    expectArraysClose(result, [3, -1, 0, 50, -1, 2]);
+  });
+
+  it('using extreme values', () => {
+    const a = tf.tensor1d([3, -1, 0, 100, -7, 2]);
+    let result =
+        tf.clipByValue(a, Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY);
+    expectArraysClose(result, [3, -1, 0, 100, -7, 2]);
+
+    result = tf.clipByValue(a, Number.MIN_VALUE, Number.MAX_VALUE);
+    expectArraysClose(
+        result,
+        [3, Number.MIN_VALUE, Number.MIN_VALUE, 100, Number.MIN_VALUE, 2]);
+  });
+
+  it('should work for scalars', () => {
+    const a = tf.scalar(-4);
+    const min = -1;
+    const max = 50;
+
+    const result = tf.clipByValue(a, min, max);
+
+    expectArraysClose(result, [min]);
+  });
+
+  it('derivative: 1D tensor with max or min value', () => {
+    const min = -1;
+    const max = 2;
+    const x = tf.tensor1d([-1, 1, 2, 3]);
+    const dy = tf.tensor1d([1, 10, 100, 1000]);
+    const gradients = tf.grad(x => x.clipByValue(min, max))(x, dy);
+
+    expect(gradients.shape).toEqual(x.shape);
+    expect(gradients.dtype).toEqual('float32');
+    expectArraysClose(gradients, [1, 10, 100, 0]);
+  });
 });
 
 describeWithFlags('clip', ALL_ENVS, () => {
@@ -2464,10 +2715,15 @@ describeWithFlags('clip', ALL_ENVS, () => {
 
   it('clip(x, eps, 1-eps) never returns 0 or 1', () => {
     const min = tf.ENV.get('EPSILON');
-    const max = 1 - min;
+    const max = 0.5;
     const res = tf.clipByValue([0, 1], min, max).dataSync();
     expect(res[0]).toBeGreaterThan(0);
-    expect(res[1]).toBeLessThan(1);
+    expect(res[1]).toBeCloseTo(max);
+  });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.clipByValue('q', 0, 1))
+        .toThrowError(/Argument 'x' passed to 'clipByValue' must be numeric/);
   });
 });
 
@@ -2530,6 +2786,11 @@ describeWithFlags('round', ALL_ENVS, () => {
   it('accepts a tensor-like object', () => {
     const r = tf.round([0.9, 2.5, 2.3, 1.5, -4.5]);
     expectArraysClose(r, [1, 2, 2, 2, -4]);
+  });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.round('q'))
+        .toThrowError(/Argument 'x' passed to 'round' must be numeric/);
   });
 });
 
@@ -2633,6 +2894,11 @@ describeWithFlags('asinh', ALL_ENVS, () => {
       expected[i] = Math.asinh(values[i]);
     }
     expectArraysClose(result, expected);
+  });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.asinh('q'))
+        .toThrowError(/Argument 'x' passed to 'asinh' must be numeric/);
   });
 });
 
@@ -2744,6 +3010,11 @@ describeWithFlags('acosh', ALL_ENVS, () => {
     }
     expectArraysClose(result, expected);
   });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.acosh('q'))
+        .toThrowError(/Argument 'x' passed to 'acosh' must be numeric/);
+  });
 });
 
 describeWithFlags('atanh', ALL_ENVS, () => {
@@ -2848,6 +3119,11 @@ describeWithFlags('atanh', ALL_ENVS, () => {
     const result = tf.atanh(0.2);
     expectNumbersClose(result.get(), Math.atanh(0.2));
   });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.atanh('q'))
+        .toThrowError(/Argument 'x' passed to 'atanh' must be numeric/);
+  });
 });
 
 describeWithFlags('erf', ALL_ENVS, () => {
@@ -2937,5 +3213,10 @@ describeWithFlags('erf', ALL_ENVS, () => {
   it('accepts a tensor-like object', () => {
     const result = tf.erf(1);
     expectNumbersClose(result.get(), 0.8427008);
+  });
+
+  it('throws for string tensor', () => {
+    expect(() => tf.erf('q'))
+        .toThrowError(/Argument 'x' passed to 'erf' must be numeric/);
   });
 });

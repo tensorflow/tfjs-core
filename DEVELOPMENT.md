@@ -45,6 +45,13 @@ To run the tests once and exit the karma process (helpful on Windows):
 $ yarn test --single-run
 ```
 
+To run the tests in an environment that does not have GPU support (such as Chrome Remote Desktop):
+
+```bash
+$ yarn test --backend cpu
+```
+
+
 #### Packaging (browser and npm)
 
 ```bash
@@ -57,5 +64,4 @@ To install it locally, run `yarn add ./tensorflow-tf-core-VERSION.tgz`.
 
 > On Windows, use bash (available through git) to use the scripts above.
 
-Looking to contribute, and don't know where to start? Check out our "help wanted"
-[issues](https://github.com/tensorflow/tfjs/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22).
+Looking to contribute, and don't know where to start? Check out our "stat:contributions welcome" [issues](https://github.com/tensorflow/tfjs/labels/stat%3Acontributions%20welcome).

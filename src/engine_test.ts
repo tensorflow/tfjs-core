@@ -20,7 +20,7 @@ import {describeWithFlags} from './jasmine_util';
 import {MathBackendCPU} from './kernels/backend_cpu';
 import {MathBackendWebGL} from './kernels/backend_webgl';
 import {Tensor} from './tensor';
-import {ALL_ENVS, expectArraysClose, expectArraysEqual, expectNumbersClose, WEBGL_ENVS} from './test_util';
+import {ALL_ENVS, CPU_ENVS, expectArraysClose, expectArraysEqual, expectNumbersClose, WEBGL_ENVS} from './test_util';
 
 describeWithFlags('fromPixels + regular math op', WEBGL_ENVS, () => {
   it('debug mode does not error when no nans', () => {
@@ -361,6 +361,74 @@ describeWithFlags('memory', ALL_ENVS, () => {
     expect(sum.dtype).toBe('int32');
     expectArraysClose(sum, [1 + 1 + 0 + 1]);
   });
+
+  it('string tensor', () => {
+    const a = tf.tensor([['a', 'bb'], ['c', 'd']]);
+
+    expect(tf.memory().numTensors).toBe(1);
+    expect(tf.memory().numBytes).toBe(10);  // 5 letters, each 2 bytes.
+
+    a.dispose();
+
+    expect(tf.memory().numTensors).toBe(0);
+    expect(tf.memory().numBytes).toBe(0);
+  });
+
+  it('unreliable is true for string tensors', () => {
+    tf.tensor('a');
+    const mem = tf.memory();
+    expect(mem.unreliable).toBe(true);
+    const expectedReason = 'Memory usage by string tensors is approximate ' +
+        '(2 bytes per character)';
+    expect(mem.reasons.indexOf(expectedReason) >= 0).toBe(true);
+  });
+});
+
+describeWithFlags('memory webgl', WEBGL_ENVS, () => {
+  it('unreliable is falsy/not present when all tensors are numeric', () => {
+    tf.tensor(1);
+    const mem = tf.memory();
+    expect(mem.numTensors).toBe(1);
+    expect(mem.numDataBuffers).toBe(1);
+    expect(mem.numBytes).toBe(4);
+    expect(mem.unreliable).toBeFalsy();
+  });
+});
+
+describeWithFlags('memory cpu', CPU_ENVS, () => {
+  it('unreliable is true due to auto gc', () => {
+    tf.tensor(1);
+    const mem = tf.memory();
+    expect(mem.numTensors).toBe(1);
+    expect(mem.numDataBuffers).toBe(1);
+    expect(mem.numBytes).toBe(4);
+    expect(mem.unreliable).toBe(true);
+
+    const expectedReason =
+        'The reported memory is an upper bound. Due to automatic garbage ' +
+        'collection, the true allocated memory may be less.';
+    expect(mem.reasons.indexOf(expectedReason) >= 0).toBe(true);
+  });
+
+  it('unreliable is true due to both auto gc and string tensors', () => {
+    tf.tensor(1);
+    tf.tensor('a');
+
+    const mem = tf.memory();
+    expect(mem.numTensors).toBe(2);
+    expect(mem.numDataBuffers).toBe(2);
+    expect(mem.numBytes).toBe(6);
+    expect(mem.unreliable).toBe(true);
+
+    const expectedReasonGC =
+        'The reported memory is an upper bound. Due to automatic garbage ' +
+        'collection, the true allocated memory may be less.';
+    expect(mem.reasons.indexOf(expectedReasonGC) >= 0).toBe(true);
+    const expectedReasonString =
+        'Memory usage by string tensors is approximate ' +
+        '(2 bytes per character)';
+    expect(mem.reasons.indexOf(expectedReasonString) >= 0).toBe(true);
+  });
 });
 
 describeWithFlags('profile', ALL_ENVS, () => {
@@ -579,5 +647,21 @@ describeWithFlags('Switching WebGL + CPU backends', WEBGL_ENVS, () => {
       expect(tf.memory().numTensors).toBe(4);
     });
     expect(tf.memory().numTensors).toBe(0);
+  });
+});
+
+// NOTE: This describe is purposefully not a describeWithFlags so that we test
+// tensor allocation where no scopes have been created. The backend here must be
+// set to CPU because we cannot allocate GPU tensors outside a
+// describeWithFlags because the default webgl backend and the test backends
+// share a WebGLContext. When backends get registered, global WebGL state is
+// initialized, which causes the two backends to step on each other and get in a
+// bad state.
+describe('Memory allocation outside a test scope', () => {
+  it('constructing a tensor works', () => {
+    tf.setBackend('cpu');
+    const a = tf.tensor1d([1, 2, 3]);
+    expectArraysClose(a, [1, 2, 3]);
+    a.dispose();
   });
 });

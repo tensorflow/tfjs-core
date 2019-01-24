@@ -18,8 +18,8 @@
 import * as erf_util from '../../ops/erf_util';
 import * as selu_util from '../../ops/selu_util';
 
-import {GPGPUProgram} from './gpgpu_math';
 import {GPGPUContext} from './gpgpu_context';
+import {GPGPUProgram} from './gpgpu_math';
 
 export class UnaryOpProgram implements GPGPUProgram {
   variableNames = ['A'];
@@ -62,6 +62,8 @@ export class UnaryOpProgram implements GPGPUProgram {
 }
 
 const CHECK_NAN_SNIPPET = `if (isNaN(x)) return x;`;
+
+export const LINEAR = `return x;`;
 
 export const ABS = `return abs(x);`;
 
@@ -228,3 +230,5 @@ export const RECIPROCAL = `return 1.0 / x;`;
 export const LOGICAL_NOT = `return float(!(x >= 1.0));`;
 
 export const TO_INT = `return float(int(x));`;
+
+export const CLONE = 'return x;';

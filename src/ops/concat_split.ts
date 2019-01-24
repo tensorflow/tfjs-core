@@ -20,7 +20,7 @@ import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import {convertToTensor, convertToTensorArray} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import {assert, sizeFromShape} from '../util';
-import {parseAxisParam} from './axis_util';
+import {parseAxisParam} from '../util';
 import {assertParamsConsistent, computeOutShape} from './concat_util';
 import {op} from './operation';
 import {tensor} from './tensor_ops';
@@ -36,7 +36,7 @@ import {tensor} from './tensor_ops';
  * @param tensors A list of`tf.Tensor`s to concatenate.
  * @return The concatenated array.
  */
-function concat1d_(tensors: Tensor1D[]|TensorLike[]): Tensor1D {
+function concat1d_(tensors: Array<Tensor1D|TensorLike>): Tensor1D {
   return concat(tensors, 0 /* axis */);
 }
 
@@ -67,7 +67,8 @@ function concat1d_(tensors: Tensor1D[]|TensorLike[]): Tensor1D {
  * @param axis The axis to concatenate along.
  * @return The concatenated array.
  */
-function concat2d_(tensors: Tensor2D[]|TensorLike[], axis: number): Tensor2D {
+function concat2d_(
+    tensors: Array<Tensor2D|TensorLike>, axis: number): Tensor2D {
   return concat(tensors, axis);
 }
 
@@ -101,7 +102,8 @@ function concat2d_(tensors: Tensor2D[]|TensorLike[], axis: number): Tensor2D {
  * @param axis The axis to concate along.
  * @return The concatenated array.
  */
-function concat3d_(tensors: Tensor3D[]|TensorLike[], axis: number): Tensor3D {
+function concat3d_(
+    tensors: Array<Tensor3D|TensorLike>, axis: number): Tensor3D {
   return concat(tensors, axis);
 }
 
@@ -112,7 +114,8 @@ function concat3d_(tensors: Tensor3D[]|TensorLike[], axis: number): Tensor3D {
  * @param axis The axis to concate along.
  * @return The concatenated array.
  */
-function concat4d_(tensors: Tensor4D[]|TensorLike[], axis: number): Tensor4D {
+function concat4d_(
+    tensors: Array<Tensor4D|TensorLike>, axis: number): Tensor4D {
   return concat(tensors, axis);
 }
 
@@ -155,7 +158,7 @@ function concat4d_(tensors: Tensor4D[]|TensorLike[], axis: number): Tensor4D {
  * @param axis The axis to concate along. Defaults to 0 (the first dim).
  */
 /** @doc {heading: 'Tensors', subheading: 'Slicing and Joining'} */
-function concat_<T extends Tensor>(tensors: T[]|TensorLike[], axis = 0): T {
+function concat_<T extends Tensor>(tensors: Array<T|TensorLike>, axis = 0): T {
   assert(tensors.length >= 1, 'Pass at least one tensor to concat');
   let $tensors = convertToTensorArray(tensors, 'tensors', 'concat');
   axis = parseAxisParam(axis, $tensors[0].shape)[0];
@@ -224,7 +227,8 @@ function split_<T extends Tensor>(
     assert(
         $x.shape[axis] % numOrSizeSplits === 0,
         'Number of splits must evenly divide the axis.');
-    splitSizes = Array(numOrSizeSplits).fill($x.shape[axis] / numOrSizeSplits);
+    splitSizes =
+        new Array(numOrSizeSplits).fill($x.shape[axis] / numOrSizeSplits);
   } else {
     assert(
         $x.shape[axis] === numOrSizeSplits.reduce((a, b) => a + b),

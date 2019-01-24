@@ -54,9 +54,9 @@ import {op} from './operation';
 export function confusionMatrix_(
     labels: Tensor1D|TensorLike, predictions: Tensor1D|TensorLike,
     numClasses: number): Tensor2D {
-  const $labels = convertToTensor(labels, 'label', 'confusionMatrix', 'int32');
+  const $labels = convertToTensor(labels, 'labels', 'confusionMatrix');
   const $predictions =
-      convertToTensor(predictions, 'label', 'confusionMatrix', 'int32');
+      convertToTensor(predictions, 'predictions', 'confusionMatrix');
 
   util.assert(
       numClasses == null || numClasses > 0 && Number.isInteger(numClasses),
@@ -80,8 +80,9 @@ export function confusionMatrix_(
   // TODO(cais): In the future, if oneHot supports tensors inputs for
   //   `numClasses`, `confusionMatrix` can make `numClasses` optional.
 
-  const oneHotLabels = oneHot($labels.asType('int32'), numClasses);
-  const oneHotPredictions = oneHot($predictions.asType('int32'), numClasses);
+  const oneHotLabels = oneHot($labels.asType('int32'), numClasses) as Tensor2D;
+  const oneHotPredictions =
+      oneHot($predictions.asType('int32'), numClasses) as Tensor2D;
   return oneHotLabels.transpose().matMul(oneHotPredictions).asType('int32');
 }
 

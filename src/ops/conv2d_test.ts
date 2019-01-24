@@ -17,20 +17,24 @@
 
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
-import {ALL_ENVS, expectArraysClose, WEBGL_ENVS} from '../test_util';
+import {ALL_ENVS, expectArraysClose, PACKED_ENVS} from '../test_util';
 import {Rank} from '../types';
 
-describeWithFlags('conv im2row', WEBGL_ENVS, () => {
-  const webglConvIm2colSavedFlag = tf.ENV.get('WEBGL_CONV_IM2COL');
+function generateCaseInputs(totalSizeTensor: number, totalSizeFilter: number) {
+  const inp = new Array(totalSizeTensor);
+  const filt = new Array(totalSizeFilter);
 
-  beforeAll(() => {
-    tf.ENV.set('WEBGL_CONV_IM2COL', true);
-  });
+  for (let i = 0; i < totalSizeTensor; i++) {
+    inp[i] = i + 1;
+  }
+  for (let i = 0; i < totalSizeFilter; i++) {
+    filt[i] = i + 1;
+  }
 
-  afterAll(() => {
-    tf.ENV.set('WEBGL_CONV_IM2COL', webglConvIm2colSavedFlag);
-  });
+  return {input: inp, filter: filt};
+}
 
+describeWithFlags('im2col', PACKED_ENVS, () => {
   it('should not leak memory', () => {
     const inputDepth = 1;
     const inputShape: [number, number, number] = [2, 2, inputDepth];
@@ -51,101 +55,6 @@ describeWithFlags('conv im2row', WEBGL_ENVS, () => {
 
     expect(endNumBytes - startNumBytes).toEqual(4);
   });
-
-  it('x=[3,3,1] f=[2,2,1,1] s=1 d=1 p=0', () => {
-    const inputDepth = 1;
-    const inputShape: [number, number, number] = [3, 3, inputDepth];
-    const outputDepth = 1;
-    const fSize = 2;
-    const pad = 0;
-    const stride = 1;
-    const dataFormat = 'NHWC';
-    const dilation = 1;
-
-    const x = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8, 9], inputShape);
-    const w =
-        tf.tensor4d([3, 1, 5, 0], [fSize, fSize, inputDepth, outputDepth]);
-
-    const result = tf.conv2d(x, w, stride, pad, dataFormat, dilation);
-    expectArraysClose(result, [25, 34, 52, 61]);
-  });
-
-  it('x=[2,2,1] f=[2,2,1,1] s=1 d=1 p=0', () => {
-    const inputDepth = 1;
-    const inputShape: [number, number, number] = [2, 2, inputDepth];
-    const outputDepth = 1;
-    const fSize = 2;
-    const pad = 0;
-    const stride = 1;
-    const dataFormat = 'NHWC';
-    const dilation = 1;
-
-    const x = tf.tensor3d([1, 2, 3, 4], inputShape);
-    const w =
-        tf.tensor4d([3, 1, 5, 0], [fSize, fSize, inputDepth, outputDepth]);
-
-    const result = tf.conv2d(x, w, stride, pad, dataFormat, dilation);
-    expectArraysClose(result, [20]);
-  });
-
-  it('should work when output texture shape does not equal logical shape',
-     () => {
-       const inputDepth = 3;
-       const inputSize = 300;
-       const filterSize = 3;
-       const outputDepth = 24;
-
-       const xData = new Float32Array(1 * inputSize * inputSize * inputDepth);
-       const wData =
-           new Float32Array(filterSize * filterSize * inputDepth * outputDepth);
-
-       xData[0] = 1;
-       xData[100] = 1;
-       wData[0] = 1;
-       wData[100] = 1;
-
-       const x = tf.tensor4d(xData, [1, inputSize, inputSize, inputDepth]);
-       const w = tf.tensor4d(
-           wData, [filterSize, filterSize, inputDepth, outputDepth]);
-
-       const result = tf.conv2d(x, w, 2, 'same');
-       const resultData = result.dataSync();
-
-       expect(resultData[0]).toEqual(1);
-       expect(resultData[388]).toEqual(1);
-     });
-
-  it('should work when input texture shapes do not equal logical shapes',
-     () => {
-       const webglMaxTextureSize = tf.ENV.get('WEBGL_MAX_TEXTURE_SIZE');
-       tf.ENV.set('WEBGL_MAX_TEXTURE_SIZE', 10);
-
-       const inputDepth = 1;
-       const inputSize = 5;
-       const filterSize = 2;
-       const outputDepth = 1;
-
-       const x = tf.tensor3d(
-           [
-             0.4,  0.75, 0.65, 0.98, 0.1,  0.41, 0.01, 0.46, 0.49,
-             0.4,  0.11, 0.76, 0.73, 0.86, 0.34, 0.34, 0.71, 0.68,
-             0.62, 0.87, 0.64, 0.38, 0.29, 0.55, 0.95
-           ],
-           [inputSize, inputSize, inputDepth]);
-       const w = tf.tensor4d(
-           [0.57, 0.64, 0.18, 0.18],
-           [filterSize, filterSize, inputDepth, outputDepth]);
-
-       const result = tf.conv2d(x, w, 1, 'same');
-
-       tf.ENV.set('WEBGL_MAX_TEXTURE_SIZE', webglMaxTextureSize);
-
-       expectArraysClose(result, [
-         0.7836, 0.9281, 1.1687, 0.7828, 0.129,  0.3967, 0.5683, 0.862,  0.7513,
-         0.2892, 0.7381, 1.1506, 1.2005, 0.976,  0.3504, 0.8318, 0.9605, 0.9356,
-         1.1802, 0.6669, 0.608,  0.4022, 0.5173, 0.9215, 0.5415
-       ]);
-     });
 });
 
 describeWithFlags('conv2d', ALL_ENVS, () => {
@@ -229,6 +138,23 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
 
     expect(result.shape).toEqual(expectedResult.shape);
     expectArraysClose(result, expectedResult);
+  });
+
+  it('x=[1,3,6,1] f=[2,2,1,1] s=[1,2] d=1 p=valid', () => {
+    const inputDepth = 1;
+    const inputShape: [number, number, number, number] = [1, 3, 6, inputDepth];
+    const outputDepth = 1;
+    const fSize = 2;
+    const pad = 'valid';
+    const stride: [number, number] = [1, 2];
+
+    const inputs = generateCaseInputs(1 * 3 * 6 * inputDepth, fSize * fSize);
+    const x = tf.tensor4d(inputs.input, inputShape);
+    const w =
+        tf.tensor4d(inputs.filter, [fSize, fSize, inputDepth, outputDepth]);
+
+    const result = tf.conv2d(x, w, stride, pad);
+    expectArraysClose(result, [58.0, 78.0, 98.0, 118.0, 138.0, 158.0]);
   });
 
   it('throws when x is not rank 3', () => {

@@ -19,11 +19,12 @@ import {ENV} from '../environment';
 import {Tensor} from '../tensor';
 import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
-import {maximum, minimum} from './binary_ops';
+import {maximum} from './binary_ops';
+import {getReductionAxes} from './broadcast_util';
 import {where} from './logical_ops';
 import {op} from './operation';
 import {SELU_SCALE, SELU_SCALEALPHA} from './selu_util';
-import {scalar} from './tensor_ops';
+import {scalar, zerosLike} from './tensor_ops';
 
 /**
  * Computes rectified linear element-wise: `max(x, 0)`.
@@ -149,8 +150,24 @@ function prelu_<T extends Tensor>(x: T|TensorLike, alpha: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'prelu');
   const $alpha = convertToTensor(alpha, 'alpha', 'prelu');
 
-  const zero = scalar(0);
-  return maximum(zero, $x).add($alpha.mul(minimum(zero, $x)));
+  const grad = (dy: Tensor) => {
+    const mask = $x.greater(0);
+
+    return {
+      $x: () => where(mask, dy, dy.mul($alpha)) as T,
+      $alpha: () => {
+        let res = where(mask, zerosLike(dy), dy.mul($x));
+        const reduceAxes = getReductionAxes($alpha.shape, dy.shape);
+        if (reduceAxes.length > 0) {
+          res = res.sum(reduceAxes);
+        }
+        return res.reshape($alpha.shape) as T;
+      }
+    };
+  };
+
+  return ENV.engine.runKernel(
+             backend => backend.prelu($x, $alpha), {$x, $alpha}, grad) as T;
 }
 
 export const elu = op({elu_});

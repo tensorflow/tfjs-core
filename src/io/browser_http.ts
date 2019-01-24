@@ -31,18 +31,39 @@ export class BrowserHTTPRequest implements IOHandler {
   protected readonly path: string|string[];
   protected readonly requestInit: RequestInit;
 
+  private readonly fetchFunc: Function;
+
   readonly DEFAULT_METHOD = 'POST';
 
   static readonly URL_SCHEME_REGEX = /^https?:\/\//;
 
   constructor(
       path: string|string[], requestInit?: RequestInit,
-      private readonly weightPathPrefix?: string) {
-    if (typeof fetch === 'undefined') {
-      throw new Error(
-          // tslint:disable-next-line:max-line-length
-          'browserHTTPRequest is not supported outside the web browser without a fetch polyfill.');
+      private readonly weightPathPrefix?: string, fetchFunc?: Function,
+      private readonly onProgress?: Function) {
+    if (fetchFunc == null) {
+      if (typeof fetch === 'undefined') {
+        throw new Error(
+            'browserHTTPRequest is not supported outside the web browser ' +
+            'without a fetch polyfill.');
+      }
+      // Make sure fetch is always bound to window (the
+      // original object) when available.
+      fetchFunc = fetch.bind(typeof window === 'undefined' ? null : window);
+    } else {
+      assert(
+          typeof fetchFunc === 'function',
+          'Must pass a function that matches the signature of ' +
+              '`fetch` (see ' +
+              'https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)');
     }
+
+    this.fetchFunc = (path: string, requestInits: RequestInit) => {
+      // tslint:disable-next-line:no-any
+      return fetchFunc(path, requestInits).catch((error: any) => {
+        throw new Error(`Request for ${path} failed due to error: ${error}`);
+      });
+    };
 
     assert(
         path != null && path.length > 0,
@@ -98,7 +119,7 @@ export class BrowserHTTPRequest implements IOHandler {
           'model.weights.bin');
     }
 
-    const response = await fetch(this.path as string, init);
+    const response = await this.getFetchFunc()(this.path as string, init);
 
     if (response.ok) {
       return {
@@ -129,24 +150,44 @@ export class BrowserHTTPRequest implements IOHandler {
    * Loads the model topology file and build the in memory graph of the model.
    */
   private async loadBinaryTopology(): Promise<ArrayBuffer> {
-    try {
-      const response = await fetch(this.path[0], this.requestInit);
-      if (!response.ok) {
-        throw new Error(
-            `BrowserHTTPRequest.load() failed due to HTTP response: ${
-                response.statusText}`);
-      }
-      return await response.arrayBuffer();
-    } catch (error) {
-      throw new Error(`${this.path[0]} not found. ${error}`);
+    const response = await this.getFetchFunc()(
+        this.path[0], this.addAcceptHeader('application/octet-stream'));
+    this.verifyContentType(
+        response, 'model topology', 'application/octet-stream');
+
+    if (!response.ok) {
+      throw new Error(`Request to ${this.path[0]} failed with error: ${
+          response.statusText}`);
+    }
+    return await response.arrayBuffer();
+  }
+
+  private addAcceptHeader(mimeType: string): RequestInit {
+    const requestOptions = Object.assign({}, this.requestInit || {});
+    const headers = Object.assign({}, requestOptions.headers || {});
+    // tslint:disable-next-line:no-any
+    (headers as any)['Accept'] = mimeType;
+    requestOptions.headers = headers;
+    return requestOptions;
+  }
+
+  private verifyContentType(response: Response, target: string, type: string) {
+    const contentType = response.headers.get('content-type');
+    if (!contentType || contentType.indexOf(type) === -1) {
+      throw new Error(`Request to ${response.url} for ${
+          target} failed. Expected content type ${type} but got ${
+          contentType}.`);
     }
   }
 
   protected async loadBinaryModel(): Promise<ModelArtifacts> {
     const graphPromise = this.loadBinaryTopology();
-    const manifestPromise = await fetch(this.path[1], this.requestInit);
+    const manifestPromise = await this.getFetchFunc()(
+        this.path[1], this.addAcceptHeader('application/json'));
+    this.verifyContentType(
+        manifestPromise, 'weights manifest', 'application/json');
     if (!manifestPromise.ok) {
-      throw new Error(`BrowserHTTPRequest.load() failed due to HTTP response: ${
+      throw new Error(`Request to ${this.path[1]} failed with error: ${
           manifestPromise.statusText}`);
     }
 
@@ -167,10 +208,13 @@ export class BrowserHTTPRequest implements IOHandler {
   }
 
   protected async loadJSONModel(): Promise<ModelArtifacts> {
-    const modelConfigRequest =
-        await fetch(this.path as string, this.requestInit);
+    const modelConfigRequest = await this.getFetchFunc()(
+        this.path as string, this.addAcceptHeader('application/json'));
+    this.verifyContentType(
+        modelConfigRequest, 'model topology', 'application/json');
+
     if (!modelConfigRequest.ok) {
-      throw new Error(`BrowserHTTPRequest.load() failed due to HTTP response: ${
+      throw new Error(`Request to ${this.path} failed with error: ${
           modelConfigRequest.statusText}`);
     }
     const modelConfig = await modelConfigRequest.json();
@@ -198,15 +242,10 @@ export class BrowserHTTPRequest implements IOHandler {
 
   private async loadWeights(weightsManifest: WeightsManifestConfig):
       Promise<[WeightsManifestEntry[], ArrayBuffer]> {
-    let pathPrefix = this.weightPathPrefix;
-    if (pathPrefix == null) {
-      const weightPath = Array.isArray(this.path) ? this.path[1] : this.path;
+    const weightPath = Array.isArray(this.path) ? this.path[1] : this.path;
+    const [prefix, suffix] = parseUrl(weightPath);
+    const pathPrefix = this.weightPathPrefix || prefix;
 
-      pathPrefix = weightPath.substring(0, weightPath.lastIndexOf('/'));
-      if (!pathPrefix.endsWith('/')) {
-        pathPrefix = pathPrefix + '/';
-      }
-    }
     const weightSpecs = [];
     for (const entry of weightsManifest) {
       weightSpecs.push(...entry.weights);
@@ -215,40 +254,71 @@ export class BrowserHTTPRequest implements IOHandler {
     const fetchURLs: string[] = [];
     weightsManifest.forEach(weightsGroup => {
       weightsGroup.paths.forEach(path => {
-        fetchURLs.push(pathPrefix + path);
+        fetchURLs.push(pathPrefix + path + suffix);
       });
     });
-
     return [
       weightSpecs,
-      concatenateArrayBuffers(
-          await loadWeightsAsArrayBuffer(fetchURLs, this.requestInit))
+      concatenateArrayBuffers(await loadWeightsAsArrayBuffer(
+          fetchURLs, this.requestInit, this.getFetchFunc(), this.onProgress))
     ];
+  }
+
+  /**
+   * Helper method to get the `fetch`-like function set for this instance.
+   *
+   * This is mainly for avoiding confusion with regard to what context
+   * the `fetch`-like function is bound to. In the default (browser) case,
+   * the function will be bound to `window`, instead of `this`.
+   */
+  private getFetchFunc() {
+    return this.fetchFunc;
   }
 }
 
-function isHTTPScheme(url: string): boolean {
+/**
+ * Extract the prefix and suffix of the url, where the prefix is the path before
+ * the last file, and suffix is the search params after the last file.
+ * ```
+ * const url = 'http://tfhub.dev/model/1/tensorflowjs_model.pb?tfjs-format=file'
+ * [prefix, suffix] = parseUrl(url)
+ * // prefix = 'http://tfhub.dev/model/1/'
+ * // suffix = '?tfjs-format=file'
+ * ```
+ * @param url the model url to be parsed.
+ */
+export function parseUrl(url: string): [string, string] {
+  const lastSlash = url.lastIndexOf('/');
+  const lastSearchParam = url.lastIndexOf('?');
+  const prefix = url.substring(0, lastSlash);
+  const suffix =
+      lastSearchParam > lastSlash ? url.substring(lastSearchParam) : '';
+  return [prefix + '/', suffix];
+}
+
+export function isHTTPScheme(url: string): boolean {
   return url.match(BrowserHTTPRequest.URL_SCHEME_REGEX) != null;
 }
 
-export const httpRequestRouter: IORouter = (url: string|string[]) => {
-  if (typeof fetch === 'undefined') {
-    // browserHTTPRequest uses `fetch`, if one wants to use it in node.js
-    // they have to setup a global fetch polyfill.
-    return null;
-  } else {
-    let isHTTP = true;
-    if (Array.isArray(url)) {
-      isHTTP = url.every(urlItem => isHTTPScheme(urlItem));
-    } else {
-      isHTTP = isHTTPScheme(url);
-    }
-    if (isHTTP) {
-      return browserHTTPRequest(url);
-    }
-  }
-  return null;
-};
+export const httpRequestRouter: IORouter =
+    (url: string|string[], onProgress?: Function) => {
+      if (typeof fetch === 'undefined') {
+        // browserHTTPRequest uses `fetch`, if one wants to use it in node.js
+        // they have to setup a global fetch polyfill.
+        return null;
+      } else {
+        let isHTTP = true;
+        if (Array.isArray(url)) {
+          isHTTP = url.every(urlItem => isHTTPScheme(urlItem));
+        } else {
+          isHTTP = isHTTPScheme(url);
+        }
+        if (isHTTP) {
+          return browserHTTPRequest(url, null, null, null, onProgress);
+        }
+      }
+      return null;
+    };
 IORouterRegistry.registerSaveRouter(httpRequestRouter);
 IORouterRegistry.registerLoadRouter(httpRequestRouter);
 
@@ -389,11 +459,16 @@ IORouterRegistry.registerLoadRouter(httpRequestRouter);
  * 'model.weights.bin') will be appended to the body. If `requestInit` has a
  * `body`, an Error will be thrown.
  * @param weightPathPrefix Optional, this specifies the path prefix for weight
- * files, by default this is calculated from the path param.
+ *   files, by default this is calculated from the path param.
+ * @param fetchFunc Optional, custom `fetch` function. E.g., in Node.js,
+ *   the `fetch` from node-fetch can be used here.
+ * @param onProgress Optional, progress callback function, fired periodically
+ *   before the load is completed.
  * @returns An instance of `IOHandler`.
  */
 export function browserHTTPRequest(
-    path: string|string[], requestInit?: RequestInit,
-    weightPathPrefix?: string): IOHandler {
-  return new BrowserHTTPRequest(path, requestInit, weightPathPrefix);
+    path: string|string[], requestInit?: RequestInit, weightPathPrefix?: string,
+    fetchFunc?: Function, onProgress?: Function): IOHandler {
+  return new BrowserHTTPRequest(
+      path, requestInit, weightPathPrefix, fetchFunc, onProgress);
 }

@@ -19,13 +19,14 @@ import {ENV} from '../environment';
 import {Tensor, Tensor1D} from '../tensor';
 import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
-import {assert, isInt} from '../util';
+import {assert, isInt, parseAxisParam} from '../util';
 import {expandDims} from './array_ops';
-import {getUndoAxesPermutation, parseAxisParam} from './axis_util';
+import {getUndoAxesPermutation} from './axis_util';
 import {maximum} from './binary_ops';
 import {greaterEqual} from './compare';
 import {logicalAnd, where} from './logical_ops';
 import {op} from './operation';
+import {collectGatherOpShapeInfo} from './segment_util';
 import {ones, scalar, zerosLike} from './tensor_ops';
 
 /**
@@ -50,7 +51,6 @@ function unsortedSegmentSum_<T extends Tensor>(
   const $x = convertToTensor(x, 'x', 'unsortedSegmentSum');
   const $segmentIds =
       convertToTensor(segmentIds, 'segmentIds', 'unsortedSegmentSum', 'int32');
-  assert($segmentIds.dtype === 'int32', 'segmentIds must be of dtype `int32`');
   assert(isInt(numSegments), 'numSegments must be of dtype int');
 
   const gradFunc = (dy: T) => {
@@ -87,17 +87,14 @@ function unsortedSegmentSum_<T extends Tensor>(
  */
 /** @doc {heading: 'Tensors', subheading: 'Slicing and Joining'} */
 function gather_<T extends Tensor>(
-    x: T|TensorLike, indices: Tensor1D|TensorLike, axis = 0): T {
+    x: T|TensorLike, indices: Tensor|TensorLike, axis = 0): T {
   const $x = convertToTensor(x, 'x', 'gather');
   const $indices = convertToTensor(indices, 'indices', 'gather', 'int32');
-
-  assert($indices.dtype === 'int32', 'Indices must be of dtype `int32`');
   axis = parseAxisParam(axis, $x.shape)[0];
+  const shapeInfo = collectGatherOpShapeInfo($x, $indices, axis);
+
   const grad = (dy: T) => {
     const derX = () => {
-      if (axis === 0) {
-        return unsortedSegmentSum(dy, $indices, $x.shape[axis]);
-      }
       const paramsShape = $x.shape;
       const indicesSize = $indices.size;
 
@@ -118,7 +115,6 @@ function gather_<T extends Tensor>(
       const transposeDims =
           arrayConcat([[outerDims], outerAxesIndices, innerAxesIndices]);
       const valuesTranspose = values.transpose(transposeDims);
-
       let paramsGrad = unsortedSegmentSum(
           valuesTranspose, reshapedIndices as Tensor1D, $x.shape[axis]);
 
@@ -129,9 +125,10 @@ function gather_<T extends Tensor>(
     };
     return {$x: derX};
   };
-  return ENV.engine.runKernel(
-             backend => backend.gather($x, $indices as Tensor1D, axis), {$x},
-             grad) as T;
+  return (ENV.engine.runKernel(
+              backend => backend.gather($x, $indices.flatten(), axis), {$x},
+              grad))
+             .reshape(shapeInfo.outputShape) as T;
 }
 
 function arrayRange(start: number, stop: number): number[] {

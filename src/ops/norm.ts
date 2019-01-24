@@ -21,6 +21,7 @@ import {TensorLike} from '../types';
 import * as axis_util from './axis_util';
 import {op} from './operation';
 import {scalar} from './tensor_ops';
+import {parseAxisParam} from '../util';
 
 /**
  * Computes the norm of scalar, vectors, and matrices.
@@ -67,7 +68,7 @@ function norm_(
   const norm = normImpl(x, ord, axis);
   let keepDimsShape = norm.shape;
   if (keepDims) {
-    const axes = axis_util.parseAxisParam(axis, x.shape);
+    const axes = parseAxisParam(axis, x.shape);
     keepDimsShape = axis_util.expandShapeToKeepDim(norm.shape, axes);
   }
   return norm.reshape(keepDimsShape);
@@ -86,7 +87,7 @@ function normImpl(
 
   // vector
   if (x.rank === 1 || typeof axis === 'number' ||
-      axis instanceof Array && axis.length === 1) {
+      Array.isArray(axis) && axis.length === 1) {
     if (p === 1) {
       return x.abs().sum(axis);
     }
@@ -105,7 +106,7 @@ function normImpl(
   }
 
   // matrix (assumption axis[0] < axis[1])
-  if (axis instanceof Array && axis.length === 2) {
+  if (Array.isArray(axis) && axis.length === 2) {
     if (p === 1) {
       return x.abs().sum(axis[0]).max(axis[1] - 1);
     }
