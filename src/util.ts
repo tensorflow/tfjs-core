@@ -537,7 +537,15 @@ function createNestedArray(offset: number, shape: number[], a: TypedArray) {
 
 // Provide a nested array of TypedArray in given shape.
 export function toNestedArray(shape: number[], a: TypedArray) {
+  if (shape.length === 0) {
+    // Scalar type should be empty list.
+    return [];
+  }
   const size = shape.reduce((acc, c) => acc * c);
+  if (size === 0) {
+    // A tensor with shape zero should be turned into empty list.
+    return [];
+  }
   if (size !== a.length) {
     throw new Error(`[${shape}] does not match the input size.`);
   }
