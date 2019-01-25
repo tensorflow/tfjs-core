@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2018 Google Inc. All Rights Reserved.
+ * Copyright 2019 Google Inc. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -45,38 +45,25 @@ export class TransposePackedProgram implements GPGPUProgram {
       switchedOrder[newDim[i]] = outputOrder[i];
     }
     const innerDims = `vec2(${switchedOrder.slice(-2).join()})`;
-    const cLimit =
-        `${outputOrder[this.rank - 1]} < ${outputShape[this.rank - 1]}`;
-    let main = '';
-    
-    const componentSetup = [
-      `${dtype} rc = resRC;`,
-      `${outputOrder[this.rank - 1]} += 1;
-       if(${cLimit}) {
-      `,
-      `}
-       rc = resRC;
-       ${outputOrder[this.rank - 2]} += 1;
-       if(${outputOrder[this.rank - 2]} < ${outputShape[this.rank - 2]}) {`,
-      `  ${outputOrder[this.rank - 1]} += 1;
-         if(${cLimit}) {`
-    ];
-    for (let i = 0; i < 4; i++) {
-      main += `
-        ${componentSetup[i]}
-          result[${i}] =
-            getChannel(getA(${switchedOrder.join()}), ${innerDims});
-      `;
-    }
-    main += `
-         }
-       }`;
+    const nextColumn =
+        `++${outputOrder[this.rank - 1]} < ${outputShape[this.rank - 1]}`;
+    const getc = `getChannel(getA(${switchedOrder.join()}), ${innerDims})`;
 
     this.userCode = `
     void main() {
-      ${dtype} resRC = getOutputCoords();
-      vec4 result = vec4(0.);       
-      ${main}
+      ${dtype} rc = getOutputCoords();
+      vec4 result = vec4(0.);
+      result[0] = ${getc};
+      if(${nextColumn}) {
+        result[1] = ${getc};
+      }
+      --${outputOrder[this.rank - 1]};
+      if(++${outputOrder[this.rank - 2]} < ${outputShape[this.rank - 2]}) {
+        result[2] = ${getc};
+        if(${nextColumn}) {
+          result[3] = ${getc};
+        }
+      }  
       setOutput(result);
     }
     `;
