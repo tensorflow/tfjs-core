@@ -20,7 +20,8 @@ import {GPGPUContext} from './gpgpu_context';
 import {GPGPUProgram} from './gpgpu_math';
 
 // We do the same as in ./binaryop_gpu, with vec4 and ivec4.
-// TODO(https://github.com/tensorflow/tfjs/issues/1141): Understand why vectorized implementation causes layers tests to break.
+// TODO(https://github.com/tensorflow/tfjs/issues/1141): Understand why
+// vectorized implementation causes layers tests to break.
 export const PACKED_DIV = `
   // vec4 one = vec4(equal(a, b));
   // return one + (vec4(1.0) - one) * a / b;
