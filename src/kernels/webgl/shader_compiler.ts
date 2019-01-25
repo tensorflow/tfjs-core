@@ -298,8 +298,6 @@ function getShaderPrefix(glsl: GLSL): string {
     }
 
     ${SAMPLE_1D_SNIPPET}
-    ${SAMPLE_2D_SNIPPET}
-    ${SAMPLE_3D_SNIPPET}
     ${SAMPLE_5D_SNIPPET}
     ${SAMPLE_6D_SNIPPET}
   `;
@@ -309,33 +307,6 @@ function getShaderPrefix(glsl: GLSL): string {
 
 const SAMPLE_1D_SNIPPET = `
 vec2 uvFromFlat(int texNumR, int texNumC, int index) {
-  int texR = index / texNumC;
-  int texC = index - texR * texNumC;
-  return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
-}
-vec2 packedUVfrom1D(int texNumR, int texNumC, int index) {
-  int texelIndex = index / 2;
-  int texR = texelIndex / texNumC;
-  int texC = texelIndex - texR * texNumC;
-  return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
-}
-`;
-
-const SAMPLE_2D_SNIPPET = `
-vec2 packedUVfrom2D(int texelsInLogicalRow, int texNumR,
-  int texNumC, int row, int col) {
-  int texelIndex = (row / 2) * texelsInLogicalRow + (col / 2);
-  int texR = texelIndex / texNumC;
-  int texC = texelIndex - texR * texNumC;
-  return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
-}
-`;
-
-const SAMPLE_3D_SNIPPET = `
-vec2 packedUVfrom3D(int texNumR, int texNumC,
-    int texelsInBatch, int texelsInLogicalRow, int b,
-    int row, int col) {
-  int index = b * texelsInBatch + (row / 2) * texelsInLogicalRow + (col / 2);
   int texR = index / texNumC;
   int texC = index - texR * texNumC;
   return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
@@ -705,14 +676,17 @@ function getPackedSampler1D(inputInfo: InputInfo): string {
   const texName = inputInfo.name;
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
   const texShape = inputInfo.shapeInfo.texShape;
-  const packedTexShape =
+  const [texNumR, texNumC] =
       [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
   const glsl = getGlslDifferences();
 
   return `
     vec4 ${funcName}(int index) {
-      vec2 uv = packedUVfrom1D(
-        ${packedTexShape[0]}, ${packedTexShape[1]}, index);
+      int texelIndex = index / 2;
+      int texR = texelIndex / ${texNumC};
+      int texC = texelIndex - texR * ${texNumC};
+      vec2 uv = (vec2(texC, texR) + halfCR) *
+           vec2(${1 / texNumC}, ${1 / texNumR});
       return ${glsl.texture2D}(${texName}, uv);
     }
   `;
@@ -779,21 +753,25 @@ function getPackedSampler2D(inputInfo: InputInfo): string {
   if (texShape != null && util.arraysEqual(shape, texShape)) {
     return `
       vec4 ${funcName}(int row, int col) {
-        vec2 uv = (vec2(col, row) + halfCR) / vec2(${texNumC}.0, ${texNumR}.0);
+        vec2 uv = (vec2(col, row) + halfCR) * vec2(
+          ${1.0 / texNumC}, ${1.0 / texNumR});
 
         return ${glsl.texture2D}(${texName}, uv);
       }
     `;
   }
 
-  const packedTexShape =
+  const [texNumPackedR, texNumPackedC] =
       [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
   const valuesPerRow = Math.ceil(shape[1] / 2);
 
   return `
     vec4 ${funcName}(int row, int col) {
-      vec2 uv = packedUVfrom2D(${valuesPerRow}, ${packedTexShape[0]}, ${
-      packedTexShape[1]}, row, col);
+      int texelIndex = (row / 2) * ${valuesPerRow} + (col / 2);
+      int texR = texelIndex / ${texNumPackedC};
+      int texC = texelIndex - ${texNumPackedC} * texR;
+      vec2 uv = (vec2(texC, texR) + halfCR) *
+          vec2(${1 / texNumPackedC}, ${1 / texNumPackedR}); 
       return ${glsl.texture2D}(${texName}, uv);
     }
   `;
@@ -810,7 +788,8 @@ function getSampler2D(inputInfo: InputInfo): string {
     const texNumC = texShape[1];
     return `
     float ${funcName}(int row, int col) {
-      vec2 uv = (vec2(col, row) + halfCR) / vec2(${texNumC}.0, ${texNumR}.0);
+      vec2 uv = (vec2(col, row) + halfCR) * vec2(
+        ${1.0 / texNumC}, ${1.0 / texNumR});
       return sampleTexture(${texName}, uv);
     }
   `;
@@ -878,7 +857,7 @@ function getPackedSampler3D(inputInfo: InputInfo): string {
   const texName = inputInfo.name;
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
   const texShape = inputInfo.shapeInfo.texShape;
-  const packedTexShape =
+  const [texNumR, texNumC] =
       [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
 
   if (shape[0] === 1) {
@@ -894,17 +873,18 @@ function getPackedSampler3D(inputInfo: InputInfo): string {
       `;
   }
 
-  const texNumR = packedTexShape[0];
-  const texNumC = packedTexShape[1];
-
   const valuesPerRow = Math.ceil(shape[2] / 2);
   const texelsInBatch = valuesPerRow * Math.ceil(shape[1] / 2);
   const glsl = getGlslDifferences();
 
   return `
     vec4 ${funcName}(int b, int row, int col) {
-      vec2 uv = packedUVfrom3D(
-        ${texNumR}, ${texNumC}, ${texelsInBatch}, ${valuesPerRow}, b, row, col);
+      int index = b * ${texelsInBatch} +
+          (row / 2) * ${valuesPerRow} + (col / 2);
+      int texR = index / ${texNumC};
+      int texC = index - texR * ${texNumC};
+      vec2 uv = (vec2(texC, texR) + halfCR) * vec2(
+        ${1.0 / texNumC}, ${1.0 / texNumR});
       return ${glsl.texture2D}(${texName}, uv);
     }
   `;
@@ -987,10 +967,8 @@ function getPackedSamplerND(inputInfo: InputInfo): string {
   const texName = inputInfo.name;
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
   const texShape = inputInfo.shapeInfo.texShape;
-  const packedTexShape =
+  const [texNumR, texNumC] =
       [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
-  const texNumR = packedTexShape[0];
-  const texNumC = packedTexShape[1];
 
   const valuesPerRow = Math.ceil(shape[rank - 1] / 2);
   let texelsInBatch = valuesPerRow * Math.ceil(shape[rank - 2] / 2);
@@ -1007,8 +985,9 @@ function getPackedSamplerND(inputInfo: InputInfo): string {
       int index = ${index};
       int texR = index / ${texNumC};
       int texC = index - texR * ${texNumC};
-      vec2 uv = (vec2(texC, texR) + halfCR) / vec2(${texNumC}, ${texNumR});
-      return ${glsl.texture2D}(${texName}, uv);
+      vec2 uv = (vec2(texC, texR) + halfCR) * vec2(
+        ${1.0 / texNumC}, ${1.0 / texNumR});
+      return ${glsl.texture2D}(${texName}, uv);      
     }
   `;
 }
@@ -1055,10 +1034,9 @@ function getSampler4D(inputInfo: InputInfo): string {
       float ${funcName}(int row, int col, int depth, int depth2) {
         float texR = float(row);
         float texC =
-            dot(vec3(col, depth, depth2),
-                vec3(${stride1}, ${stride2}, 1));
-        vec2 uv = (vec2(texC, texR) + halfCR) /
-                   vec2(${texNumC}.0, ${texNumR}.0);
+            dot(vec3(col, depth, depth2), vec3(${stride1}, ${stride2}, 1));
+        vec2 uv = (vec2(texC, texR) + halfCR) *
+                   vec2(${1.0 / texNumC}, ${1.0 / texNumR});
         return sampleTexture(${texName}, uv);
       }
     `;
@@ -1070,8 +1048,8 @@ function getSampler4D(inputInfo: InputInfo): string {
         float texR = dot(vec3(row, col, depth),
                          vec3(${shape[1] * shape[2]}, ${shape[2]}, 1));
         float texC = float(depth2);
-        vec2 uv = (vec2(texC, texR) + halfCR) /
-                  vec2(${texNumC}.0, ${texNumR}.0);
+        vec2 uv = (vec2(texC, texR) + halfCR) *
+                  vec2(${1.0 / texNumC}, ${1.0 / texNumR});
         return sampleTexture(${texName}, uv);
       }
     `;
