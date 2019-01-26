@@ -15,10 +15,14 @@
  * =============================================================================
  */
 
-const delayCallback: Function = typeof requestAnimationFrame !== 'undefined' ?
-    requestAnimationFrame :                               // Browsers
-    typeof setImmediate !== 'undefined' ? setImmediate :  // Node.js
-        (f: Function) => f();                             // No delayed
+const delayCallback: Function = (() => {
+  if (typeof requestAnimationFrame !== 'undefined') {
+    return requestAnimationFrame;
+  } else if (typeof setImmediate !== 'undefined') {
+    return setImmediate;
+  }
+  return (f: Function) => f();  // no delays
+})();
 
 /**
  * Returns a promise that resolve when a requestAnimationFrame has completed.
