@@ -53,7 +53,7 @@ export class GPGPUContext {
       this.gl = gl;
       setWebGLContext(glVersion, gl);
     } else {
-      this.gl = getWebGLContext(ENV.get('WEBGL_VERSION'));
+      this.gl = getWebGLContext(glVersion);
     }
     // WebGL 2.0 enables texture floats without an extension.
     if (ENV.get('WEBGL_VERSION') === 1) {
