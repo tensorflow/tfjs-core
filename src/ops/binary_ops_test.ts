@@ -20,7 +20,7 @@ import {describeWithFlags} from '../jasmine_util';
 import {ALL_ENVS, expectArraysClose, expectArraysEqual, PACKED_ENVS, WEBGL_ENVS} from '../test_util';
 
 describeWithFlags('div', PACKED_ENVS, () => {
-  fit('works when unused channels are divided', () => {
+  it('works when unused channels are divided', () => {
     // Tests that the 0's in unused channels for input textures do not corrupt
     // the result when swizzled with 3 / 3.
     const a = tf.tensor2d([3], [1, 1]);
