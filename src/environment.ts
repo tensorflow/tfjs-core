@@ -461,10 +461,14 @@ export class Environment {
           new Engine(backend, false /* safeMode */, () => this.get('DEBUG'));
     }
   }
+
+  get global(): {ENV: Environment} {
+    return getGlobalNamespace();
+  }
 }
 
 let _global: {ENV: Environment};
-export function getGlobalNamespace(): {ENV: Environment} {
+function getGlobalNamespace(): {ENV: Environment} {
   if (_global == null) {
     // tslint:disable-next-line:no-any
     let ns: any;
