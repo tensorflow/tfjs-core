@@ -421,7 +421,6 @@ export class Environment {
     if (name in this.registry) {
       console.warn(
           `${name} backend was already registered. Reusing existing backend`);
-      setTensorTracker(() => this.engine);
       return false;
     }
     try {
@@ -477,8 +476,10 @@ function getOrMakeEnvironment(): Environment {
   const ns = getGlobalNamespace();
   if (ns.ENV == null) {
     ns.ENV = new Environment(getFeaturesFromURL());
-    setTensorTracker(() => ns.ENV.engine);
   }
+  // Tell the current tensor interface that the global engine is responsible for
+  // tracking.
+  setTensorTracker(() => ns.ENV.engine);
   return ns.ENV;
 }
 
