@@ -3077,7 +3077,7 @@ describeWithFlags('unstack', ALL_ENVS, () => {
 
   it('unstack with negative integer axis', () => {
     const x = tf.tensor2d([1, 2, 3, 4, 5, 6, 7, 8], [2, 4]);
-    
+
     let res = tf.unstack(x, -1);
     expect(res.length).toEqual(4);
     expect(res[0].rank).toEqual(1);
