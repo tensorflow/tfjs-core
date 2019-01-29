@@ -20,9 +20,16 @@ import {GPGPUContext} from './gpgpu_context';
 import {GPGPUProgram} from './gpgpu_math';
 
 // We do the same as in ./binaryop_gpu, with vec4 and ivec4.
+// On Linux, the vectorized implementation produces NaNs when a and b are 0.
 export const PACKED_DIV = `
-  vec4 one = vec4(equal(a, b));
-  return one + (vec4(1.0) - one) * a / b;
+  // vec4 one = vec4(equal(a, b));
+  // return one + (vec4(1.0) - one) * a / b;
+  vec4 result = a / b;
+  result.x = a.x == b.x ? 1. : result.x;
+  result.y = a.y == b.y ? 1. : result.y;
+  result.z = a.z == b.z ? 1. : result.z;
+  result.w = a.w == b.w ? 1. : result.w;
+  return result;
 `;
 
 export const PACKED_INT_DIV = `
