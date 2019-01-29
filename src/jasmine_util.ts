@@ -99,7 +99,7 @@ export let TEST_ENVS: TestEnv[] = [
       'WEBGL_VERSION': 1,
       'WEBGL_CPU_FORWARD': false,
       'WEBGL_SIZE_UPLOAD_UNIFORM': 0,
-      'WEBGL_PACK': false
+      'WEBGL_PACK': true
     }
   },
   {

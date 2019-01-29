@@ -309,7 +309,7 @@ export class Environment {
     } else if (feature === 'WEBGL_CPU_FORWARD') {
       return true;
     } else if (feature === 'WEBGL_PACK') {
-      return false;
+      return true;
     } else if (feature === 'WEBGL_PACK_BATCHNORMALIZATION') {
       return this.get('WEBGL_PACK');
     } else if (feature === 'WEBGL_PACK_CLIP') {
