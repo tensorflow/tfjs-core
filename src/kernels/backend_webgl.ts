@@ -32,7 +32,7 @@ import * as segment_util from '../ops/segment_util';
 import {computeFlatOffset, getStridedSlicedInfo, isSliceContinous} from '../ops/slice_util';
 import {softmax} from '../ops/softmax';
 import {range, scalar, tensor} from '../ops/tensor_ops';
-import {DataId, Scalar, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D} from '../tensor';
+import {DataId, Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D} from '../tensor';
 import {DataType, DataTypeMap, DataValues, NumericDataType, Rank, RecursiveArray, ShapeMap, sumOutType, TypedArray, upcastType} from '../types';
 import * as util from '../util';
 import {getTypedArrayFromDType, sizeFromShape} from '../util';
@@ -96,12 +96,14 @@ import {ScatterProgram} from './webgl/scatter_gpu';
 import {SegmentOpProgram} from './webgl/segment_gpu';
 import {SelectProgram} from './webgl/select_gpu';
 import {SliceProgram} from './webgl/slice_gpu';
+import {SlicePackedProgram} from './webgl/slice_packed_gpu';
 import {StridedSliceProgram} from './webgl/strided_slice_gpu';
 import * as tex_util from './webgl/tex_util';
 import {TextureData, TextureUsage} from './webgl/tex_util';
 import {TextureManager} from './webgl/texture_manager';
 import {TileProgram} from './webgl/tile_gpu';
 import {TransposeProgram} from './webgl/transpose_gpu';
+import {TransposePackedProgram} from './webgl/transpose_packed_gpu';
 import * as unary_op from './webgl/unaryop_gpu';
 import {UnaryOpProgram} from './webgl/unaryop_gpu';
 import * as unary_packed_op from './webgl/unaryop_packed_gpu';
@@ -640,7 +642,9 @@ export class MathBackendWebGL implements KernelBackend {
     const {isPacked} = this.texData.get(x.dataId);
     const isContinous = isSliceContinous(x.shape, begin, size);
     if (isPacked || !isContinous) {
-      const program = new SliceProgram(size);
+      const program = ENV.get('WEBGL_PACK_ARRAY_OPERATIONS') ?
+          new SlicePackedProgram(size) :
+          new SliceProgram(size);
       const customSetup = program.getCustomSetupFunc(begin);
       return this.compileAndRun(program, [x], null, customSetup);
     }
@@ -923,7 +927,9 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   transpose<T extends Tensor>(x: T, perm: number[]): T {
-    const program = new TransposeProgram(x.shape, perm);
+    const program = ENV.get('WEBGL_PACK_ARRAY_OPERATIONS') ?
+        new TransposePackedProgram(x.shape, perm) :
+        new TransposeProgram(x.shape, perm);
     return this.compileAndRun(program, [x]);
   }
 
@@ -2298,9 +2304,7 @@ export class MathBackendWebGL implements KernelBackend {
 }
 
 if (ENV.get('IS_BROWSER')) {
-  ENV.registerBackend(
-      'webgl', () => new MathBackendWebGL(), 2 /* priority */,
-      setTensorTracker);
+  ENV.registerBackend('webgl', () => new MathBackendWebGL(), 2 /* priority */);
 }
 
 function float32ToTypedArray<D extends NumericDataType>(
