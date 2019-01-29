@@ -25,14 +25,14 @@ import * as broadcast_util from '../ops/broadcast_util';
 import * as concat_util from '../ops/concat_util';
 import {Conv2DInfo, Conv3DInfo} from '../ops/conv_util';
 import * as erf_util from '../ops/erf_util';
-import {FusableActivation} from '../ops/fused_util';
+import {Activation} from '../ops/fused_util';
 import * as gather_nd_util from '../ops/gather_nd_util';
 import * as ops from '../ops/ops';
 import {buffer, scalar, tensor, tensor3d, tensor4d} from '../ops/ops';
 import * as scatter_nd_util from '../ops/scatter_nd_util';
 import * as selu_util from '../ops/selu_util';
 import {computeFlatOffset, getStridedSlicedInfo, isSliceContinous} from '../ops/slice_util';
-import {DataId, Scalar, setTensorTracker, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D, TensorBuffer} from '../tensor';
+import {DataId, Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D, TensorBuffer} from '../tensor';
 import {DataType, DataTypeMap, DataValues, NumericDataType, Rank, ShapeMap, TypedArray, upcastType} from '../types';
 import * as util from '../util';
 import {now} from '../util';
@@ -46,7 +46,7 @@ import {topkImpl} from './topk_impl';
 import {whereImpl} from './where_impl';
 
 function mapActivation(
-    backend: MathBackendCPU, activation: FusableActivation, x: Tensor): Tensor {
+    backend: MathBackendCPU, activation: Activation, x: Tensor): Tensor {
   if (activation === 'linear') {
     return backend.linear(x);
   } else if (activation === 'relu') {
@@ -484,7 +484,7 @@ export class MathBackendCPU implements KernelBackend {
 
   fusedBatchMatMul(
       a: Tensor3D, b: Tensor3D, transposeA: boolean, transposeB: boolean,
-      bias?: Tensor3D, activation?: FusableActivation): Tensor3D {
+      bias?: Tensor, activation?: Activation): Tensor3D {
     let result = this.batchMatMul(a, b, transposeA, transposeB);
     if (bias) {
       result = this.add(result, bias) as Tensor3D;
@@ -3363,5 +3363,4 @@ export class MathBackendCPU implements KernelBackend {
   }
 }
 
-ENV.registerBackend(
-    'cpu', () => new MathBackendCPU(), 1 /* priority */, setTensorTracker);
+ENV.registerBackend('cpu', () => new MathBackendCPU(), 1 /* priority */);

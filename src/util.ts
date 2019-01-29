@@ -440,7 +440,7 @@ export function isNumber(value: {}): boolean {
 }
 
 export function inferDtype(values: TensorLike): DataType {
-  if (values instanceof Array) {
+  if (Array.isArray(values)) {
     return inferDtype(values[0]);
   }
   if (values instanceof Float32Array) {
@@ -515,6 +515,42 @@ export function toTypedArray(
   } else {
     throw new Error(`Unknown data type ${dtype}`);
   }
+}
+
+function createNestedArray(offset: number, shape: number[], a: TypedArray) {
+  const ret = new Array();
+  if (shape.length === 1) {
+    const d = shape[0];
+    for (let i = 0; i < d; i++) {
+      ret[i] = a[offset + i];
+    }
+  } else {
+    const d = shape[0];
+    const rest = shape.slice(1);
+    const len = rest.reduce((acc, c) => acc * c);
+    for (let i = 0; i < d; i++) {
+      ret[i] = createNestedArray(offset + i * len, rest, a);
+    }
+  }
+  return ret;
+}
+
+// Provide a nested array of TypedArray in given shape.
+export function toNestedArray(shape: number[], a: TypedArray) {
+  if (shape.length === 0) {
+    // Scalar type should be empty list.
+    return [];
+  }
+  const size = shape.reduce((acc, c) => acc * c);
+  if (size === 0) {
+    // A tensor with shape zero should be turned into empty list.
+    return [];
+  }
+  if (size !== a.length) {
+    throw new Error(`[${shape}] does not match the input size.`);
+  }
+
+  return createNestedArray(0, shape, a);
 }
 
 function noConversionNeeded(a: TensorLike, dtype: DataType): boolean {
