@@ -90,6 +90,7 @@ export abstract class Serializable {
    * @param cls A Constructor for the class to instantiate.
    * @param config The Configuration for the object.
    */
+  /** @nocollapse */
   static fromConfig<T extends Serializable>(
       cls: SerializableConstructor<T>, config: ConfigDict): T {
     return new cls(config);
