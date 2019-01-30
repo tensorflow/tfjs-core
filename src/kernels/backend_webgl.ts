@@ -2076,7 +2076,8 @@ export class MathBackendWebGL implements KernelBackend {
           preProcessProgram = new UnpackProgram(input.shape);
           processedInput = this.compileAndRun(
               preProcessProgram, [input],
-              Tensor.make(preProcessProgram.outputShape, {}, input.dtype));
+              Tensor.make(
+                  preProcessProgram.outputShape, {}, input.dtype, this));
         } else {
           preProcessProgram = new PackProgram(input.shape);
           processedInput = this.compileAndRun(

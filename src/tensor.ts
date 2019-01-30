@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+import {KernelBackend} from './kernels/backend';
 import {tensorToString} from './tensor_format';
 import {DataType, DataTypeMap, DataValues, NumericDataType, Rank, ShapeMap, SingleValueMap, TensorLike, TensorLike1D, TensorLike3D, TensorLike4D, TypedArray} from './types';
 import * as util from './util';
@@ -139,7 +140,7 @@ export class TensorBuffer<R extends Rank, D extends DataType = 'float32'> {
 }
 
 export interface TensorTracker {
-  registerTensor(t: Tensor): void;
+  registerTensor(t: Tensor, backend?: KernelBackend): void;
   disposeTensor(t: Tensor): void;
   write(dataId: DataId, values: DataValues): void;
   read(dataId: DataId): Promise<DataValues>;
@@ -411,8 +412,8 @@ export class Tensor<R extends Rank = Rank> {
   readonly strides: number[];
 
   protected constructor(
-      shape: ShapeMap[R], dtype: DataType, values?: DataValues,
-      dataId?: DataId) {
+      shape: ShapeMap[R], dtype: DataType, values?: DataValues, dataId?: DataId,
+      backend?: KernelBackend) {
     this.shape = shape.slice();
     this.dtype = dtype || 'float32';
     this.size = util.sizeFromShape(shape);
@@ -420,7 +421,7 @@ export class Tensor<R extends Rank = Rank> {
     this.dataId = dataId != null ? dataId : {};
     this.id = trackerFn().nextTensorId();
     this.rankType = (this.rank < 5 ? this.rank.toString() : 'higher') as R;
-    trackerFn().registerTensor(this);
+    trackerFn().registerTensor(this, backend);
     if (values != null) {
       trackerFn().write(this.dataId, values);
     }
@@ -432,8 +433,9 @@ export class Tensor<R extends Rank = Rank> {
    */
   static make<T extends Tensor<R>, D extends DataType = 'float32',
                                              R extends Rank = Rank>(
-      shape: ShapeMap[R], data: TensorData<D>, dtype?: D): T {
-    return new Tensor(shape, dtype, data.values, data.dataId) as T;
+      shape: ShapeMap[R], data: TensorData<D>, dtype?: D,
+      backend?: KernelBackend): T {
+    return new Tensor(shape, dtype, data.values, data.dataId, backend) as T;
   }
 
   /** Flatten a Tensor to a 1D array. */
