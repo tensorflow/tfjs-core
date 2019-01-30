@@ -241,3 +241,121 @@ describeWithFlags('qr', ALL_ENVS, () => {
     expect(() => tf.linalg.qr(x2)).toThrowError(/rank >= 2.*got rank 1/);
   });
 });
+
+describeWithFlags('bandPart', ALL_ENVS, () => {
+  const la = tf.linalg;
+
+  // FIXME: shouldn't 1*x be lossless?
+  // It's even in the IEEE spec somewhere...
+  // Yet this fails on Travis with `expectArraysEqual`...
+  const expectArraysEqual = expectArraysClose;
+
+  it('works for 3x4 example', () => {
+    const a = tf.tensor2d([
+      [1, 2, 3, 4],
+      [5, 6, 7, 8],
+      [9,10,11,12]
+    ]);
+    expectArraysEqual(
+      la.bandPart(a,0,0),
+      tf.tensor2d([[1, 0, 0, 0],
+                   [0, 6, 0, 0],
+                   [0, 0,11, 0]])
+    );
+    expectArraysEqual(
+      la.bandPart(a,0,1),
+      tf.tensor2d([[1, 2, 0, 0],
+                   [0, 6, 7, 0],
+                   [0, 0,11,12]])
+    );
+    expectArraysEqual(
+      la.bandPart(a,0,2),
+      tf.tensor2d([[1, 2, 3, 0],
+                   [0, 6, 7, 8],
+                   [0, 0,11,12]])
+    );
+    expectArraysEqual(
+      la.bandPart(a,0,2),
+      tf.tensor2d([[1, 2, 3, 0],
+                   [0, 6, 7, 8],
+                   [0, 0,11,12]])
+    );
+    for( const numUpper of [3,4,-1,-2] ) {
+      expectArraysEqual(
+        la.bandPart(a,0,numUpper),
+        tf.tensor2d([[1, 2, 3, 4],
+                     [0, 6, 7, 8],
+                     [0, 0,11,12]])
+      );
+    }
+
+    expectArraysEqual(
+      la.bandPart(a,1,0),
+      tf.tensor2d([[1, 0, 0, 0],
+                   [5, 6, 0, 0],
+                   [0,10,11, 0]])
+    );
+    expectArraysEqual(
+      la.bandPart(a,1,1),
+      tf.tensor2d([[1, 2, 0, 0],
+                   [5, 6, 7, 0],
+                   [0,10,11,12]])
+    );
+    expectArraysEqual(
+      la.bandPart(a,1,2),
+      tf.tensor2d([[1, 2, 3, 0],
+                   [5, 6, 7, 8],
+                   [0,10,11,12]])
+    );
+    expectArraysEqual(
+      la.bandPart(a,1,2),
+      tf.tensor2d([[1, 2, 3, 0],
+                   [5, 6, 7, 8],
+                   [0,10,11,12]])
+    );
+    for( const numUpper of [3,4,-1,-2] ) {
+      expectArraysEqual(
+        la.bandPart(a,1,numUpper),
+        tf.tensor2d([[1, 2, 3, 4],
+                     [5, 6, 7, 8],
+                     [0,10,11,12]])
+      );
+    }
+
+    for( const numLower of [2,3,-1,-2])
+    {
+      expectArraysEqual(
+        la.bandPart(a,numLower,0),
+        tf.tensor2d([[1, 0, 0, 0],
+                     [5, 6, 0, 0],
+                     [9,10,11, 0]])
+      );
+      expectArraysEqual(
+        la.bandPart(a,numLower,1),
+        tf.tensor2d([[1, 2, 0, 0],
+                     [5, 6, 7, 0],
+                     [9,10,11,12]])
+      );
+      expectArraysEqual(
+        la.bandPart(a,numLower,2),
+        tf.tensor2d([[1, 2, 3, 0],
+                     [5, 6, 7, 8],
+                     [9,10,11,12]])
+      );
+      expectArraysEqual(
+        la.bandPart(a,numLower,2),
+        tf.tensor2d([[1, 2, 3, 0],
+                     [5, 6, 7, 8],
+                     [9,10,11,12]])
+      );
+      for( const numUpper of [3,4,-1,-2] ) {
+        expectArraysEqual(
+          la.bandPart(a,numLower,numUpper),
+          tf.tensor2d([[1, 2, 3, 4],
+                       [5, 6, 7, 8],
+                       [9,10,11,12]])
+        );
+      }
+    }
+  });
+});
