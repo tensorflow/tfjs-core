@@ -15,7 +15,6 @@
  * =============================================================================
  */
 
-import {KernelBackend} from './kernels/backend';
 import {tensorToString} from './tensor_format';
 import {DataType, DataTypeMap, DataValues, NumericDataType, Rank, ShapeMap, SingleValueMap, TensorLike, TensorLike1D, TensorLike3D, TensorLike4D, TypedArray} from './types';
 import * as util from './util';
@@ -24,6 +23,15 @@ import {computeStrides} from './util';
 export interface TensorData<D extends DataType> {
   dataId?: DataId;
   values?: DataTypeMap[D];
+}
+
+// This interface mimics KernelBackend (in backend.ts), which would create a
+// circular dependency if imported.
+interface Backend {
+  read(dataId: object): Promise<DataValues>;
+  readSync(dataId: object): DataValues;
+  disposeData(dataId: object): void;
+  write(dataId: object, values: DataValues): void;
 }
 
 /**
@@ -140,7 +148,7 @@ export class TensorBuffer<R extends Rank, D extends DataType = 'float32'> {
 }
 
 export interface TensorTracker {
-  registerTensor(t: Tensor, backend?: KernelBackend): void;
+  registerTensor(t: Tensor, backend?: Backend): void;
   disposeTensor(t: Tensor): void;
   write(dataId: DataId, values: DataValues): void;
   read(dataId: DataId): Promise<DataValues>;
@@ -413,7 +421,7 @@ export class Tensor<R extends Rank = Rank> {
 
   protected constructor(
       shape: ShapeMap[R], dtype: DataType, values?: DataValues, dataId?: DataId,
-      backend?: KernelBackend) {
+      backend?: Backend) {
     this.shape = shape.slice();
     this.dtype = dtype || 'float32';
     this.size = util.sizeFromShape(shape);
@@ -434,7 +442,7 @@ export class Tensor<R extends Rank = Rank> {
   static make<T extends Tensor<R>, D extends DataType = 'float32',
                                              R extends Rank = Rank>(
       shape: ShapeMap[R], data: TensorData<D>, dtype?: D,
-      backend?: KernelBackend): T {
+      backend?: Backend): T {
     return new Tensor(shape, dtype, data.values, data.dataId, backend) as T;
   }
 
