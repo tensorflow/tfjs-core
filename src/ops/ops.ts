@@ -44,6 +44,7 @@ export * from './scatter_nd';
 export * from './spectral_ops';
 export * from './sparse_to_dense';
 export * from './gather_nd';
+export * from './diagpart';
 
 export {op} from './operation';
 

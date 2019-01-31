@@ -2836,6 +2836,16 @@ export class MathBackendCPU implements KernelBackend {
     return res;
   }
 
+  diagPart(x: Tensor): Tensor {
+    const xVals = x.dataSync();
+    const buffer = ops.buffer([Math.sqrt(x.size)], x.dtype);
+    const vals = buffer.values;
+    for (let i = 0; i < vals.length; i++) {
+      vals[i] = xVals[i * vals.length + i];
+    }
+    return buffer.toTensor();
+  }
+
   oneHot(indices: Tensor1D, depth: number, onValue: number, offValue: number):
       Tensor2D {
     this.assertNotComplex(indices, 'oneHot');

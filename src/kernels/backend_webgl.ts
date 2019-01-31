@@ -111,6 +111,7 @@ import {UnaryOpPackedProgram} from './webgl/unaryop_packed_gpu';
 import {UnpackProgram} from './webgl/unpack_gpu';
 import * as webgl_util from './webgl/webgl_util';
 import {whereImpl} from './where_impl';
+import {DiagPartProgram} from './webgl/diagpart_gpu';
 
 type KernelInfo = {
   name: string; query: Promise<number>;
@@ -1896,6 +1897,12 @@ export class MathBackendWebGL implements KernelBackend {
         this.makeOutputArray(program.outputShape, 'int32') as Tensor2D;
     const customSetup = program.getCustomSetupFunc(seed);
     return this.compileAndRun(program, [probs], output, customSetup);
+  }
+
+  diagPart(x: Tensor): Tensor {
+    const size = Math.sqrt(x.size);
+    const program = new DiagPartProgram(size);
+    return this.compileAndRun(program, [x.reshape([size, size])]);
   }
 
   oneHot(indices: Tensor1D, depth: number, onValue: number, offValue: number):
