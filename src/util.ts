@@ -607,8 +607,8 @@ export function now(): number {
  * @param endFraction Optional fraction end. Default to 1.
  */
 export function monitorPromisesProgress(
-    promises: Array<Promise<{}>>, onProgress: Function, startFraction?: number,
-    endFraction?: number): void {
+    promises: Array<Promise<{}|void>>, onProgress: Function,
+    startFraction?: number, endFraction?: number) {
   checkPromises(promises);
   startFraction = startFraction == null ? 0 : startFraction;
   endFraction = endFraction == null ? 1 : endFraction;
@@ -626,7 +626,7 @@ export function monitorPromisesProgress(
     return promise;
   }
 
-  function checkPromises(promises: Array<Promise<{}>>): void {
+  function checkPromises(promises: Array<Promise<{}|void>>): void {
     assert(
         promises != null && Array.isArray(promises) && promises.length > 0,
         'promises must be a none empty array');
@@ -648,5 +648,5 @@ export function monitorPromisesProgress(
                 endFraction}`);
   }
 
-  promises.forEach(registerMonitor);
+  return Promise.all(promises.map(registerMonitor));
 }
