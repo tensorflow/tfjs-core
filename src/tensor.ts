@@ -27,7 +27,7 @@ export interface TensorData<D extends DataType> {
 
 // This interface mimics KernelBackend (in backend.ts), which would create a
 // circular dependency if imported.
-interface Backend {
+export interface Backend {
   read(dataId: object): Promise<DataValues>;
   readSync(dataId: object): DataValues;
   disposeData(dataId: object): void;
