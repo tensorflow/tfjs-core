@@ -1643,8 +1643,9 @@ export class MathBackendWebGL implements KernelBackend {
           convInfo.inChannels]) as Tensor3D;
       const filterReshaped = this.reshape(filter,
           [1, convInfo.inChannels, convInfo.outChannels]) as Tensor3D;
-      return this.batchMatMul(xReshaped, filterReshaped, false, false)
-          .reshape<Rank.R4>(convInfo.outShape);
+      return this.reshape<Rank.R4>(
+          this.batchMatMul(xReshaped, filterReshaped, false, false),
+          convInfo.outShape);
     }
     
     // Following optimization is specific to packed |x| with odd row count
@@ -1665,9 +1666,9 @@ export class MathBackendWebGL implements KernelBackend {
     const filterReshaped = this.reshape(filter,
         [1, convInfo.inChannels, convInfo.outChannels]) as Tensor3D;
     
-    let pointwiseConv =
+    const pointwiseConv =
         this.batchMatMul(xReshaped, filterReshaped, false, false);
-    let pointwiseConvTexData = this.texData.get(pointwiseConv.dataId);
+    const pointwiseConvTexData = this.texData.get(pointwiseConv.dataId);
     util.assert(pointwiseConvTexData.isPacked,
         'batchMatMul result is expected to be packed');
     // Restore the input shape to odd number of rows.
