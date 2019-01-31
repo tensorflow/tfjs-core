@@ -245,11 +245,6 @@ describeWithFlags('qr', ALL_ENVS, () => {
 describeWithFlags('bandPart', ALL_ENVS, () => {
   const la = tf.linalg;
 
-  // FIXME: shouldn't 1*x be lossless?
-  // It's even in the IEEE spec somewhere...
-  // Yet this fails on Travis with `expectArraysEqual`...
-  const expectArraysEqual = expectArraysClose;
-
   it('works for 3x4 example', () => {
     const a = tf.tensor2d([
       [1, 2, 3, 4],
