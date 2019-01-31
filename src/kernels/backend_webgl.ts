@@ -1634,49 +1634,49 @@ export class MathBackendWebGL implements KernelBackend {
       Tensor4D {
     // Reshapes conv2D input to 2D tensors, uses matMul and then reshape the
     // result from 2D to 4D.
+    const xShape = x.shape;
+    const xTexData = this.texData.get(x.dataId);
     if (!ENV.get('WEBGL_LAZILY_UNPACK') ||
-        !ENV.get('WEBGL_PACK_BINARY_OPERATIONS')) {
-      const $x = this.reshape(x, [1, x.shape[0] * x.shape[1] * x.shape[2],
+        !ENV.get('WEBGL_PACK_BINARY_OPERATIONS') ||
+        xShape[2] % 2 === 0 || !xTexData.isPacked) {
+      const xReshaped = this.reshape(x, [1, xShape[0] * xShape[1] * xShape[2],
           convInfo.inChannels]) as Tensor3D;
-      const $filter = this.reshape(filter,
+      const filterReshaped = this.reshape(filter,
           [1, convInfo.inChannels, convInfo.outChannels]) as Tensor3D;
-      return this.batchMatMul($x, $filter, false, false).reshape<Rank.R4>(
-          convInfo.outShape);
+      return this.batchMatMul(xReshaped, filterReshaped, false, false)
+          .reshape<Rank.R4>(convInfo.outShape);
     }
     
-    const xshape = x.shape;
-    const xTexData = this.texData.get(x.dataId);
-    // We avoid expensive packed reshape by padding row count to next even
-    // number. When number of rows in batch, x.shape[2]), in 2x2 packed texture
-    // layout is odd, the result of packed batchMatMul is the same as it is for
-    // next, even, number of rows in the batch - x.shape[2] + 1.
-    const packedXRowPad = xshape[2] % 2 === 1 && xTexData.isPacked ? 1 : 0;
-
-    const $x = Tensor.make(
-        [1, xshape[0] * xshape[1] * (xshape[2] + packedXRowPad),
+    // Following optimization is specific to packed |x| with odd row count
+    // ('row count' refers to x.shape[2]): we avoid expensive packed 2x2
+    // reshape by padding row count to next, even number. When x.shape[2] is
+    // odd, the result of packed batchMatMul is the same (has the same texture
+    // layout and and values in the texture) as it is for even x.shape[2] + 1.
+    // We make the odd-rows tensor to look like even-rows tensor before the
+    // operation and, after the batchMatMul, fix the even-rows result to have
+    // odd number of rows.
+    const xReshaped = Tensor.make(
+        [1, xShape[0] * xShape[1] * (xShape[2] + 1),
          convInfo.inChannels], {dataId: x.dataId}, x.dtype) as Tensor3D;
-    if (packedXRowPad) {
-        xTexData.shape[xTexData.shape.length - 2]++;
-        util.assert(webgl_util.isReshapeFree(xTexData.shape, $x.shape),
-            `packed reshape from ${xTexData.shape} to ${$x.shape} isn't free`,);
-    }
-    const $filter = this.reshape(filter,
+    
+    xTexData.shape[xTexData.shape.length - 2]++;
+    util.assert(webgl_util.isReshapeFree(xTexData.shape, xReshaped.shape),
+        `packed reshape ${xTexData.shape} to ${xReshaped.shape} isn't free`);
+    const filterReshaped = this.reshape(filter,
         [1, convInfo.inChannels, convInfo.outChannels]) as Tensor3D;
     
-    let xf = this.batchMatMul($x, $filter, false, false);
-    let xfTexData = this.texData.get(xf.dataId);
-    util.assert(xfTexData.isPacked, 'expected packed result of batchMatMul');
-
-    if (packedXRowPad) {
-      // Restore the input shape.
-      xTexData.shape[xTexData.shape.length - 2]--;
-      // Set the output shape - there is no need for expensive reshape as data
-      // layout is already correct.
-      xfTexData.shape = convInfo.outShape;
-      return Tensor.make(convInfo.outShape, {dataId: xf.dataId}, xf.dtype) as
-          Tensor4D;
-    }
-    return this.reshape<Rank.R4>(xf, convInfo.outShape);
+    let pointwiseConv =
+        this.batchMatMul(xReshaped, filterReshaped, false, false);
+    let pointwiseConvTexData = this.texData.get(pointwiseConv.dataId);
+    util.assert(pointwiseConvTexData.isPacked,
+        'batchMatMul result is expected to be packed');
+    // Restore the input shape to odd number of rows.
+    xTexData.shape[xTexData.shape.length - 2]--;
+    // Set the output shape - there is no need for expensive reshape as data
+    // layout is already correct.
+    pointwiseConvTexData.shape = convInfo.outShape;
+    return Tensor.make(convInfo.outShape, {dataId: pointwiseConv.dataId},
+        pointwiseConv.dtype) as Tensor4D;
   }
 
   conv2dWithIm2Row(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
