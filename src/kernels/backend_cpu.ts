@@ -972,6 +972,45 @@ export class MathBackendCPU implements KernelBackend {
     return Tensor.make(x.shape, {values: newValues}) as T;
   }
 
+  isNaN<T extends Tensor>(x: T): T {
+    this.assertNotComplex(x, 'x');
+
+    const values = x.dataSync();
+    const newValues = new Float32Array(values.length);
+    for (let i = 0; i < values.length; ++i) {
+      if (Number.isNaN(values[i])) {
+        newValues[i] = 1;
+      }
+    }
+    return Tensor.make(x.shape, {values: newValues}) as T;
+  }
+
+  isInf<T extends Tensor>(x: T): T {
+    this.assertNotComplex(x, 'x');
+
+    const values = x.dataSync();
+    const newValues = new Float32Array(values.length);
+    for (let i = 0; i < values.length; ++i) {
+      if (Math.abs(values[i]) === Infinity) {
+        newValues[i] = 1;
+      }
+    }
+    return Tensor.make(x.shape, {values: newValues}) as T;
+  }
+
+  isFinite<T extends Tensor>(x: T): T {
+    this.assertNotComplex(x, 'x');
+
+    const values = x.dataSync();
+    const newValues = new Float32Array(values.length);
+    for (let i = 0; i < values.length; ++i) {
+      if (Number.isFinite(values[i])) {
+        newValues[i] = 1;
+      }
+    }
+    return Tensor.make(x.shape, {values: newValues}) as T;
+  }
+
   round<T extends Tensor>(x: T): T {
     this.assertNotComplex(x, 'round');
 

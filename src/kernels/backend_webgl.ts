@@ -1290,16 +1290,14 @@ export class MathBackendWebGL implements KernelBackend {
     const program = ENV.get('WEBGL_PACK_BINARY_OPERATIONS') ?
         new BinaryOpPackedProgram(binaryop_packed_gpu.MIN, a.shape, b.shape) :
         new BinaryOpProgram(binaryop_gpu.MIN, a.shape, b.shape);
-    const customSetup = program.getCustomSetupFunc();
-    return this.compileAndRun(program, [a, b], null, customSetup);
+    return this.compileAndRun(program, [a, b]);
   }
 
   mod(a: Tensor, b: Tensor): Tensor {
     const program = ENV.get('WEBGL_PACK_BINARY_OPERATIONS') ?
         new BinaryOpPackedProgram(binaryop_packed_gpu.MOD, a.shape, b.shape) :
         new BinaryOpProgram(binaryop_gpu.MOD, a.shape, b.shape);
-    const customSetup = program.getCustomSetupFunc();
-    return this.compileAndRun(program, [a, b], null, customSetup);
+    return this.compileAndRun(program, [a, b]);
   }
 
   max(x: Tensor, axes: number[]): Tensor {
@@ -1323,8 +1321,7 @@ export class MathBackendWebGL implements KernelBackend {
     const program = ENV.get('WEBGL_PACK_BINARY_OPERATIONS') ?
         new BinaryOpPackedProgram(binaryop_packed_gpu.MAX, a.shape, b.shape) :
         new BinaryOpProgram(binaryop_gpu.MAX, a.shape, b.shape);
-    const customSetup = program.getCustomSetupFunc();
-    return this.compileAndRun(program, [a, b], null, customSetup);
+    return this.compileAndRun(program, [a, b]);
   }
 
   all(x: Tensor, axes: number[]): Tensor {
@@ -1480,8 +1477,7 @@ export class MathBackendWebGL implements KernelBackend {
     const output = usePackedOp ?
         this.makePackedTensor(program.outputShape, dtype) as T :
         this.makeOutputArray(program.outputShape, dtype) as T;
-    const customSetup = program.getCustomSetupFunc();
-    return this.compileAndRun<T>(program, [a, b], output, customSetup);
+    return this.compileAndRun<T>(program, [a, b], output);
   }
 
   ceil<T extends Tensor>(x: T): T {
@@ -1496,6 +1492,34 @@ export class MathBackendWebGL implements KernelBackend {
 
   sign<T extends Tensor>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.SIGN);
+    return this.compileAndRun(program, [x]) as T;
+  }
+
+  isNaN<T extends Tensor>(x: T): T {
+    let program: UnaryOpProgram|UnaryOpPackedProgram;
+    if (ENV.get('WEBGL_PACK')) {
+      program = new UnaryOpPackedProgram(x.shape, unary_packed_op.IS_NAN);
+    } else {
+      program = new UnaryOpProgram(x.shape, unary_op.IS_NAN);
+    }
+    return this.compileAndRun(program, [x]) as T;
+  }
+  isInf<T extends Tensor>(x: T): T {
+    let program: UnaryOpProgram|UnaryOpPackedProgram;
+    if (ENV.get('WEBGL_PACK')) {
+      program = new UnaryOpPackedProgram(x.shape, unary_packed_op.IS_INF);
+    } else {
+      program = new UnaryOpProgram(x.shape, unary_op.IS_INF);
+    }
+    return this.compileAndRun(program, [x]) as T;
+  }
+  isFinite<T extends Tensor>(x: T): T {
+    let program: UnaryOpProgram|UnaryOpPackedProgram;
+    if (ENV.get('WEBGL_PACK')) {
+      program = new UnaryOpPackedProgram(x.shape, unary_packed_op.IS_FINITE);
+    } else {
+      program = new UnaryOpProgram(x.shape, unary_op.IS_FINITE);
+    }
     return this.compileAndRun(program, [x]) as T;
   }
 
@@ -1526,8 +1550,7 @@ export class MathBackendWebGL implements KernelBackend {
     } else {
       program = new UnaryOpProgram(x.shape, unary_op.LOG);
     }
-    const customSetup = program.getCustomSetupFunc();
-    return this.compileAndRun(program, [x], null, customSetup) as T;
+    return this.compileAndRun(program, [x]) as T;
   }
 
   log1p<T extends Tensor>(x: T): T {
@@ -1672,8 +1695,7 @@ export class MathBackendWebGL implements KernelBackend {
     const program = ENV.get('WEBGL_PACK_BINARY_OPERATIONS') ?
         new BinaryOpPackedProgram(binaryop_packed_gpu.ATAN2, a.shape, b.shape) :
         new BinaryOpProgram(binaryop_gpu.ATAN2, a.shape, b.shape);
-    const customSetup = program.getCustomSetupFunc();
-    return this.compileAndRun(program, [a, b], null, customSetup) as T;
+    return this.compileAndRun(program, [a, b]) as T;
   }
 
   sinh<T extends Tensor>(x: T): T {
@@ -1698,14 +1720,12 @@ export class MathBackendWebGL implements KernelBackend {
 
   acosh<T extends Tensor>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.ACOSH);
-    const customSetup = program.getCustomSetupFunc();
-    return this.compileAndRun(program, [x], null, customSetup) as T;
+    return this.compileAndRun(program, [x]) as T;
   }
 
   atanh<T extends Tensor>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.ATANH);
-    const customSetup = program.getCustomSetupFunc();
-    return this.compileAndRun(program, [x], null, customSetup) as T;
+    return this.compileAndRun(program, [x]) as T;
   }
 
   erf<T extends Tensor>(x: T): T {
