@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+import {ENV} from '../../environment';
 import {Tensor} from '../../tensor';
 import {TypedArray} from '../../types';
 import * as util from '../../util';
@@ -84,6 +85,7 @@ export function compileProgram<T extends Tensor, K extends Tensor>(
   const webGLProgram = gpgpu.createProgram(source);
 
   const uniformLocations: {[name: string]: WebGLUniformLocation} = {};
+  // Add user-defined uniforms
   for (let i = 0; i < program.variableNames.length; i++) {
     const varName = program.variableNames[i];
     const shouldThrow = false;
@@ -153,6 +155,22 @@ export function runProgram<T extends Tensor, K extends Tensor>(
     gpgpu.setOutputMatrixTexture(outTex, outTexShape[0], outTexShape[1]);
   }
   gpgpu.setProgram(binary.webGLProgram);
+
+  // Set special uniforms (NAN, INFINITY)
+  if (ENV.get('WEBGL_VERSION') !== 2) {
+    const infLoc =
+        gpgpu.getUniformLocation(binary.webGLProgram, 'INFINITY', false);
+    if (infLoc !== null) {
+      gpgpu.gl.uniform1f(infLoc, Infinity);
+    }
+
+    const nanLoc = gpgpu.getUniformLocation(binary.webGLProgram, 'NAN', false);
+    if (nanLoc !== null) {
+      gpgpu.gl.uniform1f(nanLoc, NaN);
+    }
+  }
+
+  // Set user-defined inputs
   inputs.forEach((input, i) => {
     const varName = binary.program.variableNames[i];
     const varLoc = binary.uniformLocations[varName];
