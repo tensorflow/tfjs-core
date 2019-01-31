@@ -27,13 +27,13 @@ const WEBGL_ATTRIBUTES: WebGLContextAttributes = {
   failIfMajorPerformanceCaveat: true
 };
 
+export function setWebGLContext(
+    webGLVersion: number, gl: WebGLRenderingContext) {
+  contexts[webGLVersion] = gl;
+}
+
 export function getWebGLContext(webGLVersion: number): WebGLRenderingContext {
   if (!(webGLVersion in contexts)) {
-    const canvas = document.createElement('canvas');
-    canvas.addEventListener('webglcontextlost', ev => {
-      ev.preventDefault();
-      delete contexts[webGLVersion];
-    }, false);
     contexts[webGLVersion] = getWebGLRenderingContext(webGLVersion);
   }
   const gl = contexts[webGLVersion];
@@ -61,6 +61,10 @@ function getWebGLRenderingContext(webGLVersion: number): WebGLRenderingContext {
   }
 
   const canvas = document.createElement('canvas');
+  canvas.addEventListener('webglcontextlost', ev => {
+    ev.preventDefault();
+    delete contexts[webGLVersion];
+  }, false);
   if (webGLVersion === 1) {
     return (canvas.getContext('webgl', WEBGL_ATTRIBUTES) ||
             canvas.getContext('experimental-webgl', WEBGL_ATTRIBUTES)) as
