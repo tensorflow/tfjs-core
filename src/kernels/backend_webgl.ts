@@ -435,11 +435,14 @@ export class MathBackendWebGL implements KernelBackend {
         {size: number};
     tmpTarget.size = sizeFromShape(shape);
     this.texData.get(tmpTarget.dataId).usage = TextureUsage.DOWNLOAD;
-    const program = new EncodeFloatProgram(shape);
-    const pageToCpu = false;
-    this.compileAndRun(
-        program, [{shape, dtype, dataId}], tmpTarget, null, pageToCpu);
-    const tmpData = this.texData.get(tmpTarget.dataId);
+    const output = tidy(() => {
+      const program = new EncodeFloatProgram(shape);
+      const pageToCpu = false;
+
+      return this.compileAndRun(
+          program, [{shape, dtype, dataId}], tmpTarget, null, pageToCpu);
+    });
+    const tmpData = this.texData.get(output.dataId);
     const vals =
         this.gpgpu
             .downloadByteEncodedFloatMatrixFromOutputTexture(
@@ -1984,7 +1987,7 @@ export class MathBackendWebGL implements KernelBackend {
 
   private makePackedTensor<T extends Tensor, D extends DataType = 'float32'>(
       shape: number[], dtype?: D): T {
-    const packedTensor = Tensor.make(shape, {}, dtype);
+    const packedTensor = Tensor.make(shape, {}, dtype, this);
     this.texData.get(packedTensor.dataId).isPacked = true;
     return packedTensor as T;
   }
