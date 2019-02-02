@@ -16,7 +16,8 @@
  */
 
 import {Conv2DInfo, Conv3DInfo} from '../ops/conv_util';
-import {DataId, Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D} from '../tensor';
+import {Activation} from '../ops/fused_util';
+import {Backend, DataId, Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D} from '../tensor';
 import {DataType, DataValues, Rank, ShapeMap} from '../types';
 
 // Required information for all backends.
@@ -83,7 +84,7 @@ export interface BackendTimer {
  * methods, this can be done gradually (throw an error for unimplemented
  * methods).
  */
-export class KernelBackend implements TensorStorage, BackendTimer {
+export class KernelBackend implements TensorStorage, Backend, BackendTimer {
   time(f: () => void): Promise<BackendTimingInfo> {
     throw new Error('Not yet implemented.');
   }
@@ -118,6 +119,12 @@ export class KernelBackend implements TensorStorage, BackendTimer {
   batchMatMul(
       a: Tensor3D, b: Tensor3D, transposeA: boolean,
       transposeB: boolean): Tensor3D {
+    throw new Error('Not yet implemented');
+  }
+
+  fusedBatchMatMul(
+      a: Tensor3D, b: Tensor3D, transposeA: boolean, transposeB: boolean,
+      bias?: Tensor, activation?: Activation): Tensor3D {
     throw new Error('Not yet implemented');
   }
 
@@ -296,7 +303,6 @@ export class KernelBackend implements TensorStorage, BackendTimer {
   reciprocal<T extends Tensor>(x: T): T {
     throw new Error('Not yet implemented');
   }
-
   relu<T extends Tensor>(x: T): T {
     throw new Error('Not yet implemented');
   }

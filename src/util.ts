@@ -441,7 +441,7 @@ export function isNumber(value: {}): boolean {
 }
 
 export function inferDtype(values: TensorLike): DataType {
-  if (values instanceof Array) {
+  if (Array.isArray(values)) {
     return inferDtype(values[0]);
   }
   if (values instanceof Float32Array) {
@@ -518,6 +518,42 @@ export function toTypedArray(
   }
 }
 
+function createNestedArray(offset: number, shape: number[], a: TypedArray) {
+  const ret = new Array();
+  if (shape.length === 1) {
+    const d = shape[0];
+    for (let i = 0; i < d; i++) {
+      ret[i] = a[offset + i];
+    }
+  } else {
+    const d = shape[0];
+    const rest = shape.slice(1);
+    const len = rest.reduce((acc, c) => acc * c);
+    for (let i = 0; i < d; i++) {
+      ret[i] = createNestedArray(offset + i * len, rest, a);
+    }
+  }
+  return ret;
+}
+
+// Provide a nested array of TypedArray in given shape.
+export function toNestedArray(shape: number[], a: TypedArray) {
+  if (shape.length === 0) {
+    // Scalar type should be empty list.
+    return [];
+  }
+  const size = shape.reduce((acc, c) => acc * c);
+  if (size === 0) {
+    // A tensor with shape zero should be turned into empty list.
+    return [];
+  }
+  if (size !== a.length) {
+    throw new Error(`[${shape}] does not match the input size.`);
+  }
+
+  return createNestedArray(0, shape, a);
+}
+
 function noConversionNeeded(a: TensorLike, dtype: DataType): boolean {
   return (
       (a instanceof Float32Array && dtype === 'float32') ||
@@ -567,15 +603,13 @@ export function now(): number {
 /**
  * Monitor Promise.all progress, fire onProgress callback function.
  *
- * @param {Array<Promise<D | Function | {} | void>>} promises,
- *    Promise list going to be monitored
- * @param {Function} onProgress, callback function.
- *    Fired when a promise resolved.
- * @param {number} startFraction, Optional fraction start. Default to 0.
- * @param {number} endFraction, Optional fraction end. Default to 1.
+ * @param promises Promise list going to be monitored
+ * @param onProgress Callback function. Fired when a promise resolved.
+ * @param startFraction Optional fraction start. Default to 0.
+ * @param endFraction Optional fraction end. Default to 1.
  */
-export function monitorPromisesProgress<D extends DataType>(
-    promises: Array<Promise<D|Function|{}|void>>, onProgress: Function,
+export function monitorPromisesProgress(
+    promises: Array<Promise<{}|void>>, onProgress: Function,
     startFraction?: number, endFraction?: number) {
   checkPromises(promises);
   startFraction = startFraction == null ? 0 : startFraction;
@@ -583,10 +617,10 @@ export function monitorPromisesProgress<D extends DataType>(
   checkFraction(startFraction, endFraction);
   let resolvedPromise = 0;
 
-  function registerMonitor(promise: Promise<D|Function|{}|void>) {
-    promise.then((value: D|Function|{}|void) => {
+  function registerMonitor(promise: Promise<{}>) {
+    promise.then(value => {
       const fraction = startFraction +
-          (++resolvedPromise / promises.length) * (endFraction - startFraction);
+          ++resolvedPromise / promises.length * (endFraction - startFraction);
       // pass fraction as parameter to callback function.
       onProgress(fraction);
       return value;
@@ -594,7 +628,7 @@ export function monitorPromisesProgress<D extends DataType>(
     return promise;
   }
 
-  function checkPromises(promises: Array<Promise<D|Function|{}|void>>): void {
+  function checkPromises(promises: Array<Promise<{}|void>>): void {
     assert(
         promises != null && Array.isArray(promises) && promises.length > 0,
         'promises must be a none empty array');
