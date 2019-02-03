@@ -30,6 +30,8 @@ function test () {
   echo 'Cloning layers'
   git clone https://github.com/tensorflow/tfjs-layers.git --depth 5
   cd tfjs-layers
+  # Checkout the release branch
+  git checkout 0.10.x
   yarn && yarn link-local '@tensorflow/tfjs-core' && ./scripts/test-travis.sh
   LAYERS_EXIT_CODE=$?
 
@@ -44,6 +46,8 @@ function test () {
   echo 'Cloning converter'
   git clone https://github.com/tensorflow/tfjs-converter.git --depth 5
   cd tfjs-converter
+  # Checkout the release branch
+  git checkout 0.8.x
   yarn && yarn link-local '@tensorflow/tfjs-core'
   yarn build && yarn lint && yarn test-travis
   CONVERTER_EXIT_CODE=$?
