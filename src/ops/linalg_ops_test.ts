@@ -244,12 +244,12 @@ describeWithFlags('qr', ALL_ENVS, () => {
 
 for( const ENV of [CPU_ENVS, WEBGL_ENVS] )
 {
-  describeWithFlags('bandPart', ALL_ENVS, () => {
-    const la = tf.linalg;
+  const expectArrayEq = Object.is(ENV, CPU_ENVS)
+    ? expectArraysEqual
+    : expectArraysClose;
 
-    const expectArrayEq = Object.is(ENV, CPU_ENVS)
-      ? expectArraysEqual
-      : expectArraysClose;
+  describeWithFlags('bandPart', ENV, () => {
+    const la = tf.linalg;
 
     it('works for 3x4 example', () => {
       const a = tf.tensor2d([[1, 2, 3, 4],
