@@ -75,8 +75,9 @@ function test () {
 
 readarray -t files_changed <<< "$(git diff --name-only $TRAVIS_COMMIT_RANGE)"
 
-for file in "${files_changed[@]}"
 test
+for file in "${files_changed[@]}"
 do
   if [ "$file" = "src/version.ts" ]; then test; break; fi
 done
+
