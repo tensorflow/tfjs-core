@@ -60,7 +60,8 @@ export const POW = `
   vec4 result = multiplier * pow(abs(a), b);
 
   vec4 isNaN = vec4(lessThan(a, vec4(0.0))) * vec4(lessThan(floor(b), b));
-  ` + CHECK_NAN_SNIPPET + `
+  ` +
+    CHECK_NAN_SNIPPET + `
   return result;
 `;
 
@@ -77,7 +78,8 @@ export const ELU_DER = `
 export const ATAN2 = `
   vec4 result = atan(a, b);
   vec4 isNaN = isNaN(result);
-  `+ CHECK_NAN_SNIPPET +`
+  ` +
+    CHECK_NAN_SNIPPET + `
   return result;
 `;
 
@@ -116,21 +118,24 @@ export const LOGICAL_OR = `
 export const MAX = `
   vec4 result = max(a, b);
   vec4 isNaN = isNaN(result);
-  `+ CHECK_NAN_SNIPPET +`
+  ` +
+    CHECK_NAN_SNIPPET + `
   return result;
 `;
 
 export const MIN = `
   vec4 result = min(a, b);
   vec4 isNaN = isNaN(result);
-  `+ CHECK_NAN_SNIPPET +`
+  ` +
+    CHECK_NAN_SNIPPET + `
   return result;
 `;
 
 export const MOD = `
   vec4 result = mod(a, b);
   vec4 isNaN = vec4(equal(b, vec4(0.0)));
-  ` + CHECK_NAN_SNIPPET + `
+  ` +
+    CHECK_NAN_SNIPPET + `
   return result;
 `;
 
