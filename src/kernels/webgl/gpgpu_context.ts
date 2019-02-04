@@ -29,7 +29,6 @@ export interface FenceContext {
   isFencePassed(): boolean;
 }
 
-
 export class GPGPUContext {
   gl: WebGLRenderingContext;
   textureFloatExtension: {};
