@@ -281,7 +281,10 @@ describeWithFlags('ModelManagement', CHROME_ENVS, () => {
         .catch(err => done.fail(err.stack));
   });
 
-  it('Successful moveModel between mediums', done => {
+  // TODO(cais): Reenable this test once we fix
+  // https://github.com/tensorflow/tfjs/issues/1198
+  // tslint:disable-next-line:ban
+  xit('Successful moveModel between mediums', done => {
     const url1 = 'localstorage://a1/FooModel';
     const url2 = 'indexeddb://a1/FooModel';
     // First, save a model.
