@@ -90,7 +90,10 @@ describeWithFlags('ModelManagement', CHROME_ENVS, () => {
     });
   });
 
-  it('List models: 0 result', done => {
+  // TODO(cais): Reenable this test once we fix
+  // https://github.com/tensorflow/tfjs/issues/1198
+  // tslint:disable-next-line:ban
+  xit('List models: 0 result', done => {
     // Before any model is saved, listModels should return empty result.
     tf.io.listModels()
         .then(out => {
