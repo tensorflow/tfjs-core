@@ -51,7 +51,8 @@ import * as binaryop_complex_gpu from './webgl/binaryop_complex_gpu';
 import {BinaryOpComplexProgram} from './webgl/binaryop_complex_gpu';
 import * as binaryop_gpu from './webgl/binaryop_gpu';
 import {BinaryOpProgram} from './webgl/binaryop_gpu';
-import {BinaryOpPackedProgram, PACKED_DIV, PACKED_INT_DIV, PACKED_POW, PACKED_PRELU, PACKED_ELU_DER, PACKED_ATAN2} from './webgl/binaryop_packed_gpu';
+import * as binaryop_packed_gpu from './webgl/binaryop_packed_gpu';
+import {BinaryOpPackedProgram} from './webgl/binaryop_packed_gpu';
 import {ClipProgram} from './webgl/clip_gpu';
 import {ClipPackedProgram} from './webgl/clip_packed_gpu';
 import {ComplexAbsProgram} from './webgl/complex_abs_gpu';
@@ -1291,7 +1292,7 @@ export class MathBackendWebGL implements KernelBackend {
     const op = binaryop_gpu.DIV;
     const outputDtype = 'float32';
     if (ENV.get('WEBGL_PACK_BINARY_OPERATIONS')) {
-      return this.packedBinaryOp(a, b, PACKED_DIV, outputDtype);
+      return this.packedBinaryOp(a, b, binaryop_packed_gpu.PACKED_DIV, outputDtype);
     }
     const program = new BinaryOpProgram(op, a.shape, b.shape);
     const output = this.makeOutputArray(program.outputShape, outputDtype);
@@ -1302,7 +1303,7 @@ export class MathBackendWebGL implements KernelBackend {
     const op = binaryop_gpu.INT_DIV;
     const outputDtype = 'int32';
     if (ENV.get('WEBGL_PACK_BINARY_OPERATIONS')) {
-      return this.packedBinaryOp(a, b, PACKED_INT_DIV, outputDtype);
+      return this.packedBinaryOp(a, b, binaryop_packed_gpu.PACKED_INT_DIV, outputDtype);
     }
     const program = new BinaryOpProgram(op, a.shape, b.shape);
     const output = this.makeOutputArray(program.outputShape, outputDtype);
@@ -1389,6 +1390,7 @@ export class MathBackendWebGL implements KernelBackend {
     }
     const dtype = upcastType(a.dtype, b.dtype);
     if (ENV.get('WEBGL_PACK_BINARY_OPERATIONS')) {
+
       return this.packedBinaryOp(a, b, binaryop_gpu.SUB, a.dtype);
     }
     const program = new BinaryOpProgram(binaryop_gpu.SUB, a.shape, b.shape);
@@ -1399,7 +1401,7 @@ export class MathBackendWebGL implements KernelBackend {
   pow<T extends Tensor>(a: T, b: Tensor): T {
     const usePackedOp = ENV.get('WEBGL_PACK_BINARY_OPERATIONS');
     const program = usePackedOp ?
-        new BinaryOpPackedProgram(PACKED_POW, a.shape, b.shape) :
+        new BinaryOpPackedProgram(binaryop_packed_gpu.PACKED_POW, a.shape, b.shape) :
         new BinaryOpProgram(binaryop_gpu.POW, a.shape, b.shape);
     const dtype = upcastType(a.dtype, b.dtype);
     const output = usePackedOp ?
@@ -1491,7 +1493,7 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   prelu<T extends Tensor>(x: T, alpha: T): T {
-    const program = ENV.get('WEBGL_PACK_BINARY_OPERATIONS') ? new BinaryOpPackedProgram(PACKED_PRELU, x.shape, alpha.shape) : new BinaryOpProgram(binaryop_gpu.PRELU, x.shape, alpha.shape);
+    const program = ENV.get('WEBGL_PACK_BINARY_OPERATIONS') ? new BinaryOpPackedProgram(binaryop_packed_gpu.PACKED_PRELU, x.shape, alpha.shape) : new BinaryOpProgram(binaryop_gpu.PRELU, x.shape, alpha.shape);
     return this.compileAndRun(program, [x, alpha]) as T;
   }
 
@@ -1501,7 +1503,7 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   eluDer<T extends Tensor>(dy: T, y: T): T {
-    const program = ENV.get('WEBGL_PACK_BINARY_OPERATIONS') ? new BinaryOpPackedProgram(PACKED_ELU_DER, dy.shape, y.shape) : new BinaryOpProgram(binaryop_gpu.ELU_DER, dy.shape, y.shape);
+    const program = ENV.get('WEBGL_PACK_BINARY_OPERATIONS') ? new BinaryOpPackedProgram(binaryop_packed_gpu.PACKED_ELU_DER, dy.shape, y.shape) : new BinaryOpProgram(binaryop_gpu.ELU_DER, dy.shape, y.shape);
     return this.compileAndRun(program, [dy, y]) as T;
   }
 
@@ -1585,7 +1587,7 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   atan2<T extends Tensor>(a: T, b: T): T {
-    const program = ENV.get('WEBGL_PACK_BINARY_OPERATIONS') ? new BinaryOpPackedProgram(PACKED_ATAN2, a.shape, b.shape) : new BinaryOpProgram(binaryop_gpu.ATAN2, a.shape, b.shape);
+    const program = ENV.get('WEBGL_PACK_BINARY_OPERATIONS') ? new BinaryOpPackedProgram(binaryop_packed_gpu.PACKED_ATAN2, a.shape, b.shape) : new BinaryOpProgram(binaryop_gpu.ATAN2, a.shape, b.shape);
     return this.compileAndRun(program, [a, b]) as T;
   }
 
