@@ -108,11 +108,15 @@ export const GREATER_EQUAL = `
 `;
 
 export const LOGICAL_AND = `
-  return vec4(all(greaterThanEqual(a, vec4(1.0)), greaterThanEqual(b, vec4(1.0))));
+  return vec4(all(
+    greaterThanEqual(a, vec4(1.0)),
+    greaterThanEqual(b, vec4(1.0))));
 `;
 
 export const LOGICAL_OR = `
-  return vec4(any(greaterThanEqual(a, vec4(1.0)), greaterThanEqual(b, vec4(1.0))));
+  return vec4(any(
+    greaterThanEqual(a, vec4(1.0)),
+    greaterThanEqual(b, vec4(1.0))));
 `;
 
 export const MAX = `
