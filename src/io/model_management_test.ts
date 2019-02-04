@@ -90,10 +90,7 @@ describeWithFlags('ModelManagement', CHROME_ENVS, () => {
     });
   });
 
-  // TODO(cais): Reenable this test once we fix
-  // https://github.com/tensorflow/tfjs/issues/1198
-  // tslint:disable-next-line:ban
-  xit('List models: 0 result', done => {
+  it('List models: 0 result', done => {
     // Before any model is saved, listModels should return empty result.
     tf.io.listModels()
         .then(out => {
@@ -103,10 +100,7 @@ describeWithFlags('ModelManagement', CHROME_ENVS, () => {
         .catch(err => done.fail(err.stack));
   });
 
-  // TODO(cais): Reenable this test once we fix
-  // https://github.com/tensorflow/tfjs/issues/1198
-  // tslint:disable-next-line:ban
-  xit('List models: 1 result', done => {
+  it('List models: 1 result', done => {
     const url = 'localstorage://baz/QuxModel';
     const handler = tf.io.getSaveHandlers(url)[0];
     handler.save(artifacts1)
@@ -182,10 +176,7 @@ describeWithFlags('ModelManagement', CHROME_ENVS, () => {
         .catch(err => done.fail(err.stack));
   });
 
-  // TODO(cais): Reenable this test once we fix
-  // https://github.com/tensorflow/tfjs/issues/1198
-  // tslint:disable-next-line:ban
-  xit('Successful removeModel', done => {
+  it('Successful removeModel', done => {
     // First, save a model.
     const handler1 = tf.io.getSaveHandlers('localstorage://QuxModel')[0];
     handler1.save(artifacts1)
