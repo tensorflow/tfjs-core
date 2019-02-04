@@ -51,7 +51,7 @@ import * as binaryop_complex_gpu from './webgl/binaryop_complex_gpu';
 import {BinaryOpComplexProgram} from './webgl/binaryop_complex_gpu';
 import * as binaryop_gpu from './webgl/binaryop_gpu';
 import {BinaryOpProgram} from './webgl/binaryop_gpu';
-import {BinaryOpPackedProgram, PACKED_DIV, PACKED_INT_DIV, PACKED_POW, PACKED_PRELU, PACKED_ELU_DER} from './webgl/binaryop_packed_gpu';
+import {BinaryOpPackedProgram, PACKED_DIV, PACKED_INT_DIV, PACKED_POW, PACKED_PRELU, PACKED_ELU_DER, PACKED_ATAN2} from './webgl/binaryop_packed_gpu';
 import {ClipProgram} from './webgl/clip_gpu';
 import {ClipPackedProgram} from './webgl/clip_packed_gpu';
 import {ComplexAbsProgram} from './webgl/complex_abs_gpu';
@@ -1585,7 +1585,7 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   atan2<T extends Tensor>(a: T, b: T): T {
-    const program = new BinaryOpProgram(binaryop_gpu.ATAN2, a.shape, b.shape);
+    const program = ENV.get('WEBGL_PACK_BINARY_OPERATIONS') ? new BinaryOpPackedProgram(PACKED_ATAN2, a.shape, b.shape) : new BinaryOpProgram(binaryop_gpu.ATAN2, a.shape, b.shape);
     return this.compileAndRun(program, [a, b]) as T;
   }
 

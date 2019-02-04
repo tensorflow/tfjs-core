@@ -74,6 +74,13 @@ export const PACKED_ELU_DER = `
   return (bGTEZero * a) + ((vec4(1.0) - bGTEZero) * (a * (b + vec4(1.0))));
 `;
 
+export const PACKED_ATAN2 = `
+  vec4 result = atan(a, b);
+  vec4 isNaN = isNaN(result);
+  `+ CHECK_NAN_SNIPPET +`
+  return result;
+`;
+
 export class BinaryOpPackedProgram implements GPGPUProgram {
   variableNames = ['A', 'B'];
   outputShape: number[];
