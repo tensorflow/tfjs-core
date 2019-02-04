@@ -28,8 +28,8 @@ import {IORouter, IORouterRegistry} from './router_registry';
 import {IOHandler, ModelArtifacts, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
 import {loadWeightsAsArrayBuffer} from './weights_loader';
 
-const OCTET_STREAM_TYPE = 'application/octet-stream';
-const JSON_TYPE = 'application/json';
+const OCTET_STREAM_MIME_TYPE = 'application/octet-stream';
+const JSON_MIME_TYPE = 'application/json';
 
 export class BrowserHTTPRequest implements IOHandler {
   protected readonly path: string|string[];
@@ -112,13 +112,13 @@ export class BrowserHTTPRequest implements IOHandler {
         'model.json',
         new Blob(
             [JSON.stringify(modelTopologyAndWeightManifest)],
-            {type: JSON_TYPE}),
+            {type: JSON_MIME_TYPE}),
         'model.json');
 
     if (modelArtifacts.weightData != null) {
       init.body.append(
           'model.weights.bin',
-          new Blob([modelArtifacts.weightData], {type: OCTET_STREAM_TYPE}),
+          new Blob([modelArtifacts.weightData], {type: OCTET_STREAM_MIME_TYPE}),
           'model.weights.bin');
     }
 
@@ -154,7 +154,7 @@ export class BrowserHTTPRequest implements IOHandler {
    */
   private async loadBinaryTopology(): Promise<ArrayBuffer> {
     const response = await this.getFetchFunc()(
-        this.path[0], this.addAcceptHeader(OCTET_STREAM_TYPE));
+        this.path[0], this.addAcceptHeader(OCTET_STREAM_MIME_TYPE));
 
     if (!response.ok) {
       throw new Error(`Request to ${this.path[0]} failed with error: ${
@@ -175,7 +175,7 @@ export class BrowserHTTPRequest implements IOHandler {
   protected async loadBinaryModel(): Promise<ModelArtifacts> {
     const graphPromise = this.loadBinaryTopology();
     const manifestPromise = await this.getFetchFunc()(
-        this.path[1], this.addAcceptHeader(JSON_TYPE));
+        this.path[1], this.addAcceptHeader(JSON_MIME_TYPE));
     if (!manifestPromise.ok) {
       throw new Error(`Request to ${this.path[1]} failed with error: ${
           manifestPromise.statusText}`);
@@ -199,7 +199,7 @@ export class BrowserHTTPRequest implements IOHandler {
 
   protected async loadJSONModel(): Promise<ModelArtifacts> {
     const modelConfigRequest = await this.getFetchFunc()(
-        this.path as string, this.addAcceptHeader(JSON_TYPE));
+        this.path as string, this.addAcceptHeader(JSON_MIME_TYPE));
 
     if (!modelConfigRequest.ok) {
       throw new Error(`Request to ${this.path} failed with error: ${
