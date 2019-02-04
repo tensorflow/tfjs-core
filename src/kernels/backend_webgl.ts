@@ -51,7 +51,7 @@ import * as binaryop_complex_gpu from './webgl/binaryop_complex_gpu';
 import {BinaryOpComplexProgram} from './webgl/binaryop_complex_gpu';
 import * as binaryop_gpu from './webgl/binaryop_gpu';
 import {BinaryOpProgram} from './webgl/binaryop_gpu';
-import {BinaryOpPackedProgram, PACKED_DIV, PACKED_INT_DIV, PACKED_POW} from './webgl/binaryop_packed_gpu';
+import {BinaryOpPackedProgram, PACKED_DIV, PACKED_INT_DIV, PACKED_POW, PACKED_PRELU, PACKED_ELU_DER} from './webgl/binaryop_packed_gpu';
 import {ClipProgram} from './webgl/clip_gpu';
 import {ClipPackedProgram} from './webgl/clip_packed_gpu';
 import {ComplexAbsProgram} from './webgl/complex_abs_gpu';
@@ -1491,8 +1491,7 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   prelu<T extends Tensor>(x: T, alpha: T): T {
-    const program =
-        new BinaryOpProgram(binaryop_gpu.PRELU, x.shape, alpha.shape);
+    const program = ENV.get('WEBGL_PACK_BINARY_OPERATIONS') ? new BinaryOpPackedProgram(PACKED_PRELU, x.shape, alpha.shape) : new BinaryOpProgram(binaryop_gpu.PRELU, x.shape, alpha.shape);
     return this.compileAndRun(program, [x, alpha]) as T;
   }
 
@@ -1502,8 +1501,7 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   eluDer<T extends Tensor>(dy: T, y: T): T {
-    const program =
-        new BinaryOpProgram(binaryop_gpu.ELU_DER, dy.shape, y.shape);
+    const program = ENV.get('WEBGL_PACK_BINARY_OPERATIONS') ? new BinaryOpPackedProgram(PACKED_ELU_DER, dy.shape, y.shape) : new BinaryOpProgram(binaryop_gpu.ELU_DER, dy.shape, y.shape);
     return this.compileAndRun(program, [dy, y]) as T;
   }
 

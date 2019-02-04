@@ -19,6 +19,13 @@ import * as broadcast_util from '../../ops/broadcast_util';
 import {GPGPUContext} from './gpgpu_context';
 import {GPGPUProgram} from './gpgpu_math';
 
+const CHECK_NAN_SNIPPET = `
+  result.x = isNaN.x == 1.0 ? NAN : result.x;
+  result.g = isNaN.g == 1.0 ? NAN : result.g;
+  result.b = isNaN.b == 1.0 ? NAN : result.b;
+  result.a = isNaN.a == 1.0 ? NAN : result.a;
+`;
+
 // We do the same as in ./binaryop_gpu, with vec4 and ivec4.
 // On Linux, the vectorized implementation produces NaNs when a and b are 0.
 export const PACKED_DIV = `
@@ -53,12 +60,18 @@ export const PACKED_POW = `
   vec4 result = multiplier * pow(abs(a), b);
 
   vec4 isNaN = vec4(lessThan(a, vec4(0.0))) * vec4(lessThan(floor(b), b));
-  result.r = isNaN.r == 1.0 ? NAN : result.r;
-  result.g = isNaN.g == 1.0 ? NAN : result.g;
-  result.b = isNaN.b == 1.0 ? NAN : result.b;
-  result.a = isNaN.a == 1.0 ? NAN : result.a;
-
+  ` + CHECK_NAN_SNIPPET + `
   return result;
+`;
+
+export const PACKED_PRELU = `
+  vec4 aLessThanZero = vec4(lessThan(a, vec4(0.)));
+  return (aLessThanZero * (b * a)) + ((vec4(1.0) - aLessThanZero) * a);
+`;
+
+export const PACKED_ELU_DER = `
+  vec4 bGTEZero = vec4(greaterThanEqual(b, vec4(0.)));
+  return (bGTEZero * a) + ((vec4(1.0) - bGTEZero) * (a * (b + vec4(1.0))));
 `;
 
 export class BinaryOpPackedProgram implements GPGPUProgram {
