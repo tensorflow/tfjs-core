@@ -26,7 +26,6 @@ type RequestHeader = {
 };
 
 const OCTET_STREAM_TYPE = 'application/octet-stream';
-const CONTENT_TYPE = 'Content-type';
 /**
  * Reads binary weights data from a number of URLs.
  *
@@ -63,19 +62,6 @@ export async function loadWeightsAsArrayBuffer(
       await util.monitorPromisesProgress(
           requests, onProgress, fetchStartFraction, fetchEndFraction);
 
-  const badContentType = responses.filter(response => {
-    const contentType = response.headers.get(CONTENT_TYPE);
-    return !contentType || contentType.indexOf(OCTET_STREAM_TYPE) === -1;
-  });
-  if (badContentType.length > 0) {
-    throw new Error(
-        badContentType
-            .map(
-                resp => `Request to ${resp.url} for weight file failed.` +
-                    ` Expected content type ${OCTET_STREAM_TYPE} but got ${
-                            resp.headers.get(CONTENT_TYPE)}.`)
-            .join('\n'));
-  }
   const bufferPromises = responses.map(response => response.arrayBuffer());
 
   const bufferStartFraction = 0.5;
