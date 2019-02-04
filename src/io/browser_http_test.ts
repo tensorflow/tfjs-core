@@ -156,10 +156,6 @@ describeWithFlags('browserHTTPRequest-load fetch', NODE_ENVS, () => {
     expect(modelArtifacts.modelTopology).toEqual(modelTopology1);
     expect(modelArtifacts.weightSpecs).toEqual(weightManifest1[0].weights);
     expect(new Float32Array(modelArtifacts.weightData)).toEqual(floatData);
-    expect(requestInits['./model.json'].headers['Accept'])
-        .toEqual('application/json');
-    expect(requestInits['./weightfile0'].headers['Accept'])
-        .toEqual('application/octet-stream');
   });
 
   it('throw exception if no fetch polyfill', () => {
@@ -487,10 +483,6 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
       expect(modelArtifacts.weightSpecs).toEqual(weightManifest1[0].weights);
       expect(new Float32Array(modelArtifacts.weightData)).toEqual(floatData);
       expect(Object.keys(requestInits).length).toEqual(2);
-      expect(requestInits['./model.json'].headers['Accept'])
-          .toEqual('application/json');
-      expect(requestInits['./weightfile0'].headers['Accept'])
-          .toEqual('application/octet-stream');
       // Assert that fetch is invoked with `window` as the context.
       expect(windowFetchSpy.calls.mostRecent().object).toEqual(window);
     });
@@ -533,10 +525,6 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
       expect(modelArtifacts.weightSpecs).toEqual(weightManifest1[0].weights);
       expect(new Float32Array(modelArtifacts.weightData)).toEqual(floatData);
       expect(Object.keys(requestInits).length).toEqual(2);
-      expect(requestInits['./model.json'].headers['Accept'])
-          .toEqual('application/json');
-      expect(requestInits['./weightfile0'].headers['Accept'])
-          .toEqual('application/octet-stream');
       expect(Object.keys(requestInits).length).toEqual(2);
       expect(requestInits['./model.json'].headers['header_key_1'])
           .toEqual('header_value_1');
@@ -833,12 +821,6 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
             expect(new Float32Array(modelArtifacts.weightData))
                 .toEqual(floatData);
             expect(Object.keys(requestInits).length).toEqual(3);
-            expect(requestInits['./model.pb'].headers['Accept'])
-                .toEqual('application/octet-stream');
-            expect(requestInits['./weights_manifest.json'].headers['Accept'])
-                .toEqual('application/json');
-            expect(requestInits['./weightfile0'].headers['Accept'])
-                .toEqual('application/octet-stream');
             done();
           })
           .catch(err => done.fail(err.stack));
@@ -883,13 +865,6 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
       expect(modelArtifacts.weightSpecs).toEqual(weightManifest1[0].weights);
       expect(new Float32Array(modelArtifacts.weightData)).toEqual(floatData);
       expect(Object.keys(requestInits).length).toEqual(3);
-      expect(requestInits['./model.pb?tfjs-format=file'].headers['Accept'])
-          .toEqual('application/octet-stream');
-      expect(requestInits['./weights_manifest.json?tfjs-format=file']
-                 .headers['Accept'])
-          .toEqual('application/json');
-      expect(requestInits['./weightfile0?tfjs-format=file'].headers['Accept'])
-          .toEqual('application/octet-stream');
     });
 
     it('1 group, 2 weights, 1 path, with requestInit', async () => {
@@ -931,16 +906,10 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
       expect(modelArtifacts.weightSpecs).toEqual(weightManifest1[0].weights);
       expect(new Float32Array(modelArtifacts.weightData)).toEqual(floatData);
       expect(Object.keys(requestInits).length).toEqual(3);
-      expect(requestInits['./model.pb'].headers['Accept'])
-          .toEqual('application/octet-stream');
       expect(requestInits['./model.pb'].headers['header_key_1'])
           .toEqual('header_value_1');
-      expect(requestInits['./weights_manifest.json'].headers['Accept'])
-          .toEqual('application/json');
       expect(requestInits['./weights_manifest.json'].headers['header_key_1'])
           .toEqual('header_value_1');
-      expect(requestInits['./weightfile0'].headers['Accept'])
-          .toEqual('application/octet-stream');
       expect(requestInits['./weightfile0'].headers['header_key_1'])
           .toEqual('header_value_1');
     });

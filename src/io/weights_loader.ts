@@ -21,11 +21,6 @@ import * as util from '../util';
 import {decodeWeights} from './io_utils';
 import {DTYPE_VALUE_SIZE_MAP, WeightsManifestConfig, WeightsManifestEntry} from './types';
 
-type RequestHeader = {
-  [key: string]: string
-};
-
-const OCTET_STREAM_MIME_TYPE = 'application/octet-stream';
 /**
  * Reads binary weights data from a number of URLs.
  *
@@ -43,12 +38,6 @@ export async function loadWeightsAsArrayBuffer(
   if (fetchFunc == null) {
     fetchFunc = fetch;
   }
-
-  // Add accept header
-  requestOptions = requestOptions || {};
-  const headers = (requestOptions.headers || {}) as RequestHeader;
-  headers['Accept'] = OCTET_STREAM_MIME_TYPE;
-  requestOptions.headers = headers;
 
   // Create the requests for all of the weights in parallel.
   const requests =

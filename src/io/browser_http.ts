@@ -29,7 +29,7 @@ import {IOHandler, ModelArtifacts, SaveResult, WeightsManifestConfig, WeightsMan
 import {loadWeightsAsArrayBuffer} from './weights_loader';
 
 const OCTET_STREAM_MIME_TYPE = 'application/octet-stream';
-const JSON_MIME_TYPE = 'application/json';
+const JSON_TYPE = 'application/json';
 
 export class BrowserHTTPRequest implements IOHandler {
   protected readonly path: string|string[];
@@ -112,7 +112,7 @@ export class BrowserHTTPRequest implements IOHandler {
         'model.json',
         new Blob(
             [JSON.stringify(modelTopologyAndWeightManifest)],
-            {type: JSON_MIME_TYPE}),
+            {type: JSON_TYPE}),
         'model.json');
 
     if (modelArtifacts.weightData != null) {
@@ -153,8 +153,7 @@ export class BrowserHTTPRequest implements IOHandler {
    * Loads the model topology file and build the in memory graph of the model.
    */
   private async loadBinaryTopology(): Promise<ArrayBuffer> {
-    const response = await this.getFetchFunc()(
-        this.path[0], this.addAcceptHeader(OCTET_STREAM_MIME_TYPE));
+    const response = await this.getFetchFunc()(this.path[0], this.requestInit);
 
     if (!response.ok) {
       throw new Error(`Request to ${this.path[0]} failed with error: ${
@@ -163,19 +162,10 @@ export class BrowserHTTPRequest implements IOHandler {
     return await response.arrayBuffer();
   }
 
-  private addAcceptHeader(mimeType: string): RequestInit {
-    const requestOptions = Object.assign({}, this.requestInit || {});
-    const headers = Object.assign({}, requestOptions.headers || {});
-    // tslint:disable-next-line:no-any
-    (headers as any)['Accept'] = mimeType;
-    requestOptions.headers = headers;
-    return requestOptions;
-  }
-
   protected async loadBinaryModel(): Promise<ModelArtifacts> {
     const graphPromise = this.loadBinaryTopology();
-    const manifestPromise = await this.getFetchFunc()(
-        this.path[1], this.addAcceptHeader(JSON_MIME_TYPE));
+    const manifestPromise =
+        await this.getFetchFunc()(this.path[1], this.requestInit);
     if (!manifestPromise.ok) {
       throw new Error(`Request to ${this.path[1]} failed with error: ${
           manifestPromise.statusText}`);
@@ -198,8 +188,8 @@ export class BrowserHTTPRequest implements IOHandler {
   }
 
   protected async loadJSONModel(): Promise<ModelArtifacts> {
-    const modelConfigRequest = await this.getFetchFunc()(
-        this.path as string, this.addAcceptHeader(JSON_MIME_TYPE));
+    const modelConfigRequest =
+        await this.getFetchFunc()(this.path as string, this.requestInit);
 
     if (!modelConfigRequest.ok) {
       throw new Error(`Request to ${this.path} failed with error: ${
