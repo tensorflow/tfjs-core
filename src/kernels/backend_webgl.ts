@@ -1137,12 +1137,18 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   equal(a: Tensor, b: Tensor): Tensor {
+    if(ENV.get('WEBGL_PACK_BINARY_OPERATIONS')) {
+      return this.packedBinaryOp(a, b, binaryop_packed_gpu.EQUAL, 'bool');
+    }
     const program = new BinaryOpProgram(binaryop_gpu.EQUAL, a.shape, b.shape);
     const output = this.makeOutputArray(program.outputShape, 'bool');
     return this.compileAndRun(program, [a, b], output);
   }
 
   notEqual(a: Tensor, b: Tensor): Tensor {
+    if(ENV.get('WEBGL_PACK_BINARY_OPERATIONS')) {
+      return this.packedBinaryOp(a, b, binaryop_packed_gpu.NOT_EQUAL, 'bool');
+    }
     const program =
         new BinaryOpProgram(binaryop_gpu.NOT_EQUAL, a.shape, b.shape);
     const output = this.makeOutputArray(program.outputShape, 'bool');
@@ -1154,12 +1160,19 @@ export class MathBackendWebGL implements KernelBackend {
       return this.cpuBackend.less(a, b);
     }
 
+    if(ENV.get('WEBGL_PACK_BINARY_OPERATIONS')) {
+      return this.packedBinaryOp(a, b, binaryop_packed_gpu.LESS, 'bool');
+    }
+
     const program = new BinaryOpProgram(binaryop_gpu.LESS, a.shape, b.shape);
     const output = this.makeOutputArray(program.outputShape, 'bool');
     return this.compileAndRun(program, [a, b], output);
   }
 
   lessEqual(a: Tensor, b: Tensor): Tensor {
+    if(ENV.get('WEBGL_PACK_BINARY_OPERATIONS')) {
+      return this.packedBinaryOp(a, b, binaryop_packed_gpu.LESS_EQUAL, 'bool');
+    }
     const program =
         new BinaryOpProgram(binaryop_gpu.LESS_EQUAL, a.shape, b.shape);
     const output = this.makeOutputArray(program.outputShape, 'bool');
@@ -1171,12 +1184,19 @@ export class MathBackendWebGL implements KernelBackend {
       return this.cpuBackend.greater(a, b);
     }
 
+    if(ENV.get('WEBGL_PACK_BINARY_OPERATIONS')) {
+      return this.packedBinaryOp(a, b, binaryop_packed_gpu.GREATER, 'bool'):
+    }
+
     const program = new BinaryOpProgram(binaryop_gpu.GREATER, a.shape, b.shape);
     const output = this.makeOutputArray(program.outputShape, 'bool');
     return this.compileAndRun(program, [a, b], output);
   }
 
   greaterEqual(a: Tensor, b: Tensor): Tensor {
+    if(ENV.get('WEBGL_PACK_BINARY_OPERATIONS')) {
+      return this.packedBinaryOp(a, b, binaryop_packed_gpu.GREATER_EQUAL, 'bool');
+    }
     const program =
         new BinaryOpProgram(binaryop_gpu.GREATER_EQUAL, a.shape, b.shape);
     const output = this.makeOutputArray(program.outputShape, 'bool');
@@ -1189,6 +1209,9 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   logicalAnd(a: Tensor, b: Tensor): Tensor {
+    if(ENV.get('WEBGL_PACK_BINARY_OPERATIONS')) {
+      return this.packedBinaryOp(a, b, binaryop_packed_gpu.LOGICAL_AND, 'bool');
+    }
     const program =
         new BinaryOpProgram(binaryop_gpu.LOGICAL_AND, a.shape, b.shape);
     const output = this.makeOutputArray(program.outputShape, 'bool');
@@ -1196,6 +1219,9 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   logicalOr(a: Tensor, b: Tensor): Tensor {
+    if(ENV.get('WEBGL_PACK_BINARY_OPERATIONS')) {
+      return this.packedBinaryOp(a, b, binaryop_packed_gpu.LOGICAL_OR, 'bool');
+    }
     const program =
         new BinaryOpProgram(binaryop_gpu.LOGICAL_OR, a.shape, b.shape);
     const output = this.makeOutputArray(program.outputShape, 'bool');
@@ -1236,12 +1262,12 @@ export class MathBackendWebGL implements KernelBackend {
       return this.cpuBackend.minimum(a, b);
     }
 
-    const program = new BinaryOpProgram(binaryop_gpu.MIN, a.shape, b.shape);
+    const program = ENV.get('WEBGL_PACK_BINARY_OPERATIONS') ? new BinaryOpPackedProgram(binaryop_packed_gpu.MIN, a.shape, b.shape) : new BinaryOpProgram(binaryop_gpu.MIN, a.shape, b.shape);
     return this.compileAndRun(program, [a, b]);
   }
 
   mod(a: Tensor, b: Tensor): Tensor {
-    const program = new BinaryOpProgram(binaryop_gpu.MOD, a.shape, b.shape);
+    const program = ENV.get('WEBGL_PACK_BINARY_OPERATIONS') ? new BinaryOpPackedProgram(binaryop_packed_gpu.MOD, a.shape, b.shape) : new BinaryOpProgram(binaryop_gpu.MOD, a.shape, b.shape);
     const customSetup = program.getCustomSetupFunc();
     return this.compileAndRun(program, [a, b], null, customSetup);
   }
@@ -1260,7 +1286,7 @@ export class MathBackendWebGL implements KernelBackend {
       return this.cpuBackend.maximum(a, b);
     }
 
-    const program = new BinaryOpProgram(binaryop_gpu.MAX, a.shape, b.shape);
+    const program = ENV.get('WEBGL_PACK_BINARY_OPERATIONS') ? new BinaryOpPackedProgram(binaryop_packed_gpu.MAX, a.shape, b.shape) : new BinaryOpProgram(binaryop_gpu.MAX, a.shape, b.shape);
     return this.compileAndRun(program, [a, b]);
   }
 
