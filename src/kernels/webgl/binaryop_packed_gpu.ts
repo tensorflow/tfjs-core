@@ -28,7 +28,7 @@ const CHECK_NAN_SNIPPET = `
 
 // We do the same as in ./binaryop_gpu, with vec4 and ivec4.
 // On Linux, the vectorized implementation produces NaNs when a and b are 0.
-export const PACKED_DIV = `
+export const DIV = `
   // vec4 one = vec4(equal(a, b));
   // return one + (vec4(1.0) - one) * a / b;
   vec4 result = a / b;
@@ -39,7 +39,7 @@ export const PACKED_DIV = `
   return result;
 `;
 
-export const PACKED_INT_DIV = `
+export const INT_DIV = `
   vec4 resultSign = sign(a) * sign(b);
   ivec4 ia = round(a);
   ivec4 ib = round(b);
@@ -53,7 +53,7 @@ export const PACKED_INT_DIV = `
      ivec4(lessThan(resultSign, vec4(0.0))) * ivec4(notEqual(amodb, ivec4(0))));
 `;
 
-export const PACKED_POW = `
+export const POW = `
   // isModRound1 has 1 for components with round(mod(b, 2.0)) == 1, 0 otherwise.
   vec4 isModRound1 = vec4(equal(round(mod(b, 2.0)), ivec4(1)));
   vec4 multiplier = sign(a) * isModRound1 + (vec4(1.0) - isModRound1);
@@ -64,17 +64,17 @@ export const PACKED_POW = `
   return result;
 `;
 
-export const PACKED_PRELU = `
+export const PRELU = `
   vec4 aLessThanZero = vec4(lessThan(a, vec4(0.)));
   return (aLessThanZero * (b * a)) + ((vec4(1.0) - aLessThanZero) * a);
 `;
 
-export const PACKED_ELU_DER = `
+export const ELU_DER = `
   vec4 bGTEZero = vec4(greaterThanEqual(b, vec4(0.)));
   return (bGTEZero * a) + ((vec4(1.0) - bGTEZero) * (a * (b + vec4(1.0))));
 `;
 
-export const PACKED_ATAN2 = `
+export const ATAN2 = `
   vec4 result = atan(a, b);
   vec4 isNaN = isNaN(result);
   `+ CHECK_NAN_SNIPPET +`
