@@ -81,6 +81,59 @@ export const ATAN2 = `
   return result;
 `;
 
+export const EQUAL = `
+  return vec4(equal(a, b));
+`;
+
+export const NOT_EQUAL = `
+  return vec4(notEqual(a, b));
+`;
+
+export const LESS = `
+  return vec4(lessThan(a, b));
+`;
+
+export const LESS_EQUAL = `
+  return vec4(lessThanEqual(a, b));
+`;
+
+export const GREATER = `
+  return vec4(greaterThan(a, b));
+`;
+
+export const GREATER_EQUAL = `
+  return vec4(greaterThanEqual(a, b));
+`;
+
+export const LOGICAL_AND = `
+  return vec4(all(greaterThanEqual(a, vec4(1.0)), greaterThanEqual(b, vec4(1.0))));
+`;
+
+export const LOGICAL_OR = `
+  return vec4(any(greaterThanEqual(a, vec4(1.0)), greaterThanEqual(b, vec4(1.0))));
+`;
+
+export const MAX = `
+  vec4 result = max(a, b);
+  vec4 isNaN = isNaN(result);
+  `+ CHECK_NAN_SNIPPET +`
+  return result;
+`;
+
+export const MIN = `
+  vec4 result = min(a, b);
+  vec4 isNaN = isNaN(result);
+  `+ CHECK_NAN_SNIPPET +`
+  return result;
+`;
+
+export const MOD = `
+  vec4 result = mod(a, b);
+  vec4 isNaN = vec4(equal(b, vec4(0.0)));
+  ` + CHECK_NAN_SNIPPET + `
+  return result;
+`;
+
 export class BinaryOpPackedProgram implements GPGPUProgram {
   variableNames = ['A', 'B'];
   outputShape: number[];

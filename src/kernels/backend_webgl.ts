@@ -1390,7 +1390,6 @@ export class MathBackendWebGL implements KernelBackend {
     }
     const dtype = upcastType(a.dtype, b.dtype);
     if (ENV.get('WEBGL_PACK_BINARY_OPERATIONS')) {
-
       return this.packedBinaryOp(a, b, binaryop_gpu.SUB, a.dtype);
     }
     const program = new BinaryOpProgram(binaryop_gpu.SUB, a.shape, b.shape);
