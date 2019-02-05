@@ -1313,12 +1313,11 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   add(a: Tensor, b: Tensor): Tensor {
-    const shouldPack = ENV.get('WEBGL_PACK_BINARY_OPERATIONS');
     if (a.dtype === 'complex64' && b.dtype === 'complex64') {
-      return this.complexSeparableBinaryOp(a, b, binaryop_gpu.ADD, shouldPack);
+      return this.complexSeparableBinaryOp(a, b, binaryop_gpu.ADD);
     }
     const dtype = upcastType(a.dtype, b.dtype);
-    if (shouldPack) {
+    if (ENV.get('WEBGL_PACK_BINARY_OPERATIONS')) {
       return this.packedBinaryOp(a, b, binaryop_gpu.ADD, dtype);
     }
     const program = new BinaryOpProgram(binaryop_gpu.ADD, a.shape, b.shape);
@@ -1337,8 +1336,7 @@ export class MathBackendWebGL implements KernelBackend {
    * Computes a complex binary operation that can be decomposed into a simple
    * binary operation on both the real and imagary parts.
    */
-  private complexSeparableBinaryOp(
-      a: Tensor, b: Tensor, op: string, isPacked: boolean): Tensor {
+  private complexSeparableBinaryOp(a: Tensor, b: Tensor, op: string): Tensor {
     const aData = this.texData.get(a.dataId);
     const bData = this.texData.get(b.dataId);
 
@@ -1350,11 +1348,6 @@ export class MathBackendWebGL implements KernelBackend {
 
       const aHandle = this.makeComplexComponentTensorHandle(a, aPart);
       const bHandle = this.makeComplexComponentTensorHandle(b, bPart);
-
-      if (isPacked) {
-        return this.packedBinaryOp(
-            aHandle, bHandle, op, upcastType(aPart.dtype, bPart.dtype));
-      }
 
       const program = new BinaryOpProgram(op, a.shape, b.shape);
       const output = this.makeOutputArray(
@@ -1391,16 +1384,15 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   subtract(a: Tensor, b: Tensor): Tensor {
-    const shouldPack = ENV.get('WEBGL_PACK_BINARY_OPERATIONS');
     if (a.dtype === 'complex64' && b.dtype === 'complex64') {
-      return this.complexSeparableBinaryOp(a, b, binaryop_gpu.SUB, shouldPack);
+      return this.complexSeparableBinaryOp(a, b, binaryop_gpu.SUB);
     }
 
     if (this.shouldExecuteOnCPU([a, b])) {
       return this.cpuBackend.subtract(a, b);
     }
     const dtype = upcastType(a.dtype, b.dtype);
-    if (shouldPack) {
+    if (ENV.get('WEBGL_PACK_BINARY_OPERATIONS')) {
       return this.packedBinaryOp(a, b, binaryop_gpu.SUB, a.dtype);
     }
     const program = new BinaryOpProgram(binaryop_gpu.SUB, a.shape, b.shape);
