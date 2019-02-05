@@ -1249,7 +1249,7 @@ describeWithFlags('fromPixels, mock canvas', NODE_ENVS, () => {
   it('accepts a canvas-like element', () => {
     const c = new MockCanvas(2, 2);
     // tslint:disable-next-line:no-any
-    const t = tf.fromPixels(c as any);
+    const t = tf.browser.fromPixels(c as any);
     expect(t.dtype).toBe('int32');
     expect(t.shape).toEqual([2, 2, 3]);
     tf.test_util.expectArraysEqual(
@@ -1259,7 +1259,7 @@ describeWithFlags('fromPixels, mock canvas', NODE_ENVS, () => {
   it('accepts a canvas-like element, numChannels=4', () => {
     const c = new MockCanvas(2, 2);
     // tslint:disable-next-line:no-any
-    const t = tf.fromPixels(c as any, 4);
+    const t = tf.browser.fromPixels(c as any, 4);
     expect(t.dtype).toBe('int32');
     expect(t.shape).toEqual([2, 2, 4]);
     tf.test_util.expectArraysEqual(
@@ -1268,7 +1268,7 @@ describeWithFlags('fromPixels, mock canvas', NODE_ENVS, () => {
 
   it('errors when passed a non-canvas object', () => {
     // tslint:disable-next-line:no-any
-    expect(() => tf.fromPixels(5 as any)).toThrowError();
+    expect(() => tf.browser.fromPixels(5 as any)).toThrowError();
   });
 });
 
@@ -1280,7 +1280,7 @@ describeWithFlags('fromPixels', BROWSER_ENVS, () => {
     pixels.data[2] = 160;
     pixels.data[3] = 240;
 
-    const array = tf.fromPixels(pixels, 3);
+    const array = tf.browser.fromPixels(pixels, 3);
 
     expectArraysEqual(array, [0, 80, 160]);
   });
@@ -1292,7 +1292,7 @@ describeWithFlags('fromPixels', BROWSER_ENVS, () => {
     pixels.data[2] = 160;
     pixels.data[3] = 240;
 
-    const array = tf.fromPixels(pixels, 4);
+    const array = tf.browser.fromPixels(pixels, 4);
 
     expectArraysEqual(array, [0, 80, 160, 240]);
   });
@@ -1307,7 +1307,7 @@ describeWithFlags('fromPixels', BROWSER_ENVS, () => {
       pixels.data[i] = i * 2;
     }
 
-    const array = tf.fromPixels(pixels, 3);
+    const array = tf.browser.fromPixels(pixels, 3);
 
     expectArraysEqual(array, [0, 2, 4, 8, 10, 12, 16, 18, 20, 24, 26, 28]);
   });
@@ -1321,7 +1321,7 @@ describeWithFlags('fromPixels', BROWSER_ENVS, () => {
       pixels.data[i] = i * 2;
     }
 
-    const array = tf.fromPixels(pixels, 4);
+    const array = tf.browser.fromPixels(pixels, 4);
 
     expectArraysClose(
         array,
@@ -1339,7 +1339,7 @@ describeWithFlags('fromPixels', BROWSER_ENVS, () => {
     pixels.data[5] = 6;
     pixels.data[6] = 7;
     pixels.data[7] = 255;  // Not used.
-    const res = tf.fromPixels(pixels, 3);
+    const res = tf.browser.fromPixels(pixels, 3);
     expect(res.shape).toEqual([2, 1, 3]);
     expect(res.dtype).toBe('int32');
     expectArraysClose(res, [2, 3, 4, 5, 6, 7]);
@@ -1351,7 +1351,7 @@ describeWithFlags('fromPixels', BROWSER_ENVS, () => {
     pixels.data[1] = 3;
     pixels.data[2] = 4;
     pixels.data[3] = 255;  // Not used.
-    const a = tf.fromPixels(pixels, 3).reshape([1, 1, 1, 3]);
+    const a = tf.browser.fromPixels(pixels, 3).reshape([1, 1, 1, 3]);
     const res = a.add(tf.scalar(2, 'int32'));
     expect(res.shape).toEqual([1, 1, 1, 3]);
     expect(res.dtype).toBe('int32');
@@ -1369,8 +1369,8 @@ describeWithFlags('fromPixels', BROWSER_ENVS, () => {
     pixelsB.data[1] = 6;
     pixelsB.data[2] = 7;
     pixelsB.data[3] = 255;  // Not used.
-    const a = tf.fromPixels(pixelsA, 3).toFloat();
-    const b = tf.fromPixels(pixelsB, 3).toFloat();
+    const a = tf.browser.fromPixels(pixelsA, 3).toFloat();
+    const b = tf.browser.fromPixels(pixelsB, 3).toFloat();
     const res = a.add(b);
     expect(res.shape).toEqual([1, 1, 3]);
     expect(res.dtype).toBe('float32');
@@ -1379,14 +1379,14 @@ describeWithFlags('fromPixels', BROWSER_ENVS, () => {
 
   it('throws when passed a primitive number', () => {
     // tslint:disable-next-line:no-any
-    expect(() => tf.fromPixels(3 as any))
-        .toThrowError(/pixels passed to tf.fromPixels\(\) must be either/);
+    expect(() => tf.browser.fromPixels(3 as any))
+        .toThrowError(/pixels passed to tf.browser.fromPixels\(\) must be either/);
   });
 
   it('throws when passed a string', () => {
     // tslint:disable-next-line:no-any
-    expect(() => tf.fromPixels('test' as any))
-        .toThrowError(/pixels passed to tf.fromPixels\(\) must be either/);
+    expect(() => tf.browser.fromPixels('test' as any))
+        .toThrowError(/pixels passed to tf.browser.fromPixels\(\) must be either/);
   });
 });
 

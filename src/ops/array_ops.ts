@@ -20,7 +20,9 @@ import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../t
 import {convertToTensor, convertToTensorArray} from '../tensor_util_env';
 import {DataType, DataTypeMap, Rank, ShapeMap, TensorLike, TensorLike4D} from '../types';
 import * as util from '../util';
+
 import {getAxesPermutation, getInnerMostAxes} from './axis_util';
+import {fromPixels as browserFromPixels} from './browser';
 import {concat} from './concat_split';
 import {op} from './operation';
 import {MPRandGauss} from './rand';
@@ -306,17 +308,7 @@ function oneHot_(
 }
 
 /**
- * Creates a `tf.Tensor` from an image.
- *
- * ```js
- * const image = new ImageData(1, 1);
- * image.data[0] = 100;
- * image.data[1] = 150;
- * image.data[2] = 200;
- * image.data[3] = 255;
- *
- * tf.fromPixels(image).print();
- * ```
+ * Deprecated. Use `tf.browser.fromPixels`.
  *
  * @param pixels The input image to construct the tensor from. The
  * supported image types are all 4-channel.
@@ -328,11 +320,7 @@ function oneHot_(
 function fromPixels_(
     pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
     numChannels = 3): Tensor3D {
-  if (numChannels > 4) {
-    throw new Error(
-        'Cannot construct Tensor with more than 4 channels from pixels.');
-  }
-  return ENV.engine.fromPixels(pixels, numChannels);
+  return browserFromPixels(pixels, numChannels);
 }
 
 /**
@@ -1210,7 +1198,7 @@ export const cumsum = op({cumsum_});
 export const depthToSpace = op({depthToSpace_});
 export const expandDims = op({expandDims_});
 export const eye = op({eye_});
-export const fromPixels = op({fromPixels_});
+export const fromPixels = fromPixels_;
 export const multinomial = op({multinomial_});
 export const oneHot = op({oneHot_});
 export const pad = op({pad_});

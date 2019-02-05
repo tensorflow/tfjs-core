@@ -27,6 +27,7 @@ import {enableProdMode, Environment} from './environment';
 // Serialization.
 import * as io from './io/io';
 import * as math from './math';
+import * as browser from './ops/browser';
 import * as serialization from './serialization';
 import {setOpHandler} from './tensor';
 import * as test_util from './test_util';
@@ -69,6 +70,7 @@ export {nextFrame};
 
 // Second level exports.
 export {
+  browser,
   environment,
   io,
   math,
