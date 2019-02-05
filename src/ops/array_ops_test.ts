@@ -1378,15 +1378,17 @@ describeWithFlags('fromPixels', BROWSER_ENVS, () => {
   });
 
   it('throws when passed a primitive number', () => {
+    const msg = /pixels passed to tf.browser.fromPixels\(\) must be either/;
     // tslint:disable-next-line:no-any
     expect(() => tf.browser.fromPixels(3 as any))
-        .toThrowError(/pixels passed to tf.browser.fromPixels\(\) must be either/);
+        .toThrowError(msg);
   });
 
   it('throws when passed a string', () => {
+    const msg = /pixels passed to tf.browser.fromPixels\(\) must be either/;
     // tslint:disable-next-line:no-any
     expect(() => tf.browser.fromPixels('test' as any))
-        .toThrowError(/pixels passed to tf.browser.fromPixels\(\) must be either/);
+        .toThrowError(msg);
   });
 });
 

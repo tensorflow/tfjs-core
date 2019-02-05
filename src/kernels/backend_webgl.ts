@@ -227,9 +227,10 @@ export class MathBackendWebGL implements KernelBackend {
         if (this.fromPixels2DContext == null) {
           if (document.readyState !== 'complete') {
             throw new Error(
-                'The DOM is not ready yet. Please call tf.browser.fromPixels() ' +
-                'once the DOM is ready. One way to do that is to add an ' +
-                'event listener for `DOMContentLoaded` on the document object');
+                'The DOM is not ready yet. Please call ' +
+                'tf.browser.fromPixels() once the DOM is ready. One way to ' +
+                'do that is to add an event listener for `DOMContentLoaded` ' +
+                'on the document object');
           }
           this.fromPixels2DContext =
               document.createElement('canvas').getContext('2d');
