@@ -1396,7 +1396,7 @@ describeWithFlags('toPixels no canvas', ALL_ENVS, () => {
   it('draws a rank-2 float32 tensor', async () => {
     const x = tf.tensor2d([.15, .2], [2, 1], 'float32');
 
-    const data = await tf.toPixels(x);
+    const data = await tf.browser.toPixels(x);
     const expected = new Uint8ClampedArray([
       Math.round(.15 * 255), Math.round(.15 * 255), Math.round(.15 * 255), 255,
       Math.round(.2 * 255), Math.round(.2 * 255), Math.round(.2 * 255), 255
@@ -1406,7 +1406,7 @@ describeWithFlags('toPixels no canvas', ALL_ENVS, () => {
 
   it('draws a rank-2 int32 tensor', async () => {
     const x = tf.tensor2d([10, 20], [2, 1], 'int32');
-    const data = await tf.toPixels(x);
+    const data = await tf.browser.toPixels(x);
     const expected = new Uint8ClampedArray([10, 10, 10, 255, 20, 20, 20, 255]);
     expect(data).toEqual(expected);
   });
@@ -1414,7 +1414,7 @@ describeWithFlags('toPixels no canvas', ALL_ENVS, () => {
   it('draws a rank-3 float32 tensor, 1 channel', async () => {
     const x = tf.tensor3d([.15, .2], [2, 1, 1], 'float32');
 
-    const data = await tf.toPixels(x);
+    const data = await tf.browser.toPixels(x);
     const expected = new Uint8ClampedArray([
       Math.round(.15 * 255), Math.round(.15 * 255), Math.round(.15 * 255), 255,
       Math.round(.2 * 255), Math.round(.2 * 255), Math.round(.2 * 255), 255
@@ -1425,7 +1425,7 @@ describeWithFlags('toPixels no canvas', ALL_ENVS, () => {
   it('draws a rank-3 int32 tensor, 1 channel', async () => {
     const x = tf.tensor3d([10, 20], [2, 1, 1], 'int32');
 
-    const data = await tf.toPixels(x);
+    const data = await tf.browser.toPixels(x);
     const expected = new Uint8ClampedArray([10, 10, 10, 255, 20, 20, 20, 255]);
     expect(data).toEqual(expected);
   });
@@ -1437,7 +1437,7 @@ describeWithFlags('toPixels no canvas', ALL_ENVS, () => {
     const x =
         tf.tensor3d([.05, .1001, .15, .2, .25, .3001], [2, 1, 3], 'float32');
 
-    const data = await tf.toPixels(x);
+    const data = await tf.browser.toPixels(x);
     const expected = new Uint8ClampedArray([
       Math.round(.05 * 255), Math.round(.1001 * 255), Math.round(.15 * 255),
       255, Math.round(.2 * 255), Math.round(.25 * 255), Math.round(.3001 * 255),
@@ -1449,7 +1449,7 @@ describeWithFlags('toPixels no canvas', ALL_ENVS, () => {
   it('draws a rank-3 int32 tensor, 3 channel', async () => {
     const x = tf.tensor3d([10, 20, 30, 40, 50, 60], [2, 1, 3], 'int32');
 
-    const data = await tf.toPixels(x);
+    const data = await tf.browser.toPixels(x);
     const expected = new Uint8ClampedArray([10, 20, 30, 255, 40, 50, 60, 255]);
     expect(data).toEqual(expected);
   });
@@ -1458,7 +1458,7 @@ describeWithFlags('toPixels no canvas', ALL_ENVS, () => {
     const x = tf.tensor3d(
         [.05, .1001, .15, .2, .25, .3001, .35, .4], [2, 1, 4], 'float32');
 
-    const data = await tf.toPixels(x);
+    const data = await tf.browser.toPixels(x);
     const expected = new Uint8ClampedArray([
       Math.round(.05 * 255), Math.round(.1001 * 255), Math.round(.15 * 255),
       Math.round(.20 * 255), Math.round(.25 * 255), Math.round(.3001 * 255),
@@ -1470,52 +1470,52 @@ describeWithFlags('toPixels no canvas', ALL_ENVS, () => {
   it('draws a rank-3 int32 tensor, 4 channel', async () => {
     const x = tf.tensor3d([10, 20, 30, 40, 50, 60, 70, 80], [2, 1, 4], 'int32');
 
-    const data = await tf.toPixels(x);
+    const data = await tf.browser.toPixels(x);
     const expected = new Uint8ClampedArray([10, 20, 30, 40, 50, 60, 70, 80]);
     expect(data).toEqual(expected);
   });
 
   it('throws for scalars', done => {
     // tslint:disable-next-line:no-any
-    expectPromiseToFail(() => tf.toPixels(tf.scalar(1) as any), done);
+    expectPromiseToFail(() => tf.browser.toPixels(tf.scalar(1) as any), done);
   });
 
   it('throws for rank-1 tensors', done => {
     // tslint:disable-next-line:no-any
-    expectPromiseToFail(() => tf.toPixels(tf.tensor1d([1]) as any), done);
+    expectPromiseToFail(() => tf.browser.toPixels(tf.tensor1d([1]) as any), done);
   });
   it('throws for rank-4 tensors', done => {
     expectPromiseToFail(
         // tslint:disable-next-line:no-any
-        () => tf.toPixels(tf.tensor4d([1], [1, 1, 1, 1]) as any), done);
+        () => tf.browser.toPixels(tf.tensor4d([1], [1, 1, 1, 1]) as any), done);
   });
   it('throws for bool dtype', done => {
     expectPromiseToFail(
-        () => tf.toPixels(tf.tensor2d([1], [1, 1], 'bool')), done);
+        () => tf.browser.toPixels(tf.tensor2d([1], [1, 1], 'bool')), done);
   });
   it('throws for rank-3 depth = 2', done => {
     expectPromiseToFail(
-        () => tf.toPixels(tf.tensor3d([1, 2], [1, 1, 2])), done);
+        () => tf.browser.toPixels(tf.tensor3d([1, 2], [1, 1, 2])), done);
   });
   it('throws for rank-3 depth = 5', done => {
     expectPromiseToFail(
-        () => tf.toPixels(tf.tensor3d([1, 2, 3, 4, 5], [1, 1, 5])), done);
+        () => tf.browser.toPixels(tf.tensor3d([1, 2, 3, 4, 5], [1, 1, 5])), done);
   });
   it('throws for float32 tensor with values not in [0 - 1]', done => {
-    expectPromiseToFail(() => tf.toPixels(tf.tensor2d([-1, .5], [1, 2])), done);
+    expectPromiseToFail(() => tf.browser.toPixels(tf.tensor2d([-1, .5], [1, 2])), done);
   });
   it('throws for int32 tensor with values not in [0 - 255]', done => {
     expectPromiseToFail(
-        () => tf.toPixels(tf.tensor2d([-1, 100], [1, 2], 'int32')), done);
+        () => tf.browser.toPixels(tf.tensor2d([-1, 100], [1, 2], 'int32')), done);
   });
   it('throws when passed a non-tensor', done => {
     // tslint:disable-next-line:no-any
-    expectPromiseToFail(() => tf.toPixels({} as any), done);
+    expectPromiseToFail(() => tf.browser.toPixels({} as any), done);
   });
 
   it('accepts a tensor-like object', async () => {
     const x = [[10], [20]];  // 2x1;
-    const data = await tf.toPixels(x);
+    const data = await tf.browser.toPixels(x);
 
     const expected = new Uint8ClampedArray([10, 10, 10, 255, 20, 20, 20, 255]);
     expect(data).toEqual(expected);
@@ -1527,7 +1527,7 @@ describeWithFlags('toPixels', WEBGL_ENVS, () => {
     const x = tf.tensor2d([.15, .2], [2, 1], 'float32');
     const canvas = document.createElement('canvas');
 
-    tf.toPixels(x, canvas).then(data => {
+    tf.browser.toPixels(x, canvas).then(data => {
       const expected = new Uint8ClampedArray([
         Math.round(.15 * 255), Math.round(.15 * 255), Math.round(.15 * 255),
         255, Math.round(.2 * 255), Math.round(.2 * 255), Math.round(.2 * 255),
@@ -1547,7 +1547,7 @@ describeWithFlags('toPixels', WEBGL_ENVS, () => {
     const x = tf.tensor2d([10, 20], [2, 1], 'int32');
     const canvas = document.createElement('canvas');
 
-    tf.toPixels(x, canvas).then(data => {
+    tf.browser.toPixels(x, canvas).then(data => {
       const expected =
           new Uint8ClampedArray([10, 10, 10, 255, 20, 20, 20, 255]);
       expect(data).toEqual(expected);
@@ -1564,7 +1564,7 @@ describeWithFlags('toPixels', WEBGL_ENVS, () => {
     const x = tf.tensor3d([.15, .2], [2, 1, 1], 'float32');
     const canvas = document.createElement('canvas');
 
-    tf.toPixels(x, canvas).then(data => {
+    tf.browser.toPixels(x, canvas).then(data => {
       const expected = new Uint8ClampedArray([
         Math.round(.15 * 255), Math.round(.15 * 255), Math.round(.15 * 255),
         255, Math.round(.2 * 255), Math.round(.2 * 255), Math.round(.2 * 255),
@@ -1584,7 +1584,7 @@ describeWithFlags('toPixels', WEBGL_ENVS, () => {
     const x = tf.tensor3d([10, 20], [2, 1, 1], 'int32');
     const canvas = document.createElement('canvas');
 
-    tf.toPixels(x, canvas).then(data => {
+    tf.browser.toPixels(x, canvas).then(data => {
       const expected =
           new Uint8ClampedArray([10, 10, 10, 255, 20, 20, 20, 255]);
       expect(data).toEqual(expected);
@@ -1602,7 +1602,7 @@ describeWithFlags('toPixels', WEBGL_ENVS, () => {
         tf.tensor3d([.05, .1001, .15, .20, .25, .3001], [2, 1, 3], 'float32');
     const canvas = document.createElement('canvas');
 
-    tf.toPixels(x, canvas).then(data => {
+    tf.browser.toPixels(x, canvas).then(data => {
       const expected = new Uint8ClampedArray([
         Math.round(.05 * 255), Math.round(.1001 * 255), Math.round(.15 * 255),
         255, Math.round(.2 * 255), Math.round(.25 * 255),
@@ -1622,7 +1622,7 @@ describeWithFlags('toPixels', WEBGL_ENVS, () => {
     const x = tf.tensor3d([10, 20, 30, 40, 50, 60], [2, 1, 3], 'int32');
     const canvas = document.createElement('canvas');
 
-    tf.toPixels(x, canvas).then(data => {
+    tf.browser.toPixels(x, canvas).then(data => {
       const expected =
           new Uint8ClampedArray([10, 20, 30, 255, 40, 50, 60, 255]);
       expect(data).toEqual(expected);
@@ -1642,7 +1642,7 @@ describeWithFlags('toPixels', WEBGL_ENVS, () => {
         [.05, .1001, .15, 1, .20, .25, .3001, 1], [2, 1, 4], 'float32');
     const canvas = document.createElement('canvas');
 
-    tf.toPixels(x, canvas).then(data => {
+    tf.browser.toPixels(x, canvas).then(data => {
       const expected = new Uint8ClampedArray([
         Math.round(.05 * 255), Math.round(.1001 * 255), Math.round(.15 * 255),
         255, Math.round(.20 * 255), Math.round(.25 * 255),
@@ -1666,7 +1666,7 @@ describeWithFlags('toPixels', WEBGL_ENVS, () => {
         tf.tensor3d([10, 20, 30, 255, 50, 60, 70, 255], [2, 1, 4], 'int32');
     const canvas = document.createElement('canvas');
 
-    tf.toPixels(x, canvas).then(data => {
+    tf.browser.toPixels(x, canvas).then(data => {
       const expected =
           new Uint8ClampedArray([10, 20, 30, 255, 50, 60, 70, 255]);
       expect(data).toEqual(expected);
@@ -1683,7 +1683,7 @@ describeWithFlags('toPixels', WEBGL_ENVS, () => {
     const x = [[127], [100]];  // 2x1;
     const canvas = document.createElement('canvas');
 
-    const data = await tf.toPixels(x, canvas);
+    const data = await tf.browser.toPixels(x, canvas);
     const expected =
         new Uint8ClampedArray([127, 127, 127, 255, 100, 100, 100, 255]);
     expect(data).toEqual(expected);
