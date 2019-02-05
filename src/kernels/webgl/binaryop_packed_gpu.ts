@@ -20,10 +20,10 @@ import {GPGPUContext} from './gpgpu_context';
 import {GPGPUProgram} from './gpgpu_math';
 
 const CHECK_NAN_SNIPPET = `
-  result.x = isNaN.x == 1.0 ? NAN : result.x;
-  result.g = isNaN.g == 1.0 ? NAN : result.g;
-  result.b = isNaN.b == 1.0 ? NAN : result.b;
-  result.a = isNaN.a == 1.0 ? NAN : result.a;
+  result.r = isNaN.r > 0. ? NAN : result.r;
+  result.g = isNaN.g > 0. ? NAN : result.g;
+  result.b = isNaN.b > 0. ? NAN : result.b;
+  result.a = isNaN.a > 0. ? NAN : result.a;
 `;
 
 // We do the same as in ./binaryop_gpu, with vec4 and ivec4.
@@ -77,7 +77,7 @@ export const ELU_DER = `
 
 export const ATAN2 = `
   vec4 result = atan(a, b);
-  vec4 isNaN = isNaN(result);
+  vec4 isNaN = min(vec4(isNaN(a)) + vec4(isNaN(b)), vec4(1.0));
   ` +
     CHECK_NAN_SNIPPET + `
   return result;
@@ -122,7 +122,7 @@ export const LOGICAL_OR = `
 
 export const MAX = `
   vec4 result = vec4(max(a, b));
-  vec4 isNaN = vec4(isNaN(result));
+  vec4 isNaN = min(vec4(isNaN(a)) + vec4(isNaN(b)), vec4(1.0));
   ` +
     CHECK_NAN_SNIPPET + `
   return result;
@@ -130,7 +130,7 @@ export const MAX = `
 
 export const MIN = `
   vec4 result = vec4(min(a, b));
-  vec4 isNaN = vec4(isNaN(result));
+  vec4 isNaN = min(vec4(isNaN(a)) + vec4(isNaN(b)), vec4(1.0));
   ` +
     CHECK_NAN_SNIPPET + `
   return result;
