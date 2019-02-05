@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {getWebGLContext} from '../../canvas_util';
+import {getWebGLContext, setWebGLContext} from '../../canvas_util';
 import {ENV} from '../../environment';
 import * as util from '../../util';
 import * as gpgpu_util from './gpgpu_util';
@@ -48,10 +48,12 @@ export class GPGPUContext {
   private textureConfig: TextureConfig;
 
   constructor(gl?: WebGLRenderingContext) {
+    const glVersion = ENV.get('WEBGL_VERSION');
     if (gl != null) {
       this.gl = gl;
+      setWebGLContext(glVersion, gl);
     } else {
-      this.gl = getWebGLContext(ENV.get('WEBGL_VERSION'));
+      this.gl = getWebGLContext(glVersion);
     }
     // WebGL 2.0 enables texture floats without an extension.
     if (ENV.get('WEBGL_VERSION') === 1) {
@@ -518,9 +520,8 @@ export class GPGPUContext {
   private itemsToPoll: PollItem[] = [];
 
   pollItems(): void {
-    // Find the last query that has finished using binary search.
-    // All other queries before it are also done.
-    const index = binSearchLastTrue(this.itemsToPoll.map(x => x.isDoneFn));
+    // Find the last query that has finished.
+    const index = linearSearchLastTrue(this.itemsToPoll.map(x => x.isDoneFn));
     for (let i = 0; i <= index; ++i) {
       const {resolveFn} = this.itemsToPoll[i];
       resolveFn();
@@ -614,22 +615,18 @@ type PollItem = {
 };
 
 /**
- * Finds the index of the last true element using binary search where
- * evaluation of an entry is expensive.
+ * Finds the index of the last true element using linear search.
+ * Note: We can't do binary search because Chrome expects us to explicitly
+ * test all fences before download:
+ * https://github.com/tensorflow/tfjs/issues/1145
  */
-export function binSearchLastTrue(arr: Array<() => boolean>): number {
-  let start = 0;
-  let end = arr.length - 1;
-  let best = -1;
-  while (start <= end) {
-    const mid = (start + end) >> 1;
-    const isDone = arr[mid]();
-    if (isDone) {
-      best = mid;
-      start = mid + 1;
-    } else {
-      end = mid - 1;
+export function linearSearchLastTrue(arr: Array<() => boolean>): number {
+  let i = 0;
+  for (; i < arr.length; ++i) {
+    const isDone = arr[i]();
+    if (!isDone) {
+      break;
     }
   }
-  return best;
+  return i - 1;
 }
