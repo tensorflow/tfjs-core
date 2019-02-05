@@ -242,7 +242,8 @@ describe('deprecation warnings', () => {
     tf.disableDeprecationWarnings();
     expect(console.warn).toHaveBeenCalledTimes(1);
     expect(console.warn)
-        .toHaveBeenCalledWith('Deprecation warnings have been disabled.');
+        .toHaveBeenCalledWith(
+            'TensorFlow.js deprecation warnings have been disabled.');
 
     // deprecationWarn no longer warns.
     deprecationWarn('xyz is deprecated.');

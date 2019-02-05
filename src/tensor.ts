@@ -362,7 +362,8 @@ let trackerFn: () => TensorTracker = null;
 let opHandler: OpHandler = null;
 // Used to warn about deprecated methods.
 let deprecationWarningFn: (msg: string) => void = null;
-// tslint:disable-next-line:no-unused-expression
+// This here so that we can use this method on dev branches and keep the
+// functionality at master. tslint:disable-next-line:no-unused-expression
 [deprecationWarningFn];
 
 /**
@@ -383,8 +384,8 @@ export function setOpHandler(handler: OpHandler) {
 }
 
 /**
- * An external consumer can register itself as the op handler. This way the
- * Tensor class can have chaining methods that call into ops via the op handler.
+ * Sets the deprecation warning function to be used by this file. This way the
+ * Tensor class can be a leaf but still use the environment.
  */
 export function setDeprecationWarningFn(fn: (msg: string) => void) {
   deprecationWarningFn = fn;

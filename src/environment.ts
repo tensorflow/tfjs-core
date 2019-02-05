@@ -503,7 +503,7 @@ export function enableProdMode(): void {
 /** Globally disables deprecation warnings */
 export function disableDeprecationWarnings(): void {
   ENV.set('DEPRECATION_WARNINGS_ENABLED', false);
-  console.warn(`Deprecation warnings have been disabled.`);
+  console.warn(`TensorFlow.js deprecation warnings have been disabled.`);
 }
 
 /** Warn users about deprecated functionality. */
