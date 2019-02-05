@@ -655,7 +655,7 @@ export class MathBackendWebGL implements KernelBackend {
 
   private shallowSlice(x: Tensor, begin: number[], size: number[]): Tensor {
     const xTexData = this.texData.get(x.dataId);
-    const t = Tensor.make(size, {}, xTexData.dtype);
+    const t = Tensor.make(size, {}, xTexData.dtype, this);
     const newTexData = this.texData.get(t.dataId);
     // Copy texture data from the original tensor.
     Object.assign(newTexData, xTexData);
@@ -1677,7 +1677,7 @@ export class MathBackendWebGL implements KernelBackend {
     const xReshaped =
         Tensor.make(
             [1, xShape[0] * xShape[1] * (xShape[2] + 1), convInfo.inChannels],
-            {dataId: x.dataId}, x.dtype) as Tensor3D;
+            {dataId: x.dataId}, x.dtype, this) as Tensor3D;
 
     xTexData.shape[xTexData.shape.length - 2]++;
     util.assert(
@@ -1700,7 +1700,7 @@ export class MathBackendWebGL implements KernelBackend {
     pointwiseConvTexData.shape = convInfo.outShape;
     return Tensor.make(
                convInfo.outShape, {dataId: pointwiseConv.dataId},
-               pointwiseConv.dtype) as Tensor4D;
+               pointwiseConv.dtype, this) as Tensor4D;
   }
 
   conv2dWithIm2Row(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
@@ -2063,7 +2063,7 @@ export class MathBackendWebGL implements KernelBackend {
 
   private makeOutputArray<T extends Tensor>(shape: number[], dtype: DataType):
       T {
-    return Tensor.make(shape, {}, dtype) as T;
+    return Tensor.make(shape, {}, dtype, this) as T;
   }
 
   private makePackedTensor<T extends Tensor, D extends DataType = 'float32'>(
@@ -2177,7 +2177,7 @@ export class MathBackendWebGL implements KernelBackend {
         const inputValues = (input as Tensor).dataSync();
         this.delayedStorage = true;
 
-        input = Tensor.make(input.shape, {values: inputValues}, input.dtype);
+        input = Tensor.make(input.shape, {values: inputValues}, input.dtype, this);
         texData = this.texData.get(input.dataId);
         texData.isPacked = true;
       }
