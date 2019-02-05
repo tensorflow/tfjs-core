@@ -16,7 +16,7 @@
  */
 
 import * as device_util from './device_util';
-import {ENV, Environment, EPSILON_FLOAT16, EPSILON_FLOAT32} from './environment';
+import {deprecationWarn, disableDeprecationWarnings, ENV, Environment, EPSILON_FLOAT16, EPSILON_FLOAT32} from './environment';
 import {BEFORE_PAGING_CONSTANT, Features, getQueryParams} from './environment_util';
 import * as tf from './index';
 import {describeWithFlags} from './jasmine_util';
@@ -216,5 +216,36 @@ describeWithFlags('WEBGL_SIZE_UPLOAD_UNIFORM', WEBGL_ENVS, () => {
     const env = new Environment();
     env.set('WEBGL_RENDER_FLOAT32_ENABLED', true);
     expect(env.get('WEBGL_SIZE_UPLOAD_UNIFORM')).toBeGreaterThan(0);
+  });
+});
+
+describe('deprecation warnings', () => {
+  let oldWarn: (msg: string) => void;
+  beforeEach(() => {
+    oldWarn = console.warn;
+    spyOn(console, 'warn').and.callFake((msg: string): void => null);
+  });
+  afterEach(() => {
+    console.warn = oldWarn;
+  });
+
+  it('deprecationWarn warns', () => {
+    deprecationWarn('xyz is deprecated');
+    expect(console.warn).toHaveBeenCalledTimes(1);
+    expect(console.warn)
+        .toHaveBeenCalledWith(
+            'xyz is deprecated. You can disable deprecation warnings with ' +
+            'tf.disableDeprecationWarnings().');
+  });
+
+  it('disableDeprecationWarnings called, deprecationWarn doesnt warn', () => {
+    disableDeprecationWarnings();
+    expect(console.warn).toHaveBeenCalledTimes(1);
+    expect(console.warn)
+        .toHaveBeenCalledWith('Deprecation warnings have been disabled.');
+
+    // deprecationWarn no longer warns.
+    deprecationWarn('xyz is deprecated');
+    expect(console.warn).toHaveBeenCalledTimes(1);
   });
 });

@@ -23,7 +23,7 @@ import './kernels/backend_cpu';
 
 import {nextFrame} from './browser_util';
 import * as environment from './environment';
-import {enableProdMode, Environment} from './environment';
+import {disableDeprecationWarnings, enableProdMode, Environment} from './environment';
 // Serialization.
 import * as io from './io/io';
 import * as math from './math';
@@ -76,7 +76,8 @@ export {
   test_util,
   util,
   webgl,
-  enableProdMode
+  enableProdMode,
+  disableDeprecationWarnings
 };
 
 // Backend specific.

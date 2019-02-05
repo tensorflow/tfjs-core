@@ -360,6 +360,10 @@ export interface OpHandler {
 let trackerFn: () => TensorTracker = null;
 // Used by chaining methods to call into ops.
 let opHandler: OpHandler = null;
+// Used to warn about deprecated methods.
+let deprecationWarningFn: (msg: string) => void = null;
+// tslint:disable-next-line:no-unused-expression
+[deprecationWarningFn];
 
 /**
  * An external consumer can register itself as the tensor tracker. This way
@@ -376,6 +380,14 @@ export function setTensorTracker(fn: () => TensorTracker) {
  */
 export function setOpHandler(handler: OpHandler) {
   opHandler = handler;
+}
+
+/**
+ * An external consumer can register itself as the op handler. This way the
+ * Tensor class can have chaining methods that call into ops via the op handler.
+ */
+export function setDeprecationWarningFn(fn: (msg: string) => void) {
+  deprecationWarningFn = fn;
 }
 
 /**
