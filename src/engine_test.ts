@@ -200,7 +200,7 @@ describeWithFlags('valueAndGradients', ALL_ENVS, () => {
           return tf.sum(y);
         })([a, b]);
 
-    expectArraysClose(value, [10]);
+    expectArraysClose(value, 10);
 
     // de/dy = 1
     // dy/dm = step(m)
@@ -235,7 +235,7 @@ describeWithFlags('valueAndGradients', ALL_ENVS, () => {
           });
         })([a, b]);
 
-    expectArraysClose(value, [10]);
+    expectArraysClose(value, 10);
 
     // de/dy = 1
     // dy/dm = step(m)

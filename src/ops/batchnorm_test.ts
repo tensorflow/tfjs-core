@@ -89,9 +89,9 @@ describeWithFlags('batchNormalization4D', ALL_ENVS, () => {
     const result = tf.batchNormalization4d(
         xT, meanT, varianceT, varianceEpsilon, undefined, undefined);
 
-    const x = await xT.array();
-    const mean = await meanT.array();
-    const variance = await varianceT.array();
+    const x = await xT.array() as number[][][][];
+    const mean = await meanT.array() as number[];
+    const variance = await varianceT.array() as number[];
     expectArraysClose(result, [
       (x[0][0][0][0] - mean[0]) * 1 / Math.sqrt(variance[0] + varianceEpsilon),
       (x[0][0][0][1] - mean[1]) * 1 / Math.sqrt(variance[1] + varianceEpsilon),

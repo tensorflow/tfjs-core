@@ -421,70 +421,70 @@ describeWithFlags('tensor', ALL_ENVS, () => {
   it('default dtype', () => {
     const a = tf.scalar(3);
     expect(a.dtype).toBe('float32');
-    expectArraysClose(a, [3]);
+    expectArraysClose(a, 3);
   });
 
   it('float32 dtype', () => {
     const a = tf.scalar(3, 'float32');
     expect(a.dtype).toBe('float32');
-    expectArraysClose(a, [3]);
+    expectArraysClose(a, 3);
   });
 
   it('int32 dtype', () => {
     const a = tf.scalar(3, 'int32');
     expect(a.dtype).toBe('int32');
-    expectArraysEqual(a, [3]);
+    expectArraysEqual(a, 3);
   });
 
   it('int32 dtype, 3.9 => 3, like numpy', () => {
     const a = tf.scalar(3.9, 'int32');
     expect(a.dtype).toBe('int32');
-    expectArraysEqual(a, [3]);
+    expectArraysEqual(a, 3);
   });
 
   it('int32 dtype, -3.9 => -3, like numpy', () => {
     const a = tf.scalar(-3.9, 'int32');
     expect(a.dtype).toBe('int32');
-    expectArraysEqual(a, [-3]);
+    expectArraysEqual(a, -3);
   });
 
   it('bool dtype, 3 => true, like numpy', () => {
     const a = tf.scalar(3, 'bool');
     expect(a.dtype).toBe('bool');
-    expectArraysEqual(a, [1]);
+    expectArraysEqual(a, 1);
   });
 
   it('bool dtype, -2 => true, like numpy', () => {
     const a = tf.scalar(-2, 'bool');
     expect(a.dtype).toBe('bool');
-    expectArraysEqual(a, [1]);
+    expectArraysEqual(a, 1);
   });
 
   it('bool dtype, 0 => false, like numpy', () => {
     const a = tf.scalar(0, 'bool');
     expect(a.dtype).toBe('bool');
-    expectArraysEqual(a, [0]);
+    expectArraysEqual(a, 0);
   });
 
   it('bool dtype from boolean', () => {
     const a = tf.scalar(false, 'bool');
-    expectArraysEqual(a, [0]);
+    expectArraysEqual(a, 0);
     expect(a.dtype).toBe('bool');
 
     const b = tf.scalar(true, 'bool');
-    expectArraysEqual(a, [0]);
+    expectArraysEqual(a, 0);
     expect(b.dtype).toBe('bool');
   });
 
   it('int32 dtype from boolean', () => {
     const a = tf.scalar(true, 'int32');
-    expectArraysEqual(a, [1]);
+    expectArraysEqual(a, 1);
     expect(a.dtype).toBe('int32');
   });
 
   it('default dtype from boolean', () => {
     const a = tf.scalar(false);
-    expectArraysEqual(a, [0]);
+    expectArraysEqual(a, 0);
     expect(a.dtype).toBe('bool');
   });
 
@@ -1258,7 +1258,7 @@ describeWithFlags('tensor', ALL_ENVS, () => {
   it('scalar bool -> int32', () => {
     const a = tf.scalar(true, 'bool').toInt();
     expect(a.dtype).toBe('int32');
-    expectArraysEqual(a, [1]);
+    expectArraysEqual(a, 1);
   });
 
   it('Tensor1D float32 -> int32', () => {
