@@ -557,7 +557,7 @@ export class Tensor<R extends Rank = Rank> {
    */
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
   // tslint:disable-next-line:no-any
-  async array(): Promise<any> {
+  async array(): Promise<ArrayMap[R]> {
     return toNestedArray(this.shape, await this.data());
   }
 
