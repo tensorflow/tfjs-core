@@ -620,10 +620,10 @@ describeWithFlags('batchNormalization2D', ALL_ENVS, () => {
     const result = tf.batchNormalization2d(
         xT, meanT, varianceT, varianceEpsilon, undefined, offsetT);
 
-    const offset = offsetT.arraySync();
-    const mean = meanT.arraySync();
-    const variance = varianceT.arraySync();
-    const x = xT.arraySync();
+    const offset = offsetT.arraySync() as number[];
+    const mean = meanT.arraySync() as number[];
+    const variance = varianceT.arraySync() as number[];
+    const x = xT.arraySync() as number[][];
 
     expectArraysClose(result, [
       offset[0] +
@@ -649,11 +649,11 @@ describeWithFlags('batchNormalization2D', ALL_ENVS, () => {
     const result = tf.batchNormalization2d(
         xT, meanT, varianceT, varianceEpsilon, scaleT, offsetT);
 
-    const offset = offsetT.arraySync();
-    const mean = meanT.arraySync();
-    const variance = varianceT.arraySync();
-    const scale = scaleT.arraySync();
-    const x = xT.arraySync();
+    const offset = offsetT.arraySync() as number[];
+    const mean = meanT.arraySync() as number[];
+    const variance = varianceT.arraySync() as number[];
+    const scale = scaleT.arraySync() as number[];
+    const x = xT.arraySync() as number[][];
 
     expectArraysClose(result, [
       offset[0] +
