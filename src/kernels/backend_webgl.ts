@@ -769,8 +769,8 @@ export class MathBackendWebGL implements KernelBackend {
 
     const dtype = upcastType(a.dtype, b.dtype);
 
-    const program = new MatMulPackedProgram(a.shape,
-        [batch, outerShapeA, outerShapeB], transposeA, transposeB);
+    const program = new MatMulPackedProgram(
+        a.shape, [batch, outerShapeA, outerShapeB], transposeA, transposeB);
     const output =
         this.makePackedTensor(program.outputShape, dtype) as Tensor3D;
     return this.compileAndRun<Tensor3D>(program, [a, b], output);
@@ -785,8 +785,9 @@ export class MathBackendWebGL implements KernelBackend {
 
     const dtype = upcastType(a.dtype, b.dtype);
 
-    const program = new MatMulPackedProgram(a.shape,
-        [batch, outerShapeA, outerShapeB], transposeA, transposeB, !!bias,
+    const program = new MatMulPackedProgram(
+        a.shape, [batch, outerShapeA, outerShapeB], transposeA, transposeB,
+        !!bias,
         activation ? mapActivationToShaderProgram(activation, true) : null);
     const output =
         this.makePackedTensor(program.outputShape, dtype) as Tensor3D;
@@ -1281,7 +1282,9 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   squaredDifference(a: Tensor, b: Tensor): Tensor {
-    const program =
+    const program = ENV.get('WEBGL_PACK_BINARY_OPERATIONS') ?
+        new BinaryOpPackedProgram(
+            binaryop_gpu.SQUARED_DIFFERENCE, a.shape, b.shape) :
         new BinaryOpProgram(binaryop_gpu.SQUARED_DIFFERENCE, a.shape, b.shape);
     return this.compileAndRun(program, [a, b]);
   }
@@ -1310,11 +1313,12 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   add(a: Tensor, b: Tensor): Tensor {
+    const shouldPack = ENV.get('WEBGL_PACK_BINARY_OPERATIONS');
     if (a.dtype === 'complex64' && b.dtype === 'complex64') {
-      return this.complexSeparableBinaryOp(a, b, binaryop_gpu.ADD);
+      return this.complexSeparableBinaryOp(a, b, binaryop_gpu.ADD, shouldPack);
     }
     const dtype = upcastType(a.dtype, b.dtype);
-    if (ENV.get('WEBGL_PACK_BINARY_OPERATIONS')) {
+    if (shouldPack) {
       return this.packedBinaryOp(a, b, binaryop_gpu.ADD, dtype);
     }
     const program = new BinaryOpProgram(binaryop_gpu.ADD, a.shape, b.shape);
@@ -1332,7 +1336,8 @@ export class MathBackendWebGL implements KernelBackend {
    * Computes a complex binary operation that can be decomposed into a simple
    * binary operation on both the real and imagary parts.
    */
-  private complexSeparableBinaryOp(a: Tensor, b: Tensor, op: string): Tensor {
+  private complexSeparableBinaryOp(
+      a: Tensor, b: Tensor, op: string, isPacked: boolean): Tensor {
     const aData = this.texData.get(a.dataId);
     const bData = this.texData.get(b.dataId);
 
@@ -1342,7 +1347,9 @@ export class MathBackendWebGL implements KernelBackend {
     ].map(complexParts => {
       const [aPart, bPart] = complexParts;
 
-      const program = new BinaryOpProgram(op, a.shape, b.shape);
+      const program = isPacked ?
+          new BinaryOpPackedProgram(op, a.shape, b.shape) :
+          new BinaryOpProgram(op, a.shape, b.shape);
       const output = this.makeOutputArray(
                          program.outputShape,
                          upcastType(aPart.dtype, bPart.dtype)) as Tensor;
@@ -1380,15 +1387,16 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   subtract(a: Tensor, b: Tensor): Tensor {
+    const shouldPack = ENV.get('WEBGL_PACK_BINARY_OPERATIONS');
     if (a.dtype === 'complex64' && b.dtype === 'complex64') {
-      return this.complexSeparableBinaryOp(a, b, binaryop_gpu.SUB);
+      return this.complexSeparableBinaryOp(a, b, binaryop_gpu.SUB, shouldPack);
     }
 
     if (this.shouldExecuteOnCPU([a, b])) {
       return this.cpuBackend.subtract(a, b);
     }
     const dtype = upcastType(a.dtype, b.dtype);
-    if (ENV.get('WEBGL_PACK_BINARY_OPERATIONS')) {
+    if (shouldPack) {
       return this.packedBinaryOp(a, b, binaryop_gpu.SUB, a.dtype);
     }
     const program = new BinaryOpProgram(binaryop_gpu.SUB, a.shape, b.shape);
@@ -1724,12 +1732,13 @@ export class MathBackendWebGL implements KernelBackend {
 
     const im2ColProgram =
         new Im2ColProgram(x2ColShape, xSqueezed.shape, convInfo);
-    const im2Col = this.compileAndRun<Tensor2D>(im2ColProgram, [xSqueezed]).
-        reshape([1, x2ColShape[0], x2ColShape[1]]) as Tensor3D;
+    const im2Col =
+        this.compileAndRun<Tensor2D>(im2ColProgram, [xSqueezed]).reshape([
+          1, x2ColShape[0], x2ColShape[1]
+        ]) as Tensor3D;
 
     const matmulProgram = new MatMulPackedProgram(
-        im2Col.shape, [1, numCols, convInfo.outChannels], true,
-        false);
+        im2Col.shape, [1, numCols, convInfo.outChannels], true, false);
     const product =
         this.compileAndRun<Tensor4D>(matmulProgram, [im2Col, w2Row]);
 
@@ -1869,9 +1878,9 @@ export class MathBackendWebGL implements KernelBackend {
 
   reshape<R extends Rank>(x: Tensor, shape: ShapeMap[R]): Tensor<R> {
     const texData = this.texData.get(x.dataId);
-    if (texData.isPacked && !webgl_util.isReshapeFree(x.shape, shape)
-        && !(texData.texture !== null &&
-             webgl_util.isReshapeFree(texData.shape, shape))) {
+    if (texData.isPacked && !webgl_util.isReshapeFree(x.shape, shape) &&
+        !(texData.texture !== null &&
+          webgl_util.isReshapeFree(texData.shape, shape))) {
       return this.packedReshape(x, shape);
     }
     return backend_util.reshapeTensor(x, shape);
