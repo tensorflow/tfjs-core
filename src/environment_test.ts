@@ -16,7 +16,7 @@
  */
 
 import * as device_util from './device_util';
-import {deprecationWarn, disableDeprecationWarnings, ENV, Environment, EPSILON_FLOAT16, EPSILON_FLOAT32} from './environment';
+import {deprecationWarn, ENV, Environment, EPSILON_FLOAT16, EPSILON_FLOAT32} from './environment';
 import {BEFORE_PAGING_CONSTANT, Features, getQueryParams} from './environment_util';
 import * as tf from './index';
 import {describeWithFlags} from './jasmine_util';
@@ -239,7 +239,7 @@ describe('deprecation warnings', () => {
   });
 
   it('disableDeprecationWarnings called, deprecationWarn doesnt warn', () => {
-    disableDeprecationWarnings();
+    tf.disableDeprecationWarnings();
     expect(console.warn).toHaveBeenCalledTimes(1);
     expect(console.warn)
         .toHaveBeenCalledWith('Deprecation warnings have been disabled.');
