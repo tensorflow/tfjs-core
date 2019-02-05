@@ -363,7 +363,8 @@ let opHandler: OpHandler = null;
 // Used to warn about deprecated methods.
 let deprecationWarningFn: (msg: string) => void = null;
 // This here so that we can use this method on dev branches and keep the
-// functionality at master. tslint:disable-next-line:no-unused-expression
+// functionality at master.
+// tslint:disable-next-line:no-unused-expression
 [deprecationWarningFn];
 
 /**
