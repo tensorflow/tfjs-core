@@ -596,7 +596,7 @@ describeWithFlags('batchNormalization2D', ALL_ENVS, () => {
     const x = await xT.buffer();
     const mean = await meanT.buffer();
     const variance = await varianceT.buffer();
-    const scale = await varianceT.buffer();
+    const scale = await scaleT.buffer();
     expectArraysClose(result, [
       (x.get(0, 0) - mean.get(0)) * scale.get(0) /
           Math.sqrt(variance.get(0) + varianceEpsilon),

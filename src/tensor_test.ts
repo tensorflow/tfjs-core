@@ -74,7 +74,7 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     vals = [
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ];
-    expectArraysClose(x, vals);
+    expectArraysClose(z, vals);
   });
 
   it('Tensor dataSync CPU --> GPU', () => {

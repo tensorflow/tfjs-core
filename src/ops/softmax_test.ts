@@ -89,8 +89,9 @@ describeWithFlags('softmax', ALL_ENVS, () => {
     const yVals = y.arraySync();
     expect(dx.shape).toEqual(x.shape);
     expectArraysClose(dx, [
-      (dyVals[0] - sumVals[0]) * yVals[0], (dyVals[1] - sumVals[0]) * yVals[1],
-      (dyVals[2] - sumVals[0]) * yVals[2]
+      (dyVals[0] - sumVals[0]) * yVals[0],
+      (dyVals[1] - sumVals[0]) * yVals[1],
+      (dyVals[2] - sumVals[0]) * yVals[2],
     ]);
   });
 

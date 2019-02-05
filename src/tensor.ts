@@ -16,9 +16,9 @@
  */
 
 import {tensorToString} from './tensor_format';
-import {DataType, DataTypeMap, DataValues, NumericDataType, Rank, RecursiveArray, ShapeMap, SingleValueMap, TensorLike, TensorLike1D, TensorLike3D, TensorLike4D, TypedArray} from './types';
+import {DataType, DataTypeMap, DataValues, NumericDataType, Rank, ShapeMap, SingleValueMap, TensorLike, TensorLike1D, TensorLike3D, TensorLike4D, TypedArray} from './types';
 import * as util from './util';
-import {computeStrides} from './util';
+import {computeStrides, toNestedArray} from './util';
 
 export interface TensorData<D extends DataType> {
   dataId?: DataId;
@@ -553,12 +553,12 @@ export class Tensor<R extends Rank = Rank> {
 
   // tslint:disable-next-line:no-any
   async array(): Promise<any[]> {
-    return null;
+    return toNestedArray(this.shape, await this.data());
   }
 
   // tslint:disable-next-line:no-any
   arraySync(): any[] {
-    return null;
+    return toNestedArray(this.shape, this.dataSync());
   }
 
   /**
