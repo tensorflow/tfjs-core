@@ -121,16 +121,16 @@ export const LOGICAL_OR = `
 `;
 
 export const MAX = `
-  vec4 result = max(a, b);
-  vec4 isNaN = isNaN(result);
+  vec4 result = vec4(max(a, b));
+  vec4 isNaN = vec4(isNaN(result));
   ` +
     CHECK_NAN_SNIPPET + `
   return result;
 `;
 
 export const MIN = `
-  vec4 result = min(a, b);
-  vec4 isNaN = isNaN(result);
+  vec4 result = vec4(min(a, b));
+  vec4 isNaN = vec4(isNaN(result));
   ` +
     CHECK_NAN_SNIPPET + `
   return result;
