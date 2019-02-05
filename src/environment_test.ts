@@ -230,7 +230,7 @@ describe('deprecation warnings', () => {
   });
 
   it('deprecationWarn warns', () => {
-    deprecationWarn('xyz is deprecated');
+    deprecationWarn('xyz is deprecated.');
     expect(console.warn).toHaveBeenCalledTimes(1);
     expect(console.warn)
         .toHaveBeenCalledWith(
@@ -245,7 +245,7 @@ describe('deprecation warnings', () => {
         .toHaveBeenCalledWith('Deprecation warnings have been disabled.');
 
     // deprecationWarn no longer warns.
-    deprecationWarn('xyz is deprecated');
+    deprecationWarn('xyz is deprecated.');
     expect(console.warn).toHaveBeenCalledTimes(1);
   });
 });
