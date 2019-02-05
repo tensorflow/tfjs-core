@@ -538,8 +538,8 @@ function createNestedArray(offset: number, shape: number[], a: TypedArray) {
 // Provide a nested array of TypedArray in given shape.
 export function toNestedArray(shape: number[], a: TypedArray) {
   if (shape.length === 0) {
-    // Scalar type should be an array with a single number.
-    return [a[0]];
+    // Scalar type should return a single number.
+    return a[0];
   }
   const size = shape.reduce((acc, c) => acc * c);
   if (size === 0) {

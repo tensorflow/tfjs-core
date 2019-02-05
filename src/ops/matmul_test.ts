@@ -537,9 +537,9 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     // da = dy * bT
     expect(da.shape).toEqual(aT.shape);
 
-    const a = await aT.buffer<'float32'>();
-    const dy = await dyT.buffer<'float32'>();
-    const b = await bT.buffer<'float32'>();
+    const a = await aT.buffer();
+    const dy = await dyT.buffer();
+    const b = await bT.buffer();
     expectArraysClose(
         da,
         [
@@ -579,9 +579,9 @@ describeWithFlags('matmul', ALL_ENVS, () => {
 
     // da = dy * b
     expect(da.shape).toEqual(aT.shape);
-    const a = await aT.buffer<'float32'>();
-    const dy = await dyT.buffer<'float32'>();
-    const b = await bT.buffer<'float32'>();
+    const a = await aT.buffer();
+    const dy = await dyT.buffer();
+    const b = await bT.buffer();
     expectArraysClose(da, [
       dy.get(0, 0) * b.get(0, 0) + dy.get(0, 1) * b.get(1, 0) +
           dy.get(0, 2) * b.get(2, 0),
@@ -630,9 +630,9 @@ describeWithFlags('matmul', ALL_ENVS, () => {
 
     // da = b * dyT
     expect(da.shape).toEqual(aT.shape);
-    const a = await aT.buffer<'float32'>();
-    const dy = await dyT.buffer<'float32'>();
-    const b = await bT.buffer<'float32'>();
+    const a = await aT.buffer();
+    const dy = await dyT.buffer();
+    const b = await bT.buffer();
     expectArraysClose(da, [
       dy.get(0, 0) * b.get(0, 0) + dy.get(0, 1) * b.get(0, 1),
       dy.get(1, 0) * b.get(0, 0) + dy.get(1, 1) * b.get(0, 1),
@@ -669,9 +669,9 @@ describeWithFlags('matmul', ALL_ENVS, () => {
 
     // da = bT * dyT
     expect(da.shape).toEqual(aT.shape);
-    const a = await aT.buffer<'float32'>();
-    const dy = await dyT.buffer<'float32'>();
-    const b = await bT.buffer<'float32'>();
+    const a = await aT.buffer();
+    const dy = await dyT.buffer();
+    const b = await bT.buffer();
     expectArraysClose(da, [
       dy.get(0, 0) * b.get(0, 0) + dy.get(0, 1) * b.get(1, 0),
       dy.get(1, 0) * b.get(0, 0) + dy.get(1, 1) * b.get(1, 0),

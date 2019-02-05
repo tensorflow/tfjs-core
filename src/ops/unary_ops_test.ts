@@ -543,10 +543,10 @@ describeWithFlags('logSigmoid', ALL_ENVS, () => {
   it('gradients: Scalar', () => {
     const a = tf.scalar(3);
     const dy = tf.scalar(4);
-    const dyVal = dy.arraySync()[0];
+    const dyVal = dy.arraySync();
 
     const da = tf.grad(a => tf.logSigmoid(a))(a, dy);
-    const aVal = a.arraySync()[0];
+    const aVal = a.arraySync();
     const y = 1 / (1 + Math.exp(aVal));
     expectArraysClose(da, [dyVal * y]);
   });
@@ -668,8 +668,8 @@ describeWithFlags('softplus', ALL_ENVS, () => {
   it('gradients: Scalar', () => {
     const a = tf.scalar(3);
     const dy = tf.scalar(4);
-    const aVal = a.arraySync()[0];
-    const dyVal = dy.arraySync()[0];
+    const aVal = a.arraySync();
+    const dyVal = dy.arraySync();
 
     const da = tf.grad(a => tf.softplus(a))(a, dy);
     const y = 1 / (1 + Math.exp(-aVal));

@@ -62,19 +62,17 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     const x = tf.ones<Rank.R3>([3, 4, 2]);
     expect(x.rank).toBe(3);
     expect(x.size).toBe(24);
-    let vals = [
+    expectArraysClose(x, [
       1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
-    ];
-    expectArraysClose(x, vals);
+    ]);
 
     // Tensor of zeros.
     const z = tf.zeros<Rank.R3>([3, 4, 2]);
     expect(z.rank).toBe(3);
     expect(z.size).toBe(24);
-    vals = [
+    expectArraysClose(z, [
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    ];
-    expectArraysClose(z, vals);
+    ]);
   });
 
   it('Tensor dataSync CPU --> GPU', () => {

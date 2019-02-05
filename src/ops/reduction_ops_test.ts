@@ -209,8 +209,7 @@ describeWithFlags('Reduction: min', ALL_ENVS, () => {
 
   it('throws error for string tensor', () => {
     expect(() => tf.min(['a']))
-        .toThrowError(
-            /Argument 'x' passed to 'min' must be numeric tensor/);
+        .toThrowError(/Argument 'x' passed to 'min' must be numeric tensor/);
   });
 });
 
@@ -419,8 +418,7 @@ describeWithFlags('Reduction: max', ALL_ENVS, () => {
 
   it('throws error for string tensor', () => {
     expect(() => tf.max(['a']))
-        .toThrowError(
-            /Argument 'x' passed to 'max' must be numeric tensor/);
+        .toThrowError(/Argument 'x' passed to 'max' must be numeric tensor/);
   });
 });
 
@@ -528,8 +526,7 @@ describeWithFlags('Reduction: argmax', ALL_ENVS, () => {
 
   it('throws error for string tensor', () => {
     expect(() => tf.argMax(['a']))
-        .toThrowError(
-            /Argument 'x' passed to 'argMax' must be numeric tensor/);
+        .toThrowError(/Argument 'x' passed to 'argMax' must be numeric tensor/);
   });
 });
 
@@ -631,8 +628,7 @@ describeWithFlags('Reduction: argmin', ALL_ENVS, () => {
 
   it('throws error for string tensor', () => {
     expect(() => tf.argMin(['a']))
-        .toThrowError(
-            /Argument 'x' passed to 'argMin' must be numeric tensor/);
+        .toThrowError(/Argument 'x' passed to 'argMin' must be numeric tensor/);
   });
 });
 
@@ -883,8 +879,7 @@ describeWithFlags('Reduction: sum', ALL_ENVS, () => {
 
   it('throws error for string tensor', () => {
     expect(() => tf.sum(['a']))
-        .toThrowError(
-            /Argument 'x' passed to 'sum' must be numeric tensor/);
+        .toThrowError(/Argument 'x' passed to 'sum' must be numeric tensor/);
   });
 });
 
@@ -988,8 +983,7 @@ describeWithFlags('Reduction: prod', ALL_ENVS, () => {
 
   it('throws error for string tensor', () => {
     expect(() => tf.prod(['a']))
-        .toThrowError(
-            /Argument 'x' passed to 'prod' must be numeric tensor/);
+        .toThrowError(/Argument 'x' passed to 'prod' must be numeric tensor/);
   });
 });
 
@@ -1094,11 +1088,11 @@ describeWithFlags('Reduction: mean', ALL_ENVS, () => {
     const dy = tf.scalar(1.5);
 
     const da = tf.grad(a => a.mean())(a, dy);
-    const dyVal = dy.arraySync()[0];
+    const dyVal = dy.arraySync();
     expect(da.shape).toEqual(a.shape);
     expectArraysClose(da, [
-      dyVal / a.size, dyVal / a.size, dyVal / a.size,
-      dyVal / a.size, dyVal / a.size, dyVal / a.size
+      dyVal / a.size, dyVal / a.size, dyVal / a.size, dyVal / a.size,
+      dyVal / a.size, dyVal / a.size
     ]);
   });
 
@@ -1123,8 +1117,7 @@ describeWithFlags('Reduction: mean', ALL_ENVS, () => {
 
   it('throws error for string tensor', () => {
     expect(() => tf.mean(['a']))
-        .toThrowError(
-            /Argument 'x' passed to 'mean' must be numeric tensor/);
+        .toThrowError(/Argument 'x' passed to 'mean' must be numeric tensor/);
   });
 });
 
@@ -1521,9 +1514,9 @@ describeWithFlags('Reduction: norm', ALL_ENVS, () => {
   });
 
   it('throws error for string tensors', () => {
-    expect(() => tf.norm(['a', 'b']))
-        .toThrowError(
-            /Argument 'x' passed to 'norm' must be numeric tensor/);
+    expect(() => tf.norm([
+      'a', 'b'
+    ])).toThrowError(/Argument 'x' passed to 'norm' must be numeric tensor/);
   });
 });
 
@@ -1702,7 +1695,6 @@ describeWithFlags('Reduction: any', ALL_ENVS, () => {
 
   it('throws error for string tensor', () => {
     expect(() => tf.any(['a']))
-        .toThrowError(
-            /Argument 'x' passed to 'any' must be bool tensor/);
+        .toThrowError(/Argument 'x' passed to 'any' must be bool tensor/);
   });
 });

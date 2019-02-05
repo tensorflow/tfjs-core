@@ -16,7 +16,7 @@
  */
 
 import {tensorToString} from './tensor_format';
-import {DataType, DataTypeMap, DataValues, NumericDataType, Rank, ShapeMap, SingleValueMap, TensorLike, TensorLike1D, TensorLike3D, TensorLike4D, TypedArray} from './types';
+import {ArrayMap, DataType, DataTypeMap, DataValues, NumericDataType, Rank, ShapeMap, SingleValueMap, TensorLike, TensorLike1D, TensorLike3D, TensorLike4D, TypedArray} from './types';
 import * as util from './util';
 import {computeStrides, toNestedArray} from './util';
 
@@ -539,29 +539,6 @@ export class Tensor<R extends Rank = Rank> {
     return this.shape.length;
   }
 
-  /**
-   * @deprecated Will be removed in 1.0. Please use `tensor.array()` instead.
-   */
-  get(...locs: number[]) {
-    console.warn(
-        'Deprecated: Will be removed in 1.0. Please use tensor.array()');
-    util.assert(
-        locs.length === this.rank,
-        'Number of coordinates in get() must match the rank of the tensor');
-    util.assert(
-        this.dtype !== 'complex64',
-        'Tensor.get() is not supported for complex64 tensors yet.');
-    this.throwIfDisposed();
-    if (locs.length === 0) {
-      locs = [0];
-    }
-    let index = locs[locs.length - 1];
-    for (let i = 0; i < locs.length - 1; ++i) {
-      index += this.strides[i] * locs[i];
-    }
-    return this.dataSync()[index];
-  }
-
   /** Returns a promise of `tf.TensorBuffer` that holds the underlying data. */
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
   async buffer<D extends DataType = 'float32'>(): Promise<TensorBuffer<R, D>> {
@@ -580,7 +557,7 @@ export class Tensor<R extends Rank = Rank> {
    */
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
   // tslint:disable-next-line:no-any
-  async array(): Promise<any[]> {
+  async array(): Promise<any> {
     return toNestedArray(this.shape, await this.data());
   }
 
@@ -590,7 +567,7 @@ export class Tensor<R extends Rank = Rank> {
    */
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
   // tslint:disable-next-line:no-any
-  arraySync(): any[] {
+  arraySync(): ArrayMap[R] {
     return toNestedArray(this.shape, this.dataSync());
   }
 
