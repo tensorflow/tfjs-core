@@ -1326,7 +1326,8 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun<Tensor>(program, [a, b], output);
   }
 
-  private packedBinaryOp(a: Tensor, b: Tensor, op: string, dtype: DataType) {
+  private packedBinaryOp(
+      a: TensorHandle, b: TensorHandle, op: string, dtype: DataType) {
     const program = new BinaryOpPackedProgram(op, a.shape, b.shape);
     const output = this.makePackedTensor(program.outputShape, dtype) as Tensor;
     return this.compileAndRun<Tensor>(program, [a, b], output);
@@ -1347,15 +1348,18 @@ export class MathBackendWebGL implements KernelBackend {
     ].map(complexParts => {
       const [aPart, bPart] = complexParts;
 
-      const program = isPacked ?
-          new BinaryOpPackedProgram(op, a.shape, b.shape) :
-          new BinaryOpProgram(op, a.shape, b.shape);
+      const aHandle = this.makeComplexComponentTensorHandle(a, aPart);
+      const bHandle = this.makeComplexComponentTensorHandle(b, bPart);
+
+      if (isPacked) {
+        return this.packedBinaryOp(
+            aHandle, bHandle, op, upcastType(aPart.dtype, bPart.dtype));
+      }
+
+      const program = new BinaryOpProgram(op, a.shape, b.shape);
       const output = this.makeOutputArray(
                          program.outputShape,
                          upcastType(aPart.dtype, bPart.dtype)) as Tensor;
-
-      const aHandle = this.makeComplexComponentTensorHandle(a, aPart);
-      const bHandle = this.makeComplexComponentTensorHandle(b, bPart);
 
       return this.compileAndRun<Tensor>(program, [aHandle, bHandle], output);
     });
