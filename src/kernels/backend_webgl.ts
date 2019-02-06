@@ -2179,7 +2179,8 @@ export class MathBackendWebGL implements KernelBackend {
         const inputValues = (input as Tensor).dataSync();
         this.delayedStorage = true;
 
-        input = Tensor.make(input.shape, {values: inputValues}, input.dtype, this);
+        input =
+            Tensor.make(input.shape, {values: inputValues}, input.dtype, this);
         texData = this.texData.get(input.dataId);
         texData.isPacked = true;
       }

@@ -576,42 +576,44 @@ describe('Switching cpu backends', () => {
   });
 });
 
-describeWithFlags('WebGL backend without render float32 support', WEBGL_ENVS, () => {
-  const savedRenderFloat32Flag = tf.ENV.get('WEBGL_RENDER_FLOAT32_ENABLED');
-  const savedPackFlag = tf.ENV.get('WEBGL_PACK');
+describeWithFlags(
+    'WebGL backend without render float32 support', WEBGL_ENVS, () => {
+      const savedRenderFloat32Flag = tf.ENV.get('WEBGL_RENDER_FLOAT32_ENABLED');
+      const savedPackFlag = tf.ENV.get('WEBGL_PACK');
 
-  beforeEach(() => {
-    tf.ENV.set('WEBGL_RENDER_FLOAT32_ENABLED', false);
-    tf.ENV.registerBackend('half-float-webgl', () => new MathBackendWebGL());
-  });
+      beforeEach(() => {
+        tf.ENV.set('WEBGL_RENDER_FLOAT32_ENABLED', false);
+        tf.ENV.registerBackend(
+            'half-float-webgl', () => new MathBackendWebGL());
+      });
 
-  afterEach(() => {
-    tf.ENV.removeBackend('half-float-webgl');
-  });
+      afterEach(() => {
+        tf.ENV.removeBackend('half-float-webgl');
+      });
 
-  afterAll(() => {
-    tf.ENV.set('WEBGL_RENDER_FLOAT32_ENABLED', savedRenderFloat32Flag);
-    tf.ENV.set('WEBGL_PACK', savedPackFlag);
-  });
+      afterAll(() => {
+        tf.ENV.set('WEBGL_RENDER_FLOAT32_ENABLED', savedRenderFloat32Flag);
+        tf.ENV.set('WEBGL_PACK', savedPackFlag);
+      });
 
-  it('should work when packing is false', () => {
-    tf.ENV.set('WEBGL_PACK', false);
+      it('should work when packing is false', () => {
+        tf.ENV.set('WEBGL_PACK', false);
 
-    const a = tf.tensor2d([1, 2], [1, 2]);
-    const b = tf.tensor2d([1, 2], [1, 2]);
-    const c = tf.add(a, b);
-    expectArraysClose(c, [2, 4]);
-  });
+        const a = tf.tensor2d([1, 2], [1, 2]);
+        const b = tf.tensor2d([1, 2], [1, 2]);
+        const c = tf.add(a, b);
+        expectArraysClose(c, [2, 4]);
+      });
 
-  it('should work when packing is true', () => {
-    tf.ENV.set('WEBGL_PACK', false);
+      it('should work when packing is true', () => {
+        tf.ENV.set('WEBGL_PACK', false);
 
-    const a = tf.tensor2d([1, 2], [1, 2]);
-    const b = tf.tensor2d([1, 2], [1, 2]);
-    const c = tf.add(a, b);
-    expectArraysClose(c, [2, 4]);
-  });
-});
+        const a = tf.tensor2d([1, 2], [1, 2]);
+        const b = tf.tensor2d([1, 2], [1, 2]);
+        const c = tf.add(a, b);
+        expectArraysClose(c, [2, 4]);
+      });
+    });
 
 describeWithFlags('Switching WebGL + CPU backends', WEBGL_ENVS, () => {
   beforeEach(() => {
