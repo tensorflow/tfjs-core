@@ -579,7 +579,6 @@ describe('Switching cpu backends', () => {
 describeWithFlags(
     'WebGL backend without render float32 support', WEBGL_ENVS, () => {
       const savedRenderFloat32Flag = tf.ENV.get('WEBGL_RENDER_FLOAT32_ENABLED');
-      const savedPackFlag = tf.ENV.get('WEBGL_PACK');
 
       beforeAll(() => {
         tf.ENV.set('WEBGL_RENDER_FLOAT32_ENABLED', false);
@@ -596,12 +595,10 @@ describeWithFlags(
 
       afterAll(() => {
         tf.ENV.set('WEBGL_RENDER_FLOAT32_ENABLED', savedRenderFloat32Flag);
-        tf.ENV.set('WEBGL_PACK', savedPackFlag);
       });
 
-      it('should work when packing is false', () => {
+      it('basic usage', () => {
         tf.setBackend('half-float-webgl');
-        tf.ENV.set('WEBGL_PACK', false);
 
         const a = tf.tensor2d([1, 2], [1, 2]);
         const b = tf.tensor2d([1, 2], [1, 2]);
@@ -609,14 +606,15 @@ describeWithFlags(
         expectArraysClose(c, [2, 4]);
       });
 
-      it('should work when packing is true', () => {
+      it('disposing tensors should not cause errors', () => {
         tf.setBackend('half-float-webgl');
-        tf.ENV.set('WEBGL_PACK', true);
-
-        const a = tf.tensor2d([1, 2], [1, 2]);
-        const b = tf.tensor2d([1, 2], [1, 2]);
-        const c = tf.add(a, b);
-        expectArraysClose(c, [2, 4]);
+        expect(() => tf.tidy(() => {
+          const a = tf.tensor2d([1, 2], [1, 2]);
+          const b = tf.tensor2d([1, 2], [1, 2]);
+          const c = tf.add(a, b);
+          c.dataSync();
+          return c.add(tf.tensor2d([2, 4], [1, 2]));
+        })).not.toThrowError();
       });
     });
 
