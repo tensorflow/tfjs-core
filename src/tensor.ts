@@ -545,8 +545,8 @@ export class Tensor<R extends Rank = Rank> {
 
   /** Returns a promise of `tf.TensorBuffer` that holds the underlying data. */
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
-  async buffer<D extends DataType = 'float32'>(): Promise<TensorBuffer<R, D>> {
-    return opHandler.buffer(this.shape, this.dtype as D, await this.data());
+  buffer<D extends DataType = 'float32'>(): TensorBuffer<R, D> {
+    return opHandler.buffer(this.shape, this.dtype as D, this.dataSync());
   }
 
   /** Returns a `tf.TensorBuffer` that holds the underlying data. */
