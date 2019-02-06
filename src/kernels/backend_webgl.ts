@@ -2345,7 +2345,8 @@ export class MathBackendWebGL implements KernelBackend {
         webgl_util.getPhysicalFromLogicalTextureType(usage, isPacked) !==
         webgl_util.getPhysicalFromLogicalTextureType(
             TextureUsage.UPLOAD, isPacked);
-    if(texture != null && (uploadIncompatibleWithPhysical || dontKeepCopyOnGPU)) {
+    if (texture != null &&
+        (uploadIncompatibleWithPhysical || dontKeepCopyOnGPU)) {
       this.releaseTexture(dataId, texture, texShape, usage, isPacked);
       texData.texture = null;
       texData.texShape = null;
