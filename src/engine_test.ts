@@ -581,10 +581,13 @@ describeWithFlags(
       const savedRenderFloat32Flag = tf.ENV.get('WEBGL_RENDER_FLOAT32_ENABLED');
       const savedPackFlag = tf.ENV.get('WEBGL_PACK');
 
-      beforeEach(() => {
+      beforeAll(() => {
         tf.ENV.set('WEBGL_RENDER_FLOAT32_ENABLED', false);
+      });
+
+      beforeEach(() => {
         tf.ENV.registerBackend(
-            'half-float-webgl', () => new MathBackendWebGL());
+            'half-float-webgl', () => new MathBackendWebGL(null));
       });
 
       afterEach(() => {
@@ -597,6 +600,7 @@ describeWithFlags(
       });
 
       it('should work when packing is false', () => {
+        tf.setBackend('half-float-webgl');
         tf.ENV.set('WEBGL_PACK', false);
 
         const a = tf.tensor2d([1, 2], [1, 2]);
@@ -606,7 +610,8 @@ describeWithFlags(
       });
 
       it('should work when packing is true', () => {
-        tf.ENV.set('WEBGL_PACK', false);
+        tf.setBackend('half-float-webgl');
+        tf.ENV.set('WEBGL_PACK', true);
 
         const a = tf.tensor2d([1, 2], [1, 2]);
         const b = tf.tensor2d([1, 2], [1, 2]);
