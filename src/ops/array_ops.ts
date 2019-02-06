@@ -28,7 +28,6 @@ import {op} from './operation';
 import {MPRandGauss} from './rand';
 import {zeros, zerosLike} from './tensor_ops';
 
-
 /**
  * Creates a new tensor with the same values and shape as the specified
  * tensor.
