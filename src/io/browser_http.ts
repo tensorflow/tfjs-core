@@ -21,7 +21,7 @@
  * Uses [`fetch`](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API).
  */
 
-import {ENV, Environment} from '../environment';
+import {ENV} from '../environment';
 import {assert} from '../util';
 
 import {concatenateArrayBuffers, getModelArtifactsInfoForJSON} from './io_utils';
