@@ -24,6 +24,7 @@ import * as webgl_util from './webgl_util';
 export interface TextureConfig {
   internalFormatFloat: number;
   textureFormatFloat: number;
+  internalFormatPackedHalfFloat: number;
   internalFormatHalfFloat: number;
   internalFormatPackedFloat: number;
 
