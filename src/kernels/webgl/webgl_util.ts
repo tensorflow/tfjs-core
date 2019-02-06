@@ -17,7 +17,6 @@
 
 import {ENV} from '../../environment';
 import * as util from '../../util';
-import {PhysicalTextureType, TextureUsage} from './tex_util';
 
 export function callAndCheck<T>(gl: WebGLRenderingContext, func: () => T): T {
   const returnValue = func();
@@ -352,28 +351,6 @@ export function getRowsCols(shape: number[]): [number, number] {
   return [
     shape.length > 1 ? shape[shape.length - 2] : 1, shape[shape.length - 1]
   ];
-}
-
-export function getPhysicalFromLogicalTextureType(
-    logicalTexType: TextureUsage, isPacked: boolean): PhysicalTextureType {
-  if (logicalTexType === TextureUsage.UPLOAD) {
-    return isPacked ? PhysicalTextureType.PACKED_2X2_FLOAT32 :
-                      PhysicalTextureType.UNPACKED_FLOAT32;
-  } else if (logicalTexType === TextureUsage.RENDER || logicalTexType == null) {
-    if (isPacked) {
-      return ENV.get('WEBGL_RENDER_FLOAT32_ENABLED') ?
-          PhysicalTextureType.PACKED_2X2_FLOAT32 :
-          PhysicalTextureType.PACKED_2X2_FLOAT16;
-    }
-    return ENV.get('WEBGL_RENDER_FLOAT32_ENABLED') ?
-        PhysicalTextureType.UNPACKED_FLOAT32 :
-        PhysicalTextureType.UNPACKED_FLOAT16;
-  } else if (
-      logicalTexType === TextureUsage.DOWNLOAD ||
-      logicalTexType === TextureUsage.PIXELS) {
-    return PhysicalTextureType.PACKED_4X1_UNSIGNED_BYTE;
-  }
-  throw new Error(`Unknown logical texture type ${logicalTexType}`);
 }
 
 export function getTextureShapeFromLogicalShape(

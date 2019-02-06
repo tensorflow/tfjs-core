@@ -191,6 +191,8 @@ export class MathBackendWebGL implements KernelBackend {
   // Accumulated time spent (including blocking in downloading data from webgl.
   private downloadWaitMs = 0;
   private cpuBackend: KernelBackend;
+  // Whether we dispose the texture after reading its values.
+  private keepCopyOfTextureOnGPUAfterRead = false;
 
   register(dataId: DataId, shape: number[], dtype: DataType): void {
     if (this.texData.has(dataId)) {
@@ -291,10 +293,6 @@ export class MathBackendWebGL implements KernelBackend {
     }
     texData.usage = TextureUsage.UPLOAD;
     texData.values = values;
-
-    if (!this.delayedStorage) {
-      this.uploadToGPU(dataId);
-    }
   }
   readSync(dataId: DataId): DataValues {
     const texData = this.texData.get(dataId);
@@ -565,7 +563,7 @@ export class MathBackendWebGL implements KernelBackend {
   private binaryCache: {[key: string]: GPGPUBinary} = {};
   private gpgpuCreatedLocally: boolean;
 
-  constructor(private gpgpu?: GPGPUContext, private delayedStorage = true) {
+  constructor(private gpgpu?: GPGPUContext) {
     if (ENV.get('WEBGL_VERSION') < 1) {
       throw new Error('WebGL is not supported on this device');
     }
@@ -2166,18 +2164,19 @@ export class MathBackendWebGL implements KernelBackend {
       } else if (
           texData.isPacked &&
           !webgl_util.isReshapeFree(texData.shape, input.shape)) {
-        // This is a special, temporary case where a texture exists for a tensor
+        // This is a special case where a texture exists for a tensor
         // but the shapes are incompatible (due to packing constraints) because
         // the tensor did not have a chance to go through the packed reshape
         // shader. This only happens when we reshape the *same* tensor to form
         // *distinct* inputs to an op, e.g. dotting a vector with itself. This
         // case will disappear once packed uploading is the default.
 
-        // Temporarily disable delayedStorage so the texture isn't removed from
-        // the original input
-        this.delayedStorage = false;
+        // Temporarily enable keepCopyOfTextureOnGPUAfterRead so the texture
+        // isn't removed from the original input. This does not corrupt the
+        // TextureManager cache because this texture's usage is always UPLOAD.
+        this.keepCopyOfTextureOnGPUAfterRead = true;
         const inputValues = (input as Tensor).dataSync();
-        this.delayedStorage = true;
+        this.keepCopyOfTextureOnGPUAfterRead = false;
 
         input =
             Tensor.make(input.shape, {values: inputValues}, input.dtype, this);
@@ -2331,27 +2330,16 @@ export class MathBackendWebGL implements KernelBackend {
 
   private convertAndCacheOnCPU(dataId: DataId, float32Values?: Float32Array):
       TypedArray {
-    // In delayed storage mode, when the user reads data, we don't keep a
-    // copy on the gpu, to minimize likelihood of memory leak. We re-upload
-    // to gpu the next time a gpgpu program needs the texture.
-    const dontKeepCopyOnGPU = this.delayedStorage;
     const texData = this.texData.get(dataId);
     const {texture, texShape, dtype, usage, isPacked} = texData;
 
-    // If changing texData.usage to UPLOAD entails a different physical texture
-    // type, we must dispose it to maintain the correctness of the
-    // TextureManager shape cache.
-    const uploadIncompatibleWithPhysical =
-        webgl_util.getPhysicalFromLogicalTextureType(usage, isPacked) !==
-        webgl_util.getPhysicalFromLogicalTextureType(
-            TextureUsage.UPLOAD, isPacked);
-    if (texture != null &&
-        (uploadIncompatibleWithPhysical || dontKeepCopyOnGPU)) {
+    if (texture != null && !this.keepCopyOfTextureOnGPUAfterRead) {
       this.releaseTexture(dataId, texture, texShape, usage, isPacked);
       texData.texture = null;
       texData.texShape = null;
       texData.isPacked = false;
     }
+
     texData.usage = TextureUsage.UPLOAD;
     if (float32Values != null) {
       texData.values = float32ToTypedArray(float32Values, dtype as 'float32');
