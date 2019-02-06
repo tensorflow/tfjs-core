@@ -200,10 +200,7 @@ function batchNormalization_<R extends Rank>(
     variance: Tensor<R>|Tensor1D|TensorLike, varianceEpsilon = .001,
     scale?: Tensor<R>|Tensor1D|TensorLike,
     offset?: Tensor<R>|Tensor1D|TensorLike): Tensor<R> {
-  deprecationWarn(
-      'tf.batchNormalization() is going away in TensorFlow.js 1.0. ' +
-      'Use tf.batchNorm() instead, and note the positional argument change ' +
-      'of scale, offset, and varianceEpsilon');
+  warnDeprecation();
   return batchNorm_(x, mean, variance, offset, scale, varianceEpsilon);
 }
 
@@ -340,10 +337,10 @@ function batchNorm_<R extends Rank>(
   };
 
   const res = ENV.engine.runKernel(
-      backend => backend.batchNorm(
+      backend => backend.batchNormalization(
           x4D, batchnormReshape4D($mean), batchnormReshape4D($variance),
-          batchnormReshape4D($offset), batchnormReshape4D($scale),
-          varianceEpsilon),
+          varianceEpsilon, batchnormReshape4D($scale),
+          batchnormReshape4D($offset)),
       {$x, $mean, $variance, $scale, $offset}, der);
   return res.reshape($x.shape);
 }
@@ -373,10 +370,7 @@ function batchNormalization2d_(
     variance: Tensor2D|Tensor1D|TensorLike, varianceEpsilon = .001,
     scale?: Tensor2D|Tensor1D|TensorLike,
     offset?: Tensor2D|Tensor1D|TensorLike): Tensor2D {
-  deprecationWarn(
-      'tf.batchNormalization() is going away in TensorFlow.js 1.0. ' +
-      'Use tf.batchNorm() instead, and note the positional argument change ' +
-      'of scale, offset, and varianceEpsilon');
+  warnDeprecation();
   return batchNorm2d_(x, mean, variance, offset, scale, varianceEpsilon);
 }
 
@@ -389,10 +383,7 @@ function batchNormalization3d_(
     variance: Tensor3D|Tensor1D|TensorLike, varianceEpsilon = .001,
     scale?: Tensor3D|Tensor1D|TensorLike,
     offset?: Tensor3D|Tensor1D|TensorLike): Tensor3D {
-  deprecationWarn(
-      'tf.batchNormalization() is going away in TensorFlow.js 1.0. ' +
-      'Use tf.batchNorm() instead, and note the positional argument change ' +
-      'of scale, offset, and varianceEpsilon');
+  warnDeprecation();
   return batchNorm3d_(x, mean, variance, offset, scale, varianceEpsilon);
 }
 
@@ -405,11 +396,15 @@ function batchNormalization4d_(
     variance: Tensor4D|Tensor1D|TensorLike, varianceEpsilon = .001,
     scale?: Tensor4D|Tensor1D|TensorLike,
     offset?: Tensor4D|Tensor1D|TensorLike): Tensor4D {
+  warnDeprecation();
+  return batchNorm4d_(x, mean, variance, offset, scale, varianceEpsilon);
+}
+
+function warnDeprecation() {
   deprecationWarn(
       'tf.batchNormalization() is going away in TensorFlow.js 1.0. ' +
       'Use tf.batchNorm() instead, and note the positional argument change ' +
       'of scale, offset, and varianceEpsilon');
-  return batchNorm4d_(x, mean, variance, offset, scale, varianceEpsilon);
 }
 
 export const batchNormalization2d = op({batchNormalization2d_});

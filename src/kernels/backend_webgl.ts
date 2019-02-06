@@ -836,10 +836,10 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [a, b], output) as Tensor;
   }
 
-  batchNorm(
+  batchNormalization(
       x: Tensor4D, mean: Tensor4D|Tensor1D, variance: Tensor4D|Tensor1D,
-      offset?: Tensor4D|Tensor1D, scale?: Tensor4D|Tensor1D,
-      varianceEpsilon?: number): Tensor4D {
+      varianceEpsilon: number, scale?: Tensor4D|Tensor1D,
+      offset?: Tensor4D|Tensor1D): Tensor4D {
     const inputs = [x, mean, variance];
 
     let offsetShape = null;

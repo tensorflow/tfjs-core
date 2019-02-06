@@ -28,7 +28,7 @@ describeWithFlags('batchnorm packed', PACKED_ENVS, () => {
 
     const startNumBytes = tf.memory().numBytes;
     const startNumTensors = tf.memory().numTensors;
-    tf.batchNorm4d(x, mean, variance, varianceEpsilon, undefined, undefined);
+    tf.batchNorm4d(x, mean, variance, undefined, undefined, varianceEpsilon);
     const endNumBytes = tf.memory().numBytes;
     const endNumTensors = tf.memory().numTensors;
 
@@ -86,7 +86,7 @@ describeWithFlags('batchNorm4D', ALL_ENVS, () => {
     const varianceEpsilon = .001;
 
     const result = tf.batchNorm4d(
-        xT, meanT, varianceT, varianceEpsilon, undefined, undefined);
+        xT, meanT, varianceT, undefined, undefined, varianceEpsilon);
 
     const x = await xT.array() as number[][][][];
     const mean = await meanT.array() as number[];
@@ -107,7 +107,7 @@ describeWithFlags('batchNorm4D', ALL_ENVS, () => {
     const varianceEpsilon = .001;
 
     const result = tf.batchNorm4d(
-        xT, meanT, varianceT, varianceEpsilon, scaleT, undefined);
+        xT, meanT, varianceT, undefined, scaleT, varianceEpsilon);
     const x = await xT.buffer();
     const mean = await meanT.buffer();
     const variance = await varianceT.buffer();
@@ -238,13 +238,7 @@ describeWithFlags('batchNorm4D', ALL_ENVS, () => {
     expectArraysClose(gradMean, tf.tensor1d([2.828, 5.773]));
     const gradVariance = tf.grad(
         (variance: tf.Tensor1D) => tf.batchNorm4d(
-            x,
-            mean,
-            variance,
-            offset,
-            scale,
-            varianceEpsilon,
-            ))(variance, dy);
+            x, mean, variance, offset, scale, varianceEpsilon))(variance, dy);
     expectArraysClose(gradVariance, tf.tensor1d([3.180, 11.060]));
     const gradOffset = tf.grad(
         (offset: tf.Tensor1D) => tf.batchNorm4d(
@@ -301,7 +295,7 @@ describeWithFlags('batchNorm3D', ALL_ENVS, () => {
     const varianceEpsilon = .001;
 
     const result = tf.batchNorm3d(
-        xT, meanT, varianceT, varianceEpsilon, undefined, undefined);
+        xT, meanT, varianceT, undefined, undefined, varianceEpsilon);
     const x = await xT.buffer();
     const mean = await meanT.buffer();
     const variance = await varianceT.buffer();
@@ -325,7 +319,7 @@ describeWithFlags('batchNorm3D', ALL_ENVS, () => {
     const varianceEpsilon = .001;
 
     const result = tf.batchNorm3d(
-        xT, meanT, varianceT, varianceEpsilon, scaleT, undefined);
+        xT, meanT, varianceT, undefined, scaleT, varianceEpsilon);
 
     const x = await xT.buffer();
     const mean = await meanT.buffer();
@@ -572,7 +566,7 @@ describeWithFlags('batchNorm2D', ALL_ENVS, () => {
     const varianceEpsilon = .001;
 
     const result = tf.batchNorm2d(
-        xT, meanT, varianceT, varianceEpsilon, undefined, undefined);
+        xT, meanT, varianceT, undefined, undefined, varianceEpsilon);
 
     const x = await xT.buffer();
     const mean = await meanT.buffer();
@@ -596,7 +590,7 @@ describeWithFlags('batchNorm2D', ALL_ENVS, () => {
     const varianceEpsilon = .001;
 
     const result = tf.batchNorm2d(
-        xT, meanT, varianceT, varianceEpsilon, scaleT, undefined);
+        xT, meanT, varianceT, undefined, scaleT, varianceEpsilon);
 
     const x = await xT.buffer();
     const mean = await meanT.buffer();

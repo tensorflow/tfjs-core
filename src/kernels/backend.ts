@@ -505,10 +505,10 @@ export class KernelBackend implements TensorStorage, Backend, BackendTimer {
     throw new Error('Not yet implemented');
   }
 
-  batchNorm(
+  batchNormalization(
       x: Tensor4D, mean: Tensor4D|Tensor1D, variance: Tensor4D|Tensor1D,
-      offset?: Tensor4D|Tensor1D, scale?: Tensor4D|Tensor1D,
-      varianceEpsilon?: number): Tensor4D {
+      varianceEpsilon: number, scale?: Tensor4D|Tensor1D,
+      offset?: Tensor4D|Tensor1D): Tensor4D {
     throw new Error('Not yet implemented');
   }
 
