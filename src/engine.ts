@@ -234,7 +234,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
         totalTensorsSnapshot: this.numTensors,
         inputShapes: Object.keys(inputs).map(key => inputs[key].shape),
         outputShape: Array.isArray(result) ?
-            (result as Tensor[]).map(item => (item as Tensor).shape) :
+            (result as Tensor[]).map(item => item.shape) :
             (result as Tensor).shape
       });
     }

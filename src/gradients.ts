@@ -186,7 +186,7 @@ function valueAndGrad<I extends Tensor, O extends Tensor>(f: (x: I) => O): (
         'The dy passed in valueAndGrad(f)(x, dy) must be a tensor');
     const {grads, value} = ENV.engine.gradients(() => f(x), [x], dy);
     checkGrads(grads);
-    return {grad: grads[0] as I, value: value as O};
+    return {grad: grads[0] as I, value};
   };
 }
 

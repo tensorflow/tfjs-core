@@ -29,6 +29,7 @@
       "options": {"limit": 80, "ignore-pattern": "^import |^export "}
     },
     "new-parens": true,
+    "no-unnecessary-type-assertion": true,
     "no-angle-bracket-type-assertion": true,
     "no-any": true,
     "no-construct": true,

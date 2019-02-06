@@ -22,6 +22,15 @@
         "problemMatcher": [
           "$tsc"
         ]
+      },
+      {
+        "command": "yarn",
+        "label": "lint",
+        "type": "shell",
+        "args": ["lint"],
+        "problemMatcher": [
+          "$tslint5"
+        ]
       }
     ]
   }

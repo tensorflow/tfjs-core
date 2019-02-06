@@ -615,7 +615,7 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   complex<T extends Tensor>(real: T, imag: T): T {
-    const result = this.makeOutputArray(real.shape, 'complex64') as T;
+    const result = this.makeOutputArray(real.shape, 'complex64');
     const resultData = this.texData.get(result.dataId);
     // The backend owns the reference to the underlying real and imaginary
     // clones. These will explicitly get disposed when the complex tensor is
@@ -625,7 +625,7 @@ export class MathBackendWebGL implements KernelBackend {
       imag: ENV.engine.keep(imag.clone())
     };
 
-    return result;
+    return result as T;
   }
   real<T extends Tensor>(input: T): T {
     const resultData = this.texData.get(input.dataId);
@@ -739,7 +739,7 @@ export class MathBackendWebGL implements KernelBackend {
 
   neg<T extends Tensor>(x: T): T {
     const program = new UnaryOpProgram(x.shape, unary_op.NEG);
-    return this.compileAndRun(program, [x]) as T;
+    return this.compileAndRun(program, [x]);
   }
 
   batchMatMul(
