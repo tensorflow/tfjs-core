@@ -971,13 +971,11 @@ function depthToSpace_(
       inputHeight * blockSize >= 0,
       `Negative dimension size caused by overflow when multiplying
       ${inputHeight} and ${blockSize}  for depthToSpace with input shape
-      $ {
-        $x.shape
-      } `);
+      ${$x.shape}`);
 
   util.assert(
       inputWidth * blockSize >= 0,
-      ` Negative dimension size caused by overflow when multiplying
+      `Negative dimension size caused by overflow when multiplying
       ${inputWidth} and ${blockSize} for depthToSpace with input shape
           ${$x.shape}`);
 
