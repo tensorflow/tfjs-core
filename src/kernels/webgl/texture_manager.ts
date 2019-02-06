@@ -15,9 +15,8 @@
  * =============================================================================
  */
 
-import {ENV} from '../../environment';
-
 import {GPGPUContext} from './gpgpu_context';
+import {getPhysicalFromLogicalTextureType} from './webgl_util';
 import {PhysicalTextureType, TextureUsage} from './tex_util';
 
 export class TextureManager {
@@ -141,28 +140,6 @@ export class TextureManager {
     this.numUsedTextures = 0;
     this.numFreeTextures = 0;
   }
-}
-
-function getPhysicalFromLogicalTextureType(
-    logicalTexType: TextureUsage, isPacked: boolean): PhysicalTextureType {
-  if (logicalTexType === TextureUsage.UPLOAD) {
-    return isPacked ? PhysicalTextureType.PACKED_2X2_FLOAT32 :
-                      PhysicalTextureType.UNPACKED_FLOAT32;
-  } else if (logicalTexType === TextureUsage.RENDER || logicalTexType == null) {
-    if (isPacked) {
-      return ENV.get('WEBGL_RENDER_FLOAT32_ENABLED') ?
-          PhysicalTextureType.PACKED_2X2_FLOAT32 :
-          PhysicalTextureType.PACKED_2X2_FLOAT16;
-    }
-    return ENV.get('WEBGL_RENDER_FLOAT32_ENABLED') ?
-        PhysicalTextureType.UNPACKED_FLOAT32 :
-        PhysicalTextureType.UNPACKED_FLOAT16;
-  } else if (
-      logicalTexType === TextureUsage.DOWNLOAD ||
-      logicalTexType === TextureUsage.PIXELS) {
-    return PhysicalTextureType.PACKED_4X1_UNSIGNED_BYTE;
-  }
-  throw new Error(`Unknown logical texture type ${logicalTexType}`);
 }
 
 function getKeyFromTextureShape(

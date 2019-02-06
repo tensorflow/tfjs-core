@@ -2337,7 +2337,16 @@ export class MathBackendWebGL implements KernelBackend {
     const dontKeepCopyOnGPU = this.delayedStorage;
     const texData = this.texData.get(dataId);
     const {texture, texShape, dtype, usage, isPacked} = texData;
-    if (dontKeepCopyOnGPU && texture != null) {
+
+    // If changing texData.usage to UPLOAD entails a different physical texture
+    // type, we must dispose it to maintain the correctness of the
+    // TextureManager shape cache.
+    const uploadIncompatibleWithPhysical =
+        webgl_util.getPhysicalFromLogicalTextureType(usage, isPacked) !==
+        webgl_util.getPhysicalFromLogicalTextureType(
+            TextureUsage.UPLOAD, isPacked);
+    if (uploadIncompatibleWithPhysical ||
+        (dontKeepCopyOnGPU && texture != null)) {
       this.releaseTexture(dataId, texture, texShape, usage, isPacked);
       texData.texture = null;
       texData.texShape = null;
