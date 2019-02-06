@@ -23,10 +23,11 @@ import './kernels/backend_cpu';
 
 import {nextFrame} from './browser_util';
 import * as environment from './environment';
-import {enableProdMode, Environment} from './environment';
+import {deprecationWarn, disableDeprecationWarnings, enableProdMode, Environment} from './environment';
 // Serialization.
 import * as io from './io/io';
 import * as math from './math';
+import * as browser from './ops/browser';
 import * as serialization from './serialization';
 import {setOpHandler} from './tensor';
 import * as test_util from './test_util';
@@ -65,19 +66,11 @@ export const disposeVariables = Environment.disposeVariables;
 export const memory = Environment.memory;
 export {version as version_core};
 
-export {nextFrame};
+// Top-level method exports.
+export {nextFrame, enableProdMode, disableDeprecationWarnings, deprecationWarn};
 
 // Second level exports.
-export {
-  environment,
-  io,
-  math,
-  serialization,
-  test_util,
-  util,
-  webgl,
-  enableProdMode
-};
+export {browser, environment, io, math, serialization, test_util, util, webgl};
 
 // Backend specific.
 export {KernelBackend, BackendTimingInfo, DataMover, DataStorage} from './kernels/backend';
