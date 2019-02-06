@@ -2124,7 +2124,7 @@ describeWithFlags('Deprecation warnings', ALL_ENVS, () => {
 
   it('Tensor.buffer', () => {
     const t = tf.tensor1d([5, 3, 2]);
-    const buffer = t.bufferSync();
+    const buffer = t.buffer<'float32'>();
     expectNumbersClose(buffer.get(1), 3);
 
     expect(console.warn).toHaveBeenCalledTimes(1);
