@@ -2690,12 +2690,11 @@ export class MathBackendCPU implements KernelBackend {
     return ops.tensor4d(output, x.shape, x.dtype);
   }
 
-  batchNormalization(
+  batchNorm(
       x: Tensor4D, mean: Tensor4D|Tensor1D, variance: Tensor4D|Tensor1D,
-      varianceEpsilon: number, scale?: Tensor4D|Tensor1D,
-      offset?: Tensor4D|Tensor1D): Tensor4D {
-    this.assertNotComplex(
-        [x, mean, variance, scale, offset], 'batchNormalization');
+      offset?: Tensor4D|Tensor1D, scale?: Tensor4D|Tensor1D,
+      varianceEpsilon?: number): Tensor4D {
+    this.assertNotComplex([x, mean, variance, scale, offset], 'batchNorm');
 
     const xVals = x.dataSync();
     const mVals = mean.dataSync();

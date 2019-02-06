@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+import {deprecationWarn} from './environment';
 import {tensorToString} from './tensor_format';
 import {ArrayMap, DataType, DataTypeMap, DataValues, NumericDataType, Rank, ShapeMap, SingleValueMap, TensorLike, TensorLike1D, TensorLike3D, TensorLike4D, TypedArray} from './types';
 import * as util from './util';
@@ -194,11 +195,12 @@ export interface OpHandler {
   unstack<T extends Tensor>(value: T, axis: number): Tensor[];
   pad<T extends Tensor>(
       x: T, paddings: Array<[number, number]>, constantValue: number): T;
-  batchNormalization<R extends Rank>(
+  batchNorm<R extends Rank>(
       x: Tensor<R>, mean: Tensor<R>|Tensor1D|TensorLike,
-      variance: Tensor<R>|Tensor1D|TensorLike, varianceEpsilon: number,
+      variance: Tensor<R>|Tensor1D|TensorLike,
+      offset?: Tensor<R>|Tensor1D|TensorLike,
       scale?: Tensor<R>|Tensor1D|TensorLike,
-      offset?: Tensor<R>|Tensor1D|TensorLike): Tensor<R>;
+      varianceEpsilon?: number): Tensor<R>;
   all<T extends Tensor>(x: Tensor, axis: number|number[], keepDims: boolean): T;
   any<T extends Tensor>(x: Tensor, axis: number|number[], keepDims: boolean): T;
   logSumExp<T extends Tensor>(
@@ -801,16 +803,33 @@ export class Tensor<R extends Rank = Rank> {
       this: T, paddings: Array<[number, number]>, constantValue = 0): T {
     return opHandler.pad(this, paddings, constantValue);
   }
+  /**
+   * @deprecated Use `tf.batchNorm` instead, and note the positional argument
+   *     change of scale, offset, and varianceEpsilon.
+   */
   batchNormalization(
       mean: Tensor<R>|Tensor1D|TensorLike,
       variance: Tensor<R>|Tensor1D|TensorLike, varianceEpsilon = .001,
       scale?: Tensor<R>|Tensor1D|TensorLike,
       offset?: Tensor<R>|Tensor1D|TensorLike): Tensor<R> {
-    this.throwIfDisposed();
-    return opHandler.batchNormalization(
-        this, mean, variance, varianceEpsilon, scale, offset);
+    deprecationWarn(
+        'tf.batchNormalization() is going away in TensorFlow.js 1.0. ' +
+        'Use tf.batchNorm() instead, and note the positional argument change ' +
+        'of scale, offset, and varianceEpsilon');
+    return this.batchNorm(mean, variance, offset, scale, varianceEpsilon);
   }
 
+  batchNorm(
+      mean: Tensor<R>|Tensor1D|TensorLike,
+      variance: Tensor<R>|Tensor1D|TensorLike,
+      offset?: Tensor<R>|Tensor1D|TensorLike,
+      scale?: Tensor<R>|Tensor1D|TensorLike,
+      varianceEpsilon = .001,
+      ): Tensor<R> {
+    this.throwIfDisposed();
+    return opHandler.batchNorm(
+        this, mean, variance, offset, scale, varianceEpsilon);
+  }
   // Reduction ops.
   all<T extends Tensor>(axis: number|number[] = null, keepDims = false): T {
     this.throwIfDisposed();
