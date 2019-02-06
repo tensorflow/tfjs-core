@@ -187,7 +187,7 @@ describeWithFlags('epsilon', {}, () => {
   });
 
   it('abs(epsilon) > 0', () => {
-    expect(tf.abs(ENV.get('EPSILON')).get()).toBeGreaterThan(0);
+    expect(tf.abs(ENV.get('EPSILON')).arraySync()).toBeGreaterThan(0);
   });
 });
 
@@ -216,5 +216,37 @@ describeWithFlags('WEBGL_SIZE_UPLOAD_UNIFORM', WEBGL_ENVS, () => {
     const env = new Environment();
     env.set('WEBGL_RENDER_FLOAT32_ENABLED', true);
     expect(env.get('WEBGL_SIZE_UPLOAD_UNIFORM')).toBeGreaterThan(0);
+  });
+});
+
+describe('deprecation warnings', () => {
+  let oldWarn: (msg: string) => void;
+  beforeEach(() => {
+    oldWarn = console.warn;
+    spyOn(console, 'warn').and.callFake((msg: string): void => null);
+  });
+  afterEach(() => {
+    console.warn = oldWarn;
+  });
+
+  it('deprecationWarn warns', () => {
+    tf.deprecationWarn('xyz is deprecated.');
+    expect(console.warn).toHaveBeenCalledTimes(1);
+    expect(console.warn)
+        .toHaveBeenCalledWith(
+            'xyz is deprecated. You can disable deprecation warnings with ' +
+            'tf.disableDeprecationWarnings().');
+  });
+
+  it('disableDeprecationWarnings called, deprecationWarn doesnt warn', () => {
+    tf.disableDeprecationWarnings();
+    expect(console.warn).toHaveBeenCalledTimes(1);
+    expect(console.warn)
+        .toHaveBeenCalledWith(
+            'TensorFlow.js deprecation warnings have been disabled.');
+
+    // deprecationWarn no longer warns.
+    tf.deprecationWarn('xyz is deprecated.');
+    expect(console.warn).toHaveBeenCalledTimes(1);
   });
 });

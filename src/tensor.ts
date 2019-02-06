@@ -16,9 +16,9 @@
  */
 
 import {tensorToString} from './tensor_format';
-import {DataType, DataTypeMap, DataValues, NumericDataType, Rank, ShapeMap, SingleValueMap, TensorLike, TensorLike1D, TensorLike3D, TensorLike4D, TypedArray} from './types';
+import {ArrayMap, DataType, DataTypeMap, DataValues, NumericDataType, Rank, ShapeMap, SingleValueMap, TensorLike, TensorLike1D, TensorLike3D, TensorLike4D, TypedArray} from './types';
 import * as util from './util';
-import {computeStrides} from './util';
+import {computeStrides, toNestedArray} from './util';
 
 export interface TensorData<D extends DataType> {
   dataId?: DataId;
@@ -360,6 +360,12 @@ export interface OpHandler {
 let trackerFn: () => TensorTracker = null;
 // Used by chaining methods to call into ops.
 let opHandler: OpHandler = null;
+// Used to warn about deprecated methods.
+let deprecationWarningFn: (msg: string) => void = null;
+// This here so that we can use this method on dev branches and keep the
+// functionality at master.
+// tslint:disable-next-line:no-unused-expression
+[deprecationWarningFn];
 
 /**
  * An external consumer can register itself as the tensor tracker. This way
@@ -376,6 +382,14 @@ export function setTensorTracker(fn: () => TensorTracker) {
  */
 export function setOpHandler(handler: OpHandler) {
   opHandler = handler;
+}
+
+/**
+ * Sets the deprecation warning function to be used by this file. This way the
+ * Tensor class can be a leaf but still use the environment.
+ */
+export function setDeprecationWarningFn(fn: (msg: string) => void) {
+  deprecationWarningFn = fn;
 }
 
 /**
@@ -539,35 +553,36 @@ export class Tensor<R extends Rank = Rank> {
     return this.shape.length;
   }
 
-  /**
-   * Returns the value in the tensor at the provided location.
-   * If using WebGL backend, this is a blocking call.
-   * Prefer calling the `async data()[flatIndex]` method instead.
-   *
-   * @param locs The location indices.
-   */
-  get(...locs: number[]) {
-    util.assert(
-        locs.length === this.rank,
-        'Number of coordinates in get() must match the rank of the tensor');
-    util.assert(
-        this.dtype !== 'complex64',
-        'Tensor.get() is not supported for complex64 tensors yet.');
-    this.throwIfDisposed();
-    if (locs.length === 0) {
-      locs = [0];
-    }
-    let index = locs[locs.length - 1];
-    for (let i = 0; i < locs.length - 1; ++i) {
-      index += this.strides[i] * locs[i];
-    }
-    return this.dataSync()[index];
+  /** Returns a promise of `tf.TensorBuffer` that holds the underlying data. */
+  /** @doc {heading: 'Tensors', subheading: 'Classes'} */
+  async buffer<D extends DataType = 'float32'>(): Promise<TensorBuffer<R, D>> {
+    return opHandler.buffer(this.shape, this.dtype as D, await this.data());
   }
 
   /** Returns a `tf.TensorBuffer` that holds the underlying data. */
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
-  buffer<D extends DataType>(): TensorBuffer<R, D> {
+  bufferSync<D extends DataType = 'float32'>(): TensorBuffer<R, D> {
     return opHandler.buffer(this.shape, this.dtype as D, this.dataSync());
+  }
+
+  /**
+   * Returns the tensor data as a nested array. The transfer of data is done
+   * asynchronously.
+   */
+  /** @doc {heading: 'Tensors', subheading: 'Classes'} */
+  // tslint:disable-next-line:no-any
+  async array(): Promise<ArrayMap[R]> {
+    return toNestedArray(this.shape, await this.data());
+  }
+
+  /**
+   * Returns the tensor data as a nested array. The transfer of data is done
+   * synchronously.
+   */
+  /** @doc {heading: 'Tensors', subheading: 'Classes'} */
+  // tslint:disable-next-line:no-any
+  arraySync(): ArrayMap[R] {
+    return toNestedArray(this.shape, this.dataSync());
   }
 
   /**
