@@ -15,7 +15,6 @@
  * =============================================================================
  */
 
-import {deprecationWarn} from './environment';
 import {tensorToString} from './tensor_format';
 import {ArrayMap, DataType, DataTypeMap, DataValues, NumericDataType, Rank, ShapeMap, SingleValueMap, TensorLike, TensorLike1D, TensorLike3D, TensorLike4D, TypedArray} from './types';
 import * as util from './util';
@@ -812,7 +811,7 @@ export class Tensor<R extends Rank = Rank> {
       variance: Tensor<R>|Tensor1D|TensorLike, varianceEpsilon = .001,
       scale?: Tensor<R>|Tensor1D|TensorLike,
       offset?: Tensor<R>|Tensor1D|TensorLike): Tensor<R> {
-    deprecationWarn(
+    deprecationWarningFn(
         'tf.batchNormalization() is going away. ' +
         'Use tf.batchNorm() instead, and note the positional argument change ' +
         'of scale, offset, and varianceEpsilon');
