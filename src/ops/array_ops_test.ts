@@ -1272,6 +1272,56 @@ describeWithFlags('fromPixels, mock canvas', NODE_ENVS, () => {
   });
 });
 
+describeWithFlags('Deprecation warnings', ALL_ENVS, () => {
+  let oldWarn: (msg: string) => void;
+  beforeEach(() => {
+    oldWarn = console.warn;
+    spyOn(console, 'warn').and.callFake((msg: string): void => null);
+  });
+  afterEach(() => {
+    console.warn = oldWarn;
+  });
+
+  it('tf.fromPixels', () => {
+    const pixels = new ImageData(1, 1);
+    pixels.data[0] = 0;
+    pixels.data[1] = 80;
+    pixels.data[2] = 160;
+    pixels.data[3] = 240;
+
+    const array = tf.fromPixels(pixels, 3);
+
+    expectArraysEqual(array, [0, 80, 160]);
+
+    expect(console.warn).toHaveBeenCalledTimes(1);
+    expect(console.warn)
+        .toHaveBeenCalledWith(
+            `tf.fromPixels() is renamed to tf.browser.fromPixels(), please ` +
+            `switch to the new method as the old method will be removed in ` +
+            `TensorFlow.js 1.0. You can disable deprecation warnings with ` +
+            `tf.disableDeprecationWarnings().`);
+  });
+
+  it('tf.toPixels', async () => {
+    const x = tf.tensor2d([.15, .2], [2, 1], 'float32');
+
+    const data = await tf.browser.toPixels(x);
+    const expected = new Uint8ClampedArray([
+      Math.round(.15 * 255), Math.round(.15 * 255), Math.round(.15 * 255), 255,
+      Math.round(.2 * 255), Math.round(.2 * 255), Math.round(.2 * 255), 255
+    ]);
+    expect(data).toEqual(expected);
+
+    expect(console.warn).toHaveBeenCalledTimes(1);
+    expect(console.warn)
+        .toHaveBeenCalledWith(
+            `tf.toPixels() is renamed to tf.browser.toPixels(), please ` +
+            `switch to the new method as the old method will be removed in ` +
+            `TensorFlow.js 1.0. You can disable deprecation warnings with ` +
+            `tf.disableDeprecationWarnings().`);
+  });
+});
+
 describeWithFlags('fromPixels', BROWSER_ENVS, () => {
   it('ImageData 1x1x3', () => {
     const pixels = new ImageData(1, 1);

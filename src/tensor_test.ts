@@ -2102,3 +2102,40 @@ describeWithFlags('tensor with 0 in shape', ALL_ENVS, () => {
     expectArraysEqual(a, []);
   });
 });
+
+describeWithFlags('Deprecation warnings', ALL_ENVS, () => {
+  let oldWarn: (msg: string) => void;
+  beforeEach(() => {
+    oldWarn = console.warn;
+    spyOn(console, 'warn').and.callFake((msg: string): void => null);
+  });
+  afterEach(() => {
+    console.warn = oldWarn;
+  });
+
+  it('Tensor.get', () => {
+    const t = tf.tensor1d([5, 3, 2]);
+    expectNumbersClose(t.get(1), 3);
+
+    expect(console.warn).toHaveBeenCalledTimes(1);
+    expect(console.warn)
+        .toHaveBeenCalledWith(
+            `Tensor.get() is deprecated. Use Tensor.array() and native array ` +
+            `indexing instead. You can disable deprecation warnings with ` +
+            `tf.disableDeprecationWarnings().`);
+  });
+
+  it('Tensor.buffer', () => {
+    const t = tf.tensor1d([5, 3, 2]);
+    const buffer = t.bufferSync();
+    expectNumbersClose(buffer.get(1), 3);
+
+    expect(console.warn).toHaveBeenCalledTimes(1);
+    expect(console.warn)
+        .toHaveBeenCalledWith(
+            `Tensor.buffer() is renamed to Tensor.bufferSync() in ` +
+            `TensorFlow.js 1.0 and Tensor.buffer() will become an async ` +
+            `function. You can disable deprecation warnings with ` +
+            `tf.disableDeprecationWarnings().`);
+  });
+});
