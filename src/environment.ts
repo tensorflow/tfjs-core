@@ -500,7 +500,6 @@ export function disableDeprecationWarnings(): void {
 
 /** Warn users about deprecated functionality. */
 export function deprecationWarn(msg: string) {
-  console.log('warning about', msg, ENV.get('DEPRECATION_WARNINGS_ENABLED'));
   if (ENV.get('DEPRECATION_WARNINGS_ENABLED')) {
     console.warn(
         msg + ' You can disable deprecation warnings with ' +
