@@ -140,7 +140,7 @@ function createAndConfigureTexture(
       gl,
       () => gl.texImage2D(
           tex2d, 0, internalFormat, width, height, 0, textureFormat,
-          gl.FLOAT, null));
+          textureType, null));
   webgl_util.callAndCheck(gl, () => gl.bindTexture(gl.TEXTURE_2D, null));
   return texture;
 }
