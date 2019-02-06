@@ -31,10 +31,6 @@ import {loadWeightsAsArrayBuffer} from './weights_loader';
 
 const OCTET_STREAM_MIME_TYPE = 'application/octet-stream';
 const JSON_TYPE = 'application/json';
-export type GlobalWithFetch = {
-  ENV: Environment,
-  fetch: Function
-};
 export class BrowserHTTPRequest implements IOHandler {
   protected readonly path: string|string[];
   protected readonly requestInit: RequestInit;
@@ -50,7 +46,7 @@ export class BrowserHTTPRequest implements IOHandler {
       private readonly weightPathPrefix?: string, fetchFunc?: Function,
       private readonly onProgress?: Function) {
     if (fetchFunc == null) {
-      const systemFetch = (ENV.global as GlobalWithFetch).fetch;
+      const systemFetch = ENV.global.fetch;
       if (typeof systemFetch === 'undefined') {
         throw new Error(
             'browserHTTPRequest is not supported outside the web browser ' +

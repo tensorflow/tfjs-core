@@ -460,7 +460,8 @@ export class Environment {
     }
   }
 
-  get global(): {ENV: Environment} {
+  // tslint:disable-next-line:no-any
+  get global(): any {
     return getGlobalNamespace();
   }
 }
