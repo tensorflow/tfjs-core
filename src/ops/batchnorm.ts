@@ -402,7 +402,7 @@ function batchNormalization4d_(
 
 function warnDeprecation() {
   deprecationWarn(
-      'tf.batchNormalization() is going away in TensorFlow.js 1.0. ' +
+      'tf.batchNormalization() is going away. ' +
       'Use tf.batchNorm() instead, and note the positional argument change ' +
       'of scale, offset, and varianceEpsilon');
 }

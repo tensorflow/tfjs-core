@@ -813,7 +813,7 @@ export class Tensor<R extends Rank = Rank> {
       scale?: Tensor<R>|Tensor1D|TensorLike,
       offset?: Tensor<R>|Tensor1D|TensorLike): Tensor<R> {
     deprecationWarn(
-        'tf.batchNormalization() is going away in TensorFlow.js 1.0. ' +
+        'tf.batchNormalization() is going away. ' +
         'Use tf.batchNorm() instead, and note the positional argument change ' +
         'of scale, offset, and varianceEpsilon');
     return this.batchNorm(mean, variance, offset, scale, varianceEpsilon);
