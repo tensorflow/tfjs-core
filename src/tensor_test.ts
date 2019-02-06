@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+import {ENV} from './environment';
 import * as tf from './index';
 import {describeWithFlags} from './jasmine_util';
 import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
@@ -2104,13 +2105,9 @@ describeWithFlags('tensor with 0 in shape', ALL_ENVS, () => {
 });
 
 describeWithFlags('Deprecation warnings', ALL_ENVS, () => {
-  let oldWarn: (msg: string) => void;
   beforeEach(() => {
-    oldWarn = console.warn;
     spyOn(console, 'warn').and.callFake((msg: string): void => null);
-  });
-  afterEach(() => {
-    console.warn = oldWarn;
+    ENV.set('DEPRECATION_WARNINGS_ENABLED', true);
   });
 
   it('Tensor.get', () => {

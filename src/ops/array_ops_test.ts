@@ -20,6 +20,7 @@ import {describeWithFlags} from '../jasmine_util';
 import {ALL_ENVS, BROWSER_ENVS, CPU_ENVS, expectArraysClose, expectArraysEqual, expectPromiseToFail, expectValuesInRange, NODE_ENVS, WEBGL_ENVS} from '../test_util';
 import * as util from '../util';
 import {expectArrayInMeanStdRange, jarqueBeraNormalityTest} from './rand_util';
+import { ENV } from '../environment';
 
 describeWithFlags('zeros', ALL_ENVS, () => {
   it('1D default dtype', () => {
@@ -1272,14 +1273,10 @@ describeWithFlags('fromPixels, mock canvas', NODE_ENVS, () => {
   });
 });
 
-describeWithFlags('Deprecation warnings', ALL_ENVS, () => {
-  let oldWarn: (msg: string) => void;
+describeWithFlags('Deprecation warnings', BROWSER_ENVS, () => {
   beforeEach(() => {
-    oldWarn = console.warn;
     spyOn(console, 'warn').and.callFake((msg: string): void => null);
-  });
-  afterEach(() => {
-    console.warn = oldWarn;
+    ENV.set('DEPRECATION_WARNINGS_ENABLED', true);
   });
 
   it('tf.fromPixels', () => {
@@ -1305,7 +1302,7 @@ describeWithFlags('Deprecation warnings', ALL_ENVS, () => {
   it('tf.toPixels', async () => {
     const x = tf.tensor2d([.15, .2], [2, 1], 'float32');
 
-    const data = await tf.browser.toPixels(x);
+    const data = await tf.toPixels(x);
     const expected = new Uint8ClampedArray([
       Math.round(.15 * 255), Math.round(.15 * 255), Math.round(.15 * 255), 255,
       Math.round(.2 * 255), Math.round(.2 * 255), Math.round(.2 * 255), 255
