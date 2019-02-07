@@ -538,16 +538,16 @@ export class MathBackendWebGL implements KernelBackend {
     if (this.texData.has(dataId)) {
       const {texture, texShape, usage, complexTensors, isPacked, slice} =
           this.texData.get(dataId);
-      if (texture != null) {
-        const key = slice && slice.origDataId || dataId;
-        const refCount = this.dataRefCount.get(key);
-        if (refCount > 1) {
-          this.dataRefCount.set(key, refCount - 1);
-        } else {
-          this.dataRefCount.delete(key);
+      const key = slice && slice.origDataId || dataId;
+      const refCount = this.dataRefCount.get(key);
+      if (refCount > 1) {
+        this.dataRefCount.set(key, refCount - 1);
+      } else {
+        this.dataRefCount.delete(key);
+        if (texture != null) {
           this.releaseTexture(dataId, texture, texShape, usage, isPacked);
-          this.texData.delete(dataId);
         }
+        this.texData.delete(dataId);
       }
       if (complexTensors != null) {
         complexTensors.real.dispose();
