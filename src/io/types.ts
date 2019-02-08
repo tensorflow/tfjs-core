@@ -279,7 +279,6 @@ export interface LoadOptions {
    */
   weightPathPrefix?: string;
 
-
   /**
    * Whether the module or model is to be loaded from TF Hub.
    * 
