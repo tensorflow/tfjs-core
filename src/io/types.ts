@@ -247,7 +247,7 @@ export interface ModelStoreManager {
  * `fraction` should be a number in the [0, 1] interval, indicating how
  * much of the action has completed.
  */
-export type OnProgressCallback = (fraction: number) => void;  
+export type OnProgressCallback = (fraction: number) => void;
 
 export interface LoadOptions {
   /**
@@ -268,6 +268,8 @@ export interface LoadOptions {
   /**
    * Strict loading model: whether extraneous weights or missing
    * weights should trigger an `Error`.
+   * 
+   * Default: `true`.
    */
   strict?: boolean;
 
@@ -276,4 +278,12 @@ export interface LoadOptions {
    * path param.
    */
   weightPathPrefix?: string;
+
+
+  /**
+   * Whether the module or model is to be loaded from TF Hub.
+   * 
+   * Default: `false`.
+   */
+  fromTFHub?: boolean;
 }
