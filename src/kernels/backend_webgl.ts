@@ -1681,9 +1681,14 @@ export class MathBackendWebGL implements KernelBackend {
             [1, xShape[0] * xShape[1] * (xShape[2] + 1), convInfo.inChannels],
             {dataId: x.dataId}, x.dtype) as Tensor3D;
 
-    // xTexData.shape gets referenced from GPGPUBinary.inShapeInfos. Provide a
-    // copy to it with even row count. After the method, the original
-    // xTexData.shape needs to be restored.
+    // xTexData.shape gets referenced from GPGPUBinary.inShapeInfos.
+    // Decrementing row count, after batchMatMul->...->compileProgram leads to
+    // invalid row count within the reference in GPGPUBinary.inShapeInfos.
+    // Alternative fix would be to provide a copy to GPGPUBinary.inShapeInfos
+    // in compileProgram method, but that would affect compilation of all
+    // programs - instead, provide a copy here, with even row count, before
+    // calling batchMatMul->...->compileProgram and after that, the original
+    // xTexData.shape is restored.
     const originalXTexDataShape = xTexData.shape;
     xTexData.shape = xTexData.shape.slice();
     xTexData.shape[xTexData.shape.length - 2]++;
