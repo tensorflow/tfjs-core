@@ -192,7 +192,6 @@ export class MathBackendWebGL implements KernelBackend {
   private downloadWaitMs = 0;
   private cpuBackend: KernelBackend;
   // Whether we dispose the texture after reading its values.
-  private keepCopyOfTextureOnGPUAfterRead = false;
 
   register(dataId: DataId, shape: number[], dtype: DataType): void {
     if (this.texData.has(dataId)) {
@@ -2171,17 +2170,14 @@ export class MathBackendWebGL implements KernelBackend {
         // *distinct* inputs to an op, e.g. dotting a vector with itself. This
         // case will disappear once packed uploading is the default.
 
-        // Temporarily enable keepCopyOfTextureOnGPUAfterRead so the texture
-        // isn't removed from the original input. This does not corrupt the
-        // TextureManager cache because this texture's usage is always UPLOAD.
-        this.keepCopyOfTextureOnGPUAfterRead = true;
-        const inputValues = (input as Tensor).dataSync();
-        this.keepCopyOfTextureOnGPUAfterRead = false;
+        const savedInput = input;
+        const targetShape = input.shape;
 
-        input =
-            Tensor.make(input.shape, {values: inputValues}, input.dtype, this);
+        input.shape = texData.shape;
+        input = this.packedReshape(input as Tensor, targetShape);
         texData = this.texData.get(input.dataId);
-        texData.isPacked = true;
+
+        savedInput.shape = targetShape;
       }
 
       this.uploadToGPU(input.dataId);
@@ -2333,7 +2329,7 @@ export class MathBackendWebGL implements KernelBackend {
     const texData = this.texData.get(dataId);
     const {texture, texShape, dtype, usage, isPacked} = texData;
 
-    if (texture != null && !this.keepCopyOfTextureOnGPUAfterRead) {
+    if (texture != null) {
       this.releaseTexture(dataId, texture, texShape, usage, isPacked);
       texData.texture = null;
       texData.texShape = null;
