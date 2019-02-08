@@ -251,7 +251,7 @@ export type OnProgressCallback = (fraction: number) => void;
 
 export interface LoadOptions {
   /**
-   * RequestInit (options) for the HTTP requests.
+   * RequestInit (options) for HTTP requests.
    */
   requestInit?: RequestInit;
 
