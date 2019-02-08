@@ -25,7 +25,7 @@ import {assert} from '../util';
 
 import {concatenateArrayBuffers, getModelArtifactsInfoForJSON} from './io_utils';
 import {IORouter, IORouterRegistry} from './router_registry';
-import {IOHandler, ModelArtifacts, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
+import {IOHandler, ModelArtifacts, OnProgressCallback, SaveResult, WeightsManifestConfig, WeightsManifestEntry, LoadOptions} from './types';
 import {loadWeightsAsArrayBuffer} from './weights_loader';
 
 const OCTET_STREAM_MIME_TYPE = 'application/octet-stream';
@@ -41,11 +41,17 @@ export class BrowserHTTPRequest implements IOHandler {
 
   static readonly URL_SCHEME_REGEX = /^https?:\/\//;
 
-  constructor(
-      path: string|string[], requestInit?: RequestInit,
-      private readonly weightPathPrefix?: string, fetchFunc?: Function,
-      private readonly onProgress?: Function) {
-    if (fetchFunc == null) {
+  private readonly weightPathPrefix: string;
+  private readonly onProgress: OnProgressCallback;
+
+  constructor(path: string|string[], loadOptions?: LoadOptions) {
+    if (loadOptions == null) {
+      loadOptions = {};
+    }
+    this.weightPathPrefix = loadOptions.weightPathPrefix;
+    this.onProgress = loadOptions.onProgress;
+
+    if (loadOptions.fetchFunc == null) {
       if (typeof fetch === 'undefined') {
         throw new Error(
             'browserHTTPRequest is not supported outside the web browser ' +
@@ -53,10 +59,11 @@ export class BrowserHTTPRequest implements IOHandler {
       }
       // Make sure fetch is always bound to window (the
       // original object) when available.
-      fetchFunc = fetch.bind(typeof window === 'undefined' ? null : window);
+      loadOptions.fetchFunc =
+          fetch.bind(typeof window === 'undefined' ? null : window);
     } else {
       assert(
-          typeof fetchFunc === 'function',
+          typeof loadOptions.fetchFunc === 'function',
           'Must pass a function that matches the signature of ' +
               '`fetch` (see ' +
               'https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)');
@@ -64,7 +71,7 @@ export class BrowserHTTPRequest implements IOHandler {
 
     this.fetchFunc = (path: string, requestInits: RequestInit) => {
       // tslint:disable-next-line:no-any
-      return fetchFunc(path, requestInits).catch((error: any) => {
+      return loadOptions.fetchFunc(path, requestInits).catch((error: any) => {
         throw new Error(`Request for ${path} failed due to error: ${error}`);
       });
     };
@@ -82,11 +89,12 @@ export class BrowserHTTPRequest implements IOHandler {
     }
     this.path = path;
 
-    if (requestInit != null && requestInit.body != null) {
+    if (loadOptions.requestInit != null &&
+        loadOptions.requestInit.body != null) {
       throw new Error(
           'requestInit is expected to have no pre-existing body, but has one.');
     }
-    this.requestInit = requestInit || {};
+    this.requestInit = loadOptions.requestInit || {};
   }
 
   async save(modelArtifacts: ModelArtifacts): Promise<SaveResult> {
@@ -235,8 +243,11 @@ export class BrowserHTTPRequest implements IOHandler {
         fetchURLs.push(pathPrefix + path + suffix);
       });
     });
-    const buffers = await loadWeightsAsArrayBuffer(
-        fetchURLs, this.requestInit, this.getFetchFunc(), this.onProgress);
+    const buffers = await loadWeightsAsArrayBuffer(fetchURLs, {
+      requestInit: this.requestInit,
+      fetchFunc: this.getFetchFunc(),
+      onProgress: this.onProgress
+    });
     return [weightSpecs, concatenateArrayBuffers(buffers)];
   }
 
@@ -277,7 +288,7 @@ export function isHTTPScheme(url: string): boolean {
 }
 
 export const httpRequestRouter: IORouter =
-    (url: string|string[], onProgress?: Function) => {
+    (url: string|string[], onProgress?: OnProgressCallback) => {
       if (typeof fetch === 'undefined') {
         // browserHTTPRequest uses `fetch`, if one wants to use it in node.js
         // they have to setup a global fetch polyfill.
@@ -290,7 +301,7 @@ export const httpRequestRouter: IORouter =
           isHTTP = isHTTPScheme(url);
         }
         if (isHTTP) {
-          return browserHTTPRequest(url, null, null, null, onProgress);
+          return browserHTTPRequest(url, {onProgress});
         }
       }
       return null;
@@ -442,8 +453,6 @@ IORouterRegistry.registerLoadRouter(httpRequestRouter);
  * @returns An instance of `IOHandler`.
  */
 export function browserHTTPRequest(
-    path: string|string[], requestInit?: RequestInit, weightPathPrefix?: string,
-    fetchFunc?: Function, onProgress?: Function): IOHandler {
-  return new BrowserHTTPRequest(
-      path, requestInit, weightPathPrefix, fetchFunc, onProgress);
+    path: string|string[], loadOptions?: LoadOptions): IOHandler {
+  return new BrowserHTTPRequest(path, loadOptions);
 }

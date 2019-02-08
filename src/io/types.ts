@@ -239,3 +239,40 @@ export interface ModelStoreManager {
    */
   removeModel(path: string): Promise<ModelArtifactsInfo>;
 }
+
+/**
+ * Callback for the progress of a long-running action.
+ * 
+ * fraction should be a number in the [0, 1] interval, indicating how
+ * much of the action has completed.
+ */
+export type OnProgressCallback = (fraction: number) => void;  
+
+export interface LoadOptions {
+  /**
+   * RequestInit (options) for the HTTP requests.
+   */
+  requestInit?: RequestInit;
+
+  /**
+   * Progress callback
+   */
+  onProgress?: OnProgressCallback;
+
+  /**
+   * A function used to override the `window.fetch` function.
+   */
+  fetchFunc?: Function;
+
+  /**
+   * Strict loading model: whether extraneous weights or missing
+   * weights should trigger an Error.
+   */
+  strict?: boolean;
+
+  /**
+   * Path prefix for weight files, by default this is calculated from the
+   * path param.
+   */
+  weightPathPrefix?: string;
+}
