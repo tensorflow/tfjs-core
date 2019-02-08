@@ -1681,6 +1681,11 @@ export class MathBackendWebGL implements KernelBackend {
             [1, xShape[0] * xShape[1] * (xShape[2] + 1), convInfo.inChannels],
             {dataId: x.dataId}, x.dtype) as Tensor3D;
 
+    // xTexData.shape gets referenced from GPGPUBinary.inShapeInfos. Provide a
+    // copy to it with even row count. After the method, the original
+    // xTexData.shape needs to be restored.
+    const originalXTexDataShape = xTexData.shape;
+    xTexData.shape = xTexData.shape.slice();
     xTexData.shape[xTexData.shape.length - 2]++;
     util.assert(
         webgl_util.isReshapeFree(xTexData.shape, xReshaped.shape),
@@ -1695,8 +1700,8 @@ export class MathBackendWebGL implements KernelBackend {
     util.assert(
         pointwiseConvTexData.isPacked,
         'batchMatMul result is expected to be packed');
-    // Restore the input shape to odd number of rows.
-    xTexData.shape[xTexData.shape.length - 2]--;
+    // Restore the input shape to original.
+    xTexData.shape = originalXTexDataShape;
     // Set the output shape - there is no need for expensive reshape as data
     // layout is already correct.
     pointwiseConvTexData.shape = convInfo.outShape;
