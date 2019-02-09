@@ -35,7 +35,7 @@ import {range, scalar, tensor} from '../ops/tensor_ops';
 import {DataId, Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D} from '../tensor';
 import {DataType, DataTypeMap, DataValues, NumericDataType, Rank, RecursiveArray, ShapeMap, sumOutType, TypedArray, upcastType} from '../types';
 import * as util from '../util';
-import {getTypedArrayFromDType, sizeFromShape} from '../util';
+import {inferDtype, getArrayFromDType, getTypedArrayFromDType, sizeFromShape} from '../util';
 
 import {DataMover, DataStorage, KernelBackend} from './backend';
 import * as backend_util from './backend_util';
@@ -111,6 +111,7 @@ import {UnaryOpPackedProgram} from './webgl/unaryop_packed_gpu';
 import {UnpackProgram} from './webgl/unpack_gpu';
 import * as webgl_util from './webgl/webgl_util';
 import {whereImpl} from './where_impl';
+import {FillProgram} from './webgl/fill_gpu';
 
 type KernelInfo = {
   name: string; query: Promise<number>;
@@ -2061,6 +2062,22 @@ export class MathBackendWebGL implements KernelBackend {
         new GatherNDProgram(sliceRank, strides, [numSlices, sliceSize]);
     return (this.compileAndRun(program, [flattenX, flattenIndices]) as Tensor)
         .reshape(resultShape);
+  }
+
+  fill<R extends Rank>(
+    shape: ShapeMap[R], value: number|string, dtype?: DataType): Tensor<R> {
+    dtype = dtype || inferDtype(value);
+
+    if (dtype === 'string') {
+      // String type should be handled in CPU memory.
+      const values = getArrayFromDType(dtype, sizeFromShape(shape));
+      values.fill(value as string);
+      return Tensor.make(shape, {values}, dtype);
+    } else {
+      const input = scalar(value);
+      const program = new FillProgram(shape, value as number);
+      return this.compileAndRun(program, [input]) as Tensor<R>;
+    }
   }
 
   private makeOutputArray<T extends Tensor>(shape: number[], dtype: DataType):
