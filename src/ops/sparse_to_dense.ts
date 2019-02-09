@@ -23,7 +23,6 @@ import {Rank, ScalarLike, ShapeMap, TensorLike} from '../types';
 
 import {op} from './operation';
 
-
 /**
  * Converts a sparse representation into a dense tensor.
  *
