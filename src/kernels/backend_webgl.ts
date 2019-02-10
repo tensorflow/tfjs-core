@@ -2219,8 +2219,8 @@ export class MathBackendWebGL implements KernelBackend {
       let numBytesToPage = this.numBytesInGPU - numBytesBeforePaging;
       while (numBytesToPage > 0 && this.lruDataGPU.length > 0) {
         const dataId = this.lruDataGPU.shift();
-        const {texShape, dtype, isPacked} = this.texData.get(dataId);
-        numBytesToPage -= this.computeBytes(texShape, dtype, isPacked);
+        const {texShape, dtype} = this.texData.get(dataId);
+        numBytesToPage -= this.computeBytes(texShape, dtype);
         this.read(dataId);
       }
     }
@@ -2364,7 +2364,7 @@ export class MathBackendWebGL implements KernelBackend {
         this.lruDataGPU.splice(idx, 1);
       }
     }
-    this.numBytesInGPU -= this.computeBytes(texShape, dtype, isPacked);
+    this.numBytesInGPU -= this.computeBytes(texShape, dtype);
     this.textureManager.releaseTexture(texture, texShape, texType, isPacked);
   }
 
@@ -2374,12 +2374,11 @@ export class MathBackendWebGL implements KernelBackend {
     if (ENV.get('WEBGL_NUM_MB_BEFORE_PAGING') < Number.POSITIVE_INFINITY) {
       this.lruDataGPU.push(dataId);
     }
-    this.numBytesInGPU += this.computeBytes(texShape, dtype, isPacked);
+    this.numBytesInGPU += this.computeBytes(texShape, dtype);
     return this.textureManager.acquireTexture(texShape, texType, isPacked);
   }
 
-  private computeBytes(
-      shape: [number, number], dtype: DataType, isPacked: boolean) {
+  private computeBytes(shape: [number, number], dtype: DataType) {
     return shape[0] * shape[1] * util.bytesPerElement(dtype);
   }
 }
