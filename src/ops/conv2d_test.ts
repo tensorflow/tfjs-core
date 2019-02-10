@@ -359,13 +359,13 @@ describeWithFlags('conv2d webgl', WEBGL_ENVS, () => {
     expectArraysClose(result1, [37, 54, 81, 118]);
   });
 
-  it('numBytesInGPU packed input x=[1,1,1,2] f=[1,1,2,2] s=1 d=1 p=0', () => {
+  it('tf.memory() packed input x=[1,1,1,2] f=[1,1,2,2] s=1 d=1 p=0', () => {
     const inputShape: [number, number, number, number] = [1, 1, 1, 2];
     const fSize = 1;
     const pad = 0;
     const stride = 1;
 
-    let x = tf.tensor4d([0, 1], inputShape);
+    const xInit = tf.tensor4d([0, 1], inputShape);
     const w = tf.tensor4d([1, 2, 3, 4], [fSize, fSize, 2, 2]);
 
     const webglLazilyUnpackFlagSaved = tf.ENV.get('WEBGL_LAZILY_UNPACK');
@@ -374,9 +374,7 @@ describeWithFlags('conv2d webgl', WEBGL_ENVS, () => {
         tf.ENV.get('WEBGL_PACK_BINARY_OPERATIONS');
     tf.ENV.set('WEBGL_PACK_BINARY_OPERATIONS', true);
 
-    x = x.add(1);
-    const prevNumBytesOnGPU =
-        (tf.memory() as tf.webgl.WebGLMemoryInfo).numBytesInGPU;
+    const x = xInit.add<tf.Tensor4D>(1);
     const result = tf.conv2d(x, w, stride, pad);
 
     tf.ENV.set('WEBGL_LAZILY_UNPACK', webglLazilyUnpackFlagSaved);
@@ -387,7 +385,9 @@ describeWithFlags('conv2d webgl', WEBGL_ENVS, () => {
     expectArraysClose(result, [7, 10]);
     result.dispose();
     x.dispose();
-    expect((tf.memory() as tf.webgl.WebGLMemoryInfo).numBytesInGPU)
-        .toBe(prevNumBytesOnGPU);
+    xInit.dispose();
+    w.dispose();
+    expect((tf.memory() as tf.webgl.WebGLMemoryInfo).numBytesInGPU).toBe(0);
+    expect(tf.memory().numBytes).toBe(0);
   });
 });
