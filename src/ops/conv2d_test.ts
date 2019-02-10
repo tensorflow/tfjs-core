@@ -344,17 +344,50 @@ describeWithFlags('conv2d webgl', WEBGL_ENVS, () => {
     const webglLazilyPackBinaryOperationsFlagSaved =
         tf.ENV.get('WEBGL_PACK_BINARY_OPERATIONS');
     tf.ENV.set('WEBGL_PACK_BINARY_OPERATIONS', true);
-    
+
     // First conv2D tests conv2D with non-packed input |x|, and the second uses
     // packed input |result|.
     const result = tf.conv2d(x, w, stride, pad);
     const result1 = tf.conv2d(result, w, stride, pad);
 
     tf.ENV.set('WEBGL_LAZILY_UNPACK', webglLazilyUnpackFlagSaved);
-    tf.ENV.set('WEBGL_PACK_BINARY_OPERATIONS',
+    tf.ENV.set(
+        'WEBGL_PACK_BINARY_OPERATIONS',
         webglLazilyPackBinaryOperationsFlagSaved);
 
     expectArraysClose(result, [7, 10, 15, 22]);
     expectArraysClose(result1, [37, 54, 81, 118]);
+  });
+
+  it('numBytesInGPU packed input x=[1,1,1,2] f=[1,1,2,2] s=1 d=1 p=0', () => {
+    const inputShape: [number, number, number, number] = [1, 1, 1, 2];
+    const fSize = 1;
+    const pad = 0;
+    const stride = 1;
+
+    let x = tf.tensor4d([0, 1], inputShape);
+    const w = tf.tensor4d([1, 2, 3, 4], [fSize, fSize, 2, 2]);
+
+    const webglLazilyUnpackFlagSaved = tf.ENV.get('WEBGL_LAZILY_UNPACK');
+    tf.ENV.set('WEBGL_LAZILY_UNPACK', true);
+    const webglLazilyPackBinaryOperationsFlagSaved =
+        tf.ENV.get('WEBGL_PACK_BINARY_OPERATIONS');
+    tf.ENV.set('WEBGL_PACK_BINARY_OPERATIONS', true);
+
+    x = x.add(1);
+    const prevNumBytesOnGPU =
+        (tf.memory() as tf.webgl.WebGLMemoryInfo).numBytesInGPU;
+    const result = tf.conv2d(x, w, stride, pad);
+
+    tf.ENV.set('WEBGL_LAZILY_UNPACK', webglLazilyUnpackFlagSaved);
+    tf.ENV.set(
+        'WEBGL_PACK_BINARY_OPERATIONS',
+        webglLazilyPackBinaryOperationsFlagSaved);
+
+    expectArraysClose(result, [7, 10]);
+    result.dispose();
+    x.dispose();
+    expect((tf.memory() as tf.webgl.WebGLMemoryInfo).numBytesInGPU)
+        .toBe(prevNumBytesOnGPU);
   });
 });
