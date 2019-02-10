@@ -341,7 +341,7 @@ describeWithFlags('conv2d webgl', WEBGL_ENVS, () => {
 
     const webglLazilyUnpackFlagSaved = tf.ENV.get('WEBGL_LAZILY_UNPACK');
     tf.ENV.set('WEBGL_LAZILY_UNPACK', true);
-    const webglLazilyPackBinaryOperationsFlagSaved =
+    const webglPackBinaryOperationsFlagSaved =
         tf.ENV.get('WEBGL_PACK_BINARY_OPERATIONS');
     tf.ENV.set('WEBGL_PACK_BINARY_OPERATIONS', true);
 
@@ -352,8 +352,7 @@ describeWithFlags('conv2d webgl', WEBGL_ENVS, () => {
 
     tf.ENV.set('WEBGL_LAZILY_UNPACK', webglLazilyUnpackFlagSaved);
     tf.ENV.set(
-        'WEBGL_PACK_BINARY_OPERATIONS',
-        webglLazilyPackBinaryOperationsFlagSaved);
+        'WEBGL_PACK_BINARY_OPERATIONS', webglPackBinaryOperationsFlagSaved);
 
     expectArraysClose(result, [7, 10, 15, 22]);
     expectArraysClose(result1, [37, 54, 81, 118]);
@@ -370,7 +369,7 @@ describeWithFlags('conv2d webgl', WEBGL_ENVS, () => {
 
     const webglLazilyUnpackFlagSaved = tf.ENV.get('WEBGL_LAZILY_UNPACK');
     tf.ENV.set('WEBGL_LAZILY_UNPACK', true);
-    const webglLazilyPackBinaryOperationsFlagSaved =
+    const webglPackBinaryOperationsFlagSaved =
         tf.ENV.get('WEBGL_PACK_BINARY_OPERATIONS');
     tf.ENV.set('WEBGL_PACK_BINARY_OPERATIONS', true);
 
@@ -379,8 +378,7 @@ describeWithFlags('conv2d webgl', WEBGL_ENVS, () => {
 
     tf.ENV.set('WEBGL_LAZILY_UNPACK', webglLazilyUnpackFlagSaved);
     tf.ENV.set(
-        'WEBGL_PACK_BINARY_OPERATIONS',
-        webglLazilyPackBinaryOperationsFlagSaved);
+        'WEBGL_PACK_BINARY_OPERATIONS', webglPackBinaryOperationsFlagSaved);
 
     expectArraysClose(result, [7, 10]);
     result.dispose();

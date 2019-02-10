@@ -2380,11 +2380,7 @@ export class MathBackendWebGL implements KernelBackend {
 
   private computeBytes(
       shape: [number, number], dtype: DataType, isPacked: boolean) {
-    let bytes = shape[0] * shape[1] * util.bytesPerElement(dtype);
-    if (isPacked) {
-      bytes /= 4;
-    }
-    return bytes;
+    return shape[0] * shape[1] * util.bytesPerElement(dtype);
   }
 }
 
