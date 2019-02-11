@@ -72,16 +72,14 @@ describeWithFlags('tf.buffer', ALL_ENVS, () => {
   });
 
   it('throws when passed non-integer shape', () => {
-    const msg = new RegExp(
-        'Tensor must have a shape comprised of positive ' +
-        'integers but got [2, 2.2].');
+    const msg = 'Tensor must have a shape comprised of positive ' +
+        'integers but got shape [2,2.2].';
     expect(() => tf.buffer([2, 2.2])).toThrowError(msg);
   });
 
   it('throws when passed negative shape', () => {
-    const msg = new RegExp(
-        'Tensor must have a shape comprised of positive ' +
-        'integers but got [2, -2].');
+    const msg = 'Tensor must have a shape comprised of positive ' +
+        'integers but got shape [2,-2].';
     expect(() => tf.buffer([2, -2])).toThrowError(msg);
   });
 });
