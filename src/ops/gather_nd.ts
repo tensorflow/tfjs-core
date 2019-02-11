@@ -50,7 +50,7 @@ import {op} from './operation';
  * ```js
  * const indices = tf.tensor2d([0, 1, 1, 0], [2,2], 'int32');
  * const input = tf.tensor2d([9, 10, 11, 12], [2, 2]);
- * tf.gatherND(input, indices).print() //[  10, 11]
+ * tf.gatherND(input, indices).print() // [10, 11]
  * ```
  *
  * @param x The tensor from which to gather values.
