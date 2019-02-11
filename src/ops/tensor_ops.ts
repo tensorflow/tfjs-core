@@ -20,10 +20,11 @@ import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D, Tensor
 import {convertToTensor, inferShape} from '../tensor_util_env';
 import {TensorLike, TensorLike1D, TensorLike2D, TensorLike3D, TensorLike4D, TensorLike5D, TensorLike6D, TypedArray} from '../types';
 import {DataType, Rank, ShapeMap} from '../types';
-import {assert, assertNonNull, flatten, getArrayFromDType, inferDtype, isTypedArray, makeOnesTypedArray, makeZerosTypedArray, sizeFromShape, toTypedArray} from '../util';
+import {assert, assertIntegerDimensions, assertNonNull, flatten, getArrayFromDType, inferDtype, isTypedArray, makeOnesTypedArray, makeZerosTypedArray, sizeFromShape, toTypedArray} from '../util';
 
 import {complex} from './complex_ops';
 import {op} from './operation';
+
 
 /**
  * Creates a `tf.Tensor` with the provided values, shape and dtype.
@@ -70,6 +71,8 @@ function tensor<R extends Rank>(
   }
   const inferredShape = inferShape(values);
   if (shape != null) {
+    assertIntegerDimensions(shape);
+
     const providedSize = sizeFromShape(shape);
     const inferredSize = sizeFromShape(inferredShape);
     assert(

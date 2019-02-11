@@ -49,6 +49,8 @@ export class TensorBuffer<R extends Rank, D extends DataType = 'float32'> {
 
   constructor(shape: ShapeMap[R], public dtype: D, values?: DataTypeMap[D]) {
     this.shape = shape.slice();
+    util.assertIntegerDimensions(this.shape);
+
     this.size = util.sizeFromShape(shape);
 
     if (values != null) {

@@ -650,3 +650,12 @@ export function monitorPromisesProgress(
 
   return Promise.all(promises.map(registerMonitor));
 }
+
+export function assertIntegerDimensions(shape: number[]) {
+  shape.forEach(dimSize => {
+    assert(
+        Number.isInteger(dimSize),
+        `Tensor must have a shape comprised of integers but got ` +
+            `shape ${shape}.`);
+  });
+}
