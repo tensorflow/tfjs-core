@@ -25,7 +25,6 @@ import {assert, assertIntegerDimensions, assertNonNull, flatten, getArrayFromDTy
 import {complex} from './complex_ops';
 import {op} from './operation';
 
-
 /**
  * Creates a `tf.Tensor` with the provided values, shape and dtype.
  *
