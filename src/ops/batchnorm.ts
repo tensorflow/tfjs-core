@@ -43,9 +43,6 @@ function batchNorm2d_(
     variance: Tensor2D|Tensor1D|TensorLike,
     offset?: Tensor2D|Tensor1D|TensorLike, scale?: Tensor2D|Tensor1D|TensorLike,
     varianceEpsilon?: number): Tensor2D {
-  if (varianceEpsilon == null) {
-    varianceEpsilon = 0.001;
-  }
   const $x = convertToTensor(x, 'x', 'batchNorm');
   const $mean = convertToTensor(mean, 'mean', 'batchNorm');
   const $variance = convertToTensor(variance, 'variance', 'batchNorm');
@@ -101,9 +98,6 @@ function batchNorm3d_(
     variance: Tensor3D|Tensor1D|TensorLike,
     offset?: Tensor3D|Tensor1D|TensorLike, scale?: Tensor3D|Tensor1D|TensorLike,
     varianceEpsilon?: number): Tensor3D {
-  if (varianceEpsilon == null) {
-    varianceEpsilon = 0.001;
-  }
   const $x = convertToTensor(x, 'x', 'batchNorm');
   const $mean = convertToTensor(mean, 'mean', 'batchNorm');
   const $variance = convertToTensor(variance, 'variance', 'batchNorm');
@@ -159,9 +153,6 @@ function batchNorm4d_(
     variance: Tensor4D|Tensor1D|TensorLike,
     offset?: Tensor4D|Tensor1D|TensorLike, scale?: Tensor4D|Tensor1D|TensorLike,
     varianceEpsilon?: number): Tensor4D {
-  if (varianceEpsilon == null) {
-    varianceEpsilon = 0.001;
-  }
   const $x = convertToTensor(x, 'x', 'batchNorm');
   const $mean = convertToTensor(mean, 'mean', 'batchNorm');
   const $variance = convertToTensor(variance, 'variance', 'batchNorm');
