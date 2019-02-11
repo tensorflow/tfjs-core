@@ -53,7 +53,6 @@
     "triple-equals": [true, "allow-null-check"],
     "use-isnan": true,
     "use-default-type-parameter": true,
-
     "variable-name": [
       true,
       "check-format",
