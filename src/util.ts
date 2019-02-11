@@ -656,6 +656,6 @@ export function assertIntegerDimensions(shape: number[]) {
     assert(
         Number.isInteger(dimSize),
         `Tensor must have a shape comprised of integers but got ` +
-            `shape ${shape}.`);
+            `shape [${shape}].`);
   });
 }
