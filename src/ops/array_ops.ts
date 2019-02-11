@@ -1077,7 +1077,7 @@ function buffer<R extends Rank, D extends DataType = 'float32'>(
     shape: ShapeMap[R], dtype: D = 'float32' as D,
     values?: DataTypeMap[D]): TensorBuffer<R, D> {
   dtype = dtype || 'float32' as D;
-  util.assertIntegerDimensions(shape);
+  util.assertPositiveIntegerDimensions(shape);
   return new TensorBuffer<R, D>(shape, dtype, values);
 }
 

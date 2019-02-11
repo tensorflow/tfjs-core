@@ -651,7 +651,7 @@ export function monitorPromisesProgress(
   return Promise.all(promises.map(registerMonitor));
 }
 
-export function assertIntegerDimensions(shape: number[]) {
+export function assertNonNegativeIntegerDimensions(shape: number[]) {
   shape.forEach(dimSize => {
     assert(
         Number.isInteger(dimSize) && dimSize >= 0,
