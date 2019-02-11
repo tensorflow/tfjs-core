@@ -18,6 +18,7 @@
 import {ConvGPUBenchmark, RegularConvParams} from './conv_benchmarks';
 import {MatmulGPUBenchmark} from './matmul_benchmarks';
 import {MobileNetV1GPUBenchmark} from './mobilenet_benchmarks';
+import {AvgPoolGPUBenchmark, ConcatGPUBenchmark, ReductionOpsGPUBenchmark, ResizeBilinearBenchmark} from './reduction_ops_benchmark';
 import * as test_util from './test_util';
 
 const BENCHMARK_RUNS = 100;
@@ -35,6 +36,54 @@ describe('benchmarks', () => {
     await test_util.benchmarkAndLog(
         'matmul', size => benchmark.run(size), sizes, size => `N=${size}`,
         BENCHMARK_RUNS);
+
+    done();
+  });
+
+  it('reduction', async done => {
+    const sizes = [263169];
+
+    const benchmark = new ReductionOpsGPUBenchmark();
+
+    await test_util.benchmarkAndLog(
+        'reduction', size => benchmark.run(size, 'argMax'), sizes,
+        size => `N=${size}`, BENCHMARK_RUNS);
+
+    done();
+  });
+
+  it('avgPool', async done => {
+    const sizes = [33, 65];
+
+    const benchmark = new AvgPoolGPUBenchmark();
+
+    await test_util.benchmarkAndLog(
+        'avgPool', size => benchmark.run(size), sizes, size => `N=${size}`,
+        BENCHMARK_RUNS);
+
+    done();
+  });
+
+  it('concat', async done => {
+    const sizes = [33, 65];
+
+    const benchmark = new ConcatGPUBenchmark();
+
+    await test_util.benchmarkAndLog(
+        'concat', size => benchmark.run(size), sizes, size => `N=${size}`,
+        BENCHMARK_RUNS);
+
+    done();
+  });
+
+  it('resizeBilinear', async done => {
+    const sizes = [33, 65];
+
+    const benchmark = new ResizeBilinearBenchmark();
+
+    await test_util.benchmarkAndLog(
+        'resizeBilinear', size => benchmark.run(size), sizes,
+        size => `N=${size}`, BENCHMARK_RUNS);
 
     done();
   });

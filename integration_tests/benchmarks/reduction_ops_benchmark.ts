@@ -49,7 +49,7 @@ export class ReductionOpsCPUBenchmark implements BenchmarkTest {
     const start = performance.now();
 
     tf.tidy(() => {
-      op(input).get();
+      op(input).arraySync();
     });
 
     const end = performance.now();
@@ -61,9 +61,7 @@ export class ReductionOpsGPUBenchmark implements BenchmarkTest {
   async run(size: number, option: string) {
     tf.setBackend('webgl');
 
-    // Square the provided size to make these 1D benchmarks comparable to the
-    // other 2D ones.
-    const input: tf.Tensor1D = tf.randomUniform([size * size], -1, 1);
+    const input: tf.Tensor2D = tf.randomUniform([size, 21], -1, 1);
     const op = getReductionOp(option);
 
     const benchmark = () => op(input);
@@ -72,6 +70,56 @@ export class ReductionOpsGPUBenchmark implements BenchmarkTest {
 
     input.dispose();
 
+    return time;
+  }
+}
+
+export class AvgPoolGPUBenchmark implements BenchmarkTest {
+  async run(size: number) {
+    tf.setBackend('webgl');
+
+    const x: tf.Tensor4D = tf.randomUniform([1, size, size, 320], -1, 1);
+
+    const benchmark = () => tf.avgPool(x, [size, size], [size, size], 'valid');
+
+    const time = await util.warmupAndBenchmarkGPU(benchmark);
+
+    x.dispose();
+
+    return time;
+  }
+}
+
+export class ConcatGPUBenchmark implements BenchmarkTest {
+  async run(size: number) {
+    tf.setBackend('webgl');
+
+    const x: tf.Tensor4D = tf.randomUniform([1, size, size, 256], -1, 1);
+    const y: tf.Tensor4D = tf.randomUniform([1, size, size, 256], -1, 1);
+
+    const benchmark = () => tf.concat([x, y], 3);
+
+    const time = await util.warmupAndBenchmarkGPU(benchmark);
+
+    x.dispose();
+    y.dispose();
+
+    return time;
+  }
+}
+
+export class ResizeBilinearBenchmark implements BenchmarkTest {
+  async run(size: number) {
+    tf.setBackend('webgl');
+
+    const x: tf.Tensor4D = tf.randomUniform([1, size, size, 21], -1, 1);
+
+    const toSize = (size - 1) * 8 + 1;
+    const benchmark = () => tf.image.resizeBilinear(x, [toSize, toSize], true);
+
+    const time = await util.warmupAndBenchmarkGPU(benchmark);
+
+    x.dispose();
     return time;
   }
 }
