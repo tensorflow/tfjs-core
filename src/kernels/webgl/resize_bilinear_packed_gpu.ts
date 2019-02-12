@@ -70,7 +70,8 @@ export class ResizeBilinearPackedProgram implements GPGPUProgram {
         bool hasNextCol = d < ${depth - 1}; 
         bool hasNextRow = coords.z < ${newWidth - 1};
 
-        // In parallel, construct values for all four values in 2x2 packed cell.
+        // In parallel, construct four corners for all four components in
+        // packed 2x2 cell.
         vec4 topLeft = vec4(
           getAValue(b, sourceFloorRC.x, sourceFloorRC.y, d),
           hasNextCol ? getAValue(b, sourceFloorRC.x, sourceFloorRC.y, d + 1)
@@ -109,9 +110,9 @@ export class ResizeBilinearPackedProgram implements GPGPUProgram {
 
         vec3 fracRC = sourceFracIndexRC - vec3(sourceFloorRC);
 
-        vec4 top = topLeft + (topRight - topLeft) * fracRC.yyzz;
-        vec4 bottom = bottomLeft + (bottomRight - bottomLeft) * fracRC.yyzz;
-        vec4 newValue = top + (bottom - top) * fracRC.x;
+        vec4 top = mix(topLeft, topRight, fracRC.yyzz);
+        vec4 bottom = mix(bottomLeft, bottomRight, fracRC.yyzz);
+        vec4 newValue = mix(top, bottom, fracRC.x);
 
         setOutput(newValue);
       }

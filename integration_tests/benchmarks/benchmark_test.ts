@@ -15,11 +15,15 @@
  * =============================================================================
  */
 
+import * as tf from '@tensorflow/tfjs-core';
+
 import {ConvGPUBenchmark, RegularConvParams} from './conv_benchmarks';
 import {MatmulGPUBenchmark} from './matmul_benchmarks';
 import {MobileNetV1GPUBenchmark} from './mobilenet_benchmarks';
-import {AvgPoolGPUBenchmark, ConcatGPUBenchmark, ReductionOpsGPUBenchmark, ResizeBilinearBenchmark} from './reduction_ops_benchmark';
+import {ReductionOpsGPUBenchmark} from './reduction_ops_benchmark';
 import * as test_util from './test_util';
+import {BenchmarkTest} from './types';
+import * as util from './util';
 
 const BENCHMARK_RUNS = 100;
 
@@ -113,3 +117,53 @@ describe('benchmarks', () => {
     done();
   });
 });
+
+export class AvgPoolGPUBenchmark implements BenchmarkTest {
+  async run(size: number) {
+    tf.setBackend('webgl');
+
+    const x: tf.Tensor4D = tf.randomUniform([1, size, size, 320], -1, 1);
+
+    const benchmark = () => tf.avgPool(x, [size, size], [size, size], 'valid');
+
+    const time = await util.warmupAndBenchmarkGPU(benchmark);
+
+    x.dispose();
+
+    return time;
+  }
+}
+
+export class ConcatGPUBenchmark implements BenchmarkTest {
+  async run(size: number) {
+    tf.setBackend('webgl');
+
+    const x: tf.Tensor4D = tf.randomUniform([1, size, size, 256], -1, 1);
+    const y: tf.Tensor4D = tf.randomUniform([1, size, size, 256], -1, 1);
+
+    const benchmark = () => tf.concat([x, y], 3);
+
+    const time = await util.warmupAndBenchmarkGPU(benchmark);
+
+    x.dispose();
+    y.dispose();
+
+    return time;
+  }
+}
+
+export class ResizeBilinearBenchmark implements BenchmarkTest {
+  async run(size: number) {
+    tf.setBackend('webgl');
+
+    const x: tf.Tensor4D = tf.randomUniform([1, size, size, 21], -1, 1);
+
+    const toSize = (size - 1) * 8 + 1;
+    const benchmark = () => tf.image.resizeBilinear(x, [toSize, toSize], true);
+
+    const time = await util.warmupAndBenchmarkGPU(benchmark);
+
+    x.dispose();
+    return time;
+  }
+}
