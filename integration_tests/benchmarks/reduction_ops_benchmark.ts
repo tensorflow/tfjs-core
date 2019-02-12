@@ -49,7 +49,7 @@ export class ReductionOpsCPUBenchmark implements BenchmarkTest {
     const start = performance.now();
 
     tf.tidy(() => {
-      op(input).arraySync();
+      op(input).get();
     });
 
     const end = performance.now();
@@ -61,7 +61,9 @@ export class ReductionOpsGPUBenchmark implements BenchmarkTest {
   async run(size: number, option: string) {
     tf.setBackend('webgl');
 
-    const input: tf.Tensor2D = tf.randomUniform([size, 21], -1, 1);
+    // Square the provided size to make these 1D benchmarks comparable to the
+    // other 2D ones.
+    const input: tf.Tensor1D = tf.randomUniform([size * size], -1, 1);
     const op = getReductionOp(option);
 
     const benchmark = () => op(input);
