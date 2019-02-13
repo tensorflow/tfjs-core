@@ -597,3 +597,12 @@ export function now(): number {
         'in the browser or in Node.js');
   }
 }
+
+export function assertNonNegativeIntegerDimensions(shape: number[]) {	
+  shape.forEach(dimSize => {	
+    assert(	
+        Number.isInteger(dimSize) && dimSize >= 0,	
+        `Tensor must have a shape comprised of positive integers but got ` +	
+            `shape [${shape}].`);	
+  });	
+}
