@@ -25,7 +25,7 @@ import {browserHTTPRequest, isHTTPScheme} from './browser_http';
 import {concatenateArrayBuffers, decodeWeights, encodeWeights, getModelArtifactsInfoForJSON} from './io_utils';
 import {fromMemory, withSaveHandler} from './passthrough';
 import {getLoadHandlers, getSaveHandlers, registerLoadRouter, registerSaveRouter} from './router_registry';
-import {IOHandler, LoadHandler, ModelArtifacts, ModelStoreManager, OnProgressCallback, SaveConfig, SaveHandler, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
+import {IOHandler, LoadHandler, LoadOptions, ModelArtifacts, ModelStoreManager, OnProgressCallback, SaveConfig, SaveHandler, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
 import {loadWeights, weightsLoaderFactory} from './weights_loader';
 
 export {copyModel, listModels, moveModel, removeModel} from './model_management';
@@ -42,6 +42,7 @@ export {
   IOHandler,
   isHTTPScheme,
   LoadHandler,
+  LoadOptions,
   loadWeights,
   ModelArtifacts,
   ModelStoreManager,
