@@ -530,8 +530,8 @@ describeWithFlags('Reduction: argmax', ALL_ENVS, () => {
   });
 });
 
-describeWithFlags('Reduction: argmax webgl', WEBGL_ENVS, () => {
-  it('3D packed, odd number of rows, axis = -1', () => {
+describeWithFlags('Reduction: webgl packed input', WEBGL_ENVS, () => {
+  it('argmax 3D, odd number of rows, axis = -1', () => {
     const webglLazilyUnpackFlagSaved = tf.ENV.get('WEBGL_LAZILY_UNPACK');
     tf.ENV.set('WEBGL_LAZILY_UNPACK', true);
     const webglPackBinaryOperationsFlagSaved =
@@ -546,6 +546,27 @@ describeWithFlags('Reduction: argmax webgl', WEBGL_ENVS, () => {
 
     expect(r.dtype).toBe('int32');
     expectArraysEqual(r, [2, 0]);
+  });
+
+  it('argmin 4D, odd number of rows, axis = -1', () => {
+    const webglLazilyUnpackFlagSaved = tf.ENV.get('WEBGL_LAZILY_UNPACK');
+    tf.ENV.set('WEBGL_LAZILY_UNPACK', true);
+    const webglPackBinaryOperationsFlagSaved =
+        tf.ENV.get('WEBGL_PACK_BINARY_OPERATIONS');
+    tf.ENV.set('WEBGL_PACK_BINARY_OPERATIONS', true);
+
+    const a =
+        tf.tensor4d(
+              [3, 2, 5, 100, -7, 2, 8, 7, -5, 101, 7, -2, 100, -7, 2, 8, 7, -5],
+              [1, 2, 3, 3])
+            .add(1);
+    const r = tf.argMin(a, -1);
+    tf.ENV.set('WEBGL_LAZILY_UNPACK', webglLazilyUnpackFlagSaved);
+    tf.ENV.set(
+        'WEBGL_PACK_BINARY_OPERATIONS', webglPackBinaryOperationsFlagSaved);
+
+    expect(r.dtype).toBe('int32');
+    expectArraysEqual(r, [1, 1, 2, 2, 1, 2]);
   });
 });
 
