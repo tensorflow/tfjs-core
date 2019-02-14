@@ -44,6 +44,7 @@ import {nonMaxSuppressionImpl} from './non_max_suppression_impl';
 import {split} from './split_shared';
 import {topkImpl} from './topk_impl';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
+import {ArgMinMaxPackedProgram} from './webgl/argminmax_packed_gpu';
 import {AvgPool2DBackpropProgram} from './webgl/avg_pool_backprop_gpu';
 import {BatchNormProgram} from './webgl/batchnorm_gpu';
 import {BatchNormPackedProgram} from './webgl/batchnorm_packed_gpu';
@@ -989,10 +990,13 @@ export class MathBackendWebGL implements KernelBackend {
     }
     const windowSize = reduce_util.computeOptimalWindowSize(inSize);
     const reduceInfo = {windowSize, inSize, batchSize};
-    const program =
+    const program = ENV.get('WEBGL_PACK_REDUCE') ?
+        new ArgMinMaxPackedProgram(
+            reduceInfo, reduceType, bestIndicesA == null) :
         new ArgMinMaxProgram(reduceInfo, reduceType, bestIndicesA == null);
-    const [rows, cols] = program.outputShape;
-    const output = this.makeOutputArray<Tensor2D>([rows, cols], 'int32');
+    const output = ENV.get('WEBGL_PACK_REDUCE') ?
+        this.makePackedTensor(program.outputShape, 'int32') as Tensor2D :
+        this.makeOutputArray<Tensor2D>(program.outputShape, 'int32');
     const inputs = [x];
     if (bestIndicesA != null) {
       inputs.push(bestIndicesA);
@@ -1085,8 +1089,41 @@ export class MathBackendWebGL implements KernelBackend {
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(x.shape, axes);
     const inSize = util.sizeFromShape(reduceShape);
+    if (x.rank <= 2 || axis !== x.rank - 1 ||
+        x.shape[x.shape.length - 2] % 2 === 0 ||
+        !ENV.get('WEBGL_LAZILY_UNPACK') || !ENV.get('WEBGL_PACK_REDUCE') ||
+        inSize !== x.shape[x.shape.length - 1]! ||
+        !this.texData.get(x.dataId).isPacked) {
+      const a2D = x.as2D(-1, inSize);
+      return this.argReduce(a2D, 'max').reshape(outShape);
+    }
+    // Optimization related to packed tensors with odd row count. See
+    // conv2dByMatMul.
+
+    const xTexData = this.texData.get(x.dataId);
+
+    const xShape = x.shape.slice();
+    xShape[xShape.length - 2]++;
+    const xReshaped = Tensor.make(xShape, {dataId: x.dataId}, x.dtype, this);
+
+    const originalXTexDataShape = xTexData.shape;
+    xTexData.shape = xTexData.shape.slice();
+    xTexData.shape[xTexData.shape.length - 2]++;
+
+    util.assert(
+        webgl_util.isReshapeFree(xTexData.shape, xReshaped.shape),
+        `packed reshape ${xTexData.shape} to ${xReshaped.shape} isn't free`);
+
     const a2D = x.as2D(-1, inSize);
-    return this.argReduce(a2D, 'max').reshape(outShape);
+    const reduced = this.argReduce(a2D, 'max');
+
+    const reducedTexData = this.texData.get(reduced.dataId);
+    // Restore the input shape to original.
+    xTexData.shape = originalXTexDataShape;
+    // Set the output shape - there is no need for expensive reshape as data
+    // layout is already correct.
+    reducedTexData.shape = outShape;
+    return Tensor.make(outShape, {dataId: reduced.dataId}, reduced.dtype, this);
   }
 
   cumsum(x: Tensor, axis: number, exclusive: boolean, reverse: boolean):

@@ -17,7 +17,7 @@
 
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
-import {ALL_ENVS, expectArraysClose, expectArraysEqual} from '../test_util';
+import {ALL_ENVS, expectArraysClose, expectArraysEqual, WEBGL_ENVS} from '../test_util';
 
 import * as reduce_util from './reduce_util';
 
@@ -527,6 +527,25 @@ describeWithFlags('Reduction: argmax', ALL_ENVS, () => {
   it('throws error for string tensor', () => {
     expect(() => tf.argMax(['a']))
         .toThrowError(/Argument 'x' passed to 'argMax' must be numeric tensor/);
+  });
+});
+
+describeWithFlags('Reduction: argmax webgl', WEBGL_ENVS, () => {
+  it('3D packed, odd number of rows, axis = -1', () => {
+    const webglLazilyUnpackFlagSaved = tf.ENV.get('WEBGL_LAZILY_UNPACK');
+    tf.ENV.set('WEBGL_LAZILY_UNPACK', true);
+    const webglPackBinaryOperationsFlagSaved =
+        tf.ENV.get('WEBGL_PACK_BINARY_OPERATIONS');
+    tf.ENV.set('WEBGL_PACK_BINARY_OPERATIONS', true);
+
+    const a = tf.tensor3d([3, 2, 5, 100, -7, 2], [2, 1, 3]).add(1);
+    const r = tf.argMax(a, -1);
+    tf.ENV.set('WEBGL_LAZILY_UNPACK', webglLazilyUnpackFlagSaved);
+    tf.ENV.set(
+        'WEBGL_PACK_BINARY_OPERATIONS', webglPackBinaryOperationsFlagSaved);
+
+    expect(r.dtype).toBe('int32');
+    expectArraysEqual(r, [2, 0]);
   });
 });
 
