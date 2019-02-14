@@ -1123,7 +1123,7 @@ export class MathBackendWebGL implements KernelBackend {
     }
 
     // Optimization related to packed input tensors with odd row count: avoid
-    // expensive packed reshapes. See conv2dByMatMul.
+    // expensive packed reshape. See conv2dByMatMul.
     const xTexData = this.texData.get(x.dataId);
     const originalXTexDataShape = xTexData.shape;
 
