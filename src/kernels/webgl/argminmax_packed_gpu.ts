@@ -16,7 +16,10 @@
  */
 
 import {ReduceInfo} from '../../ops/reduce_util';
+import {getChannels, getVecChannels} from '../packing_util';
+
 import {GPGPUProgram} from './gpgpu_math';
+import {getCoordsDataType} from './shader_compiler';
 
 export class ArgMinMaxPackedProgram implements GPGPUProgram {
   variableNames = ['A'];
@@ -24,66 +27,105 @@ export class ArgMinMaxPackedProgram implements GPGPUProgram {
   userCode: string;
   usesPackedTextures = true;
 
-  constructor(reduceInfo: ReduceInfo, op: 'max'|'min', firstPass: boolean) {
-    const windowSize = reduceInfo.windowSize;
-    const batchSize = reduceInfo.batchSize;
-    const inSize = reduceInfo.inSize;
+  constructor(
+      shape: number[], windowSize: number, op: 'max'|'min',
+      firstPass: boolean) {
+    const inSize = shape[length];
     const outSize = Math.ceil(inSize / windowSize);
+    this.outputShape = shape.slice(-1);
+    if (outSize > 1) {
+      this.outputShape.push(outSize);
+    }
     if (!firstPass) {
       this.variableNames.push('bestIndicesA');
     }
-    this.outputShape = [batchSize, outSize];
+    const outShape = this.outputShape;
+    const rank = outShape.length;
+    const dtype = getCoordsDataType(rank);
+    const coords = getChannels('coords', rank);
+
+    let sourceLocSetup;
+    let sourceRank;
+    if (outSize === 1) {
+      sourceRank = rank + 1;
+      const sourceLocDType = getCoordsDataType(sourceRank);
+      sourceLocSetup = `
+      ${sourceLocDType} sourceLocR = ${sourceLocDType}(coords, 0);
+      ++${coords[rank - 1]};
+      ${sourceLocDType} sourceLocG = ${sourceLocDType}(coords, 0);
+      ++${coords[rank - 2]};
+      ${sourceLocDType} sourceLocA = ${sourceLocDType}(coords, 0);
+      --${coords[rank - 1]};
+      ${sourceLocDType} sourceLocB = ${sourceLocDType}(coords, 0);
+      --${coords[rank - 2]};
+      `;
+    } else {
+      sourceRank = rank;
+      sourceLocSetup = `
+      ${dtype} sourceLocR = coords;
+      ++${coords[rank - 1]};
+      ${dtype} sourceLocG = coords;
+      ++${coords[rank - 2]};
+      ${dtype} sourceLocA = coords;
+      --${coords[rank - 1]};
+      ${dtype} sourceLocB = coords;
+      --${coords[rank - 2]};
+      `;
+    }
+    const channels = ['x', 'y', 'z', 'w', 'u', 'v'].slice(0, sourceRank);
+    const inChannel = '.' + channels[sourceRank - 1];  // e.g. ".b" for rank 3.
+    const intChannels = channels.map(x => 'int ' + x);
+    const srcRCoords =
+        getChannels('sourceLocR', sourceRank - 1).concat('inIdx.r');
+    const srcGCoords =
+        getChannels('sourceLocG', sourceRank - 1).concat('inIdx.g');
+    const srcBCoords =
+        getChannels('sourceLocB', sourceRank - 1).concat('inIdx.b');
+    const srcACoords =
+        getChannels('sourceLocA', sourceRank - 1).concat('inIdx.a');
+
+    const hasNextRowSetup = rank < 2 ?
+        'bool hasNextRow = false;' :
+        `bool hasNextRow = ${coords[rank - 2]} < ${outShape[rank - 1] - 1};`;
     const compOp = (op === 'max') ? 'greaterThan' : 'lessThan';
-    const indexSnippet =
-        firstPass ? `ivec4 inIdx = inOffset + i;` : `ivec4 inIdx = inOffset + i;
-         inIdx = round(vec4(
-           getBestIndicesAChannel(batch, inIdx.r),
-           hasNextCol ? getBestIndicesAChannel(batch, inIdx.g) : 0.0,
-           hasNextRow ? getBestIndicesAChannel(batchNextRow, inIdx.b) : 0.0,
-           (hasNextRow && hasNextCol) ?
-             getBestIndicesAChannel(batchNextRow, inIdx.a) : 0.0));`;
+    const bestIndexSetup = firstPass ? 'vec4 bestIndex = vec4(inIdx);' : `
+      vec4 bestIndex = vec4(getBestIndicesAChannel(${srcRCoords.join()}),
+                            getBestIndicesAChannel(${srcGCoords.join()}),
+                            getBestIndicesAChannel(${srcBCoords.join()}),
+                            getBestIndicesAChannel(${srcACoords.join()}));
+    `;
 
     const getBestIndicesAChannelSnippet = firstPass ? '' : `
-      float getBestIndicesAChannel(int r, int c) {
-        return getChannel(getBestIndicesA(r, c), vec2(r, c));
+      float getBestIndicesAChannel(${intChannels.join()}) {
+        return getChannel(getBestIndicesA(${channels.join()}),
+                                          vec2(${channels.slice(-2).join()}));
       }`;
 
     this.userCode = `
-      float getAChannel(int r, int c) {
-        return getChannel(getA(r, c), vec2(r, c));
-      }      
-      
+      float getAChannel(${intChannels.join()}) {
+        return getChannel(getA(${channels.join()}),
+                               vec2(${channels.slice(-2).join()}));
+      };
       ${getBestIndicesAChannelSnippet}
-      
       void main() {
-        ivec2 coords = getOutputCoords();
-        int batch = coords[0];
-        int batchNextRow = batch + 1;
-        int outIdx = coords[1];
-        int outIdxNextCol = outIdx + 1;
-        ivec4 inOffset =
-          ivec4(outIdx, outIdxNextCol, outIdx, outIdxNextCol) * ${windowSize};
+        ${dtype} coords = getOutputCoords();
+        bool hasNextCol = ${coords[rank - 1]} < ${outShape[rank - 1] - 1};
+        ${hasNextRowSetup}
+        ${sourceLocSetup}
 
-        bool hasNextCol = outIdx < ${outSize - 1};
-        bool hasNextRow = batch < ${batchSize - 1};
-
+        ivec4 srcIdx = ivec4(sourceLocR${inChannel}, sourceLocG${inChannel},
+          sourceLocB${inChannel}, sourceLocA${inChannel}) * ${windowSize};
+        ivec4 inIdx = srcIdx;
+        vec4 bestIndex = vec4(inIdx);
         vec4 bestValue = vec4(
-          getAChannel(batch, inOffset.r),
-          hasNextCol ? getAChannel(batch, inOffset.g) : 0.0,
-          hasNextRow ? getAChannel(batchNextRow, inOffset.b) : 0.0,
-          (hasNextRow && hasNextCol) ?
-            getAChannel(batchNextRow, inOffset.a) : 0.0);
-        vec4 bestIndex = vec4(inOffset);
+          getAChannel(${srcRCoords.join()}),
+          hasNextCol ? getAChannel(${srcGCoords.join()}) : 0.0,
+          hasNextRow ? getAChannel(${srcBCoords.join()}) : 0.0,
+          hasNextRow && hasNextCol ? getAChannel(${srcACoords.join()}) : 0.0);
 
         for (int i = 0; i < ${windowSize}; i++) {
-          ${indexSnippet};
-          vec4 candidate = vec4(
-            getAChannel(batch, inIdx.r),
-            hasNextCol ? getAChannel(batch, inIdx.g) : 0.0,
-            hasNextRow ? getAChannel(batchNextRow, inIdx.b) : 0.0,
-            (hasNextRow && hasNextCol) ?
-              getAChannel(batchNextRow, inIdx.a) : 0.0);
-          
+          srcIdx++;
+          ${fetchCandidate};
           bvec4 nan = isNaN(candidate);
           bvec4 replace = bvec4(
             vec4(${compOp}(candidate, bestValue)) * (vec4(1.0) - vec4(nan)));

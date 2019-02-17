@@ -990,13 +990,9 @@ export class MathBackendWebGL implements KernelBackend {
     }
     const windowSize = reduce_util.computeOptimalWindowSize(inSize);
     const reduceInfo = {windowSize, inSize, batchSize};
-    const program = ENV.get('WEBGL_PACK_REDUCE') ?
-        new ArgMinMaxPackedProgram(
-            reduceInfo, reduceType, bestIndicesA == null) :
+    const program =
         new ArgMinMaxProgram(reduceInfo, reduceType, bestIndicesA == null);
-    const output = ENV.get('WEBGL_PACK_REDUCE') ?
-        this.makePackedTensor(program.outputShape, 'int32') as Tensor2D :
-        this.makeOutputArray<Tensor2D>(program.outputShape, 'int32');
+    const output = this.makeOutputArray<Tensor2D>(program.outputShape, 'int32');
     const inputs = [x];
     if (bestIndicesA != null) {
       inputs.push(bestIndicesA);
@@ -1007,6 +1003,25 @@ export class MathBackendWebGL implements KernelBackend {
       return output;
     }
     return this.argReduce(x, reduceType, output);
+  }
+
+  private argReducePacked(
+      x: Tensor, reduceType: 'max'|'min', bestIndicesA: Tensor = null): Tensor {
+    const inShape = bestIndicesA != null ? bestIndicesA.shape : x.shape;
+    const inSize = inShape[inShape.length - 1];
+    const windowSize = reduce_util.computeOptimalWindowSize(inSize);
+    const program = new ArgMinMaxPackedProgram(
+        inShape, windowSize, reduceType, bestIndicesA == null);
+    const output = this.makePackedTensor(program.outputShape, 'int32');
+    const inputs = [x];
+    if (bestIndicesA != null) {
+      inputs.push(bestIndicesA);
+    }
+    this.compileAndRun(program, inputs, output);
+    if (output.rank === x.rank) {
+      return this.argReducePacked(output, reduceType);
+    }
+    return output;
   }
 
   sum(x: Tensor, axes: number[]): Tensor {
@@ -1110,40 +1125,14 @@ export class MathBackendWebGL implements KernelBackend {
     axis_util.assertAxesAreInnerMostDims(
         'arg' + reduceType.charAt(0).toUpperCase() + reduceType.slice(1), axes,
         x.rank);
-    const [outShape, reduceShape] =
-        axis_util.computeOutAndReduceShapes(x.shape, axes);
-    const inSize = util.sizeFromShape(reduceShape);
-    if (x.rank <= 2 || axis !== x.rank - 1 ||
-        x.shape[x.shape.length - 2] % 2 === 0 ||
-        !ENV.get('WEBGL_LAZILY_UNPACK') || !ENV.get('WEBGL_PACK_REDUCE') ||
-        inSize !== x.shape[x.shape.length - 1]! ||
-        !this.texData.get(x.dataId).isPacked) {
+    if (!ENV.get('WEBGL_PACK_REDUCE') || x.rank < 2) {
+      const [outShape, reduceShape] =
+          axis_util.computeOutAndReduceShapes(x.shape, axes);
+      const inSize = util.sizeFromShape(reduceShape);
       const a2D = x.as2D(-1, inSize);
       return this.argReduce(a2D, reduceType).reshape(outShape);
     }
-
-    // Optimization related to packed input tensors with odd row count: avoid
-    // expensive packed reshape. See conv2dByMatMul.
-    const xTexData = this.texData.get(x.dataId);
-    const originalXTexDataShape = xTexData.shape;
-
-    const xReshaped =
-        this.makePackedTensorShallowCopyWithEvenRowCount(x, xTexData);
-
-    const a2D = xReshaped.as2D(-1, inSize);
-    const reduced = this.argReduce(a2D, reduceType);
-
-    // Restore the input shape to original.
-    xTexData.shape = originalXTexDataShape;
-
-    // Set the output shape - argReduce for e.g. [1, 513, 513, 21] results with
-    // tensor of shape [1, 513, 513, 1] and we need to reshape it to outShape
-    // [1, 513, 513].
-    const reducedShape = outShape.concat(1);
-    const reducedTexData = this.texData.get(reduced.dataId);
-    reducedTexData.shape = reducedShape;
-    return Tensor.make(outShape, {dataId: reduced.dataId}, reduced.dtype, this)
-        .reshape(outShape);
+    return this.argReducePacked(x, reduceType);
   }
 
   argMin(x: Tensor, axis: number): Tensor {
