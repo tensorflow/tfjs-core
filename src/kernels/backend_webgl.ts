@@ -1019,7 +1019,7 @@ export class MathBackendWebGL implements KernelBackend {
     }
     this.compileAndRun(program, inputs, output);
     if (output.rank === x.rank) {
-      return this.argReducePacked(output, reduceType);
+      return this.argReducePacked(x, reduceType, output);
     }
     return output;
   }
@@ -1125,13 +1125,14 @@ export class MathBackendWebGL implements KernelBackend {
     axis_util.assertAxesAreInnerMostDims(
         'arg' + reduceType.charAt(0).toUpperCase() + reduceType.slice(1), axes,
         x.rank);
-    if (!ENV.get('WEBGL_PACK_REDUCE') || x.rank < 2) {
+    if (!ENV.get('WEBGL_PACK_REDUCE') || x.rank <= 2) {
       const [outShape, reduceShape] =
           axis_util.computeOutAndReduceShapes(x.shape, axes);
       const inSize = util.sizeFromShape(reduceShape);
       const a2D = x.as2D(-1, inSize);
       return this.argReduce(a2D, reduceType).reshape(outShape);
     }
+    // Packed argReduced is implemented only for ranks above 2.
     return this.argReducePacked(x, reduceType);
   }
 

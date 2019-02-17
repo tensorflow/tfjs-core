@@ -15,8 +15,7 @@
  * =============================================================================
  */
 
-import {ReduceInfo} from '../../ops/reduce_util';
-import {getChannels, getVecChannels} from '../packing_util';
+import {getChannels} from '../packing_util';
 
 import {GPGPUProgram} from './gpgpu_math';
 import {getCoordsDataType} from './shader_compiler';
@@ -30,9 +29,9 @@ export class ArgMinMaxPackedProgram implements GPGPUProgram {
   constructor(
       shape: number[], windowSize: number, op: 'max'|'min',
       firstPass: boolean) {
-    const inSize = shape[length];
+    const inSize = shape[shape.length - 1];
     const outSize = Math.ceil(inSize / windowSize);
-    this.outputShape = shape.slice(-1);
+    this.outputShape = shape.slice(0, -1);
     if (outSize > 1) {
       this.outputShape.push(outSize);
     }
@@ -50,13 +49,13 @@ export class ArgMinMaxPackedProgram implements GPGPUProgram {
       sourceRank = rank + 1;
       const sourceLocDType = getCoordsDataType(sourceRank);
       sourceLocSetup = `
-      ${sourceLocDType} sourceLocR = ${sourceLocDType}(coords, 0);
+      ${sourceLocDType} sourceLocR = ${sourceLocDType}(${coords.join()}, 0);
       ++${coords[rank - 1]};
-      ${sourceLocDType} sourceLocG = ${sourceLocDType}(coords, 0);
+      ${sourceLocDType} sourceLocG = ${sourceLocDType}(${coords.join()}, 0);
       ++${coords[rank - 2]};
-      ${sourceLocDType} sourceLocA = ${sourceLocDType}(coords, 0);
+      ${sourceLocDType} sourceLocA = ${sourceLocDType}(${coords.join()}, 0);
       --${coords[rank - 1]};
-      ${sourceLocDType} sourceLocB = ${sourceLocDType}(coords, 0);
+      ${sourceLocDType} sourceLocB = ${sourceLocDType}(${coords.join()}, 0);
       --${coords[rank - 2]};
       `;
     } else {
@@ -88,12 +87,19 @@ export class ArgMinMaxPackedProgram implements GPGPUProgram {
         'bool hasNextRow = false;' :
         `bool hasNextRow = ${coords[rank - 2]} < ${outShape[rank - 1] - 1};`;
     const compOp = (op === 'max') ? 'greaterThan' : 'lessThan';
-    const bestIndexSetup = firstPass ? 'vec4 bestIndex = vec4(inIdx);' : `
-      vec4 bestIndex = vec4(getBestIndicesAChannel(${srcRCoords.join()}),
-                            getBestIndicesAChannel(${srcGCoords.join()}),
-                            getBestIndicesAChannel(${srcBCoords.join()}),
-                            getBestIndicesAChannel(${srcACoords.join()}));
+    const fetchCandidateIdx = firstPass ? '' : `
+      inIdx = round(vec4(getBestIndicesAChannel(${srcRCoords.join()}),
+                         getBestIndicesAChannel(${srcGCoords.join()}),
+                         getBestIndicesAChannel(${srcBCoords.join()}),
+                         getBestIndicesAChannel(${srcACoords.join()})));
     `;
+
+    const fetchValue = `
+      vec4(
+        getAChannel(${srcRCoords.join()}),
+        hasNextCol ? getAChannel(${srcGCoords.join()}) : 0.0,
+        hasNextRow ? getAChannel(${srcBCoords.join()}) : 0.0,
+        hasNextRow && hasNextCol ? getAChannel(${srcACoords.join()}) : 0.0)`;
 
     const getBestIndicesAChannelSnippet = firstPass ? '' : `
       float getBestIndicesAChannel(${intChannels.join()}) {
@@ -105,7 +111,7 @@ export class ArgMinMaxPackedProgram implements GPGPUProgram {
       float getAChannel(${intChannels.join()}) {
         return getChannel(getA(${channels.join()}),
                                vec2(${channels.slice(-2).join()}));
-      };
+      }
       ${getBestIndicesAChannelSnippet}
       void main() {
         ${dtype} coords = getOutputCoords();
@@ -117,15 +123,12 @@ export class ArgMinMaxPackedProgram implements GPGPUProgram {
           sourceLocB${inChannel}, sourceLocA${inChannel}) * ${windowSize};
         ivec4 inIdx = srcIdx;
         vec4 bestIndex = vec4(inIdx);
-        vec4 bestValue = vec4(
-          getAChannel(${srcRCoords.join()}),
-          hasNextCol ? getAChannel(${srcGCoords.join()}) : 0.0,
-          hasNextRow ? getAChannel(${srcBCoords.join()}) : 0.0,
-          hasNextRow && hasNextCol ? getAChannel(${srcACoords.join()}) : 0.0);
+        vec4 bestValue = ${fetchValue};
 
         for (int i = 0; i < ${windowSize}; i++) {
-          srcIdx++;
-          ${fetchCandidate};
+          inIdx = srcIdx;
+          ${fetchCandidateIdx};
+          vec4 candidate = ${fetchValue};
           bvec4 nan = isNaN(candidate);
           bvec4 replace = bvec4(
             vec4(${compOp}(candidate, bestValue)) * (vec4(1.0) - vec4(nan)));
@@ -135,6 +138,7 @@ export class ArgMinMaxPackedProgram implements GPGPUProgram {
                            replace.z  ? candidate.z : bestValue.z,
                            replace.w  ? candidate.w : bestValue.w);
           bestIndex = mix(bestIndex, vec4(inIdx), vec4(replace));
+          srcIdx++;
         }
         setOutput(bestIndex);
       }

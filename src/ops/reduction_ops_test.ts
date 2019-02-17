@@ -443,8 +443,8 @@ describeWithFlags('Reduction: argmax', ALL_ENVS, () => {
     for (let i = 0; i < n; i++) {
       values[i] = i;
     }
-    const a = tf.tensor1d(values);
-    const result = tf.argMax(a);
+    const a = tf.tensor3d(values, [1, 1, n]);
+    const result = tf.argMax(a, -1);
     expect(result.dtype).toBe('int32');
     expectArraysEqual(result, n - 1);
   });
@@ -455,8 +455,8 @@ describeWithFlags('Reduction: argmax', ALL_ENVS, () => {
     const values = new Float32Array(n);
     const index = windowSize * 2;
     values[index] = 1;
-    const a = tf.tensor1d(values);
-    const result = tf.argMax(a);
+    const a = tf.tensor5d(values, [1, 1, 1, 1, n]);
+    const result = tf.argMax(a, -1);
     expect(result.dtype).toBe('int32');
     expectArraysEqual(result, index);
   });
@@ -468,16 +468,16 @@ describeWithFlags('Reduction: argmax', ALL_ENVS, () => {
     expectArraysEqual(res, 2);
   });
 
-  it('2D, no axis specified', () => {
-    const a = tf.tensor2d([3, -1, 0, 100, -7, 2], [2, 3]);
+  it('4D, no axis specified', () => {
+    const a = tf.tensor4d([3, -1, 0, 100, -7, 2], [2, 1, 1, 3]);
     expectArraysEqual(tf.argMax(a), [1, 0, 1]);
   });
 
-  it('2D, axis=0', () => {
-    const a = tf.tensor2d([3, -1, 0, 100, -7, 2], [2, 3]);
+  it('3D, axis=0', () => {
+    const a = tf.tensor3d([3, -1, 0, 100, -7, 2], [2, 1, 3]);
     const r = tf.argMax(a, 0);
 
-    expect(r.shape).toEqual([3]);
+    expect(r.shape).toEqual([1, 3]);
     expect(r.dtype).toBe('int32');
     expectArraysEqual(r, [1, 0, 1]);
   });
@@ -589,8 +589,8 @@ describeWithFlags('Reduction: argmin', ALL_ENVS, () => {
     for (let i = 0; i < n; i++) {
       values[i] = n - i;
     }
-    const a = tf.tensor1d(values);
-    const result = tf.argMin(a);
+    const a = tf.tensor3d(values, [1, 1, n]);
+    const result = tf.argMin(a, -1);
     expect(result.dtype).toBe('int32');
     expectArraysEqual(result, n - 1);
   });
