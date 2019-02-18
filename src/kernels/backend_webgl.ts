@@ -1013,10 +1013,7 @@ export class MathBackendWebGL implements KernelBackend {
     const program = new ArgMinMaxPackedProgram(
         inShape, windowSize, reduceType, bestIndicesA == null);
     const output = this.makePackedTensor(program.outputShape, 'int32');
-    const inputs = [x];
-    if (bestIndicesA != null) {
-      inputs.push(bestIndicesA);
-    }
+    const inputs = bestIndicesA == null ? [x] : [x, bestIndicesA];
     this.compileAndRun(program, inputs, output);
     if (output.rank === x.rank) {
       return this.argReducePacked(x, reduceType, output);
@@ -1132,7 +1129,6 @@ export class MathBackendWebGL implements KernelBackend {
       const a2D = x.as2D(-1, inSize);
       return this.argReduce(a2D, reduceType).reshape(outShape);
     }
-    // Packed argReduced is implemented only for ranks above 2.
     return this.argReducePacked(x, reduceType);
   }
 
