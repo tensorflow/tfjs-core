@@ -993,7 +993,8 @@ export class MathBackendWebGL implements KernelBackend {
     const reduceInfo = {windowSize, inSize, batchSize};
     const program =
         new ArgMinMaxProgram(reduceInfo, reduceType, bestIndicesA == null);
-    const output = this.makeOutputArray<Tensor2D>(program.outputShape, 'int32');
+    const [rows, cols] = program.outputShape;
+    const output = this.makeOutputArray<Tensor2D>([rows, cols], 'int32');
     const inputs = [x];
     if (bestIndicesA != null) {
       inputs.push(bestIndicesA);
@@ -1084,37 +1085,6 @@ export class MathBackendWebGL implements KernelBackend {
     }
     segmentIds = range(0, numSegments).tile([inSize / windowSize]);
     return this.segOpCompute(output, segOpType, segmentIds, dtype, numSegments);
-  }
-
-  // Following optimization is specific to packed |x| with odd row count
-  // ('row count' refers to x.shape[x.rank - 2]): we avoid expensive packed 2x2
-  // reshape by padding row count to next, even number. When x.shape[x.rank - 2]
-  // is odd, the result of packed e.g. batchMatMul is the same (has the same
-  // texture layout and values in the texture) as it is for even x.shape[2] + 1.
-  // We make the odd-rows tensor to look like even-rows tensor before the
-  // operation and, after the operation, restore the even-rows x and result to
-  // have odd number of rows.
-  private makePackedTensorShallowCopyWithEvenRowCount(
-      x: Tensor, xTexData: TextureData): Tensor {
-    const xShape = x.shape.slice();
-    xShape[xShape.length - 2]++;
-    const xReshaped = Tensor.make(xShape, {dataId: x.dataId}, x.dtype, this);
-
-    // xTexData.shape gets referenced from GPGPUBinary.inShapeInfos.
-    // Decrementing row count, after batchMatMul->...->compileProgram leads to
-    // invalid row count within the reference in GPGPUBinary.inShapeInfos.
-    // Alternative fix would be to provide a copy to GPGPUBinary.inShapeInfos
-    // in compileProgram method, but that would affect compilation of all
-    // programs - instead, provide a copy here, with even row count, before
-    // calling batchMatMul->...->compileProgram and after that, the original
-    // xTexData.shape is restored.
-    xTexData.shape = xTexData.shape.slice();
-    xTexData.shape[xTexData.shape.length - 2]++;
-
-    util.assert(
-        webgl_util.isReshapeFree(xTexData.shape, xReshaped.shape),
-        `packed reshape ${xTexData.shape} to ${xReshaped.shape} isn't free`);
-    return xReshaped;
   }
 
   private argMinMaxReduce(x: Tensor, axis: number, reduceType: 'min'|'max'):
@@ -1701,9 +1671,6 @@ export class MathBackendWebGL implements KernelBackend {
     // Reshapes conv2D input to 2D tensors, uses matMul and then reshape the
     // result from 2D to 4D.
     const xShape = x.shape;
-    const filterReshaped =
-        this.reshape(filter, [1, convInfo.inChannels, convInfo.outChannels]) as
-        Tensor3D;
     const xTexData = this.texData.get(x.dataId);
     if (!ENV.get('WEBGL_LAZILY_UNPACK') ||
         !ENV.get('WEBGL_PACK_BINARY_OPERATIONS') || xShape[2] % 2 === 0 ||
@@ -1712,28 +1679,56 @@ export class MathBackendWebGL implements KernelBackend {
           this.reshape(
               x, [1, xShape[0] * xShape[1] * xShape[2], convInfo.inChannels]) as
           Tensor3D;
+      const filterReshaped =
+          this.reshape(
+              filter, [1, convInfo.inChannels, convInfo.outChannels]) as
+          Tensor3D;
       return this.reshape<Rank.R4>(
           this.batchMatMul(xReshaped, filterReshaped, false, false),
           convInfo.outShape);
     }
 
-    // Optimization related to packed tensors with odd row count: avoid two
-    // expensive packed reshapes.
-    const originalXTexDataShape = xTexData.shape;
+    // Following optimization is specific to packed |x| with odd row count
+    // ('row count' refers to x.shape[2]): we avoid expensive packed 2x2
+    // reshape by padding row count to next, even number. When x.shape[2] is
+    // odd, the result of packed batchMatMul is the same (has the same texture
+    // layout and and values in the texture) as it is for even x.shape[2] + 1.
+    // We make the odd-rows tensor to look like even-rows tensor before the
+    // operation and, after the batchMatMul, fix the even-rows result to have
+    // odd number of rows.
     const xReshaped =
-        this.makePackedTensorShallowCopyWithEvenRowCount(x, xTexData)
-            .as3D(1, -1, convInfo.inChannels);
+        Tensor.make(
+            [1, xShape[0] * xShape[1] * (xShape[2] + 1), convInfo.inChannels],
+            {dataId: x.dataId}, x.dtype, this) as Tensor3D;
+
+    // xTexData.shape gets referenced from GPGPUBinary.inShapeInfos.
+    // Decrementing row count, after batchMatMul->...->compileProgram leads to
+    // invalid row count within the reference in GPGPUBinary.inShapeInfos.
+    // Alternative fix would be to provide a copy to GPGPUBinary.inShapeInfos
+    // in compileProgram method, but that would affect compilation of all
+    // programs - instead, provide a copy here, with even row count, before
+    // calling batchMatMul->...->compileProgram and after that, the original
+    // xTexData.shape is restored.
+    const originalXTexDataShape = xTexData.shape;
+    xTexData.shape = xTexData.shape.slice();
+    xTexData.shape[xTexData.shape.length - 2]++;
+    util.assert(
+        webgl_util.isReshapeFree(xTexData.shape, xReshaped.shape),
+        `packed reshape ${xTexData.shape} to ${xReshaped.shape} isn't free`);
+    const filterReshaped =
+        this.reshape(filter, [1, convInfo.inChannels, convInfo.outChannels]) as
+        Tensor3D;
 
     const pointwiseConv =
         this.batchMatMul(xReshaped, filterReshaped, false, false);
-    // Restore the input shape to original.
-    xTexData.shape = originalXTexDataShape;
-    // Set the output shape - there is no need for expensive reshape as data
-    // layout is already correct.
     const pointwiseConvTexData = this.texData.get(pointwiseConv.dataId);
     util.assert(
         pointwiseConvTexData.isPacked,
         'batchMatMul result is expected to be packed');
+    // Restore the input shape to original.
+    xTexData.shape = originalXTexDataShape;
+    // Set the output shape - there is no need for expensive reshape as data
+    // layout is already correct.
     pointwiseConvTexData.shape = convInfo.outShape;
     return Tensor.make(
                convInfo.outShape, {dataId: pointwiseConv.dataId},
