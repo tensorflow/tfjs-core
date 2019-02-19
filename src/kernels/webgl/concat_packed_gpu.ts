@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2017 Google Inc. All Rights Reserved.
+ * Copyright 2019 Google Inc. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -27,7 +27,7 @@ export class ConcatPackedProgram implements GPGPUProgram {
   outputShape: number[] = [];
   userCode: string;
 
-  constructor(shapes: Array<number[]>, axis: number) {
+  constructor(shapes: number[][], axis: number) {
     this.outputShape = concat_util.computeOutShape(shapes, axis);
     const shape = this.outputShape;
     const rank = shape.length;
@@ -54,7 +54,7 @@ export class ConcatPackedProgram implements GPGPUProgram {
         else if (${channel} < ${offsets[i]}) {
           ${channel} -= ${shift};
           return getChannel(getT${i}(${allChannels}), ${lastChannels});
-        }`
+        }`;
     }
     const lastIndex = offsets.length;
     const shift = offsets[offsets.length - 1];
