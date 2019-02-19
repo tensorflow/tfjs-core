@@ -505,3 +505,18 @@ describeWithFlags('slice ergonomics', ALL_ENVS, () => {
     expect(tf.slice(b, 0).dtype).toEqual('float32');
   });
 });
+
+describeWithFlags('shallow slice an input that was cast', ALL_ENVS, () => {
+  beforeAll(() => {
+    tf.ENV.set('WEBGL_CPU_FORWARD', false);
+  });
+
+  it('shallow slice an input that was cast', () => {
+    const a = tf.tensor([[1, 2], [3, 4]], [2, 2], 'int32');
+    const b = a.toFloat();
+    const c = b.slice(1, 1);
+    expect(c.dtype).toBe('float32');
+    expect(c.shape).toEqual([1, 2]);
+    expectArraysClose(c, [3, 4]);
+  });
+});

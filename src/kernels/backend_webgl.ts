@@ -661,6 +661,7 @@ export class MathBackendWebGL implements KernelBackend {
     // Copy texture data from the original tensor.
     Object.assign(newTexData, xTexData);
     newTexData.shape = size;
+    newTexData.dtype = x.dtype;
     let flatOffset = computeFlatOffset(begin, x.strides);
     if (xTexData.slice) {
       // We are slicing an already sliced tensor, so we have to accumulate
