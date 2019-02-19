@@ -55,13 +55,29 @@ export function expectArraysClose(
       [expected] as number[] :
       expected as number[];
   return expectArraysPredicate(
-      actual, exp, (a, b) => areClose(a as number, Number(b), epsilon));
+      actual, exp, 'ALL', (a, b) => areClose(a as number, Number(b), epsilon));
+}
+
+export function expectArraysDifferInValue(
+    actual: Tensor|TypedArray|number[],
+    expected: Tensor|TypedArray|number[]|boolean[]|number|boolean,
+    epsilon?: number) {
+  if (epsilon == null) {
+    epsilon = ENV.get('TEST_EPSILON');
+  }
+  const exp = typeof expected === 'number' || typeof expected === 'boolean' ?
+      [expected] as number[] :
+      expected as number[];
+  return expectArraysPredicate(
+      actual, exp, 'ANY', (a, b) => !areClose(a as number, Number(b), epsilon));
 }
 
 function expectArraysPredicate(
     actual: Tensor|TypedArray|number[]|string[],
     expected: Tensor|TypedArray|number[]|boolean[]|string[],
-    predicate: (a: {}, b: {}) => boolean) {
+    predicateReducer: 'ALL'|'ANY',
+    predicate: (a: {}, b: {}) => boolean,
+) {
   if (!(actual instanceof Tensor) && !(expected instanceof Tensor)) {
     const aType = actual.constructor.name;
     const bType = expected.constructor.name;
@@ -104,13 +120,27 @@ function expectArraysPredicate(
         `Actual:   ${actualValues}.\n` +
         `Expected: ${expectedValues}.`);
   }
-  for (let i = 0; i < expectedValues.length; ++i) {
-    const a = actualValues[i];
-    const e = expectedValues[i];
+  if (predicateReducer === 'ALL') {
+    for (let i = 0; i < expectedValues.length; ++i) {
+      const a = actualValues[i];
+      const e = expectedValues[i];
 
-    if (!predicate(a, e)) {
+      if (!predicate(a, e)) {
+        throw new Error(
+            `Arrays differ: actual[${i}] = ${a}, expected[${i}] = ${e}.\n` +
+            `Actual:   ${actualValues}.\n` +
+            `Expected: ${expectedValues}.`);
+      }
+    }
+  } else {  // predicateReducer === 'ANY'
+    for (let i = 0; i < expectedValues.length; ++i) {
+      const a = actualValues[i];
+      const e = expectedValues[i];
+      if (predicate(a, e)) {
+        return;
+      }
       throw new Error(
-          `Arrays differ: actual[${i}] = ${a}, expected[${i}] = ${e}.\n` +
+          `No pair of array elements match predicate.\n` +
           `Actual:   ${actualValues}.\n` +
           `Expected: ${expectedValues}.`);
     }
@@ -139,7 +169,7 @@ export function expectArraysEqual(
       Array.isArray(actual) && isString(actual[0]) ||
       Array.isArray(expected) && isString(expected[0])) {
     // tslint:disable-next-line:triple-equals
-    return expectArraysPredicate(actual, exp, (a, b) => a == b);
+    return expectArraysPredicate(actual, exp, 'ALL', (a, b) => a == b);
   }
   return expectArraysClose(actual as Tensor, expected as Tensor, 0);
 }
