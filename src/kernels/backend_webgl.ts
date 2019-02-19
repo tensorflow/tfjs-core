@@ -300,7 +300,9 @@ export class MathBackendWebGL implements KernelBackend {
     if (slice != null) {
       const program = new UnaryOpProgram(shape, unary_op.CLONE);
       const res = this.compileAndRun(program, [{dataId, shape, dtype}]);
-      return this.readSync(res.dataId);
+      const data = this.readSync(res.dataId);
+      (res as Tensor).dispose();
+      return data;
     }
     if (values != null) {
       return this.convertAndCacheOnCPU(dataId);
@@ -340,7 +342,9 @@ export class MathBackendWebGL implements KernelBackend {
     if (slice != null) {
       const program = new UnaryOpProgram(shape, unary_op.CLONE);
       const res = this.compileAndRun(program, [{dataId, shape, dtype}]);
-      return this.read(res.dataId);
+      const data = this.read(res.dataId);
+      (res as Tensor).dispose();
+      return data;
     }
 
     if (values != null) {

@@ -506,7 +506,7 @@ describeWithFlags('slice ergonomics', ALL_ENVS, () => {
   });
 });
 
-describeWithFlags('shallow slice an input that was cast', ALL_ENVS, () => {
+describeWithFlags('shallow slicing', ALL_ENVS, () => {
   beforeAll(() => {
     tf.ENV.set('WEBGL_CPU_FORWARD', false);
   });
@@ -518,5 +518,29 @@ describeWithFlags('shallow slice an input that was cast', ALL_ENVS, () => {
     expect(c.dtype).toBe('float32');
     expect(c.shape).toEqual([1, 2]);
     expectArraysClose(c, [3, 4]);
+  });
+
+  it('delayed async read of sliced tensor has no mem leak', async () => {
+    const a = tf.zeros([10]);
+    const b = tf.slice(a, 0, 1);
+    const nBefore = tf.memory().numTensors;
+    expect(nBefore).toBe(2);
+    await b.data();
+    const nAfter = tf.memory().numTensors;
+    expect(nAfter).toBe(2);
+    tf.dispose([a, b]);
+    expect(tf.memory().numTensors).toBe(0);
+  });
+
+  it('delayed sync read of sliced tensor has no mem leak', () => {
+    const a = tf.zeros([10]);
+    const b = tf.slice(a, 0, 1);
+    const nBefore = tf.memory().numTensors;
+    expect(nBefore).toBe(2);
+    b.dataSync();
+    const nAfter = tf.memory().numTensors;
+    expect(nAfter).toBe(2);
+    tf.dispose([a, b]);
+    expect(tf.memory().numTensors).toBe(0);
   });
 });
