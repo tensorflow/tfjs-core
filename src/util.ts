@@ -17,7 +17,17 @@
 
 import {DataType, DataTypeMap, FlatVector, NumericDataType, RecursiveArray, TensorLike, TypedArray} from './types';
 
-/** Shuffles the array using Fisher-Yates algorithm. */
+/**
+ * Shuffles the array in-place using Fisher-Yates algorithm.
+ *
+ * ```js
+ * const a = [1, 2, 3, 4, 5];
+ * tf.util.shuffle(a);
+ * console.log(a);
+ * ```
+ *
+ * @param array The array to shuffle in-place.
+ */
 /** @doc {heading: 'Util'} */
 // tslint:disable-next-line:no-any
 export function shuffle(array: any[]|Uint32Array|Int32Array|
@@ -81,6 +91,10 @@ export function distSquared(a: FlatVector, b: FlatVector): number {
  * Asserts that the expression is true. Otherwise throws an error with the
  * provided message.
  *
+ * ```js
+ * tf.util.assert(2 === 3, 'Two is not three');
+ * ```
+ *
  * @param expr The expression to assert (as a boolean).
  * @param msg The message to report when throwing an error. Can be either a
  *     string, or a function that returns a string (for performance reasons).
@@ -111,6 +125,12 @@ export function assertNonNull(a: TensorLike): void {
 /**
  *  Flattens an arbitrarily nested array.
  *
+ * ```js
+ * const a = [[1, 2], [3, 4], [5, [6, [7]]]];
+ * const flat = tf.util.flatten(a);
+ * console.log(flat);
+ * ```
+ *
  *  @param arr The nested array to flatten.
  *  @param result Optional. The destination array which holds the elements.
  */
@@ -131,7 +151,15 @@ flatten<T extends number|boolean|string|Promise<number>|TypedArray>(
   return result;
 }
 
-/** Returns the size (number of elements) of the tensor given its shape. */
+/**
+ * Returns the size (number of elements) of the tensor given its shape.
+ *
+ * ```js
+ * const shape = [3, 4, 2];
+ * const size = tf.util.sizeFromShape(shape);
+ * console.log(size);
+ * ```
+ */
 /** @doc {heading: 'Util'} */
 export function sizeFromShape(shape: number[]): number {
   if (shape.length === 0) {
@@ -606,6 +634,10 @@ export function makeZerosTypedArray<D extends DataType>(
 /**
  * Returns the current high-resolution time in milliseconds. It is
  * relative to an arbitrary time in the past.
+ *
+ * ```js
+ * console.log(tf.util.now());
+ * ```
  */
 /** @doc {heading: 'Util'} */
 export function now(): number {
