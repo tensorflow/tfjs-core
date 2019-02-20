@@ -507,11 +507,9 @@ export function enableProdMode(): void {
 }
 
 /**
- * Enables debug mode.
- *
- * Debug mode will log information about all executed kernels: the ellapsed time
- * of the kernel execution, as well as the rank, shape, and size of the output
- * tensor.
+ * Enables debug mode which will log information about all executed kernels:
+ * the ellapsed time of the kernel execution, as well as the rank, shape, and
+ * size of the output tensor.
  */
 /** @doc {heading: 'Environment'} */
 export function enableDebugMode(): void {
