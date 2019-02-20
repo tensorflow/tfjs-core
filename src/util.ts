@@ -132,7 +132,7 @@ export function assertNonNull(a: TensorLike): void {
  * ```
  *
  *  @param arr The nested array to flatten.
- *  @param result Optional. The destination array which holds the elements.
+ *  @param result The destination array which holds the elements.
  */
 /** @doc {heading: 'Util'} */
 export function
@@ -632,8 +632,9 @@ export function makeZerosTypedArray<D extends DataType>(
 }
 
 /**
- * Returns the current high-resolution time in milliseconds. It is
- * relative to an arbitrary time in the past.
+ * Returns the current high-resolution time in milliseconds relative to an
+ * arbitrary time in the past. It works across different platforms (node.js,
+ * browsers).
  *
  * ```js
  * console.log(tf.util.now());
