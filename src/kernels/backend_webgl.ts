@@ -2092,7 +2092,9 @@ export class MathBackendWebGL implements KernelBackend {
     } else {
       const input = scalar(value);
       const program = new FillProgram(shape, value as number);
-      return this.compileAndRun(program, [input]) as Tensor<R>;
+      const customSetup = program.getCustomSetupFunc(value as number);
+      return this.compileAndRun(program, [input], null,
+        customSetup) as Tensor<R>;
     }
   }
 

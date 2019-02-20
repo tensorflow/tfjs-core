@@ -16,22 +16,34 @@
  */
 
 import {GPGPUProgram} from './gpgpu_math';
+import {GPGPUContext} from './gpgpu_context';
 
 export class FillProgram implements GPGPUProgram {
   variableNames: string[];
   outputShape: number[] = [];
   userCode: string;
 
+  valueLoc: WebGLUniformLocation;
+
   constructor(shape: number[], value: number) {
     this.variableNames = ['x'];
     this.outputShape = shape;
 
     this.userCode = `
+      uniform float value;
       void main() {
-        // Input value can be embedded directly to avoid overhead.
-        float v = float(${value});
-        setOutput(v);
+        // Input can be obtained from uniform value.
+        setOutput(value);
       }
     `;
+  }
+
+  getCustomSetupFunc(value: number) {
+    return (gpgpu: GPGPUContext, webGLProgram: WebGLProgram) => {
+      if (this.valueLoc == null) {
+        this.valueLoc = gpgpu.getUniformLocationNoThrow(webGLProgram, 'value');
+      }
+      gpgpu.gl.uniform1f(this.valueLoc, value);
+    };
   }
 }
