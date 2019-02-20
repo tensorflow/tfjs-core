@@ -516,7 +516,7 @@ export function enableProdMode(): void {
  * production. Debug mode does not affect the timing information of the kernel
  * execution as we do not measure download time in the kernel execution time.
  *
- * See also: `tf.profile`.
+ * See also: `tf.profile`, `tf.memory`.
  */
 /** @doc {heading: 'Environment'} */
 export function enableDebugMode(): void {
