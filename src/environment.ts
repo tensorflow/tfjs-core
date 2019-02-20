@@ -497,9 +497,25 @@ function getOrMakeEnvironment(): Environment {
   return ns.ENV;
 }
 
-/** Enables production mode which disables safety checks to gain performance */
+/**
+ * Enables production mode which disables correctness checks in favor of
+ * performance.
+ */
+/** @doc {heading: 'Environment'} */
 export function enableProdMode(): void {
   ENV.set('PROD', true);
+}
+
+/**
+ * Enables debug mode.
+ *
+ * Debug mode will log information about all executed kernels: the ellapsed time
+ * of the kernel execution, as well as the rank, shape, and size of the output
+ * tensor.
+ */
+/** @doc {heading: 'Environment'} */
+export function enableDebugMode(): void {
+  ENV.set('DEBUG', true);
 }
 
 /** Globally disables deprecation warnings */
