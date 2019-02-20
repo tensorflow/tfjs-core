@@ -23,7 +23,7 @@ import './kernels/backend_cpu';
 
 import {nextFrame} from './browser_util';
 import * as environment from './environment';
-import {deprecationWarn, disableDeprecationWarnings, enableProdMode, enableDebugMode Environment} from './environment';
+import {deprecationWarn, disableDeprecationWarnings, enableDebugMode, enableProdMode, Environment} from './environment';
 // Serialization.
 import * as io from './io/io';
 import * as math from './math';
