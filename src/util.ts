@@ -18,6 +18,7 @@
 import {DataType, DataTypeMap, FlatVector, NumericDataType, RecursiveArray, TensorLike, TypedArray} from './types';
 
 /** Shuffles the array using Fisher-Yates algorithm. */
+/** @doc {heading: 'Util'} */
 // tslint:disable-next-line:no-any
 export function shuffle(array: any[]|Uint32Array|Int32Array|
                         Float32Array): void {
@@ -76,6 +77,15 @@ export function distSquared(a: FlatVector, b: FlatVector): number {
   return result;
 }
 
+/**
+ * Asserts that the expression is true. Otherwise throws an error with the
+ * provided message.
+ *
+ * @param expr The expression to assert (as a boolean).
+ * @param msg The message to report when throwing an error. Can be either a
+ *     string, or a function that returns a string (for performance reasons).
+ */
+/** @doc {heading: 'Util'} */
 export function assert(expr: boolean, msg: string|(() => string)) {
   if (!expr) {
     throw new Error(typeof msg === 'string' ? msg : msg());
@@ -98,19 +108,31 @@ export function assertNonNull(a: TensorLike): void {
 // NOTE: We explicitly type out what T extends instead of any so that
 // util.flatten on a nested array of number doesn't try to infer T as a
 // number[][], causing us to explicitly type util.flatten<number>().
+/**
+ *  Flattens an arbitrarily nested array.
+ *
+ *  @param arr The nested array to flatten.
+ *  @param result Optional. The destination array which holds the elements.
+ */
+/** @doc {heading: 'Util'} */
 export function
 flatten<T extends number|boolean|string|Promise<number>|TypedArray>(
-    arr: T|RecursiveArray<T>, ret: T[] = []): T[] {
+    arr: T|RecursiveArray<T>, result: T[] = []): T[] {
+  if (result == null) {
+    result = [];
+  }
   if (Array.isArray(arr) || isTypedArray(arr)) {
     for (let i = 0; i < arr.length; ++i) {
-      flatten(arr[i], ret);
+      flatten(arr[i], result);
     }
   } else {
-    ret.push(arr as T);
+    result.push(arr as T);
   }
-  return ret;
+  return result;
 }
 
+/** Returns the size (number of elements) of the tensor given its shape. */
+/** @doc {heading: 'Util'} */
 export function sizeFromShape(shape: number[]): number {
   if (shape.length === 0) {
     // Scalar.
@@ -582,9 +604,10 @@ export function makeZerosTypedArray<D extends DataType>(
 }
 
 /**
- * Returns the current high-resolution real time in milliseconds. It is
+ * Returns the current high-resolution time in milliseconds. It is
  * relative to an arbitrary time in the past.
  */
+/** @doc {heading: 'Util'} */
 export function now(): number {
   if (typeof performance !== 'undefined') {
     return performance.now();
