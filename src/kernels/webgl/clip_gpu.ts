@@ -47,7 +47,7 @@ export class ClipProgram implements GPGPUProgram {
 
   getCustomSetupFunc(min: number, max: number) {
     return (gpgpu: GPGPUContext, webGLProgram: WebGLProgram) => {
-      if (this.minLoc == null) {
+      if (this.minLoc == null || this.maxLoc == null) {
         this.minLoc = gpgpu.getUniformLocationNoThrow(webGLProgram, 'min');
         this.maxLoc = gpgpu.getUniformLocationNoThrow(webGLProgram, 'max');
       }
