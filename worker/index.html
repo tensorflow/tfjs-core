@@ -24,7 +24,8 @@ function computeOffsets(n, numSplits) {
   return offsets;
 }
 
-const nWorkers = navigator.hardwareConcurrency * 2;
+// Safari doesn't have one.
+const nWorkers = navigator.hardwareConcurrency || 4;
 const workers = makeWorkers(nWorkers);
 
 async function matmul(a, b) {
@@ -60,7 +61,7 @@ async function matmul(a, b) {
 tf.setBackend('cpu');
 
 async function compute() {
-  const N = 1024;
+  const N = 384;
   const a = tf.randomUniform([N, N]);
   const b = tf.randomUniform([N, N]);
 

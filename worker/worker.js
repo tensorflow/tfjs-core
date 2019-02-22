@@ -50,6 +50,24 @@ var heap = new ArrayBuffer(1024 * 1024 * 16); // 128k heap
 var heapF32 = new Float32Array(heap);
 var asm = ASMModule(self, null, heap);
 
+function matmulSimple(aVals, bVals, mid) {
+  const aSize = aVals.length / mid;
+  const bSize = bVals.length / mid;
+  const res = new Float32Array(aSize * bSize);
+  for (let i = 0; i < aSize; ++i) {
+    const iMid = i * mid;
+    const iBSize = i * bSize;
+    for (let j = 0; j < bSize; ++j) {
+      let dot = 0;
+      for (let k = 0; k < mid; ++k) {
+        dot += aVals[iMid + k] * bVals[k * bSize + j];
+      }
+      res[iBSize + j] = dot;
+    }
+  }
+  return res;
+}
+
 onmessage = function(e) {
   const [aVals, bVals, mid] = e.data;
   const aSize = aVals.length / mid;
@@ -60,15 +78,8 @@ onmessage = function(e) {
   asm.matmul(aSize, bSize, mid);
   const offset = aVals.length + bVals.length;
   const res = heapF32.slice(offset, offset + aSize * bSize);
-  // const res = new Float32Array(aSize * bSize);
-  // for (let i = 0; i < aSize; ++i) {
-  //   for (let j = 0; j < bSize; ++j) {
-  //     let dot = 0;
-  //     for (let k = 0; k < mid; ++k) {
-  //       dot += aVals[i * mid + k] * bVals[k * bSize + j];
-  //     }
-  //     res[i * bSize + j] = dot;
-  //   }
-  // }
+
+  // const res = matmulSimple(aVals, bVals, mid);
+
   postMessage(res);
 }
