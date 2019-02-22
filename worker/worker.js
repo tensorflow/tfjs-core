@@ -23,34 +23,30 @@ function ASMModule(stdlib, _, heap) {
     var b = fround(0);
     var dot = fround(0);
 
-    bOffset = imul(aSize, mid) << 2;
-    cOffset = imul(bSize, mid) << 2;
+    bOffset = imul(aSize, mid);
+    cOffset = (bOffset + imul(bSize, mid))|0;
   
-    for (i = 0; (i|0) < (bOffset|0); i = (i + 4)|0) {
-      for (j = 0; (j|0) < (cOffset|0); j = (j + 4)|0) {
+    for (i = 0; (i|0) < (aSize|0); i = (i + 1)|0) {
+      for (j = 0; (j|0) < (bSize|0); j = (j + 1)|0) {
         dot = fround(0);
-        for (k = 0; (k|0) < (mid << 2); k = (k + 4)|0) {
-          ;
-          //a = // aVals[i * mid + k]
+        for (k = 0; (k|0) < (mid|0); k = (k + 1)|0) {
+          offset = (imul(i, mid) + k) << 2;
+          a = fround(heap32[offset >> 2]); // a[i * mid + k]
+
+          offset = (bOffset + imul(k, bSize) + j) << 2;
+          b = fround(heap32[offset >> 2]); // b[k * bSize + j]
+
+          dot = fround(dot + fround(a * b));
         }
+        offset = (cOffset + imul(i, bSize) + j) << 2;
+        heap32[offset >> 2] = fround(dot);
       }
-      // read A.
-      offset = i;
-      a = fround(heap32[offset >> 2]);
-      
-      // read B.
-      offset = (offset + bOffset)|0;
-      b = fround(heap32[offset >> 2]);
-      
-      // write to C.
-      offset = (offset + cOffset)|0;
-      heap32[offset >> 2] = fround(a * b);
     }
   }
   return {matmul: matmul};
 }
 
-var heap = new ArrayBuffer(128 * 1024); // 128k heap
+var heap = new ArrayBuffer(1024 * 1024 * 16); // 128k heap
 var heapF32 = new Float32Array(heap);
 var asm = ASMModule(self, null, heap);
 
@@ -61,11 +57,9 @@ onmessage = function(e) {
 
   heapF32.set(aVals, 0);
   heapF32.set(bVals, aVals.length);
-  console.log(heapF32);
   asm.matmul(aSize, bSize, mid);
   const offset = aVals.length + bVals.length;
   const res = heapF32.slice(offset, offset + aSize * bSize);
-  console.log('Result', res);
   // const res = new Float32Array(aSize * bSize);
   // for (let i = 0; i < aSize; ++i) {
   //   for (let j = 0; j < bSize; ++j) {
