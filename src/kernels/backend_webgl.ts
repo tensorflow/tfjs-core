@@ -2097,6 +2097,18 @@ export class MathBackendWebGL implements KernelBackend {
     }
   }
 
+  onesLike<R extends Rank>(x: Tensor<R>): Tensor<R> {
+    if (x.dtype === 'string') {
+      throw new Error('onesLike is not supported under string dtype');
+    } else {
+      return this.fill(x.shape, 1, x.dtype);
+    }
+  }
+
+  zerosLike<R extends Rank>(x: Tensor<R>): Tensor<R> {
+    return this.fill(x.shape, x.dtype === 'string' ? '' : 0, x.dtype);
+  }
+
   private makeOutputArray<T extends Tensor>(shape: number[], dtype: DataType):
       T {
     return Tensor.make(shape, {}, dtype, this) as T;
