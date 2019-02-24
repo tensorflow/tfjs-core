@@ -32,7 +32,7 @@ async function matmul(a, b) {
   const aSize = a.shape[0];
   const bSize = b.shape[1];
   const k = a.shape[1];
-  
+
   const offsets = computeOffsets(aSize, nWorkers);
   const aVals = a.dataSync();
   const bVals = b.dataSync();
@@ -65,13 +65,23 @@ async function compute() {
   const a = tf.randomUniform([N, N]);
   const b = tf.randomUniform([N, N]);
 
-  let start = performance.now();
-  const res = tf.matMul(a, b);
-  console.log('tf.js took', performance.now() - start);
+  const Ntries = 10;
+  const tfjsTimes = [];
+  let res, res2;
+  for (let i = 0; i < Ntries; i++) {
+    const start = performance.now();
+    res = tf.matMul(a, b);
+    tfjsTimes.push(performance.now() - start);
+  }
 
-  start = performance.now();
-  const res2 = await matmul(a, b);
-  console.log('worker took', performance.now() - start);
+  const workerTimes = [];
+  for (let i = 0; i < Ntries; i++) {
+    const start = performance.now();
+    res2 = await matmul(a, b);
+    workerTimes.push(performance.now() - start);
+  }
+  console.log('Best of tfjs', Math.min(...tfjsTimes));
+  console.log('Best of worker', Math.min(...workerTimes));
   tf.test_util.expectArraysClose(res, res2);
 }
 </script>
