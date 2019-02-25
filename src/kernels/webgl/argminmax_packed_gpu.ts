@@ -115,7 +115,7 @@ export class ArgMinMaxPackedProgram implements GPGPUProgram {
       void main() {
         ${dtype} coords = getOutputCoords();
         bool hasNextCol = ${coords[rank - 1]} < ${outShape[rank - 1] - 1};
-        bool hasNextRow = ${coords[rank - 2]} < ${outShape[rank - 1] - 1};
+        bool hasNextRow = ${coords[rank - 2]} < ${outShape[rank - 2] - 1};
         ${sourceLocSetup}
         ivec4 srcIdx = ivec4(sourceLocR${inChannel}, sourceLocG${inChannel},
           sourceLocB${inChannel}, sourceLocA${inChannel}) * ${windowSize};
@@ -125,7 +125,7 @@ export class ArgMinMaxPackedProgram implements GPGPUProgram {
 
         for (int i = 0; i < ${windowSize}; i++) {
           inIdx = srcIdx;
-          ${fetchCandidateIdx};
+          ${fetchCandidateIdx}
           vec4 candidate = ${fetchValue};
           bvec4 nan = isNaN(candidate);
           bvec4 replace = bvec4(

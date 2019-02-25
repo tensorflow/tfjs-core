@@ -443,6 +443,18 @@ describeWithFlags('Reduction: argmax', ALL_ENVS, () => {
     for (let i = 0; i < n; i++) {
       values[i] = i;
     }
+    const a = tf.tensor1d(values);
+    const result = tf.argMax(a);
+    expect(result.dtype).toBe('int32');
+    expectArraysEqual(result, n - 1);
+  });
+
+  it('3D, N > than parallelization threshold', () => {
+    const n = reduce_util.PARALLELIZE_THRESHOLD * 2;
+    const values = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+      values[i] = i;
+    }
     const a = tf.tensor3d(values, [1, 1, n]);
     const result = tf.argMax(a, -1);
     expect(result.dtype).toBe('int32');
@@ -450,6 +462,18 @@ describeWithFlags('Reduction: argmax', ALL_ENVS, () => {
   });
 
   it('max index corresponds to start of a non-initial window', () => {
+    const n = reduce_util.PARALLELIZE_THRESHOLD * 2;
+    const windowSize = reduce_util.computeOptimalWindowSize(n);
+    const values = new Float32Array(n);
+    const index = windowSize * 2;
+    values[index] = 1;
+    const a = tf.tensor1d(values);
+    const result = tf.argMax(a);
+    expect(result.dtype).toBe('int32');
+    expectArraysEqual(result, index);
+  });
+
+  it('5D, max index corresponds to start of a non-initial window', () => {
     const n = reduce_util.PARALLELIZE_THRESHOLD * 2;
     const windowSize = reduce_util.computeOptimalWindowSize(n);
     const values = new Float32Array(n);
@@ -468,16 +492,30 @@ describeWithFlags('Reduction: argmax', ALL_ENVS, () => {
     expectArraysEqual(res, 2);
   });
 
+  it('2D, no axis specified', () => {
+    const a = tf.tensor2d([3, -1, 0, 100, -7, 2], [2, 3]);
+    expectArraysEqual(tf.argMax(a), [1, 0, 1]);
+  });
+
   it('4D, no axis specified', () => {
     const a = tf.tensor4d([3, -1, 0, 100, -7, 2], [2, 1, 1, 3]);
     expectArraysEqual(tf.argMax(a), [1, 0, 1]);
   });
 
-  it('3D, axis=0', () => {
-    const a = tf.tensor3d([3, -1, 0, 100, -7, 2], [2, 1, 3]);
+  it('2D, axis=0', () => {
+    const a = tf.tensor2d([3, -1, 0, 100, -7, 2], [2, 3]);
     const r = tf.argMax(a, 0);
 
-    expect(r.shape).toEqual([1, 3]);
+    expect(r.shape).toEqual([3]);
+    expect(r.dtype).toBe('int32');
+    expectArraysEqual(r, [1, 0, 1]);
+  });
+
+  it('6D, axis=0', () => {
+    const a = tf.tensor6d([3, -1, 0, 100, -7, 2], [2, 1, 1, 1, 1, 3]);
+    const r = tf.argMax(a, 0);
+
+    expect(r.shape).toEqual([1, 1, 1, 1, 3]);
     expect(r.dtype).toBe('int32');
     expectArraysEqual(r, [1, 0, 1]);
   });
@@ -568,6 +606,29 @@ describeWithFlags('Reduction: webgl packed input', WEBGL_ENVS, () => {
     expect(r.dtype).toBe('int32');
     expectArraysEqual(r, [1, 1, 2, 2, 1, 2]);
   });
+
+  it('should not leak memory when called after unpacked op', () => {
+    const webglPackBinaryOperationsFlagSaved =
+        tf.ENV.get('WEBGL_PACK_BINARY_OPERATIONS');
+    tf.ENV.set('WEBGL_PACK_BINARY_OPERATIONS', false);
+
+    const a =
+        tf.tensor5d(
+              [3, 2, 5, 100, -7, 2, 8, 7, -5, 101, 7, -2, 100, -7, 2, 8, 7, -5],
+              [1, 2, 3, 1, 3])
+            .add(1);
+    const startNumBytes = tf.memory().numBytes;
+    const startNumTensors = tf.memory().numTensors;
+    const r = tf.argMin(a, -1);
+    tf.ENV.set(
+        'WEBGL_PACK_BINARY_OPERATIONS', webglPackBinaryOperationsFlagSaved);
+    const endNumBytes = tf.memory().numBytes;
+    const endNumTensors = tf.memory().numTensors;
+    expect(endNumBytes - startNumBytes).toEqual(24);
+    expect(endNumTensors - startNumTensors).toEqual(1);
+    expect(r.dtype).toBe('int32');
+    expectArraysEqual(r, [1, 1, 2, 2, 1, 2]);
+  });
 });
 
 describeWithFlags('Reduction: argmin', ALL_ENVS, () => {
@@ -589,7 +650,19 @@ describeWithFlags('Reduction: argmin', ALL_ENVS, () => {
     for (let i = 0; i < n; i++) {
       values[i] = n - i;
     }
-    const a = tf.tensor3d(values, [1, 1, n]);
+    const a = tf.tensor1d(values);
+    const result = tf.argMin(a);
+    expect(result.dtype).toBe('int32');
+    expectArraysEqual(result, n - 1);
+  });
+
+  it('4D, N > than parallelization threshold', () => {
+    const n = reduce_util.PARALLELIZE_THRESHOLD * 2;
+    const values = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+      values[i] = n - i;
+    }
+    const a = tf.tensor4d(values, [1, 1, 1, n]);
     const result = tf.argMin(a, -1);
     expect(result.dtype).toBe('int32');
     expectArraysEqual(result, n - 1);
@@ -610,6 +683,12 @@ describeWithFlags('Reduction: argmin', ALL_ENVS, () => {
   it('ignores NaNs', () => {
     const a = tf.tensor1d([5, 0, NaN, -1, 3]);
     const res = tf.argMin(a);
+    expectArraysEqual(res, 3);
+  });
+
+  it('3D, ignores NaNs', () => {
+    const a = tf.tensor3d([5, 0, NaN, -1, 3], [1, 1, 5]);
+    const res = tf.argMin(a, -1);
     expectArraysEqual(res, 3);
   });
 
