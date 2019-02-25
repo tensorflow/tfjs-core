@@ -96,7 +96,6 @@ export class Environment {
    * object with the following properties:
    *
    * - `numBytes`: Number of bytes allocated (undisposed) at this time.
-   * - `numBytesInGPU`: Number of bytes allocated on the GPU backend.
    * - `numTensors`: Number of unique tensors allocated.
    * - `numDataBuffers`: Number of unique data buffers allocated
    *   (undisposed) at this time, which is ≤ the number of tensors
