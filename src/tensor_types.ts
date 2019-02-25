@@ -28,7 +28,7 @@ export type NamedVariableMap = {
 };
 
 /**
- * @docalias void|number|string|Tensor|Tensor[]|{[key:
+ * @docalias void|number|string|TypedArray|Tensor|Tensor[]|{[key:
  * string]:Tensor|number|string}
  */
 export type TensorContainer =
