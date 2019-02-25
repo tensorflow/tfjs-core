@@ -161,7 +161,7 @@ export interface TensorHandle {
 
 // Empirically determined constant used to determine size threshold for handing
 // off execution to the CPU.
-const CPU_HANDOFF_SIZE_THRESHOLD = 10;
+const CPU_HANDOFF_SIZE_THRESHOLD = 128;
 
 // Empirically determined minimal shared dimension in matmul before we forward
 // to a.mul(b).sum() in order to take advantage of GPU parallelism. See
@@ -902,6 +902,9 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   transpose<T extends Tensor>(x: T, perm: number[]): T {
+    if(this.shouldExecuteOnCPU([x])) {
+      return this.cpuBackend.transpose(x, perm);
+    }
     const program = ENV.get('WEBGL_PACK_ARRAY_OPERATIONS') ?
         new TransposePackedProgram(x.shape, perm) :
         new TransposeProgram(x.shape, perm);
@@ -909,6 +912,9 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   gather<T extends Tensor>(x: T, indices: Tensor1D, axis: number): T {
+    if (this.shouldExecuteOnCPU([x, indices])) {
+      return this.cpuBackend.gather(x, indices, axis);
+    }
     const program = new GatherProgram(x.shape, indices.size, axis);
     return this.compileAndRun(program, [x, indices]);
   }
@@ -1023,6 +1029,10 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   prod(x: Tensor, axes: number[]): Tensor {
+    if (this.shouldExecuteOnCPU([x])) {
+      return this.cpuBackend.prod(x, axes);
+    }
+
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(x.shape, axes);
     const inSize = util.sizeFromShape(reduceShape);
@@ -1250,6 +1260,10 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   max(x: Tensor, axes: number[]): Tensor {
+    if (this.shouldExecuteOnCPU([x])) {
+      return this.cpuBackend.max(x, axes);
+    }
+
     axis_util.assertAxesAreInnerMostDims('max', axes, x.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(x.shape, axes);
@@ -1323,6 +1337,11 @@ export class MathBackendWebGL implements KernelBackend {
     if (a.dtype === 'complex64' && b.dtype === 'complex64') {
       return this.complexSeparableBinaryOp(a, b, binaryop_gpu.ADD);
     }
+
+    if(this.shouldExecuteOnCPU([a, b])) {
+      return this.cpuBackend.add(a, b);
+    }
+
     const dtype = upcastType(a.dtype, b.dtype);
     if (ENV.get('WEBGL_PACK_BINARY_OPERATIONS')) {
       return this.packedBinaryOp(a, b, binaryop_gpu.ADD, dtype);
@@ -1477,6 +1496,9 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   rsqrt<T extends Tensor>(x: T): T {
+    if (this.shouldExecuteOnCPU([x])) {
+      return this.cpuBackend.rsqrt(x);
+    }
     const program = new UnaryOpProgram(x.shape, unary_op.RSQRT);
     return this.compileAndRun(program, [x]) as T;
   }
