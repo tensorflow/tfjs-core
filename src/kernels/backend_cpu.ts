@@ -35,7 +35,7 @@ import {computeFlatOffset, getStridedSlicedInfo, isSliceContinous} from '../ops/
 import {DataId, Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D, TensorBuffer} from '../tensor';
 import {DataType, DataTypeMap, DataValues, NumericDataType, Rank, ShapeMap, TypedArray, upcastType} from '../types';
 import * as util from '../util';
-import {now} from '../util';
+import {getArrayFromDType, inferDtype, now, sizeFromShape} from '../util';
 
 import {BackendTimingInfo, DataMover, DataStorage, KernelBackend} from './backend';
 import * as backend_util from './backend_util';
@@ -115,7 +115,8 @@ export class MathBackendCPU implements KernelBackend {
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
       numChannels: number): Tensor3D {
     if (pixels == null) {
-      throw new Error('pixels passed to tf.fromPixels() can not be null');
+      throw new Error(
+          'pixels passed to tf.browser.fromPixels() can not be null');
     }
     let vals: Uint8ClampedArray;
     // tslint:disable-next-line:no-any
@@ -150,7 +151,7 @@ export class MathBackendCPU implements KernelBackend {
                  .data;
     } else {
       throw new Error(
-          'pixels passed to tf.fromPixels() must be either an ' +
+          'pixels passed to tf.browser.fromPixels() must be either an ' +
           `HTMLVideoElement, HTMLImageElement, HTMLCanvasElement or ` +
           `ImageData, but was ${(pixels as {}).constructor.name}`);
     }
@@ -2693,8 +2694,7 @@ export class MathBackendCPU implements KernelBackend {
       x: Tensor4D, mean: Tensor4D|Tensor1D, variance: Tensor4D|Tensor1D,
       varianceEpsilon: number, scale?: Tensor4D|Tensor1D,
       offset?: Tensor4D|Tensor1D): Tensor4D {
-    this.assertNotComplex(
-        [x, mean, variance, scale, offset], 'batchNormalization');
+    this.assertNotComplex([x, mean, variance, scale, offset], 'batchNorm');
 
     const xVals = x.dataSync();
     const mVals = mean.dataSync();
@@ -3284,7 +3284,7 @@ export class MathBackendCPU implements KernelBackend {
         numUpdates, sliceRank, strides, defaultValue, sumDupeIndices);
   }
 
-  gatherND(x: Tensor, indices: Tensor): Tensor<Rank> {
+  gatherND(x: Tensor, indices: Tensor): Tensor {
     const indicesShape = indices.shape;
     const sliceRank = indicesShape[indicesShape.length - 1];
 
@@ -3327,6 +3327,14 @@ export class MathBackendCPU implements KernelBackend {
     return this.scatter(
         indices, updates, shape, outputSize, sliceSize, numUpdates, sliceRank,
         strides, defaultValue, sumDupeIndices);
+  }
+
+  fill<R extends Rank>(
+    shape: ShapeMap[R], value: number|string, dtype?: DataType): Tensor<R> {
+    dtype = dtype || inferDtype(value);
+    const values = getArrayFromDType(dtype, sizeFromShape(shape)) as TypedArray;
+    values.fill(value as number);
+    return Tensor.make(shape, {values}, dtype);
   }
 
   private scatter<R extends Rank>(
