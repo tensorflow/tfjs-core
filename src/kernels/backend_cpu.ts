@@ -3340,14 +3340,16 @@ export class MathBackendCPU implements KernelBackend {
 
   onesLike<R extends Rank>(x: Tensor<R>): Tensor<R> {
     if (x.dtype === 'string') {
-      throw new Error('onesLike is not supported under string dtype');
+      throw new Error('onesLike is not supported for string tensors');
     } else {
       return this.fill(x.shape, 1, x.dtype);
     }
   }
 
   zerosLike<R extends Rank>(x: Tensor<R>): Tensor<R> {
-    return this.fill(x.shape, x.dtype === 'string' ? '' : 0, x.dtype);
+    const values =
+        getArrayFromDType(x.dtype, sizeFromShape(x.shape)) as TypedArray;
+    return Tensor.make(x.shape, {values}, x.dtype);
   }
 
   private scatter<R extends Rank>(
