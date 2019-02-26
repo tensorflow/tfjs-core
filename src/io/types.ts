@@ -256,7 +256,8 @@ export interface LoadOptions {
    * RequestInit (options) for HTTP requests.
    *
    * For detailed information on the supported fields, see
-   * https://developer.mozilla.org/en-US/docs/Web/API/Request/Request
+   * [https://developer.mozilla.org/en-US/docs/Web/API/Request/Request](
+   *     https://developer.mozilla.org/en-US/docs/Web/API/Request/Request)
    */
   requestInit?: RequestInit;
 
@@ -287,13 +288,13 @@ export interface LoadOptions {
    * path of the model JSON file.
    *
    * For instance, if the path to the model JSON file is
-   * 'http://localhost/foo/model.json', then the default path prefix will be
-   * 'http://localhost/foo/'. If a weight file has the path value
-   * 'group1-shard1of2' in the weight manifest, then the weight file will be
-   * loaded from 'http://localhost/foo/group1-shard1of2' by default. However,
+   * `http://localhost/foo/model.json`, then the default path prefix will be
+   * `http://localhost/foo/`. If a weight file has the path value
+   * `group1-shard1of2` in the weight manifest, then the weight file will be
+   * loaded from `http://localhost/foo/group1-shard1of2` by default. However,
    * if you provide a `weightPathPrefix` value of
-   * 'http://localhost/foo/alt-weights', then the weight file will be loaded
-   * from the path 'http://localhost/foo/alt-weights/group1-shard1of2' instead.
+   * `http://localhost/foo/alt-weights`, then the weight file will be loaded
+   * from the path `http://localhost/foo/alt-weights/group1-shard1of2` instead.
    */
   weightPathPrefix?: string;
 
