@@ -495,9 +495,9 @@ function depthwiseConv2d_<T extends Tensor3D|Tensor4D>(
   const grad = (dy: Tensor4D) => {
     util.assert(
         conv_util.tupleValuesAreOne(dilations),
-        () =>
-            'Error in gradient of depthwiseConv2d: dilation rates greater than ' +
-            `1 are not yet supported. Got dilations '${dilations}'`);
+        () => 'Error in gradient of depthwiseConv2d: dilation rates ' +
+            `greater than 1 are not yet supported. Got dilations ` +
+            `'${dilations}'`);
     return {
       x: () => depthwiseConv2dDerInput(x4D.shape, dy, $filter, convInfo),
       $filter: () => depthwiseConv2dDerFilter(x4D, dy, $filter.shape, convInfo),

@@ -928,8 +928,8 @@ export class MathBackendWebGL implements KernelBackend {
       x: T, blockShape: number[], crops: number[][]): T {
     util.assert(
         x.rank <= 4,
-        () =>
-            'batchToSpaceND for rank > 4 with a WebGL backend not implemented yet');
+        () => 'batchToSpaceND for rank > 4 with a WebGL backend not ' +
+            'implemented yet');
     const prod = blockShape.reduce((a, b) => a * b);
 
     const reshaped = array_ops_util.getReshaped(x.shape, blockShape, prod);
@@ -952,8 +952,8 @@ export class MathBackendWebGL implements KernelBackend {
       x: T, blockShape: number[], paddings: Array<[number, number]>): T {
     util.assert(
         x.rank <= 4,
-        () =>
-            'spaceToBatchND for rank > 4 with a WebGL backend not implemented yet');
+        () => 'spaceToBatchND for rank > 4 with a WebGL backend not ' +
+            'implemented yet');
 
     const prod = blockShape.reduce((a, b) => a * b);
 
