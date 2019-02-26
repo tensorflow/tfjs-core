@@ -96,8 +96,8 @@ export function distSquared(a: FlatVector, b: FlatVector): number {
  * ```
  *
  * @param expr The expression to assert (as a boolean).
- * @param msg The message to report when throwing an error. Can be either a
- *     string, or a function that returns a string (for performance reasons).
+ * @param msg A function that returns the message to report when throwing an
+ *     error. We use a function for performance reasons.
  */
 /** @doc {heading: 'Util'} */
 export function assert(expr: boolean, msg: () => string) {
