@@ -2153,6 +2153,8 @@ export class MathBackendWebGL implements KernelBackend {
     if (x.dtype === 'string') {
       throw new Error('onesLike is not supported under string dtype');
     } else {
+      // TODO(cais, smilkov): Add WebGL shader for onesLike:
+      //   https://github.com/tensorflow/tfjs/issues/1293
       return this.fill(x.shape, 1, x.dtype);
     }
   }
