@@ -1728,7 +1728,8 @@ export class MathBackendWebGL implements KernelBackend {
     xTexData.shape[xTexData.shape.length - 2]++;
     util.assert(
         webgl_util.isReshapeFree(xTexData.shape, xReshaped.shape),
-        `packed reshape ${xTexData.shape} to ${xReshaped.shape} isn't free`);
+        () => `packed reshape ${xTexData.shape} to ${
+            xReshaped.shape} isn't free`);
     const filterReshaped =
         this.reshape(filter, [1, convInfo.inChannels, convInfo.outChannels]) as
         Tensor3D;
@@ -1738,7 +1739,7 @@ export class MathBackendWebGL implements KernelBackend {
     const pointwiseConvTexData = this.texData.get(pointwiseConv.dataId);
     util.assert(
         pointwiseConvTexData.isPacked,
-        'batchMatMul result is expected to be packed');
+        () => 'batchMatMul result is expected to be packed');
     // Restore the input shape to original.
     xTexData.shape = originalXTexDataShape;
     // Set the output shape - there is no need for expensive reshape as data
