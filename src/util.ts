@@ -76,7 +76,7 @@ export function distSquared(a: FlatVector, b: FlatVector): number {
   return result;
 }
 
-export function assert(expr: boolean, msg: string|(() => string)) {
+export function assert(expr: boolean, msg: () => string) {
   if (!expr) {
     throw new Error(typeof msg === 'string' ? msg : msg());
   }
@@ -86,13 +86,13 @@ export function assertShapesMatch(
     shapeA: number[], shapeB: number[], errorMessagePrefix = ''): void {
   assert(
       arraysEqual(shapeA, shapeB),
-      errorMessagePrefix + ` Shapes ${shapeA} and ${shapeB} must match`);
+      () => errorMessagePrefix + ` Shapes ${shapeA} and ${shapeB} must match`);
 }
 
 export function assertNonNull(a: TensorLike): void {
   assert(
       a != null,
-      `The input to the tensor constructor must be a non-null value.`);
+      () => `The input to the tensor constructor must be a non-null value.`);
 }
 
 // NOTE: We explicitly type out what T extends instead of any so that
@@ -276,13 +276,14 @@ export function parseAxisParam(
   // Check for valid range
   assert(
       axis.every(ax => ax >= -rank && ax < rank),
-      `All values in axis param must be in range [-${rank}, ${rank}) but ` +
+      () =>
+          `All values in axis param must be in range [-${rank}, ${rank}) but ` +
           `got axis ${axis}`);
 
   // Check for only integers
   assert(
       axis.every(ax => isInt(ax)),
-      `All values in axis param must be integers but ` +
+      () => `All values in axis param must be integers but ` +
           `got axis ${axis}`);
 
   // Handle negative axis.
@@ -629,23 +630,23 @@ export function monitorPromisesProgress(
   function checkPromises(promises: Array<Promise<{}|void>>): void {
     assert(
         promises != null && Array.isArray(promises) && promises.length > 0,
-        'promises must be a none empty array');
+        () => 'promises must be a none empty array');
   }
 
   function checkFraction(startFraction: number, endFraction: number): void {
     assert(
         startFraction >= 0 && startFraction <= 1,
-        `Progress fraction must be in range [0, 1], but ` +
+        () => `Progress fraction must be in range [0, 1], but ` +
             `got startFraction ${startFraction}`);
     assert(
         endFraction >= 0 && endFraction <= 1,
-        `Progress fraction must be in range [0, 1], but ` +
+        () => `Progress fraction must be in range [0, 1], but ` +
             `got endFraction ${endFraction}`);
     assert(
         endFraction >= startFraction,
-        `startFraction must be no more than endFraction, but ` +
+        () => `startFraction must be no more than endFraction, but ` +
             `got startFraction ${startFraction} and endFraction ${
-                endFraction}`);
+                  endFraction}`);
   }
 
   return Promise.all(promises.map(registerMonitor));
