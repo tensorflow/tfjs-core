@@ -1068,9 +1068,8 @@ function print<T extends Tensor>(x: T, verbose = false): void {
 }
 
 export {
-  buffer,    // Not wrapped in op() since no tensors.
-  toPixels,  // Not wrapped in op() since async.
-  print      // Not wrapped in op() since no need to increase stack trace.
+  buffer,  // Not wrapped in op() since no tensors.
+  print    // Not wrapped in op() since no need to increase stack trace.
 };
 
 export const batchToSpaceND = op({batchToSpaceND_});
@@ -1080,7 +1079,6 @@ export const cumsum = op({cumsum_});
 export const depthToSpace = op({depthToSpace_});
 export const expandDims = op({expandDims_});
 export const eye = op({eye_});
-export const fromPixels = fromPixels_;
 export const multinomial = op({multinomial_});
 export const oneHot = op({oneHot_});
 export const pad = op({pad_});
