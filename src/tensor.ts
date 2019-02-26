@@ -55,7 +55,7 @@ export class TensorBuffer<R extends Rank, D extends DataType = 'float32'> {
       const n = values.length;
       util.assert(
           n === this.size,
-          `Length of values '${n}' does not match the size ` +
+          () => `Length of values '${n}' does not match the size ` +
               `inferred by the shape '${this.size}'.`);
     }
     if (dtype === 'complex64') {
@@ -82,7 +82,7 @@ export class TensorBuffer<R extends Rank, D extends DataType = 'float32'> {
     }
     util.assert(
         locs.length === this.rank,
-        `The number of provided coordinates (${locs.length}) must ` +
+        () => `The number of provided coordinates (${locs.length}) must ` +
             `match the rank (${this.rank})`);
 
     const index = this.locToIndex(locs);
@@ -472,7 +472,7 @@ export class Tensor<R extends Rank = Rank> {
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
   asScalar(): Scalar {
     this.throwIfDisposed();
-    util.assert(this.size === 1, 'The array must have only 1 element.');
+    util.assert(this.size === 1, () => 'The array must have only 1 element.');
     return this.reshape<Rank.R0>([]);
   }
 
@@ -572,7 +572,6 @@ export class Tensor<R extends Rank = Rank> {
    * asynchronously.
    */
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
-  // tslint:disable-next-line:no-any
   async array(): Promise<ArrayMap[R]> {
     const vals = await this.data();
     return toNestedArray(this.shape, vals);
@@ -583,7 +582,6 @@ export class Tensor<R extends Rank = Rank> {
    * synchronously.
    */
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
-  // tslint:disable-next-line:no-any
   arraySync(): ArrayMap[R] {
     return toNestedArray(this.shape, this.dataSync());
   }
@@ -797,7 +795,7 @@ export class Tensor<R extends Rank = Rank> {
   stack(x: Tensor, axis = 0): Tensor {
     return opHandler.stack([this, x], axis);
   }
-  unstack(x: Tensor, axis = 0): Tensor[] {
+  unstack(axis = 0): Tensor[] {
     return opHandler.unstack(this, axis);
   }
   pad<T extends Tensor>(

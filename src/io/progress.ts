@@ -15,8 +15,9 @@
  * =============================================================================
  */
 
-import {OnProgressCallback} from './types';
 import {assert} from '../util';
+
+import {OnProgressCallback} from './types';
 
 /**
  * Monitor Promise.all progress, fire onProgress callback function.
@@ -49,23 +50,23 @@ export function monitorPromisesProgress(
   function checkPromises(promises: Array<Promise<{}|void>>): void {
     assert(
         promises != null && Array.isArray(promises) && promises.length > 0,
-        'promises must be a none empty array');
+        () => 'promises must be a none empty array');
   }
 
   function checkFraction(startFraction: number, endFraction: number): void {
     assert(
         startFraction >= 0 && startFraction <= 1,
-        `Progress fraction must be in range [0, 1], but ` +
+        () => `Progress fraction must be in range [0, 1], but ` +
             `got startFraction ${startFraction}`);
     assert(
         endFraction >= 0 && endFraction <= 1,
-        `Progress fraction must be in range [0, 1], but ` +
+        () => `Progress fraction must be in range [0, 1], but ` +
             `got endFraction ${endFraction}`);
     assert(
         endFraction >= startFraction,
-        `startFraction must be no more than endFraction, but ` +
-            `got startFraction ${startFraction} and endFraction ${
-                endFraction}`);
+        () => `startFraction must be no more than endFraction, but ` +
+            `got startFraction ${startFraction} and endFraction ` +
+            `${endFraction}`);
   }
 
   return Promise.all(promises.map(registerMonitor));
