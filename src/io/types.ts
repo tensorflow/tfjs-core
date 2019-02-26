@@ -92,6 +92,7 @@ export declare interface WeightsManifestEntry {
 
 /**
  * Options for saving a model.
+ * @innamespace io
  */
 export interface SaveConfig {
   /**
@@ -249,6 +250,7 @@ export interface ModelStoreManager {
  */
 export type OnProgressCallback = (fraction: number) => void;
 
+/** @innamespace io */
 export interface LoadOptions {
   /**
    * RequestInit (options) for HTTP requests.
@@ -297,7 +299,7 @@ export interface LoadOptions {
 
   /**
    * Whether the module or model is to be loaded from TF Hub.
-   * 
+   *
    * Setting this to `true` allows passing a TF-Hub module URL, omitting the
    * standard model file name and the query parameters.
    *
