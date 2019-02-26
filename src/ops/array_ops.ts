@@ -22,7 +22,6 @@ import {DataType, DataTypeMap, Rank, ShapeMap, TensorLike, TensorLike4D} from '.
 import * as util from '../util';
 
 import {getAxesPermutation, getInnerMostAxes} from './axis_util';
-import {fromPixels as browserFromPixels, toPixels as browserToPixels} from './browser';
 import {concat} from './concat_split';
 import {op} from './operation';
 import {MPRandGauss} from './rand';
@@ -305,39 +304,6 @@ function oneHot_(
       backend => backend.oneHot($indices as Tensor1D, depth, onValue, offValue),
       {$indices}, grad);
   return result.reshape(outShape);
-}
-
-/**
- * Deprecated. Use `tf.browser.fromPixels`.
- *
- * @param pixels The input image to construct the tensor from. The
- * supported image types are all 4-channel.
- * @param numChannels The number of channels of the output tensor. A
- * numChannels value less than 4 allows you to ignore channels. Defaults to
- * 3 (ignores alpha channel of input image).
- */
-/** @doc {heading: 'Tensors', subheading: 'Creation'} */
-function fromPixels_(
-    pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
-    numChannels = 3): Tensor3D {
-  return browserFromPixels(pixels, numChannels);
-}
-
-/**
- * Deprecated. Use `tf.browser.toPixels`.
- *
- * @param img A rank-2 or rank-3 tensor. If rank-2, draws grayscale. If
- *     rank-3, must have depth of 1, 3 or 4. When depth of 1, draws
- * grayscale. When depth of 3, we draw with the first three components of
- * the depth dimension corresponding to r, g, b and alpha = 1. When depth of
- * 4, all four components of the depth dimension correspond to r, g, b, a.
- * @param canvas The canvas to draw to.
- */
-/** @doc {heading: 'Visualization'} */
-async function toPixels(
-    img: Tensor2D|Tensor3D|TensorLike,
-    canvas?: HTMLCanvasElement): Promise<Uint8ClampedArray> {
-  return browserToPixels(img, canvas);
 }
 
 /**
