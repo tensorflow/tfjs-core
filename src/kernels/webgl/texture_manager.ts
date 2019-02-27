@@ -142,6 +142,7 @@ export class TextureManager {
   }
 }
 
+// TODO - export this function?
 function getPhysicalFromLogicalTextureType(
     logicalTexType: TextureUsage, isPacked: boolean): PhysicalTextureType {
   if (logicalTexType === TextureUsage.UPLOAD) {
