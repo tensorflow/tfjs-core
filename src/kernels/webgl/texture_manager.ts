@@ -149,8 +149,8 @@ function getPhysicalFromLogicalTextureType(
       return isPacked ? PhysicalTextureType.PACKED_2X2_FLOAT32 :
                         PhysicalTextureType.UNPACKED_FLOAT32;
     } else {
-      return isPacked ? PhysicalTextureType.PACKED_2X2_FLOAT32 :
-                        PhysicalTextureType.UNPACKED_FLOAT32;
+      return isPacked ? PhysicalTextureType.PACKED_2X2_FLOAT16 :
+                        PhysicalTextureType.UNPACKED_FLOAT16;
     }
   } else if (logicalTexType === TextureUsage.RENDER || logicalTexType == null) {
     if (isPacked) {
