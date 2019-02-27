@@ -145,8 +145,13 @@ export class TextureManager {
 function getPhysicalFromLogicalTextureType(
     logicalTexType: TextureUsage, isPacked: boolean): PhysicalTextureType {
   if (logicalTexType === TextureUsage.UPLOAD) {
-    return isPacked ? PhysicalTextureType.PACKED_2X2_FLOAT32 :
-                      PhysicalTextureType.UNPACKED_FLOAT32;
+    if (ENV.get('WEBGL_RENDER_FLOAT32_ENABLED')) {
+      return isPacked ? PhysicalTextureType.PACKED_2X2_FLOAT32 :
+                        PhysicalTextureType.UNPACKED_FLOAT32;
+    } else {
+      return isPacked ? PhysicalTextureType.PACKED_2X2_FLOAT32 :
+                        PhysicalTextureType.UNPACKED_FLOAT32;
+    }
   } else if (logicalTexType === TextureUsage.RENDER || logicalTexType == null) {
     if (isPacked) {
       return ENV.get('WEBGL_RENDER_FLOAT32_ENABLED') ?
