@@ -185,6 +185,26 @@ export declare interface ModelArtifacts {
    * by `weightSpecs`.
    */
   weightData?: ArrayBuffer;
+
+  /**
+   * Hard-coded format name for models saved from TensorFlow.js Layers API.
+   */
+  format?: 'graph-model'|'layers-model';
+
+  /**
+   * What library is responsible for originally generating this artifact.
+   *
+   * Used for debugging purposes.
+   */
+  generatedBy?: string;
+
+  /**
+   * What library or tool is responsible for converting the original model
+   * to this format, applicable only if the model is output by a converter.
+   *
+   * Used for debugging purposes.
+   */
+  convertedBy?: string|null;
 }
 
 /**
