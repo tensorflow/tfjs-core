@@ -204,6 +204,10 @@ export declare interface ModelArtifacts {
    * to this format, applicable only if the model is output by a converter.
    *
    * Used for debugging purposes.  E.g., 'TensorFlow.js Converter v1.0.0'.
+   *
+   * A value of `null` means the model artifacts are generated without any
+   * conversion process (e.g., saved directly from a TensorFlow.js
+   * `LayersModel` instance.)
    */
   convertedBy?: string|null;
 }
