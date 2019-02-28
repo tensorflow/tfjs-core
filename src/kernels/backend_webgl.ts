@@ -569,22 +569,13 @@ export class MathBackendWebGL implements KernelBackend {
 
   private textureManager: TextureManager;
   private binaryCache: {[key: string]: GPGPUBinary} = {};
-  private gpgpuCreatedLocally: boolean;
 
-  constructor(private gpgpu?: GPGPUContext) {
+  constructor() {
     if (ENV.get('WEBGL_VERSION') < 1) {
       throw new Error('WebGL is not supported on this device');
     }
-
-    if (gpgpu == null) {
-      const gl = getWebGLContext(ENV.get('WEBGL_VERSION'));
-      this.gpgpu = new GPGPUContext(gl);
-      this.canvas = gl.canvas;
-      this.gpgpuCreatedLocally = true;
-    } else {
-      this.gpgpuCreatedLocally = false;
-      this.canvas = gpgpu.gl.canvas;
-    }
+    this.gpgpu = new GPGPUContext();
+    this.canvas = this.gpgpu.gl.canvas;
     this.textureManager = new TextureManager(this.gpgpu);
   }
 

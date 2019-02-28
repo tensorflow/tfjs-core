@@ -47,14 +47,8 @@ export class GPGPUContext {
   private disjoint: boolean;
   private textureConfig: TextureConfig;
 
-  constructor(gl?: WebGLRenderingContext) {
-    const glVersion = ENV.get('WEBGL_VERSION');
-    if (gl != null) {
-      this.gl = gl;
-      setWebGLContext(glVersion, gl);
-    } else {
-      this.gl = getWebGLContext(glVersion);
-    }
+  constructor() {
+    this.gl = getWebGLContext(ENV.get('WEBGL_VERSION'));
     // WebGL 2.0 enables texture floats without an extension.
     if (ENV.get('WEBGL_VERSION') === 1) {
       this.textureFloatExtension =
