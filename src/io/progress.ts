@@ -36,7 +36,7 @@ export function monitorPromisesProgress(
   checkFraction(startFraction, endFraction);
   let resolvedPromise = 0;
 
-  function registerMonitor(promise: Promise<{}>) {
+  const registerMonitor = (promise: Promise<{}>) => {
     promise.then(value => {
       const fraction = startFraction +
           ++resolvedPromise / promises.length * (endFraction - startFraction);
@@ -45,7 +45,7 @@ export function monitorPromisesProgress(
       return value;
     });
     return promise;
-  }
+  };
 
   function checkPromises(promises: Array<Promise<{}|void>>): void {
     assert(

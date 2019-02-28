@@ -445,12 +445,14 @@ IORouterRegistry.registerLoadRouter(httpRequestRouter);
  * topology (filename: 'model.json') and the weights of the model (filename:
  * 'model.weights.bin') will be appended to the body. If `requestInit` has a
  * `body`, an Error will be thrown.
- * @param weightPathPrefix Optional, this specifies the path prefix for weight
- *   files, by default this is calculated from the path param.
- * @param fetchFunc Optional, custom `fetch` function. E.g., in Node.js,
- *   the `fetch` from node-fetch can be used here.
- * @param onProgress Optional, progress callback function, fired periodically
- *   before the load is completed.
+ * @param loadOptions Optional configuration for the loading. It includes the
+ *   following fields:
+ *   - weightPathPrefix Optional, this specifies the path prefix for weight
+ *     files, by default this is calculated from the path param.
+ *   - fetchFunc Optional, custom `fetch` function. E.g., in Node.js,
+ *     the `fetch` from node-fetch can be used here.
+ *   - onProgress Optional, progress callback function, fired periodically
+ *     before the load is completed.
  * @returns An instance of `IOHandler`.
  */
 export function browserHTTPRequest(
