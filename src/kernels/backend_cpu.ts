@@ -34,8 +34,9 @@ import {computeFlatOffset, getStridedSlicedInfo, isSliceContinous} from '../ops/
 import {DataId, Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D, TensorBuffer} from '../tensor';
 import {DataType, DataTypeMap, DataValues, NumericDataType, Rank, ShapeMap, TypedArray, upcastType} from '../types';
 import * as util from '../util';
-import {now} from '../util';
 import * as asm from './asm';
+import {getArrayFromDType, inferDtype, now, sizeFromShape} from '../util';
+
 import {BackendTimingInfo, DataMover, DataStorage, KernelBackend} from './backend';
 import * as backend_util from './backend_util';
 import * as complex_util from './complex_util';
@@ -242,7 +243,7 @@ export class MathBackendCPU implements KernelBackend {
       if (t != null) {
         util.assert(
             t.dtype !== 'complex64',
-            `${opName} does not support complex64 tensors.`);
+            () => `${opName} does not support complex64 tensors.`);
       }
     });
   }
@@ -3047,11 +3048,12 @@ export class MathBackendCPU implements KernelBackend {
       Tensor4D {
     util.assert(
         dataFormat === 'NHWC',
-        `Only NHWC dataFormat supported on CPU for depthToSpace. Got ${
+        () => `Only NHWC dataFormat supported on CPU for depthToSpace. Got ${
             dataFormat}`);
     util.assert(
         blockSize > 1,
-        `blockSize should be > 1 for depthToSpace, but was: ${blockSize}`);
+        () =>
+            `blockSize should be > 1 for depthToSpace, but was: ${blockSize}`);
 
     const batchSize = x.shape[0];
     const inputHeight = x.shape[1];
@@ -3384,6 +3386,28 @@ export class MathBackendCPU implements KernelBackend {
     return this.scatter(
         indices, updates, shape, outputSize, sliceSize, numUpdates, sliceRank,
         strides, defaultValue, sumDupeIndices);
+  }
+
+  fill<R extends Rank>(
+      shape: ShapeMap[R], value: number|string, dtype?: DataType): Tensor<R> {
+    dtype = dtype || inferDtype(value);
+    const values = getArrayFromDType(dtype, sizeFromShape(shape)) as TypedArray;
+    values.fill(value as number);
+    return Tensor.make(shape, {values}, dtype);
+  }
+
+  onesLike<R extends Rank>(x: Tensor<R>): Tensor<R> {
+    if (x.dtype === 'string') {
+      throw new Error('onesLike is not supported for string tensors');
+    } else {
+      return this.fill(x.shape, 1, x.dtype);
+    }
+  }
+
+  zerosLike<R extends Rank>(x: Tensor<R>): Tensor<R> {
+    const values =
+        getArrayFromDType(x.dtype, sizeFromShape(x.shape)) as TypedArray;
+    return Tensor.make(x.shape, {values}, x.dtype);
   }
 
   private scatter<R extends Rank>(

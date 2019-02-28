@@ -35,7 +35,7 @@ import {range, scalar, tensor} from '../ops/tensor_ops';
 import {DataId, Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D} from '../tensor';
 import {DataType, DataTypeMap, DataValues, NumericDataType, Rank, RecursiveArray, ShapeMap, sumOutType, TypedArray, upcastType} from '../types';
 import * as util from '../util';
-import {getTypedArrayFromDType, sizeFromShape} from '../util';
+import {getArrayFromDType, getTypedArrayFromDType, inferDtype, sizeFromShape} from '../util';
 
 import {DataMover, DataStorage, KernelBackend} from './backend';
 import * as backend_util from './backend_util';
@@ -44,6 +44,7 @@ import {nonMaxSuppressionImpl} from './non_max_suppression_impl';
 import {split} from './split_shared';
 import {topkImpl} from './topk_impl';
 import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
+import {ArgMinMaxPackedProgram} from './webgl/argminmax_packed_gpu';
 import {AvgPool2DBackpropProgram} from './webgl/avg_pool_backprop_gpu';
 import {BatchNormProgram} from './webgl/batchnorm_gpu';
 import {BatchNormPackedProgram} from './webgl/batchnorm_packed_gpu';
@@ -57,6 +58,7 @@ import {ClipProgram} from './webgl/clip_gpu';
 import {ClipPackedProgram} from './webgl/clip_packed_gpu';
 import {ComplexAbsProgram} from './webgl/complex_abs_gpu';
 import {ConcatProgram} from './webgl/concat_gpu';
+import {ConcatPackedProgram} from './webgl/concat_packed_gpu';
 import {Conv2DDerFilterProgram, Conv2DDerInputProgram, Conv3DDerFilterProgram, Conv3DDerInputProgram} from './webgl/conv_backprop_gpu';
 import {DepthwiseConv2DDerFilterProgram, DepthwiseConv2DDerInputProgram} from './webgl/conv_backprop_gpu_depthwise';
 import {Conv2DProgram, Conv3DProgram} from './webgl/conv_gpu';
@@ -68,6 +70,7 @@ import {DepthToSpaceProgram} from './webgl/depth_to_space_gpu';
 import {EncodeFloatProgram} from './webgl/encode_float_gpu';
 import * as fft_gpu from './webgl/fft_gpu';
 import {FFTProgram} from './webgl/fft_gpu';
+import {FillProgram} from './webgl/fill_gpu';
 import {FromPixelsProgram} from './webgl/from_pixels_gpu';
 import {GatherProgram} from './webgl/gather_gpu';
 import {GatherNDProgram} from './webgl/gather_nd_gpu';
@@ -160,7 +163,7 @@ export interface TensorHandle {
 
 // Empirically determined constant used to determine size threshold for handing
 // off execution to the CPU.
-const CPU_HANDOFF_SIZE_THRESHOLD = 10;
+const CPU_HANDOFF_SIZE_THRESHOLD = 128;
 
 // Empirically determined minimal shared dimension in matmul before we forward
 // to a.mul(b).sum() in order to take advantage of GPU parallelism. See
@@ -728,6 +731,10 @@ export class MathBackendWebGL implements KernelBackend {
       const rightSide = this.concat(tensors.slice(midIndex), axis);
       return this.concat([leftSide, rightSide], axis);
     }
+    if (ENV.get('WEBGL_PACK_ARRAY_OPERATIONS') && tensors[0].rank > 1) {
+      const program = new ConcatPackedProgram(tensors.map(t => t.shape), axis);
+      return this.compileAndRun(program, tensors);
+    }
     // Any concat of n-dimensional tensors across any axis can be reduced to
     // a concatenation of two-dimensional tensors across the axis 1 by first
     // partitioning the axes of the original tensors into those less than the
@@ -901,6 +908,9 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   transpose<T extends Tensor>(x: T, perm: number[]): T {
+    if (this.shouldExecuteOnCPU([x])) {
+      return this.cpuBackend.transpose(x, perm);
+    }
     const program = ENV.get('WEBGL_PACK_ARRAY_OPERATIONS') ?
         new TransposePackedProgram(x.shape, perm) :
         new TransposeProgram(x.shape, perm);
@@ -908,6 +918,9 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   gather<T extends Tensor>(x: T, indices: Tensor1D, axis: number): T {
+    if (this.shouldExecuteOnCPU([x, indices])) {
+      return this.cpuBackend.gather(x, indices, axis);
+    }
     const program = new GatherProgram(x.shape, indices.size, axis);
     return this.compileAndRun(program, [x, indices]);
   }
@@ -916,7 +929,8 @@ export class MathBackendWebGL implements KernelBackend {
       x: T, blockShape: number[], crops: number[][]): T {
     util.assert(
         x.rank <= 4,
-        'batchToSpaceND for rank > 4 with a WebGL backend not implemented yet');
+        () => 'batchToSpaceND for rank > 4 with a WebGL backend not ' +
+            'implemented yet');
     const prod = blockShape.reduce((a, b) => a * b);
 
     const reshaped = array_ops_util.getReshaped(x.shape, blockShape, prod);
@@ -939,7 +953,8 @@ export class MathBackendWebGL implements KernelBackend {
       x: T, blockShape: number[], paddings: Array<[number, number]>): T {
     util.assert(
         x.rank <= 4,
-        'spaceToBatchND for rank > 4 with a WebGL backend not implemented yet');
+        () => 'spaceToBatchND for rank > 4 with a WebGL backend not ' +
+            'implemented yet');
 
     const prod = blockShape.reduce((a, b) => a * b);
 
@@ -1011,6 +1026,22 @@ export class MathBackendWebGL implements KernelBackend {
     return this.argReduce(x, reduceType, output);
   }
 
+  private argReducePacked(
+      x: Tensor, reduceType: 'max'|'min', bestIndicesA: Tensor = null): Tensor {
+    const inShape = bestIndicesA != null ? bestIndicesA.shape : x.shape;
+    const inSize = inShape[inShape.length - 1];
+    const windowSize = reduce_util.computeOptimalWindowSize(inSize);
+    const program = new ArgMinMaxPackedProgram(
+        inShape, windowSize, reduceType, bestIndicesA == null);
+    const output = this.makePackedTensor(program.outputShape, 'int32');
+    const inputs = bestIndicesA == null ? [x] : [x, bestIndicesA];
+    this.compileAndRun(program, inputs, output);
+    if (output.rank === x.rank) {
+      return this.argReducePacked(x, reduceType, output);
+    }
+    return output;
+  }
+
   sum(x: Tensor, axes: number[]): Tensor {
     axis_util.assertAxesAreInnerMostDims('sum', axes, x.rank);
     const [outShape, reduceShape] =
@@ -1022,6 +1053,10 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   prod(x: Tensor, axes: number[]): Tensor {
+    if (this.shouldExecuteOnCPU([x])) {
+      return this.cpuBackend.prod(x, axes);
+    }
+
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(x.shape, axes);
     const inSize = util.sizeFromShape(reduceShape);
@@ -1075,24 +1110,28 @@ export class MathBackendWebGL implements KernelBackend {
     return this.segOpCompute(output, segOpType, segmentIds, dtype, numSegments);
   }
 
-  argMin(x: Tensor, axis: number): Tensor {
+  private argMinMaxReduce(x: Tensor, axis: number, reduceType: 'min'|'max'):
+      Tensor {
     const axes = [axis];
-    axis_util.assertAxesAreInnerMostDims('argMin', axes, x.rank);
-    const [outShape, reduceShape] =
-        axis_util.computeOutAndReduceShapes(x.shape, axes);
-    const inSize = util.sizeFromShape(reduceShape);
-    const a2D = x.as2D(-1, inSize);
-    return this.argReduce(a2D, 'min').reshape(outShape);
+    axis_util.assertAxesAreInnerMostDims(
+        'arg' + reduceType.charAt(0).toUpperCase() + reduceType.slice(1), axes,
+        x.rank);
+    if (!ENV.get('WEBGL_PACK_REDUCE') || x.rank <= 2) {
+      const [outShape, reduceShape] =
+          axis_util.computeOutAndReduceShapes(x.shape, axes);
+      const inSize = util.sizeFromShape(reduceShape);
+      const a2D = x.as2D(-1, inSize);
+      return this.argReduce(a2D, reduceType).reshape(outShape);
+    }
+    return this.argReducePacked(x, reduceType);
+  }
+
+  argMin(x: Tensor, axis: number): Tensor {
+    return this.argMinMaxReduce(x, axis, 'min');
   }
 
   argMax(x: Tensor, axis: number): Tensor {
-    const axes = [axis];
-    axis_util.assertAxesAreInnerMostDims('argMax', axes, x.rank);
-    const [outShape, reduceShape] =
-        axis_util.computeOutAndReduceShapes(x.shape, axes);
-    const inSize = util.sizeFromShape(reduceShape);
-    const a2D = x.as2D(-1, inSize);
-    return this.argReduce(a2D, 'max').reshape(outShape);
+    return this.argMinMaxReduce(x, axis, 'max');
   }
 
   cumsum(x: Tensor, axis: number, exclusive: boolean, reverse: boolean):
@@ -1249,6 +1288,10 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   max(x: Tensor, axes: number[]): Tensor {
+    if (this.shouldExecuteOnCPU([x])) {
+      return this.cpuBackend.max(x, axes);
+    }
+
     axis_util.assertAxesAreInnerMostDims('max', axes, x.rank);
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(x.shape, axes);
@@ -1322,6 +1365,11 @@ export class MathBackendWebGL implements KernelBackend {
     if (a.dtype === 'complex64' && b.dtype === 'complex64') {
       return this.complexSeparableBinaryOp(a, b, binaryop_gpu.ADD);
     }
+
+    if (this.shouldExecuteOnCPU([a, b])) {
+      return this.cpuBackend.add(a, b);
+    }
+
     const dtype = upcastType(a.dtype, b.dtype);
     if (ENV.get('WEBGL_PACK_BINARY_OPERATIONS')) {
       return this.packedBinaryOp(a, b, binaryop_gpu.ADD, dtype);
@@ -1476,6 +1524,9 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   rsqrt<T extends Tensor>(x: T): T {
+    if (this.shouldExecuteOnCPU([x])) {
+      return this.cpuBackend.rsqrt(x);
+    }
     const program = new UnaryOpProgram(x.shape, unary_op.RSQRT);
     return this.compileAndRun(program, [x]) as T;
   }
@@ -1698,7 +1749,8 @@ export class MathBackendWebGL implements KernelBackend {
     xTexData.shape[xTexData.shape.length - 2]++;
     util.assert(
         webgl_util.isReshapeFree(xTexData.shape, xReshaped.shape),
-        `packed reshape ${xTexData.shape} to ${xReshaped.shape} isn't free`);
+        () => `packed reshape ${xTexData.shape} to ${
+            xReshaped.shape} isn't free`);
     const filterReshaped =
         this.reshape(filter, [1, convInfo.inChannels, convInfo.outChannels]) as
         Tensor3D;
@@ -1708,7 +1760,7 @@ export class MathBackendWebGL implements KernelBackend {
     const pointwiseConvTexData = this.texData.get(pointwiseConv.dataId);
     util.assert(
         pointwiseConvTexData.isPacked,
-        'batchMatMul result is expected to be packed');
+        () => 'batchMatMul result is expected to be packed');
     // Restore the input shape to original.
     xTexData.shape = originalXTexDataShape;
     // Set the output shape - there is no need for expensive reshape as data
@@ -1974,7 +2026,8 @@ export class MathBackendWebGL implements KernelBackend {
       Tensor4D {
     util.assert(
         blockSize > 1,
-        `blockSize should be > 1 for depthToSpace, but was: ${blockSize}`);
+        () =>
+            `blockSize should be > 1 for depthToSpace, but was: ${blockSize}`);
 
     const batchSize = x.shape[0];
     const inputHeight = (dataFormat === 'NHWC') ? x.shape[1] : x.shape[2];
@@ -2077,6 +2130,37 @@ export class MathBackendWebGL implements KernelBackend {
         new GatherNDProgram(sliceRank, strides, [numSlices, sliceSize]);
     return (this.compileAndRun(program, [flattenX, flattenIndices]) as Tensor)
         .reshape(resultShape);
+  }
+
+  fill<R extends Rank>(
+      shape: ShapeMap[R], value: number|string, dtype?: DataType): Tensor<R> {
+    dtype = dtype || inferDtype(value);
+
+    if (dtype === 'string') {
+      // String type should be handled in CPU memory.
+      const values = getArrayFromDType(dtype, sizeFromShape(shape));
+      values.fill(value as string);
+      return Tensor.make(shape, {values}, dtype);
+    } else {
+      const program = new FillProgram(shape, value as number);
+      const customSetup = program.getCustomSetupFunc(value as number);
+      const output = this.makeOutputArray(shape, dtype) as Tensor<R>;
+      return this.compileAndRun(program, [], output, customSetup) as Tensor<R>;
+    }
+  }
+
+  onesLike<R extends Rank>(x: Tensor<R>): Tensor<R> {
+    if (x.dtype === 'string') {
+      throw new Error('onesLike is not supported under string dtype');
+    } else {
+      // TODO(cais, smilkov): Add WebGL shader for onesLike:
+      //   https://github.com/tensorflow/tfjs/issues/1293
+      return this.fill(x.shape, 1, x.dtype);
+    }
+  }
+
+  zerosLike<R extends Rank>(x: Tensor<R>): Tensor<R> {
+    return this.fill(x.shape, x.dtype === 'string' ? '' : 0, x.dtype);
   }
 
   private makeOutputArray<T extends Tensor>(shape: number[], dtype: DataType):
