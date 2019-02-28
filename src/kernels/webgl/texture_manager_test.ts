@@ -14,26 +14,82 @@
  * limitations under the License.
  * =============================================================================
  */
-
 import {describeWithFlags} from '../../jasmine_util';
 
+import * as tf from './../../index';
 import {GPGPUContext} from './gpgpu_context';
+import {TextureUsage} from './tex_util';
 import {TextureManager} from './texture_manager';
 
 const DOWNLOAD_FLOAT_ENVS = {
   'WEBGL_DOWNLOAD_FLOAT_ENABLED': true
 };
 
-describeWithFlags(
-    'getPhysicalFromLogicalTextureType', DOWNLOAD_FLOAT_ENVS, () => {
-      let textureManager: TextureManager;
+describeWithFlags('acquireTexture', DOWNLOAD_FLOAT_ENVS, () => {
+  let textureManager: TextureManager;
+  let gpgpuContext: GPGPUContext;
 
-      beforeEach(() => {
-        //
-        // TODO(kreeger): Left off right here.
-        //
+  beforeEach(() => {
+    gpgpuContext = new GPGPUContext();
+    spyOn(gpgpuContext, 'createFloat16MatrixTexture');
+    spyOn(gpgpuContext, 'createFloat16PackedMatrixTexture');
+    spyOn(gpgpuContext, 'createFloat32MatrixTexture');
+    spyOn(gpgpuContext, 'createPackedMatrixTexture');
+    textureManager = new TextureManager(gpgpuContext);
+  });
 
-        // Either export the helper function or mock out GPGPUContext..
-        textureManager = new TextureManager(new GPGPUContext());
-      });
-    });
+  it('uploads f16', () => {
+    tf.ENV.set('WEBGL_RENDER_FLOAT32_ENABLED', false);
+
+    textureManager.acquireTexture(
+        [1, 1], TextureUsage.UPLOAD, false /* packed */);
+
+    expect(gpgpuContext.createFloat16MatrixTexture).toHaveBeenCalled();
+
+    expect(gpgpuContext.createFloat16PackedMatrixTexture)
+        .not.toHaveBeenCalled();
+    expect(gpgpuContext.createFloat32MatrixTexture).not.toHaveBeenCalled();
+    expect(gpgpuContext.createPackedMatrixTexture).not.toHaveBeenCalled();
+  });
+
+  it('uploads f32', () => {
+    tf.ENV.set('WEBGL_RENDER_FLOAT32_ENABLED', true);
+
+    textureManager.acquireTexture(
+        [1, 1], TextureUsage.UPLOAD, false /* packed */);
+
+    expect(gpgpuContext.createFloat32MatrixTexture).toHaveBeenCalled();
+
+    expect(gpgpuContext.createFloat16MatrixTexture).not.toHaveBeenCalled();
+    expect(gpgpuContext.createFloat16PackedMatrixTexture)
+        .not.toHaveBeenCalled();
+    expect(gpgpuContext.createPackedMatrixTexture).not.toHaveBeenCalled();
+  });
+
+  it('uploads packed f16', () => {
+    tf.ENV.set('WEBGL_RENDER_FLOAT32_ENABLED', false);
+
+    textureManager.acquireTexture(
+        [1, 1], TextureUsage.UPLOAD, true /* packed */);
+
+    expect(gpgpuContext.createFloat16PackedMatrixTexture).toHaveBeenCalled();
+
+    expect(gpgpuContext.createFloat16MatrixTexture).not.toHaveBeenCalled();
+    expect(gpgpuContext.createFloat32MatrixTexture).not.toHaveBeenCalled();
+    expect(gpgpuContext.createPackedMatrixTexture).not.toHaveBeenCalled();
+  });
+
+  it('uploads packed f32', () => {
+    tf.ENV.set('WEBGL_RENDER_FLOAT32_ENABLED', true);
+
+    textureManager.acquireTexture(
+        [1, 1], TextureUsage.UPLOAD, true /* packed */);
+
+    expect(gpgpuContext.createPackedMatrixTexture).toHaveBeenCalled();
+
+    expect(gpgpuContext.createFloat16MatrixTexture).not.toHaveBeenCalled();
+    expect(gpgpuContext.createFloat16PackedMatrixTexture)
+        .not.toHaveBeenCalled();
+    expect(gpgpuContext.createFloat32MatrixTexture).not.toHaveBeenCalled();
+  });
+});
