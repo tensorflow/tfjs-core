@@ -197,7 +197,7 @@ export declare interface ModelArtifacts {
    *
    * Used for debugging purposes. E.g., 'TensorFlow.js v1.0.0'.
    */
-  generatedBy?: string|null;
+  generatedBy?: string;
 
   /**
    * What library or tool is responsible for converting the original model
