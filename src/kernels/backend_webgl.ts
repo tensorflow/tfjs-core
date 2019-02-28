@@ -267,10 +267,10 @@ export class MathBackendWebGL implements KernelBackend {
     if (values == null) {
       throw new Error('MathBackendWebGL.write(): values can not be null');
     }
-
+    const vals = values as DataTypeMap[DataType];
     if (ENV.get('DEBUG')) {
-      for (let i = 0; i < values.length; i++) {
-        const num = values[i] as number;
+      for (let i = 0; i < vals.length; i++) {
+        const num = vals[i] as number;
         if (!webgl_util.canBeRepresented(num)) {
           throw Error(`The value ${num} cannot be represented on this device.`);
         }

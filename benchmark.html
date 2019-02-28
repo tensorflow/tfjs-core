@@ -1,0 +1,41 @@
+<html>
+  <head>
+  </head>
+  <body>
+    <button onclick="run()">Run</button>
+    <!-- <script src="https://unpkg.com/@tensorflow/tfjs-core/dist/tf-core.js"></script> -->
+    <script src="dist/tf-core.js"></script>
+    <script src="https://unpkg.com/@tensorflow/tfjs-converter/dist/tf-converter.js"></script>
+    <script>
+      // MobileNet v2
+      const base_url = 'https://storage.googleapis.com/tfjs-models/savedmodel/mobilenet_v2_1.0_224/';
+
+      // ResNet 50 v2
+      // const base_url = 'https://storage.googleapis.com/tfjs-models/savedmodel/resnet_50_v2/';
+
+      let model;
+      async function load() {
+        model = await tf.loadGraphModel(
+          base_url + 'tensorflowjs_model.pb',
+          base_url + 'weights_manifest.json');
+        console.log('model loaded');
+
+        let start = performance.now();
+        let inputs = tf.zeros([1, 224, 224, 3]);
+        await model.execute({'images': inputs}).data();
+        let elapsed = performance.now() - start;
+        console.log('Warmup took', elapsed);
+      }
+
+      async function run() {
+        let start = performance.now();
+        let inputs = tf.zeros([1, 224, 224, 3]);
+        await model.execute({'images': inputs}).data();
+        let elapsed = performance.now() - start;
+        console.log('Took', elapsed);
+      }
+      tf.setBackend('cpu');
+      load();
+    </script>
+  </body>
+</html>

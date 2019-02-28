@@ -16,7 +16,6 @@
  */
 
 import * as seedrandom from 'seedrandom';
-
 import {ENV} from '../environment';
 import {warn} from '../log';
 import * as array_ops_util from '../ops/array_ops_util';
@@ -36,7 +35,7 @@ import {DataId, Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D
 import {DataType, DataTypeMap, DataValues, NumericDataType, Rank, ShapeMap, TypedArray, upcastType} from '../types';
 import * as util from '../util';
 import {now} from '../util';
-
+import * as asm from './asm';
 import {BackendTimingInfo, DataMover, DataStorage, KernelBackend} from './backend';
 import * as backend_util from './backend_util';
 import * as complex_util from './complex_util';
@@ -57,7 +56,7 @@ function mapActivation(
 }
 
 interface TensorData<D extends DataType> {
-  values?: DataTypeMap[D];
+  values?: DataTypeMap[D]|Promise<DataTypeMap[D]>;
   dtype: D;
   // For complex numbers, the real and imaginary parts are stored as their own
   // individual tensors, with a parent joining the two with the
@@ -399,16 +398,21 @@ export class MathBackendCPU implements KernelBackend {
   addN<T extends Tensor>(tensors: T[]): T {
     this.assertNotComplex(tensors, 'addN');
 
-    const vals = tensors.map(t => t.dataSync());
-    const result = ops.buffer(tensors[0].shape, tensors[0].dtype as 'float32');
-    const resultVals = result.values;
-    for (let i = 0; i < tensors.length; i++) {
-      const currVals = vals[i];
-      for (let j = 0; j < resultVals.length; j++) {
-        resultVals[j] += currVals[j];
+    async function compute() {
+      const vals = await Promise.all(tensors.map(t => t.data()));
+      const result =
+          ops.buffer(tensors[0].shape, tensors[0].dtype as 'float32');
+      const resultVals = result.values;
+      for (let i = 0; i < tensors.length; i++) {
+        const currVals = vals[i];
+        for (let j = 0; j < resultVals.length; j++) {
+          resultVals[j] += currVals[j];
+        }
       }
+      return resultVals;
     }
-    return result.toTensor() as T;
+    return Tensor.make(
+               tensors[0].shape, {values: compute()}, tensors[0].dtype) as T;
   }
 
   subtract(a: Tensor, b: Tensor): Tensor {
@@ -433,6 +437,23 @@ export class MathBackendCPU implements KernelBackend {
         T;
   }
 
+  conv2dByMatMul(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
+      Tensor4D {
+    // Reshapes conv2D input to 2D tensors, uses matMul and then reshape the
+    // result from 2D to 4D.
+    const xShape = x.shape;
+    const xReshaped =
+        this.reshape(
+            x, [1, xShape[0] * xShape[1] * xShape[2], convInfo.inChannels]) as
+        Tensor3D;
+    const filterReshaped =
+        this.reshape(filter, [1, convInfo.inChannels, convInfo.outChannels]) as
+        Tensor3D;
+    return this.reshape<Rank.R4>(
+        this.batchMatMul(xReshaped, filterReshaped, false, false),
+        convInfo.outShape);
+  }
+
   batchMatMul(
       a: Tensor3D, b: Tensor3D, transposeA: boolean,
       transposeB: boolean): Tensor3D {
@@ -442,39 +463,48 @@ export class MathBackendCPU implements KernelBackend {
     const leftDim = transposeA ? a.shape[2] : a.shape[1];
     const rightDim = transposeB ? b.shape[1] : b.shape[2];
     const batchDim = a.shape[0];
-
+    const flop = leftDim * rightDim * sharedDim;
+    if (batchDim === 1 && flop > 1) {
+      const values = asm.matmul(a.squeeze([0]), b.squeeze([0]));
+      return Tensor.make([batchDim, leftDim, rightDim], {values}, a.dtype);
+    }
+    // console.log(`matmul ${leftDim}x${sharedDim} X ${sharedDim}x${rightDim}`);
     const aValues = a.dataSync();
     const bValues = b.dataSync();
-    const [aBatch, aOuterStep, aInnerStep] = transposeA ?
+    const [, aOuterStep, aInnerStep] = transposeA ?
         [a.strides[0], 1, a.strides[1]] :
         [a.strides[0], a.strides[1], 1];
-    const [bInnerStep, bOuterStep, bBatch] = transposeB ?
+    const [bInnerStep, bOuterStep, ] = transposeB ?
         [1, b.strides[1], b.strides[0]] :
         [b.strides[1], 1, b.strides[0]];
 
-    const size = leftDim * rightDim;
+    // const size = leftDim * rightDim;
     const result = buffer([batchDim, leftDim, rightDim], a.dtype);
     const resVals = result.values as TypedArray;
     const blockSize = this.blockSize;
 
     for (let b = 0; b < batchDim; b++) {
       for (let i0 = 0; i0 < leftDim; i0 += blockSize) {
+        const iBlock = i0 + blockSize < leftDim ? i0 + blockSize : leftDim;
         for (let j0 = 0; j0 < rightDim; j0 += blockSize) {
+          const jBlock = j0 + blockSize < rightDim ? j0 + blockSize : rightDim;
           for (let k0 = 0; k0 < sharedDim; k0 += blockSize) {
             // for when blockSize doesn't evenly divide the input
-            const iBlock = Math.min(i0 + blockSize, leftDim);
-            const jBlock = Math.min(j0 + blockSize, rightDim);
-            const kBlock = Math.min(k0 + blockSize, sharedDim);
+            const kBlock =
+                k0 + blockSize < sharedDim ? k0 + blockSize : sharedDim;
 
             for (let i = i0; i < iBlock; i++) {
+              const iDim = i * rightDim;
+              const iStep = i * aOuterStep;
               for (let j = j0; j < jBlock; j++) {
+                const jStep = j * bOuterStep;
                 let sum = 0.0;
 
                 for (let k = k0; k < kBlock; k++) {
-                  sum += aValues[b * aBatch + i * aOuterStep + k * aInnerStep] *
-                      bValues[k * bInnerStep + j * bOuterStep + b * bBatch];
+                  sum += aValues[iStep + k * aInnerStep] *
+                      bValues[k * bInnerStep + jStep];
                 }
-                resVals[b * size + (i * rightDim + j)] += sum;
+                resVals[iDim + j] += sum;
               }
             }
           }
@@ -1169,13 +1199,16 @@ export class MathBackendCPU implements KernelBackend {
   clip<T extends Tensor>(x: T, min: number, max: number): T {
     this.assertNotComplex(x, 'clip');
 
-    const resultValues = new Float32Array(x.size);
-    const values = x.dataSync();
-    for (let i = 0; i < values.length; ++i) {
-      const v = values[i];
-      resultValues[i] = v > max ? max : (v < min ? min : v);
+    async function compute() {
+      const resultValues = new Float32Array(x.size);
+      const values = await x.data();
+      for (let i = 0; i < values.length; ++i) {
+        const v = values[i];
+        resultValues[i] = v > max ? max : (v < min ? min : v);
+      }
+      return resultValues;
     }
-    return Tensor.make(x.shape, {values: resultValues}) as T;
+    return Tensor.make(x.shape, {values: compute()}, x.dtype) as T;
   }
 
   abs<T extends Tensor>(x: T): T {
@@ -1438,6 +1471,14 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   conv2d(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
+    if (convInfo.filterHeight === 1 && convInfo.filterWidth === 1 &&
+        convInfo.dilationHeight === 1 && convInfo.dilationWidth === 1 &&
+        convInfo.strideHeight === 1 && convInfo.strideWidth === 1 &&
+        (convInfo.padInfo.type === 'SAME' ||
+         convInfo.padInfo.type === 'VALID')) {
+      return this.conv2dByMatMul(x, filter, convInfo);
+    }
+
     this.assertNotComplex([x, filter], 'conv2d');
 
     const filterHeight = convInfo.filterHeight;
@@ -1446,49 +1487,53 @@ export class MathBackendCPU implements KernelBackend {
     const dilationWidth = convInfo.dilationWidth;
     const padLeft = convInfo.padInfo.left;
     const padTop = convInfo.padInfo.top;
-    const y = ops.buffer(convInfo.outShape, x.dtype as 'float32');
 
-    const xVals = x.dataSync();
-    const wVals = filter.dataSync();
-    const yVals = y.values;
+    async function compute() {
+      const xVals = await x.data();
+      const wVals = await filter.data();
+      const y = ops.buffer(convInfo.outShape, x.dtype as 'float32');
+      const yVals = y.values;
 
-    for (let b = 0; b < convInfo.batchSize; ++b) {
-      const xOffset1 = b * x.strides[0];
-      const yOffset1 = b * y.strides[0];
-      for (let yR = 0; yR < convInfo.outHeight; ++yR) {
-        const yOffset2 = yOffset1 + yR * y.strides[1];
-        const xRCorner = yR * convInfo.strideHeight - padLeft;
-        for (let wR = 0; wR < filterHeight; wR++) {
-          const xR = xRCorner + wR * dilationHeight;
-          if (xR < 0 || xR >= convInfo.inHeight) {
-            continue;
-          }
-          const wOffset1 = wR * filter.strides[0];
-          const xOffset2 = xOffset1 + xR * x.strides[1];
-          for (let yC = 0; yC < convInfo.outWidth; ++yC) {
-            const yOffset3 = yOffset2 + yC * convInfo.outChannels;
-            const xCCorner = yC * convInfo.strideWidth - padTop;
-            for (let wC = 0; wC < filterWidth; wC++) {
-              const xC = xCCorner + wC * dilationWidth;
-              if (xC < 0 || xC >= convInfo.inWidth) {
-                continue;
-              }
-              const wOffset2 = wOffset1 + wC * filter.strides[1];
-              const xOffset3 = xOffset2 + xC * convInfo.inChannels;
-              let wOffset3 = wOffset2;
-              for (let d1 = 0; d1 < convInfo.inChannels; ++d1) {
-                const xVal = xVals[xOffset3 + d1];
-                for (let d2 = 0; d2 < convInfo.outChannels; ++d2) {
-                  yVals[yOffset3 + d2] += xVal * wVals[wOffset3 + d2];
+      for (let b = 0; b < convInfo.batchSize; ++b) {
+        const xOffset1 = b * x.strides[0];
+        const yOffset1 = b * y.strides[0];
+        for (let yR = 0; yR < convInfo.outHeight; ++yR) {
+          const yOffset2 = yOffset1 + yR * y.strides[1];
+          const xRCorner = yR * convInfo.strideHeight - padLeft;
+          for (let wR = 0; wR < filterHeight; wR++) {
+            const xR = xRCorner + wR * dilationHeight;
+            if (xR < 0 || xR >= convInfo.inHeight) {
+              continue;
+            }
+            const wOffset1 = wR * filter.strides[0];
+            const xOffset2 = xOffset1 + xR * x.strides[1];
+            for (let yC = 0; yC < convInfo.outWidth; ++yC) {
+              const yOffset3 = yOffset2 + yC * convInfo.outChannels;
+              const xCCorner = yC * convInfo.strideWidth - padTop;
+              for (let wC = 0; wC < filterWidth; wC++) {
+                const xC = xCCorner + wC * dilationWidth;
+                if (xC < 0 || xC >= convInfo.inWidth) {
+                  continue;
                 }
-                wOffset3 += convInfo.outChannels;
+                const wOffset2 = wOffset1 + wC * filter.strides[1];
+                const xOffset3 = xOffset2 + xC * convInfo.inChannels;
+                let wOffset3 = wOffset2;
+                for (let d1 = 0; d1 < convInfo.inChannels; ++d1) {
+                  const xVal = xVals[xOffset3 + d1];
+                  for (let d2 = 0; d2 < convInfo.outChannels; ++d2) {
+                    yVals[yOffset3 + d2] += xVal * wVals[wOffset3 + d2];
+                  }
+                  wOffset3 += convInfo.outChannels;
+                }
               }
             }
           }
         }
       }
+      return yVals;
     }
-    return y.toTensor() as Tensor4D;
+    return Tensor.make(convInfo.outShape, {values: compute()}, x.dtype) as
+        Tensor4D;
   }
 
   conv3d(x: Tensor5D, filter: Tensor5D, convInfo: Conv3DInfo): Tensor5D {
@@ -1844,51 +1889,56 @@ export class MathBackendCPU implements KernelBackend {
     const padLeft = convInfo.padInfo.left;
     const padTop = convInfo.padInfo.top;
     const chMul = convInfo.outChannels / convInfo.inChannels;
-    const y = ops.buffer(convInfo.outShape, x.dtype as 'float32');
-    const xVals = x.dataSync();
-    const wVals = filter.dataSync();
-    const yVals = y.values;
 
-    for (let b = 0; b < convInfo.batchSize; ++b) {
-      const xOffset1 = b * x.strides[0];
-      const yOffset1 = b * y.strides[0];
-      for (let yR = 0; yR < convInfo.outHeight; ++yR) {
-        const yOffset2 = yOffset1 + yR * y.strides[1];
-        const xRCorner = yR * convInfo.strideHeight - padLeft;
-        for (let wR = 0; wR < filterHeight; ++wR) {
-          const xR = xRCorner + wR * dilationHeight;
-          if (xR < 0 || xR >= convInfo.inHeight) {
-            continue;
-          }
-          const wOffset1 = wR * filter.strides[0];
-          const xOffset2 = xOffset1 + xR * x.strides[1];
-          for (let yC = 0; yC < convInfo.outWidth; ++yC) {
-            const yOffset3 = yOffset2 + yC * y.strides[2];
-            const xCCorner = yC * convInfo.strideWidth - padTop;
-            for (let wC = 0; wC < filterWidth; ++wC) {
-              const xC = xCCorner + wC * dilationWidth;
-              if (xC < 0 || xC >= convInfo.inWidth) {
-                continue;
-              }
-              const wOffset2 = wOffset1 + wC * filter.strides[1];
-              const xOffset3 = xOffset2 + xC * convInfo.inChannels;
-              let yOffset4 = yOffset3;
-              let wOffset3 = wOffset2;
-              for (let d1 = 0; d1 < convInfo.inChannels; ++d1) {
-                const xVal = xVals[xOffset3 + d1];
-                for (let q = 0; q < chMul; ++q) {
-                  yVals[yOffset4 + q] += xVal * wVals[wOffset3 + q];
+    async function compute() {
+      const y = ops.buffer(convInfo.outShape, x.dtype as 'float32');
+      const xVals = await x.data();
+      const wVals = await filter.data();
+      const yVals = y.values;
+
+      for (let b = 0; b < convInfo.batchSize; ++b) {
+        const xOffset1 = b * x.strides[0];
+        const yOffset1 = b * y.strides[0];
+        for (let yR = 0; yR < convInfo.outHeight; ++yR) {
+          const yOffset2 = yOffset1 + yR * y.strides[1];
+          const xRCorner = yR * convInfo.strideHeight - padLeft;
+          for (let wR = 0; wR < filterHeight; ++wR) {
+            const xR = xRCorner + wR * dilationHeight;
+            if (xR < 0 || xR >= convInfo.inHeight) {
+              continue;
+            }
+            const wOffset1 = wR * filter.strides[0];
+            const xOffset2 = xOffset1 + xR * x.strides[1];
+            for (let yC = 0; yC < convInfo.outWidth; ++yC) {
+              const yOffset3 = yOffset2 + yC * y.strides[2];
+              const xCCorner = yC * convInfo.strideWidth - padTop;
+              for (let wC = 0; wC < filterWidth; ++wC) {
+                const xC = xCCorner + wC * dilationWidth;
+                if (xC < 0 || xC >= convInfo.inWidth) {
+                  continue;
                 }
-                yOffset4 += chMul;
-                wOffset3 += chMul;
+                const wOffset2 = wOffset1 + wC * filter.strides[1];
+                const xOffset3 = xOffset2 + xC * convInfo.inChannels;
+                let yOffset4 = yOffset3;
+                let wOffset3 = wOffset2;
+                for (let d1 = 0; d1 < convInfo.inChannels; ++d1) {
+                  const xVal = xVals[xOffset3 + d1];
+                  for (let q = 0; q < chMul; ++q) {
+                    yVals[yOffset4 + q] += xVal * wVals[wOffset3 + q];
+                  }
+                  yOffset4 += chMul;
+                  wOffset3 += chMul;
+                }
               }
             }
           }
         }
       }
+      return yVals;
     }
 
-    return y.toTensor() as Tensor4D;
+    return Tensor.make(convInfo.outShape, {values: compute()}, x.dtype) as
+        Tensor4D;
   }
 
   depthwiseConv2DDerInput(dy: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
@@ -2163,57 +2213,61 @@ export class MathBackendCPU implements KernelBackend {
         (poolType === 'max' ? Number.NEGATIVE_INFINITY :
                               Number.POSITIVE_INFINITY);
 
-    const xValues = x.dataSync();
-    const output = ops.buffer(convInfo.outShape, x.dtype);
-    const outputVals = output.values;
+    async function compute() {
+      const xValues = await x.data();
+      const output = ops.buffer(convInfo.outShape, x.dtype);
+      const outputVals = output.values;
 
-    const outputBatchStrides =
-        convInfo.outShape[1] * convInfo.outShape[2] * convInfo.outShape[3];
-    const outputRowStrides = convInfo.outShape[2] * convInfo.outShape[3];
-    const outputColStrides = convInfo.outShape[3];
+      const outputBatchStrides =
+          convInfo.outShape[1] * convInfo.outShape[2] * convInfo.outShape[3];
+      const outputRowStrides = convInfo.outShape[2] * convInfo.outShape[3];
+      const outputColStrides = convInfo.outShape[3];
 
-    for (let b = 0; b < convInfo.batchSize; ++b) {
-      const outputBatchOffset = b * outputBatchStrides;
-      const inputBatchOffset = b * x.strides[0];
-      for (let d = 0; d < convInfo.inChannels; ++d) {
-        for (let yR = 0; yR < convInfo.outHeight; ++yR) {
-          const xRCorner = yR * strideHeight - padTop;
-          const xRMin = Math.max(0, xRCorner);
-          const xRMax =
-              Math.min(convInfo.inHeight, effectiveFilterHeight + xRCorner);
-          const outputRowOffset = outputBatchOffset + yR * outputRowStrides;
-          for (let yC = 0; yC < convInfo.outWidth; ++yC) {
-            const xCCorner = yC * strideWidth - padLeft;
-            const xCMin = Math.max(0, xCCorner);
-            const xCMax =
-                Math.min(convInfo.inWidth, effectiveFilterWidth + xCCorner);
-            let minMaxValue = initialValue;
-            let avgValue = 0;
-            let count = 0;
-            for (let xR = xRMin; xR < xRMax; xR += dilationHeight) {
-              const xROffset = inputBatchOffset + xR * x.strides[1];
-              for (let xC = xCMin; xC < xCMax; xC += dilationWidth) {
-                const xCOffset = xROffset + xC * x.strides[2];
-                const pixel = xValues[xCOffset + d];
-                if ((poolType === 'max' && pixel > minMaxValue)) {
-                  minMaxValue = pixel;
-                } else if (poolType === 'avg') {
-                  avgValue += pixel;
-                  count++;
+      for (let b = 0; b < convInfo.batchSize; ++b) {
+        const outputBatchOffset = b * outputBatchStrides;
+        const inputBatchOffset = b * x.strides[0];
+        for (let d = 0; d < convInfo.inChannels; ++d) {
+          for (let yR = 0; yR < convInfo.outHeight; ++yR) {
+            const xRCorner = yR * strideHeight - padTop;
+            const xRMin = Math.max(0, xRCorner);
+            const xRMax =
+                Math.min(convInfo.inHeight, effectiveFilterHeight + xRCorner);
+            const outputRowOffset = outputBatchOffset + yR * outputRowStrides;
+            for (let yC = 0; yC < convInfo.outWidth; ++yC) {
+              const xCCorner = yC * strideWidth - padLeft;
+              const xCMin = Math.max(0, xCCorner);
+              const xCMax =
+                  Math.min(convInfo.inWidth, effectiveFilterWidth + xCCorner);
+              let minMaxValue = initialValue;
+              let avgValue = 0;
+              let count = 0;
+              for (let xR = xRMin; xR < xRMax; xR += dilationHeight) {
+                const xROffset = inputBatchOffset + xR * x.strides[1];
+                for (let xC = xCMin; xC < xCMax; xC += dilationWidth) {
+                  const xCOffset = xROffset + xC * x.strides[2];
+                  const pixel = xValues[xCOffset + d];
+                  if ((poolType === 'max' && pixel > minMaxValue)) {
+                    minMaxValue = pixel;
+                  } else if (poolType === 'avg') {
+                    avgValue += pixel;
+                    count++;
+                  }
+                }
+                if (isNaN(minMaxValue)) {
+                  break;
                 }
               }
-              if (isNaN(minMaxValue)) {
-                break;
-              }
+              const outputOffset = outputRowOffset + yC * outputColStrides + d;
+              outputVals[outputOffset] =
+                  poolType === 'avg' ? avgValue / count : minMaxValue;
             }
-            const outputOffset = outputRowOffset + yC * outputColStrides + d;
-            outputVals[outputOffset] =
-                poolType === 'avg' ? avgValue / count : minMaxValue;
           }
         }
       }
+      return outputVals;
     }
-    return output.toTensor() as Tensor4D;
+    return Tensor.make(convInfo.outShape, {values: compute()}, x.dtype) as
+        Tensor4D;
   }
 
   maxPool(x: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
@@ -3039,35 +3093,38 @@ export class MathBackendCPU implements KernelBackend {
       op: (a: number, b: number) => number): Tensor {
     const newShape =
         broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
-    const result = ops.buffer(newShape, dtype);
-    const aVals = a.dataSync();
-    const bVals = b.dataSync();
-    const aBroadcastDims = broadcast_util.getBroadcastDims(a.shape, newShape);
-    const bBroadcastDims = broadcast_util.getBroadcastDims(b.shape, newShape);
 
-    const resVals = result.values;
-    if (aBroadcastDims.length + bBroadcastDims.length === 0) {
-      for (let i = 0; i < resVals.length; ++i) {
-        resVals[i] = op(aVals[i % aVals.length], bVals[i % bVals.length]);
+    async function compute() {
+      const [aVals, bVals] = await Promise.all([a.data(), b.data()]);
+      const aBroadcastDims = broadcast_util.getBroadcastDims(a.shape, newShape);
+      const bBroadcastDims = broadcast_util.getBroadcastDims(b.shape, newShape);
+
+      const result = buffer(newShape, dtype);
+      const resVals = result.values;
+      if (aBroadcastDims.length + bBroadcastDims.length === 0) {
+        for (let i = 0; i < resVals.length; ++i) {
+          resVals[i] = op(aVals[i % aVals.length], bVals[i % bVals.length]);
+        }
+      } else {
+        const aBuf = a.bufferSync();
+        const bBuf = b.bufferSync();
+        for (let i = 0; i < resVals.length; ++i) {
+          const loc = result.indexToLoc(i);
+
+          const aLoc = loc.slice(-a.rank);
+          aBroadcastDims.forEach(d => aLoc[d] = 0);
+          const aIndex = aBuf.locToIndex(aLoc);
+
+          const bLoc = loc.slice(-b.rank);
+          bBroadcastDims.forEach(d => bLoc[d] = 0);
+          const bIndex = bBuf.locToIndex(bLoc);
+
+          resVals[i] = op(aVals[aIndex], bVals[bIndex]);
+        }
       }
-    } else {
-      const aBuf = a.bufferSync();
-      const bBuf = b.bufferSync();
-      for (let i = 0; i < resVals.length; ++i) {
-        const loc = result.indexToLoc(i);
-
-        const aLoc = loc.slice(-a.rank);
-        aBroadcastDims.forEach(d => aLoc[d] = 0);
-        const aIndex = aBuf.locToIndex(aLoc);
-
-        const bLoc = loc.slice(-b.rank);
-        bBroadcastDims.forEach(d => bLoc[d] = 0);
-        const bIndex = bBuf.locToIndex(bLoc);
-
-        resVals[i] = op(aVals[aIndex], bVals[bIndex]);
-      }
+      return resVals;
     }
-    return result.toTensor();
+    return Tensor.make(newShape, {values: compute()}, dtype);
   }
 
   private broadcastedBinaryComplexOp(

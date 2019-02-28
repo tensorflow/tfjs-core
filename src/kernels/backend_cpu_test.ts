@@ -49,18 +49,18 @@ describe('backendCPU', () => {
   it('register empty string tensor and write', () => {
     const t = tf.Tensor.make([3], {}, 'string');
     backend.write(t.dataId, ['c', 'a', 'b']);
-    expectArraysEqual(backend.readSync(t.dataId), ['c', 'a', 'b']);
+    expectArraysEqual(backend.readSync(t.dataId) as string[], ['c', 'a', 'b']);
   });
 
   it('register string tensor with values', () => {
     const t = tf.Tensor.make([3], {values: ['a', 'b', 'c']}, 'string');
-    expectArraysEqual(backend.readSync(t.dataId), ['a', 'b', 'c']);
+    expectArraysEqual(backend.readSync(t.dataId) as string[], ['a', 'b', 'c']);
   });
 
   it('register string tensor with values and overwrite', () => {
     const t = tf.Tensor.make([3], {values: ['a', 'b', 'c']}, 'string');
     backend.write(t.dataId, ['c', 'a', 'b']);
-    expectArraysEqual(backend.readSync(t.dataId), ['c', 'a', 'b']);
+    expectArraysEqual(backend.readSync(t.dataId) as string[], ['c', 'a', 'b']);
   });
 
   it('register string tensor with values and mismatched shape', () => {

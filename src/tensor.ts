@@ -22,7 +22,7 @@ import {computeStrides, toNestedArray} from './util';
 
 export interface TensorData<D extends DataType> {
   dataId?: DataId;
-  values?: DataTypeMap[D];
+  values?: DataTypeMap[D]|Promise<DataTypeMap[D]>;
 }
 
 // This interface mimics KernelBackend (in backend.ts), which would create a
@@ -605,7 +605,11 @@ export class Tensor<R extends Rank = Rank> {
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
   dataSync<D extends DataType = NumericDataType>(): DataTypeMap[D] {
     this.throwIfDisposed();
-    return trackerFn().readSync(this.dataId);
+    const vals = trackerFn().readSync(this.dataId);
+    if (vals instanceof Promise) {
+      throw new Error('data sync is not supported');
+    }
+    return trackerFn().readSync(this.dataId) as DataTypeMap[D];
   }
 
   /**

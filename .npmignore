@@ -1,4 +1,5 @@
 .vscode/
+.yalc/
 .rpt2_cache/
 integration_tests/
 scripts/
@@ -14,6 +15,7 @@ karma.conf.js
 CONTRIBUTING.md
 tslint.json
 yarn.lock
+yalc.lock
 DEVELOPMENT.md
 ISSUE_TEMPLATE.md
 PULL_REQUEST_TEMPLATE.md

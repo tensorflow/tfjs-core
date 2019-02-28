@@ -57,7 +57,7 @@ export interface SingleValueMap {
 export type DataType = keyof DataTypeMap;
 export type NumericDataType = 'float32'|'int32'|'bool'|'complex64';
 export type TypedArray = Float32Array|Int32Array|Uint8Array;
-export type DataValues = DataTypeMap[DataType];
+export type DataValues = DataTypeMap[DataType]|Promise<DataTypeMap[DataType]>;
 
 export enum Rank {
   R0 = 'R0',
