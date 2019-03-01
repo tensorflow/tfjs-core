@@ -173,10 +173,10 @@ export declare interface ModelArtifacts {
    * Model topology.
    *
    * For Keras-style `tf.Model`s, this is a JSON object.
-   * For TensorFlow-style models (e.g., `FrozenModel`), this is a binary buffer
-   * carrying the `GraphDef` protocol buffer.
+   * For TensorFlow-style models (e.g., `SavedModel`), this is the JSON
+   * encoding of the `GraphDef` protocol buffer.
    */
-  modelTopology?: {}|ArrayBuffer;
+  modelTopology?: KerasJSON|GraphDefJSON|ArrayBuffer;
 
   /**
    * Weight specifications.
@@ -221,25 +221,26 @@ export declare interface ModelArtifacts {
 // See also https://github.com/tensorflow/tfjs/issues/1082.
 export type KerasJSON = {};
 
-// TODO(soergel): consider whether there's any tractable way to describe this,
-// e.g. an automatic converter from proto definitions to TypeScript types,
-// taking into account the canonical proto->JSON encoding provided by
-// google.protobuf.json_format.
+// We do not actually enforce this type here, but the intent is that the type
+// represents the canonical JSON serialization of the GraphDef proto, as
+// provided by
+// https://github.com/tensorflow/tfjs-converter/blob/master/tools/compiled_api.js
 export type GraphDefJSON = {};
 
 /**
  * The on-disk format of the `model.json` file, as written by TF.js versions
  * prior to 1.0.
  */
-export declare interface ModelJSONLegacy {
+// tslint:disable-next-line:class-name
+export declare interface ModelJSON_v0 {
   /**
    * Model topology.
    *
    * For Keras-style `tf.Model`s, this is a JSON object.
-   * For TensorFlow-style models (e.g., `FrozenModel`), this is a binary buffer
-   * carrying the `GraphDef` protocol buffer.
+   * For TensorFlow-style models (e.g., `SavedModel`), this is the JSON
+   * encoding of the `GraphDef` protocol buffer.
    */
-  modelTopology: KerasJSON|GraphDefJSON;
+  modelTopology: GraphDefJSON|KerasJSON;
 
   /**
    * Weights manifest.
@@ -261,10 +262,10 @@ export declare interface ModelJSON_v1_0 {
    * Model topology.
    *
    * For Keras-style `tf.Model`s, this is a JSON object.
-   * For TensorFlow-style models (e.g., `FrozenModel`), this is a binary buffer
-   * carrying the `GraphDef` protocol buffer.
+   * For TensorFlow-style models (e.g., `SavedModel`), this is the JSON
+   * encoding of the `GraphDef` protocol buffer.
    */
-  modelTopology: KerasJSON|GraphDefJSON;
+  modelTopology: GraphDefJSON|KerasJSON;
 
   /**
    * Weights manifest.
@@ -303,9 +304,12 @@ export declare interface ModelJSON_v1_0 {
 }
 
 /**
+ * The on-disk format of the `model.json` file, when the version is unknown.
  *
+ * This represents fields that are present in some versions but not others as
+ * optional.
  */
-export type ModelJSON = ModelJSON_v1_0|ModelJSONLegacy;
+export type ModelJSON = ModelJSON_v0&Partial<ModelJSON_v1_0>;
 
 /**
  * Type definition for handlers of loading operations.
