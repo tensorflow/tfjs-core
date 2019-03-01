@@ -281,14 +281,14 @@ export declare interface ModelJSON_v1_0 {
    * Hard-coded format name for models saved from TensorFlow.js or converted
    * by TensorFlow.js Converter.
    */
-  format?: ModelFormat;
+  format: ModelFormat;
 
   /**
    * What library is responsible for originally generating this artifact.
    *
    * Used for debugging purposes. E.g., 'TensorFlow.js v1.0.0'.
    */
-  generatedBy?: string;
+  generatedBy: string;
 
   /**
    * What library or tool is responsible for converting the original model
@@ -300,7 +300,7 @@ export declare interface ModelJSON_v1_0 {
    * conversion process (e.g., saved directly from a TensorFlow.js
    * `LayersModel` instance.)
    */
-  convertedBy?: string|null;
+  convertedBy: string|null;
 }
 
 /**
