@@ -35,7 +35,7 @@ export class BrowserHTTPRequest implements IOHandler {
   protected readonly path: string|string[];
   protected readonly requestInit: RequestInit;
 
-  private readonly fetchFunc: Function;
+  private readonly fetchFunc: (path: string, init?: RequestInit) => Response;
 
   readonly DEFAULT_METHOD = 'POST';
 
@@ -158,8 +158,10 @@ export class BrowserHTTPRequest implements IOHandler {
         await this.getFetchFunc()(this.path as string, this.requestInit);
 
     if (!modelConfigRequest.ok) {
-      throw new Error(`Request to ${this.path} failed with error: ${
-          modelConfigRequest.statusText}`);
+      throw new Error(
+          `Request to ${this.path} failed with status code ` +
+          `${modelConfigRequest.status}. Please verify this URL points to ` +
+          `the model JSON of the model to load.`);
     }
     let modelConfig;
     try {
