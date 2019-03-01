@@ -22,10 +22,9 @@
  */
 
 import {assert} from '../util';
-
 import {concatenateArrayBuffers, getModelArtifactsInfoForJSON} from './io_utils';
 import {IORouter, IORouterRegistry} from './router_registry';
-import {IOHandler, LoadOptions, ModelArtifacts, OnProgressCallback, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
+import {IOHandler, LoadOptions, ModelArtifacts, ModelJSON, ModelJSON_v1_0, OnProgressCallback, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
 import {loadWeightsAsArrayBuffer} from './weights_loader';
 
 const OCTET_STREAM_MIME_TYPE = 'application/octet-stream';
@@ -112,7 +111,7 @@ export class BrowserHTTPRequest implements IOHandler {
       paths: ['./model.weights.bin'],
       weights: modelArtifacts.weightSpecs,
     }];
-    const modelTopologyAndWeightManifest = {
+    const modelTopologyAndWeightManifest: ModelJSON_v1_0 = {
       modelTopology: modelArtifacts.modelTopology,
       weightsManifest
     };
@@ -204,9 +203,9 @@ export class BrowserHTTPRequest implements IOHandler {
       throw new Error(`Request to ${this.path} failed with error: ${
           modelConfigRequest.statusText}`);
     }
-    const modelConfig = await modelConfigRequest.json();
-    const modelTopology = modelConfig['modelTopology'];
-    const weightsManifest = modelConfig['weightsManifest'];
+    const modelConfig = await modelConfigRequest.json() as ModelJSON;
+    const modelTopology = modelConfig.modelTopology;
+    const weightsManifest = modelConfig.weightsManifest;
 
     // We do not allow both modelTopology and weightsManifest to be missing.
     if (modelTopology == null && weightsManifest == null) {
@@ -218,8 +217,6 @@ export class BrowserHTTPRequest implements IOHandler {
     let weightSpecs: WeightsManifestEntry[];
     let weightData: ArrayBuffer;
     if (weightsManifest != null) {
-      const weightsManifest =
-          modelConfig['weightsManifest'] as WeightsManifestConfig;
       const results = await this.loadWeights(weightsManifest);
       [weightSpecs, weightData] = results;
     }

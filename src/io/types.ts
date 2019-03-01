@@ -162,6 +162,9 @@ export declare interface ModelArtifactsInfo {
  * The `modelTopology`, `weightSpecs` and `weightData` fields of this interface
  * are optional, in order to support topology- or weights-only saving and
  * loading.
+ *
+ * Note this interface is used internally in IOHandlers.  For the file format
+ * written to disk as `model.json`, see `ModelJSON`.
  */
 export declare interface ModelArtifacts {
   /**
@@ -186,6 +189,40 @@ export declare interface ModelArtifacts {
    */
   weightData?: ArrayBuffer;
 }
+
+// TODO(soergel): hook this up to tfjs_layers/src/keras_format when possible.
+// See also https://github.com/tensorflow/tfjs/issues/1082.
+export type KerasJSON = {};
+
+// TODO(soergel): consider whether there's any tractable way to describe this,
+// e.g. an automatic converter from proto definitions to TypeScript types,
+// taking into account the canonical proto->JSON encoding provided by
+// google.protobuf.json_format.
+export type GraphDefJSON = {};
+
+/**
+ * The on-disk format of the `model.json` file, as written by TF.js versions
+ * prior to 1.0.
+ */
+export declare interface ModelJSONLegacy {
+  modelTopology: KerasJSON|GraphDefJSON;
+  weightsManifest: WeightsManifestConfig;
+}
+
+/**
+ * The on-disk format of the `model.json` file, as written by TF.js 1.0.
+ */
+// tslint:disable-next-line:class-name
+export declare interface ModelJSON_v1_0 {
+  modelTopology: KerasJSON|GraphDefJSON;
+  weightsManifest: WeightsManifestConfig;
+  // TODO(cais): Add new required fields here.
+}
+
+/**
+ *
+ */
+export type ModelJSON = ModelJSON_v1_0|ModelJSONLegacy;
 
 /**
  * Type definition for handlers of loading operations.
