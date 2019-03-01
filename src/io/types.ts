@@ -156,6 +156,8 @@ export declare interface ModelArtifactsInfo {
   weightDataBytes?: number;
 }
 
+export declare type ModelType = 'graph-model'|'layers-model';
+
 /**
  * The serialized artifacts of a model, including topology and weights.
  *
@@ -190,7 +192,7 @@ export declare interface ModelArtifacts {
    * Hard-coded format name for models saved from TensorFlow.js or converted
    * by TensorFlow.js Converter.
    */
-  format?: 'graph-model'|'layers-model';
+  format?: ModelType;
 
   /**
    * What library is responsible for originally generating this artifact.
