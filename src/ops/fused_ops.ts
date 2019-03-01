@@ -120,6 +120,9 @@ function matMul_<T extends Tensor>(
       biasGradient = {
         $bias: () => {
           let res = dyActivation;
+          // Using dyActivation as reference shape because outputShape does not
+          // account for the fact that we temporarily reshape inputs to 3D as
+          // part of batched matMul.
           const reduceAxes =
               broadcast_util.getReductionAxes($bias.shape, dyActivation.shape);
           if (reduceAxes.length > 0) {
