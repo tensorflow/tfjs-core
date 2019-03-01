@@ -121,7 +121,7 @@ function matMul_<T extends Tensor>(
         $bias: () => {
           let res = dyActivation;
           const reduceAxes =
-              broadcast_util.getReductionAxes($bias.shape, outShape);
+              broadcast_util.getReductionAxes($bias.shape, dyActivation.shape);
           if (reduceAxes.length > 0) {
             res = res.sum(reduceAxes);
           }

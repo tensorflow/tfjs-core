@@ -165,4 +165,29 @@ describeWithFlags('fused matmul', ALL_ENVS, () => {
     expectArraysClose(db, fusedDb);
     expectArraysClose(dc, fusedDc);
   });
+
+  it('A x B with relu and broadcasted bias gradient', () => {
+    const a = tf.tensor2d([1, 2, 3, 10, 20, -30], [2, 3]);
+    const b = tf.tensor2d([2, 3, 4, -1, 2, 3], [3, 2]);
+    const c = tf.tensor2d([[1]]);
+
+    const dy = tf.tensor2d([1, 10, 20, 30], [2, 2]);
+
+    const grads = tf.grads((a, b, c) => {
+      const prod = tf.matMul(a, b, false, false);
+      const sum = tf.add(prod, c);
+      return tf.relu(sum);
+    });
+
+    const fusedGrads = tf.grads((a, b, c) => {
+      return tf.fused.matMul(a, b, false, false, c, 'relu');
+    });
+
+    const [da, db, dc] = grads([a, b, c], dy);
+    const [fusedDa, fusedDb, fusedDc] = fusedGrads([a, b, c], dy);
+
+    expectArraysClose(da, fusedDa);
+    expectArraysClose(db, fusedDb);
+    expectArraysClose(dc, fusedDc);
+  });
 });
