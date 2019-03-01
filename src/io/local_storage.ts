@@ -224,9 +224,9 @@ export class BrowserLocalStorage implements IOHandler {
     if (metadataString != null) {
       const metadata = JSON.parse(metadataString) as
           {format: string, generatedBy: string, convertedBy: string};
-      out.format = metadata.format;
-      out.generatedBy = metadata.generatedBy;
-      out.convertedBy = metadata.convertedBy;
+      out.format = metadata['format'];
+      out.generatedBy = metadata['generatedBy'];
+      out.convertedBy = metadata['convertedBy'];
     }
 
     // Load weight data.

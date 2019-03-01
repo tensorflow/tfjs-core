@@ -210,7 +210,7 @@ export declare interface ModelArtifacts {
    *
    * A value of `null` means the model artifacts are generated without any
    * conversion process (e.g., saved directly from a TensorFlow.js
-   * `LayersModel` instance.)
+   * `tf.LayersModel` instance.)
    */
   convertedBy?: string|null;
 }
@@ -262,7 +262,7 @@ export declare interface ModelJSON {
    *
    * A value of `null` means the model artifacts are generated without any
    * conversion process (e.g., saved directly from a TensorFlow.js
-   * `LayersModel` instance.)
+   * `tf.LayersModel` instance.)
    */
   convertedBy?: string|null;
 }
