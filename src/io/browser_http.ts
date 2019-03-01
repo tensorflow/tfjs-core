@@ -167,16 +167,16 @@ export class BrowserHTTPRequest implements IOHandler {
     try {
       modelConfig = await modelConfigRequest.json();
     } catch (e) {
-      let message = `Failed to parse model JSON for request to ${this.path}.`;
+      let message = `Failed to parse model JSON of response from ${this.path}.`;
       // TODO(nsthorat): Remove this after some time when we're comfortable that
       // .pb files are mostly gone.
       if (this.path.endsWith('.pb')) {
         message += ' Your path contains a .pb file extension. ' +
             'Support for .pb models have been removed in TensorFlow.js 1.0 ' +
-            'in favor of .json models. You can re-convert your python model ' +
-            'using the TensorFlow.js 1.0 conversion scripts or you can ' +
-            'convert your .pb models with the pb2json_converter script in ' +
-            'the tensorflow/tfjs-converter repository.';
+            'in favor of .json models. You can re-convert your Python ' +
+            'Tensorflow model using the TensorFlow.js 1.0 conversion scripts ' +
+            'or you can convert your.pb models with the \'pb2json\'' +
+            'NPM script in the tensorflow/tfjs-converter repository.';
       } else {
         message += ' Please make sure the server is serving valid ' +
             'JSON for this request.';
