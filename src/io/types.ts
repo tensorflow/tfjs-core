@@ -156,6 +156,8 @@ export declare interface ModelArtifactsInfo {
   weightDataBytes?: number;
 }
 
+export declare type ModelFormat = 'graph-model' | 'layers-model';
+
 /**
  * The serialized artifacts of a model, including topology and weights.
  *
@@ -188,6 +190,31 @@ export declare interface ModelArtifacts {
    * by `weightSpecs`.
    */
   weightData?: ArrayBuffer;
+
+  /**
+   * Hard-coded format name for models saved from TensorFlow.js or converted
+   * by TensorFlow.js Converter.
+   */
+  format?: ModelFormat;
+
+  /**
+   * What library is responsible for originally generating this artifact.
+   *
+   * Used for debugging purposes. E.g., 'TensorFlow.js v1.0.0'.
+   */
+  generatedBy?: string;
+
+  /**
+   * What library or tool is responsible for converting the original model
+   * to this format, applicable only if the model is output by a converter.
+   *
+   * Used for debugging purposes.  E.g., 'TensorFlow.js Converter v1.0.0'.
+   *
+   * A value of `null` means the model artifacts are generated without any
+   * conversion process (e.g., saved directly from a TensorFlow.js
+   * `LayersModel` instance.)
+   */
+  convertedBy?: string|null;
 }
 
 // TODO(soergel): hook this up to tfjs_layers/src/keras_format when possible.

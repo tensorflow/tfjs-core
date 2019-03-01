@@ -73,6 +73,9 @@ export class BrowserDownloads implements IOHandler {
       }];
       const modelTopologyAndWeightManifest: ModelJSON_v1_0 = {
         modelTopology: modelArtifacts.modelTopology,
+        format: modelArtifacts.format,
+        generatedBy: modelArtifacts.generatedBy,
+        convertedBy: modelArtifacts.convertedBy,
         weightsManifest
       };
       const modelTopologyAndWeightManifestURL =
