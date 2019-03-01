@@ -232,7 +232,23 @@ export type GraphDefJSON = {};
  * prior to 1.0.
  */
 export declare interface ModelJSONLegacy {
+  /**
+   * Model topology.
+   *
+   * For Keras-style `tf.Model`s, this is a JSON object.
+   * For TensorFlow-style models (e.g., `FrozenModel`), this is a binary buffer
+   * carrying the `GraphDef` protocol buffer.
+   */
   modelTopology: KerasJSON|GraphDefJSON;
+
+  /**
+   * Weights manifest.
+   *
+   * The weights manifest consists of an ordered list of weight-manifest
+   * groups. Each weight-manifest group consists of a number of weight values
+   * stored in a number of paths. See the documentation of
+   * `WeightsManifestConfig` for more details.
+   */
   weightsManifest: WeightsManifestConfig;
 }
 
@@ -241,9 +257,49 @@ export declare interface ModelJSONLegacy {
  */
 // tslint:disable-next-line:class-name
 export declare interface ModelJSON_v1_0 {
+  /**
+   * Model topology.
+   *
+   * For Keras-style `tf.Model`s, this is a JSON object.
+   * For TensorFlow-style models (e.g., `FrozenModel`), this is a binary buffer
+   * carrying the `GraphDef` protocol buffer.
+   */
   modelTopology: KerasJSON|GraphDefJSON;
+
+  /**
+   * Weights manifest.
+   *
+   * The weights manifest consists of an ordered list of weight-manifest
+   * groups. Each weight-manifest group consists of a number of weight values
+   * stored in a number of paths. See the documentation of
+   * `WeightsManifestConfig` for more details.
+   */
   weightsManifest: WeightsManifestConfig;
-  // TODO(cais): Add new required fields here.
+
+  /**
+   * Hard-coded format name for models saved from TensorFlow.js or converted
+   * by TensorFlow.js Converter.
+   */
+  format?: ModelFormat;
+
+  /**
+   * What library is responsible for originally generating this artifact.
+   *
+   * Used for debugging purposes. E.g., 'TensorFlow.js v1.0.0'.
+   */
+  generatedBy?: string;
+
+  /**
+   * What library or tool is responsible for converting the original model
+   * to this format, applicable only if the model is output by a converter.
+   *
+   * Used for debugging purposes.  E.g., 'TensorFlow.js Converter v1.0.0'.
+   *
+   * A value of `null` means the model artifacts are generated without any
+   * conversion process (e.g., saved directly from a TensorFlow.js
+   * `LayersModel` instance.)
+   */
+  convertedBy?: string|null;
 }
 
 /**
