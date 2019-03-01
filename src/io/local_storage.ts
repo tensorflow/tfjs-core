@@ -20,7 +20,7 @@ import {assert} from '../util';
 import {arrayBufferToBase64String, base64StringToArrayBuffer, getModelArtifactsInfoForJSON} from './io_utils';
 import {ModelStoreManagerRegistry} from './model_management';
 import {IORouter, IORouterRegistry} from './router_registry';
-import {IOHandler, ModelArtifacts, ModelArtifactsInfo, ModelStoreManager, ModelType, SaveResult} from './types';
+import {IOHandler, ModelArtifacts, ModelArtifactsInfo, ModelStoreManager, ModelFormat, SaveResult} from './types';
 
 const PATH_SEPARATOR = '/';
 const PATH_PREFIX = 'tensorflowjs_models';
@@ -223,7 +223,7 @@ export class BrowserLocalStorage implements IOHandler {
         generatedBy: string,
         convertedBy: string
       };
-      out.format = metadata.format as ModelType;
+      out.format = metadata.format as ModelFormat;
       out.generatedBy = metadata['generatedBy'];
       out.convertedBy = metadata['convertedBy'];
     }
