@@ -23,7 +23,7 @@
 import {ENV} from '../environment';
 import {basename, concatenateArrayBuffers, getModelArtifactsInfoForJSON} from './io_utils';
 import {IORouter, IORouterRegistry} from './router_registry';
-import {IOHandler, ModelArtifacts, ModelJSON, ModelJSON_v1_0, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
+import {IOHandler, ModelArtifacts, ModelJSON, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
 
 const DEFAULT_FILE_NAME_PREFIX = 'model';
 const DEFAULT_JSON_EXTENSION_NAME = '.json';
@@ -71,7 +71,7 @@ export class BrowserDownloads implements IOHandler {
         paths: ['./' + this.weightDataFileName],
         weights: modelArtifacts.weightSpecs
       }];
-      const modelTopologyAndWeightManifest: ModelJSON_v1_0 = {
+      const modelTopologyAndWeightManifest: ModelJSON = {
         modelTopology: modelArtifacts.modelTopology,
         format: modelArtifacts.format,
         generatedBy: modelArtifacts.generatedBy,

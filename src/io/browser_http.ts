@@ -24,7 +24,7 @@
 import {assert} from '../util';
 import {concatenateArrayBuffers, getModelArtifactsInfoForJSON} from './io_utils';
 import {IORouter, IORouterRegistry} from './router_registry';
-import {IOHandler, LoadOptions, ModelArtifacts, ModelJSON, ModelJSON_v1_0, OnProgressCallback, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
+import {IOHandler, LoadOptions, ModelArtifacts, ModelJSON, OnProgressCallback, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
 import {loadWeightsAsArrayBuffer} from './weights_loader';
 
 const OCTET_STREAM_MIME_TYPE = 'application/octet-stream';
@@ -111,7 +111,7 @@ export class BrowserHTTPRequest implements IOHandler {
       paths: ['./model.weights.bin'],
       weights: modelArtifacts.weightSpecs,
     }];
-    const modelTopologyAndWeightManifest: ModelJSON_v1_0 = {
+    const modelTopologyAndWeightManifest: ModelJSON = {
       modelTopology: modelArtifacts.modelTopology,
       format: modelArtifacts.format,
       generatedBy: modelArtifacts.generatedBy,
