@@ -32,7 +32,7 @@ const OCTET_STREAM_MIME_TYPE = 'application/octet-stream';
 const JSON_TYPE = 'application/json';
 
 export class BrowserHTTPRequest implements IOHandler {
-  protected readonly path: string|string[];
+  protected readonly path: string;
   protected readonly requestInit: RequestInit;
 
   private readonly fetchFunc: (path: string, init?: RequestInit) => Response;
@@ -131,7 +131,7 @@ export class BrowserHTTPRequest implements IOHandler {
           'model.weights.bin');
     }
 
-    const response = await this.getFetchFunc()(this.path as string, init);
+    const response = await this.getFetchFunc()(this.path, init);
 
     if (response.ok) {
       return {
@@ -155,7 +155,7 @@ export class BrowserHTTPRequest implements IOHandler {
    */
   async load(): Promise<ModelArtifacts> {
     const modelConfigRequest =
-        await this.getFetchFunc()(this.path as string, this.requestInit);
+        await this.getFetchFunc()(this.path, this.requestInit);
 
     if (!modelConfigRequest.ok) {
       throw new Error(
@@ -170,7 +170,7 @@ export class BrowserHTTPRequest implements IOHandler {
       let message = `Failed to parse model JSON for request to ${this.path}.`;
       // TODO(nsthorat): Remove this after some time when we're comfortable that
       // .pb files are mostly gone.
-      if ((this.path as string).endsWith('.pb')) {
+      if (this.path.endsWith('.pb')) {
         message += ' Your path contains a .pb file extension. ' +
             'Support for .pb models have been removed in TensorFlow.js 1.0 ' +
             'in favor of .json models. You can re-convert your python model ' +
