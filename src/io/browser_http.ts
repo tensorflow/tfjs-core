@@ -174,7 +174,7 @@ export class BrowserHTTPRequest implements IOHandler {
         message += ' Your path contains a .pb file extension. ' +
             'Support for .pb models have been removed in TensorFlow.js 1.0 ' +
             'in favor of .json models. You can re-convert your Python ' +
-            'Tensorflow model using the TensorFlow.js 1.0 conversion scripts ' +
+            'TensorFlow model using the TensorFlow.js 1.0 conversion scripts ' +
             'or you can convert your.pb models with the \'pb2json\'' +
             'NPM script in the tensorflow/tfjs-converter repository.';
       } else {
