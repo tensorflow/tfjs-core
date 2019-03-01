@@ -213,9 +213,9 @@ export declare interface ModelArtifacts {
 }
 
 // TODO(cais): Create interface spec for JSON model artifact, e.g., the format
-// for the content in a model.json file saved by TensorFlow. It should be the same
-// as the `ModelArtifacts` interface, but without the binary `weightData` field.
-// The `weightSpec` field should be replaced with a `weightManifest` one.
+// for the content in a model.json file saved by TensorFlow. It should be the
+// same as the `ModelArtifacts` interface, but without the binary `weightData`
+// field. The `weightSpec` field should be replaced with a `weightManifest` one.
 
 /**
  * Type definition for handlers of loading operations.

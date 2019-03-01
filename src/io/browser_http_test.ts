@@ -193,7 +193,7 @@ describeWithFlags('browserHTTPRequest-save', CHROME_ENVS, () => {
     weightSpecs: weightSpecs1,
     weightData: weightData1,
     format: 'layers-model',
-    generatedBy: 'TensorFlow.js 0.0.0',
+    generatedBy: 'TensorFlow.js v0.0.0',
     convertedBy: null
   };
 
@@ -342,7 +342,7 @@ describeWithFlags('browserHTTPRequest-save', CHROME_ENVS, () => {
             // tslint:disable-next-line:no-any
             const modelJSON = JSON.parse((event.target as any).result);
             expect(modelJSON.format).toEqual('layers-model');
-            expect(modelJSON.generatedBy).toEqual('TensorFlow.js 0.0.0');
+            expect(modelJSON.generatedBy).toEqual('TensorFlow.js v0.0.0');
             expect(modelJSON.convertedBy).toEqual(null);
             expect(modelJSON.modelTopology).toEqual(modelTopology1);
             expect(modelJSON.weightsManifest.length).toEqual(1);
