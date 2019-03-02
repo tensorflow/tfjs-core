@@ -34,7 +34,7 @@ import {computeFlatOffset, getStridedSlicedInfo, isSliceContinous} from '../ops/
 import {DataId, Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D, TensorBuffer} from '../tensor';
 import {DataType, DataTypeMap, DataValues, NumericDataType, Rank, ShapeMap, TypedArray, upcastType} from '../types';
 import * as util from '../util';
-import * as asm from './asm';
+// import * as asm from './asm';
 import {getArrayFromDType, inferDtype, now, sizeFromShape} from '../util';
 
 import {BackendTimingInfo, DataMover, DataStorage, KernelBackend} from './backend';
@@ -464,55 +464,59 @@ export class MathBackendCPU implements KernelBackend {
     const leftDim = transposeA ? a.shape[2] : a.shape[1];
     const rightDim = transposeB ? b.shape[1] : b.shape[2];
     const batchDim = a.shape[0];
-    const flop = leftDim * rightDim * sharedDim;
-    if (batchDim === 1 && flop > 1) {
-      const values = asm.matmul(a.squeeze([0]), b.squeeze([0]));
-      return Tensor.make([batchDim, leftDim, rightDim], {values}, a.dtype);
-    }
-    // console.log(`matmul ${leftDim}x${sharedDim} X ${sharedDim}x${rightDim}`);
-    const aValues = a.dataSync();
-    const bValues = b.dataSync();
-    const [, aOuterStep, aInnerStep] = transposeA ?
-        [a.strides[0], 1, a.strides[1]] :
-        [a.strides[0], a.strides[1], 1];
-    const [bInnerStep, bOuterStep, ] = transposeB ?
-        [1, b.strides[1], b.strides[0]] :
-        [b.strides[1], 1, b.strides[0]];
+    // const nWorkers = navigator.hardwareConcurrency || 4;
+    const outShape = [batchDim, leftDim, rightDim];
+    // if (batchDim === 1 && a.shape[0] >= nWorkers) {
+    //   console.warn('asking for asm');
+    //   const values = asm.matmul(a.squeeze([0]), b.squeeze([0]));
+    //   return Tensor.make(outShape, {values}, a.dtype);
+    // }
 
-    // const size = leftDim * rightDim;
-    const result = buffer([batchDim, leftDim, rightDim], a.dtype);
-    const resVals = result.values as TypedArray;
-    const blockSize = this.blockSize;
+    const compute = async () => {
+      const [aValues, bValues] = await Promise.all([a.data(), b.data()]);
+      const [aOuterStep, aInnerStep] =
+          transposeA ? [1, a.strides[1]] : [a.strides[1], 1];
+      const [bInnerStep, bOuterStep] =
+          transposeB ? [1, b.strides[1]] : [b.strides[1], 1];
 
-    for (let b = 0; b < batchDim; b++) {
-      for (let i0 = 0; i0 < leftDim; i0 += blockSize) {
-        const iBlock = i0 + blockSize < leftDim ? i0 + blockSize : leftDim;
-        for (let j0 = 0; j0 < rightDim; j0 += blockSize) {
-          const jBlock = j0 + blockSize < rightDim ? j0 + blockSize : rightDim;
-          for (let k0 = 0; k0 < sharedDim; k0 += blockSize) {
-            // for when blockSize doesn't evenly divide the input
-            const kBlock =
-                k0 + blockSize < sharedDim ? k0 + blockSize : sharedDim;
+      const resVals = util.getTypedArrayFromDType(
+          a.dtype as 'float32', sizeFromShape(outShape));
+      const blockSize = this.blockSize;
 
-            for (let i = i0; i < iBlock; i++) {
-              const iDim = i * rightDim;
-              const iStep = i * aOuterStep;
-              for (let j = j0; j < jBlock; j++) {
-                const jStep = j * bOuterStep;
-                let sum = 0.0;
+      for (let batch = 0; batch < batchDim; batch++) {
+        const aBatch = batch * a.strides[0];
+        const bBatch = batch * b.strides[0];
+        for (let i0 = 0; i0 < leftDim; i0 += blockSize) {
+          const iBlock = i0 + blockSize < leftDim ? i0 + blockSize : leftDim;
+          for (let j0 = 0; j0 < rightDim; j0 += blockSize) {
+            const jBlock =
+                j0 + blockSize < rightDim ? j0 + blockSize : rightDim;
+            for (let k0 = 0; k0 < sharedDim; k0 += blockSize) {
+              // for when blockSize doesn't evenly divide the input
+              const kBlock =
+                  k0 + blockSize < sharedDim ? k0 + blockSize : sharedDim;
 
-                for (let k = k0; k < kBlock; k++) {
-                  sum += aValues[iStep + k * aInnerStep] *
-                      bValues[k * bInnerStep + jStep];
+              for (let i = i0; i < iBlock; i++) {
+                const iDim = i * rightDim;
+                const iStep = aBatch + i * aOuterStep;
+                for (let j = j0; j < jBlock; j++) {
+                  const jStep = bBatch + j * bOuterStep;
+                  let sum = 0.0;
+
+                  for (let k = k0; k < kBlock; k++) {
+                    sum += aValues[k * aInnerStep + iStep] *
+                        bValues[k * bInnerStep + jStep];
+                  }
+                  resVals[iDim + j] += sum;
                 }
-                resVals[iDim + j] += sum;
               }
             }
           }
         }
       }
-    }
-    return result.toTensor() as Tensor3D;
+      return resVals;
+    };
+    return Tensor.make(outShape, {values: compute()}, a.dtype) as Tensor3D;
   }
 
   fusedBatchMatMul(
@@ -568,20 +572,24 @@ export class MathBackendCPU implements KernelBackend {
     const [outShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(x.shape, axes);
     const resultDtype = upcastType(x.dtype, 'int32');
-    const result = ops.zeros(outShape, resultDtype);
-    const reduceSize = util.sizeFromShape(reduceShape);
-    const vals = result.dataSync();
 
-    const aVals = x.dataSync();
-    for (let i = 0; i < vals.length; ++i) {
-      const offset = i * reduceSize;
-      let sum = 0;
-      for (let j = 0; j < reduceSize; ++j) {
-        sum += aVals[offset + j];
+    const compute = async () => {
+      const resVals =
+          util.getTypedArrayFromDType(resultDtype, sizeFromShape(outShape));
+      const reduceSize = util.sizeFromShape(reduceShape);
+      const aVals = await x.data();
+      for (let i = 0; i < resVals.length; ++i) {
+        const offset = i * reduceSize;
+        let sum = 0;
+        for (let j = 0; j < reduceSize; ++j) {
+          sum += aVals[offset + j];
+        }
+        resVals[i] = sum;
       }
-      vals[i] = sum;
-    }
-    return result;
+      return resVals;
+    };
+
+    return Tensor.make(outShape, {values: compute()}, resultDtype);
   }
 
   prod(x: Tensor, axes: number[]): Tensor {
@@ -1126,13 +1134,15 @@ export class MathBackendCPU implements KernelBackend {
   relu<T extends Tensor>(x: T): T {
     this.assertNotComplex(x, 'relu');
 
-    const res = ops.zeros(x.shape, x.dtype);
-    const resVals = res.dataSync();
-    const inVals = x.dataSync();
-    for (let i = 0; i < inVals.length; ++i) {
-      resVals[i] = Math.max(0, inVals[i]);
+    async function compute() {
+      const resVals = util.getTypedArrayFromDType(x.dtype as 'float32', x.size);
+      const inVals = await x.data();
+      for (let i = 0; i < inVals.length; ++i) {
+        resVals[i] = inVals[i] > 0 ? inVals[i] : 0;
+      }
+      return resVals;
     }
-    return res as T;
+    return Tensor.make(x.shape, {values: compute()}, x.dtype) as T;
   }
 
   prelu<T extends Tensor>(x: T, a: T): T {
@@ -1458,17 +1468,21 @@ export class MathBackendCPU implements KernelBackend {
   step<T extends Tensor>(x: T, alpha = 0): T {
     this.assertNotComplex(x, 'step');
 
-    const resultValues = new Float32Array(x.size);
-    const values = x.dataSync();
-    for (let i = 0; i < values.length; ++i) {
-      const value = values[i];
-      if (isNaN(value)) {
-        resultValues[i] = NaN;
-      } else {
-        resultValues[i] = value > 0 ? 1 : alpha;
+    const compute = async () => {
+      const resVals = util.getTypedArrayFromDType(x.dtype as 'float32', x.size);
+      const values = await x.data();
+      for (let i = 0; i < values.length; ++i) {
+        const value = values[i];
+        if (isNaN(value)) {
+          resVals[i] = NaN;
+        } else {
+          resVals[i] = value > 0 ? 1 : alpha;
+        }
       }
-    }
-    return Tensor.make(x.shape, {values: resultValues}) as T;
+      return resVals;
+    };
+
+    return Tensor.make(x.shape, {values: compute()}, x.dtype) as T;
   }
 
   conv2d(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
@@ -1489,6 +1503,11 @@ export class MathBackendCPU implements KernelBackend {
     const padLeft = convInfo.padInfo.left;
     const padTop = convInfo.padInfo.top;
 
+    // console.log(
+    //     `conv2d, input: ${x.shape[1]}x${x.shape[2]}x${x.shape[3]}, ` +
+    //     `filter: ${filterHeight}x${filterWidth}x${convInfo.inChannels}` +
+    //     `x${convInfo.outChannels}`);
+
     async function compute() {
       const xVals = await x.data();
       const wVals = await filter.data();
@@ -1501,7 +1520,7 @@ export class MathBackendCPU implements KernelBackend {
         for (let yR = 0; yR < convInfo.outHeight; ++yR) {
           const yOffset2 = yOffset1 + yR * y.strides[1];
           const xRCorner = yR * convInfo.strideHeight - padLeft;
-          for (let wR = 0; wR < filterHeight; wR++) {
+          for (let wR = 0; wR < filterHeight; ++wR) {
             const xR = xRCorner + wR * dilationHeight;
             if (xR < 0 || xR >= convInfo.inHeight) {
               continue;
@@ -1511,20 +1530,19 @@ export class MathBackendCPU implements KernelBackend {
             for (let yC = 0; yC < convInfo.outWidth; ++yC) {
               const yOffset3 = yOffset2 + yC * convInfo.outChannels;
               const xCCorner = yC * convInfo.strideWidth - padTop;
-              for (let wC = 0; wC < filterWidth; wC++) {
+              for (let wC = 0; wC < filterWidth; ++wC) {
                 const xC = xCCorner + wC * dilationWidth;
                 if (xC < 0 || xC >= convInfo.inWidth) {
                   continue;
                 }
                 const wOffset2 = wOffset1 + wC * filter.strides[1];
                 const xOffset3 = xOffset2 + xC * convInfo.inChannels;
-                let wOffset3 = wOffset2;
                 for (let d1 = 0; d1 < convInfo.inChannels; ++d1) {
                   const xVal = xVals[xOffset3 + d1];
+                  const wOffset3 = wOffset2 + d1 * convInfo.outChannels;
                   for (let d2 = 0; d2 < convInfo.outChannels; ++d2) {
                     yVals[yOffset3 + d2] += xVal * wVals[wOffset3 + d2];
                   }
-                  wOffset3 += convInfo.outChannels;
                 }
               }
             }
@@ -1893,42 +1911,38 @@ export class MathBackendCPU implements KernelBackend {
 
     async function compute() {
       const y = ops.buffer(convInfo.outShape, x.dtype as 'float32');
-      const xVals = await x.data();
-      const wVals = await filter.data();
+      const [xVals, wVals] = await Promise.all([x.data(), filter.data()]);
       const yVals = y.values;
 
       for (let b = 0; b < convInfo.batchSize; ++b) {
-        const xOffset1 = b * x.strides[0];
-        const yOffset1 = b * y.strides[0];
-        for (let yR = 0; yR < convInfo.outHeight; ++yR) {
-          const yOffset2 = yOffset1 + yR * y.strides[1];
-          const xRCorner = yR * convInfo.strideHeight - padLeft;
-          for (let wR = 0; wR < filterHeight; ++wR) {
-            const xR = xRCorner + wR * dilationHeight;
-            if (xR < 0 || xR >= convInfo.inHeight) {
-              continue;
-            }
-            const wOffset1 = wR * filter.strides[0];
-            const xOffset2 = xOffset1 + xR * x.strides[1];
-            for (let yC = 0; yC < convInfo.outWidth; ++yC) {
-              const yOffset3 = yOffset2 + yC * y.strides[2];
-              const xCCorner = yC * convInfo.strideWidth - padTop;
-              for (let wC = 0; wC < filterWidth; ++wC) {
-                const xC = xCCorner + wC * dilationWidth;
-                if (xC < 0 || xC >= convInfo.inWidth) {
-                  continue;
-                }
-                const wOffset2 = wOffset1 + wC * filter.strides[1];
-                const xOffset3 = xOffset2 + xC * convInfo.inChannels;
-                let yOffset4 = yOffset3;
-                let wOffset3 = wOffset2;
-                for (let d1 = 0; d1 < convInfo.inChannels; ++d1) {
-                  const xVal = xVals[xOffset3 + d1];
-                  for (let q = 0; q < chMul; ++q) {
-                    yVals[yOffset4 + q] += xVal * wVals[wOffset3 + q];
+        for (let q = 0; q < chMul; ++q) {
+          const xOffset1 = b * x.strides[0];
+          const yOffset1 = b * y.strides[0];
+          for (let yR = 0; yR < convInfo.outHeight; ++yR) {
+            const yOffset2 = yOffset1 + yR * y.strides[1];
+            const xRCorner = yR * convInfo.strideHeight - padLeft;
+            for (let wR = 0; wR < filterHeight; ++wR) {
+              const xR = xRCorner + wR * dilationHeight;
+              if (xR < 0 || xR >= convInfo.inHeight) {
+                continue;
+              }
+              const wOffset1 = wR * filter.strides[0];
+              const xOffset2 = xOffset1 + xR * x.strides[1];
+              for (let yC = 0; yC < convInfo.outWidth; ++yC) {
+                const yOffset3 = yOffset2 + yC * y.strides[2];
+                const xCCorner = yC * convInfo.strideWidth - padTop;
+                for (let wC = 0; wC < filterWidth; ++wC) {
+                  const xC = xCCorner + wC * dilationWidth;
+                  if (xC < 0 || xC >= convInfo.inWidth) {
+                    continue;
                   }
-                  yOffset4 += chMul;
-                  wOffset3 += chMul;
+                  const wOffset2 = wOffset1 + wC * filter.strides[1];
+                  const xOffset3 = xOffset2 + xC * convInfo.inChannels;
+                  for (let d1 = 0; d1 < convInfo.inChannels; ++d1) {
+                    const dOffset = d1 * chMul + q;
+                    yVals[yOffset3 + dOffset] +=
+                        xVals[xOffset3 + d1] * wVals[wOffset2 + dOffset];
+                  }
                 }
               }
             }
@@ -3096,20 +3110,19 @@ export class MathBackendCPU implements KernelBackend {
     const newShape =
         broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
 
-    async function compute() {
-      const [aVals, bVals] = await Promise.all([a.data(), b.data()]);
+    const compute = async () => {
+      const result = buffer(newShape, dtype);
+      const resVals = result.values;
       const aBroadcastDims = broadcast_util.getBroadcastDims(a.shape, newShape);
       const bBroadcastDims = broadcast_util.getBroadcastDims(b.shape, newShape);
 
-      const result = buffer(newShape, dtype);
-      const resVals = result.values;
+      const [aBuf, bBuf] = await Promise.all([a.buffer(), b.buffer()]);
+      const [aVals, bVals] = [aBuf.values, bBuf.values];
       if (aBroadcastDims.length + bBroadcastDims.length === 0) {
         for (let i = 0; i < resVals.length; ++i) {
           resVals[i] = op(aVals[i % aVals.length], bVals[i % bVals.length]);
         }
       } else {
-        const aBuf = a.bufferSync();
-        const bBuf = b.bufferSync();
         for (let i = 0; i < resVals.length; ++i) {
           const loc = result.indexToLoc(i);
 
@@ -3125,7 +3138,7 @@ export class MathBackendCPU implements KernelBackend {
         }
       }
       return resVals;
-    }
+    };
     return Tensor.make(newShape, {values: compute()}, dtype);
   }
 

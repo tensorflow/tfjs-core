@@ -66,7 +66,7 @@ function expectArraysPredicate(
     const aType = actual.constructor.name;
     const bType = expected.constructor.name;
 
-    if (aType !== bType) {
+    if (!Array.isArray(expected) && aType !== bType) {
       throw new Error(
           `Arrays are of different type actual: ${aType} ` +
           `vs expected: ${bType}`);

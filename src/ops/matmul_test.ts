@@ -34,20 +34,21 @@ describeWithFlags('matmul', PACKED_ENVS, () => {
     expect(endNumBytes - startNumBytes).toEqual(60);
   });
 
-  it('should work when input matrix dimensions are not divisible by 2', () => {
-    const a = tf.tensor2d([1, 2, 3, 4, 5, 6, 7, 8, 9], [3, 3]);
-    const b = tf.tensor2d(
-        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], [3, 5]);
+  it('should work when input matrix dimensions are not divisible by 2',
+     async () => {
+       const a = tf.tensor2d([1, 2, 3, 4, 5, 6, 7, 8, 9], [3, 3]);
+       const b = tf.tensor2d(
+           [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], [3, 5]);
 
-    const c = tf.matMul(a, b);
+       const c = tf.matMul(a, b);
 
-    expect(c.shape).toEqual([3, 5]);
-    expectArraysClose(
-        c,
-        [46, 52, 58, 64, 70, 100, 115, 130, 145, 160, 154, 178, 202, 226, 250]);
-  });
+       expect(c.shape).toEqual([3, 5]);
+       expectArraysClose(await c.data(), [
+         46, 52, 58, 64, 70, 100, 115, 130, 145, 160, 154, 178, 202, 226, 250
+       ]);
+     });
 
-  it('should work when output texture shape != physical shape', () => {
+  it('should work when output texture shape != physical shape', async () => {
     const sharedDim = 16000;
     const a = tf.buffer<Rank.R2>([2, sharedDim], 'float32');
     const b = tf.buffer<Rank.R2>([sharedDim, 2], 'float32');
@@ -60,10 +61,10 @@ describeWithFlags('matmul', PACKED_ENVS, () => {
 
     const c = tf.matMul(a.toTensor(), b.toTensor());
     const expected = [2, 0, 1, 0];
-    expectArraysClose(c, expected);
+    expectArraysClose(await c.data(), expected);
   });
 
-  it('should work when input texture shapes != physical shape', () => {
+  it('should work when input texture shapes != physical shape', async () => {
     const maxTextureSize = tf.ENV.get('WEBGL_MAX_TEXTURE_SIZE');
     tf.ENV.set('WEBGL_MAX_TEXTURE_SIZE', 5);
     const a = tf.tensor2d([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], [1, 12]);
@@ -73,10 +74,10 @@ describeWithFlags('matmul', PACKED_ENVS, () => {
 
     tf.ENV.set('WEBGL_MAX_TEXTURE_SIZE', maxTextureSize);
 
-    expectArraysClose(c, [572]);
+    expectArraysClose(await c.data(), [572]);
   });
 
-  it('should work when squarification results in zero padding', () => {
+  it('should work when squarification results in zero padding', async () => {
     const maxTextureSize = tf.ENV.get('WEBGL_MAX_TEXTURE_SIZE');
     tf.ENV.set('WEBGL_MAX_TEXTURE_SIZE', 3);
     const a = tf.tensor2d([1, 2], [1, 2]);
@@ -87,20 +88,20 @@ describeWithFlags('matmul', PACKED_ENVS, () => {
 
     tf.ENV.set('WEBGL_MAX_TEXTURE_SIZE', maxTextureSize);
 
-    expectArraysClose(c, [18, 21, 24, 27, 30, 33, 36, 39, 42]);
+    expectArraysClose(await c.data(), [18, 21, 24, 27, 30, 33, 36, 39, 42]);
   });
 
-  it('A x B', () => {
+  it('A x B', async () => {
     const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
     const b = tf.tensor2d([0, 1, -3, 2, 2, 1], [3, 2]);
 
     const c = tf.matMul(a, b);
 
     expect(c.shape).toEqual([2, 2]);
-    expectArraysClose(c, [0, 8, -3, 20]);
+    expectArraysClose(await c.data(), [0, 8, -3, 20]);
   });
 
-  it('A x B^t', () => {
+  it('A x B^t', async () => {
     const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
     const b = tf.tensor2d([1, 0, 2, 4, 3, 0], [2, 3]);
 
@@ -109,10 +110,10 @@ describeWithFlags('matmul', PACKED_ENVS, () => {
     const c = tf.matMul(a, b, transposeA, transposeB);
 
     const expected = [7, 10, 16, 31];
-    expectArraysClose(c, expected);
+    expectArraysClose(await c.data(), expected);
   });
 
-  it('A^t x B', () => {
+  it('A^t x B', async () => {
     const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
     const b = tf.tensor2d([1, 0, 2, 4, 3, 0], [2, 3]);
 
@@ -121,10 +122,10 @@ describeWithFlags('matmul', PACKED_ENVS, () => {
     const c = tf.matMul(a, b, transposeA, transposeB);
 
     const expected = [17, 12, 2, 22, 15, 4, 27, 18, 6];
-    expectArraysClose(c, expected);
+    expectArraysClose(await c.data(), expected);
   });
 
-  it('A^t x B^t', () => {
+  it('A^t x B^t', async () => {
     const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [3, 2]);
     const b = tf.tensor2d([1, 0, 2, 4, 3, 0], [2, 3]);
 
@@ -133,10 +134,10 @@ describeWithFlags('matmul', PACKED_ENVS, () => {
     const c = tf.matMul(a, b, transposeA, transposeB);
 
     const expected = [11, 13, 14, 20];
-    expectArraysClose(c, expected);
+    expectArraysClose(await c.data(), expected);
   });
 
-  it('works when followed by an op that requires unpacked inputs', () => {
+  it('works when followed by an op that requires unpacked inputs', async () => {
     const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
     const b = tf.tensor2d([0, 1, -3, 2, 2, 1], [3, 2]);
 
@@ -147,12 +148,12 @@ describeWithFlags('matmul', PACKED_ENVS, () => {
     const d = tf.add(c, 1);
     tf.ENV.set('WEBGL_PACK_BINARY_OPERATIONS', webglPackBinarySaved);
 
-    expectArraysClose(d, [1, 9, -2, 21]);
+    expectArraysClose(await d.data(), [1, 9, -2, 21]);
   });
 
   // tslint:disable-next-line:max-line-length
   it('works when followed by a packed reshape that changes texture layout, and then an unpacked op',
-     () => {
+     async () => {
        const a = tf.tensor2d([1, 2, 3, 4, 5, 6, 7, 8, 9], [9, 1]);
        const b = tf.tensor2d([1], [1, 1]);
        const c = tf.matMul(a, b);
@@ -164,32 +165,32 @@ describeWithFlags('matmul', PACKED_ENVS, () => {
        const e = tf.add(d, 1);
        tf.ENV.set('WEBGL_PACK_BINARY_OPERATIONS', webglPackBinarySaved);
 
-       expectArraysClose(e, [2, 3, 4, 5, 6, 7, 8, 9, 10]);
+       expectArraysClose(await e.data(), [2, 3, 4, 5, 6, 7, 8, 9, 10]);
      });
 
-  it('works when preceded by an op that requires packed inputs', () => {
+  it('works when preceded by an op that requires packed inputs', async () => {
     const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
     const b = tf.tensor2d([0, 1, -3, 2, 2, 1], [3, 2]);
 
     const c = tf.add(a, 1);
     const d = tf.matMul(b, c);
 
-    expectArraysClose(d, [5, 6, 7, 4, 3, 2, 9, 12, 15]);
+    expectArraysClose(await d.data(), [5, 6, 7, 4, 3, 2, 9, 12, 15]);
   });
 });
 
 describeWithFlags('matmul', ALL_ENVS, () => {
-  it('A x B', () => {
+  it('A x B', async () => {
     const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
     const b = tf.tensor2d([0, 1, -3, 2, 2, 1], [3, 2]);
 
     const c = tf.matMul(a, b);
 
     expect(c.shape).toEqual([2, 2]);
-    expectArraysClose(c, [0, 8, -3, 20]);
+    expectArraysClose(await c.data(), [0, 8, -3, 20]);
   });
 
-  it('upcasts when dtypes dont match', () => {
+  it('upcasts when dtypes dont match', async () => {
     const a = [1, 2, 3, 4, 5, 6];
     const b = [0, 1, -3, 2, 2, 1];
 
@@ -204,10 +205,10 @@ describeWithFlags('matmul', ALL_ENVS, () => {
 
     expect(c.shape).toEqual([2, 2]);
     expect(c.dtype).toBe('int32');
-    expectArraysClose(c, [5, 6, 11, 15]);
+    expectArraysClose(await c.data(), [5, 6, 11, 15]);
   });
 
-  it('A x B^t', () => {
+  it('A x B^t', async () => {
     const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
     const b = tf.tensor2d([1, 0, 2, 4, 3, 0], [2, 3]);
 
@@ -216,10 +217,10 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     const c = tf.matMul(a, b, transposeA, transposeB);
 
     const expected = [7, 10, 16, 31];
-    expectArraysClose(c, expected);
+    expectArraysClose(await c.data(), expected);
   });
 
-  it('A^t x B', () => {
+  it('A^t x B', async () => {
     const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
     const b = tf.tensor2d([1, 0, 2, 4, 3, 0], [2, 3]);
 
@@ -228,10 +229,10 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     const c = tf.matMul(a, b, transposeA, transposeB);
 
     const expected = [17, 12, 2, 22, 15, 4, 27, 18, 6];
-    expectArraysClose(c, expected);
+    expectArraysClose(await c.data(), expected);
   });
 
-  it('A^t x B^t', () => {
+  it('A^t x B^t', async () => {
     const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [3, 2]);
     const b = tf.tensor2d([1, 0, 2, 4, 3, 0], [2, 3]);
 
@@ -240,7 +241,7 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     const c = tf.matMul(a, b, transposeA, transposeB);
 
     const expected = [11, 13, 14, 20];
-    expectArraysClose(c, expected);
+    expectArraysClose(await c.data(), expected);
   });
 
   it('A x B^t shapes do not match', () => {
@@ -304,35 +305,35 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     expect(() => tf.matMul(matrix, v)).toThrowError();
   });
 
-  it('Vector times matrix', () => {
+  it('Vector times matrix', async () => {
     const v = tf.tensor1d([2, 3]);
     const matrix = tf.tensor2d([1, 2, 3, 4], [2, 2]);
     const result = tf.dot(v, matrix);
 
     const expected = [11, 16];
-    expectArraysClose(result, expected);
+    expectArraysClose(await result.data(), expected);
   });
 
-  it('Vector times matrix with implicit reshape', () => {
+  it('Vector times matrix with implicit reshape', async () => {
     const v = tf.tensor1d([2, 3]);
 
     const matrix = tf.tensor2d([1, 2, 3, 4], [2, 2]);
     const result = tf.dot(v, matrix);
 
     const expected = [11, 16];
-    expectArraysClose(result, expected);
+    expectArraysClose(await result.data(), expected);
   });
 
-  it('Matrix times vector', () => {
+  it('Matrix times vector', async () => {
     const matrix = tf.tensor2d([1, 2, 3, 4], [2, 2]);
     const v = tf.tensor1d([2, 3]);
     const result = tf.dot(matrix, v);
 
     const expected = [8, 18];
-    expectArraysClose(result, expected);
+    expectArraysClose(await result.data(), expected);
   });
 
-  it('batched matmul with the matrices being vectors', () => {
+  it('batched matmul with the matrices being vectors', async () => {
     const batch = 3;
     const sharedDim = MATMUL_SHARED_DIM_THRESHOLD + 1;
     const values = new Float32Array(batch * sharedDim);
@@ -342,10 +343,10 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     const b = tf.tensor(values, [batch, sharedDim, 1]);
     const result = tf.matMul(a, b);
     expect(result.shape).toEqual([batch, 1, 1]);
-    expectArraysClose(result, [4, 0, 0]);
+    expectArraysClose(await result.data(), [4, 0, 0]);
   });
 
-  it('batched matmul with the matrices being vectors transposedA', () => {
+  it('batched matmul with the matrices being vectors transposedA', async () => {
     const batch = 3;
     const sharedDim = MATMUL_SHARED_DIM_THRESHOLD + 1;
     const values = new Float32Array(batch * sharedDim);
@@ -357,10 +358,10 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     const transposeB = false;
     const result = tf.matMul(a, b, transposeA, transposeB);
     expect(result.shape).toEqual([batch, 1, 1]);
-    expectArraysClose(result, [4, 0, 0]);
+    expectArraysClose(await result.data(), [4, 0, 0]);
   });
 
-  it('batched matmul with the matrices being vectors transposedB', () => {
+  it('batched matmul with the matrices being vectors transposedB', async () => {
     const batch = 3;
     const sharedDim = MATMUL_SHARED_DIM_THRESHOLD + 1;
     const values = new Float32Array(batch * sharedDim);
@@ -372,10 +373,10 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     const transposeB = true;
     const result = tf.matMul(a, b, transposeA, transposeB);
     expect(result.shape).toEqual([batch, 1, 1]);
-    expectArraysClose(result, [4, 0, 0]);
+    expectArraysClose(await result.data(), [4, 0, 0]);
   });
 
-  it('batched matmul with matrix x vector', () => {
+  it('batched matmul with matrix x vector', async () => {
     const batch = 3;
     const sharedDim = MATMUL_SHARED_DIM_THRESHOLD + 1;
     const values = new Float32Array(batch * sharedDim);
@@ -385,10 +386,10 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     const b = tf.tensor(values, [batch, sharedDim, 1]);
     const result = tf.matMul(a, b);
     expect(result.shape).toEqual([batch, 2, 1]);
-    expectArraysClose(result, [2, 2, 0, 0, 0, 0]);
+    expectArraysClose(await result.data(), [2, 2, 0, 0, 0, 0]);
   });
 
-  it('batched matmul with matrix x vector transposedA', () => {
+  it('batched matmul with matrix x vector transposedA', async () => {
     const batch = 3;
     const sharedDim = MATMUL_SHARED_DIM_THRESHOLD + 1;
     const values = new Float32Array(batch * sharedDim);
@@ -400,10 +401,10 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     const transposeB = false;
     const result = tf.matMul(a, b, transposeA, transposeB);
     expect(result.shape).toEqual([batch, 2, 1]);
-    expectArraysClose(result, [2, 2, 0, 0, 0, 0]);
+    expectArraysClose(await result.data(), [2, 2, 0, 0, 0, 0]);
   });
 
-  it('batched matmul with matrix x vector transposedB', () => {
+  it('batched matmul with matrix x vector transposedB', async () => {
     const batch = 3;
     const sharedDim = MATMUL_SHARED_DIM_THRESHOLD + 1;
     const values = new Float32Array(batch * sharedDim);
@@ -415,10 +416,10 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     const transposeB = true;
     const result = tf.matMul(a, b, transposeA, transposeB);
     expect(result.shape).toEqual([batch, 2, 1]);
-    expectArraysClose(result, [2, 2, 0, 0, 0, 0]);
+    expectArraysClose(await result.data(), [2, 2, 0, 0, 0, 0]);
   });
 
-  it('batched matmul with vector x matrix', () => {
+  it('batched matmul with vector x matrix', async () => {
     const batch = 3;
     const sharedDim = MATMUL_SHARED_DIM_THRESHOLD + 1;
     const values = new Float32Array(batch * sharedDim);
@@ -428,10 +429,10 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     const b = tf.ones([batch, sharedDim, 2]);
     const result = tf.matMul(a, b);
     expect(result.shape).toEqual([batch, 1, 2]);
-    expectArraysClose(result, [2, 2, 0, 0, 0, 0]);
+    expectArraysClose(await result.data(), [2, 2, 0, 0, 0, 0]);
   });
 
-  it('batched matmul with vector x matrix transposedA', () => {
+  it('batched matmul with vector x matrix transposedA', async () => {
     const batch = 3;
     const sharedDim = MATMUL_SHARED_DIM_THRESHOLD + 1;
     const values = new Float32Array(batch * sharedDim);
@@ -443,10 +444,10 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     const transposeB = false;
     const result = tf.matMul(a, b, transposeA, transposeB);
     expect(result.shape).toEqual([batch, 1, 2]);
-    expectArraysClose(result, [2, 2, 0, 0, 0, 0]);
+    expectArraysClose(await result.data(), [2, 2, 0, 0, 0, 0]);
   });
 
-  it('batched matmul with vector x matrix transposedB', () => {
+  it('batched matmul with vector x matrix transposedB', async () => {
     const batch = 3;
     const sharedDim = MATMUL_SHARED_DIM_THRESHOLD + 1;
     const values = new Float32Array(batch * sharedDim);
@@ -458,16 +459,16 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     const transposeB = true;
     const result = tf.matMul(a, b, transposeA, transposeB);
     expect(result.shape).toEqual([batch, 1, 2]);
-    expectArraysClose(result, [2, 2, 0, 0, 0, 0]);
+    expectArraysClose(await result.data(), [2, 2, 0, 0, 0, 0]);
   });
 
-  it('Matrix * vector propagates NaNs', () => {
+  it('Matrix * vector propagates NaNs', async () => {
     const matrix = tf.tensor2d([1, 2, 3, 4], [2, 2]);
     const v = tf.tensor1d([2, NaN]);
     const result = tf.dot(matrix, v);
 
     const expected = [NaN, NaN];
-    expectArraysClose(result, expected);
+    expectArraysClose(await result.data(), expected);
   });
 
   it('matrix times vector throws when not passed a matrix', () => {
@@ -479,19 +480,19 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     expect(() => tf.dot(matrix, v)).toThrowError();
   });
 
-  it('Dot product', () => {
+  it('Dot product', async () => {
     const v1 = tf.tensor1d([2, 3]);
     const v2 = tf.tensor1d([2, 1]);
     const result = tf.dot(v1, v2);
 
-    expectArraysClose(result, [7]);
+    expectArraysClose(await result.data(), [7]);
   });
 
-  it('Dot product propagates NaNs', () => {
+  it('Dot product propagates NaNs', async () => {
     const v1 = tf.tensor1d([2, NaN]);
     const v2 = tf.tensor1d([2, 1]);
     const result = tf.dot(v1, v2);
-    expectArraysEqual(result, [NaN]);
+    expectArraysEqual(await result.data(), [NaN]);
   });
 
   it('Dot product throws when vectors are different size', () => {
@@ -502,23 +503,23 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     expect(() => tf.dot(v2, v1)).toThrowError();
   });
 
-  it('Outer product', () => {
+  it('Outer product', async () => {
     const v1 = tf.tensor1d([2, 3]);
     const v2 = tf.tensor1d([2, 1]);
     const result = tf.outerProduct(v1, v2);
 
     const expected = [4, 2, 6, 3];
     expect(result.shape).toEqual([2, 2]);
-    expectArraysClose(result, expected);
+    expectArraysClose(await result.data(), expected);
   });
 
-  it('outer product accepts a tensor-like object', () => {
+  it('outer product accepts a tensor-like object', async () => {
     const v1 = [2, 3];
     const v2 = [2, 1];
     const result = tf.outerProduct(v1, v2);
     const expected = [4, 2, 6, 3];
     expect(result.shape).toEqual([2, 2]);
-    expectArraysClose(result, expected);
+    expectArraysClose(await result.data(), expected);
   });
 
   it('gradients: A * B', async () => {
@@ -541,7 +542,7 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     const dy = await dyT.buffer();
     const b = await bT.buffer();
     expectArraysClose(
-        da,
+        await da.data(),
         [
           dy.get(0, 0) * b.get(0, 0) + dy.get(0, 1) * b.get(0, 1),
           dy.get(0, 0) * b.get(1, 0) + dy.get(0, 1) * b.get(1, 1),
@@ -554,7 +555,7 @@ describeWithFlags('matmul', ALL_ENVS, () => {
 
     // db = aT * dy
     expect(db.shape).toEqual(b.shape);
-    expectArraysClose(db, [
+    expectArraysClose(await db.data(), [
       a.get(0, 0) * dy.get(0, 0) + a.get(1, 0) * dy.get(1, 0),
       a.get(0, 0) * dy.get(0, 1) + a.get(1, 0) * dy.get(1, 1),
       a.get(0, 1) * dy.get(0, 0) + a.get(1, 1) * dy.get(1, 0),
@@ -582,7 +583,7 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     const a = await aT.buffer();
     const dy = await dyT.buffer();
     const b = await bT.buffer();
-    expectArraysClose(da, [
+    expectArraysClose(await da.data(), [
       dy.get(0, 0) * b.get(0, 0) + dy.get(0, 1) * b.get(1, 0) +
           dy.get(0, 2) * b.get(2, 0),
       dy.get(0, 0) * b.get(0, 1) + dy.get(0, 1) * b.get(1, 1) +
@@ -599,7 +600,7 @@ describeWithFlags('matmul', ALL_ENVS, () => {
 
     // db = dyT * a
     expect(db.shape).toEqual(b.shape);
-    expectArraysClose(db, [
+    expectArraysClose(await db.data(), [
       dy.get(0, 0) * a.get(0, 0) + dy.get(1, 0) * a.get(1, 0) +
           dy.get(2, 0) * a.get(2, 0),
       dy.get(0, 0) * a.get(0, 1) + dy.get(1, 0) * a.get(1, 1) +
@@ -633,7 +634,7 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     const a = await aT.buffer();
     const dy = await dyT.buffer();
     const b = await bT.buffer();
-    expectArraysClose(da, [
+    expectArraysClose(await da.data(), [
       dy.get(0, 0) * b.get(0, 0) + dy.get(0, 1) * b.get(0, 1),
       dy.get(1, 0) * b.get(0, 0) + dy.get(1, 1) * b.get(0, 1),
       dy.get(0, 0) * b.get(1, 0) + dy.get(0, 1) * b.get(1, 1),
@@ -672,7 +673,7 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     const a = await aT.buffer();
     const dy = await dyT.buffer();
     const b = await bT.buffer();
-    expectArraysClose(da, [
+    expectArraysClose(await da.data(), [
       dy.get(0, 0) * b.get(0, 0) + dy.get(0, 1) * b.get(1, 0),
       dy.get(1, 0) * b.get(0, 0) + dy.get(1, 1) * b.get(1, 0),
       dy.get(0, 0) * b.get(0, 1) + dy.get(0, 1) * b.get(1, 1),
@@ -683,7 +684,7 @@ describeWithFlags('matmul', ALL_ENVS, () => {
 
     // db = dyT * aT
     expect(db.shape).toEqual(b.shape);
-    expectArraysClose(db, [
+    expectArraysClose(await db.data(), [
       dy.get(0, 0) * a.get(0, 0) + dy.get(1, 0) * a.get(0, 1),
       dy.get(0, 0) * a.get(1, 0) + dy.get(1, 0) * a.get(1, 1),
       dy.get(0, 0) * a.get(2, 0) + dy.get(1, 0) * a.get(2, 1),
@@ -702,45 +703,46 @@ describeWithFlags('matmul', ALL_ENVS, () => {
         .toThrowError(/Argument 'b' passed to 'matMul' must be a Tensor/);
   });
 
-  it('accepts a tensor-like object', () => {
+  it('accepts a tensor-like object', async () => {
     const a = [[1, 2, 3], [4, 5, 6]];     // 2x3
     const b = [[0, 1], [-3, 2], [2, 1]];  // 3x2
     const c = tf.matMul(a, b);
 
     expect(c.shape).toEqual([2, 2]);
-    expectArraysClose(c, [0, 8, -3, 20]);
+    expectArraysClose(await c.data(), [0, 8, -3, 20]);
   });
 
-  it('accepts a tensor-like object chained', () => {
+  it('accepts a tensor-like object chained', async () => {
     const a = tf.tensor2d([[1, 2, 3], [4, 5, 6]], [2, 3]);  // 2x3
     const b = [[0, 1], [-3, 2], [2, 1]];                    // 3x2
     const c = a.matMul(b);
 
     expect(c.shape).toEqual([2, 2]);
-    expectArraysClose(c, [0, 8, -3, 20]);
+    expectArraysClose(await c.data(), [0, 8, -3, 20]);
   });
 
-  it('a * b where a has zero in its shape', () => {
+  it('a * b where a has zero in its shape', async () => {
     const a = tf.tensor2d([], [0, 3]);
     const b = tf.tensor2d([1, 2, 3, 4, 5, 6], [3, 2]);
     const c = tf.matMul(a, b);
     expect(c.shape).toEqual([0, 2]);
     expect(c.rank).toBe(2);
     expect(c.size).toBe(0);
-    expectArraysClose(c, []);
+    expectArraysClose(await c.data(), []);
   });
 
-  it('(a * b) * c where a has zero in its shape, so a*b does also', () => {
-    const a = tf.tensor2d([], [0, 3]);
-    const b = tf.tensor2d([1, 2, 3, 4, 5, 6], [3, 2]);
-    const ab = tf.matMul(a, b);
-    expect(ab.shape).toEqual([0, 2]);
-    expectArraysClose(ab, []);
-    const c = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
-    const res = tf.matMul(ab, c);
-    expect(res.shape).toEqual([0, 3]);
-    expectArraysClose(res, []);
-  });
+  it('(a * b) * c where a has zero in its shape, so a*b does also',
+     async () => {
+       const a = tf.tensor2d([], [0, 3]);
+       const b = tf.tensor2d([1, 2, 3, 4, 5, 6], [3, 2]);
+       const ab = tf.matMul(a, b);
+       expect(ab.shape).toEqual([0, 2]);
+       expectArraysClose(await ab.data(), []);
+       const c = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
+       const res = tf.matMul(ab, c);
+       expect(res.shape).toEqual([0, 3]);
+       expectArraysClose(await res.data(), []);
+     });
 
   it('throws error for string tensor', () => {
     expect(() => tf.matMul([['a']], [['b']]))
@@ -749,7 +751,7 @@ describeWithFlags('matmul', ALL_ENVS, () => {
 });
 
 describeWithFlags('matmulBatch', ALL_ENVS, () => {
-  it('A x B', () => {
+  it('A x B', async () => {
     const a = tf.tensor3d(
         [
           -5, -5, -6, 8, -2, -8, 4, -7, -6, -9, -1, 3,  7,  -2, 5,
@@ -765,13 +767,13 @@ describeWithFlags('matmulBatch', ALL_ENVS, () => {
 
     const c = tf.matMul(a, b);
     expect(c.shape).toEqual([5, 2, 2]);
-    expectArraysClose(c, [
+    expectArraysClose(await c.data(), [
       87, 20, -6,  -32, -24, -50, -36, -5, 24, 98,
       70, 33, -64, 47,  -42, -28, -71, 24, 37, 5
     ]);
   });
 
-  it('A x B in 4D', () => {
+  it('A x B in 4D', async () => {
     const a = tf.tensor4d(
         [
           -2, 3,  5,  -5, 3,  9,  -3, -5, 1,   1,  -9, 9,   -6, 6,  -8,
@@ -801,7 +803,7 @@ describeWithFlags('matmulBatch', ALL_ENVS, () => {
     const transposeB = false;
     const c = tf.matMul(a, b, transposeA, transposeB);
 
-    expectArraysClose(c, [
+    expectArraysClose(await c.data(), [
       32,  -17, 68,  -12,  -15, 14,  5,   -46, 96,  32,  46,  -17, 78,   -85,
       -28, 46,  94,  -35,  0,   -13, 31,  -52, 17,  -87, 96,  47,  32,   -2,
       -6,  105, 40,  -2,   63,  76,  17,  30,  56,  -66, -21, 23,  -144, 41,
@@ -811,7 +813,7 @@ describeWithFlags('matmulBatch', ALL_ENVS, () => {
     ]);
   });
 
-  it('A x B^t', () => {
+  it('A x B^t', async () => {
     const a = tf.tensor3d(
         [
           -5, -5, -6, 8, -2, -8, 4, -7, -6, -9, -1, 3,  7,  -2, 5,
@@ -829,13 +831,13 @@ describeWithFlags('matmulBatch', ALL_ENVS, () => {
     const transposeB = true;
     const c = tf.matMul(a, b, transposeA, transposeB);
     expect(c.shape).toEqual([5, 2, 2]);
-    expectArraysClose(c, [
+    expectArraysClose(await c.data(), [
       66, 35, -48,  14, -45, -33, -12, 7,  -76, 64,
       3,  66, -119, -9, -64, -60, -76, 48, 33,  -16
     ]);
   });
 
-  it('A^t x B', () => {
+  it('A^t x B', async () => {
     const a = tf.tensor3d(
         [
           -5, -5, -6, 8, -2, -8, 4, -7, -6, -9, -1, 3,  7,  -2, 5,
@@ -853,14 +855,14 @@ describeWithFlags('matmulBatch', ALL_ENVS, () => {
     const transposeB = false;
     const c = tf.matMul(a, b, transposeA, transposeB);
 
-    expectArraysClose(c, [
+    expectArraysClose(await c.data(), [
       40,  -36, 5,   40,  34, 5,   48,  80, 6,  -6, 21,  -48, -23, -20, -50,
       -12, -21, -12, -58, 15, -96, 23,  6,  39, 20, 109, 42,  -67, 45,  -40,
       76,  -52, 40,  -15, 1,  -60, -58, -3, 36, 40, -6,  -24, 51,  -33, -28
     ]);
   });
 
-  it('A^t x B in 4D', () => {
+  it('A^t x B in 4D', async () => {
     const a = tf.tensor4d(
         [
           -2, 3,  5,  -5, 3,  9,  -3, -5, 1,   1,  -9, 9,   -6, 6,  -8,
@@ -890,7 +892,7 @@ describeWithFlags('matmulBatch', ALL_ENVS, () => {
     const transposeB = false;
     const c = tf.matMul(a, b, transposeA, transposeB);
 
-    expectArraysClose(c, [
+    expectArraysClose(await c.data(), [
       38,  -24, 9,   -30, 9,   -9,  -74,  39,  -19,  8,    11,  -30, 56,  -67,
       46,  -40, 71,  -74, 82,  42,  55,   -50, 6,    1,    60,  -18, -13, -15,
       -52, -61, 81,  -52, 59,  -15, 76,   43,  34,   -56,  38,  0,   26,  -14,
@@ -907,7 +909,7 @@ describeWithFlags('matmulBatch', ALL_ENVS, () => {
     ]);
   });
 
-  it('A^t x B^t', () => {
+  it('A^t x B^t', async () => {
     const a = tf.tensor3d(
         [
           -5, -5, -6, 8, -2, -8, 4, -7, -6, -9, -1, 3,  7,  -2, 5,
@@ -924,7 +926,7 @@ describeWithFlags('matmulBatch', ALL_ENVS, () => {
     const transposeA = true;
     const transposeB = true;
     const c = tf.matMul(a, b, transposeA, transposeB);
-    expectArraysClose(c, [
+    expectArraysClose(await c.data(), [
       66,  42, 16,  -56, -12, 6,   -30, 19,  -1, 102,
       -94, 14, -56, 32,  100, -56, -47, -11, 5,  -31
     ]);
@@ -950,7 +952,7 @@ describeWithFlags('matmulBatch', ALL_ENVS, () => {
     expect(f).toThrowError();
   });
 
-  it('gradients: A x B', () => {
+  it('gradients: A x B', async () => {
     const a = tf.tensor3d(
         [
           -5, -5, -6, 8, -2, -8, 4, -7, -6, -9, -1, 3,  7,  -2, 5,
@@ -973,20 +975,20 @@ describeWithFlags('matmulBatch', ALL_ENVS, () => {
 
     // da = dy * bT
     expect(da.shape).toEqual(a.shape);
-    expectArraysClose(da, [
+    expectArraysClose(await da.data(), [
       -72, -8, -56, 32, 3,   21,   -12, -40, 40, 36,  44, 51, -52, -44, -4,
       61,  49, 13,  -2, -10, -108, -9,  0,   -1, -24, 60, -6, 49,  26,  -40
     ]);
 
     // db = aT * dy
     expect(db.shape).toEqual(b.shape);
-    expectArraysClose(db, [
+    expectArraysClose(await db.data(), [
       -64, -26, -34, -6, -24, 4,   -77, -47, 51, -35, 63,  -3,  52,  -58, -20,
       23,  -12, 20,  60, 70,  -68, -80, 14,  10, 44,  -11, -32, -10, -46, -68
     ]);
   });
 
-  it('4d gradients: A x B', () => {
+  it('4d gradients: A x B', async () => {
     const a = tf.tensor4d(
         [
           -2, 3,  5,  -5, 3,  9,  -3, -5, 1,   1,  -9, 9,   -6, 6,  -8,
@@ -1027,7 +1029,7 @@ describeWithFlags('matmulBatch', ALL_ENVS, () => {
 
     // da = dy * bT
     expect(da.shape).toEqual(a.shape);
-    expectArraysClose(da, [
+    expectArraysClose(await da.data(), [
       -11,  26,  55,  27,  54,  9,   25,  -15, 5,   -3,   -12, -27, -63, 9,
       -14,  -54, 26,  20,  24,  56,  64,  35,  -41, 0,    11,  30,  -37, -1,
       31,   13,  12,  37,  2,   29,  97,  6,   60,  47,   31,  35,  -14, 24,
@@ -1054,7 +1056,7 @@ describeWithFlags('matmulBatch', ALL_ENVS, () => {
     ]);
   });
 
-  it('gradients: A x B^t', () => {
+  it('gradients: A x B^t', async () => {
     const a = tf.tensor3d(
         [
           -5, -5, -6, 8, -2, -8, 4, -7, -6, -9, -1, 3,  7,  -2, 5,
@@ -1080,19 +1082,19 @@ describeWithFlags('matmulBatch', ALL_ENVS, () => {
     const [da, db] = grads([a, b], dy);
 
     expect(da.shape).toEqual(a.shape);
-    expectArraysClose(da, [
+    expectArraysClose(await da.data(), [
       -42, 0,  -26,  0,  85,  28,  -19, -29, 51, -16, 6,   37,  94,  -27, 50,
       71,  24, -202, 46, -25, -31, -22, -87, 10, -7,  -80, -36, -15, 55,  35
     ]);
 
     expect(db.shape).toEqual(b.shape);
-    expectArraysClose(db, [
+    expectArraysClose(await db.data(), [
       14,  56, 7,    -155, -45, 55, 7,   72,  -67, -79, 7, 50, -69, -46, -52,
       -88, 49, -126, -68,  106, 31, -30, -27, 60,  -19, 5, 27, 43,  55,  -13
     ]);
   });
 
-  it('4d gradients: A x B^t', () => {
+  it('4d gradients: A x B^t', async () => {
     const a = tf.tensor4d(
         [
           -2, 3,  5,  -5, 3,  9,  -3, -5, 1,   1,  -9, 9,   -6, 6,  -8,
@@ -1139,7 +1141,7 @@ describeWithFlags('matmulBatch', ALL_ENVS, () => {
     const [da, db] = grads([a, b], dy);
 
     expect(da.shape).toEqual(a.shape);
-    expectArraysClose(da, [
+    expectArraysClose(await da.data(), [
       -48, -4,   72,  9,   60,  -1,  13,   -57, 64,  3,   -48, -11, -4,  -24,
       16,  38,   44,  -10, -55, -45, 92,   -43, 14,  -4,  71,  -61, -51, 16,
       46,  -57,  48,  78,  104, 57,  -17,  -11, -85, -33, 16,  1,   86,  21,
@@ -1152,7 +1154,7 @@ describeWithFlags('matmulBatch', ALL_ENVS, () => {
     ]);
 
     expect(db.shape).toEqual(b.shape);
-    expectArraysClose(db, [
+    expectArraysClose(await db.data(), [
       -27,  44,   -9,  -16, 85,  30,  -110, 38,  47,  -23, -39, -15, 0,    -76,
       -8,   -128, 26,  136, 31,  -26, -26,  39,  136, -85, -45, 93,  37,   -68,
       -112, -6,   90,  70,  169, -7,  15,   68,  -16, -33, -16, -47, -21,  0,
@@ -1165,7 +1167,7 @@ describeWithFlags('matmulBatch', ALL_ENVS, () => {
     ]);
   });
 
-  it('gradients: A^t x B', () => {
+  it('gradients: A^t x B', async () => {
     const a = tf.tensor3d(
         [
           -5, -5, -6, 8, -2, -8, 4, -7, -6, -9, -1, 3,  7,  -2, 5,
@@ -1187,19 +1189,19 @@ describeWithFlags('matmulBatch', ALL_ENVS, () => {
     const [da, db] = grads([a, b], dy);
 
     expect(da.shape).toEqual(a.shape);
-    expectArraysClose(da, [
+    expectArraysClose(await da.data(), [
       -72, 32, -8, 3,  -56, 21,  -12, 36,   -40, 44,  40, 51, -52, 61, -44,
       49,  -4, 13, -2, -9,  -10, 0,   -108, -1,  -24, 49, 60, 26,  -6, -40
     ]);
 
     expect(db.shape).toEqual(b.shape);
-    expectArraysClose(db, [
+    expectArraysClose(await db.data(), [
       -25, 0,   -72, -28, 8,  12, -67, -33, 3,   -87, 23, 17,  36,  -38, 44,
       -50, -20, 28,  48,  70, 12, 10,  -26, -40, 40,  -4, -34, -89, 20,  -2
     ]);
   });
 
-  it('gradients: A^t x B^t', () => {
+  it('gradients: A^t x B^t', async () => {
     const a = tf.tensor3d(
         [
           -5, -5, -6, 8, -2, -8, 4, -7, -6, -9, -1, 3,  7,  -2, 5,
@@ -1221,13 +1223,13 @@ describeWithFlags('matmulBatch', ALL_ENVS, () => {
     const [da, db] = grads([a, b], dy);
 
     expect(da.shape).toEqual(a.shape);
-    expectArraysClose(da, [
+    expectArraysClose(await da.data(), [
       -64, 24,  -46, 26,  -8, 3,  -16, 29,   -28, 8,  -16, 86, -36, 41, 4,
       4,   -60, 69,  -82, -9, 46, 7,   -100, 0,   -6, 70,  36, 9,   0,  -44
     ]);
 
     expect(db.shape).toEqual(b.shape);
-    expectArraysClose(db, [
+    expectArraysClose(await db.data(), [
       -25, -72, 8,  0,  -28, 12,  -67, 3,  23,  -33, -87, 17, 36, 44,  -20,
       -38, -50, 28, 48, 12,  -26, 70,  10, -40, 40,  -34, 20, -4, -89, -2
     ]);

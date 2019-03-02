@@ -45,7 +45,7 @@ describeWithFlags('fromPixels + regular math op', WEBGL_ENVS, () => {
 });
 
 describeWithFlags('gradients', ALL_ENVS, () => {
-  it('matmul + relu', () => {
+  it('matmul + relu', async () => {
     const a = tf.tensor2d([-1, 2, -3, 10, -20, 30], [2, 3]);
     const b = tf.tensor2d([2, -3, 4, -1, 2, -3], [3, 2]);
 
@@ -67,13 +67,17 @@ describeWithFlags('gradients', ALL_ENVS, () => {
     expect(da.shape).toEqual(a.shape);
     let transposeA = false;
     let transposeB = true;
-    expectArraysClose(da, tf.matMul(dedm, b, transposeA, transposeB));
+    expectArraysClose(
+        await da.data(),
+        await tf.matMul(dedm, b, transposeA, transposeB).data());
 
     // de/db = dot(aT, de/dy)
     expect(db.shape).toEqual(b.shape);
     transposeA = true;
     transposeB = false;
-    expectArraysClose(db, tf.matMul(a, dedm, transposeA, transposeB));
+    expectArraysClose(
+        await db.data(),
+        await tf.matMul(a, dedm, transposeA, transposeB).data());
   });
 
   it('grad(f)', () => {
@@ -186,7 +190,7 @@ describeWithFlags('gradients', ALL_ENVS, () => {
 });
 
 describeWithFlags('valueAndGradients', ALL_ENVS, () => {
-  it('matmul + relu', () => {
+  it('matmul + relu', async () => {
     const a = tf.tensor2d([-1, 2, -3, 10, -20, 30], [2, 3]);
     const b = tf.tensor2d([2, -3, 4, -1, 2, -3], [3, 2]);
 
@@ -200,7 +204,7 @@ describeWithFlags('valueAndGradients', ALL_ENVS, () => {
           return tf.sum(y);
         })([a, b]);
 
-    expectArraysClose(value, 10);
+    expectArraysClose(await value.data(), 10);
 
     // de/dy = 1
     // dy/dm = step(m)
@@ -211,15 +215,19 @@ describeWithFlags('valueAndGradients', ALL_ENVS, () => {
     // de/da = dot(de/dy, bT)
     let transposeA = false;
     let transposeB = true;
-    expectArraysClose(da, tf.matMul(dedm, b, transposeA, transposeB));
+    expectArraysClose(
+        await da.data(),
+        await tf.matMul(dedm, b, transposeA, transposeB).data());
 
     // de/db = dot(aT, de/dy)
     transposeA = true;
     transposeB = false;
-    expectArraysClose(db, tf.matMul(a, dedm, transposeA, transposeB));
+    expectArraysClose(
+        await db.data(),
+        await tf.matMul(a, dedm, transposeA, transposeB).data());
   });
 
-  it('matmul + relu + inner tidy', () => {
+  it('matmul + relu + inner tidy', async () => {
     const a = tf.tensor2d([-1, 2, -3, 10, -20, 30], [2, 3]);
     const b = tf.tensor2d([2, -3, 4, -1, 2, -3], [3, 2]);
 
@@ -235,7 +243,7 @@ describeWithFlags('valueAndGradients', ALL_ENVS, () => {
           });
         })([a, b]);
 
-    expectArraysClose(value, 10);
+    expectArraysClose(await value.data(), 10);
 
     // de/dy = 1
     // dy/dm = step(m)
@@ -246,12 +254,16 @@ describeWithFlags('valueAndGradients', ALL_ENVS, () => {
     // de/da = dot(de/dy, bT)
     let transposeA = false;
     let transposeB = true;
-    expectArraysClose(da, tf.matMul(dedm, b, transposeA, transposeB));
+    expectArraysClose(
+        await da.data(),
+        await tf.matMul(dedm, b, transposeA, transposeB).data());
 
     // de/db = dot(aT, de/dy)
     transposeA = true;
     transposeB = false;
-    expectArraysClose(db, tf.matMul(a, dedm, transposeA, transposeB));
+    expectArraysClose(
+        await db.data(),
+        await tf.matMul(a, dedm, transposeA, transposeB).data());
   });
 });
 

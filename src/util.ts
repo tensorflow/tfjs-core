@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {DataType, DataTypeMap, FlatVector, NumericDataType, RecursiveArray, TensorLike, TypedArray} from './types';
+import {DataType, DataTypeMap, FlatVector, RecursiveArray, TensorLike, TypedArray} from './types';
 
 /**
  * Shuffles the array in-place using Fisher-Yates algorithm.
@@ -369,7 +369,7 @@ export function squeezeShape(shape: number[], axis?: number[]):
   return {newShape, keptDims};
 }
 
-export function getTypedArrayFromDType<D extends NumericDataType>(
+export function getTypedArrayFromDType<D extends DataType>(
     dtype: D, size: number): DataTypeMap[D] {
   let values = null;
   if (dtype == null || dtype === 'float32') {

@@ -47,7 +47,7 @@ describeWithFlags('depthwiseConv2d packed', PACKED_ENVS, () => {
 });
 
 describeWithFlags('depthwiseConv2D', ALL_ENVS, () => {
-  it('input=1x3x3x1,f=2,s=1,d=1,p=valid,chMul=1', () => {
+  it('input=1x3x3x1,f=2,s=1,d=1,p=valid,chMul=1', async () => {
     const fSize = 2;
     const pad = 'valid';
     const stride = 1;
@@ -68,10 +68,10 @@ describeWithFlags('depthwiseConv2D', ALL_ENVS, () => {
     const result = tf.depthwiseConv2d(x, w, stride, pad);
     expect(result.shape).toEqual([1, 2, 2, 1]);
     const expected = [1.07022, 1.03167, 0.67041, 0.778863];
-    expectArraysClose(result, expected);
+    expectArraysClose(await result.data(), expected);
   });
 
-  it('input=1x5x5x1,f=3,s=1,d=1,p=valid,chMul=1', () => {
+  it('input=1x5x5x1,f=3,s=1,d=1,p=valid,chMul=1', async () => {
     const fSize = 3;
     const pad = 'valid';
     const stride = 1;
@@ -100,10 +100,10 @@ describeWithFlags('depthwiseConv2D', ALL_ENVS, () => {
       2.540022, 2.505885, 2.454062, 2.351701, 2.459601, 3.076421, 3.29848,
       3.437421, 2.93419
     ];
-    expectArraysClose(result, expected);
+    expectArraysClose(await result.data(), expected);
   });
 
-  it('input=1x3x3x1,f=2,s=1,d=2,p=valid,chMul=1', () => {
+  it('input=1x3x3x1,f=2,s=1,d=2,p=valid,chMul=1', async () => {
     const fSize = 2;
     const pad = 'valid';
     const stride = 1;
@@ -134,10 +134,10 @@ describeWithFlags('depthwiseConv2D', ALL_ENVS, () => {
     const expectedResult = tf.depthwiseConv2d(x, wDilated, stride, pad);
 
     expect(result.shape).toEqual(expectedResult.shape);
-    expectArraysClose(result, expectedResult);
+    expectArraysClose(await result.data(), expectedResult);
   });
 
-  it('input=1x5x5x1,f=3,s=1,d=2,p=valid,chMul=1', () => {
+  it('input=1x5x5x1,f=3,s=1,d=2,p=valid,chMul=1', async () => {
     const fSize = 3;
     const pad = 'valid';
     const stride = 1;
@@ -177,10 +177,10 @@ describeWithFlags('depthwiseConv2D', ALL_ENVS, () => {
     const expectedResult = tf.depthwiseConv2d(x, wDilated, stride, pad);
 
     expect(result.shape).toEqual(expectedResult.shape);
-    expectArraysClose(result, expectedResult);
+    expectArraysClose(await result.data(), expectedResult);
   });
 
-  it('input=1x3x3x2,f=2,s=1,d=1,p=same,chMul=1', () => {
+  it('input=1x3x3x2,f=2,s=1,d=1,p=same,chMul=1', async () => {
     const fSize = 2;
     const pad = 'same';
     const stride = 1;
@@ -208,10 +208,10 @@ describeWithFlags('depthwiseConv2D', ALL_ENVS, () => {
       1.10771, 0.430373, 1.23126, 0.290885, 0.372855, 0.3962, 0.379995,
       0.0490466, 0.410569, 0.10902, 0.0514242
     ];
-    expectArraysClose(result, expected);
+    expectArraysClose(await result.data(), expected);
   });
 
-  it('input=1x5x5x1,f=3,s=1,d=1,p=same,chMul=1', () => {
+  it('input=1x5x5x1,f=3,s=1,d=1,p=same,chMul=1', async () => {
     const fSize = 3;
     const pad = 'same';
     const stride = 1;
@@ -243,10 +243,10 @@ describeWithFlags('depthwiseConv2D', ALL_ENVS, () => {
       1.323994, 1.985572, 3.29848,  3.437421, 2.93419,  1.823238, 1.410545,
       2.352186, 2.19622,  1.348218, 0.774635
     ];
-    expectArraysClose(result, expected);
+    expectArraysClose(await result.data(), expected);
   });
 
-  it('input=1x3x3x2,f=2,s=1,d=2,p=same,chMul=1', () => {
+  it('input=1x3x3x2,f=2,s=1,d=2,p=same,chMul=1', async () => {
     const fSize = 2;
     const pad = 'same';
     const stride = 1;
@@ -295,10 +295,10 @@ describeWithFlags('depthwiseConv2D', ALL_ENVS, () => {
     const expectedResult = tf.depthwiseConv2d(x, wDilated, stride, pad);
 
     expect(result.shape).toEqual(expectedResult.shape);
-    expectArraysClose(result, expectedResult);
+    expectArraysClose(await result.data(), expectedResult);
   });
 
-  it('input=1x5x5x1,f=3,s=1,d=2,p=same,chMul=1', () => {
+  it('input=1x5x5x1,f=3,s=1,d=2,p=same,chMul=1', async () => {
     const fSize = 3;
     const pad = 'valid';
     const stride = 1;
@@ -327,10 +327,10 @@ describeWithFlags('depthwiseConv2D', ALL_ENVS, () => {
       2.540022, 2.505885, 2.454062, 2.351701, 2.459601, 3.076421, 3.29848,
       3.437421, 2.93419
     ];
-    expectArraysClose(result, expected);
+    expectArraysClose(await result.data(), expected);
   });
 
-  it('input=1x3x3x2,f=2,s=1,p=same,chMul=2', () => {
+  it('input=1x3x3x2,f=2,s=1,p=same,chMul=2', async () => {
     const fSize = 2;
     const pad = 'same';
     const stride = 1;
@@ -362,10 +362,10 @@ describeWithFlags('depthwiseConv2D', ALL_ENVS, () => {
       0.0746509, 0.0633184, 0.74101,  0.41159,  0.403195, 0.176938,
       0.602415,  0.345499,  0.226819, 0.252651, 0.144682, 0.213927
     ];
-    expectArraysClose(result, expected);
+    expectArraysClose(await result.data(), expected);
   });
 
-  it('input=2x3x3x2,f=2,s=1,p=same,chMul=2', () => {
+  it('input=2x3x3x2,f=2,s=1,p=same,chMul=2', async () => {
     const fSize = 2;
     const pad = 'same';
     const stride = 1;
@@ -405,11 +405,11 @@ describeWithFlags('depthwiseConv2D', ALL_ENVS, () => {
       0.403335, 0.419286, 0.587321, 0.600655, 0.884853,  0.190907, 0.719914,
       0.346842, 0.598472
     ];
-    expectArraysClose(result, expected);
+    expectArraysClose(await result.data(), expected);
   });
 
   it('input=2x3x3x2,f=2,s=1,d=2,p=same,chMul=2',
-     () => {
+     async () => {
        const fSize = 2;
        const pad = 'same';
        const stride = 1;
@@ -483,7 +483,7 @@ describeWithFlags('depthwiseConv2D', ALL_ENVS, () => {
            tf.depthwiseConv2d(x, wDilated, stride, pad, 'NHWC', noDilation);
 
        expect(result.shape).toEqual(expectedResult.shape);
-       expectArraysClose(result, expectedResult);
+       expectArraysClose(await result.data(), expectedResult);
      });
 
   it('Tensor3D is allowed', () => {
@@ -513,7 +513,7 @@ describeWithFlags('depthwiseConv2D', ALL_ENVS, () => {
     expect(result.shape).toEqual([3, 3, inDepth * chMul]);
   });
 
-  it('TensorLike', () => {
+  it('TensorLike', async () => {
     const pad = 'valid';
     const stride = 1;
 
@@ -527,9 +527,9 @@ describeWithFlags('depthwiseConv2D', ALL_ENVS, () => {
     const result = tf.depthwiseConv2d(x, w, stride, pad);
 
     const expected = [1.07022, 1.03167, 0.67041, 0.778863];
-    expectArraysClose(result, expected);
+    expectArraysClose(await result.data(), expected);
   });
-  it('TensorLike Chained', () => {
+  it('TensorLike Chained', async () => {
     const pad = 'valid';
     const stride = 1;
     const inDepth = 1;
@@ -546,7 +546,7 @@ describeWithFlags('depthwiseConv2D', ALL_ENVS, () => {
     expect(result.shape).toEqual([1, 2, 2, 1]);
 
     const expected = [1.07022, 1.03167, 0.67041, 0.778863];
-    expectArraysClose(result, expected);
+    expectArraysClose(await result.data(), expected);
   });
 
   it('throws when passed x as a non-tensor', () => {
@@ -584,7 +584,7 @@ describeWithFlags('depthwiseConv2D', ALL_ENVS, () => {
         .toThrowError(e);
   });
 
-  it('accepts a tensor-like object', () => {
+  it('accepts a tensor-like object', async () => {
     const pad = 'valid';
     const stride = 1;
     // 1x3x3x1
@@ -599,7 +599,7 @@ describeWithFlags('depthwiseConv2D', ALL_ENVS, () => {
     expect(result.shape).toEqual([1, 2, 2, 1]);
 
     const expected = [1.07022, 1.03167, 0.67041, 0.778863];
-    expectArraysClose(result, expected);
+    expectArraysClose(await result.data(), expected);
   });
 });
 

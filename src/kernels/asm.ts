@@ -1,9 +1,13 @@
 import {Tensor} from '../tensor';
+import {worker} from './worker';
 
 function makeWorkers(n: number) {
   const workers = [];
+  const blobURL = URL.createObjectURL(new Blob(
+      ['(', worker.toString(), ')()'], {type: 'application/javascript'}));
+
   for (let i = 0; i < n; i++) {
-    workers.push(new Worker('worker/worker.js'));
+    workers.push(new Worker(blobURL));
   }
   return workers;
 }
