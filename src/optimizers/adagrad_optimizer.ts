@@ -68,7 +68,7 @@ export class AdagradOptimizer extends Optimizer {
     }
   }
 
-  dispose() {
+  dispose(): void {
     this.epsilon.dispose();
     this.c.dispose();
     if (this.accumulatedGrads != null) {
@@ -82,6 +82,8 @@ export class AdagradOptimizer extends Optimizer {
       initialAccumulatorValue: this.initialAccumulatorValue,
     };
   }
+
+  /** @nocollapse */
   static fromConfig<T extends Serializable>(
       cls: SerializableConstructor<T>, config: ConfigDict): T {
     return new cls(config.learningRate, config.initialAccumulatorValue);

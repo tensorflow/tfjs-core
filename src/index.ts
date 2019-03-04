@@ -23,11 +23,11 @@ import './kernels/backend_cpu';
 
 import {nextFrame} from './browser_util';
 import * as environment from './environment';
-import {Environment, enableProdMode} from './environment';
-
+import {deprecationWarn, disableDeprecationWarnings, enableDebugMode, enableProdMode, Environment} from './environment';
 // Serialization.
 import * as io from './io/io';
 import * as math from './math';
+import * as browser from './ops/browser';
 import * as serialization from './serialization';
 import {setOpHandler} from './tensor';
 import * as test_util from './test_util';
@@ -36,7 +36,6 @@ import {version} from './version';
 import * as webgl from './webgl';
 
 export {InferenceModel, ModelPredictConfig} from './model_types';
-
 // Optimizers.
 export {AdadeltaOptimizer} from './optimizers/adadelta_optimizer';
 export {AdagradOptimizer} from './optimizers/adagrad_optimizer';
@@ -67,10 +66,17 @@ export const disposeVariables = Environment.disposeVariables;
 export const memory = Environment.memory;
 export {version as version_core};
 
-export {nextFrame};
+// Top-level method exports.
+export {
+  nextFrame,
+  enableProdMode,
+  enableDebugMode,
+  disableDeprecationWarnings,
+  deprecationWarn
+};
 
 // Second level exports.
-export {environment, io, math, serialization, test_util, util, webgl, enableProdMode};
+export {browser, environment, io, math, serialization, test_util, util, webgl};
 
 // Backend specific.
 export {KernelBackend, BackendTimingInfo, DataMover, DataStorage} from './kernels/backend';

@@ -16,13 +16,22 @@
  */
 
 import {tensorToString} from './tensor_format';
-import {DataType, DataTypeMap, DataValues, NumericDataType, Rank, ShapeMap, SingleValueMap, TensorLike, TensorLike1D, TensorLike3D, TensorLike4D, TypedArray} from './types';
+import {ArrayMap, DataType, DataTypeMap, DataValues, NumericDataType, Rank, ShapeMap, SingleValueMap, TensorLike, TensorLike1D, TensorLike3D, TensorLike4D, TypedArray} from './types';
 import * as util from './util';
-import {computeStrides} from './util';
+import {computeStrides, toNestedArray} from './util';
 
 export interface TensorData<D extends DataType> {
   dataId?: DataId;
   values?: DataTypeMap[D];
+}
+
+// This interface mimics KernelBackend (in backend.ts), which would create a
+// circular dependency if imported.
+export interface Backend {
+  read(dataId: object): Promise<DataValues>;
+  readSync(dataId: object): DataValues;
+  disposeData(dataId: object): void;
+  write(dataId: object, values: DataValues): void;
 }
 
 /**
@@ -46,7 +55,7 @@ export class TensorBuffer<R extends Rank, D extends DataType = 'float32'> {
       const n = values.length;
       util.assert(
           n === this.size,
-          `Length of values '${n}' does not match the size ` +
+          () => `Length of values '${n}' does not match the size ` +
               `inferred by the shape '${this.size}'.`);
     }
     if (dtype === 'complex64') {
@@ -73,7 +82,7 @@ export class TensorBuffer<R extends Rank, D extends DataType = 'float32'> {
     }
     util.assert(
         locs.length === this.rank,
-        `The number of provided coordinates (${locs.length}) must ` +
+        () => `The number of provided coordinates (${locs.length}) must ` +
             `match the rank (${this.rank})`);
 
     const index = this.locToIndex(locs);
@@ -139,7 +148,7 @@ export class TensorBuffer<R extends Rank, D extends DataType = 'float32'> {
 }
 
 export interface TensorTracker {
-  registerTensor(t: Tensor): void;
+  registerTensor(t: Tensor, backend?: Backend): void;
   disposeTensor(t: Tensor): void;
   write(dataId: DataId, values: DataValues): void;
   read(dataId: DataId): Promise<DataValues>;
@@ -185,11 +194,12 @@ export interface OpHandler {
   unstack<T extends Tensor>(value: T, axis: number): Tensor[];
   pad<T extends Tensor>(
       x: T, paddings: Array<[number, number]>, constantValue: number): T;
-  batchNormalization<R extends Rank>(
+  batchNorm<R extends Rank>(
       x: Tensor<R>, mean: Tensor<R>|Tensor1D|TensorLike,
-      variance: Tensor<R>|Tensor1D|TensorLike, varianceEpsilon: number,
+      variance: Tensor<R>|Tensor1D|TensorLike,
+      offset?: Tensor<R>|Tensor1D|TensorLike,
       scale?: Tensor<R>|Tensor1D|TensorLike,
-      offset?: Tensor<R>|Tensor1D|TensorLike): Tensor<R>;
+      varianceEpsilon?: number): Tensor<R>;
   all<T extends Tensor>(x: Tensor, axis: number|number[], keepDims: boolean): T;
   any<T extends Tensor>(x: Tensor, axis: number|number[], keepDims: boolean): T;
   logSumExp<T extends Tensor>(
@@ -351,6 +361,12 @@ export interface OpHandler {
 let trackerFn: () => TensorTracker = null;
 // Used by chaining methods to call into ops.
 let opHandler: OpHandler = null;
+// Used to warn about deprecated methods.
+let deprecationWarningFn: (msg: string) => void = null;
+// This here so that we can use this method on dev branches and keep the
+// functionality at master.
+// tslint:disable-next-line:no-unused-expression
+[deprecationWarningFn];
 
 /**
  * An external consumer can register itself as the tensor tracker. This way
@@ -367,6 +383,14 @@ export function setTensorTracker(fn: () => TensorTracker) {
  */
 export function setOpHandler(handler: OpHandler) {
   opHandler = handler;
+}
+
+/**
+ * Sets the deprecation warning function to be used by this file. This way the
+ * Tensor class can be a leaf but still use the environment.
+ */
+export function setDeprecationWarningFn(fn: (msg: string) => void) {
+  deprecationWarningFn = fn;
 }
 
 /**
@@ -411,8 +435,8 @@ export class Tensor<R extends Rank = Rank> {
   readonly strides: number[];
 
   protected constructor(
-      shape: ShapeMap[R], dtype: DataType, values?: DataValues,
-      dataId?: DataId) {
+      shape: ShapeMap[R], dtype: DataType, values?: DataValues, dataId?: DataId,
+      backend?: Backend) {
     this.shape = shape.slice();
     this.dtype = dtype || 'float32';
     this.size = util.sizeFromShape(shape);
@@ -420,7 +444,7 @@ export class Tensor<R extends Rank = Rank> {
     this.dataId = dataId != null ? dataId : {};
     this.id = trackerFn().nextTensorId();
     this.rankType = (this.rank < 5 ? this.rank.toString() : 'higher') as R;
-    trackerFn().registerTensor(this);
+    trackerFn().registerTensor(this, backend);
     if (values != null) {
       trackerFn().write(this.dataId, values);
     }
@@ -432,8 +456,9 @@ export class Tensor<R extends Rank = Rank> {
    */
   static make<T extends Tensor<R>, D extends DataType = 'float32',
                                              R extends Rank = Rank>(
-      shape: ShapeMap[R], data: TensorData<D>, dtype?: D): T {
-    return new Tensor(shape, dtype, data.values, data.dataId) as T;
+      shape: ShapeMap[R], data: TensorData<D>, dtype?: D,
+      backend?: Backend): T {
+    return new Tensor(shape, dtype, data.values, data.dataId, backend) as T;
   }
 
   /** Flatten a Tensor to a 1D array. */
@@ -447,7 +472,7 @@ export class Tensor<R extends Rank = Rank> {
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
   asScalar(): Scalar {
     this.throwIfDisposed();
-    util.assert(this.size === 1, 'The array must have only 1 element.');
+    util.assert(this.size === 1, () => 'The array must have only 1 element.');
     return this.reshape<Rank.R0>([]);
   }
 
@@ -529,35 +554,36 @@ export class Tensor<R extends Rank = Rank> {
     return this.shape.length;
   }
 
-  /**
-   * Returns the value in the tensor at the provided location.
-   * If using WebGL backend, this is a blocking call.
-   * Prefer calling the `async data()[flatIndex]` method instead.
-   *
-   * @param locs The location indices.
-   */
-  get(...locs: number[]) {
-    util.assert(
-        locs.length === this.rank,
-        'Number of coordinates in get() must match the rank of the tensor');
-    util.assert(
-        this.dtype !== 'complex64',
-        'Tensor.get() is not supported for complex64 tensors yet.');
-    this.throwIfDisposed();
-    if (locs.length === 0) {
-      locs = [0];
-    }
-    let index = locs[locs.length - 1];
-    for (let i = 0; i < locs.length - 1; ++i) {
-      index += this.strides[i] * locs[i];
-    }
-    return this.dataSync()[index];
+  /** Returns a promise of `tf.TensorBuffer` that holds the underlying data. */
+  /** @doc {heading: 'Tensors', subheading: 'Classes'} */
+  async buffer<D extends DataType = 'float32'>(): Promise<TensorBuffer<R, D>> {
+    const vals = await this.data();
+    return opHandler.buffer(this.shape, this.dtype as D, vals);
   }
 
   /** Returns a `tf.TensorBuffer` that holds the underlying data. */
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
-  buffer<D extends DataType>(): TensorBuffer<R, D> {
+  bufferSync<D extends DataType = 'float32'>(): TensorBuffer<R, D> {
     return opHandler.buffer(this.shape, this.dtype as D, this.dataSync());
+  }
+
+  /**
+   * Returns the tensor data as a nested array. The transfer of data is done
+   * asynchronously.
+   */
+  /** @doc {heading: 'Tensors', subheading: 'Classes'} */
+  async array(): Promise<ArrayMap[R]> {
+    const vals = await this.data();
+    return toNestedArray(this.shape, vals);
+  }
+
+  /**
+   * Returns the tensor data as a nested array. The transfer of data is done
+   * synchronously.
+   */
+  /** @doc {heading: 'Tensors', subheading: 'Classes'} */
+  arraySync(): ArrayMap[R] {
+    return toNestedArray(this.shape, this.dataSync());
   }
 
   /**
@@ -769,23 +795,40 @@ export class Tensor<R extends Rank = Rank> {
   stack(x: Tensor, axis = 0): Tensor {
     return opHandler.stack([this, x], axis);
   }
-  unstack(x: Tensor, axis = 0): Tensor[] {
+  unstack(axis = 0): Tensor[] {
     return opHandler.unstack(this, axis);
   }
   pad<T extends Tensor>(
       this: T, paddings: Array<[number, number]>, constantValue = 0): T {
     return opHandler.pad(this, paddings, constantValue);
   }
+  /**
+   * @deprecated Use `tf.batchNorm` instead, and note the positional argument
+   *     change of scale, offset, and varianceEpsilon.
+   */
   batchNormalization(
       mean: Tensor<R>|Tensor1D|TensorLike,
       variance: Tensor<R>|Tensor1D|TensorLike, varianceEpsilon = .001,
       scale?: Tensor<R>|Tensor1D|TensorLike,
       offset?: Tensor<R>|Tensor1D|TensorLike): Tensor<R> {
-    this.throwIfDisposed();
-    return opHandler.batchNormalization(
-        this, mean, variance, varianceEpsilon, scale, offset);
+    deprecationWarningFn(
+        'tf.batchNormalization() is going away. ' +
+        'Use tf.batchNorm() instead, and note the positional argument change ' +
+        'of scale, offset, and varianceEpsilon');
+    return this.batchNorm(mean, variance, offset, scale, varianceEpsilon);
   }
 
+  batchNorm(
+      mean: Tensor<R>|Tensor1D|TensorLike,
+      variance: Tensor<R>|Tensor1D|TensorLike,
+      offset?: Tensor<R>|Tensor1D|TensorLike,
+      scale?: Tensor<R>|Tensor1D|TensorLike,
+      varianceEpsilon = .001,
+      ): Tensor<R> {
+    this.throwIfDisposed();
+    return opHandler.batchNorm(
+        this, mean, variance, offset, scale, varianceEpsilon);
+  }
   // Reduction ops.
   all<T extends Tensor>(axis: number|number[] = null, keepDims = false): T {
     this.throwIfDisposed();

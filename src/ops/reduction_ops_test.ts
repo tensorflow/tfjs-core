@@ -17,29 +17,29 @@
 
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
-import {ALL_ENVS, expectArraysClose, expectArraysEqual, expectNumbersClose} from '../test_util';
+import {ALL_ENVS, expectArraysClose, expectArraysEqual, WEBGL_ENVS} from '../test_util';
 
 import * as reduce_util from './reduce_util';
 
 describeWithFlags('Reduction: min', ALL_ENVS, () => {
   it('Tensor1D', () => {
     const a = tf.tensor1d([3, -1, 0, 100, -7, 2]);
-    expectNumbersClose(tf.min(a).get(), -7);
+    expectArraysClose(tf.min(a), -7);
   });
 
   it('ignores NaNs', () => {
     const a = tf.tensor1d([3, NaN, 2]);
-    expect(tf.min(a).get()).toEqual(2);
+    expectArraysEqual(tf.min(a), 2);
   });
 
   it('2D', () => {
     const a = tf.tensor2d([3, -1, 0, 100, -7, 2], [2, 3]);
-    expectNumbersClose(tf.min(a).get(), -7);
+    expectArraysClose(tf.min(a), -7);
   });
 
   it('2D axis=[0,1]', () => {
     const a = tf.tensor2d([3, -1, 0, 100, -7, 2], [2, 3]);
-    expectNumbersClose(tf.min(a, [0, 1]).get(), -7);
+    expectArraysClose(tf.min(a, [0, 1]), -7);
   });
 
   it('2D, axis=0', () => {
@@ -82,7 +82,7 @@ describeWithFlags('Reduction: min', ALL_ENVS, () => {
   });
 
   it('accepts a tensor-like object', () => {
-    expectNumbersClose(tf.min([3, -1, 0, 100, -7, 2]).get(), -7);
+    expectArraysClose(tf.min([3, -1, 0, 100, -7, 2]), -7);
   });
 
   it('min gradient: Scalar', () => {
@@ -209,8 +209,7 @@ describeWithFlags('Reduction: min', ALL_ENVS, () => {
 
   it('throws error for string tensor', () => {
     expect(() => tf.min(['a']))
-        .toThrowError(
-            /Argument 'x' passed to 'min' must be numeric tensor/);
+        .toThrowError(/Argument 'x' passed to 'min' must be numeric tensor/);
   });
 });
 
@@ -218,27 +217,27 @@ describeWithFlags('Reduction: max', ALL_ENVS, () => {
   it('with one element dominating', () => {
     const a = tf.tensor1d([3, -1, 0, 100, -7, 2]);
     const r = tf.max(a);
-    expectNumbersClose(r.get(), 100);
+    expectArraysClose(r, 100);
   });
 
   it('with all elements being the same', () => {
     const a = tf.tensor1d([3, 3, 3]);
     const r = tf.max(a);
-    expectNumbersClose(r.get(), 3);
+    expectArraysClose(r, 3);
   });
 
   it('ignores NaNs', () => {
-    expectNumbersClose(tf.max(tf.tensor1d([3, NaN, 2])).get(), 3);
+    expectArraysClose(tf.max(tf.tensor1d([3, NaN, 2])), 3);
   });
 
   it('2D', () => {
     const a = tf.tensor2d([3, -1, 0, 100, -7, 2], [2, 3]);
-    expectNumbersClose(tf.max(a).get(), 100);
+    expectArraysClose(tf.max(a), 100);
   });
 
   it('2D axis=[0,1]', () => {
     const a = tf.tensor2d([3, -1, 0, 100, -7, 2], [2, 3]);
-    expectNumbersClose(tf.max(a, [0, 1]).get(), 100);
+    expectArraysClose(tf.max(a, [0, 1]), 100);
   });
 
   it('2D, axis=0', () => {
@@ -292,7 +291,7 @@ describeWithFlags('Reduction: max', ALL_ENVS, () => {
 
   it('accepts a tensor-like object', () => {
     const r = tf.max([3, -1, 0, 100, -7, 2]);
-    expectNumbersClose(r.get(), 100);
+    expectArraysClose(r, 100);
   });
 
   it('max gradient: Scalar', () => {
@@ -419,8 +418,7 @@ describeWithFlags('Reduction: max', ALL_ENVS, () => {
 
   it('throws error for string tensor', () => {
     expect(() => tf.max(['a']))
-        .toThrowError(
-            /Argument 'x' passed to 'max' must be numeric tensor/);
+        .toThrowError(/Argument 'x' passed to 'max' must be numeric tensor/);
   });
 });
 
@@ -429,14 +427,14 @@ describeWithFlags('Reduction: argmax', ALL_ENVS, () => {
     const a = tf.tensor1d([1, 0, 3, 2]);
     const result = tf.argMax(a);
     expect(result.dtype).toBe('int32');
-    expect(result.get()).toBe(2);
+    expectArraysEqual(result, 2);
   });
 
   it('one value', () => {
     const a = tf.tensor1d([10]);
     const result = tf.argMax(a);
     expect(result.dtype).toBe('int32');
-    expect(result.get()).toBe(0);
+    expectArraysEqual(result, 0);
   });
 
   it('N > than parallelization threshold', () => {
@@ -448,7 +446,19 @@ describeWithFlags('Reduction: argmax', ALL_ENVS, () => {
     const a = tf.tensor1d(values);
     const result = tf.argMax(a);
     expect(result.dtype).toBe('int32');
-    expect(result.get()).toBe(n - 1);
+    expectArraysEqual(result, n - 1);
+  });
+
+  it('3D, N > than parallelization threshold', () => {
+    const n = reduce_util.PARALLELIZE_THRESHOLD * 2;
+    const values = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+      values[i] = i;
+    }
+    const a = tf.tensor3d(values, [1, 1, n]);
+    const result = tf.argMax(a, -1);
+    expect(result.dtype).toBe('int32');
+    expectArraysEqual(result, n - 1);
   });
 
   it('max index corresponds to start of a non-initial window', () => {
@@ -460,18 +470,35 @@ describeWithFlags('Reduction: argmax', ALL_ENVS, () => {
     const a = tf.tensor1d(values);
     const result = tf.argMax(a);
     expect(result.dtype).toBe('int32');
-    expect(result.get()).toBe(index);
+    expectArraysEqual(result, index);
+  });
+
+  it('5D, max index corresponds to start of a non-initial window', () => {
+    const n = reduce_util.PARALLELIZE_THRESHOLD * 2;
+    const windowSize = reduce_util.computeOptimalWindowSize(n);
+    const values = new Float32Array(n);
+    const index = windowSize * 2;
+    values[index] = 1;
+    const a = tf.tensor5d(values, [1, 1, 1, 1, n]);
+    const result = tf.argMax(a, -1);
+    expect(result.dtype).toBe('int32');
+    expectArraysEqual(result, index);
   });
 
   it('ignores NaNs', () => {
     const a = tf.tensor1d([0, 3, 5, NaN, 3]);
     const res = tf.argMax(a);
     expect(res.dtype).toBe('int32');
-    expect(res.get()).toBe(2);
+    expectArraysEqual(res, 2);
   });
 
   it('2D, no axis specified', () => {
     const a = tf.tensor2d([3, -1, 0, 100, -7, 2], [2, 3]);
+    expectArraysEqual(tf.argMax(a), [1, 0, 1]);
+  });
+
+  it('4D, no axis specified', () => {
+    const a = tf.tensor4d([3, -1, 0, 100, -7, 2], [2, 1, 1, 3]);
     expectArraysEqual(tf.argMax(a), [1, 0, 1]);
   });
 
@@ -480,6 +507,15 @@ describeWithFlags('Reduction: argmax', ALL_ENVS, () => {
     const r = tf.argMax(a, 0);
 
     expect(r.shape).toEqual([3]);
+    expect(r.dtype).toBe('int32');
+    expectArraysEqual(r, [1, 0, 1]);
+  });
+
+  it('6D, axis=0', () => {
+    const a = tf.tensor6d([3, -1, 0, 100, -7, 2], [2, 1, 1, 1, 1, 3]);
+    const r = tf.argMax(a, 0);
+
+    expect(r.shape).toEqual([1, 1, 1, 1, 3]);
     expect(r.dtype).toBe('int32');
     expectArraysEqual(r, [1, 0, 1]);
   });
@@ -506,14 +542,14 @@ describeWithFlags('Reduction: argmax', ALL_ENVS, () => {
   it('accepts a tensor-like object', () => {
     const result = tf.argMax([1, 0, 3, 2]);
     expect(result.dtype).toBe('int32');
-    expect(result.get()).toBe(2);
+    expectArraysEqual(result, 2);
   });
 
   it('accepts tensor with bool values', () => {
     const t = tf.tensor1d([0, 1], 'bool');
     const result = tf.argMax(t);
     expect(result.dtype).toBe('int32');
-    expect(result.get()).toBe(1);
+    expectArraysEqual(result, 1);
   });
 
   it('has gradient', () => {
@@ -528,8 +564,70 @@ describeWithFlags('Reduction: argmax', ALL_ENVS, () => {
 
   it('throws error for string tensor', () => {
     expect(() => tf.argMax(['a']))
-        .toThrowError(
-            /Argument 'x' passed to 'argMax' must be numeric tensor/);
+        .toThrowError(/Argument 'x' passed to 'argMax' must be numeric tensor/);
+  });
+});
+
+describeWithFlags('Reduction: webgl packed input', WEBGL_ENVS, () => {
+  it('argmax 3D, odd number of rows, axis = -1', () => {
+    const webglLazilyUnpackFlagSaved = tf.ENV.get('WEBGL_LAZILY_UNPACK');
+    tf.ENV.set('WEBGL_LAZILY_UNPACK', true);
+    const webglPackBinaryOperationsFlagSaved =
+        tf.ENV.get('WEBGL_PACK_BINARY_OPERATIONS');
+    tf.ENV.set('WEBGL_PACK_BINARY_OPERATIONS', true);
+
+    const a = tf.tensor3d([3, 2, 5, 100, -7, 2], [2, 1, 3]).add(1);
+    const r = tf.argMax(a, -1);
+    tf.ENV.set('WEBGL_LAZILY_UNPACK', webglLazilyUnpackFlagSaved);
+    tf.ENV.set(
+        'WEBGL_PACK_BINARY_OPERATIONS', webglPackBinaryOperationsFlagSaved);
+
+    expect(r.dtype).toBe('int32');
+    expectArraysEqual(r, [2, 0]);
+  });
+
+  it('argmin 4D, odd number of rows, axis = -1', () => {
+    const webglLazilyUnpackFlagSaved = tf.ENV.get('WEBGL_LAZILY_UNPACK');
+    tf.ENV.set('WEBGL_LAZILY_UNPACK', true);
+    const webglPackBinaryOperationsFlagSaved =
+        tf.ENV.get('WEBGL_PACK_BINARY_OPERATIONS');
+    tf.ENV.set('WEBGL_PACK_BINARY_OPERATIONS', true);
+
+    const a =
+        tf.tensor4d(
+              [3, 2, 5, 100, -7, 2, 8, 7, -5, 101, 7, -2, 100, -7, 2, 8, 7, -5],
+              [1, 2, 3, 3])
+            .add(1);
+    const r = tf.argMin(a, -1);
+    tf.ENV.set('WEBGL_LAZILY_UNPACK', webglLazilyUnpackFlagSaved);
+    tf.ENV.set(
+        'WEBGL_PACK_BINARY_OPERATIONS', webglPackBinaryOperationsFlagSaved);
+
+    expect(r.dtype).toBe('int32');
+    expectArraysEqual(r, [1, 1, 2, 2, 1, 2]);
+  });
+
+  it('should not leak memory when called after unpacked op', () => {
+    const webglPackBinaryOperationsFlagSaved =
+        tf.ENV.get('WEBGL_PACK_BINARY_OPERATIONS');
+    tf.ENV.set('WEBGL_PACK_BINARY_OPERATIONS', false);
+
+    const a =
+        tf.tensor5d(
+              [3, 2, 5, 100, -7, 2, 8, 7, -5, 101, 7, -2, 100, -7, 2, 8, 7, -5],
+              [1, 2, 3, 1, 3])
+            .add(1);
+    const startNumBytes = tf.memory().numBytes;
+    const startNumTensors = tf.memory().numTensors;
+    const r = tf.argMin(a, -1);
+    tf.ENV.set(
+        'WEBGL_PACK_BINARY_OPERATIONS', webglPackBinaryOperationsFlagSaved);
+    const endNumBytes = tf.memory().numBytes;
+    const endNumTensors = tf.memory().numTensors;
+    expect(endNumBytes - startNumBytes).toEqual(24);
+    expect(endNumTensors - startNumTensors).toEqual(1);
+    expect(r.dtype).toBe('int32');
+    expectArraysEqual(r, [1, 1, 2, 2, 1, 2]);
   });
 });
 
@@ -537,13 +635,13 @@ describeWithFlags('Reduction: argmin', ALL_ENVS, () => {
   it('Tensor1D', () => {
     const a = tf.tensor1d([1, 0, 3, 2]);
     const result = tf.argMin(a);
-    expect(result.get()).toBe(1);
+    expectArraysEqual(result, 1);
   });
 
   it('one value', () => {
     const a = tf.tensor1d([10]);
     const result = tf.argMin(a);
-    expect(result.get()).toBe(0);
+    expectArraysEqual(result, 0);
   });
 
   it('N > than parallelization threshold', () => {
@@ -555,7 +653,19 @@ describeWithFlags('Reduction: argmin', ALL_ENVS, () => {
     const a = tf.tensor1d(values);
     const result = tf.argMin(a);
     expect(result.dtype).toBe('int32');
-    expect(result.get()).toBe(n - 1);
+    expectArraysEqual(result, n - 1);
+  });
+
+  it('4D, N > than parallelization threshold', () => {
+    const n = reduce_util.PARALLELIZE_THRESHOLD * 2;
+    const values = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+      values[i] = n - i;
+    }
+    const a = tf.tensor4d(values, [1, 1, 1, n]);
+    const result = tf.argMin(a, -1);
+    expect(result.dtype).toBe('int32');
+    expectArraysEqual(result, n - 1);
   });
 
   it('min index corresponds to start of a non-initial window', () => {
@@ -567,13 +677,19 @@ describeWithFlags('Reduction: argmin', ALL_ENVS, () => {
     const a = tf.tensor1d(values);
     const result = tf.argMin(a);
     expect(result.dtype).toBe('int32');
-    expect(result.get()).toBe(index);
+    expectArraysEqual(result, index);
   });
 
   it('ignores NaNs', () => {
     const a = tf.tensor1d([5, 0, NaN, -1, 3]);
     const res = tf.argMin(a);
-    expect(res.get()).toBe(3);
+    expectArraysEqual(res, 3);
+  });
+
+  it('3D, ignores NaNs', () => {
+    const a = tf.tensor3d([5, 0, NaN, -1, 3], [1, 1, 5]);
+    const res = tf.argMin(a, -1);
+    expectArraysEqual(res, 3);
   });
 
   it('2D, no axis specified', () => {
@@ -609,14 +725,14 @@ describeWithFlags('Reduction: argmin', ALL_ENVS, () => {
 
   it('accepts a tensor-like object', () => {
     const result = tf.argMin([1, 0, 3, 2]);
-    expect(result.get()).toBe(1);
+    expectArraysEqual(result, 1);
   });
 
   it('accepts tensor with bool values', () => {
     const t = tf.tensor1d([0, 1], 'bool');
     const result = tf.argMin(t);
     expect(result.dtype).toBe('int32');
-    expect(result.get()).toBe(0);
+    expectArraysEqual(result, 0);
   });
 
   it('has gradient', () => {
@@ -631,8 +747,7 @@ describeWithFlags('Reduction: argmin', ALL_ENVS, () => {
 
   it('throws error for string tensor', () => {
     expect(() => tf.argMin(['a']))
-        .toThrowError(
-            /Argument 'x' passed to 'argMin' must be numeric tensor/);
+        .toThrowError(/Argument 'x' passed to 'argMin' must be numeric tensor/);
   });
 });
 
@@ -640,21 +755,21 @@ describeWithFlags('Reduction: logSumExp', ALL_ENVS, () => {
   it('0', () => {
     const a = tf.scalar(0);
     const result = tf.logSumExp(a);
-    expectNumbersClose(result.get(), 0);
+    expectArraysClose(result, 0);
   });
 
   it('basic', () => {
     const a = tf.tensor1d([1, 2, -3]);
     const result = tf.logSumExp(a);
 
-    expectNumbersClose(
-        result.get(), Math.log(Math.exp(1) + Math.exp(2) + Math.exp(-3)));
+    expectArraysClose(
+        result, Math.log(Math.exp(1) + Math.exp(2) + Math.exp(-3)));
   });
 
   it('propagates NaNs', () => {
     const a = tf.tensor1d([1, 2, NaN]);
     const result = tf.logSumExp(a);
-    expect(result.get()).toEqual(NaN);
+    expectArraysEqual(result, NaN);
   });
 
   it('axes=0 in 2D array', () => {
@@ -737,8 +852,8 @@ describeWithFlags('Reduction: logSumExp', ALL_ENVS, () => {
 
   it('accepts a tensor-like object', () => {
     const result = tf.logSumExp([1, 2, -3]);
-    expectNumbersClose(
-        result.get(), Math.log(Math.exp(1) + Math.exp(2) + Math.exp(-3)));
+    expectArraysClose(
+        result, Math.log(Math.exp(1) + Math.exp(2) + Math.exp(-3)));
   });
 
   it('throws error for string tensor', () => {
@@ -752,24 +867,24 @@ describeWithFlags('Reduction: sum', ALL_ENVS, () => {
   it('basic', () => {
     const a = tf.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
     const result = tf.sum(a);
-    expectNumbersClose(result.get(), 7);
+    expectArraysClose(result, 7);
   });
 
   it('propagates NaNs', () => {
     const a = tf.tensor2d([1, 2, 3, NaN, 0, 1], [3, 2]);
-    expect(tf.sum(a).get()).toEqual(NaN);
+    expectArraysEqual(tf.sum(a), NaN);
   });
 
   it('sum over dtype int32', () => {
     const a = tf.tensor1d([1, 5, 7, 3], 'int32');
     const sum = tf.sum(a);
-    expect(sum.get()).toBe(16);
+    expectArraysEqual(sum, 16);
   });
 
   it('sum over dtype bool', () => {
     const a = tf.tensor1d([true, false, false, true, true], 'bool');
     const sum = tf.sum(a);
-    expect(sum.get()).toBe(3);
+    expectArraysEqual(sum, 3);
   });
 
   it('sums all values in 2D array with keep dim', () => {
@@ -878,13 +993,12 @@ describeWithFlags('Reduction: sum', ALL_ENVS, () => {
 
   it('accepts a tensor-like object', () => {
     const result = tf.sum([[1, 2], [3, 0], [0, 1]]);
-    expectNumbersClose(result.get(), 7);
+    expectArraysClose(result, 7);
   });
 
   it('throws error for string tensor', () => {
     expect(() => tf.sum(['a']))
-        .toThrowError(
-            /Argument 'x' passed to 'sum' must be numeric tensor/);
+        .toThrowError(/Argument 'x' passed to 'sum' must be numeric tensor/);
   });
 });
 
@@ -892,24 +1006,24 @@ describeWithFlags('Reduction: prod', ALL_ENVS, () => {
   it('basic', () => {
     const a = tf.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
     const result = tf.prod(a);
-    expectNumbersClose(result.get(), 0);
+    expectArraysClose(result, 0);
   });
 
   it('propagates NaNs', () => {
     const a = tf.tensor2d([1, 2, 3, NaN, 0, 1], [3, 2]);
-    expect(tf.prod(a).get()).toEqual(NaN);
+    expectArraysEqual(tf.prod(a), NaN);
   });
 
   it('prod over dtype int32', () => {
     const a = tf.tensor1d([1, 5, 7, 3], 'int32');
     const prod = tf.prod(a);
-    expect(prod.get()).toBe(105);
+    expectArraysEqual(prod, 105);
   });
 
   it('prod over dtype bool', () => {
     const a = tf.tensor1d([true, false, false, true, true], 'bool');
     const prod = tf.prod(a);
-    expect(prod.get()).toBe(0);
+    expectArraysEqual(prod, 0);
   });
 
   it('prods all values in 2D array with keep dim', () => {
@@ -917,7 +1031,7 @@ describeWithFlags('Reduction: prod', ALL_ENVS, () => {
     const res = tf.prod(a, null, true /* keepDims */);
 
     expect(res.shape).toEqual([1, 1]);
-    expectArraysClose(res, [0]);
+    expectArraysClose(res, 0);
   });
 
   it('prods across axis=0 in 2D array', () => {
@@ -983,13 +1097,12 @@ describeWithFlags('Reduction: prod', ALL_ENVS, () => {
 
   it('accepts a tensor-like object', () => {
     const result = tf.prod([[1, 2], [3, 1], [1, 1]]);
-    expectNumbersClose(result.get(), 6);
+    expectArraysClose(result, 6);
   });
 
   it('throws error for string tensor', () => {
     expect(() => tf.prod(['a']))
-        .toThrowError(
-            /Argument 'x' passed to 'prod' must be numeric tensor/);
+        .toThrowError(/Argument 'x' passed to 'prod' must be numeric tensor/);
   });
 });
 
@@ -999,7 +1112,7 @@ describeWithFlags('Reduction: mean', ALL_ENVS, () => {
     const r = tf.mean(a);
 
     expect(r.dtype).toBe('float32');
-    expectNumbersClose(r.get(), 7 / 6);
+    expectArraysClose(r, 7 / 6);
   });
 
   it('propagates NaNs', () => {
@@ -1007,7 +1120,7 @@ describeWithFlags('Reduction: mean', ALL_ENVS, () => {
     const r = tf.mean(a);
 
     expect(r.dtype).toBe('float32');
-    expect(r.get()).toEqual(NaN);
+    expectArraysEqual(r, NaN);
   });
 
   it('mean(int32) => float32', () => {
@@ -1015,7 +1128,7 @@ describeWithFlags('Reduction: mean', ALL_ENVS, () => {
     const r = tf.mean(a);
 
     expect(r.dtype).toBe('float32');
-    expectNumbersClose(r.get(), 4);
+    expectArraysClose(r, 4);
   });
 
   it('mean(bool) => float32', () => {
@@ -1023,7 +1136,7 @@ describeWithFlags('Reduction: mean', ALL_ENVS, () => {
     const r = tf.mean(a);
 
     expect(r.dtype).toBe('float32');
-    expectNumbersClose(r.get(), 3 / 5);
+    expectArraysClose(r, 3 / 5);
   });
 
   it('2D array with keep dim', () => {
@@ -1094,11 +1207,11 @@ describeWithFlags('Reduction: mean', ALL_ENVS, () => {
     const dy = tf.scalar(1.5);
 
     const da = tf.grad(a => a.mean())(a, dy);
-
+    const dyVal = dy.arraySync();
     expect(da.shape).toEqual(a.shape);
     expectArraysClose(da, [
-      dy.get() / a.size, dy.get() / a.size, dy.get() / a.size,
-      dy.get() / a.size, dy.get() / a.size, dy.get() / a.size
+      dyVal / a.size, dyVal / a.size, dyVal / a.size, dyVal / a.size,
+      dyVal / a.size, dyVal / a.size
     ]);
   });
 
@@ -1118,13 +1231,12 @@ describeWithFlags('Reduction: mean', ALL_ENVS, () => {
     const r = tf.mean([[1, 2, 3], [0, 0, 1]]);
 
     expect(r.dtype).toBe('float32');
-    expectNumbersClose(r.get(), 7 / 6);
+    expectArraysClose(r, 7 / 6);
   });
 
   it('throws error for string tensor', () => {
     expect(() => tf.mean(['a']))
-        .toThrowError(
-            /Argument 'x' passed to 'mean' must be numeric tensor/);
+        .toThrowError(/Argument 'x' passed to 'mean' must be numeric tensor/);
   });
 });
 
@@ -1135,8 +1247,8 @@ describeWithFlags('Reduction: moments', ALL_ENVS, () => {
 
     expect(mean.dtype).toBe('float32');
     expect(variance.dtype).toBe('float32');
-    expectNumbersClose(mean.get(), 7 / 6);
-    expectNumbersClose(variance.get(), 1.1389);
+    expectArraysClose(mean, 7 / 6);
+    expectArraysClose(variance, 1.1389);
   });
 
   it('propagates NaNs', () => {
@@ -1145,8 +1257,8 @@ describeWithFlags('Reduction: moments', ALL_ENVS, () => {
 
     expect(mean.dtype).toBe('float32');
     expect(variance.dtype).toBe('float32');
-    expect(mean.get()).toEqual(NaN);
-    expect(variance.get()).toEqual(NaN);
+    expectArraysEqual(mean, NaN);
+    expectArraysEqual(variance, NaN);
   });
 
   it('moments(int32) => float32', () => {
@@ -1155,8 +1267,8 @@ describeWithFlags('Reduction: moments', ALL_ENVS, () => {
 
     expect(mean.dtype).toBe('float32');
     expect(variance.dtype).toBe('float32');
-    expectNumbersClose(mean.get(), 4);
-    expectNumbersClose(variance.get(), 5);
+    expectArraysClose(mean, 4);
+    expectArraysClose(variance, 5);
   });
 
   it('moments(bool) => float32', () => {
@@ -1165,8 +1277,8 @@ describeWithFlags('Reduction: moments', ALL_ENVS, () => {
 
     expect(mean.dtype).toBe('float32');
     expect(variance.dtype).toBe('float32');
-    expectNumbersClose(mean.get(), 3 / 5);
-    expectNumbersClose(variance.get(), 0.23999998);
+    expectArraysClose(mean, 3 / 5);
+    expectArraysClose(variance, 0.23999998);
   });
 
   it('2D array with keep dim', () => {
@@ -1251,8 +1363,8 @@ describeWithFlags('Reduction: moments', ALL_ENVS, () => {
 
     expect(mean.dtype).toBe('float32');
     expect(variance.dtype).toBe('float32');
-    expectNumbersClose(mean.get(), 7 / 6);
-    expectNumbersClose(variance.get(), 1.1389);
+    expectArraysClose(mean, 7 / 6);
+    expectArraysClose(variance, 1.1389);
   });
 });
 
@@ -1262,7 +1374,7 @@ describeWithFlags('Reduction: norm', ALL_ENVS, () => {
     const norm = tf.norm(a);
 
     expect(norm.dtype).toBe('float32');
-    expectNumbersClose(norm.get(), 22);
+    expectArraysClose(norm, 22);
   });
 
   it('vector inf norm', () => {
@@ -1270,7 +1382,7 @@ describeWithFlags('Reduction: norm', ALL_ENVS, () => {
     const norm = tf.norm(a, Infinity);
 
     expect(norm.dtype).toBe('float32');
-    expectNumbersClose(norm.get(), 4);
+    expectArraysClose(norm, 4);
   });
 
   it('vector -inf norm', () => {
@@ -1278,7 +1390,7 @@ describeWithFlags('Reduction: norm', ALL_ENVS, () => {
     const norm = tf.norm(a, -Infinity);
 
     expect(norm.dtype).toBe('float32');
-    expectNumbersClose(norm.get(), 1);
+    expectArraysClose(norm, 1);
   });
 
   it('vector 1 norm', () => {
@@ -1286,7 +1398,7 @@ describeWithFlags('Reduction: norm', ALL_ENVS, () => {
     const norm = tf.norm(a, 1);
 
     expect(norm.dtype).toBe('float32');
-    expectNumbersClose(norm.get(), 10);
+    expectArraysClose(norm, 10);
   });
 
   it('vector euclidean norm', () => {
@@ -1294,7 +1406,7 @@ describeWithFlags('Reduction: norm', ALL_ENVS, () => {
     const norm = tf.norm(a, 'euclidean');
 
     expect(norm.dtype).toBe('float32');
-    expectNumbersClose(norm.get(), 5.4772);
+    expectArraysClose(norm, 5.4772);
   });
 
   it('vector 2-norm', () => {
@@ -1302,7 +1414,7 @@ describeWithFlags('Reduction: norm', ALL_ENVS, () => {
     const norm = tf.norm(a, 2);
 
     expect(norm.dtype).toBe('float32');
-    expectNumbersClose(norm.get(), 5.4772);
+    expectArraysClose(norm, 5.4772);
   });
 
   it('vector >2-norm to throw error', () => {
@@ -1315,7 +1427,7 @@ describeWithFlags('Reduction: norm', ALL_ENVS, () => {
     const norm = tf.norm(a, Infinity, [0, 1]);
 
     expect(norm.dtype).toBe('float32');
-    expectNumbersClose(norm.get(), 4);
+    expectArraysClose(norm, 4);
   });
 
   it('matrix -inf norm', () => {
@@ -1323,7 +1435,7 @@ describeWithFlags('Reduction: norm', ALL_ENVS, () => {
     const norm = tf.norm(a, -Infinity, [0, 1]);
 
     expect(norm.dtype).toBe('float32');
-    expectNumbersClose(norm.get(), 1);
+    expectArraysClose(norm, 1);
   });
 
   it('matrix 1 norm', () => {
@@ -1331,7 +1443,7 @@ describeWithFlags('Reduction: norm', ALL_ENVS, () => {
     const norm = tf.norm(a, 1, [0, 1]);
 
     expect(norm.dtype).toBe('float32');
-    expectNumbersClose(norm.get(), 5);
+    expectArraysClose(norm, 5);
   });
 
   it('matrix euclidean norm', () => {
@@ -1339,7 +1451,7 @@ describeWithFlags('Reduction: norm', ALL_ENVS, () => {
     const norm = tf.norm(a, 'euclidean', [0, 1]);
 
     expect(norm.dtype).toBe('float32');
-    expectNumbersClose(norm.get(), 4.123);
+    expectArraysClose(norm, 4.123);
   });
 
   it('matrix fro norm', () => {
@@ -1347,7 +1459,7 @@ describeWithFlags('Reduction: norm', ALL_ENVS, () => {
     const norm = tf.norm(a, 'fro', [0, 1]);
 
     expect(norm.dtype).toBe('float32');
-    expectNumbersClose(norm.get(), 4.123);
+    expectArraysClose(norm, 4.123);
   });
 
   it('matrix other norm to throw error', () => {
@@ -1360,7 +1472,7 @@ describeWithFlags('Reduction: norm', ALL_ENVS, () => {
     const norm = tf.norm(a);
 
     expect(norm.dtype).toBe('float32');
-    expect(norm.get()).toEqual(NaN);
+    expectArraysEqual(norm, NaN);
   });
 
   it('axis=null in 2D array norm', () => {
@@ -1517,41 +1629,41 @@ describeWithFlags('Reduction: norm', ALL_ENVS, () => {
     const norm = tf.norm([1, -2, 3, -4], 1);
 
     expect(norm.dtype).toBe('float32');
-    expectNumbersClose(norm.get(), 10);
+    expectArraysClose(norm, 10);
   });
 
   it('throws error for string tensors', () => {
-    expect(() => tf.norm(['a', 'b']))
-        .toThrowError(
-            /Argument 'x' passed to 'norm' must be numeric tensor/);
+    expect(() => tf.norm([
+      'a', 'b'
+    ])).toThrowError(/Argument 'x' passed to 'norm' must be numeric tensor/);
   });
 });
 
 describeWithFlags('Reduction: all', ALL_ENVS, () => {
   it('Tensor1D', () => {
     let a = tf.tensor1d([0, 0, 0], 'bool');
-    expectNumbersClose(tf.all(a).get(), 0);
+    expectArraysClose(tf.all(a), 0);
 
     a = tf.tensor1d([1, 0, 1], 'bool');
-    expectNumbersClose(tf.all(a).get(), 0);
+    expectArraysClose(tf.all(a), 0);
 
     a = tf.tensor1d([1, 1, 1], 'bool');
-    expectNumbersClose(tf.all(a).get(), 1);
+    expectArraysClose(tf.all(a), 1);
   });
 
   it('ignores NaNs', () => {
     const a = tf.tensor1d([1, NaN, 1], 'bool');
-    expect(tf.all(a).get()).toEqual(1);
+    expectArraysEqual(tf.all(a), 1);
   });
 
   it('2D', () => {
     const a = tf.tensor2d([1, 1, 0, 0], [2, 2], 'bool');
-    expectNumbersClose(tf.all(a).get(), 0);
+    expectArraysClose(tf.all(a), 0);
   });
 
   it('2D axis=[0,1]', () => {
     const a = tf.tensor2d([1, 1, 0, 0, 1, 0], [2, 3], 'bool');
-    expectNumbersClose(tf.all(a, [0, 1]).get(), 0);
+    expectArraysClose(tf.all(a, [0, 1]), 0);
   });
 
   it('2D, axis=0', () => {
@@ -1607,7 +1719,7 @@ describeWithFlags('Reduction: all', ALL_ENVS, () => {
 
   it('accepts a tensor-like object', () => {
     const a = [0, 0, 0];
-    expectNumbersClose(tf.all(a).get(), 0);
+    expectArraysClose(tf.all(a), 0);
   });
 
   it('throws error for string tensor', () => {
@@ -1620,28 +1732,28 @@ describeWithFlags('Reduction: all', ALL_ENVS, () => {
 describeWithFlags('Reduction: any', ALL_ENVS, () => {
   it('Tensor1D', () => {
     let a = tf.tensor1d([0, 0, 0], 'bool');
-    expectNumbersClose(tf.any(a).get(), 0);
+    expectArraysClose(tf.any(a), 0);
 
     a = tf.tensor1d([1, 0, 1], 'bool');
-    expectNumbersClose(tf.any(a).get(), 1);
+    expectArraysClose(tf.any(a), 1);
 
     a = tf.tensor1d([1, 1, 1], 'bool');
-    expectNumbersClose(tf.any(a).get(), 1);
+    expectArraysClose(tf.any(a), 1);
   });
 
   it('ignores NaNs', () => {
     const a = tf.tensor1d([1, NaN, 0], 'bool');
-    expect(tf.any(a).get()).toEqual(1);
+    expectArraysEqual(tf.any(a), 1);
   });
 
   it('2D', () => {
     const a = tf.tensor2d([1, 1, 0, 0], [2, 2], 'bool');
-    expectNumbersClose(tf.any(a).get(), 1);
+    expectArraysClose(tf.any(a), 1);
   });
 
   it('2D axis=[0,1]', () => {
     const a = tf.tensor2d([1, 1, 0, 0, 1, 0], [2, 3], 'bool');
-    expectNumbersClose(tf.any(a, [0, 1]).get(), 1);
+    expectArraysClose(tf.any(a, [0, 1]), 1);
   });
 
   it('2D, axis=0', () => {
@@ -1697,12 +1809,11 @@ describeWithFlags('Reduction: any', ALL_ENVS, () => {
 
   it('accepts a tensor-like object', () => {
     const a = [0, 0, 0];
-    expectNumbersClose(tf.any(a).get(), 0);
+    expectArraysClose(tf.any(a), 0);
   });
 
   it('throws error for string tensor', () => {
     expect(() => tf.any(['a']))
-        .toThrowError(
-            /Argument 'x' passed to 'any' must be bool tensor/);
+        .toThrowError(/Argument 'x' passed to 'any' must be bool tensor/);
   });
 });

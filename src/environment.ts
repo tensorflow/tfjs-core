@@ -19,7 +19,7 @@ import * as device_util from './device_util';
 import {Engine, MemoryInfo, ProfileInfo, ScopeFn, TimingInfo} from './engine';
 import {Features, getFeaturesFromURL, getMaxTexturesInShader, getNumMBBeforePaging, getWebGLDisjointQueryTimerVersion, getWebGLMaxTextureSize, isChrome, isDownloadFloatTextureEnabled, isRenderToFloatTextureEnabled, isWebGLFenceEnabled, isWebGLVersionEnabled} from './environment_util';
 import {KernelBackend} from './kernels/backend';
-import {DataId, setTensorTracker, Tensor, TensorTracker} from './tensor';
+import {DataId, setDeprecationWarningFn, setTensorTracker, Tensor} from './tensor';
 import {TensorContainer} from './tensor_types';
 import {getTensorsInContainer} from './tensor_util';
 
@@ -309,7 +309,7 @@ export class Environment {
     } else if (feature === 'WEBGL_CPU_FORWARD') {
       return true;
     } else if (feature === 'WEBGL_PACK') {
-      return false;
+      return this.get('WEBGL_VERSION') === 0 ? false : true;
     } else if (feature === 'WEBGL_PACK_BATCHNORMALIZATION') {
       return this.get('WEBGL_PACK');
     } else if (feature === 'WEBGL_PACK_CLIP') {
@@ -317,6 +317,12 @@ export class Environment {
     } else if (feature === 'WEBGL_PACK_DEPTHWISECONV') {
       return this.get('WEBGL_PACK');
     } else if (feature === 'WEBGL_PACK_BINARY_OPERATIONS') {
+      return this.get('WEBGL_PACK');
+    } else if (feature === 'WEBGL_PACK_ARRAY_OPERATIONS') {
+      return this.get('WEBGL_PACK');
+    } else if (feature === 'WEBGL_PACK_IMAGE_OPERATIONS') {
+      return this.get('WEBGL_PACK');
+    } else if (feature === 'WEBGL_PACK_REDUCE') {
       return this.get('WEBGL_PACK');
     } else if (feature === 'WEBGL_LAZILY_UNPACK') {
       return this.get('WEBGL_PACK');
@@ -376,6 +382,8 @@ export class Environment {
       return false;
     } else if (feature === 'TENSORLIKE_CHECK_SHAPE_CONSISTENCY') {
       return !this.get('PROD');
+    } else if (feature === 'DEPRECATION_WARNINGS_ENABLED') {
+      return true;
     }
     throw new Error(`Unknown feature ${feature}.`);
   }
@@ -414,15 +422,11 @@ export class Environment {
    *     the best backend. Defaults to 1.
    * @return False if the creation/registration failed. True otherwise.
    */
-  registerBackend(
-      name: string, factory: () => KernelBackend, priority = 1,
-      setTensorTrackerFn?: (f: () => TensorTracker) => void): boolean {
+  registerBackend(name: string, factory: () => KernelBackend, priority = 1):
+      boolean {
     if (name in this.registry) {
       console.warn(
           `${name} backend was already registered. Reusing existing backend`);
-      if (setTensorTrackerFn != null) {
-        setTensorTrackerFn(() => this.engine);
-      }
       return false;
     }
     try {
@@ -459,33 +463,82 @@ export class Environment {
           new Engine(backend, false /* safeMode */, () => this.get('DEBUG'));
     }
   }
+
+  get global(): {ENV: Environment} {
+    return getGlobalNamespace();
+  }
 }
 
+let _global: {ENV: Environment};
 function getGlobalNamespace(): {ENV: Environment} {
-  // tslint:disable-next-line:no-any
-  let ns: any;
-  if (typeof (window) !== 'undefined') {
-    ns = window;
-  } else if (typeof (process) !== 'undefined') {
-    ns = process;
-  } else {
-    throw new Error('Could not find a global object');
+  if (_global == null) {
+    // tslint:disable-next-line:no-any
+    let ns: any;
+    if (typeof (window) !== 'undefined') {
+      ns = window;
+    } else if (typeof (global) !== 'undefined') {
+      ns = global;
+    } else if (typeof (process) !== 'undefined') {
+      ns = process;
+    } else {
+      throw new Error('Could not find a global object');
+    }
+    _global = ns;
   }
-  return ns;
+  return _global;
 }
 
 function getOrMakeEnvironment(): Environment {
   const ns = getGlobalNamespace();
   if (ns.ENV == null) {
     ns.ENV = new Environment(getFeaturesFromURL());
-    setTensorTracker(() => ns.ENV.engine);
   }
+  // Tell the current tensor interface that the global engine is responsible for
+  // tracking.
+  setTensorTracker(() => ns.ENV.engine);
   return ns.ENV;
 }
 
-/** Enables production mode which disables safety checks to gain performance */
+/**
+ * Enables production mode which disables correctness checks in favor of
+ * performance.
+ */
+/** @doc {heading: 'Environment'} */
 export function enableProdMode(): void {
   ENV.set('PROD', true);
 }
+
+/**
+ * Enables debug mode which will log information about all executed kernels:
+ * the ellapsed time of the kernel execution, as well as the rank, shape, and
+ * size of the output tensor.
+ *
+ * Debug mode will significantly slow down your application as it will
+ * download the result of every operation to the CPU. This should not be used in
+ * production. Debug mode does not affect the timing information of the kernel
+ * execution as we do not measure download time in the kernel execution time.
+ *
+ * See also: `tf.profile`, `tf.memory`.
+ */
+/** @doc {heading: 'Environment'} */
+export function enableDebugMode(): void {
+  ENV.set('DEBUG', true);
+}
+
+/** Globally disables deprecation warnings */
+export function disableDeprecationWarnings(): void {
+  ENV.set('DEPRECATION_WARNINGS_ENABLED', false);
+  console.warn(`TensorFlow.js deprecation warnings have been disabled.`);
+}
+
+/** Warn users about deprecated functionality. */
+export function deprecationWarn(msg: string) {
+  if (ENV.get('DEPRECATION_WARNINGS_ENABLED')) {
+    console.warn(
+        msg + ' You can disable deprecation warnings with ' +
+        'tf.disableDeprecationWarnings().');
+  }
+}
+setDeprecationWarningFn(deprecationWarn);
 
 export let ENV = getOrMakeEnvironment();

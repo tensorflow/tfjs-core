@@ -22,7 +22,9 @@ import {makeTypesMatch} from '../tensor_util';
 import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import * as util from '../util';
-import {FusableActivation} from './fused_util';
+
+import * as broadcast_util from './broadcast_util';
+import {Activation} from './fused_util';
 
 /**
  * Computes the dot product of two matrices with optional activation and bias.
@@ -45,7 +47,7 @@ import {FusableActivation} from './fused_util';
 /** @doc {heading: 'Operations', subheading: 'Matrices', namespace: 'fused'} */
 function matMul_<T extends Tensor>(
     a: T|TensorLike, b: T|TensorLike, transposeA = false, transposeB = false,
-    bias?: T|TensorLike, activation: FusableActivation = 'linear'): T {
+    bias?: Tensor|TensorLike, activation: Activation = 'linear'): T {
   let $a = convertToTensor(a, 'a', 'fused matMul');
   let $b = convertToTensor(b, 'b', 'fused matMul');
   [$a, $b] = makeTypesMatch($a, $b);
@@ -67,18 +69,19 @@ function matMul_<T extends Tensor>(
 
   util.assert(
       $a.rank >= 2 && $b.rank >= 2 && $a.rank === $b.rank,
-      `Error in fused matMul: inputs must have the same rank of at least 2, ` +
-          `got ranks ${$a.rank} and ${$b.rank}.`);
+      () =>
+          `Error in fused matMul: inputs must have the same rank of at least ` +
+          `2, got ranks ${$a.rank} and ${$b.rank}.`);
 
   util.assert(
       util.arraysEqual(outerDimsA, outerDimsB),
-      `Error in fused matMul: outer dimensions (${outerDimsA}) and (` +
+      () => `Error in fused matMul: outer dimensions (${outerDimsA}) and (` +
           `${outerDimsB}) of Tensors with shapes ${$a.shape} and ` +
           `${$b.shape} must match.`);
 
   util.assert(
       innerShapeA === innerShapeB,
-      `Error in fused matMul: inner shapes (${innerShapeA}) and (` +
+      () => `Error in fused matMul: inner shapes (${innerShapeA}) and (` +
           `${innerShapeB}) of Tensors with shapes ${$a.shape} and ` +
           `${$b.shape} and transposeA=${transposeA}` +
           ` and transposeB=${transposeB} must match.`);
@@ -89,21 +92,13 @@ function matMul_<T extends Tensor>(
                            $a.as3D(batchDimA, outerShapeA, innerShapeA);
   const b3D = transposeB ? $b.as3D(batchDimB, outerShapeB, innerShapeB) :
                            $b.as3D(batchDimB, innerShapeB, outerShapeB);
-  let bias3D: Tensor3D;
+
+  let $bias: Tensor;
   if (bias != null) {
-    let $bias = convertToTensor(bias, 'bias', 'fused matMul');
+    $bias = convertToTensor(bias, 'bias', 'fused matMul');
     [$bias] = makeTypesMatch($bias, $a);
 
-    const rowsBias = $bias.shape[$bias.rank - 2];
-    const colsBias = $bias.shape[$bias.rank - 1];
-
-    util.assert(
-        outerShapeA === rowsBias && outerShapeB === colsBias,
-        `Error in fused matMul: inner dimensions of bias shape ${
-            $bias.shape} must match outer shapes (${outerShapeA}) and (${
-            outerShapeB}) of Tensors with shapes ${$a.shape} and ${$b.shape}`);
-
-    bias3D = $bias.as3D(batchDimA, rowsBias, colsBias);
+    broadcast_util.assertAndGetBroadcastShape(outShape, $bias.shape);
   }
 
   const grad = (dy: Tensor3D, saved: Tensor[]) => {
@@ -120,7 +115,23 @@ function matMul_<T extends Tensor>(
           `implemented yet.`);
     }
 
-    const biasGradient = bias != null ? {$bias: () => dyActivation} : {};
+    let biasGradient = {};
+    if (bias != null) {
+      biasGradient = {
+        $bias: () => {
+          let res = dyActivation;
+          // Using dyActivation as reference shape because outputShape does not
+          // account for the fact that we temporarily reshape inputs to 3D as
+          // part of batched matMul.
+          const reduceAxes =
+              broadcast_util.getReductionAxes($bias.shape, dyActivation.shape);
+          if (reduceAxes.length > 0) {
+            res = res.sum(reduceAxes);
+          }
+          return res.reshape($bias.shape);
+        }
+      };
+    }
 
     if (!transposeA && !transposeB) {
       return Object.assign(
@@ -155,14 +166,16 @@ function matMul_<T extends Tensor>(
 
   const inputs: {$a: Tensor, $b: Tensor, $bias?: Tensor} = {$a: a3D, $b: b3D};
   if (bias != null) {
-    inputs.$bias = bias3D;
+    inputs.$bias = $bias;
   }
 
   const res = ENV.engine.runKernel(
       (backend, save) => save(backend.fusedBatchMatMul(
-          a3D, b3D, transposeA, transposeB, bias3D, activation)),
+          a3D, b3D, transposeA, transposeB, $bias, activation)),
       inputs, grad);
   return res.reshape(outShape) as T;
 }
 
 export const matMul = op({matMul_});
+
+export {Activation};

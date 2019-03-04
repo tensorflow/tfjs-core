@@ -18,9 +18,9 @@
 import {ENV} from '../environment';
 import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D, Tensor6D} from '../tensor';
 import {convertToTensor, inferShape} from '../tensor_util_env';
-import {TensorLike, TensorLike1D, TensorLike2D, TensorLike3D, TensorLike4D, TensorLike5D, TensorLike6D, TypedArray} from '../types';
+import {TensorLike, TensorLike1D, TensorLike2D, TensorLike3D, TensorLike4D, TensorLike5D, TensorLike6D} from '../types';
 import {DataType, Rank, ShapeMap} from '../types';
-import {assert, assertNonNull, flatten, getArrayFromDType, inferDtype, isTypedArray, makeOnesTypedArray, makeZerosTypedArray, sizeFromShape, toTypedArray} from '../util';
+import {assert, assertNonNull, assertNonNegativeIntegerDimensions, flatten, inferDtype, isTypedArray, makeOnesTypedArray, makeZerosTypedArray, sizeFromShape, toTypedArray} from '../util';
 
 import {complex} from './complex_ops';
 import {op} from './operation';
@@ -70,6 +70,8 @@ function tensor<R extends Rank>(
   }
   const inferredShape = inferShape(values);
   if (shape != null) {
+    assertNonNegativeIntegerDimensions(shape);
+
     const providedSize = sizeFromShape(shape);
     const inferredSize = sizeFromShape(inferredShape);
     assert(
@@ -428,10 +430,8 @@ function zeros<R extends Rank>(
 /** @doc {heading: 'Tensors', subheading: 'Creation'} */
 function fill<R extends Rank>(
     shape: ShapeMap[R], value: number|string, dtype?: DataType): Tensor<R> {
-  dtype = dtype || inferDtype(value);
-  const values = getArrayFromDType(dtype, sizeFromShape(shape)) as TypedArray;
-  values.fill(value as number);
-  return Tensor.make(shape, {values}, dtype);
+  return ENV.engine.runKernel(backend =>
+    backend.fill(shape, value, dtype), {});
 }
 
 /**
@@ -447,7 +447,7 @@ function fill<R extends Rank>(
 /** @doc {heading: 'Tensors', subheading: 'Creation'} */
 function onesLike_<T extends Tensor>(x: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'onesLike');
-  return ones($x.shape, $x.dtype) as T;
+  return ENV.engine.runKernel(backend => backend.onesLike($x), {$x}, null) as T;
 }
 
 /**
@@ -464,7 +464,8 @@ function onesLike_<T extends Tensor>(x: T|TensorLike): T {
 /** @doc {heading: 'Tensors', subheading: 'Creation'} */
 function zerosLike_<T extends Tensor>(x: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'zerosLike');
-  return zeros($x.shape, $x.dtype) as T;
+  return ENV.engine.runKernel(backend => backend.zerosLike($x), {$x}, null) as
+      T;
 }
 
 /**

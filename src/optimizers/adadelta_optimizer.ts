@@ -96,7 +96,7 @@ export class AdadeltaOptimizer extends Optimizer {
     }
   }
 
-  dispose() {
+  dispose(): void {
     this.c.dispose();
     this.epsilonScalar.dispose();
     this.rhoScalar.dispose();
@@ -115,6 +115,8 @@ export class AdadeltaOptimizer extends Optimizer {
       epsilon: this.epsilon
     };
   }
+
+  /** @nocollapse */
   static fromConfig<T extends Serializable>(
       cls: SerializableConstructor<T>, config: ConfigDict): T {
     return new cls(config.learningRate, config.rho, config.epsilon);

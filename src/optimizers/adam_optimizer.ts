@@ -110,7 +110,7 @@ export class AdamOptimizer extends Optimizer {
     });
   }
 
-  dispose() {
+  dispose(): void {
     this.c.dispose();
     this.epsScalar.dispose();
     this.beta1Scalar.dispose();
@@ -139,6 +139,8 @@ export class AdamOptimizer extends Optimizer {
       epsilon: this.epsilon,
     };
   }
+
+  /** @nocollapse */
   static fromConfig<T extends Serializable>(
       cls: SerializableConstructor<T>, config: ConfigDict): T {
     return new cls(

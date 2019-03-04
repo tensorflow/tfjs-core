@@ -67,7 +67,7 @@ export class MomentumOptimizer extends SGDOptimizer {
     }
   }
 
-  dispose() {
+  dispose(): void {
     super.dispose();
     this.m.dispose();
     if (this.accumulations != null) {
@@ -93,6 +93,8 @@ export class MomentumOptimizer extends SGDOptimizer {
       useNesterov: this.useNesterov
     };
   }
+
+  /** @nocollapse */
   static fromConfig<T extends Serializable>(
       cls: SerializableConstructor<T>, config: ConfigDict): T {
     return new cls(config.learningRate, config.momentum, config.useNesterov);

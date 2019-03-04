@@ -268,15 +268,15 @@ function computeOutputShape3D(
       (inputRows - fieldSize + 2 * zeroPad) / stride + 1, roundingMode);
   util.assert(
       util.isInt(outputRows),
-      `The output # of rows (${outputRows}) must be an integer. Change the ` +
-          `stride and/or zero pad parameters`);
+      () => `The output # of rows (${outputRows}) must be an integer. ` +
+          `Change the stride and/or zero pad parameters`);
 
   const outputCols = conditionalRound(
       (inputCols - fieldSize + 2 * zeroPad) / stride + 1, roundingMode);
   util.assert(
       util.isInt(outputCols),
-      `The output # of columns (${outputCols}) must be an integer. Change ` +
-          `the stride and/or zero pad parameters`);
+      () => `The output # of columns (${outputCols}) must be an integer. ` +
+          `Change the stride and/or zero pad parameters`);
 
   return [outputRows, outputCols, outDepth];
 }
@@ -338,8 +338,9 @@ function getPadAndOutInfo(
     outHeight = Math.ceil(inHeight / strideHeight);
     outWidth = Math.ceil(inWidth / strideWidth);
     const padAlongHeight =
-        (outHeight - 1) * strideHeight + filterHeight - inHeight;
-    const padAlongWidth = (outWidth - 1) * strideWidth + filterWidth - inWidth;
+        Math.max(0, (outHeight - 1) * strideHeight + filterHeight - inHeight);
+    const padAlongWidth =
+        Math.max(0, (outWidth - 1) * strideWidth + filterWidth - inWidth);
     const top = Math.floor(padAlongHeight / 2);
     const bottom = padAlongHeight - top;
     const left = Math.floor(padAlongWidth / 2);
