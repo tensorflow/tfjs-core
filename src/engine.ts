@@ -16,6 +16,7 @@
  */
 
 import {BackendTimingInfo, DataMover, KernelBackend} from './kernels/backend';
+import {clone} from './ops/array_ops';
 import {Profiler} from './profiler';
 import {backpropagateGradients, getFilteredNodesXToY, NamedGradientMap, TapeNode} from './tape';
 import {DataId, Tensor, Tensor3D, TensorTracker, Variable} from './tensor';
@@ -191,7 +192,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     let result: T;
     const saved: Tensor[] = [];
     const saveFunc = <T extends Tensor>(x: T): T => {
-      saved.push(x);
+      saved.push(this.keep(clone(x)));
       return x;
     };
     const scopeName = this.activeScope != null ? this.activeScope.name : '';
@@ -218,9 +219,8 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
         outputs: Array.isArray(result) ? result : [result] as Tensor[]
       };
       if (backwardsFunc != null) {
-        tapeNode.gradient =
-            ((dy: T) => backwardsFunc(dy, saved)) as (dy: Tensor) =>
-                NamedGradientMap;
+        tapeNode.gradient = (dy: T) => backwardsFunc(dy, saved);
+        tapeNode.saved = saved;
       }
       this.activeTape.push(tapeNode);
     }

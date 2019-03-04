@@ -271,6 +271,18 @@ describeWithFlags('higher-order gradients', ALL_ENVS, () => {
 });
 
 describeWithFlags('customGradient', ALL_ENVS, () => {
+  // tslint:disable-next-line:ban
+  fit('saved', () => {
+    const x = tf.scalar(1).variable();
+    const optimizer = tf.train.sgd(0.1);
+    optimizer.minimize(() => {
+      const y = x.square();
+      const z = y.square();
+      y.dispose();
+      return z;
+    });
+  });
+
   it('basic', () => {
     const a = tf.scalar(3);
     const b = tf.scalar(2, 'int32');

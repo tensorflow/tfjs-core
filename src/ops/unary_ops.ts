@@ -270,10 +270,12 @@ function rsqrt_<T extends Tensor>(x: T|TensorLike): T {
 function square_<T extends Tensor>(x: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'square');
 
-  const grad = (dy: T) => {
-    return {$x: () => dy.mul($x.toFloat().mul(2)) as T};
+  const grad = (dy: T, saved: T[]) => {
+    const x = saved[0];
+    return {$x: () => dy.mul(x.toFloat().mul(2)) as T};
   };
-  return ENV.engine.runKernel(backend => backend.square($x), {$x}, grad);
+  return ENV.engine.runKernel(
+      (backend, save) => backend.square(save($x)), {$x}, grad);
 }
 
 /**
