@@ -17,6 +17,7 @@
 
 import {ENV} from '../environment';
 import {Tensor} from '../tensor';
+import {NamedTensorMap} from '../tensor_types';
 import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import * as util from '../util';
@@ -145,12 +146,14 @@ function round_<T extends Tensor>(x: T|TensorLike): T {
 function exp_<T extends Tensor>(x: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'exp');
 
-  const bck = (dy: T, saved: Tensor[]) => {
-    const [y] = saved;
-    return {$x: () => dy.mulStrict(y as T)};
+  const bck = (dy: T, saved: NamedTensorMap) => {
+    return {$x: () => dy.mulStrict(saved.y as T)};
   };
-  return ENV.engine.runKernel(
-      (backend, save) => save(backend.exp($x)), {$x}, bck);
+  return ENV.engine.runKernel((backend, save) => {
+    const y = backend.exp($x);
+    save({y});
+    return y;
+  }, {$x}, bck);
 }
 
 /**
@@ -270,12 +273,13 @@ function rsqrt_<T extends Tensor>(x: T|TensorLike): T {
 function square_<T extends Tensor>(x: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'square');
 
-  const grad = (dy: T, saved: T[]) => {
-    const x = saved[0];
-    return {$x: () => dy.mul(x.toFloat().mul(2)) as T};
+  const grad = (dy: T, saved: NamedTensorMap) => {
+    return {$x: () => dy.mul(saved.$x.toFloat().mul(2)) as T};
   };
-  return ENV.engine.runKernel(
-      (backend, save) => backend.square(save($x)), {$x}, grad);
+  return ENV.engine.runKernel((backend, save) => {
+    save({$x});
+    return backend.square($x);
+  }, {$x}, grad);
 }
 
 /**
@@ -369,12 +373,15 @@ function clipByValue_<T extends Tensor>(
 function sigmoid_<T extends Tensor>(x: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'sigmoid');
 
-  const grad = (dy: T, saved: Tensor[]) => {
-    const [y] = saved;
+  const grad = (dy: T, saved: NamedTensorMap) => {
+    const y = saved.y;
     return {$x: () => dy.mul(y.mul(scalar(1).sub(y))) as T};
   };
-  return ENV.engine.runKernel(
-      (backend, save) => save(backend.sigmoid($x)), {$x}, grad);
+  return ENV.engine.runKernel((backend, save) => {
+    const y = backend.sigmoid($x);
+    save({y});
+    return y;
+  }, {$x}, grad);
 }
 
 /**
@@ -598,12 +605,15 @@ function cosh_<T extends Tensor>(x: T|TensorLike): T {
 function tanh_<T extends Tensor>(x: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'tanh');
 
-  const grad = (dy: T, saved: Tensor[]) => {
-    const [y] = saved;
+  const grad = (dy: T, saved: NamedTensorMap) => {
+    const y = saved.y;
     return {$x: () => scalar(1).sub(y.square()).mulStrict(dy) as T};
   };
-  return ENV.engine.runKernel(
-      (backend, save) => save(backend.tanh($x)), {$x}, grad);
+  return ENV.engine.runKernel((backend, save) => {
+    const y = backend.tanh($x);
+    save({y});
+    return y;
+  }, {$x}, grad);
 }
 
 /**

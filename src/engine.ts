@@ -16,7 +16,6 @@
  */
 
 import {BackendTimingInfo, DataMover, KernelBackend} from './kernels/backend';
-import {clone} from './ops/array_ops';
 import {Profiler} from './profiler';
 import {backpropagateGradients, getFilteredNodesXToY, NamedGradientMap, TapeNode} from './tape';
 import {DataId, Tensor, Tensor3D, TensorTracker, Variable} from './tensor';
@@ -31,7 +30,7 @@ import {bytesFromStringArray, makeOnesTypedArray, now, sizeFromShape} from './ut
  * computed in the forward pass, that we need in the backward pass.
  */
 export type ForwardFunc<T> =
-    (backend: KernelBackend, save?: <S extends Tensor>(tensor: S) => S) => T;
+    (backend: KernelBackend, save?: (tensors: NamedTensorMap) => void) => T;
 
 /**
  * @docalias (a: Tensor, b: Tensor,...) => {
@@ -184,16 +183,22 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     return Engine.nextVariableId++;
   }
 
+  private clone(x: Tensor): Tensor {
+    return Tensor.make(x.shape, {dataId: x.dataId}, x.dtype);
+  }
+
   runKernel<T extends Tensor|Tensor[], I extends NamedTensorMap>(
       forwardFunc: ForwardFunc<T>,
       inputs: I,
-      backwardsFunc?: (dy: T, saved: Tensor[]) => {[P in keyof I]: () => I[P]},
+      backwardsFunc?:
+          (dy: T, saved: NamedTensorMap) => {[P in keyof I]: () => I[P]},
       ): T {
     let result: T;
-    const saved: Tensor[] = [];
-    const saveFunc = <T extends Tensor>(x: T): T => {
-      saved.push(this.keep(clone(x)));
-      return x;
+    const saved: NamedTensorMap = {};
+    const saveFunc = (x: NamedTensorMap): void => {
+      for (const key in x) {
+        saved[key] = this.keep(this.clone(x[key]));
+      }
     };
     const scopeName = this.activeScope != null ? this.activeScope.name : '';
     const startingBytecount = this.numBytes;

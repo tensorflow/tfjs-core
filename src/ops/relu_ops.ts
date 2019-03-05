@@ -17,6 +17,7 @@
 
 import {ENV} from '../environment';
 import {Tensor} from '../tensor';
+import {NamedTensorMap} from '../tensor_types';
 import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import {maximum} from './binary_ops';
@@ -65,15 +66,18 @@ function relu_<T extends Tensor>(x: T|TensorLike): T {
 function elu_<T extends Tensor>(x: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'elu');
 
-  const grad = (dy: T, saved: Tensor[]) => {
-    const [y] = saved;
+  const grad = (dy: T, saved: NamedTensorMap) => {
+    const y = saved.y;
     return {
       $x: () =>
           ENV.engine.runKernel(backend => backend.eluDer(dy, y), {dy, y}) as T
     };
   };
-  return ENV.engine.runKernel(
-      (backend, save) => save(backend.elu($x)), {$x}, grad);
+  return ENV.engine.runKernel((backend, save) => {
+    const y = backend.elu($x);
+    save({y});
+    return y;
+  }, {$x}, grad);
 }
 
 /**

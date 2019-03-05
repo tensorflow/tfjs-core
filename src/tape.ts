@@ -26,7 +26,7 @@ export interface TapeNode {
   inputs: NamedTensorMap;
   // Optional params, defined only for ops with gradient impl.
   gradient?: (dy: Tensor|Tensor[]) => NamedGradientMap;
-  saved?: Tensor[];
+  saved?: NamedTensorMap;
 }
 
 export type NamedGradientMap = {
@@ -191,6 +191,8 @@ export function backpropagateGradients(
         curGradient.dispose();
       }
     }
-    node.saved.forEach(s => s.dispose());
+    for (const key in node.saved) {
+      node.saved[key].dispose();
+    }
   }
 }

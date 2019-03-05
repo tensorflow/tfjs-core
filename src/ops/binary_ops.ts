@@ -253,8 +253,8 @@ function pow_<T extends Tensor>(base: T|TensorLike, exp: Tensor|TensorLike): T {
       broadcast_util.assertAndGetBroadcastShape($base.shape, $exp.shape);
   base = $base.cast(upcastType($base.dtype, $exp.dtype));
   exp = $exp.cast(upcastType($base.dtype, $exp.dtype));
-  const grad = (dy: Tensor, saved: Tensor[]) => {
-    const [y] = saved;
+  const grad = (dy: Tensor, saved: NamedTensorMap) => {
+    const y = saved.y;
     const derBase = () => {
       const expFloat = $exp.toFloat();
       let res = dy.mul(expFloat.mul($base.pow(expFloat.sub(scalar(1)))));
@@ -276,9 +276,11 @@ function pow_<T extends Tensor>(base: T|TensorLike, exp: Tensor|TensorLike): T {
     };
     return {$base: derBase, $exp: derExp};
   };
-  return ENV.engine.runKernel(
-             (backend, save) => save(backend.pow($base, $exp)), {$base, $exp},
-             grad) as T;
+  return ENV.engine.runKernel((backend, save) => {
+    const y = backend.pow($base, $exp);
+    save({y});
+    return y;
+  }, {$base, $exp}, grad) as T;
 }
 
 /**
