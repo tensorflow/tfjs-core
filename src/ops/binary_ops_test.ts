@@ -15,8 +15,6 @@
  * =============================================================================
  */
 
-import {getWebGLContext} from '../canvas_util';
-import {ENV} from '../environment';
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
 import {ALL_ENVS, expectArraysClose, expectArraysEqual, PACKED_ENVS, WEBGL_ENVS} from '../test_util';
