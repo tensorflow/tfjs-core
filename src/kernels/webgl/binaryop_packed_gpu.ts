@@ -30,7 +30,7 @@ const CHECK_NAN_SNIPPET = `
 // On Linux, the vectorized implementation produces NaNs when a and b are 0.
 // We must also check for a / b channels equal to 0 in case they are empty.
 // Equality check fails, so checking epsilon.
-// TODO: Find a vectorized implementation of epsilon check that works on Linux.
+// TODO (https://github.com/tensorflow/tfjs/issues/1324): Find a vectorized implementation of epsilon check that works on Linux.
 export const DIV = `
   // vec4 one = vec4(equal(a, b));
   // return one + (vec4(1.0) - one) * a / b;
