@@ -34,9 +34,8 @@ import {computeFlatOffset, getStridedSlicedInfo, isSliceContinous} from '../ops/
 import {DataId, Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D, TensorBuffer} from '../tensor';
 import {DataType, DataTypeMap, DataValues, NumericDataType, Rank, ShapeMap, TypedArray, upcastType} from '../types';
 import * as util from '../util';
-// import * as asm from './asm';
+import * as asm from './asm';
 import {getArrayFromDType, inferDtype, now, sizeFromShape} from '../util';
-
 import {BackendTimingInfo, DataMover, DataStorage, KernelBackend} from './backend';
 import * as backend_util from './backend_util';
 import * as complex_util from './complex_util';
@@ -460,63 +459,60 @@ export class MathBackendCPU implements KernelBackend {
       transposeB: boolean): Tensor3D {
     this.assertNotComplex([a, b], 'matMul');
 
-    const sharedDim = transposeA ? a.shape[1] : a.shape[2];
+    // const sharedDim = transposeA ? a.shape[1] : a.shape[2];
     const leftDim = transposeA ? a.shape[2] : a.shape[1];
     const rightDim = transposeB ? b.shape[1] : b.shape[2];
     const batchDim = a.shape[0];
-    // const nWorkers = navigator.hardwareConcurrency || 4;
     const outShape = [batchDim, leftDim, rightDim];
-    // if (batchDim === 1 && a.shape[0] >= nWorkers) {
-    //   console.warn('asking for asm');
-    //   const values = asm.matmul(a.squeeze([0]), b.squeeze([0]));
-    //   return Tensor.make(outShape, {values}, a.dtype);
-    // }
+    const values = asm.matmul(a, b, transposeA, transposeB);
+    return Tensor.make(outShape, {values}, a.dtype);
 
-    const compute = async () => {
-      const [aValues, bValues] = await Promise.all([a.data(), b.data()]);
-      const [aOuterStep, aInnerStep] =
-          transposeA ? [1, a.strides[1]] : [a.strides[1], 1];
-      const [bInnerStep, bOuterStep] =
-          transposeB ? [1, b.strides[1]] : [b.strides[1], 1];
+    // const compute = async () => {
+    //   const [aValues, bValues] = await Promise.all([a.data(), b.data()]);
+    //   const [aOuterStep, aInnerStep] =
+    //       transposeA ? [1, a.strides[1]] : [a.strides[1], 1];
+    //   const [bInnerStep, bOuterStep] =
+    //       transposeB ? [1, b.strides[1]] : [b.strides[1], 1];
 
-      const resVals = util.getTypedArrayFromDType(
-          a.dtype as 'float32', sizeFromShape(outShape));
-      const blockSize = this.blockSize;
+    //   const resVals = util.getTypedArrayFromDType(
+    //       a.dtype as 'float32', sizeFromShape(outShape));
+    //   const blockSize = this.blockSize;
 
-      for (let batch = 0; batch < batchDim; batch++) {
-        const aBatch = batch * a.strides[0];
-        const bBatch = batch * b.strides[0];
-        for (let i0 = 0; i0 < leftDim; i0 += blockSize) {
-          const iBlock = i0 + blockSize < leftDim ? i0 + blockSize : leftDim;
-          for (let j0 = 0; j0 < rightDim; j0 += blockSize) {
-            const jBlock =
-                j0 + blockSize < rightDim ? j0 + blockSize : rightDim;
-            for (let k0 = 0; k0 < sharedDim; k0 += blockSize) {
-              // for when blockSize doesn't evenly divide the input
-              const kBlock =
-                  k0 + blockSize < sharedDim ? k0 + blockSize : sharedDim;
+    //   for (let batch = 0; batch < batchDim; batch++) {
+    //     const aBatch = batch * a.strides[0];
+    //     const bBatch = batch * b.strides[0];
+    //     const resBatch = batch * leftDim * rightDim;
+    //     for (let i0 = 0; i0 < leftDim; i0 += blockSize) {
+    //       const iBlock = i0 + blockSize < leftDim ? i0 + blockSize : leftDim;
+    //       for (let j0 = 0; j0 < rightDim; j0 += blockSize) {
+    //         const jBlock =
+    //             j0 + blockSize < rightDim ? j0 + blockSize : rightDim;
+    //         for (let k0 = 0; k0 < sharedDim; k0 += blockSize) {
+    //           // for when blockSize doesn't evenly divide the input
+    //           const kBlock =
+    //               k0 + blockSize < sharedDim ? k0 + blockSize : sharedDim;
 
-              for (let i = i0; i < iBlock; i++) {
-                const iDim = i * rightDim;
-                const iStep = aBatch + i * aOuterStep;
-                for (let j = j0; j < jBlock; j++) {
-                  const jStep = bBatch + j * bOuterStep;
-                  let sum = 0.0;
+    //           for (let i = i0; i < iBlock; i++) {
+    //             const iDim = resBatch + i * rightDim;
+    //             const iStep = aBatch + i * aOuterStep;
+    //             for (let j = j0; j < jBlock; j++) {
+    //               const jStep = bBatch + j * bOuterStep;
+    //               let sum = 0.0;
 
-                  for (let k = k0; k < kBlock; k++) {
-                    sum += aValues[k * aInnerStep + iStep] *
-                        bValues[k * bInnerStep + jStep];
-                  }
-                  resVals[iDim + j] += sum;
-                }
-              }
-            }
-          }
-        }
-      }
-      return resVals;
-    };
-    return Tensor.make(outShape, {values: compute()}, a.dtype) as Tensor3D;
+    //               for (let k = k0; k < kBlock; k++) {
+    //                 sum += aValues[k * aInnerStep + iStep] *
+    //                     bValues[k * bInnerStep + jStep];
+    //               }
+    //               resVals[iDim + j] += sum;
+    //             }
+    //           }
+    //         }
+    //       }
+    //     }
+    //   }
+    //   return resVals;
+    // };
+    // return Tensor.make(outShape, {values: compute()}, a.dtype) as Tensor3D;
   }
 
   fusedBatchMatMul(
