@@ -215,8 +215,7 @@ export class MathBackendWebGL implements KernelBackend {
       throw new Error(
           'pixels passed to tf.browser.fromPixels() can not be null');
     }
-    const texShape: [number, number] = [pixels.height, pixels.width];
-    const outShape = [pixels.height, pixels.width, numChannels];
+    let [width, height] = [pixels.width, pixels.height];
 
     if (ENV.get('IS_BROWSER')) {
       if (!(pixels instanceof HTMLVideoElement) &&
@@ -229,6 +228,8 @@ export class MathBackendWebGL implements KernelBackend {
             `ImageData, but was ${(pixels as {}).constructor.name}`);
       }
       if (pixels instanceof HTMLVideoElement) {
+        [width, height] = [pixels.videoWidth, pixels.videoHeight];
+
         if (this.fromPixels2DContext == null) {
           if (document.readyState !== 'complete') {
             throw new Error(
@@ -240,13 +241,21 @@ export class MathBackendWebGL implements KernelBackend {
           this.fromPixels2DContext =
               document.createElement('canvas').getContext('2d');
         }
-        this.fromPixels2DContext.canvas.width = pixels.width;
-        this.fromPixels2DContext.canvas.height = pixels.height;
+        this.fromPixels2DContext.canvas.width = width;
+        this.fromPixels2DContext.canvas.height = height;
         this.fromPixels2DContext.drawImage(
             pixels, 0, 0, pixels.width, pixels.height);
         pixels = this.fromPixels2DContext.canvas;
+      } else if (pixels instanceof HTMLImageElement) {
+        console.log('htmlimage');
+        [width, height] = [pixels.naturalWidth, pixels.naturalHeight];
       }
     }
+
+    console.log([width, height]);
+    const texShape: [number, number] = [height, width];
+    const outShape = [height, width, numChannels];
+
     const tempPixelHandle = this.makeTensorHandle(texShape, 'int32');
     // This is a byte texture with pixels.
     this.texData.get(tempPixelHandle.dataId).usage = TextureUsage.PIXELS;
@@ -1341,9 +1350,11 @@ export class MathBackendWebGL implements KernelBackend {
   realDivide(a: Tensor, b: Tensor): Tensor {
     const op = binaryop_gpu.DIV;
     const outputDtype = 'float32';
-    if (ENV.get('WEBGL_PACK_BINARY_OPERATIONS')) {
-      return this.packedBinaryOp(a, b, binaryop_packed_gpu.DIV, outputDtype);
-    }
+    // TODO: https://github.com/tensorflow/tfjs/issues/1324
+    // Revive this once we understand why this produces NaNs.
+    // if (ENV.get('WEBGL_PACK_BINARY_OPERATIONS')) {
+    //   return this.packedBinaryOp(a, b, binaryop_packed_gpu.DIV, outputDtype);
+    // }
     const program = new BinaryOpProgram(op, a.shape, b.shape);
     const output = this.makeOutputArray(program.outputShape, outputDtype);
     return this.compileAndRun<Tensor>(program, [a, b], output);

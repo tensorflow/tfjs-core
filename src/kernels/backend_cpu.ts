@@ -118,6 +118,9 @@ export class MathBackendCPU implements KernelBackend {
       throw new Error(
           'pixels passed to tf.browser.fromPixels() can not be null');
     }
+
+    let [width, height] = [pixels.width, pixels.height];
+
     let vals: Uint8ClampedArray;
     // tslint:disable-next-line:no-any
     if (ENV.get('IS_NODE') && (pixels as any).getContext == null) {
@@ -130,25 +133,28 @@ export class MathBackendCPU implements KernelBackend {
       // tslint:disable-next-line:no-any
       vals = (pixels as any)
                  .getContext('2d')
-                 .getImageData(0, 0, pixels.width, pixels.height)
+                 .getImageData(0, 0, width, height)
                  .data;
     } else if (pixels instanceof ImageData) {
       vals = pixels.data;
     } else if (
         pixels instanceof HTMLImageElement ||
         pixels instanceof HTMLVideoElement) {
+      if (pixels instanceof HTMLImageElement) {
+        [width, height] = [pixels.naturalWidth, pixels.naturalHeight];
+      } else if (pixels instanceof HTMLVideoElement) {
+        [width, height] = [pixels.videoWidth, pixels.videoHeight];
+      }
+
       if (this.fromPixels2DContext == null) {
         throw new Error(
             'Can\'t read pixels from HTMLImageElement outside ' +
             'the browser.');
       }
-      this.fromPixels2DContext.canvas.width = pixels.width;
-      this.fromPixels2DContext.canvas.height = pixels.height;
-      this.fromPixels2DContext.drawImage(
-          pixels, 0, 0, pixels.width, pixels.height);
-      vals = this.fromPixels2DContext
-                 .getImageData(0, 0, pixels.width, pixels.height)
-                 .data;
+      this.fromPixels2DContext.canvas.width = width;
+      this.fromPixels2DContext.canvas.height = height;
+      this.fromPixels2DContext.drawImage(pixels, 0, 0, width, height);
+      vals = this.fromPixels2DContext.getImageData(0, 0, width, height).data;
     } else {
       throw new Error(
           'pixels passed to tf.browser.fromPixels() must be either an ' +
@@ -159,7 +165,7 @@ export class MathBackendCPU implements KernelBackend {
     if (numChannels === 4) {
       values = new Int32Array(vals);
     } else {
-      const numPixels = pixels.width * pixels.height;
+      const numPixels = width * height;
       values = new Int32Array(numPixels * numChannels);
       for (let i = 0; i < numPixels; i++) {
         for (let channel = 0; channel < numChannels; ++channel) {
@@ -167,8 +173,7 @@ export class MathBackendCPU implements KernelBackend {
         }
       }
     }
-    const outShape: [number, number, number] =
-        [pixels.height, pixels.width, numChannels];
+    const outShape: [number, number, number] = [height, width, numChannels];
     return tensor3d(values, outShape, 'int32');
   }
   async read(dataId: DataId): Promise<DataValues> {
@@ -3331,7 +3336,7 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   fill<R extends Rank>(
-    shape: ShapeMap[R], value: number|string, dtype?: DataType): Tensor<R> {
+      shape: ShapeMap[R], value: number|string, dtype?: DataType): Tensor<R> {
     dtype = dtype || inferDtype(value);
     const values = getArrayFromDType(dtype, sizeFromShape(shape)) as TypedArray;
     values.fill(value as number);

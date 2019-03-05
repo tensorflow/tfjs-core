@@ -1272,6 +1272,27 @@ describeWithFlags('fromPixels, mock canvas', NODE_ENVS, () => {
   });
 });
 
+describeWithFlags('fromPixels HTMLImageElement', BROWSER_ENVS, () => {
+  it('preserves natural width and height', () => {
+    const img = new Image();
+    img.height = 200;
+    img.width = 200;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 100;
+    canvas.height = 100;
+
+    img.src = canvas.toDataURL('image/png');
+
+    console.log('natural', img.naturalWidth, img.naturalHeight);
+    console.log('real', img.width, img.height);
+
+    //const t = tf.browser.fromPixels(img);
+    //expect(t.dtype).toBe('int32');
+    //expect(t.shape).toEqual([100, 100, 3]);
+  });
+});
+
 describeWithFlags('fromPixels', BROWSER_ENVS, () => {
   it('ImageData 1x1x3', () => {
     const pixels = new ImageData(1, 1);
