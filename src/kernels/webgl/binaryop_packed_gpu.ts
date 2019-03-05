@@ -44,16 +44,16 @@ export const DIV = `
   result.w = a.w == b.w ? 1. : result.w;
 
   if(abs(a.x) < epsilon && abs(b.x) < epsilon) {
-    result.x = 0.;
+    result.x = 1.;
   }
   if(abs(a.y) < epsilon && abs(b.y) < epsilon) {
-    result.y = 0.;
+    result.y = 1.;
   }
   if(abs(a.z) < epsilon && abs(b.z) < epsilon) {
-    result.z = 0.;
+    result.z = 1.;
   }
   if(abs(a.w) < epsilon && abs(b.w) < epsilon) {
-    result.w = 0.;
+    result.w = 1.;
   }
 
   return result;
