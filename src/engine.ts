@@ -195,9 +195,13 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
       ): T {
     let result: T;
     const saved: NamedTensorMap = {};
-    const saveFunc = (x: NamedTensorMap): void => {
-      for (const key in x) {
-        saved[key] = this.keep(this.clone(x[key]));
+    const saveFunc = (tensors: NamedTensorMap): void => {
+      // Do not save unless we are recording to the tape.
+      if (this.activeTape == null) {
+        return;
+      }
+      for (const key in tensors) {
+        saved[key] = this.keep(this.clone(tensors[key]));
       }
     };
     const scopeName = this.activeScope != null ? this.activeScope.name : '';
