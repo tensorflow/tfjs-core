@@ -15,6 +15,8 @@
  * =============================================================================
  */
 
+import {getWebGLContext} from '../canvas_util';
+import {ENV} from '../environment';
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
 import {ALL_ENVS, expectArraysClose, expectArraysEqual, PACKED_ENVS, WEBGL_ENVS} from '../test_util';
@@ -28,6 +30,17 @@ describeWithFlags('div', PACKED_ENVS, () => {
 
     const c = a.div(b).matMul(b);
     expectArraysClose(c, [3]);
+  });
+
+  it('unused channels should be left as 0', () => {
+    const gl = getWebGLContext(ENV.get('WEBGL_VERSION'));
+    const a = tf.tensor2d([3], [1, 1]);
+    const b = tf.tensor2d([3], [1, 1]);
+
+    a.div(b);
+    const packedRGBA = new Float32Array(4);
+    gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.FLOAT, packedRGBA)
+    expectArraysClose(packedRGBA, new Float32Array([1, 0, 0, 0]));
   });
 });
 

@@ -28,14 +28,33 @@ const CHECK_NAN_SNIPPET = `
 
 // We do the same as in ./binaryop_gpu, with vec4 and ivec4.
 // On Linux, the vectorized implementation produces NaNs when a and b are 0.
+// We must also check for a / b channels equal to 0 in case they are empty.
+// Equality check fails, so checking epsilon.
+// TODO: Find a vectorized implementation of epsilon check that works on Linux.
 export const DIV = `
   // vec4 one = vec4(equal(a, b));
   // return one + (vec4(1.0) - one) * a / b;
+  float epsilon = 0.00000001;
   vec4 result = a / b;
+
   result.x = a.x == b.x ? 1. : result.x;
   result.y = a.y == b.y ? 1. : result.y;
   result.z = a.z == b.z ? 1. : result.z;
   result.w = a.w == b.w ? 1. : result.w;
+
+  if(abs(a.x) < epsilon && abs(b.x) < epsilon) {
+    result.x = 0.;
+  }
+  if(abs(a.y) < epsilon && abs(b.y) < epsilon) {
+    result.y = 0.;
+  }
+  if(abs(a.z) < epsilon && abs(b.z) < epsilon) {
+    result.z = 0.;
+  }
+  if(abs(a.w) < epsilon && abs(b.w) < epsilon) {
+    result.w = 0.;
+  }
+
   return result;
 `;
 

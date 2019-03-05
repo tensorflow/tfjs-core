@@ -27,7 +27,8 @@ export const WEBGL_ENVS: Features = {
   'HAS_WEBGL': true
 };
 export const PACKED_ENVS: Features = {
-  'WEBGL_PACK': true
+  'WEBGL_PACK': true,
+  'HAS_WEBGL': true
 };
 export const NODE_ENVS: Features = {
   'IS_NODE': true
