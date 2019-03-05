@@ -18,6 +18,7 @@
 import * as broadcast_util from '../../ops/broadcast_util';
 import {GPGPUContext} from './gpgpu_context';
 import {GPGPUProgram} from './gpgpu_math';
+import {ENV} from '../../environment';
 
 const CHECK_NAN_SNIPPET = `
   result.r = isNaN.r > 0. ? NAN : result.r;
@@ -34,7 +35,7 @@ const CHECK_NAN_SNIPPET = `
 export const DIV = `
   // vec4 one = vec4(equal(a, b));
   // return one + (vec4(1.0) - one) * a / b;
-  float epsilon = 0.00000001;
+  float epsilon = ${ENV.get('EPSILON')};
   vec4 result = a / b;
 
   result.x = a.x == b.x ? 1. : result.x;

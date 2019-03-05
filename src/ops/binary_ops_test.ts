@@ -39,7 +39,7 @@ describeWithFlags('div', PACKED_ENVS, () => {
 
     a.div(b);
     const packedRGBA = new Float32Array(4);
-    gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.FLOAT, packedRGBA)
+    gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.FLOAT, packedRGBA);
     expectArraysClose(packedRGBA, new Float32Array([1, 0, 0, 0]));
   });
 });
