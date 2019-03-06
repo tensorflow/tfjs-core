@@ -1718,7 +1718,7 @@ export class MathBackendWebGL implements KernelBackend {
     const batchMatMulWillBeUnpacked =
         (outerShapeX === 1 || outerShapeFilter === 1) &&
         sharedMatMulDim > MATMUL_SHARED_DIM_THRESHOLD;
-    const reshapeWillBeExpensive = xShape[2] % 2 !== 0 && xTexData.isPacked;
+    const reshapeWillBeExpensive = xShape[2] % 2 !== 0 && !!xTexData.isPacked;
 
     if (batchMatMulWillBeUnpacked || !ENV.get('WEBGL_LAZILY_UNPACK') ||
         !ENV.get('WEBGL_PACK_BINARY_OPERATIONS') || !reshapeWillBeExpensive) {
