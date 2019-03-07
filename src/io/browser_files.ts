@@ -29,7 +29,9 @@ const DEFAULT_FILE_NAME_PREFIX = 'model';
 const DEFAULT_JSON_EXTENSION_NAME = '.json';
 const DEFAULT_WEIGHT_DATA_EXTENSION_NAME = '.weights.bin';
 
-const defer = (f: () => any): Promise<any> => new Promise(resolve => setTimeout(resolve)).then(f);
+function defer<T>(f: () => T): Promise<T> {
+  return new Promise(resolve => setTimeout(resolve)).then(f);
+}
 
 export class BrowserDownloads implements IOHandler {
   private readonly modelTopologyFileName: string;
@@ -92,7 +94,7 @@ export class BrowserDownloads implements IOHandler {
       jsonAnchor.download = this.modelTopologyFileName;
       jsonAnchor.href = modelTopologyAndWeightManifestURL;
       // Trigger downloads by evoking a click event on the download anchors.
-      // When multiple downloads are started synchronously, Firefox will only 
+      // When multiple downloads are started synchronously, Firefox will only
       // save the last one.
       await defer(() => jsonAnchor.dispatchEvent(new MouseEvent('click')));
 
@@ -102,7 +104,8 @@ export class BrowserDownloads implements IOHandler {
             this.weightDataAnchor;
         weightDataAnchor.download = this.weightDataFileName;
         weightDataAnchor.href = weightsURL;
-        await defer(() => weightDataAnchor.dispatchEvent(new MouseEvent('click')));
+        await defer(
+            () => weightDataAnchor.dispatchEvent(new MouseEvent('click')));
       }
 
       return {modelArtifactsInfo: getModelArtifactsInfoForJSON(modelArtifacts)};
