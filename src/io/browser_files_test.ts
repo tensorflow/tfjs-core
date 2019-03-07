@@ -89,7 +89,7 @@ describeWithFlags('browserDownloads', BROWSER_ENVS, () => {
       this.clicked = 0;
     }
 
-    click() {
+    dispatchEvent() {
       this.clicked++;
     }
   }
