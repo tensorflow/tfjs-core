@@ -184,6 +184,8 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
   }
 
   private clone(x: Tensor): Tensor {
+    // We don't want to all public-facing tensor.clone() since we want to avoid
+    // adding a node to the tape.
     return Tensor.make(x.shape, {dataId: x.dataId}, x.dtype);
   }
 
@@ -196,7 +198,9 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     let result: T;
     const saved: NamedTensorMap = {};
     const saveFunc = (tensors: NamedTensorMap): void => {
-      // Do not save unless we are recording to the tape.
+      // Do not save unless we are recording to the tape. Otherwise it would
+      // cause a mem leak since we would never run backprop, which disposes the
+      // kept tensors.
       if (this.activeTape == null) {
         return;
       }
