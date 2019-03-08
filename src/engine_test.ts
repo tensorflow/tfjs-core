@@ -586,8 +586,7 @@ describeWithFlags('backend without render float32 support', WEBGL_ENVS, () => {
   });
 
   beforeEach(() => {
-    tf.ENV.registerBackend(
-        'half-float-webgl', () => new MathBackendWebGL(null));
+    tf.ENV.registerBackend('half-float-webgl', () => new MathBackendWebGL());
   });
 
   afterEach(() => {

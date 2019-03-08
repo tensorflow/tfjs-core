@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {getWebGLContext, setWebGLContext} from '../../canvas_util';
+import {getWebGLContext} from '../../canvas_util';
 import {ENV} from '../../environment';
 import * as util from '../../util';
 import * as gpgpu_util from './gpgpu_util';
@@ -47,14 +47,9 @@ export class GPGPUContext {
   private disjoint: boolean;
   private textureConfig: TextureConfig;
 
-  constructor(gl?: WebGLRenderingContext) {
+  constructor() {
     const glVersion = ENV.get('WEBGL_VERSION');
-    if (gl != null) {
-      this.gl = gl;
-      setWebGLContext(glVersion, gl);
-    } else {
-      this.gl = getWebGLContext(glVersion);
-    }
+    this.gl = getWebGLContext(glVersion);
     // WebGL 2.0 enables texture floats without an extension.
     if (ENV.get('WEBGL_VERSION') === 1) {
       this.textureFloatExtension =

@@ -27,9 +27,23 @@ const WEBGL_ATTRIBUTES: WebGLContextAttributes = {
   failIfMajorPerformanceCaveat: true
 };
 
-export function setWebGLContext(
-    webGLVersion: number, gl: WebGLRenderingContext) {
-  contexts[webGLVersion] = gl;
+/**
+ *
+ * @param gl
+ */
+export function setContext(gl: WebGLRenderingContext) {
+  const versionStr: string = gl.getParameter(gl.VERSION);
+  let version = 0;
+  if (versionStr.startsWith('WebGL 1.0')) {
+    version = 1;
+  } else if (versionStr.startsWith('WebGL 2.0')) {
+    version = 2;
+  } else {
+    throw new Error(
+        `We failed to detect WebGL version from the version string ` +
+        `provided by your gl context: '${versionStr}'`);
+  }
+  contexts[version] = gl;
 }
 
 export function getWebGLContext(webGLVersion: number): WebGLRenderingContext {

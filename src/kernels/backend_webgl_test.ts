@@ -155,7 +155,7 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
   });
 
   it('reading', () => {
-    const backend = new MathBackendWebGL(null);
+    const backend = new MathBackendWebGL();
     tf.ENV.registerBackend('test-storage', () => backend);
     tf.setBackend('test-storage');
 
@@ -176,7 +176,7 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
   });
 
   it('read packed and then use by an unpacked op', () => {
-    const backend = new MathBackendWebGL(null);
+    const backend = new MathBackendWebGL();
     tf.ENV.registerBackend('test-storage', () => backend);
     tf.setBackend('test-storage');
 
@@ -196,7 +196,7 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
   });
 
   it('delayed storage, overwriting', () => {
-    const backend = new MathBackendWebGL(null);
+    const backend = new MathBackendWebGL();
     tf.ENV.registerBackend('test-storage', () => backend);
     tf.setBackend('test-storage');
 
