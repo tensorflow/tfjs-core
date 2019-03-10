@@ -17,6 +17,7 @@
 
 import {ENV} from '../environment';
 import {Tensor2D, Tensor3D, Tensor4D, Tensor5D} from '../tensor';
+import {NamedTensorMap} from '../tensor_types';
 import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import * as util from '../util';
@@ -188,7 +189,9 @@ function conv2d_<T extends Tensor3D|Tensor4D>(
   const convInfo = conv_util.computeConv2DInfo(
       x4D.shape, $filter.shape, strides, dilations, pad, dimRoundingMode);
 
-  const grad = (dy: Tensor4D) => {
+  const grad = (dy: Tensor4D, saved: NamedTensorMap) => {
+    const x4D = saved.x4D as Tensor4D;
+    const $filter = saved.$filter as Tensor4D;
     util.assert(
         conv_util.tupleValuesAreOne(dilations),
         () => 'Error in gradient of conv2D: dilation rates greater than 1 ' +
@@ -200,9 +203,11 @@ function conv2d_<T extends Tensor3D|Tensor4D>(
     };
   };
 
-  const res = ENV.engine.runKernel(
-      backend => backend.conv2d(x4D, $filter, convInfo), {x: x4D, $filter},
-      grad);
+  const res = ENV.engine.runKernel((backend, save) => {
+    const res = backend.conv2d(x4D, $filter, convInfo);
+    save({$filter, x4D});
+    return res;
+  }, {x: x4D, $filter}, grad);
 
   if (reshapedTo4D) {
     return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as T;

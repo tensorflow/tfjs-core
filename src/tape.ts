@@ -130,7 +130,7 @@ export function getFilteredNodesXToY(
  */
 export function backpropagateGradients(
     tensorAccumulatedGradientMap: {[tensorId: number]: Tensor},
-    filteredTape: TapeNode[]) {
+    filteredTape: TapeNode[], tidy: (f: Function) => Tensor) {
   // Walk the tape backward and keep a map of Tensor to its gradient.
   for (let i = filteredTape.length - 1; i >= 0; i--) {
     const node = filteredTape[i];
@@ -169,7 +169,7 @@ export function backpropagateGradients(
       }
 
       // Call the gradient function.
-      const dx = inputGradients[inputName]();
+      const dx = tidy(() => inputGradients[inputName]());
       if (dx.dtype !== 'float32') {
         throw new Error(
             `Error in gradient for op ${node.name}. The gradient of input ` +
@@ -190,9 +190,6 @@ export function backpropagateGradients(
         tensorAccumulatedGradientMap[x.id] = curGradient.add(dx);
         curGradient.dispose();
       }
-    }
-    for (const key in node.saved) {
-      node.saved[key].dispose();
     }
   }
 }

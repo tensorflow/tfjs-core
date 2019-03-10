@@ -16,7 +16,6 @@
  */
 
 import {ENV} from '../environment';
-import {KernelBackend} from '../kernels/backend';
 import {Tensor} from '../tensor';
 import {NamedTensorMap} from '../tensor_types';
 import {makeTypesMatch} from '../tensor_util';
@@ -254,7 +253,7 @@ function pow_<T extends Tensor>(base: T|TensorLike, exp: Tensor|TensorLike): T {
   base = $base.cast(upcastType($base.dtype, $exp.dtype));
   exp = $exp.cast(upcastType($base.dtype, $exp.dtype));
   const grad = (dy: Tensor, saved: NamedTensorMap) => {
-    const y = saved.y;
+    const {$base, $exp, y} = saved;
     const derBase = () => {
       const expFloat = $exp.toFloat();
       let res = dy.mul(expFloat.mul($base.pow(expFloat.sub(scalar(1)))));
@@ -278,7 +277,7 @@ function pow_<T extends Tensor>(base: T|TensorLike, exp: Tensor|TensorLike): T {
   };
   return ENV.engine.runKernel((backend, save) => {
     const y = backend.pow($base, $exp);
-    save({y});
+    save({$base, $exp, y});
     return y;
   }, {$base, $exp}, grad) as T;
 }
@@ -329,7 +328,8 @@ function mul_<T extends Tensor>(a: Tensor|TensorLike, b: Tensor|TensorLike): T {
   const outShape =
       broadcast_util.assertAndGetBroadcastShape($a.shape, $b.shape);
 
-  const der = (dy: Tensor) => {
+  const der = (dy: Tensor, saved: NamedTensorMap) => {
+    const {$a, $b} = saved;
     const derA = () => {
       const res = dy.mul($b.toFloat());
       const reduceAxes = broadcast_util.getReductionAxes($a.shape, outShape);
@@ -348,8 +348,11 @@ function mul_<T extends Tensor>(a: Tensor|TensorLike, b: Tensor|TensorLike): T {
     };
     return {$a: derA, $b: derB};
   };
-  return ENV.engine.runKernel(
-             backend => backend.multiply($a, $b), {$a, $b}, der) as T;
+  return ENV.engine.runKernel((backend, save) => {
+    const res = backend.multiply($a, $b);
+    save({$a, $b});
+    return res;
+  }, {$a, $b}, der) as T;
 }
 
 /**
@@ -399,16 +402,14 @@ function div_<T extends Tensor>(a: Tensor|TensorLike, b: Tensor|TensorLike): T {
   let $b = convertToTensor(b, 'b', 'div');
   [$a, $b] = makeTypesMatch($a, $b);
 
-  let forwardFunc: (backend: KernelBackend) => Tensor;
   if ($a.dtype === 'int32' && $b.dtype === 'int32') {
     return floorDiv($a, $b);
-  } else {
-    forwardFunc = (backend: KernelBackend) => backend.realDivide($a, $b);
   }
 
   const outShape =
       broadcast_util.assertAndGetBroadcastShape($a.shape, $b.shape);
-  const der = (dy: Tensor) => {
+  const der = (dy: Tensor, saved: NamedTensorMap) => {
+    const {$a, $b} = saved;
     const derA = () => {
       const res = dy.div($b.toFloat());
       const reduceAxes = broadcast_util.getReductionAxes($a.shape, outShape);
@@ -428,7 +429,11 @@ function div_<T extends Tensor>(a: Tensor|TensorLike, b: Tensor|TensorLike): T {
     };
     return {$a: derA, $b: derB};
   };
-  return ENV.engine.runKernel(forwardFunc, {$a, $b}, der) as T;
+  return ENV.engine.runKernel((backend, save) => {
+    const res = backend.realDivide($a, $b);
+    save({$a, $b});
+    return res;
+  }, {$a, $b}, der) as T;
 }
 
 /**
@@ -462,10 +467,10 @@ function floorDiv_<T extends Tensor>(
   let $b = convertToTensor(b, 'b', 'floorDiv');
   [$a, $b] = makeTypesMatch($a, $b);
 
-  const forwardFunc = (backend: KernelBackend) => backend.floorDiv($a, $b);
   const outShape =
       broadcast_util.assertAndGetBroadcastShape($a.shape, $b.shape);
-  const der = (dy: Tensor) => {
+  const der = (dy: Tensor, saved: NamedTensorMap) => {
+    const {$a, $b} = saved;
     const derA = () => {
       const res = dy.div($b.toFloat());
       const reduceAxes = broadcast_util.getReductionAxes($a.shape, outShape);
@@ -485,7 +490,11 @@ function floorDiv_<T extends Tensor>(
     };
     return {$a: derA, $b: derB};
   };
-  return ENV.engine.runKernel(forwardFunc, {$a, $b}, der) as T;
+  return ENV.engine.runKernel((backend, save) => {
+    const res = backend.floorDiv($a, $b);
+    save({$a, $b});
+    return res;
+  }, {$a, $b}, der) as T;
 }
 
 /**
@@ -671,13 +680,17 @@ function maximum_<T extends Tensor>(
   }
 
   broadcast_util.assertAndGetBroadcastShape($a.shape, $b.shape);
-  const der = (dy: Tensor) => {
+  const der = (dy: Tensor, saved: NamedTensorMap) => {
+    const {$a, $b} = saved;
     const derA = () => dy.mul($a.greaterEqual($b).toFloat());
     const derB = () => dy.mul($a.less($b).toFloat());
     return {$a: derA, $b: derB};
   };
-  return ENV.engine.runKernel(
-             backend => backend.maximum($a, $b), {$a, $b}, der) as T;
+  return ENV.engine.runKernel((backend, save) => {
+    const res = backend.maximum($a, $b);
+    save({$a, $b});
+    return res;
+  }, {$a, $b}, der) as T;
 }
 
 /**

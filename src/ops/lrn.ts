@@ -56,18 +56,19 @@ function localResponseNormalization_<T extends Tensor3D|Tensor4D>(
     x4D = $x.as4D(1, $x.shape[0], $x.shape[1], $x.shape[2]);
   }
   const backward = (dy: Tensor4D, saved: NamedTensorMap) => {
-    const outputImage = saved.y;
+    const {x4D, y} = saved;
     return {
       x4D: () => ENV.engine.runKernel(
           backend => backend.LRNGrad(
-              dy, x4D, outputImage as Tensor4D, depthRadius, bias, alpha, beta),
+              dy, x4D as Tensor4D, y as Tensor4D, depthRadius, bias, alpha,
+              beta),
           {})
     };
   };
   const res = ENV.engine.runKernel((backend, save) => {
     const y = backend.localResponseNormalization4D(
         x4D, depthRadius, bias, alpha, beta);
-    save({y});
+    save({x4D, y});
     return y;
   }, {x4D}, backward);
   if (reshapedTo4D) {

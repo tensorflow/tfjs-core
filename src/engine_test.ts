@@ -194,6 +194,14 @@ describeWithFlags('gradients', ALL_ENVS, () => {
       return z;
     });
   });
+
+  it('custom ops do not leak', () => {
+    const before = tf.memory().numTensors;
+    const x = tf.softmax([1, 2, 3, 4]);
+    x.dispose();
+    const now = tf.memory().numTensors;
+    expect(now).toBe(before);
+  });
 });
 
 describeWithFlags('valueAndGradients', ALL_ENVS, () => {
@@ -268,9 +276,20 @@ describeWithFlags('valueAndGradients', ALL_ENVS, () => {
 
 describeWithFlags('higher-order gradients', ALL_ENVS, () => {
   it('grad(grad(f))', () => {
+    const x = tf.tensor1d([.1, .2]);
+    const before = tf.memory().numTensors;
     const gradgrad = tf.grad(tf.grad(x => x.mul(x).mul(x)));
-    const result = gradgrad(tf.tensor1d([.1, .2]));
+    const result = gradgrad(x);
+    expect(tf.memory().numTensors).toBe(before + 1);
     expectArraysClose(result, [.6, 1.2]);
+  });
+
+  it('grad(grad(x^2))', () => {
+    const x = tf.scalar(3);
+    const gradgrad = tf.grad(tf.grad(x => x.square()));
+    const result = gradgrad(x);
+    // grad(grad(x^2)) = grad(2x) = 2
+    expectArraysClose(result, [2]);
   });
 
   it('grads(grads(f))', () => {

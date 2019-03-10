@@ -160,8 +160,11 @@ describeWithFlags('div', ALL_ENVS, () => {
     const b = tf.scalar(2);
     const dy = tf.scalar(4);
 
+    const before = tf.memory().numTensors;
     const grads = tf.grads((a, b) => tf.div(a, b));
     const [da, db] = grads([a, b], dy);
+    const now = tf.memory().numTensors;
+    expect(now).toBe(before + 2);
 
     expect(da.shape).toEqual(a.shape);
     expect(da.dtype).toEqual('float32');

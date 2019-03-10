@@ -94,6 +94,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
   private activeTape: TapeNode[];
   private gradientScopeCount = 0;
   private customGradientDepth = 0;
+  private kernelDepth = 0;
 
   // Keep Tensors that parallel the tapes.
   private activeScope: ScopeState;
@@ -184,9 +185,11 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
   }
 
   private clone(x: Tensor): Tensor {
-    // We don't want to all public-facing tensor.clone() since we want to avoid
-    // adding a node to the tape.
-    return Tensor.make(x.shape, {dataId: x.dataId}, x.dtype);
+    // We don't want to all public-facing tensor.clone() since we are already
+    // executing a kernel.
+    const y = Tensor.make(x.shape, {dataId: x.dataId}, x.dtype);
+    this.addTapeNode([x], y, dy => [dy.toFloat()]);
+    return y;
   }
 
   runKernel<T extends Tensor|Tensor[], I extends NamedTensorMap>(
@@ -197,43 +200,43 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
       ): T {
     let result: T;
     const saved: NamedTensorMap = {};
+    const shouldRecord = this.shouldRecord();
+    const scopeName = this.activeScope != null ? this.activeScope.name : '';
     const saveFunc = (tensors: NamedTensorMap): void => {
       // Do not save unless we are recording to the tape. Otherwise it would
       // cause a mem leak since we would never run backprop, which disposes the
       // kept tensors.
-      if (this.activeTape == null) {
+      if (!shouldRecord) {
         return;
       }
       for (const key in tensors) {
         saved[key] = this.keep(this.clone(tensors[key]));
       }
     };
-    const scopeName = this.activeScope != null ? this.activeScope.name : '';
+
     const startingBytecount = this.numBytes;
     const startingNumTensors = this.numTensors;
 
     // Stop recording to a tape when running a kernel.
-    this.scopedRun(
-        () => this.customGradientDepth++, () => this.customGradientDepth--,
-        () => {
-          if (!this.debugMode()) {
-            result = forwardFunc(this.backend, saveFunc);
-          } else {
-            result = this.profiler.profileKernel(
-                scopeName, () => forwardFunc(this.backend, saveFunc));
-          }
-        });
+    this.scopedRun(() => this.kernelDepth++, () => this.kernelDepth--, () => {
+      if (!this.debugMode()) {
+        result = forwardFunc(this.backend, saveFunc);
+      } else {
+        result = this.profiler.profileKernel(
+            scopeName, () => forwardFunc(this.backend, saveFunc));
+      }
+    });
 
-    if (this.shouldRecord()) {
+    if (shouldRecord) {
       const tapeNode: TapeNode = {
         id: this.nextTapeNodeId++,
         name: scopeName,
         inputs,
-        outputs: Array.isArray(result) ? result : [result] as Tensor[]
+        outputs: Array.isArray(result) ? result : [result] as Tensor[],
+        saved
       };
       if (backwardsFunc != null) {
         tapeNode.gradient = (dy: T) => backwardsFunc(dy, saved);
-        tapeNode.saved = saved;
       }
       this.activeTape.push(tapeNode);
     }
@@ -375,7 +378,8 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
   }
 
   private shouldRecord(): boolean {
-    return this.activeTape != null && this.customGradientDepth === 0;
+    return this.gradientScopeCount > 0 && this.customGradientDepth === 0 &&
+        this.kernelDepth === 0;
   }
 
   private addTapeNode(
@@ -442,9 +446,6 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
   endScope(result?: TensorContainer, gradientsMode = false) {
     if (gradientsMode) {
       this.gradientScopeCount--;
-      if (this.gradientScopeCount === 0) {
-        this.activeTape = null;
-      }
     }
 
     const tensorsToKeep = new Set(this.keepTensors);
@@ -458,12 +459,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
       if (tensorsToKeep.has(tensor.id)) {
         continue;
       }
-
-      if (this.activeTape != null) {
-        tensorsToTrackInParent.push(tensor);
-      } else {
-        tensor.dispose();
-      }
+      tensor.dispose();
     }
 
     const oldScope = this.scopeStack.pop();
@@ -497,29 +493,41 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
       throw new Error(`dy must have 'float32' dtype, but has '${dy.dtype}'`);
     }
 
-    return this.tidy('gradients', () => {
-      const y = f();
-      util.assert(
-          y instanceof Tensor,
-          () => 'The result y returned by f() must be a tensor.');
-      // Filter out the nodes that don't connect x => y.
-      const filteredTape = getFilteredNodesXToY(this.activeTape, xs, y);
-      if (!allowNoGradients && filteredTape.length === 0 && xs.length > 0) {
-        throw new Error(
-            'Cannot compute gradient of y=f(x) with respect to x. Make sure ' +
-            'that the f you passed encloses all operations that lead from x ' +
-            'to y.');
-      }
+    const y = this.tidy('forward', () => f(), true /* gradientsMode */);
+    util.assert(
+        y instanceof Tensor,
+        () => 'The result y returned by f() must be a tensor.');
+    // Filter out the nodes that don't connect x => y.
+    const filteredTape = getFilteredNodesXToY(this.activeTape, xs, y);
+    if (!allowNoGradients && filteredTape.length === 0 && xs.length > 0) {
+      throw new Error(
+          'Cannot compute gradient of y=f(x) with respect to x. Make sure ' +
+          'that the f you passed encloses all operations that lead from x ' +
+          'to y.');
+    }
 
+    return this.tidy('backward', () => {
       const accumulatedGradientMap: {[tensorId: number]: Tensor} = {};
       accumulatedGradientMap[y.id] = (dy == null) ? ones(y.shape) : dy;
 
       // Backprop gradients through the filtered nodes.
-      backpropagateGradients(accumulatedGradientMap, filteredTape);
-
+      backpropagateGradients(
+          accumulatedGradientMap, filteredTape,
+          f => this.tidy(f as ScopeFn<Tensor>));
       const grads = xs.map(x => accumulatedGradientMap[x.id]);
+
+      if (this.gradientScopeCount === 0) {
+        // This means that we are not computing higher-order gradients
+        // and can clean up the tape.
+        this.activeTape.forEach(node => {
+          for (const key in node.saved) {
+            node.saved[key].dispose();
+          }
+        });
+        this.activeTape = null;
+      }
       return {value: y, grads};
-    }, true /* gradientsMode */);
+    });
   }
 
   customGrad<T extends Tensor>(f: CustomGradientFunc<T>):
@@ -538,7 +546,6 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
       this.scopedRun(
           () => this.customGradientDepth++, () => this.customGradientDepth--,
           () => {
-            const gradientsMode = true;
             result = this.tidy(f.name, () => {
               const {value, gradFunc} = f(...inputs);
               util.assert(
@@ -553,7 +560,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
                       'object where `obj.gradFunc` is a function.');
               gradientsFunc = gradFunc;
               return value;
-            }, gradientsMode);
+            });
           });
 
       if (this.shouldRecord()) {

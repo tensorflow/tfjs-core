@@ -191,10 +191,15 @@ function expm1_<T extends Tensor>(x: T|TensorLike): T {
 function log_<T extends Tensor>(x: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'log');
 
-  const grad = (dy: T) => {
-    return {$x: () => dy.divStrict($x.toFloat())};
+  const grad = (dy: T, saved: NamedTensorMap) => {
+    const {$x} = saved;
+    return {$x: () => dy.div($x.toFloat()) as T};
   };
-  return ENV.engine.runKernel(backend => backend.log($x), {$x}, grad);
+  return ENV.engine.runKernel((backend, save) => {
+    const res = backend.log($x);
+    save({$x});
+    return res;
+  }, {$x}, grad);
 }
 
 /**
@@ -347,7 +352,8 @@ function clipByValue_<T extends Tensor>(
       () => `Error in clip: min (${clipValueMin}) must be ` +
           `less than or equal to max (${clipValueMax}).`);
 
-  const grad = (dy: T) => {
+  const grad = (dy: T, saved: NamedTensorMap) => {
+    const {$x} = saved;
     return {
       $x: () => dy.where(
                     $x.greaterEqual(clipValueMin)
@@ -355,8 +361,11 @@ function clipByValue_<T extends Tensor>(
                     zerosLike(dy)) as T,
     };
   };
-  return ENV.engine.runKernel(
-      backend => backend.clip($x, clipValueMin, clipValueMax), {$x}, grad);
+  return ENV.engine.runKernel((backend, save) => {
+    const res = backend.clip($x, clipValueMin, clipValueMax);
+    save({$x});
+    return res;
+  }, {$x}, grad);
 }
 
 /**

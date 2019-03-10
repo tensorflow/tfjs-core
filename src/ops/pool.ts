@@ -83,16 +83,17 @@ function maxPoolImpl_<T extends Tensor3D|Tensor4D>(
       x4D.shape, filterSize, strides, dilations, pad, dimRoundingMode);
 
   const grad = (dy: Tensor4D, saved: NamedTensorMap) => {
-    const y4D = saved.y;
+    const {x4D, y} = saved;
     return {
       x: () => maxPoolBackprop(
-          dy, x4D, y4D as Tensor4D, filterSize, strides, dilations, pad)
+          dy, x4D as Tensor4D, y as Tensor4D, filterSize, strides, dilations,
+          pad)
     };
   };
 
   const res = ENV.engine.runKernel((backend, save) => {
     const y = backend.maxPool(x4D, convInfo);
-    save({y});
+    save({x4D, y});
     return y;
   }, {x: x4D}, grad);
   if (reshapedTo4D) {

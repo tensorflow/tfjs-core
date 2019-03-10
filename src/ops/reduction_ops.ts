@@ -250,8 +250,7 @@ function mean_<T extends Tensor>(
         expandedDyShape[axis] = 1;
       });
       const expandedDy = dy.reshape(expandedDyShape);
-      const derX =
-          expandedDy.mul(ones(x.shape, 'float32')).div(reduceSizeScalar);
+      const derX = expandedDy.mul(ones(x.shape, 'float32')).div(reduceSize);
       return derX;
     };
     return {value, gradFunc};

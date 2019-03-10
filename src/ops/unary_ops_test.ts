@@ -2678,6 +2678,17 @@ describeWithFlags('clip', ALL_ENVS, () => {
     expectArraysClose(gradients, [0]);
   });
 
+  it('derivate with primitive as input', () => {
+    const min = -1;
+    const max = 2;
+    const x = -10;
+    const dy = tf.scalar(5);
+    const gradients = tf.grad(x => x.clipByValue(min, max))(x, dy);
+    expect(gradients.shape).toEqual([]);
+    expect(gradients.dtype).toEqual('float32');
+    expectArraysClose(gradients, [0]);
+  });
+
   it('throws when passed a non-tensor', () => {
     expect(() => tf.clipByValue({} as tf.Tensor, 0, 1))
         .toThrowError(/Argument 'x' passed to 'clipByValue' must be a Tensor/);

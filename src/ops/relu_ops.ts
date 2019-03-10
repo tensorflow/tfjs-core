@@ -45,11 +45,15 @@ function relu_<T extends Tensor>(x: T|TensorLike): T {
   if ($x.dtype === 'bool') {
     return $x.toInt();
   }
-  const grad = (dy: T) => {
-    const stepRes = $x.step();
-    return {$x: () => dy.mulStrict(stepRes.toFloat())};
+  const grad = (dy: T, saved: NamedTensorMap) => {
+    const {$x} = saved;
+    return {$x: () => dy.mulStrict($x.step().toFloat() as T)};
   };
-  return ENV.engine.runKernel(backend => backend.relu($x), {$x}, grad);
+  return ENV.engine.runKernel((backend, save) => {
+    const res = backend.relu($x);
+    save({$x});
+    return res;
+  }, {$x}, grad);
 }
 
 /**

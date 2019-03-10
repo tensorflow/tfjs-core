@@ -19,6 +19,8 @@ import {CustomGradientFunc, ScopeFn} from './engine';
 import {ENV} from './environment';
 import {Scalar, Tensor, Variable} from './tensor';
 import {NamedTensorMap, TensorContainer} from './tensor_types';
+import {convertToTensor} from './tensor_util_env';
+import {TensorLike} from './types';
 import * as util from './util';
 
 /**
@@ -70,27 +72,24 @@ function gradScope<T extends TensorContainer>(
  * @param f The function f(x), to compute gradient for.
  */
 /** @doc {heading: 'Training', subheading: 'Gradients'} */
-function grad<I extends Tensor, O extends Tensor>(f: (x: I) => O): (
-    x: I, dy?: O) => I {
+function grad(f: (x: Tensor) => Tensor): (
+    x: TensorLike|Tensor, dy?: TensorLike|Tensor) => Tensor {
   util.assert(
       util.isFunction(f), () => 'The f passed in grad(f) must be a function');
-  return (x: I, dy?: O): I => {
-    util.assert(
-        x instanceof Tensor,
-        () => 'The x passed in grad(f)(x) must be a tensor');
-    util.assert(
-        dy == null || dy instanceof Tensor,
-        () => 'The dy passed in grad(f)(x, dy) must be a tensor');
+  return (x: TensorLike|Tensor, dy?: TensorLike|Tensor): Tensor => {
+    const $x = convertToTensor(x, 'x', 'tf.grad');
+    const $dy: Tensor =
+        (dy != null) ? convertToTensor(dy, 'dy', 'tf.grad') : null;
     return ENV.engine.tidy(() => {
-      const {value, grads} = ENV.engine.gradients(() => f(x), [x], dy);
-      if (dy != null) {
+      const {value, grads} = ENV.engine.gradients(() => f($x), [$x], $dy);
+      if ($dy != null) {
         util.assertShapesMatch(
-            value.shape, dy.shape,
+            value.shape, $dy.shape,
             'The shape of dy passed in grad(f)(x, dy) must match the shape ' +
                 'returned by f(x)');
       }
       checkGrads(grads);
-      return grads[0] as I;
+      return grads[0];
     });
   };
 }
@@ -123,6 +122,7 @@ function grad<I extends Tensor, O extends Tensor>(f: (x: I) => O): (
  * @param f The function `f(x1, x2,...)` to compute gradients for.
  */
 /** @doc {heading: 'Training', subheading: 'Gradients'} */
+// TODO(smilkov): Change to take TensorLike, before seding a PR.
 function grads<O extends Tensor>(f: (...args: Tensor[]) => O): (
     args: Tensor[], dy?: O) => Tensor[] {
   util.assert(
