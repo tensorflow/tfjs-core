@@ -95,8 +95,13 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
   private activeProfile: ProfileInfo;
 
   private activeTape: TapeNode[];
-  private gradientScopeCount = 0;
-  private customGradientDepth = 0;
+  // Number of nested tf.grad() statements when computing higher-order
+  // gradients. E.g. `1` for first-order gradients and `2` when computing
+  // second-order gradients. Used to track if the tape should be removed after
+  // a backprop. (We don't remove the tape when we still inside a grad()).
+  private gradientDepth = 0;
+  // Number of nested kernel calls. When kernel depth is greater than 1, we turn
+  // off the tape.
   private kernelDepth = 0;
 
   // Keep Tensors that parallel the tapes.
@@ -384,8 +389,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
   }
 
   private shouldRecord(): boolean {
-    return this.gradientScopeCount > 0 && this.customGradientDepth === 0 &&
-        this.kernelDepth === 0;
+    return this.gradientDepth > 0 && this.kernelDepth === 0;
   }
 
   private addTapeNode(
@@ -430,11 +434,11 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
    * as scope() without the need for a function closure.
    */
   startScope(name?: string, gradientsMode = false) {
-    if (gradientsMode && this.gradientScopeCount === 0) {
+    if (gradientsMode && this.gradientDepth === 0) {
       this.activeTape = [];
     }
     if (gradientsMode) {
-      this.gradientScopeCount++;
+      this.gradientDepth++;
     }
 
     const scopeInfo: ScopeState = {track: [], name: 'unnamed scope'};
@@ -451,7 +455,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
    */
   endScope(result?: TensorContainer, gradientsMode = false) {
     if (gradientsMode) {
-      this.gradientScopeCount--;
+      this.gradientDepth--;
     }
 
     const tensorsToKeep = new Set(this.keepTensors);
@@ -519,10 +523,11 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
       // Backprop gradients through the filtered nodes.
       backpropagateGradients(
           accumulatedGradientMap, filteredTape,
+          // Pass the tidy function to avoid circular dep with `tape.ts`.
           f => this.tidy(f as ScopeFn<Tensor>));
       const grads = xs.map(x => accumulatedGradientMap[x.id]);
 
-      if (this.gradientScopeCount === 0) {
+      if (this.gradientDepth === 0) {
         // This means that we are not computing higher-order gradients
         // and can clean up the tape.
         this.activeTape.forEach(node => {
