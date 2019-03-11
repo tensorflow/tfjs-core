@@ -230,6 +230,16 @@ describeWithFlags('abs', ALL_ENVS, () => {
     expectArraysClose(da, [8 * 1]);
   });
 
+  it('gradient with clones', () => {
+    const a = tf.scalar(4);
+    const dy = tf.scalar(8);
+
+    const da = tf.grad(a => a.clone().abs().clone())(a, dy);
+
+    expect(da.shape).toEqual(a.shape);
+    expect(da.dtype).toEqual('float32');
+  });
+
   it('gradients: Tensor1D', () => {
     const a = tf.tensor1d([1, 2, -3, 5]);
     const dy = tf.tensor1d([1, 2, 3, 4]);
@@ -1156,6 +1166,14 @@ describeWithFlags('log1p', ALL_ENVS, () => {
     expect(gradients.shape).toEqual(a.shape);
     expect(gradients.dtype).toEqual('float32');
     expectArraysClose(gradients, [3 / (1 + 5)]);
+  });
+
+  it('gradient with clones', () => {
+    const a = tf.scalar(5);
+    const gradients = tf.grad(a => a.clone().log1p().clone())(a);
+
+    expect(gradients.shape).toEqual(a.shape);
+    expect(gradients.dtype).toEqual('float32');
   });
 
   it('gradients: Tensor1D', () => {

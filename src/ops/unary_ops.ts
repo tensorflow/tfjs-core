@@ -217,10 +217,15 @@ function log_<T extends Tensor>(x: T|TensorLike): T {
 function log1p_<T extends Tensor>(x: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'log1p');
 
-  const grad = (dy: T) => {
+  const grad = (dy: T, saved: NamedTensorMap) => {
+    const {$x} = saved;
     return {$x: () => dy.div($x.add(1)) as T};
   };
-  return ENV.engine.runKernel(backend => backend.log1p($x), {$x}, grad);
+  return ENV.engine.runKernel((backend, save) => {
+    const res = backend.log1p($x);
+    save({$x});
+    return res;
+  }, {$x}, grad);
 }
 
 /**
@@ -325,10 +330,15 @@ function abs_<T extends Tensor>(x: T|TensorLike): T {
     return ENV.engine.runKernel(backend => backend.complexAbs($x), {$x});
   }
 
-  const grad = (dy: T) => {
-    return {$x: () => dy.mulStrict($x.toFloat().step(-1))};
+  const grad = (dy: T, saved: NamedTensorMap) => {
+    const {$x} = saved;
+    return {$x: () => dy.mul($x.toFloat().step(-1)) as T};
   };
-  return ENV.engine.runKernel(backend => backend.abs($x), {$x}, grad);
+  return ENV.engine.runKernel((backend, save) => {
+    const res = backend.abs($x);
+    save({$x});
+    return res;
+  }, {$x}, grad);
 }
 
 /**

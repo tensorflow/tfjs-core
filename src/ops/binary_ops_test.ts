@@ -71,6 +71,16 @@ describeWithFlags('prelu', ALL_ENVS, () => {
     expectArraysClose(dx, [1, 1, 0.25, 0.15]);
   });
 
+  it('gradient with clones', () => {
+    const x = tf.tensor1d([0.5, 3, -0.1, -4]);
+    const a = tf.tensor1d([0.2, 0.4, 0.25, 0.15]);
+    const dx = tf.grad(x => tf.prelu(x.clone(), a).clone())(x);
+
+    expect(dx.shape).toEqual(x.shape);
+    expect(dx.dtype).toEqual('float32');
+    expectArraysClose(dx, [1, 1, 0.25, 0.15]);
+  });
+
   it('derivative where alpha got broadcasted', () => {
     const x = tf.tensor2d([[0.5, 3, -0.1, -4]]);
     const a = tf.tensor2d([[0.2]]);

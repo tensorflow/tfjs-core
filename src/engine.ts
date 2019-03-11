@@ -33,12 +33,15 @@ export type ForwardFunc<T> =
     (backend: KernelBackend, save?: (tensors: NamedTensorMap) => void) => T;
 
 /**
- * @docalias (a: Tensor, b: Tensor,...) => {
- * value: Tensor, * gradFunc: (dy: Tensor) => Tensor | Tensor[] * }
+ * @docalias (args: Tensor[], save: Function) => {
+ *   value: Tensor,
+ *   gradFunc: (dy: Tensor, saved: NamedTensorMap) => Tensor | Tensor[]
+ * }
  */
-export type CustomGradientFunc<T extends Tensor> = (...args: Tensor[]) => {
-  value: T, gradFunc: (dy: T) => Tensor | Tensor[];
-};
+export type CustomGradientFunc<T extends Tensor> =
+    (args: Tensor[], save: (map: NamedTensorMap) => void) => {
+      value: T, gradFunc: (dy: T, saved: NamedTensorMap) => Tensor | Tensor[];
+    };
 
 export type MemoryInfo = {
   numTensors: number; numDataBuffers: number; numBytes: number;
@@ -184,9 +187,12 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     return Engine.nextVariableId++;
   }
 
+  /**
+   * This method is called instead of the public-facing tensor.clone() when
+   * saving a tensor for backwards pass. It makes sure to add the clone
+   * operation to the tape regardless of being called inside a kernel execution.
+   */
   private clone(x: Tensor): Tensor {
-    // We don't want to all public-facing tensor.clone() since we are already
-    // executing a kernel.
     const y = Tensor.make(x.shape, {dataId: x.dataId}, x.dtype);
     this.addTapeNode([x], y, dy => [dy.toFloat()]);
     return y;
@@ -541,47 +547,48 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
           () => 'The args passed in customGrad(f)(x1, x2,...) must all be ' +
               'tensors');
 
-      let gradientsFunc: (dy: T) => Tensor | Tensor[];
-      let result: T;
-      this.scopedRun(
-          () => this.customGradientDepth++, () => this.customGradientDepth--,
-          () => {
-            result = this.tidy(f.name, () => {
-              const {value, gradFunc} = f(...inputs);
-              util.assert(
-                  value instanceof Tensor,
-                  () =>
-                      'The function f passed in customGrad(f) must return an ' +
-                      'object where `obj.value` is a tensor');
-              util.assert(
-                  util.isFunction(gradFunc),
-                  () =>
-                      'The function f passed in customGrad(f) must return an ' +
-                      'object where `obj.gradFunc` is a function.');
-              gradientsFunc = gradFunc;
-              return value;
+      let res: {
+        value: T,
+        gradFunc: (dy: T, saved: NamedTensorMap) => Tensor | Tensor[],
+      };
+      const inputMap: NamedTensorMap = {};
+      inputs.forEach((input, i) => {
+        inputMap[i] = input;
+      });
+      return this.runKernel(
+          (_, save) => {
+            res = f(inputs, save);
+            util.assert(
+                res.value instanceof Tensor,
+                () => 'The function f passed in customGrad(f) must return an ' +
+                    'object where `obj.value` is a tensor');
+            util.assert(
+                util.isFunction(res.gradFunc),
+                () => 'The function f passed in customGrad(f) must return an ' +
+                    'object where `obj.gradFunc` is a function.');
+            return res.value;
+          },
+          inputMap,
+          (dy: T, saved: NamedTensorMap) => {
+            const gradRes = res.gradFunc(dy, saved);
+            const grads: Tensor[] =
+                Array.isArray(gradRes) ? gradRes : [gradRes];
+            util.assert(
+                grads.length === inputs.length,
+                () => 'The function f passed in customGrad(f) must return an ' +
+                    'object where `obj.gradFunc` is a function that returns ' +
+                    'the same number of tensors as inputs passed to f(...).');
+            util.assert(
+                grads.every(t => t instanceof Tensor),
+                () => 'The function f passed in customGrad(f) must return an ' +
+                    'object where `obj.gradFunc` is a function that returns ' +
+                    'a list of only tensors.');
+            const gradMap: {[key: string]: () => Tensor} = {};
+            grads.forEach((grad, i) => {
+              gradMap[i] = () => grad;
             });
+            return gradMap;
           });
-
-      if (this.shouldRecord()) {
-        const gradFunc = (dy: T): Tensor[] => {
-          const res = gradientsFunc(dy);
-          const grads: Tensor[] = Array.isArray(res) ? res : [res];
-          util.assert(
-              grads.length === inputs.length,
-              () => 'The function f passed in customGrad(f) must return an ' +
-                  'object where `obj.gradFunc` is a function that returns ' +
-                  'the same number of tensors as inputs passed to f(...).');
-          util.assert(
-              grads.every(t => t instanceof Tensor),
-              () => 'The function f passed in customGrad(f) must return an ' +
-                  'object where `obj.gradFunc` is a function that returns a ' +
-                  'list of only tensors.');
-          return grads;
-        };
-        this.addTapeNode(inputs, result, gradFunc);
-      }
-      return result;
     };
   }
 

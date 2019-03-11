@@ -2313,6 +2313,14 @@ describeWithFlags('gather', ALL_ENVS, () => {
     expectArraysClose(gradients, [8, 6, 4]);
   });
 
+  it('gradient with clones', () => {
+    const t = tf.tensor1d([1, 2, 3]);
+    const indices = tf.tensor1d([0, 2, 0, 1], 'int32');
+    const gradF = tf.grad(t => tf.gather(t.clone(), indices.clone()).clone());
+    const dt = gradF(t);
+    expect(dt.shape).toEqual(t.shape);
+  });
+
   it('gradient 1D (gather), 2D indices', () => {
     const t = tf.tensor1d([1, 2, 3]);
     const indices = tf.tensor2d([0, 2, 0, 1], [2, 2], 'int32');

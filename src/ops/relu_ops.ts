@@ -158,7 +158,8 @@ function prelu_<T extends Tensor>(x: T|TensorLike, alpha: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'prelu');
   const $alpha = convertToTensor(alpha, 'alpha', 'prelu');
 
-  const grad = (dy: Tensor) => {
+  const grad = (dy: Tensor, saved: NamedTensorMap) => {
+    const {$x, $alpha} = saved;
     const mask = $x.greater(0);
 
     return {
@@ -174,8 +175,11 @@ function prelu_<T extends Tensor>(x: T|TensorLike, alpha: T|TensorLike): T {
     };
   };
 
-  return ENV.engine.runKernel(
-             backend => backend.prelu($x, $alpha), {$x, $alpha}, grad) as T;
+  return ENV.engine.runKernel((backend, save) => {
+    const res = backend.prelu($x, $alpha);
+    save({$x, $alpha});
+    return res;
+  }, {$x, $alpha}, grad) as T;
 }
 
 export const elu = op({elu_});

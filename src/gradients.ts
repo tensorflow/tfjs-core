@@ -77,7 +77,8 @@ function grad(f: (x: Tensor) => Tensor): (
   util.assert(
       util.isFunction(f), () => 'The f passed in grad(f) must be a function');
   return (x: TensorLike|Tensor, dy?: TensorLike|Tensor): Tensor => {
-    const $x = convertToTensor(x, 'x', 'tf.grad');
+    // x can be of any dtype, thus null as the last argument.
+    const $x = convertToTensor(x, 'x', 'tf.grad', null);
     const $dy: Tensor =
         (dy != null) ? convertToTensor(dy, 'dy', 'tf.grad') : null;
     return ENV.engine.tidy(() => {
@@ -328,15 +329,25 @@ function variableGrads(f: () => Scalar, varList?: Variable[]):
  * Overrides the gradient computation of a function `f`.
  *
  * Takes a function
- * `f(...inputs) => {value: Tensor, gradFunc: dy => Tensor[]}` and returns
- * another function `g(...inputs)` which takes the same inputs as `f`. When
- * called, `g` returns `f().value`. In backward mode, custom gradients with
+ * `f(inputs, save) => {value: Tensor, gradFunc: (dy, saved) => Tensor[]}` and
+ * returns another function `g(...inputs)` which takes the same inputs as `f`.
+ * When called, `g` returns `f().value`. In backward mode, custom gradients with
  * respect to each input of `f` are computed using `f().gradFunc`.
  *
+ * The `save` function passsed to `f` should be used for saving tensors needed
+ * in the gradient. And the `saved` passed to the `gradFunc` is a
+ * `NamedTensorMap`, which contains those saved tensor.
+ *
  * ```js
- * const customOp = tf.customGrad(x => {
+ * const customOp = tf.customGrad(([x], save) => {
+ *   // Save x to make sure it's available later for the gradient.
+ *   save({x});
  *   // Override gradient of our custom x ^ 2 op to be dy * abs(x);
- *   return {value: x.square(), gradFunc: dy => [dy.mul(x.abs())]};
+ *   return {
+ *     value: x.square(),
+ *     // Note `saved.x` which points to the `x` we saved ealier.
+ *     gradFunc: (dy, saved) => [dy.mul(saved.x.abs())]
+ *   };
  * });
  *
  * const x = tf.tensor1d([-1, -2, 3]);
@@ -349,8 +360,8 @@ function variableGrads(f: () => Scalar, varList?: Variable[]):
  * ```
  *
  * @param f The function to evaluate in forward mode, which should return
- *     `{value: Tensor, gradFunc: (dy) => Tensor[]}`, where `gradFunc` returns
- *     the custom gradients of `f` with respect to its inputs.
+ *     `{value: Tensor, gradFunc: (dy, saved) => Tensor[]}`, where `gradFunc`
+ *     returns the custom gradients of `f` with respect to its inputs.
  */
 /** @doc {heading: 'Training', subheading: 'Gradients'} */
 function customGrad<T extends Tensor>(f: CustomGradientFunc<T>):

@@ -20,6 +20,7 @@ import {describeWithFlags} from './jasmine_util';
 import {MathBackendCPU} from './kernels/backend_cpu';
 import {MathBackendWebGL} from './kernels/backend_webgl';
 import {Tensor} from './tensor';
+import {NamedTensorMap} from './tensor_types';
 import {ALL_ENVS, CPU_ENVS, expectArraysClose, expectArraysEqual, WEBGL_ENVS} from './test_util';
 
 describeWithFlags('fromPixels + regular math op', WEBGL_ENVS, () => {
@@ -306,7 +307,7 @@ describeWithFlags('customGradient', ALL_ENVS, () => {
     const b = tf.scalar(2, 'int32');
     const dy = tf.scalar(4);
 
-    const customPow = tf.customGrad(a => {
+    const customPow = tf.customGrad(([a]) => {
       const value = tf.pow(a, b);
       const gradFunc = (dy: tf.Tensor) => dy.mul(tf.scalar(0.1));
       return {value, gradFunc};
@@ -325,9 +326,13 @@ describeWithFlags('customGradient', ALL_ENVS, () => {
 
     const dy = tf.scalar(5);
 
-    const customPow = tf.customGrad(a => {
+    const customPow = tf.customGrad(([a], save) => {
       const value = tf.pow(a, b);
-      const gradFunc = (dy: tf.Tensor) => dy.mul(a);
+      save({a});
+      const gradFunc = (dy: tf.Tensor, saved: NamedTensorMap) => {
+        const {a} = saved;
+        return dy.mul(a);
+      };
       return {value, gradFunc};
     });
 
@@ -339,9 +344,16 @@ describeWithFlags('customGradient', ALL_ENVS, () => {
   });
 
   it('calling gradient of custom op twice works', () => {
-    const customOp = tf.customGrad(x => {
+    const customOp = tf.customGrad(([x], save) => {
       // Override gradient of our custom x ^ 2 op to be dy * abs(x);
-      return {value: x.square(), gradFunc: dy => dy.mul(x.abs())};
+      save({x});
+      return {
+        value: x.square(),
+        gradFunc: (dy, saved: NamedTensorMap) => {
+          const {x} = saved;
+          return dy.mul(x.abs());
+        }
+      };
     });
     const x = tf.tensor1d([-1, -2, 3]);
     const grad = tf.grad(x => customOp(x));
@@ -724,12 +736,12 @@ describeWithFlags('Switching WebGL + CPU backends', WEBGL_ENVS, () => {
 });
 
 // NOTE: This describe is purposefully not a describeWithFlags so that we test
-// tensor allocation where no scopes have been created. The backend here must be
-// set to CPU because we cannot allocate GPU tensors outside a
+// tensor allocation where no scopes have been created. The backend here must
+// be set to CPU because we cannot allocate GPU tensors outside a
 // describeWithFlags because the default webgl backend and the test backends
 // share a WebGLContext. When backends get registered, global WebGL state is
-// initialized, which causes the two backends to step on each other and get in a
-// bad state.
+// initialized, which causes the two backends to step on each other and get in
+// a bad state.
 describe('Memory allocation outside a test scope', () => {
   it('constructing a tensor works', () => {
     tf.setBackend('cpu');

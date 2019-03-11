@@ -113,7 +113,7 @@ function sum_<T extends Tensor>(
 
   // Use a custom gradient to bypass 2 gradient backprops since sum is used
   // extremely often.
-  const customOp = customGrad(x => {
+  const customOp = customGrad(([x]) => {
     const permutation = axis_util.getAxesPermutation(axes, x.rank);
     let reductionAxes = axes;
     let permutedX = x;
@@ -236,7 +236,7 @@ function mean_<T extends Tensor>(
 
   // Use a custom gradient to bypass 2 gradient backprops since mean is used
   // extremely often.
-  const customOp = customGrad(x => {
+  const customOp = customGrad(([x]) => {
     const reduceSizeScalar = scalar(reduceSize);
     // Cast if needed.
     const xReduce =

@@ -737,6 +737,30 @@ describeWithFlags('batchNorm2D', ALL_ENVS, () => {
         gradScale, tf.tensor2d([7.069, 7.499, 8.164, 8.838], [2, 2]));
   });
 
+  it('gradient with clones', () => {
+    const x = tf.zeros([2, 2]);
+    const mean = tf.zeros([2, 2]);
+    const variance = tf.zeros([2, 2]);
+    const scale = tf.zeros([2, 2]);
+    const offset = tf.zeros([2, 2]);
+
+    const varianceEpsilon = .001;
+
+    const gradF = tf.grads(
+        (x: tf.Tensor2D, mean: tf.Tensor2D, variance: tf.Tensor2D,
+         offset: tf.Tensor2D, scale: tf.Tensor2D) =>
+            tf.batchNorm2d(
+                x.clone(), mean.clone(), variance.clone(), offset.clone(),
+                scale.clone(), varianceEpsilon));
+    const [gradX, gradMean, gradVariance, gradOffset, gradScale] =
+        gradF([x, mean, variance, offset, scale]);
+    expect(gradX.shape).toEqual(x.shape);
+    expect(gradMean.shape).toEqual(mean.shape);
+    expect(gradVariance.shape).toEqual(variance.shape);
+    expect(gradOffset.shape).toEqual(offset.shape);
+    expect(gradScale.shape).toEqual(scale.shape);
+  });
+
   it('batchnorm2D matches tensorflow, 3x3', () => {
     const x = tf.tensor2d(
         [

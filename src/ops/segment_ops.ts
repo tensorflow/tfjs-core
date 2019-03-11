@@ -17,6 +17,7 @@
 
 import {ENV} from '../environment';
 import {Tensor, Tensor1D} from '../tensor';
+import {NamedTensorMap} from '../tensor_types';
 import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import {assert, isInt, parseAxisParam} from '../util';
@@ -93,7 +94,8 @@ function gather_<T extends Tensor>(
   axis = parseAxisParam(axis, $x.shape)[0];
   const shapeInfo = collectGatherOpShapeInfo($x, $indices, axis);
 
-  const grad = (dy: T) => {
+  const grad = (dy: T, saved: NamedTensorMap) => {
+    const {$indices} = saved;
     const derX = () => {
       const paramsShape = $x.shape;
       const indicesSize = $indices.size;
@@ -125,10 +127,11 @@ function gather_<T extends Tensor>(
     };
     return {$x: derX};
   };
-  return (ENV.engine.runKernel(
-              backend => backend.gather($x, $indices.flatten(), axis), {$x},
-              grad))
-             .reshape(shapeInfo.outputShape) as T;
+  return (ENV.engine.runKernel((backend, save) => {
+           const res = backend.gather($x, $indices.flatten(), axis);
+           save({$indices});
+           return res;
+         }, {$x}, grad)).reshape(shapeInfo.outputShape) as T;
 }
 
 function arrayRange(start: number, stop: number): number[] {
