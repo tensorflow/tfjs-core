@@ -320,10 +320,10 @@ function min_<T extends Tensor>(
   }
 
   const grad = (dy: T, saved: NamedTensorMap) =>
-      gradForMinAndMax(dy, saved.y, xOrig, origAxes, permutedAxes);
+      gradForMinAndMax(dy, saved.y, saved.xOrig, origAxes, permutedAxes);
   let res = ENV.engine.runKernel((backend, save) => {
     const y = backend.min($x, axes);
-    save({y});
+    save({xOrig, y});
     return y as T;
   }, {$x}, grad);
   if (keepDims) {
@@ -375,10 +375,10 @@ function max_<T extends Tensor>(
   }
 
   const grad = (dy: T, saved: NamedTensorMap) =>
-      gradForMinAndMax(dy, saved.y, xOrig, origAxes, permutedAxes);
+      gradForMinAndMax(dy, saved.y, saved.xOrig, origAxes, permutedAxes);
   let res = ENV.engine.runKernel((backend, save) => {
     const y = backend.max($x, axes);
-    save({y});
+    save({xOrig, y});
     return y;
   }, {$x}, grad);
   if (keepDims) {

@@ -54,16 +54,18 @@ function unsortedSegmentSum_<T extends Tensor>(
       convertToTensor(segmentIds, 'segmentIds', 'unsortedSegmentSum', 'int32');
   assert(isInt(numSegments), () => 'numSegments must be of dtype int');
 
-  const gradFunc = (dy: T) => {
+  const gradFunc = (dy: T, saved: NamedTensorMap) => {
+    const {$segmentIds} = saved;
     const derX = () => {
-      return gatherDropNegatives(dy, $segmentIds);
+      return gatherDropNegatives(dy, $segmentIds as Tensor1D);
     };
     return {$x: derX};
   };
-  return ENV.engine.runKernel(
-             backend =>
-                 backend.unsortedSegmentSum($x, $segmentIds, numSegments),
-             {$x}, gradFunc) as T;
+  return ENV.engine.runKernel((backend, save) => {
+    const res = backend.unsortedSegmentSum($x, $segmentIds, numSegments);
+    save({$segmentIds});
+    return res;
+  }, {$x}, gradFunc) as T;
 }
 
 /**

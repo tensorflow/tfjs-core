@@ -545,7 +545,8 @@ function mod_<T extends Tensor>(a: Tensor|TensorLike, b: Tensor|TensorLike): T {
 
   const outShape =
       broadcast_util.assertAndGetBroadcastShape($a.shape, $b.shape);
-  const der = (dy: Tensor) => {
+  const der = (dy: Tensor, saved: NamedTensorMap) => {
+    const {$a, $b} = saved;
     const derA = () => {
       const reduceAxes = broadcast_util.getReductionAxes($a.shape, outShape);
       if (reduceAxes.length > 0) {
@@ -563,8 +564,11 @@ function mod_<T extends Tensor>(a: Tensor|TensorLike, b: Tensor|TensorLike): T {
     };
     return {$a: derA, $b: derB};
   };
-  return ENV.engine.runKernel(backend => backend.mod($a, $b), {$a, $b}, der) as
-      T;
+  return ENV.engine.runKernel((backend, save) => {
+    const res = backend.mod($a, $b);
+    save({$a, $b});
+    return res;
+  }, {$a, $b}, der) as T;
 }
 
 /**
@@ -619,13 +623,17 @@ function minimum_<T extends Tensor>(
   }
 
   broadcast_util.assertAndGetBroadcastShape($a.shape, $b.shape);
-  const der = (dy: Tensor) => {
+  const der = (dy: Tensor, saved: NamedTensorMap) => {
+    const {$a, $b} = saved;
     const derA = () => dy.mul($a.lessEqual($b).toFloat());
     const derB = () => dy.mul($a.greater($b).toFloat());
     return {$a: derA, $b: derB};
   };
-  return ENV.engine.runKernel(
-             backend => backend.minimum($a, $b), {$a, $b}, der) as T;
+  return ENV.engine.runKernel((backend, save) => {
+    const res = backend.minimum($a, $b);
+    save({$a, $b});
+    return res;
+  }, {$a, $b}, der) as T;
 }
 
 /**
@@ -741,14 +749,18 @@ function squaredDifference_<T extends Tensor>(
   [$a, $b] = makeTypesMatch($a, $b);
 
   broadcast_util.assertAndGetBroadcastShape($a.shape, $b.shape);
-  const der = (dy: Tensor) => {
+  const der = (dy: Tensor, saved: NamedTensorMap) => {
+    const {$a, $b} = saved;
     const two = scalar(2);
     const derA = () => dy.mul($a.sub($b).mul(two));
     const derB = () => dy.mul($b.sub($a).mul(two));
     return {$a: derA, $b: derB};
   };
-  return ENV.engine.runKernel(
-             backend => backend.squaredDifference($a, $b), {$a, $b}, der) as T;
+  return ENV.engine.runKernel((backend, save) => {
+    const res = backend.squaredDifference($a, $b);
+    save({$a, $b});
+    return res;
+  }, {$a, $b}, der) as T;
 }
 
 /**
@@ -794,7 +806,8 @@ function atan2_<T extends Tensor>(
   const outShape =
       broadcast_util.assertAndGetBroadcastShape($a.shape, $b.shape);
 
-  const der = (dy: Tensor) => {
+  const der = (dy: Tensor, saved: NamedTensorMap) => {
+    const {$a, $b} = saved;
     const derA = () => {
       const d = add($a.square(), $b.square());
       let res = dy.mul($b.div(d));
@@ -815,8 +828,11 @@ function atan2_<T extends Tensor>(
     };
     return {$a: derA, $b: derB};
   };
-  return ENV.engine.runKernel(
-             backend => backend.atan2($a, $b), {$a, $b}, der) as T;
+  return ENV.engine.runKernel((backend, save) => {
+    const res = backend.atan2($a, $b);
+    save({$a, $b});
+    return res;
+  }, {$a, $b}, der) as T;
 }
 
 export const add = op({add_});

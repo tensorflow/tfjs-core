@@ -32,7 +32,7 @@ import {bytesFromStringArray, makeOnesTypedArray, now, sizeFromShape} from './ut
 export type ForwardFunc<T> = (backend: KernelBackend, save?: GradSaveFunc) => T;
 
 /**
- * @docalias (...inputs: Tensor, save?: Function) => {
+ * @docalias (a: Tensor, b: Tensor,..., save?: Function) => {
  *   value: Tensor,
  *   gradFunc: (dy: Tensor, saved?: NamedTensorMap) => Tensor | Tensor[]
  * }
@@ -96,9 +96,8 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
 
   private activeTape: TapeNode[];
   // Number of nested tf.grad() statements when computing higher-order
-  // gradients. E.g. `1` for first-order gradients and `2` when computing
-  // second-order gradients. Used to track if the tape should be removed after
-  // a backprop. (We don't remove the tape when we still inside a grad()).
+  // gradients. E.g. `1` for first-order gradients and `2` for second-order
+  // gradients. Used to track if the tape should be removed after a backprop.
   private gradientDepth = 0;
   // Number of nested kernel calls. When kernel depth is greater than 1, we turn
   // off the tape.

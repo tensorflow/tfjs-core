@@ -19,7 +19,7 @@ import {CustomGradientFunc, ScopeFn} from './engine';
 import {ENV} from './environment';
 import {Scalar, Tensor, Variable} from './tensor';
 import {NamedTensorMap, TensorContainer} from './tensor_types';
-import {convertToTensor} from './tensor_util_env';
+import {convertToTensor, convertToTensorArray} from './tensor_util_env';
 import {TensorLike} from './types';
 import * as util from './util';
 
@@ -123,23 +123,25 @@ function grad(f: (x: Tensor) => Tensor): (
  * @param f The function `f(x1, x2,...)` to compute gradients for.
  */
 /** @doc {heading: 'Training', subheading: 'Gradients'} */
-// TODO(smilkov): Change to take TensorLike, before seding a PR.
-function grads<O extends Tensor>(f: (...args: Tensor[]) => O): (
-    args: Tensor[], dy?: O) => Tensor[] {
+function grads(f: (...args: Tensor[]) => Tensor): (
+    args: Array<Tensor|TensorLike>, dy?: Tensor|TensorLike) => Tensor[] {
   util.assert(
       util.isFunction(f), () => 'The f passed in grads(f) must be a function');
-  return (args: Tensor[], dy?: O): Tensor[] => {
+  return (args: Array<Tensor|TensorLike>, dy?: Tensor|TensorLike): Tensor[] => {
     util.assert(
-        Array.isArray(args) && args.every(arg => arg instanceof Tensor),
-        () => 'The args passed in grads(f)(args) must be an array of tensors');
-    util.assert(
-        dy == null || dy instanceof Tensor,
-        () => 'The dy passed in grads(f)(args, dy) must be a tensor');
+        Array.isArray(args),
+        () => 'The args passed in grads(f)(args) must be an array ' +
+            'of `Tensor`s or `TensorLike`s');
+    // args can be of any dtype, thus null as the last argument.
+    const $args = convertToTensorArray(args, 'args', 'tf.grads', null);
+    const $dy: Tensor =
+        (dy != null) ? convertToTensor(dy, 'dy', 'tf.grads') : null;
     return ENV.engine.tidy(() => {
-      const {value, grads} = ENV.engine.gradients(() => f(...args), args, dy);
-      if (dy != null) {
+      const {value, grads} =
+          ENV.engine.gradients(() => f(...$args), $args, $dy);
+      if ($dy != null) {
         util.assertShapesMatch(
-            value.shape, dy.shape,
+            value.shape, $dy.shape,
             'The shape of dy passed in grads(f)([x1,...], dy) must ' +
                 'match the shape returned by f([x1,...])');
       }
@@ -329,17 +331,17 @@ function variableGrads(f: () => Scalar, varList?: Variable[]):
  * Overrides the gradient computation of a function `f`.
  *
  * Takes a function
- * `f(inputs, save) => {value: Tensor, gradFunc: (dy, saved) => Tensor[]}` and
- * returns another function `g(...inputs)` which takes the same inputs as `f`.
- * When called, `g` returns `f().value`. In backward mode, custom gradients with
- * respect to each input of `f` are computed using `f().gradFunc`.
+ * `f(...inputs, save) => {value: Tensor, gradFunc: (dy, saved) => Tensor[]}`
+ * and returns another function `g(...inputs)` which takes the same inputs as
+ * `f`. When called, `g` returns `f().value`. In backward mode, custom gradients
+ * with respect to each input of `f` are computed using `f().gradFunc`.
  *
  * The `save` function passsed to `f` should be used for saving tensors needed
  * in the gradient. And the `saved` passed to the `gradFunc` is a
  * `NamedTensorMap`, which contains those saved tensor.
  *
  * ```js
- * const customOp = tf.customGrad(([x], save) => {
+ * const customOp = tf.customGrad((x, save) => {
  *   // Save x to make sure it's available later for the gradient.
  *   save({x});
  *   // Override gradient of our custom x ^ 2 op to be dy * abs(x);

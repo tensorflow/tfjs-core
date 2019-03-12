@@ -113,7 +113,8 @@ export function convertToTensor<T extends Tensor>(
 }
 
 export function convertToTensorArray<T extends Tensor>(
-    arg: Array<T|TensorLike>, argName: string, functionName: string): T[] {
+    arg: Array<T|TensorLike>, argName: string, functionName: string,
+    parseAsDtype: DataType|'numeric' = 'numeric'): T[] {
   if (!Array.isArray(arg)) {
     throw new Error(
         `Argument ${argName} passed to ${functionName} must be a ` +
@@ -121,5 +122,6 @@ export function convertToTensorArray<T extends Tensor>(
   }
   const tensors = arg as T[];
   return tensors.map(
-      (t, i) => convertToTensor(t, `${argName}[${i}]`, functionName));
+      (t, i) => convertToTensor(t, `${argName}[${i}]`, functionName),
+      parseAsDtype);
 }

@@ -100,7 +100,8 @@ function elu_<T extends Tensor>(x: T|TensorLike): T {
 function selu_<T extends Tensor>(x: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'selu');
 
-  const grad = (dy: T) => {
+  const grad = (dy: T, saved: NamedTensorMap) => {
+    const {$x} = saved;
     return {
       $x: () => {
         const mask = $x.greater(scalar(0));
@@ -115,7 +116,11 @@ function selu_<T extends Tensor>(x: T|TensorLike): T {
       }
     };
   };
-  return ENV.engine.runKernel(backend => backend.selu($x), {$x}, grad);
+  return ENV.engine.runKernel((backend, save) => {
+    const res = backend.selu($x);
+    save({$x});
+    return res;
+  }, {$x}, grad);
 }
 
 /**
