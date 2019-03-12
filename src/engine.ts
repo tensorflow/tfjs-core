@@ -97,9 +97,9 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
   private customGradientDepth = 0;
 
   // Keep Tensors that parallel the tapes.
-  private nextScopeId = 0;
   private activeScope: ScopeState;
   private scopeStack: ScopeState[] = [];
+  private nextScopeId = 0;
   private profiler: Profiler;
 
   private tensorInfo = new WeakMap<DataId, {
@@ -397,14 +397,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
           'Safe mode is ON. Enclose all tensor operations inside tf.tidy(): ' +
           'tf.tidy(() => {...}) to avoid memory leaks.');
     }
-    // Add kept bit on the tensor.
     result.kept = true;
-    // Remove it from this scope's tracking mechanism.
-    // const scopeTrackIdx = this.activeScope.track.indexOf(result);
-    // if (scopeTrackIdx !== -1) {
-    //   this.activeScope.track.splice(scopeTrackIdx);
-    // }
-
     return result;
   }
 
