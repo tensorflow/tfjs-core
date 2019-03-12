@@ -56,7 +56,7 @@ describeWithFlags('custom-op webgl', WEBGL_ENVS, () => {
   }
 
   function squareAndAdd<T extends tf.Tensor>(x: T): T {
-    const fn = tf.customGrad(([x], save) => {
+    const fn = tf.customGrad((x: tf.Tensor, save: tf.GradSaveFunc) => {
       save({x});
       const webglBackend = tf.ENV.backend as tf.webgl.MathBackendWebGL;
       const program = new SquareAndAddKernel(x.shape);

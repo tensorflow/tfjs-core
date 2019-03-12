@@ -307,7 +307,7 @@ describeWithFlags('customGradient', ALL_ENVS, () => {
     const b = tf.scalar(2, 'int32');
     const dy = tf.scalar(4);
 
-    const customPow = tf.customGrad(([a]) => {
+    const customPow = tf.customGrad((a: tf.Tensor) => {
       const value = tf.pow(a, b);
       const gradFunc = (dy: tf.Tensor) => dy.mul(tf.scalar(0.1));
       return {value, gradFunc};
@@ -326,7 +326,7 @@ describeWithFlags('customGradient', ALL_ENVS, () => {
 
     const dy = tf.scalar(5);
 
-    const customPow = tf.customGrad(([a], save) => {
+    const customPow = tf.customGrad((a: tf.Tensor, save: tf.GradSaveFunc) => {
       const value = tf.pow(a, b);
       save({a});
       const gradFunc = (dy: tf.Tensor, saved: NamedTensorMap) => {
@@ -344,7 +344,7 @@ describeWithFlags('customGradient', ALL_ENVS, () => {
   });
 
   it('calling gradient of custom op twice works', () => {
-    const customOp = tf.customGrad(([x], save) => {
+    const customOp = tf.customGrad((x: tf.Tensor, save: tf.GradSaveFunc) => {
       // Override gradient of our custom x ^ 2 op to be dy * abs(x);
       save({x});
       return {

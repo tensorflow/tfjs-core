@@ -19,7 +19,7 @@ import {BackendTimingInfo, DataMover, KernelBackend} from './kernels/backend';
 import {Profiler} from './profiler';
 import {backpropagateGradients, getFilteredNodesXToY, NamedGradientMap, TapeNode} from './tape';
 import {DataId, Tensor, Tensor3D, TensorTracker, Variable} from './tensor';
-import {NamedTensorMap, NamedVariableMap, TensorContainer} from './tensor_types';
+import {GradSaveFunc, NamedTensorMap, NamedVariableMap, TensorContainer} from './tensor_types';
 import {getTensorsInContainer, isTensorInList} from './tensor_util';
 import {DataType, DataValues} from './types';
 import * as util from './util';
@@ -29,18 +29,18 @@ import {bytesFromStringArray, makeOnesTypedArray, now, sizeFromShape} from './ut
  * A function that computes an output. The save function is for saving tensors
  * computed in the forward pass, that we need in the backward pass.
  */
-export type ForwardFunc<T> =
-    (backend: KernelBackend, save?: (tensors: NamedTensorMap) => void) => T;
+export type ForwardFunc<T> = (backend: KernelBackend, save?: GradSaveFunc) => T;
 
 /**
- * @docalias (args: Tensor[], save: Function) => {
+ * @docalias (...inputs: Tensor, save?: Function) => {
  *   value: Tensor,
- *   gradFunc: (dy: Tensor, saved: NamedTensorMap) => Tensor | Tensor[]
+ *   gradFunc: (dy: Tensor, saved?: NamedTensorMap) => Tensor | Tensor[]
  * }
  */
 export type CustomGradientFunc<T extends Tensor> =
-    (args: Tensor[], save: (map: NamedTensorMap) => void) => {
-      value: T, gradFunc: (dy: T, saved: NamedTensorMap) => Tensor | Tensor[];
+    (...inputs: Array<Tensor|GradSaveFunc>) => {
+      value: T;
+      gradFunc: (dy: T, saved: NamedTensorMap) => Tensor | Tensor[];
     };
 
 export type MemoryInfo = {
@@ -213,7 +213,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     const saved: NamedTensorMap = {};
     const shouldRecord = this.shouldRecord();
     const scopeName = this.activeScope != null ? this.activeScope.name : '';
-    const saveFunc = (tensors: NamedTensorMap): void => {
+    const saveFunc: GradSaveFunc = (tensors) => {
       // Do not save unless we are recording to the tape. Otherwise it would
       // cause a mem leak since we would never run backprop, which disposes the
       // kept tensors.
@@ -542,7 +542,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
   }
 
   customGrad<T extends Tensor>(f: CustomGradientFunc<T>):
-      (...args: Tensor[]) => T {
+      (...args: Array<Tensor|GradSaveFunc>) => T {
     util.assert(
         util.isFunction(f),
         () => 'The f passed in customGrad(f) must be a function.');
@@ -562,7 +562,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
       });
       return this.runKernel(
           (_, save) => {
-            res = f(inputs, save);
+            res = f(...[...inputs, save]);
             util.assert(
                 res.value instanceof Tensor,
                 () => 'The function f passed in customGrad(f) must return an ' +
