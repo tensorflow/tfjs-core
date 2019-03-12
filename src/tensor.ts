@@ -428,6 +428,8 @@ export class Tensor<R extends Rank = Rank> {
 
   /** Whether this tensor has been globally kept. */
   kept = false;
+  /** The id of the scope this tensor is being tracked in. */
+  scopeId: number;
 
   /**
    * Number of elements to skip in each dimension when indexing. See

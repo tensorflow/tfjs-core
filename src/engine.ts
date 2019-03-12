@@ -20,7 +20,7 @@ import {Profiler} from './profiler';
 import {backpropagateGradients, getFilteredNodesXToY, NamedGradientMap, TapeNode} from './tape';
 import {DataId, Tensor, Tensor3D, TensorTracker, Variable} from './tensor';
 import {NamedTensorMap, NamedVariableMap, TensorContainer} from './tensor_types';
-import {getTensorsInContainer, isTensorInList} from './tensor_util';
+import {getTensorsInContainer} from './tensor_util';
 import {DataType, DataValues} from './types';
 import * as util from './util';
 import {bytesFromStringArray, makeOnesTypedArray, now, sizeFromShape} from './util';
@@ -76,6 +76,7 @@ export interface TensorManager {
 interface ScopeState {
   track: Tensor[];
   name: string;
+  id: number;
 }
 
 export class Engine implements TensorManager, TensorTracker, DataMover {
@@ -96,6 +97,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
   private customGradientDepth = 0;
 
   // Keep Tensors that parallel the tapes.
+  private nextScopeId = 0;
   private activeScope: ScopeState;
   private scopeStack: ScopeState[] = [];
   private profiler: Profiler;
@@ -418,7 +420,8 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
       this.gradientScopeCount++;
     }
 
-    const scopeInfo: ScopeState = {track: [], name: 'unnamed scope'};
+    const scopeInfo:
+        ScopeState = {track: [], name: 'unnamed scope', id: this.nextScopeId++};
     if (name) {
       scopeInfo.name = name;
     }
@@ -462,7 +465,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     tensorsToTrackInParent.forEach(tensor => {
       // Only track the tensor if was allocated in the inner scope and is not
       // globally kept.
-      if (!tensor.kept && isTensorInList(tensor, oldScope.track)) {
+      if (!tensor.kept && tensor.scopeId === oldScope.id) {
         this.track(tensor);
       }
     });
@@ -617,8 +620,10 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
           'tf.tidy(() => {op();...}); to avoid memory leaks.');
     }
     if (this.activeScope != null) {
+      result.scopeId = this.activeScope.id;
       this.activeScope.track.push(result);
     }
+
     return result;
   }
 }
