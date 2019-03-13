@@ -426,6 +426,11 @@ export class Tensor<R extends Rank = Rank> {
   /** The rank type for the array (see `Rank` enum). */
   readonly rankType: R;
 
+  /** Whether this tensor has been globally kept. */
+  kept = false;
+  /** The id of the scope this tensor is being tracked in. */
+  scopeId: number;
+
   /**
    * Number of elements to skip in each dimension when indexing. See
    * https://docs.scipy.org/doc/numpy/reference/generated/\

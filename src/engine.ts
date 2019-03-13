@@ -20,7 +20,7 @@ import {Profiler} from './profiler';
 import {backpropagateGradients, getFilteredNodesXToY, NamedGradientMap, TapeNode} from './tape';
 import {DataId, Tensor, Tensor3D, TensorTracker, Variable} from './tensor';
 import {GradSaveFunc, NamedTensorMap, NamedVariableMap, TensorContainer} from './tensor_types';
-import {getTensorsInContainer, isTensorInList} from './tensor_util';
+import {getTensorsInContainer} from './tensor_util';
 import {DataType, DataValues} from './types';
 import * as util from './util';
 import {bytesFromStringArray, makeOnesTypedArray, now, sizeFromShape} from './util';
@@ -79,6 +79,7 @@ export interface TensorManager {
 interface ScopeState {
   track: Tensor[];
   name: string;
+  id: number;
 }
 
 export class Engine implements TensorManager, TensorTracker, DataMover {
@@ -106,7 +107,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
   // Keep Tensors that parallel the tapes.
   private activeScope: ScopeState;
   private scopeStack: ScopeState[] = [];
-  private keepTensors: Set<number> = new Set();
+  private nextScopeId = 0;
   private profiler: Profiler;
 
   private tensorInfo = new WeakMap<DataId, {
@@ -318,9 +319,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     if (!this.tensorInfo.has(a.dataId)) {
       return;
     }
-    if (this.keepTensors.has(a.id)) {
-      this.keepTensors.delete(a.id);
-    }
+
     this.numTensors--;
     if (a.dtype === 'string') {
       this.numStringTensors--;
@@ -424,7 +423,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
           'Safe mode is ON. Enclose all tensor operations inside tf.tidy(): ' +
           'tf.tidy(() => {...}) to avoid memory leaks.');
     }
-    this.keepTensors.add(result.id);
+    result.kept = true;
     return result;
   }
 
@@ -440,7 +439,8 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
       this.gradientDepth++;
     }
 
-    const scopeInfo: ScopeState = {track: [], name: 'unnamed scope'};
+    const scopeInfo:
+        ScopeState = {track: [], name: 'unnamed scope', id: this.nextScopeId++};
     if (name) {
       scopeInfo.name = name;
     }
@@ -457,18 +457,16 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
       this.gradientDepth--;
     }
 
-    const tensorsToKeep = new Set(this.keepTensors);
-
     const tensorsToTrackInParent = getTensorsInContainer(result);
-    tensorsToTrackInParent.forEach(tensor => tensorsToKeep.add(tensor.id));
+    const tensorsToTrackInParentSet =
+        new Set(tensorsToTrackInParent.map(t => t.id));
 
     // Dispose the arrays tracked in this scope.
     for (let i = 0; i < this.activeScope.track.length; i++) {
       const tensor = this.activeScope.track[i];
-      if (tensorsToKeep.has(tensor.id)) {
-        continue;
+      if (!tensor.kept && !tensorsToTrackInParentSet.has(tensor.id)) {
+        tensor.dispose();
       }
-      tensor.dispose();
     }
 
     const oldScope = this.scopeStack.pop();
@@ -480,8 +478,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     tensorsToTrackInParent.forEach(tensor => {
       // Only track the tensor if was allocated in the inner scope and is not
       // globally kept.
-      if (!this.keepTensors.has(tensor.id) &&
-          isTensorInList(tensor, oldScope.track)) {
+      if (!tensor.kept && tensor.scopeId === oldScope.id) {
         this.track(tensor);
       }
     });
@@ -649,8 +646,10 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
           'tf.tidy(() => {op();...}); to avoid memory leaks.');
     }
     if (this.activeScope != null) {
+      result.scopeId = this.activeScope.id;
       this.activeScope.track.push(result);
     }
+
     return result;
   }
 }
