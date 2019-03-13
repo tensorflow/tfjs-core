@@ -15,29 +15,13 @@
  * =============================================================================
  */
 
-import {CustomGradientFunc, ScopeFn} from './engine';
+import {CustomGradientFunc} from './engine';
 import {ENV} from './environment';
 import {Scalar, Tensor, Variable} from './tensor';
-import {NamedTensorMap, TensorContainer} from './tensor_types';
+import {NamedTensorMap} from './tensor_types';
 import {convertToTensor, convertToTensorArray} from './tensor_util_env';
 import {TensorLike} from './types';
 import * as util from './util';
-
-/**
- * Create a new gradient scope. Similar to scope, but forces all inner scopes
- * to not clean up so that gradient operations can be used inside of this
- * scope.
- * @param nameOrScopeFn The name of the scope, or the function to execute.
- *     If a name is provided, the 2nd argument should be the function.
- *     If a name is provided, and debug mode is on, the timing and the memory
- *     usage of the function will be tracked and displayed on the console
- *     using the provided name.
- * @param scopeFn The function to execute.
- */
-function gradScope<T extends TensorContainer>(
-    nameOrScopeFn: string|ScopeFn<T>, scopeFn?: ScopeFn<T>): T {
-  return ENV.engine.tidy(nameOrScopeFn, scopeFn, true /* gradScope */);
-}
 
 /**
  * Provided `f(x)`, returns another function `g(x, dy?)`, which gives the
@@ -381,7 +365,6 @@ function checkGrads(grads: Tensor[]) {
 }
 
 export {
-  gradScope,
   customGrad,
   variableGrads,
   valueAndGrad,

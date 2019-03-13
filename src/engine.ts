@@ -130,11 +130,8 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     this.write(dataId, this.readSync(dataId));
   }
 
-  tidy<T extends TensorContainer>(
-      nameOrFn: string|ScopeFn<T>, fn?: ScopeFn<T>, gradMode = false): T {
-    // gradMode Primarily for internal use during backprop
-    //          If true, will start a tape if it is the outermost tidy.
-
+  tidy<T extends TensorContainer>(nameOrFn: string|ScopeFn<T>, fn?: ScopeFn<T>):
+      T {
     let name: string = null;
     if (fn == null) {
       // Called with only 1 argument.
@@ -160,8 +157,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     }
     let result: T;
     return this.scopedRun(
-        () => this.startScope(name, gradMode),
-        () => this.endScope(result, gradMode), () => {
+        () => this.startScope(name), () => this.endScope(result), () => {
           result = fn();
           if (result instanceof Promise) {
             console.error('Cannot return a Promise inside of tidy.');
@@ -427,18 +423,22 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     return result;
   }
 
+  private startTape() {
+    if (this.gradientDepth === 0) {
+      this.activeTape = [];
+    }
+    this.gradientDepth++;
+  }
+
+  private endTape() {
+    this.gradientDepth--;
+  }
+
   /**
    * Start a scope. Use this with endScope() to achieve the same functionality
    * as scope() without the need for a function closure.
    */
-  startScope(name?: string, gradientsMode = false) {
-    if (gradientsMode && this.gradientDepth === 0) {
-      this.activeTape = [];
-    }
-    if (gradientsMode) {
-      this.gradientDepth++;
-    }
-
+  startScope(name?: string) {
     const scopeInfo:
         ScopeState = {track: [], name: 'unnamed scope', id: this.nextScopeId++};
     if (name) {
@@ -452,11 +452,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
    * End a scope. Use this with startScope() to achieve the same functionality
    * as scope() without the need for a function closure.
    */
-  endScope(result?: TensorContainer, gradientsMode = false) {
-    if (gradientsMode) {
-      this.gradientDepth--;
-    }
-
+  endScope(result?: TensorContainer) {
     const tensorsToTrackInParent = getTensorsInContainer(result);
     const tensorsToTrackInParentSet =
         new Set(tensorsToTrackInParent.map(t => t.id));
@@ -499,7 +495,10 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
       throw new Error(`dy must have 'float32' dtype, but has '${dy.dtype}'`);
     }
 
-    const y = this.tidy('forward', () => f(), true /* gradientsMode */);
+    this.startTape();
+    const y = this.tidy('forward', () => f());
+    this.endTape();
+
     util.assert(
         y instanceof Tensor,
         () => 'The result y returned by f() must be a tensor.');
