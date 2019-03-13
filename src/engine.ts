@@ -207,13 +207,13 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
       ): T {
     let result: T;
     const saved: NamedTensorMap = {};
-    const shouldRecord = this.shouldRecord();
+    const isTapeOn = this.isTapeOn();
     const scopeName = this.activeScope != null ? this.activeScope.name : '';
     const saveFunc: GradSaveFunc = (tensors) => {
       // Do not save unless we are recording to the tape. Otherwise it would
       // cause a mem leak since we would never run backprop, which disposes the
       // kept tensors.
-      if (!shouldRecord) {
+      if (!isTapeOn) {
         return;
       }
       for (const key in tensors) {
@@ -234,7 +234,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
       }
     });
 
-    if (shouldRecord) {
+    if (isTapeOn) {
       const tapeNode: TapeNode = {
         id: this.nextTapeNodeId++,
         name: scopeName,
@@ -382,7 +382,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     return this.activeProfile;
   }
 
-  private shouldRecord(): boolean {
+  isTapeOn(): boolean {
     return this.gradientDepth > 0 && this.kernelDepth === 0;
   }
 
@@ -495,9 +495,9 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
       throw new Error(`dy must have 'float32' dtype, but has '${dy.dtype}'`);
     }
 
-    this.startTape();
-    const y = this.tidy('forward', () => f());
-    this.endTape();
+    const y = this.scopedRun(
+        () => this.startTape(), () => this.endTape(),
+        () => this.tidy('forward', f));
 
     util.assert(
         y instanceof Tensor,

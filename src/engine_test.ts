@@ -92,6 +92,28 @@ describeWithFlags('gradients', ALL_ENVS, () => {
     expectArraysClose(result2, [.2, .8]);
   });
 
+  it('grad(f): throwing an error during forward pass', () => {
+    const grad = tf.grad(x => {
+      throw new Error('failed forward pass');
+    });
+    expect(() => grad(tf.zeros([]))).toThrowError();
+    expect(tf.ENV.engine.isTapeOn()).toBe(false);
+  });
+
+  it('grad(f): throwing an error during backwards pass', () => {
+    const customOp = tf.customGrad((x: tf.Tensor) => {
+      return {
+        value: x,
+        gradFunc: () => {
+          throw new Error('failed backward pass');
+        }
+      };
+    });
+    const grad = tf.grad(x => customOp(x));
+    expect(() => grad(tf.zeros([]))).toThrowError();
+    expect(tf.ENV.engine.isTapeOn()).toBe(false);
+  });
+
   it('grads(f)', () => {
     const grads = tf.grads(x => x.square());
     const result = grads([tf.tensor1d([.1, .2])]);
