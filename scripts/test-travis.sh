@@ -19,7 +19,7 @@ set -e
 yarn build
 yarn lint
 # Test in node (headless environment).
-yarn test-node
+#yarn test-node
 
 if [[ $(node -v) = *v10* ]]; then
   # Run the first karma separately so it can download the BrowserStack binary
