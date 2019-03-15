@@ -74,6 +74,8 @@ module.exports = function(config) {
     reportSlowerThan: 500,
     browserNoActivityTimeout: 180000,
     customLaunchers: {
+      // For browserstack configs see:
+      // https://www.browserstack.com/automate/node
       bs_chrome_mac: {
         base: 'BrowserStack',
         browser: 'chrome',
