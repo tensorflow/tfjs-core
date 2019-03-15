@@ -88,7 +88,8 @@ module.exports = function(config) {
         real_mobile: true
       },
       win_10_chrome: {
-        browserName: 'Chrome',
+        base: 'BrowserStack',
+        browser: 'chrome',
         browser_version: '72.0',
         os: 'Windows',
         os_version: '10'
