@@ -40,14 +40,15 @@ const devConfig = {
   reporters: ['dots', 'karma-typescript'],
 };
 
-const travisConfig = {
+const browserstackConfig = {
   frameworks: ['browserify', 'jasmine'],
   files: [{pattern: 'dist/**/*_test.js'}],
   exclude: ['dist/test_node.js'],
   preprocessors: {'dist/**/*_test.js': ['browserify']},
   browserify: {debug: false},
-  reporters: ['dots'],
+  reporters: ['dots', 'BrowserStack'],
   singleRun: true,
+  hostname: 'bs-local.com',
 };
 
 module.exports = function(config) {
@@ -61,7 +62,7 @@ module.exports = function(config) {
   if (config.features) {
     args.push('--features', config.features);
   }
-  const extraConfig = config.travis ? travisConfig : devConfig;
+  const extraConfig = config.browserstack ? browserstackConfig : devConfig;
 
   config.set({
     ...extraConfig,
