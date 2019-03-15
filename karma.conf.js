@@ -15,6 +15,41 @@
  * =============================================================================
  */
 
+const karmaTypescriptConfig = {
+  tsconfig: 'tsconfig.json',
+  // Disable coverage reports and instrumentation by default for tests
+  coverageOptions: {instrumentation: false},
+  reports: {},
+  bundlerOptions: {sourceMap: true}
+};
+
+// Enable coverage reports and instrumentation under KARMA_COVERAGE=1 env
+const coverageEnabled = !!process.env.KARMA_COVERAGE;
+if (coverageEnabled) {
+  karmaTypescriptConfig.coverageOptions.instrumentation = true;
+  karmaTypescriptConfig.coverageOptions.exclude = /_test\.ts$/;
+  karmaTypescriptConfig.reports = {html: 'coverage', 'text-summary': ''};
+}
+
+const devConfig = {
+  frameworks: ['jasmine', 'karma-typescript'],
+  files: [{pattern: 'src/**/*.ts'}],
+  exclude: ['src/test_node.ts'],
+  preprocessors: {'**/*.ts': ['karma-typescript']},
+  karmaTypescriptConfig,
+  reporters: ['dots', 'karma-typescript'],
+};
+
+const travisConfig = {
+  frameworks: ['browserify', 'jasmine'],
+  files: [{pattern: 'dist/**/*_test.js'}],
+  exclude: ['dist/test_node.js'],
+  preprocessors: {'dist/**/*_test.js': ['browserify']},
+  browserify: {debug: false},
+  reporters: ['dots'],
+  singleRun: true,
+};
+
 module.exports = function(config) {
   const args = [];
   if (config.backend) {
@@ -26,14 +61,10 @@ module.exports = function(config) {
   if (config.features) {
     args.push('--features', config.features);
   }
+  const extraConfig = config.travis ? travisConfig : devConfig;
 
   config.set({
-    frameworks: ['browserify', 'jasmine'],
-    files: [{pattern: 'dist/**/*_test.js'}],
-    exclude: ['dist/test_node.js'],
-    preprocessors: {'dist/**/*_test.js': ['browserify']},
-    browserify: {debug: false},
-    reporters: ['progress'],
+    ...extraConfig,
     browsers: ['Chrome'],
     browserStack: {
       username: process.env.BROWSERSTACK_USERNAME,
