@@ -87,6 +87,12 @@ module.exports = function(config) {
         os_version: '11.0',
         real_mobile: true
       },
+      win_10_chrome: {
+        browser: 'chrome',
+        browser_version: '72.0',
+        os: 'Windows',
+        os_version: '10'
+      },
       chrome_with_swift_shader: {
         base: 'Chrome',
         flags: ['--blacklist-accelerated-compositing', '--blacklist-webgl']
