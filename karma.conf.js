@@ -15,22 +15,6 @@
  * =============================================================================
  */
 
-// const karmaTypescriptConfig = {
-//   tsconfig: 'tsconfig.json',
-//   // Disable coverage reports and instrumentation by default for tests
-//   coverageOptions: {instrumentation: false},
-//   reports: {},
-//   bundlerOptions: {sourceMap: true}
-// };
-
-// Enable coverage reports and instrumentation under KARMA_COVERAGE=1 env
-// const coverageEnabled = !!process.env.KARMA_COVERAGE;
-// if (coverageEnabled) {
-//   karmaTypescriptConfig.coverageOptions.instrumentation = true;
-//   karmaTypescriptConfig.coverageOptions.exclude = /_test\.ts$/;
-//   karmaTypescriptConfig.reports = {html: 'coverage', 'text-summary': ''};
-// }
-
 module.exports = function(config) {
   const args = [];
   if (config.backend) {
@@ -44,14 +28,12 @@ module.exports = function(config) {
   }
 
   config.set({
-    frameworks: ['jasmine', 'karma-typescript'],
-    files: [{pattern: 'dist/**/*.js'}],
+    frameworks: ['browserify', 'jasmine'],
+    files: [{pattern: 'dist/**/*_test.js'}],
     exclude: ['dist/test_node.js'],
-    // preprocessors: {'**/*.ts': ['karma-typescript']},
-    preprocessors: {'dist/**/*.js': ['webpack']},
-    webpack: {},
-    // karmaTypescriptConfig,
-    reporters: ['dots', 'karma-typescript'],
+    preprocessors: {'dist/**/*_test.js': ['browserify']},
+    browserify: {debug: false},
+    reporters: ['progress'],
     browsers: ['Chrome'],
     browserStack: {
       username: process.env.BROWSERSTACK_USERNAME,
