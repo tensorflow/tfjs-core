@@ -126,8 +126,6 @@ describeWithFlags(
         const tBeforeClear =
             gpgpu.downloadFloat32MatrixFromOutputTexture(texture, 1, 1);
         expectNumbersClose(tBeforeClear[0], 10);
-        gpgpu.gl.clearColor(1, 0, 0, 0);
-        gpgpu.gl.clear(gpgpu.gl.COLOR_BUFFER_BIT);
         const tAfterClear =
             gpgpu.downloadFloat32MatrixFromOutputTexture(texture, 1, 1);
         expectNumbersClose(tAfterClear[0], 10);
