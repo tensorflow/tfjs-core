@@ -16,7 +16,8 @@
  */
 
 import {ENV} from '../environment';
-import {Tensor, Tensor3D, Tensor4D} from '../tensor';
+import {Tensor3D, Tensor4D} from '../tensor';
+import {NamedTensorMap} from '../tensor_types';
 import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import * as util from '../util';
@@ -67,30 +68,34 @@ function maxPoolImpl_<T extends Tensor3D|Tensor4D>(
   }
   util.assert(
       x4D.rank === 4,
-      `Error in maxPool: input must be rank 4 but got rank ${x4D.rank}.`);
+      () => `Error in maxPool: input must be rank 4 but got rank ${x4D.rank}.`);
   util.assert(
       conv_util.eitherStridesOrDilationsAreOne(strides, dilations),
-      'Error in maxPool: Either strides or dilations must be 1. ' +
+      () => 'Error in maxPool: Either strides or dilations must be 1. ' +
           `Got strides ${strides} and dilations '${dilations}'`);
   if (dimRoundingMode != null) {
     util.assert(
         util.isInt(pad as number),
-        `Error in maxPool: pad must be an integer when using, ` +
+        () => `Error in maxPool: pad must be an integer when using, ` +
             `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
   }
   const convInfo = conv_util.computePool2DInfo(
       x4D.shape, filterSize, strides, dilations, pad, dimRoundingMode);
 
-  const grad = (dy: Tensor4D, saved: Tensor[]) => {
-    const [y4D] = saved;
+  const grad = (dy: Tensor4D, saved: NamedTensorMap) => {
+    const {x4D, y} = saved;
     return {
       x: () => maxPoolBackprop(
-          dy, x4D, y4D as Tensor4D, filterSize, strides, dilations, pad)
+          dy, x4D as Tensor4D, y as Tensor4D, filterSize, strides, dilations,
+          pad)
     };
   };
 
-  const res = ENV.engine.runKernel(
-      (backend, save) => save(backend.maxPool(x4D, convInfo)), {x: x4D}, grad);
+  const res = ENV.engine.runKernel((backend, save) => {
+    const y = backend.maxPool(x4D, convInfo);
+    save({x4D, y});
+    return y;
+  }, {x: x4D}, grad);
   if (reshapedTo4D) {
     return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as T;
   }
@@ -162,7 +167,7 @@ function avgPoolImpl_<T extends Tensor3D|Tensor4D>(
   }
   util.assert(
       conv_util.eitherStridesOrDilationsAreOne(strides, dilations),
-      'Error in avgPool: Either strides or dilations must be 1. ' +
+      () => 'Error in avgPool: Either strides or dilations must be 1. ' +
           `Got strides ${strides} and dilations '${dilations}'`);
   let x4D = $x as Tensor4D;
   let reshapedTo4D = false;
@@ -172,11 +177,11 @@ function avgPoolImpl_<T extends Tensor3D|Tensor4D>(
   }
   util.assert(
       x4D.rank === 4,
-      `Error in avgPool: x must be rank 4 but got rank ${x4D.rank}.`);
+      () => `Error in avgPool: x must be rank 4 but got rank ${x4D.rank}.`);
   if (dimRoundingMode != null) {
     util.assert(
         util.isInt(pad as number),
-        `Error in avgPool: pad must be an integer when using, ` +
+        () => `Error in avgPool: pad must be an integer when using, ` +
             `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
   }
 
@@ -273,7 +278,7 @@ function pool_<T extends Tensor3D|Tensor4D>(
   }
   util.assert(
       conv_util.eitherStridesOrDilationsAreOne(strides, dilations),
-      'Error in pool: Either strides or dilations must be 1. ' +
+      () => 'Error in pool: Either strides or dilations must be 1. ' +
           `Got strides ${strides} and dilations '${dilations}'`);
   const convInfo = conv_util.computePool2DInfo(
       x4D.shape, windowShape, strides, dilations, pad);
@@ -343,27 +348,29 @@ function maxPoolBackprop(
   const $output = convertToTensor(output, 'output', 'maxPoolBackprop');
   util.assert(
       $input.rank === $dy.rank,
-      `Rank of input (${$input.rank}) does not match rank of dy (${$dy.rank})`);
+      () => `Rank of input (${$input.rank}) does not match rank of dy ` +
+          `(${$dy.rank})`);
   if (dilations == null) {
     dilations = [1, 1];
   }
   util.assert(
       conv_util.eitherStridesOrDilationsAreOne(strides, dilations),
-      'Error in maxPoolBackProp: Either strides or dilations must be 1. ' +
+      () =>
+          'Error in maxPoolBackProp: Either strides or dilations must be 1. ' +
           `Got strides ${strides} and dilations '${dilations}'`);
 
   util.assert(
       $dy.rank === 4,
-      `Error in maxPoolBackprop: dy must be rank 4 but got rank ` +
+      () => `Error in maxPoolBackprop: dy must be rank 4 but got rank ` +
           `${$dy.rank}.`);
   util.assert(
       $input.rank === 4,
-      `Error in maxPoolBackprop: input must be rank 4 but got rank ` +
+      () => `Error in maxPoolBackprop: input must be rank 4 but got rank ` +
           `${$input.rank}.`);
   if (dimRoundingMode != null) {
     util.assert(
         util.isInt(pad as number),
-        `Error in maxPoolBackprop: pad must be an integer when using, ` +
+        () => `Error in maxPoolBackprop: pad must be an integer when using, ` +
             `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
   }
 
@@ -399,13 +406,15 @@ function avgPoolBackprop<T extends Tensor3D|Tensor4D>(
   const $input = convertToTensor(input, 'input', 'avgPoolBackprop');
   util.assert(
       $input.rank === $dy.rank,
-      `Rank of input (${$input.rank}) does not match rank of dy (${$dy.rank})`);
+      () => `Rank of input (${$input.rank}) does not match rank of dy (${
+          $dy.rank})`);
   if (dilations == null) {
     dilations = [1, 1];
   }
   util.assert(
       conv_util.eitherStridesOrDilationsAreOne(strides, dilations),
-      'Error in avgPoolBackprop: Either strides or dilations must be 1. ' +
+      () =>
+          'Error in avgPoolBackprop: Either strides or dilations must be 1. ' +
           `Got strides ${strides} and dilations '${dilations}'`);
 
   let input4D = $input as Tensor4D;
@@ -419,11 +428,11 @@ function avgPoolBackprop<T extends Tensor3D|Tensor4D>(
 
   util.assert(
       dy4D.rank === 4,
-      `Error in avgPoolBackprop: dy must be rank 4 but got rank ` +
+      () => `Error in avgPoolBackprop: dy must be rank 4 but got rank ` +
           `${dy4D.rank}.`);
   util.assert(
       input4D.rank === 4,
-      `Error in avgPoolBackprop: input must be rank 4 but got rank ` +
+      () => `Error in avgPoolBackprop: input must be rank 4 but got rank ` +
           `${input4D.rank}.`);
 
   const convInfo = conv_util.computePool2DInfo(

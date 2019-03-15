@@ -55,7 +55,7 @@ export class TensorBuffer<R extends Rank, D extends DataType = 'float32'> {
       const n = values.length;
       util.assert(
           n === this.size,
-          `Length of values '${n}' does not match the size ` +
+          () => `Length of values '${n}' does not match the size ` +
               `inferred by the shape '${this.size}'.`);
     }
     if (dtype === 'complex64') {
@@ -64,8 +64,7 @@ export class TensorBuffer<R extends Rank, D extends DataType = 'float32'> {
           `a TensorBuffer for the real and imaginary parts separately and ` +
           `call tf.complex(real, imag).`);
     }
-    this.values =
-        values || util.getArrayFromDType(dtype, util.sizeFromShape(this.shape));
+    this.values = values || util.getArrayFromDType(dtype, this.size);
     this.strides = computeStrides(shape);
   }
 
@@ -82,7 +81,7 @@ export class TensorBuffer<R extends Rank, D extends DataType = 'float32'> {
     }
     util.assert(
         locs.length === this.rank,
-        `The number of provided coordinates (${locs.length}) must ` +
+        () => `The number of provided coordinates (${locs.length}) must ` +
             `match the rank (${this.rank})`);
 
     const index = this.locToIndex(locs);
@@ -427,6 +426,11 @@ export class Tensor<R extends Rank = Rank> {
   /** The rank type for the array (see `Rank` enum). */
   readonly rankType: R;
 
+  /** Whether this tensor has been globally kept. */
+  kept = false;
+  /** The id of the scope this tensor is being tracked in. */
+  scopeId: number;
+
   /**
    * Number of elements to skip in each dimension when indexing. See
    * https://docs.scipy.org/doc/numpy/reference/generated/\
@@ -472,7 +476,7 @@ export class Tensor<R extends Rank = Rank> {
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
   asScalar(): Scalar {
     this.throwIfDisposed();
-    util.assert(this.size === 1, 'The array must have only 1 element.');
+    util.assert(this.size === 1, () => 'The array must have only 1 element.');
     return this.reshape<Rank.R0>([]);
   }
 
@@ -572,7 +576,6 @@ export class Tensor<R extends Rank = Rank> {
    * asynchronously.
    */
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
-  // tslint:disable-next-line:no-any
   async array(): Promise<ArrayMap[R]> {
     const vals = await this.data();
     return toNestedArray(this.shape, vals);
@@ -583,7 +586,6 @@ export class Tensor<R extends Rank = Rank> {
    * synchronously.
    */
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
-  // tslint:disable-next-line:no-any
   arraySync(): ArrayMap[R] {
     return toNestedArray(this.shape, this.dataSync());
   }

@@ -17,7 +17,7 @@
 
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
-import {ALL_ENVS, expectArraysClose, expectArraysEqual} from '../test_util';
+import {ALL_ENVS, expectArraysClose, expectArraysEqual, WEBGL_ENVS} from '../test_util';
 
 import * as reduce_util from './reduce_util';
 
@@ -89,6 +89,13 @@ describeWithFlags('Reduction: min', ALL_ENVS, () => {
     const x = tf.scalar(42);
     const dy = tf.scalar(-1);
     const gradients = tf.grad(v => tf.min(v))(x, dy);
+    expectArraysClose(gradients, tf.scalar(-1));
+  });
+
+  it('gradient with clones', () => {
+    const x = tf.scalar(42);
+    const dy = tf.scalar(-1);
+    const gradients = tf.grad(v => tf.min(v.clone()).clone())(x, dy);
     expectArraysClose(gradients, tf.scalar(-1));
   });
 
@@ -301,6 +308,13 @@ describeWithFlags('Reduction: max', ALL_ENVS, () => {
     expectArraysClose(gradients, tf.scalar(-1));
   });
 
+  it('gradient with clones', () => {
+    const x = tf.scalar(42);
+    const dy = tf.scalar(-1);
+    const gradients = tf.grad(v => tf.max(v.clone()).clone())(x, dy);
+    expectArraysClose(gradients, tf.scalar(-1));
+  });
+
   it('max gradient: 1D, ties', () => {
     const x = tf.tensor1d([1, 3, 7, 7]);
     const dy = tf.scalar(-1);
@@ -449,6 +463,18 @@ describeWithFlags('Reduction: argmax', ALL_ENVS, () => {
     expectArraysEqual(result, n - 1);
   });
 
+  it('3D, N > than parallelization threshold', () => {
+    const n = reduce_util.PARALLELIZE_THRESHOLD * 2;
+    const values = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+      values[i] = i;
+    }
+    const a = tf.tensor3d(values, [1, 1, n]);
+    const result = tf.argMax(a, -1);
+    expect(result.dtype).toBe('int32');
+    expectArraysEqual(result, n - 1);
+  });
+
   it('max index corresponds to start of a non-initial window', () => {
     const n = reduce_util.PARALLELIZE_THRESHOLD * 2;
     const windowSize = reduce_util.computeOptimalWindowSize(n);
@@ -457,6 +483,18 @@ describeWithFlags('Reduction: argmax', ALL_ENVS, () => {
     values[index] = 1;
     const a = tf.tensor1d(values);
     const result = tf.argMax(a);
+    expect(result.dtype).toBe('int32');
+    expectArraysEqual(result, index);
+  });
+
+  it('5D, max index corresponds to start of a non-initial window', () => {
+    const n = reduce_util.PARALLELIZE_THRESHOLD * 2;
+    const windowSize = reduce_util.computeOptimalWindowSize(n);
+    const values = new Float32Array(n);
+    const index = windowSize * 2;
+    values[index] = 1;
+    const a = tf.tensor5d(values, [1, 1, 1, 1, n]);
+    const result = tf.argMax(a, -1);
     expect(result.dtype).toBe('int32');
     expectArraysEqual(result, index);
   });
@@ -473,11 +511,25 @@ describeWithFlags('Reduction: argmax', ALL_ENVS, () => {
     expectArraysEqual(tf.argMax(a), [1, 0, 1]);
   });
 
+  it('4D, no axis specified', () => {
+    const a = tf.tensor4d([3, -1, 0, 100, -7, 2], [2, 1, 1, 3]);
+    expectArraysEqual(tf.argMax(a), [1, 0, 1]);
+  });
+
   it('2D, axis=0', () => {
     const a = tf.tensor2d([3, -1, 0, 100, -7, 2], [2, 3]);
     const r = tf.argMax(a, 0);
 
     expect(r.shape).toEqual([3]);
+    expect(r.dtype).toBe('int32');
+    expectArraysEqual(r, [1, 0, 1]);
+  });
+
+  it('6D, axis=0', () => {
+    const a = tf.tensor6d([3, -1, 0, 100, -7, 2], [2, 1, 1, 1, 1, 3]);
+    const r = tf.argMax(a, 0);
+
+    expect(r.shape).toEqual([1, 1, 1, 1, 3]);
     expect(r.dtype).toBe('int32');
     expectArraysEqual(r, [1, 0, 1]);
   });
@@ -524,9 +576,82 @@ describeWithFlags('Reduction: argmax', ALL_ENVS, () => {
     expectArraysClose(da, [0, 0, 0, 0, 0, 0]);
   });
 
+  it('gradient with clones', () => {
+    const a = tf.tensor2d([3, 2, 5, 100, -7, 2], [2, 3]);
+    const dy = tf.ones([3], 'float32') as tf.Tensor1D;
+    const da = tf.grad((x: tf.Tensor2D) => tf.argMax(x.clone()).clone())(a, dy);
+
+    expect(da.dtype).toBe('float32');
+    expect(da.shape).toEqual([2, 3]);
+    expectArraysClose(da, [0, 0, 0, 0, 0, 0]);
+  });
+
   it('throws error for string tensor', () => {
     expect(() => tf.argMax(['a']))
         .toThrowError(/Argument 'x' passed to 'argMax' must be numeric tensor/);
+  });
+});
+
+describeWithFlags('Reduction: webgl packed input', WEBGL_ENVS, () => {
+  it('argmax 3D, odd number of rows, axis = -1', () => {
+    const webglLazilyUnpackFlagSaved = tf.ENV.get('WEBGL_LAZILY_UNPACK');
+    tf.ENV.set('WEBGL_LAZILY_UNPACK', true);
+    const webglPackBinaryOperationsFlagSaved =
+        tf.ENV.get('WEBGL_PACK_BINARY_OPERATIONS');
+    tf.ENV.set('WEBGL_PACK_BINARY_OPERATIONS', true);
+
+    const a = tf.tensor3d([3, 2, 5, 100, -7, 2], [2, 1, 3]).add(1);
+    const r = tf.argMax(a, -1);
+    tf.ENV.set('WEBGL_LAZILY_UNPACK', webglLazilyUnpackFlagSaved);
+    tf.ENV.set(
+        'WEBGL_PACK_BINARY_OPERATIONS', webglPackBinaryOperationsFlagSaved);
+
+    expect(r.dtype).toBe('int32');
+    expectArraysEqual(r, [2, 0]);
+  });
+
+  it('argmin 4D, odd number of rows, axis = -1', () => {
+    const webglLazilyUnpackFlagSaved = tf.ENV.get('WEBGL_LAZILY_UNPACK');
+    tf.ENV.set('WEBGL_LAZILY_UNPACK', true);
+    const webglPackBinaryOperationsFlagSaved =
+        tf.ENV.get('WEBGL_PACK_BINARY_OPERATIONS');
+    tf.ENV.set('WEBGL_PACK_BINARY_OPERATIONS', true);
+
+    const a =
+        tf.tensor4d(
+              [3, 2, 5, 100, -7, 2, 8, 7, -5, 101, 7, -2, 100, -7, 2, 8, 7, -5],
+              [1, 2, 3, 3])
+            .add(1);
+    const r = tf.argMin(a, -1);
+    tf.ENV.set('WEBGL_LAZILY_UNPACK', webglLazilyUnpackFlagSaved);
+    tf.ENV.set(
+        'WEBGL_PACK_BINARY_OPERATIONS', webglPackBinaryOperationsFlagSaved);
+
+    expect(r.dtype).toBe('int32');
+    expectArraysEqual(r, [1, 1, 2, 2, 1, 2]);
+  });
+
+  it('should not leak memory when called after unpacked op', () => {
+    const webglPackBinaryOperationsFlagSaved =
+        tf.ENV.get('WEBGL_PACK_BINARY_OPERATIONS');
+    tf.ENV.set('WEBGL_PACK_BINARY_OPERATIONS', false);
+
+    const a =
+        tf.tensor5d(
+              [3, 2, 5, 100, -7, 2, 8, 7, -5, 101, 7, -2, 100, -7, 2, 8, 7, -5],
+              [1, 2, 3, 1, 3])
+            .add(1);
+    const startNumBytes = tf.memory().numBytes;
+    const startNumTensors = tf.memory().numTensors;
+    const r = tf.argMin(a, -1);
+    tf.ENV.set(
+        'WEBGL_PACK_BINARY_OPERATIONS', webglPackBinaryOperationsFlagSaved);
+    const endNumBytes = tf.memory().numBytes;
+    const endNumTensors = tf.memory().numTensors;
+    expect(endNumBytes - startNumBytes).toEqual(24);
+    expect(endNumTensors - startNumTensors).toEqual(1);
+    expect(r.dtype).toBe('int32');
+    expectArraysEqual(r, [1, 1, 2, 2, 1, 2]);
   });
 });
 
@@ -555,6 +680,18 @@ describeWithFlags('Reduction: argmin', ALL_ENVS, () => {
     expectArraysEqual(result, n - 1);
   });
 
+  it('4D, N > than parallelization threshold', () => {
+    const n = reduce_util.PARALLELIZE_THRESHOLD * 2;
+    const values = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+      values[i] = n - i;
+    }
+    const a = tf.tensor4d(values, [1, 1, 1, n]);
+    const result = tf.argMin(a, -1);
+    expect(result.dtype).toBe('int32');
+    expectArraysEqual(result, n - 1);
+  });
+
   it('min index corresponds to start of a non-initial window', () => {
     const n = reduce_util.PARALLELIZE_THRESHOLD * 2;
     const windowSize = reduce_util.computeOptimalWindowSize(n);
@@ -570,6 +707,12 @@ describeWithFlags('Reduction: argmin', ALL_ENVS, () => {
   it('ignores NaNs', () => {
     const a = tf.tensor1d([5, 0, NaN, -1, 3]);
     const res = tf.argMin(a);
+    expectArraysEqual(res, 3);
+  });
+
+  it('3D, ignores NaNs', () => {
+    const a = tf.tensor3d([5, 0, NaN, -1, 3], [1, 1, 5]);
+    const res = tf.argMin(a, -1);
     expectArraysEqual(res, 3);
   });
 
@@ -620,6 +763,16 @@ describeWithFlags('Reduction: argmin', ALL_ENVS, () => {
     const a = tf.tensor2d([3, 2, 5, 100, -7, 2], [2, 3]);
     const dy = tf.ones([3], 'float32') as tf.Tensor1D;
     const da = tf.grad((x: tf.Tensor2D) => tf.argMin(x))(a, dy);
+
+    expect(da.dtype).toBe('float32');
+    expect(da.shape).toEqual([2, 3]);
+    expectArraysClose(da, [0, 0, 0, 0, 0, 0]);
+  });
+
+  it('gradient with clones', () => {
+    const a = tf.tensor2d([3, 2, 5, 100, -7, 2], [2, 3]);
+    const dy = tf.ones([3], 'float32') as tf.Tensor1D;
+    const da = tf.grad((x: tf.Tensor2D) => tf.argMin(x.clone()).clone())(a, dy);
 
     expect(da.dtype).toBe('float32');
     expect(da.shape).toEqual([2, 3]);
@@ -837,6 +990,17 @@ describeWithFlags('Reduction: sum', ALL_ENVS, () => {
     const dy = tf.scalar(10);
 
     const gradients = tf.grad(a => a.sum())(a, dy);
+
+    expect(gradients.shape).toEqual(a.shape);
+    expect(gradients.dtype).toEqual('float32');
+    expectArraysClose(gradients, [10, 10, 10, 10, 10, 10]);
+  });
+
+  it('gradient with clones', () => {
+    const a = tf.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
+    const dy = tf.scalar(10);
+
+    const gradients = tf.grad(a => a.clone().sum().clone())(a, dy);
 
     expect(gradients.shape).toEqual(a.shape);
     expect(gradients.dtype).toEqual('float32');
@@ -1088,6 +1252,19 @@ describeWithFlags('Reduction: mean', ALL_ENVS, () => {
     const dy = tf.scalar(1.5);
 
     const da = tf.grad(a => a.mean())(a, dy);
+    const dyVal = dy.arraySync();
+    expect(da.shape).toEqual(a.shape);
+    expectArraysClose(da, [
+      dyVal / a.size, dyVal / a.size, dyVal / a.size, dyVal / a.size,
+      dyVal / a.size, dyVal / a.size
+    ]);
+  });
+
+  it('gradient with clones', () => {
+    const a = tf.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
+    const dy = tf.scalar(1.5);
+
+    const da = tf.grad(a => a.clone().mean().clone())(a, dy);
     const dyVal = dy.arraySync();
     expect(da.shape).toEqual(a.shape);
     expectArraysClose(da, [

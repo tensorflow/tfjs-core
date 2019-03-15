@@ -17,6 +17,7 @@
 
 import {ENV} from '../environment';
 import {Tensor, Tensor1D, Tensor2D, Tensor3D} from '../tensor';
+import {NamedTensorMap} from '../tensor_types';
 import {makeTypesMatch} from '../tensor_util';
 import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
@@ -62,18 +63,18 @@ function matMul_<T extends Tensor>(
 
   util.assert(
       $a.rank >= 2 && $b.rank >= 2 && $a.rank === $b.rank,
-      `Error in matMul: inputs must have the same rank of at least 2, ` +
+      () => `Error in matMul: inputs must have the same rank of at least 2, ` +
           `got ranks ${$a.rank} and ${$b.rank}.`);
 
   util.assert(
       util.arraysEqual(outerDimsA, outerDimsB),
-      `Error in matMul: outer dimensions (${outerDimsA}) and (` +
+      () => `Error in matMul: outer dimensions (${outerDimsA}) and (` +
           `${outerDimsB}) of Tensors with shapes ${$a.shape} and ` +
           `${$b.shape} must match.`);
 
   util.assert(
       innerShapeA === innerShapeB,
-      `Error in matMul: inner shapes (${innerShapeA}) and (` +
+      () => `Error in matMul: inner shapes (${innerShapeA}) and (` +
           `${innerShapeB}) of Tensors with shapes ${$a.shape} and ` +
           `${$b.shape} and transposeA=${transposeA}` +
           ` and transposeB=${transposeB} must match.`);
@@ -85,7 +86,9 @@ function matMul_<T extends Tensor>(
   const b3D = transposeB ? $b.as3D(batchDimB, outerShapeB, innerShapeB) :
                            $b.as3D(batchDimB, innerShapeB, outerShapeB);
 
-  const grad = (dy: Tensor3D) => {
+  const grad = (dy: Tensor3D, saved: NamedTensorMap) => {
+    const a3D = saved.a3D as Tensor3D;
+    const b3D = saved.b3D as Tensor3D;
     if (!transposeA && !transposeB) {
       return {
         $a: () => dy.matMul(b3D, false, true),
@@ -109,9 +112,11 @@ function matMul_<T extends Tensor>(
     }
   };
 
-  const res = ENV.engine.runKernel(
-      backend => backend.batchMatMul(a3D, b3D, transposeA, transposeB),
-      {$a: a3D, $b: b3D}, grad);
+  const res = ENV.engine.runKernel((backend, save) => {
+    const res = backend.batchMatMul(a3D, b3D, transposeA, transposeB);
+    save({a3D, b3D});
+    return res;
+  }, {$a: a3D, $b: b3D}, grad);
   return res.reshape(outShape) as T;
 }
 
@@ -135,7 +140,7 @@ function outerProduct_(
 
   util.assert(
       $v1.rank === 1 && $v2.rank === 1,
-      `Error in outerProduct: inputs must be rank 1, but got ranks ` +
+      () => `Error in outerProduct: inputs must be rank 1, but got ranks ` +
           `${$v1.rank} and ${$v2.rank}.`);
 
   return $v1.as2D(-1, 1).matMul($v2.as2D(1, -1));
@@ -162,7 +167,7 @@ function dot_(t1: Tensor|TensorLike, t2: Tensor|TensorLike): Tensor {
   const $t2 = convertToTensor(t2, 't2', 'dot');
   util.assert(
       ($t1.rank === 1 || $t1.rank === 2) && ($t2.rank === 1 || $t2.rank === 2),
-      `Error in dot: inputs must all be rank 1 or 2, but got ranks ` +
+      () => `Error in dot: inputs must all be rank 1 or 2, but got ranks ` +
           `${$t1.rank} and ${$t2.rank}.`);
 
   const t1Inner = ($t1.rank === 1 ? $t1.size : $t1.shape[1]);
@@ -170,7 +175,7 @@ function dot_(t1: Tensor|TensorLike, t2: Tensor|TensorLike): Tensor {
 
   util.assert(
       t1Inner === t2Inner,
-      `Error in dot: inner dimensions of inputs must match, but got ` +
+      () => `Error in dot: inner dimensions of inputs must match, but got ` +
           `${t1Inner} and ${t2Inner}.`);
 
   if ($t1.rank === 1 && $t2.rank === 1) {

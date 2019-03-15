@@ -243,7 +243,7 @@ export class MathBackendCPU implements KernelBackend {
       if (t != null) {
         util.assert(
             t.dtype !== 'complex64',
-            `${opName} does not support complex64 tensors.`);
+            () => `${opName} does not support complex64 tensors.`);
       }
     });
   }
@@ -2740,7 +2740,7 @@ export class MathBackendCPU implements KernelBackend {
     const channels = x.shape[3];
     const maxD = channels - 1;
     const xValues = x.dataSync();
-    const size = util.sizeFromShape(x.shape);
+    const size = x.size;
     const result = new Float32Array(size);
 
     function sumAcrossChannels(offset: number) {
@@ -2776,8 +2776,8 @@ export class MathBackendCPU implements KernelBackend {
     const dyValues = dy.dataSync();
     const inputImageValues = inputImage.dataSync();
     const outputImageValues = outputImage.dataSync();
-    const result = new Float32Array(util.sizeFromShape(dy.shape));
-    const size = util.sizeFromShape(dy.shape);
+    const result = new Float32Array(dy.size);
+    const size = dy.size;
 
     for (let offset = 0; offset < size; offset++) {
       const currentChannel = offset % channels;
@@ -2993,11 +2993,12 @@ export class MathBackendCPU implements KernelBackend {
       Tensor4D {
     util.assert(
         dataFormat === 'NHWC',
-        `Only NHWC dataFormat supported on CPU for depthToSpace. Got ${
+        () => `Only NHWC dataFormat supported on CPU for depthToSpace. Got ${
             dataFormat}`);
     util.assert(
         blockSize > 1,
-        `blockSize should be > 1 for depthToSpace, but was: ${blockSize}`);
+        () =>
+            `blockSize should be > 1 for depthToSpace, but was: ${blockSize}`);
 
     const batchSize = x.shape[0];
     const inputHeight = x.shape[1];
@@ -3335,6 +3336,20 @@ export class MathBackendCPU implements KernelBackend {
     const values = getArrayFromDType(dtype, sizeFromShape(shape)) as TypedArray;
     values.fill(value as number);
     return Tensor.make(shape, {values}, dtype);
+  }
+
+  onesLike<R extends Rank>(x: Tensor<R>): Tensor<R> {
+    if (x.dtype === 'string') {
+      throw new Error('onesLike is not supported for string tensors');
+    } else {
+      return this.fill(x.shape, 1, x.dtype);
+    }
+  }
+
+  zerosLike<R extends Rank>(x: Tensor<R>): Tensor<R> {
+    const values =
+        getArrayFromDType(x.dtype, sizeFromShape(x.shape)) as TypedArray;
+    return Tensor.make(x.shape, {values}, x.dtype);
   }
 
   private scatter<R extends Rank>(
