@@ -5,7 +5,7 @@
     <button onclick="run()">Run</button>
     <!-- <script src="https://unpkg.com/@tensorflow/tfjs-core/dist/tf-core.js"></script> -->
     <script src="dist/tf-core.js"></script>
-    <script src="https://unpkg.com/@tensorflow/tfjs-converter/dist/tf-converter.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter/dist/tf-converter.js"></script>
     <script>
       // MobileNet v2
       const base_url = 'https://storage.googleapis.com/tfjs-models/savedmodel/mobilenet_v2_1.0_224/';
@@ -15,9 +15,7 @@
 
       let model;
       async function load() {
-        model = await tf.loadGraphModel(
-          base_url + 'tensorflowjs_model.pb',
-          base_url + 'weights_manifest.json');
+        model = await tf.loadGraphModel(base_url + 'model.json');
         console.log('model loaded');
 
         let start = performance.now();
