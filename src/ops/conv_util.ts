@@ -175,11 +175,38 @@ export type Conv3DInfo = {
   filterDepth: number,
   filterHeight: number,
   filterWidth: number,
+  effectiveFilterDepth: number,
+  effectiveFilterHeight: number,
+  effectiveFilterWidth: number,
   padInfo: PadInfo3D,
   inShape: [number, number, number, number, number],
   outShape: [number, number, number, number, number],
   filterShape: [number, number, number, number, number]
 };
+
+export function computePool3DInfo(
+    inShape: [number, number, number, number, number],
+    filterSize: [number, number, number]|number,
+    strides: number|[number, number, number],
+    dilations: number|[number, number, number], pad: 'same'|'valid',
+    // roundingMode?: 'floor'|'round'|'ceil',
+    dataFormat: 'channelsFirst'|'channelsLast' = 'channelsLast'): Conv3DInfo {
+  const [filterDepth, filterHeight, filterWidth] = parse3TupleParam(filterSize);
+
+  let filterShape: [number, number, number, number, number];
+  if (dataFormat === 'channelsLast') {
+    filterShape =
+        [filterDepth, filterHeight, filterWidth, inShape[4], inShape[4]];
+  } else if (dataFormat === 'channelsFirst') {
+    filterShape =
+        [filterDepth, filterHeight, filterWidth, inShape[1], inShape[1]];
+  } else {
+    throw new Error(`Unknown dataFormat ${dataFormat}`);
+  }
+
+  return computeConv3DInfo(
+      inShape, filterShape, strides, dilations, pad, false, dataFormat);
+}
 
 /**
  * Computes the information for a forward pass of a 3D convolution/pooling
@@ -245,6 +272,9 @@ export function computeConv3DInfo(
     filterDepth,
     filterHeight,
     filterWidth,
+    effectiveFilterDepth,
+    effectiveFilterHeight,
+    effectiveFilterWidth,
     dilationDepth,
     dilationHeight,
     dilationWidth,
