@@ -656,7 +656,7 @@ function tupleValuesAreOne(
   return dimA === 1 && dimB === 1 && dimC === 1;
 }
 
-function eitherStridesOrDilationsAreOne(
+export function eitherStridesOrDilationsAreOne(
     strides: number|[number, number]|[number, number, number],
     dilations: number|[number, number]|[number, number, number]): boolean {
   return tupleValuesAreOne(strides) || tupleValuesAreOne(dilations);
