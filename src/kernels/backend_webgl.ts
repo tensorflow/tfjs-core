@@ -1341,9 +1341,11 @@ export class MathBackendWebGL implements KernelBackend {
   realDivide(a: Tensor, b: Tensor): Tensor {
     const op = binaryop_gpu.DIV;
     const outputDtype = 'float32';
-    if (ENV.get('WEBGL_PACK_BINARY_OPERATIONS')) {
-      return this.packedBinaryOp(a, b, binaryop_packed_gpu.DIV, outputDtype);
-    }
+    // TODO: https://github.com/tensorflow/tfjs/issues/1324
+    // Revive this once we understand why this produces NaNs.
+    // if (ENV.get('WEBGL_PACK_BINARY_OPERATIONS')) {
+    //   return this.packedBinaryOp(a, b, binaryop_packed_gpu.DIV, outputDtype);
+    // }
     const program = new BinaryOpProgram(op, a.shape, b.shape);
     const output = this.makeOutputArray(program.outputShape, outputDtype);
     return this.compileAndRun<Tensor>(program, [a, b], output);
@@ -1707,9 +1709,19 @@ export class MathBackendWebGL implements KernelBackend {
     // result from 2D to 4D.
     const xShape = x.shape;
     const xTexData = this.texData.get(x.dataId);
-    if (!ENV.get('WEBGL_LAZILY_UNPACK') ||
-        !ENV.get('WEBGL_PACK_BINARY_OPERATIONS') || xShape[2] % 2 === 0 ||
-        !xTexData.isPacked) {
+    const sharedMatMulDim = convInfo.inChannels;
+    const outerShapeX = xShape[0] * xShape[1] * xShape[2];
+    const outerShapeFilter = convInfo.outChannels;
+
+    // TODO: Once reduction ops are packed, batchMatMul will always be packed
+    // and we can remove this condition.
+    const batchMatMulWillBeUnpacked =
+        (outerShapeX === 1 || outerShapeFilter === 1) &&
+        sharedMatMulDim > MATMUL_SHARED_DIM_THRESHOLD;
+    const reshapeWillBeExpensive = xShape[2] % 2 !== 0 && !!xTexData.isPacked;
+
+    if (batchMatMulWillBeUnpacked || !ENV.get('WEBGL_LAZILY_UNPACK') ||
+        !ENV.get('WEBGL_PACK_BINARY_OPERATIONS') || !reshapeWillBeExpensive) {
       const xReshaped =
           this.reshape(
               x, [1, xShape[0] * xShape[1] * xShape[2], convInfo.inChannels]) as
