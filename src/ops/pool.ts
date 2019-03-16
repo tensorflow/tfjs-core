@@ -16,12 +16,8 @@
  */
 
 import {ENV} from '../environment';
-<<<<<<< HEAD
-import {Tensor, Tensor3D, Tensor4D, Tensor5D} from '../tensor';
-=======
-import {Tensor3D, Tensor4D} from '../tensor';
+import {Tensor3D, Tensor4D, Tensor5D} from '../tensor';
 import {NamedTensorMap} from '../tensor_types';
->>>>>>> upstream/master
 import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import * as util from '../util';
@@ -451,7 +447,6 @@ function avgPoolBackprop<T extends Tensor3D|Tensor4D>(
   return res as T;
 }
 
-
 /**
  * Computes the 3D max pooling of a volume.
  *
@@ -506,8 +501,11 @@ function maxPool3DImpl_<T extends Tensor4D|Tensor5D>(
   const convInfo = conv_util.computePool3DInfo(
       x5D.shape, filterSize, strides, dilations, pad);
 
-  const res = ENV.engine.runKernel(
-      (backend, save) => save(backend.maxPool3d(x5D, convInfo)), {x: x5D});
+  const res = ENV.engine.runKernel((backend, save) => {
+    const y = backend.maxPool3d(x5D, convInfo);
+    save({x5D, y});
+    return y;
+  }, {x: x5D});
   if (reshapedTo5D) {
     return res.as4D(res.shape[1], res.shape[2], res.shape[3], res.shape[4]) as
         T;
