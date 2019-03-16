@@ -2384,6 +2384,97 @@ export class MathBackendCPU implements KernelBackend {
     return dx.toTensor();
   }
 
+  private pool3d(x: Tensor5D, convInfo: Conv3DInfo, poolType: 'max'|'avg'):
+      Tensor5D {
+    this.assertNotComplex(x, 'pool');
+
+    const strideDepth = convInfo.strideDepth;
+    const strideHeight = convInfo.strideHeight;
+    const strideWidth = convInfo.strideWidth;
+    const dilationDepth = convInfo.dilationDepth;
+    const dilationHeight = convInfo.dilationHeight;
+    const dilationWidth = convInfo.dilationWidth;
+    const effectiveFilterDepth = convInfo.effectiveFilterDepth;
+    const effectiveFilterHeight = convInfo.effectiveFilterHeight;
+    const effectiveFilterWidth = convInfo.effectiveFilterWidth;
+    const padFront = convInfo.padInfo.front;
+    const padTop = convInfo.padInfo.top;
+    const padLeft = convInfo.padInfo.left;
+
+    const initialValue =
+        (poolType === 'max' ? Number.NEGATIVE_INFINITY :
+                              Number.POSITIVE_INFINITY);
+
+    const xValues = x.dataSync();
+    const output = ops.buffer(convInfo.outShape, x.dtype);
+    const outputVals = output.values;
+
+    const outputBatchStrides = convInfo.outShape[1] * convInfo.outShape[2] *
+        convInfo.outShape[3] * convInfo.outShape[4];
+    const outputDepthStrides =
+        convInfo.outShape[2] * convInfo.outShape[3] * convInfo.outShape[4];
+    const outputRowStrides = convInfo.outShape[3] * convInfo.outShape[4];
+    const outputColStrides = convInfo.outShape[4];
+
+    for (let b = 0; b < convInfo.batchSize; ++b) {
+      const outputBatchOffset = b * outputBatchStrides;
+      const inputBatchOffset = b * x.strides[0];
+      for (let d = 0; d < convInfo.inChannels; ++d) {
+        for (let yD = 0; yD < convInfo.outDepth; ++yD) {
+          const xDCorner = yD * strideDepth - padFront;
+          const xDMin = Math.max(0, xDCorner);
+          const xDMax =
+              Math.min(convInfo.inDepth, effectiveFilterDepth + xDCorner);
+          const outputDepthOffset = outputBatchOffset + yD * outputDepthStrides;
+          for (let yR = 0; yR < convInfo.outHeight; ++yR) {
+            const xRCorner = yR * strideHeight - padTop;
+            const xRMin = Math.max(0, xRCorner);
+            const xRMax =
+                Math.min(convInfo.inHeight, effectiveFilterHeight + xRCorner);
+            for (let yC = 0; yC < convInfo.outWidth; ++yC) {
+              const xCCorner = yC * strideWidth - padLeft;
+              const xCMin = Math.max(0, xCCorner);
+              const xCMax =
+                  Math.min(convInfo.inWidth, effectiveFilterWidth + xCCorner);
+              let minMaxValue = initialValue;
+              let avgValue = 0;
+              let count = 0;
+              for (let xD = xDMin; xD < xDMax; xD += dilationDepth) {
+                const xDOffset = inputBatchOffset + xD * x.strides[1];
+                for (let xR = xRMin; xR < xRMax; xR += dilationHeight) {
+                  const xROffset = xDOffset + xR * x.strides[2];
+                  // const xROffset = inputBatchOffset + xR * x.strides[1];
+                  for (let xC = xCMin; xC < xCMax; xC += dilationWidth) {
+                    const xCOffset = xROffset + xC * x.strides[3];
+                    const pixel = xValues[xCOffset + d];
+                    if ((poolType === 'max' && pixel > minMaxValue)) {
+                      minMaxValue = pixel;
+                    } else if (poolType === 'avg') {
+                      avgValue += pixel;
+                      count++;
+                    }
+                  }
+                  if (isNaN(minMaxValue)) {
+                    break;
+                  }
+                }
+              }
+              const outputOffset = outputDepthOffset + yR * outputRowStrides +
+                  yC * outputColStrides + d;
+              outputVals[outputOffset] =
+                  poolType === 'avg' ? avgValue / count : minMaxValue;
+            }
+          }
+        }
+      }
+    }
+    return output.toTensor() as Tensor5D;
+  }
+
+  maxPool3d(x: Tensor5D, convInfo: Conv3DInfo): Tensor5D {
+    return this.pool3d(x, convInfo, 'max');
+  }
+
   cast<T extends Tensor>(x: T, dtype: DataType): T {
     return backend_util.castTensor(x, dtype, this);
   }
@@ -3331,7 +3422,7 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   fill<R extends Rank>(
-    shape: ShapeMap[R], value: number|string, dtype?: DataType): Tensor<R> {
+      shape: ShapeMap[R], value: number|string, dtype?: DataType): Tensor<R> {
     dtype = dtype || inferDtype(value);
     const values = getArrayFromDType(dtype, sizeFromShape(shape)) as TypedArray;
     values.fill(value as number);
