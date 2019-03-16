@@ -66,8 +66,8 @@ describeWithFlags('gpgpu_util createFloat32MatrixTexture', WEBGL_ENVS, () => {
   it('sets the TEXTURE_WRAP S+T parameters to CLAMP_TO_EDGE', () => {
     const gpgpu = new GPGPUContext();
     const textureConfig = gpgpu_util.getTextureConfig(gpgpu.gl);
-    const tex =
-        gpgpu_util.createFloat32MatrixTexture(gpgpu.gl, 32, 32, textureConfig);
+    const tex = gpgpu_util.createFloat32MatrixTexture(
+        gpgpu.gl, false, 32, 32, textureConfig);
     gpgpu.gl.bindTexture(gpgpu.gl.TEXTURE_2D, tex);
     expect(
         gpgpu.gl.getTexParameter(gpgpu.gl.TEXTURE_2D, gpgpu.gl.TEXTURE_WRAP_S))
@@ -83,8 +83,8 @@ describeWithFlags('gpgpu_util createFloat32MatrixTexture', WEBGL_ENVS, () => {
   it('sets the TEXTURE_[MIN|MAG]_FILTER parameters to NEAREST', () => {
     const gpgpu = new GPGPUContext();
     const textureConfig = gpgpu_util.getTextureConfig(gpgpu.gl);
-    const tex =
-        gpgpu_util.createFloat32MatrixTexture(gpgpu.gl, 32, 32, textureConfig);
+    const tex = gpgpu_util.createFloat32MatrixTexture(
+        gpgpu.gl, false, 32, 32, textureConfig);
     gpgpu.gl.bindTexture(gpgpu.gl.TEXTURE_2D, tex);
     expect(gpgpu.gl.getTexParameter(
                gpgpu.gl.TEXTURE_2D, gpgpu.gl.TEXTURE_MIN_FILTER))
@@ -102,8 +102,8 @@ describeWithFlags('gpgpu_util createPackedMatrixTexture', WEBGL_ENVS, () => {
   it('sets the TEXTURE_WRAP S+T parameters to CLAMP_TO_EDGE', () => {
     const gpgpu = new GPGPUContext();
     const textureConfig = gpgpu_util.getTextureConfig(gpgpu.gl);
-    const tex =
-        gpgpu_util.createPackedMatrixTexture(gpgpu.gl, 32, 32, textureConfig);
+    const tex = gpgpu_util.createPackedMatrixTexture(
+        gpgpu.gl, false, 32, 32, textureConfig);
     gpgpu.gl.bindTexture(gpgpu.gl.TEXTURE_2D, tex);
     expect(
         gpgpu.gl.getTexParameter(gpgpu.gl.TEXTURE_2D, gpgpu.gl.TEXTURE_WRAP_S))
@@ -119,8 +119,8 @@ describeWithFlags('gpgpu_util createPackedMatrixTexture', WEBGL_ENVS, () => {
   it('sets the TEXTURE_[MIN|MAG]_FILTER parameters to NEAREST', () => {
     const gpgpu = new GPGPUContext();
     const textureConfig = gpgpu_util.getTextureConfig(gpgpu.gl);
-    const tex =
-        gpgpu_util.createPackedMatrixTexture(gpgpu.gl, 32, 32, textureConfig);
+    const tex = gpgpu_util.createPackedMatrixTexture(
+        gpgpu.gl, false, 32, 32, textureConfig);
     gpgpu.gl.bindTexture(gpgpu.gl.TEXTURE_2D, tex);
     expect(gpgpu.gl.getTexParameter(
                gpgpu.gl.TEXTURE_2D, gpgpu.gl.TEXTURE_MIN_FILTER))
@@ -141,8 +141,8 @@ describeWithFlags(
         const gpgpu = new GPGPUContext();
         const textureConfig = gpgpu_util.getTextureConfig(gpgpu.gl);
 
-        const tex =
-            gpgpu_util.createPackedMatrixTexture(gpgpu.gl, 4, 6, textureConfig);
+        const tex = gpgpu_util.createPackedMatrixTexture(
+            gpgpu.gl, false, 4, 6, textureConfig);
 
         const mat =
             tf.tensor2d([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], [1, 12]);
@@ -186,7 +186,7 @@ describeWithFlags(
            const physicalRows = 10;
            const physicalCols = 16;
            const tex = gpgpu_util.createPackedMatrixTexture(
-               gpgpu.gl, physicalRows, physicalCols, textureConfig);
+               gpgpu.gl, false, physicalRows, physicalCols, textureConfig);
 
            const mat = tf.tensor3d(
                [
