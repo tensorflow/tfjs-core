@@ -1927,6 +1927,10 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(avgPoolBackpropProgram, [dy], output) as Tensor4D;
   }
 
+  maxPool3d(): Tensor5D {
+    throw new Error('Not yet implemented');
+  }
+
   cast<T extends Tensor>(x: T, dtype: DataType): T {
     return backend_util.castTensor(x, dtype, this);
   }
