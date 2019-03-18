@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+import {ENV} from '../../environment';
 import {describeWithFlags} from '../../jasmine_util';
 import {expectArraysClose, expectNumbersClose} from '../../test_util';
 import {getGlslDifferences} from './glsl_version';
@@ -32,7 +33,7 @@ describeWithFlags(
 
       beforeEach(() => {
         gpgpu = new GPGPUContext();
-        gpgpu.enableAutomaticDebugValidation(true);
+        ENV.set('DEBUG', true);
         texture = gpgpu.createFloat32MatrixTexture(1, 1);
       });
 
@@ -86,7 +87,7 @@ describeWithFlags(
 
       it('basic', () => {
         gpgpu = new GPGPUContext();
-        gpgpu.enableAutomaticDebugValidation(true);
+        ENV.set('DEBUG', true);
         texture = gpgpu.createFloat32MatrixTexture(1, 1);
 
         gpgpu.setOutputMatrixTexture(texture, 1, 1);
@@ -105,7 +106,7 @@ describeWithFlags(
 
       beforeEach(() => {
         gpgpu = new GPGPUContext();
-        gpgpu.enableAutomaticDebugValidation(true);
+        ENV.set('DEBUG', true);
         texture = gpgpu.createFloat32MatrixTexture(1, 1);
       });
 
@@ -168,7 +169,7 @@ describeWithFlags(
 
       beforeEach(() => {
         gpgpu = new GPGPUContext();
-        gpgpu.enableAutomaticDebugValidation(true);
+        ENV.set('DEBUG', true);
       });
 
       afterEach(() => {
@@ -204,7 +205,7 @@ describeWithFlags(
 
       beforeEach(() => {
         gpgpu = new GPGPUContext();
-        gpgpu.enableAutomaticDebugValidation(true);
+        ENV.set('DEBUG', true);
         const glsl = getGlslDifferences();
         const src = `${glsl.version}
           precision highp float;
@@ -286,7 +287,7 @@ describeWithFlags('GPGPUContext', DOWNLOAD_FLOAT_ENVS, () => {
 
   beforeEach(() => {
     gpgpu = new GPGPUContext();
-    gpgpu.enableAutomaticDebugValidation(true);
+    ENV.set('DEBUG', true);
   });
 
   afterEach(() => {

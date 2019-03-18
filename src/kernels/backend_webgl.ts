@@ -136,7 +136,7 @@ export interface WebGLTimingInfo extends TimingInfo {
   downloadWaitMs: number;
 }
 
-const binaryCaches: {[webGlVersion: string]: {[key: string]: GPGPUBinary}} = {};
+const binaryCaches: {[webGLVersion: string]: {[key: string]: GPGPUBinary}} = {};
 
 function getBinaryCache(webGLVersion: number) {
   if (webGLVersion in binaryCaches) {

@@ -43,7 +43,6 @@ export class GPGPUContext {
   outputTexture: WebGLTexture|null = null;
   program: WebGLProgram|null = null;
   private disposed = false;
-  private debug = false;
   private disjoint: boolean;
   private textureConfig: TextureConfig;
 
@@ -81,6 +80,10 @@ export class GPGPUContext {
         gpgpu_util.getTextureConfig(this.gl, this.textureHalfFloatExtension);
   }
 
+  private get debug(): boolean {
+    return ENV.get('DEBUG');
+  }
+
   public dispose() {
     if (this.disposed) {
       return;
@@ -111,10 +114,6 @@ export class GPGPUContext {
     webgl_util.callAndCheck(
         gl, this.debug, () => gl.deleteBuffer(this.indexBuffer));
     this.disposed = true;
-  }
-
-  public enableAutomaticDebugValidation(enabled: boolean) {
-    this.debug = enabled;
   }
 
   public createFloat32MatrixTexture(rows: number, columns: number):
