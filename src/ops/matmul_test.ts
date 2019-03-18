@@ -209,7 +209,7 @@ describeWithFlags('matmul', ALL_ENVS, () => {
   });
 
   // tslint:disable-next-line:ban
-  fit('A x B^t', async () => {
+  it('A x B^t', async () => {
     const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
     const b = tf.tensor2d([1, 0, 2, 4, 3, 0], [2, 3]);
 

@@ -78,7 +78,8 @@ describeWithFlags('conv to matmul', PACKED_ENVS, () => {
 });
 
 describeWithFlags('conv2d', ALL_ENVS, () => {
-  it('x=[1,4,4,1] f=[1,1,1,3] s=2 d=1 p=same', () => {
+  // tslint:disable-next-line:ban
+  fit('x=[1,4,4,1] f=[1,1,1,3] s=2 d=1 p=same', async () => {
     const inputDepth = 1;
     const inputShape: [number, number, number] = [4, 4, inputDepth];
     const outputDepth = 3;
@@ -96,9 +97,11 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
     const result = tf.conv2d(x, w, stride, pad);
 
     expectArraysClose(
-        result, [10, 5, 10, 50, 25, 50, -10, -5, -10, -50, -25, -50]);
+        await result.data(),
+        [10, 5, 10, 50, 25, 50, -10, -5, -10, -50, -25, -50]);
   });
-  it('x=[2,2,1] f=[1,1,1,2] s=1 d=1 p=0', () => {
+  // tslint:disable-next-line:ban
+  fit('x=[2,2,1] f=[1,1,1,2] s=1 d=1 p=0', async () => {
     const inputDepth = 1;
     const inputShape: [number, number, number] = [2, 2, inputDepth];
     const outputDepth = 1;
@@ -111,10 +114,11 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
 
     const result = tf.conv2d(x, w, stride, pad);
 
-    expectArraysClose(result, [2, 4, 6, 8]);
+    expectArraysClose(await result.data(), [2, 4, 6, 8]);
   });
 
-  it('x=[2,2,2,1] f=[1,1,1,1] s=1 d=1 p=0', () => {
+  // tslint:disable-next-line:ban
+  fit('x=[2,2,2,1] f=[1,1,1,1] s=1 d=1 p=0', async () => {
     const inputDepth = 1;
     const inShape: [number, number, number, number] = [2, 2, 2, inputDepth];
     const outputDepth = 1;
@@ -129,10 +133,11 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
     expect(result.shape).toEqual([2, 2, 2, 1]);
     const expected = [2, 4, 6, 8, 10, 12, 14, 16];
 
-    expectArraysClose(result, expected);
+    expectArraysClose(await result.data(), expected);
   });
 
-  it('x=[2,2,1] f=[2,2,1,1] s=1 d=1 p=0', () => {
+  // tslint:disable-next-line:ban
+  fit('x=[2,2,1] f=[2,2,1,1] s=1 d=1 p=0', async () => {
     const inputDepth = 1;
     const inputShape: [number, number, number] = [2, 2, inputDepth];
     const outputDepth = 1;
@@ -147,10 +152,11 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
         tf.tensor4d([3, 1, 5, 0], [fSize, fSize, inputDepth, outputDepth]);
 
     const result = tf.conv2d(x, w, stride, pad, dataFormat, dilation);
-    expectArraysClose(result, [20]);
+    expectArraysClose(await result.data(), [20]);
   });
 
-  it('x=[4,4,1] f=[2,2,1,1] s=1 d=2 p=0', () => {
+  // tslint:disable-next-line:ban
+  fit('x=[4,4,1] f=[2,2,1,1] s=1 d=2 p=0', async () => {
     const inputDepth = 1;
     const inputShape: [number, number, number] = [4, 4, inputDepth];
     const outputDepth = 1;
@@ -177,10 +183,11 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
         tf.conv2d(x, wDilated, stride, pad, dataFormat, noDilation);
 
     expect(result.shape).toEqual(expectedResult.shape);
-    expectArraysClose(result, expectedResult);
+    expectArraysClose(await result.data(), await expectedResult.data());
   });
 
-  it('x=[1,3,6,1] f=[2,2,1,1] s=[1,2] d=1 p=valid', () => {
+  // tslint:disable-next-line:ban
+  fit('x=[1,3,6,1] f=[2,2,1,1] s=[1,2] d=1 p=valid', async () => {
     const inputDepth = 1;
     const inputShape: [number, number, number, number] = [1, 3, 6, inputDepth];
     const outputDepth = 1;
@@ -194,7 +201,8 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
         tf.tensor4d(inputs.filter, [fSize, fSize, inputDepth, outputDepth]);
 
     const result = tf.conv2d(x, w, stride, pad);
-    expectArraysClose(result, [58.0, 78.0, 98.0, 118.0, 138.0, 158.0]);
+    expectArraysClose(
+        await result.data(), [58.0, 78.0, 98.0, 118.0, 138.0, 158.0]);
   });
 
   it('throws when x is not rank 3', () => {
@@ -359,14 +367,15 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
         .toThrowError(/Argument 'filter' passed to 'conv2d' must be a Tensor/);
   });
 
-  it('accepts a tensor-like object', () => {
+  // tslint:disable-next-line:ban
+  fit('accepts a tensor-like object', async () => {
     const pad = 0;
     const stride = 1;
     const x = [[[1], [2]], [[3], [4]]];  // 2x2x1
     const w = [[[[2]]]];                 // 1x1x1x1
 
     const result = tf.conv2d(x, w, stride, pad);
-    expectArraysClose(result, [2, 4, 6, 8]);
+    expectArraysClose(await result.data(), [2, 4, 6, 8]);
   });
 });
 

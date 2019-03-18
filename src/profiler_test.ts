@@ -19,7 +19,6 @@ import * as tf from './index';
 import {BackendTimer, BackendTimingInfo} from './kernels/backend';
 import {Logger, Profiler} from './profiler';
 import {Tensor} from './tensor';
-import {TypedArray} from './types';
 
 class TestBackendTimer implements BackendTimer {
   private counter = 1;
@@ -37,8 +36,7 @@ class TestBackendTimer implements BackendTimer {
 }
 
 class TestLogger extends Logger {
-  logKernelProfile(
-      name: string, result: Tensor, vals: TypedArray, timeMs: number) {}
+  logKernelProfile(name: string, result: Tensor, timeMs: number) {}
 }
 
 describe('profiler.Profiler', () => {
