@@ -98,12 +98,14 @@ export class TensorBuffer<R extends Rank, D extends DataType = 'float32'> {
     if (locs.length === 0) {
       locs = [0];
     }
-    for (const i in locs) {
-      if (locs[i] < 0 || locs[i] >= this.shape[i]) {
+    let i = 0;
+    for (const loc of locs) {
+      if (loc < 0 || loc >= this.shape[i]) {
         const msg = `Requested out of range element at ${locs}. ` +
             `  Buffer shape=${this.shape}`;
         throw new Error(msg);
       }
+      i++;
     }
     let index = locs[locs.length - 1];
     for (let i = 0; i < locs.length - 1; ++i) {
