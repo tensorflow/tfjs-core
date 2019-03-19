@@ -1496,31 +1496,19 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   isNaN<T extends Tensor>(x: T): T {
-    let program: UnaryOpProgram|UnaryOpPackedProgram;
-    if (ENV.get('WEBGL_PACK')) {
-      program = new UnaryOpPackedProgram(x.shape, unary_packed_op.IS_NAN);
-    } else {
-      program = new UnaryOpProgram(x.shape, unary_op.IS_NAN);
-    }
-    return this.compileAndRun(program, [x]) as T;
+    const program = new UnaryOpProgram(x.shape, unary_op.IS_NAN);
+    const output = this.makeOutputArray(program.outputShape, 'bool');
+    return this.compileAndRun(program, [x], output) as T;
   }
   isInf<T extends Tensor>(x: T): T {
-    let program: UnaryOpProgram|UnaryOpPackedProgram;
-    if (ENV.get('WEBGL_PACK')) {
-      program = new UnaryOpPackedProgram(x.shape, unary_packed_op.IS_INF);
-    } else {
-      program = new UnaryOpProgram(x.shape, unary_op.IS_INF);
-    }
-    return this.compileAndRun(program, [x]) as T;
+    const program = new UnaryOpProgram(x.shape, unary_op.IS_INF);
+    const output = this.makeOutputArray(program.outputShape, 'bool');
+    return this.compileAndRun(program, [x], output) as T;
   }
   isFinite<T extends Tensor>(x: T): T {
-    let program: UnaryOpProgram|UnaryOpPackedProgram;
-    if (ENV.get('WEBGL_PACK')) {
-      program = new UnaryOpPackedProgram(x.shape, unary_packed_op.IS_FINITE);
-    } else {
-      program = new UnaryOpProgram(x.shape, unary_op.IS_FINITE);
-    }
-    return this.compileAndRun(program, [x]) as T;
+    const program = new UnaryOpProgram(x.shape, unary_op.IS_FINITE);
+    const output = this.makeOutputArray(program.outputShape, 'bool');
+    return this.compileAndRun(program, [x], output) as T;
   }
 
   round<T extends Tensor>(x: T): T {

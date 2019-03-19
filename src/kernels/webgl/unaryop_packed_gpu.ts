@@ -42,12 +42,6 @@ export const RELU = `
   return result;
 `;
 
-export const IS_NAN = `return vec4(isnan(x));`;
-
-export const IS_INF = `return vec4(isinf(x));`;
-
-export const IS_FINITE = `return vec4(not(isnan(x))) * vec4(not(isinf(x)));`;
-
 export class UnaryOpPackedProgram implements GPGPUProgram {
   variableNames = ['A'];
   userCode: string;

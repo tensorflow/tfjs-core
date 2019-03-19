@@ -81,12 +81,7 @@ export function getGlslDifferences(): GLSL {
         return (val < 1.0 || 0.0 < val || val == 0.0) ? false : true;
       }
       bvec4 isnan(vec4 val) {
-        return equal(
-          ivec4(lessThan(val, vec4(1.0))) +
-            ivec4(lessThan(vec4(0.0), val)) +
-            ivec4(equal(val, vec4(0.0))),
-          ivec4(0)
-        );
+        return bvec4(isnan(val.x), isnan(val.y), isnan(val.z), isnan(val.w));
       }
     `;
     defineSpecialInf = `

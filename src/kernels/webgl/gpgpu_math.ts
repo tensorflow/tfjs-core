@@ -155,7 +155,7 @@ export function runProgram<T extends Tensor, K extends Tensor>(
   gpgpu.setProgram(binary.webGLProgram);
 
   // Set special uniforms (NAN, INFINITY)
-  if (ENV.get('WEBGL_VERSION') !== 2) {
+  if (ENV.get('WEBGL_VERSION') === 1) {
     const infLoc =
         gpgpu.getUniformLocation(binary.webGLProgram, 'INFINITY', false);
     if (infLoc !== null) {

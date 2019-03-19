@@ -109,7 +109,7 @@ function sign_<T extends Tensor>(x: T|TensorLike): T {
 }
 
 /**
- * Returns an element-wise indication that is 1 if the value is NaN.
+ * RReturns which elements of x are NaN.
  *
  * ```js
  * const x = tf.tensor1d([NaN, Infinity, -Infinity, 0, 1]);
@@ -131,8 +131,7 @@ function isNaN_<T extends Tensor>(x: T|TensorLike): T {
 }
 
 /**
- * Returns an element-wise indication that is 1 if the value is Infinity
- * or -Infinity.
+ * Returns which elements of x are Infinity or -Infinity.
  *
  * ```js
  * const x = tf.tensor1d([NaN, Infinity, -Infinity, 0, 1]);
@@ -154,7 +153,7 @@ function isInf_<T extends Tensor>(x: T|TensorLike): T {
 }
 
 /**
- * Returns an element-wise indication that is 1 if the value is finite.
+ * Returns which elements of x are finite.
  *
  * ```js
  * const x = tf.tensor1d([NaN, Infinity, -Infinity, 0, 1]);

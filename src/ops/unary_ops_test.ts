@@ -1574,6 +1574,7 @@ describeWithFlags('isNaN', ALL_ENVS, () => {
   it('basic', () => {
     const a = tf.tensor1d([NaN, Infinity, -Infinity, 0, 1]);
     const r = tf.isNaN(a);
+    expect(r.dtype).toEqual('bool');
     expectArraysClose(r, [1, 0, 0, 0, 0]);
   });
 
@@ -1630,6 +1631,7 @@ describeWithFlags('isInf', ALL_ENVS, () => {
   it('basic', () => {
     const a = tf.tensor1d([NaN, Infinity, -Infinity, 0, 1]);
     const r = tf.isInf(a);
+    expect(r.dtype).toEqual('bool');
     expectArraysClose(r, [0, 1, 1, 0, 0]);
   });
 
@@ -1686,6 +1688,7 @@ describeWithFlags('isFinite', ALL_ENVS, () => {
   it('basic', () => {
     const a = tf.tensor1d([NaN, Infinity, -Infinity, 0, 1]);
     const r = tf.isFinite(a);
+    expect(r.dtype).toEqual('bool');
     expectArraysClose(r, [0, 0, 0, 1, 1]);
   });
 
