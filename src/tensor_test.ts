@@ -1965,7 +1965,7 @@ describeWithFlags('tensor grad', ALL_ENVS, () => {
     const gg = tf.grad(g);
     const x = tf.tensor1d([2, 3]);
     const data = gg(x);
-    expectArraysClose(data, [12, 18]);
+    expectArraysClose(data, [11, 18]);
   });
 });
 

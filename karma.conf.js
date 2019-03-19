@@ -16,7 +16,7 @@
  */
 
 const karmaTypescriptConfig = {
-  tsconfig: 'tsconfig.json',
+  tsconfig: 'src/tsconfig-test.json',
   // Disable coverage reports and instrumentation by default for tests
   coverageOptions: {instrumentation: false},
   reports: {},
@@ -33,7 +33,7 @@ if (coverageEnabled) {
 
 const devConfig = {
   frameworks: ['jasmine', 'karma-typescript'],
-  files: [{pattern: 'src/**/*.ts'}],
+  files: [{pattern: 'src/**/*_test.ts'}],
   exclude: ['src/test_node.ts'],
   preprocessors: {'**/*.ts': ['karma-typescript']},
   karmaTypescriptConfig,

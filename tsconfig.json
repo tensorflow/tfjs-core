@@ -18,11 +18,12 @@
     "noUnusedParameters": false,
     "pretty": true,
     "noFallthroughCasesInSwitch": true,
-    "allowUnreachableCode": false
+    "allowUnreachableCode": false,
+    "noEmitOnError": true
   },
   "include": [],
   "references": [
-    {"path": "./src/tsconfig-src.json" },
+    {"path": "./src/tsconfig.json" },
     {"path": "./src/tsconfig-test.json" }
   ],
 }

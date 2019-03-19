@@ -30,6 +30,7 @@ import * as reduce_util from '../../ops/reduce_util';
 import * as scatter_nd_util from '../../ops/scatter_nd_util';
 import * as segment_util from '../../ops/segment_util';
 import {computeFlatOffset, getStridedSlicedInfo, isSliceContinous} from '../../ops/slice_util';
+import {softmax} from '../../ops/softmax';
 import {range, scalar, tensor} from '../../ops/tensor_ops';
 import {DataId, Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D} from '../../tensor';
 import {DataType, DataTypeMap, DataValues, NumericDataType, Rank, RecursiveArray, ShapeMap, sumOutType, TypedArray, upcastType} from '../../types';
@@ -2008,19 +2009,10 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [dy]);
   }
 
-  private softmax(logits: Tensor2D): Tensor2D {
-    const keepDims = true;
-    const lastAxis = 1;
-    const lse = this.logSumExp(logits, [lastAxis], keepDims);
-    const logResult = logits.toFloat().sub(lse);
-    const y = logResult.exp() as T;
-    save({y});
-  }
-
   multinomial(
       logits: Tensor2D, normalized: boolean, numSamples: number,
       seed: number): Tensor2D {
-    const probs = normalized ? logits : this.softmax(logits);
+    const probs = normalized ? logits : softmax(logits);
     const batchSize = probs.shape[0];
     const numOutcomes = probs.shape[1];
     const program = new MultinomialProgram(batchSize, numOutcomes, numSamples);

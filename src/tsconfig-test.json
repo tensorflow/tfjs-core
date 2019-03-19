@@ -3,10 +3,8 @@
   "compilerOptions": {
     "composite": true
   },
-  "include": [
-    "**/*_test.ts",
-  ],
+  "include": ["**/*_test.ts"],
   "references": [
-    {"path": "./tsconfig-src.json"}
+    {"path": "./tsconfig.json"}
   ]
 }
