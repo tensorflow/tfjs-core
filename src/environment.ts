@@ -446,12 +446,12 @@ export class Environment {
           `${name} backend was already registered. Reusing existing backend`);
       return false;
     }
-    this.registryFactory[name] = factory;
     try {
       const backend = factory();
       backend.setDataMover(
           {moveData: (dataId: DataId) => this.engine.moveData(dataId)});
       this.registry[name] = {backend, priority};
+      this.registryFactory[name] = factory;
       return true;
     } catch (err) {
       console.warn(`Registration of backend ${name} failed`);
