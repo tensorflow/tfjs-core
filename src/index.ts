@@ -91,6 +91,7 @@ export {
 
 // Backend specific.
 export {KernelBackend, BackendTimingInfo, DataMover, DataStorage} from './kernels/backend';
+export {MathBackendCPU} from './kernels/backend_cpu';
 
 import * as ops from './ops/ops';
 setOpHandler(ops);
