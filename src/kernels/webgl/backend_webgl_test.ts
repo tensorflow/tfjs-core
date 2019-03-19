@@ -15,9 +15,9 @@
  * =============================================================================
  */
 
-import * as tf from '../index';
-import {describeWithFlags} from '../jasmine_util';
-import {expectArraysClose, expectArraysEqual, WEBGL_ENVS} from '../test_util';
+import * as tf from '../../index';
+import {describeWithFlags} from '../../jasmine_util';
+import {expectArraysClose, expectArraysEqual, WEBGL_ENVS} from '../../test_util';
 import {MathBackendWebGL, WebGLMemoryInfo} from './backend_webgl';
 
 describeWithFlags('lazy packing and unpacking', WEBGL_ENVS, () => {

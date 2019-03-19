@@ -1,0 +1,19 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "composite": true
+  },
+  "include": [
+    "**/*.ts",
+    "../backend.ts",
+    "../topk_impl.ts",
+    "../where_impl.ts",
+    "../packing_util.ts",
+    "../split_shared.ts",
+    "../non_max_suppression_impl.ts",
+    "../backend_util.ts",
+    "../complex_util.ts",
+  ],
+  "exclude": ["**/*_test.ts"],
+  "references": []
+}

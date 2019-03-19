@@ -18,7 +18,7 @@
 import * as tf from './index';
 import {describeWithFlags} from './jasmine_util';
 import {MathBackendCPU} from './kernels/backend_cpu';
-import {MathBackendWebGL} from './kernels/backend_webgl';
+import {MathBackendWebGL} from './kernels/webgl/backend_webgl';
 import {Tensor} from './tensor';
 import {NamedTensorMap} from './tensor_types';
 import {ALL_ENVS, CPU_ENVS, expectArraysClose, expectArraysEqual, WEBGL_ENVS} from './test_util';

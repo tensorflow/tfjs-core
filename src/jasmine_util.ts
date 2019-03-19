@@ -19,7 +19,7 @@ import {ENV, Environment} from './environment';
 import {Features} from './environment_util';
 import {KernelBackend} from './kernels/backend';
 import {MathBackendCPU} from './kernels/backend_cpu';
-import {MathBackendWebGL} from './kernels/backend_webgl';
+import {MathBackendWebGL} from './kernels/webgl/backend_webgl';
 
 Error.stackTraceLimit = Infinity;
 

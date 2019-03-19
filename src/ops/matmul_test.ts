@@ -17,7 +17,7 @@
 
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
-import {MATMUL_SHARED_DIM_THRESHOLD} from '../kernels/backend_webgl';
+import {MATMUL_SHARED_DIM_THRESHOLD} from '../kernels/webgl/backend_webgl';
 import {ALL_ENVS, expectArraysClose, expectArraysEqual, PACKED_ENVS, WEBGL_ENVS} from '../test_util';
 import {Rank} from '../types';
 

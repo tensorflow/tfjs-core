@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "module": "commonjs",
+    "composite": true,
     "moduleResolution": "node",
     "noImplicitAny": true,
     "sourceMap": true,
@@ -19,7 +20,9 @@
     "noFallthroughCasesInSwitch": true,
     "allowUnreachableCode": false
   },
-  "include": [
-    "src/"
-  ]
+  "include": [],
+  "references": [
+    {"path": "./src/tsconfig-src.json" },
+    {"path": "./src/tsconfig-test.json" }
+  ],
 }

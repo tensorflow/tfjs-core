@@ -18,7 +18,7 @@
 import * as tf from './index';
 import {describeWithFlags, envSatisfiesConstraints, parseKarmaFlags} from './jasmine_util';
 import {MathBackendCPU} from './kernels/backend_cpu';
-import {MathBackendWebGL} from './kernels/backend_webgl';
+import {MathBackendWebGL} from './kernels/webgl/backend_webgl';
 import {WEBGL_ENVS} from './test_util';
 
 describeWithFlags('jasmine_util.envSatisfiesConstraints', {}, () => {
