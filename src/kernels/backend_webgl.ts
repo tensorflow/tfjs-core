@@ -65,6 +65,7 @@ import {Conv2DProgram, Conv3DProgram} from './webgl/conv_gpu';
 import {DepthwiseConv2DProgram} from './webgl/conv_gpu_depthwise';
 import {DepthwiseConvPacked2DProgram} from './webgl/conv_packed_gpu_depthwise';
 import {CropAndResizeProgram} from './webgl/crop_and_resize_gpu';
+import {TransformProgram} from './webgl/transform_gpu';
 import {CumSumProgram} from './webgl/cumsum_gpu';
 import {DepthToSpaceProgram} from './webgl/depth_to_space_gpu';
 import {EncodeFloatProgram} from './webgl/encode_float_gpu';
@@ -2033,7 +2034,19 @@ export class MathBackendWebGL implements KernelBackend {
         image.shape, boxes.shape, cropSize, method, extrapolationValue);
     return this.compileAndRun(program, [image, boxes, boxIndex]);
   }
-
+  
+  transform(
+    image: Tensor4D,
+    transforms: Tensor2D,
+    method: 'bilinear'|'nearest',
+    outputSize: [number, number],
+    fillValue: number
+    ): Tensor4D {
+    const program = new TransformProgram(image.shape, transforms.shape, method, outputSize, fillValue);
+    
+    return this.compileAndRun(program, [image, transforms]);
+  }
+  
   depthToSpace(x: Tensor4D, blockSize: number, dataFormat: 'NHWC'|'NCHW'):
       Tensor4D {
     util.assert(

@@ -3272,7 +3272,77 @@ export class MathBackendCPU implements KernelBackend {
     }
     return output.toTensor() as Tensor4D;
   }
+  
+  transform(
+      images: Tensor4D,
+      transforms: Tensor2D,
+      method: string,
+      outputSize: [number, number],
+      fillValue: number
+  ) {
+    const [batch, inHeight, inWidth, numChannels] = images.shape;
+    const numTransforms = transforms.shape[0];
 
+    const outHeight = outputSize[0];
+    const outWidth = outputSize[1];
+    const imageBuffers = images.bufferSync();
+        
+    const output = ops.buffer([batch, outHeight, outWidth, numChannels], images.dtype);
+    
+    const outStride = output.strides; 
+
+    const transformVals = transforms.dataSync();
+
+    // Reference implementation
+    // tslint:disable-next-line:max-line-length
+    // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/contrib/image/kernels/image_ops.h
+    if((numTransforms !== batch && numTransforms !== 1 )|| transforms.shape[1] !== 8){
+      throw (new Error("Input transform should be num_images x 8 or 1 x 8"));
+    }
+    const readWithFillValue = function(batch : number, y: number, x: number, channel: number, fillValue: number){
+      return (0 <= y && y < inHeight && 0 <= x && x < inWidth) ? imageBuffers.get(batch, y, x, channel) : fillValue;
+    }
+    const bilinearInterpolation = function(batch : number, y: number, x: number, channel: number, fillValue: number){
+      const xFloor = Math.floor(x);
+      const yFloor = Math.floor(y);
+      const xCeil = xFloor+1;
+      const yCeil = yFloor+1;
+      
+      const valueYFloor = (xCeil - x) * readWithFillValue(batch, yFloor, xFloor, channel, fillValue) 
+        + (x - xFloor) * readWithFillValue(batch, yFloor, xCeil, channel, fillValue);
+      
+      const valueYCeil = (xCeil - x) * readWithFillValue(batch, yCeil, xFloor, channel, fillValue) 
+        + (x - xFloor) * readWithFillValue(batch, yCeil, xCeil, channel, fillValue);
+      const res = (yCeil - y)*valueYFloor + (y - yFloor)*valueYCeil;
+
+      return res;
+    }
+    const nearestInterpolation = function(batch : number, y: number, x: number, channel: number, fillValue: number){
+      return readWithFillValue(batch, Math.round(y), Math.round(x), channel, fillValue);
+    }
+    for (let bInd = 0; bInd < batch; bInd++){
+      const transform = numTransforms === 1 ? transformVals: transformVals.slice(bInd*8, (bInd+1)*8);
+      
+      for (let topInd = 0; topInd < outHeight; topInd++){
+        for (let leftInd = 0; leftInd < outWidth; leftInd++){          
+          const projection = transform[6]*leftInd + transform[7]*topInd + 1;
+          const floatInputLeft = (transform[0] * leftInd + transform[1] * topInd + transform[2]) / projection;
+          const floatInputTop = (transform[3] * leftInd + transform[4] * topInd + transform[5]) / projection;
+          
+          for (let c = 0; c < numChannels; c ++){
+            const outInd = c + leftInd * outStride[2] + topInd * outStride[1] + bInd * outStride[0];
+            if (method === 'bilinear') {
+              output.values[outInd] = bilinearInterpolation(bInd, floatInputTop, floatInputLeft, c, fillValue);
+            } else {  // method == "nearest"
+              output.values[outInd] = nearestInterpolation(bInd, floatInputTop, floatInputLeft, c, fillValue);
+            }
+          }
+        }
+      }
+    }
+    return output.toTensor() as Tensor4D;
+  }
+  
   sparseToDense<R extends Rank>(
       sparseIndices: Tensor, sparseValues: Tensor, outputShape: ShapeMap[R],
       defaultValue: Scalar): Tensor<R> {

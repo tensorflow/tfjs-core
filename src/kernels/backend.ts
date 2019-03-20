@@ -568,7 +568,17 @@ export class KernelBackend implements TensorStorage, Backend, BackendTimer {
       extrapolationValue: number): Tensor4D {
     throw new Error('Not yet implemented');
   }
-
+  
+  transform(
+    images: Tensor4D,
+    transforms: Tensor2D,
+    method: 'bilinear'|'nearest',
+    outputSize: [number, number],
+    fillValue: number
+    ): Tensor4D {
+    throw new Error('Not yet implemented');
+  }
+  
   depthToSpace(x: Tensor4D, blockSize: number, dataFormat: string): Tensor4D {
     throw new Error('Not yet implemented');
   }

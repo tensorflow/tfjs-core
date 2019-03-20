@@ -407,3 +407,126 @@ describeWithFlags('cropAndResize', ALL_ENVS, () => {
         output, [1, 2, 0, 3, 4, 0, 3, 4, 0, 5, 6, 6, 7, 8, 8, 0, 0, 0]);
   });
 });
+
+
+describeWithFlags('nonMaxSuppressionAsync', ALL_ENVS, () => {
+  it('select from three clusters', async () => {
+    const boxes = tf.tensor2d(
+        [
+          0, 0,  1, 1,  0, 0.1,  1, 1.1,  0, -0.1, 1, 0.9,
+          0, 10, 1, 11, 0, 10.1, 1, 11.1, 0, 100,  1, 101
+        ],
+        [6, 4]);
+    const scores = tf.tensor1d([0.9, 0.75, 0.6, 0.95, 0.5, 0.3]);
+    const maxOutputSize = 3;
+    const iouThreshold = 0.5;
+    const scoreThreshold = 0;
+    const indices = await tf.image.nonMaxSuppressionAsync(
+        boxes, scores, maxOutputSize, iouThreshold, scoreThreshold);
+
+    expect(indices.shape).toEqual([3]);
+    expectArraysEqual(indices, [3, 0, 5]);
+  });
+
+  it('accepts a tensor-like object', async () => {
+    const boxes = [[0, 0, 1, 1], [0, 1, 1, 2]];
+    const scores = [1, 2];
+    const indices = await tf.image.nonMaxSuppressionAsync(boxes, scores, 10);
+    expect(indices.shape).toEqual([2]);
+    expect(indices.dtype).toEqual('int32');
+    expectArraysEqual(indices, [1, 0]);
+  });
+});
+
+describeWithFlags('transform', ALL_ENVS, () => {
+  it('2x2-bilinear 90° rotate', () => {
+
+    const image: tf.Tensor4D = tf.tensor4d([1, 2, 3, 4], [1, 2, 2, 1]);
+    // inspired from https://math.stackexchange.com/questions/2093314/rotation-matrix-of-rotation-around-a-point-other-than-the-origin
+    // const angle = Math.PI/2;
+    // const center = [0.5, 0.5];
+    // [
+    //   Math.cos(angle), Math.sin(angle), center[0]*(1-Math.cos(angle)) - center[1]*Math.sin(angle), 
+    //   -1*Math.sin(angle), Math.cos(angle), center[1]*(1-Math.cos(angle)) + center[0]*Math.sin(angle), 
+    //   0, 0
+    // ];
+    const t = [0,1,0,-1,0,1,0,0]
+
+    const transforms: tf.Tensor2D = tf.tensor2d(t, [1, 8]);
+    
+    const output = tf.image.transform(image, transforms, 'bilinear');
+    expect(output.shape).toEqual([1, 2, 2, 1]); 
+    expectArraysClose(output, [3, 1, 4, 2]);
+  });
+  it('2x2-nearest 90° rotate', () => {
+    const image: tf.Tensor4D = tf.tensor4d([1, 2, 3, 4], [1, 2, 2, 1]);
+    // inspired from https://math.stackexchange.com/questions/2093314/rotation-matrix-of-rotation-around-a-point-other-than-the-origin
+    // const angle = Math.PI/2;
+    // const center = [0.5, 0.5];
+    // [
+    //   Math.cos(angle), Math.sin(angle), center[0]*(1-Math.cos(angle)) - center[1]*Math.sin(angle), 
+    //   -1*Math.sin(angle), Math.cos(angle), center[1]*(1-Math.cos(angle)) + center[0]*Math.sin(angle), 
+    //   0, 0
+    // ];
+    const t = [0,1,0,-1,0,1,0,0]
+
+    const transforms: tf.Tensor2D = tf.tensor2d(t, [1, 8]);
+    
+    const output = tf.image.transform(image, transforms, 'nearest');
+    expect(output.shape).toEqual([1, 2, 2, 1]); 
+    expectArraysClose(output, [3, 1, 4, 2]);
+  });
+  it('2x2-to-3x2-bilinear identity', () => {
+    const image: tf.Tensor4D = tf.tensor4d([1, 2, 3, 4], [1, 2, 2, 1]);
+    // inspired from https://math.stackexchange.com/questions/2093314/rotation-matrix-of-rotation-around-a-point-other-than-the-origin
+    const transforms: tf.Tensor2D = tf.tensor2d(
+      [
+        1, 0, 0, 
+        0, 1, 0, 
+        0, 0
+      ], [1, 8]);
+    const output = tf.image.transform(image, transforms, 'bilinear', [2, 3]);
+    expect(output.shape).toEqual([1, 2, 3, 1]);
+    expectArraysClose(output, [1, 2, 0, 3, 4, 0]);
+  });
+  it('2x2-to-3x2-nearest identity', () => {
+    const image: tf.Tensor4D = tf.tensor4d([1, 2, 3, 4], [1, 2, 2, 1]);
+    // inspired from https://math.stackexchange.com/questions/2093314/rotation-matrix-of-rotation-around-a-point-other-than-the-origin
+    const transforms: tf.Tensor2D = tf.tensor2d(
+      [
+        1, 0, 0, 
+        0, 1, 0, 
+        0, 0
+      ], [1, 8]);
+    const output = tf.image.transform(image, transforms, 'nearest', [2, 3]);
+    expect(output.shape).toEqual([1, 2, 3, 1]);
+    expectArraysClose(output, [1, 2, 0, 3, 4, 0]);
+  });
+  it('2x2-to-3x2-bilinear 10° shearing', () => {
+    const image: tf.Tensor4D = tf.tensor4d([1, 2, 3, 4], [1, 2, 2, 1]);
+    // inspired from https://math.stackexchange.com/questions/2093314/rotation-matrix-of-rotation-around-a-point-other-than-the-origin
+    const transforms: tf.Tensor2D = tf.tensor2d(
+      [
+        1, -0.1, 0, 
+        0, 1, 0, 
+        0, 0
+      ], [1, 8]);
+    const output = tf.image.transform(image, transforms, 'bilinear', [2, 3]);
+    expect(output.shape).toEqual([1, 2, 3, 1]);
+    console.log(output.dataSync())
+    expectArraysClose(output, [1, 2, 0, 2.7, 3.9, 0.4]);
+  });
+  it('2x2-to-3x2-nearest 10° shearing', () => {
+    const image: tf.Tensor4D = tf.tensor4d([1, 2, 3, 4], [1, 2, 2, 1]);
+    // inspired from https://math.stackexchange.com/questions/2093314/rotation-matrix-of-rotation-around-a-point-other-than-the-origin
+    const transforms: tf.Tensor2D = tf.tensor2d(
+      [
+        1, -0.1, 0, 
+        0, 1, 0, 
+        0, 0
+      ], [1, 8]);
+    const output = tf.image.transform(image, transforms, 'nearest', [2, 3]);
+    expect(output.shape).toEqual([1, 2, 3, 1]);
+    expectArraysClose(output, [1, 2, 0, 3, 4, 0]);
+  });
+});

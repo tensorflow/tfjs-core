@@ -299,8 +299,63 @@ function cropAndResize_(
   return res as Tensor4D;
 }
 
+/**
+ * Applies the given transform(s) to the image(s).
+ *
+ * @param image 4d tensor of shape `[batch,imageHeight,imageWidth,depth]`,
+ *     where imageHeight and imageWidth must be positive, specifying the
+ *     batch of images to transform
+ * @param transforms 2d float32 tensor of shape `[batch, 8]` or `[1, 8]`.
+ *     Each entry is a projective transform matrix/matrices 
+ *     If one row of transforms is `[a0, a1, a2, b0, b1, b2, c0, c1]`, 
+ *     then it maps the output point (x, y) to a transformed input point 
+ *     `(x', y') = ((a0 x + a1 y + a2) / k, (b0 x + b1 y + b2) / k)`, where `k = c0 x + c1 y + 1`
+ * @param method Optional, string from `'bilinear' | 'nearest'`,
+ *     defaults to bilinear, which specifies the sampling method for resizing
+ * @param size Optional, The new size `[newHeight, newWidth]` for the output image
+ *     defaults to `[imageHeight,imageWidth]`
+ * @param fillValue Optional, the value to fill the outside of the input image pixels 
+ *     default to 0
+ * @return A 4D tensor of the shape `[numBoxes,imageHeight,imageWidth,depth]`
+ */
+/** @doc {heading: 'Operations', subheading: 'Images', namespace: 'image'} */
+function transform_(
+    image: Tensor4D|TensorLike,
+    transforms: Tensor2D|TensorLike,
+    method?: 'bilinear'|'nearest',
+    size?: [number, number],
+    fillValue?: number
+    ): Tensor4D {
+  const $image = convertToTensor(image, 'image', 'transform', 'float32');
+  const $transforms = convertToTensor(transforms, 'transforms', 'transform', 'float32');
+  method = method || 'bilinear';
+  fillValue = fillValue || 0;
+  size = size || [$image.shape[1], $image.shape[2]];
+
+  util.assert(
+      $image.rank === 4,
+      () => 'Error in transform: image must be rank 4,' +
+          `but got rank ${$image.rank}.`);
+  util.assert(
+      $transforms.rank === 2 && $transforms.shape[1] === 8 && ($transforms.shape[0] === 1 || $transforms.shape[0] === $image.shape[0]),
+      () => `Error in transform: transforms must be have size [${$image.shape[0]},8] or [1,8]` +
+          `but had shape ${$transforms.shape}.`);
+  util.assert(
+      size[0] >= 1 && size[1] >= 1,
+      () => `size must be atleast [1,1], but was ${size}`);
+  util.assert(
+      method === 'bilinear' || method === 'nearest',
+      () => `method must be bilinear or nearest, but was ${method}`);
+      
+  const forward: ForwardFunc<Tensor4D> = (backend, save) =>
+      backend.transform($image, $transforms, method, size, fillValue);
+
+  const res = ENV.engine.runKernel(forward, {$image, $transforms});
+  return res as Tensor4D;
+}
 export const resizeBilinear = op({resizeBilinear_});
 export const resizeNearestNeighbor = op({resizeNearestNeighbor_});
 export const nonMaxSuppression = op({nonMaxSuppression_});
 export const nonMaxSuppressionAsync = nonMaxSuppressionAsync_;
 export const cropAndResize = op({cropAndResize_});
+export const transform = op({transform_});
