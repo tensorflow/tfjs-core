@@ -97,28 +97,28 @@ export class CropAndResizeProgram implements GPGPUProgram {
           return;
         }
 
-        vec2 sourceFracIndexRC = vec2(in_y,in_x);
+        vec2 sourceFracIndexRC = vec2(in_x,in_y);
         if(${methodId} == 1) {
           // Compute the four integer indices.
           ivec2 sourceFloorRC = ivec2(sourceFracIndexRC);
           ivec2 sourceCeilRC = ivec2(ceil(sourceFracIndexRC));
 
-          float topLeft = getImage(b, sourceFloorRC.x, sourceFloorRC.y, d);
-          float bottomLeft = getImage(b, sourceCeilRC.x, sourceFloorRC.y, d);
-          float topRight = getImage(b, sourceFloorRC.x, sourceCeilRC.y, d);
-          float bottomRight = getImage(b, sourceCeilRC.x, sourceCeilRC.y, d);
+          float topLeft = getImage(b, sourceFloorRC.y, sourceFloorRC.x, d);
+          float bottomLeft = getImage(b, sourceCeilRC.y, sourceFloorRC.x, d);
+          float topRight = getImage(b, sourceFloorRC.y, sourceCeilRC.x, d);
+          float bottomRight = getImage(b, sourceCeilRC.y, sourceCeilRC.x, d);
 
           vec2 fracRC = sourceFracIndexRC - vec2(sourceFloorRC);
 
-          float top = topLeft + (topRight - topLeft) * fracRC.y;
-          float bottom = bottomLeft + (bottomRight - bottomLeft) * fracRC.y;
-          float newValue = top + (bottom - top) * fracRC.x;
+          float top = topLeft + (topRight - topLeft) * fracRC.x;
+          float bottom = bottomLeft + (bottomRight - bottomLeft) * fracRC.x;
+          float newValue = top + (bottom - top) * fracRC.y;
           setOutput(newValue);
         } else {
           // Compute the coordinators of nearest neighbor point.
           ivec2 sourceNearestRC = ivec2(floor(
             sourceFracIndexRC + vec2(0.5,0.5)));
-          float newValue = getImage(b, sourceNearestRC.x, sourceNearestRC.y, d);
+          float newValue = getImage(b, sourceNearestRC.y, sourceNearestRC.x, d);
           setOutput(newValue);
         }
       }
