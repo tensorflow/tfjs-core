@@ -1823,10 +1823,11 @@ export class MathBackendWebGL implements KernelBackend {
 
     const im2ColProgram =
         new Im2ColProgram(x2ColShape, xSqueezed.shape, convInfo);
+    const im2ColOutput =
+        this.makePackedTensor(im2ColProgram.outputShape) as Tensor2D;
     const im2Col =
-        this.compileAndRun<Tensor2D>(im2ColProgram, [xSqueezed]).reshape([
-          1, x2ColShape[0], x2ColShape[1]
-        ]) as Tensor3D;
+        this.compileAndRun<Tensor2D>(im2ColProgram, [xSqueezed], im2ColOutput)
+            .reshape([1, x2ColShape[0], x2ColShape[1]]) as Tensor3D;
 
     const matmulProgram = new MatMulPackedProgram(
         im2Col.shape, [1, numCols, convInfo.outChannels], true, false);
@@ -2236,6 +2237,7 @@ export class MathBackendWebGL implements KernelBackend {
       program: GPGPUProgram, inputs: TensorHandle[], output?: K,
       customSetup?: (gpgpu: GPGPUContext, webGLProgram: WebGLProgram) => void,
       pageToCpu = true): K {
+    console.log('compile and run', program.constructor.name);
     if (output == null) {
       if (program.usesPackedTextures) {
         output = this.makePackedTensor(program.outputShape, inputs[0].dtype) as
@@ -2254,6 +2256,8 @@ export class MathBackendWebGL implements KernelBackend {
     }
 
     const inputsData: TensorData[] = inputs.map(input => {
+      console.log('looping over input');
+      console.log(input)
       if (input.dtype === 'complex64') {
         throw new Error(
             `GPGPUProgram does not support complex64 input. For complex64 ` +
@@ -2262,6 +2266,8 @@ export class MathBackendWebGL implements KernelBackend {
       }
 
       let texData = this.texData.get(input.dataId);
+      console.log('input tex data');
+      console.log(texData);
 
       if (texData.texture == null) {
         if (!program.usesPackedTextures &&
@@ -2287,6 +2293,7 @@ export class MathBackendWebGL implements KernelBackend {
           texData.shape = input.shape;
         }
       } else if (!!texData.isPacked !== !!program.usesPackedTextures) {
+        console.log('PREPROCESS');
         input = texData.isPacked ? this.unpackTensor(input) :
                                    this.packTensor(input);
         texData = this.texData.get(input.dataId);
@@ -2353,8 +2360,11 @@ export class MathBackendWebGL implements KernelBackend {
 
     if (!ENV.get('WEBGL_LAZILY_UNPACK') &&
         this.texData.get(output.dataId).isPacked && !program.isPackShader) {
+      console.log('UNPACK TENSOR');
       return this.unpackTensor(output as {} as Tensor) as {} as K;
     }
+    console.log('OUTPUT');
+    console.log(this.texData.get(output.dataId))
     return output;
   }
 
