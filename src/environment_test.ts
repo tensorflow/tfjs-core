@@ -110,8 +110,11 @@ describe('Backend', () => {
   it('custom cpu registration', () => {
     let backend: KernelBackend;
     ENV.registerBackend('custom-cpu', () => {
-      backend = new MathBackendCPU();
-      return backend;
+      const newBackend = new MathBackendCPU();
+      if (backend == null) {
+        backend = newBackend;
+      }
+      return newBackend;
     });
 
     expect(ENV.findBackend('custom-cpu')).toBe(backend);
