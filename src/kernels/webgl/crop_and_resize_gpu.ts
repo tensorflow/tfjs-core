@@ -97,28 +97,28 @@ export class CropAndResizeProgram implements GPGPUProgram {
           return;
         }
 
-        vec2 sourceFracIndexRC = vec2(in_x,in_y);
+        vec2 sourceFracIndexCR = vec2(in_x,in_y);
         if(${methodId} == 1) {
           // Compute the four integer indices.
-          ivec2 sourceFloorRC = ivec2(sourceFracIndexRC);
-          ivec2 sourceCeilRC = ivec2(ceil(sourceFracIndexRC));
+          ivec2 sourceFloorCR = ivec2(sourceFracIndexCR);
+          ivec2 sourceCeilCR = ivec2(ceil(sourceFracIndexCR));
 
-          float topLeft = getImage(b, sourceFloorRC.y, sourceFloorRC.x, d);
-          float bottomLeft = getImage(b, sourceCeilRC.y, sourceFloorRC.x, d);
-          float topRight = getImage(b, sourceFloorRC.y, sourceCeilRC.x, d);
-          float bottomRight = getImage(b, sourceCeilRC.y, sourceCeilRC.x, d);
+          float topLeft = getImage(b, sourceFloorCR.y, sourceFloorCR.x, d);
+          float bottomLeft = getImage(b, sourceCeilCR.y, sourceFloorCR.x, d);
+          float topRight = getImage(b, sourceFloorCR.y, sourceCeilCR.x, d);
+          float bottomRight = getImage(b, sourceCeilCR.y, sourceCeilCR.x, d);
 
-          vec2 fracRC = sourceFracIndexRC - vec2(sourceFloorRC);
+          vec2 fracCR = sourceFracIndexCR - vec2(sourceFloorCR);
 
-          float top = topLeft + (topRight - topLeft) * fracRC.x;
-          float bottom = bottomLeft + (bottomRight - bottomLeft) * fracRC.x;
-          float newValue = top + (bottom - top) * fracRC.y;
+          float top = topLeft + (topRight - topLeft) * fracCR.x;
+          float bottom = bottomLeft + (bottomRight - bottomLeft) * fracCR.x;
+          float newValue = top + (bottom - top) * fracCR.y;
           setOutput(newValue);
         } else {
           // Compute the coordinators of nearest neighbor point.
-          ivec2 sourceNearestRC = ivec2(floor(
-            sourceFracIndexRC + vec2(0.5,0.5)));
-          float newValue = getImage(b, sourceNearestRC.y, sourceNearestRC.x, d);
+          ivec2 sourceNearestCR = ivec2(floor(
+            sourceFracIndexCR + vec2(0.5,0.5)));
+          float newValue = getImage(b, sourceNearestCR.y, sourceNearestCR.x, d);
           setOutput(newValue);
         }
       }
