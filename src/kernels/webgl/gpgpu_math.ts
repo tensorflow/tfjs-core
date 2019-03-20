@@ -42,6 +42,8 @@ export interface GPGPUBinary {
   source: string;
   inShapeInfos: ShapeInfo[];
   outShapeInfo: ShapeInfo;
+  infLoc: WebGLUniformLocation;
+  nanLoc: WebGLUniformLocation;
 }
 
 export interface TensorData {
@@ -83,8 +85,16 @@ export function compileProgram<T extends Tensor, K extends Tensor>(
 
   const webGLProgram = gpgpu.createProgram(source);
 
-  const uniformLocations: {[name: string]: WebGLUniformLocation} = {};
+  // Add special uniforms (NAN, INFINITY)
+  let infLoc: WebGLUniformLocation = null;
+  let nanLoc: WebGLUniformLocation = null;
+  if (ENV.get('WEBGL_VERSION') === 1) {
+    infLoc = gpgpu.getUniformLocation(webGLProgram, 'INFINITY', false);
+    nanLoc = gpgpu.getUniformLocation(webGLProgram, 'NAN', false);
+  }
+
   // Add user-defined uniforms
+  const uniformLocations: {[name: string]: WebGLUniformLocation} = {};
   for (let i = 0; i < program.variableNames.length; i++) {
     const varName = program.variableNames[i];
     const shouldThrow = false;
@@ -100,7 +110,9 @@ export function compileProgram<T extends Tensor, K extends Tensor>(
     webGLProgram,
     uniformLocations,
     inShapeInfos,
-    outShapeInfo
+    outShapeInfo,
+    infLoc,
+    nanLoc,
   };
 }
 
@@ -156,15 +168,11 @@ export function runProgram<T extends Tensor, K extends Tensor>(
 
   // Set special uniforms (NAN, INFINITY)
   if (ENV.get('WEBGL_VERSION') === 1) {
-    const infLoc =
-        gpgpu.getUniformLocation(binary.webGLProgram, 'INFINITY', false);
-    if (infLoc !== null) {
-      gpgpu.gl.uniform1f(infLoc, Infinity);
+    if (binary.infLoc !== null) {
+      gpgpu.gl.uniform1f(binary.infLoc, Infinity);
     }
-
-    const nanLoc = gpgpu.getUniformLocation(binary.webGLProgram, 'NAN', false);
-    if (nanLoc !== null) {
-      gpgpu.gl.uniform1f(nanLoc, NaN);
+    if (binary.nanLoc !== null) {
+      gpgpu.gl.uniform1f(binary.nanLoc, NaN);
     }
   }
 
