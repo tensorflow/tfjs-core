@@ -97,6 +97,7 @@ import {ResizeBilinearPackedProgram} from './webgl/resize_bilinear_packed_gpu';
 import {ResizeNearestNeigborBackpropProgram} from './webgl/resize_nearest_neighbor_backprop_gpu';
 import {ResizeNearestNeighborProgram} from './webgl/resize_nearest_neighbor_gpu';
 import {ReverseProgram} from './webgl/reverse_gpu';
+import {ReversePackedProgram} from './webgl/reverse_packed_gpu';
 import {ScatterProgram} from './webgl/scatter_gpu';
 import {SegmentOpProgram} from './webgl/segment_gpu';
 import {SelectProgram} from './webgl/select_gpu';
@@ -135,6 +136,16 @@ export interface WebGLMemoryInfo extends MemoryInfo {
 export interface WebGLTimingInfo extends TimingInfo {
   uploadWaitMs: number;
   downloadWaitMs: number;
+}
+
+const binaryCaches: {[webGLVersion: string]: {[key: string]: GPGPUBinary}} = {};
+
+function getBinaryCache(webGLVersion: number) {
+  if (webGLVersion in binaryCaches) {
+    return binaryCaches[webGLVersion];
+  }
+  binaryCaches[webGLVersion] = {};
+  return binaryCaches[webGLVersion];
 }
 
 function mapActivationToShaderProgram(
@@ -569,7 +580,7 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   private textureManager: TextureManager;
-  private binaryCache: {[key: string]: GPGPUBinary} = {};
+  private binaryCache: {[key: string]: GPGPUBinary};
   private gpgpuCreatedLocally: boolean;
 
   constructor(private gpgpu?: GPGPUContext) {
@@ -579,10 +590,12 @@ export class MathBackendWebGL implements KernelBackend {
 
     if (gpgpu == null) {
       const gl = getWebGLContext(ENV.get('WEBGL_VERSION'));
+      this.binaryCache = getBinaryCache(ENV.get('WEBGL_VERSION'));
       this.gpgpu = new GPGPUContext(gl);
       this.canvas = gl.canvas;
       this.gpgpuCreatedLocally = true;
     } else {
+      this.binaryCache = {};
       this.gpgpuCreatedLocally = false;
       this.canvas = gpgpu.gl.canvas;
     }
@@ -714,7 +727,9 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   reverse<T extends Tensor>(x: T, axis: number[]): T {
-    const program = new ReverseProgram(x.shape, axis);
+    const program = ENV.get('WEBGL_PACK_ARRAY_OPERATIONS') ?
+        new ReversePackedProgram(x.shape, axis) :
+        new ReverseProgram(x.shape, axis);
     return this.compileAndRun(program, [x]);
   }
 
@@ -2329,7 +2344,8 @@ export class MathBackendWebGL implements KernelBackend {
       query = this.startTimer();
     }
 
-    gpgpu_math.runProgram(binary, inputsData, outputData, customSetup);
+    gpgpu_math.runProgram(
+        this.gpgpu, binary, inputsData, outputData, customSetup);
 
     const numBytesBeforePaging = ENV.get('WEBGL_NUM_MB_BEFORE_PAGING') * 1024;
     if (pageToCpu && this.numBytesInGPU > numBytesBeforePaging) {
@@ -2373,15 +2389,13 @@ export class MathBackendWebGL implements KernelBackend {
     if (this.disposed) {
       return;
     }
-    for (const key in this.binaryCache) {
-      this.gpgpu.deleteProgram(this.binaryCache[key].webGLProgram);
-    }
     this.textureManager.dispose();
     this.canvas.remove();
     if (this.fromPixels2DContext != null) {
       this.fromPixels2DContext.canvas.remove();
     }
     if (this.gpgpuCreatedLocally) {
+      this.gpgpu.program = null;
       this.gpgpu.dispose();
     }
     this.disposed = true;
