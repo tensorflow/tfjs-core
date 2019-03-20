@@ -15,8 +15,8 @@
  * =============================================================================
  */
 
+import {ENV} from './environment';
 import {setTestEnvs} from './jasmine_util';
-import {MathBackendCPU} from './kernels/backend_cpu';
 // tslint:disable-next-line:no-require-imports
 const jasmine = require('jasmine');
 
@@ -25,8 +25,8 @@ process.on('unhandledRejection', e => {
 });
 
 setTestEnvs(
-    [{name: 'node', factory: () => new MathBackendCPU(), features: {}}]);
+    [{name: 'node', factory: ENV.findBackendFactory('cpu'), features: {}}]);
 
 const runner = new jasmine();
-runner.loadConfig({spec_files: ['src/**/**_test.ts'], random: false});
+runner.loadConfig({spec_files: ['dist/**/**_test.js'], random: false});
 runner.execute();
