@@ -23,14 +23,26 @@
         await model.execute({'images': inputs}).data();
         let elapsed = performance.now() - start;
         console.log('Warmup took', elapsed);
+        for (key in window.timeMap) {
+          delete window.timeMap[key];
+        }
       }
 
       async function run() {
-        let start = performance.now();
         let inputs = tf.zeros([1, 224, 224, 3]);
+        let start = performance.now();
         await model.execute({'images': inputs}).data();
         let elapsed = performance.now() - start;
         console.log('Took', elapsed);
+        let total = 0;
+        for (key in window.timeMap) {
+          total += window.timeMap[key];
+        }
+        console.log('Total timed', total);
+        console.log(Object.assign({}, window.timeMap));
+        for (key in window.timeMap) {
+          delete window.timeMap[key];
+        }
       }
       tf.setBackend('cpu');
       load();

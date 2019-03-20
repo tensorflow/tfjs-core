@@ -109,6 +109,10 @@ export class MathBackendCPU implements KernelBackend {
     if (values == null) {
       throw new Error('MathBackendCPU.write(): values can not be null');
     }
+    // const size = (values as Float32Array).buffer.byteLength;
+    // // @ts-ignore
+    // const vals = new Float32Array(new SharedArrayBuffer(size));
+    // vals.set(values as Float32Array);
     this.data.get(dataId).values = values;
   }
   fromPixels(
@@ -391,9 +395,10 @@ export class MathBackendCPU implements KernelBackend {
                  }) as Tensor;
     }
 
-    return this.broadcastedBinaryOp(
-               a, b, upcastType(a.dtype, b.dtype),
-               (aValue, bValue) => aValue + bValue) as Tensor;
+    const newShape =
+        broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+    const values = webworker.binary(a, b, 'add');
+    return Tensor.make(newShape, {values}, a.dtype);
   }
 
   addN<T extends Tensor>(tensors: T[]): T {
@@ -425,9 +430,10 @@ export class MathBackendCPU implements KernelBackend {
                  }) as Tensor;
     }
 
-    return this.broadcastedBinaryOp(
-               a, b, upcastType(a.dtype, b.dtype),
-               (aValue, bValue) => aValue - bValue) as Tensor;
+    const newShape =
+        broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+    const values = webworker.binary(a, b, 'sub');
+    return Tensor.make(newShape, {values}, a.dtype);
   }
 
   pow<T extends Tensor>(a: T, b: Tensor): T {
@@ -541,9 +547,10 @@ export class MathBackendCPU implements KernelBackend {
                  }) as Tensor;
     }
 
-    return this.broadcastedBinaryOp(
-               a, b, upcastType(a.dtype, b.dtype),
-               (aValue, bValue) => aValue * bValue) as Tensor;
+    const newShape =
+        broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+    const values = webworker.binary(a, b, 'mul');
+    return Tensor.make(newShape, {values}, a.dtype);
   }
 
   realDivide(a: Tensor, b: Tensor): Tensor {
@@ -1210,13 +1217,12 @@ export class MathBackendCPU implements KernelBackend {
     async function compute() {
       const resultValues = new Float32Array(x.size);
       const values = await x.data();
-      const start = performance.now();
+      const end = util.time('clip');
       for (let i = 0; i < values.length; ++i) {
         const v = values[i];
         resultValues[i] = v > max ? max : (v < min ? min : v);
       }
-      const end = performance.now();
-      console.log('clip took', (end - start).toFixed(1));
+      end();
       return resultValues;
     }
     return Tensor.make(x.shape, {values: compute()}, x.dtype) as T;
@@ -1495,58 +1501,6 @@ export class MathBackendCPU implements KernelBackend {
     }
 
     this.assertNotComplex([x, filter], 'conv2d');
-
-    // const {filterWidth, filterHeight, outHeight, outWidth, outChannels} =
-    //     convInfo;
-    // console.log(
-    //     `conv2d, input: ${x.shape[1]}x${x.shape[2]}x${x.shape[3]}, ` +
-    //     `filter: ${filterHeight}x${filterWidth}x${convInfo.inChannels}` +
-    //     `x${convInfo.outChannels}, out: ` +
-    //     `${outHeight}x${outWidth}x${outChannels}`);
-
-    // async function compute() {
-    //   const {dilationHeight, dilationWidth, padInfo: {left, top}} = convInfo;
-    //   const [xVals, wVals] = await Promise.all([x.data(), filter.data()]);
-    //   const y = ops.buffer(convInfo.outShape, x.dtype as 'float32');
-    //   const yVals = y.values;
-
-    //   for (let b = 0; b < convInfo.batchSize; ++b) {
-    //     const xOffset1 = b * x.strides[0];
-    //     const yOffset1 = b * y.strides[0];
-    //     for (let yR = 0; yR < convInfo.outHeight; ++yR) {
-    //       const yOffset2 = yOffset1 + yR * y.strides[1];
-    //       const xRCorner = yR * convInfo.strideHeight - top;
-    //       for (let wR = 0; wR < filterHeight; ++wR) {
-    //         const xR = xRCorner + wR * dilationHeight;
-    //         if (xR < 0 || xR >= convInfo.inHeight) {
-    //           continue;
-    //         }
-    //         const wOffset1 = wR * filter.strides[0];
-    //         const xOffset2 = xOffset1 + xR * x.strides[1];
-    //         for (let yC = 0; yC < convInfo.outWidth; ++yC) {
-    //           const yOffset3 = yOffset2 + yC * convInfo.outChannels;
-    //           const xCCorner = yC * convInfo.strideWidth - left;
-    //           for (let wC = 0; wC < filterWidth; ++wC) {
-    //             const xC = xCCorner + wC * dilationWidth;
-    //             if (xC < 0 || xC >= convInfo.inWidth) {
-    //               continue;
-    //             }
-    //             const wOffset2 = wOffset1 + wC * filter.strides[1];
-    //             const xOffset3 = xOffset2 + xC * convInfo.inChannels;
-    //             for (let d1 = 0; d1 < convInfo.inChannels; ++d1) {
-    //               const xVal = xVals[xOffset3 + d1];
-    //               const wOffset3 = wOffset2 + d1 * convInfo.outChannels;
-    //               for (let d2 = 0; d2 < convInfo.outChannels; ++d2) {
-    //                 yVals[yOffset3 + d2] += xVal * wVals[wOffset3 + d2];
-    //               }
-    //             }
-    //           }
-    //         }
-    //       }
-    //     }
-    //   }
-    //   return yVals;
-    // }
     const values = webworker.conv2d(convInfo, x, filter);
     return Tensor.make(convInfo.outShape, {values}, x.dtype) as Tensor4D;
   }
@@ -1896,61 +1850,6 @@ export class MathBackendCPU implements KernelBackend {
   depthwiseConv2D(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
       Tensor4D {
     this.assertNotComplex([x, filter], 'depthwiseConv2D');
-
-    // const filterHeight = convInfo.filterHeight;
-    // const filterWidth = convInfo.filterWidth;
-    // const dilationHeight = convInfo.dilationHeight;
-    // const dilationWidth = convInfo.dilationWidth;
-    // const padLeft = convInfo.padInfo.left;
-    // const padTop = convInfo.padInfo.top;
-    // const chMul = convInfo.outChannels / convInfo.inChannels;
-    // async function compute() {
-    //   const y = ops.buffer(convInfo.outShape, x.dtype as 'float32');
-    //   const [xVals, wVals] = await Promise.all([x.data(), filter.data()]);
-    //   const start = performance.now();
-    //   const yVals = y.values;
-    //   const {outHeight, outWidth, outChannels} = convInfo;
-    //   for (let b = 0; b < convInfo.batchSize; ++b) {
-    //     for (let q = 0; q < chMul; ++q) {
-    //       const xOffset1 = b * x.strides[0];
-    //       const yOffset1 = b * y.strides[0];
-    //       for (let yR = 0; yR < convInfo.outHeight; ++yR) {
-    //         const yOffset2 = yOffset1 + yR * y.strides[1];
-    //         const xRCorner = yR * convInfo.strideHeight - padLeft;
-    //         for (let wR = 0; wR < filterHeight; ++wR) {
-    //           const xR = xRCorner + wR * dilationHeight;
-    //           if (xR < 0 || xR >= convInfo.inHeight) {
-    //             continue;
-    //           }
-    //           const wOffset1 = wR * filter.strides[0];
-    //           const xOffset2 = xOffset1 + xR * x.strides[1];
-    //           for (let yC = 0; yC < convInfo.outWidth; ++yC) {
-    //             const yOffset3 = yOffset2 + yC * y.strides[2];
-    //             const xCCorner = yC * convInfo.strideWidth - padTop;
-    //             for (let wC = 0; wC < filterWidth; ++wC) {
-    //               const xC = xCCorner + wC * dilationWidth;
-    //               if (xC < 0 || xC >= convInfo.inWidth) {
-    //                 continue;
-    //               }
-    //               const wOffset2 = wOffset1 + wC * filter.strides[1];
-    //               const xOffset3 = xOffset2 + xC * convInfo.inChannels;
-    //               for (let d1 = 0; d1 < convInfo.inChannels; ++d1) {
-    //                 const dOffset = d1 * chMul + q;
-    //                 yVals[yOffset3 + dOffset] +=
-    //                     xVals[xOffset3 + d1] * wVals[wOffset2 + dOffset];
-    //               }
-    //             }
-    //           }
-    //         }
-    //       }
-    //     }
-    //   }
-    //   console.log(
-    //       `depthwise ${outHeight}x${outWidth}x${outChannels} took`,
-    //       (performance.now() - start).toFixed(0));
-    //   return yVals;
-    // }
-
     const values = webworker.depthwiseConv2D(convInfo, x, filter);
     return Tensor.make(convInfo.outShape, {values}, x.dtype) as Tensor4D;
   }
@@ -3116,7 +3015,6 @@ export class MathBackendCPU implements KernelBackend {
       const bBroadcastDims = broadcast_util.getBroadcastDims(b.shape, newShape);
 
       const [aBuf, bBuf] = await Promise.all([a.buffer(), b.buffer()]);
-      const start = performance.now();
       const [aVals, bVals] = [aBuf.values, bBuf.values];
       if (a.size === b.size) {
         for (let i = 0; i < resVals.length; ++i) {
@@ -3169,8 +3067,6 @@ export class MathBackendCPU implements KernelBackend {
           resVals[i] = op(aVals[aIndex], bVals[bIndex]);
         }
       }
-      console.log(
-          'broadcasted binary took', (performance.now() - start).toFixed(0));
       return resVals;
     };
     return Tensor.make(newShape, {values: compute()}, dtype);

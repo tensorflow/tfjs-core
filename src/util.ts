@@ -48,6 +48,22 @@ export function shuffle(array: any[]|Uint32Array|Int32Array|
   }
 }
 
+const timeMap: {[key: string]: number} = {};
+// tslint:disable-next-line:no-any
+(window as any).timeMap = timeMap;
+
+export function time(key: string): () => void {
+  const start = performance.now();
+  return () => {
+    const end = performance.now();
+    const elapsed = end - start;
+    if (!(key in timeMap)) {
+      timeMap[key] = 0;
+    }
+    timeMap[key] += elapsed;
+  };
+}
+
 /** Clamps a value to a specified range. */
 export function clamp(min: number, x: number, max: number): number {
   return Math.max(min, Math.min(x, max));

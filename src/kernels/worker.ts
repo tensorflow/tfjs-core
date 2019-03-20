@@ -95,6 +95,29 @@ export function worker() {
     return heapF32.slice(offset, offset + aSize * bSize);
   }
 
+  function getBinaryOp(type: string): (a: number, b: number) => number {
+    switch (type) {
+      case 'add':
+        return (a, b) => a + b;
+      case 'sub':
+        return (a, b) => a - b;
+      case 'mul':
+        return (a, b) => a * b;
+    }
+    throw new Error(`Unknown binary op: ${type}`);
+  }
+
+  function binary(data: [Float32Array, Float32Array, string]): Float32Array {
+    const [aVals, bVals, type] = data;
+    const op = getBinaryOp(type);
+    const bSize = bVals.length;
+    const y = new Float32Array(aVals.length);
+    for (let i = 0; i < y.length; ++i) {
+      y[i] = op(aVals[i], bVals[i % bSize]);
+    }
+    return y;
+  }
+
   function conv2d(data: [
     Conv2DInfo, number, number, number, number, Float32Array, Float32Array
   ]): Float32Array {
@@ -228,6 +251,8 @@ export function worker() {
       res = conv2d(data);
     } else if (type === 'depthwiseConv2D') {
       res = depthwiseConv2D(data);
+    } else if (type === 'binary') {
+      res = binary(data);
     } else {
       throw new Error(`Unknown message type: ${type}`);
     }

@@ -1,7 +1,7 @@
 import {Conv2DInfo} from '../ops/conv_util';
 import {Tensor, Tensor4D} from '../tensor';
 import {TypedArray} from '../types';
-import {getTypedArrayFromDType} from '../util';
+import {getTypedArrayFromDType, time} from '../util';
 
 import {worker} from './worker';
 
@@ -16,7 +16,8 @@ function makeWorkers(n: number) {
   return workers;
 }
 
-function computeOffsets(n: number, numSplits: number) {
+function computeOffsets(n: number) {
+  const numSplits = Math.min(n, nWorkers);
   const offsets = [];
   const modulo = n % numSplits;
   let offset = 0;
@@ -49,22 +50,26 @@ interface Work {
   resolve: (data: {}) => void;
 }
 
-export function sendWork(type: string, data: Array<{}>): Promise<{}> {
+function sendWork(type: string, data: Array<{}>): Promise<{}> {
   const worker = workers[nextWorker];
   const transfers: Transferable[] = [];
+  const end = time('copy');
   data = data.map(v => {
     if (v instanceof Float32Array) {
-      const copy = v.slice();
+      const copy = new Float32Array(v);
       transfers.push(copy.buffer);
       return copy.buffer;
     }
     return v;
   });
+  end();
   nextWorker = (nextWorker + 1) % nWorkers;
   return new Promise(resolve => {
     const msgId = nextMsgId++;
     workMap.set(msgId, {resolve});
+    const end = time('postMsg');
     worker.postMessage([msgId, type, data], transfers);
+    end();
   });
 }
 
@@ -83,15 +88,12 @@ export async function depthwiseConv2D(
   } = convInfo;
 
   const [xVal, wVal] = await Promise.all([x.data(), filter.data()]);
-  // const start = performance.now();
+  const end = time('depthwise');
   const jobSize = convInfo.outHeight;
-  const nSplits = Math.min(jobSize, nWorkers);
-  const offsets = computeOffsets(jobSize, nSplits);
+  const offsets = computeOffsets(jobSize);
   const jobs: Array<Promise<{}>> = [];
-  // let sendWorkTotal = 0;
-  // let xSize = 0;
   for (let b = 0; b < batchSize; b++) {
-    for (let i = 0; i < nSplits; i++) {
+    for (let i = 0; i < offsets.length; i++) {
       const yRStart = offsets[i];
       const yREnd = i + 1 < offsets.length ? offsets[i + 1] : jobSize;
       const xRstart = Math.max(0, yRStart * strideHeight - top);
@@ -102,13 +104,9 @@ export async function depthwiseConv2D(
       const xOffset = b * x.strides[0] + xRstart * x.strides[1];
       const xOffsetEnd = b * x.strides[0] + xREnd * x.strides[1];
       const xSub = xVal.subarray(xOffset, xOffsetEnd);
-      // const startWork = performance.now();
-      // xSize = xSub.length;
       jobs.push(sendWork(
           'depthwiseConv2D',
           [convInfo, yRStart, yREnd, xRstart, xREnd, xSub, wVal]));
-      // const endWork = performance.now();
-      // sendWorkTotal += (endWork - startWork);
     }
   }
   // console.log(
@@ -121,8 +119,8 @@ export async function depthwiseConv2D(
       x.dtype as 'float32', batchSize * outHeight * outWidth * outChannels);
   const results = await Promise.all(jobs);
   for (let b = 0; b < batchSize; b++) {
-    for (let i = 0; i < nSplits; i++) {
-      const resIdx = b * nSplits + i;
+    for (let i = 0; i < offsets.length; i++) {
+      const resIdx = b * offsets.length + i;
       const data = results[resIdx];
       const resOffset = b * yStrideHWC + offsets[i] * yStrideWC;
       y.set(data as Float32Array, resOffset);
@@ -131,6 +129,7 @@ export async function depthwiseConv2D(
   // console.log(
   //     `depthwise worker ${outHeight}x${outWidth}x${outChannels} took`,
   //     (performance.now() - start).toFixed(0));
+  end();
   return y;
 }
 
@@ -149,13 +148,12 @@ export async function conv2d(
   } = convInfo;
 
   const [xVal, wVal] = await Promise.all([x.data(), filter.data()]);
-  // const start = performance.now();
+  const end = time('conv2d');
   const jobSize = convInfo.outHeight;
-  const nSplits = Math.min(jobSize, nWorkers);
-  const offsets = computeOffsets(jobSize, nSplits);
+  const offsets = computeOffsets(jobSize);
   const jobs: Array<Promise<{}>> = [];
   for (let b = 0; b < batchSize; b++) {
-    for (let i = 0; i < nSplits; i++) {
+    for (let i = 0; i < offsets.length; i++) {
       const yRStart = offsets[i];
       const yREnd = i + 1 < offsets.length ? offsets[i + 1] : jobSize;
       const xRstart = Math.max(0, yRStart * strideHeight - top);
@@ -176,14 +174,14 @@ export async function conv2d(
       x.dtype as 'float32', batchSize * outHeight * outWidth * outChannels);
   const results = await Promise.all(jobs);
   for (let b = 0; b < batchSize; b++) {
-    for (let i = 0; i < nSplits; i++) {
-      const resIdx = b * nSplits + i;
+    for (let i = 0; i < offsets.length; i++) {
+      const resIdx = b * offsets.length + i;
       const data = results[resIdx];
       const resOffset = b * yStrideHWC + offsets[i] * yStrideWC;
       y.set(data as Float32Array, resOffset);
     }
   }
-  // console.log('conv2d worker took', (performance.now() - start).toFixed(0));
+  end();
   return y;
 }
 
@@ -198,17 +196,16 @@ export async function matmul(
   const bSize = innerDim * rightDim;
   const cSize = leftDim * rightDim;
 
-  const nSplits = Math.min(leftDim, nWorkers);
-  const offsets = computeOffsets(leftDim, nSplits);
+  const offsets = computeOffsets(leftDim);
   const [aVals, bVals] = await Promise.all([a.data(), b.data()]);
 
-  // const start = performance.now();
+  const end = time('matmul');
   const resVals = getTypedArrayFromDType(
       a.dtype as 'float32', batchDim * leftDim * rightDim);
 
   const jobs: Array<Promise<{}>> = [];
   for (let b = 0; b < batchDim; b++) {
-    for (let i = 0; i < nSplits; i++) {
+    for (let i = 0; i < offsets.length; i++) {
       const aOffset = b * aSize + offsets[i] * innerDim;
       const nextOffset = i + 1 < offsets.length ?
           b * aSize + offsets[i + 1] * innerDim :
@@ -226,13 +223,50 @@ export async function matmul(
   }
   const results = await Promise.all(jobs);
   for (let b = 0; b < batchDim; b++) {
-    for (let i = 0; i < nSplits; i++) {
-      const resIdx = b * nSplits + i;
+    for (let i = 0; i < offsets.length; i++) {
+      const resIdx = b * offsets.length + i;
       const data = results[resIdx];
       const resOffset = b * cSize + offsets[i] * rightDim;
       resVals.set(data as Float32Array, resOffset);
     }
   }
-  // console.log('matmul worker took', (performance.now() - start).toFixed(0));
+  end();
+  return resVals;
+}
+
+export async function binary(a: Tensor, b: Tensor, type: 'add'|'sub'|'mul') {
+  // Swap so A is always larger.
+  if (a.size < b.size) {
+    const tmpA = a;
+    a = b;
+    b = tmpA;
+  }
+
+  const offsets = computeOffsets(a.size);
+  const [aVals, bVals] = await Promise.all([a.data(), b.data()]);
+
+  const end = time(type);
+  const resVals = getTypedArrayFromDType(a.dtype as 'float32', a.size);
+
+  const jobs: Array<Promise<{}>> = [];
+  for (let i = 0; i < offsets.length; i++) {
+    const aOffset = offsets[i];
+    const aNextOffset = i + 1 < offsets.length ? offsets[i + 1] : a.size;
+    const aSubVals = aVals.subarray(aOffset, aNextOffset);
+    const bOffset = aOffset % b.size;
+    let bNextOffset = aNextOffset % b.size;
+    if (bNextOffset === 0) {
+      bNextOffset = b.size;
+    }
+    const bSubVals = bVals.subarray(bOffset, bNextOffset);
+    jobs.push(sendWork('binary', [aSubVals, bSubVals, type]));
+  }
+  const results = await Promise.all(jobs);
+  for (let i = 0; i < offsets.length; i++) {
+    const data = results[i];
+    const resOffset = offsets[i];
+    resVals.set(data as Float32Array, resOffset);
+  }
+  end();
   return resVals;
 }
