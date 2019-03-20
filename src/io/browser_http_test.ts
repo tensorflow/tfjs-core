@@ -733,6 +733,67 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
           .toEqual(new Float32Array([-7, -4]));
     });
 
+    it('load TFHub module path', async () => {
+      const weightManifest1: tf.io.WeightsManifestConfig = [{
+        paths: ['weightfile0'],
+        weights: [
+          {
+            name: 'dense/kernel',
+            shape: [3, 1],
+            dtype: 'float32',
+          },
+          {
+            name: 'dense/bias',
+            shape: [2],
+            dtype: 'float32',
+          }
+        ]
+      }];
+      const floatData = new Float32Array([1, 3, 3, 7, 4]);
+      setupFakeWeightFiles(
+          {
+            'https://tfhub.dev/mobilenet_v2/1/model.json?tfjs-format=file': {
+              data: JSON.stringify({
+                modelTopology: modelTopology1,
+                weightsManifest: weightManifest1
+              }),
+              contentType: 'application/json'
+            },
+            'https://tfhub.dev/mobilenet_v2/1/weightfile0?tfjs-format=file':
+                {data: floatData, contentType: 'application/octet-stream'},
+          },
+          requestInits);
+
+      const handler = tf.io.browserHTTPRequest(
+          'https://tfhub.dev/mobilenet_v2/1', {fromTFHub: true});
+      const modelArtifacts = await handler.load();
+      expect(modelArtifacts.modelTopology).toEqual(modelTopology1);
+      expect(modelArtifacts.weightSpecs).toEqual(weightManifest1[0].weights);
+      expect(new Float32Array(modelArtifacts.weightData)).toEqual(floatData);
+      expect(Object.keys(requestInits).length).toEqual(2);
+      expect(Object.keys(requestInits).length).toEqual(2);
+      expect(windowFetchSpy.calls.mostRecent().object).toEqual(window);
+    });
+
+    it('Fails for TFHub module not found error', async (done) => {
+      // tslint:disable-next-line:no-any
+      spyOn(global as any, 'fetch')
+          .and.callFake((path: string, init: RequestInit) => {
+            return Promise.resolve(new Response(null, {status: 404}));
+          });
+      const handler =
+          tf.io.browserHTTPRequest('path2/model.json', {fromTFHub: true});
+      try {
+        const data = await handler.load();
+        expect(data).toBeDefined();
+        done.fail('Loading with fetch rejection succeeded unexpectedly.');
+      } catch (err) {
+        expect(err.message)
+            .toMatch(/has not been converted to TensorFlow.js yet/);
+        done();
+      }
+    });
+
     it('Missing modelTopology and weightsManifest leads to error',
        async (done) => {
          setupFakeWeightFiles(

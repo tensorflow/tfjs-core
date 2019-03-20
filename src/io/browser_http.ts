@@ -30,9 +30,14 @@ import {loadWeightsAsArrayBuffer} from './weights_loader';
 
 const OCTET_STREAM_MIME_TYPE = 'application/octet-stream';
 const JSON_TYPE = 'application/json';
+const TFHUB_SEARCH_PARAM = '?tfjs-format=file';
+const DEFAULT_MODEL_NAME = 'model.json';
+
 export class BrowserHTTPRequest implements IOHandler {
   protected readonly path: string;
+  protected readonly originalPath: string;
   protected readonly requestInit: RequestInit;
+  protected readonly fromTFHub: boolean;
 
   private readonly fetchFunc: (path: string, init?: RequestInit) => Response;
 
@@ -49,6 +54,8 @@ export class BrowserHTTPRequest implements IOHandler {
     }
     this.weightPathPrefix = loadOptions.weightPathPrefix;
     this.onProgress = loadOptions.onProgress;
+    this.fromTFHub = loadOptions.fromTFHub;
+    this.originalPath = path;
 
     if (loadOptions.fetchFunc == null) {
       const systemFetch = ENV.global.fetch;
@@ -81,12 +88,13 @@ export class BrowserHTTPRequest implements IOHandler {
             'URL path for browserHTTPRequest must not be null, undefined or ' +
             'empty.');
 
-    if (Array.isArray(path)) {
-      assert(
-          path.length === 2,
-          () => 'URL paths for browserHTTPRequest must have a length of 2, ' +
-              `(actual length is ${path.length}).`);
+    if (loadOptions.fromTFHub === true && !path.endsWith(TFHUB_SEARCH_PARAM)) {
+      if (!path.endsWith('/')) {
+        path = path + '/';
+      }
+      path = `${path}${DEFAULT_MODEL_NAME}${TFHUB_SEARCH_PARAM}`;
     }
+
     this.path = path;
 
     if (loadOptions.requestInit != null &&
@@ -160,6 +168,12 @@ export class BrowserHTTPRequest implements IOHandler {
         await this.getFetchFunc()(this.path, this.requestInit);
 
     if (!modelConfigRequest.ok) {
+      if (this.fromTFHub === true && modelConfigRequest.status === 404) {
+        throw new Error(
+            `TFHub module at ${this.originalPath} has not been` +
+            ' converted to TensorFlow.js yet.');
+      }
+
       throw new Error(
           `Request to ${this.path} failed with status code ` +
           `${modelConfigRequest.status}. Please verify this URL points to ` +
