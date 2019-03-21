@@ -186,7 +186,7 @@ function numMBBeforeWarning(): number {
   }
   return (ENV.global.screen.height * ENV.global.screen.width *
           window.devicePixelRatio) *
-      BEFORE_PAGING_CONSTANT / 1024;
+      BEFORE_PAGING_CONSTANT / 1024 / 1024;
 }
 
 // Empirically determined minimal shared dimension in matmul before we forward
@@ -589,6 +589,8 @@ export class MathBackendWebGL implements KernelBackend {
   private textureManager: TextureManager;
   private binaryCache: {[key: string]: GPGPUBinary};
   private gpgpuCreatedLocally: boolean;
+  private numMBBeforeWarning: number;
+  private warnedAboutMemory = false;
 
   constructor(private gpgpu?: GPGPUContext) {
     if (ENV.get('WEBGL_VERSION') < 1) {
@@ -607,6 +609,7 @@ export class MathBackendWebGL implements KernelBackend {
       this.canvas = gpgpu.gl.canvas;
     }
     this.textureManager = new TextureManager(this.gpgpu);
+    this.numMBBeforeWarning = numMBBeforeWarning();
   }
 
   private getCPUBackend(): KernelBackend|null {
@@ -2416,8 +2419,7 @@ export class MathBackendWebGL implements KernelBackend {
     const texShape =
         webgl_util.getTextureShapeFromLogicalShape(shape, isPacked);
     texData.texShape = texShape;
-    const newTexture =
-        this.acquireTexture(dataId, texShape, usage, dtype, isPacked);
+    const newTexture = this.acquireTexture(texShape, usage, dtype, isPacked);
     texData.texture = newTexture;
     if (values != null) {
       // TODO(smilkov): Propagate the original typed array to gpgpu.
@@ -2470,11 +2472,16 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   private acquireTexture(
-      dataId: DataId, texShape: [number, number], texType: TextureUsage,
-      dtype: DataType, isPacked: boolean): WebGLTexture {
+      texShape: [number, number], texType: TextureUsage, dtype: DataType,
+      isPacked: boolean): WebGLTexture {
     this.numBytesInGPU += this.computeBytes(texShape, dtype);
-    if (this.numBytesInGPU > numMBBeforeWarning() * 1024 * 1024) {
-      console.warn('Exceeded');
+    if (!this.warnedAboutMemory &&
+        this.numBytesInGPU > this.numMBBeforeWarning * 1024 * 1024) {
+      const mb = (this.numBytesInGPU / 1024 / 1024).toFixed(2);
+      this.warnedAboutMemory = true;
+      console.warn(
+          `High memory usage in GPU: ${mb} MB, ` +
+          `most likely due to a memory leak`);
     }
     return this.textureManager.acquireTexture(texShape, texType, isPacked);
   }
