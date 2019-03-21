@@ -1823,11 +1823,10 @@ export class MathBackendWebGL implements KernelBackend {
 
     const im2ColProgram =
         new Im2ColPackedProgram(x2ColShape, xSqueezed.shape, convInfo);
-    const im2ColOutput =
-        this.makePackedTensor(im2ColProgram.outputShape) as Tensor2D;
     const im2Col =
-        this.compileAndRun<Tensor2D>(im2ColProgram, [xSqueezed], im2ColOutput)
-            .reshape([1, x2ColShape[0], x2ColShape[1]]) as Tensor3D;
+        this.compileAndRun<Tensor2D>(im2ColProgram, [xSqueezed]).reshape([
+          1, x2ColShape[0], x2ColShape[1]
+        ]) as Tensor3D;
 
     const matmulProgram = new MatMulPackedProgram(
         im2Col.shape, [1, numCols, convInfo.outChannels], true, false);
