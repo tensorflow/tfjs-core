@@ -75,7 +75,59 @@ export function worker() {
         }
       }
     }
-    return {matmul: matmul};
+
+    function add(aSize: number, bSize: number) {
+      // Function arguments.
+      aSize = aSize | 0;
+      bSize = bSize | 0;
+
+      // Variables.
+      var i = 0;
+      var offset = 0;
+      var bOffset = 0;
+      var cOffset = 0;
+      var a = fround(0);
+      var b = fround(0);
+
+      bOffset = aSize;
+      cOffset = (bOffset + bSize) | 0;
+
+      for (i = 0; (i | 0) < (aSize | 0); i = (i + 1) | 0) {
+        offset = i << 2;
+        a = fround(heap32[offset >> 2]);  // a[i]
+        offset = (bOffset + i) << 2;
+        b = fround(heap32[offset >> 2]);  // b[i]
+        offset = (cOffset + i) << 2;
+        heap32[offset >> 2] = fround(a + b);
+      }
+    }
+
+    function mul(aSize: number, bSize: number) {
+      // Function arguments.
+      aSize = aSize | 0;
+      bSize = bSize | 0;
+
+      // Variables.
+      var i = 0;
+      var offset = 0;
+      var bOffset = 0;
+      var cOffset = 0;
+      var a = fround(0);
+      var b = fround(0);
+
+      bOffset = aSize;
+      cOffset = (bOffset + bSize) | 0;
+
+      for (i = 0; (i | 0) < (aSize | 0); i = (i + 1) | 0) {
+        offset = i << 2;
+        a = fround(heap32[offset >> 2]);  // a[i]
+        offset = (bOffset + i) << 2;
+        b = fround(heap32[offset >> 2]);  // b[i]
+        offset = (cOffset + i) << 2;
+        heap32[offset >> 2] = fround(a * b);
+      }
+    }
+    return {matmul: matmul, add: add, mul: mul};
   }
 
   // TODO(smilkov): Grow the heap dynamically.
@@ -95,6 +147,30 @@ export function worker() {
     return heapF32.slice(offset, offset + aSize * bSize);
   }
 
+  function add(data: [Float32Array, Float32Array]): Float32Array {
+    const [aVals, bVals] = data;
+    const aSize = aVals.length;
+    const bSize = bVals.length;
+    heapF32.set(aVals, 0);
+    heapF32.set(bVals, aVals.length);
+    const offset = aVals.length + bVals.length;
+    heapF32.fill(0, offset, offset + aSize);
+    asm.add(aSize, bSize);
+    return heapF32.slice(offset, offset + aSize);
+  }
+
+  function mul(data: [Float32Array, Float32Array]): Float32Array {
+    const [aVals, bVals] = data;
+    const aSize = aVals.length;
+    const bSize = bVals.length;
+    heapF32.set(aVals, 0);
+    heapF32.set(bVals, aVals.length);
+    const offset = aVals.length + bVals.length;
+    heapF32.fill(0, offset, offset + aSize);
+    asm.mul(aSize, bSize);
+    return heapF32.slice(offset, offset + aSize);
+  }
+
   function getBinaryOp(type: string): (a: number, b: number) => number {
     switch (type) {
       case 'add':
@@ -109,6 +185,11 @@ export function worker() {
 
   function binary(data: [Float32Array, Float32Array, string]): Float32Array {
     const [aVals, bVals, type] = data;
+    if (type === 'add') {
+      return add([aVals, bVals]);
+    } else if (type === 'mul') {
+      return mul([aVals, bVals]);
+    }
     const op = getBinaryOp(type);
     const bSize = bVals.length;
     const y = new Float32Array(aVals.length);

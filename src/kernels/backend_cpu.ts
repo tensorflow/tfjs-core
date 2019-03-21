@@ -109,10 +109,6 @@ export class MathBackendCPU implements KernelBackend {
     if (values == null) {
       throw new Error('MathBackendCPU.write(): values can not be null');
     }
-    // const size = (values as Float32Array).buffer.byteLength;
-    // // @ts-ignore
-    // const vals = new Float32Array(new SharedArrayBuffer(size));
-    // vals.set(values as Float32Array);
     this.data.get(dataId).values = values;
   }
   fromPixels(

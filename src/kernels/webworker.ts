@@ -203,6 +203,7 @@ export async function matmul(
   const resVals = getTypedArrayFromDType(
       a.dtype as 'float32', batchDim * leftDim * rightDim);
 
+  const start = performance.now();
   const jobs: Array<Promise<{}>> = [];
   for (let b = 0; b < batchDim; b++) {
     for (let i = 0; i < offsets.length; i++) {
@@ -229,6 +230,12 @@ export async function matmul(
       const resOffset = b * cSize + offsets[i] * rightDim;
       resVals.set(data as Float32Array, resOffset);
     }
+  }
+  const elapsed = performance.now() - start;
+  if (offsets.length < nWorkers) {
+    console.log(
+        `matmul ${leftDim}x${innerDim} * ${innerDim}x${rightDim} ` +
+        `took ${elapsed} with ${offsets.length} workers`);
   }
   end();
   return resVals;
