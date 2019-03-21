@@ -71,7 +71,8 @@ export class Im2ColPackedProgram implements GPGPUProgram {
             if(d1 >= ${inputShape[1]} || d1 < 0) continue;
 
             vec2 innerDims = vec2(d1, int(mod(float(pos), ${inChannels}.)));
-            result[row * 2 + col] = getChannel(getA(d0, int(innerDims.x), int(innerDims.y)), innerDims);
+            result[row * 2 + col] = getChannel(getA(d0, int(innerDims.x),
+                                              int(innerDims.y)), innerDims);
           }
         }
 
