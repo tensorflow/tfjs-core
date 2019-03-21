@@ -148,9 +148,9 @@ export class BrowserLocalStorage implements IOHandler {
           getModelArtifactsInfoForJSON(modelArtifacts);
 
       try {
-        this.LS.setItem(this.keys.info, JSON.stringify(modelArtifactsInfo));
-        this.LS.setItem(this.keys.topology, topology);
-        this.LS.setItem(this.keys.weightSpecs, weightSpecs);
+        this.LS.setItem(this.keys['info'], JSON.stringify(modelArtifactsInfo));
+        this.LS.setItem(this.keys['topology'], topology);
+        this.LS.setItem(this.keys['weightSpecs'], weightSpecs);
         this.LS.setItem(
             this.keys.weightData,
             arrayBufferToBase64String(modelArtifacts.weightData));
