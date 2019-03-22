@@ -1,6 +1,6 @@
 {
   "name": "@tensorflow/tfjs-core",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Hardware-accelerated JavaScript library for machine intelligence",
   "private": false,
   "main": "dist/index.js",
@@ -41,6 +41,7 @@
     "tslint": "~5.11.0",
     "tslint-no-circular-imports": "~0.5.0",
     "typescript": "3.3.3333",
+    "watchify": "~3.11.1",
     "yalc": "~1.0.0-pre.21"
   },
   "scripts": {
