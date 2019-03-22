@@ -18,6 +18,7 @@
 import {ForwardFunc} from '../engine';
 import {ENV} from '../environment';
 import {nonMaxSuppressionImpl} from '../kernels/non_max_suppression_impl';
+import {transformOp} from './transform';
 import {Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import {NamedTensorMap} from '../tensor_types';
 import {convertToTensor} from '../tensor_util_env';
@@ -310,3 +311,4 @@ export const resizeNearestNeighbor = op({resizeNearestNeighbor_});
 export const nonMaxSuppression = op({nonMaxSuppression_});
 export const nonMaxSuppressionAsync = nonMaxSuppressionAsync_;
 export const cropAndResize = op({cropAndResize_});
+export const transform = transformOp;
