@@ -20,7 +20,7 @@ import {DataType} from './types';
 
 /** @docalias {[name: string]: Tensor} */
 export type NamedTensorMap = {
-  [name: string]: Tensor
+  [name: string]: Tensor;
 };
 
 export type NamedVariableMap = {

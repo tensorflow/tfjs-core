@@ -189,7 +189,7 @@ function conv2d_<T extends Tensor3D|Tensor4D>(
   const convInfo = conv_util.computeConv2DInfo(
       x4D.shape, $filter.shape, strides, dilations, pad, dimRoundingMode);
 
-  const grad = (dy: Tensor4D, saved: NamedTensorMap) => {
+  const grad = (dy: Tensor4D, saved: {x4D: Tensor4D, $filter: Tensor4D}) => {
     const x4D = saved.x4D as Tensor4D;
     const $filter = saved.$filter as Tensor4D;
     util.assert(
