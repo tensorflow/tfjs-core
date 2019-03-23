@@ -80,6 +80,7 @@ import {GPGPUBinary, GPGPUProgram, TensorData} from './webgl/gpgpu_math';
 import {Im2ColPackedProgram} from './webgl/im2col_packed_gpu';
 import {LRNProgram} from './webgl/lrn_gpu';
 import {LRNGradProgram} from './webgl/lrn_grad_gpu';
+import {LRNPackedProgram} from './webgl/lrn_packed_gpu';
 import {MaxPool2DBackpropProgram} from './webgl/max_pool_backprop_gpu';
 import {MatMulPackedProgram} from './webgl/mulmat_packed_gpu';
 import {MultinomialProgram} from './webgl/multinomial_gpu';
@@ -880,7 +881,7 @@ export class MathBackendWebGL implements KernelBackend {
       inputs.push(scale);
     }
 
-    if (ENV.get('WEBGL_PACK_BATCHNORMALIZATION')) {
+    if (ENV.get('WEBGL_PACK_NORMALIZATION')) {
       const batchNormPackedProgram = new BatchNormPackedProgram(
           x.shape, mean.shape, variance.shape, offsetShape, scaleShape,
           varianceEpsilon);
@@ -896,7 +897,9 @@ export class MathBackendWebGL implements KernelBackend {
   localResponseNormalization4D(
       x: Tensor4D, radius: number, bias: number, alpha: number,
       beta: number): Tensor4D {
-    const program = new LRNProgram(x.shape, radius, bias, alpha, beta);
+    const program = ENV.get('WEBGL_PACK_NORMALIZATION') ?
+        new LRNPackedProgram(x.shape, radius, bias, alpha, beta) :
+        new LRNProgram(x.shape, radius, bias, alpha, beta);
     return this.compileAndRun(program, [x]);
   }
 

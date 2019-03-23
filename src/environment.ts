@@ -311,7 +311,7 @@ export class Environment {
       return true;
     } else if (feature === 'WEBGL_PACK') {
       return this.get('WEBGL_VERSION') === 0 ? false : true;
-    } else if (feature === 'WEBGL_PACK_BATCHNORMALIZATION') {
+    } else if (feature === 'WEBGL_PACK_NORMALIZATION') {
       return this.get('WEBGL_PACK');
     } else if (feature === 'WEBGL_PACK_CLIP') {
       return this.get('WEBGL_PACK');

@@ -30,8 +30,8 @@ export interface Features {
   'WEBGL_CPU_FORWARD'?: boolean;
   // Whether to turn all packing related flags on.
   'WEBGL_PACK'?: boolean;
-  // Whether we will pack the batchnormalization op.
-  'WEBGL_PACK_BATCHNORMALIZATION'?: boolean;
+  // Whether we will pack batchnormalization and localResponseNormalization ops.
+  'WEBGL_PACK_NORMALIZATION'?: boolean;
   // Whether we will pack the clipping op.
   'WEBGL_PACK_CLIP'?: boolean;
   // Whether we pack the depthwise convolution op.
@@ -112,7 +112,7 @@ export const URL_PROPERTIES: URLProperty[] = [
   {name: 'WEBGL_LAZILY_UNPACK', type: Type.BOOLEAN},
   {name: 'WEBGL_CPU_FORWARD', type: Type.BOOLEAN},
   {name: 'WEBGL_PACK', type: Type.BOOLEAN},
-  {name: 'WEBGL_PACK_BATCHNORMALIZATION', type: Type.BOOLEAN},
+  {name: 'WEBGL_PACK_NORMALIZATION', type: Type.BOOLEAN},
   {name: 'WEBGL_PACK_CLIP', type: Type.BOOLEAN},
   {name: 'WEBGL_PACK_DEPTHWISECONV', type: Type.BOOLEAN},
   {name: 'WEBGL_PACK_BINARY_OPERATIONS', type: Type.BOOLEAN},
