@@ -15,7 +15,8 @@
  * =============================================================================
  */
 
-import {DataType, DataTypeMap, FlatVector, NumericDataType, RecursiveArray, TensorLike, TypedArray} from './types';
+import { DataType, DataTypeMap, FlatVector, NumericDataType, RecursiveArray, TensorLike, TypedArray } from './types';
+import { ENV } from './environment';
 
 /**
  * Shuffles the array in-place using Fisher-Yates algorithm.
@@ -30,8 +31,8 @@ import {DataType, DataTypeMap, FlatVector, NumericDataType, RecursiveArray, Tens
  */
 /** @doc {heading: 'Util'} */
 // tslint:disable-next-line:no-any
-export function shuffle(array: any[]|Uint32Array|Int32Array|
-                        Float32Array): void {
+export function shuffle(array: any[] | Uint32Array | Int32Array |
+  Float32Array): void {
   let counter = array.length;
   let temp = 0;
   let index = 0;
@@ -107,16 +108,16 @@ export function assert(expr: boolean, msg: () => string) {
 }
 
 export function assertShapesMatch(
-    shapeA: number[], shapeB: number[], errorMessagePrefix = ''): void {
+  shapeA: number[], shapeB: number[], errorMessagePrefix = ''): void {
   assert(
-      arraysEqual(shapeA, shapeB),
-      () => errorMessagePrefix + ` Shapes ${shapeA} and ${shapeB} must match`);
+    arraysEqual(shapeA, shapeB),
+    () => errorMessagePrefix + ` Shapes ${shapeA} and ${shapeB} must match`);
 }
 
 export function assertNonNull(a: TensorLike): void {
   assert(
-      a != null,
-      () => `The input to the tensor constructor must be a non-null value.`);
+    a != null,
+    () => `The input to the tensor constructor must be a non-null value.`);
 }
 
 // NOTE: We explicitly type out what T extends instead of any so that
@@ -136,8 +137,8 @@ export function assertNonNull(a: TensorLike): void {
  */
 /** @doc {heading: 'Util'} */
 export function
-flatten<T extends number|boolean|string|Promise<number>|TypedArray>(
-    arr: T|RecursiveArray<T>, result: T[] = []): T[] {
+  flatten<T extends number | boolean | string | Promise<number> | TypedArray>(
+    arr: T | RecursiveArray<T>, result: T[] = []): T[] {
   if (result == null) {
     result = [];
   }
@@ -238,8 +239,8 @@ export function rightPad(a: string, size: number): string {
 }
 
 export function repeatedTry(
-    checkFn: () => boolean, delayFn = (counter: number) => 0,
-    maxCounter?: number): Promise<void> {
+  checkFn: () => boolean, delayFn = (counter: number) => 0,
+  maxCounter?: number): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     let tryCount = 0;
 
@@ -274,7 +275,7 @@ export function repeatedTry(
  * @return The inferred shape where -1 is replaced with the inferred size.
  */
 export function inferFromImplicitShape(
-    shape: number[], size: number): number[] {
+  shape: number[], size: number): number[] {
   let shapeProd = 1;
   let implicitIdx = -1;
 
@@ -284,8 +285,8 @@ export function inferFromImplicitShape(
     } else if (shape[i] === -1) {
       if (implicitIdx !== -1) {
         throw Error(
-            `Shapes can only have 1 implicit size. ` +
-            `Found -1 at dim ${implicitIdx} and dim ${i}`);
+          `Shapes can only have 1 implicit size. ` +
+          `Found -1 at dim ${implicitIdx} and dim ${i}`);
       }
       implicitIdx = i;
     } else if (shape[i] < 0) {
@@ -302,13 +303,13 @@ export function inferFromImplicitShape(
 
   if (shapeProd === 0) {
     throw Error(
-        `Cannot infer the missing size in [${shape}] when ` +
-        `there are 0 elements`);
+      `Cannot infer the missing size in [${shape}] when ` +
+      `there are 0 elements`);
   }
   if (size % shapeProd !== 0) {
     throw Error(
-        `The implicit shape can't be a fractional number. ` +
-        `Got ${size} / ${shapeProd}`);
+      `The implicit shape can't be a fractional number. ` +
+      `Got ${size} / ${shapeProd}`);
   }
 
   const newShape = shape.slice();
@@ -317,7 +318,7 @@ export function inferFromImplicitShape(
 }
 
 export function parseAxisParam(
-    axis: number|number[], shape: number[]): number[] {
+  axis: number | number[], shape: number[]): number[] {
   const rank = shape.length;
 
   // Normalize input
@@ -325,24 +326,23 @@ export function parseAxisParam(
 
   // Check for valid range
   assert(
-      axis.every(ax => ax >= -rank && ax < rank),
-      () =>
-          `All values in axis param must be in range [-${rank}, ${rank}) but ` +
-          `got axis ${axis}`);
+    axis.every(ax => ax >= -rank && ax < rank),
+    () =>
+      `All values in axis param must be in range [-${rank}, ${rank}) but ` +
+      `got axis ${axis}`);
 
   // Check for only integers
   assert(
-      axis.every(ax => isInt(ax)),
-      () => `All values in axis param must be integers but ` +
-          `got axis ${axis}`);
+    axis.every(ax => isInt(ax)),
+    () => `All values in axis param must be integers but ` +
+      `got axis ${axis}`);
 
   // Handle negative axis.
   return axis.map(a => a < 0 ? rank + a : a);
 }
 
 /** Reduces the shape by removing all dimensions of shape 1. */
-export function squeezeShape(shape: number[], axis?: number[]):
-    {newShape: number[], keptDims: number[]} {
+export function squeezeShape(shape: number[], axis?: number[]): { newShape: number[], keptDims: number[] } {
   const newShape: number[] = [];
   const keptDims: number[] = [];
   const axes = axis == null ? null : parseAxisParam(axis, shape).sort();
@@ -351,7 +351,7 @@ export function squeezeShape(shape: number[], axis?: number[]):
     if (axes != null) {
       if (axes[j] === i && shape[i] !== 1) {
         throw new Error(
-            `Can't squeeze axis ${i} since its dim '${shape[i]}' is not 1`);
+          `Can't squeeze axis ${i} since its dim '${shape[i]}' is not 1`);
       }
       if ((axes[j] == null || axes[j] > i) && shape[i] === 1) {
         newShape.push(shape[i]);
@@ -366,11 +366,11 @@ export function squeezeShape(shape: number[], axis?: number[]):
       keptDims.push(i);
     }
   }
-  return {newShape, keptDims};
+  return { newShape, keptDims };
 }
 
 export function getTypedArrayFromDType<D extends NumericDataType>(
-    dtype: D, size: number): DataTypeMap[D] {
+  dtype: D, size: number): DataTypeMap[D] {
   let values = null;
   if (dtype == null || dtype === 'float32') {
     values = new Float32Array(size);
@@ -385,7 +385,7 @@ export function getTypedArrayFromDType<D extends NumericDataType>(
 }
 
 export function getArrayFromDType<D extends DataType>(
-    dtype: D, size: number): DataTypeMap[D] {
+  dtype: D, size: number): DataTypeMap[D] {
   let values = null;
   if (dtype == null || dtype === 'float32') {
     values = new Float32Array(size);
@@ -402,7 +402,7 @@ export function getArrayFromDType<D extends DataType>(
 }
 
 export function checkComputationForErrors<D extends DataType>(
-    vals: DataTypeMap[D], dtype: D, name: string): void {
+  vals: DataTypeMap[D], dtype: D, name: string): void {
   if (dtype !== 'float32') {
     // Only floating point computations will generate NaN values
     return;
@@ -416,7 +416,7 @@ export function checkComputationForErrors<D extends DataType>(
 }
 
 export function checkConversionForErrors<D extends DataType>(
-    vals: DataTypeMap[D]|number[], dtype: D): void {
+  vals: DataTypeMap[D] | number[], dtype: D): void {
   for (let i = 0; i < vals.length; i++) {
     const num = vals[i] as number;
     if (isNaN(num) || !isFinite(num)) {
@@ -445,9 +445,9 @@ export function hasEncodingLoss(oldType: DataType, newType: DataType): boolean {
   return true;
 }
 
-export function isTypedArray(a: {}): a is Float32Array|Int32Array|Uint8Array {
+export function isTypedArray(a: {}): a is Float32Array | Int32Array | Uint8Array {
   return a instanceof Float32Array || a instanceof Int32Array ||
-      a instanceof Uint8Array;
+    a instanceof Uint8Array;
 }
 
 export function bytesPerElement(dtype: DataType): number {
@@ -538,7 +538,7 @@ export function computeStrides(shape: number[]): number[] {
 }
 
 export function toTypedArray(
-    a: TensorLike, dtype: DataType, debugMode: boolean): TypedArray {
+  a: TensorLike, dtype: DataType, debugMode: boolean): TypedArray {
   if (dtype === 'string') {
     throw new Error('Cannot convert a string[] to a TypedArray');
   }
@@ -606,12 +606,12 @@ export function toNestedArray(shape: number[], a: TypedArray) {
 
 function noConversionNeeded(a: TensorLike, dtype: DataType): boolean {
   return (a instanceof Float32Array && dtype === 'float32') ||
-      (a instanceof Int32Array && dtype === 'int32') ||
-      (a instanceof Uint8Array && dtype === 'bool');
+    (a instanceof Int32Array && dtype === 'int32') ||
+    (a instanceof Uint8Array && dtype === 'bool');
 }
 
 export function makeOnesTypedArray<D extends DataType>(
-    size: number, dtype: D): DataTypeMap[D] {
+  size: number, dtype: D): DataTypeMap[D] {
   const array = makeZerosTypedArray(size, dtype);
   for (let i = 0; i < array.length; i++) {
     array[i] = 1;
@@ -620,7 +620,7 @@ export function makeOnesTypedArray<D extends DataType>(
 }
 
 export function makeZerosTypedArray<D extends DataType>(
-    size: number, dtype: D): DataTypeMap[D] {
+  size: number, dtype: D): DataTypeMap[D] {
   if (dtype == null || dtype === 'float32' || dtype === 'complex64') {
     return new Float32Array(size);
   } else if (dtype === 'int32') {
@@ -650,17 +650,33 @@ export function now(): number {
     return time[0] * 1000 + time[1] / 1000000;
   } else {
     throw new Error(
-        'Cannot measure time in this environment. You should run tf.js ' +
-        'in the browser or in Node.js');
+      'Cannot measure time in this environment. You should run tf.js ' +
+      'in the browser or in Node.js');
   }
 }
 
 export function assertNonNegativeIntegerDimensions(shape: number[]) {
   shape.forEach(dimSize => {
     assert(
-        Number.isInteger(dimSize) && dimSize >= 0,
-        () =>
-            `Tensor must have a shape comprised of positive integers but got ` +
-            `shape [${shape}].`);
+      Number.isInteger(dimSize) && dimSize >= 0,
+      () =>
+        `Tensor must have a shape comprised of positive integers but got ` +
+        `shape [${shape}].`);
   });
+}
+
+export function fetch() {
+  let fetchFunc: Function;
+
+  if (ENV.global.fetch != null) {
+    fetchFunc = ENV.global.fetch;
+  } else {
+    if (!ENV.get('IS_BROWSER')) {
+      fetchFunc = require('node-fetch');
+    } else {
+      throw new Error(`Unable to find a fetch function on ${ENV.global}`)
+    }
+  }
+
+  return fetchFunc;
 }
