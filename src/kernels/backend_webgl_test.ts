@@ -221,8 +221,7 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
 });
 
 describeWithFlags('Custom window size', WEBGL_ENVS, () => {
-  // tslint:disable-next-line:ban
-  fit('Set screen area to be 1x1', async () => {
+  it('Set screen area to be 1x1', () => {
     // This will set the screen size to 1x1 to make sure the page limit is
     // very small.
     spyOnProperty(window, 'screen', 'get')
@@ -236,14 +235,24 @@ describeWithFlags('Custom window size', WEBGL_ENVS, () => {
     // No gpu memory used yet because of delayed storage.
     expect((tf.memory() as tf.webgl.WebGLMemoryInfo).numBytesInGPU).toBe(0);
 
-    // Expect console warn to be called.
-    let called = false;
+    // Expect console.warn() to be called.
+    let numWarnCalls = 0;
     spyOn(console, 'warn').and.callFake(() => {
-      called = true;
+      numWarnCalls++;
     });
 
-    await a.square().data();
-    expect(called).toBe(true);
+    a.square();
+    expect(numWarnCalls).toBe(1);
+    expect((tf.memory() as tf.webgl.WebGLMemoryInfo).numBytesInGPU)
+        .toBe(100 * 100 * 4 * 2);
+
+    // Allocate another 40KB.
+    a.square();
+
+    // Expect console.warn() to NOT be called more than once.
+    expect(numWarnCalls).toBe(1);
+    expect((tf.memory() as tf.webgl.WebGLMemoryInfo).numBytesInGPU)
+        .toBe(100 * 100 * 4 * 3);
   });
 });
 
