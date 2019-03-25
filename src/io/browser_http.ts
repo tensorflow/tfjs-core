@@ -88,7 +88,7 @@ export class BrowserHTTPRequest implements IOHandler {
             'URL path for browserHTTPRequest must not be null, undefined or ' +
             'empty.');
 
-    if (loadOptions.fromTFHub === true && !path.endsWith(TFHUB_SEARCH_PARAM)) {
+    if (loadOptions.fromTFHub && !path.endsWith(TFHUB_SEARCH_PARAM)) {
       if (!path.endsWith('/')) {
         path = path + '/';
       }
@@ -168,7 +168,7 @@ export class BrowserHTTPRequest implements IOHandler {
         await this.getFetchFunc()(this.path, this.requestInit);
 
     if (!modelConfigRequest.ok) {
-      if (this.fromTFHub === true && modelConfigRequest.status === 404) {
+      if (this.fromTFHub && modelConfigRequest.status === 404) {
         throw new Error(
             `TFHub module at ${this.originalPath} has not been` +
             ' converted to TensorFlow.js yet.');
