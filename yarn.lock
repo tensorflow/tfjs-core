@@ -12,6 +12,13 @@
   resolved "https://registry.yarnpkg.com/@types/jasmine/-/jasmine-2.5.54.tgz#a6b5f2ae2afb6e0307774e8c7c608e037d491c63"
   integrity sha512-B9YofFbUljs19g5gBKUYeLIulsh31U5AK70F41BImQRHEZQGm4GcN922UvnYwkduMqbC/NH+9fruWa/zrqvHIg==
 
+"@types/node-fetch@^2.1.2":
+  version "2.1.7"
+  resolved "https://registry.yarnpkg.com/@types/node-fetch/-/node-fetch-2.1.7.tgz#0231559340f6e3f3a0608692077d744c87b5b367"
+  integrity sha512-TZozHCDVrs0Aj1B9ZR5F4Q9MknDNcVd+hO5lxXOCzz07ELBey6s1gMUSZHUYHlPfRFKJFXiTnNuD7ePiI6S4/g==
+  dependencies:
+    "@types/node" "*"
+
 "@types/node@*":
   version "10.12.18"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-10.12.18.tgz#1d3ca764718915584fcd9f6344621b7672665c67"
@@ -2923,6 +2930,11 @@ nice-try@^1.0.4:
   version "1.0.5"
   resolved "https://registry.yarnpkg.com/nice-try/-/nice-try-1.0.5.tgz#a3378a7696ce7d223e88fc9b764bd7ef1089e366"
   integrity sha512-1nh45deeb5olNY7eX82BkPO7SSxR5SSYJiPTrTdFUVYwAl8CKMA5N9PjTYkHiRjisVcxcQ1HXdLhx2qxxJzLNQ==
+
+node-fetch@~2.1.2:
+  version "2.1.2"
+  resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-2.1.2.tgz#ab884e8e7e57e38a944753cec706f788d1768bb5"
+  integrity sha1-q4hOjn5X44qUR1POxwb3iNF2i7U=
 
 node-pre-gyp@^0.10.0:
   version "0.10.3"
