@@ -1364,14 +1364,11 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   floorDiv(a: Tensor, b: Tensor): Tensor {
-    const op = ENV.get('WEBGL_VERSION') === 2 ? binaryop_gpu.INT_DIV_300 :
-                                                binaryop_gpu.INT_DIV;
+    const op = binaryop_gpu.INT_DIV;
     const outputDtype = 'int32';
     if (ENV.get('WEBGL_PACK_BINARY_OPERATIONS')) {
-      const op = ENV.get('WEBGL_VERSION') === 2 ?
-          binaryop_packed_gpu.INT_DIV_300 :
-          binaryop_packed_gpu.INT_DIV;
-      return this.packedBinaryOp(a, b, op, outputDtype);
+      return this.packedBinaryOp(
+          a, b, binaryop_packed_gpu.INT_DIV, outputDtype);
     }
     const program = new BinaryOpProgram(op, a.shape, b.shape);
     const output = this.makeOutputArray(program.outputShape, outputDtype);

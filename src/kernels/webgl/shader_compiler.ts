@@ -247,7 +247,7 @@ function getShaderPrefix(glsl: GLSL): string {
     ${glsl.defineRound}
 
     int imod(int x, int y) {
-      return ${glsl.imod_x_y};
+      return x - y * (x / y);
     }
 
     int idiv(int a, int b, float sign) {
