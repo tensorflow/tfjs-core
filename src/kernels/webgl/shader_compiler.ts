@@ -15,9 +15,9 @@
  * =============================================================================
  */
 
-import { getBroadcastDims } from '../../ops/broadcast_util';
+import {getBroadcastDims} from '../../ops/broadcast_util';
 import * as util from '../../util';
-import { getGlslDifferences, GLSL } from './glsl_version';
+import {getGlslDifferences, GLSL} from './glsl_version';
 import * as shader_util from './shader_compiler_util';
 
 export type ShapeInfo = {
@@ -34,8 +34,8 @@ export type InputInfo = {
 };
 
 export function makeShader(
-  inputsInfo: InputInfo[], outputShape: ShapeInfo, userCode: string,
-  usesPackedTextures: boolean): string {
+    inputsInfo: InputInfo[], outputShape: ShapeInfo, userCode: string,
+    usesPackedTextures: boolean): string {
   const prefixSnippets: string[] = [];
   inputsInfo.forEach(x => {
     const size = util.sizeFromShape(x.shapeInfo.logicalShape);
@@ -43,7 +43,7 @@ export function makeShader(
     // Snippet when we decided to upload the values as uniform.
     if (x.shapeInfo.isUniform) {
       prefixSnippets.push(
-        `uniform float ${x.name}${size > 1 ? `[${size}]` : ''};`);
+          `uniform float ${x.name}${size > 1 ? `[${size}]` : ''};`);
     } else {
       prefixSnippets.push(`uniform sampler2D ${x.name};`);
       prefixSnippets.push(`uniform int offset${x.name};`);
@@ -52,9 +52,9 @@ export function makeShader(
   const inputPrefixSnippet = prefixSnippets.join('\n');
 
   const inputSamplingSnippet =
-    inputsInfo
-      .map(x => getInputSamplingSnippet(x, outputShape, usesPackedTextures))
-      .join('\n');
+      inputsInfo
+          .map(x => getInputSamplingSnippet(x, outputShape, usesPackedTextures))
+          .join('\n');
   const outTexShape = outputShape.texShape;
   const glsl = getGlslDifferences();
   const floatTextureSampleSnippet = getFloatTextureSampleSnippet(glsl);
@@ -64,11 +64,11 @@ export function makeShader(
 
   if (outputShape.isPacked) {
     outputSamplingSnippet =
-      getPackedOutputSamplingSnippet(outputShape.logicalShape, outTexShape);
+        getPackedOutputSamplingSnippet(outputShape.logicalShape, outTexShape);
     floatTextureSetOutputSnippet = getFloatTextureSetRGBASnippet(glsl);
   } else {
     outputSamplingSnippet =
-      getOutputSamplingSnippet(outputShape.logicalShape, outTexShape);
+        getOutputSamplingSnippet(outputShape.logicalShape, outTexShape);
     floatTextureSetOutputSnippet = getFloatTextureSetRSnippet(glsl);
   }
 
@@ -102,8 +102,8 @@ function getSamplerFromInInfo(inInfo: InputInfo): string {
       return getSampler6D(inInfo);
     default:
       throw new Error(
-        `${shape.length}-D input sampling` +
-        ` is not yet supported`);
+          `${shape.length}-D input sampling` +
+          ` is not yet supported`);
   }
 }
 
@@ -124,8 +124,8 @@ function getPackedSamplerFromInInfo(inInfo: InputInfo): string {
 }
 
 function getInputSamplingSnippet(
-  inInfo: InputInfo, outShapeInfo: ShapeInfo,
-  usesPackedTextures = false): string {
+    inInfo: InputInfo, outShapeInfo: ShapeInfo,
+    usesPackedTextures = false): string {
   let res = '';
   if (usesPackedTextures) {
     res += getPackedSamplerFromInInfo(inInfo);
@@ -146,7 +146,7 @@ function getInputSamplingSnippet(
 }
 
 function getPackedOutputSamplingSnippet(
-  outShape: number[], outTexShape: [number, number]): string {
+    outShape: number[], outTexShape: [number, number]): string {
   switch (outShape.length) {
     case 0:
       return getOutputScalarCoords();
@@ -156,14 +156,14 @@ function getPackedOutputSamplingSnippet(
       return getOutputPacked2DCoords(outShape as [number, number], outTexShape);
     case 3:
       return getOutputPacked3DCoords(
-        outShape as [number, number, number], outTexShape);
+          outShape as [number, number, number], outTexShape);
     default:
       return getOutputPackedNDCoords(outShape, outTexShape);
   }
 }
 
 function getOutputSamplingSnippet(
-  outShape: number[], outTexShape: [number, number]): string {
+    outShape: number[], outTexShape: [number, number]): string {
   switch (outShape.length) {
     case 0:
       return getOutputScalarCoords();
@@ -173,20 +173,20 @@ function getOutputSamplingSnippet(
       return getOutput2DCoords(outShape as [number, number], outTexShape);
     case 3:
       return getOutput3DCoords(
-        outShape as [number, number, number], outTexShape);
+          outShape as [number, number, number], outTexShape);
     case 4:
       return getOutput4DCoords(
-        outShape as [number, number, number, number], outTexShape);
+          outShape as [number, number, number, number], outTexShape);
     case 5:
       return getOutput5DCoords(
-        outShape as [number, number, number, number, number], outTexShape);
+          outShape as [number, number, number, number, number], outTexShape);
     case 6:
       return getOutput6DCoords(
-        outShape as [number, number, number, number, number, number],
-        outTexShape);
+          outShape as [number, number, number, number, number, number],
+          outTexShape);
     default:
       throw new Error(
-        `${outShape.length}-D output sampling is not yet supported`);
+          `${outShape.length}-D output sampling is not yet supported`);
   }
 }
 
@@ -334,9 +334,9 @@ function getOutputScalarCoords() {
 }
 
 function getOutputPacked1DCoords(
-  shape: [number], texShape: [number, number]): string {
+    shape: [number], texShape: [number, number]): string {
   const packedTexShape =
-    [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
+      [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
   if (packedTexShape[0] === 1) {
     return `
       int getOutputCoords() {
@@ -363,7 +363,7 @@ function getOutputPacked1DCoords(
 }
 
 function getOutput1DCoords(
-  shape: [number], texShape: [number, number]): string {
+    shape: [number], texShape: [number, number]): string {
   if (texShape[0] === 1) {
     return `
       int getOutputCoords() {
@@ -388,9 +388,9 @@ function getOutput1DCoords(
 }
 
 function getOutputPacked3DCoords(
-  shape: [number, number, number], texShape: [number, number]): string {
+    shape: [number, number, number], texShape: [number, number]): string {
   const packedTexShape =
-    [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
+      [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
   const texelsInLogicalRow = Math.ceil(shape[2] / 2);
   const texelsInBatch = texelsInLogicalRow * Math.ceil(shape[1] / 2);
 
@@ -412,9 +412,9 @@ function getOutputPacked3DCoords(
 }
 
 function getOutput3DCoords(
-  shape: [number, number, number], texShape: [number, number]): string {
+    shape: [number, number, number], texShape: [number, number]): string {
   const coordsFromIndexSnippet =
-    shader_util.getLogicalCoordinatesFromFlatIndex(['r', 'c', 'd'], shape);
+      shader_util.getLogicalCoordinatesFromFlatIndex(['r', 'c', 'd'], shape);
 
   return `
     ivec3 getOutputCoords() {
@@ -428,13 +428,13 @@ function getOutput3DCoords(
 }
 
 function getOutputPackedNDCoords(
-  shape: number[], texShape: [number, number]): string {
+    shape: number[], texShape: [number, number]): string {
   const packedTexShape =
-    [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
+      [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
 
   const texelsInLogicalRow = Math.ceil(shape[shape.length - 1] / 2);
   const texelsInBatch =
-    texelsInLogicalRow * Math.ceil(shape[shape.length - 2] / 2);
+      texelsInLogicalRow * Math.ceil(shape[shape.length - 2] / 2);
   let texelsInBatchN = texelsInBatch;
   let batches = ``;
   let coords = 'b, r, c';
@@ -468,10 +468,10 @@ function getOutputPackedNDCoords(
 }
 
 function getOutput4DCoords(
-  shape: [number, number, number, number],
-  texShape: [number, number]): string {
+    shape: [number, number, number, number],
+    texShape: [number, number]): string {
   const coordsFromIndexSnippet = shader_util.getLogicalCoordinatesFromFlatIndex(
-    ['r', 'c', 'd', 'd2'], shape);
+      ['r', 'c', 'd', 'd2'], shape);
 
   return `
     ivec4 getOutputCoords() {
@@ -485,10 +485,10 @@ function getOutput4DCoords(
 }
 
 function getOutput5DCoords(
-  shape: [number, number, number, number, number],
-  texShape: [number, number]): string {
+    shape: [number, number, number, number, number],
+    texShape: [number, number]): string {
   const coordsFromIndexSnippet = shader_util.getLogicalCoordinatesFromFlatIndex(
-    ['r', 'c', 'd', 'd2', 'd3'], shape);
+      ['r', 'c', 'd', 'd2', 'd3'], shape);
 
   return `
     ivec5 getOutputCoords() {
@@ -506,10 +506,10 @@ function getOutput5DCoords(
 }
 
 function getOutput6DCoords(
-  shape: [number, number, number, number, number, number],
-  texShape: [number, number]): string {
+    shape: [number, number, number, number, number, number],
+    texShape: [number, number]): string {
   const coordsFromIndexSnippet = shader_util.getLogicalCoordinatesFromFlatIndex(
-    ['r', 'c', 'd', 'd2', 'd3', 'd4'], shape);
+      ['r', 'c', 'd', 'd2', 'd3', 'd4'], shape);
 
   return `
     ivec6 getOutputCoords() {
@@ -526,14 +526,14 @@ function getOutput6DCoords(
 }
 
 function getOutputPacked2DCoords(
-  shape: [number, number], texShape: [number, number]): string {
+    shape: [number, number], texShape: [number, number]): string {
   const packedTexShape =
-    [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
+      [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
   if (util.arraysEqual(shape, texShape)) {
     return `
       ivec2 getOutputCoords() {
         return 2 * ivec2(resultUV.yx * vec2(${packedTexShape[0]}, ${
-      packedTexShape[1]}));
+        packedTexShape[1]}));
       }
     `;
   }
@@ -565,7 +565,7 @@ function getOutputPacked2DCoords(
 }
 
 function getOutput2DCoords(
-  shape: [number, number], texShape: [number, number]): string {
+    shape: [number, number], texShape: [number, number]): string {
   if (util.arraysEqual(shape, texShape)) {
     return `
       ivec2 getOutputCoords() {
@@ -650,7 +650,7 @@ function getPackedSampler1D(inputInfo: InputInfo): string {
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
   const texShape = inputInfo.shapeInfo.texShape;
   const packedTexShape =
-    [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
+      [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
   const glsl = getGlslDifferences();
 
   return `
@@ -731,13 +731,13 @@ function getPackedSampler2D(inputInfo: InputInfo): string {
   }
 
   const packedTexShape =
-    [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
+      [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
   const valuesPerRow = Math.ceil(shape[1] / 2);
 
   return `
     vec4 ${funcName}(int row, int col) {
       vec2 uv = packedUVfrom2D(${valuesPerRow}, ${packedTexShape[0]}, ${
-    packedTexShape[1]}, row, col);
+      packedTexShape[1]}, row, col);
       return ${glsl.texture2D}(${texName}, uv);
     }
   `;
@@ -760,7 +760,7 @@ function getSampler2D(inputInfo: InputInfo): string {
   `;
   }
 
-  const { newShape, keptDims } = util.squeezeShape(shape);
+  const {newShape, keptDims} = util.squeezeShape(shape);
   const squeezedShape = newShape;
   if (squeezedShape.length < shape.length) {
     const newInputInfo = squeezeInputInfo(inputInfo, squeezedShape);
@@ -823,7 +823,7 @@ function getPackedSampler3D(inputInfo: InputInfo): string {
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
   const texShape = inputInfo.shapeInfo.texShape;
   const packedTexShape =
-    [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
+      [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
 
   if (shape[0] === 1) {
     const squeezedShape = shape.slice(1);
@@ -861,7 +861,7 @@ function getSampler3D(inputInfo: InputInfo): string {
   const stride0 = shape[1] * shape[2];
   const stride1 = shape[2];
 
-  const { newShape, keptDims } = util.squeezeShape(shape);
+  const {newShape, keptDims} = util.squeezeShape(shape);
   const squeezedShape = newShape;
   if (squeezedShape.length < shape.length) {
     const newInputInfo = squeezeInputInfo(inputInfo, squeezedShape);
@@ -932,7 +932,7 @@ function getPackedSamplerND(inputInfo: InputInfo): string {
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
   const texShape = inputInfo.shapeInfo.texShape;
   const packedTexShape =
-    [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
+      [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
   const texNumR = packedTexShape[0];
   const texNumC = packedTexShape[1];
 
@@ -965,7 +965,7 @@ function getSampler4D(inputInfo: InputInfo): string {
   const stride1 = shape[2] * stride2;
   const stride0 = shape[1] * stride1;
 
-  const { newShape, keptDims } = util.squeezeShape(shape);
+  const {newShape, keptDims} = util.squeezeShape(shape);
   if (newShape.length < shape.length) {
     const newInputInfo = squeezeInputInfo(inputInfo, newShape);
     const params = ['row', 'col', 'depth', 'depth2'];
@@ -1042,7 +1042,7 @@ function getSampler5D(inputInfo: InputInfo): string {
   const stride1 = shape[2] * stride2;
   const stride0 = shape[1] * stride1;
 
-  const { newShape, keptDims } = util.squeezeShape(shape);
+  const {newShape, keptDims} = util.squeezeShape(shape);
   if (newShape.length < shape.length) {
     const newInputInfo = squeezeInputInfo(inputInfo, newShape);
     const params = ['row', 'col', 'depth', 'depth2', 'depth3'];
@@ -1119,7 +1119,7 @@ function getSampler6D(inputInfo: InputInfo): string {
   const texName = inputInfo.name;
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
 
-  const { newShape, keptDims } = util.squeezeShape(shape);
+  const {newShape, keptDims} = util.squeezeShape(shape);
   if (newShape.length < shape.length) {
     const newInputInfo = squeezeInputInfo(inputInfo, newShape);
     const params = ['row', 'col', 'depth', 'depth2', 'depth3', 'depth4'];
@@ -1220,7 +1220,7 @@ function getUniformSampler(inputInfo: InputInfo): string {
 }
 
 function getPackedSamplerAtOutputCoords(
-  inputInfo: InputInfo, outShapeInfo: ShapeInfo) {
+    inputInfo: InputInfo, outShapeInfo: ShapeInfo) {
   const texName = inputInfo.name;
   const texFuncSnippet = texName.charAt(0).toUpperCase() + texName.slice(1);
   const funcName = 'get' + texFuncSnippet + 'AtOutCoords';
@@ -1228,7 +1228,7 @@ function getPackedSamplerAtOutputCoords(
   const outRank = outShapeInfo.logicalShape.length;
 
   const broadcastDims = getBroadcastDims(
-    inputInfo.shapeInfo.logicalShape, outShapeInfo.logicalShape);
+      inputInfo.shapeInfo.logicalShape, outShapeInfo.logicalShape);
 
   const type = getCoordsDataType(outRank);
   const rankDiff = outRank - inRank;
@@ -1241,16 +1241,16 @@ function getPackedSamplerAtOutputCoords(
     coordsSnippet = 'coords = 0;';
   } else {
     coordsSnippet =
-      broadcastDims.map(d => `coords.${fields[d + rankDiff]} = 0;`)
-        .join('\n');
+        broadcastDims.map(d => `coords.${fields[d + rankDiff]} = 0;`)
+            .join('\n');
   }
   let unpackedCoordsSnippet = '';
   if (outRank < 2 && inRank > 0) {
     unpackedCoordsSnippet = 'coords';
   } else {
     unpackedCoordsSnippet = inputInfo.shapeInfo.logicalShape
-      .map((s, i) => `coords.${fields[i + rankDiff]}`)
-      .join(', ');
+                                .map((s, i) => `coords.${fields[i + rankDiff]}`)
+                                .join(', ');
   }
 
   let output = `return outputValue;`;
@@ -1277,7 +1277,7 @@ function getPackedSamplerAtOutputCoords(
       output = `return vec4(outputValue.x);`;
     } else if (broadcastDims.indexOf(rows) > -1) {
       output = `return vec4(outputValue.x, outputValue.y, ` +
-        `outputValue.x, outputValue.y);`;
+          `outputValue.x, outputValue.y);`;
     } else if (broadcastDims.indexOf(cols) > -1) {
       output = `return vec4(outputValue.xx, outputValue.zz);`;
     }
@@ -1294,7 +1294,7 @@ function getPackedSamplerAtOutputCoords(
 }
 
 function getSamplerAtOutputCoords(
-  inputInfo: InputInfo, outShapeInfo: ShapeInfo) {
+    inputInfo: InputInfo, outShapeInfo: ShapeInfo) {
   const texName = inputInfo.name;
   const texFuncSnippet = texName.charAt(0).toUpperCase() + texName.slice(1);
   const funcName = 'get' + texFuncSnippet + 'AtOutCoords';
@@ -1304,8 +1304,8 @@ function getSamplerAtOutputCoords(
   const outRank = outShapeInfo.logicalShape.length;
 
   if (!inputInfo.shapeInfo.isUniform && inRank === outRank &&
-    inputInfo.shapeInfo.flatOffset == null &&
-    util.arraysEqual(inTexShape, outTexShape)) {
+      inputInfo.shapeInfo.flatOffset == null &&
+      util.arraysEqual(inTexShape, outTexShape)) {
     return `
       float ${funcName}() {
         return sampleTexture(${texName}, resultUV);
@@ -1315,7 +1315,7 @@ function getSamplerAtOutputCoords(
 
   const type = getCoordsDataType(outRank);
   const broadcastDims = getBroadcastDims(
-    inputInfo.shapeInfo.logicalShape, outShapeInfo.logicalShape);
+      inputInfo.shapeInfo.logicalShape, outShapeInfo.logicalShape);
   const rankDiff = outRank - inRank;
   let coordsSnippet: string;
   const fields = ['x', 'y', 'z', 'w', 'u', 'v'];
@@ -1326,16 +1326,16 @@ function getSamplerAtOutputCoords(
     coordsSnippet = 'coords = 0;';
   } else {
     coordsSnippet =
-      broadcastDims.map(d => `coords.${fields[d + rankDiff]} = 0;`)
-        .join('\n');
+        broadcastDims.map(d => `coords.${fields[d + rankDiff]} = 0;`)
+            .join('\n');
   }
   let unpackedCoordsSnippet = '';
   if (outRank < 2 && inRank > 0) {
     unpackedCoordsSnippet = 'coords';
   } else {
     unpackedCoordsSnippet = inputInfo.shapeInfo.logicalShape
-      .map((s, i) => `coords.${fields[i + rankDiff]}`)
-      .join(', ');
+                                .map((s, i) => `coords.${fields[i + rankDiff]}`)
+                                .join(', ');
   }
 
   return `
@@ -1367,7 +1367,7 @@ export function getCoordsDataType(rank: number): string {
 
 /** Returns a new input info (a copy) that has a squeezed logical shape. */
 function squeezeInputInfo(
-  inInfo: InputInfo, squeezedShape: number[]): InputInfo {
+    inInfo: InputInfo, squeezedShape: number[]): InputInfo {
   // Deep copy.
   const newInputInfo: InputInfo = JSON.parse(JSON.stringify(inInfo));
   newInputInfo.shapeInfo.logicalShape = squeezedShape;

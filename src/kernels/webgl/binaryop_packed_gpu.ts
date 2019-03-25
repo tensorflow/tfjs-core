@@ -16,7 +16,7 @@
  */
 
 import * as broadcast_util from '../../ops/broadcast_util';
-import { GPGPUProgram } from './gpgpu_math';
+import {GPGPUProgram} from './gpgpu_math';
 
 const CHECK_NAN_SNIPPET = `
   result.r = isNaN.r > 0. ? NAN : result.r;
@@ -82,7 +82,7 @@ export const POW = `
 
   vec4 isNaN = vec4(lessThan(a, vec4(0.0))) * vec4(lessThan(floor(b), b));
   ` +
-  CHECK_NAN_SNIPPET + `
+    CHECK_NAN_SNIPPET + `
   return result;
 `;
 
@@ -100,7 +100,7 @@ export const ATAN2 = `
   vec4 result = atan(a, b);
   vec4 isNaN = min(vec4(isnan(a)) + vec4(isnan(b)), vec4(1.0));
   ` +
-  CHECK_NAN_SNIPPET + `
+    CHECK_NAN_SNIPPET + `
   return result;
 `;
 
@@ -145,7 +145,7 @@ export const MAX = `
   vec4 result = vec4(max(a, b));
   vec4 isNaN = min(vec4(isnan(a)) + vec4(isnan(b)), vec4(1.0));
   ` +
-  CHECK_NAN_SNIPPET + `
+    CHECK_NAN_SNIPPET + `
   return result;
 `;
 
@@ -153,7 +153,7 @@ export const MIN = `
   vec4 result = vec4(min(a, b));
   vec4 isNaN = min(vec4(isnan(a)) + vec4(isnan(b)), vec4(1.0));
   ` +
-  CHECK_NAN_SNIPPET + `
+    CHECK_NAN_SNIPPET + `
   return result;
 `;
 
@@ -161,7 +161,7 @@ export const MOD = `
   vec4 result = mod(a, b);
   vec4 isNaN = vec4(equal(b, vec4(0.0)));
   ` +
-  CHECK_NAN_SNIPPET + `
+    CHECK_NAN_SNIPPET + `
   return result;
 `;
 
@@ -174,7 +174,7 @@ export class BinaryOpPackedProgram implements GPGPUProgram {
 
   constructor(op: string, aShape: number[], bShape: number[]) {
     this.outputShape =
-      broadcast_util.assertAndGetBroadcastShape(aShape, bShape);
+        broadcast_util.assertAndGetBroadcastShape(aShape, bShape);
     this.userCode = `
       vec4 binaryOperation(vec4 a, vec4 b) {
         ${op}
