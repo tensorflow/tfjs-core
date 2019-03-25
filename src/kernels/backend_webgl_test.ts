@@ -253,6 +253,7 @@ describeWithFlags('Custom window size', WEBGL_ENVS, () => {
     expect(numWarnCalls).toBe(1);
     expect((tf.memory() as tf.webgl.WebGLMemoryInfo).numBytesInGPU)
         .toBe(100 * 100 * 4 * 3);
+    tf.ENV.removeBackend('custom-webgl');
   });
 });
 
