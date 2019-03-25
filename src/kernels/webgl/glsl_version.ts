@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {ENV} from '../../environment';
+import { ENV } from '../../environment';
 
 export type GLSL = {
   version: string,
@@ -28,6 +28,7 @@ export type GLSL = {
   defineSpecialNaN: string,
   defineSpecialInf: string,
   defineRound: string
+  imod_x_y: string;
 };
 
 export function getGlslDifferences(): GLSL {
@@ -41,6 +42,7 @@ export function getGlslDifferences(): GLSL {
   let defineSpecialNaN: string;
   let defineSpecialInf: string;
   let defineRound: string;
+  let imod_x_y: string;
 
   if (ENV.get('WEBGL_VERSION') === 2) {
     version = '#version 300 es';
@@ -49,6 +51,7 @@ export function getGlslDifferences(): GLSL {
     varyingFs = 'in';
     texture2D = 'texture';
     output = 'outputColor';
+    imod_x_y = 'x % y';
     defineOutput = 'out vec4 outputColor;';
     defineSpecialNaN = `
       const float NAN = uintBitsToFloat(uint(0x7fc00000));
@@ -103,6 +106,7 @@ export function getGlslDifferences(): GLSL {
         return ivec4(floor(value + vec4(0.5)));
       }
     `;
+    imod_x_y = 'x - y * (x / y)'
   }
 
   return {
@@ -115,6 +119,7 @@ export function getGlslDifferences(): GLSL {
     defineOutput,
     defineSpecialNaN,
     defineSpecialInf,
-    defineRound
+    defineRound,
+    imod_x_y
   };
 }

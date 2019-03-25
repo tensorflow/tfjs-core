@@ -16,7 +16,7 @@
  */
 
 import * as broadcast_util from '../../ops/broadcast_util';
-import {GPGPUProgram} from './gpgpu_math';
+import { GPGPUProgram } from './gpgpu_math';
 
 const CHECK_NAN_SNIPPET = `
   result.r = isNaN.r > 0. ? NAN : result.r;
@@ -52,6 +52,28 @@ export const INT_DIV = `
      ivec4(lessThan(resultSign, vec4(0.0))) * ivec4(notEqual(amodb, ivec4(0))));
 `;
 
+export const INT_DIV_300 = `
+  ivec4 ia = round(a);
+  ivec4 ib = round(b);
+  bvec4 cond = notEqual(ib, ivec4(0));
+  ivec4 result = ivec4(0);
+  vec4 s = sign(a) * sign(b);
+
+  if (cond[0]) {
+    result[0] = idiv(ia[0], ib[0], s[0]);
+  }
+  if (cond[1]) {
+    result[1] = idiv(ia[1], ib[1], s[1]);
+  }
+  if (cond[2]) {
+    result[2] = idiv(ia[2], ib[2], s[2]);
+  }
+  if (cond[3]) {
+    result[3] = idiv(ia[3], ib[3], s[3]);
+  }
+  return vec4(result);
+`;
+
 export const POW = `
   // isModRound1 has 1 for components with round(mod(b, 2.0)) == 1, 0 otherwise.
   vec4 isModRound1 = vec4(equal(round(mod(b, 2.0)), ivec4(1)));
@@ -60,7 +82,7 @@ export const POW = `
 
   vec4 isNaN = vec4(lessThan(a, vec4(0.0))) * vec4(lessThan(floor(b), b));
   ` +
-    CHECK_NAN_SNIPPET + `
+  CHECK_NAN_SNIPPET + `
   return result;
 `;
 
@@ -78,7 +100,7 @@ export const ATAN2 = `
   vec4 result = atan(a, b);
   vec4 isNaN = min(vec4(isnan(a)) + vec4(isnan(b)), vec4(1.0));
   ` +
-    CHECK_NAN_SNIPPET + `
+  CHECK_NAN_SNIPPET + `
   return result;
 `;
 
@@ -123,7 +145,7 @@ export const MAX = `
   vec4 result = vec4(max(a, b));
   vec4 isNaN = min(vec4(isnan(a)) + vec4(isnan(b)), vec4(1.0));
   ` +
-    CHECK_NAN_SNIPPET + `
+  CHECK_NAN_SNIPPET + `
   return result;
 `;
 
@@ -131,7 +153,7 @@ export const MIN = `
   vec4 result = vec4(min(a, b));
   vec4 isNaN = min(vec4(isnan(a)) + vec4(isnan(b)), vec4(1.0));
   ` +
-    CHECK_NAN_SNIPPET + `
+  CHECK_NAN_SNIPPET + `
   return result;
 `;
 
@@ -139,7 +161,7 @@ export const MOD = `
   vec4 result = mod(a, b);
   vec4 isNaN = vec4(equal(b, vec4(0.0)));
   ` +
-    CHECK_NAN_SNIPPET + `
+  CHECK_NAN_SNIPPET + `
   return result;
 `;
 
@@ -152,7 +174,7 @@ export class BinaryOpPackedProgram implements GPGPUProgram {
 
   constructor(op: string, aShape: number[], bShape: number[]) {
     this.outputShape =
-        broadcast_util.assertAndGetBroadcastShape(aShape, bShape);
+      broadcast_util.assertAndGetBroadcastShape(aShape, bShape);
     this.userCode = `
       vec4 binaryOperation(vec4 a, vec4 b) {
         ${op}

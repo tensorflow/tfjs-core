@@ -17,7 +17,7 @@
 
 import * as broadcast_util from '../../ops/broadcast_util';
 
-import {GPGPUProgram} from './gpgpu_math';
+import { GPGPUProgram } from './gpgpu_math';
 
 const CHECK_NAN_SNIPPET = `
   if (isnan(a)) return a;
@@ -47,6 +47,11 @@ export const INT_DIV = `
   if (resultSign < 0.0 && amodb != 0) {
     result -= 1;
   }
+  return float(result);
+`;
+
+export const INT_DIV_300 = `
+  int result = a % b;
   return float(result);
 `;
 
@@ -99,7 +104,7 @@ export class BinaryOpProgram implements GPGPUProgram {
 
   constructor(op: string, aShape: number[], bShape: number[]) {
     this.outputShape =
-        broadcast_util.assertAndGetBroadcastShape(aShape, bShape);
+      broadcast_util.assertAndGetBroadcastShape(aShape, bShape);
     this.userCode = `
       float binaryOperation(float a, float b) {
         ${op}
