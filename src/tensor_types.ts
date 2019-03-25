@@ -27,7 +27,7 @@ export type NamedVariableMap = {
   [name: string]: Variable;
 };
 
-export type GradSaveFunc = (map: NamedTensorMap) => void;
+export type GradSaveFunc = (save: Tensor[]) => void;
 
 /**
  * @docalias void|number|string|TypedArray|Tensor|Tensor[]|{[key:
