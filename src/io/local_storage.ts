@@ -95,6 +95,14 @@ function maybeStripScheme(key: string) {
       key;
 }
 
+declare type LocalStorageKeys = {
+  info: string,
+  topology: string,
+  weightSpecs: string,
+  weightData: string,
+  modelMetadata: string
+};
+
 /**
  * IOHandler subclass: Browser Local Storage.
  *
@@ -103,7 +111,7 @@ function maybeStripScheme(key: string) {
 export class BrowserLocalStorage implements IOHandler {
   protected readonly LS: Storage;
   protected readonly modelPath: string;
-  protected readonly keys: {[key: string]: string};
+  protected readonly keys: LocalStorageKeys;
 
   static readonly URL_SCHEME = 'localstorage://';
 
@@ -148,13 +156,13 @@ export class BrowserLocalStorage implements IOHandler {
           getModelArtifactsInfoForJSON(modelArtifacts);
 
       try {
-        this.LS.setItem(this.keys['info'], JSON.stringify(modelArtifactsInfo));
-        this.LS.setItem(this.keys['topology'], topology);
-        this.LS.setItem(this.keys['weightSpecs'], weightSpecs);
+        this.LS.setItem(this.keys.info, JSON.stringify(modelArtifactsInfo));
+        this.LS.setItem(this.keys.topology, topology);
+        this.LS.setItem(this.keys.weightSpecs, weightSpecs);
         this.LS.setItem(
-            this.keys['weightData'],
+            this.keys.weightData,
             arrayBufferToBase64String(modelArtifacts.weightData));
-        this.LS.setItem(this.keys['modelMetadata'], JSON.stringify({
+        this.LS.setItem(this.keys.modelMetadata, JSON.stringify({
           format: modelArtifacts.format,
           generatedBy: modelArtifacts.generatedBy,
           convertedBy: modelArtifacts.convertedBy
@@ -163,9 +171,11 @@ export class BrowserLocalStorage implements IOHandler {
         return {modelArtifactsInfo};
       } catch (err) {
         // If saving failed, clean up all items saved so far.
-        for (const key in this.keys) {
-          this.LS.removeItem(this.keys[key]);
-        }
+        this.LS.removeItem(this.keys.info);
+        this.LS.removeItem(this.keys.topology);
+        this.LS.removeItem(this.keys.weightSpecs);
+        this.LS.removeItem(this.keys.weightData);
+        this.LS.removeItem(this.keys.modelMetadata);
 
         throw new Error(
             `Failed to save model '${this.modelPath}' to local storage: ` +
@@ -187,7 +197,7 @@ export class BrowserLocalStorage implements IOHandler {
    */
   async load(): Promise<ModelArtifacts> {
     const info =
-        JSON.parse(this.LS.getItem(this.keys['info'])) as ModelArtifactsInfo;
+        JSON.parse(this.LS.getItem(this.keys.info)) as ModelArtifactsInfo;
     if (info == null) {
       throw new Error(
           `In local storage, there is no model with name '${this.modelPath}'`);
@@ -202,7 +212,7 @@ export class BrowserLocalStorage implements IOHandler {
     const out: ModelArtifacts = {};
 
     // Load topology.
-    const topology = JSON.parse(this.LS.getItem(this.keys['topology']));
+    const topology = JSON.parse(this.LS.getItem(this.keys.topology));
     if (topology == null) {
       throw new Error(
           `In local storage, the topology of model '${this.modelPath}' ` +
@@ -211,7 +221,7 @@ export class BrowserLocalStorage implements IOHandler {
     out.modelTopology = topology;
 
     // Load weight specs.
-    const weightSpecs = JSON.parse(this.LS.getItem(this.keys['weightSpecs']));
+    const weightSpecs = JSON.parse(this.LS.getItem(this.keys.weightSpecs));
     if (weightSpecs == null) {
       throw new Error(
           `In local storage, the weight specs of model '${this.modelPath}' ` +
@@ -230,7 +240,7 @@ export class BrowserLocalStorage implements IOHandler {
     }
 
     // Load weight data.
-    const weightDataBase64 = this.LS.getItem(this.keys['weightData']);
+    const weightDataBase64 = this.LS.getItem(this.keys.weightData);
     if (weightDataBase64 == null) {
       throw new Error(
           `In local storage, the binary weight values of model ` +
