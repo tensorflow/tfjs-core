@@ -27,6 +27,7 @@ import {DTYPE_VALUE_SIZE_MAP, LoadOptions, WeightsManifestConfig, WeightsManifes
  *
  * @param fetchURLs URLs to send the HTTP requests at, using `fetch` calls.
  * @param requestOptions RequestInit (options) for the HTTP requests.
+ * @param fetchFunc Optional overriding value for the `window.fetch` function.
  * @param onProgress Optional, progress callback function, fired periodically
  *   before the load is completed.
  * @returns A `Promise` of an Array of `ArrayBuffer`. The Array has the same
@@ -38,9 +39,12 @@ export async function loadWeightsAsArrayBuffer(
     loadOptions = {};
   }
 
+  const fetchFunc =
+      loadOptions.fetchFunc == null ? util.fetch() : loadOptions.fetchFunc;
+
   // Create the requests for all of the weights in parallel.
-  const requests = fetchURLs.map(
-      fetchURL => util.fetch()(fetchURL, loadOptions.requestInit));
+  const requests =
+      fetchURLs.map(fetchURL => fetchFunc(fetchURL, loadOptions.requestInit));
 
   const fetchStartFraction = 0;
   const fetchEndFraction = 0.5;

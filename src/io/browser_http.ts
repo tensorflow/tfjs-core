@@ -22,7 +22,7 @@
  */
 
 import {ENV} from '../environment';
-import {assert} from '../util';
+import {assert, fetch as systemFetch} from '../util';
 import {concatenateArrayBuffers, getModelArtifactsInfoForJSON} from './io_utils';
 import {IORouter, IORouterRegistry} from './router_registry';
 import {IOHandler, LoadOptions, ModelArtifacts, ModelJSON, OnProgressCallback, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
@@ -51,15 +51,9 @@ export class BrowserHTTPRequest implements IOHandler {
     this.onProgress = loadOptions.onProgress;
 
     if (loadOptions.fetchFunc == null) {
-      const systemFetch = ENV.global.fetch;
-      if (typeof systemFetch === 'undefined') {
-        throw new Error(
-            'browserHTTPRequest is not supported outside the web browser ' +
-            'without a fetch polyfill.');
-      }
       // Make sure fetch is always bound to global object (the
       // original object) when available.
-      loadOptions.fetchFunc = systemFetch.bind(ENV.global);
+      loadOptions.fetchFunc = systemFetch().bind(ENV.global);
     } else {
       assert(
           typeof loadOptions.fetchFunc === 'function',
