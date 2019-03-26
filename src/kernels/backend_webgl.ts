@@ -178,7 +178,7 @@ const CPU_HANDOFF_SIZE_THRESHOLD = 128;
 
 // Empirically determined constant used to decide the number of MB on GPU
 // before we warn about high memory use. The MB are this constant * screen area
-// * dpi / 1024.
+// * dpi / 1024 / 1024.
 const BEFORE_PAGING_CONSTANT = 600;
 function numMBBeforeWarning(): number {
   if (ENV.global.screen == null) {
