@@ -501,7 +501,7 @@ describe('util.fetch', () => {
   it('should allow overriding global fetch', () => {
     spyOn(ENV.global, 'fetch').and.callFake(() => {});
 
-    util.fetch()();
+    util.fetch('');
     expect(ENV.global.fetch).toHaveBeenCalled();
   });
 });

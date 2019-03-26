@@ -667,6 +667,23 @@ export function assertNonNegativeIntegerDimensions(shape: number[]) {
   });
 }
 
+let systemFetch: Function;
+const getSystemFetch = () => {
+  let fetchFunc: Function;
+
+  if (ENV.global.fetch != null) {
+    fetchFunc = ENV.global.fetch;
+  } else {
+    if (ENV.get('IS_NODE')) {
+      // tslint:disable-next-line:no-require-imports
+      fetchFunc = require('node-fetch');
+    } else {
+      throw new Error(`Unable to find fetch polyfill.`);
+    }
+  }
+  return fetchFunc;
+};
+
 /**
  * Returns a platform-specific implementation of `window.fetch`.
  *
@@ -680,19 +697,10 @@ export function assertNonNegativeIntegerDimensions(shape: number[]) {
  *  .then(response => {}) // handle response
  * ```
  */
-export function fetch() {
-  let fetchFunc: Function;
-
-  if (ENV.global.fetch != null) {
-    fetchFunc = ENV.global.fetch;
-  } else {
-    if (ENV.get('IS_NODE')) {
-      // tslint:disable-next-line:no-require-imports
-      fetchFunc = require('node-fetch');
-    } else {
-      throw new Error(`Unable to find fetch polyfill.`)
-    }
+/** @doc {heading: 'Util'} */
+export function fetch(path: string, requestInits?: RequestInit) {
+  if (systemFetch == null) {
+    systemFetch = getSystemFetch();
   }
-
-  return fetchFunc;
+  return systemFetch(path, requestInits);
 }
