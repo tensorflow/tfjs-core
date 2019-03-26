@@ -690,7 +690,7 @@ export function fetch() {
       // tslint:disable-next-line:no-require-imports
       fetchFunc = require('node-fetch');
     } else {
-      throw new Error(`Unable to find fetch solution on ${ENV.global}`)
+      throw new Error(`Unable to find fetch polyfill.`)
     }
   }
 

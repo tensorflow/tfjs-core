@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+import {ENV} from './environment';
 import {scalar, tensor2d} from './ops/ops';
 import {inferShape} from './tensor_util_env';
 import * as util from './util';
@@ -493,5 +494,14 @@ describe('util.toNestedArray', () => {
   it('tensor with zero shape', () => {
     const a = new Float32Array([0, 1]);
     expect(util.toNestedArray([1, 0, 2], a)).toEqual([]);
+  });
+});
+
+describe('util.fetch', () => {
+  it('should allow overriding global fetch', () => {
+    spyOn(ENV.global, 'fetch').and.callFake(() => {});
+
+    util.fetch()();
+    expect(ENV.global.fetch).toHaveBeenCalled();
   });
 });
