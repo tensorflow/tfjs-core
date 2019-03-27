@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+import {ENGINE} from '../engine';
 import {ENV} from '../environment';
 import {keep, tidy} from '../globals';
 import {fill, scalar} from '../ops/ops';
@@ -42,7 +43,7 @@ export class AdagradOptimizer extends Optimizer {
 
   applyGradients(variableGradients: NamedVariableMap) {
     for (const variableName in variableGradients) {
-      const value = ENV.engine.registeredVariables[variableName];
+      const value = ENGINE.registeredVariables[variableName];
       if (this.accumulatedGrads[variableName] == null) {
         const trainable = false;
         tidy(() => {

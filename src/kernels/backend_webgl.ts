@@ -16,7 +16,7 @@
  */
 
 import {getWebGLContext} from '../canvas_util';
-import {MemoryInfo, TimingInfo} from '../engine';
+import {ENGINE, MemoryInfo, TimingInfo} from '../engine';
 import {ENV} from '../environment';
 import {tidy} from '../globals';
 import {warn} from '../log';
@@ -181,10 +181,10 @@ const CPU_HANDOFF_SIZE_THRESHOLD = 128;
 // * dpi / 1024 / 1024.
 const BEFORE_PAGING_CONSTANT = 600;
 function numMBBeforeWarning(): number {
-  if (ENV.global.screen == null) {
+  if (ENGINE.global.screen == null) {
     return 1024;  // 1 GB.
   }
-  return (ENV.global.screen.height * ENV.global.screen.width *
+  return (ENGINE.global.screen.height * ENGINE.global.screen.width *
           window.devicePixelRatio) *
       BEFORE_PAGING_CONSTANT / 1024 / 1024;
 }
@@ -618,7 +618,7 @@ export class MathBackendWebGL implements KernelBackend {
     }
 
     if (this.cpuBackend == null) {
-      this.cpuBackend = ENV.findBackend('cpu');
+      this.cpuBackend = ENGINE.findBackend('cpu');
     }
 
     return this.cpuBackend;
@@ -653,8 +653,8 @@ export class MathBackendWebGL implements KernelBackend {
     // clones. These will explicitly get disposed when the complex tensor is
     // disposed.
     resultData.complexTensors = {
-      real: ENV.engine.keep(real.clone()),
-      imag: ENV.engine.keep(imag.clone())
+      real: ENGINE.keep(real.clone()),
+      imag: ENGINE.keep(imag.clone())
     };
 
     return result;
@@ -2500,7 +2500,8 @@ export class MathBackendWebGL implements KernelBackend {
 }
 
 if (ENV.get('IS_BROWSER')) {
-  ENV.registerBackend('webgl', () => new MathBackendWebGL(), 2 /* priority */);
+  ENGINE.registerBackend(
+      'webgl', () => new MathBackendWebGL(), 2 /* priority */);
 }
 
 function float32ToTypedArray<D extends NumericDataType>(

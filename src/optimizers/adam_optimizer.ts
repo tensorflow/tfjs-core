@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+import {ENGINE} from '../engine';
 import {ENV} from '../environment';
 import {keep, tidy} from '../globals';
 import {scalar, zerosLike} from '../ops/ops';
@@ -69,7 +70,7 @@ export class AdamOptimizer extends Optimizer {
       const oneMinusAccBeta2 = this.one.sub(this.accBeta2);
 
       for (const variableName in variableGradients) {
-        const value = ENV.engine.registeredVariables[variableName];
+        const value = ENGINE.registeredVariables[variableName];
         if (this.accumulatedFirstMoment[variableName] == null) {
           const trainable = false;
           this.accumulatedFirstMoment[variableName] =

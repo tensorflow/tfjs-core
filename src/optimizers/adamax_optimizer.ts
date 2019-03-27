@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+import {ENGINE} from '../engine';
 import {ENV} from '../environment';
 import {keep, tidy} from '../globals';
 import {scalar, zerosLike} from '../ops/ops';
@@ -73,7 +74,7 @@ export class AdamaxOptimizer extends Optimizer {
       const lr = this.c.div(this.one.add(this.decayScalar.mul(this.iteration)));
 
       for (const variableName in variableGradients) {
-        const value = ENV.engine.registeredVariables[variableName];
+        const value = ENGINE.registeredVariables[variableName];
         if (this.accumulatedFirstMoment[variableName] == null) {
           const trainable = false;
           this.accumulatedFirstMoment[variableName] =

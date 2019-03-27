@@ -15,7 +15,8 @@
  * =============================================================================
  */
 
-import {ENV, Environment} from './environment';
+import {ENGINE, Engine} from './engine';
+import {ENV} from './environment';
 import {Features} from './environment_util';
 import {KernelBackend} from './kernels/backend';
 import {MathBackendCPU} from './kernels/backend_cpu';
@@ -139,21 +140,21 @@ function executeTests(
       ENV.reset();
       ENV.setFeatures(testEnv.features);
       ENV.set('IS_TEST', true);
-      ENV.registerBackend(backendName, testEnv.factory, 1000);
-      Environment.setBackend(backendName);
+      ENGINE.registerBackend(backendName, testEnv.factory, 1000);
+      Engine.setBackend(backendName);
     });
 
     beforeEach(() => {
-      ENV.engine.startScope();
+      ENGINE.startScope();
     });
 
     afterEach(() => {
-      ENV.engine.endScope();
-      Environment.disposeVariables();
+      ENGINE.endScope();
+      ENGINE.disposeVariables();
     });
 
     afterAll(() => {
-      ENV.removeBackend(backendName);
+      ENGINE.removeBackend(backendName);
       ENV.reset();
     });
 

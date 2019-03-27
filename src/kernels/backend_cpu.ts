@@ -17,6 +17,7 @@
 
 import * as seedrandom from 'seedrandom';
 
+import {ENGINE} from '../engine';
 import {ENV} from '../environment';
 import {warn} from '../log';
 import * as array_ops_util from '../ops/array_ops_util';
@@ -220,8 +221,8 @@ export class MathBackendCPU implements KernelBackend {
     // clones. These will explicitly get disposed when the complex tensor is
     // disposed.
     resultData.complexTensors = {
-      real: ENV.engine.keep(real.clone()),
-      imag: ENV.engine.keep(imag.clone())
+      real: ENGINE.keep(real.clone()),
+      imag: ENGINE.keep(imag.clone())
     };
 
     return result;
@@ -3436,4 +3437,4 @@ export class MathBackendCPU implements KernelBackend {
   }
 }
 
-ENV.registerBackend('cpu', () => new MathBackendCPU(), 1 /* priority */);
+ENGINE.registerBackend('cpu', () => new MathBackendCPU(), 1 /* priority */);

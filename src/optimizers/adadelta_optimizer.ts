@@ -15,12 +15,14 @@
  * =============================================================================
  */
 
+import {ENGINE} from '../engine';
 import {ENV} from '../environment';
 import {keep, tidy} from '../globals';
 import {scalar, zerosLike} from '../ops/ops';
 import {ConfigDict, registerClass, Serializable, SerializableConstructor} from '../serialization';
 import {Scalar} from '../tensor';
 import {NamedVariableMap} from '../tensor_types';
+
 import {Optimizer} from './optimizer';
 
 /** @doclink Optimizer */
@@ -53,7 +55,7 @@ export class AdadeltaOptimizer extends Optimizer {
 
   applyGradients(variableGradients: NamedVariableMap) {
     for (const variableName in variableGradients) {
-      const value = ENV.engine.registeredVariables[variableName];
+      const value = ENGINE.registeredVariables[variableName];
       if (this.accumulatedGrads[variableName] == null) {
         const trainable = false;
         tidy(() => {

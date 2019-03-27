@@ -15,14 +15,14 @@
  * =============================================================================
  */
 
+import {ENGINE} from '../engine';
 import {ENV} from '../environment';
 import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D, Tensor6D} from '../tensor';
 import {convertToTensor, inferShape} from '../tensor_util_env';
 import {TensorLike, TensorLike1D, TensorLike2D, TensorLike3D, TensorLike4D, TensorLike5D, TensorLike6D} from '../types';
 import {DataType, Rank, ShapeMap} from '../types';
-import {assert, assertNonNull, assertNonNegativeIntegerDimensions, flatten, inferDtype, isTypedArray, makeOnesTypedArray, makeZerosTypedArray, sizeFromShape, toTypedArray} from '../util';
-
-import {complex, real, imag} from './complex_ops';
+import {assert, assertNonNegativeIntegerDimensions, assertNonNull, flatten, inferDtype, isTypedArray, makeOnesTypedArray, makeZerosTypedArray, sizeFromShape, toTypedArray} from '../util';
+import {complex, imag, real} from './complex_ops';
 import {op} from './operation';
 
 /**
@@ -430,8 +430,7 @@ function zeros<R extends Rank>(
 /** @doc {heading: 'Tensors', subheading: 'Creation'} */
 function fill<R extends Rank>(
     shape: ShapeMap[R], value: number|string, dtype?: DataType): Tensor<R> {
-  return ENV.engine.runKernel(backend =>
-    backend.fill(shape, value, dtype), {});
+  return ENGINE.runKernel(backend => backend.fill(shape, value, dtype), {});
 }
 
 /**
@@ -452,7 +451,7 @@ function onesLike_<T extends Tensor>(x: T|TensorLike): T {
     const i = zerosLike(imag($x));
     return complex(r, i);
   }
-  return ENV.engine.runKernel(backend => backend.onesLike($x), {$x}, null) as T;
+  return ENGINE.runKernel(backend => backend.onesLike($x), {$x}, null) as T;
 }
 
 /**
@@ -469,8 +468,7 @@ function onesLike_<T extends Tensor>(x: T|TensorLike): T {
 /** @doc {heading: 'Tensors', subheading: 'Creation'} */
 function zerosLike_<T extends Tensor>(x: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'zerosLike');
-  return ENV.engine.runKernel(backend => backend.zerosLike($x), {$x}, null) as
-      T;
+  return ENGINE.runKernel(backend => backend.zerosLike($x), {$x}, null) as T;
 }
 
 /**

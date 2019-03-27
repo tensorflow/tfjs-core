@@ -55,15 +55,14 @@ export {Reduction} from './ops/loss_ops';
 
 export * from './train';
 export * from './globals';
+export {customGrad, grad, grads, valueAndGrad, valueAndGrads, variableGrads} from './gradients';
 
 export {Features} from './environment_util';
 export {TimingInfo} from './engine';
 export {ENV, Environment} from './environment';
 
-export const setBackend = Environment.setBackend;
-export const getBackend = Environment.getBackend;
-export const disposeVariables = Environment.disposeVariables;
-export const memory = Environment.memory;
+export const setBackend = Engine.setBackend;
+export const getBackend = Engine.getBackend;
 export {version as version_core};
 
 // Top-level method exports.
@@ -92,4 +91,5 @@ export {
 export {KernelBackend, BackendTimingInfo, DataMover, DataStorage} from './kernels/backend';
 
 import * as ops from './ops/ops';
+import {Engine} from './engine';
 setOpHandler(ops);
