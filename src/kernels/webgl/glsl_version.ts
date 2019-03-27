@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {ENV} from '../../environment';
+import { ENV } from '../../environment';
 
 export type GLSL = {
   version: string,
@@ -52,6 +52,13 @@ export function getGlslDifferences(): GLSL {
     defineOutput = 'out vec4 outputColor;';
     defineSpecialNaN = `
       const float NAN = uintBitsToFloat(uint(0x7fc00000));
+      #define isnan(value) newIsNan(value)
+      bool newIsNan(float val) {
+        return (val > 0. || val < 0. || val == 0.) ? false : true;
+      }
+      bvec4 newIsNan(vec4 val) {
+        return bvec4(isnan(val.x), isnan(val.y), isnan(val.z), isnan(val.w));
+      }
     `;
     defineSpecialInf = `
       const float INFINITY = uintBitsToFloat(uint(0x7f800000));
