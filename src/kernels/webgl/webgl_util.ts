@@ -243,19 +243,12 @@ export function bindVertexBufferToProgramAttribute(
   return true;
 }
 
-export function bindTextureUnit(
+function bindTextureUnit(
     gl: WebGLRenderingContext, debug: boolean, texture: WebGLTexture,
     textureUnit: number) {
   validateTextureUnit(gl, textureUnit);
   callAndCheck(gl, debug, () => gl.activeTexture(gl.TEXTURE0 + textureUnit));
   callAndCheck(gl, debug, () => gl.bindTexture(gl.TEXTURE_2D, texture));
-}
-
-export function unbindTextureUnit(
-    gl: WebGLRenderingContext, debug: boolean, textureUnit: number) {
-  validateTextureUnit(gl, textureUnit);
-  callAndCheck(gl, debug, () => gl.activeTexture(gl.TEXTURE0 + textureUnit));
-  callAndCheck(gl, debug, () => gl.bindTexture(gl.TEXTURE_2D, null));
 }
 
 export function getProgramUniformLocationOrThrow(
@@ -273,29 +266,16 @@ export function getProgramUniformLocation(
 }
 
 export function bindTextureToProgramUniformSampler(
-    gl: WebGLRenderingContext, debug: boolean, program: WebGLProgram,
-    texture: WebGLTexture, uniformSamplerLocation: WebGLUniformLocation,
-    textureUnit: number) {
+    gl: WebGLRenderingContext, debug: boolean, texture: WebGLTexture,
+    uniformSamplerLocation: WebGLUniformLocation, textureUnit: number) {
   callAndCheck(
       gl, debug, () => bindTextureUnit(gl, debug, texture, textureUnit));
   callAndCheck(
       gl, debug, () => gl.uniform1i(uniformSamplerLocation, textureUnit));
 }
 
-export function bindCanvasToFramebuffer(
-    gl: WebGLRenderingContext, debug: boolean) {
-  callAndCheck(gl, debug, () => gl.bindFramebuffer(gl.FRAMEBUFFER, null));
-  callAndCheck(
-      gl, debug, () => gl.viewport(0, 0, gl.canvas.width, gl.canvas.height));
-  callAndCheck(
-      gl, debug, () => gl.scissor(0, 0, gl.canvas.width, gl.canvas.height));
-}
-
 export function bindColorTextureToFramebuffer(
-    gl: WebGLRenderingContext, debug: boolean, texture: WebGLTexture,
-    framebuffer: WebGLFramebuffer) {
-  callAndCheck(
-      gl, debug, () => gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer));
+    gl: WebGLRenderingContext, debug: boolean, texture: WebGLTexture) {
   callAndCheck(
       gl, debug,
       () => gl.framebufferTexture2D(
@@ -303,9 +283,7 @@ export function bindColorTextureToFramebuffer(
 }
 
 export function unbindColorTextureFromFramebuffer(
-    gl: WebGLRenderingContext, debug: boolean, framebuffer: WebGLFramebuffer) {
-  callAndCheck(
-      gl, debug, () => gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer));
+    gl: WebGLRenderingContext, debug: boolean) {
   callAndCheck(
       gl, debug,
       () => gl.framebufferTexture2D(
