@@ -769,9 +769,9 @@ function ones(shape: number[]): Tensor {
   return Tensor.make(shape, {values});
 }
 
-let _global: {_tfengine: Engine};
+let GLOBAL: {_tfengine: Engine};
 function getGlobalNamespace(): {_tfengine: Engine} {
-  if (_global == null) {
+  if (GLOBAL == null) {
     // tslint:disable-next-line:no-any
     let ns: any;
     if (typeof (window) !== 'undefined') {
@@ -783,9 +783,9 @@ function getGlobalNamespace(): {_tfengine: Engine} {
     } else {
       throw new Error('Could not find a global object');
     }
-    _global = ns;
+    GLOBAL = ns;
   }
-  return _global;
+  return GLOBAL;
 }
 
 function getOrMakeEngine(): Engine {
