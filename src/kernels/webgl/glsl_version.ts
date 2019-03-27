@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import { ENV } from '../../environment';
+import {ENV} from '../../environment';
 
 export type GLSL = {
   version: string,

@@ -15,8 +15,8 @@
  * =============================================================================
  */
 
-import { GPGPUContext } from './gpgpu_context';
-import { GPGPUProgram } from './gpgpu_math';
+import {GPGPUContext} from './gpgpu_context';
+import {GPGPUProgram} from './gpgpu_math';
 
 export class ClipPackedProgram implements GPGPUProgram {
   variableNames = ['A'];
