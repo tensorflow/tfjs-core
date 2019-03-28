@@ -91,10 +91,11 @@ export async function toPixels(
         `1, 3 or 4 but got ${depth}`);
   }
 
+  const data = await $img.data();
   const minTensor = $img.min();
   const maxTensor = $img.max();
-  const [data, minVals, maxVals] =
-      await Promise.all([$img.data(), minTensor.data(), maxTensor.data()]);
+  const [minVals, maxVals] =
+      await Promise.all([minTensor.data(), maxTensor.data()]);
   const min = minVals[0];
   const max = maxVals[0];
   minTensor.dispose();
