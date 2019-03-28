@@ -18,7 +18,7 @@
 // backend_cpu.ts and backend_webgl.ts are standalone files and should be
 // explicitly included here.
 import './kernels/webgl/backend_webgl';
-import './kernels/backend_cpu';
+import './kernels/cpu/backend_cpu';
 // Register backend-agnostic flags.
 import './flags';
 
