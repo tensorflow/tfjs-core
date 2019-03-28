@@ -17,7 +17,7 @@
 
 import * as device_util from './device_util';
 import {Engine, MemoryInfo, ProfileInfo, ScopeFn, TimingInfo} from './engine';
-import {Features, getFeaturesFromURL, getMaxTexturesInShader, getNumMBBeforePaging, getWebGLDisjointQueryTimerVersion, getWebGLMaxTextureSize, isChrome, isDownloadFloatTextureEnabled, isRenderToFloatTextureEnabled, isWebGLFenceEnabled, isWebGLVersionEnabled} from './environment_util';
+import {Features, getFeaturesFromURL, getMaxTexturesInShader, getWebGLDisjointQueryTimerVersion, getWebGLMaxTextureSize, isChrome, isDownloadFloatTextureEnabled, isRenderToFloatTextureEnabled, isWebGLFenceEnabled, isWebGLVersionEnabled} from './environment_util';
 import {KernelBackend} from './kernels/backend';
 import {DataId, setDeprecationWarningFn, setTensorTracker, Tensor} from './tensor';
 import {TensorContainer} from './tensor_types';
@@ -34,6 +34,7 @@ export class Environment {
   private globalEngine: Engine;
   private registry:
       {[id: string]: {backend: KernelBackend, priority: number}} = {};
+  private registryFactory: {[id: string]: () => KernelBackend} = {};
   backendName: string;
 
   constructor(features?: Features) {
@@ -328,11 +329,6 @@ export class Environment {
       return this.get('WEBGL_PACK');
     } else if (feature === 'WEBGL_CONV_IM2COL') {
       return this.get('WEBGL_PACK');
-    } else if (feature === 'WEBGL_NUM_MB_BEFORE_PAGING') {
-      if (this.get('PROD') || !this.get('IS_BROWSER')) {
-        return Number.POSITIVE_INFINITY;
-      }
-      return getNumMBBeforePaging();
     } else if (feature === 'WEBGL_MAX_TEXTURE_SIZE') {
       return getWebGLMaxTextureSize(this.get('WEBGL_VERSION'));
     } else if (feature === 'WEBGL_MAX_TEXTURES_IN_SHADER') {
@@ -403,11 +399,27 @@ export class Environment {
     return this.engine.backend;
   }
 
+  /**
+   * Finds the backend registered under the provided name. Returns null if the
+   * name is not in the registry.
+   */
   findBackend(name: string): KernelBackend {
     if (!(name in this.registry)) {
       return null;
     }
     return this.registry[name].backend;
+  }
+
+  /**
+   * Finds the backend factory registered under the provided name. Returns a
+   * function that produces a new backend when called. Returns null if the name
+   * is not in the registry.
+   */
+  findBackendFactory(name: string): () => KernelBackend {
+    if (!(name in this.registryFactory)) {
+      return null;
+    }
+    return this.registryFactory[name];
   }
 
   /**
@@ -434,6 +446,7 @@ export class Environment {
       backend.setDataMover(
           {moveData: (dataId: DataId) => this.engine.moveData(dataId)});
       this.registry[name] = {backend, priority};
+      this.registryFactory[name] = factory;
       return true;
     } catch (err) {
       console.warn(`Registration of backend ${name} failed`);
@@ -464,7 +477,8 @@ export class Environment {
     }
   }
 
-  get global(): {ENV: Environment} {
+  // tslint:disable-next-line:no-any
+  get global(): any {
     return getGlobalNamespace();
   }
 }

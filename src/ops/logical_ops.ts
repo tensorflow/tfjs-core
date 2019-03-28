@@ -153,15 +153,20 @@ function where_<T extends Tensor>(
 
   // TODO(julianoks): Return null for condition gradient
   // when backprop supports it.
-  const grad = (dy: T) => ({
-    $condition: () => zerosLike($condition).toFloat(),
-    $a: () => dy.mul($condition.cast(dy.dtype)) as T,
-    $b: () => dy.mul($condition.logicalNot().cast(dy.dtype)) as T
-  });
+  const grad = (dy: T, saved: Tensor[]) => {
+    const [$condition] = saved;
+    return {
+      $condition: () => zerosLike($condition).toFloat(),
+      $a: () => dy.mul($condition.cast(dy.dtype)) as T,
+      $b: () => dy.mul($condition.logicalNot().cast(dy.dtype)) as T
+    };
+  };
 
-  return ENV.engine.runKernel(
-             backend => backend.select($condition, $a, $b),
-             {$condition, $a, $b}, grad) as T;
+  return ENV.engine.runKernel((backend, save) => {
+    const res = backend.select($condition, $a, $b);
+    save([$condition]);
+    return res;
+  }, {$condition, $a, $b}, grad) as T;
 }
 
 /**

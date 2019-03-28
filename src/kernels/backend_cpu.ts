@@ -972,6 +972,45 @@ export class MathBackendCPU implements KernelBackend {
     return Tensor.make(x.shape, {values: newValues}) as T;
   }
 
+  isNaN<T extends Tensor>(x: T): T {
+    this.assertNotComplex(x, 'x');
+
+    const values = x.dataSync();
+    const newValues = new Uint8Array(values.length);
+    for (let i = 0; i < values.length; ++i) {
+      if (Number.isNaN(values[i])) {
+        newValues[i] = 1;
+      }
+    }
+    return Tensor.make(x.shape, {values: newValues}, 'bool') as T;
+  }
+
+  isInf<T extends Tensor>(x: T): T {
+    this.assertNotComplex(x, 'x');
+
+    const values = x.dataSync();
+    const newValues = new Uint8Array(values.length);
+    for (let i = 0; i < values.length; ++i) {
+      if (Math.abs(values[i]) === Infinity) {
+        newValues[i] = 1;
+      }
+    }
+    return Tensor.make(x.shape, {values: newValues}, 'bool') as T;
+  }
+
+  isFinite<T extends Tensor>(x: T): T {
+    this.assertNotComplex(x, 'x');
+
+    const values = x.dataSync();
+    const newValues = new Uint8Array(values.length);
+    for (let i = 0; i < values.length; ++i) {
+      if (Number.isFinite(values[i])) {
+        newValues[i] = 1;
+      }
+    }
+    return Tensor.make(x.shape, {values: newValues}, 'bool') as T;
+  }
+
   round<T extends Tensor>(x: T): T {
     this.assertNotComplex(x, 'round');
 
@@ -2740,7 +2779,7 @@ export class MathBackendCPU implements KernelBackend {
     const channels = x.shape[3];
     const maxD = channels - 1;
     const xValues = x.dataSync();
-    const size = util.sizeFromShape(x.shape);
+    const size = x.size;
     const result = new Float32Array(size);
 
     function sumAcrossChannels(offset: number) {
@@ -2776,8 +2815,8 @@ export class MathBackendCPU implements KernelBackend {
     const dyValues = dy.dataSync();
     const inputImageValues = inputImage.dataSync();
     const outputImageValues = outputImage.dataSync();
-    const result = new Float32Array(util.sizeFromShape(dy.shape));
-    const size = util.sizeFromShape(dy.shape);
+    const result = new Float32Array(dy.size);
+    const size = dy.size;
 
     for (let offset = 0; offset < size; offset++) {
       const currentChannel = offset % channels;
@@ -3331,7 +3370,7 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   fill<R extends Rank>(
-    shape: ShapeMap[R], value: number|string, dtype?: DataType): Tensor<R> {
+      shape: ShapeMap[R], value: number|string, dtype?: DataType): Tensor<R> {
     dtype = dtype || inferDtype(value);
     const values = getArrayFromDType(dtype, sizeFromShape(shape)) as TypedArray;
     values.fill(value as number);

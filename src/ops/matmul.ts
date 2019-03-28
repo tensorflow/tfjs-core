@@ -85,7 +85,8 @@ function matMul_<T extends Tensor>(
   const b3D = transposeB ? $b.as3D(batchDimB, outerShapeB, innerShapeB) :
                            $b.as3D(batchDimB, innerShapeB, outerShapeB);
 
-  const grad = (dy: Tensor3D) => {
+  const grad = (dy: Tensor3D, saved: Tensor[]) => {
+    const [a3D, b3D] = saved as Tensor3D[];
     if (!transposeA && !transposeB) {
       return {
         $a: () => dy.matMul(b3D, false, true),
@@ -109,9 +110,11 @@ function matMul_<T extends Tensor>(
     }
   };
 
-  const res = ENV.engine.runKernel(
-      backend => backend.batchMatMul(a3D, b3D, transposeA, transposeB),
-      {$a: a3D, $b: b3D}, grad);
+  const res = ENV.engine.runKernel((backend, save) => {
+    const res = backend.batchMatMul(a3D, b3D, transposeA, transposeB);
+    save([a3D, b3D]);
+    return res;
+  }, {$a: a3D, $b: b3D}, grad);
   return res.reshape(outShape) as T;
 }
 

@@ -22,6 +22,7 @@ import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import * as util from '../util';
+
 import {op} from './operation';
 
 /**
@@ -58,14 +59,17 @@ function resizeBilinear_<T extends Tensor3D|Tensor4D>(
   }
 
   const [newHeight, newWidth] = size;
-  const forward: ForwardFunc<Tensor4D> = (backend, save) =>
-      backend.resizeBilinear(batchImages, newHeight, newWidth, alignCorners);
+  const forward: ForwardFunc<Tensor4D> = (backend, save) => {
+    save([batchImages]);
+    return backend.resizeBilinear(
+        batchImages, newHeight, newWidth, alignCorners);
+  };
 
   const backward = (dy: Tensor4D, saved: Tensor[]) => {
     return {
       batchImages: () => ENV.engine.runKernel(
-          backend =>
-              backend.resizeBilinearBackprop(dy, batchImages, alignCorners),
+          backend => backend.resizeBilinearBackprop(
+              dy, saved[0] as Tensor4D, alignCorners),
           {})
     };
   };
@@ -115,15 +119,17 @@ function resizeNearestNeighbor_<T extends Tensor3D|Tensor4D>(
   }
   const [newHeight, newWidth] = size;
 
-  const forward: ForwardFunc<Tensor4D> = (backend, save) =>
-      backend.resizeNearestNeighbor(
-          batchImages, newHeight, newWidth, alignCorners);
+  const forward: ForwardFunc<Tensor4D> = (backend, save) => {
+    save([batchImages]);
+    return backend.resizeNearestNeighbor(
+        batchImages, newHeight, newWidth, alignCorners);
+  };
 
   const backward = (dy: Tensor4D, saved: Tensor[]) => {
     return {
       batchImages: () => ENV.engine.runKernel(
           backend => backend.resizeNearestNeighborBackprop(
-              dy, batchImages, alignCorners),
+              dy, saved[0] as Tensor4D, alignCorners),
           {})
     };
   };

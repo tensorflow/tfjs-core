@@ -64,8 +64,7 @@ export class TensorBuffer<R extends Rank, D extends DataType = 'float32'> {
           `a TensorBuffer for the real and imaginary parts separately and ` +
           `call tf.complex(real, imag).`);
     }
-    this.values =
-        values || util.getArrayFromDType(dtype, util.sizeFromShape(this.shape));
+    this.values = values || util.getArrayFromDType(dtype, this.size);
     this.strides = computeStrides(shape);
   }
 
@@ -98,6 +97,15 @@ export class TensorBuffer<R extends Rank, D extends DataType = 'float32'> {
   get(...locs: number[]): SingleValueMap[D] {
     if (locs.length === 0) {
       locs = [0];
+    }
+    let i = 0;
+    for (const loc of locs) {
+      if (loc < 0 || loc >= this.shape[i]) {
+        const msg = `Requested out of range element at ${locs}. ` +
+            `  Buffer shape=${this.shape}`;
+        throw new Error(msg);
+      }
+      i++;
     }
     let index = locs[locs.length - 1];
     for (let i = 0; i < locs.length - 1; ++i) {
@@ -426,6 +434,11 @@ export class Tensor<R extends Rank = Rank> {
   readonly dtype: DataType;
   /** The rank type for the array (see `Rank` enum). */
   readonly rankType: R;
+
+  /** Whether this tensor has been globally kept. */
+  kept = false;
+  /** The id of the scope this tensor is being tracked in. */
+  scopeId: number;
 
   /**
    * Number of elements to skip in each dimension when indexing. See

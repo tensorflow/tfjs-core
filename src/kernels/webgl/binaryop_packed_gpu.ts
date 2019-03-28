@@ -16,7 +16,6 @@
  */
 
 import * as broadcast_util from '../../ops/broadcast_util';
-import {GPGPUContext} from './gpgpu_context';
 import {GPGPUProgram} from './gpgpu_math';
 
 const CHECK_NAN_SNIPPET = `
@@ -40,17 +39,26 @@ export const DIV = `
 `;
 
 export const INT_DIV = `
-  vec4 resultSign = sign(a) * sign(b);
   ivec4 ia = round(a);
   ivec4 ib = round(b);
-  ivec4 result = ia / ib;
-  ivec4 amodb = ia - ib * result;
+  bvec4 cond = notEqual(ib, ivec4(0));
+  ivec4 result = ivec4(0);
+  vec4 s = sign(a) * sign(b);
 
-  // Vectorize INT_DIV
-  // if (resultSign < 0.0 && amodb != 0) result -= 1;
-  // return float(result);
-  return vec4(result -
-     ivec4(lessThan(resultSign, vec4(0.0))) * ivec4(notEqual(amodb, ivec4(0))));
+  // Windows (D3D) wants guaranteed non-zero int division at compile-time.
+  if (cond[0]) {
+    result[0] = idiv(ia[0], ib[0], s[0]);
+  }
+  if (cond[1]) {
+    result[1] = idiv(ia[1], ib[1], s[1]);
+  }
+  if (cond[2]) {
+    result[2] = idiv(ia[2], ib[2], s[2]);
+  }
+  if (cond[3]) {
+    result[3] = idiv(ia[3], ib[3], s[3]);
+  }
+  return vec4(result);
 `;
 
 export const POW = `
@@ -77,7 +85,7 @@ export const ELU_DER = `
 
 export const ATAN2 = `
   vec4 result = atan(a, b);
-  vec4 isNaN = min(vec4(isNaN(a)) + vec4(isNaN(b)), vec4(1.0));
+  vec4 isNaN = min(vec4(isnan(a)) + vec4(isnan(b)), vec4(1.0));
   ` +
     CHECK_NAN_SNIPPET + `
   return result;
@@ -122,7 +130,7 @@ export const LOGICAL_OR = `
 
 export const MAX = `
   vec4 result = vec4(max(a, b));
-  vec4 isNaN = min(vec4(isNaN(a)) + vec4(isNaN(b)), vec4(1.0));
+  vec4 isNaN = min(vec4(isnan(a)) + vec4(isnan(b)), vec4(1.0));
   ` +
     CHECK_NAN_SNIPPET + `
   return result;
@@ -130,7 +138,7 @@ export const MAX = `
 
 export const MIN = `
   vec4 result = vec4(min(a, b));
-  vec4 isNaN = min(vec4(isNaN(a)) + vec4(isNaN(b)), vec4(1.0));
+  vec4 isNaN = min(vec4(isnan(a)) + vec4(isnan(b)), vec4(1.0));
   ` +
     CHECK_NAN_SNIPPET + `
   return result;
@@ -151,14 +159,10 @@ export class BinaryOpPackedProgram implements GPGPUProgram {
   supportsBroadcasting = true;
   usesPackedTextures = true;
 
-  // Caching uniform location for speed.
-  startLoc: WebGLUniformLocation;
-
   constructor(op: string, aShape: number[], bShape: number[]) {
     this.outputShape =
         broadcast_util.assertAndGetBroadcastShape(aShape, bShape);
     this.userCode = `
-      uniform float NAN;
       vec4 binaryOperation(vec4 a, vec4 b) {
         ${op}
       }
@@ -169,19 +173,5 @@ export class BinaryOpPackedProgram implements GPGPUProgram {
         setOutput(binaryOperation(a, b));
       }
     `;
-  }
-
-  getCustomSetupFunc() {
-    return (gpgpu: GPGPUContext, webGLProgram: WebGLProgram) => {
-      if (this.startLoc == null) {
-        this.startLoc = gpgpu.getUniformLocationNoThrow(webGLProgram, 'NAN');
-        if (this.startLoc == null) {
-          // This means the compiler has optimized and realized it doesn't need
-          // the uniform.
-          return;
-        }
-      }
-      gpgpu.gl.uniform1f(this.startLoc, NaN);
-    };
   }
 }

@@ -17,13 +17,13 @@
 
 import * as device_util from './device_util';
 import {ENV, Environment, EPSILON_FLOAT16, EPSILON_FLOAT32} from './environment';
-import {BEFORE_PAGING_CONSTANT, Features, getQueryParams} from './environment_util';
+import {Features, getQueryParams} from './environment_util';
 import * as tf from './index';
 import {describeWithFlags} from './jasmine_util';
 import {KernelBackend} from './kernels/backend';
 import {MathBackendCPU} from './kernels/backend_cpu';
 import {MathBackendWebGL} from './kernels/backend_webgl';
-import {ALL_ENVS, expectArraysClose, NODE_ENVS, WEBGL_ENVS} from './test_util';
+import {ALL_ENVS, WEBGL_ENVS} from './test_util';
 
 describeWithFlags(
     'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE', WEBGL_ENVS, () => {
@@ -60,43 +60,6 @@ describeWithFlags(
       });
     });
 
-describeWithFlags('WEBGL_NUM_MB_BEFORE_PAGING webgl', WEBGL_ENVS, () => {
-  it('should be set in a browser', () => {
-    const expectedMBBeforePaging = window.screen.width * window.screen.height *
-        window.devicePixelRatio * BEFORE_PAGING_CONSTANT / 1024;
-
-    const features: Features = {'IS_BROWSER': true, 'PROD': false};
-    const env = new Environment(features);
-    expect(env.get('WEBGL_NUM_MB_BEFORE_PAGING')).toBe(expectedMBBeforePaging);
-  });
-
-  it('should be off when the environment is prod', () => {
-    const features: Features = {'IS_BROWSER': true, 'PROD': true};
-    const env = new Environment(features);
-    expect(env.get('WEBGL_NUM_MB_BEFORE_PAGING'))
-        .toBe(Number.POSITIVE_INFINITY);
-  });
-
-  it('should not cause errors when paging is turned off', () => {
-    ENV.set('WEBGL_NUM_MB_BEFORE_PAGING', Number.POSITIVE_INFINITY);
-
-    const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
-    const b = tf.tensor2d([0, 1, -3, 2, 2, 1], [3, 2]);
-
-    const c = tf.matMul(a, b);
-
-    expectArraysClose(c, [0, 8, -3, 20]);
-  });
-});
-
-describeWithFlags('WEBGL_NUM_MB_BEFORE_PAGING node', NODE_ENVS, () => {
-  it('should be off when the environment is node', () => {
-    const env = new Environment();
-    expect(env.get('WEBGL_NUM_MB_BEFORE_PAGING'))
-        .toBe(Number.POSITIVE_INFINITY);
-  });
-});
-
 describe('Backend', () => {
   beforeAll(() => {
     // Silences backend registration warnings.
@@ -110,11 +73,17 @@ describe('Backend', () => {
   it('custom cpu registration', () => {
     let backend: KernelBackend;
     ENV.registerBackend('custom-cpu', () => {
-      backend = new MathBackendCPU();
-      return backend;
+      const newBackend = new MathBackendCPU();
+      if (backend == null) {
+        backend = newBackend;
+      }
+      return newBackend;
     });
 
     expect(ENV.findBackend('custom-cpu')).toBe(backend);
+    const factory = ENV.findBackendFactory('custom-cpu');
+    expect(factory).not.toBeNull();
+    expect(factory() instanceof MathBackendCPU).toBe(true);
     Environment.setBackend('custom-cpu');
     expect(ENV.backend).toBe(backend);
 
@@ -132,6 +101,7 @@ describe('Backend', () => {
         ENV.registerBackend('custom-webgl', () => new MathBackendWebGL(), 104);
     expect(success).toBe(false);
     expect(ENV.findBackend('custom-webgl') == null).toBe(true);
+    expect(ENV.findBackendFactory('custom-webgl') == null).toBe(true);
     expect(Environment.getBackend()).toBe('custom-cpu');
     expect(ENV.backend).toBe(cpuBackend);
 
