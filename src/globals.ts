@@ -322,9 +322,4 @@ export function registerBackend(
   return ENGINE.registerBackend(name, factory, priority);
 }
 
-export class BackendGetter {
-  static get backend(): KernelBackend {
-    return ENGINE.backend;
-  }
-}
-export const backend = BackendGetter.backend;
+export const backend = () => ENGINE.backend;

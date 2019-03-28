@@ -48,7 +48,7 @@ describe('Backend', () => {
     expect(factory).not.toBeNull();
     expect(factory() instanceof MathBackendCPU).toBe(true);
     tf.setBackend('custom-cpu');
-    expect(tf.backend).toBe(backend);
+    expect(tf.backend()).toBe(backend);
 
     tf.removeBackend('custom-cpu');
   });
@@ -66,7 +66,7 @@ describe('Backend', () => {
     expect(tf.findBackend('custom-webgl') == null).toBe(true);
     expect(tf.findBackendFactory('custom-webgl') == null).toBe(true);
     expect(tf.getBackend()).toBe('custom-cpu');
-    expect(tf.backend).toBe(cpuBackend);
+    expect(tf.backend()).toBe(cpuBackend);
 
     tf.removeBackend('custom-cpu');
   });
@@ -112,13 +112,14 @@ describe('public api tf.*', () => {
 });
 describeWithFlags('epsilon', {}, () => {
   it('Epsilon is a function of float precision', () => {
-    const epsilonValue =
-        tf.backend.floatPrecision() === 32 ? EPSILON_FLOAT32 : EPSILON_FLOAT16;
-    expect(tf.backend.epsilon()).toBe(epsilonValue);
+    const epsilonValue = tf.backend().floatPrecision() === 32 ?
+        EPSILON_FLOAT32 :
+        EPSILON_FLOAT16;
+    expect(tf.backend().epsilon()).toBe(epsilonValue);
   });
 
   it('abs(epsilon) > 0', () => {
-    expect(tf.abs(ENV.get('EPSILON') as number).arraySync()).toBeGreaterThan(0);
+    expect(tf.abs(tf.backend().epsilon()).arraySync()).toBeGreaterThan(0);
   });
 });
 

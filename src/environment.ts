@@ -19,24 +19,23 @@ type FlagValue = number|boolean;
 export type Flags = {
   [featureName: string]: FlagValue
 };
+export type FlagRegistryEntry = {
+  evaluationFn: () => FlagValue;
+  setHook?: (value: FlagValue) => void;
+};
 
 export class Environment {
-  private flags: Flags;
-  private flagRegistry: {[flagName: string]: () => number | boolean} = {};
+  private flags: Flags = {};
+  private flagRegistry: {[flagName: string]: FlagRegistryEntry} = {};
 
   constructor() {
-    this.flags = getFlagsFromURL();
-
-    if (this.get('DEBUG')) {
-      console.warn(
-          'Debugging mode is ON. The output of every math call will ' +
-          'be downloaded to CPU and checked for NaNs. ' +
-          'This significantly impacts performance.');
-    }
+    this.populateFlagsFromURL();
   }
 
-  registerFlag(flagName: string, evaluationFn: () => FlagValue) {
-    this.flagRegistry[flagName] = evaluationFn;
+  registerFlag(
+      flagName: string, evaluationFn: () => FlagValue,
+      setHook?: (value: FlagValue) => void) {
+    this.flagRegistry[flagName] = {evaluationFn};
   }
 
   get(flagName: string): FlagValue {
@@ -58,7 +57,14 @@ export class Environment {
   }
 
   set(flagName: string, value: FlagValue): void {
+    if (this.flagRegistry[flagName] == null) {
+      throw new Error(
+          `Cannot set flag ${flagName} as it has not been registered.`);
+    }
     this.flags[flagName] = value;
+    if (this.flagRegistry[flagName].setHook != null) {
+      this.flagRegistry[flagName].setHook(value);
+    }
   }
 
   private evaluateFlag(flagName: string): FlagValue {
@@ -66,7 +72,7 @@ export class Environment {
       throw new Error(
           `Cannot evaluate flag '${flagName}': no evaluation function found.`);
     }
-    return this.flagRegistry[flagName]();
+    return this.flagRegistry[flagName].evaluationFn();
   }
 
   setFlags(flags: Flags) {
@@ -74,56 +80,59 @@ export class Environment {
   }
 
   reset() {
-    this.flags = getFlagsFromURL();
+    this.populateFlagsFromURL();
   }
 
   // tslint:disable-next-line:no-any
   get global(): any {
     return global;
   }
+
+  private populateFlagsFromURL(): void {
+    if (typeof window === 'undefined' ||
+        typeof window.location === 'undefined' ||
+        typeof window.location.search === 'undefined') {
+      return;
+    }
+
+    const urlParams = getQueryParams(window.location.search);
+    if (TENSORFLOWJS_FLAGS_PREFIX in urlParams) {
+      const urlFlags: {[key: string]: string} = {};
+
+      const keyValues = urlParams[TENSORFLOWJS_FLAGS_PREFIX].split(',');
+      keyValues.forEach(keyValue => {
+        const [key, value] = keyValue.split(':') as [string, string];
+        urlFlags[key] = value;
+      });
+
+      // for (const flagName in this.flagRegistry) {
+
+      // }
+
+      // URL_PROPERTIES.forEach(urlProperty => {
+      //   if (urlProperty.name in urlFlags) {
+      //     console.log(
+      //         `Setting feature override from URL ${urlProperty.name}: ` +
+      //         `${urlFlags[urlProperty.name]}`);
+      //     if (urlProperty.type === Type.NUMBER) {
+      //       features[urlProperty.name] = +urlFlags[urlProperty.name];
+      //     } else if (urlProperty.type === Type.BOOLEAN) {
+      //       features[urlProperty.name] = urlFlags[urlProperty.name] ===
+      //       'true';
+      //     } else if (urlProperty.type === Type.STRING) {
+      //       // tslint:disable-next-line:no-any
+      //       features[urlProperty.name] = urlFlags[urlProperty.name] as any;
+      //     } else {
+      //       console.warn(`Unknown URL param: ${urlProperty.name}.`);
+      //     }
+      //   }
+      // });
+    }
+  }
 }
 
 // Expects flags from URL in the format ?tfjsflags=FLAG1:1,FLAG2:true.
 const TENSORFLOWJS_FLAGS_PREFIX = 'tfjsflags';
-export function getFlagsFromURL(): Flags {
-  const flags: Flags = {};
-
-  if (typeof window === 'undefined' || typeof window.location === 'undefined' ||
-      typeof window.location.search === 'undefined') {
-    return flags;
-  }
-
-  const urlParams = getQueryParams(window.location.search);
-  if (TENSORFLOWJS_FLAGS_PREFIX in urlParams) {
-    const urlFlags: {[key: string]: string} = {};
-
-    const keyValues = urlParams[TENSORFLOWJS_FLAGS_PREFIX].split(',');
-    keyValues.forEach(keyValue => {
-      const [key, value] = keyValue.split(':') as [string, string];
-      urlFlags[key] = value;
-    });
-
-    // URL_PROPERTIES.forEach(urlProperty => {
-    //   if (urlProperty.name in urlFlags) {
-    //     console.log(
-    //         `Setting feature override from URL ${urlProperty.name}: ` +
-    //         `${urlFlags[urlProperty.name]}`);
-    //     if (urlProperty.type === Type.NUMBER) {
-    //       features[urlProperty.name] = +urlFlags[urlProperty.name];
-    //     } else if (urlProperty.type === Type.BOOLEAN) {
-    //       features[urlProperty.name] = urlFlags[urlProperty.name] === 'true';
-    //     } else if (urlProperty.type === Type.STRING) {
-    //       // tslint:disable-next-line:no-any
-    //       features[urlProperty.name] = urlFlags[urlProperty.name] as any;
-    //     } else {
-    //       console.warn(`Unknown URL param: ${urlProperty.name}.`);
-    //     }
-    //   }
-    // });
-  }
-
-  return flags;
-}
 
 export function getQueryParams(queryString: string): {[key: string]: string} {
   const params = {};

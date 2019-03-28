@@ -198,7 +198,7 @@ describeWithFlags('abs', ALL_ENVS, () => {
   });
 
   it('is underflow-safe for complex64', () => {
-    const floatBits = tf.backend.floatPrecision();
+    const floatBits = tf.backend().floatPrecision();
     let small;
     switch (floatBits) {
       case 32:
@@ -3227,7 +3227,7 @@ describeWithFlags('clip', ALL_ENVS, () => {
   });
 
   it('clip(x, eps, 1-eps) never returns 0 or 1', () => {
-    const min = tf.ENV.get('EPSILON') as number;
+    const min = tf.backend().epsilon();
     const max = 0.5;
     const res = tf.clipByValue([0, 1], min, max).dataSync();
     expect(res[0]).toBeGreaterThan(0);

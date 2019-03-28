@@ -44,8 +44,8 @@ export class AdamaxOptimizer extends Optimizer {
       this.accBeta1 = scalar(beta1).variable();
     });
 
-    if (epsilon === null) {
-      epsilon = ENGINE.backend.epsilon();
+    if (epsilon == null) {
+      this.epsilon = ENGINE.backend.epsilon();
     }
   }
 

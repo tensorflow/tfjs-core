@@ -43,8 +43,8 @@ export class AdamOptimizer extends Optimizer {
       this.accBeta2 = scalar(beta2).variable();
     });
 
-    if (epsilon === null) {
-      epsilon = ENGINE.backend.epsilon();
+    if (epsilon == null) {
+      this.epsilon = ENGINE.backend.epsilon();
     }
   }
 

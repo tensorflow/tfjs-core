@@ -14,6 +14,7 @@
  * limitations under the License.
  * =============================================================================
  */
+import * as device_util from './device_util';
 import {ENV} from './environment';
 
 /**
@@ -21,10 +22,17 @@ import {ENV} from './environment';
  */
 
 /** Whether to enable debug mode. */
-ENV.registerFlag('DEBUG', () => false);
+ENV.registerFlag('DEBUG', () => false, debugValue => {
+  if (debugValue) {
+    console.warn(
+        'Debugging mode is ON. The output of every math call will ' +
+        'be downloaded to CPU and checked for NaNs. ' +
+        'This significantly impacts performance.');
+  }
+});
 
 /** Whether we are in a browser (as versus, say, node.js) environment. */
-ENV.registerFlag('IS_BROWSER', () => typeof window !== 'undefined');
+ENV.registerFlag('IS_BROWSER', () => device_util.isBrowser());
 
 /** Whether we are in a browser (as versus, say, node.js) environment. */
 ENV.registerFlag(

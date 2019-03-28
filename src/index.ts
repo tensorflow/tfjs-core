@@ -15,6 +15,10 @@
  * =============================================================================
  */
 
+// Engine is the global singleton that needs to be initialized before the rest
+// of the app.
+import './engine';
+
 // backend_cpu.ts and backend_webgl.ts are standalone files and should be
 // explicitly included here.
 import './kernels/webgl/backend_webgl';

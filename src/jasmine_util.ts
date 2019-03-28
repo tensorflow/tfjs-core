@@ -160,6 +160,7 @@ function executeTests(
       ENV.reset();
       ENV.setFlags(testEnv.flags);
       ENV.set('IS_TEST', true);
+      ENGINE.reset();
       ENGINE.registerBackend(backendName, testEnv.factory, 1000);
       ENGINE.setBackend(backendName);
     });
@@ -176,6 +177,7 @@ function executeTests(
     afterAll(() => {
       ENGINE.removeBackend(backendName);
       ENV.reset();
+      ENGINE.reset();
     });
 
     tests(testEnv);

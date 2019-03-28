@@ -40,8 +40,8 @@ export class RMSPropOptimizer extends Optimizer {
 
     this.centered = centered;
 
-    if (epsilon === null) {
-      epsilon = ENGINE.backend.epsilon();
+    if (epsilon == null) {
+      this.epsilon = ENGINE.backend.epsilon();
     }
   }
 

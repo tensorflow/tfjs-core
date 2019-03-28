@@ -35,8 +35,8 @@ export class AdadeltaOptimizer extends Optimizer {
       protected epsilon: number = null) {
     super();
 
-    if (epsilon === null) {
-      epsilon = ENGINE.backend.epsilon();
+    if (epsilon == null) {
+      this.epsilon = ENGINE.backend.epsilon();
     }
   }
 

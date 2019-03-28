@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import * as tf from './index';
+import {ENV} from './environment';
 import {describeWithFlags, envSatisfiesConstraints, parseKarmaFlags, WEBGL_ENVS} from './jasmine_util';
 import {MathBackendCPU} from './kernels/cpu/backend_cpu';
 import {MathBackendWebGL} from './kernels/webgl/backend_webgl';
@@ -26,12 +26,12 @@ describeWithFlags('jasmine_util.envSatisfiesConstraints', {}, () => {
   });
 
   it('ENV satisfies matching constraints', () => {
-    const c = {TEST_EPSILON: tf.ENV.get('TEST_EPSILON')};
+    const c = {DEBUG: ENV.get('DEBUG')};
     expect(envSatisfiesConstraints(c)).toBe(true);
   });
 
   it('ENV does not satisfy mismatching constraints', () => {
-    const c = {TEST_EPSILON: tf.ENV.get('TEST_EPSILON') as number + 0.1};
+    const c = {DEBUG: !ENV.get('DEBUG')};
     expect(envSatisfiesConstraints(c)).toBe(false);
   });
 });
@@ -49,9 +49,9 @@ describe('jasmine_util.parseKarmaFlags', () => {
     expect(res.factory() instanceof MathBackendCPU).toBe(true);
   });
 
-  it('--backend cpu --features {"IS_NODE": true}', () => {
-    const res = parseKarmaFlags(
-        ['--backend', 'cpu', '--features', '{"IS_NODE": true}']);
+  it('--backend cpu --flags {"IS_NODE": true}', () => {
+    const res =
+        parseKarmaFlags(['--backend', 'cpu', '--flags', '{"IS_NODE": true}']);
     expect(res.name).toBe('cpu');
     expect(res.flags).toEqual({IS_NODE: true});
     expect(res.factory() instanceof MathBackendCPU).toBe(true);
@@ -61,18 +61,18 @@ describe('jasmine_util.parseKarmaFlags', () => {
     expect(() => parseKarmaFlags(['--backend', 'unknown'])).toThrowError();
   });
 
-  it('"--features {}" throws error since --backend is missing', () => {
-    expect(() => parseKarmaFlags(['--features', '{}'])).toThrowError();
+  it('"--flags {}" throws error since --backend is missing', () => {
+    expect(() => parseKarmaFlags(['--flags', '{}'])).toThrowError();
   });
 
-  it('"--backend cpu --features" throws error since features value is missing',
+  it('"--backend cpu --flags" throws error since features value is missing',
      () => {
-       expect(() => parseKarmaFlags(['--backend', 'cpu', '--features']))
+       expect(() => parseKarmaFlags(['--backend', 'cpu', '--flags']))
            .toThrowError();
      });
 
-  it('"--backend cpu --features notJson" throws error', () => {
-    expect(() => parseKarmaFlags(['--backend', 'cpu', '--features', 'notJson']))
+  it('"--backend cpu --flags notJson" throws error', () => {
+    expect(() => parseKarmaFlags(['--backend', 'cpu', '--flags', 'notJson']))
         .toThrowError();
   });
 });
