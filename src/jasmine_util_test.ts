@@ -15,8 +15,9 @@
  * =============================================================================
  */
 
+import {ENGINE} from './engine';
 import {ENV} from './environment';
-import {describeWithFlags, envSatisfiesConstraints, parseKarmaFlags, WEBGL_ENVS} from './jasmine_util';
+import {describeWithFlags, envSatisfiesConstraints, parseKarmaFlags, TestKernelBackend, WEBGL_ENVS} from './jasmine_util';
 import {MathBackendCPU} from './kernels/cpu/backend_cpu';
 import {MathBackendWebGL} from './kernels/webgl/backend_webgl';
 
@@ -49,12 +50,16 @@ describe('jasmine_util.parseKarmaFlags', () => {
     expect(res.factory() instanceof MathBackendCPU).toBe(true);
   });
 
-  it('--backend cpu --flags {"IS_NODE": true}', () => {
+  // tslint:disable-next-line:ban
+  fit('--backend cpu --flags {"IS_NODE": true}', () => {
+    const backend = new TestKernelBackend();
+    ENGINE.registerBackend('cpu', () => backend);
+
     const res =
         parseKarmaFlags(['--backend', 'cpu', '--flags', '{"IS_NODE": true}']);
     expect(res.name).toBe('cpu');
     expect(res.flags).toEqual({IS_NODE: true});
-    expect(res.factory() instanceof MathBackendCPU).toBe(true);
+    expect(res.factory() === backend).toBe(true);
   });
 
   it('"--backend unknown" throws error', () => {

@@ -15,15 +15,13 @@
  * =============================================================================
  */
 
-import {ENV, Environment} from './environment';
+import {ENV} from './environment';
 import {getQueryParams} from './environment';
 import * as tf from './index';
-import {ALL_ENVS, describeWithFlags, WEBGL_ENVS} from './jasmine_util';
+import {describeWithFlags, TestKernelBackend} from './jasmine_util';
 import {EPSILON_FLOAT16, EPSILON_FLOAT32, KernelBackend} from './kernels/backend';
-import {MathBackendCPU} from './kernels/cpu/backend_cpu';
-import {MathBackendWebGL} from './kernels/webgl/backend_webgl';
 
-describe('Backend', () => {
+describe('Backend registration', () => {
   beforeAll(() => {
     // Silences backend registration warnings.
     spyOn(console, 'warn');
@@ -36,7 +34,7 @@ describe('Backend', () => {
   it('custom cpu registration', () => {
     let backend: KernelBackend;
     tf.registerBackend('custom-cpu', () => {
-      const newBackend = new MathBackendCPU();
+      const newBackend = new TestKernelBackend();
       if (backend == null) {
         backend = newBackend;
       }
@@ -46,7 +44,7 @@ describe('Backend', () => {
     expect(tf.findBackend('custom-cpu')).toBe(backend);
     const factory = tf.findBackendFactory('custom-cpu');
     expect(factory).not.toBeNull();
-    expect(factory() instanceof MathBackendCPU).toBe(true);
+    expect(factory() instanceof TestKernelBackend).toBe(true);
     tf.setBackend('custom-cpu');
     expect(tf.backend()).toBe(backend);
 
@@ -57,11 +55,11 @@ describe('Backend', () => {
     ENV.setFlags({'WEBGL_VERSION': 0});
     let cpuBackend: KernelBackend;
     tf.registerBackend('custom-cpu', () => {
-      cpuBackend = new MathBackendCPU();
+      cpuBackend = new TestKernelBackend();
       return cpuBackend;
     }, 103);
     const success =
-        tf.registerBackend('custom-webgl', () => new MathBackendWebGL(), 104);
+        tf.registerBackend('custom-webgl', () => new TestKernelBackend(), 104);
     expect(success).toBe(false);
     expect(tf.findBackend('custom-webgl') == null).toBe(true);
     expect(tf.findBackendFactory('custom-webgl') == null).toBe(true);
@@ -76,7 +74,7 @@ describe('Backend', () => {
   });
 
   it('allow custom backend', () => {
-    const backend = new MathBackendCPU();
+    const backend = new TestKernelBackend();
     const success = tf.registerBackend('custom', () => backend);
     expect(success).toBeTruthy();
     expect(tf.findBackend('custom')).toEqual(backend);
@@ -84,32 +82,13 @@ describe('Backend', () => {
   });
 });
 
-describe('environment_util.getQueryParams', () => {
+describe('environment.getQueryParams', () => {
   it('basic', () => {
     expect(getQueryParams('?a=1&b=hi&f=animal'))
         .toEqual({'a': '1', 'b': 'hi', 'f': 'animal'});
   });
 });
 
-describe('public api tf.*', () => {
-  beforeEach(() => {
-    ENV.reset();
-  });
-
-  afterEach(() => {
-    ENV.reset();
-  });
-
-  it('tf.enableProdMode', () => {
-    tf.enableProdMode();
-    expect(ENV.get('PROD')).toBe(true);
-  });
-
-  it('tf.enableDebugMode', () => {
-    tf.enableDebugMode();
-    expect(ENV.get('DEBUG')).toBe(true);
-  });
-});
 describeWithFlags('epsilon', {}, () => {
   it('Epsilon is a function of float precision', () => {
     const epsilonValue = tf.backend().floatPrecision() === 32 ?
@@ -120,65 +99,5 @@ describeWithFlags('epsilon', {}, () => {
 
   it('abs(epsilon) > 0', () => {
     expect(tf.abs(tf.backend().epsilon()).arraySync()).toBeGreaterThan(0);
-  });
-});
-
-describeWithFlags('TENSORLIKE_CHECK_SHAPE_CONSISTENCY', ALL_ENVS, () => {
-  it('disabled when prod is enabled', () => {
-    const env = new Environment();
-    env.set('PROD', true);
-    expect(env.get('TENSORLIKE_CHECK_SHAPE_CONSISTENCY')).toBe(false);
-  });
-
-  it('enabled when prod is disabled', () => {
-    const env = new Environment();
-    env.set('PROD', false);
-    expect(env.get('TENSORLIKE_CHECK_SHAPE_CONSISTENCY')).toBe(true);
-  });
-});
-
-describeWithFlags('WEBGL_SIZE_UPLOAD_UNIFORM', WEBGL_ENVS, () => {
-  it('is 0 when there is no float32 bit support', () => {
-    const env = new Environment();
-    env.set('WEBGL_RENDER_FLOAT32_ENABLED', false);
-    expect(env.get('WEBGL_SIZE_UPLOAD_UNIFORM')).toBe(0);
-  });
-
-  it('is > 0 when there is float32 bit support', () => {
-    const env = new Environment();
-    env.set('WEBGL_RENDER_FLOAT32_ENABLED', true);
-    expect(env.get('WEBGL_SIZE_UPLOAD_UNIFORM')).toBeGreaterThan(0);
-  });
-});
-
-describe('deprecation warnings', () => {
-  let oldWarn: (msg: string) => void;
-  beforeEach(() => {
-    oldWarn = console.warn;
-    spyOn(console, 'warn').and.callFake((msg: string): void => null);
-  });
-  afterEach(() => {
-    console.warn = oldWarn;
-  });
-
-  it('deprecationWarn warns', () => {
-    tf.deprecationWarn('xyz is deprecated.');
-    expect(console.warn).toHaveBeenCalledTimes(1);
-    expect(console.warn)
-        .toHaveBeenCalledWith(
-            'xyz is deprecated. You can disable deprecation warnings with ' +
-            'tf.disableDeprecationWarnings().');
-  });
-
-  it('disableDeprecationWarnings called, deprecationWarn doesnt warn', () => {
-    tf.disableDeprecationWarnings();
-    expect(console.warn).toHaveBeenCalledTimes(1);
-    expect(console.warn)
-        .toHaveBeenCalledWith(
-            'TensorFlow.js deprecation warnings have been disabled.');
-
-    // deprecationWarn no longer warns.
-    tf.deprecationWarn('xyz is deprecated.');
-    expect(console.warn).toHaveBeenCalledTimes(1);
   });
 });

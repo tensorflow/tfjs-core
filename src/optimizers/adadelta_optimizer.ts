@@ -72,7 +72,7 @@ export class AdadeltaOptimizer extends Optimizer {
                             .mul(gradient);
 
         const newAccumulatedUpdate = accumulatedUpdate.mul(this.rho).add(
-            updates.square().mul(-this.learningRate));
+            updates.square().mul(1 - this.rho));
 
         this.accumulatedGrads[variableName].assign(newAccumulatedGrad);
         this.accumulatedUpdates[variableName].assign(newAccumulatedUpdate);

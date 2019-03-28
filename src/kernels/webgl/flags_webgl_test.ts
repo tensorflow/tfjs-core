@@ -25,7 +25,6 @@ describeWithFlags(
         // const features:
         //     Flags = {'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION': 0};
 
-        // const env = new Environment(features);
         ENV.set('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION', 0);
 
         expect(ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE'))
@@ -61,5 +60,17 @@ describeWithFlags(
 describeWithFlags('max texture size', WEBGL_ENVS, () => {
   it('should not throw exception', () => {
     expect(() => ENV.get('WEBGL_MAX_TEXTURE_SIZE')).not.toThrow();
+  });
+});
+
+describeWithFlags('WEBGL_SIZE_UPLOAD_UNIFORM', WEBGL_ENVS, () => {
+  it('is 0 when there is no float32 bit support', () => {
+    ENV.set('WEBGL_RENDER_FLOAT32_ENABLED', false);
+    expect(ENV.get('WEBGL_SIZE_UPLOAD_UNIFORM')).toBe(0);
+  });
+
+  it('is > 0 when there is float32 bit support', () => {
+    ENV.set('WEBGL_RENDER_FLOAT32_ENABLED', true);
+    expect(ENV.get('WEBGL_SIZE_UPLOAD_UNIFORM')).toBeGreaterThan(0);
   });
 });

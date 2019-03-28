@@ -80,6 +80,7 @@ export class Environment {
   }
 
   reset() {
+    this.flags = {};
     this.populateFlagsFromURL();
   }
 

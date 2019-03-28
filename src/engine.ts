@@ -179,11 +179,13 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     return this.registryFactory[name].factory;
   }
 
+  // TODO(nsthorat): Unit test this
   registerBackend(name: string, factory: () => KernelBackend, priority = 1):
       boolean {
-    if (name in this.registry) {
+    if (name in this.registryFactory) {
       console.warn(
-          `${name} backend was already registered. Reusing existing backend`);
+          `${name} backend was already registered. ` +
+          `Reusing existing backend factory.`);
       return false;
     }
     this.registryFactory[name] = {factory, priority};

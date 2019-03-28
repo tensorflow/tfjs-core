@@ -19,7 +19,6 @@ import {ENGINE} from '../engine';
 import {tidy} from '../globals';
 import {fill} from '../ops/ops';
 import {ConfigDict, registerClass, Serializable, SerializableConstructor} from '../serialization';
-import {Scalar} from '../tensor';
 import {NamedVariableMap} from '../tensor_types';
 import {Optimizer} from './optimizer';
 
@@ -27,7 +26,6 @@ import {Optimizer} from './optimizer';
 export class AdagradOptimizer extends Optimizer {
   /** @nocollapse */
   static className = 'AdagradOptimizer';
-  private c: Scalar;
 
   private accumulatedGrads: NamedVariableMap = {};
 
@@ -66,7 +64,6 @@ export class AdagradOptimizer extends Optimizer {
   }
 
   dispose(): void {
-    this.c.dispose();
     if (this.accumulatedGrads != null) {
       Object.keys(this.accumulatedGrads)
           .forEach(name => this.accumulatedGrads[name].dispose());
