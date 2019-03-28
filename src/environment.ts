@@ -21,12 +21,11 @@ export type Flags = {
 };
 
 export class Environment {
+  private flags: Flags;
   private flagRegistry: {[flagName: string]: () => number | boolean} = {};
 
-  constructor(private flags?: Flags) {
-    if (flags == null) {
-      flags = getFlagsFromURL();
-    }
+  constructor() {
+    this.flags = getFlagsFromURL();
 
     if (this.get('DEBUG')) {
       console.warn(
