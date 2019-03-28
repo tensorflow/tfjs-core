@@ -15,10 +15,10 @@
  * =============================================================================
  */
 
-import * as tf from '../index';
-import {expectArraysEqual} from '../test_util';
+import * as tf from '../../index';
+import {expectArraysEqual} from '../../test_util';
 
-import {KernelBackend} from './backend';
+import {KernelBackend} from '../backend';
 import {MathBackendCPU} from './backend_cpu';
 
 describe('backendCPU', () => {
@@ -31,14 +31,14 @@ describe('backendCPU', () => {
 
   beforeEach(() => {
     backend = new MathBackendCPU();
-    tf.ENV.registerBackend('test-storage', () => backend);
+    tf.registerBackend('test-storage', () => backend);
     tf.setBackend('test-storage');
   });
 
   afterEach(() => {
     backend.dispose();
     tf.setBackend(prevBackend);
-    tf.ENV.removeBackend('test-storage');
+    tf.removeBackend('test-storage');
   });
 
   it('register empty string tensor', () => {

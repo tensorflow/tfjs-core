@@ -16,4 +16,4 @@
  */
 
 import './kernels/backend_cpu';
-import './kernels/backend_webgl';
+import './kernels/webgl/backend_webgl';

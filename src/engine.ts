@@ -86,9 +86,8 @@ interface ScopeState {
 export class Engine implements TensorManager, TensorTracker, DataMover {
   backend: KernelBackend;
   backendName: string;
-  private registry:
-      {[id: string]: {backend: KernelBackend, priority: number}} = {};
-  private registryFactory: {[id: string]: () => KernelBackend} = {};
+  registry: {[id: string]: {backend: KernelBackend, priority: number}} = {};
+  registryFactory: {[id: string]: () => KernelBackend} = {};
 
   // Public since optimizers will use it.
   registeredVariables: NamedVariableMap = {};
@@ -125,68 +124,36 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     refCount: number
   }>();
 
-  constructor(public ENV: Environment) {}
+  constructor(public ENV: Environment) {
+    this.backendName = this.getBestBackendName();
+    this.backend = this.registry[this.backendName].backend;
 
-  // constructor(
-  //     public backend: KernelBackend, public safeMode: boolean,
-  //     private debugMode: () => boolean) {
-  //   this.profiler = new Profiler(backend);
-  //   this.activeProfile =
-  //       {newBytes: 0, newTensors: 0, peakBytes: 0, kernels: [], result:
-  //       null};
-  // }
+    this.profiler = new Profiler(this.backend);
+    this.activeProfile =
+        {newBytes: 0, newTensors: 0, peakBytes: 0, kernels: [], result: null};
+  }
 
-  /**
-   * Sets the backend (cpu, webgl, etc) responsible for creating tensors and
-   * executing operations on those tensors.
-   *
-   * Note this disposes the current backend, if any, as well as any tensors
-   * associated with it. A new backend is initialized, even if it is of the
-   * same type as the previous one.
-   *
-   * @param backendName The name of the backend. Currently supports
-   *     `'webgl'|'cpu'` in the browser, and `'tensorflow'` under node.js
-   *     (requires tfjs-node).
-   * @param safeMode Defaults to false. In safe mode, you are forced to
-   *     construct tensors and call math operations inside a `tidy()` which
-   *     will automatically clean up intermediate tensors.
-   */
-  /** @doc {heading: 'Environment'} */
-  static setBackend(backendName: string, safeMode = false) {
-    if (!(backendName in ENGINE.registry)) {
-      throw new Error(`Backend name '${backendName}' not found in registry`);
+  private getBestBackendName(): string {
+    if (Object.keys(this.registry).length === 0) {
+      throw new Error('No backend found in registry.');
     }
-    ENGINE.backend = ENGINE.findBackend(backendName);
-    ENGINE.backendName = backendName;
+    const sortedBackends = Object.keys(this.registry)
+                               .map(name => {
+                                 return {name, entry: this.registry[name]};
+                               })
+                               .sort((a, b) => {
+                                 // Highest priority comes first.
+                                 return b.entry.priority - a.entry.priority;
+                               });
+    return sortedBackends[0].name;
   }
 
-  /**
-   * Returns the current backend name (cpu, webgl, etc). The backend is
-   * responsible for creating tensors and executing operations on those tensors.
-   */
-  /** @doc {heading: 'Environment'} */
-  static getBackend(): string {
-    // NOTE(nsthorat): This might be more complicated, see diff before
-    // submitting!
-    return ENGINE.backendName;
-  }
-
-  /**
-   * Finds the backend registered under the provided name. Returns null if the
-   * name is not in the registry.
-   */
   findBackend(name: string): KernelBackend {
     if (!(name in this.registry)) {
       return null;
     }
     return this.registry[name].backend;
   }
-
-  /**
-   * Finds the backend factory registered under the provided name. Returns a
-   * function that produces a new backend when called. Returns null if the name
-   * is not in the registry.
-   */
   findBackendFactory(name: string): () => KernelBackend {
     if (!(name in this.registryFactory)) {
       return null;
@@ -194,21 +161,9 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     return this.registryFactory[name];
   }
 
-  /**
-   * Registers a global backend. The registration should happen when importing
-   * a module file (e.g. when importing `backend_webgl.ts`), and is used for
-   * modular builds (e.g. custom tfjs bundle with only webgl support).
-   *
-   * @param factory The backend factory function. When called, it should
-   * return an instance of the backend.
-   * @param priority The priority of the backend (higher = more important).
-   *     In case multiple backends are registered, the priority is used to find
-   *     the best backend. Defaults to 1.
-   * @return False if the creation/registration failed. True otherwise.
-   */
   registerBackend(name: string, factory: () => KernelBackend, priority = 1):
       boolean {
-    if (name in this.registry) {
+    if (name in ENGINE.registry) {
       console.warn(
           `${name} backend was already registered. Reusing existing backend`);
       return false;
@@ -216,9 +171,9 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     try {
       const backend = factory();
       backend.setDataMover(
-          {moveData: (dataId: DataId) => this.moveData(dataId)});
-      this.registry[name] = {backend, priority};
-      this.registryFactory[name] = factory;
+          {moveData: (dataId: DataId) => ENGINE.moveData(dataId)});
+      ENGINE.registry[name] = {backend, priority};
+      ENGINE.registryFactory[name] = factory;
       return true;
     } catch (err) {
       console.warn(`Registration of backend ${name} failed`);
@@ -227,17 +182,20 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     }
   }
 
+  setBackend(backendName: string) {
+    if (!(backendName in ENGINE.registry)) {
+      throw new Error(`Backend name '${backendName}' not found in registry`);
+    }
+    ENGINE.backend = this.findBackend(backendName);
+    ENGINE.backendName = backendName;
+  }
+
   removeBackend(name: string): void {
     if (!(name in this.registry)) {
       throw new Error(`${name} backend not found in registry`);
     }
     this.registry[name].backend.dispose();
     delete this.registry[name];
-  }
-
-  // tslint:disable-next-line:no-any
-  get global(): any {
-    return getGlobalNamespace();
   }
 
   moveData(dataId: DataId) {
@@ -337,7 +295,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
 
     // Stop recording to a tape when running a kernel.
     this.scopedRun(() => this.kernelDepth++, () => this.kernelDepth--, () => {
-      if (!this.debugMode()) {
+      if (!this.ENV.get('DEBUG')) {
         result = forwardFunc(this.backend, saveFunc);
       } else {
         result = this.profiler.profileKernel(
@@ -525,11 +483,6 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
   }
 
   keep<T extends Tensor>(result: T): T {
-    if (this.scopeStack.length === 1 && this.safeMode) {
-      throw new Error(
-          'Safe mode is ON. Enclose all tensor operations inside tf.tidy(): ' +
-          'tf.tidy(() => {...}) to avoid memory leaks.');
-    }
     result.kept = true;
     return result;
   }
@@ -750,11 +703,6 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
    * @param result The Tensor to track in the current scope.
    */
   private track<T extends Tensor>(result: T): T {
-    if (this.scopeStack.length === 1 && this.safeMode) {
-      throw new Error(
-          'Safe mode is ON. Enclose all tensor operations inside tf.tidy(): ' +
-          'tf.tidy(() => {op();...}); to avoid memory leaks.');
-    }
     if (this.activeScope != null) {
       result.scopeId = this.activeScope.id;
       this.activeScope.track.push(result);
@@ -793,7 +741,7 @@ function getOrMakeEngine(): Engine {
   if (ns._tfengine == null) {
     const environment = new Environment();
     ns._tfengine = new Engine(environment);
-    setEnvironmentGlobal(environment);
+    setEnvironmentGlobal(environment, ns);
   }
   // Tell the current tensor interface that the global engine is responsible for
   // tracking.
@@ -802,4 +750,3 @@ function getOrMakeEngine(): Engine {
 }
 
 export let ENGINE = getOrMakeEngine();
-export let ENV = ENGINE.ENV;

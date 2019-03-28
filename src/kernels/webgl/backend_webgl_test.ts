@@ -15,9 +15,9 @@
  * =============================================================================
  */
 
-import * as tf from '../index';
-import {describeWithFlags} from '../jasmine_util';
-import {expectArraysClose, expectArraysEqual, WEBGL_ENVS} from '../test_util';
+import * as tf from '../../index';
+import {describeWithFlags, WEBGL_ENVS} from '../../jasmine_util';
+import {expectArraysClose, expectArraysEqual} from '../../test_util';
 import {MathBackendWebGL, WebGLMemoryInfo} from './backend_webgl';
 
 describeWithFlags('lazy packing and unpacking', WEBGL_ENVS, () => {
@@ -25,8 +25,8 @@ describeWithFlags('lazy packing and unpacking', WEBGL_ENVS, () => {
   let webglCpuForwardFlagSaved: boolean;
 
   beforeAll(() => {
-    webglLazilyUnpackFlagSaved = tf.ENV.get('WEBGL_LAZILY_UNPACK');
-    webglCpuForwardFlagSaved = tf.ENV.get('WEBGL_CPU_FORWARD');
+    webglLazilyUnpackFlagSaved = tf.ENV.get('WEBGL_LAZILY_UNPACK') as boolean;
+    webglCpuForwardFlagSaved = tf.ENV.get('WEBGL_CPU_FORWARD') as boolean;
     tf.ENV.set('WEBGL_LAZILY_UNPACK', true);
     tf.ENV.set('WEBGL_CPU_FORWARD', false);
   });
@@ -106,12 +106,12 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
 
   afterEach(() => {
     tf.setBackend(prevBackend);
-    tf.ENV.removeBackend('test-storage');
+    tf.removeBackend('test-storage');
   });
 
   it('register empty string tensor', () => {
     const backend = new MathBackendWebGL();
-    tf.ENV.registerBackend('test-storage', () => backend);
+    tf.registerBackend('test-storage', () => backend);
     tf.setBackend('test-storage');
 
     const t = tf.Tensor.make([3], {}, 'string');
@@ -120,7 +120,7 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
 
   it('register empty string tensor and write', () => {
     const backend = new MathBackendWebGL();
-    tf.ENV.registerBackend('test-storage', () => backend);
+    tf.registerBackend('test-storage', () => backend);
     tf.setBackend('test-storage');
 
     const t = tf.Tensor.make([3], {}, 'string');
@@ -130,7 +130,7 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
 
   it('register string tensor with values', () => {
     const backend = new MathBackendWebGL();
-    tf.ENV.registerBackend('test-storage', () => backend);
+    tf.registerBackend('test-storage', () => backend);
     tf.setBackend('test-storage');
 
     const t = tf.Tensor.make([3], {values: ['a', 'b', 'c']}, 'string');
@@ -139,7 +139,7 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
 
   it('register string tensor with values and overwrite', () => {
     const backend = new MathBackendWebGL();
-    tf.ENV.registerBackend('test-storage', () => backend);
+    tf.registerBackend('test-storage', () => backend);
     tf.setBackend('test-storage');
 
     const t = tf.Tensor.make([3], {values: ['a', 'b', 'c']}, 'string');
@@ -149,14 +149,14 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
 
   it('register string tensor with values and wrong shape throws error', () => {
     const backend = new MathBackendWebGL();
-    tf.ENV.registerBackend('test-storage', () => backend);
+    tf.registerBackend('test-storage', () => backend);
     tf.setBackend('test-storage');
     expect(() => tf.tensor(['a', 'b', 'c'], [4], 'string')).toThrowError();
   });
 
   it('reading', () => {
     const backend = new MathBackendWebGL(null);
-    tf.ENV.registerBackend('test-storage', () => backend);
+    tf.registerBackend('test-storage', () => backend);
     tf.setBackend('test-storage');
 
     const texManager = backend.getTextureManager();
@@ -177,7 +177,7 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
 
   it('read packed and then use by an unpacked op', () => {
     const backend = new MathBackendWebGL(null);
-    tf.ENV.registerBackend('test-storage', () => backend);
+    tf.registerBackend('test-storage', () => backend);
     tf.setBackend('test-storage');
 
     const webglPackFlagSaved = tf.ENV.get('WEBGL_PACK');
@@ -197,7 +197,7 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
 
   it('delayed storage, overwriting', () => {
     const backend = new MathBackendWebGL(null);
-    tf.ENV.registerBackend('test-storage', () => backend);
+    tf.registerBackend('test-storage', () => backend);
     tf.setBackend('test-storage');
 
     const texManager = backend.getTextureManager();
@@ -227,7 +227,7 @@ describeWithFlags('Custom window size', WEBGL_ENVS, () => {
     spyOnProperty(window, 'screen', 'get')
         .and.returnValue({height: 1, width: 1});
 
-    tf.ENV.registerBackend('custom-webgl', () => new MathBackendWebGL());
+    tf.registerBackend('custom-webgl', () => new MathBackendWebGL());
     tf.setBackend('custom-webgl');
 
     // Allocate ~40KB.
@@ -253,7 +253,7 @@ describeWithFlags('Custom window size', WEBGL_ENVS, () => {
     expect(numWarnCalls).toBe(1);
     expect((tf.memory() as tf.webgl.WebGLMemoryInfo).numBytesInGPU)
         .toBe(100 * 100 * 4 * 3);
-    tf.ENV.removeBackend('custom-webgl');
+    tf.removeBackend('custom-webgl');
   });
 });
 

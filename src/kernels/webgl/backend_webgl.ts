@@ -15,107 +15,110 @@
  * =============================================================================
  */
 
-import {getWebGLContext} from '../canvas_util';
-import {ENGINE, MemoryInfo, TimingInfo} from '../engine';
-import {ENV} from '../environment';
-import {tidy} from '../globals';
-import {warn} from '../log';
-import * as array_ops_util from '../ops/array_ops_util';
-import * as axis_util from '../ops/axis_util';
-import {computeOutShape} from '../ops/concat_util';
-import {Conv2DInfo, Conv3DInfo} from '../ops/conv_util';
-import {Activation} from '../ops/fused_util';
-import * as gather_nd_util from '../ops/gather_nd_util';
-import * as reduce_util from '../ops/reduce_util';
-import * as scatter_nd_util from '../ops/scatter_nd_util';
-import * as segment_util from '../ops/segment_util';
-import {computeFlatOffset, getStridedSlicedInfo, isSliceContinous} from '../ops/slice_util';
-import {softmax} from '../ops/softmax';
-import {range, scalar, tensor} from '../ops/tensor_ops';
-import {DataId, Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D} from '../tensor';
-import {DataType, DataTypeMap, DataValues, NumericDataType, Rank, RecursiveArray, ShapeMap, sumOutType, TypedArray, upcastType} from '../types';
-import * as util from '../util';
-import {getArrayFromDType, getTypedArrayFromDType, inferDtype, sizeFromShape} from '../util';
+// Import webgl flags.
+import './flags_webgl';
 
-import {DataMover, DataStorage, KernelBackend} from './backend';
-import * as backend_util from './backend_util';
-import {mergeRealAndImagArrays} from './complex_util';
-import {nonMaxSuppressionImpl} from './non_max_suppression_impl';
-import {split} from './split_shared';
-import {topkImpl} from './topk_impl';
-import {ArgMinMaxProgram} from './webgl/argminmax_gpu';
-import {ArgMinMaxPackedProgram} from './webgl/argminmax_packed_gpu';
-import {AvgPool2DBackpropProgram} from './webgl/avg_pool_backprop_gpu';
-import {BatchNormProgram} from './webgl/batchnorm_gpu';
-import {BatchNormPackedProgram} from './webgl/batchnorm_packed_gpu';
-import * as binaryop_complex_gpu from './webgl/binaryop_complex_gpu';
-import {BinaryOpComplexProgram} from './webgl/binaryop_complex_gpu';
-import * as binaryop_gpu from './webgl/binaryop_gpu';
-import {BinaryOpProgram} from './webgl/binaryop_gpu';
-import * as binaryop_packed_gpu from './webgl/binaryop_packed_gpu';
-import {BinaryOpPackedProgram} from './webgl/binaryop_packed_gpu';
-import {ClipProgram} from './webgl/clip_gpu';
-import {ClipPackedProgram} from './webgl/clip_packed_gpu';
-import {ComplexAbsProgram} from './webgl/complex_abs_gpu';
-import {ConcatProgram} from './webgl/concat_gpu';
-import {ConcatPackedProgram} from './webgl/concat_packed_gpu';
-import {Conv2DDerFilterProgram, Conv2DDerInputProgram, Conv3DDerFilterProgram, Conv3DDerInputProgram} from './webgl/conv_backprop_gpu';
-import {DepthwiseConv2DDerFilterProgram, DepthwiseConv2DDerInputProgram} from './webgl/conv_backprop_gpu_depthwise';
-import {Conv2DProgram, Conv3DProgram} from './webgl/conv_gpu';
-import {DepthwiseConv2DProgram} from './webgl/conv_gpu_depthwise';
-import {DepthwiseConvPacked2DProgram} from './webgl/conv_packed_gpu_depthwise';
-import {CropAndResizeProgram} from './webgl/crop_and_resize_gpu';
-import {CumSumProgram} from './webgl/cumsum_gpu';
-import {DepthToSpaceProgram} from './webgl/depth_to_space_gpu';
-import {EncodeFloatProgram} from './webgl/encode_float_gpu';
-import * as fft_gpu from './webgl/fft_gpu';
-import {FFTProgram} from './webgl/fft_gpu';
-import {FillProgram} from './webgl/fill_gpu';
-import {FromPixelsProgram} from './webgl/from_pixels_gpu';
-import {GatherProgram} from './webgl/gather_gpu';
-import {GatherNDProgram} from './webgl/gather_nd_gpu';
-import {GPGPUContext} from './webgl/gpgpu_context';
-import * as gpgpu_math from './webgl/gpgpu_math';
-import {GPGPUBinary, GPGPUProgram, TensorData} from './webgl/gpgpu_math';
-import {Im2ColPackedProgram} from './webgl/im2col_packed_gpu';
-import {LRNProgram} from './webgl/lrn_gpu';
-import {LRNGradProgram} from './webgl/lrn_grad_gpu';
-import {MaxPool2DBackpropProgram} from './webgl/max_pool_backprop_gpu';
-import {MatMulPackedProgram} from './webgl/mulmat_packed_gpu';
-import {MultinomialProgram} from './webgl/multinomial_gpu';
-import {OneHotProgram} from './webgl/onehot_gpu';
-import {PackProgram} from './webgl/pack_gpu';
-import {PadProgram} from './webgl/pad_gpu';
-import {PadPackedProgram} from './webgl/pad_packed_gpu';
-import {Pool2DProgram} from './webgl/pool_gpu';
-import {ReduceProgram} from './webgl/reduce_gpu';
-import {ReshapePackedProgram} from './webgl/reshape_packed_gpu';
-import {ResizeBilinearBackpropProgram} from './webgl/resize_bilinear_backprop_gpu';
-import {ResizeBilinearProgram} from './webgl/resize_bilinear_gpu';
-import {ResizeBilinearPackedProgram} from './webgl/resize_bilinear_packed_gpu';
-import {ResizeNearestNeigborBackpropProgram} from './webgl/resize_nearest_neighbor_backprop_gpu';
-import {ResizeNearestNeighborProgram} from './webgl/resize_nearest_neighbor_gpu';
-import {ReverseProgram} from './webgl/reverse_gpu';
-import {ReversePackedProgram} from './webgl/reverse_packed_gpu';
-import {ScatterProgram} from './webgl/scatter_gpu';
-import {SegmentOpProgram} from './webgl/segment_gpu';
-import {SelectProgram} from './webgl/select_gpu';
-import {SliceProgram} from './webgl/slice_gpu';
-import {SlicePackedProgram} from './webgl/slice_packed_gpu';
-import {StridedSliceProgram} from './webgl/strided_slice_gpu';
-import * as tex_util from './webgl/tex_util';
-import {TextureData, TextureUsage} from './webgl/tex_util';
-import {TextureManager} from './webgl/texture_manager';
-import {TileProgram} from './webgl/tile_gpu';
-import {TransposeProgram} from './webgl/transpose_gpu';
-import {TransposePackedProgram} from './webgl/transpose_packed_gpu';
-import * as unary_op from './webgl/unaryop_gpu';
-import {UnaryOpProgram} from './webgl/unaryop_gpu';
-import * as unary_packed_op from './webgl/unaryop_packed_gpu';
-import {UnaryOpPackedProgram} from './webgl/unaryop_packed_gpu';
-import {UnpackProgram} from './webgl/unpack_gpu';
-import * as webgl_util from './webgl/webgl_util';
-import {whereImpl} from './where_impl';
+import {ENGINE, MemoryInfo, TimingInfo} from '../../engine';
+import {ENV} from '../../environment';
+import {tidy} from '../../globals';
+import {warn} from '../../log';
+import * as array_ops_util from '../../ops/array_ops_util';
+import * as axis_util from '../../ops/axis_util';
+import {computeOutShape} from '../../ops/concat_util';
+import {Conv2DInfo, Conv3DInfo} from '../../ops/conv_util';
+import {Activation} from '../../ops/fused_util';
+import * as gather_nd_util from '../../ops/gather_nd_util';
+import * as reduce_util from '../../ops/reduce_util';
+import * as scatter_nd_util from '../../ops/scatter_nd_util';
+import * as segment_util from '../../ops/segment_util';
+import {computeFlatOffset, getStridedSlicedInfo, isSliceContinous} from '../../ops/slice_util';
+import {softmax} from '../../ops/softmax';
+import {range, scalar, tensor} from '../../ops/tensor_ops';
+import {DataId, Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D} from '../../tensor';
+import {DataType, DataTypeMap, DataValues, NumericDataType, Rank, RecursiveArray, ShapeMap, sumOutType, TypedArray, upcastType} from '../../types';
+import * as util from '../../util';
+import {getArrayFromDType, getTypedArrayFromDType, inferDtype, sizeFromShape} from '../../util';
+import {DataMover, DataStorage, EPSILON_FLOAT16, EPSILON_FLOAT32, KernelBackend} from '../backend';
+import * as backend_util from '../backend_util';
+import {mergeRealAndImagArrays} from '../complex_util';
+import {nonMaxSuppressionImpl} from '../non_max_suppression_impl';
+import {split} from '../split_shared';
+import {topkImpl} from '../topk_impl';
+import {whereImpl} from '../where_impl';
+
+import {ArgMinMaxProgram} from './argminmax_gpu';
+import {ArgMinMaxPackedProgram} from './argminmax_packed_gpu';
+import {AvgPool2DBackpropProgram} from './avg_pool_backprop_gpu';
+import {BatchNormProgram} from './batchnorm_gpu';
+import {BatchNormPackedProgram} from './batchnorm_packed_gpu';
+import * as binaryop_complex_gpu from './binaryop_complex_gpu';
+import {BinaryOpComplexProgram} from './binaryop_complex_gpu';
+import * as binaryop_gpu from './binaryop_gpu';
+import {BinaryOpProgram} from './binaryop_gpu';
+import * as binaryop_packed_gpu from './binaryop_packed_gpu';
+import {BinaryOpPackedProgram} from './binaryop_packed_gpu';
+import {getWebGLContext} from './canvas_util';
+import {ClipProgram} from './clip_gpu';
+import {ClipPackedProgram} from './clip_packed_gpu';
+import {ComplexAbsProgram} from './complex_abs_gpu';
+import {ConcatProgram} from './concat_gpu';
+import {ConcatPackedProgram} from './concat_packed_gpu';
+import {Conv2DDerFilterProgram, Conv2DDerInputProgram, Conv3DDerFilterProgram, Conv3DDerInputProgram} from './conv_backprop_gpu';
+import {DepthwiseConv2DDerFilterProgram, DepthwiseConv2DDerInputProgram} from './conv_backprop_gpu_depthwise';
+import {Conv2DProgram, Conv3DProgram} from './conv_gpu';
+import {DepthwiseConv2DProgram} from './conv_gpu_depthwise';
+import {DepthwiseConvPacked2DProgram} from './conv_packed_gpu_depthwise';
+import {CropAndResizeProgram} from './crop_and_resize_gpu';
+import {CumSumProgram} from './cumsum_gpu';
+import {DepthToSpaceProgram} from './depth_to_space_gpu';
+import {EncodeFloatProgram} from './encode_float_gpu';
+import * as fft_gpu from './fft_gpu';
+import {FFTProgram} from './fft_gpu';
+import {FillProgram} from './fill_gpu';
+import {FromPixelsProgram} from './from_pixels_gpu';
+import {GatherProgram} from './gather_gpu';
+import {GatherNDProgram} from './gather_nd_gpu';
+import {GPGPUContext} from './gpgpu_context';
+import * as gpgpu_math from './gpgpu_math';
+import {GPGPUBinary, GPGPUProgram, TensorData} from './gpgpu_math';
+import {Im2ColPackedProgram} from './im2col_packed_gpu';
+import {LRNProgram} from './lrn_gpu';
+import {LRNGradProgram} from './lrn_grad_gpu';
+import {MaxPool2DBackpropProgram} from './max_pool_backprop_gpu';
+import {MatMulPackedProgram} from './mulmat_packed_gpu';
+import {MultinomialProgram} from './multinomial_gpu';
+import {OneHotProgram} from './onehot_gpu';
+import {PackProgram} from './pack_gpu';
+import {PadProgram} from './pad_gpu';
+import {PadPackedProgram} from './pad_packed_gpu';
+import {Pool2DProgram} from './pool_gpu';
+import {ReduceProgram} from './reduce_gpu';
+import {ReshapePackedProgram} from './reshape_packed_gpu';
+import {ResizeBilinearBackpropProgram} from './resize_bilinear_backprop_gpu';
+import {ResizeBilinearProgram} from './resize_bilinear_gpu';
+import {ResizeBilinearPackedProgram} from './resize_bilinear_packed_gpu';
+import {ResizeNearestNeigborBackpropProgram} from './resize_nearest_neighbor_backprop_gpu';
+import {ResizeNearestNeighborProgram} from './resize_nearest_neighbor_gpu';
+import {ReverseProgram} from './reverse_gpu';
+import {ReversePackedProgram} from './reverse_packed_gpu';
+import {ScatterProgram} from './scatter_gpu';
+import {SegmentOpProgram} from './segment_gpu';
+import {SelectProgram} from './select_gpu';
+import {SliceProgram} from './slice_gpu';
+import {SlicePackedProgram} from './slice_packed_gpu';
+import {StridedSliceProgram} from './strided_slice_gpu';
+import * as tex_util from './tex_util';
+import {TextureData, TextureUsage} from './tex_util';
+import {TextureManager} from './texture_manager';
+import {TileProgram} from './tile_gpu';
+import {TransposeProgram} from './transpose_gpu';
+import {TransposePackedProgram} from './transpose_packed_gpu';
+import * as unary_op from './unaryop_gpu';
+import {UnaryOpProgram} from './unaryop_gpu';
+import * as unary_packed_op from './unaryop_packed_gpu';
+import {UnaryOpPackedProgram} from './unaryop_packed_gpu';
+import {UnpackProgram} from './unpack_gpu';
+import * as webgl_util from './webgl_util';
 
 type KernelInfo = {
   name: string; query: Promise<number>;
@@ -181,10 +184,10 @@ const CPU_HANDOFF_SIZE_THRESHOLD = 128;
 // * dpi / 1024 / 1024.
 const BEFORE_PAGING_CONSTANT = 600;
 function numMBBeforeWarning(): number {
-  if (ENGINE.global.screen == null) {
+  if (ENV.global.screen == null) {
     return 1024;  // 1 GB.
   }
-  return (ENGINE.global.screen.height * ENGINE.global.screen.width *
+  return (ENV.global.screen.height * ENV.global.screen.width *
           window.devicePixelRatio) *
       BEFORE_PAGING_CONSTANT / 1024 / 1024;
 }
@@ -216,7 +219,9 @@ export class MathBackendWebGL implements KernelBackend {
   // Accumulated time spent (including blocking in downloading data from webgl.
   private downloadWaitMs = 0;
   private cpuBackend: KernelBackend;
-  // Whether we dispose the texture after reading its values.
+
+  // Number of bits of precision of this backend.
+  private floatPrecisionValue: 32|16;
 
   register(dataId: DataId, shape: number[], dtype: DataType): void {
     if (this.texData.has(dataId)) {
@@ -598,8 +603,8 @@ export class MathBackendWebGL implements KernelBackend {
     }
 
     if (gpgpu == null) {
-      const gl = getWebGLContext(ENV.get('WEBGL_VERSION'));
-      this.binaryCache = getBinaryCache(ENV.get('WEBGL_VERSION'));
+      const gl = getWebGLContext(ENV.get('WEBGL_VERSION') as number);
+      this.binaryCache = getBinaryCache(ENV.get('WEBGL_VERSION') as number);
       this.gpgpu = new GPGPUContext(gl);
       this.canvas = gl.canvas;
       this.gpgpuCreatedLocally = true;
@@ -2396,20 +2401,27 @@ export class MathBackendWebGL implements KernelBackend {
     this.disposed = true;
   }
 
-  floatPrecision(): number {
-    return tidy(() => {
-      // Momentarily switching DEBUG flag to false so we don't throw an error
-      // trying to upload a small value.
-      const debugFlag = ENV.get('DEBUG');
-      ENV.set('DEBUG', false);
-      const underflowCheckValue = this.abs(scalar(1e-8)).dataSync()[0];
-      ENV.set('DEBUG', debugFlag);
+  floatPrecision(): 16|32 {
+    if (this.floatPrecisionValue == null) {
+      this.floatPrecisionValue = tidy(() => {
+        // Momentarily switching DEBUG flag to false so we don't throw an error
+        // trying to upload a small value.
+        const debugFlag = ENV.get('DEBUG');
+        ENV.set('DEBUG', false);
+        const underflowCheckValue = this.abs(scalar(1e-8)).dataSync()[0];
+        ENV.set('DEBUG', debugFlag);
 
-      if (underflowCheckValue > 0) {
-        return 32;
-      }
-      return 16;
-    });
+        if (underflowCheckValue > 0) {
+          return 32;
+        }
+        return 16;
+      });
+    }
+    return this.floatPrecisionValue;
+  }
+  /** Returns the smallest representable number.  */
+  epsilon(): number {
+    return this.floatPrecision() === 32 ? EPSILON_FLOAT32 : EPSILON_FLOAT16;
   }
 
   private uploadToGPU(dataId: DataId): void {

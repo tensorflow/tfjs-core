@@ -16,11 +16,9 @@
  */
 
 import {ENGINE} from '../engine';
-import {ENV} from '../environment';
-import {keep, tidy} from '../globals';
-import {scalar, zerosLike} from '../ops/ops';
+import {tidy} from '../globals';
+import {zerosLike} from '../ops/ops';
 import {ConfigDict, registerClass, Serializable, SerializableConstructor} from '../serialization';
-import {Scalar} from '../tensor';
 import {NamedVariableMap} from '../tensor_types';
 
 import {Optimizer} from './optimizer';
@@ -29,11 +27,6 @@ import {Optimizer} from './optimizer';
 export class AdadeltaOptimizer extends Optimizer {
   /** @nocollapse */
   static className = 'AdadeltaOptimizer';
-  private c: Scalar;
-  private epsilonScalar: Scalar;
-  private rhoScalar: Scalar;
-  private oneMinusRho: Scalar;
-
   private accumulatedGrads: NamedVariableMap = {};
   private accumulatedUpdates: NamedVariableMap = {};
 
@@ -42,15 +35,9 @@ export class AdadeltaOptimizer extends Optimizer {
       protected epsilon: number = null) {
     super();
 
-    this.c = keep(scalar(-learningRate));
-    this.rhoScalar = keep(scalar(rho));
-    this.oneMinusRho = keep(scalar(1 - rho));
-
     if (epsilon === null) {
-      epsilon = ENV.get('EPSILON');
+      epsilon = ENGINE.backend.epsilon();
     }
-
-    this.epsilonScalar = keep(scalar(epsilon));
   }
 
   applyGradients(variableGradients: NamedVariableMap) {
@@ -76,33 +63,27 @@ export class AdadeltaOptimizer extends Optimizer {
       const accumulatedUpdate = this.accumulatedUpdates[variableName];
 
       tidy(() => {
-        const newAccumulatedGrad =
-            this.rhoScalar.mul(accumulatedGrad)
-                .add(this.oneMinusRho.mul(gradient.square()));
+        const newAccumulatedGrad = accumulatedGrad.mul(this.rho).add(
+            gradient.square().mul(1 - this.rho));
 
-        const updates = accumulatedUpdate.add(this.epsilonScalar)
+        const updates = accumulatedUpdate.add(this.epsilon)
                             .sqrt()
-                            .div(accumulatedGrad.add(this.epsilonScalar).sqrt())
+                            .div(accumulatedGrad.add(this.epsilon).sqrt())
                             .mul(gradient);
 
-        const newAccumulatedUpdate =
-            this.rhoScalar.mul(accumulatedUpdate)
-                .add(this.oneMinusRho.mul(updates.square()));
+        const newAccumulatedUpdate = accumulatedUpdate.mul(this.rho).add(
+            updates.square().mul(-this.learningRate));
 
         this.accumulatedGrads[variableName].assign(newAccumulatedGrad);
         this.accumulatedUpdates[variableName].assign(newAccumulatedUpdate);
 
-        const newValue = this.c.mul(updates).add(value);
+        const newValue = updates.mul(-this.learningRate).add(value);
         value.assign(newValue);
       });
     }
   }
 
   dispose(): void {
-    this.c.dispose();
-    this.epsilonScalar.dispose();
-    this.rhoScalar.dispose();
-    this.oneMinusRho.dispose();
     if (this.accumulatedUpdates != null) {
       Object.keys(this.accumulatedUpdates)
           .forEach(name => this.accumulatedUpdates[name].dispose());

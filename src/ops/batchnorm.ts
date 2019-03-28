@@ -16,7 +16,7 @@
  */
 
 import {ENGINE} from '../engine';
-import {deprecationWarn} from '../environment';
+import {deprecationWarn} from '../globals';
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import {convertToTensor} from '../tensor_util_env';
 import {Rank, TensorLike} from '../types';

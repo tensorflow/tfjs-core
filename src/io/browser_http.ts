@@ -21,9 +21,8 @@
  * Uses [`fetch`](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API).
  */
 
-import {ENGINE} from '../engine';
+import {ENV} from '../environment';
 import {assert} from '../util';
-
 import {concatenateArrayBuffers, getModelArtifactsInfoForJSON} from './io_utils';
 import {IORouter, IORouterRegistry} from './router_registry';
 import {IOHandler, LoadOptions, ModelArtifacts, ModelJSON, OnProgressCallback, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
@@ -52,7 +51,7 @@ export class BrowserHTTPRequest implements IOHandler {
     this.onProgress = loadOptions.onProgress;
 
     if (loadOptions.fetchFunc == null) {
-      const systemFetch = ENGINE.global.fetch;
+      const systemFetch = ENV.global.fetch;
       if (typeof systemFetch === 'undefined') {
         throw new Error(
             'browserHTTPRequest is not supported outside the web browser ' +
@@ -60,7 +59,7 @@ export class BrowserHTTPRequest implements IOHandler {
       }
       // Make sure fetch is always bound to global object (the
       // original object) when available.
-      loadOptions.fetchFunc = systemFetch.bind(ENGINE.global);
+      loadOptions.fetchFunc = systemFetch.bind(ENV.global);
     } else {
       assert(
           typeof loadOptions.fetchFunc === 'function',

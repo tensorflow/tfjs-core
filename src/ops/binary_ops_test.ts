@@ -16,8 +16,8 @@
  */
 
 import * as tf from '../index';
-import {describeWithFlags} from '../jasmine_util';
-import {ALL_ENVS, expectArraysClose, expectArraysEqual, PACKED_ENVS, WEBGL_ENVS} from '../test_util';
+import {ALL_ENVS, describeWithFlags, PACKED_ENVS, WEBGL_ENVS} from '../jasmine_util';
+import {expectArraysClose, expectArraysEqual} from '../test_util';
 
 describeWithFlags('div', PACKED_ENVS, () => {
   it('works when unused channels are divided', () => {

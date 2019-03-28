@@ -15,50 +15,13 @@
  * =============================================================================
  */
 
-import * as device_util from './device_util';
-import {ENV, Environment, EPSILON_FLOAT16, EPSILON_FLOAT32} from './environment';
-import {Features, getQueryParams} from './environment_util';
+import {ENV, Environment} from './environment';
+import {getQueryParams} from './environment';
 import * as tf from './index';
-import {describeWithFlags} from './jasmine_util';
-import {KernelBackend} from './kernels/backend';
-import {MathBackendCPU} from './kernels/backend_cpu';
-import {MathBackendWebGL} from './kernels/backend_webgl';
-import {ALL_ENVS, WEBGL_ENVS} from './test_util';
-
-describeWithFlags(
-    'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE', WEBGL_ENVS, () => {
-      it('disjoint query timer disabled', () => {
-        const features:
-            Features = {'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION': 0};
-
-        const env = new Environment(features);
-
-        expect(env.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE'))
-            .toBe(false);
-      });
-
-      it('disjoint query timer enabled, mobile', () => {
-        const features:
-            Features = {'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION': 1};
-        spyOn(device_util, 'isMobile').and.returnValue(true);
-
-        const env = new Environment(features);
-
-        expect(env.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE'))
-            .toBe(false);
-      });
-
-      it('disjoint query timer enabled, not mobile', () => {
-        const features:
-            Features = {'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION': 1};
-        spyOn(device_util, 'isMobile').and.returnValue(false);
-
-        const env = new Environment(features);
-
-        expect(env.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE'))
-            .toBe(true);
-      });
-    });
+import {ALL_ENVS, describeWithFlags, WEBGL_ENVS} from './jasmine_util';
+import {EPSILON_FLOAT16, EPSILON_FLOAT32, KernelBackend} from './kernels/backend';
+import {MathBackendCPU} from './kernels/cpu/backend_cpu';
+import {MathBackendWebGL} from './kernels/webgl/backend_webgl';
 
 describe('Backend', () => {
   beforeAll(() => {
@@ -72,7 +35,7 @@ describe('Backend', () => {
 
   it('custom cpu registration', () => {
     let backend: KernelBackend;
-    ENV.registerBackend('custom-cpu', () => {
+    tf.registerBackend('custom-cpu', () => {
       const newBackend = new MathBackendCPU();
       if (backend == null) {
         backend = newBackend;
@@ -80,44 +43,44 @@ describe('Backend', () => {
       return newBackend;
     });
 
-    expect(ENV.findBackend('custom-cpu')).toBe(backend);
-    const factory = ENV.findBackendFactory('custom-cpu');
+    expect(tf.findBackend('custom-cpu')).toBe(backend);
+    const factory = tf.findBackendFactory('custom-cpu');
     expect(factory).not.toBeNull();
     expect(factory() instanceof MathBackendCPU).toBe(true);
-    Environment.setBackend('custom-cpu');
-    expect(ENV.backend).toBe(backend);
+    tf.setBackend('custom-cpu');
+    expect(tf.backend).toBe(backend);
 
-    ENV.removeBackend('custom-cpu');
+    tf.removeBackend('custom-cpu');
   });
 
   it('webgl not supported, falls back to cpu', () => {
-    ENV.setFeatures({'WEBGL_VERSION': 0});
+    ENV.setFlags({'WEBGL_VERSION': 0});
     let cpuBackend: KernelBackend;
-    ENV.registerBackend('custom-cpu', () => {
+    tf.registerBackend('custom-cpu', () => {
       cpuBackend = new MathBackendCPU();
       return cpuBackend;
     }, 103);
     const success =
-        ENV.registerBackend('custom-webgl', () => new MathBackendWebGL(), 104);
+        tf.registerBackend('custom-webgl', () => new MathBackendWebGL(), 104);
     expect(success).toBe(false);
-    expect(ENV.findBackend('custom-webgl') == null).toBe(true);
-    expect(ENV.findBackendFactory('custom-webgl') == null).toBe(true);
-    expect(Environment.getBackend()).toBe('custom-cpu');
-    expect(ENV.backend).toBe(cpuBackend);
+    expect(tf.findBackend('custom-webgl') == null).toBe(true);
+    expect(tf.findBackendFactory('custom-webgl') == null).toBe(true);
+    expect(tf.getBackend()).toBe('custom-cpu');
+    expect(tf.backend).toBe(cpuBackend);
 
-    ENV.removeBackend('custom-cpu');
+    tf.removeBackend('custom-cpu');
   });
 
   it('default custom background null', () => {
-    expect(ENV.findBackend('custom')).toBeNull();
+    expect(tf.findBackend('custom')).toBeNull();
   });
 
   it('allow custom backend', () => {
     const backend = new MathBackendCPU();
-    const success = ENV.registerBackend('custom', () => backend);
+    const success = tf.registerBackend('custom', () => backend);
     expect(success).toBeTruthy();
-    expect(ENV.findBackend('custom')).toEqual(backend);
-    ENV.removeBackend('custom');
+    expect(tf.findBackend('custom')).toEqual(backend);
+    tf.removeBackend('custom');
   });
 });
 
@@ -147,22 +110,15 @@ describe('public api tf.*', () => {
     expect(ENV.get('DEBUG')).toBe(true);
   });
 });
-
-describeWithFlags('max texture size', WEBGL_ENVS, () => {
-  it('should not throw exception', () => {
-    expect(() => ENV.get('WEBGL_MAX_TEXTURE_SIZE')).not.toThrow();
-  });
-});
-
 describeWithFlags('epsilon', {}, () => {
   it('Epsilon is a function of float precision', () => {
     const epsilonValue =
-        ENV.backend.floatPrecision() === 32 ? EPSILON_FLOAT32 : EPSILON_FLOAT16;
-    expect(ENV.get('EPSILON')).toBe(epsilonValue);
+        tf.backend.floatPrecision() === 32 ? EPSILON_FLOAT32 : EPSILON_FLOAT16;
+    expect(tf.backend.epsilon()).toBe(epsilonValue);
   });
 
   it('abs(epsilon) > 0', () => {
-    expect(tf.abs(ENV.get('EPSILON')).arraySync()).toBeGreaterThan(0);
+    expect(tf.abs(ENV.get('EPSILON') as number).arraySync()).toBeGreaterThan(0);
   });
 });
 

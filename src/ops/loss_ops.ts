@@ -15,12 +15,13 @@
  * =============================================================================
  */
 
-import {customGrad} from '../globals';
+import {customGrad} from '../gradients';
 import {Tensor} from '../tensor';
 import {GradSaveFunc} from '../tensor_types';
 import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import {assertShapesMatch} from '../util';
+
 import {expandShapeToKeepDim} from './axis_util';
 import {minimum} from './binary_ops';
 import {op} from './operation';

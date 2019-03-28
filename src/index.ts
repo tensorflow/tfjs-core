@@ -17,12 +17,12 @@
 
 // backend_cpu.ts and backend_webgl.ts are standalone files and should be
 // explicitly included here.
-import './kernels/backend_webgl';
+import './kernels/webgl/backend_webgl';
 import './kernels/backend_cpu';
+// Register backend-agnostic flags.
+import './flags';
 
-import {nextFrame} from './browser_util';
 import * as environment from './environment';
-import {deprecationWarn, disableDeprecationWarnings, enableDebugMode, enableProdMode, Environment} from './environment';
 // Serialization.
 import * as io from './io/io';
 import * as math from './math';
@@ -57,22 +57,13 @@ export * from './train';
 export * from './globals';
 export {customGrad, grad, grads, valueAndGrad, valueAndGrads, variableGrads} from './gradients';
 
-export {Features} from './environment_util';
 export {TimingInfo} from './engine';
 export {ENV, Environment} from './environment';
 
-export const setBackend = Engine.setBackend;
-export const getBackend = Engine.getBackend;
 export {version as version_core};
 
 // Top-level method exports.
-export {
-  nextFrame,
-  enableProdMode,
-  enableDebugMode,
-  disableDeprecationWarnings,
-  deprecationWarn
-};
+export {nextFrame} from './browser_util';
 
 // Second level exports.
 export {
@@ -91,5 +82,4 @@ export {
 export {KernelBackend, BackendTimingInfo, DataMover, DataStorage} from './kernels/backend';
 
 import * as ops from './ops/ops';
-import {Engine} from './engine';
 setOpHandler(ops);

@@ -15,21 +15,17 @@
  * =============================================================================
  */
 
-import * as device_util from './device_util';
-import {Features, getFeaturesFromURL, getMaxTexturesInShader, getWebGLDisjointQueryTimerVersion, getWebGLMaxTextureSize, isChrome, isDownloadFloatTextureEnabled, isRenderToFloatTextureEnabled, isWebGLFenceEnabled, isWebGLVersionEnabled} from './environment_util';
-import {KernelBackend} from './kernels/backend';
-import {setDeprecationWarningFn} from './tensor';
-
-export const EPSILON_FLOAT16 = 1e-4;
-const TEST_EPSILON_FLOAT16 = 1e-1;
-
-export const EPSILON_FLOAT32 = 1e-7;
-const TEST_EPSILON_FLOAT32 = 1e-3;
+type FlagValue = number|boolean;
+export type Flags = {
+  [featureName: string]: FlagValue
+};
 
 export class Environment {
-  constructor(private features?: Features) {
-    if (features == null) {
-      features = getFeaturesFromURL();
+  private flagRegistry: {[flagName: string]: () => number | boolean} = {};
+
+  constructor(private flags?: Flags) {
+    if (flags == null) {
+      flags = getFlagsFromURL();
     }
 
     if (this.get('DEBUG')) {
@@ -40,179 +36,115 @@ export class Environment {
     }
   }
 
-  get<K extends keyof Features>(feature: K): Features[K] {
-    if (feature in this.features) {
-      return this.features[feature];
+  registerFlag(flagName: string, evaluationFn: () => FlagValue) {
+    this.flagRegistry[flagName] = evaluationFn;
+  }
+
+  get(flagName: string): FlagValue {
+    if (flagName in this.flags) {
+      return this.flags[flagName];
     }
 
-    this.features[feature] = this.evaluateFeature(feature);
+    this.flags[flagName] = this.evaluateFlag(flagName);
 
-    return this.features[feature];
+    return this.flags[flagName];
   }
 
-  getFeatures(): Features {
-    return this.features;
+  getFlags(): Flags {
+    return this.flags;
+  }
+  // For backwards compatibility.
+  get features(): Flags {
+    return this.flags;
   }
 
-  set<K extends keyof Features>(feature: K, value: Features[K]): void {
-    this.features[feature] = value;
+  set(flagName: string, value: FlagValue): void {
+    this.flags[flagName] = value;
   }
 
-  private getBestBackendName(): string {
-    if (Object.keys(this.registry).length === 0) {
-      throw new Error('No backend found in registry.');
+  private evaluateFlag(flagName: string): FlagValue {
+    if (this.flagRegistry[flagName] == null) {
+      throw new Error(
+          `Cannot evaluate flag '${flagName}': no evaluation function found.`);
     }
-    const sortedBackends = Object.keys(this.registry)
-                               .map(name => {
-                                 return {name, entry: this.registry[name]};
-                               })
-                               .sort((a, b) => {
-                                 // Highest priority comes first.
-                                 return b.entry.priority - a.entry.priority;
-                               });
-    return sortedBackends[0].name;
+    return this.flagRegistry[flagName]();
   }
 
-  private evaluateFeature<K extends keyof Features>(feature: K): Features[K] {
-    if (feature === 'DEBUG') {
-      return false;
-    } else if (feature === 'IS_BROWSER') {
-      return typeof window !== 'undefined';
-    } else if (feature === 'IS_NODE') {
-      return (typeof process !== 'undefined') &&
-          (typeof process.versions !== 'undefined') &&
-          (typeof process.versions.node !== 'undefined');
-    } else if (feature === 'IS_CHROME') {
-      return isChrome();
-    } else if (feature === 'WEBGL_CPU_FORWARD') {
-      return true;
-    } else if (feature === 'WEBGL_PACK') {
-      return this.get('WEBGL_VERSION') === 0 ? false : true;
-    } else if (feature === 'WEBGL_PACK_BATCHNORMALIZATION') {
-      return this.get('WEBGL_PACK');
-    } else if (feature === 'WEBGL_PACK_CLIP') {
-      return this.get('WEBGL_PACK');
-    } else if (feature === 'WEBGL_PACK_DEPTHWISECONV') {
-      return this.get('WEBGL_PACK');
-    } else if (feature === 'WEBGL_PACK_BINARY_OPERATIONS') {
-      return this.get('WEBGL_PACK');
-    } else if (feature === 'WEBGL_PACK_ARRAY_OPERATIONS') {
-      return this.get('WEBGL_PACK');
-    } else if (feature === 'WEBGL_PACK_IMAGE_OPERATIONS') {
-      return this.get('WEBGL_PACK');
-    } else if (feature === 'WEBGL_PACK_REDUCE') {
-      return this.get('WEBGL_PACK');
-    } else if (feature === 'WEBGL_LAZILY_UNPACK') {
-      return this.get('WEBGL_PACK');
-    } else if (feature === 'WEBGL_CONV_IM2COL') {
-      return this.get('WEBGL_PACK');
-    } else if (feature === 'WEBGL_MAX_TEXTURE_SIZE') {
-      return getWebGLMaxTextureSize(this.get('WEBGL_VERSION'));
-    } else if (feature === 'WEBGL_MAX_TEXTURES_IN_SHADER') {
-      return getMaxTexturesInShader(this.get('WEBGL_VERSION'));
-    } else if (feature === 'IS_TEST') {
-      return false;
-    } else if (feature === 'BACKEND') {
-      return this.getBestBackendName();
-    } else if (feature === 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') {
-      const webGLVersion = this.get('WEBGL_VERSION');
-
-      if (webGLVersion === 0) {
-        return 0;
-      }
-      return getWebGLDisjointQueryTimerVersion(webGLVersion);
-    } else if (feature === 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE') {
-      return this.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') > 0 &&
-          !device_util.isMobile();
-    } else if (feature === 'HAS_WEBGL') {
-      return this.get('WEBGL_VERSION') > 0;
-    } else if (feature === 'WEBGL_VERSION') {
-      if (isWebGLVersionEnabled(2)) {
-        return 2;
-      } else if (isWebGLVersionEnabled(1)) {
-        return 1;
-      }
-      return 0;
-    } else if (feature === 'WEBGL_RENDER_FLOAT32_ENABLED') {
-      return isRenderToFloatTextureEnabled(this.get('WEBGL_VERSION'));
-    } else if (feature === 'WEBGL_DOWNLOAD_FLOAT_ENABLED') {
-      return isDownloadFloatTextureEnabled(this.get('WEBGL_VERSION'));
-    } else if (feature === 'WEBGL_FENCE_API_ENABLED') {
-      return isWebGLFenceEnabled(this.get('WEBGL_VERSION'));
-    } else if (feature === 'WEBGL_SIZE_UPLOAD_UNIFORM') {
-      // Use uniform uploads only when 32bit floats are supported. In 16bit
-      // environments there are problems with comparing a 16bit texture value
-      // with a 32bit uniform value.
-      const useUniforms = this.get('WEBGL_RENDER_FLOAT32_ENABLED');
-      return useUniforms ? 4 : 0;
-    } else if (feature === 'TEST_EPSILON') {
-      return this.backend.floatPrecision() === 32 ? TEST_EPSILON_FLOAT32 :
-                                                    TEST_EPSILON_FLOAT16;
-    } else if (feature === 'EPSILON') {
-      return this.backend.floatPrecision() === 32 ? EPSILON_FLOAT32 :
-                                                    EPSILON_FLOAT16;
-    } else if (feature === 'PROD') {
-      return false;
-    } else if (feature === 'TENSORLIKE_CHECK_SHAPE_CONSISTENCY') {
-      return !this.get('PROD');
-    } else if (feature === 'DEPRECATION_WARNINGS_ENABLED') {
-      return true;
-    }
-    throw new Error(`Unknown feature ${feature}.`);
-  }
-
-  setFeatures(features: Features) {
-    this.features = Object.assign({}, features);
+  setFlags(flags: Flags) {
+    this.flags = Object.assign({}, flags);
   }
 
   reset() {
-    this.features = getFeaturesFromURL();
+    this.flags = getFlagsFromURL();
+  }
+
+  // tslint:disable-next-line:no-any
+  get global(): any {
+    return global;
   }
 }
 
-/**
- * Enables production mode which disables correctness checks in favor of
- * performance.
- */
-/** @doc {heading: 'Environment'} */
-export function enableProdMode(): void {
-  ENV.set('PROD', true);
-}
+// Expects flags from URL in the format ?tfjsflags=FLAG1:1,FLAG2:true.
+const TENSORFLOWJS_FLAGS_PREFIX = 'tfjsflags';
+export function getFlagsFromURL(): Flags {
+  const flags: Flags = {};
 
-/**
- * Enables debug mode which will log information about all executed kernels:
- * the ellapsed time of the kernel execution, as well as the rank, shape, and
- * size of the output tensor.
- *
- * Debug mode will significantly slow down your application as it will
- * download the result of every operation to the CPU. This should not be used in
- * production. Debug mode does not affect the timing information of the kernel
- * execution as we do not measure download time in the kernel execution time.
- *
- * See also: `tf.profile`, `tf.memory`.
- */
-/** @doc {heading: 'Environment'} */
-export function enableDebugMode(): void {
-  ENV.set('DEBUG', true);
-}
-
-/** Globally disables deprecation warnings */
-export function disableDeprecationWarnings(): void {
-  ENV.set('DEPRECATION_WARNINGS_ENABLED', false);
-  console.warn(`TensorFlow.js deprecation warnings have been disabled.`);
-}
-
-/** Warn users about deprecated functionality. */
-export function deprecationWarn(msg: string) {
-  if (ENV.get('DEPRECATION_WARNINGS_ENABLED')) {
-    console.warn(
-        msg + ' You can disable deprecation warnings with ' +
-        'tf.disableDeprecationWarnings().');
+  if (typeof window === 'undefined' || typeof window.location === 'undefined' ||
+      typeof window.location.search === 'undefined') {
+    return flags;
   }
-}
-setDeprecationWarningFn(deprecationWarn);
 
+  const urlParams = getQueryParams(window.location.search);
+  if (TENSORFLOWJS_FLAGS_PREFIX in urlParams) {
+    const urlFlags: {[key: string]: string} = {};
+
+    const keyValues = urlParams[TENSORFLOWJS_FLAGS_PREFIX].split(',');
+    keyValues.forEach(keyValue => {
+      const [key, value] = keyValue.split(':') as [string, string];
+      urlFlags[key] = value;
+    });
+
+    // URL_PROPERTIES.forEach(urlProperty => {
+    //   if (urlProperty.name in urlFlags) {
+    //     console.log(
+    //         `Setting feature override from URL ${urlProperty.name}: ` +
+    //         `${urlFlags[urlProperty.name]}`);
+    //     if (urlProperty.type === Type.NUMBER) {
+    //       features[urlProperty.name] = +urlFlags[urlProperty.name];
+    //     } else if (urlProperty.type === Type.BOOLEAN) {
+    //       features[urlProperty.name] = urlFlags[urlProperty.name] === 'true';
+    //     } else if (urlProperty.type === Type.STRING) {
+    //       // tslint:disable-next-line:no-any
+    //       features[urlProperty.name] = urlFlags[urlProperty.name] as any;
+    //     } else {
+    //       console.warn(`Unknown URL param: ${urlProperty.name}.`);
+    //     }
+    //   }
+    // });
+  }
+
+  return flags;
+}
+
+export function getQueryParams(queryString: string): {[key: string]: string} {
+  const params = {};
+  queryString.replace(/[?&]([^=?&]+)(?:=([^&]*))?/g, (s, ...t) => {
+    decodeParam(params, t[0], t[1]);
+    return t.join('=');
+  });
+  return params;
+}
+
+function decodeParam(
+    params: {[key: string]: string}, name: string, value?: string) {
+  params[decodeURIComponent(name)] = decodeURIComponent(value || '');
+}
+
+// tslint:disable-next-line:no-any
+let global: any;
 export let ENV: Environment;
-export function setEnvironmentGlobal(environment: Environment) {
+// tslint:disable-next-line:no-any
+export function setEnvironmentGlobal(environment: Environment, ns: any) {
   ENV = environment;
+  global = ns;
 }

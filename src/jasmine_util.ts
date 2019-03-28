@@ -15,20 +15,40 @@
  * =============================================================================
  */
 
-import {ENGINE, Engine} from './engine';
-import {ENV} from './environment';
-import {Features} from './environment_util';
+import {ENGINE} from './engine';
+import {ENV, Flags} from './environment';
 import {KernelBackend} from './kernels/backend';
-import {MathBackendCPU} from './kernels/backend_cpu';
-import {MathBackendWebGL} from './kernels/backend_webgl';
+import {MathBackendCPU} from './kernels/cpu/backend_cpu';
+import {MathBackendWebGL} from './kernels/webgl/backend_webgl';
 
 Error.stackTraceLimit = Infinity;
 
+export const WEBGL_ENVS: Flags = {
+  'HAS_WEBGL': true
+};
+export const PACKED_ENVS: Flags = {
+  'WEBGL_PACK': true
+};
+export const NODE_ENVS: Flags = {
+  'IS_NODE': true
+};
+export const CHROME_ENVS: Flags = {
+  'IS_CHROME': true
+};
+export const BROWSER_ENVS: Flags = {
+  'IS_BROWSER': true
+};
+export const CPU_ENVS: Flags = {
+  'HAS_WEBGL': false
+};
+
+export const ALL_ENVS: Flags = {};
+
 // Tests whether the current environment satisfies the set of constraints.
-export function envSatisfiesConstraints(constraints: Features): boolean {
+export function envSatisfiesConstraints(constraints: Flags): boolean {
   for (const key in constraints) {
-    const value = constraints[key as keyof Features];
-    if (ENV.get(key as keyof Features) !== value) {
+    const value = constraints[key];
+    if (ENV.get(key) !== value) {
       return false;
     }
   }
@@ -39,20 +59,20 @@ export function envSatisfiesConstraints(constraints: Features): boolean {
 declare let __karma__: any;
 
 export function parseKarmaFlags(args: string[]): TestEnv {
-  let features: Features;
+  let flags: Flags;
   let backend: () => KernelBackend;
   let name = '';
 
   args.forEach((arg, i) => {
-    if (arg === '--features') {
-      features = JSON.parse(args[i + 1]);
+    if (arg === '--flags') {
+      flags = JSON.parse(args[i + 1]);
     } else if (arg === '--backend') {
       const type = args[i + 1];
       name = type;
       if (type.toLowerCase() === 'cpu') {
         backend = () => new MathBackendCPU();
-        features = features || {};
-        features['HAS_WEBGL'] = false;
+        flags = flags || {};
+        flags['HAS_WEBGL'] = false;
       } else if (type.toLowerCase() === 'webgl') {
         backend = () => new MathBackendWebGL();
       } else {
@@ -63,24 +83,24 @@ export function parseKarmaFlags(args: string[]): TestEnv {
     }
   });
 
-  if (features == null && backend == null) {
+  if (flags == null && backend == null) {
     return null;
   }
-  if (features != null && backend == null) {
+  if (flags != null && backend == null) {
     throw new Error(
-        '--backend flag is required when --features is present. ' +
+        '--backend flag is required when --flags is present. ' +
         'Available values are "webgl" or "cpu".');
   }
-  return {features: features || {}, factory: backend, name};
+  return {flags: flags || {}, factory: backend, name};
 }
 
 export function describeWithFlags(
-    name: string, constraints: Features, tests: (env: TestEnv) => void) {
+    name: string, constraints: Flags, tests: (env: TestEnv) => void) {
   TEST_ENVS.forEach(testEnv => {
-    ENV.setFeatures(testEnv.features);
+    ENV.setFlags(testEnv.flags);
     if (envSatisfiesConstraints(constraints)) {
       const testName =
-          name + ' ' + testEnv.name + ' ' + JSON.stringify(testEnv.features);
+          name + ' ' + testEnv.name + ' ' + JSON.stringify(testEnv.flags);
       executeTests(testName, tests, testEnv);
     }
   });
@@ -89,14 +109,14 @@ export function describeWithFlags(
 export interface TestEnv {
   name: string;
   factory: () => KernelBackend;
-  features: Features;
+  flags: Flags;
 }
 
 export let TEST_ENVS: TestEnv[] = [
   {
     name: 'webgl1',
     factory: () => new MathBackendWebGL(),
-    features: {
+    flags: {
       'WEBGL_VERSION': 1,
       'WEBGL_CPU_FORWARD': false,
       'WEBGL_SIZE_UPLOAD_UNIFORM': 0
@@ -105,7 +125,7 @@ export let TEST_ENVS: TestEnv[] = [
   {
     name: 'webgl2',
     factory: () => new MathBackendWebGL(),
-    features: {
+    flags: {
       'WEBGL_VERSION': 2,
       'WEBGL_CPU_FORWARD': false,
       'WEBGL_SIZE_UPLOAD_UNIFORM': 0
@@ -114,7 +134,7 @@ export let TEST_ENVS: TestEnv[] = [
   {
     name: 'cpu',
     factory: () => new MathBackendCPU(),
-    features: {'HAS_WEBGL': false}
+    flags: {'HAS_WEBGL': false}
   }
 ];
 
@@ -138,10 +158,10 @@ function executeTests(
 
     beforeAll(() => {
       ENV.reset();
-      ENV.setFeatures(testEnv.features);
+      ENV.setFlags(testEnv.flags);
       ENV.set('IS_TEST', true);
       ENGINE.registerBackend(backendName, testEnv.factory, 1000);
-      Engine.setBackend(backendName);
+      ENGINE.setBackend(backendName);
     });
 
     beforeEach(() => {

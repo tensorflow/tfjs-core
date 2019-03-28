@@ -16,9 +16,8 @@
  */
 
 import {ENGINE} from '../engine';
-import {ENV} from '../environment';
-import {keep, tidy} from '../globals';
-import {fill, scalar} from '../ops/ops';
+import {tidy} from '../globals';
+import {fill} from '../ops/ops';
 import {ConfigDict, registerClass, Serializable, SerializableConstructor} from '../serialization';
 import {Scalar} from '../tensor';
 import {NamedVariableMap} from '../tensor_types';
@@ -29,16 +28,12 @@ export class AdagradOptimizer extends Optimizer {
   /** @nocollapse */
   static className = 'AdagradOptimizer';
   private c: Scalar;
-  private epsilon: Scalar;
 
   private accumulatedGrads: NamedVariableMap = {};
 
   constructor(
       protected learningRate: number, private initialAccumulatorValue = 0.1) {
     super();
-    this.c = keep(scalar(-learningRate));
-
-    this.epsilon = keep(scalar(ENV.get('EPSILON')));
   }
 
   applyGradients(variableGradients: NamedVariableMap) {
@@ -61,8 +56,9 @@ export class AdagradOptimizer extends Optimizer {
         this.accumulatedGrads[variableName].assign(newAccumulatedGrad);
 
         const newValue =
-            this.c
-                .mul(gradient.div(newAccumulatedGrad.add(this.epsilon).sqrt()))
+            gradient
+                .div(newAccumulatedGrad.add(ENGINE.backend.epsilon()).sqrt())
+                .mul(-this.learningRate)
                 .add(value);
         value.assign(newValue);
       });
@@ -70,7 +66,6 @@ export class AdagradOptimizer extends Optimizer {
   }
 
   dispose(): void {
-    this.epsilon.dispose();
     this.c.dispose();
     if (this.accumulatedGrads != null) {
       Object.keys(this.accumulatedGrads)

@@ -15,19 +15,19 @@
  * =============================================================================
  */
 
+import {ENV} from '../../environment';
+import {BROWSER_ENVS, describeWithFlags} from '../../jasmine_util';
+
 import {getWebGLContext} from './canvas_util';
-import {ENV} from './environment';
-import {describeWithFlags} from './jasmine_util';
-import {BROWSER_ENVS} from './test_util';
 
 describeWithFlags('canvas_util', BROWSER_ENVS, () => {
   it('Returns a valid canvas', () => {
-    const canvas = getWebGLContext(ENV.get('WEBGL_VERSION')).canvas;
+    const canvas = getWebGLContext(ENV.get('WEBGL_VERSION') as number).canvas;
     expect(canvas instanceof HTMLCanvasElement).toBe(true);
   });
 
   it('Returns a valid gl context', () => {
-    const gl = getWebGLContext(ENV.get('WEBGL_VERSION'));
+    const gl = getWebGLContext(ENV.get('WEBGL_VERSION') as number);
     expect(gl.isContextLost()).toBe(false);
   });
 });

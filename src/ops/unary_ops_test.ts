@@ -15,10 +15,9 @@
  * =============================================================================
  */
 
-import {ENV} from '../environment';
 import * as tf from '../index';
-import {describeWithFlags} from '../jasmine_util';
-import {ALL_ENVS, expectArraysClose, PACKED_ENVS, WEBGL_ENVS} from '../test_util';
+import {ALL_ENVS, describeWithFlags, PACKED_ENVS, WEBGL_ENVS} from '../jasmine_util';
+import {expectArraysClose} from '../test_util';
 import * as util from '../util';
 
 import * as selu_util from './selu_util';
@@ -199,7 +198,7 @@ describeWithFlags('abs', ALL_ENVS, () => {
   });
 
   it('is underflow-safe for complex64', () => {
-    const floatBits = ENV.backend.floatPrecision();
+    const floatBits = tf.backend.floatPrecision();
     let small;
     switch (floatBits) {
       case 32:
@@ -3228,7 +3227,7 @@ describeWithFlags('clip', ALL_ENVS, () => {
   });
 
   it('clip(x, eps, 1-eps) never returns 0 or 1', () => {
-    const min = tf.ENV.get('EPSILON');
+    const min = tf.ENV.get('EPSILON') as number;
     const max = 0.5;
     const res = tf.clipByValue([0, 1], min, max).dataSync();
     expect(res[0]).toBeGreaterThan(0);

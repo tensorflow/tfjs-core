@@ -15,9 +15,9 @@
  * =============================================================================
  */
 
-import {getWebGLContext, setWebGLContext} from '../../canvas_util';
 import {ENV} from '../../environment';
 import * as util from '../../util';
+import {getWebGLContext, setWebGLContext} from './canvas_util';
 import * as gpgpu_util from './gpgpu_util';
 import {TextureConfig} from './gpgpu_util';
 import * as tex_util from './tex_util';
@@ -47,7 +47,7 @@ export class GPGPUContext {
   private textureConfig: TextureConfig;
 
   constructor(gl?: WebGLRenderingContext) {
-    const glVersion = ENV.get('WEBGL_VERSION');
+    const glVersion = ENV.get('WEBGL_VERSION') as number;
     if (gl != null) {
       this.gl = gl;
       setWebGLContext(glVersion, gl);
@@ -81,7 +81,7 @@ export class GPGPUContext {
   }
 
   private get debug(): boolean {
-    return ENV.get('DEBUG');
+    return ENV.get('DEBUG') as boolean;
   }
 
   public dispose() {
@@ -254,7 +254,8 @@ export class GPGPUContext {
       query = this.beginQuery();
       this.endQuery();
       isFencePassed = () => this.isQueryAvailable(
-          query, ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION'));
+          query,
+          ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') as number);
     } else {
       // If we have no way to fence, return true immediately. This will fire in
       // WebGL 1.0 when there is no disjoint query timer. In this case, because
@@ -469,9 +470,11 @@ export class GPGPUContext {
                                 // may poll for the query timer indefinitely
             this.isQueryAvailable(
                 query,
-                ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION')));
+                ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') as
+                    number));
     return this.getQueryTime(
-        query, ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION'));
+        query,
+        ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') as number);
   }
 
   private getQueryTime(query: WebGLQuery, queryTimerVersion: number): number {

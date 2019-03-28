@@ -300,7 +300,7 @@ export class BrowserLocalStorageManager implements ModelStoreManager {
 
   constructor() {
     assert(
-        ENV.get('IS_BROWSER'),
+        ENV.get('IS_BROWSER') as boolean,
         () => 'Current environment is not a web browser');
     assert(
         typeof window.localStorage !== 'undefined',

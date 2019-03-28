@@ -16,10 +16,9 @@
  */
 
 import * as tf from './index';
-import {describeWithFlags, envSatisfiesConstraints, parseKarmaFlags} from './jasmine_util';
-import {MathBackendCPU} from './kernels/backend_cpu';
-import {MathBackendWebGL} from './kernels/backend_webgl';
-import {WEBGL_ENVS} from './test_util';
+import {describeWithFlags, envSatisfiesConstraints, parseKarmaFlags, WEBGL_ENVS} from './jasmine_util';
+import {MathBackendCPU} from './kernels/cpu/backend_cpu';
+import {MathBackendWebGL} from './kernels/webgl/backend_webgl';
 
 describeWithFlags('jasmine_util.envSatisfiesConstraints', {}, () => {
   it('ENV satisfies empty constraints', () => {
@@ -32,7 +31,7 @@ describeWithFlags('jasmine_util.envSatisfiesConstraints', {}, () => {
   });
 
   it('ENV does not satisfy mismatching constraints', () => {
-    const c = {TEST_EPSILON: tf.ENV.get('TEST_EPSILON') + 0.1};
+    const c = {TEST_EPSILON: tf.ENV.get('TEST_EPSILON') as number + 0.1};
     expect(envSatisfiesConstraints(c)).toBe(false);
   });
 });
@@ -46,7 +45,7 @@ describe('jasmine_util.parseKarmaFlags', () => {
   it('--backend cpu', () => {
     const res = parseKarmaFlags(['--backend', 'cpu']);
     expect(res.name).toBe('cpu');
-    expect(res.features).toEqual({'HAS_WEBGL': false});
+    expect(res.flags).toEqual({'HAS_WEBGL': false});
     expect(res.factory() instanceof MathBackendCPU).toBe(true);
   });
 
@@ -54,7 +53,7 @@ describe('jasmine_util.parseKarmaFlags', () => {
     const res = parseKarmaFlags(
         ['--backend', 'cpu', '--features', '{"IS_NODE": true}']);
     expect(res.name).toBe('cpu');
-    expect(res.features).toEqual({IS_NODE: true});
+    expect(res.flags).toEqual({IS_NODE: true});
     expect(res.factory() instanceof MathBackendCPU).toBe(true);
   });
 
@@ -82,7 +81,7 @@ describeWithFlags('jasmine_util.envSatisfiesConstraints', WEBGL_ENVS, () => {
   it('--backend webgl', () => {
     const res = parseKarmaFlags(['--backend', 'webgl']);
     expect(res.name).toBe('webgl');
-    expect(res.features).toEqual({});
+    expect(res.flags).toEqual({});
     expect(res.factory() instanceof MathBackendWebGL).toBe(true);
   });
 });

@@ -16,9 +16,53 @@
  */
 
 import {ENGINE, MemoryInfo, ProfileInfo, ScopeFn, TimingInfo} from './engine';
-import {Tensor} from './tensor';
+import {ENV} from './environment';
+import {KernelBackend} from './kernels/backend';
+import {setDeprecationWarningFn, Tensor} from './tensor';
 import {TensorContainer} from './tensor_types';
 import {getTensorsInContainer} from './tensor_util';
+
+/**
+ * Enables production mode which disables correctness checks in favor of
+ * performance.
+ */
+/** @doc {heading: 'Environment'} */
+export function enableProdMode(): void {
+  ENV.set('PROD', true);
+}
+
+/**
+ * Enables debug mode which will log information about all executed kernels:
+ * the ellapsed time of the kernel execution, as well as the rank, shape, and
+ * size of the output tensor.
+ *
+ * Debug mode will significantly slow down your application as it will
+ * download the result of every operation to the CPU. This should not be used in
+ * production. Debug mode does not affect the timing information of the kernel
+ * execution as we do not measure download time in the kernel execution time.
+ *
+ * See also: `tf.profile`, `tf.memory`.
+ */
+/** @doc {heading: 'Environment'} */
+export function enableDebugMode(): void {
+  ENV.set('DEBUG', true);
+}
+
+/** Globally disables deprecation warnings */
+export function disableDeprecationWarnings(): void {
+  ENV.set('DEPRECATION_WARNINGS_ENABLED', false);
+  console.warn(`TensorFlow.js deprecation warnings have been disabled.`);
+}
+
+/** Warn users about deprecated functionality. */
+export function deprecationWarn(msg: string) {
+  if (ENV.get('DEPRECATION_WARNINGS_ENABLED')) {
+    console.warn(
+        msg + ' You can disable deprecation warnings with ' +
+        'tf.disableDeprecationWarnings().');
+  }
+}
+setDeprecationWarningFn(deprecationWarn);
 
 /**
  * Dispose all variables kept in backend engine.
@@ -198,3 +242,89 @@ export function keep<T extends Tensor>(result: T): T {
 export function time(f: () => void): Promise<TimingInfo> {
   return ENGINE.time(f);
 }
+
+/**
+ * Sets the backend (cpu, webgl, etc) responsible for creating tensors and
+ * executing operations on those tensors.
+ *
+ * Note this disposes the current backend, if any, as well as any tensors
+ * associated with it. A new backend is initialized, even if it is of the
+ * same type as the previous one.
+ *
+ * @param backendName The name of the backend. Currently supports
+ *     `'webgl'|'cpu'` in the browser, and `'tensorflow'` under node.js
+ *     (requires tfjs-node).
+ */
+/** @doc {heading: 'Environment'} */
+export function setBackend(backendName: string) {
+  ENGINE.setBackend(backendName);
+}
+
+/**
+ * Returns the current backend name (cpu, webgl, etc). The backend is
+ * responsible for creating tensors and executing operations on those tensors.
+ */
+/** @doc {heading: 'Environment'} */
+export function getBackend(): string {
+  // NOTE(nsthorat): This might be more complicated, see diff before
+  // submitting!
+  return ENGINE.backendName;
+}
+
+/**
+ * Removes a backend.
+ */
+/** @doc {heading: 'Environment'} */
+export function removeBackend(name: string): void {
+  ENGINE.removeBackend(name);
+}
+
+/**
+ * Returns the current backend name (cpu, webgl, etc). The backend is
+ * responsible for creating tensors and executing operations on those tensors.
+ */
+/** @doc {heading: 'Environment'} */
+export function currentBackend(): KernelBackend {
+  return ENGINE.backend;
+}
+
+/**
+ * Finds the backend registered under the provided name. Returns null if the
+ * name is not in the registry.
+ */
+export function findBackend(name: string): KernelBackend {
+  return ENGINE.findBackend(name);
+}
+
+/**
+ * Finds the backend factory registered under the provided name. Returns a
+ * function that produces a new backend when called. Returns null if the name
+ * is not in the registry.
+ */
+export function findBackendFactory(name: string): () => KernelBackend {
+  return ENGINE.findBackendFactory(name);
+}
+
+/**
+ * Registers a global backend. The registration should happen when importing
+ * a module file (e.g. when importing `backend_webgl.ts`), and is used for
+ * modular builds (e.g. custom tfjs bundle with only webgl support).
+ *
+ * @param factory The backend factory function. When called, it should
+ * return an instance of the backend.
+ * @param priority The priority of the backend (higher = more important).
+ *     In case multiple backends are registered, the priority is used to find
+ *     the best backend. Defaults to 1.
+ * @return False if the creation/registration failed. True otherwise.
+ */
+export function registerBackend(
+    name: string, factory: () => KernelBackend, priority = 1): boolean {
+  return ENGINE.registerBackend(name, factory, priority);
+}
+
+export class BackendGetter {
+  static get backend(): KernelBackend {
+    return ENGINE.backend;
+  }
+}
+export const backend = BackendGetter.backend;

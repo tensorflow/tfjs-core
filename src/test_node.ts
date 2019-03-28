@@ -26,7 +26,7 @@ process.on('unhandledRejection', e => {
 });
 
 setTestEnvs(
-    [{name: 'node', factory: ENGINE.findBackendFactory('cpu'), features: {}}]);
+    [{name: 'node', factory: ENGINE.findBackendFactory('cpu'), flags: {}}]);
 
 const runner = new jasmine();
 runner.loadConfig({spec_files: ['dist/**/**_test.js'], random: false});

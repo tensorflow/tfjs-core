@@ -15,12 +15,13 @@
  * =============================================================================
  */
 
+import {ENGINE} from './engine';
 import * as tf from './index';
-import {describeWithFlags} from './jasmine_util';
-import {MathBackendCPU} from './kernels/backend_cpu';
-import {MathBackendWebGL} from './kernels/backend_webgl';
+import {ALL_ENVS, CPU_ENVS, describeWithFlags, WEBGL_ENVS} from './jasmine_util';
+import {MathBackendCPU} from './kernels/cpu/backend_cpu';
+import {MathBackendWebGL} from './kernels/webgl/backend_webgl';
 import {Tensor} from './tensor';
-import {ALL_ENVS, CPU_ENVS, expectArraysClose, expectArraysEqual, WEBGL_ENVS} from './test_util';
+import {expectArraysClose, expectArraysEqual} from './test_util';
 
 describeWithFlags('fromPixels + regular math op', WEBGL_ENVS, () => {
   it('debug mode does not error when no nans', () => {
@@ -96,7 +97,7 @@ describeWithFlags('gradients', ALL_ENVS, () => {
       throw new Error('failed forward pass');
     });
     expect(() => grad(tf.zeros([]))).toThrowError();
-    expect(tf.ENV.engine.isTapeOn()).toBe(false);
+    expect(ENGINE.isTapeOn()).toBe(false);
   });
 
   it('grad(f): throwing an error during backwards pass', () => {
@@ -110,7 +111,7 @@ describeWithFlags('gradients', ALL_ENVS, () => {
     });
     const grad = tf.grad(x => customOp(x));
     expect(() => grad(tf.zeros([]))).toThrowError();
-    expect(tf.ENV.engine.isTapeOn()).toBe(false);
+    expect(ENGINE.isTapeOn()).toBe(false);
   });
 
   it('grads(f)', () => {
@@ -573,13 +574,13 @@ describeWithFlags('disposeVariables', ALL_ENVS, () => {
 
 describe('Switching cpu backends', () => {
   beforeEach(() => {
-    tf.ENV.registerBackend('cpu1', () => new MathBackendCPU());
-    tf.ENV.registerBackend('cpu2', () => new MathBackendCPU());
+    tf.registerBackend('cpu1', () => new MathBackendCPU());
+    tf.registerBackend('cpu2', () => new MathBackendCPU());
   });
 
   afterEach(() => {
-    tf.ENV.removeBackend('cpu1');
-    tf.ENV.removeBackend('cpu2');
+    tf.removeBackend('cpu1');
+    tf.removeBackend('cpu2');
   });
 
   it('Move data from cpu1 to cpu2 backend', () => {
@@ -649,12 +650,11 @@ describeWithFlags('backend without render float32 support', WEBGL_ENVS, () => {
   });
 
   beforeEach(() => {
-    tf.ENV.registerBackend(
-        'half-float-webgl', () => new MathBackendWebGL(null));
+    tf.registerBackend('half-float-webgl', () => new MathBackendWebGL(null));
   });
 
   afterEach(() => {
-    tf.ENV.removeBackend('half-float-webgl');
+    tf.removeBackend('half-float-webgl');
   });
 
   afterAll(() => {
@@ -684,15 +684,15 @@ describeWithFlags('backend without render float32 support', WEBGL_ENVS, () => {
 
 describeWithFlags('Switching WebGL + CPU backends', WEBGL_ENVS, () => {
   beforeEach(() => {
-    tf.ENV.registerBackend('webgl1', () => new MathBackendWebGL());
-    tf.ENV.registerBackend('webgl2', () => new MathBackendWebGL());
-    tf.ENV.registerBackend('cpu1', () => new MathBackendCPU());
+    tf.registerBackend('webgl1', () => new MathBackendWebGL());
+    tf.registerBackend('webgl2', () => new MathBackendWebGL());
+    tf.registerBackend('cpu1', () => new MathBackendCPU());
   });
 
   afterEach(() => {
-    tf.ENV.removeBackend('webgl1');
-    tf.ENV.removeBackend('webgl2');
-    tf.ENV.removeBackend('cpu1');
+    tf.removeBackend('webgl1');
+    tf.removeBackend('webgl2');
+    tf.removeBackend('cpu1');
   });
 
   it('can execute op with data from mixed backends', () => {
