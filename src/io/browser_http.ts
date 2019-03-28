@@ -320,11 +320,12 @@ IORouterRegistry.registerLoadRouter(httpRequestRouter);
  * const saveResult = await model.save('http://model-server:5000/upload');
  * ```
  *
- * The following Python code snippet based on the
- * [flask](https://github.com/pallets/flask) server framework implements a
- * server that can receive the request. Upon receiving the model artifacts
- * via the requst, this particular server reconsistutes instances of
- * [Keras Models](https://keras.io/models/model/) in memory.
+ * The following GitHub Gist
+ * https://gist.github.com/dsmilkov/1b6046fd6132d7408d5257b0976f7864
+ * implements a server based on [flask](https://github.com/pallets/flask) that
+ * can receive the request. Upon receiving the model artifacts via the requst,
+ * this particular server reconsistutes instances of [Keras
+ * Models](https://keras.io/models/model/) in memory.
  *
  * ```python
  * # pip install -U flask flask-cors tensorflow tensorflowjs
