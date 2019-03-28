@@ -25,7 +25,6 @@ export type GLSL = {
   texture2D: string,
   output: string,
   defineOutput: string,
-  defineSpecialNaN: string,
   defineSpecialInf: string,
   defineRound: string
 };
@@ -38,7 +37,6 @@ export function getGlslDifferences(): GLSL {
   let texture2D: string;
   let output: string;
   let defineOutput: string;
-  let defineSpecialNaN: string;
   let defineSpecialInf: string;
   let defineRound: string;
 
@@ -50,16 +48,6 @@ export function getGlslDifferences(): GLSL {
     texture2D = 'texture';
     output = 'outputColor';
     defineOutput = 'out vec4 outputColor;';
-    defineSpecialNaN = `
-      const float NAN = uintBitsToFloat(uint(0x7fc00000));
-      #define isnan(value) newIsNan(value)
-      bool newIsNan(float val) {
-        return (val > 0. || val < 0. || val == 0.) ? false : true;
-      }
-      bvec4 newIsNan(vec4 val) {
-        return bvec4(isnan(val.x), isnan(val.y), isnan(val.z), isnan(val.w));
-      }
-    `;
     defineSpecialInf = `
       const float INFINITY = uintBitsToFloat(uint(0x7f800000));
     `;
@@ -81,16 +69,6 @@ export function getGlslDifferences(): GLSL {
     texture2D = 'texture2D';
     output = 'gl_FragColor';
     defineOutput = '';
-    defineSpecialNaN = `
-      uniform float NAN;
-
-      bool isnan(float val) {
-        return (val < 1.0 || 0.0 < val || val == 0.0) ? false : true;
-      }
-      bvec4 isnan(vec4 val) {
-        return bvec4(isnan(val.x), isnan(val.y), isnan(val.z), isnan(val.w));
-      }
-    `;
     defineSpecialInf = `
       uniform float INFINITY;
 
@@ -120,7 +98,6 @@ export function getGlslDifferences(): GLSL {
     texture2D,
     output,
     defineOutput,
-    defineSpecialNaN,
     defineSpecialInf,
     defineRound
   };

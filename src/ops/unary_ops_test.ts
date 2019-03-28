@@ -2146,6 +2146,7 @@ describeWithFlags('tan', ALL_ENVS, () => {
 
     expect(gradients.shape).toEqual(a.shape);
     expect(gradients.dtype).toEqual('float32');
+    // The grad(tan(x)) which relies on 1/cos(x) is less precise on Windows.
     expectArraysClose(gradients, expected, 1e-2);
   });
 
