@@ -249,7 +249,6 @@ function getShaderPrefix(glsl: GLSL): string {
       return bvec4(isnan(val.x), isnan(val.y), isnan(val.z), isnan(val.w));
     }
 
-
     ${glsl.defineSpecialInf}
     ${glsl.defineRound}
 
