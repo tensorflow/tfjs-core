@@ -149,6 +149,10 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     return this.backendInstance;
   }
 
+  backendNames(): string[] {
+    return Object.keys(this.registryFactory);
+  }
+
   private getBestBackendName(): string {
     if (Object.keys(this.registryFactory).length === 0) {
       throw new Error('No backend found in registry.');
@@ -165,11 +169,17 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     return sortedBackends[0].name;
   }
 
-  findBackend(name: string): KernelBackend {
-    if (!(name in this.registry)) {
-      return null;
+  findBackend(backendName: string): KernelBackend {
+    if (!(backendName in this.registry)) {
+      // If the backend hasn't been initialized but we have a registry entry for
+      // it, initialize it and return it.
+      if (backendName in this.registryFactory) {
+        this.initializeBackend(backendName);
+      } else {
+        return null;
+      }
     }
-    return this.registry[name];
+    return this.registry[backendName];
   }
 
   findBackendFactory(name: string): () => KernelBackend {
@@ -197,13 +207,8 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
       throw new Error(`Backend name '${backendName}' not found in registry`);
     }
     if (this.registry[backendName] == null) {
-      const registryFactoryEntry = ENGINE.registryFactory[backendName];
-
       try {
-        const backend = registryFactoryEntry.factory();
-        backend.setDataMover(
-            {moveData: (dataId: DataId) => ENGINE.moveData(dataId)});
-        this.registry[backendName] = backend;
+        this.initializeBackend(backendName);
       } catch (err) {
         console.warn(`Registration of backend ${backendName} failed`);
         console.warn(err.stack || err.message);
@@ -220,6 +225,18 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     return true;
   }
 
+  private initializeBackend(backendName: string): void {
+    const registryFactoryEntry = ENGINE.registryFactory[backendName];
+    if (registryFactoryEntry == null) {
+      throw new Error(
+          `Cannot initialize backend ${backendName}, no registration found.`);
+    }
+    const backend = registryFactoryEntry.factory();
+    backend.setDataMover(
+        {moveData: (dataId: DataId) => ENGINE.moveData(dataId)});
+    this.registry[backendName] = backend;
+  }
+
   removeBackend(backendName: string): void {
     if (!(backendName in this.registryFactory)) {
       throw new Error(`${backendName} backend not found in registry`);
@@ -228,6 +245,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
       this.registry[backendName].dispose();
       delete this.registry[backendName];
     }
+
     delete this.registryFactory[backendName];
   }
 
@@ -759,6 +777,11 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
   reset() {
     this.state.dispose();
     this.state = new EngineState();
+
+    for (const backendName in this.registry) {
+      this.registry[backendName].dispose();
+      delete this.registry[backendName];
+    }
   }
 }
 

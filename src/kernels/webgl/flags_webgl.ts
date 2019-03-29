@@ -105,10 +105,10 @@ ENV.registerFlag('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION', () => {
  * Whether the timer object from the disjoint_query_timer extension gives
  * timing information that is reliable.
  */
-ENV.registerFlag('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE', () => {
-  return ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') > 0 &&
-      !device_util.isMobile();
-});
+ENV.registerFlag(
+    'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE',
+    () => ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') > 0 &&
+        !device_util.isMobile());
 
 /**
  * Whether rendering to float32 textures is enabled. If disabled, renders to

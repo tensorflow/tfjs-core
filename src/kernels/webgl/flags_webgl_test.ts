@@ -22,9 +22,6 @@ import {describeWithFlags, WEBGL_ENVS} from '../../jasmine_util';
 describeWithFlags(
     'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE', WEBGL_ENVS, () => {
       it('disjoint query timer disabled', () => {
-        // const features:
-        //     Flags = {'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION': 0};
-
         ENV.set('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION', 0);
 
         expect(ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE'))
@@ -32,25 +29,17 @@ describeWithFlags(
       });
 
       it('disjoint query timer enabled, mobile', () => {
-        // const flags:
-        //     Flags = {'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION': 1};
         ENV.set('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION', 1);
         spyOn(device_util, 'isMobile').and.returnValue(true);
-
-        // const env = new Environment(flags);
 
         expect(ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE'))
             .toBe(false);
       });
 
       it('disjoint query timer enabled, not mobile', () => {
-        // const flags:
-        //     Features = {'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION': 1};
         ENV.set('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION', 1);
 
         spyOn(device_util, 'isMobile').and.returnValue(false);
-
-        // const env = new Environment(flags);
 
         expect(ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE'))
             .toBe(true);

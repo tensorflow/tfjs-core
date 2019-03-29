@@ -17,7 +17,7 @@
 
 import {ENGINE} from './engine';
 import {ENV, Flags} from './environment';
-import {KernelBackend} from './kernels/backend';
+import {DataMover, KernelBackend} from './kernels/backend';
 import {MathBackendCPU} from './kernels/cpu/backend_cpu';
 import {MathBackendWebGL} from './kernels/webgl/backend_webgl';
 
@@ -61,38 +61,42 @@ declare let __karma__: any;
 // TODO(nsthorat): Check the registry instead of manual instantiation.
 export function parseKarmaFlags(args: string[]): TestEnv {
   let flags: Flags;
-  let backend: () => KernelBackend;
-  let name = '';
+  let factory: () => KernelBackend;
+  let backendName = '';
+  const backendNames = ENGINE.backendNames()
+                           .map(backendName => '\'' + backendName + '\'')
+                           .join(', ');
 
   args.forEach((arg, i) => {
     if (arg === '--flags') {
       flags = JSON.parse(args[i + 1]);
     } else if (arg === '--backend') {
       const type = args[i + 1];
-      name = type;
-      if (type.toLowerCase() === 'cpu') {
-        backend = () => new MathBackendCPU();
+      backendName = type;
+      factory = ENGINE.findBackendFactory(backendName.toLowerCase());
+
+      // TODO(nsthorat): Fix this to be truly modular.
+      if (backendName === 'cpu') {
         flags = flags || {};
         flags['HAS_WEBGL'] = false;
-      } else if (type.toLowerCase() === 'webgl') {
-        backend = () => new MathBackendWebGL();
-      } else {
+      }
+      if (factory == null) {
         throw new Error(
             `Unknown value ${type} for flag --backend. ` +
-            `Allowed values are 'cpu' or 'webgl'.`);
+            `Allowed values are ${backendNames}.`);
       }
     }
   });
 
-  if (flags == null && backend == null) {
+  if (flags == null && factory == null) {
     return null;
   }
-  if (flags != null && backend == null) {
+  if (flags != null && factory == null) {
     throw new Error(
         '--backend flag is required when --flags is present. ' +
-        'Available values are "webgl" or "cpu".');
+        `Available values are ${backendNames}.`);
   }
-  return {flags: flags || {}, factory: backend, name};
+  return {flags: flags || {}, factory, name: backendName};
 }
 
 export function describeWithFlags(
@@ -185,4 +189,7 @@ function executeTests(
   });
 }
 
-export class TestKernelBackend extends KernelBackend {}
+export class TestKernelBackend extends KernelBackend {
+  setDataMover(dataMover: DataMover): void {}
+  dispose(): void {}
+}

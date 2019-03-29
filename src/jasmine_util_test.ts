@@ -15,11 +15,9 @@
  * =============================================================================
  */
 
-import {ENGINE} from './engine';
 import {ENV} from './environment';
-import {describeWithFlags, envSatisfiesConstraints, parseKarmaFlags, TestKernelBackend, WEBGL_ENVS} from './jasmine_util';
-import {MathBackendCPU} from './kernels/cpu/backend_cpu';
-import {MathBackendWebGL} from './kernels/webgl/backend_webgl';
+import * as tf from './index';
+import {describeWithFlags, envSatisfiesConstraints, parseKarmaFlags, TestKernelBackend} from './jasmine_util';
 
 describeWithFlags('jasmine_util.envSatisfiesConstraints', {}, () => {
   it('ENV satisfies empty constraints', () => {
@@ -43,23 +41,17 @@ describe('jasmine_util.parseKarmaFlags', () => {
     expect(res).toBeNull();
   });
 
-  it('--backend cpu', () => {
-    const res = parseKarmaFlags(['--backend', 'cpu']);
-    expect(res.name).toBe('cpu');
-    expect(res.flags).toEqual({'HAS_WEBGL': false});
-    expect(res.factory() instanceof MathBackendCPU).toBe(true);
-  });
-
-  // tslint:disable-next-line:ban
-  fit('--backend cpu --flags {"IS_NODE": true}', () => {
+  it('--backend test-backend --flags {"IS_NODE": true}', () => {
     const backend = new TestKernelBackend();
-    ENGINE.registerBackend('cpu', () => backend);
+    tf.registerBackend('test-backend', () => backend);
 
-    const res =
-        parseKarmaFlags(['--backend', 'cpu', '--flags', '{"IS_NODE": true}']);
-    expect(res.name).toBe('cpu');
+    const res = parseKarmaFlags(
+        ['--backend', 'test-backend', '--flags', '{"IS_NODE": true}']);
+    expect(res.name).toBe('test-backend');
     expect(res.flags).toEqual({IS_NODE: true});
     expect(res.factory() === backend).toBe(true);
+
+    tf.removeBackend('test-backend');
   });
 
   it('"--backend unknown" throws error', () => {
@@ -79,14 +71,5 @@ describe('jasmine_util.parseKarmaFlags', () => {
   it('"--backend cpu --flags notJson" throws error', () => {
     expect(() => parseKarmaFlags(['--backend', 'cpu', '--flags', 'notJson']))
         .toThrowError();
-  });
-});
-
-describeWithFlags('jasmine_util.envSatisfiesConstraints', WEBGL_ENVS, () => {
-  it('--backend webgl', () => {
-    const res = parseKarmaFlags(['--backend', 'webgl']);
-    expect(res.name).toBe('webgl');
-    expect(res.flags).toEqual({});
-    expect(res.factory() instanceof MathBackendWebGL).toBe(true);
   });
 });

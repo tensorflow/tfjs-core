@@ -256,8 +256,8 @@ export function time(f: () => void): Promise<TimingInfo> {
  *     (requires tfjs-node).
  */
 /** @doc {heading: 'Environment'} */
-export function setBackend(backendName: string) {
-  ENGINE.setBackend(backendName);
+export function setBackend(backendName: string): boolean {
+  return ENGINE.setBackend(backendName);
 }
 
 /**
@@ -272,7 +272,7 @@ export function getBackend(): string {
 }
 
 /**
- * Removes a backend.
+ * Removes a backend and the registered factory.
  */
 /** @doc {heading: 'Environment'} */
 export function removeBackend(name: string): void {

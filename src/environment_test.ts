@@ -58,9 +58,12 @@ describe('Backend registration', () => {
       cpuBackend = new TestKernelBackend();
       return cpuBackend;
     }, 103);
-    const success =
-        tf.registerBackend('custom-webgl', () => new TestKernelBackend(), 104);
+    tf.registerBackend('custom-webgl', () => new TestKernelBackend(), 104);
+
+    const success = tf.setBackend('custom-webgl');
     expect(success).toBe(false);
+
+
     expect(tf.findBackend('custom-webgl') == null).toBe(true);
     expect(tf.findBackendFactory('custom-webgl') == null).toBe(true);
     expect(tf.getBackend()).toBe('custom-cpu');
