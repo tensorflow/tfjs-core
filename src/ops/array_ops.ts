@@ -17,7 +17,6 @@
 
 import {ENV} from '../environment';
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
-import {NamedTensorMap} from '../tensor_types';
 import {convertToTensor, convertToTensorArray} from '../tensor_util_env';
 import {DataType, DataTypeMap, Rank, ShapeMap, TensorLike, TensorLike4D} from '../types';
 import * as util from '../util';
@@ -29,8 +28,8 @@ import {MPRandGauss} from './rand';
 import {zeros, zerosLike} from './tensor_ops';
 
 // TODO(nsthorat): remove this
-const x: NamedTensorMap = {};
-x.value = randomNormal_([1]);
+const x: {[key: string]: string} = {};
+x.value = 'testbazel';
 
 /**
  * Creates a new tensor with the same values and shape as the specified
