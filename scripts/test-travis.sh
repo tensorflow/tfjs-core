@@ -38,3 +38,6 @@ if [[ $(node -v) = *v10* ]]; then
     "run-browserstack --browsers=bs_chrome_mac --backend webgl --features '{\"WEBGL_CPU_FORWARD\": true}'" \
     "run-browserstack --browsers=bs_chrome_mac --backend webgl --features '{\"WEBGL_CPU_FORWARD\": false}'"
 fi
+
+# Test that we build with Google rules.
+yarn build:bazel

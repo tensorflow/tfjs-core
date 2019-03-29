@@ -1,8 +1,26 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+
+# This file contains rules for building the library so that it's
+# Google-complaint and will compile with closure.
+
 load("@npm_bazel_typescript//:defs.bzl", "ts_library")
 
 TEST_SRCS = [
   "jasmine_*",
-  "test_*",
+  "test_node.ts",
   "**/*_test.ts"
 ]
 
@@ -10,7 +28,7 @@ ts_library(
     name = "src",
     srcs = glob(
         ["**/*.ts"],
-        # exclude = TEST_SRCS,
+        exclude = TEST_SRCS,
     ),
     deps = [
       "@npm//@types",
