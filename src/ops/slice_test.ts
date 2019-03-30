@@ -294,7 +294,7 @@ describeWithFlags('slice and memory usage', WEBGL_ENVS, () => {
     expect(getMem().numBytesInGPU).toBe(8);
 
     // Dispose b and expect 0 memory on GPU.
-    tf.dispose([b]);
+    b.dispose();
     expect(getMem().numBytesInGPU).toBe(0);
   });
 });
