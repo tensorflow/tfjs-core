@@ -22,7 +22,7 @@ import * as util from './util';
 import {isString} from './util';
 
 const TEST_EPSILON_FLOAT32 = 1e-3;
-const TEST_EPSILON_FLOAT16 = 1e-1;
+export const TEST_EPSILON_FLOAT16 = 1e-1;
 
 export function expectArraysClose(
     actual: Tensor|TypedArray|number[],

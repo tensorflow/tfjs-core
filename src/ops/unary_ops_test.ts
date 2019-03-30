@@ -17,7 +17,7 @@
 
 import * as tf from '../index';
 import {ALL_ENVS, describeWithFlags, PACKED_ENVS, WEBGL_ENVS} from '../jasmine_util';
-import {expectArraysClose} from '../test_util';
+import {expectArraysClose, TEST_EPSILON_FLOAT16} from '../test_util';
 import * as util from '../util';
 
 import * as selu_util from './selu_util';
@@ -2145,7 +2145,8 @@ describeWithFlags('tan', ALL_ENVS, () => {
 
     expect(gradients.shape).toEqual(a.shape);
     expect(gradients.dtype).toEqual('float32');
-    expectArraysClose(gradients, expected);
+    // The grad(tan(x)) which relies on 1/cos(x) is less precise on Windows.
+    expectArraysClose(gradients, expected, TEST_EPSILON_FLOAT16);
   });
 
   it('gradients: Tensor2D', () => {

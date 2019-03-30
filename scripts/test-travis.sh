@@ -30,6 +30,7 @@ if [[ $(node -v) = *v10* ]]; then
   # already downloaded binary.
   npm-run-all -p -c --aggregate-output \
     "run-browserstack --browsers=bs_safari_mac --flags '{\"HAS_WEBGL\": false}' --backend cpu" \
+    "run-browserstack --browsers=win_10_chrome --backend webgl --flags '{\"WEBGL_CPU_FORWARD\": false, \"WEBGL_SIZE_UPLOAD_UNIFORM\": 0}'" \
     "run-browserstack --browsers=bs_ios_11 --backend webgl --flags '{\"WEBGL_CPU_FORWARD\": false, \"WEBGL_SIZE_UPLOAD_UNIFORM\": 0}'" \
     "run-browserstack --browsers=bs_ios_11 --flags '{\"HAS_WEBGL\": false}' --backend cpu" \
     "run-browserstack --browsers=bs_firefox_mac" \
