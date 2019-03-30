@@ -15,12 +15,64 @@
  * =============================================================================
  */
 
+import * as device_util from './device_util';
 import {ENV} from './environment';
-import * as tf from './index';
-import {ALL_ENVS, describeWithFlags} from './jasmine_util';
 
-describeWithFlags('TENSORLIKE_CHECK_SHAPE_CONSISTENCY', ALL_ENVS, () => {
+describe('DEBUG', () => {
+  beforeEach(() => {
+    ENV.reset();
+    spyOn(console, 'warn').and.callFake((msg: string) => {});
+  });
+  afterAll(() => ENV.reset());
+
+  it('disabled by default', () => {
+    expect(ENV.get('DEBUG')).toBe(false);
+  });
+
+  it('warns when enabled', () => {
+    const consoleWarnSpy = console.warn as jasmine.Spy;
+    ENV.set('DEBUG', true);
+    expect(consoleWarnSpy.calls.count()).toBe(1);
+    expect((consoleWarnSpy.calls.first().args[0] as string)
+               .startsWith('Debugging mode is ON. '))
+        .toBe(true);
+
+    expect(ENV.get('DEBUG')).toBe(true);
+    expect(consoleWarnSpy.calls.count()).toBe(1);
+  });
+});
+
+describe('IS_BROWSER', () => {
+  let isBrowser: boolean;
+  beforeEach(() => {
+    ENV.reset();
+    spyOn(device_util, 'isBrowser').and.callFake(() => isBrowser);
+  });
+  afterAll(() => ENV.reset());
+
+  it('isBrowser: true', () => {
+    isBrowser = true;
+    expect(ENV.get('IS_BROWSER')).toBe(true);
+  });
+
+  it('isBrowser: false', () => {
+    isBrowser = false;
+    expect(ENV.get('IS_BROWSER')).toBe(false);
+  });
+});
+
+describe('PROD', () => {
   beforeEach(() => ENV.reset());
+  afterAll(() => ENV.reset());
+
+  it('disabled by default', () => {
+    expect(ENV.get('PROD')).toBe(false);
+  });
+});
+
+describe('TENSORLIKE_CHECK_SHAPE_CONSISTENCY', () => {
+  beforeEach(() => ENV.reset());
+  afterAll(() => ENV.reset());
 
   it('disabled when prod is enabled', () => {
     ENV.set('PROD', true);
@@ -33,18 +85,20 @@ describeWithFlags('TENSORLIKE_CHECK_SHAPE_CONSISTENCY', ALL_ENVS, () => {
   });
 });
 
-describe('public api tf.*', () => {
-  beforeEach(() => {
-    ENV.reset();
-  });
+describe('DEPRECATION_WARNINGS_ENABLED', () => {
+  beforeEach(() => ENV.reset());
+  afterAll(() => ENV.reset());
 
-  it('tf.enableProdMode', () => {
-    tf.enableProdMode();
-    expect(ENV.get('PROD')).toBe(true);
+  it('enabled by default', () => {
+    expect(ENV.get('DEPRECATION_WARNINGS_ENABLED')).toBe(true);
   });
+});
 
-  it('tf.enableDebugMode', () => {
-    tf.enableDebugMode();
-    expect(ENV.get('DEBUG')).toBe(true);
+describe('IS_TEST', () => {
+  beforeEach(() => ENV.reset());
+  afterAll(() => ENV.reset());
+
+  it('disabled by default', () => {
+    expect(ENV.get('IS_TEST')).toBe(false);
   });
 });

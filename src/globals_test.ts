@@ -15,6 +15,7 @@
  * limitations under the License.
  * =============================================================================
  */
+import {ENV} from './environment';
 import * as tf from './index';
 
 describe('deprecation warnings', () => {
@@ -46,5 +47,21 @@ describe('deprecation warnings', () => {
     // deprecationWarn no longer warns.
     tf.deprecationWarn('xyz is deprecated.');
     expect(console.warn).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('Flag flipping methods', () => {
+  beforeEach(() => {
+    ENV.reset();
+  });
+
+  it('tf.enableProdMode', () => {
+    tf.enableProdMode();
+    expect(ENV.get('PROD')).toBe(true);
+  });
+
+  it('tf.enableDebugMode', () => {
+    tf.enableDebugMode();
+    expect(ENV.get('DEBUG')).toBe(true);
   });
 });

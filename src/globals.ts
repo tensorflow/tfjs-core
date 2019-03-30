@@ -321,4 +321,10 @@ export function registerBackend(
   return ENGINE.registerBackend(name, factory, priority);
 }
 
-export const backend = () => ENGINE.backend;
+/**
+ * Gets the current backend. If no backends have been initialized, this will
+ * initialize the best backend.
+ */
+export function backend(): KernelBackend {
+  return ENGINE.backend;
+}

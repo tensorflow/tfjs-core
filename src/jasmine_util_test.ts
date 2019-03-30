@@ -22,7 +22,7 @@ import {envSatisfiesConstraints, parseKarmaFlags, TestKernelBackend} from './jas
 describe('jasmine_util.envSatisfiesConstraints', () => {
   it('ENV satisfies empty constraints', () => {
     const backendName = 'test-backend';
-    const env = new Environment();
+    const env = new Environment({});
     env.setFlags({});
 
     const constraints = {};
@@ -32,7 +32,7 @@ describe('jasmine_util.envSatisfiesConstraints', () => {
 
   it('ENV satisfies matching flag constraints, no backend constraint', () => {
     const backendName = 'test-backend';
-    const env = new Environment();
+    const env = new Environment({});
     env.setFlags({'TEST-FLAG': true});
 
     const constraints = {flags: {'TEST-FLAG': true}};
@@ -42,7 +42,7 @@ describe('jasmine_util.envSatisfiesConstraints', () => {
 
   it('ENV satisfies matching flag and one backend constraint', () => {
     const backendName = 'test-backend';
-    const env = new Environment();
+    const env = new Environment({});
     env.setFlags({'TEST-FLAG': true});
 
     const constraints = {flags: {'TEST-FLAG': true}, backends: backendName};
@@ -52,7 +52,7 @@ describe('jasmine_util.envSatisfiesConstraints', () => {
 
   it('ENV satisfies matching flag and multiple backend constraints', () => {
     const backendName = 'test-backend';
-    const env = new Environment();
+    const env = new Environment({});
     env.setFlags({'TEST-FLAG': true});
 
     const constraints = {
@@ -65,7 +65,7 @@ describe('jasmine_util.envSatisfiesConstraints', () => {
 
   it('ENV does not satisfy mismatching flags constraints', () => {
     const backendName = 'test-backend';
-    const env = new Environment();
+    const env = new Environment({});
     env.setFlags({'TEST-FLAG': false});
 
     const constraints = {flags: {'TEST-FLAG': true}};
@@ -76,7 +76,7 @@ describe('jasmine_util.envSatisfiesConstraints', () => {
   it('ENV satisfies no flag constraint but does not satisfy backend constraint',
      () => {
        const backendName = 'test-backend';
-       const env = new Environment();
+       const env = new Environment({});
 
        const constraints = {backends: 'test-backend2'};
 
@@ -86,7 +86,7 @@ describe('jasmine_util.envSatisfiesConstraints', () => {
 
   it('ENV satisfies flags but does not satisfy backend constraint', () => {
     const backendName = 'test-backend';
-    const env = new Environment();
+    const env = new Environment({});
     env.setFlags({'TEST-FLAG': true});
 
     const constraints = {flags: {'TEST-FLAG': true}, backends: 'test-backend2'};

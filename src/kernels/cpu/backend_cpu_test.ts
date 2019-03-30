@@ -18,28 +18,12 @@
 import * as tf from '../../index';
 import {CPU_ENVS, describeWithFlags} from '../../jasmine_util';
 import {expectArraysEqual} from '../../test_util';
-import {KernelBackend} from '../backend';
-
 import {MathBackendCPU} from './backend_cpu';
 
 describeWithFlags('backendCPU', CPU_ENVS, () => {
-  let prevBackend: string;
-  let backend: KernelBackend;
-
-  beforeAll(() => {
-    prevBackend = tf.getBackend();
-  });
-
+  let backend: MathBackendCPU;
   beforeEach(() => {
-    backend = new MathBackendCPU();
-    tf.registerBackend('test-storage', () => backend);
-    tf.setBackend('test-storage');
-  });
-
-  afterEach(() => {
-    backend.dispose();
-    tf.setBackend(prevBackend);
-    tf.removeBackend('test-storage');
+    backend = tf.backend() as MathBackendCPU;
   });
 
   it('register empty string tensor', () => {

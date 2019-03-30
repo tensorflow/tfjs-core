@@ -20,7 +20,6 @@ import {tidy} from '../globals';
 import {zerosLike} from '../ops/ops';
 import {ConfigDict, registerClass, Serializable, SerializableConstructor} from '../serialization';
 import {NamedVariableMap} from '../tensor_types';
-
 import {Optimizer} from './optimizer';
 
 /** @doclink Optimizer */

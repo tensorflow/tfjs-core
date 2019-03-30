@@ -80,7 +80,6 @@ export function envSatisfiesConstraints(
 // tslint:disable-next-line:no-any
 declare let __karma__: any;
 
-// TODO(nsthorat): Check the registry instead of manual instantiation.
 export function parseKarmaFlags(args: string[]): TestEnv {
   let flags: Flags;
   let factory: () => KernelBackend;
@@ -170,10 +169,9 @@ function executeTests(
     testName: string, tests: (env: TestEnv) => void, testEnv: TestEnv) {
   describe(testName, () => {
     beforeAll(() => {
-      ENV.reset();
+      ENGINE.reset();
       ENV.setFlags(testEnv.flags);
       ENV.set('IS_TEST', true);
-      ENGINE.reset();
       ENGINE.setBackend(testEnv.backendName);
     });
 
@@ -187,7 +185,6 @@ function executeTests(
     });
 
     afterAll(() => {
-      ENV.reset();
       ENGINE.reset();
     });
 

@@ -486,8 +486,8 @@ export function isReshapeFree(shape1: number[], shape2: number[]): boolean {
 // We cache webgl params because the environment gets reset between
 // unit tests and we don't want to constantly query the WebGLContext for
 // MAX_TEXTURE_SIZE.
-let MAX_TEXTURE_SIZE: number;
-let MAX_TEXTURES_IN_SHADER: number;
+export let MAX_TEXTURE_SIZE: number;
+export let MAX_TEXTURES_IN_SHADER: number;
 
 export function getWebGLMaxTextureSize(webGLVersion: number): number {
   if (MAX_TEXTURE_SIZE == null) {

@@ -166,23 +166,23 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     return this.registry[backendName];
   }
 
-  findBackendFactory(name: string): () => KernelBackend {
-    if (!(name in this.registryFactory)) {
+  findBackendFactory(backendName: string): () => KernelBackend {
+    if (!(backendName in this.registryFactory)) {
       return null;
     }
-    return this.registryFactory[name].factory;
+    return this.registryFactory[backendName].factory;
   }
 
-  // TODO(nsthorat): Unit test this
-  registerBackend(name: string, factory: () => KernelBackend, priority = 1):
-      boolean {
-    if (name in this.registryFactory) {
+  registerBackend(
+      backendName: string, factory: () => KernelBackend,
+      priority = 1): boolean {
+    if (backendName in this.registryFactory) {
       console.warn(
-          `${name} backend was already registered. ` +
+          `${backendName} backend was already registered. ` +
           `Reusing existing backend factory.`);
       return false;
     }
-    this.registryFactory[name] = {factory, priority};
+    this.registryFactory[backendName] = {factory, priority};
     return true;
   }
 
@@ -804,6 +804,8 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     this.state.dispose();
     this.state = new EngineState();
 
+    this.ENV.reset();
+
     for (const backendName in this.registry) {
       this.registry[backendName].dispose();
       delete this.registry[backendName];
@@ -840,9 +842,9 @@ function getGlobalNamespace(): {_tfengine: Engine} {
 function getOrMakeEngine(): Engine {
   const ns = getGlobalNamespace();
   if (ns._tfengine == null) {
-    const environment = new Environment();
+    const environment = new Environment(ns);
     ns._tfengine = new Engine(environment);
-    setEnvironmentGlobal(environment, ns);
+    setEnvironmentGlobal(environment);
   }
   // Tell the current tensor interface that the global engine is responsible
   // for tracking.

@@ -15,10 +15,10 @@
  * =============================================================================
  */
 import * as tf from '../index';
-import {describeWithFlags} from '../jasmine_util';
+import {ALL_ENVS, describeWithFlags} from '../jasmine_util';
 import {EPSILON_FLOAT16, EPSILON_FLOAT32} from './backend';
 
-describeWithFlags('epsilon', {}, () => {
+describeWithFlags('epsilon', ALL_ENVS, () => {
   it('Epsilon is a function of float precision', () => {
     const epsilonValue = tf.backend().floatPrecision() === 32 ?
         EPSILON_FLOAT32 :

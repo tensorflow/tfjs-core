@@ -15,6 +15,9 @@
  * =============================================================================
  */
 
+// Expects flags from URL in the format ?tfjsflags=FLAG1:1,FLAG2:true.
+const TENSORFLOWJS_FLAGS_PREFIX = 'tfjsflags';
+
 type FlagValue = number|boolean;
 export type Flags = {
   [featureName: string]: FlagValue
@@ -28,14 +31,26 @@ export class Environment {
   private flags: Flags = {};
   private flagRegistry: {[flagName: string]: FlagRegistryEntry} = {};
 
-  constructor() {
-    this.populateFlagsFromURL();
+  private urlFlags: Flags = {};
+
+  // tslint:disable-next-line: no-any
+  constructor(public global: any) {
+    this.populateURLFlags();
   }
 
   registerFlag(
       flagName: string, evaluationFn: () => FlagValue,
       setHook?: (value: FlagValue) => void) {
-    this.flagRegistry[flagName] = {evaluationFn};
+    this.flagRegistry[flagName] = {evaluationFn, setHook};
+
+    // Override the flag value from the URL. This has to happen here because the
+    // environment is initialized before flags get registered.
+    if (this.urlFlags[flagName] != null) {
+      const flagValue = this.urlFlags[flagName];
+      console.warn(
+          `Setting feature override from URL ${flagName}: ${flagValue}.`);
+      this.set(flagName, flagValue);
+    }
   }
 
   get(flagName: string): FlagValue {
@@ -81,59 +96,27 @@ export class Environment {
 
   reset() {
     this.flags = {};
-    this.populateFlagsFromURL();
+    this.urlFlags = {};
+    this.populateURLFlags();
   }
 
-  // tslint:disable-next-line:no-any
-  get global(): any {
-    return global;
-  }
-
-  private populateFlagsFromURL(): void {
-    if (typeof window === 'undefined' ||
-        typeof window.location === 'undefined' ||
-        typeof window.location.search === 'undefined') {
+  private populateURLFlags(): void {
+    if (typeof this.global === 'undefined' ||
+        typeof this.global.location === 'undefined' ||
+        typeof this.global.location.search === 'undefined') {
       return;
     }
 
-    const urlParams = getQueryParams(window.location.search);
+    const urlParams = getQueryParams(this.global.location.search);
     if (TENSORFLOWJS_FLAGS_PREFIX in urlParams) {
-      const urlFlags: {[key: string]: string} = {};
-
       const keyValues = urlParams[TENSORFLOWJS_FLAGS_PREFIX].split(',');
       keyValues.forEach(keyValue => {
         const [key, value] = keyValue.split(':') as [string, string];
-        urlFlags[key] = value;
+        this.urlFlags[key] = parseValue(key, value);
       });
-
-      // for (const flagName in this.flagRegistry) {
-
-      // }
-
-      // URL_PROPERTIES.forEach(urlProperty => {
-      //   if (urlProperty.name in urlFlags) {
-      //     console.log(
-      //         `Setting feature override from URL ${urlProperty.name}: ` +
-      //         `${urlFlags[urlProperty.name]}`);
-      //     if (urlProperty.type === Type.NUMBER) {
-      //       features[urlProperty.name] = +urlFlags[urlProperty.name];
-      //     } else if (urlProperty.type === Type.BOOLEAN) {
-      //       features[urlProperty.name] = urlFlags[urlProperty.name] ===
-      //       'true';
-      //     } else if (urlProperty.type === Type.STRING) {
-      //       // tslint:disable-next-line:no-any
-      //       features[urlProperty.name] = urlFlags[urlProperty.name] as any;
-      //     } else {
-      //       console.warn(`Unknown URL param: ${urlProperty.name}.`);
-      //     }
-      //   }
-      // });
     }
   }
 }
-
-// Expects flags from URL in the format ?tfjsflags=FLAG1:1,FLAG2:true.
-const TENSORFLOWJS_FLAGS_PREFIX = 'tfjsflags';
 
 export function getQueryParams(queryString: string): {[key: string]: string} {
   const params = {};
@@ -149,11 +132,19 @@ function decodeParam(
   params[decodeURIComponent(name)] = decodeURIComponent(value || '');
 }
 
-// tslint:disable-next-line:no-any
-let global: any;
+function parseValue(flagName: string, value: string): FlagValue {
+  value = value.toLowerCase();
+  if (value === 'true' || value === 'false') {
+    return Boolean(value) === true;
+  } else if (`${+ value}` === value) {
+    return +value;
+  }
+  throw new Error(
+      `Could not parse value flag value ${value} for flag ${flagName}.`);
+}
+
 export let ENV: Environment;
 // tslint:disable-next-line:no-any
-export function setEnvironmentGlobal(environment: Environment, ns: any) {
+export function setEnvironmentGlobal(environment: Environment) {
   ENV = environment;
-  global = ns;
 }

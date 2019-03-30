@@ -21,7 +21,6 @@ import {div, scalar, sub, zerosLike} from '../ops/ops';
 import {ConfigDict, registerClass, Serializable, SerializableConstructor} from '../serialization';
 import {Variable} from '../tensor';
 import {NamedVariableMap} from '../tensor_types';
-
 import {Optimizer} from './optimizer';
 
 export class AdamaxOptimizer extends Optimizer {
