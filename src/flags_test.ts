@@ -20,6 +20,8 @@ import * as tf from './index';
 import {ALL_ENVS, describeWithFlags} from './jasmine_util';
 
 describeWithFlags('TENSORLIKE_CHECK_SHAPE_CONSISTENCY', ALL_ENVS, () => {
+  beforeEach(() => ENV.reset());
+
   it('disabled when prod is enabled', () => {
     ENV.set('PROD', true);
     expect(ENV.get('TENSORLIKE_CHECK_SHAPE_CONSISTENCY')).toBe(false);
@@ -33,10 +35,6 @@ describeWithFlags('TENSORLIKE_CHECK_SHAPE_CONSISTENCY', ALL_ENVS, () => {
 
 describe('public api tf.*', () => {
   beforeEach(() => {
-    ENV.reset();
-  });
-
-  afterEach(() => {
     ENV.reset();
   });
 

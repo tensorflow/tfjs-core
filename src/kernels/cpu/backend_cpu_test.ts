@@ -16,12 +16,13 @@
  */
 
 import * as tf from '../../index';
+import {CPU_ENVS, describeWithFlags} from '../../jasmine_util';
 import {expectArraysEqual} from '../../test_util';
-
 import {KernelBackend} from '../backend';
+
 import {MathBackendCPU} from './backend_cpu';
 
-describe('backendCPU', () => {
+describeWithFlags('backendCPU', CPU_ENVS, () => {
   let prevBackend: string;
   let backend: KernelBackend;
 

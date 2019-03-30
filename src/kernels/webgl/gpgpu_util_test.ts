@@ -22,7 +22,7 @@ import {GPGPUContext} from './gpgpu_context';
 import * as gpgpu_util from './gpgpu_util';
 
 const DOWNLOAD_FLOAT_ENVS = {
-  'WEBGL_DOWNLOAD_FLOAT_ENABLED': true
+  flags: {'WEBGL_DOWNLOAD_FLOAT_ENABLED': true}
 };
 
 describeWithFlags('gpgpu_util createWebGLContext', WEBGL_ENVS, () => {

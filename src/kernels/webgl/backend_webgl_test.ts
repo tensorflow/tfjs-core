@@ -259,12 +259,15 @@ describeWithFlags('Custom window size', WEBGL_ENVS, () => {
 
 const SIZE_UPLOAD_UNIFORM = 4;
 // Run only for environments that have 32bit floating point support.
-const FLOAT32_WEBGL_ENVS = Object.assign(
-    {
-      'WEBGL_RENDER_FLOAT32_ENABLED': true,
-      'WEBGL_SIZE_UPLOAD_UNIFORM': SIZE_UPLOAD_UNIFORM
-    },
-    WEBGL_ENVS);
+const FLOAT32_WEBGL_ENVS = {
+  flags: Object.assign(
+      {
+        'WEBGL_RENDER_FLOAT32_ENABLED': true,
+        'WEBGL_SIZE_UPLOAD_UNIFORM': SIZE_UPLOAD_UNIFORM
+      },
+      WEBGL_ENVS.flags),
+  backends: WEBGL_ENVS.backends
+};
 describeWithFlags('upload tensors as uniforms', FLOAT32_WEBGL_ENVS, () => {
   it('small tensor gets uploaded as scalar', () => {
     let m = tf.memory() as WebGLMemoryInfo;

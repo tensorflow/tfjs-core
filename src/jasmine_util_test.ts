@@ -15,23 +15,83 @@
  * =============================================================================
  */
 
-import {ENV} from './environment';
+import {Environment} from './environment';
 import * as tf from './index';
-import {describeWithFlags, envSatisfiesConstraints, parseKarmaFlags, TestKernelBackend} from './jasmine_util';
+import {envSatisfiesConstraints, parseKarmaFlags, TestKernelBackend} from './jasmine_util';
 
-describeWithFlags('jasmine_util.envSatisfiesConstraints', {}, () => {
+describe('jasmine_util.envSatisfiesConstraints', () => {
   it('ENV satisfies empty constraints', () => {
-    expect(envSatisfiesConstraints({})).toBe(true);
+    const backendName = 'test-backend';
+    const env = new Environment();
+    env.setFlags({});
+
+    const constraints = {};
+
+    expect(envSatisfiesConstraints(env, backendName, constraints)).toBe(true);
   });
 
-  it('ENV satisfies matching constraints', () => {
-    const c = {DEBUG: ENV.get('DEBUG')};
-    expect(envSatisfiesConstraints(c)).toBe(true);
+  it('ENV satisfies matching flag constraints, no backend constraint', () => {
+    const backendName = 'test-backend';
+    const env = new Environment();
+    env.setFlags({'TEST-FLAG': true});
+
+    const constraints = {flags: {'TEST-FLAG': true}};
+
+    expect(envSatisfiesConstraints(env, backendName, constraints)).toBe(true);
   });
 
-  it('ENV does not satisfy mismatching constraints', () => {
-    const c = {DEBUG: !ENV.get('DEBUG')};
-    expect(envSatisfiesConstraints(c)).toBe(false);
+  it('ENV satisfies matching flag and one backend constraint', () => {
+    const backendName = 'test-backend';
+    const env = new Environment();
+    env.setFlags({'TEST-FLAG': true});
+
+    const constraints = {flags: {'TEST-FLAG': true}, backends: backendName};
+
+    expect(envSatisfiesConstraints(env, backendName, constraints)).toBe(true);
+  });
+
+  it('ENV satisfies matching flag and multiple backend constraints', () => {
+    const backendName = 'test-backend';
+    const env = new Environment();
+    env.setFlags({'TEST-FLAG': true});
+
+    const constraints = {
+      flags: {'TEST-FLAG': true},
+      backends: [backendName, 'other-backend']
+    };
+
+    expect(envSatisfiesConstraints(env, backendName, constraints)).toBe(true);
+  });
+
+  it('ENV does not satisfy mismatching flags constraints', () => {
+    const backendName = 'test-backend';
+    const env = new Environment();
+    env.setFlags({'TEST-FLAG': false});
+
+    const constraints = {flags: {'TEST-FLAG': true}};
+
+    expect(envSatisfiesConstraints(env, backendName, constraints)).toBe(false);
+  });
+
+  it('ENV satisfies no flag constraint but does not satisfy backend constraint',
+     () => {
+       const backendName = 'test-backend';
+       const env = new Environment();
+
+       const constraints = {backends: 'test-backend2'};
+
+       expect(envSatisfiesConstraints(env, backendName, constraints))
+           .toBe(false);
+     });
+
+  it('ENV satisfies flags but does not satisfy backend constraint', () => {
+    const backendName = 'test-backend';
+    const env = new Environment();
+    env.setFlags({'TEST-FLAG': true});
+
+    const constraints = {flags: {'TEST-FLAG': true}, backends: 'test-backend2'};
+
+    expect(envSatisfiesConstraints(env, backendName, constraints)).toBe(false);
   });
 });
 
@@ -48,8 +108,8 @@ describe('jasmine_util.parseKarmaFlags', () => {
     const res = parseKarmaFlags(
         ['--backend', 'test-backend', '--flags', '{"IS_NODE": true}']);
     expect(res.name).toBe('test-backend');
+    expect(res.backendName).toBe('test-backend');
     expect(res.flags).toEqual({IS_NODE: true});
-    expect(res.factory() === backend).toBe(true);
 
     tf.removeBackend('test-backend');
   });

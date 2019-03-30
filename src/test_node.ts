@@ -15,7 +15,6 @@
  * =============================================================================
  */
 
-import {ENGINE} from './engine';
 import {setTestEnvs} from './jasmine_util';
 
 // tslint:disable-next-line:no-require-imports
@@ -25,8 +24,7 @@ process.on('unhandledRejection', e => {
   throw e;
 });
 
-setTestEnvs(
-    [{name: 'node', factory: ENGINE.findBackendFactory('cpu'), flags: {}}]);
+setTestEnvs([{name: 'node', backendName: 'cpu', flags: {}}]);
 
 const runner = new jasmine();
 runner.loadConfig({spec_files: ['dist/**/**_test.js'], random: false});

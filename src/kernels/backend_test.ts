@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2017 Google Inc. All Rights Reserved.
+ * Copyright 2019 Google Inc. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,14 +14,19 @@
  * limitations under the License.
  * =============================================================================
  */
+import * as tf from '../index';
+import {describeWithFlags} from '../jasmine_util';
+import {EPSILON_FLOAT16, EPSILON_FLOAT32} from './backend';
 
-import {getQueryParams} from './environment';
+describeWithFlags('epsilon', {}, () => {
+  it('Epsilon is a function of float precision', () => {
+    const epsilonValue = tf.backend().floatPrecision() === 32 ?
+        EPSILON_FLOAT32 :
+        EPSILON_FLOAT16;
+    expect(tf.backend().epsilon()).toBe(epsilonValue);
+  });
 
-// TODO(nsthorat);: Add more tests of environment directly.
-
-describe('environment.getQueryParams', () => {
-  it('basic', () => {
-    expect(getQueryParams('?a=1&b=hi&f=animal'))
-        .toEqual({'a': '1', 'b': 'hi', 'f': 'animal'});
+  it('abs(epsilon) > 0', () => {
+    expect(tf.abs(tf.backend().epsilon()).arraySync()).toBeGreaterThan(0);
   });
 });

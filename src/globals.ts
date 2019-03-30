@@ -245,7 +245,8 @@ export function time(f: () => void): Promise<TimingInfo> {
 
 /**
  * Sets the backend (cpu, webgl, etc) responsible for creating tensors and
- * executing operations on those tensors.
+ * executing operations on those tensors. Returns whether the setting of the
+ * backend was successful.
  *
  * Note this disposes the current backend, if any, as well as any tensors
  * associated with it. A new backend is initialized, even if it is of the
@@ -266,8 +267,6 @@ export function setBackend(backendName: string): boolean {
  */
 /** @doc {heading: 'Environment'} */
 export function getBackend(): string {
-  // NOTE(nsthorat): This might be more complicated, see diff before
-  // submitting!
   return ENGINE.backendName;
 }
 

@@ -16,40 +16,62 @@
  */
 
 import {ENGINE} from './engine';
-import {ENV, Flags} from './environment';
+import {ENV, Environment, Flags} from './environment';
 import {DataMover, KernelBackend} from './kernels/backend';
-import {MathBackendCPU} from './kernels/cpu/backend_cpu';
-import {MathBackendWebGL} from './kernels/webgl/backend_webgl';
 
 Error.stackTraceLimit = Infinity;
 
-export const WEBGL_ENVS: Flags = {
-  'HAS_WEBGL': true
-};
-export const PACKED_ENVS: Flags = {
-  'WEBGL_PACK': true
-};
-export const NODE_ENVS: Flags = {
-  'IS_NODE': true
-};
-export const CHROME_ENVS: Flags = {
-  'IS_CHROME': true
-};
-export const BROWSER_ENVS: Flags = {
-  'IS_BROWSER': true
-};
-export const CPU_ENVS: Flags = {
-  'HAS_WEBGL': false
+export type Constraints = {
+  flags?: Flags;
+  backends?: string | string[];
 };
 
-export const ALL_ENVS: Flags = {};
+export const WEBGL_ENVS: Constraints = {
+  backends: 'webgl'
+};
+export const CPU_ENVS: Constraints = {
+  backends: 'cpu'
+};
+export const PACKED_ENVS: Constraints = {
+  flags: {'WEBGL_PACK': true}
+};
+export const NODE_ENVS: Constraints = {
+  flags: {'IS_NODE': true}
+};
+export const CHROME_ENVS: Constraints = {
+  flags: {'IS_CHROME': true}
+};
+export const BROWSER_ENVS: Constraints = {
+  flags: {'IS_BROWSER': true}
+};
+
+export const ALL_ENVS: Constraints = {};
 
 // Tests whether the current environment satisfies the set of constraints.
-export function envSatisfiesConstraints(constraints: Flags): boolean {
-  for (const key in constraints) {
-    const value = constraints[key];
-    if (ENV.get(key) !== value) {
-      return false;
+export function envSatisfiesConstraints(
+    env: Environment, currentBackendName: string,
+    constraints: Constraints): boolean {
+  if (constraints.flags != null) {
+    for (const flagName in constraints.flags) {
+      const flagValue = constraints.flags[flagName];
+      if (env.get(flagName) !== flagValue) {
+        return false;
+      }
+    }
+  }
+  if (constraints.backends != null) {
+    let anyBackendMatches = false;
+    if (Array.isArray(constraints.backends)) {
+      constraints.backends.forEach(constraintBackendName => {
+        if (constraintBackendName === currentBackendName) {
+          anyBackendMatches = true;
+        }
+      });
+      if (!anyBackendMatches) {
+        return false;
+      }
+    } else {
+      return currentBackendName === constraints.backends;
     }
   }
   return true;
@@ -74,12 +96,6 @@ export function parseKarmaFlags(args: string[]): TestEnv {
       const type = args[i + 1];
       backendName = type;
       factory = ENGINE.findBackendFactory(backendName.toLowerCase());
-
-      // TODO(nsthorat): Fix this to be truly modular.
-      if (backendName === 'cpu') {
-        flags = flags || {};
-        flags['HAS_WEBGL'] = false;
-      }
       if (factory == null) {
         throw new Error(
             `Unknown value ${type} for flag --backend. ` +
@@ -96,14 +112,14 @@ export function parseKarmaFlags(args: string[]): TestEnv {
         '--backend flag is required when --flags is present. ' +
         `Available values are ${backendNames}.`);
   }
-  return {flags: flags || {}, factory, name: backendName};
+  return {flags: flags || {}, name: backendName, backendName};
 }
 
 export function describeWithFlags(
-    name: string, constraints: Flags, tests: (env: TestEnv) => void) {
+    name: string, constraints: Constraints, tests: (env: TestEnv) => void) {
   TEST_ENVS.forEach(testEnv => {
     ENV.setFlags(testEnv.flags);
-    if (envSatisfiesConstraints(constraints)) {
+    if (envSatisfiesConstraints(ENV, testEnv.backendName, constraints)) {
       const testName =
           name + ' ' + testEnv.name + ' ' + JSON.stringify(testEnv.flags);
       executeTests(testName, tests, testEnv);
@@ -113,14 +129,14 @@ export function describeWithFlags(
 
 export interface TestEnv {
   name: string;
-  factory: () => KernelBackend;
+  backendName: string;
   flags: Flags;
 }
 
 export let TEST_ENVS: TestEnv[] = [
   {
     name: 'webgl1',
-    factory: () => new MathBackendWebGL(),
+    backendName: 'webgl',
     flags: {
       'WEBGL_VERSION': 1,
       'WEBGL_CPU_FORWARD': false,
@@ -129,21 +145,15 @@ export let TEST_ENVS: TestEnv[] = [
   },
   {
     name: 'webgl2',
-    factory: () => new MathBackendWebGL(),
+    backendName: 'webgl',
     flags: {
       'WEBGL_VERSION': 2,
       'WEBGL_CPU_FORWARD': false,
       'WEBGL_SIZE_UPLOAD_UNIFORM': 0
     }
   },
-  {
-    name: 'cpu',
-    factory: () => new MathBackendCPU(),
-    flags: {'HAS_WEBGL': false}
-  }
+  {name: 'cpu', backendName: 'cpu', flags: {'HAS_WEBGL': false}}
 ];
-
-export const CPU_FACTORY = () => new MathBackendCPU();
 
 if (typeof __karma__ !== 'undefined') {
   const testEnv = parseKarmaFlags(__karma__.config.args);
@@ -159,15 +169,12 @@ export function setTestEnvs(testEnvs: TestEnv[]) {
 function executeTests(
     testName: string, tests: (env: TestEnv) => void, testEnv: TestEnv) {
   describe(testName, () => {
-    const backendName = 'test-' + testEnv.name;
-
     beforeAll(() => {
       ENV.reset();
       ENV.setFlags(testEnv.flags);
       ENV.set('IS_TEST', true);
       ENGINE.reset();
-      ENGINE.registerBackend(backendName, testEnv.factory, 1000);
-      ENGINE.setBackend(backendName);
+      ENGINE.setBackend(testEnv.backendName);
     });
 
     beforeEach(() => {
@@ -180,7 +187,6 @@ function executeTests(
     });
 
     afterAll(() => {
-      ENGINE.removeBackend(backendName);
       ENV.reset();
       ENGINE.reset();
     });
