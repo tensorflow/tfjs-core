@@ -186,9 +186,6 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     return true;
   }
 
-  /**
-   * Tries to set the backend to
-   */
   setBackend(backendName: string): boolean {
     if (this.registryFactory[backendName] == null) {
       throw new Error(`Backend name '${backendName}' not found in registry`);

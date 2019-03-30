@@ -256,7 +256,7 @@ export function time(f: () => void): Promise<TimingInfo> {
  *     `'webgl'|'cpu'` in the browser, and `'tensorflow'` under node.js
  *     (requires tfjs-node).
  */
-/** @doc {heading: 'Environment'} */
+/** @doc {heading: 'Backends'} */
 export function setBackend(backendName: string): boolean {
   return ENGINE.setBackend(backendName);
 }
@@ -265,7 +265,7 @@ export function setBackend(backendName: string): boolean {
  * Returns the current backend name (cpu, webgl, etc). The backend is
  * responsible for creating tensors and executing operations on those tensors.
  */
-/** @doc {heading: 'Environment'} */
+/** @doc {heading: 'Backends'} */
 export function getBackend(): string {
   return ENGINE.backendName;
 }
@@ -273,18 +273,9 @@ export function getBackend(): string {
 /**
  * Removes a backend and the registered factory.
  */
-/** @doc {heading: 'Environment'} */
+/** @doc {heading: 'Backends'} */
 export function removeBackend(name: string): void {
   ENGINE.removeBackend(name);
-}
-
-/**
- * Returns the current backend name (cpu, webgl, etc). The backend is
- * responsible for creating tensors and executing operations on those tensors.
- */
-/** @doc {heading: 'Environment'} */
-export function currentBackend(): KernelBackend {
-  return ENGINE.backend;
 }
 
 /**
@@ -316,6 +307,7 @@ export function findBackendFactory(name: string): () => KernelBackend {
  *     the best backend. Defaults to 1.
  * @return False if the creation/registration failed. True otherwise.
  */
+/** @doc {heading: 'Backends'} */
 export function registerBackend(
     name: string, factory: () => KernelBackend, priority = 1): boolean {
   return ENGINE.registerBackend(name, factory, priority);
@@ -325,6 +317,7 @@ export function registerBackend(
  * Gets the current backend. If no backends have been initialized, this will
  * initialize the best backend.
  */
+/** @doc {heading: 'Backends'} */
 export function backend(): KernelBackend {
   return ENGINE.backend;
 }
