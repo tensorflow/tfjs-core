@@ -45,8 +45,14 @@ describe('WEBGL_PACK', () => {
   beforeEach(() => ENV.reset());
   afterAll(() => ENV.reset());
 
-  it('defaults to true', () => {
+  it('true when HAS_WEBGL is true', () => {
+    ENV.set('HAS_WEBGL', true);
     expect(ENV.get('WEBGL_PACK')).toBe(true);
+  });
+
+  it('false when HAS_WEBGL is false', () => {
+    ENV.set('HAS_WEBGL', false);
+    expect(ENV.get('WEBGL_PACK')).toBe(false);
   });
 });
 

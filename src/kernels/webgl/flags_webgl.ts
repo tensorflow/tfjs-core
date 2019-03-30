@@ -42,7 +42,7 @@ ENV.registerFlag('WEBGL_VERSION', () => {
 ENV.registerFlag('WEBGL_CPU_FORWARD', () => false);
 
 /** Whether to turn all packing related flags on. */
-ENV.registerFlag('WEBGL_PACK', () => true);
+ENV.registerFlag('WEBGL_PACK', () => ENV.get('HAS_WEBGL'));
 
 /** Whether we will pack the batchnormalization op. */
 ENV.registerFlag('WEBGL_PACK_BATCHNORMALIZATION', () => ENV.get('WEBGL_PACK'));
