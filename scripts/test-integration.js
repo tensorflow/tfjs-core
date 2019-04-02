@@ -15,8 +15,6 @@
 // =============================================================================
 
 const shell = require('shelljs');
-console.log(shell.env['BRANCH_NAME']);
-console.log(shell.env['COMMIT_SHA']);
 
 shell.exec(
     `git clone --branch=${shell.env['BRANCH_NAME']} ` +
