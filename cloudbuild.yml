@@ -8,19 +8,14 @@ steps:
   env: ['BROWSERSTACK_USERNAME=deeplearnjs1']
   secretEnv: ['BROWSERSTACK_KEY']
 - name: gcr.io/cloud-builders/git
-  args: ['clone', '--depth=5', 'https://github.com/tensorflow/tfjs-core.git']
+  args: ['clone', '--depth=1', '--single-branch', '--branch=${BRANCH_NAME}', 'https://github.com/tensorflow/tfjs-core.git']
   id: 'clone'
   waitFor: ['-']
-- name: gcr.io/cloud-builders/git
-  args: ['checkout', '$COMMIT_SHA']
-  dir: 'tfjs-core'
-  id: 'checkout'
-  waitFor: ['clone']
 - name: 'gcr.io/cloud-builders/yarn'
   id: 'clone-install'
   dir: 'tfjs-core'
   args: ['install']
-  waitFor: ['checkout']
+  waitFor: ['clone']
 - name: 'gcr.io/cloud-builders/yarn'
   dir: 'tfjs-core'
   args: ['test-integration']
