@@ -59,7 +59,7 @@
     "test-benchmark": "cd integration_tests/benchmarks && yarn benchmark-travis && cd ../../",
     "test-node": "node dist/test_node.js",
     "test-integration": "./scripts/test-integration.sh",
-    "test-travis": "./scripts/test-travis.sh"
+    "test-ci": "./scripts/test-ci.sh"
   },
   "dependencies": {
     "@types/seedrandom": "2.4.27",

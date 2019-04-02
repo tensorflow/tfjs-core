@@ -3,7 +3,7 @@ steps:
   id: 'install'
   args: ['install']
 - name: 'gcr.io/cloud-builders/yarn'
-  args: ['test-travis']
+  args: ['test-ci']
   waitFor: ['install']
   env: ['BROWSERSTACK_USERNAME=deeplearnjs1']
   secretEnv: ['BROWSERSTACK_KEY']
