@@ -58,7 +58,7 @@
     "test": "karma start",
     "run-browserstack": "karma start --browserstack",
     "test-node": "node dist/test_node.js",
-    "test-integration": "ls -l ./scripts/ && node scripts/test-integration.js",
+    "test-integration": "./scripts/test-integration.js",
     "test-ci": "./scripts/test-ci.sh"
   },
   "dependencies": {
