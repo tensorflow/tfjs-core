@@ -10,6 +10,7 @@ steps:
 - name: gcr.io/cloud-builders/git
   args: ['clone', '--depth=5', 'https://github.com/tensorflow/tfjs-core.git']
   id: 'clone'
+  waitFor: ['-']
 - name: gcr.io/cloud-builders/git
   args: ['checkout', '$COMMIT_SHA']
   dir: 'tfjs-core'
