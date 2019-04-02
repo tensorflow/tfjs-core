@@ -1373,9 +1373,9 @@ export class MathBackendWebGL implements KernelBackend {
     const outputDtype = 'float32';
     // TODO: https://github.com/tensorflow/tfjs/issues/1324
     // Revive this once we understand why this produces NaNs.
-    // if (ENV.get('WEBGL_PACK_BINARY_OPERATIONS')) {
-    //   return this.packedBinaryOp(a, b, binaryop_packed_gpu.DIV, outputDtype);
-    // }
+    if (ENV.get('WEBGL_PACK_BINARY_OPERATIONS')) {
+      return this.packedBinaryOp(a, b, binaryop_packed_gpu.DIV, outputDtype);
+    }
     const program = new BinaryOpProgram(op, a.shape, b.shape);
     const output = this.makeOutputArray(program.outputShape, outputDtype);
     return this.compileAndRun<Tensor>(program, [a, b], output);

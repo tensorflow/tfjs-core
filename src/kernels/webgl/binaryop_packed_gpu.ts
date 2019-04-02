@@ -30,11 +30,39 @@ const CHECK_NAN_SNIPPET = `
 export const DIV = `
   // vec4 one = vec4(equal(a, b));
   // return one + (vec4(1.0) - one) * a / b;
-  vec4 result = a / b;
-  result.x = a.x == b.x ? 1. : result.x;
-  result.y = a.y == b.y ? 1. : result.y;
-  result.z = a.z == b.z ? 1. : result.z;
-  result.w = a.w == b.w ? 1. : result.w;
+  vec4 result = vec4(0.);
+  if(b.x == 0.0) {
+    result.x = NAN;
+  } else if(a.x == b.x) {
+    result.x = 1.;
+  } else {
+    result.x = a.x / b.x;
+  }
+  
+  if(b.y == 0.0) {
+    result.y = NAN;
+  } else if(a.y == b.y) {
+    result.y = 1.;
+  } else {
+    result.y = a.y / b.y;
+  }
+  
+  if(b.z == 0.0) {
+    result.z = NAN;
+  } else if(a.z == b.z) {
+    result.z = 1.;
+  } else {
+    result.z = a.z / b.z;
+  }
+  
+  if(b.w == 0.0) {
+    result.w = NAN;
+  } else if(a.w == b.w) {
+    result.w = 1.;
+  } else {
+    result.w = a.w / b.w;
+  }
+  
   return result;
 `;
 
