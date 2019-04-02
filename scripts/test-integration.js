@@ -15,10 +15,15 @@
 // =============================================================================
 
 const shell = require('shelljs');
+console.log(shell.env['BRANCH_NAME']);
+console.log(shell.env['COMMIT_SHA']);
+
 shell.exec(
-    'git clone --branch=${BRANCH_NAME} https://github.com/tensorflow/tfjs-core.git');
+    `git clone --branch=${shell.env['BRANCH_NAME']} ` +
+    `https://github.com/tensorflow/tfjs-core.git`);
 shell.cd('tfjs-core');
-const res = shell.exec('git diff --name-only ${COMMIT_SHA}..origin/master');
+const res = shell.exec(
+    `git diff --name-only ${shell.env['COMMIT_SHA']}..origin/master`);
 const files = res.stdout.trim().split('\n');
 files.forEach(file => {
   if (file === 'src/version.ts') {
