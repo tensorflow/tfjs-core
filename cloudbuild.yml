@@ -1,17 +1,17 @@
 steps:
 - name: 'gcr.io/cloud-builders/yarn'
-  id: 'install'
+  id: 'yarn'
   args: ['install']
 - name: 'gcr.io/cloud-builders/yarn'
   id: 'test'
   args: ['test-ci']
-  waitFor: ['install']
+  waitFor: ['yarn']
   env: ['BROWSERSTACK_USERNAME=deeplearnjs1']
   secretEnv: ['BROWSERSTACK_KEY']
 - name: gcr.io/cloud-builders/yarn
   id: 'test-integration'
   args: ['test-integration']
-  waitFor: ['install']
+  waitFor: ['yarn']
   env: ['BROWSERSTACK_USERNAME=deeplearnjs1', 'BRANCH_NAME=$BRANCH_NAME', 'COMMIT_SHA=$COMMIT_SHA']
   secretEnv: ['BROWSERSTACK_KEY']
 secrets:
