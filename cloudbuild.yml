@@ -1,11 +1,20 @@
 steps:
+- name: gcr.io/cloud-builders/git
+  args: ['fetch', '--unshallow', '--depth=5']
+  id: 'unshallow'
 - name: 'gcr.io/cloud-builders/yarn'
   id: 'install'
+  waitFor: ['unshallow']
   args: ['install']
 - name: 'gcr.io/cloud-builders/yarn'
   args: ['test-travis']
   waitFor: ['install']
   env: ['BROWSERSTACK_USERNAME=deeplearnjs1']
+  secretEnv: ['BROWSERSTACK_KEY']
+- name: 'gcr.io/cloud-builders/yarn'
+  args: ['test-integration']
+  waitFor: ['install']
+  env: ['BROWSERSTACK_USERNAME=deeplearnjs1', 'TRAVIS_COMMIT_RANGE=${COMMIT_SHA}..origin/master']
   secretEnv: ['BROWSERSTACK_KEY']
 secrets:
 - kmsKeyName: projects/learnjs-174218/locations/global/keyRings/tfjs/cryptoKeys/enc
