@@ -11,10 +11,10 @@ steps:
   args: ['clone', '--branch=${BRANCH_NAME}', 'https://github.com/tensorflow/tfjs-core.git']
   id: 'clone'
   waitFor: ['-']
-- name: 'gcr.io/cloud-builders/yarn'
+- name: 'ubuntu'
   id: 'clone-install'
   dir: 'tfjs-core'
-  args: ['install']
+  args: ['ln', '-s', '../node_modules/' ,'node_modules']
   waitFor: ['clone']
 - name: 'gcr.io/cloud-builders/yarn'
   dir: 'tfjs-core'
