@@ -21,7 +21,8 @@ shell.exec(
     `https://github.com/tensorflow/tfjs-core.git`);
 shell.cd('tfjs-core');
 const res = shell.exec(
-    `git diff --name-only ${shell.env['COMMIT_SHA']}..origin/master`);
+    `git diff --name-only ${shell.env['COMMIT_SHA']}..origin/master`,
+    {silent: true});
 const files = res.stdout.trim().split('\n');
 files.forEach(file => {
   if (file === 'src/version.ts') {
