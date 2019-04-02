@@ -19,7 +19,7 @@ steps:
 - name: 'gcr.io/cloud-builders/yarn'
   dir: 'tfjs-core'
   args: ['test-integration']
-  waitFor: ['clone-install']
+  waitFor: ['install', 'clone-install']
   env: ['BROWSERSTACK_USERNAME=deeplearnjs1', 'TRAVIS_COMMIT_RANGE=${COMMIT_SHA}..origin/master']
   secretEnv: ['BROWSERSTACK_KEY']
 secrets:
