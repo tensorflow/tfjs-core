@@ -3,23 +3,15 @@ steps:
   id: 'install'
   args: ['install']
 - name: 'gcr.io/cloud-builders/yarn'
+  id: 'test'
   args: ['test-ci']
   waitFor: ['install']
   env: ['BROWSERSTACK_USERNAME=deeplearnjs1']
   secretEnv: ['BROWSERSTACK_KEY']
-- name: gcr.io/cloud-builders/git
-  args: ['clone', '--branch=${BRANCH_NAME}', 'https://github.com/tensorflow/tfjs-core.git']
-  id: 'clone'
-  waitFor: ['-']
-- name: 'ubuntu'
-  id: 'clone-install'
-  dir: 'tfjs-core'
-  args: ['ln', '-s', '../node_modules/' ,'node_modules']
-  waitFor: ['clone']
-- name: 'gcr.io/cloud-builders/yarn'
-  dir: 'tfjs-core'
+- name: gcr.io/cloud-builders/yarn
+  id: 'test-integration'
   args: ['test-integration']
-  waitFor: ['install', 'clone-install']
+  waitFor: ['install']
   env: ['BROWSERSTACK_USERNAME=deeplearnjs1']
   secretEnv: ['BROWSERSTACK_KEY']
 secrets:
