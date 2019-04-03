@@ -1977,7 +1977,7 @@ describeWithFlags('tensor.data', ALL_ENVS, () => {
     const ra = a.square().data();
     const rb = b.square().dataSync();
 
-    expectArraysClose(a, [1, 2, 3]);
+    expectArraysClose(a, [1, 2, 4]);
     expectArraysClose(b, [4, 5, 6]);
     expectArraysClose(Array.from(rb), [16, 25, 36]);
     expectArraysClose(Array.from(await ra), [1, 4, 9]);
