@@ -15,20 +15,25 @@
 // =============================================================================
 
 const shell = require('shelljs');
-console.log('trigger_id:', shell.env['TRIGGER_ID']);
-console.log('repo_name:', shell.env['REPO_NAME']);
 
-shell.exec(
-    `git clone --branch=${shell.env['BRANCH_NAME']} ` +
+function exec(command, opt, ignoreCode) {
+  const res = shell.exec(command, opt);
+  if (!ignoreCode && res.code !== 0) {
+    shell.echo('command', command, 'returned code', res.code);
+    shell.exit(1);
+  }
+  return res;
+}
+
+exec(
+    `git clone --depth=1 --single-branch ` +
     `https://github.com/tensorflow/tfjs-core.git`);
-shell.cd('tfjs-core');
-const res = shell.exec(
-    `git diff --name-only ${shell.env['COMMIT_SHA']}..origin/master`,
-    {silent: true});
-const files = res.stdout.trim().split('\n');
+const res = exec(
+    'git diff --name-only --diff-filter=M --no-index tfjs-core/src/ src/',
+    {silent: true}, true);
+let files = res.stdout.trim().split('\n');
 files.forEach(file => {
   if (file === 'src/version.ts') {
-    shell.cd('..');
     shell.exec('./scripts/test-integration.sh');
   }
 });
