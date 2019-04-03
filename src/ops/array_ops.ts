@@ -20,8 +20,10 @@ import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../t
 import {convertToTensor, convertToTensorArray} from '../tensor_util_env';
 import {DataType, DataTypeMap, Rank, ShapeMap, TensorLike, TensorLike4D} from '../types';
 import * as util from '../util';
+
 import {getAxesPermutation, getInnerMostAxes} from './axis_util';
 import {concat} from './concat_split';
+import {MersenneTwister} from './mersenne-rand';
 import {op} from './operation';
 import {MPRandGauss} from './rand';
 import {zeros, zerosLike} from './tensor_ops';
@@ -66,11 +68,8 @@ function clone_<T extends Tensor>(x: T|TensorLike): T {
 /** @doc {heading: 'Tensors', subheading: 'Creation'} */
 function eye_(
     numRows: number, numColumns?: number,
-    batchShape?:
-        [
-          number
-        ]|[number,
-           number]|[number, number, number]|[number, number, number, number],
+    batchShape?:|[number]|[number, number]|[number, number, number]|
+        [number, number, number, number],
     dtype: DataType = 'float32'): Tensor2D {
   if (numColumns == null) {
     numColumns = numRows;
@@ -186,11 +185,12 @@ function truncatedNormal_<R extends Rank>(
  */
 /** @doc {heading: 'Tensors', subheading: 'Random'} */
 function randomUniform_<R extends Rank>(
-    shape: ShapeMap[R], minval = 0, maxval = 1,
-    dtype: DataType = 'float32'): Tensor<R> {
+    shape: ShapeMap[R], minval = 0, maxval = 1, dtype: DataType = 'float32',
+    seed?: number): Tensor<R> {
   const res = buffer(shape, dtype);
+  const mersenneRand = new MersenneTwister(seed);
   for (let i = 0; i < res.values.length; i++) {
-    res.values[i] = util.randUniform(minval, maxval);
+    res.values[i] = mersenneRand.randomWithLimits(minval, maxval);
   }
   return res.toTensor();
 }
@@ -260,7 +260,7 @@ function multinomial_(
     throw new Error(`Rank of probabilities must be 1 or 2, but is ${origRank}`);
   }
   seed = seed || Math.random();
-  const logits2D = origRank === 1 ? $logits.as2D(1, -1) : $logits as Tensor2D;
+  const logits2D = origRank === 1 ? $logits.as2D(1, -1) : ($logits as Tensor2D);
   const res = ENV.engine.runKernel(
       backend => backend.multinomial(logits2D, normalized, numSamples, seed),
       {logits2D});
@@ -759,10 +759,11 @@ function spaceToBatchND_<T extends Tensor>(
       $x.shape.reduce(
           (a, b, i) => {
             if (i > 0 && i <= blockShape.length) {
-              return a &&
-                  ((b + paddings[i - 1][0] + paddings[i - 1][1]) %
-                       blockShape[i - 1] ===
-                   0);
+              return (
+                  a &&
+                  (b + paddings[i - 1][0] + paddings[i - 1][1]) %
+                          blockShape[i - 1] ===
+                      0);
             }
             return a;
           },
@@ -929,9 +930,9 @@ function depthToSpace_(
     dataFormat: 'NHWC'|'NCHW' = 'NHWC'): Tensor4D {
   const $x = convertToTensor(x, 'x', 'depthToSpace') as Tensor4D;
 
-  const inputHeight = (dataFormat === 'NHWC') ? $x.shape[1] : $x.shape[2];
-  const inputWidth = (dataFormat === 'NHWC') ? $x.shape[2] : $x.shape[3];
-  const inputDepth = (dataFormat === 'NHWC') ? $x.shape[3] : $x.shape[1];
+  const inputHeight = dataFormat === 'NHWC' ? $x.shape[1] : $x.shape[2];
+  const inputWidth = dataFormat === 'NHWC' ? $x.shape[2] : $x.shape[3];
+  const inputDepth = dataFormat === 'NHWC' ? $x.shape[3] : $x.shape[1];
 
   util.assert(
       inputHeight * blockSize >= 0,

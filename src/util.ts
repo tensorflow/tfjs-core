@@ -74,7 +74,7 @@ export function sum(arr: number[]): number {
  */
 export function randUniform(a: number, b: number) {
   const r = Math.random();
-  return (b * r) + (1 - r) * a;
+  return b * r + (1 - r) * a;
 }
 
 /** Returns the squared Euclidean distance between two vectors. */
@@ -337,12 +337,12 @@ export function parseAxisParam(
           `got axis ${axis}`);
 
   // Handle negative axis.
-  return axis.map(a => a < 0 ? rank + a : a);
+  return axis.map(a => (a < 0 ? rank + a : a));
 }
 
 /** Reduces the shape by removing all dimensions of shape 1. */
 export function squeezeShape(shape: number[], axis?: number[]):
-    {newShape: number[], keptDims: number[]} {
+    {newShape: number[]; keptDims: number[]} {
   const newShape: number[] = [];
   const keptDims: number[] = [];
   const axes = axis == null ? null : parseAxisParam(axis, shape).sort();
@@ -445,9 +445,10 @@ export function hasEncodingLoss(oldType: DataType, newType: DataType): boolean {
   return true;
 }
 
-export function isTypedArray(a: {}): a is Float32Array|Int32Array|Uint8Array {
-  return a instanceof Float32Array || a instanceof Int32Array ||
-      a instanceof Uint8Array;
+export function isTypedArray(a: {}): a is|Float32Array|Int32Array|Uint8Array {
+  return (
+      a instanceof Float32Array || a instanceof Int32Array ||
+      a instanceof Uint8Array);
 }
 
 export function bytesPerElement(dtype: DataType): number {
@@ -473,7 +474,7 @@ export function bytesFromStringArray(arr: string[]): number {
     return 0;
   }
   let bytes = 0;
-  arr.forEach(x => bytes += x.length * 2);
+  arr.forEach(x => (bytes += x.length * 2));
   return bytes;
 }
 
@@ -605,9 +606,10 @@ export function toNestedArray(shape: number[], a: TypedArray) {
 }
 
 function noConversionNeeded(a: TensorLike, dtype: DataType): boolean {
-  return (a instanceof Float32Array && dtype === 'float32') ||
+  return (
+      (a instanceof Float32Array && dtype === 'float32') ||
       (a instanceof Int32Array && dtype === 'int32') ||
-      (a instanceof Uint8Array && dtype === 'bool');
+      (a instanceof Uint8Array && dtype === 'bool'));
 }
 
 export function makeOnesTypedArray<D extends DataType>(
