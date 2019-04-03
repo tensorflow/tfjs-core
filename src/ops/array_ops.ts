@@ -14,6 +14,7 @@
  * limitations under the License.
  * =============================================================================
  */
+import {alea} from 'seedrandom';
 
 import {ENV} from '../environment';
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
@@ -23,7 +24,6 @@ import * as util from '../util';
 
 import {getAxesPermutation, getInnerMostAxes} from './axis_util';
 import {concat} from './concat_split';
-import {MersenneTwister} from './mersenne-rand';
 import {op} from './operation';
 import {MPRandGauss} from './rand';
 import {zeros, zerosLike} from './tensor_ops';
@@ -186,11 +186,11 @@ function truncatedNormal_<R extends Rank>(
 /** @doc {heading: 'Tensors', subheading: 'Random'} */
 function randomUniform_<R extends Rank>(
     shape: ShapeMap[R], minval = 0, maxval = 1, dtype: DataType = 'float32',
-    seed?: number): Tensor<R> {
+    seed: number = Math.random()): Tensor<R> {
   const res = buffer(shape, dtype);
-  const mersenneRand = new MersenneTwister(seed);
+  const random = alea(seed.toString());
   for (let i = 0; i < res.values.length; i++) {
-    res.values[i] = mersenneRand.randomWithLimits(minval, maxval);
+    res.values[i] = minval + (maxval - minval) * random.double();
   }
   return res.toTensor();
 }
