@@ -185,7 +185,7 @@ function truncatedNormal_<R extends Rank>(
 /** @doc {heading: 'Tensors', subheading: 'Random'} */
 function randomUniform_<R extends Rank>(
     shape: ShapeMap[R], minval = 0, maxval = 1, dtype: DataType = 'float32',
-    seed: number|string): Tensor<R> {
+    seed?: number|string): Tensor<R> {
   const res = buffer(shape, dtype);
   const random = new UniformRandom(minval, maxval, seed);
   for (let i = 0; i < res.values.length; i++) {
