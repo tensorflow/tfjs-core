@@ -17,7 +17,7 @@
 
 import * as seedrandom from 'seedrandom';
 
-export interface RandGauss {
+export interface RandomBase {
   nextValue(): number;
 }
 
@@ -27,7 +27,7 @@ export interface RandNormalDataTypes {
 }
 
 // https://en.wikipedia.org/wiki/Marsaglia_polar_method
-export class MPRandGauss implements RandGauss {
+export class MPRandGauss implements RandomBase {
   private mean: number;
   private stdDev: number;
   private nextVal: number;
@@ -97,5 +97,21 @@ export class MPRandGauss implements RandGauss {
   /** Returns true if less than 2-standard-deviations from the mean. */
   private isValidTruncated(value: number): boolean {
     return value <= this.upper && value >= this.lower;
+  }
+}
+
+export class UniformRandom implements RandomBase {
+  private min: number;
+  private range: number;
+  private random: seedrandom.prng;
+
+  constructor(min = 0, max = 1, seed: string|number = Math.random()) {
+    this.min = min;
+    this.range = max - min;
+    this.random = seedrandom.alea(seed.toString());
+  }
+
+  nextValue() {
+    return this.min + this.range * this.random.double();
   }
 }
