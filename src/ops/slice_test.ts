@@ -269,7 +269,7 @@ describeWithFlags('slice and memory usage', WEBGL_ENVS, () => {
 
   it('slice a tensor, read it and check memory', async () => {
     const getMem = () => tf.memory() as WebGLMemoryInfo;
-    expect(getMem().numBytesInGPU).toBe(1);
+    expect(getMem().numBytesInGPU).toBe(0);
 
     // Lazy upload won't increase gpu memory.
     const a = tf.tensor([2, 3]);
