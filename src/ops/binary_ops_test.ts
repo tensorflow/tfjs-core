@@ -20,7 +20,7 @@ import {describeWithFlags} from '../jasmine_util';
 import {ALL_ENVS, expectArraysClose, expectArraysEqual, PACKED_ENVS, WEBGL_ENVS} from '../test_util';
 
 describeWithFlags('div', PACKED_ENVS, () => {
-  fit('works when unused channels are divided', () => {
+  it('works when unused channels are divided', () => {
     // Tests that the 0's in unused channels for input textures do not corrupt
     // the result when swizzled with 3 / 3.
     const a = tf.tensor2d([1], [1, 1]);
@@ -31,6 +31,19 @@ describeWithFlags('div', PACKED_ENVS, () => {
 
     const result = c.matMul(d);
     expectArraysClose(result, [4]);
+  });
+
+  it('works when unused channels in tensors with size > 1 are divided', () => {
+    const a = tf.tensor2d([1, 2, 3], [3, 1]);
+    const b = tf.tensor2d([1, 2, 3], [3, 1]);
+    const c = a.div(b);
+
+    const d = tf.tensor1d([1, 2, 3]);
+    const e = tf.tensor1d([1, 2, 3]);
+    const f = d.div(e).reshape([1, 3]);
+
+    const result = c.matMul(f);
+    expectArraysClose(result, [1, 1, 1, 1, 1, 1, 1, 1, 1]);
   });
 });
 
