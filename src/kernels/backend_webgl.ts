@@ -1371,8 +1371,6 @@ export class MathBackendWebGL implements KernelBackend {
   realDivide(a: Tensor, b: Tensor): Tensor {
     const op = binaryop_gpu.DIV;
     const outputDtype = 'float32';
-    // TODO: https://github.com/tensorflow/tfjs/issues/1324
-    // Revive this once we understand why this produces NaNs.
     if (ENV.get('WEBGL_PACK_BINARY_OPERATIONS')) {
       const checkOutOfBounds = true;
       return this.packedBinaryOp(
