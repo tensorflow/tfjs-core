@@ -15,6 +15,8 @@
 // =============================================================================
 
 const shell = require('shelljs');
+console.log('trigger_id:', shell.env['TRIGGER_ID']);
+console.log('repo_name:', shell.env['REPO_NAME']);
 
 shell.exec(
     `git clone --branch=${shell.env['BRANCH_NAME']} ` +
