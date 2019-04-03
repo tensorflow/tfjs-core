@@ -228,8 +228,8 @@ export class BinaryOpPackedProgram implements GPGPUProgram {
       void main() {
         vec4 a = getAAtOutCoords();
         vec4 b = getBAtOutCoords();
-        vec4 result = binaryOperation(a, b);
 
+        vec4 result = binaryOperation(a, b);
         ${checkOutOfBoundsString}
 
         setOutput(result);
