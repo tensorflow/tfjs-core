@@ -208,11 +208,10 @@ export class BinaryOpPackedProgram implements GPGPUProgram {
         } else {
           const channels = getChannels('coords', rank);
           checkOutOfBoundsString += `
-            bool nextRowOutOfBounds = 
+            bool nextRowOutOfBounds =
               (${channels[rank - 2]} + 1) >= ${this.outputShape[rank - 2]};
             bool nextColOutOfBounds =
               (${channels[rank - 1]} + 1) >= ${this.outputShape[rank - 1]};
-            
             result.y = nextColOutOfBounds ? 0. : result.y;
             result.z = nextRowOutOfBounds ? 0. : result.z;
             result.w = nextColOutOfBounds || nextRowOutOfBounds ? 0. : result.w;
