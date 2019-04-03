@@ -22,13 +22,17 @@
 import {ENV} from '../environment';
 import {dispose} from '../globals';
 import {Tensor, Tensor1D, Tensor2D} from '../tensor';
+import {convertToTensor} from '../tensor_util_env';
+import {TensorLike} from '../types';
 import {assert} from '../util';
 import {eye, squeeze, stack, unstack} from './array_ops';
+import {sub} from './binary_ops';
 import {split} from './concat_split';
+import {logicalAnd, where} from './logical_ops';
 import {norm} from './norm';
 import {op} from './operation';
 import {sum} from './reduction_ops';
-import {tensor2d} from './tensor_ops';
+import {range, scalar, tensor2d, zeros} from './tensor_ops';
 
 /**
  * Gram-Schmidt orthogonalization.
@@ -263,5 +267,91 @@ function qr2d(x: Tensor2D, fullMatrices = false): [Tensor2D, Tensor2D] {
   }) as [Tensor2D, Tensor2D];
 }
 
+/** 
+ * Copies a tensor of matrices, setting everything outside a central band
+ * in each matrix to zero.
+ *
+ * ```js
+ * >>> const a = tf.tensor2d([[11, 12, 13, 14],
+ * ...                        [21, 22, 23, 24],
+ * ...                        [31, 32, 33, 34],
+ * ...                        [41, 42, 43, 44]]);
+ * >>> tf.linalg.bandPart(a,0,2).print();
+ *   [[11, 12, 13,  0], 
+ *    [ 0, 22, 23, 24],
+ *    [ 0,  0, 33, 34],
+ *    [ 0,  0,  0, 44]]
+ * 
+ * >>> tf.linalg.bandPart(a,1,-1).print();
+ *   [[11, 12, 13, 14], 
+ *    [21, 22, 23, 24],
+ *    [ 0, 32, 33, 34],
+ *    [ 0,  0, 43, 44]]
+ * ```
+ *
+ * @param a Tensor of matrices from which the band part is extracted.
+ * @param numLower The number of subdiagonal lines to be copied.
+ *                 If set to `-1`, all entries below the diagonal are
+ *                 copied.
+ * @param numUpper The number of superdiagonal lines to be copied.
+ *                 If set to `-1`, all entries above the diagonal are
+ *                 copied.
+ */
+/** 
+ * @doc {heading:'Operations',
+ *       subheading:'Linear Algebra',
+ *       namespace:'linalg'}
+ */
+function bandPart_<T extends Tensor>(
+  a: T|TensorLike, numLower: number, numUpper: number
+): T
+{
+  if( numLower%1 !== 0 ){
+    throw new Error(`bandPart(): numLower=${numLower} not an integer.`);
+  }
+  if( numUpper%1 !== 0 ){
+    throw new Error(`bandPart(): numUpper=${numUpper} not an integer.`);
+  }
+
+  return ENV.engine.tidy( () => {
+    const $a = convertToTensor(a,'a','bandPart');
+    a = undefined;
+
+    if( $a.rank < 2 ) {
+      throw new Error(`bandPart(): a.rank = ${$a.rank} < 2.`);
+    }
+
+    const shape = $a.shape,
+          [M,N] = $a.shape.slice(-2);
+
+    if( !(numLower <= M) ) {
+      throw new Error(`bandPart() check failed: numLower <= #rows.`   );
+    }
+    if( !(numUpper <= N) ) {
+      throw new Error(`bandPart() check failed: numUpper <= #columns.`);
+    }
+
+    if( numLower < 0 ) { numLower = M; }
+    if( numUpper < 0 ) { numUpper = N; }
+
+    const i = range(0,M, 1, 'int32').reshape([-1,1]),
+          j = range(0,N, 1, 'int32');
+
+    const inBand = logicalAnd(
+      sub(i,j).lessEqual( scalar(numLower,'int32') ),
+      sub(j,i).lessEqual( scalar(numUpper,'int32') )
+    );
+
+    const zero = zeros([M,N], $a.dtype);
+
+    return stack(
+      unstack( $a.reshape([-1,M,N]) ).map(
+        mat => where(inBand, mat, zero)
+      )
+    ).reshape(shape) as T;
+  });
+}
+
 export const gramSchmidt = op({gramSchmidt_});
+export const bandPart = op({bandPart_});
 export const qr = op({qr_});
