@@ -104,14 +104,33 @@ export class UniformRandom implements RandomBase {
   private min: number;
   private range: number;
   private random: seedrandom.prng;
+  private dtype?: keyof RandNormalDataTypes;
 
-  constructor(min = 0, max = 1, seed: string|number = Math.random()) {
+  constructor(
+      min = 0, max = 1, dtype?: keyof RandNormalDataTypes,
+      seed: string|number = Math.random()) {
     this.min = min;
     this.range = max - min;
+    this.dtype = dtype;
+    if (!this.canReturnFloat() && this.range <= 1) {
+      throw new Error(
+          `The difference between ${min} - ${max} <= 1 and dtype is not float`);
+    }
     this.random = seedrandom.alea(seed.toString());
   }
 
+  /** Handles proper rounding for non floating point numbers. */
+  private canReturnFloat = () =>
+      (this.dtype == null || this.dtype === 'float32');
+
+  private convertValue(value: number): number {
+    if (this.canReturnFloat()) {
+      return value;
+    }
+    return Math.round(value);
+  }
+
   nextValue() {
-    return this.min + this.range * this.random();
+    return this.convertValue(this.min + this.range * this.random());
   }
 }

@@ -187,7 +187,7 @@ function randomUniform_<R extends Rank>(
     shape: ShapeMap[R], minval = 0, maxval = 1, dtype: DataType = 'float32',
     seed?: number|string): Tensor<R> {
   const res = buffer(shape, dtype);
-  const random = new UniformRandom(minval, maxval, seed);
+  const random = new UniformRandom(minval, maxval, null, seed);
   for (let i = 0; i < res.values.length; i++) {
     res.values[i] = random.nextValue();
   }
