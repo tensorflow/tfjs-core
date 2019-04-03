@@ -112,6 +112,6 @@ export class UniformRandom implements RandomBase {
   }
 
   nextValue() {
-    return this.min + this.range * this.random.double();
+    return this.min + this.range * this.random();
   }
 }
