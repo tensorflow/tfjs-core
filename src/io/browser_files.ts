@@ -23,7 +23,7 @@
 import {ENV} from '../environment';
 import {basename, concatenateArrayBuffers, getModelArtifactsInfoForJSON} from './io_utils';
 import {IORouter, IORouterRegistry} from './router_registry';
-import {IOHandler, ModelArtifacts, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
+import {IOHandler, ModelArtifacts, ModelJSON, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
 
 const DEFAULT_FILE_NAME_PREFIX = 'model';
 const DEFAULT_JSON_EXTENSION_NAME = '.json';
@@ -42,7 +42,7 @@ export class BrowserDownloads implements IOHandler {
       // TODO(cais): Provide info on what IOHandlers are available under the
       //   current environment.
       throw new Error(
-          'triggerDownloads() cannot proceed because the current environment ' +
+          'browserDownloads() cannot proceed because the current environment ' +
           'is not a browser.');
     }
 
@@ -64,15 +64,18 @@ export class BrowserDownloads implements IOHandler {
 
     if (modelArtifacts.modelTopology instanceof ArrayBuffer) {
       throw new Error(
-          'DownloadTrigger.save() does not support saving model topology ' +
+          'BrowserDownloads.save() does not support saving model topology ' +
           'in binary formats yet.');
     } else {
       const weightsManifest: WeightsManifestConfig = [{
         paths: ['./' + this.weightDataFileName],
         weights: modelArtifacts.weightSpecs
       }];
-      const modelTopologyAndWeightManifest = {
+      const modelTopologyAndWeightManifest: ModelJSON = {
         modelTopology: modelArtifacts.modelTopology,
+        format: modelArtifacts.format,
+        generatedBy: modelArtifacts.generatedBy,
+        convertedBy: modelArtifacts.convertedBy,
         weightsManifest
       };
       const modelTopologyAndWeightManifestURL =
@@ -124,8 +127,8 @@ class BrowserFiles implements IOHandler {
       const jsonReader = new FileReader();
       jsonReader.onload = (event: Event) => {
         // tslint:disable-next-line:no-any
-        const modelJSON = JSON.parse((event.target as any).result);
-        const modelTopology = modelJSON.modelTopology as {};
+        const modelJSON = JSON.parse((event.target as any).result) as ModelJSON;
+        const modelTopology = modelJSON.modelTopology;
         if (modelTopology == null) {
           reject(new Error(
               `modelTopology field is missing from file ${jsonFile.name}`));
@@ -136,8 +139,7 @@ class BrowserFiles implements IOHandler {
           resolve({modelTopology});
         }
 
-        const weightsManifest =
-            modelJSON.weightsManifest as WeightsManifestConfig;
+        const weightsManifest = modelJSON.weightsManifest;
         if (weightsManifest == null) {
           reject(new Error(
               `weightManifest field is missing from file ${jsonFile.name}`));
@@ -180,21 +182,16 @@ class BrowserFiles implements IOHandler {
                 });
               }
             };
-            weightFileReader.onerror = (error: FileReaderProgressEvent) => {
-              reject(`Failed to weights data from file of path '${path}'.`);
-              return;
-            };
+            weightFileReader.onerror = error =>
+                reject(`Failed to weights data from file of path '${path}'.`);
             weightFileReader.readAsArrayBuffer(pathToFile[path]);
           });
         });
       };
-      jsonReader.onerror = (error: FileReaderProgressEvent) => {
-        reject(
-            `Failed to read model topology and weights manifest JSON ` +
-            `from file '${jsonFile.name}'. BrowserFiles supports loading ` +
-            `Keras-style tf.Model artifacts only.`);
-        return;
-      };
+      jsonReader.onerror = error => reject(
+          `Failed to read model topology and weights manifest JSON ` +
+          `from file '${jsonFile.name}'. BrowserFiles supports loading ` +
+          `Keras-style tf.Model artifacts only.`);
       jsonReader.readAsText(jsonFile);
     });
   }
@@ -278,8 +275,9 @@ IORouterRegistry.registerSaveRouter(browserDownloadsRouter);
  *      file and binary weights file will be named 'foo.json' and
  *      'foo.weights.bin', respectively.
  * @param config Additional configuration for triggering downloads.
- * @returns An instance of `DownloadTrigger` `IOHandler`.
+ * @returns An instance of `BrowserDownloads` `IOHandler`.
  */
+/** @doc {heading: 'Models', subheading: 'Loading', namespace: 'io'} */
 export function browserDownloads(fileNamePrefix = 'model'): IOHandler {
   return new BrowserDownloads(fileNamePrefix);
 }
@@ -317,6 +315,7 @@ export function browserDownloads(fileNamePrefix = 'model'): IOHandler {
  *     topology will be loaded from the JSON file above.
  * @returns An instance of `Files` `IOHandler`.
  */
+/** @doc {heading: 'Models', subheading: 'Loading', namespace: 'io'} */
 export function browserFiles(files: File[]): IOHandler {
   return new BrowserFiles(files);
 }

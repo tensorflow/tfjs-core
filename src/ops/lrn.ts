@@ -20,6 +20,7 @@ import {Tensor, Tensor3D, Tensor4D} from '../tensor';
 import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import * as util from '../util';
+
 import {op} from './operation';
 
 /**
@@ -41,12 +42,12 @@ function localResponseNormalization_<T extends Tensor3D|Tensor4D>(
   const $x = convertToTensor(x, 'x', 'localResponseNormalization');
   util.assert(
       $x.rank === 4 || $x.rank === 3,
-      `Error in localResponseNormalization: x must be rank 3 or 4 but got
+      () => `Error in localResponseNormalization: x must be rank 3 or 4 but got
                rank ${$x.rank}.`);
   util.assert(
       util.isInt(depthRadius),
-      `Error in localResponseNormalization: depthRadius must be an integer
-                     but got depthRadius ${depthRadius}.`);
+      () => `Error in localResponseNormalization: depthRadius must be an ` +
+          `integer but got depthRadius ${depthRadius}.`);
 
   let x4D = $x as Tensor4D;
   let reshapedTo4D = false;
@@ -55,18 +56,21 @@ function localResponseNormalization_<T extends Tensor3D|Tensor4D>(
     x4D = $x.as4D(1, $x.shape[0], $x.shape[1], $x.shape[2]);
   }
   const backward = (dy: Tensor4D, saved: Tensor[]) => {
-    const [outputImage] = saved;
+    const [x4D, y] = saved;
     return {
       x4D: () => ENV.engine.runKernel(
           backend => backend.LRNGrad(
-              dy, x4D, outputImage as Tensor4D, depthRadius, bias, alpha, beta),
+              dy, x4D as Tensor4D, y as Tensor4D, depthRadius, bias, alpha,
+              beta),
           {})
     };
   };
-  const res = ENV.engine.runKernel(
-      (backend, save) => save(backend.localResponseNormalization4D(
-          x4D, depthRadius, bias, alpha, beta)),
-      {x4D}, backward);
+  const res = ENV.engine.runKernel((backend, save) => {
+    const y = backend.localResponseNormalization4D(
+        x4D, depthRadius, bias, alpha, beta);
+    save([x4D, y]);
+    return y;
+  }, {x4D}, backward);
   if (reshapedTo4D) {
     return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as T;
   } else {

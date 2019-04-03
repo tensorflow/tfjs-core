@@ -17,42 +17,49 @@
 
 import * as broadcast_util from '../../ops/broadcast_util';
 
-import {GPGPUContext} from './gpgpu_context';
 import {GPGPUProgram} from './gpgpu_math';
 
 const CHECK_NAN_SNIPPET = `
-  if (isNaN(a)) return a;
-  if (isNaN(b)) return b;
+  if (isnan(a)) return a;
+  if (isnan(b)) return b;
 `;
 
 export const ADD = 'return a + b;';
 export const SUB = 'return a - b;';
 export const MUL = 'return a * b;';
-export const DIV = `if (a == b) return 1.0;
-  return a / b;`;
+
+// Without the equality check div produces 0.9999 for a = b, which when
+// floored can cause errors.
+export const DIV = `
+if (b == 0.0) {
+  return NAN;
+} 
+if (a == b) {
+  return 1.0;
+};
+return a / b;`;
 
 // We use native integer division to deal with floating point imprecision. Since
 // we implement floor division and glsl implements truncated division, we
 // correct for this by subtracting 1 from result when the result is negative and
 // there is a remainder.
 export const INT_DIV = `
-  float resultSign = sign(a) * sign(b);
+  float s = sign(a) * sign(b);
   int ia = round(a);
   int ib = round(b);
-  int result = ia / ib;
-  int amodb = ia - ib * result;
-
-  if (resultSign < 0.0 && amodb != 0) {
-    result -= 1;
+  if (ib != 0) {
+    // Windows (D3D) wants guaranteed non-zero int division at compile-time.
+    return float(idiv(ia, ib, s));
+  } else {
+    return NAN;
   }
-  return float(result);
 `;
 
 export const POW = `
 if(a < 0.0 && floor(b) < b){
   return NAN;
 }
-return (round(mod(b, 2.0)) == 0 || round(mod(b, 2.0)) == 2) ?
+return (round(mod(b, 2.0)) != 1) ?
     pow(abs(a), b) : sign(a) * pow(abs(a), b);
 `;
 export const SQUARED_DIFFERENCE = 'return (a - b) * (a - b);';
@@ -88,20 +95,17 @@ export const ATAN2 = CHECK_NAN_SNIPPET + `
 
 export const ELU_DER = `return (b >= 1.0) ? a : a * (b + 1.0);`;
 
+export const PRELU = `return (a < 0.) ? b * a : a;`;
+
 export class BinaryOpProgram implements GPGPUProgram {
   variableNames = ['A', 'B'];
   outputShape: number[];
   userCode: string;
-  supportsBroadcasting = true;
-
-  // Caching uniform location for speed.
-  startLoc: WebGLUniformLocation;
 
   constructor(op: string, aShape: number[], bShape: number[]) {
     this.outputShape =
         broadcast_util.assertAndGetBroadcastShape(aShape, bShape);
     this.userCode = `
-      uniform float NAN;
       float binaryOperation(float a, float b) {
         ${op}
       }
@@ -112,19 +116,5 @@ export class BinaryOpProgram implements GPGPUProgram {
         setOutput(binaryOperation(a, b));
       }
     `;
-  }
-
-  getCustomSetupFunc() {
-    return (gpgpu: GPGPUContext, webGLProgram: WebGLProgram) => {
-      if (this.startLoc == null) {
-        this.startLoc = gpgpu.getUniformLocationNoThrow(webGLProgram, 'NAN');
-        if (this.startLoc == null) {
-          // This means the compiler has optimized and realized it doesn't need
-          // the uniform.
-          return;
-        }
-      }
-      gpgpu.gl.uniform1f(this.startLoc, NaN);
-    };
   }
 }

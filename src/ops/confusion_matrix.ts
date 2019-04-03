@@ -54,34 +54,36 @@ import {op} from './operation';
 export function confusionMatrix_(
     labels: Tensor1D|TensorLike, predictions: Tensor1D|TensorLike,
     numClasses: number): Tensor2D {
-  const $labels = convertToTensor(labels, 'label', 'confusionMatrix', 'int32');
+  const $labels = convertToTensor(labels, 'labels', 'confusionMatrix');
   const $predictions =
-      convertToTensor(predictions, 'label', 'confusionMatrix', 'int32');
+      convertToTensor(predictions, 'predictions', 'confusionMatrix');
 
   util.assert(
       numClasses == null || numClasses > 0 && Number.isInteger(numClasses),
-      `If provided, numClasses must be a positive integer, ` +
+      () => `If provided, numClasses must be a positive integer, ` +
           `but got ${numClasses}`);
   util.assert(
       $labels.rank === 1,
-      `Expected the rank of labels to be 1, but got ${$labels.rank}`);
+      () => `Expected the rank of labels to be 1, but got ${$labels.rank}`);
   util.assert(
       $predictions.rank === 1,
-      `Expected the rank of predictions to be 1, ` +
+      () => `Expected the rank of predictions to be 1, ` +
           `but got ${$predictions.rank}`);
   util.assert(
       $labels.shape[0] === $predictions.shape[0],
-      `Mismatch in the number of examples: ` +
+      () => `Mismatch in the number of examples: ` +
           `${$labels.shape[0]} vs. ${$predictions.shape[0]}. ` +
           `Labels and predictions should have the same number of elements.`);
   util.assert(
       numClasses > 0 && Number.isInteger(numClasses),
-      `numClasses is required to be a positive integer, but got ${numClasses}`);
+      () => `numClasses is required to be a positive integer, but got ` +
+          `${numClasses}`);
   // TODO(cais): In the future, if oneHot supports tensors inputs for
   //   `numClasses`, `confusionMatrix` can make `numClasses` optional.
 
-  const oneHotLabels = oneHot($labels.asType('int32'), numClasses);
-  const oneHotPredictions = oneHot($predictions.asType('int32'), numClasses);
+  const oneHotLabels = oneHot($labels.asType('int32'), numClasses) as Tensor2D;
+  const oneHotPredictions =
+      oneHot($predictions.asType('int32'), numClasses) as Tensor2D;
   return oneHotLabels.transpose().matMul(oneHotPredictions).asType('int32');
 }
 

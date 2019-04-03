@@ -25,6 +25,7 @@ import {Optimizer} from './optimizer';
 
 /** @doclink Optimizer */
 export class AdagradOptimizer extends Optimizer {
+  /** @nocollapse */
   static className = 'AdagradOptimizer';
   private c: Scalar;
   private epsilon: Scalar;
@@ -67,7 +68,7 @@ export class AdagradOptimizer extends Optimizer {
     }
   }
 
-  dispose() {
+  dispose(): void {
     this.epsilon.dispose();
     this.c.dispose();
     if (this.accumulatedGrads != null) {
@@ -77,13 +78,15 @@ export class AdagradOptimizer extends Optimizer {
   }
   getConfig(): ConfigDict {
     return {
-      learningRate: this.learningRate,
-      initialAccumulatorValue: this.initialAccumulatorValue,
+      'learningRate': this.learningRate,
+      'initialAccumulatorValue': this.initialAccumulatorValue,
     };
   }
+
+  /** @nocollapse */
   static fromConfig<T extends Serializable>(
       cls: SerializableConstructor<T>, config: ConfigDict): T {
-    return new cls(config.learningRate, config.initialAccumulatorValue);
+    return new cls(config['learningRate'], config['initialAccumulatorValue']);
   }
 }
 registerClass(AdagradOptimizer);

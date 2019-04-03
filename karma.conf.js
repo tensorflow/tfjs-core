@@ -19,7 +19,8 @@ const karmaTypescriptConfig = {
   tsconfig: 'tsconfig.json',
   // Disable coverage reports and instrumentation by default for tests
   coverageOptions: {instrumentation: false},
-  reports: {}
+  reports: {},
+  bundlerOptions: {sourceMap: true}
 };
 
 // Enable coverage reports and instrumentation under KARMA_COVERAGE=1 env
@@ -29,6 +30,26 @@ if (coverageEnabled) {
   karmaTypescriptConfig.coverageOptions.exclude = /_test\.ts$/;
   karmaTypescriptConfig.reports = {html: 'coverage', 'text-summary': ''};
 }
+
+const devConfig = {
+  frameworks: ['jasmine', 'karma-typescript'],
+  files: [{pattern: 'src/**/*.ts'}],
+  exclude: ['src/test_node.ts'],
+  preprocessors: {'**/*.ts': ['karma-typescript']},
+  karmaTypescriptConfig,
+  reporters: ['dots', 'karma-typescript'],
+};
+
+const browserstackConfig = {
+  frameworks: ['browserify', 'jasmine'],
+  files: [{pattern: 'dist/**/*_test.js'}],
+  exclude: ['dist/test_node.js'],
+  preprocessors: {'dist/**/*_test.js': ['browserify']},
+  browserify: {debug: false},
+  reporters: ['dots', 'BrowserStack'],
+  singleRun: true,
+  hostname: 'bs-local.com',
+};
 
 module.exports = function(config) {
   const args = [];
@@ -41,14 +62,10 @@ module.exports = function(config) {
   if (config.features) {
     args.push('--features', config.features);
   }
+  const extraConfig = config.browserstack ? browserstackConfig : devConfig;
 
   config.set({
-    frameworks: ['jasmine', 'karma-typescript'],
-    files: [{pattern: 'src/**/*.ts'}],
-    exclude: ['src/test_node.ts'],
-    preprocessors: {'**/*.ts': ['karma-typescript']},
-    karmaTypescriptConfig,
-    reporters: ['progress', 'karma-typescript'],
+    ...extraConfig,
     browsers: ['Chrome'],
     browserStack: {
       username: process.env.BROWSERSTACK_USERNAME,
@@ -58,6 +75,8 @@ module.exports = function(config) {
     reportSlowerThan: 500,
     browserNoActivityTimeout: 180000,
     customLaunchers: {
+      // For browserstack configs see:
+      // https://www.browserstack.com/automate/node
       bs_chrome_mac: {
         base: 'BrowserStack',
         browser: 'chrome',
@@ -86,10 +105,19 @@ module.exports = function(config) {
         os_version: '11.0',
         real_mobile: true
       },
+      win_10_chrome: {
+        base: 'BrowserStack',
+        browser: 'chrome',
+        browser_version: 'latest',
+        os: 'Windows',
+        os_version: '10'
+      },
       chrome_with_swift_shader: {
         base: 'Chrome',
         flags: ['--blacklist-accelerated-compositing', '--blacklist-webgl']
-      }
+      },
+      chrome_debugging:
+          {base: 'Chrome', flags: ['--remote-debugging-port=9333']}
     },
     client: {jasmine: {random: false}, args: args}
   });

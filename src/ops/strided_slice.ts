@@ -20,12 +20,14 @@ import {Tensor} from '../tensor';
 import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import {op} from './operation';
+import {slice} from './slice';
+import {getStridedSlicedInfo} from './slice_util';
 
 /**
  * Extracts a strided slice of a tensor.
  *
  * Roughly speaking, this op extracts a slice of size (end-begin)/stride from
- * the given input_ tensor. Starting at the location specified by begin the
+ * the given input tensor (x). Starting at the location specified by begin the
  * slice continues by adding stride to the index until all dimensions are not
  * less than end. Note that a stride can be negative, which causes a reverse
  * slice.
@@ -44,19 +46,19 @@ import {op} from './operation';
  * @param begin The coordinates to start the slice from.
  * @param end: The coordinates to end the slice at.
  * @param strides: The size of the slice.
- * @param beginMask: If the ith bit of begin_mask is set, begin[i] is ignored
+ * @param beginMask: If the ith bit of beginMask is set, begin[i] is ignored
  *      and the fullest possible range in that dimension is used instead.
- * @param endMask: If the ith bit of end_mask is set, end[i] is ignored
+ * @param endMask: If the ith bit of endMask is set, end[i] is ignored
  *      and the fullest possible range in that dimension is used instead.
  * @param shrinkAxisMask: a bitmask where bit i implies that
  * the ith specification should shrink the dimensionality. begin and end must
  * imply a slice of size 1 in the dimension.
  */
 /** @doc {heading: 'Operations', subheading: 'Slicing and Joining'} */
-function stridedSlice_<T extends Tensor>(
-    x: T|TensorLike, begin: number[], end: number[], strides: number[],
+function stridedSlice_(
+    x: Tensor|TensorLike, begin: number[], end: number[], strides: number[],
     beginMask = 0, endMask = 0, ellipsisMask = 0, newAxisMask = 0,
-    shrinkAxisMask = 0): T {
+    shrinkAxisMask = 0): Tensor {
   if (ellipsisMask !== 0) {
     throw new Error('ellipsis mask is not yet supported');
   }
@@ -64,11 +66,20 @@ function stridedSlice_<T extends Tensor>(
     throw new Error('new axis mask is not yet supported');
   }
   const $x = convertToTensor(x, 'x', 'stridedSlice');
+  const nonStrided = strides.every(v => v === 1);
+  if (nonStrided) {
+    const [beginIndex, size, shrinkAxis] = getStridedSlicedInfo(
+        $x.shape, begin, end, strides, beginMask, endMask, ellipsisMask,
+        newAxisMask, shrinkAxisMask);
+    const outShape =
+        size.filter((_, index) => shrinkAxis.indexOf(index) === -1);
+    return slice($x, beginIndex, size).reshape(outShape);
+  }
   return ENV.engine.runKernel(
-             backend => backend.stridedSlice(
-                 $x, begin, end, strides, beginMask, endMask, ellipsisMask,
-                 newAxisMask, shrinkAxisMask),
-             {$x}) as T;
+      backend => backend.stridedSlice(
+          $x, begin, end, strides, beginMask, endMask, ellipsisMask,
+          newAxisMask, shrinkAxisMask),
+      {$x});
 }
 
 export const stridedSlice = op({stridedSlice_});

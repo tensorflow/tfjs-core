@@ -20,10 +20,14 @@ import {Features} from './environment_util';
 import {Tensor} from './tensor';
 import {TypedArray} from './types';
 import * as util from './util';
+import {isString} from './util';
 
 // TODO(smilkov): Move these constants to jasmine_util.
 export const WEBGL_ENVS: Features = {
   'HAS_WEBGL': true
+};
+export const PACKED_ENVS: Features = {
+  'WEBGL_PACK': true
 };
 export const NODE_ENVS: Features = {
   'IS_NODE': true
@@ -37,18 +41,27 @@ export const BROWSER_ENVS: Features = {
 export const CPU_ENVS: Features = {
   'HAS_WEBGL': false
 };
-export const BROWSER_CPU_ENVS: Features = {
-  'BACKEND': 'test-cpu'
-};
 
 export const ALL_ENVS: Features = {};
 
 export function expectArraysClose(
     actual: Tensor|TypedArray|number[],
-    expected: Tensor|TypedArray|number[]|boolean[], epsilon?: number) {
+    expected: Tensor|TypedArray|number[]|boolean[]|number|boolean,
+    epsilon?: number) {
   if (epsilon == null) {
     epsilon = ENV.get('TEST_EPSILON');
   }
+  const exp = typeof expected === 'number' || typeof expected === 'boolean' ?
+      [expected] as number[] :
+      expected as number[];
+  return expectArraysPredicate(
+      actual, exp, (a, b) => areClose(a as number, Number(b), epsilon));
+}
+
+function expectArraysPredicate(
+    actual: Tensor|TypedArray|number[]|string[],
+    expected: Tensor|TypedArray|number[]|boolean[]|string[],
+    predicate: (a: {}, b: {}) => boolean) {
   if (!(actual instanceof Tensor) && !(expected instanceof Tensor)) {
     const aType = actual.constructor.name;
     const bType = expected.constructor.name;
@@ -71,8 +84,8 @@ export function expectArraysClose(
     }
   }
 
-  let actualValues: TypedArray|number[];
-  let expectedValues: TypedArray|number[]|boolean[];
+  let actualValues: TypedArray|number[]|string[];
+  let expectedValues: TypedArray|number[]|boolean[]|string[];
   if (actual instanceof Tensor) {
     actualValues = actual.dataSync();
   } else {
@@ -95,7 +108,7 @@ export function expectArraysClose(
     const a = actualValues[i];
     const e = expectedValues[i];
 
-    if (!areClose(a, Number(e), epsilon)) {
+    if (!predicate(a, e)) {
       throw new Error(
           `Arrays differ: actual[${i}] = ${a}, expected[${i}] = ${e}.\n` +
           `Actual:   ${actualValues}.\n` +
@@ -114,9 +127,21 @@ export function expectPromiseToFail(fn: () => Promise<{}>, done: DoneFn): void {
 }
 
 export function expectArraysEqual(
-    actual: Tensor|TypedArray|number[],
-    expected: Tensor|TypedArray|number[]|boolean[]) {
-  return expectArraysClose(actual, expected, 0);
+    actual: Tensor|TypedArray|number[]|string[],
+    expected: Tensor|TypedArray|number[]|boolean[]|string[]|number|boolean|
+    string) {
+  const exp = typeof expected === 'string' || typeof expected === 'number' ||
+          typeof expected === 'boolean' ?
+      [expected] as number[] :
+      expected as number[];
+  if (actual instanceof Tensor && actual.dtype === 'string' ||
+      expected instanceof Tensor && expected.dtype === 'string' ||
+      Array.isArray(actual) && isString(actual[0]) ||
+      Array.isArray(expected) && isString(expected[0])) {
+    // tslint:disable-next-line:triple-equals
+    return expectArraysPredicate(actual, exp, (a, b) => a == b);
+  }
+  return expectArraysClose(actual as Tensor, expected as Tensor, 0);
 }
 
 export function expectNumbersClose(a: number, e: number, epsilon?: number) {
@@ -129,7 +154,7 @@ export function expectNumbersClose(a: number, e: number, epsilon?: number) {
 }
 
 function areClose(a: number, e: number, epsilon: number): boolean {
-  if (isNaN(a) && isNaN(e)) {
+  if (!isFinite(a) && !isFinite(e)) {
     return true;
   }
   if (isNaN(a) || isNaN(e) || Math.abs(a - e) > epsilon) {

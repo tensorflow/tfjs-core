@@ -25,6 +25,7 @@ import {Optimizer} from './optimizer';
 
 /** @doclink Optimizer */
 export class RMSPropOptimizer extends Optimizer {
+  /** @nocollapse */
   static className = 'RMSPropOptimizer';
   private c: Scalar;
   private epsilonScalar: Scalar;
@@ -135,7 +136,7 @@ export class RMSPropOptimizer extends Optimizer {
     }
   }
 
-  dispose() {
+  dispose(): void {
     this.c.dispose();
     this.epsilonScalar.dispose();
     this.decayScalar.dispose();
@@ -157,18 +158,20 @@ export class RMSPropOptimizer extends Optimizer {
 
   getConfig(): ConfigDict {
     return {
-      learningRate: this.learningRate,
-      decay: this.decay,
-      momentum: this.momentum,
-      epsilon: this.epsilon,
-      centered: this.centered
+      'learningRate': this.learningRate,
+      'decay': this.decay,
+      'momentum': this.momentum,
+      'epsilon': this.epsilon,
+      'centered': this.centered
     };
   }
+
+  /** @nocollapse */
   static fromConfig<T extends Serializable>(
       cls: SerializableConstructor<T>, config: ConfigDict): T {
     return new cls(
-        config.learningRate, config.decay, config.momentum, config.epsilon,
-        config.centered);
+        config['learningRate'], config['decay'], config['momentum'],
+        config['epsilon'], config['centered']);
   }
 }
 registerClass(RMSPropOptimizer);

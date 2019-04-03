@@ -20,7 +20,7 @@ import {describeWithFlags} from './jasmine_util';
 import {MathBackendCPU} from './kernels/backend_cpu';
 import {MathBackendWebGL} from './kernels/backend_webgl';
 import {Tensor} from './tensor';
-import {ALL_ENVS, expectArraysClose, expectArraysEqual, expectNumbersClose, WEBGL_ENVS} from './test_util';
+import {ALL_ENVS, CPU_ENVS, expectArraysClose, expectArraysEqual, WEBGL_ENVS} from './test_util';
 
 describeWithFlags('fromPixels + regular math op', WEBGL_ENVS, () => {
   it('debug mode does not error when no nans', () => {
@@ -32,7 +32,7 @@ describeWithFlags('fromPixels + regular math op', WEBGL_ENVS, () => {
       pixels.data[i] = 250;
     }
 
-    const a = tf.fromPixels(pixels, 4);
+    const a = tf.browser.fromPixels(pixels, 4);
     const b = tf.scalar(20, 'int32');
 
     const res = tf.add(a, b);
@@ -89,6 +89,28 @@ describeWithFlags('gradients', ALL_ENVS, () => {
     const result2 = grad(tf.tensor1d([.1, .4]));
     expectArraysClose(result, [.2, .4]);
     expectArraysClose(result2, [.2, .8]);
+  });
+
+  it('grad(f): throwing an error during forward pass', () => {
+    const grad = tf.grad(x => {
+      throw new Error('failed forward pass');
+    });
+    expect(() => grad(tf.zeros([]))).toThrowError();
+    expect(tf.ENV.engine.isTapeOn()).toBe(false);
+  });
+
+  it('grad(f): throwing an error during backwards pass', () => {
+    const customOp = tf.customGrad((x: tf.Tensor) => {
+      return {
+        value: x,
+        gradFunc: () => {
+          throw new Error('failed backward pass');
+        }
+      };
+    });
+    const grad = tf.grad(x => customOp(x));
+    expect(() => grad(tf.zeros([]))).toThrowError();
+    expect(tf.ENV.engine.isTapeOn()).toBe(false);
   });
 
   it('grads(f)', () => {
@@ -183,6 +205,25 @@ describeWithFlags('gradients', ALL_ENVS, () => {
     };
     expect(f).toThrowError();
   });
+
+  it('saves tensors from the forward pass as expected', () => {
+    const x = tf.scalar(1).variable();
+    const optimizer = tf.train.sgd(0.1);
+    optimizer.minimize(() => {
+      const y = x.square();
+      const z = y.square();
+      y.dispose();
+      return z;
+    });
+  });
+
+  it('custom ops do not leak', () => {
+    const before = tf.memory().numTensors;
+    const x = tf.softmax([1, 2, 3, 4]);
+    x.dispose();
+    const now = tf.memory().numTensors;
+    expect(now).toBe(before);
+  });
 });
 
 describeWithFlags('valueAndGradients', ALL_ENVS, () => {
@@ -200,7 +241,7 @@ describeWithFlags('valueAndGradients', ALL_ENVS, () => {
           return tf.sum(y);
         })([a, b]);
 
-    expectNumbersClose(value.get(), 10);
+    expectArraysClose(value, 10);
 
     // de/dy = 1
     // dy/dm = step(m)
@@ -235,7 +276,7 @@ describeWithFlags('valueAndGradients', ALL_ENVS, () => {
           });
         })([a, b]);
 
-    expectNumbersClose(value.get(), 10);
+    expectArraysClose(value, 10);
 
     // de/dy = 1
     // dy/dm = step(m)
@@ -257,9 +298,20 @@ describeWithFlags('valueAndGradients', ALL_ENVS, () => {
 
 describeWithFlags('higher-order gradients', ALL_ENVS, () => {
   it('grad(grad(f))', () => {
+    const x = tf.tensor1d([.1, .2]);
+    const before = tf.memory().numTensors;
     const gradgrad = tf.grad(tf.grad(x => x.mul(x).mul(x)));
-    const result = gradgrad(tf.tensor1d([.1, .2]));
+    const result = gradgrad(x);
+    expect(tf.memory().numTensors).toBe(before + 1);
     expectArraysClose(result, [.6, 1.2]);
+  });
+
+  it('grad(grad(x^2))', () => {
+    const x = tf.scalar(3);
+    const gradgrad = tf.grad(tf.grad(x => x.square()));
+    const result = gradgrad(x);
+    // grad(grad(x^2)) = grad(2x) = 2
+    expectArraysClose(result, [2]);
   });
 
   it('grads(grads(f))', () => {
@@ -276,7 +328,7 @@ describeWithFlags('customGradient', ALL_ENVS, () => {
     const b = tf.scalar(2, 'int32');
     const dy = tf.scalar(4);
 
-    const customPow = tf.customGrad(a => {
+    const customPow = tf.customGrad((a: tf.Tensor) => {
       const value = tf.pow(a, b);
       const gradFunc = (dy: tf.Tensor) => dy.mul(tf.scalar(0.1));
       return {value, gradFunc};
@@ -295,9 +347,13 @@ describeWithFlags('customGradient', ALL_ENVS, () => {
 
     const dy = tf.scalar(5);
 
-    const customPow = tf.customGrad(a => {
+    const customPow = tf.customGrad((a: tf.Tensor, save: tf.GradSaveFunc) => {
       const value = tf.pow(a, b);
-      const gradFunc = (dy: tf.Tensor) => dy.mul(a);
+      save([a]);
+      const gradFunc = (dy: tf.Tensor, saved: Tensor[]) => {
+        const [a] = saved;
+        return dy.mul(a);
+      };
       return {value, gradFunc};
     });
 
@@ -309,9 +365,16 @@ describeWithFlags('customGradient', ALL_ENVS, () => {
   });
 
   it('calling gradient of custom op twice works', () => {
-    const customOp = tf.customGrad(x => {
+    const customOp = tf.customGrad((x: tf.Tensor, save: tf.GradSaveFunc) => {
       // Override gradient of our custom x ^ 2 op to be dy * abs(x);
-      return {value: x.square(), gradFunc: dy => dy.mul(x.abs())};
+      save([x]);
+      return {
+        value: x.square(),
+        gradFunc: (dy, saved: Tensor[]) => {
+          const [x] = saved;
+          return dy.mul(x.abs());
+        }
+      };
     });
     const x = tf.tensor1d([-1, -2, 3]);
     const grad = tf.grad(x => customOp(x));
@@ -360,6 +423,74 @@ describeWithFlags('memory', ALL_ENVS, () => {
     expect(tf.memory().numBytes).toBe(4);
     expect(sum.dtype).toBe('int32');
     expectArraysClose(sum, [1 + 1 + 0 + 1]);
+  });
+
+  it('string tensor', () => {
+    const a = tf.tensor([['a', 'bb'], ['c', 'd']]);
+
+    expect(tf.memory().numTensors).toBe(1);
+    expect(tf.memory().numBytes).toBe(10);  // 5 letters, each 2 bytes.
+
+    a.dispose();
+
+    expect(tf.memory().numTensors).toBe(0);
+    expect(tf.memory().numBytes).toBe(0);
+  });
+
+  it('unreliable is true for string tensors', () => {
+    tf.tensor('a');
+    const mem = tf.memory();
+    expect(mem.unreliable).toBe(true);
+    const expectedReason = 'Memory usage by string tensors is approximate ' +
+        '(2 bytes per character)';
+    expect(mem.reasons.indexOf(expectedReason) >= 0).toBe(true);
+  });
+});
+
+describeWithFlags('memory webgl', WEBGL_ENVS, () => {
+  it('unreliable is falsy/not present when all tensors are numeric', () => {
+    tf.tensor(1);
+    const mem = tf.memory();
+    expect(mem.numTensors).toBe(1);
+    expect(mem.numDataBuffers).toBe(1);
+    expect(mem.numBytes).toBe(4);
+    expect(mem.unreliable).toBeFalsy();
+  });
+});
+
+describeWithFlags('memory cpu', CPU_ENVS, () => {
+  it('unreliable is true due to auto gc', () => {
+    tf.tensor(1);
+    const mem = tf.memory();
+    expect(mem.numTensors).toBe(1);
+    expect(mem.numDataBuffers).toBe(1);
+    expect(mem.numBytes).toBe(4);
+    expect(mem.unreliable).toBe(true);
+
+    const expectedReason =
+        'The reported memory is an upper bound. Due to automatic garbage ' +
+        'collection, the true allocated memory may be less.';
+    expect(mem.reasons.indexOf(expectedReason) >= 0).toBe(true);
+  });
+
+  it('unreliable is true due to both auto gc and string tensors', () => {
+    tf.tensor(1);
+    tf.tensor('a');
+
+    const mem = tf.memory();
+    expect(mem.numTensors).toBe(2);
+    expect(mem.numDataBuffers).toBe(2);
+    expect(mem.numBytes).toBe(6);
+    expect(mem.unreliable).toBe(true);
+
+    const expectedReasonGC =
+        'The reported memory is an upper bound. Due to automatic garbage ' +
+        'collection, the true allocated memory may be less.';
+    expect(mem.reasons.indexOf(expectedReasonGC) >= 0).toBe(true);
+    const expectedReasonString =
+        'Memory usage by string tensors is approximate ' +
+        '(2 bytes per character)';
+    expect(mem.reasons.indexOf(expectedReasonString) >= 0).toBe(true);
   });
 });
 
@@ -508,6 +639,49 @@ describe('Switching cpu backends', () => {
   });
 });
 
+// We do not yet fully support half float backends. These tests are a starting
+// point.
+describeWithFlags('backend without render float32 support', WEBGL_ENVS, () => {
+  const savedRenderFloat32Flag = tf.ENV.get('WEBGL_RENDER_FLOAT32_ENABLED');
+
+  beforeAll(() => {
+    tf.ENV.set('WEBGL_RENDER_FLOAT32_ENABLED', false);
+  });
+
+  beforeEach(() => {
+    tf.ENV.registerBackend(
+        'half-float-webgl', () => new MathBackendWebGL(null));
+  });
+
+  afterEach(() => {
+    tf.ENV.removeBackend('half-float-webgl');
+  });
+
+  afterAll(() => {
+    tf.ENV.set('WEBGL_RENDER_FLOAT32_ENABLED', savedRenderFloat32Flag);
+  });
+
+  it('basic usage', () => {
+    tf.setBackend('half-float-webgl');
+
+    const a = tf.tensor2d([1, 2], [1, 2]);
+    const b = tf.tensor2d([1, 2], [1, 2]);
+    const c = tf.add(a, b);
+    expectArraysClose(c, [2, 4]);
+  });
+
+  it('disposing tensors should not cause errors', () => {
+    tf.setBackend('half-float-webgl');
+    expect(() => tf.tidy(() => {
+      const a = tf.tensor2d([1, 2], [1, 2]);
+      const b = tf.tensor2d([1, 2], [1, 2]);
+      const c = tf.add(a, b);
+      c.dataSync();
+      return c.add(tf.tensor2d([2, 4], [1, 2]));
+    })).not.toThrowError();
+  });
+});
+
 describeWithFlags('Switching WebGL + CPU backends', WEBGL_ENVS, () => {
   beforeEach(() => {
     tf.ENV.registerBackend('webgl1', () => new MathBackendWebGL());
@@ -554,12 +728,12 @@ describeWithFlags('Switching WebGL + CPU backends', WEBGL_ENVS, () => {
 
   it('fromPixels with mixed backends works', () => {
     tf.setBackend('webgl1');
-    const a =
-        tf.fromPixels(new ImageData(new Uint8ClampedArray([1, 2, 3, 4]), 1, 1));
+    const a = tf.browser.fromPixels(
+        new ImageData(new Uint8ClampedArray([1, 2, 3, 4]), 1, 1));
 
     tf.setBackend('webgl2');
-    const b =
-        tf.fromPixels(new ImageData(new Uint8ClampedArray([5, 6, 7, 8]), 1, 1));
+    const b = tf.browser.fromPixels(
+        new ImageData(new Uint8ClampedArray([5, 6, 7, 8]), 1, 1));
 
     expectArraysClose(tf.add(a, b), [6, 8, 10]);
   });
@@ -579,5 +753,21 @@ describeWithFlags('Switching WebGL + CPU backends', WEBGL_ENVS, () => {
       expect(tf.memory().numTensors).toBe(4);
     });
     expect(tf.memory().numTensors).toBe(0);
+  });
+});
+
+// NOTE: This describe is purposefully not a describeWithFlags so that we test
+// tensor allocation where no scopes have been created. The backend here must
+// be set to CPU because we cannot allocate GPU tensors outside a
+// describeWithFlags because the default webgl backend and the test backends
+// share a WebGLContext. When backends get registered, global WebGL state is
+// initialized, which causes the two backends to step on each other and get in
+// a bad state.
+describe('Memory allocation outside a test scope', () => {
+  it('constructing a tensor works', () => {
+    tf.setBackend('cpu');
+    const a = tf.tensor1d([1, 2, 3]);
+    expectArraysClose(a, [1, 2, 3]);
+    a.dispose();
   });
 });

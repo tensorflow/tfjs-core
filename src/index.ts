@@ -16,27 +16,26 @@
  */
 
 // backend_cpu.ts and backend_webgl.ts are standalone files and should be
-// explicitly included here. Below, there is an export from backend_webgl, but
-// that doesn't count since it's exporting a Typescript interface.
+// explicitly included here.
 import './kernels/backend_webgl';
 import './kernels/backend_cpu';
 
 import {nextFrame} from './browser_util';
 import * as environment from './environment';
-import {Environment} from './environment';
-
+import {deprecationWarn, disableDeprecationWarnings, enableDebugMode, enableProdMode, Environment} from './environment';
 // Serialization.
 import * as io from './io/io';
 import * as math from './math';
+import * as browser from './ops/browser';
 import * as serialization from './serialization';
 import {setOpHandler} from './tensor';
+import * as tensor_util from './tensor_util';
 import * as test_util from './test_util';
 import * as util from './util';
 import {version} from './version';
 import * as webgl from './webgl';
 
 export {InferenceModel, ModelPredictConfig} from './model_types';
-
 // Optimizers.
 export {AdadeltaOptimizer} from './optimizers/adadelta_optimizer';
 export {AdagradOptimizer} from './optimizers/adagrad_optimizer';
@@ -47,8 +46,8 @@ export {Optimizer} from './optimizers/optimizer';
 export {RMSPropOptimizer} from './optimizers/rmsprop_optimizer';
 export {SGDOptimizer} from './optimizers/sgd_optimizer';
 export {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer, variable, Variable} from './tensor';
-export {NamedTensorMap} from './tensor_types';
-export {DataType, Rank, ShapeMap} from './types';
+export {GradSaveFunc, NamedTensorMap, TensorContainer, TensorContainerArray, TensorContainerObject} from './tensor_types';
+export {DataType, DataTypeMap, DataValues, Rank, ShapeMap, TensorLike} from './types';
 
 export * from './ops/ops';
 export {LSTMCellFunc} from './ops/lstm';
@@ -67,10 +66,27 @@ export const disposeVariables = Environment.disposeVariables;
 export const memory = Environment.memory;
 export {version as version_core};
 
-export {nextFrame};
+// Top-level method exports.
+export {
+  nextFrame,
+  enableProdMode,
+  enableDebugMode,
+  disableDeprecationWarnings,
+  deprecationWarn
+};
 
 // Second level exports.
-export {environment, io, math, serialization, test_util, util, webgl};
+export {
+  browser,
+  environment,
+  io,
+  math,
+  serialization,
+  test_util,
+  util,
+  webgl,
+  tensor_util
+};
 
 // Backend specific.
 export {KernelBackend, BackendTimingInfo, DataMover, DataStorage} from './kernels/backend';

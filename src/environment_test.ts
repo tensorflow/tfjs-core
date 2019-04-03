@@ -16,14 +16,14 @@
  */
 
 import * as device_util from './device_util';
-import {ENV, Environment} from './environment';
+import {ENV, Environment, EPSILON_FLOAT16, EPSILON_FLOAT32} from './environment';
 import {Features, getQueryParams} from './environment_util';
 import * as tf from './index';
 import {describeWithFlags} from './jasmine_util';
 import {KernelBackend} from './kernels/backend';
 import {MathBackendCPU} from './kernels/backend_cpu';
 import {MathBackendWebGL} from './kernels/backend_webgl';
-import {ALL_ENVS, expectArraysClose, WEBGL_ENVS} from './test_util';
+import {ALL_ENVS, WEBGL_ENVS} from './test_util';
 
 describeWithFlags(
     'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE', WEBGL_ENVS, () => {
@@ -60,37 +60,6 @@ describeWithFlags(
       });
     });
 
-describeWithFlags('WEBGL_PAGING_ENABLED', WEBGL_ENVS, testEnv => {
-  afterEach(() => {
-    ENV.reset();
-    ENV.setFeatures(testEnv.features);
-  });
-
-  it('should be true if in a browser', () => {
-    const features: Features = {'IS_BROWSER': true};
-    const env = new Environment(features);
-    expect(env.get('WEBGL_PAGING_ENABLED')).toBe(true);
-  });
-
-  it('should not cause errors when paging is turned off', () => {
-    ENV.set('WEBGL_PAGING_ENABLED', false);
-
-    const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
-    const b = tf.tensor2d([0, 1, -3, 2, 2, 1], [3, 2]);
-
-    const c = tf.matMul(a, b);
-
-    expectArraysClose(c, [0, 8, -3, 20]);
-  });
-
-  it('should be false when the environment is prod', () => {
-    const features: Features = {'IS_BROWSER': true};
-    const env = new Environment(features);
-    env.set('PROD', true);
-    expect(env.get('WEBGL_PAGING_ENABLED')).toBe(false);
-  });
-});
-
 describe('Backend', () => {
   beforeAll(() => {
     // Silences backend registration warnings.
@@ -104,11 +73,17 @@ describe('Backend', () => {
   it('custom cpu registration', () => {
     let backend: KernelBackend;
     ENV.registerBackend('custom-cpu', () => {
-      backend = new MathBackendCPU();
-      return backend;
+      const newBackend = new MathBackendCPU();
+      if (backend == null) {
+        backend = newBackend;
+      }
+      return newBackend;
     });
 
     expect(ENV.findBackend('custom-cpu')).toBe(backend);
+    const factory = ENV.findBackendFactory('custom-cpu');
+    expect(factory).not.toBeNull();
+    expect(factory() instanceof MathBackendCPU).toBe(true);
     Environment.setBackend('custom-cpu');
     expect(ENV.backend).toBe(backend);
 
@@ -126,6 +101,7 @@ describe('Backend', () => {
         ENV.registerBackend('custom-webgl', () => new MathBackendWebGL(), 104);
     expect(success).toBe(false);
     expect(ENV.findBackend('custom-webgl') == null).toBe(true);
+    expect(ENV.findBackendFactory('custom-webgl') == null).toBe(true);
     expect(Environment.getBackend()).toBe('custom-cpu');
     expect(ENV.backend).toBe(cpuBackend);
 
@@ -152,6 +128,26 @@ describe('environment_util.getQueryParams', () => {
   });
 });
 
+describe('public api tf.*', () => {
+  beforeEach(() => {
+    ENV.reset();
+  });
+
+  afterEach(() => {
+    ENV.reset();
+  });
+
+  it('tf.enableProdMode', () => {
+    tf.enableProdMode();
+    expect(ENV.get('PROD')).toBe(true);
+  });
+
+  it('tf.enableDebugMode', () => {
+    tf.enableDebugMode();
+    expect(ENV.get('DEBUG')).toBe(true);
+  });
+});
+
 describeWithFlags('max texture size', WEBGL_ENVS, () => {
   it('should not throw exception', () => {
     expect(() => ENV.get('WEBGL_MAX_TEXTURE_SIZE')).not.toThrow();
@@ -160,12 +156,13 @@ describeWithFlags('max texture size', WEBGL_ENVS, () => {
 
 describeWithFlags('epsilon', {}, () => {
   it('Epsilon is a function of float precision', () => {
-    const epsilonValue = ENV.backend.floatPrecision() === 32 ? 1e-7 : 1e-3;
+    const epsilonValue =
+        ENV.backend.floatPrecision() === 32 ? EPSILON_FLOAT32 : EPSILON_FLOAT16;
     expect(ENV.get('EPSILON')).toBe(epsilonValue);
   });
 
   it('abs(epsilon) > 0', () => {
-    expect(tf.abs(ENV.get('EPSILON')).get()).toBeGreaterThan(0);
+    expect(tf.abs(ENV.get('EPSILON')).arraySync()).toBeGreaterThan(0);
   });
 });
 
@@ -194,5 +191,37 @@ describeWithFlags('WEBGL_SIZE_UPLOAD_UNIFORM', WEBGL_ENVS, () => {
     const env = new Environment();
     env.set('WEBGL_RENDER_FLOAT32_ENABLED', true);
     expect(env.get('WEBGL_SIZE_UPLOAD_UNIFORM')).toBeGreaterThan(0);
+  });
+});
+
+describe('deprecation warnings', () => {
+  let oldWarn: (msg: string) => void;
+  beforeEach(() => {
+    oldWarn = console.warn;
+    spyOn(console, 'warn').and.callFake((msg: string): void => null);
+  });
+  afterEach(() => {
+    console.warn = oldWarn;
+  });
+
+  it('deprecationWarn warns', () => {
+    tf.deprecationWarn('xyz is deprecated.');
+    expect(console.warn).toHaveBeenCalledTimes(1);
+    expect(console.warn)
+        .toHaveBeenCalledWith(
+            'xyz is deprecated. You can disable deprecation warnings with ' +
+            'tf.disableDeprecationWarnings().');
+  });
+
+  it('disableDeprecationWarnings called, deprecationWarn doesnt warn', () => {
+    tf.disableDeprecationWarnings();
+    expect(console.warn).toHaveBeenCalledTimes(1);
+    expect(console.warn)
+        .toHaveBeenCalledWith(
+            'TensorFlow.js deprecation warnings have been disabled.');
+
+    // deprecationWarn no longer warns.
+    tf.deprecationWarn('xyz is deprecated.');
+    expect(console.warn).toHaveBeenCalledTimes(1);
   });
 });

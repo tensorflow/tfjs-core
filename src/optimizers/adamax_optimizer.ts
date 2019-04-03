@@ -24,6 +24,7 @@ import {NamedVariableMap} from '../tensor_types';
 import {Optimizer} from './optimizer';
 
 export class AdamaxOptimizer extends Optimizer {
+  /** @nocollapse */
   static className = 'AdamaxOptimizer';
   private c: Scalar;
   private epsScalar: Scalar;
@@ -113,7 +114,7 @@ export class AdamaxOptimizer extends Optimizer {
     });
   }
 
-  dispose() {
+  dispose(): void {
     this.c.dispose();
     this.epsScalar.dispose();
     this.accBeta1.dispose();
@@ -138,18 +139,20 @@ export class AdamaxOptimizer extends Optimizer {
   }
   getConfig(): ConfigDict {
     return {
-      learningRate: this.learningRate,
-      beta1: this.beta1,
-      beta2: this.beta2,
-      epsilon: this.epsilon,
-      decay: this.decay
+      'learningRate': this.learningRate,
+      'beta1': this.beta1,
+      'beta2': this.beta2,
+      'epsilon': this.epsilon,
+      'decay': this.decay
     };
   }
+
+  /** @nocollapse */
   static fromConfig<T extends Serializable>(
       cls: SerializableConstructor<T>, config: ConfigDict): T {
     return new cls(
-        config.learningRate, config.beta1, config.beta2, config.epsilon,
-        config.decay);
+        config['learningRate'], config['beta1'], config['beta2'],
+        config['epsilon'], config['decay']);
   }
 }
 registerClass(AdamaxOptimizer);

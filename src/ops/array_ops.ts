@@ -18,13 +18,13 @@
 import {ENV} from '../environment';
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
 import {convertToTensor, convertToTensorArray} from '../tensor_util_env';
-import {DataType, Rank, ShapeMap, TensorLike, TensorLike1D, TensorLike4D, TypedArray} from '../types';
+import {DataType, DataTypeMap, Rank, ShapeMap, TensorLike, TensorLike4D} from '../types';
 import * as util from '../util';
 import {getAxesPermutation, getInnerMostAxes} from './axis_util';
 import {concat} from './concat_split';
 import {op} from './operation';
 import {MPRandGauss} from './rand';
-import {zerosLike} from './tensor_ops';
+import {zeros, zerosLike} from './tensor_ops';
 
 /**
  * Creates a new tensor with the same values and shape as the specified
@@ -40,7 +40,7 @@ import {zerosLike} from './tensor_ops';
  */
 /** @doc {heading: 'Tensors', subheading: 'Creation'} */
 function clone_<T extends Tensor>(x: T|TensorLike): T {
-  const $x = convertToTensor(x, 'x', 'clone');
+  const $x = convertToTensor(x, 'x', 'clone', null);
   const der = (dy: T) => {
     return {$x: () => dy.toFloat()};
   };
@@ -271,13 +271,14 @@ function multinomial_(
 /**
  * Creates a one-hot `tf.Tensor`. The locations represented by `indices` take
  * value `onValue` (defaults to 1), while all other locations take value
- * `offValue` (defaults to 0).
+ * `offValue` (defaults to 0). If `indices` is rank `R`, the output has rank
+ * `R+1` with the last axis of size `depth`.
  *
  * ```js
  * tf.oneHot(tf.tensor1d([0, 1], 'int32'), 3).print();
  * ```
  *
- * @param indices `tf.Tensor1D` of indices with dtype `int32`.
+ * @param indices `tf.Tensor` of indices with dtype `int32`.
  * @param depth The depth of the one hot dimension.
  * @param onValue A number used to fill in the output when the index matches
  * the location.
@@ -286,152 +287,22 @@ function multinomial_(
  */
 /** @doc {heading: 'Tensors', subheading: 'Creation'} */
 function oneHot_(
-    indices: Tensor1D|TensorLike1D, depth: number, onValue = 1,
-    offValue = 0): Tensor2D {
-  const $indices = convertToTensor(indices, 'indices', 'oneHot', 'int32');
-  util.assert($indices.dtype === 'int32', 'Indices must be of dtype `int32`');
-
+    indices: Tensor|TensorLike, depth: number, onValue = 1,
+    offValue = 0): Tensor {
   if (depth < 2) {
     throw new Error(`Error in oneHot: depth must be >=2, but it is ${depth}`);
   }
+  let $indices = convertToTensor(indices, 'indices', 'oneHot', 'int32');
+  const outShape = [...$indices.shape, depth];
+  $indices = $indices.flatten();
+
   const grad = (dy: Tensor2D) => {
-    return {$indices: () => zerosLike($indices)};
+    return {$indices: () => zeros($indices.shape, 'float32')};
   };
-  return ENV.engine.runKernel(
-      backend => backend.oneHot($indices, depth, onValue, offValue), {$indices},
-      grad);
-}
-
-/**
- * Creates a `tf.Tensor` from an image.
- *
- * ```js
- * const image = new ImageData(1, 1);
- * image.data[0] = 100;
- * image.data[1] = 150;
- * image.data[2] = 200;
- * image.data[3] = 255;
- *
- * tf.fromPixels(image).print();
- * ```
- *
- * @param pixels The input image to construct the tensor from. The
- * supported image types are all 4-channel.
- * @param numChannels The number of channels of the output tensor. A
- * numChannels value less than 4 allows you to ignore channels. Defaults to
- * 3 (ignores alpha channel of input image).
- */
-/** @doc {heading: 'Tensors', subheading: 'Creation'} */
-function fromPixels_(
-    pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
-    numChannels = 3): Tensor3D {
-  if (numChannels > 4) {
-    throw new Error(
-        'Cannot construct Tensor with more than 4 channels from pixels.');
-  }
-  return ENV.engine.fromPixels(pixels, numChannels);
-}
-
-/**
- * Draws a `tf.Tensor` of pixel values to a byte array or optionally a
- * canvas.
- *
- * When the dtype of the input is 'float32', we assume values in the range
- * [0-1]. Otherwise, when input is 'int32', we assume values in the range
- * [0-255].
- *
- * Returns a promise that resolves when the canvas has been drawn to.
- *
- * @param img A rank-2 or rank-3 tensor. If rank-2, draws grayscale. If
- *     rank-3, must have depth of 1, 3 or 4. When depth of 1, draws
- * grayscale. When depth of 3, we draw with the first three components of
- * the depth dimension corresponding to r, g, b and alpha = 1. When depth of
- * 4, all four components of the depth dimension correspond to r, g, b, a.
- * @param canvas The canvas to draw to.
- */
-/** @doc {heading: 'Visualization'} */
-async function toPixels(
-    img: Tensor2D|Tensor3D|TensorLike,
-    canvas?: HTMLCanvasElement): Promise<Uint8ClampedArray> {
-  const $img = convertToTensor(img, 'img', 'toPixels', 'int32');
-  if ($img.rank !== 2 && $img.rank !== 3) {
-    throw new Error(
-        `toPixels only supports rank 2 or 3 tensors, got rank ${$img.rank}.`);
-  }
-  const [height, width] = $img.shape.slice(0, 2);
-  const depth = $img.rank === 2 ? 1 : $img.shape[2];
-
-  if (depth > 4 || depth === 2) {
-    throw new Error(
-        `toPixels only supports depth of size ` +
-        `1, 3 or 4 but got ${depth}`);
-  }
-
-  const minTensor = $img.min();
-  const maxTensor = $img.max();
-  const min = (await minTensor.data())[0];
-  const max = (await maxTensor.data())[0];
-  minTensor.dispose();
-  maxTensor.dispose();
-  if ($img.dtype === 'float32') {
-    if (min < 0 || max > 1) {
-      throw new Error(
-          `Tensor values for a float32 Tensor must be in the ` +
-          `range [0 - 1] but got range [${min} - ${max}].`);
-    }
-  } else if ($img.dtype === 'int32') {
-    if (min < 0 || max > 255) {
-      throw new Error(
-          `Tensor values for a int32 Tensor must be in the ` +
-          `range [0 - 255] but got range [${min} - ${max}].`);
-    }
-  } else {
-    throw new Error(
-        `Unsupported type for toPixels: ${$img.dtype}.` +
-        ` Please use float32 or int32 tensors.`);
-  }
-
-  const data = await $img.data();
-  const multiplier = $img.dtype === 'float32' ? 255 : 1;
-  const bytes = new Uint8ClampedArray(width * height * 4);
-
-  for (let i = 0; i < height * width; ++i) {
-    let r, g, b, a;
-    if (depth === 1) {
-      r = data[i] * multiplier;
-      g = data[i] * multiplier;
-      b = data[i] * multiplier;
-      a = 255;
-    } else if (depth === 3) {
-      r = data[i * 3] * multiplier;
-      g = data[i * 3 + 1] * multiplier;
-      b = data[i * 3 + 2] * multiplier;
-      a = 255;
-    } else if (depth === 4) {
-      r = data[i * 4] * multiplier;
-      g = data[i * 4 + 1] * multiplier;
-      b = data[i * 4 + 2] * multiplier;
-      a = data[i * 4 + 3] * multiplier;
-    }
-
-    const j = i * 4;
-    bytes[j + 0] = Math.round(r);
-    bytes[j + 1] = Math.round(g);
-    bytes[j + 2] = Math.round(b);
-    bytes[j + 3] = Math.round(a);
-  }
-
-  if (canvas != null) {
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext('2d');
-    const imageData = new ImageData(bytes, width, height);
-    ctx.putImageData(imageData, 0, 0);
-  }
-  if ($img !== img) {
-    $img.dispose();
-  }
-  return bytes;
+  const result = ENV.engine.runKernel(
+      backend => backend.oneHot($indices as Tensor1D, depth, onValue, offValue),
+      {$indices}, grad);
+  return result.reshape(outShape);
 }
 
 /**
@@ -461,11 +332,11 @@ async function toPixels(
 /** @doc {heading: 'Tensors', subheading: 'Transformations'} */
 function reshape_<R2 extends Rank>(
     x: Tensor|TensorLike, shape: ShapeMap[R2]): Tensor<R2> {
-  const $x = convertToTensor(x, 'x', 'reshape');
+  const $x = convertToTensor(x, 'x', 'reshape', null);
   shape = util.inferFromImplicitShape(shape, $x.size);
   util.assert(
       $x.size === util.sizeFromShape(shape),
-      'new shape and old shape must have the same number of elements.');
+      () => 'new shape and old shape must have the same number of elements.');
 
   const grad = (dy: Tensor<R2>) => {
     return {$x: () => dy.reshape($x.shape)};
@@ -543,9 +414,10 @@ function tile_<T extends Tensor>(x: T|TensorLike, reps: number[]): T {
 
   util.assert(
       $x.rank === reps.length,
-      `Error in transpose: rank of input ${$x.rank} ` +
+      () => `Error in transpose: rank of input ${$x.rank} ` +
           `must match length of reps ${reps}.`);
-  const grad = (dy: T) => {
+  const grad = (dy: T, saved: Tensor[]) => {
+    const [$x] = saved;
     const derX = () => {
       let xGrad = zerosLike($x);
       // TODO(cais): Maybe reduce memory footprint by avoiding repeated
@@ -592,11 +464,15 @@ function tile_<T extends Tensor>(x: T|TensorLike, reps: number[]): T {
             `Gradient for tile operation is not implemented for rank-` +
             `${$x.rank} tensors yet.`);
       }
-      return xGrad;
+      return xGrad as T;
     };
     return {$x: derX};
   };
-  return ENV.engine.runKernel(backend => backend.tile($x, reps), {$x}, grad);
+  return ENV.engine.runKernel((backend, save) => {
+    const res = backend.tile($x, reps);
+    save([$x]);
+    return res;
+  }, {$x}, grad);
 }
 
 /**
@@ -607,7 +483,7 @@ function pad1d_(
     constantValue = 0): Tensor1D {
   util.assert(
       paddings.length === 2,
-      'Invalid number of paddings. Must be length of 2.');
+      () => 'Invalid number of paddings. Must be length of 2.');
   return pad(x, [paddings], constantValue);
 }
 
@@ -620,7 +496,7 @@ function pad2d_(
   util.assert(
       paddings.length === 2 && paddings[0].length === 2 &&
           paddings[1].length === 2,
-      'Invalid number of paddings. Must be length of 2 each.');
+      () => 'Invalid number of paddings. Must be length of 2 each.');
   return pad(x, paddings, constantValue);
 }
 
@@ -634,7 +510,7 @@ function pad3d_(
   util.assert(
       paddings.length === 3 && paddings[0].length === 2 &&
           paddings[1].length === 2 && paddings[2].length === 2,
-      'Invalid number of paddings. Must be length of 2 each.');
+      () => 'Invalid number of paddings. Must be length of 2 each.');
   return pad(x, paddings, constantValue);
 }
 
@@ -652,7 +528,7 @@ function pad4d_(
       paddings.length === 4 && paddings[0].length === 2 &&
           paddings[1].length === 2 && paddings[2].length === 2 &&
           paddings[3].length === 2,
-      'Invalid number of paddings. Must be length of 2 each.');
+      () => 'Invalid number of paddings. Must be length of 2 each.');
   return pad(x, paddings, constantValue);
 }
 
@@ -711,10 +587,12 @@ function pad_<T extends Tensor>(
  * @param axis The axis to stack along. Defaults to 0 (the first dim).
  */
 /** @doc {heading: 'Tensors', subheading: 'Slicing and Joining'} */
-function stack_<T extends Tensor>(tensors: T[]|TensorLike[], axis = 0): Tensor {
+function stack_<T extends Tensor>(
+    tensors: Array<T|TensorLike>, axis = 0): Tensor {
   const $tensors = convertToTensorArray(tensors, 'tensors', 'stack');
 
-  util.assert($tensors.length >= 1, 'Pass at least one tensor to tf.stack');
+  util.assert(
+      $tensors.length >= 1, () => 'Pass at least one tensor to tf.stack');
   if ($tensors.length === 1) {
     return $tensors[0].expandDims(axis);
   }
@@ -722,7 +600,7 @@ function stack_<T extends Tensor>(tensors: T[]|TensorLike[], axis = 0): Tensor {
   const shape = $tensors[0].shape;
   const dtype = $tensors[0].dtype;
 
-  util.assert(axis <= rank, 'Axis must be <= rank of the tensor');
+  util.assert(axis <= rank, () => 'Axis must be <= rank of the tensor');
 
   $tensors.forEach(t => {
     util.assertShapesMatch(
@@ -733,7 +611,7 @@ function stack_<T extends Tensor>(tensors: T[]|TensorLike[], axis = 0): Tensor {
   $tensors.forEach(t => {
     util.assert(
         dtype === t.dtype,
-        'All tensors passed to stack must have matching dtypes');
+        () => 'All tensors passed to stack must have matching dtypes');
   });
   const expandedTensors = $tensors.map(t => t.expandDims(axis));
   return concat(expandedTensors, axis);
@@ -758,13 +636,12 @@ function stack_<T extends Tensor>(tensors: T[]|TensorLike[], axis = 0): Tensor {
  *
  * @param x A `tf.Tensor`. N-D with `x.shape` = `[batch] + spatialShape +
  * remainingShape`, where spatialShape has `M` dimensions.
- * @param blockShape A 1-D array. Must be one of the following types: `int32`,
- * `int64`. Must have shape `[M]`, all values must be >= 1.
- * @param crops A 2-D array.  Must be one of the following types: `int32`,
- * `int64`. Must have shape `[M, 2]`, all values must be >= 0. `crops[i] =
- * [cropStart, cropEnd]` specifies the amount to crop from input dimension `i
- * + 1`, which corresponds to spatial dimension `i`. It is required that
- * `cropStart[i] + cropEnd[i] <= blockShape[i] * inputShape[i + 1]`
+ * @param blockShape A 1-D array. Must have shape `[M]`, all values must
+ * be >= 1.
+ * @param crops A 2-D array.  Must have shape `[M, 2]`, all values must be >= 0.
+ * `crops[i] = [cropStart, cropEnd]` specifies the amount to crop from input
+ * dimension `i + 1`, which corresponds to spatial dimension `i`. It is required
+ * that `cropStart[i] + cropEnd[i] <= blockShape[i] * inputShape[i + 1]`
  *
  * This operation is equivalent to the following steps:
  *
@@ -794,19 +671,19 @@ function batchToSpaceND_<T extends Tensor>(
 
   util.assert(
       $x.rank >= 1 + blockShape.length,
-      `input rank is ${$x.rank} but should be > than blockShape.length ${
+      () => `input rank is ${$x.rank} but should be > than blockShape.length ${
           blockShape.length}`);
 
   util.assert(
       crops.length === blockShape.length,
-      `crops.length is ${
+      () => `crops.length is ${
           crops.length} but should be equal to blockShape.length  ${
           blockShape.length}`);
 
   util.assert(
       $x.shape[0] % prod === 0,
-      `input tensor batch is ${
-          $x.shape[0]} but is not divisible by the product of ` +
+      () => `input tensor batch is ${
+                $x.shape[0]} but is not divisible by the product of ` +
           `the elements of blockShape ${blockShape.join(' * ')} === ${prod}`);
 
   const grad = (dy: T) => {
@@ -818,17 +695,17 @@ function batchToSpaceND_<T extends Tensor>(
 }
 
 /**
- * This operation divides "spatial" dimensions [1, ..., M] of the input into
- * a grid of blocks of shape block_shape, and interleaves these blocks with
+ * This operation divides "spatial" dimensions `[1, ..., M]` of the input into
+ * a grid of blocks of shape `blockShape`, and interleaves these blocks with
  * the "batch" dimension (0) such that in the output, the spatial
- * dimensions [1, ..., M] correspond to the position within the grid,
+ * dimensions `[1, ..., M]` correspond to the position within the grid,
  * and the batch dimension combines both the position within a spatial block
  * and the original batch position. Prior to division into blocks,
  * the spatial dimensions of the input are optionally zero padded
- * according to paddings. See below for a precise description.
+ * according to `paddings`. See below for a precise description.
  *
  * ```js
- * const x = tf.tensor4d([1, 2, 3, 4], [4, 1, 1, 1]);
+ * const x = tf.tensor4d([1, 2, 3, 4], [1, 2, 2, 1]);
  * const blockShape = [2, 2];
  * const paddings = [[0, 0], [0, 0]];
  *
@@ -837,33 +714,31 @@ function batchToSpaceND_<T extends Tensor>(
  *
  * @param x A `tf.Tensor`. N-D with `x.shape` = `[batch] + spatialShape +
  * remainingShape`, where spatialShape has `M` dimensions.
- * @param blockShape A 1-D array. Must be one of the following types: `int32`,
- * `int64`. Must have shape `[M]`, all values must be >= 1.
- * @param paddings A 2-D array.  Must be one of the following types: `int32`,
- * `int64`. Must have shape `[M, 2]`, all values must be >= 0. `paddings[i] =
- * [padStart, padEnd]` specifies the amount to zero-pad from input dimension
- * `i + 1`, which corresponds to spatial dimension `i`.
- * It is required that
+ * @param blockShape A 1-D array. Must have shape `[M]`, all values must
+ * be >= 1.
+ * @param paddings A 2-D array. Must have shape `[M, 2]`, all values must be >=
+ *     0. `paddings[i] = [padStart, padEnd]` specifies the amount to zero-pad
+ * from input dimension `i + 1`, which corresponds to spatial dimension `i`. It
+ * is required that
  * `(inputShape[i + 1] + padStart + padEnd) % blockShape[i] === 0`
  *
  * This operation is equivalent to the following steps:
  *
- * 1. Zero-pad the start and end of dimensions [1, ..., M] of the input
- * according to paddings to produce padded of shape padded_shape.
+ * 1. Zero-pad the start and end of dimensions `[1, ..., M]` of the input
+ * according to `paddings` to produce `padded` of shape paddedShape.
  *
- * 2. Reshape padded to reshaped_padded of shape:
- * [batch] + [padded_shape[1] / block_shape[0], block_shape[0], ...,
- * padded_shape[M] / block_shape[M-1], block_shape[M-1]] + remaining_shape
+ * 2. Reshape `padded` to `reshapedPadded` of shape:
+ * `[batch] + [paddedShape[1] / blockShape[0], blockShape[0], ...,
+ * paddedShape[M] / blockShape[M-1], blockShape[M-1]] + remainingShape`
  *
- * 3. Permute dimensions of reshaped_padded to produce permuted_
- * reshaped_padded of shape:
- * block_shape + [batch] + [padded_shape[1] / block_shape[0], ...,
- * padded_shape[M] / block_shape[M-1]] + remaining_shape
+ * 3. Permute dimensions of `reshapedPadded` to produce `permutedReshapedPadded`
+ * of shape: `blockShape + [batch] + [paddedShape[1] / blockShape[0], ...,
+ * paddedShape[M] / blockShape[M-1]] + remainingShape`
  *
- * 4. Reshape permuted_reshaped_padded to flatten block_shape into the
+ * 4. Reshape `permutedReshapedPadded` to flatten `blockShape` into the
  * batch dimension, producing an output tensor of shape:
- * [batch * prod(block_shape)] + [padded_shape[1] / block_shape[0], ...,
- * padded_shape[M] / block_shape[M-1]] + remaining_shape
+ * `[batch * prod(blockShape)] + [paddedShape[1] / blockShape[0], ...,
+ * paddedShape[M] / blockShape[M-1]] + remainingShape`
  */
 /** @doc {heading: 'Tensors', subheading: 'Transformations'} */
 function spaceToBatchND_<T extends Tensor>(
@@ -872,13 +747,13 @@ function spaceToBatchND_<T extends Tensor>(
 
   util.assert(
       $x.rank >= 1 + blockShape.length,
-      `input rank ${$x.rank} should be > than [blockShape] ${
+      () => `input rank ${$x.rank} should be > than [blockShape] ${
           blockShape.length}`);
 
   util.assert(
       paddings.length === blockShape.length,
-      `paddings.shape[0] ${paddings.length} must be equal to [blockShape] ${
-          blockShape.length}`);
+      () => `paddings.shape[0] ${
+          paddings.length} must be equal to [blockShape] ${blockShape.length}`);
 
   util.assert(
       $x.shape.reduce(
@@ -892,7 +767,7 @@ function spaceToBatchND_<T extends Tensor>(
             return a;
           },
           true),
-      `input spatial dimensions ${$x.shape.slice(1)} with paddings ${
+      () => `input spatial dimensions ${$x.shape.slice(1)} with paddings ${
           paddings.toString()} must be divisible by blockShapes ${
           blockShape.toString()}`);
 
@@ -917,28 +792,20 @@ function spaceToBatchND_<T extends Tensor>(
  * @param axis The axis to unstack along. Defaults to 0 (the first dim).
  */
 /** @doc {heading: 'Tensors', subheading: 'Slicing and Joining'} */
-function unstack_<T extends Tensor>(x: T|TensorLike, axis = 0): Tensor[] {
+function unstack_(x: Tensor|TensorLike, axis = 0): Tensor[] {
+  axis = axis || 0;
   const $x = convertToTensor(x, 'x', 'unstack');
-  const num = $x.shape[axis];
-  const outputShape: number[] = Array($x.rank - 1).fill(0);
-  let outIndex = 0;
-  for (let i = 0; i < $x.rank; i++) {
-    if (i !== axis) {
-      outputShape[outIndex] = $x.shape[i];
-      outIndex++;
-    }
+  util.assert(
+      axis >= -$x.shape.length && axis < $x.shape.length,
+      () =>
+          `Axis = ${axis} is not in [-${$x.shape.length}, ${$x.shape.length})`);
+  if (axis < 0) {
+    axis += $x.shape.length;
   }
-
-  let splitSizes: number[];
-  splitSizes = Array(num).fill(1);
-  const begin = Array($x.rank).fill(0);
-  const size = $x.shape.slice();
-  return splitSizes.map(s => {
-    size[axis] = s;
-    const slice = $x.slice(begin, size);
-    begin[axis] += s;
-    return slice.reshape(outputShape);
-  });
+  const grad = (dy: Tensor[]) => {
+    return {$x: () => stack(dy, axis)};
+  };
+  return ENV.engine.runKernel(backend => backend.unstack($x, axis), {$x}, grad);
 }
 
 /**
@@ -1008,13 +875,13 @@ function expandDims_<R2 extends Rank>(
     x: Tensor|TensorLike, axis = 0): Tensor<R2> {
   const $x = convertToTensor(x, 'x', 'expandDims');
 
-  util.assert(axis <= $x.rank, 'Axis must be <= rank of the tensor');
+  util.assert(axis <= $x.rank, () => 'Axis must be <= rank of the tensor');
   const newShape = $x.shape.slice();
   if (axis < 0) {
     // Negative value is counted from the tail of rank.
     util.assert(
         -($x.rank + 1) <= axis,
-        `Axis must be in the interval [${- ($x.rank + 1)}, ${$x.rank}]`);
+        () => `Axis must be in the interval [${- ($x.rank + 1)}, ${$x.rank}]`);
     axis = $x.rank + axis + 1;
   }
   newShape.splice(axis, 0, 1);
@@ -1060,7 +927,7 @@ function expandDims_<R2 extends Rank>(
 function depthToSpace_(
     x: Tensor4D|TensorLike4D, blockSize: number,
     dataFormat: 'NHWC'|'NCHW' = 'NHWC'): Tensor4D {
-  const $x = convertToTensor(x, 'x', 'depthToSpace');
+  const $x = convertToTensor(x, 'x', 'depthToSpace') as Tensor4D;
 
   const inputHeight = (dataFormat === 'NHWC') ? $x.shape[1] : $x.shape[2];
   const inputWidth = (dataFormat === 'NHWC') ? $x.shape[2] : $x.shape[3];
@@ -1068,24 +935,91 @@ function depthToSpace_(
 
   util.assert(
       inputHeight * blockSize >= 0,
-      `Negative dimension size caused by overflow when multiplying
+      () => `Negative dimension size caused by overflow when multiplying
       ${inputHeight} and ${blockSize}  for depthToSpace with input shape
       ${$x.shape}`);
 
   util.assert(
       inputWidth * blockSize >= 0,
-      `Negative dimension size caused by overflow when multiplying
+      () => `Negative dimension size caused by overflow when multiplying
       ${inputWidth} and ${blockSize} for depthToSpace with input shape
           ${$x.shape}`);
 
   util.assert(
       (inputDepth % (blockSize * blockSize) === 0),
-      `Dimension size must be evenly divisible by ${
+      () => `Dimension size must be evenly divisible by ${
           blockSize * blockSize} but is ${
           inputDepth} for depthToSpace with input shape ${$x.shape}`);
 
   return ENV.engine.runKernel(
       backend => backend.depthToSpace($x, blockSize, dataFormat), {$x});
+}
+
+/**
+ * Computes the difference between two lists of numbers.
+ *
+ * Given a Tensor `x` and a Tensor `y`, this operation returns a Tensor `out`
+ * that represents all values that are in `x` but not in `y`. The returned
+ * Tensor `out` is sorted in the same order that the numbers appear in `x`
+ * (duplicates are preserved). This operation also returns a Tensor indices that
+ * represents the position of each out element in `x`. In other words:
+ *
+ * `out[i] = x[idx[i]] for i in [0, 1, ..., out.length - 1]`
+ *
+ * ```js
+ * const x = [1, 2, 3, 4, 5, 6];
+ * const y = [1, 3, 5];
+ *
+ * const [out, indices] = await tf.setdiff1dAsync(x, y);
+ * out.print(); // [2, 4, 6]
+ * indices.print(); // [1, 3, 5]
+ * ```
+ *
+ * @param x 1-D Tensor. Values to keep.
+ * @param y 1-D Tensor. Must have the same type as x. Values to exclude in the
+ *     output.
+ * @returns Promise of Tensor tuple [out, indices].
+ *  out: Tensor with the same type as x.
+ *  indices: A Tensor of type int32.
+ */
+/** @doc {heading: 'Tensors', subheading: 'Transformations'} */
+async function setdiff1dAsync_(
+    x: Tensor|TensorLike, y: Tensor|TensorLike): Promise<[Tensor, Tensor]> {
+  const $x = convertToTensor(x, 'x', 'setdiff1d');
+  const $y = convertToTensor(y, 'y', 'setdiff1d');
+
+  util.assert(
+      $x.dtype === $y.dtype,
+      () => `x and y should have the same dtype, but got x (${
+          $x.dtype}) and y (${$y.dtype}).`);
+
+  util.assert(
+      $x.rank === 1, () => `x should be 1D tensor, but got x (${$x.shape}).`);
+
+  util.assert(
+      $y.rank === 1, () => `y should be 1D tensor, but got y (${$y.shape}).`);
+
+  const xVals = await $x.data();
+  const yVals = await $y.data();
+  const ySet = new Set(yVals);
+
+  let outputSize = 0;
+  for (let i = 0; i < xVals.length; i++) {
+    if (!ySet.has(xVals[i])) {
+      outputSize++;
+    }
+  }
+
+  const buffer = new TensorBuffer([outputSize], $x.dtype);
+  const indices = new TensorBuffer([outputSize], 'int32');
+  for (let i = 0, p = 0; i < xVals.length; i++) {
+    if (!ySet.has(xVals[i])) {
+      buffer.values[p] = xVals[i];
+      indices.values[p] = i;
+      p++;
+    }
+  }
+  return [buffer.toTensor(), indices.toTensor()];
 }
 
 /**
@@ -1113,10 +1047,12 @@ function depthToSpace_(
  * zeros.
  */
 /** @doc {heading: 'Tensors', subheading: 'Creation'} */
-function buffer<R extends Rank>(
-    shape: ShapeMap[R], dtype: DataType = 'float32',
-    values?: TypedArray): TensorBuffer<R> {
-  return new TensorBuffer<R>(shape, dtype, values);
+function buffer<R extends Rank, D extends DataType = 'float32'>(
+    shape: ShapeMap[R], dtype: D = 'float32' as D,
+    values?: DataTypeMap[D]): TensorBuffer<R, D> {
+  dtype = dtype || 'float32' as D;
+  util.assertNonNegativeIntegerDimensions(shape);
+  return new TensorBuffer<R, D>(shape, dtype, values);
 }
 
 /**
@@ -1136,9 +1072,8 @@ function print<T extends Tensor>(x: T, verbose = false): void {
 }
 
 export {
-  buffer,    // Not wrapped in op() since no tensors.
-  toPixels,  // Not wrapped in op() since async.
-  print      // Not wrapped in op() since no need to increase stack trace.
+  buffer,  // Not wrapped in op() since no tensors.
+  print    // Not wrapped in op() since no need to increase stack trace.
 };
 
 export const batchToSpaceND = op({batchToSpaceND_});
@@ -1148,7 +1083,6 @@ export const cumsum = op({cumsum_});
 export const depthToSpace = op({depthToSpace_});
 export const expandDims = op({expandDims_});
 export const eye = op({eye_});
-export const fromPixels = op({fromPixels_});
 export const multinomial = op({multinomial_});
 export const oneHot = op({oneHot_});
 export const pad = op({pad_});
@@ -1166,3 +1100,4 @@ export const stack = op({stack_});
 export const tile = op({tile_});
 export const truncatedNormal = op({truncatedNormal_});
 export const unstack = op({unstack_});
+export const setdiff1dAsync = setdiff1dAsync_;

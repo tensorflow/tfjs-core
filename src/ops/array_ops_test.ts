@@ -19,7 +19,6 @@ import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
 import {ALL_ENVS, BROWSER_ENVS, CPU_ENVS, expectArraysClose, expectArraysEqual, expectPromiseToFail, expectValuesInRange, NODE_ENVS, WEBGL_ENVS} from '../test_util';
 import * as util from '../util';
-
 import {expectArrayInMeanStdRange, jarqueBeraNormalityTest} from './rand_util';
 
 describeWithFlags('zeros', ALL_ENVS, () => {
@@ -512,6 +511,16 @@ describeWithFlags('onesLike', ALL_ENVS, () => {
     expectArraysEqual(b, [1, 1, 1]);
   });
 
+  it('1D complex dtype', () => {
+    const real = tf.tensor1d([1, 2, 3], 'float32');
+    const imag = tf.tensor1d([1, 2, 3], 'float32');
+    const a = tf.complex(real, imag);
+    const b = tf.onesLike(a);
+    expect(b.dtype).toBe('complex64');
+    expect(b.shape).toEqual([3]);
+    expectArraysEqual(b, [1, 0, 1, 0, 1, 0]);
+  });
+
   it('2D default dtype', () => {
     const a = tf.tensor2d([1, 2, 3, 4], [2, 2]);
     const b = tf.onesLike(a);
@@ -544,6 +553,16 @@ describeWithFlags('onesLike', ALL_ENVS, () => {
     expectArraysEqual(b, [1, 1, 1, 1]);
   });
 
+  it('2D complex dtype', () => {
+    const real = tf.tensor2d([1, 2, 3, 4], [2, 2], 'float32');
+    const imag = tf.tensor2d([1, 2, 3, 4], [2, 2], 'float32');
+    const a = tf.complex(real, imag);
+    const b = tf.onesLike(a);
+    expect(b.dtype).toBe('complex64');
+    expect(b.shape).toEqual([2, 2]);
+    expectArraysEqual(b, [1, 0, 1, 0, 1, 0, 1, 0]);
+  });
+
   it('3D default dtype', () => {
     const a = tf.tensor3d([1, 2, 3, 4], [2, 2, 1]);
     const b = tf.onesLike(a);
@@ -574,6 +593,16 @@ describeWithFlags('onesLike', ALL_ENVS, () => {
     expect(b.dtype).toBe('bool');
     expect(b.shape).toEqual([2, 2, 1]);
     expectArraysEqual(b, [1, 1, 1, 1]);
+  });
+
+  it('3D complex dtype', () => {
+    const real = tf.tensor3d([1, 2, 3, 4], [2, 2, 1], 'float32');
+    const imag = tf.tensor3d([1, 2, 3, 4], [2, 2, 1], 'float32');
+    const a = tf.complex(real, imag);
+    const b = tf.onesLike(a);
+    expect(b.dtype).toBe('complex64');
+    expect(b.shape).toEqual([2, 2, 1]);
+    expectArraysEqual(b, [1, 0, 1, 0, 1, 0, 1, 0]);
   });
 
   it('4D default dtype', () => {
@@ -616,6 +645,16 @@ describeWithFlags('onesLike', ALL_ENVS, () => {
     expectArraysClose(b, [1, 1, 1, 1]);
   });
 
+  it('4D complex dtype', () => {
+    const real = tf.tensor4d([1, 2, 3, 4], [2, 2, 1, 1], 'float32');
+    const imag = tf.tensor4d([1, 2, 3, 4], [2, 2, 1, 1], 'float32');
+    const a = tf.complex(real, imag);
+    const b = tf.onesLike(a);
+    expect(b.dtype).toBe('complex64');
+    expect(b.shape).toEqual([2, 2, 1, 1]);
+    expectArraysEqual(b, [1, 0, 1, 0, 1, 0, 1, 0]);
+  });
+
   it('5D float32 dtype', () => {
     const a = tf.tensor5d([1, 2, 3, 4], [1, 2, 2, 1, 1], 'float32');
     const b = tf.onesLike(a);
@@ -648,6 +687,16 @@ describeWithFlags('onesLike', ALL_ENVS, () => {
     expectArraysClose(b, [1, 1, 1, 1]);
   });
 
+  it('5D complex dtype', () => {
+    const real = tf.tensor5d([1, 2, 3, 4], [1, 2, 2, 1, 1], 'float32');
+    const imag = tf.tensor5d([1, 2, 3, 4], [1, 2, 2, 1, 1], 'float32');
+    const a = tf.complex(real, imag);
+    const b = tf.onesLike(a);
+    expect(b.dtype).toBe('complex64');
+    expect(b.shape).toEqual([1, 2, 2, 1, 1]);
+    expectArraysEqual(b, [1, 0, 1, 0, 1, 0, 1, 0]);
+  });
+
   it('6D int32 dtype', () => {
     const a = tf.tensor6d([1, 2, 3, 4], [1, 2, 2, 1, 1, 1], 'int32');
     const b = tf.onesLike(a);
@@ -678,6 +727,16 @@ describeWithFlags('onesLike', ALL_ENVS, () => {
     expect(b.dtype).toBe('float32');
     expect(b.shape).toEqual(a.shape);
     expectArraysClose(b, [1, 1, 1, 1]);
+  });
+
+  it('6D complex dtype', () => {
+    const real = tf.tensor6d([1, 2, 3, 4], [1, 2, 2, 1, 1, 1], 'float32');
+    const imag = tf.tensor6d([1, 2, 3, 4], [1, 2, 2, 1, 1, 1], 'float32');
+    const a = tf.complex(real, imag);
+    const b = tf.onesLike(a);
+    expect(b.dtype).toBe('complex64');
+    expect(b.shape).toEqual([1, 2, 2, 1, 1, 1]);
+    expectArraysEqual(b, [1, 0, 1, 0, 1, 0, 1, 0]);
   });
 
   it('throws when passed a non-tensor', () => {
@@ -1250,7 +1309,7 @@ describeWithFlags('fromPixels, mock canvas', NODE_ENVS, () => {
   it('accepts a canvas-like element', () => {
     const c = new MockCanvas(2, 2);
     // tslint:disable-next-line:no-any
-    const t = tf.fromPixels(c as any);
+    const t = tf.browser.fromPixels(c as any);
     expect(t.dtype).toBe('int32');
     expect(t.shape).toEqual([2, 2, 3]);
     tf.test_util.expectArraysEqual(
@@ -1260,7 +1319,7 @@ describeWithFlags('fromPixels, mock canvas', NODE_ENVS, () => {
   it('accepts a canvas-like element, numChannels=4', () => {
     const c = new MockCanvas(2, 2);
     // tslint:disable-next-line:no-any
-    const t = tf.fromPixels(c as any, 4);
+    const t = tf.browser.fromPixels(c as any, 4);
     expect(t.dtype).toBe('int32');
     expect(t.shape).toEqual([2, 2, 4]);
     tf.test_util.expectArraysEqual(
@@ -1269,7 +1328,7 @@ describeWithFlags('fromPixels, mock canvas', NODE_ENVS, () => {
 
   it('errors when passed a non-canvas object', () => {
     // tslint:disable-next-line:no-any
-    expect(() => tf.fromPixels(5 as any)).toThrowError();
+    expect(() => tf.browser.fromPixels(5 as any)).toThrowError();
   });
 });
 
@@ -1281,7 +1340,7 @@ describeWithFlags('fromPixels', BROWSER_ENVS, () => {
     pixels.data[2] = 160;
     pixels.data[3] = 240;
 
-    const array = tf.fromPixels(pixels, 3);
+    const array = tf.browser.fromPixels(pixels, 3);
 
     expectArraysEqual(array, [0, 80, 160]);
   });
@@ -1293,7 +1352,7 @@ describeWithFlags('fromPixels', BROWSER_ENVS, () => {
     pixels.data[2] = 160;
     pixels.data[3] = 240;
 
-    const array = tf.fromPixels(pixels, 4);
+    const array = tf.browser.fromPixels(pixels, 4);
 
     expectArraysEqual(array, [0, 80, 160, 240]);
   });
@@ -1308,7 +1367,7 @@ describeWithFlags('fromPixels', BROWSER_ENVS, () => {
       pixels.data[i] = i * 2;
     }
 
-    const array = tf.fromPixels(pixels, 3);
+    const array = tf.browser.fromPixels(pixels, 3);
 
     expectArraysEqual(array, [0, 2, 4, 8, 10, 12, 16, 18, 20, 24, 26, 28]);
   });
@@ -1322,7 +1381,7 @@ describeWithFlags('fromPixels', BROWSER_ENVS, () => {
       pixels.data[i] = i * 2;
     }
 
-    const array = tf.fromPixels(pixels, 4);
+    const array = tf.browser.fromPixels(pixels, 4);
 
     expectArraysClose(
         array,
@@ -1340,7 +1399,7 @@ describeWithFlags('fromPixels', BROWSER_ENVS, () => {
     pixels.data[5] = 6;
     pixels.data[6] = 7;
     pixels.data[7] = 255;  // Not used.
-    const res = tf.fromPixels(pixels, 3);
+    const res = tf.browser.fromPixels(pixels, 3);
     expect(res.shape).toEqual([2, 1, 3]);
     expect(res.dtype).toBe('int32');
     expectArraysClose(res, [2, 3, 4, 5, 6, 7]);
@@ -1352,7 +1411,7 @@ describeWithFlags('fromPixels', BROWSER_ENVS, () => {
     pixels.data[1] = 3;
     pixels.data[2] = 4;
     pixels.data[3] = 255;  // Not used.
-    const a = tf.fromPixels(pixels, 3).reshape([1, 1, 1, 3]);
+    const a = tf.browser.fromPixels(pixels, 3).reshape([1, 1, 1, 3]);
     const res = a.add(tf.scalar(2, 'int32'));
     expect(res.shape).toEqual([1, 1, 1, 3]);
     expect(res.dtype).toBe('int32');
@@ -1370,8 +1429,8 @@ describeWithFlags('fromPixels', BROWSER_ENVS, () => {
     pixelsB.data[1] = 6;
     pixelsB.data[2] = 7;
     pixelsB.data[3] = 255;  // Not used.
-    const a = tf.fromPixels(pixelsA, 3).toFloat();
-    const b = tf.fromPixels(pixelsB, 3).toFloat();
+    const a = tf.browser.fromPixels(pixelsA, 3).toFloat();
+    const b = tf.browser.fromPixels(pixelsB, 3).toFloat();
     const res = a.add(b);
     expect(res.shape).toEqual([1, 1, 3]);
     expect(res.dtype).toBe('float32');
@@ -1379,172 +1438,148 @@ describeWithFlags('fromPixels', BROWSER_ENVS, () => {
   });
 
   it('throws when passed a primitive number', () => {
+    const msg = /pixels passed to tf.browser.fromPixels\(\) must be either/;
     // tslint:disable-next-line:no-any
-    expect(() => tf.fromPixels(3 as any))
-        .toThrowError(/pixels passed to tf.fromPixels\(\) must be either/);
+    expect(() => tf.browser.fromPixels(3 as any))
+        .toThrowError(msg);
   });
 
   it('throws when passed a string', () => {
+    const msg = /pixels passed to tf.browser.fromPixels\(\) must be either/;
     // tslint:disable-next-line:no-any
-    expect(() => tf.fromPixels('test' as any))
-        .toThrowError(/pixels passed to tf.fromPixels\(\) must be either/);
+    expect(() => tf.browser.fromPixels('test' as any))
+        .toThrowError(msg);
   });
 });
 
 describeWithFlags('toPixels no canvas', ALL_ENVS, () => {
-  it('draws a rank-2 float32 tensor', done => {
+  it('draws a rank-2 float32 tensor', async () => {
     const x = tf.tensor2d([.15, .2], [2, 1], 'float32');
 
-    tf.toPixels(x).then(data => {
-      const expected = new Uint8ClampedArray([
-        Math.round(.15 * 255), Math.round(.15 * 255), Math.round(.15 * 255),
-        255, Math.round(.2 * 255), Math.round(.2 * 255), Math.round(.2 * 255),
-        255
-      ]);
-      expect(data).toEqual(expected);
-
-      done();
-    });
+    const data = await tf.browser.toPixels(x);
+    const expected = new Uint8ClampedArray([
+      Math.round(.15 * 255), Math.round(.15 * 255), Math.round(.15 * 255), 255,
+      Math.round(.2 * 255), Math.round(.2 * 255), Math.round(.2 * 255), 255
+    ]);
+    expect(data).toEqual(expected);
   });
 
-  it('draws a rank-2 int32 tensor', done => {
+  it('draws a rank-2 int32 tensor', async () => {
     const x = tf.tensor2d([10, 20], [2, 1], 'int32');
-
-    tf.toPixels(x).then(data => {
-      const expected =
-          new Uint8ClampedArray([10, 10, 10, 255, 20, 20, 20, 255]);
-      expect(data).toEqual(expected);
-
-      done();
-    });
+    const data = await tf.browser.toPixels(x);
+    const expected = new Uint8ClampedArray([10, 10, 10, 255, 20, 20, 20, 255]);
+    expect(data).toEqual(expected);
   });
 
-  it('draws a rank-3 float32 tensor, 1 channel', done => {
+  it('draws a rank-3 float32 tensor, 1 channel', async () => {
     const x = tf.tensor3d([.15, .2], [2, 1, 1], 'float32');
 
-    tf.toPixels(x).then(data => {
-      const expected = new Uint8ClampedArray([
-        Math.round(.15 * 255), Math.round(.15 * 255), Math.round(.15 * 255),
-        255, Math.round(.2 * 255), Math.round(.2 * 255), Math.round(.2 * 255),
-        255
-      ]);
-      expect(data).toEqual(expected);
-      done();
-    });
+    const data = await tf.browser.toPixels(x);
+    const expected = new Uint8ClampedArray([
+      Math.round(.15 * 255), Math.round(.15 * 255), Math.round(.15 * 255), 255,
+      Math.round(.2 * 255), Math.round(.2 * 255), Math.round(.2 * 255), 255
+    ]);
+    expect(data).toEqual(expected);
   });
 
-  it('draws a rank-3 int32 tensor, 1 channel', done => {
+  it('draws a rank-3 int32 tensor, 1 channel', async () => {
     const x = tf.tensor3d([10, 20], [2, 1, 1], 'int32');
 
-    tf.toPixels(x).then(data => {
-      const expected =
-          new Uint8ClampedArray([10, 10, 10, 255, 20, 20, 20, 255]);
-      expect(data).toEqual(expected);
-
-      done();
-    });
+    const data = await tf.browser.toPixels(x);
+    const expected = new Uint8ClampedArray([10, 10, 10, 255, 20, 20, 20, 255]);
+    expect(data).toEqual(expected);
   });
 
-  it('draws a rank-3 float32 tensor, 3 channel', done => {
+  it('draws a rank-3 float32 tensor, 3 channel', async () => {
     // 0.1 and 0.3 are changed to 0.1001 and 0.3001 to avoid boundary conditions
     // such as Math.round(~25.5) which on Mobile Safari gives 25 and Desktop
     // gives 26.
     const x =
         tf.tensor3d([.05, .1001, .15, .2, .25, .3001], [2, 1, 3], 'float32');
 
-    tf.toPixels(x).then(data => {
-      const expected = new Uint8ClampedArray([
-        Math.round(.05 * 255), Math.round(.1001 * 255), Math.round(.15 * 255),
-        255, Math.round(.2 * 255), Math.round(.25 * 255),
-        Math.round(.3001 * 255), 255
-      ]);
-      expect(data).toEqual(expected);
-
-      done();
-    });
+    const data = await tf.browser.toPixels(x);
+    const expected = new Uint8ClampedArray([
+      Math.round(.05 * 255), Math.round(.1001 * 255), Math.round(.15 * 255),
+      255, Math.round(.2 * 255), Math.round(.25 * 255), Math.round(.3001 * 255),
+      255
+    ]);
+    expect(data).toEqual(expected);
   });
 
-  it('draws a rank-3 int32 tensor, 3 channel', done => {
+  it('draws a rank-3 int32 tensor, 3 channel', async () => {
     const x = tf.tensor3d([10, 20, 30, 40, 50, 60], [2, 1, 3], 'int32');
 
-    tf.toPixels(x).then(data => {
-      const expected =
-          new Uint8ClampedArray([10, 20, 30, 255, 40, 50, 60, 255]);
-      expect(data).toEqual(expected);
-
-      done();
-    });
+    const data = await tf.browser.toPixels(x);
+    const expected = new Uint8ClampedArray([10, 20, 30, 255, 40, 50, 60, 255]);
+    expect(data).toEqual(expected);
   });
 
-  it('draws a rank-3 float32 tensor, 4 channel', done => {
-    const x =
-      tf.tensor3d([.05, .1001, .15, .2, .25, .3001, .35, .4], [2, 1, 4],
-        'float32');
+  it('draws a rank-3 float32 tensor, 4 channel', async () => {
+    const x = tf.tensor3d(
+        [.05, .1001, .15, .2, .25, .3001, .35, .4], [2, 1, 4], 'float32');
 
-    tf.toPixels(x).then(data => {
-      const expected = new Uint8ClampedArray([
-        Math.round(.05 * 255), Math.round(.1001 * 255), Math.round(.15 * 255),
-        Math.round(.20 * 255), Math.round(.25 * 255), Math.round(.3001 * 255),
-        Math.round(.35 * 255), Math.round(.4 * 255)
-      ]);
-      expect(data).toEqual(expected);
-
-      done();
-    });
+    const data = await tf.browser.toPixels(x);
+    const expected = new Uint8ClampedArray([
+      Math.round(.05 * 255), Math.round(.1001 * 255), Math.round(.15 * 255),
+      Math.round(.20 * 255), Math.round(.25 * 255), Math.round(.3001 * 255),
+      Math.round(.35 * 255), Math.round(.4 * 255)
+    ]);
+    expect(data).toEqual(expected);
   });
 
-  it('draws a rank-3 int32 tensor, 4 channel', done => {
+  it('draws a rank-3 int32 tensor, 4 channel', async () => {
     const x = tf.tensor3d([10, 20, 30, 40, 50, 60, 70, 80], [2, 1, 4], 'int32');
 
-    tf.toPixels(x).then(data => {
-      const expected = new Uint8ClampedArray([10, 20, 30, 40, 50, 60, 70, 80]);
-      expect(data).toEqual(expected);
-
-      done();
-    });
+    const data = await tf.browser.toPixels(x);
+    const expected = new Uint8ClampedArray([10, 20, 30, 40, 50, 60, 70, 80]);
+    expect(data).toEqual(expected);
   });
 
   it('throws for scalars', done => {
     // tslint:disable-next-line:no-any
-    expectPromiseToFail(() => tf.toPixels(tf.scalar(1) as any), done);
+    expectPromiseToFail(() => tf.browser.toPixels(tf.scalar(1) as any), done);
   });
 
   it('throws for rank-1 tensors', done => {
-    // tslint:disable-next-line:no-any
-    expectPromiseToFail(() => tf.toPixels(tf.tensor1d([1]) as any), done);
+    expectPromiseToFail(
+        // tslint:disable-next-line:no-any
+        () => tf.browser.toPixels(tf.tensor1d([1]) as any), done);
   });
   it('throws for rank-4 tensors', done => {
     expectPromiseToFail(
         // tslint:disable-next-line:no-any
-        () => tf.toPixels(tf.tensor4d([1], [1, 1, 1, 1]) as any), done);
+        () => tf.browser.toPixels(tf.tensor4d([1], [1, 1, 1, 1]) as any), done);
   });
   it('throws for bool dtype', done => {
     expectPromiseToFail(
-        () => tf.toPixels(tf.tensor2d([1], [1, 1], 'bool')), done);
+        () => tf.browser.toPixels(tf.tensor2d([1], [1, 1], 'bool')), done);
   });
   it('throws for rank-3 depth = 2', done => {
     expectPromiseToFail(
-        () => tf.toPixels(tf.tensor3d([1, 2], [1, 1, 2])), done);
+        () => tf.browser.toPixels(tf.tensor3d([1, 2], [1, 1, 2])), done);
   });
   it('throws for rank-3 depth = 5', done => {
     expectPromiseToFail(
-        () => tf.toPixels(tf.tensor3d([1, 2, 3, 4, 5], [1, 1, 5])), done);
+        () => tf.browser.toPixels(tf.tensor3d([1, 2, 3, 4, 5], [1, 1, 5])),
+        done);
   });
   it('throws for float32 tensor with values not in [0 - 1]', done => {
-    expectPromiseToFail(() => tf.toPixels(tf.tensor2d([-1, .5], [1, 2])), done);
+    expectPromiseToFail(
+        () => tf.browser.toPixels(tf.tensor2d([-1, .5], [1, 2])), done);
   });
   it('throws for int32 tensor with values not in [0 - 255]', done => {
     expectPromiseToFail(
-        () => tf.toPixels(tf.tensor2d([-1, 100], [1, 2], 'int32')), done);
+        () => tf.browser.toPixels(tf.tensor2d([-1, 100], [1, 2], 'int32')),
+        done);
   });
   it('throws when passed a non-tensor', done => {
     // tslint:disable-next-line:no-any
-    expectPromiseToFail(() => tf.toPixels({} as any), done);
+    expectPromiseToFail(() => tf.browser.toPixels({} as any), done);
   });
 
   it('accepts a tensor-like object', async () => {
     const x = [[10], [20]];  // 2x1;
-    const data = await tf.toPixels(x);
+    const data = await tf.browser.toPixels(x);
 
     const expected = new Uint8ClampedArray([10, 10, 10, 255, 20, 20, 20, 255]);
     expect(data).toEqual(expected);
@@ -1556,7 +1591,7 @@ describeWithFlags('toPixels', WEBGL_ENVS, () => {
     const x = tf.tensor2d([.15, .2], [2, 1], 'float32');
     const canvas = document.createElement('canvas');
 
-    tf.toPixels(x, canvas).then(data => {
+    tf.browser.toPixels(x, canvas).then(data => {
       const expected = new Uint8ClampedArray([
         Math.round(.15 * 255), Math.round(.15 * 255), Math.round(.15 * 255),
         255, Math.round(.2 * 255), Math.round(.2 * 255), Math.round(.2 * 255),
@@ -1576,7 +1611,7 @@ describeWithFlags('toPixels', WEBGL_ENVS, () => {
     const x = tf.tensor2d([10, 20], [2, 1], 'int32');
     const canvas = document.createElement('canvas');
 
-    tf.toPixels(x, canvas).then(data => {
+    tf.browser.toPixels(x, canvas).then(data => {
       const expected =
           new Uint8ClampedArray([10, 10, 10, 255, 20, 20, 20, 255]);
       expect(data).toEqual(expected);
@@ -1593,7 +1628,7 @@ describeWithFlags('toPixels', WEBGL_ENVS, () => {
     const x = tf.tensor3d([.15, .2], [2, 1, 1], 'float32');
     const canvas = document.createElement('canvas');
 
-    tf.toPixels(x, canvas).then(data => {
+    tf.browser.toPixels(x, canvas).then(data => {
       const expected = new Uint8ClampedArray([
         Math.round(.15 * 255), Math.round(.15 * 255), Math.round(.15 * 255),
         255, Math.round(.2 * 255), Math.round(.2 * 255), Math.round(.2 * 255),
@@ -1613,7 +1648,7 @@ describeWithFlags('toPixels', WEBGL_ENVS, () => {
     const x = tf.tensor3d([10, 20], [2, 1, 1], 'int32');
     const canvas = document.createElement('canvas');
 
-    tf.toPixels(x, canvas).then(data => {
+    tf.browser.toPixels(x, canvas).then(data => {
       const expected =
           new Uint8ClampedArray([10, 10, 10, 255, 20, 20, 20, 255]);
       expect(data).toEqual(expected);
@@ -1631,7 +1666,7 @@ describeWithFlags('toPixels', WEBGL_ENVS, () => {
         tf.tensor3d([.05, .1001, .15, .20, .25, .3001], [2, 1, 3], 'float32');
     const canvas = document.createElement('canvas');
 
-    tf.toPixels(x, canvas).then(data => {
+    tf.browser.toPixels(x, canvas).then(data => {
       const expected = new Uint8ClampedArray([
         Math.round(.05 * 255), Math.round(.1001 * 255), Math.round(.15 * 255),
         255, Math.round(.2 * 255), Math.round(.25 * 255),
@@ -1651,7 +1686,7 @@ describeWithFlags('toPixels', WEBGL_ENVS, () => {
     const x = tf.tensor3d([10, 20, 30, 40, 50, 60], [2, 1, 3], 'int32');
     const canvas = document.createElement('canvas');
 
-    tf.toPixels(x, canvas).then(data => {
+    tf.browser.toPixels(x, canvas).then(data => {
       const expected =
           new Uint8ClampedArray([10, 20, 30, 255, 40, 50, 60, 255]);
       expect(data).toEqual(expected);
@@ -1671,7 +1706,7 @@ describeWithFlags('toPixels', WEBGL_ENVS, () => {
         [.05, .1001, .15, 1, .20, .25, .3001, 1], [2, 1, 4], 'float32');
     const canvas = document.createElement('canvas');
 
-    tf.toPixels(x, canvas).then(data => {
+    tf.browser.toPixels(x, canvas).then(data => {
       const expected = new Uint8ClampedArray([
         Math.round(.05 * 255), Math.round(.1001 * 255), Math.round(.15 * 255),
         255, Math.round(.20 * 255), Math.round(.25 * 255),
@@ -1695,7 +1730,7 @@ describeWithFlags('toPixels', WEBGL_ENVS, () => {
         tf.tensor3d([10, 20, 30, 255, 50, 60, 70, 255], [2, 1, 4], 'int32');
     const canvas = document.createElement('canvas');
 
-    tf.toPixels(x, canvas).then(data => {
+    tf.browser.toPixels(x, canvas).then(data => {
       const expected =
           new Uint8ClampedArray([10, 20, 30, 255, 50, 60, 70, 255]);
       expect(data).toEqual(expected);
@@ -1712,7 +1747,7 @@ describeWithFlags('toPixels', WEBGL_ENVS, () => {
     const x = [[127], [100]];  // 2x1;
     const canvas = document.createElement('canvas');
 
-    const data = await tf.toPixels(x, canvas);
+    const data = await tf.browser.toPixels(x, canvas);
     const expected =
         new Uint8ClampedArray([127, 127, 127, 255, 100, 100, 100, 255]);
     expect(data).toEqual(expected);
@@ -1765,6 +1800,14 @@ describeWithFlags('clone', ALL_ENVS, () => {
     expectArraysEqual(b, [1, 1]);
   });
 
+  it('1D string dtype', () => {
+    const a = tf.tensor1d(['a', 'b', 'c'], 'string');
+    const b = tf.clone(a);
+    expect(b.dtype).toBe('string');
+    expect(b.shape).toEqual([3]);
+    expectArraysEqual(b, ['a', 'b', 'c']);
+  });
+
   it('2D default dtype', () => {
     const a = tf.tensor2d([1, 2, 3, 4], [2, 2]);
     const b = tf.clone(a);
@@ -1805,6 +1848,14 @@ describeWithFlags('clone', ALL_ENVS, () => {
     expectArraysEqual(b, [1, 2, 3, 4, 5, 6, 7, 8]);
   });
 
+  it('2D string dtype', () => {
+    const a = tf.tensor2d(['a', 'b', 'c', 'd'], [2, 2], 'string');
+    const b = tf.clone(a);
+    expect(b.dtype).toBe('string');
+    expect(b.shape).toEqual([2, 2]);
+    expectArraysEqual(b, ['a', 'b', 'c', 'd']);
+  });
+
   it('3D default dtype', () => {
     const a = tf.tensor3d([1, 2, 3, 4], [2, 2, 1]);
     const b = tf.clone(a);
@@ -1843,6 +1894,14 @@ describeWithFlags('clone', ALL_ENVS, () => {
     expect(b.dtype).toBe('complex64');
     expect(b.shape).toEqual([2, 2, 1]);
     expectArraysEqual(b, [1, 2, 3, 4, 5, 6, 7, 8]);
+  });
+
+  it('3D string dtype', () => {
+    const a = tf.tensor3d(['a', 'b', 'c', 'd'], [2, 2, 1], 'string');
+    const b = tf.clone(a);
+    expect(b.dtype).toBe('string');
+    expect(b.shape).toEqual([2, 2, 1]);
+    expectArraysEqual(b, ['a', 'b', 'c', 'd']);
   });
 
   it('4D default dtype', () => {
@@ -1886,8 +1945,54 @@ describeWithFlags('clone', ALL_ENVS, () => {
     expectArraysEqual(b, [1, 2, 3, 4, 5, 6, 7, 8]);
   });
 
+  it('4D string dtype', () => {
+    const a = tf.tensor4d(['a', 'b', 'c', 'd'], [2, 2, 1, 1], 'string');
+    const b = tf.clone(a);
+    expect(b.dtype).toBe('string');
+    expect(b.shape).toEqual([2, 2, 1, 1]);
+    expectArraysEqual(b, ['a', 'b', 'c', 'd']);
+  });
+
   it('gradient: 1D', () => {
     const a = tf.tensor1d([1, 2, 3]);
+    const dy = tf.tensor1d([4, 5, 6]);
+    const da = tf.grad(x => tf.clone(x))(a, dy);
+
+    expect(da.dtype).toBe('float32');
+    expect(da.shape).toEqual([3]);
+    expectArraysClose(da, [4, 5, 6]);
+  });
+
+  it('gradient with clones', () => {
+    const a = tf.tensor1d([1, 2, 3]);
+    const dy = tf.tensor1d([4, 5, 6]);
+    const da = tf.grad(x => tf.clone(x.clone()).clone())(a, dy);
+
+    expect(da.dtype).toBe('float32');
+    expect(da.shape).toEqual([3]);
+    expectArraysClose(da, [4, 5, 6]);
+  });
+
+  it('gradient: 1D string throws error with string dy', () => {
+    const a = tf.tensor1d(['a', 'b', 'c'], 'string');
+    const dy = tf.tensor1d(['d', 'e', 'f']);
+    expect(() => tf.grad(x => tf.clone(x))(a, dy)).toThrowError();
+  });
+
+  it('gradient: 1D string throws error with bool dy', () => {
+    const a = tf.tensor1d(['a', 'b', 'c'], 'string');
+    const dy = tf.tensor1d([false, true, false], 'bool');
+    expect(() => tf.grad(x => tf.clone(x))(a, dy)).toThrowError();
+  });
+
+  it('gradient: 1D string throws error with int32 dy', () => {
+    const a = tf.tensor1d(['a', 'b', 'c'], 'string');
+    const dy = tf.tensor1d([4, 5, 6], 'int32');
+    expect(() => tf.grad(x => tf.clone(x))(a, dy)).toThrowError();
+  });
+
+  it('gradient: 1D string works with float32 dy', () => {
+    const a = tf.tensor1d(['a', 'b', 'c'], 'string');
     const dy = tf.tensor1d([4, 5, 6]);
     const da = tf.grad(x => tf.clone(x))(a, dy);
 
@@ -2064,6 +2169,13 @@ describeWithFlags('tile', ALL_ENVS, () => {
     expectArraysClose(gradients, tf.tensor1d([11.1, 22.2, 33.3]));
   });
 
+  it('gradient with clones', () => {
+    const x = tf.tensor1d([1, 2, 3]);
+    const dy = tf.tensor1d([0.1, 0.2, 0.3, 1, 2, 3, 10, 20, 30]);
+    const gradients = tf.grad(x => tf.tile(x.clone(), [3]).clone())(x, dy);
+    expectArraysClose(gradients, tf.tensor1d([11.1, 22.2, 33.3]));
+  });
+
   it('2D (tile) gradient', () => {
     const x = tf.tensor2d([[1, 2], [3, 4]], [2, 2]);
     const dy = tf.tensor2d([[1, 2, 10, 20], [3, 4, 30, 40]], [2, 4]);
@@ -2107,7 +2219,16 @@ describeWithFlags('tile', ALL_ENVS, () => {
 });
 
 describeWithFlags('gather', ALL_ENVS, () => {
-  it('1D (gather)', () => {
+  it('1D (gather), scalar indices', () => {
+    const t = tf.tensor1d([1, 2, 3]);
+
+    const t2 = tf.gather(t, tf.scalar(1, 'int32'), 0);
+
+    expect(t2.shape).toEqual([]);
+    expectArraysClose(t2, [2]);
+  });
+
+  it('1D (gather), 1D indices', () => {
     const t = tf.tensor1d([1, 2, 3]);
 
     const t2 = tf.gather(t, tf.tensor1d([0, 2, 0, 1], 'int32'), 0);
@@ -2116,7 +2237,27 @@ describeWithFlags('gather', ALL_ENVS, () => {
     expectArraysClose(t2, [1, 3, 1, 2]);
   });
 
-  it('2D (gather)', () => {
+  it('1D (gather), 2D indices', () => {
+    const t = tf.tensor1d([1, 2, 3]);
+
+    const t2 = tf.gather(t, tf.tensor2d([0, 2, 0, 1], [1, 4], 'int32'), 0);
+
+    expect(t2.shape).toEqual([1, 4]);
+    expectArraysClose(t2, [1, 3, 1, 2]);
+  });
+
+  it('2D (gather), scalar indices', () => {
+    const t = tf.tensor2d([1, 11, 2, 22], [2, 2]);
+    let t2 = tf.gather(t, tf.scalar(1, 'int32'), 0);
+    expect(t2.shape).toEqual([2]);
+    expectArraysClose(t2, [2, 22]);
+
+    t2 = tf.gather(t, tf.scalar(1, 'int32'), 1);
+    expect(t2.shape).toEqual([2]);
+    expectArraysClose(t2, [11, 22]);
+  });
+
+  it('2D (gather), 1D indices', () => {
     const t = tf.tensor2d([1, 11, 2, 22], [2, 2]);
     let t2 = tf.gather(t, tf.tensor1d([1, 0, 0, 1], 'int32'), 0);
     expect(t2.shape).toEqual([4, 2]);
@@ -2127,7 +2268,18 @@ describeWithFlags('gather', ALL_ENVS, () => {
     expectArraysClose(t2, [11, 1, 1, 11, 22, 2, 2, 22]);
   });
 
-  it('3D (gather)', () => {
+  it('2D (gather), 2D indices', () => {
+    const t = tf.tensor2d([1, 11, 2, 22], [2, 2]);
+    let t2 = tf.gather(t, tf.tensor2d([1, 0, 0, 1], [2, 2], 'int32'), 0);
+    expect(t2.shape).toEqual([2, 2, 2]);
+    expectArraysClose(t2, [2, 22, 1, 11, 1, 11, 2, 22]);
+
+    t2 = tf.gather(t, tf.tensor2d([1, 0, 0, 1], [2, 2], 'int32'), 1);
+    expect(t2.shape).toEqual([2, 2, 2]);
+    expectArraysClose(t2, [11, 1, 1, 11, 22, 2, 2, 22]);
+  });
+
+  it('3D (gather), 1D indices', () => {
     const t = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2]);
 
     const t2 = tf.gather(t, tf.tensor1d([1, 0, 0, 1], 'int32'), 2);
@@ -2136,7 +2288,16 @@ describeWithFlags('gather', ALL_ENVS, () => {
     expectArraysClose(t2, [2, 1, 1, 2, 4, 3, 3, 4, 6, 5, 5, 6, 8, 7, 7, 8]);
   });
 
-  it('bool (gather)', () => {
+  it('3D (gather), 2D indices', () => {
+    const t = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2]);
+
+    const t2 = tf.gather(t, tf.tensor2d([1, 0, 0, 1], [2, 2], 'int32'), 2);
+
+    expect(t2.shape).toEqual([2, 2, 2, 2]);
+    expectArraysClose(t2, [2, 1, 1, 2, 4, 3, 3, 4, 6, 5, 5, 6, 8, 7, 7, 8]);
+  });
+
+  it('bool (gather), 1D indices', () => {
     const t = tf.tensor1d([true, false, true], 'bool');
 
     const t2 = tf.gather(t, tf.tensor1d([0, 2, 0, 1], 'int32'), 0);
@@ -2146,12 +2307,32 @@ describeWithFlags('gather', ALL_ENVS, () => {
     expect(t2.dataSync()).toEqual(new Uint8Array([1, 1, 1, 0]));
   });
 
-  it('int32 (gather)', () => {
+  it('bool (gather), 2D indices', () => {
+    const t = tf.tensor1d([true, false, true], 'bool');
+
+    const t2 = tf.gather(t, tf.tensor2d([0, 2, 0, 1], [2, 2], 'int32'), 0);
+
+    expect(t2.shape).toEqual([2, 2]);
+    expect(t2.dtype).toBe('bool');
+    expect(t2.dataSync()).toEqual(new Uint8Array([1, 1, 1, 0]));
+  });
+
+  it('int32 (gather), 1D indices', () => {
     const t = tf.tensor1d([1, 2, 5], 'int32');
 
     const t2 = tf.gather(t, tf.tensor1d([0, 2, 0, 1], 'int32'), 0);
 
     expect(t2.shape).toEqual([4]);
+    expect(t2.dtype).toBe('int32');
+    expect(t2.dataSync()).toEqual(new Int32Array([1, 5, 1, 2]));
+  });
+
+  it('int32 (gather), 2D indices', () => {
+    const t = tf.tensor1d([1, 2, 5], 'int32');
+
+    const t2 = tf.gather(t, tf.tensor2d([0, 2, 0, 1], [2, 2], 'int32'), 0);
+
+    expect(t2.shape).toEqual([2, 2]);
     expect(t2.dtype).toBe('int32');
     expect(t2.dataSync()).toEqual(new Int32Array([1, 5, 1, 2]));
   });
@@ -2198,7 +2379,7 @@ describeWithFlags('gather', ALL_ENVS, () => {
     expectArraysClose(res, [1, 3, 1, 2]);
   });
 
-  it('gradient 1D (gather)', () => {
+  it('gradient 1D (gather), 1D indices', () => {
     const t = tf.tensor1d([1, 2, 3]);
     const indices = tf.tensor1d([0, 2, 0, 1], 'int32');
     const dy = tf.tensor([3, 4, 5, 6]);
@@ -2209,7 +2390,26 @@ describeWithFlags('gather', ALL_ENVS, () => {
     expectArraysClose(gradients, [8, 6, 4]);
   });
 
-  it('gradient 2D (gather) axis=0 shape=[2, 2]', () => {
+  it('gradient with clones', () => {
+    const t = tf.tensor1d([1, 2, 3]);
+    const indices = tf.tensor1d([0, 2, 0, 1], 'int32');
+    const gradF = tf.grad(t => tf.gather(t.clone(), indices.clone()).clone());
+    const dt = gradF(t);
+    expect(dt.shape).toEqual(t.shape);
+  });
+
+  it('gradient 1D (gather), 2D indices', () => {
+    const t = tf.tensor1d([1, 2, 3]);
+    const indices = tf.tensor2d([0, 2, 0, 1], [2, 2], 'int32');
+    const dy = tf.tensor2d([3, 4, 5, 6], [2, 2]);
+
+    const gradients = tf.grad(t => tf.gather(t, indices))(t, dy);
+
+    expect(gradients.shape).toEqual(t.shape);
+    expectArraysClose(gradients, [8, 6, 4]);
+  });
+
+  it('gradient 2D (gather) axis=0 shape=[2, 2] 1D indices', () => {
     const t = tf.tensor2d([1, 11, 2, 22], [2, 2]);
     const indices = tf.tensor1d([1, 0, 0, 1], 'int32');
     const dy = tf.tensor([3, 4, 5, 6, 7, 8, 9, 10], [4, 2]);
@@ -2221,7 +2421,19 @@ describeWithFlags('gather', ALL_ENVS, () => {
     expectArraysClose(gradients, [12, 14, 12, 14]);
   });
 
-  it('gradient 2D (gather) axis=0 shape=[4, 1]', () => {
+  it('gradient 2D (gather) axis=0 shape=[2, 2] 2D indices', () => {
+    const t = tf.tensor2d([1, 11, 2, 22], [2, 2]);
+    const indices = tf.tensor2d([1, 0, 0, 1], [2, 2], 'int32');
+    const dy = tf.tensor([3, 4, 5, 6, 7, 8, 9, 10], [2, 2, 2]);
+    const axis = 0;
+
+    const gradients = tf.grad(t => tf.gather(t, indices, axis))(t, dy);
+
+    expect(gradients.shape).toEqual(t.shape);
+    expectArraysClose(gradients, [12, 14, 12, 14]);
+  });
+
+  it('gradient 2D (gather) axis=0 shape=[4, 1] 1D indices', () => {
     const t = tf.tensor2d([1, 11, 2, 22], [4, 1]);
     const indices = tf.tensor1d([1, 0, 0, 1], 'int32');
     const dy = tf.tensor([23, 7, 19, 13], [4, 1]);
@@ -2233,7 +2445,19 @@ describeWithFlags('gather', ALL_ENVS, () => {
     expectArraysClose(gradients, [26, 36, 0, 0]);
   });
 
-  it('gradient 2D (gather) axis=1 shape=[2, 2]', () => {
+  it('gradient 2D (gather) axis=0 shape=[4, 1] 2D indices', () => {
+    const t = tf.tensor2d([1, 11, 2, 22], [4, 1]);
+    const indices = tf.tensor2d([1, 0, 0, 1], [2, 2], 'int32');
+    const dy = tf.tensor([23, 7, 19, 13], [2, 2, 1]);
+    const axis = 0;
+
+    const gradients = tf.grad(t => tf.gather(t, indices, axis))(t, dy);
+
+    expect(gradients.shape).toEqual(t.shape);
+    expectArraysClose(gradients, [26, 36, 0, 0]);
+  });
+
+  it('gradient 2D (gather) axis=1 shape=[2, 2] 1D indices', () => {
     const t = tf.tensor2d([1, 11, 2, 22], [2, 2]);
     const indices = tf.tensor1d([1, 0, 0, 1], 'int32');
     const dy = tf.tensor([3, 4, 5, 6, 7, 8, 9, 10], [2, 4]);
@@ -2245,7 +2469,19 @@ describeWithFlags('gather', ALL_ENVS, () => {
     expectArraysClose(gradients, [9, 9, 17, 17]);
   });
 
-  it('gradient 2D (gather) axis=1 shape=[4, 1]', () => {
+  it('gradient 2D (gather) axis=1 shape=[2, 2] 2D indices', () => {
+    const t = tf.tensor2d([1, 11, 2, 22], [2, 2]);
+    const indices = tf.tensor2d([1, 0, 0, 1], [2, 2], 'int32');
+    const dy = tf.tensor([3, 4, 5, 6, 7, 8, 9, 10], [2, 2, 2]);
+    const axis = 1;
+
+    const gradients = tf.grad(t => tf.gather(t, indices, axis))(t, dy);
+
+    expect(gradients.shape).toEqual(t.shape);
+    expectArraysClose(gradients, [9, 9, 17, 17]);
+  });
+
+  it('gradient 2D (gather) axis=1 shape=[4, 1] 1D indices', () => {
     const t = tf.tensor2d([1, 11, 2, 22], [4, 1]);
     const indices = tf.tensor1d([0, 0, 0, 0], 'int32');
     const dy = tf.tensor(
@@ -2258,7 +2494,20 @@ describeWithFlags('gather', ALL_ENVS, () => {
     expectArraysClose(gradients, [18, 34, 50, 66]);
   });
 
-  it('gradient 3D (gather) axis=0 shape=[2, 3, 2]', () => {
+  it('gradient 2D (gather) axis=1 shape=[4, 1] 2D indices', () => {
+    const t = tf.tensor2d([1, 11, 2, 22], [4, 1]);
+    const indices = tf.tensor2d([0, 0, 0, 0], [2, 2], 'int32');
+    const dy = tf.tensor(
+        [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18], [4, 2, 2]);
+    const axis = 1;
+
+    const gradients = tf.grad(t => tf.gather(t, indices, axis))(t, dy);
+
+    expect(gradients.shape).toEqual(t.shape);
+    expectArraysClose(gradients, [18, 34, 50, 66]);
+  });
+
+  it('gradient 3D (gather) axis=0 shape=[2, 3, 2] 1D indices', () => {
     const t = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [2, 3, 2]);
     const indices = tf.tensor1d([1, 0, 0, 1], 'int32');
     const dy = tf.tensor(
@@ -2267,6 +2516,24 @@ describeWithFlags('gather', ALL_ENVS, () => {
           4, 15, 12, -7, 18, 19,  2, 21, 6,    23, 24, 25
         ],
         [4, 3, 2]);
+    const axis = 0;
+
+    const gradients = tf.grad(t => tf.gather(t, indices, axis))(t, dy);
+
+    expect(gradients.shape).toEqual(t.shape);
+    expectArraysClose(
+        gradients, [5, 33, 12.01, -7, 30, 32, 4, 18, 10, 38, 30, 25.7]);
+  });
+
+  it('gradient 3D (gather) axis=0 shape=[2, 3, 2] 2D indices', () => {
+    const t = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [2, 3, 2]);
+    const indices = tf.tensor2d([1, 0, 0, 1], [2, 2], 'int32');
+    const dy = tf.tensor(
+        [
+          2, -3, 4,  15, 6,  0.7, 1, 18, 0.01, 0,  12, 13,
+          4, 15, 12, -7, 18, 19,  2, 21, 6,    23, 24, 25
+        ],
+        [2, 2, 3, 2]);
     const axis = 0;
 
     const gradients = tf.grad(t => tf.gather(t, indices, axis))(t, dy);
@@ -2296,12 +2563,32 @@ describeWithFlags('gather', ALL_ENVS, () => {
         [20, 16, 6, 36, 12, 23.7, 25, 43, 101.01, 31, 46, 67, 5, 15, 9, -11]);
   });
 
-  it('gradient 3D (gather) axis=1 shape=[2, 3, 2]', () => {
+  it('gradient 3D (gather) axis=0 shape=[1, 4, 4] 1D indices', () => {
+    const t = tf.tensor3d(
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], [1, 4, 4]);
+    const indices = tf.tensor1d([0, 0], 'int32');
+    const dy = tf.tensor(
+        [
+          2,  -3, 4, 15, 6, 0.7, 1,  18, 0.01, 0,  12, 13, 4, 15, 12, -7,
+          18, 19, 2, 21, 6, 23,  24, 25, 101,  31, 34, 54, 1, 0,  -3, -4
+        ],
+        [2, 4, 4]);
+    const axis = 0;
+
+    const gradients = tf.grad(t => tf.gather(t, indices, axis))(t, dy);
+
+    expect(gradients.shape).toEqual(t.shape);
+    expectArraysClose(
+        gradients,
+        [20, 16, 6, 36, 12, 23.7, 25, 43, 101.01, 31, 46, 67, 5, 15, 9, -11]);
+  });
+
+  it('gradient 3D (gather) axis=1 shape=[2, 3, 2] 2D indices', () => {
     const t = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [2, 3, 2]);
-    const indices = tf.tensor1d([1, 2, 2, 1], 'int32');
+    const indices = tf.tensor2d([1, 2, 2, 1], [2, 2], 'int32');
     const dy = tf.tensor(
         [2, -3, 4, 15, 6, 0.7, 1, 18, 0.01, 0, 12, 13, 4, 15, 12, -7],
-        [2, 4, 2]);
+        [2, 2, 2, 2]);
     const axis = 1;
 
     const gradients = tf.grad(t => tf.gather(t, indices, axis))(t, dy);
@@ -2311,7 +2598,7 @@ describeWithFlags('gather', ALL_ENVS, () => {
         gradients, [0, 0, 3, 15, 10, 15.7, 0, 0, 12.01, -7, 16, 28]);
   });
 
-  it('gradient 3D (gather) axis=1 shape=[1, 4, 4]', () => {
+  it('gradient 3D (gather) axis=1 shape=[1, 4, 4] 1D indices', () => {
     const t = tf.tensor3d(
         [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], [1, 4, 4]);
     const indices = tf.tensor1d([1, 2, 2, 1], 'int32');
@@ -2327,7 +2614,23 @@ describeWithFlags('gather', ALL_ENVS, () => {
         gradients, [0, 0, 0, 0, 6, 12, 16, 8, 6.01, .7, 13, 31, 0, 0, 0, 0]);
   });
 
-  it('gradient 3D (gather) axis=2 shape=[2, 3, 2]', () => {
+  it('gradient 3D (gather) axis=1 shape=[1, 4, 4] 2D indices', () => {
+    const t = tf.tensor3d(
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], [1, 4, 4]);
+    const indices = tf.tensor2d([1, 2, 2, 1], [2, 2], 'int32');
+    const dy = tf.tensor(
+        [2, -3, 4, 15, 6, 0.7, 1, 18, 0.01, 0, 12, 13, 4, 15, 12, -7],
+        [1, 2, 2, 4]);
+    const axis = 1;
+
+    const gradients = tf.grad(t => tf.gather(t, indices, axis))(t, dy);
+
+    expect(gradients.shape).toEqual(t.shape);
+    expectArraysClose(
+        gradients, [0, 0, 0, 0, 6, 12, 16, 8, 6.01, .7, 13, 31, 0, 0, 0, 0]);
+  });
+
+  it('gradient 3D (gather) axis=2 shape=[2, 3, 2] 1D indices', () => {
     const t = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [2, 3, 2]);
     const indices = tf.tensor1d([1, 0, 1, 0], 'int32');
     const dy = tf.tensor(
@@ -2345,12 +2648,45 @@ describeWithFlags('gather', ALL_ENVS, () => {
         gradients, [12, 6, 18.7, 7, 13, 12.01, 8, 16, 40, 20, 48, 30]);
   });
 
-  it('gradient 3D (gather) axis=2 shape=[4, 1, 4]', () => {
+  it('gradient 3D (gather) axis=2 shape=[2, 3, 2] 2D indices', () => {
+    const t = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [2, 3, 2]);
+  const indices = tf.tensor2d([1, 0, 1, 0], [2, 2], 'int32');
+    const dy = tf.tensor(
+        [
+          2, -3, 4,  15, 6,  0.7, 1, 18, 0.01, 0,  12, 13,
+          4, 15, 12, -7, 18, 19,  2, 21, 6,    23, 24, 25
+        ],
+        [2, 3, 2, 2]);
+    const axis = 2;
+
+    const gradients = tf.grad(t => tf.gather(t, indices, axis))(t, dy);
+
+    expect(gradients.shape).toEqual(t.shape);
+    expectArraysClose(
+        gradients, [12, 6, 18.7, 7, 13, 12.01, 8, 16, 40, 20, 48, 30]);
+  });
+
+  it('gradient 3D (gather) axis=2 shape=[4, 1, 4] 1D indices', () => {
     const t = tf.tensor3d(
         [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], [4, 1, 4]);
     const indices = tf.tensor1d([1, 3, 1], 'int32');
     const dy =
         tf.tensor([2, -3, 4, 15, 6, 0.7, 1, 18, 0.01, 0, 4, 15], [4, 1, 3]);
+    const axis = 2;
+
+    const gradients = tf.grad(t => tf.gather(t, indices, axis))(t, dy);
+
+    expect(gradients.shape).toEqual(t.shape);
+    expectArraysClose(
+        gradients, [0, 6, 0, -3, 0, 15.7, 0, 6, 0, 1.01, 0, 18, 0, 15, 0, 4]);
+  });
+
+  it('gradient 3D (gather) axis=2 shape=[4, 1, 4] 2D indices', () => {
+    const t = tf.tensor3d(
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], [4, 1, 4]);
+    const indices = tf.tensor2d([1, 3, 1], [1, 3], 'int32');
+    const dy =
+        tf.tensor([2, -3, 4, 15, 6, 0.7, 1, 18, 0.01, 0, 4, 15], [4, 1, 1, 3]);
     const axis = 2;
 
     const gradients = tf.grad(t => tf.gather(t, indices, axis))(t, dy);
@@ -2373,6 +2709,28 @@ describeWithFlags('oneHot', ALL_ENVS, () => {
 
     expect(res.shape).toEqual([2, 2]);
     expectArraysClose(res, [1, 0, 0, 1]);
+  });
+
+  it('Scalar input as Tensor', () => {
+    const indices = tf.scalar(2, 'int32');
+    const res = tf.oneHot(indices, 4);
+
+    expect(res.shape).toEqual([4]);
+    expectArraysClose(res, [0, 0, 1, 0]);
+  });
+
+  it('Scalar input as number', () => {
+    const indices = 2;
+    const res = tf.oneHot(indices, 4);
+
+    expect(res.shape).toEqual([4]);
+    expectArraysClose(res, [0, 0, 1, 0]);
+  });
+
+  it('oneHot with chaining compiles', () => {
+    const indices = 2;
+    // Asserts that there is no compiler error.
+    tf.oneHot(indices, 4).toFloat();
   });
 
   it('Depth 2, transposed diagonal', () => {
@@ -2430,9 +2788,57 @@ describeWithFlags('oneHot', ALL_ENVS, () => {
     const dy = tf.ones([3, 3], 'float32') as tf.Tensor2D;
     const da = tf.grad((x: tf.Tensor1D) => tf.oneHot(x, 3))(a, dy);
 
-    expect(da.dtype).toBe('int32');
+    expect(da.dtype).toBe('float32');
     expect(da.shape).toEqual([3]);
     expectArraysClose(da, [0, 0, 0]);
+  });
+
+  it('gradient with clones', () => {
+    const a = tf.tensor1d([0, 1, 2], 'int32');
+    const dy = tf.ones([3, 3], 'float32') as tf.Tensor2D;
+    const da = tf.grad((x: tf.Tensor1D) =>
+        tf.oneHot(x.clone(), 3).clone())(a, dy);
+
+    expect(da.dtype).toBe('float32');
+    expect(da.shape).toEqual([3]);
+    expectArraysClose(da, [0, 0, 0]);
+  });
+
+  it('gradient when indices is 3d', () => {
+    const a = tf.tensor3d([1, 2, 3, 4], [1, 2, 2], 'int32');
+    const dy = tf.ones([1, 2, 2, 3], 'float32');
+    const depth = 3;
+    const da = tf.grad(x => tf.oneHot(x, depth))(a, dy);
+    expect(da.dtype).toBe('float32');
+    expect(da.shape).toEqual(a.shape);
+    expectArraysClose(da, [0, 0, 0, 0]);
+  });
+
+  it('oneHot with indices as 2d', () => {
+    const indices = tf.tensor2d([[1, 3], [2, 3]], [2, 2], 'int32');
+    const depth = 4;
+    const res = tf.oneHot(indices, depth);
+    expect(res.shape).toEqual([2, 2, depth]);
+    expectArraysClose(res, [0, 1, 0, 0,
+                            0, 0, 0, 1,
+                            0, 0, 1, 0,
+                            0, 0, 0, 1]);
+  });
+
+  it('Supports chaining', () => {
+    const indices =
+        tf.tensor2d([[1, 2, 3], [2, 3, 1], [4, 5, 6]], [3, 3], 'int32');
+    const depth = 6;
+    const onValue = 3;
+    const offValue = 7;
+    const res = indices.oneHot(depth, onValue, offValue);
+
+    expect(res.shape).toEqual([3, 3, 6]);
+    expectArraysClose(res, [
+      7, 3, 7, 7, 7, 7, 7, 7, 3, 7, 7, 7, 7, 7, 7, 3, 7, 7,
+      7, 7, 3, 7, 7, 7, 7, 7, 7, 3, 7, 7, 7, 3, 7, 7, 7, 7,
+      7, 7, 7, 7, 3, 7, 7, 7, 7, 7, 7, 3, 7, 7, 7, 7, 7, 7
+    ]);
   });
 });
 
@@ -2620,11 +3026,25 @@ describeWithFlags('fill', ALL_ENVS, () => {
     expectArraysClose(a, [2, 2, 2]);
   });
 
+  it('1D fill string', () => {
+    const a = tf.fill([3], 'aa');
+    expect(a.dtype).toBe('string');
+    expect(a.shape).toEqual([3]);
+    expectArraysEqual(a, ['aa', 'aa', 'aa']);
+  });
+
   it('2D fill', () => {
     const a = tf.fill([3, 2], 2);
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([3, 2]);
     expectArraysClose(a, [2, 2, 2, 2, 2, 2]);
+  });
+
+  it('2D fill string', () => {
+    const a = tf.fill([3, 2], 'a');
+    expect(a.dtype).toBe('string');
+    expect(a.shape).toEqual([3, 2]);
+    expectArraysEqual(a, ['a', 'a', 'a', 'a', 'a', 'a']);
   });
 
   it('3D fill', () => {
@@ -2742,12 +3162,59 @@ describeWithFlags('stack', ALL_ENVS, () => {
     expect(res.shape).toEqual([2, 2, 1]);
     expectArraysClose(res, [1, 2, 3, 4]);
   });
+
+  it('chain api', () => {
+    const a = tf.tensor([1, 2]);
+    const res = a.stack(tf.tensor([3, 4]));
+    expect(res.shape).toEqual([2, 2]);
+    expectArraysClose(res, [1, 2, 3, 4]);
+  });
 });
 
 describeWithFlags('unstack', ALL_ENVS, () => {
   it('unstack by default', () => {
     const x = tf.tensor2d([1, 2, 3, 4, 5, 6, 7, 8], [2, 4]);
     const res = tf.unstack(x);
+    expect(res.length).toEqual(2);
+    expect(res[0].rank).toEqual(1);
+    expect(res[0].shape).toEqual([4]);
+    expectArraysClose(res[0], [1, 2, 3, 4]);
+    expect(res[1].rank).toEqual(1);
+    expect(res[1].shape).toEqual([4]);
+    expectArraysClose(res[1], [5, 6, 7, 8]);
+  });
+
+  it('chain api', () => {
+    const x = tf.tensor2d([1, 2, 3, 4, 5, 6, 7, 8], [2, 4]);
+    const res = x.unstack();
+    expect(res.length).toEqual(2);
+    expect(res[0].rank).toEqual(1);
+    expect(res[0].shape).toEqual([4]);
+    expectArraysClose(res[0], [1, 2, 3, 4]);
+    expect(res[1].rank).toEqual(1);
+    expect(res[1].shape).toEqual([4]);
+    expectArraysClose(res[1], [5, 6, 7, 8]);
+  });
+
+  it('unstack with negative integer axis', () => {
+    const x = tf.tensor2d([1, 2, 3, 4, 5, 6, 7, 8], [2, 4]);
+
+    let res = tf.unstack(x, -1);
+    expect(res.length).toEqual(4);
+    expect(res[0].rank).toEqual(1);
+    expect(res[0].shape).toEqual([2]);
+    expectArraysClose(res[0], [1, 5]);
+    expect(res[1].rank).toEqual(1);
+    expect(res[1].shape).toEqual([2]);
+    expectArraysClose(res[1], [2, 6]);
+    expect(res[2].rank).toEqual(1);
+    expect(res[2].shape).toEqual([2]);
+    expectArraysClose(res[2], [3, 7]);
+    expect(res[3].rank).toEqual(1);
+    expect(res[3].shape).toEqual([2]);
+    expectArraysClose(res[3], [4, 8]);
+
+    res = tf.unstack(x, -2);
     expect(res.length).toEqual(2);
     expect(res[0].rank).toEqual(1);
     expect(res[0].shape).toEqual([4]);
@@ -2876,6 +3343,21 @@ describeWithFlags('unstack', ALL_ENVS, () => {
         .toThrowError(/Argument 'x' passed to 'unstack' must be a Tensor/);
   });
 
+  it('throws when passed an invalid axis', () => {
+    expect(() => {
+      const x = tf.tensor2d([1, 2, 3, 4, 5, 6, 7, 8], [2, 4]);
+      tf.unstack(x, 3);
+    }).toThrowError('Axis = 3 is not in [-2, 2)');
+    expect(() => {
+      const x = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2]);
+      tf.unstack(x, 3);
+    }).toThrowError('Axis = 3 is not in [-3, 3)');
+    expect(() => {
+      const x = tf.tensor4d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2, 1]);
+      tf.unstack(x, 5);
+    }).toThrowError('Axis = 5 is not in [-4, 4)');
+  });
+
   it('accepts a tensor-like object', () => {
     const x = [[1, 2, 3, 4], [5, 6, 7, 8]];
     const res = tf.unstack(x);
@@ -2886,6 +3368,51 @@ describeWithFlags('unstack', ALL_ENVS, () => {
     expect(res[1].rank).toEqual(1);
     expect(res[1].shape).toEqual([4]);
     expectArraysClose(res[1], [5, 6, 7, 8]);
+  });
+
+  it('grad of unstack axis=0', () => {
+    const x = tf.tensor([[1, 2, 3], [4, 5, 6]]);
+    const dx1 = tf.grad(x => tf.unstack(x)[0])(x);
+    expect(dx1.shape).toEqual([2, 3]);
+    expect(dx1.dtype).toBe('float32');
+    expectArraysClose(dx1, [1, 1, 1, 0, 0, 0]);
+
+    const dx2 = tf.grad(x => tf.unstack(x)[1])(x);
+    expect(dx2.shape).toEqual([2, 3]);
+    expect(dx2.dtype).toBe('float32');
+    expectArraysClose(dx2, [0, 0, 0, 1, 1, 1]);
+  });
+
+  it('gradient with clones', () => {
+    const x = tf.tensor([[1, 2, 3], [4, 5, 6]]);
+    const dx1 = tf.grad(x => tf.unstack(x.clone())[0].clone())(x);
+    expect(dx1.shape).toEqual([2, 3]);
+    expect(dx1.dtype).toBe('float32');
+    expectArraysClose(dx1, [1, 1, 1, 0, 0, 0]);
+
+    const dx2 = tf.grad(x => tf.unstack(x.clone())[1].clone())(x);
+    expect(dx2.shape).toEqual([2, 3]);
+    expect(dx2.dtype).toBe('float32');
+    expectArraysClose(dx2, [0, 0, 0, 1, 1, 1]);
+  });
+
+  it('grad of unstack axis=1', () => {
+    const x = tf.tensor([[1, 2, 3], [4, 5, 6]]);
+    const axis = 1;
+    const dx1 = tf.grad(x => tf.unstack(x, axis)[0])(x);
+    expect(dx1.shape).toEqual([2, 3]);
+    expect(dx1.dtype).toBe('float32');
+    expectArraysClose(dx1, [1, 0, 0, 1, 0, 0]);
+
+    const dx2 = tf.grad(x => tf.unstack(x, axis)[1])(x);
+    expect(dx2.shape).toEqual([2, 3]);
+    expect(dx2.dtype).toBe('float32');
+    expectArraysClose(dx2, [0, 1, 0, 0, 1, 0]);
+
+    const dx3 = tf.grad(x => tf.unstack(x, axis)[2])(x);
+    expect(dx3.shape).toEqual([2, 3]);
+    expect(dx3.dtype).toBe('float32');
+    expectArraysClose(dx3, [0, 0, 1, 0, 0, 1]);
   });
 });
 
@@ -2955,6 +3482,14 @@ describeWithFlags('split', ALL_ENVS, () => {
   it('gradient of 1st output', () => {
     const a = tf.tensor1d([1, 2, 3]);
     const da = tf.grad(x => tf.split(x, [1, 2])[0])(a);
+
+    expect(da.shape).toEqual([3]);
+    expectArraysClose(da, [1, 0, 0]);
+  });
+
+  it('gradient with clones', () => {
+    const a = tf.tensor1d([1, 2, 3]);
+    const da = tf.grad(x => tf.split(x.clone(), [1, 2])[0].clone())(a);
 
     expect(da.shape).toEqual([3]);
     expectArraysClose(da, [1, 0, 0]);
@@ -3125,6 +3660,15 @@ describeWithFlags('cumsum', ALL_ENVS, () => {
     expectArraysClose(da, [15, 11, 6]);
   });
 
+  it('gradient with clones', () => {
+    const a = tf.tensor1d([1, 2, 3]);
+    const dy = tf.tensor1d([4, 5, 6]);
+    const da = tf.grad(x => tf.cumsum(x.clone()).clone())(a, dy);
+
+    expect(da.shape).toEqual([3]);
+    expectArraysClose(da, [15, 11, 6]);
+  });
+
   it('2D standard', () => {
     const res = tf.tensor2d([[1, 2], [3, 4]]).cumsum(1);
     expect(res.shape).toEqual([2, 2]);
@@ -3160,6 +3704,12 @@ describeWithFlags('cumsum', ALL_ENVS, () => {
     const res = tf.cumsum([1, 2, 3, 4]);
     expect(res.shape).toEqual([4]);
     expectArraysClose(res, [1, 3, 6, 10]);
+  });
+
+  it('throws error for string tensor', () => {
+    expect(() => tf.cumsum([
+      'a', 'b', 'c'
+    ])).toThrowError(/Argument 'x' passed to 'cumsum' must be numeric tensor/);
   });
 });
 
@@ -3328,6 +3878,21 @@ describeWithFlags('batchToSpaceND', ALL_ENVS, () => {
 
     const gradient =
         tf.grad(t => tf.batchToSpaceND(t, blockShape, crops))(t, dy);
+    expect(gradient.shape).toEqual([4, 2, 2, 1]);
+    expectArraysClose(
+        gradient, [1, 3, 9, 11, 2, 4, 10, 12, 5, 7, 13, 15, 6, 8, 14, 16]);
+  });
+
+  it('gradient with clones, input=[4, 2, 2, 1], block shape=[2, 2]', () => {
+    const t = tf.tensor4d(
+        [1, 3, 9, 11, 2, 4, 10, 12, 5, 7, 13, 15, 6, 8, 14, 16], [4, 2, 2, 1]);
+    const blockShape = [2, 2];
+    const crops = [[0, 0], [0, 0]];
+    const dy = tf.tensor(
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], [1, 4, 4, 1]);
+
+    const gradient = tf.grad(t =>
+        tf.batchToSpaceND(t.clone(), blockShape, crops).clone())(t, dy);
     expect(gradient.shape).toEqual([4, 2, 2, 1]);
     expectArraysClose(
         gradient, [1, 3, 9, 11, 2, 4, 10, 12, 5, 7, 13, 15, 6, 8, 14, 16]);
@@ -3533,6 +4098,26 @@ describeWithFlags('batchToSpaceND X spaceToBatchND', ALL_ENVS, () => {
         gradient, [1, 2, 17, 18, 5, 6, 21, 22, 9, 10, 25, 26, 13, 14, 29, 30]);
   });
 
+  it('gradient with clones input=[4, 2, 2], block shape=[2]', () => {
+    const t = tf.tensor(
+        [-61, 37, -68, 72, 31, 62, 0, -13, 28, 54, 96, 44, -55, -64, -88, -94],
+        [4, 2, 2]);
+    const blockShape = [2];
+    const paddings = [[0, 2]];
+    const dy = tf.tensor(
+        [
+          1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15, 16,
+          17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32
+        ],
+        [8, 2, 2]);
+
+    const gradient = tf.grad(t =>
+        tf.spaceToBatchND(t.clone(), blockShape, paddings).clone())(t, dy);
+    expect(gradient.shape).toEqual([4, 2, 2]);
+    expectArraysClose(
+        gradient, [1, 2, 17, 18, 5, 6, 21, 22, 9, 10, 25, 26, 13, 14, 29, 30]);
+  });
+
   it('gradients, input shape=[2, 2, 4, 1], block shape=[2, 2]', () => {
     const t = tf.tensor4d(
         [
@@ -3675,5 +4260,91 @@ describeWithFlags('depthToSpace', WEBGL_ENVS, () => {
       1, 9,  2, 10, 17, 25, 18, 26, 3, 11, 4, 12, 19, 27, 20, 28,
       5, 13, 6, 14, 21, 29, 22, 30, 7, 15, 8, 16, 23, 31, 24, 32
     ]);
+  });
+});
+
+describeWithFlags('setdiff1dAsync', ALL_ENVS, () => {
+  it('1d int32 tensor', async () => {
+    const x = tf.tensor1d([1, 2, 3, 4], 'int32');
+    const y = tf.tensor1d([1, 2], 'int32');
+    const [out, indices] = await tf.setdiff1dAsync(x, y);
+    expect(out.dtype).toBe('int32');
+    expect(indices.dtype).toBe('int32');
+    expect(out.shape).toEqual([2]);
+    expect(indices.shape).toEqual([2]);
+    expectArraysClose(out, [3, 4]);
+    expectArraysClose(indices, [2, 3]);
+  });
+
+  it('1d float32 tensor', async () => {
+    const x = tf.tensor1d([1, 2, 3, 4], 'float32');
+    const y = tf.tensor1d([1, 3], 'float32');
+    const [out, indices] = await tf.setdiff1dAsync(x, y);
+    expect(out.dtype).toBe('float32');
+    expect(indices.dtype).toBe('int32');
+    expect(out.shape).toEqual([2]);
+    expect(indices.shape).toEqual([2]);
+    expectArraysClose(out, [2, 4]);
+    expectArraysClose(indices, [1, 3]);
+  });
+
+  it('empty output', async () => {
+    const x = tf.tensor1d([1, 2, 3, 4], 'float32');
+    const y = tf.tensor1d([1, 2, 3, 4], 'float32');
+    const [out, indices] = await tf.setdiff1dAsync(x, y);
+    expect(out.dtype).toBe('float32');
+    expect(indices.dtype).toBe('int32');
+    expect(out.shape).toEqual([0]);
+    expect(indices.shape).toEqual([0]);
+    expectArraysClose(out, []);
+    expectArraysClose(indices, []);
+  });
+
+  it('tensor like', async () => {
+    const x = [1, 2, 3, 4];
+    const y = [1, 3];
+    const [out, indices] = await tf.setdiff1dAsync(x, y);
+    expect(out.dtype).toBe('float32');
+    expect(indices.dtype).toBe('int32');
+    expect(out.shape).toEqual([2]);
+    expect(indices.shape).toEqual([2]);
+    expectArraysClose(out, [2, 4]);
+    expectArraysClose(indices, [1, 3]);
+  });
+
+  it('should throw if x is not 1d', async () => {
+    const x = tf.tensor2d([1, 2, 3, 4], [4, 1], 'float32');
+    const y = tf.tensor1d([1, 2, 3, 4], 'float32');
+    try {
+      await tf.setdiff1dAsync(x, y);
+      throw new Error('The line above should have thrown an error');
+    } catch (ex) {
+      expect(ex.message).toBe('x should be 1D tensor, but got x (4,1).');
+    }
+  });
+
+  it('should throw if y is not 1d', async () => {
+    const x = tf.tensor1d([1, 2, 3, 4], 'float32');
+    const y = tf.tensor2d([1, 2, 3, 4], [4, 1], 'float32');
+    try {
+      await tf.setdiff1dAsync(x, y);
+      throw new Error('The line above should have thrown an error');
+    } catch (ex) {
+      expect(ex.message).toBe('y should be 1D tensor, but got y (4,1).');
+    }
+  });
+
+  it('should throw if x and y dtype mismatch', async () => {
+    const x = tf.tensor1d([1, 2, 3, 4], 'float32');
+    const y = tf.tensor1d([1, 2, 3, 4], 'int32');
+    try {
+      await tf.setdiff1dAsync(x, y);
+      throw new Error('The line above should have thrown an error');
+    } catch (ex) {
+      expect(ex.message)
+          .toBe(
+              'x and y should have the same dtype,' +
+              ' but got x (float32) and y (int32).');
+    }
   });
 });

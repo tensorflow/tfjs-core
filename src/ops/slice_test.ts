@@ -17,7 +17,8 @@
 
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
-import {ALL_ENVS, expectArraysClose, expectNumbersClose} from '../test_util';
+import {WebGLMemoryInfo} from '../kernels/backend_webgl';
+import {ALL_ENVS, expectArraysClose, WEBGL_ENVS} from '../test_util';
 import {Rank} from '../types';
 
 describeWithFlags('slice1d', ALL_ENVS, () => {
@@ -26,7 +27,7 @@ describeWithFlags('slice1d', ALL_ENVS, () => {
     const result = tf.slice1d(a, 0, 1);
 
     expect(result.shape).toEqual([1]);
-    expectNumbersClose(result.get(0), 5);
+    expectArraysClose(result, 5);
   });
 
   it('slices 5x1 into shape 2x1 starting at 3', () => {
@@ -48,7 +49,16 @@ describeWithFlags('slice1d', ALL_ENVS, () => {
   it('grad', () => {
     const a = tf.tensor1d([1, 2, 3, 4, 5]);
     const dy = tf.tensor1d([10, 100]);
-    const da = tf.grad(x => tf.slice1d(a, 1, 2))(a, dy);
+    const da = tf.grad((a: tf.Tensor1D) => tf.slice1d(a, 1, 2))(a, dy);
+    expect(da.shape).toEqual([5]);
+    expectArraysClose(da, [0, 10, 100, 0, 0]);
+  });
+
+  it('gradient with clones', () => {
+    const a = tf.tensor1d([1, 2, 3, 4, 5]);
+    const dy = tf.tensor1d([10, 100]);
+    const da =
+        tf.grad((a: tf.Tensor1D) => tf.slice1d(a.clone(), 1, 2).clone())(a, dy);
     expect(da.shape).toEqual([5]);
     expectArraysClose(da, [0, 10, 100, 0, 0]);
   });
@@ -57,7 +67,7 @@ describeWithFlags('slice1d', ALL_ENVS, () => {
     const a = [5];
     const result = tf.slice1d(a, 0, 1);
     expect(result.shape).toEqual([1]);
-    expectNumbersClose(result.get(0), 5);
+    expectArraysClose(result, 5);
   });
 });
 
@@ -107,6 +117,204 @@ describeWithFlags('slice2d', ALL_ENVS, () => {
     const a = [[0]];  // 1x1
     const b = tf.slice2d(a, [0, 0], [1, 1]);
     expect(b.shape).toEqual([1, 1]);
+  });
+
+  it('slice an already sliced tensor, first was not continous', () => {
+    const a = [
+      [1, 2, 3, 4],
+      [5, 6, 7, 8],
+      [9, 10, 11, 12],
+    ];  // 3x4.
+    const b = tf.slice(a, [0, 1]);
+    const c = tf.slice(b, [1, 1], [1, 1]);
+    expect(c.shape).toEqual([1, 1]);
+    expectArraysClose(c, [7]);
+  });
+
+  it('slice an already sliced tensor, first was continous', () => {
+    const a = [
+      [1, 2, 3, 4],
+      [5, 6, 7, 8],
+      [9, 10, 11, 12],
+    ];  // 3x4.
+    const b = tf.slice(a, [1, 0]);
+    const c = tf.slice(b, [1, 0]);
+    expect(c.shape).toEqual([1, 4]);
+    expectArraysClose(c, [9, 10, 11, 12]);
+  });
+
+  it('slice an already sliced tensor and do async read', async () => {
+    const a = [
+      [1, 2, 3, 4],
+      [5, 6, 7, 8],
+      [9, 10, 11, 12],
+    ];  // 3x4.
+    const b = tf.slice(a, [0, 1]);
+    const c = tf.slice(b, [1, 1], [1, 1]);
+    expect(c.shape).toEqual([1, 1]);
+    expectArraysClose(await c.data(), new Float32Array([7]));
+  });
+
+  it('square a sliced texture, followed by non-sliced texture of same shape',
+     () => {  // Tests collisions in the shader cache.
+       // Make a 2x3 tensor, upload to gpu and reshape to 3x2.
+       const input = tf.tensor([[1, 2, 3], [4, 5, 6]]).abs().as2D(3, 2);
+       const slicedInput = tf.slice(input, [0, 0], [3, 2]);
+       // First square program takes the sliced input.
+       const a = slicedInput.square();
+       expectArraysClose(a, [1, 4, 9, 16, 25, 36]);
+       // Second square program takes the non-sliced input.
+       const b = tf.square(input);
+       expectArraysClose(b, [1, 4, 9, 16, 25, 36]);
+     });
+
+  it('square a non-sliced texture, followed by a sliced texture of same shape',
+     () => {  // Tests collisions in the shader cache.
+       // Make a 2x3 tensor, upload to gpu and reshape to 3x2.
+       const input = tf.tensor([[1, 2, 3], [4, 5, 6]]).abs().as2D(3, 2);
+       // Make a sliced version of the same tensor with the same shape.
+       const slicedInput = tf.slice(input, [0, 0], [3, 2]);
+       // First square program takes the non-sliced input.
+       const a = input.square();
+       expectArraysClose(a, [1, 4, 9, 16, 25, 36]);
+       // Second square program takes the sliced input.
+       const b = tf.square(slicedInput);
+       expectArraysClose(b, [1, 4, 9, 16, 25, 36]);
+     });
+
+  it('slice a tensor and do async read', async () => {
+    const a = [
+      [1, 2, 3, 4],
+      [5, 6, 7, 8],
+      [9, 10, 11, 12],
+    ];  // 3x4.
+    const b = tf.slice(a, [0, 1], [3, 2]);
+    expect(b.shape).toEqual([3, 2]);
+    const vals = await b.data();
+    expectArraysClose(vals, new Float32Array([2, 3, 6, 7, 10, 11]));
+  });
+
+  it('flatten a sliced tensor that was continous in memory', () => {
+    const a = [
+      [1, 2, 3, 4],
+      [5, 6, 7, 8],
+      [9, 10, 11, 12],
+    ];  // 3x4.
+    const b = tf.slice(a, [1, 0]).flatten();
+    expect(b.shape).toEqual([8]);
+    expectArraysClose(b, [5, 6, 7, 8, 9, 10, 11, 12]);
+  });
+
+  it('slice a tensor that was not continous in memory', () => {
+    const a = [
+      [1, 2, 3, 4],
+      [5, 6, 7, 8],
+      [9, 10, 11, 12],
+    ];  // 3x4.
+    const b = tf.slice(a, [0, 1]);
+    expect(b.shape).toEqual([3, 3]);
+    expectArraysClose(b, [2, 3, 4, 6, 7, 8, 10, 11, 12]);
+  });
+
+  it('flatten a sliced tensor that was not continous in memory', () => {
+    const a = [
+      [1, 2, 3, 4],
+      [5, 6, 7, 8],
+      [9, 10, 11, 12],
+    ];  // 3x4.
+    const b = tf.slice(a, [0, 1]).flatten();
+    expect(b.shape).toEqual([9]);
+    expectArraysClose(b, [2, 3, 4, 6, 7, 8, 10, 11, 12]);
+  });
+
+  it('flatten a sliced tensor not continous in memory and run program', () => {
+    const a = [
+      [1, 2, 3, 4],
+      [5, 6, 7, 8],
+      [9, 10, 11, 12],
+    ];  // 3x4.
+    const b = tf.slice(a, [0, 1]).flatten();
+    const c = tf.square(b);
+    expectArraysClose(c, [4, 9, 16, 36, 49, 64, 100, 121, 144]);
+  });
+
+  it('reshape a sliced 1d into a 2d tensor', () => {
+    const a = [1, 2, 3, 4, 5];
+    const b = tf.slice(a, 1).as2D(2, 2);
+    expect(b.shape).toEqual([2, 2]);
+    expectArraysClose(b, [2, 3, 4, 5]);
+  });
+
+  it('reshape a sliced 1d into a 2d tensor and run program', () => {
+    const a = [1, 2, 3, 4, 5];
+    const b = tf.slice(a, 1).as2D(2, 2).square();
+    expect(b.shape).toEqual([2, 2]);
+    expectArraysClose(b, [4, 9, 16, 25]);
+  });
+
+  it('broadcast the original with the sliced tensor', () => {
+    const a = [[1, 2], [3, 4]];
+    const b = tf.slice(a, [0, 1]);
+    const c = tf.add(a, b);
+    expect(c.shape).toEqual([2, 2]);
+    expectArraysClose(c, [3, 4, 7, 8]);
+  });
+});
+
+describeWithFlags('slice and memory usage', WEBGL_ENVS, () => {
+  beforeAll(() => {
+    tf.ENV.set('WEBGL_CPU_FORWARD', false);
+    tf.ENV.set('WEBGL_SIZE_UPLOAD_UNIFORM', 0);
+  });
+
+  it('slice a tensor, read it and check memory', async () => {
+    const getMem = () => tf.memory() as WebGLMemoryInfo;
+    expect(getMem().numBytesInGPU).toBe(0);
+
+    // Lazy upload won't increase gpu memory.
+    const a = tf.tensor([2, 3]);
+    expect(getMem().numBytesInGPU).toBe(0);
+
+    // Upload a to the GPU by running an op.
+    a.square().dispose();
+    expect(getMem().numBytesInGPU).toBe(8);
+
+    // Slicing does not allocate new memory.
+    const b = a.slice(0);
+    expect(getMem().numBytesInGPU).toBe(8);
+
+    // Download a to the CPU but the texture remains on GPU
+    // since b points to it.
+    await a.data();
+    expect(getMem().numBytesInGPU).toBe(8);
+
+    // Dispose a, but the texture should still remain on the GPU
+    // since b points to it.
+    a.dispose();
+    expect(getMem().numBytesInGPU).toBe(8);
+
+    // Dispose b and expect 0 memory on GPU.
+    b.dispose();
+    expect(getMem().numBytesInGPU).toBe(0);
+  });
+});
+
+describeWithFlags('slice a packed texture', WEBGL_ENVS, () => {
+  beforeAll(() => {
+    tf.ENV.set('WEBGL_PACK', true);
+  });
+
+  it('slice after a matmul', () => {
+    const a = [[1, 2], [3, 4]];
+    const b = [[5, 6], [7, 8]];
+    // Matmul gives a packed tensor in webgl.
+    //  [19, 22]
+    //  [43, 50]
+    const c = tf.matMul(a, b);
+    expectArraysClose(c.slice([0, 0]), [19, 22, 43, 50]);
+    expectArraysClose(c.slice([0, 1]), [22, 50]);
+    expectArraysClose(c.slice([1, 0]), [43, 50]);
+    expectArraysClose(c.slice([1, 1]), [50]);
   });
 });
 
@@ -182,6 +390,114 @@ describeWithFlags('slice4d', ALL_ENVS, () => {
   });
 });
 
+describeWithFlags('slice5d', ALL_ENVS, () => {
+  it('slices 1x1x1x1x1 into shape 1x1x1x1x1 (effectively a copy)', () => {
+    const a = tf.tensor5d([[[[[5]]]]], [1, 1, 1, 1, 1]);
+    const result = tf.slice(a, [0, 0, 0, 0, 0], [1, 1, 1, 1, 1]);
+
+    expect(result.shape).toEqual([1, 1, 1, 1, 1]);
+    expectArraysClose(result, [5]);
+  });
+
+  it('slices 2x2x2x2x2 array into 1x2x2x2x2 starting at [1,0,0,0,0]', () => {
+    const a = tf.tensor5d(
+        [
+          1,  2,  3,   4,   5,   6,   7,   8,   9,   10, 11,
+          12, 13, 14,  15,  16,  11,  22,  33,  44,  55, 66,
+          77, 88, 111, 222, 333, 444, 555, 666, 777, 888
+        ],
+        [2, 2, 2, 2, 2]);
+    const result = tf.slice(a, [1, 0, 0, 0, 0], [1, 2, 2, 2, 2]);
+
+    expect(result.shape).toEqual([1, 2, 2, 2, 2]);
+    expectArraysClose(result, [
+      11, 22, 33, 44, 55, 66, 77, 88, 111, 222, 333, 444, 555, 666, 777, 888
+    ]);
+  });
+
+  it('slices 2x2x2x2x2 array into 2x1x1x1x1 starting at [0,1,1,1,1]', () => {
+    const a = tf.tensor5d(
+        [
+          1,  2,  3,   4,   5,   6,   7,   8,   9,   10, 11,
+          12, 13, 14,  15,  16,  11,  22,  33,  44,  55, 66,
+          77, 88, 111, 222, 333, 444, 555, 666, 777, 888
+        ],
+        [2, 2, 2, 2, 2]);
+    const result = tf.slice(a, [0, 1, 1, 1, 1], [2, 1, 1, 1, 1]);
+
+    expect(result.shape).toEqual([2, 1, 1, 1, 1]);
+    expectArraysClose(result, [16, 888]);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const a = [[[[[5]]]]];  // 1x1x1x1x1
+    const result = tf.slice(a, [0, 0, 0, 0, 0], [1, 1, 1, 1, 1]);
+
+    expect(result.shape).toEqual([1, 1, 1, 1, 1]);
+    expectArraysClose(result, [5]);
+  });
+});
+
+describeWithFlags('slice6d', ALL_ENVS, () => {
+  it('slices 1x1x1x1x1x1 into shape 1x1x1x1x1x1 (effectively a copy)', () => {
+    const a = tf.tensor6d([[[[[[5]]]]]], [1, 1, 1, 1, 1, 1]);
+    const result = tf.slice(a, [0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1]);
+
+    expect(result.shape).toEqual([1, 1, 1, 1, 1, 1]);
+    expectArraysClose(result, [5]);
+  });
+
+  it('slices 2x2x2x2x2x2 array into 1x2x2x2x2x2 starting at [1,0,0,0,0,0]',
+     () => {
+       const a = tf.tensor6d(
+           [
+             31,  32,  33,   34,   35,   36,   37,   38,   39,   310,  311,
+             312, 313, 314,  315,  316,  311,  322,  333,  344,  355,  366,
+             377, 388, 3111, 3222, 3333, 3444, 3555, 3666, 3777, 3888,
+
+             1,   2,   3,    4,    5,    6,    7,    8,    9,    10,   11,
+             12,  13,  14,   15,   16,   11,   22,   33,   44,   55,   66,
+             77,  88,  111,  222,  333,  444,  555,  666,  777,  888
+           ],
+           [2, 2, 2, 2, 2, 2]);
+       const result = tf.slice(a, [1, 0, 0, 0, 0, 0], [1, 2, 2, 2, 2, 2]);
+
+       expect(result.shape).toEqual([1, 2, 2, 2, 2, 2]);
+       expectArraysClose(result, [
+         1,  2,  3,   4,   5,   6,   7,   8,   9,   10, 11,
+         12, 13, 14,  15,  16,  11,  22,  33,  44,  55, 66,
+         77, 88, 111, 222, 333, 444, 555, 666, 777, 888
+       ]);
+     });
+
+  it('slices 2x2x2x2x2x2 array into 2x1x1x1x1x1 starting at [0,1,1,1,1,1]',
+     () => {
+       const a = tf.tensor6d(
+           [
+             31,  32,  33,   34,   35,   36,   37,   38,   39,   310,  311,
+             312, 313, 314,  315,  316,  311,  322,  333,  344,  355,  366,
+             377, 388, 3111, 3222, 3333, 3444, 3555, 3666, 3777, 3888,
+
+             1,   2,   3,    4,    5,    6,    7,    8,    9,    10,   11,
+             12,  13,  14,   15,   16,   11,   22,   33,   44,   55,   66,
+             77,  88,  111,  222,  333,  444,  555,  666,  777,  888
+           ],
+           [2, 2, 2, 2, 2, 2]);
+       const result = tf.slice(a, [0, 1, 1, 1, 1, 1], [2, 1, 1, 1, 1, 1]);
+
+       expect(result.shape).toEqual([2, 1, 1, 1, 1, 1]);
+       expectArraysClose(result, [3888, 888]);
+     });
+
+  it('accepts a tensor-like object', () => {
+    const a = [[[[[[5]]]]]];  // 1x1x1x1x1x1
+    const result = tf.slice(a, [0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1]);
+
+    expect(result.shape).toEqual([1, 1, 1, 1, 1, 1]);
+    expectArraysClose(result, [5]);
+  });
+});
+
 describeWithFlags('slice ergonomics', ALL_ENVS, () => {
   it('slices 2x2x2 array into 2x1x1 no size', () => {
     const a = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2]);
@@ -228,5 +544,51 @@ describeWithFlags('slice ergonomics', ALL_ENVS, () => {
     const result = tf.slice(a, [0, 1, 1]);
     expect(result.shape).toEqual([2, 1, 1]);
     expectArraysClose(result, [4, 8]);
+  });
+
+  it('should match source tensor dtype', () => {
+    const a = tf.tensor1d([1, 2, 3, 4, 5], 'int32');
+    const b = a.asType('float32');
+
+    expect(tf.slice(b, 0).dtype).toEqual('float32');
+  });
+});
+
+describeWithFlags('shallow slicing', ALL_ENVS, () => {
+  beforeAll(() => {
+    tf.ENV.set('WEBGL_CPU_FORWARD', false);
+  });
+
+  it('shallow slice an input that was cast', () => {
+    const a = tf.tensor([[1, 2], [3, 4]], [2, 2], 'int32');
+    const b = a.toFloat();
+    const c = b.slice(1, 1);
+    expect(c.dtype).toBe('float32');
+    expect(c.shape).toEqual([1, 2]);
+    expectArraysClose(c, [3, 4]);
+  });
+
+  it('delayed async read of sliced tensor has no mem leak', async () => {
+    const a = tf.zeros([10]);
+    const b = tf.slice(a, 0, 1);
+    const nBefore = tf.memory().numTensors;
+    expect(nBefore).toBe(2);
+    await b.data();
+    const nAfter = tf.memory().numTensors;
+    expect(nAfter).toBe(2);
+    tf.dispose([a, b]);
+    expect(tf.memory().numTensors).toBe(0);
+  });
+
+  it('delayed sync read of sliced tensor has no mem leak', () => {
+    const a = tf.zeros([10]);
+    const b = tf.slice(a, 0, 1);
+    const nBefore = tf.memory().numTensors;
+    expect(nBefore).toBe(2);
+    b.dataSync();
+    const nAfter = tf.memory().numTensors;
+    expect(nAfter).toBe(2);
+    tf.dispose([a, b]);
+    expect(tf.memory().numTensors).toBe(0);
   });
 });

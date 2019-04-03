@@ -18,22 +18,51 @@
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
 import {expectArraysClose, expectArraysEqual, WEBGL_ENVS} from '../test_util';
-import {MathBackendWebGL, SIZE_UPLOAD_UNIFORM, WebGLMemoryInfo} from './backend_webgl';
+import {MathBackendWebGL, WebGLMemoryInfo} from './backend_webgl';
 
 describeWithFlags('lazy packing and unpacking', WEBGL_ENVS, () => {
+  let webglLazilyUnpackFlagSaved: boolean;
+  let webglCpuForwardFlagSaved: boolean;
+
+  beforeAll(() => {
+    webglLazilyUnpackFlagSaved = tf.ENV.get('WEBGL_LAZILY_UNPACK');
+    webglCpuForwardFlagSaved = tf.ENV.get('WEBGL_CPU_FORWARD');
+    tf.ENV.set('WEBGL_LAZILY_UNPACK', true);
+    tf.ENV.set('WEBGL_CPU_FORWARD', false);
+  });
+
+  afterAll(() => {
+    tf.ENV.set('WEBGL_LAZILY_UNPACK', webglLazilyUnpackFlagSaved);
+    tf.ENV.set('WEBGL_CPU_FORWARD', webglCpuForwardFlagSaved);
+  });
+
   it('should not leak memory when lazily unpacking', () => {
     const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
     const b = tf.tensor2d([0, 1, -3, 2, 2, 1], [3, 2]);
 
+    // c is packed to 1x1 RGBA texture.
     const c = tf.matMul(a, b);
 
     const startNumBytes = tf.memory().numBytes;
     const startNumTensors = tf.memory().numTensors;
+    const startNumBytesInGPU =
+        (tf.memory() as tf.webgl.WebGLMemoryInfo).numBytesInGPU;
 
+    const webglPackBinaryOperationsFlagSaved =
+        tf.ENV.get('WEBGL_PACK_BINARY_OPERATIONS');
+    tf.ENV.set('WEBGL_PACK_BINARY_OPERATIONS', false);
+    // Add will unpack c before the operation to 2
     tf.add(c, 1);
+    tf.ENV.set(
+        'WEBGL_PACK_BINARY_OPERATIONS', webglPackBinaryOperationsFlagSaved);
 
     expect(tf.memory().numBytes - startNumBytes).toEqual(16);
     expect(tf.memory().numTensors - startNumTensors).toEqual(1);
+    // result is unpacked 2x2 R texture.
+    expect(
+        (tf.memory() as tf.webgl.WebGLMemoryInfo).numBytesInGPU -
+        startNumBytesInGPU)
+        .toEqual(4 * tf.util.bytesPerElement(a.dtype));
   });
 
   it('should not leak memory when lazily packing', () => {
@@ -44,12 +73,28 @@ describeWithFlags('lazy packing and unpacking', WEBGL_ENVS, () => {
 
     const startNumBytes = tf.memory().numBytes;
     const startNumTensors = tf.memory().numTensors;
+    const startNumBytesInGPU =
+        (tf.memory() as tf.webgl.WebGLMemoryInfo).numBytesInGPU;
 
     tf.matMul(b, c);
 
     expect(tf.memory().numBytes - startNumBytes).toEqual(36);
     expect(tf.memory().numTensors - startNumTensors).toEqual(1);
+    // result [3, 3] is packed to four RGBA pixel texture b is packed to two
+    // RGBA texels texture: total 6 * 4 = 24 components.
+    expect(
+        (tf.memory() as tf.webgl.WebGLMemoryInfo).numBytesInGPU -
+        startNumBytesInGPU)
+        .toEqual(24 * tf.util.bytesPerElement(a.dtype));
   });
+
+  it('should work when the same input must be represented by' +
+         'different textures',
+     () => {
+       const a = tf.tensor1d([1, 2]);
+       const res = tf.dot(a, a);
+       expectArraysClose(res, [5]);
+     });
 });
 
 describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
@@ -64,9 +109,53 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
     tf.ENV.removeBackend('test-storage');
   });
 
-  it('delayed storage, reading', () => {
-    const delayedStorage = true;
-    const backend = new MathBackendWebGL(null, delayedStorage);
+  it('register empty string tensor', () => {
+    const backend = new MathBackendWebGL();
+    tf.ENV.registerBackend('test-storage', () => backend);
+    tf.setBackend('test-storage');
+
+    const t = tf.Tensor.make([3], {}, 'string');
+    expect(backend.readSync(t.dataId) == null).toBe(true);
+  });
+
+  it('register empty string tensor and write', () => {
+    const backend = new MathBackendWebGL();
+    tf.ENV.registerBackend('test-storage', () => backend);
+    tf.setBackend('test-storage');
+
+    const t = tf.Tensor.make([3], {}, 'string');
+    backend.write(t.dataId, ['c', 'a', 'b']);
+    expectArraysEqual(backend.readSync(t.dataId), ['c', 'a', 'b']);
+  });
+
+  it('register string tensor with values', () => {
+    const backend = new MathBackendWebGL();
+    tf.ENV.registerBackend('test-storage', () => backend);
+    tf.setBackend('test-storage');
+
+    const t = tf.Tensor.make([3], {values: ['a', 'b', 'c']}, 'string');
+    expectArraysEqual(backend.readSync(t.dataId), ['a', 'b', 'c']);
+  });
+
+  it('register string tensor with values and overwrite', () => {
+    const backend = new MathBackendWebGL();
+    tf.ENV.registerBackend('test-storage', () => backend);
+    tf.setBackend('test-storage');
+
+    const t = tf.Tensor.make([3], {values: ['a', 'b', 'c']}, 'string');
+    backend.write(t.dataId, ['c', 'a', 'b']);
+    expectArraysEqual(backend.readSync(t.dataId), ['c', 'a', 'b']);
+  });
+
+  it('register string tensor with values and wrong shape throws error', () => {
+    const backend = new MathBackendWebGL();
+    tf.ENV.registerBackend('test-storage', () => backend);
+    tf.setBackend('test-storage');
+    expect(() => tf.tensor(['a', 'b', 'c'], [4], 'string')).toThrowError();
+  });
+
+  it('reading', () => {
+    const backend = new MathBackendWebGL(null);
     tf.ENV.registerBackend('test-storage', () => backend);
     tf.setBackend('test-storage');
 
@@ -76,7 +165,9 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
     expect(texManager.getNumUsedTextures()).toBe(0);
     backend.getTexture(t.dataId);
     expect(texManager.getNumUsedTextures()).toBe(1);
-    expectArraysClose(backend.readSync(t.dataId), new Float32Array([1, 2, 3]));
+    expectArraysClose(
+        backend.readSync(t.dataId) as Float32Array,
+        new Float32Array([1, 2, 3]));
     expect(texManager.getNumUsedTextures()).toBe(0);
     backend.getTexture(t.dataId);
     expect(texManager.getNumUsedTextures()).toBe(1);
@@ -84,9 +175,28 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
     expect(texManager.getNumUsedTextures()).toBe(0);
   });
 
+  it('read packed and then use by an unpacked op', () => {
+    const backend = new MathBackendWebGL(null);
+    tf.ENV.registerBackend('test-storage', () => backend);
+    tf.setBackend('test-storage');
+
+    const webglPackFlagSaved = tf.ENV.get('WEBGL_PACK');
+    tf.ENV.set('WEBGL_PACK', true);
+    const webglSizeUploadUniformSaved = tf.ENV.get('WEBGL_SIZE_UPLOAD_UNIFORM');
+    tf.ENV.set('WEBGL_SIZE_UPLOAD_UNIFORM', 0);
+    const a = tf.tensor2d([1, 2], [2, 1]);
+    const b = tf.tensor2d([1], [1, 1]);
+    const c = tf.matMul(a, b);
+    backend.readSync(c.dataId);
+    tf.ENV.set('WEBGL_PACK', false);
+    const d = tf.add(c, 1);
+    tf.ENV.set('WEBGL_PACK', webglPackFlagSaved);
+    tf.ENV.set('WEBGL_SIZE_UPLOAD_UNIFORM', webglSizeUploadUniformSaved);
+    expectArraysClose(d, [2, 3]);
+  });
+
   it('delayed storage, overwriting', () => {
-    const delayedStorage = true;
-    const backend = new MathBackendWebGL(null, delayedStorage);
+    const backend = new MathBackendWebGL(null);
     tf.ENV.registerBackend('test-storage', () => backend);
     tf.setBackend('test-storage');
 
@@ -98,93 +208,63 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
     // overwrite.
     backend.write(t.dataId, new Float32Array([4, 5, 6]));
     expect(texManager.getNumUsedTextures()).toBe(0);
-    expectArraysClose(backend.readSync(t.dataId), new Float32Array([4, 5, 6]));
+    expectArraysClose(
+        backend.readSync(t.dataId) as Float32Array,
+        new Float32Array([4, 5, 6]));
     backend.getTexture(t.dataId);
     expect(texManager.getNumUsedTextures()).toBe(1);
-    expectArraysClose(backend.readSync(t.dataId), new Float32Array([4, 5, 6]));
-    expect(texManager.getNumUsedTextures()).toBe(0);
-  });
-
-  it('immediate storage reading', () => {
-    const delayedStorage = false;
-    const backend = new MathBackendWebGL(null, delayedStorage);
-    tf.ENV.registerBackend('test-storage', () => backend);
-    tf.setBackend('test-storage');
-
-    const texManager = backend.getTextureManager();
-    const t = tf.Tensor.make([3], {}, 'float32');
-    backend.write(t.dataId, new Float32Array([1, 2, 3]));
-    expect(texManager.getNumUsedTextures()).toBe(1);
-    expectArraysClose(backend.readSync(t.dataId), new Float32Array([1, 2, 3]));
-    expect(texManager.getNumUsedTextures()).toBe(1);
-    backend.disposeData(t.dataId);
-    expect(texManager.getNumUsedTextures()).toBe(0);
-  });
-
-  it('immediate storage overwriting', () => {
-    const delayedStorage = false;
-    const backend = new MathBackendWebGL(null, delayedStorage);
-    tf.ENV.registerBackend('test-storage', () => backend);
-    tf.setBackend('test-storage');
-
-    const texManager = backend.getTextureManager();
-    const t = tf.Tensor.make([3], {}, 'float32');
-    backend.write(t.dataId, new Float32Array([1, 2, 3]));
-    expect(texManager.getNumUsedTextures()).toBe(1);
-    backend.write(t.dataId, new Float32Array([4, 5, 6]));
-    expect(texManager.getNumUsedTextures()).toBe(1);
-    expectArraysClose(backend.readSync(t.dataId), new Float32Array([4, 5, 6]));
-    expect(texManager.getNumUsedTextures()).toBe(1);
-    backend.disposeData(t.dataId);
-    expect(texManager.getNumUsedTextures()).toBe(0);
-  });
-
-  it('disposal of backend disposes all textures', () => {
-    const delayedStorage = false;
-    const backend = new MathBackendWebGL(null, delayedStorage);
-    const texManager = backend.getTextureManager();
-    tf.ENV.registerBackend('test-storage', () => backend);
-    tf.setBackend('test-storage');
-
-    const t = tf.Tensor.make([3], {}, 'float32');
-    backend.write(t.dataId, new Float32Array([1, 2, 3]));
-    const t2 = tf.Tensor.make([3], {}, 'float32');
-    backend.write(t2.dataId, new Float32Array([4, 5, 6]));
-    expect(texManager.getNumUsedTextures()).toBe(2);
-    backend.dispose();
+    expectArraysClose(
+        backend.readSync(t.dataId) as Float32Array,
+        new Float32Array([4, 5, 6]));
     expect(texManager.getNumUsedTextures()).toBe(0);
   });
 });
 
 describeWithFlags('Custom window size', WEBGL_ENVS, () => {
-  it('Set screen area to be 1x1', async () => {
+  it('Set screen area to be 1x1', () => {
     // This will set the screen size to 1x1 to make sure the page limit is
     // very small.
     spyOnProperty(window, 'screen', 'get')
         .and.returnValue({height: 1, width: 1});
-    const oldBackend = tf.getBackend();
 
     tf.ENV.registerBackend('custom-webgl', () => new MathBackendWebGL());
     tf.setBackend('custom-webgl');
 
-    // Allocate a 100x100 tensor.
+    // Allocate ~40KB.
     const a = tf.ones([100, 100]);
     // No gpu memory used yet because of delayed storage.
     expect((tf.memory() as tf.webgl.WebGLMemoryInfo).numBytesInGPU).toBe(0);
 
-    await a.square().data();
-    // Everything got paged out of gpu after the run finished.
-    expect((tf.memory() as tf.webgl.WebGLMemoryInfo).numBytesInGPU).toBe(0);
+    // Expect console.warn() to be called.
+    let numWarnCalls = 0;
+    spyOn(console, 'warn').and.callFake(() => {
+      numWarnCalls++;
+    });
 
-    expectArraysEqual(a, new Float32Array(100 * 100).fill(1));
-    tf.setBackend(oldBackend);
+    a.square();
+    expect(numWarnCalls).toBe(1);
+    expect((tf.memory() as tf.webgl.WebGLMemoryInfo).numBytesInGPU)
+        .toBe(100 * 100 * 4 * 2);
+
+    // Allocate another 40KB.
+    a.square();
+
+    // Expect console.warn() to NOT be called more than once.
+    expect(numWarnCalls).toBe(1);
+    expect((tf.memory() as tf.webgl.WebGLMemoryInfo).numBytesInGPU)
+        .toBe(100 * 100 * 4 * 3);
     tf.ENV.removeBackend('custom-webgl');
   });
 });
 
+const SIZE_UPLOAD_UNIFORM = 4;
 // Run only for environments that have 32bit floating point support.
-const FLOAT32_WEBGL_ENVS =
-    Object.assign({'WEBGL_RENDER_FLOAT32_ENABLED': true}, WEBGL_ENVS);
+const FLOAT32_WEBGL_ENVS = Object.assign(
+    {
+      'WEBGL_RENDER_FLOAT32_ENABLED': true,
+      'WEBGL_SIZE_UPLOAD_UNIFORM': SIZE_UPLOAD_UNIFORM
+    },
+    WEBGL_ENVS);
 describeWithFlags('upload tensors as uniforms', FLOAT32_WEBGL_ENVS, () => {
   it('small tensor gets uploaded as scalar', () => {
     let m = tf.memory() as WebGLMemoryInfo;

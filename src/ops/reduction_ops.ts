@@ -57,7 +57,7 @@ function logSumExp_<T extends Tensor>(
     x: Tensor|TensorLike, axis: number|number[] = null, keepDims = false): T {
   const $x = convertToTensor(x, 'x', 'logSumExp');
 
-  const axes = axis_util.parseAxisParam(axis, $x.shape);
+  const axes = util.parseAxisParam(axis, $x.shape);
   const xMax = $x.max(axes, true /* keepDims */);
   const a = $x.sub(xMax);
   const b = a.exp();
@@ -108,11 +108,11 @@ function sum_<T extends Tensor>(
   if ($x.dtype === 'bool') {
     $x = $x.toInt();
   }
-  const axes = axis_util.parseAxisParam(axis, $x.shape);
+  const axes = util.parseAxisParam(axis, $x.shape);
 
   // Use a custom gradient to bypass 2 gradient backprops since sum is used
   // extremely often.
-  const customOp = customGrad(x => {
+  const customOp = customGrad((x: Tensor) => {
     const permutation = axis_util.getAxesPermutation(axes, x.rank);
     let reductionAxes = axes;
     let permutedX = x;
@@ -178,7 +178,7 @@ function prod_<T extends Tensor>(
   if ($x.dtype === 'bool') {
     $x = $x.toInt();
   }
-  const axes = axis_util.parseAxisParam(axis, $x.shape);
+  const axes = util.parseAxisParam(axis, $x.shape);
 
   const permutation = axis_util.getAxesPermutation(axes, $x.rank);
   let reductionAxes = axes;
@@ -228,14 +228,14 @@ function mean_<T extends Tensor>(
     x: Tensor|TensorLike, axis: number|number[] = null, keepDims = false): T {
   const $x = convertToTensor(x, 'x', 'mean');
 
-  const axes = axis_util.parseAxisParam(axis, $x.shape);
+  const axes = util.parseAxisParam(axis, $x.shape);
   const shapes = axis_util.computeOutAndReduceShapes($x.shape, axes);
   const reduceShape = shapes[1];
   const reduceSize = util.sizeFromShape(reduceShape);
 
   // Use a custom gradient to bypass 2 gradient backprops since mean is used
   // extremely often.
-  const customOp = customGrad(x => {
+  const customOp = customGrad((x: Tensor) => {
     const reduceSizeScalar = scalar(reduceSize);
     // Cast if needed.
     const xReduce =
@@ -249,8 +249,7 @@ function mean_<T extends Tensor>(
         expandedDyShape[axis] = 1;
       });
       const expandedDy = dy.reshape(expandedDyShape);
-      const derX =
-          expandedDy.mul(ones(x.shape, 'float32')).div(reduceSizeScalar);
+      const derX = expandedDy.mul(ones(x.shape, 'float32')).div(reduceSize);
       return derX;
     };
     return {value, gradFunc};
@@ -263,9 +262,7 @@ function mean_<T extends Tensor>(
  * Gradient helper function for the min and max operations.
  */
 function gradForMinAndMax<T extends Tensor>(
-    dy: T, saved: Tensor[], xOrig: Tensor, origAxes: number[],
-    permutedAxes: number[]) {
-  let [y] = saved;
+    dy: T, y: T, xOrig: Tensor, origAxes: number[], permutedAxes: number[]) {
   if (y.rank < xOrig.rank) {
     y = y.reshape(axis_util.expandShapeToKeepDim(y.shape, origAxes)) as T;
   }
@@ -313,7 +310,7 @@ function min_<T extends Tensor>(
   let $x = convertToTensor(x, 'x', 'min');
   const xOrig = $x;
 
-  const origAxes = axis_util.parseAxisParam(axis, $x.shape);
+  const origAxes = util.parseAxisParam(axis, $x.shape);
   let axes = origAxes;
   const permutedAxes = axis_util.getAxesPermutation(axes, $x.rank);
   if (permutedAxes != null) {
@@ -322,9 +319,12 @@ function min_<T extends Tensor>(
   }
 
   const grad = (dy: T, saved: Tensor[]) =>
-      gradForMinAndMax(dy, saved, xOrig, origAxes, permutedAxes);
-  let res = ENV.engine.runKernel(
-      (backend, save) => save(backend.min($x, axes)), {$x}, grad);
+      gradForMinAndMax(dy, saved[1], saved[0], origAxes, permutedAxes);
+  let res = ENV.engine.runKernel((backend, save) => {
+    const y = backend.min($x, axes);
+    save([xOrig, y]);
+    return y as T;
+  }, {$x}, grad);
   if (keepDims) {
     const newShape = axis_util.expandShapeToKeepDim(res.shape, origAxes);
     res = res.reshape(newShape) as T;
@@ -365,7 +365,7 @@ function max_<T extends Tensor>(
   let $x = convertToTensor(x, 'x', 'max');
   const xOrig = $x;
 
-  const origAxes = axis_util.parseAxisParam(axis, $x.shape);
+  const origAxes = util.parseAxisParam(axis, $x.shape);
   let axes = origAxes;
   const permutedAxes = axis_util.getAxesPermutation(axes, $x.rank);
   if (permutedAxes != null) {
@@ -374,9 +374,12 @@ function max_<T extends Tensor>(
   }
 
   const grad = (dy: T, saved: Tensor[]) =>
-      gradForMinAndMax(dy, saved, xOrig, origAxes, permutedAxes);
-  let res = ENV.engine.runKernel(
-      (backend, save) => save(backend.max($x, axes)), {$x}, grad);
+      gradForMinAndMax(dy, saved[1], saved[0], origAxes, permutedAxes);
+  let res = ENV.engine.runKernel((backend, save) => {
+    const y = backend.max($x, axes);
+    save([xOrig, y]);
+    return y;
+  }, {$x}, grad);
   if (keepDims) {
     const newShape = axis_util.expandShapeToKeepDim(res.shape, origAxes);
     res = res.reshape(newShape) as T;
@@ -414,17 +417,21 @@ function argMin_<T extends Tensor>(x: Tensor|TensorLike, axis = 0): T {
   if (axis == null) {
     axis = 0;
   }
-  let axes = axis_util.parseAxisParam(axis, $x.shape);
+  let axes = util.parseAxisParam(axis, $x.shape);
   const permutedAxes = axis_util.getAxesPermutation(axes, $x.rank);
   if (permutedAxes != null) {
     $x = $x.transpose(permutedAxes);
     axes = axis_util.getInnerMostAxes(axes.length, $x.rank);
   }
-  const grad = (dy: T) => {
+  const grad = (dy: T, saved: Tensor[]) => {
+    const [$x] = saved;
     return {$x: () => zerosLike($x)};
   };
-  return ENV.engine.runKernel(
-             backend => backend.argMin($x, axes[0]), {$x}, grad) as T;
+  return ENV.engine.runKernel((backend, save) => {
+    const res = backend.argMin($x, axes[0]);
+    save([$x]);
+    return res;
+  }, {$x}, grad) as T;
 }
 
 /**
@@ -456,17 +463,21 @@ function argMax_<T extends Tensor>(x: Tensor|TensorLike, axis = 0): T {
   if (axis == null) {
     axis = 0;
   }
-  let axes = axis_util.parseAxisParam(axis, $x.shape);
+  let axes = util.parseAxisParam(axis, $x.shape);
   const permutedAxes = axis_util.getAxesPermutation(axes, $x.rank);
   if (permutedAxes != null) {
     $x = $x.transpose(permutedAxes);
     axes = axis_util.getInnerMostAxes(axes.length, $x.rank);
   }
-  const grad = (dy: T) => {
+  const grad = (dy: T, saved: Tensor[]) => {
+    const [$x] = saved;
     return {$x: () => zerosLike($x)};
   };
-  return ENV.engine.runKernel(
-             backend => backend.argMax($x, axes[0]), {$x}, grad) as T;
+  return ENV.engine.runKernel((backend, save) => {
+    const res = backend.argMax($x, axes[0]);
+    save([$x]);
+    return res;
+  }, {$x}, grad) as T;
 }
 
 /**
@@ -479,7 +490,7 @@ function argMax_<T extends Tensor>(x: Tensor|TensorLike, axis = 0): T {
  * `tf.Tensor` with a single element is returned.
  *
  * ```js
- * const x = tf.tensor1d([1, 1, 1]);
+ * const x = tf.tensor1d([1, 1, 1], 'bool');
  *
  * x.all().print();  // or tf.all(x)
  * ```
@@ -500,11 +511,8 @@ function argMax_<T extends Tensor>(x: Tensor|TensorLike, axis = 0): T {
 function all_<T extends Tensor>(
     x: Tensor|TensorLike, axis: number|number[] = null, keepDims = false): T {
   let $x = convertToTensor(x, 'x', 'all', 'bool');
-  util.assert(
-      $x.dtype === 'bool',
-      `Error Tensor must be of type bool. Got: ${$x.dtype}`);
 
-  const origAxes = axis_util.parseAxisParam(axis, $x.shape);
+  const origAxes = util.parseAxisParam(axis, $x.shape);
   let axes = origAxes;
   const permutedAxes = axis_util.getAxesPermutation(axes, $x.rank);
   if (permutedAxes != null) {
@@ -529,7 +537,7 @@ function all_<T extends Tensor>(
  * `tf.Tensor` with a single element is returned.
  *
  * ```js
- * const x = tf.tensor1d([1, 1, 1]);
+ * const x = tf.tensor1d([1, 1, 1], 'bool');
  *
  * x.any().print();  // or tf.any(x)
  * ```
@@ -550,11 +558,8 @@ function all_<T extends Tensor>(
 function any_<T extends Tensor>(
     x: Tensor|TensorLike, axis: number|number[] = null, keepDims = false): T {
   let $x = convertToTensor(x, 'x', 'any', 'bool');
-  util.assert(
-      $x.dtype === 'bool',
-      `Error Tensor must be of type bool. Got: ${$x.dtype}`);
 
-  const origAxes = axis_util.parseAxisParam(axis, $x.shape);
+  const origAxes = util.parseAxisParam(axis, $x.shape);
   let axes = origAxes;
   const permutedAxes = axis_util.getAxesPermutation(axes, $x.rank);
   if (permutedAxes != null) {
@@ -586,7 +591,7 @@ function moments_(
     x: Tensor|TensorLike, axis: number|number[] = null,
     keepDims = false): {mean: Tensor, variance: Tensor} {
   x = convertToTensor(x, 'x', 'moments');
-  const axes = axis_util.parseAxisParam(axis, x.shape);
+  const axes = util.parseAxisParam(axis, x.shape);
   const mean = x.mean(axes, keepDims);
   let keepDimsShape = mean.shape;
   if (!keepDims) {

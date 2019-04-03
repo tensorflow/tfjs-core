@@ -15,12 +15,6 @@
  * =============================================================================
  */
 
-export enum DType {
-  float32 = 'float32',
-  int32 = 'int32',
-  bool = 'bool'
-}
-
 /** @docalias number[] */
 export interface ShapeMap {
   R0: number[];
@@ -32,16 +26,38 @@ export interface ShapeMap {
   R6: [number, number, number, number, number, number];
 }
 
-/** @hidden */
+/** @docalias number[] */
+export interface ArrayMap {
+  R0: number;
+  R1: number[];
+  R2: number[][];
+  R3: number[][][];
+  R4: number[][][][];
+  R5: number[][][][][];
+  R6: number[][][][][][];
+}
+
 export interface DataTypeMap {
   float32: Float32Array;
   int32: Int32Array;
   bool: Uint8Array;
   complex64: Float32Array;
+  string: string[];
 }
-/** @docalias 'float32'|'int32'|'bool'|'complex64' */
+
+export interface SingleValueMap {
+  bool: boolean;
+  int32: number;
+  float32: number;
+  complex64: number;
+  string: string;
+}
+
+/** @docalias 'float32'|'int32'|'bool'|'complex64'|'string' */
 export type DataType = keyof DataTypeMap;
-export type TypedArray = DataTypeMap[DataType];
+export type NumericDataType = 'float32'|'int32'|'bool'|'complex64';
+export type TypedArray = Float32Array|Int32Array|Uint8Array;
+export type DataValues = DataTypeMap[DataType];
 
 export enum Rank {
   R0 = 'R0',
@@ -56,8 +72,6 @@ export enum Rank {
 export type FlatVector = boolean[]|number[]|TypedArray;
 export type RegularArray<T> =
     T[]|T[][]|T[][][]|T[][][][]|T[][][][][]|T[][][][][][];
-export type ArrayData<D extends DataType> =
-    DataTypeMap[D]|RegularArray<number>|RegularArray<boolean>;
 
 // tslint:disable-next-line:no-any
 export interface RecursiveArray<T extends any> {
@@ -102,6 +116,12 @@ const upcastTypeMap = {
 };
 
 export function upcastType(typeA: DataType, typeB: DataType): DataType {
+  if (typeA === 'string' || typeB === 'string') {
+    if (typeA === 'string' && typeB === 'string') {
+      return 'string';
+    }
+    throw new Error(`Can not upcast ${typeA} with ${typeB}`);
+  }
   return upcastTypeMap[typeA][typeB];
 }
 
@@ -112,22 +132,23 @@ export function sumOutType(type: DataType): DataType {
 
 /** @docalias TypedArray|Array */
 export type TensorLike =
-    TypedArray|number|boolean|number[]|number[][]|number[][][]|number[][][][]|
-    number[][][][][]|number[][][][][][]|boolean[]|boolean[][]|boolean[][][]|
-    boolean[][][][]|boolean[][][][][]|boolean[][][][][][];
+    TypedArray|number|boolean|string|RegularArray<number|number[]|TypedArray>|
+    RegularArray<boolean>|RegularArray<string>;
+export type ScalarLike = number|boolean|string;
 /** @docalias TypedArray|Array */
-export type TensorLike1D = TypedArray|number[]|boolean[];
+export type TensorLike1D = TypedArray|number[]|boolean[]|string[];
 /** @docalias TypedArray|Array */
-export type TensorLike2D = TypedArray|number[]|number[][]|boolean[]|boolean[][];
+export type TensorLike2D =
+    TypedArray|number[]|number[][]|boolean[]|boolean[][]|string[]|string[][];
 /** @docalias TypedArray|Array */
-export type TensorLike3D =
-    TypedArray|number[]|number[][][]|boolean[]|boolean[][][];
+export type TensorLike3D = TypedArray|number[]|number[][][]|boolean[]|
+    boolean[][][]|string[]|string[][][];
 /** @docalias TypedArray|Array */
-export type TensorLike4D =
-    TypedArray|number[]|number[][][][]|boolean[]|boolean[][][][];
+export type TensorLike4D = TypedArray|number[]|number[][][][]|boolean[]|
+    boolean[][][][]|string[]|string[][][][];
 /** @docalias TypedArray|Array */
-export type TensorLike5D =
-    TypedArray|number[]|number[][][][][]|boolean[]|boolean[][][][][];
+export type TensorLike5D = TypedArray|number[]|number[][][][][]|boolean[]|
+    boolean[][][][][]|string[]|string[][][][][];
 /** @docalias TypedArray|Array */
-export type TensorLike6D =
-    TypedArray|number[]|number[][][][][][]|boolean[]|boolean[][][][][][];
+export type TensorLike6D = TypedArray|number[]|number[][][][][][]|boolean[]|
+    boolean[][][][][][]|string[]|string[][][][][][];
