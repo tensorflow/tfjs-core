@@ -499,6 +499,8 @@ describe('util.toNestedArray', () => {
 
 describe('util.fetch', () => {
   it('should allow overriding global fetch', () => {
+    console.log('in fetch test');
+    console.log(ENV.global);
     spyOn(ENV.global, 'fetch').and.callFake(() => {});
 
     util.fetch('');

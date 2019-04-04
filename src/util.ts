@@ -699,6 +699,7 @@ const getSystemFetch = () => {
  */
 /** @doc {heading: 'Util'} */
 export function fetch(path: string, requestInits?: RequestInit) {
+  console.log('calling fetch util');
   if (systemFetch == null) {
     systemFetch = getSystemFetch();
   }
