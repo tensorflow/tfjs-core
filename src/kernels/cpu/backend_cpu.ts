@@ -80,7 +80,7 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   setDataMover(dataMover: DataMover): void {
-    this.data = new DataStorage(dataMover);
+    this.data = new DataStorage(ENGINE);
   }
 
   register(dataId: DataId, shape: number[], dtype: DataType): void {
