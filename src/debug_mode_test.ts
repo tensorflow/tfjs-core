@@ -105,7 +105,8 @@ describeWithFlags('debug on webgl', WEBGL_ENVS, () => {
   });
 
   it('debug mode errors when overflow in tensor construction', () => {
-    const savedRenderFloat32Flag = tf.ENV.get('WEBGL_RENDER_FLOAT32_ENABLED');
+    const savedRenderFloat32Flag =
+        tf.ENV.getBool('WEBGL_RENDER_FLOAT32_ENABLED');
     tf.ENV.set('WEBGL_RENDER_FLOAT32_ENABLED', false);
     const a = () => tf.tensor1d([2, Math.pow(2, 17)], 'float32');
     expect(a).toThrowError();
@@ -113,7 +114,8 @@ describeWithFlags('debug on webgl', WEBGL_ENVS, () => {
   });
 
   it('debug mode errors when underflow in tensor construction', () => {
-    const savedRenderFloat32Flag = tf.ENV.get('WEBGL_RENDER_FLOAT32_ENABLED');
+    const savedRenderFloat32Flag =
+        tf.ENV.getBool('WEBGL_RENDER_FLOAT32_ENABLED');
     tf.ENV.set('WEBGL_RENDER_FLOAT32_ENABLED', false);
     const a = () => tf.tensor1d([2, 1e-8], 'float32');
     expect(a).toThrowError();

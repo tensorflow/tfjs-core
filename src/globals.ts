@@ -56,7 +56,7 @@ export function disableDeprecationWarnings(): void {
 
 /** Warn users about deprecated functionality. */
 export function deprecationWarn(msg: string) {
-  if (ENV.get('DEPRECATION_WARNINGS_ENABLED')) {
+  if (ENV.getBool('DEPRECATION_WARNINGS_ENABLED')) {
     console.warn(
         msg + ' You can disable deprecation warnings with ' +
         'tf.disableDeprecationWarnings().');
@@ -305,7 +305,8 @@ export function findBackendFactory(name: string): () => KernelBackend {
  * @param priority The priority of the backend (higher = more important).
  *     In case multiple backends are registered, the priority is used to find
  *     the best backend. Defaults to 1.
- * @return False if the creation/registration failed. True otherwise.
+ * @return False if there is already a registered backend under this name, true
+ *     if not.
  */
 /** @doc {heading: 'Backends'} */
 export function registerBackend(

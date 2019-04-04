@@ -22,12 +22,12 @@ import {getWebGLContext} from './canvas_util';
 
 describeWithFlags('canvas_util', BROWSER_ENVS, () => {
   it('Returns a valid canvas', () => {
-    const canvas = getWebGLContext(ENV.get('WEBGL_VERSION') as number).canvas;
+    const canvas = getWebGLContext(ENV.getNumber('WEBGL_VERSION')).canvas;
     expect(canvas instanceof HTMLCanvasElement).toBe(true);
   });
 
   it('Returns a valid gl context', () => {
-    const gl = getWebGLContext(ENV.get('WEBGL_VERSION') as number);
+    const gl = getWebGLContext(ENV.getNumber('WEBGL_VERSION'));
     expect(gl.isContextLost()).toBe(false);
   });
 });

@@ -132,7 +132,7 @@ describeWithFlags('relu', ALL_ENVS, () => {
 
 describeWithFlags('relu', WEBGL_ENVS, () => {
   it('works with squarification for prime number length vector', () => {
-    const maxTextureSize = tf.ENV.get('WEBGL_MAX_TEXTURE_SIZE');
+    const maxTextureSize = tf.ENV.getNumber('WEBGL_MAX_TEXTURE_SIZE');
     tf.ENV.set('WEBGL_MAX_TEXTURE_SIZE', 5);
     const a = tf.tensor1d([1, -2, 5, -3, -1, 4, 7]);
     const result = tf.relu(a);

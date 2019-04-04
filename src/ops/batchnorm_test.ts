@@ -48,7 +48,7 @@ describeWithFlags('batchNorm', WEBGL_ENVS, () => {
   });
 
   it('should work when squarification results in zero padding', () => {
-    const maxTextureSize = tf.ENV.get('WEBGL_MAX_TEXTURE_SIZE');
+    const maxTextureSize = tf.ENV.getNumber('WEBGL_MAX_TEXTURE_SIZE');
     tf.ENV.set('WEBGL_MAX_TEXTURE_SIZE', 5);
 
     const x = tf.tensor3d(

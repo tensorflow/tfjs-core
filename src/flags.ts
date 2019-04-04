@@ -58,7 +58,8 @@ ENV.registerFlag('PROD', () => false);
  * Whether to do sanity checks when inferring a shape from user-provided
  * values, used when creating a new tensor.
  */
-ENV.registerFlag('TENSORLIKE_CHECK_SHAPE_CONSISTENCY', () => !ENV.get('PROD'));
+ENV.registerFlag(
+    'TENSORLIKE_CHECK_SHAPE_CONSISTENCY', () => !ENV.getBool('PROD'));
 
 /** Whether deprecation warnings are enabled. */
 ENV.registerFlag('DEPRECATION_WARNINGS_ENABLED', () => true);

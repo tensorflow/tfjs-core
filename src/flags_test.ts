@@ -26,7 +26,7 @@ describe('DEBUG', () => {
   afterAll(() => ENV.reset());
 
   it('disabled by default', () => {
-    expect(ENV.get('DEBUG')).toBe(false);
+    expect(ENV.getBool('DEBUG')).toBe(false);
   });
 
   it('warns when enabled', () => {
@@ -37,7 +37,7 @@ describe('DEBUG', () => {
                .startsWith('Debugging mode is ON. '))
         .toBe(true);
 
-    expect(ENV.get('DEBUG')).toBe(true);
+    expect(ENV.getBool('DEBUG')).toBe(true);
     expect(consoleWarnSpy.calls.count()).toBe(1);
   });
 });
@@ -52,12 +52,12 @@ describe('IS_BROWSER', () => {
 
   it('isBrowser: true', () => {
     isBrowser = true;
-    expect(ENV.get('IS_BROWSER')).toBe(true);
+    expect(ENV.getBool('IS_BROWSER')).toBe(true);
   });
 
   it('isBrowser: false', () => {
     isBrowser = false;
-    expect(ENV.get('IS_BROWSER')).toBe(false);
+    expect(ENV.getBool('IS_BROWSER')).toBe(false);
   });
 });
 
@@ -66,7 +66,7 @@ describe('PROD', () => {
   afterAll(() => ENV.reset());
 
   it('disabled by default', () => {
-    expect(ENV.get('PROD')).toBe(false);
+    expect(ENV.getBool('PROD')).toBe(false);
   });
 });
 
@@ -76,12 +76,12 @@ describe('TENSORLIKE_CHECK_SHAPE_CONSISTENCY', () => {
 
   it('disabled when prod is enabled', () => {
     ENV.set('PROD', true);
-    expect(ENV.get('TENSORLIKE_CHECK_SHAPE_CONSISTENCY')).toBe(false);
+    expect(ENV.getBool('TENSORLIKE_CHECK_SHAPE_CONSISTENCY')).toBe(false);
   });
 
   it('enabled when prod is disabled', () => {
     ENV.set('PROD', false);
-    expect(ENV.get('TENSORLIKE_CHECK_SHAPE_CONSISTENCY')).toBe(true);
+    expect(ENV.getBool('TENSORLIKE_CHECK_SHAPE_CONSISTENCY')).toBe(true);
   });
 });
 
@@ -90,7 +90,7 @@ describe('DEPRECATION_WARNINGS_ENABLED', () => {
   afterAll(() => ENV.reset());
 
   it('enabled by default', () => {
-    expect(ENV.get('DEPRECATION_WARNINGS_ENABLED')).toBe(true);
+    expect(ENV.getBool('DEPRECATION_WARNINGS_ENABLED')).toBe(true);
   });
 });
 
@@ -99,6 +99,6 @@ describe('IS_TEST', () => {
   afterAll(() => ENV.reset());
 
   it('disabled by default', () => {
-    expect(ENV.get('IS_TEST')).toBe(false);
+    expect(ENV.getBool('IS_TEST')).toBe(false);
   });
 });

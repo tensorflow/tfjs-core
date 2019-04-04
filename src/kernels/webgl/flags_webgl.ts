@@ -26,7 +26,7 @@ import * as webgl_util from './webgl_util';
 /**
  * True if WebGL is supported.
  */
-ENV.registerFlag('HAS_WEBGL', () => ENV.get('WEBGL_VERSION') > 0);
+ENV.registerFlag('HAS_WEBGL', () => ENV.getNumber('WEBGL_VERSION') > 0);
 
 /** 0: No WebGL, 1: WebGL 1.0, 2: WebGL 2.0. */
 ENV.registerFlag('WEBGL_VERSION', () => {
@@ -42,46 +42,48 @@ ENV.registerFlag('WEBGL_VERSION', () => {
 ENV.registerFlag('WEBGL_CPU_FORWARD', () => false);
 
 /** Whether to turn all packing related flags on. */
-ENV.registerFlag('WEBGL_PACK', () => ENV.get('HAS_WEBGL'));
+ENV.registerFlag('WEBGL_PACK', () => ENV.getBool('HAS_WEBGL'));
 
 /** Whether we will pack the batchnormalization op. */
-ENV.registerFlag('WEBGL_PACK_BATCHNORMALIZATION', () => ENV.get('WEBGL_PACK'));
+ENV.registerFlag(
+    'WEBGL_PACK_BATCHNORMALIZATION', () => ENV.getBool('WEBGL_PACK'));
 
 /** Whether we will pack the clip op. */
-ENV.registerFlag('WEBGL_PACK_CLIP', () => ENV.get('WEBGL_PACK'));
+ENV.registerFlag('WEBGL_PACK_CLIP', () => ENV.getBool('WEBGL_PACK'));
 
 /** Whether we will pack the depthwise conv op. */
-ENV.registerFlag('WEBGL_PACK_DEPTHWISECONV', () => ENV.get('WEBGL_PACK'));
+ENV.registerFlag('WEBGL_PACK_DEPTHWISECONV', () => ENV.getBool('WEBGL_PACK'));
 
 /** Whether we will pack binary ops. */
-ENV.registerFlag('WEBGL_PACK_BINARY_OPERATIONS', () => ENV.get('WEBGL_PACK'));
+ENV.registerFlag(
+    'WEBGL_PACK_BINARY_OPERATIONS', () => ENV.getBool('WEBGL_PACK'));
 
 /** Whether we will pack array ops. */
-ENV.registerFlag('WEBGL_PACK_ARRAY_OPERATIONS', () => ENV.get('WEBGL_PACK'));
+ENV.registerFlag(
+    'WEBGL_PACK_ARRAY_OPERATIONS', () => ENV.getBool('WEBGL_PACK'));
 
 /** Whether we will pack image ops. */
-ENV.registerFlag('WEBGL_PACK_IMAGE_OPERATIONS', () => ENV.get('WEBGL_PACK'));
+ENV.registerFlag(
+    'WEBGL_PACK_IMAGE_OPERATIONS', () => ENV.getBool('WEBGL_PACK'));
 
 /** Whether we will pack reduce ops. */
-ENV.registerFlag('WEBGL_PACK_REDUCE', () => ENV.get('WEBGL_PACK'));
+ENV.registerFlag('WEBGL_PACK_REDUCE', () => ENV.getBool('WEBGL_PACK'));
 
 /** Whether packed WebGL kernels lazily unpack their outputs. */
-ENV.registerFlag('WEBGL_LAZILY_UNPACK', () => ENV.get('WEBGL_PACK'));
+ENV.registerFlag('WEBGL_LAZILY_UNPACK', () => ENV.getBool('WEBGL_PACK'));
 
 /** Whether we will use the im2col algorithm to speed up convolutions. */
-ENV.registerFlag('WEBGL_CONV_IM2COL', () => ENV.get('WEBGL_PACK'));
+ENV.registerFlag('WEBGL_CONV_IM2COL', () => ENV.getBool('WEBGL_PACK'));
 
 /** The maximum texture dimension. */
 ENV.registerFlag(
     'WEBGL_MAX_TEXTURE_SIZE',
-    () =>
-        webgl_util.getWebGLMaxTextureSize(ENV.get('WEBGL_VERSION') as number));
+    () => webgl_util.getWebGLMaxTextureSize(ENV.getNumber('WEBGL_VERSION')));
 
 /** The maximum texture dimension. */
 ENV.registerFlag(
     'WEBGL_MAX_TEXTURES_IN_SHADER',
-    () =>
-        webgl_util.getMaxTexturesInShader(ENV.get('WEBGL_VERSION') as number));
+    () => webgl_util.getMaxTexturesInShader(ENV.getNumber('WEBGL_VERSION')));
 
 /**
  * The disjoint_query_timer extension version.
@@ -92,7 +94,7 @@ ENV.registerFlag(
  * WebGL 1.0 extension.
  */
 ENV.registerFlag('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION', () => {
-  const webGLVersion = ENV.get('WEBGL_VERSION') as number;
+  const webGLVersion = ENV.getNumber('WEBGL_VERSION');
 
   if (webGLVersion === 0) {
     return 0;
@@ -106,7 +108,7 @@ ENV.registerFlag('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION', () => {
  */
 ENV.registerFlag(
     'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE',
-    () => ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') > 0 &&
+    () => ENV.getNumber('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') > 0 &&
         !device_util.isMobile());
 
 /**
@@ -116,7 +118,7 @@ ENV.registerFlag(
 ENV.registerFlag(
     'WEBGL_RENDER_FLOAT32_ENABLED',
     () => webgl_util.isRenderToFloatTextureEnabled(
-        ENV.get('WEBGL_VERSION') as number));
+        ENV.getNumber('WEBGL_VERSION')));
 
 /**
  * Whether downloading float textures is enabled (16 or 32 bit). If disabled,
@@ -125,12 +127,12 @@ ENV.registerFlag(
 ENV.registerFlag(
     'WEBGL_DOWNLOAD_FLOAT_ENABLED',
     () => webgl_util.isDownloadFloatTextureEnabled(
-        ENV.get('WEBGL_VERSION') as number));
+        ENV.getNumber('WEBGL_VERSION')));
 
 /** Whether the fence API is available. */
 ENV.registerFlag(
     'WEBGL_FENCE_API_ENABLED',
-    () => webgl_util.isWebGLFenceEnabled(ENV.get('WEBGL_VERSION') as number));
+    () => webgl_util.isWebGLFenceEnabled(ENV.getNumber('WEBGL_VERSION')));
 
 /**
  * Tensors with size <= than this will be uploaded as uniforms, not textures.
@@ -140,6 +142,6 @@ ENV.registerFlag('WEBGL_SIZE_UPLOAD_UNIFORM', () => {
   // 16bit
   // environments there are problems with comparing a 16bit texture value
   // with a 32bit uniform value.
-  const useUniforms = ENV.get('WEBGL_RENDER_FLOAT32_ENABLED');
+  const useUniforms = ENV.getBool('WEBGL_RENDER_FLOAT32_ENABLED');
   return useUniforms ? 4 : 0;
 });

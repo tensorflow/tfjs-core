@@ -323,7 +323,7 @@ describeWithFlags('maximum', ALL_ENVS, () => {
 
 describeWithFlags('maximum', WEBGL_ENVS, () => {
   it('works with squarification for large dimension', () => {
-    const maxTextureSize = tf.ENV.get('WEBGL_MAX_TEXTURE_SIZE');
+    const maxTextureSize = tf.ENV.getNumber('WEBGL_MAX_TEXTURE_SIZE');
     tf.ENV.set('WEBGL_MAX_TEXTURE_SIZE', 5);
     const a =
         tf.tensor2d([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13], [2, 7]);

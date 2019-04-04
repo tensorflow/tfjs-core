@@ -25,8 +25,9 @@ describeWithFlags('lazy packing and unpacking', WEBGL_ENVS, () => {
   let webglCpuForwardFlagSaved: boolean;
 
   beforeAll(() => {
-    webglLazilyUnpackFlagSaved = tf.ENV.get('WEBGL_LAZILY_UNPACK') as boolean;
-    webglCpuForwardFlagSaved = tf.ENV.get('WEBGL_CPU_FORWARD') as boolean;
+    webglLazilyUnpackFlagSaved =
+        tf.ENV.getBool('WEBGL_LAZILY_UNPACK') as boolean;
+    webglCpuForwardFlagSaved = tf.ENV.getBool('WEBGL_CPU_FORWARD') as boolean;
     tf.ENV.set('WEBGL_LAZILY_UNPACK', true);
     tf.ENV.set('WEBGL_CPU_FORWARD', false);
   });
@@ -49,7 +50,7 @@ describeWithFlags('lazy packing and unpacking', WEBGL_ENVS, () => {
         (tf.memory() as tf.webgl.WebGLMemoryInfo).numBytesInGPU;
 
     const webglPackBinaryOperationsFlagSaved =
-        tf.ENV.get('WEBGL_PACK_BINARY_OPERATIONS');
+        tf.ENV.getBool('WEBGL_PACK_BINARY_OPERATIONS');
     tf.ENV.set('WEBGL_PACK_BINARY_OPERATIONS', false);
     // Add will unpack c before the operation to 2
     tf.add(c, 1);
@@ -180,9 +181,10 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
     tf.registerBackend('test-storage', () => backend);
     tf.setBackend('test-storage');
 
-    const webglPackFlagSaved = tf.ENV.get('WEBGL_PACK');
+    const webglPackFlagSaved = tf.ENV.getBool('WEBGL_PACK');
     tf.ENV.set('WEBGL_PACK', true);
-    const webglSizeUploadUniformSaved = tf.ENV.get('WEBGL_SIZE_UPLOAD_UNIFORM');
+    const webglSizeUploadUniformSaved =
+        tf.ENV.getNumber('WEBGL_SIZE_UPLOAD_UNIFORM');
     tf.ENV.set('WEBGL_SIZE_UPLOAD_UNIFORM', 0);
     const a = tf.tensor2d([1, 2], [2, 1]);
     const b = tf.tensor2d([1], [1, 1]);

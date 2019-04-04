@@ -368,7 +368,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     // Stop recording to a tape when running a kernel.
     this.scopedRun(
         () => this.state.kernelDepth++, () => this.state.kernelDepth--, () => {
-          if (!this.ENV.get('DEBUG')) {
+          if (!this.ENV.getBool('DEBUG')) {
             result = forwardFunc(this.backend, saveFunc);
           } else {
             result = this.profiler.profileKernel(
@@ -799,9 +799,8 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
    */
   reset() {
     this.state.dispose();
-    this.state = new EngineState();
-
     this.ENV.reset();
+    this.state = new EngineState();
 
     for (const backendName in this.registry) {
       this.registry[backendName].dispose();

@@ -435,7 +435,7 @@ describe('Switching cpu backends', () => {
 // We do not yet fully support half float backends. These tests are a starting
 // point.
 describeWithFlags('backend without render float32 support', WEBGL_ENVS, () => {
-  const savedRenderFloat32Flag = tf.ENV.get('WEBGL_RENDER_FLOAT32_ENABLED');
+  const savedRenderFloat32Flag = tf.ENV.getBool('WEBGL_RENDER_FLOAT32_ENABLED');
 
   beforeAll(() => {
     tf.ENV.set('WEBGL_RENDER_FLOAT32_ENABLED', false);

@@ -380,10 +380,10 @@ describeWithFlags('conv2d webgl', WEBGL_ENVS, () => {
     const x = tf.tensor3d([1, 2, 3, 4], inputShape);
     const w = tf.tensor4d([1, 2, 3, 4], [fSize, fSize, 2, 2]);
 
-    const webglLazilyUnpackFlagSaved = tf.ENV.get('WEBGL_LAZILY_UNPACK');
+    const webglLazilyUnpackFlagSaved = tf.ENV.getBool('WEBGL_LAZILY_UNPACK');
     tf.ENV.set('WEBGL_LAZILY_UNPACK', true);
     const webglPackBinaryOperationsFlagSaved =
-        tf.ENV.get('WEBGL_PACK_BINARY_OPERATIONS');
+        tf.ENV.getBool('WEBGL_PACK_BINARY_OPERATIONS');
     tf.ENV.set('WEBGL_PACK_BINARY_OPERATIONS', true);
 
     // First conv2D tests conv2D with non-packed input |x|, and the second uses
@@ -408,10 +408,10 @@ describeWithFlags('conv2d webgl', WEBGL_ENVS, () => {
     const xInit = tf.tensor4d([0, 1], inputShape);
     const w = tf.tensor4d([1, 2, 3, 4], [fSize, fSize, 2, 2]);
 
-    const webglLazilyUnpackFlagSaved = tf.ENV.get('WEBGL_LAZILY_UNPACK');
+    const webglLazilyUnpackFlagSaved = tf.ENV.getBool('WEBGL_LAZILY_UNPACK');
     tf.ENV.set('WEBGL_LAZILY_UNPACK', true);
     const webglPackBinaryOperationsFlagSaved =
-        tf.ENV.get('WEBGL_PACK_BINARY_OPERATIONS');
+        tf.ENV.getBool('WEBGL_PACK_BINARY_OPERATIONS');
     tf.ENV.set('WEBGL_PACK_BINARY_OPERATIONS', true);
 
     const x = xInit.add<tf.Tensor4D>(1);

@@ -64,7 +64,7 @@ describeWithFlags('matmul', PACKED_ENVS, () => {
   });
 
   it('should work when input texture shapes != physical shape', () => {
-    const maxTextureSize = tf.ENV.get('WEBGL_MAX_TEXTURE_SIZE');
+    const maxTextureSize = tf.ENV.getNumber('WEBGL_MAX_TEXTURE_SIZE');
     tf.ENV.set('WEBGL_MAX_TEXTURE_SIZE', 5);
     const a = tf.tensor2d([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], [1, 12]);
     const b = tf.tensor2d([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [12, 1]);
@@ -77,7 +77,7 @@ describeWithFlags('matmul', PACKED_ENVS, () => {
   });
 
   it('should work when squarification results in zero padding', () => {
-    const maxTextureSize = tf.ENV.get('WEBGL_MAX_TEXTURE_SIZE');
+    const maxTextureSize = tf.ENV.getNumber('WEBGL_MAX_TEXTURE_SIZE');
     tf.ENV.set('WEBGL_MAX_TEXTURE_SIZE', 3);
     const a = tf.tensor2d([1, 2], [1, 2]);
     const b = tf.tensor2d(
@@ -142,7 +142,7 @@ describeWithFlags('matmul', PACKED_ENVS, () => {
 
     const c = tf.matMul(a, b);
 
-    const webglPackBinarySaved = tf.ENV.get('WEBGL_PACK_BINARY_OPERATIONS');
+    const webglPackBinarySaved = tf.ENV.getBool('WEBGL_PACK_BINARY_OPERATIONS');
     tf.ENV.set('WEBGL_PACK_BINARY_OPERATIONS', false);
     const d = tf.add(c, 1);
     tf.ENV.set('WEBGL_PACK_BINARY_OPERATIONS', webglPackBinarySaved);
@@ -159,7 +159,8 @@ describeWithFlags('matmul', PACKED_ENVS, () => {
 
        const d = tf.reshape(c, [1, 3, 3, 1]);
 
-       const webglPackBinarySaved = tf.ENV.get('WEBGL_PACK_BINARY_OPERATIONS');
+       const webglPackBinarySaved =
+           tf.ENV.getBool('WEBGL_PACK_BINARY_OPERATIONS');
        tf.ENV.set('WEBGL_PACK_BINARY_OPERATIONS', false);
        const e = tf.add(d, 1);
        tf.ENV.set('WEBGL_PACK_BINARY_OPERATIONS', webglPackBinarySaved);

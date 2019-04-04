@@ -63,6 +63,14 @@ export class Environment {
     return this.flags[flagName];
   }
 
+  getNumber(flagName: string): number {
+    return this.get(flagName) as number;
+  }
+
+  getBool(flagName: string): boolean {
+    return this.get(flagName) as boolean;
+  }
+
   getFlags(): Flags {
     return this.flags;
   }
