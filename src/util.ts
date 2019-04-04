@@ -684,7 +684,8 @@ const getSystemFetch = () => {
 };
 
 /**
- * Returns a platform-specific implementation of `window.fetch`.
+ * Returns a platform-specific implementation of
+ * [`fetch`](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API).
  *
  * If `fetch` is defined on the global object (`window`, `process`, etc.),
  * `tf.util.fetch` returns that function.
