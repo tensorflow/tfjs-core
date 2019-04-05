@@ -123,11 +123,11 @@ export interface TestEnv {
 }
 
 export let TEST_ENVS: TestEnv[] = [];
-
+let commandLineTestEnv: TestEnv;
 if (typeof __karma__ !== 'undefined') {
-  const testEnv = parseKarmaFlags(__karma__.config.args);
-  if (testEnv) {
-    setTestEnvs([testEnv]);
+  commandLineTestEnv = parseKarmaFlags(__karma__.config.args);
+  if (commandLineTestEnv != null) {
+    setTestEnvs([commandLineTestEnv]);
   }
 }
 
@@ -138,7 +138,7 @@ export function setTestEnvs(testEnvs: TestEnv[]) {
 export function registerTestEnv(testEnv: TestEnv) {
   // When overriding via command line, turn off registration of test
   // environments because the command line will set all the test environments.
-  if (typeof __karma__ !== 'undefined') {
+  if (commandLineTestEnv != null) {
     return;
   }
   TEST_ENVS.push(testEnv);
