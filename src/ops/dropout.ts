@@ -40,7 +40,8 @@ import {step} from './unary_ops';
  * @returns Result of the dropout operation.
  */
 function dropout_(
-    x: Tensor, level: Scalar, noiseShape?: number[], seed?: number): Tensor {
+    x: Tensor, rate: Scalar|number, noiseShape?: number[],
+    seed?: number): Tensor {
   if (noiseShape != null && !arraysEqual(x.shape, noiseShape)) {
     // TODO(VariableVasasMT): implement non default noise shape
     throw new Error(
@@ -48,10 +49,9 @@ function dropout_(
         JSON.stringify(noiseShape));
   }
 
-  let multiplier =
-      step(sub(randomUniform(x.shape, 0, 1, 'float32', seed), level));
+  let multiplier = randomUniform(x.shape, 0, 1, 'float32', seed).greater(rate);
   // Scale the kept elements, so the expected sum is unchanged.
-  multiplier = multiplier.div(sub(1, level) as Scalar);
+  multiplier = multiplier.div(sub(1, rate) as Scalar);
   return x.mul(multiplier);
 }
 
