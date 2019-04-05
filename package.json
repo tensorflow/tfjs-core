@@ -51,6 +51,7 @@
     "build": "tsc",
     "build:bazel": "bazel build //...",
     "build-npm": "./scripts/build-npm.sh",
+    "bundle-size": "./scripts/bundle-size.sh",
     "link-local": "yalc link",
     "publish-local": "rimraf dist/ && yarn build && rollup -c && yalc push",
     "lint": "tslint -p . -t verbose",
