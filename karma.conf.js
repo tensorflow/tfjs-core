@@ -60,7 +60,7 @@ module.exports = function(config) {
     args.push('--grep', config.grep);
   }
   if (config.features) {
-    args.push('--features', config.features);
+    args.push('--flags', config.flags);
   }
   const extraConfig = config.browserstack ? browserstackConfig : devConfig;
 
@@ -104,6 +104,13 @@ module.exports = function(config) {
         os: 'iOS',
         os_version: '11.0',
         real_mobile: true
+      },
+      win_10_chrome: {
+        base: 'BrowserStack',
+        browser: 'chrome',
+        browser_version: 'latest',
+        os: 'Windows',
+        os_version: '10'
       },
       chrome_with_swift_shader: {
         base: 'Chrome',
