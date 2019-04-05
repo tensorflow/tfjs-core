@@ -16,7 +16,7 @@
  */
 import {ENGINE} from './engine';
 import {ENV, Environment, Flags} from './environment';
-import {DataMover, KernelBackend} from './kernels/backend';
+import {KernelBackend} from './kernels/backend';
 
 Error.stackTraceLimit = Infinity;
 
@@ -182,6 +182,5 @@ function executeTests(
 }
 
 export class TestKernelBackend extends KernelBackend {
-  setDataMover(dataMover: DataMover): void {}
   dispose(): void {}
 }
