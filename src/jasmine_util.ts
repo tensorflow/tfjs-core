@@ -124,13 +124,6 @@ export interface TestEnv {
 
 export let TEST_ENVS: TestEnv[] = [];
 
-if (typeof __karma__ !== 'undefined') {
-  const testEnv = parseKarmaFlags(__karma__.config.args);
-  if (testEnv != null) {
-    setTestEnvs([testEnv]);
-  }
-}
-
 // Whether a call to setTestEnvs has been called so we turn off registration.
 // This allows comamnd line overriding or programmatic overriding of the
 // default registrations.
@@ -147,6 +140,13 @@ export function registerTestEnv(testEnv: TestEnv) {
     return;
   }
   TEST_ENVS.push(testEnv);
+}
+
+if (typeof __karma__ !== 'undefined') {
+  const testEnv = parseKarmaFlags(__karma__.config.args);
+  if (testEnv != null) {
+    setTestEnvs([testEnv]);
+  }
 }
 
 function executeTests(
