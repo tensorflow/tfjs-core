@@ -41,7 +41,7 @@ export const ALL_ENVS: Constraints = {};
 export function envSatisfiesConstraints(
     env: Environment, currentBackendName: string,
     constraints: Constraints): boolean {
-  if (constraints.flags != null) {
+  if (constraints != null && constraints.flags != null) {
     for (const flagName in constraints.flags) {
       const flagValue = constraints.flags[flagName];
       if (env.get(flagName) !== flagValue) {
@@ -49,7 +49,7 @@ export function envSatisfiesConstraints(
       }
     }
   }
-  if (constraints.backends != null) {
+  if (constraints != null && constraints.backends != null) {
     let anyBackendMatches = false;
     if (Array.isArray(constraints.backends)) {
       constraints.backends.forEach(constraintBackendName => {
@@ -123,22 +123,27 @@ export interface TestEnv {
 }
 
 export let TEST_ENVS: TestEnv[] = [];
-let commandLineTestEnv: TestEnv;
+
 if (typeof __karma__ !== 'undefined') {
-  commandLineTestEnv = parseKarmaFlags(__karma__.config.args);
-  if (commandLineTestEnv != null) {
-    setTestEnvs([commandLineTestEnv]);
+  const testEnv = parseKarmaFlags(__karma__.config.args);
+  if (testEnv != null) {
+    setTestEnvs([testEnv]);
   }
 }
 
+// Whether a call to setTestEnvs has been called so we turn off registration.
+// This allows comamnd line overriding or programmatic overriding of the
+// default registrations.
+let testEnvSet = false;
 export function setTestEnvs(testEnvs: TestEnv[]) {
+  testEnvSet = true;
   TEST_ENVS = testEnvs;
 }
 
 export function registerTestEnv(testEnv: TestEnv) {
-  // When overriding via command line, turn off registration of test
-  // environments because the command line will set all the test environments.
-  if (commandLineTestEnv != null) {
+  // When using an explicit call to setTestEnvs, turn off registration of test
+  // environments because the explicit call will set the test environments.
+  if (testEnvSet) {
     return;
   }
   TEST_ENVS.push(testEnv);
