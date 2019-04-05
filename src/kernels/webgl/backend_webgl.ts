@@ -39,7 +39,7 @@ import {DataId, Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D
 import {DataType, DataTypeMap, DataValues, NumericDataType, Rank, RecursiveArray, ShapeMap, sumOutType, TypedArray, upcastType} from '../../types';
 import * as util from '../../util';
 import {getArrayFromDType, getTypedArrayFromDType, inferDtype, sizeFromShape} from '../../util';
-import {DataMover, DataStorage, EPSILON_FLOAT16, EPSILON_FLOAT32, KernelBackend} from '../backend';
+import {DataStorage, EPSILON_FLOAT16, EPSILON_FLOAT32, KernelBackend} from '../backend';
 import * as backend_util from '../backend_util';
 import {mergeRealAndImagArrays} from '../complex_util';
 import {nonMaxSuppressionImpl} from '../non_max_suppression_impl';
@@ -224,15 +224,33 @@ export class MathBackendWebGL implements KernelBackend {
   // Number of bits of precision of this backend.
   private floatPrecisionValue: 32|16;
 
+  constructor(private gpgpu?: GPGPUContext) {
+    if (!ENV.getBool('HAS_WEBGL')) {
+      throw new Error('WebGL is not supported on this device');
+    }
+
+    if (gpgpu == null) {
+      const gl = getWebGLContext(ENV.getNumber('WEBGL_VERSION'));
+      this.binaryCache = getBinaryCache(ENV.getNumber('WEBGL_VERSION'));
+      this.gpgpu = new GPGPUContext(gl);
+      this.canvas = gl.canvas;
+      this.gpgpuCreatedLocally = true;
+    } else {
+      this.binaryCache = {};
+      this.gpgpuCreatedLocally = false;
+      this.canvas = gpgpu.gl.canvas;
+    }
+    this.textureManager = new TextureManager(this.gpgpu);
+    this.numMBBeforeWarning = numMBBeforeWarning();
+
+    this.texData = new DataStorage(ENGINE);
+  }
+
   register(dataId: DataId, shape: number[], dtype: DataType): void {
     if (this.texData.has(dataId)) {
       throw new Error('Data buffer is already registered');
     }
     this.texData.set(dataId, {shape, dtype});
-  }
-
-  setDataMover(dataMover: DataMover): void {
-    this.texData = new DataStorage(ENGINE);
   }
 
   fromPixels(
@@ -604,26 +622,6 @@ export class MathBackendWebGL implements KernelBackend {
   private gpgpuCreatedLocally: boolean;
   private numMBBeforeWarning: number;
   private warnedAboutMemory = false;
-
-  constructor(private gpgpu?: GPGPUContext) {
-    if (!ENV.getBool('HAS_WEBGL')) {
-      throw new Error('WebGL is not supported on this device');
-    }
-
-    if (gpgpu == null) {
-      const gl = getWebGLContext(ENV.getNumber('WEBGL_VERSION'));
-      this.binaryCache = getBinaryCache(ENV.getNumber('WEBGL_VERSION'));
-      this.gpgpu = new GPGPUContext(gl);
-      this.canvas = gl.canvas;
-      this.gpgpuCreatedLocally = true;
-    } else {
-      this.binaryCache = {};
-      this.gpgpuCreatedLocally = false;
-      this.canvas = gpgpu.gl.canvas;
-    }
-    this.textureManager = new TextureManager(this.gpgpu);
-    this.numMBBeforeWarning = numMBBeforeWarning();
-  }
 
   private getCPUBackend(): KernelBackend|null {
     if (!ENV.getBool('WEBGL_CPU_FORWARD')) {
