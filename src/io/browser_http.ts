@@ -21,8 +21,7 @@
  * Uses [`fetch`](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API).
  */
 
-import {ENV} from '../environment';
-import {assert} from '../util';
+import {assert, fetch as systemFetch} from '../util';
 import {concatenateArrayBuffers, getModelArtifactsInfoForJSON} from './io_utils';
 import {IORouter, IORouterRegistry} from './router_registry';
 import {IOHandler, LoadOptions, ModelArtifacts, ModelJSON, OnProgressCallback, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
@@ -34,7 +33,7 @@ export class BrowserHTTPRequest implements IOHandler {
   protected readonly path: string;
   protected readonly requestInit: RequestInit;
 
-  private readonly fetchFunc: (path: string, init?: RequestInit) => Response;
+  private readonly fetchFunc: Function;
 
   readonly DEFAULT_METHOD = 'POST';
 
@@ -50,30 +49,16 @@ export class BrowserHTTPRequest implements IOHandler {
     this.weightPathPrefix = loadOptions.weightPathPrefix;
     this.onProgress = loadOptions.onProgress;
 
-    if (loadOptions.fetchFunc == null) {
-      const systemFetch = ENV.global.fetch;
-      if (typeof systemFetch === 'undefined') {
-        throw new Error(
-            'browserHTTPRequest is not supported outside the web browser ' +
-            'without a fetch polyfill.');
-      }
-      // Make sure fetch is always bound to global object (the
-      // original object) when available.
-      loadOptions.fetchFunc = systemFetch.bind(ENV.global);
-    } else {
+    if (loadOptions.fetchFunc != null) {
       assert(
           typeof loadOptions.fetchFunc === 'function',
           () => 'Must pass a function that matches the signature of ' +
               '`fetch` (see ' +
               'https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)');
+      this.fetchFunc = loadOptions.fetchFunc;
+    } else {
+      this.fetchFunc = systemFetch;
     }
-
-    this.fetchFunc = (path: string, requestInits: RequestInit) => {
-      // tslint:disable-next-line:no-any
-      return loadOptions.fetchFunc(path, requestInits).catch((error: any) => {
-        throw new Error(`Request for ${path} failed due to error: ${error}`);
-      });
-    };
 
     assert(
         path != null && path.length > 0,

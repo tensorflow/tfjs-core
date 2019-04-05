@@ -162,9 +162,7 @@ describeWithFlags('browserHTTPRequest-load fetch', NODE_ENVS, () => {
     try {
       tf.io.browserHTTPRequest('./model.json');
     } catch (err) {
-      expect(err.message)
-          .toMatch(
-              /not supported outside the web browser without a fetch polyfill/);
+      expect(err.message).toMatch(/Unable to find fetch polyfill./);
     }
   });
 });
