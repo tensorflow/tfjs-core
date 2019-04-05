@@ -224,6 +224,12 @@ export class MathBackendWebGL implements KernelBackend {
   // Number of bits of precision of this backend.
   private floatPrecisionValue: 32|16;
 
+  private textureManager: TextureManager;
+  private binaryCache: {[key: string]: GPGPUBinary};
+  private gpgpuCreatedLocally: boolean;
+  private numMBBeforeWarning: number;
+  private warnedAboutMemory = false;
+
   constructor(private gpgpu?: GPGPUContext) {
     if (!ENV.getBool('HAS_WEBGL')) {
       throw new Error('WebGL is not supported on this device');
@@ -616,12 +622,6 @@ export class MathBackendWebGL implements KernelBackend {
     this.uploadToGPU(dataId);
     return this.texData.get(dataId).texture;
   }
-
-  private textureManager: TextureManager;
-  private binaryCache: {[key: string]: GPGPUBinary};
-  private gpgpuCreatedLocally: boolean;
-  private numMBBeforeWarning: number;
-  private warnedAboutMemory = false;
 
   private getCPUBackend(): KernelBackend|null {
     if (!ENV.getBool('WEBGL_CPU_FORWARD')) {
