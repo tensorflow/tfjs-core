@@ -16,13 +16,11 @@
  */
 
 import {KernelBackend} from './backends/backend';
-import {MathBackendCPU} from './backends/cpu/backend_cpu';
-import {MathBackendWebGL} from './backends/webgl/backend_webgl';
 import {ENGINE} from './engine';
 import * as tf from './index';
-import {ALL_ENVS, describeWithFlags, TestKernelBackend, WEBGL_ENVS} from './jasmine_util';
+import {ALL_ENVS, describeWithFlags, TestKernelBackend} from './jasmine_util';
 import {Tensor} from './tensor';
-import {expectArraysClose, expectArraysEqual} from './test_util';
+import {expectArraysClose} from './test_util';
 
 describe('Backend registration', () => {
   beforeAll(() => {
@@ -155,28 +153,6 @@ describe('Backend registration', () => {
   });
 });
 
-describeWithFlags('fromPixels + regular math op', WEBGL_ENVS, () => {
-  it('debug mode does not error when no nans', () => {
-    const pixels = new ImageData(2, 2);
-    for (let i = 0; i < 8; i++) {
-      pixels.data[i] = 100;
-    }
-    for (let i = 8; i < 16; i++) {
-      pixels.data[i] = 250;
-    }
-
-    const a = tf.browser.fromPixels(pixels, 4);
-    const b = tf.scalar(20, 'int32');
-
-    const res = tf.add(a, b);
-
-    expectArraysEqual(res, [
-      120, 120, 120, 120, 120, 120, 120, 120, 270, 270, 270, 270, 270, 270, 270,
-      270
-    ]);
-  });
-});
-
 describeWithFlags('memory', ALL_ENVS, () => {
   it('Sum(float)', () => {
     expect(tf.memory().numTensors).toBe(0);
@@ -237,17 +213,6 @@ describeWithFlags('memory', ALL_ENVS, () => {
     const expectedReason = 'Memory usage by string tensors is approximate ' +
         '(2 bytes per character)';
     expect(mem.reasons.indexOf(expectedReason) >= 0).toBe(true);
-  });
-});
-
-describeWithFlags('memory webgl', WEBGL_ENVS, () => {
-  it('unreliable is falsy/not present when all tensors are numeric', () => {
-    tf.tensor(1);
-    const mem = tf.memory();
-    expect(mem.numTensors).toBe(1);
-    expect(mem.numDataBuffers).toBe(1);
-    expect(mem.numBytes).toBe(4);
-    expect(mem.unreliable).toBeFalsy();
   });
 });
 
@@ -328,10 +293,18 @@ describeWithFlags('disposeVariables', ALL_ENVS, () => {
   });
 });
 
-describe('Switching cpu backends', () => {
+/**
+ * The following unit tests are a special integration-style test that assume
+ * things about backends being registered. These tests don't live in the
+ * backend directories because it is testing engine rather than backend-specific
+ * details but needs a real backend to exist. These test will fail if the
+ * backends are not registered. This is intentional, we should have coverage for
+ * when these backends are enabled and ensuring they work with the engine.
+ */
+describeWithFlags('Switching cpu backends', {backends: 'cpu'}, () => {
   beforeEach(() => {
-    tf.registerBackend('cpu1', () => new MathBackendCPU());
-    tf.registerBackend('cpu2', () => new MathBackendCPU());
+    tf.registerBackend('cpu1', tf.findBackendFactory('cpu'));
+    tf.registerBackend('cpu2', tf.findBackendFactory('cpu'));
   });
 
   afterEach(() => {
@@ -396,53 +369,11 @@ describe('Switching cpu backends', () => {
   });
 });
 
-// We do not yet fully support half float backends. These tests are a starting
-// point.
-describeWithFlags('backend without render float32 support', WEBGL_ENVS, () => {
-  const savedRenderFloat32Flag = tf.ENV.getBool('WEBGL_RENDER_FLOAT32_ENABLED');
-
-  beforeAll(() => {
-    tf.ENV.set('WEBGL_RENDER_FLOAT32_ENABLED', false);
-  });
-
+describeWithFlags('Switching WebGL + CPU backends', {backends: 'webgl'}, () => {
   beforeEach(() => {
-    tf.registerBackend('half-float-webgl', () => new MathBackendWebGL(null));
-  });
-
-  afterEach(() => {
-    tf.removeBackend('half-float-webgl');
-  });
-
-  afterAll(() => {
-    tf.ENV.set('WEBGL_RENDER_FLOAT32_ENABLED', savedRenderFloat32Flag);
-  });
-
-  it('basic usage', () => {
-    tf.setBackend('half-float-webgl');
-
-    const a = tf.tensor2d([1, 2], [1, 2]);
-    const b = tf.tensor2d([1, 2], [1, 2]);
-    const c = tf.add(a, b);
-    expectArraysClose(c, [2, 4]);
-  });
-
-  it('disposing tensors should not cause errors', () => {
-    tf.setBackend('half-float-webgl');
-    expect(() => tf.tidy(() => {
-      const a = tf.tensor2d([1, 2], [1, 2]);
-      const b = tf.tensor2d([1, 2], [1, 2]);
-      const c = tf.add(a, b);
-      c.dataSync();
-      return c.add(tf.tensor2d([2, 4], [1, 2]));
-    })).not.toThrowError();
-  });
-});
-
-describeWithFlags('Switching WebGL + CPU backends', WEBGL_ENVS, () => {
-  beforeEach(() => {
-    tf.registerBackend('webgl1', () => new MathBackendWebGL());
-    tf.registerBackend('webgl2', () => new MathBackendWebGL());
-    tf.registerBackend('cpu1', () => new MathBackendCPU());
+    tf.registerBackend('webgl1', tf.findBackendFactory('webgl'));
+    tf.registerBackend('webgl2', tf.findBackendFactory('webgl'));
+    tf.registerBackend('cpu1', tf.findBackendFactory('cpu'));
   });
 
   afterEach(() => {

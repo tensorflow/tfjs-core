@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2017 Google Inc. All Rights Reserved.
+ * Copyright 2019 Google LLC. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,7 +21,7 @@ import {tensor2d} from '../../ops/ops';
 import {expectArraysEqual} from '../../test_util';
 
 import {MathBackendCPU} from './backend_cpu';
-import {CPU_ENVS} from './backend_cpu_test_harness';
+import {CPU_ENVS} from './backend_cpu_test_registry';
 
 describeWithFlags('backendCPU', CPU_ENVS, () => {
   let backend: MathBackendCPU;
@@ -104,5 +104,41 @@ describeWithFlags('sparseToDense CPU', CPU_ENVS, () => {
     const shape = [6];
     expect(() => tf.sparseToDense(indices, values, shape, defaultValue))
         .toThrow();
+  });
+});
+
+describeWithFlags('memory cpu', CPU_ENVS, () => {
+  it('unreliable is true due to auto gc', () => {
+    tf.tensor(1);
+    const mem = tf.memory();
+    expect(mem.numTensors).toBe(1);
+    expect(mem.numDataBuffers).toBe(1);
+    expect(mem.numBytes).toBe(4);
+    expect(mem.unreliable).toBe(true);
+
+    const expectedReason =
+        'The reported memory is an upper bound. Due to automatic garbage ' +
+        'collection, the true allocated memory may be less.';
+    expect(mem.reasons.indexOf(expectedReason) >= 0).toBe(true);
+  });
+
+  it('unreliable is true due to both auto gc and string tensors', () => {
+    tf.tensor(1);
+    tf.tensor('a');
+
+    const mem = tf.memory();
+    expect(mem.numTensors).toBe(2);
+    expect(mem.numDataBuffers).toBe(2);
+    expect(mem.numBytes).toBe(6);
+    expect(mem.unreliable).toBe(true);
+
+    const expectedReasonGC =
+        'The reported memory is an upper bound. Due to automatic garbage ' +
+        'collection, the true allocated memory may be less.';
+    expect(mem.reasons.indexOf(expectedReasonGC) >= 0).toBe(true);
+    const expectedReasonString =
+        'Memory usage by string tensors is approximate ' +
+        '(2 bytes per character)';
+    expect(mem.reasons.indexOf(expectedReasonString) >= 0).toBe(true);
   });
 });
