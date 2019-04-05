@@ -376,7 +376,6 @@ describeWithFlags('conv2d webgl', WEBGL_ENVS, () => {
   });
 });
 
-
 describeWithFlags('conv to matmul', PACKED_ENVS, () => {
   it('im2col should not leak memory', () => {
     const inputDepth = 1;
