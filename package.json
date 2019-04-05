@@ -68,5 +68,8 @@
     "@types/webgl2": "0.0.4",
     "seedrandom": "2.4.3",
     "node-fetch": "~2.1.2"
+  },
+  "browser": {
+    "node-fetch": false
   }
 }

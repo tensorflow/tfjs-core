@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+import {ENV} from './environment';
 import {scalar, tensor2d} from './ops/ops';
 import {inferShape} from './tensor_util_env';
 import * as util from './util';
@@ -497,20 +498,15 @@ describe('util.toNestedArray', () => {
 });
 
 describe('util.fetch', () => {
-  it('should allow overriding global fetch', () => {
-    // tslint:disable-next-line:no-any
-    const savedFetch = (global as any).fetch;
-    // tslint:disable-next-line:no-any
-    (global as any).fetch = () => {};
+  fit('should allow overriding global fetch', () => {
+    const savedFetch = ENV.global.fetch;
+    ENV.global.fetch = () => {};
 
-    // tslint:disable-next-line:no-any
-    spyOn((global as any), 'fetch').and.callThrough();
+    spyOn(ENV.global, 'fetch').and.callThrough();
 
     util.fetch('');
 
-    // tslint:disable-next-line:no-any
-    expect((global as any).fetch).toHaveBeenCalled();
-    // tslint:disable-next-line:no-any
-    (global as any).fetch = savedFetch;
+    expect(ENV.global.fetch).toHaveBeenCalled();
+    ENV.global.fetch = savedFetch;
   });
 });

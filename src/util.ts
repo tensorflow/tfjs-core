@@ -666,21 +666,16 @@ export function assertNonNegativeIntegerDimensions(shape: number[]) {
   });
 }
 
-let systemFetch: Function;
 const getSystemFetch = () => {
-  let fetchFunc: Function;
-
   if (ENV.global.fetch != null) {
-    fetchFunc = ENV.global.fetch;
-  } else {
-    if (ENV.get('IS_NODE')) {
-      // tslint:disable-next-line:no-require-imports
-      fetchFunc = require('node-fetch');
-    } else {
-      throw new Error(`Unable to find fetch polyfill.`);
-    }
+    return ENV.global.fetch;
+  } else if (ENV.get('IS_NODE')) {
+    // tslint:disable-next-line:no-require-imports
+    return require('node-fetch');
   }
-  return fetchFunc;
+  throw new Error(
+      `Unable to find the fetch() method. Please add your own fetch() ` +
+      `function to the global namespace.`);
 };
 
 /**
@@ -693,11 +688,12 @@ const getSystemFetch = () => {
  * If not, `tf.util.fetch` returns a platform-specific solution.
  *
  * ```js
- * tf.util.fetch('path/to/resource')
- *  .then(response => {}) // handle response
+ * const resource = await tf.util.fetch('https://unpkg.com/@tensorflow/tfjs');
+ * // handle response
  * ```
  */
 /** @doc {heading: 'Util'} */
+let systemFetch: Function;
 export function fetch(path: string, requestInits?: RequestInit) {
   if (systemFetch == null) {
     systemFetch = getSystemFetch();
