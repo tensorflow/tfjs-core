@@ -87,7 +87,7 @@ const setupFakeWeightFiles =
      requestInits: {[key: string]: RequestInit}) => {
       windowFetchSpy =
           // tslint:disable-next-line:no-any
-          spyOn(global as any, 'fetch')
+          spyOn(tf.util, 'fetch')
               .and.callFake((path: string, init: RequestInit) => {
                 if (fileBufferMap[path]) {
                   requestInits[path] = init;
@@ -203,7 +203,7 @@ describeWithFlags('browserHTTPRequest-save', CHROME_ENVS, () => {
 
   beforeEach(() => {
     requestInits = [];
-    spyOn(window, 'fetch').and.callFake((path: string, init: RequestInit) => {
+    spyOn(tf.util, 'fetch').and.callFake((path: string, init: RequestInit) => {
       if (path === 'model-upload-test' || path === 'http://model-upload-test') {
         requestInits.push(init);
         return Promise.resolve(new Response(null, {status: 200}));
