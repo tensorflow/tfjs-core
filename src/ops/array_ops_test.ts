@@ -16,7 +16,7 @@
  */
 
 import * as tf from '../index';
-import {describeWithFlags, ALL_ENVS, BROWSER_ENVS, CPU_ENVS, NODE_ENVS, WEBGL_ENVS} from '../jasmine_util';
+import {describeWithFlags, ALL_ENVS, BROWSER_ENVS, NODE_ENVS, WEBGL_ENVS} from '../jasmine_util';
 import { expectArraysClose, expectArraysEqual, expectPromiseToFail, expectValuesInRange} from '../test_util';
 import * as util from '../util';
 import {expectArrayInMeanStdRange, jarqueBeraNormalityTest} from './rand_util';
@@ -4194,19 +4194,6 @@ describeWithFlags('depthToSpace', BROWSER_ENVS, () => {
     expect(() => tf.depthToSpace(t, blockSize))
         .toThrowError(
             `blockSize should be > 1 for depthToSpace, but was: ${blockSize}`);
-  });
-});
-
-describeWithFlags('depthToSpace', CPU_ENVS, () => {
-  it('throws when CPU backend used with data format NCHW', () => {
-    const t = tf.tensor4d([1, 2, 3, 4], [1, 4, 1, 1]);
-    const blockSize = 2;
-    const dataFormat = 'NCHW';
-
-    expect(() => tf.depthToSpace(t, blockSize, dataFormat))
-        .toThrowError(
-            `Only NHWC dataFormat supported on CPU for depthToSpace. Got ${
-                dataFormat}`);
   });
 });
 

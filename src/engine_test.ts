@@ -15,12 +15,12 @@
  * =============================================================================
  */
 
+import {KernelBackend} from './backends/backend';
+import {MathBackendCPU} from './backends/cpu/backend_cpu';
+import {MathBackendWebGL} from './backends/webgl/backend_webgl';
 import {ENGINE} from './engine';
 import * as tf from './index';
-import {ALL_ENVS, CPU_ENVS, describeWithFlags, TestKernelBackend, WEBGL_ENVS} from './jasmine_util';
-import {KernelBackend} from './kernels/backend';
-import {MathBackendCPU} from './kernels/cpu/backend_cpu';
-import {MathBackendWebGL} from './kernels/webgl/backend_webgl';
+import {ALL_ENVS, describeWithFlags, TestKernelBackend, WEBGL_ENVS} from './jasmine_util';
 import {Tensor} from './tensor';
 import {expectArraysClose, expectArraysEqual} from './test_util';
 
@@ -248,42 +248,6 @@ describeWithFlags('memory webgl', WEBGL_ENVS, () => {
     expect(mem.numDataBuffers).toBe(1);
     expect(mem.numBytes).toBe(4);
     expect(mem.unreliable).toBeFalsy();
-  });
-});
-
-describeWithFlags('memory cpu', CPU_ENVS, () => {
-  it('unreliable is true due to auto gc', () => {
-    tf.tensor(1);
-    const mem = tf.memory();
-    expect(mem.numTensors).toBe(1);
-    expect(mem.numDataBuffers).toBe(1);
-    expect(mem.numBytes).toBe(4);
-    expect(mem.unreliable).toBe(true);
-
-    const expectedReason =
-        'The reported memory is an upper bound. Due to automatic garbage ' +
-        'collection, the true allocated memory may be less.';
-    expect(mem.reasons.indexOf(expectedReason) >= 0).toBe(true);
-  });
-
-  it('unreliable is true due to both auto gc and string tensors', () => {
-    tf.tensor(1);
-    tf.tensor('a');
-
-    const mem = tf.memory();
-    expect(mem.numTensors).toBe(2);
-    expect(mem.numDataBuffers).toBe(2);
-    expect(mem.numBytes).toBe(6);
-    expect(mem.unreliable).toBe(true);
-
-    const expectedReasonGC =
-        'The reported memory is an upper bound. Due to automatic garbage ' +
-        'collection, the true allocated memory may be less.';
-    expect(mem.reasons.indexOf(expectedReasonGC) >= 0).toBe(true);
-    const expectedReasonString =
-        'Memory usage by string tensors is approximate ' +
-        '(2 bytes per character)';
-    expect(mem.reasons.indexOf(expectedReasonString) >= 0).toBe(true);
   });
 });
 

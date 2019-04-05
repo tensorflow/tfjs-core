@@ -14,9 +14,9 @@
  * limitations under the License.
  * =============================================================================
  */
+import {KernelBackend} from './backends/backend';
 import {ENGINE} from './engine';
 import {ENV, Environment, Flags} from './environment';
-import {KernelBackend} from './kernels/backend';
 
 Error.stackTraceLimit = Infinity;
 
@@ -25,15 +25,6 @@ export type Constraints = {
   backends?: string | string[];
 };
 
-export const WEBGL_ENVS: Constraints = {
-  backends: 'webgl'
-};
-export const CPU_ENVS: Constraints = {
-  backends: 'cpu'
-};
-export const PACKED_ENVS: Constraints = {
-  flags: {'WEBGL_PACK': true}
-};
 export const NODE_ENVS: Constraints = {
   flags: {'IS_NODE': true}
 };

@@ -15,7 +15,11 @@
  * =============================================================================
  */
 
-import {registerTestEnv} from '../../jasmine_util';
+import {Constraints, registerTestEnv} from '../../jasmine_util';
+
+export const WEBGL_ENVS: Constraints = {
+  backends: 'webgl'
+};
 
 registerTestEnv({
   name: 'webgl1',

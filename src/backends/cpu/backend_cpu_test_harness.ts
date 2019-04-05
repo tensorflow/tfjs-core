@@ -15,6 +15,13 @@
  * =============================================================================
  */
 
-import {registerTestEnv} from '../../jasmine_util';
+import {Constraints, registerTestEnv} from '../../jasmine_util';
+
+export const CPU_ENVS: Constraints = {
+  backends: 'cpu'
+};
+export const PACKED_ENVS: Constraints = {
+  flags: {'WEBGL_PACK': true}
+};
 
 registerTestEnv({name: 'cpu', backendName: 'cpu'});
