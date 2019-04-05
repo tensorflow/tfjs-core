@@ -137,10 +137,11 @@ export function setTestEnvs(testEnvs: TestEnv[]) {
 
 export function registerTestEnv(testEnv: TestEnv) {
   // When overriding via command line, turn off registration of test
-  // environments.
+  // environments because the command line will set all the test environments.
   if (typeof __karma__ !== 'undefined') {
-    TEST_ENVS.push(testEnv);
+    return;
   }
+  TEST_ENVS.push(testEnv);
 }
 
 function executeTests(
