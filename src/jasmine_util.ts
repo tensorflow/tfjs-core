@@ -14,7 +14,6 @@
  * limitations under the License.
  * =============================================================================
  */
-
 import {ENGINE} from './engine';
 import {ENV, Environment, Flags} from './environment';
 import {DataMover, KernelBackend} from './kernels/backend';
@@ -129,30 +128,10 @@ export function describeWithFlags(
 export interface TestEnv {
   name: string;
   backendName: string;
-  flags: Flags;
+  flags?: Flags;
 }
 
-export let TEST_ENVS: TestEnv[] = [
-  {
-    name: 'webgl1',
-    backendName: 'webgl',
-    flags: {
-      'WEBGL_VERSION': 1,
-      'WEBGL_CPU_FORWARD': false,
-      'WEBGL_SIZE_UPLOAD_UNIFORM': 0
-    }
-  },
-  {
-    name: 'webgl2',
-    backendName: 'webgl',
-    flags: {
-      'WEBGL_VERSION': 2,
-      'WEBGL_CPU_FORWARD': false,
-      'WEBGL_SIZE_UPLOAD_UNIFORM': 0
-    }
-  },
-  {name: 'cpu', backendName: 'cpu', flags: {'HAS_WEBGL': false}}
-];
+export let TEST_ENVS: TestEnv[] = [];
 
 if (typeof __karma__ !== 'undefined') {
   const testEnv = parseKarmaFlags(__karma__.config.args);
@@ -165,12 +144,22 @@ export function setTestEnvs(testEnvs: TestEnv[]) {
   TEST_ENVS = testEnvs;
 }
 
+export function registerTestEnv(testEnv: TestEnv) {
+  // When overriding via command line, turn off registration of test
+  // environments.
+  if (typeof __karma__ !== 'undefined') {
+    TEST_ENVS.push(testEnv);
+  }
+}
+
 function executeTests(
     testName: string, tests: (env: TestEnv) => void, testEnv: TestEnv) {
   describe(testName, () => {
     beforeAll(() => {
       ENGINE.reset();
-      ENV.setFlags(testEnv.flags);
+      if (testEnv.flags != null) {
+        ENV.setFlags(testEnv.flags);
+      }
       ENV.set('IS_TEST', true);
       ENGINE.setBackend(testEnv.backendName);
     });
