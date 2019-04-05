@@ -149,10 +149,7 @@ describeWithFlags('browserHTTPRequest-load fetch', NODE_ENVS, () => {
         },
         requestInits);
 
-    const handler = tf.io.browserHTTPRequest('./model.json', {
-      // tslint:disable-next-line:no-any
-      fetchFunc: (global as any).fetch
-    });
+    const handler = tf.io.browserHTTPRequest('./model.json');
     const modelArtifacts = await handler.load();
     expect(modelArtifacts.modelTopology).toEqual(modelTopology1);
     expect(modelArtifacts.weightSpecs).toEqual(weightManifest1[0].weights);
@@ -163,10 +160,7 @@ describeWithFlags('browserHTTPRequest-load fetch', NODE_ENVS, () => {
     // tslint:disable-next-line:no-any
     delete (global as any).fetch;
     try {
-      tf.io.browserHTTPRequest('./model.json', {
-        // tslint:disable-next-line:no-any
-        fetchFunc: (global as any).fetch
-      });
+      tf.io.browserHTTPRequest('./model.json');
     } catch (err) {
       expect(err.message).toMatch(/Unable to find fetch polyfill./);
     }
