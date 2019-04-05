@@ -21,7 +21,6 @@ import {arraysEqual} from '../util';
 import {randomUniform} from './array_ops';
 import {sub} from './binary_ops';
 import {op} from './operation';
-import {step} from './unary_ops';
 
 /**
  * Sets entries in `x` to zero at random, while scaling the entire tensor.
