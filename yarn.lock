@@ -3626,7 +3626,7 @@ rollup-plugin-node-resolve@~3.4.0:
     is-module "^1.0.0"
     resolve "^1.1.6"
 
-rollup-plugin-terser@^4.0.4:
+rollup-plugin-terser@~4.0.4:
   version "4.0.4"
   resolved "https://registry.yarnpkg.com/rollup-plugin-terser/-/rollup-plugin-terser-4.0.4.tgz#6f661ef284fa7c27963d242601691dc3d23f994e"
   integrity sha512-wPANT5XKVJJ8RDUN0+wIr7UPd0lIXBo4UdJ59VmlPCtlFsE20AM+14pe+tk7YunCsWEiuzkDBY3QIkSCjtrPXg==
@@ -3646,7 +3646,7 @@ rollup-plugin-typescript2@~0.20.1:
     rollup-pluginutils "2.4.1"
     tslib "1.9.3"
 
-rollup-plugin-visualizer@^1.1.0:
+rollup-plugin-visualizer@~1.1.0:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/rollup-plugin-visualizer/-/rollup-plugin-visualizer-1.1.0.tgz#56b7c340a66acfae4ae6476fddca5754907655c6"
   integrity sha512-K+TbgK3ds5gpIH5dgM39qD+txbWL/gRbws4Kq0b/Bg2IZpMlB7YwAgo97KmBvWN5tCQdFhsBVtzSQ0NzL9uKZg==
