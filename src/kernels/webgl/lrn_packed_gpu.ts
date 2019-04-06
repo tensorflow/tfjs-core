@@ -56,26 +56,27 @@ export class LRNPackedProgram implements GPGPUProgram {
         bool hasNextRow = c < ${this.outputShape[2]};
 
         vec4 sum = vec4(0.);
+        vec4 xFragAtOutputCoords = getX(b, r, c, d);
 
         vec4 xAtOutputCoords = vec4(
-          getChannel(getX(b, r, c, d), vec2(c, d)),
+          getChannel(xFragAtOutputCoords, vec2(c, d)),
           hasNextCol ?
-            getChannel(getX(b, r, c, d + 1), vec2(c, d + 1)) : 0.0,
+            getChannel(xFragAtOutputCoords, vec2(c, d + 1)) : 0.0,
           hasNextRow ?
-            getChannel(getX(b, r, c + 1, d), vec2(c + 1, d)) : 0.0,
+            getChannel(xFragAtOutputCoords , vec2(c + 1, d)) : 0.0,
           (hasNextRow && hasNextCol) ?
-            getChannel(getX(b, r, c + 1, d + 1), vec2(c + 1, d + 1)) : 0.0
+            getChannel(xFragAtOutputCoords, vec2(c + 1, d + 1)) : 0.0
         );
 
         int firstChannel = d - ${rad};
-        vec2 cache = firstChannel  >= 0 ? vec2(
-          getChannel(getX(b, r, c, firstChannel ),
-            vec2(c, firstChannel)
-          ),
-          hasNextRow ? getChannel(getX(b, r, c + 1, firstChannel ),
-            vec2(c + 1, firstChannel)
-          ) : 0.0
-        ) : vec2(0.);
+        vec2 cache = vec2(0.);
+        if(firstChannel >= 0){
+          vec4 firstChannelFrag = getX(b, r, c, firstChannel);
+          cache.x = getChannel(firstChannelFrag, vec2(c, firstChannel));
+            if(hasNextRow){
+              cache.y = getChannel(firstChannelFrag, vec2(c + 1, firstChannel));
+            }
+        }
 
         ivec2 depth = ivec2(d, d + 1);
         for (int j = - ${rad}; j <= ${rad}; j++) {
@@ -87,14 +88,17 @@ export class LRNPackedProgram implements GPGPUProgram {
           bool depthPlusOneInRange = aboveLowerBound.y && belowUpperBound.y;
 
           if(depthInRange || depthPlusOneInRange){
-            vec4 z = vec4(
-              cache.x,
-              (depthPlusOneInRange && hasNextCol) ?
-                getChannel(getX(b, r, c, idx.y), vec2(c, idx.y)) : 0.0,
-              cache.y,
-              (depthPlusOneInRange && hasNextRow && hasNextCol) ?
-                getChannel(getX(b, r, c + 1, idx.y), vec2(c + 1, idx.y)) : 0.0
-            );
+            vec4 z = vec4(0.);
+            vec4 xFragAtCurrentDepth;
+            z.xz = cache.xy;
+            if(depthPlusOneInRange && hasNextCol){
+              xFragAtCurrentDepth = idx.y != d ?
+                getX(b, r, c, idx.y) : xFragAtOutputCoords;
+              z.y = getChannel(xFragAtCurrentDepth, vec2(c, idx.y));
+              if(hasNextRow){
+                z.w = getChannel(xFragAtCurrentDepth, vec2(c + 1, idx.y));
+              }
+            }
             cache.xy = z.yw;
             sum += z * z;
           }
