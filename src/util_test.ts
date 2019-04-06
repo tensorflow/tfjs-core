@@ -514,15 +514,10 @@ describe('util.fetch', () => {
 
 describeWithFlags('util.fetch node', NODE_ENVS, () => {
   it('should use node-fetch', () => {
-    const savedUtilFetch = util.systemFetch;
-    // @ts-ignore
-    util.systemFetch = null;
     // tslint:disable-next-line:no-any
     spyOn((global as any), 'fetch').and.callThrough();
     util.fetch('');
     // tslint:disable-next-line:no-any
     expect((global as any).fetch).toHaveBeenCalled();
-    // @ts-ignore
-    util.systemFetch = savedUtilFetch;
   });
 });

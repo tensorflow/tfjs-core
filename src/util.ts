@@ -693,7 +693,7 @@ const getSystemFetch = () => {
  * ```
  */
 /** @doc {heading: 'Util'} */
-export let systemFetch: Function;
+let systemFetch: Function;
 export function fetch(path: string, requestInits?: RequestInit) {
   if (systemFetch == null) {
     systemFetch = getSystemFetch();
