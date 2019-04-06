@@ -33,7 +33,7 @@ export class BrowserHTTPRequest implements IOHandler {
   protected readonly path: string;
   protected readonly requestInit: RequestInit;
 
-  private readonly fetchFunc: Function;
+  private readonly fetch: Function;
 
   readonly DEFAULT_METHOD = 'POST';
 
@@ -55,9 +55,9 @@ export class BrowserHTTPRequest implements IOHandler {
           () => 'Must pass a function that matches the signature of ' +
               '`fetch` (see ' +
               'https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)');
-      this.fetchFunc = loadOptions.fetchFunc;
+      this.fetch = loadOptions.fetchFunc;
     } else {
-      this.fetchFunc = fetch;
+      this.fetch = fetch;
     }
 
     assert(
@@ -118,7 +118,7 @@ export class BrowserHTTPRequest implements IOHandler {
           'model.weights.bin');
     }
 
-    const response = await this.getFetchFunc()(this.path, init);
+    const response = await this.fetch(this.path, init);
 
     if (response.ok) {
       return {
@@ -141,8 +141,7 @@ export class BrowserHTTPRequest implements IOHandler {
    * @returns The loaded model artifacts (if loading succeeds).
    */
   async load(): Promise<ModelArtifacts> {
-    const modelConfigRequest =
-        await this.getFetchFunc()(this.path, this.requestInit);
+    const modelConfigRequest = await this.fetch(this.path, this.requestInit);
 
     if (!modelConfigRequest.ok) {
       throw new Error(
@@ -209,21 +208,10 @@ export class BrowserHTTPRequest implements IOHandler {
     });
     const buffers = await loadWeightsAsArrayBuffer(fetchURLs, {
       requestInit: this.requestInit,
-      fetchFunc: this.getFetchFunc(),
+      fetchFunc: this.fetch,
       onProgress: this.onProgress
     });
     return [weightSpecs, concatenateArrayBuffers(buffers)];
-  }
-
-  /**
-   * Helper method to get the `fetch`-like function set for this instance.
-   *
-   * This is mainly for avoiding confusion with regard to what context
-   * the `fetch`-like function is bound to. In the default (browser) case,
-   * the function will be bound to `window`, instead of `this`.
-   */
-  private getFetchFunc() {
-    return this.fetchFunc;
   }
 }
 

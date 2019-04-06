@@ -16,6 +16,7 @@
  */
 
 import {ENV} from './environment';
+import {describeWithFlags, NODE_ENVS} from './jasmine_util';
 import {scalar, tensor2d} from './ops/ops';
 import {inferShape} from './tensor_util_env';
 import * as util from './util';
@@ -498,7 +499,7 @@ describe('util.toNestedArray', () => {
 });
 
 describe('util.fetch', () => {
-  fit('should allow overriding global fetch', () => {
+  it('should allow overriding global fetch', () => {
     const savedFetch = ENV.global.fetch;
     ENV.global.fetch = () => {};
 
@@ -508,5 +509,20 @@ describe('util.fetch', () => {
 
     expect(ENV.global.fetch).toHaveBeenCalled();
     ENV.global.fetch = savedFetch;
+  });
+});
+
+describeWithFlags('util.fetch node', NODE_ENVS, () => {
+  it('should use node-fetch', () => {
+    const savedUtilFetch = util.systemFetch;
+    // @ts-ignore
+    util.systemFetch = null;
+    // tslint:disable-next-line:no-any
+    spyOn((global as any), 'fetch').and.callThrough();
+    util.fetch('');
+    // tslint:disable-next-line:no-any
+    expect((global as any).fetch).toHaveBeenCalled();
+    // @ts-ignore
+    util.systemFetch = savedUtilFetch;
   });
 });
