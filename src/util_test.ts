@@ -523,7 +523,6 @@ describeWithFlags('util.fetch node', NODE_ENVS, () => {
 
     util.fetch('');
     // tslint:disable-next-line:no-any
-    expect((global as any).fetch).toBeDefined();
     expect(nodeFetch.fetch).toHaveBeenCalled();
     // @ts-ignore
     util.systemFetch = savedFetch;
