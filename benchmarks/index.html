@@ -175,9 +175,7 @@
       //////////////////////////////////
       // Place model loading code here.
       //////////////////////////////////
-      return await tf.loadFrozenModel(
-        'https://storage.googleapis.com/tfjs-models/savedmodel/mobilenet_v2_1.0_224/tensorflowjs_model.pb',
-        'https://storage.googleapis.com/tfjs-models/savedmodel/mobilenet_v2_1.0_224/weights_manifest.json');
+      return await tf.loadLayersModel('../mobilenet_v2_1.0_224/model.json');
     }
 
     const zeros = tf.zeros([1, 224, 224, 3]);

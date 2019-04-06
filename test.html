@@ -1,0 +1,10 @@
+<script src="dist/tf-core.js"></script>
+<script src="https://unpkg.com/@tensorflow/tfjs-layers"></script>
+
+<script>
+async function go() {
+  const model = await tf.loadLayersModel('https://storage.googleapis.com/tfjs-models/tfjs/mobilenet_v1_1.0_224/model.json');
+  model.predict(tf.zeros([1, 224, 224, 3])).print();
+}
+go();
+</script>
