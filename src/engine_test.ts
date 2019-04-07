@@ -15,12 +15,145 @@
  * =============================================================================
  */
 
+import {ENGINE} from './engine';
 import * as tf from './index';
-import {describeWithFlags} from './jasmine_util';
-import {MathBackendCPU} from './kernels/backend_cpu';
-import {MathBackendWebGL} from './kernels/backend_webgl';
+import {ALL_ENVS, CPU_ENVS, describeWithFlags, TestKernelBackend, WEBGL_ENVS} from './jasmine_util';
+import {KernelBackend} from './kernels/backend';
+import {MathBackendCPU} from './kernels/cpu/backend_cpu';
+import {MathBackendWebGL} from './kernels/webgl/backend_webgl';
 import {Tensor} from './tensor';
-import {ALL_ENVS, CPU_ENVS, expectArraysClose, expectArraysEqual, expectNumbersClose, WEBGL_ENVS} from './test_util';
+import {expectArraysClose, expectArraysEqual} from './test_util';
+
+describe('Backend registration', () => {
+  beforeAll(() => {
+    // Silences backend registration warnings.
+    spyOn(console, 'warn');
+  });
+
+  beforeEach(() => {
+    ENGINE.reset();
+  });
+
+  it('removeBackend disposes the backend and removes the factory', () => {
+    let backend: KernelBackend;
+    const factory = () => {
+      const newBackend = new TestKernelBackend();
+      if (backend == null) {
+        backend = newBackend;
+        spyOn(backend, 'dispose').and.callThrough();
+      }
+      return newBackend;
+    };
+
+    tf.registerBackend('test-backend', factory);
+
+    expect(tf.findBackend('test-backend') != null).toBe(true);
+    expect(tf.findBackend('test-backend')).toBe(backend);
+    expect(tf.findBackendFactory('test-backend')).toBe(factory);
+
+    tf.removeBackend('test-backend');
+
+    expect(tf.findBackend('test-backend') == null).toBe(true);
+    expect(tf.findBackend('test-backend')).toBe(null);
+    expect((backend.dispose as jasmine.Spy).calls.count()).toBe(1);
+    expect(tf.findBackendFactory('test-backend')).toBe(null);
+  });
+
+  it('findBackend initializes the backend', () => {
+    let backend: KernelBackend;
+    const factory = () => {
+      const newBackend = new TestKernelBackend();
+      if (backend == null) {
+        backend = newBackend;
+      }
+      return newBackend;
+    };
+    tf.registerBackend('custom-cpu', factory);
+
+    expect(tf.findBackend('custom-cpu') != null).toBe(true);
+    expect(tf.findBackend('custom-cpu')).toBe(backend);
+    expect(tf.findBackendFactory('custom-cpu')).toBe(factory);
+
+    tf.removeBackend('custom-cpu');
+  });
+
+  it('custom backend registration', () => {
+    let backend: KernelBackend;
+    const priority = 103;
+    tf.registerBackend('custom-cpu', () => {
+      const newBackend = new TestKernelBackend();
+      if (backend == null) {
+        backend = newBackend;
+      }
+      return newBackend;
+    }, priority);
+
+    expect(tf.backend() != null).toBe(true);
+    expect(tf.backend()).toBe(backend);
+
+    tf.removeBackend('custom-cpu');
+  });
+
+  it('high priority backend registration fails, falls back', () => {
+    let lowPriorityBackend: KernelBackend;
+    const lowPriority = 103;
+    const highPriority = 104;
+    tf.registerBackend('custom-low-priority', () => {
+      lowPriorityBackend = new TestKernelBackend();
+      return lowPriorityBackend;
+    }, lowPriority);
+    tf.registerBackend('custom-high-priority', () => {
+      throw new Error(`High priority backend fails`);
+    }, highPriority);
+
+    expect(tf.backend() != null).toBe(true);
+    expect(tf.backend()).toBe(lowPriorityBackend);
+    expect(tf.getBackend()).toBe('custom-low-priority');
+
+    tf.removeBackend('custom-low-priority');
+    tf.removeBackend('custom-high-priority');
+  });
+
+  it('low priority and high priority backends, setBackend low priority', () => {
+    let lowPriorityBackend: KernelBackend;
+    let highPriorityBackend: KernelBackend;
+    const lowPriority = 103;
+    const highPriority = 104;
+    tf.registerBackend('custom-low-priority', () => {
+      lowPriorityBackend = new TestKernelBackend();
+      return lowPriorityBackend;
+    }, lowPriority);
+    tf.registerBackend('custom-high-priority', () => {
+      highPriorityBackend = new TestKernelBackend();
+      return highPriorityBackend;
+    }, highPriority);
+
+    expect(tf.backend() != null).toBe(true);
+    expect(tf.backend()).toBe(highPriorityBackend);
+    expect(tf.getBackend()).toBe('custom-high-priority');
+
+    tf.setBackend('custom-low-priority');
+
+    expect(tf.backend() != null).toBe(true);
+    expect(tf.backend()).toBe(lowPriorityBackend);
+    expect(tf.getBackend()).toBe('custom-low-priority');
+
+    tf.removeBackend('custom-low-priority');
+    tf.removeBackend('custom-high-priority');
+  });
+
+  it('default custom background null', () => {
+    expect(tf.findBackend('custom')).toBeNull();
+  });
+
+  it('allow custom backend', () => {
+    const backend = new TestKernelBackend();
+    const success = tf.registerBackend('custom', () => backend);
+    expect(success).toBeTruthy();
+    expect(tf.findBackend('custom')).toEqual(backend);
+    tf.removeBackend('custom');
+  });
+});
 
 describeWithFlags('fromPixels + regular math op', WEBGL_ENVS, () => {
   it('debug mode does not error when no nans', () => {
@@ -32,7 +165,7 @@ describeWithFlags('fromPixels + regular math op', WEBGL_ENVS, () => {
       pixels.data[i] = 250;
     }
 
-    const a = tf.fromPixels(pixels, 4);
+    const a = tf.browser.fromPixels(pixels, 4);
     const b = tf.scalar(20, 'int32');
 
     const res = tf.add(a, b);
@@ -41,283 +174,6 @@ describeWithFlags('fromPixels + regular math op', WEBGL_ENVS, () => {
       120, 120, 120, 120, 120, 120, 120, 120, 270, 270, 270, 270, 270, 270, 270,
       270
     ]);
-  });
-});
-
-describeWithFlags('gradients', ALL_ENVS, () => {
-  it('matmul + relu', () => {
-    const a = tf.tensor2d([-1, 2, -3, 10, -20, 30], [2, 3]);
-    const b = tf.tensor2d([2, -3, 4, -1, 2, -3], [3, 2]);
-
-    const [da, db] = tf.grads((a: tf.Tensor2D, b: tf.Tensor2D) => {
-      // m = dot(a, b)
-      // y = relu(m)
-      // e = sum(y)
-      const m = tf.matMul(a, b);
-      const y = tf.relu(m);
-      return tf.sum(y);
-    })([a, b]);
-
-    // de/dy = 1
-    // dy/dm = step(m)
-    // de/dm = de/dy * dy/dm = step(m)
-    const dedm = tf.step(tf.matMul(a, b));
-
-    // de/da = dot(de/dy, bT)
-    expect(da.shape).toEqual(a.shape);
-    let transposeA = false;
-    let transposeB = true;
-    expectArraysClose(da, tf.matMul(dedm, b, transposeA, transposeB));
-
-    // de/db = dot(aT, de/dy)
-    expect(db.shape).toEqual(b.shape);
-    transposeA = true;
-    transposeB = false;
-    expectArraysClose(db, tf.matMul(a, dedm, transposeA, transposeB));
-  });
-
-  it('grad(f)', () => {
-    const grad = tf.grad(x => x.square());
-    const result = grad(tf.tensor1d([.1, .2]));
-    expectArraysClose(result, [.2, .4]);
-  });
-
-  it('calling grad(f) twice works', () => {
-    const grad = tf.grad(x => x.square());
-
-    const result = grad(tf.tensor1d([.1, .2]));
-    const result2 = grad(tf.tensor1d([.1, .4]));
-    expectArraysClose(result, [.2, .4]);
-    expectArraysClose(result2, [.2, .8]);
-  });
-
-  it('grads(f)', () => {
-    const grads = tf.grads(x => x.square());
-    const result = grads([tf.tensor1d([.1, .2])]);
-    expectArraysClose(result[0], [.2, .4]);
-  });
-
-  it('calling grads(f) twice works', () => {
-    const grads = tf.grads(x => x.square());
-
-    const result = grads([tf.tensor1d([.1, .2])]);
-    const result2 = grads([tf.tensor1d([.1, .4])]);
-    expectArraysClose(result[0], [.2, .4]);
-    expectArraysClose(result2[0], [.2, .8]);
-  });
-
-  it('works with reshape', () => {
-    const a = tf.tensor2d([1, 2, 3, 4], [2, 2]);
-    const exponent = tf.tensor1d([2, 2, 2, 2], 'int32');
-
-    const da = tf.grad(a => {
-      const b = a.flatten();
-      const m = tf.pow(b, exponent);
-      return tf.sum(m);
-    })(a);
-
-    expect(da.shape).toEqual([2, 2]);
-    expectArraysClose(da, [2, 4, 6, 8]);
-  });
-
-  it('reshape outside tf.grads() throws error', () => {
-    const a = tf.tensor2d([1, 2, 3, 4], [2, 2]);
-    const b = a.flatten();
-    const exponent = tf.tensor1d([2, 2, 2, 2], 'int32');
-
-    const f = () => {
-      tf.grads((a, b) => {
-        const m = tf.pow(b, exponent);
-        return tf.sum(m);
-      })([a, b]);
-    };
-    expect(f).toThrowError();
-  });
-
-  it('does not error if irrelevant (pruned) ops are missing grads', () => {
-    const a = tf.tensor1d([true, true], 'bool');
-    const b = tf.tensor1d([false, true], 'bool');
-    const da = tf.grad(a => {
-      // Logical has no gradients, but it is irrelevant.
-      a.logicalAnd(b);
-      return a.sum();
-    })(a);
-    expectArraysClose(da, [1, 1]);
-  });
-
-  it('errors if relevant ops are missing grads', () => {
-    const a = tf.tensor1d([true, true], 'bool');
-    const b = tf.tensor1d([false, true], 'bool');
-    const dfda = tf.grad(a => {
-      // Logical has no gradients, but it's relevant to the output.
-      return a.logicalAnd(b);
-    });
-    expect(() => dfda(a)).toThrowError();
-  });
-
-  it('works with asType', () => {
-    const a = tf.tensor2d([1, 2, 3, 4], [2, 2], 'int32');
-    const exponent = tf.tensor2d([2, 2, 2, 2], [2, 2], 'int32');
-
-    const da = tf.grad(a => {
-      const b = a.toFloat();
-      const m = tf.pow(b, exponent);
-      return tf.sum(m);
-    })(a);
-
-    expect(da.shape).toEqual([2, 2]);
-    expect(da.dtype).toEqual('float32');
-    expectArraysClose(da, [2, 4, 6, 8]);
-  });
-
-  it('asType outside of tf.grads() throws error', () => {
-    const a = tf.tensor2d([1, 2, 3, 4], [2, 2], 'int32');
-    const b = a.toFloat();
-    const exponent = tf.tensor2d([2, 2, 2, 2], [2, 2], 'int32');
-
-    const f = () => {
-      tf.grad(a => {
-        const m = tf.pow(b, exponent);
-        return tf.sum(m);
-      })(a);
-    };
-    expect(f).toThrowError();
-  });
-});
-
-describeWithFlags('valueAndGradients', ALL_ENVS, () => {
-  it('matmul + relu', () => {
-    const a = tf.tensor2d([-1, 2, -3, 10, -20, 30], [2, 3]);
-    const b = tf.tensor2d([2, -3, 4, -1, 2, -3], [3, 2]);
-
-    const {value, grads} =
-        tf.valueAndGrads((a: tf.Tensor2D, b: tf.Tensor2D) => {
-          // m = dot(a, b)
-          // y = relu(m)
-          // e = sum(y)
-          const m = tf.matMul(a, b);
-          const y = tf.relu(m);
-          return tf.sum(y);
-        })([a, b]);
-
-    expectNumbersClose(value.get(), 10);
-
-    // de/dy = 1
-    // dy/dm = step(m)
-    // de/dm = de/dy * dy/dm = step(m)
-    const dedm = tf.step(tf.matMul(a, b));
-
-    const [da, db] = grads;
-    // de/da = dot(de/dy, bT)
-    let transposeA = false;
-    let transposeB = true;
-    expectArraysClose(da, tf.matMul(dedm, b, transposeA, transposeB));
-
-    // de/db = dot(aT, de/dy)
-    transposeA = true;
-    transposeB = false;
-    expectArraysClose(db, tf.matMul(a, dedm, transposeA, transposeB));
-  });
-
-  it('matmul + relu + inner tidy', () => {
-    const a = tf.tensor2d([-1, 2, -3, 10, -20, 30], [2, 3]);
-    const b = tf.tensor2d([2, -3, 4, -1, 2, -3], [3, 2]);
-
-    const {value, grads} =
-        tf.valueAndGrads((a: tf.Tensor2D, b: tf.Tensor2D) => {
-          // m = dot(a, b)
-          // y = relu(m)
-          // e = sum(y)
-          const m = tf.matMul(a, b);
-          return tf.tidy(() => {
-            const y = tf.relu(m);
-            return tf.sum(y);
-          });
-        })([a, b]);
-
-    expectNumbersClose(value.get(), 10);
-
-    // de/dy = 1
-    // dy/dm = step(m)
-    // de/dm = de/dy * dy/dm = step(m)
-    const dedm = tf.step(tf.matMul(a, b));
-
-    const [da, db] = grads;
-    // de/da = dot(de/dy, bT)
-    let transposeA = false;
-    let transposeB = true;
-    expectArraysClose(da, tf.matMul(dedm, b, transposeA, transposeB));
-
-    // de/db = dot(aT, de/dy)
-    transposeA = true;
-    transposeB = false;
-    expectArraysClose(db, tf.matMul(a, dedm, transposeA, transposeB));
-  });
-});
-
-describeWithFlags('higher-order gradients', ALL_ENVS, () => {
-  it('grad(grad(f))', () => {
-    const gradgrad = tf.grad(tf.grad(x => x.mul(x).mul(x)));
-    const result = gradgrad(tf.tensor1d([.1, .2]));
-    expectArraysClose(result, [.6, 1.2]);
-  });
-
-  it('grads(grads(f))', () => {
-    const grads = tf.grads(x => x.mul(x).mul(x));
-    const gradsgrads = tf.grads(x => grads([x])[0]);
-    const result = gradsgrads([tf.tensor1d([.1, .2])]);
-    expectArraysClose(result[0], [.6, 1.2]);
-  });
-});
-
-describeWithFlags('customGradient', ALL_ENVS, () => {
-  it('basic', () => {
-    const a = tf.scalar(3);
-    const b = tf.scalar(2, 'int32');
-    const dy = tf.scalar(4);
-
-    const customPow = tf.customGrad(a => {
-      const value = tf.pow(a, b);
-      const gradFunc = (dy: tf.Tensor) => dy.mul(tf.scalar(0.1));
-      return {value, gradFunc};
-    });
-
-    const {value, grad} = tf.valueAndGrad(a => customPow(a))(a, dy);
-    expect(value.shape).toEqual(a.shape);
-    expectArraysClose(value, [9]);
-    expect(grad.shape).toEqual(a.shape);
-    expectArraysClose(grad, [.4]);
-  });
-
-  it('second order derivative through customGradient', () => {
-    const a = tf.scalar(3);
-    const b = tf.scalar(2, 'int32');
-
-    const dy = tf.scalar(5);
-
-    const customPow = tf.customGrad(a => {
-      const value = tf.pow(a, b);
-      const gradFunc = (dy: tf.Tensor) => dy.mul(a);
-      return {value, gradFunc};
-    });
-
-    const dda = tf.grad(tf.grad(a => customPow(a)))(a, dy);
-    expect(dda.shape).toEqual(a.shape);
-
-    // First order: dy * a. Second order: dy.
-    expectArraysClose(dda, dy);
-  });
-
-  it('calling gradient of custom op twice works', () => {
-    const customOp = tf.customGrad(x => {
-      // Override gradient of our custom x ^ 2 op to be dy * abs(x);
-      return {value: x.square(), gradFunc: dy => dy.mul(x.abs())};
-    });
-    const x = tf.tensor1d([-1, -2, 3]);
-    const grad = tf.grad(x => customOp(x));
-
-    expectArraysClose(grad(x), [1, 2, 3]);
-    expectArraysClose(grad(x), [1, 2, 3]);
   });
 });
 
@@ -510,13 +366,13 @@ describeWithFlags('disposeVariables', ALL_ENVS, () => {
 
 describe('Switching cpu backends', () => {
   beforeEach(() => {
-    tf.ENV.registerBackend('cpu1', () => new MathBackendCPU());
-    tf.ENV.registerBackend('cpu2', () => new MathBackendCPU());
+    tf.registerBackend('cpu1', () => new MathBackendCPU());
+    tf.registerBackend('cpu2', () => new MathBackendCPU());
   });
 
   afterEach(() => {
-    tf.ENV.removeBackend('cpu1');
-    tf.ENV.removeBackend('cpu2');
+    tf.removeBackend('cpu1');
+    tf.removeBackend('cpu2');
   });
 
   it('Move data from cpu1 to cpu2 backend', () => {
@@ -576,17 +432,59 @@ describe('Switching cpu backends', () => {
   });
 });
 
-describeWithFlags('Switching WebGL + CPU backends', WEBGL_ENVS, () => {
+// We do not yet fully support half float backends. These tests are a starting
+// point.
+describeWithFlags('backend without render float32 support', WEBGL_ENVS, () => {
+  const savedRenderFloat32Flag = tf.ENV.getBool('WEBGL_RENDER_FLOAT32_ENABLED');
+
+  beforeAll(() => {
+    tf.ENV.set('WEBGL_RENDER_FLOAT32_ENABLED', false);
+  });
+
   beforeEach(() => {
-    tf.ENV.registerBackend('webgl1', () => new MathBackendWebGL());
-    tf.ENV.registerBackend('webgl2', () => new MathBackendWebGL());
-    tf.ENV.registerBackend('cpu1', () => new MathBackendCPU());
+    tf.registerBackend('half-float-webgl', () => new MathBackendWebGL(null));
   });
 
   afterEach(() => {
-    tf.ENV.removeBackend('webgl1');
-    tf.ENV.removeBackend('webgl2');
-    tf.ENV.removeBackend('cpu1');
+    tf.removeBackend('half-float-webgl');
+  });
+
+  afterAll(() => {
+    tf.ENV.set('WEBGL_RENDER_FLOAT32_ENABLED', savedRenderFloat32Flag);
+  });
+
+  it('basic usage', () => {
+    tf.setBackend('half-float-webgl');
+
+    const a = tf.tensor2d([1, 2], [1, 2]);
+    const b = tf.tensor2d([1, 2], [1, 2]);
+    const c = tf.add(a, b);
+    expectArraysClose(c, [2, 4]);
+  });
+
+  it('disposing tensors should not cause errors', () => {
+    tf.setBackend('half-float-webgl');
+    expect(() => tf.tidy(() => {
+      const a = tf.tensor2d([1, 2], [1, 2]);
+      const b = tf.tensor2d([1, 2], [1, 2]);
+      const c = tf.add(a, b);
+      c.dataSync();
+      return c.add(tf.tensor2d([2, 4], [1, 2]));
+    })).not.toThrowError();
+  });
+});
+
+describeWithFlags('Switching WebGL + CPU backends', WEBGL_ENVS, () => {
+  beforeEach(() => {
+    tf.registerBackend('webgl1', () => new MathBackendWebGL());
+    tf.registerBackend('webgl2', () => new MathBackendWebGL());
+    tf.registerBackend('cpu1', () => new MathBackendCPU());
+  });
+
+  afterEach(() => {
+    tf.removeBackend('webgl1');
+    tf.removeBackend('webgl2');
+    tf.removeBackend('cpu1');
   });
 
   it('can execute op with data from mixed backends', () => {
@@ -622,12 +520,12 @@ describeWithFlags('Switching WebGL + CPU backends', WEBGL_ENVS, () => {
 
   it('fromPixels with mixed backends works', () => {
     tf.setBackend('webgl1');
-    const a =
-        tf.fromPixels(new ImageData(new Uint8ClampedArray([1, 2, 3, 4]), 1, 1));
+    const a = tf.browser.fromPixels(
+        new ImageData(new Uint8ClampedArray([1, 2, 3, 4]), 1, 1));
 
     tf.setBackend('webgl2');
-    const b =
-        tf.fromPixels(new ImageData(new Uint8ClampedArray([5, 6, 7, 8]), 1, 1));
+    const b = tf.browser.fromPixels(
+        new ImageData(new Uint8ClampedArray([5, 6, 7, 8]), 1, 1));
 
     expectArraysClose(tf.add(a, b), [6, 8, 10]);
   });
@@ -651,12 +549,12 @@ describeWithFlags('Switching WebGL + CPU backends', WEBGL_ENVS, () => {
 });
 
 // NOTE: This describe is purposefully not a describeWithFlags so that we test
-// tensor allocation where no scopes have been created. The backend here must be
-// set to CPU because we cannot allocate GPU tensors outside a
+// tensor allocation where no scopes have been created. The backend here must
+// be set to CPU because we cannot allocate GPU tensors outside a
 // describeWithFlags because the default webgl backend and the test backends
 // share a WebGLContext. When backends get registered, global WebGL state is
-// initialized, which causes the two backends to step on each other and get in a
-// bad state.
+// initialized, which causes the two backends to step on each other and get in
+// a bad state.
 describe('Memory allocation outside a test scope', () => {
   it('constructing a tensor works', () => {
     tf.setBackend('cpu');

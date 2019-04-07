@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {ENV} from '../environment';
+import {ENGINE} from '../engine';
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import {convertToTensor, convertToTensorArray} from '../tensor_util_env';
 import {TensorLike} from '../types';
@@ -161,7 +161,7 @@ function concat4d_(
  */
 /** @doc {heading: 'Tensors', subheading: 'Slicing and Joining'} */
 function concat_<T extends Tensor>(tensors: Array<T|TensorLike>, axis = 0): T {
-  assert(tensors.length >= 1, 'Pass at least one tensor to concat');
+  assert(tensors.length >= 1, () => 'Pass at least one tensor to concat');
   let $tensors = convertToTensorArray(tensors, 'tensors', 'concat');
   axis = parseAxisParam(axis, $tensors[0].shape)[0];
   const outShape = computeOutShape($tensors.map(t => t.shape), axis);
@@ -182,7 +182,7 @@ function concat_<T extends Tensor>(tensors: Array<T|TensorLike>, axis = 0): T {
     return derTensors.map(t => () => t) as {};
   };
   const inputs = $tensors as {};
-  return ENV.engine.runKernel(
+  return ENGINE.runKernel(
       backend => backend.concat($tensors, axis) as T, inputs, der);
 }
 
@@ -228,17 +228,17 @@ function split_<T extends Tensor>(
   if (typeof (numOrSizeSplits) === 'number') {
     assert(
         $x.shape[axis] % numOrSizeSplits === 0,
-        'Number of splits must evenly divide the axis.');
+        () => 'Number of splits must evenly divide the axis.');
     splitSizes =
         new Array(numOrSizeSplits).fill($x.shape[axis] / numOrSizeSplits);
   } else {
     assert(
         $x.shape[axis] === numOrSizeSplits.reduce((a, b) => a + b),
-        'The sum of sizes must match the size of the axis dimension.');
+        () => 'The sum of sizes must match the size of the axis dimension.');
     splitSizes = numOrSizeSplits;
   }
   const der = (dy: T[]) => ({$x: () => concat(dy, axis)});
-  return ENV.engine.runKernel(
+  return ENGINE.runKernel(
       backend => backend.split($x, splitSizes, axis), {$x}, der);
 }
 

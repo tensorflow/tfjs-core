@@ -16,8 +16,9 @@
  */
 
 import * as tf from '../index';
-import {describeWithFlags} from '../jasmine_util';
-import {ALL_ENVS, expectArraysClose, expectNumbersClose, WEBGL_ENVS} from '../test_util';
+import {ALL_ENVS, describeWithFlags, WEBGL_ENVS} from '../jasmine_util';
+import {WebGLMemoryInfo} from '../kernels/webgl/backend_webgl';
+import {expectArraysClose} from '../test_util';
 import {Rank} from '../types';
 
 describeWithFlags('slice1d', ALL_ENVS, () => {
@@ -26,7 +27,7 @@ describeWithFlags('slice1d', ALL_ENVS, () => {
     const result = tf.slice1d(a, 0, 1);
 
     expect(result.shape).toEqual([1]);
-    expectNumbersClose(result.get(0), 5);
+    expectArraysClose(result, 5);
   });
 
   it('slices 5x1 into shape 2x1 starting at 3', () => {
@@ -48,7 +49,16 @@ describeWithFlags('slice1d', ALL_ENVS, () => {
   it('grad', () => {
     const a = tf.tensor1d([1, 2, 3, 4, 5]);
     const dy = tf.tensor1d([10, 100]);
-    const da = tf.grad(x => tf.slice1d(a, 1, 2))(a, dy);
+    const da = tf.grad((a: tf.Tensor1D) => tf.slice1d(a, 1, 2))(a, dy);
+    expect(da.shape).toEqual([5]);
+    expectArraysClose(da, [0, 10, 100, 0, 0]);
+  });
+
+  it('gradient with clones', () => {
+    const a = tf.tensor1d([1, 2, 3, 4, 5]);
+    const dy = tf.tensor1d([10, 100]);
+    const da =
+        tf.grad((a: tf.Tensor1D) => tf.slice1d(a.clone(), 1, 2).clone())(a, dy);
     expect(da.shape).toEqual([5]);
     expectArraysClose(da, [0, 10, 100, 0, 0]);
   });
@@ -57,7 +67,7 @@ describeWithFlags('slice1d', ALL_ENVS, () => {
     const a = [5];
     const result = tf.slice1d(a, 0, 1);
     expect(result.shape).toEqual([1]);
-    expectNumbersClose(result.get(0), 5);
+    expectArraysClose(result, 5);
   });
 });
 
@@ -248,6 +258,44 @@ describeWithFlags('slice2d', ALL_ENVS, () => {
     const c = tf.add(a, b);
     expect(c.shape).toEqual([2, 2]);
     expectArraysClose(c, [3, 4, 7, 8]);
+  });
+});
+
+describeWithFlags('slice and memory usage', WEBGL_ENVS, () => {
+  beforeAll(() => {
+    tf.ENV.set('WEBGL_CPU_FORWARD', false);
+    tf.ENV.set('WEBGL_SIZE_UPLOAD_UNIFORM', 0);
+  });
+
+  it('slice a tensor, read it and check memory', async () => {
+    const getMem = () => tf.memory() as WebGLMemoryInfo;
+    expect(getMem().numBytesInGPU).toBe(0);
+
+    // Lazy upload won't increase gpu memory.
+    const a = tf.tensor([2, 3]);
+    expect(getMem().numBytesInGPU).toBe(0);
+
+    // Upload a to the GPU by running an op.
+    a.square().dispose();
+    expect(getMem().numBytesInGPU).toBe(8);
+
+    // Slicing does not allocate new memory.
+    const b = a.slice(0);
+    expect(getMem().numBytesInGPU).toBe(8);
+
+    // Download a to the CPU but the texture remains on GPU
+    // since b points to it.
+    await a.data();
+    expect(getMem().numBytesInGPU).toBe(8);
+
+    // Dispose a, but the texture should still remain on the GPU
+    // since b points to it.
+    a.dispose();
+    expect(getMem().numBytesInGPU).toBe(8);
+
+    // Dispose b and expect 0 memory on GPU.
+    b.dispose();
+    expect(getMem().numBytesInGPU).toBe(0);
   });
 });
 
@@ -496,5 +544,51 @@ describeWithFlags('slice ergonomics', ALL_ENVS, () => {
     const result = tf.slice(a, [0, 1, 1]);
     expect(result.shape).toEqual([2, 1, 1]);
     expectArraysClose(result, [4, 8]);
+  });
+
+  it('should match source tensor dtype', () => {
+    const a = tf.tensor1d([1, 2, 3, 4, 5], 'int32');
+    const b = a.asType('float32');
+
+    expect(tf.slice(b, 0).dtype).toEqual('float32');
+  });
+});
+
+describeWithFlags('shallow slicing', ALL_ENVS, () => {
+  beforeAll(() => {
+    tf.ENV.set('WEBGL_CPU_FORWARD', false);
+  });
+
+  it('shallow slice an input that was cast', () => {
+    const a = tf.tensor([[1, 2], [3, 4]], [2, 2], 'int32');
+    const b = a.toFloat();
+    const c = b.slice(1, 1);
+    expect(c.dtype).toBe('float32');
+    expect(c.shape).toEqual([1, 2]);
+    expectArraysClose(c, [3, 4]);
+  });
+
+  it('delayed async read of sliced tensor has no mem leak', async () => {
+    const a = tf.zeros([10]);
+    const b = tf.slice(a, 0, 1);
+    const nBefore = tf.memory().numTensors;
+    expect(nBefore).toBe(2);
+    await b.data();
+    const nAfter = tf.memory().numTensors;
+    expect(nAfter).toBe(2);
+    tf.dispose([a, b]);
+    expect(tf.memory().numTensors).toBe(0);
+  });
+
+  it('delayed sync read of sliced tensor has no mem leak', () => {
+    const a = tf.zeros([10]);
+    const b = tf.slice(a, 0, 1);
+    const nBefore = tf.memory().numTensors;
+    expect(nBefore).toBe(2);
+    b.dataSync();
+    const nAfter = tf.memory().numTensors;
+    expect(nAfter).toBe(2);
+    tf.dispose([a, b]);
+    expect(tf.memory().numTensors).toBe(0);
   });
 });

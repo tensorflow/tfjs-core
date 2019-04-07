@@ -17,7 +17,18 @@
 
 import {DataType, DataTypeMap, FlatVector, NumericDataType, RecursiveArray, TensorLike, TypedArray} from './types';
 
-/** Shuffles the array using Fisher-Yates algorithm. */
+/**
+ * Shuffles the array in-place using Fisher-Yates algorithm.
+ *
+ * ```js
+ * const a = [1, 2, 3, 4, 5];
+ * tf.util.shuffle(a);
+ * console.log(a);
+ * ```
+ *
+ * @param array The array to shuffle in-place.
+ */
+/** @doc {heading: 'Util', namespace: 'util'} */
 // tslint:disable-next-line:no-any
 export function shuffle(array: any[]|Uint32Array|Int32Array|
                         Float32Array): void {
@@ -76,7 +87,20 @@ export function distSquared(a: FlatVector, b: FlatVector): number {
   return result;
 }
 
-export function assert(expr: boolean, msg: string|(() => string)) {
+/**
+ * Asserts that the expression is true. Otherwise throws an error with the
+ * provided message.
+ *
+ * ```js
+ * tf.util.assert(2 === 3, 'Two is not three');
+ * ```
+ *
+ * @param expr The expression to assert (as a boolean).
+ * @param msg A function that returns the message to report when throwing an
+ *     error. We use a function for performance reasons.
+ */
+/** @doc {heading: 'Util', namespace: 'util'} */
+export function assert(expr: boolean, msg: () => string) {
   if (!expr) {
     throw new Error(typeof msg === 'string' ? msg : msg());
   }
@@ -86,31 +110,57 @@ export function assertShapesMatch(
     shapeA: number[], shapeB: number[], errorMessagePrefix = ''): void {
   assert(
       arraysEqual(shapeA, shapeB),
-      errorMessagePrefix + ` Shapes ${shapeA} and ${shapeB} must match`);
+      () => errorMessagePrefix + ` Shapes ${shapeA} and ${shapeB} must match`);
 }
 
 export function assertNonNull(a: TensorLike): void {
   assert(
       a != null,
-      `The input to the tensor constructor must be a non-null value.`);
+      () => `The input to the tensor constructor must be a non-null value.`);
 }
 
 // NOTE: We explicitly type out what T extends instead of any so that
 // util.flatten on a nested array of number doesn't try to infer T as a
 // number[][], causing us to explicitly type util.flatten<number>().
+/**
+ *  Flattens an arbitrarily nested array.
+ *
+ * ```js
+ * const a = [[1, 2], [3, 4], [5, [6, [7]]]];
+ * const flat = tf.util.flatten(a);
+ * console.log(flat);
+ * ```
+ *
+ *  @param arr The nested array to flatten.
+ *  @param result The destination array which holds the elements.
+ */
+/** @doc {heading: 'Util', namespace: 'util'} */
 export function
 flatten<T extends number|boolean|string|Promise<number>|TypedArray>(
-    arr: T|RecursiveArray<T>, ret: T[] = []): T[] {
+    arr: T|RecursiveArray<T>, result: T[] = []): T[] {
+  if (result == null) {
+    result = [];
+  }
   if (Array.isArray(arr) || isTypedArray(arr)) {
     for (let i = 0; i < arr.length; ++i) {
-      flatten(arr[i], ret);
+      flatten(arr[i], result);
     }
   } else {
-    ret.push(arr as T);
+    result.push(arr as T);
   }
-  return ret;
+  return result;
 }
 
+/**
+ * Returns the size (number of elements) of the tensor given its shape.
+ *
+ * ```js
+ * const shape = [3, 4, 2];
+ * const size = tf.util.sizeFromShape(shape);
+ * console.log(size);
+ * ```
+ */
+/** @doc {heading: 'Util', namespace: 'util'} */
 export function sizeFromShape(shape: number[]): number {
   if (shape.length === 0) {
     // Scalar.
@@ -276,13 +326,14 @@ export function parseAxisParam(
   // Check for valid range
   assert(
       axis.every(ax => ax >= -rank && ax < rank),
-      `All values in axis param must be in range [-${rank}, ${rank}) but ` +
+      () =>
+          `All values in axis param must be in range [-${rank}, ${rank}) but ` +
           `got axis ${axis}`);
 
   // Check for only integers
   assert(
       axis.every(ax => isInt(ax)),
-      `All values in axis param must be integers but ` +
+      () => `All values in axis param must be integers but ` +
           `got axis ${axis}`);
 
   // Handle negative axis.
@@ -538,8 +589,8 @@ function createNestedArray(offset: number, shape: number[], a: TypedArray) {
 // Provide a nested array of TypedArray in given shape.
 export function toNestedArray(shape: number[], a: TypedArray) {
   if (shape.length === 0) {
-    // Scalar type should be empty list.
-    return [];
+    // Scalar type should return a single number.
+    return a[0];
   }
   const size = shape.reduce((acc, c) => acc * c);
   if (size === 0) {
@@ -582,9 +633,15 @@ export function makeZerosTypedArray<D extends DataType>(
 }
 
 /**
- * Returns the current high-resolution real time in milliseconds. It is
- * relative to an arbitrary time in the past.
+ * Returns the current high-resolution time in milliseconds relative to an
+ * arbitrary time in the past. It works across different platforms (node.js,
+ * browsers).
+ *
+ * ```js
+ * console.log(tf.util.now());
+ * ```
  */
+/** @doc {heading: 'Util', namespace: 'util'} */
 export function now(): number {
   if (typeof performance !== 'undefined') {
     return performance.now();
@@ -598,55 +655,12 @@ export function now(): number {
   }
 }
 
-/**
- * Monitor Promise.all progress, fire onProgress callback function.
- *
- * @param promises Promise list going to be monitored
- * @param onProgress Callback function. Fired when a promise resolved.
- * @param startFraction Optional fraction start. Default to 0.
- * @param endFraction Optional fraction end. Default to 1.
- */
-export function monitorPromisesProgress(
-    promises: Array<Promise<{}|void>>, onProgress: Function,
-    startFraction?: number, endFraction?: number) {
-  checkPromises(promises);
-  startFraction = startFraction == null ? 0 : startFraction;
-  endFraction = endFraction == null ? 1 : endFraction;
-  checkFraction(startFraction, endFraction);
-  let resolvedPromise = 0;
-
-  function registerMonitor(promise: Promise<{}>) {
-    promise.then(value => {
-      const fraction = startFraction +
-          ++resolvedPromise / promises.length * (endFraction - startFraction);
-      // pass fraction as parameter to callback function.
-      onProgress(fraction);
-      return value;
-    });
-    return promise;
-  }
-
-  function checkPromises(promises: Array<Promise<{}|void>>): void {
+export function assertNonNegativeIntegerDimensions(shape: number[]) {
+  shape.forEach(dimSize => {
     assert(
-        promises != null && Array.isArray(promises) && promises.length > 0,
-        'promises must be a none empty array');
-  }
-
-  function checkFraction(startFraction: number, endFraction: number): void {
-    assert(
-        startFraction >= 0 && startFraction <= 1,
-        `Progress fraction must be in range [0, 1], but ` +
-            `got startFraction ${startFraction}`);
-    assert(
-        endFraction >= 0 && endFraction <= 1,
-        `Progress fraction must be in range [0, 1], but ` +
-            `got endFraction ${endFraction}`);
-    assert(
-        endFraction >= startFraction,
-        `startFraction must be no more than endFraction, but ` +
-            `got startFraction ${startFraction} and endFraction ${
-                endFraction}`);
-  }
-
-  return Promise.all(promises.map(registerMonitor));
+        Number.isInteger(dimSize) && dimSize >= 0,
+        () =>
+            `Tensor must have a shape comprised of positive integers but got ` +
+            `shape [${shape}].`);
+  });
 }

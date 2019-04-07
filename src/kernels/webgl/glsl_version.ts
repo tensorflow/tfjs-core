@@ -25,6 +25,8 @@ export type GLSL = {
   texture2D: string,
   output: string,
   defineOutput: string,
+  defineSpecialNaN: string,
+  defineSpecialInf: string,
   defineRound: string
 };
 
@@ -36,9 +38,11 @@ export function getGlslDifferences(): GLSL {
   let texture2D: string;
   let output: string;
   let defineOutput: string;
+  let defineSpecialNaN: string;
+  let defineSpecialInf: string;
   let defineRound: string;
 
-  if (ENV.get('WEBGL_VERSION') === 2) {
+  if (ENV.getNumber('WEBGL_VERSION') === 2) {
     version = '#version 300 es';
     attribute = 'in';
     varyingVs = 'out';
@@ -46,6 +50,14 @@ export function getGlslDifferences(): GLSL {
     texture2D = 'texture';
     output = 'outputColor';
     defineOutput = 'out vec4 outputColor;';
+    defineSpecialNaN = `
+      bool isnan_custom(float val) {
+        return (val > 0. || val < 0. || val == 0.) ? false : true;
+      }
+    `;
+    defineSpecialInf = `
+      const float INFINITY = uintBitsToFloat(uint(0x7f800000));
+    `;
     defineRound = `
       #define round(value) newRound(value)
       int newRound(float value) {
@@ -64,6 +76,21 @@ export function getGlslDifferences(): GLSL {
     texture2D = 'texture2D';
     output = 'gl_FragColor';
     defineOutput = '';
+    defineSpecialNaN = `
+      bool isnan_custom(float val) {
+        return (val > 0. || val < 1. || val == 0.) ? false : true;
+      }
+    `;
+    defineSpecialInf = `
+      uniform float INFINITY;
+
+      bool isinf(float val) {
+        return abs(val) == INFINITY;
+      }
+      bvec4 isinf(vec4 val) {
+        return equal(abs(val), vec4(INFINITY));
+      }
+    `;
     defineRound = `
       int round(float value) {
         return int(floor(value + 0.5));
@@ -83,6 +110,8 @@ export function getGlslDifferences(): GLSL {
     texture2D,
     output,
     defineOutput,
+    defineSpecialNaN,
+    defineSpecialInf,
     defineRound
   };
 }

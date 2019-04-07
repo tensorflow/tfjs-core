@@ -16,12 +16,11 @@
  */
 
 import * as tf from './index';
-import {describeWithFlags} from './jasmine_util';
+import {ALL_ENVS, describeWithFlags} from './jasmine_util';
 import {Tensor} from './tensor';
-import {NamedTensorMap} from './tensor_types';
-import {flattenNameArrayMap, getTensorsInContainer, isTensorInList, unflattenToNameArrayMap} from './tensor_util';
+import {getTensorsInContainer, isTensorInList} from './tensor_util';
 import {convertToTensor} from './tensor_util_env';
-import {ALL_ENVS, expectArraysClose, expectNumbersClose} from './test_util';
+import {expectArraysClose, expectArraysEqual} from './test_util';
 
 describe('tensor_util.isTensorInList', () => {
   it('not in list', () => {
@@ -36,29 +35,6 @@ describe('tensor_util.isTensorInList', () => {
     const list: Tensor[] = [tf.scalar(2), tf.tensor1d([1, 2, 3]), a];
 
     expect(isTensorInList(a, list)).toBe(true);
-  });
-});
-
-describe('tensor_util.flattenNameArrayMap', () => {
-  it('basic', () => {
-    const a = tf.scalar(1);
-    const b = tf.scalar(3);
-    const c = tf.tensor1d([1, 2, 3]);
-
-    const map: NamedTensorMap = {a, b, c};
-    expect(flattenNameArrayMap(map, Object.keys(map))).toEqual([a, b, c]);
-  });
-});
-
-describe('tensor_util.unflattenToNameArrayMap', () => {
-  it('basic', () => {
-    const a = tf.scalar(1);
-    const b = tf.scalar(3);
-    const c = tf.tensor1d([1, 2, 3]);
-
-    expect(unflattenToNameArrayMap(['a', 'b', 'c'], [
-      a, b, c
-    ])).toEqual({a, b, c});
   });
 });
 
@@ -111,35 +87,35 @@ describeWithFlags('convertToTensor', ALL_ENVS, () => {
     const b = convertToTensor(NaN, 'b', 'test', 'int32');
     expect(b.rank).toBe(0);
     expect(b.dtype).toBe('int32');
-    expectNumbersClose(b.get(), 0);
+    expectArraysClose(b, 0);
   });
 
   it('primitive number', () => {
     const a = convertToTensor(3, 'a', 'test');
     expect(a.rank).toBe(0);
     expect(a.dtype).toBe('float32');
-    expectNumbersClose(a.get(), 3);
+    expectArraysClose(a, 3);
   });
 
   it('primitive integer, NaN converts to zero', () => {
     const a = convertToTensor(NaN, 'a', 'test', 'int32');
     expect(a.rank).toBe(0);
     expect(a.dtype).toBe('int32');
-    expectNumbersClose(a.get(), 0);
+    expectArraysClose(a, 0);
   });
 
   it('primitive boolean, parsed as bool tensor', () => {
     const a = convertToTensor(true, 'a', 'test');
     expect(a.rank).toBe(0);
     expect(a.dtype).toBe('bool');
-    expectNumbersClose(a.get(), 1);
+    expectArraysClose(a, 1);
   });
 
   it('primitive boolean, forced to be parsed as bool tensor', () => {
     const a = convertToTensor(true, 'a', 'test', 'bool');
     expect(a.rank).toBe(0);
     expect(a.dtype).toBe('bool');
-    expect(a.get()).toBe(1);
+    expectArraysEqual(a, 1);
   });
 
   it('array1d', () => {

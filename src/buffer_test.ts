@@ -16,8 +16,8 @@
  */
 
 import * as tf from './index';
-import {describeWithFlags} from './jasmine_util';
-import {ALL_ENVS, expectArraysClose, expectArraysEqual} from './test_util';
+import {ALL_ENVS, describeWithFlags} from './jasmine_util';
+import {expectArraysClose, expectArraysEqual} from './test_util';
 
 describeWithFlags('tf.buffer', ALL_ENVS, () => {
   it('float32', () => {
@@ -32,6 +32,16 @@ describeWithFlags('tf.buffer', ALL_ENVS, () => {
     expect(buff.get(0, 1, 2)).toBeCloseTo(0);
     expectArraysClose(buff.toTensor(), [1.3, 0, 0, 2.9, 0, 0]);
     expectArraysClose(buff.values, new Float32Array([1.3, 0, 0, 2.9, 0, 0]));
+  });
+
+  it('get() out of range throws', () => {
+    const t = tf.tensor([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2]);
+
+    const buff = t.bufferSync();
+    expect(buff.get(0, 0, 0)).toBeCloseTo(1);
+    expect(buff.get(0, 0, 1)).toBeCloseTo(2);
+    expect(() => buff.get(0, 0, 2))
+        .toThrowError(/Requested out of range element/);
   });
 
   it('int32', () => {
@@ -69,5 +79,17 @@ describeWithFlags('tf.buffer', ALL_ENVS, () => {
     expect(buff.get(1, 0)).toEqual('third');
     expect(buff.get(1, 1)).toBeFalsy();
     expectArraysEqual(buff.toTensor(), ['first', null, 'third', null]);
+  });
+
+  it('throws when passed non-integer shape', () => {
+    const msg = 'Tensor must have a shape comprised of positive ' +
+        'integers but got shape [2,2.2].';
+    expect(() => tf.buffer([2, 2.2])).toThrowError(msg);
+  });
+
+  it('throws when passed negative shape', () => {
+    const msg = 'Tensor must have a shape comprised of positive ' +
+        'integers but got shape [2,-2].';
+    expect(() => tf.buffer([2, -2])).toThrowError(msg);
   });
 });

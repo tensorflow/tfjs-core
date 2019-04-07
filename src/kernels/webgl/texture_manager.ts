@@ -16,7 +16,6 @@
  */
 
 import {ENV} from '../../environment';
-
 import {GPGPUContext} from './gpgpu_context';
 import {PhysicalTextureType, TextureUsage} from './tex_util';
 
@@ -150,11 +149,11 @@ function getPhysicalFromLogicalTextureType(
                       PhysicalTextureType.UNPACKED_FLOAT32;
   } else if (logicalTexType === TextureUsage.RENDER || logicalTexType == null) {
     if (isPacked) {
-      return ENV.get('WEBGL_RENDER_FLOAT32_ENABLED') ?
+      return ENV.getBool('WEBGL_RENDER_FLOAT32_ENABLED') ?
           PhysicalTextureType.PACKED_2X2_FLOAT32 :
           PhysicalTextureType.PACKED_2X2_FLOAT16;
     }
-    return ENV.get('WEBGL_RENDER_FLOAT32_ENABLED') ?
+    return ENV.getBool('WEBGL_RENDER_FLOAT32_ENABLED') ?
         PhysicalTextureType.UNPACKED_FLOAT32 :
         PhysicalTextureType.UNPACKED_FLOAT16;
   } else if (

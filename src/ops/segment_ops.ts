@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {ENV} from '../environment';
+import {ENGINE} from '../engine';
 import {Tensor, Tensor1D} from '../tensor';
 import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
@@ -51,18 +51,20 @@ function unsortedSegmentSum_<T extends Tensor>(
   const $x = convertToTensor(x, 'x', 'unsortedSegmentSum');
   const $segmentIds =
       convertToTensor(segmentIds, 'segmentIds', 'unsortedSegmentSum', 'int32');
-  assert(isInt(numSegments), 'numSegments must be of dtype int');
+  assert(isInt(numSegments), () => 'numSegments must be of dtype int');
 
-  const gradFunc = (dy: T) => {
+  const gradFunc = (dy: T, saved: Tensor[]) => {
+    const [$segmentIds] = saved;
     const derX = () => {
-      return gatherDropNegatives(dy, $segmentIds);
+      return gatherDropNegatives(dy, $segmentIds as Tensor1D);
     };
     return {$x: derX};
   };
-  return ENV.engine.runKernel(
-             backend =>
-                 backend.unsortedSegmentSum($x, $segmentIds, numSegments),
-             {$x}, gradFunc) as T;
+  return ENGINE.runKernel((backend, save) => {
+    const res = backend.unsortedSegmentSum($x, $segmentIds, numSegments);
+    save([$segmentIds]);
+    return res;
+  }, {$x}, gradFunc) as T;
 }
 
 /**
@@ -93,7 +95,8 @@ function gather_<T extends Tensor>(
   axis = parseAxisParam(axis, $x.shape)[0];
   const shapeInfo = collectGatherOpShapeInfo($x, $indices, axis);
 
-  const grad = (dy: T) => {
+  const grad = (dy: T, saved: Tensor[]) => {
+    const [$indices] = saved;
     const derX = () => {
       const paramsShape = $x.shape;
       const indicesSize = $indices.size;
@@ -125,10 +128,11 @@ function gather_<T extends Tensor>(
     };
     return {$x: derX};
   };
-  return (ENV.engine.runKernel(
-              backend => backend.gather($x, $indices.flatten(), axis), {$x},
-              grad))
-             .reshape(shapeInfo.outputShape) as T;
+  return (ENGINE.runKernel((backend, save) => {
+           const res = backend.gather($x, $indices.flatten(), axis);
+           save([$indices]);
+           return res;
+         }, {$x}, grad)).reshape(shapeInfo.outputShape) as T;
 }
 
 function arrayRange(start: number, stop: number): number[] {

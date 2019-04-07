@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {variableGrads} from '../globals';
+import {variableGrads} from '../gradients';
 import {Serializable} from '../serialization';
 import {Scalar, Variable} from '../tensor';
 import {NamedTensorMap} from '../tensor_types';
@@ -75,6 +75,11 @@ export abstract class Optimizer extends Serializable {
    * @param variableGradients A mapping of variable name to its gradient value.
    */
   abstract applyGradients(variableGradients: NamedTensorMap): void;
+
+  /**
+   * Dispose the variables (if any) owned by this optimizer instance.
+   */
+  dispose(): void {}
 }
 
 Object.defineProperty(Optimizer, Symbol.hasInstance, {

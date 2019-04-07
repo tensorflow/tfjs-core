@@ -19,14 +19,9 @@ import {NamedTensorMap} from '../tensor_types';
 import * as util from '../util';
 
 import {decodeWeights} from './io_utils';
-import {DTYPE_VALUE_SIZE_MAP, WeightsManifestConfig, WeightsManifestEntry} from './types';
+import {monitorPromisesProgress} from './progress';
+import {DTYPE_VALUE_SIZE_MAP, LoadOptions, WeightsManifestConfig, WeightsManifestEntry} from './types';
 
-type RequestHeader = {
-  [key: string]: string
-};
-
-const OCTET_STREAM_TYPE = 'application/octet-stream';
-const CONTENT_TYPE = 'Content-type';
 /**
  * Reads binary weights data from a number of URLs.
  *
@@ -39,52 +34,37 @@ const CONTENT_TYPE = 'Content-type';
  *   length as `fetchURLs`.
  */
 export async function loadWeightsAsArrayBuffer(
-    fetchURLs: string[], requestOptions?: RequestInit, fetchFunc?: Function,
-    onProgress?: Function): Promise<ArrayBuffer[]> {
-  if (fetchFunc == null) {
-    fetchFunc = fetch;
+    fetchURLs: string[], loadOptions?: LoadOptions): Promise<ArrayBuffer[]> {
+  if (loadOptions == null) {
+    loadOptions = {};
   }
 
-  // Add accept header
-  requestOptions = requestOptions || {};
-  const headers = (requestOptions.headers || {}) as RequestHeader;
-  headers['Accept'] = OCTET_STREAM_TYPE;
-  requestOptions.headers = headers;
+  const fetchFunc =
+      loadOptions.fetchFunc == null ? fetch : loadOptions.fetchFunc;
 
   // Create the requests for all of the weights in parallel.
   const requests =
-      fetchURLs.map(fetchURL => fetchFunc(fetchURL, requestOptions));
+      fetchURLs.map(fetchURL => fetchFunc(fetchURL, loadOptions.requestInit));
 
   const fetchStartFraction = 0;
   const fetchEndFraction = 0.5;
 
-  const responses = onProgress == null ?
+  const responses = loadOptions.onProgress == null ?
       await Promise.all(requests) :
-      await util.monitorPromisesProgress(
-          requests, onProgress, fetchStartFraction, fetchEndFraction);
+      await monitorPromisesProgress(
+          requests, loadOptions.onProgress, fetchStartFraction,
+          fetchEndFraction);
 
-  const badContentType = responses.filter(response => {
-    const contentType = response.headers.get(CONTENT_TYPE);
-    return !contentType || contentType.indexOf(OCTET_STREAM_TYPE) === -1;
-  });
-  if (badContentType.length > 0) {
-    throw new Error(
-        badContentType
-            .map(
-                resp => `Request to ${resp.url} for weight file failed.` +
-                    ` Expected content type ${OCTET_STREAM_TYPE} but got ${
-                            resp.headers.get(CONTENT_TYPE)}.`)
-            .join('\n'));
-  }
   const bufferPromises = responses.map(response => response.arrayBuffer());
 
   const bufferStartFraction = 0.5;
   const bufferEndFraction = 1;
 
-  const buffers = onProgress == null ?
+  const buffers = loadOptions.onProgress == null ?
       await Promise.all(bufferPromises) :
-      await util.monitorPromisesProgress(
-          bufferPromises, onProgress, bufferStartFraction, bufferEndFraction);
+      await monitorPromisesProgress(
+          bufferPromises, loadOptions.onProgress, bufferStartFraction,
+          bufferEndFraction);
   return buffers;
 }
 
@@ -100,7 +80,7 @@ export async function loadWeightsAsArrayBuffer(
 export async function loadWeights(
     manifest: WeightsManifestConfig, filePathPrefix = '',
     weightNames?: string[],
-    requestOptions?: RequestInit): Promise<NamedTensorMap> {
+    requestInit?: RequestInit): Promise<NamedTensorMap> {
   // TODO(nsthorat): Groups are currently fetched atomically. If you need a
   // single weight from a group, the whole group will be fetched. At a future
   // date, we should support fetching only the individual shards within a
@@ -108,7 +88,7 @@ export async function loadWeights(
   // TODO(cais): Use `decodeWeights` for implementation.
 
   const fetchWeights = (fetchUrls: string[]) =>
-      loadWeightsAsArrayBuffer(fetchUrls, requestOptions);
+      loadWeightsAsArrayBuffer(fetchUrls, {requestInit});
   const loadWeights = weightsLoaderFactory(fetchWeights);
 
   return loadWeights(manifest, filePathPrefix, weightNames);

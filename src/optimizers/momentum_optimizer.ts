@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {ENV} from '../environment';
+import {ENGINE} from '../engine';
 import {tidy} from '../globals';
 import {scalar, zerosLike} from '../ops/ops';
 import {ConfigDict, registerClass, Serializable, SerializableConstructor} from '../serialization';
@@ -40,7 +40,7 @@ export class MomentumOptimizer extends SGDOptimizer {
 
   applyGradients(variableGradients: NamedVariableMap) {
     for (const variableName in variableGradients) {
-      const value = ENV.engine.registeredVariables[variableName];
+      const value = ENGINE.registeredVariables[variableName];
       if (this.accumulations[variableName] == null) {
         const trainable = false;
         tidy(() => {
@@ -67,7 +67,7 @@ export class MomentumOptimizer extends SGDOptimizer {
     }
   }
 
-  dispose() {
+  dispose(): void {
     super.dispose();
     this.m.dispose();
     if (this.accumulations != null) {
@@ -88,16 +88,17 @@ export class MomentumOptimizer extends SGDOptimizer {
 
   getConfig(): ConfigDict {
     return {
-      learningRate: this.learningRate,
-      momentum: this.momentum,
-      useNesterov: this.useNesterov
+      'learningRate': this.learningRate,
+      'momentum': this.momentum,
+      'useNesterov': this.useNesterov
     };
   }
 
   /** @nocollapse */
   static fromConfig<T extends Serializable>(
       cls: SerializableConstructor<T>, config: ConfigDict): T {
-    return new cls(config.learningRate, config.momentum, config.useNesterov);
+    return new cls(
+        config['learningRate'], config['momentum'], config['useNesterov']);
   }
 }
 registerClass(MomentumOptimizer);

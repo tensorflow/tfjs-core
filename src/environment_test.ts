@@ -15,206 +15,134 @@
  * =============================================================================
  */
 
-import * as device_util from './device_util';
-import {ENV, Environment, EPSILON_FLOAT16, EPSILON_FLOAT32} from './environment';
-import {BEFORE_PAGING_CONSTANT, Features, getQueryParams} from './environment_util';
-import * as tf from './index';
-import {describeWithFlags} from './jasmine_util';
-import {KernelBackend} from './kernels/backend';
-import {MathBackendCPU} from './kernels/backend_cpu';
-import {MathBackendWebGL} from './kernels/backend_webgl';
-import {ALL_ENVS, expectArraysClose, NODE_ENVS, WEBGL_ENVS} from './test_util';
+import * as environment from './environment';
+import {Environment} from './environment';
 
-describeWithFlags(
-    'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE', WEBGL_ENVS, () => {
-      it('disjoint query timer disabled', () => {
-        const features:
-            Features = {'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION': 0};
+describe('initializes flags from the url', () => {
+  // Silence console.warns for these tests.
+  beforeAll(() => spyOn(console, 'warn').and.returnValue(null));
 
-        const env = new Environment(features);
+  it('no overrides one registered flag', () => {
+    spyOn(environment, 'getQueryParams').and.returnValue({});
 
-        expect(env.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE'))
-            .toBe(false);
-      });
+    const global = {location: {search: ''}};
+    const env = new Environment(global);
+    env.registerFlag('FLAG1', () => false);
+    expect(env.get('FLAG1')).toBe(false);
+  });
 
-      it('disjoint query timer enabled, mobile', () => {
-        const features:
-            Features = {'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION': 1};
-        spyOn(device_util, 'isMobile').and.returnValue(true);
-
-        const env = new Environment(features);
-
-        expect(env.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE'))
-            .toBe(false);
-      });
-
-      it('disjoint query timer enabled, not mobile', () => {
-        const features:
-            Features = {'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION': 1};
-        spyOn(device_util, 'isMobile').and.returnValue(false);
-
-        const env = new Environment(features);
-
-        expect(env.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE'))
-            .toBe(true);
-      });
+  it('one unregistered flag', () => {
+    spyOn(environment, 'getQueryParams').and.returnValue({
+      'tfjsflags': 'FLAG1:true'
     });
 
-describeWithFlags('WEBGL_NUM_MB_BEFORE_PAGING webgl', WEBGL_ENVS, () => {
-  it('should be set in a browser', () => {
-    const expectedMBBeforePaging = window.screen.width * window.screen.height *
-        window.devicePixelRatio * BEFORE_PAGING_CONSTANT / 1024;
-
-    const features: Features = {'IS_BROWSER': true, 'PROD': false};
-    const env = new Environment(features);
-    expect(env.get('WEBGL_NUM_MB_BEFORE_PAGING')).toBe(expectedMBBeforePaging);
+    const global = {location: {search: ''}};
+    const env = new Environment(global);
+    expect(env.features).toEqual({});
   });
 
-  it('should be off when the environment is prod', () => {
-    const features: Features = {'IS_BROWSER': true, 'PROD': true};
-    const env = new Environment(features);
-    expect(env.get('WEBGL_NUM_MB_BEFORE_PAGING'))
-        .toBe(Number.POSITIVE_INFINITY);
+  it('one registered flag', () => {
+    const global = {location: {search: '?tfjsflags=FLAG1:true'}};
+    const env = new Environment(global);
+    env.registerFlag('FLAG1', () => false);
+
+    expect(env.get('FLAG1')).toBe(true);
   });
 
-  it('should not cause errors when paging is turned off', () => {
-    ENV.set('WEBGL_NUM_MB_BEFORE_PAGING', Number.POSITIVE_INFINITY);
+  it('two registered flags', () => {
+    const global = {location: {search: '?tfjsflags=FLAG1:true,FLAG2:200'}};
+    const env = new Environment(global);
+    env.registerFlag('FLAG1', () => false);
+    env.registerFlag('FLAG2', () => 100);
 
-    const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
-    const b = tf.tensor2d([0, 1, -3, 2, 2, 1], [3, 2]);
-
-    const c = tf.matMul(a, b);
-
-    expectArraysClose(c, [0, 8, -3, 20]);
+    expect(env.get('FLAG1')).toBe(true);
+    expect(env.get('FLAG2')).toBe(200);
   });
 });
 
-describeWithFlags('WEBGL_NUM_MB_BEFORE_PAGING node', NODE_ENVS, () => {
-  it('should be off when the environment is node', () => {
-    const env = new Environment();
-    expect(env.get('WEBGL_NUM_MB_BEFORE_PAGING'))
-        .toBe(Number.POSITIVE_INFINITY);
+describe('flag registration and evaluation', () => {
+  it('one flag registered', () => {
+    const env = new Environment({});
+
+    const evalObject = {eval: () => true};
+    const spy = spyOn(evalObject, 'eval').and.callThrough();
+
+    env.registerFlag('FLAG1', () => evalObject.eval());
+
+    expect(env.get('FLAG1')).toBe(true);
+    expect(spy.calls.count()).toBe(1);
+
+    // Multiple calls to get do not call the evaluation function again.
+    expect(env.get('FLAG1')).toBe(true);
+    expect(spy.calls.count()).toBe(1);
+  });
+
+  it('multiple flags registered', () => {
+    const env = new Environment({});
+
+    const evalObject = {eval1: () => true, eval2: () => 100};
+    const spy1 = spyOn(evalObject, 'eval1').and.callThrough();
+    const spy2 = spyOn(evalObject, 'eval2').and.callThrough();
+
+    env.registerFlag('FLAG1', () => evalObject.eval1());
+    env.registerFlag('FLAG2', () => evalObject.eval2());
+
+    expect(env.get('FLAG1')).toBe(true);
+    expect(spy1.calls.count()).toBe(1);
+    expect(spy2.calls.count()).toBe(0);
+    expect(env.get('FLAG2')).toBe(100);
+    expect(spy1.calls.count()).toBe(1);
+    expect(spy2.calls.count()).toBe(1);
+
+    // Multiple calls to get do not call the evaluation function again.
+    expect(env.get('FLAG1')).toBe(true);
+    expect(env.get('FLAG2')).toBe(100);
+    expect(spy1.calls.count()).toBe(1);
+    expect(spy2.calls.count()).toBe(1);
+  });
+
+  it('setting overrides value', () => {
+    const env = new Environment({});
+
+    const evalObject = {eval: () => true};
+    const spy = spyOn(evalObject, 'eval').and.callThrough();
+
+    env.registerFlag('FLAG1', () => evalObject.eval());
+
+    expect(env.get('FLAG1')).toBe(true);
+    expect(spy.calls.count()).toBe(1);
+
+    env.set('FLAG1', false);
+
+    expect(env.get('FLAG1')).toBe(false);
+    expect(spy.calls.count()).toBe(1);
+  });
+
+  it('set hook is called', () => {
+    const env = new Environment({});
+
+    const evalObject = {eval: () => true, setHook: () => true};
+    const evalSpy = spyOn(evalObject, 'eval').and.callThrough();
+    const setHookSpy = spyOn(evalObject, 'setHook').and.callThrough();
+
+    env.registerFlag(
+        'FLAG1', () => evalObject.eval(), () => evalObject.setHook());
+
+    expect(env.get('FLAG1')).toBe(true);
+    expect(evalSpy.calls.count()).toBe(1);
+    expect(setHookSpy.calls.count()).toBe(0);
+
+    env.set('FLAG1', false);
+
+    expect(env.get('FLAG1')).toBe(false);
+    expect(evalSpy.calls.count()).toBe(1);
+    expect(setHookSpy.calls.count()).toBe(1);
   });
 });
 
-describe('Backend', () => {
-  beforeAll(() => {
-    // Silences backend registration warnings.
-    spyOn(console, 'warn');
-  });
-
-  afterEach(() => {
-    ENV.reset();
-  });
-
-  it('custom cpu registration', () => {
-    let backend: KernelBackend;
-    ENV.registerBackend('custom-cpu', () => {
-      backend = new MathBackendCPU();
-      return backend;
-    });
-
-    expect(ENV.findBackend('custom-cpu')).toBe(backend);
-    Environment.setBackend('custom-cpu');
-    expect(ENV.backend).toBe(backend);
-
-    ENV.removeBackend('custom-cpu');
-  });
-
-  it('webgl not supported, falls back to cpu', () => {
-    ENV.setFeatures({'WEBGL_VERSION': 0});
-    let cpuBackend: KernelBackend;
-    ENV.registerBackend('custom-cpu', () => {
-      cpuBackend = new MathBackendCPU();
-      return cpuBackend;
-    }, 103);
-    const success =
-        ENV.registerBackend('custom-webgl', () => new MathBackendWebGL(), 104);
-    expect(success).toBe(false);
-    expect(ENV.findBackend('custom-webgl') == null).toBe(true);
-    expect(Environment.getBackend()).toBe('custom-cpu');
-    expect(ENV.backend).toBe(cpuBackend);
-
-    ENV.removeBackend('custom-cpu');
-  });
-
-  it('default custom background null', () => {
-    expect(ENV.findBackend('custom')).toBeNull();
-  });
-
-  it('allow custom backend', () => {
-    const backend = new MathBackendCPU();
-    const success = ENV.registerBackend('custom', () => backend);
-    expect(success).toBeTruthy();
-    expect(ENV.findBackend('custom')).toEqual(backend);
-    ENV.removeBackend('custom');
-  });
-});
-
-describe('environment_util.getQueryParams', () => {
+describe('environment.getQueryParams', () => {
   it('basic', () => {
-    expect(getQueryParams('?a=1&b=hi&f=animal'))
+    expect(environment.getQueryParams('?a=1&b=hi&f=animal'))
         .toEqual({'a': '1', 'b': 'hi', 'f': 'animal'});
-  });
-});
-
-describe('public api tf.*', () => {
-  beforeEach(() => {
-    ENV.reset();
-  });
-
-  afterEach(() => {
-    ENV.reset();
-  });
-
-  it('tf.enableProdMode', () => {
-    tf.enableProdMode();
-    expect(ENV.get('PROD')).toBe(true);
-  });
-});
-
-describeWithFlags('max texture size', WEBGL_ENVS, () => {
-  it('should not throw exception', () => {
-    expect(() => ENV.get('WEBGL_MAX_TEXTURE_SIZE')).not.toThrow();
-  });
-});
-
-describeWithFlags('epsilon', {}, () => {
-  it('Epsilon is a function of float precision', () => {
-    const epsilonValue =
-        ENV.backend.floatPrecision() === 32 ? EPSILON_FLOAT32 : EPSILON_FLOAT16;
-    expect(ENV.get('EPSILON')).toBe(epsilonValue);
-  });
-
-  it('abs(epsilon) > 0', () => {
-    expect(tf.abs(ENV.get('EPSILON')).get()).toBeGreaterThan(0);
-  });
-});
-
-describeWithFlags('TENSORLIKE_CHECK_SHAPE_CONSISTENCY', ALL_ENVS, () => {
-  it('disabled when prod is enabled', () => {
-    const env = new Environment();
-    env.set('PROD', true);
-    expect(env.get('TENSORLIKE_CHECK_SHAPE_CONSISTENCY')).toBe(false);
-  });
-
-  it('enabled when prod is disabled', () => {
-    const env = new Environment();
-    env.set('PROD', false);
-    expect(env.get('TENSORLIKE_CHECK_SHAPE_CONSISTENCY')).toBe(true);
-  });
-});
-
-describeWithFlags('WEBGL_SIZE_UPLOAD_UNIFORM', WEBGL_ENVS, () => {
-  it('is 0 when there is no float32 bit support', () => {
-    const env = new Environment();
-    env.set('WEBGL_RENDER_FLOAT32_ENABLED', false);
-    expect(env.get('WEBGL_SIZE_UPLOAD_UNIFORM')).toBe(0);
-  });
-
-  it('is > 0 when there is float32 bit support', () => {
-    const env = new Environment();
-    env.set('WEBGL_RENDER_FLOAT32_ENABLED', true);
-    expect(env.get('WEBGL_SIZE_UPLOAD_UNIFORM')).toBeGreaterThan(0);
   });
 });

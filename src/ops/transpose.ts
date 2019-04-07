@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {ENV} from '../environment';
+import {ENGINE} from '../engine';
 import {Tensor} from '../tensor';
 import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
@@ -49,12 +49,12 @@ function transpose_<T extends Tensor>(x: T|TensorLike, perm?: number[]): T {
   }
   util.assert(
       $x.rank === perm.length,
-      `Error in transpose: rank of input ${$x.rank} ` +
+      () => `Error in transpose: rank of input ${$x.rank} ` +
           `must match length of perm ${perm}.`);
   perm.forEach(axis => {
     util.assert(
         axis >= 0 && axis < $x.rank,
-        `All entries in 'perm' must be between 0 and ${$x.rank - 1}` +
+        () => `All entries in 'perm' must be between 0 and ${$x.rank - 1}` +
             ` but got ${perm}`);
   });
 
@@ -66,8 +66,7 @@ function transpose_<T extends Tensor>(x: T|TensorLike, perm?: number[]): T {
     const undoPerm = axis_util.getUndoAxesPermutation(perm);
     return {$x: () => dy.transpose(undoPerm)};
   };
-  return ENV.engine.runKernel(
-      backend => backend.transpose($x, perm), {$x}, der);
+  return ENGINE.runKernel(backend => backend.transpose($x, perm), {$x}, der);
 }
 
 export const transpose = op({transpose_});

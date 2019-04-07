@@ -16,8 +16,8 @@
  */
 
 import * as tf from '../index';
-import {describeWithFlags} from '../jasmine_util';
-import {ALL_ENVS, expectArraysClose, PACKED_ENVS, WEBGL_ENVS} from '../test_util';
+import {ALL_ENVS, describeWithFlags, PACKED_ENVS, WEBGL_ENVS} from '../jasmine_util';
+import {expectArraysClose} from '../test_util';
 import {Rank} from '../types';
 
 function generateCaseInputs(totalSizeTensor: number, totalSizeFilter: number) {
@@ -34,8 +34,8 @@ function generateCaseInputs(totalSizeTensor: number, totalSizeFilter: number) {
   return {input: inp, filter: filt};
 }
 
-describeWithFlags('im2col', PACKED_ENVS, () => {
-  it('should not leak memory', () => {
+describeWithFlags('conv to matmul', PACKED_ENVS, () => {
+  it('im2col should not leak memory', () => {
     const inputDepth = 1;
     const inputShape: [number, number, number] = [2, 2, inputDepth];
     const outputDepth = 1;
@@ -55,9 +55,49 @@ describeWithFlags('im2col', PACKED_ENVS, () => {
 
     expect(endNumBytes - startNumBytes).toEqual(4);
   });
+
+  it('pointwise conv should work when matmul is unpacked', () => {
+    const inputDepth =
+        1001;  // this number must be greater than MATMUL_SHARED_DIM_THRESHOLD
+               // for matmul to be unpacked
+    const inputShape: [number, number, number] = [3, 3, inputDepth];
+    const outputDepth = 1;
+    const fSize = 1;
+    const pad = 'same';
+    const stride: [number, number] = [1, 1];
+
+    let x = tf.randomNormal(inputShape) as tf.Tensor3D;
+    x = x.add(1);  // this packs x so we can test the case where we mistakenly
+                   // want to avoid expensive reshape in pointwise conv2d even
+                   // though matmul is unpacked
+    const w =
+        tf.randomNormal([fSize, fSize, inputDepth, outputDepth]) as tf.Tensor4D;
+
+    expect(() => tf.conv2d(x, w, stride, pad)).not.toThrow();
+  });
 });
 
 describeWithFlags('conv2d', ALL_ENVS, () => {
+  it('x=[1,4,4,1] f=[1,1,1,3] s=2 d=1 p=same', () => {
+    const inputDepth = 1;
+    const inputShape: [number, number, number] = [4, 4, inputDepth];
+    const outputDepth = 3;
+    const fSize = 1;
+    const pad = 'same';
+    const stride: [number, number] = [2, 2];
+
+    const x = tf.tensor3d(
+        [
+          10, 30, 50, 70, 20, 40, 60, 80, -10, -30, -50, -70, -20, -40, -60, -80
+        ],
+        inputShape);
+    const w = tf.tensor4d([1, 0.5, 1], [fSize, fSize, inputDepth, outputDepth]);
+
+    const result = tf.conv2d(x, w, stride, pad);
+
+    expectArraysClose(
+        result, [10, 5, 10, 50, 25, 50, -10, -5, -10, -50, -25, -50]);
+  });
   it('x=[2,2,1] f=[1,1,1,2] s=1 d=1 p=0', () => {
     const inputDepth = 1;
     const inputShape: [number, number, number] = [2, 2, inputDepth];
@@ -239,7 +279,7 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
         .toThrowError();
   });
 
-  it('gradient input=[3,3,1] f=[2,2,1,1] s=1 p=0', () => {
+  it('gradient with clones input=[3,3,1] f=[2,2,1,1] s=1 p=0', () => {
     const inputDepth = 1;
     const outputDepth = 1;
     const inputShape: [number, number, number] = [3, 3, inputDepth];
@@ -255,7 +295,8 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
     const dy = tf.tensor3d([3, 1, 2, 0], [2, 2, 1]);
 
     const grads = tf.grads(
-        (x: tf.Tensor3D, filter: tf.Tensor4D) => x.conv2d(filter, stride, pad));
+        (x: tf.Tensor3D, filter: tf.Tensor4D) =>
+            x.clone().conv2d(filter.clone(), stride, pad).clone());
     const [dx, dfilter] = grads([x, filter], dy);
 
     expect(dx.shape).toEqual(x.shape);
@@ -339,22 +380,53 @@ describeWithFlags('conv2d webgl', WEBGL_ENVS, () => {
     const x = tf.tensor3d([1, 2, 3, 4], inputShape);
     const w = tf.tensor4d([1, 2, 3, 4], [fSize, fSize, 2, 2]);
 
-    const webglLazilyUnpackFlagSaved = tf.ENV.get('WEBGL_LAZILY_UNPACK');
+    const webglLazilyUnpackFlagSaved = tf.ENV.getBool('WEBGL_LAZILY_UNPACK');
     tf.ENV.set('WEBGL_LAZILY_UNPACK', true);
-    const webglLazilyPackBinaryOperationsFlagSaved =
-        tf.ENV.get('WEBGL_PACK_BINARY_OPERATIONS');
+    const webglPackBinaryOperationsFlagSaved =
+        tf.ENV.getBool('WEBGL_PACK_BINARY_OPERATIONS');
     tf.ENV.set('WEBGL_PACK_BINARY_OPERATIONS', true);
-    
+
     // First conv2D tests conv2D with non-packed input |x|, and the second uses
     // packed input |result|.
     const result = tf.conv2d(x, w, stride, pad);
     const result1 = tf.conv2d(result, w, stride, pad);
 
     tf.ENV.set('WEBGL_LAZILY_UNPACK', webglLazilyUnpackFlagSaved);
-    tf.ENV.set('WEBGL_PACK_BINARY_OPERATIONS',
-        webglLazilyPackBinaryOperationsFlagSaved);
+    tf.ENV.set(
+        'WEBGL_PACK_BINARY_OPERATIONS', webglPackBinaryOperationsFlagSaved);
 
     expectArraysClose(result, [7, 10, 15, 22]);
     expectArraysClose(result1, [37, 54, 81, 118]);
+  });
+
+  it('tf.memory() packed input x=[1,1,1,2] f=[1,1,2,2] s=1 d=1 p=0', () => {
+    const inputShape: [number, number, number, number] = [1, 1, 1, 2];
+    const fSize = 1;
+    const pad = 0;
+    const stride = 1;
+
+    const xInit = tf.tensor4d([0, 1], inputShape);
+    const w = tf.tensor4d([1, 2, 3, 4], [fSize, fSize, 2, 2]);
+
+    const webglLazilyUnpackFlagSaved = tf.ENV.getBool('WEBGL_LAZILY_UNPACK');
+    tf.ENV.set('WEBGL_LAZILY_UNPACK', true);
+    const webglPackBinaryOperationsFlagSaved =
+        tf.ENV.getBool('WEBGL_PACK_BINARY_OPERATIONS');
+    tf.ENV.set('WEBGL_PACK_BINARY_OPERATIONS', true);
+
+    const x = xInit.add<tf.Tensor4D>(1);
+    const result = tf.conv2d(x, w, stride, pad);
+
+    tf.ENV.set('WEBGL_LAZILY_UNPACK', webglLazilyUnpackFlagSaved);
+    tf.ENV.set(
+        'WEBGL_PACK_BINARY_OPERATIONS', webglPackBinaryOperationsFlagSaved);
+
+    expectArraysClose(result, [7, 10]);
+    result.dispose();
+    x.dispose();
+    xInit.dispose();
+    w.dispose();
+    expect((tf.memory() as tf.webgl.WebGLMemoryInfo).numBytesInGPU).toBe(0);
+    expect(tf.memory().numBytes).toBe(0);
   });
 });

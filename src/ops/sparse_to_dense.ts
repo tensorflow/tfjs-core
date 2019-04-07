@@ -15,12 +15,11 @@
  * =============================================================================
  */
 
-import {ENV} from '../environment';
+import {ENGINE} from '../engine';
 import * as sparse_to_dense from '../ops/sparse_to_dense_util';
 import {Scalar, Tensor} from '../tensor';
 import {convertToTensor} from '../tensor_util_env';
-import {Rank, ShapeMap, TensorLike} from '../types';
-
+import {Rank, ScalarLike, ShapeMap, TensorLike} from '../types';
 import {op} from './operation';
 
 /**
@@ -59,7 +58,7 @@ import {op} from './operation';
 /** @doc {heading: 'Operations', subheading: 'Normalization'} */
 function sparseToDense_<R extends Rank>(
     sparseIndices: Tensor|TensorLike, sparseValues: Tensor|TensorLike,
-    outputShape: ShapeMap[R], defaultValue: Scalar|TensorLike): Tensor<R> {
+    outputShape: ShapeMap[R], defaultValue: Scalar|ScalarLike = 0): Tensor<R> {
   const $sparseIndices =
       convertToTensor(sparseIndices, 'sparseIndices', 'sparseToDense', 'int32');
   const $sparseValues =
@@ -70,7 +69,7 @@ function sparseToDense_<R extends Rank>(
   sparse_to_dense.validateInput(
       $sparseIndices, $sparseValues, outputShape, $defaultValue);
 
-  return ENV.engine.runKernel(
+  return ENGINE.runKernel(
       backend => backend.sparseToDense(
           $sparseIndices, $sparseValues, outputShape, $defaultValue),
       {$sparseIndices, $sparseValues, $defaultValue});

@@ -16,8 +16,9 @@
  */
 
 import * as tf from '../../index';
-import {describeWithFlags} from '../../jasmine_util';
-import {expectArraysClose, WEBGL_ENVS} from '../../test_util';
+import {describeWithFlags, WEBGL_ENVS} from '../../jasmine_util';
+import {Tensor} from '../../tensor';
+import {expectArraysClose} from '../../test_util';
 
 describeWithFlags('custom-op webgl', WEBGL_ENVS, () => {
   class SquareAndAddKernel implements tf.webgl.GPGPUProgram {
@@ -55,15 +56,18 @@ describeWithFlags('custom-op webgl', WEBGL_ENVS, () => {
   }
 
   function squareAndAdd<T extends tf.Tensor>(x: T): T {
-    const fn = tf.customGrad(x => {
-      const webglBackend = tf.ENV.backend as tf.webgl.MathBackendWebGL;
+    const fn = tf.customGrad((x: tf.Tensor, save: tf.GradSaveFunc) => {
+      save([x]);
+      const webglBackend = tf.backend() as tf.webgl.MathBackendWebGL;
       const program = new SquareAndAddKernel(x.shape);
       const backpropProgram = new SquareAndAddBackpropKernel(x.shape);
 
       const value = webglBackend.compileAndRun(program, [x]) as tf.Tensor;
 
-      const gradFunc = (dy: T) =>
-          (webglBackend.compileAndRun(backpropProgram, [x]) as T).mul(dy);
+      const gradFunc = (dy: T, saved: Tensor[]) => {
+        const [x] = saved;
+        return (webglBackend.compileAndRun(backpropProgram, [x]) as T).mul(dy);
+      };
       return {value, gradFunc};
     });
     return fn(x) as T;

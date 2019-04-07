@@ -15,43 +15,32 @@
  * =============================================================================
  */
 
-import {ENV} from './environment';
-import {Features} from './environment_util';
+import {ENGINE} from './engine';
 import {Tensor} from './tensor';
 import {TypedArray} from './types';
 import * as util from './util';
 import {isString} from './util';
 
-// TODO(smilkov): Move these constants to jasmine_util.
-export const WEBGL_ENVS: Features = {
-  'HAS_WEBGL': true
-};
-export const PACKED_ENVS: Features = {
-  'WEBGL_PACK': true
-};
-export const NODE_ENVS: Features = {
-  'IS_NODE': true
-};
-export const CHROME_ENVS: Features = {
-  'IS_CHROME': true
-};
-export const BROWSER_ENVS: Features = {
-  'IS_BROWSER': true
-};
-export const CPU_ENVS: Features = {
-  'HAS_WEBGL': false
-};
-
-export const ALL_ENVS: Features = {};
+const TEST_EPSILON_FLOAT32 = 1e-3;
+export const TEST_EPSILON_FLOAT16 = 1e-1;
 
 export function expectArraysClose(
     actual: Tensor|TypedArray|number[],
-    expected: Tensor|TypedArray|number[]|boolean[], epsilon?: number) {
+    expected: Tensor|TypedArray|number[]|boolean[]|number|boolean,
+    epsilon?: number) {
   if (epsilon == null) {
-    epsilon = ENV.get('TEST_EPSILON');
+    epsilon = testEpsilon();
   }
+  const exp = typeof expected === 'number' || typeof expected === 'boolean' ?
+      [expected] as number[] :
+      expected as number[];
   return expectArraysPredicate(
-      actual, expected, (a, b) => areClose(a as number, Number(b), epsilon));
+      actual, exp, (a, b) => areClose(a as number, Number(b), epsilon));
+}
+
+export function testEpsilon() {
+  return ENGINE.backend.floatPrecision() === 32 ? TEST_EPSILON_FLOAT32 :
+                                                  TEST_EPSILON_FLOAT16;
 }
 
 function expectArraysPredicate(
@@ -124,20 +113,25 @@ export function expectPromiseToFail(fn: () => Promise<{}>, done: DoneFn): void {
 
 export function expectArraysEqual(
     actual: Tensor|TypedArray|number[]|string[],
-    expected: Tensor|TypedArray|number[]|boolean[]|string[]) {
+    expected: Tensor|TypedArray|number[]|boolean[]|string[]|number|boolean|
+    string) {
+  const exp = typeof expected === 'string' || typeof expected === 'number' ||
+          typeof expected === 'boolean' ?
+      [expected] as number[] :
+      expected as number[];
   if (actual instanceof Tensor && actual.dtype === 'string' ||
       expected instanceof Tensor && expected.dtype === 'string' ||
       Array.isArray(actual) && isString(actual[0]) ||
       Array.isArray(expected) && isString(expected[0])) {
     // tslint:disable-next-line:triple-equals
-    return expectArraysPredicate(actual, expected, (a, b) => a == b);
+    return expectArraysPredicate(actual, exp, (a, b) => a == b);
   }
   return expectArraysClose(actual as Tensor, expected as Tensor, 0);
 }
 
 export function expectNumbersClose(a: number, e: number, epsilon?: number) {
   if (epsilon == null) {
-    epsilon = ENV.get('TEST_EPSILON');
+    epsilon = testEpsilon();
   }
   if (!areClose(a, e, epsilon)) {
     throw new Error(`Numbers differ: actual === ${a}, expected === ${e}`);
@@ -145,7 +139,7 @@ export function expectNumbersClose(a: number, e: number, epsilon?: number) {
 }
 
 function areClose(a: number, e: number, epsilon: number): boolean {
-  if (isNaN(a) && isNaN(e)) {
+  if (!isFinite(a) && !isFinite(e)) {
     return true;
   }
   if (isNaN(a) || isNaN(e) || Math.abs(a - e) > epsilon) {

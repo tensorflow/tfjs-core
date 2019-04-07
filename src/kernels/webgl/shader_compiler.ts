@@ -15,7 +15,6 @@
  * =============================================================================
  */
 
-import {ENV} from '../../environment';
 import {getBroadcastDims} from '../../ops/broadcast_util';
 import * as util from '../../util';
 import {getGlslDifferences, GLSL} from './glsl_version';
@@ -216,38 +215,6 @@ function getFloatTextureSetRGBASnippet(glsl: GLSL): string {
 }
 
 function getShaderPrefix(glsl: GLSL): string {
-  let nanChecks = '';
-  if (ENV.get('PROD')) {
-    nanChecks = `
-      bool isNaN(float val) {
-        return false;
-      }
-
-      bool hasNaN(vec4 values) {
-        return false;
-      }
-    `;
-  } else {
-    /**
-     * Previous NaN check '(val < 0.0 || 0.0 < val || val == 0.0) ? false :
-     * true' does not work on iOS 12
-     */
-    nanChecks = `
-      bool isNaN(float val) {
-        return (val < 1.0 || 0.0 < val || val == 0.0) ? false : true;
-      }
-
-      bool hasNaN(vec4 values) {
-        return any(bvec4(
-          isNaN(values.x),
-          isNaN(values.y),
-          isNaN(values.z),
-          isNaN(values.w)
-        ));
-      }
-    `;
-  }
-
   const SHADER_PREFIX = `${glsl.version}
     precision highp float;
     precision highp int;
@@ -275,16 +242,27 @@ function getShaderPrefix(glsl: GLSL): string {
       int v;
     };
 
-    ${nanChecks}
-
-    float getNaN(vec4 values) {
-      return dot(vec4(1), values);
+    uniform float NAN;
+    #define isnan(value) isnan_custom(value)
+    ${glsl.defineSpecialNaN}
+    bvec4 isnan_custom(vec4 val) {
+      return bvec4(isnan(val.x), isnan(val.y), isnan(val.z), isnan(val.w));
     }
 
+    ${glsl.defineSpecialInf}
     ${glsl.defineRound}
 
     int imod(int x, int y) {
       return x - y * (x / y);
+    }
+
+    int idiv(int a, int b, float sign) {
+      int res = a / b;
+      int mod = imod(a, b);
+      if (sign < 0. && mod != 0) {
+        res -= 1;
+      }
+      return res;
     }
 
     //Based on the work of Dave Hoskins
@@ -300,8 +278,6 @@ function getShaderPrefix(glsl: GLSL): string {
     ${SAMPLE_1D_SNIPPET}
     ${SAMPLE_2D_SNIPPET}
     ${SAMPLE_3D_SNIPPET}
-    ${SAMPLE_5D_SNIPPET}
-    ${SAMPLE_6D_SNIPPET}
   `;
 
   return SHADER_PREFIX;
@@ -336,32 +312,6 @@ vec2 packedUVfrom3D(int texNumR, int texNumC,
     int texelsInBatch, int texelsInLogicalRow, int b,
     int row, int col) {
   int index = b * texelsInBatch + (row / 2) * texelsInLogicalRow + (col / 2);
-  int texR = index / texNumC;
-  int texC = index - texR * texNumC;
-  return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
-}
-`;
-
-const SAMPLE_5D_SNIPPET = `
-vec2 UVfrom5D(int texNumR, int texNumC, int stride0,
-    int stride1, int stride2, int stride3, int row, int col, int depth,
-    int depth2, int depth3) {
-  // Explicitly use integer operations as dot() only works on floats.
-  int index = row * stride0 + col * stride1 +
-              depth * stride2 + depth2 * stride3 + depth3;
-  int texR = index / texNumC;
-  int texC = index - texR * texNumC;
-  return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
-}
-`;
-
-const SAMPLE_6D_SNIPPET = `
-vec2 UVfrom6D(int texNumR, int texNumC, int stride0,
-    int stride1, int stride2, int stride3, int stride4,
-    int row, int col, int depth, int depth2, int depth3, int depth4) {
-  // Explicitly use integer operations as dot() only works on floats.
-  int index = row * stride0 + col * stride1 + depth * stride2 + depth2 *
-    stride3 + depth3 * stride4 + depth4;
   int texR = index / texNumC;
   int texC = index - texR * texNumC;
   return (vec2(texC, texR) + halfCR) / vec2(texNumC, texNumR);
@@ -1263,7 +1213,7 @@ function getUniformSampler(inputInfo: InputInfo): string {
   const texName = inputInfo.name;
   const inSize = util.sizeFromShape(inputInfo.shapeInfo.logicalShape);
 
-  if (inSize === 1) {
+  if (inSize < 2) {
     return `return ${texName};`;
   }
   return `

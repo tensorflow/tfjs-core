@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {ENV} from '../environment';
+import {ENGINE} from '../engine';
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
 import {convertToTensor, convertToTensorArray} from '../tensor_util_env';
 import {DataType, DataTypeMap, Rank, ShapeMap, TensorLike, TensorLike4D} from '../types';
@@ -45,7 +45,7 @@ function clone_<T extends Tensor>(x: T|TensorLike): T {
     return {$x: () => dy.toFloat()};
   };
 
-  return ENV.engine.runKernel(
+  return ENGINE.runKernel(
              backend =>
                  Tensor.make($x.shape, {dataId: $x.dataId}, $x.dtype) as T,
              {$x}, der) as T;
@@ -261,7 +261,7 @@ function multinomial_(
   }
   seed = seed || Math.random();
   const logits2D = origRank === 1 ? $logits.as2D(1, -1) : $logits as Tensor2D;
-  const res = ENV.engine.runKernel(
+  const res = ENGINE.runKernel(
       backend => backend.multinomial(logits2D, normalized, numSamples, seed),
       {logits2D});
 
@@ -299,146 +299,10 @@ function oneHot_(
   const grad = (dy: Tensor2D) => {
     return {$indices: () => zeros($indices.shape, 'float32')};
   };
-  const result = ENV.engine.runKernel(
+  const result = ENGINE.runKernel(
       backend => backend.oneHot($indices as Tensor1D, depth, onValue, offValue),
       {$indices}, grad);
   return result.reshape(outShape);
-}
-
-/**
- * Creates a `tf.Tensor` from an image.
- *
- * ```js
- * const image = new ImageData(1, 1);
- * image.data[0] = 100;
- * image.data[1] = 150;
- * image.data[2] = 200;
- * image.data[3] = 255;
- *
- * tf.fromPixels(image).print();
- * ```
- *
- * @param pixels The input image to construct the tensor from. The
- * supported image types are all 4-channel.
- * @param numChannels The number of channels of the output tensor. A
- * numChannels value less than 4 allows you to ignore channels. Defaults to
- * 3 (ignores alpha channel of input image).
- */
-/** @doc {heading: 'Tensors', subheading: 'Creation'} */
-function fromPixels_(
-    pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
-    numChannels = 3): Tensor3D {
-  if (numChannels > 4) {
-    throw new Error(
-        'Cannot construct Tensor with more than 4 channels from pixels.');
-  }
-  return ENV.engine.fromPixels(pixels, numChannels);
-}
-
-/**
- * Draws a `tf.Tensor` of pixel values to a byte array or optionally a
- * canvas.
- *
- * When the dtype of the input is 'float32', we assume values in the range
- * [0-1]. Otherwise, when input is 'int32', we assume values in the range
- * [0-255].
- *
- * Returns a promise that resolves when the canvas has been drawn to.
- *
- * @param img A rank-2 or rank-3 tensor. If rank-2, draws grayscale. If
- *     rank-3, must have depth of 1, 3 or 4. When depth of 1, draws
- * grayscale. When depth of 3, we draw with the first three components of
- * the depth dimension corresponding to r, g, b and alpha = 1. When depth of
- * 4, all four components of the depth dimension correspond to r, g, b, a.
- * @param canvas The canvas to draw to.
- */
-/** @doc {heading: 'Visualization'} */
-async function toPixels(
-    img: Tensor2D|Tensor3D|TensorLike,
-    canvas?: HTMLCanvasElement): Promise<Uint8ClampedArray> {
-  let $img = convertToTensor(img, 'img', 'toPixels');
-  if (!(img instanceof Tensor)) {
-    // Assume int32 if user passed a native array.
-    $img = $img.toInt();
-  }
-  if ($img.rank !== 2 && $img.rank !== 3) {
-    throw new Error(
-        `toPixels only supports rank 2 or 3 tensors, got rank ${$img.rank}.`);
-  }
-  const [height, width] = $img.shape.slice(0, 2);
-  const depth = $img.rank === 2 ? 1 : $img.shape[2];
-
-  if (depth > 4 || depth === 2) {
-    throw new Error(
-        `toPixels only supports depth of size ` +
-        `1, 3 or 4 but got ${depth}`);
-  }
-
-  const minTensor = $img.min();
-  const maxTensor = $img.max();
-  const min = (await minTensor.data())[0];
-  const max = (await maxTensor.data())[0];
-  minTensor.dispose();
-  maxTensor.dispose();
-  if ($img.dtype === 'float32') {
-    if (min < 0 || max > 1) {
-      throw new Error(
-          `Tensor values for a float32 Tensor must be in the ` +
-          `range [0 - 1] but got range [${min} - ${max}].`);
-    }
-  } else if ($img.dtype === 'int32') {
-    if (min < 0 || max > 255) {
-      throw new Error(
-          `Tensor values for a int32 Tensor must be in the ` +
-          `range [0 - 255] but got range [${min} - ${max}].`);
-    }
-  } else {
-    throw new Error(
-        `Unsupported type for toPixels: ${$img.dtype}.` +
-        ` Please use float32 or int32 tensors.`);
-  }
-
-  const data = await $img.data();
-  const multiplier = $img.dtype === 'float32' ? 255 : 1;
-  const bytes = new Uint8ClampedArray(width * height * 4);
-
-  for (let i = 0; i < height * width; ++i) {
-    let r, g, b, a;
-    if (depth === 1) {
-      r = data[i] * multiplier;
-      g = data[i] * multiplier;
-      b = data[i] * multiplier;
-      a = 255;
-    } else if (depth === 3) {
-      r = data[i * 3] * multiplier;
-      g = data[i * 3 + 1] * multiplier;
-      b = data[i * 3 + 2] * multiplier;
-      a = 255;
-    } else if (depth === 4) {
-      r = data[i * 4] * multiplier;
-      g = data[i * 4 + 1] * multiplier;
-      b = data[i * 4 + 2] * multiplier;
-      a = data[i * 4 + 3] * multiplier;
-    }
-
-    const j = i * 4;
-    bytes[j + 0] = Math.round(r);
-    bytes[j + 1] = Math.round(g);
-    bytes[j + 2] = Math.round(b);
-    bytes[j + 3] = Math.round(a);
-  }
-
-  if (canvas != null) {
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext('2d');
-    const imageData = new ImageData(bytes, width, height);
-    ctx.putImageData(imageData, 0, 0);
-  }
-  if ($img !== img) {
-    $img.dispose();
-  }
-  return bytes;
 }
 
 /**
@@ -472,13 +336,12 @@ function reshape_<R2 extends Rank>(
   shape = util.inferFromImplicitShape(shape, $x.size);
   util.assert(
       $x.size === util.sizeFromShape(shape),
-      'new shape and old shape must have the same number of elements.');
+      () => 'new shape and old shape must have the same number of elements.');
 
   const grad = (dy: Tensor<R2>) => {
     return {$x: () => dy.reshape($x.shape)};
   };
-  return ENV.engine.runKernel(
-      backend => backend.reshape($x, shape), {$x}, grad);
+  return ENGINE.runKernel(backend => backend.reshape($x, shape), {$x}, grad);
 }
 
 /**
@@ -517,8 +380,7 @@ function cast_<T extends Tensor>(x: T|TensorLike, dtype: DataType): T {
   const grad = (dy: T) => {
     return {$x: () => dy.clone()};
   };
-  return ENV.engine.runKernel(backend => backend.cast($x, dtype), {$x}, grad) as
-      T;
+  return ENGINE.runKernel(backend => backend.cast($x, dtype), {$x}, grad) as T;
 }
 
 /**
@@ -550,9 +412,10 @@ function tile_<T extends Tensor>(x: T|TensorLike, reps: number[]): T {
 
   util.assert(
       $x.rank === reps.length,
-      `Error in transpose: rank of input ${$x.rank} ` +
+      () => `Error in transpose: rank of input ${$x.rank} ` +
           `must match length of reps ${reps}.`);
-  const grad = (dy: T) => {
+  const grad = (dy: T, saved: Tensor[]) => {
+    const [$x] = saved;
     const derX = () => {
       let xGrad = zerosLike($x);
       // TODO(cais): Maybe reduce memory footprint by avoiding repeated
@@ -599,11 +462,15 @@ function tile_<T extends Tensor>(x: T|TensorLike, reps: number[]): T {
             `Gradient for tile operation is not implemented for rank-` +
             `${$x.rank} tensors yet.`);
       }
-      return xGrad;
+      return xGrad as T;
     };
     return {$x: derX};
   };
-  return ENV.engine.runKernel(backend => backend.tile($x, reps), {$x}, grad);
+  return ENGINE.runKernel((backend, save) => {
+    const res = backend.tile($x, reps);
+    save([$x]);
+    return res;
+  }, {$x}, grad);
 }
 
 /**
@@ -614,7 +481,7 @@ function pad1d_(
     constantValue = 0): Tensor1D {
   util.assert(
       paddings.length === 2,
-      'Invalid number of paddings. Must be length of 2.');
+      () => 'Invalid number of paddings. Must be length of 2.');
   return pad(x, [paddings], constantValue);
 }
 
@@ -627,7 +494,7 @@ function pad2d_(
   util.assert(
       paddings.length === 2 && paddings[0].length === 2 &&
           paddings[1].length === 2,
-      'Invalid number of paddings. Must be length of 2 each.');
+      () => 'Invalid number of paddings. Must be length of 2 each.');
   return pad(x, paddings, constantValue);
 }
 
@@ -641,7 +508,7 @@ function pad3d_(
   util.assert(
       paddings.length === 3 && paddings[0].length === 2 &&
           paddings[1].length === 2 && paddings[2].length === 2,
-      'Invalid number of paddings. Must be length of 2 each.');
+      () => 'Invalid number of paddings. Must be length of 2 each.');
   return pad(x, paddings, constantValue);
 }
 
@@ -659,7 +526,7 @@ function pad4d_(
       paddings.length === 4 && paddings[0].length === 2 &&
           paddings[1].length === 2 && paddings[2].length === 2 &&
           paddings[3].length === 2,
-      'Invalid number of paddings. Must be length of 2 each.');
+      () => 'Invalid number of paddings. Must be length of 2 each.');
   return pad(x, paddings, constantValue);
 }
 
@@ -699,7 +566,7 @@ function pad_<T extends Tensor>(
   const grad = (dy: T) => {
     return {$x: () => dy.slice(begin, $x.shape)};
   };
-  return ENV.engine.runKernel(
+  return ENGINE.runKernel(
              backend => backend.pad($x, paddings, constantValue), {$x}, grad) as
       T;
 }
@@ -722,7 +589,8 @@ function stack_<T extends Tensor>(
     tensors: Array<T|TensorLike>, axis = 0): Tensor {
   const $tensors = convertToTensorArray(tensors, 'tensors', 'stack');
 
-  util.assert($tensors.length >= 1, 'Pass at least one tensor to tf.stack');
+  util.assert(
+      $tensors.length >= 1, () => 'Pass at least one tensor to tf.stack');
   if ($tensors.length === 1) {
     return $tensors[0].expandDims(axis);
   }
@@ -730,7 +598,7 @@ function stack_<T extends Tensor>(
   const shape = $tensors[0].shape;
   const dtype = $tensors[0].dtype;
 
-  util.assert(axis <= rank, 'Axis must be <= rank of the tensor');
+  util.assert(axis <= rank, () => 'Axis must be <= rank of the tensor');
 
   $tensors.forEach(t => {
     util.assertShapesMatch(
@@ -741,7 +609,7 @@ function stack_<T extends Tensor>(
   $tensors.forEach(t => {
     util.assert(
         dtype === t.dtype,
-        'All tensors passed to stack must have matching dtypes');
+        () => 'All tensors passed to stack must have matching dtypes');
   });
   const expandedTensors = $tensors.map(t => t.expandDims(axis));
   return concat(expandedTensors, axis);
@@ -801,26 +669,26 @@ function batchToSpaceND_<T extends Tensor>(
 
   util.assert(
       $x.rank >= 1 + blockShape.length,
-      `input rank is ${$x.rank} but should be > than blockShape.length ${
+      () => `input rank is ${$x.rank} but should be > than blockShape.length ${
           blockShape.length}`);
 
   util.assert(
       crops.length === blockShape.length,
-      `crops.length is ${
+      () => `crops.length is ${
           crops.length} but should be equal to blockShape.length  ${
           blockShape.length}`);
 
   util.assert(
       $x.shape[0] % prod === 0,
-      `input tensor batch is ${
-          $x.shape[0]} but is not divisible by the product of ` +
+      () => `input tensor batch is ${
+                $x.shape[0]} but is not divisible by the product of ` +
           `the elements of blockShape ${blockShape.join(' * ')} === ${prod}`);
 
   const grad = (dy: T) => {
     return {$x: () => dy.spaceToBatchND(blockShape, crops)};
   };
 
-  return ENV.engine.runKernel(
+  return ENGINE.runKernel(
       backend => backend.batchToSpaceND($x, blockShape, crops), {$x}, grad);
 }
 
@@ -877,13 +745,13 @@ function spaceToBatchND_<T extends Tensor>(
 
   util.assert(
       $x.rank >= 1 + blockShape.length,
-      `input rank ${$x.rank} should be > than [blockShape] ${
+      () => `input rank ${$x.rank} should be > than [blockShape] ${
           blockShape.length}`);
 
   util.assert(
       paddings.length === blockShape.length,
-      `paddings.shape[0] ${paddings.length} must be equal to [blockShape] ${
-          blockShape.length}`);
+      () => `paddings.shape[0] ${
+          paddings.length} must be equal to [blockShape] ${blockShape.length}`);
 
   util.assert(
       $x.shape.reduce(
@@ -897,7 +765,7 @@ function spaceToBatchND_<T extends Tensor>(
             return a;
           },
           true),
-      `input spatial dimensions ${$x.shape.slice(1)} with paddings ${
+      () => `input spatial dimensions ${$x.shape.slice(1)} with paddings ${
           paddings.toString()} must be divisible by blockShapes ${
           blockShape.toString()}`);
 
@@ -905,7 +773,7 @@ function spaceToBatchND_<T extends Tensor>(
     return {$x: () => dy.batchToSpaceND(blockShape, paddings)};
   };
 
-  return ENV.engine.runKernel(
+  return ENGINE.runKernel(
       backend => backend.spaceToBatchND($x, blockShape, paddings), {$x}, grad);
 }
 
@@ -927,14 +795,15 @@ function unstack_(x: Tensor|TensorLike, axis = 0): Tensor[] {
   const $x = convertToTensor(x, 'x', 'unstack');
   util.assert(
       axis >= -$x.shape.length && axis < $x.shape.length,
-      `Axis = ${axis} is not in [-${$x.shape.length}, ${$x.shape.length})`);
+      () =>
+          `Axis = ${axis} is not in [-${$x.shape.length}, ${$x.shape.length})`);
   if (axis < 0) {
     axis += $x.shape.length;
   }
   const grad = (dy: Tensor[]) => {
     return {$x: () => stack(dy, axis)};
   };
-  return ENV.engine.runKernel(backend => backend.unstack($x, axis), {$x}, grad);
+  return ENGINE.runKernel(backend => backend.unstack($x, axis), {$x}, grad);
 }
 
 /**
@@ -974,7 +843,7 @@ function cumsum_<T extends Tensor>(
   const grad = (dy: T) => {
     return {permutedX: () => dy.cumsum(axis, exclusive, !reverse)};
   };
-  let value = ENV.engine.runKernel(
+  let value = ENGINE.runKernel(
                   backend => backend.cumsum(
                       permutedX, permutedAxis, exclusive, reverse),
                   {permutedX}, grad) as T;
@@ -1004,13 +873,13 @@ function expandDims_<R2 extends Rank>(
     x: Tensor|TensorLike, axis = 0): Tensor<R2> {
   const $x = convertToTensor(x, 'x', 'expandDims');
 
-  util.assert(axis <= $x.rank, 'Axis must be <= rank of the tensor');
+  util.assert(axis <= $x.rank, () => 'Axis must be <= rank of the tensor');
   const newShape = $x.shape.slice();
   if (axis < 0) {
     // Negative value is counted from the tail of rank.
     util.assert(
         -($x.rank + 1) <= axis,
-        `Axis must be in the interval [${- ($x.rank + 1)}, ${$x.rank}]`);
+        () => `Axis must be in the interval [${- ($x.rank + 1)}, ${$x.rank}]`);
     axis = $x.rank + axis + 1;
   }
   newShape.splice(axis, 0, 1);
@@ -1064,23 +933,23 @@ function depthToSpace_(
 
   util.assert(
       inputHeight * blockSize >= 0,
-      `Negative dimension size caused by overflow when multiplying
+      () => `Negative dimension size caused by overflow when multiplying
       ${inputHeight} and ${blockSize}  for depthToSpace with input shape
       ${$x.shape}`);
 
   util.assert(
       inputWidth * blockSize >= 0,
-      `Negative dimension size caused by overflow when multiplying
+      () => `Negative dimension size caused by overflow when multiplying
       ${inputWidth} and ${blockSize} for depthToSpace with input shape
           ${$x.shape}`);
 
   util.assert(
       (inputDepth % (blockSize * blockSize) === 0),
-      `Dimension size must be evenly divisible by ${
+      () => `Dimension size must be evenly divisible by ${
           blockSize * blockSize} but is ${
           inputDepth} for depthToSpace with input shape ${$x.shape}`);
 
-  return ENV.engine.runKernel(
+  return ENGINE.runKernel(
       backend => backend.depthToSpace($x, blockSize, dataFormat), {$x});
 }
 
@@ -1119,12 +988,14 @@ async function setdiff1dAsync_(
 
   util.assert(
       $x.dtype === $y.dtype,
-      `x and y should have the same dtype, but got x (${$x.dtype}) and y (${
-          $y.dtype}).`);
+      () => `x and y should have the same dtype, but got x (${
+          $x.dtype}) and y (${$y.dtype}).`);
 
-  util.assert($x.rank === 1, `x should be 1D tensor, but got x (${$x.shape}).`);
+  util.assert(
+      $x.rank === 1, () => `x should be 1D tensor, but got x (${$x.shape}).`);
 
-  util.assert($y.rank === 1, `y should be 1D tensor, but got y (${$y.shape}).`);
+  util.assert(
+      $y.rank === 1, () => `y should be 1D tensor, but got y (${$y.shape}).`);
 
   const xVals = await $x.data();
   const yVals = await $y.data();
@@ -1178,6 +1049,7 @@ function buffer<R extends Rank, D extends DataType = 'float32'>(
     shape: ShapeMap[R], dtype: D = 'float32' as D,
     values?: DataTypeMap[D]): TensorBuffer<R, D> {
   dtype = dtype || 'float32' as D;
+  util.assertNonNegativeIntegerDimensions(shape);
   return new TensorBuffer<R, D>(shape, dtype, values);
 }
 
@@ -1198,9 +1070,8 @@ function print<T extends Tensor>(x: T, verbose = false): void {
 }
 
 export {
-  buffer,    // Not wrapped in op() since no tensors.
-  toPixels,  // Not wrapped in op() since async.
-  print      // Not wrapped in op() since no need to increase stack trace.
+  buffer,  // Not wrapped in op() since no tensors.
+  print    // Not wrapped in op() since no need to increase stack trace.
 };
 
 export const batchToSpaceND = op({batchToSpaceND_});
@@ -1210,7 +1081,6 @@ export const cumsum = op({cumsum_});
 export const depthToSpace = op({depthToSpace_});
 export const expandDims = op({expandDims_});
 export const eye = op({eye_});
-export const fromPixels = op({fromPixels_});
 export const multinomial = op({multinomial_});
 export const oneHot = op({oneHot_});
 export const pad = op({pad_});

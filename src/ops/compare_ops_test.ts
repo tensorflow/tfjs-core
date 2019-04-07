@@ -16,8 +16,8 @@
  */
 
 import * as tf from '../index';
-import {ALL_ENVS, expectArraysClose, expectArraysEqual} from '../test_util';
-import {describeWithFlags} from '../jasmine_util';
+import {expectArraysClose, expectArraysEqual} from '../test_util';
+import {ALL_ENVS, describeWithFlags} from '../jasmine_util';
 
 describeWithFlags('equal', ALL_ENVS, () => {
   it('Tensor1D - int32', () => {
@@ -2592,6 +2592,18 @@ describeWithFlags('greaterEqual', ALL_ENVS, () => {
     const b = tf.tensor1d([4, 1, 5]);
     const dy = tf.ones([3], 'float32') as tf.Tensor1D;
     const da = tf.grad((a: tf.Tensor1D) => tf.greaterEqual(a, b))(a, dy);
+
+    expect(da.dtype).toBe('float32');
+    expect(da.shape).toEqual([3]);
+    expectArraysClose(da, [0, 0, 0]);
+  });
+
+  it('gradient with clones', () => {
+    const a = tf.tensor1d([3, 2, 5]);
+    const b = tf.tensor1d([4, 1, 5]);
+    const dy = tf.ones([3], 'float32') as tf.Tensor1D;
+    const da = tf.grad((a: tf.Tensor1D) =>
+        tf.greaterEqual(a.clone(), b.clone()).clone())(a, dy);
 
     expect(da.dtype).toBe('float32');
     expect(da.shape).toEqual([3]);

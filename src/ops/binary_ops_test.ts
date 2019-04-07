@@ -16,18 +16,34 @@
  */
 
 import * as tf from '../index';
-import {describeWithFlags} from '../jasmine_util';
-import {ALL_ENVS, expectArraysClose, expectArraysEqual, PACKED_ENVS, WEBGL_ENVS} from '../test_util';
+import {ALL_ENVS, describeWithFlags, PACKED_ENVS, WEBGL_ENVS} from '../jasmine_util';
+import {expectArraysClose, expectArraysEqual} from '../test_util';
 
 describeWithFlags('div', PACKED_ENVS, () => {
   it('works when unused channels are divided', () => {
     // Tests that the 0's in unused channels for input textures do not corrupt
     // the result when swizzled with 3 / 3.
-    const a = tf.tensor2d([3], [1, 1]);
-    const b = tf.tensor2d([3], [1, 1]);
+    const a = tf.tensor2d([1], [1, 1]);
+    const b = tf.tensor2d([1], [1, 1]);
 
-    const c = a.div(b).matMul(b);
-    expectArraysClose(c, [3]);
+    const c = tf.add(a, b).div(a);
+    const d = tf.add(a, b).div(a);
+
+    const result = c.matMul(d);
+    expectArraysClose(result, [4]);
+  });
+
+  it('works when unused channels in tensors with size > 1 are divided', () => {
+    const a = tf.tensor2d([1, 2, 3], [3, 1]);
+    const b = tf.tensor2d([1, 2, 3], [3, 1]);
+    const c = a.div(b);
+
+    const d = tf.tensor1d([1, 2, 3]);
+    const e = tf.tensor1d([1, 2, 3]);
+    const f = d.div(e).reshape([1, 3]);
+
+    const result = c.matMul(f);
+    expectArraysClose(result, [1, 1, 1, 1, 1, 1, 1, 1, 1]);
   });
 });
 
@@ -65,6 +81,16 @@ describeWithFlags('prelu', ALL_ENVS, () => {
     const dy = tf.tensor1d([1, 1, 1, 1]);
 
     const dx = tf.grad(x => tf.prelu(x, a))(x, dy);
+
+    expect(dx.shape).toEqual(x.shape);
+    expect(dx.dtype).toEqual('float32');
+    expectArraysClose(dx, [1, 1, 0.25, 0.15]);
+  });
+
+  it('gradient with clones', () => {
+    const x = tf.tensor1d([0.5, 3, -0.1, -4]);
+    const a = tf.tensor1d([0.2, 0.4, 0.25, 0.15]);
+    const dx = tf.grad(x => tf.prelu(x.clone(), a).clone())(x);
 
     expect(dx.shape).toEqual(x.shape);
     expect(dx.dtype).toEqual('float32');
@@ -215,6 +241,23 @@ describeWithFlags('maximum', ALL_ENVS, () => {
     expectArraysClose(db, [3 * 0]);
   });
 
+  it('gradient with clones', () => {
+    const a = tf.scalar(5.2);
+    const b = tf.scalar(0.6);
+    const dy = tf.scalar(3);
+
+    const grads = tf.grads((a, b) => tf.maximum(a.clone(), b.clone()).clone());
+    const [da, db] = grads([a, b], dy);
+
+    expect(da.shape).toEqual(a.shape);
+    expect(db.shape).toEqual(b.shape);
+    expect(da.dtype).toEqual('float32');
+    expect(db.dtype).toEqual('float32');
+
+    expectArraysClose(da, [3 * 1]);
+    expectArraysClose(db, [3 * 0]);
+  });
+
   it('gradients: Tensor1D', () => {
     const a = tf.tensor1d([1.1, 2.6, 3, 5.9]);
     const b = tf.tensor1d([1.0, 2.7, 3, 5.8]);
@@ -280,7 +323,7 @@ describeWithFlags('maximum', ALL_ENVS, () => {
 
 describeWithFlags('maximum', WEBGL_ENVS, () => {
   it('works with squarification for large dimension', () => {
-    const maxTextureSize = tf.ENV.get('WEBGL_MAX_TEXTURE_SIZE');
+    const maxTextureSize = tf.ENV.getNumber('WEBGL_MAX_TEXTURE_SIZE');
     tf.ENV.set('WEBGL_MAX_TEXTURE_SIZE', 5);
     const a =
         tf.tensor2d([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13], [2, 7]);
@@ -422,6 +465,24 @@ describeWithFlags('squaredDifference', ALL_ENVS, () => {
     const dy = tf.scalar(3);
 
     const grads = tf.grads((a, b) => tf.squaredDifference(a, b));
+    const [da, db] = grads([a, b], dy);
+
+    expect(da.shape).toEqual(a.shape);
+    expect(db.shape).toEqual(b.shape);
+    expect(da.dtype).toEqual('float32');
+    expect(db.dtype).toEqual('float32');
+
+    expectArraysClose(da, [3 * 2 * (5.2 - 0.6)]);
+    expectArraysClose(db, [3 * 2 * (0.6 - 5.2)]);
+  });
+
+  it('gradient with clones', () => {
+    const a = tf.scalar(5.2);
+    const b = tf.scalar(0.6);
+    const dy = tf.scalar(3);
+
+    const grads =
+        tf.grads((a, b) => tf.squaredDifference(a.clone(), b.clone()).clone());
     const [da, db] = grads([a, b], dy);
 
     expect(da.shape).toEqual(a.shape);
@@ -632,6 +693,23 @@ describeWithFlags('minimum', ALL_ENVS, () => {
     expectArraysClose(db, [3 * 1]);
   });
 
+  it('gradient with clones', () => {
+    const a = tf.scalar(5.2);
+    const b = tf.scalar(0.6);
+    const dy = tf.scalar(3);
+
+    const grads = tf.grads((a, b) => tf.minimum(a.clone(), b.clone()).clone());
+    const [da, db] = grads([a, b], dy);
+
+    expect(da.shape).toEqual(a.shape);
+    expect(db.shape).toEqual(b.shape);
+    expect(da.dtype).toEqual('float32');
+    expect(db.dtype).toEqual('float32');
+
+    expectArraysClose(da, [3 * 0]);
+    expectArraysClose(db, [3 * 1]);
+  });
+
   it('gradients: Tensor1D', () => {
     const a = tf.tensor1d([1.1, 2.6, 3, 5.9]);
     const b = tf.tensor1d([1.0, 2.7, 3, 5.8]);
@@ -793,6 +871,23 @@ describeWithFlags('mod', ALL_ENVS, () => {
     const dy = tf.scalar(3);
 
     const grads = tf.grads((a, b) => tf.mod(a, b));
+    const [da, db] = grads([a, b], dy);
+
+    expect(da.shape).toEqual(a.shape);
+    expect(db.shape).toEqual(b.shape);
+    expect(da.dtype).toEqual('float32');
+    expect(db.dtype).toEqual('float32');
+
+    expectArraysClose(da, [3]);
+    expectArraysClose(db, [3 * -1 * Math.floor(5.2 / 0.6)]);
+  });
+
+  it('gradient with clones', () => {
+    const a = tf.scalar(5.2);
+    const b = tf.scalar(0.6);
+    const dy = tf.scalar(3);
+
+    const grads = tf.grads((a, b) => tf.mod(a.clone(), b.clone()).clone());
     const [da, db] = grads([a, b], dy);
 
     expect(da.shape).toEqual(a.shape);
@@ -1026,6 +1121,23 @@ describeWithFlags('atan2', ALL_ENVS, () => {
     const dy = tf.scalar(4);
 
     const grads = tf.grads((a, b) => tf.atan2(a, b));
+    const [da, db] = grads([a, b], dy);
+
+    expect(da.shape).toEqual(a.shape);
+    expect(da.dtype).toEqual('float32');
+    expectArraysClose(da, [4 * 2 / 29]);
+
+    expect(db.shape).toEqual(b.shape);
+    expect(db.dtype).toEqual('float32');
+    expectArraysClose(db, [4 * -5 / 29]);
+  });
+
+  it('gradient with clones', () => {
+    const a = tf.scalar(5);
+    const b = tf.scalar(2);
+    const dy = tf.scalar(4);
+
+    const grads = tf.grads((a, b) => tf.atan2(a.clone(), b.clone()).clone());
     const [da, db] = grads([a, b], dy);
 
     expect(da.shape).toEqual(a.shape);

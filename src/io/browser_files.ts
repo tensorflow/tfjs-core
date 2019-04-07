@@ -23,7 +23,7 @@
 import {ENV} from '../environment';
 import {basename, concatenateArrayBuffers, getModelArtifactsInfoForJSON} from './io_utils';
 import {IORouter, IORouterRegistry} from './router_registry';
-import {IOHandler, ModelArtifacts, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
+import {IOHandler, ModelArtifacts, ModelJSON, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
 
 const DEFAULT_FILE_NAME_PREFIX = 'model';
 const DEFAULT_JSON_EXTENSION_NAME = '.json';
@@ -38,7 +38,7 @@ export class BrowserDownloads implements IOHandler {
   static readonly URL_SCHEME = 'downloads://';
 
   constructor(fileNamePrefix?: string) {
-    if (!ENV.get('IS_BROWSER')) {
+    if (!ENV.getBool('IS_BROWSER')) {
       // TODO(cais): Provide info on what IOHandlers are available under the
       //   current environment.
       throw new Error(
@@ -71,8 +71,11 @@ export class BrowserDownloads implements IOHandler {
         paths: ['./' + this.weightDataFileName],
         weights: modelArtifacts.weightSpecs
       }];
-      const modelTopologyAndWeightManifest = {
+      const modelTopologyAndWeightManifest: ModelJSON = {
         modelTopology: modelArtifacts.modelTopology,
+        format: modelArtifacts.format,
+        generatedBy: modelArtifacts.generatedBy,
+        convertedBy: modelArtifacts.convertedBy,
         weightsManifest
       };
       const modelTopologyAndWeightManifestURL =
@@ -124,8 +127,8 @@ class BrowserFiles implements IOHandler {
       const jsonReader = new FileReader();
       jsonReader.onload = (event: Event) => {
         // tslint:disable-next-line:no-any
-        const modelJSON = JSON.parse((event.target as any).result);
-        const modelTopology = modelJSON.modelTopology as {};
+        const modelJSON = JSON.parse((event.target as any).result) as ModelJSON;
+        const modelTopology = modelJSON.modelTopology;
         if (modelTopology == null) {
           reject(new Error(
               `modelTopology field is missing from file ${jsonFile.name}`));
@@ -136,8 +139,7 @@ class BrowserFiles implements IOHandler {
           resolve({modelTopology});
         }
 
-        const weightsManifest =
-            modelJSON.weightsManifest as WeightsManifestConfig;
+        const weightsManifest = modelJSON.weightsManifest;
         if (weightsManifest == null) {
           reject(new Error(
               `weightManifest field is missing from file ${jsonFile.name}`));
@@ -231,7 +233,7 @@ class BrowserFiles implements IOHandler {
 }
 
 export const browserDownloadsRouter: IORouter = (url: string|string[]) => {
-  if (!ENV.get('IS_BROWSER')) {
+  if (!ENV.getBool('IS_BROWSER')) {
     return null;
   } else {
     if (!Array.isArray(url) && url.startsWith(BrowserDownloads.URL_SCHEME)) {

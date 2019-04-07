@@ -16,8 +16,8 @@
  */
 
 import * as tf from '../index';
-import {describeWithFlags} from '../jasmine_util';
-import {ALL_ENVS, expectArraysClose} from '../test_util';
+import {ALL_ENVS, describeWithFlags} from '../jasmine_util';
+import {expectArraysClose} from '../test_util';
 
 describeWithFlags('reverse1d', ALL_ENVS, () => {
   it('reverse a 1D array', () => {
@@ -31,6 +31,15 @@ describeWithFlags('reverse1d', ALL_ENVS, () => {
     const a = tf.tensor1d([1, 2, 3]);
     const dy = tf.tensor1d([10, 20, 30]);
     const da = tf.grad((a: tf.Tensor1D) => tf.reverse1d(a))(a, dy);
+    expect(da.shape).toEqual([3]);
+    expectArraysClose(da, [30, 20, 10]);
+  });
+
+  it('gradient with clones', () => {
+    const a = tf.tensor1d([1, 2, 3]);
+    const dy = tf.tensor1d([10, 20, 30]);
+    const da =
+        tf.grad((a: tf.Tensor1D) => tf.reverse1d(a.clone()).clone())(a, dy);
     expect(da.shape).toEqual([3]);
     expectArraysClose(da, [30, 20, 10]);
   });
@@ -60,6 +69,17 @@ describeWithFlags('reverse2d', ALL_ENVS, () => {
 
     expect(result.shape).toEqual(a.shape);
     expectArraysClose(result, [3, 2, 1, 6, 5, 4]);
+  });
+
+  it('reverse a 2D array odd rows and columns at axis [0, 1]', () => {
+    const axis = [0, 1];
+    const a = tf.tensor2d(
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], [3, 5]);
+    const result = tf.reverse2d(a, axis);
+
+    expect(result.shape).toEqual(a.shape);
+    expectArraysClose(
+        result, [15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]);
   });
 
   it('throws error with invalid input', () => {

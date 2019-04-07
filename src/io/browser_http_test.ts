@@ -20,9 +20,7 @@
  */
 
 import * as tf from '../index';
-import {describeWithFlags} from '../jasmine_util';
-import {BROWSER_ENVS, CHROME_ENVS, NODE_ENVS} from '../test_util';
-
+import {BROWSER_ENVS, CHROME_ENVS, describeWithFlags, NODE_ENVS} from '../jasmine_util';
 import {BrowserHTTPRequest, httpRequestRouter, parseUrl} from './browser_http';
 
 // Test data.
@@ -156,10 +154,6 @@ describeWithFlags('browserHTTPRequest-load fetch', NODE_ENVS, () => {
     expect(modelArtifacts.modelTopology).toEqual(modelTopology1);
     expect(modelArtifacts.weightSpecs).toEqual(weightManifest1[0].weights);
     expect(new Float32Array(modelArtifacts.weightData)).toEqual(floatData);
-    expect(requestInits['./model.json'].headers['Accept'])
-        .toEqual('application/json');
-    expect(requestInits['./weightfile0'].headers['Accept'])
-        .toEqual('application/octet-stream');
   });
 
   it('throw exception if no fetch polyfill', () => {
@@ -196,6 +190,9 @@ describeWithFlags('browserHTTPRequest-save', CHROME_ENVS, () => {
     modelTopology: modelTopology1,
     weightSpecs: weightSpecs1,
     weightData: weightData1,
+    format: 'layers-model',
+    generatedBy: 'TensorFlow.js v0.0.0',
+    convertedBy: null
   };
 
   let requestInits: RequestInit[] = [];
@@ -307,9 +304,11 @@ describeWithFlags('browserHTTPRequest-save', CHROME_ENVS, () => {
   it('Save topology and weights, PUT method, extra headers', (done) => {
     const testStartDate = new Date();
     const handler = tf.io.browserHTTPRequest('model-upload-test', {
-      method: 'PUT',
-      headers:
-          {'header_key_1': 'header_value_1', 'header_key_2': 'header_value_2'}
+      requestInit: {
+        method: 'PUT',
+        headers:
+            {'header_key_1': 'header_value_1', 'header_key_2': 'header_value_2'}
+      }
     });
     handler.save(artifacts1)
         .then(saveResult => {
@@ -340,6 +339,9 @@ describeWithFlags('browserHTTPRequest-save', CHROME_ENVS, () => {
           jsonFileReader.onload = (event: Event) => {
             // tslint:disable-next-line:no-any
             const modelJSON = JSON.parse((event.target as any).result);
+            expect(modelJSON.format).toEqual('layers-model');
+            expect(modelJSON.generatedBy).toEqual('TensorFlow.js v0.0.0');
+            expect(modelJSON.convertedBy).toEqual(null);
             expect(modelJSON.modelTopology).toEqual(modelTopology1);
             expect(modelJSON.weightsManifest.length).toEqual(1);
             expect(modelJSON.weightsManifest[0].weights).toEqual(weightSpecs1);
@@ -387,16 +389,9 @@ describeWithFlags('browserHTTPRequest-save', CHROME_ENVS, () => {
     expect(handlers[0] instanceof BrowserHTTPRequest).toEqual(true);
   });
 
-  it('getLoadHandlers with two URL strings', () => {
-    const handlers = tf.io.getLoadHandlers(
-        ['https://foo/graph.pb', 'https://foo/weights_manifest.json']);
-    expect(handlers.length).toEqual(1);
-    expect(handlers[0] instanceof BrowserHTTPRequest).toEqual(true);
-  });
-
   it('Existing body leads to Error', () => {
     expect(() => tf.io.browserHTTPRequest('model-upload-test', {
-      body: 'existing body'
+      requestInit: {body: 'existing body'}
     })).toThrowError(/requestInit is expected to have no pre-existing body/);
   });
 
@@ -487,10 +482,6 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
       expect(modelArtifacts.weightSpecs).toEqual(weightManifest1[0].weights);
       expect(new Float32Array(modelArtifacts.weightData)).toEqual(floatData);
       expect(Object.keys(requestInits).length).toEqual(2);
-      expect(requestInits['./model.json'].headers['Accept'])
-          .toEqual('application/json');
-      expect(requestInits['./weightfile0'].headers['Accept'])
-          .toEqual('application/octet-stream');
       // Assert that fetch is invoked with `window` as the context.
       expect(windowFetchSpy.calls.mostRecent().object).toEqual(window);
     });
@@ -527,16 +518,13 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
           requestInits);
 
       const handler = tf.io.browserHTTPRequest(
-          './model.json', {headers: {'header_key_1': 'header_value_1'}});
+          './model.json',
+          {requestInit: {headers: {'header_key_1': 'header_value_1'}}});
       const modelArtifacts = await handler.load();
       expect(modelArtifacts.modelTopology).toEqual(modelTopology1);
       expect(modelArtifacts.weightSpecs).toEqual(weightManifest1[0].weights);
       expect(new Float32Array(modelArtifacts.weightData)).toEqual(floatData);
       expect(Object.keys(requestInits).length).toEqual(2);
-      expect(requestInits['./model.json'].headers['Accept'])
-          .toEqual('application/json');
-      expect(requestInits['./weightfile0'].headers['Accept'])
-          .toEqual('application/octet-stream');
       expect(Object.keys(requestInits).length).toEqual(2);
       expect(requestInits['./model.json'].headers['header_key_1'])
           .toEqual('header_value_1');
@@ -765,29 +753,6 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
              });
        });
 
-    it('with wrong content type leads to error', async (done) => {
-      setupFakeWeightFiles(
-          {
-            'path1/model.json':
-                {data: JSON.stringify({}), contentType: 'text/html'}
-          },
-          requestInits);
-      const handler = tf.io.browserHTTPRequest('path1/model.json');
-      handler.load()
-          .then(modelTopology1 => {
-            done.fail(
-                'Loading with wrong content-type succeeded unexpectedly.');
-          })
-          .catch(err => {
-            expect(err.message)
-                .toEqual(
-                    'Request to path1/model.json for model topology failed. ' +
-                    'Expected content type application/json ' +
-                    'but got text/html.');
-            done();
-          });
-    });
-
     it('with fetch rejection leads to error', async (done) => {
       setupFakeWeightFiles(
           {
@@ -802,536 +767,6 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
         done.fail('Loading with fetch rejection succeeded unexpectedly.');
       } catch (err) {
         expect(err.message).toMatch(/Request for path2\/model.json failed /);
-        done();
-      }
-    });
-  });
-
-  describe('Binary model', () => {
-    let requestInits: {[key: string]: {headers: {[key: string]: string}}};
-    let modelData: ArrayBuffer;
-
-    beforeEach(() => {
-      requestInits = {};
-      modelData = new ArrayBuffer(5);
-    });
-
-    it('1 group, 2 weights, 1 path', (done) => {
-      const weightManifest1: tf.io.WeightsManifestConfig = [{
-        paths: ['weightfile0'],
-        weights: [
-          {
-            name: 'dense/kernel',
-            shape: [3, 1],
-            dtype: 'float32',
-          },
-          {
-            name: 'dense/bias',
-            shape: [2],
-            dtype: 'float32',
-          }
-        ]
-      }];
-      const floatData = new Float32Array([1, 3, 3, 7, 4]);
-      setupFakeWeightFiles(
-          {
-            './model.pb':
-                {data: modelData, contentType: 'application/octet-stream'},
-            './weights_manifest.json': {
-              data: JSON.stringify(weightManifest1),
-              contentType: 'application/json'
-            },
-            './weightfile0':
-                {data: floatData, contentType: 'application/octet-stream'},
-          },
-          requestInits);
-
-      const handler =
-          tf.io.browserHTTPRequest(['./model.pb', './weights_manifest.json']);
-      handler.load()
-          .then(modelArtifacts => {
-            expect(modelArtifacts.modelTopology).toEqual(modelData);
-            expect(modelArtifacts.weightSpecs)
-                .toEqual(weightManifest1[0].weights);
-            expect(new Float32Array(modelArtifacts.weightData))
-                .toEqual(floatData);
-            expect(Object.keys(requestInits).length).toEqual(3);
-            expect(requestInits['./model.pb'].headers['Accept'])
-                .toEqual('application/octet-stream');
-            expect(requestInits['./weights_manifest.json'].headers['Accept'])
-                .toEqual('application/json');
-            expect(requestInits['./weightfile0'].headers['Accept'])
-                .toEqual('application/octet-stream');
-            done();
-          })
-          .catch(err => done.fail(err.stack));
-    });
-
-    it('1 group, 2 weights, 1 path with suffix', async () => {
-      const weightManifest1: tf.io.WeightsManifestConfig = [{
-        paths: ['weightfile0'],
-        weights: [
-          {
-            name: 'dense/kernel',
-            shape: [3, 1],
-            dtype: 'float32',
-          },
-          {
-            name: 'dense/bias',
-            shape: [2],
-            dtype: 'float32',
-          }
-        ]
-      }];
-      const floatData = new Float32Array([1, 3, 3, 7, 4]);
-      setupFakeWeightFiles(
-          {
-            './model.pb?tfjs-format=file':
-                {data: modelData, contentType: 'application/octet-stream'},
-            './weights_manifest.json?tfjs-format=file': {
-              data: JSON.stringify(weightManifest1),
-              contentType: 'application/json'
-            },
-            './weightfile0?tfjs-format=file':
-                {data: floatData, contentType: 'application/octet-stream'},
-          },
-          requestInits);
-
-      const handler = tf.io.browserHTTPRequest([
-        './model.pb?tfjs-format=file',
-        './weights_manifest.json?tfjs-format=file'
-      ]);
-      const modelArtifacts = await handler.load();
-      expect(modelArtifacts.modelTopology).toEqual(modelData);
-      expect(modelArtifacts.weightSpecs).toEqual(weightManifest1[0].weights);
-      expect(new Float32Array(modelArtifacts.weightData)).toEqual(floatData);
-      expect(Object.keys(requestInits).length).toEqual(3);
-      expect(requestInits['./model.pb?tfjs-format=file'].headers['Accept'])
-          .toEqual('application/octet-stream');
-      expect(requestInits['./weights_manifest.json?tfjs-format=file']
-                 .headers['Accept'])
-          .toEqual('application/json');
-      expect(requestInits['./weightfile0?tfjs-format=file'].headers['Accept'])
-          .toEqual('application/octet-stream');
-    });
-
-    it('1 group, 2 weights, 1 path, with requestInit', async () => {
-      const weightManifest1: tf.io.WeightsManifestConfig = [{
-        paths: ['weightfile0'],
-        weights: [
-          {
-            name: 'dense/kernel',
-            shape: [3, 1],
-            dtype: 'float32',
-          },
-          {
-            name: 'dense/bias',
-            shape: [2],
-            dtype: 'float32',
-          }
-        ]
-      }];
-      const floatData = new Float32Array([1, 3, 3, 7, 4]);
-
-      setupFakeWeightFiles(
-          {
-            './model.pb':
-                {data: modelData, contentType: 'application/octet-stream'},
-            './weights_manifest.json': {
-              data: JSON.stringify(weightManifest1),
-              contentType: 'application/json'
-            },
-            './weightfile0':
-                {data: floatData, contentType: 'application/octet-stream'},
-          },
-          requestInits);
-
-      const handler = tf.io.browserHTTPRequest(
-          ['./model.pb', './weights_manifest.json'],
-          {headers: {'header_key_1': 'header_value_1'}});
-      const modelArtifacts = await handler.load();
-      expect(modelArtifacts.modelTopology).toEqual(modelData);
-      expect(modelArtifacts.weightSpecs).toEqual(weightManifest1[0].weights);
-      expect(new Float32Array(modelArtifacts.weightData)).toEqual(floatData);
-      expect(Object.keys(requestInits).length).toEqual(3);
-      expect(requestInits['./model.pb'].headers['Accept'])
-          .toEqual('application/octet-stream');
-      expect(requestInits['./model.pb'].headers['header_key_1'])
-          .toEqual('header_value_1');
-      expect(requestInits['./weights_manifest.json'].headers['Accept'])
-          .toEqual('application/json');
-      expect(requestInits['./weights_manifest.json'].headers['header_key_1'])
-          .toEqual('header_value_1');
-      expect(requestInits['./weightfile0'].headers['Accept'])
-          .toEqual('application/octet-stream');
-      expect(requestInits['./weightfile0'].headers['header_key_1'])
-          .toEqual('header_value_1');
-    });
-
-    it('1 group, 2 weight, 2 paths', async () => {
-      const weightManifest1: tf.io.WeightsManifestConfig = [{
-        paths: ['weightfile0', 'weightfile1'],
-        weights: [
-          {
-            name: 'dense/kernel',
-            shape: [3, 1],
-            dtype: 'float32',
-          },
-          {
-            name: 'dense/bias',
-            shape: [2],
-            dtype: 'float32',
-          }
-        ]
-      }];
-      const floatData1 = new Float32Array([1, 3, 3]);
-      const floatData2 = new Float32Array([7, 4]);
-      setupFakeWeightFiles(
-          {
-            './model.pb':
-                {data: modelData, contentType: 'application/octet-stream'},
-            './weights_manifest.json': {
-              data: JSON.stringify(weightManifest1),
-              contentType: 'application/json'
-            },
-            './weightfile0':
-                {data: floatData1, contentType: 'application/octet-stream'},
-            './weightfile1':
-                {data: floatData2, contentType: 'application/octet-stream'},
-          },
-          requestInits);
-
-      const handler =
-          tf.io.browserHTTPRequest(['./model.pb', './weights_manifest.json']);
-      const modelArtifacts = await handler.load();
-      expect(modelArtifacts.modelTopology).toEqual(modelData);
-      expect(modelArtifacts.weightSpecs).toEqual(weightManifest1[0].weights);
-      expect(new Float32Array(modelArtifacts.weightData))
-          .toEqual(new Float32Array([1, 3, 3, 7, 4]));
-    });
-
-    it('2 groups, 2 weight, 2 paths', async () => {
-      const weightsManifest: tf.io.WeightsManifestConfig = [
-        {
-          paths: ['weightfile0'],
-          weights: [{
-            name: 'dense/kernel',
-            shape: [3, 1],
-            dtype: 'float32',
-          }]
-        },
-        {
-          paths: ['weightfile1'],
-          weights: [{
-            name: 'dense/bias',
-            shape: [2],
-            dtype: 'float32',
-          }],
-        }
-      ];
-      const floatData1 = new Float32Array([1, 3, 3]);
-      const floatData2 = new Float32Array([7, 4]);
-      setupFakeWeightFiles(
-          {
-            './model.pb':
-                {data: modelData, contentType: 'application/octet-stream'},
-            './weights_manifest.json': {
-              data: JSON.stringify(weightsManifest),
-              contentType: 'application/json'
-            },
-            './weightfile0':
-                {data: floatData1, contentType: 'application/octet-stream'},
-            './weightfile1':
-                {data: floatData2, contentType: 'application/octet-stream'},
-          },
-          requestInits);
-
-      const handler =
-          tf.io.browserHTTPRequest(['./model.pb', './weights_manifest.json']);
-      const modelArtifacts = await handler.load();
-      expect(modelArtifacts.modelTopology).toEqual(modelData);
-      expect(modelArtifacts.weightSpecs)
-          .toEqual(
-              weightsManifest[0].weights.concat(weightsManifest[1].weights));
-      expect(new Float32Array(modelArtifacts.weightData))
-          .toEqual(new Float32Array([1, 3, 3, 7, 4]));
-    });
-
-    it('2 groups, 2 weight, 2 paths, Int32 and Uint8 Data', async () => {
-      const weightsManifest: tf.io.WeightsManifestConfig = [
-        {
-          paths: ['weightfile0'],
-          weights: [{
-            name: 'fooWeight',
-            shape: [3, 1],
-            dtype: 'int32',
-          }]
-        },
-        {
-          paths: ['weightfile1'],
-          weights: [{
-            name: 'barWeight',
-            shape: [2],
-            dtype: 'bool',
-          }],
-        }
-      ];
-      const floatData1 = new Int32Array([1, 3, 3]);
-      const floatData2 = new Uint8Array([7, 4]);
-      setupFakeWeightFiles(
-          {
-            'path1/model.pb':
-                {data: modelData, contentType: 'application/octet-stream'},
-            'path2/weights_manifest.json': {
-              data: JSON.stringify(weightsManifest),
-              contentType: 'application/json'
-            },
-            'path2/weightfile0':
-                {data: floatData1, contentType: 'application/octet-stream'},
-            'path2/weightfile1':
-                {data: floatData2, contentType: 'application/octet-stream'},
-          },
-          requestInits);
-
-      const handler = tf.io.browserHTTPRequest(
-          ['path1/model.pb', 'path2/weights_manifest.json']);
-      const modelArtifacts = await handler.load();
-      expect(modelArtifacts.modelTopology).toEqual(modelData);
-      expect(modelArtifacts.weightSpecs)
-          .toEqual(
-              weightsManifest[0].weights.concat(weightsManifest[1].weights));
-      expect(new Int32Array(modelArtifacts.weightData.slice(0, 12)))
-          .toEqual(new Int32Array([1, 3, 3]));
-      expect(new Uint8Array(modelArtifacts.weightData.slice(12, 14)))
-          .toEqual(new Uint8Array([7, 4]));
-    });
-
-    it('2 groups, 2 weight, weight path prefix, Int32 and Uint8 Data',
-       async () => {
-         const weightsManifest: tf.io.WeightsManifestConfig = [
-           {
-             paths: ['weightfile0'],
-             weights: [{
-               name: 'fooWeight',
-               shape: [3, 1],
-               dtype: 'int32',
-             }]
-           },
-           {
-             paths: ['weightfile1'],
-             weights: [{
-               name: 'barWeight',
-               shape: [2],
-               dtype: 'bool',
-             }],
-           }
-         ];
-         const floatData1 = new Int32Array([1, 3, 3]);
-         const floatData2 = new Uint8Array([7, 4]);
-         setupFakeWeightFiles(
-             {
-               'path1/model.pb':
-                   {data: modelData, contentType: 'application/octet-stream'},
-               'path2/weights_manifest.json': {
-                 data: JSON.stringify(weightsManifest),
-                 contentType: 'application/json'
-               },
-               'path3/weightfile0':
-                   {data: floatData1, contentType: 'application/octet-stream'},
-               'path3/weightfile1':
-                   {data: floatData2, contentType: 'application/octet-stream'},
-             },
-             requestInits);
-         const handler = tf.io.browserHTTPRequest(
-             ['path1/model.pb', 'path2/weights_manifest.json'], {}, 'path3/');
-         const modelArtifacts = await handler.load();
-         expect(modelArtifacts.modelTopology).toEqual(modelData);
-         expect(modelArtifacts.weightSpecs)
-             .toEqual(
-                 weightsManifest[0].weights.concat(weightsManifest[1].weights));
-         expect(new Int32Array(modelArtifacts.weightData.slice(0, 12)))
-             .toEqual(new Int32Array([1, 3, 3]));
-         expect(new Uint8Array(modelArtifacts.weightData.slice(12, 14)))
-             .toEqual(new Uint8Array([7, 4]));
-       });
-
-    it('the url path length is not 2 should leads to error', () => {
-      expect(() => tf.io.browserHTTPRequest(['path1/model.pb'])).toThrow();
-    });
-
-    it('with wrong model content type leads to error', async (done) => {
-      const weightsManifest: tf.io.WeightsManifestConfig = [
-        {
-          paths: ['weightfile0'],
-          weights: [{
-            name: 'fooWeight',
-            shape: [3, 1],
-            dtype: 'int32',
-          }]
-        },
-        {
-          paths: ['weightfile1'],
-          weights: [{
-            name: 'barWeight',
-            shape: [2],
-            dtype: 'bool',
-          }],
-        }
-      ];
-      const floatData1 = new Int32Array([1, 3, 3]);
-      const floatData2 = new Uint8Array([7, 4]);
-      setupFakeWeightFiles(
-          {
-            'path1/model.pb': {data: modelData, contentType: 'text/html'},
-            'path2/weights_manifest.json': {
-              data: JSON.stringify(weightsManifest),
-              contentType: 'application/json'
-            },
-            'path3/weightfile0':
-                {data: floatData1, contentType: 'application/octet-stream'},
-            'path3/weightfile1':
-                {data: floatData2, contentType: 'application/octet-stream'},
-          },
-          requestInits);
-      const handler = tf.io.browserHTTPRequest(
-          ['path1/model.pb', 'path2/weights_manifest.json'], {}, 'path3/');
-      handler.load()
-          .then(modelTopology1 => {
-            done.fail(
-                'Loading with wrong content-type succeeded unexpectedly.');
-          })
-          .catch(err => {
-            expect(err.message)
-                .toEqual(
-                    'Request to path1/model.pb for model topology failed. ' +
-                    'Expected content type application/octet-stream ' +
-                    'but got text/html.');
-            done();
-          });
-    });
-
-    it('with wrong manifest content type leads to error', async (done) => {
-      const weightsManifest: tf.io.WeightsManifestConfig = [
-        {
-          paths: ['weightfile0'],
-          weights: [{
-            name: 'fooWeight',
-            shape: [3, 1],
-            dtype: 'int32',
-          }]
-        },
-        {
-          paths: ['weightfile1'],
-          weights: [{
-            name: 'barWeight',
-            shape: [2],
-            dtype: 'bool',
-          }],
-        }
-      ];
-      const floatData1 = new Int32Array([1, 3, 3]);
-      const floatData2 = new Uint8Array([7, 4]);
-      setupFakeWeightFiles(
-          {
-            'path1/model.pb':
-                {data: modelData, contentType: 'application/octet-stream'},
-            'path2/weights_manifest.json': {
-              data: JSON.stringify(weightsManifest),
-              contentType: 'application/octet-stream'
-            },
-            'path3/weightfile0':
-                {data: floatData1, contentType: 'application/octet-stream'},
-            'path3/weightfile1':
-                {data: floatData2, contentType: 'application/octet-stream'},
-          },
-          requestInits);
-      const handler = tf.io.browserHTTPRequest(
-          ['path1/model.pb', 'path2/weights_manifest.json'], {}, 'path3/');
-      handler.load()
-          .then(modelTopology1 => {
-            done.fail(
-                'Loading with wrong content-type succeeded unexpectedly.');
-          })
-          .catch(err => {
-            expect(err.message)
-                .toEqual(
-                    'Request to path2/weights_manifest.json for weights ' +
-                    'manifest failed. Expected content type application/json' +
-                    ' but got application/octet-stream.');
-            done();
-          });
-    });
-
-    it('with wrong weight content type leads to error', async (done) => {
-      const weightsManifest: tf.io.WeightsManifestConfig = [
-        {
-          paths: ['weightfile0'],
-          weights: [{
-            name: 'fooWeight',
-            shape: [3, 1],
-            dtype: 'int32',
-          }]
-        },
-        {
-          paths: ['weightfile1'],
-          weights: [{
-            name: 'barWeight',
-            shape: [2],
-            dtype: 'bool',
-          }],
-        }
-      ];
-      const floatData1 = new Int32Array([1, 3, 3]);
-      const floatData2 = new Uint8Array([7, 4]);
-      setupFakeWeightFiles(
-          {
-            'path1/model.pb':
-                {data: modelData, contentType: 'application/octet-stream'},
-            'path2/weights_manifest.json': {
-              data: JSON.stringify(weightsManifest),
-              contentType: 'application/json'
-            },
-            'path3/weightfile0':
-                {data: floatData1, contentType: 'application/json'},
-            'path3/weightfile1':
-                {data: floatData2, contentType: 'application/octet-stream'},
-          },
-          requestInits);
-      const handler = tf.io.browserHTTPRequest(
-          ['path1/model.pb', 'path2/weights_manifest.json'], {}, 'path3/');
-      handler.load()
-          .then(modelTopology1 => {
-            done.fail(
-                'Loading with wrong content-type succeeded unexpectedly.');
-          })
-          .catch(err => {
-            expect(err.message)
-                .toEqual(
-                    'Request to path3/weightfile0 for weight file failed. ' +
-                    'Expected content type application/octet-stream but ' +
-                    'got application/json.');
-            done();
-          });
-    });
-
-    it('with fetch rejection leads to error', async (done) => {
-      setupFakeWeightFiles(
-          {
-            'path1/model.pb':
-                {data: JSON.stringify({}), contentType: 'text/html'}
-          },
-          requestInits);
-      const handler = tf.io.browserHTTPRequest(
-          ['path1/model.pb', 'path2/weights_manifest.json']);
-      try {
-        const data = await handler.load();
-        expect(data).toBeDefined();
-        done.fail(
-            'Loading with fetch rejection ' +
-            'succeeded unexpectedly.');
-      } catch (err) {
-        expect(err.message)
-            .toMatch(/Request for path2\/weights_manifest.json failed /);
         done();
       }
     });
@@ -1380,7 +815,8 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
     }
 
     const handler = tf.io.browserHTTPRequest(
-        './model.json', {credentials: 'include'}, null, customFetch);
+        './model.json',
+        {requestInit: {credentials: 'include'}, fetchFunc: customFetch});
     const modelArtifacts = await handler.load();
     expect(modelArtifacts.modelTopology).toEqual(modelTopology1);
     expect(modelArtifacts.weightSpecs).toEqual(weightManifest1[0].weights);
