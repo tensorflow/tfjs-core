@@ -121,6 +121,7 @@ import {UnaryOpPackedProgram} from './unaryop_packed_gpu';
 import {UnpackProgram} from './unpack_gpu';
 import {AddNProgram} from './addn_gpu';
 import * as webgl_util from './webgl_util';
+import {AddNPackedProgram} from './addn_packed_gpu';
 
 type KernelInfo = {
   name: string; query: Promise<number>;
@@ -1486,8 +1487,13 @@ export class MathBackendWebGL implements KernelBackend {
         .reduce((d1, d2) => upcastType(d1, d2));
     const shapes = tensors.map(t => t.shape);
     // We can make sure shapes are identical in op level.
-    const program = new AddNProgram(tensors[0].shape, shapes);
-    const output = this.makeOutputArray(program.outputShape, dtype) as T;
+    const usePackedOp = ENV.getBool('WEBGL_PACK_BINARY_OPERATIONS');
+    const program = usePackedOp ?
+        new AddNPackedProgram(tensors[0].shape, shapes) :
+        new AddNProgram(tensors[0].shape, shapes);
+    const output = usePackedOp ?
+        this.makePackedTensor(program.outputShape, dtype) as T :
+        this.makeOutputArray(program.outputShape, dtype) as T;
     return this.compileAndRun<T>(program, tensors, output);
   }
 
