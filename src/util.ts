@@ -683,7 +683,7 @@ export const getNodeFetch = {
     // tslint:disable-next-line:no-require-imports
     return require('node-fetch');
   }
-}
+};
 
 /**
  * Returns a platform-specific implementation of
