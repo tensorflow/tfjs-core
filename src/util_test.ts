@@ -515,15 +515,18 @@ describe('util.fetch', () => {
 describeWithFlags('util.fetch node', NODE_ENVS, () => {
   it('should use node-fetch', () => {
     const savedFetch = util.systemFetch;
+    const savedGlobalFetch = ENV.global.fetch;
+    // @ts-ignore
+    ENV.global.fetch = null;
     // @ts-ignore
     util.systemFetch = null;
-    // tslint:disable-next-line:no-require-imports
-    const nodeFetch = require('node-fetch');
-    spyOn(nodeFetch, 'fetch').and.callThrough();
+    spyOn(util.getNodeFetch, 'fetchImport').and.callFake(() => () => {});
 
     util.fetch('');
     // tslint:disable-next-line:no-any
-    expect(nodeFetch.fetch).toHaveBeenCalled();
+    expect(util.getNodeFetch.fetchImport).toHaveBeenCalled();
+    // @ts-ignore
+    ENV.global.fetch = savedGlobalFetch;
     // @ts-ignore
     util.systemFetch = savedFetch;
   });

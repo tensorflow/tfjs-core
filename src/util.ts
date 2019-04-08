@@ -670,13 +670,20 @@ const getSystemFetch = () => {
   if (ENV.global.fetch != null) {
     return ENV.global.fetch;
   } else if (ENV.get('IS_NODE')) {
-    // tslint:disable-next-line:no-require-imports
-    return require('node-fetch');
+    return getNodeFetch.fetchImport();
   }
   throw new Error(
       `Unable to find the fetch() method. Please add your own fetch() ` +
       `function to the global namespace.`);
 };
+
+// We are wrapping this within an object so it can be stubbed by Jasmine.
+export const getNodeFetch = {
+  fetchImport: () => {
+    // tslint:disable-next-line:no-require-imports
+    return require('node-fetch');
+  }
+}
 
 /**
  * Returns a platform-specific implementation of
