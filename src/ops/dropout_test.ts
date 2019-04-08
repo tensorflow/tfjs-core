@@ -15,9 +15,8 @@
  * =============================================================================
  */
 import * as tf from '../index';
-import {describeWithFlags} from '../jasmine_util';
+import {ALL_ENVS, describeWithFlags} from '../jasmine_util';
 import {Tensor} from '../tensor';
-import {ALL_ENVS} from '../test_util';
 
 function countParams(x: Tensor): number {
   const shape = x.shape;
