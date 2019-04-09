@@ -155,6 +155,28 @@ describe('Backend registration', () => {
   });
 });
 
+describeWithFlags('readbacks return shallow copies', ALL_ENVS, () => {
+  it('dataSync returns shallow copy of data', () => {
+    const x = tf.tensor([1, 2, 3]);
+    x.square();
+
+    const xData = x.dataSync();
+    xData[1] = 10;
+
+    expectArraysClose(x, [1, 2, 3]);
+  });
+
+  it('data returns shallow copy of data', async () => {
+    const x = tf.tensor([1, 2, 3]);
+    x.square();
+
+    const xData = await x.data();
+    xData[1] = 10;
+
+    expectArraysClose(x, [1, 2, 3]);
+  });
+});
+
 describeWithFlags('fromPixels + regular math op', WEBGL_ENVS, () => {
   it('debug mode does not error when no nans', () => {
     const pixels = new ImageData(2, 2);

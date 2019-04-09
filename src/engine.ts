@@ -753,12 +753,18 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
   readSync(dataId: DataId): DataValues {
     // Route the read to the correct backend.
     const info = this.state.tensorInfo.get(dataId);
-    return info.backend.readSync(dataId);
+    const result = info.backend.readSync(dataId);
+
+    // Shallow copy the result so the user cannot mutate tensor state.
+    return result.slice();
   }
-  read(dataId: DataId): Promise<DataValues> {
+  async read(dataId: DataId): Promise<DataValues> {
     // Route the read to the correct backend.
     const info = this.state.tensorInfo.get(dataId);
-    return info.backend.read(dataId);
+    const result = await info.backend.read(dataId);
+
+    // Shallow copy the result so the user cannot mutate tensor state.
+    return result.slice();
   }
   fromPixels(
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,

@@ -166,7 +166,7 @@
       <tbody></tbody>
     </table>
   </div>
-  <script src="https://unpkg.com/@tensorflow/tfjs-core/dist/tf-core.js"></script>
+  <script src="../dist/tf-core.js"></script>
   <script src="https://unpkg.com/@tensorflow/tfjs-layers/dist/tf-layers.js"></script>
   <script src="https://unpkg.com/@tensorflow/tfjs-converter/dist/tf-converter.js"></script>
   <script>
@@ -175,9 +175,9 @@
       //////////////////////////////////
       // Place model loading code here.
       //////////////////////////////////
-      return await tf.loadFrozenModel(
-        'https://storage.googleapis.com/tfjs-models/savedmodel/mobilenet_v2_1.0_224/tensorflowjs_model.pb',
-        'https://storage.googleapis.com/tfjs-models/savedmodel/mobilenet_v2_1.0_224/weights_manifest.json');
+      return await tf.loadGraphModel(
+        'https://tfhub.dev/google/imagenet/mobilenet_v2_100_224/classification/2',
+        {fromTFHub: true});
     }
 
     const zeros = tf.zeros([1, 224, 224, 3]);
