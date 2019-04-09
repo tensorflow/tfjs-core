@@ -547,7 +547,7 @@ export class MathBackendCPU implements KernelBackend {
       }
       vals[i] = sum;
     }
-    return result;
+    return tensor(vals, result.shape);
   }
 
   prod(x: Tensor, axes: number[]): Tensor {
@@ -569,7 +569,7 @@ export class MathBackendCPU implements KernelBackend {
       }
       vals[i] = prod;
     }
-    return result;
+    return tensor(vals, result.shape);
   }
 
   unsortedSegmentSum<T extends Tensor>(
@@ -620,7 +620,7 @@ export class MathBackendCPU implements KernelBackend {
       }
       vals[i] = minIndex;
     }
-    return result;
+    return tensor(vals, result.shape);
   }
 
   argMax(x: Tensor, axis: number): Tensor {
@@ -648,7 +648,7 @@ export class MathBackendCPU implements KernelBackend {
       }
       vals[i] = maxIndex;
     }
-    return result;
+    return tensor(vals, result.shape);
   }
 
   cumsum(x: Tensor, axis: number, exclusive: boolean, reverse: boolean):
@@ -681,7 +681,7 @@ export class MathBackendCPU implements KernelBackend {
         }
       }
     }
-    return result;
+    return tensor(vals, result.shape);
   }
 
   equal(a: Tensor, b: Tensor): Tensor {
@@ -781,7 +781,7 @@ export class MathBackendCPU implements KernelBackend {
         }
       }
     }
-    return result;
+    return tensor(newValues, result.shape);
   }
 
   where(condition: Tensor): Tensor2D {
@@ -820,7 +820,7 @@ export class MathBackendCPU implements KernelBackend {
       }
       vals[i] = min;
     }
-    return result;
+    return tensor(vals, result.shape);
   }
 
   minimum(a: Tensor, b: Tensor): Tensor {
@@ -865,7 +865,7 @@ export class MathBackendCPU implements KernelBackend {
       }
       vals[i] = max;
     }
-    return result;
+    return tensor(vals, result.shape);
   }
 
   maximum(a: Tensor, b: Tensor): Tensor {
@@ -895,7 +895,7 @@ export class MathBackendCPU implements KernelBackend {
       }
       vals[i] = all;
     }
-    return result;
+    return tensor(vals, result.shape);
   }
 
   any(x: Tensor, axes: number[]): Tensor {
@@ -918,7 +918,7 @@ export class MathBackendCPU implements KernelBackend {
       }
       vals[i] = anyVal;
     }
-    return result;
+    return tensor(vals, result.shape);
   }
 
   squaredDifference(a: Tensor, b: Tensor): Tensor {
@@ -1137,7 +1137,7 @@ export class MathBackendCPU implements KernelBackend {
     for (let i = 0; i < inVals.length; ++i) {
       resVals[i] = Math.max(0, inVals[i]);
     }
-    return res as T;
+    return tensor(resVals, res.shape) as T;
   }
 
   prelu<T extends Tensor>(x: T, a: T): T {
@@ -2879,7 +2879,7 @@ export class MathBackendCPU implements KernelBackend {
         }
       }
     }
-    return res;
+    return tensor(resVals, res.shape);
   }
 
   oneHot(indices: Tensor1D, depth: number, onValue: number, offValue: number):
