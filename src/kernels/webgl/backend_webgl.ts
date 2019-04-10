@@ -1487,7 +1487,7 @@ export class MathBackendWebGL implements KernelBackend {
         .reduce((d1, d2) => upcastType(d1, d2));
     const shapes = tensors.map(t => t.shape);
     // We can make sure shapes are identical in op level.
-    const usePackedOp = ENV.getBool('WEBGL_PACK_BINARY_OPERATIONS');
+    const usePackedOp = ENV.getBool('WEBGL_PACK');
     const program = usePackedOp ?
         new AddNPackedProgram(tensors[0].shape, shapes) :
         new AddNProgram(tensors[0].shape, shapes);
