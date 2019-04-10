@@ -125,7 +125,7 @@ export interface TestEnv {
 export let TEST_ENVS: TestEnv[] = [];
 
 // Whether a call to setTestEnvs has been called so we turn off registration.
-// This allows comamnd line overriding or programmatic overriding of the
+// This allows command line overriding or programmatic overriding of the
 // default registrations.
 let testEnvSet = false;
 export function setTestEnvs(testEnvs: TestEnv[]) {

@@ -294,12 +294,9 @@ describeWithFlags('disposeVariables', ALL_ENVS, () => {
 });
 
 /**
- * The following unit tests are a special integration-style test that assume
- * things about backends being registered. These tests don't live in the
- * backend directories because it is testing engine rather than backend-specific
- * details but needs a real backend to exist. These test will fail if the
- * backends are not registered. This is intentional, we should have coverage for
- * when these backends are enabled and ensuring they work with the engine.
+ * The following test constraints to the CPU environment because it needs a
+ * concrete backend to exist. This test will work for any backend, but currently
+ * this is the simplest backend to test against.
  */
 describeWithFlags('Switching cpu backends', {backends: 'cpu'}, () => {
   beforeEach(() => {
@@ -369,6 +366,15 @@ describeWithFlags('Switching cpu backends', {backends: 'cpu'}, () => {
   });
 });
 
+/**
+ * The following unit test is a special integration-style test that assumes
+ * things about CPU & WebGL backends being registered. This tests doesn't live
+ * in the backend directory because it is testing engine rather than
+ * backend-specific details but needs a real backend to exist. This test will
+ * fail if the CPU backends is not registered. This is intentional, we should
+ * have coverage for when these backends are enabled and ensure they work with
+ * the engine.
+ */
 describeWithFlags('Switching WebGL + CPU backends', {backends: 'webgl'}, () => {
   beforeEach(() => {
     tf.registerBackend('webgl1', tf.findBackendFactory('webgl'));
