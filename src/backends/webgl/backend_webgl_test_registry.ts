@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {Constraints, registerTestEnv} from '../../jasmine_util';
+import {Constraints} from '../../jasmine_util';
 
 export const WEBGL_ENVS: Constraints = {
   activeBackend: 'webgl'
@@ -24,22 +24,22 @@ export const PACKED_ENVS: Constraints = {
   flags: {'WEBGL_PACK': true}
 };
 
-registerTestEnv({
-  name: 'webgl1',
-  backendName: 'webgl',
-  flags: {
-    'WEBGL_VERSION': 1,
-    'WEBGL_CPU_FORWARD': false,
-    'WEBGL_SIZE_UPLOAD_UNIFORM': 0
-  }
-});
+// registerTestEnv({
+//   name: 'webgl1',
+//   backendName: 'webgl',
+//   flags: {
+//     'WEBGL_VERSION': 1,
+//     'WEBGL_CPU_FORWARD': false,
+//     'WEBGL_SIZE_UPLOAD_UNIFORM': 0
+//   }
+// });
 
-registerTestEnv({
-  name: 'webgl2',
-  backendName: 'webgl',
-  flags: {
-    'WEBGL_VERSION': 2,
-    'WEBGL_CPU_FORWARD': false,
-    'WEBGL_SIZE_UPLOAD_UNIFORM': 0
-  }
-});
+// registerTestEnv({
+//   name: 'webgl2',
+//   backendName: 'webgl',
+//   flags: {
+//     'WEBGL_VERSION': 2,
+//     'WEBGL_CPU_FORWARD': false,
+//     'WEBGL_SIZE_UPLOAD_UNIFORM': 0
+//   }
+// });

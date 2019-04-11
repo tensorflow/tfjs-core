@@ -23,8 +23,8 @@ import './flags';
 
 // backend_cpu.ts and backend_webgl.ts are standalone files and should be
 // explicitly included here.
-import './backends/webgl/backend_webgl';
-// import './backends/cpu/backend_cpu';
+// import './backends/webgl/backend_webgl';
+import './backends/cpu/backend_cpu';
 
 import * as environment from './environment';
 // Serialization.
@@ -37,7 +37,7 @@ import * as tensor_util from './tensor_util';
 import * as test_util from './test_util';
 import * as util from './util';
 import {version} from './version';
-import * as webgl from './webgl';
+// import * as webgl from './webgl';
 
 export {InferenceModel, ModelPredictConfig} from './model_types';
 // Optimizers.
@@ -78,7 +78,7 @@ export {
   serialization,
   test_util,
   util,
-  webgl,
+  // webgl,
   tensor_util
 };
 
