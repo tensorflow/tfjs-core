@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {Constraints, registerTestEnv} from '../../jasmine_util';
+import {Constraints} from '../../jasmine_util';
 
 export const CPU_ENVS: Constraints = {
   activeBackend: 'cpu'
