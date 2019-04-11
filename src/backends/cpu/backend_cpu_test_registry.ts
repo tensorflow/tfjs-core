@@ -21,4 +21,4 @@ export const CPU_ENVS: Constraints = {
   activeBackend: 'cpu'
 };
 
-registerTestEnv({name: 'cpu', backendName: 'cpu'});
+// registerTestEnv({name: 'cpu', backendName: 'cpu'});
