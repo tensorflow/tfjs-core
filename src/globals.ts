@@ -73,6 +73,22 @@ export function disposeVariables(): void {
 }
 
 /**
+ * Dispose all variables kept in backend engine.
+ */
+/** @doc {heading: 'Environment'} */
+export function disposeVariables2(): void {
+  ENGINE.disposeVariables();
+}
+
+/**
+ * Dispose all variables kept in backend engine.
+ */
+/** @doc {heading: 'Environment'} */
+export function disposeVariables3(): void {
+  ENGINE.disposeVariables();
+}
+
+/**
  * Returns memory info at the current time in the program. The result is an
  * object with the following properties:
  *
