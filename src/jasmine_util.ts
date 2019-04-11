@@ -23,6 +23,7 @@ Error.stackTraceLimit = Infinity;
 export type Constraints = {
   flags?: Flags;
   activeBackend?: string;
+  // If defined, all backends in this array must be registered.
   registeredBackends?: string[];
 };
 
@@ -40,7 +41,7 @@ export const ALL_ENVS: Constraints = {};
 
 // Tests whether the current environment satisfies the set of constraints.
 export function envSatisfiesConstraints(
-    env: Environment, currentBackendName: string, registeredBackends: string[],
+    env: Environment, activeBackend: string, registeredBackends: string[],
     constraints: Constraints): boolean {
   if (constraints == null) {
     return true;
@@ -55,9 +56,15 @@ export function envSatisfiesConstraints(
     }
   }
   if (constraints.activeBackend != null) {
-    return currentBackendName === constraints.activeBackend;
+    return activeBackend === constraints.activeBackend;
   }
   if (constraints.registeredBackends != null) {
+    for (let i = 0; i < constraints.registeredBackends.length; i++) {
+      const registeredBackendConstraint = constraints.registeredBackends[i];
+      if (registeredBackends.indexOf(registeredBackendConstraint) === -1) {
+        return false;
+      }
+    }
   }
 
   return true;
@@ -104,7 +111,8 @@ export function describeWithFlags(
     name: string, constraints: Constraints, tests: (env: TestEnv) => void) {
   TEST_ENVS.forEach(testEnv => {
     ENV.setFlags(testEnv.flags);
-    if (envSatisfiesConstraints(ENV, testEnv.backendName, constraints)) {
+    if (envSatisfiesConstraints(
+            ENV, testEnv.backendName, ENGINE.backendNames(), constraints)) {
       const testName =
           name + ' ' + testEnv.name + ' ' + JSON.stringify(testEnv.flags);
       executeTests(testName, tests, testEnv);

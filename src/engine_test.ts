@@ -376,7 +376,8 @@ describeWithFlags('Switching cpu backends', {activeBackend: 'cpu'}, () => {
  * the engine.
  */
 describeWithFlags(
-    'Switching WebGL + CPU backends', {activeBackend: 'webgl'}, () => {
+    'Switching WebGL + CPU backends',
+    {activeBackend: 'webgl', registeredBackends: ['webgl', 'cpu']}, () => {
       beforeEach(() => {
         tf.registerBackend('webgl1', tf.findBackendFactory('webgl'));
         tf.registerBackend('webgl2', tf.findBackendFactory('webgl'));
