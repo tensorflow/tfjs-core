@@ -24,7 +24,7 @@ import './flags';
 // backend_cpu.ts and backend_webgl.ts are standalone files and should be
 // explicitly included here.
 import './backends/webgl/backend_webgl';
-import './backends/cpu/backend_cpu';
+// import './backends/cpu/backend_cpu';
 
 import * as environment from './environment';
 // Serialization.
