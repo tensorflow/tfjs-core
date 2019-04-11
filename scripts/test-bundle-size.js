@@ -28,7 +28,7 @@ function getFileSizeBytes(filename) {
 }
 
 // Get the bundle sizes from this change.
-exec(`yarn build && yarn rollup -c`, {silent: true});
+exec(`yarn build && yarn rollup -c`);
 const size = getFileSizeBytes('dist/tf-core.js');
 const minSize = getFileSizeBytes('dist/tf-core.min.js');
 const esmSize = getFileSizeBytes('dist/tf-core.esm.js');
