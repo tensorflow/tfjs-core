@@ -22,7 +22,8 @@ Error.stackTraceLimit = Infinity;
 
 export type Constraints = {
   flags?: Flags;
-  backends?: string | string[];
+  activeBackend?: string;
+  registeredBackends?: string[];
 };
 
 export const NODE_ENVS: Constraints = {
@@ -39,9 +40,13 @@ export const ALL_ENVS: Constraints = {};
 
 // Tests whether the current environment satisfies the set of constraints.
 export function envSatisfiesConstraints(
-    env: Environment, currentBackendName: string,
+    env: Environment, currentBackendName: string, registeredBackends: string[],
     constraints: Constraints): boolean {
-  if (constraints != null && constraints.flags != null) {
+  if (constraints == null) {
+    return true;
+  }
+
+  if (constraints.flags != null) {
     for (const flagName in constraints.flags) {
       const flagValue = constraints.flags[flagName];
       if (env.get(flagName) !== flagValue) {
@@ -49,21 +54,12 @@ export function envSatisfiesConstraints(
       }
     }
   }
-  if (constraints != null && constraints.backends != null) {
-    let anyBackendMatches = false;
-    if (Array.isArray(constraints.backends)) {
-      constraints.backends.forEach(constraintBackendName => {
-        if (constraintBackendName === currentBackendName) {
-          anyBackendMatches = true;
-        }
-      });
-      if (!anyBackendMatches) {
-        return false;
-      }
-    } else {
-      return currentBackendName === constraints.backends;
-    }
+  if (constraints.activeBackend != null) {
+    return currentBackendName === constraints.activeBackend;
   }
+  if (constraints.registeredBackends != null) {
+  }
+
   return true;
 }
 
@@ -124,9 +120,9 @@ export interface TestEnv {
 
 export let TEST_ENVS: TestEnv[] = [];
 
-// Whether a call to setTestEnvs has been called so we turn off registration.
-// This allows command line overriding or programmatic overriding of the
-// default registrations.
+// Whether a call to setTestEnvs has been called so we turn off
+// registration. This allows command line overriding or programmatic
+// overriding of the default registrations.
 let testEnvSet = false;
 export function setTestEnvs(testEnvs: TestEnv[]) {
   testEnvSet = true;
@@ -134,8 +130,9 @@ export function setTestEnvs(testEnvs: TestEnv[]) {
 }
 
 export function registerTestEnv(testEnv: TestEnv) {
-  // When using an explicit call to setTestEnvs, turn off registration of test
-  // environments because the explicit call will set the test environments.
+  // When using an explicit call to setTestEnvs, turn off registration of
+  // test environments because the explicit call will set the test
+  // environments.
   if (testEnvSet) {
     return;
   }

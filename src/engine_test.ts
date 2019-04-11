@@ -298,7 +298,7 @@ describeWithFlags('disposeVariables', ALL_ENVS, () => {
  * concrete backend to exist. This test will work for any backend, but currently
  * this is the simplest backend to test against.
  */
-describeWithFlags('Switching cpu backends', {backends: 'cpu'}, () => {
+describeWithFlags('Switching cpu backends', {activeBackend: 'cpu'}, () => {
   beforeEach(() => {
     tf.registerBackend('cpu1', tf.findBackendFactory('cpu'));
     tf.registerBackend('cpu2', tf.findBackendFactory('cpu'));
@@ -375,79 +375,80 @@ describeWithFlags('Switching cpu backends', {backends: 'cpu'}, () => {
  * have coverage for when these backends are enabled and ensure they work with
  * the engine.
  */
-describeWithFlags('Switching WebGL + CPU backends', {backends: 'webgl'}, () => {
-  beforeEach(() => {
-    tf.registerBackend('webgl1', tf.findBackendFactory('webgl'));
-    tf.registerBackend('webgl2', tf.findBackendFactory('webgl'));
-    tf.registerBackend('cpu1', tf.findBackendFactory('cpu'));
-  });
+describeWithFlags(
+    'Switching WebGL + CPU backends', {activeBackend: 'webgl'}, () => {
+      beforeEach(() => {
+        tf.registerBackend('webgl1', tf.findBackendFactory('webgl'));
+        tf.registerBackend('webgl2', tf.findBackendFactory('webgl'));
+        tf.registerBackend('cpu1', tf.findBackendFactory('cpu'));
+      });
 
-  afterEach(() => {
-    tf.removeBackend('webgl1');
-    tf.removeBackend('webgl2');
-    tf.removeBackend('cpu1');
-  });
+      afterEach(() => {
+        tf.removeBackend('webgl1');
+        tf.removeBackend('webgl2');
+        tf.removeBackend('cpu1');
+      });
 
-  it('can execute op with data from mixed backends', () => {
-    tf.setBackend('webgl1');
-    const a = tf.scalar(5);
+      it('can execute op with data from mixed backends', () => {
+        tf.setBackend('webgl1');
+        const a = tf.scalar(5);
 
-    tf.setBackend('webgl2');
-    const b = tf.scalar(3);
+        tf.setBackend('webgl2');
+        const b = tf.scalar(3);
 
-    tf.setBackend('cpu1');
-    const c = tf.scalar(2);
+        tf.setBackend('cpu1');
+        const c = tf.scalar(2);
 
-    // Verify that ops can execute with mixed backend data.
-    tf.tidy(() => {
-      tf.setBackend('webgl1');
-      expectArraysClose(tf.addN([a, b, c]), [10]);
+        // Verify that ops can execute with mixed backend data.
+        tf.tidy(() => {
+          tf.setBackend('webgl1');
+          expectArraysClose(tf.addN([a, b, c]), [10]);
 
-      tf.setBackend('webgl2');
-      expectArraysClose(tf.addN([a, b, c]), [10]);
+          tf.setBackend('webgl2');
+          expectArraysClose(tf.addN([a, b, c]), [10]);
 
-      tf.setBackend('cpu1');
-      expectArraysClose(tf.addN([a, b, c]), [10]);
+          tf.setBackend('cpu1');
+          expectArraysClose(tf.addN([a, b, c]), [10]);
+        });
+
+        expect(tf.memory().numTensors).toBe(3);
+        expect(tf.memory().numDataBuffers).toBe(3);
+
+        tf.dispose([a, b, c]);
+
+        expect(tf.memory().numTensors).toBe(0);
+        expect(tf.memory().numDataBuffers).toBe(0);
+      });
+
+      it('fromPixels with mixed backends works', () => {
+        tf.setBackend('webgl1');
+        const a = tf.browser.fromPixels(
+            new ImageData(new Uint8ClampedArray([1, 2, 3, 4]), 1, 1));
+
+        tf.setBackend('webgl2');
+        const b = tf.browser.fromPixels(
+            new ImageData(new Uint8ClampedArray([5, 6, 7, 8]), 1, 1));
+
+        expectArraysClose(tf.add(a, b), [6, 8, 10]);
+      });
+
+      it('single tidy multiple backends', () => {
+        expect(tf.memory().numTensors).toBe(0);
+
+        tf.tidy(() => {
+          tf.setBackend('webgl1');
+          const a = tf.scalar(1);
+          a.square();  // Uploads to GPU.
+
+          tf.setBackend('webgl2');
+          const b = tf.scalar(1);
+          b.square();  // Uploads to GPU.
+
+          expect(tf.memory().numTensors).toBe(4);
+        });
+        expect(tf.memory().numTensors).toBe(0);
+      });
     });
-
-    expect(tf.memory().numTensors).toBe(3);
-    expect(tf.memory().numDataBuffers).toBe(3);
-
-    tf.dispose([a, b, c]);
-
-    expect(tf.memory().numTensors).toBe(0);
-    expect(tf.memory().numDataBuffers).toBe(0);
-  });
-
-  it('fromPixels with mixed backends works', () => {
-    tf.setBackend('webgl1');
-    const a = tf.browser.fromPixels(
-        new ImageData(new Uint8ClampedArray([1, 2, 3, 4]), 1, 1));
-
-    tf.setBackend('webgl2');
-    const b = tf.browser.fromPixels(
-        new ImageData(new Uint8ClampedArray([5, 6, 7, 8]), 1, 1));
-
-    expectArraysClose(tf.add(a, b), [6, 8, 10]);
-  });
-
-  it('single tidy multiple backends', () => {
-    expect(tf.memory().numTensors).toBe(0);
-
-    tf.tidy(() => {
-      tf.setBackend('webgl1');
-      const a = tf.scalar(1);
-      a.square();  // Uploads to GPU.
-
-      tf.setBackend('webgl2');
-      const b = tf.scalar(1);
-      b.square();  // Uploads to GPU.
-
-      expect(tf.memory().numTensors).toBe(4);
-    });
-    expect(tf.memory().numTensors).toBe(0);
-  });
-});
 
 // NOTE: This describe is purposefully not a describeWithFlags so that we test
 // tensor allocation where no scopes have been created. The backend here must
