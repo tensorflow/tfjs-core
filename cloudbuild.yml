@@ -30,4 +30,4 @@ timeout: 1800s
 logsBucket: 'gs://tfjs-build-logs'
 options:
  logStreamingOption: 'STREAM_ON'
-  machineType: 'N1_HIGHCPU_8'
+ machineType: 'N1_HIGHCPU_8'
