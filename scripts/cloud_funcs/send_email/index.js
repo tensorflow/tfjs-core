@@ -1,6 +1,6 @@
 const Mailgun = require('mailgun-js');
 const humanizeDuration = require('humanize-duration');
-const request = require('request');
+const request = require('request-promise-native');
 const config = require('./config.json');
 
 const mailgun = new Mailgun({
@@ -31,32 +31,32 @@ module.exports.send_email = async event => {
   const msg = `${build.substitutions.REPO_NAME} nightly finished with status ` +
       `${build.status}, in ${duration}.`;
 
-  // Send email.
-  const email = createEmail(build, msg);
-  await mailgun.messages().send(email);
-
-  // Send a chat message.
-  const chatMsg = `${msg} <${build.logUrl}|See logs>`;
-  request.post(
-      process.env.HANGOUTS_URL, {json: {text: chatMsg}}, (error, res, body) => {
-        if (error) {
-          console.error(error);
-          return;
-        }
-        console.log(`statusCode: ${res.statusCode}`);
-        console.log(body);
-      });
+  await sendEmail(build, msg);
+  await sendChatMsg(build, msg);
 };
 
+async function sendChatMsg(build, msg) {
+  const chatMsg = `${msg} <${build.logUrl}|See logs>`;
+  const res = await request(process.env.HANGOUTS_URL, {
+    resolveWithFullResponse: true,
+    method: 'POST',
+    json: true,
+    body: {text: chatMsg},
+  });
+  console.log(`statusCode: ${res.statusCode}`);
+  console.log(res.body);
+}
+
 // createEmail create an email message from a build object.
-function createEmail(build, msg) {
+async function sendEmail(build, msg) {
   // Send an email.
   let emailMsg = `<p>${msg}</p><p><a href="${build.logUrl}">Build logs</a></p>`;
-  return {
+  const email = {
     from: config.MAILGUN_FROM,
     to: config.MAILGUN_TO,
     subject: `Nightly ${build.substitutions.REPO_NAME}: ${build.status}`,
     text: emailMsg,
     html: emailMsg
   };
+  await mailgun.messages().send(email);
 }
