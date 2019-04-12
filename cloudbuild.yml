@@ -21,6 +21,8 @@ steps:
   entrypoint: 'yarn'
   id: 'test-bundle-size'
   args: ['test-bundle-size']
+  options:
+    machineType: 'N1_HIGHCPU_8'
   waitFor: ['yarn']
 secrets:
 - kmsKeyName: projects/learnjs-174218/locations/global/keyRings/tfjs/cryptoKeys/enc
