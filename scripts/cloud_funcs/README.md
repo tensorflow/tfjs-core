@@ -2,6 +2,7 @@ This directory contains the following Google Cloud Functions.
 
 ## `trigger_nightly`
 Programatically triggers a Cloud Build on master. This function is called by the Cloud Scheduler at 3am every day.
+You can also trigger the function manually via the Cloud UI.
 
 Command to re-deploy:
 ```sh
