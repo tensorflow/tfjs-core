@@ -16,7 +16,7 @@ Sends an email with the nightly build status. Every build sends a message to the
 
 Command to re-deploy:
   ```sh
-  gcloud functions deploy subscribe --runtime nodejs8 --stage-bucket learnjs-174218_cloudbuild --trigger-topic cloud-builds --set-env-vars MAILGUN_API_KEY=[API_KEY_HERE]
+  gcloud functions deploy send_email --runtime nodejs8 --stage-bucket learnjs-174218_cloudbuild --trigger-topic cloud-builds --set-env-vars MAILGUN_API_KEY="[API_KEY_HERE]",HANGOUTS_URL="[URL_HERE]"
   ```
 
 
