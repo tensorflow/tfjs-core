@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 // Copyright 2019 Google LLC. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,27 +13,15 @@
 // limitations under the License.
 // =============================================================================
 
-const {exec} = require('./test-util');
+const shell = require('shelljs');
 
-const dirName = 'tfjs-core-integration';
+function exec(command, opt, ignoreCode) {
+  const res = shell.exec(command, opt);
+  if (!ignoreCode && res.code !== 0) {
+    shell.echo('command', command, 'returned code', res.code);
+    shell.exit(1);
+  }
+  return res;
+}
 
-let shouldRunIntegration = false;
-if (process.env.NIGHTLY === 'true') {
-  shouldRunIntegration = true;
-} else {
-  exec(
-      `git clone --depth=1 --single-branch ` +
-      `https://github.com/tensorflow/tfjs-core.git ${dirName}`);
-  const res = exec(
-      `git diff --name-only --diff-filter=M --no-index ${dirName}/src/ src/`,
-      {silent: true}, true);
-  let files = res.stdout.trim().split('\n');
-  files.forEach(file => {
-    if (file === 'src/version.ts') {
-      shouldRunIntegration = true;
-    }
-  });
-}
-if (shouldRunIntegration) {
-  shell.exec('./scripts/test-integration.sh');
-}
+exports.exec = exec;
