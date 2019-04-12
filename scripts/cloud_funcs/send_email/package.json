@@ -5,6 +5,7 @@
   "main": "index.js",
   "dependencies": {
     "humanize-duration": "3.10.0",
-    "mailgun-js": "^0.22.0"
+    "mailgun-js": "^0.22.0",
+    "request": "^2.88.0"
   }
 }
