@@ -25,15 +25,23 @@ function exec(command, opt, ignoreCode) {
   return res;
 }
 
-exec(
-    `git clone --depth=1 --single-branch ` +
-    `https://github.com/tensorflow/tfjs-core.git`);
-const res = exec(
-    'git diff --name-only --diff-filter=M --no-index tfjs-core/src/ src/',
-    {silent: true}, true);
-let files = res.stdout.trim().split('\n');
-files.forEach(file => {
-  if (file === 'src/version.ts') {
-    shell.exec('./scripts/test-integration.sh');
-  }
-});
+let shouldRunIntegration = false;
+if (process.env.NIGHTLY) {
+  shouldRunIntegration = true;
+} else {
+  exec(
+      `git clone --depth=1 --single-branch ` +
+      `https://github.com/tensorflow/tfjs-core.git`);
+  const res = exec(
+      'git diff --name-only --diff-filter=M --no-index tfjs-core/src/ src/',
+      {silent: true}, true);
+  let files = res.stdout.trim().split('\n');
+  files.forEach(file => {
+    if (file === 'src/version.ts') {
+      shouldRunIntegration = true;
+    }
+  });
+}
+if (shouldRunIntegration) {
+  shell.exec('./scripts/test-integration.sh');
+}
