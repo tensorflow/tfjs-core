@@ -26,7 +26,7 @@ function exec(command, opt, ignoreCode) {
 }
 
 let shouldRunIntegration = false;
-if (process.env.NIGHTLY) {
+if (process.env.NIGHTLY === 'true') {
   shouldRunIntegration = true;
 } else {
   exec(
