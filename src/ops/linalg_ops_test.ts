@@ -82,6 +82,69 @@ describeWithFlags('gramSchmidt-tiny', ALL_ENVS, () => {
   });
 });
 
+describeWithFlags('lu', ALL_ENVS, () => {
+  it('1X1', () => {
+    const x = tensor2d([[2]], [1, 1]);
+    const [l, u] = tf.linalg.lu(x);
+    expectArraysClose(l, tensor2d([[1]], [1, 1]));
+    expectArraysClose(u, tensor2d([[2]], [1, 1]));
+    expectArraysClose(l.matMul(u), x);
+  });
+
+  it('2X2', () => {
+    const x = tensor2d([[1, 2], [3, 4]], [2, 2]);
+    const [l, u] = tf.linalg.lu(x);
+    expectArraysClose(l, tensor2d([[1, 0], [3, 1]], [2, 2]));
+    expectArraysClose(u, tensor2d([[1, 2], [0, -2]], [2, 2]));
+    expectArraysClose(l.matMul(u), x);
+  });
+
+  it('3X3', () => {
+    const x = tensor2d([[2, -1, -2], [-4, 6, 3], [-4, -2, 8]], [3, 3]);
+    const [l, u] = tf.linalg.lu(x);
+    expectArraysClose(
+        l, tensor2d([[1, 0, 0], [-2, 1, 0], [-2, -1, 1]], [3, 3]));
+    expectArraysClose(
+        u, tensor2d([[2, -1, -2], [0, 4, -1], [0, 0, 3]], [3, 3]));
+    expectArraysClose(l.matMul(u), x);
+  });
+
+  it('not a 2D tensor', () => {
+    const x = tensor3d([[[1, 2, 3]]], [1, 1, 3]);
+    expect(() => {
+      tf.linalg.lu(x);
+    })
+        .toThrowError(
+            `lu() requires input tensor of rank 2 but found tensor` +
+            ` of rank 3`);
+  });
+
+  it('not a square tensor', () => {
+    const x = tensor2d([[1, 2, 3], [4, 5, 6]], [2, 3]);
+    expect(() => {
+      tf.linalg.lu(x);
+    })
+        .toThrowError(
+            `lu() requires input to be a square matrix but found a tensor of` +
+            ` dimension ${x.shape}`);
+  });
+
+  it('non decomposable tensor', () => {
+    const x = tensor2d([[0, 1], [1, 0]], [2, 2]);
+    expect(() => {
+      tf.linalg.lu(x);
+    })
+        .toThrowError(
+            `LU decomposition couldn't be calculated for the given tensor`);
+  });
+
+  it('10X10', () => {
+    const x = tf.randomNormal([10, 10]) as Tensor2D;
+    const [l, u] = tf.linalg.lu(x);
+    expectArraysClose(l.matMul(u), x);
+  });
+});
+
 describeWithFlags('qr', ALL_ENVS, () => {
   it('1x1', () => {
     const x = tensor2d([[10]], [1, 1]);

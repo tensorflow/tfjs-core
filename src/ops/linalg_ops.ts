@@ -110,6 +110,92 @@ function gramSchmidt_(xs: Tensor1D[]|Tensor2D): Tensor1D[]|Tensor2D {
 }
 
 /**
+ * Computes LU decomposition of a given square tensor
+ * Implementation based on Doolittle Decomposition of Matrix
+ *  (http://www.engr.colostate.edu/~thompson/hPage/CourseMat/Tutorials/
+ *  CompMethods/doolittle.pdf)
+ *
+ * ```js
+ * const x = tf.tensor2d([[1, 2], [3, 4]]);
+ * const [l, u] = tf.linalg.lu(x);
+ * console.log('L - Lower Triangular Matrix:');
+ * l.print();
+ * console.log('U - Upper Triangular Matrix:');
+ * u.print()
+ * l.matMul(u).print()  // Should display a tesor same as x
+ * ```
+ *
+ * @param x `tf.Tensor` that has to be decomposed into a Lower Triangular Matrix
+ *   and an Upper Triangualar Matrix such that their product is same as the
+ *   original tensor.
+ *   `x` must be of rank 2 and must be `square` i.e. it ust have the shape
+ *   as [N, N]
+ * @returns An `Array` of `tf.Tensor2D` of size `2` with the first tensor equal
+ *   to the lower triangular matrix with all the diagoonal elements equal to 1
+ *   and the second tensor equal to the upper triangular matrix.
+ * @throws
+ *   - If the rank of `x` is not 2.
+ *   - If `x` isn't of shape `[N, N]`
+ *   - If `x` cannot be decomposed in LU
+ */
+/**
+ * @doc {heading:'Operations',
+ *       subheading:'Linear Algebra',
+ *       namespace:'linalg'}
+ */
+function lu_(x: Tensor): [Tensor2D, Tensor2D] {
+  return ENGINE.tidy(() => {
+    if (x.rank !== 2) {
+      throw new Error(
+          `lu() requires input tensor of rank 2 but found` +
+          ` tensor of rank ${x.rank}`);
+    } else if (x.shape[0] !== x.shape[1]) {
+      throw new Error(
+          `lu() requires input to be a square matrix but found a tensor of` +
+          ` dimension ${x.shape}`);
+    }
+
+    const n: number = x.shape[0];
+    const xData = x.dataSync();
+
+    let l: number[];
+    let u: number[];
+    l = new Array(n * n).fill(0);
+    u = new Array(n * n).fill(0);
+
+    for (let i = 0; i < n; ++i) {
+      // Evaluating the upper triangular matrix
+      for (let k = i; k < n; ++k) {
+        u[i * n + k] = xData[i * n + k];
+        for (let j = 0; j < i; ++j) {
+          u[i * n + k] -= (l[i * n + j] * u[j * n + k]);
+        }
+      }
+
+      // Evaluating the lower triangular matrix
+      for (let k = i; k < n; ++k) {
+        if (i === k) {
+          l[i * n + i] = 1;
+        } else {
+          if (u[i * n + i] === 0) {
+            throw new Error(
+                `LU decomposition couldn't be calculated for the given tensor`);
+          }
+
+          l[k * n + i] = xData[k * n + i];
+          for (let j = 0; j < i; ++j) {
+            l[k * n + i] -= (l[k * n + j] * u[j * n + i]);
+          }
+
+          l[k * n + i] /= u[i * n + i];
+        }
+      }
+    }
+    return [tensor2d(l, [n, n]), tensor2d(u, [n, n])];
+  }) as [Tensor2D, Tensor2D];
+}
+
+/**
  * Compute QR decomposition of m-by-n matrix using Householder transformation.
  *
  * Implementation based on
@@ -265,3 +351,4 @@ function qr2d(x: Tensor2D, fullMatrices = false): [Tensor2D, Tensor2D] {
 
 export const gramSchmidt = op({gramSchmidt_});
 export const qr = op({qr_});
+export const lu = op({lu_});
