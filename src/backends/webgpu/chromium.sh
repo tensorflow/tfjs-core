@@ -1,2 +1,2 @@
 #!/bin/bash
-exec ./Chromium.app/Contents/MacOS/Chromium --enable-unsafe-webgpu "$@"
+exec ./../../../../Chromium.app/Contents/MacOS/Chromium --enable-unsafe-webgpu "$@"
