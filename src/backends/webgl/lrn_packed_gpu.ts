@@ -27,6 +27,16 @@ export class LRNPackedProgram implements GPGPUProgram {
       xShape: number[], radius: number, bias: number, alpha: number,
       beta: number) {
     const rad = radius;
+    const radIsEven = rad % 2 === 0;
+    let cacheXSnippet = '';
+    let cacheYSnippet = '';
+    if (radIsEven) {
+      cacheXSnippet = '.x';
+      cacheYSnippet = '.z';
+    } else {
+      cacheXSnippet = '.y';
+      cacheYSnippet = '.w';
+    }
     const maxD = xShape[3] - 1;
     this.outputShape = xShape;
 
@@ -58,23 +68,17 @@ export class LRNPackedProgram implements GPGPUProgram {
         vec4 sum = vec4(0.);
         vec4 xFragAtOutputCoords = getX(b, r, c, d);
 
-        vec4 xAtOutputCoords = vec4(
-          getChannel(xFragAtOutputCoords, vec2(c, d)),
-          hasNextCol ?
-            getChannel(xFragAtOutputCoords, vec2(c, d + 1)) : 0.0,
-          hasNextRow ?
-            getChannel(xFragAtOutputCoords , vec2(c + 1, d)) : 0.0,
-          (hasNextRow && hasNextCol) ?
-            getChannel(xFragAtOutputCoords, vec2(c + 1, d + 1)) : 0.0
-        );
+        vec4 xAtOutputCoords =
+          xFragAtOutputCoords *
+            vec4(1, hasNextCol, hasNextRow, hasNextRow && hasNextCol);
 
         int firstChannel = d - ${rad};
         vec2 cache = vec2(0.);
         if(firstChannel >= 0){
           vec4 firstChannelFrag = getX(b, r, c, firstChannel);
-          cache.x = getChannel(firstChannelFrag, vec2(c, firstChannel));
+          cache.x = firstChannelFrag${cacheXSnippet};
             if(hasNextRow){
-              cache.y = getChannel(firstChannelFrag, vec2(c + 1, firstChannel));
+              cache.y = firstChannelFrag${cacheYSnippet};
             }
         }
 
@@ -92,11 +96,14 @@ export class LRNPackedProgram implements GPGPUProgram {
             vec4 xFragAtCurrentDepth;
             z.xz = cache.xy;
             if(depthPlusOneInRange && hasNextCol){
-              xFragAtCurrentDepth = idx.y != d ?
+              xFragAtCurrentDepth = (idx.y != d || idx.y != d + 1) ?
                 getX(b, r, c, idx.y) : xFragAtOutputCoords;
-              z.y = getChannel(xFragAtCurrentDepth, vec2(c, idx.y));
+              bool idxYEven = imod(idx.y, 2) == 0;
+              z.y = idxYEven ? xFragAtCurrentDepth.x :
+                xFragAtCurrentDepth.y;
               if(hasNextRow){
-                z.w = getChannel(xFragAtCurrentDepth, vec2(c + 1, idx.y));
+                z.w = idxYEven ? xFragAtCurrentDepth.z :
+                  xFragAtCurrentDepth.w;
               }
             }
             cache.xy = z.yw;
