@@ -43,3 +43,28 @@ describeWithFlags('hannWindow', ALL_ENVS, () => {
        0.09549153, 0.02447173]);
   });
 });
+
+describeWithFlags('hammingWindow', ALL_ENVS, () => {
+  it('length=3', () => {
+    const ret = tf.hammingWindow(3);
+    expectArraysClose(ret, [0.08, 1, 0.08]);
+  });
+
+  it('length=6', () => {
+    const ret = tf.hammingWindow(6);
+    expectArraysClose(ret, [0.08, 0.31, 0.77, 1., 0.77, 0.31]);
+  });
+
+  it('length=7', () => {
+    const ret = tf.hammingWindow(7);
+    expectArraysClose(ret, [0.08, 0.31,  0.77, 1, 0.77, 0.31, 0.08]);
+  });
+
+  it('length=20', () => {
+    const ret = tf.hammingWindow(20);
+    expectArraysClose(ret, [0.08000001, 0.10251403, 0.16785222, 0.2696188,
+      0.3978522,  0.54, 0.68214786, 0.8103813, 0.9121479, 0.977486, 1.,
+      0.977486, 0.9121478, 0.8103812, 0.6821477, 0.54, 0.39785212, 0.2696187,
+      0.16785222, 0.102514]);
+  });
+});

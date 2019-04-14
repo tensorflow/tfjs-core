@@ -36,4 +36,22 @@ function hannWindow_(windowLength: number): Tensor {
   return ENGINE.runKernel(backend => backend.hannWindow(windowLength), {});
 }
 
+/**
+ * Generate a hamming window.
+ *
+ * See: https://en.wikipedia.org/wiki/Window_function#Hann_window
+ *
+ * ```js
+ * tf.hammingWindow(10).print();
+ * ```
+ * @param The length of window
+ */
+/**
+ * @doc {heading: 'Operations', subheading: 'Signal', namespace: 'signal'}
+ */
+function hammingWindow_(windowLength: number): Tensor {
+  return ENGINE.runKernel(backend => backend.hammingWindow(windowLength), {});
+}
+
 export const hannWindow = op({hannWindow_});
+export const hammingWindow = op({hammingWindow_});
