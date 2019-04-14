@@ -85,7 +85,9 @@ describeWithFlags('gramSchmidt-tiny', ALL_ENVS, () => {
 describeWithFlags('lu', ALL_ENVS, () => {
   it('1X1', () => {
     const x = tensor2d([[2]], [1, 1]);
-    const [l, u] = tf.linalg.lu(x);
+    const res = tf.linalg.lu(x);
+    expect(res.length).toEqual(1);
+    const [l, u] = res[0];
     expectArraysClose(l, tensor2d([[1]], [1, 1]));
     expectArraysClose(u, tensor2d([[2]], [1, 1]));
     expectArraysClose(l.matMul(u), x);
@@ -93,7 +95,9 @@ describeWithFlags('lu', ALL_ENVS, () => {
 
   it('2X2', () => {
     const x = tensor2d([[1, 2], [3, 4]], [2, 2]);
-    const [l, u] = tf.linalg.lu(x);
+    const res = tf.linalg.lu(x);
+    expect(res.length).toEqual(1);
+    const [l, u] = res[0];
     expectArraysClose(l, tensor2d([[1, 0], [3, 1]], [2, 2]));
     expectArraysClose(u, tensor2d([[1, 2], [0, -2]], [2, 2]));
     expectArraysClose(l.matMul(u), x);
@@ -101,7 +105,9 @@ describeWithFlags('lu', ALL_ENVS, () => {
 
   it('3X3', () => {
     const x = tensor2d([[2, -1, -2], [-4, 6, 3], [-4, -2, 8]], [3, 3]);
-    const [l, u] = tf.linalg.lu(x);
+    const res = tf.linalg.lu(x);
+    expect(res.length).toEqual(1);
+    const [l, u] = res[0];
     expectArraysClose(
         l, tensor2d([[1, 0, 0], [-2, 1, 0], [-2, -1, 1]], [3, 3]));
     expectArraysClose(
@@ -109,14 +115,54 @@ describeWithFlags('lu', ALL_ENVS, () => {
     expectArraysClose(l.matMul(u), x);
   });
 
-  it('not a 2D tensor', () => {
-    const x = tensor3d([[[1, 2, 3]]], [1, 1, 3]);
+  it('rank < 2', () => {
+    const x = tensor1d([1]);
     expect(() => {
       tf.linalg.lu(x);
     })
         .toThrowError(
-            `lu() requires input tensor of rank 2 but found tensor` +
-            ` of rank 3`);
+            `lu() requires input tensor of rank >= 2 but found` +
+            ` tensor of rank ${x.rank}`);
+  });
+
+  it('innermost dimensions equal 1X2X2', () => {
+    const x = tensor3d([[[2, -1, -2], [-4, 6, 3], [-4, -2, 8]]], [1, 3, 3]);
+    const res = tf.linalg.lu(x);
+    expect(res.length).toEqual(1);
+    const [l, u] = res[0];
+    expectArraysClose(
+        l, tensor2d([[1, 0, 0], [-2, 1, 0], [-2, -1, 1]], [3, 3]));
+    expectArraysClose(
+        u, tensor2d([[2, -1, -2], [0, 4, -1], [0, 0, 3]], [3, 3]));
+    expectArraysClose(l.matMul(u), x.squeeze());
+  });
+
+  it('innermost dimension equal 2X2X2', () => {
+    const x = tensor3d([[[1, 2], [3, 4]], [[2, 0], [0, 2]]], [2, 2, 2]);
+    const res = tf.linalg.lu(x);
+    expect(res.length).toEqual(2);
+
+    expectArraysClose(res[0][0], tensor2d([[1, 0], [3, 1]], [2, 2]));
+    expectArraysClose(res[0][1], tensor2d([[1, 2], [0, -2]], [2, 2]));
+    expectArraysClose(res[0][0].matMul(res[0][1]), tensor2d([[1, 2], [3, 4]]));
+
+    expectArraysClose(res[1][0], tensor2d([[1, 0], [0, 1]], [2, 2]));
+    expectArraysClose(res[1][1], tensor2d([[2, 0], [0, 2]], [2, 2]));
+    expectArraysClose(res[1][0].matMul(res[1][1]), tensor2d([[2, 0], [0, 2]]));
+  });
+
+  it('innermost dimension equal 1X2X2X2', () => {
+    const x = tensor4d([[[[1, 2], [3, 4]], [[2, 0], [0, 2]]]], [1, 2, 2, 2]);
+    const res = tf.linalg.lu(x);
+    expect(res.length).toEqual(2);
+
+    expectArraysClose(res[0][0], tensor2d([[1, 0], [3, 1]], [2, 2]));
+    expectArraysClose(res[0][1], tensor2d([[1, 2], [0, -2]], [2, 2]));
+    expectArraysClose(res[0][0].matMul(res[0][1]), tensor2d([[1, 2], [3, 4]]));
+
+    expectArraysClose(res[1][0], tensor2d([[1, 0], [0, 1]], [2, 2]));
+    expectArraysClose(res[1][1], tensor2d([[2, 0], [0, 2]], [2, 2]));
+    expectArraysClose(res[1][0].matMul(res[1][1]), tensor2d([[2, 0], [0, 2]]));
   });
 
   it('not a square tensor', () => {
@@ -125,22 +171,24 @@ describeWithFlags('lu', ALL_ENVS, () => {
       tf.linalg.lu(x);
     })
         .toThrowError(
-            `lu() requires input to be a square matrix but found a tensor of` +
-            ` dimension ${x.shape}`);
+            `lu() requires the tensor with the two innermost dimension equal` +
+            `but found a tensor of dimension ${x.shape}`);
   });
 
   it('non decomposable tensor', () => {
     const x = tensor2d([[0, 1], [1, 0]], [2, 2]);
-    expect(() => {
-      tf.linalg.lu(x);
-    })
-        .toThrowError(
-            `LU decomposition couldn't be calculated for the given tensor`);
+    const res = tf.linalg.lu(x);
+    expect(res.length).toEqual(1);
+    const [l, u] = res[0];
+    expect(l).toEqual(null);
+    expect(u).toEqual(null);
   });
 
-  it('10X10', () => {
-    const x = tf.randomNormal([10, 10]) as Tensor2D;
-    const [l, u] = tf.linalg.lu(x);
+  it('16X16', () => {
+    const x = tf.randomNormal([16, 16]) as Tensor2D;
+    const res = tf.linalg.lu(x);
+    expect(res.length).toEqual(1);
+    const [l, u] = res[0];
     expectArraysClose(l.matMul(u), x);
   });
 });

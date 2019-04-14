@@ -22,7 +22,9 @@
 import {ENGINE} from '../engine';
 import {dispose} from '../globals';
 import {Tensor, Tensor1D, Tensor2D} from '../tensor';
+import {TypedArray} from '../types';
 import {assert} from '../util';
+
 import {eye, squeeze, stack, unstack} from './array_ops';
 import {split} from './concat_split';
 import {norm} from './norm';
@@ -117,7 +119,9 @@ function gramSchmidt_(xs: Tensor1D[]|Tensor2D): Tensor1D[]|Tensor2D {
  *
  * ```js
  * const x = tf.tensor2d([[1, 2], [3, 4]]);
- * const [l, u] = tf.linalg.lu(x);
+ * const res = tf.linalg.lu(x);
+ * console.log(res.length);
+ * const [l, u] = res[0];
  * console.log('L - Lower Triangular Matrix:');
  * l.print();
  * console.log('U - Upper Triangular Matrix:');
@@ -128,36 +132,49 @@ function gramSchmidt_(xs: Tensor1D[]|Tensor2D): Tensor1D[]|Tensor2D {
  * @param x `tf.Tensor` that has to be decomposed into a Lower Triangular Matrix
  *   and an Upper Triangualar Matrix such that their product is same as the
  *   original tensor.
- *   `x` must be of rank 2 and must be `square` i.e. it ust have the shape
- *   as [N, N]
- * @returns An `Array` of `tf.Tensor2D` of size `2` with the first tensor equal
- *   to the lower triangular matrix with all the diagoonal elements equal to 1
- *   and the second tensor equal to the upper triangular matrix.
+ *   `x` must be of rank >= 2 and must be have the two innermost dimension
+ *   equal i.e., `x.shape` must be of form `[......., N, N]`.
+ * @returns A 2D `Array` with second dimension equal to 2. Each element of the
+ *   `Array` is equal to `[l, u]` where l is the lower triangular matrix and u
+ *   is the upper triangular both of order `N`, obtained as a result of
+ *   decomposition of `NxN` sub tensor.
+ *   If the given sub matrix isn't decomposable, the result for `[l, u]` is
+ *   `[null, null]`.
  * @throws
- *   - If the rank of `x` is not 2.
- *   - If `x` isn't of shape `[N, N]`
- *   - If `x` cannot be decomposed in LU
+ *   - If the rank of `x` is less than 2.
+ *   - If `x` doesn't have the two innermost dimension equal.
  */
 /**
  * @doc {heading:'Operations',
  *       subheading:'Linear Algebra',
  *       namespace:'linalg'}
  */
-function lu_(x: Tensor): [Tensor2D, Tensor2D] {
+function lu_(x: Tensor): Array<[Tensor2D | null, Tensor2D | null]> {
+  if (x.rank < 2) {
+    throw new Error(
+        `lu() requires input tensor of rank >= 2 but found` +
+        ` tensor of rank ${x.rank}`);
+  } else if (x.shape[x.shape.length - 1] !== x.shape[x.shape.length - 2]) {
+    throw new Error(
+        `lu() requires the tensor with the two innermost dimension equal` +
+        `but found a tensor of dimension ${x.shape}`);
+  }
+
+  const xData = x.dataSync();
+  const n = x.shape[x.shape.length - 1];
+  const totalElements = x.shape.reduce((a, b) => (a * b));
+  let res: Array<[Tensor2D, Tensor2D]>;
+  res = [];
+
+  for (let i = 0; i < totalElements; i += n * n) {
+    const res2d = lu2d(xData.slice(i, i + n * n), n);
+    res.push(res2d);
+  }
+
+  return res;
+}
+function lu2d(xData: TypedArray, n: number): [Tensor2D, Tensor2D] {
   return ENGINE.tidy(() => {
-    if (x.rank !== 2) {
-      throw new Error(
-          `lu() requires input tensor of rank 2 but found` +
-          ` tensor of rank ${x.rank}`);
-    } else if (x.shape[0] !== x.shape[1]) {
-      throw new Error(
-          `lu() requires input to be a square matrix but found a tensor of` +
-          ` dimension ${x.shape}`);
-    }
-
-    const n: number = x.shape[0];
-    const xData = x.dataSync();
-
     let l: number[];
     let u: number[];
     l = new Array(n * n).fill(0);
@@ -178,8 +195,7 @@ function lu_(x: Tensor): [Tensor2D, Tensor2D] {
           l[i * n + i] = 1;
         } else {
           if (u[i * n + i] === 0) {
-            throw new Error(
-                `LU decomposition couldn't be calculated for the given tensor`);
+            return [null, null];
           }
 
           l[k * n + i] = xData[k * n + i];
