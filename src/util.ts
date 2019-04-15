@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+import {ENV} from './environment';
 import {DataType, DataTypeMap, FlatVector, NumericDataType, RecursiveArray, TensorLike, TypedArray} from './types';
 
 /**
@@ -28,7 +29,7 @@ import {DataType, DataTypeMap, FlatVector, NumericDataType, RecursiveArray, Tens
  *
  * @param array The array to shuffle in-place.
  */
-/** @doc {heading: 'Util'} */
+/** @doc {heading: 'Util', namespace: 'util'} */
 // tslint:disable-next-line:no-any
 export function shuffle(array: any[]|Uint32Array|Int32Array|
                         Float32Array): void {
@@ -99,7 +100,7 @@ export function distSquared(a: FlatVector, b: FlatVector): number {
  * @param msg A function that returns the message to report when throwing an
  *     error. We use a function for performance reasons.
  */
-/** @doc {heading: 'Util'} */
+/** @doc {heading: 'Util', namespace: 'util'} */
 export function assert(expr: boolean, msg: () => string) {
   if (!expr) {
     throw new Error(typeof msg === 'string' ? msg : msg());
@@ -134,7 +135,7 @@ export function assertNonNull(a: TensorLike): void {
  *  @param arr The nested array to flatten.
  *  @param result The destination array which holds the elements.
  */
-/** @doc {heading: 'Util'} */
+/** @doc {heading: 'Util', namespace: 'util'} */
 export function
 flatten<T extends number|boolean|string|Promise<number>|TypedArray>(
     arr: T|RecursiveArray<T>, result: T[] = []): T[] {
@@ -160,7 +161,7 @@ flatten<T extends number|boolean|string|Promise<number>|TypedArray>(
  * console.log(size);
  * ```
  */
-/** @doc {heading: 'Util'} */
+/** @doc {heading: 'Util', namespace: 'util'} */
 export function sizeFromShape(shape: number[]): number {
   if (shape.length === 0) {
     // Scalar.
@@ -641,7 +642,7 @@ export function makeZerosTypedArray<D extends DataType>(
  * console.log(tf.util.now());
  * ```
  */
-/** @doc {heading: 'Util'} */
+/** @doc {heading: 'Util', namespace: 'util'} */
 export function now(): number {
   if (typeof performance !== 'undefined') {
     return performance.now();
@@ -663,4 +664,46 @@ export function assertNonNegativeIntegerDimensions(shape: number[]) {
             `Tensor must have a shape comprised of positive integers but got ` +
             `shape [${shape}].`);
   });
+}
+
+const getSystemFetch = () => {
+  if (ENV.global.fetch != null) {
+    return ENV.global.fetch;
+  } else if (ENV.get('IS_NODE')) {
+    return getNodeFetch.fetchImport();
+  }
+  throw new Error(
+      `Unable to find the fetch() method. Please add your own fetch() ` +
+      `function to the global namespace.`);
+};
+
+// We are wrapping this within an object so it can be stubbed by Jasmine.
+export const getNodeFetch = {
+  fetchImport: () => {
+    // tslint:disable-next-line:no-require-imports
+    return require('node-fetch');
+  }
+};
+
+/**
+ * Returns a platform-specific implementation of
+ * [`fetch`](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API).
+ *
+ * If `fetch` is defined on the global object (`window`, `process`, etc.),
+ * `tf.util.fetch` returns that function.
+ *
+ * If not, `tf.util.fetch` returns a platform-specific solution.
+ *
+ * ```js
+ * const resource = await tf.util.fetch('https://unpkg.com/@tensorflow/tfjs');
+ * // handle response
+ * ```
+ */
+/** @doc {heading: 'Util'} */
+export let systemFetch: Function;
+export function fetch(path: string, requestInits?: RequestInit) {
+  if (systemFetch == null) {
+    systemFetch = getSystemFetch();
+  }
+  return systemFetch(path, requestInits);
 }

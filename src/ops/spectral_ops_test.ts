@@ -16,9 +16,8 @@
  */
 
 import * as tf from '../index';
-import {describeWithFlags} from '../jasmine_util';
-// tslint:max-line-length
-import {ALL_ENVS, expectArraysClose, WEBGL_ENVS} from '../test_util';
+import {ALL_ENVS, describeWithFlags} from '../jasmine_util';
+import {expectArraysClose} from '../test_util';
 
 describeWithFlags('1D FFT', ALL_ENVS, () => {
   it('should return the same value with TensorFlow (2 elements)', () => {
@@ -194,8 +193,7 @@ describeWithFlags('1D RFFT', ALL_ENVS, () => {
   it('should calculate from tensor directly', () => {
     const t1Real = tf.tensor1d([1, 2, 3]);
     expectArraysClose(
-        t1Real.rfft(),
-        [6, 1.1920929e-07, -1.4999999, 8.6602521e-01]);
+        t1Real.rfft(), [6, 1.1920929e-07, -1.4999999, 8.6602521e-01]);
   });
 
   it('should return the same value with TensorFlow (6 elements)', () => {
@@ -207,7 +205,7 @@ describeWithFlags('1D RFFT', ALL_ENVS, () => {
   });
 });
 
-describeWithFlags('2D RFFT', WEBGL_ENVS, () => {
+describeWithFlags('2D RFFT', ALL_ENVS, () => {
   it('should return the same value with TensorFlow (2x2 elements)', () => {
     const t1Real = tf.tensor2d([1, 2, 3, 4], [2, 2]);
     expectArraysClose(tf.spectral.rfft(t1Real), [3, 0, -1, 0, 7, 0, -1, 0]);

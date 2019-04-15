@@ -16,8 +16,8 @@
  */
 
 import * as tf from '../index';
-import {describeWithFlags} from '../jasmine_util';
-import {ALL_ENVS, expectArraysClose} from '../test_util';
+import {ALL_ENVS, describeWithFlags} from '../jasmine_util';
+import {expectArraysClose} from '../test_util';
 
 describeWithFlags('resizeNearestNeighbor', ALL_ENVS, () => {
   it('simple alignCorners=false', () => {
@@ -119,6 +119,24 @@ describeWithFlags('resizeNearestNeighbor gradients', ALL_ENVS, () => {
     const g = tf.grad(
         (i: tf.Tensor3D) =>
             tf.image.resizeNearestNeighbor(i, size, alignCorners));
+
+    const output = g(input, dy);
+    const expected = tf.tensor3d([[[14.0], [22.0]], [[46.0], [54.0]]]);
+
+    expectArraysClose(output, expected);
+  });
+
+  it('with clones, greyscale: upscale, same aspect ratio', () => {
+    const input = tf.tensor3d([[[100.0], [50.0]], [[60.0], [20.0]]]);
+    const dy = tf.tensor3d([
+      [[1.0], [2.0], [3.0], [4.0]], [[5.0], [6.0], [7.0], [8.0]],
+      [[9.0], [10.0], [11.0], [12.0]], [[13.0], [14.0], [15.0], [16.0]]
+    ]);
+
+    const size: [number, number] = [4, 4];
+    const alignCorners = false;
+    const g = tf.grad((i: tf.Tensor3D) =>
+        tf.image.resizeNearestNeighbor(i.clone(), size, alignCorners).clone());
 
     const output = g(input, dy);
     const expected = tf.tensor3d([[[14.0], [22.0]], [[46.0], [54.0]]]);

@@ -16,8 +16,8 @@
  */
 
 import * as tf from '../index';
-import {describeWithFlags} from '../jasmine_util';
-import {ALL_ENVS, expectArraysClose, WEBGL_ENVS} from '../test_util';
+import {ALL_ENVS, describeWithFlags} from '../jasmine_util';
+import {expectArraysClose} from '../test_util';
 import {Rank} from '../types';
 
 describeWithFlags('slice1d', ALL_ENVS, () => {
@@ -48,7 +48,16 @@ describeWithFlags('slice1d', ALL_ENVS, () => {
   it('grad', () => {
     const a = tf.tensor1d([1, 2, 3, 4, 5]);
     const dy = tf.tensor1d([10, 100]);
-    const da = tf.grad(x => tf.slice1d(a, 1, 2))(a, dy);
+    const da = tf.grad((a: tf.Tensor1D) => tf.slice1d(a, 1, 2))(a, dy);
+    expect(da.shape).toEqual([5]);
+    expectArraysClose(da, [0, 10, 100, 0, 0]);
+  });
+
+  it('gradient with clones', () => {
+    const a = tf.tensor1d([1, 2, 3, 4, 5]);
+    const dy = tf.tensor1d([10, 100]);
+    const da =
+        tf.grad((a: tf.Tensor1D) => tf.slice1d(a.clone(), 1, 2).clone())(a, dy);
     expect(da.shape).toEqual([5]);
     expectArraysClose(da, [0, 10, 100, 0, 0]);
   });
@@ -248,25 +257,6 @@ describeWithFlags('slice2d', ALL_ENVS, () => {
     const c = tf.add(a, b);
     expect(c.shape).toEqual([2, 2]);
     expectArraysClose(c, [3, 4, 7, 8]);
-  });
-});
-
-describeWithFlags('slice a packed texture', WEBGL_ENVS, () => {
-  beforeAll(() => {
-    tf.ENV.set('WEBGL_PACK', true);
-  });
-
-  it('slice after a matmul', () => {
-    const a = [[1, 2], [3, 4]];
-    const b = [[5, 6], [7, 8]];
-    // Matmul gives a packed tensor in webgl.
-    //  [19, 22]
-    //  [43, 50]
-    const c = tf.matMul(a, b);
-    expectArraysClose(c.slice([0, 0]), [19, 22, 43, 50]);
-    expectArraysClose(c.slice([0, 1]), [22, 50]);
-    expectArraysClose(c.slice([1, 0]), [43, 50]);
-    expectArraysClose(c.slice([1, 1]), [50]);
   });
 });
 

@@ -16,35 +16,9 @@
  */
 
 import * as tf from '../index';
-import {describeWithFlags} from '../jasmine_util';
-import {ALL_ENVS, expectArraysClose, PACKED_ENVS} from '../test_util';
+import {describeWithFlags, ALL_ENVS} from '../jasmine_util';
+import {expectArraysClose} from '../test_util';
 import {Rank} from '../types';
-
-describeWithFlags('depthwiseConv2d packed', PACKED_ENVS, () => {
-  it('should not leak memory', () => {
-    const x = tf.tensor4d(
-        [
-          0.230664, 0.987388, 0.0685208, 0.419224, 0.887861, 0.731641,
-          0.0741907, 0.409265, 0.351377
-        ],
-        [1, 3, 3, 1]);
-    const w = tf.tensor4d(
-        [0.303873, 0.229223, 0.144333, 0.803373],
-        [2, 2, 1, 1],
-    );
-
-    const startNumBytes = tf.memory().numBytes;
-    const startNumTensors = tf.memory().numTensors;
-
-    tf.depthwiseConv2d(x, w, 1, 'valid');
-
-    const endNumBytes = tf.memory().numBytes;
-    const endNumTensors = tf.memory().numTensors;
-
-    expect(endNumBytes - startNumBytes).toEqual(16);
-    expect(endNumTensors - startNumTensors).toEqual(1);
-  });
-});
 
 describeWithFlags('depthwiseConv2D', ALL_ENVS, () => {
   it('input=1x3x3x1,f=2,s=1,d=1,p=valid,chMul=1', () => {
@@ -678,6 +652,14 @@ describeWithFlags('depthwiseConv2d gradients', ALL_ENVS, () => {
     expectArraysClose(grad, expectedGrad);
   });
 
+  it('gradient with clones', () => {
+    const [dx, dFilter] = tf.grads((x: tf.Tensor4D, filter: tf.Tensor4D) =>
+      tf.depthwiseConv2d(x.clone(), filter.clone(),
+         stride, pad).clone())([images, filter]);
+    expect(dx.shape).toEqual(images.shape);
+    expect(dFilter.shape).toEqual(filter.shape);
+  });
+
   // Also disambiguate regular vs. depthwise filter gradients
   it('wrt filter, squared output', () => {
     const grad = tf.grad(
@@ -727,7 +709,7 @@ describeWithFlags('depthwiseConv2d gradients', ALL_ENVS, () => {
     ]));
   });
 
-  it('wrt input and filter, 1x3x3x1 and 2x2x1x1', () => {
+  it('gradient with clones', () => {
     const fSize = 2;
     const pad = 'valid';
     const stride = 1;
@@ -748,7 +730,8 @@ describeWithFlags('depthwiseConv2d gradients', ALL_ENVS, () => {
 
     const [dx, df] = tf.grads(
         (x: tf.Tensor4D, f: tf.Tensor4D) =>
-            tf.depthwiseConv2d(x, f, stride, pad))([x, f]);
+            tf.depthwiseConv2d(
+              x.clone(), f.clone(), stride, pad).clone())([x, f]);
 
     expectArraysClose(dx, tf.tensor4d([[
       [[0.303873], [0.533096], [0.229223]],

@@ -16,8 +16,8 @@
  */
 
 import * as tf from '../index';
-import {describeWithFlags} from '../jasmine_util';
-import {ALL_ENVS, expectArraysClose} from '../test_util';
+import {ALL_ENVS, describeWithFlags} from '../jasmine_util';
+import {expectArraysClose} from '../test_util';
 
 describeWithFlags('softmax', ALL_ENVS, () => {
   it('regular test', () => {
@@ -93,6 +93,13 @@ describeWithFlags('softmax', ALL_ENVS, () => {
       (dyVals[1] - sumVals) * yVals[1],
       (dyVals[2] - sumVals) * yVals[2],
     ]);
+  });
+
+  it('gradient with clones', () => {
+    const x = tf.tensor1d([10, 0, -1]);
+    const dx = tf.grad((x) => x.clone().softmax().clone())(x);
+    expect(dx.shape).toEqual(x.shape);
+    expect(dx.dtype).toBe('float32');
   });
 
   it('2D gradient', () => {

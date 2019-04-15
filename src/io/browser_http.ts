@@ -21,7 +21,7 @@
  * Uses [`fetch`](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API).
  */
 
-import {assert} from '../util';
+import {assert, fetch} from '../util';
 import {concatenateArrayBuffers, getModelArtifactsInfoForJSON} from './io_utils';
 import {IORouter, IORouterRegistry} from './router_registry';
 import {IOHandler, LoadOptions, ModelArtifacts, ModelJSON, OnProgressCallback, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
@@ -29,12 +29,11 @@ import {loadWeightsAsArrayBuffer} from './weights_loader';
 
 const OCTET_STREAM_MIME_TYPE = 'application/octet-stream';
 const JSON_TYPE = 'application/json';
-
 export class BrowserHTTPRequest implements IOHandler {
   protected readonly path: string;
   protected readonly requestInit: RequestInit;
 
-  private readonly fetchFunc: (path: string, init?: RequestInit) => Response;
+  private readonly fetch: Function;
 
   readonly DEFAULT_METHOD = 'POST';
 
@@ -50,30 +49,16 @@ export class BrowserHTTPRequest implements IOHandler {
     this.weightPathPrefix = loadOptions.weightPathPrefix;
     this.onProgress = loadOptions.onProgress;
 
-    if (loadOptions.fetchFunc == null) {
-      if (typeof fetch === 'undefined') {
-        throw new Error(
-            'browserHTTPRequest is not supported outside the web browser ' +
-            'without a fetch polyfill.');
-      }
-      // Make sure fetch is always bound to window (the
-      // original object) when available.
-      loadOptions.fetchFunc =
-          fetch.bind(typeof window === 'undefined' ? null : window);
-    } else {
+    if (loadOptions.fetchFunc != null) {
       assert(
           typeof loadOptions.fetchFunc === 'function',
           () => 'Must pass a function that matches the signature of ' +
               '`fetch` (see ' +
               'https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)');
+      this.fetch = loadOptions.fetchFunc;
+    } else {
+      this.fetch = fetch;
     }
-
-    this.fetchFunc = (path: string, requestInits: RequestInit) => {
-      // tslint:disable-next-line:no-any
-      return loadOptions.fetchFunc(path, requestInits).catch((error: any) => {
-        throw new Error(`Request for ${path} failed due to error: ${error}`);
-      });
-    };
 
     assert(
         path != null && path.length > 0,
@@ -133,7 +118,7 @@ export class BrowserHTTPRequest implements IOHandler {
           'model.weights.bin');
     }
 
-    const response = await this.getFetchFunc()(this.path, init);
+    const response = await this.fetch(this.path, init);
 
     if (response.ok) {
       return {
@@ -156,8 +141,7 @@ export class BrowserHTTPRequest implements IOHandler {
    * @returns The loaded model artifacts (if loading succeeds).
    */
   async load(): Promise<ModelArtifacts> {
-    const modelConfigRequest =
-        await this.getFetchFunc()(this.path, this.requestInit);
+    const modelConfigRequest = await this.fetch(this.path, this.requestInit);
 
     if (!modelConfigRequest.ok) {
       throw new Error(
@@ -224,21 +208,10 @@ export class BrowserHTTPRequest implements IOHandler {
     });
     const buffers = await loadWeightsAsArrayBuffer(fetchURLs, {
       requestInit: this.requestInit,
-      fetchFunc: this.getFetchFunc(),
+      fetchFunc: this.fetch,
       onProgress: this.onProgress
     });
     return [weightSpecs, concatenateArrayBuffers(buffers)];
-  }
-
-  /**
-   * Helper method to get the `fetch`-like function set for this instance.
-   *
-   * This is mainly for avoiding confusion with regard to what context
-   * the `fetch`-like function is bound to. In the default (browser) case,
-   * the function will be bound to `window`, instead of `this`.
-   */
-  private getFetchFunc() {
-    return this.fetchFunc;
   }
 }
 
@@ -320,93 +293,13 @@ IORouterRegistry.registerLoadRouter(httpRequestRouter);
  * const saveResult = await model.save('http://model-server:5000/upload');
  * ```
  *
- * The following Python code snippet based on the
- * [flask](https://github.com/pallets/flask) server framework implements a
- * server that can receive the request. Upon receiving the model artifacts
- * via the requst, this particular server reconsistutes instances of
- * [Keras Models](https://keras.io/models/model/) in memory.
+ * The following GitHub Gist
+ * https://gist.github.com/dsmilkov/1b6046fd6132d7408d5257b0976f7864
+ * implements a server based on [flask](https://github.com/pallets/flask) that
+ * can receive the request. Upon receiving the model artifacts via the requst,
+ * this particular server reconsistutes instances of [Keras
+ * Models](https://keras.io/models/model/) in memory.
  *
- * ```python
- * # pip install -U flask flask-cors tensorflow tensorflowjs
- *
- * from __future__ import absolute_import
- * from __future__ import division
- * from __future__ import print_function
- *
- * import io
- *
- * from flask import Flask, Response, request
- * from flask_cors import CORS, cross_origin
- * import tensorflow as tf
- * import tensorflowjs as tfjs
- * import werkzeug.formparser
- *
- * class ModelReceiver(object):
- *
- *   def __init__(self):
- *     self._model = None
- *     self._model_json_bytes = None
- *     self._model_json_writer = None
- *     self._weight_bytes = None
- *     self._weight_writer = None
- *
- *   @property
- *   def model(self):
- *     self._model_json_writer.flush()
- *     self._weight_writer.flush()
- *     self._model_json_writer.seek(0)
- *     self._weight_writer.seek(0)
- *
- *     json_content = self._model_json_bytes.read()
- *     weights_content = self._weight_bytes.read()
- *     return tfjs.converters.deserialize_keras_model(
- *         json_content,
- *         weight_data=[weights_content],
- *         use_unique_name_scope=True)
- *
- *   def stream_factory(self,
- *                      total_content_length,
- *                      content_type,
- *                      filename,
- *                      content_length=None):
- *     # Note: this example code is *not* thread-safe.
- *     if filename == 'model.json':
- *       self._model_json_bytes = io.BytesIO()
- *       self._model_json_writer = io.BufferedWriter(self._model_json_bytes)
- *       return self._model_json_writer
- *     elif filename == 'model.weights.bin':
- *       self._weight_bytes = io.BytesIO()
- *       self._weight_writer = io.BufferedWriter(self._weight_bytes)
- *       return self._weight_writer
- *
- *
- * def main():
- *   app = Flask('model-server')
- *   CORS(app)
- *   app.config['CORS_HEADER'] = 'Content-Type'
- *
- *   model_receiver = ModelReceiver()
- *
- *   @app.route('/upload', methods=['POST'])
- *   @cross_origin()
- *   def upload():
- *     print('Handling request...')
- *     werkzeug.formparser.parse_form_data(
- *         request.environ, stream_factory=model_receiver.stream_factory)
- *     print('Received model:')
- *     with tf.Graph().as_default(), tf.Session():
- *       model = model_receiver.model
- *       model.summary()
- *       # You can perform `model.predict()`, `model.fit()`,
- *       # `model.evaluate()` etc. here.
- *     return Response(status=200)
- *
- *   app.run('localhost', 5000)
- *
- *
- * if __name__ == '__main__':
- *   main()
- * ```
  *
  * @param path A URL path to the model.
  *   Can be an absolute HTTP path (e.g.,
@@ -431,6 +324,7 @@ IORouterRegistry.registerLoadRouter(httpRequestRouter);
  *     before the load is completed.
  * @returns An instance of `IOHandler`.
  */
+/** @doc {heading: 'Models', subheading: 'Loading', namespace: 'io'} */
 export function browserHTTPRequest(
     path: string, loadOptions?: LoadOptions): IOHandler {
   return new BrowserHTTPRequest(path, loadOptions);
