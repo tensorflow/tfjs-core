@@ -59,7 +59,7 @@ export class WebGPUBackend extends KernelBackend {
   }
 
   setDataMover(dataMover: DataMover): void {
-    // TODO: tfjs team to implement this.
+    // TODO: tfjs team to implement this. Call GPUBuffer.destroy()
   }
 
   private tensorMap = new WeakMap<DataId, TensorInfo>();
@@ -114,10 +114,7 @@ export class WebGPUBackend extends KernelBackend {
     }
     const mapped: ArrayBuffer = await staging.mapReadAsync();
 
-    const data = mapped.slice(0);
-    info.buffer.unmap();
-
-    return data;
+    return mapped.slice(0);
   }
 
   async read(dataId: object): Promise<Float32Array|Int32Array|Uint8Array> {
@@ -153,7 +150,7 @@ export class WebGPUBackend extends KernelBackend {
           this.device, program, bindings);
     });
 
-    // TODO: bind groups should be cached.
+    // Creating bind groups on the fly should never be a bottleneck.
     const bg = this.device.createBindGroup({
       layout: bindGroupLayout,
       bindings: inputs.concat(output).map((tensor, i: number) => {
@@ -176,6 +173,7 @@ export class WebGPUBackend extends KernelBackend {
     pass.setBindGroup(0, bg);
     pass.dispatch(...program.dispatch);
     pass.endPass();
+    // TODO: Create flag for toggling graph mode.
     this.queue.submit([encoder.finish()]);
     return output;
   }
