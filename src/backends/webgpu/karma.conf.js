@@ -36,7 +36,13 @@ module.exports = function(config) {
     colors: true,
     logLevel: config.LOG_INFO,
     autoWatch: false,
-    browsers: ['Chrome'],
-    singleRun: true
+    browsers: ['Chrome', 'chrome_webgpu'],
+    singleRun: true,
+    customLaunchers: {
+      chrome_webgpu: {
+        base: 'Chrome',
+        flags: ['--enable-unsafe-webgpu']
+      }
+    }
   })
 }

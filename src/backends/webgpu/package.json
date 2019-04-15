@@ -6,7 +6,7 @@
   "scripts": {
     "publish-local": "rimraf dist/ && yarn build && rollup -c && yalc push",
     "build": "tsc",
-    "test": "karma start"
+    "test": "karma start --browsers='chrome_webgpu'"
   },
   "license": "Apache-2.0",
   "devDependencies": {

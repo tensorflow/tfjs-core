@@ -1,5 +1,5 @@
 # To run the test suite:
-CHROME_BIN="$PWD/chromium.sh" yarn test
+The `$CHROME_BIN` environment variable must be set to the location of a custom Chromium build. 
 
 # TensorFlow.js WebGPU backend
 
