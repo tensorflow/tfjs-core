@@ -29,9 +29,8 @@ const TRIGGER_ID = '7423c985-2fd2-40f3-abe7-94d4c353eed0';
 module.exports.send_email = async event => {
   // Parse the build information.
   const build = JSON.parse(new Buffer(event.data, 'base64').toString());
-  // Add 'SUCCESS' to monitor successful builds also.
-  const status =
-      ['SUCCESS', 'FAILURE', 'INTERNAL_ERROR', 'TIMEOUT', 'CANCELLED'];
+  // FYI: you can add 'SUCCESS' to monitor successful builds also.
+  const status = ['FAILURE', 'INTERNAL_ERROR', 'TIMEOUT', 'CANCELLED'];
   // Email only when the build has failed.
   if (status.indexOf(build.status) === -1) {
     return;
