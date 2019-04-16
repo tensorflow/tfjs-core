@@ -20,9 +20,9 @@ import {expectArraysClose} from '@tensorflow/tfjs-core/dist/test_util';
 import * as tf from './index';
 
 describe('WebGPU backend', () => {
-  it('A * B elementwise', async () => {
-    await tf.ready;
+  beforeAll(async () => await tf.ready);
 
+  it('A * B elementwise', async () => {
     const a = tf.tensor1d([1, 2, 3]);
     const b = tf.tensor1d([3, 4, 5]);
     const c = tf.mul(a, b);
@@ -33,8 +33,6 @@ describe('WebGPU backend', () => {
   });
 
   it('matMul A x B odd shared dim', async () => {
-    await tf.ready;
-
     const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
     const b = tf.tensor2d([0, 1, -3, 2, 2, 1], [3, 2]);
 
@@ -46,8 +44,6 @@ describe('WebGPU backend', () => {
   });
 
   it('matMul A x B multiple tiles', async () => {
-    await tf.ready;
-
     const a = tf.tensor2d(
         [
           1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16,
@@ -76,8 +72,6 @@ describe('WebGPU backend', () => {
   });
 
   it('matmul A x B asymmetric', async () => {
-    await tf.ready;
-
     const a = tf.tensor2d([1, 2, 3, 4], [2, 2]);
     const b = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
 
@@ -89,8 +83,6 @@ describe('WebGPU backend', () => {
   });
 
   it('works when chained', async () => {
-    await tf.ready;
-
     const a = tf.tensor2d([1, 2, 3, 4], [2, 2]);
     const b = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
 
