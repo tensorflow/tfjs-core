@@ -40,7 +40,7 @@ export const compileProgram =
           source, shaderKind, 'file', 'main', compileOptions);
       const error = result.GetErrorMessage();
       if (error.length) {
-        console.error(error);
+        throw new Error(`Shader compilation failed: ${error}`);
       }
       const code = result.GetBinary().slice(0).buffer;
       const bindGroupLayout = device.createBindGroupLayout({bindings});
