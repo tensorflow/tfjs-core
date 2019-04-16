@@ -31,7 +31,6 @@ type TensorInfo = {
 };
 
 interface DataId {}
-;
 
 declare const GPUBufferUsage: any;
 declare const GPUShaderStageBit: any;
