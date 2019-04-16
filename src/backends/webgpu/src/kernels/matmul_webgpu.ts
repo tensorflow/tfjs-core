@@ -25,6 +25,7 @@ export class MatMulProgram implements WebGPUProgram {
   constructor(outputShape: [number, number, number]) {
     this.outputShape = outputShape;
     const tileSize = 2;
+    // Dispatch determines the layout of thread groups.
     this.dispatch = [
       Math.ceil(outputShape[1] / tileSize),
       Math.ceil(outputShape[2] / tileSize), 1
@@ -49,13 +50,12 @@ export class MatMulProgram implements WebGPUProgram {
       };
 
       shared float Asub[TileSize][TileSize];
-      shared float Bsub[TileSize][TileSize];  
+      shared float Bsub[TileSize][TileSize];
 
       void main() {
         // M is A outer, N is shared, K is B outer
         uint M = Dimensions[0], N = Dimensions[1], 
           K = Dimensions[2], batch = Dimensions[3];
-        
         uint row = gl_LocalInvocationID.x; // Local row ID (max: TileSize)
         uint col = gl_LocalInvocationID.y; // Local col ID (max: TileSize)
         uint globalRow = TileSize*gl_WorkGroupID.x + row; // Row ID of C (0..M)
@@ -67,23 +67,22 @@ export class MatMulProgram implements WebGPUProgram {
         uint numTiles = (N + 1)/TileSize;
 
         for (uint t=0; t<numTiles; t++) {
+          // Load one tile of A and B into local memory
+          uint tiledRow = TileSize*t + row;
+          uint tiledCol = TileSize*t + col;
+          Asub[row][col] = A[globalRow*N + tiledCol];
+          Bsub[row][col] = B[tiledRow*K + globalCol];
 
-            // Load one tile of A and B into local memory
-            uint tiledRow = TileSize*t + row;
-            uint tiledCol = TileSize*t + col;
-            Asub[row][col] = A[globalRow*N + tiledCol];
-            Bsub[row][col] = B[tiledRow*K + globalCol];
+          // Synchronise to make sure the tile is loaded
+          // memoryBarrierShared();
+          barrier();
 
-            // Synchronise to make sure the tile is loaded
-            // memoryBarrierShared();
-            barrier();
+          for (uint k=0; k<TileSize; k++) {
+            acc += Asub[row][k] * Bsub[k][col];
+          }
 
-            for (uint k=0; k<TileSize; k++) {
-              acc += Asub[row][k] * Bsub[k][col];
-            }
-
-            // Synchronise before loading the next tile
-            barrier();
+          // Synchronise before loading the next tile
+          barrier();
         }
 
         if(globalCol < K && globalRow < M) {
