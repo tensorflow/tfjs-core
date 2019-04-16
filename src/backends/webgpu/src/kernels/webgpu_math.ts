@@ -16,7 +16,8 @@
  */
 
 export interface WebGPUBuffer {
-  size: number, usage: any
+  size: number, usage: any,
+      setSubData: (index: number, buffer: ArrayBuffer|SharedArrayBuffer) => void
 }
 
 export interface WebGPUProgram {

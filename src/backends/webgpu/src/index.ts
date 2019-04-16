@@ -15,12 +15,12 @@
  * =============================================================================
  */
 
-import * as tf from '@tensorflow/tfjs';
+import * as tf from '@tensorflow/tfjs-core';
 import * as Shaderc from '@webgpu/shaderc';
 
 import {WebGPUBackend} from './backend_webgpu';
 
-export * from '@tensorflow/tfjs';
+export * from '@tensorflow/tfjs-core';
 
 export const ready = (async () => {
   const shaderc = await Shaderc.instantiate();

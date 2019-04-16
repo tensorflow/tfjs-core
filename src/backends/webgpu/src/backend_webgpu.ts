@@ -77,7 +77,9 @@ export class WebGPUBackend extends KernelBackend {
     });
   }
 
-  private setBufferData(buffer: any, data: Float32Array|Int32Array|Uint8Array) {
+  private setBufferData(
+      buffer: webgpu_math.WebGPUBuffer,
+      data: Float32Array|Int32Array|Uint8Array) {
     buffer.setSubData(0, data.slice().buffer);
   }
 
@@ -101,7 +103,7 @@ export class WebGPUBackend extends KernelBackend {
     this.tensorMap.set(dataId, info);
   }
 
-  async getBufferData(info: TensorInfo): Promise<ArrayBuffer> {
+  private async getBufferData(info: TensorInfo): Promise<ArrayBuffer> {
     const size =
         util.sizeFromShape(info.shape) * util.bytesPerElement(info.dtype);
     const staging = this.device.createBuffer({
@@ -128,14 +130,15 @@ export class WebGPUBackend extends KernelBackend {
     return new Float32Array(data);
   }
 
-  getAndSavePipeline(key: string, getBinary: () => any) {
+  private getAndSavePipeline(
+      key: string, getBinary: () => webgpu_math.WebGPUBinary) {
     if (!(key in this.binaryCache)) {
       this.binaryCache[key] = getBinary();
     }
     return this.binaryCache[key];
   }
 
-  public compileAndRun(
+  private compileAndRun(
       program: webgpu_math.WebGPUProgram, inputs: any[], output: Tensor) {
     const key = webgpu_math.makeShaderKey(program);
     const bindings = inputs.concat(output).map((input: any, idx: number) => {
