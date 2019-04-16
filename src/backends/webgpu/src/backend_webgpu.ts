@@ -27,10 +27,11 @@ type TensorInfo = {
   dtype: DataType,
   values: Float32Array|Int32Array|Uint8Array,
   id: number,
-  buffer?: any,  // WebGPUBuffer
+  buffer?: webgpu_math.WebGPUBuffer,  // WebGPUBuffer
 };
 
 interface DataId {}
+;
 
 declare const GPUBufferUsage: any;
 declare const GPUShaderStageBit: any;

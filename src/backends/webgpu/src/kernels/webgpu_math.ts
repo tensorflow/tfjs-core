@@ -15,6 +15,10 @@
  * =============================================================================
  */
 
+export interface WebGPUBuffer {
+  size: number, usage: any
+}
+
 export interface WebGPUProgram {
   userCode: string;
   outputShape: number[];
