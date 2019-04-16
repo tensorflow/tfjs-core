@@ -139,9 +139,9 @@ export class WebGPUBackend extends KernelBackend {
   }
 
   private compileAndRun(
-      program: webgpu_math.WebGPUProgram, inputs: any[], output: Tensor) {
+      program: webgpu_math.WebGPUProgram, inputs: Tensor[], output: Tensor) {
     const key = webgpu_math.makeShaderKey(program);
-    const bindings = inputs.concat(output).map((input: any, idx: number) => {
+    const bindings = inputs.concat(output).map((input: Tensor, idx: number) => {
       return {
         binding: idx,
         visibility: GPUShaderStageBit.COMPUTE,
