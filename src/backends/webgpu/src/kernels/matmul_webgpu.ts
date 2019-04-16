@@ -41,8 +41,8 @@ export class MatMulProgram implements WebGPUProgram {
       layout(std430, binding = 1) readonly buffer ssbB {
         float B[];
       };
-      layout(std430, binding = 2) readonly buffer ssbMNKB {
-        uint MNKB[];
+      layout(std430, binding = 2) readonly buffer ssbDimensions {
+        uint Dimensions[];
       };
       layout(std430, binding = 3) writeonly buffer ssbOut {
         float result[];
@@ -53,7 +53,8 @@ export class MatMulProgram implements WebGPUProgram {
 
       void main() {
         // M is A outer, N is shared, K is B outer
-        uint M = MNKB[0], N = MNKB[1], K = MNKB[2], batch = MNKB[3];
+        uint M = Dimensions[0], N = Dimensions[1], 
+          K = Dimensions[2], batch = Dimensions[3];
         
         uint row = gl_LocalInvocationID.x; // Local row ID (max: TileSize)
         uint col = gl_LocalInvocationID.y; // Local col ID (max: TileSize)

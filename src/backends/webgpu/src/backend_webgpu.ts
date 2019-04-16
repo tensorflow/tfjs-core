@@ -206,10 +206,10 @@ export class WebGPUBackend extends KernelBackend {
         Tensor3D;
 
     const program = new MatMulProgram(output.shape);
-    const mnkb =
+    const dimensions =
         tensor1d([outerShapeA, sharedDim, outerShapeB, batch], 'int32');
     // TODO: dispose mnkb
 
-    return this.compileAndRun(program, [a, b, mnkb], output) as Tensor3D;
+    return this.compileAndRun(program, [a, b, dimensions], output) as Tensor3D;
   }
 }
