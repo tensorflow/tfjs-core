@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {WebGPUProgram} from './webgpu_math';
+import {WebGPUProgram} from './webgpu_program';
 
 export class MatMulProgram implements WebGPUProgram {
   outputShape: number[];
@@ -25,7 +25,6 @@ export class MatMulProgram implements WebGPUProgram {
   constructor(outputShape: [number, number, number]) {
     this.outputShape = outputShape;
     const tileSize = 2;
-    // Dispatch determines the layout of thread groups.
     this.dispatch = [
       Math.ceil(outputShape[1] / tileSize),
       Math.ceil(outputShape[2] / tileSize), 1

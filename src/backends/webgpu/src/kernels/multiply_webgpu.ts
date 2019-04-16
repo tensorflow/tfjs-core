@@ -16,7 +16,7 @@
  */
 
 import {util} from '@tensorflow/tfjs-core';
-import {WebGPUProgram} from './webgpu_math';
+import {WebGPUProgram} from './webgpu_program';
 
 export class MultiplyProgram implements WebGPUProgram {
   outputShape: number[];

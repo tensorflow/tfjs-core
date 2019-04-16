@@ -23,6 +23,7 @@ export interface WebGPUBuffer {
 export interface WebGPUProgram {
   userCode: string;
   outputShape: number[];
+  // Dispatch determines the layout of thread groups.
   dispatch: number[];
 }
 

@@ -19,15 +19,15 @@ import {DataMover, DataType, KernelBackend, Rank, ShapeMap, Tensor, tensor1d, Te
 
 import {MatMulProgram} from './kernels/matmul_webgpu';
 import {MultiplyProgram} from './kernels/multiply_webgpu';
-import * as webgpu_math from './kernels/webgpu_math';
-import {WebGPUBinary} from './kernels/webgpu_math';
+import * as webgpu_program from './kernels/webgpu_program';
+import {WebGPUBinary} from './kernels/webgpu_program';
 
 type TensorInfo = {
   shape: number[],
   dtype: DataType,
   values: Float32Array|Int32Array|Uint8Array,
   id: number,
-  buffer?: webgpu_math.WebGPUBuffer,  // WebGPUBuffer
+  buffer?: webgpu_program.WebGPUBuffer,  // WebGPUBuffer
 };
 
 interface DataId {}
@@ -78,7 +78,7 @@ export class WebGPUBackend extends KernelBackend {
   }
 
   private setBufferData(
-      buffer: webgpu_math.WebGPUBuffer,
+      buffer: webgpu_program.WebGPUBuffer,
       data: Float32Array|Int32Array|Uint8Array) {
     buffer.setSubData(0, data.slice().buffer);
   }
@@ -131,7 +131,7 @@ export class WebGPUBackend extends KernelBackend {
   }
 
   private getAndSavePipeline(
-      key: string, getBinary: () => webgpu_math.WebGPUBinary) {
+      key: string, getBinary: () => webgpu_program.WebGPUBinary) {
     if (!(key in this.binaryCache)) {
       this.binaryCache[key] = getBinary();
     }
@@ -139,8 +139,8 @@ export class WebGPUBackend extends KernelBackend {
   }
 
   private compileAndRun(
-      program: webgpu_math.WebGPUProgram, inputs: Tensor[], output: Tensor) {
-    const key = webgpu_math.makeShaderKey(program);
+      program: webgpu_program.WebGPUProgram, inputs: Tensor[], output: Tensor) {
+    const key = webgpu_program.makeShaderKey(program);
     const bindings = inputs.concat(output).map((input: Tensor, idx: number) => {
       return {
         binding: idx,
@@ -149,7 +149,7 @@ export class WebGPUBackend extends KernelBackend {
       };
     });
     const {bindGroupLayout, pipeline} = this.getAndSavePipeline(key, () => {
-      return webgpu_math.compileProgram(
+      return webgpu_program.compileProgram(
           this.compiler, this.shaderc.shader_kind.compute, this.compileOpts,
           this.device, program, bindings);
     });
