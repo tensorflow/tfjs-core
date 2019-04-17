@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-const mapType = (type: string) => {
+function mapToGlslTypes(type: string): string {
   if (type === 'float32') {
     return 'float';
   }
@@ -26,12 +26,19 @@ const mapType = (type: string) => {
 };
 
 export function makeShader(
-    inputTypes: string[], variableNames: string[], userCode: string): string {
+    inputTypes: string[], variableNames: string[], userCode: string,
+    tileSize: number): string {
+  let tileSizeSnippet: string;
+  if (tileSize != null) {
+    tileSizeSnippet = `const uint TileSize = ${tileSize};
+    layout (local_size_x = TileSize, local_size_y = TileSize, 
+      local_size_z = 1) in;`;
+  }
   const prefixSnippets: string[] = [];
   variableNames.forEach((x, i) => {
     prefixSnippets.push(`
       layout(std430, set = 0, binding = ${i}) readonly buffer ssb${x} {
-        ${mapType(inputTypes[i])} ${x}[];
+        ${mapToGlslTypes(inputTypes[i])} ${x}[];
       };
     `);
   });
@@ -44,8 +51,9 @@ export function makeShader(
     };
   `);
 
-  const source =
-      [SHADER_PREFIX, prefixSnippets.join('\n'), userCode].join('\n');
+  const source = [
+    SHADER_PREFIX, tileSizeSnippet, prefixSnippets.join('\n'), userCode
+  ].join('\n');
   return source;
 }
 

@@ -26,6 +26,7 @@ export interface WebGPUProgram {
   // Dispatch determines the layout of thread groups.
   dispatch: [number, number, number];
   variableNames: string[];
+  tileSize?: number;
 }
 
 export interface WebGPUBinary {
@@ -43,8 +44,8 @@ export const compileProgram =
      program: WebGPUProgram, inputsData: TensorData[], outputData: TensorData,
      bindings: GPUBindGroupLayoutBinding[]): WebGPUBinary => {
       const source = shader_preprocessor.makeShader(
-          inputsData.map(d => d.dtype), program.variableNames,
-          program.userCode);
+          inputsData.map(d => d.dtype), program.variableNames, program.userCode,
+          program.tileSize);
       const result = shaderCompiler.CompileGlslToSpv(
           source, shaderKind, 'file', 'main', compileOptions);
       const error = result.GetErrorMessage();

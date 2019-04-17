@@ -22,20 +22,16 @@ export class MatMulProgram implements WebGPUProgram {
   userCode: string;
   dispatch: [number, number, number];
   variableNames = ['A', 'B', 'Dimensions'];
+  tileSize = 2;
 
   constructor(outputShape: [number, number, number]) {
     this.outputShape = outputShape;
-    const tileSize = 2;
     this.dispatch = [
-      Math.ceil(outputShape[1] / tileSize),
-      Math.ceil(outputShape[2] / tileSize), 1
+      Math.ceil(outputShape[1] / this.tileSize),
+      Math.ceil(outputShape[2] / this.tileSize), 1
     ];
 
     this.userCode = `
-      const uint TileSize = ${tileSize};
-      layout (local_size_x = TileSize, local_size_y = TileSize, 
-        local_size_z = 1) in;
-
       shared float Asub[TileSize][TileSize];
       shared float Bsub[TileSize][TileSize];
 
