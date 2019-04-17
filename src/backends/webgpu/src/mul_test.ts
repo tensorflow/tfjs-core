@@ -97,7 +97,9 @@ describe('WebGPU backend', () => {
     expectArraysClose(dData, new Float32Array([0, 12, 7.5, 0, 6.5, 66]));
   });
 
-  it('if in graph mode submit only gets called once when reading', async () => {
+  it('if works in graph mode.', async () => {
+    const savedFlag = tf.ENV.get('WEBGPU_IMMEDIATE_EXECUTION_ENABLED');
+    tf.ENV.set('WEBGPU_IMMEDIATE_EXECUTION_ENABLED', true);
     const a = tf.tensor2d([1, 2, 3, 4], [2, 2]);
     const b = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
 
@@ -107,7 +109,7 @@ describe('WebGPU backend', () => {
     const d = tf.mul(c, f);
 
     const dData = await d.data();
-
-    console.log(dData);
+    expectArraysClose(dData, new Float32Array([0, 12, 7.5, 0, 6.5, 66]));
+    tf.ENV.set('WEBGPU_IMMEDIATE_EXECUTION_ENABLED', savedFlag);
   });
 });
