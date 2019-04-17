@@ -17,6 +17,8 @@
 
 /// <reference types="@webgpu/types" />
 
+import './flags_webgpu';
+
 import {DataMover, DataType, ENV, KernelBackend, Rank, ShapeMap, Tensor, tensor1d, Tensor3D, util} from '@tensorflow/tfjs-core';
 import * as shaderc from '@webgpu/shaderc';
 
@@ -217,6 +219,3 @@ export class WebGPUBackend extends KernelBackend {
     return this.compileAndRun(program, [a, b, dimensions], output) as Tensor3D;
   }
 }
-
-/** Whether we submit commands to the device queue immediately. */
-ENV.registerFlag('WEBGPU_IMMEDIATE_EXECUTION_ENABLED', () => true);
