@@ -15,7 +15,10 @@
  * =============================================================================
  */
 
-function mapToGlslTypes(type: string): string {
+import {DataType} from '@tensorflow/tfjs-core';
+
+type GLSLDataType = 'float'|'uint';
+function mapToGlslTypes(type: DataType): GLSLDataType|DataType {
   if (type === 'float32') {
     return 'float';
   }
@@ -26,7 +29,7 @@ function mapToGlslTypes(type: string): string {
 };
 
 export function makeShader(
-    inputTypes: string[], variableNames: string[], userCode: string,
+    inputTypes: DataType[], variableNames: string[], userCode: string,
     tileSize: number): string {
   let tileSizeSnippet: string;
   if (tileSize != null) {
