@@ -32,8 +32,5 @@ export const ready = (async () => {
     return new WebGPUBackend(device, shaderc);
   }, 3 /*priority*/);
 
-  // If registration succeeded, set the backend.
-  if (tf.findBackend('webgpu') != null) {
-    tf.setBackend('webgpu');
-  }
+  tf.setBackend('webgpu');
 })();
