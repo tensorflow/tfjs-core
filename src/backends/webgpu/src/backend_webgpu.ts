@@ -41,7 +41,7 @@ export class WebGPUBackend extends KernelBackend {
   shaderc: shaderc.Shaderc;
   compiler: shaderc.Compiler;
   compileOpts: shaderc.CompileOptions;
-  queueArr: any[];
+  commandQueue: GPUCommandEncoder[];
 
   private binaryCache: {[key: string]: WebGPUBinary};
 
@@ -50,7 +50,7 @@ export class WebGPUBackend extends KernelBackend {
     this.binaryCache = {};
     this.device = device;
     this.queue = device.getQueue();
-    this.queueArr = [];
+    this.commandQueue = [];
     this.shaderc = shaderc;
     this.compiler = new shaderc.Compiler();
     this.compileOpts = new shaderc.CompileOptions();
@@ -104,11 +104,9 @@ export class WebGPUBackend extends KernelBackend {
   }
 
   private submitQueue() {
-    this.queue.submit(this.queueArr.map(enc => {
-      return enc.finish();
-    }));
+    this.queue.submit(this.commandQueue.map(enc => enc.finish()));
 
-    this.queueArr = [];
+    this.commandQueue = [];
   }
 
   private async getBufferData(info: TensorInfo): Promise<ArrayBuffer> {
@@ -121,7 +119,7 @@ export class WebGPUBackend extends KernelBackend {
     {
       const encoder = this.device.createCommandEncoder({});
       encoder.copyBufferToBuffer(info.buffer, 0, staging, 0, size);
-      this.queueArr.push(encoder);
+      this.commandQueue.push(encoder);
       this.submitQueue();
     }
     const mapped: ArrayBuffer = await staging.mapReadAsync();
@@ -187,7 +185,7 @@ export class WebGPUBackend extends KernelBackend {
     pass.dispatch(
         program.dispatch[0], program.dispatch[1], program.dispatch[2]);
     pass.endPass();
-    this.queueArr.push(encoder);
+    this.commandQueue.push(encoder);
 
     if (ENV.get('WEBGPU_IMMEDIATE_EXECUTION_ENABLED')) {
       this.submitQueue();
