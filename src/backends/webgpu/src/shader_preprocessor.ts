@@ -26,13 +26,12 @@ const mapType = (type: string) => {
 };
 
 export function makeShader(
-    inputs: any[], outputs: any, variableNames: string[],
-    userCode: string): string {
+    inputTypes: string[], variableNames: string[], userCode: string): string {
   const prefixSnippets: string[] = [];
   variableNames.forEach((x, i) => {
     prefixSnippets.push(`
       layout(std430, set = 0, binding = ${i}) readonly buffer ssb${x} {
-        ${mapType(inputs[i].dtype)} ${x}[];
+        ${mapType(inputTypes[i])} ${x}[];
       };
     `);
   });

@@ -43,7 +43,8 @@ export const compileProgram =
      program: WebGPUProgram, inputsData: TensorData[], outputData: TensorData,
      bindings: GPUBindGroupLayoutBinding[]): WebGPUBinary => {
       const source = shader_preprocessor.makeShader(
-          inputsData, outputData, program.variableNames, program.userCode);
+          inputsData.map(d => d.dtype), program.variableNames,
+          program.userCode);
       const result = shaderCompiler.CompileGlslToSpv(
           source, shaderKind, 'file', 'main', compileOptions);
       const error = result.GetErrorMessage();
