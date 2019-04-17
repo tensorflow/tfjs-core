@@ -15,8 +15,38 @@
  * =============================================================================
  */
 
-export function makeShader(userCode: string): string {
-  const source = [SHADER_PREFIX, userCode].join('\n');
+const mapType = (type: string) => {
+  if (type === 'float32') {
+    return 'float';
+  }
+  if (type === 'int32') {
+    return 'uint';
+  }
+  return type;
+};
+
+export function makeShader(
+    inputs: any[], outputs: any, variableNames: string[],
+    userCode: string): string {
+  const prefixSnippets: string[] = [];
+  variableNames.forEach((x, i) => {
+    prefixSnippets.push(`
+      layout(std430, set = 0, binding = ${i}) readonly buffer ssb${x} {
+        ${mapType(inputs[i].dtype)} ${x}[];
+      };
+    `);
+  });
+
+  // Output buffer.
+  prefixSnippets.push(`
+    layout(std430, set = 0, binding = ${
+      variableNames.length}) writeonly buffer ssbOut {
+      float result[];
+    };
+  `);
+
+  const source =
+      [SHADER_PREFIX, prefixSnippets.join('\n'), userCode].join('\n');
   return source;
 }
 

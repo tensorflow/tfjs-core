@@ -17,9 +17,8 @@
 
 /// <reference types="@webgpu/types" />
 
-import * as shaderc from '@webgpu/shaderc';
-
 import {DataMover, DataType, KernelBackend, Rank, ShapeMap, Tensor, tensor1d, Tensor3D, util} from '@tensorflow/tfjs-core';
+import * as shaderc from '@webgpu/shaderc';
 
 import {MatMulProgram} from './kernels/matmul_webgpu';
 import {MultiplyProgram} from './kernels/multiply_webgpu';
@@ -78,8 +77,7 @@ export class WebGPUBackend extends KernelBackend {
   }
 
   private setBufferData(
-      buffer: GPUBuffer,
-      data: Float32Array|Int32Array|Uint8Array) {
+      buffer: GPUBuffer, data: Float32Array|Int32Array|Uint8Array) {
     buffer.setSubData(0, data);
   }
 
@@ -148,10 +146,14 @@ export class WebGPUBackend extends KernelBackend {
         type: 'storage-buffer'
       } as GPUBindGroupLayoutBinding;
     });
+    const inputsData = inputs.map((input: Tensor) => {
+      return {dtype: input.dtype};
+    });
+    const outputData = {dtype: output.dtype};
     const {bindGroupLayout, pipeline} = this.getAndSavePipeline(key, () => {
       return webgpu_program.compileProgram(
           this.compiler, this.shaderc.shader_kind.compute, this.compileOpts,
-          this.device, program, bindings);
+          this.device, program, inputsData, outputData, bindings);
     });
 
     // Creating bind groups on the fly should never be a bottleneck.
@@ -175,7 +177,8 @@ export class WebGPUBackend extends KernelBackend {
     const pass = encoder.beginComputePass();
     pass.setPipeline(pipeline);
     pass.setBindGroup(0, bg);
-    pass.dispatch(program.dispatch[0], program.dispatch[1], program.dispatch[2]);
+    pass.dispatch(
+        program.dispatch[0], program.dispatch[1], program.dispatch[2]);
     pass.endPass();
     // TODO: Create flag for toggling graph mode.
     this.queue.submit([encoder.finish()]);

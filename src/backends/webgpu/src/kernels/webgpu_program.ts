@@ -15,7 +15,9 @@
  * =============================================================================
  */
 
+import {DataType} from '@tensorflow/tfjs-core';
 import * as shaderc from '@webgpu/shaderc';
+
 import * as shader_preprocessor from '../shader_preprocessor';
 
 export interface WebGPUProgram {
@@ -23,6 +25,7 @@ export interface WebGPUProgram {
   outputShape: number[];
   // Dispatch determines the layout of thread groups.
   dispatch: [number, number, number];
+  variableNames: string[];
 }
 
 export interface WebGPUBinary {
@@ -30,12 +33,17 @@ export interface WebGPUBinary {
   pipeline: GPUComputePipeline;
 }
 
+export interface TensorData {
+  dtype: DataType;
+}
+
 export const compileProgram =
     (shaderCompiler: shaderc.Compiler, shaderKind: shaderc.ShaderKind,
      compileOptions: shaderc.CompileOptions, device: GPUDevice,
-     program: WebGPUProgram,
+     program: WebGPUProgram, inputsData: TensorData[], outputData: TensorData,
      bindings: GPUBindGroupLayoutBinding[]): WebGPUBinary => {
-      const source = shader_preprocessor.makeShader(program.userCode);
+      const source = shader_preprocessor.makeShader(
+          inputsData, outputData, program.variableNames, program.userCode);
       const result = shaderCompiler.CompileGlslToSpv(
           source, shaderKind, 'file', 'main', compileOptions);
       const error = result.GetErrorMessage();
