@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {DataType} from '@tensorflow/tfjs-core';
+import {DataType, Tensor} from '@tensorflow/tfjs-core';
 import * as shaderc from '@webgpu/shaderc';
 
 import * as shader_preprocessor from '../shader_preprocessor';
@@ -41,8 +41,20 @@ export interface TensorData {
 export const compileProgram =
     (shaderCompiler: shaderc.Compiler, shaderKind: shaderc.ShaderKind,
      compileOptions: shaderc.CompileOptions, device: GPUDevice,
-     program: WebGPUProgram, inputsData: TensorData[], outputData: TensorData,
-     bindings: GPUBindGroupLayoutBinding[]): WebGPUBinary => {
+     program: WebGPUProgram, inputs: Tensor[],
+     output: Tensor): WebGPUBinary => {
+      const bindings =
+          inputs.concat(output).map((input: Tensor, idx: number) => {
+            return {
+              binding: idx,
+              visibility: GPUShaderStageBit.COMPUTE,
+              type: 'storage-buffer'
+            } as GPUBindGroupLayoutBinding;
+          });
+      const inputsData = inputs.map((input: Tensor) => {
+        return {dtype: input.dtype};
+      });
+
       const source = shader_preprocessor.makeShader(
           inputsData.map(d => d.dtype), program.variableNames, program.userCode,
           program.tileSize);
