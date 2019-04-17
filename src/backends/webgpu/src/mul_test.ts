@@ -97,7 +97,7 @@ describe('WebGPU backend', () => {
     expectArraysClose(dData, new Float32Array([0, 12, 7.5, 0, 6.5, 66]));
   });
 
-  it('if works in graph mode.', async () => {
+  it('it works in graph mode.', async () => {
     const savedFlag = tf.ENV.get('WEBGPU_IMMEDIATE_EXECUTION_ENABLED');
     tf.ENV.set('WEBGPU_IMMEDIATE_EXECUTION_ENABLED', true);
     const a = tf.tensor2d([1, 2, 3, 4], [2, 2]);
