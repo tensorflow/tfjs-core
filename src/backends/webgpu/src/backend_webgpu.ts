@@ -148,17 +148,10 @@ export class WebGPUBackend extends KernelBackend {
   private compileAndRun(
       program: webgpu_program.WebGPUProgram, inputs: Tensor[], output: Tensor) {
     const key = webgpu_program.makeShaderKey(program);
-    const bindings = inputs.concat(output).map((input: Tensor, idx: number) => {
-      return {
-        binding: idx,
-        visibility: GPUShaderStageBit.COMPUTE,
-        type: 'storage-buffer'
-      } as GPUBindGroupLayoutBinding;
-    });
     const {bindGroupLayout, pipeline} = this.getAndSavePipeline(key, () => {
       return webgpu_program.compileProgram(
           this.compiler, this.shaderc.shader_kind.compute, this.compileOpts,
-          this.device, program, bindings);
+          this.device, program, inputs, output);
     });
 
     // Creating bind groups on the fly should never be a bottleneck.
