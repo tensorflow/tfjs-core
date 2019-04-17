@@ -56,7 +56,7 @@ export class WebGPUBackend extends KernelBackend {
     this.compileOpts = new shaderc.CompileOptions();
   }
 
-  floatPrecision(): 16|32 {
+  floatPrecision(): 32 {
     return 32;
   }
 
