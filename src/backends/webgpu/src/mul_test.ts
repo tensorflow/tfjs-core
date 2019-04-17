@@ -96,4 +96,18 @@ describe('WebGPU backend', () => {
     expect(d.shape).toEqual([2, 3]);
     expectArraysClose(dData, new Float32Array([0, 12, 7.5, 0, 6.5, 66]));
   });
+
+  it('if in graph mode submit only gets called once when reading', async () => {
+    const a = tf.tensor2d([1, 2, 3, 4], [2, 2]);
+    const b = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
+
+    const c = tf.matMul(a, b);
+
+    const f = tf.tensor2d([0, 1, 0.5, 0, 0.25, 2], [2, 3]);
+    const d = tf.mul(c, f);
+
+    const dData = await d.data();
+
+    console.log(dData);
+  });
 });

@@ -17,7 +17,7 @@
 
 /// <reference types="@webgpu/types" />
 
-import {DataMover, DataType, KernelBackend, Rank, ShapeMap, Tensor, tensor1d, Tensor3D, util} from '@tensorflow/tfjs-core';
+import {DataMover, DataType, ENV, KernelBackend, Rank, ShapeMap, Tensor, tensor1d, Tensor3D, util} from '@tensorflow/tfjs-core';
 import * as shaderc from '@webgpu/shaderc';
 
 import {MatMulProgram} from './kernels/matmul_webgpu';
@@ -39,7 +39,6 @@ export class WebGPUBackend extends KernelBackend {
   device: GPUDevice;
   queue: GPUQueue;
   shaderc: shaderc.Shaderc;
-  immediateExecutionEnabled: boolean;
   compiler: shaderc.Compiler;
   compileOpts: shaderc.CompileOptions;
   queueArr: any[];
@@ -51,22 +50,13 @@ export class WebGPUBackend extends KernelBackend {
     this.binaryCache = {};
     this.device = device;
     this.queue = device.getQueue();
-    this.immediateExecutionEnabled = true;
     this.queueArr = [];
     this.shaderc = shaderc;
     this.compiler = new shaderc.Compiler();
     this.compileOpts = new shaderc.CompileOptions();
   }
 
-  public enableImmediateExecution() {
-    this.immediateExecutionEnabled = true;
-  }
-
-  public disableImmediateExecution() {
-    this.immediateExecutionEnabled = false;
-  }
-
-  floatPrecision(): number {
+  floatPrecision(): 16|32 {
     return 32;
   }
 
@@ -199,7 +189,7 @@ export class WebGPUBackend extends KernelBackend {
     pass.endPass();
     this.queueArr.push(encoder);
 
-    if (this.immediateExecutionEnabled) {
+    if (ENV.get('WEBGPU_IMMEDIATE_EXECUTION_ENABLED')) {
       this.submitQueue();
     }
     return output;
@@ -236,3 +226,6 @@ export class WebGPUBackend extends KernelBackend {
     return this.compileAndRun(program, [a, b, dimensions], output) as Tensor3D;
   }
 }
+
+/** Whether we submit commands to the device queue immediately. */
+ENV.registerFlag('WEBGPU_IMMEDIATE_EXECUTION_ENABLED', () => true);
