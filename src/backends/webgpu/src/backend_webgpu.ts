@@ -17,9 +17,8 @@
 
 /// <reference types="@webgpu/types" />
 
-import * as shaderc from '@webgpu/shaderc';
-
 import {DataMover, DataType, KernelBackend, Rank, ShapeMap, Tensor, tensor1d, Tensor3D, util} from '@tensorflow/tfjs-core';
+import * as shaderc from '@webgpu/shaderc';
 
 import {MatMulProgram} from './kernels/matmul_webgpu';
 import {MultiplyProgram} from './kernels/multiply_webgpu';
@@ -40,8 +39,10 @@ export class WebGPUBackend extends KernelBackend {
   device: GPUDevice;
   queue: GPUQueue;
   shaderc: shaderc.Shaderc;
+  immediateExecutionEnabled: boolean;
   compiler: shaderc.Compiler;
   compileOpts: shaderc.CompileOptions;
+  queueArr: any[];
 
   private binaryCache: {[key: string]: WebGPUBinary};
 
@@ -50,9 +51,19 @@ export class WebGPUBackend extends KernelBackend {
     this.binaryCache = {};
     this.device = device;
     this.queue = device.getQueue();
+    this.immediateExecutionEnabled = true;
+    this.queueArr = [];
     this.shaderc = shaderc;
     this.compiler = new shaderc.Compiler();
     this.compileOpts = new shaderc.CompileOptions();
+  }
+
+  public enableImmediateExecution() {
+    this.immediateExecutionEnabled = true;
+  }
+
+  public disableImmediateExecution() {
+    this.immediateExecutionEnabled = false;
   }
 
   floatPrecision(): number {
@@ -78,8 +89,7 @@ export class WebGPUBackend extends KernelBackend {
   }
 
   private setBufferData(
-      buffer: GPUBuffer,
-      data: Float32Array|Int32Array|Uint8Array) {
+      buffer: GPUBuffer, data: Float32Array|Int32Array|Uint8Array) {
     buffer.setSubData(0, data);
   }
 
@@ -103,6 +113,14 @@ export class WebGPUBackend extends KernelBackend {
     this.tensorMap.set(dataId, info);
   }
 
+  private submitQueue() {
+    this.queue.submit(this.queueArr.map(enc => {
+      return enc.finish();
+    }));
+
+    this.queueArr = [];
+  }
+
   private async getBufferData(info: TensorInfo): Promise<ArrayBuffer> {
     const size =
         util.sizeFromShape(info.shape) * util.bytesPerElement(info.dtype);
@@ -113,7 +131,8 @@ export class WebGPUBackend extends KernelBackend {
     {
       const encoder = this.device.createCommandEncoder({});
       encoder.copyBufferToBuffer(info.buffer, 0, staging, 0, size);
-      this.queue.submit([encoder.finish()]);
+      this.queueArr.push(encoder);
+      this.submitQueue();
     }
     const mapped: ArrayBuffer = await staging.mapReadAsync();
 
@@ -175,10 +194,14 @@ export class WebGPUBackend extends KernelBackend {
     const pass = encoder.beginComputePass();
     pass.setPipeline(pipeline);
     pass.setBindGroup(0, bg);
-    pass.dispatch(program.dispatch[0], program.dispatch[1], program.dispatch[2]);
+    pass.dispatch(
+        program.dispatch[0], program.dispatch[1], program.dispatch[2]);
     pass.endPass();
-    // TODO: Create flag for toggling graph mode.
-    this.queue.submit([encoder.finish()]);
+    this.queueArr.push(encoder);
+
+    if (this.immediateExecutionEnabled) {
+      this.submitQueue();
+    }
     return output;
   }
 
