@@ -16,6 +16,7 @@
  */
 
 import * as shaderc from '@webgpu/shaderc';
+import * as shader_preprocessor from '../shader_preprocessor';
 
 export interface WebGPUProgram {
   userCode: string;
@@ -30,13 +31,11 @@ export interface WebGPUBinary {
 }
 
 export const compileProgram =
-    (shaderCompiler: shaderc.Compiler,
-     shaderKind: shaderc.ShaderKind,
-     compileOptions: shaderc.CompileOptions,
-     device: GPUDevice,
+    (shaderCompiler: shaderc.Compiler, shaderKind: shaderc.ShaderKind,
+     compileOptions: shaderc.CompileOptions, device: GPUDevice,
      program: WebGPUProgram,
      bindings: GPUBindGroupLayoutBinding[]): WebGPUBinary => {
-      const source = program.userCode;
+      const source = shader_preprocessor.makeShader(program.userCode);
       const result = shaderCompiler.CompileGlslToSpv(
           source, shaderKind, 'file', 'main', compileOptions);
       const error = result.GetErrorMessage();

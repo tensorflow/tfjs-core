@@ -31,7 +31,6 @@ export class MatMulProgram implements WebGPUProgram {
     ];
 
     this.userCode = `
-      #version 450
       const uint TileSize = ${tileSize};
       layout (local_size_x = TileSize, local_size_y = TileSize, 
         local_size_z = 1) in;

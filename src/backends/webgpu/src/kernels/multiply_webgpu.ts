@@ -28,7 +28,6 @@ export class MultiplyProgram implements WebGPUProgram {
     this.dispatch = [util.sizeFromShape(this.outputShape), 1, 1];
 
     this.userCode = `
-      #version 450
       layout(std430, set = 0, binding = 0) readonly buffer ssbA {
         float A[];
       };
