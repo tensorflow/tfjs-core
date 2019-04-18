@@ -47,6 +47,8 @@ import {split} from '../split_shared';
 import {topkImpl} from '../topk_impl';
 import {whereImpl} from '../where_impl';
 
+import {AddNProgram} from './addn_gpu';
+import {AddNPackedProgram} from './addn_packed_gpu';
 import {ArgMinMaxProgram} from './argminmax_gpu';
 import {ArgMinMaxPackedProgram} from './argminmax_packed_gpu';
 import {AvgPool2DBackpropProgram} from './avg_pool_backprop_gpu';
@@ -1471,11 +1473,30 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   addN<T extends Tensor>(tensors: T[]): T {
-    let res = tensors[0];
-    for (let i = 1; i < tensors.length; i++) {
-      res = this.add(res, tensors[i]) as T;
+    if (tensors.length === 1) {
+      return tensors[0];
     }
-    return res;
+
+    // Limit the number of uploaded textures for optimization.
+    if (tensors.length > ENV.get('WEBGL_MAX_TEXTURES_IN_SHADER')) {
+      const midIndex = Math.floor(tensors.length / 2);
+      const leftSide = this.addN(tensors.slice(0, midIndex));
+      const rightSide = this.addN(tensors.slice(midIndex));
+      return this.addN([leftSide, rightSide]);
+    }
+
+    const dtype =
+        tensors.map(t => t.dtype).reduce((d1, d2) => upcastType(d1, d2));
+    const shapes = tensors.map(t => t.shape);
+    // We can make sure shapes are identical in op level.
+    const usePackedOp = ENV.getBool('WEBGL_PACK');
+    const program = usePackedOp ?
+        new AddNPackedProgram(tensors[0].shape, shapes) :
+        new AddNProgram(tensors[0].shape, shapes);
+    const output = usePackedOp ?
+        this.makePackedTensor(program.outputShape, dtype) as T :
+        this.makeOutputArray(program.outputShape, dtype) as T;
+    return this.compileAndRun<T>(program, tensors, output);
   }
 
   subtract(a: Tensor, b: Tensor): Tensor {
