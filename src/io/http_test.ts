@@ -17,7 +17,7 @@
 
 import * as tf from '../index';
 import {BROWSER_ENVS, CHROME_ENVS, describeWithFlags, NODE_ENVS} from '../jasmine_util';
-import {HTTPRequest, httpRequestRouter, parseUrl} from './http';
+import {HTTPRequest, httpRouter, parseUrl} from './http';
 
 // Test data.
 const modelTopology1: {} = {
@@ -94,7 +94,7 @@ const setupFakeWeightFiles =
                      });
     };
 
-describeWithFlags('httpRequest-load fetch', NODE_ENVS, () => {
+describeWithFlags('http-load fetch', NODE_ENVS, () => {
   let requestInits: {[key: string]: {headers: {[key: string]: string}}};
   // tslint:disable-next-line:no-any
   let originalFetch: any;
@@ -143,7 +143,7 @@ describeWithFlags('httpRequest-load fetch', NODE_ENVS, () => {
         },
         requestInits);
 
-    const handler = tf.io.httpRequest('./model.json');
+    const handler = tf.io.http('./model.json');
     const modelArtifacts = await handler.load();
     expect(modelArtifacts.modelTopology).toEqual(modelTopology1);
     expect(modelArtifacts.weightSpecs).toEqual(weightManifest1[0].weights);
@@ -154,7 +154,7 @@ describeWithFlags('httpRequest-load fetch', NODE_ENVS, () => {
     // tslint:disable-next-line:no-any
     delete (global as any).fetch;
     try {
-      tf.io.httpRequest('./model.json');
+      tf.io.http('./model.json');
     } catch (err) {
       expect(err.message).toMatch(/Unable to find fetch polyfill./);
     }
@@ -163,7 +163,7 @@ describeWithFlags('httpRequest-load fetch', NODE_ENVS, () => {
 
 // Turned off for other browsers due to:
 // https://github.com/tensorflow/tfjs/issues/426
-describeWithFlags('httpRequest-save', CHROME_ENVS, () => {
+describeWithFlags('http-save', CHROME_ENVS, () => {
   // Test data.
   const weightSpecs1: tf.io.WeightsManifestEntry[] = [
     {
@@ -295,7 +295,7 @@ describeWithFlags('httpRequest-save', CHROME_ENVS, () => {
 
   it('Save topology and weights, PUT method, extra headers', (done) => {
     const testStartDate = new Date();
-    const handler = tf.io.httpRequest('model-upload-test', {
+    const handler = tf.io.http('model-upload-test', {
       requestInit: {
         method: 'PUT',
         headers:
@@ -367,7 +367,7 @@ describeWithFlags('httpRequest-save', CHROME_ENVS, () => {
     handler.save(artifacts1)
         .then(saveResult => {
           done.fail(
-              'Calling httpRequest at invalid URL succeeded ' +
+              'Calling http at invalid URL succeeded ' +
               'unexpectedly');
         })
         .catch(err => {
@@ -382,29 +382,26 @@ describeWithFlags('httpRequest-save', CHROME_ENVS, () => {
   });
 
   it('Existing body leads to Error', () => {
-    expect(() => tf.io.httpRequest('model-upload-test', {
+    expect(() => tf.io.http('model-upload-test', {
       requestInit: {body: 'existing body'}
     })).toThrowError(/requestInit is expected to have no pre-existing body/);
   });
 
   it('Empty, null or undefined URL paths lead to Error', () => {
-    expect(() => tf.io.httpRequest(null))
+    expect(() => tf.io.http(null))
         .toThrowError(/must not be null, undefined or empty/);
-    expect(() => tf.io.httpRequest(undefined))
+    expect(() => tf.io.http(undefined))
         .toThrowError(/must not be null, undefined or empty/);
-    expect(() => tf.io.httpRequest(''))
+    expect(() => tf.io.http(''))
         .toThrowError(/must not be null, undefined or empty/);
   });
 
   it('router', () => {
-    expect(httpRequestRouter('http://bar/foo') instanceof HTTPRequest)
+    expect(httpRouter('http://bar/foo') instanceof HTTPRequest).toEqual(true);
+    expect(httpRouter('https://localhost:5000/upload') instanceof HTTPRequest)
         .toEqual(true);
-    expect(
-        httpRequestRouter('https://localhost:5000/upload') instanceof
-        HTTPRequest)
-        .toEqual(true);
-    expect(httpRequestRouter('localhost://foo')).toBeNull();
-    expect(httpRequestRouter('foo:5000/bar')).toBeNull();
+    expect(httpRouter('localhost://foo')).toBeNull();
+    expect(httpRouter('foo:5000/bar')).toBeNull();
   });
 });
 
@@ -429,7 +426,7 @@ describeWithFlags('parseUrl', BROWSER_ENVS, () => {
   });
 });
 
-describeWithFlags('httpRequest-load', BROWSER_ENVS, () => {
+describeWithFlags('http-load', BROWSER_ENVS, () => {
   describe('JSON model', () => {
     let requestInits: {[key: string]: {headers: {[key: string]: string}}};
 
@@ -468,7 +465,7 @@ describeWithFlags('httpRequest-load', BROWSER_ENVS, () => {
           },
           requestInits);
 
-      const handler = tf.io.httpRequest('./model.json');
+      const handler = tf.io.http('./model.json');
       const modelArtifacts = await handler.load();
       expect(modelArtifacts.modelTopology).toEqual(modelTopology1);
       expect(modelArtifacts.weightSpecs).toEqual(weightManifest1[0].weights);
@@ -509,7 +506,7 @@ describeWithFlags('httpRequest-load', BROWSER_ENVS, () => {
           },
           requestInits);
 
-      const handler = tf.io.httpRequest(
+      const handler = tf.io.http(
           './model.json',
           {requestInit: {headers: {'header_key_1': 'header_value_1'}}});
       const modelArtifacts = await handler.load();
@@ -560,7 +557,7 @@ describeWithFlags('httpRequest-load', BROWSER_ENVS, () => {
           },
           requestInits);
 
-      const handler = tf.io.httpRequest('./model.json');
+      const handler = tf.io.http('./model.json');
       const modelArtifacts = await handler.load();
       expect(modelArtifacts.modelTopology).toEqual(modelTopology1);
       expect(modelArtifacts.weightSpecs).toEqual(weightManifest1[0].weights);
@@ -603,7 +600,7 @@ describeWithFlags('httpRequest-load', BROWSER_ENVS, () => {
           },
           requestInits);
 
-      const handler = tf.io.httpRequest('./model.json');
+      const handler = tf.io.http('./model.json');
       const modelArtifacts = await handler.load();
       expect(modelArtifacts.modelTopology).toEqual(modelTopology1);
       expect(modelArtifacts.weightSpecs)
@@ -648,7 +645,7 @@ describeWithFlags('httpRequest-load', BROWSER_ENVS, () => {
           },
           requestInits);
 
-      const handler = tf.io.httpRequest('path1/model.json');
+      const handler = tf.io.http('path1/model.json');
       const modelArtifacts = await handler.load();
       expect(modelArtifacts.modelTopology).toEqual(modelTopology1);
       expect(modelArtifacts.weightSpecs)
@@ -670,7 +667,7 @@ describeWithFlags('httpRequest-load', BROWSER_ENVS, () => {
           },
           requestInits);
 
-      const handler = tf.io.httpRequest('./model.json');
+      const handler = tf.io.http('./model.json');
       const modelArtifacts = await handler.load();
       expect(modelArtifacts.modelTopology).toEqual(modelTopology1);
       expect(modelArtifacts.weightSpecs).toBeUndefined();
@@ -711,7 +708,7 @@ describeWithFlags('httpRequest-load', BROWSER_ENVS, () => {
           },
           requestInits);
 
-      const handler = tf.io.httpRequest('path1/model.json');
+      const handler = tf.io.http('path1/model.json');
       const modelArtifacts = await handler.load();
       expect(modelArtifacts.modelTopology).toBeUndefined();
       expect(modelArtifacts.weightSpecs)
@@ -731,7 +728,7 @@ describeWithFlags('httpRequest-load', BROWSER_ENVS, () => {
                    {data: JSON.stringify({}), contentType: 'application/json'}
              },
              requestInits);
-         const handler = tf.io.httpRequest('path1/model.json');
+         const handler = tf.io.http('path1/model.json');
          handler.load()
              .then(modelTopology1 => {
                done.fail(
@@ -752,7 +749,7 @@ describeWithFlags('httpRequest-load', BROWSER_ENVS, () => {
                 {data: JSON.stringify({}), contentType: 'text/html'}
           },
           requestInits);
-      const handler = tf.io.httpRequest('path2/model.json');
+      const handler = tf.io.http('path2/model.json');
       try {
         const data = await handler.load();
         expect(data).toBeDefined();
@@ -805,7 +802,7 @@ describeWithFlags('httpRequest-load', BROWSER_ENVS, () => {
       }
     }
 
-    const handler = tf.io.httpRequest(
+    const handler = tf.io.http(
         './model.json',
         {requestInit: {credentials: 'include'}, fetchFunc: customFetch});
     const modelArtifacts = await handler.load();
