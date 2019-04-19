@@ -39,6 +39,13 @@ type TensorInfo = {
   buffer: GPUBuffer
 };
 
+function tensorSize(t: TensorInfo) {
+  return shapeSize(t.shape, t.dtype);
+}
+function shapeSize(shape: number[], dtype: DataType) {
+  return util.sizeFromShape(shape) * util.bytesPerElement(dtype);
+}
+
 interface DataId {}
 
 export class WebGPUBackend extends KernelBackend {
@@ -74,11 +81,32 @@ export class WebGPUBackend extends KernelBackend {
 
   private tensorMap = new WeakMap<DataId, TensorInfo>();
 
+  private reusableBuffers = new Map<number, GPUBuffer[]>();
+
   disposeData(dataId: DataId): void {
-    // Tensor disposal logic.
+    const info = this.tensorMap.get(dataId);
+    const size = tensorSize(info);
+    let bs: GPUBuffer[];
+    if (this.reusableBuffers.has(size)) {
+      bs = this.reusableBuffers.get(size);
+    } else {
+      bs = [];
+      this.reusableBuffers.set(size, bs);
+    }
+    bs.push(info.buffer);
+
+    // TODO: actually delete buffers at some point
   }
 
   private createBuffer(size: number) {
+    if (this.reusableBuffers.has(size)) {
+      const bs = this.reusableBuffers.get(size);
+      if (bs.length) {
+        const b = this.reusableBuffers.get(size).pop();
+        return b;
+      }
+    }
+
     return this.device.createBuffer({
       size,
       usage: GPUBufferUsage.TRANSFER_SRC | GPUBufferUsage.TRANSFER_DST |
@@ -93,8 +121,7 @@ export class WebGPUBackend extends KernelBackend {
 
   register(dataId: object, shape: number[], dtype: DataType): void {
     if (!this.tensorMap.has(dataId)) {
-      const buffer = this.createBuffer(
-          util.sizeFromShape(shape) * util.bytesPerElement(dtype));
+      const buffer = this.createBuffer(shapeSize(shape, dtype));
 
       this.tensorMap.set(dataId, {shape, dtype, values: null, id: -1, buffer});
     }
@@ -118,8 +145,7 @@ export class WebGPUBackend extends KernelBackend {
   }
 
   private async getBufferData(info: TensorInfo): Promise<ArrayBuffer> {
-    const size =
-        util.sizeFromShape(info.shape) * util.bytesPerElement(info.dtype);
+    const size = tensorSize(info);
     const staging = this.device.createBuffer({
       size,
       usage: GPUBufferUsage.TRANSFER_DST | GPUBufferUsage.MAP_READ,
