@@ -160,8 +160,8 @@ export class WebGPUBackend extends KernelBackend {
 
   private compileAndRun<
       K extends {dtype: DataType, size: number, dataId: {}, shape: number[]}>(
-      program: webgpu_program.WebGPUProgram, inputs: Tensor[],
-      output?: Tensor): K {
+      program: webgpu_program.WebGPUProgram,
+      output: Tensor | null, inputs: Tensor[], uniforms?: Tensor): K {
     if (output == null) {
       output = this.makeOutputArray(program.outputShape, inputs[0].dtype);
     }
@@ -169,24 +169,30 @@ export class WebGPUBackend extends KernelBackend {
     const {bindGroupLayout, pipeline} = this.getAndSavePipeline(key, () => {
       return webgpu_program.compileProgram(
           this.compiler, this.shaderc.shader_kind.compute, this.compileOpts,
-          this.device, program, inputs, output);
+          this.device, program, output, inputs, uniforms);
     });
+
+    const toBinding = (tensor: Tensor) => {
+      const tensorData = this.tensorMap.get(tensor.dataId);
+
+      return {
+        resource: {
+          offset: 0,
+          size: tensor.size * util.bytesPerElement(tensor.dtype),
+          buffer: tensorData.buffer
+        }
+      };
+    };
+
+    const bindings = [toBinding(output), ...inputs.map(toBinding)];
+    if (uniforms) {
+      bindings.push(toBinding(uniforms));
+    }
 
     // Creating bind groups on the fly should never be a bottleneck.
     const bg = this.device.createBindGroup({
       layout: bindGroupLayout,
-      bindings: inputs.concat(output).map((tensor, i: number) => {
-        const tensorData = this.tensorMap.get(tensor.dataId);
-
-        return {
-          binding: i,
-          resource: {
-            offset: 0,
-            size: tensor.size * util.bytesPerElement(tensor.dtype),
-            buffer: tensorData.buffer
-          }
-        };
-      })
+      bindings: bindings.map((b, i) => ({binding: i, ...b})),
     });
 
     const encoder = this.device.createCommandEncoder({});
@@ -207,26 +213,26 @@ export class WebGPUBackend extends KernelBackend {
   pad<T extends Tensor>(
       x: T, paddings: Array<[number, number]>, constantValue: number): T {
     const program = new PadProgram(x.shape, paddings, constantValue);
-    return this.compileAndRun(program, [x]);
+    return this.compileAndRun(program, null, [x]);
   }
 
   add(a: Tensor, b: Tensor): Tensor {
     const output = Tensor.make(a.shape, {}, a.dtype, this);
     const program = new BinaryOpProgram(binary_op.ADD, output.shape);
 
-    return this.compileAndRun(program, [a, b], output) as Tensor;
+    return this.compileAndRun(program, output, [a, b]) as Tensor;
   }
 
   multiply(a: Tensor, b: Tensor): Tensor {
     const output = Tensor.make(a.shape, {}, a.dtype, this);
     const program = new BinaryOpProgram(binary_op.MUL, output.shape);
 
-    return this.compileAndRun(program, [a, b], output) as Tensor;
+    return this.compileAndRun(program, output, [a, b]) as Tensor;
   }
 
   relu<T extends Tensor>(x: T): T {
     const program = new UnaryOpProgram(unary_op.RELU, x.shape);
-    return this.compileAndRun(program, [x]) as T;
+    return this.compileAndRun(program, null, [x]) as T;
   }
 
   reshape<R extends Rank>(x: Tensor, shape: ShapeMap[R]): Tensor<R> {
@@ -250,6 +256,6 @@ export class WebGPUBackend extends KernelBackend {
         tensor1d([outerShapeA, sharedDim, outerShapeB, batch], 'int32');
     // TODO: dispose mnkb
 
-    return this.compileAndRun(program, [a, b, dimensions], output) as Tensor3D;
+    return this.compileAndRun(program, output, [a, b], dimensions) as Tensor3D;
   }
 }
