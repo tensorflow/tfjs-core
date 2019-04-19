@@ -25,6 +25,8 @@ import * as shaderc from '@webgpu/shaderc';
 import * as binary_op from './kernels/binary_op_webgpu';
 import {BinaryOpProgram} from './kernels/binary_op_webgpu';
 import {MatMulProgram} from './kernels/matmul_webgpu';
+import * as unary_op from './kernels/unary_op_webgpu';
+import {UnaryOpProgram} from './kernels/unary_op_webgpu';
 import * as webgpu_program from './kernels/webgpu_program';
 import {WebGPUBinary} from './kernels/webgpu_program';
 
@@ -148,8 +150,16 @@ export class WebGPUBackend extends KernelBackend {
     return this.binaryCache[key];
   }
 
+  private makeOutputArray<T extends Tensor>(shape: number[], dtype: DataType) {
+    return Tensor.make(shape, {}, dtype, this) as T;
+  }
+
   private compileAndRun(
-      program: webgpu_program.WebGPUProgram, inputs: Tensor[], output: Tensor) {
+      program: webgpu_program.WebGPUProgram, inputs: Tensor[],
+      output?: Tensor) {
+    if (output == null) {
+      output = this.makeOutputArray(program.outputShape, inputs[0].dtype);
+    }
     const key = webgpu_program.makeShaderKey(program);
     const {bindGroupLayout, pipeline} = this.getAndSavePipeline(key, () => {
       return webgpu_program.compileProgram(
@@ -201,6 +211,11 @@ export class WebGPUBackend extends KernelBackend {
     const program = new BinaryOpProgram(binary_op.MUL, output.shape);
 
     return this.compileAndRun(program, [a, b], output) as Tensor;
+  }
+
+  relu<T extends Tensor>(x: T): T {
+    const program = new UnaryOpProgram(unary_op.RELU, x.shape);
+    return this.compileAndRun(program, [x]) as T;
   }
 
   reshape<R extends Rank>(x: Tensor, shape: ShapeMap[R]): Tensor<R> {

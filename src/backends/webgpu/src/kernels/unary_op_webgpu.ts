@@ -15,30 +15,31 @@
  * =============================================================================
  */
 
-import {expectArraysClose} from '@tensorflow/tfjs-core/dist/test_util';
+import {util} from '@tensorflow/tfjs-core';
+import {WebGPUProgram} from './webgpu_program';
 
-import * as tf from './index';
+export const RELU = 'return max(a, 0.0);';
 
-describe('Binary ops', () => {
-  beforeAll(async () => await tf.ready);
+export class UnaryOpProgram implements WebGPUProgram {
+  outputShape: number[];
+  userCode: string;
+  dispatch: [number, number, number];
+  variableNames = ['A'];
 
-  it('A * B', async () => {
-    const a = tf.tensor1d([1, 2, 3]);
-    const b = tf.tensor1d([3, 4, 5]);
-    const c = tf.mul(a, b);
+  constructor(op: string, outputShape: number[]) {
+    this.outputShape = outputShape;
+    this.dispatch = [util.sizeFromShape(this.outputShape), 1, 1];
 
-    const cData = await c.data();
+    this.userCode = `
+      float unaryOperation(float a) {
+        ${op}
+      }
 
-    expectArraysClose(cData, new Float32Array([3, 8, 15]));
-  });
-
-  it('A + B', async () => {
-    const a = tf.tensor1d([1, 2, 3]);
-    const b = tf.tensor1d([3, 4, 5]);
-    const c = tf.add(a, b);
-
-    const cData = await c.data();
-
-    expectArraysClose(cData, new Float32Array([4, 6, 8]));
-  });
-});
+      void main() {
+        uint index = gl_GlobalInvocationID.x;
+        float a = A[index];
+        result[index] = unaryOperation(a);
+      }
+    `;
+  }
+}

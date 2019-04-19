@@ -19,26 +19,24 @@ import {expectArraysClose} from '@tensorflow/tfjs-core/dist/test_util';
 
 import * as tf from './index';
 
-describe('Binary ops', () => {
+describe('Unary ops', () => {
   beforeAll(async () => await tf.ready);
 
-  it('A * B', async () => {
-    const a = tf.tensor1d([1, 2, 3]);
-    const b = tf.tensor1d([3, 4, 5]);
-    const c = tf.mul(a, b);
+  it('relu', async () => {
+    const a = tf.tensor1d([1, -2, 0, 3, -0.1]);
+    const result = tf.relu(a);
 
-    const cData = await c.data();
+    const cData = await result.data();
 
-    expectArraysClose(cData, new Float32Array([3, 8, 15]));
+    expectArraysClose(cData, new Float32Array([1, 0, 0, 3, 0]));
   });
 
-  it('A + B', async () => {
-    const a = tf.tensor1d([1, 2, 3]);
-    const b = tf.tensor1d([3, 4, 5]);
-    const c = tf.add(a, b);
+  it('relu 5D', async () => {
+    const a = tf.tensor5d([1, -2, 5, -3], [1, 2, 2, 1, 1]);
+    const result = tf.relu(a);
 
-    const cData = await c.data();
+    const cData = await result.data();
 
-    expectArraysClose(cData, new Float32Array([4, 6, 8]));
+    expectArraysClose(cData, new Float32Array([1, 0, 5, 0]));
   });
 });

@@ -19,7 +19,7 @@ import {expectArraysClose} from '@tensorflow/tfjs-core/dist/test_util';
 
 import * as tf from './index';
 
-describe('WebGPU backend', () => {
+describe('matMul', () => {
   beforeAll(async () => await tf.ready);
 
   it('matMul A x B odd shared dim', async () => {
