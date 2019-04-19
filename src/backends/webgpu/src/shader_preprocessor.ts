@@ -89,6 +89,10 @@ const SHADER_PREFIX = `
 
 function getOutputSamplingSnippet(outShape: number[]): string {
   switch (outShape.length) {
+    case 0:
+      return getOutputScalarCoords();
+    case 1:
+      return getOutput1DCoords(outShape as [number]);
     case 2:
       return getOutput2DCoords(outShape as [number, number]);
     case 3:
@@ -97,6 +101,18 @@ function getOutputSamplingSnippet(outShape: number[]): string {
       throw new Error(
           `${outShape.length}-D output sampling is not yet supported`);
   }
+}
+
+function getOutputScalarCoords() {
+  return `int getOutputCoords() {
+    return 0;
+  }`;
+}
+
+function getOutput1DCoords(shape: [number]) {
+  return `uint getOutputCoords(uint index) {
+    return index;
+  }`;
 }
 
 function getOutput2DCoords(shape: [number, number]) {
