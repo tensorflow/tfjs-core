@@ -26,10 +26,6 @@ export function getCoordsDataType(rank: number): string {
     return 'ivec3';
   } else if (rank === 4) {
     return 'ivec4';
-  } else if (rank === 5) {
-    return 'ivec5';
-  } else if (rank === 6) {
-    return 'ivec6';
   } else {
     throw Error(`GPU for rank ${rank} is not yet supported`);
   }
@@ -93,11 +89,11 @@ const SAMPLING_SNIPPETS = `
   }
 
   uint getFlatIndex(ivec2 coords, ivec2 shape) {
-    return coords.x * shape.y + coords.y;
+    return uint(dot(coords, ivec2(shape.y, 1.)));
   }
 
   uint getFlatIndex(ivec3 coords, ivec3 shape) {
-    return coords.x * (shape.y * shape.z) + coords.y * shape.z + coords.z;
+    return uint(dot(coords, ivec3(shape.y * shape.z, shape.z, 1.)));
   }
 `;
 
