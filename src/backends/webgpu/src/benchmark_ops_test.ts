@@ -17,27 +17,47 @@
 
 import * as tf from './index';
 
-xdescribe('Ops benchmarks', () => {
-  it('matMul', async () => {
+describe('Ops benchmarks', () => {
+  beforeEach(async () => {
     await tf.ready;
+  });
 
+  async function time(trials: number, reps: number,
+                      doRep: () => void, endTrial: () => Promise<void>) {
     const times = [];
 
-    const a = tf.randomNormal([500, 500]);
-    const b = tf.randomNormal([500, 500]);
-
-    let c = tf.matMul(a, b);
-    await c.data();
-
-    for (let i = 0; i < 100; i++) {
+    for (let t = 0; t < trials; ++t) {
       const start = performance.now();
-      c = tf.matMul(a, b);
-      await c.data();
+      for (let r = 0; r < reps; ++r) {
+        doRep();
+      }
+      await endTrial();
       times.push(performance.now() - start);
     }
 
-    console.log(
-        `Average time ms: ${times.reduce((a, b) => a + b, 0) / times.length}`);
-    console.log(`Min time ms: ${Math.min(...times)}`);
-  });
+    const mean = times.reduce((a, b) => a + b, 0) / trials;
+    const min = Math.min(...times);
+    const fmt = (n: number) => n.toFixed(3);
+    console.log(`Mean time: ${fmt(mean)} ms -> ${fmt(mean / reps)} / rep`);
+    console.log(`Min time: ${fmt(min)} ms -> ${fmt(min / reps)} / rep`);
+  }
+
+  xit('matMul', async () => {
+    let a = tf.randomNormal([500, 500]);
+    const b = tf.randomNormal([500, 500]);
+
+    {
+      const c = tf.matMul(a, b);
+      await c.data();
+      c.dispose();
+    }
+
+    await time(5, 50, () => {
+      const c = tf.matMul(a, b);
+      a.dispose();
+      a = c;
+    }, async () => {
+      await a.data();
+    });
+  }, 60000);
 });
