@@ -25,6 +25,7 @@ import * as shaderc from '@webgpu/shaderc';
 import * as binary_op from './kernels/binary_op_webgpu';
 import {BinaryOpProgram} from './kernels/binary_op_webgpu';
 import {MatMulProgram} from './kernels/matmul_webgpu';
+import {PadProgram} from './kernels/pad_webgpu';
 import * as unary_op from './kernels/unary_op_webgpu';
 import {UnaryOpProgram} from './kernels/unary_op_webgpu';
 import * as webgpu_program from './kernels/webgpu_program';
@@ -154,9 +155,10 @@ export class WebGPUBackend extends KernelBackend {
     return Tensor.make(shape, {}, dtype, this) as T;
   }
 
-  private compileAndRun(
+  private compileAndRun<
+      K extends {dtype: DataType, size: number, dataId: {}, shape: number[]}>(
       program: webgpu_program.WebGPUProgram, inputs: Tensor[],
-      output?: Tensor) {
+      output?: Tensor): K {
     if (output == null) {
       output = this.makeOutputArray(program.outputShape, inputs[0].dtype);
     }
@@ -196,7 +198,13 @@ export class WebGPUBackend extends KernelBackend {
     if (ENV.get('WEBGPU_IMMEDIATE_EXECUTION_ENABLED')) {
       this.submitQueue();
     }
-    return output;
+    return output as {} as K;
+  }
+
+  pad<T extends Tensor>(
+      x: T, paddings: Array<[number, number]>, constantValue: number): T {
+    const program = new PadProgram(x.shape, paddings, constantValue);
+    return this.compileAndRun(program, [x]);
   }
 
   add(a: Tensor, b: Tensor): Tensor {
