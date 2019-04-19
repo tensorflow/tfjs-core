@@ -22,8 +22,9 @@ import './flags_webgpu';
 import {DataMover, DataType, ENV, KernelBackend, Rank, ShapeMap, Tensor, tensor1d, Tensor3D, util} from '@tensorflow/tfjs-core';
 import * as shaderc from '@webgpu/shaderc';
 
+import * as binary_op from './kernels/binary_op_webgpu';
+import {BinaryOpProgram} from './kernels/binary_op_webgpu';
 import {MatMulProgram} from './kernels/matmul_webgpu';
-import {MultiplyProgram} from './kernels/multiply_webgpu';
 import * as webgpu_program from './kernels/webgpu_program';
 import {WebGPUBinary} from './kernels/webgpu_program';
 
@@ -190,7 +191,7 @@ export class WebGPUBackend extends KernelBackend {
 
   multiply(a: Tensor, b: Tensor): Tensor {
     const output = Tensor.make(a.shape, {}, a.dtype, this);
-    const program = new MultiplyProgram(output.shape);
+    const program = new BinaryOpProgram(binary_op.MUL, output.shape);
 
     return this.compileAndRun(program, [a, b], output) as Tensor;
   }
