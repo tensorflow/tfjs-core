@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {DataType} from '@tensorflow/tfjs-core';
+import {DataType, util} from '@tensorflow/tfjs-core';
 
 export function getCoordsDataType(rank: number): string {
   if (rank <= 1) {
@@ -140,11 +140,13 @@ function getOutput2DCoords(shape: [number, number]) {
 }
 
 function getOutput3DCoords(shape: [number, number, number]) {
+  const strides = util.computeStrides(shape);
+
   return `ivec3 getOutputCoords(uint index) {
-    uint d = index / ${shape[1] * shape[2]};
-    index -= d * ${shape[1] * shape[2]};
-    uint r = index / ${shape[2]};
-    uint c = index - r * ${shape[2]};
+    uint d = index / ${strides[0]};
+    index -= d * ${strides[0]};
+    uint r = index / ${strides[1]};
+    uint c = index - r * ${strides[1]};
 
     return ivec3(d, r, c);
   }`;
