@@ -16,6 +16,9 @@
  */
 
 import {util} from '@tensorflow/tfjs-core';
+
+import {getCoordsDataType} from '../shader_preprocessor';
+
 import {WebGPUProgram} from './webgpu_program';
 
 export class PadProgram implements WebGPUProgram {
@@ -29,15 +32,44 @@ export class PadProgram implements WebGPUProgram {
       constantValue: number) {
     this.outputShape = paddings.map(
         (p, i) => p[0] /* beforePad */ + xShape[i] + p[1] /* afterPad */);
-    // const rank = xShape.length;
+    const rank = xShape.length;
+    const type = getCoordsDataType(rank);
     this.dispatch = [util.sizeFromShape(this.outputShape), 1, 1];
 
+    const start = paddings.map(p => p[0]).join(',');
+    const end = paddings.map((p, i) => p[0] + xShape[i]).join(',');
+
+    console.log('start', start);
+    console.log('end', end);
+    console.log('type', type);
+    console.log('OUTPUT SHAPE', this.outputShape);
+    console.log('X SHAPE', xShape);
+
     this.userCode = `
+      ${type} start = ${type}(${start});
+      ${type} end = ${type}(${end});
+
+      ivec2 getOutputCoords(uint index) {
+        uint r = index / ${this.outputShape[1]};
+        uint c = index - r * ${this.outputShape[1]};
+        return ivec2(r, c);
+      }
+
+      int getFlatIndex(ivec2 coords, ivec2 shape) {
+        return coords.x * shape.y + coords.y;
+      }
+
       void main() {
         uint index = gl_GlobalInvocationID.x;
-        float a = A[index];
-        float b = B[index];
-        result[index] = binaryOperation(a, b);
+        ${type} outC = getOutputCoords(index);
+
+        if(any(lessThan(outC, start)) || any(greaterThanEqual(outC, end))) {
+          result[index] = ${constantValue}; // TODO: UPLOAD AS UNIFORM
+        } else {
+          ${type} coords = outC - start;
+          ${type} xShape = ${type}(${xShape.join(',')});
+          result[index] = x[getFlatIndex(coords, xShape)];
+        }
       }
     `;
   }
