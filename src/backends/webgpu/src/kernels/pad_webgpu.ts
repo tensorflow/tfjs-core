@@ -53,18 +53,6 @@ export class PadProgram implements WebGPUProgram {
       ${type} start = ${startValue};
       ${type} end = ${endValue};
 
-      uint getFlatIndex(uint coord, uint shape) {
-        return coord;
-      }
-
-      uint getFlatIndex(ivec2 coords, ivec2 shape) {
-        return coords.x * shape.y + coords.y;
-      }
-
-      uint getFlatIndex(ivec3 coords, ivec3 shape) {
-        return coords.x * (shape.y * shape.z) + coords.y * shape.z + coords.z;
-      }
-
       void main() {
         uint index = gl_GlobalInvocationID.x;
         ${type} outC = getOutputCoords(index);

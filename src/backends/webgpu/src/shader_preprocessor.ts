@@ -77,7 +77,7 @@ export function makeShader(
 
   const source = [
     SHADER_PREFIX, tileSizeSnippet, prefixSnippets.join('\n'),
-    outputSamplingSnippet, userCode
+    SAMPLING_SNIPPETS, outputSamplingSnippet, userCode
   ].join('\n');
 
   return source;
@@ -85,6 +85,20 @@ export function makeShader(
 
 const SHADER_PREFIX = `
   #version 450
+`;
+
+const SAMPLING_SNIPPETS = `
+  uint getFlatIndex(uint coord, uint shape) {
+    return coord;
+  }
+
+  uint getFlatIndex(ivec2 coords, ivec2 shape) {
+    return coords.x * shape.y + coords.y;
+  }
+
+  uint getFlatIndex(ivec3 coords, ivec3 shape) {
+    return coords.x * (shape.y * shape.z) + coords.y * shape.z + coords.z;
+  }
 `;
 
 function getOutputSamplingSnippet(outShape: number[]): string {
