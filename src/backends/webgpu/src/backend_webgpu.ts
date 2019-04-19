@@ -189,6 +189,13 @@ export class WebGPUBackend extends KernelBackend {
     return output;
   }
 
+  add(a: Tensor, b: Tensor): Tensor {
+    const output = Tensor.make(a.shape, {}, a.dtype, this);
+    const program = new BinaryOpProgram(binary_op.ADD, output.shape);
+
+    return this.compileAndRun(program, [a, b], output) as Tensor;
+  }
+
   multiply(a: Tensor, b: Tensor): Tensor {
     const output = Tensor.make(a.shape, {}, a.dtype, this);
     const program = new BinaryOpProgram(binary_op.MUL, output.shape);

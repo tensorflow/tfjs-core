@@ -22,16 +22,6 @@ import * as tf from './index';
 describe('WebGPU backend', () => {
   beforeAll(async () => await tf.ready);
 
-  it('A * B elementwise', async () => {
-    const a = tf.tensor1d([1, 2, 3]);
-    const b = tf.tensor1d([3, 4, 5]);
-    const c = tf.mul(a, b);
-
-    const cData = await c.data();
-
-    expectArraysClose(cData, new Float32Array([3, 8, 15]));
-  });
-
   it('matMul A x B odd shared dim', async () => {
     const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
     const b = tf.tensor2d([0, 1, -3, 2, 2, 1], [3, 2]);
