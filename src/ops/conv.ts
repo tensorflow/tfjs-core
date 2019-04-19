@@ -15,8 +15,8 @@
  * =============================================================================
  */
 
-import {ENV} from '../environment';
-import {Tensor2D, Tensor3D, Tensor4D, Tensor5D} from '../tensor';
+import {ENGINE} from '../engine';
+import {Tensor, Tensor2D, Tensor3D, Tensor4D, Tensor5D} from '../tensor';
 import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import * as util from '../util';
@@ -188,7 +188,8 @@ function conv2d_<T extends Tensor3D|Tensor4D>(
   const convInfo = conv_util.computeConv2DInfo(
       x4D.shape, $filter.shape, strides, dilations, pad, dimRoundingMode);
 
-  const grad = (dy: Tensor4D) => {
+  const grad = (dy: Tensor4D, saved: Tensor[]) => {
+    const [$filter, x4D] = saved as [Tensor4D, Tensor4D];
     util.assert(
         conv_util.tupleValuesAreOne(dilations),
         () => 'Error in gradient of conv2D: dilation rates greater than 1 ' +
@@ -200,9 +201,12 @@ function conv2d_<T extends Tensor3D|Tensor4D>(
     };
   };
 
-  const res = ENV.engine.runKernel(
-      backend => backend.conv2d(x4D, $filter, convInfo), {x: x4D, $filter},
-      grad);
+  const res = ENGINE.runKernel((backend, save) => {
+    const res = backend.conv2d(x4D, $filter, convInfo);
+    save([$filter, x4D]);
+
+    return res;
+  }, {x: x4D, $filter}, grad);
 
   if (reshapedTo4D) {
     return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as T;
@@ -281,21 +285,26 @@ function conv2dDerInput_<T extends Tensor3D|Tensor4D>(
 
   const dilations = 1;
 
-  const grad = (ddx: Tensor4D) => {
+  const grad = (ddx: Tensor4D, saved: Tensor[]) => {
     const dataFormat = 'NHWC';
+    const [filter, dy4D] = saved;
     return {
       dy4D: () => conv2d(
-          ddx, filter, strides, pad, dataFormat, dilations, dimRoundingMode),
+          ddx, filter as Tensor4D, strides, pad, dataFormat, dilations,
+          dimRoundingMode),
       filter: () => conv2dDerFilter(
-          ddx, dy4D, filter.shape, strides, pad, dimRoundingMode)
+          ddx, dy4D as Tensor4D, (filter as Tensor4D).shape, strides, pad,
+          dimRoundingMode)
     };
   };
 
   const convInfo = conv_util.computeConv2DInfo(
       xShape4D, filter.shape, strides, dilations, pad, dimRoundingMode);
-  const res = ENV.engine.runKernel(
-      backend => backend.conv2dDerInput(dy4D, filter, convInfo), {dy4D, filter},
-      grad);
+  const res = ENGINE.runKernel((backend, save) => {
+    const res = backend.conv2dDerInput(dy4D, filter, convInfo);
+    save([filter, dy4D]);
+    return res;
+  }, {dy4D, filter}, grad);
   if (reshapedTo4D) {
     return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as T;
   }
@@ -363,7 +372,7 @@ function conv2dDerFilter_<T extends Tensor3D|Tensor4D>(
 
   const convInfo = conv_util.computeConv2DInfo(
       x4D.shape, filterShape, strides, dilations, pad, dimRoundingMode);
-  return ENV.engine.runKernel(
+  return ENGINE.runKernel(
       backend => backend.conv2dDerFilter(x4D, dy4D, convInfo), {x4D, dy4D});
 }
 
@@ -492,21 +501,26 @@ function depthwiseConv2d_<T extends Tensor3D|Tensor4D>(
       x4D.shape, $filter.shape, strides, dilations, pad, dimRoundingMode,
       true /* depthwise */);
 
-  const grad = (dy: Tensor4D) => {
+  const grad = (dy: Tensor4D, saved: Tensor[]) => {
     util.assert(
         conv_util.tupleValuesAreOne(dilations),
         () => 'Error in gradient of depthwiseConv2d: dilation rates ' +
             `greater than 1 are not yet supported. Got dilations ` +
             `'${dilations}'`);
+    const [x4D, $filter] = saved;
     return {
-      x: () => depthwiseConv2dDerInput(x4D.shape, dy, $filter, convInfo),
-      $filter: () => depthwiseConv2dDerFilter(x4D, dy, $filter.shape, convInfo),
+      x: () => depthwiseConv2dDerInput(
+          (x4D as Tensor4D).shape, dy, $filter as Tensor4D, convInfo),
+      $filter: () => depthwiseConv2dDerFilter(
+          x4D as Tensor4D, dy, ($filter as Tensor4D).shape, convInfo),
     };
   };
 
-  const res = ENV.engine.runKernel(
-      backend => backend.depthwiseConv2D(x4D, $filter, convInfo),
-      {x: x4D, $filter}, grad);
+  const res = ENGINE.runKernel((backend, save) => {
+    const res = backend.depthwiseConv2D(x4D, $filter, convInfo);
+    save([x4D, $filter]);
+    return res;
+  }, {x: x4D, $filter}, grad);
   if (reshapedTo4D) {
     return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as T;
   }
@@ -656,7 +670,7 @@ function depthwiseConv2dDerInput<T extends Tensor3D|Tensor4D>(
     reshapedTo4D = true;
     dy4D = dy.as4D(1, dy.shape[0], dy.shape[1], dy.shape[2]);
   }
-  const res = ENV.engine.runKernel(
+  const res = ENGINE.runKernel(
       backend => backend.depthwiseConv2DDerInput(dy4D, filter, convInfo),
       {dy4D});
   if (reshapedTo4D) {
@@ -676,7 +690,7 @@ function depthwiseConv2dDerFilter<T extends Tensor3D|Tensor4D>(
   if (dy4D.rank === 3) {
     dy4D = dy.as4D(1, dy.shape[0], dy.shape[1], dy.shape[2]);
   }
-  return ENV.engine.runKernel(
+  return ENGINE.runKernel(
       backend => backend.depthwiseConv2DDerFilter(x4D, dy4D, convInfo),
       {x4D, dy4D});
 }
@@ -700,10 +714,10 @@ function depthwiseConv2dDerFilter<T extends Tensor3D|Tensor4D>(
  *   - For more info, see this guide:
  *     [https://www.tensorflow.org/api_guides/python/nn#Convolution](
  *          https://www.tensorflow.org/api_guides/python/nn#Convolution)
- * @param dataFormat: An optional string from: "NHWC", "NCHW". Defaults to
- *     "NHWC". Specify the data format of the input and output data. With the
- *     default format "NHWC", the data is stored in the order of: [batch,
- *     depth, height, width, channels]. Only "NHWC" is currently supported.
+ * @param dataFormat: An optional string from: "NDHWC", "NCDHW". Defaults to
+ *     "NDHWC". Specify the data format of the input and output data. With the
+ *     default format "NDHWC", the data is stored in the order of: [batch,
+ *     depth, height, width, channels]. Only "NDHWC" is currently supported.
  * @param dilations The dilation rates: `[dilationDepth, dilationHeight,
  *     dilationWidth]` in which we sample input values across the height
  *     and width dimensions in atrous convolution. Defaults to `[1, 1, 1]`.
@@ -716,7 +730,7 @@ function depthwiseConv2dDerFilter<T extends Tensor3D|Tensor4D>(
 function conv3d_<T extends Tensor4D|Tensor5D>(
     x: T|TensorLike, filter: Tensor5D|TensorLike,
     strides: [number, number, number]|number, pad: 'valid'|'same',
-    dataFormat: 'NHWC'|'NCHW' = 'NHWC',
+    dataFormat: 'NDHWC'|'NCDHW' = 'NDHWC',
     dilations: [number, number, number]|number = [1, 1, 1]): T {
   const $x = convertToTensor(x, 'x', 'conv3d');
   const $filter = convertToTensor(filter, 'filter', 'conv3d');
@@ -744,29 +758,33 @@ function conv3d_<T extends Tensor4D|Tensor5D>(
       () => 'Error in conv3D: Either strides or dilations must be 1. ' +
           `Got strides ${strides} and dilations '${dilations}'`);
   util.assert(
-      dataFormat === 'NHWC',
+      dataFormat === 'NDHWC',
       () => `Error in conv3d: got dataFormat of ${
-          dataFormat} but only NHWC is currently supported.`);
+          dataFormat} but only NDHWC is currently supported.`);
 
   const convInfo = conv_util.computeConv3DInfo(
       x5D.shape, $filter.shape, strides, dilations, pad);
 
-  const grad = (dy: Tensor5D) => {
+  const grad = (dy: Tensor5D, saved: Tensor[]) => {
     util.assert(
         tupleValuesAreOne(dilations),
         () =>
             'Error in gradient of conv3D: dilation rates greater than 1 are ' +
             `not yet supported in gradients. Got dilations '${dilations}'`);
-
+    const [x5D, $filter] = saved;
     return {
-      x: () => conv3dDerInput_(x5D.shape, dy, $filter, strides, pad),
-      $filter: () => conv3dDerFilter_(x5D, dy, $filter.shape, strides, pad)
+      x: () => conv3dDerInput_(
+          (x5D as Tensor5D).shape, dy, $filter as Tensor5D, strides, pad),
+      $filter: () => conv3dDerFilter_(
+          x5D as Tensor5D, dy, ($filter as Tensor5D).shape, strides, pad)
     };
   };
 
-  const res = ENV.engine.runKernel(
-      backend => backend.conv3d(x5D, $filter, convInfo), {x: x5D, $filter},
-      grad);
+  const res = ENGINE.runKernel((backend, save) => {
+    const res = backend.conv3d(x5D, $filter, convInfo);
+    save([x5D, $filter]);
+    return res;
+  }, {x: x5D, $filter}, grad);
   if (reshapedTo5D) {
     return res.as4D(res.shape[1], res.shape[2], res.shape[3], res.shape[4]) as
         T;
@@ -840,7 +858,7 @@ function conv3dDerInput_<T extends Tensor4D|Tensor5D>(
 
   const convInfo = conv_util.computeConv3DInfo(
       xShape5D, filter.shape, strides, dilations, pad);
-  const res = ENV.engine.runKernel(
+  const res = ENGINE.runKernel(
       backend => backend.conv3dDerInput(dy5D, filter, convInfo), {dy5D});
   if (reshapedTo5D) {
     return res.as4D(res.shape[1], res.shape[2], res.shape[3], res.shape[4]) as
@@ -901,7 +919,7 @@ function conv3dDerFilter_<T extends Tensor4D|Tensor5D>(
 
   const convInfo = conv_util.computeConv3DInfo(
       x5D.shape, filterShape, strides, dilations, pad);
-  return ENV.engine.runKernel(
+  return ENGINE.runKernel(
       backend => backend.conv3dDerFilter(x5D, dy5D, convInfo), {x5D, dy5D});
 }
 

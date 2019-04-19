@@ -1,10 +1,10 @@
 node_modules/
-scripts/**/*.js
 coverage/
 npm-debug.log
 yarn-error.log
 .DS_Store
 dist/
+bazel-out/
 .idea/
 *.tgz
 **/*.pyc
@@ -12,4 +12,3 @@ dist/
 yalc.lock
 .rpt2_cache/
 package/
-integration_tests/benchmarks/ui/bundle.js

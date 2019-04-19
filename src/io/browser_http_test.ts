@@ -20,9 +20,7 @@
  */
 
 import * as tf from '../index';
-import {describeWithFlags} from '../jasmine_util';
-import {BROWSER_ENVS, CHROME_ENVS, NODE_ENVS} from '../test_util';
-
+import {BROWSER_ENVS, CHROME_ENVS, describeWithFlags, NODE_ENVS} from '../jasmine_util';
 import {BrowserHTTPRequest, httpRequestRouter, parseUrl} from './browser_http';
 
 // Test data.
@@ -89,7 +87,7 @@ const setupFakeWeightFiles =
      requestInits: {[key: string]: RequestInit}) => {
       windowFetchSpy =
           // tslint:disable-next-line:no-any
-          spyOn(global as any, 'fetch')
+          spyOn(tf.util, 'fetch')
               .and.callFake((path: string, init: RequestInit) => {
                 if (fileBufferMap[path]) {
                   requestInits[path] = init;
@@ -164,9 +162,7 @@ describeWithFlags('browserHTTPRequest-load fetch', NODE_ENVS, () => {
     try {
       tf.io.browserHTTPRequest('./model.json');
     } catch (err) {
-      expect(err.message)
-          .toMatch(
-              /not supported outside the web browser without a fetch polyfill/);
+      expect(err.message).toMatch(/Unable to find fetch polyfill./);
     }
   });
 });
@@ -201,7 +197,7 @@ describeWithFlags('browserHTTPRequest-save', CHROME_ENVS, () => {
 
   beforeEach(() => {
     requestInits = [];
-    spyOn(window, 'fetch').and.callFake((path: string, init: RequestInit) => {
+    spyOn(tf.util, 'fetch').and.callFake((path: string, init: RequestInit) => {
       if (path === 'model-upload-test' || path === 'http://model-upload-test') {
         requestInits.push(init);
         return Promise.resolve(new Response(null, {status: 200}));
@@ -768,7 +764,6 @@ describeWithFlags('browserHTTPRequest-load', BROWSER_ENVS, () => {
         expect(data).toBeDefined();
         done.fail('Loading with fetch rejection succeeded unexpectedly.');
       } catch (err) {
-        expect(err.message).toMatch(/Request for path2\/model.json failed /);
         done();
       }
     });

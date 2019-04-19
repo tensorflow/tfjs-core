@@ -16,8 +16,8 @@
  */
 
 import * as tf from '../index';
-import {describeWithFlags} from '../jasmine_util';
-import {ALL_ENVS, expectArraysClose} from '../test_util';
+import {ALL_ENVS, describeWithFlags} from '../jasmine_util';
+import {expectArraysClose} from '../test_util';
 
 describeWithFlags('transpose', ALL_ENVS, () => {
   it('of scalar is no-op', () => {
@@ -135,6 +135,16 @@ describeWithFlags('transpose', ALL_ENVS, () => {
     const perm = [2, 1, 0];
     const dy = tf.tensor3d([111, 211, 121, 221, 112, 212, 122, 222], [2, 2, 2]);
     const dt = tf.grad(t => t.transpose(perm))(t, dy);
+    expect(dt.shape).toEqual(t.shape);
+    expect(dt.dtype).toEqual('float32');
+    expectArraysClose(dt, [111, 112, 121, 122, 211, 212, 221, 222]);
+  });
+
+  it('gradient with clones', () => {
+    const t = tf.tensor3d([1, 11, 2, 22, 3, 33, 4, 44], [2, 2, 2]);
+    const perm = [2, 1, 0];
+    const dy = tf.tensor3d([111, 211, 121, 221, 112, 212, 122, 222], [2, 2, 2]);
+    const dt = tf.grad(t => t.clone().transpose(perm).clone())(t, dy);
     expect(dt.shape).toEqual(t.shape);
     expect(dt.dtype).toEqual('float32');
     expectArraysClose(dt, [111, 112, 121, 122, 211, 212, 221, 222]);

@@ -1,8 +1,8 @@
 .vscode/
 .rpt2_cache/
+src/**/*_test.ts
 integration_tests/
 scripts/
-src/
 models/
 coverage/
 package/
@@ -19,3 +19,5 @@ ISSUE_TEMPLATE.md
 PULL_REQUEST_TEMPLATE.md
 rollup.config.js
 tsconfig.json
+.yalc/
+yalc.lock

@@ -16,8 +16,8 @@
  */
 
 import * as tf from '../index';
-import {describeWithFlags} from '../jasmine_util';
-import {ALL_ENVS, expectArraysClose} from '../test_util';
+import {ALL_ENVS, describeWithFlags} from '../jasmine_util';
+import {expectArraysClose} from '../test_util';
 import {PARALLELIZE_THRESHOLD} from './reduce_util';
 
 describeWithFlags('unsortedSegmentSum', ALL_ENVS, () => {
@@ -102,6 +102,20 @@ describeWithFlags('unsortedSegmentSum', ALL_ENVS, () => {
     const dy = tf.tensor1d([11, 2, 7]);
     const gradient =
         tf.grad(a => tf.unsortedSegmentSum(a, segmentIds, numSegments))(t, dy);
+
+    expect(gradient.shape).toEqual(t.shape);
+    expectArraysClose(gradient, [11, 7, 11, 2]);
+  });
+
+  it('gradient with clones', () => {
+    const t = tf.tensor1d([1, 2, 3, 4]);
+    const segmentIds = tf.tensor1d([0, 2, 0, 1], 'int32');
+    const numSegments = 3;
+
+    const dy = tf.tensor1d([11, 2, 7]);
+    const gradient = tf.grad(
+        a => tf.unsortedSegmentSum(a.clone(), segmentIds.clone(), numSegments)
+                 .clone())(t, dy);
 
     expect(gradient.shape).toEqual(t.shape);
     expectArraysClose(gradient, [11, 7, 11, 2]);

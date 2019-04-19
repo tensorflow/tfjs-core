@@ -16,9 +16,9 @@
  */
 
 import * as tf from '../index';
-import {describeWithFlags} from '../jasmine_util';
+import {ALL_ENVS, describeWithFlags} from '../jasmine_util';
 import {Tensor5D} from '../tensor';
-import {ALL_ENVS, expectArraysClose} from '../test_util';
+import {expectArraysClose} from '../test_util';
 import {sizeFromShape} from '../util';
 
 // Generates small floating point inputs to avoid overflows
@@ -90,7 +90,8 @@ function runGradientConv3DTestCase(
   const w = tf.tensor5d(inputs.filter, filterShape);
 
   const grads = tf.grads(
-      (x: Tensor5D, filter: Tensor5D) => tf.conv3d(x, filter, stride, pad));
+      (x: Tensor5D, filter: Tensor5D) =>
+          tf.conv3d(x.clone(), filter.clone(), stride, pad).clone());
   const [dx, dfilter] = grads([x, w]);
 
   expect(dx.shape).toEqual(x.shape);
@@ -407,30 +408,31 @@ describeWithFlags('conv3d', ALL_ENVS, () => {
     expectArraysClose(result, expectedOutput);
   });
 
-  it('gradient check, x=[1,3,6,1,1] filter=[2,2,1,1,1] s=1 d=1 p=valid', () => {
-    const batch = 1;
-    const inDepth = 3;
-    const inHeight = 6;
-    const inWidth = 1;
-    const inChannels = 1;
-    const outChannels = 1;
-    const fDepth = 2;
-    const fHeight = 2;
-    const fWidth = 1;
-    const pad = 'valid';
-    const stride = 1;
-    const [dx, dfilter] = runGradientConv3DTestCase(
-        batch, inDepth, inHeight, inWidth, inChannels, outChannels, fDepth,
-        fHeight, fWidth, pad, stride);
+  it('gradient with clones, x=[1,3,6,1,1] filter=[2,2,1,1,1] s=1 d=1 p=valid',
+     () => {
+       const batch = 1;
+       const inDepth = 3;
+       const inHeight = 6;
+       const inWidth = 1;
+       const inChannels = 1;
+       const outChannels = 1;
+       const fDepth = 2;
+       const fHeight = 2;
+       const fWidth = 1;
+       const pad = 'valid';
+       const stride = 1;
+       const [dx, dfilter] = runGradientConv3DTestCase(
+           batch, inDepth, inHeight, inWidth, inChannels, outChannels, fDepth,
+           fHeight, fWidth, pad, stride);
 
-    const expectedFilterOutput = [60.0, 70.0, 120.0, 130.0];
-    const expectedOutput = [
-      1.0, 3.0, 3.0, 3.0, 3.0, 2.0, 4.0, 10.0, 10.0, 10.0, 10.0, 6.0, 3.0, 7.0,
-      7.0, 7.0, 7.0, 4.0
-    ];
-    expectArraysClose(dx, expectedOutput);
-    expectArraysClose(dfilter, expectedFilterOutput);
-  });
+       const expectedFilterOutput = [60.0, 70.0, 120.0, 130.0];
+       const expectedOutput = [
+         1.0, 3.0, 3.0, 3.0, 3.0, 2.0, 4.0, 10.0, 10.0, 10.0, 10.0, 6.0, 3.0,
+         7.0, 7.0, 7.0, 7.0, 4.0
+       ];
+       expectArraysClose(dx, expectedOutput);
+       expectArraysClose(dfilter, expectedFilterOutput);
+     });
 
   it('throws when passed x as a non-tensor', () => {
     const inputDepth = 1;
@@ -465,5 +467,20 @@ describeWithFlags('conv3d', ALL_ENVS, () => {
 
     const result = tf.conv3d(x, w, stride, pad);
     expectArraysClose(result, [2, 4, 6, 8]);
+  });
+
+  it('throws when data format not NDHWC', () => {
+    const inputDepth = 1;
+    const outputDepth = 1;
+    const inputShape: [number, number, number, number] = [2, 2, 1, inputDepth];
+    const pad = 'valid';
+    const fSize = 1;
+    const stride = 1;
+    const dataFormat = 'NCDHW';
+
+    const x = tf.tensor4d([1, 2, 3, 4], inputShape);
+    const w = tf.tensor5d([2], [fSize, fSize, fSize, inputDepth, outputDepth]);
+
+    expect(() => tf.conv3d(x, w, stride, pad, dataFormat)).toThrowError();
   });
 });

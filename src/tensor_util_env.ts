@@ -35,7 +35,7 @@ export function inferShape(val: TensorLike): number[] {
     shape.push(firstElem.length);
     firstElem = firstElem[0];
   }
-  if (Array.isArray(val) && ENV.get('TENSORLIKE_CHECK_SHAPE_CONSISTENCY')) {
+  if (Array.isArray(val) && ENV.getBool('TENSORLIKE_CHECK_SHAPE_CONSISTENCY')) {
     deepAssertShapeConsistency(val, shape, []);
   }
 
@@ -96,24 +96,27 @@ export function convertToTensor<T extends Tensor>(
   }
   assertDtype(parseAsDtype, inferredDtype, argName, functionName);
 
-  if (!isTypedArray(x) && !Array.isArray(x) && typeof x !== 'number' &&
-      typeof x !== 'boolean' && typeof x !== 'string') {
+  if ((x == null) ||
+      (!isTypedArray(x) && !Array.isArray(x) && typeof x !== 'number' &&
+       typeof x !== 'boolean' && typeof x !== 'string')) {
+    const type = x == null ? 'null' : (x as {}).constructor.name;
     throw new Error(
         `Argument '${argName}' passed to '${functionName}' must be a ` +
-        `Tensor or TensorLike, but got '${(x as {}).constructor.name}'`);
+        `Tensor or TensorLike, but got '${type}'`);
   }
   const inferredShape = inferShape(x);
   if (!isTypedArray(x) && !Array.isArray(x)) {
     x = [x] as number[];
   }
   const values = inferredDtype !== 'string' ?
-      toTypedArray(x, inferredDtype as DataType, ENV.get('DEBUG')) :
+      toTypedArray(x, inferredDtype as DataType, ENV.getBool('DEBUG')) :
       flatten(x as string[]) as string[];
   return Tensor.make(inferredShape, {values}, inferredDtype);
 }
 
 export function convertToTensorArray<T extends Tensor>(
-    arg: Array<T|TensorLike>, argName: string, functionName: string): T[] {
+    arg: Array<T|TensorLike>, argName: string, functionName: string,
+    parseAsDtype: DataType|'numeric' = 'numeric'): T[] {
   if (!Array.isArray(arg)) {
     throw new Error(
         `Argument ${argName} passed to ${functionName} must be a ` +
@@ -121,5 +124,6 @@ export function convertToTensorArray<T extends Tensor>(
   }
   const tensors = arg as T[];
   return tensors.map(
-      (t, i) => convertToTensor(t, `${argName}[${i}]`, functionName));
+      (t, i) => convertToTensor(t, `${argName}[${i}]`, functionName),
+      parseAsDtype);
 }

@@ -15,12 +15,11 @@
  * =============================================================================
  */
 
-import {ENV} from '../environment';
+import {ENGINE} from '../engine';
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
 import {convertToTensor, convertToTensorArray} from '../tensor_util_env';
 import {DataType, DataTypeMap, Rank, ShapeMap, TensorLike, TensorLike4D} from '../types';
 import * as util from '../util';
-
 import {getAxesPermutation, getInnerMostAxes} from './axis_util';
 import {concat} from './concat_split';
 import {op} from './operation';
@@ -46,7 +45,7 @@ function clone_<T extends Tensor>(x: T|TensorLike): T {
     return {$x: () => dy.toFloat()};
   };
 
-  return ENV.engine.runKernel(
+  return ENGINE.runKernel(
              backend =>
                  Tensor.make($x.shape, {dataId: $x.dataId}, $x.dtype) as T,
              {$x}, der) as T;
@@ -262,7 +261,7 @@ function multinomial_(
   }
   seed = seed || Math.random();
   const logits2D = origRank === 1 ? $logits.as2D(1, -1) : $logits as Tensor2D;
-  const res = ENV.engine.runKernel(
+  const res = ENGINE.runKernel(
       backend => backend.multinomial(logits2D, normalized, numSamples, seed),
       {logits2D});
 
@@ -300,7 +299,7 @@ function oneHot_(
   const grad = (dy: Tensor2D) => {
     return {$indices: () => zeros($indices.shape, 'float32')};
   };
-  const result = ENV.engine.runKernel(
+  const result = ENGINE.runKernel(
       backend => backend.oneHot($indices as Tensor1D, depth, onValue, offValue),
       {$indices}, grad);
   return result.reshape(outShape);
@@ -342,8 +341,7 @@ function reshape_<R2 extends Rank>(
   const grad = (dy: Tensor<R2>) => {
     return {$x: () => dy.reshape($x.shape)};
   };
-  return ENV.engine.runKernel(
-      backend => backend.reshape($x, shape), {$x}, grad);
+  return ENGINE.runKernel(backend => backend.reshape($x, shape), {$x}, grad);
 }
 
 /**
@@ -382,8 +380,7 @@ function cast_<T extends Tensor>(x: T|TensorLike, dtype: DataType): T {
   const grad = (dy: T) => {
     return {$x: () => dy.clone()};
   };
-  return ENV.engine.runKernel(backend => backend.cast($x, dtype), {$x}, grad) as
-      T;
+  return ENGINE.runKernel(backend => backend.cast($x, dtype), {$x}, grad) as T;
 }
 
 /**
@@ -417,7 +414,8 @@ function tile_<T extends Tensor>(x: T|TensorLike, reps: number[]): T {
       $x.rank === reps.length,
       () => `Error in transpose: rank of input ${$x.rank} ` +
           `must match length of reps ${reps}.`);
-  const grad = (dy: T) => {
+  const grad = (dy: T, saved: Tensor[]) => {
+    const [$x] = saved;
     const derX = () => {
       let xGrad = zerosLike($x);
       // TODO(cais): Maybe reduce memory footprint by avoiding repeated
@@ -464,11 +462,15 @@ function tile_<T extends Tensor>(x: T|TensorLike, reps: number[]): T {
             `Gradient for tile operation is not implemented for rank-` +
             `${$x.rank} tensors yet.`);
       }
-      return xGrad;
+      return xGrad as T;
     };
     return {$x: derX};
   };
-  return ENV.engine.runKernel(backend => backend.tile($x, reps), {$x}, grad);
+  return ENGINE.runKernel((backend, save) => {
+    const res = backend.tile($x, reps);
+    save([$x]);
+    return res;
+  }, {$x}, grad);
 }
 
 /**
@@ -564,7 +566,7 @@ function pad_<T extends Tensor>(
   const grad = (dy: T) => {
     return {$x: () => dy.slice(begin, $x.shape)};
   };
-  return ENV.engine.runKernel(
+  return ENGINE.runKernel(
              backend => backend.pad($x, paddings, constantValue), {$x}, grad) as
       T;
 }
@@ -686,7 +688,7 @@ function batchToSpaceND_<T extends Tensor>(
     return {$x: () => dy.spaceToBatchND(blockShape, crops)};
   };
 
-  return ENV.engine.runKernel(
+  return ENGINE.runKernel(
       backend => backend.batchToSpaceND($x, blockShape, crops), {$x}, grad);
 }
 
@@ -771,7 +773,7 @@ function spaceToBatchND_<T extends Tensor>(
     return {$x: () => dy.batchToSpaceND(blockShape, paddings)};
   };
 
-  return ENV.engine.runKernel(
+  return ENGINE.runKernel(
       backend => backend.spaceToBatchND($x, blockShape, paddings), {$x}, grad);
 }
 
@@ -801,7 +803,7 @@ function unstack_(x: Tensor|TensorLike, axis = 0): Tensor[] {
   const grad = (dy: Tensor[]) => {
     return {$x: () => stack(dy, axis)};
   };
-  return ENV.engine.runKernel(backend => backend.unstack($x, axis), {$x}, grad);
+  return ENGINE.runKernel(backend => backend.unstack($x, axis), {$x}, grad);
 }
 
 /**
@@ -841,7 +843,7 @@ function cumsum_<T extends Tensor>(
   const grad = (dy: T) => {
     return {permutedX: () => dy.cumsum(axis, exclusive, !reverse)};
   };
-  let value = ENV.engine.runKernel(
+  let value = ENGINE.runKernel(
                   backend => backend.cumsum(
                       permutedX, permutedAxis, exclusive, reverse),
                   {permutedX}, grad) as T;
@@ -947,7 +949,7 @@ function depthToSpace_(
           blockSize * blockSize} but is ${
           inputDepth} for depthToSpace with input shape ${$x.shape}`);
 
-  return ENV.engine.runKernel(
+  return ENGINE.runKernel(
       backend => backend.depthToSpace($x, blockSize, dataFormat), {$x});
 }
 
