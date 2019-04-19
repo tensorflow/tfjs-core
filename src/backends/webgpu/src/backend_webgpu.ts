@@ -158,10 +158,22 @@ export class WebGPUBackend extends KernelBackend {
     return Tensor.make(shape, {}, dtype, this) as T;
   }
 
+  private tensorToBinding(tensor: Tensor) {
+    const tensorData = this.tensorMap.get(tensor.dataId);
+
+    return {
+      resource: {
+        offset: 0,
+        size: tensor.size * util.bytesPerElement(tensor.dtype),
+        buffer: tensorData.buffer
+      }
+    };
+  }
+
   private compileAndRun<
       K extends {dtype: DataType, size: number, dataId: {}, shape: number[]}>(
-      program: webgpu_program.WebGPUProgram, inputs: Tensor[],
-      output?: Tensor): K {
+      program: webgpu_program.WebGPUProgram,
+      inputs: Tensor[], output?: Tensor, uniforms?: Tensor): K {
     if (output == null) {
       output = this.makeOutputArray(program.outputShape, inputs[0].dtype);
     }
@@ -169,24 +181,21 @@ export class WebGPUBackend extends KernelBackend {
     const {bindGroupLayout, pipeline} = this.getAndSavePipeline(key, () => {
       return webgpu_program.compileProgram(
           this.compiler, this.shaderc.shader_kind.compute, this.compileOpts,
-          this.device, program, inputs, output);
+          this.device, program, inputs, output, uniforms);
     });
+
+    const bindings = [
+      this.tensorToBinding(output),
+      ...inputs.map(i => this.tensorToBinding(i)),
+    ];
+    if (uniforms) {
+      bindings.push(this.tensorToBinding(uniforms));
+    }
 
     // Creating bind groups on the fly should never be a bottleneck.
     const bg = this.device.createBindGroup({
       layout: bindGroupLayout,
-      bindings: inputs.concat(output).map((tensor, i: number) => {
-        const tensorData = this.tensorMap.get(tensor.dataId);
-
-        return {
-          binding: i,
-          resource: {
-            offset: 0,
-            size: tensor.size * util.bytesPerElement(tensor.dtype),
-            buffer: tensorData.buffer
-          }
-        };
-      })
+      bindings: bindings.map((b, i) => ({binding: i, ...b})),
     });
 
     const encoder = this.device.createCommandEncoder({});
@@ -250,6 +259,6 @@ export class WebGPUBackend extends KernelBackend {
         tensor1d([outerShapeA, sharedDim, outerShapeB, batch], 'int32');
     // TODO: dispose mnkb
 
-    return this.compileAndRun(program, [a, b, dimensions], output) as Tensor3D;
+    return this.compileAndRun(program, [a, b], output, dimensions) as Tensor3D;
   }
 }

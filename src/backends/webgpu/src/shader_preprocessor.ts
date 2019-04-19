@@ -31,6 +31,8 @@ export function getCoordsDataType(rank: number): string {
   }
 }
 
+import {WebGPUProgram} from './kernels/webgpu_program';
+
 type GLSLDataType = 'float'|'uint';
 function mapToGlslTypes(type: DataType): GLSLDataType|DataType {
   if (type === 'float32') {
@@ -44,36 +46,51 @@ function mapToGlslTypes(type: DataType): GLSLDataType|DataType {
 
 export function makeShader(
     inputTypes: Array<{dtype: DataType, shape: number[]}>,
-    variableNames: string[], outputData: {dtype: DataType, shape: number[]},
-    userCode: string, tileSize: number): string {
-  let tileSizeSnippet: string;
-  if (tileSize != null) {
-    tileSizeSnippet = `const uint TileSize = ${tileSize};
-    layout (local_size_x = TileSize, local_size_y = TileSize, 
-      local_size_z = 1) in;`;
-  }
+    outputData: {dtype: DataType, shape: number[]},
+    program: WebGPUProgram): string {
   const prefixSnippets: string[] = [];
-  variableNames.forEach((x, i) => {
+
+  if (program.tileSize != null) {
+    const ts = program.tileSize;
+    ts[1] = ts[1] || 1;
+    ts[2] = ts[2] || 1;
     prefixSnippets.push(`
-      layout(std430, set = 0, binding = ${i}) readonly buffer ssb${x} {
+      const uvec3 TileSize = uvec3(${ts[0]}, ${ts[1]}, ${ts[2]});
+      layout (local_size_x = TileSize.x,
+              local_size_y = TileSize.y,
+              local_size_z = TileSize.z) in;
+    `);
+  }
+
+  // Output buffer.
+  prefixSnippets.push(`
+    layout(std430, set = 0, binding = 0) writeonly buffer ssbOut {
+      float result[];
+    };
+  `);
+
+  program.variableNames.forEach((x, i) => {
+    prefixSnippets.push(`
+      layout(std430, set = 0, binding = ${1 + i}) readonly buffer ssb${x} {
         ${mapToGlslTypes(inputTypes[i].dtype)} ${x}[];
       };
     `);
   });
 
-  // Output buffer.
-  prefixSnippets.push(`
-    layout(std430, set = 0, binding = ${
-      variableNames.length}) writeonly buffer ssbOut {
-      float result[];
-    };
-  `);
+  if (program.uniforms) {
+    prefixSnippets.push(`
+      layout(std430, set = 0, binding = ${
+        1 + program.variableNames.length}) readonly buffer Uniforms {
+        ${program.uniforms}
+      };
+    `);
+  }
 
   const outputSamplingSnippet = getOutputSamplingSnippet(outputData.shape);
 
   const source = [
-    SHADER_PREFIX, tileSizeSnippet, prefixSnippets.join('\n'),
-    SAMPLING_SNIPPETS, outputSamplingSnippet, SET_OUTPUT_SNIPPET, userCode
+    SHADER_PREFIX, prefixSnippets.join('\n'), SAMPLING_SNIPPETS,
+    outputSamplingSnippet, SET_OUTPUT_SNIPPET, program.userCode
   ].join('\n');
 
   return source;
