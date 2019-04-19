@@ -15,12 +15,12 @@
  * =============================================================================
  */
 
-import {expectArraysClose} from '@tensorflow/tfjs-core/dist/test_util';
+import * as tf from '@tensorflow/tfjs-core';
 
-import * as tf from './index';
+import * as tfwebgpu from './index';
 
 describe('Unary ops', () => {
-  beforeAll(async () => await tf.ready);
+  beforeAll(async () => await tfwebgpu.ready);
 
   it('relu', async () => {
     const a = tf.tensor1d([1, -2, 0, 3, -0.1]);
@@ -28,7 +28,7 @@ describe('Unary ops', () => {
 
     const cData = await result.data();
 
-    expectArraysClose(cData, new Float32Array([1, 0, 0, 3, 0]));
+    tf.test_util.expectArraysClose(cData, new Float32Array([1, 0, 0, 3, 0]));
   });
 
   it('relu 3D', async () => {
@@ -37,6 +37,6 @@ describe('Unary ops', () => {
 
     const cData = await result.data();
 
-    expectArraysClose(cData, new Float32Array([1, 0, 5, 0]));
+    tf.test_util.expectArraysClose(cData, new Float32Array([1, 0, 5, 0]));
   });
 });

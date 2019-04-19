@@ -15,19 +15,19 @@
  * =============================================================================
  */
 
-import {expectArraysClose} from '@tensorflow/tfjs-core/dist/test_util';
+import * as tf from '@tensorflow/tfjs-core';
 
-import * as tf from './index';
+import * as tfwebgpu from './index';
 
 describe('pad', () => {
-  beforeAll(async () => await tf.ready);
+  beforeAll(async () => await tfwebgpu.ready);
 
   it('Should pad 1D arrays', async () => {
     const a = tf.tensor1d([1, 2, 3, 4, 5, 6], 'int32');
     const b = tf.pad1d(a, [2, 3]);
     const bData = await b.data();
 
-    expectArraysClose(
+    tf.test_util.expectArraysClose(
         bData, new Float32Array([0, 0, 1, 2, 3, 4, 5, 6, 0, 0, 0]));
   });
 
@@ -39,7 +39,7 @@ describe('pad', () => {
     // 0, 2, 0
     // 0, 0, 0
     const bData = await b.data();
-    expectArraysClose(
+    tf.test_util.expectArraysClose(
         bData, new Float32Array([0, 0, 0, 0, 1, 0, 0, 2, 0, 0, 0, 0]));
   });
 
@@ -53,10 +53,11 @@ describe('pad', () => {
     // 0, 4, 5, 6, 0
     // 0, 0, 0, 0, 0
     // 0, 0, 0, 0, 0
-    expectArraysClose(bData, new Float32Array([
-                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 0,
-                        0, 4, 5, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-                      ]));
+    tf.test_util.expectArraysClose(
+        bData, new Float32Array([
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 0,
+          0, 4, 5, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ]));
   });
 
   it('should pad 3D arrays', async () => {
@@ -64,10 +65,11 @@ describe('pad', () => {
     const b = tf.pad(a, [[1, 0], [0, 1], [2, 2]]);
     const bData = await b.data();
 
-    expectArraysClose(bData, new Float32Array([
-                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2,
-                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 4, 0, 0, 0, 0,
-                        0, 0, 0, 0, 0, 0, 5, 6, 0, 0, 0, 0, 0, 0, 0, 0
-                      ]));
+    tf.test_util.expectArraysClose(
+        bData, new Float32Array([
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 4, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 5, 6, 0, 0, 0, 0, 0, 0, 0, 0
+        ]));
   });
 });

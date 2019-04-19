@@ -15,12 +15,12 @@
  * =============================================================================
  */
 
-import {expectArraysClose} from '@tensorflow/tfjs-core/dist/test_util';
+import * as tf from '@tensorflow/tfjs-core';
 
-import * as tf from './index';
+import * as tfwebgpu from './index';
 
 describe('Binary ops', () => {
-  beforeAll(async () => await tf.ready);
+  beforeAll(async () => await tfwebgpu.ready);
 
   it('A * B', async () => {
     const a = tf.tensor1d([1, 2, 3]);
@@ -29,7 +29,7 @@ describe('Binary ops', () => {
 
     const cData = await c.data();
 
-    expectArraysClose(cData, new Float32Array([3, 8, 15]));
+    tf.test_util.expectArraysClose(cData, new Float32Array([3, 8, 15]));
   });
 
   it('A + B', async () => {
@@ -39,6 +39,6 @@ describe('Binary ops', () => {
 
     const cData = await c.data();
 
-    expectArraysClose(cData, new Float32Array([4, 6, 8]));
+    tf.test_util.expectArraysClose(cData, new Float32Array([4, 6, 8]));
   });
 });

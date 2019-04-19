@@ -151,7 +151,8 @@ export class WebGPUBackend extends KernelBackend {
     return this.binaryCache[key];
   }
 
-  private makeOutputArray<T extends Tensor>(shape: number[], dtype: DataType) {
+  private makeOutputArray<T extends Tensor>(shape: number[], dtype: DataType):
+      T {
     return Tensor.make(shape, {}, dtype, this) as T;
   }
 
