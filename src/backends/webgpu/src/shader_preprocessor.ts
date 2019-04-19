@@ -132,6 +132,8 @@ function getOutput1DCoords(shape: [number]) {
 }
 
 function getOutput2DCoords(shape: [number, number]) {
+  // TODO: See whether using a 2D/3D dispatch to avoid division would improve
+  // performance.
   return `
     ivec2 getOutputCoords(uint index) {
       uint r = index / ${shape[1]};
