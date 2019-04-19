@@ -15,11 +15,12 @@
  * =============================================================================
  */
 
-import {expectArraysClose} from '@tensorflow/tfjs-core/dist/test_util';
+import {test_util} from '@tensorflow/tfjs-core';
+import {describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_util';
 
 import * as tf from './index';
 
-describe('WebGPU backend', () => {
+describeWithFlags('WebGPU backend', {}, () => {
   beforeAll(async () => await tf.ready);
 
   it('A * B elementwise', async () => {
@@ -29,7 +30,7 @@ describe('WebGPU backend', () => {
 
     const cData = await c.data();
 
-    expectArraysClose(cData, new Float32Array([3, 8, 15]));
+    test_util.expectArraysClose(cData, new Float32Array([3, 8, 15]));
   });
 
   it('matMul A x B odd shared dim', async () => {
@@ -40,7 +41,7 @@ describe('WebGPU backend', () => {
     const cData = await c.data();
 
     expect(c.shape).toEqual([2, 2]);
-    expectArraysClose(cData, new Float32Array([0, 8, -3, 20]));
+    test_util.expectArraysClose(cData, new Float32Array([0, 8, -3, 20]));
   });
 
   it('matMul A x B multiple tiles', async () => {
@@ -61,7 +62,7 @@ describe('WebGPU backend', () => {
     const cData = await c.data();
 
     expect(c.shape).toEqual([8, 8]);
-    expectArraysClose(
+    test_util.expectArraysClose(
         cData, new Float32Array([
           49,  53,  25,  21,  8,   25,  33,  52,  121, 133, 57,  49,  12,
           45,  69,  136, 193, 213, 89,  77,  16,  65,  105, 220, 265, 293,
@@ -79,7 +80,8 @@ describe('WebGPU backend', () => {
     const cData = await c.data();
 
     expect(c.shape).toEqual([2, 3]);
-    expectArraysClose(cData, new Float32Array([9, 12, 15, 19, 26, 33]));
+    test_util.expectArraysClose(
+        cData, new Float32Array([9, 12, 15, 19, 26, 33]));
   });
 
   it('works when chained', async () => {
@@ -94,7 +96,8 @@ describe('WebGPU backend', () => {
     const dData = await d.data();
 
     expect(d.shape).toEqual([2, 3]);
-    expectArraysClose(dData, new Float32Array([0, 12, 7.5, 0, 6.5, 66]));
+    test_util.expectArraysClose(
+        dData, new Float32Array([0, 12, 7.5, 0, 6.5, 66]));
   });
 
   it('it works in graph mode.', async () => {
@@ -109,7 +112,8 @@ describe('WebGPU backend', () => {
     const d = tf.mul(c, f);
 
     const dData = await d.data();
-    expectArraysClose(dData, new Float32Array([0, 12, 7.5, 0, 6.5, 66]));
+    test_util.expectArraysClose(
+        dData, new Float32Array([0, 12, 7.5, 0, 6.5, 66]));
     tf.ENV.set('WEBGPU_IMMEDIATE_EXECUTION_ENABLED', savedFlag);
   });
 });

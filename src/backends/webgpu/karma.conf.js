@@ -25,24 +25,23 @@ const karmaTypescriptConfig = {
 module.exports = function(config) {
   config.set({
     basePath: '',
-    frameworks: ['jasmine', 'karma-typescript'],
+    frameworks: ['browserify', 'jasmine', 'karma-typescript'],
     files: [
-      {pattern: 'src/**/*.ts'}
+      {pattern: 'src/**/*.ts'},
+      {pattern: 'node_modules/@tensorflow/tfjs-core/dist/**/*_test.js'},
     ],
-    preprocessors: {'**/*.ts': ['karma-typescript']},
+    exclude: ['test_node.js'],
+    preprocessors: {
+      '**/*.ts': ['karma-typescript'],
+      '**/*_test.js': ['browserify'],
+    },
     karmaTypescriptConfig,
     reporters: ['progress', 'karma-typescript'],
     port: 9876,
     colors: true,
     logLevel: config.LOG_INFO,
-    autoWatch: false,
     browsers: ['Chrome', 'chrome_webgpu'],
-    singleRun: true,
-    customLaunchers: {
-      chrome_webgpu: {
-        base: 'Chrome',
-        flags: ['--enable-unsafe-webgpu']
-      }
-    }
+    customLaunchers:
+        {chrome_webgpu: {base: 'Chrome', flags: ['--enable-unsafe-webgpu']}}
   })
 }
