@@ -39,24 +39,16 @@ export class PadProgram implements WebGPUProgram {
     const start = paddings.map(p => p[0]).join(',');
     const end = paddings.map((p, i) => p[0] + xShape[i]).join(',');
 
-    console.log('start', start);
-    console.log('end', end);
-    console.log('type', type);
-    console.log('OUTPUT SHAPE', this.outputShape);
-    console.log('X SHAPE', xShape);
-
     this.userCode = `
       ${type} start = ${type}(${start});
       ${type} end = ${type}(${end});
 
-      ivec2 getOutputCoords(uint index) {
-        uint r = index / ${this.outputShape[1]};
-        uint c = index - r * ${this.outputShape[1]};
-        return ivec2(r, c);
-      }
-
       int getFlatIndex(ivec2 coords, ivec2 shape) {
         return coords.x * shape.y + coords.y;
+      }
+
+      int getFlatIndex(ivec3 coords, ivec3 shape) {
+        return coords.x * (shape.y * shape.z) + coords.y * shape.z + coords.z;
       }
 
       void main() {

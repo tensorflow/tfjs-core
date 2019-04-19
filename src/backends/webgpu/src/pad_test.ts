@@ -31,7 +31,7 @@ describe('pad', () => {
         bData, new Float32Array([0, 0, 1, 2, 3, 4, 5, 6, 0, 0, 0]));
   });
 
-  fit('Should pad 2D arrays', async () => {
+  it('Should pad 2D arrays', async () => {
     const a = tf.tensor2d([[1], [2]], [2, 1], 'int32');
     const b = tf.pad2d(a, [[1, 1], [1, 1]]);
     // 0, 0, 0
@@ -61,5 +61,24 @@ describe('pad', () => {
     //                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 0,
     //                     0, 4, 5, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
     //                   ]));
+  });
+
+  fit('should pad 3D arrays', async () => {
+    const a = tf.tensor3d([1, 2, 3, 4, 5, 6], [3, 1, 2]);
+    const b = tf.pad(a, [[1, 0], [0, 1], [2, 2]]);
+    const bData = await b.data();
+
+    console.log(bData);
+    // 14: 1
+    // 15: 2
+    // 26: 3
+    // 27: 4
+    // 38: 5
+    // 39: 6
+    expectArraysClose(bData, new Float32Array([
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2,
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 4, 0, 0, 0, 0,
+                        0, 0, 0, 0, 0, 0, 5, 6, 0, 0, 0, 0, 0, 0, 0, 0
+                      ]));
   });
 });

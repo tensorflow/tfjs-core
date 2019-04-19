@@ -47,8 +47,9 @@ function mapToGlslTypes(type: DataType): GLSLDataType|DataType {
 };
 
 export function makeShader(
-    inputTypes: DataType[], variableNames: string[], userCode: string,
-    tileSize: number): string {
+    inputTypes: Array<{dtype: DataType, shape: number[]}>,
+    variableNames: string[], outputData: {dtype: DataType, shape: number[]},
+    userCode: string, tileSize: number): string {
   let tileSizeSnippet: string;
   if (tileSize != null) {
     tileSizeSnippet = `const uint TileSize = ${tileSize};
@@ -59,7 +60,7 @@ export function makeShader(
   variableNames.forEach((x, i) => {
     prefixSnippets.push(`
       layout(std430, set = 0, binding = ${i}) readonly buffer ssb${x} {
-        ${mapToGlslTypes(inputTypes[i])} ${x}[];
+        ${mapToGlslTypes(inputTypes[i].dtype)} ${x}[];
       };
     `);
   });
@@ -72,12 +73,49 @@ export function makeShader(
     };
   `);
 
+  const outputSamplingSnippet = getOutputSamplingSnippet(outputData.shape);
+
   const source = [
-    SHADER_PREFIX, tileSizeSnippet, prefixSnippets.join('\n'), userCode
+    SHADER_PREFIX, tileSizeSnippet, prefixSnippets.join('\n'),
+    outputSamplingSnippet, userCode
   ].join('\n');
+
   return source;
 }
 
 const SHADER_PREFIX = `
   #version 450
 `;
+
+function getOutputSamplingSnippet(outShape: number[]): string {
+  switch (outShape.length) {
+    case 2:
+      return getOutput2DCoords(outShape as [number, number]);
+    case 3:
+      return getOutput3DCoords(outShape as [number, number, number]);
+    default:
+      throw new Error(
+          `${outShape.length}-D output sampling is not yet supported`);
+  }
+}
+
+function getOutput2DCoords(shape: [number, number]) {
+  return `
+    ivec2 getOutputCoords(uint index) {
+      uint r = index / ${shape[1]};
+      uint c = index - r * ${shape[1]};
+      return ivec2(r, c);
+    }
+  `;
+}
+
+function getOutput3DCoords(shape: [number, number, number]) {
+  return `ivec3 getOutputCoords(uint index) {
+    uint d = index / ${shape[1] * shape[2]};
+    index -= d * ${shape[1] * shape[2]};
+    uint r = index / ${shape[2]};
+    uint c = index - r * ${shape[2]};
+
+    return ivec3(d, r, c);
+  }`;
+}
