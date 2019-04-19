@@ -38,16 +38,30 @@ export class PadProgram implements WebGPUProgram {
 
     const start = paddings.map(p => p[0]).join(',');
     const end = paddings.map((p, i) => p[0] + xShape[i]).join(',');
+    const startValue = rank > 1 ? `${type}(${start})` : `${start}`;
+    const endValue = rank > 1 ? `${type}(${end})` : `${end}`;
+
+    const xShapeValue =
+        rank > 1 ? `${type}(${xShape.join(',')})` : `${xShape[0]}`;
+
+    const leftPadCondition =
+        rank > 1 ? `any(lessThan(outC, start))` : `outC < start`;
+    const rightPadCondition =
+        rank > 1 ? `any(greaterThanEqual(outC, end))` : `outC >= end`;
 
     this.userCode = `
-      ${type} start = ${type}(${start});
-      ${type} end = ${type}(${end});
+      ${type} start = ${startValue};
+      ${type} end = ${endValue};
 
-      int getFlatIndex(ivec2 coords, ivec2 shape) {
+      uint getFlatIndex(uint coord, uint shape) {
+        return coord;
+      }
+
+      uint getFlatIndex(ivec2 coords, ivec2 shape) {
         return coords.x * shape.y + coords.y;
       }
 
-      int getFlatIndex(ivec3 coords, ivec3 shape) {
+      uint getFlatIndex(ivec3 coords, ivec3 shape) {
         return coords.x * (shape.y * shape.z) + coords.y * shape.z + coords.z;
       }
 
@@ -55,11 +69,11 @@ export class PadProgram implements WebGPUProgram {
         uint index = gl_GlobalInvocationID.x;
         ${type} outC = getOutputCoords(index);
 
-        if(any(lessThan(outC, start)) || any(greaterThanEqual(outC, end))) {
-          result[index] = ${constantValue}; // TODO: UPLOAD AS UNIFORM
+        if(${leftPadCondition} || ${rightPadCondition}) {
+          result[index] = ${constantValue};
         } else {
           ${type} coords = outC - start;
-          ${type} xShape = ${type}(${xShape.join(',')});
+          ${type} xShape = ${xShapeValue};
           result[index] = x[getFlatIndex(coords, xShape)];
         }
       }

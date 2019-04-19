@@ -19,7 +19,7 @@ import {DataType} from '@tensorflow/tfjs-core';
 
 export function getCoordsDataType(rank: number): string {
   if (rank <= 1) {
-    return 'int';
+    return 'uint';
   } else if (rank === 2) {
     return 'ivec2';
   } else if (rank === 3) {

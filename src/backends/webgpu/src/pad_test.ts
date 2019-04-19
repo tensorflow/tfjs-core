@@ -22,14 +22,14 @@ import * as tf from './index';
 describe('pad', () => {
   beforeAll(async () => await tf.ready);
 
-  // it('Should pad 1D arrays', async () => {
-  //   const a = tf.tensor1d([1, 2, 3, 4, 5, 6], 'int32');
-  //   const b = tf.pad1d(a, [2, 3]);
-  //   const bData = await b.data();
+  it('Should pad 1D arrays', async () => {
+    const a = tf.tensor1d([1, 2, 3, 4, 5, 6], 'int32');
+    const b = tf.pad1d(a, [2, 3]);
+    const bData = await b.data();
 
-  //   expectArraysClose(
-  //       bData, new Float32Array([0, 0, 1, 2, 3, 4, 5, 6, 0, 0, 0]));
-  // });
+    expectArraysClose(
+        bData, new Float32Array([0, 0, 1, 2, 3, 4, 5, 6, 0, 0, 0]));
+  });
 
   it('Should pad 2D arrays', async () => {
     const a = tf.tensor2d([[1], [2]], [2, 1], 'int32');

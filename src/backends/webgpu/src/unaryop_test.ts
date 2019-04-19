@@ -31,8 +31,8 @@ describe('Unary ops', () => {
     expectArraysClose(cData, new Float32Array([1, 0, 0, 3, 0]));
   });
 
-  it('relu 5D', async () => {
-    const a = tf.tensor5d([1, -2, 5, -3], [1, 2, 2, 1, 1]);
+  it('relu 3D', async () => {
+    const a = tf.tensor3d([1, -2, 5, -3], [1, 2, 2]);
     const result = tf.relu(a);
 
     const cData = await result.data();
