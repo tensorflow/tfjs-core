@@ -17,27 +17,58 @@
 
 import * as tf from './index';
 
-xdescribe('Ops benchmarks', () => {
-  it('matMul', async () => {
-    await tf.ready;
+describe('Ops benchmarks', () => {
+  let device: GPUDevice;
+  let queue: GPUQueue;
+  let fence: GPUFence;
+  let fenceValue: number;
 
+  beforeEach(async () => {
+    device = await tf.ready;
+    queue = device.getQueue();
+    fence = queue.createFence({});
+    fenceValue = 0;
+  });
+
+  afterEach(() => {
+  });
+
+  function waitFence() {
+    fenceValue++;
+    queue.signal(fence, fenceValue);
+    return fence.onCompletion(fenceValue);
+  }
+
+  async function time(trials: number, fn: () => Promise<void>) {
     const times = [];
 
-    const a = tf.randomNormal([500, 500]);
-    const b = tf.randomNormal([500, 500]);
-
-    let c = tf.matMul(a, b);
-    await c.data();
-
-    for (let i = 0; i < 100; i++) {
+    for (let i = 0; i < trials; ++i) {
       const start = performance.now();
-      c = tf.matMul(a, b);
-      await c.data();
+      await fn();
       times.push(performance.now() - start);
     }
 
     console.log(
         `Average time ms: ${times.reduce((a, b) => a + b, 0) / times.length}`);
     console.log(`Min time ms: ${Math.min(...times)}`);
-  });
+  }
+
+  xit('matMul', async () => {
+    let a = tf.randomNormal([500, 500]);
+    const b = tf.randomNormal([500, 500]);
+
+    for (let i = 0; i < 5; i++) {
+      const c = tf.matMul(a, b);
+      a.dispose();
+      a = c;
+    }
+    await waitFence();
+
+    await time(100, async () => {
+      const c = tf.matMul(a, b);
+      a.dispose();
+      a = c;
+      await waitFence();
+    });
+  }, 60000);
 });

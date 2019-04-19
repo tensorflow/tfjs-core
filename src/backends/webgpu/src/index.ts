@@ -33,4 +33,6 @@ export const ready = (async () => {
   }, 3 /*priority*/);
 
   tf.setBackend('webgpu');
+
+  return device;
 })();
