@@ -51,3 +51,5 @@ env.specFilter = spec => {
   // Otherwise ignore the test.
   return false;
 };
+
+import '@tensorflow/tfjs-core/dist/tests';
