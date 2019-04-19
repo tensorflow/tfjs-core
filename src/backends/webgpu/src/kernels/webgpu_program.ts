@@ -26,7 +26,8 @@ export interface WebGPUProgram {
   // Dispatch determines the layout of thread groups.
   dispatch: [number, number, number];
   variableNames: string[];
-  tileSize?: number;
+  uniforms?: string;
+  tileSize?: [number, number?, number?];
 }
 
 export interface WebGPUBinary {
@@ -41,24 +42,21 @@ export interface TensorData {
 export const compileProgram =
     (shaderCompiler: shaderc.Compiler, shaderKind: shaderc.ShaderKind,
      compileOptions: shaderc.CompileOptions, device: GPUDevice,
-     program: WebGPUProgram, inputs: Tensor[],
-     output: Tensor): WebGPUBinary => {
-      const bindings =
-          inputs.concat(output).map((input: Tensor, idx: number) => {
-            return {
-              binding: idx,
-              visibility: GPUShaderStageBit.COMPUTE,
-              type: 'storage-buffer'
-            } as GPUBindGroupLayoutBinding;
-          });
+     program: WebGPUProgram,
+     inputs: Tensor[], output: Tensor, uniforms?: Tensor): WebGPUBinary => {
+      const numBindings = 1 + inputs.length + (uniforms ? 1 : 0);
+      const bindings = Array(numBindings).fill({
+        visibility: GPUShaderStageBit.COMPUTE,
+        type: 'storage-buffer' as GPUBindingType
+      });
+
       const inputsData = inputs.map((input: Tensor) => {
         return {dtype: input.dtype, shape: input.shape};
       });
       const outputData = {dtype: output.dtype, shape: output.shape};
 
       const source = shader_preprocessor.makeShader(
-          inputsData, program.variableNames, outputData, program.userCode,
-          program.tileSize);
+          inputsData, outputData, program);
       const result = shaderCompiler.CompileGlslToSpv(
           source, shaderKind, 'file', 'main', compileOptions);
       const error = result.GetErrorMessage();
@@ -66,7 +64,9 @@ export const compileProgram =
         throw new Error(`Shader compilation failed: ${error}`);
       }
       const code = result.GetBinary();
-      const bindGroupLayout = device.createBindGroupLayout({bindings});
+      const bindGroupLayout = device.createBindGroupLayout({
+        bindings: bindings.map((b, i) => ({binding: i, ...b})),
+      });
       const layout =
           device.createPipelineLayout({bindGroupLayouts: [bindGroupLayout]});
       const module = device.createShaderModule({code});
