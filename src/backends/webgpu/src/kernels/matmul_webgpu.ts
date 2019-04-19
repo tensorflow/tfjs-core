@@ -69,7 +69,7 @@ export class MatMulProgram implements WebGPUProgram {
         }
 
         if(globalCol < K && globalRow < M) {
-          result[globalRow*K + globalCol] = acc;
+          setOutput(globalRow*K + globalCol, acc);
         }
       }
     `;

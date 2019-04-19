@@ -77,7 +77,7 @@ export function makeShader(
 
   const source = [
     SHADER_PREFIX, tileSizeSnippet, prefixSnippets.join('\n'),
-    SAMPLING_SNIPPETS, outputSamplingSnippet, userCode
+    SAMPLING_SNIPPETS, outputSamplingSnippet, SET_OUTPUT_SNIPPET, userCode
   ].join('\n');
 
   return source;
@@ -98,6 +98,12 @@ const SAMPLING_SNIPPETS = `
 
   uint getFlatIndex(ivec3 coords, ivec3 shape) {
     return coords.x * (shape.y * shape.z) + coords.y * shape.z + coords.z;
+  }
+`;
+
+const SET_OUTPUT_SNIPPET = `
+  void setOutput(uint flatIndex, float value) {
+    result[flatIndex] = value;
   }
 `;
 

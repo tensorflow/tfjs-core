@@ -58,11 +58,11 @@ export class PadProgram implements WebGPUProgram {
         ${type} outC = getOutputCoords(index);
 
         if(${leftPadCondition} || ${rightPadCondition}) {
-          result[index] = ${constantValue};
+          setOutput(index, ${constantValue});
         } else {
           ${type} coords = outC - start;
           ${type} xShape = ${xShapeValue};
-          result[index] = x[getFlatIndex(coords, xShape)];
+          setOutput(index, x[getFlatIndex(coords, xShape)]);
         }
       }
     `;
