@@ -3392,26 +3392,6 @@ export class MathBackendCPU implements KernelBackend {
     return Tensor.make(x.shape, {values}, x.dtype);
   }
 
-  hannWindow<R extends Rank>(windowLength: number): Tensor<R> {
-    const even = 1 - windowLength % 2;
-    const newValues = new Float32Array(windowLength);
-    for (let i = 0; i < windowLength; ++i) {
-      const cosArg = (2.0 * Math.PI * i) / (windowLength+even-1);
-      newValues[i] = 0.5 - 0.5 * Math.cos(cosArg);
-    }
-    return Tensor.make([windowLength], {values: newValues}) as Tensor<R>;
-  }
-
-  hammingWindow<R extends Rank>(windowLength: number): Tensor<R> {
-    const even = 1 - windowLength % 2;
-    const newValues = new Float32Array(windowLength);
-    for (let i = 0; i < windowLength; ++i) {
-      const cosArg = (2.0 * Math.PI * i) / (windowLength+even-1);
-      newValues[i] = 0.54 - 0.46 * Math.cos(cosArg);
-    }
-    return Tensor.make([windowLength], {values: newValues}) as Tensor<R>;
-  }
-
   private scatter<R extends Rank>(
       indices: Tensor, updates: Tensor, shape: ShapeMap[R], outputSize: number,
       sliceSize: number, numUpdates: number, sliceRank: number,

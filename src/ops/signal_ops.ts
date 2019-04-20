@@ -15,9 +15,8 @@
  * =============================================================================
  */
 
-import {ENGINE} from '../engine';
 import {op} from '../ops/operation';
-import {Tensor} from'../tensor';
+import {Tensor} from '../tensor';
 
 /**
  * Generate a Hann window.
@@ -33,7 +32,7 @@ import {Tensor} from'../tensor';
  * @doc {heading: 'Operations', subheading: 'Signal', namespace: 'signal'}
  */
 function hannWindow_(windowLength: number): Tensor {
-  return ENGINE.runKernel(backend => backend.hannWindow(windowLength), {});
+  return cosineWindow(windowLength, 0.5, 0.5);
 }
 
 /**
@@ -50,7 +49,17 @@ function hannWindow_(windowLength: number): Tensor {
  * @doc {heading: 'Operations', subheading: 'Signal', namespace: 'signal'}
  */
 function hammingWindow_(windowLength: number): Tensor {
-  return ENGINE.runKernel(backend => backend.hammingWindow(windowLength), {});
+  return cosineWindow(windowLength, 0.54, 0.46);
+}
+
+function cosineWindow(windowLength: number, a: number, b: number): Tensor {
+  const even = 1 - windowLength % 2;
+  const newValues = new Float32Array(windowLength);
+  for (let i = 0; i < windowLength; ++i) {
+    const cosArg = (2.0 * Math.PI * i) / (windowLength + even - 1);
+    newValues[i] = a - b * Math.cos(cosArg);
+  }
+  return Tensor.make([windowLength], {values: newValues}) as Tensor;
 }
 
 export const hannWindow = op({hannWindow_});

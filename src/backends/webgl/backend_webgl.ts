@@ -122,8 +122,6 @@ import * as unary_packed_op from './unaryop_packed_gpu';
 import {UnaryOpPackedProgram} from './unaryop_packed_gpu';
 import {UnpackProgram} from './unpack_gpu';
 import * as webgl_util from './webgl_util';
-import {HannWindowProgram} from './hann_window_gpu';
-import {HammingWindowProgram} from './hamming_window_gpu';
 
 type KernelInfo = {
   name: string; query: Promise<number>;
@@ -2244,22 +2242,6 @@ export class MathBackendWebGL implements KernelBackend {
 
   zerosLike<R extends Rank>(x: Tensor<R>): Tensor<R> {
     return this.fill(x.shape, x.dtype === 'string' ? '' : 0, x.dtype);
-  }
-
-  hannWindow<R extends Rank>(windowLength: number): Tensor<R> {
-    const shape: ShapeMap[R] = [windowLength];
-    const program = new HannWindowProgram(shape);
-    const customSetup = program.getCustomSetupFunc(windowLength);
-    const output = this.makeOutputArray(shape, 'float32') as Tensor<R>;
-    return this.compileAndRun(program, [], output, customSetup) as Tensor<R>;
-  }
-
-  hammingWindow<R extends Rank>(windowLength: number): Tensor<R> {
-    const shape: ShapeMap[R] = [windowLength];
-    const program = new HammingWindowProgram(shape);
-    const customSetup = program.getCustomSetupFunc(windowLength);
-    const output = this.makeOutputArray(shape, 'float32') as Tensor<R>;
-    return this.compileAndRun(program, [], output, customSetup) as Tensor<R>;
   }
 
   private makeOutputArray<T extends Tensor>(shape: number[], dtype: DataType):

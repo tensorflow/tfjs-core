@@ -614,14 +614,6 @@ export class KernelBackend implements TensorStorage, Backend, BackendTimer {
     throw new Error('Not yet implemented');
   }
 
-  hannWindow<R extends Rank>(x: number): Tensor<R> {
-    throw new Error('Not yet implemented');
-  }
-
-  hammingWindow<R extends Rank>(x: number): Tensor<R> {
-    throw new Error('Not yet implemented');
-  }
-
   dispose(): void {
     throw new Error('Not yet implemented');
   }
