@@ -21,33 +21,17 @@ export class MatMulProgram implements WebGPUProgram {
   outputShape: number[];
   userCode: string;
   dispatch: [number, number, number];
+  variableNames = ['A', 'B', 'Dimensions'];
+  tileSize = 8;
 
   constructor(outputShape: [number, number, number]) {
     this.outputShape = outputShape;
-    const tileSize = 2;
     this.dispatch = [
-      Math.ceil(outputShape[1] / tileSize),
-      Math.ceil(outputShape[2] / tileSize), 1
+      Math.ceil(outputShape[1] / this.tileSize),
+      Math.ceil(outputShape[2] / this.tileSize), 1
     ];
 
     this.userCode = `
-      #version 450
-      const uint TileSize = ${tileSize};
-      layout (local_size_x = TileSize, local_size_y = TileSize, 
-        local_size_z = 1) in;
-      layout(std430, binding = 0) readonly buffer ssbA {
-        float A[];
-      };
-      layout(std430, binding = 1) readonly buffer ssbB {
-        float B[];
-      };
-      layout(std430, binding = 2) readonly buffer ssbDimensions {
-        uint Dimensions[];
-      };
-      layout(std430, binding = 3) writeonly buffer ssbOut {
-        float result[];
-      };
-
       shared float Asub[TileSize][TileSize];
       shared float Bsub[TileSize][TileSize];
 
@@ -62,8 +46,7 @@ export class MatMulProgram implements WebGPUProgram {
 
         float acc = 0.0;
 
-        // Add 1 to N to ceil.
-        uint numTiles = (N + 1)/TileSize;
+        uint numTiles = (N - 1)/TileSize + 1;
 
         for (uint t=0; t<numTiles; t++) {
           // Load one tile of A and B into local memory
@@ -73,7 +56,6 @@ export class MatMulProgram implements WebGPUProgram {
           Bsub[row][col] = B[tiledRow*K + globalCol];
 
           // Synchronise to make sure the tile is loaded
-          // memoryBarrierShared();
           barrier();
 
           for (uint k=0; k<TileSize; k++) {
@@ -85,7 +67,7 @@ export class MatMulProgram implements WebGPUProgram {
         }
 
         if(globalCol < K && globalRow < M) {
-          result[globalRow*K + globalCol] = acc;
+          setOutput(globalRow*K + globalCol, acc);
         }
       }
     `;

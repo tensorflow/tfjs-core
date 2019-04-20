@@ -17,12 +17,17 @@
 
 /// <reference types="@webgpu/types" />
 
+import './flags_webgpu';
+
+import {DataMover, DataType, ENV, KernelBackend, Rank, ShapeMap, Tensor, tensor1d, Tensor3D, util} from '@tensorflow/tfjs-core';
 import * as shaderc from '@webgpu/shaderc';
 
-import {DataMover, DataType, KernelBackend, Rank, ShapeMap, Tensor, tensor1d, Tensor3D, util} from '@tensorflow/tfjs-core';
-
+import * as binary_op from './kernels/binary_op_webgpu';
+import {BinaryOpProgram} from './kernels/binary_op_webgpu';
 import {MatMulProgram} from './kernels/matmul_webgpu';
-import {MultiplyProgram} from './kernels/multiply_webgpu';
+import {PadProgram} from './kernels/pad_webgpu';
+import * as unary_op from './kernels/unary_op_webgpu';
+import {UnaryOpProgram} from './kernels/unary_op_webgpu';
 import * as webgpu_program from './kernels/webgpu_program';
 import {WebGPUBinary} from './kernels/webgpu_program';
 
@@ -42,6 +47,7 @@ export class WebGPUBackend extends KernelBackend {
   shaderc: shaderc.Shaderc;
   compiler: shaderc.Compiler;
   compileOpts: shaderc.CompileOptions;
+  commandQueue: GPUCommandEncoder[];
 
   private binaryCache: {[key: string]: WebGPUBinary};
 
@@ -50,12 +56,15 @@ export class WebGPUBackend extends KernelBackend {
     this.binaryCache = {};
     this.device = device;
     this.queue = device.getQueue();
+    this.commandQueue = [];
     this.shaderc = shaderc;
     this.compiler = new shaderc.Compiler();
-    this.compileOpts = new shaderc.CompileOptions();
+    const opts = new shaderc.CompileOptions();
+    opts.SetOptimizationLevel(shaderc.optimization_level.performance);
+    this.compileOpts = opts;
   }
 
-  floatPrecision(): number {
+  floatPrecision(): 32 {
     return 32;
   }
 
@@ -78,8 +87,7 @@ export class WebGPUBackend extends KernelBackend {
   }
 
   private setBufferData(
-      buffer: GPUBuffer,
-      data: Float32Array|Int32Array|Uint8Array) {
+      buffer: GPUBuffer, data: Float32Array|Int32Array|Uint8Array) {
     buffer.setSubData(0, data);
   }
 
@@ -103,6 +111,12 @@ export class WebGPUBackend extends KernelBackend {
     this.tensorMap.set(dataId, info);
   }
 
+  private submitQueue() {
+    this.queue.submit(this.commandQueue.map(enc => enc.finish()));
+
+    this.commandQueue = [];
+  }
+
   private async getBufferData(info: TensorInfo): Promise<ArrayBuffer> {
     const size =
         util.sizeFromShape(info.shape) * util.bytesPerElement(info.dtype);
@@ -113,7 +127,8 @@ export class WebGPUBackend extends KernelBackend {
     {
       const encoder = this.device.createCommandEncoder({});
       encoder.copyBufferToBuffer(info.buffer, 0, staging, 0, size);
-      this.queue.submit([encoder.finish()]);
+      this.commandQueue.push(encoder);
+      this.submitQueue();
     }
     const mapped: ArrayBuffer = await staging.mapReadAsync();
 
@@ -138,20 +153,23 @@ export class WebGPUBackend extends KernelBackend {
     return this.binaryCache[key];
   }
 
-  private compileAndRun(
-      program: webgpu_program.WebGPUProgram, inputs: Tensor[], output: Tensor) {
+  private makeOutputArray<T extends Tensor>(shape: number[], dtype: DataType):
+      T {
+    return Tensor.make(shape, {}, dtype, this) as T;
+  }
+
+  private compileAndRun<
+      K extends {dtype: DataType, size: number, dataId: {}, shape: number[]}>(
+      program: webgpu_program.WebGPUProgram, inputs: Tensor[],
+      output?: Tensor): K {
+    if (output == null) {
+      output = this.makeOutputArray(program.outputShape, inputs[0].dtype);
+    }
     const key = webgpu_program.makeShaderKey(program);
-    const bindings = inputs.concat(output).map((input: Tensor, idx: number) => {
-      return {
-        binding: idx,
-        visibility: GPUShaderStageBit.COMPUTE,
-        type: 'storage-buffer'
-      } as GPUBindGroupLayoutBinding;
-    });
     const {bindGroupLayout, pipeline} = this.getAndSavePipeline(key, () => {
       return webgpu_program.compileProgram(
           this.compiler, this.shaderc.shader_kind.compute, this.compileOpts,
-          this.device, program, bindings);
+          this.device, program, inputs, output);
     });
 
     // Creating bind groups on the fly should never be a bottleneck.
@@ -175,18 +193,40 @@ export class WebGPUBackend extends KernelBackend {
     const pass = encoder.beginComputePass();
     pass.setPipeline(pipeline);
     pass.setBindGroup(0, bg);
-    pass.dispatch(program.dispatch[0], program.dispatch[1], program.dispatch[2]);
+    pass.dispatch(
+        program.dispatch[0], program.dispatch[1], program.dispatch[2]);
     pass.endPass();
-    // TODO: Create flag for toggling graph mode.
-    this.queue.submit([encoder.finish()]);
-    return output;
+    this.commandQueue.push(encoder);
+
+    if (ENV.get('WEBGPU_IMMEDIATE_EXECUTION_ENABLED')) {
+      this.submitQueue();
+    }
+    return output as {} as K;
+  }
+
+  pad<T extends Tensor>(
+      x: T, paddings: Array<[number, number]>, constantValue: number): T {
+    const program = new PadProgram(x.shape, paddings, constantValue);
+    return this.compileAndRun(program, [x]);
+  }
+
+  add(a: Tensor, b: Tensor): Tensor {
+    const output = Tensor.make(a.shape, {}, a.dtype, this);
+    const program = new BinaryOpProgram(binary_op.ADD, output.shape);
+
+    return this.compileAndRun(program, [a, b], output) as Tensor;
   }
 
   multiply(a: Tensor, b: Tensor): Tensor {
     const output = Tensor.make(a.shape, {}, a.dtype, this);
-    const program = new MultiplyProgram(output.shape);
+    const program = new BinaryOpProgram(binary_op.MUL, output.shape);
 
     return this.compileAndRun(program, [a, b], output) as Tensor;
+  }
+
+  relu<T extends Tensor>(x: T): T {
+    const program = new UnaryOpProgram(unary_op.RELU, x.shape);
+    return this.compileAndRun(program, [x]) as T;
   }
 
   reshape<R extends Rank>(x: Tensor, shape: ShapeMap[R]): Tensor<R> {

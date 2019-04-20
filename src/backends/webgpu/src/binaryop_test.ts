@@ -16,21 +16,29 @@
  */
 
 import * as tf from '@tensorflow/tfjs-core';
-import * as Shaderc from '@webgpu/shaderc';
 
-import {WebGPUBackend} from './backend_webgpu';
+import * as tfwebgpu from './index';
 
-export * from '@tensorflow/tfjs-core';
+describe('Binary ops', () => {
+  beforeAll(async () => await tfwebgpu.ready);
 
-export const ready = (async () => {
-  const shaderc = await Shaderc.instantiate();
-  // @ts-ignore navigator.gpu is required
-  const adapter = await navigator.gpu.requestAdapter({});
-  const device = await adapter.requestDevice({});
+  it('A * B', async () => {
+    const a = tf.tensor1d([1, 2, 3]);
+    const b = tf.tensor1d([3, 4, 5]);
+    const c = tf.mul(a, b);
 
-  tf.registerBackend('webgpu', () => {
-    return new WebGPUBackend(device, shaderc);
-  }, 3 /*priority*/);
+    const cData = await c.data();
 
-  tf.setBackend('webgpu');
-})();
+    tf.test_util.expectArraysClose(cData, new Float32Array([3, 8, 15]));
+  });
+
+  it('A + B', async () => {
+    const a = tf.tensor1d([1, 2, 3]);
+    const b = tf.tensor1d([3, 4, 5]);
+    const c = tf.add(a, b);
+
+    const cData = await c.data();
+
+    tf.test_util.expectArraysClose(cData, new Float32Array([4, 6, 8]));
+  });
+});
