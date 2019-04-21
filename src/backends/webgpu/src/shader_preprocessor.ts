@@ -45,12 +45,20 @@ function mapToGlslTypes(type: DataType): GLSLDataType|DataType {
 export function makeShader(
     inputTypes: Array<{dtype: DataType, shape: number[]}>,
     variableNames: string[], outputData: {dtype: DataType, shape: number[]},
-    userCode: string, tileSize: number): string {
+    userCode: string, tileSize: number, workPerThread: number): string {
   let tileSizeSnippet: string;
   if (tileSize != null) {
-    tileSizeSnippet = `const uint TileSize = ${tileSize};
-    layout (local_size_x = TileSize, local_size_y = TileSize, 
-      local_size_z = 1) in;`;
+    if (workPerThread == null) {
+      workPerThread = 1;
+    }
+
+    tileSizeSnippet = `
+      const uint WorkPerThread = ${workPerThread};
+      const uint TileSize = ${tileSize};
+      layout (
+        local_size_x = TileSize / WorkPerThread, 
+        local_size_y = TileSize / WorkPerThread, 
+        local_size_z = 1) in;`;
   }
   const prefixSnippets: string[] = [];
   variableNames.forEach((x, i) => {

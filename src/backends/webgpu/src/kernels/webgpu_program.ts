@@ -27,6 +27,7 @@ export interface WebGPUProgram {
   dispatch: [number, number, number];
   variableNames: string[];
   tileSize?: number;
+  workPerThread?: number;
 }
 
 export interface WebGPUBinary {
@@ -58,7 +59,7 @@ export const compileProgram =
 
       const source = shader_preprocessor.makeShader(
           inputsData, program.variableNames, outputData, program.userCode,
-          program.tileSize);
+          program.tileSize, program.workPerThread);
       const result = shaderCompiler.CompileGlslToSpv(
           source, shaderKind, 'file', 'main', compileOptions);
       const error = result.GetErrorMessage();
