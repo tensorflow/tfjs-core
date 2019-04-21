@@ -122,6 +122,7 @@ import * as unary_packed_op from './unaryop_packed_gpu';
 import {UnaryOpPackedProgram} from './unaryop_packed_gpu';
 import {UnpackProgram} from './unpack_gpu';
 import * as webgl_util from './webgl_util';
+import {LinspaceProgram} from './linspace_webgl';
 
 type KernelInfo = {
   name: string; query: Promise<number>;
@@ -2242,6 +2243,15 @@ export class MathBackendWebGL implements KernelBackend {
 
   zerosLike<R extends Rank>(x: Tensor<R>): Tensor<R> {
     return this.fill(x.shape, x.dtype === 'string' ? '' : 0, x.dtype);
+  }
+
+  linspace(start: number, stop: number, num: number): Tensor1D {
+    if (num === 0) {
+      throw new Error('Cannot request zero samples');
+    }
+    const program = new LinspaceProgram(start, stop, num);
+    const output = this.makeOutputArray([num], 'float32');
+    return this.compileAndRun(program, [], output) as Tensor1D;
   }
 
   private makeOutputArray<T extends Tensor>(shape: number[], dtype: DataType):

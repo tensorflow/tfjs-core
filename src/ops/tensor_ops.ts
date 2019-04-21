@@ -484,19 +484,8 @@ function zerosLike_<T extends Tensor>(x: T|TensorLike): T {
  */
 /** @doc {heading: 'Tensors', subheading: 'Creation'} */
 function linspace(start: number, stop: number, num: number): Tensor1D {
-  if (num === 0) {
-    throw new Error('Cannot request zero samples');
-  }
-
-  const step = (stop - start) / (num - 1);
-
-  const values = makeZerosTypedArray(num, 'float32');
-  values[0] = start;
-  for (let i = 1; i < values.length; i++) {
-    values[i] = values[i - 1] + step;
-  }
-
-  return tensor1d(values, 'float32');
+  return ENGINE.runKernel(backend => backend.linspace(start, stop, num),
+    {}, null) as Tensor1D;
 }
 
 /**
