@@ -50,7 +50,7 @@ export class MatMulPackedProgram implements WebGPUProgram {
 
         uint numTiles = (N - 1)/TileSize + 1;
 
-        for(uint t=0; t<numTiles; t++) {
+        for(uint t=0; t<numTiles; t++) { // looping over shared dimension
           // Load one tile of A and B into local memory.
           for(uint innerRow=0; innerRow<WorkPerThread; innerRow++) {
             for(uint innerCol=0; innerCol<WorkPerThread; innerCol++) {
@@ -58,7 +58,7 @@ export class MatMulPackedProgram implements WebGPUProgram {
               uint inputCol = tileCol + innerCol;
 
               uint AColumnIndex = t * TileSize + tileCol + innerCol;
-              uint AFlatIndex = (globalRow + innerRow) * M + AColumnIndex;
+              uint AFlatIndex = (globalRow + innerRow) * N + AColumnIndex;
               Asub[inputRow][inputCol] = A[AFlatIndex];
 
               uint BRowIndex = t * TileSize + tileRow + innerRow;
@@ -87,8 +87,8 @@ export class MatMulPackedProgram implements WebGPUProgram {
           for (uint innerCol=0; innerCol<WorkPerThread; innerCol++) {
             uint globalFlatIndex = 
               (globalRow + innerRow) * K + (globalCol + innerCol);
-            // setOutput(globalFlatIndex, acc[innerRow][innerCol]);
-            setOutput(globalFlatIndex, globalFlatIndex);
+            setOutput(globalFlatIndex, acc[innerRow][innerCol]);
+            // setOutput(globalFlatIndex, globalFlatIndex);
           }
         }
       }
