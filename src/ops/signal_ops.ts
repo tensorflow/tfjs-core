@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2019 Google Inc. All Rights Reserved.
+ * Copyright 2019 Google LLC. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,12 +16,12 @@
  */
 
 import {op} from '../ops/operation';
-import {Tensor} from '../tensor';
+import {Tensor, Tensor1D} from '../tensor';
 
 /**
  * Generate a Hann window.
  *
- * See: https://en.wikipedia.org/wiki/Window_function#Hann_window
+ * See: https://en.wikipedia.org/wiki/Window_function#Hann_and_Hamming_windows
  *
  * ```js
  * tf.hannWindow(10).print();
@@ -31,14 +31,14 @@ import {Tensor} from '../tensor';
 /**
  * @doc {heading: 'Operations', subheading: 'Signal', namespace: 'signal'}
  */
-function hannWindow_(windowLength: number): Tensor {
+function hannWindow_(windowLength: number): Tensor1D {
   return cosineWindow(windowLength, 0.5, 0.5);
 }
 
 /**
  * Generate a hamming window.
  *
- * See: https://en.wikipedia.org/wiki/Window_function#Hann_window
+ * See: https://en.wikipedia.org/wiki/Window_function#Hann_and_Hamming_windows
  *
  * ```js
  * tf.hammingWindow(10).print();
@@ -48,18 +48,18 @@ function hannWindow_(windowLength: number): Tensor {
 /**
  * @doc {heading: 'Operations', subheading: 'Signal', namespace: 'signal'}
  */
-function hammingWindow_(windowLength: number): Tensor {
+function hammingWindow_(windowLength: number): Tensor1D {
   return cosineWindow(windowLength, 0.54, 0.46);
 }
 
-function cosineWindow(windowLength: number, a: number, b: number): Tensor {
+function cosineWindow(windowLength: number, a: number, b: number): Tensor1D {
   const even = 1 - windowLength % 2;
   const newValues = new Float32Array(windowLength);
   for (let i = 0; i < windowLength; ++i) {
     const cosArg = (2.0 * Math.PI * i) / (windowLength + even - 1);
     newValues[i] = a - b * Math.cos(cosArg);
   }
-  return Tensor.make([windowLength], {values: newValues}) as Tensor;
+  return Tensor.make([windowLength], {values: newValues}) as Tensor1D;
 }
 
 export const hannWindow = op({hannWindow_});
