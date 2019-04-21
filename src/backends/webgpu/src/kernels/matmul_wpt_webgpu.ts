@@ -23,13 +23,15 @@ export class MatMulPackedProgram implements WebGPUProgram {
   tileSize = 4;
   workPerThread = 2;
 
-  constructor(outputShape: [number, number, number]) {
+  constructor(outputShape: [number, number, number], sharedDim: number) {
     this.outputShape = outputShape;
     this.dispatch = [
       Math.ceil(outputShape[1] / this.tileSize),
       Math.ceil(outputShape[2] / this.tileSize), 1
     ];
 
+    // TODO: Why does this need to be spliced in?
+    const numTiles = Math.floor((sharedDim - 1) / this.tileSize) + 1;
     this.userCode = `
       shared float Asub[TileSize][TileSize];
       shared float Bsub[TileSize][TileSize];
@@ -50,7 +52,11 @@ export class MatMulPackedProgram implements WebGPUProgram {
 
         float acc[WorkPerThread][WorkPerThread];
 
-        for(uint t=0; t<numTiles; t++) { // looping over shared dimension
+        for(uint t=0; t<${numTiles}; t++) { 
+          // looping over shared dimension 
+          // for some reason if this is not interpolated it causes 
+          // strange values to be sampled
+
           // Load one tile of A and B into local memory.
           for(uint innerRow=0; innerRow<WorkPerThread; innerRow++) {
             for(uint innerCol=0; innerCol<WorkPerThread; innerCol++) {
@@ -100,7 +106,7 @@ export class MatMulPackedProgram implements WebGPUProgram {
             uint globalFlatIndex = 
               (globalRow + innerRow) * K + (globalCol + innerCol);
             setOutput(globalFlatIndex, acc[innerRow][innerCol]);
-            // setOutput(globalFlatIndex, globalFlatIndex);
+            // setOutput(globalFlatIndex, numTiles);
           }
         }
       }
