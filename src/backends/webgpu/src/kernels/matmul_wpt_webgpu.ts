@@ -56,14 +56,20 @@ export class MatMulPackedProgram implements WebGPUProgram {
             for(uint innerCol=0; innerCol<WorkPerThread; innerCol++) {
               uint inputRow = tileRow + innerRow;
               uint inputCol = tileCol + innerCol;
-
+              
               uint AColumnIndex = t * TileSize + tileCol + innerCol;
               uint AFlatIndex = (globalRow + innerRow) * N + AColumnIndex;
-              Asub[inputRow][inputCol] = A[AFlatIndex];
+
+              if(AColumnIndex < N) {
+                Asub[inputRow][inputCol] = A[AFlatIndex];
+              }
 
               uint BRowIndex = t * TileSize + tileRow + innerRow;
               uint BFlatIndex = BRowIndex * K + (globalCol + innerCol);
-              Bsub[inputRow][inputCol] = B[BFlatIndex];
+
+              if(BRowIndex < N) {
+                Bsub[inputRow][inputCol] = B[BFlatIndex];
+              }
             }
           }
 
