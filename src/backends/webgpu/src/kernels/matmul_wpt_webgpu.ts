@@ -23,15 +23,13 @@ export class MatMulPackedProgram implements WebGPUProgram {
   tileSize = 4;
   workPerThread = 2;
 
-  constructor(outputShape: [number, number, number], sharedDim: number) {
+  constructor(outputShape: [number, number, number]) {
     this.outputShape = outputShape;
     this.dispatch = [
       Math.ceil(outputShape[1] / this.tileSize),
       Math.ceil(outputShape[2] / this.tileSize), 1
     ];
 
-    // TODO: Why does this need to be spliced in?
-    const numTiles = Math.floor((sharedDim - 1) / this.tileSize) + 1;
     this.userCode = `
       shared float Asub[TileSize][TileSize];
       shared float Bsub[TileSize][TileSize];
@@ -52,11 +50,15 @@ export class MatMulPackedProgram implements WebGPUProgram {
 
         float acc[WorkPerThread][WorkPerThread];
 
-        for(uint t=0; t<${numTiles}; t++) { 
-          // looping over shared dimension 
-          // for some reason if this is not interpolated it causes 
-          // strange values to be sampled
+        // Without this initialization strange values show up in acc.
+        for(uint innerRow=0; innerRow<WorkPerThread; innerRow++) {
+          for(uint innerCol=0; innerCol<WorkPerThread; innerCol++) {
+            acc[innerRow][innerCol] = 0.0;
+          }
+        }
 
+        // Loop over shared dimension.
+        for(uint t=0; t<numTiles; t++) { 
           // Load one tile of A and B into local memory.
           for(uint innerRow=0; innerRow<WorkPerThread; innerRow++) {
             for(uint innerCol=0; innerCol<WorkPerThread; innerCol++) {
@@ -85,19 +87,14 @@ export class MatMulPackedProgram implements WebGPUProgram {
 
           barrier();
 
-          // Compute acc values for a single tile.
-          for(uint k=0; k<TileSize; k++) { // 0, 1, 2, 3
+          // Compute acc values for a single thread.
+          for(uint k=0; k<TileSize; k++) {
             for(uint innerRow=0; innerRow<WorkPerThread; innerRow++) {
               for(uint innerCol=0; innerCol<WorkPerThread; innerCol++) {
                 float ALocal = Asub[tileRow + innerRow][k];
                 float BLocal = Bsub[k][tileCol + innerCol];
                 
-                uint AColumnIndex = t * TileSize + tileCol + innerCol;
-                uint BRowIndex = t * TileSize + tileRow + innerRow;
-
-                // if(AColumnIndex < N && BRowIndex < N) {
                 acc[innerRow][innerCol] += ALocal * BLocal;
-                // }
               }
             }
           }
@@ -110,8 +107,6 @@ export class MatMulPackedProgram implements WebGPUProgram {
             uint globalFlatIndex = 
               (globalRow + innerRow) * K + (globalCol + innerCol);
             setOutput(globalFlatIndex, acc[innerRow][innerCol]);
-            // setOutput(globalFlatIndex, Asub[tileRow + innerRow][tileCol + innerCol]);
-            // setOutput(globalFlatIndex, numTiles);
           }
         }
       }
