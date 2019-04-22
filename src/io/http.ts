@@ -241,7 +241,7 @@ export function isHTTPScheme(url: string): boolean {
 export const httpRouter: IORouter =
     (url: string, onProgress?: OnProgressCallback) => {
       if (typeof fetch === 'undefined') {
-        // http uses `fetch` or `node-fetch`, if one wants to use it in
+        // `http` uses `fetch` or `node-fetch`, if one wants to use it in
         // an environment that is not the browser or node they have to setup a
         // global fetch polyfill.
         return null;
