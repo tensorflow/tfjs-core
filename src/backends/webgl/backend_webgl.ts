@@ -429,7 +429,7 @@ export class MathBackendWebGL implements KernelBackend {
 
     // Download the values from the GPU.
     let vals: Float32Array;
-    if (!ENV.get('WEBGL_BUFFER_SUPPORTED')) {
+    if (buffer == null) {
       vals = this.getValuesFromTexture(dataId);
     } else {
       const size = util.sizeFromShape(shape);
