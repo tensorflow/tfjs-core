@@ -218,12 +218,15 @@ export class GPGPUContext {
         this.gl, buffer, rows, columns, this.textureConfig);
   }
 
-  public maybeCreateBufferFromTexture(
-      texture: WebGLTexture, rows: number, columns: number): WebGLBuffer
-      |WebGLTexture {
+  /**
+   * Returns null if WebGLBuffers are not supported.
+   */
+  public createBufferFromTexture(
+      texture: WebGLTexture, rows: number, columns: number): WebGLBuffer|null {
     this.bindTextureToFrameBuffer(texture);
-    const result = gpgpu_util.maybeCreateBufferFromOutputTexture(
-        this.gl, this.debug, texture, rows, columns, this.textureConfig);
+    const result = gpgpu_util.createBufferFromOutputTexture(
+        this.gl as WebGL2RenderingContext, this.debug, rows, columns,
+        this.textureConfig);
     this.unbindTextureToFrameBuffer();
     return result;
   }
