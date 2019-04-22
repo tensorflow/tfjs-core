@@ -1,18 +1,3 @@
-/**
- * WPT registers initialized to 0 for each thread
- * each thread loads WPT values of A / B into local memory
- * each thread performs WPT * tileSize accumulations per tile
- * each thread stores WPT values in C
- *
- * dispatch dimensions stay the same - it's the same number of tiles (work
-groups), but each tile is smaller
- * but the actual tile size passed into the layout declaration gets divided by
- * WPT
- *
-kai: the geometry of the dispatch is measured in tiles
-so if you have a tilesize of 2,3,4 then a dispatch of 2,2,2 runs 4*6*8 threads
- */
-
 import {WebGPUProgram} from './webgpu_program';
 
 export class MatMulPackedProgram implements WebGPUProgram {
