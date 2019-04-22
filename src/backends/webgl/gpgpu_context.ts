@@ -218,9 +218,6 @@ export class GPGPUContext {
         this.gl, buffer, rows, columns, this.textureConfig);
   }
 
-  /**
-   * Returns null if WebGLBuffers are not supported.
-   */
   public createBufferFromTexture(
       texture: WebGLTexture, rows: number, columns: number): WebGLBuffer|null {
     this.bindTextureToFrameBuffer(texture);
