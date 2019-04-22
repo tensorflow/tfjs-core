@@ -68,6 +68,8 @@ export class MatMulPackedProgram implements WebGPUProgram {
 
               if(AColumnIndex < N) {
                 Asub[inputRow][inputCol] = A[AFlatIndex];
+              } else {
+                Asub[inputRow][inputCol] = 0.0;
               }
 
               uint BRowIndex = t * TileSize + tileRow + innerRow;
@@ -75,6 +77,8 @@ export class MatMulPackedProgram implements WebGPUProgram {
 
               if(BRowIndex < N) {
                 Bsub[inputRow][inputCol] = B[BFlatIndex];
+              } else {
+                Bsub[inputRow][inputCol] = 0.0; 
               }
             }
           }
@@ -91,9 +95,9 @@ export class MatMulPackedProgram implements WebGPUProgram {
                 uint AColumnIndex = t * TileSize + tileCol + innerCol;
                 uint BRowIndex = t * TileSize + tileRow + innerRow;
 
-                if(AColumnIndex < N && BRowIndex < N) {
-                  acc[innerRow][innerCol] += ALocal * BLocal;
-                }
+                // if(AColumnIndex < N && BRowIndex < N) {
+                acc[innerRow][innerCol] += ALocal * BLocal;
+                // }
               }
             }
           }
@@ -106,6 +110,7 @@ export class MatMulPackedProgram implements WebGPUProgram {
             uint globalFlatIndex = 
               (globalRow + innerRow) * K + (globalCol + innerCol);
             setOutput(globalFlatIndex, acc[innerRow][innerCol]);
+            // setOutput(globalFlatIndex, Asub[tileRow + innerRow][tileCol + innerCol]);
             // setOutput(globalFlatIndex, numTiles);
           }
         }
