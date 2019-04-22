@@ -219,7 +219,7 @@ export class GPGPUContext {
   }
 
   public createBufferFromTexture(
-      texture: WebGLTexture, rows: number, columns: number): WebGLBuffer|null {
+      texture: WebGLTexture, rows: number, columns: number): WebGLBuffer {
     this.bindTextureToFrameBuffer(texture);
     const result = gpgpu_util.createBufferFromOutputTexture(
         this.gl as WebGL2RenderingContext, this.debug, rows, columns,
