@@ -21,12 +21,12 @@ setTestEnvs([{name: 'test-webgpu', backendName: 'webgpu', flags: {}}]);
 
 const env = jasmine.getEnv();
 
-const INCLUDE_LIST = [
+/** Tests that have these substrings in their name will be included. */
+const INCLUDE_LIST: string[] = [
   'matmul',
 ];
-const EXCLUDE_LIST = [
-  'hello',
-];
+/** Tests that have these substrings in their name will be excluded. */
+const EXCLUDE_LIST: string[] = [];
 
 /**
  * Filter method that returns boolean, if a given test should run or be
@@ -52,4 +52,5 @@ env.specFilter = spec => {
   return false;
 };
 
+// Import and run all the tests from core.
 import '@tensorflow/tfjs-core/dist/tests';

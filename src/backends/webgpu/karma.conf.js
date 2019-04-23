@@ -26,7 +26,10 @@ module.exports = function(config) {
   config.set({
     basePath: '',
     frameworks: ['jasmine', 'karma-typescript'],
-    files: [{pattern: 'src/**/*.ts'}],
+    files: [
+      'src/setup_test.ts',       // Setup the environment for the tests.
+      {pattern: 'src/**/*.ts'},  // Import all tests.
+    ],
     preprocessors: {'**/*.ts': ['karma-typescript']},
     karmaTypescriptConfig,
     reporters: ['progress', 'karma-typescript'],
@@ -34,7 +37,11 @@ module.exports = function(config) {
     colors: true,
     logLevel: config.LOG_INFO,
     browsers: ['Chrome', 'chrome_webgpu'],
-    customLaunchers:
-        {chrome_webgpu: {base: 'Chrome', flags: ['--enable-unsafe-webgpu']}}
+    customLaunchers: {
+      chrome_webgpu: {
+        base: 'Chrome',
+        flags: ['--enable-unsafe-webgpu'],
+      }
+    }
   })
 }

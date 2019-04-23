@@ -16,11 +16,11 @@
  */
 
 import {test_util} from '@tensorflow/tfjs-core';
-import {describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_util';
+import {ALL_ENVS, describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_util';
 
 import * as tf from './index';
 
-describeWithFlags('WebGPU backend', {}, () => {
+describeWithFlags('WebGPU backend', ALL_ENVS, () => {
   beforeAll(async () => await tf.ready);
 
   it('A * B elementwise', async () => {
