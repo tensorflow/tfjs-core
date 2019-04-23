@@ -451,6 +451,65 @@ describeWithFlags(
       });
     });
 
+describeWithFlags('ready', {}, () => {
+  it('sync backend init with await ready works', async () => {
+    const testBackend = new TestKernelBackend();
+    tf.registerBackend('sync', () => testBackend);
+    tf.setBackend('sync');
+    expect(tf.getBackend()).toEqual('sync');
+    await tf.ready();
+    expect(tf.backend()).toEqual(testBackend);
+    tf.removeBackend('sync');
+  });
+
+  it('sync backend init without await ready works', async () => {
+    const testBackend = new TestKernelBackend();
+    tf.registerBackend('sync', () => testBackend);
+    tf.setBackend('sync');
+    expect(tf.getBackend()).toEqual('sync');
+    expect(tf.backend()).toEqual(testBackend);
+    tf.removeBackend('sync');
+  });
+
+  it('async backend init followed by ready works', async () => {
+    const testBackend = new TestKernelBackend();
+    tf.registerBackend('async', async () => {
+      await tf.nextFrame();
+      return testBackend;
+    });
+    tf.setBackend('async');
+    expect(tf.getBackend()).toEqual('async');
+    await tf.ready();
+    expect(tf.backend()).toEqual(testBackend);
+    tf.removeBackend('async');
+  });
+
+  it('tf.backend() fails if user forgets to await ready on async backend',
+     async () => {
+       tf.registerBackend('async', async () => {
+         await tf.nextFrame();
+         return new TestKernelBackend();
+       });
+       tf.setBackend('async');
+       expect(tf.getBackend()).toEqual('async');
+       expect(() => tf.backend())
+           .toThrowError(/Backend 'async' has not yet been initialized./);
+       tf.removeBackend('async');
+     });
+
+  it('tf.square() fails if user forgets to call ready on async backend',
+     async () => {
+       tf.registerBackend('async', async () => {
+         await tf.nextFrame();
+         return new TestKernelBackend();
+       });
+       tf.setBackend('async');
+       expect(() => tf.square(2))
+           .toThrowError(/Backend 'async' has not yet been initialized/);
+       tf.removeBackend('async');
+     });
+});
+
 // NOTE: This describe is purposefully not a describeWithFlags so that we test
 // tensor allocation where no scopes have been created. The backend here must
 // be set to CPU because we cannot allocate GPU tensors outside a

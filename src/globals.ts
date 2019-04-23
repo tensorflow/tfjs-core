@@ -257,8 +257,13 @@ export function time(f: () => void): Promise<TimingInfo> {
  *     (requires tfjs-node).
  */
 /** @doc {heading: 'Backends'} */
-export function setBackend(backendName: string): boolean {
+export function setBackend(backendName: string): Promise<boolean> {
   return ENGINE.setBackend(backendName);
+}
+
+/** @doc {heading: 'Backends'} */
+export function ready(): Promise<void> {
+  return ENGINE.ready();
 }
 
 /**
@@ -282,7 +287,8 @@ export function removeBackend(name: string): void {
  * Finds the backend registered under the provided name. Returns null if the
  * name is not in the registry.
  */
-export function findBackend(name: string): KernelBackend {
+export function findBackend(name: string): KernelBackend|
+    Promise<KernelBackend> {
   return ENGINE.findBackend(name);
 }
 
@@ -291,7 +297,8 @@ export function findBackend(name: string): KernelBackend {
  * function that produces a new backend when called. Returns null if the name
  * is not in the registry.
  */
-export function findBackendFactory(name: string): () => KernelBackend {
+export function findBackendFactory(name: string): () =>
+    KernelBackend | Promise<KernelBackend> {
   return ENGINE.findBackendFactory(name);
 }
 
@@ -301,7 +308,7 @@ export function findBackendFactory(name: string): () => KernelBackend {
  * modular builds (e.g. custom tfjs bundle with only webgl support).
  *
  * @param factory The backend factory function. When called, it should
- * return an instance of the backend.
+ * return a backend instance, or a promise of an instance.
  * @param priority The priority of the backend (higher = more important).
  *     In case multiple backends are registered, the priority is used to find
  *     the best backend. Defaults to 1.
@@ -310,7 +317,8 @@ export function findBackendFactory(name: string): () => KernelBackend {
  */
 /** @doc {heading: 'Backends'} */
 export function registerBackend(
-    name: string, factory: () => KernelBackend, priority = 1): boolean {
+    name: string, factory: () => KernelBackend | Promise<KernelBackend>,
+    priority = 1): boolean {
   return ENGINE.registerBackend(name, factory, priority);
 }
 
