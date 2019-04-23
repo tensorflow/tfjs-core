@@ -5,7 +5,7 @@ export class MatMulPackedProgram implements WebGPUProgram {
   userCode: string;
   dispatch: [number, number, number];
   variableNames = ['A', 'B', 'Dimensions'];
-  tileSize = 4;
+  tileSize = 8;
   workPerThread = 2;
 
   constructor(outputShape: [number, number, number]) {
@@ -91,7 +91,10 @@ export class MatMulPackedProgram implements WebGPUProgram {
           for (uint innerCol=0; innerCol<WorkPerThread; innerCol++) {
             uint globalFlatIndex = 
               (globalRow + innerRow) * K + (globalCol + innerCol);
-            setOutput(globalFlatIndex, acc[innerRow][innerCol]);
+            
+            if((globalCol + innerCol) < K && (globalRow + innerRow) < M) {
+              setOutput(globalFlatIndex, acc[innerRow][innerCol]);
+            }
           }
         }
       }
