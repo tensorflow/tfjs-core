@@ -35,7 +35,7 @@ export class MatMulPackedProgram implements WebGPUProgram {
         uint numTiles = (N - 1)/TileSize + 1;
 
         float acc[WorkPerThread][WorkPerThread];
-        float ACached[WorkPerThread];
+        float ACached;
         float BCached[WorkPerThread];
 
         // Without this initialization strange values show up in acc.
@@ -78,14 +78,13 @@ export class MatMulPackedProgram implements WebGPUProgram {
           // Compute acc values for a single thread.
           for(uint k=0; k<TileSize; k++) {
             for(uint inner=0; inner<WorkPerThread; inner++) {
-              ACached[inner] = Asub[tileRow + inner][k];
               BCached[inner] = Bsub[k][tileCol + inner];
             }
             
             for(uint innerRow=0; innerRow<WorkPerThread; innerRow++) {
+              ACached = Asub[tileRow + innerRow][k];
               for(uint innerCol=0; innerCol<WorkPerThread; innerCol++) {
-                acc[innerRow][innerCol] += 
-                  ACached[innerRow] * BCached[innerCol];
+                acc[innerRow][innerCol] += ACached * BCached[innerCol];
               }
             }
           }
