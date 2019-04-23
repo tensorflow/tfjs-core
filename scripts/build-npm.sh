@@ -16,9 +16,9 @@
 
 set -e
 
-yarn run rimraf dist/
+yarn rimraf dist/
 yarn
 
 yarn build
-yarn run rollup -c --visualize
+yarn rollup -c --visualize
 echo "Stored standalone library at dist/tf-core(.min).js"
