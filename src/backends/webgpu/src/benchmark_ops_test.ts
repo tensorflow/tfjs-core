@@ -85,4 +85,18 @@ describe('Ops benchmarks', () => {
       await a.data();
     });
   }, 60000);
+
+  xit('conv2d', async () => {
+    let a = tf.randomNormal<tf.Rank.R4>([1, 100, 100, 1]);
+    const b = tf.randomNormal<tf.Rank.R4>([25, 25, 1, 1]);
+
+    await time(5, 50, () => {
+      const c = tf.conv2d(a, b, 1, 'same');
+      const toDispose = a;
+      a = c;
+      return [toDispose];
+    }, async () => {
+      await a.data();
+    });
+  }, 60000);
 });
