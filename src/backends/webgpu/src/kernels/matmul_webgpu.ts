@@ -22,7 +22,7 @@ export class MatMulProgram implements WebGPUProgram {
   userCode: string;
   dispatch: [number, number, number];
   variableNames = ['A', 'B', 'Dimensions'];
-  tileSize = 8;
+  tileSize = 16;
 
   constructor(outputShape: [number, number, number]) {
     this.outputShape = outputShape;

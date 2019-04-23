@@ -6,7 +6,7 @@ export class MatMulPackedProgram implements WebGPUProgram {
   dispatch: [number, number, number];
   workPerThread: number;
   variableNames = ['A', 'B', 'Dimensions'];
-  tileSize = 8;
+  tileSize = 16;
 
   constructor(outputShape: [number, number, number], workPerThread: number) {
     this.outputShape = outputShape;
@@ -35,6 +35,8 @@ export class MatMulPackedProgram implements WebGPUProgram {
         uint numTiles = (N - 1)/TileSize + 1;
 
         float acc[WorkPerThread][WorkPerThread];
+        float ACached[WorkPerThread];
+        float BCached[WorkPerThread];
 
         // Without this initialization strange values show up in acc.
         for(uint innerRow=0; innerRow<WorkPerThread; innerRow++) {
@@ -75,12 +77,15 @@ export class MatMulPackedProgram implements WebGPUProgram {
 
           // Compute acc values for a single thread.
           for(uint k=0; k<TileSize; k++) {
+            for(uint inner=0; inner<WorkPerThread; inner++) {
+              ACached[inner] = Asub[tileRow + inner][k];
+              BCached[inner] = Bsub[k][tileCol + inner];
+            }
+            
             for(uint innerRow=0; innerRow<WorkPerThread; innerRow++) {
               for(uint innerCol=0; innerCol<WorkPerThread; innerCol++) {
-                float ALocal = Asub[tileRow + innerRow][k];
-                float BLocal = Bsub[k][tileCol + innerCol];
-                
-                acc[innerRow][innerCol] += ALocal * BLocal;
+                acc[innerRow][innerCol] += 
+                  ACached[innerRow] * BCached[innerCol];
               }
             }
           }
