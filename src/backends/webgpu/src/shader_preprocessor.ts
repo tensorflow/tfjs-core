@@ -136,6 +136,8 @@ function getOutputSamplingSnippet(outShape: number[]): string {
       return getOutput2DCoords(outShape as [number, number]);
     case 3:
       return getOutput3DCoords(outShape as [number, number, number]);
+    case 4:
+      return '';
     default:
       throw new Error(
           `${outShape.length}-D output sampling is not yet supported`);

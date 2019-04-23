@@ -19,11 +19,13 @@
 
 import './flags_webgpu';
 
-import {DataMover, DataType, ENV, KernelBackend, Rank, ShapeMap, Tensor, Tensor3D, util} from '@tensorflow/tfjs-core';
+import {DataMover, DataType, ENV, KernelBackend, Rank, ShapeMap, Tensor, Tensor3D, Tensor4D, util} from '@tensorflow/tfjs-core';
+import {Conv2DInfo} from '@tensorflow/tfjs-core/dist/ops/conv_util';
 import * as shaderc from '@webgpu/shaderc';
 
 import * as binary_op from './kernels/binary_op_webgpu';
 import {BinaryOpProgram} from './kernels/binary_op_webgpu';
+import {Conv2DNaiveProgram} from './kernels/conv2d_naive_webgpu';
 import {MatMulPackedProgram} from './kernels/matmul_packed_webgpu';
 import {MatMulProgram} from './kernels/matmul_webgpu';
 import {PadProgram} from './kernels/pad_webgpu';
@@ -228,6 +230,39 @@ export class WebGPUBackend extends KernelBackend {
     const program = new BinaryOpProgram(binary_op.ADD, output.shape);
 
     return this.compileAndRun(program, [a, b], output) as Tensor;
+  }
+
+  conv2d(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
+    const output =
+        Tensor.make(convInfo.outShape, {}, x.dtype, this) as Tensor4D;
+    const program = new Conv2DNaiveProgram(convInfo);
+
+    const pad = convInfo.padInfo.type === 'VALID' ?
+        [0, 0] :
+        convInfo.padInfo.type === 'SAME' ?
+        [
+          -Math.floor((convInfo.filterShape[0] - 1) / 2),
+          -Math.floor((convInfo.filterShape[1] - 1) / 2)
+        ] :
+        [convInfo.padInfo.top, convInfo.padInfo.left];
+
+    const dimensionsData = new Uint32Array([
+      ...convInfo.inShape,
+      ...convInfo.outShape,
+      convInfo.filterHeight,
+      convInfo.filterWidth,
+      ...pad,
+      convInfo.strideHeight,
+      convInfo.strideWidth,
+    ]);
+    const dimensions = this.makeUniforms(dimensionsData);
+
+    const result = this.compileAndRun(
+                       program, [x, filter], output, dimensions) as Tensor4D;
+
+    this.destroyBuffer(dimensionsData.byteLength, dimensions.resource.buffer);
+
+    return result;
   }
 
   multiply(a: Tensor, b: Tensor): Tensor {
