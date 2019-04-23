@@ -52,7 +52,7 @@
     "rollup-plugin-visualizer": "~1.1.1"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && ./scripts/enumerate-tests.js",
     "build:bazel": "bazel build //...",
     "build-npm": "./scripts/build-npm.sh",
     "link-local": "yalc link",
