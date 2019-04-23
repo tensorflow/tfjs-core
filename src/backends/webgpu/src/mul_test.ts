@@ -15,13 +15,13 @@
  * =============================================================================
  */
 
+import * as tf from '@tensorflow/tfjs-core';
 import {test_util} from '@tensorflow/tfjs-core';
 import {ALL_ENVS, describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_util';
-
-import * as tf from './index';
+import * as webgpu from './index';
 
 describeWithFlags('WebGPU backend', ALL_ENVS, () => {
-  beforeAll(async () => await tf.ready);
+  beforeAll(async () => await webgpu.ready);
 
   it('A * B elementwise', async () => {
     const a = tf.tensor1d([1, 2, 3]);

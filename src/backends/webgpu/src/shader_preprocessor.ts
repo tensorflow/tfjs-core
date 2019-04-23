@@ -26,7 +26,7 @@ function mapToGlslTypes(type: DataType): GLSLDataType|DataType {
     return 'uint';
   }
   return type;
-};
+}
 
 export function makeShader(
     inputTypes: DataType[], variableNames: string[], userCode: string,
@@ -34,7 +34,7 @@ export function makeShader(
   let tileSizeSnippet: string;
   if (tileSize != null) {
     tileSizeSnippet = `const uint TileSize = ${tileSize};
-    layout (local_size_x = TileSize, local_size_y = TileSize, 
+    layout (local_size_x = TileSize, local_size_y = TileSize,
       local_size_z = 1) in;`;
   }
   const prefixSnippets: string[] = [];

@@ -23,7 +23,9 @@ const env = jasmine.getEnv();
 
 /** Tests that have these substrings in their name will be included. */
 const INCLUDE_LIST: string[] = [
-  'matmul',
+  'WebGPU',
+  // TODO(smilkov): Enable this when we use async .data() in core tests.
+  // 'matmul'
 ];
 /** Tests that have these substrings in their name will be excluded. */
 const EXCLUDE_LIST: string[] = [];
@@ -53,4 +55,5 @@ env.specFilter = spec => {
 };
 
 // Import and run all the tests from core.
-import '@tensorflow/tfjs-core/dist/tests';
+// TODO(smilkov): Enable when we publish new core.
+// import '@tensorflow/tfjs-core/dist/tests';

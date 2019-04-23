@@ -67,7 +67,7 @@
     "test-node": "tsc && node dist/test_node.js",
     "test-node-ci": "node dist/test_node.js",
     "test-integration": "./scripts/test-integration.js",
-    "test-ci": "./scripts/test-ci.sh"
+    "test-ci": "./scripts/test-ci.sh && ./src/backends/webgpu/scripts/test-ci.sh"
   },
   "dependencies": {
     "@types/seedrandom": "2.4.27",

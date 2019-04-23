@@ -78,4 +78,4 @@ export const compileProgram =
 export function makeShaderKey(program: WebGPUProgram): string {
   const key = program.userCode;
   return key;
-};
+}

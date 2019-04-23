@@ -218,4 +218,8 @@ export class WebGPUBackend extends KernelBackend {
 
     return this.compileAndRun(program, [a, b, dimensions], output) as Tensor3D;
   }
+
+  dispose() {
+    // Backend disposal logic.
+  }
 }

@@ -15,11 +15,13 @@
  * =============================================================================
  */
 
-import * as tf from './index';
+import * as tf from '@tensorflow/tfjs-core';
+import * as webgpu from './index';
 
+// tslint:disable-next-line:ban
 xdescribe('Ops benchmarks', () => {
   it('matMul', async () => {
-    await tf.ready;
+    await webgpu.ready;
 
     const times = [];
 
