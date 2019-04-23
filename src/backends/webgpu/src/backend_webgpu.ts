@@ -246,12 +246,15 @@ export class WebGPUBackend extends KernelBackend {
         Tensor.make([batch, outerShapeA, outerShapeB], {}, a.dtype, this) as
         Tensor3D;
 
-    // const program = new MatMulProgram(output.shape);
     let program: MatMulProgram|MatMulPackedProgram;
-    if (1 + 1 !== 2) {
+    // TODO: We should eventually use the blocked version, but keeping around
+    // the old version while we try to understand conditions under which blocked
+    // is faster.
+    if (ENV.get('WEBGPU_MATMUL_WORK_PER_THREAD') === 1) {
       program = new MatMulProgram(output.shape);
     } else {
-      program = new MatMulPackedProgram(output.shape);
+      program = new MatMulPackedProgram(
+          output.shape, ENV.get('WEBGPU_MATMUL_WORK_PER_THREAD') as number);
     }
 
     const dimensions =

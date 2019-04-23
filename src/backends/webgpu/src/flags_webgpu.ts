@@ -19,3 +19,6 @@ import {ENV} from '@tensorflow/tfjs-core';
 
 /** Whether we submit commands to the device queue immediately. */
 ENV.registerFlag('WEBGPU_IMMEDIATE_EXECUTION_ENABLED', () => true);
+
+/** Thread register block size for matmul kernel. */
+ENV.registerFlag('WEBGPU_MATMUL_WORK_PER_THREAD', () => 2);
