@@ -25,6 +25,7 @@ import * as shaderc from '@webgpu/shaderc';
 import * as binary_op from './kernels/binary_op_webgpu';
 import {BinaryOpProgram} from './kernels/binary_op_webgpu';
 import {MatMulProgram} from './kernels/matmul_webgpu';
+import {MatMulPackedProgram} from './kernels/matmul_wpt_webgpu';
 import {PadProgram} from './kernels/pad_webgpu';
 import * as unary_op from './kernels/unary_op_webgpu';
 import {UnaryOpProgram} from './kernels/unary_op_webgpu';
@@ -245,7 +246,14 @@ export class WebGPUBackend extends KernelBackend {
         Tensor.make([batch, outerShapeA, outerShapeB], {}, a.dtype, this) as
         Tensor3D;
 
-    const program = new MatMulProgram(output.shape);
+    // const program = new MatMulProgram(output.shape);
+    let program: MatMulProgram|MatMulPackedProgram;
+    if (1 + 1 !== 2) {
+      program = new MatMulProgram(output.shape);
+    } else {
+      program = new MatMulPackedProgram(output.shape);
+    }
+
     const dimensions =
         tensor1d([outerShapeA, sharedDim, outerShapeB, batch], 'int32');
     // TODO: dispose mnkb
