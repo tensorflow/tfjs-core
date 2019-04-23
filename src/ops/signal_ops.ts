@@ -16,7 +16,8 @@
  */
 
 import {op} from '../ops/operation';
-import {Tensor, Tensor1D} from '../tensor';
+import {Tensor1D} from '../tensor';
+import {tensor1d} from './tensor_ops';
 
 /**
  * Generate a Hann window.
@@ -59,7 +60,7 @@ function cosineWindow(windowLength: number, a: number, b: number): Tensor1D {
     const cosArg = (2.0 * Math.PI * i) / (windowLength + even - 1);
     newValues[i] = a - b * Math.cos(cosArg);
   }
-  return Tensor.make([windowLength], {values: newValues}) as Tensor1D;
+  return tensor1d(newValues, 'float32');
 }
 
 export const hannWindow = op({hannWindow_});
