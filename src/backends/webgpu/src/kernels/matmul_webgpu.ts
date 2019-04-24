@@ -22,7 +22,7 @@ export class MatMulProgram implements WebGPUProgram {
   userCode: string;
   dispatch: [number, number, number];
   variableNames = ['A', 'B', 'Dimensions'];
-  tileSize = 16;
+  tileSize = 32;
 
   constructor(outputShape: [number, number, number]) {
     this.outputShape = outputShape;
@@ -39,10 +39,10 @@ export class MatMulProgram implements WebGPUProgram {
         // M is A outer, N is shared, K is B outer
         uint M = Dimensions[0], N = Dimensions[1], 
           K = Dimensions[2], batch = Dimensions[3];
-        uint row = gl_LocalInvocationID.x; // Local row ID (max: TileSize)
-        uint col = gl_LocalInvocationID.y; // Local col ID (max: TileSize)
-        uint globalRow = TileSize*gl_WorkGroupID.x + row; // Row ID of C (0..M)
-        uint globalCol = TileSize*gl_WorkGroupID.y + col; // Col ID of C (0..N)
+        uint row = gl_LocalInvocationID.y; // Local row ID (max: TileSize)
+        uint col = gl_LocalInvocationID.x; // Local col ID (max: TileSize)
+        uint globalRow = TileSize*gl_WorkGroupID.y + row; // Row ID of C (0..M)
+        uint globalCol = TileSize*gl_WorkGroupID.x + col; // Col ID of C (0..N)
 
         float acc = 0.0;
 

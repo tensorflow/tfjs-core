@@ -6,7 +6,7 @@ export class MatMulPackedProgram implements WebGPUProgram {
   dispatch: [number, number, number];
   workPerThread: number;
   variableNames = ['A', 'B', 'Dimensions'];
-  tileSize = 16;
+  tileSize = 32;
 
   constructor(outputShape: [number, number, number], workPerThread: number) {
     this.outputShape = outputShape;
@@ -24,13 +24,13 @@ export class MatMulPackedProgram implements WebGPUProgram {
         // M is A outer, N is shared, K is B outer
         uint M = Dimensions[0], N = Dimensions[1], 
           K = Dimensions[2], batch = Dimensions[3];
-        uint row = gl_LocalInvocationID.x; // 0..local_size_x
-        uint col = gl_LocalInvocationID.y; // 0..local_size_y
+        uint row = gl_LocalInvocationID.y; // 0..local_size_x
+        uint col = gl_LocalInvocationID.x; // 0..local_size_y
         uint tileRow = row * WorkPerThread; // 0..TileSize, stride by local_size
         uint tileCol = col * WorkPerThread; // 0..TileSize
         uint globalRow = 
-          TileSize*gl_WorkGroupID.x + tileRow; // 0..M, stride by tileSize
-        uint globalCol = TileSize*gl_WorkGroupID.y + tileCol;
+          TileSize*gl_WorkGroupID.y + tileRow; // 0..M, stride by tileSize
+        uint globalCol = TileSize*gl_WorkGroupID.x + tileCol;
 
         uint numTiles = (N - 1)/TileSize + 1;
 
@@ -56,7 +56,7 @@ export class MatMulPackedProgram implements WebGPUProgram {
               uint AColumnIndex = t * TileSize + tileCol + innerCol;
               uint AFlatIndex = (globalRow + innerRow) * N + AColumnIndex;
 
-              if(AColumnIndex < N) {
+              if(AColumnIndex < N && AFlatIndex < M * N) {
                 Asub[inputRow][inputCol] = A[AFlatIndex];
               } else {
                 Asub[inputRow][inputCol] = 0.0;
@@ -65,7 +65,7 @@ export class MatMulPackedProgram implements WebGPUProgram {
               uint BRowIndex = t * TileSize + tileRow + innerRow;
               uint BFlatIndex = BRowIndex * K + (globalCol + innerCol);
 
-              if(BRowIndex < N) {
+              if(BRowIndex < N && BFlatIndex < N * K) {
                 Bsub[inputRow][inputCol] = B[BFlatIndex];
               } else {
                 Bsub[inputRow][inputCol] = 0.0; 
