@@ -24,37 +24,39 @@ echo '######################'
 echo 'Nightly build or version.ts was modified.'
 echo 'Testing layers/converter/node/data against tfjs-core@master.'
 echo '######################'
-yarn build && yarn run yalc publish
+yarn build && yarn yalc publish
 
 echo 'Cloning layers'
 git clone https://github.com/tensorflow/tfjs-layers.git --depth 1
 cd tfjs-layers
-yarn && yarn link-local '@tensorflow/tfjs-core' && ./scripts/test-travis.sh
+yarn && yarn link-local '@tensorflow/tfjs-core'
+yarn test-ci
 LAYERS_EXIT_CODE=$?
-
+echo '!!!!!!!!!!!' $LAYERS_EXIT_CODE
 cd ..
 echo 'Cloning node'
 git clone https://github.com/tensorflow/tfjs-node.git --depth 1
 cd tfjs-node
-yarn && yarn link-local '@tensorflow/tfjs-core' && ./scripts/test-travis.sh
+yarn && yarn link-local '@tensorflow/tfjs-core'
+yarn test-ci
 NODE_EXIT_CODE=$?
-
+echo '!!!!!!!!!!!' $NODE_EXIT_CODE
 cd ..
 echo 'Cloning converter'
 git clone https://github.com/tensorflow/tfjs-converter.git --depth 1
 cd tfjs-converter
 yarn && yarn link-local '@tensorflow/tfjs-core'
-yarn build && yarn lint && yarn test-travis
+yarn test-ci
 CONVERTER_EXIT_CODE=$?
-
+echo '!!!!!!!!!!!' $CONVERTER_EXIT_CODE
 cd ..
 echo 'Cloning data'
 git clone https://github.com/tensorflow/tfjs-data.git --depth 1
 cd tfjs-data
 yarn && yarn link-local '@tensorflow/tfjs-core'
-yarn build && yarn lint && yarn test-travis
+yarn test-ci
 DATA_EXIT_CODE=$?
-
+echo '!!!!!!!!!!!' $DATA_EXIT_CODE
 echo '==== INTEGRATION TEST RESULTS ===='
 print_status "tfjs-layers" "$LAYERS_EXIT_CODE"
 print_status "tfjs-node" "$NODE_EXIT_CODE"
