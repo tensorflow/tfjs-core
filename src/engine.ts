@@ -165,9 +165,10 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
         });
 
     for (let i = 0; i < sortedBackends.length; i++) {
-      const backend = sortedBackends[i];
-      const success = await this.initializeBackend(backend).success;
+      const backendName = sortedBackends[i];
+      const success = await this.initializeBackend(backendName).success;
       if (success) {
+        this.setBackend(backendName);
         return;
       }
     }
@@ -181,11 +182,17 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     if (this.pendingInit != null) {
       throw new Error(
           `Backend '${this.backendName}' has not yet been initialized. Make ` +
-          `sure to await tf.ready() before using this backend`);
+          `sure to await tf.ready() before calling other methods`);
     }
     if (this.backendInstance == null) {
-      const bestBackendName = this.initializeBackendsAndReturnBest();
-      this.setBackend(bestBackendName);
+      const {name, asyncInit} = this.initializeBackendsAndReturnBest();
+      if (asyncInit) {
+        throw new Error(
+            `The highest priority backend '${name}' has not yet been ` +
+            `initialized. Make sure to await tf.ready() before calling ` +
+            `other methods`);
+      }
+      this.setBackend(name);
     }
     return this.backendInstance;
   }
@@ -240,8 +247,9 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     this.backendName = backendName;
     if (this.registry[backendName] == null) {
       this.backendInstance = null;
-      const success = await this.initializeBackend(backendName).success;
-      if (!success) {
+      const {success, asyncInit} = this.initializeBackend(backendName);
+      const result = asyncInit ? await success : success;
+      if (!result) {
         return false;
       }
     }
@@ -279,6 +287,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
                   return true;
                 })
                 .catch(err => {
+                  this.pendingInit = null;
                   console.warn(
                       `Initialization of backend ${backendName} failed`);
                   console.warn(err.stack || err.message);
@@ -309,7 +318,8 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     delete this.registryFactory[backendName];
   }
 
-  private initializeBackendsAndReturnBest(): string {
+  private initializeBackendsAndReturnBest():
+      {name: string, asyncInit: boolean} {
     if (Object.keys(this.registryFactory).length === 0) {
       throw new Error('No backend found in registry.');
     }
@@ -321,18 +331,12 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
         });
 
     for (let i = 0; i < sortedBackends.length; i++) {
-      const backend = sortedBackends[i];
-      const {success, asyncInit} = this.initializeBackend(backend);
-      if (asyncInit) {
-        throw new Error(
-            `Backend '${
-                backend}' has async initialization. Please call await ` +
-            `tf.ready() before you run other commands`);
-      } else if (success) {
-        return backend;
+      const backendName = sortedBackends[i];
+      const {success, asyncInit} = this.initializeBackend(backendName);
+      if (asyncInit || success) {
+        return {name: backendName, asyncInit};
       }
     }
-
     throw new Error(
         `Could not initialize any backends, all backend initializations ` +
         `failed.`);

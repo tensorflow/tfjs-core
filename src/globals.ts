@@ -245,8 +245,8 @@ export function time(f: () => void): Promise<TimingInfo> {
 
 /**
  * Sets the backend (cpu, webgl, etc) responsible for creating tensors and
- * executing operations on those tensors. Returns whether the setting of the
- * backend was successful.
+ * executing operations on those tensors. Returns a promise that resolves
+ * to a boolean if the backend initialization was successful.
  *
  * Note this disposes the current backend, if any, as well as any tensors
  * associated with it. A new backend is initialized, even if it is of the
@@ -261,6 +261,11 @@ export function setBackend(backendName: string): Promise<boolean> {
   return ENGINE.setBackend(backendName);
 }
 
+/**
+ * Returns a promise that resolves when the currently selected backend (or the
+ * highest priority one) has initialized. Await this promise when you are using
+ * a backend that has async initialization.
+ */
 /** @doc {heading: 'Backends'} */
 export function ready(): Promise<void> {
   return ENGINE.ready();
@@ -285,10 +290,9 @@ export function removeBackend(name: string): void {
 
 /**
  * Finds the backend registered under the provided name. Returns null if the
- * name is not in the registry.
+ * name is not in the registry, or the registration hasn't finished yet.
  */
-export function findBackend(name: string): KernelBackend|
-    Promise<KernelBackend> {
+export function findBackend(name: string): KernelBackend {
   return ENGINE.findBackend(name);
 }
 
@@ -324,7 +328,9 @@ export function registerBackend(
 
 /**
  * Gets the current backend. If no backends have been initialized, this will
- * initialize the best backend.
+ * attempt to initialize the best backend. Will throw an error if the highest
+ * priority backend has async initialization, in which case, you should call
+ * 'await tf.ready()' before running other code.
  */
 /** @doc {heading: 'Backends'} */
 export function backend(): KernelBackend {
