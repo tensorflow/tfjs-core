@@ -44,7 +44,11 @@ export * from './scatter_nd';
 export * from './spectral_ops';
 export * from './sparse_to_dense';
 export * from './gather_nd';
+<<<<<<< HEAD
 export * from './dropout';
+=======
+export * from './signal_ops';
+>>>>>>> af1040d234f66d8f2d13a87796c630939ea09b5e
 
 export {op} from './operation';
 
