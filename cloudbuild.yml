@@ -27,7 +27,7 @@ steps:
   id: 'test-webgpu'
   dir: 'src/backends/webgpu/'
   args: ['test-ci']
-  waitFor: ['yarn']
+  waitFor: ['-']
 secrets:
 - kmsKeyName: projects/learnjs-174218/locations/global/keyRings/tfjs/cryptoKeys/enc
   secretEnv:
