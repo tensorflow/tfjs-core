@@ -18,9 +18,11 @@
 import {KernelBackend} from './backends/backend';
 import {ENGINE, MemoryInfo, ProfileInfo, ScopeFn, TimingInfo} from './engine';
 import {ENV} from './environment';
+import {Platform} from './platforms/platform';
 import {setDeprecationWarningFn, Tensor} from './tensor';
 import {TensorContainer} from './tensor_types';
 import {getTensorsInContainer} from './tensor_util';
+
 
 /**
  * Enables production mode which disables correctness checks in favor of
@@ -321,4 +323,13 @@ export function registerBackend(
 /** @doc {heading: 'Backends'} */
 export function backend(): KernelBackend {
   return ENGINE.backend;
+}
+
+/**
+ * Sets the global platform.
+ *
+ * @param platform A platform implementation.
+ */
+export function setPlatform(platform: Platform) {
+  ENV.setPlatform(platform);
 }

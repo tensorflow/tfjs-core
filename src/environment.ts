@@ -15,6 +15,8 @@
  * =============================================================================
  */
 
+import {Platform} from './platforms/platform';
+
 // Expects flags from URL in the format ?tfjsflags=FLAG1:1,FLAG2:true.
 const TENSORFLOWJS_FLAGS_PREFIX = 'tfjsflags';
 
@@ -33,9 +35,15 @@ export class Environment {
 
   private urlFlags: Flags = {};
 
+  platform: Platform;
+
   // tslint:disable-next-line: no-any
   constructor(public global: any) {
     this.populateURLFlags();
+  }
+
+  setPlatform(platform: Platform) {
+    this.platform = platform;
   }
 
   registerFlag(
