@@ -1,5 +1,5 @@
 {
-  "name": "@tensorflow/tfjs-webgpu",
+  "name": "@tensorflow/tfjs-backend-webgpu",
   "version": "0.0.1",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -35,7 +35,7 @@
   },
   "dependencies": {
     "@tensorflow/tfjs-core": "1.1.0",
-    "@webgpu/shaderc": "0.0.4",
+    "@webgpu/shaderc": "0.0.6",
     "@webgpu/types": "0.0.3"
   }
 }
