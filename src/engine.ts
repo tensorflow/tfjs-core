@@ -145,24 +145,16 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     this.state = new EngineState();
   }
 
-  private pendingInit: Promise<boolean>;
+  private pendingBackendInit: Promise<boolean>;
 
   async ready(): Promise<void> {
-    if (this.pendingInit != null) {
-      return this.pendingInit.then(() => {});
+    if (this.pendingBackendInit != null) {
+      return this.pendingBackendInit.then(() => {});
     }
     if (this.backendInstance != null) {
       return;
     }
-    if (Object.keys(this.registryFactory).length === 0) {
-      throw new Error('No backend found in registry.');
-    }
-    const sortedBackends =
-        Object.keys(this.registryFactory).sort((a: string, b: string) => {
-          // Highest priority comes first.
-          return this.registryFactory[b].priority -
-              this.registryFactory[a].priority;
-        });
+    const sortedBackends = this.getSortedBackends();
 
     for (let i = 0; i < sortedBackends.length; i++) {
       const backendName = sortedBackends[i];
@@ -179,7 +171,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
   }
 
   get backend(): KernelBackend {
-    if (this.pendingInit != null) {
+    if (this.pendingBackendInit != null) {
       throw new Error(
           `Backend '${this.backendName}' has not yet been initialized. Make ` +
           `sure to await tf.ready() before calling other methods`);
@@ -283,17 +275,17 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
             backend
                 .then(backendInstance => {
                   this.registry[backendName] = backendInstance;
-                  this.pendingInit = null;
+                  this.pendingBackendInit = null;
                   return true;
                 })
                 .catch(err => {
-                  this.pendingInit = null;
+                  this.pendingBackendInit = null;
                   console.warn(
                       `Initialization of backend ${backendName} failed`);
                   console.warn(err.stack || err.message);
                   return false;
                 });
-        this.pendingInit = success;
+        this.pendingBackendInit = success;
         return {success, asyncInit: true};
       } else {
         this.registry[backendName] = backend as KernelBackend;
@@ -318,17 +310,20 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     delete this.registryFactory[backendName];
   }
 
-  private initializeBackendsAndReturnBest():
-      {name: string, asyncInit: boolean} {
+  private getSortedBackends(): string[] {
     if (Object.keys(this.registryFactory).length === 0) {
       throw new Error('No backend found in registry.');
     }
-    const sortedBackends =
-        Object.keys(this.registryFactory).sort((a: string, b: string) => {
-          // Highest priority comes first.
-          return this.registryFactory[b].priority -
-              this.registryFactory[a].priority;
-        });
+    return Object.keys(this.registryFactory).sort((a: string, b: string) => {
+      // Highest priority comes first.
+      return this.registryFactory[b].priority -
+          this.registryFactory[a].priority;
+    });
+  }
+
+  private initializeBackendsAndReturnBest():
+      {name: string, asyncInit: boolean} {
+    const sortedBackends = this.getSortedBackends();
 
     for (let i = 0; i < sortedBackends.length; i++) {
       const backendName = sortedBackends[i];

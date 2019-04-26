@@ -36,7 +36,9 @@ module.exports = function(config) {
     port: 9876,
     colors: true,
     logLevel: config.LOG_INFO,
+    autoWatch: false,
     browsers: ['Chrome', 'chrome_webgpu'],
+    singleRun: true,
     customLaunchers: {
       chrome_webgpu: {
         base: 'Chrome',
