@@ -5,8 +5,9 @@ export class MatMulPackedProgram implements WebGPUProgram {
   userCode: string;
   dispatch: [number, number, number];
   workPerThread: number;
-  variableNames = ['A', 'B', 'Dimensions'];
-  tileSize: [number, number] = [32, 32];
+  variableNames = ['A', 'B'];
+  uniforms = 'uint dimAOuter, dimInner, dimBOuter, batch;';
+  tileSize: [number, number] = [64, 64];
 
   constructor(outputShape: [number, number, number], workPerThread: number) {
     this.outputShape = outputShape;
@@ -17,22 +18,20 @@ export class MatMulPackedProgram implements WebGPUProgram {
     ];
 
     this.userCode = `
-      shared float Asub[TileSize][TileSize];
-      shared float Bsub[TileSize][TileSize];
+      shared float Asub[TileSize.x][TileSize.x];
+      shared float Bsub[TileSize.x][TileSize.x];
 
       void main() {
-        // M is A outer, N is shared, K is B outer
-        uint M = Dimensions[0], N = Dimensions[1], 
-          K = Dimensions[2], batch = Dimensions[3];
         uint row = gl_LocalInvocationID.y; // 0..local_size_x
         uint col = gl_LocalInvocationID.x; // 0..local_size_y
         uint tileRow = row * WorkPerThread; // 0..TileSize, stride by local_size
         uint tileCol = col * WorkPerThread; // 0..TileSize
-        uint globalRow = 
-          TileSize*gl_WorkGroupID.y + tileRow; // 0..M, stride by tileSize
-        uint globalCol = TileSize*gl_WorkGroupID.x + tileCol;
+        
+        // 0..AOuter, stride by tileSize
+        uint globalRow = TileSize.x*gl_WorkGroupID.y + tileRow; 
+        uint globalCol = TileSize.x*gl_WorkGroupID.x + tileCol;
 
-        uint numTiles = (N - 1)/TileSize + 1;
+        uint numTiles = (dimInner - 1) / TileSize.x + 1;
 
         float acc[WorkPerThread][WorkPerThread];
         float ACached;
@@ -53,19 +52,20 @@ export class MatMulPackedProgram implements WebGPUProgram {
               uint inputRow = tileRow + innerRow;
               uint inputCol = tileCol + innerCol;
               
-              uint AColumnIndex = t * TileSize + tileCol + innerCol;
-              uint AFlatIndex = (globalRow + innerRow) * N + AColumnIndex;
+              uint AColumnIndex = t * TileSize.x + tileCol + innerCol;
+              uint AFlatIndex = 
+                (globalRow + innerRow) * dimInner + AColumnIndex;
 
-              if(AColumnIndex < N && AFlatIndex < M * N) {
+              if(AColumnIndex < dimInner && AFlatIndex < dimAOuter * dimInner) {
                 Asub[inputRow][inputCol] = A[AFlatIndex];
               } else {
                 Asub[inputRow][inputCol] = 0.0;
               }
 
-              uint BRowIndex = t * TileSize + tileRow + innerRow;
-              uint BFlatIndex = BRowIndex * K + (globalCol + innerCol);
+              uint BRowIndex = t * TileSize.x + tileRow + innerRow;
+              uint BFlatIndex = BRowIndex * dimBOuter + (globalCol + innerCol);
 
-              if(BRowIndex < N && BFlatIndex < N * K) {
+              if(BRowIndex < dimInner && BFlatIndex < dimInner * dimBOuter) {
                 Bsub[inputRow][inputCol] = B[BFlatIndex];
               } else {
                 Bsub[inputRow][inputCol] = 0.0; 
@@ -76,7 +76,7 @@ export class MatMulPackedProgram implements WebGPUProgram {
           barrier();
 
           // Compute acc values for a single thread.
-          for(uint k=0; k<TileSize; k++) {
+          for(uint k=0; k<TileSize.x; k++) {
             for(uint inner=0; inner<WorkPerThread; inner++) {
               BCached[inner] = Bsub[k][tileCol + inner];
             }
@@ -95,9 +95,10 @@ export class MatMulPackedProgram implements WebGPUProgram {
         for (uint innerRow=0; innerRow<WorkPerThread; innerRow++) {
           for (uint innerCol=0; innerCol<WorkPerThread; innerCol++) {
             uint globalFlatIndex = 
-              (globalRow + innerRow) * K + (globalCol + innerCol);
+              (globalRow + innerRow) * dimBOuter + (globalCol + innerCol);
             
-            if((globalCol + innerCol) < K && (globalRow + innerRow) < M) {
+            if((globalCol + innerCol) < dimBOuter && 
+              (globalRow + innerRow) < dimAOuter) {
               setOutput(globalFlatIndex, acc[innerRow][innerCol]);
             }
           }
