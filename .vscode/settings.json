@@ -3,7 +3,7 @@
   "search.exclude": {
     "**/node_modules": true,
     "coverage/": true,
-    "dist/": true,
+    "**/dist/": true,
     "**/yarn.lock": true,
     ".rpt2_cache/": true,
     ".yalc/": true

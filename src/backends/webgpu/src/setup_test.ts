@@ -23,7 +23,6 @@ const env = jasmine.getEnv();
 
 /** Tests that have these substrings in their name will be included. */
 const INCLUDE_LIST: string[] = [
-  'WebGPU',
   // TODO(smilkov): Enable this when we use async .data() in core tests.
   // 'matmul'
 ];
@@ -44,7 +43,14 @@ env.specFilter = spec => {
       return false;
     }
   }
-  // Only include a test if the test was in the include list.
+
+  // Include all tests inside a regular describe().
+  if (name.indexOf('test-webgpu') === -1) {
+    return true;
+  }
+
+  // Include a test inside describeWithFlags() only if the test was in the
+  // include list.
   for (let i = 0; i < INCLUDE_LIST.length; ++i) {
     if (name.indexOf(INCLUDE_LIST[i]) > -1) {
       return true;

@@ -16,11 +16,10 @@
  */
 
 import * as tf from '@tensorflow/tfjs-core';
-import {ALL_ENVS, describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_util';
 
 import * as tfwebgpu from './index';
 
-describeWithFlags('WebGPU backend', ALL_ENVS, () => {
+describe('matMul', () => {
   beforeAll(async () => await tfwebgpu.ready);
 
   it('matMul A x B odd shared dim', async () => {
