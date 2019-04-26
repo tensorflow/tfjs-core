@@ -7,7 +7,7 @@ export class MatMulPackedProgram implements WebGPUProgram {
   workPerThread: number;
   variableNames = ['A', 'B'];
   uniforms = 'uint dimAOuter, dimInner, dimBOuter, batch;';
-  tileSize: [number, number] = [64, 64];
+  tileSize: [number, number] = [32, 32];
 
   constructor(outputShape: [number, number, number], workPerThread: number) {
     this.outputShape = outputShape;
@@ -18,8 +18,9 @@ export class MatMulPackedProgram implements WebGPUProgram {
     ];
 
     this.userCode = `
-      shared float Asub[TileSize.x][TileSize.x];
-      shared float Bsub[TileSize.x][TileSize.x];
+      const uint WorkPerThread = ${workPerThread};
+      shared float Asub[TileSize.x * WorkPerThread][TileSize.x * WorkPerThread];
+      shared float Bsub[TileSize.x * WorkPerThread][TileSize.x * WorkPerThread];
 
       void main() {
         uint row = gl_LocalInvocationID.y; // 0..local_size_x

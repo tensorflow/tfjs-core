@@ -44,7 +44,6 @@ function mapToGlslTypes(type: DataType): GLSLDataType|DataType {
 
 interface ProgramParams {
   tileSize?: [number, number?, number?];
-  workPerThread?: number;
   variableNames: string[];
   uniforms?: string;
   userCode: string;
@@ -58,19 +57,13 @@ export function makeShader(
 
   if (program.tileSize != null) {
     const ts = program.tileSize;
-    let workPerThread = program.workPerThread;
-
-    if (workPerThread == null) {
-      workPerThread = 1;
-    }
 
     ts[1] = ts[1] || 1;
     ts[2] = ts[2] || 1;
     prefixSnippets.push(`
-      const uint WorkPerThread = ${workPerThread};
       const uvec3 TileSize = uvec3(${ts[0]}, ${ts[1]}, ${ts[2]});
-      layout (local_size_x = TileSize.x / WorkPerThread,
-              local_size_y = TileSize.y / WorkPerThread,
+      layout (local_size_x = TileSize.x,
+              local_size_y = TileSize.y,
               local_size_z = TileSize.z) in;
     `);
   }
