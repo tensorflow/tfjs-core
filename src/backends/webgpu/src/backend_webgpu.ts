@@ -24,8 +24,8 @@ import * as shaderc from '@webgpu/shaderc';
 
 import * as binary_op from './kernels/binary_op_webgpu';
 import {BinaryOpProgram} from './kernels/binary_op_webgpu';
+import {MatMulPackedProgram} from './kernels/matmul_packed_webgpu';
 import {MatMulProgram} from './kernels/matmul_webgpu';
-import {MatMulPackedProgram} from './kernels/matmul_wpt_webgpu';
 import {PadProgram} from './kernels/pad_webgpu';
 import * as unary_op from './kernels/unary_op_webgpu';
 import {UnaryOpProgram} from './kernels/unary_op_webgpu';
@@ -262,7 +262,7 @@ export class WebGPUBackend extends KernelBackend {
     // TODO: We should eventually use the blocked version, but keeping around
     // the old version while we try to understand conditions under which blocked
     // is faster.
-    if (ENV.get('WEBGPU_MATMUL_WORK_PER_THREAD') === 1) {
+    if (ENV.get('WEBGPU_MATMUL_WORK_PER_THREAD') === 0) {
       program = new MatMulProgram(output.shape);
     } else {
       program = new MatMulPackedProgram(
