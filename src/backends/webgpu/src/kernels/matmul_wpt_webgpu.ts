@@ -6,14 +6,14 @@ export class MatMulPackedProgram implements WebGPUProgram {
   dispatch: [number, number, number];
   workPerThread: number;
   variableNames = ['A', 'B', 'Dimensions'];
-  tileSize = 32;
+  tileSize: [number, number] = [32, 32];
 
   constructor(outputShape: [number, number, number], workPerThread: number) {
     this.outputShape = outputShape;
     this.workPerThread = workPerThread;
     this.dispatch = [
-      Math.ceil(outputShape[1] / this.tileSize),
-      Math.ceil(outputShape[2] / this.tileSize), 1
+      Math.ceil(outputShape[1] / this.tileSize[0]),
+      Math.ceil(outputShape[2] / this.tileSize[1]), 1
     ];
 
     this.userCode = `
