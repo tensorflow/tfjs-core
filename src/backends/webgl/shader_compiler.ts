@@ -1260,12 +1260,14 @@ function getPackedSamplerAtOutputCoords(
   }
 
   let output = `return outputValue;`;
+  const inSize = util.sizeFromShape(inputInfo.shapeInfo.logicalShape);
+  const isScalar = inRank === 0 || inSize === 1;
 
-  if (inRank === 1 && outRank > 1) {
+  if (inRank === 1 && !isScalar && outRank > 1) {
     output = `
       return vec4(outputValue.xy, outputValue.xy);
     `;
-  } else if (inRank === 0 && outRank > 0) {
+  } else if (isScalar && outRank > 0) {
     if (outRank === 1) {
       output = `
         return vec4(outputValue.x, outputValue.x, 0., 0.);
