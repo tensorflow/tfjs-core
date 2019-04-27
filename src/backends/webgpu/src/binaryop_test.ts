@@ -16,21 +16,29 @@
  */
 
 import * as tf from '@tensorflow/tfjs-core';
-import * as Shaderc from '@webgpu/shaderc';
 
-import {WebGPUBackend} from './backend_webgpu';
+import * as tfwebgpu from './index';
 
-// TODO(smilkov): Remove this method after the next core release and use
-// tf.ready() instead.
-export const ready = (async () => {
-  const shaderc = await Shaderc.instantiate();
-  // @ts-ignore navigator.gpu is required
-  const adapter = await navigator.gpu.requestAdapter({});
-  const device = await adapter.requestDevice({});
+describe('Binary ops', () => {
+  beforeAll(async () => await tfwebgpu.ready);
 
-  tf.registerBackend('webgpu', () => {
-    return new WebGPUBackend(device, shaderc);
-  }, 3 /*priority*/);
+  it('A * B', async () => {
+    const a = tf.tensor1d([1, 2, 3]);
+    const b = tf.tensor1d([3, 4, 5]);
+    const c = tf.mul(a, b);
 
-  tf.setBackend('webgpu');
-})();
+    const cData = await c.data();
+
+    tf.test_util.expectArraysClose(cData, new Float32Array([3, 8, 15]));
+  });
+
+  it('A + B', async () => {
+    const a = tf.tensor1d([1, 2, 3]);
+    const b = tf.tensor1d([3, 4, 5]);
+    const c = tf.add(a, b);
+
+    const cData = await c.data();
+
+    tf.test_util.expectArraysClose(cData, new Float32Array([4, 6, 8]));
+  });
+});

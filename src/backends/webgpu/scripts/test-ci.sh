@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copyright 2017 Google Inc. All Rights Reserved.
+# Copyright 2019 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,9 +16,7 @@
 
 set -e
 
-yarn rimraf dist/
 yarn
-
+yarn lint
 yarn build
-yarn rollup -c --visualize
-echo "Stored standalone library at dist/tf-core(.min).js"
+

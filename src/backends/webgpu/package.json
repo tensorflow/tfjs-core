@@ -1,12 +1,14 @@
 {
-  "name": "@tensorflow/tfjs-webgpu",
+  "name": "@tensorflow/tfjs-backend-webgpu",
   "version": "0.0.1",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "publish-local": "rimraf dist/ && yarn build && rollup -c && yalc push",
     "build": "tsc",
-    "test": "karma start --browsers='chrome_webgpu'"
+    "lint": "tslint -p . -t verbose",
+    "test": "karma start --browsers='chrome_webgpu'",
+    "test-ci": "./scripts/test-ci.sh"
   },
   "license": "Apache-2.0",
   "devDependencies": {
@@ -33,7 +35,7 @@
   },
   "dependencies": {
     "@tensorflow/tfjs-core": "1.1.0",
-    "@webgpu/shaderc": "0.0.4",
+    "@webgpu/shaderc": "0.0.6",
     "@webgpu/types": "0.0.3"
   }
 }

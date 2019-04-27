@@ -15,22 +15,31 @@
  * =============================================================================
  */
 
-import * as tf from '@tensorflow/tfjs-core';
-import * as Shaderc from '@webgpu/shaderc';
+import {util} from '@tensorflow/tfjs-core';
+import {WebGPUProgram} from './webgpu_program';
 
-import {WebGPUBackend} from './backend_webgpu';
+export const RELU = 'return max(a, 0.0);';
 
-// TODO(smilkov): Remove this method after the next core release and use
-// tf.ready() instead.
-export const ready = (async () => {
-  const shaderc = await Shaderc.instantiate();
-  // @ts-ignore navigator.gpu is required
-  const adapter = await navigator.gpu.requestAdapter({});
-  const device = await adapter.requestDevice({});
+export class UnaryOpProgram implements WebGPUProgram {
+  outputShape: number[];
+  userCode: string;
+  dispatch: [number, number, number];
+  variableNames = ['A'];
 
-  tf.registerBackend('webgpu', () => {
-    return new WebGPUBackend(device, shaderc);
-  }, 3 /*priority*/);
+  constructor(op: string, outputShape: number[]) {
+    this.outputShape = outputShape;
+    this.dispatch = [util.sizeFromShape(this.outputShape), 1, 1];
 
-  tf.setBackend('webgpu');
-})();
+    this.userCode = `
+      float unaryOperation(float a) {
+        ${op}
+      }
+
+      void main() {
+        uint index = gl_GlobalInvocationID.x;
+        float a = A[index];
+        setOutput(index, unaryOperation(a));
+      }
+    `;
+  }
+}

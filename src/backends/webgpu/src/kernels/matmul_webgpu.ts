@@ -21,55 +21,63 @@ export class MatMulProgram implements WebGPUProgram {
   outputShape: number[];
   userCode: string;
   dispatch: [number, number, number];
-  variableNames = ['A', 'B', 'Dimensions'];
-  tileSize = 2;
+  variableNames = ['A', 'B'];
+  uniforms = 'uint dimAOuter, dimInner, dimBOuter, batch;';
+  tileSize: [number, number] = [32, 32];  // Must be square.
 
   constructor(outputShape: [number, number, number]) {
     this.outputShape = outputShape;
     this.dispatch = [
-      Math.ceil(outputShape[1] / this.tileSize),
-      Math.ceil(outputShape[2] / this.tileSize), 1
+      Math.ceil(outputShape[1] / this.tileSize[0]),
+      Math.ceil(outputShape[2] / this.tileSize[1]), 1
     ];
 
     this.userCode = `
-      shared float Asub[TileSize][TileSize];
-      shared float Bsub[TileSize][TileSize];
+      shared float Asub[TileSize.x][TileSize.x];
+      shared float Bsub[TileSize.x][TileSize.x];
 
       void main() {
-        // M is A outer, N is shared, K is B outer
-        uint M = Dimensions[0], N = Dimensions[1], 
-          K = Dimensions[2], batch = Dimensions[3];
-        uint row = gl_LocalInvocationID.x; // Local row ID (max: TileSize)
-        uint col = gl_LocalInvocationID.y; // Local col ID (max: TileSize)
-        uint globalRow = TileSize*gl_WorkGroupID.x + row; // Row ID of C (0..M)
-        uint globalCol = TileSize*gl_WorkGroupID.y + col; // Col ID of C (0..N)
+        uint localRow = gl_LocalInvocationID.x; // < TileSize.x
+        uint localCol = gl_LocalInvocationID.y; // < TileSize.x
+        uint globalRow = TileSize.x*gl_WorkGroupID.x + localRow; // < dimAOuter
+        uint globalCol = TileSize.x*gl_WorkGroupID.y + localCol; // < dimInner
 
         float acc = 0.0;
 
-        // Add 1 to N to ceil.
-        uint numTiles = (N + 1)/TileSize;
+        uint numTiles = (dimInner - 1) / TileSize.x + 1;
 
         for (uint t=0; t<numTiles; t++) {
           // Load one tile of A and B into local memory
-          uint tiledRow = TileSize*t + row;
-          uint tiledCol = TileSize*t + col;
-          Asub[row][col] = A[globalRow*N + tiledCol];
-          Bsub[row][col] = B[tiledRow*K + globalCol];
+          uint tiledACol = TileSize.x*t + localCol;
+          uint tiledBRow = TileSize.x*t + localRow;
+
+          uint AFlatIndex = globalRow * dimInner + tiledACol;
+          if(AFlatIndex < dimAOuter * dimInner) {
+            Asub[localRow][localCol] = A[AFlatIndex];
+          } else {
+            Asub[localRow][localCol] = 0.0;
+          }
+
+          uint BFlatIndex = tiledBRow * dimBOuter + globalCol;
+          if(BFlatIndex < dimInner * dimBOuter) {
+            Bsub[localRow][localCol] = B[BFlatIndex];
+          } else {
+            Bsub[localRow][localCol] = 0.0;
+          }
 
           // Synchronise to make sure the tile is loaded
-          // memoryBarrierShared();
           barrier();
 
-          for (uint k=0; k<TileSize; k++) {
-            acc += Asub[row][k] * Bsub[k][col];
+          for (uint k=0; k<TileSize.x; k++) {
+            acc += Asub[localRow][k] * Bsub[k][localCol];
           }
 
           // Synchronise before loading the next tile
           barrier();
         }
 
-        if(globalCol < K && globalRow < M) {
-          result[globalRow*K + globalCol] = acc;
+        if (globalCol < dimBOuter && globalRow < dimAOuter) {
+          setOutput(globalRow * dimBOuter + globalCol, acc);
         }
       }
     `;
