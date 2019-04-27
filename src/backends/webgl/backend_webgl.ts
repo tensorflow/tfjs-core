@@ -2247,7 +2247,7 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   linspace(start: number, stop: number, num: number): Tensor1D {
-    // TODO: Use CPU implementation due to the precision problem in Sarari.
+    // TODO: Use CPU implementation due to the precision problem in Safari.
     if (num === 0) {
       throw new Error('Cannot request zero samples');
     }
