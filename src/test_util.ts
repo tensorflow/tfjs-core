@@ -158,7 +158,7 @@ function areClose(a: number, e: number, epsilon: number): boolean {
 }
 
 export function expectValuesInRange(
-    actual: Tensor|TypedArray|number[], low: number, high: number) {
+    actual: TypedArray|number[], low: number, high: number) {
   let actualVals: TypedArray|number[];
   if (actual instanceof Tensor) {
     actualVals = actual.dataSync();
