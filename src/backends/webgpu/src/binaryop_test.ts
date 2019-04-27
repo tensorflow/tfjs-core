@@ -17,10 +17,8 @@
 
 import * as tf from '@tensorflow/tfjs-core';
 
-import * as tfwebgpu from './index';
-
 describe('Binary ops', () => {
-  beforeAll(async () => await tfwebgpu.ready);
+  beforeAll(async () => await tf.ready());
 
   it('A * B', async () => {
     const a = tf.tensor1d([1, 2, 3]);

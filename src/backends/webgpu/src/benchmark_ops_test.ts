@@ -16,12 +16,9 @@
  */
 
 import * as tf from '@tensorflow/tfjs-core';
-import * as webgpu from './index';
 
 describe('Ops benchmarks', () => {
-  beforeEach(async () => {
-    await webgpu.ready;
-  });
+  beforeEach(async () => await tf.ready());
 
   // Performs `trials` trials, of `reps` repetitions each. At the end of each
   // trial, endTrial() is run (and included in the benchmark time). This

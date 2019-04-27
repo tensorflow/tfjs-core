@@ -17,10 +17,8 @@
 
 import * as tf from '@tensorflow/tfjs-core';
 
-import * as tfwebgpu from './index';
-
 describe('matMul', () => {
-  beforeAll(async () => await tfwebgpu.ready);
+  beforeAll(async () => await tf.ready());
 
   it('matMul A x B odd shared dim', async () => {
     const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
