@@ -61,5 +61,9 @@ env.specFilter = spec => {
 };
 
 // Import and run all the tests from core.
-// TODO(smilkov): Enable when we publish new core.
-// import '@tensorflow/tfjs-core/dist/tests';
+async function runCoreTests() {
+  // TODO(smilkov): Enable when we publish new core.
+  // await tf.ready();
+  // require('@tensorflow/tfjs-core/dist/tests');
+}
+runCoreTests();
