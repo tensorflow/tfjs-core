@@ -34,7 +34,7 @@ import * as scatter_nd_util from '../../ops/scatter_nd_util';
 import * as segment_util from '../../ops/segment_util';
 import {computeFlatOffset, getStridedSlicedInfo, isSliceContinous} from '../../ops/slice_util';
 import {softmax} from '../../ops/softmax';
-import {range, scalar, tensor} from '../../ops/tensor_ops';
+import {range, scalar, tensor, tensor1d} from '../../ops/tensor_ops';
 import {DataId, Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D} from '../../tensor';
 import {DataType, DataTypeMap, DataValues, NumericDataType, Rank, RecursiveArray, ShapeMap, sumOutType, TypedArray, upcastType} from '../../types';
 import * as util from '../../util';
@@ -122,7 +122,6 @@ import * as unary_packed_op from './unaryop_packed_gpu';
 import {UnaryOpPackedProgram} from './unaryop_packed_gpu';
 import {UnpackProgram} from './unpack_gpu';
 import * as webgl_util from './webgl_util';
-import {LinspaceProgram} from './linspace_webgl';
 
 type KernelInfo = {
   name: string; query: Promise<number>;
@@ -2248,12 +2247,20 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   linspace(start: number, stop: number, num: number): Tensor1D {
+    // TODO: Use CPU implementation due to the precision problem in Sarari.
     if (num === 0) {
       throw new Error('Cannot request zero samples');
     }
-    const program = new LinspaceProgram(start, stop, num);
-    const output = this.makeOutputArray([num], 'float32');
-    return this.compileAndRun(program, [], output) as Tensor1D;
+
+    const step = (stop - start) / (num - 1);
+
+    const values = util.makeZerosTypedArray(num, 'float32');
+    values[0] = start;
+    for (let i = 1; i < values.length; i++) {
+      values[i] = values[i - 1] + step;
+    }
+
+    return tensor1d(values, 'float32');
   }
 
   private makeOutputArray<T extends Tensor>(shape: number[], dtype: DataType):
