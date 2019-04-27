@@ -43,11 +43,20 @@ export function testEpsilon() {
                                                   TEST_EPSILON_FLOAT16;
 }
 
+function bothAreNotTensors(actual: {}, expected: {}): boolean {
+  return !(actual instanceof Tensor) && !(expected instanceof Tensor);
+}
+
+function bothAreNotArrays(actual: {}, expected: {}): boolean {
+  return !Array.isArray(actual) && !Array.isArray(expected);
+}
+
 function expectArraysPredicate(
     actual: Tensor|TypedArray|number[]|string[],
     expected: Tensor|TypedArray|number[]|boolean[]|string[],
     predicate: (a: {}, b: {}) => boolean) {
-  if (!(actual instanceof Tensor) && !(expected instanceof Tensor)) {
+  if (bothAreNotTensors(actual, expected) &&
+      bothAreNotArrays(actual, expected)) {
     const aType = actual.constructor.name;
     const bType = expected.constructor.name;
 
@@ -126,7 +135,7 @@ export function expectArraysEqual(
     // tslint:disable-next-line:triple-equals
     return expectArraysPredicate(actual, exp, (a, b) => a == b);
   }
-  return expectArraysClose(actual as Tensor, expected as Tensor, 0);
+  return expectArraysClose(actual as TypedArray, expected as TypedArray, 0);
 }
 
 export function expectNumbersClose(a: number, e: number, epsilon?: number) {
