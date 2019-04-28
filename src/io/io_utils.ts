@@ -17,9 +17,10 @@
 
 import {tensor} from '../ops/tensor_ops';
 import {Tensor} from '../tensor';
-import {NamedTensorMap} from '../tensor_types';
+import {NamedTensor, NamedTensorMap} from '../tensor_types';
 import {TypedArray} from '../types';
 import {sizeFromShape} from '../util';
+
 import {DTYPE_VALUE_SIZE_MAP, ModelArtifacts, ModelArtifactsInfo, WeightsManifestEntry} from './types';
 
 /**
@@ -38,20 +39,26 @@ import {DTYPE_VALUE_SIZE_MAP, ModelArtifacts, ModelArtifactsInfo, WeightsManifes
  *     tensor names, `dtype`s and shapes.
  * @throws Error: on unsupported tensor `dtype`.
  */
-export async function encodeWeights(tensors: NamedTensorMap):
+export async function encodeWeights(tensors: NamedTensorMap|NamedTensor[]):
     Promise<{data: ArrayBuffer, specs: WeightsManifestEntry[]}> {
   // TODO(adarob, cais): Support quantization.
   const specs: WeightsManifestEntry[] = [];
   const dataPromises: Array<Promise<TypedArray>> = [];
-  for (const name in tensors) {
-    const t = tensors[name];
 
+  const names: string[] = Array.isArray(tensors) ?
+      tensors.map(tensor => tensor.name) :
+      Object.keys(tensors);
+
+  for (let i = 0; i < names.length; ++i) {
+    const name = names[i];
+    const t = Array.isArray(tensors) ? tensors[i].tensor : tensors[name];
     if (t.dtype !== 'float32' && t.dtype !== 'int32' && t.dtype !== 'bool') {
       throw new Error(`Unsupported dtype in weight '${name}': ${t.dtype}`);
     }
     specs.push({name, shape: t.shape, dtype: t.dtype});
     dataPromises.push(t.data());
   }
+
   const tensorValues = await Promise.all(dataPromises);
   return {data: concatenateTypedArrays(tensorValues), specs};
 }
