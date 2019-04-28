@@ -60,6 +60,13 @@ export declare interface WeightsManifestGroupConfig {
 }
 
 /**
+ * Weight type.
+ *
+ * - 'optimizer': Weight from a stateful optimizer.
+ */
+export type WeightType = 'model'|'optimizer';
+
+/**
  * An entry in the weight manifest.
  *
  * The entry contains specification of a weight.
@@ -81,6 +88,16 @@ export declare interface WeightsManifestEntry {
   dtype: 'float32'|'int32'|'bool';
 
   /**
+   * Type of the weight.
+   *
+   * Optinoal.
+   *
+   * The value 'optimizer' indicates the weight belongs to an optimizer
+   * (i.e., not the proper part of a model).
+   */
+  type?: WeightType;
+
+  /**
    * Information for dequantization of the weight.
    */
   quantization?: {
@@ -100,6 +117,13 @@ export interface SaveConfig {
    * untrainable ones.
    */
   trainableOnly?: boolean;
+
+  /**
+   * Whether the optimizer will be saved (if exists).
+   *
+   * Deafult: `false`.
+   */
+  includeOptimizer?: boolean;
 }
 
 /**
