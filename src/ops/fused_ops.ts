@@ -33,7 +33,7 @@ import {Activation} from './fused_util';
  * const b = tf.tensor2d([1, 2, 3, 4], [2, 2]);
  * const bias = tf.tensor2d([1, 2], [1, 2]);
  *
- * tf.fused.matMul(a, b, false, false, bias, 'relu');
+ * tf.fused.matMul(a, b, false, false, bias, 'relu').print();
  * ```
  *
  * @param a First matrix in dot product operation.
