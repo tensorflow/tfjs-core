@@ -18,10 +18,12 @@
 import {variableGrads} from '../gradients';
 import {Serializable} from '../serialization';
 import {Scalar, Variable} from '../tensor';
-import {NamedTensorMap} from '../tensor_types';
+import {NamedTensor, NamedTensorMap} from '../tensor_types';
 
 /** @doc {heading: 'Training', subheading: 'Classes', namespace: 'train'} */
 export abstract class Optimizer extends Serializable {
+  protected varList: Variable[];
+
   /**
    * Executes `f()` and minimizes the scalar output of `f()` by computing
    * gradients of y with respect to the list of trainable variables provided by
@@ -37,9 +39,14 @@ export abstract class Optimizer extends Serializable {
   /** @doc {heading: 'Training', subheading: 'Optimizers'} */
   minimize(f: () => Scalar, returnCost = false, varList?: Variable[]): Scalar
       |null {
+    // Keep track of list of variables for saving and loading.
+    this.varList = varList;
+
     const {value, grads} = this.computeGradients(f, varList);
 
-    this.applyGradients(grads);
+    const gradArray: NamedTensor[] =
+        varList.map(v => ({name: v.name, tensor: grads[v.name]}));
+    this.applyGradients(gradArray);
 
     // Dispose gradients.
     const varNames = Object.keys(grads);
@@ -74,7 +81,8 @@ export abstract class Optimizer extends Serializable {
    *
    * @param variableGradients A mapping of variable name to its gradient value.
    */
-  abstract applyGradients(variableGradients: NamedTensorMap): void;
+  abstract applyGradients(variableGradients: NamedTensorMap|
+                          NamedTensor[]): void;
 
   /**
    * Dispose the variables (if any) owned by this optimizer instance.
@@ -88,3 +96,10 @@ Object.defineProperty(Optimizer, Symbol.hasInstance, {
         instance.applyGradients != null;
   }
 });
+
+// export function assertNamedVariableNameMatch(
+//     namedVariable: NamedVariable, name: string) {
+//   assert(
+//       namedVariable.name === name,
+//       () => `Variable name mismatch: ${name} !== ${namedVariable.name}`);
+// }

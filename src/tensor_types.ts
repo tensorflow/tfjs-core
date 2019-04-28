@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {Tensor, Variable} from './tensor';
+import {Tensor, Variable, variable} from './tensor';
 import {DataType} from './types';
 
 /** @docalias {[name: string]: Tensor} */
@@ -23,13 +23,19 @@ export type NamedTensorMap = {
   [name: string]: Tensor;
 };
 
-export type NamedTensor = {
-  name: string; tensor: Tensor;
-};
+export interface NamedTensor {
+  name: string;
+  tensor: Tensor;
+}
 
 export type NamedVariableMap = {
   [name: string]: Variable;
 };
+
+export interface NamedVariable {
+  name: string;
+  variable: Variable;
+}
 
 export type GradSaveFunc = (save: Tensor[]) => void;
 

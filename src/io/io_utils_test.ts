@@ -177,7 +177,7 @@ describe('concatenateTypedArrays', () => {
   });
 });
 
-fdescribe('encodeWeights', () => {
+describe('encodeWeights', () => {
   it('Float32 tensors as NamedTensorMap', async done => {
     const tensors: NamedTensorMap = {
       x1: tensor2d([[10, 20], [30, 40]]),
