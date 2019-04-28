@@ -410,7 +410,7 @@ describeWithFlags('time webgl', WEBGL_ENVS, () => {
 
   it('upload + compute + data', async () => {
     const a = tf.zeros([10, 10]);
-    const time = await tf.time(async () => await a.square().data()) as
+    const time = await tf.time(async () => a.square().data()) as
         tf.webgl.WebGLTimingInfo;
     expect(time.uploadWaitMs > 0);
     expect(time.downloadWaitMs > 0);
