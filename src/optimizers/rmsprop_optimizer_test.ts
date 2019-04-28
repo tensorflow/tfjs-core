@@ -147,6 +147,59 @@ describeWithFlags('RMSPropOptimizer', ALL_ENVS, () => {
     // The only tensor remaining is the argument to variable().
     expect(tf.memory().numTensors).toBe(1);
   });
+
+  it('Save and load weigths: centered = false', () => {
+    const learningRate = 0.1;
+    const moment = 0.1;
+    const rho = 0.95;
+    const optimizer1 = tf.train.rmsprop(learningRate, rho, moment);
+
+    const x = tf.tensor1d([1, 2]).variable();
+    const f = () => x.square().sum() as tf.Scalar;
+
+    let cost = optimizer1.minimize(f, /* returnCost */ true);
+    expectArraysClose(cost, tf.scalar(5));
+    expectArraysClose(x, tf.tensor1d( [0.5527865, 1.5527864]));
+
+    const weights = optimizer1.getWeights();
+    expect(weights.length).toEqual(2);
+
+    const optimizer2 = tf.train.rmsprop(learningRate, rho, moment);
+    optimizer2.setWeights(weights);
+
+    cost = optimizer2.minimize(f, /* returnCost */ true);
+    expectArraysClose(cost, tf.scalar(2.7167187));
+    expectArraysClose(x, tf.tensor1d( [0.2874418, 1.2294267]));
+  });
+
+  it('Save and load weigths: centered = true', () => {
+    const learningRate = 0.1;
+    const moment = 0.1;
+    const rho = 0.95;
+    const epsilon: number = undefined;
+    const centered = true;
+    const optimizer1 =
+        tf.train.rmsprop(learningRate, rho, moment, epsilon, centered);
+
+    const x = tf.tensor1d([1, 2]).variable();
+    const f = () => x.square().sum() as tf.Scalar;
+
+    let cost = optimizer1.minimize(f, /* returnCost */ true);
+    expectArraysClose(cost, tf.scalar(5));
+    expectArraysClose(x, tf.tensor1d( [0.5411684, 1.5411685]));
+
+    const weights = optimizer1.getWeights();
+    expect(weights.length).toEqual(3);
+
+    const optimizer2 =
+        tf.train.rmsprop(learningRate, rho, moment, epsilon, centered);
+    optimizer2.setWeights(weights);
+
+    cost = optimizer2.minimize(f, /* returnCost */ true);
+    expectArraysClose(cost, tf.scalar(2.668063));
+    expectArraysClose(x, tf.tensor1d( [0.2677834, 1.2035918]));
+  });
+
   it('serialization round-trip', () => {
     const originalOpt = tf.train.rmsprop(0.1, 0.5, 0.1, 1e-7, true);
     const reserialized = tf.RMSPropOptimizer.fromConfig(

@@ -94,6 +94,15 @@ export abstract class Optimizer extends Serializable {
    * Dispose the variables (if any) owned by this optimizer instance.
    */
   dispose(): void {}
+
+  getWeights(): NamedTensor[] {
+    return null;
+  }
+
+  setWeights(weightValues: NamedTensor[]): void {
+    throw new Error(
+        'setWeights() is not implemented for this optimizer class.');
+  }
 }
 
 Object.defineProperty(Optimizer, Symbol.hasInstance, {
