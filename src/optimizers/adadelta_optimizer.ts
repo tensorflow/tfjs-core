@@ -19,16 +19,15 @@ import {ENGINE} from '../engine';
 import {tidy, dispose} from '../globals';
 import {zerosLike} from '../ops/ops';
 import {ConfigDict, registerClass, Serializable, SerializableConstructor} from '../serialization';
-import {NamedVariableMap, NamedTensor} from '../tensor_types';
+import {NamedVariable, NamedVariableMap, NamedTensor} from '../tensor_types';
 import {Optimizer} from './optimizer';
-import {Variable} from '../tensor';
 
 /** @doclink Optimizer */
 export class AdadeltaOptimizer extends Optimizer {
   /** @nocollapse */
   static className = 'AdadeltaOptimizer';
-  private accumulatedGrads: Variable[] = [];
-  private accumulatedUpdates: Variable[] = [];
+  private accumulatedGrads: NamedVariable[] = [];
+  private accumulatedUpdates: NamedVariable[] = [];
 
   constructor(
       protected learningRate: number, protected rho: number,
@@ -50,12 +49,16 @@ export class AdadeltaOptimizer extends Optimizer {
       const value = ENGINE.registeredVariables[name];
       const trainable = false;
       if (this.accumulatedGrads[i] == null) {
-        this.accumulatedGrads[i] =
-            tidy(() => zerosLike(value).variable(trainable));
+        this.accumulatedGrads[i] = {
+          name: `${name}/accum_grad`,  // Name matters for Python compatibility.
+          variable: tidy(() => zerosLike(value).variable(trainable))
+        };
       }
       if (this.accumulatedUpdates[i] == null) {
-        this.accumulatedUpdates[i] =
-            tidy(() => zerosLike(value).variable(trainable));
+        this.accumulatedUpdates[i] = {
+          name: `${name}/accum_var`,  // Name matters for Python compatibility.
+          variable: tidy(() => zerosLike(value).variable(trainable))
+        };
       }
 
       const gradient = Array.isArray(variableGradients) ?
@@ -64,19 +67,21 @@ export class AdadeltaOptimizer extends Optimizer {
       const accumulatedUpdate = this.accumulatedUpdates[i];
 
       tidy(() => {
-        const newAccumulatedGrad = accumulatedGrad.mul(this.rho).add(
+        const newAccumulatedGrad = accumulatedGrad.variable.mul(this.rho).add(
             gradient.square().mul(1 - this.rho));
 
-        const updates = accumulatedUpdate.add(this.epsilon)
-                            .sqrt()
-                            .div(accumulatedGrad.add(this.epsilon).sqrt())
-                            .mul(gradient);
+        const updates =
+            accumulatedUpdate.variable.add(this.epsilon)
+                .sqrt()
+                .div(accumulatedGrad.variable.add(this.epsilon).sqrt())
+                .mul(gradient);
 
-        const newAccumulatedUpdate = accumulatedUpdate.mul(this.rho).add(
-            updates.square().mul(1 - this.rho));
+        const newAccumulatedUpdate =
+            accumulatedUpdate.variable.mul(this.rho).add(
+                updates.square().mul(1 - this.rho));
 
-        this.accumulatedGrads[i].assign(newAccumulatedGrad);
-        this.accumulatedUpdates[i].assign(newAccumulatedUpdate);
+        this.accumulatedGrads[i].variable.assign(newAccumulatedGrad);
+        this.accumulatedUpdates[i].variable.assign(newAccumulatedUpdate);
 
         const newValue = updates.mul(-this.learningRate).add(value);
         value.assign(newValue);
@@ -86,9 +91,12 @@ export class AdadeltaOptimizer extends Optimizer {
 
   dispose(): void {
     if (this.accumulatedUpdates != null) {
-      dispose([this.accumulatedGrads, this.accumulatedUpdates]);
+      dispose([
+          this.accumulatedGrads.map(v => v.variable),
+          this.accumulatedUpdates.map(v => v.variable)]);
     }
   }
+
   getConfig(): ConfigDict {
     return {
       'learningRate': this.learningRate,

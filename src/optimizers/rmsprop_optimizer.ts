@@ -30,8 +30,8 @@ export class RMSPropOptimizer extends Optimizer {
   private centered: boolean;
 
   private accumulatedMeanSquares: NamedVariable[] = [];
-  private accumulatedMeanGrads: NamedVariable[] = [];
   private accumulatedMoments: NamedVariable[] = [];
+  private accumulatedMeanGrads: NamedVariable[] = [];
 
   constructor(
       protected learningRate: number, protected decay = 0.9,
@@ -58,19 +58,19 @@ export class RMSPropOptimizer extends Optimizer {
       const trainable = false;
       if (this.accumulatedMeanSquares[i] == null) {
         this.accumulatedMeanSquares[i] = {
-          name: `${name}/accumulatedMeanSquare`,
-          variable: tidy(() => zerosLike(value).variable(trainable))
-        };
-      }
-      if (this.accumulatedMeanGrads[i] == null && this.centered) {
-        this.accumulatedMeanGrads[i] = {
-          name: `${name}/accumulatedMeanGrad`,
+          name: `${name}/rms`,  // Name matters for Python compatibility.
           variable: tidy(() => zerosLike(value).variable(trainable))
         };
       }
       if (this.accumulatedMoments[i] == null) {
         this.accumulatedMoments[i] = {
-          name: `${name}/accumulatedMoment`,
+          name: `${name}/momentum`,  // Name matters for Python compatibility.
+          variable: tidy(() => zerosLike(value).variable(trainable))
+        };
+      }
+      if (this.accumulatedMeanGrads[i] == null && this.centered) {
+        this.accumulatedMeanGrads[i] = {
+          name: `${name}/mg`,  // Name matters for Python compatibility.
           variable: tidy(() => zerosLike(value).variable(trainable))
         };
       }
@@ -142,36 +142,27 @@ export class RMSPropOptimizer extends Optimizer {
   }
 
   getWeights(): NamedTensor[] {
-    let namedVariables: NamedVariable[];
+    // Order matters for Python compatibility.
+    const namedVariables: NamedVariable[] = [
+        ...this.accumulatedMeanSquares,  ...this.accumulatedMoments];
     if (this.centered) {
-      namedVariables = [
-          ...this.accumulatedMeanSquares, ...this.accumulatedMeanGrads,
-          ...this.accumulatedMoments];
-    } else {
-      namedVariables = [
-          ...this.accumulatedMeanSquares,  ...this.accumulatedMoments];
+      namedVariables.push(...this.accumulatedMeanGrads);
     }
     return namedVariables.map(v => ({name: v.name, tensor: v.variable}));
   }
 
   setWeights(weightValues: NamedTensor[]): void {
+    const variableCount =
+        this.centered ? weightValues.length / 3 : weightValues.length / 2;
     const trainable = false;
-    if (this.centered) {
-      const variableCount = weightValues.length / 3;
-      this.accumulatedMeanSquares = weightValues.slice(0, variableCount).map(
-          v => ({name: v.name, variable: v.tensor.variable(trainable)}));
-      this.accumulatedMeanGrads =
-          weightValues.slice(variableCount, variableCount * 2).map(
-              v => ({name: v.name, variable: v.tensor.variable(trainable)}));
-      this.accumulatedMoments =
-          weightValues.slice(variableCount * 2, variableCount * 3).map(
-              v => ({name: v.name, variable: v.tensor.variable(trainable)}));
-    } else {
-      const variableCount = weightValues.length / 2;
-      this.accumulatedMeanSquares = weightValues.slice(0, variableCount).map(
+    this.accumulatedMeanSquares = weightValues.slice(0, variableCount).map(
         v => ({name: v.name, variable: v.tensor.variable(trainable)}));
-      this.accumulatedMoments =
-          weightValues.slice(variableCount, variableCount * 2).map(
+    this.accumulatedMoments =
+        weightValues.slice(variableCount, variableCount * 2).map(
+            v => ({name: v.name, variable: v.tensor.variable(trainable)}));
+    if (this.centered) {
+      this.accumulatedMeanGrads =
+          weightValues.slice(variableCount * 2, variableCount * 3).map(
               v => ({name: v.name, variable: v.tensor.variable(trainable)}));
     }
   }
