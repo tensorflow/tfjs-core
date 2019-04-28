@@ -97,6 +97,23 @@ export class AdadeltaOptimizer extends Optimizer {
     }
   }
 
+  getWeights(): NamedTensor[] {
+    // Order matters for Python compatibility.
+    const namedVariables: NamedVariable[] = [
+        ...this.accumulatedGrads,  ...this.accumulatedUpdates];
+    return namedVariables.map(v => ({name: v.name, tensor: v.variable}));
+  }
+
+  setWeights(weightValues: NamedTensor[]): void {
+    const variableCount = weightValues.length / 2;
+    const trainable = false;
+    this.accumulatedGrads = weightValues.slice(0, variableCount).map(
+        v => ({name: v.name, variable: v.tensor.variable(trainable)}));
+    this.accumulatedUpdates =
+        weightValues.slice(variableCount, variableCount * 2).map(
+            v => ({name: v.name, variable: v.tensor.variable(trainable)}));
+  }
+
   getConfig(): ConfigDict {
     return {
       'learningRate': this.learningRate,

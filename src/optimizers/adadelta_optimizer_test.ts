@@ -75,6 +75,28 @@ describeWithFlags('AdadeltaOptimizer', ALL_ENVS, () => {
     // The only tensor remaining is the argument to variable().
     expect(tf.memory().numTensors).toBe(1);
   });
+
+  it('Save and load', () => {
+    const learningRate = .1;
+    const rho = .95;
+    const optimizer1 = tf.train.adadelta(learningRate, rho);
+
+    const x = tf.tensor1d([1, 2]).variable();
+    const f = () => x.square().sum() as tf.Scalar;
+
+    let cost = optimizer1.minimize(f, /* returnCost */ true);
+    expectArraysClose(cost, tf.scalar(5));
+    expectArraysClose(x, tf.tensor1d([0.8, 1.6]));
+
+    const weights = optimizer1.getWeights();
+    const optimizer2 = tf.train.adadelta(learningRate, rho);
+    optimizer2.setWeights(weights);
+
+    cost = optimizer2.minimize(f, /* returnCost */ true);
+    expectArraysClose(cost, tf.scalar(3.2));
+    expectArraysClose(x, tf.tensor1d([0.64, 1.28]));
+  });
+
   it('serialization round-trip', () => {
     const originalOpt = tf.train.adadelta(0.1, 0.2, 2e-8);
     const reserialized = tf.AdadeltaOptimizer.fromConfig(

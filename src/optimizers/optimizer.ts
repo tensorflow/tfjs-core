@@ -96,12 +96,15 @@ export abstract class Optimizer extends Serializable {
   dispose(): void {}
 
   getWeights(): NamedTensor[] {
-    return null;
+    throw new Error(
+        `getWeights() is not implemented for this optimizer class ` +
+        `${this.getClassName()}`);
   }
 
   setWeights(weightValues: NamedTensor[]): void {
     throw new Error(
-        'setWeights() is not implemented for this optimizer class.');
+        `setWeights() is not implemented for this optimizer class ` +
+        `${this.getClassName()}`);
   }
 }
 
