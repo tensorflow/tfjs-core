@@ -18,7 +18,7 @@
 import {ENGINE} from '../engine';
 import {dispose, tidy} from '../globals';
 import {zerosLike} from '../ops/ops';
-import {registerClass, Serializable} from '../serialization';
+import {ConfigDict, registerClass, Serializable, SerializableConstructor} from '../serialization';
 import {Variable} from '../tensor';
 import {NamedTensor, NamedTensorMap} from '../tensor_types';
 
@@ -74,8 +74,7 @@ export class RMSPropOptimizer extends Optimizer {
       const accumulatedMeanGrad = this.accumulatedMeanGrads[i];
       const accumulatedMoments = this.accumulatedMoments[i];
       const gradient = Array.isArray(variableGradients) ?
-          variableGradients[i].tensor :
-          variableGradients[name];
+          variableGradients[i].tensor : variableGradients[name];
 
       tidy(() => {
         const newAccumulatedMeanSquare =

@@ -22,7 +22,7 @@ import {NamedTensor, NamedTensorMap} from '../tensor_types';
 
 /** @doc {heading: 'Training', subheading: 'Classes', namespace: 'train'} */
 export abstract class Optimizer extends Serializable {
-  protected varList: Variable[];
+  // protected varList: Variable[];
 
   /**
    * Executes `f()` and minimizes the scalar output of `f()` by computing
@@ -39,14 +39,20 @@ export abstract class Optimizer extends Serializable {
   /** @doc {heading: 'Training', subheading: 'Optimizers'} */
   minimize(f: () => Scalar, returnCost = false, varList?: Variable[]): Scalar
       |null {
-    // Keep track of list of variables for saving and loading.
-    this.varList = varList;
-
     const {value, grads} = this.computeGradients(f, varList);
 
-    const gradArray: NamedTensor[] =
-        varList.map(v => ({name: v.name, tensor: grads[v.name]}));
-    this.applyGradients(gradArray);
+    if (varList != null) {
+      const gradArray: NamedTensor[] =
+          varList.map(v => ({name: v.name, tensor: grads[v.name]}));
+      this.applyGradients(gradArray);
+    } else {
+      this.applyGradients(grads);
+    }
+
+    // Keep track of list of variables for saving and loading.
+    // if (this.varList != null) {  // TODO(cais): Clean up.
+    //   this.varList = varList;
+    // }
 
     // Dispose gradients.
     const varNames = Object.keys(grads);

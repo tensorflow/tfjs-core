@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {Tensor, Variable, variable} from './tensor';
+import {Tensor, Variable} from './tensor';
 import {DataType} from './types';
 
 /** @docalias {[name: string]: Tensor} */
