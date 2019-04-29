@@ -180,6 +180,7 @@ function where_<T extends Tensor>(
  * This is analogous to calling the python `tf.where(cond)` without an x or y.
  *
  * ```js
+ * asdf;ljk
  * const cond = tf.tensor1d([false, false, true], 'bool');
  * const result = await tf.whereAsync(cond);
  * result.print();
