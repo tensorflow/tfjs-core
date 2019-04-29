@@ -26,7 +26,7 @@ import {Optimizer} from './optimizer';
 /** @doclink Optimizer */
 export class SGDOptimizer extends Optimizer {
   /** @nocollapse */
-  static className = 'SGDOptimizer';  // TODO(cais): Check compatibility with TF v2.
+  static className = 'SGD';  // Name matters for Python compatibility.
   protected c: Scalar;
 
   constructor(protected learningRate: number) {
@@ -72,7 +72,6 @@ export class SGDOptimizer extends Optimizer {
       throw new Error('SGD optimizer does not have settable weights.');
     }
   }
-
 
   getConfig(): ConfigDict {
     return {'learningRate': this.learningRate};

@@ -362,17 +362,6 @@ function checkGrads(grads: Tensor[]) {
   }
 }
 
-// function getAllTrainableVariables(): Variable[] {
-//   const varList: Variable[] = [];
-//   for (const varName in ENGINE.registeredVariables) {
-//     const v = ENGINE.registeredVariables[varName];
-//     if (v.trainable) {
-//       varList.push(v);
-//     }
-//   }
-//   return varList;
-// }
-
 export {
   customGrad,
   variableGrads,
