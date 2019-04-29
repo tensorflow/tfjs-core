@@ -1,4 +1,3 @@
-
 /**
  * @license
  * Copyright 2019 Google LLC. All Rights Reserved.
@@ -16,6 +15,6 @@
  * =============================================================================
  */
 import * as tf from '../../src/index';
-import {parseAndEvaluatedSnippets as parseAndEvaluateSnippets} from './util';
+import {parseAndEvaluateSnippets} from './util';
 
 parseAndEvaluateSnippets(tf);

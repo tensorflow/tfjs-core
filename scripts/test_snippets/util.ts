@@ -22,7 +22,7 @@ import * as ts from 'typescript';
 let snippetCount = 0;
 
 // tslint:disable-next-line:no-any
-export async function parseAndEvaluatedSnippets(tf: any) {
+export async function parseAndEvaluateSnippets(tf: any) {
   const index = path.join(process.cwd(), 'src/index.ts');
   const tsconfigPath = path.join(process.cwd(), 'tsconfig.json');
 
