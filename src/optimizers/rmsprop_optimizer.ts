@@ -26,7 +26,7 @@ import {Optimizer} from './optimizer';
 /** @doclink Optimizer */
 export class RMSPropOptimizer extends Optimizer {
   /** @nocollapse */
-  static className = 'RMSPropOptimizer';
+  static className = 'RMSProp';
   private centered: boolean;
 
   private accumulatedMeanSquares: NamedVariable[] = [];
