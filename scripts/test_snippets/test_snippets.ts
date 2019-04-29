@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+import * as tf from '@tensorflow/tfjs';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as ts from 'typescript';
@@ -34,16 +35,23 @@ const program = ts.createProgram([index], tsconfig.compilerOptions);
 // Get the checker, we will use it to find more about classes
 const checker = program.getTypeChecker();
 
-// Visit every sourceFile in the program
-for (const sourceFile of program.getSourceFiles()) {
-  if (!sourceFile.isDeclarationFile) {
-    // Walk the tree to search for classes
-    ts.forEachChild(sourceFile, visit);
+async function main() {
+  // Visit every sourceFile in the program
+  for (const sourceFile of program.getSourceFiles()) {
+    if (!sourceFile.isDeclarationFile) {
+      // Walk the tree to search for classes
+      // ts.forEachChild(sourceFile, visit);
+      const children = sourceFile.getChildren();
+      console.log(children.length);
+      for (let i = 0; i < children.length; i++) {
+        await visit(children[i]);
+      }
+    }
   }
 }
 
 /** visit nodes finding exported classes */
-function visit(node: ts.Node) {
+async function visit(node: ts.Node) {
   if (ts.isClassDeclaration(node) || ts.isFunctionDeclaration(node) ||
       ts.isMethodDeclaration(node) || ts.isInterfaceDeclaration(node)) {
     const symbol = checker.getSymbolAtLocation(node.name);
@@ -51,20 +59,49 @@ function visit(node: ts.Node) {
     if (documentation == null) {
       return;
     }
-    documentation.forEach(doc => {
-      const re = /```js.*```/gs;
+    for (let i = 0; i < documentation.length; i++) {
+      const doc = documentation[i];
+      const re = /```js.*?```/gs;
       const matches = re.exec(doc.text);
       if (matches == null) {
         return;
       }
-      matches.forEach(match => {
+
+      for (let k = 0; k < matches.length; k++) {
+        const match = matches[k];
         const lines = match.split('\n');
         console.log('-------------');
-        lines.forEach(line => {
-          console.log(line);
-        });
+        const evalLines: string[] = [];
+        for (let j = 0; j < lines.length; j++) {
+          let line = lines[j];
+          if (line.startsWith('```js')) {
+            line = line.substring('```js'.length);
+          }
+          if (line.endsWith('```')) {
+            line = line.substring(0, line.length - '```'.length);
+          }
+          line = line.trim();
+          if (line.startsWith('*')) {
+            line = line.substring(1).trim();
+          }
+          evalLines.push(line);
+        }
+
+        const srcCode = evalLines.join('\n');
+        console.log(srcCode);
+        await tf.nextFrame();
+        const evalString = '(async function runner() { try { ' + srcCode +
+            '} catch (e) { reportError(e); } })()';
+        eval(evalString);
+
         console.log('...............');
-      });
-    });
+      }
+    }
+  }
+  const children = node.getChildren();
+  for (let i = 0; i < children.length; i++) {
+    await visit(children[i]);
   }
 }
+
+main();
