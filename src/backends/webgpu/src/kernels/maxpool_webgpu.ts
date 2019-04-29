@@ -66,13 +66,11 @@ export class MaxPoolProgram implements WebGPUProgram {
       const ivec2 strides = ivec2(${strideHeight}, ${strideWidth});
       const ivec2 pads = ivec2(${padTop}, ${padLeft});
       float initializationValue = 0.0;
-      float count = 0.0;
 
       float getValue(int batch, int xR, int xC, int d) {
         if (xC < 0 || xC >= ${convInfo.inWidth}) {
           return initializationValue;
         }
-        count += 1.0;
         // return getX(batch, xR, xC, d);
         return x[getFlatIndex(ivec4(batch, xR, xC, d), ${xShape})];
       }
@@ -100,7 +98,6 @@ export class MaxPoolProgram implements WebGPUProgram {
         // ? = to be determined
         float minMaxValue = 0.0;
         float avgValue = 0.0;
-        count = 0.0;
 
         for(int wR=0; wR<${effectiveFilterHeight}; wR += ${dilationHeight}) {
           int xR = xRCorner + wR;
