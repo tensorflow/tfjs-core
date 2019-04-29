@@ -14,6 +14,7 @@
  * limitations under the License.
  * =============================================================================
  */
+import {ENGINE} from './engine';
 import {ENV} from './environment';
 import * as tf from './index';
 import {ALL_ENVS, describeWithFlags, NODE_ENVS} from './jasmine_util';
@@ -77,28 +78,28 @@ describeWithFlags('time cpu', NODE_ENVS, () => {
 });
 
 describeWithFlags('tidy', ALL_ENVS, () => {
-  it('returns Tensor', () => {
-    tf.tidy(() => {
-      const a = tf.tensor1d([1, 2, 3]);
-      let b = tf.tensor1d([0, 0, 0]);
+  it('returns Tensor', async () => {
+    ENGINE.startScope();
+    const a = tf.tensor1d([1, 2, 3]);
+    let b = tf.tensor1d([0, 0, 0]);
 
-      expect(tf.memory().numTensors).toBe(2);
-      tf.tidy(() => {
-        const result = tf.tidy(() => {
-          b = tf.addStrict(a, b);
-          b = tf.addStrict(a, b);
-          b = tf.addStrict(a, b);
-          return tf.add(a, b);
-        });
-
-        // result is new. All intermediates should be disposed.
-        expect(tf.memory().numTensors).toBe(2 + 1);
-        expectArraysClose(result, [4, 8, 12]);
-      });
-
-      // a, b are still here, result should be disposed.
-      expect(tf.memory().numTensors).toBe(2);
+    expect(tf.memory().numTensors).toBe(2);
+    ENGINE.startScope();
+    const result = tf.tidy(() => {
+      b = tf.addStrict(a, b);
+      b = tf.addStrict(a, b);
+      b = tf.addStrict(a, b);
+      return tf.add(a, b);
     });
+
+    // result is new. All intermediates should be disposed.
+    expect(tf.memory().numTensors).toBe(2 + 1);
+    expectArraysClose(await result.data(), [4, 8, 12]);
+    ENGINE.endScope();
+
+    // a, b are still here, result should be disposed.
+    expect(tf.memory().numTensors).toBe(2);
+    ENGINE.endScope();
 
     expect(tf.memory().numTensors).toBe(0);
   });
@@ -123,31 +124,31 @@ describeWithFlags('tidy', ALL_ENVS, () => {
     expect(b).toBe('hello');
   });
 
-  it('allows complex types', () => {
+  it('allows complex types', async () => {
     const res = tf.tidy(() => {
       return {a: tf.scalar(1), b: 'hello', c: [tf.scalar(2), 'world']};
     });
-    expectArraysClose(res.a, [1]);
-    expectArraysClose(res.c[0] as tf.Scalar, [2]);
+    expectArraysClose(await res.a.data(), [1]);
+    expectArraysClose(await (res.c[0] as tf.Tensor).data(), [2]);
   });
 
-  it('returns Tensor[]', () => {
+  it('returns Tensor[]', async () => {
     const a = tf.tensor1d([1, 2, 3]);
     const b = tf.tensor1d([0, -1, 1]);
     expect(tf.memory().numTensors).toBe(2);
 
-    tf.tidy(() => {
-      const result = tf.tidy(() => {
-        tf.add(a, b);
-        return [tf.add(a, b), tf.sub(a, b)];
-      });
-
-      // the 2 results are new. All intermediates should be disposed.
-      expect(tf.memory().numTensors).toBe(4);
-      expectArraysClose(result[0], [1, 1, 4]);
-      expectArraysClose(result[1], [1, 3, 2]);
-      expect(tf.memory().numTensors).toBe(4);
+    ENGINE.startScope();
+    const result = tf.tidy(() => {
+      tf.add(a, b);
+      return [tf.add(a, b), tf.sub(a, b)];
     });
+
+    // the 2 results are new. All intermediates should be disposed.
+    expect(tf.memory().numTensors).toBe(4);
+    expectArraysClose(await result[0].data(), [1, 1, 4]);
+    expectArraysClose(await result[1].data(), [1, 3, 2]);
+    expect(tf.memory().numTensors).toBe(4);
+    ENGINE.endScope();
 
     // the 2 results should be disposed.
     expect(tf.memory().numTensors).toBe(2);
@@ -173,38 +174,38 @@ describeWithFlags('tidy', ALL_ENVS, () => {
     expect(tf.memory().numTensors).toBe(2);
   });
 
-  it('nested usage', () => {
+  it('nested usage', async () => {
     const a = tf.tensor1d([1, 2, 3]);
     let b = tf.tensor1d([0, 0, 0]);
 
     expect(tf.memory().numTensors).toBe(2);
 
-    tf.tidy(() => {
-      const result = tf.tidy(() => {
-        b = tf.addStrict(a, b);
+    ENGINE.startScope();
+    const result = tf.tidy(() => {
+      b = tf.addStrict(a, b);
+      b = tf.tidy(() => {
         b = tf.tidy(() => {
-          b = tf.tidy(() => {
-            return tf.addStrict(a, b);
-          });
-          // original a, b, and two intermediates.
-          expect(tf.memory().numTensors).toBe(4);
-
-          tf.tidy(() => {
-            tf.addStrict(a, b);
-          });
-          // All the intermediates should be cleaned up.
-          expect(tf.memory().numTensors).toBe(4);
-
           return tf.addStrict(a, b);
         });
+        // original a, b, and two intermediates.
+        expect(tf.memory().numTensors).toBe(4);
+
+        tf.tidy(() => {
+          tf.addStrict(a, b);
+        });
+        // All the intermediates should be cleaned up.
         expect(tf.memory().numTensors).toBe(4);
 
         return tf.addStrict(a, b);
       });
+      expect(tf.memory().numTensors).toBe(4);
 
-      expect(tf.memory().numTensors).toBe(3);
-      expectArraysClose(result, [4, 8, 12]);
+      return tf.addStrict(a, b);
     });
+
+    expect(tf.memory().numTensors).toBe(3);
+    expectArraysClose(await result.data(), [4, 8, 12]);
+    ENGINE.endScope();
     expect(tf.memory().numTensors).toBe(2);
   });
 
@@ -269,19 +270,18 @@ describeWithFlags('tidy', ALL_ENVS, () => {
     }).toThrowError();
   });
 
-  it('works with arbitrary depth of result', () => {
-    tf.tidy(() => {
-      const res = tf.tidy(() => {
-        return [tf.scalar(1), [[tf.scalar(2)]], {list: [tf.scalar(3)]}];
-      });
-      expectArraysEqual(res[0] as tf.Tensor, [1]);
-      // tslint:disable-next-line:no-any
-      expectArraysEqual((res[1] as any)[0][0], [2]);
-      // tslint:disable-next-line:no-any
-      expectArraysEqual((res[2] as any).list[0], [3]);
-      expect(tf.memory().numTensors).toBe(3);
-      return res[0];
+  it('works with arbitrary depth of result', async () => {
+    ENGINE.startScope();
+    const res = tf.tidy(() => {
+      return [tf.scalar(1), [[tf.scalar(2)]], {list: [tf.scalar(3)]}];
     });
+    expectArraysEqual(await (res[0] as tf.Tensor).data(), [1]);
+    // tslint:disable-next-line:no-any
+    expectArraysEqual((res[1] as any)[0][0], [2]);
+    // tslint:disable-next-line:no-any
+    expectArraysEqual((res[2] as any).list[0], [3]);
+    expect(tf.memory().numTensors).toBe(3);
+    ENGINE.endScope(res[0]);
     // Everything but scalar(1) got disposed.
     expect(tf.memory().numTensors).toBe(1);
   });
