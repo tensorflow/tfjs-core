@@ -22,7 +22,7 @@ import * as tfwebgpu from './index';
 describe('pool', () => {
   beforeAll(async () => await tfwebgpu.ready);
 
-  fit('x=[1,1,1] f=[1,1] s=1 [0] => [0]', async () => {
+  it('x=[1,1,1] f=[1,1] s=1 [0] => [0]', async () => {
     const x = tf.tensor3d([0], [1, 1, 1]);
 
     const result = tf.maxPool(x, 1, 1, 0);
@@ -32,7 +32,7 @@ describe('pool', () => {
     tf.test_util.expectArraysClose(resultData, new Float32Array([0]));
   });
 
-  it('x=[2,3,3,1] f=[2,2] s=1', async () => {
+  fit('x=[2,3,3,1] f=[2,2] s=1', async () => {
     // Feed forward.
     const x = tf.tensor4d(
         [1, 2, 3, 4, 5, 6, 7, 9, 8, 1, 2, 3, 4, 5, 6, 7, 8, 9], [2, 3, 3, 1]);

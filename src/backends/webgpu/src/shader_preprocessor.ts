@@ -99,6 +99,7 @@ export function makeShader(
     outputSamplingSnippet, SET_OUTPUT_SNIPPET, program.userCode
   ].join('\n');
 
+  console.log(source);
   return source;
 }
 
@@ -117,6 +118,11 @@ const SAMPLING_SNIPPETS = `
 
   uint getFlatIndex(ivec3 coords, ivec3 shape) {
     return uint(dot(coords, ivec3(shape.y * shape.z, shape.z, 1.)));
+  }
+
+  uint getFlatIndex(ivec4 coords, ivec4 shape) {
+    return uint(dot(coords, ivec4(
+      shape.y * shape.z * shape.w, shape.z * shape.w, shape.w, 1.)));
   }
 `;
 
