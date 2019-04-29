@@ -20,13 +20,13 @@ import {keep, tidy} from '../globals';
 import {scalar} from '../ops/ops';
 import {ConfigDict, registerClass, Serializable, SerializableConstructor} from '../serialization';
 import {Scalar} from '../tensor';
-import {NamedTensorMap} from '../tensor_types';
+import {NamedTensorMap, NamedTensor} from '../tensor_types';
 import {Optimizer} from './optimizer';
 
 /** @doclink Optimizer */
 export class SGDOptimizer extends Optimizer {
   /** @nocollapse */
-  static className = 'SGDOptimizer';
+  static className = 'SGDOptimizer';  // TODO(cais): Check compatibility with TF v2.
   protected c: Scalar;
 
   constructor(protected learningRate: number) {
@@ -34,12 +34,13 @@ export class SGDOptimizer extends Optimizer {
     this.setLearningRate(learningRate);
   }
 
-  applyGradients(variableGradients: NamedTensorMap) {
-    const varNames = Object.keys(variableGradients);
-    varNames.forEach(varName => {
-      const gradient = variableGradients[varName];
+  applyGradients(variableGradients: NamedTensorMap|NamedTensor[]) {
+    const varNames = Array.isArray(variableGradients) ?
+        variableGradients.map(v => v.name) : Object.keys(variableGradients);
+    varNames.forEach((varName, i) => {
+      const gradient = Array.isArray(variableGradients) ?
+          variableGradients[i].tensor : variableGradients[varName];
       const value = ENGINE.registeredVariables[varName];
-
       tidy(() => {
         const newValue = this.c.mul(gradient).add(value);
         value.assign(newValue);
@@ -61,6 +62,17 @@ export class SGDOptimizer extends Optimizer {
   dispose() {
     this.c.dispose();
   }
+
+  getWeights(): NamedTensor[] {
+    return [];
+  }
+
+  setWeights(weightValues: NamedTensor[]): void {
+    if (!(weightValues == null || weightValues.length === 0)) {
+      throw new Error('SGD optimizer does not have settable weights.');
+    }
+  }
+
 
   getConfig(): ConfigDict {
     return {'learningRate': this.learningRate};
