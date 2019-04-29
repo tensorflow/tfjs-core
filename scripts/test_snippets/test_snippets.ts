@@ -43,7 +43,7 @@ async function main() {
     if (!sourceFile.isDeclarationFile) {
       const children = sourceFile.getChildren();
       for (let i = 0; i < children.length; i++) {
-        await visit(children[i]);
+        await visit(children[i], sourceFile);
       }
     }
   }
@@ -51,10 +51,10 @@ async function main() {
   console.log(`Parsed and evaluated ${snippetCount} snippets successfully.`);
 }
 
-async function visit(node: ts.Node) {
+async function visit(node: ts.Node, sourceFile: ts.SourceFile) {
   const children = node.getChildren();
   for (let i = 0; i < children.length; i++) {
-    await visit(children[i]);
+    await visit(children[i], sourceFile);
   }
 
   if (ts.isClassDeclaration(node) || ts.isFunctionDeclaration(node) ||
@@ -104,17 +104,23 @@ async function visit(node: ts.Node) {
 
         const srcCode = evalLines.join('\n');
 
-        const reportError = (e: string|Error) => {
-          console.log(symbol.name, jsdoc);
-          console.log(srcCode);
-          console.error(e);
-          process.exit(1);
-        };
-
         const evalString = '(async function runner() { try { ' + srcCode +
             '} catch (e) { reportError(e); } })()';
 
-        const oldLog = [console.log, console.info];
+        const oldLog = console.log;
+        const oldWarn = console.warn;
+
+        const reportError = (e: string|Error) => {
+          oldLog();
+          oldLog(`Error executing snippet for ${symbol.name} at ${
+              sourceFile.fileName}`);
+          oldLog();
+          oldLog(`\`\`\`js${srcCode}\`\`\``);
+          oldLog();
+
+          console.error(e);
+          process.exit(1);
+        };
 
         // Overrwrite console.log so we don't spam the console.
         console.log = (msg: string) => {};
@@ -126,8 +132,8 @@ async function visit(node: ts.Node) {
         } catch (e) {
           reportError(e);
         }
-        console.log = oldLog[0];
-        console.warn = oldLog[1];
+        console.log = oldLog;
+        console.warn = oldWarn;
       }
     }
   }
