@@ -39,14 +39,28 @@ export class MaxPoolProgram implements WebGPUProgram {
 
     this.outputShape = convInfo.outShape;
     this.dispatch = [
+      // columns
       Math.ceil(this.outputShape[2] / this.tileSize[0]),
+      // rows
       Math.ceil(this.outputShape[1] / this.tileSize[1]),
+      // batch * channels
       Math.ceil(this.outputShape[0] * this.outputShape[3] / this.tileSize[2]),
     ];
 
-    // const returnValue = `max(max(max(` +
-    //     'minMaxValue[0], minMaxValue[1]), minMaxValue[2]), minMaxValue[3])';
     const xShape = `ivec4(${convInfo.inShape.join(',')})`;
+
+    // function generateGetOutputCoords(
+    //     outputShape, xIndices, yIndices, zIndices) {
+    //   return `
+    //       ivec4 getOutputCoords() {
+    //         return ivec4(gl_GlobalInvocationID.z / ${
+    //       outputShape[3]}, gl_GlobalInvocationID.y, gl_GlobalInvocationID.x,
+    //       gl_GlobalInvocation.z % ${ outputShape[3]})
+    //       }
+    //   `;
+    // }
+
+    // const func = generateGetOutputCoords(this.outputShape, [2], [1], [0, 3])
 
     this.userCode = `
       const ivec2 strides = ivec2(${strideHeight}, ${strideWidth});
@@ -64,10 +78,19 @@ export class MaxPoolProgram implements WebGPUProgram {
       }
 
       void main() {
-        uint index = 0;
-        ivec4 coords = getOutputCoords(index);
+        // ivec4 coords = getOutputCoords(index);
+        ivec4 coords = ivec4(
+          gl_GlobalInvocationID.z / ${this.outputShape[3]}, 
+          gl_GlobalInvocationID.y, 
+          gl_GlobalInvocationID.x, 
+          gl_GlobalInvocationID.z % ${this.outputShape[3]});
         int batch = coords[0];
         int d = coords[3];
+        uint index = getFlatIndex(coords, ivec4(
+          ${this.outputShape[0]}, 
+          ${this.outputShape[1]}, 
+          ${this.outputShape[2]}, 
+          ${this.outputShape[3]}));
 
         ivec2 xRCCorner = coords.yz * strides - pads;
         int xRCorner = xRCCorner.x;
