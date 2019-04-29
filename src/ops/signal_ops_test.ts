@@ -68,3 +68,40 @@ describeWithFlags('hammingWindow', ALL_ENVS, () => {
       0.16785222, 0.102514]);
   });
 });
+
+describeWithFlags('frame', ALL_ENVS, () => {
+  it('3 length frames', () => {
+    const input = tf.tensor1d([1, 2, 3, 4, 5]);
+    const output = tf.frame(input, 3, 1);
+    expect(output.shape).toEqual([3, 3]);
+    expectArraysClose(output, [1, 2, 3, 2, 3, 4, 3, 4, 5]);
+  });
+
+  it('3 length frames with step 2', () => {
+    const input = tf.tensor1d([1, 2, 3, 4, 5]);
+    const output = tf.frame(input, 3, 2);
+    expect(output.shape).toEqual([2, 3]);
+    expectArraysClose(output, [1, 2, 3, 3, 4, 5]);
+  });
+
+  it('3 length frames with step 5', () => {
+    const input = tf.tensor1d([1, 2, 3, 4, 5]);
+    const output = tf.frame(input, 3, 5);
+    expect(output.shape).toEqual([1, 3]);
+    expectArraysClose(output, [1, 2, 3]);
+  });
+
+  it('Exceeding frame length', () => {
+    const input = tf.tensor1d([1, 2, 3, 4, 5]);
+    const output = tf.frame(input, 6, 1);
+    expect(output.shape).toEqual([0, 6]);
+    expectArraysClose(output, []);
+  });
+
+  it('Zero frame step', () => {
+    const input = tf.tensor1d([1, 2, 3, 4, 5]);
+    const output = tf.frame(input, 6, 0);
+    expect(output.shape).toEqual([0, 6]);
+    expectArraysClose(output, []);
+  });
+});

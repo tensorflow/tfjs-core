@@ -16,8 +16,10 @@
  */
 
 import {op} from '../ops/operation';
-import {Tensor1D} from '../tensor';
-import {tensor1d} from './tensor_ops';
+import {Tensor1D, Tensor} from '../tensor';
+import {tensor1d, tensor2d} from './tensor_ops';
+import {slice} from './slice';
+import {concat} from './concat_split';
 
 /**
  * Generate a Hann window.
@@ -53,6 +55,36 @@ function hammingWindow_(windowLength: number): Tensor1D {
   return cosineWindow(windowLength, 0.54, 0.46);
 }
 
+/**
+ * Expands input into frames of frameLength.
+ * Slides a window size with frameStep.
+ *
+ * ```js
+ * tf.frame([1, 2, 3], 2, 1).print();
+ * ```
+ * @param input The input tensor to be expanded
+ * @param frameLength Length of each frame
+ * @param frameStep The frame hop size in samples.
+ */
+/**
+ * @doc {heading: 'Operations', subheading: 'Signal', namespace: 'signal'}
+ */
+function frame_(input: Tensor1D, frameLength: number,
+  frameStep: number): Tensor {
+  let start = 0;
+  const output: Tensor[] = [];
+  while (start + frameLength <= input.size) {
+    output.push(slice(input, start, frameLength));
+    start += frameStep;
+  }
+
+  if (output.length === 0) {
+    return tensor2d([], [0, frameLength]);
+  }
+
+  return concat(output).as2D(output.length, frameLength);
+}
+
 function cosineWindow(windowLength: number, a: number, b: number): Tensor1D {
   const even = 1 - windowLength % 2;
   const newValues = new Float32Array(windowLength);
@@ -65,3 +97,4 @@ function cosineWindow(windowLength: number, a: number, b: number): Tensor1D {
 
 export const hannWindow = op({hannWindow_});
 export const hammingWindow = op({hammingWindow_});
+export const frame = op({frame_});
