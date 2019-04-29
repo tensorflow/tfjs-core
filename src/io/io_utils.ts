@@ -56,7 +56,11 @@ export async function encodeWeights(
     if (t.dtype !== 'float32' && t.dtype !== 'int32' && t.dtype !== 'bool') {
       throw new Error(`Unsupported dtype in weight '${name}': ${t.dtype}`);
     }
-    specs.push({name, shape: t.shape, dtype: t.dtype, type});
+    const spec: WeightsManifestEntry = {name, shape: t.shape, dtype: t.dtype};
+    if (type != null) {
+      spec.type = type;
+    }
+    specs.push(spec);
     dataPromises.push(t.data());
   }
 

@@ -279,7 +279,7 @@ describe('encodeWeights', () => {
         });
   });
 
-  fit('Int32 tensors', async done => {
+  it('Int32 tensors', async done => {
     const tensors: NamedTensorMap = {
       x1: tensor2d([[10, 20], [30, 40]], [2, 2], 'int32'),
       x2: scalar(42, 'int32'),
