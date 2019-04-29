@@ -49,19 +49,6 @@ export class MaxPoolProgram implements WebGPUProgram {
 
     const xShape = `ivec4(${convInfo.inShape.join(',')})`;
 
-    // function generateGetOutputCoords(
-    //     outputShape, xIndices, yIndices, zIndices) {
-    //   return `
-    //       ivec4 getOutputCoords() {
-    //         return ivec4(gl_GlobalInvocationID.z / ${
-    //       outputShape[3]}, gl_GlobalInvocationID.y, gl_GlobalInvocationID.x,
-    //       gl_GlobalInvocation.z % ${ outputShape[3]})
-    //       }
-    //   `;
-    // }
-
-    // const func = generateGetOutputCoords(this.outputShape, [2], [1], [0, 3])
-
     this.userCode = `
       const ivec2 strides = ivec2(${strideHeight}, ${strideWidth});
       const ivec2 pads = ivec2(${padTop}, ${padLeft});
