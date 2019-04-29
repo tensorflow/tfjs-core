@@ -25,7 +25,8 @@ export class MaxPoolProgram implements WebGPUProgram {
   dispatch: [number, number, number];
   variableNames = ['x'];
   uniforms = 'uvec4 inpShape, outShape; uvec2 pad, stride;';
-  tileSize: [number, number, number] = [4, 8, 1];
+  // tileSize: [number, number, number] = [4, 4, 1];
+  tileSize: [number, number, number] = [2, 2, 1];
 
   constructor(convInfo: Conv2DInfo) {
     const strideHeight = convInfo.strideHeight;
@@ -40,12 +41,13 @@ export class MaxPoolProgram implements WebGPUProgram {
     this.outputShape = convInfo.outShape;
     this.dispatch = [
       // columns
-      Math.ceil(this.outputShape[2] / this.tileSize[0]),
+      Math.ceil(this.outputShape[1] / this.tileSize[0]),
       // rows
-      Math.ceil(this.outputShape[1] / this.tileSize[1]),
+      Math.ceil(this.outputShape[2] / this.tileSize[1]),
       // batch * channels
-      Math.ceil(this.outputShape[0] * this.outputShape[3] / this.tileSize[2]),
+      Math.ceil(this.outputShape[0] * this.outputShape[3] / this.tileSize[2])
     ];
+    console.log('dispatch', this.dispatch);
 
     const xShape = `ivec4(${convInfo.inShape.join(',')})`;
 
@@ -66,8 +68,8 @@ export class MaxPoolProgram implements WebGPUProgram {
         // ivec4 coords = getOutputCoords(index);
         ivec4 coords = ivec4(
           gl_GlobalInvocationID.z / ${this.outputShape[3]}, 
-          gl_GlobalInvocationID.y, 
           gl_GlobalInvocationID.x, 
+          gl_GlobalInvocationID.y, 
           gl_GlobalInvocationID.z % ${this.outputShape[3]});
         int batch = coords[0];
         int d = coords[3];

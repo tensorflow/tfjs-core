@@ -232,7 +232,7 @@ export class WebGPUBackend extends KernelBackend {
     const output =
         this.makeOutputArray(program.outputShape, x.dtype) as Tensor4D;
 
-    const pad = [0, 0];
+    const pad = [convInfo.padInfo.left, convInfo.padInfo.top];
 
     const dimensionsData = new Uint32Array([
       ...convInfo.inShape,
