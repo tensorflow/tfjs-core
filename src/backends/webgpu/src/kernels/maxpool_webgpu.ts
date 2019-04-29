@@ -75,7 +75,7 @@ export class MaxPoolProgram implements WebGPUProgram {
 
         // max/min x(?, ?, d) to get y(yR, yC, d).
         // ? = to be determined
-        vec4 minMaxValue = vec4(0.0);
+        float minMaxValue = 0.0;
         float avgValue = 0.0;
         count = 0.0;
 
@@ -88,10 +88,14 @@ export class MaxPoolProgram implements WebGPUProgram {
 
           for(int wC=0; wC<${effectiveFilterWidth}; wC += ${dilationWidth}) {
             int xC = xCCorner + wC * ${dilationWidth};
+
+            float value = getValue(batch, xR, xC, d);
+
+            minMaxValue = max(value, minMaxValue);
           }
         }
 
-        setOutput(0, 0);
+        setOutput(index, minMaxValue);
       }
     `;
   }
