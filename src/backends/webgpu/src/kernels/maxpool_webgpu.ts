@@ -15,8 +15,9 @@
  * =============================================================================
  */
 
+import {util} from '@tensorflow/tfjs-core';
 import {Conv2DInfo} from '@tensorflow/tfjs-core/dist/ops/conv_util';
-
+import {getCoordsDataType} from '../shader_preprocessor';
 import {WebGPUProgram} from './webgpu_program';
 
 export class MaxPoolProgram implements WebGPUProgram {
@@ -39,17 +40,78 @@ export class MaxPoolProgram implements WebGPUProgram {
     const effectiveFilterWidth = convInfo.effectiveFilterWidth;
 
     this.outputShape = convInfo.outShape;
-    this.dispatch = [
-      // columns
-      Math.ceil(this.outputShape[1] / this.tileSize[0]),
-      // rows
-      Math.ceil(this.outputShape[2] / this.tileSize[1]),
-      // batch * channels
-      Math.ceil(this.outputShape[0] * this.outputShape[3] / this.tileSize[2])
-    ];
-    console.log('dispatch', this.dispatch);
 
     const xShape = `ivec4(${convInfo.inShape.join(',')})`;
+
+    const dispatchArrangement = [[1], [2], [0, 3]];
+
+    const arrayProduct = (arr: number[]) => {
+      if (!arr.length) {
+        throw new Error('Cannot find product of empty array.');
+      }
+      let product = 1;
+      for (let i = 0; i < arr.length; i++) {
+        product *= arr[i];
+      }
+      return product;
+    };
+
+    this.dispatch = [
+      Math.ceil(
+          arrayProduct(dispatchArrangement[0].map(d => this.outputShape[d])) /
+          this.tileSize[0]),
+      Math.ceil(
+          arrayProduct(dispatchArrangement[1].map(d => this.outputShape[d])) /
+          this.tileSize[1]),
+      Math.ceil(
+          arrayProduct(dispatchArrangement[2].map(d => this.outputShape[d])) /
+          this.tileSize[2])
+    ];
+
+    const generateGetOutputCoords = (shape: number[]) => {
+      const dtype = getCoordsDataType(shape.length);
+      const globalInvocationPositions = ['x', 'y', 'z'];
+      let gatherDimensionsStr = '';
+      for (let i = 0; i < dispatchArrangement.length; i++) {
+        const arr = dispatchArrangement[i];
+
+        if (arr.length === 1) {
+          gatherDimensionsStr += `uint d${arr[0]} = gl_GlobalInvocationID.${
+              globalInvocationPositions[i]};`;
+        } else {
+          const strides =
+              util.computeStrides(arr.map(d => this.outputShape[d]));
+          gatherDimensionsStr += `uint index${i} = 
+            gl_GlobalInvocationID.${globalInvocationPositions[i]};`;
+          for (let j = 0; j < strides.length; j++) {
+            gatherDimensionsStr += `
+              uint d${arr[j]} = index${i} / ${strides[j]};
+            `;
+
+            if (j === strides.length - 1) {
+              gatherDimensionsStr += `
+                uint d${arr[j + 1]} = index${i} - d${arr[j]} * ${strides[j]};
+              `;
+            } else {
+              gatherDimensionsStr += `index${i} -= d${arr[j]} * ${strides[j]};`;
+            }
+          }
+        }
+      }
+
+      const dimensions = [];
+      for (let i = 0; i < shape.length; i++) {
+        dimensions.push(`d${i}`);
+      }
+
+      return `
+        ${dtype} getOutputCoords() {
+          ${gatherDimensionsStr}
+
+          return ${dtype}(${dimensions.join(',')});
+        }
+      `;
+    };
 
     this.userCode = `
       const ivec2 strides = ivec2(${strideHeight}, ${strideWidth});
@@ -60,17 +122,13 @@ export class MaxPoolProgram implements WebGPUProgram {
         if (xC < 0 || xC >= ${convInfo.inWidth}) {
           return initializationValue;
         }
-        // return getX(batch, xR, xC, d);
         return x[getFlatIndex(ivec4(batch, xR, xC, d), ${xShape})];
       }
 
+      ${generateGetOutputCoords(this.outputShape)}
+
       void main() {
-        // ivec4 coords = getOutputCoords(index);
-        ivec4 coords = ivec4(
-          gl_GlobalInvocationID.z / ${this.outputShape[3]}, 
-          gl_GlobalInvocationID.x, 
-          gl_GlobalInvocationID.y, 
-          gl_GlobalInvocationID.z % ${this.outputShape[3]});
+        ivec4 coords = getOutputCoords();
         int batch = coords[0];
         int d = coords[3];
         uint index = getFlatIndex(coords, ivec4(
