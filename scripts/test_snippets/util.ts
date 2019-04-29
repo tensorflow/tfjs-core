@@ -21,6 +21,12 @@ import * as ts from 'typescript';
 
 let snippetCount = 0;
 
+/**
+ * Parse and evaluate snippets for the src/index.ts from where this script is
+ * run.
+ * @param tf The TensorFlow.js module to use when evaluating snippets. If used
+ *     outside core, this should be a union of core and the separate package.
+ */
 // tslint:disable-next-line:no-any
 export async function parseAndEvaluateSnippets(tf: any) {
   const index = path.join(process.cwd(), 'src/index.ts');

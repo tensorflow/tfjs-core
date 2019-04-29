@@ -40,7 +40,7 @@ import {tensor2d} from './tensor_ops';
  * console.log('Othogonalized:');
  * y.dot(y.transpose()).print();  // should be nearly the identity matrix.
  * console.log('First row direction maintained:');
- * const data = y.arraySync();
+ * const data = await y.array();
  * console.log(data[0][1] / data[0][0]);  // should be nearly 2.
  * ```
  *
