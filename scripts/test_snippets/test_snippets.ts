@@ -16,6 +16,6 @@
  * =============================================================================
  */
 import * as tf from '../../src/index';
-import {parseAndEvaluatedSnippets} from './util';
+import {parseAndEvaluatedSnippets as parseAndEvaluateSnippets} from './util';
 
-parseAndEvaluatedSnippets(tf);
+parseAndEvaluateSnippets(tf);
