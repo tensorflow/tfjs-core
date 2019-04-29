@@ -81,10 +81,7 @@ export class MaxPoolProgram implements WebGPUProgram {
         int xRCorner = xRCCorner.x;
         int xCCorner = xRCCorner.y;
 
-        // max/min x(?, ?, d) to get y(yR, yC, d).
-        // ? = to be determined
         float minMaxValue = 0.0;
-        float avgValue = 0.0;
 
         for(int wR=0; wR<${effectiveFilterHeight}; wR += ${dilationHeight}) {
           int xR = xRCorner + wR;
