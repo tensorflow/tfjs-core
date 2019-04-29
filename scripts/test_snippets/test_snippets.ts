@@ -107,10 +107,8 @@ async function visit(node: ts.Node) {
         const reportError = (e: string|Error) => {
           console.log(symbol.name, jsdoc);
           console.log(srcCode);
-          if (e instanceof Error) {
-            throw (e);
-          }
-          throw new Error(e);
+          console.error(e);
+          process.exit(1);
         };
 
         const evalString = '(async function runner() { try { ' + srcCode +
