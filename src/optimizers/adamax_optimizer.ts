@@ -16,7 +16,7 @@
  */
 
 import {ENGINE} from '../engine';
-import {tidy} from '../globals';
+import {dispose, tidy} from '../globals';
 import {div, scalar, sub, zerosLike} from '../ops/ops';
 import {ConfigDict, registerClass, Serializable, SerializableConstructor} from '../serialization';
 import {Variable} from '../tensor';
@@ -64,7 +64,7 @@ export class AdamaxOptimizer extends Optimizer {
           this.accumulatedFirstMoment[i] =
               zerosLike(value).variable(trainable, `${name}/m`);
         }
-        if (this.accumulatedWeightedInfNorm[name] == null) {
+        if (this.accumulatedWeightedInfNorm[i] == null) {
           const trainable = false;
           this.accumulatedWeightedInfNorm[i] =
               zerosLike(value).variable(trainable, `${name}/v`);
@@ -110,13 +110,10 @@ export class AdamaxOptimizer extends Optimizer {
     this.iteration.dispose();
 
     if (this.accumulatedFirstMoment != null) {
-      Object.keys(this.accumulatedFirstMoment)
-          .forEach(name => this.accumulatedFirstMoment[name].dispose());
+      dispose(this.accumulatedFirstMoment);
     }
-
     if (this.accumulatedWeightedInfNorm != null) {
-      Object.keys(this.accumulatedWeightedInfNorm)
-          .forEach(name => this.accumulatedWeightedInfNorm[name].dispose());
+      dispose(this.accumulatedWeightedInfNorm);
     }
   }
 
