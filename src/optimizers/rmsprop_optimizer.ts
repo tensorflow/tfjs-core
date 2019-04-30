@@ -52,10 +52,8 @@ export class RMSPropOptimizer extends Optimizer {
         variableGradients.map(item => item.name) :
         Object.keys(variableGradients);
 
-    for (let i = 0; i < variableNames.length; ++i) {
-      const name = variableNames[i];
+    variableNames.forEach((name, i) => {
       const value = ENGINE.registeredVariables[name];
-
       const trainable = false;
       if (this.accumulatedMeanSquares[i] == null) {
         this.accumulatedMeanSquares[i] =
@@ -118,7 +116,7 @@ export class RMSPropOptimizer extends Optimizer {
           value.assign(newValue);
         }
       });
-    }
+    });
     this.incrementIterations();
   }
 

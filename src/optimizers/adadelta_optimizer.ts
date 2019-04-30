@@ -45,8 +45,7 @@ export class AdadeltaOptimizer extends Optimizer {
         variableGradients.map(item => item.name) :
         Object.keys(variableGradients);
 
-    for (let i = 0; i < variableNames.length; ++i) {
-      const name = variableNames[i];
+    variableNames.forEach((name, i) => {
       const value = ENGINE.registeredVariables[name];
       const trainable = false;
       if (this.accumulatedGrads[i] == null) {
@@ -84,7 +83,7 @@ export class AdadeltaOptimizer extends Optimizer {
         const newValue = updates.mul(-this.learningRate).add(value);
         value.assign(newValue);
       });
-    }
+    });
     this.incrementIterations();
   }
 
