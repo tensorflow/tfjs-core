@@ -104,4 +104,18 @@ describeWithFlags('frame', ALL_ENVS, () => {
     expect(output.shape).toEqual([0, 6]);
     expectArraysClose(output, []);
   });
+
+  it('Padding with default value', () => {
+    const input = tf.tensor1d([1, 2, 3, 4, 5]);
+    const output = tf.signal.frame(input, 3, 3, true);
+    expect(output.shape).toEqual([2, 3]);
+    expectArraysClose(output, [1, 2, 3, 4, 5, 0]);
+  });
+
+  it('Padding with the given value', () => {
+    const input = tf.tensor1d([1, 2, 3, 4, 5]);
+    const output = tf.signal.frame(input, 3, 3, true, 100);
+    expect(output.shape).toEqual([2, 3]);
+    expectArraysClose(output, [1, 2, 3, 4, 5, 100]);
+  });
 });

@@ -20,7 +20,7 @@ import {Tensor, Tensor1D} from '../tensor';
 
 import {concat} from './concat_split';
 import {slice} from './slice';
-import {tensor1d, tensor2d} from './tensor_ops';
+import {fill, tensor1d, tensor2d} from './tensor_ops';
 
 /**
  * Generate a Hann window.
@@ -71,12 +71,20 @@ function hammingWindow_(windowLength: number): Tensor1D {
  * @doc {heading: 'Operations', subheading: 'Signal', namespace: 'signal'}
  */
 function frame_(
-    signal: Tensor1D, frameLength: number, frameStep: number): Tensor {
+    signal: Tensor1D, frameLength: number, frameStep: number, padEnd = false,
+    padValue = 0): Tensor {
   let start = 0;
   const output: Tensor[] = [];
   while (start + frameLength <= signal.size) {
     output.push(slice(signal, start, frameLength));
     start += frameStep;
+  }
+
+  if (padEnd) {
+    const padLen = (start + frameLength) - signal.size;
+    const pad = concat(
+        [slice(signal, start, frameLength - padLen), fill([padLen], padValue)]);
+    output.push(pad);
   }
 
   if (output.length === 0) {
