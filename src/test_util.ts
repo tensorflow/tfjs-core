@@ -16,7 +16,6 @@
  */
 
 import {ENGINE} from './engine';
-import {Tensor} from './tensor';
 import {inferShape} from './tensor_util_env';
 import {RecursiveArray, TensorLike, TypedArray} from './types';
 import {arraysEqual, flatten, isString, isTypedArray} from './util';
@@ -25,9 +24,8 @@ const TEST_EPSILON_FLOAT32 = 1e-3;
 export const TEST_EPSILON_FLOAT16 = 1e-1;
 
 export function expectArraysClose(
-    actual: Tensor|TypedArray|number|RecursiveArray<number>,
-    expected: Tensor|TypedArray|number|RecursiveArray<number>,
-    epsilon?: number) {
+    actual: TypedArray|number|RecursiveArray<number>,
+    expected: TypedArray|number|RecursiveArray<number>, epsilon?: number) {
   if (epsilon == null) {
     epsilon = testEpsilon();
   }
@@ -41,12 +39,9 @@ export function testEpsilon() {
 }
 
 function expectArraysPredicate(
-    actual: Tensor|TensorLike, expected: Tensor|TensorLike,
+    actual: TensorLike, expected: TensorLike,
     predicate: (a: {}, b: {}) => boolean) {
   let checkClassType = true;
-  if (actual instanceof Tensor || expected instanceof Tensor) {
-    checkClassType = false;
-  }
   if (isTypedArray(actual) || isTypedArray(expected)) {
     checkClassType = false;
   }
@@ -59,20 +54,8 @@ function expectArraysPredicate(
 
     if (aType !== bType) {
       throw new Error(
-          `Arrays are of different type actual: ${aType} ` +
-          `vs expected: ${bType}`);
-    }
-  }
-  if (actual instanceof Tensor && expected instanceof Tensor) {
-    if (actual.dtype !== expected.dtype) {
-      throw new Error(
-          `Arrays are of different type actual: ${actual.dtype} ` +
-          `vs expected: ${expected.dtype}.`);
-    }
-    if (!arraysEqual(actual.shape, expected.shape)) {
-      throw new Error(
-          `Arrays are of different shape actual: ${actual.shape} ` +
-          `vs expected: ${expected.shape}.`);
+          `Arrays are of different type. Actual: ${aType}. ` +
+          `Expected: ${bType}`);
     }
   }
 
@@ -82,21 +65,19 @@ function expectArraysPredicate(
     if (!arraysEqual(actualShape, expectedShape)) {
       throw new Error(
           `Arrays have different shapes. ` +
-          `Actual: ${actualShape}. Expected: ${expectedShape}`);
+          `Actual: [${actualShape}]. Expected: [${expectedShape}]`);
     }
   }
   let actualFlat: TypedArray|number[]|boolean[]|string[];
-  if (actual instanceof Tensor) {
-    actualFlat = actual.dataSync();
-  } else if (Array.isArray(actual) || typeof actual === 'number') {
+  if (Array.isArray(actual) || typeof actual === 'number' ||
+      typeof actual === 'string' || typeof actual === 'boolean') {
     actualFlat = flatten(actual) as number[];
   } else {
     actualFlat = actual as TypedArray;
   }
   let expectedFlat: typeof actualFlat;
-  if (expected instanceof Tensor) {
-    expectedFlat = expected.dataSync();
-  } else if (Array.isArray(expected) || typeof expected === 'number') {
+  if (Array.isArray(expected) || typeof expected === 'number' ||
+      typeof expected === 'string' || typeof expected === 'boolean') {
     expectedFlat = flatten(expected) as number[];
   } else {
     expectedFlat = expected as TypedArray;
@@ -131,15 +112,12 @@ export function expectPromiseToFail(fn: () => Promise<{}>, done: DoneFn): void {
   fn().then(() => done.fail(), () => done());
 }
 
-export function expectArraysEqual(
-    actual: Tensor|TensorLike, expected: Tensor|TensorLike) {
+export function expectArraysEqual(actual: TensorLike, expected: TensorLike) {
   const exp = typeof expected === 'string' || typeof expected === 'number' ||
           typeof expected === 'boolean' ?
       [expected] as number[] :
       expected as number[];
-  if (actual instanceof Tensor && actual.dtype === 'string' ||
-      expected instanceof Tensor && expected.dtype === 'string' ||
-      Array.isArray(actual) && isString(actual[0]) ||
+  if (Array.isArray(actual) && isString(actual[0]) ||
       Array.isArray(expected) && isString(expected[0])) {
     // tslint:disable-next-line:triple-equals
     return expectArraysPredicate(actual, exp, (a, b) => a == b);
@@ -168,16 +146,10 @@ function areClose(a: number, e: number, epsilon: number): boolean {
 
 export function expectValuesInRange(
     actual: TypedArray|number[], low: number, high: number) {
-  let actualVals: TypedArray|number[];
-  if (actual instanceof Tensor) {
-    actualVals = actual.dataSync();
-  } else {
-    actualVals = actual;
-  }
-  for (let i = 0; i < actualVals.length; i++) {
-    if (actualVals[i] < low || actualVals[i] > high) {
+  for (let i = 0; i < actual.length; i++) {
+    if (actual[i] < low || actual[i] > high) {
       throw new Error(
-          `Value out of range:${actualVals[i]} low: ${low}, high: ${high}`);
+          `Value out of range:${actual[i]} low: ${low}, high: ${high}`);
     }
   }
 }
