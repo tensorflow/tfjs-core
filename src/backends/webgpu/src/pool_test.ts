@@ -48,7 +48,7 @@ describe('pool', () => {
         resultData, new Float32Array([5, 6, 6, 9, 9, 8, 0, 9, 8]));
   });
 
-  it('x=[2,3,3,1] f=[2,2] s=1', async () => {
+  fit('x=[2,3,3,1] f=[2,2] s=1', async () => {
     // Feed forward.
     const x = tf.tensor4d(
         [1, 2, 3, 4, 5, 6, 7, 9, 8, 1, 2, 3, 4, 5, 6, 7, 8, 9], [2, 3, 3, 1]);
