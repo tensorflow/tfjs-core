@@ -25,16 +25,12 @@ export class MaxPoolProgram implements WebGPUProgram {
   userCode: string;
   dispatch: [number, number, number];
   variableNames = ['x'];
-  uniforms = 'ivec4 xShape, outShape; ivec2 pad, stride;';
+  uniforms = 'ivec4 xShape, outShape; ' +
+      'ivec2 pad, dilation, filterDims, convDims, stride;';
   // tileSize: [number, number, number] = [4, 4, 1];
   tileSize: [number, number, number] = [2, 2, 1];
 
   constructor(convInfo: Conv2DInfo) {
-    const dilationHeight = convInfo.dilationHeight;
-    const dilationWidth = convInfo.dilationWidth;
-    const effectiveFilterHeight = convInfo.effectiveFilterHeight;
-    const effectiveFilterWidth = convInfo.effectiveFilterWidth;
-
     this.outputShape = convInfo.outShape;
 
     const dispatchArrangement = [[1], [2], [0, 3]];
@@ -111,7 +107,7 @@ export class MaxPoolProgram implements WebGPUProgram {
       float initializationValue = 0.0;
 
       float getValue(int batch, int xR, int xC, int d) {
-        if (xC < 0 || xC >= ${convInfo.inWidth}) {
+        if (xC < 0 || xC >= convDims.x) {
           return initializationValue;
         }
         return x[getFlatIndex(ivec4(batch, xR, xC, d), xShape)];
@@ -123,11 +119,7 @@ export class MaxPoolProgram implements WebGPUProgram {
         ivec4 coords = getOutputCoords();
         int batch = coords[0];
         int d = coords[3];
-        uint index = getFlatIndex(coords, ivec4(
-          ${this.outputShape[0]}, 
-          ${this.outputShape[1]}, 
-          ${this.outputShape[2]}, 
-          ${this.outputShape[3]}));
+        uint index = getFlatIndex(coords, outShape);
 
         ivec2 xRCCorner = coords.yz * stride - pad;
         int xRCorner = xRCCorner.x;
@@ -135,15 +127,15 @@ export class MaxPoolProgram implements WebGPUProgram {
 
         float minMaxValue = 0.0;
 
-        for(int wR=0; wR<${effectiveFilterHeight}; wR += ${dilationHeight}) {
+        for(int wR=0; wR<filterDims.y; wR += dilation.y) {
           int xR = xRCorner + wR;
 
-          if (xR < 0 || xR >= ${convInfo.inHeight}) {
+          if (xR < 0 || xR >= convDims.y) {
             continue;
           }
 
-          for(int wC=0; wC<${effectiveFilterWidth}; wC += ${dilationWidth}) {
-            int xC = xCCorner + wC * ${dilationWidth};
+          for(int wC=0; wC<filterDims.x; wC += dilation.x) {
+            int xC = xCCorner + wC * dilation.x;
 
             float value = getValue(batch, xR, xC, d);
 
