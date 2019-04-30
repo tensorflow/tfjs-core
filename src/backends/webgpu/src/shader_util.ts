@@ -18,7 +18,7 @@
 import {getCoordsDataType} from './shader_preprocessor';
 
 // Generates GLSL that computes strides.
-function symbolicallyComputeStrides(
+export function symbolicallyComputeStrides(
     indicesArr: number[], variableName: string): string[] {
   if (Math.max(...indicesArr) > 3) {
     throw new Error('Cannot symbolically compute strides for rank > 4 tensor.');
