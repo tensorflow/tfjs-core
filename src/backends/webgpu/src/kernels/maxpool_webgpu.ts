@@ -68,7 +68,7 @@ export class MaxPoolProgram implements WebGPUProgram {
           const strides = new Array(rank - 1);
           strides[rank - 2] = shape[rank - 1];
           for (let i = rank - 3; i >= 0; --i) {
-            strides[i] = `${strides[i + 1]} * ${shape[i + 1]}`;
+            strides[i] = `(${strides[i + 1]} * ${shape[i + 1]})`;
           }
 
           return strides;
