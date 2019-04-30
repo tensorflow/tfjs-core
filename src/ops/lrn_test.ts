@@ -537,7 +537,7 @@ describeWithFlags('localResponseNormalization with Tensor4D', ALL_ENVS, () => {
   });
 
   it('yields same result as tensorflow with inner most dims of odd shape',
-     () => {
+     async () => {
        // t = tf.random_uniform([1, 5, 5, 3])
        // l = tf.nn.lrn(t, depth_radius=2)
        // print(tf.Session().run([t, l]))
@@ -629,7 +629,7 @@ describeWithFlags('localResponseNormalization with Tensor4D', ALL_ENVS, () => {
 
        const result = x.localResponseNormalization(radius);
 
-       expectArraysClose(result, flatten(expected));
+       expectArraysClose(await result.data(), flatten(expected));
      });
 
   it('throws when passed a non-tensor', () => {
