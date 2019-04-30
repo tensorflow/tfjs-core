@@ -1,5 +1,0 @@
-expectArraysClose\(([().\w]+),
-expectArraysClose(await $1.data(),
-
-- unit test assertArraysClose/Equal
-- Should we break assrtArraysClose/Equal (remove tensor from it)?
