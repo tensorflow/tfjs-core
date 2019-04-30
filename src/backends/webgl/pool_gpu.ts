@@ -23,7 +23,12 @@ export class Pool2DProgram implements GPGPUProgram {
   outputShape: number[];
   userCode: string;
 
-  constructor(convInfo: Conv2DInfo) {
+  constructor(
+      convInfo: Conv2DInfo, poolType: 'max'|'avg', computePositions: boolean) {
+    if (poolType === 'avg' && computePositions) {
+      throw new Error('Cannot compute positions for average pool.');
+    }
+
     const filterWidth = convInfo.filterWidth;
     const strideHeight = convInfo.strideHeight;
     const strideWidth = convInfo.strideWidth;
@@ -36,15 +41,89 @@ export class Pool2DProgram implements GPGPUProgram {
     const padLeft = convInfo.padInfo.left;
     this.outputShape = convInfo.outShape;
 
-    const initializationValue = '0.0';
-    const returnValue = `max(max(max(` +
+    const isAvgPool = poolType === 'avg';
+
+    let initializationValue = '0.0';
+    if (!isAvgPool) {
+      // WebGL on Firefox Linux can't compile 1/0 so we do 1/eps.
+      initializationValue = '-1.0 / 1e-20';
+    }
+
+    if (computePositions) {
+      const compareOp = '>=';
+
+      this.userCode = `
+        const ivec2 strides = ivec2(${strideHeight}, ${strideWidth});
+        const ivec2 pads = ivec2(${padTop}, ${padLeft});
+
+        void main() {
+          ivec4 coords = getOutputCoords();
+          int batch = coords[0];
+          int d = coords[3];
+
+          ivec2 xRCCorner = coords.yz * strides - pads;
+          int xRCorner = xRCCorner.x;
+          int xCCorner = xRCCorner.y;
+
+          // max/min x(?, ?, d) to get y(yR, yC, d).
+          // ? = to be determined
+          float minMaxValue = 0.0;
+          float minMaxValueFound = 0.0;
+          int minMaxPosition = 0;
+          float avgValue = 0.0;
+
+          for (int wR = 0; wR < ${effectiveFilterHeight};
+              wR += ${dilationHeight}) {
+            int xR = xRCorner + wR;
+
+            if (xR < 0 || xR >= ${convInfo.inHeight}) {
+              continue;
+            }
+
+            for (int wC = 0; wC < ${effectiveFilterWidth};
+                wC += ${dilationWidth}) {
+              int xC = xCCorner + wC;
+
+              if (xC < 0 || xC >= ${convInfo.inWidth}) {
+                continue;
+              }
+
+              float value = getX(batch, xR, xC, d);
+
+              // If a min / max value has already been found, use it. If not,
+              // use the current value.
+              float currMinMaxValue = mix(
+                  value, minMaxValue, minMaxValueFound);
+              if (value ${compareOp} currMinMaxValue) {
+                minMaxValue = value;
+                minMaxValueFound = 1.0;
+                minMaxPosition = wR * ${effectiveFilterWidth} + wC;
+              }
+            }
+          }
+          setOutput(float(minMaxPosition));
+        }
+      `;
+      return;
+    }
+
+    const compareOp = 'max';
+
+    let returnValue = `${poolType}(${poolType}(${poolType}(` +
         'minMaxValue[0], minMaxValue[1]), minMaxValue[2]), minMaxValue[3])';
+    if (poolType === 'avg') {
+      returnValue = `avgValue / count`;
+    }
 
     const filterWidthNearestVec4 = Math.floor(filterWidth / 4) * 4;
     const filterWidthVec4Remainder = filterWidth % 4;
 
     const updateSnippet = `
-      minMaxValue = max(values, minMaxValue);
+      if (${isAvgPool}) {
+        avgValue += dot(values, ones);
+      } else {
+        minMaxValue = ${compareOp}(values, minMaxValue);
+      }
     `;
 
     this.userCode = `
