@@ -68,20 +68,8 @@ function expectArraysPredicate(
           `Actual: [${actualShape}]. Expected: [${expectedShape}]`);
     }
   }
-  let actualFlat: TypedArray|number[]|boolean[]|string[];
-  if (Array.isArray(actual) || typeof actual === 'number' ||
-      typeof actual === 'string' || typeof actual === 'boolean') {
-    actualFlat = flatten(actual) as number[];
-  } else {
-    actualFlat = actual as TypedArray;
-  }
-  let expectedFlat: typeof actualFlat;
-  if (Array.isArray(expected) || typeof expected === 'number' ||
-      typeof expected === 'string' || typeof expected === 'boolean') {
-    expectedFlat = flatten(expected) as number[];
-  } else {
-    expectedFlat = expected as TypedArray;
-  }
+  const actualFlat = isTypedArray(actual) ? actual : flatten(actual);
+  const expectedFlat = isTypedArray(expected) ? expected : flatten(expected);
 
   if (actualFlat.length !== expectedFlat.length) {
     throw new Error(
@@ -117,12 +105,13 @@ export function expectArraysEqual(actual: TensorLike, expected: TensorLike) {
           typeof expected === 'boolean' ?
       [expected] as number[] :
       expected as number[];
-  if (Array.isArray(actual) && isString(actual[0]) ||
-      Array.isArray(expected) && isString(expected[0])) {
-    // tslint:disable-next-line:triple-equals
+  if (isString(actual) || isString((actual as string[])[0]) ||
+      isString(expected) || isString((expected as string[])[0])) {
+    // tslint:disable-next-line: triple-equals
     return expectArraysPredicate(actual, exp, (a, b) => a == b);
   }
-  return expectArraysClose(actual as TypedArray, expected as TypedArray, 0);
+  return expectArraysPredicate(
+      actual, expected, (a, b) => areClose(a as number, b as number, 0));
 }
 
 export function expectNumbersClose(a: number, e: number, epsilon?: number) {
