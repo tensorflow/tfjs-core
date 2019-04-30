@@ -87,6 +87,7 @@ import {GPGPUBinary, GPGPUProgram, TensorData} from './gpgpu_math';
 import {Im2ColPackedProgram} from './im2col_packed_gpu';
 import {LRNProgram} from './lrn_gpu';
 import {LRNGradProgram} from './lrn_grad_gpu';
+import {LRNPackedProgram} from './lrn_packed_gpu';
 import {MaxPool2DBackpropProgram} from './max_pool_backprop_gpu';
 import {MatMulPackedProgram} from './mulmat_packed_gpu';
 import {MultinomialProgram} from './multinomial_gpu';
@@ -388,7 +389,16 @@ export class MathBackendWebGL implements KernelBackend {
       return new Promise<TypedArray>(resolve => subscribers.push(resolve));
     }
     const texData = this.texData.get(dataId);
-    const {texture, values, texShape, isPacked, shape, slice, dtype} = texData;
+    const {
+      texture,
+      values,
+      texShape,
+      isPacked,
+      shape,
+      slice,
+      dtype,
+      complexTensors
+    } = texData;
 
     if (slice != null) {
       const program = new UnaryOpProgram(shape, unary_op.CLONE);
@@ -411,25 +421,31 @@ export class MathBackendWebGL implements KernelBackend {
           `WEBGL_VERSION=2 not yet supported.`);
     }
 
-    // Possibly copy the texture into a buffer before inserting a fence.
-    let width = texShape[1];
-    let height = texShape[0];
-    if (isPacked) {
-      [width, height] = tex_util.getPackedMatrixTextureShapeWidthHeight(
-          texShape[0], texShape[1]);
-    }
-
     let buffer = null;
-    if (ENV.get('WEBGL_BUFFER_SUPPORTED')) {
-      buffer = this.gpgpu.createBufferFromTexture(texture, height, width);
+    if (dtype !== 'complex64') {
+      // Possibly copy the texture into a buffer before inserting a fence.
+      let width = texShape[1];
+      let height = texShape[0];
+      if (isPacked) {
+        [width, height] = tex_util.getPackedMatrixTextureShapeWidthHeight(
+            texShape[0], texShape[1]);
+      }
+      if (ENV.get('WEBGL_BUFFER_SUPPORTED')) {
+        buffer = this.gpgpu.createBufferFromTexture(texture, height, width);
+      }
+      // Create a fence and wait for it to resolve.
+      await this.gpgpu.createAndWaitForFence();
     }
-
-    // Create a fence and wait for it to resolve.
-    await this.gpgpu.createAndWaitForFence();
 
     // Download the values from the GPU.
     let vals: Float32Array;
-    if (buffer == null) {
+    if (dtype === 'complex64') {
+      const ps =
+          Promise.all([complexTensors.real.data(), complexTensors.imag.data()]);
+      const [realValues, imagValues] = await ps;
+      vals = mergeRealAndImagArrays(
+          realValues as Float32Array, imagValues as Float32Array);
+    } else if (buffer == null) {
       vals = this.getValuesFromTexture(dataId);
     } else {
       const size = util.sizeFromShape(shape);
@@ -906,7 +922,7 @@ export class MathBackendWebGL implements KernelBackend {
       inputs.push(scale);
     }
 
-    if (ENV.getBool('WEBGL_PACK_BATCHNORMALIZATION')) {
+    if (ENV.getBool('WEBGL_PACK_NORMALIZATION')) {
       const batchNormPackedProgram = new BatchNormPackedProgram(
           x.shape, mean.shape, variance.shape, offsetShape, scaleShape,
           varianceEpsilon);
@@ -922,7 +938,9 @@ export class MathBackendWebGL implements KernelBackend {
   localResponseNormalization4D(
       x: Tensor4D, radius: number, bias: number, alpha: number,
       beta: number): Tensor4D {
-    const program = new LRNProgram(x.shape, radius, bias, alpha, beta);
+    const program = ENV.getBool('WEBGL_PACK_NORMALIZATION') ?
+        new LRNPackedProgram(x.shape, radius, bias, alpha, beta) :
+        new LRNProgram(x.shape, radius, bias, alpha, beta);
     return this.compileAndRun(program, [x]);
   }
 
@@ -2244,6 +2262,11 @@ export class MathBackendWebGL implements KernelBackend {
 
   zerosLike<R extends Rank>(x: Tensor<R>): Tensor<R> {
     return this.fill(x.shape, x.dtype === 'string' ? '' : 0, x.dtype);
+  }
+
+  linspace(start: number, stop: number, num: number): Tensor1D {
+    // TODO: Use CPU implementation due to the precision problem in Safari.
+    return backend_util.linspaceImpl(start, stop, num);
   }
 
   private makeOutputArray<T extends Tensor>(shape: number[], dtype: DataType):
