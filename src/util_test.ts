@@ -499,7 +499,7 @@ describe('util.toNestedArray', () => {
 
 describe('util.fetch', () => {
   it('should call the platform fetch', () => {
-    spyOn(ENV.platform, 'fetch').and.callFake(() => new Response());
+    spyOn(ENV.platform, 'fetch').and.callFake(() => {});
 
     util.fetch('test/path', {method: 'GET'});
 

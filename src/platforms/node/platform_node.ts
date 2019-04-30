@@ -24,8 +24,8 @@ export const getNodeFetch = {
   }
 };
 
-export let systemFetch: Function;
-class PlatformNode {
+export let systemFetch: (url: string, init?: RequestInit) => Promise<Response>;
+export class PlatformNode {
   fetch(path: string, requestInits?: RequestInit): Promise<Response> {
     if (systemFetch == null) {
       systemFetch = getNodeFetch.fetchImport();

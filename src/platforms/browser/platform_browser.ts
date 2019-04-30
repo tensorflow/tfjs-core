@@ -15,8 +15,9 @@
  * =============================================================================
  */
 import {ENV} from '../../environment';
+import {Platform} from '../platform';
 
-class PlatformBrowser {
+export class PlatformBrowser extends Platform {
   fetch(path: string, init?: RequestInit): Promise<Response> {
     return fetch(path, init);
   }

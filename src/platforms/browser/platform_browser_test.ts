@@ -15,41 +15,18 @@
  * =============================================================================
  */
 
-// import * as tf from './index';
-// import {ALL_ENVS, describeWithFlags} from './jasmine_util';
-// import {convertToTensor} from './tensor_util_env';
-// import {expectArraysClose} from './test_util';
+import {BROWSER_ENVS, describeWithFlags} from '../../jasmine_util';
 
-// describe('util.fetch', () => {
-//   it('should allow overriding global fetch', () => {
-//     const savedFetch = ENV.global.fetch;
-//     ENV.global.fetch = () => {};
+import {PlatformBrowser} from './platform_browser';
 
-//     spyOn(ENV.global, 'fetch').and.callThrough();
+describeWithFlags('PlatformBrowser', BROWSER_ENVS, async () => {
+  it('fetch calls window.fetch', async () => {
+    const response = new Response();
+    spyOn(window, 'fetch').and.returnValue(response);
+    const platform = new PlatformBrowser();
 
-//     util.fetch('');
+    await platform.fetch('test/url', {method: 'GET'});
 
-//     expect(ENV.global.fetch).toHaveBeenCalled();
-//     ENV.global.fetch = savedFetch;
-//   });
-// });
-
-// describeWithFlags('util.fetch node', NODE_ENVS, () => {
-//   it('should use node-fetch', () => {
-//     const savedFetch = util.systemFetch;
-//     const savedGlobalFetch = ENV.global.fetch;
-//     // @ts-ignore
-//     ENV.global.fetch = null;
-//     // @ts-ignore
-//     util.systemFetch = null;
-//     spyOn(util.getNodeFetch, 'fetchImport').and.callFake(() => () => {});
-
-//     util.fetch('');
-//     // tslint:disable-next-line:no-any
-//     expect(util.getNodeFetch.fetchImport).toHaveBeenCalled();
-//     // @ts-ignore
-//     ENV.global.fetch = savedGlobalFetch;
-//     // @ts-ignore
-//     util.systemFetch = savedFetch;
-//   });
-// });
+    expect(window.fetch).toHaveBeenCalledWith('test/url', {method: 'GET'});
+  });
+});

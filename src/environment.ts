@@ -44,6 +44,7 @@ export class Environment {
   }
 
   setPlatform(platformName: string, platform: Platform) {
+    this.platformName = platformName;
     this.platform = platform;
   }
 
