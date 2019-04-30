@@ -26,6 +26,7 @@ const arrayProduct = (arr: number[]) => {
   return product;
 };
 
+// Computes dispatch geometry based on layout of output dimensions and tileSize.
 export function computeDispatch(
     layout: [number[], number[], number[]], outputShape: number[],
     tileSize: [number, number, number] = [1, 1, 1]): [number, number, number] {
