@@ -60,11 +60,11 @@ export declare interface WeightsManifestGroupConfig {
 }
 
 /**
- * Weight type.
+ * Group to which the weight belongs.
  *
  * - 'optimizer': Weight from a stateful optimizer.
  */
-export type WeightType = 'model'|'optimizer';
+export type WeightGroup = 'model'|'optimizer';
 
 /**
  * An entry in the weight manifest.
@@ -95,7 +95,7 @@ export declare interface WeightsManifestEntry {
    * The value 'optimizer' indicates the weight belongs to an optimizer
    * (i.e., not the proper part of a model).
    */
-  type?: WeightType;
+  type?: WeightGroup;
 
   /**
    * Information for dequantization of the weight.

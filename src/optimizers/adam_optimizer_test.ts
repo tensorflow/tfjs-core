@@ -79,6 +79,33 @@ describeWithFlags('AdamOptimizer', ALL_ENVS, () => {
     // The only tensor remaining should be the argument to variable().
     expect(tf.memory().numTensors).toBe(1);
   });
+
+  it('Continue training after loading weights', () => {
+    const learningRate = .1;
+    const beta1 = .8;
+    const beta2 = .9;
+    const optimizer1 = tf.train.adam(learningRate, beta1, beta2);
+
+    const x = tf.tensor1d([2, 4]).variable();
+    const f = () => x.square().sum() as tf.Scalar;
+    let cost = optimizer1.minimize(f, /* returnCost */ true);
+    expectArraysClose(cost, tf.scalar(20));
+    // cost = optimizer1.minimize(f, /* returnCost */ true);
+    // cost.print();  // DEBUG
+
+    const weights = optimizer1.getWeights();
+    console.log(weights);  // DEBUG
+    expect(weights.length).toEqual(2);
+    expect(weights[0].name).toEqual(`${x.name}/m`);
+    expect(weights[1].name).toEqual(`${x.name}/v`);
+
+    const optimizer2 = tf.train.adam(learningRate, beta1, beta2);
+    optimizer2.setWeights(weights);
+
+    cost = optimizer2.minimize(f, /* returnCost */ true);
+    expectArraysClose(cost, tf.scalar(18.82));
+  });
+
   it('serialization round-trip', () => {
     const originalOpt = tf.train.adam(0.1, 0.2, 0.3, 2e-8);
     const reserialized =

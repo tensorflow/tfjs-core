@@ -21,7 +21,7 @@ import {NamedTensor, NamedTensorMap} from '../tensor_types';
 import {TypedArray} from '../types';
 import {sizeFromShape} from '../util';
 
-import {DTYPE_VALUE_SIZE_MAP, ModelArtifacts, ModelArtifactsInfo, WeightsManifestEntry, WeightType} from './types';
+import {DTYPE_VALUE_SIZE_MAP, ModelArtifacts, ModelArtifactsInfo, WeightsManifestEntry, WeightGroup} from './types';
 
 /**
  * Encode a map from names to weight values as an ArrayBuffer, along with an
@@ -32,6 +32,7 @@ import {DTYPE_VALUE_SIZE_MAP, ModelArtifacts, ModelArtifactsInfo, WeightsManifes
  * This function is the reverse of `decodeWeights`.
  *
  * @param tensors A map ("dict") from names to tensors.
+ * @param group Group to which the weights belong (optional).
  * @returns A `Promise` of
  *   - A flat `ArrayBuffer` with all the binary values of the `Tensor`s
  *     concatenated.
@@ -40,7 +41,7 @@ import {DTYPE_VALUE_SIZE_MAP, ModelArtifacts, ModelArtifactsInfo, WeightsManifes
  * @throws Error: on unsupported tensor `dtype`.
  */
 export async function encodeWeights(
-    tensors: NamedTensorMap|NamedTensor[], type?: WeightType):
+    tensors: NamedTensorMap|NamedTensor[], group?: WeightGroup):
     Promise<{data: ArrayBuffer, specs: WeightsManifestEntry[]}> {
   // TODO(adarob, cais): Support quantization.
   const specs: WeightsManifestEntry[] = [];
@@ -57,8 +58,8 @@ export async function encodeWeights(
       throw new Error(`Unsupported dtype in weight '${name}': ${t.dtype}`);
     }
     const spec: WeightsManifestEntry = {name, shape: t.shape, dtype: t.dtype};
-    if (type != null) {
-      spec.type = type;
+    if (group != null) {
+      spec.type = group;
     }
     specs.push(spec);
     dataPromises.push(t.data());

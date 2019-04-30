@@ -25,7 +25,7 @@ import {Optimizer} from './optimizer';
 
 export class AdamOptimizer extends Optimizer {
   /** @nocollapse */
-  static className = 'AdamOptimizer';
+  static className = 'Adam';   // Note: Name matters for Python compatibility.
   private accBeta1: Variable;
   private accBeta2: Variable;
 
