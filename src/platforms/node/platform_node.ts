@@ -16,8 +16,24 @@
  */
 import {ENV} from '../../environment';
 
-export class PlatformNode {
-  fetch(path: string, requestInits?: RequestInit) {}
+// We are wrapping this within an object so it can be stubbed by Jasmine.
+export const getNodeFetch = {
+  fetchImport: () => {
+    // tslint:disable-next-line:no-require-imports
+    return require('node-fetch');
+  }
+};
+
+export let systemFetch: Function;
+class PlatformNode {
+  fetch(path: string, requestInits?: RequestInit): Promise<Response> {
+    if (systemFetch == null) {
+      systemFetch = getNodeFetch.fetchImport();
+    }
+    return systemFetch(path, requestInits);
+  }
 }
 
-ENV.setPlatform(new PlatformNode());
+if (ENV.get('IS_NODE')) {
+  ENV.setPlatform('node', new PlatformNode());
+}

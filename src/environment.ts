@@ -35,6 +35,7 @@ export class Environment {
 
   private urlFlags: Flags = {};
 
+  platformName: string;
   platform: Platform;
 
   // tslint:disable-next-line: no-any
@@ -42,7 +43,7 @@ export class Environment {
     this.populateURLFlags();
   }
 
-  setPlatform(platform: Platform) {
+  setPlatform(platformName: string, platform: Platform) {
     this.platform = platform;
   }
 

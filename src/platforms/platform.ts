@@ -16,7 +16,7 @@
  */
 
 export class Platform {
-  fetch(path: string, requestInits?: RequestInit) {
+  fetch(path: string, requestInits?: RequestInit): Promise<Response> {
     throw new Error(`fetch() is not implemented for this platform.`);
   }
 }

@@ -328,8 +328,9 @@ export function backend(): KernelBackend {
 /**
  * Sets the global platform.
  *
+ * @param platformName The name of this platform.
  * @param platform A platform implementation.
  */
-export function setPlatform(platform: Platform) {
-  ENV.setPlatform(platform);
+export function setPlatform(platformName: string, platform: Platform) {
+  ENV.setPlatform(platformName, platform);
 }
