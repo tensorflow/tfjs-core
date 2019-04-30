@@ -32,11 +32,6 @@ export type NamedVariableMap = {
   [name: string]: Variable;
 };
 
-export interface NamedVariable {
-  name: string;
-  variable: Variable;
-}
-
 export type GradSaveFunc = (save: Tensor[]) => void;
 
 /**

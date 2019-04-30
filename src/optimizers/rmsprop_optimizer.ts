@@ -19,9 +19,10 @@ import {ENGINE} from '../engine';
 import {dispose, tidy} from '../globals';
 import {zerosLike} from '../ops/ops';
 import {ConfigDict, registerClass, Serializable, SerializableConstructor} from '../serialization';
-import {NamedTensor, NamedTensorMap, NamedVariable} from '../tensor_types';
+import {NamedTensor, NamedTensorMap} from '../tensor_types';
 
 import {Optimizer} from './optimizer';
+import {Variable} from '../tensor';
 
 /** @doclink Optimizer */
 export class RMSPropOptimizer extends Optimizer {
@@ -29,9 +30,9 @@ export class RMSPropOptimizer extends Optimizer {
   static className = 'RMSProp';
   private centered: boolean;
 
-  private accumulatedMeanSquares: NamedVariable[] = [];
-  private accumulatedMoments: NamedVariable[] = [];
-  private accumulatedMeanGrads: NamedVariable[] = [];
+  private accumulatedMeanSquares: Variable[] = [];
+  private accumulatedMoments: Variable[] = [];
+  private accumulatedMeanGrads: Variable[] = [];
 
   constructor(
       protected learningRate: number, protected decay = 0.9,
@@ -57,22 +58,17 @@ export class RMSPropOptimizer extends Optimizer {
 
       const trainable = false;
       if (this.accumulatedMeanSquares[i] == null) {
-        this.accumulatedMeanSquares[i] = {
-          name: `${name}/rms`,  // Name matters for Python compatibility.
-          variable: tidy(() => zerosLike(value).variable(trainable))
-        };
+        this.accumulatedMeanSquares[i] =
+            tidy(() => zerosLike(value).variable(trainable, `${name}/rms`));
       }
       if (this.accumulatedMoments[i] == null) {
-        this.accumulatedMoments[i] = {
-          name: `${name}/momentum`,  // Name matters for Python compatibility.
-          variable: tidy(() => zerosLike(value).variable(trainable))
-        };
+        this.accumulatedMoments[i] =
+            tidy(() => zerosLike(value).variable(
+                trainable, `${name}/momentum`));
       }
       if (this.accumulatedMeanGrads[i] == null && this.centered) {
-        this.accumulatedMeanGrads[i] = {
-          name: `${name}/mg`,  // Name matters for Python compatibility.
-          variable: tidy(() => zerosLike(value).variable(trainable))
-        };
+        this.accumulatedMeanGrads[i] =
+            tidy(() => zerosLike(value).variable(trainable, `${name}/mg`));
       }
 
       const accumulatedMeanSquare = this.accumulatedMeanSquares[i];
@@ -83,44 +79,40 @@ export class RMSPropOptimizer extends Optimizer {
 
       tidy(() => {
         const newAccumulatedMeanSquare =
-            accumulatedMeanSquare.variable.mul(this.decay)
+            accumulatedMeanSquare.mul(this.decay)
                 .add(gradient.square().mul(1 - this.decay));
 
         if (this.centered) {
           // Centered gradient
-          const newAccumulatedMeanGrad = accumulatedMeanGrad.variable
+          const newAccumulatedMeanGrad = accumulatedMeanGrad
               .mul(this.decay).add(gradient.mul(1 - this.decay));
 
-          const newAccumulatedMoments = accumulatedMoments.variable
-              .mul(this.momentum)
-                  .add(gradient.mul(this.learningRate)
-                           .div(newAccumulatedMeanSquare
-                                    .sub(newAccumulatedMeanGrad.square().add(
-                                        this.epsilon))
-                                    .sqrt()));
+          const newAccumulatedMoments = accumulatedMoments.mul(this.momentum)
+              .add(gradient.mul(this.learningRate)
+                        .div(newAccumulatedMeanSquare
+                                .sub(newAccumulatedMeanGrad.square().add(
+                                    this.epsilon)).sqrt()));
 
-          this.accumulatedMeanSquares[i].variable.assign(
+          this.accumulatedMeanSquares[i].assign(
               newAccumulatedMeanSquare);
-          this.accumulatedMeanGrads[i].variable.assign(newAccumulatedMeanGrad);
-          this.accumulatedMoments[i].variable.assign(newAccumulatedMoments);
+          this.accumulatedMeanGrads[i].assign(newAccumulatedMeanGrad);
+          this.accumulatedMoments[i].assign(newAccumulatedMoments);
 
           const newValue = value.sub(newAccumulatedMoments);
           value.assign(newValue);
         } else {
           // Plain gradient
           const newAccumulatedMeanSquare =
-              accumulatedMeanSquare.variable.mul(this.decay)
+              accumulatedMeanSquare.mul(this.decay)
                   .add(gradient.square().mul(1 - this.decay));
 
-          const newAccumulatedMoments =
-              accumulatedMoments.variable.mul(this.momentum)
-                  .add(gradient.mul(this.learningRate)
-                           .div(newAccumulatedMeanSquare.add(this.epsilon)
-                                    .sqrt()));
+          const newAccumulatedMoments = accumulatedMoments.mul(this.momentum)
+              .add(gradient.mul(this.learningRate)
+                        .div(newAccumulatedMeanSquare.add(this.epsilon)
+                                .sqrt()));
 
-          this.accumulatedMeanSquares[i].variable.assign(
-              newAccumulatedMeanSquare);
-          this.accumulatedMoments[i].variable.assign(newAccumulatedMoments);
+          this.accumulatedMeanSquares[i].assign(newAccumulatedMeanSquare);
+          this.accumulatedMoments[i].assign(newAccumulatedMoments);
 
           const newValue = value.sub(newAccumulatedMoments);
           value.assign(newValue);
@@ -131,24 +123,24 @@ export class RMSPropOptimizer extends Optimizer {
 
   dispose(): void {
     if (this.accumulatedMeanSquares != null) {
-      dispose(this.accumulatedMeanSquares.map(v => v.variable));
+      dispose(this.accumulatedMeanSquares);
     }
     if (this.accumulatedMeanGrads != null && this.centered) {
-      dispose(this.accumulatedMeanGrads.map(v => v.variable));
+      dispose(this.accumulatedMeanGrads);
     }
     if (this.accumulatedMoments != null) {
-      dispose(this.accumulatedMoments.map(v => v.variable));
+      dispose(this.accumulatedMoments);
     }
   }
 
   getWeights(): NamedTensor[] {
     // Order matters for Python compatibility.
-    const namedVariables: NamedVariable[] = [
+    const variables: Variable[] = [
         ...this.accumulatedMeanSquares,  ...this.accumulatedMoments];
     if (this.centered) {
-      namedVariables.push(...this.accumulatedMeanGrads);
+      variables.push(...this.accumulatedMeanGrads);
     }
-    return namedVariables.map(v => ({name: v.name, tensor: v.variable}));
+    return variables.map(v => ({name: v.name, tensor: v}));
   }
 
   setWeights(weightValues: NamedTensor[]): void {
@@ -156,14 +148,14 @@ export class RMSPropOptimizer extends Optimizer {
         this.centered ? weightValues.length / 3 : weightValues.length / 2;
     const trainable = false;
     this.accumulatedMeanSquares = weightValues.slice(0, variableCount).map(
-        v => ({name: v.name, variable: v.tensor.variable(trainable)}));
+        v => v.tensor.variable(trainable));
     this.accumulatedMoments =
         weightValues.slice(variableCount, variableCount * 2).map(
-            v => ({name: v.name, variable: v.tensor.variable(trainable)}));
+            v => v.tensor.variable(trainable));
     if (this.centered) {
       this.accumulatedMeanGrads =
           weightValues.slice(variableCount * 2, variableCount * 3).map(
-              v => ({name: v.name, variable: v.tensor.variable(trainable)}));
+              v => v.tensor.variable(trainable));
     }
   }
 

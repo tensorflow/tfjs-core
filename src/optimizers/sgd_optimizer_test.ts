@@ -54,6 +54,17 @@ describeWithFlags('SGDOptimizer', ALL_ENVS, () => {
     // The only tensor remaining is the argument to variable().
     expect(tf.memory().numTensors).toBe(1);
   });
+
+  it('Set and get weights: empty', () => {
+    const learningRate = .1;
+    const optimizer1 = tf.train.sgd(learningRate);
+
+    const weights = optimizer1.getWeights();
+    expect(weights).toEqual([]);
+    const optimizer2 = tf.train.sgd(learningRate);
+    optimizer2.setWeights(weights);
+  });
+
   it('serialization round-trip', () => {
     const learningRate = .1;
     const originalOpt = tf.train.sgd(learningRate);

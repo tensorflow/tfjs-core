@@ -90,11 +90,8 @@ describeWithFlags('AdamOptimizer', ALL_ENVS, () => {
     const f = () => x.square().sum() as tf.Scalar;
     let cost = optimizer1.minimize(f, /* returnCost */ true);
     expectArraysClose(cost, tf.scalar(20));
-    // cost = optimizer1.minimize(f, /* returnCost */ true);
-    // cost.print();  // DEBUG
 
     const weights = optimizer1.getWeights();
-    console.log(weights);  // DEBUG
     expect(weights.length).toEqual(2);
     expect(weights[0].name).toEqual(`${x.name}/m`);
     expect(weights[1].name).toEqual(`${x.name}/v`);

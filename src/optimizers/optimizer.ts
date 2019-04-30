@@ -22,7 +22,7 @@ import {NamedTensor, NamedTensorMap} from '../tensor_types';
 
 /** @doc {heading: 'Training', subheading: 'Classes', namespace: 'train'} */
 export abstract class Optimizer extends Serializable {
-  // protected varList: Variable[];
+  // TODO(cais): Add variable `iterations`.
 
   /**
    * Executes `f()` and minimizes the scalar output of `f()` by computing
@@ -114,10 +114,3 @@ Object.defineProperty(Optimizer, Symbol.hasInstance, {
         instance.applyGradients != null;
   }
 });
-
-// export function assertNamedVariableNameMatch(
-//     namedVariable: NamedVariable, name: string) {
-//   assert(
-//       namedVariable.name === name,
-//       () => `Variable name mismatch: ${name} !== ${namedVariable.name}`);
-// }

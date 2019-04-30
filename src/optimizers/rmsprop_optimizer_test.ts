@@ -172,7 +172,7 @@ describeWithFlags('RMSPropOptimizer', ALL_ENVS, () => {
     expectArraysClose(x, tf.tensor1d( [0.2874418, 1.2294267]));
   });
 
-  it('Save and load weigths: centered = true', () => {
+  it('Save, load weigths and continue training: centered = true', () => {
     const learningRate = 0.1;
     const moment = 0.1;
     const rho = 0.95;
