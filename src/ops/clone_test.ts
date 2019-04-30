@@ -24,7 +24,8 @@ describeWithFlags('clone', ALL_ENVS, () => {
     const a = tf.tensor2d([1, 2, 3, 4, 5, 6, 7, 8, 9], [3, 3]);
     const aPrime = tf.clone(a);
     expect(aPrime.shape).toEqual(a.shape);
-    expectArraysClose(await aPrime.data(), a);
+    expectArraysClose(await aPrime.data(), await a.data());
+    expect(aPrime.shape).toEqual(a.shape);
   });
 
   it('accepts a tensor-like object', async () => {

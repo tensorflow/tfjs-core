@@ -17,25 +17,22 @@
 
 import {ENGINE} from './engine';
 import {Tensor} from './tensor';
-import {TypedArray} from './types';
-import * as util from './util';
-import {isString} from './util';
+import {inferShape} from './tensor_util_env';
+import {RecursiveArray, TensorLike, TypedArray} from './types';
+import {arraysEqual, flatten, isString, isTypedArray} from './util';
 
 const TEST_EPSILON_FLOAT32 = 1e-3;
 export const TEST_EPSILON_FLOAT16 = 1e-1;
 
 export function expectArraysClose(
-    actual: Tensor|TypedArray|number[],
-    expected: Tensor|TypedArray|number[]|boolean[]|number|boolean,
+    actual: Tensor|TypedArray|number|RecursiveArray<number>,
+    expected: Tensor|TypedArray|number|RecursiveArray<number>,
     epsilon?: number) {
   if (epsilon == null) {
     epsilon = testEpsilon();
   }
-  const exp = typeof expected === 'number' || typeof expected === 'boolean' ?
-      [expected] as number[] :
-      expected as number[];
   return expectArraysPredicate(
-      actual, exp, (a, b) => areClose(a as number, Number(b), epsilon));
+      actual, expected, (a, b) => areClose(a as number, b as number, epsilon));
 }
 
 export function testEpsilon() {
@@ -43,20 +40,20 @@ export function testEpsilon() {
                                                   TEST_EPSILON_FLOAT16;
 }
 
-function bothAreNotTensors(actual: {}, expected: {}): boolean {
-  return !(actual instanceof Tensor) && !(expected instanceof Tensor);
-}
-
-function bothAreNotArrays(actual: {}, expected: {}): boolean {
-  return !Array.isArray(actual) && !Array.isArray(expected);
-}
-
 function expectArraysPredicate(
-    actual: Tensor|TypedArray|number[]|string[],
-    expected: Tensor|TypedArray|number[]|boolean[]|string[],
+    actual: Tensor|TensorLike, expected: Tensor|TensorLike,
     predicate: (a: {}, b: {}) => boolean) {
-  if (bothAreNotTensors(actual, expected) &&
-      bothAreNotArrays(actual, expected)) {
+  let checkClassType = true;
+  if (actual instanceof Tensor || expected instanceof Tensor) {
+    checkClassType = false;
+  }
+  if (isTypedArray(actual) || isTypedArray(expected)) {
+    checkClassType = false;
+  }
+  if (isTypedArray(actual) && isTypedArray(expected)) {
+    checkClassType = true;
+  }
+  if (checkClassType) {
     const aType = actual.constructor.name;
     const bType = expected.constructor.name;
 
@@ -65,48 +62,62 @@ function expectArraysPredicate(
           `Arrays are of different type actual: ${aType} ` +
           `vs expected: ${bType}`);
     }
-  } else if (actual instanceof Tensor && expected instanceof Tensor) {
+  }
+  if (actual instanceof Tensor && expected instanceof Tensor) {
     if (actual.dtype !== expected.dtype) {
       throw new Error(
           `Arrays are of different type actual: ${actual.dtype} ` +
           `vs expected: ${expected.dtype}.`);
     }
-    if (!util.arraysEqual(actual.shape, expected.shape)) {
+    if (!arraysEqual(actual.shape, expected.shape)) {
       throw new Error(
           `Arrays are of different shape actual: ${actual.shape} ` +
           `vs expected: ${expected.shape}.`);
     }
   }
 
-  let actualValues: TypedArray|number[]|string[];
-  let expectedValues: TypedArray|number[]|boolean[]|string[];
-  if (actual instanceof Tensor) {
-    actualValues = actual.dataSync();
-  } else {
-    actualValues = actual;
+  if (Array.isArray(actual) && Array.isArray(expected)) {
+    const actualShape = inferShape(actual);
+    const expectedShape = inferShape(expected);
+    if (!arraysEqual(actualShape, expectedShape)) {
+      throw new Error(
+          `Arrays have different shapes. ` +
+          `Actual: ${actualShape}. Expected: ${expectedShape}`);
+    }
   }
-  if (expected instanceof Tensor) {
-    expectedValues = expected.dataSync();
+  let actualFlat: TypedArray|number[]|boolean[]|string[];
+  if (actual instanceof Tensor) {
+    actualFlat = actual.dataSync();
+  } else if (Array.isArray(actual) || typeof actual === 'number') {
+    actualFlat = flatten(actual) as number[];
   } else {
-    expectedValues = expected;
+    actualFlat = actual as TypedArray;
+  }
+  let expectedFlat: typeof actualFlat;
+  if (expected instanceof Tensor) {
+    expectedFlat = expected.dataSync();
+  } else if (Array.isArray(expected) || typeof expected === 'number') {
+    expectedFlat = flatten(expected) as number[];
+  } else {
+    expectedFlat = expected as TypedArray;
   }
 
-  if (actualValues.length !== expectedValues.length) {
+  if (actualFlat.length !== expectedFlat.length) {
     throw new Error(
-        `Arrays have different lengths actual: ${actualValues.length} vs ` +
-        `expected: ${expectedValues.length}.\n` +
-        `Actual:   ${actualValues}.\n` +
-        `Expected: ${expectedValues}.`);
+        `Arrays have different lengths actual: ${actualFlat.length} vs ` +
+        `expected: ${expectedFlat.length}.\n` +
+        `Actual:   ${actualFlat}.\n` +
+        `Expected: ${expectedFlat}.`);
   }
-  for (let i = 0; i < expectedValues.length; ++i) {
-    const a = actualValues[i];
-    const e = expectedValues[i];
+  for (let i = 0; i < expectedFlat.length; ++i) {
+    const a = actualFlat[i];
+    const e = expectedFlat[i];
 
     if (!predicate(a, e)) {
       throw new Error(
           `Arrays differ: actual[${i}] = ${a}, expected[${i}] = ${e}.\n` +
-          `Actual:   ${actualValues}.\n` +
-          `Expected: ${expectedValues}.`);
+          `Actual:   ${actualFlat}.\n` +
+          `Expected: ${expectedFlat}.`);
     }
   }
 }
@@ -121,9 +132,7 @@ export function expectPromiseToFail(fn: () => Promise<{}>, done: DoneFn): void {
 }
 
 export function expectArraysEqual(
-    actual: Tensor|TypedArray|number[]|string[],
-    expected: Tensor|TypedArray|number[]|boolean[]|string[]|number|boolean|
-    string) {
+    actual: Tensor|TensorLike, expected: Tensor|TensorLike) {
   const exp = typeof expected === 'string' || typeof expected === 'number' ||
           typeof expected === 'boolean' ?
       [expected] as number[] :
