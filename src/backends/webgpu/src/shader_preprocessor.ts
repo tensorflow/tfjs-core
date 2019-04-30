@@ -99,7 +99,6 @@ export function makeShader(
     outputSamplingSnippet, SET_OUTPUT_SNIPPET, program.userCode
   ].join('\n');
 
-  console.log(source);
   return source;
 }
 
