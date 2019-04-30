@@ -38,8 +38,8 @@ describeWithFlags('optimizer', ALL_ENVS, () => {
 
     let cost = optimizer.minimize(f, /* returnCost */ true);
 
-    // Cost should be the only additional array.
-    expect(tf.memory().numTensors).toBe(numTensors + 1);
+    // Cost & iterations should be the only additional arrays.
+    expect(tf.memory().numTensors).toBe(numTensors + 2);
 
     // de/dx = 2x
     const expectedX1 = -2 * 4 * learningRate + 4;

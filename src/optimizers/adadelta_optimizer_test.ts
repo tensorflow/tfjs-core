@@ -33,8 +33,8 @@ describeWithFlags('AdadeltaOptimizer', ALL_ENVS, () => {
 
     let cost = optimizer.minimize(f, /* returnCost */ true);
 
-    // Cost & 2 accumulators should be the only additional arrays.
-    expect(tf.memory().numTensors).toBe(numTensors + 3);
+    // Cost, iterations & 2 accumulators should be the only additional arrays.
+    expect(tf.memory().numTensors).toBe(numTensors + 4);
 
     // epsilon = 1-e8
     // newAccumulatedGrad = rho * accumulatedGrad + (1 - rho) * grad ^ 2
@@ -76,7 +76,7 @@ describeWithFlags('AdadeltaOptimizer', ALL_ENVS, () => {
     expect(tf.memory().numTensors).toBe(1);
   });
 
-  it('Save and load', () => {
+  it('Save, load weights and continue training', () => {
     const learningRate = .1;
     const rho = .95;
     const optimizer1 = tf.train.adadelta(learningRate, rho);
@@ -89,12 +89,16 @@ describeWithFlags('AdadeltaOptimizer', ALL_ENVS, () => {
     expectArraysClose(x, tf.tensor1d([0.8, 1.6]));
 
     const weights = optimizer1.getWeights();
+    expect(weights.length).toEqual(3);
+    expect(weights[0].name).toEqual('iter');
+
     const optimizer2 = tf.train.adadelta(learningRate, rho);
     optimizer2.setWeights(weights);
 
     cost = optimizer2.minimize(f, /* returnCost */ true);
     expectArraysClose(cost, tf.scalar(3.2));
     expectArraysClose(x, tf.tensor1d([0.64, 1.28]));
+    expectArraysClose(optimizer2.iterations, tf.scalar(2, 'int32'));
   });
 
   it('serialization round-trip', () => {

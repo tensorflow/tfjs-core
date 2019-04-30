@@ -61,9 +61,11 @@ export class AdagradOptimizer extends Optimizer {
         value.assign(newValue);
       });
     }
+    this.incrementIterations();
   }
 
   dispose(): void {
+    super.dispose();
     if (this.accumulatedGrads != null) {
       Object.keys(this.accumulatedGrads)
           .forEach(name => this.accumulatedGrads[name].dispose());

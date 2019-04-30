@@ -85,9 +85,11 @@ export class AdadeltaOptimizer extends Optimizer {
         value.assign(newValue);
       });
     }
+    this.incrementIterations();
   }
 
   dispose(): void {
+    super.dispose();
     if (this.accumulatedUpdates != null) {
       dispose([this.accumulatedGrads, this.accumulatedUpdates]);
     }
@@ -97,10 +99,12 @@ export class AdadeltaOptimizer extends Optimizer {
     // Order matters for Python compatibility.
     const variables: Variable[] = [
         ...this.accumulatedGrads,  ...this.accumulatedUpdates];
-    return variables.map(v => ({name: v.name, tensor: v}));
+    return super.getWeights().concat(
+        variables.map(v => ({name: v.name, tensor: v})));
   }
 
   setWeights(weightValues: NamedTensor[]): void {
+    weightValues = super.setIterations(weightValues);
     const variableCount = weightValues.length / 2;
     const trainable = false;
     this.accumulatedGrads = weightValues.slice(0, variableCount).map(

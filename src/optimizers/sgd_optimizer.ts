@@ -46,6 +46,7 @@ export class SGDOptimizer extends Optimizer {
         value.assign(newValue);
       });
     });
+    this.incrementIterations();
   }
 
   /**
@@ -60,15 +61,17 @@ export class SGDOptimizer extends Optimizer {
   }
 
   dispose() {
+    super.dispose();
     this.c.dispose();
   }
 
   getWeights(): NamedTensor[] {
-    return [];
+    return super.getWeights();
   }
 
   setWeights(weightValues: NamedTensor[]): void {
-    if (!(weightValues == null || weightValues.length === 0)) {
+    weightValues = this.setIterations(weightValues);
+    if (weightValues.length !== 0) {
       throw new Error('SGD optimizer does not have settable weights.');
     }
   }

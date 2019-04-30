@@ -30,8 +30,8 @@ describeWithFlags('SGDOptimizer', ALL_ENVS, () => {
 
     let cost = optimizer.minimize(() => x.square(), /* returnCost */ true);
 
-    // Cost should be the only additional array.
-    expect(tf.memory().numTensors).toBe(numTensors + 1);
+    // Cost and iterations should be the only additional arrays.
+    expect(tf.memory().numTensors).toBe(numTensors + 2);
 
     // de/dx = 2x
     const expectedValue1 = -2 * 4 * learningRate + 4;
@@ -56,13 +56,26 @@ describeWithFlags('SGDOptimizer', ALL_ENVS, () => {
   });
 
   it('Set and get weights: empty', () => {
+    const x = tf.scalar(4).variable();
+
     const learningRate = .1;
     const optimizer1 = tf.train.sgd(learningRate);
 
-    const weights = optimizer1.getWeights();
+    let weights = optimizer1.getWeights();
+    // No iterations prior to applyGradients() call.
     expect(weights).toEqual([]);
+
+    optimizer1.minimize(() => x.square());
+
+    weights = optimizer1.getWeights();
+    // No iterations prior to applyGradients() call.
+    expect(weights.length).toEqual(1);
+    expect(weights[0].name).toEqual('iter');
+    expectArraysClose(weights[0].tensor, tf.scalar(1, 'int32'));
+
     const optimizer2 = tf.train.sgd(learningRate);
     optimizer2.setWeights(weights);
+    expectArraysClose(optimizer2.iterations, tf.scalar(1, 'int32'));
   });
 
   it('serialization round-trip', () => {

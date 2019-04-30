@@ -34,8 +34,8 @@ describeWithFlags('AdamOptimizer', ALL_ENVS, () => {
 
     let cost = optimizer.minimize(f, /* returnCost */ true);
 
-    // Cost & 2 accumulators should be the only additional arrays.
-    expect(tf.memory().numTensors).toBe(numTensors + 3);
+    // Cost, iterations & 2 accumulators should be the only additional arrays.
+    expect(tf.memory().numTensors).toBe(numTensors + 4);
     // new_first_m = [
     //    beta1 * old_first_m_w1 + (1-beta1) * grad_w1,
     //    beta1 * old_first_m_w2 + (1-beta1) * grad_w2
@@ -92,15 +92,17 @@ describeWithFlags('AdamOptimizer', ALL_ENVS, () => {
     expectArraysClose(cost, tf.scalar(20));
 
     const weights = optimizer1.getWeights();
-    expect(weights.length).toEqual(2);
-    expect(weights[0].name).toEqual(`${x.name}/m`);
-    expect(weights[1].name).toEqual(`${x.name}/v`);
+    expect(weights.length).toEqual(3);
+    expect(weights[0].name).toEqual('iter');
+    expect(weights[1].name).toEqual(`${x.name}/m`);
+    expect(weights[2].name).toEqual(`${x.name}/v`);
 
     const optimizer2 = tf.train.adam(learningRate, beta1, beta2);
     optimizer2.setWeights(weights);
 
     cost = optimizer2.minimize(f, /* returnCost */ true);
     expectArraysClose(cost, tf.scalar(18.82));
+    expectArraysClose(optimizer2.iterations, tf.scalar(2, 'int32'));
   });
 
   it('serialization round-trip', () => {

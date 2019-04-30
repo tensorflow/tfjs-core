@@ -93,9 +93,11 @@ export class AdamOptimizer extends Optimizer {
       this.accBeta1.assign(this.accBeta1.mul(this.beta1));
       this.accBeta2.assign(this.accBeta2.mul(this.beta2));
     });
+    this.incrementIterations();
   }
 
   dispose(): void {
+    super.dispose();
     this.accBeta1.dispose();
     this.accBeta2.dispose();
 
@@ -111,10 +113,12 @@ export class AdamOptimizer extends Optimizer {
     // Order matters for Python compatibility.
     const variables: Variable[] = [
         ...this.accumulatedFirstMoment,  ...this.accumulatedSecondMoment];
-    return variables.map(v => ({name: v.name, tensor: v}));
+    return super.getWeights().concat(
+        variables.map(v => ({name: v.name, tensor: v})));
   }
 
   setWeights(weightValues: NamedTensor[]): void {
+    weightValues = super.setIterations(weightValues);
     const variableCount = weightValues.length / 2;
     const trainable = false;
     this.accumulatedFirstMoment = weightValues.slice(0, variableCount).map(

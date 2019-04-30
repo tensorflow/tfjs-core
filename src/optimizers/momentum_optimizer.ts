@@ -65,6 +65,7 @@ export class MomentumOptimizer extends SGDOptimizer {
         value.assign(newValue);
       });
     }
+    this.incrementIterations();
   }
 
   dispose(): void {

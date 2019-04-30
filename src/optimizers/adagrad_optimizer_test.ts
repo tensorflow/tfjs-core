@@ -33,8 +33,8 @@ describeWithFlags('AdagradOptimizer', ALL_ENVS, () => {
 
     let cost = optimizer.minimize(f, /* returnCost */ true);
 
-    // Cost & accumulator should be the only additional arrays.
-    expect(tf.memory().numTensors).toBe(numTensors + 2);
+    // Cost, iterations & accumulator should be the only additional arrays.
+    expect(tf.memory().numTensors).toBe(numTensors + 3);
 
     // epsilon = 1-e8
     // newAccumulatedGrad = accumulatedGrad + grad^2

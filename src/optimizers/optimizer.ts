@@ -15,14 +15,17 @@
  * =============================================================================
  */
 
+import {dispose, tidy} from '../globals';
 import {variableGrads} from '../gradients';
 import {Serializable} from '../serialization';
+import {scalar} from '../ops/ops';
 import {Scalar, Variable} from '../tensor';
 import {NamedTensor, NamedTensorMap} from '../tensor_types';
 
 /** @doc {heading: 'Training', subheading: 'Classes', namespace: 'train'} */
 export abstract class Optimizer extends Serializable {
-  // TODO(cais): Add variable `iterations`.
+
+  protected iterations_: Variable;
 
   /**
    * Executes `f()` and minimizes the scalar output of `f()` by computing
@@ -66,6 +69,19 @@ export abstract class Optimizer extends Serializable {
     }
   }
 
+  get iterations(): Variable {
+    if (this.iterations_ == null) {
+      const trainable = false;
+      // TODO(cais): Use 'int64' when available.
+      this.iterations_ = scalar(0, 'int32').variable(trainable);
+    }
+    return this.iterations_;
+  }
+
+  protected incrementIterations() {
+    tidy(() => this.iterations.assign(this.iterations.add(scalar(1, 'int32'))));
+  }
+
   /**
    * Executes f() and computes the gradient of the scalar output of f() with
    * respect to the list of trainable variables provided by `varList`. If no
@@ -93,18 +109,40 @@ export abstract class Optimizer extends Serializable {
   /**
    * Dispose the variables (if any) owned by this optimizer instance.
    */
-  dispose(): void {}
+  dispose(): void {
+    if (this.iterations_ != null) {
+      dispose(this.iterations_);
+    }
+  }
 
   getWeights(): NamedTensor[] {
-    throw new Error(
-        `getWeights() is not implemented for this optimizer class ` +
-        `${this.getClassName()}`);
+    const weights: NamedTensor[] = [];
+    if (this.iterations_ != null) {
+      weights.push({
+        name: 'iter',  // Named for Python compatibility.
+        tensor: this.iterations_
+      });
+    }
+    return weights;
   }
 
   setWeights(weightValues: NamedTensor[]): void {
     throw new Error(
         `setWeights() is not implemented for this optimizer class ` +
         `${this.getClassName()}`);
+  }
+
+  /**
+   * Take the first element of the weight values and set it
+   * as the iterations counter variable of this instance of optimizer.
+   *
+   * @param weightValues
+   * @returns Weight values with the first element consumed and excluded.
+   */
+  protected setIterations(weightValues: NamedTensor[]): NamedTensor[] {
+    const trainable = false;
+    this.iterations_ = weightValues[0].tensor.variable(trainable);
+    return weightValues.slice(1);
   }
 }
 

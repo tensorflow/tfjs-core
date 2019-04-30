@@ -119,9 +119,11 @@ export class RMSPropOptimizer extends Optimizer {
         }
       });
     }
+    this.incrementIterations();
   }
 
   dispose(): void {
+    super.dispose();
     if (this.accumulatedMeanSquares != null) {
       dispose(this.accumulatedMeanSquares);
     }
@@ -140,10 +142,12 @@ export class RMSPropOptimizer extends Optimizer {
     if (this.centered) {
       variables.push(...this.accumulatedMeanGrads);
     }
-    return variables.map(v => ({name: v.name, tensor: v}));
+    return super.getWeights().concat(
+        variables.map(v => ({name: v.name, tensor: v})));
   }
 
   setWeights(weightValues: NamedTensor[]): void {
+    weightValues = this.setIterations(weightValues);
     const variableCount =
         this.centered ? weightValues.length / 3 : weightValues.length / 2;
     const trainable = false;

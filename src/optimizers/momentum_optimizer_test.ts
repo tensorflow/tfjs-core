@@ -33,8 +33,8 @@ describeWithFlags('MomentumOptimizer', ALL_ENVS, () => {
 
     let cost = optimizer.minimize(f, /* returnCost */ true);
 
-    // Cost / velocity should be the only additional arrays.
-    expect(tf.memory().numTensors).toBe(numTensors + 2);
+    // Cost, velocity & iteartions should be the only additional arrays.
+    expect(tf.memory().numTensors).toBe(numTensors + 3);
 
     // newAccumulation = momentum * accumulation + gradient
     // newVariable += -learningRate * newAccumulation + variable
@@ -81,8 +81,8 @@ describeWithFlags('MomentumOptimizer', ALL_ENVS, () => {
 
     let cost = optimizer.minimize(f, /* returnCost */ true);
 
-    // Cost / velocity should be the only additional arrays.
-    expect(tf.memory().numTensors).toBe(numTensors + 2);
+    // Cost, velocity and iteartions should be the only additional arrays.
+    expect(tf.memory().numTensors).toBe(numTensors + 3);
 
     // newAccumulation = momentum * accumulation + gradient
     // newVariable = -learningRate * (newAccumulation * momentum + gradient) +

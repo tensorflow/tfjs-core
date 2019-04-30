@@ -93,9 +93,11 @@ export class AdamaxOptimizer extends Optimizer {
       this.iteration.assign(this.iteration.add(1));
       this.accBeta1.assign(this.accBeta1.mul(this.beta1));
     });
+    this.incrementIterations();
   }
 
   dispose(): void {
+    super.dispose();
     this.accBeta1.dispose();
     this.iteration.dispose();
 
