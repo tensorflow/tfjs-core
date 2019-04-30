@@ -19,6 +19,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as ts from 'typescript';
 
+// Used for logging the number of snippets that have been found.
 let snippetCount = 0;
 
 /**
@@ -26,6 +27,7 @@ let snippetCount = 0;
  * run.
  * @param tf The TensorFlow.js module to use when evaluating snippets. If used
  *     outside core, this should be a union of core and the separate package.
+ *     This is unused here but is used in eval() of the snippets.
  */
 // tslint:disable-next-line:no-any
 export async function parseAndEvaluateSnippets(tf: any) {
@@ -65,7 +67,7 @@ async function visit(
   if (ts.isClassDeclaration(node) || ts.isFunctionDeclaration(node) ||
       ts.isMethodDeclaration(node) || ts.isInterfaceDeclaration(node)) {
     const symbol = checker.getSymbolAtLocation(node.name);
-    const jsdoc = getJSDoc(symbol);
+    const jsdoc = getJSDocTag(symbol);
     if (jsdoc == null) {
       return;
     }
@@ -131,9 +133,7 @@ async function visit(
         console.log = (msg: string) => {};
         console.warn = (msg: string) => {};
         try {
-          await eval(evalString).catch((e: Error) => {
-            reportError(e);
-          });
+          await eval(evalString);
         } catch (e) {
           reportError(e);
         }
@@ -149,7 +149,7 @@ interface JSDoc {
   ignoreCI?: boolean;
 }
 
-function getJSDoc(symbol: ts.Symbol): JSDoc {
+function getJSDocTag(symbol: ts.Symbol): JSDoc {
   const tags = symbol.getJsDocTags();
   for (let i = 0; i < tags.length; i++) {
     const jsdocTag = tags[i];
