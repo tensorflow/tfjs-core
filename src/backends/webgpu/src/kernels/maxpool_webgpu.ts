@@ -134,8 +134,7 @@ export class MaxPoolProgram implements WebGPUProgram {
         int d = coords[3];
         uint index = getFlatIndex(coords, outShape);
 
-        if (coords[0] < outShape[0] && coords[1] < outShape[1] && 
-          coords[2] < outShape[2] && coords[3] < outShape[3]) {
+        if(all(lessThan(coords, outShape))) {
           ivec2 xRCCorner = coords.yz * stride - pad;
           int xRCorner = xRCCorner.x;
           int xCCorner = xRCCorner.y;

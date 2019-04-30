@@ -32,7 +32,7 @@ describe('pool', () => {
     tf.test_util.expectArraysClose(resultData, new Float32Array([0]));
   });
 
-  fit('x=[3,3,1] f=[2,2] s=1', async () => {
+  it('x=[3,3,1] f=[2,2] s=1', async () => {
     // Feed forward.
     const x = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 9, 8], [3, 3, 1]);
 
