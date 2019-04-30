@@ -25,23 +25,17 @@ export class MaxPoolProgram implements WebGPUProgram {
   userCode: string;
   dispatch: [number, number, number];
   variableNames = ['x'];
-  uniforms = 'uvec4 inpShape, outShape; uvec2 pad, stride;';
+  uniforms = 'ivec4 xShape, outShape; ivec2 pad, stride;';
   // tileSize: [number, number, number] = [4, 4, 1];
   tileSize: [number, number, number] = [2, 2, 1];
 
   constructor(convInfo: Conv2DInfo) {
-    const strideHeight = convInfo.strideHeight;
-    const strideWidth = convInfo.strideWidth;
     const dilationHeight = convInfo.dilationHeight;
     const dilationWidth = convInfo.dilationWidth;
-    const padTop = convInfo.padInfo.top;
-    const padLeft = convInfo.padInfo.left;
     const effectiveFilterHeight = convInfo.effectiveFilterHeight;
     const effectiveFilterWidth = convInfo.effectiveFilterWidth;
 
     this.outputShape = convInfo.outShape;
-
-    const xShape = `ivec4(${convInfo.inShape.join(',')})`;
 
     const dispatchArrangement = [[1], [2], [0, 3]];
 
@@ -114,15 +108,13 @@ export class MaxPoolProgram implements WebGPUProgram {
     };
 
     this.userCode = `
-      const ivec2 strides = ivec2(${strideHeight}, ${strideWidth});
-      const ivec2 pads = ivec2(${padTop}, ${padLeft});
       float initializationValue = 0.0;
 
       float getValue(int batch, int xR, int xC, int d) {
         if (xC < 0 || xC >= ${convInfo.inWidth}) {
           return initializationValue;
         }
-        return x[getFlatIndex(ivec4(batch, xR, xC, d), ${xShape})];
+        return x[getFlatIndex(ivec4(batch, xR, xC, d), xShape)];
       }
 
       ${generateGetOutputCoords(this.outputShape)}
@@ -137,7 +129,7 @@ export class MaxPoolProgram implements WebGPUProgram {
           ${this.outputShape[2]}, 
           ${this.outputShape[3]}));
 
-        ivec2 xRCCorner = coords.yz * strides - pads;
+        ivec2 xRCCorner = coords.yz * stride - pad;
         int xRCorner = xRCCorner.x;
         int xCCorner = xRCCorner.y;
 
