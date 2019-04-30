@@ -270,21 +270,27 @@ function variableGrads(f: () => Scalar, varList?: Variable[]):
       () =>
           'The varList passed in variableGrads(f, varList) must be an array ' +
           'of variables');
-  if (varList == null) {
+
+  const specifiedVarList = varList != null;
+  if (!specifiedVarList) {
     // Get all of the trainable variables.
     varList = [];
     for (const varName in ENGINE.registeredVariables) {
       varList.push(ENGINE.registeredVariables[varName]);
     }
   }
+
+  const specifiedNonTrainable: Variable[] = specifiedVarList ?
+      varList.filter(variable => !variable.trainable) : null;
+
   // Prune non-trainable variables.
   const originalVarCount = varList.length;
   varList = varList.filter(variable => variable.trainable);
   util.assert(
       varList.length > 0,
       () =>
-          `variableGrads() expects at least one of the input variables to be ` +
-          `trainable, but none of the ${originalVarCount} variables is ` +
+          `variableGrads() expects at least one of the input variables to ` +
+          `be trainable, but none of the ${originalVarCount} variables is ` +
           `trainable.`);
 
   const allowNoGradients = true;
@@ -306,6 +312,11 @@ function variableGrads(f: () => Scalar, varList?: Variable[]):
       namedGrads[v.name] = grads[i];
     }
   });
+  if (specifiedNonTrainable != null) {
+    // If varList is explicitly provided and contains non-trainable values,
+    // add them to the returned gradients with `null` values.
+    specifiedNonTrainable.forEach(v => namedGrads[v.name] = null);
+  }
   return {value, grads: namedGrads};
 }
 

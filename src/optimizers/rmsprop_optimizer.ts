@@ -69,12 +69,15 @@ export class RMSPropOptimizer extends Optimizer {
             tidy(() => zerosLike(value).variable(trainable, `${name}/mg`));
       }
 
+      const gradient = Array.isArray(variableGradients) ?
+          variableGradients[i].tensor : variableGradients[name];
+      if (gradient == null) {
+        return;
+      }
+
       const accumulatedMeanSquare = this.accumulatedMeanSquares[i];
       const accumulatedMeanGrad = this.accumulatedMeanGrads[i];
       const accumulatedMoments = this.accumulatedMoments[i];
-      const gradient = Array.isArray(variableGradients) ?
-          variableGradients[i].tensor : variableGradients[name];
-
       tidy(() => {
         const newAccumulatedMeanSquare =
             accumulatedMeanSquare.mul(this.decay)

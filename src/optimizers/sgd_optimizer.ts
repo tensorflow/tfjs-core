@@ -37,10 +37,13 @@ export class SGDOptimizer extends Optimizer {
   applyGradients(variableGradients: NamedTensorMap|NamedTensor[]) {
     const varNames = Array.isArray(variableGradients) ?
         variableGradients.map(v => v.name) : Object.keys(variableGradients);
-    varNames.forEach((varName, i) => {
+    varNames.forEach((name, i) => {
       const gradient = Array.isArray(variableGradients) ?
-          variableGradients[i].tensor : variableGradients[varName];
-      const value = ENGINE.registeredVariables[varName];
+          variableGradients[i].tensor : variableGradients[name];
+      if (gradient == null) {
+        return;
+      }
+      const value = ENGINE.registeredVariables[name];
       tidy(() => {
         const newValue = this.c.mul(gradient).add(value);
         value.assign(newValue);

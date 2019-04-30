@@ -51,6 +51,10 @@ export class AdagradOptimizer extends Optimizer {
 
       const gradient = Array.isArray(variableGradients) ?
           variableGradients[i].tensor : variableGradients[name];
+      if (gradient == null) {
+        return;
+      }
+
       const accumulatedGrad = this.accumulatedGrads[i];
 
       tidy(() => {

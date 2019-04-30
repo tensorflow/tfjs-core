@@ -58,8 +58,7 @@ export abstract class Optimizer extends Serializable {
     // }
 
     // Dispose gradients.
-    const varNames = Object.keys(grads);
-    varNames.forEach(varName => grads[varName].dispose());
+    dispose(grads);
 
     if (returnCost) {
       return value as Scalar;

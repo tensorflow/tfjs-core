@@ -67,6 +67,10 @@ export class AdamaxOptimizer extends Optimizer {
         }
 
         const gradient = variableGradients[variableName];
+        if (gradient == null) {
+          return;
+        }
+
         const firstMoment = this.accumulatedFirstMoment[variableName];
         const weightedInfNorm = this.accumulatedWeightedInfNorm[variableName];
 

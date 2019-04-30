@@ -60,6 +60,10 @@ export class AdadeltaOptimizer extends Optimizer {
 
       const gradient = Array.isArray(variableGradients) ?
           variableGradients[i].tensor : variableGradients[name];
+      if (gradient == null) {
+        return;
+      }
+
       const accumulatedGrad = this.accumulatedGrads[i];
       const accumulatedUpdate = this.accumulatedUpdates[i];
 

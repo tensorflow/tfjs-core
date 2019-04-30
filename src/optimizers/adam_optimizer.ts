@@ -68,6 +68,10 @@ export class AdamOptimizer extends Optimizer {
 
         const gradient = Array.isArray(variableGradients) ?
             variableGradients[i].tensor : variableGradients[name];
+        if (gradient == null) {
+          return;
+        }
+
         const firstMoment = this.accumulatedFirstMoment[i];
         const secondMoment = this.accumulatedSecondMoment[i];
 

@@ -51,6 +51,9 @@ export class MomentumOptimizer extends SGDOptimizer {
 
       const accumulation = this.accumulations[variableName];
       const gradient = variableGradients[variableName];
+      if (gradient == null) {
+        return;
+      }
 
       tidy(() => {
         let newValue: Tensor;
