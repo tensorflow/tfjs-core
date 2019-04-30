@@ -28,7 +28,7 @@ const arrayProduct = (arr: number[]) => {
 
 export function computeDispatch(
     layout: [number[], number[], number[]], outputShape: number[],
-    tileSize: [number, number, number]): [number, number, number] {
+    tileSize: [number, number, number] = [1, 1, 1]): [number, number, number] {
   return [
     Math.ceil(arrayProduct(layout[0].map(d => outputShape[d])) / tileSize[0]),
     Math.ceil(arrayProduct(layout[1].map(d => outputShape[d])) / tileSize[1]),
