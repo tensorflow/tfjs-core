@@ -484,8 +484,11 @@ function zerosLike_<T extends Tensor>(x: T|TensorLike): T {
  */
 /** @doc {heading: 'Tensors', subheading: 'Creation'} */
 function linspace(start: number, stop: number, num: number): Tensor1D {
+  if (num <= 0) {
+    throw new Error('The number of values should be positive.');
+  }
   return ENGINE.runKernel(backend => backend.linspace(start, stop, num),
-    {}, null) as Tensor1D;
+    {}) as Tensor1D;
 }
 
 /**

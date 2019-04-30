@@ -36,7 +36,7 @@ import {computeFlatOffset, getStridedSlicedInfo, isSliceContinous} from '../../o
 import {DataId, Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D, TensorBuffer} from '../../tensor';
 import {DataType, DataTypeMap, DataValues, NumericDataType, Rank, ShapeMap, TypedArray, upcastType} from '../../types';
 import * as util from '../../util';
-import {getArrayFromDType, inferDtype, makeZerosTypedArray, now, sizeFromShape} from '../../util';
+import {getArrayFromDType, inferDtype, now, sizeFromShape} from '../../util';
 import {BackendTimingInfo, DataStorage, EPSILON_FLOAT32, KernelBackend} from '../backend';
 import * as backend_util from '../backend_util';
 import * as complex_util from '../complex_util';
@@ -3393,19 +3393,7 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   linspace(start: number, stop: number, num: number): Tensor1D {
-    if (num === 0) {
-      throw new Error('Cannot request zero samples');
-    }
-
-    const step = (stop - start) / (num - 1);
-
-    const values = makeZerosTypedArray(num, 'float32');
-    values[0] = start;
-    for (let i = 1; i < values.length; i++) {
-      values[i] = values[i - 1] + step;
-    }
-
-    return ops.tensor1d(values, 'float32');
+    return backend_util.linspaceImpl(start, stop, num);
   }
 
   private scatter<R extends Rank>(
