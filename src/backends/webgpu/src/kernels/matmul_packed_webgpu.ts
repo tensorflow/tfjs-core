@@ -15,6 +15,8 @@
  * =============================================================================
  */
 
+import {computeDispatch} from '../webgpu_util';
+
 import {WebGPUProgram} from './webgpu_program';
 
 export class MatMulPackedProgram implements WebGPUProgram {
@@ -24,15 +26,15 @@ export class MatMulPackedProgram implements WebGPUProgram {
   workPerThread: number;
   variableNames = ['A', 'B'];
   uniforms = 'uint dimAOuter, dimInner, dimBOuter, batch;';
-  tileSize: [number, number] = [32, 32];
+  tileSize: [number, number, number] = [32, 32, 1];
 
   constructor(outputShape: [number, number, number], workPerThread: number) {
     this.outputShape = outputShape;
     this.workPerThread = workPerThread;
-    this.dispatch = [
-      Math.ceil(outputShape[1] / this.tileSize[0]),
-      Math.ceil(outputShape[2] / this.tileSize[1]), 1
-    ];
+
+    const dispatchLayout = [[1], [2], [0]] as [number[], number[], number[]];
+    this.dispatch =
+        computeDispatch(dispatchLayout, this.outputShape, this.tileSize);
 
     // Consider compiling a different version of the shader that doesn't care
     // about boundary conditions when loading from Asub / Bsub when tiles fit
