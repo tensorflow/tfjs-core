@@ -232,14 +232,14 @@ export class WebGPUBackend extends KernelBackend {
     const output =
         this.makeOutputArray(program.outputShape, x.dtype) as Tensor4D;
 
-    const pad = [convInfo.padInfo.left, convInfo.padInfo.top];
-    const dilation = [convInfo.dilationWidth, convInfo.dilationHeight];
-
     const dimensionsData = new Uint32Array([
-      ...convInfo.inShape, ...convInfo.outShape, ...pad, ...dilation,
-      convInfo.effectiveFilterWidth, convInfo.effectiveFilterHeight,
-      convInfo.inWidth, convInfo.inHeight, convInfo.strideWidth,
-      convInfo.strideHeight
+      ...convInfo.inShape, ...convInfo.outShape,        // inShape / outShape.
+      convInfo.padInfo.left, convInfo.padInfo.top,      // Padding.
+      convInfo.strideWidth, convInfo.strideHeight,      // Stride.
+      convInfo.dilationWidth, convInfo.dilationHeight,  // Dilation.
+      convInfo.inWidth, convInfo.inHeight,              // Conv dims.
+      convInfo.effectiveFilterWidth,
+      convInfo.effectiveFilterHeight  // Filter dims.
     ]);
     const dimensions = this.makeUniforms(dimensionsData);
 
