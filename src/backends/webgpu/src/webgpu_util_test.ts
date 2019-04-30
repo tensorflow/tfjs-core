@@ -15,23 +15,18 @@
  * =============================================================================
  */
 
-import {symbolicallyComputeStrides} from './shader_util';
+import {computeDispatch} from './webgpu_util';
 
-describe('shader util', () => {
-  it('symbolicallyComputeStrides takes in array of dimensions ' +
-         'and returns GLSL to compute strides for those dimensions',
+describe('webgpu util', () => {
+  it('computeDispatch returns dispatch dimensions based on layout of ' +
+         'output dimensions and tileSize.',
      () => {
-       const layout = [0, 2, 1];
-       const strides = symbolicallyComputeStrides(layout, 'output');
-       expect(strides[0]).toEqual('(output.y * output.z)');
-       expect(strides[1]).toEqual('output.y');
-     });
+       const layout = [[0], [1], [2, 3]] as [number[], number[], number[]];
+       const outputShape = [1, 2, 3, 2];
 
-  it('symbolicallyComputeStrides throws if given a dimension ' +
-         'that cannot be accessed from a GLSL data type',
-     () => {
-       const layout = [0, 5, 2];
-       expect(() => symbolicallyComputeStrides(layout, 'output'))
-           .toThrowError();
+       const tileSize = [2, 2, 1] as [number, number, number];
+
+       const dispatch = computeDispatch(layout, outputShape, tileSize);
+       expect(dispatch).toEqual([1, 1, 6]);
      });
 });
