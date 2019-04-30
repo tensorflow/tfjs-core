@@ -1,6 +1,5 @@
 expectArraysClose\(([().\w]+),
 expectArraysClose(await $1.data(),
 
-- check ENGINE.startscope()
 - unit test assertArraysClose/Equal
 - Should we break assrtArraysClose/Equal (remove tensor from it)?
