@@ -32,7 +32,6 @@ describe('pool', () => {
   });
 
   it('x=[3,3,1] f=[2,2] s=1', async () => {
-    // Feed forward.
     const x = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 9, 8], [3, 3, 1]);
 
     const result = tf.maxPool(x, 2, 1, 'same');
@@ -43,7 +42,6 @@ describe('pool', () => {
   });
 
   it('x=[2,3,3,1] f=[2,2] s=1', async () => {
-    // Feed forward.
     const x = tf.tensor4d(
         [1, 2, 3, 4, 5, 6, 7, 9, 8, 1, 2, 3, 4, 5, 6, 7, 8, 9], [2, 3, 3, 1]);
 
@@ -55,7 +53,6 @@ describe('pool', () => {
   });
 
   it('x=[3,3,2] f=[2,2] s=1', async () => {
-    // Feed forward.
     const x = tf.tensor3d(
         [1, 99, 2, 88, 3, 77, 4, 66, 5, 55, 6, 44, 7, 33, 9, 22, 8, 11],
         [3, 3, 2]);
@@ -69,7 +66,6 @@ describe('pool', () => {
   });
 
   it('x=[4,4,1] f=[2,2] s=2', async () => {
-    // Feed forward.
     const x = tf.tensor3d(
         [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], [4, 4, 1]);
 
@@ -82,7 +78,6 @@ describe('pool', () => {
   });
 
   it('x=[2,2,1] f=[2,2] s=1 p=same', async () => {
-    // Feed forward.
     const x = tf.tensor3d([1, 2, 3, 4], [2, 2, 1]);
     const fSize = 2;
     const strides = 1;
@@ -93,7 +88,6 @@ describe('pool', () => {
   });
 
   it('x=[2,2,3] f=[1,1] s=2 p=1 dimRoundingMode=floor', () => {
-    // Feed forward.
     const x = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [2, 2, 3]);
     const result = tf.maxPool(x, 1, 2, 1, 'floor');
 

@@ -17,6 +17,7 @@
 
 import {getCoordsDataType} from './shader_preprocessor';
 
+// Generates GLSL that computes strides.
 function symbolicallyComputeStrides(
     indicesArr: number[], variableName: string): string[] {
   if (Math.max(...indicesArr) > 3) {
@@ -35,6 +36,10 @@ function symbolicallyComputeStrides(
   return strides;
 }
 
+/**
+ * Generates getOutputCoords() function that computes output coordinates from
+ * dispatch geometry to reduce arithmetic.
+ */
 export function generateGetOutputCoords(
     dispatchLayout: number[][], rank: number): string {
   const dtype = getCoordsDataType(rank);
