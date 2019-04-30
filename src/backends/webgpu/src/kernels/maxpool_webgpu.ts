@@ -26,7 +26,7 @@ export class MaxPoolProgram implements WebGPUProgram {
   variableNames = ['x'];
   uniforms = 'ivec4 xShape, outShape; ' +
       'ivec2 pad, dilation, filterDims, convDims, stride;';
-  tileSize: [number, number, number] = [2, 2, 1];
+  tileSize: [number, number, number] = [4, 4, 1];
 
   constructor(convInfo: Conv2DInfo) {
     this.outputShape = convInfo.outShape;
@@ -134,29 +134,32 @@ export class MaxPoolProgram implements WebGPUProgram {
         int d = coords[3];
         uint index = getFlatIndex(coords, outShape);
 
-        ivec2 xRCCorner = coords.yz * stride - pad;
-        int xRCorner = xRCCorner.x;
-        int xCCorner = xRCCorner.y;
-
-        float minMaxValue = 0.0;
-
-        for(int wR=0; wR<filterDims.y; wR += dilation.y) {
-          int xR = xRCorner + wR;
-
-          if (xR < 0 || xR >= convDims.y) {
-            continue;
+        if (coords[0] < outShape[0] && coords[1] < outShape[1] && 
+          coords[2] < outShape[2] && coords[3] < outShape[3]) {
+          ivec2 xRCCorner = coords.yz * stride - pad;
+          int xRCorner = xRCCorner.x;
+          int xCCorner = xRCCorner.y;
+  
+          float minMaxValue = 0.0;
+  
+          for(int wR=0; wR<filterDims.y; wR += dilation.y) {
+            int xR = xRCorner + wR;
+  
+            if (xR < 0 || xR >= convDims.y) {
+              continue;
+            }
+  
+            for(int wC=0; wC<filterDims.x; wC += dilation.x) {
+              int xC = xCCorner + wC * dilation.x;
+  
+              float value = getValue(batch, xR, xC, d);
+  
+              minMaxValue = max(value, minMaxValue);
+            }
           }
-
-          for(int wC=0; wC<filterDims.x; wC += dilation.x) {
-            int xC = xCCorner + wC * dilation.x;
-
-            float value = getValue(batch, xR, xC, d);
-
-            minMaxValue = max(value, minMaxValue);
-          }
+          
+          setOutput(index, minMaxValue);
         }
-
-        setOutput(index, minMaxValue);
       }
     `;
   }
