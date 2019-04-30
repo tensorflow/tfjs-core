@@ -18,6 +18,7 @@
 import {Conv2DInfo} from '@tensorflow/tfjs-core/dist/ops/conv_util';
 
 import {generateGetOutputCoords} from '../shader_util';
+import {computeDispatch} from '../webgpu_util';
 
 import {WebGPUProgram} from './webgpu_program';
 
@@ -33,30 +34,10 @@ export class MaxPoolProgram implements WebGPUProgram {
   constructor(convInfo: Conv2DInfo) {
     this.outputShape = convInfo.outShape;
 
-    const dispatchArrangement = [[1], [2], [0, 3]];
+    const dispatchLayout = [[1], [2], [0, 3]] as [number[], number[], number[]];
 
-    const arrayProduct = (arr: number[]) => {
-      if (!arr.length) {
-        throw new Error('Cannot find product of empty array.');
-      }
-      let product = 1;
-      for (let i = 0; i < arr.length; i++) {
-        product *= arr[i];
-      }
-      return product;
-    };
-
-    this.dispatch = [
-      Math.ceil(
-          arrayProduct(dispatchArrangement[0].map(d => this.outputShape[d])) /
-          this.tileSize[0]),
-      Math.ceil(
-          arrayProduct(dispatchArrangement[1].map(d => this.outputShape[d])) /
-          this.tileSize[1]),
-      Math.ceil(
-          arrayProduct(dispatchArrangement[2].map(d => this.outputShape[d])) /
-          this.tileSize[2])
-    ];
+    this.dispatch =
+        computeDispatch(dispatchLayout, this.outputShape, this.tileSize);
 
     this.userCode = `
       float getValue(int batch, int xR, int xC, int d) {
@@ -66,7 +47,7 @@ export class MaxPoolProgram implements WebGPUProgram {
         return x[getFlatIndex(ivec4(batch, xR, xC, d), xShape)];
       }
 
-      ${generateGetOutputCoords(dispatchArrangement, this.outputShape.length)}
+      ${generateGetOutputCoords(dispatchLayout, this.outputShape.length)}
 
       void main() {
         ivec4 coords = getOutputCoords();
