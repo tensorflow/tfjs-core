@@ -32,6 +32,18 @@ describe('Binary ops', () => {
     tf.test_util.expectArraysClose(cData, new Float32Array([3, 8, 15]));
   });
 
+  it('A * B >1D', async () => {
+    const a = tf.tensor3d([1, 2, 3, 4, 5, 6], [1, 2, 3]);
+    const b = tf.tensor3d([1, 2, 3, 4, 5, 6], [1, 2, 3]);
+    const c = tf.mul(a, b);
+
+    const cData = await c.data();
+    console.log(cData);
+
+    tf.test_util.expectArraysClose(
+        cData, new Float32Array([1, 4, 9, 16, 25, 36]));
+  });
+
   it('A + B', async () => {
     const a = tf.tensor1d([1, 2, 3]);
     const b = tf.tensor1d([3, 4, 5]);

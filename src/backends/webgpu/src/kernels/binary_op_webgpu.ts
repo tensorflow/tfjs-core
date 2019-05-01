@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+import {generateGetOutputCoords} from '../shader_util';
 import {computeDispatch} from '../webgpu_util';
 
 import {WebGPUProgram} from './webgpu_program';
@@ -25,13 +26,18 @@ export const ADD = 'return a + b;';
 export class BinaryOpProgram implements WebGPUProgram {
   outputShape: number[];
   userCode: string;
+  dispatchLayout: {x: number[]};
   dispatch: [number, number, number];
   variableNames = ['A', 'B'];
 
   constructor(op: string, outputShape: number[]) {
     this.outputShape = outputShape;
-    const dispatchLayout = {x: outputShape.map((d, i) => i)};
-    this.dispatch = computeDispatch(dispatchLayout, this.outputShape);
+    this.dispatchLayout = {x: outputShape.map((d, i) => i)};
+    this.dispatch = computeDispatch(this.dispatchLayout, this.outputShape);
+    const getOutput =
+        generateGetOutputCoords(this.dispatchLayout, this.outputShape.length);
+
+    console.log(getOutput);
 
     this.userCode = `
       float binaryOperation(float a, float b) {

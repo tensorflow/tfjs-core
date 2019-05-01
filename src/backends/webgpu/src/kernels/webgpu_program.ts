@@ -23,7 +23,10 @@ import * as shader_preprocessor from '../shader_preprocessor';
 export interface WebGPUProgram {
   userCode: string;
   outputShape: number[];
-  // Dispatch determines the layout of thread groups.
+  // dispatchLayout enumerates how tensor dimensions are distributed among
+  // dispatch x,y,z dimensions.
+  dispatchLayout: {x: number[], y?: number[], z?: number[]};
+  // dispatch specifies geometry of thread groups - derived from dispatchLayout.
   dispatch: [number, number, number];
   variableNames: string[];
   uniforms?: string;

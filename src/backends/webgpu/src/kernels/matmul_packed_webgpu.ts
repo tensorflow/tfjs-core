@@ -108,6 +108,7 @@ export function makeMatMulPackedSource(workPerThread: number): string {
 export class MatMulPackedProgram implements WebGPUProgram {
   outputShape: number[];
   userCode: string;
+  dispatchLayout: {x: number[], y: number[], z: number[]};
   dispatch: [number, number, number];
   workPerThread: number;
   variableNames = ['A', 'B'];
@@ -118,9 +119,9 @@ export class MatMulPackedProgram implements WebGPUProgram {
     this.outputShape = outputShape;
     this.workPerThread = workPerThread;
 
-    const dispatchLayout = {x: [1], y: [2], z: [0]};
+    this.dispatchLayout = {x: [1], y: [2], z: [0]};
     this.dispatch =
-        computeDispatch(dispatchLayout, this.outputShape, this.tileSize);
+        computeDispatch(this.dispatchLayout, this.outputShape, this.tileSize);
 
     // Consider compiling a different version of the shader that doesn't care
     // about boundary conditions when loading from Asub / Bsub when tiles fit
