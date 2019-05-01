@@ -16,9 +16,6 @@
  */
 
 const arrayProduct = (arr: number[]) => {
-  if (!arr.length) {
-    throw new Error('Cannot compute product of empty array.');
-  }
   let product = 1;
   for (let i = 0; i < arr.length; i++) {
     product *= arr[i];
@@ -28,11 +25,12 @@ const arrayProduct = (arr: number[]) => {
 
 // Computes dispatch geometry based on layout of output dimensions and tileSize.
 export function computeDispatch(
-    layout: {x: number[], y: number[], z: number[]}, outputShape: number[],
+    layout: {x: number[], y?: number[], z?: number[]}, outputShape: number[],
     tileSize: [number, number, number] = [1, 1, 1]): [number, number, number] {
+  const {x, y = [], z = []} = layout;
   return [
-    Math.ceil(arrayProduct(layout.x.map(d => outputShape[d])) / tileSize[0]),
-    Math.ceil(arrayProduct(layout.y.map(d => outputShape[d])) / tileSize[1]),
-    Math.ceil(arrayProduct(layout.z.map(d => outputShape[d])) / tileSize[2])
+    Math.ceil(arrayProduct(x.map(d => outputShape[d])) / tileSize[0]),
+    Math.ceil(arrayProduct(y.map(d => outputShape[d])) / tileSize[1]),
+    Math.ceil(arrayProduct(z.map(d => outputShape[d])) / tileSize[2])
   ];
 }

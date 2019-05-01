@@ -15,7 +15,8 @@
  * =============================================================================
  */
 
-import {util} from '@tensorflow/tfjs-core';
+import {computeDispatch} from '../webgpu_util';
+
 import {WebGPUProgram} from './webgpu_program';
 
 export const MUL = 'return a * b;';
@@ -29,7 +30,8 @@ export class BinaryOpProgram implements WebGPUProgram {
 
   constructor(op: string, outputShape: number[]) {
     this.outputShape = outputShape;
-    this.dispatch = [util.sizeFromShape(this.outputShape), 1, 1];
+    const dispatchLayout = {x: outputShape.map((d, i) => i)};
+    this.dispatch = computeDispatch(dispatchLayout, this.outputShape);
 
     this.userCode = `
       float binaryOperation(float a, float b) {
