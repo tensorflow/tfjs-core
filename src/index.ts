@@ -56,6 +56,7 @@ export {DataType, DataTypeMap, DataValues, Rank, ShapeMap, TensorLike} from './t
 export * from './ops/ops';
 export {LSTMCellFunc} from './ops/lstm';
 export {Reduction} from './ops/loss_ops';
+export {Conv2DInfo} from './ops/conv_util';
 
 export * from './train';
 export * from './globals';
