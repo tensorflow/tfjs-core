@@ -40,14 +40,19 @@ export function symbolicallyComputeStrides(
  * dispatch geometry to reduce arithmetic.
  */
 export function generateGetOutputCoords(
-    dispatchLayout: {x: number[], y: number[], z: number[]},
+    dispatchLayout: {x: number[], y?: number[], z?: number[]},
     rank: number): string {
+  const {x, y = [], z = []} = dispatchLayout;
   const dtype = getCoordsDataType(rank);
   let gatherDimensionsStr = '';
-  const dims = [dispatchLayout.x, dispatchLayout.y, dispatchLayout.z];
+  const dims = [x, y, z];
 
   for (let i = 0; i < dims.length; i++) {
     const arr = dims[i];
+
+    if (arr.length === 0) {
+      continue;
+    }
 
     if (arr.length === 1) {
       gatherDimensionsStr += `uint d${arr[0]} = gl_GlobalInvocationID[${i}];`;
