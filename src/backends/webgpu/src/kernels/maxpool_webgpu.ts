@@ -72,13 +72,10 @@ export class MaxPoolProgram implements WebGPUProgram {
   
             for (int wC = 0; wC < filterDims.x; wC += dilation.x) {
               int xC = xCCorner + wC * dilation.x;
-  
               float value = getValue(batch, xR, xC, d);
-  
               minMaxValue = max(value, minMaxValue);
             }
           }
-          
           setOutput(index, minMaxValue);
         }
       }
