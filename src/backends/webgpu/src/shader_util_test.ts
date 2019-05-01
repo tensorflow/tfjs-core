@@ -23,8 +23,8 @@ describe('shader util', () => {
      () => {
        const layout = [0, 2, 1];
        const strides = symbolicallyComputeStrides(layout, 'output');
-       expect(strides[0]).toEqual('(output.y * output.z)');
-       expect(strides[1]).toEqual('output.y');
+       expect(strides[0]).toEqual('(output[1] * output[2])');
+       expect(strides[1]).toEqual('output[1]');
      });
 
   it('symbolicallyComputeStrides throws if given a dimension ' +

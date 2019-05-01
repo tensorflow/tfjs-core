@@ -25,8 +25,7 @@ export function symbolicallyComputeStrides(
   }
 
   const numCoords = indicesArr.length;
-  const dims = ['x', 'y', 'z', 'w'];
-  const shape = indicesArr.map(d => `${variableName}.${dims[d]}`);
+  const shape = indicesArr.map(d => `${variableName}[${d}]`);
   const strides = new Array(numCoords - 1);
   strides[numCoords - 2] = shape[numCoords - 1];
   for (let i = numCoords - 3; i >= 0; --i) {
@@ -43,19 +42,17 @@ export function symbolicallyComputeStrides(
 export function generateGetOutputCoords(
     dispatchLayout: number[][], rank: number): string {
   const dtype = getCoordsDataType(rank);
-  const globalDims = ['x', 'y', 'z'];
   let gatherDimensionsStr = '';
 
   for (let i = 0; i < dispatchLayout.length; i++) {
     const arr = dispatchLayout[i];
 
     if (arr.length === 1) {
-      gatherDimensionsStr +=
-          `uint d${arr[0]} = gl_GlobalInvocationID.${globalDims[i]};`;
+      gatherDimensionsStr += `uint d${arr[0]} = gl_GlobalInvocationID[${i}];`;
     } else {
       const strides = symbolicallyComputeStrides(arr, 'outShape');
       gatherDimensionsStr += `uint index${i} = 
-            gl_GlobalInvocationID.${globalDims[i]};`;
+            gl_GlobalInvocationID[${i}];`;
       for (let j = 0; j < strides.length; j++) {
         gatherDimensionsStr += `uint d${arr[j]} = index${i} / ${strides[j]};`;
 
