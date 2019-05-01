@@ -17,14 +17,18 @@
 
 import {dispose, tidy} from '../globals';
 import {variableGrads} from '../gradients';
-import {Serializable} from '../serialization';
 import {scalar} from '../ops/ops';
+import {Serializable} from '../serialization';
 import {Scalar, Variable} from '../tensor';
 import {NamedTensor, NamedTensorMap} from '../tensor_types';
 
+export interface VariableWithOriginalName {
+  originalName: string;
+  variable: Variable;
+}
+
 /** @doc {heading: 'Training', subheading: 'Classes', namespace: 'train'} */
 export abstract class Optimizer extends Serializable {
-
   protected iterations_: Variable;
 
   /**

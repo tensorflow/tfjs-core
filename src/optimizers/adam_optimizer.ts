@@ -16,21 +16,22 @@
  */
 
 import {ENGINE} from '../engine';
-import {tidy, dispose} from '../globals';
+import {dispose, tidy} from '../globals';
 import {scalar, sub, zerosLike} from '../ops/ops';
 import {ConfigDict, registerClass, Serializable, SerializableConstructor} from '../serialization';
 import {Variable} from '../tensor';
 import {NamedTensor, NamedVariableMap} from '../tensor_types';
-import {Optimizer} from './optimizer';
+
+import {Optimizer, VariableWithOriginalName} from './optimizer';
 
 export class AdamOptimizer extends Optimizer {
   /** @nocollapse */
-  static className = 'Adam';   // Note: Name matters for Python compatibility.
+  static className = 'Adam';  // Note: Name matters for Python compatibility.
   private accBeta1: Variable;
   private accBeta2: Variable;
 
-  private accumulatedFirstMoment: Variable[] = [];
-  private accumulatedSecondMoment: Variable[] = [];
+  private accumulatedFirstMoment: VariableWithOriginalName[] = [];
+  private accumulatedSecondMoment: VariableWithOriginalName[] = [];
 
   constructor(
       protected learningRate: number, protected beta1: number,
@@ -49,7 +50,8 @@ export class AdamOptimizer extends Optimizer {
 
   applyGradients(variableGradients: NamedVariableMap|NamedTensor[]) {
     const varNames = Array.isArray(variableGradients) ?
-        variableGradients.map(v => v.name) : Object.keys(variableGradients);
+        variableGradients.map(v => v.name) :
+        Object.keys(variableGradients);
     tidy(() => {
       const oneMinusAccBeta1 = sub(1, this.accBeta1);
       const oneMinusAccBeta2 = sub(1, this.accBeta2);
@@ -58,22 +60,27 @@ export class AdamOptimizer extends Optimizer {
         const value = ENGINE.registeredVariables[name];
         const trainable = false;
         if (this.accumulatedFirstMoment[i] == null) {
-          this.accumulatedFirstMoment[i] =
-              zerosLike(value).variable(trainable, `${name}/m`);
+          this.accumulatedFirstMoment[i] = {
+            originalName: `${name}/m`,
+            variable: tidy(() => zerosLike(value).variable(trainable))
+          };
         }
         if (this.accumulatedSecondMoment[i] == null) {
-          this.accumulatedSecondMoment[i] =
-              zerosLike(value).variable(trainable, `${name}/v`);
+          this.accumulatedSecondMoment[i] = {
+            originalName: `${name}/v`,
+            variable: tidy(() => zerosLike(value).variable(trainable))
+          };
         }
 
         const gradient = Array.isArray(variableGradients) ?
-            variableGradients[i].tensor : variableGradients[name];
+            variableGradients[i].tensor :
+            variableGradients[name];
         if (gradient == null) {
           return;
         }
 
-        const firstMoment = this.accumulatedFirstMoment[i];
-        const secondMoment = this.accumulatedSecondMoment[i];
+        const firstMoment = this.accumulatedFirstMoment[i].variable;
+        const secondMoment = this.accumulatedSecondMoment[i].variable;
 
         const newFirstMoment =
             firstMoment.mul(this.beta1).add(gradient.mul(1 - this.beta1));
@@ -83,8 +90,8 @@ export class AdamOptimizer extends Optimizer {
         const biasCorrectedFirstMoment = newFirstMoment.div(oneMinusAccBeta1);
         const biasCorrectedSecondMoment = newSecondMoment.div(oneMinusAccBeta2);
 
-        this.accumulatedFirstMoment[i].assign(newFirstMoment);
-        this.accumulatedSecondMoment[i].assign(newSecondMoment);
+        firstMoment.assign(newFirstMoment);
+        secondMoment.assign(newSecondMoment);
 
         const newValue =
             biasCorrectedFirstMoment
@@ -106,30 +113,37 @@ export class AdamOptimizer extends Optimizer {
     this.accBeta2.dispose();
 
     if (this.accumulatedFirstMoment != null) {
-      dispose(this.accumulatedFirstMoment);
+      dispose(this.accumulatedFirstMoment.map(v => v.variable));
     }
     if (this.accumulatedSecondMoment != null) {
-      dispose(this.accumulatedSecondMoment);
+      dispose(this.accumulatedSecondMoment.map(v => v.variable));
     }
   }
 
   getWeights(): NamedTensor[] {
     // Order matters for Python compatibility.
-    const variables: Variable[] = [
-        ...this.accumulatedFirstMoment,  ...this.accumulatedSecondMoment];
+    const variables: VariableWithOriginalName[] =
+        [...this.accumulatedFirstMoment, ...this.accumulatedSecondMoment];
     return super.getWeights().concat(
-        variables.map(v => ({name: v.name, tensor: v})));
+        variables.map(v => ({name: v.originalName, tensor: v.variable})));
   }
 
   setWeights(weightValues: NamedTensor[]): void {
     weightValues = super.setIterations(weightValues);
     const variableCount = weightValues.length / 2;
     const trainable = false;
-    this.accumulatedFirstMoment = weightValues.slice(0, variableCount).map(
-        v => v.tensor.variable(trainable));
+    this.accumulatedFirstMoment =
+        weightValues.slice(0, variableCount).map(v => ({
+                                                   originalName: v.name,
+                                                   variable: v.tensor.variable(
+                                                       trainable)
+                                                 }));
     this.accumulatedSecondMoment =
-        weightValues.slice(variableCount, variableCount * 2).map(
-            v => v.tensor.variable(trainable));
+        weightValues.slice(variableCount, variableCount * 2)
+            .map(v => ({
+                   originalName: v.name,
+                   variable: v.tensor.variable(trainable)
+                 }));
   }
 
   getConfig(): ConfigDict {

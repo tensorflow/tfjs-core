@@ -21,7 +21,7 @@ import {div, scalar, sub, zerosLike} from '../ops/ops';
 import {ConfigDict, registerClass, Serializable, SerializableConstructor} from '../serialization';
 import {Variable} from '../tensor';
 import {NamedTensor, NamedVariableMap} from '../tensor_types';
-import {Optimizer} from './optimizer';
+import {Optimizer, VariableWithOriginalName} from './optimizer';
 
 export class AdamaxOptimizer extends Optimizer {
   /** @nocollapse */
@@ -29,8 +29,8 @@ export class AdamaxOptimizer extends Optimizer {
   private accBeta1: Variable;
   private iteration: Variable;
 
-  private accumulatedFirstMoment: Variable[] = [];
-  private accumulatedWeightedInfNorm: Variable[] = [];
+  private accumulatedFirstMoment: VariableWithOriginalName[] = [];
+  private accumulatedWeightedInfNorm: VariableWithOriginalName[] = [];
 
   constructor(
       protected learningRate: number, protected beta1: number,
@@ -61,12 +61,16 @@ export class AdamaxOptimizer extends Optimizer {
         const value = ENGINE.registeredVariables[name];
         const trainable = false;
         if (this.accumulatedFirstMoment[i] == null) {
-          this.accumulatedFirstMoment[i] =
-              zerosLike(value).variable(trainable, `${name}/m`);
+          this.accumulatedFirstMoment[i] = {
+            originalName: `${name}/m`,
+            variable: zerosLike(value).variable(trainable)
+          };
         }
         if (this.accumulatedWeightedInfNorm[i] == null) {
-          this.accumulatedWeightedInfNorm[i] =
-              zerosLike(value).variable(trainable, `${name}/v`);
+          this.accumulatedWeightedInfNorm[i] = {
+            originalName: `${name}/v`,
+            variable: zerosLike(value).variable(trainable)
+          };
         }
 
         const gradient = Array.isArray(variableGradients) ?
@@ -76,8 +80,8 @@ export class AdamaxOptimizer extends Optimizer {
           return;
         }
 
-        const firstMoment = this.accumulatedFirstMoment[i];
-        const weightedInfNorm = this.accumulatedWeightedInfNorm[i];
+        const firstMoment = this.accumulatedFirstMoment[i].variable;
+        const weightedInfNorm = this.accumulatedWeightedInfNorm[i].variable;
 
         const newFirstMoment =
             firstMoment.mul(this.beta1).add(gradient.mul(1 - this.beta1));
@@ -87,8 +91,8 @@ export class AdamaxOptimizer extends Optimizer {
 
         const newWeightedInfNorm = ut0.maximum(ut1);
 
-        this.accumulatedFirstMoment[i].assign(newFirstMoment);
-        this.accumulatedWeightedInfNorm[i].assign(newWeightedInfNorm);
+        firstMoment.assign(newFirstMoment);
+        weightedInfNorm.assign(newWeightedInfNorm);
 
         const newValue =
             lr.div(oneMinusAccBeta1)
@@ -110,10 +114,10 @@ export class AdamaxOptimizer extends Optimizer {
     this.iteration.dispose();
 
     if (this.accumulatedFirstMoment != null) {
-      dispose(this.accumulatedFirstMoment);
+      dispose(this.accumulatedFirstMoment.map(v => v.variable));
     }
     if (this.accumulatedWeightedInfNorm != null) {
-      dispose(this.accumulatedWeightedInfNorm);
+      dispose(this.accumulatedWeightedInfNorm.map(v => v.variable));
     }
   }
 

@@ -16,19 +16,19 @@
  */
 
 import {ENGINE} from '../engine';
-import {tidy, dispose} from '../globals';
+import {dispose, tidy} from '../globals';
 import {fill} from '../ops/ops';
 import {ConfigDict, registerClass, Serializable, SerializableConstructor} from '../serialization';
-import {Variable} from '../tensor';
 import {NamedTensor, NamedVariableMap} from '../tensor_types';
-import {Optimizer} from './optimizer';
+
+import {Optimizer, VariableWithOriginalName} from './optimizer';
 
 /** @doclink Optimizer */
 export class AdagradOptimizer extends Optimizer {
   /** @nocollapse */
   static className = 'Adagrad';  // Note: Name matters for Python compatibility.
 
-  private accumulatedGrads: Variable[] = [];
+  private accumulatedGrads: VariableWithOriginalName[] = [];
 
   constructor(
       protected learningRate: number, private initialAccumulatorValue = 0.1) {
@@ -44,22 +44,26 @@ export class AdagradOptimizer extends Optimizer {
       const value = ENGINE.registeredVariables[name];
       if (this.accumulatedGrads[i] == null) {
         const trainable = false;
-        this.accumulatedGrads[i] = tidy(
-            () => fill(value.shape, this.initialAccumulatorValue)
-              .variable(trainable, `${name}/accumulator`));
+        this.accumulatedGrads[i] = {
+          originalName: `${name}/accumulator`,
+          variable: tidy(
+              () => fill(value.shape, this.initialAccumulatorValue)
+                        .variable(trainable))
+        };
       }
 
       const gradient = Array.isArray(variableGradients) ?
-          variableGradients[i].tensor : variableGradients[name];
+          variableGradients[i].tensor :
+          variableGradients[name];
       if (gradient == null) {
         return;
       }
 
-      const accumulatedGrad = this.accumulatedGrads[i];
+      const accumulatedGrad = this.accumulatedGrads[i].variable;
 
       tidy(() => {
         const newAccumulatedGrad = accumulatedGrad.add(gradient.square());
-        this.accumulatedGrads[i].assign(newAccumulatedGrad);
+        accumulatedGrad.assign(newAccumulatedGrad);
 
         const newValue =
             gradient
@@ -75,21 +79,21 @@ export class AdagradOptimizer extends Optimizer {
   dispose(): void {
     super.dispose();
     if (this.accumulatedGrads != null) {
-      dispose(this.accumulatedGrads);
+      dispose(this.accumulatedGrads.map(v => v.variable));
     }
   }
 
   getWeights(): NamedTensor[] {
     // Order matters for Python compatibility.
-    return super.getWeights().concat(
-        this.accumulatedGrads.map(v => ({name: v.name, tensor: v})));
+    return super.getWeights().concat(this.accumulatedGrads.map(
+        v => ({name: v.originalName, tensor: v.variable})));
   }
 
   setWeights(weightValues: NamedTensor[]): void {
     weightValues = this.setIterations(weightValues);
     const trainable = false;
     this.accumulatedGrads = weightValues.map(
-        v => v.tensor.variable(trainable));
+        v => ({originalName: v.name, variable: v.tensor.variable(trainable)}));
   }
 
   getConfig(): ConfigDict {
