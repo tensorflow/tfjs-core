@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /**
  * @license
  * Copyright 2019 Google LLC. All Rights Reserved.
@@ -14,29 +15,7 @@
  * limitations under the License.
  * =============================================================================
  */
+import * as tf from '../../src/index';
+import {parseAndEvaluateSnippets} from './util';
 
-import * as tf from '@tensorflow/tfjs-core';
-
-import * as tfwebgpu from './index';
-
-describe('Unary ops', () => {
-  beforeAll(async () => tfwebgpu.ready);
-
-  it('relu', async () => {
-    const a = tf.tensor1d([1, -2, 0, 3, -0.1]);
-    const result = tf.relu(a);
-
-    const cData = await result.data();
-
-    tf.test_util.expectArraysClose(cData, new Float32Array([1, 0, 0, 3, 0]));
-  });
-
-  it('relu 3D', async () => {
-    const a = tf.tensor3d([1, -2, 5, -3], [1, 2, 2]);
-    const result = tf.relu(a);
-
-    const cData = await result.data();
-
-    tf.test_util.expectArraysClose(cData, new Float32Array([1, 0, 5, 0]));
-  });
-});
+parseAndEvaluateSnippets(tf);
