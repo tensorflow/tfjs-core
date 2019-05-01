@@ -15,6 +15,7 @@
  * =============================================================================
  */
 import {ENV} from '../../environment';
+import {Platform} from '../platform';
 
 // We are wrapping this within an object so it can be stubbed by Jasmine.
 export const getNodeFetch = {
@@ -25,7 +26,7 @@ export const getNodeFetch = {
 };
 
 export let systemFetch: (url: string, init?: RequestInit) => Promise<Response>;
-export class PlatformNode {
+export class PlatformNode extends Platform {
   fetch(path: string, requestInits?: RequestInit): Promise<Response> {
     if (systemFetch == null) {
       systemFetch = getNodeFetch.fetchImport();
