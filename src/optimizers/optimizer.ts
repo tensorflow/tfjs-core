@@ -56,11 +56,6 @@ export abstract class Optimizer extends Serializable {
       this.applyGradients(grads);
     }
 
-    // Keep track of list of variables for saving and loading.
-    // if (this.varList != null) {  // TODO(cais): Clean up.
-    //   this.varList = varList;
-    // }
-
     // Dispose gradients.
     dispose(grads);
 
