@@ -1,6 +1,6 @@
 {
   "name": "@tensorflow/tfjs-core",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Hardware-accelerated JavaScript library for machine intelligence",
   "private": false,
   "main": "dist/index.js",
@@ -64,10 +64,11 @@
     "test": "karma start",
     "run-browserstack": "karma start --browserstack",
     "test-bundle-size": "./scripts/test-bundle-size.js",
-    "test-node": "tsc && node dist/test_node.js",
+    "test-node": "rimraf dist/ && tsc && node dist/test_node.js",
     "test-node-ci": "node dist/test_node.js",
     "test-integration": "./scripts/test-integration.js",
-    "test-ci": "./scripts/test-ci.sh"
+    "test-ci": "./scripts/test-ci.sh",
+    "test-snippets": "ts-node ./scripts/test_snippets/test_snippets.ts"
   },
   "dependencies": {
     "@types/seedrandom": "2.4.27",
