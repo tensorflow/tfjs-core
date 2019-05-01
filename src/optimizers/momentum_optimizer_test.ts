@@ -117,6 +117,30 @@ describeWithFlags('MomentumOptimizer', ALL_ENVS, () => {
     // The only tensor remaining is the argument to variable().
     expect(tf.memory().numTensors).toBe(1);
   });
+
+  it('Save, load weights and conntinue training', () => {
+    const learningRate = .1;
+    const momentum = .5;
+    const useNesterov = true;
+    const optimizer1 = tf.train.momentum(learningRate, momentum, useNesterov);
+
+    const x = tf.tensor1d([1, 2]).variable();
+    const f = () => x.square().sum() as tf.Scalar;
+
+    let cost = optimizer1.minimize(f, /* returnCost */ true);
+
+    const weights = optimizer1.getWeights();
+    // The iterations counter and the accumulation for the variable x.
+    expect(weights.length).toEqual(2);
+
+    const optimizer2 = tf.train.momentum(learningRate, momentum, useNesterov);
+    optimizer2.setWeights(weights);
+    cost = optimizer2.minimize(f, /* returnCost */ true);
+    expectArraysClose(cost, tf.scalar(2.45));
+    expectArraysClose(x, tf.tensor1d([0.44, 0.88]));
+    expectArraysClose(optimizer2.iterations, tf.scalar(2, 'int32'));
+  });
+
   it('serialization round-trip', () => {
     const originalOpt = tf.train.momentum(0.1, 0.2, true);
     const reserialized = tf.MomentumOptimizer.fromConfig(

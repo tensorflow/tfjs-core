@@ -159,7 +159,7 @@ describeWithFlags('RMSPropOptimizer', ALL_ENVS, () => {
 
     let cost = optimizer1.minimize(f, /* returnCost */ true);
     expectArraysClose(cost, tf.scalar(5));
-    expectArraysClose(x, tf.tensor1d( [0.5527865, 1.5527864]));
+    expectArraysClose(x, tf.tensor1d([0.5527865, 1.5527864]));
 
     const weights = optimizer1.getWeights();
     // An iteration variable and two optimizer state variables.
@@ -170,7 +170,7 @@ describeWithFlags('RMSPropOptimizer', ALL_ENVS, () => {
 
     cost = optimizer2.minimize(f, /* returnCost */ true);
     expectArraysClose(cost, tf.scalar(2.7167187));
-    expectArraysClose(x, tf.tensor1d( [0.2874418, 1.2294267]));
+    expectArraysClose(x, tf.tensor1d([0.2874418, 1.2294267]));
     expectArraysClose(optimizer2.iterations, tf.scalar(2, 'int32'));
   });
 
@@ -188,7 +188,7 @@ describeWithFlags('RMSPropOptimizer', ALL_ENVS, () => {
 
     let cost = optimizer1.minimize(f, /* returnCost */ true);
     expectArraysClose(cost, tf.scalar(5));
-    expectArraysClose(x, tf.tensor1d( [0.5411684, 1.5411685]));
+    expectArraysClose(x, tf.tensor1d([0.5411684, 1.5411685]));
 
     const weights = optimizer1.getWeights();
     // An iteration variable and three optimizer state variables.
@@ -200,7 +200,7 @@ describeWithFlags('RMSPropOptimizer', ALL_ENVS, () => {
 
     cost = optimizer2.minimize(f, /* returnCost */ true);
     expectArraysClose(cost, tf.scalar(2.668063));
-    expectArraysClose(x, tf.tensor1d( [0.2677834, 1.2035918]));
+    expectArraysClose(x, tf.tensor1d([0.2677834, 1.2035918]));
     expectArraysClose(optimizer2.iterations, tf.scalar(2, 'int32'));
   });
 

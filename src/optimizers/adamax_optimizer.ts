@@ -59,19 +59,19 @@ export class AdamaxOptimizer extends Optimizer {
 
       variableNames.forEach((name, i) => {
         const value = ENGINE.registeredVariables[name];
+        const trainable = false;
         if (this.accumulatedFirstMoment[i] == null) {
-          const trainable = false;
           this.accumulatedFirstMoment[i] =
               zerosLike(value).variable(trainable, `${name}/m`);
         }
         if (this.accumulatedWeightedInfNorm[i] == null) {
-          const trainable = false;
           this.accumulatedWeightedInfNorm[i] =
               zerosLike(value).variable(trainable, `${name}/v`);
         }
 
         const gradient = Array.isArray(variableGradients) ?
-            variableGradients[i].tensor : variableGradients[i];
+            variableGradients[i].tensor :
+            variableGradients[name];
         if (gradient == null) {
           return;
         }
@@ -118,22 +118,11 @@ export class AdamaxOptimizer extends Optimizer {
   }
 
   getWeights(): NamedTensor[] {
-    // Order matters for Python compatibility.
-    const variables: Variable[] = [
-        ...this.accumulatedFirstMoment,  ...this.accumulatedWeightedInfNorm];
-    return super.getWeights().concat(
-        variables.map(v => ({name: v.name, tensor: v})));
+    throw new Error('getWeights() is not implemented for Adamax yet.');
   }
 
   setWeights(weightValues: NamedTensor[]): void {
-    weightValues = super.setIterations(weightValues);
-    const variableCount = weightValues.length / 2;
-    const trainable = false;
-    this.accumulatedFirstMoment = weightValues.slice(0, variableCount).map(
-        v => v.tensor.variable(trainable));
-    this.accumulatedWeightedInfNorm =
-        weightValues.slice(variableCount, variableCount * 2).map(
-            v =>v.tensor.variable(trainable));
+    throw new Error('setWeights() is not implemented for Adamax yet.');
   }
 
   getConfig(): ConfigDict {

@@ -16,11 +16,12 @@
  */
 
 import {ENGINE} from '../engine';
-import {tidy} from '../globals';
+import {dispose, tidy} from '../globals';
 import {scalar, zerosLike} from '../ops/ops';
 import {ConfigDict, registerClass, Serializable, SerializableConstructor} from '../serialization';
-import {Scalar, Tensor} from '../tensor';
-import {NamedVariableMap} from '../tensor_types';
+import {Scalar, Tensor, Variable} from '../tensor';
+import {NamedTensor, NamedVariableMap} from '../tensor_types';
+
 import {SGDOptimizer} from './sgd_optimizer';
 
 /** @doclink Optimizer */
@@ -28,29 +29,32 @@ export class MomentumOptimizer extends SGDOptimizer {
   /** @nocollapse */
   static className = 'MomentumOptimizer';
   private m: Scalar;
-  private accumulations: NamedVariableMap;
+  private accumulations: Variable[] = [];
 
   constructor(
       protected learningRate: number, private momentum: number,
       private useNesterov = false) {
     super(learningRate);
     this.m = scalar(this.momentum);
-    this.accumulations = {};
   }
 
-  applyGradients(variableGradients: NamedVariableMap) {
-    for (const variableName in variableGradients) {
-      const value = ENGINE.registeredVariables[variableName];
-      if (this.accumulations[variableName] == null) {
+  applyGradients(variableGradients: NamedVariableMap|NamedTensor[]) {
+    const variableNames = Array.isArray(variableGradients) ?
+        variableGradients.map(item => item.name) :
+        Object.keys(variableGradients);
+
+    variableNames.forEach((name, i) => {
+      const value = ENGINE.registeredVariables[name];
+      if (this.accumulations[i] == null) {
         const trainable = false;
-        tidy(() => {
-          this.accumulations[variableName] =
-              zerosLike(value).variable(trainable);
-        });
+        this.accumulations[i] =
+            tidy(() => zerosLike(value).variable(trainable));
       }
 
-      const accumulation = this.accumulations[variableName];
-      const gradient = variableGradients[variableName];
+      const accumulation = this.accumulations[i];
+      const gradient = Array.isArray(variableGradients) ?
+          variableGradients[i].tensor :
+          variableGradients[name];
       if (gradient == null) {
         return;
       }
@@ -64,10 +68,10 @@ export class MomentumOptimizer extends SGDOptimizer {
         } else {
           newValue = this.c.mul(newAccumulation).add(value);
         }
-        this.accumulations[variableName].assign(newAccumulation);
+        this.accumulations[i].assign(newAccumulation);
         value.assign(newValue);
       });
-    }
+    });
     this.incrementIterations();
   }
 
@@ -75,9 +79,7 @@ export class MomentumOptimizer extends SGDOptimizer {
     super.dispose();
     this.m.dispose();
     if (this.accumulations != null) {
-      for (const variableName in this.accumulations) {
-        this.accumulations[variableName].dispose();
-      }
+      dispose(this.accumulations);
     }
   }
 
@@ -88,6 +90,19 @@ export class MomentumOptimizer extends SGDOptimizer {
    */
   setMomentum(momentum: number) {
     this.momentum = momentum;
+  }
+
+  getWeights(): NamedTensor[] {
+    // Order matters for Python compatibility.
+    const variables: Variable[] = this.accumulations;
+    return super.getWeights().concat(
+        variables.map(v => ({name: v.name, tensor: v})));
+  }
+
+  setWeights(weightValues: NamedTensor[]): void {
+    weightValues = this.setIterations(weightValues);
+    const trainable = false;
+    this.accumulations = weightValues.map(v => v.tensor.variable(trainable));
   }
 
   getConfig(): ConfigDict {
