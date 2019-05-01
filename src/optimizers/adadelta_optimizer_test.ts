@@ -76,7 +76,7 @@ describeWithFlags('AdadeltaOptimizer', ALL_ENVS, () => {
     expect(tf.memory().numTensors).toBe(1);
   });
 
-  it('Save, load weights and continue training', () => {
+  it('Save, load weights and continue training', async () => {
     const learningRate = .1;
     const rho = .95;
     const optimizer1 = tf.train.adadelta(learningRate, rho);
@@ -85,8 +85,8 @@ describeWithFlags('AdadeltaOptimizer', ALL_ENVS, () => {
     const f = () => x.square().sum() as tf.Scalar;
 
     let cost = optimizer1.minimize(f, /* returnCost */ true);
-    expectArraysClose(cost, tf.scalar(5));
-    expectArraysClose(x, tf.tensor1d([0.8, 1.6]));
+    expectArraysClose(await cost.data(), 5);
+    expectArraysClose(await x.data(), [0.8, 1.6]);
 
     const weights = optimizer1.getWeights();
     expect(weights.length).toEqual(3);
@@ -96,9 +96,9 @@ describeWithFlags('AdadeltaOptimizer', ALL_ENVS, () => {
     optimizer2.setWeights(weights);
 
     cost = optimizer2.minimize(f, /* returnCost */ true);
-    expectArraysClose(cost, tf.scalar(3.2));
-    expectArraysClose(x, tf.tensor1d([0.64, 1.28]));
-    expectArraysClose(optimizer2.iterations, tf.scalar(2, 'int32'));
+    expectArraysClose(await cost.data(), 3.2);
+    expectArraysClose(await x.data(), [0.64, 1.28]);
+    expectArraysClose(await optimizer2.iterations.data(), 2);
   });
 
   it('serialization round-trip', () => {

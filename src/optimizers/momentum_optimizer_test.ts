@@ -118,7 +118,7 @@ describeWithFlags('MomentumOptimizer', ALL_ENVS, () => {
     expect(tf.memory().numTensors).toBe(1);
   });
 
-  it('Save, load weights and conntinue training', () => {
+  it('Save, load weights and conntinue training', async () => {
     const learningRate = .1;
     const momentum = .5;
     const useNesterov = true;
@@ -136,9 +136,9 @@ describeWithFlags('MomentumOptimizer', ALL_ENVS, () => {
     const optimizer2 = tf.train.momentum(learningRate, momentum, useNesterov);
     optimizer2.setWeights(weights);
     cost = optimizer2.minimize(f, /* returnCost */ true);
-    expectArraysClose(cost, tf.scalar(2.45));
-    expectArraysClose(x, tf.tensor1d([0.44, 0.88]));
-    expectArraysClose(optimizer2.iterations, tf.scalar(2, 'int32'));
+    expectArraysClose(await cost.data(), 2.45);
+    expectArraysClose(await x.data(), [0.44, 0.88]);
+    expectArraysClose(await optimizer2.iterations.data(), 2);
   });
 
   it('serialization round-trip', () => {

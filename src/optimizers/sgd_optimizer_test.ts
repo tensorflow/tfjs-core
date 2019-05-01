@@ -55,7 +55,7 @@ describeWithFlags('SGDOptimizer', ALL_ENVS, () => {
     expect(tf.memory().numTensors).toBe(1);
   });
 
-  it('Set and get weights: empty', () => {
+  it('Set and get weights: empty', async () => {
     const x = tf.scalar(4).variable();
 
     const learningRate = .1;
@@ -71,11 +71,11 @@ describeWithFlags('SGDOptimizer', ALL_ENVS, () => {
     // No iterations prior to applyGradients() call.
     expect(weights.length).toEqual(1);
     expect(weights[0].name).toEqual('iter');
-    expectArraysClose(weights[0].tensor, tf.scalar(1, 'int32'));
+    expectArraysClose(await weights[0].tensor.data(), 1);
 
     const optimizer2 = tf.train.sgd(learningRate);
     optimizer2.setWeights(weights);
-    expectArraysClose(optimizer2.iterations, tf.scalar(1, 'int32'));
+    expectArraysClose(await optimizer2.iterations.data(), 1);
   });
 
   it('serialization round-trip', () => {

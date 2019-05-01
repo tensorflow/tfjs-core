@@ -148,7 +148,7 @@ describeWithFlags('RMSPropOptimizer', ALL_ENVS, () => {
     expect(tf.memory().numTensors).toBe(1);
   });
 
-  it('Save and load weigths: centered = false', () => {
+  it('Save and load weigths: centered = false', async () => {
     const learningRate = 0.1;
     const moment = 0.1;
     const rho = 0.95;
@@ -158,8 +158,8 @@ describeWithFlags('RMSPropOptimizer', ALL_ENVS, () => {
     const f = () => x.square().sum() as tf.Scalar;
 
     let cost = optimizer1.minimize(f, /* returnCost */ true);
-    expectArraysClose(cost, tf.scalar(5));
-    expectArraysClose(x, tf.tensor1d([0.5527865, 1.5527864]));
+    expectArraysClose(await cost.data(), 5);
+    expectArraysClose(await x.data(), [0.5527865, 1.5527864]);
 
     const weights = optimizer1.getWeights();
     // An iteration variable and two optimizer state variables.
@@ -169,12 +169,12 @@ describeWithFlags('RMSPropOptimizer', ALL_ENVS, () => {
     optimizer2.setWeights(weights);
 
     cost = optimizer2.minimize(f, /* returnCost */ true);
-    expectArraysClose(cost, tf.scalar(2.7167187));
-    expectArraysClose(x, tf.tensor1d([0.2874418, 1.2294267]));
-    expectArraysClose(optimizer2.iterations, tf.scalar(2, 'int32'));
+    expectArraysClose(cost.dataSync(), 2.7167187);
+    expectArraysClose(x.dataSync(), [0.2874418, 1.2294267]);
+    expectArraysClose(await optimizer2.iterations.data(), 2);
   });
 
-  it('Save, load weigths and continue training: centered = true', () => {
+  it('Save, load weigths and continue training: centered = true', async () => {
     const learningRate = 0.1;
     const moment = 0.1;
     const rho = 0.95;
@@ -187,8 +187,8 @@ describeWithFlags('RMSPropOptimizer', ALL_ENVS, () => {
     const f = () => x.square().sum() as tf.Scalar;
 
     let cost = optimizer1.minimize(f, /* returnCost */ true);
-    expectArraysClose(cost, tf.scalar(5));
-    expectArraysClose(x, tf.tensor1d([0.5411684, 1.5411685]));
+    expectArraysClose(await cost.data(), 5);
+    expectArraysClose(await x.data(), [0.5411684, 1.5411685]);
 
     const weights = optimizer1.getWeights();
     // An iteration variable and three optimizer state variables.
@@ -199,9 +199,9 @@ describeWithFlags('RMSPropOptimizer', ALL_ENVS, () => {
     optimizer2.setWeights(weights);
 
     cost = optimizer2.minimize(f, /* returnCost */ true);
-    expectArraysClose(cost, tf.scalar(2.668063));
-    expectArraysClose(x, tf.tensor1d([0.2677834, 1.2035918]));
-    expectArraysClose(optimizer2.iterations, tf.scalar(2, 'int32'));
+    expectArraysClose(await cost.data(), 2.668063);
+    expectArraysClose(await x.data(), [0.2677834, 1.2035918]);
+    expectArraysClose(await optimizer2.iterations.data(), 2);
   });
 
   it('serialization round-trip', () => {
