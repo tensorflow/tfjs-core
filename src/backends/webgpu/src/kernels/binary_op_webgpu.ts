@@ -15,6 +15,8 @@
  * =============================================================================
  */
 
+import * as broadcast_util from '@tensorflow/tfjs-core/dist/ops/broadcast_util';
+import {getCoordsDataType} from '../shader_preprocessor';
 import {generateGetOutputCoords} from '../shader_util';
 import {computeDispatch} from '../webgpu_util';
 
@@ -25,14 +27,20 @@ export const ADD = 'return a + b;';
 
 export class BinaryOpProgram implements WebGPUProgram {
   outputShape: number[];
+  uniforms: string;
   userCode: string;
   dispatchLayout: {x: number[]};
   dispatch: [number, number, number];
   variableNames = ['A', 'B'];
 
-  constructor(op: string, outputShape: number[]) {
-    this.outputShape = outputShape;
-    this.dispatchLayout = {x: outputShape.map((d, i) => i)};
+  constructor(op: string, aShape: number[], bShape: number[]) {
+    this.outputShape =
+        broadcast_util.assertAndGetBroadcastShape(aShape, bShape);
+    this.uniforms = `${getCoordsDataType(aShape.length)} aShape; ${
+        getCoordsDataType(bShape.length)} bShape; ${
+        getCoordsDataType(this.outputShape.length)} outShape;`;
+
+    this.dispatchLayout = {x: this.outputShape.map((d, i) => i)};
     this.dispatch = computeDispatch(this.dispatchLayout, this.outputShape);
     const getOutput =
         generateGetOutputCoords(this.dispatchLayout, this.outputShape.length);

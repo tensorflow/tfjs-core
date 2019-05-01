@@ -17,7 +17,6 @@
 
 import {Conv2DInfo} from '@tensorflow/tfjs-core/dist/ops/conv_util';
 
-import {generateGetOutputCoords} from '../shader_util';
 import {computeDispatch} from '../webgpu_util';
 
 import {WebGPUProgram} from './webgpu_program';
@@ -48,8 +47,6 @@ export class MaxPoolProgram implements WebGPUProgram {
         }
         return x[getFlatIndex(ivec4(batch, xR, xC, d), xShape)];
       }
-
-      ${generateGetOutputCoords(this.dispatchLayout, this.outputShape.length)}
 
       void main() {
         ivec4 coords = getOutputCoords();

@@ -22,6 +22,7 @@ import './flags_webgpu';
 import {DataMover, DataType, ENV, KernelBackend, Rank, ShapeMap, Tensor, Tensor3D, Tensor4D, util} from '@tensorflow/tfjs-core';
 // How should this be imported?
 import {Conv2DInfo} from '@tensorflow/tfjs-core/dist/ops/conv_util';
+import {upcastType} from '@tensorflow/tfjs-core/dist/types';
 import * as shaderc from '@webgpu/shaderc';
 
 import * as binary_op from './kernels/binary_op_webgpu';
@@ -250,18 +251,25 @@ export class WebGPUBackend extends KernelBackend {
     return result as Tensor4D;
   }
 
-  add(a: Tensor, b: Tensor): Tensor {
-    const output = Tensor.make(a.shape, {}, a.dtype, this);
-    const program = new BinaryOpProgram(binary_op.ADD, output.shape);
+  private binaryOp(a: Tensor, b: Tensor, op: string) {
+    const dtype = upcastType(a.dtype, b.dtype);
+    const program = new BinaryOpProgram(op, a.shape, b.shape);
+    const output = Tensor.make(program.outputShape, {}, dtype) as Tensor;
 
-    return this.compileAndRun(program, [a, b], output) as Tensor;
+    const dimensionsData =
+        new Int32Array([...a.shape, ...b.shape, ...program.outputShape]);
+    const dimensions = this.makeUniforms(dimensionsData);
+    const result = this.compileAndRun(program, [a, b], output) as Tensor;
+    this.destroyBuffer(dimensionsData.byteLength, dimensions.resource.buffer);
+    return result;
+  }
+
+  add(a: Tensor, b: Tensor): Tensor {
+    return this.binaryOp(a, b, binary_op.ADD);
   }
 
   multiply(a: Tensor, b: Tensor): Tensor {
-    const output = Tensor.make(a.shape, {}, a.dtype, this);
-    const program = new BinaryOpProgram(binary_op.MUL, output.shape);
-
-    return this.compileAndRun(program, [a, b], output) as Tensor;
+    return this.binaryOp(a, b, binary_op.MUL);
   }
 
   relu<T extends Tensor>(x: T): T {

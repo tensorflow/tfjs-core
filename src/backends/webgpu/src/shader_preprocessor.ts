@@ -15,7 +15,8 @@
  * =============================================================================
  */
 
-import {DataType, util} from '@tensorflow/tfjs-core';
+import {DataType} from '@tensorflow/tfjs-core';
+import {generateGetOutputCoords} from './shader_util';
 
 export function getCoordsDataType(rank: number): string {
   if (rank <= 1) {
@@ -43,6 +44,7 @@ function mapToGlslTypes(type: DataType): GLSLDataType|DataType {
 }
 
 interface ProgramParams {
+  dispatchLayout: {x: number[], y?: number[], z?: number[]};
   tileSize?: [number, number?, number?];
   variableNames: string[];
   uniforms?: string;
@@ -92,7 +94,8 @@ export function makeShader(
     `);
   }
 
-  const outputSamplingSnippet = getOutputSamplingSnippet(outputData.shape);
+  const outputSamplingSnippet =
+      generateGetOutputCoords(program.dispatchLayout, outputData.shape.length);
 
   const source = [
     SHADER_PREFIX, prefixSnippets.join('\n'), SAMPLING_SNIPPETS,
@@ -130,73 +133,3 @@ const SET_OUTPUT_SNIPPET = `
     result[flatIndex] = value;
   }
 `;
-
-function getOutputSamplingSnippet(outShape: number[]): string {
-  switch (outShape.length) {
-    case 0:
-      return getOutputScalarCoords();
-    case 1:
-      return getOutput1DCoords(outShape as [number]);
-    case 2:
-      return getOutput2DCoords(outShape as [number, number]);
-    case 3:
-      return getOutput3DCoords(outShape as [number, number, number]);
-    case 4:
-      return getOutput4DCoords(outShape as [number, number, number, number]);
-    default:
-      throw new Error(
-          `${outShape.length}-D output sampling is not yet supported`);
-  }
-}
-
-function getOutputScalarCoords() {
-  return `int getOutputCoords() {
-    return 0;
-  }`;
-}
-
-function getOutput1DCoords(shape: [number]) {
-  return `uint getOutputCoords(uint index) {
-    return index;
-  }`;
-}
-
-function getOutput2DCoords(shape: [number, number]) {
-  // TODO: See whether using a 2D/3D dispatch to avoid division would improve
-  // performance.
-  return `
-    ivec2 getOutputCoords(uint index) {
-      uint r = index / ${shape[1]};
-      uint c = index - r * ${shape[1]};
-      return ivec2(r, c);
-    }
-  `;
-}
-
-function getOutput3DCoords(shape: [number, number, number]) {
-  const strides = util.computeStrides(shape);
-
-  return `ivec3 getOutputCoords(uint index) {
-    uint d = index / ${strides[0]};
-    index -= d * ${strides[0]};
-    uint r = index / ${strides[1]};
-    uint c = index - r * ${strides[1]};
-
-    return ivec3(d, r, c);
-  }`;
-}
-
-function getOutput4DCoords(shape: [number, number, number, number]) {
-  const strides = util.computeStrides(shape);
-
-  return `ivec4 getOutputCoords(uint index) {
-    uint d1 = index / ${strides[0]};
-    index -= d1 * ${strides[0]};
-    uint d2 = index / ${strides[1]};
-    index -= d2 * ${strides[1]};
-    uint r = index / ${strides[2]};
-    uint c = index - r * ${strides[2]};
-
-    return ivec4(d1, d2, r, c);
-  }`;
-}
