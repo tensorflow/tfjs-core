@@ -210,7 +210,8 @@ export class WebGPUBackend extends KernelBackend {
     return output as {} as K;
   }
 
-  private makeUniforms(data: Uint32Array): webgpu_program.BindingInfo {
+  private makeUniforms(data: Uint32Array|
+                       Int32Array): webgpu_program.BindingInfo {
     const dimensionsBuffer = this.createBuffer(
         data.byteLength, GPUBufferUsage.TRANSFER_DST | GPUBufferUsage.UNIFORM);
     dimensionsBuffer.setSubData(0, data);
@@ -232,7 +233,7 @@ export class WebGPUBackend extends KernelBackend {
     const output =
         this.makeOutputArray(program.outputShape, x.dtype) as Tensor4D;
 
-    const dimensionsData = new Uint32Array([
+    const dimensionsData = new Int32Array([
       ...convInfo.inShape, ...convInfo.outShape,        // inShape / outShape.
       convInfo.padInfo.left, convInfo.padInfo.top,      // Padding.
       convInfo.strideWidth, convInfo.strideHeight,      // Stride.
