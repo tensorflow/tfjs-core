@@ -34,11 +34,12 @@ export class MaxPoolProgram implements WebGPUProgram {
   constructor(convInfo: Conv2DInfo) {
     this.outputShape = convInfo.outShape;
 
-    const dispatchLayout = [[1], [2], [0, 3]] as [number[], number[], number[]];
+    const dispatchLayout = {x: [1], y: [2], z: [0, 3]};
 
     this.dispatch =
         computeDispatch(dispatchLayout, this.outputShape, this.tileSize);
 
+    // TODO: Parallelize max computation by thread and merge result.
     this.userCode = `
       float getValue(int batch, int xR, int xC, int d) {
         if (xC < 0 || xC >= convDims.x) {
@@ -55,21 +56,21 @@ export class MaxPoolProgram implements WebGPUProgram {
         int d = coords[3];
         uint index = getFlatIndex(coords, outShape);
 
-        if(all(lessThan(coords, outShape))) {
+        if (all(lessThan(coords, outShape))) {
           ivec2 xRCCorner = coords.yz * stride - pad;
           int xRCorner = xRCCorner.x;
           int xCCorner = xRCCorner.y;
   
           float minMaxValue = 0.0;
   
-          for(int wR=0; wR<filterDims.y; wR += dilation.y) {
+          for (int wR = 0; wR < filterDims.y; wR += dilation.y) {
             int xR = xRCorner + wR;
   
             if (xR < 0 || xR >= convDims.y) {
               continue;
             }
   
-            for(int wC=0; wC<filterDims.x; wC += dilation.x) {
+            for (int wC = 0; wC < filterDims.x; wC += dilation.x) {
               int xC = xCCorner + wC * dilation.x;
   
               float value = getValue(batch, xR, xC, d);

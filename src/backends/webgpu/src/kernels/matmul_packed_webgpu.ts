@@ -118,7 +118,7 @@ export class MatMulPackedProgram implements WebGPUProgram {
     this.outputShape = outputShape;
     this.workPerThread = workPerThread;
 
-    const dispatchLayout = [[1], [2], [0]] as [number[], number[], number[]];
+    const dispatchLayout = {x: [1], y: [2], z: [0]};
     this.dispatch =
         computeDispatch(dispatchLayout, this.outputShape, this.tileSize);
 

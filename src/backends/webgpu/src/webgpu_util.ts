@@ -28,11 +28,11 @@ const arrayProduct = (arr: number[]) => {
 
 // Computes dispatch geometry based on layout of output dimensions and tileSize.
 export function computeDispatch(
-    layout: [number[], number[], number[]], outputShape: number[],
+    layout: {x: number[], y: number[], z: number[]}, outputShape: number[],
     tileSize: [number, number, number] = [1, 1, 1]): [number, number, number] {
   return [
-    Math.ceil(arrayProduct(layout[0].map(d => outputShape[d])) / tileSize[0]),
-    Math.ceil(arrayProduct(layout[1].map(d => outputShape[d])) / tileSize[1]),
-    Math.ceil(arrayProduct(layout[2].map(d => outputShape[d])) / tileSize[2])
+    Math.ceil(arrayProduct(layout.x.map(d => outputShape[d])) / tileSize[0]),
+    Math.ceil(arrayProduct(layout.y.map(d => outputShape[d])) / tileSize[1]),
+    Math.ceil(arrayProduct(layout.z.map(d => outputShape[d])) / tileSize[2])
   ];
 }

@@ -21,7 +21,7 @@ describe('webgpu util', () => {
   it('computeDispatch returns dispatch dimensions based on layout of ' +
          'output dimensions and tileSize.',
      () => {
-       const layout = [[0], [1], [2, 3]] as [number[], number[], number[]];
+       const layout = {x: [0], y: [1], z: [2, 3]};
        const outputShape = [1, 2, 3, 2];
 
        const tileSize = [2, 2, 1] as [number, number, number];
