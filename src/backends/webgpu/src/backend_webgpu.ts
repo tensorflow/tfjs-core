@@ -20,7 +20,6 @@
 import './flags_webgpu';
 
 import {DataMover, DataType, ENV, KernelBackend, Rank, ShapeMap, Tensor, Tensor3D, Tensor4D, util} from '@tensorflow/tfjs-core';
-// How should this be imported?
 import {Conv2DInfo} from '@tensorflow/tfjs-core/dist/ops/conv_util';
 import {upcastType} from '@tensorflow/tfjs-core/dist/types';
 import * as shaderc from '@webgpu/shaderc';
@@ -225,7 +224,12 @@ export class WebGPUBackend extends KernelBackend {
   pad<T extends Tensor>(
       x: T, paddings: Array<[number, number]>, constantValue: number): T {
     const program = new PadProgram(x.shape, paddings, constantValue);
-    return this.compileAndRun(program, [x]);
+    const output = this.makeOutputArray(program.outputShape, x.dtype);
+    const dimensionsData = new Int32Array([...program.outputShape]);
+    const dimensions = this.makeUniforms(dimensionsData);
+    const result = this.compileAndRun(program, [x], output, dimensions);
+    this.destroyBuffer(dimensionsData.byteLength, dimensions.resource.buffer);
+    return result as T;
   }
 
   maxPool(x: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
