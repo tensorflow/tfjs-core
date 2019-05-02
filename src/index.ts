@@ -27,7 +27,7 @@ import './backends/webgl/backend_webgl';
 import './backends/cpu/backend_cpu';
 
 import './platforms/platform_browser';
-import './platforms/node/platform_node';
+import './platforms/platform_node';
 
 import * as environment from './environment';
 // Serialization.
