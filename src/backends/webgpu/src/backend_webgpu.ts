@@ -19,14 +19,18 @@
 
 import './flags_webgpu';
 
-import {DataMover, DataType, ENV, KernelBackend, Rank, ShapeMap, Tensor, Tensor3D, util} from '@tensorflow/tfjs-core';
+import {DataMover, DataType, ENV, KernelBackend, Rank, ShapeMap, Tensor, Tensor3D, Tensor4D, util} from '@tensorflow/tfjs-core';
+// How should this be imported?
+import {Conv2DInfo} from '@tensorflow/tfjs-core/dist/ops/conv_util';
 import * as shaderc from '@webgpu/shaderc';
 
 import * as binary_op from './kernels/binary_op_webgpu';
 import {BinaryOpProgram} from './kernels/binary_op_webgpu';
 import {MatMulPackedProgram} from './kernels/matmul_packed_webgpu';
 import {MatMulProgram} from './kernels/matmul_webgpu';
+import {MaxPoolProgram} from './kernels/maxpool_webgpu';
 import {PadProgram} from './kernels/pad_webgpu';
+import {ResizeBilinearProgram} from './kernels/resize_bilinear_webgpu';
 import * as unary_op from './kernels/unary_op_webgpu';
 import {UnaryOpProgram} from './kernels/unary_op_webgpu';
 import * as webgpu_program from './kernels/webgpu_program';
@@ -207,7 +211,8 @@ export class WebGPUBackend extends KernelBackend {
     return output as {} as K;
   }
 
-  private makeUniforms(data: Uint32Array): webgpu_program.BindingInfo {
+  private makeUniforms(data: Uint32Array|
+                       Int32Array): webgpu_program.BindingInfo {
     const dimensionsBuffer = this.createBuffer(
         data.byteLength, GPUBufferUsage.TRANSFER_DST | GPUBufferUsage.UNIFORM);
     dimensionsBuffer.setSubData(0, data);
@@ -221,6 +226,29 @@ export class WebGPUBackend extends KernelBackend {
       x: T, paddings: Array<[number, number]>, constantValue: number): T {
     const program = new PadProgram(x.shape, paddings, constantValue);
     return this.compileAndRun(program, [x]);
+  }
+
+  maxPool(x: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
+    const program = new MaxPoolProgram(convInfo);
+
+    const output =
+        this.makeOutputArray(program.outputShape, x.dtype) as Tensor4D;
+
+    const dimensionsData = new Int32Array([
+      ...convInfo.inShape, ...convInfo.outShape,        // inShape / outShape.
+      convInfo.padInfo.left, convInfo.padInfo.top,      // Padding.
+      convInfo.strideWidth, convInfo.strideHeight,      // Stride.
+      convInfo.dilationWidth, convInfo.dilationHeight,  // Dilation.
+      convInfo.inWidth, convInfo.inHeight,              // Conv dims.
+      convInfo.effectiveFilterWidth,
+      convInfo.effectiveFilterHeight  // Filter dims.
+    ]);
+    const dimensions = this.makeUniforms(dimensionsData);
+
+    const result = this.compileAndRun(program, [x], output, dimensions);
+    this.destroyBuffer(dimensionsData.byteLength, dimensions.resource.buffer);
+
+    return result as Tensor4D;
   }
 
   add(a: Tensor, b: Tensor): Tensor {
@@ -240,6 +268,27 @@ export class WebGPUBackend extends KernelBackend {
   relu<T extends Tensor>(x: T): T {
     const program = new UnaryOpProgram(unary_op.RELU, x.shape);
     return this.compileAndRun(program, [x]) as T;
+  }
+
+  resizeBilinear(
+      x: Tensor4D, newHeight: number, newWidth: number,
+      alignCorners: boolean): Tensor4D {
+    const program =
+        new ResizeBilinearProgram(x.shape, newHeight, newWidth, alignCorners);
+
+    const output =
+        this.makeOutputArray(program.outputShape, x.dtype) as Tensor4D;
+
+    const uniformData = new Int32Array([
+      ...x.shape, ...program.outputShape,  // inShape / outShape.
+    ]);
+    const uniforms = this.makeUniforms(uniformData);
+
+    const result =
+        this.compileAndRun(program, [x], output, uniforms) as Tensor4D;
+    this.destroyBuffer(uniformData.byteLength, uniforms.resource.buffer);
+
+    return result as Tensor4D;
   }
 
   reshape<R extends Rank>(x: Tensor, shape: ShapeMap[R]): Tensor<R> {
