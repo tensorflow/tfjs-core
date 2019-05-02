@@ -15,9 +15,14 @@
  * =============================================================================
  */
 
+/**
+ * At any given time a single platform is active and represents and
+ * implementation of this interface. In practice, a platform is an environment
+ * where TensorFlow.js can be executed, e.g. the browser or Node.js.
+ */
 export interface Platform {
   /**
-   * Makes an HTTP GET request.
+   * Makes an HTTP request.
    * @param path The URL path to make a request to
    * @param init The request init. See init here:
    *     https://developer.mozilla.org/en-US/docs/Web/API/Request/Request

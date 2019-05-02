@@ -15,19 +15,22 @@
  * =============================================================================
  */
 import {ENV} from '../environment';
+
 import {Platform} from './platform';
 
 // We are wrapping this within an object so it can be stubbed by Jasmine.
 export const getNodeFetch = {
-  // tslint:disable-next-line:no-require-imports
-  fetchImport: () => require('node-fetch')
+  importFetch: () => {
+    // tslint:disable-next-line:no-require-imports
+    return require('node-fetch');
+  }
 };
 
 export let systemFetch: (url: string, init?: RequestInit) => Promise<Response>;
 export class PlatformNode implements Platform {
   fetch(path: string, requestInits?: RequestInit): Promise<Response> {
     if (systemFetch == null) {
-      systemFetch = getNodeFetch.fetchImport();
+      systemFetch = getNodeFetch.importFetch();
     }
     return systemFetch(path, requestInits);
   }

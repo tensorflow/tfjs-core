@@ -24,25 +24,19 @@ describeWithFlags('PlatformNode', NODE_ENVS, () => {
   it('fetch should use node-fetch', async () => {
     const platform = new PlatformNode();
 
-    const savedFetch = platform_node.systemFetch;
-
-    // Null out the system fetch so we force it to require node-fetch.
-    // @ts-ignore
-    platform_node.systemFetch = null;
-
     const testFetch = {fetch: (url: string, init: RequestInit) => {}};
 
     // Mock the actual fetch call.
     spyOn(testFetch, 'fetch').and.returnValue(() => {});
     // Mock the import to override the real require of node-fetch.
-    spyOn(platform_node.getNodeFetch, 'fetchImport')
+    spyOn(platform_node.getNodeFetch, 'importFetch')
         .and.callFake(
             () => (url: string, init: RequestInit) =>
                 testFetch.fetch(url, init));
 
     await platform.fetch('test/url', {method: 'GET'});
 
-    expect(platform_node.getNodeFetch.fetchImport).toHaveBeenCalled();
+    expect(platform_node.getNodeFetch.importFetch).toHaveBeenCalled();
     expect(testFetch.fetch).toHaveBeenCalledWith('test/url', {method: 'GET'});
 
     // @ts-ignore
