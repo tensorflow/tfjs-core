@@ -171,7 +171,6 @@ export class MathBackendCPU implements KernelBackend {
   async read(dataId: DataId): Promise<DataValues> {
     return this.readSync(dataId);
   }
-
   readSync(dataId: DataId): DataValues {
     const {dtype, complexTensors} = this.data.get(dataId);
     if (dtype === 'complex64') {
@@ -182,6 +181,10 @@ export class MathBackendCPU implements KernelBackend {
       return complex_util.mergeRealAndImagArrays(realValues, imagValues);
     }
     return this.data.get(dataId).values;
+  }
+
+  bufferSync<R extends Rank>(t: Tensor<R>): TensorBuffer<R>{
+    return buffer(t.shape, t.dtype, this.readSync(t.dataId)) as TensorBuffer<R>
   }
 
   disposeData(dataId: DataId): void {
@@ -262,7 +265,7 @@ export class MathBackendCPU implements KernelBackend {
     }
 
     const buffer = ops.buffer(size, x.dtype);
-    const xBuf = x.bufferSync();
+    const xBuf = this.bufferSync(x);
     for (let i = 0; i < buffer.size; ++i) {
       const loc = buffer.indexToLoc(i);
       const xLoc = loc.map((idx, j) => idx + begin[j]);
@@ -288,7 +291,7 @@ export class MathBackendCPU implements KernelBackend {
     }
 
     const buffer = ops.buffer(size, x.dtype);
-    const xBuf = x.bufferSync();
+    const xBuf = this.bufferSync(x);
     for (let i = 0; i < buffer.size; i++) {
       const loc = buffer.indexToLoc(i);
 
@@ -327,7 +330,7 @@ export class MathBackendCPU implements KernelBackend {
     this.assertNotComplex(x, 'reverse');
 
     const buffer = ops.buffer(x.shape, x.dtype);
-    const xBuf = x.bufferSync();
+    const xBuf = this.bufferSync(x);
 
     for (let i = 0; i < buffer.size; i++) {
       const outLoc = buffer.indexToLoc(i);
@@ -1760,8 +1763,8 @@ export class MathBackendCPU implements KernelBackend {
 
     const leftPad = convInfo.padInfo.left;
     const topPad = convInfo.padInfo.top;
-    const xBuf = x.bufferSync();
-    const dyBuf = dy.bufferSync();
+    const xBuf = this.bufferSync(x);
+    const dyBuf = this.bufferSync(dy);
     for (let wR = 0; wR < filterHeight; ++wR) {
       const yRMin = Math.max(0, Math.ceil((topPad - wR) / strideHeight));
       const yRMax = Math.min(
@@ -2012,8 +2015,8 @@ export class MathBackendCPU implements KernelBackend {
     const topPad = convInfo.padInfo.top;
     const chMul = convInfo.outChannels / convInfo.inChannels;
 
-    const xBuf = x.bufferSync();
-    const dyBuf = dy.bufferSync();
+    const xBuf = this.bufferSync(x);
+    const dyBuf = this.bufferSync(dy);
     for (let wR = 0; wR < filterHeight; ++wR) {
       const yRMin = Math.max(0, Math.ceil((topPad - wR) / strideHeight));
       const yRMax = Math.min(
@@ -2053,7 +2056,7 @@ export class MathBackendCPU implements KernelBackend {
       newShape[i] = x.shape[i] * reps[i];
     }
     const result = ops.buffer(newShape, x.dtype);
-    const xBuf = x.bufferSync();
+    const xBuf = this.bufferSync(x);
     for (let i = 0; i < result.values.length; ++i) {
       const newLoc = result.indexToLoc(i);
 
@@ -2076,7 +2079,7 @@ export class MathBackendCPU implements KernelBackend {
     const outShape = paddings.map(
         (p, i) => p[0] /* beforePad */ + x.shape[i] + p[1] /* afterPad */);
     const start = paddings.map(p => p[0]);
-    const xBuffer = x.bufferSync();
+    const xBuffer = this.bufferSync(x);
     const buffer = ops.buffer(outShape, x.dtype as 'float32');
     if (constantValue !== 0) {
       buffer.values.fill(constantValue);
@@ -2100,7 +2103,7 @@ export class MathBackendCPU implements KernelBackend {
     const values = this.readSync(x.dataId) as TypedArray;
     const result = buffer(newShape, x.dtype);
 
-    const xBuf = x.bufferSync();
+    const xBuf = this.bufferSync(x);
     for (let i = 0; i < x.size; ++i) {
       const loc = xBuf.indexToLoc(i);
 
@@ -2123,7 +2126,7 @@ export class MathBackendCPU implements KernelBackend {
     const indicesValues = this.readSync(indices.dataId) as TypedArray;
     newShape[axis] = indicesValues.length;
     const result = buffer(newShape, x.dtype);
-    const xBuf = x.bufferSync();
+    const xBuf = this.bufferSync(x);
 
     for (let i = 0; i < result.size; ++i) {
       const newLoc = result.indexToLoc(i);
@@ -2270,7 +2273,7 @@ export class MathBackendCPU implements KernelBackend {
     const padTop = convInfo.padInfo.top;
     const padLeft = convInfo.padInfo.left;
 
-    const xBuf = x.bufferSync();
+    const xBuf = this.bufferSync(x);
     for (let b = 0; b < convInfo.batchSize; ++b) {
       for (let d = 0; d < convInfo.inChannels; ++d) {
         for (let yR = 0; yR < convInfo.outHeight; ++yR) {
@@ -2327,8 +2330,8 @@ export class MathBackendCPU implements KernelBackend {
     const padTop = effectiveFilterHeight - 1 - convInfo.padInfo.top;
     const dx = ops.buffer<Rank.R4>(x.shape, 'float32');
 
-    const maxPosBuf = maxPositions.bufferSync();
-    const dyBuf = dy.bufferSync();
+    const maxPosBuf = this.bufferSync(maxPositions);
+    const dyBuf = this.bufferSync(dy);
 
     for (let b = 0; b < convInfo.batchSize; ++b) {
       for (let d = 0; d < convInfo.inChannels; ++d) {
@@ -2388,7 +2391,7 @@ export class MathBackendCPU implements KernelBackend {
 
     const avgMultiplier = 1 / (filterHeight * filterWidth);
 
-    const dyBuf = dy.bufferSync();
+    const dyBuf = this.bufferSync(dy);
 
     for (let b = 0; b < convInfo.batchSize; ++b) {
       for (let d = 0; d < convInfo.inChannels; ++d) {
@@ -3093,8 +3096,8 @@ export class MathBackendCPU implements KernelBackend {
         resVals[i] = op(aVals[i % aVals.length], bVals[i % bVals.length]);
       }
     } else {
-      const aBuf = a.bufferSync();
-      const bBuf = b.bufferSync();
+      const aBuf = this.bufferSync(a);
+      const bBuf = this.bufferSync(b);
       for (let i = 0; i < resVals.length; ++i) {
         const loc = result.indexToLoc(i);
 
@@ -3143,8 +3146,10 @@ export class MathBackendCPU implements KernelBackend {
         imagVals[i] = result.imag;
       }
     } else {
-      const aRealBuf = this.data.get(a.dataId).complexTensors.real.bufferSync();
-      const bRealBuf = this.data.get(b.dataId).complexTensors.real.bufferSync();
+      const aRealBuf =
+          this.bufferSync(this.data.get(a.dataId).complexTensors.real);
+      const bRealBuf =
+          this.bufferSync(this.data.get(b.dataId).complexTensors.real);
       for (let i = 0; i < realVals.length; i++) {
         const loc = realResult.indexToLoc(i);
 
