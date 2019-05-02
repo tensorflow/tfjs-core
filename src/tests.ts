@@ -111,7 +111,7 @@ import './optimizers/optimizer_test';
 import './optimizers/rmsprop_optimizer_test';
 import './optimizers/sgd_optimizer_test';
 import './platforms/platform_browser_test';
-import './platforms/node/platform_node_test';
+import './platforms/platform_node_test';
 import './profiler_test';
 import './serialization_test';
 import './tape_test';
