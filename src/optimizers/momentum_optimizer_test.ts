@@ -33,8 +33,8 @@ describeWithFlags('MomentumOptimizer', ALL_ENVS, () => {
 
     let cost = optimizer.minimize(f, /* returnCost */ true);
 
-    // Cost, velocity & iteartions should be the only additional arrays.
-    expect(tf.memory().numTensors).toBe(numTensors + 3);
+    // Cost & velocity should be the only additional arrays.
+    expect(tf.memory().numTensors).toBe(numTensors + 2);
 
     // newAccumulation = momentum * accumulation + gradient
     // newVariable += -learningRate * newAccumulation + variable
@@ -61,10 +61,12 @@ describeWithFlags('MomentumOptimizer', ALL_ENVS, () => {
     expect(cost).toBe(null);
 
     x.dispose();
+    numTensors = tf.memory().numTensors;
     optimizer.dispose();
 
-    // The only tensor remaining is the argument to variable().
-    expect(tf.memory().numTensors).toBe(1);
+    // The optimizer.dispose() call should have disposed the m variable and the
+    // momentum variable for x.
+    expect(tf.memory().numTensors).toBe(numTensors - 2);
   });
 
   it('basic - with Nesterov', async () => {
@@ -81,8 +83,8 @@ describeWithFlags('MomentumOptimizer', ALL_ENVS, () => {
 
     let cost = optimizer.minimize(f, /* returnCost */ true);
 
-    // Cost, velocity and iteartions should be the only additional arrays.
-    expect(tf.memory().numTensors).toBe(numTensors + 3);
+    // Cost and velocity should be the only additional arrays.
+    expect(tf.memory().numTensors).toBe(numTensors + 2);
 
     // newAccumulation = momentum * accumulation + gradient
     // newVariable = -learningRate * (newAccumulation * momentum + gradient) +
@@ -112,10 +114,12 @@ describeWithFlags('MomentumOptimizer', ALL_ENVS, () => {
     expect(cost).toBe(null);
 
     x.dispose();
+    numTensors = tf.memory().numTensors;
     optimizer.dispose();
 
-    // The only tensor remaining is the argument to variable().
-    expect(tf.memory().numTensors).toBe(1);
+    // The optimizer.dispose() call should have disposed the m variable and the
+    // momentum variable for x.
+    expect(tf.memory().numTensors).toBe(numTensors - 2);
   });
 
   it('Save, load weights and conntinue training', async () => {

@@ -30,8 +30,8 @@ describeWithFlags('SGDOptimizer', ALL_ENVS, () => {
 
     let cost = optimizer.minimize(() => x.square(), /* returnCost */ true);
 
-    // Cost and iterations should be the only additional arrays.
-    expect(tf.memory().numTensors).toBe(numTensors + 2);
+    // Cost should be the only additional arrays.
+    expect(tf.memory().numTensors).toBe(numTensors + 1);
 
     // de/dx = 2x
     const expectedValue1 = -2 * 4 * learningRate + 4;

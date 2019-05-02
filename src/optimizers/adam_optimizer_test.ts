@@ -34,8 +34,8 @@ describeWithFlags('AdamOptimizer', ALL_ENVS, () => {
 
     let cost = optimizer.minimize(f, /* returnCost */ true);
 
-    // Cost, iterations & 2 accumulators should be the only additional arrays.
-    expect(tf.memory().numTensors).toBe(numTensors + 4);
+    // Cost & 2 accumulators should be the only additional arrays.
+    expect(tf.memory().numTensors).toBe(numTensors + 3);
     // new_first_m = [
     //    beta1 * old_first_m_w1 + (1-beta1) * grad_w1,
     //    beta1 * old_first_m_w2 + (1-beta1) * grad_w2

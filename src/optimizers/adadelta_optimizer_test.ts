@@ -33,8 +33,8 @@ describeWithFlags('AdadeltaOptimizer', ALL_ENVS, () => {
 
     let cost = optimizer.minimize(f, /* returnCost */ true);
 
-    // Cost, iterations & 2 accumulators should be the only additional arrays.
-    expect(tf.memory().numTensors).toBe(numTensors + 4);
+    // Cost & 2 accumulators should be the only additional arrays.
+    expect(tf.memory().numTensors).toBe(numTensors + 3);
 
     // epsilon = 1-e8
     // newAccumulatedGrad = rho * accumulatedGrad + (1 - rho) * grad ^ 2

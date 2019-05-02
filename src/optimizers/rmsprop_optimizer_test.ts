@@ -34,8 +34,8 @@ describeWithFlags('RMSPropOptimizer', ALL_ENVS, () => {
 
     let cost = optimizer.minimize(f, /* returnCost */ true);
 
-    // Cost, iteration & 2 accumulators should be the only additional arrays.
-    expect(tf.memory().numTensors).toBe(numTensors + 4);
+    // Cost & 2 accumulators should be the only additional arrays.
+    expect(tf.memory().numTensors).toBe(numTensors + 3);
 
     // epsilon = 1e-8
     // newAccumulatedMeanSquare =
@@ -95,8 +95,8 @@ describeWithFlags('RMSPropOptimizer', ALL_ENVS, () => {
 
     let cost = optimizer.minimize(f, /* returnCost */ true);
 
-    // Cost, iteration & 3 accumulators should be the only additional arrays.
-    expect(tf.memory().numTensors).toBe(numTensors + 5);
+    // Cost & 3 accumulators should be the only additional arrays.
+    expect(tf.memory().numTensors).toBe(numTensors + 4);
 
     // epsilon = 1e-8
     // newAccumulatedMeanSquare =
