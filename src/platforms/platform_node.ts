@@ -20,10 +20,8 @@ import {Platform} from './platform';
 
 // We are wrapping this within an object so it can be stubbed by Jasmine.
 export const getNodeFetch = {
-  importFetch: () => {
-    // tslint:disable-next-line:no-require-imports
-    return require('node-fetch');
-  }
+  // tslint:disable-next-line:no-require-imports
+  importFetch: () => require('node-fetch')
 };
 
 export let systemFetch: (url: string, init?: RequestInit) => Promise<Response>;
