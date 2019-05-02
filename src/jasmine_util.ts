@@ -22,6 +22,7 @@ Error.stackTraceLimit = Infinity;
 
 export type Constraints = {
   flags?: Flags;
+  predicate?: (backendName: string) => boolean;
   activeBackend?: string;
   // If defined, all backends in this array must be registered.
   registeredBackends?: string[];
