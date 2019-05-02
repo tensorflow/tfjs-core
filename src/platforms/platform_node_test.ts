@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {describeWithFlags, NODE_ENVS} from '../../jasmine_util';
+import {describeWithFlags, NODE_ENVS} from '../jasmine_util';
 
 import * as platform_node from './platform_node';
 import {PlatformNode} from './platform_node';

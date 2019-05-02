@@ -14,15 +14,19 @@
  * limitations under the License.
  * =============================================================================
  */
-import {ENV} from '../../environment';
-import {Platform} from '../platform';
 
-export class PlatformBrowser extends Platform {
-  fetch(path: string, init?: RequestInit): Promise<Response> {
-    return fetch(path, init);
-  }
-}
+import {BROWSER_ENVS, describeWithFlags} from '../jasmine_util';
 
-if (ENV.get('IS_BROWSER')) {
-  ENV.setPlatform('browser', new PlatformBrowser());
-}
+import {PlatformBrowser} from './platform_browser';
+
+describeWithFlags('PlatformBrowser', BROWSER_ENVS, async () => {
+  it('fetch calls window.fetch', async () => {
+    const response = new Response();
+    spyOn(window, 'fetch').and.returnValue(response);
+    const platform = new PlatformBrowser();
+
+    await platform.fetch('test/url', {method: 'GET'});
+
+    expect(window.fetch).toHaveBeenCalledWith('test/url', {method: 'GET'});
+  });
+});

@@ -14,19 +14,25 @@
  * limitations under the License.
  * =============================================================================
  */
+import {ENV} from '../environment';
+import {Platform} from './platform';
 
-import {BROWSER_ENVS, describeWithFlags} from '../../jasmine_util';
+// We are wrapping this within an object so it can be stubbed by Jasmine.
+export const getNodeFetch = {
+  // tslint:disable-next-line:no-require-imports
+  fetchImport: () => require('node-fetch')
+};
 
-import {PlatformBrowser} from './platform_browser';
+export let systemFetch: (url: string, init?: RequestInit) => Promise<Response>;
+export class PlatformNode implements Platform {
+  fetch(path: string, requestInits?: RequestInit): Promise<Response> {
+    if (systemFetch == null) {
+      systemFetch = getNodeFetch.fetchImport();
+    }
+    return systemFetch(path, requestInits);
+  }
+}
 
-describeWithFlags('PlatformBrowser', BROWSER_ENVS, async () => {
-  it('fetch calls window.fetch', async () => {
-    const response = new Response();
-    spyOn(window, 'fetch').and.returnValue(response);
-    const platform = new PlatformBrowser();
-
-    await platform.fetch('test/url', {method: 'GET'});
-
-    expect(window.fetch).toHaveBeenCalledWith('test/url', {method: 'GET'});
-  });
-});
+if (ENV.get('IS_NODE')) {
+  ENV.setPlatform('node', new PlatformNode());
+}

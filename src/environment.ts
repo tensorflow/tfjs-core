@@ -44,6 +44,11 @@ export class Environment {
   }
 
   setPlatform(platformName: string, platform: Platform) {
+    if (this.platform != null) {
+      console.warn(
+          `Platform ${this.platformName} has already been set. ` +
+          `Overwriting the platform with ${platform}.`);
+    }
     this.platformName = platformName;
     this.platform = platform;
   }

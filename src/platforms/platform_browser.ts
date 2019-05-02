@@ -14,27 +14,21 @@
  * limitations under the License.
  * =============================================================================
  */
-import {ENV} from '../../environment';
-import {Platform} from '../platform';
+import {ENV} from '../environment';
+import {Platform} from './platform';
 
-// We are wrapping this within an object so it can be stubbed by Jasmine.
-export const getNodeFetch = {
-  fetchImport: () => {
-    // tslint:disable-next-line:no-require-imports
-    return require('node-fetch');
-  }
-};
-
-export let systemFetch: (url: string, init?: RequestInit) => Promise<Response>;
-export class PlatformNode extends Platform {
-  fetch(path: string, requestInits?: RequestInit): Promise<Response> {
-    if (systemFetch == null) {
-      systemFetch = getNodeFetch.fetchImport();
-    }
-    return systemFetch(path, requestInits);
+export class PlatformBrowser implements Platform {
+  /**
+   * Makes an HTTP GET request.
+   * @param path The URL path to make a request to
+   * @param init The request init. See init here:
+   *     https://developer.mozilla.org/en-US/docs/Web/API/Request/Request
+   */
+  fetch(path: string, init?: RequestInit): Promise<Response> {
+    return fetch(path, init);
   }
 }
 
-if (ENV.get('IS_NODE')) {
-  ENV.setPlatform('node', new PlatformNode());
+if (ENV.get('IS_BROWSER')) {
+  ENV.setPlatform('browser', new PlatformBrowser());
 }
