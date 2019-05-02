@@ -99,6 +99,7 @@ module.exports = cmdOptions => {
     }));
   }
 
+  // tf-core.min.js
   bundles.push(config({
     plugins: [terser({output: {preamble: PREAMBLE}})],
     output: {
