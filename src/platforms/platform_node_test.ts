@@ -24,6 +24,12 @@ describeWithFlags('PlatformNode', NODE_ENVS, () => {
   it('fetch should use node-fetch', async () => {
     const platform = new PlatformNode();
 
+    const savedFetch = platform_node.systemFetch;
+
+    // Null out the system fetch so we force it to require node-fetch.
+    // @ts-ignore
+    platform_node.systemFetch = null;
+
     const testFetch = {fetch: (url: string, init: RequestInit) => {}};
 
     // Mock the actual fetch call.
