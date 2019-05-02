@@ -98,7 +98,7 @@ describeWithFlags('AdadeltaOptimizer', ALL_ENVS, () => {
     cost = optimizer2.minimize(f, /* returnCost */ true);
     expectArraysClose(await cost.data(), 3.2);
     expectArraysClose(await x.data(), [0.64, 1.28]);
-    expectArraysClose(await optimizer2.iterations.data(), 2);
+    expect(optimizer2.iterations).toEqual(2);
   });
 
   it('serialization round-trip', () => {

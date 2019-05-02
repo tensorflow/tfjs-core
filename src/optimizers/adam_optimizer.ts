@@ -108,7 +108,6 @@ export class AdamOptimizer extends Optimizer {
   }
 
   dispose(): void {
-    super.dispose();
     this.accBeta1.dispose();
     this.accBeta2.dispose();
 

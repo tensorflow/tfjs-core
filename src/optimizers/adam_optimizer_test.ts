@@ -89,6 +89,8 @@ describeWithFlags('AdamOptimizer', ALL_ENVS, () => {
     const x = tf.tensor1d([2, 4]).variable();
     const f = () => x.square().sum() as tf.Scalar;
     let cost = optimizer1.minimize(f, /* returnCost */ true);
+
+    expect(optimizer1.iterations).toEqual(1);
     expectArraysClose(await cost.data(), 20);
 
     const weights = optimizer1.getWeights();
@@ -102,7 +104,7 @@ describeWithFlags('AdamOptimizer', ALL_ENVS, () => {
 
     cost = optimizer2.minimize(f, /* returnCost */ true);
     expectArraysClose(await cost.data(), 18.82);
-    expectArraysClose(await optimizer2.iterations.data(), 2);
+    expect(optimizer2.iterations).toEqual(2);
   });
 
   it('serialization round-trip', () => {

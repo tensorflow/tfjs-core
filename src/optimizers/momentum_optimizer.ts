@@ -79,7 +79,6 @@ export class MomentumOptimizer extends SGDOptimizer {
   }
 
   dispose(): void {
-    super.dispose();
     this.m.dispose();
     if (this.accumulations != null) {
       dispose(this.accumulations.map(v => v.variable));

@@ -131,7 +131,6 @@ export class RMSPropOptimizer extends Optimizer {
   }
 
   dispose(): void {
-    super.dispose();
     if (this.accumulatedMeanSquares != null) {
       dispose(this.accumulatedMeanSquares.map(v => v.variable));
     }

@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {dispose, tidy} from '../globals';
+import {dispose} from '../globals';
 import {variableGrads} from '../gradients';
 import {scalar} from '../ops/ops';
 import {Serializable} from '../serialization';
@@ -40,7 +40,7 @@ export interface OptimizerVariable {
 
 /** @doc {heading: 'Training', subheading: 'Classes', namespace: 'train'} */
 export abstract class Optimizer extends Serializable {
-  protected iterations_: Variable;
+  protected iterations_: number;
 
   /**
    * Executes `f()` and minimizes the scalar output of `f()` by computing
@@ -81,17 +81,15 @@ export abstract class Optimizer extends Serializable {
   /**
    * The number of iterations that this optimizer instance has been invoked for.
    */
-  get iterations(): Variable {
+  get iterations(): number {
     if (this.iterations_ == null) {
-      const trainable = false;
-      // TODO(cais): Use 'int64' when available.
-      this.iterations_ = scalar(0, 'int32').variable(trainable);
+      this.iterations_ = 0;
     }
     return this.iterations_;
   }
 
   protected incrementIterations() {
-    tidy(() => this.iterations.assign(this.iterations.add(scalar(1, 'int32'))));
+    this.iterations_ = this.iterations + 1;
   }
 
   /**
@@ -132,7 +130,8 @@ export abstract class Optimizer extends Serializable {
     if (this.iterations_ != null) {
       weights.push({
         name: 'iter',  // Named for Python compatibility.
-        tensor: this.iterations_
+        // TODO(cais): Use 'int64' type when available.
+        tensor: scalar(this.iterations_, 'int32')
       });
     }
     return weights;
@@ -152,8 +151,7 @@ export abstract class Optimizer extends Serializable {
    * @returns Weight values with the first element consumed and excluded.
    */
   protected setIterations(weightValues: NamedTensor[]): NamedTensor[] {
-    const trainable = false;
-    this.iterations_ = weightValues[0].tensor.variable(trainable);
+    this.iterations_ = weightValues[0].tensor.dataSync()[0];
     return weightValues.slice(1);
   }
 }

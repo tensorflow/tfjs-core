@@ -109,7 +109,6 @@ export class AdamaxOptimizer extends Optimizer {
   }
 
   dispose(): void {
-    super.dispose();
     this.accBeta1.dispose();
     this.iteration.dispose();
 

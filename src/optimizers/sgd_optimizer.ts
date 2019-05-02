@@ -20,7 +20,8 @@ import {keep, tidy} from '../globals';
 import {scalar} from '../ops/ops';
 import {ConfigDict, registerClass, Serializable, SerializableConstructor} from '../serialization';
 import {Scalar} from '../tensor';
-import {NamedTensorMap, NamedTensor} from '../tensor_types';
+import {NamedTensor, NamedTensorMap} from '../tensor_types';
+
 import {Optimizer} from './optimizer';
 
 /** @doclink Optimizer */
@@ -36,10 +37,12 @@ export class SGDOptimizer extends Optimizer {
 
   applyGradients(variableGradients: NamedTensorMap|NamedTensor[]) {
     const varNames = Array.isArray(variableGradients) ?
-        variableGradients.map(v => v.name) : Object.keys(variableGradients);
+        variableGradients.map(v => v.name) :
+        Object.keys(variableGradients);
     varNames.forEach((name, i) => {
       const gradient = Array.isArray(variableGradients) ?
-          variableGradients[i].tensor : variableGradients[name];
+          variableGradients[i].tensor :
+          variableGradients[name];
       if (gradient == null) {
         return;
       }
@@ -64,7 +67,6 @@ export class SGDOptimizer extends Optimizer {
   }
 
   dispose() {
-    super.dispose();
     this.c.dispose();
   }
 

@@ -171,7 +171,7 @@ describeWithFlags('RMSPropOptimizer', ALL_ENVS, () => {
     cost = optimizer2.minimize(f, /* returnCost */ true);
     expectArraysClose(cost.dataSync(), 2.7167187);
     expectArraysClose(x.dataSync(), [0.2874418, 1.2294267]);
-    expectArraysClose(await optimizer2.iterations.data(), 2);
+    expect(optimizer2.iterations).toEqual(2);
   });
 
   it('Save, load weigths and continue training: centered = true', async () => {
@@ -201,7 +201,14 @@ describeWithFlags('RMSPropOptimizer', ALL_ENVS, () => {
     cost = optimizer2.minimize(f, /* returnCost */ true);
     expectArraysClose(await cost.data(), 2.668063);
     expectArraysClose(await x.data(), [0.2677834, 1.2035918]);
-    expectArraysClose(await optimizer2.iterations.data(), 2);
+    expect(optimizer2.iterations).toEqual(2);
+
+    const optimizer3 =
+        tf.train.rmsprop(learningRate, rho, moment, epsilon, centered);
+    optimizer3.setWeights(optimizer2.getWeights());
+    cost = optimizer3.minimize(f, /* returnCost */ true);
+    expectArraysClose(await cost.data(), 1.520341);
+    expect(optimizer3.iterations).toEqual(3);
   });
 
   it('serialization round-trip', () => {

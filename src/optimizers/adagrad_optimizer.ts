@@ -77,7 +77,6 @@ export class AdagradOptimizer extends Optimizer {
   }
 
   dispose(): void {
-    super.dispose();
     if (this.accumulatedGrads != null) {
       dispose(this.accumulatedGrads.map(v => v.variable));
     }

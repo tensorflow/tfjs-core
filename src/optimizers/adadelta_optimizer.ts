@@ -93,7 +93,6 @@ export class AdadeltaOptimizer extends Optimizer {
   }
 
   dispose(): void {
-    super.dispose();
     if (this.accumulatedUpdates != null) {
       dispose(this.accumulatedGrads.map(v => v.variable));
       dispose(this.accumulatedUpdates.map(v => v.variable));

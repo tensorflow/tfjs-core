@@ -90,7 +90,7 @@ describeWithFlags('AdagradOptimizer', ALL_ENVS, () => {
 
     cost = optimizer2.minimize(f, /* returnCost */ true);
     expectArraysClose(await cost.data(), 18.82179);
-    expectArraysClose(await optimizer2.iterations.data(), 2);
+    expect(optimizer2.iterations).toEqual(2);
   });
 
   it('serialization round-trip', () => {

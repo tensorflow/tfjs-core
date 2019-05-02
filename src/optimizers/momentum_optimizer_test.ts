@@ -138,7 +138,7 @@ describeWithFlags('MomentumOptimizer', ALL_ENVS, () => {
     cost = optimizer2.minimize(f, /* returnCost */ true);
     expectArraysClose(await cost.data(), 2.45);
     expectArraysClose(await x.data(), [0.44, 0.88]);
-    expectArraysClose(await optimizer2.iterations.data(), 2);
+    expect(optimizer2.iterations).toEqual(2);
   });
 
   it('serialization round-trip', () => {
