@@ -123,7 +123,7 @@ export class AdamOptimizer extends Optimizer {
     // Order matters for Python compatibility.
     const variables: OptimizerVariable[] =
         [...this.accumulatedFirstMoment, ...this.accumulatedSecondMoment];
-    return super.getWeights().concat(
+    return [this.getIterationsAsWeight()].concat(
         variables.map(v => ({name: v.originalName, tensor: v.variable})));
   }
 

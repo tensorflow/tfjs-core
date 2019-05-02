@@ -125,16 +125,20 @@ export abstract class Optimizer extends Serializable {
     }
   }
 
-  getWeights(): NamedTensor[] {
-    const weights: NamedTensor[] = [];
-    if (this.iterations_ != null) {
-      weights.push({
+  getIterationsAsWeight(): NamedTensor {
+    if (this.iterations_ == null) {
+      return null;
+    } else {
+      return {
         name: 'iter',  // Named for Python compatibility.
         // TODO(cais): Use 'int64' type when available.
         tensor: scalar(this.iterations_, 'int32')
-      });
+      };
     }
-    return weights;
+  }
+
+  getWeights(): NamedTensor[] {
+    throw new Error('getWeights() is not implemented for this optimizer yet.');
   }
 
   setWeights(weightValues: NamedTensor[]): void {

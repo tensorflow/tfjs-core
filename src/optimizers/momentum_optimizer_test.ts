@@ -133,12 +133,9 @@ describeWithFlags('MomentumOptimizer', ALL_ENVS, () => {
 
     let cost = optimizer1.minimize(f, /* returnCost */ true);
 
-    const weights = optimizer1.getWeights();
     // The iterations counter and the accumulation for the variable x.
-    expect(weights.length).toEqual(2);
-
     const optimizer2 = tf.train.momentum(learningRate, momentum, useNesterov);
-    optimizer2.setWeights(weights);
+    optimizer2.setWeights(optimizer1.getWeights());
     cost = optimizer2.minimize(f, /* returnCost */ true);
     expectArraysClose(await cost.data(), 2.45);
     expectArraysClose(await x.data(), [0.44, 0.88]);

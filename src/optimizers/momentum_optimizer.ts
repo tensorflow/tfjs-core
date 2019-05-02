@@ -96,7 +96,7 @@ export class MomentumOptimizer extends SGDOptimizer {
 
   getWeights(): NamedTensor[] {
     // Order matters for Python compatibility.
-    return super.getWeights().concat(this.accumulations.map(
+    return [this.getIterationsAsWeight()].concat(this.accumulations.map(
         v => ({name: v.originalName, tensor: v.variable})));
   }
 

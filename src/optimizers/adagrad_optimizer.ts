@@ -84,7 +84,7 @@ export class AdagradOptimizer extends Optimizer {
 
   getWeights(): NamedTensor[] {
     // Order matters for Python compatibility.
-    return super.getWeights().concat(this.accumulatedGrads.map(
+    return [this.getIterationsAsWeight()].concat(this.accumulatedGrads.map(
         v => ({name: v.originalName, tensor: v.variable})));
   }
 

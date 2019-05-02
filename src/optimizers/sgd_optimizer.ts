@@ -71,7 +71,7 @@ export class SGDOptimizer extends Optimizer {
   }
 
   getWeights(): NamedTensor[] {
-    return super.getWeights();
+    return [this.getIterationsAsWeight()];
   }
 
   setWeights(weightValues: NamedTensor[]): void {

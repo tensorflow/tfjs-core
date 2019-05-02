@@ -103,7 +103,7 @@ export class AdadeltaOptimizer extends Optimizer {
     // Order matters for Python compatibility.
     const variables: OptimizerVariable[] =
         [...this.accumulatedGrads, ...this.accumulatedUpdates];
-    return super.getWeights().concat(
+    return [this.getIterationsAsWeight()].concat(
         variables.map(v => ({name: v.originalName, tensor: v.variable})));
   }
 

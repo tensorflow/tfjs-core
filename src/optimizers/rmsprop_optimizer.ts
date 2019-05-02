@@ -149,7 +149,7 @@ export class RMSPropOptimizer extends Optimizer {
     if (this.centered) {
       variables.push(...this.accumulatedMeanGrads);
     }
-    return super.getWeights().concat(
+    return [this.getIterationsAsWeight()].concat(
         variables.map(v => ({name: v.originalName, tensor: v.variable})));
   }
 
