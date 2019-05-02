@@ -23,8 +23,10 @@ Error.stackTraceLimit = Infinity;
 export type Constraints = {
   flags?: Flags;
   activeBackend?: string;
+  activePlatform?: string;
   // If defined, all backends in this array must be registered.
   registeredBackends?: string[];
+
 };
 
 export const NODE_ENVS: Constraints = {
