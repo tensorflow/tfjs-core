@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2019 Google Inc. All Rights Reserved.
+ * Copyright 2019 Google LLC. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,13 +15,17 @@
  * =============================================================================
  */
 
-import {ENV} from '@tensorflow/tfjs-core';
-
-/** Whether we submit commands to the device queue immediately. */
-ENV.registerFlag('WEBGPU_IMMEDIATE_EXECUTION_ENABLED', () => true);
-
 /**
- * Thread register block size for matmul kernel. If 0, we use the version of
- * matMul without register blocking.
+ * At any given time a single platform is active and represents and
+ * implementation of this interface. In practice, a platform is an environment
+ * where TensorFlow.js can be executed, e.g. the browser or Node.js.
  */
-ENV.registerFlag('WEBGPU_MATMUL_WORK_PER_THREAD', () => 4);
+export interface Platform {
+  /**
+   * Makes an HTTP request.
+   * @param path The URL path to make a request to
+   * @param init The request init. See init here:
+   *     https://developer.mozilla.org/en-US/docs/Web/API/Request/Request
+   */
+  fetch(path: string, requestInits?: RequestInit): Promise<Response>;
+}
