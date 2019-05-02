@@ -2944,7 +2944,8 @@ export class MathBackendCPU implements KernelBackend {
       const i = imag.slice([b, 0], [1, innerDim]);
       const input = ops.complex(r, i);
       // Run FFT by batch element.
-      const res = this.fftImpl(input, inverse).dataSync() as Float32Array;
+      const res =
+          this.readSync(this.fftImpl(input, inverse).dataId) as Float32Array;
       for (let d = 0; d < innerDim; d++) {
         const c = complex_util.getComplexWithIndex(res, d);
         realResult.values[b * innerDim + d] = c.real;

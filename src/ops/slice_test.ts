@@ -527,12 +527,12 @@ describeWithFlags('shallow slicing', ALL_ENVS, () => {
     expect(tf.memory().numTensors).toBe(0);
   });
 
-  it('delayed sync read of sliced tensor has no mem leak', () => {
+  it('delayed sync read of sliced tensor has no mem leak', async () => {
     const a = tf.zeros([10]);
     const b = tf.slice(a, 0, 1);
     const nBefore = tf.memory().numTensors;
     expect(nBefore).toBe(2);
-    b.dataSync();
+    await b.data();
     const nAfter = tf.memory().numTensors;
     expect(nAfter).toBe(2);
     tf.dispose([a, b]);
