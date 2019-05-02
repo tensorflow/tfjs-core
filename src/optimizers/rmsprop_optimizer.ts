@@ -21,7 +21,7 @@ import {zerosLike} from '../ops/ops';
 import {ConfigDict, registerClass, Serializable, SerializableConstructor} from '../serialization';
 import {NamedTensor, NamedTensorMap} from '../tensor_types';
 
-import {Optimizer, VariableWithOriginalName} from './optimizer';
+import {Optimizer, OptimizerVariable} from './optimizer';
 
 /** @doclink Optimizer */
 export class RMSPropOptimizer extends Optimizer {
@@ -29,9 +29,9 @@ export class RMSPropOptimizer extends Optimizer {
   static className = 'RMSProp';
   private centered: boolean;
 
-  private accumulatedMeanSquares: VariableWithOriginalName[] = [];
-  private accumulatedMoments: VariableWithOriginalName[] = [];
-  private accumulatedMeanGrads: VariableWithOriginalName[] = [];
+  private accumulatedMeanSquares: OptimizerVariable[] = [];
+  private accumulatedMoments: OptimizerVariable[] = [];
+  private accumulatedMeanGrads: OptimizerVariable[] = [];
 
   constructor(
       protected learningRate: number, protected decay = 0.9,
@@ -145,7 +145,7 @@ export class RMSPropOptimizer extends Optimizer {
 
   getWeights(): NamedTensor[] {
     // Order matters for Python compatibility.
-    const variables: VariableWithOriginalName[] =
+    const variables: OptimizerVariable[] =
         [...this.accumulatedMeanSquares, ...this.accumulatedMoments];
     if (this.centered) {
       variables.push(...this.accumulatedMeanGrads);

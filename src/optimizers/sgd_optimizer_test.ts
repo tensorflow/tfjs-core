@@ -63,6 +63,7 @@ describeWithFlags('SGDOptimizer', ALL_ENVS, () => {
 
     let weights = optimizer1.getWeights();
     // No iterations prior to applyGradients() call.
+    // expect(optimizer1.iterations).toEqual(0);  // TODO(cais): Fix.
     expect(weights).toEqual([]);
 
     optimizer1.minimize(() => x.square());

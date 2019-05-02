@@ -21,14 +21,14 @@ import {fill} from '../ops/ops';
 import {ConfigDict, registerClass, Serializable, SerializableConstructor} from '../serialization';
 import {NamedTensor, NamedVariableMap} from '../tensor_types';
 
-import {Optimizer, VariableWithOriginalName} from './optimizer';
+import {Optimizer, OptimizerVariable} from './optimizer';
 
 /** @doclink Optimizer */
 export class AdagradOptimizer extends Optimizer {
   /** @nocollapse */
   static className = 'Adagrad';  // Note: Name matters for Python compatibility.
 
-  private accumulatedGrads: VariableWithOriginalName[] = [];
+  private accumulatedGrads: OptimizerVariable[] = [];
 
   constructor(
       protected learningRate: number, private initialAccumulatorValue = 0.1) {

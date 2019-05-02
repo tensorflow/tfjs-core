@@ -21,7 +21,7 @@ import {div, scalar, sub, zerosLike} from '../ops/ops';
 import {ConfigDict, registerClass, Serializable, SerializableConstructor} from '../serialization';
 import {Variable} from '../tensor';
 import {NamedTensor, NamedVariableMap} from '../tensor_types';
-import {Optimizer, VariableWithOriginalName} from './optimizer';
+import {Optimizer, OptimizerVariable} from './optimizer';
 
 export class AdamaxOptimizer extends Optimizer {
   /** @nocollapse */
@@ -29,8 +29,8 @@ export class AdamaxOptimizer extends Optimizer {
   private accBeta1: Variable;
   private iteration: Variable;
 
-  private accumulatedFirstMoment: VariableWithOriginalName[] = [];
-  private accumulatedWeightedInfNorm: VariableWithOriginalName[] = [];
+  private accumulatedFirstMoment: OptimizerVariable[] = [];
+  private accumulatedWeightedInfNorm: OptimizerVariable[] = [];
 
   constructor(
       protected learningRate: number, protected beta1: number,

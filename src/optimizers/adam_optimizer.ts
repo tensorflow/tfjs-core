@@ -22,7 +22,7 @@ import {ConfigDict, registerClass, Serializable, SerializableConstructor} from '
 import {Variable} from '../tensor';
 import {NamedTensor, NamedVariableMap} from '../tensor_types';
 
-import {Optimizer, VariableWithOriginalName} from './optimizer';
+import {Optimizer, OptimizerVariable} from './optimizer';
 
 export class AdamOptimizer extends Optimizer {
   /** @nocollapse */
@@ -30,8 +30,8 @@ export class AdamOptimizer extends Optimizer {
   private accBeta1: Variable;
   private accBeta2: Variable;
 
-  private accumulatedFirstMoment: VariableWithOriginalName[] = [];
-  private accumulatedSecondMoment: VariableWithOriginalName[] = [];
+  private accumulatedFirstMoment: OptimizerVariable[] = [];
+  private accumulatedSecondMoment: OptimizerVariable[] = [];
 
   constructor(
       protected learningRate: number, protected beta1: number,
@@ -122,7 +122,7 @@ export class AdamOptimizer extends Optimizer {
 
   getWeights(): NamedTensor[] {
     // Order matters for Python compatibility.
-    const variables: VariableWithOriginalName[] =
+    const variables: OptimizerVariable[] =
         [...this.accumulatedFirstMoment, ...this.accumulatedSecondMoment];
     return super.getWeights().concat(
         variables.map(v => ({name: v.originalName, tensor: v.variable})));

@@ -22,7 +22,18 @@ import {Serializable} from '../serialization';
 import {Scalar, Variable} from '../tensor';
 import {NamedTensor, NamedTensorMap} from '../tensor_types';
 
-export interface VariableWithOriginalName {
+/**
+ * A variable that belongs to an optimizer.
+ *
+ * The `originalName` field is required for keeping track of the canonical
+ * name of the variable, which is usually the name of the model weight that
+ * the variable is related to plus a suffix, e.g., 'dense1/kernel/momentum'.
+ * The name of the `Variable` object itself cannot be used directly due to
+ * possible deduplication: Every `Variable` must have a unique name but more
+ * than one optimizer objects of the same type may be created for the same model
+ * or the same `Variable`.
+ */
+export interface OptimizerVariable {
   originalName: string;
   variable: Variable;
 }
@@ -67,6 +78,9 @@ export abstract class Optimizer extends Serializable {
     }
   }
 
+  /**
+   * The number of iterations that this optimizer instance has been invoked for.
+   */
   get iterations(): Variable {
     if (this.iterations_ == null) {
       const trainable = false;

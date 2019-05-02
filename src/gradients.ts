@@ -259,9 +259,9 @@ function valueAndGrads<O extends Tensor>(f: (...args: Tensor[]) => O): (
  *     to. Defaults to all trainable variables.
  * @returns An object with the following keys and values:
  *   - `value`: The value of the function `f`.
- *   - `grads`: The a map from the names of the variables to the gradients.
+ *   - `grads`: A map from the names of the variables to the gradients.
  *     If the `varList` argument is provided explicitly and contains a subset of
- *     untrainable variables, this map in the return value will contain keys
+ *     non-trainable variables, this map in the return value will contain keys
  *     that map the names of the non-trainable variables to `null`.
  */
 /** @doc {heading: 'Training', subheading: 'Gradients'} */
@@ -286,16 +286,15 @@ function variableGrads(f: () => Scalar, varList?: Variable[]):
     }
   }
 
-  const specifiedNonTrainable: Variable[] = specifiedVarList ?
-      varList.filter(variable => !variable.trainable) : null;
+  const specifiedNonTrainable: Variable[] =
+      specifiedVarList ? varList.filter(variable => !variable.trainable) : null;
 
   // Prune non-trainable variables.
   const originalVarCount = varList.length;
   varList = varList.filter(variable => variable.trainable);
   util.assert(
       varList.length > 0,
-      () =>
-          `variableGrads() expects at least one of the input variables to ` +
+      () => `variableGrads() expects at least one of the input variables to ` +
           `be trainable, but none of the ${originalVarCount} variables is ` +
           `trainable.`);
 

@@ -20,14 +20,14 @@ import {dispose, tidy} from '../globals';
 import {zerosLike} from '../ops/ops';
 import {ConfigDict, registerClass, Serializable, SerializableConstructor} from '../serialization';
 import {NamedTensor, NamedVariableMap} from '../tensor_types';
-import {Optimizer, VariableWithOriginalName} from './optimizer';
+import {Optimizer, OptimizerVariable} from './optimizer';
 
 /** @doclink Optimizer */
 export class AdadeltaOptimizer extends Optimizer {
   /** @nocollapse */
   static className = 'AdadeltaOptimizer';
-  private accumulatedGrads: VariableWithOriginalName[] = [];
-  private accumulatedUpdates: VariableWithOriginalName[] = [];
+  private accumulatedGrads: OptimizerVariable[] = [];
+  private accumulatedUpdates: OptimizerVariable[] = [];
 
   constructor(
       protected learningRate: number, protected rho: number,
@@ -102,7 +102,7 @@ export class AdadeltaOptimizer extends Optimizer {
 
   getWeights(): NamedTensor[] {
     // Order matters for Python compatibility.
-    const variables: VariableWithOriginalName[] =
+    const variables: OptimizerVariable[] =
         [...this.accumulatedGrads, ...this.accumulatedUpdates];
     return super.getWeights().concat(
         variables.map(v => ({name: v.originalName, tensor: v.variable})));

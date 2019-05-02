@@ -21,7 +21,7 @@ import {NamedTensor, NamedTensorMap} from '../tensor_types';
 import {TypedArray} from '../types';
 import {sizeFromShape} from '../util';
 
-import {DTYPE_VALUE_SIZE_MAP, ModelArtifacts, ModelArtifactsInfo, WeightsManifestEntry, WeightGroup} from './types';
+import {DTYPE_VALUE_SIZE_MAP, ModelArtifacts, ModelArtifactsInfo, WeightGroup, WeightsManifestEntry} from './types';
 
 /**
  * Encode a map from names to weight values as an ArrayBuffer, along with an
@@ -59,7 +59,7 @@ export async function encodeWeights(
     }
     const spec: WeightsManifestEntry = {name, shape: t.shape, dtype: t.dtype};
     if (group != null) {
-      spec.type = group;
+      spec.group = group;
     }
     specs.push(spec);
     dataPromises.push(t.data());

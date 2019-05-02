@@ -22,7 +22,7 @@ import {ConfigDict, registerClass, Serializable, SerializableConstructor} from '
 import {Scalar, Tensor} from '../tensor';
 import {NamedTensor, NamedVariableMap} from '../tensor_types';
 
-import {VariableWithOriginalName} from './optimizer';
+import {OptimizerVariable} from './optimizer';
 import {SGDOptimizer} from './sgd_optimizer';
 
 /** @doclink Optimizer */
@@ -30,7 +30,7 @@ export class MomentumOptimizer extends SGDOptimizer {
   /** @nocollapse */
   static className = 'MomentumOptimizer';
   private m: Scalar;
-  private accumulations: VariableWithOriginalName[] = [];
+  private accumulations: OptimizerVariable[] = [];
 
   constructor(
       protected learningRate: number, private momentum: number,

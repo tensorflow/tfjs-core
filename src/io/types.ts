@@ -90,12 +90,12 @@ export declare interface WeightsManifestEntry {
   /**
    * Type of the weight.
    *
-   * Optinoal.
+   * Optional.
    *
    * The value 'optimizer' indicates the weight belongs to an optimizer
-   * (i.e., not the proper part of a model).
+   * (i.e., used only during model training and not during inference).
    */
-  type?: WeightGroup;
+  group?: WeightGroup;
 
   /**
    * Information for dequantization of the weight.
@@ -114,14 +114,14 @@ export declare interface WeightsManifestEntry {
 export interface SaveConfig {
   /**
    * Whether to save only the trainable weights of the model, ignoring the
-   * untrainable ones.
+   * non-trainable ones.
    */
   trainableOnly?: boolean;
 
   /**
    * Whether the optimizer will be saved (if exists).
    *
-   * Deafult: `false`.
+   * Default: `false`.
    */
   includeOptimizer?: boolean;
 }
