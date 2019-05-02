@@ -15,13 +15,31 @@
  * =============================================================================
  */
 
+import {ENV} from '../environment';
 import {describeWithFlags, NODE_ENVS} from '../jasmine_util';
 
 import * as platform_node from './platform_node';
 import {PlatformNode} from './platform_node';
 
 describeWithFlags('PlatformNode', NODE_ENVS, () => {
-  it('fetch should use node-fetch', async () => {
+  it('fetch should use global.fetch if defined', async () => {
+    const globalFetch = ENV.global.fetch;
+
+    spyOn(ENV.global, 'fetch').and.returnValue(() => {});
+
+    const platform = new PlatformNode();
+
+    await platform.fetch('test/url', {method: 'GET'});
+
+    expect(ENV.global.fetch).toHaveBeenCalledWith('test/url', {method: 'GET'});
+
+    ENV.global.fetch = globalFetch;
+  });
+
+  it('fetch should use node-fetch with ENV.global.fetch is null', async () => {
+    const globalFetch = ENV.global.fetch;
+    ENV.global.fetch = null;
+
     const platform = new PlatformNode();
 
     const savedFetch = platform_node.systemFetch;
@@ -47,5 +65,6 @@ describeWithFlags('PlatformNode', NODE_ENVS, () => {
 
     // @ts-ignore
     platform_node.systemFetch = savedFetch;
+    ENV.global.fetch = globalFetch;
   });
 });

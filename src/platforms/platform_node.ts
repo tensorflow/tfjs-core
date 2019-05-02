@@ -27,6 +27,10 @@ export const getNodeFetch = {
 export let systemFetch: (url: string, init?: RequestInit) => Promise<Response>;
 export class PlatformNode implements Platform {
   fetch(path: string, requestInits?: RequestInit): Promise<Response> {
+    if (ENV.global.fetch != null) {
+      return ENV.global.fetch(path, requestInits);
+    }
+
     if (systemFetch == null) {
       systemFetch = getNodeFetch.importFetch();
     }
