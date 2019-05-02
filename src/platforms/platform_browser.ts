@@ -18,12 +18,6 @@ import {ENV} from '../environment';
 import {Platform} from './platform';
 
 export class PlatformBrowser implements Platform {
-  /**
-   * Makes an HTTP GET request.
-   * @param path The URL path to make a request to
-   * @param init The request init. See init here:
-   *     https://developer.mozilla.org/en-US/docs/Web/API/Request/Request
-   */
   fetch(path: string, init?: RequestInit): Promise<Response> {
     return fetch(path, init);
   }

@@ -16,5 +16,11 @@
  */
 
 export interface Platform {
+  /**
+   * Makes an HTTP GET request.
+   * @param path The URL path to make a request to
+   * @param init The request init. See init here:
+   *     https://developer.mozilla.org/en-US/docs/Web/API/Request/Request
+   */
   fetch(path: string, requestInits?: RequestInit): Promise<Response>;
 }
