@@ -112,7 +112,6 @@ export class MatMulPackedProgram implements WebGPUProgram {
   dispatch: [number, number, number];
   workPerThread: number;
   variableNames = ['A', 'B'];
-  uniforms = 'uint dimAOuter, dimInner, dimBOuter, batch;';
   tileSize: [number, number, number] = [16, 16, 1];
 
   constructor(outputShape: [number, number, number], workPerThread: number) {
@@ -127,6 +126,10 @@ export class MatMulPackedProgram implements WebGPUProgram {
     // about boundary conditions when loading from Asub / Bsub when tiles fit
     // neatly inside of output. May slightly improve performance.
     this.userCode = `
+      uint dimAOuter = aShape[1];
+      uint dimInner = aShape[2];
+      uint dimBOuter = bShape[2];
+
       ${makeMatMulPackedSource(workPerThread)}
 
       float mm_readA(uint row, uint col) {

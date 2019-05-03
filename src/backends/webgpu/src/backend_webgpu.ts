@@ -186,6 +186,10 @@ export class WebGPUBackend extends KernelBackend {
     let dimUniforms: number[] = [];
     inputs.concat(output).forEach(d => {
       dimUniforms.push(...d.shape);
+      // vec3 and vec4 have the same alignment.
+      if (d.shape.length === 3) {
+        dimUniforms.push(0);
+      }
     });
 
     if (additionalUniforms) {
@@ -289,9 +293,11 @@ export class WebGPUBackend extends KernelBackend {
   batchMatMul(
       a: Tensor3D, b: Tensor3D, transposeA: boolean,
       transposeB: boolean): Tensor3D {
-    const outerShapeA = transposeA ? a.shape[2] : a.shape[1];
-    const outerShapeB = transposeB ? b.shape[1] : b.shape[2];
-    const sharedDim = transposeA ? a.shape[1] : a.shape[2];
+    // TODO: Support transposed inputs.
+    // const outerShapeA = transposeA ? a.shape[2] : a.shape[1];
+    // const outerShapeB = transposeB ? b.shape[1] : b.shape[2];
+    const outerShapeA = a.shape[1];
+    const outerShapeB = b.shape[2];
     const [batch, , ] = a.shape;
 
     const output =
@@ -309,14 +315,7 @@ export class WebGPUBackend extends KernelBackend {
           output.shape, ENV.get('WEBGPU_MATMUL_WORK_PER_THREAD') as number);
     }
 
-    const dimensionsData =
-        new Uint32Array([outerShapeA, sharedDim, outerShapeB, batch]);
-    const dimensions = this.makeUniforms(dimensionsData);
-
-    const result =
-        this.compileAndRun(program, [a, b], output, dimensions) as Tensor3D;
-
-    this.destroyBuffer(dimensionsData.byteLength, dimensions.resource.buffer);
+    const result = this.compileAndRun(program, [a, b], output) as Tensor3D;
 
     return result;
   }
