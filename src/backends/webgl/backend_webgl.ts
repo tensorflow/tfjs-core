@@ -1,3 +1,16 @@
+declare global {
+  interface Window {
+    // tslint:disable-next-line:no-any
+    debug: any;
+    // tslint:disable-next-line:no-any
+    _tfengine: any;
+  }
+}
+
+if (window.debug == null) {
+  window.debug = {};
+}
+
 /**
  * @license
  * Copyright 2017 Google Inc. All Rights Reserved.
@@ -2399,8 +2412,9 @@ export class MathBackendWebGL implements KernelBackend {
       texData: this.texData.get(output.dataId),
       isUniform: false
     };
-    const key = gpgpu_math.makeShaderKey(program, inputsData, outputData);
-    const binary = this.getAndSaveBinary(key, () => {
+    const shortKey = gpgpu_math.makeShaderKey(program, inputsData, outputData);
+    const key = gpgpu_math.makeShaderKeyWhole(program, inputsData, outputData);
+    const binary = this.getAndSaveBinary(key, shortKey, () => {
       return gpgpu_math.compileProgram(
           this.gpgpu, program, inputsData, outputData);
     });
@@ -2426,11 +2440,40 @@ export class MathBackendWebGL implements KernelBackend {
     return output;
   }
 
-  private getAndSaveBinary(key: string, getBinary: () => GPGPUBinary):
-      GPGPUBinary {
-    if (!(key in this.binaryCache)) {
-      this.binaryCache[key] = getBinary();
+  private recordCacheStats(
+      key: string, shortKey: string, binary: GPGPUBinary, scopeName: string) {
+    if (window.debug.cacheMissMap[scopeName] == null) {
+      window.debug.cacheMissMap[scopeName] = 0;
+      window.debug.cacheMissShortkeyVariants[scopeName] = new Set();
+      window.debug.cacheMissLongkeyVariants[scopeName] = new Set();
+      window.debug.cacheMissBinaryVariants[scopeName] = new Set();
     }
+
+    window.debug.cacheMissMap[scopeName] += 1;
+    window.debug.cacheMissShortkeyVariants[scopeName].add(shortKey);
+    window.debug.cacheMissLongkeyVariants[scopeName].add(key);
+    window.debug.cacheMissBinaryVariants[scopeName].add(binary);
+  }
+
+  private getAndSaveBinary(
+      key: string, shortKey: string,
+      getBinary: () => GPGPUBinary): GPGPUBinary {
+    if (!(key in this.binaryCache)) {
+      const engineState = window._tfengine.state;
+      const scopeName =
+          engineState.activeScope != null ? engineState.activeScope.name : '';
+      console.time(`getBinary ${scopeName}`);
+      this.binaryCache[key] = getBinary();
+      console.timeEnd(`getBinary ${scopeName}`);
+
+      this.recordCacheStats(key, shortKey, this.binaryCache[key], scopeName);
+    } else {
+      if (window.debug.cacheHitCounter == null) {
+        window.debug.cacheHitCounter = 0;
+      }
+      window.debug.cacheHitCounter += 1;
+    }
+
     return this.binaryCache[key];
   }
 

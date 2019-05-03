@@ -17,7 +17,13 @@
 
 import {getBroadcastDims} from '../../ops/broadcast_util';
 import * as util from '../../util';
+
+// TK this introduces a circular import. Check if this will be a problem
+// for g3 sync
+import {GPGPUProgram} from '../../webgl';
+
 import {getGlslDifferences, GLSL} from './glsl_version';
+import {TensorData} from './gpgpu_math';
 import * as shader_util from './shader_compiler_util';
 
 export type ShapeInfo = {
@@ -32,6 +38,46 @@ export type InputInfo = {
   name: string,
   shapeInfo: ShapeInfo
 };
+
+export function assembleProgramSource(
+    program: GPGPUProgram, inputs: TensorData[], output: TensorData) {
+  console.time('assembleProgramSource');
+  const userCode = program.userCode;
+
+  const inputInfos: InputInfo[] = inputs.map((input, i) => {
+    const shapeInfo: ShapeInfo = {
+      logicalShape: input.shape,
+      texShape: input.isUniform ? null : input.texData.texShape,
+      isUniform: input.isUniform,
+      isPacked: input.isUniform ? false : input.texData.isPacked,
+      flatOffset: null
+    };
+    if (input.texData != null && input.texData.slice != null &&
+        input.texData.slice.flatOffset > 0) {
+      shapeInfo.flatOffset = input.texData.slice.flatOffset;
+    }
+    return {name: program.variableNames[i], shapeInfo};
+  });
+
+  // const inShapeInfos = inputInfos.map(x => x.shapeInfo);
+  const outShapeInfo: ShapeInfo = {
+    logicalShape: output.shape,
+    texShape: output.texData.texShape,
+    isUniform: false,
+    isPacked: output.texData.isPacked,
+    flatOffset: null
+  };
+
+  const source = makeShader(
+      inputInfos, outShapeInfo, userCode, program.usesPackedTextures);
+
+  console.timeEnd('assembleProgramSource');
+  return {
+    source,
+    inputInfos,
+    outShapeInfo,
+  };
+}
 
 export function makeShader(
     inputsInfo: InputInfo[], outputShape: ShapeInfo, userCode: string,
@@ -123,10 +169,34 @@ function getPackedSamplerFromInInfo(inInfo: InputInfo): string {
   }
 }
 
+function getShapeUniformDeclaration(name: string, shapeInfo: ShapeInfo) {
+  // return `uniform int shape${name}[${shapeInfo.logicalShape.length}]; \n`;
+
+  // We don't want to the program text to change based on shape.
+  // so allocate the largest array the shape info could possible use at all
+  // times.
+  const MAX_TENSOR_RANK =
+      6;  // TODO THIS WOULD NEED TO BE MORE GLOBALLY DECLARED.
+  const TEXSHAPE_RANK =
+      2;  // TODO THIS WOULD NEED TO BE MORE GLOBALLY DECLARED.
+  let snip = `uniform int shape${name}[${MAX_TENSOR_RANK}]; \n`;
+  snip += `uniform float texShape${name}[${TEXSHAPE_RANK}]; \n`;
+  snip += `// ORIG SHAPE [${shapeInfo.logicalShape.join(',')}] \n`;  // TEMP
+  if (shapeInfo.texShape) {
+    snip += `// TEX SHAPE [${shapeInfo.texShape.join(',')}] \n`;  // TEMP
+  }
+  console.log('getShapeUniformDeclaration\n', snip);
+  return snip;
+}
+
 function getInputSamplingSnippet(
     inInfo: InputInfo, outShapeInfo: ShapeInfo,
     usesPackedTextures = false): string {
   let res = '';
+  if (inInfo.shapeInfo.logicalShape.length > 0) {
+    console.log('inInfo', inInfo);
+    res += getShapeUniformDeclaration(inInfo.name, inInfo.shapeInfo);
+  }
   if (usesPackedTextures) {
     res += getPackedSamplerFromInInfo(inInfo);
   } else {
@@ -755,16 +825,36 @@ function getSampler2D(inputInfo: InputInfo): string {
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
   const texShape = inputInfo.shapeInfo.texShape;
 
+  const inputName = inputInfo.name;
+
   if (texShape != null && util.arraysEqual(shape, texShape)) {
     const texNumR = texShape[0];
     const texNumC = texShape[1];
-    return `
-    float ${funcName}(int row, int col) {
-      vec2 uv = (vec2(col, row) + halfCR) / vec2(${texNumC}.0, ${texNumR}.0);
-      return sampleTexture(${texName}, uv);
-    }
-  `;
+
+    console.log('getSampler2D', texNumR, texNumC);
+    const texShapeUniformName = `texShape${inputName}`;
+    console.log('inputInfo', inputInfo);
+    console.log('texShapeUniformName', texShapeUniformName);
+
+    // return `
+    //   float ${funcName}(int row, int col) {
+    //     vec2 uv = (vec2(col, row) + halfCR) / vec2(${texNumC}.0,
+    //     ${texNumR}.0); return sampleTexture(${texName}, uv);
+    //   }
+    // `;
+
+    // TKCURR
+    const SNIP = `
+        float ${funcName}(int row, int col) {
+          vec2 uv = (vec2(col, row) + halfCR) / vec2(${
+        texShapeUniformName}[1], ${texShapeUniformName}[0]);
+          return sampleTexture(${texName}, uv);
+        }
+      `;
+    console.log('sampler', SNIP);
+    return SNIP;
   }
+
 
   const {newShape, keptDims} = util.squeezeShape(shape);
   const squeezedShape = newShape;

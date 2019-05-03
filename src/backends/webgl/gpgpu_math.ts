@@ -21,8 +21,7 @@ import {TypedArray} from '../../types';
 import * as util from '../../util';
 
 import {GPGPUContext} from './gpgpu_context';
-import * as shader_compiler from './shader_compiler';
-import {InputInfo, ShapeInfo} from './shader_compiler';
+import {assembleProgramSource, InputInfo, ShapeInfo} from './shader_compiler';
 import {TextureData} from './tex_util';
 
 export interface GPGPUProgram {
@@ -57,33 +56,20 @@ export interface TensorData {
 export function compileProgram<T extends Tensor, K extends Tensor>(
     gpgpu: GPGPUContext, program: GPGPUProgram, inputs: TensorData[],
     output: TensorData): GPGPUBinary {
-  const userCode = program.userCode;
-  const inputInfos: InputInfo[] = inputs.map((input, i) => {
-    const shapeInfo: ShapeInfo = {
-      logicalShape: input.shape,
-      texShape: input.isUniform ? null : input.texData.texShape,
-      isUniform: input.isUniform,
-      isPacked: input.isUniform ? false : input.texData.isPacked,
-      flatOffset: null
-    };
-    if (input.texData != null && input.texData.slice != null &&
-        input.texData.slice.flatOffset > 0) {
-      shapeInfo.flatOffset = input.texData.slice.flatOffset;
-    }
-    return {name: program.variableNames[i], shapeInfo};
-  });
-  const inShapeInfos = inputInfos.map(x => x.shapeInfo);
-  const outShapeInfo: ShapeInfo = {
-    logicalShape: output.shape,
-    texShape: output.texData.texShape,
-    isUniform: false,
-    isPacked: output.texData.isPacked,
-    flatOffset: null
-  };
-  const source = shader_compiler.makeShader(
-      inputInfos, outShapeInfo, userCode, program.usesPackedTextures);
+  const engineState = window._tfengine.state;
+  const scopeName =
+      engineState.activeScope != null ? engineState.activeScope.name : '';
+  console.group(`compileProgram: ${scopeName}`);
 
+
+
+  const {source, inputInfos, outShapeInfo} =
+      assembleProgramSource(program, inputs, output);
+
+  console.log('compileProgram*****', inputInfos);
   const webGLProgram = gpgpu.createProgram(source);
+
+  // TKTK uniforms
 
   // Add special uniforms (NAN, INFINITY)
   let infLoc: WebGLUniformLocation = null;
@@ -103,12 +89,32 @@ export function compileProgram<T extends Tensor, K extends Tensor>(
         gpgpu.getUniformLocation(webGLProgram, `offset${varName}`, shouldThrow);
   }
 
+  // Add uniforms for input shapes;
+
+  for (let i = 0; i < inputInfos.length; i++) {
+    const inputInfo = inputInfos[i];
+    console.log('Add uniformsinputInfo', inputInfo);
+    const inShapeInfo = inputInfo.shapeInfo;
+    if (inShapeInfo.logicalShape.length > 0) {
+      const varShapeName = `shape${inputInfo.name}`;
+      const varTexShapeName = `texShape${inputInfo.name}`;
+      const shouldThrow = false;
+      uniformLocations[varShapeName] =
+          gpgpu.getUniformLocation(webGLProgram, varShapeName, shouldThrow);
+      console.log('set varTexShapeName', varTexShapeName, inputInfo);
+      uniformLocations[varTexShapeName] =
+          gpgpu.getUniformLocation(webGLProgram, varTexShapeName, shouldThrow);
+    }
+  }
+
+  console.groupEnd();
+
   return {
     program,
     source,
     webGLProgram,
     uniformLocations,
-    inShapeInfos,
+    inShapeInfos: inputInfos.map(x => x.shapeInfo),
     outShapeInfo,
     infLoc,
     nanLoc,
@@ -198,6 +204,32 @@ export function runProgram<T extends Tensor, K extends Tensor>(
         gpgpu.gl.uniform1fv(varLoc, vals);
       }
       return;
+    } else {
+      console.log('inputs.forEach: input', i, input);
+      // Upload the shape information as a uniform as well.
+      // Upload the shape information for this input to the corresponding
+      // uniform;
+      const varShapeName = `shape${varName}`;
+      const varShapeLoc = binary.uniformLocations[varShapeName];
+      console.log('varShapeLoc', varShapeLoc);
+      let shape: number[]|Float32Array = input.shape;
+      if (!(shape instanceof Float32Array)) {
+        shape = new Float32Array(shape);
+      }
+      gpgpu.gl.uniform1fv(varShapeLoc, shape);
+
+      // TK UPLOADUNIFORM
+
+      const varTexShapeName = `texShape${varName}`;
+      console.log('varTexShapeName', varTexShapeName);
+      const varTexShapeLoc = binary.uniformLocations[varTexShapeName];
+      console.log('varTexShapeLoc', varTexShapeLoc);
+      let texShape: number[]|Float32Array = input.texData.shape;
+      if (!(texShape instanceof Float32Array)) {
+        texShape = new Float32Array(texShape);
+      }
+      console.log('runProgram: texShape', texShape);
+      gpgpu.gl.uniform1fv(varTexShapeLoc, texShape);
     }
 
     // If the input was sliced, upload the flat offset index.
@@ -216,6 +248,7 @@ export function runProgram<T extends Tensor, K extends Tensor>(
 
 export function makeShaderKey(
     program: GPGPUProgram, inputs: TensorData[], output: TensorData): string {
+  console.time('makeShaderKey:partial');
   let keyInputs = '';
   inputs.concat(output).forEach(x => {
     const hasOffset = x.texData != null && x.texData.slice != null &&
@@ -227,5 +260,14 @@ export function makeShaderKey(
   let key = program.constructor.name;
   // Fast string concat. See https://jsperf.com/string-concatenation/14.
   key += '_' + keyInputs + '_' + keyUserCode;
+  console.timeEnd('makeShaderKey:partial');
   return key;
+}
+
+export function makeShaderKeyWhole(
+    program: GPGPUProgram, inputs: TensorData[], output: TensorData) {
+  console.time('makeShaderKey:whole');
+  const {source} = assembleProgramSource(program, inputs, output);
+  console.timeEnd('makeShaderKey:whole');
+  return source;
 }
