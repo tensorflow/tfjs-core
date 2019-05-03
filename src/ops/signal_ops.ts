@@ -28,7 +28,7 @@ import {fill, tensor1d, tensor2d} from './tensor_ops';
  * See: https://en.wikipedia.org/wiki/Window_function#Hann_and_Hamming_windows
  *
  * ```js
- * tf.hannWindow(10).print();
+ * tf.signal.hannWindow(10).print();
  * ```
  * @param The length of window
  */
@@ -45,7 +45,7 @@ function hannWindow_(windowLength: number): Tensor1D {
  * See: https://en.wikipedia.org/wiki/Window_function#Hann_and_Hamming_windows
  *
  * ```js
- * tf.hammingWindow(10).print();
+ * tf.signal.hammingWindow(10).print();
  * ```
  * @param The length of window
  */
@@ -61,9 +61,9 @@ function hammingWindow_(windowLength: number): Tensor1D {
  * Slides a window size with frameStep.
  *
  * ```js
- * tf.frame([1, 2, 3], 2, 1).print();
+ * tf.signal.frame([1, 2, 3], 2, 1).print();
  * ```
- * @param input The input tensor to be expanded
+ * @param signal The input tensor to be expanded
  * @param frameLength Length of each frame
  * @param frameStep The frame hop size in samples.
  */

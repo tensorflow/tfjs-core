@@ -15,61 +15,46 @@
  * =============================================================================
  */
 
+import {computeDispatch} from '../webgpu_util';
+
 import {WebGPUProgram} from './webgpu_program';
 
-export class MatMulProgram implements WebGPUProgram {
-  outputShape: number[];
-  userCode: string;
-  dispatch: [number, number, number];
-  variableNames = ['A', 'B'];
-  uniforms = 'uint dimAOuter, dimInner, dimBOuter, batch;';
-  tileSize: [number, number] = [16, 16];  // Must be square.
+export const matMulHeader = `
+  float mm_readA(uint row, uint col);
+  float mm_readB(uint row, uint col);
+  void mm_write(uint row, uint col, float value);
+  void mm_matMul(uint dimAOuter, uint dimInner, uint dimBOuter);`;
 
-  constructor(outputShape: [number, number, number]) {
-    this.outputShape = outputShape;
-    this.dispatch = [
-      Math.ceil(outputShape[1] / this.tileSize[0]),
-      Math.ceil(outputShape[2] / this.tileSize[1]), 1
-    ];
+export function makeMatMulSource(): string {
+  return `
+    ${matMulHeader}
 
-    this.userCode = `
-      shared float Asub[TileSize.x][TileSize.x];
-      shared float Bsub[TileSize.x][TileSize.x];
+    const uint MatTileSize = gl_WorkGroupSize.x;  // .x == .y
+    shared float mm_Asub[MatTileSize][MatTileSize];
+    shared float mm_Bsub[MatTileSize][MatTileSize];
 
-      void main() {
-        uint localRow = gl_LocalInvocationID.x; // < TileSize.x
-        uint localCol = gl_LocalInvocationID.y; // < TileSize.x
-        uint globalRow = TileSize.x*gl_WorkGroupID.x + localRow; // < dimAOuter
-        uint globalCol = TileSize.x*gl_WorkGroupID.y + localCol; // < dimInner
+    void mm_matMul(uint dimAOuter, uint dimInner, uint dimBOuter) {
+        uint localRow = gl_LocalInvocationID.y;  // 0..MatTileSize
+        uint localCol = gl_LocalInvocationID.x;  // 0..MatTileSize
+        uint globalRow = gl_GlobalInvocationID.y;  // AOuter
+        uint globalCol = gl_GlobalInvocationID.x;  // Inner
 
         float acc = 0.0;
 
-        uint numTiles = (dimInner - 1) / TileSize.x + 1;
+        uint numTiles = (dimInner - 1) / MatTileSize + 1;
 
-        for (uint t=0; t<numTiles; t++) {
+        for (uint t = 0; t < numTiles; t++) {
           // Load one tile of A and B into local memory
-          uint tiledACol = TileSize.x*t + localCol;
-          uint tiledBRow = TileSize.x*t + localRow;
-
-          uint AFlatIndex = globalRow * dimInner + tiledACol;
-          if(AFlatIndex < dimAOuter * dimInner) {
-            Asub[localRow][localCol] = A[AFlatIndex];
-          } else {
-            Asub[localRow][localCol] = 0.0;
-          }
-
-          uint BFlatIndex = tiledBRow * dimBOuter + globalCol;
-          if(BFlatIndex < dimInner * dimBOuter) {
-            Bsub[localRow][localCol] = B[BFlatIndex];
-          } else {
-            Bsub[localRow][localCol] = 0.0;
-          }
+          uint tiledACol = MatTileSize * t + localCol;
+          uint tiledBRow = MatTileSize * t + localRow;
+          mm_Asub[localRow][localCol] = mm_readA(globalRow, tiledACol);
+          mm_Bsub[localRow][localCol] = mm_readB(tiledBRow, globalCol);
 
           // Synchronise to make sure the tile is loaded
           barrier();
 
-          for (uint k=0; k<TileSize.x; k++) {
-            acc += Asub[localRow][k] * Bsub[k][localCol];
+          for (uint k = 0; k < MatTileSize; k++) {
+            acc += mm_Asub[localRow][k] * mm_Bsub[k][localCol];
           }
 
           // Synchronise before loading the next tile
@@ -77,8 +62,51 @@ export class MatMulProgram implements WebGPUProgram {
         }
 
         if (globalCol < dimBOuter && globalRow < dimAOuter) {
-          setOutput(globalRow * dimBOuter + globalCol, acc);
+          mm_write(globalRow, globalCol, acc);
         }
+      }
+  `;
+}
+
+export class MatMulProgram implements WebGPUProgram {
+  outputShape: number[];
+  userCode: string;
+  dispatch: [number, number, number];
+  variableNames = ['A', 'B'];
+  uniforms = 'uint dimAOuter, dimInner, dimBOuter, batch;';
+  workGroupSize: [number, number, number] = [16, 16, 1];  // Must be square.
+
+  constructor(outputShape: [number, number, number]) {
+    this.outputShape = outputShape;
+    const dispatchLayout = {x: [1], y: [2], z: [0]};
+    this.dispatch =
+        computeDispatch(dispatchLayout, this.outputShape, this.workGroupSize);
+
+    this.userCode = `
+      ${makeMatMulSource()}
+
+      float mm_readA(uint row, uint col) {
+        if (row < dimAOuter && col < dimInner) {
+          return A[row * dimInner + col];
+        } else {
+          return 0.0;
+        }
+      }
+
+      float mm_readB(uint row, uint col) {
+        if (row < dimInner && col < dimBOuter) {
+          return B[row * dimBOuter + col];
+        } else {
+          return 0.0;
+        }
+      }
+
+      void mm_write(uint row, uint col, float value) {
+        setOutput(row * dimBOuter + col, value);
+      }
+
+      void main() {
+        mm_matMul(dimAOuter, dimInner, dimBOuter);
       }
     `;
   }
