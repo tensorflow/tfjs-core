@@ -88,8 +88,8 @@ export class AdagradOptimizer extends Optimizer {
         v => ({name: v.originalName, tensor: v.variable})));
   }
 
-  setWeights(weightValues: NamedTensor[]): void {
-    weightValues = this.setIterations(weightValues);
+  async setWeights(weightValues: NamedTensor[]): Promise<void> {
+    weightValues = await this.setIterations(weightValues);
     const trainable = false;
     this.accumulatedGrads = weightValues.map(
         v => ({originalName: v.name, variable: v.tensor.variable(trainable)}));

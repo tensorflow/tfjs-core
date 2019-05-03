@@ -93,7 +93,7 @@ describeWithFlags('AdadeltaOptimizer', ALL_ENVS, () => {
     expect(weights[0].name).toEqual('iter');
 
     const optimizer2 = tf.train.adadelta(learningRate, rho);
-    optimizer2.setWeights(weights);
+    await optimizer2.setWeights(weights);
 
     cost = optimizer2.minimize(f, /* returnCost */ true);
     expectArraysClose(await cost.data(), 3.2);

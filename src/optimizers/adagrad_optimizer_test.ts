@@ -86,7 +86,7 @@ describeWithFlags('AdagradOptimizer', ALL_ENVS, () => {
     expect(weights[1].name).toEqual(`${x.name}/accumulator`);
 
     const optimizer2 = tf.train.adam(learningRate, initialAccumulatorValue);
-    optimizer2.setWeights(weights);
+    await optimizer2.setWeights(weights);
 
     cost = optimizer2.minimize(f, /* returnCost */ true);
     expectArraysClose(await cost.data(), 18.82179);

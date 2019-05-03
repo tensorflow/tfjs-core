@@ -74,8 +74,8 @@ export class SGDOptimizer extends Optimizer {
     return [this.getIterationsAsWeight()];
   }
 
-  setWeights(weightValues: NamedTensor[]): void {
-    weightValues = this.setIterations(weightValues);
+  async setWeights(weightValues: NamedTensor[]): Promise<void> {
+    weightValues = await this.setIterations(weightValues);
     if (weightValues.length !== 0) {
       throw new Error('SGD optimizer does not have settable weights.');
     }

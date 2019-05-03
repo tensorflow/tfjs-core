@@ -63,7 +63,6 @@ describeWithFlags('SGDOptimizer', ALL_ENVS, () => {
 
     let weights = optimizer1.getWeights();
     expect(optimizer1.iterations).toEqual(0);
-    expect(weights).toEqual([]);
 
     optimizer1.minimize(() => x.square());
 
@@ -74,13 +73,14 @@ describeWithFlags('SGDOptimizer', ALL_ENVS, () => {
     expectArraysClose(await weights[0].tensor.data(), 1);
 
     const optimizer2 = tf.train.sgd(learningRate);
-    optimizer2.setWeights(weights);
+    await optimizer2.setWeights(weights);
+    console.log('Calling optimizer2.minimize()');  // DEBUG
     optimizer2.minimize(() => x.square());
     expectArraysClose(await x.data(), 2.56);
     expect(optimizer2.iterations).toEqual(2);
 
     const optimizer3 = tf.train.sgd(learningRate);
-    optimizer3.setWeights(optimizer2.getWeights());
+    await optimizer3.setWeights(optimizer2.getWeights());
     optimizer3.minimize(() => x.square());
     expectArraysClose(await x.data(), 2.048);
     expect(optimizer3.iterations).toEqual(3);

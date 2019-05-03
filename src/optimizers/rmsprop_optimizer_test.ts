@@ -166,7 +166,7 @@ describeWithFlags('RMSPropOptimizer', ALL_ENVS, () => {
     expect(weights.length).toEqual(3);
 
     const optimizer2 = tf.train.rmsprop(learningRate, rho, moment);
-    optimizer2.setWeights(weights);
+    await optimizer2.setWeights(weights);
 
     cost = optimizer2.minimize(f, /* returnCost */ true);
     expectArraysClose(cost.dataSync(), 2.7167187);
@@ -196,7 +196,7 @@ describeWithFlags('RMSPropOptimizer', ALL_ENVS, () => {
 
     const optimizer2 =
         tf.train.rmsprop(learningRate, rho, moment, epsilon, centered);
-    optimizer2.setWeights(weights);
+    await optimizer2.setWeights(weights);
 
     cost = optimizer2.minimize(f, /* returnCost */ true);
     expectArraysClose(await cost.data(), 2.668063);
@@ -205,7 +205,7 @@ describeWithFlags('RMSPropOptimizer', ALL_ENVS, () => {
 
     const optimizer3 =
         tf.train.rmsprop(learningRate, rho, moment, epsilon, centered);
-    optimizer3.setWeights(optimizer2.getWeights());
+    await optimizer3.setWeights(optimizer2.getWeights());
     cost = optimizer3.minimize(f, /* returnCost */ true);
     expectArraysClose(await cost.data(), 1.520341);
     expect(optimizer3.iterations).toEqual(3);

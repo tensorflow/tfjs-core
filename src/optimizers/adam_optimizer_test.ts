@@ -100,7 +100,7 @@ describeWithFlags('AdamOptimizer', ALL_ENVS, () => {
     expect(weights[2].name).toEqual(`${x.name}/v`);
 
     const optimizer2 = tf.train.adam(learningRate, beta1, beta2);
-    optimizer2.setWeights(weights);
+    await optimizer2.setWeights(weights);
 
     cost = optimizer2.minimize(f, /* returnCost */ true);
     expectArraysClose(await cost.data(), 18.82);

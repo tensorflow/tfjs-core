@@ -89,6 +89,7 @@ export abstract class Optimizer extends Serializable {
   }
 
   protected incrementIterations() {
+    console.log('In incrementIterations: iter=', this.iterations);  // DEBUG
     this.iterations_ = this.iterations + 1;
   }
 
@@ -127,21 +128,20 @@ export abstract class Optimizer extends Serializable {
 
   getIterationsAsWeight(): NamedTensor {
     if (this.iterations_ == null) {
-      return null;
-    } else {
-      return {
-        name: 'iter',  // Named for Python compatibility.
-        // TODO(cais): Use 'int64' type when available.
-        tensor: scalar(this.iterations_, 'int32')
-      };
+      this.iterations_ = 0;
     }
+    return {
+      name: 'iter',  // Named for Python compatibility.
+      // TODO(cais): Use 'int64' type when available.
+      tensor: scalar(this.iterations_, 'int32')
+    };
   }
 
   getWeights(): NamedTensor[] {
     throw new Error('getWeights() is not implemented for this optimizer yet.');
   }
 
-  setWeights(weightValues: NamedTensor[]): void {
+  async setWeights(weightValues: NamedTensor[]): Promise<void> {
     throw new Error(
         `setWeights() is not implemented for this optimizer class ` +
         `${this.getClassName()}`);
@@ -154,8 +154,10 @@ export abstract class Optimizer extends Serializable {
    * @param weightValues
    * @returns Weight values with the first element consumed and excluded.
    */
-  protected setIterations(weightValues: NamedTensor[]): NamedTensor[] {
-    this.iterations_ = weightValues[0].tensor.dataSync()[0];
+  protected async setIterations(
+      weightValues: NamedTensor[]): Promise<NamedTensor[]> {
+    console.log('Extracting iter:',  (await weightValues[0].tensor.data())[0]);
+    this.iterations_ = (await weightValues[0].tensor.data())[0];
     return weightValues.slice(1);
   }
 }
