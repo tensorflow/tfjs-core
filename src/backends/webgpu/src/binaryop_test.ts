@@ -38,7 +38,6 @@ describe('Binary ops', () => {
     const c = tf.mul(a, b);
 
     const cData = await c.data();
-    console.log(cData);
 
     tf.test_util.expectArraysClose(
         cData, new Float32Array([1, 4, 9, 16, 25, 36]));
