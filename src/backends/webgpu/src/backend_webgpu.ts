@@ -179,14 +179,18 @@ export class WebGPUBackend extends KernelBackend {
   private compileAndRun<
       K extends {dtype: DataType, size: number, dataId: {}, shape: number[]}>(
       program: webgpu_program.WebGPUProgram, inputs: Tensor[], output?: Tensor,
-      additionalUniforms?: webgpu_program.BindingInfo): K {
+      additionalUniforms?: any): K {
     if (output == null) {
       output = this.makeOutputArray(program.outputShape, inputs[0].dtype);
     }
-    const dimUniforms: number[] = [];
+    let dimUniforms: number[] = [];
     inputs.concat(output).forEach(d => {
       dimUniforms.push(...d.shape);
     });
+
+    if (additionalUniforms) {
+      dimUniforms = dimUniforms.concat(additionalUniforms);
+    }
 
     const uniformData = new Int32Array(dimUniforms);
 
@@ -248,21 +252,16 @@ export class WebGPUBackend extends KernelBackend {
     const output =
         this.makeOutputArray(program.outputShape, x.dtype) as Tensor4D;
 
-    const dimensionsData = new Int32Array([
-      ...convInfo.inShape, ...convInfo.outShape,        // inShape / outShape.
+    const dimensions = [
       convInfo.padInfo.left, convInfo.padInfo.top,      // Padding.
       convInfo.strideWidth, convInfo.strideHeight,      // Stride.
       convInfo.dilationWidth, convInfo.dilationHeight,  // Dilation.
       convInfo.inWidth, convInfo.inHeight,              // Conv dims.
       convInfo.effectiveFilterWidth,
       convInfo.effectiveFilterHeight  // Filter dims.
-    ]);
-    const dimensions = this.makeUniforms(dimensionsData);
+    ];
 
-    const result = this.compileAndRun(program, [x], output, dimensions);
-    this.destroyBuffer(dimensionsData.byteLength, dimensions.resource.buffer);
-
-    return result as Tensor4D;
+    return this.compileAndRun(program, [x], output, dimensions);
   }
 
   private binaryOp(a: Tensor, b: Tensor, op: string) {
