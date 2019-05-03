@@ -74,7 +74,6 @@ describeWithFlags('SGDOptimizer', ALL_ENVS, () => {
 
     const optimizer2 = tf.train.sgd(learningRate);
     await optimizer2.setWeights(weights);
-    console.log('Calling optimizer2.minimize()');  // DEBUG
     optimizer2.minimize(() => x.square());
     expectArraysClose(await x.data(), 2.56);
     expect(optimizer2.iterations).toEqual(2);

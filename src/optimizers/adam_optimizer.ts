@@ -17,7 +17,7 @@
 
 import {ENGINE} from '../engine';
 import {dispose, tidy} from '../globals';
-import {scalar, sub, zerosLike} from '../ops/ops';
+import {scalar, sub, zerosLike, pow} from '../ops/ops';
 import {ConfigDict, registerClass, Serializable, SerializableConstructor} from '../serialization';
 import {Variable} from '../tensor';
 import {NamedTensor, NamedVariableMap} from '../tensor_types';
@@ -129,6 +129,11 @@ export class AdamOptimizer extends Optimizer {
 
   async setWeights(weightValues: NamedTensor[]): Promise<void> {
     weightValues = await this.extractIterations(weightValues);
+    tidy(() => {
+      this.accBeta1.assign(pow(this.beta1, this.iterations_ + 1));
+      this.accBeta2.assign(pow(this.beta2, this.iterations_ + 1));
+    });
+
     const variableCount = weightValues.length / 2;
     const trainable = false;
     this.accumulatedFirstMoment =

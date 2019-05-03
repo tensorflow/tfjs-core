@@ -89,7 +89,6 @@ export abstract class Optimizer extends Serializable {
   }
 
   protected incrementIterations() {
-    console.log('In incrementIterations: iter=', this.iterations);  // DEBUG
     this.iterations_ = this.iterations + 1;
   }
 
@@ -156,7 +155,6 @@ export abstract class Optimizer extends Serializable {
    */
   protected async extractIterations(
       weightValues: NamedTensor[]): Promise<NamedTensor[]> {
-    console.log('Extracting iter:',  (await weightValues[0].tensor.data())[0]);
     this.iterations_ = (await weightValues[0].tensor.data())[0];
     return weightValues.slice(1);
   }
