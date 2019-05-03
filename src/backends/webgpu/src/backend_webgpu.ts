@@ -188,9 +188,9 @@ export class WebGPUBackend extends KernelBackend {
     let dimUniforms: number[] = [];
     const bufferShapes = inputs.concat(output).map(d => d.shape);
     bufferShapes.forEach((d, i) => {
+      // TODO: handle vec3 uniform upload in a principled way.
       // vec3 and vec4 have the same alignment, however padding is only
-      // necessary in case of adjacent vec3's. Complete std140 layout rules are
-      // documented here:
+      // sometimes necessary. Complete std140 layout rules are documented here:
       // tslint:disable-next-line:max-line-length
       // https://www.khronos.org/registry/OpenGL/specs/gl/glspec45.core.pdf#page=159
       if (d.length === 3 && i > 0 && bufferShapes[i - 1].length === 3) {

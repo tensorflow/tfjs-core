@@ -188,8 +188,10 @@ function getSamplerAtOutputCoords(inInfo: InputInfo, outShape: number[]) {
     unpackedCoordsSnippet = 'coords';
   } else {
     if (inRank > 1) {
-      unpackedCoordsSnippet = `${getCoordsDataType(inRank)}(${
-          inInfo.shape.map((s, i) => `coords[${i + rankDiff}]`).join(', ')})`;
+      const coordsType = getCoordsDataType(inRank);
+      const coordsValues =
+          inInfo.shape.map((s, i) => `coords[${i + rankDiff}]`).join(', ');
+      unpackedCoordsSnippet = `${coordsType}(${coordsValues})`;
     } else {
       unpackedCoordsSnippet = `coords[${rankDiff}]`;
     }

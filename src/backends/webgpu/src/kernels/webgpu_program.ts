@@ -118,6 +118,10 @@ export const compileProgram =
       return {bindGroupLayout, pipeline};
     };
 
+// TODO: Consider allowing each program to specify its own shader key. E.g. some
+// kernels account for different work group sizes, but some don't.
+// TODO: Consider uploading shape info as vec4s regardless of rank to reduce
+// recompilation.
 export function makeShaderKey(program: WebGPUProgram, ranks: number[]): string {
   const key = (program.workGroupSize ? program.workGroupSize.join(',') : '') +
       ranks.join(',') + program.userCode;
