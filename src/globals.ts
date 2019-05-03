@@ -18,6 +18,7 @@
 import {KernelBackend} from './backends/backend';
 import {ENGINE, MemoryInfo, ProfileInfo, ScopeFn, TimingInfo} from './engine';
 import {ENV} from './environment';
+import {Platform} from './platforms/platform';
 import {setDeprecationWarningFn, Tensor} from './tensor';
 import {TensorContainer} from './tensor_types';
 import {getTensorsInContainer} from './tensor_util';
@@ -133,8 +134,9 @@ export function profile(f: () => TensorContainer): Promise<ProfileInfo> {
  * Using this method helps avoid memory leaks. In general, wrap calls to
  * operations in `tf.tidy` for automatic memory cleanup.
  *
- * When in safe mode, you must enclose all `tf.Tensor` creation and ops
- * inside a `tf.tidy` to prevent memory leaks.
+ * NOTE: Variables do *not* get cleaned up when inside a tidy(). If you want to
+ * dispose variables, please use `tf.disposeVariables` or call dispose()
+ * directly on variables.
  *
  * ```js
  * // y = 2 ^ 2 + 1
@@ -335,4 +337,14 @@ export function registerBackend(
 /** @doc {heading: 'Backends'} */
 export function backend(): KernelBackend {
   return ENGINE.backend;
+}
+
+/**
+ * Sets the global platform.
+ *
+ * @param platformName The name of this platform.
+ * @param platform A platform implementation.
+ */
+export function setPlatform(platformName: string, platform: Platform) {
+  ENV.setPlatform(platformName, platform);
 }
