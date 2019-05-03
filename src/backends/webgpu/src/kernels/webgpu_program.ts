@@ -89,8 +89,12 @@ export const compileProgram =
      compileOptions: shaderc.CompileOptions, device: GPUDevice,
      program: WebGPUProgram, inputs: Tensor[], output: Tensor,
      uniforms?: BindingInfo): WebGPUBinary => {
-      const inputsData = inputs.map((input: Tensor) => {
-        return {dtype: input.dtype, shape: input.shape};
+      const inputsData = inputs.map((input: Tensor, i: number) => {
+        return {
+          dtype: input.dtype,
+          shape: input.shape,
+          name: program.variableNames[i]
+        };
       });
       const outputData = {dtype: output.dtype, shape: output.shape};
 

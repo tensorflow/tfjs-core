@@ -263,7 +263,8 @@ export class WebGPUBackend extends KernelBackend {
     const dimensionsData =
         new Int32Array([...a.shape, ...b.shape, ...program.outputShape]);
     const dimensions = this.makeUniforms(dimensionsData);
-    const result = this.compileAndRun(program, [a, b], output) as Tensor;
+    const result =
+        this.compileAndRun(program, [a, b], output, dimensions) as Tensor;
     this.destroyBuffer(dimensionsData.byteLength, dimensions.resource.buffer);
     return result;
   }

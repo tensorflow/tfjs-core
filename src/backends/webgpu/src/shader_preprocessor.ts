@@ -51,9 +51,14 @@ interface ProgramParams {
   userCode: string;
 }
 
+interface InputInfo {
+  dtype: DataType;
+  shape: number[];
+  name: string;
+}
+
 export function makeShader(
-    inputTypes: Array<{dtype: DataType, shape: number[]}>,
-    outputData: {dtype: DataType, shape: number[]},
+    inputInfo: InputInfo[], outputData: {dtype: DataType, shape: number[]},
     program: ProgramParams): string {
   const prefixSnippets: string[] = [];
 
@@ -80,7 +85,7 @@ export function makeShader(
   program.variableNames.forEach((x, i) => {
     prefixSnippets.push(`
       layout(std430, set = 0, binding = ${1 + i}) readonly buffer ssb${x} {
-        ${mapToGlslTypes(inputTypes[i].dtype)} ${x}[];
+        ${mapToGlslTypes(inputInfo[i].dtype)} ${x}[];
       };
     `);
   });
@@ -94,14 +99,18 @@ export function makeShader(
     `);
   }
 
+  const inputSamplingSnippet =
+      inputInfo.map(x => getInputSamplingSnippet(x, outputData.shape))
+          .join('\n');
+
   const outputSamplingSnippet =
       generateGetOutputCoords(program.dispatchLayout, outputData.shape.length);
 
   const source = [
     SHADER_PREFIX, prefixSnippets.join('\n'), SAMPLING_SNIPPETS,
-    outputSamplingSnippet, SET_OUTPUT_SNIPPET, program.userCode
+    outputSamplingSnippet, inputSamplingSnippet, SET_OUTPUT_SNIPPET,
+    program.userCode
   ].join('\n');
-
   return source;
 }
 
@@ -133,3 +142,29 @@ const SET_OUTPUT_SNIPPET = `
     result[flatIndex] = value;
   }
 `;
+
+function getInputSamplingSnippet(
+    inInfo: InputInfo, outShape: number[]): string {
+  let res = '';
+
+  const inShape = inInfo.shape;
+  if (inShape.length <= outShape.length) {
+    res += getSamplerAtOutputCoords(inInfo, outShape);
+  }
+
+  return res;
+}
+
+function getSamplerAtOutputCoords(inInfo: InputInfo, outShape: number[]) {
+  const texName = inInfo.name;
+  const texFuncSnippet = texName.charAt(0).toUpperCase() + texName.slice(1);
+  const funcName = 'get' + texFuncSnippet + 'AtOutCoords';
+  const type = getCoordsDataType(outShape.length);
+
+  return `
+    float ${funcName}() {
+      ${type} coords = getOutputCoords();
+      return ${texName}[getFlatIndex(coords, outShape)];
+    }
+  `;
+}
