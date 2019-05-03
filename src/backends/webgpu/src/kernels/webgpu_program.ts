@@ -118,8 +118,8 @@ export const compileProgram =
       return {bindGroupLayout, pipeline};
     };
 
-export function makeShaderKey(program: WebGPUProgram): string {
+export function makeShaderKey(program: WebGPUProgram, ranks: number[]): string {
   const key = (program.workGroupSize ? program.workGroupSize.join(',') : '') +
-      program.userCode;
+      ranks.join(',') + program.userCode;
   return key;
 }

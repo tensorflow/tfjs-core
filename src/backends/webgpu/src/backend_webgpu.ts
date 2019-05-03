@@ -205,7 +205,8 @@ export class WebGPUBackend extends KernelBackend {
     const uniformData = new Int32Array(dimUniforms);
     const uniforms = this.makeUniforms(uniformData);
 
-    const key = webgpu_program.makeShaderKey(program);
+    const key =
+        webgpu_program.makeShaderKey(program, bufferShapes.map(d => d.length));
     const {bindGroupLayout, pipeline} = this.getAndSavePipeline(key, () => {
       return webgpu_program.compileProgram(
           this.compiler, this.shaderc.shader_kind.compute, this.compileOpts,
