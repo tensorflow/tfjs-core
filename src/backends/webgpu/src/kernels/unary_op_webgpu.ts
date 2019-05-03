@@ -39,7 +39,7 @@ export class UnaryOpProgram implements WebGPUProgram {
 
       void main() {
         uint index = gl_GlobalInvocationID.x;
-        float a = A[index];
+        float a = getAAtOutCoords();
         setOutput(index, unaryOperation(a));
       }
     `;
