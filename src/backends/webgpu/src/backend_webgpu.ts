@@ -186,12 +186,16 @@ export class WebGPUBackend extends KernelBackend {
       output = this.makeOutputArray(program.outputShape, inputs[0].dtype);
     }
     let dimUniforms: number[] = [];
-    inputs.concat(output).forEach(d => {
-      dimUniforms.push(...d.shape);
-      // vec3 and vec4 have the same alignment.
-      if (d.shape.length === 3) {
+    const bufferShapes = inputs.concat(output).map(d => d.shape);
+    bufferShapes.forEach((d, i) => {
+      // vec3 and vec4 have the same alignment, however padding is only
+      // necessary in case of adjacent vec3's. Complete std140 layout rules are
+      // documented here:
+      // https://www.khronos.org/registry/OpenGL/specs/gl/glspec45.core.pdf#page=159
+      if (d.length === 3 && i > 0 && bufferShapes[i - 1].length === 3) {
         dimUniforms.push(0);
       }
+      dimUniforms.push(...d);
     });
 
     if (programUniforms) {

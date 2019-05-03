@@ -16,6 +16,8 @@
  */
 
 import {DataType} from '@tensorflow/tfjs-core';
+import {getBroadcastDims} from '@tensorflow/tfjs-core/dist/ops/broadcast_util';
+
 import {generateGetOutputCoords} from './shader_util';
 
 export function getCoordsDataType(rank: number): string {
@@ -163,12 +165,43 @@ function getSamplerAtOutputCoords(inInfo: InputInfo, outShape: number[]) {
   const texName = inInfo.name;
   const texFuncSnippet = texName.charAt(0).toUpperCase() + texName.slice(1);
   const funcName = 'get' + texFuncSnippet + 'AtOutCoords';
-  const type = getCoordsDataType(outShape.length);
+
+  const inRank = inInfo.shape.length;
+  const outRank = outShape.length;
+  const type = getCoordsDataType(outRank);
+
+  const broadcastDims = getBroadcastDims(inInfo.shape, outShape);
+  const rankDiff = outRank - inRank;
+
+  let coordsSnippet = '';
+
+  if (inRank > 0) {
+    if (outRank < 2 && broadcastDims.length >= 1) {
+      coordsSnippet = 'coords = 0.;';
+    } else {
+      coordsSnippet =
+          broadcastDims.map(d => `coords[${d + rankDiff}] = 0;`).join('\n');
+    }
+  }
+
+  let unpackedCoordsSnippet = '';
+  if (outRank < 2 && inRank > 0) {
+    unpackedCoordsSnippet = 'coords';
+  } else {
+    if (inRank > 1) {
+      unpackedCoordsSnippet = `${getCoordsDataType(inRank)}(${
+          inInfo.shape.map((s, i) => `coords[${i + rankDiff}]`).join(', ')})`;
+    } else {
+      unpackedCoordsSnippet = `coords[${rankDiff}]`;
+    }
+  }
 
   return `
     float ${funcName}() {
       ${type} coords = getOutputCoords();
-      return ${texName}[getFlatIndex(coords, outShape)];
+      ${coordsSnippet}
+      return ${texName}[getFlatIndex(${unpackedCoordsSnippet}, ${
+      texName.substring(0, 1).toLowerCase()}Shape)];
     }
   `;
 }
