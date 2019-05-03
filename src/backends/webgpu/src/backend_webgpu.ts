@@ -24,6 +24,7 @@ import {Conv2DInfo} from '@tensorflow/tfjs-core/dist/ops/conv_util';
 import {upcastType} from '@tensorflow/tfjs-core/dist/types';
 import * as shaderc from '@webgpu/shaderc';
 
+import {ArgMinMaxProgram} from './kernels/argminmax_webgpu';
 import * as binary_op from './kernels/binary_op_webgpu';
 import {BinaryOpProgram} from './kernels/binary_op_webgpu';
 import {Conv2DMMProgram} from './kernels/conv2d_mm_webgpu';
@@ -315,6 +316,33 @@ export class WebGPUBackend extends KernelBackend {
 
     return this.compileAndRun(program, [x, filter], output, dimensions) as
         Tensor4D;
+  }
+
+  private argMinMaxReduce(x: Tensor, axis: number, reduceType: 'min'|'max'):
+      Tensor {
+    const program = new ArgMinMaxProgram(x.shape, axis, reduceType);
+
+    const output = this.makeOutputArray(program.outputShape, 'int32') as Tensor;
+
+    const uniformData = new Int32Array([
+      axis,
+      x.rank,
+      ...x.shape,
+    ]);
+    const uniforms = this.makeUniforms(uniformData);
+
+    const result = this.compileAndRun(program, [x], output, uniforms) as Tensor;
+    this.destroyBuffer(uniformData.byteLength, uniforms.resource.buffer);
+
+    return result as Tensor;
+  }
+
+  argMin(x: Tensor, axis: number): Tensor {
+    return this.argMinMaxReduce(x, axis, 'min');
+  }
+
+  argMax(x: Tensor, axis: number): Tensor {
+    return this.argMinMaxReduce(x, axis, 'max');
   }
 
   multiply(a: Tensor, b: Tensor): Tensor {
