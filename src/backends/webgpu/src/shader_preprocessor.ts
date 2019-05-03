@@ -18,7 +18,7 @@
 import {DataType} from '@tensorflow/tfjs-core';
 import {getBroadcastDims} from '@tensorflow/tfjs-core/dist/ops/broadcast_util';
 
-import {generateGetOutputCoords} from './shader_util';
+import {symbolicallyComputeStrides} from './shader_util';
 
 export function getCoordsDataType(rank: number): string {
   if (rank <= 1) {
@@ -116,7 +116,6 @@ export function makeShader(
     outputSamplingSnippet, inputSamplingSnippet, SET_OUTPUT_SNIPPET,
     program.userCode
   ].join('\n');
-  console.log(source);
   return source;
 }
 
@@ -204,4 +203,54 @@ function getSamplerAtOutputCoords(inInfo: InputInfo, outShape: number[]) {
       texName.substring(0, 1).toLowerCase()}Shape)];
     }
   `;
+}
+
+/**
+ * Generates getOutputCoords() function that computes output coordinates from
+ * dispatch geometry to reduce arithmetic.
+ */
+function generateGetOutputCoords(
+    dispatchLayout: {x: number[], y?: number[], z?: number[]},
+    rank: number): string {
+  const {x, y = [], z = []} = dispatchLayout;
+  const dtype = getCoordsDataType(rank);
+  let gatherDimensionsStr = '';
+  const dims = [x, y, z];
+
+  for (let i = 0; i < dims.length; i++) {
+    const arr = dims[i];
+
+    if (arr.length === 0) {
+      continue;
+    }
+
+    if (arr.length === 1) {
+      gatherDimensionsStr += `uint d${arr[0]} = gl_GlobalInvocationID[${i}];`;
+    } else {
+      const strides = symbolicallyComputeStrides(arr, 'outShape');
+      gatherDimensionsStr += `uint index${i} = 
+        gl_GlobalInvocationID[${i}];`;
+      for (let j = 0; j < strides.length; j++) {
+        gatherDimensionsStr += `uint d${arr[j]} = index${i} / ${strides[j]};`;
+
+        if (j === strides.length - 1) {
+          gatherDimensionsStr += `uint d${arr[j + 1]} = ` +
+              `index${i} - d${arr[j]} * ${strides[j]};`;
+        } else {
+          gatherDimensionsStr += `index${i} -= d${arr[j]} * ${strides[j]};`;
+        }
+      }
+    }
+  }
+
+  const dimensions = [];
+  for (let i = 0; i < rank; i++) {
+    dimensions.push(`d${i}`);
+  }
+
+  return `${dtype} getOutputCoords() {
+    ${gatherDimensionsStr}
+
+    return ${dtype}(${dimensions.join(',')});
+  }`;
 }
