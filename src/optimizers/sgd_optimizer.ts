@@ -71,7 +71,7 @@ export class SGDOptimizer extends Optimizer {
   }
 
   async getWeights(): Promise<NamedTensor[]> {
-    return [this.getIterationsAsWeight()];
+    return [await this.saveIterations()];
   }
 
   async setWeights(weightValues: NamedTensor[]): Promise<void> {

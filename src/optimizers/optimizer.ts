@@ -126,7 +126,7 @@ export abstract class Optimizer extends Serializable {
     }
   }
 
-  getIterationsAsWeight(): NamedTensor {
+  async saveIterations(): Promise<NamedTensor> {
     if (this.iterations_ == null) {
       this.iterations_ = 0;
     }

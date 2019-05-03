@@ -96,7 +96,7 @@ export class MomentumOptimizer extends SGDOptimizer {
 
   async getWeights(): Promise<NamedTensor[]> {
     // Order matters for Python compatibility.
-    return [this.getIterationsAsWeight()].concat(this.accumulations.map(
+    return [await this.saveIterations()].concat(this.accumulations.map(
         v => ({name: v.originalName, tensor: v.variable})));
   }
 
