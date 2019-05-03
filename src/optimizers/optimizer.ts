@@ -137,7 +137,7 @@ export abstract class Optimizer extends Serializable {
     };
   }
 
-  getWeights(): NamedTensor[] {
+  async getWeights(): Promise<NamedTensor[]> {
     throw new Error('getWeights() is not implemented for this optimizer yet.');
   }
 

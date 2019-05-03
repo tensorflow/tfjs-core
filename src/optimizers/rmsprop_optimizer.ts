@@ -142,7 +142,7 @@ export class RMSPropOptimizer extends Optimizer {
     }
   }
 
-  getWeights(): NamedTensor[] {
+  async getWeights(): Promise<NamedTensor[]> {
     // Order matters for Python compatibility.
     const variables: OptimizerVariable[] =
         [...this.accumulatedMeanSquares, ...this.accumulatedMoments];

@@ -70,7 +70,7 @@ export class SGDOptimizer extends Optimizer {
     this.c.dispose();
   }
 
-  getWeights(): NamedTensor[] {
+  async getWeights(): Promise<NamedTensor[]> {
     return [this.getIterationsAsWeight()];
   }
 

@@ -99,7 +99,7 @@ export class AdadeltaOptimizer extends Optimizer {
     }
   }
 
-  getWeights(): NamedTensor[] {
+  async getWeights(): Promise<NamedTensor[]> {
     // Order matters for Python compatibility.
     const variables: OptimizerVariable[] =
         [...this.accumulatedGrads, ...this.accumulatedUpdates];

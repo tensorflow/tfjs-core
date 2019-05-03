@@ -88,7 +88,7 @@ describeWithFlags('AdadeltaOptimizer', ALL_ENVS, () => {
     expectArraysClose(await cost.data(), 5);
     expectArraysClose(await x.data(), [0.8, 1.6]);
 
-    const weights = optimizer1.getWeights();
+    const weights = await optimizer1.getWeights();
     expect(weights.length).toEqual(3);
     expect(weights[0].name).toEqual('iter');
 

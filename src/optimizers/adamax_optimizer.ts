@@ -120,7 +120,7 @@ export class AdamaxOptimizer extends Optimizer {
     }
   }
 
-  getWeights(): NamedTensor[] {
+  async getWeights(): Promise<NamedTensor[]> {
     throw new Error('getWeights() is not implemented for Adamax yet.');
   }
 

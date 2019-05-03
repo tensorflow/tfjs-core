@@ -80,7 +80,7 @@ describeWithFlags('AdagradOptimizer', ALL_ENVS, () => {
     let cost = optimizer1.minimize(f, /* returnCost */ true);
     expectArraysClose(await cost.data(), 20);
 
-    const weights = optimizer1.getWeights();
+    const weights = await optimizer1.getWeights();
     expect(weights.length).toEqual(2);
     expect(weights[0].name).toEqual('iter');
     expect(weights[1].name).toEqual(`${x.name}/accumulator`);
