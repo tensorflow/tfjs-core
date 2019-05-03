@@ -154,7 +154,7 @@ export class RMSPropOptimizer extends Optimizer {
   }
 
   async setWeights(weightValues: NamedTensor[]): Promise<void> {
-    weightValues = await this.setIterations(weightValues);
+    weightValues = await this.extractIterations(weightValues);
     const variableCount =
         this.centered ? weightValues.length / 3 : weightValues.length / 2;
     const trainable = false;

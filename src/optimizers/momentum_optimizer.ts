@@ -101,7 +101,7 @@ export class MomentumOptimizer extends SGDOptimizer {
   }
 
   async setWeights(weightValues: NamedTensor[]): Promise<void> {
-    weightValues = await this.setIterations(weightValues);
+    weightValues = await this.extractIterations(weightValues);
     const trainable = false;
     this.accumulations = weightValues.map(
         v => ({originalName: v.name, variable: v.tensor.variable(trainable)}));

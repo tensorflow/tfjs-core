@@ -148,13 +148,13 @@ export abstract class Optimizer extends Serializable {
   }
 
   /**
-   * Take the first element of the weight values and set it
+   * Extract the first element of the weight values and set it
    * as the iterations counter variable of this instance of optimizer.
    *
    * @param weightValues
    * @returns Weight values with the first element consumed and excluded.
    */
-  protected async setIterations(
+  protected async extractIterations(
       weightValues: NamedTensor[]): Promise<NamedTensor[]> {
     console.log('Extracting iter:',  (await weightValues[0].tensor.data())[0]);
     this.iterations_ = (await weightValues[0].tensor.data())[0];

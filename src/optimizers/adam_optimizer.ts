@@ -128,7 +128,7 @@ export class AdamOptimizer extends Optimizer {
   }
 
   async setWeights(weightValues: NamedTensor[]): Promise<void> {
-    weightValues = await this.setIterations(weightValues);
+    weightValues = await this.extractIterations(weightValues);
     const variableCount = weightValues.length / 2;
     const trainable = false;
     this.accumulatedFirstMoment =
