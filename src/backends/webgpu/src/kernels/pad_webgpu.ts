@@ -22,7 +22,6 @@ import {WebGPUProgram} from './webgpu_program';
 
 export class PadProgram implements WebGPUProgram {
   outputShape: number[];
-  uniforms: string;
   userCode: string;
   dispatchLayout: {x: number[]};
   dispatch: [number, number, number];
@@ -35,7 +34,6 @@ export class PadProgram implements WebGPUProgram {
         (p, i) => p[0] /* beforePad */ + xShape[i] + p[1] /* afterPad */);
     const rank = xShape.length;
     const type = getCoordsDataType(rank);
-    this.uniforms = `${getCoordsDataType(this.outputShape.length)} outShape;`;
     this.dispatchLayout = {x: this.outputShape.map((d, i) => i)};
     this.dispatch = computeDispatch(this.dispatchLayout, this.outputShape);
 

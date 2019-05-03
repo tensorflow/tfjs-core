@@ -239,11 +239,7 @@ export class WebGPUBackend extends KernelBackend {
       x: T, paddings: Array<[number, number]>, constantValue: number): T {
     const program = new PadProgram(x.shape, paddings, constantValue);
     const output = this.makeOutputArray(program.outputShape, x.dtype);
-    const dimensionsData = new Int32Array([...program.outputShape]);
-    const dimensions = this.makeUniforms(dimensionsData);
-    const result = this.compileAndRun(program, [x], output, dimensions);
-    this.destroyBuffer(dimensionsData.byteLength, dimensions.resource.buffer);
-    return result as T;
+    return this.compileAndRun(program, [x], output);
   }
 
   maxPool(x: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
