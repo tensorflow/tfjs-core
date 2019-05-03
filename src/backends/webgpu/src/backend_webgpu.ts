@@ -181,7 +181,7 @@ export class WebGPUBackend extends KernelBackend {
   private compileAndRun<
       K extends {dtype: DataType, size: number, dataId: {}, shape: number[]}>(
       program: webgpu_program.WebGPUProgram, inputs: Tensor[], output?: Tensor,
-      additionalUniforms?: any): K {
+      programUniforms?: number[]): K {
     if (output == null) {
       output = this.makeOutputArray(program.outputShape, inputs[0].dtype);
     }
@@ -194,12 +194,11 @@ export class WebGPUBackend extends KernelBackend {
       }
     });
 
-    if (additionalUniforms) {
-      dimUniforms = dimUniforms.concat(additionalUniforms);
+    if (programUniforms) {
+      dimUniforms = dimUniforms.concat(programUniforms);
     }
 
     const uniformData = new Int32Array(dimUniforms);
-
     const uniforms = this.makeUniforms(uniformData);
 
     const key = webgpu_program.makeShaderKey(program);
@@ -293,23 +292,13 @@ export class WebGPUBackend extends KernelBackend {
         ] :
         [convInfo.padInfo.top, convInfo.padInfo.left];
 
-    const dimensionsData = new Int32Array([
-      ...convInfo.inShape,
-      ...convInfo.outShape,
-      convInfo.filterHeight,
-      convInfo.filterWidth,
-      ...pad,
-      convInfo.strideHeight,
-      convInfo.strideWidth,
-    ]);
-    const dimensions = this.makeUniforms(dimensionsData);
+    const dimensions = [
+      convInfo.filterHeight, convInfo.filterWidth, ...pad,
+      convInfo.strideHeight, convInfo.strideWidth
+    ];
 
-    const result = this.compileAndRun(
-                       program, [x, filter], output, dimensions) as Tensor4D;
-
-    this.destroyBuffer(dimensionsData.byteLength, dimensions.resource.buffer);
-
-    return result;
+    return this.compileAndRun(program, [x, filter], output, dimensions) as
+        Tensor4D;
   }
 
   multiply(a: Tensor, b: Tensor): Tensor {
@@ -330,16 +319,7 @@ export class WebGPUBackend extends KernelBackend {
     const output =
         this.makeOutputArray(program.outputShape, x.dtype) as Tensor4D;
 
-    const uniformData = new Int32Array([
-      ...x.shape, ...program.outputShape,  // inShape / outShape.
-    ]);
-    const uniforms = this.makeUniforms(uniformData);
-
-    const result =
-        this.compileAndRun(program, [x], output, uniforms) as Tensor4D;
-    this.destroyBuffer(uniformData.byteLength, uniforms.resource.buffer);
-
-    return result as Tensor4D;
+    return this.compileAndRun(program, [x], output) as Tensor4D;
   }
 
   reshape<R extends Rank>(x: Tensor, shape: ShapeMap[R]): Tensor<R> {

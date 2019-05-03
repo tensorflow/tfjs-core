@@ -28,7 +28,7 @@ export class Conv2DNaiveProgram implements WebGPUProgram {
   dispatchLayout: {x: number[], y: number[], z: number[]};
   dispatch: [number, number, number];
   variableNames = ['x', 'W'];
-  uniforms = 'ivec2 WShape, pad, stride;';
+  uniforms = 'ivec2 filterDims, pad, stride;';
   workGroupSize: [number, number, number] = [4, 8, 1];
 
   constructor(convInfo: Conv2DInfo) {
@@ -57,7 +57,7 @@ export class Conv2DNaiveProgram implements WebGPUProgram {
 
       float readFilt(uint row, uint col, uint xChannel, uint outChannel) {
         ivec4 coord = ivec4(row, col, xChannel, outChannel);
-        ivec4 shape = ivec4(WShape, xShape[3], outShape[3]);
+        ivec4 shape = ivec4(filterDims, xShape[3], outShape[3]);
         return coordIsValid(coord, shape) ? W[getFlatIndex(coord, shape)] : 0;
       }
 
@@ -75,8 +75,8 @@ export class Conv2DNaiveProgram implements WebGPUProgram {
 
         float acc = 0.0;
 
-        for (int row = 0; row < WShape[0]; ++row) {
-          for (int col = 0; col < WShape[1]; ++col) {
+        for (int row = 0; row < filterDims[0]; ++row) {
+          for (int col = 0; col < filterDims[1]; ++col) {
             for (int xChannel = 0; xChannel < xShape[3]; ++xChannel) {
               float v = readInp(batch,
                   pad[0] + coords[1] * stride[0] + row,
