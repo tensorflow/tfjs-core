@@ -18,7 +18,6 @@
 import * as tf from '@tensorflow/tfjs-core';
 import {Conv2DInfo} from '@tensorflow/tfjs-core/dist/ops/conv_util';
 
-import {generateGetOutputCoords} from '../shader_util';
 import {computeDispatch} from '../webgpu_util';
 
 import {WebGPUProgram} from './webgpu_program';
@@ -26,16 +25,17 @@ import {WebGPUProgram} from './webgpu_program';
 export class Conv2DNaiveProgram implements WebGPUProgram {
   outputShape: number[];
   userCode: string;
+  dispatchLayout: {x: number[], y: number[], z: number[]};
   dispatch: [number, number, number];
   variableNames = ['x', 'W'];
-  uniforms = 'ivec4 xShape, outShape; ivec2 WShape, pad, stride;';
+  uniforms = 'ivec2 WShape, pad, stride;';
   workGroupSize: [number, number, number] = [4, 8, 1];
 
   constructor(convInfo: Conv2DInfo) {
     this.outputShape = convInfo.outShape;
-    const dispatchLayout = {x: [2], y: [1], z: [0, 3]};
-    this.dispatch =
-        computeDispatch(dispatchLayout, this.outputShape, this.workGroupSize);
+    this.dispatchLayout = {x: [2], y: [1], z: [0, 3]};
+    this.dispatch = computeDispatch(
+        this.dispatchLayout, this.outputShape, this.workGroupSize);
 
     tf.util.assert(
         convInfo.dataFormat === 'channelsLast',
@@ -67,8 +67,6 @@ export class Conv2DNaiveProgram implements WebGPUProgram {
           result[getFlatIndex(coord, outShape)] = value;
         }
       }
-
-      ${generateGetOutputCoords(dispatchLayout, this.outputShape.length)}
 
       void main() {
         ivec4 coords = getOutputCoords();

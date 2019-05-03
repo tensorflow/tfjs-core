@@ -34,11 +34,13 @@ export function computeDispatch(
     Math.ceil(
         arrayProduct(layout.x.map(d => outputShape[d])) /
         (workGroupSize[0] * elementsPerThread[0])),
-    Math.ceil(
-        arrayProduct(layout.y.map(d => outputShape[d])) /
-        (workGroupSize[1] * elementsPerThread[1])),
-    Math.ceil(
-        arrayProduct(layout.z.map(d => outputShape[d])) /
-        (workGroupSize[2] * elementsPerThread[2]))
+    layout.y ? Math.ceil(
+                   arrayProduct(layout.y.map(d => outputShape[d])) /
+                   (workGroupSize[1] * elementsPerThread[1])) :
+               1,
+    layout.z ? Math.ceil(
+                   arrayProduct(layout.z.map(d => outputShape[d])) /
+                   (workGroupSize[2] * elementsPerThread[2])) :
+               1
   ];
 }

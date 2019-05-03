@@ -16,7 +16,6 @@
  */
 
 import * as broadcast_util from '@tensorflow/tfjs-core/dist/ops/broadcast_util';
-import {generateGetOutputCoords} from '../shader_util';
 import {computeDispatch} from '../webgpu_util';
 
 import {WebGPUProgram} from './webgpu_program';
@@ -37,10 +36,6 @@ export class BinaryOpProgram implements WebGPUProgram {
 
     this.dispatchLayout = {x: this.outputShape.map((d, i) => i)};
     this.dispatch = computeDispatch(this.dispatchLayout, this.outputShape);
-    const getOutput =
-        generateGetOutputCoords(this.dispatchLayout, this.outputShape.length);
-
-    console.log(getOutput);
 
     this.userCode = `
       float binaryOperation(float a, float b) {
