@@ -54,9 +54,9 @@ export interface TensorData {
   uniformValues?: TypedArray;
 }
 
-export function compileProgram<T extends Tensor, K extends Tensor>(
-    gpgpu: GPGPUContext, program: GPGPUProgram, inputs: TensorData[],
-    output: TensorData): GPGPUBinary {
+export function assembleProgramSource(
+    program: GPGPUProgram, inputs: TensorData[], output: TensorData):
+    {source: string, inShapeInfos: ShapeInfo[], outShapeInfo: ShapeInfo} {
   const userCode = program.userCode;
   const inputInfos: InputInfo[] = inputs.map((input, i) => {
     const shapeInfo: ShapeInfo = {
@@ -83,6 +83,20 @@ export function compileProgram<T extends Tensor, K extends Tensor>(
   const source = shader_compiler.makeShader(
       inputInfos, outShapeInfo, userCode, program.usesPackedTextures);
 
+  return {
+    source,
+    inShapeInfos,
+    outShapeInfo,
+  };
+}
+
+export function compileProgram<T extends Tensor, K extends Tensor>(
+    gpgpu: GPGPUContext, program: GPGPUProgram, inputs: TensorData[],
+    output: TensorData,
+    programInfo:
+        {source: string, inShapeInfos: ShapeInfo[], outShapeInfo: ShapeInfo}):
+    GPGPUBinary {
+  const {source, inShapeInfos, outShapeInfo} = programInfo;
   const webGLProgram = gpgpu.createProgram(source);
 
   // Add special uniforms (NAN, INFINITY)
@@ -228,4 +242,10 @@ export function makeShaderKey(
   // Fast string concat. See https://jsperf.com/string-concatenation/14.
   key += '_' + keyInputs + '_' + keyUserCode;
   return key;
+}
+
+export function makeShaderKeyWhole(
+    program: GPGPUProgram, inputs: TensorData[], output: TensorData) {
+  const source = assembleProgramSource(program, inputs, output);
+  return source;
 }
