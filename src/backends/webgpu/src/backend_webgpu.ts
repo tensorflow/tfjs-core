@@ -179,10 +179,19 @@ export class WebGPUBackend extends KernelBackend {
   private compileAndRun<
       K extends {dtype: DataType, size: number, dataId: {}, shape: number[]}>(
       program: webgpu_program.WebGPUProgram, inputs: Tensor[], output?: Tensor,
-      uniforms?: webgpu_program.BindingInfo): K {
+      additionalUniforms?: webgpu_program.BindingInfo): K {
     if (output == null) {
       output = this.makeOutputArray(program.outputShape, inputs[0].dtype);
     }
+    const dimUniforms: number[] = [];
+    inputs.concat(output).forEach(d => {
+      dimUniforms.push(...d.shape);
+    });
+
+    const uniformData = new Int32Array(dimUniforms);
+
+    const uniforms = this.makeUniforms(uniformData);
+
     const key = webgpu_program.makeShaderKey(program);
     const {bindGroupLayout, pipeline} = this.getAndSavePipeline(key, () => {
       return webgpu_program.compileProgram(
@@ -207,6 +216,7 @@ export class WebGPUBackend extends KernelBackend {
     if (ENV.get('WEBGPU_IMMEDIATE_EXECUTION_ENABLED')) {
       this.submitQueue();
     }
+    this.destroyBuffer(uniformData.byteLength, uniforms.resource.buffer);
     return output as {} as K;
   }
 
@@ -260,12 +270,7 @@ export class WebGPUBackend extends KernelBackend {
     const program = new BinaryOpProgram(op, a.shape, b.shape);
     const output = Tensor.make(program.outputShape, {}, dtype) as Tensor;
 
-    const dimensionsData =
-        new Int32Array([...a.shape, ...b.shape, ...program.outputShape]);
-    const dimensions = this.makeUniforms(dimensionsData);
-    const result =
-        this.compileAndRun(program, [a, b], output, dimensions) as Tensor;
-    this.destroyBuffer(dimensionsData.byteLength, dimensions.resource.buffer);
+    const result = this.compileAndRun(program, [a, b], output) as Tensor;
     return result;
   }
 

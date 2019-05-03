@@ -32,7 +32,7 @@ describe('Binary ops', () => {
     tf.test_util.expectArraysClose(cData, new Float32Array([3, 8, 15]));
   });
 
-  it('A * B >1D', async () => {
+  fit('A * B >1D', async () => {
     const a = tf.tensor3d([1, 2, 3, 4, 5, 6], [1, 2, 3]);
     const b = tf.tensor3d([1, 2, 3, 4, 5, 6], [1, 2, 3]);
     const c = tf.mul(a, b);

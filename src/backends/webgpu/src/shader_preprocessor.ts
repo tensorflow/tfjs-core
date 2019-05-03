@@ -82,7 +82,10 @@ export function makeShader(
     };
   `);
 
+  let uniformDeclaration = '';
   program.variableNames.forEach((x, i) => {
+    uniformDeclaration += `${getCoordsDataType(inputInfo[i].shape.length)} ${
+        x.substring(0, 1).toLowerCase()}Shape;`;
     prefixSnippets.push(`
       layout(std430, set = 0, binding = ${1 + i}) readonly buffer ssb${x} {
         ${mapToGlslTypes(inputInfo[i].dtype)} ${x}[];
@@ -90,14 +93,19 @@ export function makeShader(
     `);
   });
 
+  uniformDeclaration +=
+      `${getCoordsDataType(outputData.shape.length)} outShape;`;
+
   if (program.uniforms) {
-    prefixSnippets.push(`
-      layout(std140, set = 0, binding = ${
-        1 + program.variableNames.length}) uniform Uniforms {
-        ${program.uniforms}
-      };
-    `);
+    uniformDeclaration += program.uniforms;
   }
+
+  prefixSnippets.push(`
+    layout(std140, set = 0, binding = ${
+      1 + program.variableNames.length}) uniform Uniforms {
+      ${uniformDeclaration}
+    };
+  `);
 
   const inputSamplingSnippet =
       inputInfo.map(x => getInputSamplingSnippet(x, outputData.shape))
@@ -111,6 +119,7 @@ export function makeShader(
     outputSamplingSnippet, inputSamplingSnippet, SET_OUTPUT_SNIPPET,
     program.userCode
   ].join('\n');
+  console.log(source);
   return source;
 }
 
