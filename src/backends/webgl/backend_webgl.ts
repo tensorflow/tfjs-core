@@ -2399,11 +2399,14 @@ export class MathBackendWebGL implements KernelBackend {
       texData: this.texData.get(output.dataId),
       isUniform: false
     };
-    // const key = gpgpu_math.makeShaderKey(program, inputsData, outputData);
+    const keyOld = gpgpu_math.makeShaderKey(program, inputsData, outputData);
     const programInfo =
         gpgpu_math.assembleProgramSource(program, inputsData, outputData);
 
-    const key = programInfo.source;
+    const key = programInfo.source + keyOld;
+
+    // console.log('key', key);
+    // console.log('\n********\n');
     const binary = this.getAndSaveBinary(key, () => {
       return gpgpu_math.compileProgram(
           this.gpgpu, program, inputsData, outputData, programInfo);

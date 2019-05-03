@@ -243,9 +243,3 @@ export function makeShaderKey(
   key += '_' + keyInputs + '_' + keyUserCode;
   return key;
 }
-
-export function makeShaderKeyWhole(
-    program: GPGPUProgram, inputs: TensorData[], output: TensorData) {
-  const source = assembleProgramSource(program, inputs, output);
-  return source;
-}
