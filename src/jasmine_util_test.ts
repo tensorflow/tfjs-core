@@ -167,7 +167,8 @@ describe('jasmine_util.envSatisfiesConstraints', () => {
        const constraints = {
          flags: {'TEST-FLAG': true},
          backends: [backendName, 'other-backend'],
-         activePlatform: 'node'
+         predicate: (backendName: string, platformName: string) =>
+             platformName === 'node'
        };
 
        expect(

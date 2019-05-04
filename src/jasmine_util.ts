@@ -22,21 +22,20 @@ Error.stackTraceLimit = Infinity;
 
 export type Constraints = {
   flags?: Flags;
-  predicate?: (backendName: string) => boolean;
+  predicate?: (backendName: string, platformName: string) => boolean;
   activeBackend?: string;
-  activePlatform?: string;
   // If defined, all backends in this array must be registered.
   registeredBackends?: string[];
 };
 
 export const NODE_ENVS: Constraints = {
-  activePlatform: 'node'
+  predicate: (backendName, platformName) => platformName === 'node'
 };
 export const CHROME_ENVS: Constraints = {
   flags: {'IS_CHROME': true}
 };
 export const BROWSER_ENVS: Constraints = {
-  activePlatform: 'browser'
+  predicate: (backendName, platformName) => platformName === 'browser'
 };
 
 export const ALL_ENVS: Constraints = {};
@@ -68,8 +67,9 @@ export function envSatisfiesConstraints(
       }
     }
   }
-  if (constraints.activePlatform != null) {
-    return activePlatform === constraints.activePlatform;
+  if (constraints.predicate != null &&
+      !constraints.predicate(activeBackend, activePlatform)) {
+    return false;
   }
   return true;
 }
