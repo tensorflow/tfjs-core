@@ -22,7 +22,7 @@ Error.stackTraceLimit = Infinity;
 
 export type Constraints = {
   flags?: Flags;
-  predicate?: () => boolean;
+  predicate?: (backend: string) => boolean;
 };
 
 export const NODE_ENVS: Constraints = {
@@ -39,7 +39,7 @@ export const ALL_ENVS: Constraints = {};
 
 // Tests whether the current environment satisfies the set of constraints.
 export function envSatisfiesConstraints(
-    env: Environment, constraints: Constraints): boolean {
+    env: Environment, backendName: string, constraints: Constraints): boolean {
   if (constraints == null) {
     return true;
   }
@@ -52,7 +52,7 @@ export function envSatisfiesConstraints(
       }
     }
   }
-  if (constraints.predicate != null && !constraints.predicate()) {
+  if (constraints.predicate != null && !constraints.predicate(backendName)) {
     return false;
   }
   return true;
@@ -99,7 +99,7 @@ export function describeWithFlags(
     name: string, constraints: Constraints, tests: (env: TestEnv) => void) {
   TEST_ENVS.forEach(testEnv => {
     ENV.setFlags(testEnv.flags);
-    if (envSatisfiesConstraints(ENV, constraints)) {
+    if (envSatisfiesConstraints(ENV, testEnv.backendName, constraints)) {
       const testName =
           name + ' ' + testEnv.name + ' ' + JSON.stringify(testEnv.flags);
       executeTests(testName, tests, testEnv);
