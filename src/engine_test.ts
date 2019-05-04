@@ -459,8 +459,7 @@ describeWithFlags('disposeVariables', ALL_ENVS, () => {
  * this is the simplest backend to test against.
  */
 describeWithFlags(
-    'Switching cpu backends',
-    {predicate: (backend: string) => backend === 'cpu'}, () => {
+    'Switching cpu backends', {predicate: backend => backend === 'cpu'}, () => {
       beforeEach(() => {
         tf.registerBackend('cpu1', tf.findBackendFactory('cpu'));
         tf.registerBackend('cpu2', tf.findBackendFactory('cpu'));
@@ -539,7 +538,7 @@ describeWithFlags(
  */
 describeWithFlags(
     'Switching WebGL + CPU backends', {
-      predicate: (backend: string) => backend === 'webgl' &&
+      predicate: backend => backend === 'webgl' &&
           ENGINE.backendNames().indexOf('webgl') !== -1 &&
           ENGINE.backendNames().indexOf('cpu') !== -1
     },
