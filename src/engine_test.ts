@@ -16,6 +16,7 @@
  */
 
 import {KernelBackend} from './backends/backend';
+import {CPU_ENVS} from './backends/cpu/backend_cpu_test_registry';
 import {ENGINE} from './engine';
 import * as tf from './index';
 import {ALL_ENVS, describeWithFlags, TestKernelBackend} from './jasmine_util';
@@ -458,7 +459,7 @@ describeWithFlags('disposeVariables', ALL_ENVS, () => {
  * concrete backend to exist. This test will work for any backend, but currently
  * this is the simplest backend to test against.
  */
-describeWithFlags('Switching cpu backends', {activeBackend: 'cpu'}, () => {
+describeWithFlags('Switching cpu backends', CPU_ENVS, () => {
   beforeEach(() => {
     tf.registerBackend('cpu1', tf.findBackendFactory('cpu'));
     tf.registerBackend('cpu2', tf.findBackendFactory('cpu'));
@@ -536,8 +537,12 @@ describeWithFlags('Switching cpu backends', {activeBackend: 'cpu'}, () => {
  * the engine.
  */
 describeWithFlags(
-    'Switching WebGL + CPU backends',
-    {activeBackend: 'webgl', registeredBackends: ['webgl', 'cpu']}, () => {
+    'Switching WebGL + CPU backends', {
+      predicate: () => ENGINE.backendName === 'webgl' &&
+          (ENGINE.backendNames().indexOf('webgl') !== -1 ||
+           ENGINE.backendNames().indexOf('cpu') !== -1)
+    },
+    () => {
       beforeEach(() => {
         tf.registerBackend('webgl1', tf.findBackendFactory('webgl'));
         tf.registerBackend('webgl2', tf.findBackendFactory('webgl'));
@@ -611,13 +616,13 @@ describeWithFlags(
       });
     });
 
-// NOTE: This describe is purposefully not a describeWithFlags so that we test
-// tensor allocation where no scopes have been created. The backend here must
-// be set to CPU because we cannot allocate GPU tensors outside a
-// describeWithFlags because the default webgl backend and the test backends
-// share a WebGLContext. When backends get registered, global WebGL state is
-// initialized, which causes the two backends to step on each other and get in
-// a bad state.
+// NOTE: This describe is purposefully not a describeWithFlags so that we
+// test tensor allocation where no scopes have been created. The backend
+// here must be set to CPU because we cannot allocate GPU tensors outside
+// a describeWithFlags because the default webgl backend and the test
+// backends share a WebGLContext. When backends get registered, global
+// WebGL state is initialized, which causes the two backends to step on
+// each other and get in a bad state.
 describe('Memory allocation outside a test scope', () => {
   it('constructing a tensor works', async () => {
     tf.setBackend('cpu');

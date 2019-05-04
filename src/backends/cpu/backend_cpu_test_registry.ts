@@ -15,10 +15,11 @@
  * =============================================================================
  */
 
+import {ENGINE} from '../../engine';
 import {Constraints, registerTestEnv} from '../../jasmine_util';
 
 export const CPU_ENVS: Constraints = {
-  predicate: backendName => backendName === 'webgl'
+  predicate: () => ENGINE.backendName === 'cpu'
 };
 
 registerTestEnv({name: 'cpu', backendName: 'cpu'});

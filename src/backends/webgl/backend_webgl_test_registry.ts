@@ -15,10 +15,11 @@
  * =============================================================================
  */
 
+import {ENGINE} from '../../engine';
 import {Constraints, registerTestEnv} from '../../jasmine_util';
 
 export const WEBGL_ENVS: Constraints = {
-  predicate: backendName => backendName === 'webgl'
+  predicate: () => ENGINE.backendName === 'webgl'
 };
 export const PACKED_ENVS: Constraints = {
   flags: {'WEBGL_PACK': true}
