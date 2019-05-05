@@ -107,6 +107,18 @@ export function compileProgram<T extends Tensor, K extends Tensor>(
     }
   }
 
+  // Record location of uniforms for output
+  if (outShapeInfo.logicalShape.length > 0) {
+    console.log('WEBGLPROG:source', source);
+    const outputShapeName = `outputShape`;
+    const outputTexShapeName = `outputTexShape`;
+    const shouldThrow = false;
+    uniformLocations[outputShapeName] =
+        gpgpu.getUniformLocation(webGLProgram, outputShapeName, shouldThrow);
+    uniformLocations[outputTexShapeName] =
+        gpgpu.getUniformLocation(webGLProgram, outputTexShapeName, shouldThrow);
+  }
+
   console.groupEnd();
 
   return {
@@ -159,8 +171,8 @@ export function runProgram<T extends Tensor, K extends Tensor>(
     output: TensorData,
     customSetup?: (gpgpu: GPGPUContext, webGLProgram: WebGLProgram) =>
         void): void {
-  validateBinaryAndProgram(binary.inShapeInfos, inputs);
-  validateBinaryAndProgram([binary.outShapeInfo], [output]);
+  // validateBinaryAndProgram(binary.inShapeInfos, inputs);
+  // validateBinaryAndProgram([binary.outShapeInfo], [output]);
 
   const outTex = output.texData.texture;
   const outTexShape = output.texData.texShape;
@@ -239,6 +251,28 @@ export function runProgram<T extends Tensor, K extends Tensor>(
 
     gpgpu.setInputMatrixTexture(input.texData.texture, varLoc, i);
   });
+
+  // Upload output shape uniforms
+  if (output.shape.length > 0) {
+    const outputShapeName = `outputShape`;
+    const outputShapeLoc = binary.uniformLocations[outputShapeName];
+
+    let outputShape: number[]|Float32Array = output.shape;
+    if (!(outputShape instanceof Float32Array)) {
+      outputShape = new Float32Array(outputShape);
+    }
+    gpgpu.gl.uniform1fv(outputShapeLoc, outputShape);
+
+    const outputTexShapeName = `outputTexShape`;
+    const outputTexShapeLoc = binary.uniformLocations[outputTexShapeName];
+
+    let outputTexShape: number[]|Float32Array = output.texData.shape;
+    if (!(outputTexShape instanceof Float32Array)) {
+      outputTexShape = new Float32Array(outputTexShape);
+    }
+    gpgpu.gl.uniform1fv(outputTexShapeLoc, outputTexShape);
+  }
+
 
   if (customSetup != null) {
     customSetup(gpgpu, binary.webGLProgram);

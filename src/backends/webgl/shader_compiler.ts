@@ -108,12 +108,15 @@ export function makeShader(
   let floatTextureSetOutputSnippet: string;
   let shaderPrefix = getShaderPrefix(glsl);
 
+  outputSamplingSnippet =
+      getOutputShapeSnippet(outputShape.logicalShape, outTexShape);
+
   if (outputShape.isPacked) {
-    outputSamplingSnippet =
+    outputSamplingSnippet +=
         getPackedOutputSamplingSnippet(outputShape.logicalShape, outTexShape);
     floatTextureSetOutputSnippet = getFloatTextureSetRGBASnippet(glsl);
   } else {
-    outputSamplingSnippet =
+    outputSamplingSnippet +=
         getOutputSamplingSnippet(outputShape.logicalShape, outTexShape);
     floatTextureSetOutputSnippet = getFloatTextureSetRSnippet(glsl);
   }
@@ -169,7 +172,26 @@ function getPackedSamplerFromInInfo(inInfo: InputInfo): string {
   }
 }
 
-function getShapeUniformDeclaration(name: string, shapeInfo: ShapeInfo) {
+function getOutputShapeSnippet(
+    shape: number[], texShape: [number, number]): string {
+  // We don't want to the program text to change based on shape.
+  // so allocate the largest array the shape info could possible use at all
+  // times.
+  const MAX_TENSOR_RANK =
+      6;  // TODO THIS WOULD NEED TO BE MORE GLOBALLY DECLARED.
+  const TEXSHAPE_RANK =
+      2;  // TODO THIS WOULD NEED TO BE MORE GLOBALLY DECLARED.
+  let snip = `uniform int outputShape${name}[${MAX_TENSOR_RANK}]; \n`;
+  // snip += `// outputShape SHAPE [${shape.join(',')}] \n`;  // TEMP
+  if (texShape) {  // is this ever null?
+    snip += `uniform float outputTexShape${name}[${TEXSHAPE_RANK}]; \n`;
+    // snip += `// outputTexShape SHAPE [${texShape.join(',')}] \n`;  // TEMP
+  }
+  console.log('getOutputShapeSnippet\n', snip);
+  return snip;
+}
+
+function getInputShapeSnippet(name: string, shapeInfo: ShapeInfo) {
   // return `uniform int shape${name}[${shapeInfo.logicalShape.length}]; \n`;
 
   // We don't want to the program text to change based on shape.
@@ -180,10 +202,11 @@ function getShapeUniformDeclaration(name: string, shapeInfo: ShapeInfo) {
   const TEXSHAPE_RANK =
       2;  // TODO THIS WOULD NEED TO BE MORE GLOBALLY DECLARED.
   let snip = `uniform int shape${name}[${MAX_TENSOR_RANK}]; \n`;
-  snip += `uniform float texShape${name}[${TEXSHAPE_RANK}]; \n`;
-  snip += `// ORIG SHAPE [${shapeInfo.logicalShape.join(',')}] \n`;  // TEMP
+
+  // snip += `// ORIG SHAPE [${shapeInfo.logicalShape.join(',')}] \n`;  // TEMP
   if (shapeInfo.texShape) {
-    snip += `// TEX SHAPE [${shapeInfo.texShape.join(',')}] \n`;  // TEMP
+    snip += `uniform float texShape${name}[${TEXSHAPE_RANK}]; \n`;
+    // snip += `// TEX SHAPE [${shapeInfo.texShape.join(',')}] \n`;  // TEMP
   }
   console.log('getShapeUniformDeclaration\n', snip);
   return snip;
@@ -195,7 +218,7 @@ function getInputSamplingSnippet(
   let res = '';
   if (inInfo.shapeInfo.logicalShape.length > 0) {
     console.log('inInfo', inInfo);
-    res += getShapeUniformDeclaration(inInfo.name, inInfo.shapeInfo);
+    res += getInputShapeSnippet(inInfo.name, inInfo.shapeInfo);
   }
   if (usesPackedTextures) {
     res += getPackedSamplerFromInInfo(inInfo);
@@ -645,9 +668,14 @@ function getOutput2DCoords(
   if (util.arraysEqual(shape, texShape)) {
     return `
       ivec2 getOutputCoords() {
-        return ivec2(resultUV.yx * vec2(${texShape[0]}, ${texShape[1]}));
+        return ivec2(resultUV.yx * vec2(outputTexShape[0], outputTexShape[1]));
       }
     `;
+    // return `
+    //   ivec2 getOutputCoords() {
+    //     return ivec2(resultUV.yx * vec2(${texShape[0]}, ${texShape[1]}));
+    //   }
+    // `;
   }
   if (shape[1] === 1) {
     return `
