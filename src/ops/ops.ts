@@ -46,6 +46,7 @@ export * from './sparse_to_dense';
 export * from './gather_nd';
 export * from './dropout';
 export * from './signal_ops';
+export * from './inTopK';
 
 export {op} from './operation';
 

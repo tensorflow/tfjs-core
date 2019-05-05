@@ -43,6 +43,7 @@ import * as complex_util from '../complex_util';
 import {nonMaxSuppressionImpl} from '../non_max_suppression_impl';
 import {split} from '../split_shared';
 import {topkImpl} from '../topk_impl';
+import {inTopKImpl} from '../inTopK_impl';
 import {whereImpl} from '../where_impl';
 
 function mapActivation(
@@ -796,6 +797,18 @@ export class MathBackendCPU implements KernelBackend {
 
     const xVals = x.dataSync();
     return topkImpl(xVals, x.shape, x.dtype as NumericDataType, k, sorted);
+  }
+
+  inTopK<T extends Tensor, U extends Tensor>(
+      predictions: T, targets: U, k: number): U {
+    this.assertNotComplex([predictions, targets], 'inTopK');
+
+    const predictionsVals = predictions.dataSync();
+    const targetsVals = targets.dataSync();
+
+    return inTopKImpl(
+        predictionsVals, predictions.shape, targetsVals, targets.shape, k
+    ) as U;
   }
 
   min(x: Tensor, axes: number[]): Tensor {
