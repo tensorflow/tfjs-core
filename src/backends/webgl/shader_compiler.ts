@@ -466,22 +466,22 @@ function getOutput1DCoords(
   if (texShape[0] === 1) {
     return `
       int getOutputCoords() {
-        return int(resultUV.x * ${texShape[1]}.0);
+        return int(resultUV.x * outputTexShape[0]);
       }
     `;
   }
   if (texShape[1] === 1) {
     return `
       int getOutputCoords() {
-        return int(resultUV.y * ${texShape[0]}.0);
+        return int(resultUV.y * outputTexShape[0]);
       }
     `;
   }
   return `
     int getOutputCoords() {
       ivec2 resTexRC = ivec2(resultUV.yx *
-                             vec2(${texShape[0]}, ${texShape[1]}));
-      return resTexRC.x * ${texShape[1]} + resTexRC.y;
+                             vec2(outputTexShape[0], outputTexShape[1]));
+      return resTexRC.x * outputTexShape[1] + resTexRC.y;
     }
   `;
 }
@@ -518,8 +518,8 @@ function getOutput3DCoords(
   return `
     ivec3 getOutputCoords() {
       ivec2 resTexRC = ivec2(resultUV.yx *
-                             vec2(${texShape[0]}, ${texShape[1]}));
-      int index = resTexRC.x * ${texShape[1]} + resTexRC.y;
+                             vec2(outputTexShape[0], outputTexShape[1]));
+      int index = resTexRC.x * outputTexShape[1] + resTexRC.y;
       ${coordsFromIndexSnippet}
       return ivec3(r, c, d);
     }
@@ -575,8 +575,8 @@ function getOutput4DCoords(
   return `
     ivec4 getOutputCoords() {
       ivec2 resTexRC = ivec2(resultUV.yx *
-        vec2(${texShape[0]}, ${texShape[1]}));
-      int index = resTexRC.x * ${texShape[1]} + resTexRC.y;
+        vec2(outputTexShape[0], outputTexShape[0]));
+      int index = resTexRC.x * outputTexShape[1] + resTexRC.y;
       ${coordsFromIndexSnippet}
       return ivec4(r, c, d, d2);
     }
@@ -591,10 +591,10 @@ function getOutput5DCoords(
 
   return `
     ivec5 getOutputCoords() {
-      ivec2 resTexRC = ivec2(resultUV.yx * vec2(${texShape[0]},
-                             ${texShape[1]}));
+      ivec2 resTexRC = ivec2(resultUV.yx * vec2(outputTexShape[0],
+                             outputTexShape[1]));
 
-      int index = resTexRC.x * ${texShape[1]} + resTexRC.y;
+      int index = resTexRC.x * outputTexShape[1] + resTexRC.y;
 
       ${coordsFromIndexSnippet}
 
@@ -613,8 +613,8 @@ function getOutput6DCoords(
   return `
     ivec6 getOutputCoords() {
       ivec2 resTexRC = ivec2(resultUV.yx *
-        vec2(${texShape[0]}, ${texShape[1]}));
-      int index = resTexRC.x * ${texShape[1]} + resTexRC.y;
+        vec2(outputTexShape[0], outputTexShape[1]));
+      int index = resTexRC.x * outputTexShape[1] + resTexRC.y;
 
       ${coordsFromIndexSnippet}
 
@@ -671,18 +671,13 @@ function getOutput2DCoords(
         return ivec2(resultUV.yx * vec2(outputTexShape[0], outputTexShape[1]));
       }
     `;
-    // return `
-    //   ivec2 getOutputCoords() {
-    //     return ivec2(resultUV.yx * vec2(${texShape[0]}, ${texShape[1]}));
-    //   }
-    // `;
   }
   if (shape[1] === 1) {
     return `
       ivec2 getOutputCoords() {
         ivec2 resTexRC = ivec2(resultUV.yx *
-                               vec2(${texShape[0]}, ${texShape[1]}));
-        int index = resTexRC.x * ${texShape[1]} + resTexRC.y;
+                               vec2(outputTexShape[0], outputTexShape[1]));
+        int index = resTexRC.x * outputTexShape[1] + resTexRC.y;
         return ivec2(index, 0);
       }
     `;
@@ -691,8 +686,8 @@ function getOutput2DCoords(
     return `
       ivec2 getOutputCoords() {
         ivec2 resTexRC = ivec2(resultUV.yx *
-                               vec2(${texShape[0]}, ${texShape[1]}));
-        int index = resTexRC.x * ${texShape[1]} + resTexRC.y;
+                               vec2(outputTexShape[0], outputTexShape[1]));
+        int index = resTexRC.x * outputTexShape[1] + resTexRC.y;
         return ivec2(0, index);
       }
     `;
@@ -700,10 +695,10 @@ function getOutput2DCoords(
   return `
     ivec2 getOutputCoords() {
       ivec2 resTexRC = ivec2(resultUV.yx *
-                             vec2(${texShape[0]}, ${texShape[1]}));
-      int index = resTexRC.x * ${texShape[1]} + resTexRC.y;
-      int r = index / ${shape[1]};
-      int c = index - r * ${shape[1]};
+                             vec2(outputTexShape[0], outputTexShape[1]));
+      int index = resTexRC.x * outputTexShape[1] + resTexRC.y;
+      int r = index / outputShape[1];
+      int c = index - r * outputShape[1];
       return ivec2(r, c);
     }
   `;
