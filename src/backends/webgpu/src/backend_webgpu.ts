@@ -22,6 +22,7 @@ import './flags_webgpu';
 import {DataMover, DataType, ENV, KernelBackend, Rank, ShapeMap, Tensor, Tensor3D, Tensor4D, util} from '@tensorflow/tfjs-core';
 import {Conv2DInfo} from '@tensorflow/tfjs-core/dist/ops/conv_util';
 import {upcastType} from '@tensorflow/tfjs-core/dist/types';
+import {assert} from '@tensorflow/tfjs-core/dist/util';
 import * as shaderc from '@webgpu/shaderc';
 
 import {ArgMinMaxProgram} from './kernels/argminmax_webgpu';
@@ -190,18 +191,39 @@ export class WebGPUBackend extends KernelBackend {
     }
     let dimUniforms: number[] = [];
     const bufferShapes = inputs.concat(output).map(d => d.shape);
+    let currentOffset = 0;
     bufferShapes.forEach((d, i) => {
-      // TODO: handle vec3 uniform upload in a principled way.
-      // vec3 and vec4 have the same alignment, however padding is only
-      // sometimes necessary. Complete std140 layout rules are documented here:
+      // Complete std140 layout rules are documented here:
       // tslint:disable-next-line:max-line-length
       // https://www.khronos.org/registry/OpenGL/specs/gl/glspec45.core.pdf#page=159
-      if (d.length === 3 && i > 0 && bufferShapes[i - 1].length === 3) {
+      let baseAlignment = 0;
+      switch (d.length) {
+        case 1:
+          baseAlignment = 1;
+          break;
+        case 2:
+          baseAlignment = 2;
+          break;
+        case 3:
+          baseAlignment = 4;
+          break;
+        case 4:
+          baseAlignment = 4;
+          break;
+        default:
+          assert(false, () => `Unsupported ${d.length}D shape`);
+      }
+
+      let padding = Math.ceil(currentOffset / baseAlignment) * baseAlignment -
+          currentOffset;
+      for (let p = 0; p < padding; ++p) {
         dimUniforms.push(0);
       }
       dimUniforms.push(...d);
+      currentOffset += d.length + padding;
     });
 
+    // TODO: handle padding of program-specific uniforms
     if (programUniforms) {
       dimUniforms = dimUniforms.concat(programUniforms);
     }
@@ -321,20 +343,8 @@ export class WebGPUBackend extends KernelBackend {
   private argMinMaxReduce(x: Tensor, axis: number, reduceType: 'min'|'max'):
       Tensor {
     const program = new ArgMinMaxProgram(x.shape, axis, reduceType);
-
     const output = this.makeOutputArray(program.outputShape, 'int32') as Tensor;
-
-    const uniformData = new Int32Array([
-      axis,
-      x.rank,
-      ...x.shape,
-    ]);
-    const uniforms = this.makeUniforms(uniformData);
-
-    const result = this.compileAndRun(program, [x], output, uniforms) as Tensor;
-    this.destroyBuffer(uniformData.byteLength, uniforms.resource.buffer);
-
-    return result as Tensor;
+    return this.compileAndRun(program, [x], output, [axis]) as Tensor;
   }
 
   argMin(x: Tensor, axis: number): Tensor {

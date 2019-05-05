@@ -54,6 +54,61 @@ describe('Reduction: argmax', () => {
     tf.test_util.expectArraysEqual(await result.data(), new Float32Array([0]));
   });
 
+  it('3D, axis=0', async () => {
+    const values = [
+      5,  8,  2, 11, 1, 6, 7, 10, 3, 9, 0,  4,   //
+      0,  1,  2, 3,  4, 5, 6, 7,  8, 9, 10, 11,  //
+      11, 10, 9, 8,  7, 6, 5, 4,  3, 2, 1,  0,   //
+    ];
+    const a = tf.tensor3d(values, [3, 4, 3]);
+    const result = tf.argMax(a, 0);
+    expect(result.shape).toEqual([4, 3]);
+    expect(result.dtype).toBe('int32');
+    tf.test_util.expectArraysEqual(
+        await result.data(),
+        new Float32Array([2, 2, 2, 0, 2, 0, 0, 0, 1, 0, 1, 1]));
+  });
+
+  it('3D, axis=1', async () => {
+    const values = [
+      5,  8,  2,  //
+      11, 1,  6,  //
+      7,  10, 3,  //
+      9,  0,  4,  //
+
+      0,  1,  2,   //
+      3,  4,  5,   //
+      6,  7,  8,   //
+      9,  10, 11,  //
+
+      11, 10, 9,  //
+      8,  7,  6,  //
+      5,  4,  3,  //
+      2,  1,  0,  //
+    ];
+    const a = tf.tensor3d(values, [3, 4, 3]);
+    const result = tf.argMax(a, 1);
+    expect(result.shape).toEqual([3, 3]);
+    expect(result.dtype).toBe('int32');
+    tf.test_util.expectArraysEqual(
+        await result.data(), new Float32Array([1, 2, 1, 3, 3, 3, 0, 0, 0]));
+  });
+
+  it('3D, axis=2', async () => {
+    const values = [
+      5,  8,  2, 11, 1, 6, 7, 10, 3, 9, 0,  4,   //
+      0,  1,  2, 3,  4, 5, 6, 7,  8, 9, 10, 11,  //
+      11, 10, 9, 8,  7, 6, 5, 4,  3, 2, 1,  0,   //
+    ];
+    const a = tf.tensor3d(values, [3, 4, 3]);
+    const result = tf.argMax(a, 2);
+    expect(result.shape).toEqual([3, 4]);
+    expect(result.dtype).toBe('int32');
+    tf.test_util.expectArraysEqual(
+        await result.data(),
+        new Float32Array([1, 0, 1, 0, 2, 2, 2, 2, 0, 0, 0, 0]));
+  });
+
   it('1D large', async () => {
     const n = 250000;
     const values = randomFloats(n);
@@ -85,22 +140,19 @@ describe('Reduction: argmax', () => {
     tf.test_util.expectArraysEqual(await res.data(), new Float32Array([2]));
   });
 
-  // TODO: requires transpose()
-  xit('2D, no axis specified', async () => {
+  it('2D, no axis specified', async () => {
     const a = tf.tensor2d([3, -1, 0, 100, -7, 2], [2, 3]);
     tf.test_util.expectArraysEqual(
         await tf.argMax(a).data(), new Float32Array([1, 0, 1]));
   });
 
-  // TODO: requires transpose()
-  xit('4D, no axis specified', async () => {
+  it('4D, no axis specified', async () => {
     const a = tf.tensor4d([3, -1, 0, 100, -7, 2], [2, 1, 1, 3]);
     tf.test_util.expectArraysEqual(
         await tf.argMax(a).data(), new Float32Array([1, 0, 1]));
   });
 
-  // TODO: requires transpose()
-  xit('2D, axis=0', async () => {
+  it('2D, axis=0', async () => {
     const a = tf.tensor2d([3, -1, 0, 100, -7, 2], [2, 3]);
     const r = tf.argMax(a, 0);
 
@@ -109,7 +161,7 @@ describe('Reduction: argmax', () => {
     tf.test_util.expectArraysEqual(await r.data(), new Float32Array([1, 0, 1]));
   });
 
-  // TODO: requires transpose()
+  // TODO: rank 6 not supported
   xit('6D, axis=0', async () => {
     const a = tf.tensor6d([3, -1, 0, 100, -7, 2], [2, 1, 1, 1, 1, 3]);
     const r = tf.argMax(a, 0);
@@ -119,17 +171,14 @@ describe('Reduction: argmax', () => {
     tf.test_util.expectArraysEqual(await r.data(), new Float32Array([1, 0, 1]));
   });
 
-  // TODO: requires transpose()
-  xit('2D, axis=1', async () => {
-    const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
-    tf.tensor2d([3, 2, 5, 100, -7, 2], [2, 3]);
+  it('2D, axis=1', async () => {
+    const a = tf.tensor2d([3, 2, 5, 100, -7, 2], [2, 3]);
     const r = tf.argMax(a, 1);
     expect(r.shape).toEqual([2]);
     expect(r.dtype).toBe('int32');
     tf.test_util.expectArraysEqual(await r.data(), new Float32Array([2, 0]));
   });
 
-  // TODO: requires transpose()
   it('2D, axis = -1', async () => {
     const a = tf.tensor2d([3, 2, 5, 100, -7, 2], [2, 3]);
     const r = tf.argMax(a, -1);
@@ -206,22 +255,19 @@ describe('Reduction: argmin', () => {
     tf.test_util.expectArraysEqual(await res.data(), new Float32Array([3]));
   });
 
-  // TODO: requires transpose()
-  xit('3D, ignores NaNs', async () => {
+  it('3D, ignores NaNs', async () => {
     const a = tf.tensor3d([5, 0, NaN, -1, 3], [1, 1, 5]);
     const res = tf.argMin(a, -1);
     tf.test_util.expectArraysEqual(await res.data(), new Float32Array([3]));
   });
 
-  // TODO: requires transpose()
-  xit('2D, no axis specified', async () => {
+  it('2D, no axis specified', async () => {
     const a = tf.tensor2d([3, -1, 0, 100, -7, 2], [2, 3]);
     tf.test_util.expectArraysEqual(
         await tf.argMin(a).data(), new Float32Array([0, 1, 0]));
   });
 
-  // TODO: requires transpose()
-  xit('2D, axis=0', async () => {
+  it('2D, axis=0', async () => {
     const a = tf.tensor2d([3, -1, 0, 100, -7, 2], [2, 3]);
     const r = tf.argMin(a, 0);
 

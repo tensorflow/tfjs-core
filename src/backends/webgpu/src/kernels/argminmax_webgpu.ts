@@ -18,26 +18,25 @@
 import {util} from '@tensorflow/tfjs-core';
 import * as axis_util from '@tensorflow/tfjs-core/dist/ops/axis_util';
 
+import {getCoordsDataType} from '../shader_preprocessor';
+import {computeDispatch} from '../webgpu_util';
+
 import {WebGPUProgram} from './webgpu_program';
 
 export class ArgMinMaxProgram implements WebGPUProgram {
   outputShape: number[];
   userCode: string;
+  dispatchLayout: {x: number[], y: number[]};
   dispatch: [number, number, number];
   workGroupSize: [number, number, number];
   variableNames = ['x'];
-  uniforms: string;
+  uniforms = 'uint axis;';
 
   constructor(inputShape: number[], axis: number, reduceType: 'min'|'max') {
     const axes = [axis];
-    axis_util.assertAxesAreInnerMostDims('argMax', axes, inputShape.length);
-
-    // axis, rank, dim0, dim1, ..., (allocate at least 10 so most programs can
-    // use the same shader)
-    // These uniforms are declare as uvec4's because arrays in GLSL uniform
-    // blocks are padded according to layout std140
-    const numUniforms = Math.max(2 + inputShape.length, 10);
-    this.uniforms = `uvec4 uniforms[${Math.ceil(numUniforms / 4)}];`;
+    axis_util.assertAxesAreInnerMostDims(
+        'arg' + reduceType.charAt(0).toUpperCase() + reduceType.slice(1), axes,
+        inputShape.length);
 
     const op = reduceType === 'min' ? '<' : '>';
 
@@ -46,12 +45,10 @@ export class ArgMinMaxProgram implements WebGPUProgram {
     const [outputShape, reduceShape] =
         axis_util.computeOutAndReduceShapes(inputShape, axes);
 
-    this.outputShape = outputShape;
+    this.outputShape = outputShape.length === 0 ? [1] : outputShape;
 
     // Length of the axis we're reducing on.
     const reduceSize = util.sizeFromShape(reduceShape);
-
-    const outputSize = util.sizeFromShape(outputShape);
 
     // The number of comparisons each thread will do
     const reductionFactor = 16;
@@ -60,7 +57,9 @@ export class ArgMinMaxProgram implements WebGPUProgram {
         Math.min(Math.ceil(reduceSize / reductionFactor), xMaxThreads);
 
     this.workGroupSize = [xThreads, 1, 1];
-    this.dispatch = [1, outputSize, 1];
+
+    this.dispatchLayout = {x: [], y: this.outputShape.map((d, i) => i)};
+    this.dispatch = computeDispatch(this.dispatchLayout, this.outputShape);
 
     // When xThreads > 1, each thread reduces Length / xThreads values.
     // Thes results are stored in shared memory and iteratively reduced.
@@ -97,47 +96,57 @@ export class ArgMinMaxProgram implements WebGPUProgram {
       }
 
       if (gl_LocalInvocationID.x == 0) {
-        setOutput(gl_GlobalInvocationID.y, float(bestIndex));
+        setOutput(flatOutputIndex, float(bestIndex));
       }
     `;
 
-    this.userCode = `
-      #define UNIFORM(x) uniforms[(x) / 4][(x) % 4]
-      #define AXIS UNIFORM(0)
-      #define X_RANK UNIFORM(1)
-      #define X_SHAPE_DIM(axis) UNIFORM(2 + axis)
+    const outputCoordsType = getCoordsDataType(this.outputShape.length);
 
+    const indexOutputCoords = (outputCoords: string, index: string) => {
+      if (this.outputShape.length == 1) {
+        return outputCoords;
+      } else {
+        return `${outputCoords}[${index}]`;
+      }
+    };
+
+    const indexInputShape = (index: string) => {
+      if (inputShape.length == 1) {
+        return 'xShape';
+      } else {
+        return `xShape[${index}]`;
+      }
+    };
+
+    this.userCode = `
       #define DIV_CEIL(x, y) (((x) - 1) / (y) + 1)
 
       const uint WorkGroupSize = gl_WorkGroupSize.x;
 
       ${reduceInSharedMemory ? sharedMemorySnippet : ''}
 
-      // gl_GlobalInvocationID.y is the flattened index into the output Tensor.
       // In order to get a flattened index into the input tensor, we need to
-      // unpack gl_GlobalInvocationID.y into it's dimensional components i.e.
-      // an n-dimensional index, and we need to assemble the components together
-      // with the desired index along the reduced dimension.
-      // This function outputs the offset to the first value along dimension
-      // AXIS and the stride to get the next value of the input along AXIS.
+      // add back the index along the reduced dimension to |outputCoords|.
+      // This function outputs the offset to the first value along
+      // |axis| and the stride to get the next value of the input along |axis|.
       uvec2 getInputCoordInfo() {
-        uint flatIndex = gl_GlobalInvocationID.y;
+        const ${outputCoordsType} outputCoords = getOutputCoords();
+        uint i = ${this.outputShape.length - 1};
 
         uint stride = 1;
         uint inputStride = 1;
         uint offset = 0;
 
-        for (uint r = 1; r <= X_RANK; ++r) {
-          uint length = X_SHAPE_DIM(X_RANK - r);
-          if (X_RANK - r == AXIS) {
+        for (uint r = 1; r <= ${inputShape.length}; ++r) {
+          uint length = ${indexInputShape(`${inputShape.length} - r`)};
+          if (${inputShape.length} - r == axis) {
             inputStride = stride;
           } else {
-            uint dimIndex = flatIndex % length;
-            flatIndex = flatIndex / length;
-            offset += dimIndex * stride;
+            offset += ${indexOutputCoords('outputCoords', 'i--')} * stride;
           }
           stride *= length;
         }
+
         return uvec2(offset, inputStride);
       }
 
@@ -151,7 +160,7 @@ export class ArgMinMaxProgram implements WebGPUProgram {
         uint bestIndex = 0;
         float bestValue = x[getInputIndex(coordInfo, bestIndex)];
 
-        const uint Length = X_SHAPE_DIM(AXIS);
+        const uint Length = ${indexInputShape('axis')};
         const uint WorkPerThread = DIV_CEIL(Length, WorkGroupSize);
 
         for (uint w = 0; w < WorkPerThread; ++w) {
@@ -165,10 +174,10 @@ export class ArgMinMaxProgram implements WebGPUProgram {
           }
         }
 
+        const uint flatOutputIndex = gl_GlobalInvocationID.y;
         ${
-        reduceInSharedMemory ?
-            sharedMemoryReduceSnippet :
-            'setOutput(gl_GlobalInvocationID.y, float(bestIndex));'}
+        reduceInSharedMemory ? sharedMemoryReduceSnippet :
+                               'setOutput(flatOutputIndex, float(bestIndex));'}
       }
     `;
   }
