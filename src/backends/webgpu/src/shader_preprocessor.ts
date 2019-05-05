@@ -150,7 +150,7 @@ const SET_OUTPUT_SNIPPET = `
 
 function getInputSamplingSnippet(
     inInfo: InputInfo, outShape: number[]): string {
-  let res = '';
+  let res = getSamplerFromInInfo(inInfo);
 
   const inShape = inInfo.shape;
   if (inShape.length <= outShape.length) {
@@ -160,7 +160,22 @@ function getInputSamplingSnippet(
   return res;
 }
 
-function getSamplerAtOutputCoords(inInfo: InputInfo, outShape: number[]) {
+function getSamplerFromInInfo(inInfo: InputInfo): string {
+  const texName = inInfo.name;
+  const rank = inInfo.shape.length;
+  const type = getCoordsDataType(rank);
+  const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
+
+  return `
+    float ${funcName}(${type} coords) {
+      return ${texName}[getFlatIndex(coords, 
+        ${texName.charAt(0).toLowerCase() + texName.slice(1)}Shape)];
+    }
+  `;
+}
+
+function getSamplerAtOutputCoords(
+    inInfo: InputInfo, outShape: number[]): string {
   const texName = inInfo.name;
   const texFuncSnippet = texName.charAt(0).toUpperCase() + texName.slice(1);
 
