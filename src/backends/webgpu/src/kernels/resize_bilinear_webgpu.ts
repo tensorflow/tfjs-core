@@ -39,10 +39,6 @@ export class ResizeBilinearProgram implements WebGPUProgram {
     const adjustWidth = alignCorners && newWidth > 1;
 
     this.userCode = `
-      float getValue(int b, int r, int c, int d) {
-        return x[getFlatIndex(ivec4(b, r, c, d), xShape)];
-      }
-
       void main() {
         ivec4 coords = getOutputCoords();
 
@@ -72,10 +68,10 @@ export class ResizeBilinearProgram implements WebGPUProgram {
           ivec2 sourceCeilRC = ivec2(
             min(xShape.yz - 1.0, ceil(sourceFracIndexRC)));
 
-          float topLeft = getValue(b, sourceFloorRC.x, sourceFloorRC.y, d);
-          float bottomLeft = getValue(b, sourceCeilRC.x, sourceFloorRC.y, d);
-          float topRight = getValue(b, sourceFloorRC.x, sourceCeilRC.y, d);
-          float bottomRight = getValue(b, sourceCeilRC.x, sourceCeilRC.y, d);
+          float topLeft = getX(b, sourceFloorRC.x, sourceFloorRC.y, d);
+          float bottomLeft = getX(b, sourceCeilRC.x, sourceFloorRC.y, d);
+          float topRight = getX(b, sourceFloorRC.x, sourceCeilRC.y, d);
+          float bottomRight = getX(b, sourceCeilRC.x, sourceCeilRC.y, d);
 
           vec2 fracRC = sourceFracIndexRC - vec2(sourceFloorRC);
 

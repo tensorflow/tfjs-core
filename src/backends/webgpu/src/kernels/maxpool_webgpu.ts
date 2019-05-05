@@ -44,7 +44,7 @@ export class MaxPoolProgram implements WebGPUProgram {
         if (xC < 0 || xC >= convDims.x) {
           return 0.0;
         }
-        return x[getFlatIndex(ivec4(batch, xR, xC, d), xShape)];
+        return getX(batch, xR, xC, d);
       }
 
       void main() {

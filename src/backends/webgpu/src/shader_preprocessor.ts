@@ -22,7 +22,7 @@ import {symbolicallyComputeStrides} from './shader_util';
 
 export function getCoordsDataType(rank: number): string {
   if (rank <= 1) {
-    return 'uint';
+    return 'int';
   } else if (rank === 2) {
     return 'ivec2';
   } else if (rank === 3) {
@@ -165,10 +165,12 @@ function getSamplerFromInInfo(inInfo: InputInfo): string {
   const rank = inInfo.shape.length;
   const type = getCoordsDataType(rank);
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
+  const dims = ['d0', 'd1', 'd2', 'd3'].slice(0, rank);
+  const inputs = dims.map(d => `int ${d}`).join(', ');
 
   return `
-    float ${funcName}(${type} coords) {
-      return ${texName}[getFlatIndex(coords, 
+    float ${funcName}(${inputs}) {
+      return ${texName}[getFlatIndex(${type}(${dims.join(',')}),
         ${texName.charAt(0).toLowerCase() + texName.slice(1)}Shape)];
     }
   `;
