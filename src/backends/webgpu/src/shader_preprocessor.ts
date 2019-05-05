@@ -82,7 +82,7 @@ export function makeShader(
   let uniformDeclaration = '';
   program.variableNames.forEach((x, i) => {
     uniformDeclaration += `${getCoordsDataType(inputInfo[i].shape.length)} ${
-        x.substring(0, 1).toLowerCase()}Shape; `;
+        x.substring(0, 1).toLowerCase() + x.substring(1)}Shape; `;
     prefixSnippets.push(`
       layout(std430, set = 0, binding = ${1 + i}) readonly buffer ssb${x} {
         ${mapToGlslTypes(inputInfo[i].dtype)} ${x}[];
@@ -163,6 +163,7 @@ function getInputSamplingSnippet(
 function getSamplerAtOutputCoords(inInfo: InputInfo, outShape: number[]) {
   const texName = inInfo.name;
   const texFuncSnippet = texName.charAt(0).toUpperCase() + texName.slice(1);
+
   const funcName = 'get' + texFuncSnippet + 'AtOutCoords';
 
   const inRank = inInfo.shape.length;
@@ -202,7 +203,7 @@ function getSamplerAtOutputCoords(inInfo: InputInfo, outShape: number[]) {
       ${type} coords = getOutputCoords();
       ${coordsSnippet}
       return ${texName}[getFlatIndex(${unpackedCoordsSnippet}, ${
-      texName.substring(0, 1).toLowerCase()}Shape)];
+      texName.charAt(0).toLowerCase() + texName.slice(1)}Shape)];
     }
   `;
 }

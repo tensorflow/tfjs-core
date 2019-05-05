@@ -31,7 +31,7 @@ export class ConcatProgram implements WebGPUProgram {
         concat_util.computeOutShape(shapes, 1 /* axis */) as [number, number];
     this.variableNames = shapes.map((_, i) => `T${i}`);
 
-    this.dispatchLayout = {x: [this.outputShape[0]], y: [this.outputShape[1]]};
+    this.dispatchLayout = {x: [0], y: [1]};
     this.dispatch = computeDispatch(this.dispatchLayout, this.outputShape);
 
     const offsets: number[] = new Array(shapes.length - 1);
