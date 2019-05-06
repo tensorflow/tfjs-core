@@ -16,12 +16,11 @@
  */
 
 import * as tf from '@tensorflow/tfjs-core';
+import {describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_util';
 import {expectArraysClose} from '@tensorflow/tfjs-core/dist/test_util';
 
-import * as tfwebgpu from './index';
-
-describe('WebGPU backend - convolution tests', () => {
-  beforeAll(() => tfwebgpu.ready);
+describeWithFlags('WebGPU backend - convolution tests', {}, () => {
+  beforeAll(async () => tf.ready());
 
   it('x=[1,4,4,1] f=[1,1,1,3] s=2 d=1 p=same', async () => {
     const inputDepth = 1;

@@ -16,11 +16,10 @@
  */
 
 import * as tf from '@tensorflow/tfjs-core';
+import {describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_util';
 
-import * as tfwebgpu from './index';
-
-describe('pool', () => {
-  beforeAll(async () => tfwebgpu.ready);
+describeWithFlags('webgpu pool', {}, () => {
+  beforeAll(async () => tf.ready());
 
   it('x=[1,1,1] f=[1,1] s=1 [0] => [0]', async () => {
     const x = tf.tensor3d([0], [1, 1, 1]);

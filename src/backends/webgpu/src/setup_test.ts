@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+import * as tf from '@tensorflow/tfjs-core';
 import {setTestEnvs} from '@tensorflow/tfjs-core/dist/jasmine_util';
 
 setTestEnvs([{name: 'test-webgpu', backendName: 'webgpu', flags: {}}]);
@@ -62,8 +63,8 @@ env.specFilter = spec => {
 
 // Import and run all the tests from core.
 async function runCoreTests() {
-  // TODO(smilkov): Enable when we publish new core.
-  // await tf.ready();
-  // require('@tensorflow/tfjs-core/dist/tests');
+  await tf.ready();
+  // tslint:disable-next-line: no-require-imports
+  require('@tensorflow/tfjs-core/dist/tests');
 }
 runCoreTests();
