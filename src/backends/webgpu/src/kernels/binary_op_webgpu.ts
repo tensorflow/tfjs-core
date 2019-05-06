@@ -25,14 +25,9 @@ export const ADD = 'return a + b;';
 
 export const INT_DIV = `
   float s = sign(a) * sign(b);
-  int ia = round(a);
-  int ib = round(b);
-  if (ib != 0) {
-    // Windows (D3D) wants guaranteed non-zero int division at compile-time.
-    return float(idiv(ia, ib, s));
-  } else {
-    return NAN;
-  }
+  int ia = int(round(a));
+  int ib = int(round(b));
+  return float(idiv(ia, ib, s));
 `;
 
 export class BinaryOpProgram implements WebGPUProgram {

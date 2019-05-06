@@ -121,6 +121,19 @@ export function makeShader(
 
 const SHADER_PREFIX = `
   #version 450
+
+  int imod(int x, int y) {
+    return x - y * (x / y);
+  }
+  
+  int idiv(int a, int b, float sign) {
+    int res = a / b;
+    int mod = imod(a, b);
+    if (sign < 0. && mod != 0) {
+      res -= 1;
+    }
+    return res;
+  }
 `;
 
 const SAMPLING_SNIPPETS = `
@@ -174,9 +187,11 @@ function getSamplerAtOutputCoords(inInfo: InputInfo, outShape: number[]) {
 
   let coordsSnippet = '';
 
-  if (inRank > 0) {
+  if (inRank === 0) {
+    coordsSnippet = 'coords = 0;';
+  } else {
     if (outRank < 2 && broadcastDims.length >= 1) {
-      coordsSnippet = 'coords = 0.;';
+      coordsSnippet = 'coords = 0;';
     } else {
       coordsSnippet =
           broadcastDims.map(d => `coords[${d + rankDiff}] = 0;`).join('\n');
@@ -187,13 +202,13 @@ function getSamplerAtOutputCoords(inInfo: InputInfo, outShape: number[]) {
   if (outRank < 2 && inRank > 0) {
     unpackedCoordsSnippet = 'coords';
   } else {
-    if (inRank > 1) {
+    if (outRank > 1) {
       const coordsType = getCoordsDataType(inRank);
       const coordsValues =
           inInfo.shape.map((s, i) => `coords[${i + rankDiff}]`).join(', ');
       unpackedCoordsSnippet = `${coordsType}(${coordsValues})`;
     } else {
-      unpackedCoordsSnippet = `coords[${rankDiff}]`;
+      unpackedCoordsSnippet = 'coords';
     }
   }
 
