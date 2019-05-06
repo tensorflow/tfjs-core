@@ -16,10 +16,13 @@
  */
 
 import * as tf from '@tensorflow/tfjs-core';
-import {test_util} from '@tensorflow/tfjs-core';
-import {ALL_ENVS, describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_util';
+import {expectArraysClose} from '@tensorflow/tfjs-core/dist/test_util';
 
-describeWithFlags('conv2d', ALL_ENVS, () => {
+import * as tfwebgpu from './index';
+
+describe('WebGPU backend - convolution tests', () => {
+  beforeAll(() => tfwebgpu.ready);
+
   it('x=[1,4,4,1] f=[1,1,1,3] s=2 d=1 p=same', async () => {
     const inputDepth = 1;
     const inputShape: [number, number, number] = [4, 4, inputDepth];
@@ -39,7 +42,7 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
 
     const resultData = await result.data();
     expect(result.shape).toEqual([2, 2, 3]);
-    test_util.expectArraysClose(
+    expectArraysClose(
         resultData,
         new Float32Array([10, 5, 10, 50, 25, 50, -10, -5, -10, -50, -25, -50]));
   });
@@ -57,12 +60,12 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
 
     const resultData = await result.data();
     expect(result.shape).toEqual([2, 2, 1]);
-    test_util.expectArraysClose(resultData, new Float32Array([
-                                  256,
-                                  535,
-                                  1570,
-                                  2209,
-                                ]));
+    expectArraysClose(resultData, new Float32Array([
+                        256,
+                        535,
+                        1570,
+                        2209,
+                      ]));
   });
 
   it('x=[1,3,6,1] f=[2,2,1,1] s=[1,2] d=1 p=valid', async () => {
@@ -84,7 +87,7 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
 
     const resultData = await result.data();
     expect(result.shape).toEqual([1, 2, 3, 1]);
-    test_util.expectArraysClose(
+    expectArraysClose(
         resultData, new Float32Array([58, 78, 98, 118, 138, 158]));
   });
 
@@ -106,7 +109,7 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
 
     const resultData = await result.data();
     expect(result.shape).toEqual([1, 1, 1]);
-    test_util.expectArraysClose(resultData, new Float32Array([20]));
+    expectArraysClose(resultData, new Float32Array([20]));
   });
 
   it('x=[2,2,2,1] f=[1,1,1,1] s=1 d=1 p=0', async () => {
@@ -126,7 +129,7 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
 
     const resultData = await result.data();
     expect(result.shape).toEqual([2, 2, 2, 1]);
-    test_util.expectArraysClose(resultData, new Float32Array(expected));
+    expectArraysClose(resultData, new Float32Array(expected));
   });
 
   it('x=[2,2,1] f=[2,2,1,1] s=1 d=1 p=same', async () => {
@@ -147,7 +150,7 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
 
     const resultData = await result.data();
     expect(result.shape).toEqual([2, 2, 1]);
-    test_util.expectArraysClose(resultData, new Float32Array([20, 26, 13, 12]));
+    expectArraysClose(resultData, new Float32Array([20, 26, 13, 12]));
   });
 
   it('x=[2,4,1] f=[4,2,1,1] s=1 d=1 p=same', async () => {
@@ -166,7 +169,7 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
 
     const resultData = await result.data();
     expect(result.shape).toEqual([2, 4, 1]);
-    test_util.expectArraysClose(
+    expectArraysClose(
         resultData, new Float32Array([57, 71, 85, 36, 30, 39, 48, 52]));
   });
 });

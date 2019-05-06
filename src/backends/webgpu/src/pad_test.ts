@@ -16,9 +16,12 @@
  */
 
 import * as tf from '@tensorflow/tfjs-core';
-import {ALL_ENVS, describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_util';
 
-describeWithFlags('pad', ALL_ENVS, () => {
+import * as tfwebgpu from './index';
+
+describe('pad', () => {
+  beforeAll(async () => tfwebgpu.ready);
+
   it('Should pad 1D arrays', async () => {
     const a = tf.tensor1d([1, 2, 3, 4, 5, 6], 'int32');
     const b = tf.pad1d(a, [2, 3]);

@@ -245,7 +245,6 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
         return false;
       }
     }
-    this.pendingBackendInit = null;
     this.backendInstance = this.registry[backendName];
 
     // Reset the profiler.

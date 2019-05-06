@@ -16,9 +16,12 @@
  */
 
 import * as tf from '@tensorflow/tfjs-core';
-import {ALL_ENVS, describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_util';
 
-describeWithFlags('Binary ops', ALL_ENVS, () => {
+import * as tfwebgpu from './index';
+
+describe('Binary ops', () => {
+  beforeAll(async () => tfwebgpu.ready);
+
   it('A * B', async () => {
     const a = tf.tensor1d([1, 2, 3]);
     const b = tf.tensor1d([3, 4, 5]);
