@@ -19,7 +19,7 @@
 
 import './flags_webgpu';
 
-import {DataMover, DataType, ENV, KernelBackend, Rank, ShapeMap, Tensor, Tensor3D, Tensor4D, util} from '@tensorflow/tfjs-core';
+import {DataMover, DataType, ENV, KernelBackend, Rank, ShapeMap, Tensor, Tensor2D, Tensor3D, Tensor4D, util} from '@tensorflow/tfjs-core';
 import {computeOutShape} from '@tensorflow/tfjs-core/dist/ops/concat_util';
 import {Conv2DInfo} from '@tensorflow/tfjs-core/dist/ops/conv_util';
 import {upcastType} from '@tensorflow/tfjs-core/dist/types';
@@ -332,8 +332,10 @@ export class WebGPUBackend extends KernelBackend {
     //   return this.concat([leftSide, rightSide], axis);
     // }
     const outShape = computeOutShape(tensors.map(t => t.shape), axis);
-    const tensors2D =
-        tensors.map(t => t.as2D(-1, util.sizeFromShape(t.shape.slice(axis))));
+    const tensors2D = tensors.map(t => t.reshape([
+      util.sizeFromShape(t.shape.slice(0, axis)),
+      util.sizeFromShape(t.shape.slice(axis))
+    ]) as Tensor2D);
     const program = new ConcatProgram(tensors2D.map(t => t.shape));
     const res = this.compileAndRun(program, tensors2D) as Tensor;
     return res.reshape(outShape);
