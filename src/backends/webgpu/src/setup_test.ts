@@ -35,6 +35,7 @@ const INCLUDE_LIST: string[] = [
   'resizeBilinear',
   'Unary ops',
   'relu',
+  'transpose',
 ];
 /** Tests that have these substrings in their name will be excluded. */
 const EXCLUDE_LIST: string[] = [
@@ -72,6 +73,7 @@ const EXCLUDE_LIST: string[] = [
   'relu test-webgpu {} sets negative values to 0',  // Shader compile fails.
   'relu test-webgpu {} does nothing to positive',   // Shader compile fail.
   'prelu',                                          // Not yet implemented.
+  'oneHot test-webgpu {} Depth 2, transposed diagonal',  // Not yet implemented.
 ];
 
 /**
