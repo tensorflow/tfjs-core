@@ -24,8 +24,6 @@ const env = jasmine.getEnv();
 /** Tests that have these substrings in their name will be included. */
 const INCLUDE_LIST: string[] = [
   'matmul',
-  'matMul',
-  'Binary ops',
   'add ',
   'mul ',
   'conv2d',
@@ -33,7 +31,6 @@ const INCLUDE_LIST: string[] = [
   'pool',
   'maxPool',
   'resizeBilinear',
-  'Unary ops',
   'relu',
   'transpose',
 ];
@@ -89,11 +86,6 @@ env.specFilter = spec => {
     if (name.indexOf(EXCLUDE_LIST[i]) > -1) {
       return false;
     }
-  }
-
-  // Include all tests inside a regular describe().
-  if (name.indexOf('test-webgpu') === -1) {
-    return true;
   }
 
   // Include a test inside describeWithFlags() only if the test was in the
