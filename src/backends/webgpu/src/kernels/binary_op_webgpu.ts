@@ -23,6 +23,18 @@ import {WebGPUProgram} from './webgpu_program';
 export const MUL = 'return a * b;';
 export const ADD = 'return a + b;';
 
+export const INT_DIV = `
+  float s = sign(a) * sign(b);
+  int ia = round(a);
+  int ib = round(b);
+  if (ib != 0) {
+    // Windows (D3D) wants guaranteed non-zero int division at compile-time.
+    return float(idiv(ia, ib, s));
+  } else {
+    return NAN;
+  }
+`;
+
 export class BinaryOpProgram implements WebGPUProgram {
   outputShape: number[];
   userCode: string;
