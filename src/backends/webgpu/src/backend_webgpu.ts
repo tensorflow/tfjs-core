@@ -214,7 +214,7 @@ export class WebGPUBackend extends KernelBackend {
           assert(false, () => `Unsupported ${d.length}D shape`);
       }
 
-      let padding = Math.ceil(currentOffset / baseAlignment) * baseAlignment -
+      const padding = Math.ceil(currentOffset / baseAlignment) * baseAlignment -
           currentOffset;
       for (let p = 0; p < padding; ++p) {
         dimUniforms.push(0);

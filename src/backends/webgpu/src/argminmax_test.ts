@@ -18,7 +18,7 @@
 import * as tf from '@tensorflow/tfjs-core';
 import * as tfwebgpu from './index';
 
-function computeArgMinMax(values: Array<number>, reduceType: 'min'|'max') {
+function computeArgMinMax(values: number[], reduceType: 'min'|'max') {
   return values.map((val, index) => ({val, index}))
       .reduce((acc, curr) => {
         const better =
@@ -161,16 +161,6 @@ describe('Reduction: argmax', () => {
     tf.test_util.expectArraysEqual(await r.data(), new Float32Array([1, 0, 1]));
   });
 
-  // TODO: rank 6 not supported
-  xit('6D, axis=0', async () => {
-    const a = tf.tensor6d([3, -1, 0, 100, -7, 2], [2, 1, 1, 1, 1, 3]);
-    const r = tf.argMax(a, 0);
-
-    expect(r.shape).toEqual([1, 1, 1, 1, 3]);
-    expect(r.dtype).toBe('int32');
-    tf.test_util.expectArraysEqual(await r.data(), new Float32Array([1, 0, 1]));
-  });
-
   it('2D, axis=1', async () => {
     const a = tf.tensor2d([3, 2, 5, 100, -7, 2], [2, 3]);
     const r = tf.argMax(a, 1);
@@ -195,13 +185,6 @@ describe('Reduction: argmax', () => {
     const result = tf.argMax([1, 0, 3, 2]);
     expect(result.dtype).toBe('int32');
     tf.test_util.expectArraysEqual(await result.data(), new Float32Array([2]));
-  });
-
-  xit('accepts tensor with bool values', async () => {
-    const t = tf.tensor1d([0, 1], 'bool');
-    const result = tf.argMax(t);
-    expect(result.dtype).toBe('int32');
-    tf.test_util.expectArraysEqual(await result.data(), new Float32Array([1]));
   });
 
   it('throws error for string tensor', () => {
@@ -296,13 +279,6 @@ describe('Reduction: argmin', () => {
   it('accepts a tensor-like object', async () => {
     const result = tf.argMin([1, 0, 3, 2]);
     tf.test_util.expectArraysEqual(await result.data(), new Float32Array([1]));
-  });
-
-  xit('accepts tensor with bool values', async () => {
-    const t = tf.tensor1d([0, 1], 'bool');
-    const result = tf.argMin(t);
-    expect(result.dtype).toBe('int32');
-    tf.test_util.expectArraysEqual(await result.data(), new Float32Array([0]));
   });
 
   it('throws error for string tensor', () => {

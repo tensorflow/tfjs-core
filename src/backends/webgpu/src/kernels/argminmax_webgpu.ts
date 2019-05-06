@@ -103,7 +103,7 @@ export class ArgMinMaxProgram implements WebGPUProgram {
     const outputCoordsType = getCoordsDataType(this.outputShape.length);
 
     const indexOutputCoords = (outputCoords: string, index: string) => {
-      if (this.outputShape.length == 1) {
+      if (this.outputShape.length === 1) {
         return outputCoords;
       } else {
         return `${outputCoords}[${index}]`;
@@ -111,7 +111,7 @@ export class ArgMinMaxProgram implements WebGPUProgram {
     };
 
     const indexInputShape = (index: string) => {
-      if (inputShape.length == 1) {
+      if (inputShape.length === 1) {
         return 'xShape';
       } else {
         return `xShape[${index}]`;
