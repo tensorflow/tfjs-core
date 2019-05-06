@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+import {ALL_ENVS, describeWithFlags} from './jasmine_util';
 import {expectArraysClose, expectArraysEqual} from './test_util';
 
 describe('expectArraysEqual', () => {
@@ -75,7 +76,7 @@ describe('expectArraysEqual', () => {
   });
 });
 
-describe('expectArraysClose', () => {
+describeWithFlags('expectArraysClose', ALL_ENVS, () => {
   it('same arrays', () => {
     expectArraysClose([1, 2, 3], [1, 2, 3]);
   });

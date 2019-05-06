@@ -16,9 +16,9 @@
  */
 
 import * as tf from '@tensorflow/tfjs-core';
-import {describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_util';
+import {ALL_ENVS, describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_util';
 
-describeWithFlags('matMul', {}, () => {
+describeWithFlags('matMul', ALL_ENVS, () => {
   beforeAll(async () => tf.ready());
 
   it('matMul A x B odd shared dim', async () => {

@@ -16,9 +16,9 @@
  */
 
 import * as tf from '@tensorflow/tfjs-core';
-import {describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_util';
+import {ALL_ENVS, describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_util';
 
-describeWithFlags('Binary ops', {}, () => {
+describeWithFlags('Binary ops', ALL_ENVS, () => {
   beforeAll(async () => tf.ready());
 
   it('A * B', async () => {

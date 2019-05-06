@@ -16,9 +16,9 @@
  */
 
 import * as tf from '@tensorflow/tfjs-core';
-import {describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_util';
+import {ALL_ENVS, describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_util';
 
-describeWithFlags('webgpu pool', {}, () => {
+describeWithFlags('webgpu pool', ALL_ENVS, () => {
   beforeAll(async () => tf.ready());
 
   it('x=[1,1,1] f=[1,1] s=1 [0] => [0]', async () => {

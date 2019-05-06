@@ -16,10 +16,10 @@
  */
 
 import * as tf from '@tensorflow/tfjs-core';
-import {describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_util';
+import {ALL_ENVS, describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_util';
 
-describeWithFlags('Ops benchmarks', {}, () => {
-  beforeEach(async () => tf.ready());
+describeWithFlags('Ops benchmarks', ALL_ENVS, () => {
+  beforeAll(async () => tf.ready());
 
   // Performs `trials` trials, of `reps` repetitions each. At the end of each
   // trial, endTrial() is run (and included in the benchmark time). This

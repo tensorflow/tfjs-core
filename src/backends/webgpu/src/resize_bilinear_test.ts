@@ -16,10 +16,10 @@
  */
 
 import * as tf from '@tensorflow/tfjs-core';
-import * as tfwebgpu from './index';
+import {ALL_ENVS, describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_util';
 
-describe('resizeBilinear', () => {
-  beforeAll(async () => tfwebgpu.ready);
+describeWithFlags('resizeBilinear', ALL_ENVS, () => {
+  beforeAll(async () => tf.ready());
 
   it('simple alignCorners=false', async () => {
     const input = tf.tensor3d([2, 2, 4, 4], [2, 2, 1]);

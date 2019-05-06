@@ -16,11 +16,10 @@
  */
 
 import * as tf from '@tensorflow/tfjs-core';
+import {ALL_ENVS, describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_util';
 
-import * as tfwebgpu from './index';
-
-describe('Unary ops', () => {
-  beforeAll(async () => tfwebgpu.ready);
+describeWithFlags('Unary ops', ALL_ENVS, () => {
+  beforeAll(async () => tf.ready());
 
   it('relu', async () => {
     const a = tf.tensor1d([1, -2, 0, 3, -0.1]);
