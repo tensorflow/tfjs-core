@@ -27,5 +27,3 @@ tf.registerBackend('webgpu', async () => {
   const device = await adapter.requestDevice({});
   return new WebGPUBackend(device, shaderc);
 }, 3 /*priority*/);
-
-tf.setBackend('webgpu');

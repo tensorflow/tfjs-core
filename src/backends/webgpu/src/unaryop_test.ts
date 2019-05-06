@@ -19,8 +19,6 @@ import * as tf from '@tensorflow/tfjs-core';
 import {ALL_ENVS, describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_util';
 
 describeWithFlags('Unary ops', ALL_ENVS, () => {
-  beforeAll(async () => tf.ready());
-
   it('relu', async () => {
     const a = tf.tensor1d([1, -2, 0, 3, -0.1]);
     const result = tf.relu(a);

@@ -18,9 +18,7 @@
 import * as tf from '@tensorflow/tfjs-core';
 import {ALL_ENVS, describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_util';
 
-describeWithFlags('webgpu pool', ALL_ENVS, () => {
-  beforeAll(async () => tf.ready());
-
+describeWithFlags('pool', ALL_ENVS, () => {
   it('x=[1,1,1] f=[1,1] s=1 [0] => [0]', async () => {
     const x = tf.tensor3d([0], [1, 1, 1]);
 

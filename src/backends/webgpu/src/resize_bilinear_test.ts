@@ -19,8 +19,6 @@ import * as tf from '@tensorflow/tfjs-core';
 import {ALL_ENVS, describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_util';
 
 describeWithFlags('resizeBilinear', ALL_ENVS, () => {
-  beforeAll(async () => tf.ready());
-
   it('simple alignCorners=false', async () => {
     const input = tf.tensor3d([2, 2, 4, 4], [2, 2, 1]);
     const output = input.resizeBilinear([3, 3], false);

@@ -19,9 +19,7 @@ import * as tf from '@tensorflow/tfjs-core';
 import {test_util} from '@tensorflow/tfjs-core';
 import {ALL_ENVS, describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_util';
 
-describeWithFlags('WebGPU backend - convolution tests', ALL_ENVS, () => {
-  beforeAll(async () => tf.ready());
-
+describeWithFlags('conv2d', ALL_ENVS, () => {
   it('x=[1,4,4,1] f=[1,1,1,3] s=2 d=1 p=same', async () => {
     const inputDepth = 1;
     const inputShape: [number, number, number] = [4, 4, inputDepth];
