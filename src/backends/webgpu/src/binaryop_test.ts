@@ -64,7 +64,7 @@ describe('Binary ops', () => {
         cData, new Float32Array([0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22]));
   });
 
-  it('integer division implements floor divide', async () => {
+  it('floor division', async () => {
     const a = tf.tensor1d([-6, -6, -5, -4, -3, -3, 3, 3, 2]);
     const c = tf.tensor1d([-2, 2, 3, 2, -3, 3, 2, 3, 2]);
 
@@ -75,7 +75,7 @@ describe('Binary ops', () => {
         rData, new Float32Array([3, -3, -2, -2, 1, -1, 1, 1, 1]));
   });
 
-  it('integer division broadcasts', async () => {
+  it('floor division broadcasts', async () => {
     const a = tf.tensor1d([-5, -4, 3, 2]);
     const c = tf.scalar(2);
 
