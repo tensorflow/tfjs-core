@@ -29,7 +29,7 @@ describe('transpose', () => {
     expect(t2.shape).toEqual([4, 2]);
     const result = await t2.data();
     tf.test_util.expectArraysClose(
-        Array.from(result), [1, 3, 11, 33, 2, 4, 22, 44]);
+        result, new Float32Array([1, 3, 11, 33, 2, 4, 22, 44]));
   });
 
   it('3D [r, c, d] => [d, r, c]', async () => {
@@ -39,6 +39,6 @@ describe('transpose', () => {
     expect(t2.shape).toEqual([2, 2, 2]);
     const result = await t2.data();
     tf.test_util.expectArraysClose(
-        Array.from(result), [1, 2, 3, 4, 11, 22, 33, 44]);
+        result, new Float32Array([1, 2, 3, 4, 11, 22, 33, 44]));
   });
 });
