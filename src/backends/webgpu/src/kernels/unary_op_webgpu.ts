@@ -20,7 +20,7 @@ import {WebGPUProgram} from './webgpu_program';
 
 export const RELU = 'return max(a, 0.0);';
 
-export const SIGMOID = `return 1.0 / (1.0 + exp(-1.0 * x));`;
+export const SIGMOID = `return 1.0 / (1.0 + exp(-1.0 * a));`;
 
 export class UnaryOpProgram implements WebGPUProgram {
   outputShape: number[];
