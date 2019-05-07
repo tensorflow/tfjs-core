@@ -34,6 +34,9 @@ export const CHROME_ENVS: Constraints = {
 export const BROWSER_ENVS: Constraints = {
   predicate: () => ENV.platformName === 'browser'
 };
+export const SYNC_BACKEND_ENVS: Constraints = {
+  predicate: backend => isBackendDataSync(backend)
+};
 
 export const ALL_ENVS: Constraints = {};
 
@@ -56,6 +59,11 @@ export function envSatisfiesConstraints(
     return false;
   }
   return true;
+}
+
+// Whether a backend supports dataSync.
+export function isBackendDataSync(backendName: string): boolean {
+  return ENGINE.findBackend(backendName).isDataSync();
 }
 
 // tslint:disable-next-line:no-any

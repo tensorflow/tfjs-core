@@ -49,6 +49,9 @@ const proxyBackend = new Proxy(asyncBackend, {
           `dataSync() is disabled for this backend. ` +
           `Please use .data() in unit tests.`);
     }
+    if (name === 'isDataSync') {
+      return () => false;
+    }
     const origSymbol = backend[name];
     if (typeof origSymbol === 'function') {
       // tslint:disable-next-line:no-any
