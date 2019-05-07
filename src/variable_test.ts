@@ -119,7 +119,7 @@ describeWithFlags('variable', ALL_ENVS, () => {
     const numTensors = tf.memory().numTensors;
 
     const t = tf.scalar(1);
-    const v = tf.variable(t, true, 'var');
+    const v = tf.variable(t);
 
     expect(tf.memory().numTensors).toBe(numTensors + 2);
 
