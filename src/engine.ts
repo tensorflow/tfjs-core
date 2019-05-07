@@ -310,6 +310,12 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     }
 
     delete this.registryFactory[backendName];
+
+    // Unset the backend if it is active.
+    if (this.backendName === backendName) {
+      this.backendName = null;
+      this.backendInstance = null;
+    }
   }
 
   private getSortedBackends(): string[] {
