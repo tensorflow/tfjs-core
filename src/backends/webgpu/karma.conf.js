@@ -34,7 +34,7 @@ module.exports = function(config) {
     basePath: '',
     captureTimeout: 120000,
     reportSlowerThan: 500,
-    browserDisconnectTimeout: 10000,
+    browserDisconnectTimeout: 20000,
     browserNoActivityTimeout: 180000,
     frameworks: ['jasmine', 'karma-typescript'],
     files: [
