@@ -38,8 +38,9 @@ export class Conv2DMMProgram implements WebGPUProgram {
 
   constructor(convInfo: Conv2DInfo, workPerThread: number) {
     this.outputShape = convInfo.outShape;
-    const dispatchLayout = {x: [1], y: [2], z: [0, 3]};
 
+    tf.util.assert(
+        convInfo.batchSize === 1, () => 'TODO: batching is unimplemented');
     tf.util.assert(
         convInfo.dataFormat === 'channelsLast',
         () => 'TODO: NCHW is unimplemented');
@@ -56,8 +57,15 @@ export class Conv2DMMProgram implements WebGPUProgram {
       elementsPerThread = [workPerThread, workPerThread, 1];
       matMulSource = makeMatMulPackedSource(workPerThread);
     }
+
+    const dispatchLayout = {x: [1], y: [2], z: [0]};
+    const matMulOutShape = [
+      convInfo.outShape[0],
+      convInfo.outShape[1] * convInfo.outShape[2],
+      convInfo.outShape[3]
+    ];
     this.dispatch = computeDispatch(
-        dispatchLayout, this.outputShape, this.workGroupSize,
+        dispatchLayout, matMulOutShape, this.workGroupSize,
         elementsPerThread);
 
     this.userCode = `
@@ -68,33 +76,35 @@ export class Conv2DMMProgram implements WebGPUProgram {
               all(lessThan(coord, shape));
         }
 
-        ${generateGetOutputCoords(dispatchLayout, this.outputShape.length)}
+        ${generateGetOutputCoords(dispatchLayout, matMulOutShape.length)}
 
         int batch;
 
         float mm_readA(uint row, uint col) {
+          int r = int(row), c = int(col);
           ivec4 coord = ivec4(
-              (col / WShape[1]) % WShape[0],
-              col % WShape[1],
-              col / (WShape[1] * WShape[0]),
-              row);
+              (c / WShape[1]) % WShape[0],
+              c % WShape[1],
+              c / (WShape[0] * WShape[1]),
+              r);
 
           ivec4 shape = ivec4(WShape, xShape[3], outShape[3]);
           return coordIsValid(coord, shape) ? W[getFlatIndex(coord, shape)] : 0;
         }
 
         float mm_readB(uint row, uint col) {
-          int outRow = int(col) / outShape[2];
-          int outCol = int(col) % outShape[2];
+          int r = int(row), c = int(col);
+          int outRow = c / outShape[2];
+          int outCol = c % outShape[2];
 
-          int WRow = (int(row) / WShape[1]) % WShape[0];
-          int WCol = int(row) % WShape[1];
+          int WRow = (r / WShape[1]) % WShape[0];
+          int WCol = r % WShape[1];
 
           ivec4 coord = ivec4(
               batch,
               pad[0] + outRow * stride[0] + WRow,
               pad[1] + outCol * stride[1] + WCol,
-              row / (WShape[1] * WShape[0]));
+              r / (WShape[0] * WShape[1]));
           return coordIsValid(coord, xShape) ?
               x[getFlatIndex(coord, xShape)] : 0;
         }
