@@ -271,6 +271,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
       const backend = registryFactoryEntry.factory();
       // Test if the factory returns a promise.
       if (Promise.resolve(backend) === backend) {
+        console.warn('!!!! THIS SHOULD NOT HAPPEN');
         const success =
             backend
                 .then(backendInstance => {
@@ -875,7 +876,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
       this.registry[backendName].dispose();
       delete this.registry[backendName];
     }
-    // this.pendingBackendInit = null;
+    this.pendingBackendInit = null;
     this.backendName = null;
     this.backendInstance = null;
   }
