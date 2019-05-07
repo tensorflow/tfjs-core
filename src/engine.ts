@@ -148,6 +148,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
   private pendingBackendInit: Promise<boolean>;
 
   async ready(): Promise<void> {
+    console.warn('!!!! READY WAS CALLED');
     if (this.pendingBackendInit != null) {
       return this.pendingBackendInit.then(() => {});
     }
