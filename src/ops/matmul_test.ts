@@ -29,7 +29,7 @@ describeWithFlags('matmul', ALL_ENVS, () => {
     const c = tf.matMul(a, b);
 
     expect(c.shape).toEqual([2, 2]);
-    expectArraysClose(await c.dataSync(), [0, 8, -3, 20]);
+    expectArraysClose(await c.data(), [0, 8, -3, 20]);
   });
 
   it('upcasts when dtypes dont match', async () => {

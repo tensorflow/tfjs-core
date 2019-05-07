@@ -46,8 +46,10 @@ const proxyBackend = new Proxy(asyncBackend, {
   get(target, name, receiver) {
     if (name === 'readSync') {
       throw new Error(
-          `dataSync() is disabled for this backend. ` +
-          `Please use .data() in unit tests.`);
+          `Found dataSync() in a unit test. This is disabled so unit tests ` +
+          `can run in backends that only support async data. Please use ` +
+          `.data() in unit tests or if you truly are testing dataSync(), ` +
+          `constrain your test with SYNC_BACKEND_ENVS`);
     }
     if (name === 'isDataSync') {
       return () => false;
