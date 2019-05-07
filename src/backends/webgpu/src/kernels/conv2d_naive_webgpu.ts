@@ -64,7 +64,7 @@ export class Conv2DNaiveProgram implements WebGPUProgram {
       void writeResult(uint batch, uint row, uint col, uint chan, float value) {
         ivec4 coord = ivec4(batch, row, col, chan);
         if (coordIsValid(coord, outShape)) {
-          setOutput(getFlatIndex(coord, outShape), value);
+          setOutput(batch, row, col, chan, value);
         }
       }
 

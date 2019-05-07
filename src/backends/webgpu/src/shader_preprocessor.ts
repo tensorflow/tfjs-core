@@ -109,11 +109,12 @@ export function makeShader(
           .join('\n');
 
   const outputSamplingSnippet =
-      generateGetOutputCoords(program.dispatchLayout, outputData.shape.length);
+      generateGetOutputCoords(program.dispatchLayout, outputData.shape.length) +
+      getSetOutputSnippet(outputData.shape.length);
 
   const source = [
-    SHADER_PREFIX, prefixSnippets.join('\n'), SAMPLING_SNIPPETS,
-    outputSamplingSnippet, inputSamplingSnippet, SET_OUTPUT_SNIPPET,
+    SHADER_PREFIX, prefixSnippets.join('\n'), SET_OUTPUT_SNIPPET,
+    SAMPLING_SNIPPETS, outputSamplingSnippet, inputSamplingSnippet,
     program.userCode
   ].join('\n');
   return source;
@@ -147,6 +148,22 @@ const SET_OUTPUT_SNIPPET = `
     result[flatIndex] = value;
   }
 `;
+
+function getSetOutputSnippet(outRank: number): string {
+  if (outRank < 2) {
+    return '';
+  }
+
+  const dims = ['d0', 'd1', 'd2', 'd3'].slice(0, outRank);
+  const type = getCoordsDataType(outRank);
+
+  return `
+    void setOutput(${dims.map(d => `int ${d}`).join(', ')}, float value) {
+      uint flatIndex = getFlatIndex(${type}(${dims.join(', ')}), outShape);
+      setOutput(flatIndex, value);
+    }
+  `;
+}
 
 function getInputSamplingSnippet(
     inInfo: InputInfo, outShape: number[]): string {

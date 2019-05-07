@@ -58,8 +58,6 @@ export class ResizeBilinearProgram implements WebGPUProgram {
           vec2 effectiveInputOverOutputRatioRC =
               effectiveInSize / effectiveOutSize;
 
-          uint index = getFlatIndex(coords, outShape);
-
           // Fractional source index
           vec2 sourceFracIndexRC = vec2(rc) * effectiveInputOverOutputRatioRC;
 
@@ -79,7 +77,7 @@ export class ResizeBilinearProgram implements WebGPUProgram {
           float bottom = bottomLeft + (bottomRight - bottomLeft) * fracRC.y;
           float newValue = top + (bottom - top) * fracRC.x;
 
-          setOutput(index, newValue);
+          setOutput(b, coords[1], coords[2], d, newValue);
         }
       }
     `;

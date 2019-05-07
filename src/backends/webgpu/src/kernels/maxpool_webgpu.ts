@@ -51,7 +51,6 @@ export class MaxPoolProgram implements WebGPUProgram {
         ivec4 coords = getOutputCoords();
         int batch = coords[0];
         int d = coords[3];
-        uint index = getFlatIndex(coords, outShape);
 
         if (all(lessThan(coords, outShape))) {
           ivec2 xRCCorner = coords.yz * stride - pad;
@@ -73,7 +72,7 @@ export class MaxPoolProgram implements WebGPUProgram {
               minMaxValue = max(value, minMaxValue);
             }
           }
-          setOutput(index, minMaxValue);
+          setOutput(batch, coords[1], coords[2], d, minMaxValue);
         }
       }
     `;

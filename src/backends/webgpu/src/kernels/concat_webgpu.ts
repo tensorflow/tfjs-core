@@ -40,21 +40,21 @@ export class ConcatProgram implements WebGPUProgram {
       offsets[i] = offsets[i - 1] + shapes[i][1];
     }
 
-    const outputLoc = 'getFlatIndex(coords, outShape)';
 
-    const snippets =
-        [`if (yC < ${offsets[0]}) setOutput(${outputLoc}, getT0(yR, yC));`];
+    const snippets = [
+      `if (yC < ${offsets[0]}) setOutput(coords.x, coords.y, getT0(yR, yC));`
+    ];
 
     for (let i = 1; i < offsets.length; i++) {
       const shift = offsets[i - 1];
       snippets.push(
           `else if (yC < ${offsets[i]}) ` +
-          `setOutput(${outputLoc}, getT${i}(yR, yC-${shift}));`);
+          `setOutput(coords.x, coords.y, getT${i}(yR, yC-${shift}));`);
     }
     const lastIndex = offsets.length;
     const lastShift = offsets[offsets.length - 1];
-    snippets.push(
-        `else setOutput(${outputLoc}, getT${lastIndex}(yR, yC-${lastShift}));`);
+    snippets.push(`else setOutput(coords.x, coords.y, getT${lastIndex}(yR, yC-${
+        lastShift}));`);
 
     this.userCode = `
       void main() {
