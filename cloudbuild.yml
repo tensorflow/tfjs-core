@@ -5,14 +5,9 @@ steps:
   args: ['install']
 - name: 'node:10'
   entrypoint: 'yarn'
-  id: 'build'
-  args: ['build-ci']
-  waitFor: ['yarn']
-- name: 'node:10'
-  entrypoint: 'yarn'
   id: 'test'
   args: ['test-ci']
-  waitFor: ['build']
+  waitFor: ['yarn']
   env: ['BROWSERSTACK_USERNAME=deeplearnjs1']
   secretEnv: ['BROWSERSTACK_KEY']
 - name: 'node:10'
@@ -42,7 +37,7 @@ steps:
   entrypoint: 'yarn'
   id: 'test-async-backends'
   args: ['test-async-backends']
-  waitFor: ['build']
+  waitFor: ['yarn']
 secrets:
 - kmsKeyName: projects/learnjs-174218/locations/global/keyRings/tfjs/cryptoKeys/enc
   secretEnv:
