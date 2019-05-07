@@ -122,14 +122,10 @@ export function makeShader(
 
 const SHADER_PREFIX = `
   #version 450
-
-  int imod(int x, int y) {
-    return x - y * (x / y);
-  }
   
   int idiv(int a, int b, float sign) {
     int res = a / b;
-    int mod = imod(a, b);
+    int mod = a % b;
     if (sign < 0. && mod != 0) {
       res -= 1;
     }
