@@ -1178,7 +1178,7 @@ export class MathBackendCPU implements KernelBackend {
 
     const resultValues = new Float32Array(y.size);
     const values = this.readSync(y.dataId) as TypedArray;
-    const dyValues = this.readSync(y.dataId) as TypedArray;
+    const dyValues = this.readSync(dy.dataId) as TypedArray;
     for (let i = 0; i < values.length; ++i) {
       const v = values[i];
       if (v >= 1) {
