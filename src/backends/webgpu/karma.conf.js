@@ -32,6 +32,10 @@ module.exports = function(config) {
   }
   config.set({
     basePath: '',
+    captureTimeout: 120000,
+    reportSlowerThan: 500,
+    browserDisconnectTimeout: 10000,
+    browserNoActivityTimeout: 180000,
     frameworks: ['jasmine', 'karma-typescript'],
     files: [
       'src/setup_test.ts',       // Setup the environment for the tests.
