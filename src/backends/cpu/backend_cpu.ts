@@ -182,6 +182,9 @@ export class MathBackendCPU implements KernelBackend {
     }
     return this.data.get(dataId).values;
   }
+  isDataSync(): boolean {
+    return true;
+  }
 
   bufferSync<R extends Rank>(t: Tensor<R>): TensorBuffer<R> {
     return buffer(t.shape, t.dtype, this.readSync(t.dataId)) as TensorBuffer<R>;
