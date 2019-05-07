@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2019 Google Inc. All Rights Reserved.
+ * Copyright 2019 Google LLC. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,20 +15,18 @@
  * =============================================================================
  */
 
-import {ENV} from '@tensorflow/tfjs-core';
+import {BROWSER_ENVS, describeWithFlags} from '../jasmine_util';
 
-/** Whether we submit commands to the device queue immediately. */
-ENV.registerFlag('WEBGPU_IMMEDIATE_EXECUTION_ENABLED', () => true);
+import {PlatformBrowser} from './platform_browser';
 
-/**
- * Thread register block size for matmul kernel. If 0, we use the version of
- * matMul without register blocking.
- */
-ENV.registerFlag('WEBGPU_MATMUL_WORK_PER_THREAD', () => 4);
+describeWithFlags('PlatformBrowser', BROWSER_ENVS, async () => {
+  it('fetch calls window.fetch', async () => {
+    const response = new Response();
+    spyOn(window, 'fetch').and.returnValue(response);
+    const platform = new PlatformBrowser();
 
-/**
- * -1: conv2d_naive
- *  0: conv2d_mm with matmul without register blocking
- * >0: conv2d_mm with matmul_packed with WPT=this
- */
-ENV.registerFlag('WEBGPU_CONV2D_WORK_PER_THREAD', () => 2);
+    await platform.fetch('test/url', {method: 'GET'});
+
+    expect(window.fetch).toHaveBeenCalledWith('test/url', {method: 'GET'});
+  });
+});
