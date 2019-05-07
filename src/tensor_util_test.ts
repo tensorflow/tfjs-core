@@ -22,7 +22,7 @@ import {getTensorsInContainer, isTensorInList} from './tensor_util';
 import {convertToTensor} from './tensor_util_env';
 import {expectArraysClose, expectArraysEqual} from './test_util';
 
-describeWithFlags('tensor_util.isTensorInList', ALL_ENVS, () => {
+describe('tensor_util.isTensorInList', () => {
   it('not in list', () => {
     const a = tf.scalar(1);
     const list: Tensor[] = [tf.scalar(1), tf.tensor1d([1, 2, 3])];
@@ -38,7 +38,7 @@ describeWithFlags('tensor_util.isTensorInList', ALL_ENVS, () => {
   });
 });
 
-describeWithFlags('getTensorsInContainer', ALL_ENVS, () => {
+describe('getTensorsInContainer', () => {
   it('null input returns empty tensor', () => {
     const results = getTensorsInContainer(null);
 

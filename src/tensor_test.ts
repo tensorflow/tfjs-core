@@ -1424,7 +1424,7 @@ describeWithFlags('tensor', ALL_ENVS, () => {
   });
 });
 
-describeWithFlags('tensor.toString', ALL_ENVS, () => {
+describe('tensor.toString', () => {
   it('scalar verbose', () => {
     const verbose = true;
     const str = tf.scalar(5).toString(verbose);
