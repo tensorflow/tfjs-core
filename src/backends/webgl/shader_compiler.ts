@@ -17,7 +17,6 @@
 
 import {getBroadcastDims} from '../../ops/broadcast_util';
 import * as util from '../../util';
-
 // TK this introduces a circular import. Check if this will be a problem
 // for g3 sync
 import {GPGPUProgram} from '../../webgl';
@@ -72,6 +71,11 @@ export function assembleProgramSource(
       inputInfos, outShapeInfo, userCode, program.usesPackedTextures);
 
   console.timeEnd('assembleProgramSource');
+
+  // console.log('---------- ASSEMBLED -----------');
+  // console.log(source);
+  // console.log('---------- END ASSEMBLED -----------\n\n');
+
   return {
     source,
     inputInfos,
@@ -116,6 +120,8 @@ export function makeShader(
         getPackedOutputSamplingSnippet(outputShape.logicalShape, outTexShape);
     floatTextureSetOutputSnippet = getFloatTextureSetRGBASnippet(glsl);
   } else {
+    // console.log(
+    //     'OUTPUTSHAPE', outputShape.logicalShape, outTexShape, outputShape);
     outputSamplingSnippet +=
         getOutputSamplingSnippet(outputShape.logicalShape, outTexShape);
     floatTextureSetOutputSnippet = getFloatTextureSetRSnippet(glsl);
@@ -129,6 +135,10 @@ export function makeShader(
     shaderPrefix, floatTextureSampleSnippet, floatTextureSetOutputSnippet,
     inputPrefixSnippet, outputSamplingSnippet, inputSamplingSnippet, userCode
   ].join('\n');
+
+  // console.log('PROGRAM SOURCE-----------');
+  // console.log(source);
+  // console.log('END PROGRAM SOURCE-----------');
   return source;
 }
 
@@ -174,41 +184,34 @@ function getPackedSamplerFromInInfo(inInfo: InputInfo): string {
 
 function getOutputShapeSnippet(
     shape: number[], texShape: [number, number]): string {
-  // We don't want to the program text to change based on shape.
-  // so allocate the largest array the shape info could possible use at all
-  // times.
-  const MAX_TENSOR_RANK =
-      6;  // TODO THIS WOULD NEED TO BE MORE GLOBALLY DECLARED.
-  const TEXSHAPE_RANK =
-      2;  // TODO THIS WOULD NEED TO BE MORE GLOBALLY DECLARED.
-  let snip = `uniform int outputShape${name}[${MAX_TENSOR_RANK}]; \n`;
-  // snip += `// outputShape SHAPE [${shape.join(',')}] \n`;  // TEMP
-  if (texShape) {  // is this ever null?
-    snip += `uniform float outputTexShape${name}[${TEXSHAPE_RANK}]; \n`;
-    // snip += `// outputTexShape SHAPE [${texShape.join(',')}] \n`;  // TEMP
+  // We don't want to the program text to change based on shape so allocate the
+  // largest array the shape info could possible use at all times.
+  // TODO TK Move these to class
+  const MAX_TENSOR_RANK = 6;
+  const TEXSHAPE_RANK = 2;
+  let snip = `uniform int outputShape[${MAX_TENSOR_RANK}]; \n`;
+  snip += `// Original shape ${shape}\n`;
+  if (texShape) {
+    snip += `uniform int outputTexShape[${TEXSHAPE_RANK}]; \n`;
+    snip += `// Original texShape ${texShape}\n`;
   }
-  console.log('getOutputShapeSnippet\n', snip);
   return snip;
 }
 
 function getInputShapeSnippet(name: string, shapeInfo: ShapeInfo) {
   // return `uniform int shape${name}[${shapeInfo.logicalShape.length}]; \n`;
 
-  // We don't want to the program text to change based on shape.
-  // so allocate the largest array the shape info could possible use at all
-  // times.
-  const MAX_TENSOR_RANK =
-      6;  // TODO THIS WOULD NEED TO BE MORE GLOBALLY DECLARED.
-  const TEXSHAPE_RANK =
-      2;  // TODO THIS WOULD NEED TO BE MORE GLOBALLY DECLARED.
+  // We don't want to the program text to change based on shape so allocate the
+  // largest array the shape info could possible use at all times.
+  // TODO TK Move these to class
+  const MAX_TENSOR_RANK = 6;
+  const TEXSHAPE_RANK = 2;
   let snip = `uniform int shape${name}[${MAX_TENSOR_RANK}]; \n`;
-
-  // snip += `// ORIG SHAPE [${shapeInfo.logicalShape.join(',')}] \n`;  // TEMP
+  snip += `// Original shape ${shapeInfo.logicalShape}\n`;
   if (shapeInfo.texShape) {
-    snip += `uniform float texShape${name}[${TEXSHAPE_RANK}]; \n`;
-    // snip += `// TEX SHAPE [${shapeInfo.texShape.join(',')}] \n`;  // TEMP
+    snip += `uniform int texShape${name}[${TEXSHAPE_RANK}]; \n`;
+    snip += `// texShape ${shapeInfo.texShape}\n`;
   }
-  console.log('getShapeUniformDeclaration\n', snip);
   return snip;
 }
 
@@ -217,7 +220,6 @@ function getInputSamplingSnippet(
     usesPackedTextures = false): string {
   let res = '';
   if (inInfo.shapeInfo.logicalShape.length > 0) {
-    console.log('inInfo', inInfo);
     res += getInputShapeSnippet(inInfo.name, inInfo.shapeInfo);
   }
   if (usesPackedTextures) {
@@ -466,14 +468,14 @@ function getOutput1DCoords(
   if (texShape[0] === 1) {
     return `
       int getOutputCoords() {
-        return int(resultUV.x * outputTexShape[0]);
+        return int(resultUV.x * float(outputTexShape[1]));
       }
     `;
   }
   if (texShape[1] === 1) {
     return `
       int getOutputCoords() {
-        return int(resultUV.y * outputTexShape[0]);
+        return int(resultUV.y * float(outputTexShape[0]));
       }
     `;
   }
@@ -485,6 +487,31 @@ function getOutput1DCoords(
     }
   `;
 }
+
+// function getOutput1DCoords(
+//     shape: [number], texShape: [number, number]): string {
+//   if (texShape[0] === 1) {
+//     return `
+//       int getOutputCoords() {
+//         return int(resultUV.x * ${texShape[1]}.0);
+//       }
+//     `;
+//   }
+//   if (texShape[1] === 1) {
+//     return `
+//       int getOutputCoords() {
+//         return int(resultUV.y * ${texShape[0]}.0);
+//       }
+//     `;
+//   }
+//   return `
+//     int getOutputCoords() {
+//       ivec2 resTexRC = ivec2(resultUV.yx *
+//                              vec2(${texShape[0]}, ${texShape[1]}));
+//       return resTexRC.x * ${texShape[1]} + resTexRC.y;
+//     }
+//   `;
+// }
 
 function getOutputPacked3DCoords(
     shape: [number, number, number], texShape: [number, number]): string {
@@ -512,9 +539,8 @@ function getOutputPacked3DCoords(
 
 function getOutput3DCoords(
     shape: [number, number, number], texShape: [number, number]): string {
-  const coordsFromIndexSnippet =
-      shader_util.getLogicalCoordinatesFromFlatIndex(['r', 'c', 'd'], shape);
-
+  const coordsFromIndexSnippet = shader_util.getLogicalCoordinatesFromFlatIndex(
+      ['r', 'c', 'd'], shape, 'index', 'outputShape');
   return `
     ivec3 getOutputCoords() {
       ivec2 resTexRC = ivec2(resultUV.yx *
@@ -570,12 +596,12 @@ function getOutput4DCoords(
     shape: [number, number, number, number],
     texShape: [number, number]): string {
   const coordsFromIndexSnippet = shader_util.getLogicalCoordinatesFromFlatIndex(
-      ['r', 'c', 'd', 'd2'], shape);
+      ['r', 'c', 'd', 'd2'], shape, 'index', 'outputShape');
 
   return `
     ivec4 getOutputCoords() {
       ivec2 resTexRC = ivec2(resultUV.yx *
-        vec2(outputTexShape[0], outputTexShape[0]));
+        vec2(outputTexShape[0], outputTexShape[1]));
       int index = resTexRC.x * outputTexShape[1] + resTexRC.y;
       ${coordsFromIndexSnippet}
       return ivec4(r, c, d, d2);
@@ -668,7 +694,8 @@ function getOutput2DCoords(
   if (util.arraysEqual(shape, texShape)) {
     return `
       ivec2 getOutputCoords() {
-        return ivec2(resultUV.yx * vec2(outputTexShape[0], outputTexShape[1]));
+        return ivec2(resultUV.yx * vec2(outputTexShape[0],
+        outputTexShape[1]));
       }
     `;
   }
@@ -764,7 +791,6 @@ function getPackedSampler1D(inputInfo: InputInfo): string {
 function getSampler1D(inputInfo: InputInfo): string {
   const texName = inputInfo.name;
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
-
   if (inputInfo.shapeInfo.isUniform) {
     // Uniform arrays will be less than 65505 (no risk of float16 overflow).
     return `
@@ -777,6 +803,7 @@ function getSampler1D(inputInfo: InputInfo): string {
   const texShape = inputInfo.shapeInfo.texShape;
   const tNumR = texShape[0];
   const tNumC = texShape[1];
+  const texShapeUniform = `texShape${texName}`;
 
   if (tNumC === 1 && tNumR === 1) {
     return `
@@ -789,7 +816,8 @@ function getSampler1D(inputInfo: InputInfo): string {
   if (tNumC === 1) {
     return `
       float ${funcName}(int index) {
-        vec2 uv = vec2(0.5, (float(index + ${offset}) + 0.5) / ${tNumR}.0);
+        vec2 uv = vec2(0.5, (float(index + ${offset}) + 0.5) /
+          float(${texShapeUniform}[0]));
         return sampleTexture(${texName}, uv);
       }
     `;
@@ -797,14 +825,18 @@ function getSampler1D(inputInfo: InputInfo): string {
   if (tNumR === 1) {
     return `
       float ${funcName}(int index) {
-        vec2 uv = vec2((float(index + ${offset}) + 0.5) / ${tNumC}.0, 0.5);
+        vec2 uv = vec2((float(index + ${offset}) + 0.5) /
+          float(${texShapeUniform}[1]), 0.5);
         return sampleTexture(${texName}, uv);
       }
     `;
   }
   return `
     float ${funcName}(int index) {
-      vec2 uv = uvFromFlat(${tNumR}, ${tNumC}, index + ${offset});
+      vec2 uv = uvFromFlat(
+        ${texShapeUniform}[0],
+        ${texShapeUniform}[1],
+        index + ${offset});
       return sampleTexture(${texName}, uv);
     }
   `;
@@ -848,36 +880,18 @@ function getSampler2D(inputInfo: InputInfo): string {
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
   const texShape = inputInfo.shapeInfo.texShape;
 
-  const inputName = inputInfo.name;
-
   if (texShape != null && util.arraysEqual(shape, texShape)) {
-    const texNumR = texShape[0];
-    const texNumC = texShape[1];
-
-    console.log('getSampler2D', texNumR, texNumC);
-    const texShapeUniformName = `texShape${inputName}`;
-    console.log('inputInfo', inputInfo);
-    console.log('texShapeUniformName', texShapeUniformName);
-
-    // return `
-    //   float ${funcName}(int row, int col) {
-    //     vec2 uv = (vec2(col, row) + halfCR) / vec2(${texNumC}.0,
-    //     ${texNumR}.0); return sampleTexture(${texName}, uv);
-    //   }
-    // `;
-
-    // TKCURR
-    const SNIP = `
+    const texShapeUniform = `texShape${texName}`;
+    return `
         float ${funcName}(int row, int col) {
-          vec2 uv = (vec2(col, row) + halfCR) / vec2(${
-        texShapeUniformName}[1], ${texShapeUniformName}[0]);
+          vec2 uv = (vec2(col, row) + halfCR) / vec2(
+              floor(float(${texShapeUniform}[1])),
+              floor(float(${texShapeUniform}[0]))
+            );
           return sampleTexture(${texName}, uv);
         }
       `;
-    console.log('sampler', SNIP);
-    return SNIP;
   }
-
 
   const {newShape, keptDims} = util.squeezeShape(shape);
   const squeezedShape = newShape;
@@ -892,6 +906,8 @@ function getSampler2D(inputInfo: InputInfo): string {
     `;
   }
 
+  // TODO TK upload shape as uniform for these inputs as well. and propagate
+  // usage to getUniformSampler.
   if (inputInfo.shapeInfo.isUniform) {
     // Uniform arrays will be less than 65505 (no risk of float16 overflow).
     return `
@@ -904,13 +920,16 @@ function getSampler2D(inputInfo: InputInfo): string {
 
   const texNumR = texShape[0];
   const texNumC = texShape[1];
+  const texShapeUniform = `texShape${texName}`;
+  const shapeUniform = `shape${texName}`;
   const offset = getFlatOffsetUniformName(texName);
   if (texNumC === 1) {
     // index is used directly as physical (no risk of float16 overflow).
     return `
     float ${funcName}(int row, int col) {
-      float index = dot(vec3(row, col, ${offset}), vec3(${shape[1]}, 1, 1));
-      vec2 uv = vec2(0.5, (index + 0.5) / ${texNumR}.0);
+      float index = dot(vec3(row, col, ${offset}), 
+        vec3(${shapeUniform}[1], 1, 1));
+      vec2 uv = vec2(0.5, (index + 0.5) / float(${texShapeUniform}[0]));
       return sampleTexture(${texName}, uv);
     }
   `;
@@ -919,8 +938,9 @@ function getSampler2D(inputInfo: InputInfo): string {
     // index is used directly as physical (no risk of float16 overflow).
     return `
     float ${funcName}(int row, int col) {
-      float index = dot(vec3(row, col, ${offset}), vec3(${shape[1]}, 1, 1));
-      vec2 uv = vec2((index + 0.5) / ${texNumC}.0, 0.5);
+      float index = dot(vec3(row, col, ${offset}), 
+        vec3(${shapeUniform}[1], 1, 1));
+      vec2 uv = vec2((index + 0.5) / float(${texShapeUniform}[1]), 0.5);
       return sampleTexture(${texName}, uv);
     }
   `;
@@ -929,8 +949,9 @@ function getSampler2D(inputInfo: InputInfo): string {
   return `
   float ${funcName}(int row, int col) {
     // Explicitly use integer operations as dot() only works on floats.
-    int index = row * ${shape[1]} + col + ${offset};
-    vec2 uv = uvFromFlat(${texNumR}, ${texNumC}, index);
+    int index = row * ${shapeUniform}[1] + col + ${offset};
+    vec2 uv = uvFromFlat(${texShapeUniform}[0], 
+        ${texShapeUniform}[1], index);
     return sampleTexture(${texName}, uv);
   }
 `;
@@ -977,8 +998,12 @@ function getSampler3D(inputInfo: InputInfo): string {
   const shape = inputInfo.shapeInfo.logicalShape;
   const texName = inputInfo.name;
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
+  const shapeUniform = `shape${texName}`;
+
   const stride0 = shape[1] * shape[2];
   const stride1 = shape[2];
+  const stride0Prog = `${shapeUniform}[1] * ${shapeUniform}[2]`;
+  const stride1Prog = `${shapeUniform}[2]`;
 
   const {newShape, keptDims} = util.squeezeShape(shape);
   const squeezedShape = newShape;
@@ -1005,17 +1030,19 @@ function getSampler3D(inputInfo: InputInfo): string {
   }
 
   const texShape = inputInfo.shapeInfo.texShape;
-  const texNumR = texShape[0];
+  // const texNumR = texShape[0];
   const texNumC = texShape[1];
+  const texShapeUniform = `texShape${texName}`;
   const flatOffset = inputInfo.shapeInfo.flatOffset;
   if (texNumC === stride0 && flatOffset == null) {
     // texC is used directly as physical (no risk of float16 overflow).
     return `
         float ${funcName}(int row, int col, int depth) {
           float texR = float(row);
-          float texC = dot(vec2(col, depth), vec2(${stride1}, 1));
+          float texC = dot(vec2(col, depth), vec2(${stride1Prog}, 1));
           vec2 uv = (vec2(texC, texR) + halfCR) /
-                     vec2(${texNumC}.0, ${texNumR}.0);
+                     vec2(float(${texShapeUniform}[1]), 
+                      float(${texShapeUniform}[0]));
           return sampleTexture(${texName}, uv);
         }
       `;
@@ -1025,9 +1052,10 @@ function getSampler3D(inputInfo: InputInfo): string {
     // texR is used directly as physical (no risk of float16 overflow).
     return `
     float ${funcName}(int row, int col, int depth) {
-      float texR = dot(vec2(row, col), vec2(${shape[1]}, 1));
+      float texR = dot(vec2(row, col), vec2(${shapeUniform}[1], 1));
       float texC = float(depth);
-      vec2 uv = (vec2(texC, texR) + halfCR) / vec2(${texNumC}.0, ${texNumR}.0);
+      vec2 uv = (vec2(texC, texR) + halfCR) /
+        vec2(float(${texShapeUniform}[1]), float(${texShapeUniform}[0]));
       return sampleTexture(${texName}, uv);
     }
   `;
@@ -1037,8 +1065,10 @@ function getSampler3D(inputInfo: InputInfo): string {
   return `
       float ${funcName}(int row, int col, int depth) {
         // Explicitly use integer operations as dot() only works on floats.
-        int index = row * ${stride0} + col * ${stride1} + depth + ${offset};
-        vec2 uv = uvFromFlat(${texNumR}, ${texNumC}, index);
+        int index = row * ${stride0Prog} + col * ${stride1Prog} + depth + 
+          ${offset};
+        vec2 uv = uvFromFlat(${texShapeUniform}[0], 
+          ${texShapeUniform}[1], index);
         return sampleTexture(${texName}, uv);
       }
   `;
@@ -1080,9 +1110,13 @@ function getSampler4D(inputInfo: InputInfo): string {
   const shape = inputInfo.shapeInfo.logicalShape;
   const texName = inputInfo.name;
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
+  const shapeUniform = `shape${texName}`;
   const stride2 = shape[3];
   const stride1 = shape[2] * stride2;
   const stride0 = shape[1] * stride1;
+  const stride2Prog = `${shapeUniform}[3]`;
+  const stride1Prog = `${shapeUniform}[2] * ${stride2Prog}`;
+  const stride0Prog = `${shapeUniform}[1] * ${stride1Prog}`;
 
   const {newShape, keptDims} = util.squeezeShape(shape);
   if (newShape.length < shape.length) {
@@ -1109,19 +1143,22 @@ function getSampler4D(inputInfo: InputInfo): string {
 
   const flatOffset = inputInfo.shapeInfo.flatOffset;
   const texShape = inputInfo.shapeInfo.texShape;
-  const texNumR = texShape[0];
+  // const texNumR = texShape[0];
   const texNumC = texShape[1];
+  const texShapeUniform = `texShape${texName}`;
 
   if (texNumC === stride0 && flatOffset == null) {
     // texC is used directly as physical (no risk of float16 overflow).
     return `
+      //QQ
       float ${funcName}(int row, int col, int depth, int depth2) {
         float texR = float(row);
         float texC =
             dot(vec3(col, depth, depth2),
-                vec3(${stride1}, ${stride2}, 1));
+                vec3(${stride1Prog}, ${stride2Prog}, 1));
         vec2 uv = (vec2(texC, texR) + halfCR) /
-                   vec2(${texNumC}.0, ${texNumR}.0);
+                   vec2(float(${texShapeUniform}[1]), 
+                    float(${texShapeUniform}[0]));
         return sampleTexture(${texName}, uv);
       }
     `;
@@ -1131,10 +1168,12 @@ function getSampler4D(inputInfo: InputInfo): string {
     return `
       float ${funcName}(int row, int col, int depth, int depth2) {
         float texR = dot(vec3(row, col, depth),
-                         vec3(${shape[1] * shape[2]}, ${shape[2]}, 1));
+                         vec3(
+                           ${shapeUniform}[1] * ${shapeUniform}[2], 
+                           ${shapeUniform}[2], 1));
         float texC = float(depth2);
         vec2 uv = (vec2(texC, texR) + halfCR) /
-                  vec2(${texNumC}.0, ${texNumR}.0);
+                  vec2(${texShapeUniform}[1], ${texShapeUniform}[0]);
         return sampleTexture(${texName}, uv);
       }
     `;
@@ -1144,9 +1183,12 @@ function getSampler4D(inputInfo: InputInfo): string {
   return `
     float ${funcName}(int row, int col, int depth, int depth2) {
       // Explicitly use integer operations as dot() only works on floats.
-      int index = row * ${stride0} + col * ${stride1} +
-          depth * ${stride2} + depth2;
-      vec2 uv = uvFromFlat(${texNumR}, ${texNumC}, index + ${offset});
+      int index = row * ${stride0Prog} + col * ${stride1Prog} +
+          depth * ${stride2Prog} + depth2;
+      vec2 uv = uvFromFlat(
+        ${texShapeUniform}[0], 
+        ${texShapeUniform}[1], 
+        index + ${offset});
       return sampleTexture(${texName}, uv);
     }
   `;

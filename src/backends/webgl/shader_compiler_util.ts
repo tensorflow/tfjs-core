@@ -23,10 +23,20 @@ import * as util from '../../util';
  * the index until the index equals the final dimension coordinate.
  */
 export function getLogicalCoordinatesFromFlatIndex(
-    coords: string[], shape: number[], index = 'index'): string {
-  const strides = util.computeStrides(shape);
+    coords: string[], shape: number[], index = 'index',
+    shapeUniform?: string): string {
+  let strides: Array<string|number>;
+  // If a uniform name is passed, we will splice in expressions that use the
+  // shape information rather than splicing shape values in directly.
+  if (shapeUniform != null) {
+    // TK TEMPTEMP
+    // strides = util.computeStrideExpr(shape, shapeUniform);
+    strides = util.computeStrides(shape);
+  } else {
+    strides = util.computeStrides(shape);
+  }
   return strides
-      .map((stride, i) => {
+      .map((stride: number|string, i) => {
         const line1 = `int ${coords[i]} = ${index} / ${stride}`;
         const line2 = i === strides.length - 1 ?
             `int ${coords[i + 1]} = ${index} - ${coords[i]} * ${stride}` :

@@ -2412,9 +2412,11 @@ export class MathBackendWebGL implements KernelBackend {
       texData: this.texData.get(output.dataId),
       isUniform: false
     };
+    // TK TEMPTEMP
     const shortKey = gpgpu_math.makeShaderKey(program, inputsData, outputData);
-    const key = gpgpu_math.makeShaderKeyWhole(program, inputsData, outputData);
-    const binary = this.getAndSaveBinary(key, shortKey, () => {
+    // const key = gpgpu_math.makeShaderKeyWhole(program, inputsData,
+    // outputData);
+    const binary = this.getAndSaveBinary(shortKey, shortKey, () => {
       return gpgpu_math.compileProgram(
           this.gpgpu, program, inputsData, outputData);
     });
@@ -2442,6 +2444,9 @@ export class MathBackendWebGL implements KernelBackend {
 
   private recordCacheStats(
       key: string, shortKey: string, binary: GPGPUBinary, scopeName: string) {
+    if (window.debug.cacheMissMap == null) {
+      return;
+    }
     if (window.debug.cacheMissMap[scopeName] == null) {
       window.debug.cacheMissMap[scopeName] = 0;
       window.debug.cacheMissShortkeyVariants[scopeName] = new Set();
@@ -2468,10 +2473,12 @@ export class MathBackendWebGL implements KernelBackend {
 
       this.recordCacheStats(key, shortKey, this.binaryCache[key], scopeName);
     } else {
-      if (window.debug.cacheHitCounter == null) {
-        window.debug.cacheHitCounter = 0;
+      if (window.debug.cacheMissMap != null) {
+        if (window.debug.cacheHitCounter == null) {
+          window.debug.cacheHitCounter = 0;
+        }
+        window.debug.cacheHitCounter += 1;
       }
-      window.debug.cacheHitCounter += 1;
     }
 
     return this.binaryCache[key];

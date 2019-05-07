@@ -539,6 +539,25 @@ export function computeStrides(shape: number[]): number[] {
   return strides;
 }
 
+// TODO TK Add tests
+// compare to symbolicallyComputeStrides...
+export function computeStrideExpr(
+    shape: number[], uniformName: string): string[] {
+  const rank = shape.length;
+  if (rank < 2) {
+    return [];
+  }
+
+  // Last dimension has implicit stride of 1, thus having D-1 (instead of D)
+  // strides.
+  const strides: string[] = new Array(rank - 1);
+  strides[rank - 2] = `${uniformName}[${rank - 1}]`;
+  for (let i = rank - 3; i >= 0; --i) {
+    strides[i] = `(${strides[i + 1]} * ${uniformName}[${i + 1}])`;
+  }
+  return strides;
+}
+
 export function toTypedArray(
     a: TensorLike, dtype: DataType, debugMode: boolean): TypedArray {
   if (dtype === 'string') {
