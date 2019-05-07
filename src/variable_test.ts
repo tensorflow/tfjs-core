@@ -115,6 +115,24 @@ describeWithFlags('variable', ALL_ENVS, () => {
     expect(tf.memory().numTensors).toBe(numTensors);
   });
 
+  it('double disposing a variable works', () => {
+    const numTensors = tf.memory().numTensors;
+
+    const t = tf.scalar(1);
+    const v = tf.variable(t);
+
+    expect(tf.memory().numTensors).toBe(numTensors + 2);
+
+    t.dispose();
+    v.dispose();
+
+    expect(tf.memory().numTensors).toBe(numTensors);
+
+    // Double dispose the variable.
+    v.dispose();
+    expect(tf.memory().numTensors).toBe(numTensors);
+  });
+
   it('constructor does not dispose', async () => {
     const a = tf.scalar(2);
     const v = tf.variable(a);
