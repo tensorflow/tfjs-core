@@ -40,7 +40,6 @@ export class ConcatProgram implements WebGPUProgram {
       offsets[i] = offsets[i - 1] + shapes[i][1];
     }
 
-
     const snippets = [
       `if (yC < ${offsets[0]}) setOutput(coords.x, coords.y, getT0(yR, yC));`
     ];
