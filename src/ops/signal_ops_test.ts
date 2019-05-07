@@ -124,3 +124,72 @@ describeWithFlags('frame', ALL_ENVS, () => {
     expectArraysClose(await output.data(), [1, 2, 3, 4, 5, 100]);
   });
 });
+
+describeWithFlags('stft', ALL_ENVS, () => {
+  it('3 length with hann window', async () => {
+    const input = tf.tensor1d([1, 1, 1, 1, 1]);
+    const outputs = tf.signal.sftf(input, 3, 1);
+    expect(outputs.length).toEqual(3);
+    for (const output of outputs) {
+      expectArraysClose(await output.data(), [1.0, 0.0, -0.5, -0.86602545]);
+    }
+  });
+
+  it('3 length, 2 step with hann window', async () => {
+    const input = tf.tensor1d([1, 1, 1, 1, 1]);
+    const outputs = tf.signal.sftf(input, 3, 2);
+    expect(outputs.length).toEqual(2);
+    for (const output of outputs) {
+      expectArraysClose(await output.data(), [1.0, 0.0, -0.5, -0.86602545]);
+    }
+  });
+
+  it('5 length with hann window', async () => {
+    const input = tf.tensor1d([1, 1, 1, 1, 1]);
+    const outputs = tf.signal.sftf(input, 5, 1);
+    expect(outputs.length).toEqual(1);
+    for (const output of outputs) {
+      expectArraysClose(
+          await output.data(),
+          [1.99999, 0.0, -1.059017, -0.76942056, 0.05901694, 0.18163569]);
+    }
+  });
+
+  it('3 length with hamming window', async () => {
+    const input = tf.tensor1d([1, 1, 1, 1, 1]);
+    const outputs = tf.signal.sftf(input, 3, 1, tf.signal.hammingWindow);
+    expect(outputs.length).toEqual(3);
+    for (const output of outputs) {
+      expectArraysClose(await output.data(), [1.16, 0.0, -0.46, -0.79674333]);
+    }
+  });
+
+  it('3 length, 2 step with hamming window', async () => {
+    const input = tf.tensor1d([1, 1, 1, 1, 1]);
+    const outputs = tf.signal.sftf(input, 3, 2, tf.signal.hammingWindow);
+    expect(outputs.length).toEqual(2);
+    for (const output of outputs) {
+      expectArraysClose(await output.data(), [1.16, 0.0, -0.46, -0.79674333]);
+    }
+  });
+
+  it('3 length without window function', async () => {
+    const input = tf.tensor1d([1, 1, 1, 1, 1]);
+    const ident = (length: number) => tf.ones([length]).as1D();
+    const outputs = tf.signal.sftf(input, 3, 1, ident);
+    expect(outputs.length).toEqual(3);
+    for (const output of outputs) {
+      expectArraysClose(await output.data(), [3.0, 0.0, 0.0, 0.0]);
+    }
+  });
+
+  it('3 length, 2 step without window function', async () => {
+    const input = tf.tensor1d([1, 1, 1, 1, 1]);
+    const ident = (length: number) => tf.ones([length]).as1D();
+    const outputs = tf.signal.sftf(input, 3, 2, ident);
+    expect(outputs.length).toEqual(2);
+    for (const output of outputs) {
+      expectArraysClose(await output.data(), [3.0, 0.0, 0.0, 0.0]);
+    }
+  });
+});
