@@ -90,8 +90,7 @@ describeWithFlags('variable', ALL_ENVS, () => {
     expect(tf.memory().numTensors).toBe(0);
   });
 
-  // tslint:disable-next-line: ban
-  fit('disposing a named variable allows creating new named variable', () => {
+  it('disposing a named variable allows creating new named variable', () => {
     const numTensors = tf.memory().numTensors;
     const t = tf.scalar(1);
     const varName = 'var';
