@@ -232,7 +232,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     return true;
   }
 
-  setBackend(backendName: string): boolean|Promise<boolean> {
+  async setBackend(backendName: string): Promise<boolean> {
     if (this.registryFactory[backendName] == null) {
       throw new Error(`Backend name '${backendName}' not found in registry`);
     }
@@ -240,16 +240,8 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     if (this.registry[backendName] == null) {
       this.backendInstance = null;
       const {success, asyncInit} = this.initializeBackend(backendName);
-      if (asyncInit) {
-        return (success as Promise<boolean>).then(result => {
-          if (result) {
-            this.backendInstance = this.registry[backendName];
-            // Reset the profiler.
-            this.profiler = new Profiler(this.backendInstance);
-          }
-          return result;
-        });
-      } else if (!success) {
+      const result = asyncInit ? await success : success;
+      if (!result) {
         return false;
       }
     }
