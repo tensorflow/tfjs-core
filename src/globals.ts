@@ -259,7 +259,7 @@ export function time(f: () => void): Promise<TimingInfo> {
  *     (requires tfjs-node).
  */
 /** @doc {heading: 'Backends'} */
-export function setBackend(backendName: string): Promise<boolean> {
+export function setBackend(backendName: string): boolean|Promise<boolean> {
   return ENGINE.setBackend(backendName);
 }
 

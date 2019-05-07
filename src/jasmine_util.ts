@@ -144,13 +144,18 @@ if (typeof __karma__ !== 'undefined') {
 function executeTests(
     testName: string, tests: (env: TestEnv) => void, testEnv: TestEnv) {
   describe(testName, () => {
-    beforeAll(async () => {
+    beforeAll(done => {
       ENGINE.reset();
       if (testEnv.flags != null) {
         ENV.setFlags(testEnv.flags);
       }
       ENV.set('IS_TEST', true);
-      await ENGINE.setBackend(testEnv.backendName);
+      const promise = ENGINE.setBackend(testEnv.backendName);
+      if (promise === true) {
+        done();
+      } else {
+        (promise as Promise<boolean>).then(() => done());
+      }
     });
 
     beforeEach(() => {
