@@ -19,7 +19,9 @@
 
 import './flags_webgpu';
 
-import {DataMover, DataType, ENV, KernelBackend, Rank, ShapeMap, Tensor, Tensor3D, Tensor4D, util} from '@tensorflow/tfjs-core';
+import {DataMover, DataType, ENV, KernelBackend, Rank, ShapeMap, Tensor, Tensor2D, Tensor3D, Tensor4D, util} from '@tensorflow/tfjs-core';
+import * as backend_util from '@tensorflow/tfjs-core/dist/backends/backend_util';
+import {computeOutShape} from '@tensorflow/tfjs-core/dist/ops/concat_util';
 import {Conv2DInfo} from '@tensorflow/tfjs-core/dist/ops/conv_util';
 import {upcastType} from '@tensorflow/tfjs-core/dist/types';
 import {assert} from '@tensorflow/tfjs-core/dist/util';
@@ -28,6 +30,7 @@ import * as shaderc from '@webgpu/shaderc';
 import {ArgMinMaxProgram} from './kernels/argminmax_webgpu';
 import * as binary_op from './kernels/binary_op_webgpu';
 import {BinaryOpProgram} from './kernels/binary_op_webgpu';
+import {ConcatProgram} from './kernels/concat_webgpu';
 import {Conv2DMMProgram} from './kernels/conv2d_mm_webgpu';
 import {Conv2DNaiveProgram} from './kernels/conv2d_naive_webgpu';
 import {MatMulPackedProgram} from './kernels/matmul_packed_webgpu';
@@ -354,13 +357,44 @@ export class WebGPUBackend extends KernelBackend {
   argMax(x: Tensor, axis: number): Tensor {
     return this.argMinMaxReduce(x, axis, 'max');
   }
+  
+  concat(tensors: Tensor[], axis: number): Tensor {
+    if (tensors.length === 1) {
+      return tensors[0];
+    }
+    // Is there a maximum number of buffers that can be uploaded to a WebGPU
+    // program?
+    // if (tensors.length > MAX_SSBOS_FOR_WEBGPU_PROGRAM) {
+    //   const midIndex = Math.floor(tensors.length / 2);
+    //   const leftSide = this.concat(tensors.slice(0, midIndex), axis);
+    //   const rightSide = this.concat(tensors.slice(midIndex), axis);
+    //   return this.concat([leftSide, rightSide], axis);
+    // }
+    const outShape = computeOutShape(tensors.map(t => t.shape), axis);
+    const tensors2D = tensors.map(t => t.reshape([
+      util.sizeFromShape(t.shape.slice(0, axis)),
+      util.sizeFromShape(t.shape.slice(axis))
+    ]) as Tensor2D);
+    const program = new ConcatProgram(tensors2D.map(t => t.shape));
+    const res = this.compileAndRun(program, tensors2D) as Tensor;
+    return res.reshape(outShape);
+  }
 
   multiply(a: Tensor, b: Tensor): Tensor {
     return this.binaryOp(a, b, binary_op.MUL);
   }
 
+  floorDiv(a: Tensor, b: Tensor): Tensor {
+    return this.binaryOp(a, b, binary_op.INT_DIV);
+  }
+
+  sigmoid<T extends Tensor>(x: T): T {
+    const program = new UnaryOpProgram(x.shape, unary_op.SIGMOID);
+    return this.compileAndRun(program, [x]) as T;
+  }
+
   relu<T extends Tensor>(x: T): T {
-    const program = new UnaryOpProgram(unary_op.RELU, x.shape);
+    const program = new UnaryOpProgram(x.shape, unary_op.RELU);
     return this.compileAndRun(program, [x]) as T;
   }
 
@@ -378,6 +412,10 @@ export class WebGPUBackend extends KernelBackend {
 
   reshape<R extends Rank>(x: Tensor, shape: ShapeMap[R]): Tensor<R> {
     return Tensor.make(shape, {dataId: x.dataId}, x.dtype);
+  }
+
+  cast<T extends Tensor>(x: T, dtype: DataType): T {
+    return backend_util.castTensor(x, dtype, this);
   }
 
   transpose<T extends Tensor>(x: T, perm: number[]): T {
