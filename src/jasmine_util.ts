@@ -118,7 +118,7 @@ export function describeWithFlags(
             ENV, testEnv.backendName, ENGINE.backendNames(), ENV.platformName,
             constraints)) {
       const testName =
-          name + ' ' + testEnv.name + ' ' + JSON.stringify(testEnv.flags);
+          JSON.stringify(testEnv.flags) + '\n' + name + ' ' + testEnv.name;
       executeTests(testName, tests, testEnv);
     }
   });
