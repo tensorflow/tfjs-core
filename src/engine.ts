@@ -253,6 +253,8 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     return true;
   }
 
+  private promiseId = 0;
+
   /**
    * Initializes a backend by looking up the backend name in the factory
    * registry and calling the factory method. Returns a boolean representing
@@ -271,14 +273,21 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
       const backend = registryFactoryEntry.factory();
       // Test if the factory returns a promise.
       if (Promise.resolve(backend) === backend) {
+        const id = ++this.promiseId;
         const success =
             backend
                 .then(backendInstance => {
+                  if (id < this.promiseId) {
+                    return false;
+                  }
                   this.registry[backendName] = backendInstance;
                   this.pendingBackendInit = null;
                   return true;
                 })
                 .catch(err => {
+                  if (id < this.promiseId) {
+                    return false;
+                  }
                   this.pendingBackendInit = null;
                   console.warn(
                       `Initialization of backend ${backendName} failed`);
