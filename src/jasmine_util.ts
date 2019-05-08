@@ -144,13 +144,13 @@ if (typeof __karma__ !== 'undefined') {
 function executeTests(
     testName: string, tests: (env: TestEnv) => void, testEnv: TestEnv) {
   describe(testName, () => {
-    beforeAll(() => {
-      ENGINE.reset();
+    beforeAll(async () => {
+      await ENGINE.reset();
       if (testEnv.flags != null) {
         ENV.setFlags(testEnv.flags);
       }
       ENV.set('IS_TEST', true);
-      ENGINE.setBackend(testEnv.backendName);
+      await ENGINE.setBackend(testEnv.backendName);
     });
 
     beforeEach(() => {
@@ -162,8 +162,8 @@ function executeTests(
       ENGINE.disposeVariables();
     });
 
-    afterAll(() => {
-      ENGINE.reset();
+    afterAll(async () => {
+      await ENGINE.reset();
     });
 
     tests(testEnv);

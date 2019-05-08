@@ -148,7 +148,6 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
   private pendingBackendInit: Promise<boolean>;
 
   async ready(): Promise<void> {
-    console.warn('!!!! READY WAS CALLED');
     if (this.pendingBackendInit != null) {
       return this.pendingBackendInit.then(() => {});
     }
@@ -272,7 +271,6 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
       const backend = registryFactoryEntry.factory();
       // Test if the factory returns a promise.
       if (Promise.resolve(backend) === backend) {
-        console.warn('!!!! THIS SHOULD NOT HAPPEN');
         const success =
             backend
                 .then(backendInstance => {
@@ -300,10 +298,15 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     }
   }
 
-  removeBackend(backendName: string): void {
+  async removeBackend(backendName: string): Promise<void> {
     if (!(backendName in this.registryFactory)) {
       throw new Error(`${backendName} backend not found in registry`);
     }
+
+    if (this.pendingBackendInit != null) {
+      await this.pendingBackendInit;
+    }
+
     if (backendName in this.registry) {
       this.registry[backendName].dispose();
       delete this.registry[backendName];
@@ -313,6 +316,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
 
     // Unset the backend if it is active.
     if (this.backendName === backendName) {
+      this.pendingBackendInit = null;
       this.backendName = null;
       this.backendInstance = null;
     }
@@ -874,7 +878,10 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
    * Resets the engine state. Removes all backends but does not remove
    * registered backend factories.
    */
-  reset() {
+  async reset(): Promise<void> {
+    if (this.pendingBackendInit != null) {
+      await this.pendingBackendInit;
+    }
     this.state.dispose();
     this.ENV.reset();
     this.state = new EngineState();

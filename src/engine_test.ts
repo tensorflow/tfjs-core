@@ -28,6 +28,10 @@ describe('Backend registration', () => {
     spyOn(console, 'warn');
   });
 
+  beforeEach(async () => {
+    await ENGINE.reset();
+  });
+
   it('removeBackend disposes the backend and removes the factory', () => {
     let backend: KernelBackend;
     const factory = () => {
