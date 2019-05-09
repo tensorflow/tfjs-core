@@ -153,7 +153,7 @@ describeWithFlags('convertToTensor', ALL_ENVS, () => {
   it('passing a tensor returns the tensor itself', () => {
     const s = tf.scalar(3);
     const res = convertToTensor(s, 'a', 'test');
-    expect(res).toBe(s);
+    expect(res === s);
   });
 
   it('passing a tensor with wrong type errors', () => {
