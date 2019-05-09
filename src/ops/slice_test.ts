@@ -16,7 +16,7 @@
  */
 
 import * as tf from '../index';
-import {ALL_ENVS, describeWithFlags} from '../jasmine_util';
+import {ALL_ENVS, describeWithFlags, SYNC_BACKEND_ENVS} from '../jasmine_util';
 import {expectArraysClose} from '../test_util';
 import {Rank} from '../types';
 
@@ -526,13 +526,15 @@ describeWithFlags('shallow slicing', ALL_ENVS, () => {
     tf.dispose([a, b]);
     expect(tf.memory().numTensors).toBe(0);
   });
+});
 
-  it('delayed sync read of sliced tensor has no mem leak', async () => {
+describeWithFlags('shallow slicing', SYNC_BACKEND_ENVS, () => {
+  it('delayed sync read of sliced tensor has no mem leak', () => {
     const a = tf.zeros([10]);
     const b = tf.slice(a, 0, 1);
     const nBefore = tf.memory().numTensors;
     expect(nBefore).toBe(2);
-    await b.data();
+    b.dataSync();
     const nAfter = tf.memory().numTensors;
     expect(nAfter).toBe(2);
     tf.dispose([a, b]);

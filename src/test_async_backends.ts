@@ -41,7 +41,6 @@ const asyncBackend = new AsyncCPUBackend();
 // notation.
 // tslint:disable-next-line:no-any
 const backend: any = new MathBackendCPU();
-// let count = 0;
 const proxyBackend = new Proxy(asyncBackend, {
   get(target, name, receiver) {
     if (name === 'readSync') {
