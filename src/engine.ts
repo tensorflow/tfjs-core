@@ -128,8 +128,6 @@ class EngineState {
 
 export class Engine implements TensorManager, TensorTracker, DataMover {
   state: EngineState;
-
-  private backendInstance: KernelBackend;
   backendName: string;
   registry: {[id: string]: KernelBackend} = {};
   registryFactory: {
@@ -140,12 +138,13 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
   } = {};
 
   private profiler: Profiler;
+  private backendInstance: KernelBackend;
+  private pendingBackendInit: Promise<boolean>;
+  private pendingPromiseId = 0;
 
   constructor(public ENV: Environment) {
     this.state = new EngineState();
   }
-
-  private pendingBackendInit: Promise<boolean>;
 
   async ready(): Promise<void> {
     if (this.pendingBackendInit != null) {
@@ -253,8 +252,6 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     return true;
   }
 
-  private promiseId = 0;
-
   /**
    * Initializes a backend by looking up the backend name in the factory
    * registry and calling the factory method. Returns a boolean representing
@@ -273,11 +270,11 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
       const backend = registryFactoryEntry.factory();
       // Test if the factory returns a promise.
       if (Promise.resolve(backend) === backend) {
-        const id = ++this.promiseId;
+        const id = ++this.pendingPromiseId;
         const success =
             backend
                 .then(backendInstance => {
-                  if (id < this.promiseId) {
+                  if (id < this.pendingPromiseId) {
                     return false;
                   }
                   this.registry[backendName] = backendInstance;
@@ -285,7 +282,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
                   return true;
                 })
                 .catch(err => {
-                  if (id < this.promiseId) {
+                  if (id < this.pendingPromiseId) {
                     return false;
                   }
                   this.pendingBackendInit = null;
