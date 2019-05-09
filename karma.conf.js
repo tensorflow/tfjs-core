@@ -102,7 +102,7 @@ module.exports = function(config) {
         base: 'BrowserStack',
         device: 'iPhone X',
         os: 'iOS',
-        os_version: '11.0',
+        os_version: '12.0',
         real_mobile: true
       },
       win_10_chrome: {
