@@ -37,7 +37,7 @@ const devConfig = {
   exclude: ['src/test_node.ts', 'src/backends/webgpu/**/*.ts'],
   preprocessors: {'**/*.ts': ['karma-typescript']},
   karmaTypescriptConfig,
-  reporters: ['dots', 'karma-typescript'],
+  reporters: ['verbose', 'karma-typescript'],
 };
 
 const browserstackConfig = {
@@ -46,7 +46,7 @@ const browserstackConfig = {
   exclude: ['dist/test_node.js'],
   preprocessors: {'dist/**/*_test.js': ['browserify']},
   browserify: {debug: false},
-  reporters: ['dots', 'BrowserStack'],
+  reporters: ['verbose', 'BrowserStack'],
   singleRun: true,
   hostname: 'bs-local.com',
 };
@@ -101,8 +101,8 @@ module.exports = function(config) {
       bs_ios_11: {
         base: 'BrowserStack',
         device: 'iPhone XS',
-        os: 'iOS',
-        os_version: '12',
+        // os: 'iOS',
+        // os_version: '12',
         real_mobile: true
       },
       win_10_chrome: {
