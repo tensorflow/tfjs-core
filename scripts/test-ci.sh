@@ -17,9 +17,9 @@
 set -e
 
 yarn build-ci
-yarn lint
+# yarn lint
 # Test in node (headless environment).
-yarn test-node-ci
+# yarn test-node-ci
 
 # Run the first karma separately so it can download the BrowserStack binary
 # without conflicting with others.
