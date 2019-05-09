@@ -37,7 +37,7 @@ const devConfig = {
   exclude: ['src/test_node.ts', 'src/backends/webgpu/**/*.ts'],
   preprocessors: {'**/*.ts': ['karma-typescript']},
   karmaTypescriptConfig,
-  reporters: ['verbose', 'karma-typescript'],
+  reporters: ['dots', 'karma-typescript'],
 };
 
 const browserstackConfig = {
@@ -46,7 +46,7 @@ const browserstackConfig = {
   exclude: ['dist/test_node.js'],
   preprocessors: {'dist/**/*_test.js': ['browserify']},
   browserify: {debug: false},
-  reporters: ['verbose', 'BrowserStack'],
+  reporters: ['dots', 'BrowserStack'],
   singleRun: true,
   hostname: 'bs-local.com',
 };

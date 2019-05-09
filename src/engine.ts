@@ -899,11 +899,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     }
     this.backendName = null;
     this.backendInstance = null;
-    // We guard here against null due to an unexplainable bug that freezes
-    // Mobile Safari during unit tests.
-    if (this.pendingBackendInit != null) {
-      this.pendingBackendInit = null;
-    }
+    this.pendingBackendInit = null;
   }
 }
 
