@@ -145,7 +145,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     this.state = new EngineState();
   }
 
-  private pendingBackendInit: Promise<boolean> = null;
+  private pendingBackendInit: Promise<boolean>;
 
   async ready(): Promise<void> {
     if (this.pendingBackendInit != null) {
@@ -894,10 +894,8 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
    * registered backend factories.
    */
   async reset(): Promise<void> {
-    if (this.pendingBackendInit != null) {
-      console.warn('!!!! pending is awaited');
-      await this.pendingBackendInit;
-    }
+    await this.pendingBackendInit;
+
     this.state.dispose();
     this.ENV.reset();
     this.state = new EngineState();
