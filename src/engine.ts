@@ -270,11 +270,11 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
       const backend = registryFactoryEntry.factory();
       // Test if the factory returns a promise.
       if (Promise.resolve(backend) === backend) {
-        const id = ++this.pendingPromiseId;
+        const promiseId = ++this.pendingPromiseId;
         const success =
             backend
                 .then(backendInstance => {
-                  if (id < this.pendingPromiseId) {
+                  if (promiseId < this.pendingPromiseId) {
                     return false;
                   }
                   this.registry[backendName] = backendInstance;
@@ -282,7 +282,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
                   return true;
                 })
                 .catch(err => {
-                  if (id < this.pendingPromiseId) {
+                  if (promiseId < this.pendingPromiseId) {
                     return false;
                   }
                   this.pendingBackendInit = null;
