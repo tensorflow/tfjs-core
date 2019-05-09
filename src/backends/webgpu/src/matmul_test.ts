@@ -16,9 +16,9 @@
  */
 
 import * as tf from '@tensorflow/tfjs-core';
-import {ALL_ENVS, describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_util';
+import {describeWebGPU} from './test_util';
 
-describeWithFlags('matmul', ALL_ENVS, () => {
+describeWebGPU('matmul', () => {
   it('it works in graph mode.', async () => {
     const savedFlag = tf.ENV.get('WEBGPU_IMMEDIATE_EXECUTION_ENABLED');
     tf.ENV.set('WEBGPU_IMMEDIATE_EXECUTION_ENABLED', true);

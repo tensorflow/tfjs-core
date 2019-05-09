@@ -33,6 +33,8 @@ const INCLUDE_LIST: string[] = [
   'resizeBilinear',
   'relu',
   'transpose',
+  'concat',
+  'argmax',
 ];
 /** Tests that have these substrings in their name will be excluded. */
 const EXCLUDE_LIST: string[] = [
@@ -71,6 +73,10 @@ const EXCLUDE_LIST: string[] = [
   'relu test-webgpu {} does nothing to positive',   // Shader compile fail.
   'prelu',                                          // Not yet implemented.
   'oneHot test-webgpu {} Depth 2, transposed diagonal',  // Not yet implemented.
+  'concat zero-sized tensors',                           // Timeout.
+  'concat a large number of tensors',                    // Actual != Expected.
+  'concat tensors with 0 in their shape',                // Timeout.
+  'argmax test-webgpu {} accepts tensor with bool',      // Actual != Expected.
 ];
 
 /**
@@ -88,8 +94,12 @@ env.specFilter = spec => {
     }
   }
 
-  // Include a test inside describeWithFlags() only if the test was in the
-  // include list.
+  // Always include all of the webgpu specific tests.
+  if (name.startsWith('webgpu')) {
+    return true;
+  }
+
+  // Include a test from tfjs-core only if the test is in the include list.
   for (let i = 0; i < INCLUDE_LIST.length; ++i) {
     if (name.indexOf(INCLUDE_LIST[i]) > -1) {
       return true;
