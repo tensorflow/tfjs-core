@@ -149,7 +149,6 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
 
   async ready(): Promise<void> {
     if (this.pendingBackendInit != null) {
-      console.warn('!!!! pending in tf.ready');
       return this.pendingBackendInit.then(() => {});
     }
     if (this.backendInstance != null) {
@@ -173,7 +172,6 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
 
   get backend(): KernelBackend {
     if (this.pendingBackendInit != null) {
-      console.warn('!!!! pending is not null in engine.backend()');
       throw new Error(
           `Backend '${this.backendName}' has not yet been initialized. Make ` +
           `sure to await tf.ready() before calling other methods`);
@@ -283,7 +281,6 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
                     return false;
                   }
                   this.registry[backendName] = backendInstance;
-                  console.warn('!!!! pending is null');
                   this.pendingBackendInit = null;
                   return true;
                 })
@@ -291,14 +288,12 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
                   if (id < this.promiseId) {
                     return false;
                   }
-                  console.warn('!!!! pending is null');
                   this.pendingBackendInit = null;
                   console.warn(
                       `Initialization of backend ${backendName} failed`);
                   console.warn(err.stack || err.message);
                   return false;
                 });
-        console.warn('!!!! pending got set');
         this.pendingBackendInit = success;
         return {success, asyncInit: true};
       } else {
@@ -318,7 +313,6 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     }
 
     if (this.pendingBackendInit != null) {
-      console.warn('!!!! pending is awaited in removebackend');
       await this.pendingBackendInit;
     }
 
@@ -894,7 +888,9 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
    * registered backend factories.
    */
   async reset(): Promise<void> {
-    await this.pendingBackendInit;
+    if (this.pendingBackendInit != null) {
+      await this.pendingBackendInit;
+    }
 
     this.state.dispose();
     this.ENV.reset();
@@ -906,12 +902,11 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     }
     this.backendName = null;
     this.backendInstance = null;
-    console.log('!!!! BEFORE');
-    // if (this.pendingBackendInit != null) {
-    // console.log('!!!! NULLING backend init');
-    // console.warn('!!!! NULLING backend init');
-    this.pendingBackendInit = null;
-    // }
+    // We guard here against null due to an unexplainable bug that freezes
+    // Mobile Safari during unit tests.
+    if (this.pendingBackendInit != null) {
+      this.pendingBackendInit = null;
+    }
   }
 }
 
