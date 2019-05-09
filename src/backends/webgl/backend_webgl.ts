@@ -2354,7 +2354,6 @@ export class MathBackendWebGL implements KernelBackend {
       }
 
       let texData = this.texData.get(input.dataId);
-
       if (texData.texture == null) {
         if (!program.usesPackedTextures &&
             util.sizeFromShape(input.shape) <=
@@ -2416,6 +2415,7 @@ export class MathBackendWebGL implements KernelBackend {
     const shortKey = gpgpu_math.makeShaderKey(program, inputsData, outputData);
     // const key = gpgpu_math.makeShaderKeyWhole(program, inputsData,
     // outputData);
+    // TK BINARYBINARY
     const binary = this.getAndSaveBinary(shortKey, shortKey, () => {
       return gpgpu_math.compileProgram(
           this.gpgpu, program, inputsData, outputData);

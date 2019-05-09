@@ -63,6 +63,7 @@ export function compileProgram<T extends Tensor, K extends Tensor>(
 
   const {source, inputInfos, outShapeInfo} =
       assembleProgramSource(program, inputs, output);
+  console.log('ASSEMBLED SOURCE', inputInfos);
   const webGLProgram = gpgpu.createProgram(source);
 
   // TKTK uniforms
@@ -90,6 +91,7 @@ export function compileProgram<T extends Tensor, K extends Tensor>(
   for (let i = 0; i < inputInfos.length; i++) {
     const inputInfo = inputInfos[i];
     const inShapeInfo = inputInfo.shapeInfo;
+
     if (inShapeInfo.logicalShape.length > 0) {
       const varShapeName = `shape${inputInfo.name}`;
       const varTexShapeName = `texShape${inputInfo.name}`;
@@ -112,6 +114,8 @@ export function compileProgram<T extends Tensor, K extends Tensor>(
         gpgpu.getUniformLocation(webGLProgram, outputTexShapeName, shouldThrow);
   }
 
+  const inShapeInfos = inputInfos.map(x => x.shapeInfo);
+
   console.groupEnd();
 
   return {
@@ -119,7 +123,7 @@ export function compileProgram<T extends Tensor, K extends Tensor>(
     source,
     webGLProgram,
     uniformLocations,
-    inShapeInfos: inputInfos.map(x => x.shapeInfo),
+    inShapeInfos,
     outShapeInfo,
     infLoc,
     nanLoc,
@@ -187,6 +191,8 @@ export function runProgram<T extends Tensor, K extends Tensor>(
     gpgpu.gl.uniform1f(binary.nanLoc, NaN);
   }
 
+  // console.log('Program', binary.source);
+
   // Set user-defined inputs
   inputs.forEach((input, i) => {
     const varName = binary.program.variableNames[i];
@@ -211,14 +217,16 @@ export function runProgram<T extends Tensor, K extends Tensor>(
       }
       return;
     }
-
     // Upload the shape/texShape information as a uniform as well.
     const varShapeName = `shape${varName}`;
     const varShapeLoc = binary.uniformLocations[varShapeName];
-    let shape: number[]|Int32Array = input.shape;
+    // Call squeezeShape to match the shape used in the shader program
+    const {newShape} = util.squeezeShape(input.shape);
+    let shape: number[]|Int32Array = newShape;
     if (!(shape instanceof Int32Array)) {
       shape = new Int32Array(shape);
     }
+
     gpgpu.gl.uniform1iv(varShapeLoc, shape);
 
     const varTexShapeName = `texShape${varName}`;
@@ -226,10 +234,8 @@ export function runProgram<T extends Tensor, K extends Tensor>(
 
     // TODO TK investigate the difference between thse two shapes
     // also note that input.shape is a thing.
-    // let texShape: number[]|Int32Array = input.texData.shape;
+    // let texShape: number[]|Int32Array = input.texData.shape; ** NOTTHISONE
     let texShape: number[]|Int32Array = input.texData.texShape;
-    // console.log(
-    //     `uploading texshapewith nameQQ ${varTexShapeName} : ${texShape}`);
     if (!(texShape instanceof Int32Array)) {
       texShape = new Int32Array(texShape);
     }
