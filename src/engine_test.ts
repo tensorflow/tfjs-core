@@ -23,10 +23,10 @@ import {Tensor} from './tensor';
 import {expectArraysClose} from './test_util';
 
 describe('Backend registration', () => {
-  beforeAll(() => {
-    // Silences backend registration warnings.
-    spyOn(console, 'warn');
-  });
+  // beforeAll(() => {
+  //   // Silences backend registration warnings.
+  //   spyOn(console, 'warn');
+  // });
 
   beforeEach(async () => {
     await ENGINE.reset();
