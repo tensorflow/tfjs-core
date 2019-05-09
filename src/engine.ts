@@ -906,6 +906,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     }
     this.backendName = null;
     this.backendInstance = null;
+    console.log('!!!! BEFORE');
     if (this.pendingBackendInit != null) {
       console.log('!!!! NULLING backend init');
       console.warn('!!!! NULLING backend init');
