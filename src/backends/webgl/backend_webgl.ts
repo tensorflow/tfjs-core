@@ -2413,10 +2413,10 @@ export class MathBackendWebGL implements KernelBackend {
     };
     // TK TEMPTEMP
     const shortKey = gpgpu_math.makeShaderKey(program, inputsData, outputData);
-    // const key = gpgpu_math.makeShaderKeyWhole(program, inputsData,
-    // outputData);
+    const key = gpgpu_math.makeShaderKeyWhole(program, inputsData, outputData);
+
     // TK BINARYBINARY
-    const binary = this.getAndSaveBinary(shortKey, shortKey, () => {
+    const binary = this.getAndSaveBinary(key, shortKey, () => {
       return gpgpu_math.compileProgram(
           this.gpgpu, program, inputsData, outputData);
     });
@@ -2467,9 +2467,9 @@ export class MathBackendWebGL implements KernelBackend {
       const engineState = window._tfengine.state;
       const scopeName =
           engineState.activeScope != null ? engineState.activeScope.name : '';
-      console.time(`getBinary ${scopeName}`);
+      // console.time(`getBinary ${scopeName}`);
       this.binaryCache[key] = getBinary();
-      console.timeEnd(`getBinary ${scopeName}`);
+      // console.timeEnd(`getBinary ${scopeName}`);
 
       this.recordCacheStats(key, shortKey, this.binaryCache[key], scopeName);
     } else {

@@ -30,8 +30,8 @@ export function getLogicalCoordinatesFromFlatIndex(
   // shape information rather than splicing shape values in directly.
   if (shapeUniform != null) {
     // TK TEMP
-    // strides = util.computeStrideExpr(shape, shapeUniform);
-    strides = util.computeStrides(shape);
+    strides = util.computeStrideExpr(shape, shapeUniform);
+    // strides = util.computeStrides(shape);
   } else {
     strides = util.computeStrides(shape);
   }

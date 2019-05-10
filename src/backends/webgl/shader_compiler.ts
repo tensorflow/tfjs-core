@@ -40,7 +40,7 @@ export type InputInfo = {
 
 export function assembleProgramSource(
     program: GPGPUProgram, inputs: TensorData[], output: TensorData) {
-  console.time('assembleProgramSource');
+  // console.time('assembleProgramSource');
   const userCode = program.userCode;
 
   const inputInfos: InputInfo[] = inputs.map((input, i) => {
@@ -70,7 +70,7 @@ export function assembleProgramSource(
   const source = makeShader(
       inputInfos, outShapeInfo, userCode, program.usesPackedTextures);
 
-  console.timeEnd('assembleProgramSource');
+  // console.timeEnd('assembleProgramSource');
 
   // console.log('---------- ASSEMBLED -----------');
   // console.log(source);
@@ -189,44 +189,70 @@ function getOutputShapeSnippet(
   // TODO TK Move these to class
   const MAX_TENSOR_RANK = 6;
   const TEXSHAPE_RANK = 2;
+  // TK TK
   let snip = `uniform int outputShape[${MAX_TENSOR_RANK}]; \n`;
-  snip += `// Original shape ${shape}\n`;
+  // snip += `// Original shape ${shape}\n`;
   if (texShape) {
     snip += `uniform int outputTexShape[${TEXSHAPE_RANK}]; \n`;
-    snip += `// Original texShape ${texShape}\n`;
+    // snip += `// Original texShape ${texShape}\n`;
   }
   return snip;
 }
 
-function getInputShapeSnippet(name: string, shapeInfo: ShapeInfo) {
-  // return `uniform int shape${name}[${shapeInfo.logicalShape.length}]; \n`;
+// function getInputShapeSnippet(name: string, shapeInfo: ShapeInfo) {
+//   // return `uniform int shape${name}[${shapeInfo.logicalShape.length}]; \n`;
 
-  // We don't want to the program text to change based on shape so allocate the
-  // largest array the shape info could possible use at all times.
-  // TODO TK Move these to class
-  const MAX_TENSOR_RANK = 6;
-  const TEXSHAPE_RANK = 2;
-  let snip = `uniform int shape${name}[${MAX_TENSOR_RANK}]; \n`;
-  snip += `// Original shape ${shapeInfo.logicalShape}\n`;
-  if (shapeInfo.texShape) {
-    snip += `uniform int texShape${name}[${TEXSHAPE_RANK}]; \n`;
-    snip += `// texShape ${shapeInfo.texShape}\n`;
-  }
-  return snip;
-}
+//   // We don't want to the program text to change based on shape so allocate
+//   the
+//   // largest array the shape info could possible use at all times.
+//   // TODO TK Move these to class
+//   const MAX_TENSOR_RANK = 6;
+//   const TEXSHAPE_RANK = 2;
+//   // TK TK
+//   let snip = `uniform int shape${name}[${MAX_TENSOR_RANK}]; \n`;
+//   if (shapeInfo.texShape) {
+//     snip += `uniform int texShape${name}[${TEXSHAPE_RANK}]; \n`;
+//   }
+//   return snip;
+// }
 
 function getInputSamplingSnippet(
     inInfo: InputInfo, outShapeInfo: ShapeInfo,
     usesPackedTextures = false): string {
+  const MAX_TENSOR_RANK = 6;
+  const TEXSHAPE_RANK = 2;
+
   let res = '';
-  if (inInfo.shapeInfo.logicalShape.length > 0) {
-    res += getInputShapeSnippet(inInfo.name, inInfo.shapeInfo);
-  }
+  const inputName = inInfo.name;
+  const shapeUniform = `shape${inputName}`;
+  const texShapeUniform = `texShape${inputName}`;
+
+  // if (inInfo.shapeInfo.logicalShape.length > 0) {
+  //   res += getInputShapeSnippet(inInfo.name, inInfo.shapeInfo);
+  // }
+
+  let sampler;
   if (usesPackedTextures) {
-    res += getPackedSamplerFromInInfo(inInfo);
+    sampler = getPackedSamplerFromInInfo(inInfo);
   } else {
-    res += getSamplerFromInInfo(inInfo);
+    sampler = getSamplerFromInInfo(inInfo);
   }
+  // console.log(`sampler for ${inputName}: `, sampler);
+
+  if (inInfo.shapeInfo.logicalShape.length > 0 && !usesPackedTextures) {
+    if (sampler.indexOf(shapeUniform) !== -1) {
+      res += `uniform int shape${inputName}[${MAX_TENSOR_RANK}]; \n`;
+    }
+    // else {
+    //   // console.log('sampler does not user shapeinfo', shapeUniform,
+    //   sampler);
+    // }
+    // TKTK texShape may be used in every sampler...
+    if (sampler.indexOf(texShapeUniform) !== -1) {
+      res += `uniform int texShape${inputName}[${TEXSHAPE_RANK}]; \n`;
+    }
+  }
+  res += sampler;
 
   const inShape = inInfo.shapeInfo.logicalShape;
   const outShape = outShapeInfo.logicalShape;
@@ -487,31 +513,6 @@ function getOutput1DCoords(
     }
   `;
 }
-
-// function getOutput1DCoords(
-//     shape: [number], texShape: [number, number]): string {
-//   if (texShape[0] === 1) {
-//     return `
-//       int getOutputCoords() {
-//         return int(resultUV.x * ${texShape[1]}.0);
-//       }
-//     `;
-//   }
-//   if (texShape[1] === 1) {
-//     return `
-//       int getOutputCoords() {
-//         return int(resultUV.y * ${texShape[0]}.0);
-//       }
-//     `;
-//   }
-//   return `
-//     int getOutputCoords() {
-//       ivec2 resTexRC = ivec2(resultUV.yx *
-//                              vec2(${texShape[0]}, ${texShape[1]}));
-//       return resTexRC.x * ${texShape[1]} + resTexRC.y;
-//     }
-//   `;
-// }
 
 function getOutputPacked3DCoords(
     shape: [number, number, number], texShape: [number, number]): string {
@@ -885,8 +886,8 @@ function getSampler2D(inputInfo: InputInfo): string {
     return `
         float ${funcName}(int row, int col) {
           vec2 uv = (vec2(col, row) + halfCR) / vec2(
-              floor(float(${texShapeUniform}[1])),
-              floor(float(${texShapeUniform}[0]))
+              float(${texShapeUniform}[1]),
+              float(${texShapeUniform}[0])
             );
           return sampleTexture(${texName}, uv);
         }
@@ -1173,7 +1174,8 @@ function getSampler4D(inputInfo: InputInfo): string {
                            ${shapeUniform}[2], 1));
         float texC = float(depth2);
         vec2 uv = (vec2(texC, texR) + halfCR) /
-                  vec2(${texShapeUniform}[1], ${texShapeUniform}[0]);
+                  vec2(float(${texShapeUniform}[1]), float(${
+        texShapeUniform}[0]));
         return sampleTexture(${texName}, uv);
       }
     `;

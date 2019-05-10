@@ -56,14 +56,14 @@ export interface TensorData {
 export function compileProgram<T extends Tensor, K extends Tensor>(
     gpgpu: GPGPUContext, program: GPGPUProgram, inputs: TensorData[],
     output: TensorData): GPGPUBinary {
-  const engineState = window._tfengine.state;
-  const scopeName =
-      engineState.activeScope != null ? engineState.activeScope.name : '';
-  console.group(`compileProgram: ${scopeName}`);
+  // const engineState = window._tfengine.state;
+  // const scopeName =
+  // engineState.activeScope != null ? engineState.activeScope.name : '';
+  // console.group(`compileProgram: ${scopeName}`);
 
   const {source, inputInfos, outShapeInfo} =
       assembleProgramSource(program, inputs, output);
-  console.log('ASSEMBLED SOURCE', inputInfos);
+  // console.log('ASSEMBLED SOURCE', inputInfos);
   const webGLProgram = gpgpu.createProgram(source);
 
   // TKTK uniforms
@@ -96,10 +96,17 @@ export function compileProgram<T extends Tensor, K extends Tensor>(
       const varShapeName = `shape${inputInfo.name}`;
       const varTexShapeName = `texShape${inputInfo.name}`;
       const shouldThrow = false;
-      uniformLocations[varShapeName] =
+      const shapeLocation =
           gpgpu.getUniformLocation(webGLProgram, varShapeName, shouldThrow);
-      uniformLocations[varTexShapeName] =
+      if (shapeLocation != null) {
+        uniformLocations[varShapeName] = shapeLocation;
+      }
+
+      const texShapeLocation =
           gpgpu.getUniformLocation(webGLProgram, varTexShapeName, shouldThrow);
+      if (texShapeLocation != null) {
+        uniformLocations[varTexShapeName] = texShapeLocation;
+      }
     }
   }
 
@@ -116,7 +123,7 @@ export function compileProgram<T extends Tensor, K extends Tensor>(
 
   const inShapeInfos = inputInfos.map(x => x.shapeInfo);
 
-  console.groupEnd();
+  // console.groupEnd();
 
   return {
     program,
@@ -220,14 +227,17 @@ export function runProgram<T extends Tensor, K extends Tensor>(
     // Upload the shape/texShape information as a uniform as well.
     const varShapeName = `shape${varName}`;
     const varShapeLoc = binary.uniformLocations[varShapeName];
-    // Call squeezeShape to match the shape used in the shader program
-    const {newShape} = util.squeezeShape(input.shape);
-    let shape: number[]|Int32Array = newShape;
-    if (!(shape instanceof Int32Array)) {
-      shape = new Int32Array(shape);
-    }
 
-    gpgpu.gl.uniform1iv(varShapeLoc, shape);
+    if (varShapeLoc != null) {
+      // Call squeezeShape to match the shape used in the shader program
+      const {newShape} = util.squeezeShape(input.shape);
+
+      let shape: number[]|Int32Array = newShape;
+      if (!(shape instanceof Int32Array)) {
+        shape = new Int32Array(shape);
+      }
+      gpgpu.gl.uniform1iv(varShapeLoc, shape);
+    }
 
     const varTexShapeName = `texShape${varName}`;
     const varTexShapeLoc = binary.uniformLocations[varTexShapeName];
@@ -301,6 +311,23 @@ export function makeShaderKeyWhole(
     program: GPGPUProgram, inputs: TensorData[], output: TensorData) {
   // console.time('makeShaderKey:whole');
   const {source} = assembleProgramSource(program, inputs, output);
+  let keyInputs = '';
+  inputs.concat(output).forEach(x => {
+    const hasOffset = x.texData != null && x.texData.slice != null &&
+        x.texData.slice.flatOffset > 0;
+    // const texShape = x.isUniform ? 'uniform' : x.texData.texShape;
+    // keyInputs += `${x.shape}_${texShape}_${hasOffset}`;
+    // const isUniform = x.isUniform;
+    // TKTK IMPORTANT
+    // has offset needs to be in te key for now because offset is always
+    // added as a uniform to the source whether or not it is acutally used
+    // and thus the uniform location gets cached as null. So any future
+    // invocations with a sliced tensor ends up colliding with an incompatible
+    // program in the cache (missing cache location). This can be removed of the
+    // offset is not added/a null location is not cached.
+    keyInputs += `_${hasOffset}`;
+  });
+  const progName = program.constructor.name;
   // console.timeEnd('makeShaderKey:whole');
-  return source;
+  return progName + '_' + keyInputs + '_' + source;
 }
