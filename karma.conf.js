@@ -81,8 +81,11 @@ module.exports = function(config) {
     browserStack: {
       username: process.env.BROWSERSTACK_USERNAME,
       accessKey: process.env.BROWSERSTACK_KEY,
-      pollingTimeout: 5000,
+      pollingTimeout: 20000,
+      localIdentifier: Math.random().toString(36).substring(7),
+      video: false,
     },
+    listenAddress: '0.0.0.0',
     browserSocketTimeout: 60000,
     captureTimeout: 120000,
     reportSlowerThan: 500,
