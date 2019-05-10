@@ -539,8 +539,7 @@ export function computeStrides(shape: number[]): number[] {
   return strides;
 }
 
-// TODO TK Add tests
-// compare to symbolicallyComputeStrides...
+// TODO(yassogba) Add tests
 export function computeStrideExpr(
     shape: number[], uniformName: string): string[] {
   const rank = shape.length;

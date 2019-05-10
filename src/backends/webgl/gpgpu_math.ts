@@ -56,7 +56,6 @@ export interface TensorData {
 
 export function assembleProgramSource(
     program: GPGPUProgram, inputs: TensorData[], output: TensorData) {
-  // console.time('assembleProgramSource');
   const userCode = program.userCode;
 
   const inputInfos: InputInfo[] = inputs.map((input, i) => {
@@ -74,7 +73,6 @@ export function assembleProgramSource(
     return {name: program.variableNames[i], shapeInfo};
   });
 
-  // const inShapeInfos = inputInfos.map(x => x.shapeInfo);
   const outShapeInfo: ShapeInfo = {
     logicalShape: output.shape,
     texShape: output.texData.texShape,
@@ -86,13 +84,11 @@ export function assembleProgramSource(
   const source = shader_compiler.makeShader(
       inputInfos, outShapeInfo, userCode, program.usesPackedTextures);
 
-  // console.timeEnd('assembleProgramSource');
-
-  // console.log('---------- ASSEMBLED -----------');
-  // console.log(source);
-  // console.log('---------- END ASSEMBLED -----------\n\n');
+  // TODO(yassogba) removed the fixed portions of the program from the key.
+  const key = source;
 
   return {
+    key,
     source,
     inputInfos,
     outShapeInfo,
@@ -102,17 +98,9 @@ export function assembleProgramSource(
 export function compileProgram<T extends Tensor, K extends Tensor>(
     gpgpu: GPGPUContext, program: GPGPUProgram, inputs: TensorData[],
     output: TensorData): GPGPUBinary {
-  // const engineState = window._tfengine.state;
-  // const scopeName =
-  // engineState.activeScope != null ? engineState.activeScope.name : '';
-  // console.group(`compileProgram: ${scopeName}`);
-
   const {source, inputInfos, outShapeInfo} =
       assembleProgramSource(program, inputs, output);
-  // console.log('ASSEMBLED SOURCE', inputInfos);
   const webGLProgram = gpgpu.createProgram(source);
-
-  // TKTK uniforms
 
   // Add special uniforms (NAN, INFINITY)
   let infLoc: WebGLUniformLocation = null;
@@ -133,12 +121,14 @@ export function compileProgram<T extends Tensor, K extends Tensor>(
   }
 
   // Add uniforms for input shapes;
-
   for (let i = 0; i < inputInfos.length; i++) {
     const inputInfo = inputInfos[i];
     const inShapeInfo = inputInfo.shapeInfo;
 
     if (inShapeInfo.logicalShape.length > 0) {
+      // if (inShapeInfo.isUniform) {
+      //   console.log(`input is logicalShape.length > 0 && isUniform`);
+      // }
       const varShapeName = `shape${inputInfo.name}`;
       const varTexShapeName = `texShape${inputInfo.name}`;
       const shouldThrow = false;
@@ -169,8 +159,6 @@ export function compileProgram<T extends Tensor, K extends Tensor>(
 
   const inShapeInfos = inputInfos.map(x => x.shapeInfo);
 
-  // console.groupEnd();
-
   return {
     program,
     source,
@@ -183,7 +171,7 @@ export function compileProgram<T extends Tensor, K extends Tensor>(
   };
 }
 
-// TODO TK update
+// TODO(yassogba) update/remove this once packed path is updated
 // function validateBinaryAndProgram(
 //     shapeInfos: ShapeInfo[], inputs: TensorData[]) {
 //   if (shapeInfos.length !== inputs.length) {
@@ -222,8 +210,13 @@ export function runProgram<T extends Tensor, K extends Tensor>(
     output: TensorData,
     customSetup?: (gpgpu: GPGPUContext, webGLProgram: WebGLProgram) =>
         void): void {
-  // validateBinaryAndProgram(binary.inShapeInfos, inputs);
-  // validateBinaryAndProgram([binary.outShapeInfo], [output]);
+  // TODO(yassogba) update/remove this once packed path uses uniforms
+  // In the short terms this should exclude non packed programs but in
+  // practice doesn't...
+  // if (binary.program.usesPackedTextures || binary.program.isPackShader) {
+  //   validateBinaryAndProgram(binary.inShapeInfos, inputs);
+  //   validateBinaryAndProgram([binary.outShapeInfo], [output]);
+  // }
 
   const outTex = output.texData.texture;
   const outTexShape = output.texData.texShape;
@@ -288,9 +281,9 @@ export function runProgram<T extends Tensor, K extends Tensor>(
     const varTexShapeName = `texShape${varName}`;
     const varTexShapeLoc = binary.uniformLocations[varTexShapeName];
 
-    // TODO TK investigate the difference between thse two shapes
-    // also note that input.shape is a thing.
-    // let texShape: number[]|Int32Array = input.texData.shape; ** NOTTHISONE
+    // TODO(yassogba, nsthoat) rename/document these two shapes:
+    // input.texData.shape and input.texData.texShape
+    // to make it more apparent why they are both needed.
     let texShape: number[]|Int32Array = input.texData.texShape;
     if (!(texShape instanceof Int32Array)) {
       texShape = new Int32Array(texShape);
@@ -319,9 +312,9 @@ export function runProgram<T extends Tensor, K extends Tensor>(
     const outputTexShapeName = `outputTexShape`;
     const outputTexShapeLoc = binary.uniformLocations[outputTexShapeName];
 
-    // TODO TK investigate the difference between thse two shapes
-    // also note that output.shape is a thing.
-    // let outputTexShape: number[]|Int32Array = output.texData.shape;
+    // TODO(yassogba, nsthoat) rename/document these two shapes:
+    // output.texData.shape and output.texData.texShape
+    // to make it more apparent why they are both needed.
     let outputTexShape: number[]|Int32Array = output.texData.texShape;
     if (!(outputTexShape instanceof Int32Array)) {
       outputTexShape = new Int32Array(outputTexShape);
@@ -335,9 +328,9 @@ export function runProgram<T extends Tensor, K extends Tensor>(
   gpgpu.executeProgram();
 }
 
+// TODO(yassogba) remove
 export function makeShaderKey(
     program: GPGPUProgram, inputs: TensorData[], output: TensorData): string {
-  // console.time('makeShaderKey:partial');
   let keyInputs = '';
   inputs.concat(output).forEach(x => {
     const hasOffset = x.texData != null && x.texData.slice != null &&
@@ -349,31 +342,27 @@ export function makeShaderKey(
   let key = program.constructor.name;
   // Fast string concat. See https://jsperf.com/string-concatenation/14.
   key += '_' + keyInputs + '_' + keyUserCode;
-  // console.timeEnd('makeShaderKey:partial');
   return key;
 }
 
 export function makeShaderKeyWhole(
     program: GPGPUProgram, inputs: TensorData[], output: TensorData) {
   // console.time('makeShaderKey:whole');
-  const {source} = assembleProgramSource(program, inputs, output);
+  const {key} = assembleProgramSource(program, inputs, output);
   let keyInputs = '';
   inputs.concat(output).forEach(x => {
     const hasOffset = x.texData != null && x.texData.slice != null &&
         x.texData.slice.flatOffset > 0;
-    // const texShape = x.isUniform ? 'uniform' : x.texData.texShape;
-    // keyInputs += `${x.shape}_${texShape}_${hasOffset}`;
-    // const isUniform = x.isUniform;
-    // TKTK IMPORTANT
-    // has offset needs to be in te key for now because offset is always
-    // added as a uniform to the source whether or not it is acutally used
-    // and thus the uniform location gets cached as null. So any future
-    // invocations with a sliced tensor ends up colliding with an incompatible
-    // program in the cache (missing cache location). This can be removed of the
-    // offset is not added/a null location is not cached.
+    // hasOffset needs to be in te key because offset is always added as a
+    // uniform to the source whether or not it is acutally used and thus the
+    // uniform location may get cached as null on first invocation if we didn't
+    // have this here. This results in  future invocations with a sliced tensor
+    // colliding with an incompatible program in the cache. This could be
+    // removed if the offset uniform and location were not added to the program
+    // at compile if it is not used.
     keyInputs += `_${hasOffset}`;
   });
+  // Progname is added for debugging convenience.
   const progName = program.constructor.name;
-  // console.timeEnd('makeShaderKey:whole');
-  return progName + '_' + keyInputs + '_' + source;
+  return progName + '_' + keyInputs + '_' + key;
 }

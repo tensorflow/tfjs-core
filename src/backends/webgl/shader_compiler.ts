@@ -33,6 +33,9 @@ export type InputInfo = {
   shapeInfo: ShapeInfo
 };
 
+const MAX_TENSOR_RANK = 6;
+const TEXSHAPE_RANK = 2;
+
 export function makeShader(
     inputsInfo: InputInfo[], outputShape: ShapeInfo, userCode: string,
     usesPackedTextures: boolean): string {
@@ -86,9 +89,6 @@ export function makeShader(
     inputPrefixSnippet, outputSamplingSnippet, inputSamplingSnippet, userCode
   ].join('\n');
 
-  // console.log('PROGRAM SOURCE-----------');
-  // console.log(source);
-  // console.log('END PROGRAM SOURCE-----------');
   return source;
 }
 
@@ -136,50 +136,21 @@ function getOutputShapeSnippet(
     shape: number[], texShape: [number, number]): string {
   // We don't want to the program text to change based on shape so allocate the
   // largest array the shape info could possible use at all times.
-  // TODO TK Move these to class
-  const MAX_TENSOR_RANK = 6;
-  const TEXSHAPE_RANK = 2;
-  // TK TK
+
   let snip = `uniform int outputShape[${MAX_TENSOR_RANK}]; \n`;
-  // snip += `// Original shape ${shape}\n`;
   if (texShape) {
     snip += `uniform int outputTexShape[${TEXSHAPE_RANK}]; \n`;
-    // snip += `// Original texShape ${texShape}\n`;
   }
   return snip;
 }
 
-// function getInputShapeSnippet(name: string, shapeInfo: ShapeInfo) {
-//   // return `uniform int shape${name}[${shapeInfo.logicalShape.length}]; \n`;
-
-//   // We don't want to the program text to change based on shape so allocate
-//   the
-//   // largest array the shape info could possible use at all times.
-//   // TODO TK Move these to class
-//   const MAX_TENSOR_RANK = 6;
-//   const TEXSHAPE_RANK = 2;
-//   // TK TK
-//   let snip = `uniform int shape${name}[${MAX_TENSOR_RANK}]; \n`;
-//   if (shapeInfo.texShape) {
-//     snip += `uniform int texShape${name}[${TEXSHAPE_RANK}]; \n`;
-//   }
-//   return snip;
-// }
-
 function getInputSamplingSnippet(
     inInfo: InputInfo, outShapeInfo: ShapeInfo,
     usesPackedTextures = false): string {
-  const MAX_TENSOR_RANK = 6;
-  const TEXSHAPE_RANK = 2;
-
   let res = '';
   const inputName = inInfo.name;
   const shapeUniform = `shape${inputName}`;
   const texShapeUniform = `texShape${inputName}`;
-
-  // if (inInfo.shapeInfo.logicalShape.length > 0) {
-  //   res += getInputShapeSnippet(inInfo.name, inInfo.shapeInfo);
-  // }
 
   let sampler;
   if (usesPackedTextures) {
@@ -187,17 +158,15 @@ function getInputSamplingSnippet(
   } else {
     sampler = getSamplerFromInInfo(inInfo);
   }
-  // console.log(`sampler for ${inputName}: `, sampler);
 
-  if (inInfo.shapeInfo.logicalShape.length > 0 && !usesPackedTextures) {
+  // Only add the uniform declaration if the sampler actually uses it
+  // This is a nice to have as it makes the generated source more closely
+  // match the source that will be linked into the webgl program (and thus make
+  // for a good cache hit).
+  if (inInfo.shapeInfo.logicalShape.length > 0) {
     if (sampler.indexOf(shapeUniform) !== -1) {
       res += `uniform int shape${inputName}[${MAX_TENSOR_RANK}]; \n`;
     }
-    // else {
-    //   // console.log('sampler does not user shapeinfo', shapeUniform,
-    //   sampler);
-    // }
-    // TKTK texShape may be used in every sampler...
     if (sampler.indexOf(texShapeUniform) !== -1) {
       res += `uniform int texShape${inputName}[${TEXSHAPE_RANK}]; \n`;
     }
@@ -857,8 +826,8 @@ function getSampler2D(inputInfo: InputInfo): string {
     `;
   }
 
-  // TODO TK upload shape as uniform for these inputs as well. and propagate
-  // usage to getUniformSampler.
+  // TODO(yassogba) TK upload shape as uniform for these inputs as well. and
+  // propagate usage to getUniformSampler.
   if (inputInfo.shapeInfo.isUniform) {
     // Uniform arrays will be less than 65505 (no risk of float16 overflow).
     return `
@@ -1155,6 +1124,12 @@ function getSampler5D(inputInfo: InputInfo): string {
   const stride1 = shape[2] * stride2;
   const stride0 = shape[1] * stride1;
 
+  const shapeUniform = `shape${texName}`;
+  const stride3Prog = `${shapeUniform}[4]`;
+  const stride2Prog = `${shapeUniform}[3] * ${stride3Prog}`;
+  const stride1Prog = `${shapeUniform}[2] * ${stride2Prog}`;
+  const stride0Prog = `${shapeUniform}[1] * ${stride1Prog}`;
+
   const {newShape, keptDims} = util.squeezeShape(shape);
   if (newShape.length < shape.length) {
     const newInputInfo = squeezeInputInfo(inputInfo, newShape);
@@ -1182,8 +1157,10 @@ function getSampler5D(inputInfo: InputInfo): string {
 
   const flatOffset = inputInfo.shapeInfo.flatOffset;
   const texShape = inputInfo.shapeInfo.texShape;
-  const texNumR = texShape[0];
+  // const texNumR = texShape[0];
   const texNumC = texShape[1];
+
+  const texShapeUniform = `texShape${texName}`;
 
   if (texNumC === stride0 && flatOffset == null) {
     // texC is used directly as physical (no risk of float16 overflow).
@@ -1191,9 +1168,11 @@ function getSampler5D(inputInfo: InputInfo): string {
       float ${funcName}(int row, int col, int depth, int depth2, int depth3) {
         int texR = row;
         float texC = dot(vec4(col, depth, depth2, depth3),
-                         vec4(${stride1}, ${stride2}, ${stride3}, 1));
+                         vec4(${stride1Prog}, ${stride2Prog}, 
+                            ${stride3Prog}, 1));
         vec2 uv = (vec2(texC, texR) + halfCR) /
-                   vec2(${texNumC}.0, ${texNumR}.0);
+                   vec2(float(${texShapeUniform}[1]), 
+                    float(${texShapeUniform}[0]));
         return sampleTexture(${texName}, uv);
       }
     `;
@@ -1205,11 +1184,12 @@ function getSampler5D(inputInfo: InputInfo): string {
       float ${funcName}(int row, int col, int depth, int depth2, int depth3) {
         float texR = dot(
           vec4(row, col, depth, depth2),
-          vec4(${shape[1] * shape[2] * shape[3]},
-               ${shape[2] * shape[3]}, ${shape[3]}, 1));
+          vec4(${shapeUniform}[1] * ${shapeUniform}[2] * ${shapeUniform}[3]},
+               ${shapeUniform}[2] * ${shapeUniform}[3], ${shapeUniform}[3], 1));
         int texC = depth3;
         vec2 uv = (vec2(texC, texR) + halfCR) /
-                  vec2(${texNumC}.0, ${texNumR}.0);
+                  vec2(float(${texShapeUniform}[1]), 
+                    float(${texShapeUniform}[0]));
         return sampleTexture(${texName}, uv);
       }
     `;
@@ -1219,9 +1199,9 @@ function getSampler5D(inputInfo: InputInfo): string {
   return `
     float ${funcName}(int row, int col, int depth, int depth2, int depth3) {
       // Explicitly use integer operations as dot() only works on floats.
-      int index = row * ${stride0} + col * ${stride1} + depth * ${stride2} +
-          depth2 * ${stride3} + depth3 + ${offset};
-      vec2 uv = uvFromFlat(${texNumR}, ${texNumC}, index);
+      int index = row * ${stride0Prog} + col * ${stride1Prog} + depth * ${
+      stride2Prog} + depth2 * ${stride3Prog} + depth3 + ${offset};
+      vec2 uv = uvFromFlat(${texShapeUniform}[0], ${texShapeUniform}[1], index);
       return sampleTexture(${texName}, uv);
     }
   `;
@@ -1251,6 +1231,13 @@ function getSampler6D(inputInfo: InputInfo): string {
   const stride1 = shape[2] * stride2;
   const stride0 = shape[1] * stride1;
 
+  const shapeUniform = `shape${texName}`;
+  const stride4Prog = `${shapeUniform}[5]`;
+  const stride3Prog = `${shapeUniform}[4] * ${stride4Prog}`;
+  const stride2Prog = `${shapeUniform}[3] * ${stride3Prog}`;
+  const stride1Prog = `${shapeUniform}[2] * ${stride2Prog}`;
+  const stride0Prog = `${shapeUniform}[1] * ${stride1Prog}`;
+
   if (inputInfo.shapeInfo.isUniform) {
     // Uniform arrays will be less than 65505 (no risk of float16 overflow).
     return `
@@ -1271,17 +1258,20 @@ function getSampler6D(inputInfo: InputInfo): string {
   const texShape = inputInfo.shapeInfo.texShape;
   const texNumR = texShape[0];
   const texNumC = texShape[1];
+  const texShapeUniform = `texShape${texName}`;
   if (texNumC === stride0 && flatOffset == null) {
     // texC is used directly as physical (no risk of float16 overflow).
     return `
       float ${funcName}(int row, int col, int depth,
                     int depth2, int depth3, int depth4) {
         int texR = row;
-        float texC = dot(vec4(col, depth, depth2, depth3),
-          vec4(${stride1}, ${stride2}, ${stride3}, ${stride4})) +
-               float(depth4);
+        float texC = dot(
+          vec4(col, depth, depth2, depth3),
+          vec4(${stride1Prog}, ${stride2Prog}, ${stride3Prog}, ${stride4Prog}))
+             + float(depth4);
         vec2 uv = (vec2(texC, texR) + halfCR) /
-                   vec2(${texNumC}.0, ${texNumR}.0);
+                   vec2(float(${texShapeUniform}[1]), 
+                    float(${texShapeUniform}[0]));
         return sampleTexture(${texName}, uv);
       }
     `;
@@ -1292,10 +1282,11 @@ function getSampler6D(inputInfo: InputInfo): string {
       float ${funcName}(int row, int col, int depth,
                     int depth2, int depth3, int depth4) {
         float texR = dot(vec4(row, col, depth, depth2),
-          vec4(${shape[1] * shape[2] * shape[3] * shape[4]},
-               ${shape[2] * shape[3] * shape[4]},
-               ${shape[3] * shape[4]},
-               ${shape[4]})) + float(depth3);
+          vec4(${shapeUniform}[1] * ${shapeUniform}[2] * ${shapeUniform}[3] 
+            * ${shapeUniform}[4]},
+               ${shapeUniform}[2] * ${shapeUniform}[3] * ${shapeUniform[4]},
+               ${shapeUniform}[3] * ${shapeUniform}[4],
+               ${shapeUniform}[4])) + float(depth3);
         int texC = depth4;
         vec2 uv = (vec2(texC, texR) + halfCR) /
                   vec2(${texNumC}.0, ${texNumR}.0);
@@ -1308,9 +1299,10 @@ function getSampler6D(inputInfo: InputInfo): string {
     float ${funcName}(int row, int col, int depth,
                   int depth2, int depth3, int depth4) {
       // Explicitly use integer operations as dot() only works on floats.
-      int index = row * ${stride0} + col * ${stride1} + depth * ${stride2} +
-          depth2 * ${stride3} + depth3 * ${stride4} + depth4 + ${offset};
-      vec2 uv = uvFromFlat(${texNumR}, ${texNumC}, index);
+      int index = row * ${stride0Prog} + col * ${stride1Prog} + depth * ${
+      stride2Prog} + depth2 * ${stride3Prog} + depth3 * ${stride4Prog} + 
+      depth4 + ${offset};
+      vec2 uv = uvFromFlat(${texShapeUniform}[0], ${texShapeUniform}[1], index);
       return sampleTexture(${texName}, uv);
     }
   `;
