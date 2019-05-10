@@ -41,7 +41,7 @@ const devConfig = {
   ],
   preprocessors: {'**/*.ts': ['karma-typescript']},
   karmaTypescriptConfig,
-  reporters: ['dots', 'karma-typescript'],
+  reporters: ['verbose', 'karma-typescript'],
 };
 
 const browserstackConfig = {
@@ -54,7 +54,7 @@ const browserstackConfig = {
   ],
   preprocessors: {'dist/**/*_test.js': ['browserify']},
   browserify: {debug: false},
-  reporters: ['dots', 'BrowserStack'],
+  reporters: ['verbose', 'BrowserStack'],
   singleRun: true,
   hostname: 'bs-local.com',
 };
@@ -74,6 +74,7 @@ module.exports = function(config) {
 
   config.set({
     ...extraConfig,
+    logLevel: config.LOG_DEBUG,
     browsers: ['Chrome'],
     browserStack: {
       username: process.env.BROWSERSTACK_USERNAME,
