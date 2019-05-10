@@ -15,6 +15,7 @@
  * =============================================================================
  */
 import {KernelBackend} from './backends/backend';
+import {nextFrame} from './browser_util';
 import {ENGINE} from './engine';
 import {ENV, Environment, Flags} from './environment';
 
@@ -154,6 +155,7 @@ function executeTests(
       }
       ENV.set('IS_TEST', true);
       await ENGINE.setBackend(testEnv.backendName);
+      await nextFrame();
     });
 
     beforeEach(() => {
