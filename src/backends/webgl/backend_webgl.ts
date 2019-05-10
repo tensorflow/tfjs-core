@@ -2475,14 +2475,15 @@ export class MathBackendWebGL implements KernelBackend {
 
       // this.recordCacheStats(key, shortKey, this.binaryCache[key],
       // scopeName);
-    } else {
-      // if (window.debug.cacheMissMap != null) {
-      //   if (window.debug.cacheHitCounter == null) {
-      //     window.debug.cacheHitCounter = 0;
-      //   }
-      //   window.debug.cacheHitCounter += 1;
-      // }
     }
+    // else {
+    // if (window.debug.cacheMissMap != null) {
+    //   if (window.debug.cacheHitCounter == null) {
+    //     window.debug.cacheHitCounter = 0;
+    //   }
+    //   window.debug.cacheHitCounter += 1;
+    // }
+    //}
 
     return this.binaryCache[key];
   }
