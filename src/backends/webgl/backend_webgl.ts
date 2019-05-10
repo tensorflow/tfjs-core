@@ -2442,23 +2442,23 @@ export class MathBackendWebGL implements KernelBackend {
     return output;
   }
 
-  private recordCacheStats(
-      key: string, shortKey: string, binary: GPGPUBinary, scopeName: string) {
-    // if (window.debug.cacheMissMap == null) {
-    //   return;
-    // }
-    // if (window.debug.cacheMissMap[scopeName] == null) {
-    //   window.debug.cacheMissMap[scopeName] = 0;
-    //   window.debug.cacheMissShortkeyVariants[scopeName] = new Set();
-    //   window.debug.cacheMissLongkeyVariants[scopeName] = new Set();
-    //   window.debug.cacheMissBinaryVariants[scopeName] = new Set();
-    // }
+  // private recordCacheStats(
+  // key: string, shortKey: string, binary: GPGPUBinary, scopeName: string) {
+  // if (window.debug.cacheMissMap == null) {
+  //   return;
+  // }
+  // if (window.debug.cacheMissMap[scopeName] == null) {
+  //   window.debug.cacheMissMap[scopeName] = 0;
+  //   window.debug.cacheMissShortkeyVariants[scopeName] = new Set();
+  //   window.debug.cacheMissLongkeyVariants[scopeName] = new Set();
+  //   window.debug.cacheMissBinaryVariants[scopeName] = new Set();
+  // }
 
-    // window.debug.cacheMissMap[scopeName] += 1;
-    // window.debug.cacheMissShortkeyVariants[scopeName].add(shortKey);
-    // window.debug.cacheMissLongkeyVariants[scopeName].add(key);
-    // window.debug.cacheMissBinaryVariants[scopeName].add(binary);
-  }
+  // window.debug.cacheMissMap[scopeName] += 1;
+  // window.debug.cacheMissShortkeyVariants[scopeName].add(shortKey);
+  // window.debug.cacheMissLongkeyVariants[scopeName].add(key);
+  // window.debug.cacheMissBinaryVariants[scopeName].add(binary);
+  // }
 
   private getAndSaveBinary(
       key: string, shortKey: string,
@@ -2466,13 +2466,15 @@ export class MathBackendWebGL implements KernelBackend {
     if (!(key in this.binaryCache)) {
       // const engineState = window._tfengine.state;
       // const scopeName =
-      //     engineState.activeScope != null ? engineState.activeScope.name :
+      //     engineState.activeScope != null ?
+      //     engineState.activeScope.name :
       //     '';
       // console.time(`getBinary ${scopeName}`);
       this.binaryCache[key] = getBinary();
       // console.timeEnd(`getBinary ${scopeName}`);
 
-      // this.recordCacheStats(key, shortKey, this.binaryCache[key], scopeName);
+      // this.recordCacheStats(key, shortKey, this.binaryCache[key],
+      // scopeName);
     } else {
       // if (window.debug.cacheMissMap != null) {
       //   if (window.debug.cacheHitCounter == null) {
@@ -2510,8 +2512,8 @@ export class MathBackendWebGL implements KernelBackend {
   floatPrecision(): 16|32 {
     if (this.floatPrecisionValue == null) {
       this.floatPrecisionValue = tidy(() => {
-        // Momentarily switching DEBUG flag to false so we don't throw an error
-        // trying to upload a small value.
+        // Momentarily switching DEBUG flag to false so we don't throw an
+        // error trying to upload a small value.
         const debugFlag = ENV.getBool('DEBUG');
         ENV.set('DEBUG', false);
         const underflowCheckValue = this.abs(scalar(1e-8)).dataSync()[0];
