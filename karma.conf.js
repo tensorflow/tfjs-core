@@ -75,6 +75,7 @@ module.exports = function(config) {
   config.set({
     ...extraConfig,
     logLevel: config.LOG_DEBUG,
+    forceJSONP: true,
     transports: ['polling'],
     browsers: ['Chrome'],
     browserStack: {
