@@ -75,6 +75,7 @@ module.exports = function(config) {
   config.set({
     ...extraConfig,
     logLevel: config.LOG_DEBUG,
+    transports: ['polling'],
     browsers: ['Chrome'],
     browserStack: {
       username: process.env.BROWSERSTACK_USERNAME,
