@@ -533,7 +533,7 @@ function getOutput5DCoords(
     shape: [number, number, number, number, number],
     texShape: [number, number]): string {
   const coordsFromIndexSnippet = shader_util.getLogicalCoordinatesFromFlatIndex(
-      ['r', 'c', 'd', 'd2', 'd3'], shape);
+      ['r', 'c', 'd', 'd2', 'd3'], shape, 'index', 'outputShape');
 
   return `
     ivec5 getOutputCoords() {
@@ -554,7 +554,7 @@ function getOutput6DCoords(
     shape: [number, number, number, number, number, number],
     texShape: [number, number]): string {
   const coordsFromIndexSnippet = shader_util.getLogicalCoordinatesFromFlatIndex(
-      ['r', 'c', 'd', 'd2', 'd3', 'd4'], shape);
+      ['r', 'c', 'd', 'd2', 'd3', 'd4'], shape, 'index', 'outputShape');
 
   return `
     ivec6 getOutputCoords() {
@@ -847,7 +847,7 @@ function getSampler2D(inputInfo: InputInfo): string {
     // index is used directly as physical (no risk of float16 overflow).
     return `
     float ${funcName}(int row, int col) {
-      float index = dot(vec3(row, col, ${offset}), 
+      float index = dot(vec3(row, col, ${offset}),
         vec3(${shapeUniform}[1], 1, 1));
       vec2 uv = vec2(0.5, (index + 0.5) / float(${texShapeUniform}[0]));
       return sampleTexture(${texName}, uv);
@@ -858,7 +858,7 @@ function getSampler2D(inputInfo: InputInfo): string {
     // index is used directly as physical (no risk of float16 overflow).
     return `
     float ${funcName}(int row, int col) {
-      float index = dot(vec3(row, col, ${offset}), 
+      float index = dot(vec3(row, col, ${offset}),
         vec3(${shapeUniform}[1], 1, 1));
       vec2 uv = vec2((index + 0.5) / float(${texShapeUniform}[1]), 0.5);
       return sampleTexture(${texName}, uv);
@@ -870,7 +870,7 @@ function getSampler2D(inputInfo: InputInfo): string {
   float ${funcName}(int row, int col) {
     // Explicitly use integer operations as dot() only works on floats.
     int index = row * ${shapeUniform}[1] + col + ${offset};
-    vec2 uv = uvFromFlat(${texShapeUniform}[0], 
+    vec2 uv = uvFromFlat(${texShapeUniform}[0],
         ${texShapeUniform}[1], index);
     return sampleTexture(${texName}, uv);
   }
@@ -961,7 +961,7 @@ function getSampler3D(inputInfo: InputInfo): string {
           float texR = float(row);
           float texC = dot(vec2(col, depth), vec2(${stride1Prog}, 1));
           vec2 uv = (vec2(texC, texR) + halfCR) /
-                     vec2(float(${texShapeUniform}[1]), 
+                     vec2(float(${texShapeUniform}[1]),
                       float(${texShapeUniform}[0]));
           return sampleTexture(${texName}, uv);
         }
@@ -985,9 +985,9 @@ function getSampler3D(inputInfo: InputInfo): string {
   return `
       float ${funcName}(int row, int col, int depth) {
         // Explicitly use integer operations as dot() only works on floats.
-        int index = row * ${stride0Prog} + col * ${stride1Prog} + depth + 
+        int index = row * ${stride0Prog} + col * ${stride1Prog} + depth +
           ${offset};
-        vec2 uv = uvFromFlat(${texShapeUniform}[0], 
+        vec2 uv = uvFromFlat(${texShapeUniform}[0],
           ${texShapeUniform}[1], index);
         return sampleTexture(${texName}, uv);
       }
@@ -1077,7 +1077,7 @@ function getSampler4D(inputInfo: InputInfo): string {
             dot(vec3(col, depth, depth2),
                 vec3(${stride1Prog}, ${stride2Prog}, 1));
         vec2 uv = (vec2(texC, texR) + halfCR) /
-                   vec2(float(${texShapeUniform}[1]), 
+                   vec2(float(${texShapeUniform}[1]),
                     float(${texShapeUniform}[0]));
         return sampleTexture(${texName}, uv);
       }
@@ -1089,7 +1089,7 @@ function getSampler4D(inputInfo: InputInfo): string {
       float ${funcName}(int row, int col, int depth, int depth2) {
         float texR = dot(vec3(row, col, depth),
                          vec3(
-                           ${shapeUniform}[1] * ${shapeUniform}[2], 
+                           ${shapeUniform}[1] * ${shapeUniform}[2],
                            ${shapeUniform}[2], 1));
         float texC = float(depth2);
         vec2 uv = (vec2(texC, texR) + halfCR) /
@@ -1107,8 +1107,8 @@ function getSampler4D(inputInfo: InputInfo): string {
       int index = row * ${stride0Prog} + col * ${stride1Prog} +
           depth * ${stride2Prog} + depth2;
       vec2 uv = uvFromFlat(
-        ${texShapeUniform}[0], 
-        ${texShapeUniform}[1], 
+        ${texShapeUniform}[0],
+        ${texShapeUniform}[1],
         index + ${offset});
       return sampleTexture(${texName}, uv);
     }
@@ -1168,10 +1168,10 @@ function getSampler5D(inputInfo: InputInfo): string {
       float ${funcName}(int row, int col, int depth, int depth2, int depth3) {
         int texR = row;
         float texC = dot(vec4(col, depth, depth2, depth3),
-                         vec4(${stride1Prog}, ${stride2Prog}, 
+                         vec4(${stride1Prog}, ${stride2Prog},
                             ${stride3Prog}, 1));
         vec2 uv = (vec2(texC, texR) + halfCR) /
-                   vec2(float(${texShapeUniform}[1]), 
+                   vec2(float(${texShapeUniform}[1]),
                     float(${texShapeUniform}[0]));
         return sampleTexture(${texName}, uv);
       }
@@ -1188,7 +1188,7 @@ function getSampler5D(inputInfo: InputInfo): string {
                ${shapeUniform}[2] * ${shapeUniform}[3], ${shapeUniform}[3], 1));
         int texC = depth3;
         vec2 uv = (vec2(texC, texR) + halfCR) /
-                  vec2(float(${texShapeUniform}[1]), 
+                  vec2(float(${texShapeUniform}[1]),
                     float(${texShapeUniform}[0]));
         return sampleTexture(${texName}, uv);
       }
@@ -1270,7 +1270,7 @@ function getSampler6D(inputInfo: InputInfo): string {
           vec4(${stride1Prog}, ${stride2Prog}, ${stride3Prog}, ${stride4Prog}))
              + float(depth4);
         vec2 uv = (vec2(texC, texR) + halfCR) /
-                   vec2(float(${texShapeUniform}[1]), 
+                   vec2(float(${texShapeUniform}[1]),
                     float(${texShapeUniform}[0]));
         return sampleTexture(${texName}, uv);
       }
@@ -1282,7 +1282,7 @@ function getSampler6D(inputInfo: InputInfo): string {
       float ${funcName}(int row, int col, int depth,
                     int depth2, int depth3, int depth4) {
         float texR = dot(vec4(row, col, depth, depth2),
-          vec4(${shapeUniform}[1] * ${shapeUniform}[2] * ${shapeUniform}[3] 
+          vec4(${shapeUniform}[1] * ${shapeUniform}[2] * ${shapeUniform}[3]
             * ${shapeUniform}[4]},
                ${shapeUniform}[2] * ${shapeUniform}[3] * ${shapeUniform[4]},
                ${shapeUniform}[3] * ${shapeUniform}[4],
@@ -1300,7 +1300,7 @@ function getSampler6D(inputInfo: InputInfo): string {
                   int depth2, int depth3, int depth4) {
       // Explicitly use integer operations as dot() only works on floats.
       int index = row * ${stride0Prog} + col * ${stride1Prog} + depth * ${
-      stride2Prog} + depth2 * ${stride3Prog} + depth3 * ${stride4Prog} + 
+      stride2Prog} + depth2 * ${stride3Prog} + depth3 * ${stride4Prog} +
       depth4 + ${offset};
       vec2 uv = uvFromFlat(${texShapeUniform}[0], ${texShapeUniform}[1], index);
       return sampleTexture(${texName}, uv);
