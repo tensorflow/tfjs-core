@@ -17,12 +17,7 @@
 
 import {getBroadcastDims} from '../../ops/broadcast_util';
 import * as util from '../../util';
-// TK this introduces a circular import. Check if this will be a problem
-// for g3 sync
-import {GPGPUProgram} from '../../webgl';
-
 import {getGlslDifferences, GLSL} from './glsl_version';
-import {TensorData} from './gpgpu_math';
 import * as shader_util from './shader_compiler_util';
 
 export type ShapeInfo = {
@@ -37,51 +32,6 @@ export type InputInfo = {
   name: string,
   shapeInfo: ShapeInfo
 };
-
-export function assembleProgramSource(
-    program: GPGPUProgram, inputs: TensorData[], output: TensorData) {
-  // console.time('assembleProgramSource');
-  const userCode = program.userCode;
-
-  const inputInfos: InputInfo[] = inputs.map((input, i) => {
-    const shapeInfo: ShapeInfo = {
-      logicalShape: input.shape,
-      texShape: input.isUniform ? null : input.texData.texShape,
-      isUniform: input.isUniform,
-      isPacked: input.isUniform ? false : input.texData.isPacked,
-      flatOffset: null
-    };
-    if (input.texData != null && input.texData.slice != null &&
-        input.texData.slice.flatOffset > 0) {
-      shapeInfo.flatOffset = input.texData.slice.flatOffset;
-    }
-    return {name: program.variableNames[i], shapeInfo};
-  });
-
-  // const inShapeInfos = inputInfos.map(x => x.shapeInfo);
-  const outShapeInfo: ShapeInfo = {
-    logicalShape: output.shape,
-    texShape: output.texData.texShape,
-    isUniform: false,
-    isPacked: output.texData.isPacked,
-    flatOffset: null
-  };
-
-  const source = makeShader(
-      inputInfos, outShapeInfo, userCode, program.usesPackedTextures);
-
-  // console.timeEnd('assembleProgramSource');
-
-  // console.log('---------- ASSEMBLED -----------');
-  // console.log(source);
-  // console.log('---------- END ASSEMBLED -----------\n\n');
-
-  return {
-    source,
-    inputInfos,
-    outShapeInfo,
-  };
-}
 
 export function makeShader(
     inputsInfo: InputInfo[], outputShape: ShapeInfo, userCode: string,

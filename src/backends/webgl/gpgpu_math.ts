@@ -21,7 +21,8 @@ import {TypedArray} from '../../types';
 import * as util from '../../util';
 
 import {GPGPUContext} from './gpgpu_context';
-import {assembleProgramSource, ShapeInfo} from './shader_compiler';
+import * as shader_compiler from './shader_compiler';
+import {InputInfo, ShapeInfo} from './shader_compiler';
 import {TextureData} from './tex_util';
 
 export interface GPGPUProgram {
@@ -51,6 +52,51 @@ export interface TensorData {
   isUniform: boolean;
   // Available when we decide to upload as uniform instead of texture.
   uniformValues?: TypedArray;
+}
+
+export function assembleProgramSource(
+    program: GPGPUProgram, inputs: TensorData[], output: TensorData) {
+  // console.time('assembleProgramSource');
+  const userCode = program.userCode;
+
+  const inputInfos: InputInfo[] = inputs.map((input, i) => {
+    const shapeInfo: ShapeInfo = {
+      logicalShape: input.shape,
+      texShape: input.isUniform ? null : input.texData.texShape,
+      isUniform: input.isUniform,
+      isPacked: input.isUniform ? false : input.texData.isPacked,
+      flatOffset: null
+    };
+    if (input.texData != null && input.texData.slice != null &&
+        input.texData.slice.flatOffset > 0) {
+      shapeInfo.flatOffset = input.texData.slice.flatOffset;
+    }
+    return {name: program.variableNames[i], shapeInfo};
+  });
+
+  // const inShapeInfos = inputInfos.map(x => x.shapeInfo);
+  const outShapeInfo: ShapeInfo = {
+    logicalShape: output.shape,
+    texShape: output.texData.texShape,
+    isUniform: false,
+    isPacked: output.texData.isPacked,
+    flatOffset: null
+  };
+
+  const source = shader_compiler.makeShader(
+      inputInfos, outShapeInfo, userCode, program.usesPackedTextures);
+
+  // console.timeEnd('assembleProgramSource');
+
+  // console.log('---------- ASSEMBLED -----------');
+  // console.log(source);
+  // console.log('---------- END ASSEMBLED -----------\n\n');
+
+  return {
+    source,
+    inputInfos,
+    outShapeInfo,
+  };
 }
 
 export function compileProgram<T extends Tensor, K extends Tensor>(
