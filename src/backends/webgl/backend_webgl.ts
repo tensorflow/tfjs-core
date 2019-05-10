@@ -2464,14 +2464,15 @@ export class MathBackendWebGL implements KernelBackend {
       key: string, shortKey: string,
       getBinary: () => GPGPUBinary): GPGPUBinary {
     if (!(key in this.binaryCache)) {
-      const engineState = window._tfengine.state;
-      const scopeName =
-          engineState.activeScope != null ? engineState.activeScope.name : '';
+      // const engineState = window._tfengine.state;
+      // const scopeName =
+      //     engineState.activeScope != null ? engineState.activeScope.name :
+      //     '';
       // console.time(`getBinary ${scopeName}`);
       this.binaryCache[key] = getBinary();
       // console.timeEnd(`getBinary ${scopeName}`);
 
-      this.recordCacheStats(key, shortKey, this.binaryCache[key], scopeName);
+      // this.recordCacheStats(key, shortKey, this.binaryCache[key], scopeName);
     } else {
       // if (window.debug.cacheMissMap != null) {
       //   if (window.debug.cacheHitCounter == null) {
