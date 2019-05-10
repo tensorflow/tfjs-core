@@ -80,7 +80,8 @@ module.exports = function(config) {
     browsers: ['Chrome'],
     browserStack: {
       username: process.env.BROWSERSTACK_USERNAME,
-      accessKey: process.env.BROWSERSTACK_KEY
+      accessKey: process.env.BROWSERSTACK_KEY,
+      pollingTimeout: 5000,
     },
     browserSocketTimeout: 60000,
     captureTimeout: 120000,
