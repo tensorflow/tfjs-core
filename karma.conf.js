@@ -54,7 +54,7 @@ const browserstackConfig = {
   ],
   preprocessors: {'dist/**/*_test.js': ['browserify']},
   browserify: {debug: false},
-  reporters: ['verbose', 'BrowserStack'],
+  reporters: ['verbose'],
   singleRun: true,
   hostname: 'bs-local.com',
 };
