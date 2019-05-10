@@ -82,6 +82,7 @@ module.exports = function(config) {
       username: process.env.BROWSERSTACK_USERNAME,
       accessKey: process.env.BROWSERSTACK_KEY
     },
+    browserSocketTimeout: 60000,
     captureTimeout: 120000,
     reportSlowerThan: 500,
     browserNoActivityTimeout: 180000,
