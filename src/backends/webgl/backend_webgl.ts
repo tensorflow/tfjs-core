@@ -1,15 +1,15 @@
-declare global {
-  interface Window {
-    // tslint:disable-next-line:no-any
-    debug: any;
-    // tslint:disable-next-line:no-any
-    _tfengine: any;
-  }
-}
+// declare global {
+//   interface Window {
+//     // tslint:disable-next-line:no-any
+//     debug: any;
+//     // tslint:disable-next-line:no-any
+//     _tfengine: any;
+//   }
+// }
 
-if (window.debug == null) {
-  window.debug = {};
-}
+// if (window.debug == null) {
+//   window.debug = {};
+// }
 
 /**
  * @license
@@ -2444,20 +2444,20 @@ export class MathBackendWebGL implements KernelBackend {
 
   private recordCacheStats(
       key: string, shortKey: string, binary: GPGPUBinary, scopeName: string) {
-    if (window.debug.cacheMissMap == null) {
-      return;
-    }
-    if (window.debug.cacheMissMap[scopeName] == null) {
-      window.debug.cacheMissMap[scopeName] = 0;
-      window.debug.cacheMissShortkeyVariants[scopeName] = new Set();
-      window.debug.cacheMissLongkeyVariants[scopeName] = new Set();
-      window.debug.cacheMissBinaryVariants[scopeName] = new Set();
-    }
+    // if (window.debug.cacheMissMap == null) {
+    //   return;
+    // }
+    // if (window.debug.cacheMissMap[scopeName] == null) {
+    //   window.debug.cacheMissMap[scopeName] = 0;
+    //   window.debug.cacheMissShortkeyVariants[scopeName] = new Set();
+    //   window.debug.cacheMissLongkeyVariants[scopeName] = new Set();
+    //   window.debug.cacheMissBinaryVariants[scopeName] = new Set();
+    // }
 
-    window.debug.cacheMissMap[scopeName] += 1;
-    window.debug.cacheMissShortkeyVariants[scopeName].add(shortKey);
-    window.debug.cacheMissLongkeyVariants[scopeName].add(key);
-    window.debug.cacheMissBinaryVariants[scopeName].add(binary);
+    // window.debug.cacheMissMap[scopeName] += 1;
+    // window.debug.cacheMissShortkeyVariants[scopeName].add(shortKey);
+    // window.debug.cacheMissLongkeyVariants[scopeName].add(key);
+    // window.debug.cacheMissBinaryVariants[scopeName].add(binary);
   }
 
   private getAndSaveBinary(
@@ -2473,12 +2473,12 @@ export class MathBackendWebGL implements KernelBackend {
 
       this.recordCacheStats(key, shortKey, this.binaryCache[key], scopeName);
     } else {
-      if (window.debug.cacheMissMap != null) {
-        if (window.debug.cacheHitCounter == null) {
-          window.debug.cacheHitCounter = 0;
-        }
-        window.debug.cacheHitCounter += 1;
-      }
+      // if (window.debug.cacheMissMap != null) {
+      //   if (window.debug.cacheHitCounter == null) {
+      //     window.debug.cacheHitCounter = 0;
+      //   }
+      //   window.debug.cacheHitCounter += 1;
+      // }
     }
 
     return this.binaryCache[key];
