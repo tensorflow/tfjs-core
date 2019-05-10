@@ -14,8 +14,9 @@
  * limitations under the License.
  * =============================================================================
  */
+
 import {KernelBackend} from './backends/backend';
-import {nextFrame} from './browser_util';
+// import {nextFrame} from './browser_util';
 import {ENGINE} from './engine';
 import {ENV, Environment, Flags} from './environment';
 
@@ -148,14 +149,16 @@ if (typeof __karma__ !== 'undefined') {
 function executeTests(
     testName: string, tests: (env: TestEnv) => void, testEnv: TestEnv) {
   describe(testName, () => {
-    beforeAll(async () => {
-      await ENGINE.reset();
+    beforeAll(() => {
+      // await ENGINE.reset();
+      ENGINE.reset();
       if (testEnv.flags != null) {
         ENV.setFlags(testEnv.flags);
       }
       ENV.set('IS_TEST', true);
-      await ENGINE.setBackend(testEnv.backendName);
-      await nextFrame();
+      // await ENGINE.setBackend(testEnv.backendName);
+      ENGINE.setBackend(testEnv.backendName);
+      // await nextFrame();
     });
 
     beforeEach(() => {
@@ -167,8 +170,9 @@ function executeTests(
       ENGINE.disposeVariables();
     });
 
-    afterAll(async () => {
-      await ENGINE.reset();
+    afterAll(() => {
+      // await ENGINE.reset();
+      ENGINE.reset();
     });
 
     tests(testEnv);
