@@ -129,6 +129,11 @@ module.exports = function(config) {
       chrome_debugging:
           {base: 'Chrome', flags: ['--remote-debugging-port=9333']}
     },
-    client: {jasmine: {random: false}, args: args}
+    client: {
+      runInParent: true,
+      useIframe: false,
+      jasmine: {random: false},
+      args: args,
+    }
   });
 };
