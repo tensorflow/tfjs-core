@@ -21,6 +21,7 @@ import * as tf from './index';
 import {ALL_ENVS, describeWithFlags, TestKernelBackend} from './jasmine_util';
 import {Tensor} from './tensor';
 import {expectArraysClose} from './test_util';
+import { CPU_ENVS } from './backends/cpu/backend_cpu_test_registry';
 
 describe('Backend registration', () => {
   beforeAll(() => {
@@ -458,8 +459,7 @@ describeWithFlags('disposeVariables', ALL_ENVS, () => {
  * concrete backend to exist. This test will work for any backend, but currently
  * this is the simplest backend to test against.
  */
-describeWithFlags(
-    'Switching cpu backends', {predicate: backend => backend === 'cpu'}, () => {
+describeWithFlags('Switching cpu backends', CPU_ENVS, () => {
       beforeEach(() => {
         tf.registerBackend('cpu1', tf.findBackendFactory('cpu'));
         tf.registerBackend('cpu2', tf.findBackendFactory('cpu'));
@@ -538,7 +538,7 @@ describeWithFlags(
  */
 describeWithFlags(
     'Switching WebGL + CPU backends', {
-      predicate: backend => backend === 'webgl' &&
+      predicate: testEnv => testEnv.backendName === 'webgl' &&
           ENGINE.backendNames().indexOf('webgl') !== -1 &&
           ENGINE.backendNames().indexOf('cpu') !== -1
     },
