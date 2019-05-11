@@ -15,10 +15,15 @@
  * =============================================================================
  */
 
-import * as tf from '@tensorflow/tfjs-core';
+// import * as tf from '@tensorflow/tfjs-core';
 import {setTestEnvs} from '@tensorflow/tfjs-core/dist/jasmine_util';
 
-setTestEnvs([{name: 'test-webgpu', backendName: 'webgpu', flags: {}}]);
+setTestEnvs([{
+  name: 'test-webgpu',
+  backendName: 'webgpu',
+  flags: {},
+  isDataSync: false,
+}]);
 
 const env = jasmine.getEnv();
 

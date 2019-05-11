@@ -39,12 +39,12 @@ module.exports = function(config) {
     ],
     preprocessors: {'**/*.ts': ['karma-typescript']},
     karmaTypescriptConfig,
-    reporters: ['verbose', 'karma-typescript'],
+    reporters: ['progress', 'karma-typescript'],
     port: 9876,
     colors: true,
     autoWatch: false,
     browsers: ['Chrome', 'chrome_webgpu'],
-    singleRun: false,
+    singleRun: true,
     customLaunchers: {
       chrome_webgpu: {
         base: 'Chrome',
