@@ -110,15 +110,5 @@ env.specFilter = spec => {
   return false;
 };
 
-import './index.ts';
-
-async function run() {
-  await tf.ready();
-  console.log('Backend is ready!!');
-  console.log(tf.backend());
-
-  // tslint:disable-next-line:no-require-imports
-  // require('@tensorflow/tfjs-core/dist/tests');
-}
-
-run();
+// Import the tests from core.
+import '@tensorflow/tfjs-core/dist/tests';
