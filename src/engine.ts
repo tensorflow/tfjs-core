@@ -274,6 +274,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
         const success =
             backend
                 .then(backendInstance => {
+                  // Outdated promise. Another backed was set in the meantime.
                   if (promiseId < this.pendingPromiseId) {
                     return false;
                   }
@@ -282,6 +283,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
                   return true;
                 })
                 .catch(err => {
+                  // Outdated promise. Another backed was set in the meantime.
                   if (promiseId < this.pendingPromiseId) {
                     return false;
                   }
@@ -309,6 +311,8 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
       throw new Error(`${backendName} backend not found in registry`);
     }
     if (this.backendName === backendName && this.pendingBackendInit != null) {
+      // There is a pending promise of the backend we want to remove. Make it
+      // obsolete.
       this.pendingPromiseId++;
     }
 
@@ -884,6 +888,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
    * registered backend factories.
    */
   reset(): void {
+    // Make any pending promise obsolete.
     this.pendingPromiseId++;
 
     this.state.dispose();

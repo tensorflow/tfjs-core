@@ -153,6 +153,7 @@ function executeTests(
         ENV.setFlags(testEnv.flags);
       }
       ENV.set('IS_TEST', true);
+      // Await setting the new backend since it can have async init.
       await ENGINE.setBackend(testEnv.backendName);
     });
 

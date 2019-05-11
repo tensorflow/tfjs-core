@@ -22,11 +22,11 @@ steps:
   waitFor: ['build']
   env: ['BROWSERSTACK_USERNAME=deeplearnjs1', 'NIGHTLY=$_NIGHTLY']
   secretEnv: ['BROWSERSTACK_KEY']
-# - name: 'node:10'
-#   entrypoint: 'yarn'
-#   id: 'test-bundle-size'
-#   args: ['test-bundle-size']
-#   waitFor: ['yarn']
+- name: 'node:10'
+  entrypoint: 'yarn'
+  id: 'test-bundle-size'
+  args: ['test-bundle-size']
+  waitFor: ['yarn']
 - name: 'node:10'
   entrypoint: 'yarn'
   id: 'test-webgpu'
