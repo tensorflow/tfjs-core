@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+import * as tf from '@tensorflow/tfjs-core';
 import {setTestEnvs} from '@tensorflow/tfjs-core/dist/jasmine_util';
 
 setTestEnvs([{name: 'test-webgpu', backendName: 'webgpu', flags: {}}]);
@@ -109,4 +110,15 @@ env.specFilter = spec => {
   return false;
 };
 
-import '@tensorflow/tfjs-core/dist/tests';
+import './index.ts';
+
+async function run() {
+  await tf.ready();
+  console.log('Backend is ready!!');
+  console.log(tf.backend());
+
+  // tslint:disable-next-line:no-require-imports
+  // require('@tensorflow/tfjs-core/dist/tests');
+}
+
+run();
