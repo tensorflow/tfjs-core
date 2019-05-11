@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {scalar, zeros, tensor1d} from '../ops/tensor_ops';
+import {scalar, tensor1d, zeros} from '../ops/tensor_ops';
 import {Tensor} from '../tensor';
 import {Rank} from '../types';
 import {DataType, ShapeMap} from '../types';
@@ -46,6 +46,11 @@ export function castTensor<T extends Tensor>(
     const result = real.cast(dtype);
     real.dispose();
     return result;
+  }
+  if (dtype === 'string' && x.dtype !== 'string' ||
+      dtype !== 'string' && x.dtype === 'string') {
+    console.log('about to throw an error');
+    throw new Error('Only strings can be casted to strings');
   }
   if (dtype === 'int32') {
     return backend.int(x);

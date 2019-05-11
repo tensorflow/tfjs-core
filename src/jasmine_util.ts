@@ -149,15 +149,13 @@ if (typeof __karma__ !== 'undefined') {
 function executeTests(
     testName: string, tests: (env: TestEnv) => void, testEnv: TestEnv) {
   describe(testName, () => {
-    beforeAll(() => {
-      // await ENGINE.reset();
+    beforeAll(async () => {
       ENGINE.reset();
       if (testEnv.flags != null) {
         ENV.setFlags(testEnv.flags);
       }
       ENV.set('IS_TEST', true);
-      // await ENGINE.setBackend(testEnv.backendName);
-      ENGINE.setBackend(testEnv.backendName);
+      await ENGINE.setBackend(testEnv.backendName);
       // await nextFrame();
     });
 
@@ -171,7 +169,6 @@ function executeTests(
     });
 
     afterAll(() => {
-      // await ENGINE.reset();
       ENGINE.reset();
     });
 

@@ -41,7 +41,7 @@ const devConfig = {
   ],
   preprocessors: {'**/*.ts': ['karma-typescript']},
   karmaTypescriptConfig,
-  reporters: ['verbose', 'karma-typescript'],
+  reporters: ['dots', 'karma-typescript'],
 };
 
 const browserstackConfig = {
@@ -54,7 +54,7 @@ const browserstackConfig = {
   ],
   preprocessors: {'dist/**/*_test.js': ['browserify']},
   browserify: {debug: false},
-  reporters: ['verbose'],
+  reporters: ['dots'],
   singleRun: true,
   hostname: 'bs-local.com',
 };
@@ -74,19 +74,19 @@ module.exports = function(config) {
 
   config.set({
     ...extraConfig,
-    logLevel: config.LOG_DEBUG,
-    forceJSONP: true,
-    transports: ['polling'],
+    // logLevel: config.LOG_DEBUG,
+    // forceJSONP: true,
+    // transports: ['polling'],
     browsers: ['Chrome'],
     browserStack: {
       username: process.env.BROWSERSTACK_USERNAME,
       accessKey: process.env.BROWSERSTACK_KEY,
-      pollingTimeout: 20000,
-      localIdentifier: Math.random().toString(36).substring(7),
+      // pollingTimeout: 20000,
+      // timeout: 20000,
       video: false,
     },
-    listenAddress: '0.0.0.0',
-    browserSocketTimeout: 60000,
+    // listenAddress: '0.0.0.0',
+    // browserSocketTimeout: 60000,
     captureTimeout: 120000,
     reportSlowerThan: 500,
     browserNoActivityTimeout: 180000,
@@ -136,9 +136,14 @@ module.exports = function(config) {
           {base: 'Chrome', flags: ['--remote-debugging-port=9333']}
     },
     client: {
-      runInParent: true,
-      useIframe: false,
-      jasmine: {random: false},
+      // runInParent: true,
+      // useIframe: false,
+      jasmine: {
+        // stopOnFailure: true,
+        // stopSpecOnExpectationFailure: true,
+        random: false,
+        // timeoutInterval: 5000,
+      },
       args: args,
     }
   });

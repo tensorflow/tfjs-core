@@ -304,13 +304,12 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     }
   }
 
-  async removeBackend(backendName: string): Promise<void> {
+  removeBackend(backendName: string): void {
     if (!(backendName in this.registryFactory)) {
       throw new Error(`${backendName} backend not found in registry`);
     }
-
-    if (this.pendingBackendInit != null) {
-      await this.pendingBackendInit;
+    if (this.backendName === backendName && this.pendingBackendInit != null) {
+      this.pendingPromiseId++;
     }
 
     if (backendName in this.registry) {
@@ -884,10 +883,8 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
    * Resets the engine state. Removes all backends but does not remove
    * registered backend factories.
    */
-  async reset(): Promise<void> {
-    if (this.pendingBackendInit != null) {
-      await this.pendingBackendInit;
-    }
+  reset(): void {
+    this.pendingPromiseId++;
 
     this.state.dispose();
     this.ENV.reset();
