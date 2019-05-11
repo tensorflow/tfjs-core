@@ -81,11 +81,8 @@ export function assembleProgramSource(
     flatOffset: null
   };
 
-  const source = shader_compiler.makeShader(
+  const {source, key} = shader_compiler.makeShader(
       inputInfos, outShapeInfo, userCode, program.usesPackedTextures);
-
-  // TODO(yassogba) removed the fixed portions of the program from the key.
-  const key = source;
 
   return {
     key,
@@ -236,8 +233,6 @@ export function runProgram<T extends Tensor, K extends Tensor>(
   if (binary.nanLoc !== null) {
     gpgpu.gl.uniform1f(binary.nanLoc, NaN);
   }
-
-  // console.log('Program', binary.source);
 
   // Set user-defined inputs
   inputs.forEach((input, i) => {

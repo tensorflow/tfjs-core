@@ -38,7 +38,7 @@ const TEXSHAPE_RANK = 2;
 
 export function makeShader(
     inputsInfo: InputInfo[], outputShape: ShapeInfo, userCode: string,
-    usesPackedTextures: boolean): string {
+    usesPackedTextures: boolean): {source: string, key: string} {
   const prefixSnippets: string[] = [];
   inputsInfo.forEach(x => {
     const size = util.sizeFromShape(x.shapeInfo.logicalShape);
@@ -73,8 +73,6 @@ export function makeShader(
         getPackedOutputSamplingSnippet(outputShape.logicalShape, outTexShape);
     floatTextureSetOutputSnippet = getFloatTextureSetRGBASnippet(glsl);
   } else {
-    // console.log(
-    //     'OUTPUTSHAPE', outputShape.logicalShape, outTexShape, outputShape);
     outputSamplingSnippet +=
         getOutputSamplingSnippet(outputShape.logicalShape, outTexShape);
     floatTextureSetOutputSnippet = getFloatTextureSetRSnippet(glsl);
@@ -89,7 +87,16 @@ export function makeShader(
     inputPrefixSnippet, outputSamplingSnippet, inputSamplingSnippet, userCode
   ].join('\n');
 
-  return source;
+  let keyElements = [
+    usesPackedTextures ? 'SHADER_PACKED_PREFIX_MARKER' : '',
+    outputShape.isPacked ? 'PACKED_floatTextureSetOutputSnippet_MARKER' : '',
+  ];
+  keyElements = keyElements.concat([
+    inputPrefixSnippet, outputSamplingSnippet, inputSamplingSnippet, userCode
+  ]);
+  const key = keyElements.join('\n');
+
+  return {source, key};
 }
 
 function getSamplerFromInInfo(inInfo: InputInfo): string {
