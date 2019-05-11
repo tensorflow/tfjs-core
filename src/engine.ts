@@ -140,7 +140,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
   private profiler: Profiler;
   private backendInstance: KernelBackend;
   private pendingBackendInit: Promise<boolean>;
-  private pendingPromiseId = 0;
+  private pendingBackendInitId = 0;
 
   constructor(public ENV: Environment) {
     this.state = new EngineState();
@@ -270,12 +270,12 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
       const backend = registryFactoryEntry.factory();
       // Test if the factory returns a promise.
       if (Promise.resolve(backend) === backend) {
-        const promiseId = ++this.pendingPromiseId;
+        const promiseId = ++this.pendingBackendInitId;
         const success =
             backend
                 .then(backendInstance => {
-                  // Outdated promise. Another backed was set in the meantime.
-                  if (promiseId < this.pendingPromiseId) {
+                  // Outdated promise. Another backend was set in the meantime.
+                  if (promiseId < this.pendingBackendInitId) {
                     return false;
                   }
                   this.registry[backendName] = backendInstance;
@@ -283,8 +283,8 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
                   return true;
                 })
                 .catch(err => {
-                  // Outdated promise. Another backed was set in the meantime.
-                  if (promiseId < this.pendingPromiseId) {
+                  // Outdated promise. Another backend was set in the meantime.
+                  if (promiseId < this.pendingBackendInitId) {
                     return false;
                   }
                   this.pendingBackendInit = null;
@@ -313,7 +313,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     if (this.backendName === backendName && this.pendingBackendInit != null) {
       // There is a pending promise of the backend we want to remove. Make it
       // obsolete.
-      this.pendingPromiseId++;
+      this.pendingBackendInitId++;
     }
 
     if (backendName in this.registry) {
@@ -889,7 +889,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
    */
   reset(): void {
     // Make any pending promise obsolete.
-    this.pendingPromiseId++;
+    this.pendingBackendInitId++;
 
     this.state.dispose();
     this.ENV.reset();
