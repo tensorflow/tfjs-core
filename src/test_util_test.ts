@@ -76,7 +76,7 @@ describeWithFlags('expectArraysEqual', ALL_ENVS, () => {
   });
 });
 
-describe('expectArraysClose', () => {
+describeWithFlags('expectArraysClose', ALL_ENVS, () => {
   it('same arrays', () => {
     expectArraysClose([1, 2, 3], [1, 2, 3]);
   });
