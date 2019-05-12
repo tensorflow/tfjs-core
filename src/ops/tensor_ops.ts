@@ -452,7 +452,8 @@ function onesLike_<T extends Tensor>(x: T|TensorLike): T {
     const i = zerosLike(imag($x));
     return complex(r, i);
   }
-  return ENGINE.runKernel(backend => backend.onesLike($x), {$x}, null) as T;
+  const der = (dy: T) => ({$x: zerosLike(dy) as T});
+  return ENGINE.runKernel(backend => backend.onesLike($x) as T, {$x}, der) as T;
 }
 
 /**
