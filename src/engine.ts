@@ -875,7 +875,6 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
       this.registry[backendName].dispose();
       delete this.registry[backendName];
     }
-    this.pendingBackendInit = null;
     this.backendName = null;
     this.backendInstance = null;
   }

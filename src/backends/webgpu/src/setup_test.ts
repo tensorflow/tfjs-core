@@ -100,12 +100,18 @@ env.specFilter = spec => {
     }
   }
 
-  // Always include all of the webgpu specific tests.
+  // Include all regular describe() tests.
+  if (name.indexOf('test-webgpu') < 0) {
+    return true;
+  }
+
+  // Include all of the webgpu specific tests.
   if (name.startsWith('webgpu')) {
     return true;
   }
 
-  // Include a test from tfjs-core only if the test is in the include list.
+  // Include a describeWithFlags() test from tfjs-core only if the test is in
+  // the include list.
   for (let i = 0; i < INCLUDE_LIST.length; ++i) {
     if (name.indexOf(INCLUDE_LIST[i]) > -1) {
       return true;

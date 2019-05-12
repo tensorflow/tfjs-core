@@ -16,7 +16,7 @@
  */
 
 import * as tf from '../index';
-import {ALL_ENVS, describeWithFlags} from '../jasmine_util';
+import {describeWithFlags} from '../jasmine_util';
 import {scalar, tensor1d, tensor2d} from '../ops/ops';
 import {NamedTensor, NamedTensorMap} from '../tensor_types';
 import {expectArraysEqual} from '../test_util';
@@ -177,7 +177,7 @@ describe('concatenateTypedArrays', () => {
   });
 });
 
-describeWithFlags('encodeWeights', ALL_ENVS, () => {
+describe('encodeWeights', () => {
   it('Float32 tensors as NamedTensorMap', async done => {
     const tensors: NamedTensorMap = {
       x1: tensor2d([[10, 20], [30, 40]]),
