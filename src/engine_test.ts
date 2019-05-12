@@ -16,7 +16,6 @@
  */
 
 import {KernelBackend} from './backends/backend';
-import {CPU_ENVS} from './backends/cpu/backend_cpu_test_registry';
 import {ENGINE} from './engine';
 import * as tf from './index';
 import {ALL_ENVS, describeWithFlags, TestKernelBackend} from './jasmine_util';
@@ -29,8 +28,29 @@ describe('Backend registration', () => {
     spyOn(console, 'warn');
   });
 
+  let registeredBackends: string[] = [];
+
   beforeEach(() => {
+    // Registering a backend changes global state (engine), so we wrap
+    // registration to automatically remove registered backend at the end
+    // of each test.
+    spyOn(tf, 'registerBackend')
+        .and.callFake(
+            (name: string, factory: () => KernelBackend, priority: number) => {
+              registeredBackends.push(name);
+              return ENGINE.registerBackend(name, factory, priority);
+            });
     ENGINE.reset();
+  });
+
+  afterEach(() => {
+    // Remove all registered backends at the end of each test.
+    registeredBackends.forEach(name => {
+      if (tf.findBackendFactory(name) != null) {
+        tf.removeBackend(name);
+      }
+    });
+    registeredBackends = [];
   });
 
   it('removeBackend disposes the backend and removes the factory', () => {
@@ -72,8 +92,6 @@ describe('Backend registration', () => {
     expect(tf.findBackend('custom-cpu') != null).toBe(true);
     expect(tf.findBackend('custom-cpu')).toBe(backend);
     expect(tf.findBackendFactory('custom-cpu')).toBe(factory);
-
-    tf.removeBackend('custom-cpu');
   });
 
   it('custom backend registration', () => {
@@ -89,8 +107,6 @@ describe('Backend registration', () => {
 
     expect(tf.backend() != null).toBe(true);
     expect(tf.backend()).toBe(backend);
-
-    tf.removeBackend('custom-cpu');
   });
 
   it('high priority backend registration fails, falls back', () => {
@@ -108,9 +124,6 @@ describe('Backend registration', () => {
     expect(tf.backend() != null).toBe(true);
     expect(tf.backend()).toBe(lowPriorityBackend);
     expect(tf.getBackend()).toBe('custom-low-priority');
-
-    tf.removeBackend('custom-low-priority');
-    tf.removeBackend('custom-high-priority');
   });
 
   it('low priority and high priority backends, setBackend low priority', () => {
@@ -136,9 +149,6 @@ describe('Backend registration', () => {
     expect(tf.backend() != null).toBe(true);
     expect(tf.backend()).toBe(lowPriorityBackend);
     expect(tf.getBackend()).toBe('custom-low-priority');
-
-    tf.removeBackend('custom-low-priority');
-    tf.removeBackend('custom-high-priority');
   });
 
   it('default custom background null', () => {
@@ -150,7 +160,6 @@ describe('Backend registration', () => {
     const success = tf.registerBackend('custom', () => backend);
     expect(success).toBeTruthy();
     expect(tf.findBackend('custom')).toEqual(backend);
-    tf.removeBackend('custom');
   });
 
   it('sync backend with await ready works', async () => {
@@ -161,7 +170,6 @@ describe('Backend registration', () => {
     expect(tf.getBackend()).toEqual('sync');
     await tf.ready();
     expect(tf.backend()).toEqual(testBackend);
-    tf.removeBackend('sync');
   });
 
   it('sync backend without await ready works', async () => {
@@ -171,7 +179,6 @@ describe('Backend registration', () => {
 
     expect(tf.getBackend()).toEqual('sync');
     expect(tf.backend()).toEqual(testBackend);
-    tf.removeBackend('sync');
   });
 
   it('async backend with await ready works', async () => {
@@ -185,7 +192,6 @@ describe('Backend registration', () => {
     expect(tf.getBackend()).toEqual('async');
     await tf.ready();
     expect(tf.backend()).toEqual(testBackend);
-    tf.removeBackend('async');
   });
 
   it('async backend without await ready does not work', async () => {
@@ -199,7 +205,6 @@ describe('Backend registration', () => {
     expect(tf.getBackend()).toEqual('async');
     expect(() => tf.backend())
         .toThrowError(/Backend 'async' has not yet been initialized./);
-    tf.removeBackend('async');
   });
 
   it('tf.square() fails if user does not await ready on async backend',
@@ -211,7 +216,6 @@ describe('Backend registration', () => {
        tf.setBackend('async');
        expect(() => tf.square(2))
            .toThrowError(/Backend 'async' has not yet been initialized/);
-       tf.removeBackend('async');
      });
 
   it('tf.square() works when user awaits ready on async backend', async () => {
@@ -222,7 +226,6 @@ describe('Backend registration', () => {
     tf.setBackend('async');
     await tf.ready();
     expect(() => tf.square(2)).toThrowError(/Not yet implemented/);
-    tf.removeBackend('async');
   });
 
   it('Registering async2 (higher priority) fails, async1 becomes active',
@@ -242,9 +245,6 @@ describe('Backend registration', () => {
        await tf.ready();
        expect(tf.backend()).toEqual(testBackend);
        expect(tf.getBackend()).toBe('async1');
-
-       tf.removeBackend('async1');
-       tf.removeBackend('async2');
      });
 
   it('Registering sync as higher priority and async as lower priority',
@@ -259,9 +259,6 @@ describe('Backend registration', () => {
        // No need to await for ready() since the highest priority one is sync.
        expect(tf.backend()).toEqual(testBackend);
        expect(tf.getBackend()).toBe('sync');
-
-       tf.removeBackend('sync');
-       tf.removeBackend('async');
      });
 
   it('async as higher priority and sync as lower priority with await ready',
@@ -277,9 +274,6 @@ describe('Backend registration', () => {
        await tf.ready();
        expect(tf.backend()).toEqual(testBackend);
        expect(tf.getBackend()).toBe('async');
-
-       tf.removeBackend('sync');
-       tf.removeBackend('async');
      });
 
   it('async as higher priority and sync as lower priority w/o await ready',
@@ -295,8 +289,6 @@ describe('Backend registration', () => {
        expect(() => tf.backend())
            .toThrowError(
                /The highest priority backend 'async' has not yet been/);
-       tf.removeBackend('sync');
-       tf.removeBackend('async');
      });
 
   it('Registering and setting a backend that fails to register', async () => {
@@ -309,8 +301,6 @@ describe('Backend registration', () => {
     expect(() => tf.backend())
         .toThrowError(/Backend 'async' has not yet been initialized/);
     expect(await success).toBe(false);
-
-    tf.removeBackend('async');
   });
 });
 
@@ -459,73 +449,75 @@ describeWithFlags('disposeVariables', ALL_ENVS, () => {
  * concrete backend to exist. This test will work for any backend, but currently
  * this is the simplest backend to test against.
  */
-describeWithFlags('Switching cpu backends', CPU_ENVS, () => {
-  beforeEach(() => {
-    tf.registerBackend('cpu1', tf.findBackendFactory('cpu'));
-    tf.registerBackend('cpu2', tf.findBackendFactory('cpu'));
-  });
+describeWithFlags(
+    'Switching cpu backends',
+    {predicate: testEnv => testEnv.backendName === 'cpu'}, () => {
+      beforeEach(() => {
+        tf.registerBackend('cpu1', tf.findBackendFactory('cpu'));
+        tf.registerBackend('cpu2', tf.findBackendFactory('cpu'));
+      });
 
-  afterEach(() => {
-    tf.removeBackend('cpu1');
-    tf.removeBackend('cpu2');
-  });
+      afterEach(() => {
+        tf.removeBackend('cpu1');
+        tf.removeBackend('cpu2');
+      });
 
-  it('Move data from cpu1 to cpu2 backend', async () => {
-    tf.setBackend('cpu1');
-    // This scalar lives in cpu1.
-    const a = tf.scalar(5);
+      it('Move data from cpu1 to cpu2 backend', async () => {
+        tf.setBackend('cpu1');
+        // This scalar lives in cpu1.
+        const a = tf.scalar(5);
 
-    tf.setBackend('cpu2');
-    // This scalar lives in cpu2.
-    const b = tf.scalar(3);
+        tf.setBackend('cpu2');
+        // This scalar lives in cpu2.
+        const b = tf.scalar(3);
 
-    expect(tf.memory().numDataBuffers).toBe(2);
-    expect(tf.memory().numTensors).toBe(2);
-    expect(tf.memory().numBytes).toBe(8);
+        expect(tf.memory().numDataBuffers).toBe(2);
+        expect(tf.memory().numTensors).toBe(2);
+        expect(tf.memory().numBytes).toBe(8);
 
-    // Make sure you can read both tensors.
-    expectArraysClose(await a.data(), [5]);
-    expectArraysClose(await b.data(), [3]);
+        // Make sure you can read both tensors.
+        expectArraysClose(await a.data(), [5]);
+        expectArraysClose(await b.data(), [3]);
 
-    // Switch back to cpu1.
-    tf.setBackend('cpu1');
-    // Again make sure you can read both tensors.
-    expectArraysClose(await a.data(), [5]);
-    expectArraysClose(await b.data(), [3]);
+        // Switch back to cpu1.
+        tf.setBackend('cpu1');
+        // Again make sure you can read both tensors.
+        expectArraysClose(await a.data(), [5]);
+        expectArraysClose(await b.data(), [3]);
 
-    tf.dispose([a, b]);
+        tf.dispose([a, b]);
 
-    expect(tf.memory().numDataBuffers).toBe(0);
-    expect(tf.memory().numTensors).toBe(0);
-    expect(tf.memory().numBytes).toBe(0);
-  });
+        expect(tf.memory().numDataBuffers).toBe(0);
+        expect(tf.memory().numTensors).toBe(0);
+        expect(tf.memory().numBytes).toBe(0);
+      });
 
-  it('can execute op with data from mixed backends', async () => {
-    tf.setBackend('cpu1');
-    // This scalar lives in cpu1.
-    const a = tf.scalar(5);
+      it('can execute op with data from mixed backends', async () => {
+        tf.setBackend('cpu1');
+        // This scalar lives in cpu1.
+        const a = tf.scalar(5);
 
-    tf.setBackend('cpu2');
-    // This scalar lives in cpu2.
-    const b = tf.scalar(3);
+        tf.setBackend('cpu2');
+        // This scalar lives in cpu2.
+        const b = tf.scalar(3);
 
-    // Verify that ops can execute with mixed backend data.
-    ENGINE.startScope();
-    tf.setBackend('cpu1');
-    expectArraysClose(await tf.add(a, b).data(), [8]);
+        // Verify that ops can execute with mixed backend data.
+        ENGINE.startScope();
+        tf.setBackend('cpu1');
+        expectArraysClose(await tf.add(a, b).data(), [8]);
 
-    tf.setBackend('cpu2');
-    expectArraysClose(await tf.add(a, b).data(), [8]);
-    ENGINE.endScope();
-    expect(tf.memory().numTensors).toBe(2);
-    expect(tf.memory().numDataBuffers).toBe(2);
+        tf.setBackend('cpu2');
+        expectArraysClose(await tf.add(a, b).data(), [8]);
+        ENGINE.endScope();
+        expect(tf.memory().numTensors).toBe(2);
+        expect(tf.memory().numDataBuffers).toBe(2);
 
-    tf.dispose([a, b]);
+        tf.dispose([a, b]);
 
-    expect(tf.memory().numTensors).toBe(0);
-    expect(tf.memory().numDataBuffers).toBe(0);
-  });
-});
+        expect(tf.memory().numTensors).toBe(0);
+        expect(tf.memory().numDataBuffers).toBe(0);
+      });
+    });
 
 /**
  * The following unit test is a special integration-style test that assumes
