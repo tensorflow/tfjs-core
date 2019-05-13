@@ -432,3 +432,17 @@ describeWithFlags('time webgl', WEBGL_ENVS, () => {
     expect(time.wallMs >= time.kernelMs);
   });
 });
+
+describe('WebGL backend has sync init', () => {
+  it('can do matmul without waiting for ready', async () => {
+    tf.registerBackend('my-webgl', () => {
+      return new MathBackendWebGL();
+    });
+    const a = tf.tensor1d([5]);
+    const b = tf.tensor1d([3]);
+    const res = tf.dot(a, b);
+    expectArraysClose(await res.data(), 15);
+    tf.dispose([a, b, res]);
+    tf.removeBackend('my-webgl');
+  });
+});
