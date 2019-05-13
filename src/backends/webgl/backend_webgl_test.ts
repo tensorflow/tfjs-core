@@ -309,6 +309,8 @@ describeWithFlags('upload tensors as uniforms', FLOAT32_WEBGL_ENVS, () => {
 
 describeWithFlags('debug on webgl', WEBGL_ENVS, () => {
   beforeAll(() => {
+    // Silences debug warnings.
+    spyOn(console, 'warn');
     tf.ENV.set('DEBUG', true);
   });
 
