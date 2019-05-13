@@ -15,7 +15,6 @@
  * =============================================================================
  */
 
-// import * as tf from '@tensorflow/tfjs-core';
 import {setTestEnvs} from '@tensorflow/tfjs-core/dist/jasmine_util';
 
 setTestEnvs([{
@@ -121,5 +120,5 @@ env.specFilter = spec => {
   return false;
 };
 
-// Import the tests from core.
+// Import and run all the tests from core.
 import '@tensorflow/tfjs-core/dist/tests';
