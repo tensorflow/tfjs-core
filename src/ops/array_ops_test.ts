@@ -460,7 +460,7 @@ describeWithFlags('zerosLike', ALL_ENVS, () => {
     expectArraysClose(await b.data(), [0, 0, 0, 0]);
   });
 
-  it('onesLike gradient', async () => {
+  it('zerosLike gradient', async () => {
     const x = tf.tensor2d([[0, 1, 2], [4, 5, 6]]);
     const gradients = tf.grad(x => tf.zerosLike(x))(x);
     expect(gradients.shape).toEqual([2, 3]);
