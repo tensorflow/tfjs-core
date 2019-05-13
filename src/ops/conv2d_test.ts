@@ -106,7 +106,7 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
     expectArraysClose(await result.data(), expected);
   });
 
-  it('x=[2,4,1] f=[4,2,1,1] s=1 d=1 p=same', async () => {
+  it('x=[4,2,1] f=[4,2,1,1] s=1 d=1 p=same', async () => {
     const inputDepth = 1;
     const outputDepth = 1;
     const pad = 'same';
@@ -114,16 +114,15 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
     const dataFormat = 'NHWC';
     const dilation = 1;
 
-    const x = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8], [2, 4, inputDepth]);
+    const x = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8], [4, 2, inputDepth]);
     const w =
         tf.tensor4d([3, 1, 5, 0, 2, 7, 8, 9], [4, 2, inputDepth, outputDepth]);
 
     const result = tf.conv2d(x, w, stride, pad, dataFormat, dilation);
 
     const resultData = await result.data();
-    expect(result.shape).toEqual([2, 4, 1]);
-    expectArraysClose(
-        resultData, new Float32Array([57, 71, 85, 36, 30, 39, 48, 52]));
+    expect(result.shape).toEqual([4, 2, 1]);
+    expectArraysClose(resultData, [133, 66, 200, 102, 108, 58, 56, 58]);
   });
 
   it('x=[2,2,1] f=[2,2,1,1] s=1 d=1 p=same', async () => {
