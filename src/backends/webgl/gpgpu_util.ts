@@ -221,10 +221,18 @@ export function uploadPixelDataToTexture(
     pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement) {
   webgl_util.callAndCheck(
       gl, debug, () => gl.bindTexture(gl.TEXTURE_2D, texture));
-  webgl_util.callAndCheck(
-      gl, debug,
-      () => gl.texImage2D(
-          gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, pixels));
+  if (ENV.getBool('DESTRUCT_IMAGE_DATA') && pixels instanceof ImageData) {
+    webgl_util.callAndCheck(
+        gl, debug,
+        () => gl.texImage2D(
+            gl.TEXTURE_2D, 0, gl.RGBA, pixels.width, pixels.height, 0, gl.RGBA,
+            gl.UNSIGNED_BYTE, pixels.data));
+  } else {
+    webgl_util.callAndCheck(
+        gl, debug,
+        () => gl.texImage2D(
+            gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, pixels));
+  }
   webgl_util.callAndCheck(gl, debug, () => gl.bindTexture(gl.TEXTURE_2D, null));
 }
 

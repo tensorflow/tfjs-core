@@ -147,3 +147,7 @@ ENV.registerFlag('WEBGL_SIZE_UPLOAD_UNIFORM', () => {
   const useUniforms = ENV.getBool('WEBGL_RENDER_FLOAT32_ENABLED');
   return useUniforms ? 4 : 0;
 });
+
+/** The maximum texture dimension. */
+ENV.registerFlag(
+    'DESTRUCT_IMAGE_DATA', () => ENV.getBool('DESTRUCT_IMAGE_DATA'));
