@@ -1,0 +1,20 @@
+[package]
+name = "tfjs_wasm"
+version = "0.0.1"
+authors = ["The TensorFlow.js Developers"]
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib"] # Produces a dynamic library (used for wasm).
+
+[dependencies]
+wasm-bindgen = "0.2.43"
+
+[profile.release]
+# Tell `rustc` to optimize for speed. By default it optimizes for code size.
+opt-level = 3
+# Tell LLVM to inline and prune functions. Not only will it make the
+# .wasm smaller, but it will also make it faster at runtime!
+# The downside is that compilation will take longer.
+# Source: https://rustwasm.github.io/book/reference/code-size.html
+lto = true
