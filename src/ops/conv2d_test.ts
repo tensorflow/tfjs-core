@@ -79,13 +79,13 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
     const x = tf.tensor3d(
         [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30, 40, 50, 60, 70, 80, 90],
         [3, 3, 2]);
-    const w = tf.tensor4d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2, 1]);
+    const w = tf.tensor4d([.1, .2, .3, .4, .5, .6, .7, .8], [2, 2, 2, 1]);
 
     const result = tf.conv2d(x, w, stride, pad);
 
     const resultData = await result.data();
     expect(result.shape).toEqual([2, 2, 1]);
-    expectArraysClose(resultData, new Float32Array([256, 535, 1570, 2209]));
+    expectArraysClose(resultData, new Float32Array([25.6, 53.5, 157.0, 220.9]));
   });
 
   it('x=[2,2,2,1] f=[1,1,1,1] s=1 d=1 p=0', async () => {
