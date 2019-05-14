@@ -48,8 +48,8 @@ const browserstackConfig = {
   frameworks: ['browserify', 'jasmine'],
   files: [{pattern: 'dist/**/*_test.js'}],
   exclude: [
-    'dist/test_node.js',
-    'dist/test_async_backends.js',
+    'dist/src/test_node.js',
+    'dist/src/test_async_backends.js',
   ],
   preprocessors: {'dist/**/*_test.js': ['browserify']},
   browserify: {debug: false},

@@ -56,7 +56,7 @@ $ yarn test --backend cpu
 
 ```bash
 $ yarn build-npm
-> Stored standalone library at dist/tf-core(.min).js
+> Stored standalone library at dist/src/tf-core(.min).js
 > Stored also tensorflow-tf-core-VERSION.tgz
 ```
 
