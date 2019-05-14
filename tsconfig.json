@@ -23,6 +23,7 @@
     "allowUnreachableCode": false
   },
   "include": [
+    "scripts/test_snippets/",
     "src/"
   ],
   "exclude": [
