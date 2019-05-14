@@ -25,6 +25,7 @@ import {tidy} from '../../globals';
 import {warn} from '../../log';
 import * as array_ops_util from '../../ops/array_ops_util';
 import * as axis_util from '../../ops/axis_util';
+import {PixelData} from '../../ops/browser';
 import {computeOutShape} from '../../ops/concat_util';
 import {Conv2DInfo, Conv3DInfo} from '../../ops/conv_util';
 import {Activation} from '../../ops/fused_util';
@@ -263,7 +264,8 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   fromPixels(
-      pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
+      pixels: PixelData|ImageData|HTMLImageElement|HTMLCanvasElement|
+      HTMLVideoElement,
       numChannels: number): Tensor3D {
     if (pixels == null) {
       throw new Error(
@@ -276,11 +278,12 @@ export class MathBackendWebGL implements KernelBackend {
       if (!(pixels instanceof HTMLVideoElement) &&
           !(pixels instanceof HTMLImageElement) &&
           !(pixels instanceof HTMLCanvasElement) &&
-          !(pixels instanceof ImageData)) {
+          !(pixels instanceof ImageData) &&
+          !((pixels as PixelData).data instanceof Uint8Array)) {
         throw new Error(
             'pixels passed to tf.browser.fromPixels() must be either an ' +
-            `HTMLVideoElement, HTMLImageElement, HTMLCanvasElement or ` +
-            `ImageData, but was ${(pixels as {}).constructor.name}`);
+            `HTMLVideoElement, HTMLImageElement, HTMLCanvasElement, PixelData` +
+            ` or ImageData, but was ${(pixels as {}).constructor.name}`);
       }
       if (pixels instanceof HTMLVideoElement) {
         if (this.fromPixels2DContext == null) {

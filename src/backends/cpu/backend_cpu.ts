@@ -23,6 +23,7 @@ import {warn} from '../../log';
 import * as array_ops_util from '../../ops/array_ops_util';
 import * as axis_util from '../../ops/axis_util';
 import * as broadcast_util from '../../ops/broadcast_util';
+import {PixelData} from '../../ops/browser';
 import * as concat_util from '../../ops/concat_util';
 import {Conv2DInfo, Conv3DInfo} from '../../ops/conv_util';
 import * as erf_util from '../../ops/erf_util';
@@ -109,13 +110,14 @@ export class MathBackendCPU implements KernelBackend {
     this.data.get(dataId).values = values;
   }
   fromPixels(
-      pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
+      pixels: PixelData|ImageData|HTMLImageElement|HTMLCanvasElement|
+      HTMLVideoElement,
       numChannels: number): Tensor3D {
     if (pixels == null) {
       throw new Error(
           'pixels passed to tf.browser.fromPixels() can not be null');
     }
-    let vals: Uint8ClampedArray;
+    let vals: Uint8ClampedArray|Uint8Array;
     // tslint:disable-next-line:no-any
     if (ENV.get('IS_NODE') && (pixels as any).getContext == null) {
       throw new Error(
@@ -129,8 +131,11 @@ export class MathBackendCPU implements KernelBackend {
                  .getContext('2d')
                  .getImageData(0, 0, pixels.width, pixels.height)
                  .data;
-    } else if (pixels instanceof ImageData) {
-      vals = pixels.data;
+    } else if (
+        pixels instanceof ImageData ||
+        // tslint:disable-next-line:no-any
+        (pixels as PixelData).data instanceof Uint8Array) {
+      vals = (pixels as PixelData).data;
     } else if (
         pixels instanceof HTMLImageElement ||
         pixels instanceof HTMLVideoElement) {
@@ -149,8 +154,8 @@ export class MathBackendCPU implements KernelBackend {
     } else {
       throw new Error(
           'pixels passed to tf.browser.fromPixels() must be either an ' +
-          `HTMLVideoElement, HTMLImageElement, HTMLCanvasElement or ` +
-          `ImageData, but was ${(pixels as {}).constructor.name}`);
+          `HTMLVideoElement, HTMLImageElement, HTMLCanvasElement, PixelData ` +
+          `or ImageData, but was ${(pixels as {}).constructor.name}`);
     }
     let values: Int32Array;
     if (numChannels === 4) {
