@@ -16,7 +16,7 @@
  */
 
 import {ENV} from '../../environment';
-import {PixelData} from '../../ops/browser';
+import {PixelData} from '../../types';
 import * as util from '../../util';
 
 import {getGlslDifferences} from './glsl_version';

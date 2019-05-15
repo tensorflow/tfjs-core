@@ -18,7 +18,8 @@
 import {ENGINE} from '../engine';
 import {Tensor, Tensor2D, Tensor3D} from '../tensor';
 import {convertToTensor} from '../tensor_util_env';
-import {TensorLike} from '../types';
+import {PixelData, TensorLike} from '../types';
+
 import {op} from './operation';
 
 /**
@@ -161,9 +162,3 @@ export async function toPixels(
 }
 
 export const fromPixels = op({fromPixels_});
-
-export interface PixelData {
-  width: number;
-  height: number;
-  data: Uint8Array;
-}
