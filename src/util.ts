@@ -175,6 +175,24 @@ export function sizeFromShape(shape: number[]): number {
   return size;
 }
 
+
+/**
+ * returns a glsl expression to calculate the size from the shape.
+ * @param shape
+ */
+// TODO @yassogba add tests.
+export function sizeFromShapeExpr(shape: number[]): string {
+  if (shape.length === 0) {
+    // Scalar.
+    return `1`;
+  }
+  let size = `${shape[0]}`;
+  for (let i = 1; i < shape.length; i++) {
+    size += ` * ${shape[i]}`;
+  }
+  return size;
+}
+
 export function isScalarShape(shape: number[]): boolean {
   return shape.length === 0;
 }

@@ -87,13 +87,14 @@ export function makeShader(
     inputPrefixSnippet, outputSamplingSnippet, inputSamplingSnippet, userCode
   ].join('\n');
 
-  let keyElements = [
+  const keyElements = [
     usesPackedTextures ? 'SHADER_PACKED_PREFIX_MARKER' : '',
     outputShape.isPacked ? 'PACKED_floatTextureSetOutputSnippet_MARKER' : '',
+    inputPrefixSnippet,
+    outputSamplingSnippet,
+    inputSamplingSnippet,
+    userCode,
   ];
-  keyElements = keyElements.concat([
-    inputPrefixSnippet, outputSamplingSnippet, inputSamplingSnippet, userCode
-  ]);
   const key = keyElements.join('\n');
 
   return {source, key};
@@ -688,11 +689,13 @@ function getSamplerScalar(inputInfo: InputInfo): string {
     `;
   }
 
-  const [tNumR, tNumC] = inputInfo.shapeInfo.texShape;
+  // const [tNumR, tNumC] = inputInfo.shapeInfo.texShape;
+  const texShapeUniform = `texShape${texName}`;
   const offset = getFlatOffsetUniformName(texName);
   return `
     float ${funcName}() {
-      vec2 uv = uvFromFlat(${tNumR}, ${tNumC}, ${offset});
+      vec2 uv = uvFromFlat(${texShapeUniform}[0], ${texShapeUniform}[1], ${
+      offset});
       return sampleTexture(${texName}, uv);
     }
   `;
@@ -833,13 +836,12 @@ function getSampler2D(inputInfo: InputInfo): string {
     `;
   }
 
-  // TODO(yassogba) TK upload shape as uniform for these inputs as well. and
-  // propagate usage to getUniformSampler.
+  const shapeUniform = `shape${texName}`;
   if (inputInfo.shapeInfo.isUniform) {
     // Uniform arrays will be less than 65505 (no risk of float16 overflow).
     return `
       float ${funcName}(int row, int col) {
-        int index = round(dot(vec2(row, col), vec2(${shape[1]}, 1)));
+        int index = round(dot(vec2(row, col), vec2(${shapeUniform}[1], 1)));
         ${getUniformSampler(inputInfo)}
       }
     `;
@@ -848,7 +850,6 @@ function getSampler2D(inputInfo: InputInfo): string {
   const texNumR = texShape[0];
   const texNumC = texShape[1];
   const texShapeUniform = `texShape${texName}`;
-  const shapeUniform = `shape${texName}`;
   const offset = getFlatOffsetUniformName(texName);
   if (texNumC === 1) {
     // index is used directly as physical (no risk of float16 overflow).
@@ -950,7 +951,7 @@ function getSampler3D(inputInfo: InputInfo): string {
     return `
       float ${funcName}(int row, int col, int depth) {
         int index = round(dot(vec3(row, col, depth),
-                          vec3(${stride0}, ${stride1}, 1)));
+                          vec3(${stride0Prog}, ${stride1Prog}, 1)));
         ${getUniformSampler(inputInfo)}
       }
     `;
@@ -1062,7 +1063,8 @@ function getSampler4D(inputInfo: InputInfo): string {
     return `
       float ${funcName}(int row, int col, int depth, int depth2) {
         int index = round(dot(vec4(row, col, depth, depth2),
-                          vec4(${stride0}, ${stride1}, ${stride2}, 1)));
+                          vec4(${stride0Prog}, ${stride1Prog}, ${
+        stride2Prog}, 1)));
         ${getUniformSampler(inputInfo)}
       }
     `;
@@ -1155,7 +1157,8 @@ function getSampler5D(inputInfo: InputInfo): string {
       float ${funcName}(int row, int col, int depth, int depth2, int depth3) {
         float index = dot(
           vec4(row, col, depth, depth2),
-          vec4(${stride0}, ${stride1}, ${stride2}, ${stride3})) +
+          vec4(${stride0Prog}, ${stride1Prog}, ${stride2Prog}, ${
+        stride3Prog})) +
           depth3;
         ${getUniformSampler(inputInfo)}
       }
@@ -1252,10 +1255,11 @@ function getSampler6D(inputInfo: InputInfo): string {
                   int depth2, int depth3, int depth4) {
         int index = round(dot(
           vec4(row, col, depth, depth2),
-          vec4(${stride0}, ${stride1}, ${stride2}, ${stride3})) +
+          vec4(${stride0Prog}, ${stride1Prog}, ${stride2Prog}, ${
+        stride3Prog})) +
           dot(
             vec2(depth3, depth4),
-            vec2(${stride4}, 1)));
+            vec2(${stride4Prog}, 1)));
         ${getUniformSampler(inputInfo)}
       }
     `;
@@ -1322,8 +1326,9 @@ function getUniformSampler(inputInfo: InputInfo): string {
   if (inSize < 2) {
     return `return ${texName};`;
   }
+  const inSizeExpr = util.sizeFromShapeExpr(inputInfo.shapeInfo.logicalShape);
   return `
-    for (int i = 0; i < ${inSize}; i++) {
+    for (int i = 0; i < (${inSizeExpr}); i++) {
       if (i == index) {
         return ${texName}[i];
       }

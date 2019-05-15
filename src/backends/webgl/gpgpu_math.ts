@@ -123,9 +123,6 @@ export function compileProgram<T extends Tensor, K extends Tensor>(
     const inShapeInfo = inputInfo.shapeInfo;
 
     if (inShapeInfo.logicalShape.length > 0) {
-      // if (inShapeInfo.isUniform) {
-      //   console.log(`input is logicalShape.length > 0 && isUniform`);
-      // }
       const varShapeName = `shape${inputInfo.name}`;
       const varTexShapeName = `texShape${inputInfo.name}`;
       const shouldThrow = false;
@@ -342,7 +339,6 @@ export function makeShaderKey(
 
 export function makeShaderKeyWhole(
     program: GPGPUProgram, inputs: TensorData[], output: TensorData) {
-  // console.time('makeShaderKey:whole');
   const {key} = assembleProgramSource(program, inputs, output);
   let keyInputs = '';
   inputs.concat(output).forEach(x => {
