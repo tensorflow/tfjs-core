@@ -131,7 +131,7 @@ export class MathBackendCPU implements KernelBackend {
                  .getImageData(0, 0, pixels.width, pixels.height)
                  .data;
     } else if (
-        pixels instanceof ImageData ||
+        ENV.get('IS_BROWSER') && pixels instanceof ImageData ||
         (pixels as PixelData).data instanceof Uint8Array) {
       vals = (pixels as PixelData | ImageData).data;
     } else if (
