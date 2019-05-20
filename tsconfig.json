@@ -13,6 +13,7 @@
       "dom"
     ],
     "outDir": "./dist",
+    "rootDir": "./src",
     "noUnusedLocals": true,
     "noImplicitReturns": true,
     "noImplicitThis": true,

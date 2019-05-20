@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig",
+  "outDir": "./dist/",
+  "rootDir": "./scripts/",
+  "include": [
+    "util.ts"
+  ],
+  "exclude": [
+    "./src/"
+  ]
+}
