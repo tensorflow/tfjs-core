@@ -394,7 +394,8 @@ function getOutputPacked1DCoords(
   if (packedTexShape[0] === 1) {
     return `
       int getOutputCoords() {
-        return 2 * int(resultUV.x * ${packedTexShape[1]}.0);
+        float packedTexShapeC = ceil(float(outputTexShape[1]) / 2.0);
+        return 2 * int(resultUV.x * packedTexShapeC);
       }
     `;
   }
@@ -402,16 +403,19 @@ function getOutputPacked1DCoords(
   if (packedTexShape[1] === 1) {
     return `
       int getOutputCoords() {
-        return 2 * int(resultUV.y * ${packedTexShape[0]}.0);
+        float packedTexShapeR = ceil(float(outputTexShape[0]) / 2.0);
+        return 2 * int(resultUV.y * packedTexShapeR);
       }
     `;
   }
 
   return `
     int getOutputCoords() {
+      float packedTexShapeR = ceil(float(outputTexShape[0]) / 2.0);
+      float packedTexShapeC = ceil(float(outputTexShape[1]) / 2.0);
       ivec2 resTexRC = ivec2(resultUV.yx *
-                             vec2(${packedTexShape[0]}, ${packedTexShape[1]}));
-      return resTexRC.x * ${packedTexShape[1]} + resTexRC.y;
+                             vec2(packedTexShapeR, packedTexShapeC));
+      return resTexRC.x * packedTexShapeC + resTexRC.y;
     }
   `;
 }
@@ -443,22 +447,30 @@ function getOutput1DCoords(
 
 function getOutputPacked3DCoords(
     shape: [number, number, number], texShape: [number, number]): string {
-  const packedTexShape =
-      [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
-  const texelsInLogicalRow = Math.ceil(shape[2] / 2);
-  const texelsInBatch = texelsInLogicalRow * Math.ceil(shape[1] / 2);
+  // TODO @yassogba remove
+  // const packedTexShape =
+  //     [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
+  // const texelsInLogicalRow = Math.ceil(shape[2] / 2);
+  // const texelsInBatch = texelsInLogicalRow * Math.ceil(shape[1] / 2);
 
   return `
     ivec3 getOutputCoords() {
+      int packedTexShapeR = int(ceil(float(outputTexShape[0]) / 2.0));
+      int packedTexShapeC = int(ceil(float(outputTexShape[1]) / 2.0));
+
+      int texelsInLogicalRow = int(ceil(float(outputShape[2]) / 2.0));
+      int texelsInBatch = texelsInLogicalRow *
+        int(ceil(float(outputShape[1]) / 2.0));
+
       ivec2 resTexRC = ivec2(resultUV.yx *
-                             vec2(${packedTexShape[0]}, ${packedTexShape[1]}));
-      int index = resTexRC.x * ${packedTexShape[1]} + resTexRC.y;
+                             vec2(packedTexShapeR, packedTexShapeC));
+      int index = resTexRC.x * packedTexShapeC + resTexRC.y;
 
-      int b = index / ${texelsInBatch};
-      index -= b * ${texelsInBatch};
+      int b = index / texelsInBatch;
+      index -= b * texelsInBatch;
 
-      int r = 2 * (index / ${texelsInLogicalRow});
-      int c = imod(index, ${texelsInLogicalRow}) * 2;
+      int r = 2 * (index / texelsInLogicalRow);
+      int c = imod(index, texelsInLogicalRow) * 2;
 
       return ivec3(b, r, c);
     }
@@ -482,8 +494,8 @@ function getOutput3DCoords(
 
 function getOutputPackedNDCoords(
     shape: number[], texShape: [number, number]): string {
-  const packedTexShape =
-      [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
+  // const packedTexShape =
+  //     [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
 
   const texelsInLogicalRow = Math.ceil(shape[shape.length - 1] / 2);
   const texelsInBatch =
@@ -492,8 +504,9 @@ function getOutputPackedNDCoords(
   let batches = ``;
   let coords = 'b, r, c';
 
-  for (let b = 2; b < shape.length - 1; b++) {
-    texelsInBatchN *= shape[shape.length - b - 1];
+  const rank = shape.length;
+  for (let b = 2; b < rank - 1; b++) {
+    texelsInBatchN *= shape[rank - b - 1];
     batches = `
       int b${b} = index / ${texelsInBatchN};
       index -= b${b} * ${texelsInBatchN};
@@ -503,19 +516,27 @@ function getOutputPackedNDCoords(
 
   return `
     ivec${shape.length} getOutputCoords() {
+      int packedTexShapeR = int(ceil(float(outputTexShape[0]) / 2.0));
+      int packedTexShapeC = int(ceil(float(outputTexShape[1]) / 2.0));
+      int texelsInLogicalRow = int(ceil(float(outputShape[${rank - 1}])
+      / 2.0));
+
+      int texelsInBatch = texelsInLogicalRow *
+        int(ceil(float(outputShape[${rank - 2}]) / 2.0));
+
       ivec2 resTexRC = ivec2(resultUV.yx *
-                             vec2(${packedTexShape[0]}, ${packedTexShape[1]}));
-      int index = resTexRC.x * ${packedTexShape[1]} + resTexRC.y;
+                             vec2(packedTexShapeR, packedTexShapeC));
+      int index = resTexRC.x * packedTexShapeC + resTexRC.y;
 
       ${batches}
 
-      int b = index / ${texelsInBatch};
-      index -= b * ${texelsInBatch};
+      int b = index / texelsInBatch;
+      index -= b * texelsInBatch;
 
-      int r = 2 * (index / ${texelsInLogicalRow});
-      int c = imod(index, ${texelsInLogicalRow}) * 2;
+      int r = 2 * (index / texelsInLogicalRow);
+      int c = imod(index, texelsInLogicalRow) * 2;
 
-      return ivec${shape.length}(${coords});
+      return ivec${rank}(${coords});
     }
   `;
 }
@@ -580,19 +601,22 @@ function getOutput6DCoords(
 
 function getOutputPacked2DCoords(
     shape: [number, number], texShape: [number, number]): string {
-  const packedTexShape =
-      [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
+  // const packedTexShape =
+  //     [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
   if (util.arraysEqual(shape, texShape)) {
     return `
       ivec2 getOutputCoords() {
-        return 2 * ivec2(resultUV.yx * vec2(${packedTexShape[0]}, ${
-        packedTexShape[1]}));
+        int packedTexShapeR = int(ceil(float(outputTexShape[0]) / 2.0));
+        int packedTexShapeC = int(ceil(float(outputTexShape[1]) / 2.0));
+
+        return 2 * ivec2(resultUV.yx * vec2(packedTexShapeR,
+        packedTexShapeC));
       }
     `;
   }
 
   // texels needed to accommodate a logical row
-  const texelsInLogicalRow = Math.ceil(shape[1] / 2);
+  // const texelsInLogicalRow = Math.ceil(shape[1] / 2);
 
   /**
    * getOutputCoords
@@ -605,12 +629,16 @@ function getOutputPacked2DCoords(
    */
   return `
     ivec2 getOutputCoords() {
-      ivec2 resTexRC = ivec2(resultUV.yx *
-                             vec2(${packedTexShape[0]}, ${packedTexShape[1]}));
+      int packedTexShapeR = int(ceil(float(outputTexShape[0]) / 2.0));
+      int packedTexShapeC = int(ceil(float(outputTexShape[1]) / 2.0));
+      int texelsInLogicalRow = int(ceil(float(outputShape[1]) / 2.0));
 
-      int index = resTexRC.x * ${packedTexShape[1]} + resTexRC.y;
-      int r = 2 * (index / ${texelsInLogicalRow});
-      int c = imod(index, ${texelsInLogicalRow}) * 2;
+      ivec2 resTexRC = ivec2(resultUV.yx *
+                             vec2(packedTexShapeR, packedTexShapeC));
+
+      int index = resTexRC.x * packedTexShapeC + resTexRC.y;
+      int r = 2 * (index / texelsInLogicalRow);
+      int c = imod(index, texelsInLogicalRow) * 2;
 
       return ivec2(r, c);
     }
