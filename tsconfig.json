@@ -12,8 +12,7 @@
       "es2015",
       "dom"
     ],
-    "outDir": "./dist",
-    "rootDir": "./src",
+    "outDir": "./dist/",
     "noUnusedLocals": true,
     "noImplicitReturns": true,
     "noImplicitThis": true,

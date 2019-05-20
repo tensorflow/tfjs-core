@@ -1,11 +1,9 @@
 {
-  "extends": "../../tsconfig",
-  "outDir": "./dist/",
-  "rootDir": "./scripts/",
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../../dist/scripts/"
+  },
   "include": [
     "util.ts"
-  ],
-  "exclude": [
-    "./src/"
   ]
 }
