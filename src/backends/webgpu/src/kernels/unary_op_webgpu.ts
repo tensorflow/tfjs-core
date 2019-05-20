@@ -15,20 +15,24 @@
  * =============================================================================
  */
 
-import {util} from '@tensorflow/tfjs-core';
+import {computeDispatch} from '../webgpu_util';
 import {WebGPUProgram} from './webgpu_program';
 
 export const RELU = 'return max(a, 0.0);';
 
+export const SIGMOID = `return 1.0 / (1.0 + exp(-1.0 * a));`;
+
 export class UnaryOpProgram implements WebGPUProgram {
   outputShape: number[];
   userCode: string;
+  dispatchLayout: {x: number[]};
   dispatch: [number, number, number];
   variableNames = ['A'];
 
-  constructor(op: string, outputShape: number[]) {
+  constructor(outputShape: number[], op: string) {
     this.outputShape = outputShape;
-    this.dispatch = [util.sizeFromShape(this.outputShape), 1, 1];
+    this.dispatchLayout = {x: this.outputShape.map((d, i) => i)};
+    this.dispatch = computeDispatch(this.dispatchLayout, this.outputShape);
 
     this.userCode = `
       float unaryOperation(float a) {
@@ -37,7 +41,7 @@ export class UnaryOpProgram implements WebGPUProgram {
 
       void main() {
         uint index = gl_GlobalInvocationID.x;
-        float a = A[index];
+        float a = getAAtOutCoords();
         setOutput(index, unaryOperation(a));
       }
     `;

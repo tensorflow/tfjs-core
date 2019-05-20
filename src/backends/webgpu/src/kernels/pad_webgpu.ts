@@ -15,15 +15,15 @@
  * =============================================================================
  */
 
-import {util} from '@tensorflow/tfjs-core';
-
 import {getCoordsDataType} from '../shader_preprocessor';
+import {computeDispatch, flatDispatchLayout} from '../webgpu_util';
 
 import {WebGPUProgram} from './webgpu_program';
 
 export class PadProgram implements WebGPUProgram {
   outputShape: number[];
   userCode: string;
+  dispatchLayout: {x: number[]};
   dispatch: [number, number, number];
   variableNames = ['x'];
 
@@ -34,20 +34,22 @@ export class PadProgram implements WebGPUProgram {
         (p, i) => p[0] /* beforePad */ + xShape[i] + p[1] /* afterPad */);
     const rank = xShape.length;
     const type = getCoordsDataType(rank);
-    this.dispatch = [util.sizeFromShape(this.outputShape), 1, 1];
+    this.dispatchLayout = flatDispatchLayout(this.outputShape);
+    this.dispatch = computeDispatch(this.dispatchLayout, this.outputShape);
 
     const start = paddings.map(p => p[0]).join(',');
     const end = paddings.map((p, i) => p[0] + xShape[i]).join(',');
     const startValue = rank > 1 ? `${type}(${start})` : `${start}`;
     const endValue = rank > 1 ? `${type}(${end})` : `${end}`;
 
-    const xShapeValue =
-        rank > 1 ? `${type}(${xShape.join(',')})` : `${xShape[0]}`;
-
     const leftPadCondition =
         rank > 1 ? `any(lessThan(outC, start))` : `outC < start`;
     const rightPadCondition =
         rank > 1 ? `any(greaterThanEqual(outC, end))` : `outC >= end`;
+
+    const unpackedCoords = rank > 1 ?
+        ['coords[0]', 'coords[1]', 'coords[2]', 'coords[3]'].slice(0, rank) :
+        'coords';
 
     this.userCode = `
       ${type} start = ${startValue};
@@ -55,14 +57,13 @@ export class PadProgram implements WebGPUProgram {
 
       void main() {
         uint index = gl_GlobalInvocationID.x;
-        ${type} outC = getOutputCoords(index);
+        ${type} outC = getOutputCoords();
 
         if(${leftPadCondition} || ${rightPadCondition}) {
           setOutput(index, ${constantValue});
         } else {
           ${type} coords = outC - start;
-          ${type} xShape = ${xShapeValue};
-          setOutput(index, x[getFlatIndex(coords, xShape)]);
+          setOutput(index, getX(${unpackedCoords}));
         }
       }
     `;

@@ -15,11 +15,14 @@
  * =============================================================================
  */
 
-import {DataType, util} from '@tensorflow/tfjs-core';
+import {DataType} from '@tensorflow/tfjs-core';
+import {getBroadcastDims} from '@tensorflow/tfjs-core/dist/ops/broadcast_util';
+
+import {symbolicallyComputeStrides} from './shader_util';
 
 export function getCoordsDataType(rank: number): string {
   if (rank <= 1) {
-    return 'uint';
+    return 'int';
   } else if (rank === 2) {
     return 'ivec2';
   } else if (rank === 3) {
@@ -43,15 +46,21 @@ function mapToGlslTypes(type: DataType): GLSLDataType|DataType {
 }
 
 interface ProgramParams {
+  dispatchLayout: {x: number[], y?: number[], z?: number[]};
   workGroupSize?: [number, number, number];
   variableNames: string[];
   uniforms?: string;
   userCode: string;
 }
 
+interface InputInfo {
+  dtype: DataType;
+  shape: number[];
+  name: string;
+}
+
 export function makeShader(
-    inputTypes: Array<{dtype: DataType, shape: number[]}>,
-    outputData: {dtype: DataType, shape: number[]},
+    inputInfo: InputInfo[], outputData: {dtype: DataType, shape: number[]},
     program: ProgramParams): string {
   const prefixSnippets: string[] = [];
 
@@ -70,35 +79,63 @@ export function makeShader(
     };
   `);
 
+  let uniformDeclaration = '';
   program.variableNames.forEach((x, i) => {
+    uniformDeclaration += `${getCoordsDataType(inputInfo[i].shape.length)} ${
+        x.charAt(0).toLowerCase() + x.slice(1)}Shape; `;
     prefixSnippets.push(`
       layout(std430, set = 0, binding = ${1 + i}) readonly buffer ssb${x} {
-        ${mapToGlslTypes(inputTypes[i].dtype)} ${x}[];
+        ${mapToGlslTypes(inputInfo[i].dtype)} ${x}[];
       };
     `);
   });
 
+  uniformDeclaration +=
+      `${getCoordsDataType(outputData.shape.length)} outShape; `;
+
   if (program.uniforms) {
-    prefixSnippets.push(`
-      layout(std140, set = 0, binding = ${
-        1 + program.variableNames.length}) uniform Uniforms {
-        ${program.uniforms}
-      };
-    `);
+    uniformDeclaration += program.uniforms;
   }
 
-  const outputSamplingSnippet = getOutputSamplingSnippet(outputData.shape);
+  prefixSnippets.push(`
+    layout(std140, set = 0, binding = ${
+      1 + program.variableNames.length}) uniform Uniforms {
+      ${uniformDeclaration}
+    };
+  `);
 
-  const source = [
-    SHADER_PREFIX, prefixSnippets.join('\n'), SAMPLING_SNIPPETS,
-    outputSamplingSnippet, SET_OUTPUT_SNIPPET, program.userCode
-  ].join('\n');
+  const [getOutputCoords, dispatchLayoutRank] =
+      generateGetOutputCoords(program.dispatchLayout);
+  const sources = [
+    SHADER_PREFIX, prefixSnippets.join('\n'), SET_OUTPUT_SNIPPET,
+    SAMPLING_SNIPPETS, getOutputCoords,
+    getSetOutputSnippet(outputData.shape.length)
+  ];
 
+  if (dispatchLayoutRank === outputData.shape.length) {
+    // Input sampling snippet is only meaningful when the output isn't getting
+    // implicitly reshaped (like it does in conv2d_matmul).
+    const inputSamplingSnippet =
+        inputInfo.map(x => getInputSamplingSnippet(x, outputData.shape))
+            .join('\n');
+    sources.push(inputSamplingSnippet);
+  }
+
+  sources.push(program.userCode);
+  const source = sources.join('\n');
   return source;
 }
 
-const SHADER_PREFIX = `
-  #version 450
+const SHADER_PREFIX = `#version 450
+
+  int idiv(int a, int b, float sign) {
+    int res = a / b;
+    int mod = a % b;
+    if (sign < 0. && mod != 0) {
+      res -= 1;
+    }
+    return res;
+  }
 `;
 
 const SAMPLING_SNIPPETS = `
@@ -126,72 +163,160 @@ const SET_OUTPUT_SNIPPET = `
   }
 `;
 
-function getOutputSamplingSnippet(outShape: number[]): string {
-  switch (outShape.length) {
-    case 0:
-      return getOutputScalarCoords();
-    case 1:
-      return getOutput1DCoords(outShape as [number]);
-    case 2:
-      return getOutput2DCoords(outShape as [number, number]);
-    case 3:
-      return getOutput3DCoords(outShape as [number, number, number]);
-    case 4:
-      return getOutput4DCoords(outShape as [number, number, number, number]);
-    default:
-      throw new Error(
-          `${outShape.length}-D output sampling is not yet supported`);
+function getSetOutputSnippet(outRank: number): string {
+  if (outRank < 2) {
+    return '';
   }
-}
 
-function getOutputScalarCoords() {
-  return `int getOutputCoords() {
-    return 0;
-  }`;
-}
+  const dims = ['d0', 'd1', 'd2', 'd3'].slice(0, outRank);
+  const type = getCoordsDataType(outRank);
 
-function getOutput1DCoords(shape: [number]) {
-  return `uint getOutputCoords(uint index) {
-    return index;
-  }`;
-}
-
-function getOutput2DCoords(shape: [number, number]) {
-  // TODO: See whether using a 2D/3D dispatch to avoid division would improve
-  // performance.
   return `
-    ivec2 getOutputCoords(uint index) {
-      uint r = index / ${shape[1]};
-      uint c = index - r * ${shape[1]};
-      return ivec2(r, c);
+    void setOutput(${dims.map(d => `int ${d}`).join(', ')}, float value) {
+      uint flatIndex = getFlatIndex(${type}(${dims.join(', ')}), outShape);
+      setOutput(flatIndex, value);
     }
   `;
 }
 
-function getOutput3DCoords(shape: [number, number, number]) {
-  const strides = util.computeStrides(shape);
+function getInputSamplingSnippet(
+    inInfo: InputInfo, outShape: number[]): string {
+  let res = getSamplerFromInInfo(inInfo);
 
-  return `ivec3 getOutputCoords(uint index) {
-    uint d = index / ${strides[0]};
-    index -= d * ${strides[0]};
-    uint r = index / ${strides[1]};
-    uint c = index - r * ${strides[1]};
+  const inShape = inInfo.shape;
+  if (inShape.length <= outShape.length) {
+    res += getSamplerAtOutputCoords(inInfo, outShape);
+  }
 
-    return ivec3(d, r, c);
-  }`;
+  return res;
 }
 
-function getOutput4DCoords(shape: [number, number, number, number]) {
-  const strides = util.computeStrides(shape);
+function getSamplerFromInInfo(inInfo: InputInfo): string {
+  const texName = inInfo.name;
+  const rank = inInfo.shape.length;
+  const type = getCoordsDataType(rank);
+  const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
+  const dims = ['d0', 'd1', 'd2', 'd3'].slice(0, rank);
+  const inputs = dims.map(d => `int ${d}`).join(', ');
 
-  return `ivec4 getOutputCoords(uint index) {
-    uint d1 = index / ${strides[0]};
-    index -= d1 * ${strides[0]};
-    uint d2 = index / ${strides[1]};
-    index -= d2 * ${strides[1]};
-    uint r = index / ${strides[2]};
-    uint c = index - r * ${strides[2]};
+  if (rank < 1) {
+    return `
+      float ${funcName}() {
+        return ${texName}[0];
+      }
+    `;
+  }
 
-    return ivec4(d1, d2, r, c);
+  return `
+    float ${funcName}(${inputs}) {
+      return ${texName}[getFlatIndex(${type}(${dims.join(',')}),
+        ${texName.charAt(0).toLowerCase() + texName.slice(1)}Shape)];
+    }
+  `;
+}
+
+function getSamplerAtOutputCoords(
+    inInfo: InputInfo, outShape: number[]): string {
+  const texName = inInfo.name;
+  const texFuncSnippet = texName.charAt(0).toUpperCase() + texName.slice(1);
+
+  const funcName = 'get' + texFuncSnippet + 'AtOutCoords';
+
+  const inRank = inInfo.shape.length;
+  const outRank = outShape.length;
+  const type = getCoordsDataType(outRank);
+
+  const broadcastDims = getBroadcastDims(inInfo.shape, outShape);
+  const rankDiff = outRank - inRank;
+
+  let coordsSnippet = '';
+
+  if (inRank === 0) {
+    coordsSnippet = 'coords = 0;';
+  } else {
+    if (outRank < 2 && broadcastDims.length >= 1) {
+      coordsSnippet = 'coords = 0;';
+    } else {
+      coordsSnippet =
+          broadcastDims.map(d => `coords[${d + rankDiff}] = 0;`).join('\n');
+    }
+  }
+
+  let unpackedCoordsSnippet = '';
+  if (outRank < 2 && inRank > 0) {
+    unpackedCoordsSnippet = 'coords';
+  } else {
+    if (outRank > 1) {
+      const coordsType = getCoordsDataType(inRank);
+      const coordsValues =
+          inInfo.shape.map((s, i) => `coords[${i + rankDiff}]`).join(', ');
+      unpackedCoordsSnippet = `${coordsType}(${coordsValues})`;
+    } else {
+      unpackedCoordsSnippet = 'coords';
+    }
+  }
+
+  return `
+    float ${funcName}() {
+      ${type} coords = getOutputCoords();
+      ${coordsSnippet}
+      return ${texName}[getFlatIndex(${unpackedCoordsSnippet}, ${
+      texName.charAt(0).toLowerCase() + texName.slice(1)}Shape)];
+    }
+  `;
+}
+
+/**
+ * Generates getOutputCoords() function that computes output coordinates from
+ * dispatch geometry to reduce arithmetic.
+ */
+function generateGetOutputCoords(
+    dispatchLayout: {x: number[], y?: number[], z?: number[]}):
+    [string, number] {
+  const {x, y = [], z = []} = dispatchLayout;
+  let gatherDimensionsStr = '';
+  const dims = [x, y, z];
+
+  let rank = 0;
+
+  for (let i = 0; i < dims.length; i++) {
+    const arr = dims[i];
+
+    if (arr.length === 0) {
+      continue;
+    }
+
+    rank += arr.length;
+
+    if (arr.length === 1) {
+      gatherDimensionsStr += `uint d${arr[0]} = gl_GlobalInvocationID[${i}];`;
+    } else {
+      const strides = symbolicallyComputeStrides(arr, 'outShape');
+      gatherDimensionsStr += `uint index${i} =
+        gl_GlobalInvocationID[${i}];`;
+      for (let j = 0; j < strides.length; j++) {
+        gatherDimensionsStr += `uint d${arr[j]} = index${i} / ${strides[j]};`;
+
+        if (j === strides.length - 1) {
+          gatherDimensionsStr += `uint d${arr[j + 1]} = ` +
+              `index${i} - d${arr[j]} * ${strides[j]};`;
+        } else {
+          gatherDimensionsStr += `index${i} -= d${arr[j]} * ${strides[j]};`;
+        }
+      }
+    }
+  }
+
+  const dimensions = [];
+  for (let i = 0; i < rank; i++) {
+    dimensions.push(`d${i}`);
+  }
+
+  const dtype = getCoordsDataType(rank);
+  const snippet = `${dtype} getOutputCoords() {
+    ${gatherDimensionsStr}
+
+    return ${dtype}(${dimensions.join(',')});
   }`;
+  return [snippet, rank];
 }

@@ -19,19 +19,26 @@
 
 import './flags_webgpu';
 
-import {DataMover, DataType, ENV, KernelBackend, Rank, ShapeMap, Tensor, Tensor3D, Tensor4D, util} from '@tensorflow/tfjs-core';
-// How should this be imported?
+import {DataMover, DataType, ENV, KernelBackend, Rank, ShapeMap, Tensor, Tensor2D, Tensor3D, Tensor4D, util} from '@tensorflow/tfjs-core';
+import * as backend_util from '@tensorflow/tfjs-core/dist/backends/backend_util';
+import {computeOutShape} from '@tensorflow/tfjs-core/dist/ops/concat_util';
 import {Conv2DInfo} from '@tensorflow/tfjs-core/dist/ops/conv_util';
+import {upcastType} from '@tensorflow/tfjs-core/dist/types';
+import {assert} from '@tensorflow/tfjs-core/dist/util';
 import * as shaderc from '@webgpu/shaderc';
 
+import {ArgMinMaxProgram} from './kernels/argminmax_webgpu';
 import * as binary_op from './kernels/binary_op_webgpu';
 import {BinaryOpProgram} from './kernels/binary_op_webgpu';
+import {ConcatProgram} from './kernels/concat_webgpu';
+import {Conv2DMMProgram} from './kernels/conv2d_mm_webgpu';
 import {Conv2DNaiveProgram} from './kernels/conv2d_naive_webgpu';
 import {MatMulPackedProgram} from './kernels/matmul_packed_webgpu';
 import {MatMulProgram} from './kernels/matmul_webgpu';
 import {MaxPoolProgram} from './kernels/maxpool_webgpu';
 import {PadProgram} from './kernels/pad_webgpu';
 import {ResizeBilinearProgram} from './kernels/resize_bilinear_webgpu';
+import {TransposeProgram} from './kernels/transpose_webgpu';
 import * as unary_op from './kernels/unary_op_webgpu';
 import {UnaryOpProgram} from './kernels/unary_op_webgpu';
 import * as webgpu_program from './kernels/webgpu_program';
@@ -181,11 +188,54 @@ export class WebGPUBackend extends KernelBackend {
   private compileAndRun<
       K extends {dtype: DataType, size: number, dataId: {}, shape: number[]}>(
       program: webgpu_program.WebGPUProgram, inputs: Tensor[], output?: Tensor,
-      uniforms?: webgpu_program.BindingInfo): K {
+      programUniforms?: number[]): K {
     if (output == null) {
       output = this.makeOutputArray(program.outputShape, inputs[0].dtype);
     }
-    const key = webgpu_program.makeShaderKey(program);
+    let dimUniforms: number[] = [];
+    const bufferShapes = inputs.concat(output).map(d => d.shape);
+    let currentOffset = 0;
+    bufferShapes.forEach((d, i) => {
+      // Complete std140 layout rules are documented here:
+      // tslint:disable-next-line:max-line-length
+      // https://www.khronos.org/registry/OpenGL/specs/gl/glspec45.core.pdf#page=159
+      let baseAlignment = 0;
+      switch (d.length) {
+        case 1:
+          baseAlignment = 1;
+          break;
+        case 2:
+          baseAlignment = 2;
+          break;
+        case 3:
+          baseAlignment = 4;
+          break;
+        case 4:
+          baseAlignment = 4;
+          break;
+        default:
+          assert(false, () => `Unsupported ${d.length}D shape`);
+      }
+
+      const padding = Math.ceil(currentOffset / baseAlignment) * baseAlignment -
+          currentOffset;
+      for (let p = 0; p < padding; ++p) {
+        dimUniforms.push(0);
+      }
+      dimUniforms.push(...d);
+      currentOffset += d.length + padding;
+    });
+
+    // TODO: handle padding of program-specific uniforms
+    if (programUniforms) {
+      dimUniforms = dimUniforms.concat(programUniforms);
+    }
+
+    const uniformData = new Int32Array(dimUniforms);
+    const uniforms = this.makeUniforms(uniformData);
+
+    const key =
+        webgpu_program.makeShaderKey(program, bufferShapes.map(d => d.length));
     const {bindGroupLayout, pipeline} = this.getAndSavePipeline(key, () => {
       return webgpu_program.compileProgram(
           this.compiler, this.shaderc.shader_kind.compute, this.compileOpts,
@@ -209,6 +259,7 @@ export class WebGPUBackend extends KernelBackend {
     if (ENV.get('WEBGPU_IMMEDIATE_EXECUTION_ENABLED')) {
       this.submitQueue();
     }
+    this.destroyBuffer(uniformData.byteLength, uniforms.resource.buffer);
     return output as {} as K;
   }
 
@@ -226,7 +277,8 @@ export class WebGPUBackend extends KernelBackend {
   pad<T extends Tensor>(
       x: T, paddings: Array<[number, number]>, constantValue: number): T {
     const program = new PadProgram(x.shape, paddings, constantValue);
-    return this.compileAndRun(program, [x]);
+    const output = this.makeOutputArray(program.outputShape, x.dtype);
+    return this.compileAndRun(program, [x], output);
   }
 
   maxPool(x: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
@@ -235,34 +287,43 @@ export class WebGPUBackend extends KernelBackend {
     const output =
         this.makeOutputArray(program.outputShape, x.dtype) as Tensor4D;
 
-    const dimensionsData = new Int32Array([
-      ...convInfo.inShape, ...convInfo.outShape,        // inShape / outShape.
+    const dimensions = [
       convInfo.padInfo.left, convInfo.padInfo.top,      // Padding.
       convInfo.strideWidth, convInfo.strideHeight,      // Stride.
       convInfo.dilationWidth, convInfo.dilationHeight,  // Dilation.
       convInfo.inWidth, convInfo.inHeight,              // Conv dims.
       convInfo.effectiveFilterWidth,
       convInfo.effectiveFilterHeight  // Filter dims.
-    ]);
-    const dimensions = this.makeUniforms(dimensionsData);
+    ];
 
-    const result = this.compileAndRun(program, [x], output, dimensions);
-    this.destroyBuffer(dimensionsData.byteLength, dimensions.resource.buffer);
+    return this.compileAndRun(program, [x], output, dimensions);
+  }
 
-    return result as Tensor4D;
+  private binaryOp(a: Tensor, b: Tensor, op: string) {
+    const dtype = upcastType(a.dtype, b.dtype);
+    const program = new BinaryOpProgram(op, a.shape, b.shape);
+    const output = Tensor.make(program.outputShape, {}, dtype) as Tensor;
+
+    const result = this.compileAndRun(program, [a, b], output) as Tensor;
+    return result;
   }
 
   add(a: Tensor, b: Tensor): Tensor {
-    const output = Tensor.make(a.shape, {}, a.dtype, this);
-    const program = new BinaryOpProgram(binary_op.ADD, output.shape);
-
-    return this.compileAndRun(program, [a, b], output) as Tensor;
+    return this.binaryOp(a, b, binary_op.ADD);
   }
 
   conv2d(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
     const output =
         Tensor.make(convInfo.outShape, {}, x.dtype, this) as Tensor4D;
-    const program = new Conv2DNaiveProgram(convInfo);
+    let program: Conv2DMMProgram|Conv2DNaiveProgram;
+
+    const workPerThread = ENV.get('WEBGPU_CONV2D_WORK_PER_THREAD') as number;
+    if (workPerThread === -1) {
+      // TODO(kainino0x): This may be obsolete, but is kept for reference.
+      program = new Conv2DNaiveProgram(convInfo);
+    } else {
+      program = new Conv2DMMProgram(convInfo, workPerThread);
+    }
 
     const pad = convInfo.padInfo.type === 'VALID' ?
         [0, 0] :
@@ -273,34 +334,67 @@ export class WebGPUBackend extends KernelBackend {
         ] :
         [convInfo.padInfo.top, convInfo.padInfo.left];
 
-    const dimensionsData = new Int32Array([
-      ...convInfo.inShape,
-      ...convInfo.outShape,
-      convInfo.filterHeight,
-      convInfo.filterWidth,
-      ...pad,
-      convInfo.strideHeight,
-      convInfo.strideWidth,
-    ]);
-    const dimensions = this.makeUniforms(dimensionsData);
+    const dimensions = [
+      convInfo.filterHeight, convInfo.filterWidth, ...pad,
+      convInfo.strideHeight, convInfo.strideWidth
+    ];
 
-    const result = this.compileAndRun(
-                       program, [x, filter], output, dimensions) as Tensor4D;
+    return this.compileAndRun(program, [x, filter], output, dimensions) as
+        Tensor4D;
+  }
 
-    this.destroyBuffer(dimensionsData.byteLength, dimensions.resource.buffer);
+  private argMinMaxReduce(x: Tensor, axis: number, reduceType: 'min'|'max'):
+      Tensor {
+    const program = new ArgMinMaxProgram(x.shape, axis, reduceType);
+    const output = this.makeOutputArray(program.outputShape, 'int32') as Tensor;
+    return this.compileAndRun(program, [x], output, [axis]) as Tensor;
+  }
 
-    return result;
+  argMin(x: Tensor, axis: number): Tensor {
+    return this.argMinMaxReduce(x, axis, 'min');
+  }
+
+  argMax(x: Tensor, axis: number): Tensor {
+    return this.argMinMaxReduce(x, axis, 'max');
+  }
+  
+  concat(tensors: Tensor[], axis: number): Tensor {
+    if (tensors.length === 1) {
+      return tensors[0];
+    }
+    // Is there a maximum number of buffers that can be uploaded to a WebGPU
+    // program?
+    // if (tensors.length > MAX_SSBOS_FOR_WEBGPU_PROGRAM) {
+    //   const midIndex = Math.floor(tensors.length / 2);
+    //   const leftSide = this.concat(tensors.slice(0, midIndex), axis);
+    //   const rightSide = this.concat(tensors.slice(midIndex), axis);
+    //   return this.concat([leftSide, rightSide], axis);
+    // }
+    const outShape = computeOutShape(tensors.map(t => t.shape), axis);
+    const tensors2D = tensors.map(t => t.reshape([
+      util.sizeFromShape(t.shape.slice(0, axis)),
+      util.sizeFromShape(t.shape.slice(axis))
+    ]) as Tensor2D);
+    const program = new ConcatProgram(tensors2D.map(t => t.shape));
+    const res = this.compileAndRun(program, tensors2D) as Tensor;
+    return res.reshape(outShape);
   }
 
   multiply(a: Tensor, b: Tensor): Tensor {
-    const output = Tensor.make(a.shape, {}, a.dtype, this);
-    const program = new BinaryOpProgram(binary_op.MUL, output.shape);
+    return this.binaryOp(a, b, binary_op.MUL);
+  }
 
-    return this.compileAndRun(program, [a, b], output) as Tensor;
+  floorDiv(a: Tensor, b: Tensor): Tensor {
+    return this.binaryOp(a, b, binary_op.INT_DIV);
+  }
+
+  sigmoid<T extends Tensor>(x: T): T {
+    const program = new UnaryOpProgram(x.shape, unary_op.SIGMOID);
+    return this.compileAndRun(program, [x]) as T;
   }
 
   relu<T extends Tensor>(x: T): T {
-    const program = new UnaryOpProgram(unary_op.RELU, x.shape);
+    const program = new UnaryOpProgram(x.shape, unary_op.RELU);
     return this.compileAndRun(program, [x]) as T;
   }
 
@@ -313,28 +407,30 @@ export class WebGPUBackend extends KernelBackend {
     const output =
         this.makeOutputArray(program.outputShape, x.dtype) as Tensor4D;
 
-    const uniformData = new Int32Array([
-      ...x.shape, ...program.outputShape,  // inShape / outShape.
-    ]);
-    const uniforms = this.makeUniforms(uniformData);
-
-    const result =
-        this.compileAndRun(program, [x], output, uniforms) as Tensor4D;
-    this.destroyBuffer(uniformData.byteLength, uniforms.resource.buffer);
-
-    return result as Tensor4D;
+    return this.compileAndRun(program, [x], output) as Tensor4D;
   }
 
   reshape<R extends Rank>(x: Tensor, shape: ShapeMap[R]): Tensor<R> {
     return Tensor.make(shape, {dataId: x.dataId}, x.dtype);
   }
 
+  cast<T extends Tensor>(x: T, dtype: DataType): T {
+    return backend_util.castTensor(x, dtype, this);
+  }
+
+  transpose<T extends Tensor>(x: T, perm: number[]): T {
+    const program = new TransposeProgram(x.shape, perm);
+    return this.compileAndRun(program, [x]);
+  }
+
   batchMatMul(
       a: Tensor3D, b: Tensor3D, transposeA: boolean,
       transposeB: boolean): Tensor3D {
-    const outerShapeA = transposeA ? a.shape[2] : a.shape[1];
-    const outerShapeB = transposeB ? b.shape[1] : b.shape[2];
-    const sharedDim = transposeA ? a.shape[1] : a.shape[2];
+    // TODO: Support transposed inputs.
+    // const outerShapeA = transposeA ? a.shape[2] : a.shape[1];
+    // const outerShapeB = transposeB ? b.shape[1] : b.shape[2];
+    const outerShapeA = a.shape[1];
+    const outerShapeB = b.shape[2];
     const [batch, , ] = a.shape;
 
     const output =
@@ -352,14 +448,7 @@ export class WebGPUBackend extends KernelBackend {
           output.shape, ENV.get('WEBGPU_MATMUL_WORK_PER_THREAD') as number);
     }
 
-    const dimensionsData =
-        new Uint32Array([outerShapeA, sharedDim, outerShapeB, batch]);
-    const dimensions = this.makeUniforms(dimensionsData);
-
-    const result =
-        this.compileAndRun(program, [a, b], output, dimensions) as Tensor3D;
-
-    this.destroyBuffer(dimensionsData.byteLength, dimensions.resource.buffer);
+    const result = this.compileAndRun(program, [a, b], output) as Tensor3D;
 
     return result;
   }

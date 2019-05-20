@@ -18,7 +18,8 @@
 import {ENGINE} from '../engine';
 import {Tensor, Tensor2D, Tensor3D} from '../tensor';
 import {convertToTensor} from '../tensor_util_env';
-import {TensorLike} from '../types';
+import {PixelData, TensorLike} from '../types';
+
 import {op} from './operation';
 
 /**
@@ -35,14 +36,17 @@ import {op} from './operation';
  * ```
  *
  * @param pixels The input image to construct the tensor from. The
- * supported image types are all 4-channel.
+ * supported image types are all 4-channel. You can also pass in an image
+ * object with following attributes:
+ * `{data: Uint8Array; width: number; height: number}`
  * @param numChannels The number of channels of the output tensor. A
  * numChannels value less than 4 allows you to ignore channels. Defaults to
  * 3 (ignores alpha channel of input image).
  */
 /** @doc {heading: 'Browser', namespace: 'browser', ignoreCI: true} */
 function fromPixels_(
-    pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
+    pixels: PixelData|ImageData|HTMLImageElement|HTMLCanvasElement|
+    HTMLVideoElement,
     numChannels = 3): Tensor3D {
   if (numChannels > 4) {
     throw new Error(

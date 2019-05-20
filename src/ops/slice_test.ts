@@ -16,7 +16,7 @@
  */
 
 import * as tf from '../index';
-import {ALL_ENVS, describeWithFlags} from '../jasmine_util';
+import {ALL_ENVS, describeWithFlags, SYNC_BACKEND_ENVS} from '../jasmine_util';
 import {expectArraysClose} from '../test_util';
 import {Rank} from '../types';
 
@@ -259,6 +259,20 @@ describeWithFlags('slice2d', ALL_ENVS, () => {
     const c = tf.add(a, b);
     expect(c.shape).toEqual([2, 2]);
     expectArraysClose(await c.data(), [3, 4, 7, 8]);
+  });
+
+  it('zero-sized slice out of a non-zero sized tensor', async () => {
+    const a = tf.zeros([4, 2]);
+    const res = tf.slice(a, [0, 0], [0, 2]);
+    expect(res.shape).toEqual([0, 2]);
+    expectArraysClose(await res.data(), []);
+  });
+
+  it('zero-sized slice out of a zero-sized tensor', async () => {
+    const a = tf.zeros([0, 4]);
+    const res = tf.slice(a, [0, 1], [0, 3]);
+    expect(res.shape).toEqual([0, 3]);
+    expectArraysClose(await res.data(), []);
   });
 });
 
@@ -526,7 +540,9 @@ describeWithFlags('shallow slicing', ALL_ENVS, () => {
     tf.dispose([a, b]);
     expect(tf.memory().numTensors).toBe(0);
   });
+});
 
+describeWithFlags('shallow slicing', SYNC_BACKEND_ENVS, () => {
   it('delayed sync read of sliced tensor has no mem leak', () => {
     const a = tf.zeros([10]);
     const b = tf.slice(a, 0, 1);
