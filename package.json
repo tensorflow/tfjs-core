@@ -58,7 +58,6 @@
     "build:bazel": "bazel build //...",
     "build-npm": "./scripts/build-npm.sh",
     "build-test-snippets": "yarn tsc --project ./scripts/test_snippets/tsconfig.json",
-    "commander": "2.20.0",
     "link-local": "yalc link",
     "publish-local": "rimraf dist/ && yarn build && rollup -c && yalc push",
     "lint": "tslint -p . -t verbose",

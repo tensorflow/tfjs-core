@@ -5,7 +5,6 @@ yarn-error.log
 local.log
 .DS_Store
 dist/
-scripts/**/*.js
 bazel-out/
 .idea/
 *.tgz
