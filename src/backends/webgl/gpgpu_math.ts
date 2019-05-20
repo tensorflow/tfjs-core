@@ -258,12 +258,17 @@ export function runProgram<T extends Tensor, K extends Tensor>(
     // Upload the shape/texShape information as a uniform as well.
     const varShapeName = `shape${varName}`;
     const varShapeLoc = binary.uniformLocations[varShapeName];
-
     if (varShapeLoc != null) {
-      // Call squeezeShape to match the shape used in the shader program
-      const {newShape} = util.squeezeShape(input.shape);
+      let shape: number[]|Int32Array;
+      if (binary.program.usesPackedTextures) {
+        shape = util.packedShapeTransform(input.shape);
+        // TODO yassogba@ should anything special happen for isPackShader?
+      } else {
+        // Call squeezeShape to match the shape used in the shader program
+        const {newShape} = util.squeezeShape(input.shape);
+        shape = newShape;
+      }
 
-      let shape: number[]|Int32Array = newShape;
       if (!(shape instanceof Int32Array)) {
         shape = new Int32Array(shape);
       }
@@ -272,7 +277,6 @@ export function runProgram<T extends Tensor, K extends Tensor>(
 
     const varTexShapeName = `texShape${varName}`;
     const varTexShapeLoc = binary.uniformLocations[varTexShapeName];
-
     // TODO(yassogba, nsthoat) rename/document these two shapes:
     // input.texData.shape and input.texData.texShape
     // to make it more apparent why they are both needed.

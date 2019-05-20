@@ -175,7 +175,6 @@ export function sizeFromShape(shape: number[]): number {
   return size;
 }
 
-
 /**
  * returns a glsl expression to calculate the size from the shape.
  * @param shape
@@ -387,6 +386,15 @@ export function squeezeShape(shape: number[], axis?: number[]):
     }
   }
   return {newShape, keptDims};
+}
+
+/** Reduces the shape by removing all dimensions of shape 1. */
+export function packedShapeTransform(shape: number[]): number[] {
+  if (shape.length === 3 && shape[0] === 1) {
+    const squeezedShape = shape.slice(1);
+    return squeezedShape;
+  }
+  return shape;
 }
 
 export function getTypedArrayFromDType<D extends NumericDataType>(
