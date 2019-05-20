@@ -18,13 +18,15 @@
 import {ENV} from '../../environment';
 import {describeWithFlags} from '../../jasmine_util';
 import {expectArraysClose, expectNumbersClose} from '../../test_util';
+
+import {WEBGL_ENVS} from './backend_webgl_test_registry';
 import {getGlslDifferences} from './glsl_version';
 import {GPGPUContext, linearSearchLastTrue} from './gpgpu_context';
 import * as tex_util from './tex_util';
 
 const DOWNLOAD_FLOAT_ENVS = {
   flags: {'WEBGL_DOWNLOAD_FLOAT_ENABLED': true},
-  activeBackend: 'webgl'
+  predicate: WEBGL_ENVS.predicate
 };
 
 describeWithFlags(
@@ -34,6 +36,8 @@ describeWithFlags(
 
       beforeEach(() => {
         gpgpu = new GPGPUContext();
+        // Silences debug warnings.
+        spyOn(console, 'warn');
         ENV.set('DEBUG', true);
         texture = gpgpu.createFloat32MatrixTexture(1, 1);
       });
@@ -107,6 +111,8 @@ describeWithFlags(
 
       beforeEach(() => {
         gpgpu = new GPGPUContext();
+        // Silences debug warnings.
+        spyOn(console, 'warn');
         ENV.set('DEBUG', true);
         texture = gpgpu.createFloat32MatrixTexture(1, 1);
       });
@@ -170,6 +176,8 @@ describeWithFlags(
 
       beforeEach(() => {
         gpgpu = new GPGPUContext();
+        // Silences debug warnings.
+        spyOn(console, 'warn');
         ENV.set('DEBUG', true);
       });
 
@@ -206,6 +214,8 @@ describeWithFlags(
 
       beforeEach(() => {
         gpgpu = new GPGPUContext();
+        // Silences debug warnings.
+        spyOn(console, 'warn');
         ENV.set('DEBUG', true);
         const glsl = getGlslDifferences();
         const src = `${glsl.version}
@@ -288,6 +298,8 @@ describeWithFlags('GPGPUContext', DOWNLOAD_FLOAT_ENVS, () => {
 
   beforeEach(() => {
     gpgpu = new GPGPUContext();
+    // Silences debug warnings.
+    spyOn(console, 'warn');
     ENV.set('DEBUG', true);
   });
 

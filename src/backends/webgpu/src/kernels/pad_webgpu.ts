@@ -16,7 +16,7 @@
  */
 
 import {getCoordsDataType} from '../shader_preprocessor';
-import {computeDispatch} from '../webgpu_util';
+import {computeDispatch, flatDispatchLayout} from '../webgpu_util';
 
 import {WebGPUProgram} from './webgpu_program';
 
@@ -34,7 +34,7 @@ export class PadProgram implements WebGPUProgram {
         (p, i) => p[0] /* beforePad */ + xShape[i] + p[1] /* afterPad */);
     const rank = xShape.length;
     const type = getCoordsDataType(rank);
-    this.dispatchLayout = {x: this.outputShape.map((d, i) => i)};
+    this.dispatchLayout = flatDispatchLayout(this.outputShape);
     this.dispatch = computeDispatch(this.dispatchLayout, this.outputShape);
 
     const start = paddings.map(p => p[0]).join(',');
@@ -42,13 +42,14 @@ export class PadProgram implements WebGPUProgram {
     const startValue = rank > 1 ? `${type}(${start})` : `${start}`;
     const endValue = rank > 1 ? `${type}(${end})` : `${end}`;
 
-    const xShapeValue =
-        rank > 1 ? `${type}(${xShape.join(',')})` : `${xShape[0]}`;
-
     const leftPadCondition =
         rank > 1 ? `any(lessThan(outC, start))` : `outC < start`;
     const rightPadCondition =
         rank > 1 ? `any(greaterThanEqual(outC, end))` : `outC >= end`;
+
+    const unpackedCoords = rank > 1 ?
+        ['coords[0]', 'coords[1]', 'coords[2]', 'coords[3]'].slice(0, rank) :
+        'coords';
 
     this.userCode = `
       ${type} start = ${startValue};
@@ -62,8 +63,7 @@ export class PadProgram implements WebGPUProgram {
           setOutput(index, ${constantValue});
         } else {
           ${type} coords = outC - start;
-          ${type} xShape = ${xShapeValue};
-          setOutput(index, x[getFlatIndex(coords, xShape)]);
+          setOutput(index, getX(${unpackedCoords}));
         }
       }
     `;
