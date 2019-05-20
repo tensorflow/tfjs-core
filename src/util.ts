@@ -388,7 +388,11 @@ export function squeezeShape(shape: number[], axis?: number[]):
   return {newShape, keptDims};
 }
 
-/** Reduces the shape by removing all dimensions of shape 1. */
+/**
+ * Transform shapes in the manner expected by packed samplers.
+ *
+ * Currently this is only applied to rank-3 textures
+ */
 export function packedShapeTransform(shape: number[]): number[] {
   if (shape.length === 3 && shape[0] === 1) {
     const squeezedShape = shape.slice(1);
