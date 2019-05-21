@@ -616,7 +616,7 @@ function getOutputPacked2DCoords(
   return `
     ivec2 getOutputCoords() {
       int packedTexShapeR = int(ceil(float(outputTexShape[0]) * 0.5));
-      int packedTexShapeC = int(ceil(float(outputTexShape[1]) * 0.5));      
+      int packedTexShapeC = int(ceil(float(outputTexShape[1]) * 0.5));
       int texelsInLogicalRow = int(ceil(float(outputShape[1]) * 0.5));
 
       ivec2 resTexRC = ivec2(resultUV.yx *
@@ -811,7 +811,7 @@ function getPackedSampler2D(inputInfo: InputInfo): string {
     vec4 ${funcName}(int row, int col) {
       int packedTexShapeR = int(ceil(float(${texShapeUniform}[0]) * 0.5));
       int packedTexShapeC = int(ceil(float(${texShapeUniform}[1]) * 0.5));
-      
+
       int valuesPerRow = int(ceil(float(${shapeUniform}[1]) * 0.5));
 
       vec2 uv = packedUVfrom2D(valuesPerRow,
@@ -1044,7 +1044,7 @@ function getPackedSamplerND(inputInfo: InputInfo): string {
 
       int texR = index / packedTexShapeC;
       int texC = index - texR * packedTexShapeC;
-      vec2 uv = (vec2(texC, texR) + halfCR) / 
+      vec2 uv = (vec2(texC, texR) + halfCR) /
         vec2(packedTexShapeC, packedTexShapeR);
       return ${glsl.texture2D}(${texName}, uv);
     }
@@ -1095,7 +1095,7 @@ function getSampler4D(inputInfo: InputInfo): string {
 
   if (texNumC === stride0 && flatOffset == null) {
     // texC is used directly as physical (no risk of float16 overflow).
-    return `      
+    return `
       float ${funcName}(int row, int col, int depth, int depth2) {
         float texR = float(row);
         float texC =
@@ -1342,6 +1342,7 @@ function getUniformSampler(inputInfo: InputInfo): string {
   if (inSize < 2) {
     return `return ${texName};`;
   }
+  // TODO yassogba@ potentially remove this.
   const inSizeExpr = util.sizeFromShapeExpr(inputInfo.shapeInfo.logicalShape);
   return `
     for (int i = 0; i < (${inSizeExpr}); i++) {
