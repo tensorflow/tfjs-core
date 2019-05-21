@@ -1311,7 +1311,7 @@ function getSampler6D(inputInfo: InputInfo): string {
         float texR = dot(vec4(row, col, depth, depth2),
           vec4(${shapeUniform}[1] * ${shapeUniform}[2] * ${shapeUniform}[3]
             * ${shapeUniform}[4]},
-               ${shapeUniform}[2] * ${shapeUniform}[3] * ${shapeUniform[4]},
+               ${shapeUniform}[2] * ${shapeUniform}[3] * ${shapeUniform}[4],
                ${shapeUniform}[3] * ${shapeUniform}[4],
                ${shapeUniform}[4])) + float(depth3);
         int texC = depth4;
