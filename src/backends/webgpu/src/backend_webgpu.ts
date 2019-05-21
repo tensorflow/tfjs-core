@@ -48,6 +48,7 @@ type TensorInfo = {
   byteSize: number,
   values: Float32Array|Int32Array|Uint8Array,
   id: number,
+  dtype: DataType,
   buffer: GPUBuffer
 };
 
@@ -111,7 +112,8 @@ export class WebGPUBackend extends KernelBackend {
     if (!this.tensorMap.has(dataId)) {
       const byteSize = util.sizeFromShape(shape) * util.bytesPerElement(dtype);
       const buffer = this.createBuffer(byteSize);
-      this.tensorMap.set(dataId, {byteSize, values: null, id: -1, buffer});
+      this.tensorMap.set(
+          dataId, {byteSize, values: null, id: -1, buffer, dtype});
     }
   }
 
@@ -153,6 +155,9 @@ export class WebGPUBackend extends KernelBackend {
     const info = this.tensorMap.get(dataId);
     const data = await this.getBufferData(info);
 
+    if (info.dtype === 'int32') {
+      return new Int32Array(data);
+    }
     return new Float32Array(data);
   }
 
