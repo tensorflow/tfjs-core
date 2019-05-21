@@ -30,6 +30,7 @@ const env = jasmine.getEnv();
 const INCLUDE_LIST: string[] = [
   'matmul',
   'add ',
+  'subtract ',
   'mul ',
   'conv2d',
   'pad',
