@@ -36,6 +36,7 @@ const INCLUDE_LIST: string[] = [
   'pad',
   'pool',
   'maxPool',
+  'floor divide ',
   'resizeBilinear',
   'relu',
   'transpose',
