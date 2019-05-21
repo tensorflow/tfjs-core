@@ -176,7 +176,6 @@ export class MathBackendCPU implements KernelBackend {
     return this.readSync(dataId);
   }
   readSync(dataId: DataId): DataValues {
-    console.log('cpu readsync called', this.data.get(dataId));
     const {dtype, complexTensors} = this.data.get(dataId);
     if (dtype === 'complex64') {
       const realValues =
