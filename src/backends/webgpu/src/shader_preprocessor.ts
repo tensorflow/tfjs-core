@@ -34,13 +34,13 @@ export function getCoordsDataType(rank: number): string {
   }
 }
 
-type GLSLDataType = 'float'|'uint';
+type GLSLDataType = 'float'|'int';
 function mapToGlslTypes(type: DataType): GLSLDataType|DataType {
   if (type === 'float32') {
     return 'float';
   }
   if (type === 'int32') {
-    return 'uint';
+    return 'int';
   }
   return type;
 }
