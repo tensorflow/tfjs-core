@@ -224,8 +224,11 @@ export class WebGPUBackend extends KernelBackend {
       // Complete std140 layout rules are documented here:
       // tslint:disable-next-line:max-line-length
       // https://www.khronos.org/registry/OpenGL/specs/gl/glspec45.core.pdf#page=159
-      let baseAlignment = 0;
+      let baseAlignment: number;
       switch (d.length) {
+        case 0:
+          baseAlignment = 0;
+          break;
         case 1:
           baseAlignment = 1;
           break;
