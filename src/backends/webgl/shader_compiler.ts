@@ -394,7 +394,7 @@ function getOutputPacked1DCoords(
   if (packedTexShape[0] === 1) {
     return `
       int getOutputCoords() {
-        float packedTexShapeC = ceil(float(outputTexShape[1]) / 2.0);
+        float packedTexShapeC = ceil(float(outputTexShape[1]) * 0.5);
         return 2 * int(resultUV.x * packedTexShapeC);
       }
     `;
@@ -403,7 +403,7 @@ function getOutputPacked1DCoords(
   if (packedTexShape[1] === 1) {
     return `
       int getOutputCoords() {
-        float packedTexShapeR = ceil(float(outputTexShape[0]) / 2.0);
+        float packedTexShapeR = ceil(float(outputTexShape[0]) * 0.5);
         return 2 * int(resultUV.y * packedTexShapeR);
       }
     `;
@@ -411,8 +411,8 @@ function getOutputPacked1DCoords(
 
   return `
     int getOutputCoords() {
-      float packedTexShapeR = ceil(float(outputTexShape[0]) / 2.0);
-      float packedTexShapeC = ceil(float(outputTexShape[1]) / 2.0);
+      float packedTexShapeR = ceil(float(outputTexShape[0]) * 0.5);
+      float packedTexShapeC = ceil(float(outputTexShape[1]) * 0.5);
       ivec2 resTexRC = ivec2(resultUV.yx *
                              vec2(packedTexShapeR, packedTexShapeC));
       return resTexRC.x * packedTexShapeC + resTexRC.y;
@@ -449,12 +449,12 @@ function getOutputPacked3DCoords(
     shape: [number, number, number], texShape: [number, number]): string {
   return `
     ivec3 getOutputCoords() {
-      int packedTexShapeR = int(ceil(float(outputTexShape[0]) / 2.0));
-      int packedTexShapeC = int(ceil(float(outputTexShape[1]) / 2.0));
+      int packedTexShapeR = int(ceil(float(outputTexShape[0]) * 0.5));
+      int packedTexShapeC = int(ceil(float(outputTexShape[1]) * 0.5));
 
-      int texelsInLogicalRow = int(ceil(float(outputShape[2]) / 2.0));
+      int texelsInLogicalRow = int(ceil(float(outputShape[2]) * 0.5));
       int texelsInBatch = texelsInLogicalRow *
-        int(ceil(float(outputShape[1]) / 2.0));
+        int(ceil(float(outputShape[1]) * 0.5));
 
       ivec2 resTexRC = ivec2(resultUV.yx *
                              vec2(packedTexShapeR, packedTexShapeC));
@@ -507,13 +507,13 @@ function getOutputPackedNDCoords(
 
   return `
     ivec${shape.length} getOutputCoords() {
-      int packedTexShapeR = int(ceil(float(outputTexShape[0]) / 2.0));
-      int packedTexShapeC = int(ceil(float(outputTexShape[1]) / 2.0));
+      int packedTexShapeR = int(ceil(float(outputTexShape[0]) * 0.5));
+      int packedTexShapeC = int(ceil(float(outputTexShape[1]) * 0.5));
       int texelsInLogicalRow = int(ceil(float(outputShape[${rank - 1}])
-      / 2.0));
+      * 0.5));
 
       int texelsInBatch = texelsInLogicalRow *
-        int(ceil(float(outputShape[${rank - 2}]) / 2.0));
+        int(ceil(float(outputShape[${rank - 2}]) * 0.5));
 
       ivec2 resTexRC = ivec2(resultUV.yx *
                              vec2(packedTexShapeR, packedTexShapeC));
@@ -595,8 +595,8 @@ function getOutputPacked2DCoords(
   if (util.arraysEqual(shape, texShape)) {
     return `
       ivec2 getOutputCoords() {
-        int packedTexShapeR = int(ceil(float(outputTexShape[0]) / 2.0));
-        int packedTexShapeC = int(ceil(float(outputTexShape[1]) / 2.0));
+        int packedTexShapeR = int(ceil(float(outputTexShape[0]) * 0.5));
+        int packedTexShapeC = int(ceil(float(outputTexShape[1]) * 0.5));
 
         return 2 * ivec2(resultUV.yx * vec2(packedTexShapeR,
         packedTexShapeC));
@@ -615,9 +615,9 @@ function getOutputPacked2DCoords(
    */
   return `
     ivec2 getOutputCoords() {
-      int packedTexShapeR = int(ceil(float(outputTexShape[0]) / 2.0));
-      int packedTexShapeC = int(ceil(float(outputTexShape[1]) / 2.0));      
-      int texelsInLogicalRow = int(ceil(float(outputShape[1]) / 2.0));
+      int packedTexShapeR = int(ceil(float(outputTexShape[0]) * 0.5));
+      int packedTexShapeC = int(ceil(float(outputTexShape[1]) * 0.5));      
+      int texelsInLogicalRow = int(ceil(float(outputShape[1]) * 0.5));
 
       ivec2 resTexRC = ivec2(resultUV.yx *
                              vec2(packedTexShapeR, packedTexShapeC));
@@ -722,8 +722,8 @@ function getPackedSampler1D(inputInfo: InputInfo): string {
   const texShapeUniform = `texShape${texName}`;
   return `
     vec4 ${funcName}(int index) {
-      int packedTexShapeR = int(ceil(float(${texShapeUniform}[0]) / 2.0));
-      int packedTexShapeC = int(ceil(float(${texShapeUniform}[1]) / 2.0));
+      int packedTexShapeR = int(ceil(float(${texShapeUniform}[0]) * 0.5));
+      int packedTexShapeC = int(ceil(float(${texShapeUniform}[1]) * 0.5));
 
       vec2 uv = packedUVfrom1D(
         packedTexShapeR, packedTexShapeC, index);
@@ -809,10 +809,10 @@ function getPackedSampler2D(inputInfo: InputInfo): string {
   const shapeUniform = `shape${texName}`;
   return `
     vec4 ${funcName}(int row, int col) {
-      int packedTexShapeR = int(ceil(float(${texShapeUniform}[0]) / 2.0));
-      int packedTexShapeC = int(ceil(float(${texShapeUniform}[1]) / 2.0));
+      int packedTexShapeR = int(ceil(float(${texShapeUniform}[0]) * 0.5));
+      int packedTexShapeC = int(ceil(float(${texShapeUniform}[1]) * 0.5));
       
-      int valuesPerRow = int(ceil(float(${shapeUniform}[1]) / 2.0));
+      int valuesPerRow = int(ceil(float(${shapeUniform}[1]) * 0.5));
 
       vec2 uv = packedUVfrom2D(valuesPerRow,
         packedTexShapeR, packedTexShapeC, row, col);
@@ -926,11 +926,11 @@ function getPackedSampler3D(inputInfo: InputInfo): string {
 
   return `
     vec4 ${funcName}(int b, int row, int col) {
-      int packedTexShapeR = int(ceil(float(${texShapeUniform}[0]) / 2.0));
-      int packedTexShapeC = int(ceil(float(${texShapeUniform}[1]) / 2.0));
-      int valuesPerRow = int(ceil(float(${shapeUniform}[2]) / 2.0));
+      int packedTexShapeR = int(ceil(float(${texShapeUniform}[0]) * 0.5));
+      int packedTexShapeC = int(ceil(float(${texShapeUniform}[1]) * 0.5));
+      int valuesPerRow = int(ceil(float(${shapeUniform}[2]) * 0.5));
       int texelsInBatch = valuesPerRow *
-        int(ceil(float(${shapeUniform}[1]) / 2.0));
+        int(ceil(float(${shapeUniform}[1]) * 0.5));
 
       vec2 uv = packedUVfrom3D(
         packedTexShapeR, packedTexShapeC, texelsInBatch,
@@ -1039,8 +1039,8 @@ function getPackedSamplerND(inputInfo: InputInfo): string {
   return `
     vec4 ${funcName}(${params}) {
       int index = ${index};
-      int packedTexShapeR = int(ceil(float(${texShapeUniform}[0]) / 2.0));
-      int packedTexShapeC = int(ceil(float(${texShapeUniform}[1]) / 2.0));
+      int packedTexShapeR = int(ceil(float(${texShapeUniform}[0]) * 0.5));
+      int packedTexShapeC = int(ceil(float(${texShapeUniform}[1]) * 0.5));
 
       int texR = index / packedTexShapeC;
       int texC = index - texR * packedTexShapeC;
