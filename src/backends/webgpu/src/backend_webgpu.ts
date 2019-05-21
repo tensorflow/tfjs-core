@@ -315,6 +315,10 @@ export class WebGPUBackend extends KernelBackend {
     return this.binaryOp(a, b, binary_op.ADD);
   }
 
+  subtract(a: Tensor, b: Tensor): Tensor {
+    return this.binaryOp(a, b, binary_op.SUB);
+  }
+
   conv2d(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
     const output =
         Tensor.make(convInfo.outShape, {}, x.dtype, this) as Tensor4D;
