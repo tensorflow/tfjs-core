@@ -252,7 +252,7 @@ export class MathBackendWebGL implements KernelBackend {
     this.textureManager = new TextureManager(this.gpgpu);
     this.numMBBeforeWarning = numMBBeforeWarning();
 
-    this.texData = new DataStorage(ENGINE);
+    this.texData = new DataStorage(this, ENGINE);
   }
 
   register(dataId: DataId, shape: number[], dtype: DataType): void {
@@ -350,9 +350,11 @@ export class MathBackendWebGL implements KernelBackend {
     texData.values = values;
   }
   readSync(dataId: DataId): DataValues {
+    console.log('webgl read sync called');
     const texData = this.texData.get(dataId);
     const {values, dtype, complexTensors, slice, shape} = texData;
     if (slice != null) {
+      console.log('slice not null');
       const program = new UnaryOpProgram(shape, unary_op.CLONE);
       const res = this.compileAndRun(program, [{dataId, shape, dtype}]);
       const data = this.readSync(res.dataId);
@@ -360,7 +362,12 @@ export class MathBackendWebGL implements KernelBackend {
       return data;
     }
     if (values != null) {
-      return this.convertAndCacheOnCPU(dataId);
+      console.log('webgl short circuit');
+      const result = this.convertAndCacheOnCPU(dataId);
+      console.log(result);
+      return result;
+
+      // return this.convertAndCacheOnCPU(dataId);
     }
     if (dtype === 'string') {
       return values;
