@@ -908,7 +908,7 @@ function getPackedSampler3D(inputInfo: InputInfo): string {
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
 
   if (shape[0] === 1) {
-    const squeezedShape = util.packedShapeTransform(shape);
+    const squeezedShape = shape.slice(1);
     const keptDims = [1, 2];
     const newInputInfo = squeezeInputInfo(inputInfo, squeezedShape);
     const params = ['b', 'row', 'col'];
