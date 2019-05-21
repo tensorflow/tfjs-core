@@ -1095,8 +1095,7 @@ function getSampler4D(inputInfo: InputInfo): string {
 
   if (texNumC === stride0 && flatOffset == null) {
     // texC is used directly as physical (no risk of float16 overflow).
-    return `
-      //QQ
+    return `      
       float ${funcName}(int row, int col, int depth, int depth2) {
         float texR = float(row);
         float texC =
