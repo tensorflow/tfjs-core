@@ -23,7 +23,7 @@ import {DataMover, DataType, ENV, KernelBackend, Rank, ShapeMap, Tensor, Tensor2
 import * as backend_util from '@tensorflow/tfjs-core/dist/backends/backend_util';
 import {computeOutShape} from '@tensorflow/tfjs-core/dist/ops/concat_util';
 import {Conv2DInfo} from '@tensorflow/tfjs-core/dist/ops/conv_util';
-import {upcastType} from '@tensorflow/tfjs-core/dist/types';
+import {TypedArray, upcastType} from '@tensorflow/tfjs-core/dist/types';
 import {assert} from '@tensorflow/tfjs-core/dist/util';
 import * as shaderc from '@webgpu/shaderc';
 
@@ -148,6 +148,30 @@ export class WebGPUBackend extends KernelBackend {
     return mapped.slice(0);
   }
 
+  private convertAndCacheOnCPU(dataId: DataId, data: TypedArray): TypedArray {
+    const texData = this.tensorMap.get(dataId);
+
+    // TODO: implement release GPU data.
+    // TODO: add backend_webgl float32ToTypedArray to util and use that here.
+
+    texData.values = data;
+    return texData.values as TypedArray;
+  }
+
+  // TODO: Remove once this is fixed:
+  // https://github.com/tensorflow/tfjs/issues/1595
+  readSync(dataId: object): Float32Array|Int32Array|Uint8Array {
+    const texData = this.tensorMap.get(dataId);
+    const {values} = texData;
+
+    if (values == null) {
+      throw new Error(
+          'WebGPU readSync is only available for CPU-resident tensors.');
+    }
+
+    return values;
+  }
+
   async read(dataId: object): Promise<Float32Array|Int32Array|Uint8Array> {
     if (!this.tensorMap.has(dataId)) {
       throw new Error(`Tensor ${dataId} was not registered!`);
@@ -155,10 +179,10 @@ export class WebGPUBackend extends KernelBackend {
     const info = this.tensorMap.get(dataId);
     const data = await this.getBufferData(info);
 
-    if (info.dtype === 'int32') {
-      return new Int32Array(data);
-    }
-    return new Float32Array(data);
+    const dataAsTypedArray =
+        info.dtype === 'int32' ? new Int32Array(data) : new Float32Array(data);
+    this.convertAndCacheOnCPU(dataId, dataAsTypedArray);
+    return dataAsTypedArray;
   }
 
   private getAndSavePipeline(
