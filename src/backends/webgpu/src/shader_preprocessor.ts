@@ -158,9 +158,12 @@ const SAMPLING_SNIPPETS = `
 `;
 
 function getSetOutputSnippet(outRank: number, outBufferType: DataType): string {
-  let snippet =
-      `void setOutput(uint flatIndex, ${mapToGlslTypes(outBufferType)} value) {
-      result[flatIndex] = value;
+  let snippet = `void setOutput(uint flatIndex, float value) {
+      result[flatIndex] = ${mapToGlslTypes(outBufferType)}(value);
+    }
+    
+    void setOutput(uint flatIndex, int value) {
+      result[flatIndex] = ${mapToGlslTypes(outBufferType)}(value);
     }`;
 
   if (outRank >= 2) {
@@ -168,8 +171,12 @@ function getSetOutputSnippet(outRank: number, outBufferType: DataType): string {
     const type = getCoordsDataType(outRank);
 
     snippet += `
-      void setOutput(${dims.map(d => `int ${d}`).join(', ')}, ${
-        mapToGlslTypes(outBufferType)} value) {
+      void setOutput(${dims.map(d => `int ${d}`).join(', ')}, float value) {
+        uint flatIndex = getFlatIndex(${type}(${dims.join(', ')}), outShape);
+        setOutput(flatIndex, value);
+      }
+
+      void setOutput(${dims.map(d => `int ${d}`).join(', ')}, int value) {
         uint flatIndex = getFlatIndex(${type}(${dims.join(', ')}), outShape);
         setOutput(flatIndex, value);
       }
