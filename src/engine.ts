@@ -831,10 +831,10 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
 
   // Forwarding to backend.
   write(destBackend: KernelBackend, dataId: DataId, values: DataValues): void {
-    destBackend = destBackend || this.backend;
-
     const info = this.state.tensorInfo.get(dataId);
+
     const srcBackend = info.backend;
+    destBackend = destBackend || this.backend;
    
     // Bytes for string tensors are counted when writing.
     if (info.dtype === 'string') {
