@@ -240,9 +240,7 @@ function getSamplerAtOutputCoords(
 
   let coordsSnippet = '';
 
-  if (inRank === 0) {
-    coordsSnippet = 'coords = 0;';
-  } else {
+  if (inRank > 0) {
     if (outRank < 2 && broadcastDims.length >= 1) {
       coordsSnippet = 'coords = 0;';
     } else {
