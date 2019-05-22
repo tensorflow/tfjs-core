@@ -157,6 +157,8 @@ export class WebGPUBackend extends KernelBackend {
     return texData.values as TypedArray;
   }
 
+  // TODO: Remove once this is fixed:
+  // https://github.com/tensorflow/tfjs/issues/1595
   readSync(dataId: object): Float32Array|Int32Array|Uint8Array {
     const texData = this.tensorMap.get(dataId);
     const {values} = texData;
