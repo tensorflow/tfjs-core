@@ -240,7 +240,13 @@ function getSamplerAtOutputCoords(
 
   let coordsSnippet = '';
 
-  if (inRank > 0) {
+  if (inRank === 0) {
+    return `
+      float ${funcName}() {
+        return get${texFuncSnippet}();
+      }
+    `;
+  } else {
     if (outRank < 2 && broadcastDims.length >= 1) {
       coordsSnippet = 'coords = 0;';
     } else {
