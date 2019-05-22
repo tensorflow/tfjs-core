@@ -159,11 +159,13 @@ const SAMPLING_SNIPPETS = `
 
 function getSetOutputSnippet(outRank: number, outBufferType: DataType): string {
   let snippet = `void setOutput(uint flatIndex, float value) {
-      result[flatIndex] = ${mapToGlslTypes(outBufferType)}(value);
+      result[flatIndex] = ${
+      mapToGlslTypes(outBufferType) === 'int' ? 'int(value)' : 'value'};
     }
     
     void setOutput(uint flatIndex, int value) {
-      result[flatIndex] = ${mapToGlslTypes(outBufferType)}(value);
+      result[flatIndex] = ${
+      mapToGlslTypes(outBufferType) === 'float' ? 'float(value)' : 'value'};
     }`;
 
   if (outRank >= 2) {
