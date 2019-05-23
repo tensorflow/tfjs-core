@@ -152,18 +152,11 @@ export function compileProgram<T extends Tensor, K extends Tensor>(
 
   // Record location of uniforms for output
   if (outShapeInfo.logicalShape.length > 0) {
-    // const outputShapeName = `outputShape`;
-    // const outputTexShapeName = `outputTexShape`;
     const shouldThrow = false;
     recordUniformLocation(
         gpgpu, webGLProgram, uniformLocations, 'outputShape', shouldThrow);
     recordUniformLocation(
         gpgpu, webGLProgram, uniformLocations, 'outputTexShape', shouldThrow);
-    // uniformLocations[outputShapeName] =
-    //     gpgpu.getUniformLocation(webGLProgram, outputShapeName, shouldThrow);
-    // uniformLocations[outputTexShapeName] =
-    //     gpgpu.getUniformLocation(webGLProgram, outputTexShapeName,
-    //     shouldThrow);
   }
 
   const inShapeInfos = inputInfos.map(x => x.shapeInfo);
