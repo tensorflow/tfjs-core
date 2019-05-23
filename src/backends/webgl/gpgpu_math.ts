@@ -92,6 +92,17 @@ export function assembleProgramSource(
   };
 }
 
+function recordUniformLocation(
+    gpgpu: GPGPUContext, webGLProgram: WebGLProgram,
+    uniformLocations: {[name: string]: WebGLUniformLocation}, varName: string,
+    shouldThrow: boolean) {
+  const varLocation =
+      gpgpu.getUniformLocation(webGLProgram, varName, shouldThrow);
+  if (varLocation != null) {
+    uniformLocations[varName] = varLocation;
+  }
+}
+
 export function compileProgram<T extends Tensor, K extends Tensor>(
     gpgpu: GPGPUContext, program: GPGPUProgram, inputs: TensorData[],
     output: TensorData): GPGPUBinary {
@@ -117,53 +128,42 @@ export function compileProgram<T extends Tensor, K extends Tensor>(
         gpgpu.getUniformLocation(webGLProgram, `offset${varName}`, shouldThrow);
   }
 
-  // Add uniforms for input shapes;
+  // Record uniform locations for input shapes;
   for (let i = 0; i < inputInfos.length; i++) {
     const inputInfo = inputInfos[i];
     const inShapeInfo = inputInfo.shapeInfo;
 
     if (inShapeInfo.logicalShape.length > 0) {
-      const varShapeName = `shape${inputInfo.name}`;
-      const varTexShapeName = `texShape${inputInfo.name}`;
-      const varStridesName = `strides${inputInfo.name}`;
-      const varPackedTexShapeName = `packedTexShape${inputInfo.name}`;
-
       const shouldThrow = false;
-      const shapeLocation =
-          gpgpu.getUniformLocation(webGLProgram, varShapeName, shouldThrow);
-      if (shapeLocation != null) {
-        uniformLocations[varShapeName] = shapeLocation;
-      }
-
-      const texShapeLocation =
-          gpgpu.getUniformLocation(webGLProgram, varTexShapeName, shouldThrow);
-      if (texShapeLocation != null) {
-        uniformLocations[varTexShapeName] = texShapeLocation;
-      }
-
-      const varStridesLocation =
-          gpgpu.getUniformLocation(webGLProgram, varStridesName, shouldThrow);
-      if (varStridesLocation != null) {
-        uniformLocations[varStridesName] = varStridesLocation;
-      }
-
-      const varPackedTexShapeLocation = gpgpu.getUniformLocation(
-          webGLProgram, varPackedTexShapeName, shouldThrow);
-      if (varPackedTexShapeLocation != null) {
-        uniformLocations[varPackedTexShapeName] = varPackedTexShapeLocation;
-      }
+      recordUniformLocation(
+          gpgpu, webGLProgram, uniformLocations, `shape${inputInfo.name}`,
+          shouldThrow);
+      recordUniformLocation(
+          gpgpu, webGLProgram, uniformLocations, `texShape${inputInfo.name}`,
+          shouldThrow);
+      recordUniformLocation(
+          gpgpu, webGLProgram, uniformLocations, `strides${inputInfo.name}`,
+          shouldThrow);
+      recordUniformLocation(
+          gpgpu, webGLProgram, uniformLocations,
+          `packedTexShape${inputInfo.name}`, shouldThrow);
     }
   }
 
   // Record location of uniforms for output
   if (outShapeInfo.logicalShape.length > 0) {
-    const outputShapeName = `outputShape`;
-    const outputTexShapeName = `outputTexShape`;
+    // const outputShapeName = `outputShape`;
+    // const outputTexShapeName = `outputTexShape`;
     const shouldThrow = false;
-    uniformLocations[outputShapeName] =
-        gpgpu.getUniformLocation(webGLProgram, outputShapeName, shouldThrow);
-    uniformLocations[outputTexShapeName] =
-        gpgpu.getUniformLocation(webGLProgram, outputTexShapeName, shouldThrow);
+    recordUniformLocation(
+        gpgpu, webGLProgram, uniformLocations, 'outputShape', shouldThrow);
+    recordUniformLocation(
+        gpgpu, webGLProgram, uniformLocations, 'outputTexShape', shouldThrow);
+    // uniformLocations[outputShapeName] =
+    //     gpgpu.getUniformLocation(webGLProgram, outputShapeName, shouldThrow);
+    // uniformLocations[outputTexShapeName] =
+    //     gpgpu.getUniformLocation(webGLProgram, outputTexShapeName,
+    //     shouldThrow);
   }
 
   const inShapeInfos = inputInfos.map(x => x.shapeInfo);
