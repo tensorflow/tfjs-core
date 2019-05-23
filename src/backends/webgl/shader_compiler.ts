@@ -61,12 +61,9 @@ export function makeShader(
   const outTexShape = outputShape.texShape;
   const glsl = getGlslDifferences();
   const floatTextureSampleSnippet = getFloatTextureSampleSnippet(glsl);
-  let outputSamplingSnippet: string;
+  let outputSamplingSnippet = '';
   let floatTextureSetOutputSnippet: string;
   let shaderPrefix = getShaderPrefix(glsl);
-
-  outputSamplingSnippet =
-      getOutputShapeSnippet(outputShape.logicalShape, outTexShape);
 
   if (outputShape.isPacked) {
     outputSamplingSnippet +=
@@ -141,13 +138,13 @@ function getPackedSamplerFromInInfo(inInfo: InputInfo): string {
 }
 
 function getOutputShapeSnippet(
-    shape: number[], texShape: [number, number]): string {
-  // We don't want to the program text to change based on shape so allocate the
-  // largest array the shape info could possible use at all times.
-
+    texShape: [number, number], isPacked: boolean): string {
   let snip = `uniform int outputShape[${MAX_TENSOR_RANK}]; \n`;
   if (texShape) {
     snip += `uniform int outputTexShape[${TEXSHAPE_RANK}]; \n`;
+  }
+  if (texShape && isPacked) {
+    snip += `uniform int outputPackedTexShape[${TEXSHAPE_RANK}]; \n`;
   }
   return snip;
 }
@@ -203,43 +200,55 @@ function getInputSamplingSnippet(
 
 function getPackedOutputSamplingSnippet(
     outShape: number[], outTexShape: [number, number]): string {
+  const outputSamplingSnippet = getOutputShapeSnippet(outTexShape, true);
   switch (outShape.length) {
     case 0:
-      return getOutputScalarCoords();
+      return outputSamplingSnippet + getOutputScalarCoords();
     case 1:
-      return getOutputPacked1DCoords(outShape as [number], outTexShape);
+      return outputSamplingSnippet +
+          getOutputPacked1DCoords(outShape as [number], outTexShape);
     case 2:
-      return getOutputPacked2DCoords(outShape as [number, number], outTexShape);
+      return outputSamplingSnippet +
+          getOutputPacked2DCoords(outShape as [number, number], outTexShape);
     case 3:
-      return getOutputPacked3DCoords(
-          outShape as [number, number, number], outTexShape);
+      return outputSamplingSnippet +
+          getOutputPacked3DCoords(
+                 outShape as [number, number, number], outTexShape);
     default:
-      return getOutputPackedNDCoords(outShape, outTexShape);
+      return outputSamplingSnippet +
+          getOutputPackedNDCoords(outShape, outTexShape);
   }
 }
 
 function getOutputSamplingSnippet(
     outShape: number[], outTexShape: [number, number]): string {
+  const outputSamplingSnippet = getOutputShapeSnippet(outTexShape, false);
   switch (outShape.length) {
     case 0:
-      return getOutputScalarCoords();
+      return outputSamplingSnippet + getOutputScalarCoords();
     case 1:
-      return getOutput1DCoords(outShape as [number], outTexShape);
+      return outputSamplingSnippet +
+          getOutput1DCoords(outShape as [number], outTexShape);
     case 2:
-      return getOutput2DCoords(outShape as [number, number], outTexShape);
+      return outputSamplingSnippet +
+          getOutput2DCoords(outShape as [number, number], outTexShape);
     case 3:
-      return getOutput3DCoords(
-          outShape as [number, number, number], outTexShape);
+      return outputSamplingSnippet +
+          getOutput3DCoords(outShape as [number, number, number], outTexShape);
     case 4:
-      return getOutput4DCoords(
-          outShape as [number, number, number, number], outTexShape);
+      return outputSamplingSnippet +
+          getOutput4DCoords(
+                 outShape as [number, number, number, number], outTexShape);
     case 5:
-      return getOutput5DCoords(
-          outShape as [number, number, number, number, number], outTexShape);
+      return outputSamplingSnippet +
+          getOutput5DCoords(
+                 outShape as [number, number, number, number, number],
+                 outTexShape);
     case 6:
-      return getOutput6DCoords(
-          outShape as [number, number, number, number, number, number],
-          outTexShape);
+      return outputSamplingSnippet +
+          getOutput6DCoords(
+                 outShape as [number, number, number, number, number, number],
+                 outTexShape);
     default:
       throw new Error(
           `${outShape.length}-D output sampling is not yet supported`);
@@ -397,30 +406,29 @@ function getOutputScalarCoords() {
 
 function getOutputPacked1DCoords(
     shape: [number], texShape: [number, number]): string {
-  const packedTexShape =
+  const outputPackedTexShape =
       [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
-  if (packedTexShape[0] === 1) {
+
+  if (outputPackedTexShape[0] === 1) {
     return `
       int getOutputCoords() {
-        float packedTexShapeC = ceil(float(outputTexShape[1]) * 0.5);
-        return 2 * int(resultUV.x * packedTexShapeC);
+        return 2 * int(resultUV.x * float(outputPackedTexShape[1]));
       }
     `;
   }
 
-  if (packedTexShape[1] === 1) {
+  if (outputPackedTexShape[1] === 1) {
     return `
       int getOutputCoords() {
-        float packedTexShapeR = ceil(float(outputTexShape[0]) * 0.5);
-        return 2 * int(resultUV.y * packedTexShapeR);
+        return 2 * int(resultUV.y * float(outputPackedTexShape[0]));
       }
     `;
   }
 
   return `
     int getOutputCoords() {
-      float packedTexShapeR = ceil(float(outputTexShape[0]) * 0.5);
-      float packedTexShapeC = ceil(float(outputTexShape[1]) * 0.5);
+      float packedTexShapeR = float(outputPackedTexShape[0]);
+      float packedTexShapeC = float(outputPackedTexShape[1]);
       ivec2 resTexRC = ivec2(resultUV.yx *
                              vec2(packedTexShapeR, packedTexShapeC));
       return resTexRC.x * packedTexShapeC + resTexRC.y;
@@ -457,8 +465,8 @@ function getOutputPacked3DCoords(
     shape: [number, number, number], texShape: [number, number]): string {
   return `
     ivec3 getOutputCoords() {
-      int packedTexShapeR = int(ceil(float(outputTexShape[0]) * 0.5));
-      int packedTexShapeC = int(ceil(float(outputTexShape[1]) * 0.5));
+      int packedTexShapeR = outputPackedTexShape[0];
+      int packedTexShapeC = outputPackedTexShape[1];
 
       int texelsInLogicalRow = int(ceil(float(outputShape[2]) * 0.5));
       int texelsInBatch = texelsInLogicalRow *
@@ -515,8 +523,8 @@ function getOutputPackedNDCoords(
 
   return `
     ivec${shape.length} getOutputCoords() {
-      int packedTexShapeR = int(ceil(float(outputTexShape[0]) * 0.5));
-      int packedTexShapeC = int(ceil(float(outputTexShape[1]) * 0.5));
+      int packedTexShapeR = outputPackedTexShape[0];
+      int packedTexShapeC = outputPackedTexShape[1];
       int texelsInLogicalRow = int(ceil(float(outputShape[${rank - 1}])
       * 0.5));
 
@@ -603,11 +611,10 @@ function getOutputPacked2DCoords(
   if (util.arraysEqual(shape, texShape)) {
     return `
       ivec2 getOutputCoords() {
-        int packedTexShapeR = int(ceil(float(outputTexShape[0]) * 0.5));
-        int packedTexShapeC = int(ceil(float(outputTexShape[1]) * 0.5));
+        int packedTexShapeR = outputPackedTexShape[0];
+        int packedTexShapeC = outputPackedTexShape[1];
 
-        return 2 * ivec2(resultUV.yx * vec2(packedTexShapeR,
-        packedTexShapeC));
+        return 2 * ivec2(resultUV.yx * vec2(packedTexShapeR, packedTexShapeC));
       }
     `;
   }
@@ -623,8 +630,8 @@ function getOutputPacked2DCoords(
    */
   return `
     ivec2 getOutputCoords() {
-      int packedTexShapeR = int(ceil(float(outputTexShape[0]) * 0.5));
-      int packedTexShapeC = int(ceil(float(outputTexShape[1]) * 0.5));
+      int packedTexShapeR = outputPackedTexShape[0];
+      int packedTexShapeC = outputPackedTexShape[1];
       int texelsInLogicalRow = int(ceil(float(outputShape[1]) * 0.5));
 
       ivec2 resTexRC = ivec2(resultUV.yx *
@@ -727,14 +734,11 @@ function getPackedSampler1D(inputInfo: InputInfo): string {
   const funcName = 'get' + texName.charAt(0).toUpperCase() + texName.slice(1);
   const glsl = getGlslDifferences();
 
-  const texShapeUniform = `texShape${texName}`;
+  const packedTexShapeUniform = `packedTexShape${texName}`;
   return `
     vec4 ${funcName}(int index) {
-      int packedTexShapeR = int(ceil(float(${texShapeUniform}[0]) * 0.5));
-      int packedTexShapeC = int(ceil(float(${texShapeUniform}[1]) * 0.5));
-
       vec2 uv = packedUVfrom1D(
-        packedTexShapeR, packedTexShapeC, index);
+        ${packedTexShapeUniform}[0], ${packedTexShapeUniform}[1], index);
       return ${glsl.texture2D}(${texName}, uv);
     }
   `;
@@ -818,16 +822,10 @@ function getPackedSampler2D(inputInfo: InputInfo): string {
   const packedTexShapeUniform = `packedTexShape${texName}`;
   return `
     vec4 ${funcName}(int row, int col) {
-      //int packedTexShapeR = int(ceil(float(${texShapeUniform}[0]) * 0.5));
-      //int packedTexShapeC = int(ceil(float(${texShapeUniform}[1]) * 0.5));
-
-      int packedTexShapeR = ${packedTexShapeUniform}[0];
-      int packedTexShapeC = ${packedTexShapeUniform}[1];
-
       int valuesPerRow = int(ceil(float(${shapeUniform}[1]) * 0.5));
 
       vec2 uv = packedUVfrom2D(valuesPerRow,
-        ${packedTexShapeUniform}[0], packedTexShapeC, row, col);
+        ${packedTexShapeUniform}[0], ${packedTexShapeUniform}[1], row, col);
       return ${glsl.texture2D}(${texName}, uv);
     }
   `;
@@ -932,20 +930,18 @@ function getPackedSampler3D(inputInfo: InputInfo): string {
       `;
   }
 
-  const texShapeUniform = `texShape${texName}`;
   const shapeUniform = `shape${texName}`;
+  const packedTexShapeUniform = `packedTexShape${texName}`;
   const glsl = getGlslDifferences();
 
   return `
     vec4 ${funcName}(int b, int row, int col) {
-      int packedTexShapeR = int(ceil(float(${texShapeUniform}[0]) * 0.5));
-      int packedTexShapeC = int(ceil(float(${texShapeUniform}[1]) * 0.5));
       int valuesPerRow = int(ceil(float(${shapeUniform}[2]) * 0.5));
       int texelsInBatch = valuesPerRow *
         int(ceil(float(${shapeUniform}[1]) * 0.5));
 
       vec2 uv = packedUVfrom3D(
-        packedTexShapeR, packedTexShapeC, texelsInBatch,
+        ${packedTexShapeUniform}[0], ${packedTexShapeUniform}[1], texelsInBatch,
         valuesPerRow, b, row, col);
       return ${glsl.texture2D}(${texName}, uv);
     }
@@ -960,8 +956,8 @@ function getSampler3D(inputInfo: InputInfo): string {
 
   const stride0 = shape[1] * shape[2];
   const stride1 = shape[2];
-  const stride0Prog = `${shapeUniform}[1] * ${shapeUniform}[2]`;
-  const stride1Prog = `${shapeUniform}[2]`;
+
+  const strideUniform = `strides${texName}`;
 
   const {newShape, keptDims} = util.squeezeShape(shape);
   const squeezedShape = newShape;
@@ -981,7 +977,7 @@ function getSampler3D(inputInfo: InputInfo): string {
     return `
       float ${funcName}(int row, int col, int depth) {
         int index = round(dot(vec3(row, col, depth),
-                          vec3(${stride0Prog}, ${stride1Prog}, 1)));
+                          vec3(${strideUniform}[0], ${strideUniform}[1], 1)));
         ${getUniformSampler(inputInfo)}
       }
     `;
@@ -996,7 +992,7 @@ function getSampler3D(inputInfo: InputInfo): string {
     return `
         float ${funcName}(int row, int col, int depth) {
           float texR = float(row);
-          float texC = dot(vec2(col, depth), vec2(${stride1Prog}, 1));
+          float texC = dot(vec2(col, depth), vec2(${strideUniform}[1], 1));
           vec2 uv = (vec2(texC, texR) + halfCR) /
                      vec2(float(${texShapeUniform}[1]),
                       float(${texShapeUniform}[0]));
@@ -1022,8 +1018,8 @@ function getSampler3D(inputInfo: InputInfo): string {
   return `
       float ${funcName}(int row, int col, int depth) {
         // Explicitly use integer operations as dot() only works on floats.
-        int index = row * ${stride0Prog} + col * ${stride1Prog} + depth +
-          ${offset};
+        int index = row * ${strideUniform}[0] + col * ${strideUniform}[1] + 
+           depth + ${offset};
         vec2 uv = uvFromFlat(${texShapeUniform}[0],
           ${texShapeUniform}[1], index);
         return sampleTexture(${texName}, uv);
@@ -1047,12 +1043,12 @@ function getPackedSamplerND(inputInfo: InputInfo): string {
     index = `b${b} * ${texelsInBatch} + ` + index;
   }
   const glsl = getGlslDifferences();
-  const texShapeUniform = `texShape${texName}`;
+  const packedTexShapeUniform = `packedTexShape${texName}`;
   return `
     vec4 ${funcName}(${params}) {
       int index = ${index};
-      int packedTexShapeR = int(ceil(float(${texShapeUniform}[0]) * 0.5));
-      int packedTexShapeC = int(ceil(float(${texShapeUniform}[1]) * 0.5));
+      int packedTexShapeR = ${packedTexShapeUniform}[0];
+      int packedTexShapeC = ${packedTexShapeUniform}[1];
 
       int texR = index / packedTexShapeC;
       int texC = index - texR * packedTexShapeC;
@@ -1071,9 +1067,8 @@ function getSampler4D(inputInfo: InputInfo): string {
   const stride2 = shape[3];
   const stride1 = shape[2] * stride2;
   const stride0 = shape[1] * stride1;
-  const stride2Prog = `${shapeUniform}[3]`;
-  const stride1Prog = `${shapeUniform}[2] * ${stride2Prog}`;
-  const stride0Prog = `${shapeUniform}[1] * ${stride1Prog}`;
+
+  const strideUniform = `strides${texName}`;
 
   const {newShape, keptDims} = util.squeezeShape(shape);
   if (newShape.length < shape.length) {
@@ -1092,8 +1087,8 @@ function getSampler4D(inputInfo: InputInfo): string {
     return `
       float ${funcName}(int row, int col, int depth, int depth2) {
         int index = round(dot(vec4(row, col, depth, depth2),
-                          vec4(${stride0Prog}, ${stride1Prog}, ${
-        stride2Prog}, 1)));
+                          vec4(${strideUniform}[0], ${strideUniform}[0], 
+                               ${strideUniform}[2], 1)));
         ${getUniformSampler(inputInfo)}
       }
     `;
@@ -1112,7 +1107,7 @@ function getSampler4D(inputInfo: InputInfo): string {
         float texR = float(row);
         float texC =
             dot(vec3(col, depth, depth2),
-                vec3(${stride1Prog}, ${stride2Prog}, 1));
+                vec3(${strideUniform}[1], ${strideUniform}[2], 1));
         vec2 uv = (vec2(texC, texR) + halfCR) /
                    vec2(float(${texShapeUniform}[1]),
                     float(${texShapeUniform}[0]));
@@ -1141,8 +1136,8 @@ function getSampler4D(inputInfo: InputInfo): string {
   return `
     float ${funcName}(int row, int col, int depth, int depth2) {
       // Explicitly use integer operations as dot() only works on floats.
-      int index = row * ${stride0Prog} + col * ${stride1Prog} +
-          depth * ${stride2Prog} + depth2;
+      int index = row * ${strideUniform}[0] + col * ${strideUniform}[1] +
+          depth * ${strideUniform}[2] + depth2;
       vec2 uv = uvFromFlat(
         ${texShapeUniform}[0],
         ${texShapeUniform}[1],
@@ -1162,10 +1157,8 @@ function getSampler5D(inputInfo: InputInfo): string {
   const stride0 = shape[1] * stride1;
 
   const shapeUniform = `shape${texName}`;
-  const stride3Prog = `${shapeUniform}[4]`;
-  const stride2Prog = `${shapeUniform}[3] * ${stride3Prog}`;
-  const stride1Prog = `${shapeUniform}[2] * ${stride2Prog}`;
-  const stride0Prog = `${shapeUniform}[1] * ${stride1Prog}`;
+  const strideUniform = `strides${texName}`;
+
 
   const {newShape, keptDims} = util.squeezeShape(shape);
   if (newShape.length < shape.length) {
@@ -1185,9 +1178,8 @@ function getSampler5D(inputInfo: InputInfo): string {
       float ${funcName}(int row, int col, int depth, int depth2, int depth3) {
         float index = dot(
           vec4(row, col, depth, depth2),
-          vec4(${stride0Prog}, ${stride1Prog}, ${stride2Prog}, ${
-        stride3Prog})) +
-          depth3;
+          vec4(${strideUniform}[0], ${strideUniform}[1], ${strideUniform}[2], 
+               ${strideUniform}[3])) + depth3;
         ${getUniformSampler(inputInfo)}
       }
     `;
@@ -1206,8 +1198,8 @@ function getSampler5D(inputInfo: InputInfo): string {
       float ${funcName}(int row, int col, int depth, int depth2, int depth3) {
         int texR = row;
         float texC = dot(vec4(col, depth, depth2, depth3),
-                         vec4(${stride1Prog}, ${stride2Prog},
-                            ${stride3Prog}, 1));
+                         vec4(${strideUniform}[1], ${strideUniform}[2],
+                            ${strideUniform}[3], 1));
         vec2 uv = (vec2(texC, texR) + halfCR) /
                    vec2(float(${texShapeUniform}[1]),
                     float(${texShapeUniform}[0]));
@@ -1237,8 +1229,9 @@ function getSampler5D(inputInfo: InputInfo): string {
   return `
     float ${funcName}(int row, int col, int depth, int depth2, int depth3) {
       // Explicitly use integer operations as dot() only works on floats.
-      int index = row * ${stride0Prog} + col * ${stride1Prog} + depth * ${
-      stride2Prog} + depth2 * ${stride3Prog} + depth3 + ${offset};
+      int index = row * ${strideUniform}[0] + col * ${
+      strideUniform}[1] + depth * ${strideUniform}[2] + depth2 * ${
+      strideUniform}[3] + depth3 + ${offset};
       vec2 uv = uvFromFlat(${texShapeUniform}[0], ${texShapeUniform}[1], index);
       return sampleTexture(${texName}, uv);
     }
@@ -1270,11 +1263,7 @@ function getSampler6D(inputInfo: InputInfo): string {
   const stride0 = shape[1] * stride1;
 
   const shapeUniform = `shape${texName}`;
-  const stride4Prog = `${shapeUniform}[5]`;
-  const stride3Prog = `${shapeUniform}[4] * ${stride4Prog}`;
-  const stride2Prog = `${shapeUniform}[3] * ${stride3Prog}`;
-  const stride1Prog = `${shapeUniform}[2] * ${stride2Prog}`;
-  const stride0Prog = `${shapeUniform}[1] * ${stride1Prog}`;
+  const strideUniform = `strides${texName}`;
 
   if (inputInfo.shapeInfo.isUniform) {
     // Uniform arrays will be less than 65505 (no risk of float16 overflow).
@@ -1283,11 +1272,11 @@ function getSampler6D(inputInfo: InputInfo): string {
                   int depth2, int depth3, int depth4) {
         int index = round(dot(
           vec4(row, col, depth, depth2),
-          vec4(${stride0Prog}, ${stride1Prog}, ${stride2Prog}, ${
-        stride3Prog})) +
+          vec4(${strideUniform}[0], ${strideUniform}[1], ${strideUniform}[2], ${
+        strideUniform}[3])) +
           dot(
             vec2(depth3, depth4),
-            vec2(${stride4Prog}, 1)));
+            vec2(${strideUniform}[4], 1)));
         ${getUniformSampler(inputInfo)}
       }
     `;
@@ -1306,7 +1295,8 @@ function getSampler6D(inputInfo: InputInfo): string {
         int texR = row;
         float texC = dot(
           vec4(col, depth, depth2, depth3),
-          vec4(${stride1Prog}, ${stride2Prog}, ${stride3Prog}, ${stride4Prog}))
+          vec4(${strideUniform}[1], ${strideUniform}[2], ${strideUniform}[3], 
+            ${strideUniform}[4]))
              + float(depth4);
         vec2 uv = (vec2(texC, texR) + halfCR) /
                    vec2(float(${texShapeUniform}[1]),
@@ -1338,8 +1328,9 @@ function getSampler6D(inputInfo: InputInfo): string {
     float ${funcName}(int row, int col, int depth,
                   int depth2, int depth3, int depth4) {
       // Explicitly use integer operations as dot() only works on floats.
-      int index = row * ${stride0Prog} + col * ${stride1Prog} + depth * ${
-      stride2Prog} + depth2 * ${stride3Prog} + depth3 * ${stride4Prog} +
+      int index = row * ${strideUniform}[0] + col * ${
+      strideUniform}[1] + depth * ${strideUniform}[2] + depth2 * ${
+      strideUniform}[3] + depth3 * ${strideUniform}[4] +
       depth4 + ${offset};
       vec2 uv = uvFromFlat(${texShapeUniform}[0], ${texShapeUniform}[1], index);
       return sampleTexture(${texName}, uv);
