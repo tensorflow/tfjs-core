@@ -125,6 +125,9 @@ export function compileProgram<T extends Tensor, K extends Tensor>(
     if (inShapeInfo.logicalShape.length > 0) {
       const varShapeName = `shape${inputInfo.name}`;
       const varTexShapeName = `texShape${inputInfo.name}`;
+      const varStridesName = `strides${inputInfo.name}`;
+      const varPackedTexShapeName = `packedTexShape${inputInfo.name}`;
+
       const shouldThrow = false;
       const shapeLocation =
           gpgpu.getUniformLocation(webGLProgram, varShapeName, shouldThrow);
@@ -136,6 +139,18 @@ export function compileProgram<T extends Tensor, K extends Tensor>(
           gpgpu.getUniformLocation(webGLProgram, varTexShapeName, shouldThrow);
       if (texShapeLocation != null) {
         uniformLocations[varTexShapeName] = texShapeLocation;
+      }
+
+      const varStridesLocation =
+          gpgpu.getUniformLocation(webGLProgram, varStridesName, shouldThrow);
+      if (varStridesLocation != null) {
+        uniformLocations[varStridesName] = varStridesLocation;
+      }
+
+      const varPackedTexShapeLocation = gpgpu.getUniformLocation(
+          webGLProgram, varPackedTexShapeName, shouldThrow);
+      if (varPackedTexShapeLocation != null) {
+        uniformLocations[varPackedTexShapeName] = varPackedTexShapeLocation;
       }
     }
   }
@@ -255,14 +270,12 @@ export function runProgram<T extends Tensor, K extends Tensor>(
       }
       return;
     }
-    // Upload the shape/texShape information as a uniform as well.
-    const varShapeName = `shape${varName}`;
-    const varShapeLoc = binary.uniformLocations[varShapeName];
+    // Upload shape information as uniform.
+    const varShapeLoc = binary.uniformLocations[`shape${varName}`];
     if (varShapeLoc != null) {
       let shape: number[]|Int32Array;
       if (binary.program.usesPackedTextures) {
         shape = util.packedShapeTransform(input.shape);
-        // TODO yassogba@ should anything special happen for isPackShader?
       } else {
         // Call squeezeShape to match the shape used in the shader program
         const {newShape} = util.squeezeShape(input.shape);
@@ -275,8 +288,22 @@ export function runProgram<T extends Tensor, K extends Tensor>(
       gpgpu.gl.uniform1iv(varShapeLoc, shape);
     }
 
-    const varTexShapeName = `texShape${varName}`;
-    const varTexShapeLoc = binary.uniformLocations[varTexShapeName];
+    // Upload precomputed strides
+    const varStridesLoc = binary.uniformLocations[`strides${varName}`];
+    if (varStridesLoc != null) {
+      let strides: number[]|Int32Array;
+      const {newShape} = util.squeezeShape(input.shape);
+      strides = util.computeStrides(newShape);
+
+      if (!(strides instanceof Int32Array)) {
+        strides = new Int32Array(strides);
+      }
+      gpgpu.gl.uniform1iv(varStridesLoc, strides);
+    }
+
+
+    // Upload texShape/packedTexShape information as uniform.
+    const varTexShapeLoc = binary.uniformLocations[`texShape${varName}`];
     // TODO(yassogba, nsthoat) rename/document these two shapes:
     // input.texData.shape and input.texData.texShape
     // to make it more apparent why they are both needed.
@@ -285,6 +312,15 @@ export function runProgram<T extends Tensor, K extends Tensor>(
       texShape = new Int32Array(texShape);
     }
     gpgpu.gl.uniform1iv(varTexShapeLoc, texShape);
+    if (binary.program.usesPackedTextures) {
+      const varPackedTexShapeLoc =
+          binary.uniformLocations[`packedTexShape${varName}`];
+      if (varPackedTexShapeLoc != null) {
+        const packedTexShape =
+            [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
+        gpgpu.gl.uniform1iv(varPackedTexShapeLoc, packedTexShape);
+      }
+    }
 
     // If the input was sliced, upload the flat offset index.
     if (input.texData.slice != null && varOffsetLoc != null) {
@@ -295,6 +331,7 @@ export function runProgram<T extends Tensor, K extends Tensor>(
   });
 
   // Upload output shape uniforms
+  // TODO yassogba upload outputStrides and outputPackedTexShape
   if (output.shape.length > 0) {
     const outputShapeName = `outputShape`;
     const outputShapeLoc = binary.uniformLocations[outputShapeName];

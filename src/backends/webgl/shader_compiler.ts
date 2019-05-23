@@ -159,6 +159,8 @@ function getInputSamplingSnippet(
   const inputName = inInfo.name;
   const shapeUniform = `shape${inputName}`;
   const texShapeUniform = `texShape${inputName}`;
+  const stridesUniform = `strides${inputName}`;
+  const packedTexShapeUniform = `packedTexShape${inputName}`;
 
   let sampler;
   if (usesPackedTextures) {
@@ -173,10 +175,16 @@ function getInputSamplingSnippet(
   // for a good cache hit).
   if (inInfo.shapeInfo.logicalShape.length > 0) {
     if (sampler.indexOf(shapeUniform) !== -1) {
-      res += `uniform int shape${inputName}[${MAX_TENSOR_RANK}]; \n`;
+      res += `uniform int ${shapeUniform}[${MAX_TENSOR_RANK}]; \n`;
+    }
+    if (sampler.indexOf(stridesUniform) !== -1) {
+      res += `uniform int ${stridesUniform}[${MAX_TENSOR_RANK - 1}]; \n`;
     }
     if (sampler.indexOf(texShapeUniform) !== -1) {
-      res += `uniform int texShape${inputName}[${TEXSHAPE_RANK}]; \n`;
+      res += `uniform int ${texShapeUniform}[${TEXSHAPE_RANK}]; \n`;
+    }
+    if (sampler.indexOf(packedTexShapeUniform) !== -1) {
+      res += `uniform int ${packedTexShapeUniform}[${TEXSHAPE_RANK}]; \n`;
     }
   }
   res += sampler;
@@ -807,15 +815,19 @@ function getPackedSampler2D(inputInfo: InputInfo): string {
   }
 
   const shapeUniform = `shape${texName}`;
+  const packedTexShapeUniform = `packedTexShape${texName}`;
   return `
     vec4 ${funcName}(int row, int col) {
-      int packedTexShapeR = int(ceil(float(${texShapeUniform}[0]) * 0.5));
-      int packedTexShapeC = int(ceil(float(${texShapeUniform}[1]) * 0.5));
+      //int packedTexShapeR = int(ceil(float(${texShapeUniform}[0]) * 0.5));
+      //int packedTexShapeC = int(ceil(float(${texShapeUniform}[1]) * 0.5));
+
+      int packedTexShapeR = ${packedTexShapeUniform}[0];
+      int packedTexShapeC = ${packedTexShapeUniform}[1];
 
       int valuesPerRow = int(ceil(float(${shapeUniform}[1]) * 0.5));
 
       vec2 uv = packedUVfrom2D(valuesPerRow,
-        packedTexShapeR, packedTexShapeC, row, col);
+        ${packedTexShapeUniform}[0], packedTexShapeC, row, col);
       return ${glsl.texture2D}(${texName}, uv);
     }
   `;
