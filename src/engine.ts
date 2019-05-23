@@ -835,7 +835,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
 
     const srcBackend = info.backend;
     destBackend = destBackend || this.backend;
-   
+
     // Bytes for string tensors are counted when writing.
     if (info.dtype === 'string') {
       const newBytes = bytesFromStringArray(values as string[]);
@@ -846,7 +846,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     if (destBackend !== srcBackend) {
       // Delete the tensor from the old backend and move it to the new
       // backend.
-      info.backend.disposeData(dataId);
+      srcBackend.disposeData(dataId);
       info.backend = destBackend;
       destBackend.register(dataId, info.shape, info.dtype);
     }
