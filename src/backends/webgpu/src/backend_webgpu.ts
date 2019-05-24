@@ -24,7 +24,6 @@ import * as backend_util from '@tensorflow/tfjs-core/dist/backends/backend_util'
 import {computeOutShape} from '@tensorflow/tfjs-core/dist/ops/concat_util';
 import {Conv2DInfo} from '@tensorflow/tfjs-core/dist/ops/conv_util';
 import {TypedArray, upcastType} from '@tensorflow/tfjs-core/dist/types';
-import {assert} from '@tensorflow/tfjs-core/dist/util';
 import * as shaderc from '@webgpu/shaderc';
 
 import {ArgMinMaxProgram} from './kernels/argminmax_webgpu';
@@ -246,7 +245,7 @@ export class WebGPUBackend extends KernelBackend {
           baseAlignment = 4;
           break;
         default:
-          assert(false, () => `Unsupported ${d.length}D shape`);
+          util.assert(false, () => `Unsupported ${d.length}D shape`);
       }
 
       const padding = Math.ceil(currentOffset / baseAlignment) * baseAlignment -
