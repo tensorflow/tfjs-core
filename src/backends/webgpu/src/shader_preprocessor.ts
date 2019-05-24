@@ -162,7 +162,6 @@ function getSetOutputSnippet(outRank: number, outBufferType: DataType): string {
       result[flatIndex] = ${
       mapToGlslTypes(outBufferType) === 'int' ? 'int(value)' : 'value'};
     }
-    
     void setOutput(uint flatIndex, int value) {
       result[flatIndex] = ${
       mapToGlslTypes(outBufferType) === 'float' ? 'float(value)' : 'value'};
@@ -177,7 +176,6 @@ function getSetOutputSnippet(outRank: number, outBufferType: DataType): string {
         uint flatIndex = getFlatIndex(${type}(${dims.join(', ')}), outShape);
         setOutput(flatIndex, value);
       }
-
       void setOutput(${dims.map(d => `int ${d}`).join(', ')}, int value) {
         uint flatIndex = getFlatIndex(${type}(${dims.join(', ')}), outShape);
         setOutput(flatIndex, value);

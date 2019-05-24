@@ -11,7 +11,6 @@
 cloudbuild.yml
 coverage/
 demo/
-DEVELOPMENT.md
 dist/**/*_test.d.ts
 dist/**/*_test.js
 karma.conf.js
