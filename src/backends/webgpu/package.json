@@ -6,6 +6,8 @@
   "scripts": {
     "publish-local": "rimraf dist/ && yarn build && rollup -c && yalc push",
     "build": "tsc",
+    "link-local": "yalc link",
+    "unlink-local": "yalc remove",
     "lint": "tslint -p . -t verbose",
     "test": "karma start --browsers='chrome_webgpu'",
     "test-ci": "./scripts/test-ci.sh"
@@ -34,8 +36,10 @@
     "yalc": "~1.0.0-pre.21"
   },
   "dependencies": {
-    "@tensorflow/tfjs-core": "1.2.0",
     "@webgpu/shaderc": "0.0.6",
     "@webgpu/types": "0.0.3"
+  },
+  "peerDependencies": {
+    "@tensorflow/tfjs-core": "1.2.0"
   }
 }
