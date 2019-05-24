@@ -92,14 +92,17 @@ export function assembleProgramSource(
   };
 }
 
-function recordUniformLocation(
+function recordUniformLocations(
     gpgpu: GPGPUContext, webGLProgram: WebGLProgram,
-    uniformLocations: {[name: string]: WebGLUniformLocation}, varName: string,
-    shouldThrow: boolean) {
-  const varLocation =
-      gpgpu.getUniformLocation(webGLProgram, varName, shouldThrow);
-  if (varLocation != null) {
-    uniformLocations[varName] = varLocation;
+    uniformLocations: {[name: string]: WebGLUniformLocation},
+    shouldThrow: boolean, varNames: string[]) {
+  for (let i = 0; i < varNames.length; i++) {
+    const varName = varNames[i];
+    const varLocation =
+        gpgpu.getUniformLocation(webGLProgram, varName, shouldThrow);
+    if (varLocation != null) {
+      uniformLocations[varName] = varLocation;
+    }
   }
 }
 
@@ -135,31 +138,29 @@ export function compileProgram<T extends Tensor, K extends Tensor>(
 
     if (inShapeInfo.logicalShape.length > 0) {
       const shouldThrow = false;
-      recordUniformLocation(
-          gpgpu, webGLProgram, uniformLocations, `shape${inputInfo.name}`,
-          shouldThrow);
-      recordUniformLocation(
-          gpgpu, webGLProgram, uniformLocations, `texShape${inputInfo.name}`,
-          shouldThrow);
-      recordUniformLocation(
-          gpgpu, webGLProgram, uniformLocations, `strides${inputInfo.name}`,
-          shouldThrow);
-      recordUniformLocation(
-          gpgpu, webGLProgram, uniformLocations,
-          `packedTexShape${inputInfo.name}`, shouldThrow);
+      recordUniformLocations(
+          gpgpu, webGLProgram, uniformLocations, shouldThrow, [
+            `shape${inputInfo.name}`,
+            `texShape${inputInfo.name}`,
+            `strides${inputInfo.name}`,
+            `packedTexShape${inputInfo.name}`,
+            `valuesPerRow${inputInfo.name}`,
+            `texelsInBatch${inputInfo.name}`,
+          ]);
     }
   }
 
   // Record location of uniforms for output
   if (outShapeInfo.logicalShape.length > 0) {
     const shouldThrow = false;
-    recordUniformLocation(
-        gpgpu, webGLProgram, uniformLocations, 'outputShape', shouldThrow);
-    recordUniformLocation(
-        gpgpu, webGLProgram, uniformLocations, 'outputTexShape', shouldThrow);
-    recordUniformLocation(
-        gpgpu, webGLProgram, uniformLocations, 'outputPackedTexShape',
-        shouldThrow);
+    recordUniformLocations(gpgpu, webGLProgram, uniformLocations, shouldThrow, [
+      'outputShape',
+      'outputStrides',
+      'outputTexShape',
+      'outputPackedTexShape',
+      'outputTexelsInLogicalRow',
+      'outputTexelsInBatch',
+    ]);
   }
 
   const inShapeInfos = inputInfos.map(x => x.shapeInfo);
@@ -223,6 +224,16 @@ function uploadUniform1iv(
   }
 }
 
+function uploadUniform1i(
+    gpgpu: GPGPUContext, binary: GPGPUBinary, uniformName: string,
+    values: () => number) {
+  const varStridesLoc = binary.uniformLocations[uniformName];
+  if (varStridesLoc != null) {
+    const val = values();
+    gpgpu.gl.uniform1i(varStridesLoc, val);
+  }
+}
+
 export function runProgram<T extends Tensor, K extends Tensor>(
     gpgpu: GPGPUContext, binary: GPGPUBinary, inputs: TensorData[],
     output: TensorData,
@@ -259,7 +270,6 @@ export function runProgram<T extends Tensor, K extends Tensor>(
   inputs.forEach((input, i) => {
     const varName = binary.program.variableNames[i];
     const varLoc = binary.uniformLocations[varName];
-    const varOffsetLoc = binary.uniformLocations[`offset${varName}`];
 
     if (varLoc == null) {
       // The compiler inferred that this variable is not used in this shader.
@@ -280,36 +290,47 @@ export function runProgram<T extends Tensor, K extends Tensor>(
       return;
     }
 
-    uploadUniform1iv(gpgpu, binary, `shape${varName}`, () => {
-      if (binary.program.usesPackedTextures) {
-        return util.packedShapeTransform(input.shape);
-      } else {
-        // Call squeezeShape to match the shape used in the shader program
-        const {newShape} = util.squeezeShape(input.shape);
-        return newShape;
-      }
-    });
-
-    uploadUniform1iv(gpgpu, binary, `strides${varName}`, () => {
+    // Compute shape here as it is used in a number of uniforms
+    let shape: number[];
+    if (binary.program.usesPackedTextures) {
+      shape = util.packedShapeTransform(input.shape);
+    } else {
+      // Call squeezeShape to match the shape used in the shader program
       const {newShape} = util.squeezeShape(input.shape);
-      return util.computeStrides(newShape);
-    });
+      shape = newShape;
+    }
 
-    uploadUniform1iv(gpgpu, binary, `texShape${varName}`, () => {
-      // TODO(yassogba, nsthoat) rename/document these two shapes:
-      // input.texData.shape and input.texData.texShape
-      // to make it more apparent why they are both needed.
-      return input.texData.texShape;
-    });
+    uploadUniform1iv(gpgpu, binary, `shape${varName}`, () => shape);
+    uploadUniform1iv(
+        gpgpu, binary, `strides${varName}`, () => util.computeStrides(shape));
+
+    // TODO(yassogba, nsthoat) rename/document these two shapes:
+    // input.texData.shape and input.texData.texShape
+    // to make it more apparent why they are both needed.
+    uploadUniform1iv(
+        gpgpu, binary, `texShape${varName}`, () => input.texData.texShape);
 
     uploadUniform1iv(gpgpu, binary, `packedTexShape${varName}`, () => {
       const texShape = input.texData.texShape;
       return [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
     });
 
+    uploadUniform1i(gpgpu, binary, `valuesPerRow${varName}`, () => {
+      const rank = shape.length;
+      return Math.ceil(shape[rank - 1] / 2);
+    });
+
+    uploadUniform1i(gpgpu, binary, `texelsInBatch${varName}`, () => {
+      const rank = shape.length;
+      const valuesPerRow = Math.ceil(shape[rank - 1] / 2);
+      return valuesPerRow * Math.ceil(shape[rank - 2] / 2);
+    });
+
     // If the input was sliced, upload the flat offset index.
-    if (input.texData.slice != null && varOffsetLoc != null) {
-      gpgpu.gl.uniform1i(varOffsetLoc, input.texData.slice.flatOffset);
+    if (input.texData.slice != null) {
+      uploadUniform1i(
+          gpgpu, binary, `offset${varName}`,
+          () => input.texData.slice.flatOffset);
     }
 
     gpgpu.setInputMatrixTexture(input.texData.texture, varLoc, i);
@@ -318,6 +339,11 @@ export function runProgram<T extends Tensor, K extends Tensor>(
   // Upload output shape uniforms
   if (output.shape.length > 0) {
     uploadUniform1iv(gpgpu, binary, 'outputShape', () => output.shape);
+
+    uploadUniform1iv(gpgpu, binary, 'outputStrides', () => {
+      const shape = output.shape;
+      return util.computeStrides(shape);
+    });
 
     // TODO(yassogba, nsthoat) rename/document these two shapes:
     // output.texData.shape and output.texData.texShape
@@ -334,6 +360,17 @@ export function runProgram<T extends Tensor, K extends Tensor>(
       return [Math.ceil(texShape[0] / 2), Math.ceil(texShape[1] / 2)];
     });
     // }
+
+    uploadUniform1i(gpgpu, binary, 'outputTexelsInLogicalRow', () => {
+      const shape = output.shape;
+      return Math.ceil(shape[shape.length - 1] / 2);
+    });
+
+    uploadUniform1i(gpgpu, binary, 'outputTexelsInBatch', () => {
+      const shape = output.shape;
+      const texelsInLogicalRow = Math.ceil(shape[shape.length - 1] / 2);
+      return texelsInLogicalRow * Math.ceil(shape[shape.length - 2] / 2);
+    });
   }
 
   if (customSetup != null) {

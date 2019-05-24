@@ -24,12 +24,12 @@ import * as util from '../../util';
  */
 export function getLogicalCoordinatesFromFlatIndex(
     coords: string[], shape: number[], index = 'index',
-    shapeUniform?: string): string {
+    stridesUniform?: string): string {
   let strides: Array<string|number>;
   // If a uniform name is passed, we will splice in expressions that use the
   // shape information rather than splicing shape values in directly.
-  if (shapeUniform != null) {
-    strides = util.computeStrideExpr(shape, shapeUniform);
+  if (stridesUniform != null) {
+    strides = util.computeStrideExpr(shape, stridesUniform);
   } else {
     strides = util.computeStrides(shape);
   }

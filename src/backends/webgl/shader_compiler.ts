@@ -140,11 +140,14 @@ function getPackedSamplerFromInInfo(inInfo: InputInfo): string {
 function getOutputShapeSnippet(
     texShape: [number, number], isPacked: boolean): string {
   let snip = `uniform int outputShape[${MAX_TENSOR_RANK}]; \n`;
+  snip += `uniform int outputStrides[${MAX_TENSOR_RANK - 1}]; \n`;
   if (texShape) {
     snip += `uniform int outputTexShape[${TEXSHAPE_RANK}]; \n`;
   }
   if (texShape && isPacked) {
     snip += `uniform int outputPackedTexShape[${TEXSHAPE_RANK}]; \n`;
+    snip += `uniform int outputTexelsInLogicalRow; \n`;
+    snip += `uniform int outputTexelsInBatch; \n`;
   }
   return snip;
 }
@@ -158,6 +161,8 @@ function getInputSamplingSnippet(
   const texShapeUniform = `texShape${inputName}`;
   const stridesUniform = `strides${inputName}`;
   const packedTexShapeUniform = `packedTexShape${inputName}`;
+  const valuesPerRowUniform = `valuesPerRow${inputName}`;
+  const texelsInBatchUniform = `texelsInBatch${inputName}`;
 
   let sampler;
   if (usesPackedTextures) {
@@ -182,6 +187,12 @@ function getInputSamplingSnippet(
     }
     if (sampler.indexOf(packedTexShapeUniform) !== -1) {
       res += `uniform int ${packedTexShapeUniform}[${TEXSHAPE_RANK}]; \n`;
+    }
+    if (sampler.indexOf(valuesPerRowUniform) !== -1) {
+      res += `uniform int ${valuesPerRowUniform}; \n`;
+    }
+    if (sampler.indexOf(texelsInBatchUniform) !== -1) {
+      res += `uniform int ${texelsInBatchUniform}; \n`;
     }
   }
   res += sampler;
@@ -468,19 +479,15 @@ function getOutputPacked3DCoords(
       int packedTexShapeR = outputPackedTexShape[0];
       int packedTexShapeC = outputPackedTexShape[1];
 
-      int texelsInLogicalRow = int(ceil(float(outputShape[2]) * 0.5));
-      int texelsInBatch = texelsInLogicalRow *
-        int(ceil(float(outputShape[1]) * 0.5));
-
       ivec2 resTexRC = ivec2(resultUV.yx *
                              vec2(packedTexShapeR, packedTexShapeC));
       int index = resTexRC.x * packedTexShapeC + resTexRC.y;
 
-      int b = index / texelsInBatch;
-      index -= b * texelsInBatch;
+      int b = index / outputTexelsInBatch;
+      index -= b * outputTexelsInBatch;
 
-      int r = 2 * (index / texelsInLogicalRow);
-      int c = imod(index, texelsInLogicalRow) * 2;
+      int r = 2 * (index / outputTexelsInLogicalRow);
+      int c = imod(index, outputTexelsInLogicalRow) * 2;
 
       return ivec3(b, r, c);
     }
@@ -490,7 +497,7 @@ function getOutputPacked3DCoords(
 function getOutput3DCoords(
     shape: [number, number, number], texShape: [number, number]): string {
   const coordsFromIndexSnippet = shader_util.getLogicalCoordinatesFromFlatIndex(
-      ['r', 'c', 'd'], shape, 'index', 'outputShape');
+      ['r', 'c', 'd'], shape, 'index', 'outputStrides');
   return `
     ivec3 getOutputCoords() {
       ivec2 resTexRC = ivec2(resultUV.yx *
@@ -525,11 +532,6 @@ function getOutputPackedNDCoords(
     ivec${shape.length} getOutputCoords() {
       int packedTexShapeR = outputPackedTexShape[0];
       int packedTexShapeC = outputPackedTexShape[1];
-      int texelsInLogicalRow = int(ceil(float(outputShape[${rank - 1}])
-      * 0.5));
-
-      int texelsInBatch = texelsInLogicalRow *
-        int(ceil(float(outputShape[${rank - 2}]) * 0.5));
 
       ivec2 resTexRC = ivec2(resultUV.yx *
                              vec2(packedTexShapeR, packedTexShapeC));
@@ -537,11 +539,11 @@ function getOutputPackedNDCoords(
 
       ${batches}
 
-      int b = index / texelsInBatch;
-      index -= b * texelsInBatch;
+      int b = index / outputTexelsInBatch;
+      index -= b * outputTexelsInBatch;
 
-      int r = 2 * (index / texelsInLogicalRow);
-      int c = imod(index, texelsInLogicalRow) * 2;
+      int r = 2 * (index / outputTexelsInLogicalRow);
+      int c = imod(index, outputTexelsInLogicalRow) * 2;
 
       return ivec${rank}(${coords});
     }
@@ -552,7 +554,7 @@ function getOutput4DCoords(
     shape: [number, number, number, number],
     texShape: [number, number]): string {
   const coordsFromIndexSnippet = shader_util.getLogicalCoordinatesFromFlatIndex(
-      ['r', 'c', 'd', 'd2'], shape, 'index', 'outputShape');
+      ['r', 'c', 'd', 'd2'], shape, 'index', 'outputStrides');
 
   return `
     ivec4 getOutputCoords() {
@@ -569,7 +571,7 @@ function getOutput5DCoords(
     shape: [number, number, number, number, number],
     texShape: [number, number]): string {
   const coordsFromIndexSnippet = shader_util.getLogicalCoordinatesFromFlatIndex(
-      ['r', 'c', 'd', 'd2', 'd3'], shape, 'index', 'outputShape');
+      ['r', 'c', 'd', 'd2', 'd3'], shape, 'index', 'outputStrides');
 
   return `
     ivec5 getOutputCoords() {
@@ -590,7 +592,7 @@ function getOutput6DCoords(
     shape: [number, number, number, number, number, number],
     texShape: [number, number]): string {
   const coordsFromIndexSnippet = shader_util.getLogicalCoordinatesFromFlatIndex(
-      ['r', 'c', 'd', 'd2', 'd3', 'd4'], shape, 'index', 'outputShape');
+      ['r', 'c', 'd', 'd2', 'd3', 'd4'], shape, 'index', 'outputStrides');
 
   return `
     ivec6 getOutputCoords() {
@@ -818,11 +820,11 @@ function getPackedSampler2D(inputInfo: InputInfo): string {
     `;
   }
 
-  const shapeUniform = `shape${texName}`;
   const packedTexShapeUniform = `packedTexShape${texName}`;
+  const valuesPerRowUniform = `valuesPerRow${texName}`;
   return `
     vec4 ${funcName}(int row, int col) {
-      int valuesPerRow = int(ceil(float(${shapeUniform}[1]) * 0.5));
+      int valuesPerRow = ${valuesPerRowUniform};
 
       vec2 uv = packedUVfrom2D(valuesPerRow,
         ${packedTexShapeUniform}[0], ${packedTexShapeUniform}[1], row, col);
@@ -930,15 +932,15 @@ function getPackedSampler3D(inputInfo: InputInfo): string {
       `;
   }
 
-  const shapeUniform = `shape${texName}`;
   const packedTexShapeUniform = `packedTexShape${texName}`;
+  const valuesPerRowUniform = `valuesPerRow${texName}`;
+  const texelsInBatchUniform = `texelsInBatch${texName}`;
   const glsl = getGlslDifferences();
 
   return `
     vec4 ${funcName}(int b, int row, int col) {
-      int valuesPerRow = int(ceil(float(${shapeUniform}[2]) * 0.5));
-      int texelsInBatch = valuesPerRow *
-        int(ceil(float(${shapeUniform}[1]) * 0.5));
+      int valuesPerRow = ${valuesPerRowUniform};
+      int texelsInBatch = ${texelsInBatchUniform};
 
       vec2 uv = packedUVfrom3D(
         ${packedTexShapeUniform}[0], ${packedTexShapeUniform}[1], texelsInBatch,
@@ -1159,7 +1161,6 @@ function getSampler5D(inputInfo: InputInfo): string {
   const shapeUniform = `shape${texName}`;
   const strideUniform = `strides${texName}`;
 
-
   const {newShape, keptDims} = util.squeezeShape(shape);
   if (newShape.length < shape.length) {
     const newInputInfo = squeezeInputInfo(inputInfo, newShape);
@@ -1345,10 +1346,9 @@ function getUniformSampler(inputInfo: InputInfo): string {
   if (inSize < 2) {
     return `return ${texName};`;
   }
-  // TODO yassogba@ potentially remove this.
-  const inSizeExpr = util.sizeFromShapeExpr(inputInfo.shapeInfo.logicalShape);
+
   return `
-    for (int i = 0; i < (${inSizeExpr}); i++) {
+    for (int i = 0; i < (${inSize}); i++) {
       if (i == index) {
         return ${texName}[i];
       }

@@ -175,23 +175,6 @@ export function sizeFromShape(shape: number[]): number {
   return size;
 }
 
-/**
- * returns a glsl expression to calculate the size from the shape.
- * @param shape
- */
-// TODO @yassogba add tests.
-export function sizeFromShapeExpr(shape: number[]): string {
-  if (shape.length === 0) {
-    // Scalar.
-    return `1`;
-  }
-  let size = `${shape[0]}`;
-  for (let i = 1; i < shape.length; i++) {
-    size += ` * ${shape[i]}`;
-  }
-  return size;
-}
-
 export function isScalarShape(shape: number[]): boolean {
   return shape.length === 0;
 }
@@ -583,12 +566,9 @@ export function computeStrideExpr(
     return [];
   }
 
-  // Last dimension has implicit stride of 1, thus having D-1 (instead of D)
-  // strides.
   const strides: string[] = new Array(rank - 1);
-  strides[rank - 2] = `${uniformName}[${rank - 1}]`;
-  for (let i = rank - 3; i >= 0; --i) {
-    strides[i] = `(${strides[i + 1]} * ${uniformName}[${i + 1}])`;
+  for (let i = 0; i < rank - 1; i++) {
+    strides[i] = `${uniformName}[${i}]`;
   }
   return strides;
 }
