@@ -84,15 +84,17 @@ export function makeShader(
     inputPrefixSnippet, outputSamplingSnippet, inputSamplingSnippet, userCode
   ].join('\n');
 
-  const keyElements = [
-    usesPackedTextures ? 'SHADER_PACKED_PREFIX_MARKER' : '',
-    outputShape.isPacked ? 'PACKED_floatTextureSetOutputSnippet_MARKER' : '',
-    inputPrefixSnippet,
-    outputSamplingSnippet,
-    inputSamplingSnippet,
-    userCode,
-  ];
-  const key = keyElements.join('\n');
+  // TODO placeholder for new key constuction
+  // const keyElements = [
+  //   usesPackedTextures ? 'SHADER_PACKED_PREFIX_MARKER' : '',
+  //   outputShape.isPacked ? 'PACKED_floatTextureSetOutputSnippet_MARKER' : '',
+  //   inputPrefixSnippet,
+  //   outputSamplingSnippet,
+  //   inputSamplingSnippet,
+  //   userCode,
+  // ];
+  // const key = keyElements.join('\n');
+  const key = '';
 
   return {source, key};
 }
@@ -438,8 +440,8 @@ function getOutputPacked1DCoords(
 
   return `
     int getOutputCoords() {
-      float packedTexShapeR = float(outputPackedTexShape[0]);
-      float packedTexShapeC = float(outputPackedTexShape[1]);
+      int packedTexShapeR = outputPackedTexShape[0];
+      int packedTexShapeC = outputPackedTexShape[1];
       ivec2 resTexRC = ivec2(resultUV.yx *
                              vec2(packedTexShapeR, packedTexShapeC));
       return resTexRC.x * packedTexShapeC + resTexRC.y;
