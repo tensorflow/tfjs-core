@@ -76,6 +76,10 @@ export class MathBackendCPU implements KernelBackend {
     if (ENV.get('IS_BROWSER')) {
       this.fromPixels2DContext =
           document.createElement('canvas').getContext('2d');
+    } else if (ENV.get('IS_WEBWORKER')) {
+      this.fromPixels2DContext =
+          //@ts-ignore
+          new OffscreenCanvas(300, 150).getContext('2d');
     }
     this.data = new DataStorage(ENGINE);
   }
@@ -135,6 +139,7 @@ export class MathBackendCPU implements KernelBackend {
         (pixels as PixelData).data instanceof Uint8Array) {
       vals = (pixels as PixelData | ImageData).data;
     } else if (
+        ENV.get('IS_BROWER') &&
         pixels instanceof HTMLImageElement ||
         pixels instanceof HTMLVideoElement) {
       if (this.fromPixels2DContext == null) {

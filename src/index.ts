@@ -28,6 +28,7 @@ import './backends/cpu/backend_cpu';
 
 import './platforms/platform_browser';
 import './platforms/platform_node';
+import './platforms/platform_webworker';
 
 import * as environment from './environment';
 // Serialization.

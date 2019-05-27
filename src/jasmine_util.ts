@@ -34,6 +34,9 @@ export const CHROME_ENVS: Constraints = {
 export const BROWSER_ENVS: Constraints = {
   predicate: () => ENV.platformName === 'browser'
 };
+export const WEBWORKER_ENVS: Constraints = {
+  predicate: () => ENV.platformName === 'webworker'
+};
 export const SYNC_BACKEND_ENVS: Constraints = {
   predicate: (testEnv: TestEnv) => testEnv.isDataSync === true
 };

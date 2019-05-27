@@ -61,6 +61,25 @@ describe('IS_BROWSER', () => {
   });
 });
 
+describe('IS_WEBWORKER', () => {
+  let isWebworker: boolean;
+  beforeEach(() => {
+    ENV.reset();
+    spyOn(device_util, 'isWebworker').and.callFake(() => isWebworker);
+  });
+  afterAll(() => ENV.reset());
+
+  it('isWebworker: true', () => {
+    isWebworker = true;
+    expect(ENV.getBool('IS_WEBWORKER')).toBe(true);
+  });
+
+  it('isWebworker: false', () => {
+    isBrowser = false;
+    expect(ENV.getBool('IS_WEBWORKER')).toBe(false);
+  });
+});
+
 describe('PROD', () => {
   beforeEach(() => ENV.reset());
   afterAll(() => ENV.reset());
