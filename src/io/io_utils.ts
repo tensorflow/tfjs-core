@@ -16,7 +16,6 @@
  */
 
 import {tensor} from '../ops/tensor_ops';
-import {Tensor} from '../tensor';
 import {NamedTensor, NamedTensorMap} from '../tensor_types';
 import {TypedArray} from '../types';
 import {sizeFromShape} from '../util';
@@ -94,7 +93,7 @@ export function decodeWeights(
     const dtype = spec.dtype;
     const shape = spec.shape;
     const size = sizeFromShape(shape);
-    let typedArray: TypedArray;
+    let values: TypedArray|string[];
 
     if ('quantization' in spec) {
       const quantization = spec.quantization;
@@ -111,43 +110,37 @@ export function decodeWeights(
           new Uint8Array(byteBuffer) :
           new Uint16Array(byteBuffer);
       if (dtype === 'float32') {
-        typedArray = Float32Array.from(
+        values = Float32Array.from(
             quantizedArray, v => v * quantization.scale + quantization.min);
       } else if (dtype === 'int32') {
-        typedArray = Int32Array.from(
+        values = Int32Array.from(
             quantizedArray,
             v => Math.round(v * quantization.scale + quantization.min));
       } else {
         throw new Error(`Unsupported dtype in weight '${name}': ${dtype}`);
       }
       offset += size * quantizationSizeFactor;
+    } else if (dtype === 'string') {
+      const decoder = new TextDecoder('utf-8');
+      const bytes = buffer.slice(offset, offset + spec.byte_length);
+      values = decoder.decode(bytes).split('\x00');
     } else {
       const dtypeFactor = DTYPE_VALUE_SIZE_MAP[dtype];
       const byteBuffer = buffer.slice(offset, offset + size * dtypeFactor);
 
       if (dtype === 'float32') {
-        typedArray = new Float32Array(byteBuffer);
+        values = new Float32Array(byteBuffer);
       } else if (dtype === 'int32') {
-        typedArray = new Int32Array(byteBuffer);
+        values = new Int32Array(byteBuffer);
       } else if (dtype === 'bool') {
-        typedArray = new Uint8Array(byteBuffer);
+        values = new Uint8Array(byteBuffer);
       } else {
         throw new Error(`Unsupported dtype in weight '${name}': ${dtype}`);
       }
       offset += size * dtypeFactor;
     }
 
-    let value: Tensor;
-    if (dtype === 'float32') {
-      value = tensor(typedArray, shape, 'float32');
-    } else if (dtype === 'int32') {
-      value = tensor(typedArray, shape, 'int32');
-    } else if (dtype === 'bool') {
-      value = tensor(typedArray, shape, 'bool');
-    } else {
-      throw new Error(`Unsupported dtype in weight '${name}': ${dtype}`);
-    }
-    out[name] = value;
+    out[name] = tensor(values, shape, dtype);
   }
   return out;
 }
