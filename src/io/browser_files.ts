@@ -99,13 +99,15 @@ export class BrowserDownloads implements IOHandler {
       await defer(() => jsonAnchor.dispatchEvent(new MouseEvent('click')));
 
       if (modelArtifacts.weightData != null) {
-        const weightDataAnchor = this.weightDataAnchor == null ?
-            document.createElement('a') :
-            this.weightDataAnchor;
-        weightDataAnchor.download = this.weightDataFileName;
-        weightDataAnchor.href = weightsURL;
-        await defer(
-            () => weightDataAnchor.dispatchEvent(new MouseEvent('click')));
+        if (ENV.getBool('IS_BROWSER')) {
+          const weightDataAnchor = this.weightDataAnchor == null ?
+              document.createElement('a') :
+              this.weightDataAnchor;
+          weightDataAnchor.download = this.weightDataFileName;
+          weightDataAnchor.href = weightsURL;
+          await defer(
+              () => weightDataAnchor.dispatchEvent(new MouseEvent('click')));
+        }
       }
 
       return {modelArtifactsInfo: getModelArtifactsInfoForJSON(modelArtifacts)};
