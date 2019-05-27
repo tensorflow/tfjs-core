@@ -97,6 +97,7 @@ import './optimizers/rmsprop_optimizer_test';
 import './optimizers/sgd_optimizer_test';
 import './platforms/platform_browser_test';
 import './platforms/platform_node_test';
+import './platforms/platform_webworker_test';
 import './profiler_test';
 import './serialization_test';
 import './tape_test';

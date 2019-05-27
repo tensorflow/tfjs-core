@@ -139,9 +139,9 @@ export class MathBackendCPU implements KernelBackend {
         (pixels as PixelData).data instanceof Uint8Array) {
       vals = (pixels as PixelData | ImageData).data;
     } else if (
-        ENV.get('IS_BROWER') &&
-        pixels instanceof HTMLImageElement ||
-        pixels instanceof HTMLVideoElement) {
+        ENV.get('IS_BROWSER') &&
+        (pixels instanceof HTMLImageElement ||
+        pixels instanceof HTMLVideoElement)) {
       if (this.fromPixels2DContext == null) {
         throw new Error(
             'Can\'t read pixels from HTMLImageElement outside ' +

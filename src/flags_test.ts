@@ -75,7 +75,7 @@ describe('IS_WEBWORKER', () => {
   });
 
   it('isWebworker: false', () => {
-    isBrowser = false;
+    isWebworker = false;
     expect(ENV.getBool('IS_WEBWORKER')).toBe(false);
   });
 });
