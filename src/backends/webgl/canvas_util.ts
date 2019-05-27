@@ -14,6 +14,7 @@
  * limitations under the License.
  * =============================================================================
  */
+import {ENV} from '../../environment';
 
 const contexts: {[key: string]: WebGLRenderingContext} = {};
 
@@ -59,9 +60,10 @@ function getWebGLRenderingContext(webGLVersion: number): WebGLRenderingContext {
   if (webGLVersion !== 1 && webGLVersion !== 2) {
     throw new Error('Cannot get WebGL rendering context, WebGL is disabled.');
   }
-
-  const canvas = document.createElement('canvas');
-  canvas.addEventListener('webglcontextlost', ev => {
+  //@ts-ignore
+  const canvas = ENV.getBool('IS_WEBWORKER') ? new OffscreenCanvas(300, 150)
+    : document.createElement('canvas');
+  canvas.addEventListener('webglcontextlost', (ev : Event) => {
     ev.preventDefault();
     delete contexts[webGLVersion];
   }, false);

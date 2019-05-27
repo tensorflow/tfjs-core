@@ -2561,7 +2561,7 @@ export class MathBackendWebGL implements KernelBackend {
   }
 }
 
-if (device_util.isBrowser()) {
+if (device_util.isBrowser() || device_util.isWebworker()) {
   ENGINE.registerBackend(
       'webgl', () => new MathBackendWebGL(), 2 /* priority */);
 }
