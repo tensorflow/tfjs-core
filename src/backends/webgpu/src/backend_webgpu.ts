@@ -23,7 +23,7 @@ import {DataMover, DataType, ENV, KernelBackend, Rank, ShapeMap, Tensor, Tensor2
 import * as backend_util from '@tensorflow/tfjs-core/dist/backends/backend_util';
 import {computeOutShape} from '@tensorflow/tfjs-core/dist/ops/concat_util';
 import {Conv2DInfo} from '@tensorflow/tfjs-core/dist/ops/conv_util';
-import {TypedArray, upcastType} from '@tensorflow/tfjs-core/dist/types';
+import {PixelData, TypedArray, upcastType} from '@tensorflow/tfjs-core/dist/types';
 import * as shaderc from '@webgpu/shaderc';
 
 import {ArgMinMaxProgram} from './kernels/argminmax_webgpu';
@@ -486,6 +486,16 @@ export class WebGPUBackend extends KernelBackend {
     const result = this.compileAndRun(program, [a, b], output) as Tensor3D;
 
     return result;
+  }
+
+  fromPixels(
+      pixels: PixelData|ImageData|HTMLImageElement|HTMLCanvasElement|
+      HTMLVideoElement,
+      numChannels: number): Tensor3D {
+    if (pixels == null) {
+      throw new Error(
+          'pixels passed to tf.browser.fromPixels() can not be null');
+    }
   }
 
   dispose() {
