@@ -25,6 +25,14 @@ export interface TensorData<D extends DataType> {
   values?: DataTypeMap[D];
 }
 
+// Combines a dataId, a shape, and a dtype without a Tensor object so that
+// programs can be executed without a full Tensor object.
+export interface TensorHandle {
+  dataId: DataId;
+  shape: number[];
+  dtype: DataType;
+}
+
 // This interface mimics KernelBackend (in backend.ts), which would create a
 // circular dependency if imported.
 export interface Backend {

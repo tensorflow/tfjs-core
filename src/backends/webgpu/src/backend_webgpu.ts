@@ -496,6 +496,34 @@ export class WebGPUBackend extends KernelBackend {
       throw new Error(
           'pixels passed to tf.browser.fromPixels() can not be null');
     }
+
+    const texShape: [number, number] = [pixels.height, pixels.width];
+    const outShape = [pixels.height, pixels.width, numChannels];
+
+    if (ENV.getBool('IS_BROWSER')) {
+      if (!(pixels instanceof HTMLVideoElement) &&
+          !(pixels instanceof HTMLImageElement) &&
+          !(pixels instanceof HTMLCanvasElement) &&
+          !(pixels instanceof ImageData) &&
+          !((pixels as PixelData).data instanceof Uint8Array)) {
+        throw new Error(
+            'pixels passed to tf.browser.fromPixels() must be either an ' +
+            `HTMLVideoElement, HTMLImageElement, HTMLCanvasElement, ImageData` +
+            ` or {data: Uint32Array, width: number, height: number}, ` +
+            `but was ${(pixels as {}).constructor.name}`);
+      }
+    }
+    const tempPixelHandle = this.makeTensorHandle(texShape, 'int32');
+    // This is a byte texture with pixels.
+    this.texData.get(tempPixelHandle.dataId).usage = TextureUsage.PIXELS;
+    this.gpgpu.uploadPixelDataToTexture(
+        this.getTexture(tempPixelHandle.dataId), pixels as ImageData);
+    const program = new FromPixelsProgram(outShape);
+    const res = this.compileAndRun(program, [tempPixelHandle]);
+
+    this.disposeData(tempPixelHandle.dataId);
+
+    return res as Tensor3D;
   }
 
   dispose() {
