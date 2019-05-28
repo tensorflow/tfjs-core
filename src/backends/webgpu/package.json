@@ -11,7 +11,6 @@
     "publish-local": "rimraf dist/ && yarn build && rollup -c && yalc push",
     "link-local": "yalc link",
     "build": "tsc",
-    "link-local": "yalc link",
     "unlink-local": "yalc remove",
     "lint": "tslint -p . -t verbose",
     "test": "karma start --browsers='chrome_webgpu'",
