@@ -20,15 +20,14 @@
 import './engine';
 // Register backend-agnostic flags.
 import './flags';
-
 // backend_cpu.ts and backend_webgl.ts are standalone files and should be
 // explicitly included here.
 import './backends/webgl/backend_webgl';
 import './backends/cpu/backend_cpu';
-
 import './platforms/platform_browser';
 import './platforms/platform_node';
 
+import * as backend_util from './backends/backend_util';
 import * as environment from './environment';
 // Serialization.
 import * as io from './io/io';
@@ -82,6 +81,7 @@ export {
   serialization,
   test_util,
   util,
+  backend_util,
   webgl,
   tensor_util
 };
