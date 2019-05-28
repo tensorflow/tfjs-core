@@ -211,12 +211,35 @@ function validateBinaryAndProgram(
   });
 }
 
-function uploadUniform1iv(
+// function uploadUniform1iv(
+//     gpgpu: GPGPUContext, binary: GPGPUBinary, uniformName: string,
+//     values: () => number[] | Int32Array) {
+//   const varLoc = binary.uniformLocations[uniformName];
+//   if (varLoc != null) {
+//     let vals: number[]|Int32Array = values();
+//     if (!(vals instanceof Int32Array)) {
+//       vals = new Int32Array(vals);
+//     }
+//     gpgpu.gl.uniform1iv(varLoc, vals);
+//   }
+// }
+
+// function uploadUniform1i(
+//     gpgpu: GPGPUContext, binary: GPGPUBinary, uniformName: string,
+//     values: () => number) {
+//   const varLoc = binary.uniformLocations[uniformName];
+//   if (varLoc != null) {
+//     const val = values();
+//     gpgpu.gl.uniform1i(varLoc, val);
+//   }
+// }
+
+function uploadUniform1ivVals(
     gpgpu: GPGPUContext, binary: GPGPUBinary, uniformName: string,
-    values: () => number[] | Int32Array) {
+    values: number[]|Int32Array) {
   const varLoc = binary.uniformLocations[uniformName];
   if (varLoc != null) {
-    let vals: number[]|Int32Array = values();
+    let vals: number[]|Int32Array = values;
     if (!(vals instanceof Int32Array)) {
       vals = new Int32Array(vals);
     }
@@ -224,12 +247,12 @@ function uploadUniform1iv(
   }
 }
 
-function uploadUniform1i(
+function uploadUniform1iVals(
     gpgpu: GPGPUContext, binary: GPGPUBinary, uniformName: string,
-    values: () => number) {
+    values: number) {
   const varLoc = binary.uniformLocations[uniformName];
   if (varLoc != null) {
-    const val = values();
+    const val = values;
     gpgpu.gl.uniform1i(varLoc, val);
   }
 }
@@ -297,37 +320,34 @@ export function runProgram<T extends Tensor, K extends Tensor>(
       shape = newShape;
     }
 
-    uploadUniform1iv(gpgpu, binary, `shape${varName}`, () => shape);
-    uploadUniform1iv(
-        gpgpu, binary, `strides${varName}`, () => util.computeStrides(shape));
+    uploadUniform1ivVals(gpgpu, binary, `shape${varName}`, shape);
+    uploadUniform1ivVals(
+        gpgpu, binary, `strides${varName}`, util.computeStrides(shape));
 
     // TODO(yassogba, nsthoat) rename/document these two shapes:
     // input.texData.shape and input.texData.texShape
     // to make it more apparent why they are both needed.
-    uploadUniform1iv(
-        gpgpu, binary, `texShape${varName}`, () => input.texData.texShape);
+    uploadUniform1ivVals(
+        gpgpu, binary, `texShape${varName}`, input.texData.texShape);
 
-    uploadUniform1iv(gpgpu, binary, `packedTexShape${varName}`, () => {
-      const texShape = input.texData.texShape;
-      return [Math.ceil(texShape[0] * 0.5), Math.ceil(texShape[1] * 0.5)];
-    });
+    const texShape = input.texData.texShape;
+    const packedTexShape =
+        [Math.ceil(texShape[0] * 0.5), Math.ceil(texShape[1] * 0.5)];
+    uploadUniform1ivVals(
+        gpgpu, binary, `packedTexShape${varName}`, packedTexShape);
 
-    uploadUniform1i(gpgpu, binary, `valuesPerRow${varName}`, () => {
-      const rank = shape.length;
-      return Math.ceil(shape[rank - 1] * 0.5);
-    });
+    const rank = shape.length;
+    const valuesPerRow = Math.ceil(shape[rank - 1] * 0.5);
+    uploadUniform1iVals(gpgpu, binary, `valuesPerRow${varName}`, valuesPerRow);
 
-    uploadUniform1i(gpgpu, binary, `texelsInBatch${varName}`, () => {
-      const rank = shape.length;
-      const valuesPerRow = Math.ceil(shape[rank - 1] * 0.5);
-      return valuesPerRow * Math.ceil(shape[rank - 2] * 0.5);
-    });
+    const texelsInBatch = valuesPerRow * Math.ceil(shape[rank - 2] * 0.5);
+    uploadUniform1iVals(
+        gpgpu, binary, `texelsInBatch${varName}`, texelsInBatch);
 
     // If the input was sliced, upload the flat offset index.
     if (input.texData.slice != null) {
-      uploadUniform1i(
-          gpgpu, binary, `offset${varName}`,
-          () => input.texData.slice.flatOffset);
+      uploadUniform1iVals(
+          gpgpu, binary, `offset${varName}`, input.texData.slice.flatOffset);
     }
 
     gpgpu.setInputMatrixTexture(input.texData.texture, varLoc, i);
@@ -335,39 +355,39 @@ export function runProgram<T extends Tensor, K extends Tensor>(
 
   // Upload output shape uniforms
   if (output.shape.length > 0) {
-    uploadUniform1iv(gpgpu, binary, 'outputShape', () => output.shape);
+    const outputShape = output.shape;
+    uploadUniform1ivVals(gpgpu, binary, 'outputShape', outputShape);
 
-    uploadUniform1iv(gpgpu, binary, 'outputStrides', () => {
-      const shape = output.shape;
-      return util.computeStrides(shape);
-    });
+    uploadUniform1ivVals(
+        gpgpu, binary, 'outputStrides', util.computeStrides(outputShape));
 
     // TODO(yassogba, nsthoat) rename/document these two shapes:
     // output.texData.shape and output.texData.texShape
     // to make it more apparent why they are both needed.
-    uploadUniform1iv(
-        gpgpu, binary, 'outputTexShape', () => output.texData.texShape);
+    const outputTexShape = output.texData.texShape;
+    uploadUniform1ivVals(gpgpu, binary, 'outputTexShape', outputTexShape);
 
     // TODO yassogba found out why having the conditional below causes errors
     // it appears that there are programs for which this check is false but
     // outputPackedTexShape is needed.
     // if (binary.program.usesPackedTextures) {
-    uploadUniform1iv(gpgpu, binary, 'outputPackedTexShape', () => {
-      const texShape = output.texData.texShape;
-      return [Math.ceil(texShape[0] * 0.5), Math.ceil(texShape[1] * 0.5)];
-    });
+
+    const outputPackedTexShape = [
+      Math.ceil(outputTexShape[0] * 0.5), Math.ceil(outputTexShape[1] * 0.5)
+    ];
+    uploadUniform1ivVals(
+        gpgpu, binary, 'outputPackedTexShape', outputPackedTexShape);
     // }
 
-    uploadUniform1i(gpgpu, binary, 'outputTexelsInLogicalRow', () => {
-      const shape = output.shape;
-      return Math.ceil(shape[shape.length - 1] * 0.5);
-    });
+    const rank = outputShape.length;
+    const outputTexelsInLogicalRow = Math.ceil(outputShape[rank - 1] * 0.5);
+    uploadUniform1iVals(
+        gpgpu, binary, 'outputTexelsInLogicalRow', outputTexelsInLogicalRow);
 
-    uploadUniform1i(gpgpu, binary, 'outputTexelsInBatch', () => {
-      const shape = output.shape;
-      const texelsInLogicalRow = Math.ceil(shape[shape.length - 1] * 0.5);
-      return texelsInLogicalRow * Math.ceil(shape[shape.length - 2] * 0.5);
-    });
+    const outputTexelsInBatch =
+        outputTexelsInLogicalRow * Math.ceil(outputShape[rank - 2] * 0.5);
+    uploadUniform1iVals(
+        gpgpu, binary, 'outputTexelsInBatch', outputTexelsInBatch);
   }
 
   if (customSetup != null) {

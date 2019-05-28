@@ -636,14 +636,13 @@ function getOutputPacked2DCoords(
     ivec2 getOutputCoords() {
       int packedTexShapeR = outputPackedTexShape[0];
       int packedTexShapeC = outputPackedTexShape[1];
-      int texelsInLogicalRow = int(ceil(float(outputShape[1]) * 0.5));
 
       ivec2 resTexRC = ivec2(resultUV.yx *
                              vec2(packedTexShapeR, packedTexShapeC));
 
       int index = resTexRC.x * packedTexShapeC + resTexRC.y;
-      int r = 2 * (index / texelsInLogicalRow);
-      int c = imod(index, texelsInLogicalRow) * 2;
+      int r = 2 * (index / outputTexelsInLogicalRow);
+      int c = imod(index, outputTexelsInLogicalRow) * 2;
 
       return ivec2(r, c);
     }
@@ -1315,7 +1314,7 @@ function getSampler6D(inputInfo: InputInfo): string {
                     int depth2, int depth3, int depth4) {
         float texR = dot(vec4(row, col, depth, depth2),
           vec4(${shapeUniform}[1] * ${shapeUniform}[2] * ${shapeUniform}[3]
-            * ${shapeUniform}[4]},
+            * ${shapeUniform}[4],
                ${shapeUniform}[2] * ${shapeUniform}[3] * ${shapeUniform}[4],
                ${shapeUniform}[3] * ${shapeUniform}[4],
                ${shapeUniform}[4])) + float(depth3);
