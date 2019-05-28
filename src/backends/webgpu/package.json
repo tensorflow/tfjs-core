@@ -9,6 +9,7 @@
   "jsdelivr": "dist/tf-webgpu.min.js",
   "scripts": {
     "publish-local": "rimraf dist/ && yarn build && rollup -c && yalc push",
+    "link-local": "yalc link",
     "build": "tsc",
     "link-local": "yalc link",
     "unlink-local": "yalc remove",

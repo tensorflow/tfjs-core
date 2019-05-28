@@ -19,11 +19,7 @@
 
 import './flags_webgpu';
 
-import {DataMover, DataType, ENV, KernelBackend, Rank, ShapeMap, Tensor, Tensor2D, Tensor3D, Tensor4D, util} from '@tensorflow/tfjs-core';
-import * as backend_util from '@tensorflow/tfjs-core/dist/backends/backend_util';
-import {computeOutShape} from '@tensorflow/tfjs-core/dist/ops/concat_util';
-import {Conv2DInfo} from '@tensorflow/tfjs-core/dist/ops/conv_util';
-import {TypedArray, upcastType} from '@tensorflow/tfjs-core/dist/types';
+import {backend_util, DataMover, DataType, ENV, KernelBackend, Rank, ShapeMap, Tensor, Tensor2D, Tensor3D, Tensor4D, util} from '@tensorflow/tfjs-core';
 import * as shaderc from '@webgpu/shaderc';
 
 import {ArgMinMaxProgram} from './kernels/argminmax_webgpu';
@@ -147,14 +143,15 @@ export class WebGPUBackend extends KernelBackend {
     return mapped.slice(0);
   }
 
-  private convertAndCacheOnCPU(dataId: DataId, data: TypedArray): TypedArray {
+  private convertAndCacheOnCPU(dataId: DataId, data: backend_util.TypedArray):
+      backend_util.TypedArray {
     const texData = this.tensorMap.get(dataId);
 
     // TODO: implement release GPU data.
     // TODO: add backend_webgl float32ToTypedArray to util and use that here.
 
     texData.values = data;
-    return texData.values as TypedArray;
+    return texData.values as backend_util.TypedArray;
   }
 
   // TODO: Remove once this is fixed:
@@ -312,7 +309,7 @@ export class WebGPUBackend extends KernelBackend {
     return this.compileAndRun(program, [x], output);
   }
 
-  maxPool(x: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
+  maxPool(x: Tensor4D, convInfo: backend_util.Conv2DInfo): Tensor4D {
     const program = new MaxPoolProgram(convInfo);
 
     const output =
@@ -331,7 +328,7 @@ export class WebGPUBackend extends KernelBackend {
   }
 
   private binaryOp(a: Tensor, b: Tensor, op: string) {
-    const dtype = upcastType(a.dtype, b.dtype);
+    const dtype = backend_util.upcastType(a.dtype, b.dtype);
     const program = new BinaryOpProgram(op, a.shape, b.shape);
     const output = Tensor.make(program.outputShape, {}, dtype) as Tensor;
 
@@ -347,7 +344,8 @@ export class WebGPUBackend extends KernelBackend {
     return this.binaryOp(a, b, binary_op.SUB);
   }
 
-  conv2d(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
+  conv2d(x: Tensor4D, filter: Tensor4D, convInfo: backend_util.Conv2DInfo):
+      Tensor4D {
     const output =
         Tensor.make(convInfo.outShape, {}, x.dtype, this) as Tensor4D;
     let program: Conv2DMMProgram|Conv2DNaiveProgram;
@@ -405,7 +403,8 @@ export class WebGPUBackend extends KernelBackend {
     //   const rightSide = this.concat(tensors.slice(midIndex), axis);
     //   return this.concat([leftSide, rightSide], axis);
     // }
-    const outShape = computeOutShape(tensors.map(t => t.shape), axis);
+    const outShape =
+        backend_util.computeOutShape(tensors.map(t => t.shape), axis);
     const tensors2D = tensors.map(t => t.reshape([
       util.sizeFromShape(t.shape.slice(0, axis)),
       util.sizeFromShape(t.shape.slice(axis))
