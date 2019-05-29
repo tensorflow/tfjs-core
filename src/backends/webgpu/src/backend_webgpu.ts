@@ -19,8 +19,7 @@
 
 import './flags_webgpu';
 
-import {DataMover, DataType, ENV, KernelBackend, Rank, ShapeMap, Tensor, Tensor2D, Tensor3D, Tensor4D, util} from '@tensorflow/tfjs-core';
-import * as backend_util from '@tensorflow/tfjs-core/dist/backends/backend_util';
+import {backend_util, DataMover, DataType, ENV, KernelBackend, Rank, ShapeMap, Tensor, Tensor2D, Tensor3D, Tensor4D, util} from '@tensorflow/tfjs-core';
 import {computeOutShape} from '@tensorflow/tfjs-core/dist/ops/concat_util';
 import {Conv2DInfo} from '@tensorflow/tfjs-core/dist/ops/conv_util';
 import {PixelData, TypedArray, upcastType} from '@tensorflow/tfjs-core/dist/types';
@@ -497,7 +496,7 @@ export class WebGPUBackend extends KernelBackend {
           'pixels passed to tf.browser.fromPixels() can not be null');
     }
 
-    const texShape: [number, number] = [pixels.height, pixels.width];
+    // const texShape: [number, number] = [pixels.height, pixels.width];
     const outShape = [pixels.height, pixels.width, numChannels];
 
     if (ENV.getBool('IS_BROWSER')) {
@@ -513,17 +512,11 @@ export class WebGPUBackend extends KernelBackend {
             `but was ${(pixels as {}).constructor.name}`);
       }
     }
-    const tempPixelHandle = this.makeTensorHandle(texShape, 'int32');
-    // This is a byte texture with pixels.
-    this.texData.get(tempPixelHandle.dataId).usage = TextureUsage.PIXELS;
-    this.gpgpu.uploadPixelDataToTexture(
-        this.getTexture(tempPixelHandle.dataId), pixels as ImageData);
-    const program = new FromPixelsProgram(outShape);
-    const res = this.compileAndRun(program, [tempPixelHandle]);
 
-    this.disposeData(tempPixelHandle.dataId);
+    const output = this.makeOutputArray(outShape, 'int32');
+    this.write(output.dataId, (pixels as ImageData).data as {} as TypedArray);
 
-    return res as Tensor3D;
+    return output as Tensor3D;
   }
 
   dispose() {
