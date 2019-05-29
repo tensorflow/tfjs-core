@@ -176,7 +176,7 @@
   <!-- <script src="https://unpkg.com/@tensorflow/tfjs-core@1.2.0/dist/tf-core.js"></script> -->
   <script src="./data.js"></script>
   <script src="./tf-core.js"></script>
-  <!-- <script src="./tf-webgpu.js"></script> -->
+  <script src="./tf-webgpu.js"></script>
   <script src="./posenet.js"></script>
   <script>
     'use strict';
@@ -415,7 +415,8 @@
 
     async function onPageLoad() {
       await tf.ready();
-      zeros = tf.tensor3d(zerosData, [257, 257, 3]);
+      zeros = tf.browser.fromPixels(document.querySelector("img"));
+      // zeros = tf.tensor3d(zerosData, [257, 257, 3]);
       console.log("which backend?");
       console.log(tf.getBackend());
       var gui = new dat.gui.GUI();
