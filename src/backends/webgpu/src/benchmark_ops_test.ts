@@ -133,10 +133,19 @@ describeWebGPU('Ops benchmarks', () => {
   }, 60000);
 
   fit('frompixels', async () => {
-    const a = tf.browser.fromPixels(
-        new ImageData(new Uint8ClampedArray([1, 2, 3, 4]), 1, 1));
+    const pixels = new ImageData(2, 2);
+    for (let i = 0; i < 8; i++) {
+      pixels.data[i] = 100;
+    }
+    for (let i = 8; i < 16; i++) {
+      pixels.data[i] = 250;
+    }
 
-    const b = await a.add(tf.scalar(2)).data();
-    console.log(b);
+    const a = tf.browser.fromPixels(pixels, 4);
+    const b = tf.scalar(20, 'int32');
+
+    const res = tf.add(a, b);
+    const resData = await res.data();
+    console.log(resData);
   });
 });
