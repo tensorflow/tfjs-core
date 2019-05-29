@@ -229,7 +229,7 @@ export class WebGPUBackend extends KernelBackend {
       let baseAlignment: number;
       switch (d.length) {
         case 0:
-          baseAlignment = 0;
+          baseAlignment = 1;
           break;
         case 1:
           baseAlignment = 1;
@@ -514,7 +514,10 @@ export class WebGPUBackend extends KernelBackend {
     }
 
     const output = this.makeOutputArray(outShape, 'int32');
-    this.write(output.dataId, (pixels as ImageData).data as {} as TypedArray);
+    const pixelTypedArray = (pixels as ImageData).data;
+    this.write(
+        output.dataId,
+        new Int32Array(Array.prototype.slice.call(pixelTypedArray)));
 
     return output as Tensor3D;
   }
