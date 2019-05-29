@@ -61,6 +61,7 @@ export class WebGPUBackend extends KernelBackend {
   commandQueue: GPUCommandEncoder[];
 
   private binaryCache: {[key: string]: WebGPUBinary};
+  private fromPixels2DContext: CanvasRenderingContext2D;
 
   constructor(device: GPUDevice, shaderc: shaderc.Shaderc) {
     super();
@@ -498,6 +499,7 @@ export class WebGPUBackend extends KernelBackend {
 
     // const texShape: [number, number] = [pixels.height, pixels.width];
     const outShape = [pixels.height, pixels.width, numChannels];
+    let pixelArray = Array.prototype.slice.call((pixels as ImageData).data);
 
     if (ENV.getBool('IS_BROWSER')) {
       if (!(pixels instanceof HTMLVideoElement) &&
@@ -511,13 +513,42 @@ export class WebGPUBackend extends KernelBackend {
             ` or {data: Uint32Array, width: number, height: number}, ` +
             `but was ${(pixels as {}).constructor.name}`);
       }
+      if (pixels instanceof HTMLVideoElement) {
+        if (this.fromPixels2DContext == null) {
+          this.fromPixels2DContext =
+              document.createElement('canvas').getContext('2d');
+        }
+        this.fromPixels2DContext.canvas.width = pixels.width;
+        this.fromPixels2DContext.canvas.height = pixels.height;
+        this.fromPixels2DContext.drawImage(
+            pixels, 0, 0, pixels.width, pixels.height);
+        pixels = this.fromPixels2DContext.canvas;
+
+        // TODO: Remove this once we figure out how too upload textures to
+        // WebGPU instead of buffers.
+
+        const imageData = Array.prototype.slice.call(
+            this.fromPixels2DContext
+                .getImageData(0, 0, pixels.width, pixels.height)
+                .data);
+
+        if (numChannels != null && numChannels !== 4) {
+          const filteredPixels: number[] = [];
+
+          for (let i = 0; i < imageData.length; i++) {
+            if (i % 4 < numChannels) {
+              filteredPixels.push(imageData[i]);
+            }
+          }
+
+          pixelArray = filteredPixels;
+        }
+      }
     }
 
     const output = this.makeOutputArray(outShape, 'int32');
-    const pixelTypedArray = (pixels as ImageData).data;
-    this.write(
-        output.dataId,
-        new Int32Array(Array.prototype.slice.call(pixelTypedArray)));
+
+    this.write(output.dataId, new Int32Array(pixelArray));
 
     return output as Tensor3D;
   }
