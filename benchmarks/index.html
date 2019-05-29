@@ -130,6 +130,7 @@
 
 <body>
   <h2>TensorFlow.js Model Benchmark</h2>
+  <img src="./pose.jpg" width="257" height="257" alt="">
   <div id="modal-msg"></div>
   <div id="container">
     <div id="stats">
@@ -191,7 +192,7 @@
       //////////////////////////////////
       // Place model prediction code here.
       //////////////////////////////////
-      return model.estimateSinglePose(zeros);
+      return model.estimatePoses(zeros);
     }
   </script>
   <script>
@@ -415,7 +416,6 @@
     async function onPageLoad() {
       await tf.ready();
       zeros = tf.tensor3d(zerosData, [257, 257, 3]);
-      // zeros = tf.zeros([257, 257, 3]);
       console.log("which backend?");
       console.log(tf.getBackend());
       var gui = new dat.gui.GUI();
