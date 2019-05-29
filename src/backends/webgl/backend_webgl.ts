@@ -274,19 +274,7 @@ export class MathBackendWebGL implements KernelBackend {
     const outShape = [pixels.height, pixels.width, numChannels];
 
     if (ENV.getBool('IS_BROWSER')) {
-      if (typeof(document) !== typeof(self)) {
-        if (!(pixels instanceof ImageData) &&
-            //@ts-ignore
-            !(pixels instanceof OffscreenCanvas) &&
-            !((pixels as PixelData).data instanceof Uint8Array)) {
-              throw new Error(
-                'pixels passed to tf.browser.fromPixels() must be either an ' +
-                `OffscreenCanvas, ImageData` +
-                ` or {data: Uint32Array, width: number, height: number} ` +
-                `inside the webworker`+
-                `but was ${(pixels as {}).constructor.name}`);
-            }
-      } else {
+      if (typeof(document) !== 'undefined') {
         if (!(pixels instanceof HTMLVideoElement) &&
             !(pixels instanceof HTMLImageElement) &&
             !(pixels instanceof HTMLCanvasElement) &&
@@ -294,7 +282,8 @@ export class MathBackendWebGL implements KernelBackend {
             !((pixels as PixelData).data instanceof Uint8Array)) {
           throw new Error(
               'pixels passed to tf.browser.fromPixels() must be either an ' +
-              `HTMLVideoElement, HTMLImageElement, HTMLCanvasElement, ImageData` +
+              `HTMLVideoElement, HTMLImageElement,` +
+              `HTMLCanvasElement, ImageData` +
               ` or {data: Uint32Array, width: number, height: number}, ` +
               `but was ${(pixels as {}).constructor.name}`);
         }
@@ -304,7 +293,8 @@ export class MathBackendWebGL implements KernelBackend {
               throw new Error(
                   'The DOM is not ready yet. Please call ' +
                   'tf.browser.fromPixels() once the DOM is ready. One way to ' +
-                  'do that is to add an event listener for `DOMContentLoaded` ' +
+                  'do that is to add an event ' +
+                  'listener for `DOMContentLoaded` ' +
                   'on the document object');
             }
             this.fromPixels2DContext =
@@ -316,6 +306,18 @@ export class MathBackendWebGL implements KernelBackend {
               pixels, 0, 0, pixels.width, pixels.height);
           pixels = this.fromPixels2DContext.canvas;
         }
+      } else if (typeof(self) !== 'undefined') {
+        if (!(pixels instanceof ImageData) &&
+            //@ts-ignore
+            !(pixels instanceof OffscreenCanvas) &&
+            !((pixels as PixelData).data instanceof Uint8Array)) {
+              throw new Error(
+                'pixels passed to tf.browser.fromPixels() must be either an ' +
+                `OffscreenCanvas, ImageData` +
+                ` or {data: Uint32Array, width: number, height: number} ` +
+                `inside the webworker`+
+                `but was ${(pixels as {}).constructor.name}`);
+            }
       }
     }
     const tempPixelHandle = this.makeTensorHandle(texShape, 'int32');
@@ -2575,7 +2577,7 @@ export class MathBackendWebGL implements KernelBackend {
   }
 }
 
-if (device_util.isBrowser() || (typeof window !== typeof self)) {
+if (device_util.isBrowser()) {
   ENGINE.registerBackend(
       'webgl', () => new MathBackendWebGL(), 2 /* priority */);
 }

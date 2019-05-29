@@ -77,7 +77,7 @@ export class MathBackendCPU implements KernelBackend {
       if (typeof(document) !== 'undefined') {
         this.fromPixels2DContext =
             document.createElement('canvas').getContext('2d');
-      } else if (typeof(self) !== typeof(document)) {
+      } else if (typeof(self) !== 'undefined') {
         this.fromPixels2DContext =
             //@ts-ignore
             new OffscreenCanvas(300, 150).getContext('2d');
