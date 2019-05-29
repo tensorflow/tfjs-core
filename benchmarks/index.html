@@ -65,7 +65,8 @@
       margin-top: 20px;
     }
 
-    #trendline #yMax, #trendline #yMin {
+    #trendline #yMax,
+    #trendline #yMin {
       position: absolute;
       right: calc(100% + 6px);
       font-size: 11px;
@@ -150,7 +151,9 @@
         <div id="trendline">
           <div id="yMax"></div>
           <div id="yMin">0 ms</div>
-          <svg><path></path></svg>
+          <svg>
+            <path></path>
+          </svg>
         </div>
       </div>
     </div>
@@ -159,6 +162,7 @@
         <tr>
           <th>Kernel</th>
           <th>Time(ms)</th>
+          <th>Input</th>
           <th>Output</th>
           <th>GPUPrograms</th>
         </tr>
@@ -166,29 +170,28 @@
       <tbody></tbody>
     </table>
   </div>
-  <script src="https://unpkg.com/@tensorflow/tfjs-core/dist/tf-core.js"></script>
-  <script src="https://unpkg.com/@tensorflow/tfjs-layers/dist/tf-layers.js"></script>
-  <script src="https://unpkg.com/@tensorflow/tfjs-converter/dist/tf-converter.js"></script>
+  <script src="https://unpkg.com/@tensorflow/tfjs-layers@1.1.2/dist/tf-layers.js"></script>
+  <script src="https://unpkg.com/@tensorflow/tfjs-converter@1.1.2/dist/tf-converter.js"></script>
+  <!-- <script src="https://unpkg.com/@tensorflow/tfjs-core@1.2.0/dist/tf-core.js"></script> -->
+  <script src="./data.js"></script>
+  <script src="./tf-core.js"></script>
+  <!-- <script src="./tf-webgpu.js"></script> -->
+  <script src="./posenet.js"></script>
   <script>
     'use strict';
     async function load() {
       //////////////////////////////////
       // Place model loading code here.
       //////////////////////////////////
-      return await tf.loadFrozenModel(
-        'https://storage.googleapis.com/tfjs-models/savedmodel/mobilenet_v2_1.0_224/tensorflowjs_model.pb',
-        'https://storage.googleapis.com/tfjs-models/savedmodel/mobilenet_v2_1.0_224/weights_manifest.json');
+      return await posenet.load();
     }
 
-    const zeros = tf.zeros([1, 224, 224, 3]);
+    let zeros;
     function predict(model) {
       //////////////////////////////////
       // Place model prediction code here.
       //////////////////////////////////
-      if (isAsync) {
-        return model.executeAsync(zeros);
-      }
-      return model.predict(zeros);
+      return model.estimateSinglePose(zeros);
     }
   </script>
   <script>
@@ -257,13 +260,17 @@
       await showMsg('Warming up');
       const start = performance.now();
       let res = predict(model);
+      console.log('what is res?');
       if (res instanceof Promise) {
         res = await res;
       }
 
       if (res instanceof tf.Tensor) {
-        res.dataSync();
+        // res.dataSync();
+        await res.data();
       }
+
+      console.log(res);
 
       const elapsed = performance.now() - start;
       await showMsg(null);
@@ -302,7 +309,8 @@
         }
 
         if (res instanceof tf.Tensor) {
-          res.dataSync();
+          // res.dataSync();
+          await res.data();
         }
 
         times.push(performance.now() - start);
@@ -332,7 +340,8 @@
       }
 
       if (res instanceof tf.Tensor) {
-        res.dataSync();
+        // res.dataSync();
+        await res.data();
       }
       const elapsed = performance.now() - start;
       await showMsg(null);
@@ -346,22 +355,22 @@
         const nameSpan = document.createElement('span');
         nameSpan.setAttribute('title', k.scopes.slice(0, -1).join(' --> '));
         nameSpan.textContent = k.scopes[k.scopes.length - 1];
-        appendRow(tbody, nameSpan, k.time.toFixed(2), k.output, k.gpuProgramsInfo);
+        appendRow(tbody, nameSpan, k.time.toFixed(2), k.inputs, k.output, k.gpuProgramsInfo);
       });
     }
 
     async function profileKernelTime() {
       await showMsg('Profiling kernels');
-      ENV.set('DEBUG', true);
+      tf.ENV.set('DEBUG', true);
       const oldLog = console.log;
       let kernels = [];
       console.log = msg => {
         let parts = [];
-        if(typeof msg === 'string') {
+        if (typeof msg === 'string') {
           parts = msg.split('\t').map(x => x.slice(2));
         }
 
-        if(parts.length > 2) {
+        if (parts.length > 2) {
           // heuristic for determining whether we've caught a profiler
           // log statement as opposed to a regular console.log
           // TODO(https://github.com/tensorflow/tfjs/issues/563): return timing information as part of tf.profile
@@ -371,20 +380,22 @@
           kernels.push({
             scopes: scopes,
             time: Number.parseFloat(parts[1]),
-            output: parts[2].trim(),
-            gpuProgramsInfo: parts[4]
+            inputs: parts[2],
+            output: parts[3].trim(),
+            gpuProgramsInfo: parts[5]
           });
         } else {
           oldLog.call(oldLog, msg);
         }
       }
       let res = predict(model);
-      if(res instanceof Promise) {
+      if (res instanceof Promise) {
         res = await res;
       }
 
-      if(res instanceof tf.Tensor) {
-        res.dataSync();
+      if (res instanceof tf.Tensor) {
+        // res.dataSync();
+        await res.data();
       }
 
       await showMsg(null);
@@ -392,39 +403,45 @@
       kernels = kernels.sort((a, b) => b.time - a.time);
       appendRow(timeTable, 'Number of kernels', kernels.length);
       showKernelTime(kernels);
-      ENV.set('DEBUG', false);
+      tf.ENV.set('DEBUG', false);
       // Switch back to the old log;
       console.log = oldLog;
     }
 
     function queryTimerIsEnabled() {
-      return ENV.getNumber('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') > 0;
+      return tf.ENV.getNumber('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') > 0;
     }
 
     async function onPageLoad() {
+      await tf.ready();
+      zeros = tf.tensor3d(zerosData, [257, 257, 3]);
+      // zeros = tf.zeros([257, 257, 3]);
+      console.log("which backend?");
+      console.log(tf.getBackend());
       var gui = new dat.gui.GUI();
       //gui.remember(obj);
       gui.add(state, 'numRuns').onChange(v => {
         measureAveragePredictTime();
       });
       showVersions();
-      await showEnvironment();
+      // await showEnvironment();
       await loadAndRecordTime();
       await warmUpAndRecordTime();
-      await showMsg('Waiting for GC');
-      await sleep(1000);
-      await profileMemory();
-      await sleep(200);
-      await measureAveragePredictTime();
-      await sleep(200);
-      if (queryTimerIsEnabled()) {
-        await profileKernelTime();
-      } else {
-        showMsg('Skipping kernel times since query timer extension is not ' +
-                'available. <br/> Use Chrome 70+.');
-      };
+      // await showMsg('Waiting for GC');
+      // await sleep(1000);
+      // await profileMemory();
+      // await sleep(200);
+      // await measureAveragePredictTime();
+      // await sleep(200);
+      // if (queryTimerIsEnabled()) {
+      //   await profileKernelTime();
+      // } else {
+      //   showMsg('Skipping kernel times since query timer extension is not ' +
+      //     'available. <br/> Use Chrome 70+.');
+      // };
     }
     onPageLoad();
   </script>
 </body>
+
 </html>
