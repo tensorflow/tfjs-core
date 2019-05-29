@@ -839,14 +839,14 @@
       }
   }
 
-  const MOBILENET_V1_CONFIG = {
-      architecture: 'MobileNetV1',
-      outputStride: 16,
-      inputResolution: 513,
-      multiplier: 0.75
+  const RESNET_CONFIG = {
+      architecture: 'ResNet50',
+      outputStride: 32,
+      inputResolution: 257,
+      multiplier: 1.0
   };
   function validateModelConfig(config) {
-      config = config || MOBILENET_V1_CONFIG;
+      config = config || RESNET_CONFIG;
       const VALID_ARCHITECTURE = ['MobileNetV1', 'ResNet50'];
       const VALID_STRIDE = { 'MobileNetV1': [8, 16, 32], 'ResNet50': [32, 16] };
       const VALID_RESOLUTION = {
@@ -1029,7 +1029,7 @@
       const resnet = new ResNet(graphModel, inputResolution, outputStride);
       return new PoseNet(resnet);
   }
-  async function load(config = MOBILENET_V1_CONFIG) {
+  async function load(config = RESNET_CONFIG) {
       console.log('LOAD POSENET MODEL');
       await tf.ready();
       config = validateModelConfig(config);
