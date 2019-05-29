@@ -74,12 +74,14 @@ export class MathBackendCPU implements KernelBackend {
 
   constructor() {
     if (ENV.get('IS_BROWSER')) {
-      this.fromPixels2DContext =
-          document.createElement('canvas').getContext('2d');
-    } else if (ENV.get('IS_WEBWORKER')) {
-      this.fromPixels2DContext =
-          //@ts-ignore
-          new OffscreenCanvas(300, 150).getContext('2d');
+      if (typeof(document) !== 'undefined') {
+        this.fromPixels2DContext =
+            document.createElement('canvas').getContext('2d');
+      } else if (typeof(self) !== typeof(document)) {
+        this.fromPixels2DContext =
+            //@ts-ignore
+            new OffscreenCanvas(300, 150).getContext('2d');
+      }
     }
     this.data = new DataStorage(ENGINE);
   }

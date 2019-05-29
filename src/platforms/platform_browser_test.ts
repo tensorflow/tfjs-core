@@ -22,6 +22,7 @@ import {PlatformBrowser} from './platform_browser';
 describeWithFlags('PlatformBrowser', BROWSER_ENVS, async () => {
   it('fetch calls window.fetch', async () => {
     const response = new Response();
+    window = self;
     spyOn(window, 'fetch').and.returnValue(response);
     const platform = new PlatformBrowser();
 

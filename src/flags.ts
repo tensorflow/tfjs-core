@@ -32,10 +32,9 @@ ENV.registerFlag('DEBUG', () => false, debugValue => {
 });
 
 /** Whether we are in a browser (as versus, say, node.js) environment. */
-ENV.registerFlag('IS_BROWSER', () => device_util.isBrowser());
-
-/** Whether we are in a webworker environment */
-ENV.registerFlag('IS_WEBWORKER', () => device_util.isWebworker());
+ENV.registerFlag('IS_BROWSER', () =>
+      device_util.isBrowser() || typeof(self) !== typeof(document)
+    );
 
 /** Whether we are in a browser (as versus, say, node.js) environment. */
 ENV.registerFlag(

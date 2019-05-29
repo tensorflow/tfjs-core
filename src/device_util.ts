@@ -29,7 +29,3 @@ export function isMobile(): boolean {
 export function isBrowser(): boolean {
   return typeof window !== 'undefined';
 }
-
-export function isWebworker(): boolean {
-  return typeof document === 'undefined' && typeof self !== typeof document;
-}
