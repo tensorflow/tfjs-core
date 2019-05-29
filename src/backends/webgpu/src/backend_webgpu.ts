@@ -489,8 +489,8 @@ export class WebGPUBackend extends KernelBackend {
   }
 
   fromPixels(
-      pixels: PixelData|ImageData|HTMLImageElement|HTMLCanvasElement|
-      HTMLVideoElement,
+      pixels: backend_util.PixelData|ImageData|HTMLImageElement|
+      HTMLCanvasElement|HTMLVideoElement,
       numChannels: number): Tensor3D {
     if (pixels == null) {
       throw new Error(
@@ -506,7 +506,7 @@ export class WebGPUBackend extends KernelBackend {
           !(pixels instanceof HTMLImageElement) &&
           !(pixels instanceof HTMLCanvasElement) &&
           !(pixels instanceof ImageData) &&
-          !((pixels as PixelData).data instanceof Uint8Array)) {
+          !((pixels as backend_util.PixelData).data instanceof Uint8Array)) {
         throw new Error(
             'pixels passed to tf.browser.fromPixels() must be either an ' +
             `HTMLVideoElement, HTMLImageElement, HTMLCanvasElement, ImageData` +
