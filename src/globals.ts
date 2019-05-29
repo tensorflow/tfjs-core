@@ -26,10 +26,12 @@ import {getTensorsInContainer} from './tensor_util';
 /**
  * Enables production mode which disables correctness checks in favor of
  * performance.
+ *
+ * @param active The optional parameter if prod mode should be active.
  */
 /** @doc {heading: 'Environment'} */
-export function enableProdMode(): void {
-  ENV.set('PROD', true);
+export function enableProdMode(active = true): void {
+  ENV.set('PROD', active);
 }
 
 /**
@@ -43,10 +45,11 @@ export function enableProdMode(): void {
  * execution as we do not measure download time in the kernel execution time.
  *
  * See also: `tf.profile`, `tf.memory`.
+ * @param active The optional parameter if debug flags shoud be active.
  */
 /** @doc {heading: 'Environment'} */
-export function enableDebugMode(): void {
-  ENV.set('DEBUG', true);
+export function enableDebugMode(active = true): void {
+  ENV.set('DEBUG', active);
 }
 
 /** Globally disables deprecation warnings */
