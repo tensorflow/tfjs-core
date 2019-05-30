@@ -99,7 +99,7 @@ export class BrowserDownloads implements IOHandler {
       await defer(() => jsonAnchor.dispatchEvent(new MouseEvent('click')));
 
       if (modelArtifacts.weightData != null) {
-        if (ENV.getBool('IS_BROWSER')) {
+        if (typeof(document) !== 'undefined') {
           const weightDataAnchor = this.weightDataAnchor == null ?
               document.createElement('a') :
               this.weightDataAnchor;
@@ -107,6 +107,10 @@ export class BrowserDownloads implements IOHandler {
           weightDataAnchor.href = weightsURL;
           await defer(
               () => weightDataAnchor.dispatchEvent(new MouseEvent('click')));
+        //@ts-ignore
+        } else if (typeof(WorkerGlobalScope) !== 'undefined') {
+          throw new Error('Browser downloads are not supported in ' +
+              'this environment since `document` is not present');
         }
       }
 

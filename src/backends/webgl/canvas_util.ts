@@ -63,7 +63,8 @@ function getWebGLRenderingContext(webGLVersion: number): WebGLRenderingContext {
 
   if (typeof(document) !== 'undefined') {
     canvas = document.createElement('canvas');
-  } else if (typeof(self) !== 'undefined') {
+  //@ts-ignore
+  } else if (typeof(WorkerGlobalScope) !== 'undefined') {
     //@ts-ignore
     canvas = new OffscreenCanvas(300, 150);
   } else {
