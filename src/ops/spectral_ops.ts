@@ -106,7 +106,7 @@ function ifft_(input: Tensor): Tensor {
 /**
  * @doc {heading: 'Operations', subheading: 'Spectral', namespace: 'spectral'}
  */
-function rfft_(input: Tensor, fftLength: number = null): Tensor {
+function rfft_(input: Tensor, fftLength?: number): Tensor {
   assert(
       input.dtype === 'float32',
       () => `The dtype for rfft() must be real value but got ${input.dtype}`);
