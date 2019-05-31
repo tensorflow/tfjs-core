@@ -74,14 +74,16 @@ export class MathBackendCPU implements KernelBackend {
 
   constructor() {
     if (ENV.get('IS_BROWSER')) {
-      if (typeof(document) !== 'undefined') {
-        this.fromPixels2DContext =
-            document.createElement('canvas').getContext('2d');
       //@ts-ignore
-      } else if (typeof(WorkerGlobalScope) !== 'undefined') {
+      if (typeof(OffscreenCanvas) !== 'undefined') {
         this.fromPixels2DContext =
             //@ts-ignore
             new OffscreenCanvas(300, 150).getContext('2d');
+      } else if (typeof(document) !== 'undefined') {
+        this.fromPixels2DContext =
+            document.createElement('canvas').getContext('2d');
+      } else {
+        throw new Error('It is not supported under current environment');
       }
     }
     this.data = new DataStorage(ENGINE);

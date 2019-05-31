@@ -61,12 +61,12 @@ function getWebGLRenderingContext(webGLVersion: number): WebGLRenderingContext {
   }
   let canvas;
 
-  if (typeof(document) !== 'undefined') {
-    canvas = document.createElement('canvas');
   //@ts-ignore
-  } else if (typeof(WorkerGlobalScope) !== 'undefined') {
+  if (typeof(OffscreenCanvas) !== 'undefined') {
     //@ts-ignore
     canvas = new OffscreenCanvas(300, 150);
+  } else if (typeof(document) !== 'undefined') {
+    canvas = document.createElement('canvas');
   } else {
     throw new Error('Cannot create a webgl context in this environment');
   }
