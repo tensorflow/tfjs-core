@@ -15,12 +15,16 @@
  * =============================================================================
  */
 
+import {ENV} from '../environment';
 import {tensor} from '../ops/tensor_ops';
 import {NamedTensor, NamedTensorMap} from '../tensor_types';
 import {TypedArray} from '../types';
 import {sizeFromShape} from '../util';
 
-import {DTYPE_VALUE_SIZE_MAP, ModelArtifacts, ModelArtifactsInfo, WeightGroup, WeightsManifestEntry} from './types';
+import {DTYPE_VALUE_SIZE_MAP, ModelArtifacts, ModelArtifactsInfo, StringWeightsManifestEntry, WeightGroup, WeightsManifestEntry} from './types';
+
+/** Used to delimit neighboring strings when encoding string tensors. */
+export const STRING_DELIMITER = '\x00';
 
 /**
  * Encode a map from names to weight values as an ArrayBuffer, along with an
@@ -53,15 +57,25 @@ export async function encodeWeights(
   for (let i = 0; i < names.length; ++i) {
     const name = names[i];
     const t = Array.isArray(tensors) ? tensors[i].tensor : tensors[name];
-    if (t.dtype !== 'float32' && t.dtype !== 'int32' && t.dtype !== 'bool') {
+    if (t.dtype !== 'float32' && t.dtype !== 'int32' && t.dtype !== 'bool' &&
+        t.dtype !== 'string') {
       throw new Error(`Unsupported dtype in weight '${name}': ${t.dtype}`);
     }
     const spec: WeightsManifestEntry = {name, shape: t.shape, dtype: t.dtype};
+    if (t.dtype === 'string') {
+      const utf8bytes =
+          ENV.platform.encodeUTF8((await t.data()).join(STRING_DELIMITER));
+      dataPromises.push(Promise.resolve(utf8bytes));
+      const stringSpec = spec as StringWeightsManifestEntry;
+      stringSpec.byteLength = utf8bytes.length;
+      stringSpec.delimiter = STRING_DELIMITER;
+    } else {
+      dataPromises.push(t.data());
+    }
     if (group != null) {
       spec.group = group;
     }
     specs.push(spec);
-    dataPromises.push(t.data());
   }
 
   const tensorValues = await Promise.all(dataPromises);
@@ -121,9 +135,11 @@ export function decodeWeights(
       }
       offset += size * quantizationSizeFactor;
     } else if (dtype === 'string') {
-      const decoder = new TextDecoder('utf-8');
-      const bytes = buffer.slice(offset, offset + spec.byte_length);
-      values = decoder.decode(bytes).split('\x00');
+      const stringSpec = spec as StringWeightsManifestEntry;
+      const bytes =
+          new Uint8Array(buffer.slice(offset, offset + stringSpec.byteLength));
+      values = ENV.platform.decodeUTF8(bytes).split(stringSpec.delimiter);
+      offset += stringSpec.byteLength;
     } else {
       const dtypeFactor = DTYPE_VALUE_SIZE_MAP[dtype];
       const byteBuffer = buffer.slice(offset, offset + size * dtypeFactor);

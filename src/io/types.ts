@@ -105,10 +105,13 @@ export declare interface WeightsManifestEntry {
     min: number,             // The (possibly nudged) minimum weight to add.
     dtype: 'uint16'|'uint8'  // The dtype of the quantized weights.
   };
+}
 
-  // Available for string tensors.
-  delimiter?: string;
-  byte_length?: number;
+export declare interface StringWeightsManifestEntry extends
+    WeightsManifestEntry {
+  dtype: 'string';
+  delimiter: string;
+  byteLength: number;
 }
 
 /**

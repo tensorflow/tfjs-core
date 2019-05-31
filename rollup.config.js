@@ -59,7 +59,7 @@ function config({plugins = [], output = {}, external = [], visualize = false}) {
       node(),
       // Polyfill require() from dependencies.
       commonjs({
-        ignore: ['crypto', 'node-fetch'],
+        ignore: ['crypto', 'node-fetch', 'util'],
         include: 'node_modules/**',
         namedExports: {
           './node_modules/seedrandom/index.js': ['alea'],
@@ -99,27 +99,27 @@ module.exports = cmdOptions => {
     }));
   }
 
-  // tf-core.min.js
-  bundles.push(config({
-    plugins: [terser({output: {preamble: PREAMBLE}})],
-    output: {
-      format: 'umd',
-      name: 'tf',
-      extend: true,
-      file: 'dist/tf-core.min.js',
-    },
-    visualize: cmdOptions.visualize
-  }));
+  // // tf-core.min.js
+  // bundles.push(config({
+  //   plugins: [terser({output: {preamble: PREAMBLE}})],
+  //   output: {
+  //     format: 'umd',
+  //     name: 'tf',
+  //     extend: true,
+  //     file: 'dist/tf-core.min.js',
+  //   },
+  //   visualize: cmdOptions.visualize
+  // }));
 
-  if (!cmdOptions.ci) {
-    // tf-core.esm.js
-    bundles.push(config({
-      plugins: [terser({output: {preamble: PREAMBLE}})],
-      output: {
-        format: 'es',
-        file: 'dist/tf-core.esm.js',
-      }
-    }));
-  }
+  // if (!cmdOptions.ci) {
+  //   // tf-core.esm.js
+  //   bundles.push(config({
+  //     plugins: [terser({output: {preamble: PREAMBLE}})],
+  //     output: {
+  //       format: 'es',
+  //       file: 'dist/tf-core.esm.js',
+  //     }
+  //   }));
+  // }
   return bundles;
 };

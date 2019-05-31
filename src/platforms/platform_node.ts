@@ -26,6 +26,26 @@ export const getNodeFetch = {
 
 export let systemFetch: (url: string, init?: RequestInit) => Promise<Response>;
 export class PlatformNode implements Platform {
+  private textEncoder: TextEncoder;
+  private textDecoder: TextDecoder;
+
+  constructor() {
+    // tslint:disable-next-line: no-require-imports
+    const util = require('util');
+    // Both the encoder and the decoder use UTF-8 encoding by default.
+    this.textEncoder = new util.TextEncoder();
+    this.textDecoder = new util.TextDecoder();
+  }
+
+  encodeUTF8(text: string): Uint8Array {
+    return this.textEncoder.encode(text);
+  }
+  decodeUTF8(bytes: Uint8Array): string {
+    if (bytes.length === 0) {
+      return '';
+    }
+    return this.textDecoder.decode(bytes);
+  }
   fetch(path: string, requestInits?: RequestInit): Promise<Response> {
     if (ENV.global.fetch != null) {
       return ENV.global.fetch(path, requestInits);

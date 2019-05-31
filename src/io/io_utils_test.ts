@@ -22,7 +22,7 @@ import {NamedTensor, NamedTensorMap} from '../tensor_types';
 import {expectArraysEqual} from '../test_util';
 import {expectArraysClose} from '../test_util';
 
-import {arrayBufferToBase64String, base64StringToArrayBuffer, basename, concatenateArrayBuffers, concatenateTypedArrays, stringByteLength} from './io_utils';
+import {arrayBufferToBase64String, base64StringToArrayBuffer, basename, concatenateArrayBuffers, concatenateTypedArrays, STRING_DELIMITER, stringByteLength} from './io_utils';
 import {WeightsManifestEntry} from './types';
 
 describe('concatenateTypedArrays', () => {
@@ -329,6 +329,51 @@ describe('encodeWeights', () => {
     ]);
   });
 
+  it('String tensors', async () => {
+    const tensors: NamedTensorMap = {
+      x1: tensor2d([['a', 'bc'], ['def', 'g']], [2, 2], 'string'),
+      x2: scalar('', 'string'),                       // Empty string.
+      x3: tensor1d(['здраво', 'поздрав'], 'string'),  // Cyrillic.
+    };
+    const dataAndSpecs = await tf.io.encodeWeights(tensors);
+    const data = dataAndSpecs.data;
+    const specs = dataAndSpecs.specs as tf.io.StringWeightsManifestEntry[];
+    const x1ByteLength = 7 + 3;       // 7 chars + 3 delimiters.
+    const x2ByteLength = 0;           // No chars.
+    const x3ByteLength = 13 * 2 + 1;  // 13 cyrillic letters + 1 delimiter.
+    expect(data.byteLength).toEqual(x1ByteLength + x2ByteLength + x3ByteLength);
+    let delim = specs[0].delimiter;
+    expect(new Uint8Array(data, 0, x1ByteLength))
+        .toEqual(tf.ENV.platform.encodeUTF8(`a${delim}bc${delim}def${delim}g`));
+    // The middle string takes up 0 bytes.
+    delim = specs[2].delimiter;
+    expect(new Uint8Array(data, x1ByteLength, x3ByteLength))
+        .toEqual(tf.ENV.platform.encodeUTF8(`здраво${delim}поздрав`));
+    expect(specs).toEqual([
+      {
+        name: 'x1',
+        dtype: 'string',
+        shape: [2, 2],
+        byteLength: x1ByteLength,
+        delimiter: STRING_DELIMITER,
+      },
+      {
+        name: 'x2',
+        dtype: 'string',
+        shape: [],
+        byteLength: x2ByteLength,
+        delimiter: STRING_DELIMITER,
+      },
+      {
+        name: 'x3',
+        dtype: 'string',
+        shape: [2],
+        byteLength: x3ByteLength,
+        delimiter: STRING_DELIMITER,
+      }
+    ]);
+  });
+
   it('Mixed dtype tensors', async () => {
     const tensors: NamedTensorMap = {
       x1: tensor2d([[10, 20], [30, 40]], [2, 2], 'int32'),
@@ -370,17 +415,25 @@ describeWithFlags('decodeWeights', {}, () => {
       x1: tensor2d([[10, 20], [30, 40]], [2, 2], 'int32'),
       x2: scalar(13.37, 'float32'),
       x3: tensor1d([true, false, false], 'bool'),
+      x4: tensor2d([['здраво', 'a'], ['b', 'c']], [2, 2], 'string'),
+      x5: tensor1d([''], 'string'),
       y1: tensor2d([-10, -20, -30], [3, 1], 'float32'),
     };
     const dataAndSpecs = await tf.io.encodeWeights(tensors);
     const data = dataAndSpecs.data;
     const specs = dataAndSpecs.specs;
-    expect(data.byteLength).toEqual(4 * 4 + 4 * 1 + 1 * 3 + 4 * 3);
+    // 12 bytes from cyrillic (6 letters) + 3 bytes from ascii + 3 delimiters.
+    const x4Bytes = 12 + 3 + 3;
+    const x5Bytes = 0;
+    expect(data.byteLength)
+        .toEqual(4 * 4 + 4 * 1 + 1 * 3 + x4Bytes + x5Bytes + 4 * 3);
     const decoded = tf.io.decodeWeights(data, specs);
-    expect(Object.keys(decoded).length).toEqual(4);
+    expect(Object.keys(decoded).length).toEqual(6);
     expectArraysEqual(await decoded['x1'].data(), await tensors['x1'].data());
     expectArraysEqual(await decoded['x2'].data(), await tensors['x2'].data());
     expectArraysEqual(await decoded['x3'].data(), await tensors['x3'].data());
+    expectArraysEqual(await decoded['x4'].data(), await tensors['x4'].data());
+    expectArraysEqual(await decoded['x5'].data(), await tensors['x5'].data());
     expectArraysEqual(await decoded['y1'].data(), await tensors['y1'].data());
   });
 
