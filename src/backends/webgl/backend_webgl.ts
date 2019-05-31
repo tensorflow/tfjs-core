@@ -79,6 +79,7 @@ import * as fft_gpu from './fft_gpu';
 import {FFTProgram} from './fft_gpu';
 import {FillProgram} from './fill_gpu';
 import {FromPixelsProgram} from './from_pixels_gpu';
+import {FromPixelsPackedProgram} from './from_pixels_packed_gpu';
 import {GatherProgram} from './gather_gpu';
 import {GatherNDProgram} from './gather_nd_gpu';
 import {GPGPUContext} from './gpgpu_context';
@@ -309,8 +310,16 @@ export class MathBackendWebGL implements KernelBackend {
     this.texData.get(tempPixelHandle.dataId).usage = TextureUsage.PIXELS;
     this.gpgpu.uploadPixelDataToTexture(
         this.getTexture(tempPixelHandle.dataId), pixels as ImageData);
-    const program = new FromPixelsProgram(outShape);
-    const res = this.compileAndRun(program, [tempPixelHandle]);
+    let program, res;
+    if (ENV.getBool('WEBGL_PACK')) {
+      program = new FromPixelsPackedProgram(outShape);
+      const packedOutput =
+          this.makePackedTensor(program.outputShape, tempPixelHandle.dtype);
+      res = this.compileAndRun(program, [tempPixelHandle], packedOutput);
+    } else {
+      program = new FromPixelsProgram(outShape);
+      res = this.compileAndRun(program, [tempPixelHandle]);
+    }
 
     this.disposeData(tempPixelHandle.dataId);
 
