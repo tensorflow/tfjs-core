@@ -218,18 +218,44 @@ export function bindVertexProgramAttributeStreams(
           gl, debug, program, 'uv', vertexBuffer, 2, stride, uvOffset);
 }
 
+export function uploadPixelDataToPackedTexture(
+    gl: WebGLRenderingContext, debug: boolean, texture: WebGLTexture,
+    pixels: PixelData|ImageData|HTMLImageElement|HTMLCanvasElement|
+    HTMLVideoElement,
+    textureConfig: TextureConfig) {
+  webgl_util.callAndCheck(
+      gl, debug, () => gl.bindTexture(gl.TEXTURE_2D, texture));
+  const [width, height] = tex_util.getPackedMatrixTextureShapeWidthHeight(
+      pixels.width, pixels.height);
+  if (util.isTypedArray((pixels as PixelData).data)) {
+    const data =
+        new Float32Array(tex_util.getPackedRGBAArraySizeFromMatrixShape(
+            pixels.width, pixels.height));
+    data.set((pixels as PixelData).data);
+
+    webgl_util.callAndCheck(
+        gl, debug,
+        () => gl.texImage2D(
+            gl.TEXTURE_2D, 0, textureConfig.internalFormatPackedFloat, width,
+            height, 0, gl.RGBA, gl.FLOAT, data));
+  }
+
+  webgl_util.callAndCheck(gl, debug, () => gl.bindTexture(gl.TEXTURE_2D, null));
+}
+
 export function uploadPixelDataToTexture(
     gl: WebGLRenderingContext, debug: boolean, texture: WebGLTexture,
     pixels: PixelData|ImageData|HTMLImageElement|HTMLCanvasElement|
-    HTMLVideoElement) {
+    HTMLVideoElement,
+    textureConfig: TextureConfig) {
   webgl_util.callAndCheck(
       gl, debug, () => gl.bindTexture(gl.TEXTURE_2D, texture));
-  if ((pixels as PixelData).data instanceof Uint8Array) {
+  if (util.isTypedArray((pixels as PixelData).data)) {
     webgl_util.callAndCheck(
         gl, debug,
         () => gl.texImage2D(
             gl.TEXTURE_2D, 0, gl.RGBA, pixels.width, pixels.height, 0, gl.RGBA,
-            gl.UNSIGNED_BYTE, (pixels as PixelData).data));
+            gl.FLOAT, (pixels as PixelData).data));
   } else {
     webgl_util.callAndCheck(
         gl, debug,

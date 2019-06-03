@@ -2520,9 +2520,16 @@ export class MathBackendWebGL implements KernelBackend {
         if (shape.length) {
           [rows, cols] = webgl_util.getRowsCols(shape);
         }
-        this.gpgpu.uploadMatrixToPackedTexture(
-            newTexture, batch, rows, cols, texShape[0], texShape[1],
-            typedArrayToFloat32(values as Float32Array));
+        // this.gpgpu.uploadMatrixToPackedTexture(
+        //     newTexture, batch, rows, cols, texShape[0], texShape[1],
+        //     typedArrayToFloat32(values as Float32Array));
+        console.log('upload pixel data to texture');
+        console.log(texShape, batch, rows, cols);
+        this.gpgpu.uploadPixelDataToPackedTexture(newTexture, {
+          width: texShape[0],
+          height: texShape[1],
+          data: values as TypedArray
+        } as any);
       } else {
         this.gpgpu.uploadMatrixToTexture(
             newTexture, texShape[0], texShape[1],
