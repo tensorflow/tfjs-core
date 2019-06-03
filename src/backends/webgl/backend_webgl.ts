@@ -78,6 +78,7 @@ import {EncodeFloatProgram} from './encode_float_gpu';
 import * as fft_gpu from './fft_gpu';
 import {FFTProgram} from './fft_gpu';
 import {FillProgram} from './fill_gpu';
+import {FromPixelsGenericPackedProgram} from './from_pixels_generic_packed_gpu';
 import {FromPixelsProgram} from './from_pixels_gpu';
 import {FromPixelsPackedProgram} from './from_pixels_packed_gpu';
 import {GatherProgram} from './gather_gpu';
@@ -2510,8 +2511,7 @@ export class MathBackendWebGL implements KernelBackend {
     const texShape =
         webgl_util.getTextureShapeFromLogicalShape(shape, isPacked);
     texData.texShape = texShape;
-    const newTexture = this.acquireTexture(texShape, usage, dtype, isPacked);
-    texData.texture = newTexture;
+
     if (values != null) {
       // TODO(smilkov): Propagate the original typed array to gpgpu.
       if (isPacked) {
@@ -2520,16 +2520,28 @@ export class MathBackendWebGL implements KernelBackend {
         if (shape.length) {
           [rows, cols] = webgl_util.getRowsCols(shape);
         }
+
+        const tempHandle = this.makeTensorHandle(texShape, dtype);
+
         // this.gpgpu.uploadMatrixToPackedTexture(
         //     newTexture, batch, rows, cols, texShape[0], texShape[1],
         //     typedArrayToFloat32(values as Float32Array));
         console.log('upload pixel data to texture');
         console.log(texShape, batch, rows, cols);
-        this.gpgpu.uploadPixelDataToPackedTexture(newTexture, {
-          width: texShape[0],
-          height: texShape[1],
-          data: values as TypedArray
-        } as any);
+        this.gpgpu.uploadPixelDataToPackedTexture(
+            this.getTexture(tempHandle.dataId), {
+              width: texShape[0],
+              height: texShape[1],
+              data: values as TypedArray
+            } as any);
+
+        const program = new FromPixelsGenericPackedProgram(shape);
+        const tmpTarget =
+            this.makeTensorHandle(program.outputShape, tempHandle.dtype);
+        this.texData.get(tmpTarget.dataId).isPacked = true;
+        this.compileAndRun(program, [tempHandle], tmpTarget);
+        texData.texture = this.texData.get(tmpTarget.dataId).texture;
+        // TODO: dispose all the intermediate tensors I've created...
       } else {
         this.gpgpu.uploadMatrixToTexture(
             newTexture, texShape[0], texShape[1],
@@ -2540,6 +2552,9 @@ export class MathBackendWebGL implements KernelBackend {
       if (shouldTimeProgram) {
         this.uploadWaitMs += performance.now() - start;
       }
+    } else {
+      const newTexture = this.acquireTexture(texShape, usage, dtype, isPacked);
+      texData.texture = newTexture;
     }
   }
 
