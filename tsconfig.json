@@ -27,6 +27,7 @@
   ],
   "exclude": [
     "src/backends/webgpu/",
-    "node_modules/"
+    "src/platforms/react_native/",
+    "node_modules/",
   ]
 }
