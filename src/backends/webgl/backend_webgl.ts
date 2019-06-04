@@ -2551,15 +2551,18 @@ export class MathBackendWebGL implements KernelBackend {
         const program =
             new FromPixelsGenericPackedProgram(shapeAs3D, [width, height]);
         const tmpTarget =
-            this.makeTensorHandle(program.outputShape, tempHandle.dtype);
+            this.makeTensorHandle(program.outputShape, tempHandle.dtype) as
+                TensorHandle &
+            {size: number};
+        tmpTarget.size = sizeFromShape(program.outputShape);
         this.texData.get(tmpTarget.dataId).isPacked = true;
         this.compileAndRun(program, [tempHandle], tmpTarget);
         texData.texture = this.texData.get(tmpTarget.dataId).texture;
         // TODO: dispose all the intermediate tensors I've created...
       } else {
-        this.gpgpu.uploadMatrixToTexture(
-            newTexture, texShape[0], texShape[1],
-            typedArrayToFloat32(values as Float32Array));
+        // this.gpgpu.uploadMatrixToTexture(
+        //     newTexture, texShape[0], texShape[1],
+        //     typedArrayToFloat32(values as Float32Array));
       }
       // Once uploaded, don't store the values on cpu.
       texData.values = null;
@@ -2627,6 +2630,6 @@ function float32ToTypedArray<D extends NumericDataType>(
   }
 }
 
-function typedArrayToFloat32(a: TypedArray): Float32Array {
-  return (a instanceof Float32Array) ? a : new Float32Array(a);
-}
+// function typedArrayToFloat32(a: TypedArray): Float32Array {
+//   return (a instanceof Float32Array) ? a : new Float32Array(a);
+// }
