@@ -58,8 +58,10 @@ export class FromPixelsGenericPackedProgram implements GPGPUProgram {
             flatIndex = getFlatIndex(localCoords);
             int offset = imod(flatIndex, 4);
 
-            int r = (flatIndex / 4) / ${width};
-            int c = imod((flatIndex / 4), ${width});
+            flatIndex /= 4;
+
+            int r = flatIndex / ${width};
+            int c = imod(flatIndex, ${width});
             vec2 uv = (vec2(c, r) + halfCR) / vec2(${width}.0, ${height}.0);
 
             vec4 values = ${glsl.texture2D}(A, uv);
