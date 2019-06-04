@@ -42,30 +42,30 @@ export class FromPixelsGenericPackedProgram implements GPGPUProgram {
         vec4 result = vec4(0.);
         
         int flatIndex = getFlatIndex(coords);
-        int offset = imod(flatIndex, 4);
-
+        
         for(int row=0; row<=1; row++) {
           for(int col=0; col<=1; col++) {
             ivec3 localCoords = coords;
-
+            
             if(localCoords[2] + col <= ${outputShape[2]}) {
               localCoords[2] += col;
             }
-
+            
             if(localCoords[1] + row <= ${outputShape[1]}) {
               localCoords[1] += row;
             }
-
+            
             flatIndex = getFlatIndex(localCoords);
+            int offset = imod(flatIndex, 4);
 
-            int r = flatIndex / ${width};
-            int c = imod(flatIndex, ${width});
+            int r = (flatIndex / 4) / ${width};
+            int c = imod((flatIndex / 4), ${width});
             vec2 uv = (vec2(c, r) + halfCR) / vec2(${width}.0, ${height}.0);
 
             vec4 values = ${glsl.texture2D}(A, uv);
 
             int channelIndex = row * 2 + col;
-            result[channelIndex] = values[offset + channelIndex];
+            result[channelIndex] = values[offset];
           }
         }
 

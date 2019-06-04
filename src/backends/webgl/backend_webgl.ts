@@ -2508,6 +2508,8 @@ export class MathBackendWebGL implements KernelBackend {
     if (shouldTimeProgram) {
       start = performance.now();
     }
+
+    // texShape will be [height, width]
     const texShape =
         webgl_util.getTextureShapeFromLogicalShape(shape, isPacked);
     texData.texShape = texShape;
@@ -2522,8 +2524,8 @@ export class MathBackendWebGL implements KernelBackend {
         }
 
         const [width, height] = tex_util.getPackedMatrixTextureShapeWidthHeight(
-            texShape[1], texShape[0]);
-        const tempHandle = this.makeTensorHandle([width, height], dtype);
+            texShape[0], texShape[1]);
+        const tempHandle = this.makeTensorHandle([height, width], dtype);
 
         // this.gpgpu.uploadMatrixToPackedTexture(
         //     newTexture, batch, rows, cols, texShape[0], texShape[1],
@@ -2532,8 +2534,8 @@ export class MathBackendWebGL implements KernelBackend {
         console.log(texShape, width, height, batch, rows, cols);
         this.gpgpu.uploadPixelDataToPackedTexture(
             this.getTexture(tempHandle.dataId), {
-              width: texShape[0],
-              height: texShape[1],
+              width: texShape[1],
+              height: texShape[0],
               data: values as TypedArray
             } as PixelData);
 
@@ -2546,7 +2548,8 @@ export class MathBackendWebGL implements KernelBackend {
           ] as [number, number, number];
         }
 
-        const program = new FromPixelsGenericPackedProgram(shapeAs3D, texShape);
+        const program =
+            new FromPixelsGenericPackedProgram(shapeAs3D, [width, height]);
         const tmpTarget =
             this.makeTensorHandle(program.outputShape, tempHandle.dtype);
         this.texData.get(tmpTarget.dataId).isPacked = true;
