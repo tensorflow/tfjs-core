@@ -15,43 +15,48 @@
  * =============================================================================
  */
 
+import * as util from '../../util';
+
 import {getGlslDifferences} from './glsl_version';
 import {GPGPUProgram} from './gpgpu_math';
-import {getCoordsDataType} from './shader_compiler';
+import * as shader_util from './shader_compiler_util';
 
 export class FromPixelsGenericPackedProgram implements GPGPUProgram {
   variableNames = ['A'];
   userCode: string;
   outputShape: number[];
 
-  constructor(outputShape: number[], texShape: [number, number]) {
+  constructor(outputShape: [number, number, number], texShape: [
+    number, number
+  ]) {
     const glsl = getGlslDifferences();
     const [width, height] = texShape;
     this.outputShape = outputShape;
-    const rank = outputShape.length;
-    const dtype = getCoordsDataType(rank);
 
     this.userCode = `
+      ${getFlatIndex(outputShape)}
+
       void main() {
-        ${dtype} coords = getOutputCoords();
+        ivec3 coords = getOutputCoords();
 
         vec4 result = vec4(0.);
         
-        int flatIndex = coords;
+        int flatIndex = getFlatIndex(coords);
         int offset = imod(flatIndex, 4);
 
         for(int row=0; row<=1; row++) {
           for(int col=0; col<=1; col++) {
-            ${dtype} localCoords = coords;
+            ivec3 localCoords = coords;
 
-            // adjust coords given row/col
+            if(localCoords[2] + col <= ${outputShape[2]}) {
+              localCoords[2] += col;
+            }
 
-            // add col to final element of coords
-            localCoords += col;
+            if(localCoords[1] + row <= ${outputShape[1]}) {
+              localCoords[1] += row;
+            }
 
-            // add row to second to last element of coords
-
-            flatIndex = localCoords; // TODO: generalize beyond rank=1
+            flatIndex = getFlatIndex(localCoords);
 
             int r = flatIndex / ${width};
             int c = imod(flatIndex, ${width});
@@ -68,4 +73,16 @@ export class FromPixelsGenericPackedProgram implements GPGPUProgram {
       }
     `;
   }
+}
+
+function getFlatIndex(shape: [number, number, number]): string {
+  const dotCoordsWithStrides = shader_util.dotify(
+      ['coords.x', 'coords.y', 'coords.z'],
+      util.computeStrides(shape).map(d => d.toString()).concat(['1.']));
+
+  return `
+    int getFlatIndex(ivec3 coords) {
+      return round(${dotCoordsWithStrides});
+    }
+  `;
 }

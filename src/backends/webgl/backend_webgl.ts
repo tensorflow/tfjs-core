@@ -2537,7 +2537,16 @@ export class MathBackendWebGL implements KernelBackend {
               data: values as TypedArray
             } as PixelData);
 
-        const program = new FromPixelsGenericPackedProgram(shape, texShape);
+        let shapeAs3D: [number, number, number] = [1, 1, 1];
+        const isScalar =
+            shape.length === 0 || (shape.length === 1 && shape[0] === 1);
+        if (!isScalar) {
+          shapeAs3D = [
+            webgl_util.getBatchDim(shape), ...webgl_util.getRowsCols(shape)
+          ] as [number, number, number];
+        }
+
+        const program = new FromPixelsGenericPackedProgram(shapeAs3D, texShape);
         const tmpTarget =
             this.makeTensorHandle(program.outputShape, tempHandle.dtype);
         this.texData.get(tmpTarget.dataId).isPacked = true;
