@@ -33,6 +33,44 @@ export class FromPixelsGenericPackedProgram implements GPGPUProgram {
     const [width, height] = texShape;
     this.outputShape = outputShape;
 
+    let mainLoop = ``;
+
+    for (let row = 0; row <= 1; row++) {
+      for (let col = 0; col <= 1; col++) {
+        const channel = row * 2 + col;
+        mainLoop += `
+          localCoords = coords;
+    
+          if(localCoords[2] + ${col} <= ${outputShape[2]}) {
+            localCoords[2] += ${col};
+          }
+
+          if(localCoords[1] + ${row} <= ${outputShape[1]}) {
+            localCoords[1] += ${row};
+          }
+
+          flatIndex = getFlatIndex(localCoords);
+          offset = imod(flatIndex, 4);
+
+          flatIndex /= 4;
+          r = flatIndex / ${width};
+          c = imod(flatIndex, ${width});
+          uv = (vec2(c, r) + halfCR) / vec2(${width}.0, ${height}.0);
+          values = ${glsl.texture2D}(A, uv);
+
+          if(offset == 0) {
+            result[${channel}] = values[0];
+          } else if(offset == 1) {
+            result[${channel}] = values[1];
+          } else if(offset == 2) {
+            result[${channel}] = values[2];
+          } else {
+            result[${channel}] = values[3];
+          }
+        `;
+      }
+    }
+
     this.userCode = `
       ${getFlatIndex(outputShape)}
 
@@ -40,36 +78,12 @@ export class FromPixelsGenericPackedProgram implements GPGPUProgram {
         ivec3 coords = getOutputCoords();
 
         vec4 result = vec4(0.);
+        int flatIndex, r, c, offset, channelIndex;
+        ivec3 localCoords;
+        vec2 uv;
+        vec4 values;
         
-        int flatIndex = getFlatIndex(coords);
-        
-        for(int row=0; row<=1; row++) {
-          for(int col=0; col<=1; col++) {
-            ivec3 localCoords = coords;
-            
-            if(localCoords[2] + col <= ${outputShape[2]}) {
-              localCoords[2] += col;
-            }
-            
-            if(localCoords[1] + row <= ${outputShape[1]}) {
-              localCoords[1] += row;
-            }
-            
-            flatIndex = getFlatIndex(localCoords);
-            int offset = imod(flatIndex, 4);
-
-            flatIndex /= 4;
-
-            int r = flatIndex / ${width};
-            int c = imod(flatIndex, ${width});
-            vec2 uv = (vec2(c, r) + halfCR) / vec2(${width}.0, ${height}.0);
-
-            vec4 values = ${glsl.texture2D}(A, uv);
-
-            int channelIndex = row * 2 + col;
-            result[channelIndex] = values[offset];
-          }
-        }
+        ${mainLoop}
 
         ${glsl.output} = result;
       }
