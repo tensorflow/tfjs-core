@@ -226,7 +226,7 @@ export function uploadPixelDataToPackedTexture(
   webgl_util.callAndCheck(
       gl, debug, () => gl.bindTexture(gl.TEXTURE_2D, texture));
   const [width, height] = tex_util.getPackedMatrixTextureShapeWidthHeight(
-      pixels.width, pixels.height);
+      pixels.height, pixels.width);
   if (util.isTypedArray((pixels as PixelData).data)) {
     const data =
         new Float32Array(tex_util.getPackedRGBAArraySizeFromMatrixShape(

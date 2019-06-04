@@ -17,20 +17,42 @@
 
 import {getGlslDifferences} from './glsl_version';
 import {GPGPUProgram} from './gpgpu_math';
+import {getCoordsDataType} from './shader_compiler';
 
 export class FromPixelsGenericPackedProgram implements GPGPUProgram {
   variableNames = ['A'];
   userCode: string;
   outputShape: number[];
 
-  constructor(outputShape: number[]) {
+  constructor(outputShape: number[], texShape: [number, number]) {
     const glsl = getGlslDifferences();
-    const [height, width, ] = outputShape;
+    const [width, height] = texShape;
     this.outputShape = outputShape;
+    const rank = outputShape.length;
+    const dtype = getCoordsDataType(rank);
+
     this.userCode = `
       void main() {
+        ${dtype} coords = getOutputCoords();
 
-        ${glsl.output} = vec4(100.);
+        int flatIndex = coords; // TODO: generalize beyond rank=1
+
+        vec4 result = vec4(0.);
+
+        for(int row=0; row<=1; row++) {
+          for(int col=0; col<=1; col++) {
+            int r = flatIndex / ${width};
+            int c = imod(flatIndex, ${width});
+            vec2 uv = (vec2(c, r) + halfCR) / vec2(${width}.0, ${height}.0);
+
+            vec4 values = ${glsl.texture2D}(A, uv);
+
+            int channelIndex = row * 2 + col;
+            result[channelIndex] = values[channelIndex];
+          }
+        }
+
+        ${glsl.output} = result;
       }
     `;
   }

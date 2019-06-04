@@ -2521,21 +2521,23 @@ export class MathBackendWebGL implements KernelBackend {
           [rows, cols] = webgl_util.getRowsCols(shape);
         }
 
-        const tempHandle = this.makeTensorHandle(texShape, dtype);
+        const [width, height] = tex_util.getPackedMatrixTextureShapeWidthHeight(
+            texShape[1], texShape[0]);
+        const tempHandle = this.makeTensorHandle([width, height], dtype);
 
         // this.gpgpu.uploadMatrixToPackedTexture(
         //     newTexture, batch, rows, cols, texShape[0], texShape[1],
         //     typedArrayToFloat32(values as Float32Array));
         console.log('upload pixel data to texture');
-        console.log(texShape, batch, rows, cols);
+        console.log(texShape, width, height, batch, rows, cols);
         this.gpgpu.uploadPixelDataToPackedTexture(
             this.getTexture(tempHandle.dataId), {
               width: texShape[0],
               height: texShape[1],
               data: values as TypedArray
-            } as any);
+            } as PixelData);
 
-        const program = new FromPixelsGenericPackedProgram(shape);
+        const program = new FromPixelsGenericPackedProgram(shape, texShape);
         const tmpTarget =
             this.makeTensorHandle(program.outputShape, tempHandle.dtype);
         this.texData.get(tmpTarget.dataId).isPacked = true;
