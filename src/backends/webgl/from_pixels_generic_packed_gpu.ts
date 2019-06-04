@@ -78,7 +78,7 @@ export class FromPixelsGenericPackedProgram implements GPGPUProgram {
         ivec3 coords = getOutputCoords();
 
         vec4 result = vec4(0.);
-        int flatIndex, r, c, offset, channelIndex;
+        int flatIndex, r, c, offset;
         ivec3 localCoords;
         vec2 uv;
         vec4 values;
