@@ -2516,18 +2516,16 @@ export class MathBackendWebGL implements KernelBackend {
     texData.texShape = texShape;
 
     if (values != null) {
-      let encodedOutputHandle, program, encodedOutputTarget;
       let shapeAs3D: [number, number, number] = [1, 1, 1];
       const isScalar =
           shape.length === 0 || (shape.length === 1 && shape[0] === 1);
-
       if (!isScalar) {
         shapeAs3D = [
           webgl_util.getBatchDim(shape), ...webgl_util.getRowsCols(shape)
         ] as [number, number, number];
       }
 
-      // TODO(smilkov): Propagate the original typed array to gpgpu.
+      let encodedOutputHandle, program;
       if (isPacked) {
         const [width, height] = tex_util.getPackedMatrixTextureShapeWidthHeight(
             texShape[0], texShape[1]);
@@ -2542,20 +2540,6 @@ export class MathBackendWebGL implements KernelBackend {
 
         program =
             new FromPixelsGenericPackedProgram(shapeAs3D, [width, height]);
-        encodedOutputTarget = this.makeTensorHandle(
-                                  program.outputShape,
-                                  encodedOutputHandle.dtype) as TensorHandle &
-            {size: number};
-        encodedOutputTarget.size = sizeFromShape(program.outputShape);
-        this.texData.get(encodedOutputTarget.dataId).isPacked = true;
-        this.compileAndRun(program, [encodedOutputHandle], encodedOutputTarget);
-
-        // Have the original texture assume the identity of the encoded output.
-        texData.texture = this.texData.get(encodedOutputTarget.dataId).texture;
-        texData.texShape =
-            this.texData.get(encodedOutputTarget.dataId).texShape;
-        this.disposeData(encodedOutputHandle.dataId);
-        this.texData.delete(encodedOutputTarget.dataId);
       } else {
         encodedOutputHandle = this.makeTensorHandle(texShape, dtype);
         this.gpgpu.uploadDenseMatrixToTexture(
@@ -2566,19 +2550,22 @@ export class MathBackendWebGL implements KernelBackend {
             } as PixelData);
 
         program = new FromPixelsGenericProgram(shapeAs3D, texShape);
-        encodedOutputTarget = this.makeTensorHandle(
-                                  program.outputShape,
-                                  encodedOutputHandle.dtype) as TensorHandle &
-            {size: number};
-        encodedOutputTarget.size = sizeFromShape(program.outputShape);
-        this.compileAndRun(program, [encodedOutputHandle], encodedOutputTarget);
-
-        texData.texture = this.texData.get(encodedOutputTarget.dataId).texture;
-        texData.texShape =
-            this.texData.get(encodedOutputTarget.dataId).texShape;
-        this.disposeData(encodedOutputHandle.dataId);
-        this.texData.delete(encodedOutputTarget.dataId);
       }
+
+      const encodedOutputTarget =
+          this.makeTensorHandle(
+              program.outputShape, encodedOutputHandle.dtype) as TensorHandle &
+          {size: number};
+      encodedOutputTarget.size = sizeFromShape(program.outputShape);
+      this.texData.get(encodedOutputTarget.dataId).isPacked = true;
+      this.compileAndRun(program, [encodedOutputHandle], encodedOutputTarget);
+
+      // Have the original texture assume the identity of the encoded output.
+      texData.texture = this.texData.get(encodedOutputTarget.dataId).texture;
+      texData.texShape = this.texData.get(encodedOutputTarget.dataId).texShape;
+      this.disposeData(encodedOutputHandle.dataId);
+      this.texData.delete(encodedOutputTarget.dataId);
+
       // Once uploaded, don't store the values on cpu.
       texData.values = null;
       if (shouldTimeProgram) {
