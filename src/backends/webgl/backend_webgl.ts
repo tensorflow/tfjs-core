@@ -2560,6 +2560,9 @@ export class MathBackendWebGL implements KernelBackend {
       // Have the original texture assume the identity of the encoded output.
       texData.texture = this.texData.get(encodedOutputTarget.dataId).texture;
       texData.texShape = this.texData.get(encodedOutputTarget.dataId).texShape;
+      texData.isPacked = this.texData.get(encodedOutputTarget.dataId).isPacked;
+      texData.usage = this.texData.get(encodedOutputTarget.dataId).usage;
+
       this.disposeData(encodedOutputHandle.dataId);
       this.texData.delete(encodedOutputTarget.dataId);
 

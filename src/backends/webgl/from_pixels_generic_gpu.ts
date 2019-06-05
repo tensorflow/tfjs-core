@@ -60,7 +60,7 @@ export class FromPixelsGenericProgram implements GPGPUProgram {
           result = values[3];
         }
 
-        setOutput(result);
+        ${glsl.output} = vec4(result, 0., 0., 0.);
       }
     `;
   }
