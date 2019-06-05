@@ -621,6 +621,7 @@ export class MathBackendWebGL implements KernelBackend {
     if (!this.texData.has(dataId)) {
       return;
     }
+
     this.releaseGPUData(dataId);
     const {complexTensors} = this.texData.get(dataId);
     if (complexTensors != null) {
@@ -2509,7 +2510,6 @@ export class MathBackendWebGL implements KernelBackend {
       start = performance.now();
     }
 
-    // texShape will be [height, width]
     const texShape =
         webgl_util.getTextureShapeFromLogicalShape(shape, isPacked);
     texData.texShape = texShape;
@@ -2517,23 +2517,13 @@ export class MathBackendWebGL implements KernelBackend {
     if (values != null) {
       // TODO(smilkov): Propagate the original typed array to gpgpu.
       if (isPacked) {
-        const batch = webgl_util.getBatchDim(shape);
-        let rows = 1, cols = 1;
-        if (shape.length) {
-          [rows, cols] = webgl_util.getRowsCols(shape);
-        }
-
         const [width, height] = tex_util.getPackedMatrixTextureShapeWidthHeight(
             texShape[0], texShape[1]);
-        const tempHandle = this.makeTensorHandle([height, width], dtype);
+        const encodedOutputHandle =
+            this.makeTensorHandle([height, width], dtype);
 
-        // this.gpgpu.uploadMatrixToPackedTexture(
-        //     newTexture, batch, rows, cols, texShape[0], texShape[1],
-        //     typedArrayToFloat32(values as Float32Array));
-        console.log('upload pixel data to texture');
-        console.log(texShape, width, height, batch, rows, cols);
         this.gpgpu.uploadPixelDataToPackedTexture(
-            this.getTexture(tempHandle.dataId), {
+            this.getTexture(encodedOutputHandle.dataId), {
               width: texShape[1],
               height: texShape[0],
               data: values as TypedArray
@@ -2550,15 +2540,21 @@ export class MathBackendWebGL implements KernelBackend {
 
         const program =
             new FromPixelsGenericPackedProgram(shapeAs3D, [width, height]);
-        const tmpTarget =
-            this.makeTensorHandle(program.outputShape, tempHandle.dtype) as
+        const encodedOutputTarget =
+            this.makeTensorHandle(
+                program.outputShape, encodedOutputHandle.dtype) as
                 TensorHandle &
             {size: number};
-        tmpTarget.size = sizeFromShape(program.outputShape);
-        this.texData.get(tmpTarget.dataId).isPacked = true;
-        this.compileAndRun(program, [tempHandle], tmpTarget);
-        texData.texture = this.texData.get(tmpTarget.dataId).texture;
-        // TODO: dispose all the intermediate tensors I've created...
+        encodedOutputTarget.size = sizeFromShape(program.outputShape);
+        this.texData.get(encodedOutputTarget.dataId).isPacked = true;
+        this.compileAndRun(program, [encodedOutputHandle], encodedOutputTarget);
+
+        // Have the original texture assume the identity of the encoded output.
+        texData.texture = this.texData.get(encodedOutputTarget.dataId).texture;
+        texData.texShape =
+            this.texData.get(encodedOutputTarget.dataId).texShape;
+        this.disposeData(encodedOutputHandle.dataId);
+        this.texData.delete(encodedOutputTarget.dataId);
       } else {
         // this.gpgpu.uploadMatrixToTexture(
         //     newTexture, texShape[0], texShape[1],
