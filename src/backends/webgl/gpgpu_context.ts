@@ -155,6 +155,12 @@ export class GPGPUContext {
         this.gl, this.debug, texture, pixels, this.textureConfig);
   }
 
+  public uploadDenseMatrixToTexture(texture: WebGLTexture, pixels: PixelData) {
+    this.throwIfDisposed();
+    gpgpu_util.uploadDenseMatrixToTexture(
+        this.gl, this.debug, texture, pixels, this.textureConfig);
+  }
+
   public createFloat16PackedMatrixTexture(rows: number, columns: number):
       WebGLTexture {
     this.throwIfDisposed();

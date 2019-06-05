@@ -243,6 +243,23 @@ export function uploadPixelDataToPackedTexture(
   webgl_util.callAndCheck(gl, debug, () => gl.bindTexture(gl.TEXTURE_2D, null));
 }
 
+export function uploadDenseMatrixToTexture(
+    gl: WebGLRenderingContext, debug: boolean, texture: WebGLTexture,
+    pixelData: PixelData, textureConfig: TextureConfig) {
+  webgl_util.callAndCheck(
+      gl, debug, () => gl.bindTexture(gl.TEXTURE_2D, texture));
+  const data = new Float32Array(pixelData.width * pixelData.height * 4);
+  data.set(pixelData.data);
+
+  webgl_util.callAndCheck(
+      gl, debug,
+      () => gl.texImage2D(
+          gl.TEXTURE_2D, 0, textureConfig.internalFormatPackedFloat,
+          pixelData.width, pixelData.height, 0, gl.RGBA, gl.FLOAT, data));
+
+  webgl_util.callAndCheck(gl, debug, () => gl.bindTexture(gl.TEXTURE_2D, null));
+}
+
 export function uploadPixelDataToTexture(
     gl: WebGLRenderingContext, debug: boolean, texture: WebGLTexture,
     pixels: PixelData|ImageData|HTMLImageElement|HTMLCanvasElement|
