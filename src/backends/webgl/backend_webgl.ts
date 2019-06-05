@@ -360,6 +360,7 @@ export class MathBackendWebGL implements KernelBackend {
     texData.usage = TextureUsage.UPLOAD;
     texData.values = values;
   }
+
   readSync(dataId: DataId): DataValues {
     const texData = this.texData.get(dataId);
     const {values, dtype, complexTensors, slice, shape} = texData;
@@ -2554,7 +2555,7 @@ export class MathBackendWebGL implements KernelBackend {
               program.outputShape, encodedOutputHandle.dtype) as TensorHandle &
           {size: number};
       encodedOutputTarget.size = sizeFromShape(program.outputShape);
-      this.texData.get(encodedOutputTarget.dataId).isPacked = true;
+      this.texData.get(encodedOutputTarget.dataId).isPacked = isPacked;
       this.compileAndRun(program, [encodedOutputHandle], encodedOutputTarget);
 
       // Have the original texture assume the identity of the encoded output.
