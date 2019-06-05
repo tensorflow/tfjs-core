@@ -218,27 +218,22 @@ export function bindVertexProgramAttributeStreams(
           gl, debug, program, 'uv', vertexBuffer, 2, stride, uvOffset);
 }
 
-export function uploadPixelDataToPackedTexture(
+export function uploadDenseMatrixToPackedTexture(
     gl: WebGLRenderingContext, debug: boolean, texture: WebGLTexture,
-    pixels: PixelData|ImageData|HTMLImageElement|HTMLCanvasElement|
-    HTMLVideoElement,
-    textureConfig: TextureConfig) {
+    pixelData: PixelData, textureConfig: TextureConfig) {
   webgl_util.callAndCheck(
       gl, debug, () => gl.bindTexture(gl.TEXTURE_2D, texture));
   const [width, height] = tex_util.getPackedMatrixTextureShapeWidthHeight(
-      pixels.height, pixels.width);
-  if (util.isTypedArray((pixels as PixelData).data)) {
-    const data =
-        new Float32Array(tex_util.getPackedRGBAArraySizeFromMatrixShape(
-            pixels.width, pixels.height));
-    data.set((pixels as PixelData).data);
+      pixelData.height, pixelData.width);
+  const data = new Float32Array(tex_util.getPackedRGBAArraySizeFromMatrixShape(
+      pixelData.width, pixelData.height));
+  data.set(pixelData.data);
 
-    webgl_util.callAndCheck(
-        gl, debug,
-        () => gl.texImage2D(
-            gl.TEXTURE_2D, 0, textureConfig.internalFormatPackedFloat, width,
-            height, 0, gl.RGBA, gl.FLOAT, data));
-  }
+  webgl_util.callAndCheck(
+      gl, debug,
+      () => gl.texImage2D(
+          gl.TEXTURE_2D, 0, textureConfig.internalFormatPackedFloat, width,
+          height, 0, gl.RGBA, gl.FLOAT, data));
 
   webgl_util.callAndCheck(gl, debug, () => gl.bindTexture(gl.TEXTURE_2D, null));
 }

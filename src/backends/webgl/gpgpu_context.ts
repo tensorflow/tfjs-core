@@ -139,14 +139,6 @@ export class GPGPUContext {
         this.gl, this.debug, rows, columns, this.textureConfig);
   }
 
-  public uploadPixelDataToPackedTexture(
-      texture: WebGLTexture,
-      pixels: PixelData|ImageData|HTMLImageElement|HTMLCanvasElement) {
-    this.throwIfDisposed();
-    gpgpu_util.uploadPixelDataToPackedTexture(
-        this.gl, this.debug, texture, pixels, this.textureConfig);
-  }
-
   public uploadPixelDataToTexture(
       texture: WebGLTexture,
       pixels: PixelData|ImageData|HTMLImageElement|HTMLCanvasElement) {

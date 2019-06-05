@@ -2531,12 +2531,9 @@ export class MathBackendWebGL implements KernelBackend {
             texShape[0], texShape[1]);
         encodedOutputHandle = this.makeTensorHandle([height, width], dtype);
 
-        this.gpgpu.uploadPixelDataToPackedTexture(
-            this.getTexture(encodedOutputHandle.dataId), {
-              width: texShape[1],
-              height: texShape[0],
-              data: values as TypedArray
-            } as PixelData);
+        this.gpgpu.uploadDenseMatrixToTexture(
+            this.getTexture(encodedOutputHandle.dataId),
+            {width, height, data: values as TypedArray} as PixelData);
 
         program =
             new FromPixelsGenericPackedProgram(shapeAs3D, [width, height]);
