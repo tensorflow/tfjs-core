@@ -2538,18 +2538,19 @@ export class MathBackendWebGL implements KernelBackend {
         program = new FromPixelsGenericProgram(shapeAs3D, [height, width]);
       }
 
-      const encodedOutputHandle = this.makeTensorHandle([height, width], dtype);
+      const tempDenseInputHandle =
+          this.makeTensorHandle([height, width], dtype);
       this.gpgpu.uploadDenseMatrixToTexture(
-          this.getTexture(encodedOutputHandle.dataId),
+          this.getTexture(tempDenseInputHandle.dataId),
           {width, height, data: values as TypedArray} as PixelData);
 
       const encodedOutputTarget =
           this.makeTensorHandle(
-              program.outputShape, encodedOutputHandle.dtype) as TensorHandle &
+              program.outputShape, tempDenseInputHandle.dtype) as TensorHandle &
           {size: number};
       encodedOutputTarget.size = sizeFromShape(program.outputShape);
       this.texData.get(encodedOutputTarget.dataId).isPacked = isPacked;
-      this.compileAndRun(program, [encodedOutputHandle], encodedOutputTarget);
+      this.compileAndRun(program, [tempDenseInputHandle], encodedOutputTarget);
 
       // Have the original texture assume the identity of the encoded output.
       texData.texture = this.texData.get(encodedOutputTarget.dataId).texture;
@@ -2557,7 +2558,7 @@ export class MathBackendWebGL implements KernelBackend {
       texData.isPacked = this.texData.get(encodedOutputTarget.dataId).isPacked;
       texData.usage = this.texData.get(encodedOutputTarget.dataId).usage;
 
-      this.disposeData(encodedOutputHandle.dataId);
+      this.disposeData(tempDenseInputHandle.dataId);
       this.texData.delete(encodedOutputTarget.dataId);
 
       // Once uploaded, don't store the values on cpu.
