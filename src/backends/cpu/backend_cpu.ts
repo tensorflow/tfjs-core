@@ -44,6 +44,7 @@ import {nonMaxSuppressionImpl} from '../non_max_suppression_impl';
 import {split} from '../split_shared';
 import {topkImpl} from '../topk_impl';
 import {whereImpl} from '../where_impl';
+import { createCanvas } from '../webgl/canvas_util';
 
 function mapActivation(
     backend: MathBackendCPU, activation: Activation, x: Tensor): Tensor {
@@ -74,17 +75,8 @@ export class MathBackendCPU implements KernelBackend {
 
   constructor() {
     if (ENV.get('IS_BROWSER')) {
-      //@ts-ignore
-      if (typeof(OffscreenCanvas) !== 'undefined') {
-        this.fromPixels2DContext =
-            //@ts-ignore
-            new OffscreenCanvas(300, 150).getContext('2d');
-      } else if (typeof(document) !== 'undefined') {
-        this.fromPixels2DContext =
-            document.createElement('canvas').getContext('2d');
-      } else {
-        throw new Error('It is not supported under current environment');
-      }
+      const canvas = createCanvas();
+      this.fromPixels2DContext = canvas.getContext('2d');
     }
     this.data = new DataStorage(this, ENGINE);
   }

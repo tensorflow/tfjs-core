@@ -108,8 +108,6 @@ export class BrowserDownloads implements IOHandler {
           await defer(
               () => weightDataAnchor.dispatchEvent(new MouseEvent('click')));
         //@ts-ignore
-        } else if (typeof(WorkerGlobalScope) !== 'undefined') {
-          throw new Error('Not implement yet');
         } else {
           throw new Error('Browser downloads are not supported in ' +
               'this environment since `document` is not present');
