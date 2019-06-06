@@ -310,3 +310,103 @@ export function getModelArtifactsInfoForJSON(modelArtifacts: ModelArtifacts):
         modelArtifacts.weightData.byteLength,
   };
 }
+
+/**
+ * Make Base64 string URL safe by replacing `+` with `-` and `/` with `_`.
+ *
+ * @param str Base64 string to make URL safe.
+ */
+export function urlSafeBase64(str: string): string {
+  return str.replace(/\+/g, '-').replace(/\//g, '_');
+}
+
+// revert Base64 URL safe replacement of + and /
+/**
+ * Revert Base64 URL safe changes by replacing `-` with `+` and `_` with `/`.
+ *
+ * @param str URL safe Base string to revert changes.
+ */
+export function urlUnsafeBase64(str: string): string {
+  return str.replace(/-/g, '+').replace(/_/g, '/');
+}
+
+/**
+ * Convert a string to an ArrayBuffer of UTF-8 multibyte sequence
+ *
+ * @param str A string to be converted
+ * @returns `ArrayBuffer` with the contents of `str`
+ */
+export function stringToArrayBuffer(str: string): ArrayBuffer {
+  // contains multibyte characters
+  if (/[\u0080-\uffff]/.test(str)) {
+    const arr = new Array();
+    for (let i = 0; i < str.length; i++) {
+      // var cc = str.charCodeAt(i);
+      const cc = str.codePointAt(i);
+      if (cc < 0x80) {
+        // single byte
+        arr.push(cc);
+      } else {
+        // UTF-8 multibyte
+        if (cc < 0x800) {
+          // two bytes
+          arr.push(0xc0 | (cc >> 6));
+          arr.push(0x80 | (cc & 0x3f));
+        } else if (cc < 0x10000) {
+          // three bytes
+          arr.push(0xe0 | ((cc >> 12) & 0x0f));
+          arr.push(0x80 | ((cc >> 6) & 0x3f));
+          arr.push(0x80 | (cc & 0x3f));
+        } else {
+          // four bytes
+          arr.push(0xf0 | ((cc >> 18) & 0x07));
+          arr.push(0x80 | ((cc >> 12) & 0x3f));
+          arr.push(0x80 | ((cc >> 6) & 0x3f));
+          arr.push(0x80 | (cc & 0x3f));
+          i++;
+        }
+      }
+    }
+    return (new Uint8Array(arr)).buffer;
+  } else {
+    const byteArray = new Uint8Array(str.length);
+    for (let i = str.length; i--;) {
+      byteArray[i] = str.charCodeAt(i);
+    }
+    return byteArray.buffer;
+  }
+}
+
+/**
+ * Convert an ArrayBuffer of UTF-8 multibyte sequence to a string.
+ *
+ * @param buffer `ArrayBuffer` to be converted.
+ * @returns A string representation of `buffer`.
+ */
+export function arrayBufferToString(buffer: ArrayBuffer): string {
+  const byteArray = new Uint8Array(buffer);
+  const arr = new Array();
+
+  for (let i = 0, len = byteArray.length; i < len; ++i) {
+    const v = byteArray[i];
+    if (v < 0x80) {
+      // one byte
+      arr.push(v);
+    } else if (v >= 0xc0 && v < 0xe0) {
+      // two bytes
+      arr.push(((0x1f & byteArray[i++]) << 6) + (0x3f & byteArray[i]));
+    } else if (v < 0xf0) {
+      // three bytes
+      arr.push(
+          ((0x0f & byteArray[i++]) << 12) + ((0x3f & byteArray[i++]) << 6) +
+          (0x3f & byteArray[i]));
+    } else if (v >= 0xf0 && v < 0xf7) {
+      // four bytes
+      arr.push(
+          ((0x07 & byteArray[i++]) << 18) + ((0x3f & byteArray[i++]) << 12) +
+          ((0x3f & byteArray[i++]) << 6) + (0x3f & byteArray[i]));
+    }
+  }
+
+  return String.fromCodePoint(...arr);
+}
