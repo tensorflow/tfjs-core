@@ -71,10 +71,6 @@ function getModelArtifactsInfoForJSON(modelArtifacts: ModelArtifacts):
   };
 }
 
-// tslint:disable-next-line:no-require-imports
-/**
- *
- */
 class AsyncStorageHandler implements IOHandler {
   protected readonly modelPath: string;
   protected readonly keys: LocalStorageKeys;

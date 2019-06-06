@@ -15,5 +15,7 @@
  * =============================================================================
  */
 
-import {PlatformReactNative} from './platform_react_native';
-export {PlatformReactNative as TFJSReactNative};
+import './platform_react_native';
+
+export {asyncStorageIO} from './async_storage_io';
+export {bundleResourceIO} from './bundle_resource_io';
