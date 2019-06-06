@@ -2344,6 +2344,7 @@ export class MathBackendWebGL implements KernelBackend {
             {} as K;
       }
     }
+
     if (output.size === 0) {
       // Short-circuit the computation since the result is empty (has 0 in its
       // shape).
@@ -2502,6 +2503,7 @@ export class MathBackendWebGL implements KernelBackend {
   private uploadToGPU(dataId: DataId): void {
     const texData = this.texData.get(dataId);
     const {shape, dtype, values, texture, usage, isPacked} = texData;
+
     if (texture != null) {
       // Array is already on GPU. No-op.
       return;
@@ -2540,6 +2542,8 @@ export class MathBackendWebGL implements KernelBackend {
 
       const tempDenseInputHandle =
           this.makeTensorHandle([height, width], dtype);
+      this.texData.get(tempDenseInputHandle.dataId).usage =
+          TextureUsage.DENSE_UPLOAD;
       this.gpgpu.uploadDenseMatrixToTexture(
           this.getTexture(tempDenseInputHandle.dataId),
           {width, height, data: values as TypedArray} as PixelData);

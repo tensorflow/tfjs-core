@@ -23,7 +23,8 @@ export enum TextureUsage {
   RENDER,
   UPLOAD,
   PIXELS,
-  DOWNLOAD
+  DOWNLOAD,
+  DENSE_UPLOAD
 }
 
 export enum PhysicalTextureType {
