@@ -86,7 +86,7 @@ export class MathBackendCPU implements KernelBackend {
         throw new Error('It is not supported under current environment');
       }
     }
-    this.data = new DataStorage(ENGINE);
+    this.data = new DataStorage(this, ENGINE);
   }
 
   register(dataId: DataId, shape: number[], dtype: DataType): void {
