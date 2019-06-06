@@ -238,8 +238,7 @@ export function uploadDenseMatrixToTexture(
 export function uploadPixelDataToTexture(
     gl: WebGLRenderingContext, debug: boolean, texture: WebGLTexture,
     pixels: PixelData|ImageData|HTMLImageElement|HTMLCanvasElement|
-    HTMLVideoElement,
-    textureConfig: TextureConfig) {
+    HTMLVideoElement) {
   webgl_util.callAndCheck(
       gl, debug, () => gl.bindTexture(gl.TEXTURE_2D, texture));
   if ((pixels as PixelData).data instanceof Uint8Array) {

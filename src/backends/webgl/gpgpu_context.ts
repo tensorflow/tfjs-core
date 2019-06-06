@@ -143,8 +143,7 @@ export class GPGPUContext {
       texture: WebGLTexture,
       pixels: PixelData|ImageData|HTMLImageElement|HTMLCanvasElement) {
     this.throwIfDisposed();
-    gpgpu_util.uploadPixelDataToTexture(
-        this.gl, this.debug, texture, pixels, this.textureConfig);
+    gpgpu_util.uploadPixelDataToTexture(this.gl, this.debug, texture, pixels);
   }
 
   public uploadDenseMatrixToTexture(texture: WebGLTexture, pixels: PixelData) {
