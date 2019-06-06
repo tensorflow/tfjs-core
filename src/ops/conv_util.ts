@@ -86,6 +86,38 @@ export function computePool2DInfo(
 }
 
 /**
+ * Computes the information for a forward pass of a pooling3D operation.
+ */
+export function computePool3DInfo(
+    inShape: [number, number, number, number, number],
+    filterSize: number|[number, number, number],
+    strides: number|[number, number, number],
+    dilations: number|[number, number, number], pad: 'same'|'valid'|number,
+    roundingMode?: 'floor'|'round'|'ceil',
+    dataFormat: 'NDHWC'|'NCDHW' = 'NDHWC'): Conv3DInfo {
+  const [filterDepth, filterHeight, filterWidth] =
+      parse3TupleParam(filterSize);
+
+  let filterShape: [number, number, number, number, number];
+  let $dataFormat: 'channelsFirst'|'channelsLast';
+  if (dataFormat === 'NDHWC') {
+    $dataFormat = 'channelsLast';
+    filterShape =
+        [filterDepth, filterHeight, filterWidth, inShape[4], inShape[4]];
+  } else if (dataFormat === 'NCDHW') {
+    $dataFormat = 'channelsFirst';
+    filterShape =
+        [filterDepth, filterHeight, filterWidth, inShape[1], inShape[1]];
+  } else {
+    throw new Error(`Unknown dataFormat ${dataFormat}`);
+  }
+
+  return computeConv3DInfo(
+      inShape, filterShape, strides, dilations, pad, false,
+      $dataFormat, roundingMode);
+}
+
+/**
  * Computes the information for a forward pass of a convolution/pooling
  * operation.
  */
@@ -175,6 +207,9 @@ export type Conv3DInfo = {
   filterDepth: number,
   filterHeight: number,
   filterWidth: number,
+  effectiveFilterDepth: number,
+  effectiveFilterHeight: number,
+  effectiveFilterWidth: number,
   padInfo: PadInfo3D,
   inShape: [number, number, number, number, number],
   outShape: [number, number, number, number, number],
@@ -189,9 +224,10 @@ export function computeConv3DInfo(
     inShape: [number, number, number, number, number],
     filterShape: [number, number, number, number, number],
     strides: number|[number, number, number],
-    dilations: number|[number, number, number], pad: 'same'|'valid',
+    dilations: number|[number, number, number], pad: 'same'|'valid'|number,
     depthwise = false,
-    dataFormat: 'channelsFirst'|'channelsLast' = 'channelsLast'): Conv3DInfo {
+    dataFormat: 'channelsFirst'|'channelsLast' = 'channelsLast',
+    roundingMode?: 'floor'|'round'|'ceil'): Conv3DInfo {
   let [batchSize, inDepth, inHeight, inWidth, inChannels] =
       [-1, -1, -1, -1, -1];
   if (dataFormat === 'channelsLast') {
@@ -216,7 +252,8 @@ export function computeConv3DInfo(
       getEffectiveFilterSize(filterWidth, dilationWidth);
   const {padInfo, outDepth, outHeight, outWidth} = get3DPadAndOutInfo(
       pad, inDepth, inHeight, inWidth, strideDepth, strideHeight, strideWidth,
-      effectiveFilterDepth, effectiveFilterHeight, effectiveFilterWidth);
+      effectiveFilterDepth, effectiveFilterHeight, effectiveFilterWidth,
+      roundingMode);
 
   const outChannels = depthwise ? filterChannels * inChannels : filterChannels;
 
@@ -245,6 +282,9 @@ export function computeConv3DInfo(
     filterDepth,
     filterHeight,
     filterWidth,
+    effectiveFilterDepth,
+    effectiveFilterHeight,
+    effectiveFilterWidth,
     dilationDepth,
     dilationHeight,
     dilationWidth,
@@ -281,16 +321,60 @@ function computeOutputShape3D(
   return [outputRows, outputCols, outDepth];
 }
 
+function computeOutputShape4D(
+    inShape: [number, number, number, number], fieldSize: number,
+    outChannels: number, stride: number, zeroPad?: number,
+    roundingMode?: 'floor'|'round'|'ceil'
+): [number, number, number, number] {
+  if (zeroPad == null) {
+    zeroPad = computeDefaultPad(inShape, fieldSize, stride);
+  }
+  const inputDepth = inShape[0];
+  const inputRows = inShape[1];
+  const inputCols = inShape[2];
+
+  const outputDepths = conditionalRound(
+      (inputDepth - fieldSize + 2 * zeroPad) / stride + 1, roundingMode);
+  util.assert(
+      util.isInt(outputDepths),
+      () => `The output # of depths (${outputDepths}) must be an integer. ` +
+          `Change the stride and/or zero pad parameters`);
+
+  const outputRows = conditionalRound(
+      (inputRows - fieldSize + 2 * zeroPad) / stride + 1, roundingMode);
+  util.assert(
+      util.isInt(outputRows),
+      () => `The output # of rows (${outputRows}) must be an integer. ` +
+          `Change the stride and/or zero pad parameters`);
+
+  const outputCols = conditionalRound(
+      (inputCols - fieldSize + 2 * zeroPad) / stride + 1, roundingMode);
+  util.assert(
+      util.isInt(outputCols),
+      () => `The output # of columns (${outputCols}) must be an integer. ` +
+          `Change the stride and/or zero pad parameters`);
+
+  return [outputDepths, outputRows, outputCols, outChannels];
+}
+
 export function computeDefaultPad(
-    inputShape: [number, number, number], fieldSize: number, stride: number,
-    dilation = 1): number {
+    inputShape: [number, number, number]|[number, number, number, number],
+    fieldSize: number, stride: number, dilation = 1): number {
   const effectiveFieldSize = getEffectiveFilterSize(fieldSize, dilation);
   return Math.floor(
       (inputShape[0] * (stride - 1) - stride + effectiveFieldSize) / 2);
 }
 
-function parseTupleParam(param: number|[number, number]): [number, number] {
-  return typeof param === 'number' ? [param, param] : param;
+function parseTupleParam(
+    param: number|[number, number]|[number, number, number]):
+[number, number, number] {
+  if (typeof param === 'number') {
+    return [param, param, param];
+  }
+  if (param.length === 2) {
+    return [param[0], param[1], 1];
+  }
+  return param;
 }
 
 function parse3TupleParam(param: number|[number, number, number]):
@@ -357,9 +441,10 @@ function getPadAndOutInfo(
 }
 
 function get3DPadAndOutInfo(
-    pad: 'same'|'valid', inDepth: number, inHeight: number, inWidth: number,
-    strideDepth: number, strideHeight: number, strideWidth: number,
-    filterDepth: number, filterHeight: number, filterWidth: number): {
+    pad: 'same'|'valid'|number, inDepth: number, inHeight: number,
+    inWidth: number, strideDepth: number, strideHeight: number,
+    strideWidth: number, filterDepth: number, filterHeight: number,
+    filterWidth: number, roundingMode?: 'floor'|'round'|'ceil'): {
   padInfo: PadInfo3D,
   outDepth: number,
   outHeight: number,
@@ -370,7 +455,17 @@ function get3DPadAndOutInfo(
   let outHeight: number;
   let outWidth: number;
 
-  if (pad === 'same') {
+  if (typeof pad === 'number') {
+    const padType = (pad === 0) ? 'VALID' : 'NUMBER';
+    padInfo = {top: pad, bottom: pad, left: pad, right: pad, front: pad,
+      back: pad, type: padType};
+    const outShape = computeOutputShape4D(
+        [inDepth, inHeight, inWidth, 1], filterDepth, 1, strideDepth, pad,
+        roundingMode);
+    outDepth = outShape[0];
+    outHeight = outShape[1];
+    outWidth = outShape[2];
+  } else if (pad === 'same') {
     outDepth = Math.ceil(inDepth / strideDepth);
     outHeight = Math.ceil(inHeight / strideHeight);
     outWidth = Math.ceil(inWidth / strideWidth);
@@ -429,13 +524,14 @@ function conditionalRound(
   }
 }
 
-export function tupleValuesAreOne(param: number|[number, number]): boolean {
-  const [dimA, dimB] = parseTupleParam(param);
-  return dimA === 1 && dimB === 1;
+export function tupleValuesAreOne(
+    param: number|[number, number]|[number, number, number]): boolean {
+  const [dimA, dimB, dimC] = parseTupleParam(param);
+  return dimA === 1 && dimB === 1 && dimC === 1;
 }
 
 export function eitherStridesOrDilationsAreOne(
-    strides: number|[number, number],
-    dilations: number|[number, number]): boolean {
+    strides: number|[number, number]|[number, number, number],
+    dilations: number|[number, number]|[number, number, number]): boolean {
   return tupleValuesAreOne(strides) || tupleValuesAreOne(dilations);
 }
