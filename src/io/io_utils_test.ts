@@ -22,7 +22,7 @@ import {NamedTensor, NamedTensorMap} from '../tensor_types';
 import {expectArraysEqual} from '../test_util';
 import {expectArraysClose} from '../test_util';
 
-import {arrayBufferToBase64String, base64StringToArrayBuffer, basename, concatenateArrayBuffers, concatenateTypedArrays, stringByteLength} from './io_utils';
+import {arrayBufferToBase64String, arrayBufferToString, base64StringToArrayBuffer, basename, concatenateArrayBuffers, concatenateTypedArrays, stringByteLength, stringToArrayBuffer} from './io_utils';
 import {WeightsManifestEntry} from './types';
 
 describe('concatenateTypedArrays', () => {
@@ -540,5 +540,29 @@ describe('basename', () => {
     expect(basename('/foo/bar/baz')).toEqual('baz');
     expect(basename('foo/bar/baz/')).toEqual('baz');
     expect(basename('foo/bar/baz//')).toEqual('baz');
+  });
+});
+
+describe('stringToArrayBuffer-arrayBufferToString', () => {
+  it('round-trip', () => {
+    const len = Math.floor((Math.random() * 200) + 10);
+    const arr = new Array();
+
+    // Generate some random unicode code points
+    for (let i = 0; i < len; i++) {
+      const cp = Math.floor((Math.random() * 500) + 32);
+      if (cp > 126 && cp < 161) {
+        continue;
+      }
+      arr.push(cp);
+    }
+
+    // turn code points into a string
+    const str = String.fromCodePoint(...arr);
+
+    const aBuff = stringToArrayBuffer(str);
+    const str2 = arrayBufferToString(aBuff);
+
+    expect(str2).toEqual(str);
   });
 });
