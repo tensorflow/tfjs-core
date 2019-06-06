@@ -2627,7 +2627,3 @@ function float32ToTypedArray<D extends NumericDataType>(
     throw new Error(`Unknown dtype ${dtype}`);
   }
 }
-
-// function typedArrayToFloat32(a: TypedArray): Float32Array {
-//   return (a instanceof Float32Array) ? a : new Float32Array(a);
-// }
