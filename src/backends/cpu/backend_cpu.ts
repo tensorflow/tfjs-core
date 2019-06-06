@@ -33,7 +33,7 @@ import {buffer, scalar, tensor, tensor3d, tensor4d} from '../../ops/ops';
 import * as scatter_nd_util from '../../ops/scatter_nd_util';
 import * as selu_util from '../../ops/selu_util';
 import {computeFlatOffset, getStridedSlicedInfo, isSliceContinous} from '../../ops/slice_util';
-import {DataId, Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D, TensorBuffer} from '../../tensor';
+import {DataId, Scalar, StringTensor, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D, TensorBuffer} from '../../tensor';
 import {DataType, DataTypeMap, DataValues, NumericDataType, PixelData, Rank, ShapeMap, TypedArray, upcastType} from '../../types';
 import * as util from '../../util';
 import {getArrayFromDType, inferDtype, now, sizeFromShape} from '../../util';
@@ -42,6 +42,7 @@ import * as backend_util from '../backend_util';
 import * as complex_util from '../complex_util';
 import {nonMaxSuppressionImpl} from '../non_max_suppression_impl';
 import {split} from '../split_shared';
+import {decodeBase64, encodeBase64} from '../string_shared';
 import {topkImpl} from '../topk_impl';
 import {whereImpl} from '../where_impl';
 
@@ -3182,6 +3183,15 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   dispose() {}
+
+  encodeBase64<T extends StringTensor>(str: StringTensor|Tensor, pad = false):
+      T {
+    return encodeBase64(str, pad);
+  }
+
+  decodeBase64<T extends StringTensor>(str: StringTensor|Tensor): T {
+    return decodeBase64(str);
+  }
 
   floatPrecision(): 16|32 {
     return 32;
