@@ -27,6 +27,7 @@ import './backends/webgl/backend_webgl';
 import './backends/cpu/backend_cpu';
 
 import './platforms/platform_browser';
+import './platforms/platform_mp';
 import './platforms/platform_node';
 
 import * as backend_util from './backends/backend_util';

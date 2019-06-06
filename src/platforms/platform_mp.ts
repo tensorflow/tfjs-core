@@ -23,8 +23,8 @@ export class PlatformMP implements Platform {
   }
 }
 
-if (ENV.get('IS_BROWSER')) {
-  ENV.setPlatform('browser', new PlatformMP());
+if (ENV.get('IS_MP')) {
+  ENV.setPlatform('mp', new PlatformMP());
 }
 
 function generateResponse(res: any) {
@@ -77,9 +77,11 @@ async function fetch(input: any, init: any): Promise<any> {
       dataType: '',
       responseType: 'arraybuffer',
       success: function (res: any) {
+        console.log("fetch success!");
         resolve(generateResponse(res))
       },
       fail: function (res: any) {
+        console.log("fetch fail");
         reject(generateResponse(res))
       }
     })
