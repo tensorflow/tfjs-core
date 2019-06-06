@@ -35,7 +35,7 @@ import * as segment_util from '../../ops/segment_util';
 import {computeFlatOffset, getStridedSlicedInfo, isSliceContinous} from '../../ops/slice_util';
 import {softmax} from '../../ops/softmax';
 import {range, scalar, tensor} from '../../ops/tensor_ops';
-import {DataId, Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D} from '../../tensor';
+import {DataId, Scalar, StringTensor, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D} from '../../tensor';
 import {DataType, DataTypeMap, DataValues, NumericDataType, PixelData, Rank, RecursiveArray, ShapeMap, sumOutType, TypedArray, upcastType} from '../../types';
 import * as util from '../../util';
 import {getArrayFromDType, getTypedArrayFromDType, inferDtype, sizeFromShape} from '../../util';
@@ -44,6 +44,7 @@ import * as backend_util from '../backend_util';
 import {mergeRealAndImagArrays} from '../complex_util';
 import {nonMaxSuppressionImpl} from '../non_max_suppression_impl';
 import {split} from '../split_shared';
+import {decodeBase64, encodeBase64} from '../string_shared';
 import {topkImpl} from '../topk_impl';
 import {whereImpl} from '../where_impl';
 
@@ -2156,6 +2157,15 @@ export class MathBackendWebGL implements KernelBackend {
 
   split<T extends Tensor>(x: T, sizeSplits: number[], axis: number): T[] {
     return split(x, sizeSplits, axis);
+  }
+
+  encodeBase64<T extends StringTensor>(str: StringTensor|Tensor, pad = false):
+      T {
+    return encodeBase64(str, pad);
+  }
+
+  decodeBase64<T extends StringTensor>(str: StringTensor|Tensor): T {
+    return decodeBase64(str);
   }
 
   scatterND<R extends Rank>(
