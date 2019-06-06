@@ -15,8 +15,6 @@
  * =============================================================================
  */
 
-import * as util from '../../util';
-
 import {getGlslDifferences} from './glsl_version';
 import {GPGPUProgram} from './gpgpu_math';
 import * as shader_util from './shader_compiler_util';
@@ -73,7 +71,7 @@ export class FromPixelsGenericPackedProgram implements GPGPUProgram {
     }
 
     this.userCode = `
-      ${getFlatIndex(outputShape)}
+      ${shader_util.getFlatIndexFrom3D(outputShape)}
 
       void main() {
         ivec3 coords = getOutputCoords();
@@ -90,16 +88,4 @@ export class FromPixelsGenericPackedProgram implements GPGPUProgram {
       }
     `;
   }
-}
-
-function getFlatIndex(shape: [number, number, number]): string {
-  const dotCoordsWithStrides = shader_util.dotify(
-      ['coords.x', 'coords.y', 'coords.z'],
-      util.computeStrides(shape).map(d => d.toString()).concat(['1.']));
-
-  return `
-    int getFlatIndex(ivec3 coords) {
-      return round(${dotCoordsWithStrides});
-    }
-  `;
 }
