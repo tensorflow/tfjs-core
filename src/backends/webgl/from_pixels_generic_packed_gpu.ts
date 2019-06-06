@@ -30,7 +30,7 @@ export class FromPixelsGenericPackedProgram implements GPGPUProgram {
     number, number
   ]) {
     const glsl = getGlslDifferences();
-    const [width, height] = texShape;
+    const [height, width] = texShape;
     this.outputShape = outputShape;
 
     let mainLoop = '';

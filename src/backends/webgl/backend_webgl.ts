@@ -2526,29 +2526,22 @@ export class MathBackendWebGL implements KernelBackend {
         ] as [number, number, number];
       }
 
-      let encodedOutputHandle, program;
+      let program;
+      let width = texShape[1], height = texShape[0];
+
       if (isPacked) {
-        const [width, height] = tex_util.getPackedMatrixTextureShapeWidthHeight(
+        [width, height] = tex_util.getPackedMatrixTextureShapeWidthHeight(
             texShape[0], texShape[1]);
-        encodedOutputHandle = this.makeTensorHandle([height, width], dtype);
-
-        this.gpgpu.uploadDenseMatrixToTexture(
-            this.getTexture(encodedOutputHandle.dataId),
-            {width, height, data: values as TypedArray} as PixelData);
-
         program =
-            new FromPixelsGenericPackedProgram(shapeAs3D, [width, height]);
+            new FromPixelsGenericPackedProgram(shapeAs3D, [height, width]);
       } else {
-        encodedOutputHandle = this.makeTensorHandle(texShape, dtype);
-        this.gpgpu.uploadDenseMatrixToTexture(
-            this.getTexture(encodedOutputHandle.dataId), {
-              width: texShape[1],
-              height: texShape[0],
-              data: values as TypedArray
-            } as PixelData);
-
-        program = new FromPixelsGenericProgram(shapeAs3D, texShape);
+        program = new FromPixelsGenericProgram(shapeAs3D, [height, width]);
       }
+
+      const encodedOutputHandle = this.makeTensorHandle([height, width], dtype);
+      this.gpgpu.uploadDenseMatrixToTexture(
+          this.getTexture(encodedOutputHandle.dataId),
+          {width, height, data: values as TypedArray} as PixelData);
 
       const encodedOutputTarget =
           this.makeTensorHandle(
