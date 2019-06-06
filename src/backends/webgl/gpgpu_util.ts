@@ -218,26 +218,6 @@ export function bindVertexProgramAttributeStreams(
           gl, debug, program, 'uv', vertexBuffer, 2, stride, uvOffset);
 }
 
-export function uploadDenseMatrixToPackedTexture(
-    gl: WebGLRenderingContext, debug: boolean, texture: WebGLTexture,
-    pixelData: PixelData, textureConfig: TextureConfig) {
-  webgl_util.callAndCheck(
-      gl, debug, () => gl.bindTexture(gl.TEXTURE_2D, texture));
-  const [width, height] = tex_util.getPackedMatrixTextureShapeWidthHeight(
-      pixelData.height, pixelData.width);
-  const data = new Float32Array(tex_util.getPackedRGBAArraySizeFromMatrixShape(
-      pixelData.width, pixelData.height));
-  data.set(pixelData.data);
-
-  webgl_util.callAndCheck(
-      gl, debug,
-      () => gl.texImage2D(
-          gl.TEXTURE_2D, 0, textureConfig.internalFormatPackedFloat, width,
-          height, 0, gl.RGBA, gl.FLOAT, data));
-
-  webgl_util.callAndCheck(gl, debug, () => gl.bindTexture(gl.TEXTURE_2D, null));
-}
-
 export function uploadDenseMatrixToTexture(
     gl: WebGLRenderingContext, debug: boolean, texture: WebGLTexture,
     pixelData: PixelData, textureConfig: TextureConfig) {
@@ -262,12 +242,12 @@ export function uploadPixelDataToTexture(
     textureConfig: TextureConfig) {
   webgl_util.callAndCheck(
       gl, debug, () => gl.bindTexture(gl.TEXTURE_2D, texture));
-  if (util.isTypedArray((pixels as PixelData).data)) {
+  if ((pixels as PixelData).data instanceof Uint8Array) {
     webgl_util.callAndCheck(
         gl, debug,
         () => gl.texImage2D(
             gl.TEXTURE_2D, 0, gl.RGBA, pixels.width, pixels.height, 0, gl.RGBA,
-            gl.FLOAT, (pixels as PixelData).data));
+            gl.UNSIGNED_BYTE, (pixels as PixelData).data));
   } else {
     webgl_util.callAndCheck(
         gl, debug,
@@ -475,8 +455,6 @@ export function downloadMatrixFromPackedOutputTexture(
   webgl_util.callAndCheck(
       gl, debug,
       () => gl.readPixels(0, 0, w, h, gl.RGBA, gl.FLOAT, packedRGBA));
-  console.log('RAW OUTPUT OF READPIXELS');
-  console.log(packedRGBA);
   const matrix = new Float32Array(util.sizeFromShape([batch, rows, cols]));
   return tex_util.decodeMatrixFromPackedRGBA(
       packedRGBA, batch, rows, cols, matrix);
