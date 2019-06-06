@@ -41,7 +41,8 @@ function config({plugins = [], output = {}, external = []}) {
       globals: {'@tensorflow/tfjs-core': 'tf'},
       ...output,
     },
-    external: ['@tensorflow/tfjs-core'],
+    external:
+        ['@tensorflow/tfjs-core', '@react-native-community/async-storage'],
     onwarn: warning => {
       let {code} = warning;
       if (code === 'CIRCULAR_DEPENDENCY' || code === 'CIRCULAR' ||
