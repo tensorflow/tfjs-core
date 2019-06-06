@@ -15,7 +15,7 @@
  * =============================================================================
  */
 import * as device_util from './device_util';
-import {ENV} from './environment';
+import { ENV } from './environment';
 
 /**
  * This file contains environment-related flag registrations.
@@ -25,28 +25,30 @@ import {ENV} from './environment';
 ENV.registerFlag('DEBUG', () => false, debugValue => {
   if (debugValue) {
     console.warn(
-        'Debugging mode is ON. The output of every math call will ' +
-        'be downloaded to CPU and checked for NaNs. ' +
-        'This significantly impacts performance.');
+      'Debugging mode is ON. The output of every math call will ' +
+      'be downloaded to CPU and checked for NaNs. ' +
+      'This significantly impacts performance.');
   }
 });
 
 /** Whether we are in a browser (as versus, say, node.js) environment. */
 ENV.registerFlag('IS_BROWSER', () => device_util.isBrowser());
 
+ENV.registerFlag('IS_MP', () => device_util.isMP());
+
 /** Whether we are in a browser (as versus, say, node.js) environment. */
 ENV.registerFlag(
-    'IS_NODE',
-    () => (typeof process !== 'undefined') &&
-        (typeof process.versions !== 'undefined') &&
-        (typeof process.versions.node !== 'undefined'));
+  'IS_NODE',
+  () => (typeof process !== 'undefined') &&
+    (typeof process.versions !== 'undefined') &&
+    (typeof process.versions.node !== 'undefined'));
 
 /** Whether this browser is Chrome. */
 ENV.registerFlag(
-    'IS_CHROME',
-    () => typeof navigator !== 'undefined' && navigator != null &&
-        navigator.userAgent != null && /Chrome/.test(navigator.userAgent) &&
-        /Google Inc/.test(navigator.vendor));
+  'IS_CHROME',
+  () => typeof navigator !== 'undefined' && navigator != null &&
+    navigator.userAgent != null && /Chrome/.test(navigator.userAgent) &&
+    /Google Inc/.test(navigator.vendor));
 
 /**
  * True when the environment is "production" where we disable safety checks
@@ -59,7 +61,7 @@ ENV.registerFlag('PROD', () => false);
  * values, used when creating a new tensor.
  */
 ENV.registerFlag(
-    'TENSORLIKE_CHECK_SHAPE_CONSISTENCY', () => !ENV.getBool('PROD'));
+  'TENSORLIKE_CHECK_SHAPE_CONSISTENCY', () => !ENV.getBool('PROD'));
 
 /** Whether deprecation warnings are enabled. */
 ENV.registerFlag('DEPRECATION_WARNINGS_ENABLED', () => true);
