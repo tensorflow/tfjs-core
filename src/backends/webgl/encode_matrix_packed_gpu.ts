@@ -19,7 +19,7 @@ import {getGlslDifferences} from './glsl_version';
 import {GPGPUProgram} from './gpgpu_math';
 import * as shader_util from './shader_compiler_util';
 
-export class FromPixelsGenericPackedProgram implements GPGPUProgram {
+export class EncodeMatrixPackedProgram implements GPGPUProgram {
   variableNames = ['A'];
   userCode: string;
   outputShape: number[];

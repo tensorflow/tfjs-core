@@ -75,11 +75,11 @@ import {CropAndResizeProgram} from './crop_and_resize_gpu';
 import {CumSumProgram} from './cumsum_gpu';
 import {DepthToSpaceProgram} from './depth_to_space_gpu';
 import {EncodeFloatProgram} from './encode_float_gpu';
+import {EncodeMatrixProgram} from './encode_matrix_gpu';
+import {EncodeMatrixPackedProgram} from './encode_matrix_packed_gpu';
 import * as fft_gpu from './fft_gpu';
 import {FFTProgram} from './fft_gpu';
 import {FillProgram} from './fill_gpu';
-import {FromPixelsGenericProgram} from './from_pixels_generic_gpu';
-import {FromPixelsGenericPackedProgram} from './from_pixels_generic_packed_gpu';
 import {FromPixelsProgram} from './from_pixels_gpu';
 import {FromPixelsPackedProgram} from './from_pixels_packed_gpu';
 import {GatherProgram} from './gather_gpu';
@@ -2534,10 +2534,9 @@ export class MathBackendWebGL implements KernelBackend {
       if (isPacked) {
         [width, height] = tex_util.getPackedMatrixTextureShapeWidthHeight(
             texShape[0], texShape[1]);
-        program =
-            new FromPixelsGenericPackedProgram(shapeAs3D, [height, width]);
+        program = new EncodeMatrixPackedProgram(shapeAs3D, [height, width]);
       } else {
-        program = new FromPixelsGenericProgram(shapeAs3D, [height, width]);
+        program = new EncodeMatrixProgram(shapeAs3D, [height, width]);
       }
 
       const tempDenseInputHandle =
