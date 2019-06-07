@@ -499,7 +499,7 @@ export class WebGPUBackend extends KernelBackend {
 
     // const texShape: [number, number] = [pixels.height, pixels.width];
     const outShape = [pixels.height, pixels.width, numChannels];
-    let pixelArray = (pixels as backend_util.PixelData).data;
+    let imageData = (pixels as ImageData | backend_util.PixelData).data;
 
     if (ENV.getBool('IS_BROWSER')) {
       if (!(pixels instanceof HTMLVideoElement) &&
@@ -523,24 +523,30 @@ export class WebGPUBackend extends KernelBackend {
         this.fromPixels2DContext.drawImage(
             pixels, 0, 0, pixels.width, pixels.height);
         pixels = this.fromPixels2DContext.canvas;
+      }
 
-        // TODO: Remove this once we figure out how too upload textures to
-        // WebGPU instead of buffers.
+      // TODO: Remove this once we figure out how to upload textures directly to
+      // WebGPU.
+      const imageDataLivesOnGPU = pixels instanceof HTMLVideoElement ||
+          pixels instanceof HTMLImageElement ||
+          pixels instanceof HTMLCanvasElement;
+      if (imageDataLivesOnGPU) {
+        imageData = this.fromPixels2DContext
+                        .getImageData(0, 0, pixels.width, pixels.height)
+                        .data;
+      }
+    }
 
-        const imageData = this.fromPixels2DContext
-                              .getImageData(0, 0, pixels.width, pixels.height)
-                              .data;
+    // TODO: Encoding should happen on GPU once we no longer have to download
+    // image data to the CPU.
+    let pixelArray = imageData;
+    if (numChannels != null && numChannels !== 4) {
+      pixelArray = new Uint8Array(pixels.width * pixels.height * numChannels);
 
-        if (numChannels != null && numChannels !== 4) {
-          pixelArray =
-              new Uint8Array(pixels.width * pixels.height * numChannels);
-
-          for (let i = 0; i < imageData.length; i++) {
-            if (i % 4 < numChannels) {
-              const pixelIndex = Math.floor(i / 4);
-              pixelArray[pixelIndex * numChannels + i % 4] = imageData[i];
-            }
-          }
+      for (let i = 0; i < imageData.length; i++) {
+        if (i % 4 < numChannels) {
+          const pixelIndex = Math.floor(i / 4);
+          pixelArray[pixelIndex * numChannels + i % 4] = imageData[i];
         }
       }
     }
