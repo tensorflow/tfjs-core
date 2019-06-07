@@ -148,4 +148,62 @@ describeWebGPU('Ops benchmarks', () => {
     const resData = await res.data();
     console.log(resData);
   });
+
+  fit('frompixels 1x1x4', async () => {
+    const pixels = new ImageData(1, 1);
+    pixels.data[0] = 0;
+    pixels.data[1] = 80;
+    pixels.data[2] = 160;
+    pixels.data[3] = 240;
+
+    const array = tf.browser.fromPixels(pixels, 4);
+    const data = await array.data();
+    console.log(data);  // should be [0, 80, 160, 240]
+  });
+
+  fit('fromPixels, 3 channels', async () => {
+    const pixels = new ImageData(1, 2);
+    pixels.data[0] = 2;
+    pixels.data[1] = 3;
+    pixels.data[2] = 4;
+    pixels.data[3] = 255;  // Not used.
+    pixels.data[4] = 5;
+    pixels.data[5] = 6;
+    pixels.data[6] = 7;
+    pixels.data[7] = 255;  // Not used.
+    const res = tf.browser.fromPixels(pixels, 3);
+    expect(res.shape).toEqual([2, 1, 3]);
+    expect(res.dtype).toBe('int32');
+    expectArraysClose(await res.data(), [2, 3, 4, 5, 6, 7]);
+  });
+
+  fit('fromPixels, reshape, then do tf.add()', async () => {
+    const pixels = new ImageData(1, 1);
+    pixels.data[0] = 2;
+    pixels.data[1] = 3;
+    pixels.data[2] = 4;
+    pixels.data[3] = 255;  // Not used.
+    const a = tf.browser.fromPixels(pixels, 3).reshape([1, 1, 1, 3]);
+    const res = a.add(tf.scalar(2, 'int32'));
+    expect(res.shape).toEqual([1, 1, 1, 3]);
+    expect(res.dtype).toBe('int32');
+    expectArraysClose(await res.data(), [4, 5, 6]);
+  });
+
+  fit('ImageData 2x2x4', async () => {
+    const pixels = new ImageData(2, 2);
+    for (let i = 0; i < 8; i++) {
+      pixels.data[i] = i * 2;
+    }
+    for (let i = 8; i < 16; i++) {
+      pixels.data[i] = i * 2;
+    }
+
+    const array = tf.browser.fromPixels(pixels, 4);
+
+    expectArraysClose(
+        await array.data(),
+        new Int32Array(
+            [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30]));
+  });
 });
