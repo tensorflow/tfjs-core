@@ -499,7 +499,7 @@ export class WebGPUBackend extends KernelBackend {
 
     // const texShape: [number, number] = [pixels.height, pixels.width];
     const outShape = [pixels.height, pixels.width, numChannels];
-    let pixelArray = Array.prototype.slice.call((pixels as ImageData).data);
+    let pixelArray = (pixels as backend_util.PixelData).data;
 
     if (ENV.getBool('IS_BROWSER')) {
       if (!(pixels instanceof HTMLVideoElement) &&
@@ -517,9 +517,9 @@ export class WebGPUBackend extends KernelBackend {
         if (this.fromPixels2DContext == null) {
           this.fromPixels2DContext =
               document.createElement('canvas').getContext('2d');
+          this.fromPixels2DContext.canvas.width = pixels.width;
+          this.fromPixels2DContext.canvas.height = pixels.height;
         }
-        this.fromPixels2DContext.canvas.width = pixels.width;
-        this.fromPixels2DContext.canvas.height = pixels.height;
         this.fromPixels2DContext.drawImage(
             pixels, 0, 0, pixels.width, pixels.height);
         pixels = this.fromPixels2DContext.canvas;
@@ -527,29 +527,28 @@ export class WebGPUBackend extends KernelBackend {
         // TODO: Remove this once we figure out how too upload textures to
         // WebGPU instead of buffers.
 
-        const imageData = Array.prototype.slice.call(
-            this.fromPixels2DContext
-                .getImageData(0, 0, pixels.width, pixels.height)
-                .data);
+        const imageData = this.fromPixels2DContext
+                              .getImageData(0, 0, pixels.width, pixels.height)
+                              .data;
 
         if (numChannels != null && numChannels !== 4) {
-          const filteredPixels: number[] = [];
+          pixelArray =
+              new Uint8Array(pixels.width * pixels.height * numChannels);
 
           for (let i = 0; i < imageData.length; i++) {
             if (i % 4 < numChannels) {
-              filteredPixels.push(imageData[i]);
+              const pixelIndex = Math.floor(i / 4);
+              pixelArray[pixelIndex * numChannels + i % 4] = imageData[i];
             }
           }
-
-          pixelArray = filteredPixels;
         }
       }
     }
 
     const output = this.makeOutputArray(outShape, 'int32');
-
-    this.write(output.dataId, new Int32Array(pixelArray));
-
+    this.write(
+        output.dataId,
+        Float32Array.from(pixelArray));  // TODO: Why is this necessary?
     return output as Tensor3D;
   }
 
