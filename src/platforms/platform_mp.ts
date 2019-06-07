@@ -37,11 +37,28 @@ function generateResponse(res: any) {
     clone: () => {
       return generateResponse(res);
     },
-    text: () => Promise.resolve(String.fromCharCode.apply(null, new Uint8Array(res.data))),
+    text: () => {
+      let stringRes = '';
+      let u8Array = new Uint8Array(res.data);
+      u8Array.forEach(function (item) {
+        if (item) {
+          stringRes = stringRes + String.fromCharCode(item);
+        }
+      });
+      return Promise.resolve(stringRes);
+    },
     json: () => {
-      var json = {};
+      let json = {};
       try {
-        json = JSON.parse(String.fromCharCode.apply(null, new Uint8Array(res.data)));
+        let stringRes = '';
+        let u8Array = new Uint8Array(res.data);
+        u8Array.forEach(function (item) {
+          if (item) {
+            stringRes = stringRes + String.fromCharCode(item)
+          }
+        });
+        stringRes = stringRes.trim();
+        json = JSON.parse(stringRes);
       }
       catch (err) {
         console.error(err);
