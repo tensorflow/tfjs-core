@@ -166,8 +166,24 @@ function parseValue(flagName: string, value: string): FlagValue {
       `Could not parse value flag value ${value} for flag ${flagName}.`);
 }
 
-export let ENV: Environment;
 // tslint:disable-next-line:no-any
-export function setEnvironmentGlobal(environment: Environment) {
-  ENV = environment;
+let GLOBAL: any;
+export function getGlobalNamespace() {
+  if (GLOBAL == null) {
+    // tslint:disable-next-line:no-any
+    let ns: any;
+    if (typeof (window) !== 'undefined') {
+      ns = window;
+    } else if (typeof (global) !== 'undefined') {
+      ns = global;
+    } else if (typeof (process) !== 'undefined') {
+      ns = process;
+    } else {
+      throw new Error('Could not find a global object');
+    }
+    GLOBAL = ns;
+  }
+  return GLOBAL;
 }
+
+export const ENV = new Environment(getGlobalNamespace());

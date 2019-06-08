@@ -16,7 +16,7 @@
  */
 
 import {BackendTimingInfo, DataMover, KernelBackend} from './backends/backend';
-import {Environment, setEnvironmentGlobal} from './environment';
+import {ENV, Environment, getGlobalNamespace} from './environment';
 import {Profiler} from './profiler';
 import {backpropagateGradients, getFilteredNodesXToY, NamedGradientMap, TapeNode} from './tape';
 import {DataId, setTensorTracker, Tensor, Tensor3D, TensorTracker, Variable} from './tensor';
@@ -921,32 +921,11 @@ function ones(shape: number[]): Tensor {
   return Tensor.make(shape, {values});
 }
 
-let GLOBAL: {_tfengine: Engine};
-function getGlobalNamespace(): {_tfengine: Engine} {
-  if (GLOBAL == null) {
-    // tslint:disable-next-line:no-any
-    let ns: any;
-    if (typeof (window) !== 'undefined') {
-      ns = window;
-    } else if (typeof (global) !== 'undefined') {
-      ns = global;
-    } else if (typeof (process) !== 'undefined') {
-      ns = process;
-    } else {
-      throw new Error('Could not find a global object');
-    }
-    GLOBAL = ns;
-  }
-  return GLOBAL;
-}
-
 function getOrMakeEngine(): Engine {
   const ns = getGlobalNamespace();
   if (ns._tfengine == null) {
-    const environment = new Environment(ns);
-    ns._tfengine = new Engine(environment);
+    ns._tfengine = new Engine(ENV);
   }
-  setEnvironmentGlobal(ns._tfengine.ENV);
 
   // Tell the current tensor interface that the global engine is responsible
   // for tracking.
