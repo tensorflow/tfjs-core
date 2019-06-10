@@ -179,6 +179,7 @@ export class WebGPUBackend extends KernelBackend {
     const dataAsTypedArray =
         info.dtype === 'int32' ? new Int32Array(data) : new Float32Array(data);
     this.convertAndCacheOnCPU(dataId, dataAsTypedArray);
+
     return dataAsTypedArray;
   }
 
@@ -265,10 +266,18 @@ export class WebGPUBackend extends KernelBackend {
 
     const key =
         webgpu_program.makeShaderKey(program, bufferShapes.map(d => d.length));
+    const inputsData =
+        inputs.map((input: Tensor, i: number) => ({
+                     // Returning dtype from tensorMap because it reflects dtype
+                     // of underlying buffer, rather than abstract dtype.
+                     dtype: this.tensorMap.get(input.dataId).dtype,
+                     shape: input.shape,
+                     name: program.variableNames[i]
+                   }));
     const {bindGroupLayout, pipeline} = this.getAndSavePipeline(key, () => {
       return webgpu_program.compileProgram(
           this.compiler, this.shaderc.shader_kind.compute, this.compileOpts,
-          this.device, program, inputs, output, uniforms);
+          this.device, program, inputsData, output, uniforms);
     });
 
     // Creating bind groups on the fly should never be a bottleneck.
@@ -497,7 +506,6 @@ export class WebGPUBackend extends KernelBackend {
           'pixels passed to tf.browser.fromPixels() can not be null');
     }
 
-    // const texShape: [number, number] = [pixels.height, pixels.width];
     const outShape = [pixels.height, pixels.width, numChannels];
     let imageData = (pixels as ImageData | backend_util.PixelData).data;
 
@@ -552,9 +560,7 @@ export class WebGPUBackend extends KernelBackend {
     }
 
     const output = this.makeOutputArray(outShape, 'int32');
-    this.write(
-        output.dataId,
-        Float32Array.from(pixelArray));  // TODO: Why is this necessary?
+    this.write(output.dataId, Int32Array.from(pixelArray));
     return output as Tensor3D;
   }
 

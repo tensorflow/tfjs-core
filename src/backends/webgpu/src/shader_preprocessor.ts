@@ -52,7 +52,7 @@ interface ProgramParams {
   userCode: string;
 }
 
-interface InputInfo {
+export interface InputInfo {
   dtype: DataType;
   shape: number[];
   name: string;
