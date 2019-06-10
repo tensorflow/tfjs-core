@@ -55,10 +55,8 @@ export class EncodeMatrixPackedProgram implements GPGPUProgram {
 
         mainLoop += `
           localCoords = coords;
-    
           if(localCoords[2] + ${col} < ${outputShape[2]}) {
             localCoords[2] += ${col};
-
             if(localCoords[1] + ${row} < ${outputShape[1]}) {
               localCoords[1] += ${row};
 
