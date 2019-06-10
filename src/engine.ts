@@ -16,7 +16,7 @@
  */
 
 import {BackendTimingInfo, DataMover, KernelBackend} from './backends/backend';
-import {ENV, Environment, getGlobalNamespace} from './environment';
+import {ENV, getGlobalNamespace} from './environment';
 import {Profiler} from './profiler';
 import {backpropagateGradients, getFilteredNodesXToY, NamedGradientMap, TapeNode} from './tape';
 import {DataId, setTensorTracker, Tensor, Tensor3D, TensorTracker, Variable} from './tensor';
@@ -142,7 +142,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
   private pendingBackendInit: Promise<boolean>;
   private pendingBackendInitId = 0;
 
-  constructor(public ENV: Environment) {
+  constructor() {
     this.state = new EngineState();
   }
 
@@ -458,7 +458,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     // Stop recording to a tape when running a kernel.
     this.scopedRun(
         () => this.state.kernelDepth++, () => this.state.kernelDepth--, () => {
-          if (!this.ENV.getBool('DEBUG')) {
+          if (!ENV.getBool('DEBUG')) {
             result = forwardFunc(this.backend, saveFunc);
           } else {
             result = this.profiler.profileKernel(
@@ -903,7 +903,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     this.pendingBackendInitId++;
 
     this.state.dispose();
-    this.ENV.reset();
+    ENV.reset();
     this.state = new EngineState();
 
     for (const backendName in this.registry) {
@@ -924,7 +924,7 @@ function ones(shape: number[]): Tensor {
 function getOrMakeEngine(): Engine {
   const ns = getGlobalNamespace();
   if (ns._tfengine == null) {
-    ns._tfengine = new Engine(ENV);
+    ns._tfengine = new Engine();
   }
 
   // Tell the current tensor interface that the global engine is responsible
