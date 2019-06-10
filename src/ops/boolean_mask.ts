@@ -45,7 +45,7 @@ function booleanMask_<T extends Tensor, U extends Tensor>(
   const $tensor = convertToTensor(tensor, 'tensor', 'boolMask');
   const $mask = convertToTensor(mask, 'mask', 'boolMask');
 
-  const axisFrom = axis === undefined ? 0 : axis;
+  const axisFrom = axis == null ? 0 : axis;
   const maskDim = $mask.rank;
   const tensorShape = $tensor.shape;
 
