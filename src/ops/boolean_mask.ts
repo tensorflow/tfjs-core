@@ -19,7 +19,6 @@ import {Tensor} from '../tensor';
 import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import * as util from '../util';
-import {op} from './operation';
 import {gather} from './segment_ops';
 import {whereAsync} from './logical_ops';
 import {squeeze} from './array_ops';
@@ -72,4 +71,4 @@ async function booleanMask_<T extends Tensor, U extends Tensor>(
   return gather(reshapedTensor, indices, axisFrom);
 }
 
-export const booleanMask = op({booleanMask_});
+export const booleanMask = booleanMask_;
