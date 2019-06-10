@@ -922,7 +922,8 @@ function ones(shape: number[]): Tensor {
 }
 
 function getOrMakeEngine(): Engine {
-  const ns = getGlobalNamespace();
+  // tslint:disable-next-line:no-any
+  const ns = getGlobalNamespace() as any;
   if (ns._tfengine == null) {
     ns._tfengine = new Engine(ENV);
   }

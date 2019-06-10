@@ -167,7 +167,7 @@ function parseValue(flagName: string, value: string): FlagValue {
 }
 
 // tslint:disable-next-line:no-any
-let GLOBAL: any;
+let GLOBAL: {_env: Environment};
 export function getGlobalNamespace() {
   if (GLOBAL == null) {
     // tslint:disable-next-line:no-any
@@ -186,4 +186,13 @@ export function getGlobalNamespace() {
   return GLOBAL;
 }
 
-export const ENV = new Environment(getGlobalNamespace());
+function getOrMakeENV(): Environment {
+  const ns = getGlobalNamespace();
+  if (ns._env == null) {
+    const environment = new Environment(ns);
+    ns._env = environment;
+  }
+  return ns._env;
+}
+
+export const ENV = getOrMakeENV();
