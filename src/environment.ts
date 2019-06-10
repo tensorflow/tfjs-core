@@ -166,7 +166,6 @@ function parseValue(flagName: string, value: string): FlagValue {
       `Could not parse value flag value ${value} for flag ${flagName}.`);
 }
 
-// tslint:disable-next-line:no-any
 let GLOBAL: {_env: Environment};
 export function getGlobalNamespace() {
   if (GLOBAL == null) {
