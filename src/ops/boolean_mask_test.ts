@@ -57,8 +57,8 @@ describeWithFlags('booleanMask', ALL_ENVS, () => {
     expectArraysClose(await result.data(), [2, 4, 6]);
   });
 
-  it('accepts tensor-like object as mask', async () => {
-    const array = tf.tensor2d([1, 2, 3, 4, 5, 6], [3, 2]);
+  it('accepts tensor-like object as array or mask', async () => {
+    const array = [[1, 2], [3, 4], [5, 6]];
     const mask = [1, 0, 1];
     const result = await tf.booleanMask(array, mask);
     expect(result.shape).toEqual([2, 2]);

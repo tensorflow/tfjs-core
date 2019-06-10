@@ -41,7 +41,7 @@ import {squeeze} from './array_ops';
  */
 /** @doc {heading: 'Tensors', subheading: 'Slicing and Joining'} */
 async function booleanMask_<T extends Tensor, U extends Tensor>(
-    tensor: T, mask: U|TensorLike, axis?: number): Promise<Tensor> {
+    tensor: T|TensorLike, mask: U|TensorLike, axis?: number): Promise<Tensor> {
   const $tensor = convertToTensor(tensor, 'tensor', 'boolMask');
   const $mask = convertToTensor(mask, 'mask', 'boolMask', 'bool');
 
