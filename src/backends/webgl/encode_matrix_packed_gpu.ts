@@ -19,6 +19,22 @@ import {getGlslDifferences} from './glsl_version';
 import {GPGPUProgram} from './gpgpu_math';
 import * as shader_util from './shader_compiler_util';
 
+/*
+This is how the shader encodes a tensor with shape = [2, 3, 5]
+(indices are [batch, row, col]).
+
+000|001   002|003   004|xxx   020|021   022|023   024|xxx
+-------   -------   -------   -------   -------   -------
+010|011   012|013   014|xxx   xxx|xxx   xxx|xxx   xxx|xxx
+
+100|101   102|103   104|xxx   120|121   122|123   124|xxx
+-------   -------   -------   -------   -------   -------
+110|111   112|113   114|xxx   xxx|xxx   xxx|xxx   xxx|xxx
+
+Single texels contain only values from the same batch, and from adjacent rows
+and columns.
+ */
+
 export class EncodeMatrixPackedProgram implements GPGPUProgram {
   variableNames = ['A'];
   userCode: string;
