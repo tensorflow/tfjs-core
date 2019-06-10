@@ -185,7 +185,7 @@ export function getGlobalNamespace() {
   return GLOBAL;
 }
 
-function getOrMakeENV(): Environment {
+function getOrMakeEnv(): Environment {
   const ns = getGlobalNamespace();
   if (ns._tfenv == null) {
     const environment = new Environment(ns);
@@ -194,4 +194,4 @@ function getOrMakeENV(): Environment {
   return ns._tfenv;
 }
 
-export const ENV = getOrMakeENV();
+export const ENV = getOrMakeEnv();
