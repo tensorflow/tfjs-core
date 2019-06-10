@@ -55,7 +55,7 @@ function booleanMask_<T extends Tensor, U extends Tensor>(
   );
   util.assertShapesMatch(
       tensorShape.slice(axisFrom, axisFrom + maskDim), $mask.shape,
-      'mask\'s shape must match the first K dimensions of tensor\'s shape,'
+      `mask's shape must match the first K dimensions of tensor's shape,`
   );
 
   let leadingSize = 1;
