@@ -460,6 +460,13 @@ describeWithFlags('zerosLike', ALL_ENVS, () => {
     expectArraysClose(await b.data(), [0, 0, 0, 0]);
   });
 
+  it('zerosLike gradient', async () => {
+    const x = tf.tensor2d([[0, 1, 2], [4, 5, 6]]);
+    const gradients = tf.grad(x => tf.zerosLike(x))(x);
+    expect(gradients.shape).toEqual([2, 3]);
+    expectArraysEqual(await gradients.data(), [0, 0, 0, 0, 0, 0]);
+  });
+
   it('throws when passed a non-tensor', () => {
     expect(() => tf.zerosLike({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'zerosLike' must be a Tensor/);
@@ -746,6 +753,13 @@ describeWithFlags('onesLike', ALL_ENVS, () => {
         .toThrowError(/Argument 'x' passed to 'onesLike' must be a Tensor/);
   });
 
+  it('onesLike gradient', async () => {
+    const x = tf.tensor2d([[0, 1, 2], [4, 5, 6]]);
+    const gradients = tf.grad(x => tf.onesLike(x))(x);
+    expect(gradients.shape).toEqual([2, 3]);
+    expectArraysEqual(await gradients.data(), [0, 0, 0, 0, 0, 0]);
+  });
+
   it('accepts a tensor-like object', async () => {
     const res = tf.onesLike([[1, 2], [3, 4]]);
     expect(res.shape).toEqual([2, 2]);
@@ -908,8 +922,7 @@ describeWithFlags('eye', ALL_ENVS, () => {
     const r = tf.eye(2, 2, [2, 3]);
     expect(r.shape).toEqual([2, 3, 2, 2]);
     expectArraysClose(await r.data(), [
-      1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1,
-      1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1
+      1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1
     ]);
   });
 
@@ -1443,6 +1456,19 @@ describeWithFlags('fromPixels', BROWSER_ENVS, () => {
     pixelsB.data[1] = 6;
     pixelsB.data[2] = 7;
     pixelsB.data[3] = 255;  // Not used.
+    const a = tf.browser.fromPixels(pixelsA, 3).toFloat();
+    const b = tf.browser.fromPixels(pixelsB, 3).toFloat();
+    const res = a.add(b);
+    expect(res.shape).toEqual([1, 1, 3]);
+    expect(res.dtype).toBe('float32');
+    expectArraysClose(await res.data(), [260, 9, 11]);
+  });
+  it('fromPixels for PixelData type', async () => {
+    const dataA = new Uint8Array([255, 3, 4, 255]);
+    const pixelsA = {width: 1, height: 1, data: dataA};
+
+    const dataB = new Uint8Array([5, 6, 7, 255]);
+    const pixelsB = {width: 1, height: 1, data: dataB};
     const a = tf.browser.fromPixels(pixelsA, 3).toFloat();
     const b = tf.browser.fromPixels(pixelsB, 3).toFloat();
     const res = a.add(b);
@@ -3322,6 +3348,38 @@ describeWithFlags('split', ALL_ENVS, () => {
     const x = tf.tensor2d([1, 2, 3, 4, 5, 6, 7, 8], [2, 4]);
     const f = () => tf.split(x, 3, 1);
     expect(f).toThrowError();
+  });
+
+  it('can split a zero-sized tensor, axis=0', async () => {
+    const a = tf.zeros([4, 0]);
+    const numSplits = 4;
+    const axis = 0;
+    const res = tf.split(a, numSplits, axis);
+    expect(res.length).toBe(4);
+    expect(res[0].shape).toEqual([1, 0]);
+    expect(res[1].shape).toEqual([1, 0]);
+    expect(res[2].shape).toEqual([1, 0]);
+    expect(res[3].shape).toEqual([1, 0]);
+    expectArraysClose(await res[0].data(), []);
+    expectArraysClose(await res[1].data(), []);
+    expectArraysClose(await res[2].data(), []);
+    expectArraysClose(await res[3].data(), []);
+  });
+
+  it('can split a zero-sized tensor, axis=1', async () => {
+    const a = tf.zeros([0, 4]);
+    const numSplits = 4;
+    const axis = 1;
+    const res = tf.split(a, numSplits, axis);
+    expect(res.length).toBe(4);
+    expect(res[0].shape).toEqual([0, 1]);
+    expect(res[1].shape).toEqual([0, 1]);
+    expect(res[2].shape).toEqual([0, 1]);
+    expect(res[3].shape).toEqual([0, 1]);
+    expectArraysClose(await res[0].data(), []);
+    expectArraysClose(await res[1].data(), []);
+    expectArraysClose(await res[2].data(), []);
+    expectArraysClose(await res[3].data(), []);
   });
 
   it('throws when passed a non-tensor', () => {

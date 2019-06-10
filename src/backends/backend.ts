@@ -18,7 +18,7 @@
 import {Conv2DInfo, Conv3DInfo} from '../ops/conv_util';
 import {Activation} from '../ops/fused_util';
 import {Backend, DataId, Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D} from '../tensor';
-import {DataType, DataValues, Rank, ShapeMap} from '../types';
+import {DataType, DataValues, PixelData, Rank, ShapeMap} from '../types';
 
 export const EPSILON_FLOAT32 = 1e-7;
 export const EPSILON_FLOAT16 = 1e-4;
@@ -36,7 +36,8 @@ export interface TensorStorage {
   disposeData(dataId: DataId): void;
   write(dataId: DataId, values: DataValues): void;
   fromPixels(
-      pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
+      pixels: PixelData|ImageData|HTMLImageElement|HTMLCanvasElement|
+      HTMLVideoElement,
       numChannels: number): Tensor3D;
   register(dataId: DataId, shape: number[], dtype: DataType): void;
   memory(): {unreliable: boolean;};  // Backend-specific information.
@@ -46,11 +47,11 @@ export interface TensorStorage {
 export class DataStorage<T> {
   private data = new WeakMap<DataId, T>();
 
-  constructor(private dataMover: DataMover) {}
+  constructor(private backend: KernelBackend, private dataMover: DataMover) {}
 
   get(dataId: DataId) {
     if (!this.data.has(dataId)) {
-      this.dataMover.moveData(dataId);
+      this.dataMover.moveData(this.backend, dataId);
     }
     return this.data.get(dataId);
   }
@@ -74,7 +75,7 @@ export interface DataMover {
    * Upon calling this method, the mover will fetch the tensor from another
    * backend and register it with the current active backend.
    */
-  moveData(dataId: DataId): void;
+  moveData(backend: KernelBackend, dataId: DataId): void;
 }
 
 export interface BackendTimer {
@@ -97,9 +98,6 @@ export class KernelBackend implements TensorStorage, Backend, BackendTimer {
   readSync(dataId: object): DataValues {
     throw new Error('Not yet implemented.');
   }
-  isDataSync(): boolean {
-    throw new Error('Not yet implemented.');
-  }
   disposeData(dataId: object): void {
     throw new Error('Not yet implemented.');
   }
@@ -107,7 +105,8 @@ export class KernelBackend implements TensorStorage, Backend, BackendTimer {
     throw new Error('Not yet implemented.');
   }
   fromPixels(
-      pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
+      pixels: PixelData|ImageData|HTMLImageElement|HTMLCanvasElement|
+      HTMLVideoElement,
       numChannels: number): Tensor<Rank.R3> {
     throw new Error('Not yet implemented.');
   }

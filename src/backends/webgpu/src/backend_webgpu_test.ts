@@ -15,33 +15,21 @@
  * =============================================================================
  */
 
-import {Constraints, registerTestEnv} from '../../jasmine_util';
+import * as tf from '@tensorflow/tfjs-core';
+import {describeWebGPU} from './test_util';
 
-export const WEBGL_ENVS: Constraints = {
-  predicate: testEnv => testEnv.backendName === 'webgl'
-};
-export const PACKED_ENVS: Constraints = {
-  flags: {'WEBGL_PACK': true}
-};
+describeWebGPU('backend webgpu', () => {
+  it('readSync should throw if tensors are on the GPU', async () => {
+    const a = tf.tensor2d([1, 2, 3, 4], [2, 2]);
+    const b = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
 
-registerTestEnv({
-  name: 'webgl1',
-  backendName: 'webgl',
-  flags: {
-    'WEBGL_VERSION': 1,
-    'WEBGL_CPU_FORWARD': false,
-    'WEBGL_SIZE_UPLOAD_UNIFORM': 0
-  },
-  isDataSync: true
-});
+    const c = tf.matMul(a, b);
+    expect(() => c.dataSync())
+        .toThrowError(
+            'WebGPU readSync is only available for CPU-resident tensors.');
 
-registerTestEnv({
-  name: 'webgl2',
-  backendName: 'webgl',
-  flags: {
-    'WEBGL_VERSION': 2,
-    'WEBGL_CPU_FORWARD': false,
-    'WEBGL_SIZE_UPLOAD_UNIFORM': 0
-  },
-  isDataSync: true
+    await c.data();
+    // Now that data has been downloaded to the CPU, dataSync should work.
+    expect(() => c.dataSync()).not.toThrow();
+  });
 });

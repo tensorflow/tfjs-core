@@ -51,7 +51,7 @@ export class ArgMinMaxProgram implements WebGPUProgram {
     const reduceSize = util.sizeFromShape(reduceShape);
 
     // The number of comparisons each thread will do
-    const reductionFactor = 16;
+    const reductionFactor = 2;
     const xMaxThreads = 1024;  // gl_MaxComputeWorkGroupSize
     const xThreads =
         Math.min(Math.ceil(reduceSize / reductionFactor), xMaxThreads);
@@ -75,7 +75,7 @@ export class ArgMinMaxProgram implements WebGPUProgram {
 
       uint currentSize = WorkGroupSize;
       while (currentSize > 1) {
-        memoryBarrier();
+        barrier();
 
         for (uint w = 0; w < ${reductionFactor}; ++w) {
           uint i = gl_LocalInvocationID.x * ${reductionFactor} + w;
@@ -96,7 +96,7 @@ export class ArgMinMaxProgram implements WebGPUProgram {
       }
 
       if (gl_LocalInvocationID.x == 0) {
-        setOutput(flatOutputIndex, float(bestIndex));
+        setOutput(flatOutputIndex, int(bestIndex));
       }
     `;
 
@@ -177,7 +177,7 @@ export class ArgMinMaxProgram implements WebGPUProgram {
         const uint flatOutputIndex = gl_GlobalInvocationID.y;
         ${
         reduceInSharedMemory ? sharedMemoryReduceSnippet :
-                               'setOutput(flatOutputIndex, float(bestIndex));'}
+                               'setOutput(flatOutputIndex, int(bestIndex));'}
       }
     `;
   }

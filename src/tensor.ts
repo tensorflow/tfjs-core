@@ -158,7 +158,8 @@ export class TensorBuffer<R extends Rank, D extends DataType = 'float32'> {
 export interface TensorTracker {
   registerTensor(t: Tensor, backend?: Backend): void;
   disposeTensor(t: Tensor): void;
-  write(dataId: DataId, values: DataValues): void;
+  disposeVariable(v: Variable): void;
+  write(backend: Backend, dataId: DataId, values: DataValues): void;
   read(dataId: DataId): Promise<DataValues>;
   readSync(dataId: DataId): DataValues;
   registerVariable(v: Variable): void;
@@ -462,7 +463,7 @@ export class Tensor<R extends Rank = Rank> {
     this.rankType = (this.rank < 5 ? this.rank.toString() : 'higher') as R;
     trackerFn().registerTensor(this, backend);
     if (values != null) {
-      trackerFn().write(this.dataId, values);
+      trackerFn().write(backend, this.dataId, values);
     }
   }
 
@@ -1496,6 +1497,10 @@ export class Variable<R extends Rank = Rank> extends Tensor<R> {
     trackerFn().disposeTensor(this);
     this.dataId = newValue.dataId;
     trackerFn().registerTensor(this);
+  }
+
+  dispose(): void {
+    trackerFn().disposeVariable(this);
   }
 }
 Object.defineProperty(Variable, Symbol.hasInstance, {
