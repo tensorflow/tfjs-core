@@ -20,16 +20,17 @@ import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import * as util from '../util';
 import {op} from './operation';
-import {whereImpl} from '../backends/where_impl';
 import {gather} from './segment_ops';
+import {whereAsync} from './logical_ops';
+import {squeeze} from './array_ops';
 
 /**
  * Apply boolean mask to tensor.
  *
  * ```js
- * const tensor = tf.tensor2d([1, 2, 3, 4, 5, 6], [3, 2], 'float32');
+ * const tensor = tf.tensor2d([1, 2, 3, 4, 5, 6], [3, 2]);
  * const mask = tf.tensor1d([1, 0, 1], 'bool');
- * const result = tf.booleanMask(tensor, mask);
+ * const result = await tf.booleanMask(tensor, mask);
  * result.print();
  * ```
  *
@@ -40,10 +41,10 @@ import {gather} from './segment_ops';
  *     Otherwise K + axis <= N.
  */
 /** @doc {heading: 'Tensors', subheading: 'Slicing and Joining'} */
-function booleanMask_<T extends Tensor, U extends Tensor>(
-    tensor: T|TensorLike, mask: U|TensorLike, axis?: number): Tensor {
+async function booleanMask_<T extends Tensor, U extends Tensor>(
+    tensor: T, mask: U|TensorLike, axis?: number): Promise<Tensor> {
   const $tensor = convertToTensor(tensor, 'tensor', 'boolMask');
-  const $mask = convertToTensor(mask, 'mask', 'boolMask');
+  const $mask = convertToTensor(mask, 'mask', 'boolMask', 'bool');
 
   const axisFrom = axis == null ? 0 : axis;
   const maskDim = $mask.rank;
@@ -66,13 +67,9 @@ function booleanMask_<T extends Tensor, U extends Tensor>(
       .concat([leadingSize], tensorShape.slice(axisFrom + maskDim));
   const reshapedTensor = $tensor.reshape(targetTensorShape);
   const reshapedMask = $mask.reshape([-1]);
-  const truePositions = whereImpl(
-      [leadingSize], reshapedMask.dataSync());
-  const gatherIndicesShape = util.squeezeShape(
-      truePositions.shape, [1]).newShape;
-  const gatherIndices = truePositions.reshape(gatherIndicesShape);
+  const indices = squeeze(await whereAsync(reshapedMask), [1]);
 
-  return gather(reshapedTensor, gatherIndices, axisFrom);
+  return gather(reshapedTensor, indices, axisFrom);
 }
 
 export const booleanMask = op({booleanMask_});
