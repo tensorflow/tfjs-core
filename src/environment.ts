@@ -166,7 +166,8 @@ function parseValue(flagName: string, value: string): FlagValue {
       `Could not parse value flag value ${value} for flag ${flagName}.`);
 }
 
-let GLOBAL: {_tfenv: Environment};
+// tslint:disable-next-line:no-any
+let GLOBAL: {_tfenv: Environment, _tfengine: any};
 export function getGlobalNamespace() {
   if (GLOBAL == null) {
     // tslint:disable-next-line:no-any
@@ -188,8 +189,7 @@ export function getGlobalNamespace() {
 function getOrMakeEnv(): Environment {
   const ns = getGlobalNamespace();
   if (ns._tfenv == null) {
-    const environment = new Environment(ns);
-    ns._tfenv = environment;
+    ns._tfenv = new Environment(ns);
   }
   return ns._tfenv;
 }
