@@ -15,13 +15,13 @@
  * =============================================================================
  */
 
-import {ENGINE} from '../engine';
 import {Tensor} from '../tensor';
 import {convertToTensor} from '../tensor_util_env';
-import {Rank, ShapeMap, TensorLike} from '../types';
+import {TensorLike} from '../types';
 import * as util from '../util';
 import {op} from './operation';
 import {whereImpl} from '../backends/where_impl';
+import {gather} from './segment_ops';
 
 /**
  * Apply boolean mask to tensor.
@@ -69,15 +69,10 @@ function booleanMask_<T extends Tensor, U extends Tensor>(
   const truePositions = whereImpl(
       [leadingSize], reshapedMask.dataSync());
   const gatherIndicesShape = util.squeezeShape(
-      truePositions.shape, [1]).newShape as ShapeMap['R1'];
-  const gatherIndices =
-      truePositions.reshape(gatherIndicesShape) as Tensor<Rank.R1>;
+      truePositions.shape, [1]).newShape;
+  const gatherIndices = truePositions.reshape(gatherIndicesShape);
 
-  const res =
-      ENGINE.runKernel(b =>
-              b.gather(reshapedTensor as Tensor, gatherIndices, axisFrom),
-          {reshapedTensor, gatherIndices});
-  return res as Tensor;
+  return gather(reshapedTensor, gatherIndices, axisFrom);
 }
 
 export const booleanMask = op({booleanMask_});
