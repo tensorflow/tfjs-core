@@ -223,6 +223,10 @@ export class WebGPUBackend extends KernelBackend {
     const bufferShapes = inputs.concat(output).map(d => d.shape);
     let currentOffset = 0;
     bufferShapes.forEach((d, i) => {
+      // Uniforms.
+      if (d.length === 0) {
+        d = [1];
+      }
       // Complete std140 layout rules are documented here:
       // tslint:disable-next-line:max-line-length
       // https://www.khronos.org/registry/OpenGL/specs/gl/glspec45.core.pdf#page=159
