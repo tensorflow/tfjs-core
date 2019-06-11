@@ -23,10 +23,7 @@ import {tensor1d, tensor2d, tensor3d} from './tensor_ops';
 
 describeWithFlags('inTopK', ALL_ENVS, async () => {
   it('predictions 2d array, targets 1d array, with default k', async () => {
-    const predictions = tensor2d([
-        [20, 10, 40, 30],
-        [30, 50, -20, 10]
-    ]);
+    const predictions = tensor2d([[20, 10, 40, 30], [30, 50, -20, 10]]);
     const targets = tensor1d([2, 0]);
     const precision = tf.inTopK(predictions, targets);
     expect(precision.shape).toEqual([2]);
@@ -35,10 +32,7 @@ describeWithFlags('inTopK', ALL_ENVS, async () => {
   });
 
   it('predictions 2d array, targets 1d array, with k=2', async () => {
-    const predictions = tensor2d([
-        [20, 10, 40, 30],
-        [30, 50, -20, 10]
-    ]);
+    const predictions = tensor2d([[20, 10, 40, 30], [30, 50, -20, 10]]);
     const targets = tensor1d([2, 0]);
     const k = 2;
     const precision = tf.inTopK(predictions, targets, k);
@@ -48,14 +42,9 @@ describeWithFlags('inTopK', ALL_ENVS, async () => {
   });
 
   it('predictions 3d array, targets 2d array, with default k', async () => {
-    const predictions = tensor3d([
-        [[1, 5, 2], [4, 3, 6]],
-        [[3, 2, 1], [1, 2, 3]]
-    ]);
-    const targets = tensor2d([
-        [1, 2],
-        [0, 1]
-    ]);
+    const predictions =
+        tensor3d([[[1, 5, 2], [4, 3, 6]], [[3, 2, 1], [1, 2, 3]]]);
+    const targets = tensor2d([[1, 2], [0, 1]]);
     const precision = tf.inTopK(predictions, targets);
     expect(precision.shape).toEqual([2, 2]);
     expect(precision.dtype).toBe('bool');
@@ -63,14 +52,9 @@ describeWithFlags('inTopK', ALL_ENVS, async () => {
   });
 
   it('predictions 3d array, targets 2d array, with k=2', async () => {
-    const predictions = tensor3d([
-        [[1, 5, 2], [4, 3, 6]],
-        [[3, 2, 1], [1, 2, 3]]
-    ]);
-    const targets = tensor2d([
-        [1, 2],
-        [0, 1]
-    ]);
+    const predictions =
+        tensor3d([[[1, 5, 2], [4, 3, 6]], [[3, 2, 1], [1, 2, 3]]]);
+    const targets = tensor2d([[1, 2], [0, 1]]);
     const k = 2;
     const precision = tf.inTopK(predictions, targets, k);
     expect(precision.shape).toEqual([2, 2]);
@@ -95,10 +79,7 @@ describeWithFlags('inTopK', ALL_ENVS, async () => {
   });
 
   it('accept tensor-like object, with default k', async () => {
-    const predictions = [
-        [20, 10, 40, 30],
-        [30, 50, -20, 10]
-    ];
+    const predictions = [[20, 10, 40, 30], [30, 50, -20, 10]];
     const targets = [2, 0];
     const precision = tf.inTopK(predictions, targets);
     expect(precision.shape).toEqual([2]);
@@ -113,21 +94,13 @@ describeWithFlags('inTopK', ALL_ENVS, async () => {
   });
 
   it('throws when prediction_rank != targets_rank + 1', () => {
-    const predictions = tensor2d([
-        [20, 10, 40, 30],
-        [30, 50, -20, 10]
-    ]);
-    const targets = tensor2d([
-        [0], [0]
-    ]);
+    const predictions = tensor2d([[20, 10, 40, 30], [30, 50, -20, 10]]);
+    const targets = tensor2d([[0], [0]]);
     expect(() => tf.inTopK(predictions, targets)).toThrowError();
   });
 
   it('throws when k > size of last dimension of predictions', () => {
-    const predictions = tensor2d([
-        [20, 10, 40, 30],
-        [30, 50, -20, 10]
-    ]);
+    const predictions = tensor2d([[20, 10, 40, 30], [30, 50, -20, 10]]);
     const targets = tensor1d([2, 0]);
     const k = 5;
     expect(() => tf.inTopK(predictions, targets, k)).toThrowError();

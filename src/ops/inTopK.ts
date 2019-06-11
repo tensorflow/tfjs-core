@@ -19,8 +19,10 @@ import {ENGINE} from '../engine';
 import {NumericTensor, Tensor} from '../tensor';
 import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
-import {op} from './operation';
 import {assert, assertShapesMatch} from '../util';
+
+import {op} from './operation';
+
 
 /**
  * Says whether the targets are in the top K predictions.
@@ -39,37 +41,34 @@ import {assert, assertShapesMatch} from '../util';
  */
 /** @doc {heading: 'Operations', subheading: 'Evaluation'} */
 function inTopK_<T extends Tensor, U extends Tensor>(
-    predictions: T | TensorLike, targets: U | TensorLike, k = 1): U {
+    predictions: T|TensorLike, targets: U|TensorLike, k = 1): U {
   const $predictions = convertToTensor(predictions, 'predictions', 'inTopK');
   const $targets = convertToTensor(targets, 'targets', 'inTopK');
 
   assert(
       $predictions.rank > 1,
       () => 'inTopK() expects the predictions to be of rank 2 or higher, ' +
-          `but got ${$predictions.rank}`
-  );
+          `but got ${$predictions.rank}`);
   assert(
       $predictions.rank - 1 === $targets.rank,
       () => 'predictions\' rank should be 1 larger than ' +
           `targets\' rank, but got predictions\' rank ` +
-          `${$predictions.rank} and targets\' rank ${$targets.rank}`
-  );
+          `${$predictions.rank} and targets\' rank ${$targets.rank}`);
   assertShapesMatch(
       $predictions.shape.slice(0, $predictions.shape.length - 1),
       $targets.shape,
       'predictions\'s shape should be align with the targets\' shape, ' +
-      'except the last dimension.'
-  );
+          'except the last dimension.');
   const lastDim = $predictions.shape[$predictions.shape.length - 1];
   assert(
       k > 0 && k <= lastDim,
       () => `'k' passed to inTopK() must be > 0 && <= the predictions' last ` +
-          `dimension (${lastDim}), but got ${k}`
-  );
+          `dimension (${lastDim}), but got ${k}`);
 
-  const precision =
-      ENGINE.runKernel(b => b.inTopK($predictions as NumericTensor,
-          $targets as NumericTensor, k), {$predictions, $targets});
+  const precision = ENGINE.runKernel(
+      b =>
+          b.inTopK($predictions as NumericTensor, $targets as NumericTensor, k),
+      {$predictions, $targets});
 
   return precision as U;
 }

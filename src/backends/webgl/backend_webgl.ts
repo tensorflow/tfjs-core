@@ -42,10 +42,10 @@ import {getArrayFromDType, getTypedArrayFromDType, inferDtype, sizeFromShape} fr
 import {DataStorage, EPSILON_FLOAT16, EPSILON_FLOAT32, KernelBackend} from '../backend';
 import * as backend_util from '../backend_util';
 import {mergeRealAndImagArrays} from '../complex_util';
+import {inTopKImpl} from '../inTopK_impl';
 import {nonMaxSuppressionImpl} from '../non_max_suppression_impl';
 import {split} from '../split_shared';
 import {topkImpl} from '../topk_impl';
-import {inTopKImpl} from '../inTopK_impl';
 import {whereImpl} from '../where_impl';
 
 import {AddNProgram} from './addn_gpu';
@@ -1343,8 +1343,8 @@ export class MathBackendWebGL implements KernelBackend {
     const predictionsVals = predictions.dataSync();
     const targetsVals = targets.dataSync();
     return inTopKImpl(
-        predictionsVals, predictions.shape, targetsVals, targets.shape, k
-    ) as U;
+               predictionsVals, predictions.shape, targetsVals, targets.shape,
+               k) as U;
   }
 
   min(x: Tensor, axes: number[]): Tensor {

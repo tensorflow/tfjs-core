@@ -40,10 +40,10 @@ import {getArrayFromDType, inferDtype, now, sizeFromShape} from '../../util';
 import {BackendTimingInfo, DataStorage, EPSILON_FLOAT32, KernelBackend} from '../backend';
 import * as backend_util from '../backend_util';
 import * as complex_util from '../complex_util';
+import {inTopKImpl} from '../inTopK_impl';
 import {nonMaxSuppressionImpl} from '../non_max_suppression_impl';
 import {split} from '../split_shared';
 import {topkImpl} from '../topk_impl';
-import {inTopKImpl} from '../inTopK_impl';
 import {whereImpl} from '../where_impl';
 
 function mapActivation(
@@ -817,8 +817,8 @@ export class MathBackendCPU implements KernelBackend {
     const targetsVals = targets.dataSync();
 
     return inTopKImpl(
-        predictionsVals, predictions.shape, targetsVals, targets.shape, k
-    ) as U;
+               predictionsVals, predictions.shape, targetsVals, targets.shape,
+               k) as U;
   }
 
   min(x: Tensor, axes: number[]): Tensor {
