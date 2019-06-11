@@ -35,7 +35,7 @@ import * as segment_util from '../../ops/segment_util';
 import {computeFlatOffset, getStridedSlicedInfo, isSliceContinous} from '../../ops/slice_util';
 import {softmax} from '../../ops/softmax';
 import {range, scalar, tensor} from '../../ops/tensor_ops';
-import {DataId, Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D, TensorHandle} from '../../tensor';
+import {DataId, Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D} from '../../tensor';
 import {DataType, DataTypeMap, DataValues, NumericDataType, PixelData, Rank, RecursiveArray, ShapeMap, sumOutType, TypedArray, upcastType} from '../../types';
 import * as util from '../../util';
 import {getArrayFromDType, getTypedArrayFromDType, inferDtype, sizeFromShape} from '../../util';
@@ -172,6 +172,14 @@ function mapActivationToShaderProgram(
   }
   throw new Error(`Activation ${
       activation} has not been implemented for the WebGL backend.`);
+}
+
+// Combines a dataId, a shape, and a dtype without a Tensor object so that
+// programs can be executed without a full Tensor object.
+export interface TensorHandle {
+  dataId: DataId;
+  shape: number[];
+  dtype: DataType;
 }
 
 // Empirically determined constant used to determine size threshold for handing
