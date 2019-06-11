@@ -2054,13 +2054,12 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [x], output) as Tensor5D;
   }
 
-  avgPool3dBackprop(
-      dy: Tensor5D, x: Tensor5D, convInfo: Conv3DInfo): Tensor5D {
+  avgPool3dBackprop(dy: Tensor5D, x: Tensor5D, convInfo: Conv3DInfo): Tensor5D {
     const avgPool3dBackpropProgram = new AvgPool3DBackpropProgram(convInfo);
     const output =
         this.makeOutputArray(avgPool3dBackpropProgram.outputShape, x.dtype);
-    return this.compileAndRun(
-        avgPool3dBackpropProgram, [dy], output) as Tensor5D;
+    return this.compileAndRun(avgPool3dBackpropProgram, [dy], output) as
+        Tensor5D;
   }
 
   maxPool3d(x: Tensor5D, convInfo: Conv3DInfo): Tensor5D {

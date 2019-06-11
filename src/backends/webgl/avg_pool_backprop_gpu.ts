@@ -130,38 +130,38 @@ export class AvgPool3DBackpropProgram implements GPGPUProgram {
         // dx(xD, xR, xC, ch).
         // ? = to be determined. : = across all values in that axis.
         float dotProd = 0.0;
-        
+
         for (int wD = 0; wD < ${effectiveFilterDepth};
             wD += ${dilationDepth}) {
           float dyD = float(dyDCorner + wD) / ${strideDepth}.0;
-          
+
           if (dyD < 0.0 || dyD >= ${convInfo.outDepth}.0 || fract(dyD) > 0.0) {
             continue;
           }
           int idyD = int(dyD);
-          
+
           for (int wR = 0; wR < ${effectiveFilterHeight};
               wR += ${dilationHeight}) {
             float dyR = float(dyRCorner + wR) / ${strideHeight}.0;
-            
+
             if (dyR < 0.0 || dyR >= ${convInfo.outHeight}.0 ||
                 fract(dyR) > 0.0) {
               continue;
             }
             int idyR = int(dyR);
-            
+
             for (int wC = 0; wC < ${effectiveFilterWidth};
                 wC += ${dilationWidth}) {
               float dyC = float(dyCCorner + wC) / ${strideWidth}.0;
-              
+
               if (dyC < 0.0 || dyC >= ${convInfo.outWidth}.0 ||
                   fract(dyC) > 0.0) {
                 continue;
               }
               int idyC = int(dyC);
-              
+
               float dyValue = getDy(batch, idyD, idyR, idyC, ch);
-              
+
               dotProd += dyValue * avgMultiplier;
             }
           }

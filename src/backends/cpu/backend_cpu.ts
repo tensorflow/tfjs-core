@@ -2430,8 +2430,8 @@ export class MathBackendCPU implements KernelBackend {
     return dx.toTensor();
   }
 
-  private pool3d(
-      x: Tensor5D, convInfo: Conv3DInfo, poolType: 'max'|'avg'): Tensor5D {
+  private pool3d(x: Tensor5D, convInfo: Conv3DInfo, poolType: 'max'|'avg'):
+      Tensor5D {
     this.assertNotComplex(x, 'pool3d');
 
     const strideDepth = convInfo.strideDepth;
@@ -2449,17 +2449,16 @@ export class MathBackendCPU implements KernelBackend {
 
     const initialValue =
         (poolType === 'max' ? Number.NEGATIVE_INFINITY :
-            Number.POSITIVE_INFINITY);
+                              Number.POSITIVE_INFINITY);
 
     const xValues = this.readSync(x.dataId) as TypedArray;
     const output = ops.buffer(convInfo.outShape, x.dtype);
     const outputVals = output.values;
 
-    const outputBatchStrides =
-        convInfo.outShape[1] * convInfo.outShape[2] * convInfo.outShape[3] *
-        convInfo.outShape[4];
-    const outputDepthStrides = convInfo.outShape[2] * convInfo.outShape[3] *
-        convInfo.outShape[4];
+    const outputBatchStrides = convInfo.outShape[1] * convInfo.outShape[2] *
+        convInfo.outShape[3] * convInfo.outShape[4];
+    const outputDepthStrides =
+        convInfo.outShape[2] * convInfo.outShape[3] * convInfo.outShape[4];
     const outputRowStrides = convInfo.outShape[3] * convInfo.outShape[4];
     const outputColStrides = convInfo.outShape[4];
 
@@ -2480,24 +2479,22 @@ export class MathBackendCPU implements KernelBackend {
           for (let yRow = 0; yRow < convInfo.outHeight; ++yRow) {
             const xRowCorner = yRow * strideHeight - padTop;
             let xRowMin = xRowCorner;
-            while(xRowMin < 0) {
+            while (xRowMin < 0) {
               xRowMin += dilationHeight;
             }
-            const xRowMax = Math.min(convInfo.inHeight,
-                effectiveFilterHeight + xRowCorner);
-            const outputRowOffset =
-                outputDepthOffset + yRow * outputRowStrides;
+            const xRowMax =
+                Math.min(convInfo.inHeight, effectiveFilterHeight + xRowCorner);
+            const outputRowOffset = outputDepthOffset + yRow * outputRowStrides;
             for (let yCol = 0; yCol < convInfo.outWidth; ++yCol) {
               const xColCorner = yCol * strideWidth - padLeft;
               let xColMin = xColCorner;
-              while(xColMin < 0) {
+              while (xColMin < 0) {
                 xColMin += dilationWidth;
               }
-              const xColMax = Math.min(convInfo.inWidth,
-                  effectiveFilterWidth + xColCorner);
+              const xColMax =
+                  Math.min(convInfo.inWidth, effectiveFilterWidth + xColCorner);
               // Shader code begins
-              const outputColOffset =
-                  outputRowOffset + yCol * outputColStrides;
+              const outputColOffset = outputRowOffset + yCol * outputColStrides;
               let minMaxValue = initialValue;
               let avgValue = 0;
               let count = 0;
@@ -2546,8 +2543,7 @@ export class MathBackendCPU implements KernelBackend {
     return this.pool3d(x, convInfo, 'avg').toFloat();
   }
 
-  avgPool3dBackprop(
-      dy: Tensor5D, x: Tensor5D, convInfo: Conv3DInfo): Tensor5D {
+  avgPool3dBackprop(dy: Tensor5D, x: Tensor5D, convInfo: Conv3DInfo): Tensor5D {
     this.assertNotComplex([dy, x], 'avgPool3dBackprop');
 
     const strideDepth = convInfo.strideDepth;
@@ -2603,14 +2599,15 @@ export class MathBackendCPU implements KernelBackend {
                       continue;
                     }
 
-                    const pixel = dyBuf.get(
-                        batch, dyDepth, dyRow, dyCol, channel);
+                    const pixel =
+                        dyBuf.get(batch, dyDepth, dyRow, dyCol, channel);
                     dotProd += pixel;
                   }
                 }
               }
-              dx.set(dotProd * avgMultiplier,
-                  batch, dxDepth, dxRow, dxCol, channel);
+              dx.set(
+                  dotProd * avgMultiplier, batch, dxDepth, dxRow, dxCol,
+                  channel);
             }
           }
         }
@@ -2646,27 +2643,27 @@ export class MathBackendCPU implements KernelBackend {
         for (let yDepth = 0; yDepth < convInfo.outDepth; ++yDepth) {
           const xDepthCorner = yDepth * strideDepth - padFront;
           let xDepthMin = xDepthCorner;
-          while(xDepthMin < 0) {
+          while (xDepthMin < 0) {
             xDepthMin += dilationDepth;
           }
-          const xDepthMax = Math.min(
-              convInfo.inDepth, effectiveFilterDepth + xDepthCorner);
+          const xDepthMax =
+              Math.min(convInfo.inDepth, effectiveFilterDepth + xDepthCorner);
           for (let yRow = 0; yRow < convInfo.outHeight; ++yRow) {
             const xRowCorner = yRow * strideHeight - padTop;
             let xRowMin = xRowCorner;
-            while(xRowMin < 0) {
+            while (xRowMin < 0) {
               xRowMin += dilationHeight;
             }
-            const xRowMax = Math.min(
-                convInfo.inHeight, effectiveFilterHeight + xRowCorner);
+            const xRowMax =
+                Math.min(convInfo.inHeight, effectiveFilterHeight + xRowCorner);
             for (let yCol = 0; yCol < convInfo.outWidth; ++yCol) {
               const xColCorner = yCol * strideWidth - padLeft;
               let xColMin = xColCorner;
-              while(xColMin < 0) {
+              while (xColMin < 0) {
                 xColMin += dilationWidth;
               }
-              const xColMax = Math.min(
-                  convInfo.inWidth, effectiveFilterWidth + xColCorner);
+              const xColMax =
+                  Math.min(convInfo.inWidth, effectiveFilterWidth + xColCorner);
 
               // Shader code begins
               let maxValue = Number.NEGATIVE_INFINITY;
@@ -2685,8 +2682,8 @@ export class MathBackendCPU implements KernelBackend {
                     if (pixel >= maxValue) {
                       maxValue = pixel;
                       maxPosition = wDepth * effectiveFilterHeight *
-                          effectiveFilterWidth + wRow * effectiveFilterHeight +
-                          wCol;
+                              effectiveFilterWidth +
+                          wRow * effectiveFilterHeight + wCol;
                     }
                   }
                 }
@@ -2756,7 +2753,8 @@ export class MathBackendCPU implements KernelBackend {
                     }
 
                     const maxPos = effectiveFilterDepth *
-                        effectiveFilterHeight * effectiveFilterWidth - 1 -
+                            effectiveFilterHeight * effectiveFilterWidth -
+                        1 -
                         maxPosBuf.get(batch, dyDepth, dyRow, dyCol, channel);
                     const curPos =
                         wDepth * effectiveFilterHeight * effectiveFilterWidth +

@@ -460,8 +460,7 @@ export class KernelBackend implements TensorStorage, Backend, BackendTimer {
   avgPool3d(x: Tensor5D, convInfo: Conv3DInfo): Tensor5D {
     throw new Error('Not yet implemented');
   }
-  avgPool3dBackprop(
-      dy: Tensor5D, x: Tensor5D, convInfo: Conv3DInfo): Tensor5D {
+  avgPool3dBackprop(dy: Tensor5D, x: Tensor5D, convInfo: Conv3DInfo): Tensor5D {
     throw new Error('Not yet implemented');
   }
   maxPool3d(x: Tensor5D, convInfo: Conv3DInfo): Tensor5D {

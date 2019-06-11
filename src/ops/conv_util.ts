@@ -95,8 +95,7 @@ export function computePool3DInfo(
     dilations: number|[number, number, number], pad: 'same'|'valid'|number,
     roundingMode?: 'floor'|'round'|'ceil',
     dataFormat: 'NDHWC'|'NCDHW' = 'NDHWC'): Conv3DInfo {
-  const [filterDepth, filterHeight, filterWidth] =
-      parse3TupleParam(filterSize);
+  const [filterDepth, filterHeight, filterWidth] = parse3TupleParam(filterSize);
 
   let filterShape: [number, number, number, number, number];
   let $dataFormat: 'channelsFirst'|'channelsLast';
@@ -113,8 +112,8 @@ export function computePool3DInfo(
   }
 
   return computeConv3DInfo(
-      inShape, filterShape, strides, dilations, pad, false,
-      $dataFormat, roundingMode);
+      inShape, filterShape, strides, dilations, pad, false, $dataFormat,
+      roundingMode);
 }
 
 /**
@@ -324,8 +323,7 @@ function computeOutputShape3D(
 function computeOutputShape4D(
     inShape: [number, number, number, number], fieldSize: number,
     outChannels: number, stride: number, zeroPad?: number,
-    roundingMode?: 'floor'|'round'|'ceil'
-): [number, number, number, number] {
+    roundingMode?: 'floor'|'round'|'ceil'): [number, number, number, number] {
   if (zeroPad == null) {
     zeroPad = computeDefaultPad(inShape, fieldSize, stride);
   }
@@ -367,7 +365,7 @@ export function computeDefaultPad(
 
 function parseTupleParam(
     param: number|[number, number]|[number, number, number]):
-[number, number, number] {
+    [number, number, number] {
   if (typeof param === 'number') {
     return [param, param, param];
   }
@@ -457,8 +455,15 @@ function get3DPadAndOutInfo(
 
   if (typeof pad === 'number') {
     const padType = (pad === 0) ? 'VALID' : 'NUMBER';
-    padInfo = {top: pad, bottom: pad, left: pad, right: pad, front: pad,
-      back: pad, type: padType};
+    padInfo = {
+      top: pad,
+      bottom: pad,
+      left: pad,
+      right: pad,
+      front: pad,
+      back: pad,
+      type: padType
+    };
     const outShape = computeOutputShape4D(
         [inDepth, inHeight, inWidth, 1], filterDepth, 1, strideDepth, pad,
         roundingMode);

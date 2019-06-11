@@ -970,7 +970,7 @@ describe('conv_util computePool3dInfo', () => {
     const filterSize = 2;
     const stride = 1;
     const dilation = 1;
-    const fakeDataFormat = 'fakeFormat' as 'NDHWC'|'NCDHW';
+    const fakeDataFormat = 'fakeFormat' as 'NDHWC' | 'NCDHW';
     expect(
         () => conv_util.computePool3DInfo(
             inShape, filterSize, stride, dilation, 1, 'floor', fakeDataFormat))

@@ -520,10 +520,9 @@ function withSpaceToBatchBasePaddings(
 /** @doc {heading: 'Operations', subheading: 'Convolution'} */
 function avgPool3d_(
     x: Tensor5D|TensorLike, filterSize: [number, number, number]|number,
-    strides: [number, number, number]|number,
-    pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil',
-    dataFormat: 'NDHWC'|'NCDHW' = 'NDHWC'
-): Tensor5D {
+    strides: [number, number, number]|number, pad: 'valid'|'same'|number,
+    dimRoundingMode?: 'floor'|'round'|'ceil',
+    dataFormat: 'NDHWC'|'NCDHW' = 'NDHWC'): Tensor5D {
   return avgPool3dImpl_(
       x, filterSize, strides, 1, pad, dimRoundingMode, dataFormat);
 }
@@ -567,10 +566,9 @@ function avgPool3d_(
 function avgPool3dImpl_(
     x: Tensor5D|TensorLike, filterSize: [number, number, number]|number,
     strides: [number, number, number]|number,
-    dilations: [number, number, number]|number,
-    pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil',
-    dataFormat: 'NDHWC'|'NCDHW' = 'NDHWC'
-): Tensor5D {
+    dilations: [number, number, number]|number, pad: 'valid'|'same'|number,
+    dimRoundingMode?: 'floor'|'round'|'ceil',
+    dataFormat: 'NDHWC'|'NCDHW' = 'NDHWC'): Tensor5D {
   const $x = convertToTensor(x, 'x', 'avgPool3d', 'float32');
 
   if (dilations == null) {
@@ -645,9 +643,8 @@ function avgPool3dBackprop(
     dy: Tensor5D|TensorLike, input: Tensor5D|TensorLike,
     filterSize: [number, number, number]|number,
     strides: [number, number, number]|number,
-    dilations: [number, number, number]|number,
-    pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil'
-): Tensor5D {
+    dilations: [number, number, number]|number, pad: 'valid'|'same'|number,
+    dimRoundingMode?: 'floor'|'round'|'ceil'): Tensor5D {
   const $dy = convertToTensor(dy, 'dy', 'avgPool3dBackprop');
   const $input = convertToTensor(input, 'input', 'avgPool3dBackprop');
 
@@ -720,10 +717,9 @@ function avgPool3dBackprop(
 /** @doc {heading: 'Operations', subheading: 'Convolution'} */
 function maxPool3d_(
     x: Tensor5D|TensorLike, filterSize: [number, number, number]|number,
-    strides: [number, number, number]|number,
-    pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil',
-    dataFormat: 'NDHWC'|'NCDHW' = 'NDHWC'
-): Tensor5D {
+    strides: [number, number, number]|number, pad: 'valid'|'same'|number,
+    dimRoundingMode?: 'floor'|'round'|'ceil',
+    dataFormat: 'NDHWC'|'NCDHW' = 'NDHWC'): Tensor5D {
   return maxPool3dImpl_(
       x, filterSize, strides, 1, pad, dimRoundingMode, dataFormat);
 }
@@ -767,10 +763,9 @@ function maxPool3d_(
 function maxPool3dImpl_(
     x: Tensor5D|TensorLike, filterSize: [number, number, number]|number,
     strides: [number, number, number]|number,
-    dilations: [number, number, number]|number,
-    pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil',
-    dataFormat: 'NDHWC'|'NCDHW' = 'NDHWC'
-): Tensor5D {
+    dilations: [number, number, number]|number, pad: 'valid'|'same'|number,
+    dimRoundingMode?: 'floor'|'round'|'ceil',
+    dataFormat: 'NDHWC'|'NCDHW' = 'NDHWC'): Tensor5D {
   const $x = convertToTensor(x, 'x', 'maxPool3d');
 
   if (dilations == null) {
@@ -851,9 +846,8 @@ function maxPool3dBackprop(
     dy: Tensor5D|TensorLike, input: Tensor5D|TensorLike,
     output: Tensor5D|TensorLike, filterSize: [number, number, number]|number,
     strides: [number, number, number]|number,
-    dilations: [number, number, number]|number,
-    pad: 'valid'|'same'|number, dimRoundingMode?: 'floor'|'round'|'ceil'
-): Tensor5D {
+    dilations: [number, number, number]|number, pad: 'valid'|'same'|number,
+    dimRoundingMode?: 'floor'|'round'|'ceil'): Tensor5D {
   const $dy = convertToTensor(dy, 'dy', 'maxPool3dBackprop');
   const $input = convertToTensor(input, 'input', 'maxPool3dBackprop');
   const $output = convertToTensor(output, 'output', 'maxPool3dBackprop');

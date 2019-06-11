@@ -273,33 +273,33 @@ export class Pool3DProgram implements GPGPUProgram {
           float minMaxValue = 0.0;
           float minMaxValueFound = 0.0;
           int minMaxPosition = 0;
-          
+
           for (int wD = 0; wD < ${effectiveFilterDepth};
               wD += ${dilationDepth}) {
             int xD = xDCorner + wD;
-            
+
             if (xD < 0 || xD >= ${convInfo.inDepth}) {
               continue;
             }
-            
+
             for (int wR = 0; wR < ${effectiveFilterHeight};
                 wR += ${dilationHeight}) {
               int xR = xRCorner + wR;
-              
+
               if (xR < 0 || xR >= ${convInfo.inHeight}) {
                 continue;
               }
-              
+
               for (int wC = 0; wC < ${effectiveFilterWidth};
                   wC += ${dilationWidth}) {
                 int xC = xCCorner + wC;
-                
+
                 if (xC < 0 || xC >= ${convInfo.inWidth}) {
                   continue;
                 }
-                
+
                 float value = getX(batch, xD, xR, xC, ch);
-                
+
                 // If a min / max value has already been found, use it. If not,
                 // use the current value.
                 float currMinMaxValue = mix(
@@ -311,7 +311,7 @@ export class Pool3DProgram implements GPGPUProgram {
                       wD * ${effectiveFilterHeight} * ${effectiveFilterWidth} +
                       wR * ${effectiveFilterWidth} + wC;;
                 }
-              } 
+              }
             }
           }
           setOutput(float(minMaxPosition));
@@ -371,26 +371,26 @@ export class Pool3DProgram implements GPGPUProgram {
         vec4 minMaxValue = vec4(${initializationValue});
         float avgValue = 0.0;
         count = 0.0;
-        
+
         for (int wD = 0; wD < ${effectiveFilterDepth};
             wD += ${dilationDepth}) {
           int xD = xDCorner + wD;
-          
+
           if (xD < 0 || xD >= ${convInfo.inDepth}) {
             continue;
           }
-          
+
           for (int wR = 0; wR < ${effectiveFilterHeight};
             wR += ${dilationHeight}) {
             int xR = xRCorner + wR;
-          
+
             if (xR < 0 || xR >= ${convInfo.inHeight}) {
               continue;
             }
-            
+
             for (int wC = 0; wC < ${filterWidthNearestVec4}; wC += 4) {
               int xC = xCCorner + wC * ${dilationWidth};
-              
+
               vec4 values = vec4(
                 getValue(batch, xD, xR, xC, ch),
                 getValue(batch, xD, xR, xC + ${dilationWidth}, ch),
@@ -400,7 +400,7 @@ export class Pool3DProgram implements GPGPUProgram {
 
               ${updateSnippet}
             }
-            
+
             int xC = xCCorner + ${filterWidthNearestVec4};
             if (${filterWidthVec4Remainder === 1}) {
               vec4 values = vec4(
@@ -429,7 +429,7 @@ export class Pool3DProgram implements GPGPUProgram {
               );
 
               ${updateSnippet}
-            }  
+            }
           }
           setOutput(${returnValue});
         }
