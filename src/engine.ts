@@ -22,7 +22,7 @@ import {backpropagateGradients, getFilteredNodesXToY, NamedGradientMap, TapeNode
 import {DataId, setTensorTracker, Tensor, Tensor3D, TensorTracker, Variable} from './tensor';
 import {GradSaveFunc, NamedTensorMap, NamedVariableMap, TensorContainer} from './tensor_types';
 import {getTensorsInContainer} from './tensor_util';
-import {DataType, DataValues} from './types';
+import {DataType, DataValues, PixelData} from './types';
 import * as util from './util';
 import {bytesFromStringArray, makeOnesTypedArray, now, sizeFromShape} from './util';
 
@@ -128,8 +128,6 @@ class EngineState {
 
 export class Engine implements TensorManager, TensorTracker, DataMover {
   state: EngineState;
-
-  private backendInstance: KernelBackend;
   backendName: string;
   registry: {[id: string]: KernelBackend} = {};
   registryFactory: {
@@ -140,12 +138,13 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
   } = {};
 
   private profiler: Profiler;
+  private backendInstance: KernelBackend;
+  private pendingBackendInit: Promise<boolean>;
+  private pendingBackendInitId = 0;
 
   constructor(public ENV: Environment) {
     this.state = new EngineState();
   }
-
-  private pendingBackendInit: Promise<boolean>;
 
   async ready(): Promise<void> {
     if (this.pendingBackendInit != null) {
@@ -271,14 +270,23 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
       const backend = registryFactoryEntry.factory();
       // Test if the factory returns a promise.
       if (Promise.resolve(backend) === backend) {
+        const promiseId = ++this.pendingBackendInitId;
         const success =
             backend
                 .then(backendInstance => {
+                  // Outdated promise. Another backend was set in the meantime.
+                  if (promiseId < this.pendingBackendInitId) {
+                    return false;
+                  }
                   this.registry[backendName] = backendInstance;
                   this.pendingBackendInit = null;
                   return true;
                 })
                 .catch(err => {
+                  // Outdated promise. Another backend was set in the meantime.
+                  if (promiseId < this.pendingBackendInitId) {
+                    return false;
+                  }
                   this.pendingBackendInit = null;
                   console.warn(
                       `Initialization of backend ${backendName} failed`);
@@ -302,12 +310,25 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     if (!(backendName in this.registryFactory)) {
       throw new Error(`${backendName} backend not found in registry`);
     }
+    if (this.backendName === backendName && this.pendingBackendInit != null) {
+      // There is a pending promise of the backend we want to remove. Make it
+      // obsolete.
+      this.pendingBackendInitId++;
+    }
+
     if (backendName in this.registry) {
       this.registry[backendName].dispose();
       delete this.registry[backendName];
     }
 
     delete this.registryFactory[backendName];
+
+    // Unset the backend if it is active.
+    if (this.backendName === backendName) {
+      this.pendingBackendInit = null;
+      this.backendName = null;
+      this.backendInstance = null;
+    }
   }
 
   private getSortedBackends(): string[] {
@@ -337,8 +358,8 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
         `failed.`);
   }
 
-  moveData(dataId: DataId) {
-    this.write(dataId, this.readSync(dataId));
+  moveData(destBackend: KernelBackend, dataId: DataId) {
+    this.write(destBackend, dataId, this.readSync(dataId));
   }
 
   tidy<T extends TensorContainer>(nameOrFn: string|ScopeFn<T>, fn?: ScopeFn<T>):
@@ -553,8 +574,14 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
   disposeVariables(): void {
     for (const varName in this.state.registeredVariables) {
       const v = this.state.registeredVariables[varName];
-      this.disposeTensor(v);
-      delete this.state.registeredVariables[varName];
+      this.disposeVariable(v);
+    }
+  }
+
+  disposeVariable(v: Variable): void {
+    this.disposeTensor(v);
+    if (this.state.registeredVariables[v.name] != null) {
+      delete this.state.registeredVariables[v.name];
     }
   }
 
@@ -803,8 +830,12 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
   }
 
   // Forwarding to backend.
-  write(dataId: DataId, values: DataValues): void {
+  write(destBackend: KernelBackend, dataId: DataId, values: DataValues): void {
     const info = this.state.tensorInfo.get(dataId);
+
+    const srcBackend = info.backend;
+    destBackend = destBackend || this.backend;
+
     // Bytes for string tensors are counted when writing.
     if (info.dtype === 'string') {
       const newBytes = bytesFromStringArray(values as string[]);
@@ -812,14 +843,14 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
       info.bytes = newBytes;
     }
 
-    if (this.backend !== info.backend) {
+    if (destBackend !== srcBackend) {
       // Delete the tensor from the old backend and move it to the new
       // backend.
-      info.backend.disposeData(dataId);
-      info.backend = this.backend;
-      this.backend.register(dataId, info.shape, info.dtype);
+      srcBackend.disposeData(dataId);
+      info.backend = destBackend;
+      destBackend.register(dataId, info.shape, info.dtype);
     }
-    this.backend.write(dataId, values);
+    destBackend.write(dataId, values);
   }
   readSync(dataId: DataId): DataValues {
     // Route the read to the correct backend.
@@ -832,7 +863,8 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     return info.backend.read(dataId);
   }
   fromPixels(
-      pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
+      pixels: PixelData|ImageData|HTMLImageElement|HTMLCanvasElement|
+      HTMLVideoElement,
       numChannels: number): Tensor3D {
     return this.backend.fromPixels(pixels, numChannels);
   }
@@ -866,7 +898,10 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
    * Resets the engine state. Removes all backends but does not remove
    * registered backend factories.
    */
-  reset() {
+  reset(): void {
+    // Make any pending promise obsolete.
+    this.pendingBackendInitId++;
+
     this.state.dispose();
     this.ENV.reset();
     this.state = new EngineState();
@@ -877,6 +912,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     }
     this.backendName = null;
     this.backendInstance = null;
+    this.pendingBackendInit = null;
   }
 }
 

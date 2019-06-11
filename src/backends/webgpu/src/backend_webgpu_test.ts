@@ -16,27 +16,20 @@
  */
 
 import * as tf from '@tensorflow/tfjs-core';
+import {describeWebGPU} from './test_util';
 
-import * as tfwebgpu from './index';
+describeWebGPU('backend webgpu', () => {
+  it('readSync should throw if tensors are on the GPU', async () => {
+    const a = tf.tensor2d([1, 2, 3, 4], [2, 2]);
+    const b = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
 
-describe('Unary ops', () => {
-  beforeAll(async () => tfwebgpu.ready);
+    const c = tf.matMul(a, b);
+    expect(() => c.dataSync())
+        .toThrowError(
+            'WebGPU readSync is only available for CPU-resident tensors.');
 
-  it('relu', async () => {
-    const a = tf.tensor1d([1, -2, 0, 3, -0.1]);
-    const result = tf.relu(a);
-
-    const cData = await result.data();
-
-    tf.test_util.expectArraysClose(cData, new Float32Array([1, 0, 0, 3, 0]));
-  });
-
-  it('relu 3D', async () => {
-    const a = tf.tensor3d([1, -2, 5, -3], [1, 2, 2]);
-    const result = tf.relu(a);
-
-    const cData = await result.data();
-
-    tf.test_util.expectArraysClose(cData, new Float32Array([1, 0, 5, 0]));
+    await c.data();
+    // Now that data has been downloaded to the CPU, dataSync should work.
+    expect(() => c.dataSync()).not.toThrow();
   });
 });

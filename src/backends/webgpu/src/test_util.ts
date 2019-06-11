@@ -15,33 +15,8 @@
  * =============================================================================
  */
 
-import {Constraints, registerTestEnv} from '../../jasmine_util';
+import {ALL_ENVS, describeWithFlags, TestEnv} from '@tensorflow/tfjs-core/dist/jasmine_util';
 
-export const WEBGL_ENVS: Constraints = {
-  predicate: testEnv => testEnv.backendName === 'webgl'
-};
-export const PACKED_ENVS: Constraints = {
-  flags: {'WEBGL_PACK': true}
-};
-
-registerTestEnv({
-  name: 'webgl1',
-  backendName: 'webgl',
-  flags: {
-    'WEBGL_VERSION': 1,
-    'WEBGL_CPU_FORWARD': false,
-    'WEBGL_SIZE_UPLOAD_UNIFORM': 0
-  },
-  isDataSync: true
-});
-
-registerTestEnv({
-  name: 'webgl2',
-  backendName: 'webgl',
-  flags: {
-    'WEBGL_VERSION': 2,
-    'WEBGL_CPU_FORWARD': false,
-    'WEBGL_SIZE_UPLOAD_UNIFORM': 0
-  },
-  isDataSync: true
-});
+export function describeWebGPU(name: string, tests: (env: TestEnv) => void) {
+  describeWithFlags('webgpu ' + name, ALL_ENVS, tests);
+}

@@ -15,12 +15,20 @@
  * =============================================================================
  */
 
-import {scalar, zeros, tensor1d} from '../ops/tensor_ops';
+import {scalar, tensor1d, zeros} from '../ops/tensor_ops';
 import {Tensor} from '../tensor';
 import {Rank} from '../types';
 import {DataType, ShapeMap} from '../types';
 import {hasEncodingLoss, makeZerosTypedArray} from '../util';
+
 import {KernelBackend} from './backend';
+
+// Utilities needed by backend consumers of tf-core.
+export * from '../ops/axis_util';
+export * from '../ops/broadcast_util';
+export * from '../ops/concat_util';
+export * from '../ops/conv_util';
+export {TypedArray, upcastType, PixelData} from '../types';
 
 export function castTensor<T extends Tensor>(
     x: T, dtype: DataType, backend: KernelBackend): T {
@@ -55,7 +63,7 @@ export function castTensor<T extends Tensor>(
     zero.dispose();
     return result;
   } else {
-    throw new Error(`Error in Cast: unknown dtype argument (${dtype})`);
+    throw new Error(`Error in Cast: failed to cast ${x.dtype} to ${dtype}`);
   }
 }
 

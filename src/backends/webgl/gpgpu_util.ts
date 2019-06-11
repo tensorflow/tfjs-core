@@ -16,7 +16,9 @@
  */
 
 import {ENV} from '../../environment';
+import {PixelData, TypedArray} from '../../types';
 import * as util from '../../util';
+
 import {getGlslDifferences} from './glsl_version';
 import * as tex_util from './tex_util';
 import * as webgl_util from './webgl_util';
@@ -216,82 +218,46 @@ export function bindVertexProgramAttributeStreams(
           gl, debug, program, 'uv', vertexBuffer, 2, stride, uvOffset);
 }
 
-export function uploadPixelDataToTexture(
+export function uploadDenseMatrixToTexture(
     gl: WebGLRenderingContext, debug: boolean, texture: WebGLTexture,
-    pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement) {
+    width: number, height: number, data: TypedArray,
+    textureConfig: TextureConfig) {
   webgl_util.callAndCheck(
       gl, debug, () => gl.bindTexture(gl.TEXTURE_2D, texture));
+  const dataForUpload = new Float32Array(width * height * 4);
+  dataForUpload.set(data);
+
   webgl_util.callAndCheck(
       gl, debug,
       () => gl.texImage2D(
-          gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, pixels));
+          gl.TEXTURE_2D, 0, textureConfig.internalFormatPackedFloat, width,
+          height, 0, gl.RGBA, gl.FLOAT, dataForUpload));
+
   webgl_util.callAndCheck(gl, debug, () => gl.bindTexture(gl.TEXTURE_2D, null));
 }
 
-function uploadDataToTexture(
+export function uploadPixelDataToTexture(
     gl: WebGLRenderingContext, debug: boolean, texture: WebGLTexture,
-    width: number, height: number, data: Float32Array, textureFormat: number) {
-  webgl_util.validateTextureSize(width, height);
+    pixels: PixelData|ImageData|HTMLImageElement|HTMLCanvasElement|
+    HTMLVideoElement) {
   webgl_util.callAndCheck(
       gl, debug, () => gl.bindTexture(gl.TEXTURE_2D, texture));
-  webgl_util.callAndCheck(
-      gl, debug,
-      () => gl.texSubImage2D(
-          gl.TEXTURE_2D, 0, 0, 0, width, height, textureFormat, gl.FLOAT,
-          data));
-
-  webgl_util.callAndCheck(gl, debug, () => gl.bindTexture(gl.TEXTURE_2D, null));
-}
-
-export function uploadMatrixToTexture(
-    gl: WebGLRenderingContext, debug: boolean, texture: WebGLTexture,
-    rows: number, columns: number, matrix: Float32Array, numChannels: number,
-    textureConfig: TextureConfig) {
-  const [w, h] =
-      tex_util.getUnpackedMatrixTextureShapeWidthHeight(rows, columns);
-
-  let unpackedArray: Float32Array;
-  const numTexels = rows * columns;
-  if (textureConfig.defaultNumChannels === 1 && numTexels === matrix.length) {
-    // No need to allocate a temporary array.
-    unpackedArray = matrix;
+  if ((pixels as PixelData).data instanceof Uint8Array) {
+    webgl_util.callAndCheck(
+        gl, debug,
+        () => gl.texImage2D(
+            gl.TEXTURE_2D, 0, gl.RGBA, pixels.width, pixels.height, 0, gl.RGBA,
+            gl.UNSIGNED_BYTE, (pixels as PixelData).data));
   } else {
-    unpackedArray = new Float32Array(numTexels * numChannels);
-    tex_util.encodeMatrixToUnpackedArray(matrix, unpackedArray, numChannels);
+    webgl_util.callAndCheck(
+        gl, debug,
+        () => gl.texImage2D(
+            gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE,
+            pixels as ImageData | HTMLImageElement | HTMLCanvasElement |
+                HTMLVideoElement));
   }
 
-  uploadDataToTexture(
-      gl, debug, texture, w, h, unpackedArray,
-      textureConfig.textureFormatFloat);
-}
-
-/**
- * This method writes a tensor to a packed texture in a way that respects how we
- * represent data using each texel's r,g,b,a channels. Specifically, we lay
- * out the four channels in two rows each containing two channels, so a single
- * texel can represent up to four values from the tensor. That means a texture
- * that has a channel width of 11 and channel height of 4 will have a texel
- * width of 6 and texel height of 2.
- *
- * rows, columns: Logical number of rows and columns in the tensor to be
- * uploaded.
- *
- * physicalRows, physicalCols: Channel dimensions of the texture that will hold
- * the tensor.
- *
- * width, height (internal parameters): Texel dimensions of the texture.
- */
-export function uploadMatrixToPackedTexture(
-    gl: WebGLRenderingContext, debug: boolean, texture: WebGLTexture,
-    batch: number, rows: number, columns: number, physicalRows: number,
-    physicalCols: number, matrix: Float32Array, textureConfig: TextureConfig) {
-  const [w, h] = tex_util.getPackedMatrixTextureShapeWidthHeight(
-      physicalRows, physicalCols);
-  const packedRGBA =
-      new Float32Array(tex_util.getPackedRGBAArraySizeFromMatrixShape(
-          physicalRows, physicalCols));
-  tex_util.encodeMatrixToPackedRGBA(matrix, batch, rows, columns, packedRGBA);
-  uploadDataToTexture(gl, debug, texture, w, h, packedRGBA, gl.RGBA);
+  webgl_util.callAndCheck(gl, debug, () => gl.bindTexture(gl.TEXTURE_2D, null));
 }
 
 export function createBufferFromOutputTexture(
