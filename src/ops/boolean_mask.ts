@@ -19,9 +19,10 @@ import {Tensor} from '../tensor';
 import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import * as util from '../util';
-import {gather} from './segment_ops';
-import {whereAsync} from './logical_ops';
+
 import {squeeze} from './array_ops';
+import {whereAsync} from './logical_ops';
+import {gather} from './segment_ops';
 
 /**
  * Apply boolean mask to tensor.
@@ -49,21 +50,18 @@ async function booleanMask_<T extends Tensor, U extends Tensor>(
   const maskDim = $mask.rank;
   const tensorShape = $tensor.shape;
 
-  util.assert(
-      maskDim > 0,
-      () => 'mask cannot be scalar'
-  );
+  util.assert(maskDim > 0, () => 'mask cannot be scalar');
   util.assertShapesMatch(
       tensorShape.slice(axisFrom, axisFrom + maskDim), $mask.shape,
-      `mask's shape must match the first K dimensions of tensor's shape,`
-  );
+      `mask's shape must match the first K dimensions of tensor's shape,`);
 
   let leadingSize = 1;
   for (let i = axisFrom; i < axisFrom + maskDim; i++) {
     leadingSize *= tensorShape[i];
   }
-  const targetTensorShape = tensorShape.slice(0, axisFrom)
-      .concat([leadingSize], tensorShape.slice(axisFrom + maskDim));
+  const targetTensorShape =
+      tensorShape.slice(0, axisFrom)
+          .concat([leadingSize], tensorShape.slice(axisFrom + maskDim));
   const reshapedTensor = $tensor.reshape(targetTensorShape);
   const reshapedMask = $mask.reshape([-1]);
   const indices = squeeze(await whereAsync(reshapedMask), [1]);

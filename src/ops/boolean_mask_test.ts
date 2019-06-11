@@ -87,7 +87,9 @@ describeWithFlags('booleanMask', ALL_ENVS, () => {
     } catch (error) {
       errorMessage = error.message;
     }
-    expect(errorMessage).toBe(`mask's shape must match the first K ` +
-        `dimensions of tensor's shape, Shapes 3,2 and 1,2 must match`);
+    expect(errorMessage)
+        .toBe(
+            `mask's shape must match the first K ` +
+            `dimensions of tensor's shape, Shapes 3,2 and 1,2 must match`);
   });
 });
