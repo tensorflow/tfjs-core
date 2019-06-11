@@ -14,54 +14,12 @@
  * limitations under the License.
  * =============================================================================
  */
+
 import * as tf from '../index';
 import {ALL_ENVS, describeWithFlags} from '../jasmine_util';
 import {expectArraysClose} from '../test_util';
 
 import {tensor1d, tensor2d} from './tensor_ops';
-
-describeWithFlags('getNoiseShape', ALL_ENVS, () => {
-  it('x.shape == noiseShape', async () => {
-    const x = tf.ones([2, 3]);
-    const noiseShape = [2, 3];
-    const shape = tf.getNoiseShape(x, noiseShape);
-    expect(shape).toEqual([2, 3]);
-  });
-
-  it('x.shape and noiseShape have same length, different value', async () => {
-    const x = tf.ones([2, 3]);
-    const noiseShape = [2, 1];
-    const shape = tf.getNoiseShape(x, noiseShape);
-    expect(shape).toEqual([2, 1]);
-  });
-
-  it('noiseShape has null value', async () => {
-    const x = tf.ones([2, 3]);
-    const noiseShape = [2, null];
-    const shape = tf.getNoiseShape(x, noiseShape);
-    expect(shape).toEqual([2, 3]);
-  });
-
-  it('x.shape and noiseShape has different length', async () => {
-    const x = tf.ones([2, 3, 4]);
-    const noiseShape = [2, 3];
-    const shape = tf.getNoiseShape(x, noiseShape);
-    expect(shape).toEqual([2, 3]);
-  });
-
-  it('noiseShape is null', async () => {
-    const x = tf.ones([2, 3]);
-    const shape = tf.getNoiseShape(x, null);
-    expect(shape).toEqual([2, 3]);
-  });
-
-  it('x TensorLike object', async () => {
-    const x = [2, 3];
-    const noiseShape = [2, 3];
-    const shape = tf.getNoiseShape(x, noiseShape);
-    expect(shape).toEqual([2, 3]);
-  });
-});
 
 describeWithFlags('dropout', ALL_ENVS, () => {
   it('x 1d array, rate 0', async () => {

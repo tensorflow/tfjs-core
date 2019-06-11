@@ -21,47 +21,8 @@ import {TensorLike} from '../types';
 import * as util from '../util';
 
 import {randomUniform} from './array_ops';
+import {getNoiseShape} from './dropout_util';
 import {op} from './operation';
-
-/**
- * Normalize noise shape based on provided tensor and noise shape.
- *
- * ```js
- * const x = tf.ones([2, 3]);
- * const noiseShape = [2, 3];
- * const shape = tf.getNoiseShape(x, noiseShape);
- * console.log(shape);
- * ```
- *
- * @param x Tensor or TensorLike.
- * @param noiseShape A 1-D Tensor of type int32, representing the shape for
- *   randomly generated keep/drop flags. Optional.
- * @returns Normalized noise shape.
- */
-function getNoiseShape_<T extends Tensor>(
-    x: T|TensorLike, noiseShape?: number[]): number[] {
-  const $x = convertToTensor(x, 'x', 'getNoiseShape');
-
-  if (noiseShape == null) {
-    return $x.shape.slice();
-  }
-  if (util.arraysEqual($x.shape, noiseShape)) {
-    return noiseShape;
-  }
-  if ($x.shape.length === noiseShape.length) {
-    const newDimension: number[] = [];
-    for (let i = 0; i < $x.shape.length; i++) {
-      if (noiseShape[i] == null && $x.shape[i] != null) {
-        newDimension.push($x.shape[i]);
-      } else {
-        newDimension.push(noiseShape[i]);
-      }
-    }
-    return newDimension;
-  }
-
-  return noiseShape;
-}
 
 /**
  * Computes dropout.
@@ -82,20 +43,20 @@ function getNoiseShape_<T extends Tensor>(
  * @returns A Tensor of the same shape of x.
  */
 /** @doc {heading: 'Operations', subheading: 'Dropout'} */
-function dropout_<T extends Tensor>(
-    x: T|TensorLike, rate: number, noiseShape?: number[],
-    seed?: number|string): T {
+function dropout_(
+    x: Tensor|TensorLike, rate: number, noiseShape?: number[],
+    seed?: number|string): Tensor {
   const $x = convertToTensor(x, 'x', 'dropout');
 
   util.assert(
       $x.dtype === 'float32',
-      () => 'x has to be a floating point tensor since it\'s going to be ' +
+      () => `x has to be a floating point tensor since it's going to be ` +
           `scaled, but got a ${$x.dtype} tensor instead.`);
   util.assert(
       rate >= 0 && rate < 1,
       () => `rate must be a float in the range [0, 1), but got ${rate}.`);
   if (rate === 0) {
-    return (x instanceof Tensor ? $x.clone() : $x) as T;
+    return x instanceof Tensor ? $x.clone() : $x;
   }
 
   const $noiseShape = getNoiseShape($x, noiseShape);
@@ -105,8 +66,7 @@ function dropout_<T extends Tensor>(
                          .floor()
                          .div(keepProb);
 
-  return $x.mul(multiplier) as T;
+  return $x.mul(multiplier);
 }
 
 export const dropout = op({dropout_});
-export const getNoiseShape = op({getNoiseShape_});
