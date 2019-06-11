@@ -184,7 +184,8 @@
       //////////////////////////////////
       // Place model loading code here.
       //////////////////////////////////
-      return await posenet.load();
+      return await tf.loadGraphModel(
+        'https://storage.googleapis.com/tfjs-models/savedmodel/mobilenet_v2_1.0_224/model.json');
     }
 
     let zeros;
@@ -395,8 +396,7 @@
       }
 
       if (res instanceof tf.Tensor) {
-        // res.dataSync();
-        await res.data();
+        res.dataSync();
       }
 
       await showMsg(null);
@@ -428,18 +428,18 @@
       // await showEnvironment();
       await loadAndRecordTime();
       await warmUpAndRecordTime();
-      // await showMsg('Waiting for GC');
-      // await sleep(1000);
-      // await profileMemory();
-      // await sleep(200);
-      // await measureAveragePredictTime();
-      // await sleep(200);
-      // if (queryTimerIsEnabled()) {
-      //   await profileKernelTime();
-      // } else {
-      //   showMsg('Skipping kernel times since query timer extension is not ' +
-      //     'available. <br/> Use Chrome 70+.');
-      // };
+      await showMsg('Waiting for GC');
+      await sleep(1000);
+      await profileMemory();
+      await sleep(200);
+      await measureAveragePredictTime();
+      await sleep(200);
+      if (queryTimerIsEnabled()) {
+        await profileKernelTime();
+      } else {
+        showMsg('Skipping kernel times since query timer extension is not ' +
+          'available. <br/> Use Chrome 70+.');
+      };
     }
     onPageLoad();
   </script>
