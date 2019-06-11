@@ -23,8 +23,7 @@ import {DataMover, DataType, ENV, KernelBackend, Rank, ShapeMap, Tensor, Tensor2
 import * as backend_util from '@tensorflow/tfjs-core/dist/backends/backend_util';
 import {computeOutShape} from '@tensorflow/tfjs-core/dist/ops/concat_util';
 import {Conv2DInfo} from '@tensorflow/tfjs-core/dist/ops/conv_util';
-import {upcastType} from '@tensorflow/tfjs-core/dist/types';
-import {assert} from '@tensorflow/tfjs-core/dist/util';
+import {TypedArray, upcastType} from '@tensorflow/tfjs-core/dist/types';
 import * as shaderc from '@webgpu/shaderc';
 
 import {ArgMinMaxProgram} from './kernels/argminmax_webgpu';
@@ -48,6 +47,7 @@ type TensorInfo = {
   byteSize: number,
   values: Float32Array|Int32Array|Uint8Array,
   id: number,
+  dtype: DataType,
   buffer: GPUBuffer
 };
 
@@ -111,7 +111,8 @@ export class WebGPUBackend extends KernelBackend {
     if (!this.tensorMap.has(dataId)) {
       const byteSize = util.sizeFromShape(shape) * util.bytesPerElement(dtype);
       const buffer = this.createBuffer(byteSize);
-      this.tensorMap.set(dataId, {byteSize, values: null, id: -1, buffer});
+      this.tensorMap.set(
+          dataId, {byteSize, values: null, id: -1, buffer, dtype});
     }
   }
 
@@ -146,6 +147,30 @@ export class WebGPUBackend extends KernelBackend {
     return mapped.slice(0);
   }
 
+  private convertAndCacheOnCPU(dataId: DataId, data: TypedArray): TypedArray {
+    const texData = this.tensorMap.get(dataId);
+
+    // TODO: implement release GPU data.
+    // TODO: add backend_webgl float32ToTypedArray to util and use that here.
+
+    texData.values = data;
+    return texData.values as TypedArray;
+  }
+
+  // TODO: Remove once this is fixed:
+  // https://github.com/tensorflow/tfjs/issues/1595
+  readSync(dataId: object): Float32Array|Int32Array|Uint8Array {
+    const texData = this.tensorMap.get(dataId);
+    const {values} = texData;
+
+    if (values == null) {
+      throw new Error(
+          'WebGPU readSync is only available for CPU-resident tensors.');
+    }
+
+    return values;
+  }
+
   async read(dataId: object): Promise<Float32Array|Int32Array|Uint8Array> {
     if (!this.tensorMap.has(dataId)) {
       throw new Error(`Tensor ${dataId} was not registered!`);
@@ -153,7 +178,10 @@ export class WebGPUBackend extends KernelBackend {
     const info = this.tensorMap.get(dataId);
     const data = await this.getBufferData(info);
 
-    return new Float32Array(data);
+    const dataAsTypedArray =
+        info.dtype === 'int32' ? new Int32Array(data) : new Float32Array(data);
+    this.convertAndCacheOnCPU(dataId, dataAsTypedArray);
+    return dataAsTypedArray;
   }
 
   private getAndSavePipeline(
@@ -199,8 +227,11 @@ export class WebGPUBackend extends KernelBackend {
       // Complete std140 layout rules are documented here:
       // tslint:disable-next-line:max-line-length
       // https://www.khronos.org/registry/OpenGL/specs/gl/glspec45.core.pdf#page=159
-      let baseAlignment = 0;
+      let baseAlignment: number;
       switch (d.length) {
+        case 0:
+          baseAlignment = 0;
+          break;
         case 1:
           baseAlignment = 1;
           break;
@@ -214,7 +245,7 @@ export class WebGPUBackend extends KernelBackend {
           baseAlignment = 4;
           break;
         default:
-          assert(false, () => `Unsupported ${d.length}D shape`);
+          util.assert(false, () => `Unsupported ${d.length}D shape`);
       }
 
       const padding = Math.ceil(currentOffset / baseAlignment) * baseAlignment -
@@ -312,6 +343,10 @@ export class WebGPUBackend extends KernelBackend {
     return this.binaryOp(a, b, binary_op.ADD);
   }
 
+  subtract(a: Tensor, b: Tensor): Tensor {
+    return this.binaryOp(a, b, binary_op.SUB);
+  }
+
   conv2d(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
     const output =
         Tensor.make(convInfo.outShape, {}, x.dtype, this) as Tensor4D;
@@ -357,7 +392,7 @@ export class WebGPUBackend extends KernelBackend {
   argMax(x: Tensor, axis: number): Tensor {
     return this.argMinMaxReduce(x, axis, 'max');
   }
-  
+
   concat(tensors: Tensor[], axis: number): Tensor {
     if (tensors.length === 1) {
       return tensors[0];

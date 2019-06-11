@@ -1,6 +1,6 @@
 {
   "name": "@tensorflow/tfjs-core",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Hardware-accelerated JavaScript library for machine intelligence",
   "private": false,
   "main": "dist/index.js",
@@ -57,6 +57,7 @@
     "build": "./scripts/enumerate-tests.js && tsc",
     "build:bazel": "bazel build //...",
     "build-npm": "./scripts/build-npm.sh",
+    "build-test-snippets": "yarn tsc --project ./scripts/test_snippets/tsconfig.json",
     "link-local": "yalc link",
     "publish-local": "rimraf dist/ && yarn build && rollup -c && yalc push",
     "lint": "tslint -p . -t verbose",

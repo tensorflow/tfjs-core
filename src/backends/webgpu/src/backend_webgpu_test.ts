@@ -15,12 +15,21 @@
  * =============================================================================
  */
 
-import * as gpgpu_util from './backends/webgl/gpgpu_util';
-import * as webgl_util from './backends/webgl/webgl_util';
+import * as tf from '@tensorflow/tfjs-core';
+import {describeWebGPU} from './test_util';
 
-export {MathBackendWebGL, WebGLMemoryInfo, WebGLTimingInfo} from './backends/webgl/backend_webgl';
-export {setWebGLContext} from './backends/webgl/canvas_util';
-export {GPGPUContext} from './backends/webgl/gpgpu_context';
-export {GPGPUProgram} from './backends/webgl/gpgpu_math';
-// WebGL specific utils.
-export {gpgpu_util, webgl_util};
+describeWebGPU('backend webgpu', () => {
+  it('readSync should throw if tensors are on the GPU', async () => {
+    const a = tf.tensor2d([1, 2, 3, 4], [2, 2]);
+    const b = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
+
+    const c = tf.matMul(a, b);
+    expect(() => c.dataSync())
+        .toThrowError(
+            'WebGPU readSync is only available for CPU-resident tensors.');
+
+    await c.data();
+    // Now that data has been downloaded to the CPU, dataSync should work.
+    expect(() => c.dataSync()).not.toThrow();
+  });
+});
