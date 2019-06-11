@@ -23,7 +23,6 @@ import {assert, assertShapesMatch} from '../util';
 
 import {op} from './operation';
 
-
 /**
  * Says whether the targets are in the top K predictions.
  *
