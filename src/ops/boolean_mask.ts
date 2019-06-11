@@ -20,7 +20,6 @@ import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import * as util from '../util';
 
-import {squeeze} from './array_ops';
 import {whereAsync} from './logical_ops';
 import {gather} from './segment_ops';
 
@@ -64,7 +63,7 @@ async function booleanMask_<T extends Tensor, U extends Tensor>(
           .concat([leadingSize], tensorShape.slice(axisFrom + maskDim));
   const reshapedTensor = $tensor.reshape(targetTensorShape);
   const reshapedMask = $mask.reshape([-1]);
-  const indices = squeeze(await whereAsync(reshapedMask), [1]);
+  const indices = (await whereAsync(reshapedMask)).squeeze([1]);
 
   return gather(reshapedTensor, indices, axisFrom);
 }
