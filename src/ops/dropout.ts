@@ -15,43 +15,98 @@
  * =============================================================================
  */
 
-import {Scalar, Tensor} from '../tensor';
-import {arraysEqual} from '../util';
+import {Tensor} from '../tensor';
+import {convertToTensor} from '../tensor_util_env';
+import {TensorLike} from '../types';
+import * as util from '../util';
 
 import {randomUniform} from './array_ops';
-import {sub} from './binary_ops';
 import {op} from './operation';
 
 /**
- * Sets entries in `x` to zero at random, while scaling the entire tensor.
+ * Normalize noise shape based on provided tensor and noise shape.
+ *
  * ```js
- * const x = tf.range(1, 21).reshape([10, 2]);
- * const rate = 0.5;
- * const seed = 23;
- * const noiseShape = null || x.shape;
- * const tensor = tf.dropout(x, rate, noiseShape, seed);
+ * const x = tf.ones([2, 3]);
+ * const noiseShape = [2, 3];
+ * const shape = tf.getNoiseShape(x, noiseShape);
+ * console.log(shape);
  * ```
- * @param x input tensor.
- * @param level fraction of the entries in the tensor that will be set to 0.
- * @param noiseShape shape of randomly generated keep/drop flags, must be
- *   broadcastable to the shape of `x`.
- * @param seed random seed to ensure determinism.
- * @returns Result of the dropout operation.
+ *
+ * @param x Tensor or TensorLike.
+ * @param noiseShape A 1-D Tensor of type int32, representing the shape for
+ *   randomly generated keep/drop flags. Optional.
+ * @returns Normalized noise shape.
  */
-function dropout_(
-    x: Tensor, rate: Scalar|number, noiseShape?: number[],
-    seed?: number): Tensor {
-  if (noiseShape != null && !arraysEqual(x.shape, noiseShape)) {
-    // TODO(VariableVasasMT): implement non default noise shape
-    throw new Error(
-        'Non-default noise shape is not implemented yet: ' +
-        JSON.stringify(noiseShape));
+function getNoiseShape_<T extends Tensor>(
+    x: T|TensorLike, noiseShape?: number[]): number[] {
+  const $x = convertToTensor(x, 'x', 'getNoiseShape');
+
+  if (noiseShape == null) {
+    return $x.shape.slice();
+  }
+  if (util.arraysEqual($x.shape, noiseShape)) {
+    return noiseShape;
+  }
+  if ($x.shape.length === noiseShape.length) {
+    const newDimension: number[] = [];
+    for (let i = 0; i < $x.shape.length; i++) {
+      if (noiseShape[i] == null && $x.shape[i] != null) {
+        newDimension.push($x.shape[i]);
+      } else {
+        newDimension.push(noiseShape[i]);
+      }
+    }
+    return newDimension;
   }
 
-  let multiplier = randomUniform(x.shape, 0, 1, 'float32', seed).greater(rate);
-  // Scale the kept elements, so the expected sum is unchanged.
-  multiplier = multiplier.div(sub(1, rate) as Scalar);
-  return x.mul(multiplier);
+  return noiseShape;
+}
+
+/**
+ * Computes dropout.
+ *
+ * ```js
+ * const x = tf.tensor1d([1, 2, 2, 1]);
+ * const rate = 0.75;
+ * const output = tf.dropout(x, rate);
+ * output.print();
+ * ```
+ *
+ * @param x A floating point Tensor or TensorLike.
+ * @param rate A float in the range [0, 1). The probability that each element
+ *   of x is discarded.
+ * @param noiseShape A 1-D Tensor of type int32, representing the shape for
+ *   randomly generated keep/drop flags. Optional.
+ * @param seed Used to create random seeds. Optional.
+ * @returns A Tensor of the same shape of x.
+ */
+/** @doc {heading: 'Operations', subheading: 'Dropout'} */
+function dropout_<T extends Tensor>(
+    x: T|TensorLike, rate: number, noiseShape?: number[],
+    seed?: number|string): T {
+  const $x = convertToTensor(x, 'x', 'dropout');
+
+  util.assert(
+      $x.dtype === 'float32',
+      () => 'x has to be a floating point tensor since it\'s going to be ' +
+          `scaled, but got a ${$x.dtype} tensor instead.`);
+  util.assert(
+      rate >= 0 && rate < 1,
+      () => `rate must be a float in the range [0, 1), but got ${rate}.`);
+  if (rate === 0) {
+    return (x instanceof Tensor ? $x.clone() : $x) as T;
+  }
+
+  const $noiseShape = getNoiseShape($x, noiseShape);
+  const keepProb = 1 - rate;
+  const multiplier = randomUniform($noiseShape, 0, 1, 'float32', seed)
+                         .add(keepProb)
+                         .floor()
+                         .div(keepProb);
+
+  return $x.mul(multiplier) as T;
 }
 
 export const dropout = op({dropout_});
+export const getNoiseShape = op({getNoiseShape_});
