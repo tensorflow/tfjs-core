@@ -40,8 +40,9 @@ import {gather} from './segment_ops';
  *     Otherwise K + axis <= N.
  */
 /** @doc {heading: 'Tensors', subheading: 'Slicing and Joining'} */
-async function booleanMask_<T extends Tensor, U extends Tensor>(
-    tensor: T|TensorLike, mask: U|TensorLike, axis?: number): Promise<Tensor> {
+async function booleanMask_(
+    tensor: Tensor|TensorLike, mask: Tensor|TensorLike,
+    axis?: number): Promise<Tensor> {
   const $tensor = convertToTensor(tensor, 'tensor', 'boolMask');
   const $mask = convertToTensor(mask, 'mask', 'boolMask', 'bool');
 
