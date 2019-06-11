@@ -156,3 +156,18 @@ describe('CPU backend has sync init', () => {
     tf.removeBackend('my-cpu');
   });
 });
+
+describeWithFlags('fromPixels CPU', CPU_ENVS, () => {
+  it('should work even when ImageData is not defined', () => {
+    const originalImageData = ImageData;
+    ImageData = undefined;
+    const pixelData = {
+      data: Uint8Array.from([1, 1, 1, 1]),
+      width: 1,
+      height: 1
+    };
+
+    expect(() => tf.browser.fromPixels(pixelData, 4)).not.toThrow();
+    ImageData = originalImageData;
+  });
+});
