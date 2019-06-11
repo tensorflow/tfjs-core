@@ -64,9 +64,24 @@ async function booleanMask_(
           .concat([leadingSize], tensorShape.slice(axisFrom + maskDim));
   const reshapedTensor = $tensor.reshape(targetTensorShape);
   const reshapedMask = $mask.reshape([-1]);
-  const indices = (await whereAsync(reshapedMask)).squeeze([1]);
+  const positivePositions = await whereAsync(reshapedMask);
+  const indices = positivePositions.squeeze([1]);
 
-  return gather(reshapedTensor, indices, axisFrom);
+  const res = gather(reshapedTensor, indices, axisFrom);
+
+  // Ensure no memory leak.
+  if (tensor !== $tensor) {
+    $tensor.dispose();
+  }
+  if (mask !== $mask) {
+    $mask.dispose();
+  }
+  indices.dispose();
+  reshapedTensor.dispose();
+  reshapedMask.dispose();
+  positivePositions.dispose();
+
+  return res;
 }
 
 export const booleanMask = booleanMask_;
