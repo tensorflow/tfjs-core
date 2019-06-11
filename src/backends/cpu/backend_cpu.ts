@@ -813,8 +813,8 @@ export class MathBackendCPU implements KernelBackend {
       predictions: T, targets: U, k: number): U {
     this.assertNotComplex([predictions, targets], 'inTopK');
 
-    const predictionsVals = predictions.dataSync();
-    const targetsVals = targets.dataSync();
+    const predictionsVals = this.readSync(predictions.dataId) as TypedArray;
+    const targetsVals = this.readSync(targets.dataId) as TypedArray;
 
     return inTopKImpl(
                predictionsVals, predictions.shape, targetsVals, targets.shape,
