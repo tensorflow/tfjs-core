@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+import {ENGINE} from '../engine';
 import {arrayBufferToBase64String, arrayBufferToString, base64StringToArrayBuffer, stringToArrayBuffer, urlSafeBase64, urlUnsafeBase64} from '../io/io_utils';
 import {StringTensor, Tensor} from '../tensor';
 
@@ -22,7 +23,7 @@ import {StringTensor, Tensor} from '../tensor';
 export function encodeBase64<T extends StringTensor>(
     str: StringTensor|Tensor, pad = false): T {
   const resultValues = new Array(str.size);
-  const values = str.dataSync();
+  const values = ENGINE.backend.readSync(str.dataId);
 
   for (let i = 0; i < values.length; ++i) {
     // Convert from string to ArrayBuffer of UTF-8 multibyte sequence
@@ -44,7 +45,7 @@ export function encodeBase64<T extends StringTensor>(
 export function decodeBase64<T extends StringTensor>(str: StringTensor|
                                                      Tensor): T {
   const resultValues = new Array(str.size);
-  const values = str.dataSync();
+  const values = ENGINE.backend.readSync(str.dataId);
 
   for (let i = 0; i < values.length; ++i) {
     // Undo URL safe and decode from Base64 to ArrayBuffer
