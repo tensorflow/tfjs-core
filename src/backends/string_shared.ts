@@ -15,15 +15,14 @@
  * =============================================================================
  */
 
-import {ENGINE} from '../engine';
 import {arrayBufferToBase64String, arrayBufferToString, base64StringToArrayBuffer, stringToArrayBuffer, urlSafeBase64, urlUnsafeBase64} from '../io/io_utils';
 import {StringTensor, Tensor} from '../tensor';
+import {TypedArray} from '../types';
 
 /** Shared implementation of the encodeBase64 kernel across WebGL and CPU. */
-export function encodeBase64<T extends StringTensor>(
-    str: StringTensor|Tensor, pad = false): T {
-  const resultValues = new Array(str.size);
-  const values = ENGINE.backend.readSync(str.dataId);
+export function encodeBase64Impl<T extends StringTensor>(
+    values: TypedArray|string[], shape: number[], pad = false): T {
+  const resultValues = new Array(values.length);
 
   for (let i = 0; i < values.length; ++i) {
     // Convert from string to ArrayBuffer of UTF-8 multibyte sequence
@@ -38,14 +37,13 @@ export function encodeBase64<T extends StringTensor>(
     resultValues[i] = pad ? bVal : bVal.replace(/=/g, '');
   }
 
-  return Tensor.make(str.shape, {values: resultValues}, str.dtype) as T;
+  return Tensor.make(shape, {values: resultValues}, 'string') as T;
 }
 
 /** Shared implementation of the decodeBase64 kernel across WebGL and CPU. */
-export function decodeBase64<T extends StringTensor>(str: StringTensor|
-                                                     Tensor): T {
-  const resultValues = new Array(str.size);
-  const values = ENGINE.backend.readSync(str.dataId);
+export function decodeBase64Impl<T extends StringTensor>(
+    values: TypedArray|string[], shape: number[]): T {
+  const resultValues = new Array(values.length);
 
   for (let i = 0; i < values.length; ++i) {
     // Undo URL safe and decode from Base64 to ArrayBuffer
@@ -56,5 +54,5 @@ export function decodeBase64<T extends StringTensor>(str: StringTensor|
     resultValues[i] = arrayBufferToString(aBuff);
   }
 
-  return Tensor.make(str.shape, {values: resultValues}, str.dtype) as T;
+  return Tensor.make(shape, {values: resultValues}, 'string') as T;
 }

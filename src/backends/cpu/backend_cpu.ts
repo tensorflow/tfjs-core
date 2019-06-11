@@ -42,7 +42,7 @@ import * as backend_util from '../backend_util';
 import * as complex_util from '../complex_util';
 import {nonMaxSuppressionImpl} from '../non_max_suppression_impl';
 import {split} from '../split_shared';
-import {decodeBase64, encodeBase64} from '../string_shared';
+import {decodeBase64Impl, encodeBase64Impl} from '../string_shared';
 import {topkImpl} from '../topk_impl';
 import {whereImpl} from '../where_impl';
 
@@ -3186,11 +3186,13 @@ export class MathBackendCPU implements KernelBackend {
 
   encodeBase64<T extends StringTensor>(str: StringTensor|Tensor, pad = false):
       T {
-    return encodeBase64(str, pad);
+    const sVals = this.readSync(str.dataId) as TypedArray;
+    return encodeBase64Impl(sVals, str.shape, pad);
   }
 
   decodeBase64<T extends StringTensor>(str: StringTensor|Tensor): T {
-    return decodeBase64(str);
+    const sVals = this.readSync(str.dataId) as TypedArray;
+    return decodeBase64Impl(sVals, str.shape);
   }
 
   floatPrecision(): 16|32 {
