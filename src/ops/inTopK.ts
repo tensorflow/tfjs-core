@@ -50,13 +50,13 @@ function inTopK_<T extends Tensor, U extends Tensor>(
           `but got ${$predictions.rank}`);
   assert(
       $predictions.rank - 1 === $targets.rank,
-      () => 'predictions\' rank should be 1 larger than ' +
-          `targets\' rank, but got predictions\' rank ` +
-          `${$predictions.rank} and targets\' rank ${$targets.rank}`);
+      () => `predictions' rank should be 1 larger than ` +
+          `targets' rank, but got predictions' rank ` +
+          `${$predictions.rank} and targets' rank ${$targets.rank}`);
   assertShapesMatch(
       $predictions.shape.slice(0, $predictions.shape.length - 1),
       $targets.shape,
-      'predictions\'s shape should be align with the targets\' shape, ' +
+      `predictions's shape should be align with the targets' shape, ` +
           'except the last dimension.');
   const lastDim = $predictions.shape[$predictions.shape.length - 1];
   assert(
