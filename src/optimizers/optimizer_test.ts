@@ -71,7 +71,7 @@ describeWithFlags('optimizer', ALL_ENVS, () => {
     bias.dispose();
     strayVariable.dispose();
     // The only tensors remaining are the arguments to variable().
-    expect(tf.memory().numTensors).toBe(3);
+    expect(tf.memory().numTensors).toBe(2);
   });
 
   it('varList array of all variables', async () => {

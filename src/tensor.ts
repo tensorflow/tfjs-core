@@ -1500,6 +1500,7 @@ export class Variable<R extends Rank = Rank> extends Tensor<R> {
   }
 
   dispose(): void {
+    super.dispose();
     trackerFn().disposeVariable(this);
   }
 }

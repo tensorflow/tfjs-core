@@ -190,9 +190,9 @@ describeWithFlags('variable', ALL_ENVS, () => {
     expect(tf.memory().numDataBuffers).toBe(2);
 
     v.dispose();
-    // Disposing the variable disposes itself. The input to variable and
-    // secondArray are the only remaining tensors.
-    expect(tf.memory().numTensors).toBe(2);
+    // Disposing the variable disposes itself and its input. The second array is
+    // the only remaining tensor.
+    expect(tf.memory().numTensors).toBe(1);
     expect(tf.memory().numDataBuffers).toBe(2);
   });
 
