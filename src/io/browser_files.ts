@@ -63,6 +63,10 @@ export class BrowserDownloads implements IOHandler {
   }
 
   async save(modelArtifacts: ModelArtifacts): Promise<SaveResult> {
+    if (typeof(document) === 'undefined') {
+      throw new Error('Browser downloads are not supported in ' +
+          'this environment since `document` is not present');
+    }
     const weightsURL = window.URL.createObjectURL(new Blob(
         [modelArtifacts.weightData], {type: 'application/octet-stream'}));
 
@@ -99,19 +103,13 @@ export class BrowserDownloads implements IOHandler {
       await defer(() => jsonAnchor.dispatchEvent(new MouseEvent('click')));
 
       if (modelArtifacts.weightData != null) {
-        if (typeof(document) !== 'undefined') {
-          const weightDataAnchor = this.weightDataAnchor == null ?
-              document.createElement('a') :
-              this.weightDataAnchor;
-          weightDataAnchor.download = this.weightDataFileName;
-          weightDataAnchor.href = weightsURL;
-          await defer(
-              () => weightDataAnchor.dispatchEvent(new MouseEvent('click')));
-        //@ts-ignore
-        } else {
-          throw new Error('Browser downloads are not supported in ' +
-              'this environment since `document` is not present');
-        }
+        const weightDataAnchor = this.weightDataAnchor == null ?
+            document.createElement('a') :
+            this.weightDataAnchor;
+        weightDataAnchor.download = this.weightDataFileName;
+        weightDataAnchor.href = weightsURL;
+        await defer(
+            () => weightDataAnchor.dispatchEvent(new MouseEvent('click')));
       }
 
       return {modelArtifactsInfo: getModelArtifactsInfoForJSON(modelArtifacts)};

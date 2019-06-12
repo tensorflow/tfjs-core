@@ -309,16 +309,17 @@ export class MathBackendWebGL implements KernelBackend {
               pixels, 0, 0, pixels.width, pixels.height);
           pixels = this.fromPixels2DContext.canvas;
         }
-      } else if (typeof(self) !== 'undefined') {
+        //@ts-ignore
+      } else if (typeof(WorkerGlobalScope) !== 'undefined') {
         if (!(pixels instanceof ImageData) &&
             //@ts-ignore
             !(pixels instanceof OffscreenCanvas) &&
             !((pixels as PixelData).data instanceof Uint8Array)) {
               throw new Error(
+                `inside the webworker`+
                 'pixels passed to tf.browser.fromPixels() must be either an ' +
                 `OffscreenCanvas, ImageData` +
                 ` or {data: Uint32Array, width: number, height: number} ` +
-                `inside the webworker`+
                 `but was ${(pixels as {}).constructor.name}`);
             }
       }

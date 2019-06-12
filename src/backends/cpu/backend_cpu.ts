@@ -44,7 +44,6 @@ import {nonMaxSuppressionImpl} from '../non_max_suppression_impl';
 import {split} from '../split_shared';
 import {topkImpl} from '../topk_impl';
 import {whereImpl} from '../where_impl';
-import { createCanvas } from '../webgl/canvas_util';
 
 function mapActivation(
     backend: MathBackendCPU, activation: Activation, x: Tensor): Tensor {
@@ -66,6 +65,18 @@ interface TensorData<D extends DataType> {
   complexTensors?: {real: Tensor, imag: Tensor};
 }
 
+function createCanvas() {
+  //@ts-ignore
+  if (typeof(OffscreenCanvas) !== 'undefined') {
+    //@ts-ignore
+    return new OffscreenCanvas(300, 150);
+  } else if (typeof(document) !== 'undefined') {
+    return document.createElement('canvas');
+  } else {
+    throw new Error('Cannot create a canvas in this context');
+  }
+}
+
 export class MathBackendCPU implements KernelBackend {
   public blockSize = 48;
 
@@ -75,7 +86,8 @@ export class MathBackendCPU implements KernelBackend {
 
   constructor() {
     if (ENV.get('IS_BROWSER')) {
-      const canvas = createCanvas(ENV.getNumber('WEBGL_VERSION'));
+      //@ts-ignore
+      const canvas = createCanvas();
       this.fromPixels2DContext = canvas.getContext('2d');
     }
     this.data = new DataStorage(this, ENGINE);
@@ -136,7 +148,8 @@ export class MathBackendCPU implements KernelBackend {
         (pixels as PixelData).data instanceof Uint8Array) {
       vals = (pixels as PixelData | ImageData).data;
     } else if (
-        ENV.get('IS_BROWSER') &&
+        //@ts-ignore
+        typeof(WorkerGlobalScope) !== 'undefined' &&
         (pixels instanceof HTMLImageElement ||
         pixels instanceof HTMLVideoElement)) {
       if (this.fromPixels2DContext == null) {
