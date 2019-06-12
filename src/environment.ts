@@ -167,7 +167,6 @@ function parseValue(flagName: string, value: string): FlagValue {
 }
 
 export let ENV: Environment = null;
-// tslint:disable-next-line:no-any
 export function setEnvironmentGlobal(environment: Environment) {
   ENV = environment;
 }
