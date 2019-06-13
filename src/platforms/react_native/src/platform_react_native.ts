@@ -16,8 +16,7 @@
  */
 
 import * as tf from '@tensorflow/tfjs-core';
-// TODO remove after next release with exported Platform
-import {Platform} from '../../platform';
+import {Platform} from '@tensorflow/tfjs-core';
 
 // See implemetation note on fetch
 // tslint:disable-next-line:max-line-length

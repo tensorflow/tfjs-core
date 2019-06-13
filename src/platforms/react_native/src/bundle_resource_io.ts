@@ -64,6 +64,7 @@ class BundleResourceHandler implements IOHandler {
     // Load the weights
     const weightsAssetPath =
         Image.resolveAssetSource(this.modelWeightsId as ImageSourcePropType);
+
     const response = await tf.util.fetch(weightsAssetPath.uri, {
       headers: {
         responseType: 'arraybuffer',
@@ -73,6 +74,7 @@ class BundleResourceHandler implements IOHandler {
 
     return {
       modelTopology: modelJson.modelTopology,
+      // TODO add support for sharded models.
       weightSpecs: modelJson.weightsManifest[0].weights,
       format: modelJson.format,
       generatedBy: modelJson.generatedBy,

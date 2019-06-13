@@ -64,6 +64,7 @@ function getModelArtifactsInfoForJSON(modelArtifacts: ModelArtifacts):
 
   return {
     dateSaved: new Date(),
+    // TODO followup on removing this from the the interface
     modelTopologyType: 'JSON',
     weightDataBytes: modelArtifacts.weightData == null ?
         0 :
