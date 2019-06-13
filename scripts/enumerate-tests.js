@@ -50,7 +50,8 @@ function findTestFiles(dir, files) {
         !file.startsWith('.') && fs.statSync(filePath).isDirectory() &&
         !fs.existsSync(path.join(filePath, 'package.json'))) {
       files = findTestFiles(filePath, files);
-    } else if (filePath.endsWith('_test.ts')) {
+    } else if (
+        filePath.endsWith('_test.ts') && filePath !== 'src/setup_test.ts') {
       files.push(filePath.replace('src/', './').replace('.ts', ''));
     }
   });
