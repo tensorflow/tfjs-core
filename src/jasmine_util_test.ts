@@ -16,8 +16,7 @@
  */
 
 import {Environment} from './environment';
-import * as tf from './index';
-import {envSatisfiesConstraints, parseKarmaFlags, TestKernelBackend} from './jasmine_util';
+import {envSatisfiesConstraints, parseKarmaFlags, TestEnv} from './jasmine_util';
 
 describe('jasmine_util.envSatisfiesConstraints', () => {
   it('ENV satisfies empty constraints', () => {
@@ -100,40 +99,46 @@ describe('jasmine_util.envSatisfiesConstraints', () => {
 });
 
 describe('jasmine_util.parseKarmaFlags', () => {
+  const registeredTestEnvs: TestEnv[] =
+      [{name: 'test-env', backendName: 'test-backend', isDataSync: true}];
+
   it('parse empty args', () => {
-    const res = parseKarmaFlags([]);
+    const res = parseKarmaFlags([], registeredTestEnvs);
     expect(res).toBeNull();
   });
 
-  it('--backend test-backend --flags {"IS_NODE": true}', () => {
-    const backend = new TestKernelBackend();
-    tf.registerBackend('test-backend', () => backend);
-
+  it('--testEnv test-env --flags {"IS_NODE": true}', () => {
     const res = parseKarmaFlags(
-        ['--backend', 'test-backend', '--flags', '{"IS_NODE": true}']);
-    expect(res.name).toBe('test-backend');
+        ['--testEnv', 'test-env', '--flags', '{"IS_NODE": true}'],
+        registeredTestEnvs);
+    expect(res.name).toBe('test-env');
     expect(res.backendName).toBe('test-backend');
     expect(res.flags).toEqual({IS_NODE: true});
-
-    tf.removeBackend('test-backend');
   });
 
-  it('"--backend unknown" throws error', () => {
-    expect(() => parseKarmaFlags(['--backend', 'unknown'])).toThrowError();
+  it('"--testEnv unknown" throws error', () => {
+    expect(() => parseKarmaFlags(['--testEnv', 'unknown'], registeredTestEnvs))
+        .toThrowError();
   });
 
-  it('"--flags {}" throws error since --backend is missing', () => {
-    expect(() => parseKarmaFlags(['--flags', '{}'])).toThrowError();
+  it('"--flags {}" throws error since --testEnv is missing', () => {
+    expect(() => parseKarmaFlags(['--flags', '{}'], registeredTestEnvs))
+        .toThrowError();
   });
 
-  it('"--backend cpu --flags" throws error since features value is missing',
+  it('"--testEnv cpu --flags" throws error since features value is missing',
      () => {
-       expect(() => parseKarmaFlags(['--backend', 'cpu', '--flags']))
+       expect(
+           () => parseKarmaFlags(
+               ['--testEnv', 'test-env', '--flags'], registeredTestEnvs))
            .toThrowError();
      });
 
   it('"--backend cpu --flags notJson" throws error', () => {
-    expect(() => parseKarmaFlags(['--backend', 'cpu', '--flags', 'notJson']))
+    expect(
+        () => parseKarmaFlags(
+            ['--testEnv', 'test-env', '--flags', 'notJson'],
+            registeredTestEnvs))
         .toThrowError();
   });
 });
