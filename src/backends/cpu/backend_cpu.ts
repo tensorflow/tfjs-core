@@ -139,9 +139,9 @@ export class MathBackendCPU implements KernelBackend {
     if ((pixels as any).getContext != null) {
       // tslint:disable-next-line:no-any
       vals = (pixels as any)
-                .getContext('2d')
-                .getImageData(0, 0, pixels.width, pixels.height)
-                .data;
+                 .getContext('2d')
+                 .getImageData(0, 0, pixels.width, pixels.height)
+                 .data;
     } else if (
         pixels instanceof ImageData ||
         (pixels as PixelData).data instanceof Uint8Array) {
@@ -159,8 +159,8 @@ export class MathBackendCPU implements KernelBackend {
       this.fromPixels2DContext.drawImage(
           pixels, 0, 0, pixels.width, pixels.height);
       vals = this.fromPixels2DContext
-                .getImageData(0, 0, pixels.width, pixels.height)
-                .data;
+                 .getImageData(0, 0, pixels.width, pixels.height)
+                 .data;
     } else {
       throw new Error(
           'pixels passed to tf.browser.fromPixels() must be either an ' +
