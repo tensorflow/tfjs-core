@@ -32,13 +32,8 @@ if (coverageEnabled) {
 }
 
 const devConfig = {
-  basePath: '',
   frameworks: ['jasmine', 'karma-typescript'],
-  files: [
-    // Setup the environment for
-    // the tests.
-    {pattern: 'src/setup_test.ts'}, {pattern: 'src/**/*.ts'}
-  ],
+  files: [{pattern: 'src/setup_test.ts'}, {pattern: 'src/**/*.ts'}],
   exclude: [
     'src/test_node.ts',
     'src/backends/webgpu/**/*.ts',
