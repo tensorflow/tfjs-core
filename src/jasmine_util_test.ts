@@ -99,8 +99,9 @@ describe('jasmine_util.envSatisfiesConstraints', () => {
 });
 
 describe('jasmine_util.parseKarmaFlags', () => {
-  const registeredTestEnvs: TestEnv[] =
-      [{name: 'test-env', backendName: 'test-backend', isDataSync: true}];
+  const registeredTestEnvs: TestEnv[] = [
+    {name: 'test-env', backendName: 'test-backend', isDataSync: true, flags: {}}
+  ];
 
   it('parse empty args', () => {
     const res = parseKarmaFlags([], registeredTestEnvs);
