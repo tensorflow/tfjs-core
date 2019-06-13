@@ -48,9 +48,8 @@ $ yarn test --single-run
 To run the tests in an environment that does not have GPU support (such as Chrome Remote Desktop):
 
 ```bash
-$ yarn test --backend cpu
+$ yarn test --testEnv cpu
 ```
-
 
 #### Packaging (browser and npm)
 

@@ -60,6 +60,8 @@ const browserstackConfig = {
 
 module.exports = function(config) {
   const args = [];
+  // If no test environment is set unit tests will run against all registered
+  // test environments.
   if (config.testEnv) {
     args.push('--testEnv', config.testEnv);
   }

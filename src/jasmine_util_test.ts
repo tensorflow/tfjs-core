@@ -16,7 +16,7 @@
  */
 
 import {Environment} from './environment';
-import {envSatisfiesConstraints, parseKarmaFlags, TestEnv} from './jasmine_util';
+import {envSatisfiesConstraints, parseTestEnvFromKarmaFlags, TestEnv} from './jasmine_util';
 
 describe('jasmine_util.envSatisfiesConstraints', () => {
   it('ENV satisfies empty constraints', () => {
@@ -104,12 +104,12 @@ describe('jasmine_util.parseKarmaFlags', () => {
   ];
 
   it('parse empty args', () => {
-    const res = parseKarmaFlags([], registeredTestEnvs);
+    const res = parseTestEnvFromKarmaFlags([], registeredTestEnvs);
     expect(res).toBeNull();
   });
 
   it('--testEnv test-env --flags {"IS_NODE": true}', () => {
-    const res = parseKarmaFlags(
+    const res = parseTestEnvFromKarmaFlags(
         ['--testEnv', 'test-env', '--flags', '{"IS_NODE": true}'],
         registeredTestEnvs);
     expect(res.name).toBe('test-env');
@@ -118,26 +118,29 @@ describe('jasmine_util.parseKarmaFlags', () => {
   });
 
   it('"--testEnv unknown" throws error', () => {
-    expect(() => parseKarmaFlags(['--testEnv', 'unknown'], registeredTestEnvs))
+    expect(
+        () => parseTestEnvFromKarmaFlags(
+            ['--testEnv', 'unknown'], registeredTestEnvs))
         .toThrowError();
   });
 
   it('"--flags {}" throws error since --testEnv is missing', () => {
-    expect(() => parseKarmaFlags(['--flags', '{}'], registeredTestEnvs))
+    expect(
+        () => parseTestEnvFromKarmaFlags(['--flags', '{}'], registeredTestEnvs))
         .toThrowError();
   });
 
   it('"--testEnv cpu --flags" throws error since features value is missing',
      () => {
        expect(
-           () => parseKarmaFlags(
+           () => parseTestEnvFromKarmaFlags(
                ['--testEnv', 'test-env', '--flags'], registeredTestEnvs))
            .toThrowError();
      });
 
   it('"--backend cpu --flags notJson" throws error', () => {
     expect(
-        () => parseKarmaFlags(
+        () => parseTestEnvFromKarmaFlags(
             ['--testEnv', 'test-env', '--flags', 'notJson'],
             registeredTestEnvs))
         .toThrowError();

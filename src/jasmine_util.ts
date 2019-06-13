@@ -61,7 +61,7 @@ export function envSatisfiesConstraints(
   return true;
 }
 
-export function parseKarmaFlags(
+export function parseTestEnvFromKarmaFlags(
     args: string[], registeredTestEnvs: TestEnv[]): TestEnv {
   let flags: Flags;
   let testEnvName: string;
@@ -74,11 +74,11 @@ export function parseKarmaFlags(
     }
   });
 
-  const testEnvNames = registeredTestEnvs.map(env => env.name).join(',');
+  const testEnvNames = registeredTestEnvs.map(env => env.name).join(', ');
   if (flags != null && testEnvName == null) {
     throw new Error(
         '--testEnv flag is required when --flags is present. ' +
-        `Available values are ${testEnvNames}.`);
+        `Available values are [${testEnvNames}].`);
   }
   if (testEnvName == null) {
     return null;
@@ -105,6 +105,13 @@ export function parseKarmaFlags(
 
 export function describeWithFlags(
     name: string, constraints: Constraints, tests: (env: TestEnv) => void) {
+  if (TEST_ENVS.length === 0) {
+    throw new Error(
+        `Found no test environments. This is likely due to test environment ` +
+        `registries never being imported or test environment registries ` +
+        `being registered too late.`);
+  }
+
   TEST_ENVS.forEach(testEnv => {
     ENV.setFlags(testEnv.flags);
     if (envSatisfiesConstraints(ENV, testEnv, constraints)) {

@@ -22,12 +22,12 @@
 import './backends/cpu/backend_cpu_test_registry';
 import './backends/webgl/backend_webgl_test_registry';
 
-import {parseKarmaFlags, setTestEnvs, TEST_ENVS} from './jasmine_util';
+import {parseTestEnvFromKarmaFlags, setTestEnvs, TEST_ENVS} from './jasmine_util';
 
 // tslint:disable-next-line:no-any
 declare let __karma__: any;
 if (typeof __karma__ !== 'undefined') {
-  const testEnv = parseKarmaFlags(__karma__.config.args, TEST_ENVS);
+  const testEnv = parseTestEnvFromKarmaFlags(__karma__.config.args, TEST_ENVS);
   if (testEnv != null) {
     setTestEnvs([testEnv]);
   }
