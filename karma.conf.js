@@ -33,7 +33,7 @@ if (coverageEnabled) {
 
 const devConfig = {
   frameworks: ['jasmine', 'karma-typescript'],
-  files: [{pattern: 'src/setup_test.ts'}, {pattern: 'src/**/*.ts'}],
+  files: ['src/setup_test.ts', {pattern: 'src/**/*.ts'}],
   exclude: [
     'src/test_node.ts',
     'src/backends/webgpu/**/*.ts',
