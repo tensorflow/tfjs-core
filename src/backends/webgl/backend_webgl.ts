@@ -277,51 +277,34 @@ export class MathBackendWebGL implements KernelBackend {
     const outShape = [pixels.height, pixels.width, numChannels];
 
     if (ENV.getBool('IS_BROWSER')) {
-      if (typeof(document) !== 'undefined') {
-        if (!(pixels instanceof HTMLVideoElement) &&
-            !(pixels instanceof HTMLImageElement) &&
-            !(pixels instanceof HTMLCanvasElement) &&
-            !(pixels instanceof ImageData) &&
-            !((pixels as PixelData).data instanceof Uint8Array)) {
-          throw new Error(
-              'pixels passed to tf.browser.fromPixels() must be either an ' +
-              `HTMLVideoElement, HTMLImageElement,` +
-              `HTMLCanvasElement, ImageData` +
-              ` or {data: Uint32Array, width: number, height: number}, ` +
-              `but was ${(pixels as {}).constructor.name}`);
-        }
-        if (pixels instanceof HTMLVideoElement) {
-          if (this.fromPixels2DContext == null) {
-            if (document.readyState !== 'complete') {
-              throw new Error(
-                  'The DOM is not ready yet. Please call ' +
-                  'tf.browser.fromPixels() once the DOM is ready. One way to ' +
-                  'do that is to add an event ' +
-                  'listener for `DOMContentLoaded` ' +
-                  'on the document object');
-            }
-            this.fromPixels2DContext =
-                document.createElement('canvas').getContext('2d');
+      if (!(pixels instanceof HTMLVideoElement) &&
+          !(pixels instanceof HTMLImageElement) &&
+          !(pixels instanceof HTMLCanvasElement) &&
+          !(pixels instanceof ImageData) &&
+          !((pixels as PixelData).data instanceof Uint8Array)) {
+        throw new Error(
+            'pixels passed to tf.browser.fromPixels() must be either an ' +
+            `HTMLVideoElement, HTMLImageElement, HTMLCanvasElement, ImageData` +
+            ` or {data: Uint32Array, width: number, height: number}, ` +
+            `but was ${(pixels as {}).constructor.name}`);
+      }
+      if (pixels instanceof HTMLVideoElement) {
+        if (this.fromPixels2DContext == null) {
+          if (document.readyState !== 'complete') {
+            throw new Error(
+                'The DOM is not ready yet. Please call ' +
+                'tf.browser.fromPixels() once the DOM is ready. One way to ' +
+                'do that is to add an event listener for `DOMContentLoaded` ' +
+                'on the document object');
           }
-          this.fromPixels2DContext.canvas.width = pixels.width;
-          this.fromPixels2DContext.canvas.height = pixels.height;
-          this.fromPixels2DContext.drawImage(
-              pixels, 0, 0, pixels.width, pixels.height);
-          pixels = this.fromPixels2DContext.canvas;
+          this.fromPixels2DContext =
+              document.createElement('canvas').getContext('2d');
         }
-        //@ts-ignore
-      } else if (typeof(WorkerGlobalScope) !== 'undefined') {
-        if (!(pixels instanceof ImageData) &&
-            //@ts-ignore
-            !(pixels instanceof OffscreenCanvas) &&
-            !((pixels as PixelData).data instanceof Uint8Array)) {
-              throw new Error(
-                `inside the webworker`+
-                'pixels passed to tf.browser.fromPixels() must be either an ' +
-                `OffscreenCanvas, ImageData` +
-                ` or {data: Uint32Array, width: number, height: number} ` +
-                `but was ${(pixels as {}).constructor.name}`);
-            }
+        this.fromPixels2DContext.canvas.width = pixels.width;
+        this.fromPixels2DContext.canvas.height = pixels.height;
+        this.fromPixels2DContext.drawImage(
+            pixels, 0, 0, pixels.width, pixels.height);
+        pixels = this.fromPixels2DContext.canvas;
       }
     }
     const tempPixelHandle = this.makeTensorHandle(texShape, 'int32');
