@@ -277,18 +277,26 @@ export class MathBackendWebGL implements KernelBackend {
     const outShape = [pixels.height, pixels.width, numChannels];
 
     if (ENV.getBool('IS_BROWSER')) {
-      if (!(pixels instanceof HTMLVideoElement) &&
+      //@ts-ignore
+      if (((typeof(WorkerGlobalScope) === 'undefined' &&
+          (!(pixels instanceof HTMLVideoElement) &&
           !(pixels instanceof HTMLImageElement) &&
-          !(pixels instanceof HTMLCanvasElement) &&
-          !(pixels instanceof ImageData) &&
-          !((pixels as PixelData).data instanceof Uint8Array)) {
+          !(pixels instanceof HTMLCanvasElement))) ||
+          //@ts-ignore
+          (typeof(WorkerGlobalScope) !== 'undefined' &&
+          //@ts-ignore
+          !(pixels instanceof OffscreenCanvas))) &&
+          (!(pixels instanceof ImageData) &&
+          !((pixels as PixelData).data instanceof Uint8Array))) {
         throw new Error(
             'pixels passed to tf.browser.fromPixels() must be either an ' +
             `HTMLVideoElement, HTMLImageElement, HTMLCanvasElement, ImageData` +
             ` or {data: Uint32Array, width: number, height: number}, ` +
             `but was ${(pixels as {}).constructor.name}`);
       }
-      if (pixels instanceof HTMLVideoElement) {
+      //@ts-ignore
+      if (typeof(WorkerGlobalScope) === 'undefined'
+          && pixels instanceof HTMLVideoElement) {
         if (this.fromPixels2DContext == null) {
           if (document.readyState !== 'complete') {
             throw new Error(

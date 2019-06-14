@@ -147,8 +147,10 @@ export class MathBackendCPU implements KernelBackend {
         (pixels as PixelData).data instanceof Uint8Array) {
       vals = (pixels as PixelData | ImageData).data;
     } else if (
-        pixels instanceof HTMLImageElement ||
-        pixels instanceof HTMLVideoElement) {
+        //@ts-ignore
+        typeof(WorkerGlobalScope) !== 'undefined' &&
+        (pixels instanceof HTMLImageElement ||
+        pixels instanceof HTMLVideoElement)) {
       if (this.fromPixels2DContext == null) {
         throw new Error(
             'Can\'t read pixels from HTMLImageElement outside ' +
