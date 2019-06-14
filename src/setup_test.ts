@@ -15,18 +15,20 @@
  * =============================================================================
  */
 
-import {BROWSER_ENVS, describeWithFlags} from '../jasmine_util';
+/**
+ * This file is necessary so we register all test environments before we start
+ * executing tests.
+ */
+import './backends/cpu/backend_cpu_test_registry';
+import './backends/webgl/backend_webgl_test_registry';
 
-import {PlatformBrowser} from './platform_browser';
+import {parseTestEnvFromKarmaFlags, setTestEnvs, TEST_ENVS} from './jasmine_util';
 
-describeWithFlags('PlatformBrowser', BROWSER_ENVS, async () => {
-  it('fetch calls window.fetch', async () => {
-    const response = new Response();
-    spyOn(self, 'fetch').and.returnValue(response);
-    const platform = new PlatformBrowser();
-
-    await platform.fetch('test/url', {method: 'GET'});
-
-    expect(self.fetch).toHaveBeenCalledWith('test/url', {method: 'GET'});
-  });
-});
+// tslint:disable-next-line:no-any
+declare let __karma__: any;
+if (typeof __karma__ !== 'undefined') {
+  const testEnv = parseTestEnvFromKarmaFlags(__karma__.config.args, TEST_ENVS);
+  if (testEnv != null) {
+    setTestEnvs([testEnv]);
+  }
+}
