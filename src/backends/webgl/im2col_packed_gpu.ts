@@ -37,11 +37,15 @@ export class Im2ColPackedProgram implements GPGPUProgram {
       padInfo,
       outWidth,
       dilationWidth,
-      dilationHeight
+      dilationHeight,
+      dataFormat
     } = convInfo;
     const {left, top} = padInfo;
     const itemsPerBlockRow = inChannels * filterWidth;
     const glsl = getGlslDifferences();
+    const isChannelsLast = dataFormat === 'channelsLast';
+    const rowDim = isChannelsLast ? 0 : 1;
+    const colDim = isChannelsLast ? 1 : 2;
 
     this.userCode = `
       void main() {
@@ -61,18 +65,27 @@ export class Im2ColPackedProgram implements GPGPUProgram {
         top};
             int d0 = offsetY + ${dilationHeight} * (pos / ${itemsPerBlockRow});
 
-            if(d0 >= ${inputShape[0]} || d0 < 0) continue;
+            if(d0 >= ${inputShape[rowDim]} || d0 < 0) continue;
 
             int offsetX = int(mod(float(blockIndex), ${outWidth}.) * ${
         strideWidth}. - ${left}.);
             int d1 = offsetX + ${dilationWidth} * (int(mod(float(pos), ${
         itemsPerBlockRow}.) / ${inChannels}.));
 
-            if(d1 >= ${inputShape[1]} || d1 < 0) continue;
+            if(d1 >= ${inputShape[colDim]} || d1 < 0) continue;
 
-            vec2 innerDims = vec2(d1, int(mod(float(pos), ${inChannels}.)));
-            result[row * 2 + col] = getChannel(getA(d0, int(innerDims.x),
-                                              int(innerDims.y)), innerDims);
+            int ch = int(mod(float(pos), ${inChannels}.));
+
+            if (${isChannelsLast}) {
+              vec2 innerDims = vec2(d1, ch);
+              result[row * 2 + col] = getChannel(getA(d0, int(innerDims.x),
+                  int(innerDims.y)), innerDims);
+            } else {
+              vec2 innerDims = vec2(d0, d1);
+              result[row * 2 + col] = getChannel(getA(ch, int(innerDims.x),
+                  int(innerDims.y)), innerDims);
+            }
+
           }
         }
 

@@ -1820,6 +1820,7 @@ export class MathBackendWebGL implements KernelBackend {
     const sharedMatMulDim = convInfo.inChannels;
     const outerShapeX = xShape[0] * xShape[1] * xShape[2];
     const outerShapeFilter = convInfo.outChannels;
+    const isChannelsLast = convInfo.dataFormat === 'channelsLast';
 
     // TODO: Once reduction ops are packed, batchMatMul will always be packed
     // and we can remove this condition.
@@ -1831,10 +1832,10 @@ export class MathBackendWebGL implements KernelBackend {
     if (batchMatMulWillBeUnpacked || !ENV.getBool('WEBGL_LAZILY_UNPACK') ||
         !ENV.getBool('WEBGL_PACK_BINARY_OPERATIONS') ||
         !reshapeWillBeExpensive) {
+      const targetShape = isChannelsLast ? xShape[0] * xShape[1] * xShape[2] :
+                                           xShape[0] * xShape[2] * xShape[3];
       const xReshaped =
-          this.reshape(
-              x, [1, xShape[0] * xShape[1] * xShape[2], convInfo.inChannels]) as
-          Tensor3D;
+          this.reshape(x, [1, targetShape, convInfo.inChannels]) as Tensor3D;
       const filterReshaped =
           this.reshape(
               filter, [1, convInfo.inChannels, convInfo.outChannels]) as
@@ -1845,17 +1846,19 @@ export class MathBackendWebGL implements KernelBackend {
     }
 
     // Following optimization is specific to packed |x| with odd row count
-    // ('row count' refers to x.shape[2]): we avoid expensive packed 2x2
-    // reshape by padding row count to next, even number. When x.shape[2] is
-    // odd, the result of packed batchMatMul is the same (has the same texture
-    // layout and and values in the texture) as it is for even x.shape[2] + 1.
-    // We make the odd-rows tensor to look like even-rows tensor before the
-    // operation and, after the batchMatMul, fix the even-rows result to have
-    // odd number of rows.
-    const xReshaped =
-        Tensor.make(
-            [1, xShape[0] * xShape[1] * (xShape[2] + 1), convInfo.inChannels],
-            {dataId: x.dataId}, x.dtype, this) as Tensor3D;
+    // (For example, in channelLast mode, 'row count' refers to x.shape[2]):
+    // we avoid expensive packed 2x2 reshape by padding row count to next,
+    // even number. When x.shape[2] is odd, the result of packed batchMatMul is
+    // the same (has the same texture layout and and values in the texture) as
+    // it is for even x.shape[2] + 1. We make the odd-rows tensor to look like
+    // even-rows tensor before the operation and, after the batchMatMul,
+    // fix the even-rows result to have odd number of rows.
+    const targetShape = isChannelsLast ?
+        xShape[0] * xShape[1] * (xShape[2] + 1) :
+        xShape[0] * xShape[2] * (xShape[3] + 1);
+    const xReshaped = Tensor.make(
+                          [1, targetShape, convInfo.inChannels],
+                          {dataId: x.dataId}, x.dtype, this) as Tensor3D;
 
     // xTexData.shape gets referenced from GPGPUBinary.inShapeInfos.
     // Decrementing row count, after batchMatMul->...->compileProgram leads to
@@ -1906,7 +1909,10 @@ export class MathBackendWebGL implements KernelBackend {
       inChannels,
       outWidth,
       outHeight,
+      dataFormat
     } = convInfo;
+
+    const isChannelsLast = dataFormat === 'channelsLast';
 
     const sharedDim = filterWidth * filterHeight * inChannels;
     const numCols = outHeight * outWidth;
@@ -1921,13 +1927,16 @@ export class MathBackendWebGL implements KernelBackend {
         this.compileAndRun<Tensor2D>(im2ColProgram, [xSqueezed]).reshape([
           1, x2ColShape[0], x2ColShape[1]
         ]) as Tensor3D;
-
     const matmulProgram = new MatMulPackedProgram(
         im2Col.shape, [1, numCols, convInfo.outChannels], true, false);
     const product =
         this.compileAndRun<Tensor4D>(matmulProgram, [im2Col, w2Row]);
 
-    return product.reshape([1, outHeight, outWidth, convInfo.outChannels]);
+    if (isChannelsLast) {
+      return product.reshape([1, outHeight, outWidth, convInfo.outChannels]);
+    } else {
+      return product.reshape([1, convInfo.outChannels, outHeight, outWidth]);
+    }
   }
 
   conv2d(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
