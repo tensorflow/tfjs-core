@@ -27,5 +27,7 @@ export function isMobile(): boolean {
 }
 
 export function isBrowser(): boolean {
-  return typeof window !== 'undefined' && window.document != null;
+  return (typeof window !== 'undefined' && window.document != null) ||
+      //@ts-ignore
+      (typeof WorkerGlobalScope !== 'undefined');
 }
