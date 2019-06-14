@@ -58,7 +58,7 @@ function config({plugins = [], output = {}, external = []}) {
 }
 
 module.exports = cmdOptions => [
-    // tf-react-native.js
+    // unminified umd
     config({
       output: {
         format: 'umd',
@@ -68,7 +68,7 @@ module.exports = cmdOptions => [
       }
     }),
 
-    // tf-webgpu.min.js
+    // minified umd
     config({
       plugins: [terser({output: {preamble: PREAMBLE}})],
       output: {
@@ -80,7 +80,7 @@ module.exports = cmdOptions => [
       visualize: cmdOptions.visualize
     }),
 
-    // tf-webgpu.esm.js
+    // esm bundler
     config({
       plugins: [terser({output: {preamble: PREAMBLE}})],
       output: {

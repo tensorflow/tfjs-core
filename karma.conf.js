@@ -37,6 +37,7 @@ const devConfig = {
   exclude: [
     'src/test_node.ts',
     'src/backends/webgpu/**/*.ts',
+    'src/platforms/react_native/**/*.ts',
     'src/test_async_backends.ts',
   ],
   preprocessors: {'**/*.ts': ['karma-typescript']},
