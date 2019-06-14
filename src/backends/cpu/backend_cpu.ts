@@ -66,9 +66,9 @@ interface TensorData<D extends DataType> {
 }
 
 function createCanvas() {
-  if (typeof (OffscreenCanvas) !== 'undefined') {
+  if (typeof OffscreenCanvas !== 'undefined') {
     return new OffscreenCanvas(300, 150);
-  } else if (typeof (document) !== 'undefined') {
+  } else if (typeof document !== 'undefined') {
     return document.createElement('canvas');
   } else {
     throw new Error('Cannot create a canvas in this context');
