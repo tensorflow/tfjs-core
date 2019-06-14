@@ -16,7 +16,7 @@
  */
 
 import {AsyncStorageStatic} from '@react-native-community/async-storage';
-import {IOHandler, ModelArtifacts, ModelArtifactsInfo, SaveResult} from '@tensorflow/tfjs-core';
+import {io} from '@tensorflow/tfjs-core';
 import {fromByteArray, toByteArray} from 'base64-js';
 
 type StorageKeys = {
@@ -44,8 +44,8 @@ function getModelKeys(path: string): StorageKeys {
  * @param modelArtifacts
  * @returns A ModelArtifactsInfo object.
  */
-function getModelArtifactsInfoForJSON(modelArtifacts: ModelArtifacts):
-    ModelArtifactsInfo {
+function getModelArtifactsInfoForJSON(modelArtifacts: io.ModelArtifacts):
+    io.ModelArtifactsInfo {
   if (modelArtifacts.modelTopology instanceof ArrayBuffer) {
     throw new Error('Expected JSON model topology, received ArrayBuffer.');
   }
@@ -60,16 +60,14 @@ function getModelArtifactsInfoForJSON(modelArtifacts: ModelArtifacts):
   };
 }
 
-class AsyncStorageHandler implements IOHandler {
-  protected readonly modelPath: string;
+class AsyncStorageHandler implements io.IOHandler {
   protected readonly keys: StorageKeys;
   protected asyncStorage: AsyncStorageStatic;
 
-  constructor(modelPath: string) {
+  constructor(protected readonly modelPath: string) {
     if (modelPath == null || !modelPath) {
       throw new Error('modelPath must not be null, undefined or empty.');
     }
-    this.modelPath = modelPath;
     this.keys = getModelKeys(this.modelPath);
 
     // We import this dynamically because it binds to a native library that
@@ -87,7 +85,7 @@ class AsyncStorageHandler implements IOHandler {
    * @param modelArtifacts The model artifacts to be stored.
    * @returns An instance of SaveResult.
    */
-  async save(modelArtifacts: ModelArtifacts): Promise<SaveResult> {
+  async save(modelArtifacts: io.ModelArtifacts): Promise<io.SaveResult> {
     if (modelArtifacts.modelTopology instanceof ArrayBuffer) {
       throw new Error(
           'AsyncStorageHandler.save() does not support saving model topology ' +
@@ -96,7 +94,7 @@ class AsyncStorageHandler implements IOHandler {
       // We save three items separately for each model,
       // a ModelArtifactsInfo, a ModelArtifacts without weights
       // and the model weights.
-      const modelArtifactsInfo: ModelArtifactsInfo =
+      const modelArtifactsInfo: io.ModelArtifactsInfo =
           getModelArtifactsInfoForJSON(modelArtifacts);
       const {weightData, ...modelArtifactsWithoutWeights} = modelArtifacts;
 
@@ -130,9 +128,9 @@ class AsyncStorageHandler implements IOHandler {
    *
    * @returns The loaded model (if loading succeeds).
    */
-  async load(): Promise<ModelArtifacts> {
+  async load(): Promise<io.ModelArtifacts> {
     const info = JSON.parse(await this.asyncStorage.getItem(this.keys.info)) as
-        ModelArtifactsInfo;
+        io.ModelArtifactsInfo;
     if (info == null) {
       throw new Error(
           `In local storage, there is no model with name '${this.modelPath}'`);
@@ -144,7 +142,7 @@ class AsyncStorageHandler implements IOHandler {
           'topology yet.');
     }
 
-    const modelArtifacts: ModelArtifacts =
+    const modelArtifacts: io.ModelArtifacts =
         JSON.parse(await this.asyncStorage.getItem(
             this.keys.modelArtifactsWithoutWeights));
 
@@ -180,6 +178,6 @@ class AsyncStorageHandler implements IOHandler {
  *   non-empty string.
  * @returns An instance of `IOHandler`
  */
-export function asyncStorageIO(modelPath: string): IOHandler {
+export function asyncStorageIO(modelPath: string): io.IOHandler {
   return new AsyncStorageHandler(modelPath);
 }

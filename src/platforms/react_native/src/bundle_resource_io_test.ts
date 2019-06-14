@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import '../src/platform_react_native';
+import './platform_react_native';
 import * as tf from '@tensorflow/tfjs-core';
 import {bundleResourceIO} from './bundle_resource_io';
 

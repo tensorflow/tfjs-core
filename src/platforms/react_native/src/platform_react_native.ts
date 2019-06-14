@@ -107,6 +107,9 @@ export class PlatformReactNative implements Platform {
   }
 }
 
-if (navigator && navigator.product === 'ReactNative') {
+tf.ENV.registerFlag(
+    'IS_REACT_NATIVE', () => navigator && navigator.product === 'ReactNative');
+
+if (tf.ENV.getBool('IS_REACT_NATIVE')) {
   tf.setPlatform('react-native', new PlatformReactNative());
 }

@@ -42,7 +42,6 @@ import * as test_util from './test_util';
 import * as util from './util';
 import {version} from './version';
 import * as webgl from './webgl';
-export * from './io/types';
 
 export {InferenceModel, ModelPredictConfig} from './model_types';
 // Optimizers.

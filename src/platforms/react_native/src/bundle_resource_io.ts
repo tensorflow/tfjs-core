@@ -16,14 +16,13 @@
  */
 
 import * as tf from '@tensorflow/tfjs-core';
-import {IOHandler, ModelArtifacts, ModelJSON, SaveResult} from '@tensorflow/tfjs-core';
+import {io} from '@tensorflow/tfjs-core';
 import {Image, ImageSourcePropType} from 'react-native';
 
-class BundleResourceHandler implements IOHandler {
-  protected readonly modelJson: ModelJSON;
-  protected readonly modelWeightsId: string|number;
-
-  constructor(modelJson: ModelJSON, modelWeightsId: string|number) {
+class BundleResourceHandler implements io.IOHandler {
+  constructor(
+      protected readonly modelJson: io.ModelJSON,
+      protected readonly modelWeightsId: string|number) {
     if (modelJson == null || modelWeightsId == null) {
       throw new Error(
           'Must pass the model json object and the model weights path.');
@@ -33,9 +32,6 @@ class BundleResourceHandler implements IOHandler {
           'Bundle resource IO handler does not currently support loading ' +
           'sharded weights');
     }
-
-    this.modelJson = modelJson;
-    this.modelWeightsId = modelWeightsId;
   }
 
   /**
@@ -44,7 +40,7 @@ class BundleResourceHandler implements IOHandler {
    * that is already packages with the app.
    *
    */
-  async save(): Promise<SaveResult> {
+  async save(): Promise<io.SaveResult> {
     throw new Error(
         'Bundle resource IO handler does not support saving. ' +
         'Consider using asyncStorageIO instead');
@@ -58,7 +54,7 @@ class BundleResourceHandler implements IOHandler {
    *
    * @returns The loaded model (if loading succeeds).
    */
-  async load(): Promise<ModelArtifacts> {
+  async load(): Promise<io.ModelArtifacts> {
     const modelJson = this.modelJson;
 
     // Load the weights
@@ -71,6 +67,13 @@ class BundleResourceHandler implements IOHandler {
       }
     });
     const weightData = await response.arrayBuffer();
+
+    if (modelJson.weightsManifest.length > 1) {
+      throw new Error(
+          'Bundle resource IO handler does not currently support loading ' +
+          'sharded weights and the modelJson indicates that this model has ' +
+          'sharded weights (more than one weights file).');
+    }
 
     return {
       modelTopology: modelJson.modelTopology,
@@ -104,6 +107,6 @@ class BundleResourceHandler implements IOHandler {
  * @returns An instance of `IOHandler`
  */
 export function bundleResourceIO(
-    modelJson: ModelJSON, modelWeightsId: string|number): IOHandler {
+    modelJson: io.ModelJSON, modelWeightsId: string|number): io.IOHandler {
   return new BundleResourceHandler(modelJson, modelWeightsId);
 }

@@ -15,15 +15,17 @@
  * =============================================================================
  */
 
+import * as tf from '@tensorflow/tfjs-core';
 import {PlatformReactNative} from './platform_react_native';
 
 describe('PlatformReactNative', async () => {
-  it('fetch calls window.fetch', async () => {
-    const response = new Response();
+  it('tf.util.fetch calls platform.fetch', async () => {
     const platform = new PlatformReactNative();
-    spyOn(platform, 'fetch').and.returnValue(response);
+    tf.setPlatform('rn-test-platform', platform);
 
-    await platform.fetch('test/url', {method: 'GET'});
+    spyOn(platform, 'fetch');
+
+    await tf.util.fetch('test/url', {method: 'GET'});
     expect(platform.fetch).toHaveBeenCalledWith('test/url', {method: 'GET'});
   });
 });

@@ -43,7 +43,7 @@ export async function loadWeightsAsArrayBuffer(
       loadOptions.fetchFunc == null ? util.fetch : loadOptions.fetchFunc;
 
   // Update the request headers without modifying the passed in
-  // loadOptions object;
+  // loadOptions object.
   const requestOptions = Object.assign({}, loadOptions.requestInit);
   requestOptions.headers = Object.assign({}, requestOptions.headers, {
     responseType: 'arraybuffer',
