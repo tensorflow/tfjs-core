@@ -19,36 +19,24 @@ import {AsyncStorageStatic} from '@react-native-community/async-storage';
 import {IOHandler, ModelArtifacts, ModelArtifactsInfo, SaveResult} from '@tensorflow/tfjs-core';
 import {fromByteArray, toByteArray} from 'base64-js';
 
-type LocalStorageKeys = {
+type StorageKeys = {
   info: string,
-  topology: string,
-  weightSpecs: string,
+  modelArtifactsWithoutWeights: string,
   weightData: string,
-  modelMetadata: string
 };
 
 const PATH_SEPARATOR = '/';
 const PATH_PREFIX = 'tensorflowjs_models';
 const INFO_SUFFIX = 'info';
-const MODEL_TOPOLOGY_SUFFIX = 'model_topology';
-const WEIGHT_SPECS_SUFFIX = 'weight_specs';
+const MODEL_SUFFIX = 'model_without_weight';
 const WEIGHT_DATA_SUFFIX = 'weight_data';
-const MODEL_METADATA_SUFFIX = 'model_metadata';
 
-function getModelKeys(path: string): {
-  info: string,
-  topology: string,
-  weightSpecs: string,
-  weightData: string,
-  modelMetadata: string
-} {
+function getModelKeys(path: string): StorageKeys {
   return {
     info: [PATH_PREFIX, path, INFO_SUFFIX].join(PATH_SEPARATOR),
-    topology: [PATH_PREFIX, path, MODEL_TOPOLOGY_SUFFIX].join(PATH_SEPARATOR),
-    weightSpecs: [PATH_PREFIX, path, WEIGHT_SPECS_SUFFIX].join(PATH_SEPARATOR),
+    modelArtifactsWithoutWeights:
+        [PATH_PREFIX, path, MODEL_SUFFIX].join(PATH_SEPARATOR),
     weightData: [PATH_PREFIX, path, WEIGHT_DATA_SUFFIX].join(PATH_SEPARATOR),
-    modelMetadata:
-        [PATH_PREFIX, path, MODEL_METADATA_SUFFIX].join(PATH_SEPARATOR)
   };
 }
 /**
@@ -74,7 +62,7 @@ function getModelArtifactsInfoForJSON(modelArtifacts: ModelArtifacts):
 
 class AsyncStorageHandler implements IOHandler {
   protected readonly modelPath: string;
-  protected readonly keys: LocalStorageKeys;
+  protected readonly keys: StorageKeys;
   protected asyncStorage: AsyncStorageStatic;
 
   constructor(modelPath: string) {
@@ -86,7 +74,7 @@ class AsyncStorageHandler implements IOHandler {
 
     // We import this dynamically because it binds to a native library that
     // needs to be installed by the user if they use this handler. We don't
-    // want users who are not using AsyncStorage to have to isntall this
+    // want users who are not using AsyncStorage to have to install this
     // library.
     this.asyncStorage =
         // tslint:disable-next-line:no-require-imports
@@ -105,34 +93,27 @@ class AsyncStorageHandler implements IOHandler {
           'AsyncStorageHandler.save() does not support saving model topology ' +
           'in binary format.');
     } else {
-      const topology = JSON.stringify(modelArtifacts.modelTopology);
-      const weightSpecs = JSON.stringify(modelArtifacts.weightSpecs);
-
+      // We save three items separately for each model,
+      // a ModelArtifactsInfo, a ModelArtifacts without weights
+      // and the model weights.
       const modelArtifactsInfo: ModelArtifactsInfo =
           getModelArtifactsInfoForJSON(modelArtifacts);
+      const {weightData, ...modelArtifactsWithoutWeights} = modelArtifacts;
 
       try {
         this.asyncStorage.setItem(
             this.keys.info, JSON.stringify(modelArtifactsInfo));
-        this.asyncStorage.setItem(this.keys.topology, topology);
-        this.asyncStorage.setItem(this.keys.weightSpecs, weightSpecs);
         this.asyncStorage.setItem(
-            this.keys.weightData,
-            fromByteArray(new Uint8Array(modelArtifacts.weightData)));
-        this.asyncStorage.setItem(this.keys.modelMetadata, JSON.stringify({
-          format: modelArtifacts.format,
-          generatedBy: modelArtifacts.generatedBy,
-          convertedBy: modelArtifacts.convertedBy
-        }));
-
+            this.keys.modelArtifactsWithoutWeights,
+            JSON.stringify(modelArtifactsWithoutWeights));
+        this.asyncStorage.setItem(
+            this.keys.weightData, fromByteArray(new Uint8Array(weightData)));
         return {modelArtifactsInfo};
       } catch (err) {
         // If saving failed, clean up all items saved so far.
         this.asyncStorage.removeItem(this.keys.info);
-        this.asyncStorage.removeItem(this.keys.topology);
-        this.asyncStorage.removeItem(this.keys.weightSpecs);
         this.asyncStorage.removeItem(this.keys.weightData);
-        this.asyncStorage.removeItem(this.keys.modelMetadata);
+        this.asyncStorage.removeItem(this.keys.modelArtifactsWithoutWeights);
 
         throw new Error(
             `Failed to save model '${this.modelPath}' to AsyncStorage.
@@ -163,38 +144,9 @@ class AsyncStorageHandler implements IOHandler {
           'topology yet.');
     }
 
-    const out: ModelArtifacts = {};
-
-    // Load topology.
-    const topology =
-        JSON.parse(await this.asyncStorage.getItem(this.keys.topology));
-    if (topology == null) {
-      throw new Error(
-          `In local storage, the topology of model '${this.modelPath}' ` +
-          `is missing.`);
-    }
-    out.modelTopology = topology;
-
-    // Load weight specs.
-    const weightSpecs =
-        JSON.parse(await this.asyncStorage.getItem(this.keys.weightSpecs));
-    if (weightSpecs == null) {
-      throw new Error(
-          `In local storage, the weight specs of model '${this.modelPath}' ` +
-          `are missing.`);
-    }
-    out.weightSpecs = weightSpecs;
-
-    // Load meta-data fields.
-    const metadataString =
-        await this.asyncStorage.getItem(this.keys.modelMetadata);
-    if (metadataString != null) {
-      const metadata = JSON.parse(metadataString) as
-          {format: string, generatedBy: string, convertedBy: string};
-      out.format = metadata['format'];
-      out.generatedBy = metadata['generatedBy'];
-      out.convertedBy = metadata['convertedBy'];
-    }
+    const modelArtifacts: ModelArtifacts =
+        JSON.parse(await this.asyncStorage.getItem(
+            this.keys.modelArtifactsWithoutWeights));
 
     // Load weight data.
     const weightDataBase64 =
@@ -204,9 +156,9 @@ class AsyncStorageHandler implements IOHandler {
           `In local storage, the binary weight values of model ` +
           `'${this.modelPath}' are missing.`);
     }
-    out.weightData = toByteArray(weightDataBase64).buffer;
+    modelArtifacts.weightData = toByteArray(weightDataBase64).buffer;
 
-    return out;
+    return modelArtifacts;
   }
 }
 
@@ -215,15 +167,13 @@ class AsyncStorageHandler implements IOHandler {
  *
  * This `IOHandler` supports both `save` and `load`.
  *
- * For each model's saved artifacts, four items are saved to local storage.
- *   - `${PATH_SEPARATOR}/${modelPath}/info`: Contains meta-info about the
+ * For each model's saved artifacts, three items are saved to async storage.
+ *   - `${PATH_PREFIX}/${modelPath}/info`: Contains meta-info about the
  *     model, such as date saved, type of the topology, size in bytes, etc.
- *   - `${PATH_SEPARATOR}/${modelPath}/topology`: Model topology. For Keras-
- *     style models, this is a stringized JSON.
- *   - `${PATH_SEPARATOR}/${modelPath}/weight_specs`: Weight specs of the
- *     model, can be used to decode the saved binary weight values (see
- *     item below).
- *   - `${PATH_SEPARATOR}/${modelPath}/weight_data`: Concatenated binary
+ *   - `${PATH_PREFIX}/${modelPath}/model_without_weight`: The topology,
+ *     weights_specs and all other information about the model except for the
+ *     weights.
+ *   - `${PATH_PREFIX}/${modelPath}/weight_data`: Concatenated binary
  *     weight values, stored as a base64-encoded string.
  *
  * @param modelPath A unique identifier for the model to be saved. Must be a
