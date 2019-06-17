@@ -370,10 +370,11 @@ export function downloadPackedMatrixFromBuffer(
   gl2.getBufferSubData(gl2.PIXEL_PACK_BUFFER, 0, downloadTarget);
   gl2.bindBuffer(gl2.PIXEL_PACK_BUFFER, null);
 
-  const matrix = new Float32Array(util.sizeFromShape([batch, rows, cols]));
-  tex_util.decodeMatrixFromPackedRGBA(
-      downloadTarget, batch, rows, cols, matrix);
-  return matrix;
+  return downloadTarget;
+  // const matrix = new Float32Array(util.sizeFromShape([batch, rows, cols]));
+  // tex_util.decodeMatrixFromPackedRGBA(
+  //     downloadTarget, batch, rows, cols, matrix);
+  // return matrix;
 }
 
 export function downloadMatrixFromPackedOutputTexture(
@@ -389,7 +390,12 @@ export function downloadMatrixFromPackedOutputTexture(
   webgl_util.callAndCheck(
       gl, debug,
       () => gl.readPixels(0, 0, w, h, gl.RGBA, gl.FLOAT, packedRGBA));
-  const matrix = new Float32Array(util.sizeFromShape([batch, rows, cols]));
-  return tex_util.decodeMatrixFromPackedRGBA(
-      packedRGBA, batch, rows, cols, matrix);
+
+  console.log('PACKED RGBA', w, h);
+  console.log(packedRGBA);
+
+  return packedRGBA;
+  // const matrix = new Float32Array(util.sizeFromShape([batch, rows, cols]));
+  // return tex_util.decodeMatrixFromPackedRGBA(
+  //     packedRGBA, batch, rows, cols, matrix);
 }

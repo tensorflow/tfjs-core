@@ -73,6 +73,8 @@ import {DepthwiseConv2DProgram} from './conv_gpu_depthwise';
 import {DepthwiseConvPacked2DProgram} from './conv_packed_gpu_depthwise';
 import {CropAndResizeProgram} from './crop_and_resize_gpu';
 import {CumSumProgram} from './cumsum_gpu';
+import {DecodeMatrixProgram} from './decode_matrix_gpu';
+import {DecodeMatrixPackedProgram} from './decode_matrix_packed_gpu';
 import {DepthToSpaceProgram} from './depth_to_space_gpu';
 import {EncodeFloatProgram} from './encode_float_gpu';
 import {EncodeMatrixProgram} from './encode_matrix_gpu';
@@ -496,45 +498,70 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   private getValuesFromTexture(dataId: DataId): Float32Array {
-    const {shape, dtype, texture, texShape} = this.texData.get(dataId);
+    const {shape, dtype, texture, texShape, isPacked} =
+        this.texData.get(dataId);
     const size = util.sizeFromShape(shape);
     if (ENV.getBool('WEBGL_DOWNLOAD_FLOAT_ENABLED')) {
-      if (this.texData.get(dataId).isPacked) {
-        const batch = webgl_util.getBatchDim(shape);
-        let rows = 1, cols = 1;
-        if (shape.length) {
-          [rows, cols] = webgl_util.getRowsCols(shape);
-        }
-        return this.gpgpu
-            .downloadMatrixFromPackedTexture(
-                texture, batch, rows, cols, texShape[0], texShape[1])
-            .subarray(0, size);
-      } else {
-        return this.gpgpu
-            .downloadFloat32MatrixFromOutputTexture(
-                texture, texShape[0], texShape[1])
-            .subarray(0, size);
+      const shapeAs3D =
+          webgl_util.getShapeAs3D(shape) as [number, number, number];
+      const tmpTarget =
+          this.makeTensorHandle(shape, 'float32') as TensorHandle &
+          {size: number};
+      tmpTarget.size = sizeFromShape(shape);
+      this.texData.get(tmpTarget.dataId).isPacked = isPacked;
+
+      const program = new DecodeMatrixProgram(shapeAs3D, texShape);
+      this.compileAndRun(program, [{shape, dtype, dataId}], tmpTarget);
+
+      const tmpData = this.texData.get(tmpTarget.dataId);
+      const batch = webgl_util.getBatchDim(shape);
+      let rows = 1, cols = 1;
+      if (shape.length) {
+        [rows, cols] = webgl_util.getRowsCols(shape);
       }
+
+      return this.gpgpu
+          .downloadMatrixFromPackedTexture(
+              tmpData.texture, batch, rows, cols, texShape[0], texShape[1])
+          .subarray(0, size);
+
+      // if (this.texData.get(dataId).isPacked) {
+      //   const batch = webgl_util.getBatchDim(shape);
+      //   let rows = 1, cols = 1;
+      //   if (shape.length) {
+      //     [rows, cols] = webgl_util.getRowsCols(shape);
+      //   }
+      //   return this.gpgpu
+      //       .downloadMatrixFromPackedTexture(
+      //           texture, batch, rows, cols, texShape[0], texShape[1])
+      //       .subarray(0, size);
+      // } else {
+      //   return this.gpgpu
+      //       .downloadFloat32MatrixFromOutputTexture(
+      //           texture, texShape[0], texShape[1])
+      //       .subarray(0, size);
+      // }
     }
 
-    const tmpTarget = this.makeTensorHandle(shape, 'float32') as TensorHandle &
-        {size: number};
-    tmpTarget.size = sizeFromShape(shape);
-    this.texData.get(tmpTarget.dataId).usage = TextureUsage.DOWNLOAD;
-    const output = tidy(() => {
-      const program = new EncodeFloatProgram(shape);
-      return this.compileAndRun(
-          program, [{shape, dtype, dataId}], tmpTarget, null);
-    });
-    const tmpData = this.texData.get(output.dataId);
-    const vals =
-        this.gpgpu
-            .downloadByteEncodedFloatMatrixFromOutputTexture(
-                tmpData.texture, tmpData.texShape[0], tmpData.texShape[1])
-            .subarray(0, size);
-    this.disposeData(tmpTarget.dataId);
+    // const tmpTarget = this.makeTensorHandle(shape, 'float32') as TensorHandle
+    // &
+    //     {size: number};
+    // tmpTarget.size = sizeFromShape(shape);
+    // this.texData.get(tmpTarget.dataId).usage = TextureUsage.DOWNLOAD;
+    // const output = tidy(() => {
+    //   const program = new EncodeFloatProgram(shape);
+    //   return this.compileAndRun(
+    //       program, [{shape, dtype, dataId}], tmpTarget, null);
+    // });
+    // const tmpData = this.texData.get(output.dataId);
+    // const vals =
+    //     this.gpgpu
+    //         .downloadByteEncodedFloatMatrixFromOutputTexture(
+    //             tmpData.texture, tmpData.texShape[0], tmpData.texShape[1])
+    //         .subarray(0, size);
+    // this.disposeData(tmpTarget.dataId);
 
-    return vals;
+    // return vals;
   }
 
   async time(f: () => void): Promise<WebGLTimingInfo> {
@@ -2471,8 +2498,8 @@ export class MathBackendWebGL implements KernelBackend {
     } else {
       this.canvas = null;
     }
-    if (this.fromPixels2DContext != null
-          && this.fromPixels2DContext.canvas.remove != null) {
+    if (this.fromPixels2DContext != null &&
+        this.fromPixels2DContext.canvas.remove != null) {
       this.fromPixels2DContext.canvas.remove();
     }
     if (this.gpgpuCreatedLocally) {
@@ -2524,14 +2551,7 @@ export class MathBackendWebGL implements KernelBackend {
     texData.texShape = texShape;
 
     if (values != null) {
-      let shapeAs3D: [number, number, number] = [1, 1, 1];
-      const isScalar =
-          shape.length === 0 || (shape.length === 1 && shape[0] === 1);
-      if (!isScalar) {
-        shapeAs3D = [
-          webgl_util.getBatchDim(shape), ...webgl_util.getRowsCols(shape)
-        ] as [number, number, number];
-      }
+      const shapeAs3D = webgl_util.getShapeAs3D(shape);
 
       let program;
       let width = texShape[1], height = texShape[0];
