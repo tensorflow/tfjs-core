@@ -224,14 +224,24 @@ export function uploadDenseMatrixToTexture(
     textureConfig: TextureConfig) {
   webgl_util.callAndCheck(
       gl, debug, () => gl.bindTexture(gl.TEXTURE_2D, texture));
-  const dataForUpload = new Float32Array(width * height * 4);
+  let dataForUpload: TypedArray, texelDataType: number;
+  if (data instanceof Uint8Array) {
+    dataForUpload = new Uint8Array(width * height * 4);
+    texelDataType = gl.UNSIGNED_BYTE;
+  } else {
+    dataForUpload = new Float32Array(width * height * 4);
+    texelDataType = gl.FLOAT;
+  }
+
   dataForUpload.set(data);
 
   webgl_util.callAndCheck(
       gl, debug,
       () => gl.texImage2D(
-          gl.TEXTURE_2D, 0, textureConfig.internalFormatPackedFloat, width,
-          height, 0, gl.RGBA, gl.FLOAT, dataForUpload));
+          gl.TEXTURE_2D, 0 /*level*/,
+          textureConfig.internalFormatPackedFloat /*internal format*/, width,
+          height, 0 /*border*/, gl.RGBA /*format*/, texelDataType /*type*/,
+          dataForUpload /*ArrayBufferView*/));
 
   webgl_util.callAndCheck(gl, debug, () => gl.bindTexture(gl.TEXTURE_2D, null));
 }
