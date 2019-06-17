@@ -21,7 +21,8 @@ import * as util from '../../util';
 
 export enum TextureUsage {
   RENDER,
-  UPLOAD,
+  UPLOAD_FLOAT32,
+  UPLOAD_UNSIGNED_BYTE,
   PIXELS,
   DOWNLOAD
 }

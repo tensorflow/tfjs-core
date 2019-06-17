@@ -224,13 +224,15 @@ export function uploadDenseMatrixToTexture(
     textureConfig: TextureConfig) {
   webgl_util.callAndCheck(
       gl, debug, () => gl.bindTexture(gl.TEXTURE_2D, texture));
-  let dataForUpload: TypedArray, texelDataType: number;
+  let dataForUpload: TypedArray, texelDataType: number, internalFormat: number;
   if (data instanceof Uint8Array) {
     dataForUpload = new Uint8Array(width * height * 4);
     texelDataType = gl.UNSIGNED_BYTE;
+    internalFormat = gl.RGBA;
   } else {
     dataForUpload = new Float32Array(width * height * 4);
     texelDataType = gl.FLOAT;
+    internalFormat = textureConfig.internalFormatPackedFloat;
   }
 
   dataForUpload.set(data);
@@ -238,10 +240,8 @@ export function uploadDenseMatrixToTexture(
   webgl_util.callAndCheck(
       gl, debug,
       () => gl.texImage2D(
-          gl.TEXTURE_2D, 0 /*level*/,
-          textureConfig.internalFormatPackedFloat /*internal format*/, width,
-          height, 0 /*border*/, gl.RGBA /*format*/, texelDataType /*type*/,
-          dataForUpload /*ArrayBufferView*/));
+          gl.TEXTURE_2D, 0, internalFormat, width, height, 0, gl.RGBA,
+          texelDataType, dataForUpload));
 
   webgl_util.callAndCheck(gl, debug, () => gl.bindTexture(gl.TEXTURE_2D, null));
 }
