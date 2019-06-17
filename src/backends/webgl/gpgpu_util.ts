@@ -224,6 +224,7 @@ export function uploadDenseMatrixToTexture(
     textureConfig: TextureConfig) {
   webgl_util.callAndCheck(
       gl, debug, () => gl.bindTexture(gl.TEXTURE_2D, texture));
+
   let dataForUpload: TypedArray, texelDataType: number, internalFormat: number;
   if (data instanceof Uint8Array) {
     dataForUpload = new Uint8Array(width * height * 4);
