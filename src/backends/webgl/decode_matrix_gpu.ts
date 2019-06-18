@@ -53,6 +53,7 @@ export class DecodeMatrixProgram implements GPGPUProgram {
           result[i] = float(flatIndex);
         }
 
+        result = vec4(200.);
         ${glsl.output} = result;
       }
     `;

@@ -508,7 +508,7 @@ export class MathBackendWebGL implements KernelBackend {
           this.makeTensorHandle(shape, 'float32') as TensorHandle &
           {size: number};
       tmpTarget.size = sizeFromShape(shape);
-      this.texData.get(tmpTarget.dataId).isPacked = isPacked;
+      this.texData.get(tmpTarget.dataId).isPacked = true;
 
       const program = new DecodeMatrixProgram(shapeAs3D, texShape);
       this.compileAndRun(program, [{shape, dtype, dataId}], tmpTarget);
