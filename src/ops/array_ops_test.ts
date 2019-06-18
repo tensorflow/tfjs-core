@@ -3512,6 +3512,20 @@ describeWithFlags('expandDims', ALL_ENVS, () => {
     expectArraysClose(await res.data(), [4]);
   });
 
+  it('1d string tensor', async () => {
+    const t = tf.tensor(['hello', 'world']);
+    const res = t.expandDims();
+    expect(res.shape).toEqual([1, 2]);
+    expectArraysClose(await res.data(), ['hello', 'world']);
+  });
+
+  it('2d string tensor, axis=1', async () => {
+    const t = tf.tensor([['a', 'b'], ['c', 'd']]);
+    const res = t.expandDims(1);
+    expect(res.shape).toEqual([2, 1, 2]);
+    expectArraysClose(await res.data(), ['a', 'b', 'c', 'd']);
+  });
+
   it('throws when passed a non-tensor', () => {
     expect(() => tf.expandDims({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'expandDims' must be a Tensor/);

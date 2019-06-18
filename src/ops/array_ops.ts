@@ -881,7 +881,7 @@ function cumsum_<T extends Tensor>(
 /** @doc {heading: 'Tensors', subheading: 'Transformations'} */
 function expandDims_<R2 extends Rank>(
     x: Tensor|TensorLike, axis = 0): Tensor<R2> {
-  const $x = convertToTensor(x, 'x', 'expandDims');
+  const $x = convertToTensor(x, 'x', 'expandDims', null);
 
   util.assert(axis <= $x.rank, () => 'Axis must be <= rank of the tensor');
   const newShape = $x.shape.slice();
