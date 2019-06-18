@@ -65,19 +65,30 @@ interface TensorData<D extends DataType> {
   complexTensors?: {real: Tensor, imag: Tensor};
 }
 
+function createCanvas() {
+  if (typeof OffscreenCanvas !== 'undefined') {
+    return new OffscreenCanvas(300, 150);
+  } else if (typeof document !== 'undefined') {
+    return document.createElement('canvas');
+  } else {
+    throw new Error('Cannot create a canvas in this context');
+  }
+}
+
 export class MathBackendCPU implements KernelBackend {
   public blockSize = 48;
 
   private data: DataStorage<TensorData<DataType>>;
-  private fromPixels2DContext: CanvasRenderingContext2D;
+  private fromPixels2DContext: CanvasRenderingContext2D|
+      OffscreenCanvasRenderingContext2D;
   private firstUse = true;
 
   constructor() {
     if (ENV.get('IS_BROWSER')) {
-      this.fromPixels2DContext =
-          document.createElement('canvas').getContext('2d');
+      const canvas = createCanvas();
+      this.fromPixels2DContext = canvas.getContext('2d');
     }
-    this.data = new DataStorage(ENGINE);
+    this.data = new DataStorage(this, ENGINE);
   }
 
   register(dataId: DataId, shape: number[], dtype: DataType): void {

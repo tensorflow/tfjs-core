@@ -15,12 +15,20 @@
  * =============================================================================
  */
 
-import * as gpgpu_util from './backends/webgl/gpgpu_util';
-import * as webgl_util from './backends/webgl/webgl_util';
+/**
+ * This file is necessary so we register all test environments before we start
+ * executing tests.
+ */
+import './backends/cpu/backend_cpu_test_registry';
+import './backends/webgl/backend_webgl_test_registry';
 
-export {MathBackendWebGL, WebGLMemoryInfo, WebGLTimingInfo} from './backends/webgl/backend_webgl';
-export {setWebGLContext} from './backends/webgl/canvas_util';
-export {GPGPUContext} from './backends/webgl/gpgpu_context';
-export {GPGPUProgram} from './backends/webgl/gpgpu_math';
-// WebGL specific utils.
-export {gpgpu_util, webgl_util};
+import {parseTestEnvFromKarmaFlags, setTestEnvs, TEST_ENVS} from './jasmine_util';
+
+// tslint:disable-next-line:no-any
+declare let __karma__: any;
+if (typeof __karma__ !== 'undefined') {
+  const testEnv = parseTestEnvFromKarmaFlags(__karma__.config.args, TEST_ENVS);
+  if (testEnv != null) {
+    setTestEnvs([testEnv]);
+  }
+}
