@@ -498,7 +498,7 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   private getValuesFromTexture(dataId: DataId): Float32Array {
-    const {shape, dtype, texShape} = this.texData.get(dataId);
+    const {shape, dtype, texShape, isPacked} = this.texData.get(dataId);
     const size = util.sizeFromShape(shape);
     if (ENV.getBool('WEBGL_DOWNLOAD_FLOAT_ENABLED')) {
       const shapeAs3D =
@@ -513,21 +513,23 @@ export class MathBackendWebGL implements KernelBackend {
       this.texData.get(tmpTarget.dataId).isPacked = true;
       this.texData.get(tmpTarget.dataId).texShape = denseTexShape;
 
-      const program = new DecodeMatrixProgram(
-          shapeAs3D, [denseTexShape[1], denseTexShape[0]]);
+      let program;
+      if (isPacked) {
+        program = new DecodeMatrixPackedProgram(
+            shapeAs3D, [denseTexShape[1], denseTexShape[0]]);
+      } else {
+        program = new DecodeMatrixProgram(
+            shapeAs3D, [denseTexShape[1], denseTexShape[0]]);
+      }
+
       this.compileAndRun(
           program, [{shape: shapeAs3D, dtype, dataId}], tmpTarget);
 
       const tmpData = this.texData.get(tmpTarget.dataId);
-      const batch = webgl_util.getBatchDim(shape);
-      let rows = 1, cols = 1;
-      if (shape.length) {
-        [rows, cols] = webgl_util.getRowsCols(shape);
-      }
 
       return this.gpgpu
           .downloadMatrixFromPackedTexture(
-              tmpData.texture, batch, rows, cols, texShape[0], texShape[1])
+              tmpData.texture, texShape[0], texShape[1])
           .subarray(0, size);
 
       // if (this.texData.get(dataId).isPacked) {

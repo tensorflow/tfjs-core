@@ -389,9 +389,8 @@ export function downloadPackedMatrixFromBuffer(
 }
 
 export function downloadMatrixFromPackedOutputTexture(
-    gl: WebGLRenderingContext, debug: boolean, batch: number, rows: number,
-    cols: number, physicalRows: number, physicalCols: number,
-    textureConfig: TextureConfig): Float32Array {
+    gl: WebGLRenderingContext, debug: boolean, physicalRows: number,
+    physicalCols: number): Float32Array {
   const [w, h] = tex_util.getPackedMatrixTextureShapeWidthHeight(
       physicalRows, physicalCols);
 
