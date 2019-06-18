@@ -357,7 +357,7 @@ export class MathBackendWebGL implements KernelBackend {
     }
 
     this.releaseGPUData(dataId);
-    texData.usage = TextureUsage.UPLOAD_FLOAT32;
+    texData.usage = TextureUsage.UPLOAD;
     texData.values = values;
   }
 
@@ -2550,10 +2550,10 @@ export class MathBackendWebGL implements KernelBackend {
           this.makeTensorHandle([height, width], dtype);
       if (values instanceof Uint8Array) {
         this.texData.get(tempDenseInputHandle.dataId).usage =
-            TextureUsage.UPLOAD_UNSIGNED_BYTE;
+            TextureUsage.PIXELS;
       } else {
         this.texData.get(tempDenseInputHandle.dataId).usage =
-            TextureUsage.UPLOAD_FLOAT32;
+            TextureUsage.UPLOAD;
       }
       this.gpgpu.uploadDenseMatrixToTexture(
           this.getTexture(tempDenseInputHandle.dataId), width, height,

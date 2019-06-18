@@ -144,7 +144,7 @@ export class TextureManager {
 
 function getPhysicalFromLogicalTextureType(
     logicalTexType: TextureUsage, isPacked: boolean): PhysicalTextureType {
-  if (logicalTexType === TextureUsage.UPLOAD_FLOAT32) {
+  if (logicalTexType === TextureUsage.UPLOAD) {
     return PhysicalTextureType.PACKED_2X2_FLOAT32;
   } else if (logicalTexType === TextureUsage.RENDER || logicalTexType == null) {
     if (isPacked) {
@@ -157,8 +157,7 @@ function getPhysicalFromLogicalTextureType(
         PhysicalTextureType.UNPACKED_FLOAT16;
   } else if (
       logicalTexType === TextureUsage.DOWNLOAD ||
-      logicalTexType === TextureUsage.PIXELS ||
-      logicalTexType === TextureUsage.UPLOAD_UNSIGNED_BYTE) {
+      logicalTexType === TextureUsage.PIXELS) {
     return PhysicalTextureType.PACKED_4X1_UNSIGNED_BYTE;
   }
   throw new Error(`Unknown logical texture type ${logicalTexType}`);
