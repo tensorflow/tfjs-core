@@ -107,6 +107,7 @@ function frame_(
  * @param signal 1-dimensional real value tensor.
  * @param frameLength The window length of samples.
  * @param frameStep The number of samples to step.
+ * @param fftLength The size of the FFT to apply.
  * @param windowFn A callable that takes a window length and returns 1-d tensor.
  */
 /**
@@ -114,14 +115,15 @@ function frame_(
  */
 function stft_(
     signal: Tensor1D, frameLength: number, frameStep: number,
-    windowFn: (length: number) => Tensor1D = hannWindow): Tensor[] {
-  // TODO: Pass fftLength after rfft supports fftLength.
-  const fftLength = frameLength;
+    fftLength?: number, windowFn: (length: number) => Tensor1D = hannWindow): Tensor[] {
+  if (fftLength == null) {
+    fftLength = frameLength;
+  }
   const framedSignal = frame(signal, frameLength, frameStep);
   const windowedSignal = mul(framedSignal, windowFn(frameLength));
   const output: Tensor[] = [];
   for (let i = 0; i < framedSignal.shape[0]; i++) {
-    output.push(rfft(windowedSignal.slice([i, 0], [1, fftLength])));
+    output.push(rfft(windowedSignal.slice([i, 0], [1, fftLength]), fftLength));
   }
   return output;
 }
