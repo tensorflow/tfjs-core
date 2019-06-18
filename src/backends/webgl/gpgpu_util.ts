@@ -307,11 +307,11 @@ export function createBufferFromOutputTexture(
 }
 
 export function downloadFloat32MatrixFromBuffer(
-    gl: WebGLRenderingContext, buffer: WebGLBuffer, rows: number,
-    columns: number, textureConfig: TextureConfig): Float32Array {
+    gl: WebGLRenderingContext, buffer: WebGLBuffer,
+    size: number): Float32Array {
   const gl2 = gl as WebGL2RenderingContext;
 
-  const downloadTarget = new Float32Array(rows * columns);
+  const downloadTarget = new Float32Array(size);
 
   gl2.bindBuffer(gl2.PIXEL_PACK_BUFFER, buffer);
   gl2.getBufferSubData(gl2.PIXEL_PACK_BUFFER, 0, downloadTarget);
@@ -321,13 +321,6 @@ export function downloadFloat32MatrixFromBuffer(
   console.log(downloadTarget);
 
   return downloadTarget;
-
-  // const matrix = new Float32Array(rows * columns);
-  // tex_util.decodeMatrixFromUnpackedArray(
-  //     downloadTarget as Float32Array, matrix,
-  //     textureConfig.downloadUnpackNumChannels);
-
-  // return matrix;
 }
 
 export function downloadFloat32MatrixFromOutputTexture(
