@@ -429,8 +429,6 @@ export class MathBackendWebGL implements KernelBackend {
       return this.convertAndCacheOnCPU(dataId);
     }
 
-    this.pendingRead.set(dataId, []);
-
     if (!ENV.getBool('WEBGL_DOWNLOAD_FLOAT_ENABLED') &&
         ENV.getNumber('WEBGL_VERSION') === 2) {
       throw new Error(
@@ -441,14 +439,59 @@ export class MathBackendWebGL implements KernelBackend {
     let buffer = null;
     if (dtype !== 'complex64') {
       // Possibly copy the texture into a buffer before inserting a fence.
-      let width = texShape[1];
-      let height = texShape[0];
+      const width = texShape[1];
+      const height = texShape[0];
+      // if (isPacked) {
+      //   [width, height] = tex_util.getPackedMatrixTextureShapeWidthHeight(
+      //       texShape[0], texShape[1]);
+      // }
+      const shapeAs3D =
+          webgl_util.getShapeAs3D(shape) as [number, number, number];
+      const lengthOfData = util.sizeFromShape(shape);
+      const texelsNeeded = Math.ceil(lengthOfData / 4);
+      const denseTexShape = util.sizeToSquarishShape(texelsNeeded);
+      const tmpTarget =
+          this.makeTensorHandle(shape, 'float32') as TensorHandle &
+          {size: number};
+      tmpTarget.size = sizeFromShape(shape);
+      this.texData.get(tmpTarget.dataId).isPacked = true;
+      this.texData.get(tmpTarget.dataId).texShape =
+          denseTexShape.map(
+              d => d * 2) as [number, number];  // since it's packed, we have to
+                                                // x2 so we don't create a
+                                                // texture that's half size
+      let program;
       if (isPacked) {
-        [width, height] = tex_util.getPackedMatrixTextureShapeWidthHeight(
-            texShape[0], texShape[1]);
+        program = new DecodeMatrixPackedProgram(shapeAs3D, denseTexShape);
+      } else {
+        program = new DecodeMatrixProgram(shapeAs3D, denseTexShape);
       }
+
+      this.compileAndRun(
+          program, [{shape: shapeAs3D, dtype, dataId}], tmpTarget);
+
+      const tmpData = this.texData.get(tmpTarget.dataId);
+
+      dataId = tmpTarget.dataId;
+      this.pendingRead.set(dataId, []);
+
       if (ENV.get('WEBGL_BUFFER_SUPPORTED')) {
-        buffer = this.gpgpu.createBufferFromTexture(texture, height, width);
+        console.log('create buff from tex');
+        console.log(texShape);
+        console.log(tmpData.texture);
+        console.log(denseTexShape);
+        // buffer =
+        //     this.gpgpu.createBufferFromTexture(tmpData.texture, height,
+        //     width);
+        console.log('wtf');
+        console.log(width, height, denseTexShape);
+        buffer = this.gpgpu.createBufferFromTexture(
+            tmpData.texture, denseTexShape[0], denseTexShape[1]);
+
+        // THIS WORKS SO THE DATA IS THERE.
+        // console.log('straightforward download');
+        // console.log(this.gpgpu.downloadMatrixFromPackedTexture(
+        //     tmpData.texture, denseTexShape[0], denseTexShape[1]));
       }
       // Create a fence and wait for it to resolve.
       await this.gpgpu.createAndWaitForFence();
@@ -465,23 +508,26 @@ export class MathBackendWebGL implements KernelBackend {
     } else if (buffer == null) {
       vals = this.getValuesFromTexture(dataId);
     } else {
+      console.log('DOWNLOADING FROM BUFFER');
       const size = util.sizeFromShape(shape);
-      if (isPacked) {
-        const batch = webgl_util.getBatchDim(shape);
-        let rows = 1, cols = 1;
-        if (shape.length) {
-          [rows, cols] = webgl_util.getRowsCols(shape);
-        }
-        vals = this.gpgpu
-                   .downloadPackedMatrixFromBuffer(
-                       buffer, batch, rows, cols, texShape[0], texShape[1])
-                   .subarray(0, size);
-      } else {
-        vals = this.gpgpu
-                   .downloadFloat32MatrixFromBuffer(
-                       buffer, texShape[0], texShape[1])
-                   .subarray(0, size);
-      }
+
+      // if (isPacked) {
+      //   const batch = webgl_util.getBatchDim(shape);
+      //   let rows = 1, cols = 1;
+      //   if (shape.length) {
+      //     [rows, cols] = webgl_util.getRowsCols(shape);
+      //   }
+      //   vals = this.gpgpu
+      //              .downloadPackedMatrixFromBuffer(
+      //                  buffer, batch, rows, cols, texShape[0], texShape[1])
+      //              .subarray(0, size);
+      // } else {
+      console.log('doownloading');
+      vals =
+          this.gpgpu
+              .downloadFloat32MatrixFromBuffer(buffer, texShape[0], texShape[1])
+              .subarray(0, size);
+      // }
     }
     const dTypeVals = this.convertAndCacheOnCPU(dataId, vals);
 
@@ -2371,6 +2417,7 @@ export class MathBackendWebGL implements KernelBackend {
       program: GPGPUProgram, inputs: TensorHandle[], output?: K,
       customSetup?: (gpgpu: GPGPUContext, webGLProgram: WebGLProgram) => void):
       K {
+    console.log('compileandrun', program.constructor.name);
     if (output == null) {
       if (program.usesPackedTextures) {
         output = this.makePackedTensor(program.outputShape, inputs[0].dtype) as
