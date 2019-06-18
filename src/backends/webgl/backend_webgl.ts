@@ -498,7 +498,7 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   private getValuesFromTexture(dataId: DataId): Float32Array {
-    const {shape, dtype, texShape, isPacked} = this.texData.get(dataId);
+    const {shape, dtype, isPacked} = this.texData.get(dataId);
     const size = util.sizeFromShape(shape);
     if (ENV.getBool('WEBGL_DOWNLOAD_FLOAT_ENABLED')) {
       const shapeAs3D =
@@ -529,7 +529,7 @@ export class MathBackendWebGL implements KernelBackend {
 
       return this.gpgpu
           .downloadMatrixFromPackedTexture(
-              tmpData.texture, texShape[0], texShape[1])
+              tmpData.texture, denseTexShape[0], denseTexShape[1])
           .subarray(0, size);
 
       // if (this.texData.get(dataId).isPacked) {

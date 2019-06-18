@@ -401,7 +401,7 @@ export function downloadMatrixFromPackedOutputTexture(
       gl, debug,
       () => gl.readPixels(0, 0, w, h, gl.RGBA, gl.FLOAT, packedRGBA));
 
-  console.log('PACKED RGBA', w, h);
+  console.log('PACKED RGBA', w, h, physicalRows, physicalCols);
   console.log(packedRGBA);
 
   return packedRGBA;
