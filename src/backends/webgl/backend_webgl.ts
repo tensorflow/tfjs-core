@@ -2535,20 +2535,21 @@ export class MathBackendWebGL implements KernelBackend {
 
       let program;
       let width = texShape[1], height = texShape[0];
+      const isByteArray = values instanceof Uint8Array;
 
       if (isPacked) {
         [width, height] = tex_util.getPackedMatrixTextureShapeWidthHeight(
             texShape[0], texShape[1]);
         program = new EncodeMatrixPackedProgram(
-            shapeAs3D, [height, width], values instanceof Uint8Array);
+            shapeAs3D, [height, width], isByteArray);
       } else {
-        program = new EncodeMatrixProgram(
-            shapeAs3D, [height, width], values instanceof Uint8Array);
+        program =
+            new EncodeMatrixProgram(shapeAs3D, [height, width], isByteArray);
       }
 
       const tempDenseInputHandle =
           this.makeTensorHandle([height, width], dtype);
-      if (values instanceof Uint8Array) {
+      if (isByteArray) {
         this.texData.get(tempDenseInputHandle.dataId).usage =
             TextureUsage.PIXELS;
       } else {
