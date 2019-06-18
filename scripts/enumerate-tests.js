@@ -14,6 +14,11 @@
 // limitations under the License.
 // =============================================================================
 
+/**
+ * This script generates the tests.ts file which enumerates all the
+ * backend-agonstic tests. These are the tests that get executed from other
+ * packages (e.g. WebGPU).
+ */
 // Call this script from the root of the repo.
 
 const LICENSE = `/**
@@ -46,11 +51,12 @@ function findTestFiles(dir, files) {
   files = files || [];
   fs.readdirSync(dir).forEach(file => {
     const filePath = path.join(dir, file);
-    if (!file.endsWith('node_modules') && !file.startsWith('.') &&
-        fs.statSync(filePath).isDirectory() &&
+    if (!file.endsWith('node_modules') && !filePath.endsWith('src/backends') &&
+        !file.startsWith('.') && fs.statSync(filePath).isDirectory() &&
         !fs.existsSync(path.join(filePath, 'package.json'))) {
       files = findTestFiles(filePath, files);
-    } else if (filePath.endsWith('_test.ts')) {
+    } else if (
+        filePath.endsWith('_test.ts') && filePath !== 'src/setup_test.ts') {
       files.push(filePath.replace('src/', './').replace('.ts', ''));
     }
   });

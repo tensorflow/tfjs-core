@@ -21,8 +21,8 @@ import {ENV, Environment, Flags} from './environment';
 Error.stackTraceLimit = Infinity;
 
 export type Constraints = {
-  flags?: Flags;
-  predicate?: (backend: string) => boolean;
+  flags?: Flags,
+  predicate?: (testEnv: TestEnv) => boolean,
 };
 
 export const NODE_ENVS: Constraints = {
@@ -35,11 +35,15 @@ export const BROWSER_ENVS: Constraints = {
   predicate: () => ENV.platformName === 'browser'
 };
 
+export const SYNC_BACKEND_ENVS: Constraints = {
+  predicate: (testEnv: TestEnv) => testEnv.isDataSync === true
+};
+
 export const ALL_ENVS: Constraints = {};
 
 // Tests whether the current environment satisfies the set of constraints.
 export function envSatisfiesConstraints(
-    env: Environment, backendName: string, constraints: Constraints): boolean {
+    env: Environment, testEnv: TestEnv, constraints: Constraints): boolean {
   if (constraints == null) {
     return true;
   }
@@ -52,54 +56,66 @@ export function envSatisfiesConstraints(
       }
     }
   }
-  if (constraints.predicate != null && !constraints.predicate(backendName)) {
+  if (constraints.predicate != null && !constraints.predicate(testEnv)) {
     return false;
   }
   return true;
 }
 
-// tslint:disable-next-line:no-any
-declare let __karma__: any;
-
-export function parseKarmaFlags(args: string[]): TestEnv {
+export function parseTestEnvFromKarmaFlags(
+    args: string[], registeredTestEnvs: TestEnv[]): TestEnv {
   let flags: Flags;
-  let factory: () => Promise<KernelBackend>| KernelBackend;
-  let backendName = '';
-  const backendNames = ENGINE.backendNames()
-                           .map(backendName => '\'' + backendName + '\'')
-                           .join(', ');
+  let testEnvName: string;
 
   args.forEach((arg, i) => {
     if (arg === '--flags') {
       flags = JSON.parse(args[i + 1]);
-    } else if (arg === '--backend') {
-      const type = args[i + 1];
-      backendName = type;
-      factory = ENGINE.findBackendFactory(backendName.toLowerCase());
-      if (factory == null) {
-        throw new Error(
-            `Unknown value ${type} for flag --backend. ` +
-            `Allowed values are ${backendNames}.`);
-      }
+    } else if (arg === '--testEnv') {
+      testEnvName = args[i + 1];
     }
   });
 
-  if (flags == null && factory == null) {
+  const testEnvNames = registeredTestEnvs.map(env => env.name).join(', ');
+  if (flags != null && testEnvName == null) {
+    throw new Error(
+        '--testEnv flag is required when --flags is present. ' +
+        `Available values are [${testEnvNames}].`);
+  }
+  if (testEnvName == null) {
     return null;
   }
-  if (flags != null && factory == null) {
+
+  let testEnv: TestEnv;
+  registeredTestEnvs.forEach(env => {
+    if (env.name === testEnvName) {
+      testEnv = env;
+    }
+  });
+  if (testEnv == null) {
     throw new Error(
-        '--backend flag is required when --flags is present. ' +
-        `Available values are ${backendNames}.`);
+        `Test environment with name ${testEnvName} not ` +
+        `found. Available test environment names are ` +
+        `${testEnvNames}`);
   }
-  return {flags: flags || {}, name: backendName, backendName};
+  if (flags != null) {
+    testEnv.flags = flags;
+  }
+
+  return testEnv;
 }
 
 export function describeWithFlags(
     name: string, constraints: Constraints, tests: (env: TestEnv) => void) {
+  if (TEST_ENVS.length === 0) {
+    throw new Error(
+        `Found no test environments. This is likely due to test environment ` +
+        `registries never being imported or test environment registries ` +
+        `being registered too late.`);
+  }
+
   TEST_ENVS.forEach(testEnv => {
     ENV.setFlags(testEnv.flags);
-    if (envSatisfiesConstraints(ENV, testEnv.backendName, constraints)) {
+    if (envSatisfiesConstraints(ENV, testEnv, constraints)) {
       const testName =
           name + ' ' + testEnv.name + ' ' + JSON.stringify(testEnv.flags);
       executeTests(testName, tests, testEnv);
@@ -111,6 +127,7 @@ export interface TestEnv {
   name: string;
   backendName: string;
   flags?: Flags;
+  isDataSync?: boolean;
 }
 
 export let TEST_ENVS: TestEnv[] = [];
@@ -134,23 +151,17 @@ export function registerTestEnv(testEnv: TestEnv) {
   TEST_ENVS.push(testEnv);
 }
 
-if (typeof __karma__ !== 'undefined') {
-  const testEnv = parseKarmaFlags(__karma__.config.args);
-  if (testEnv != null) {
-    setTestEnvs([testEnv]);
-  }
-}
-
 function executeTests(
     testName: string, tests: (env: TestEnv) => void, testEnv: TestEnv) {
   describe(testName, () => {
-    beforeAll(() => {
+    beforeAll(async () => {
       ENGINE.reset();
       if (testEnv.flags != null) {
         ENV.setFlags(testEnv.flags);
       }
       ENV.set('IS_TEST', true);
-      ENGINE.setBackend(testEnv.backendName);
+      // Await setting the new backend since it can have async init.
+      await ENGINE.setBackend(testEnv.backendName);
     });
 
     beforeEach(() => {

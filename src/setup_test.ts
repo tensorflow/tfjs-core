@@ -15,28 +15,20 @@
  * =============================================================================
  */
 
-import * as tf from '@tensorflow/tfjs-core';
+/**
+ * This file is necessary so we register all test environments before we start
+ * executing tests.
+ */
+import './backends/cpu/backend_cpu_test_registry';
+import './backends/webgl/backend_webgl_test_registry';
 
-import * as tfwebgpu from './index';
+import {parseTestEnvFromKarmaFlags, setTestEnvs, TEST_ENVS} from './jasmine_util';
 
-describe('Unary ops', () => {
-  beforeAll(async () => tfwebgpu.ready);
-
-  it('relu', async () => {
-    const a = tf.tensor1d([1, -2, 0, 3, -0.1]);
-    const result = tf.relu(a);
-
-    const cData = await result.data();
-
-    tf.test_util.expectArraysClose(cData, new Float32Array([1, 0, 0, 3, 0]));
-  });
-
-  it('relu 3D', async () => {
-    const a = tf.tensor3d([1, -2, 5, -3], [1, 2, 2]);
-    const result = tf.relu(a);
-
-    const cData = await result.data();
-
-    tf.test_util.expectArraysClose(cData, new Float32Array([1, 0, 5, 0]));
-  });
-});
+// tslint:disable-next-line:no-any
+declare let __karma__: any;
+if (typeof __karma__ !== 'undefined') {
+  const testEnv = parseTestEnvFromKarmaFlags(__karma__.config.args, TEST_ENVS);
+  if (testEnv != null) {
+    setTestEnvs([testEnv]);
+  }
+}

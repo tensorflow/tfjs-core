@@ -15,13 +15,22 @@
  * =============================================================================
  */
 
-import * as broadcast_util from '@tensorflow/tfjs-core/dist/ops/broadcast_util';
+import {backend_util} from '@tensorflow/tfjs-core';
+
 import {computeDispatch} from '../webgpu_util';
 
 import {WebGPUProgram} from './webgpu_program';
 
 export const MUL = 'return a * b;';
 export const ADD = 'return a + b;';
+export const SUB = 'return a - b;';
+
+export const INT_DIV = `
+  float s = sign(a) * sign(b);
+  int ia = int(round(a));
+  int ib = int(round(b));
+  return float(idiv(ia, ib, s));
+`;
 
 export class BinaryOpProgram implements WebGPUProgram {
   outputShape: number[];
@@ -31,8 +40,7 @@ export class BinaryOpProgram implements WebGPUProgram {
   variableNames = ['A', 'B'];
 
   constructor(op: string, aShape: number[], bShape: number[]) {
-    this.outputShape =
-        broadcast_util.assertAndGetBroadcastShape(aShape, bShape);
+    this.outputShape = backend_util.assertAndGetBroadcastShape(aShape, bShape);
 
     this.dispatchLayout = {x: this.outputShape.map((d, i) => i)};
     this.dispatch = computeDispatch(this.dispatchLayout, this.outputShape);

@@ -34,7 +34,7 @@ import * as scatter_nd_util from '../../ops/scatter_nd_util';
 import * as selu_util from '../../ops/selu_util';
 import {computeFlatOffset, getStridedSlicedInfo, isSliceContinous} from '../../ops/slice_util';
 import {DataId, Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D, TensorBuffer} from '../../tensor';
-import {DataType, DataTypeMap, DataValues, NumericDataType, Rank, ShapeMap, TypedArray, upcastType} from '../../types';
+import {DataType, DataTypeMap, DataValues, NumericDataType, PixelData, Rank, ShapeMap, TypedArray, upcastType} from '../../types';
 import * as util from '../../util';
 import {getArrayFromDType, inferDtype, now, sizeFromShape} from '../../util';
 import {BackendTimingInfo, DataStorage, EPSILON_FLOAT32, KernelBackend} from '../backend';
@@ -65,19 +65,30 @@ interface TensorData<D extends DataType> {
   complexTensors?: {real: Tensor, imag: Tensor};
 }
 
+function createCanvas() {
+  if (typeof OffscreenCanvas !== 'undefined') {
+    return new OffscreenCanvas(300, 150);
+  } else if (typeof document !== 'undefined') {
+    return document.createElement('canvas');
+  } else {
+    throw new Error('Cannot create a canvas in this context');
+  }
+}
+
 export class MathBackendCPU implements KernelBackend {
   public blockSize = 48;
 
   private data: DataStorage<TensorData<DataType>>;
-  private fromPixels2DContext: CanvasRenderingContext2D;
+  private fromPixels2DContext: CanvasRenderingContext2D|
+      OffscreenCanvasRenderingContext2D;
   private firstUse = true;
 
   constructor() {
     if (ENV.get('IS_BROWSER')) {
-      this.fromPixels2DContext =
-          document.createElement('canvas').getContext('2d');
+      const canvas = createCanvas();
+      this.fromPixels2DContext = canvas.getContext('2d');
     }
-    this.data = new DataStorage(ENGINE);
+    this.data = new DataStorage(this, ENGINE);
   }
 
   register(dataId: DataId, shape: number[], dtype: DataType): void {
@@ -109,13 +120,14 @@ export class MathBackendCPU implements KernelBackend {
     this.data.get(dataId).values = values;
   }
   fromPixels(
-      pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
+      pixels: PixelData|ImageData|HTMLImageElement|HTMLCanvasElement|
+      HTMLVideoElement,
       numChannels: number): Tensor3D {
     if (pixels == null) {
       throw new Error(
           'pixels passed to tf.browser.fromPixels() can not be null');
     }
-    let vals: Uint8ClampedArray;
+    let vals: Uint8ClampedArray|Uint8Array;
     // tslint:disable-next-line:no-any
     if (ENV.get('IS_NODE') && (pixels as any).getContext == null) {
       throw new Error(
@@ -129,8 +141,10 @@ export class MathBackendCPU implements KernelBackend {
                  .getContext('2d')
                  .getImageData(0, 0, pixels.width, pixels.height)
                  .data;
-    } else if (pixels instanceof ImageData) {
-      vals = pixels.data;
+    } else if (
+        pixels instanceof ImageData ||
+        (pixels as PixelData).data instanceof Uint8Array) {
+      vals = (pixels as PixelData | ImageData).data;
     } else if (
         pixels instanceof HTMLImageElement ||
         pixels instanceof HTMLVideoElement) {
@@ -149,8 +163,9 @@ export class MathBackendCPU implements KernelBackend {
     } else {
       throw new Error(
           'pixels passed to tf.browser.fromPixels() must be either an ' +
-          `HTMLVideoElement, HTMLImageElement, HTMLCanvasElement or ` +
-          `ImageData, but was ${(pixels as {}).constructor.name}`);
+          `HTMLVideoElement, HTMLImageElement, HTMLCanvasElement, ImageData ` +
+          `or {data: Uint32Array, width: number, height: number}, ` +
+          `but was ${(pixels as {}).constructor.name}`);
     }
     let values: Int32Array;
     if (numChannels === 4) {
@@ -174,11 +189,17 @@ export class MathBackendCPU implements KernelBackend {
   readSync(dataId: DataId): DataValues {
     const {dtype, complexTensors} = this.data.get(dataId);
     if (dtype === 'complex64') {
-      const realValues = complexTensors.real.dataSync() as Float32Array;
-      const imagValues = complexTensors.imag.dataSync() as Float32Array;
+      const realValues =
+          this.readSync(complexTensors.real.dataId) as Float32Array;
+      const imagValues =
+          this.readSync(complexTensors.imag.dataId) as Float32Array;
       return complex_util.mergeRealAndImagArrays(realValues, imagValues);
     }
     return this.data.get(dataId).values;
+  }
+
+  private bufferSync<R extends Rank>(t: Tensor<R>): TensorBuffer<R> {
+    return buffer(t.shape, t.dtype, this.readSync(t.dataId)) as TensorBuffer<R>;
   }
 
   disposeData(dataId: DataId): void {
@@ -252,14 +273,14 @@ export class MathBackendCPU implements KernelBackend {
     if (isContinous) {
       const flatOffset = computeFlatOffset(begin, x.strides);
       const length = util.sizeFromShape(size);
-      const vals = x.dataSync();
+      const vals = this.readSync(x.dataId) as TypedArray;
       return tensor(
                  vals.subarray(flatOffset, flatOffset + length), size,
                  x.dtype) as T;
     }
 
     const buffer = ops.buffer(size, x.dtype);
-    const xBuf = x.bufferSync();
+    const xBuf = this.bufferSync(x);
     for (let i = 0; i < buffer.size; ++i) {
       const loc = buffer.indexToLoc(i);
       const xLoc = loc.map((idx, j) => idx + begin[j]);
@@ -285,7 +306,7 @@ export class MathBackendCPU implements KernelBackend {
     }
 
     const buffer = ops.buffer(size, x.dtype);
-    const xBuf = x.bufferSync();
+    const xBuf = this.bufferSync(x);
     for (let i = 0; i < buffer.size; i++) {
       const loc = buffer.indexToLoc(i);
 
@@ -324,7 +345,7 @@ export class MathBackendCPU implements KernelBackend {
     this.assertNotComplex(x, 'reverse');
 
     const buffer = ops.buffer(x.shape, x.dtype);
-    const xBuf = x.bufferSync();
+    const xBuf = this.bufferSync(x);
 
     for (let i = 0; i < buffer.size; i++) {
       const outLoc = buffer.indexToLoc(i);
@@ -351,13 +372,13 @@ export class MathBackendCPU implements KernelBackend {
       // Use built-in TypedArray.set() method for speed.
       let offset = 0;
       tensors2D.forEach(t => {
-        values.set(t.dataSync(), offset);
+        values.set(this.readSync(t.dataId) as TypedArray, offset);
         offset += t.size;
       });
     } else {
       let colOffset = 0;
       tensors2D.forEach(t => {
-        const tVals = t.dataSync();
+        const tVals = this.readSync(t.dataId) as TypedArray;
         let tIdx = 0;
         for (let row = 0; row < t.shape[0]; ++row) {
           const resIdx = row * outShape[1] + colOffset;
@@ -396,7 +417,7 @@ export class MathBackendCPU implements KernelBackend {
   addN<T extends Tensor>(tensors: T[]): T {
     this.assertNotComplex(tensors, 'addN');
 
-    const vals = tensors.map(t => t.dataSync());
+    const vals = tensors.map(t => this.readSync(t.dataId) as TypedArray);
     const result = ops.buffer(tensors[0].shape, tensors[0].dtype as 'float32');
     const resultVals = result.values;
     for (let i = 0; i < tensors.length; i++) {
@@ -440,8 +461,8 @@ export class MathBackendCPU implements KernelBackend {
     const rightDim = transposeB ? b.shape[1] : b.shape[2];
     const batchDim = a.shape[0];
 
-    const aValues = a.dataSync();
-    const bValues = b.dataSync();
+    const aValues = this.readSync(a.dataId) as TypedArray;
+    const bValues = this.readSync(b.dataId) as TypedArray;
     const [aBatch, aOuterStep, aInnerStep] = transposeA ?
         [a.strides[0], 1, a.strides[1]] :
         [a.strides[0], a.strides[1], 1];
@@ -536,9 +557,9 @@ export class MathBackendCPU implements KernelBackend {
     const resultDtype = upcastType(x.dtype, 'int32');
     const result = ops.zeros(outShape, resultDtype);
     const reduceSize = util.sizeFromShape(reduceShape);
-    const vals = result.dataSync();
+    const vals = this.readSync(result.dataId) as TypedArray;
 
-    const aVals = x.dataSync();
+    const aVals = this.readSync(x.dataId) as TypedArray;
     for (let i = 0; i < vals.length; ++i) {
       const offset = i * reduceSize;
       let sum = 0;
@@ -558,9 +579,9 @@ export class MathBackendCPU implements KernelBackend {
     const resultDtype = upcastType(x.dtype, 'int32');
     const result = ops.zeros(outShape, resultDtype);
     const reduceSize = util.sizeFromShape(reduceShape);
-    const vals = result.dataSync();
+    const vals = this.readSync(result.dataId) as TypedArray;
 
-    const aVals = x.dataSync();
+    const aVals = this.readSync(x.dataId) as TypedArray;
     for (let i = 0; i < vals.length; ++i) {
       const offset = i * reduceSize;
       let prod = 1;
@@ -604,9 +625,9 @@ export class MathBackendCPU implements KernelBackend {
         axis_util.computeOutAndReduceShapes(x.shape, axes);
     const result = ops.zeros(outShape, 'int32');
     const reduceSize = util.sizeFromShape(reduceShape);
-    const vals = result.dataSync();
+    const vals = this.readSync(result.dataId) as TypedArray;
 
-    const aVals = x.dataSync();
+    const aVals = this.readSync(x.dataId) as TypedArray;
     for (let i = 0; i < vals.length; ++i) {
       const offset = i * reduceSize;
       let min = aVals[offset];
@@ -632,9 +653,9 @@ export class MathBackendCPU implements KernelBackend {
         axis_util.computeOutAndReduceShapes(x.shape, axes);
     const result = ops.zeros(outShape, 'int32');
     const reduceSize = util.sizeFromShape(reduceShape);
-    const vals = result.dataSync();
+    const vals = this.readSync(result.dataId) as TypedArray;
 
-    const aVals = x.dataSync();
+    const aVals = this.readSync(x.dataId) as TypedArray;
     for (let i = 0; i < vals.length; ++i) {
       const offset = i * reduceSize;
       let max = aVals[offset];
@@ -662,9 +683,9 @@ export class MathBackendCPU implements KernelBackend {
     }
     const resultDtype = upcastType(x.dtype, 'int32');
     const result = ops.zeros(x.shape, resultDtype);
-    const vals = result.dataSync();
+    const vals = this.readSync(result.dataId) as TypedArray;
 
-    const aVals = x.dataSync();
+    const aVals = this.readSync(x.dataId) as TypedArray;
     const finalDim = x.shape[x.rank - 1];
     const indexAdjuster = reverse ?
         (i: number, j: number) => i + finalDim - j - 1 :
@@ -735,7 +756,7 @@ export class MathBackendCPU implements KernelBackend {
   logicalNot<T extends Tensor>(x: T): T {
     this.assertNotComplex(x, 'logicalNot');
 
-    const values = x.dataSync();
+    const values = this.readSync(x.dataId) as TypedArray;
     const newValues = new Uint8Array(values.length);
     for (let i = 0; i < values.length; ++i) {
       newValues[i] = values[i] ? 0 : 1;
@@ -762,11 +783,11 @@ export class MathBackendCPU implements KernelBackend {
   select(condition: Tensor, a: Tensor, b: Tensor): Tensor {
     this.assertNotComplex([condition, a, b], 'select');
 
-    const values = condition.dataSync();
-    const aValues = a.dataSync();
-    const bValues = b.dataSync();
+    const values = this.readSync(condition.dataId) as TypedArray;
+    const aValues = this.readSync(a.dataId) as TypedArray;
+    const bValues = this.readSync(b.dataId) as TypedArray;
     const result = ops.zeros(a.shape, upcastType(a.dtype, b.dtype));
-    const newValues = result.dataSync();
+    const newValues = this.readSync(result.dataId) as TypedArray;
     let index = 0;
     const offset = condition.rank === 0 || condition.rank > 1 || a.rank === 1 ?
         1 :
@@ -787,14 +808,14 @@ export class MathBackendCPU implements KernelBackend {
   where(condition: Tensor): Tensor2D {
     this.assertNotComplex([condition], 'where');
 
-    const condVals = condition.dataSync();
+    const condVals = this.readSync(condition.dataId) as TypedArray;
     return whereImpl(condition.shape, condVals);
   }
 
   topk<T extends Tensor>(x: T, k: number, sorted: boolean): [T, T] {
     this.assertNotComplex(x, 'topk');
 
-    const xVals = x.dataSync();
+    const xVals = this.readSync(x.dataId) as TypedArray;
     return topkImpl(xVals, x.shape, x.dtype as NumericDataType, k, sorted);
   }
 
@@ -806,9 +827,9 @@ export class MathBackendCPU implements KernelBackend {
         axis_util.computeOutAndReduceShapes(x.shape, axes);
     const result = ops.zeros(outShape, x.dtype);
     const reduceSize = util.sizeFromShape(reduceShape);
-    const vals = result.dataSync();
+    const vals = this.readSync(result.dataId) as TypedArray;
 
-    const aVals = x.dataSync();
+    const aVals = this.readSync(x.dataId) as TypedArray;
     for (let i = 0; i < vals.length; ++i) {
       const offset = i * reduceSize;
       let min = aVals[offset];
@@ -851,9 +872,9 @@ export class MathBackendCPU implements KernelBackend {
         axis_util.computeOutAndReduceShapes(x.shape, axes);
     const result = ops.zeros(outShape, x.dtype);
     const reduceSize = util.sizeFromShape(reduceShape);
-    const vals = result.dataSync();
+    const vals = this.readSync(result.dataId) as TypedArray;
 
-    const aVals = x.dataSync();
+    const aVals = this.readSync(x.dataId) as TypedArray;
     for (let i = 0; i < vals.length; ++i) {
       const offset = i * reduceSize;
       let max = aVals[offset];
@@ -883,9 +904,9 @@ export class MathBackendCPU implements KernelBackend {
         axis_util.computeOutAndReduceShapes(x.shape, axes);
     const result = ops.zeros(outShape, x.dtype);
     const reduceSize = util.sizeFromShape(reduceShape);
-    const vals = result.dataSync();
+    const vals = this.readSync(result.dataId) as TypedArray;
 
-    const aVals = x.dataSync();
+    const aVals = this.readSync(x.dataId) as TypedArray;
     for (let i = 0; i < vals.length; ++i) {
       const offset = i * reduceSize;
       let all = aVals[offset];
@@ -906,9 +927,9 @@ export class MathBackendCPU implements KernelBackend {
         axis_util.computeOutAndReduceShapes(x.shape, axes);
     const result = ops.zeros(outShape, x.dtype);
     const reduceSize = util.sizeFromShape(reduceShape);
-    const vals = result.dataSync();
+    const vals = this.readSync(result.dataId) as TypedArray;
 
-    const aVals = x.dataSync();
+    const aVals = this.readSync(x.dataId) as TypedArray;
     for (let i = 0; i < vals.length; ++i) {
       const offset = i * reduceSize;
       let anyVal = aVals[offset];
@@ -933,7 +954,7 @@ export class MathBackendCPU implements KernelBackend {
   ceil<T extends Tensor>(x: T): T {
     this.assertNotComplex(x, 'ceil');
 
-    const values = x.dataSync();
+    const values = this.readSync(x.dataId) as TypedArray;
     const newValues = new Float32Array(values.length);
     for (let i = 0; i < values.length; ++i) {
       newValues[i] = Math.ceil(values[i]);
@@ -944,7 +965,7 @@ export class MathBackendCPU implements KernelBackend {
   floor<T extends Tensor>(x: T): T {
     this.assertNotComplex(x, 'floor');
 
-    const values = x.dataSync();
+    const values = this.readSync(x.dataId) as TypedArray;
     const newValues = new Float32Array(values.length);
     for (let i = 0; i < values.length; ++i) {
       newValues[i] = Math.floor(values[i]);
@@ -955,7 +976,7 @@ export class MathBackendCPU implements KernelBackend {
   sign<T extends Tensor>(x: T): T {
     this.assertNotComplex(x, 'x');
 
-    const values = x.dataSync();
+    const values = this.readSync(x.dataId) as TypedArray;
     const newValues = new Float32Array(values.length);
     for (let i = 0; i < values.length; ++i) {
       if (values[i] < 0) {
@@ -972,7 +993,7 @@ export class MathBackendCPU implements KernelBackend {
   isNaN<T extends Tensor>(x: T): T {
     this.assertNotComplex(x, 'x');
 
-    const values = x.dataSync();
+    const values = this.readSync(x.dataId) as TypedArray;
     const newValues = new Uint8Array(values.length);
     for (let i = 0; i < values.length; ++i) {
       if (Number.isNaN(values[i])) {
@@ -985,7 +1006,7 @@ export class MathBackendCPU implements KernelBackend {
   isInf<T extends Tensor>(x: T): T {
     this.assertNotComplex(x, 'x');
 
-    const values = x.dataSync();
+    const values = this.readSync(x.dataId) as TypedArray;
     const newValues = new Uint8Array(values.length);
     for (let i = 0; i < values.length; ++i) {
       if (Math.abs(values[i]) === Infinity) {
@@ -998,7 +1019,7 @@ export class MathBackendCPU implements KernelBackend {
   isFinite<T extends Tensor>(x: T): T {
     this.assertNotComplex(x, 'x');
 
-    const values = x.dataSync();
+    const values = this.readSync(x.dataId) as TypedArray;
     const newValues = new Uint8Array(values.length);
     for (let i = 0; i < values.length; ++i) {
       if (Number.isFinite(values[i])) {
@@ -1011,7 +1032,7 @@ export class MathBackendCPU implements KernelBackend {
   round<T extends Tensor>(x: T): T {
     this.assertNotComplex(x, 'round');
 
-    const values = x.dataSync();
+    const values = this.readSync(x.dataId) as TypedArray;
     const newValues = new Float32Array(values.length);
     for (let i = 0; i < values.length; ++i) {
       // The algorithm is based on banker's rounding.
@@ -1034,7 +1055,7 @@ export class MathBackendCPU implements KernelBackend {
   exp<T extends Tensor>(x: T): T {
     this.assertNotComplex(x, 'exp');
 
-    const values = x.dataSync();
+    const values = this.readSync(x.dataId) as TypedArray;
     const newValues = new Float32Array(values.length);
     for (let i = 0; i < values.length; ++i) {
       newValues[i] = Math.exp(values[i]);
@@ -1045,7 +1066,7 @@ export class MathBackendCPU implements KernelBackend {
   expm1<T extends Tensor>(x: T): T {
     this.assertNotComplex(x, 'expm1');
 
-    const values = x.dataSync();
+    const values = this.readSync(x.dataId) as TypedArray;
     const newValues = new Float32Array(values.length);
     for (let i = 0; i < values.length; ++i) {
       newValues[i] = Math.expm1(values[i]);
@@ -1056,7 +1077,7 @@ export class MathBackendCPU implements KernelBackend {
   log<T extends Tensor>(x: T): T {
     this.assertNotComplex(x, 'log');
 
-    const values = x.dataSync();
+    const values = this.readSync(x.dataId) as TypedArray;
     const newValues = new Float32Array(values.length);
     for (let i = 0; i < values.length; ++i) {
       const value = values[i];
@@ -1068,7 +1089,7 @@ export class MathBackendCPU implements KernelBackend {
   log1p<T extends Tensor>(x: T): T {
     this.assertNotComplex(x, 'log1p');
 
-    const values = x.dataSync();
+    const values = this.readSync(x.dataId) as TypedArray;
     const newValues = new Float32Array(values.length);
     for (let i = 0; i < values.length; ++i) {
       const value = values[i];
@@ -1080,7 +1101,7 @@ export class MathBackendCPU implements KernelBackend {
   sqrt<T extends Tensor>(x: T): T {
     this.assertNotComplex(x, 'sqrt');
 
-    const values = x.dataSync();
+    const values = this.readSync(x.dataId) as TypedArray;
     const newValues = new Float32Array(values.length);
     for (let i = 0; i < values.length; ++i) {
       const value = values[i];
@@ -1092,7 +1113,7 @@ export class MathBackendCPU implements KernelBackend {
   rsqrt<T extends Tensor>(x: T): T {
     this.assertNotComplex(x, 'rsqrt');
 
-    const values = x.dataSync();
+    const values = this.readSync(x.dataId) as TypedArray;
     const newValues = new Float32Array(values.length);
     for (let i = 0; i < values.length; ++i) {
       const value = values[i];
@@ -1104,7 +1125,7 @@ export class MathBackendCPU implements KernelBackend {
   square<T extends Tensor>(x: T): T {
     this.assertNotComplex(x, 'square');
 
-    const values = x.dataSync();
+    const values = this.readSync(x.dataId) as TypedArray;
     const newValues = new Float32Array(values.length);
     for (let i = 0; i < values.length; ++i) {
       const value = values[i];
@@ -1116,7 +1137,7 @@ export class MathBackendCPU implements KernelBackend {
   reciprocal<T extends Tensor>(x: T): T {
     this.assertNotComplex(x, 'reciprocal');
 
-    const values = x.dataSync();
+    const values = this.readSync(x.dataId) as TypedArray;
     const newValues = new Float32Array(values.length);
     for (let i = 0; i < values.length; ++i) {
       newValues[i] = 1 / values[i];
@@ -1132,8 +1153,8 @@ export class MathBackendCPU implements KernelBackend {
     this.assertNotComplex(x, 'relu');
 
     const res = ops.zeros(x.shape, x.dtype);
-    const resVals = res.dataSync();
-    const inVals = x.dataSync();
+    const resVals = this.readSync(res.dataId) as TypedArray;
+    const inVals = this.readSync(x.dataId) as TypedArray;
     for (let i = 0; i < inVals.length; ++i) {
       resVals[i] = Math.max(0, inVals[i]);
     }
@@ -1152,7 +1173,7 @@ export class MathBackendCPU implements KernelBackend {
     this.assertNotComplex(x, 'elu');
 
     const resultValues = new Float32Array(x.size);
-    const values = x.dataSync();
+    const values = this.readSync(x.dataId) as TypedArray;
     for (let i = 0; i < values.length; ++i) {
       const v = values[i];
       if (v >= 0) {
@@ -1168,8 +1189,8 @@ export class MathBackendCPU implements KernelBackend {
     this.assertNotComplex([dy, y], 'eluDer');
 
     const resultValues = new Float32Array(y.size);
-    const values = y.dataSync();
-    const dyValues = dy.dataSync();
+    const values = this.readSync(y.dataId) as TypedArray;
+    const dyValues = this.readSync(dy.dataId) as TypedArray;
     for (let i = 0; i < values.length; ++i) {
       const v = values[i];
       if (v >= 1) {
@@ -1190,7 +1211,7 @@ export class MathBackendCPU implements KernelBackend {
     const scale = selu_util.SELU_SCALE;
 
     const resultValues = new Float32Array(x.size);
-    const values = x.dataSync();
+    const values = this.readSync(x.dataId) as TypedArray;
     for (let i = 0; i < values.length; ++i) {
       const v = values[i];
       if (v >= 0) {
@@ -1206,7 +1227,7 @@ export class MathBackendCPU implements KernelBackend {
     this.assertNotComplex(x, 'clip');
 
     const resultValues = new Float32Array(x.size);
-    const values = x.dataSync();
+    const values = this.readSync(x.dataId) as TypedArray;
     for (let i = 0; i < values.length; ++i) {
       const v = values[i];
       resultValues[i] = v > max ? max : (v < min ? min : v);
@@ -1216,7 +1237,7 @@ export class MathBackendCPU implements KernelBackend {
 
   abs<T extends Tensor>(x: T): T {
     const resultValues = new Float32Array(x.size);
-    const values = x.dataSync();
+    const values = this.readSync(x.dataId) as TypedArray;
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.abs(values[i]);
     }
@@ -1226,7 +1247,7 @@ export class MathBackendCPU implements KernelBackend {
 
   complexAbs<T extends Tensor>(x: T): T {
     const resultValues = new Float32Array(x.size);
-    const values = x.dataSync();
+    const values = this.readSync(x.dataId) as TypedArray;
 
     for (let i = 0; i < x.size; ++i) {
       const real = values[i * 2];
@@ -1240,7 +1261,7 @@ export class MathBackendCPU implements KernelBackend {
     this.assertNotComplex(x, 'int');
 
     const resultValues = new Int32Array(x.size);
-    const values = x.dataSync();
+    const values = this.readSync(x.dataId) as TypedArray;
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = values[i];
     }
@@ -1251,7 +1272,7 @@ export class MathBackendCPU implements KernelBackend {
     this.assertNotComplex(x, 'sigmoid');
 
     const resultValues = new Float32Array(x.size);
-    const values = x.dataSync();
+    const values = this.readSync(x.dataId) as TypedArray;
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = 1 / (1 + Math.exp(-values[i]));
     }
@@ -1270,7 +1291,7 @@ export class MathBackendCPU implements KernelBackend {
     const threshold = Math.log(epsilon) + 2.0;
 
     const resultValues = new Float32Array(x.size);
-    const values = x.dataSync();
+    const values = this.readSync(x.dataId) as TypedArray;
 
     for (let i = 0; i < values.length; ++i) {
       // Value above which exp(x) may overflow, but softplus(x) == x
@@ -1300,7 +1321,7 @@ export class MathBackendCPU implements KernelBackend {
     this.assertNotComplex(x, 'sin');
 
     const resultValues = new Float32Array(x.size);
-    const values = x.dataSync();
+    const values = this.readSync(x.dataId) as TypedArray;
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.sin(values[i]);
     }
@@ -1311,7 +1332,7 @@ export class MathBackendCPU implements KernelBackend {
     this.assertNotComplex(x, 'cos');
 
     const resultValues = new Float32Array(x.size);
-    const values = x.dataSync();
+    const values = this.readSync(x.dataId) as TypedArray;
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.cos(values[i]);
     }
@@ -1322,7 +1343,7 @@ export class MathBackendCPU implements KernelBackend {
     this.assertNotComplex(x, 'tan');
 
     const resultValues = new Float32Array(x.size);
-    const values = x.dataSync();
+    const values = this.readSync(x.dataId) as TypedArray;
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.tan(values[i]);
     }
@@ -1333,7 +1354,7 @@ export class MathBackendCPU implements KernelBackend {
     this.assertNotComplex(x, 'asin');
 
     const resultValues = new Float32Array(x.size);
-    const values = x.dataSync();
+    const values = this.readSync(x.dataId) as TypedArray;
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.asin(values[i]);
     }
@@ -1344,7 +1365,7 @@ export class MathBackendCPU implements KernelBackend {
     this.assertNotComplex(x, 'acos');
 
     const resultValues = new Float32Array(x.size);
-    const values = x.dataSync();
+    const values = this.readSync(x.dataId) as TypedArray;
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.acos(values[i]);
     }
@@ -1355,7 +1376,7 @@ export class MathBackendCPU implements KernelBackend {
     this.assertNotComplex(x, 'atan');
 
     const resultValues = new Float32Array(x.size);
-    const values = x.dataSync();
+    const values = this.readSync(x.dataId) as TypedArray;
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.atan(values[i]);
     }
@@ -1374,7 +1395,7 @@ export class MathBackendCPU implements KernelBackend {
     this.assertNotComplex(x, 'sinh');
 
     const resultValues = new Float32Array(x.size);
-    const values = x.dataSync();
+    const values = this.readSync(x.dataId) as TypedArray;
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.sinh(values[i]);
     }
@@ -1385,7 +1406,7 @@ export class MathBackendCPU implements KernelBackend {
     this.assertNotComplex(x, 'cosh');
 
     const resultValues = new Float32Array(x.size);
-    const values = x.dataSync();
+    const values = this.readSync(x.dataId) as TypedArray;
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.cosh(values[i]);
     }
@@ -1396,7 +1417,7 @@ export class MathBackendCPU implements KernelBackend {
     this.assertNotComplex(x, 'tanh');
 
     const resultValues = new Float32Array(x.size);
-    const values = x.dataSync();
+    const values = this.readSync(x.dataId) as TypedArray;
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = util.tanh(values[i]);
     }
@@ -1407,7 +1428,7 @@ export class MathBackendCPU implements KernelBackend {
     this.assertNotComplex(x, 'asinh');
 
     const resultValues = new Float32Array(x.size);
-    const values = x.dataSync();
+    const values = this.readSync(x.dataId) as TypedArray;
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.asinh(values[i]);
     }
@@ -1418,7 +1439,7 @@ export class MathBackendCPU implements KernelBackend {
     this.assertNotComplex(x, 'acosh');
 
     const resultValues = new Float32Array(x.size);
-    const values = x.dataSync();
+    const values = this.readSync(x.dataId) as TypedArray;
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.acosh(values[i]);
     }
@@ -1429,7 +1450,7 @@ export class MathBackendCPU implements KernelBackend {
     this.assertNotComplex(x, 'atanh');
 
     const resultValues = new Float32Array(x.size);
-    const values = x.dataSync();
+    const values = this.readSync(x.dataId) as TypedArray;
     for (let i = 0; i < values.length; ++i) {
       resultValues[i] = Math.atanh(values[i]);
     }
@@ -1440,7 +1461,7 @@ export class MathBackendCPU implements KernelBackend {
     this.assertNotComplex(x, 'erf');
 
     const resultValues = new Float32Array(x.size);
-    const values = x.dataSync();
+    const values = this.readSync(x.dataId) as TypedArray;
     const p = erf_util.ERF_P;
     const a1 = erf_util.ERF_A1;
     const a2 = erf_util.ERF_A2;
@@ -1461,7 +1482,7 @@ export class MathBackendCPU implements KernelBackend {
     this.assertNotComplex(x, 'step');
 
     const resultValues = new Float32Array(x.size);
-    const values = x.dataSync();
+    const values = this.readSync(x.dataId) as TypedArray;
     for (let i = 0; i < values.length; ++i) {
       const value = values[i];
       if (isNaN(value)) {
@@ -1484,8 +1505,8 @@ export class MathBackendCPU implements KernelBackend {
     const padTop = convInfo.padInfo.top;
     const y = ops.buffer(convInfo.outShape, x.dtype as 'float32');
 
-    const xVals = x.dataSync();
-    const wVals = filter.dataSync();
+    const xVals = this.readSync(x.dataId) as TypedArray;
+    const wVals = this.readSync(filter.dataId) as TypedArray;
     const yVals = y.values;
 
     for (let b = 0; b < convInfo.batchSize; ++b) {
@@ -1493,7 +1514,7 @@ export class MathBackendCPU implements KernelBackend {
       const yOffset1 = b * y.strides[0];
       for (let yR = 0; yR < convInfo.outHeight; ++yR) {
         const yOffset2 = yOffset1 + yR * y.strides[1];
-        const xRCorner = yR * convInfo.strideHeight - padLeft;
+        const xRCorner = yR * convInfo.strideHeight - padTop;
         for (let wR = 0; wR < filterHeight; wR++) {
           const xR = xRCorner + wR * dilationHeight;
           if (xR < 0 || xR >= convInfo.inHeight) {
@@ -1503,7 +1524,7 @@ export class MathBackendCPU implements KernelBackend {
           const xOffset2 = xOffset1 + xR * x.strides[1];
           for (let yC = 0; yC < convInfo.outWidth; ++yC) {
             const yOffset3 = yOffset2 + yC * convInfo.outChannels;
-            const xCCorner = yC * convInfo.strideWidth - padTop;
+            const xCCorner = yC * convInfo.strideWidth - padLeft;
             for (let wC = 0; wC < filterWidth; wC++) {
               const xC = xCCorner + wC * dilationWidth;
               if (xC < 0 || xC >= convInfo.inWidth) {
@@ -1539,8 +1560,8 @@ export class MathBackendCPU implements KernelBackend {
     const padTop = convInfo.padInfo.top;
     const y = ops.buffer<Rank.R5>(convInfo.outShape, x.dtype as 'float32');
 
-    const xVals = x.dataSync();
-    const wVals = filter.dataSync();
+    const xVals = this.readSync(x.dataId) as TypedArray;
+    const wVals = this.readSync(filter.dataId) as TypedArray;
     const yVals = y.values;
 
     for (let b = 0; b < convInfo.batchSize; ++b) {
@@ -1602,9 +1623,9 @@ export class MathBackendCPU implements KernelBackend {
     const dx = ops.buffer<Rank.R4>(convInfo.inShape, 'float32');
     const dxValues = dx.values;
     const [dxS0, dxS1, dxS2] = dx.strides;
-    const dyValues = dy.dataSync();
+    const dyValues = this.readSync(dy.dataId) as TypedArray;
     const [dyS0, dyS1, dyS2] = dy.strides;
-    const fltValues = filter.dataSync();
+    const fltValues = this.readSync(filter.dataId) as TypedArray;
     const [fltS0, fltS1, fltS2] = filter.strides;
     const {
       batchSize,
@@ -1666,9 +1687,9 @@ export class MathBackendCPU implements KernelBackend {
     const dx = ops.buffer<Rank.R5>(convInfo.inShape, 'float32');
     const dxValues = dx.values;
     const [dxS0, dxS1, dxS2, dxS3] = dx.strides;
-    const dyValues = dy.dataSync();
+    const dyValues = this.readSync(dy.dataId) as TypedArray;
     const [dyS0, dyS1, dyS2, dyS3] = dy.strides;
-    const fltValues = filter.dataSync();
+    const fltValues = this.readSync(filter.dataId) as TypedArray;
     const [fltS0, fltS1, fltS2, fltS3] = filter.strides;
     const {
       batchSize,
@@ -1757,8 +1778,8 @@ export class MathBackendCPU implements KernelBackend {
 
     const leftPad = convInfo.padInfo.left;
     const topPad = convInfo.padInfo.top;
-    const xBuf = x.bufferSync();
-    const dyBuf = dy.bufferSync();
+    const xBuf = this.bufferSync(x);
+    const dyBuf = this.bufferSync(dy);
     for (let wR = 0; wR < filterHeight; ++wR) {
       const yRMin = Math.max(0, Math.ceil((topPad - wR) / strideHeight));
       const yRMax = Math.min(
@@ -1801,9 +1822,9 @@ export class MathBackendCPU implements KernelBackend {
     const dw = ops.buffer<Rank.R5>(convInfo.filterShape, 'float32');
     const dwValues = dw.values;
     const [dwS0, dwS1, dwS2, dwS3] = dw.strides;
-    const dyValues = dy.dataSync();
+    const dyValues = this.readSync(dy.dataId) as TypedArray;
     const [dyS0, dyS1, dyS2, dyS3] = dy.strides;
-    const xValues = x.dataSync();
+    const xValues = this.readSync(x.dataId) as TypedArray;
     const [xS0, xS1, xS2, xS3] = x.strides;
 
     const frontPad = convInfo.padInfo.front;
@@ -1881,8 +1902,8 @@ export class MathBackendCPU implements KernelBackend {
     const padTop = convInfo.padInfo.top;
     const chMul = convInfo.outChannels / convInfo.inChannels;
     const y = ops.buffer(convInfo.outShape, x.dtype as 'float32');
-    const xVals = x.dataSync();
-    const wVals = filter.dataSync();
+    const xVals = this.readSync(x.dataId) as TypedArray;
+    const wVals = this.readSync(filter.dataId) as TypedArray;
     const yVals = y.values;
 
     for (let b = 0; b < convInfo.batchSize; ++b) {
@@ -1934,9 +1955,9 @@ export class MathBackendCPU implements KernelBackend {
     const dx = ops.buffer<Rank.R4>(convInfo.inShape, 'float32');
     const dxValues = dx.values;
     const [dxS0, dxS1, dxS2] = dx.strides;
-    const dyValues = dy.dataSync();
+    const dyValues = this.readSync(dy.dataId) as TypedArray;
     const [dyS0, dyS1, dyS2] = dy.strides;
-    const fltValues = filter.dataSync();
+    const fltValues = this.readSync(filter.dataId) as TypedArray;
     const [fltS0, fltS1, fltS2] = filter.strides;
     const {
       batchSize,
@@ -2009,8 +2030,8 @@ export class MathBackendCPU implements KernelBackend {
     const topPad = convInfo.padInfo.top;
     const chMul = convInfo.outChannels / convInfo.inChannels;
 
-    const xBuf = x.bufferSync();
-    const dyBuf = dy.bufferSync();
+    const xBuf = this.bufferSync(x);
+    const dyBuf = this.bufferSync(dy);
     for (let wR = 0; wR < filterHeight; ++wR) {
       const yRMin = Math.max(0, Math.ceil((topPad - wR) / strideHeight));
       const yRMax = Math.min(
@@ -2050,7 +2071,7 @@ export class MathBackendCPU implements KernelBackend {
       newShape[i] = x.shape[i] * reps[i];
     }
     const result = ops.buffer(newShape, x.dtype);
-    const xBuf = x.bufferSync();
+    const xBuf = this.bufferSync(x);
     for (let i = 0; i < result.values.length; ++i) {
       const newLoc = result.indexToLoc(i);
 
@@ -2073,7 +2094,7 @@ export class MathBackendCPU implements KernelBackend {
     const outShape = paddings.map(
         (p, i) => p[0] /* beforePad */ + x.shape[i] + p[1] /* afterPad */);
     const start = paddings.map(p => p[0]);
-    const xBuffer = x.bufferSync();
+    const xBuffer = this.bufferSync(x);
     const buffer = ops.buffer(outShape, x.dtype as 'float32');
     if (constantValue !== 0) {
       buffer.values.fill(constantValue);
@@ -2094,10 +2115,10 @@ export class MathBackendCPU implements KernelBackend {
     for (let i = 0; i < newShape.length; i++) {
       newShape[i] = x.shape[perm[i]];
     }
-    const values = x.dataSync();
+    const values = this.readSync(x.dataId) as TypedArray;
     const result = buffer(newShape, x.dtype);
 
-    const xBuf = x.bufferSync();
+    const xBuf = this.bufferSync(x);
     for (let i = 0; i < x.size; ++i) {
       const loc = xBuf.indexToLoc(i);
 
@@ -2117,10 +2138,10 @@ export class MathBackendCPU implements KernelBackend {
     this.assertNotComplex([x, indices], 'gather');
 
     const newShape: number[] = x.shape.slice();
-    const indicesValues = indices.dataSync();
+    const indicesValues = this.readSync(indices.dataId) as TypedArray;
     newShape[axis] = indicesValues.length;
     const result = buffer(newShape, x.dtype);
-    const xBuf = x.bufferSync();
+    const xBuf = this.bufferSync(x);
 
     for (let i = 0; i < result.size; ++i) {
       const newLoc = result.indexToLoc(i);
@@ -2199,7 +2220,7 @@ export class MathBackendCPU implements KernelBackend {
         (poolType === 'max' ? Number.NEGATIVE_INFINITY :
                               Number.POSITIVE_INFINITY);
 
-    const xValues = x.dataSync();
+    const xValues = this.readSync(x.dataId) as TypedArray;
     const output = ops.buffer(convInfo.outShape, x.dtype);
     const outputVals = output.values;
 
@@ -2267,7 +2288,7 @@ export class MathBackendCPU implements KernelBackend {
     const padTop = convInfo.padInfo.top;
     const padLeft = convInfo.padInfo.left;
 
-    const xBuf = x.bufferSync();
+    const xBuf = this.bufferSync(x);
     for (let b = 0; b < convInfo.batchSize; ++b) {
       for (let d = 0; d < convInfo.inChannels; ++d) {
         for (let yR = 0; yR < convInfo.outHeight; ++yR) {
@@ -2324,8 +2345,8 @@ export class MathBackendCPU implements KernelBackend {
     const padTop = effectiveFilterHeight - 1 - convInfo.padInfo.top;
     const dx = ops.buffer<Rank.R4>(x.shape, 'float32');
 
-    const maxPosBuf = maxPositions.bufferSync();
-    const dyBuf = dy.bufferSync();
+    const maxPosBuf = this.bufferSync(maxPositions);
+    const dyBuf = this.bufferSync(dy);
 
     for (let b = 0; b < convInfo.batchSize; ++b) {
       for (let d = 0; d < convInfo.inChannels; ++d) {
@@ -2385,7 +2406,7 @@ export class MathBackendCPU implements KernelBackend {
 
     const avgMultiplier = 1 / (filterHeight * filterWidth);
 
-    const dyBuf = dy.bufferSync();
+    const dyBuf = this.bufferSync(dy);
 
     for (let b = 0; b < convInfo.batchSize; ++b) {
       for (let d = 0; d < convInfo.inChannels; ++d) {
@@ -2440,7 +2461,7 @@ export class MathBackendCPU implements KernelBackend {
     this.assertNotComplex(x, 'resizeBilinear');
 
     const [batch, oldHeight, oldWidth, numChannels] = x.shape;
-    const xValues = x.dataSync();
+    const xValues = this.readSync(x.dataId) as TypedArray;
     const result = new Float32Array(
         util.sizeFromShape([batch, newHeight, newWidth, numChannels]));
 
@@ -2527,7 +2548,7 @@ export class MathBackendCPU implements KernelBackend {
     // tslint:disable-next-line:max-line-length
     // https://github.com/tensorflow/tensorflow/blob/3039375c86a5bbc9610c7725dcaa95d635f87ba2/tensorflow/core/kernels/resize_bilinear_op.cc#L275
 
-    const dyValues = dy.dataSync();
+    const dyValues = this.readSync(dy.dataId) as TypedArray;
     let offset = 0;
     for (let b = 0; b < batch; b++) {
       const bOffset = b * x.strides[0];
@@ -2581,7 +2602,7 @@ export class MathBackendCPU implements KernelBackend {
     this.assertNotComplex(x, 'resizeNearestNeighbor');
 
     const [batch, oldHeight, oldWidth, numChannels] = x.shape;
-    const xValues = x.dataSync();
+    const xValues = this.readSync(x.dataId) as TypedArray;
     const output = new Float32Array(batch * newHeight * newWidth * numChannels);
 
     const effectiveInputSize: [number, number] = [
@@ -2637,7 +2658,7 @@ export class MathBackendCPU implements KernelBackend {
     const [, yHeight, yWidth] = dy.shape;
 
     const output = new Float32Array(batch * xHeight * xWidth * depth);
-    const dyValues = dy.dataSync();
+    const dyValues = this.readSync(dy.dataId) as TypedArray;
 
     // In the backwards pass, we want to find the pixels that were generated
     // for each pixel in the input image the forward pass
@@ -2732,11 +2753,13 @@ export class MathBackendCPU implements KernelBackend {
       offset?: Tensor4D|Tensor1D): Tensor4D {
     this.assertNotComplex([x, mean, variance, scale, offset], 'batchNorm');
 
-    const xVals = x.dataSync();
-    const mVals = mean.dataSync();
-    const varVals = variance.dataSync();
-    const sVals = scale ? scale.dataSync() : new Float32Array([1]);
-    const offVals = offset ? offset.dataSync() : new Float32Array([0]);
+    const xVals = this.readSync(x.dataId) as TypedArray;
+    const mVals = this.readSync(mean.dataId) as TypedArray;
+    const varVals = this.readSync(variance.dataId) as TypedArray;
+    const sVals = scale ? this.readSync(scale.dataId) as TypedArray :
+                          new Float32Array([1]);
+    const offVals = offset ? this.readSync(offset.dataId) as TypedArray :
+                             new Float32Array([0]);
     const outVals = new Float32Array(xVals.length);
 
     const offValsLength = offVals.length;
@@ -2775,7 +2798,7 @@ export class MathBackendCPU implements KernelBackend {
 
     const channels = x.shape[3];
     const maxD = channels - 1;
-    const xValues = x.dataSync();
+    const xValues = this.readSync(x.dataId) as TypedArray;
     const size = x.size;
     const result = new Float32Array(size);
 
@@ -2809,9 +2832,9 @@ export class MathBackendCPU implements KernelBackend {
       beta: number): Tensor4D {
     this.assertNotComplex(dy, 'LRNGrad');
     const channels = dy.shape[3];
-    const dyValues = dy.dataSync();
-    const inputImageValues = inputImage.dataSync();
-    const outputImageValues = outputImage.dataSync();
+    const dyValues = this.readSync(dy.dataId) as TypedArray;
+    const inputImageValues = this.readSync(inputImage.dataId) as TypedArray;
+    const outputImageValues = this.readSync(outputImage.dataId) as TypedArray;
     const result = new Float32Array(dy.size);
     const size = dy.size;
 
@@ -2850,8 +2873,8 @@ export class MathBackendCPU implements KernelBackend {
     const batchSize = probabilities.shape[0];
     const numEvents = probabilities.shape[1];
     const res = ops.zeros<Rank.R2>([batchSize, numSamples], 'int32');
-    const resVals = res.dataSync();
-    const probVals = probabilities.dataSync();
+    const resVals = this.readSync(res.dataId) as TypedArray;
+    const probVals = this.readSync(probabilities.dataId) as TypedArray;
 
     for (let b = 0; b < batchSize; ++b) {
       const offset = b * numEvents;
@@ -2888,7 +2911,7 @@ export class MathBackendCPU implements KernelBackend {
 
     const res = new Float32Array(indices.size * depth);
     res.fill(offValue);
-    const indicesVal = indices.dataSync();
+    const indicesVal = this.readSync(indices.dataId) as TypedArray;
 
     for (let event = 0; event < indices.size; ++event) {
       if (indicesVal[event] >= 0 && indicesVal[event] < depth) {
@@ -2903,8 +2926,8 @@ export class MathBackendCPU implements KernelBackend {
       iouThreshold: number, scoreThreshold: number): Tensor1D {
     this.assertNotComplex(boxes, 'nonMaxSuppression');
 
-    const boxesVals = boxes.dataSync();
-    const scoresVals = scores.dataSync();
+    const boxesVals = this.readSync(boxes.dataId) as TypedArray;
+    const scoresVals = this.readSync(scores.dataId) as TypedArray;
     return nonMaxSuppressionImpl(
         boxesVals, scoresVals, maxOutputSize, iouThreshold, scoreThreshold);
   }
@@ -2936,7 +2959,8 @@ export class MathBackendCPU implements KernelBackend {
       const i = imag.slice([b, 0], [1, innerDim]);
       const input = ops.complex(r, i);
       // Run FFT by batch element.
-      const res = this.fftImpl(input, inverse).dataSync() as Float32Array;
+      const res =
+          this.readSync(this.fftImpl(input, inverse).dataId) as Float32Array;
       for (let d = 0; d < innerDim; d++) {
         const c = complex_util.getComplexWithIndex(res, d);
         realResult.values[b * innerDim + d] = c.real;
@@ -2962,7 +2986,7 @@ export class MathBackendCPU implements KernelBackend {
       }
       return result;
     } else {
-      const data = x.dataSync();
+      const data = this.readSync(x.dataId) as TypedArray;
       const rawOutput =
           this.fourierTransformByMatmul(data, n, inverse) as Float32Array;
       const output = complex_util.splitRealAndImagArrays(rawOutput);
@@ -2979,7 +3003,7 @@ export class MathBackendCPU implements KernelBackend {
     if (size === 1) {
       return input;
     }
-    const data = input.dataSync() as Float32Array;
+    const data = this.readSync(input.dataId) as TypedArray as Float32Array;
     const half = size / 2;
     const evenComplex = complex_util.complexWithEvenIndex(data);
     let evenTensor = ops.complex(evenComplex.real, evenComplex.imag).as1D();
@@ -3045,7 +3069,7 @@ export class MathBackendCPU implements KernelBackend {
     const outputWidth = inputWidth * blockSize;
     const outputDepth = inputDepth / (blockSize * blockSize);
 
-    const xValues = x.dataSync();
+    const xValues = this.readSync(x.dataId) as TypedArray;
     const result =
         new Float32Array(batchSize * outputHeight * outputWidth * outputDepth);
 
@@ -3077,8 +3101,8 @@ export class MathBackendCPU implements KernelBackend {
     const newShape =
         broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
     const result = ops.buffer(newShape, dtype);
-    const aVals = a.dataSync();
-    const bVals = b.dataSync();
+    const aVals = this.readSync(a.dataId) as TypedArray;
+    const bVals = this.readSync(b.dataId) as TypedArray;
     const aBroadcastDims = broadcast_util.getBroadcastDims(a.shape, newShape);
     const bBroadcastDims = broadcast_util.getBroadcastDims(b.shape, newShape);
 
@@ -3088,8 +3112,8 @@ export class MathBackendCPU implements KernelBackend {
         resVals[i] = op(aVals[i % aVals.length], bVals[i % bVals.length]);
       }
     } else {
-      const aBuf = a.bufferSync();
-      const bBuf = b.bufferSync();
+      const aBuf = this.bufferSync(a);
+      const bBuf = this.bufferSync(b);
       for (let i = 0; i < resVals.length; ++i) {
         const loc = result.indexToLoc(i);
 
@@ -3117,8 +3141,8 @@ export class MathBackendCPU implements KernelBackend {
     const realResult = ops.buffer(newShape, 'float32');
     const imagResult = ops.buffer(newShape, 'float32');
 
-    const aVals = a.dataSync();
-    const bVals = b.dataSync();
+    const aVals = this.readSync(a.dataId) as TypedArray;
+    const bVals = this.readSync(b.dataId) as TypedArray;
     const aBroadcastDims = broadcast_util.getBroadcastDims(a.shape, newShape);
     const bBroadcastDims = broadcast_util.getBroadcastDims(b.shape, newShape);
 
@@ -3138,8 +3162,10 @@ export class MathBackendCPU implements KernelBackend {
         imagVals[i] = result.imag;
       }
     } else {
-      const aRealBuf = this.data.get(a.dataId).complexTensors.real.bufferSync();
-      const bRealBuf = this.data.get(b.dataId).complexTensors.real.bufferSync();
+      const aRealBuf =
+          this.bufferSync(this.data.get(a.dataId).complexTensors.real);
+      const bRealBuf =
+          this.bufferSync(this.data.get(b.dataId).complexTensors.real);
       for (let i = 0; i < realVals.length; i++) {
         const loc = realResult.indexToLoc(i);
 
@@ -3191,9 +3217,9 @@ export class MathBackendCPU implements KernelBackend {
     const output = ops.buffer(
         [numBoxes, cropHeight, cropWidth, numChannels], images.dtype);
 
-    const boxVals = boxes.dataSync();
-    const boxIndVals = boxIndex.dataSync();
-    const imageVals = images.dataSync();
+    const boxVals = this.readSync(boxes.dataId) as TypedArray;
+    const boxIndVals = this.readSync(boxIndex.dataId) as TypedArray;
+    const imageVals = this.readSync(images.dataId) as TypedArray;
 
     const inStride = images.strides;   // to calculate flat indexes into image
     const outStride = output.strides;  // to calculate flat indexes into output
@@ -3336,8 +3362,8 @@ export class MathBackendCPU implements KernelBackend {
     }
 
     const buffer = new TensorBuffer([numSlices, sliceSize], x.dtype);
-    const indicesData = indices.dataSync();
-    const xData = x.dataSync();
+    const indicesData = this.readSync(indices.dataId) as TypedArray;
+    const xData = this.readSync(x.dataId) as TypedArray;
 
     for (let i = 0; i < numSlices; i++) {
       const index = [];
@@ -3402,15 +3428,16 @@ export class MathBackendCPU implements KernelBackend {
       strides: number[], defaultValue: Scalar,
       sumDupeIndices: boolean): Tensor<R> {
     const flattenShape = [outputSize / sliceSize, sliceSize];
-    const indicesData = indices.dataSync();
-    const updatesData = updates.dataSync();
+
+    const indicesData = this.readSync(indices.dataId) as TypedArray;
+    const updatesData = this.readSync(updates.dataId) as TypedArray;
 
     if (outputSize === 0) {
       return tensor([], shape, updates.dtype);
     }
 
     const buffer = new TensorBuffer(flattenShape, updates.dtype as 'float32');
-    buffer.values.fill(defaultValue.dataSync()[0]);
+    buffer.values.fill((this.readSync(defaultValue.dataId) as TypedArray)[0]);
 
     for (let i = 0; i < numUpdates; i++) {
       const index = [];

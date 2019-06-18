@@ -15,12 +15,8 @@
  * =============================================================================
  */
 
-import * as gpgpu_util from './backends/webgl/gpgpu_util';
-import * as webgl_util from './backends/webgl/webgl_util';
+import {ALL_ENVS, describeWithFlags, TestEnv} from '@tensorflow/tfjs-core/dist/jasmine_util';
 
-export {MathBackendWebGL, WebGLMemoryInfo, WebGLTimingInfo} from './backends/webgl/backend_webgl';
-export {setWebGLContext} from './backends/webgl/canvas_util';
-export {GPGPUContext} from './backends/webgl/gpgpu_context';
-export {GPGPUProgram} from './backends/webgl/gpgpu_math';
-// WebGL specific utils.
-export {gpgpu_util, webgl_util};
+export function describeWebGPU(name: string, tests: (env: TestEnv) => void) {
+  describeWithFlags('webgpu ' + name, ALL_ENVS, tests);
+}

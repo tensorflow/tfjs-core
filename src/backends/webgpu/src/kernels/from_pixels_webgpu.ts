@@ -15,34 +15,44 @@
  * =============================================================================
  */
 
-import {computeDispatch} from '../webgpu_util';
+import {computeDispatch, flatDispatchLayout} from '../webgpu_util';
+
 import {WebGPUProgram} from './webgpu_program';
 
-export const RELU = 'return max(a, 0.0);';
-
-export const SIGMOID = `return 1.0 / (1.0 + exp(-1.0 * a));`;
-
-export class UnaryOpProgram implements WebGPUProgram {
+export class FromPixelsProgram implements WebGPUProgram {
   outputShape: number[];
   userCode: string;
+  variableNames = ['A'];
   dispatchLayout: {x: number[]};
   dispatch: [number, number, number];
-  variableNames = ['A'];
 
-  constructor(outputShape: number[], op: string) {
+  constructor(outputShape: number[]) {
+    const [height, width, ] = outputShape;
     this.outputShape = outputShape;
-    this.dispatchLayout = {x: this.outputShape.map((d, i) => i)};
+    this.dispatchLayout = flatDispatchLayout(this.outputShape);
     this.dispatch = computeDispatch(this.dispatchLayout, this.outputShape);
 
     this.userCode = `
-      float unaryOperation(float a) {
-        ${op}
-      }
-
       void main() {
-        uint index = gl_GlobalInvocationID.x;
-        float a = getAAtOutCoords();
-        setOutput(index, unaryOperation(a));
+        ivec3 coords = getOutputCoords();
+        int texR = coords[0];
+        int texC = coords[1];
+        int depth = coords[2];
+        vec2 uv = (vec2(texC, texR) + halfCR) / vec2(${width}.0, ${height}.0);
+
+        vec4 values = texelFetch(A, uv);
+        float value;
+        if (depth == 0) {
+          value = values.r;
+        } else if (depth == 1) {
+          value = values.g;
+        } else if (depth == 2) {
+          value = values.b;
+        } else if (depth == 3) {
+          value = values.a;
+        }
+
+        setOutput(floor(value * 255.0 + 0.5));
       }
     `;
   }

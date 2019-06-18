@@ -1,6 +1,6 @@
 {
   "name": "@tensorflow/tfjs-core",
-  "version": "1.1.2",
+  "version": "1.2.1",
   "description": "Hardware-accelerated JavaScript library for machine intelligence",
   "private": false,
   "main": "dist/index.js",
@@ -23,6 +23,7 @@
     "@types/jasmine": "~2.5.53",
     "@types/node": "~9.6.0",
     "@types/node-fetch": "~2.1.2",
+    "@types/offscreencanvas": "~2019.3.0",
     "browserify": "~16.2.3",
     "clang-format": "~1.2.4",
     "jasmine": "~3.1.0",
@@ -57,6 +58,7 @@
     "build": "./scripts/enumerate-tests.js && tsc",
     "build:bazel": "bazel build //...",
     "build-npm": "./scripts/build-npm.sh",
+    "build-test-snippets": "yarn tsc --project ./scripts/test_snippets/tsconfig.json",
     "link-local": "yalc link",
     "publish-local": "rimraf dist/ && yarn build && rollup -c && yalc push",
     "lint": "tslint -p . -t verbose",
@@ -66,6 +68,8 @@
     "test-bundle-size": "./scripts/test-bundle-size.js",
     "test-node": "rimraf dist/ && tsc && node dist/test_node.js",
     "test-node-ci": "node dist/test_node.js",
+    "test-async-backends": "rimraf dist/ && tsc && node dist/test_async_backends.js",
+    "test-async-backends-ci": "node dist/test_async_backends.js",
     "test-integration": "./scripts/test-integration.js",
     "test-ci": "./scripts/test-ci.sh",
     "test-snippets": "ts-node ./scripts/test_snippets/test_snippets.ts"

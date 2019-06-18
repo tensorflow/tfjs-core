@@ -29,6 +29,7 @@ import './backends/cpu/backend_cpu';
 import './platforms/platform_browser';
 import './platforms/platform_node';
 
+import * as backend_util from './backends/backend_util';
 import * as environment from './environment';
 // Serialization.
 import * as io from './io/io';
@@ -66,6 +67,7 @@ export {customGrad, grad, grads, valueAndGrad, valueAndGrads, variableGrads} fro
 
 export {TimingInfo} from './engine';
 export {ENV, Environment} from './environment';
+export {Platform} from './platforms/platform';
 
 export {version as version_core};
 
@@ -81,6 +83,7 @@ export {
   serialization,
   test_util,
   util,
+  backend_util,
   webgl,
   tensor_util
 };

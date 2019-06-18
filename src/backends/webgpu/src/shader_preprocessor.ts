@@ -15,8 +15,7 @@
  * =============================================================================
  */
 
-import {DataType} from '@tensorflow/tfjs-core';
-import {getBroadcastDims} from '@tensorflow/tfjs-core/dist/ops/broadcast_util';
+import {backend_util, DataType} from '@tensorflow/tfjs-core';
 
 import {symbolicallyComputeStrides} from './shader_util';
 
@@ -34,13 +33,13 @@ export function getCoordsDataType(rank: number): string {
   }
 }
 
-type GLSLDataType = 'float'|'uint';
+type GLSLDataType = 'float'|'int';
 function mapToGlslTypes(type: DataType): GLSLDataType|DataType {
   if (type === 'float32') {
     return 'float';
   }
   if (type === 'int32') {
-    return 'uint';
+    return 'int';
   }
   return type;
 }
@@ -53,7 +52,7 @@ interface ProgramParams {
   userCode: string;
 }
 
-interface InputInfo {
+export interface InputInfo {
   dtype: DataType;
   shape: number[];
   name: string;
@@ -75,7 +74,7 @@ export function makeShader(
   // Output buffer.
   prefixSnippets.push(`
     layout(std430, set = 0, binding = 0) writeonly buffer ssbOut {
-      float result[];
+      ${mapToGlslTypes(outputData.dtype)} result[];
     };
   `);
 
@@ -104,24 +103,38 @@ export function makeShader(
     };
   `);
 
-  const inputSamplingSnippet =
-      inputInfo.map(x => getInputSamplingSnippet(x, outputData.shape))
-          .join('\n');
+  const [getOutputCoords, dispatchLayoutRank] =
+      generateGetOutputCoords(program.dispatchLayout);
+  const sources = [
+    SHADER_PREFIX, prefixSnippets.join('\n'), SAMPLING_SNIPPETS,
+    getOutputCoords,
+    getSetOutputSnippet(outputData.shape.length, outputData.dtype)
+  ];
 
-  const outputSamplingSnippet =
-      generateGetOutputCoords(program.dispatchLayout, outputData.shape.length) +
-      getSetOutputSnippet(outputData.shape.length);
+  if (dispatchLayoutRank === outputData.shape.length) {
+    // Input sampling snippet is only meaningful when the output isn't getting
+    // implicitly reshaped (like it does in conv2d_matmul).
+    const inputSamplingSnippet =
+        inputInfo.map(x => getInputSamplingSnippet(x, outputData.shape))
+            .join('\n');
+    sources.push(inputSamplingSnippet);
+  }
 
-  const source = [
-    SHADER_PREFIX, prefixSnippets.join('\n'), SET_OUTPUT_SNIPPET,
-    SAMPLING_SNIPPETS, outputSamplingSnippet, inputSamplingSnippet,
-    program.userCode
-  ].join('\n');
+  sources.push(program.userCode);
+  const source = sources.join('\n');
   return source;
 }
 
-const SHADER_PREFIX = `
-  #version 450
+const SHADER_PREFIX = `#version 450
+
+  int idiv(int a, int b, float sign) {
+    int res = a / b;
+    int mod = a % b;
+    if (sign < 0. && mod != 0) {
+      res -= 1;
+    }
+    return res;
+  }
 `;
 
 const SAMPLING_SNIPPETS = `
@@ -143,26 +156,33 @@ const SAMPLING_SNIPPETS = `
   }
 `;
 
-const SET_OUTPUT_SNIPPET = `
-  void setOutput(uint flatIndex, float value) {
-    result[flatIndex] = value;
-  }
-`;
-
-function getSetOutputSnippet(outRank: number): string {
-  if (outRank < 2) {
-    return '';
-  }
-
-  const dims = ['d0', 'd1', 'd2', 'd3'].slice(0, outRank);
-  const type = getCoordsDataType(outRank);
-
-  return `
-    void setOutput(${dims.map(d => `int ${d}`).join(', ')}, float value) {
-      uint flatIndex = getFlatIndex(${type}(${dims.join(', ')}), outShape);
-      setOutput(flatIndex, value);
+function getSetOutputSnippet(outRank: number, outBufferType: DataType): string {
+  let snippet = `void setOutput(uint flatIndex, float value) {
+      result[flatIndex] = ${
+      mapToGlslTypes(outBufferType) === 'int' ? 'int(value)' : 'value'};
     }
-  `;
+    void setOutput(uint flatIndex, int value) {
+      result[flatIndex] = ${
+      mapToGlslTypes(outBufferType) === 'float' ? 'float(value)' : 'value'};
+    }`;
+
+  if (outRank >= 2) {
+    const dims = ['d0', 'd1', 'd2', 'd3'].slice(0, outRank);
+    const type = getCoordsDataType(outRank);
+
+    snippet += `
+      void setOutput(${dims.map(d => `int ${d}`).join(', ')}, float value) {
+        uint flatIndex = getFlatIndex(${type}(${dims.join(', ')}), outShape);
+        setOutput(flatIndex, value);
+      }
+      void setOutput(${dims.map(d => `int ${d}`).join(', ')}, int value) {
+        uint flatIndex = getFlatIndex(${type}(${dims.join(', ')}), outShape);
+        setOutput(flatIndex, value);
+      }
+    `;
+  }
+
+  return snippet;
 }
 
 function getInputSamplingSnippet(
@@ -185,6 +205,14 @@ function getSamplerFromInInfo(inInfo: InputInfo): string {
   const dims = ['d0', 'd1', 'd2', 'd3'].slice(0, rank);
   const inputs = dims.map(d => `int ${d}`).join(', ');
 
+  if (rank < 1) {
+    return `
+      float ${funcName}() {
+        return ${texName}[0];
+      }
+    `;
+  }
+
   return `
     float ${funcName}(${inputs}) {
       return ${texName}[getFlatIndex(${type}(${dims.join(',')}),
@@ -204,14 +232,20 @@ function getSamplerAtOutputCoords(
   const outRank = outShape.length;
   const type = getCoordsDataType(outRank);
 
-  const broadcastDims = getBroadcastDims(inInfo.shape, outShape);
+  const broadcastDims = backend_util.getBroadcastDims(inInfo.shape, outShape);
   const rankDiff = outRank - inRank;
 
   let coordsSnippet = '';
 
-  if (inRank > 0) {
+  if (inRank === 0) {
+    return `
+      float ${funcName}() {
+        return get${texFuncSnippet}();
+      }
+    `;
+  } else {
     if (outRank < 2 && broadcastDims.length >= 1) {
-      coordsSnippet = 'coords = 0.;';
+      coordsSnippet = 'coords = 0;';
     } else {
       coordsSnippet =
           broadcastDims.map(d => `coords[${d + rankDiff}] = 0;`).join('\n');
@@ -222,13 +256,13 @@ function getSamplerAtOutputCoords(
   if (outRank < 2 && inRank > 0) {
     unpackedCoordsSnippet = 'coords';
   } else {
-    if (inRank > 1) {
+    if (outRank > 1) {
       const coordsType = getCoordsDataType(inRank);
       const coordsValues =
           inInfo.shape.map((s, i) => `coords[${i + rankDiff}]`).join(', ');
       unpackedCoordsSnippet = `${coordsType}(${coordsValues})`;
     } else {
-      unpackedCoordsSnippet = `coords[${rankDiff}]`;
+      unpackedCoordsSnippet = 'coords';
     }
   }
 
@@ -247,12 +281,13 @@ function getSamplerAtOutputCoords(
  * dispatch geometry to reduce arithmetic.
  */
 function generateGetOutputCoords(
-    dispatchLayout: {x: number[], y?: number[], z?: number[]},
-    rank: number): string {
+    dispatchLayout: {x: number[], y?: number[], z?: number[]}):
+    [string, number] {
   const {x, y = [], z = []} = dispatchLayout;
-  const dtype = getCoordsDataType(rank);
   let gatherDimensionsStr = '';
   const dims = [x, y, z];
+
+  let rank = 0;
 
   for (let i = 0; i < dims.length; i++) {
     const arr = dims[i];
@@ -261,11 +296,13 @@ function generateGetOutputCoords(
       continue;
     }
 
+    rank += arr.length;
+
     if (arr.length === 1) {
       gatherDimensionsStr += `uint d${arr[0]} = gl_GlobalInvocationID[${i}];`;
     } else {
       const strides = symbolicallyComputeStrides(arr, 'outShape');
-      gatherDimensionsStr += `uint index${i} = 
+      gatherDimensionsStr += `uint index${i} =
         gl_GlobalInvocationID[${i}];`;
       for (let j = 0; j < strides.length; j++) {
         gatherDimensionsStr += `uint d${arr[j]} = index${i} / ${strides[j]};`;
@@ -285,9 +322,11 @@ function generateGetOutputCoords(
     dimensions.push(`d${i}`);
   }
 
-  return `${dtype} getOutputCoords() {
+  const dtype = getCoordsDataType(rank);
+  const snippet = `${dtype} getOutputCoords() {
     ${gatherDimensionsStr}
 
     return ${dtype}(${dimensions.join(',')});
   }`;
+  return [snippet, rank];
 }
