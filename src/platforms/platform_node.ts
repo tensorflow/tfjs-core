@@ -25,6 +25,7 @@ export const getNodeFetch = {
 };
 
 export let systemFetch: (url: string, init?: RequestInit) => Promise<Response>;
+
 export class PlatformNode implements Platform {
   private textEncoder: TextEncoder;
   private textDecoder: TextDecoder;
@@ -32,7 +33,7 @@ export class PlatformNode implements Platform {
   constructor() {
     // tslint:disable-next-line: no-require-imports
     const util = require('util');
-    // Both the encoder and the decoder use UTF-8 encoding by default.
+    // The built-in encoder and the decoder use UTF-8 encoding.
     this.textEncoder = new util.TextEncoder();
     this.textDecoder = new util.TextDecoder();
   }

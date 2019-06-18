@@ -22,7 +22,7 @@ export class PlatformBrowser implements Platform {
   private textDecoder: TextDecoder;
 
   constructor() {
-    // Both the encoder and the decoder use UTF-8 encoding by default.
+    // The built-in encoder and the decoder use UTF-8 encoding.
     this.textEncoder = new TextEncoder();
     this.textDecoder = new TextDecoder();
   }
