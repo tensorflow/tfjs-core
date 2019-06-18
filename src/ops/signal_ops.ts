@@ -24,7 +24,6 @@ import {slice} from './slice';
 import {rfft} from './spectral_ops';
 import {fill, tensor1d, tensor2d} from './tensor_ops';
 
-
 /**
  * Generate a Hann window.
  *
@@ -115,7 +114,8 @@ function frame_(
  */
 function stft_(
     signal: Tensor1D, frameLength: number, frameStep: number,
-    fftLength?: number, windowFn: (length: number) => Tensor1D = hannWindow): Tensor[] {
+    fftLength?: number,
+    windowFn: (length: number) => Tensor1D = hannWindow): Tensor[] {
   if (fftLength == null) {
     fftLength = frameLength;
   }
