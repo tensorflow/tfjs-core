@@ -511,15 +511,17 @@ export class MathBackendWebGL implements KernelBackend {
           {size: number};
       tmpTarget.size = sizeFromShape(shape);
       this.texData.get(tmpTarget.dataId).isPacked = true;
-      this.texData.get(tmpTarget.dataId).texShape = denseTexShape;
+      this.texData.get(tmpTarget.dataId).texShape =
+          denseTexShape.map(
+              d => d * 2) as [number, number];  // since it's packed, we have to
+                                                // x2 so we don't create a
+                                                // texture that's half size
 
       let program;
       if (isPacked) {
-        program = new DecodeMatrixPackedProgram(
-            shapeAs3D, [denseTexShape[1], denseTexShape[0]]);
+        program = new DecodeMatrixPackedProgram(shapeAs3D, denseTexShape);
       } else {
-        program = new DecodeMatrixProgram(
-            shapeAs3D, [denseTexShape[1], denseTexShape[0]]);
+        program = new DecodeMatrixProgram(shapeAs3D, denseTexShape);
       }
 
       this.compileAndRun(
@@ -2475,7 +2477,8 @@ export class MathBackendWebGL implements KernelBackend {
     }
 
     if (!ENV.getBool('WEBGL_LAZILY_UNPACK') &&
-        this.texData.get(output.dataId).isPacked && !program.isPackShader) {
+        this.texData.get(output.dataId).isPacked && !program.isPackShader &&
+        !program.isDecodeShader) {
       return this.unpackTensor(output as {} as Tensor) as {} as K;
     }
     return output;
@@ -2553,9 +2556,11 @@ export class MathBackendWebGL implements KernelBackend {
       start = performance.now();
     }
 
-    const texShape =
-        webgl_util.getTextureShapeFromLogicalShape(shape, isPacked);
-    texData.texShape = texShape;
+    let texShape = texData.texShape;
+    if (texShape == null) {
+      texShape = webgl_util.getTextureShapeFromLogicalShape(shape, isPacked);
+      texData.texShape = texShape;
+    }
 
     if (values != null) {
       const shapeAs3D = webgl_util.getShapeAs3D(shape);

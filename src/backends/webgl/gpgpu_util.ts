@@ -391,17 +391,13 @@ export function downloadPackedMatrixFromBuffer(
 export function downloadMatrixFromPackedOutputTexture(
     gl: WebGLRenderingContext, debug: boolean, physicalRows: number,
     physicalCols: number): Float32Array {
-  const [w, h] = tex_util.getPackedMatrixTextureShapeWidthHeight(
-      physicalRows, physicalCols);
-
-  const packedRGBA =
-      new Float32Array(tex_util.getPackedRGBAArraySizeFromMatrixShape(
-          physicalRows, physicalCols));
+  const packedRGBA = new Float32Array(physicalRows * physicalCols * 4);
   webgl_util.callAndCheck(
       gl, debug,
-      () => gl.readPixels(0, 0, w, h, gl.RGBA, gl.FLOAT, packedRGBA));
+      () => gl.readPixels(
+          0, 0, physicalCols, physicalRows, gl.RGBA, gl.FLOAT, packedRGBA));
 
-  console.log('PACKED RGBA', w, h, physicalRows, physicalCols);
+  console.log('PACKED RGBA', physicalRows, physicalCols);
   console.log(packedRGBA);
 
   return packedRGBA;
