@@ -418,7 +418,7 @@ function cast_<T extends Tensor>(x: T|TensorLike, dtype: DataType): T {
  */
 /** @doc {heading: 'Tensors', subheading: 'Slicing and Joining'} */
 function tile_<T extends Tensor>(x: T|TensorLike, reps: number[]): T {
-  const $x = convertToTensor(x, 'x', 'tile');
+  const $x = convertToTensor(x, 'x', 'tile', null);
 
   util.assert(
       $x.rank === reps.length,

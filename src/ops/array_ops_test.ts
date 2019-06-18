@@ -1946,6 +1946,23 @@ describeWithFlags('tile', ALL_ENVS, () => {
         await t2.data(), [1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8]);
   });
 
+  it('1d string tensor', async () => {
+    const a = tf.tensor(['a', 'b', 'c']);
+    const res = tf.tile(a, [2]);
+    expect(res.shape).toEqual([6]);
+    expectArraysEqual(await res.data(), ['a', 'b', 'c', 'a', 'b', 'c']);
+  });
+
+  it('2d string tensor', async () => {
+    const a = tf.tensor([['a', 'b'], ['c', 'd']]);
+    const res = tf.tile(a, [2, 3]);
+    expect(res.shape).toEqual([4, 6]);
+    expectArraysEqual(await res.data(), [
+      'a', 'b', 'a', 'b', 'a', 'b', 'c', 'd', 'c', 'd', 'c', 'd',
+      'a', 'b', 'a', 'b', 'a', 'b', 'c', 'd', 'c', 'd', 'c', 'd'
+    ]);
+  });
+
   it('propagates NaNs', async () => {
     const t = tf.tensor1d([1, 2, NaN]);
 
