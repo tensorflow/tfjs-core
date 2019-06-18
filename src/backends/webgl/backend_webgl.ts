@@ -498,20 +498,25 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   private getValuesFromTexture(dataId: DataId): Float32Array {
-    const {shape, dtype, texture, texShape, isPacked} =
-        this.texData.get(dataId);
+    const {shape, dtype, texShape} = this.texData.get(dataId);
     const size = util.sizeFromShape(shape);
     if (ENV.getBool('WEBGL_DOWNLOAD_FLOAT_ENABLED')) {
       const shapeAs3D =
           webgl_util.getShapeAs3D(shape) as [number, number, number];
+      const lengthOfData = util.sizeFromShape(shape);
+      const texelsNeeded = Math.ceil(lengthOfData / 4);
+      const denseTexShape = util.sizeToSquarishShape(texelsNeeded);
       const tmpTarget =
           this.makeTensorHandle(shape, 'float32') as TensorHandle &
           {size: number};
       tmpTarget.size = sizeFromShape(shape);
       this.texData.get(tmpTarget.dataId).isPacked = true;
+      this.texData.get(tmpTarget.dataId).texShape = denseTexShape;
 
-      const program = new DecodeMatrixProgram(shapeAs3D, texShape);
-      this.compileAndRun(program, [{shape, dtype, dataId}], tmpTarget);
+      const program = new DecodeMatrixProgram(
+          shapeAs3D, [denseTexShape[1], denseTexShape[0]]);
+      this.compileAndRun(
+          program, [{shape: shapeAs3D, dtype, dataId}], tmpTarget);
 
       const tmpData = this.texData.get(tmpTarget.dataId);
       const batch = webgl_util.getBatchDim(shape);

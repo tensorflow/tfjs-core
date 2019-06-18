@@ -49,11 +49,8 @@ export class DecodeMatrixProgram implements GPGPUProgram {
           int flatIndex = index + i;
           ivec3 rc = outCoordsFromFlatIndex(flatIndex);
           result[i] = getA(rc.x, rc.y, rc.z);
-
-          result[i] = float(flatIndex);
         }
 
-        result = vec4(200.);
         ${glsl.output} = result;
       }
     `;
