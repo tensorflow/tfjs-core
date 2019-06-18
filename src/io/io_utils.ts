@@ -63,12 +63,15 @@ export async function encodeWeights(
     }
     const spec: WeightsManifestEntry = {name, shape: t.shape, dtype: t.dtype};
     if (t.dtype === 'string') {
-      const utf8bytes =
-          ENV.platform.encodeUTF8((await t.data()).join(STRING_DELIMITER));
-      dataPromises.push(Promise.resolve(utf8bytes));
-      const stringSpec = spec as StringWeightsManifestEntry;
-      stringSpec.byteLength = utf8bytes.length;
-      stringSpec.delimiter = STRING_DELIMITER;
+      const utf8bytes = new Promise<TypedArray>(async resolve => {
+        const stringSpec = spec as StringWeightsManifestEntry;
+        const data = await t.data();
+        const bytes = ENV.platform.encodeUTF8(data.join(STRING_DELIMITER));
+        stringSpec.byteLength = bytes.length;
+        stringSpec.delimiter = STRING_DELIMITER;
+        resolve(bytes);
+      });
+      dataPromises.push(utf8bytes);
     } else {
       dataPromises.push(t.data());
     }
