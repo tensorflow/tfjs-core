@@ -406,7 +406,7 @@ export class MathBackendWebGL implements KernelBackend {
       return new Promise<TypedArray>(resolve => subscribers.push(resolve));
     }
     const texData = this.texData.get(dataId);
-    const {values, isPacked, shape, slice, dtype, complexTensors} = texData;
+    const {values, shape, slice, dtype, complexTensors} = texData;
 
     if (slice != null) {
       const program = new UnaryOpProgram(shape, unary_op.CLONE);
@@ -430,36 +430,13 @@ export class MathBackendWebGL implements KernelBackend {
     let buffer = null;
     if (dtype !== 'complex64' && ENV.get('WEBGL_BUFFER_SUPPORTED')) {
       // Possibly copy the texture into a buffer before inserting a fence.
-      const shapeAs3D =
-          webgl_util.getShapeAs3D(shape) as [number, number, number];
       const lengthOfData = util.sizeFromShape(shape);
       const texelsNeeded = Math.ceil(lengthOfData / 4);
       const denseTexShape = util.sizeToSquarishShape(texelsNeeded);
-
-      const tmpTarget =
-          this.makeTensorHandle(shape, 'float32') as TensorHandle &
-          {size: number};
-      tmpTarget.size = sizeFromShape(shape);
-      this.texData.get(tmpTarget.dataId).isPacked = true;
-      this.texData.get(tmpTarget.dataId).dtype = dtype;
-      this.texData.get(tmpTarget.dataId).texShape =
-          denseTexShape.map(
-              d => d * 2) as [number, number];  // since it's packed, we have
-                                                // to x2 so we don't create a
-                                                // texture that's half size
-      let program;
-      if (isPacked) {
-        program = new DecodeMatrixPackedProgram(shapeAs3D, denseTexShape);
-      } else {
-        program = new DecodeMatrixProgram(shapeAs3D, denseTexShape);
-      }
-
-      this.compileAndRun(
-          program, [{shape: shapeAs3D, dtype, dataId}], tmpTarget);
-
-      const tmpData = this.texData.get(tmpTarget.dataId);
+      const tmpTarget = this.decode(dataId);
 
       dataId = tmpTarget.dataId;
+      const tmpData = this.texData.get(tmpTarget.dataId);
 
       buffer = this.gpgpu.createBufferFromTexture(
           tmpData.texture, denseTexShape[0], denseTexShape[1]);
@@ -503,34 +480,14 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   private getValuesFromTexture(dataId: DataId): Float32Array {
-    const {shape, dtype, isPacked} = this.texData.get(dataId);
+    const {shape, dtype} = this.texData.get(dataId);
     const size = util.sizeFromShape(shape);
     if (ENV.getBool('WEBGL_DOWNLOAD_FLOAT_ENABLED')) {
-      const shapeAs3D =
-          webgl_util.getShapeAs3D(shape) as [number, number, number];
       const lengthOfData = util.sizeFromShape(shape);
       const texelsNeeded = Math.ceil(lengthOfData / 4);
       const denseTexShape = util.sizeToSquarishShape(texelsNeeded);
-      const tmpTarget =
-          this.makeTensorHandle(shape, 'float32') as TensorHandle &
-          {size: number};
-      tmpTarget.size = sizeFromShape(shape);
-      this.texData.get(tmpTarget.dataId).isPacked = true;
-      this.texData.get(tmpTarget.dataId).texShape =
-          denseTexShape.map(
-              d => d * 2) as [number, number];  // since it's packed, we have to
-                                                // x2 so we don't create a
-                                                // texture that's half size
 
-      let program;
-      if (isPacked) {
-        program = new DecodeMatrixPackedProgram(shapeAs3D, denseTexShape);
-      } else {
-        program = new DecodeMatrixProgram(shapeAs3D, denseTexShape);
-      }
-
-      this.compileAndRun(
-          program, [{shape: shapeAs3D, dtype, dataId}], tmpTarget);
+      const tmpTarget = this.decode(dataId);
 
       const tmpData = this.texData.get(tmpTarget.dataId);
       const vals = this.gpgpu
@@ -2354,6 +2311,36 @@ export class MathBackendWebGL implements KernelBackend {
         inputAs3D.shape as [number, number, number]);
     return this.compileAndRun<Tensor<R>>(program, [inputAs3D])
         .reshape(afterShape);
+  }
+
+  private decode(dataId: DataId) {
+    const texData = this.texData.get(dataId);
+    const {isPacked, shape, dtype} = texData;
+    const shapeAs3D =
+        webgl_util.getShapeAs3D(shape) as [number, number, number];
+    const lengthOfData = util.sizeFromShape(shape);
+    const texelsNeeded = Math.ceil(lengthOfData / 4);
+    const denseTexShape = util.sizeToSquarishShape(texelsNeeded);
+
+    const tmpTarget = this.makeTensorHandle(shape, 'float32') as TensorHandle &
+        {size: number};
+    tmpTarget.size = sizeFromShape(shape);
+    this.texData.get(tmpTarget.dataId).isPacked = true;
+    this.texData.get(tmpTarget.dataId).dtype = dtype;
+    this.texData.get(tmpTarget.dataId).texShape =
+        denseTexShape.map(
+            d => d * 2) as [number, number];  // since it's packed, we have
+                                              // to x2 so we don't create a
+                                              // texture that's half size
+    let program;
+    if (isPacked) {
+      program = new DecodeMatrixPackedProgram(shapeAs3D, denseTexShape);
+    } else {
+      program = new DecodeMatrixProgram(shapeAs3D, denseTexShape);
+    }
+
+    this.compileAndRun(program, [{shape: shapeAs3D, dtype, dataId}], tmpTarget);
+    return tmpTarget;
   }
 
   public compileAndRun<
