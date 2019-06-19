@@ -1510,7 +1510,6 @@ describeWithFlags('fromPixels', BROWSER_ENVS, () => {
     expect(data.length).toEqual(10*10*3);
   });
 
-
   it('throws when passed a primitive number', () => {
     const msg = /pixels passed to tf.browser.fromPixels\(\) must be either/;
     // tslint:disable-next-line:no-any
