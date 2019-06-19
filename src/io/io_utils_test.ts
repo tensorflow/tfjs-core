@@ -329,12 +329,14 @@ describe('encodeWeights', () => {
     ]);
   });
 
-  it('String tensors', async () => {
+  // tslint:disable-next-line: ban
+  fit('String tensors', async () => {
     const tensors: NamedTensorMap = {
       x1: tensor2d([['a', 'bc'], ['def', 'g']], [2, 2], 'string'),
       x2: scalar('', 'string'),                       // Empty string.
       x3: tensor1d(['здраво', 'поздрав'], 'string'),  // Cyrillic.
-      x4: scalar('hello', 'string')                   // Single string.
+      x4: scalar('正常'),                             // Chinese.
+      x5: scalar('hello')                             // Single string.
     };
     const dataAndSpecs = await tf.io.encodeWeights(tensors);
     const data = dataAndSpecs.data;
@@ -342,9 +344,12 @@ describe('encodeWeights', () => {
     const x1ByteLength = 7 + 3;       // 7 ascii chars + 3 delimiters.
     const x2ByteLength = 0;           // No chars.
     const x3ByteLength = 13 * 2 + 1;  // 13 cyrillic letters + 1 delimiter.
-    const x4ByteLength = 5;           // 5 ascii chars.
+    const x4ByteLength = 6;           // 2 chinese letters.
+    const x5ByteLength = 5;           // 5 ascii chars.
     expect(data.byteLength)
-        .toEqual(x1ByteLength + x2ByteLength + x3ByteLength + x4ByteLength);
+        .toEqual(
+            x1ByteLength + x2ByteLength + x3ByteLength + x4ByteLength +
+            x5ByteLength);
     let delim = specs[0].delimiter;
     expect(new Uint8Array(data, 0, x1ByteLength))
         .toEqual(tf.ENV.platform.encodeUTF8(`a${delim}bc${delim}def${delim}g`));
@@ -355,6 +360,11 @@ describe('encodeWeights', () => {
     delim = specs[3].delimiter;
     expect(new Uint8Array(
                data, x1ByteLength + x2ByteLength + x3ByteLength, x4ByteLength))
+        .toEqual(tf.ENV.platform.encodeUTF8('正常'));
+    delim = specs[4].delimiter;
+    expect(new Uint8Array(
+               data, x1ByteLength + x2ByteLength + x3ByteLength + x4ByteLength,
+               x5ByteLength))
         .toEqual(tf.ENV.platform.encodeUTF8('hello'));
     expect(specs).toEqual([
       {
@@ -383,6 +393,13 @@ describe('encodeWeights', () => {
         dtype: 'string',
         shape: [],
         byteLength: x4ByteLength,
+        delimiter: STRING_DELIMITER,
+      },
+      {
+        name: 'x5',
+        dtype: 'string',
+        shape: [],
+        byteLength: x5ByteLength,
         delimiter: STRING_DELIMITER,
       }
     ]);
