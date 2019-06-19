@@ -441,6 +441,7 @@ export class MathBackendWebGL implements KernelBackend {
           {size: number};
       tmpTarget.size = sizeFromShape(shape);
       this.texData.get(tmpTarget.dataId).isPacked = true;
+      this.texData.get(tmpTarget.dataId).dtype = dtype;
       this.texData.get(tmpTarget.dataId).texShape =
           denseTexShape.map(
               d => d * 2) as [number, number];  // since it's packed, we have
