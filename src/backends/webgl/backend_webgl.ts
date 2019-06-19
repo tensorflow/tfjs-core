@@ -406,16 +406,7 @@ export class MathBackendWebGL implements KernelBackend {
       return new Promise<TypedArray>(resolve => subscribers.push(resolve));
     }
     const texData = this.texData.get(dataId);
-    const {
-      texture,
-      values,
-      texShape,
-      isPacked,
-      shape,
-      slice,
-      dtype,
-      complexTensors
-    } = texData;
+    const {values, isPacked, shape, slice, dtype, complexTensors} = texData;
 
     if (slice != null) {
       const program = new UnaryOpProgram(shape, unary_op.CLONE);
@@ -438,42 +429,43 @@ export class MathBackendWebGL implements KernelBackend {
 
     let buffer = null;
     if (dtype !== 'complex64') {
-      const shapeAs3D =
-          webgl_util.getShapeAs3D(shape) as [number, number, number];
-      const lengthOfData = util.sizeFromShape(shape);
-      const texelsNeeded = Math.ceil(lengthOfData / 4);
-      const denseTexShape = util.sizeToSquarishShape(texelsNeeded);
-
-      const tmpTarget =
-          this.makeTensorHandle(shape, 'float32') as TensorHandle &
-          {size: number};
-      tmpTarget.size = sizeFromShape(shape);
-      this.texData.get(tmpTarget.dataId).isPacked = true;
-      this.texData.get(tmpTarget.dataId).texShape =
-          denseTexShape.map(
-              d => d * 2) as [number, number];  // since it's packed, we have to
-                                                // x2 so we don't create a
-                                                // texture that's half size
-      let program;
-      if (isPacked) {
-        program = new DecodeMatrixPackedProgram(shapeAs3D, denseTexShape);
-      } else {
-        program = new DecodeMatrixProgram(shapeAs3D, denseTexShape);
-      }
-
-      this.compileAndRun(
-          program, [{shape: shapeAs3D, dtype, dataId}], tmpTarget);
-
-      const tmpData = this.texData.get(tmpTarget.dataId);
-
-      dataId = tmpTarget.dataId;
-      this.pendingRead.set(dataId, []);
-
       // Possibly copy the texture into a buffer before inserting a fence.
       if (ENV.get('WEBGL_BUFFER_SUPPORTED')) {
+        const shapeAs3D =
+            webgl_util.getShapeAs3D(shape) as [number, number, number];
+        const lengthOfData = util.sizeFromShape(shape);
+        const texelsNeeded = Math.ceil(lengthOfData / 4);
+        const denseTexShape = util.sizeToSquarishShape(texelsNeeded);
+
+        const tmpTarget =
+            this.makeTensorHandle(shape, 'float32') as TensorHandle &
+            {size: number};
+        tmpTarget.size = sizeFromShape(shape);
+        this.texData.get(tmpTarget.dataId).isPacked = true;
+        this.texData.get(tmpTarget.dataId).texShape =
+            denseTexShape.map(
+                d => d * 2) as [number, number];  // since it's packed, we have
+                                                  // to x2 so we don't create a
+                                                  // texture that's half size
+        let program;
+        if (isPacked) {
+          program = new DecodeMatrixPackedProgram(shapeAs3D, denseTexShape);
+        } else {
+          program = new DecodeMatrixProgram(shapeAs3D, denseTexShape);
+        }
+
+        this.compileAndRun(
+            program, [{shape: shapeAs3D, dtype, dataId}], tmpTarget);
+
+        const tmpData = this.texData.get(tmpTarget.dataId);
+
+        dataId = tmpTarget.dataId;
+
         buffer = this.gpgpu.createBufferFromTexture(
             tmpData.texture, denseTexShape[0], denseTexShape[1]);
       }
+
+      this.pendingRead.set(dataId, []);
       // Create a fence and wait for it to resolve.
       await this.gpgpu.createAndWaitForFence();
     }
@@ -546,25 +538,24 @@ export class MathBackendWebGL implements KernelBackend {
           .subarray(0, size);
     }
 
-    // const tmpTarget = this.makeTensorHandle(shape, 'float32') as TensorHandle
-    // &
-    //     {size: number};
-    // tmpTarget.size = sizeFromShape(shape);
-    // this.texData.get(tmpTarget.dataId).usage = TextureUsage.DOWNLOAD;
-    // const output = tidy(() => {
-    //   const program = new EncodeFloatProgram(shape);
-    //   return this.compileAndRun(
-    //       program, [{shape, dtype, dataId}], tmpTarget, null);
-    // });
-    // const tmpData = this.texData.get(output.dataId);
-    // const vals =
-    //     this.gpgpu
-    //         .downloadByteEncodedFloatMatrixFromOutputTexture(
-    //             tmpData.texture, tmpData.texShape[0], tmpData.texShape[1])
-    //         .subarray(0, size);
-    // this.disposeData(tmpTarget.dataId);
+    const tmpTarget = this.makeTensorHandle(shape, 'float32') as TensorHandle &
+        {size: number};
+    tmpTarget.size = sizeFromShape(shape);
+    this.texData.get(tmpTarget.dataId).usage = TextureUsage.DOWNLOAD;
+    const output = tidy(() => {
+      const program = new EncodeFloatProgram(shape);
+      return this.compileAndRun(
+          program, [{shape, dtype, dataId}], tmpTarget, null);
+    });
+    const tmpData = this.texData.get(output.dataId);
+    const vals =
+        this.gpgpu
+            .downloadByteEncodedFloatMatrixFromOutputTexture(
+                tmpData.texture, tmpData.texShape[0], tmpData.texShape[1])
+            .subarray(0, size);
+    this.disposeData(tmpTarget.dataId);
 
-    // return vals;
+    return vals;
   }
 
   async time(f: () => void): Promise<WebGLTimingInfo> {

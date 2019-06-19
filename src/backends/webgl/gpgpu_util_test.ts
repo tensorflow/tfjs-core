@@ -175,8 +175,7 @@ describeWithFlags(
               6, 7, 0, 0, 8, 9, 0, 0, 10, 11, 0, 0
             ]));
 
-        const result =
-            gpgpu.downloadMatrixFromPackedTexture(tex, 1, 1, 12, 4, 6);
+        const result = gpgpu.downloadMatrixFromPackedTexture(tex, 1, 12);
 
         expectArraysClose(result, mat.dataSync());
       });
@@ -262,7 +261,7 @@ describeWithFlags(
                ]));
 
            const result = gpgpu.downloadMatrixFromPackedTexture(
-               tex, 2, 20, 3, physicalRows, physicalCols);
+               tex, physicalRows, physicalCols);
            expectArraysClose(result, mat.dataSync());
          });
     });

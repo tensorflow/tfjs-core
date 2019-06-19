@@ -17,7 +17,6 @@
 
 import {ENV} from '../../environment';
 import {PixelData, TypedArray} from '../../types';
-import * as util from '../../util';
 
 import {getGlslDifferences} from './glsl_version';
 import * as tex_util from './tex_util';
@@ -128,7 +127,8 @@ function createAndConfigureTexture(
     gl: WebGLRenderingContext, debug: boolean, width: number, height: number,
     internalFormat: number, textureFormat: number,
     textureType: number): WebGLTexture {
-  console.log('create tex', width, height);
+  console.log(
+      'create tex', width, height, internalFormat, textureFormat, textureType);
   webgl_util.validateTextureSize(width, height);
   const texture = webgl_util.createTexture(gl, debug);
 
