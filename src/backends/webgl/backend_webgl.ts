@@ -2319,9 +2319,9 @@ export class MathBackendWebGL implements KernelBackend {
     this.texData.get(tmpTarget.dataId).dtype = dtype;
     this.texData.get(tmpTarget.dataId).texShape =
         denseTexShape.map(
-            d => d * 2) as [number, number];  // since it's packed, we have
-                                              // to x2 so we don't create a
-                                              // texture that's half size
+            d => d * 2) as [number, number];  // To undo the effect of isPacked
+                                              // being set to true.
+
     let program;
     if (isPacked) {
       program = new DecodeMatrixPackedProgram(shapeAs3D, denseTexShape);
@@ -2338,7 +2338,6 @@ export class MathBackendWebGL implements KernelBackend {
       program: GPGPUProgram, inputs: TensorHandle[], output?: K,
       customSetup?: (gpgpu: GPGPUContext, webGLProgram: WebGLProgram) => void):
       K {
-    // console.log('compileandrun', program.constructor.name);
     if (output == null) {
       if (program.usesPackedTextures) {
         output = this.makePackedTensor(program.outputShape, inputs[0].dtype) as

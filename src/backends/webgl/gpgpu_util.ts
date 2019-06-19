@@ -127,9 +127,6 @@ function createAndConfigureTexture(
     gl: WebGLRenderingContext, debug: boolean, width: number, height: number,
     internalFormat: number, textureFormat: number,
     textureType: number): WebGLTexture {
-  // console.log(
-  //     'create tex', width, height, internalFormat, textureFormat,
-  //     textureType);
   webgl_util.validateTextureSize(width, height);
   const texture = webgl_util.createTexture(gl, debug);
 
