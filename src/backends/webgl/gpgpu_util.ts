@@ -127,8 +127,9 @@ function createAndConfigureTexture(
     gl: WebGLRenderingContext, debug: boolean, width: number, height: number,
     internalFormat: number, textureFormat: number,
     textureType: number): WebGLTexture {
-  console.log(
-      'create tex', width, height, internalFormat, textureFormat, textureType);
+  // console.log(
+  //     'create tex', width, height, internalFormat, textureFormat,
+  //     textureType);
   webgl_util.validateTextureSize(width, height);
   const texture = webgl_util.createTexture(gl, debug);
 
@@ -284,8 +285,6 @@ export function createBufferFromOutputTexture(
   const bytesPerFloat = 4;
   const valuesPerTexel = 4;
   const bufferSizeBytes = bytesPerFloat * valuesPerTexel * rows * columns;
-  console.log('CREATING BUFFER', rows, columns);
-  console.log(bufferSizeBytes);
 
   webgl_util.callAndCheck(
       gl2, debug,
@@ -300,8 +299,6 @@ export function createBufferFromOutputTexture(
 
   webgl_util.callAndCheck(
       gl2, debug, () => gl2.bindBuffer(gl2.PIXEL_PACK_BUFFER, null));
-  console.log('buffer');
-  console.log(buffer);
 
   return buffer;
 }
@@ -316,9 +313,6 @@ export function downloadFloat32MatrixFromBuffer(
   gl2.bindBuffer(gl2.PIXEL_PACK_BUFFER, buffer);
   gl2.getBufferSubData(gl2.PIXEL_PACK_BUFFER, 0, downloadTarget);
   gl2.bindBuffer(gl2.PIXEL_PACK_BUFFER, null);
-
-  console.log('DOWNLOAD PACKED MATRIX FROM BUFFER');
-  console.log(downloadTarget);
 
   return downloadTarget;
 }
@@ -380,14 +374,8 @@ export function downloadPackedMatrixFromBuffer(
   gl2.bindBuffer(gl2.PIXEL_PACK_BUFFER, buffer);
   gl2.getBufferSubData(gl2.PIXEL_PACK_BUFFER, 0, downloadTarget);
   gl2.bindBuffer(gl2.PIXEL_PACK_BUFFER, null);
-  console.log('DOWNLOAD PACKED MATRIX FROM BUFFER');
-  console.log(downloadTarget);
 
   return downloadTarget;
-  // const matrix = new Float32Array(util.sizeFromShape([batch, rows, cols]));
-  // tex_util.decodeMatrixFromPackedRGBA(
-  //     downloadTarget, batch, rows, cols, matrix);
-  // return matrix;
 }
 
 export function downloadMatrixFromPackedOutputTexture(
@@ -399,11 +387,5 @@ export function downloadMatrixFromPackedOutputTexture(
       () => gl.readPixels(
           0, 0, physicalCols, physicalRows, gl.RGBA, gl.FLOAT, packedRGBA));
 
-  console.log('PACKED RGBA', physicalRows, physicalCols);
-  console.log(packedRGBA);
-
   return packedRGBA;
-  // const matrix = new Float32Array(util.sizeFromShape([batch, rows, cols]));
-  // return tex_util.decodeMatrixFromPackedRGBA(
-  //     packedRGBA, batch, rows, cols, matrix);
 }

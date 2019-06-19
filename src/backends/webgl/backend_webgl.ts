@@ -481,7 +481,6 @@ export class MathBackendWebGL implements KernelBackend {
     } else if (buffer == null) {
       vals = this.getValuesFromTexture(dataId);
     } else {
-      console.log('DOWNLOADING FROM BUFFER');
       const size = util.sizeFromShape(shape);
 
       vals = this.gpgpu.downloadFloat32MatrixFromBuffer(buffer, size);
@@ -2360,7 +2359,7 @@ export class MathBackendWebGL implements KernelBackend {
       program: GPGPUProgram, inputs: TensorHandle[], output?: K,
       customSetup?: (gpgpu: GPGPUContext, webGLProgram: WebGLProgram) => void):
       K {
-    console.log('compileandrun', program.constructor.name);
+    // console.log('compileandrun', program.constructor.name);
     if (output == null) {
       if (program.usesPackedTextures) {
         output = this.makePackedTensor(program.outputShape, inputs[0].dtype) as
