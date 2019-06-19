@@ -317,29 +317,6 @@ export function downloadFloat32MatrixFromBuffer(
   return downloadTarget;
 }
 
-export function downloadFloat32MatrixFromOutputTexture(
-    gl: WebGLRenderingContext, debug: boolean, rows: number, columns: number,
-    textureConfig: TextureConfig): Float32Array {
-  const [w, h] =
-      tex_util.getUnpackedMatrixTextureShapeWidthHeight(rows, columns);
-
-  const downloadTarget =
-      new Float32Array(tex_util.getUnpackedArraySizeFromMatrixSize(
-          rows * columns, textureConfig.downloadUnpackNumChannels));
-
-  webgl_util.callAndCheck(
-      gl, debug,
-      () => gl.readPixels(
-          0, 0, w, h, textureConfig.downloadTextureFormat, gl.FLOAT,
-          downloadTarget));
-
-  const matrix = new Float32Array(rows * columns);
-  tex_util.decodeMatrixFromUnpackedArray(
-      downloadTarget as Float32Array, matrix,
-      textureConfig.downloadUnpackNumChannels);
-  return matrix;
-}
-
 export function downloadByteEncodedFloatMatrixFromOutputTexture(
     gl: WebGLRenderingContext, debug: boolean, rows: number, columns: number,
     textureConfig: TextureConfig) {

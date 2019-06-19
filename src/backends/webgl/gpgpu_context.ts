@@ -178,14 +178,6 @@ export class GPGPUContext {
         this.gl, this.debug, () => this.gl.deleteTexture(texture));
   }
 
-  public downloadFloat32MatrixFromOutputTexture(
-      texture: WebGLTexture, rows: number, columns: number): Float32Array {
-    return this.downloadMatrixDriver(
-        texture,
-        () => gpgpu_util.downloadFloat32MatrixFromOutputTexture(
-            this.gl, this.debug, rows, columns, this.textureConfig));
-  }
-
   public downloadByteEncodedFloatMatrixFromOutputTexture(
       texture: WebGLTexture, rows: number, columns: number): Float32Array {
     return this.downloadMatrixDriver(
