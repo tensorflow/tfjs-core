@@ -485,6 +485,7 @@ export class MathBackendWebGL implements KernelBackend {
       const size = util.sizeFromShape(shape);
 
       vals = this.gpgpu.downloadFloat32MatrixFromBuffer(buffer, size);
+      this.disposeData(dataId);
     }
     const dTypeVals = this.convertAndCacheOnCPU(dataId, vals);
 
@@ -531,11 +532,14 @@ export class MathBackendWebGL implements KernelBackend {
           program, [{shape: shapeAs3D, dtype, dataId}], tmpTarget);
 
       const tmpData = this.texData.get(tmpTarget.dataId);
+      const vals = this.gpgpu
+                       .downloadMatrixFromPackedTexture(
+                           tmpData.texture, denseTexShape[0], denseTexShape[1])
+                       .subarray(0, size);
 
-      return this.gpgpu
-          .downloadMatrixFromPackedTexture(
-              tmpData.texture, denseTexShape[0], denseTexShape[1])
-          .subarray(0, size);
+      this.disposeData(tmpTarget.dataId);
+
+      return vals;
     }
 
     const tmpTarget = this.makeTensorHandle(shape, 'float32') as TensorHandle &
