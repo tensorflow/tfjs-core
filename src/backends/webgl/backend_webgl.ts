@@ -430,16 +430,13 @@ export class MathBackendWebGL implements KernelBackend {
     let buffer = null;
     if (dtype !== 'complex64' && ENV.get('WEBGL_BUFFER_SUPPORTED')) {
       // Possibly copy the texture into a buffer before inserting a fence.
-      const lengthOfData = util.sizeFromShape(shape);
-      const texelsNeeded = Math.ceil(lengthOfData / 4);
-      const denseTexShape = util.sizeToSquarishShape(texelsNeeded);
       const tmpTarget = this.decode(dataId);
 
       dataId = tmpTarget.dataId;
       const tmpData = this.texData.get(tmpTarget.dataId);
 
       buffer = this.gpgpu.createBufferFromTexture(
-          tmpData.texture, denseTexShape[0], denseTexShape[1]);
+          tmpData.texture, ...tex_util.getDenseTexShape(shape));
     }
 
     this.pendingRead.set(dataId, []);
@@ -483,16 +480,11 @@ export class MathBackendWebGL implements KernelBackend {
     const {shape, dtype} = this.texData.get(dataId);
     const size = util.sizeFromShape(shape);
     if (ENV.getBool('WEBGL_DOWNLOAD_FLOAT_ENABLED')) {
-      const lengthOfData = util.sizeFromShape(shape);
-      const texelsNeeded = Math.ceil(lengthOfData / 4);
-      const denseTexShape = util.sizeToSquarishShape(texelsNeeded);
-
       const tmpTarget = this.decode(dataId);
-
       const tmpData = this.texData.get(tmpTarget.dataId);
       const vals = this.gpgpu
                        .downloadMatrixFromPackedTexture(
-                           tmpData.texture, denseTexShape[0], denseTexShape[1])
+                           tmpData.texture, ...tex_util.getDenseTexShape(shape))
                        .subarray(0, size);
 
       this.disposeData(tmpTarget.dataId);
@@ -2318,9 +2310,7 @@ export class MathBackendWebGL implements KernelBackend {
     const {isPacked, shape, dtype} = texData;
     const shapeAs3D =
         webgl_util.getShapeAs3D(shape) as [number, number, number];
-    const lengthOfData = util.sizeFromShape(shape);
-    const texelsNeeded = Math.ceil(lengthOfData / 4);
-    const denseTexShape = util.sizeToSquarishShape(texelsNeeded);
+    const denseTexShape = tex_util.getDenseTexShape(shape);
 
     const tmpTarget = this.makeTensorHandle(shape, 'float32') as TensorHandle &
         {size: number};
