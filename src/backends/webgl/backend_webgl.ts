@@ -428,44 +428,45 @@ export class MathBackendWebGL implements KernelBackend {
     }
 
     let buffer = null;
-    if (dtype !== 'complex64') {
+    if (dtype !== 'complex64' && ENV.get('WEBGL_BUFFER_SUPPORTED')) {
       // Possibly copy the texture into a buffer before inserting a fence.
-      if (ENV.get('WEBGL_BUFFER_SUPPORTED')) {
-        const shapeAs3D =
-            webgl_util.getShapeAs3D(shape) as [number, number, number];
-        const lengthOfData = util.sizeFromShape(shape);
-        const texelsNeeded = Math.ceil(lengthOfData / 4);
-        const denseTexShape = util.sizeToSquarishShape(texelsNeeded);
+      const shapeAs3D =
+          webgl_util.getShapeAs3D(shape) as [number, number, number];
+      const lengthOfData = util.sizeFromShape(shape);
+      const texelsNeeded = Math.ceil(lengthOfData / 4);
+      const denseTexShape = util.sizeToSquarishShape(texelsNeeded);
 
-        const tmpTarget =
-            this.makeTensorHandle(shape, 'float32') as TensorHandle &
-            {size: number};
-        tmpTarget.size = sizeFromShape(shape);
-        this.texData.get(tmpTarget.dataId).isPacked = true;
-        this.texData.get(tmpTarget.dataId).texShape =
-            denseTexShape.map(
-                d => d * 2) as [number, number];  // since it's packed, we have
-                                                  // to x2 so we don't create a
-                                                  // texture that's half size
-        let program;
-        if (isPacked) {
-          program = new DecodeMatrixPackedProgram(shapeAs3D, denseTexShape);
-        } else {
-          program = new DecodeMatrixProgram(shapeAs3D, denseTexShape);
-        }
-
-        this.compileAndRun(
-            program, [{shape: shapeAs3D, dtype, dataId}], tmpTarget);
-
-        const tmpData = this.texData.get(tmpTarget.dataId);
-
-        dataId = tmpTarget.dataId;
-
-        buffer = this.gpgpu.createBufferFromTexture(
-            tmpData.texture, denseTexShape[0], denseTexShape[1]);
+      const tmpTarget =
+          this.makeTensorHandle(shape, 'float32') as TensorHandle &
+          {size: number};
+      tmpTarget.size = sizeFromShape(shape);
+      this.texData.get(tmpTarget.dataId).isPacked = true;
+      this.texData.get(tmpTarget.dataId).texShape =
+          denseTexShape.map(
+              d => d * 2) as [number, number];  // since it's packed, we have
+                                                // to x2 so we don't create a
+                                                // texture that's half size
+      let program;
+      if (isPacked) {
+        program = new DecodeMatrixPackedProgram(shapeAs3D, denseTexShape);
+      } else {
+        program = new DecodeMatrixProgram(shapeAs3D, denseTexShape);
       }
 
-      this.pendingRead.set(dataId, []);
+      this.compileAndRun(
+          program, [{shape: shapeAs3D, dtype, dataId}], tmpTarget);
+
+      const tmpData = this.texData.get(tmpTarget.dataId);
+
+      dataId = tmpTarget.dataId;
+
+      buffer = this.gpgpu.createBufferFromTexture(
+          tmpData.texture, denseTexShape[0], denseTexShape[1]);
+    }
+
+    this.pendingRead.set(dataId, []);
+
+    if (dtype !== 'complex64') {
       // Create a fence and wait for it to resolve.
       await this.gpgpu.createAndWaitForFence();
     }
