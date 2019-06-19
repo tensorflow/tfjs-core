@@ -86,6 +86,7 @@ describe('WEBGL_PACK_CLIP', () => {
   });
 });
 
+// TODO: https://github.com/tensorflow/tfjs/issues/1679
 // describe('WEBGL_PACK_DEPTHWISECONV', () => {
 //   beforeEach(() => ENV.reset());
 //   afterAll(() => ENV.reset());
