@@ -329,14 +329,13 @@ describe('encodeWeights', () => {
     ]);
   });
 
-  // tslint:disable-next-line: ban
-  fit('String tensors', async () => {
+  it('String tensors', async () => {
     const tensors: NamedTensorMap = {
-      x1: tensor2d([['a', 'bc'], ['def', 'g']], [2, 2], 'string'),
-      x2: scalar('', 'string'),                       // Empty string.
-      x3: tensor1d(['здраво', 'поздрав'], 'string'),  // Cyrillic.
-      x4: scalar('正常'),                             // Chinese.
-      x5: scalar('hello')                             // Single string.
+      x1: tensor2d([['a', 'bc'], ['def', 'g']], [2, 2]),
+      x2: scalar(''),                       // Empty string.
+      x3: tensor1d(['здраво', 'поздрав']),  // Cyrillic.
+      x4: scalar('正常'),                   // East Asian.
+      x5: scalar('hello')                   // Single string.
     };
     const dataAndSpecs = await tf.io.encodeWeights(tensors);
     const data = dataAndSpecs.data;
