@@ -101,7 +101,8 @@ function frame_(
  * See: https://en.wikipedia.org/wiki/Short-time_Fourier_transform
  *
  * ```js
- * tf.signal.stft([1, 1, 1, 1, 1], 3, 1).print();
+ * const input = tf.tensor1d([1, 1, 1, 1, 1])
+ * tf.signal.stft(input, 3, 1);
  * ```
  * @param signal 1-dimensional real value tensor.
  * @param frameLength The window length of samples.
