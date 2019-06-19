@@ -544,23 +544,6 @@ export class MathBackendWebGL implements KernelBackend {
           .downloadMatrixFromPackedTexture(
               tmpData.texture, denseTexShape[0], denseTexShape[1])
           .subarray(0, size);
-
-      // if (this.texData.get(dataId).isPacked) {
-      //   const batch = webgl_util.getBatchDim(shape);
-      //   let rows = 1, cols = 1;
-      //   if (shape.length) {
-      //     [rows, cols] = webgl_util.getRowsCols(shape);
-      //   }
-      //   return this.gpgpu
-      //       .downloadMatrixFromPackedTexture(
-      //           texture, batch, rows, cols, texShape[0], texShape[1])
-      //       .subarray(0, size);
-      // } else {
-      //   return this.gpgpu
-      //       .downloadFloat32MatrixFromOutputTexture(
-      //           texture, texShape[0], texShape[1])
-      //       .subarray(0, size);
-      // }
     }
 
     // const tmpTarget = this.makeTensorHandle(shape, 'float32') as TensorHandle
