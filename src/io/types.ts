@@ -199,6 +199,9 @@ export declare interface ModelArtifactsInfo {
 /** Model training configuration. */
 export declare interface TrainingConfig {
   // TODO(cais): Tighten the typing once keras spec is available to tfjs-core.
+  // See
+  // tslint:disable-next-line:max-line-length
+  // https://github.com/tensorflow/tfjs-layers/blob/master/src/keras_format/training_config.ts
   /** Optimizer used for the model training. */
   optimizer: {};
 
