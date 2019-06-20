@@ -268,9 +268,10 @@ const FLOAT32_WEBGL_ENVS = {
 };
 
 describeWithFlags('upload tensors as uniforms', FLOAT32_WEBGL_ENVS, () => {
-  const savedUploadUniformValue = tf.ENV.get('WEBGL_SIZE_UPLOAD_UNIFORM');
+  let savedUploadUniformValue: number;
 
   beforeAll(() => {
+    savedUploadUniformValue = tf.ENV.get('WEBGL_SIZE_UPLOAD_UNIFORM') as number;
     tf.ENV.set('WEBGL_SIZE_UPLOAD_UNIFORM', SIZE_UPLOAD_UNIFORM);
   });
 
@@ -316,11 +317,17 @@ describeWithFlags('upload tensors as uniforms', FLOAT32_WEBGL_ENVS, () => {
 });
 
 describeWithFlags('indexing for large tensors', FLOAT32_WEBGL_ENVS, () => {
+  const savedDefaultTimeoutInterval = jasmine.DEFAULT_TIMEOUT_INTERVAL;
+
   beforeAll(() => {
-    jasmine.DEFAULT_TIMEOUT_INTERVAL = 600000;
+    jasmine.DEFAULT_TIMEOUT_INTERVAL = 60000;
   });
 
-  it('properly indexes large tensors', async () => {
+  afterAll(() => {
+    jasmine.DEFAULT_TIMEOUT_INTERVAL = savedDefaultTimeoutInterval;
+  });
+
+  fit('properly indexes large tensors', async () => {
     const range = 3000 * 3000;
     const aData = [];
     for (let i = 0; i < range; i++) {
@@ -328,9 +335,10 @@ describeWithFlags('indexing for large tensors', FLOAT32_WEBGL_ENVS, () => {
     }
 
     const a = tf.tensor1d(aData);
+    const aRelu = a.relu();
 
-    a.relu();
     expectArraysClose(await a.data(), aData);
+    expectArraysClose(await aRelu.data(), aData);
   });
 });
 
