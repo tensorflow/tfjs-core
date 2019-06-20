@@ -197,11 +197,33 @@ export declare interface ModelArtifactsInfo {
 }
 
 /**
+ * Model training configuration.
+ */
+export declare interface TrainingConfig {
+  // TODO(cais): Tighten the typing once keras spec is available to tfjs-core.
+  optimizer: {};
+
+  // TODO(cais): Tighten the typing once keras spec is available to tfjs-core.
+  loss: string|string[]|{[key: string]: string};
+
+  // TODO(cais): Tighten the typing once keras spec is available to tfjs-core.
+  metrics?: string[]|{[key: string]: string};
+
+  // TODO(cais): Tighten the typing once keras spec is available to tfjs-core.
+  weighted_metrics?: string[];
+
+  // TODO(cais): Tighten the typing once keras spec is available to tfjs-core.
+  sample_weight_mode?: string;
+
+  loss_weights?: number[]|{[key: string]: number};
+}
+
+/**
  * The serialized artifacts of a model, including topology and weights.
  *
- * The `modelTopology`, `weightSpecs` and `weightData` fields of this interface
- * are optional, in order to support topology- or weights-only saving and
- * loading.
+ * The `modelTopology`, `trainingConfig`, `weightSpecs` and `weightData` fields
+ * of this interface are optional, in order to support topology- or weights-only
+ * saving and loading.
  *
  * Note this interface is used internally in IOHandlers.  For the file format
  * written to disk as `model.json`, see `ModelJSON`.
@@ -215,6 +237,11 @@ export declare interface ModelArtifacts {
    * encoding of the `GraphDef` protocol buffer.
    */
   modelTopology?: {}|ArrayBuffer;
+
+  /**
+   * Serialized configuration for the model's training.
+   */
+  trainingConfig?: TrainingConfig;
 
   /**
    * Weight specifications.
@@ -270,6 +297,9 @@ export declare interface ModelJSON {
    * encoding of the `GraphDef` protocol buffer.
    */
   modelTopology: {};
+
+  /** Model training configuration. */
+  trainingConfig?: TrainingConfig;
 
   /**
    * Weights manifest.
