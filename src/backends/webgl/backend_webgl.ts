@@ -2305,7 +2305,7 @@ export class MathBackendWebGL implements KernelBackend {
         .reshape(afterShape);
   }
 
-  private decode(dataId: DataId) {
+  private decode(dataId: DataId): TensorHandle {
     const texData = this.texData.get(dataId);
     const {isPacked, shape, dtype} = texData;
     const shapeAs3D =
@@ -2314,7 +2314,6 @@ export class MathBackendWebGL implements KernelBackend {
 
     const tmpTarget = this.makeTensorHandle(shape, 'float32') as TensorHandle &
         {size: number};
-    tmpTarget.size = sizeFromShape(shape);
     this.texData.get(tmpTarget.dataId).isPacked = true;
     this.texData.get(tmpTarget.dataId).dtype = dtype;
     this.texData.get(tmpTarget.dataId).texShape =
