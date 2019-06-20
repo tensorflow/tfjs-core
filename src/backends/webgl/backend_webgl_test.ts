@@ -320,7 +320,7 @@ describeWithFlags('indexing for large tensors', FLOAT32_WEBGL_ENVS, () => {
     jasmine.DEFAULT_TIMEOUT_INTERVAL = 600000;
   });
 
-  fit('properly indexes large tensors', async () => {
+  it('properly indexes large tensors', async () => {
     const range = 3000 * 3000;
     const aData = [];
     for (let i = 0; i < range; i++) {
