@@ -196,17 +196,18 @@ export declare interface ModelArtifactsInfo {
   weightDataBytes?: number;
 }
 
-/**
- * Model training configuration.
- */
+/** Model training configuration. */
 export declare interface TrainingConfig {
   // TODO(cais): Tighten the typing once keras spec is available to tfjs-core.
+  /** Optimizer used for the model training. */
   optimizer: {};
 
   // TODO(cais): Tighten the typing once keras spec is available to tfjs-core.
+  /** Loss function(s) for the model's output(s). */
   loss: string|string[]|{[key: string]: string};
 
   // TODO(cais): Tighten the typing once keras spec is available to tfjs-core.
+  /** Metric function(s) for the model's output(s). */
   metrics?: string[]|{[key: string]: string};
 
   // TODO(cais): Tighten the typing once keras spec is available to tfjs-core.
