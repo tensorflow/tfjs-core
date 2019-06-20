@@ -1495,7 +1495,8 @@ describeWithFlags('fromPixels', BROWSER_ENVS, () => {
   });
   it('fromPixels for HTMLImageElement', async () => {
     const img = new Image(10, 10);
-    img.src = '';
+    img.src = 'data:image/gif;base64'
+        + ',R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==';
     const res = tf.browser.fromPixels(img);
     expect(res.shape).toEqual([10, 10, 3]);
     const data = await res.data();
@@ -1503,13 +1504,14 @@ describeWithFlags('fromPixels', BROWSER_ENVS, () => {
   });
   it('fromPixels for HTMLVideolement', async () => {
     const video = document.createElement('video');
-    video.width = 10;
-    video.height = 10;
-    video.src = '';
+    video.width = 1;
+    video.height = 1;
+    video.src = 'data:image/gif;base64'
+        + ',R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==';
     const res = tf.browser.fromPixels(video);
-    expect(res.shape).toEqual([10, 10, 3]);
+    expect(res.shape).toEqual([1, 1, 3]);
     const data = await res.data();
-    expect(data.length).toEqual(10*10*3);
+    expect(data.length).toEqual(1*1*3);
   });
 
   it('throws when passed a primitive number', () => {
