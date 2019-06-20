@@ -128,7 +128,7 @@ describeWithFlags('frame', ALL_ENVS, () => {
 describeWithFlags('stft', ALL_ENVS, () => {
   it('3 length with hann window', async () => {
     const input = tf.tensor1d([1, 1, 1, 1, 1]);
-    const outputs = tf.signal.sftf(input, 3, 1);
+    const outputs = tf.signal.stft(input, 3, 1);
     expect(outputs.length).toEqual(3);
     for (const output of outputs) {
       expectArraysClose(await output.data(), [1.0, 0.0, -0.5, -0.86602545]);
@@ -137,7 +137,7 @@ describeWithFlags('stft', ALL_ENVS, () => {
 
   it('3 length, 2 step with hann window', async () => {
     const input = tf.tensor1d([1, 1, 1, 1, 1]);
-    const outputs = tf.signal.sftf(input, 3, 2);
+    const outputs = tf.signal.stft(input, 3, 2);
     expect(outputs.length).toEqual(2);
     for (const output of outputs) {
       expectArraysClose(await output.data(), [1.0, 0.0, -0.5, -0.86602545]);
@@ -146,7 +146,7 @@ describeWithFlags('stft', ALL_ENVS, () => {
 
   it('3 fftLength, 5 frameLength, 2 step', async () => {
     const input = tf.tensor1d([1, 1, 1, 1, 1, 1]);
-    const outputs = tf.signal.sftf(input, 5, 1, 3);
+    const outputs = tf.signal.stft(input, 5, 1, 3);
     expect(outputs.length).toEqual(2);
     for (const output of outputs) {
       expectArraysClose(await output.data(), [1.5, 0.0, -0.749999, 0.433]);
@@ -155,7 +155,7 @@ describeWithFlags('stft', ALL_ENVS, () => {
 
   it('5 length with hann window', async () => {
     const input = tf.tensor1d([1, 1, 1, 1, 1]);
-    const outputs = tf.signal.sftf(input, 5, 1);
+    const outputs = tf.signal.stft(input, 5, 1);
     expect(outputs.length).toEqual(1);
     for (const output of outputs) {
       expectArraysClose(
@@ -166,7 +166,7 @@ describeWithFlags('stft', ALL_ENVS, () => {
 
   it('3 length with hamming window', async () => {
     const input = tf.tensor1d([1, 1, 1, 1, 1]);
-    const outputs = tf.signal.sftf(input, 3, 1, 3, tf.signal.hammingWindow);
+    const outputs = tf.signal.stft(input, 3, 1, 3, tf.signal.hammingWindow);
     expect(outputs.length).toEqual(3);
     for (const output of outputs) {
       expectArraysClose(await output.data(), [1.16, 0.0, -0.46, -0.79674333]);
@@ -175,7 +175,7 @@ describeWithFlags('stft', ALL_ENVS, () => {
 
   it('3 length, 2 step with hamming window', async () => {
     const input = tf.tensor1d([1, 1, 1, 1, 1]);
-    const outputs = tf.signal.sftf(input, 3, 2, 3, tf.signal.hammingWindow);
+    const outputs = tf.signal.stft(input, 3, 2, 3, tf.signal.hammingWindow);
     expect(outputs.length).toEqual(2);
     for (const output of outputs) {
       expectArraysClose(await output.data(), [1.16, 0.0, -0.46, -0.79674333]);
@@ -184,7 +184,7 @@ describeWithFlags('stft', ALL_ENVS, () => {
 
   it('3 fftLength, 5 frameLength, 2 step with hamming window', async () => {
     const input = tf.tensor1d([1, 1, 1, 1, 1, 1]);
-    const outputs = tf.signal.sftf(input, 5, 1, 3, tf.signal.hammingWindow);
+    const outputs = tf.signal.stft(input, 5, 1, 3, tf.signal.hammingWindow);
     expect(outputs.length).toEqual(2);
     for (const output of outputs) {
       expectArraysClose(await output.data(), [1.619999, 0.0, -0.69, 0.39837]);
@@ -194,7 +194,7 @@ describeWithFlags('stft', ALL_ENVS, () => {
   it('3 length without window function', async () => {
     const input = tf.tensor1d([1, 1, 1, 1, 1]);
     const ident = (length: number) => tf.ones([length]).as1D();
-    const outputs = tf.signal.sftf(input, 3, 1, 3, ident);
+    const outputs = tf.signal.stft(input, 3, 1, 3, ident);
     expect(outputs.length).toEqual(3);
     for (const output of outputs) {
       expectArraysClose(await output.data(), [3.0, 0.0, 0.0, 0.0]);
@@ -204,7 +204,7 @@ describeWithFlags('stft', ALL_ENVS, () => {
   it('3 length, 2 step without window function', async () => {
     const input = tf.tensor1d([1, 1, 1, 1, 1]);
     const ident = (length: number) => tf.ones([length]).as1D();
-    const outputs = tf.signal.sftf(input, 3, 2, 3, ident);
+    const outputs = tf.signal.stft(input, 3, 2, 3, ident);
     expect(outputs.length).toEqual(2);
     for (const output of outputs) {
       expectArraysClose(await output.data(), [3.0, 0.0, 0.0, 0.0]);

@@ -142,4 +142,4 @@ function cosineWindow(windowLength: number, a: number, b: number): Tensor1D {
 export const hannWindow = op({hannWindow_});
 export const hammingWindow = op({hammingWindow_});
 export const frame = op({frame_});
-export const sftf = op({stft_});
+export const stft = op({stft_});
