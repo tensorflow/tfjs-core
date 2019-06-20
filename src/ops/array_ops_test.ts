@@ -1495,15 +1495,17 @@ describeWithFlags('fromPixels', BROWSER_ENVS, () => {
   });
   it('fromPixels for HTMLImageElement', async () => {
     const img = new Image(10, 10);
+    img.src = '';
     const res = tf.browser.fromPixels(img);
     expect(res.shape).toEqual([10, 10, 3]);
     const data = await res.data();
     expect(data.length).toEqual(10*10*3);
   });
-  it('fromPixels for HTMLImageElement', async () => {
+  it('fromPixels for HTMLVideolement', async () => {
     const video = document.createElement('video');
     video.width = 10;
     video.height = 10;
+    video.src = '';
     const res = tf.browser.fromPixels(video);
     expect(res.shape).toEqual([10, 10, 3]);
     const data = await res.data();
