@@ -324,6 +324,7 @@ describeWithFlags('indexing for large tensors', FLOAT32_WEBGL_ENVS, () => {
     jasmine.DEFAULT_TIMEOUT_INTERVAL = 30000;
     savedTensorLikeCheckShapeConsistency =
         tf.ENV.get('TENSORLIKE_CHECK_SHAPE_CONSISTENCY') as boolean;
+    tf.ENV.set('TENSORLIKE_CHECK_SHAPE_CONSISTENCY', false);
   });
 
   afterAll(() => {
