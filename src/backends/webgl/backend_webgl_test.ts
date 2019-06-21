@@ -318,20 +318,26 @@ describeWithFlags('upload tensors as uniforms', FLOAT32_WEBGL_ENVS, () => {
 
 describeWithFlags('indexing for large tensors', FLOAT32_WEBGL_ENVS, () => {
   const savedDefaultTimeoutInterval = jasmine.DEFAULT_TIMEOUT_INTERVAL;
+  let savedTensorLikeCheckShapeConsistency: boolean;
 
   beforeAll(() => {
-    jasmine.DEFAULT_TIMEOUT_INTERVAL = 60000;
+    jasmine.DEFAULT_TIMEOUT_INTERVAL = 30000;
+    savedTensorLikeCheckShapeConsistency =
+        tf.ENV.get('TENSORLIKE_CHECK_SHAPE_CONSISTENCY') as boolean;
   });
 
   afterAll(() => {
     jasmine.DEFAULT_TIMEOUT_INTERVAL = savedDefaultTimeoutInterval;
+    tf.ENV.set(
+        'TENSORLIKE_CHECK_SHAPE_CONSISTENCY',
+        savedTensorLikeCheckShapeConsistency);
   });
 
   it('properly indexes large tensors', async () => {
     const range = 3000 * 3000;
-    const aData = [];
+    const aData = new Float32Array(range);
     for (let i = 0; i < range; i++) {
-      aData.push(i / range);
+      aData[i] = i / range;
     }
 
     const a = tf.tensor1d(aData);
