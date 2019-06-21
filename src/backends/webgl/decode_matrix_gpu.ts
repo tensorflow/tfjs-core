@@ -21,7 +21,6 @@ import * as shader_util from './shader_compiler_util';
 
 export class DecodeMatrixProgram implements GPGPUProgram {
   variableNames = ['A'];
-  isDecodeShader = true;
   userCode: string;
   outputShape: [number, number, number];
 

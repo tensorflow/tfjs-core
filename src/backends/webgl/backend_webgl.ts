@@ -2292,7 +2292,8 @@ export class MathBackendWebGL implements KernelBackend {
   private packTensor<T extends Tensor>(input: T|TensorHandle): T {
     const program = new PackProgram(input.shape);
     return this.compileAndRun(
-        program, [input], this.makePackedTensor(input.shape, input.dtype));
+        program, [input], this.makePackedTensor(input.shape, input.dtype), null,
+        true);
   }
 
   private packedReshape<R extends Rank>(input: Tensor, afterShape: ShapeMap[R]):
@@ -2334,15 +2335,16 @@ export class MathBackendWebGL implements KernelBackend {
       program = new DecodeMatrixProgram(shapeAs3D, denseTexShape);
     }
 
-    this.compileAndRun(program, [{shape: shapeAs3D, dtype, dataId}], tmpTarget);
+    this.compileAndRun(
+        program, [{shape: shapeAs3D, dtype, dataId}], tmpTarget, null, true);
     return tmpTarget;
   }
 
   public compileAndRun<
       K extends {dtype: DataType, size: number, dataId: {}, shape: number[]}>(
       program: GPGPUProgram, inputs: TensorHandle[], output?: K,
-      customSetup?: (gpgpu: GPGPUContext, webGLProgram: WebGLProgram) => void):
-      K {
+      customSetup?: (gpgpu: GPGPUContext, webGLProgram: WebGLProgram) => void,
+      preventEagerUnpackingOfOutput = false): K {
     if (output == null) {
       if (program.usesPackedTextures) {
         output = this.makePackedTensor(program.outputShape, inputs[0].dtype) as
@@ -2449,8 +2451,8 @@ export class MathBackendWebGL implements KernelBackend {
     }
 
     if (!ENV.getBool('WEBGL_LAZILY_UNPACK') &&
-        this.texData.get(output.dataId).isPacked && !program.isPackShader &&
-        !program.isDecodeShader) {
+        this.texData.get(output.dataId).isPacked &&
+        preventEagerUnpackingOfOutput === false) {
       return this.unpackTensor(output as {} as Tensor) as {} as K;
     }
     return output;

@@ -30,10 +30,6 @@ export interface GPGPUProgram {
   outputShape: number[];
   userCode: string;
   usesPackedTextures?: boolean;
-  isDecodeShader?: boolean;
-  isPackShader?: boolean;  // This property is used to single out the packing
-                           // shader so its output does not get eagerly unpacked
-                           // by backend_webgl.compileAndRun.
 }
 
 export interface GPGPUBinary {
