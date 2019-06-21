@@ -45,7 +45,7 @@ export class DecodeMatrixProgram implements GPGPUProgram {
 
         vec4 result = vec4(0.);
 
-        for(int i=0; i<4; i++) {
+        for (int i=0; i<4; i++) {
           int flatIndex = index + i;
           ivec3 rc = outCoordsFromFlatIndex(flatIndex);
           result[i] = getA(rc.x, rc.y, rc.z);
