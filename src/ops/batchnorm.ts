@@ -276,7 +276,10 @@ function batchNorm_<R extends Rank>(
   }
 
   const der = (dy: Tensor, saved: Tensor[]) => {
-    const [$x, $mean, $variance, $scale] = saved;
+    type Saved = [
+      Tensor<R>, Tensor<R>| Tensor1D, Tensor<R>| Tensor1D, Tensor<R>| Tensor1D
+    ];
+    const [$x, $mean, $variance, $scale] = saved as Saved;
     const scaleValue = $scale == null ? scalar(1) : $scale;
     const reductionAxes = getReductionAxes($mean.shape, x4D.shape);
     const tileShape: number[] = [];
@@ -300,11 +303,9 @@ function batchNorm_<R extends Rank>(
             .mul(tile(
                 oneOverSqrtVariance.as4D(1, 1, 1, $mean.shape[0]), tileShape))
             .mul(scaleValue)
-            .reshape($x.shape as ShapeMap[R]);
+            .reshape($x.shape);
       } else {
-        return dy.mul(oneOverSqrtVariance)
-            .mul(scaleValue)
-            .reshape($x.shape as ShapeMap[R]);
+        return dy.mul(oneOverSqrtVariance).mul(scaleValue).reshape($x.shape);
       }
     };
     const derMean = () => {
@@ -312,17 +313,14 @@ function batchNorm_<R extends Rank>(
       if ($mean.rank === 1) {
         meanDer = meanDer.sum(reductionAxes);
       }
-      return meanDer.reshape($mean.shape as ShapeMap[R | 'R1']) as Tensor<R>|
-          Tensor1D;
+      return meanDer.reshape($mean.shape as ShapeMap[R]);
     };
     const derVariance = () => {
       let varianceDer = minusHalfRCube.mul(xMinusMean).mul(dyTimesScaleValue);
       if ($mean.rank === 1) {
         varianceDer = varianceDer.sum(reductionAxes);
       }
-      return varianceDer.reshape($mean.shape as ShapeMap[R | 'R1']) as
-          Tensor<R>|
-          Tensor1D;
+      return varianceDer.reshape($mean.shape as ShapeMap[R]);
     };
     const derScale = () => {
       const xMinusMean2TimesRsqrt = xMinusMean.mul(oneOverSqrtVariance);
@@ -330,16 +328,14 @@ function batchNorm_<R extends Rank>(
       if ($mean.rank === 1) {
         scaleDer = scaleDer.sum(reductionAxes);
       }
-      return scaleDer.reshape($mean.shape as ShapeMap[R | 'R1']) as Tensor<R>|
-          Tensor1D;
+      return scaleDer.reshape($mean.shape as ShapeMap[R]);
     };
     const derOffset = () => {
       let offsetDer = dy;
       if ($mean.rank === 1) {
         offsetDer = offsetDer.sum(reductionAxes);
       }
-      return offsetDer.reshape($mean.shape as ShapeMap[R | 'R1']) as Tensor<R>|
-          Tensor1D;
+      return offsetDer.reshape($mean.shape as ShapeMap[R]);
     };
     return {
       $x: derX,
