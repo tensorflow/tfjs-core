@@ -141,7 +141,8 @@ export function decodeWeights(
       const stringSpec = spec as StringWeightsManifestEntry;
       const bytes =
           new Uint8Array(buffer.slice(offset, offset + stringSpec.byteLength));
-      values = ENV.platform.decodeUTF8(bytes).split(stringSpec.delimiter);
+      // TODO(smilkov): Use encoding from metadata.
+      values = ENV.platform.decode(bytes, 'utf-8').split(stringSpec.delimiter);
       offset += stringSpec.byteLength;
     } else {
       const dtypeFactor = DTYPE_VALUE_SIZE_MAP[dtype];

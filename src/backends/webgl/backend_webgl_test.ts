@@ -18,6 +18,8 @@
 import * as tf from '../../index';
 import {describeWithFlags} from '../../jasmine_util';
 import {expectArraysClose, expectArraysEqual} from '../../test_util';
+import {decodeStrings, encodeStrings} from '../../util';
+
 import {MathBackendWebGL, WebGLMemoryInfo} from './backend_webgl';
 import {WEBGL_ENVS} from './backend_webgl_test_registry';
 
@@ -99,14 +101,6 @@ describeWithFlags('lazy packing and unpacking', WEBGL_ENVS, () => {
      });
 });
 
-function encode(data: string[]): Uint8Array[] {
-  return data.map(s => tf.ENV.platform.encodeUTF8(s));
-}
-
-function decode(data: Uint8Array[]): string[] {
-  return data.map(d => tf.ENV.platform.decodeUTF8(d));
-}
-
 describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
   let prevBackend: string;
 
@@ -134,9 +128,10 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
     tf.setBackend('test-storage');
 
     const t = tf.Tensor.make([3], {}, 'string');
-    backend.write(t.dataId, encode(['c', 'a', 'b']));
+    backend.write(t.dataId, encodeStrings(['c', 'a', 'b']));
     expectArraysEqual(
-        decode(backend.readSync(t.dataId) as Uint8Array[]), ['c', 'a', 'b']);
+        decodeStrings(backend.readSync(t.dataId) as Uint8Array[]),
+        ['c', 'a', 'b']);
   });
 
   it('register string tensor with values', () => {
@@ -146,7 +141,8 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
 
     const t = tf.Tensor.make([3], {values: ['a', 'b', 'c']}, 'string');
     expectArraysEqual(
-        decode(backend.readSync(t.dataId) as Uint8Array[]), ['a', 'b', 'c']);
+        decodeStrings(backend.readSync(t.dataId) as Uint8Array[]),
+        ['a', 'b', 'c']);
   });
 
   it('register string tensor with values and overwrite', () => {
@@ -155,9 +151,10 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
     tf.setBackend('test-storage');
 
     const t = tf.Tensor.make([3], {values: ['a', 'b', 'c']}, 'string');
-    backend.write(t.dataId, encode(['c', 'a', 'b']));
+    backend.write(t.dataId, encodeStrings(['c', 'a', 'b']));
     expectArraysEqual(
-        decode(backend.readSync(t.dataId) as Uint8Array[]), ['c', 'a', 'b']);
+        decodeStrings(backend.readSync(t.dataId) as Uint8Array[]),
+        ['c', 'a', 'b']);
   });
 
   it('register string tensor with values and wrong shape throws error', () => {

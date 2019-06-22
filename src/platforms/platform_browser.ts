@@ -19,19 +19,18 @@ import {Platform} from './platform';
 
 export class PlatformBrowser implements Platform {
   private textEncoder: TextEncoder;
-  private textDecoder: TextDecoder;
 
   constructor() {
-    // The built-in encoder and the decoder use UTF-8 encoding.
+    // According to the spec, the built-in encoder can do only UTF-8 encoding.
+    // https://developer.mozilla.org/en-US/docs/Web/API/TextEncoder/TextEncoder
     this.textEncoder = new TextEncoder();
-    this.textDecoder = new TextDecoder();
   }
 
   encodeUTF8(text: string): Uint8Array {
     return this.textEncoder.encode(text);
   }
-  decodeUTF8(bytes: Uint8Array): string {
-    return this.textDecoder.decode(bytes);
+  decode(bytes: Uint8Array, encoding: string): string {
+    return new TextDecoder(encoding).decode(bytes);
   }
   fetch(path: string, init?: RequestInit): Promise<Response> {
     return fetch(path, init);

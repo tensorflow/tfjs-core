@@ -31,6 +31,6 @@ export interface Platform {
 
   /** UTF-8 encode the provided string into an array of bytes. */
   encodeUTF8(text: string): Uint8Array;
-  /** UTF-8 decode the provided bytes into a string. */
-  decodeUTF8(bytes: Uint8Array): string;
+  /** Decode the provided bytes into a string using the provided encoding. */
+  decode(bytes: Uint8Array, encoding: string): string;
 }

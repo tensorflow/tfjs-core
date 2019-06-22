@@ -692,3 +692,21 @@ export function fetch(
     path: string, requestInits?: RequestInit): Promise<Response> {
   return ENV.platform.fetch(path, requestInits);
 }
+
+export function encodeString(s: string): Uint8Array {
+  return ENV.platform.encodeUTF8(s);
+}
+
+export function encodeStrings(
+    strings: string[]): Uint8Array[] {
+  return strings.map(s => encodeString(s));
+}
+
+export function decodeString(bytes: Uint8Array, encoding = 'utf-8'): string {
+  return ENV.platform.decode(bytes, encoding);
+}
+
+export function decodeStrings(
+    bytes: Uint8Array[], encoding = 'utf-8'): string[] {
+  return bytes.map(b => decodeString(b, encoding));
+}

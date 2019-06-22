@@ -19,17 +19,10 @@ import * as tf from '../../index';
 import {describeWithFlags} from '../../jasmine_util';
 import {tensor2d} from '../../ops/ops';
 import {expectArraysClose, expectArraysEqual} from '../../test_util';
+import {decodeStrings, encodeStrings} from '../../util';
 
 import {MathBackendCPU} from './backend_cpu';
 import {CPU_ENVS} from './backend_cpu_test_registry';
-
-function encode(data: string[]): Uint8Array[] {
-  return data.map(s => tf.ENV.platform.encodeUTF8(s));
-}
-
-function decode(data: Uint8Array[]): string[] {
-  return data.map(d => tf.ENV.platform.decodeUTF8(d));
-}
 
 describeWithFlags('backendCPU', CPU_ENVS, () => {
   let backend: MathBackendCPU;
@@ -44,22 +37,25 @@ describeWithFlags('backendCPU', CPU_ENVS, () => {
 
   it('register empty string tensor and write', () => {
     const t = tf.Tensor.make([3], {}, 'string');
-    backend.write(t.dataId, encode(['c', 'a', 'b']));
+    backend.write(t.dataId, encodeStrings(['c', 'a', 'b']));
     expectArraysEqual(
-        decode(backend.readSync(t.dataId) as Uint8Array[]), ['c', 'a', 'b']);
+        decodeStrings(backend.readSync(t.dataId) as Uint8Array[]),
+        ['c', 'a', 'b']);
   });
 
   it('register string tensor with values', () => {
     const t = tf.Tensor.make([3], {values: ['a', 'b', 'c']}, 'string');
     expectArraysEqual(
-        decode(backend.readSync(t.dataId) as Uint8Array[]), ['a', 'b', 'c']);
+        decodeStrings(backend.readSync(t.dataId) as Uint8Array[]),
+        ['a', 'b', 'c']);
   });
 
   it('register string tensor with values and overwrite', () => {
     const t = tf.Tensor.make([3], {values: ['a', 'b', 'c']}, 'string');
-    backend.write(t.dataId, encode(['c', 'a', 'b']));
+    backend.write(t.dataId, encodeStrings(['c', 'a', 'b']));
     expectArraysEqual(
-        decode(backend.readSync(t.dataId) as Uint8Array[]), ['c', 'a', 'b']);
+        decodeStrings(backend.readSync(t.dataId) as Uint8Array[]),
+        ['c', 'a', 'b']);
   });
 
   it('register string tensor with values and mismatched shape', () => {

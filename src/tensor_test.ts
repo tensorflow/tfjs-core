@@ -20,6 +20,7 @@ import {ALL_ENVS, describeWithFlags, SYNC_BACKEND_ENVS} from './jasmine_util';
 import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
 import {expectArraysClose, expectArraysEqual, expectNumbersClose} from './test_util';
 import {Rank} from './types';
+import {encodeStrings} from './util';
 
 describeWithFlags('tensor', ALL_ENVS, () => {
   it('Tensors of arbitrary size', async () => {
@@ -618,6 +619,14 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     expect(a.dtype).toBe('string');
     expect(a.shape).toEqual([]);
     expectArraysEqual(await a.data(), ['даниел']);
+  });
+
+  it('default dtype from Uint8Array[]', async () => {
+    const bytes = encodeStrings(['a', 'b', 'c']);
+    const a = tf.tensor(bytes);
+    expect(a.dtype).toBe('string');
+    expect(a.shape).toEqual([3]);
+    expectArraysEqual(await a.data(), ['a', 'b', 'c']);
   });
 
   it('default dtype from empty string', async () => {

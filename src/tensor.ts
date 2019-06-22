@@ -15,7 +15,6 @@
  * =============================================================================
  */
 
-import {ENV} from './environment';
 import {tensorToString} from './tensor_format';
 import {ArrayMap, BackendDataValues, DataType, DataTypeMap, DataValues, NumericDataType, Rank, ShapeMap, SingleValueMap, TensorLike, TensorLike1D, TensorLike3D, TensorLike4D} from './types';
 import * as util from './util';
@@ -439,6 +438,8 @@ export class Tensor<R extends Rank = Rank> {
   readonly dtype: DataType;
   /** The rank type for the array (see `Rank` enum). */
   readonly rankType: R;
+  /** The encoding used to encode strings. Defined only for string tensors. */
+  readonly encoding: string;
 
   /** Whether this tensor has been globally kept. */
   kept = false;
@@ -453,8 +454,8 @@ export class Tensor<R extends Rank = Rank> {
   readonly strides: number[];
 
   protected constructor(
-      shape: ShapeMap[R], dtype: DataType, values?: DataValues|Uint8Array[],
-      dataId?: DataId, backend?: Backend) {
+      shape: ShapeMap[R], dtype: DataType, values?: BackendDataValues,
+      dataId?: DataId, backend?: Backend, encoding?: string) {
     this.shape = shape.slice() as ShapeMap[R];
     this.dtype = dtype || 'float32';
     this.size = util.sizeFromShape(shape);
@@ -462,13 +463,10 @@ export class Tensor<R extends Rank = Rank> {
     this.dataId = dataId != null ? dataId : {};
     this.id = trackerFn().nextTensorId();
     this.rankType = (this.rank < 5 ? this.rank.toString() : 'higher') as R;
+    this.encoding = encoding || 'utf-8';
     trackerFn().registerTensor(this, backend);
     if (values != null) {
-      if (dtype === 'string' && util.isString(values) ||
-          util.isString(values[0])) {
-        values = (values as string[]).map(v => ENV.platform.encodeUTF8(v));
-      }
-      trackerFn().write(backend, this.dataId, values as BackendDataValues);
+      trackerFn().write(backend, this.dataId, values);
     }
   }
 
@@ -478,9 +476,15 @@ export class Tensor<R extends Rank = Rank> {
    */
   static make<T extends Tensor<R>, D extends DataType = 'float32',
                                              R extends Rank = Rank>(
-      shape: ShapeMap[R], data: TensorData<D>, dtype?: D,
-      backend?: Backend): T {
-    return new Tensor(shape, dtype, data.values, data.dataId, backend) as T;
+      shape: ShapeMap[R], data: TensorData<D>, dtype?: D, backend?: Backend,
+      encoding?: string): T {
+    let backendVals = data.values as BackendDataValues;
+    if (data.values != null && dtype === 'string' &&
+        util.isString(data.values[0])) {
+      backendVals = util.encodeStrings(data.values as string[]);
+    }
+    return new Tensor(
+               shape, dtype, backendVals, data.dataId, backend, encoding) as T;
   }
 
   /** Flatten a Tensor to a 1D array. */
@@ -618,7 +622,7 @@ export class Tensor<R extends Rank = Rank> {
     const data = trackerFn().read(this.dataId);
     if (this.dtype === 'string') {
       const bytes = await data as Uint8Array[];
-      return bytes.map(d => ENV.platform.decodeUTF8(d));
+      return util.decodeStrings(bytes, this.encoding);
     }
     return data as Promise<DataTypeMap[D]>;
   }
@@ -632,7 +636,7 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     const data = trackerFn().readSync(this.dataId);
     if (this.dtype === 'string') {
-      return (data as Uint8Array[]).map(d => ENV.platform.decodeUTF8(d));
+      return util.decodeStrings(data as Uint8Array[], this.encoding);
     }
     return data as DataTypeMap[D];
   }
