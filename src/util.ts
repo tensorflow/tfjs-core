@@ -476,12 +476,12 @@ export function bytesPerElement(dtype: DataType): number {
  * not possible since it depends on the encoding of the html page that serves
  * the website.
  */
-export function bytesFromStringArray(arr: string[]): number {
+export function bytesFromStringArray(arr: Uint8Array[]): number {
   if (arr == null) {
     return 0;
   }
   let bytes = 0;
-  arr.forEach(x => bytes += x.length * 2);
+  arr.forEach(x => bytes += x.length);
   return bytes;
 }
 

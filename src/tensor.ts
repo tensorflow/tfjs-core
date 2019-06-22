@@ -15,8 +15,9 @@
  * =============================================================================
  */
 
+import {ENV} from './environment';
 import {tensorToString} from './tensor_format';
-import {ArrayMap, DataType, DataTypeMap, DataValues, NumericDataType, Rank, ShapeMap, SingleValueMap, TensorLike, TensorLike1D, TensorLike3D, TensorLike4D} from './types';
+import {ArrayMap, BackendDataValues, DataType, DataTypeMap, DataValues, NumericDataType, Rank, ShapeMap, SingleValueMap, TensorLike, TensorLike1D, TensorLike3D, TensorLike4D} from './types';
 import * as util from './util';
 import {computeStrides, toNestedArray} from './util';
 
@@ -28,10 +29,10 @@ export interface TensorData<D extends DataType> {
 // This interface mimics KernelBackend (in backend.ts), which would create a
 // circular dependency if imported.
 export interface Backend {
-  read(dataId: object): Promise<DataValues>;
-  readSync(dataId: object): DataValues;
+  read(dataId: object): Promise<BackendDataValues>;
+  readSync(dataId: object): BackendDataValues;
   disposeData(dataId: object): void;
-  write(dataId: object, values: DataValues): void;
+  write(dataId: object, values: BackendDataValues): void;
 }
 
 /**
@@ -159,9 +160,9 @@ export interface TensorTracker {
   registerTensor(t: Tensor, backend?: Backend): void;
   disposeTensor(t: Tensor): void;
   disposeVariable(v: Variable): void;
-  write(backend: Backend, dataId: DataId, values: DataValues): void;
-  read(dataId: DataId): Promise<DataValues>;
-  readSync(dataId: DataId): DataValues;
+  write(backend: Backend, dataId: DataId, values: BackendDataValues): void;
+  read(dataId: DataId): Promise<BackendDataValues>;
+  readSync(dataId: DataId): BackendDataValues;
   registerVariable(v: Variable): void;
   nextTensorId(): number;
   nextVariableId(): number;
@@ -452,8 +453,8 @@ export class Tensor<R extends Rank = Rank> {
   readonly strides: number[];
 
   protected constructor(
-      shape: ShapeMap[R], dtype: DataType, values?: DataValues, dataId?: DataId,
-      backend?: Backend) {
+      shape: ShapeMap[R], dtype: DataType, values?: DataValues|Uint8Array[],
+      dataId?: DataId, backend?: Backend) {
     this.shape = shape.slice() as ShapeMap[R];
     this.dtype = dtype || 'float32';
     this.size = util.sizeFromShape(shape);
@@ -463,7 +464,11 @@ export class Tensor<R extends Rank = Rank> {
     this.rankType = (this.rank < 5 ? this.rank.toString() : 'higher') as R;
     trackerFn().registerTensor(this, backend);
     if (values != null) {
-      trackerFn().write(backend, this.dataId, values);
+      if (dtype === 'string' && util.isString(values) ||
+          util.isString(values[0])) {
+        values = (values as string[]).map(v => ENV.platform.encodeUTF8(v));
+      }
+      trackerFn().write(backend, this.dataId, values as BackendDataValues);
     }
   }
 
@@ -610,7 +615,12 @@ export class Tensor<R extends Rank = Rank> {
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
   async data<D extends DataType = NumericDataType>(): Promise<DataTypeMap[D]> {
     this.throwIfDisposed();
-    return trackerFn().read(this.dataId) as Promise<DataTypeMap[D]>;
+    const data = trackerFn().read(this.dataId);
+    if (this.dtype === 'string') {
+      const bytes = await data as Uint8Array[];
+      return bytes.map(d => ENV.platform.decodeUTF8(d));
+    }
+    return data as Promise<DataTypeMap[D]>;
   }
 
   /**
@@ -620,7 +630,11 @@ export class Tensor<R extends Rank = Rank> {
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
   dataSync<D extends DataType = NumericDataType>(): DataTypeMap[D] {
     this.throwIfDisposed();
-    return trackerFn().readSync(this.dataId) as DataTypeMap[D];
+    const data = trackerFn().readSync(this.dataId);
+    if (this.dtype === 'string') {
+      return (data as Uint8Array[]).map(d => ENV.platform.decodeUTF8(d));
+    }
+    return data as DataTypeMap[D];
   }
 
   /**

@@ -99,6 +99,14 @@ describeWithFlags('lazy packing and unpacking', WEBGL_ENVS, () => {
      });
 });
 
+function encode(data: string[]): Uint8Array[] {
+  return data.map(s => tf.ENV.platform.encodeUTF8(s));
+}
+
+function decode(data: Uint8Array[]): string[] {
+  return data.map(d => tf.ENV.platform.decodeUTF8(d));
+}
+
 describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
   let prevBackend: string;
 
@@ -126,8 +134,9 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
     tf.setBackend('test-storage');
 
     const t = tf.Tensor.make([3], {}, 'string');
-    backend.write(t.dataId, ['c', 'a', 'b']);
-    expectArraysEqual(backend.readSync(t.dataId), ['c', 'a', 'b']);
+    backend.write(t.dataId, encode(['c', 'a', 'b']));
+    expectArraysEqual(
+        decode(backend.readSync(t.dataId) as Uint8Array[]), ['c', 'a', 'b']);
   });
 
   it('register string tensor with values', () => {
@@ -136,7 +145,8 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
     tf.setBackend('test-storage');
 
     const t = tf.Tensor.make([3], {values: ['a', 'b', 'c']}, 'string');
-    expectArraysEqual(backend.readSync(t.dataId), ['a', 'b', 'c']);
+    expectArraysEqual(
+        decode(backend.readSync(t.dataId) as Uint8Array[]), ['a', 'b', 'c']);
   });
 
   it('register string tensor with values and overwrite', () => {
@@ -145,8 +155,9 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
     tf.setBackend('test-storage');
 
     const t = tf.Tensor.make([3], {values: ['a', 'b', 'c']}, 'string');
-    backend.write(t.dataId, ['c', 'a', 'b']);
-    expectArraysEqual(backend.readSync(t.dataId), ['c', 'a', 'b']);
+    backend.write(t.dataId, encode(['c', 'a', 'b']));
+    expectArraysEqual(
+        decode(backend.readSync(t.dataId) as Uint8Array[]), ['c', 'a', 'b']);
   });
 
   it('register string tensor with values and wrong shape throws error', () => {

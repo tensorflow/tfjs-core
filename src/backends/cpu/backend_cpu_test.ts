@@ -23,6 +23,14 @@ import {expectArraysClose, expectArraysEqual} from '../../test_util';
 import {MathBackendCPU} from './backend_cpu';
 import {CPU_ENVS} from './backend_cpu_test_registry';
 
+function encode(data: string[]): Uint8Array[] {
+  return data.map(s => tf.ENV.platform.encodeUTF8(s));
+}
+
+function decode(data: Uint8Array[]): string[] {
+  return data.map(d => tf.ENV.platform.decodeUTF8(d));
+}
+
 describeWithFlags('backendCPU', CPU_ENVS, () => {
   let backend: MathBackendCPU;
   beforeEach(() => {
@@ -36,19 +44,22 @@ describeWithFlags('backendCPU', CPU_ENVS, () => {
 
   it('register empty string tensor and write', () => {
     const t = tf.Tensor.make([3], {}, 'string');
-    backend.write(t.dataId, ['c', 'a', 'b']);
-    expectArraysEqual(backend.readSync(t.dataId), ['c', 'a', 'b']);
+    backend.write(t.dataId, encode(['c', 'a', 'b']));
+    expectArraysEqual(
+        decode(backend.readSync(t.dataId) as Uint8Array[]), ['c', 'a', 'b']);
   });
 
   it('register string tensor with values', () => {
     const t = tf.Tensor.make([3], {values: ['a', 'b', 'c']}, 'string');
-    expectArraysEqual(backend.readSync(t.dataId), ['a', 'b', 'c']);
+    expectArraysEqual(
+        decode(backend.readSync(t.dataId) as Uint8Array[]), ['a', 'b', 'c']);
   });
 
   it('register string tensor with values and overwrite', () => {
     const t = tf.Tensor.make([3], {values: ['a', 'b', 'c']}, 'string');
-    backend.write(t.dataId, ['c', 'a', 'b']);
-    expectArraysEqual(backend.readSync(t.dataId), ['c', 'a', 'b']);
+    backend.write(t.dataId, encode(['c', 'a', 'b']));
+    expectArraysEqual(
+        decode(backend.readSync(t.dataId) as Uint8Array[]), ['c', 'a', 'b']);
   });
 
   it('register string tensor with values and mismatched shape', () => {
@@ -129,7 +140,7 @@ describeWithFlags('memory cpu', CPU_ENVS, () => {
     const mem = tf.memory();
     expect(mem.numTensors).toBe(2);
     expect(mem.numDataBuffers).toBe(2);
-    expect(mem.numBytes).toBe(6);
+    expect(mem.numBytes).toBe(5);
     expect(mem.unreliable).toBe(true);
 
     const expectedReasonGC =
