@@ -114,7 +114,8 @@ export class UniformRandom implements RandomBase {
     this.dtype = dtype;
     if (seed == null) {
       seed = Math.random();
-    } else if (typeof seed === 'number') {
+    }
+    if (typeof seed === 'number') {
       seed = seed.toString();
     }
 
