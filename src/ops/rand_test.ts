@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {MPRandGauss} from './rand';
+import {MPRandGauss, UniformRandom} from './rand';
 import {expectArrayInMeanStdRange, jarqueBeraNormalityTest} from './rand_util';
 
 function isFloat(n: number): boolean {
@@ -67,4 +67,45 @@ describe('MPRandGauss', () => {
          expect(Math.abs(rand.nextValue())).toBeLessThan(stdv * 2);
        }
      });
+});
+
+describe('UniformRandom', () => {
+  it('seed is number', () => {
+    const min = -1.2;
+    const max = -0.4;
+    const dtype = 'float32';
+    const seed = 1337;
+    const xs: number[] = [];
+    for (let i = 0; i < 10; ++i) {
+      const rand = new UniformRandom(min, max, dtype, seed);
+      const x = rand.nextValue();
+      expect(x).toBeGreaterThanOrEqual(min);
+      expect(x).toBeLessThan(max);
+      xs.push(x);
+    }
+    // Assert deterministic results.
+    expect(Math.min(...xs)).toEqual(Math.max(...xs));
+  });
+
+  it('seed === null', () => {
+    const min = 0;
+    const max = 1;
+    const dtype = 'float32';
+    const seed: number = null;
+    const rand = new UniformRandom(min, max, dtype, seed);
+    const x = rand.nextValue();
+    expect(x).toBeGreaterThanOrEqual(0);
+    expect(x).toBeLessThan(1);
+  });
+
+  it('seed === undefined', () => {
+    const min = 0;
+    const max = 1;
+    const dtype = 'float32';
+    const seed: number = undefined;
+    const rand = new UniformRandom(min, max, dtype, seed);
+    const x = rand.nextValue();
+    expect(x).toBeGreaterThanOrEqual(0);
+    expect(x).toBeLessThan(1);
+  });
 });
