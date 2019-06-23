@@ -96,7 +96,7 @@ describe('UniformRandom', () => {
       xs.push(x);
     }
     expect(Math.min(...xs)).toBeGreaterThanOrEqual(min);
-    expect(Math.max(...xs)).toBeLessThan(max);
+    expect(Math.max(...xs)).toBeLessThanOrEqual(max);
   });
 
   it('seed is number', () => {
