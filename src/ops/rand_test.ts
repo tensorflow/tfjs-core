@@ -80,7 +80,6 @@ describe('UniformRandom', () => {
       const x = rand.nextValue();
       xs.push(x);
     }
-    // Assert deterministic results.
     expect(Math.min(...xs)).toBeGreaterThanOrEqual(min);
     expect(Math.max(...xs)).toBeLessThan(max);
   });
@@ -96,7 +95,6 @@ describe('UniformRandom', () => {
       expect(Number.isInteger(x)).toEqual(true);
       xs.push(x);
     }
-    // Assert deterministic results.
     expect(Math.min(...xs)).toBeGreaterThanOrEqual(min);
     expect(Math.max(...xs)).toBeLessThan(max);
   });
