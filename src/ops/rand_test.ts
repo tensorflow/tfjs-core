@@ -70,6 +70,37 @@ describe('MPRandGauss', () => {
 });
 
 describe('UniformRandom', () => {
+  it('float32, no seed', () => {
+    const min = 0.2;
+    const max = 0.24;
+    const dtype = 'float32';
+    const xs: number[] = [];
+    for (let i = 0; i < 10; ++i) {
+      const rand = new UniformRandom(min, max, dtype);
+      const x = rand.nextValue();
+      xs.push(x);
+    }
+    // Assert deterministic results.
+    expect(Math.min(...xs)).toBeGreaterThanOrEqual(min);
+    expect(Math.max(...xs)).toBeLessThan(max);
+  });
+
+  it('int32, no seed', () => {
+    const min = 13;
+    const max = 37;
+    const dtype = 'int32';
+    const xs: number[] = [];
+    for (let i = 0; i < 10; ++i) {
+      const rand = new UniformRandom(min, max, dtype);
+      const x = rand.nextValue();
+      expect(Number.isInteger(x)).toEqual(true);
+      xs.push(x);
+    }
+    // Assert deterministic results.
+    expect(Math.min(...xs)).toBeGreaterThanOrEqual(min);
+    expect(Math.max(...xs)).toBeLessThan(max);
+  });
+
   it('seed is number', () => {
     const min = -1.2;
     const max = -0.4;
