@@ -79,6 +79,7 @@ import {DecodeMatrixProgram} from './decode_matrix_gpu';
 import {DecodeMatrixPackedProgram} from './decode_matrix_packed_gpu';
 import {DepthToSpaceProgram} from './depth_to_space_gpu';
 import {EncodeFloatProgram} from './encode_float_gpu';
+import {EncodeFloatPackedProgram} from './encode_float_packed_gpu';
 import {EncodeMatrixProgram} from './encode_matrix_gpu';
 import {EncodeMatrixPackedProgram} from './encode_matrix_packed_gpu';
 import * as fft_gpu from './fft_gpu';
@@ -479,7 +480,7 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   private getValuesFromTexture(dataId: DataId): Float32Array {
-    const {shape, dtype} = this.texData.get(dataId);
+    const {shape, dtype, isPacked} = this.texData.get(dataId);
     const size = util.sizeFromShape(shape);
     if (ENV.getBool('WEBGL_DOWNLOAD_FLOAT_ENABLED')) {
       const tmpTarget = this.decode(dataId);
@@ -498,8 +499,16 @@ export class MathBackendWebGL implements KernelBackend {
         {size: number};
     tmpTarget.size = sizeFromShape(shape);
     this.texData.get(tmpTarget.dataId).usage = TextureUsage.DOWNLOAD;
+
     const output = tidy(() => {
-      const program = new EncodeFloatProgram(shape);
+      let program;
+      if (ENV.getBool('WEBGL_PACK') && isPacked) {
+        const shapeAs3D = webgl_util.getShapeAs3D(shape);
+        program = new EncodeFloatPackedProgram(shapeAs3D);
+      } else {
+        program = new EncodeFloatProgram(shape);
+      }
+
       return this.compileAndRun(
           program, [{shape, dtype, dataId}], tmpTarget, null);
     });
