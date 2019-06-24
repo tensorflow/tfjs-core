@@ -697,8 +697,7 @@ export function encodeString(s: string): Uint8Array {
   return ENV.platform.encodeUTF8(s);
 }
 
-export function encodeStrings(
-    strings: string[]): Uint8Array[] {
+export function encodeStrings(strings: string[]): Uint8Array[] {
   return strings.map(s => encodeString(s));
 }
 

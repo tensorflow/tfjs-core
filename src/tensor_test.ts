@@ -621,7 +621,8 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     expectArraysEqual(await a.data(), ['даниел']);
   });
 
-  it('default dtype from Uint8Array[]', async () => {
+  // tslint:disable-next-line: ban
+  fit('default dtype from Uint8Array[]', async () => {
     const bytes = encodeStrings(['a', 'b', 'c']);
     const a = tf.tensor(bytes);
     expect(a.dtype).toBe('string');
