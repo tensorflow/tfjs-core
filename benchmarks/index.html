@@ -180,7 +180,6 @@
       //////////////////////////////////
       return await tf.loadGraphModel(
         'https://tfhub.dev/google/imagenet/mobilenet_v2_050_224/classification/2', { fromTFHub: true });
-      // return await tf.loadLayersModel('https://storage.googleapis.com/tfjs-models/tfjs/mobilenet_v1_0.25_224/model.json');
     }
 
     const zeros = tf.zeros([1, 224, 224, 3]);
