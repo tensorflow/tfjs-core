@@ -495,23 +495,26 @@ export class MathBackendWebGL implements KernelBackend {
       return vals;
     }
 
-    const tmpTarget = this.makeTensorHandle(shape, 'float32') as TensorHandle &
+    const shouldUsePackedProgram =
+        ENV.getBool('WEBGL_PACK') && isPacked === true;
+    const outputShape =
+        shouldUsePackedProgram ? webgl_util.getShapeAs3D(shape) : shape;
+    const tmpTarget =
+        this.makeTensorHandle(outputShape, 'float32') as TensorHandle &
         {size: number};
     tmpTarget.size = sizeFromShape(shape);
     this.texData.get(tmpTarget.dataId).usage = TextureUsage.DOWNLOAD;
 
     const output = tidy(() => {
-      let program;
-      if (ENV.getBool('WEBGL_PACK') && isPacked) {
-        const shapeAs3D = webgl_util.getShapeAs3D(shape);
-        program = new EncodeFloatPackedProgram(shapeAs3D);
-      } else {
-        program = new EncodeFloatProgram(shape);
-      }
+      const program = shouldUsePackedProgram ?
+          new EncodeFloatPackedProgram(
+              outputShape as [number, number, number]) :
+          new EncodeFloatProgram(outputShape);
 
       return this.compileAndRun(
-          program, [{shape, dtype, dataId}], tmpTarget, null);
+          program, [{shape: outputShape, dtype, dataId}], tmpTarget, null);
     });
+
     const tmpData = this.texData.get(output.dataId);
     const vals =
         this.gpgpu
