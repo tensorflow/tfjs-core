@@ -52,8 +52,7 @@ import {op} from './operation';
  */
 /** @doc {heading: 'Tensors', subheading: 'Creation'} */
 function tensor<R extends Rank>(
-    values: TensorLike, shape?: ShapeMap[R], dtype?: DataType,
-    encoding?: string): Tensor<R> {
+    values: TensorLike, shape?: ShapeMap[R], dtype?: DataType): Tensor<R> {
   if (dtype == null) {
     dtype = inferDtype(values);
   }
@@ -102,8 +101,7 @@ function tensor<R extends Rank>(
   values = dtype !== 'string' ?
       toTypedArray(values, dtype, ENV.getBool('DEBUG')) :
       flatten(values as string[]) as string[];
-  return Tensor.make(
-      shape, {values: values as TypedArray}, dtype, null, encoding);
+  return Tensor.make(shape, {values: values as TypedArray}, dtype);
 }
 
 /**

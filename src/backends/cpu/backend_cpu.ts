@@ -36,7 +36,7 @@ import {computeFlatOffset, getStridedSlicedInfo, isSliceContinous} from '../../o
 import {DataId, Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D, TensorBuffer} from '../../tensor';
 import {BackendDataValues, DataType, DataValues, NumericDataType, PixelData, Rank, ShapeMap, TypedArray, upcastType} from '../../types';
 import * as util from '../../util';
-import {decodeStrings, getArrayFromDType, inferDtype, now, sizeFromShape} from '../../util';
+import {getArrayFromDType, inferDtype, now, sizeFromShape} from '../../util';
 import {BackendTimingInfo, DataStorage, EPSILON_FLOAT32, KernelBackend} from '../backend';
 import * as backend_util from '../backend_util';
 import * as complex_util from '../complex_util';
@@ -206,7 +206,7 @@ export class MathBackendCPU implements KernelBackend {
     let decodedData = data as DataValues;
     if (t.dtype === 'string') {
       // Decode the bytes into string.
-      decodedData = decodeStrings(data as Uint8Array[], t.encoding);
+      decodedData = (data as Uint8Array[]).map(d => util.decodeString(d));
     }
     return buffer(t.shape, t.dtype, decodedData) as TensorBuffer<R>;
   }

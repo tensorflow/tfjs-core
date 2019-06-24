@@ -953,7 +953,7 @@ export class MathBackendWebGL implements KernelBackend {
   tile<T extends Tensor>(x: T, reps: number[]): T {
     if (x.dtype === 'string') {
       const data = this.readSync(x.dataId) as Uint8Array[];
-      const decodedData = util.decodeStrings(data, x.encoding);
+      const decodedData = data.map(d => util.decodeString(d));
       const buf = buffer(x.shape, x.dtype, decodedData);
       return tile(buf, reps) as T;
     }

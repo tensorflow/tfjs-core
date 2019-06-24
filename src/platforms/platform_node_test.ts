@@ -70,14 +70,14 @@ describeWithFlags('PlatformNode', NODE_ENVS, () => {
 
   it('encodeUTF8 single string', () => {
     const platform = new PlatformNode();
-    const bytes = platform.encodeUTF8('hello');
+    const bytes = platform.encode('hello', 'utf-8');
     expect(bytes.length).toBe(5);
     expect(bytes).toEqual(new Uint8Array([104, 101, 108, 108, 111]));
   });
 
   it('encodeUTF8 two strings delimited', () => {
     const platform = new PlatformNode();
-    const bytes = platform.encodeUTF8('hello\x00world');
+    const bytes = platform.encode('hello\x00world', 'utf-8');
     expect(bytes.length).toBe(11);
     expect(bytes).toEqual(
         new Uint8Array([104, 101, 108, 108, 111, 0, 119, 111, 114, 108, 100]));
@@ -85,7 +85,7 @@ describeWithFlags('PlatformNode', NODE_ENVS, () => {
 
   it('encodeUTF8 cyrillic', () => {
     const platform = new PlatformNode();
-    const bytes = platform.encodeUTF8('Здраво');
+    const bytes = platform.encode('Здраво', 'utf-8');
     expect(bytes.length).toBe(12);
     expect(bytes).toEqual(new Uint8Array(
         [208, 151, 208, 180, 209, 128, 208, 176, 208, 178, 208, 190]));

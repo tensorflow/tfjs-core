@@ -19,10 +19,18 @@ import * as tf from '../../index';
 import {describeWithFlags} from '../../jasmine_util';
 import {tensor2d} from '../../ops/ops';
 import {expectArraysClose, expectArraysEqual} from '../../test_util';
-import {decodeStrings, encodeStrings} from '../../util';
+import {decodeString, encodeString} from '../../util';
 
 import {MathBackendCPU} from './backend_cpu';
 import {CPU_ENVS} from './backend_cpu_test_registry';
+
+function encodeStrings(a: string[]): Uint8Array[] {
+  return a.map(s => encodeString(s));
+}
+
+function decodeStrings(bytes: Uint8Array[]): string[] {
+  return bytes.map(b => decodeString(b));
+}
 
 describeWithFlags('backendCPU', CPU_ENVS, () => {
   let backend: MathBackendCPU;

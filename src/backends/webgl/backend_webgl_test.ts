@@ -18,10 +18,18 @@
 import * as tf from '../../index';
 import {describeWithFlags} from '../../jasmine_util';
 import {expectArraysClose, expectArraysEqual} from '../../test_util';
-import {decodeStrings, encodeStrings} from '../../util';
+import {decodeString, encodeString} from '../../util';
 
 import {MathBackendWebGL, WebGLMemoryInfo} from './backend_webgl';
 import {WEBGL_ENVS} from './backend_webgl_test_registry';
+
+function encodeStrings(a: string[]): Uint8Array[] {
+  return a.map(s => encodeString(s));
+}
+
+function decodeStrings(bytes: Uint8Array[]): string[] {
+  return bytes.map(b => decodeString(b));
+}
 
 describeWithFlags('lazy packing and unpacking', WEBGL_ENVS, () => {
   let webglLazilyUnpackFlagSaved: boolean;

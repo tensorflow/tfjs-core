@@ -114,14 +114,17 @@ describe('util.flatten', () => {
   });
 });
 
+function encodeStrings(a: string[]): Uint8Array[] {
+  return a.map(s => util.encodeString(s));
+}
+
 describe('util.bytesFromStringArray', () => {
   it('count bytes after utf8 encoding', () => {
-    expect(util.bytesFromStringArray(util.encodeStrings(['a', 'bb', 'ccc'])))
+    expect(util.bytesFromStringArray(encodeStrings(['a', 'bb', 'ccc'])))
         .toBe(6);
-    expect(util.bytesFromStringArray(util.encodeStrings(['a', 'bb', 'cccddd'])))
+    expect(util.bytesFromStringArray(encodeStrings(['a', 'bb', 'cccddd'])))
         .toBe(9);
-    expect(util.bytesFromStringArray(util.encodeStrings(['даниел'])))
-        .toBe(6 * 2);
+    expect(util.bytesFromStringArray(encodeStrings(['даниел']))).toBe(6 * 2);
   });
 });
 

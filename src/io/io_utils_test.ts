@@ -351,20 +351,21 @@ describe('encodeWeights', () => {
             x5ByteLength);
     let delim = specs[0].delimiter;
     expect(new Uint8Array(data, 0, x1ByteLength))
-        .toEqual(tf.ENV.platform.encodeUTF8(`a${delim}bc${delim}def${delim}g`));
+        .toEqual(
+            tf.ENV.platform.encode(`a${delim}bc${delim}def${delim}g`, 'utf-8'));
     // The middle string takes up 0 bytes.
     delim = specs[2].delimiter;
     expect(new Uint8Array(data, x1ByteLength + x2ByteLength, x3ByteLength))
-        .toEqual(tf.ENV.platform.encodeUTF8(`здраво${delim}поздрав`));
+        .toEqual(tf.ENV.platform.encode(`здраво${delim}поздрав`, 'utf-8'));
     delim = specs[3].delimiter;
     expect(new Uint8Array(
                data, x1ByteLength + x2ByteLength + x3ByteLength, x4ByteLength))
-        .toEqual(tf.ENV.platform.encodeUTF8('正常'));
+        .toEqual(tf.ENV.platform.encode('正常', 'utf-8'));
     delim = specs[4].delimiter;
     expect(new Uint8Array(
                data, x1ByteLength + x2ByteLength + x3ByteLength + x4ByteLength,
                x5ByteLength))
-        .toEqual(tf.ENV.platform.encodeUTF8('hello'));
+        .toEqual(tf.ENV.platform.encode('hello', 'utf-8'));
     expect(specs).toEqual([
       {
         name: 'x1',

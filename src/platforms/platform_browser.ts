@@ -26,7 +26,11 @@ export class PlatformBrowser implements Platform {
     this.textEncoder = new TextEncoder();
   }
 
-  encodeUTF8(text: string): Uint8Array {
+  encode(text: string, encoding: string): Uint8Array {
+    if (encoding !== 'utf-8' && encoding !== 'utf8') {
+      throw new Error(
+          `Browser's encoder only supports utf-8, but got ${encoding}`);
+    }
     return this.textEncoder.encode(text);
   }
   decode(bytes: Uint8Array, encoding: string): string {

@@ -19,7 +19,7 @@ import {ENV} from '../environment';
 import {tensor} from '../ops/tensor_ops';
 import {NamedTensor, NamedTensorMap} from '../tensor_types';
 import {TypedArray} from '../types';
-import {sizeFromShape} from '../util';
+import {encodeString, sizeFromShape} from '../util';
 
 import {DTYPE_VALUE_SIZE_MAP, ModelArtifacts, ModelArtifactsInfo, StringWeightsManifestEntry, WeightGroup, WeightsManifestEntry} from './types';
 
@@ -66,7 +66,7 @@ export async function encodeWeights(
       const utf8bytes = new Promise<TypedArray>(async resolve => {
         const stringSpec = spec as StringWeightsManifestEntry;
         const data = await t.data();
-        const bytes = ENV.platform.encodeUTF8(data.join(STRING_DELIMITER));
+        const bytes = encodeString(data.join(STRING_DELIMITER));
         stringSpec.byteLength = bytes.length;
         stringSpec.delimiter = STRING_DELIMITER;
         resolve(bytes);
