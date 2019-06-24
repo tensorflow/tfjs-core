@@ -57,6 +57,7 @@ function tensor<R extends Rank>(
   return makeTensor(values, shape, inferredShape, dtype) as Tensor<R>;
 }
 
+/** This is shared code across all tensor creation methods. */
 function makeTensor(
     values: TensorLike, shape: number[], inferredShape: number[],
     dtype?: DataType): Tensor {
@@ -130,7 +131,9 @@ function scalar(value: number|boolean|string, dtype?: DataType): Scalar {
         'Error creating a new Scalar: value must be a primitive ' +
         '(number|boolean|string)');
   }
-  return makeTensor(value, [], [], dtype) as Scalar;
+  const shape: number[] = [];
+  const inferredShape: number[] = [];
+  return makeTensor(value, shape, inferredShape, dtype) as Scalar;
 }
 
 /**
@@ -154,7 +157,8 @@ function tensor1d(values: TensorLike1D, dtype?: DataType): Tensor1D {
   if (inferredShape.length !== 1) {
     throw new Error('tensor1d() requires values to be a flat/TypedArray');
   }
-  return makeTensor(values, null, inferredShape, dtype) as Tensor1D;
+  const shape: number[] = null;
+  return makeTensor(values, shape, inferredShape, dtype) as Tensor1D;
 }
 
 /**
