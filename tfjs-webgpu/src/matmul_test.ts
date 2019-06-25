@@ -22,7 +22,7 @@ import {describeWebGPU} from './test_util';
 describeWebGPU('matmul', () => {
   it('it works in graph mode.', async () => {
     const savedFlag = tf.ENV.get('WEBGPU_IMMEDIATE_EXECUTION_ENABLED');
-    tf.ENV.set('WEBGPU_IMMEDIATE_EXECUTION_ENABLED', true);
+    tf.ENV.set('WEBGPU_IMMEDIATE_EXECUTION_ENABLED', false);
     const a = tf.tensor2d([1, 2, 3, 4], [2, 2]);
     const b = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
 
