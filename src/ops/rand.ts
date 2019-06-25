@@ -112,12 +112,19 @@ export class UniformRandom implements RandomBase {
     this.min = min;
     this.range = max - min;
     this.dtype = dtype;
+    if (seed == null) {
+      seed = Math.random();
+    }
+    if (typeof seed === 'number') {
+      seed = seed.toString();
+    }
+
     if (!this.canReturnFloat() && this.range <= 1) {
       throw new Error(
           `The difference between ${min} - ${max} <= 1 and dtype is not float`);
     }
     const seedValue = seed ? seed : Math.random();
-    this.random = seedrandom.alea(seedValue.toString());
+    this.random = seedrandom.alea(seedValue as string);
   }
 
   /** Handles proper rounding for non floating point numbers. */
