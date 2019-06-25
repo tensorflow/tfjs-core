@@ -16,9 +16,40 @@
  */
 
 import * as tf from '@tensorflow/tfjs-core';
+import {WebGPUMemoryInfo} from './backend_webgpu';
 import {describeWebGPU} from './test_util';
 
 describeWebGPU('backend webgpu', () => {
+  fit('should not leak memory in delayed mode', async () => {
+    console.log('starat of test');
+    const savedFlag = tf.ENV.get('WEBGPU_IMMEDIATE_EXECUTION_ENABLED');
+    tf.ENV.set('WEBGPU_IMMEDIATE_EXECUTION_ENABLED', true);
+    const a = tf.tensor2d([2, 4, 6, 8], [2, 2]);
+    const b = tf.tensor2d([0.5, 0.5, 0.5, 0.5], [2, 2]);
+
+    const c = tf.mul(a, b);
+
+    const startNumBytes = tf.memory().numBytes;
+    const startNumTensors = tf.memory().numTensors;
+    const startNumBytesInGPU = (tf.memory() as WebGPUMemoryInfo).numBytesInGPU;
+
+    const f = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
+    const d = tf.matMul(c, f);
+
+    console.log(startNumBytes, startNumTensors, startNumBytesInGPU);
+    console.log(
+        tf.memory().numBytes, tf.memory().numTensors,
+        (tf.memory() as WebGPUMemoryInfo).numBytesInGPU);
+    const dData = await d.data();
+    console.log(dData);
+    console.log(
+        tf.memory().numBytes, tf.memory().numTensors,
+        (tf.memory() as WebGPUMemoryInfo).numBytesInGPU);
+    tf.test_util.expectArraysClose(
+        dData, new Float32Array([9, 12, 15, 19, 26, 33]));
+    tf.ENV.set('WEBGPU_IMMEDIATE_EXECUTION_ENABLED', savedFlag);
+  });
+
   it('readSync should throw if tensors are on the GPU', async () => {
     const a = tf.tensor2d([1, 2, 3, 4], [2, 2]);
     const b = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
@@ -32,4 +63,9 @@ describeWebGPU('backend webgpu', () => {
     // Now that data has been downloaded to the CPU, dataSync should work.
     expect(() => c.dataSync()).not.toThrow();
   });
+
+  // before and after a single matmul in immediate mode
+  // before and after a single matmul in delayed mode
+  // before and after a single matmul preceded by a matmul in immediate mode
+  // before and after a single matmul preceded by a matmul in delayed mode
 });
