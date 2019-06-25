@@ -42,6 +42,7 @@ import * as backend_util from '../backend_util';
 import * as complex_util from '../complex_util';
 import {nonMaxSuppressionImpl} from '../non_max_suppression_impl';
 import {split} from '../split_shared';
+import {tile} from '../tile_impl';
 import {topkImpl} from '../topk_impl';
 import {whereImpl} from '../where_impl';
 
@@ -66,11 +67,9 @@ interface TensorData<D extends DataType> {
 }
 
 function createCanvas() {
-  //@ts-ignore
-  if (typeof(OffscreenCanvas) !== 'undefined') {
-    //@ts-ignore
+  if (typeof OffscreenCanvas !== 'undefined') {
     return new OffscreenCanvas(300, 150);
-  } else if (typeof(document) !== 'undefined') {
+  } else if (typeof document !== 'undefined') {
     return document.createElement('canvas');
   } else {
     throw new Error('Cannot create a canvas in this context');
@@ -81,13 +80,16 @@ export class MathBackendCPU implements KernelBackend {
   public blockSize = 48;
 
   private data: DataStorage<TensorData<DataType>>;
-  private fromPixels2DContext: CanvasRenderingContext2D;
+  private fromPixels2DContext: CanvasRenderingContext2D|
+      OffscreenCanvasRenderingContext2D;
   private firstUse = true;
 
   constructor() {
     if (ENV.get('IS_BROWSER')) {
       const canvas = createCanvas();
-      this.fromPixels2DContext = canvas.getContext('2d');
+      this.fromPixels2DContext =
+          canvas.getContext('2d') as CanvasRenderingContext2D |
+          OffscreenCanvasRenderingContext2D;
     }
     this.data = new DataStorage(this, ENGINE);
   }
@@ -2068,26 +2070,7 @@ export class MathBackendCPU implements KernelBackend {
 
   tile<T extends Tensor>(x: T, reps: number[]): T {
     this.assertNotComplex(x, 'tile');
-
-    const newShape: number[] = new Array(x.rank);
-    for (let i = 0; i < newShape.length; i++) {
-      newShape[i] = x.shape[i] * reps[i];
-    }
-    const result = ops.buffer(newShape, x.dtype);
-    const xBuf = this.bufferSync(x);
-    for (let i = 0; i < result.values.length; ++i) {
-      const newLoc = result.indexToLoc(i);
-
-      const originalLoc: number[] = new Array(x.rank);
-      for (let i = 0; i < originalLoc.length; i++) {
-        originalLoc[i] = newLoc[i] % x.shape[i];
-      }
-
-      const originalIndex = xBuf.locToIndex(originalLoc);
-
-      result.values[i] = xBuf.values[originalIndex];
-    }
-    return result.toTensor() as T;
+    return tile(this.bufferSync(x), reps) as T;
   }
 
   pad<T extends Tensor>(

@@ -1477,6 +1477,43 @@ describeWithFlags('fromPixels', BROWSER_ENVS, () => {
     expectArraysClose(await res.data(), [260, 9, 11]);
   });
 
+  it('fromPixels for HTMLCanvasElement', async () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1;
+    canvas.height = 1;
+    const ctx = canvas.getContext('2d');
+    const pixels = new ImageData(1, 1);
+    pixels.data[0] = 0;
+    pixels.data[1] = 80;
+    pixels.data[2] = 160;
+    pixels.data[3] = 240;
+    ctx.putImageData(pixels, 1, 1);
+    const res = tf.browser.fromPixels(canvas);
+    expect(res.shape).toEqual([1, 1, 3]);
+    const data = await res.data();
+    expect(data.length).toEqual(1*1*3);
+  });
+  it('fromPixels for HTMLImageElement', async () => {
+    const img = new Image(10, 10);
+    img.src = 'data:image/gif;base64'
+        + ',R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==';
+    const res = tf.browser.fromPixels(img);
+    expect(res.shape).toEqual([10, 10, 3]);
+    const data = await res.data();
+    expect(data.length).toEqual(10*10*3);
+  });
+  it('fromPixels for HTMLVideolement', async () => {
+    const video = document.createElement('video');
+    video.width = 1;
+    video.height = 1;
+    video.src = 'data:image/gif;base64'
+        + ',R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==';
+    const res = tf.browser.fromPixels(video);
+    expect(res.shape).toEqual([1, 1, 3]);
+    const data = await res.data();
+    expect(data.length).toEqual(1*1*3);
+  });
+
   it('throws when passed a primitive number', () => {
     const msg = /pixels passed to tf.browser.fromPixels\(\) must be either/;
     // tslint:disable-next-line:no-any
@@ -1944,6 +1981,23 @@ describeWithFlags('tile', ALL_ENVS, () => {
     expect(t2.shape).toEqual([1, 2, 2, 2, 2]);
     expectArraysClose(
         await t2.data(), [1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8]);
+  });
+
+  it('1d string tensor', async () => {
+    const a = tf.tensor(['a', 'b', 'c']);
+    const res = tf.tile(a, [2]);
+    expect(res.shape).toEqual([6]);
+    expectArraysEqual(await res.data(), ['a', 'b', 'c', 'a', 'b', 'c']);
+  });
+
+  it('2d string tensor', async () => {
+    const a = tf.tensor([['a', 'b'], ['c', 'd']]);
+    const res = tf.tile(a, [2, 3]);
+    expect(res.shape).toEqual([4, 6]);
+    expectArraysEqual(await res.data(), [
+      'a', 'b', 'a', 'b', 'a', 'b', 'c', 'd', 'c', 'd', 'c', 'd',
+      'a', 'b', 'a', 'b', 'a', 'b', 'c', 'd', 'c', 'd', 'c', 'd'
+    ]);
   });
 
   it('propagates NaNs', async () => {
@@ -3510,6 +3564,20 @@ describeWithFlags('expandDims', ALL_ENVS, () => {
     const res = tf.tensor4d([[[[4]]]]).expandDims();
     expect(res.shape).toEqual([1, 1, 1, 1, 1]);
     expectArraysClose(await res.data(), [4]);
+  });
+
+  it('1d string tensor', async () => {
+    const t = tf.tensor(['hello', 'world']);
+    const res = t.expandDims();
+    expect(res.shape).toEqual([1, 2]);
+    expectArraysClose(await res.data(), ['hello', 'world']);
+  });
+
+  it('2d string tensor, axis=1', async () => {
+    const t = tf.tensor([['a', 'b'], ['c', 'd']]);
+    const res = t.expandDims(1);
+    expect(res.shape).toEqual([2, 1, 2]);
+    expectArraysClose(await res.data(), ['a', 'b', 'c', 'd']);
   });
 
   it('throws when passed a non-tensor', () => {
