@@ -695,11 +695,24 @@ export function fetch(
   return ENV.platform.fetch(path, requestInits);
 }
 
+/**
+ * Encodes the provided string into bytes using the provided encoding scheme.
+ *
+ * @param s The string to encode.
+ * @param encoding The encoding scheme. Defaults to utf-8.
+ *
+ */
 export function encodeString(s: string, encoding = 'utf-8'): Uint8Array {
   encoding = encoding || 'utf-8';
   return ENV.platform.encode(s, encoding);
 }
 
+/**
+ * Decodes the provided bytes into a string using the provided encoding scheme.
+ * @param bytes The bytes to decode.
+ *
+ * @param encoding The encoding scheme. Defaults to utf-8.
+ */
 export function decodeString(bytes: Uint8Array, encoding = 'utf-8'): string {
   encoding = encoding || 'utf-8';
   return ENV.platform.decode(bytes, encoding);

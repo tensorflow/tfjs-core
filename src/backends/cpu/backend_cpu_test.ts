@@ -24,10 +24,12 @@ import {decodeString, encodeString} from '../../util';
 import {MathBackendCPU} from './backend_cpu';
 import {CPU_ENVS} from './backend_cpu_test_registry';
 
+/** Private test util for encoding array of strings in utf-8. */
 function encodeStrings(a: string[]): Uint8Array[] {
   return a.map(s => encodeString(s));
 }
 
+/** Private test util for decoding array of strings in utf-8. */
 function decodeStrings(bytes: Uint8Array[]): string[] {
   return bytes.map(b => decodeString(b));
 }

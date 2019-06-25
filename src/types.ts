@@ -57,8 +57,10 @@ export interface SingleValueMap {
 export type DataType = keyof DataTypeMap;
 export type NumericDataType = 'float32'|'int32'|'bool'|'complex64';
 export type TypedArray = Float32Array|Int32Array|Uint8Array;
+/** Tensor data used in tensor creation and user-facing API. */
 export type DataValues = DataTypeMap[DataType];
-export type BackendDataValues = Float32Array|Int32Array|Uint8Array|Uint8Array[];
+/** The underlying tensor data that gets stored in a backend. */
+export type BackendValues = Float32Array|Int32Array|Uint8Array|Uint8Array[];
 
 export enum Rank {
   R0 = 'R0',

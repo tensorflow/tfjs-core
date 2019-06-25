@@ -549,3 +549,55 @@ describe('util.fetch', () => {
     });
   });
 });
+
+describe('util.encodeString', () => {
+  it('Encodes an empty string, default encoding', () => {
+    const res = util.encodeString('');
+    expect(res).toEqual(new Uint8Array([]));
+  });
+
+  it('Encodes an empty string, utf-8 encoding', () => {
+    const res = util.encodeString('', 'utf-8');
+    expect(res).toEqual(new Uint8Array([]));
+  });
+
+  it('Encodes an empty string, encoding must be utf-8', () => {
+    expect(() => util.encodeString('', 'utf-16'))
+        .toThrowError(/Browser's encoder only supports utf-8, but got utf-16/);
+  });
+
+  it('Encodes a cyrillic string', () => {
+    const res = util.encodeString('Kaкo стe');
+    expect(res).toEqual(
+        new Uint8Array([75, 97, 208, 186, 111, 32, 209, 129, 209, 130, 101]));
+  });
+
+  it('Encodes ascii', () => {
+    const res = util.encodeString('hello');
+    expect(res).toEqual(new Uint8Array([104, 101, 108, 108, 111]));
+  });
+});
+
+describe('util.decodeString', () => {
+  it('decode an empty string', () => {
+    const s = util.decodeString(new Uint8Array([]));
+    expect(s).toEqual('');
+  });
+
+  it('decode ascii', () => {
+    const s = util.decodeString(new Uint8Array([104, 101, 108, 108, 111]));
+    expect(s).toEqual('hello');
+  });
+
+  it('decode cyrillic', () => {
+    const s = util.decodeString(
+        new Uint8Array([75, 97, 208, 186, 111, 32, 209, 129, 209, 130, 101]));
+    expect(s).toEqual('Kaкo стe');
+  });
+
+  // tslint:disable-next-line: ban
+  fit('decode utf-16-be',
+      () => {
+          // TODO: implement.
+      });
+});

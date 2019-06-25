@@ -22,7 +22,7 @@ import {backpropagateGradients, getFilteredNodesXToY, NamedGradientMap, TapeNode
 import {DataId, setTensorTracker, Tensor, Tensor3D, TensorTracker, Variable} from './tensor';
 import {GradSaveFunc, NamedTensorMap, NamedVariableMap, TensorContainer} from './tensor_types';
 import {getTensorsInContainer} from './tensor_util';
-import {BackendDataValues, DataType, PixelData} from './types';
+import {BackendValues, DataType, PixelData} from './types';
 import * as util from './util';
 import {bytesFromStringArray, makeOnesTypedArray, now, sizeFromShape} from './util';
 
@@ -830,7 +830,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
   }
 
   // Forwarding to backend.
-  write(destBackend: KernelBackend, dataId: DataId, values: BackendDataValues):
+  write(destBackend: KernelBackend, dataId: DataId, values: BackendValues):
       void {
     const info = this.state.tensorInfo.get(dataId);
 
@@ -853,12 +853,12 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     }
     destBackend.write(dataId, values);
   }
-  readSync(dataId: DataId): BackendDataValues {
+  readSync(dataId: DataId): BackendValues {
     // Route the read to the correct backend.
     const info = this.state.tensorInfo.get(dataId);
     return info.backend.readSync(dataId);
   }
-  read(dataId: DataId): Promise<BackendDataValues> {
+  read(dataId: DataId): Promise<BackendValues> {
     // Route the read to the correct backend.
     const info = this.state.tensorInfo.get(dataId);
     return info.backend.read(dataId);

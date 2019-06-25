@@ -16,7 +16,7 @@
  */
 
 import {tensorToString} from './tensor_format';
-import {ArrayMap, BackendDataValues, DataType, DataTypeMap, NumericDataType, Rank, ShapeMap, SingleValueMap, TensorLike, TensorLike1D, TensorLike3D, TensorLike4D, TypedArray} from './types';
+import {ArrayMap, BackendValues, DataType, DataTypeMap, NumericDataType, Rank, ShapeMap, SingleValueMap, TensorLike, TensorLike1D, TensorLike3D, TensorLike4D, TypedArray} from './types';
 import * as util from './util';
 import {computeStrides, toNestedArray} from './util';
 
@@ -28,10 +28,10 @@ export interface TensorData<D extends DataType> {
 // This interface mimics KernelBackend (in backend.ts), which would create a
 // circular dependency if imported.
 export interface Backend {
-  read(dataId: object): Promise<BackendDataValues>;
-  readSync(dataId: object): BackendDataValues;
+  read(dataId: object): Promise<BackendValues>;
+  readSync(dataId: object): BackendValues;
   disposeData(dataId: object): void;
-  write(dataId: object, values: BackendDataValues): void;
+  write(dataId: object, values: BackendValues): void;
 }
 
 /**
@@ -159,9 +159,9 @@ export interface TensorTracker {
   registerTensor(t: Tensor, backend?: Backend): void;
   disposeTensor(t: Tensor): void;
   disposeVariable(v: Variable): void;
-  write(backend: Backend, dataId: DataId, values: BackendDataValues): void;
-  read(dataId: DataId): Promise<BackendDataValues>;
-  readSync(dataId: DataId): BackendDataValues;
+  write(backend: Backend, dataId: DataId, values: BackendValues): void;
+  read(dataId: DataId): Promise<BackendValues>;
+  readSync(dataId: DataId): BackendValues;
   registerVariable(v: Variable): void;
   nextTensorId(): number;
   nextVariableId(): number;
@@ -452,7 +452,7 @@ export class Tensor<R extends Rank = Rank> {
   readonly strides: number[];
 
   protected constructor(
-      shape: ShapeMap[R], dtype: DataType, values?: BackendDataValues,
+      shape: ShapeMap[R], dtype: DataType, values?: BackendValues,
       dataId?: DataId, backend?: Backend) {
     this.shape = shape.slice() as ShapeMap[R];
     this.dtype = dtype || 'float32';
@@ -475,7 +475,7 @@ export class Tensor<R extends Rank = Rank> {
                                              R extends Rank = Rank>(
       shape: ShapeMap[R], data: TensorData<D>, dtype?: D,
       backend?: Backend): T {
-    let backendVals = data.values as BackendDataValues;
+    let backendVals = data.values as BackendValues;
     if (data.values != null && dtype === 'string' &&
         util.isString(data.values[0])) {
       backendVals = (data.values as string[]).map(d => util.encodeString(d));
