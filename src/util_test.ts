@@ -87,6 +87,27 @@ describe('Util', () => {
     const a = new Float32Array([1, 2, 3, 4, 5]);
     expect(inferShape(a)).toEqual([5]);
   });
+
+  it('infer shape of Uint8Array[], string tensor', () => {
+    const a = [new Uint8Array([1, 2]), new Uint8Array([3, 4])];
+    expect(inferShape(a, 'string')).toEqual([2]);
+  });
+
+  it('infer shape of Uint8Array[][], string tensor', () => {
+    const a = [
+      [new Uint8Array([1]), new Uint8Array([2])],
+      [new Uint8Array([1]), new Uint8Array([2])]
+    ];
+    expect(inferShape(a, 'string')).toEqual([2, 2]);
+  });
+
+  it('infer shape of Uint8Array[][][], string tensor', () => {
+    const a = [
+      [[new Uint8Array([1, 2])], [new Uint8Array([2, 1])]],
+      [[new Uint8Array([1, 2])], [new Uint8Array([2, 1])]]
+    ];
+    expect(inferShape(a, 'string')).toEqual([2, 2, 1]);
+  });
 });
 
 describe('util.flatten', () => {
@@ -111,6 +132,17 @@ describe('util.flatten', () => {
     const data =
         [new Float32Array([1, 2]), 3, [4, 5, new Float32Array([6, 7])]];
     expect(util.flatten(data)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+  });
+
+  it('nested Uint8Arrays, skipTypedArray=true', () => {
+    const data = [
+      [new Uint8Array([1, 2]), new Uint8Array([3, 4])],
+      [new Uint8Array([5, 6]), new Uint8Array([7, 8])]
+    ];
+    expect(util.flatten(data, [], true)).toEqual([
+      new Uint8Array([1, 2]), new Uint8Array([3, 4]), new Uint8Array([5, 6]),
+      new Uint8Array([7, 8])
+    ]);
   });
 });
 

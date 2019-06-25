@@ -145,9 +145,9 @@ flatten<T extends number|boolean|string|Promise<number>|TypedArray>(
   if (result == null) {
     result = [];
   }
-  if (Array.isArray(arr) || isTypedArray(arr)) {
+  if (Array.isArray(arr) || isTypedArray(arr) && !skipTypedArray) {
     for (let i = 0; i < arr.length; ++i) {
-      flatten(arr[i], result);
+      flatten(arr[i], result, skipTypedArray);
     }
   } else {
     result.push(arr as T);
