@@ -60,6 +60,8 @@ export class WebGPUBackend extends KernelBackend {
   private binaryCache: {[key: string]: WebGPUBinary};
   private fromPixels2DContext: CanvasRenderingContext2D;
 
+  private disposed = false;
+
   constructor(device: GPUDevice, shaderc: shaderc.Shaderc) {
     super();
     this.binaryCache = {};
@@ -90,6 +92,8 @@ export class WebGPUBackend extends KernelBackend {
 
     const info = this.tensorMap.get(dataId);
     this.destroyBuffer(info.byteSize, info.buffer);
+
+    this.tensorMap.delete(dataId);
   }
 
   private createBuffer(
@@ -569,6 +573,9 @@ export class WebGPUBackend extends KernelBackend {
   }
 
   dispose() {
-    // Backend disposal logic.
+    if (this.disposed) {
+      return;
+    }
+    this.disposed = true;
   }
 }
