@@ -100,7 +100,7 @@ function tensor<R extends Rank>(
   shape = shape || inferredShape;
   values = dtype !== 'string' ?
       toTypedArray(values, dtype, ENV.getBool('DEBUG')) :
-      flatten(values as string[]) as string[];
+      flatten(values as string[], [], true) as string[];
   return Tensor.make(shape, {values: values as TypedArray}, dtype);
 }
 
@@ -145,8 +145,13 @@ function scalar(value: number|boolean|string, dtype?: DataType): Scalar {
 function tensor1d(values: TensorLike1D, dtype?: DataType): Tensor1D {
   assertNonNull(values);
   const inferredShape = inferShape(values);
-  if (inferredShape.length !== 1) {
+  if (dtype !== 'string' && inferredShape.length !== 1) {
     throw new Error('tensor1d() requires values to be a flat/TypedArray');
+  }
+  if (dtype === 'string' && inferredShape.length !== 2) {
+    throw new Error(
+        'tensor1d() of dtype string requires values to be ' +
+        'string[] or Uint8Array[]');
   }
   return tensor(values, inferredShape as [number], dtype);
 }

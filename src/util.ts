@@ -135,11 +135,13 @@ export function assertNonNull(a: TensorLike): void {
  *
  *  @param arr The nested array to flatten.
  *  @param result The destination array which holds the elements.
+ *  @param skipTypedArray If true, avoids flattening the typed arrays. Defaults
+ *      to false.
  */
 /** @doc {heading: 'Util', namespace: 'util'} */
 export function
 flatten<T extends number|boolean|string|Promise<number>|TypedArray>(
-    arr: T|RecursiveArray<T>, result: T[] = []): T[] {
+    arr: T|RecursiveArray<T>, result: T[] = [], skipTypedArray = false): T[] {
   if (result == null) {
     result = [];
   }
@@ -551,7 +553,7 @@ export function toTypedArray(
     throw new Error('Cannot convert a string[] to a TypedArray');
   }
   if (Array.isArray(a)) {
-    a = flatten(a as number[]);
+    a = flatten(a);
   }
   if (debugMode) {
     checkConversionForErrors(a as number[], dtype);
