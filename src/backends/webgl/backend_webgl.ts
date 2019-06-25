@@ -276,37 +276,50 @@ export class MathBackendWebGL implements KernelBackend {
     const texShape: [number, number] = [pixels.height, pixels.width];
     const outShape = [pixels.height, pixels.width, numChannels];
 
-    if (ENV.getBool('IS_BROWSER')) {
-      if (!(pixels instanceof HTMLVideoElement) &&
-          !(pixels instanceof HTMLImageElement) &&
-          !(pixels instanceof HTMLCanvasElement) &&
-          !(pixels instanceof ImageData) &&
-          !((pixels as PixelData).data instanceof Uint8Array)) {
-        throw new Error(
-            'pixels passed to tf.browser.fromPixels() must be either an ' +
-            `HTMLVideoElement, HTMLImageElement, HTMLCanvasElement, ImageData` +
-            ` or {data: Uint32Array, width: number, height: number}, ` +
-            `but was ${(pixels as {}).constructor.name}`);
-      }
-      if (pixels instanceof HTMLVideoElement) {
-        if (this.fromPixels2DContext == null) {
-          if (document.readyState !== 'complete') {
-            throw new Error(
-                'The DOM is not ready yet. Please call ' +
-                'tf.browser.fromPixels() once the DOM is ready. One way to ' +
-                'do that is to add an event listener for `DOMContentLoaded` ' +
-                'on the document object');
-          }
-          this.fromPixels2DContext =
-              document.createElement('canvas').getContext('2d');
-        }
-        this.fromPixels2DContext.canvas.width = pixels.width;
-        this.fromPixels2DContext.canvas.height = pixels.height;
-        this.fromPixels2DContext.drawImage(
-            pixels, 0, 0, pixels.width, pixels.height);
-        pixels = this.fromPixels2DContext.canvas;
-      }
+    //@ts-ignore
+    const isCanvas = (typeof(OffscreenCanvas) !== 'undefined'
+        //@ts-ignore
+        && pixels instanceof OffscreenCanvas)
+        || (typeof(HTMLCanvasElement) !== 'undefined'
+        && pixels instanceof HTMLCanvasElement);
+    const isPixelData = (pixels as PixelData).data instanceof Uint8Array;
+    const isImageData =
+        typeof(ImageData) !== 'undefined' && pixels instanceof ImageData;
+    const isVideo =
+        typeof(HTMLVideoElement) !== 'undefined'
+        && pixels instanceof HTMLVideoElement;
+    const isImage = typeof(HTMLImageElement) !== 'undefined'
+        && pixels instanceof HTMLImageElement;
+
+    if (!isCanvas && !isPixelData && !isImageData && !isVideo && !isImage) {
+      throw new Error(
+        'pixels passed to tf.browser.fromPixels() must be either an ' +
+        `HTMLVideoElement, HTMLImageElement, HTMLCanvasElement, ImageData ` +
+        `in browser, or OffscreenCanvas, ImageData in webworker` +
+        ` or {data: Uint32Array, width: number, height: number}, ` +
+        `but was ${(pixels as {}).constructor.name}`);
     }
+
+    if (typeof(HTMLVideoElement) !== 'undefined'
+        && pixels instanceof HTMLVideoElement) {
+      if (this.fromPixels2DContext == null) {
+        if (document.readyState !== 'complete') {
+          throw new Error(
+              'The DOM is not ready yet. Please call ' +
+              'tf.browser.fromPixels() once the DOM is ready. One way to ' +
+              'do that is to add an event listener for `DOMContentLoaded` ' +
+              'on the document object');
+        }
+        this.fromPixels2DContext =
+            document.createElement('canvas').getContext('2d');
+      }
+      this.fromPixels2DContext.canvas.width = pixels.width;
+      this.fromPixels2DContext.canvas.height = pixels.height;
+      this.fromPixels2DContext.drawImage(
+          pixels, 0, 0, pixels.width, pixels.height);
+      pixels = this.fromPixels2DContext.canvas;
+    }
+
     const tempPixelHandle = this.makeTensorHandle(texShape, 'int32');
     // This is a byte texture with pixels.
     this.texData.get(tempPixelHandle.dataId).usage = TextureUsage.PIXELS;
