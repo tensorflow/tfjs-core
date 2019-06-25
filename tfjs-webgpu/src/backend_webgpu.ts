@@ -130,7 +130,6 @@ export class WebGPUBackend extends KernelBackend {
 
   private disposeBuffer(byteSize: number, buffer: GPUBuffer) {
     this.disposalQueue.push({byteSize, buffer});
-    this.numBytesInGPU -= byteSize;
     // TODO: recycle deleted buffers
   }
 
@@ -162,7 +161,11 @@ export class WebGPUBackend extends KernelBackend {
   }
 
   private flushDisposalQueue() {
-    this.disposalQueue.forEach(d => d.buffer.destroy());
+    this.disposalQueue.forEach(d => {
+      d.buffer.destroy();
+      this.numBytesInGPU -= d.byteSize;
+    });
+
     this.disposalQueue = [];
   }
 
