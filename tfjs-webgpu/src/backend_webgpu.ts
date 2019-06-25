@@ -110,14 +110,16 @@ export class WebGPUBackend extends KernelBackend {
   }
 
   private createBuffer(
-      size: number,
+      byteSize: number,
       usage: GPUBufferUsage = GPUBufferUsage.STORAGE |
           GPUBufferUsage.TRANSFER_SRC | GPUBufferUsage.TRANSFER_DST) {
-    return this.device.createBuffer({size, usage});
+    this.numBytesInGPU += byteSize;
+    return this.device.createBuffer({size: byteSize, usage});
   }
 
   private destroyBuffer(byteSize: number, buffer: GPUBuffer) {
     // TODO: recycle deleted buffers
+    this.numBytesInGPU -= byteSize;
     buffer.destroy();
   }
 
