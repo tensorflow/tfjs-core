@@ -39,6 +39,17 @@ import {UnaryOpProgram} from './kernels/unary_op_webgpu';
 import * as webgpu_program from './kernels/webgpu_program';
 import {WebGPUBinary} from './kernels/webgpu_program';
 
+// TODO: Delete this and import from core once new release is published.
+type MemoryInfo = {
+  numTensors: number; numDataBuffers: number; numBytes: number;
+  unreliable?: boolean; reasons: string[];
+};
+
+export interface WebGPUMemoryInfo extends MemoryInfo {
+  numBytesInGPU: number;
+  unreliable: boolean;
+}
+
 type TensorInfo = {
   byteSize: number,
   values: Float32Array|Int32Array|Uint8Array,
@@ -59,6 +70,7 @@ export class WebGPUBackend extends KernelBackend {
 
   private binaryCache: {[key: string]: WebGPUBinary};
   private fromPixels2DContext: CanvasRenderingContext2D;
+  private numBytesInGPU = 0;
 
   constructor(device: GPUDevice, shaderc: shaderc.Shaderc) {
     super();
@@ -90,6 +102,11 @@ export class WebGPUBackend extends KernelBackend {
 
     const info = this.tensorMap.get(dataId);
     this.destroyBuffer(info.byteSize, info.buffer);
+  }
+
+  memory(): WebGPUMemoryInfo {
+    return {numBytesInGPU: this.numBytesInGPU, unreliable: false} as
+        WebGPUMemoryInfo;
   }
 
   private createBuffer(
