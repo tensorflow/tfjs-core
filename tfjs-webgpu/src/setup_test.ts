@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {setTestEnvs} from '@tensorflow/tfjs-core/dist/jasmine_util';
+import { setTestEnvs } from '@tensorflow/tfjs-core/dist/jasmine_util';
 
 setTestEnvs([{
   name: 'test-webgpu',
@@ -30,7 +30,7 @@ const env = jasmine.getEnv();
 const INCLUDE_LIST: string[] = [
   'matmul', 'add ', 'subtract ', 'mul ', 'conv2d', 'pad', 'pool', 'maxPool',
   'floor divide ', 'resizeBilinear', 'relu', 'transpose', 'concat', 'argmax',
-  'fromPixels'
+  'fromPixels', 'clip'
 ];
 /** Tests that have these substrings in their name will be excluded. */
 const EXCLUDE_LIST: string[] = [

@@ -15,31 +15,38 @@
  * =============================================================================
  */
 
-import {backend_util} from '@tensorflow/tfjs-core';
+import { computeDispatch } from '../webgpu_util';
 
-import {computeDispatch} from '../webgpu_util';
-
-import {WebGPUProgram} from './webgpu_program';
+import { WebGPUProgram } from './webgpu_program';
 
 export class ClipProgram implements WebGPUProgram {
   userCode: string;
   outputShape: number[];
-  dispatchLayout: {x: number[]};
+  dispatchLayout: { x: number[] };
   dispatch: [number, number, number];
   variableNames = ['A'];
-  uniforms?: 'float min; float max;';
+  uniforms = 'float min, max;';
 
-  constructor(op: string, aShape: number[]) {
+  constructor(aShape: number[]) {
     this.outputShape = aShape;
 
-    this.dispatchLayout = {x: this.outputShape.map((d, i) => i)};
+    // TODO - left off right here need to find a spot for uniforms...
+    // looks like on the backend.
+
+    this.dispatchLayout = { x: this.outputShape.map((d, i) => i) };
     this.dispatch = computeDispatch(this.dispatchLayout, this.outputShape);
 
     this.userCode = `
       void main() {
         uint index = gl_GlobalInvocationID.x;
-        //float a = getAAtOutCoords();
-        setOutput(index, binaryOperation(a, b));
+        float value = getAAtOutCoords();
+
+        if (isnan(value)) {
+          setOutput(index, value);
+          return;
+        }
+
+        setOutput(index, clamp(value, min, max));
       }
     `;
   }
