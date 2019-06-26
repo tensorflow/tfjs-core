@@ -24,7 +24,7 @@ export function inferShape(val: TensorLike, dtype?: DataType): number[] {
   let firstElem: typeof val = val;
 
   if (isTypedArray(val)) {
-    return [(val as TypedArray).length];
+    return dtype === 'string' ? [] : [(val as TypedArray).length];
   }
   if (!Array.isArray(val)) {
     return [];  // Scalar.

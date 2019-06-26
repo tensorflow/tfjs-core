@@ -618,7 +618,13 @@ export class Tensor<R extends Rank = Rank> {
     const data = trackerFn().read(this.dataId);
     if (this.dtype === 'string') {
       const bytes = await data as Uint8Array[];
-      return bytes.map(b => util.decodeString(b));
+      try {
+        return bytes.map(b => util.decodeString(b));
+      } catch {
+        throw new Error(
+            'Failed to decode the string bytes into utf-8. ' +
+            'To get the original bytes, call tensor.bytes().');
+      }
     }
     return data as Promise<DataTypeMap[D]>;
   }
@@ -632,7 +638,13 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     const data = trackerFn().readSync(this.dataId);
     if (this.dtype === 'string') {
-      return (data as Uint8Array[]).map(b => util.decodeString(b));
+      try {
+        return (data as Uint8Array[]).map(b => util.decodeString(b));
+      } catch {
+        throw new Error(
+            'Failed to decode the string bytes into utf-8. ' +
+            'To get the original bytes, call tensor.bytes().');
+      }
     }
     return data as DataTypeMap[D];
   }

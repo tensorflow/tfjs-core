@@ -702,6 +702,7 @@ export function fetch(
  * @param encoding The encoding scheme. Defaults to utf-8.
  *
  */
+/** @doc {heading: 'Util'} */
 export function encodeString(s: string, encoding = 'utf-8'): Uint8Array {
   encoding = encoding || 'utf-8';
   return ENV.platform.encode(s, encoding);
@@ -713,6 +714,7 @@ export function encodeString(s: string, encoding = 'utf-8'): Uint8Array {
  *
  * @param encoding The encoding scheme. Defaults to utf-8.
  */
+/** @doc {heading: 'Util'} */
 export function decodeString(bytes: Uint8Array, encoding = 'utf-8'): string {
   encoding = encoding || 'utf-8';
   return ENV.platform.decode(bytes, encoding);

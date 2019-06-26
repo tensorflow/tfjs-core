@@ -563,7 +563,7 @@ describe('util.encodeString', () => {
 
   it('Encode an empty string, encoding must be utf-8', () => {
     expect(() => util.encodeString('', 'utf-16'))
-        .toThrowError(/Browser's encoder only supports utf-8, but got utf-16/);
+        .toThrowError(/only supports utf-8, but got utf-16/);
   });
 
   it('Encode cyrillic letters', () => {

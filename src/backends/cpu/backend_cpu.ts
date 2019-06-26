@@ -208,7 +208,7 @@ export class MathBackendCPU implements KernelBackend {
       try {
         // Decode the bytes into string.
         decodedData = (data as Uint8Array[]).map(d => util.decodeString(d));
-      } catch (e) {
+      } catch {
         throw new Error('Failed to decode encoded string bytes into utf-8');
       }
     }

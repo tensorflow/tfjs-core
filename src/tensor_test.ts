@@ -22,7 +22,7 @@ import {expectArraysClose, expectArraysEqual, expectNumbersClose} from './test_u
 import {Rank, RecursiveArray, TensorLike1D, TensorLike2D, TensorLike3D, TensorLike4D, TypedArray} from './types';
 import {encodeString} from './util';
 
-/** Util method used for tests. It encodes each string into utf-8 bytes. */
+/** Private method used by these tests. Encodes strings into utf-8 bytes. */
 function encodeStrings(a: RecursiveArray<{}>): RecursiveArray<Uint8Array> {
   for (let i = 0; i < (a as Array<{}>).length; i++) {
     const val = a[i];
