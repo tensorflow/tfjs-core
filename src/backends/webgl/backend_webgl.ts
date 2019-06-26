@@ -320,9 +320,8 @@ export class MathBackendWebGL implements KernelBackend {
       this.fromPixels2DContext.canvas.width = pixels.width;
       this.fromPixels2DContext.canvas.height = pixels.height;
       this.fromPixels2DContext.drawImage(
-          //@ts-ignore
-          pixels, 0, 0, pixels.width, pixels.height);
-      //@ts-ignore
+					pixels as HTMLVideoElement, 0, 0, pixels.width, pixels.height);
+			//@ts-ignore
       pixels = this.fromPixels2DContext.canvas;
     }
 

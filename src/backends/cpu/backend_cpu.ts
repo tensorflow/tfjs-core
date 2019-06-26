@@ -165,8 +165,7 @@ export class MathBackendCPU implements KernelBackend {
       this.fromPixels2DContext.canvas.width = pixels.width;
       this.fromPixels2DContext.canvas.height = pixels.height;
       this.fromPixels2DContext.drawImage(
-          //@ts-ignore
-          pixels, 0, 0, pixels.width, pixels.height);
+          pixels as HTMLVideoElement, 0, 0, pixels.width, pixels.height);
       vals = this.fromPixels2DContext
                  .getImageData(0, 0, pixels.width, pixels.height)
                  .data;
