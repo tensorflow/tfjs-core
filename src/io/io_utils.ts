@@ -71,7 +71,7 @@ export async function encodeWeights(
         for (let i = 0; i < vals.length; i++) {
           const val = vals[i];
           const bytesOfLength =
-              new Uint8Array(new Int32Array([val.length]).buffer);
+              new Uint8Array(new Uint32Array([val.length]).buffer);
           bytes.set(bytesOfLength, offset);
           offset += NUM_BYTES_STRING_LENGTH;
           bytes.set(val, offset);
@@ -149,7 +149,7 @@ export function decodeWeights(
       const size = sizeFromShape(spec.shape);
       values = [];
       for (let i = 0; i < size; i++) {
-        const byteLength = new Int32Array(
+        const byteLength = new Uint32Array(
             buffer.slice(offset, offset + NUM_BYTES_STRING_LENGTH))[0];
         offset += NUM_BYTES_STRING_LENGTH;
         const bytes = new Uint8Array(buffer.slice(offset, offset + byteLength));

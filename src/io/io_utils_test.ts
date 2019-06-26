@@ -350,35 +350,35 @@ describe('encodeWeights', () => {
             x1ByteLength + x2ByteLength + x3ByteLength + x4ByteLength +
             x5ByteLength);
     // x1 'a'.
-    expect(new Int32Array(data, 0, 1)[0]).toBe(1);
+    expect(new Uint32Array(data, 0, 1)[0]).toBe(1);
     expect(new Uint8Array(data, 4, 1)).toEqual(encodeString('a'));
     // x1 'bc'.
-    expect(new Int32Array(data.slice(5, 9))[0]).toBe(2);
+    expect(new Uint32Array(data.slice(5, 9))[0]).toBe(2);
     expect(new Uint8Array(data, 9, 2)).toEqual(encodeString('bc'));
     // x1 'def'.
-    expect(new Int32Array(data.slice(11, 15))[0]).toBe(3);
+    expect(new Uint32Array(data.slice(11, 15))[0]).toBe(3);
     expect(new Uint8Array(data, 15, 3)).toEqual(encodeString('def'));
     // x1 'g'.
-    expect(new Int32Array(data.slice(18, 22))[0]).toBe(1);
+    expect(new Uint32Array(data.slice(18, 22))[0]).toBe(1);
     expect(new Uint8Array(data, 22, 1)).toEqual(encodeString('g'));
 
     // x2 is empty string.
-    expect(new Int32Array(data.slice(23, 27))[0]).toBe(0);
+    expect(new Uint32Array(data.slice(23, 27))[0]).toBe(0);
 
     // x3 'здраво'.
-    expect(new Int32Array(data.slice(27, 31))[0]).toBe(12);
+    expect(new Uint32Array(data.slice(27, 31))[0]).toBe(12);
     expect(new Uint8Array(data, 31, 12)).toEqual(encodeString('здраво'));
 
     // x3 'поздрав'.
-    expect(new Int32Array(data.slice(43, 47))[0]).toBe(14);
+    expect(new Uint32Array(data.slice(43, 47))[0]).toBe(14);
     expect(new Uint8Array(data, 47, 14)).toEqual(encodeString('поздрав'));
 
     // x4 '正常'.
-    expect(new Int32Array(data.slice(61, 65))[0]).toBe(6);
+    expect(new Uint32Array(data.slice(61, 65))[0]).toBe(6);
     expect(new Uint8Array(data, 65, 6)).toEqual(encodeString('正常'));
 
     // x5 'hello'.
-    expect(new Int32Array(data.slice(71, 75))[0]).toBe(5);
+    expect(new Uint32Array(data.slice(71, 75))[0]).toBe(5);
     expect(new Uint8Array(data, 75, 5)).toEqual(encodeString('hello'));
 
     expect(specs).toEqual([
