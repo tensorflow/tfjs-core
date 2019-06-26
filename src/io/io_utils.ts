@@ -15,16 +15,12 @@
  * =============================================================================
  */
 
-import {ENV} from '../environment';
 import {tensor} from '../ops/tensor_ops';
 import {NamedTensor, NamedTensorMap} from '../tensor_types';
 import {TypedArray} from '../types';
-import {encodeString, sizeFromShape} from '../util';
+import {sizeFromShape} from '../util';
 
-import {DTYPE_VALUE_SIZE_MAP, ModelArtifacts, ModelArtifactsInfo, StringWeightsManifestEntry, WeightGroup, WeightsManifestEntry} from './types';
-
-/** Used to delimit neighboring strings when encoding string tensors. */
-export const STRING_DELIMITER = '\x00';
+import {DTYPE_VALUE_SIZE_MAP, ModelArtifacts, ModelArtifactsInfo, WeightGroup, WeightsManifestEntry} from './types';
 
 /**
  * Encode a map from names to weight values as an ArrayBuffer, along with an
@@ -64,11 +60,20 @@ export async function encodeWeights(
     const spec: WeightsManifestEntry = {name, shape: t.shape, dtype: t.dtype};
     if (t.dtype === 'string') {
       const utf8bytes = new Promise<TypedArray>(async resolve => {
-        const stringSpec = spec as StringWeightsManifestEntry;
-        const data = await t.data();
-        const bytes = encodeString(data.join(STRING_DELIMITER));
-        stringSpec.byteLength = bytes.length;
-        stringSpec.delimiter = STRING_DELIMITER;
+        const vals = await t.bytes() as Uint8Array[];
+        const totalNumBytes =
+            vals.reduce((p, c) => p + c.length, 0) + 4 * vals.length;
+        const bytes = new Uint8Array(totalNumBytes);
+        let offset = 0;
+        for (let i = 0; i < vals.length; i++) {
+          const val = vals[i];
+          const bytesOfLength =
+              new Uint8Array(new Int32Array([val.length]).buffer);
+          bytes.set(bytesOfLength, offset);
+          offset += 4;
+          bytes.set(val, offset);
+          offset += val.length;
+        }
         resolve(bytes);
       });
       dataPromises.push(utf8bytes);
@@ -110,7 +115,7 @@ export function decodeWeights(
     const dtype = spec.dtype;
     const shape = spec.shape;
     const size = sizeFromShape(shape);
-    let values: TypedArray|string[];
+    let values: TypedArray|string[]|Uint8Array[];
 
     if ('quantization' in spec) {
       const quantization = spec.quantization;
@@ -138,12 +143,15 @@ export function decodeWeights(
       }
       offset += size * quantizationSizeFactor;
     } else if (dtype === 'string') {
-      const stringSpec = spec as StringWeightsManifestEntry;
-      const bytes =
-          new Uint8Array(buffer.slice(offset, offset + stringSpec.byteLength));
-      // TODO(smilkov): Use encoding from metadata.
-      values = ENV.platform.decode(bytes, 'utf-8').split(stringSpec.delimiter);
-      offset += stringSpec.byteLength;
+      const size = sizeFromShape(spec.shape);
+      values = [];
+      for (let i = 0; i < size; i++) {
+        const byteLength = new Int32Array(buffer.slice(offset, offset + 4))[0];
+        offset += 4;
+        const bytes = new Uint8Array(buffer.slice(offset, offset + byteLength));
+        (values as Uint8Array[]).push(bytes);
+        offset += byteLength;
+      }
     } else {
       const dtypeFactor = DTYPE_VALUE_SIZE_MAP[dtype];
       const byteBuffer = buffer.slice(offset, offset + size * dtypeFactor);

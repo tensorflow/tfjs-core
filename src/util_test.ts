@@ -551,28 +551,28 @@ describe('util.fetch', () => {
 });
 
 describe('util.encodeString', () => {
-  it('Encodes an empty string, default encoding', () => {
+  it('Encode an empty string, default encoding', () => {
     const res = util.encodeString('');
     expect(res).toEqual(new Uint8Array([]));
   });
 
-  it('Encodes an empty string, utf-8 encoding', () => {
+  it('Encode an empty string, utf-8 encoding', () => {
     const res = util.encodeString('', 'utf-8');
     expect(res).toEqual(new Uint8Array([]));
   });
 
-  it('Encodes an empty string, encoding must be utf-8', () => {
+  it('Encode an empty string, encoding must be utf-8', () => {
     expect(() => util.encodeString('', 'utf-16'))
         .toThrowError(/Browser's encoder only supports utf-8, but got utf-16/);
   });
 
-  it('Encodes a cyrillic string', () => {
+  it('Encode cyrillic letters', () => {
     const res = util.encodeString('Kaкo стe');
     expect(res).toEqual(
         new Uint8Array([75, 97, 208, 186, 111, 32, 209, 129, 209, 130, 101]));
   });
 
-  it('Encodes ascii', () => {
+  it('Encode ascii letters', () => {
     const res = util.encodeString('hello');
     expect(res).toEqual(new Uint8Array([104, 101, 108, 108, 111]));
   });
@@ -595,9 +595,9 @@ describe('util.decodeString', () => {
     expect(s).toEqual('Kaкo стe');
   });
 
-  // tslint:disable-next-line: ban
-  fit('decode utf-16-be',
-      () => {
-          // TODO: implement.
-      });
+  it('decode utf-16', () => {
+    const s = util.decodeString(
+        new Uint8Array([255, 254, 237, 139, 0, 138, 4, 89, 6, 116]), 'utf-16');
+    expect(s).toEqual('语言处理');
+  });
 });
