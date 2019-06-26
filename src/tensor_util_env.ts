@@ -109,9 +109,10 @@ export function convertToTensor<T extends Tensor>(
   if (!isTypedArray(x) && !Array.isArray(x)) {
     x = [x] as number[];
   }
+  const skipTypedArray = true;
   const values = inferredDtype !== 'string' ?
       toTypedArray(x, inferredDtype as DataType, ENV.getBool('DEBUG')) :
-      flatten(x as string[], [], true) as string[];
+      flatten(x as string[], [], skipTypedArray) as string[];
   return Tensor.make(inferredShape, {values}, inferredDtype);
 }
 

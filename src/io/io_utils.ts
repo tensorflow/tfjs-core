@@ -22,6 +22,9 @@ import {sizeFromShape} from '../util';
 
 import {DTYPE_VALUE_SIZE_MAP, ModelArtifacts, ModelArtifactsInfo, WeightGroup, WeightsManifestEntry} from './types';
 
+/** Number of bytes reserved for the length of the string. (32bit integer). */
+const NUM_BYTES_STRING_LENGTH = 4;
+
 /**
  * Encode a map from names to weight values as an ArrayBuffer, along with an
  * `Array` of `WeightsManifestEntry` as specification of the encoded weights.
@@ -61,8 +64,8 @@ export async function encodeWeights(
     if (t.dtype === 'string') {
       const utf8bytes = new Promise<TypedArray>(async resolve => {
         const vals = await t.bytes() as Uint8Array[];
-        const totalNumBytes =
-            vals.reduce((p, c) => p + c.length, 0) + 4 * vals.length;
+        const totalNumBytes = vals.reduce((p, c) => p + c.length, 0) +
+            NUM_BYTES_STRING_LENGTH * vals.length;
         const bytes = new Uint8Array(totalNumBytes);
         let offset = 0;
         for (let i = 0; i < vals.length; i++) {
@@ -70,7 +73,7 @@ export async function encodeWeights(
           const bytesOfLength =
               new Uint8Array(new Int32Array([val.length]).buffer);
           bytes.set(bytesOfLength, offset);
-          offset += 4;
+          offset += NUM_BYTES_STRING_LENGTH;
           bytes.set(val, offset);
           offset += val.length;
         }
@@ -146,8 +149,9 @@ export function decodeWeights(
       const size = sizeFromShape(spec.shape);
       values = [];
       for (let i = 0; i < size; i++) {
-        const byteLength = new Int32Array(buffer.slice(offset, offset + 4))[0];
-        offset += 4;
+        const byteLength = new Int32Array(
+            buffer.slice(offset, offset + NUM_BYTES_STRING_LENGTH))[0];
+        offset += NUM_BYTES_STRING_LENGTH;
         const bytes = new Uint8Array(buffer.slice(offset, offset + byteLength));
         (values as Uint8Array[]).push(bytes);
         offset += byteLength;
