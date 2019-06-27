@@ -881,7 +881,7 @@ interface readFileRes {
 
 interface readFileOpts extends WxApiCallback<readFileRes> {
   filePath: string;
-  encoding: string;
+  encoding?: string;
 }
 
 interface readdirRes {
