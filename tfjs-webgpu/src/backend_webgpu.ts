@@ -318,6 +318,7 @@ export class WebGPUBackend extends KernelBackend {
   }
 
   clip<T extends Tensor>(x: T, min: number, max: number): T {
+    console.log('PASSING SHAPE: ' + x.shape);
     const program = new ClipProgram(x.shape);
     const output = this.makeOutputArray(program.outputShape, x.dtype) as Tensor4D;
     return this.compileAndRun(program, [x], output, [min, max]);

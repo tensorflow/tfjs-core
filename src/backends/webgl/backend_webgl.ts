@@ -1687,6 +1687,7 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   clip<T extends Tensor>(x: T, min: number, max: number): T {
+    console.log('PASSING SHAPE: ' + x.shape);
     let program;
     if (ENV.getBool('WEBGL_PACK_CLIP')) {
       program = new ClipPackedProgram(x.shape);

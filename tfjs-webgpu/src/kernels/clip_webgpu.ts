@@ -34,6 +34,9 @@ export class ClipProgram implements WebGPUProgram {
     // looks like on the backend.
 
     this.dispatchLayout = { x: this.outputShape.map((d, i) => i) };
+    console.log('$$$$$$$$$');
+    console.log(this.outputShape);
+    console.log('$$$$$$$$$');
     this.dispatch = computeDispatch(this.dispatchLayout, this.outputShape);
 
     this.userCode = `
