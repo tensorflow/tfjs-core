@@ -76,7 +76,6 @@ export class MPSaver implements IOHandler {
       };
 
       const fileSystemManager = wx.getFileSystemManager();
-      console.log('write:' + this.modelTopologyFileName);
       fileSystemManager.writeFileSync(
         this.modelTopologyFileName,
         JSON.stringify(modelTopologyAndWeightManifest),
@@ -84,14 +83,12 @@ export class MPSaver implements IOHandler {
       );
 
       if (modelArtifacts.weightData != null) {
-        console.log('write:' + this.weightDataFileName);
         fileSystemManager.writeFileSync(
           this.weightDataFileName,
           modelArtifacts.weightData,
           'binary'
         );
       }
-      console.log('write success!');
 
       return {modelArtifactsInfo: getModelArtifactsInfoForJSON(modelArtifacts)};
     }
@@ -111,10 +108,8 @@ class MPFiles implements IOHandler {
   }
 
   async load(): Promise<ModelArtifacts> {
-    console.log('MPFiles load()');
     const jsonFile = this.files[0];
     const weightFiles = this.files.slice(1);
-    console.log(weightFiles);
 
     return new Promise<ModelArtifacts>((resolve, reject) => {
       const fileSystemManager = wx.getFileSystemManager();
@@ -164,19 +159,14 @@ class MPFiles implements IOHandler {
 
           weightsManifest.forEach(weightsGroup => {
             weightsGroup.paths.forEach(path => {
-              console.log('readFile:' + pathToFile[path]);
               fileSystemManager.readFile({
                 filePath: pathToFile[path],
                 // tslint:disable-next-line:no-any
                 success: (res: any) => {
                   const weightData = res.data;
-                  console.log('read success!');
                   const index = paths.indexOf(path);
                   perFileBuffers[index] = weightData;
-                  console.log(typeof weightData);
                   if (perFileBuffers.indexOf(null) === -1) {
-                    console.log(perFileBuffers);
-                    console.log(concatenateArrayBuffers(perFileBuffers).byteLength);
                     resolve({
                       modelTopology,
                       weightSpecs,
