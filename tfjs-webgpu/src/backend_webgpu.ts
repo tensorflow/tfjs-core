@@ -341,8 +341,10 @@ export class WebGPUBackend extends KernelBackend {
     return this.compileAndRun(program, [x], output, dimensions);
   }
 
-  private binaryOp(a: Tensor, b: Tensor, op: string) {
-    const dtype = backend_util.upcastType(a.dtype, b.dtype);
+  private binaryOp(a: Tensor, b: Tensor, op: string, dtype?: DataType) {
+    if (!dtype) {
+      dtype = backend_util.upcastType(a.dtype, b.dtype);
+    }
     const program = new BinaryOpProgram(op, a.shape, b.shape);
     const output = Tensor.make(program.outputShape, {}, dtype) as Tensor;
 
@@ -356,6 +358,23 @@ export class WebGPUBackend extends KernelBackend {
 
   subtract(a: Tensor, b: Tensor): Tensor {
     return this.binaryOp(a, b, binary_op.SUB);
+  }
+
+  greater(a: Tensor, b: Tensor): Tensor {
+    // TODO(kreeger): Consider a 'shouldExecuteOnCPU()' method
+
+    // const program = new BinaryOpProgram(binaryop_gpu.GREATER, a.shape, b.shape);
+    // const output = this.makeOutputArray(program.outputShape, 'bool');
+    // return this.compileAndRun(program, [a, b], output);
+    return this.binaryOp(a, b, binary_op.GREATER, 'bool');
+  }
+
+  greaterEqual(a: Tensor, b: Tensor): Tensor {
+    // const program =
+    //     new BinaryOpProgram(binaryop_gpu.GREATER_EQUAL, a.shape, b.shape);
+    // const output = this.makeOutputArray(program.outputShape, 'bool');
+    // return this.compileAndRun(program, [a, b], output);
+    return this.binaryOp(a, b, binary_op.GREATER_EQUAL, 'bool');
   }
 
   conv2d(x: Tensor4D, filter: Tensor4D, convInfo: backend_util.Conv2DInfo):

@@ -15,11 +15,11 @@
  * =============================================================================
  */
 
-import {backend_util} from '@tensorflow/tfjs-core';
+import { backend_util, DataType } from '@tensorflow/tfjs-core';
 
-import {computeDispatch} from '../webgpu_util';
+import { computeDispatch } from '../webgpu_util';
 
-import {WebGPUProgram} from './webgpu_program';
+import { WebGPUProgram } from './webgpu_program';
 
 export const MUL = 'return a * b;';
 export const ADD = 'return a + b;';
@@ -32,19 +32,24 @@ export const INT_DIV = `
   return float(idiv(ia, ib, s));
 `;
 
+export const GREATER = `return float(a > b);`;
+
+export const GREATER_EQUAL = `return float(a >= b);`;
+
 export class BinaryOpProgram implements WebGPUProgram {
   outputShape: number[];
   userCode: string;
-  dispatchLayout: {x: number[]};
+  dispatchLayout: { x: number[] };
   dispatch: [number, number, number];
   variableNames = ['A', 'B'];
 
-  constructor(op: string, aShape: number[], bShape: number[]) {
+  constructor(op: string, aShape: number[], bShape: number[], dtype: DataType) {
     this.outputShape = backend_util.assertAndGetBroadcastShape(aShape, bShape);
 
-    this.dispatchLayout = {x: this.outputShape.map((d, i) => i)};
+    this.dispatchLayout = { x: this.outputShape.map((d, i) => i) };
     this.dispatch = computeDispatch(this.dispatchLayout, this.outputShape);
 
+    // TODO(kreeger): This needs to know about dtype.
     this.userCode = `
       float binaryOperation(float a, float b) {
         ${op}
