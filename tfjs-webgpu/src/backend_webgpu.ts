@@ -62,6 +62,9 @@ type TensorInfo = {
 
 interface DataId {}
 
+const DEFAULT_GPUBUFFER_USAGE = GPUBufferUsage.STORAGE |
+    GPUBufferUsage.TRANSFER_SRC | GPUBufferUsage.TRANSFER_DST;
+
 export class WebGPUBackend extends KernelBackend {
   device: GPUDevice;
   queue: GPUQueue;
@@ -123,9 +126,7 @@ export class WebGPUBackend extends KernelBackend {
   }
 
   private acquireBuffer(
-      byteSize: number,
-      usage: GPUBufferUsage = GPUBufferUsage.STORAGE |
-          GPUBufferUsage.TRANSFER_SRC | GPUBufferUsage.TRANSFER_DST) {
+      byteSize: number, usage: GPUBufferUsage = DEFAULT_GPUBUFFER_USAGE) {
     return this.bufferManager.acquireBuffer(byteSize, usage);
   }
 
@@ -144,7 +145,7 @@ export class WebGPUBackend extends KernelBackend {
         id: -1,
         buffer,
         dtype,
-        usage: GPUBufferUsage.STORAGE
+        usage: DEFAULT_GPUBUFFER_USAGE
       });
     }
   }
@@ -186,10 +187,6 @@ export class WebGPUBackend extends KernelBackend {
   private convertAndCacheOnCPU(dataId: DataId, data: backend_util.TypedArray):
       backend_util.TypedArray {
     const info = this.tensorMap.get(dataId);
-    this.releaseBuffer(info.buffer, info.byteSize, info.usage);
-
-    // TODO: add backend_webgl float32ToTypedArray to util and use that here.
-
     info.values = data;
     return info.values as backend_util.TypedArray;
   }
@@ -340,9 +337,6 @@ export class WebGPUBackend extends KernelBackend {
     if (ENV.get('WEBGPU_IMMEDIATE_EXECUTION_ENABLED')) {
       this.submitQueue();
     }
-    this.releaseBuffer(
-        uniforms.resource.buffer, uniformData.byteLength,
-        GPUBufferUsage.TRANSFER_DST | GPUBufferUsage.UNIFORM);
     return output as {} as K;
   }
 
