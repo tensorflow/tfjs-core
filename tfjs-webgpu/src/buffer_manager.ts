@@ -61,7 +61,8 @@ export class BufferManager {
     return newBuffer;
   }
 
-  releaseBuffer(buffer: GPUBuffer, byteSize: number, usage: GPUBufferUsage) {
+  actuallyReleaseBuffer(
+      buffer: GPUBuffer, byteSize: number, usage: GPUBufferUsage) {
     if (this.freeBuffers == null) {
       return;
     }
@@ -84,6 +85,9 @@ export class BufferManager {
     }
     bufferList.splice(bufferIndex, 1);
     this.numBytesUsed -= byteSize;
+  }
+
+  releaseBuffer(buffer: GPUBuffer, byteSize: number, usage: GPUBufferUsage) {
     this.disposalQueue.push({byteSize, usage, buffer});
   }
 
@@ -97,7 +101,7 @@ export class BufferManager {
 
   flushDisposalQueue() {
     this.disposalQueue.forEach(d => {
-      this.releaseBuffer(d.buffer, d.byteSize, d.usage);
+      this.actuallyReleaseBuffer(d.buffer, d.byteSize, d.usage);
     });
 
     this.disposalQueue = [];
