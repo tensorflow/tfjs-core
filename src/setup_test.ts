@@ -15,21 +15,20 @@
  * =============================================================================
  */
 
-import * as tf from '@tensorflow/tfjs-core';
-import {describeWebGPU} from './test_util';
+/**
+ * This file is necessary so we register all test environments before we start
+ * executing tests.
+ */
+import './backends/cpu/backend_cpu_test_registry';
+import './backends/webgl/backend_webgl_test_registry';
 
-describeWebGPU('backend webgpu', () => {
-  it('readSync should throw if tensors are on the GPU', async () => {
-    const a = tf.tensor2d([1, 2, 3, 4], [2, 2]);
-    const b = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
+import {parseTestEnvFromKarmaFlags, setTestEnvs, TEST_ENVS} from './jasmine_util';
 
-    const c = tf.matMul(a, b);
-    expect(() => c.dataSync())
-        .toThrowError(
-            'WebGPU readSync is only available for CPU-resident tensors.');
-
-    await c.data();
-    // Now that data has been downloaded to the CPU, dataSync should work.
-    expect(() => c.dataSync()).not.toThrow();
-  });
-});
+// tslint:disable-next-line:no-any
+declare let __karma__: any;
+if (typeof __karma__ !== 'undefined') {
+  const testEnv = parseTestEnvFromKarmaFlags(__karma__.config.args, TEST_ENVS);
+  if (testEnv != null) {
+    setTestEnvs([testEnv]);
+  }
+}

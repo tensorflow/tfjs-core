@@ -21,6 +21,7 @@ import {scalar, tensor1d, tensor2d} from '../ops/ops';
 import {NamedTensor, NamedTensorMap} from '../tensor_types';
 import {expectArraysEqual} from '../test_util';
 import {expectArraysClose} from '../test_util';
+import {encodeString} from '../util';
 
 import {arrayBufferToBase64String, arrayBufferToString, base64StringToArrayBuffer, basename, concatenateArrayBuffers, concatenateTypedArrays, stringByteLength, stringToArrayBuffer} from './io_utils';
 import {WeightsManifestEntry} from './types';
@@ -329,6 +330,67 @@ describe('encodeWeights', () => {
     ]);
   });
 
+  it('String tensors', async () => {
+    const tensors: NamedTensorMap = {
+      x1: tensor2d([['a', 'bc'], ['def', 'g']], [2, 2]),
+      x2: scalar(''),                       // Empty string.
+      x3: tensor1d(['здраво', 'поздрав']),  // Cyrillic.
+      x4: scalar('正常'),                   // East Asian.
+      x5: scalar('hello')                   // Single string.
+    };
+    const dataAndSpecs = await tf.io.encodeWeights(tensors);
+    const data = dataAndSpecs.data;
+    const specs = dataAndSpecs.specs;
+    const x1ByteLength = 7 + 4 * 4;       // 7 ascii chars + 4 ints.
+    const x2ByteLength = 4;               // No chars + 1 int.
+    const x3ByteLength = 13 * 2 + 2 * 4;  // 13 cyrillic letters + 2 ints.
+    const x4ByteLength = 6 + 1 * 4;       // 2 east asian letters + 1 int.
+    const x5ByteLength = 5 + 1 * 4;       // 5 ascii chars + 1 int.
+    expect(data.byteLength)
+        .toEqual(
+            x1ByteLength + x2ByteLength + x3ByteLength + x4ByteLength +
+            x5ByteLength);
+    // x1 'a'.
+    expect(new Uint32Array(data, 0, 1)[0]).toBe(1);
+    expect(new Uint8Array(data, 4, 1)).toEqual(encodeString('a'));
+    // x1 'bc'.
+    expect(new Uint32Array(data.slice(5, 9))[0]).toBe(2);
+    expect(new Uint8Array(data, 9, 2)).toEqual(encodeString('bc'));
+    // x1 'def'.
+    expect(new Uint32Array(data.slice(11, 15))[0]).toBe(3);
+    expect(new Uint8Array(data, 15, 3)).toEqual(encodeString('def'));
+    // x1 'g'.
+    expect(new Uint32Array(data.slice(18, 22))[0]).toBe(1);
+    expect(new Uint8Array(data, 22, 1)).toEqual(encodeString('g'));
+
+    // x2 is empty string.
+    expect(new Uint32Array(data.slice(23, 27))[0]).toBe(0);
+
+    // x3 'здраво'.
+    expect(new Uint32Array(data.slice(27, 31))[0]).toBe(12);
+    expect(new Uint8Array(data, 31, 12)).toEqual(encodeString('здраво'));
+
+    // x3 'поздрав'.
+    expect(new Uint32Array(data.slice(43, 47))[0]).toBe(14);
+    expect(new Uint8Array(data, 47, 14)).toEqual(encodeString('поздрав'));
+
+    // x4 '正常'.
+    expect(new Uint32Array(data.slice(61, 65))[0]).toBe(6);
+    expect(new Uint8Array(data, 65, 6)).toEqual(encodeString('正常'));
+
+    // x5 'hello'.
+    expect(new Uint32Array(data.slice(71, 75))[0]).toBe(5);
+    expect(new Uint8Array(data, 75, 5)).toEqual(encodeString('hello'));
+
+    expect(specs).toEqual([
+      {name: 'x1', dtype: 'string', shape: [2, 2]},
+      {name: 'x2', dtype: 'string', shape: []},
+      {name: 'x3', dtype: 'string', shape: [2]},
+      {name: 'x4', dtype: 'string', shape: []},
+      {name: 'x5', dtype: 'string', shape: []}
+    ]);
+  });
+
   it('Mixed dtype tensors', async () => {
     const tensors: NamedTensorMap = {
       x1: tensor2d([[10, 20], [30, 40]], [2, 2], 'int32'),
@@ -370,17 +432,22 @@ describeWithFlags('decodeWeights', {}, () => {
       x1: tensor2d([[10, 20], [30, 40]], [2, 2], 'int32'),
       x2: scalar(13.37, 'float32'),
       x3: tensor1d([true, false, false], 'bool'),
+      x4: tensor2d([['здраво', 'a'], ['b', 'c']], [2, 2], 'string'),
+      x5: tensor1d([''], 'string'),  // Empty string.
+      x6: scalar('hello'),           // Single string.
       y1: tensor2d([-10, -20, -30], [3, 1], 'float32'),
     };
     const dataAndSpecs = await tf.io.encodeWeights(tensors);
     const data = dataAndSpecs.data;
     const specs = dataAndSpecs.specs;
-    expect(data.byteLength).toEqual(4 * 4 + 4 * 1 + 1 * 3 + 4 * 3);
     const decoded = tf.io.decodeWeights(data, specs);
-    expect(Object.keys(decoded).length).toEqual(4);
+    expect(Object.keys(decoded).length).toEqual(7);
     expectArraysEqual(await decoded['x1'].data(), await tensors['x1'].data());
     expectArraysEqual(await decoded['x2'].data(), await tensors['x2'].data());
     expectArraysEqual(await decoded['x3'].data(), await tensors['x3'].data());
+    expectArraysEqual(await decoded['x4'].data(), await tensors['x4'].data());
+    expectArraysEqual(await decoded['x5'].data(), await tensors['x5'].data());
+    expectArraysEqual(await decoded['x6'].data(), await tensors['x6'].data());
     expectArraysEqual(await decoded['y1'].data(), await tensors['y1'].data());
   });
 

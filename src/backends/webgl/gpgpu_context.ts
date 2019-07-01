@@ -16,7 +16,7 @@
  */
 
 import {ENV} from '../../environment';
-import {PixelData} from '../../types';
+import {PixelData, TypedArray} from '../../types';
 import * as util from '../../util';
 
 import {getWebGLContext, setWebGLContext} from './canvas_util';
@@ -146,6 +146,13 @@ export class GPGPUContext {
     gpgpu_util.uploadPixelDataToTexture(this.gl, this.debug, texture, pixels);
   }
 
+  public uploadDenseMatrixToTexture(
+      texture: WebGLTexture, width: number, height: number, data: TypedArray) {
+    this.throwIfDisposed();
+    gpgpu_util.uploadDenseMatrixToTexture(
+        this.gl, this.debug, texture, width, height, data, this.textureConfig);
+  }
+
   public createFloat16PackedMatrixTexture(rows: number, columns: number):
       WebGLTexture {
     this.throwIfDisposed();
@@ -171,33 +178,6 @@ export class GPGPUContext {
         this.gl, this.debug, () => this.gl.deleteTexture(texture));
   }
 
-  public uploadMatrixToTexture(
-      texture: WebGLTexture, rows: number, columns: number,
-      matrix: Float32Array) {
-    this.throwIfDisposed();
-    const numChannels = webgl_util.getNumChannels();
-    return gpgpu_util.uploadMatrixToTexture(
-        this.gl, this.debug, texture, rows, columns, matrix, numChannels,
-        this.textureConfig);
-  }
-
-  public uploadMatrixToPackedTexture(
-      texture: WebGLTexture, batch: number, rows: number, columns: number,
-      physicalRows: number, physicalCols: number, matrix: Float32Array) {
-    this.throwIfDisposed();
-    return gpgpu_util.uploadMatrixToPackedTexture(
-        this.gl, this.debug, texture, batch, rows, columns, physicalRows,
-        physicalCols, matrix, this.textureConfig);
-  }
-
-  public downloadFloat32MatrixFromOutputTexture(
-      texture: WebGLTexture, rows: number, columns: number): Float32Array {
-    return this.downloadMatrixDriver(
-        texture,
-        () => gpgpu_util.downloadFloat32MatrixFromOutputTexture(
-            this.gl, this.debug, rows, columns, this.textureConfig));
-  }
-
   public downloadByteEncodedFloatMatrixFromOutputTexture(
       texture: WebGLTexture, rows: number, columns: number): Float32Array {
     return this.downloadMatrixDriver(
@@ -214,10 +194,9 @@ export class GPGPUContext {
         this.textureConfig);
   }
 
-  public downloadFloat32MatrixFromBuffer(
-      buffer: WebGLBuffer, rows: number, columns: number): Float32Array {
-    return gpgpu_util.downloadFloat32MatrixFromBuffer(
-        this.gl, buffer, rows, columns, this.textureConfig);
+  public downloadFloat32MatrixFromBuffer(buffer: WebGLBuffer, size: number):
+      Float32Array {
+    return gpgpu_util.downloadFloat32MatrixFromBuffer(this.gl, buffer, size);
   }
 
   public createBufferFromTexture(
@@ -270,13 +249,12 @@ export class GPGPUContext {
   }
 
   public downloadMatrixFromPackedTexture(
-      texture: WebGLTexture, batch: number, rows: number, columns: number,
-      physicalRows: number, physicalCols: number): Float32Array {
+      texture: WebGLTexture, physicalRows: number,
+      physicalCols: number): Float32Array {
     return this.downloadMatrixDriver(
         texture,
         () => gpgpu_util.downloadMatrixFromPackedOutputTexture(
-            this.gl, this.debug, batch, rows, columns, physicalRows,
-            physicalCols, this.textureConfig));
+            this.gl, this.debug, physicalRows, physicalCols));
   }
 
   private vertexAttrsAreBound = false;

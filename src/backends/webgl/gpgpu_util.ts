@@ -16,8 +16,7 @@
  */
 
 import {ENV} from '../../environment';
-import {PixelData} from '../../types';
-import * as util from '../../util';
+import {PixelData, TypedArray} from '../../types';
 
 import {getGlslDifferences} from './glsl_version';
 import * as tex_util from './tex_util';
@@ -218,6 +217,35 @@ export function bindVertexProgramAttributeStreams(
           gl, debug, program, 'uv', vertexBuffer, 2, stride, uvOffset);
 }
 
+export function uploadDenseMatrixToTexture(
+    gl: WebGLRenderingContext, debug: boolean, texture: WebGLTexture,
+    width: number, height: number, data: TypedArray,
+    textureConfig: TextureConfig) {
+  webgl_util.callAndCheck(
+      gl, debug, () => gl.bindTexture(gl.TEXTURE_2D, texture));
+
+  let dataForUpload: TypedArray, texelDataType: number, internalFormat: number;
+  if (data instanceof Uint8Array) {
+    dataForUpload = new Uint8Array(width * height * 4);
+    texelDataType = gl.UNSIGNED_BYTE;
+    internalFormat = gl.RGBA;
+  } else {
+    dataForUpload = new Float32Array(width * height * 4);
+    texelDataType = gl.FLOAT;
+    internalFormat = textureConfig.internalFormatPackedFloat;
+  }
+
+  dataForUpload.set(data);
+
+  webgl_util.callAndCheck(
+      gl, debug,
+      () => gl.texImage2D(
+          gl.TEXTURE_2D, 0, internalFormat, width, height, 0, gl.RGBA,
+          texelDataType, dataForUpload));
+
+  webgl_util.callAndCheck(gl, debug, () => gl.bindTexture(gl.TEXTURE_2D, null));
+}
+
 export function uploadPixelDataToTexture(
     gl: WebGLRenderingContext, debug: boolean, texture: WebGLTexture,
     pixels: PixelData|ImageData|HTMLImageElement|HTMLCanvasElement|
@@ -242,72 +270,6 @@ export function uploadPixelDataToTexture(
   webgl_util.callAndCheck(gl, debug, () => gl.bindTexture(gl.TEXTURE_2D, null));
 }
 
-function uploadDataToTexture(
-    gl: WebGLRenderingContext, debug: boolean, texture: WebGLTexture,
-    width: number, height: number, data: Float32Array, textureFormat: number) {
-  webgl_util.validateTextureSize(width, height);
-  webgl_util.callAndCheck(
-      gl, debug, () => gl.bindTexture(gl.TEXTURE_2D, texture));
-  webgl_util.callAndCheck(
-      gl, debug,
-      () => gl.texSubImage2D(
-          gl.TEXTURE_2D, 0, 0, 0, width, height, textureFormat, gl.FLOAT,
-          data));
-
-  webgl_util.callAndCheck(gl, debug, () => gl.bindTexture(gl.TEXTURE_2D, null));
-}
-
-export function uploadMatrixToTexture(
-    gl: WebGLRenderingContext, debug: boolean, texture: WebGLTexture,
-    rows: number, columns: number, matrix: Float32Array, numChannels: number,
-    textureConfig: TextureConfig) {
-  const [w, h] =
-      tex_util.getUnpackedMatrixTextureShapeWidthHeight(rows, columns);
-
-  let unpackedArray: Float32Array;
-  const numTexels = rows * columns;
-  if (textureConfig.defaultNumChannels === 1 && numTexels === matrix.length) {
-    // No need to allocate a temporary array.
-    unpackedArray = matrix;
-  } else {
-    unpackedArray = new Float32Array(numTexels * numChannels);
-    tex_util.encodeMatrixToUnpackedArray(matrix, unpackedArray, numChannels);
-  }
-
-  uploadDataToTexture(
-      gl, debug, texture, w, h, unpackedArray,
-      textureConfig.textureFormatFloat);
-}
-
-/**
- * This method writes a tensor to a packed texture in a way that respects how we
- * represent data using each texel's r,g,b,a channels. Specifically, we lay
- * out the four channels in two rows each containing two channels, so a single
- * texel can represent up to four values from the tensor. That means a texture
- * that has a channel width of 11 and channel height of 4 will have a texel
- * width of 6 and texel height of 2.
- *
- * rows, columns: Logical number of rows and columns in the tensor to be
- * uploaded.
- *
- * physicalRows, physicalCols: Channel dimensions of the texture that will hold
- * the tensor.
- *
- * width, height (internal parameters): Texel dimensions of the texture.
- */
-export function uploadMatrixToPackedTexture(
-    gl: WebGLRenderingContext, debug: boolean, texture: WebGLTexture,
-    batch: number, rows: number, columns: number, physicalRows: number,
-    physicalCols: number, matrix: Float32Array, textureConfig: TextureConfig) {
-  const [w, h] = tex_util.getPackedMatrixTextureShapeWidthHeight(
-      physicalRows, physicalCols);
-  const packedRGBA =
-      new Float32Array(tex_util.getPackedRGBAArraySizeFromMatrixShape(
-          physicalRows, physicalCols));
-  tex_util.encodeMatrixToPackedRGBA(matrix, batch, rows, columns, packedRGBA);
-  uploadDataToTexture(gl, debug, texture, w, h, packedRGBA, gl.RGBA);
-}
-
 export function createBufferFromOutputTexture(
     gl2: WebGL2RenderingContext, debug: boolean, rows: number, columns: number,
     textureConfig: TextureConfig): WebGLBuffer {
@@ -318,9 +280,8 @@ export function createBufferFromOutputTexture(
 
   // Initialize the buffer to the size of the texture in bytes.
   const bytesPerFloat = 4;
-  const bufferSizeBytes = bytesPerFloat *
-      tex_util.getUnpackedArraySizeFromMatrixSize(
-          rows * columns, textureConfig.downloadUnpackNumChannels);
+  const valuesPerTexel = 4;
+  const bufferSizeBytes = bytesPerFloat * valuesPerTexel * rows * columns;
 
   webgl_util.callAndCheck(
       gl2, debug,
@@ -340,47 +301,17 @@ export function createBufferFromOutputTexture(
 }
 
 export function downloadFloat32MatrixFromBuffer(
-    gl: WebGLRenderingContext, buffer: WebGLBuffer, rows: number,
-    columns: number, textureConfig: TextureConfig): Float32Array {
+    gl: WebGLRenderingContext, buffer: WebGLBuffer,
+    size: number): Float32Array {
   const gl2 = gl as WebGL2RenderingContext;
 
-  const downloadTarget =
-      new Float32Array(tex_util.getUnpackedArraySizeFromMatrixSize(
-          rows * columns, textureConfig.downloadUnpackNumChannels));
+  const downloadTarget = new Float32Array(size);
 
   gl2.bindBuffer(gl2.PIXEL_PACK_BUFFER, buffer);
   gl2.getBufferSubData(gl2.PIXEL_PACK_BUFFER, 0, downloadTarget);
   gl2.bindBuffer(gl2.PIXEL_PACK_BUFFER, null);
 
-  const matrix = new Float32Array(rows * columns);
-  tex_util.decodeMatrixFromUnpackedArray(
-      downloadTarget as Float32Array, matrix,
-      textureConfig.downloadUnpackNumChannels);
-
-  return matrix;
-}
-
-export function downloadFloat32MatrixFromOutputTexture(
-    gl: WebGLRenderingContext, debug: boolean, rows: number, columns: number,
-    textureConfig: TextureConfig): Float32Array {
-  const [w, h] =
-      tex_util.getUnpackedMatrixTextureShapeWidthHeight(rows, columns);
-
-  const downloadTarget =
-      new Float32Array(tex_util.getUnpackedArraySizeFromMatrixSize(
-          rows * columns, textureConfig.downloadUnpackNumChannels));
-
-  webgl_util.callAndCheck(
-      gl, debug,
-      () => gl.readPixels(
-          0, 0, w, h, textureConfig.downloadTextureFormat, gl.FLOAT,
-          downloadTarget));
-
-  const matrix = new Float32Array(rows * columns);
-  tex_util.decodeMatrixFromUnpackedArray(
-      downloadTarget as Float32Array, matrix,
-      textureConfig.downloadUnpackNumChannels);
-  return matrix;
+  return downloadTarget;
 }
 
 export function downloadByteEncodedFloatMatrixFromOutputTexture(
@@ -418,26 +349,17 @@ export function downloadPackedMatrixFromBuffer(
   gl2.getBufferSubData(gl2.PIXEL_PACK_BUFFER, 0, downloadTarget);
   gl2.bindBuffer(gl2.PIXEL_PACK_BUFFER, null);
 
-  const matrix = new Float32Array(util.sizeFromShape([batch, rows, cols]));
-  tex_util.decodeMatrixFromPackedRGBA(
-      downloadTarget, batch, rows, cols, matrix);
-  return matrix;
+  return downloadTarget;
 }
 
 export function downloadMatrixFromPackedOutputTexture(
-    gl: WebGLRenderingContext, debug: boolean, batch: number, rows: number,
-    cols: number, physicalRows: number, physicalCols: number,
-    textureConfig: TextureConfig): Float32Array {
-  const [w, h] = tex_util.getPackedMatrixTextureShapeWidthHeight(
-      physicalRows, physicalCols);
-
-  const packedRGBA =
-      new Float32Array(tex_util.getPackedRGBAArraySizeFromMatrixShape(
-          physicalRows, physicalCols));
+    gl: WebGLRenderingContext, debug: boolean, physicalRows: number,
+    physicalCols: number): Float32Array {
+  const packedRGBA = new Float32Array(physicalRows * physicalCols * 4);
   webgl_util.callAndCheck(
       gl, debug,
-      () => gl.readPixels(0, 0, w, h, gl.RGBA, gl.FLOAT, packedRGBA));
-  const matrix = new Float32Array(util.sizeFromShape([batch, rows, cols]));
-  return tex_util.decodeMatrixFromPackedRGBA(
-      packedRGBA, batch, rows, cols, matrix);
+      () => gl.readPixels(
+          0, 0, physicalCols, physicalRows, gl.RGBA, gl.FLOAT, packedRGBA));
+
+  return packedRGBA;
 }

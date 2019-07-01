@@ -17,22 +17,49 @@
 
 import {getGlslDifferences} from './glsl_version';
 import {GPGPUProgram} from './gpgpu_math';
-import {ENCODE_FLOAT_SNIPPET} from './shader_compiler_util';
 
-export class EncodeFloatProgram implements GPGPUProgram {
+export class FromPixelsPackedProgram implements GPGPUProgram {
   variableNames = ['A'];
   userCode: string;
   outputShape: number[];
 
   constructor(outputShape: number[]) {
     const glsl = getGlslDifferences();
+    const [height, width, ] = outputShape;
     this.outputShape = outputShape;
     this.userCode = `
-      ${ENCODE_FLOAT_SNIPPET}
-
       void main() {
-        float x = getAAtOutCoords();
-        ${glsl.output} = encode_float(x);
+        ivec3 coords = getOutputCoords();
+        int texR = coords[0];
+        int texC = coords[1];
+        int depth = coords[2];
+
+        vec4 result = vec4(0.);
+
+        for(int row=0; row<=1; row++) {
+          for(int col=0; col<=1; col++) {
+            texC = coords[1] + row;
+            depth = coords[2] + col;
+
+            vec2 uv = (vec2(texC, texR) + halfCR) / vec2(${width}.0, ${
+        height}.0);
+            vec4 values = ${glsl.texture2D}(A, uv);
+            float value;
+            if (depth == 0) {
+              value = values.r;
+            } else if (depth == 1) {
+              value = values.g;
+            } else if (depth == 2) {
+              value = values.b;
+            } else if (depth == 3) {
+              value = values.a;
+            }
+
+            result[row * 2 + col] = floor(value * 255.0 + 0.5);
+          }
+        }
+
+        ${glsl.output} = result;
       }
     `;
   }

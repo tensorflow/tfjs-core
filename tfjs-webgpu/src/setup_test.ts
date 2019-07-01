@@ -28,26 +28,13 @@ const env = jasmine.getEnv();
 
 /** Tests that have these substrings in their name will be included. */
 const INCLUDE_LIST: string[] = [
-  'matmul',
-  'add ',
-  'subtract ',
-  'mul ',
-  'conv2d',
-  'pad',
-  'pool',
-  'maxPool',
-  'floor divide ',
-  'resizeBilinear',
-  'relu',
-  'transpose',
-  'concat',
-  'argmax',
+  'matmul', 'add ', 'subtract ', 'mul ', 'conv2d', 'pad', 'pool', 'maxPool',
+  'floor divide ', 'resizeBilinear', 'relu', 'transpose', 'concat', 'argmax',
+  'fromPixels'
 ];
 /** Tests that have these substrings in their name will be excluded. */
 const EXCLUDE_LIST: string[] = [
   'conv to matmul',         // Shader compile fails.
-  'should not leak',        // Missing backend.memory().
-  'does not leak',          // Missing backend.memory().
   'matmulBatch',            // Shape mismatch.
   'gradient',               // Various: Shape mismatch, cast missing, etc.
   'has zero in its shape',  // Test times out.
@@ -84,6 +71,7 @@ const EXCLUDE_LIST: string[] = [
   'concat a large number of tensors',                    // Actual != Expected.
   'concat tensors with 0 in their shape',                // Timeout.
   'argmax test-webgpu {} accepts tensor with bool',      // Actual != Expected.
+  'RFFT',                                                // Not yet implemented.
 ];
 
 /**

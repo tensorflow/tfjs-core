@@ -334,7 +334,7 @@ function oneHot_(
 function reshape_<R2 extends Rank>(
     x: Tensor|TensorLike, shape: ShapeMap[R2]): Tensor<R2> {
   const $x = convertToTensor(x, 'x', 'reshape', null);
-  shape = util.inferFromImplicitShape(shape, $x.size);
+  shape = util.inferFromImplicitShape(shape, $x.size) as ShapeMap[R2];
   util.assert(
       $x.size === util.sizeFromShape(shape),
       () => 'new shape and old shape must have the same number of elements.');
@@ -418,7 +418,8 @@ function cast_<T extends Tensor>(x: T|TensorLike, dtype: DataType): T {
  */
 /** @doc {heading: 'Tensors', subheading: 'Slicing and Joining'} */
 function tile_<T extends Tensor>(x: T|TensorLike, reps: number[]): T {
-  const $x = convertToTensor(x, 'x', 'tile');
+  const parseAs: DataType = null;
+  const $x = convertToTensor(x, 'x', 'tile', parseAs);
 
   util.assert(
       $x.rank === reps.length,
@@ -881,7 +882,8 @@ function cumsum_<T extends Tensor>(
 /** @doc {heading: 'Tensors', subheading: 'Transformations'} */
 function expandDims_<R2 extends Rank>(
     x: Tensor|TensorLike, axis = 0): Tensor<R2> {
-  const $x = convertToTensor(x, 'x', 'expandDims');
+  const parseAs: DataType = null;
+  const $x = convertToTensor(x, 'x', 'expandDims', parseAs);
 
   util.assert(axis <= $x.rank, () => 'Axis must be <= rank of the tensor');
   const newShape = $x.shape.slice();
@@ -893,7 +895,7 @@ function expandDims_<R2 extends Rank>(
     axis = $x.rank + axis + 1;
   }
   newShape.splice(axis, 0, 1);
-  return reshape($x, newShape);
+  return reshape($x, newShape as ShapeMap[R2]);
 }
 
 /**
