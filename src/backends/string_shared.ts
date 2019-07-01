@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {arrayBufferToBase64String, arrayBufferToString, base64StringToArrayBuffer, urlSafeBase64, urlUnsafeBase64} from '../io/io_utils';
+import {arrayBufferToBase64String, base64StringToArrayBuffer, urlSafeBase64, urlUnsafeBase64} from '../io/io_utils';
 import {StringTensor, Tensor} from '../tensor';
 import {decodeString} from '../util';
 
@@ -50,8 +50,7 @@ export function decodeBase64Impl<T extends StringTensor>(
     const bStr = urlUnsafeBase64(bStrUrl);
     const aBuff = base64StringToArrayBuffer(bStr);
 
-    // Convert from ArrayBuffer of UTF-8 multibyte sequence to string
-    resultValues[i] = arrayBufferToString(aBuff);
+    resultValues[i] = decodeString(new Uint8Array(aBuff));
   }
 
   return Tensor.make(shape, {values: resultValues}, 'string') as T;
