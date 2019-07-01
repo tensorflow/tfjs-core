@@ -15,26 +15,25 @@
  * =============================================================================
  */
 
-import {arrayBufferToBase64String, arrayBufferToString, base64StringToArrayBuffer, stringToArrayBuffer, urlSafeBase64, urlUnsafeBase64} from '../io/io_utils';
+import {arrayBufferToBase64String, arrayBufferToString, base64StringToArrayBuffer, urlSafeBase64, urlUnsafeBase64} from '../io/io_utils';
 import {StringTensor, Tensor} from '../tensor';
-import {TypedArray} from '../types';
+import {decodeString} from '../util';
 
 /** Shared implementation of the encodeBase64 kernel across WebGL and CPU. */
 export function encodeBase64Impl<T extends StringTensor>(
-    values: TypedArray|string[], shape: number[], pad = false): T {
+    values: Uint8Array[], shape: number[], pad = false): T {
   const resultValues = new Array(values.length);
 
   for (let i = 0; i < values.length; ++i) {
-    // Convert from string to ArrayBuffer of UTF-8 multibyte sequence
-    // tslint:disable-next-line: max-line-length
-    // https://developer.mozilla.org/en-US/docs/Web/API/WindowBase64/Base64_encoding_and_decoding#The_Unicode_Problem
-    const aBuff = stringToArrayBuffer(values[i].toString());
+    const bStr = arrayBufferToBase64String(values[i].buffer);
+    const bStrUrl = urlSafeBase64(bStr);
 
-    // Encode to Base64 and make URL safe
-    const bVal = urlSafeBase64(arrayBufferToBase64String(aBuff));
-
-    // Remove padding
-    resultValues[i] = pad ? bVal : bVal.replace(/=/g, '');
+    if (pad) {
+      resultValues[i] = bStrUrl;
+    } else {
+      // Remove padding
+      resultValues[i] = bStrUrl.replace(/=/g, '');
+    }
   }
 
   return Tensor.make(shape, {values: resultValues}, 'string') as T;
@@ -42,13 +41,14 @@ export function encodeBase64Impl<T extends StringTensor>(
 
 /** Shared implementation of the decodeBase64 kernel across WebGL and CPU. */
 export function decodeBase64Impl<T extends StringTensor>(
-    values: TypedArray|string[], shape: number[]): T {
+    values: Uint8Array[], shape: number[]): T {
   const resultValues = new Array(values.length);
 
   for (let i = 0; i < values.length; ++i) {
     // Undo URL safe and decode from Base64 to ArrayBuffer
-    const aBuff =
-        base64StringToArrayBuffer(urlUnsafeBase64(values[i].toString()));
+    const bStrUrl = decodeString(values[i]);
+    const bStr = urlUnsafeBase64(bStrUrl);
+    const aBuff = base64StringToArrayBuffer(bStr);
 
     // Convert from ArrayBuffer of UTF-8 multibyte sequence to string
     resultValues[i] = arrayBufferToString(aBuff);
