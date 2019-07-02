@@ -26,7 +26,6 @@
     "src/"
   ],
   "exclude": [
-    "src/platforms/react_native/",
     "node_modules/",
   ]
 }
