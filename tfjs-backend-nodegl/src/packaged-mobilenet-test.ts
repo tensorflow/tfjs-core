@@ -74,6 +74,19 @@ async function run(path: string) {
       await model.classify(input as tf.Tensor3D)
   timer.end();
   console.log(`  - Mobilenet cold start: ${timer.milliseconds()}ms`);
+
+  const times = 100;
+  let totalMs = 0;
+  console.log(`  - Running inference (${times}x) ...`);
+  for (let i = 0; i < times; i++) {
+    timer.start();
+    await model.classify(input as tf.Tensor3D);
+    timer.end();
+
+    totalMs += timer.milliseconds();
+  }
+
+  console.log(`  - Mobilenet inference: (${times}x) : ${(totalMs / times)}ms`);
 }
 
 if (process.argv.length !== 3)
