@@ -51,6 +51,12 @@ export interface WebGPUMemoryInfo extends MemoryInfo {
   unreliable: boolean;
 }
 
+type BufferInfo = {
+  byteSize: number,
+  usage: GPUBufferUsage,
+  buffer: GPUBuffer
+};
+
 type TensorInfo = {
   byteSize: number,
   values: Float32Array|Int32Array|Uint8Array,
@@ -77,6 +83,7 @@ export class WebGPUBackend extends KernelBackend {
   private fromPixels2DContext: CanvasRenderingContext2D;
   private bufferManager: BufferManager;
   private tensorMap = new WeakMap<DataId, TensorInfo>();
+  private disposalQueue: BufferInfo[] = [];
 
   private disposed = false;
 
@@ -101,6 +108,14 @@ export class WebGPUBackend extends KernelBackend {
 
   setDataMover(dataMover: DataMover): void {
     // TODO: tfjs team to implement this. Call GPUBuffer.destroy()
+  }
+
+  flushDisposalQueue() {
+    this.disposalQueue.forEach(d => {
+      this.releaseBuffer(d.buffer, d.byteSize, d.usage);
+    });
+
+    this.disposalQueue = [];
   }
 
   disposeData(dataId: DataId): void {
@@ -165,7 +180,7 @@ export class WebGPUBackend extends KernelBackend {
     this.queue.submit(this.commandQueue.map(enc => enc.finish()));
     this.commandQueue = [];
 
-    this.bufferManager.flushDisposalQueue();
+    this.flushDisposalQueue();
   }
 
   private async getBufferData(info: TensorInfo): Promise<ArrayBuffer> {

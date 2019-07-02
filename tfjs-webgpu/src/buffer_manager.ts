@@ -15,18 +15,11 @@
  * =============================================================================
  */
 
-type BufferInfo = {
-  byteSize: number,
-  usage: GPUBufferUsage,
-  buffer: GPUBuffer
-};
-
 export class BufferManager {
   private numUsedBuffers = 0;
   private numFreeBuffers = 0;
   private freeBuffers: {[size: string]: GPUBuffer[]} = {};
   private usedBuffers: {[size: string]: GPUBuffer[]} = {};
-  private disposalQueue: BufferInfo[] = [];
 
   public numBytesUsed = 0;
   public numBytesUsedIncludingCache = 0;
@@ -61,7 +54,7 @@ export class BufferManager {
     return newBuffer;
   }
 
-  actuallyReleaseBuffer(
+  releaseBuffer(
       buffer: GPUBuffer, byteSize: number, usage: GPUBufferUsage) {
     if (this.freeBuffers == null) {
       return;
@@ -87,24 +80,12 @@ export class BufferManager {
     this.numBytesUsed -= byteSize;
   }
 
-  releaseBuffer(buffer: GPUBuffer, byteSize: number, usage: GPUBufferUsage) {
-    this.disposalQueue.push({byteSize, usage, buffer});
-  }
-
   getNumUsedBuffers(): number {
     return this.numUsedBuffers;
   }
 
   getNumFreeBuffers(): number {
     return this.numFreeBuffers;
-  }
-
-  flushDisposalQueue() {
-    this.disposalQueue.forEach(d => {
-      this.actuallyReleaseBuffer(d.buffer, d.byteSize, d.usage);
-    });
-
-    this.disposalQueue = [];
   }
 
   dispose() {
