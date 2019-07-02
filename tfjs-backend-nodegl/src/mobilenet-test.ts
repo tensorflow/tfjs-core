@@ -18,15 +18,15 @@
 // TODO(kreeger): Do not ship this file.
 import nodegl = require('./index');
 
-import { readFileSync } from 'fs';
+import {readFileSync} from 'fs';
 
 import * as tf from '@tensorflow/tfjs';
 import * as jpeg from 'jpeg-js';
-import { Timer } from 'node-simple-timer';
+import {Timer} from 'node-simple-timer';
 
 const NUMBER_OF_CHANNELS = 3
 const GOOGLE_CLOUD_STORAGE_DIR =
-  'https://storage.googleapis.com/tfjs-models/savedmodel/';
+    'https://storage.googleapis.com/tfjs-models/savedmodel/';
 const MODEL_FILE_URL = 'mobilenet_v1_1.0_224/model.json';
 const PREPROCESS_DIVISOR = tf.scalar(255 / 2);
 
@@ -34,7 +34,8 @@ function readImageAsJpeg(path: string): jpeg.RawImageData<Uint8Array> {
   return jpeg.decode(readFileSync(path), true);
 }
 
-function imageByteArray(image: jpeg.RawImageData<Uint8Array>, numChannels: number): Int32Array {
+function imageByteArray(
+    image: jpeg.RawImageData<Uint8Array>, numChannels: number): Int32Array {
   const pixels = image.data;
   const numPixels = image.width * image.height;
   const values = new Int32Array(numPixels * numChannels);
@@ -46,9 +47,12 @@ function imageByteArray(image: jpeg.RawImageData<Uint8Array>, numChannels: numbe
   return values;
 }
 
-function imageToInput(image: jpeg.RawImageData<Uint8Array>, numChannels: number): tf.Tensor {
+function imageToInput(
+    image: jpeg.RawImageData<Uint8Array>, numChannels: number): tf.Tensor {
   const values = imageByteArray(image, numChannels);
-  const outShape = [1, image.height, image.width, numChannels] as [number, number, number, number];
+  const outShape =
+      [1, image.height, image.width,
+       numChannels] as [number, number, number, number];
   const input = tf.tensor4d(values, outShape, 'float32');
   return tf.div(tf.sub(input, PREPROCESS_DIVISOR), PREPROCESS_DIVISOR);
 }
@@ -65,8 +69,10 @@ async function result(model: tf.GraphModel, input: tf.Tensor) {
 }
 
 async function benchmark(path: string) {
-  console.log(`  - gl.VERSION: ${nodegl.context.gl.getParameter(nodegl.context.gl.VERSION)}`);
-  console.log(`  - gl.RENDERER: ${nodegl.context.gl.getParameter(nodegl.context.gl.RENDERER)}`);
+  console.log(`  - gl.VERSION: ${
+      nodegl.context.gl.getParameter(nodegl.context.gl.VERSION)}`);
+  console.log(`  - gl.RENDERER: ${
+      nodegl.context.gl.getParameter(nodegl.context.gl.RENDERER)}`);
 
   console.log(`  - Loading image: ${path}`)
   const image = readImageAsJpeg(path);
@@ -77,7 +83,7 @@ async function benchmark(path: string) {
   const model = await loadModel();
 
   timer.start();
-  console.log('  - Coldstarting model...')
+  console.log('  - Coldstarting model...');
   await result(model, input);
   timer.end();
 
@@ -97,7 +103,7 @@ async function benchmark(path: string) {
   console.log(`  - Mobilenet inference: (${times}x) : ${(totalMs / times)}ms`);
 }
 
-if (process.argv.length !== 3) throw new Error(
-  'incorrect arguments: node mobilenet_node.js <IMAGE_FILE>');
+if (process.argv.length !== 3)
+  throw new Error('incorrect arguments: node mobilenet_node.js <IMAGE_FILE>');
 
 benchmark(process.argv[2]);
