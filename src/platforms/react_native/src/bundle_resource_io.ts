@@ -38,7 +38,6 @@ class BundleResourceHandler implements io.IOHandler {
    * Save model artifacts. This IO handler cannot support writing to the
    * packaged bundle at runtime and is exclusively for loading a model
    * that is already packages with the app.
-   *
    */
   async save(): Promise<io.SaveResult> {
     throw new Error(

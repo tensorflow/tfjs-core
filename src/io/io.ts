@@ -61,5 +61,3 @@ export {
   WeightsManifestEntry,
   withSaveHandler
 };
-
-// export * from './types';
