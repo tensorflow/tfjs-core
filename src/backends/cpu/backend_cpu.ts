@@ -71,9 +71,8 @@ function createCanvas() {
     return new OffscreenCanvas(300, 150);
   } else if (typeof document !== 'undefined') {
     return document.createElement('canvas');
-  } else {
-    throw new Error('Cannot create a canvas in this context');
   }
+  return undefined;
 }
 
 export class MathBackendCPU implements KernelBackend {
@@ -87,9 +86,10 @@ export class MathBackendCPU implements KernelBackend {
   constructor() {
     if (ENV.get('IS_BROWSER')) {
       const canvas = createCanvas();
-      this.fromPixels2DContext =
-          canvas.getContext('2d') as CanvasRenderingContext2D |
-          OffscreenCanvasRenderingContext2D;
+      if (typeof canvas !== 'undefined')
+        this.fromPixels2DContext =
+            canvas.getContext('2d') as CanvasRenderingContext2D |
+            OffscreenCanvasRenderingContext2D;
     }
     this.data = new DataStorage(this, ENGINE);
   }
