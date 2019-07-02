@@ -16,12 +16,14 @@
  */
 
 import {tensor} from '../ops/tensor_ops';
-import {Tensor} from '../tensor';
 import {NamedTensor, NamedTensorMap} from '../tensor_types';
 import {TypedArray} from '../types';
 import {sizeFromShape} from '../util';
 
 import {DTYPE_VALUE_SIZE_MAP, ModelArtifacts, ModelArtifactsInfo, WeightGroup, WeightsManifestEntry} from './types';
+
+/** Number of bytes reserved for the length of the string. (32bit integer). */
+const NUM_BYTES_STRING_LENGTH = 4;
 
 /**
  * Encode a map from names to weight values as an ArrayBuffer, along with an
@@ -54,15 +56,37 @@ export async function encodeWeights(
   for (let i = 0; i < names.length; ++i) {
     const name = names[i];
     const t = Array.isArray(tensors) ? tensors[i].tensor : tensors[name];
-    if (t.dtype !== 'float32' && t.dtype !== 'int32' && t.dtype !== 'bool') {
+    if (t.dtype !== 'float32' && t.dtype !== 'int32' && t.dtype !== 'bool' &&
+        t.dtype !== 'string') {
       throw new Error(`Unsupported dtype in weight '${name}': ${t.dtype}`);
     }
     const spec: WeightsManifestEntry = {name, shape: t.shape, dtype: t.dtype};
+    if (t.dtype === 'string') {
+      const utf8bytes = new Promise<TypedArray>(async resolve => {
+        const vals = await t.bytes() as Uint8Array[];
+        const totalNumBytes = vals.reduce((p, c) => p + c.length, 0) +
+            NUM_BYTES_STRING_LENGTH * vals.length;
+        const bytes = new Uint8Array(totalNumBytes);
+        let offset = 0;
+        for (let i = 0; i < vals.length; i++) {
+          const val = vals[i];
+          const bytesOfLength =
+              new Uint8Array(new Uint32Array([val.length]).buffer);
+          bytes.set(bytesOfLength, offset);
+          offset += NUM_BYTES_STRING_LENGTH;
+          bytes.set(val, offset);
+          offset += val.length;
+        }
+        resolve(bytes);
+      });
+      dataPromises.push(utf8bytes);
+    } else {
+      dataPromises.push(t.data());
+    }
     if (group != null) {
       spec.group = group;
     }
     specs.push(spec);
-    dataPromises.push(t.data());
   }
 
   const tensorValues = await Promise.all(dataPromises);
@@ -94,7 +118,7 @@ export function decodeWeights(
     const dtype = spec.dtype;
     const shape = spec.shape;
     const size = sizeFromShape(shape);
-    let typedArray: TypedArray;
+    let values: TypedArray|string[]|Uint8Array[];
 
     if ('quantization' in spec) {
       const quantization = spec.quantization;
@@ -111,43 +135,44 @@ export function decodeWeights(
           new Uint8Array(byteBuffer) :
           new Uint16Array(byteBuffer);
       if (dtype === 'float32') {
-        typedArray = Float32Array.from(
+        values = Float32Array.from(
             quantizedArray, v => v * quantization.scale + quantization.min);
       } else if (dtype === 'int32') {
-        typedArray = Int32Array.from(
+        values = Int32Array.from(
             quantizedArray,
             v => Math.round(v * quantization.scale + quantization.min));
       } else {
         throw new Error(`Unsupported dtype in weight '${name}': ${dtype}`);
       }
       offset += size * quantizationSizeFactor;
+    } else if (dtype === 'string') {
+      const size = sizeFromShape(spec.shape);
+      values = [];
+      for (let i = 0; i < size; i++) {
+        const byteLength = new Uint32Array(
+            buffer.slice(offset, offset + NUM_BYTES_STRING_LENGTH))[0];
+        offset += NUM_BYTES_STRING_LENGTH;
+        const bytes = new Uint8Array(buffer.slice(offset, offset + byteLength));
+        (values as Uint8Array[]).push(bytes);
+        offset += byteLength;
+      }
     } else {
       const dtypeFactor = DTYPE_VALUE_SIZE_MAP[dtype];
       const byteBuffer = buffer.slice(offset, offset + size * dtypeFactor);
 
       if (dtype === 'float32') {
-        typedArray = new Float32Array(byteBuffer);
+        values = new Float32Array(byteBuffer);
       } else if (dtype === 'int32') {
-        typedArray = new Int32Array(byteBuffer);
+        values = new Int32Array(byteBuffer);
       } else if (dtype === 'bool') {
-        typedArray = new Uint8Array(byteBuffer);
+        values = new Uint8Array(byteBuffer);
       } else {
         throw new Error(`Unsupported dtype in weight '${name}': ${dtype}`);
       }
       offset += size * dtypeFactor;
     }
 
-    let value: Tensor;
-    if (dtype === 'float32') {
-      value = tensor(typedArray, shape, 'float32');
-    } else if (dtype === 'int32') {
-      value = tensor(typedArray, shape, 'int32');
-    } else if (dtype === 'bool') {
-      value = tensor(typedArray, shape, 'bool');
-    } else {
-      throw new Error(`Unsupported dtype in weight '${name}': ${dtype}`);
-    }
-    out[name] = value;
+    out[name] = tensor(values, shape, dtype);
   }
   return out;
 }
