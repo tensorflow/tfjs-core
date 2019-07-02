@@ -105,6 +105,18 @@ export class PlatformReactNative implements Platform {
       );
     });
   }
+
+  /**
+   * Encode the provided string into an array of bytes using the provided
+   * encoding.
+   */
+  encode(text: string, encoding: string): Uint8Array {
+    throw new Error('not yet implemented');
+  }
+  /** Decode the provided bytes into a string using the provided encoding. */
+  decode(bytes: Uint8Array, encoding: string): string {
+    throw new Error('not yet implemented');
+  }
 }
 
 tf.ENV.registerFlag(
