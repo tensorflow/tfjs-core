@@ -17,6 +17,7 @@
 
 import {ENV} from './environment';
 import {DataType, DataTypeMap, FlatVector, NumericDataType, RecursiveArray, TensorLike, TypedArray} from './types';
+import { util } from '.';
 
 /**
  * Shuffles the array in-place using Fisher-Yates algorithm.
@@ -654,7 +655,7 @@ export function makeZerosTypedArray<D extends DataType>(
 /** @doc {heading: 'Util', namespace: 'util'} */
 export function now(): number {
   if (typeof performance !== 'undefined') {
-    return performance.now();
+    return util.now();
   } else if (typeof process !== 'undefined') {
     const time = process.hrtime();
     return time[0] * 1000 + time[1] / 1000000;
