@@ -102,7 +102,7 @@ function frame_(
  *
  * ```js
  * const input = tf.tensor1d([1, 1, 1, 1, 1])
- * tf.signal.stft(input, 3, 1);
+ * tf.signal.stft(input, 3, 1).print();
  * ```
  * @param signal 1-dimensional real value tensor.
  * @param frameLength The window length of samples.
