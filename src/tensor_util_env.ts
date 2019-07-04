@@ -81,6 +81,12 @@ function assertDtype(
   }
 }
 
+export function isDtypeConsistent<T extends Tensor>(
+  expectedDtype: DataType|'numeric', tensors: T[]): boolean {
+    // Finding an element whose dtype is not expected means inconsistent.
+    return !tensors.some(t => t.dtype !== expectedDtype);
+}
+
 export function convertToTensor<T extends Tensor>(
     x: T|TensorLike, argName: string, functionName: string,
     parseAsDtype: DataType|'numeric' = 'numeric'): T {
