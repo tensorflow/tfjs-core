@@ -30,7 +30,7 @@ console.log(`  - gl.VERSION: ${
 console.log(`  - gl.RENDERER: ${
     backendNodeGL.gl.getParameter(backendNodeGL.gl.RENDERER)}`);
 
-const NUMBER_OF_CHANNELS = 3
+const NUMBER_OF_CHANNELS = 3;
 const PREPROCESS_DIVISOR = tf.scalar(255 / 2);
 
 function readImageAsJpeg(path: string): jpeg.RawImageData<Uint8Array> {
@@ -64,15 +64,15 @@ async function run(path: string) {
   const image = readImageAsJpeg(path);
   const input = imageToInput(image, NUMBER_OF_CHANNELS);
 
-  console.log('  - Loading model...')
+  console.log('  - Loading model...');
   let start = tf.util.now();
   const model = await mobilenet.load();
   let end = tf.util.now();
   console.log(`  - Mobilenet load: ${end - start}ms`);
 
   start = tf.util.now();
-  console.log('  - Coldstarting model...')
-      await model.classify(input as tf.Tensor3D)
+  console.log('  - Coldstarting model...');
+  await model.classify(input as tf.Tensor3D);
   end = tf.util.now();
   console.log(`  - Mobilenet cold start: ${end - start}ms`);
 
@@ -90,8 +90,9 @@ async function run(path: string) {
   console.log(`  - Mobilenet inference: (${times}x) : ${(totalMs / times)}ms`);
 }
 
-if (process.argv.length !== 3)
+if (process.argv.length !== 3) {
   throw new Error(
       'incorrect arguments: node packaged-mobilenet-test.js <IMAGE_FILE>');
+}
 
 run(process.argv[2]);

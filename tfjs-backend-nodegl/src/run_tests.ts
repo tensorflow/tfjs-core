@@ -38,6 +38,7 @@ const IGNORE_LIST: string[] = [
   // TODO(kreeger): File issue: bad uniform in input.uniformValues.
   'sparseToDense test-tensorflow {} should work with 0-sized tensors',
   // TODO(kreeger): File issue: fromPixels doesn't have data field.
+  // tslint:disable:max-line-length
   'fromPixels, mock canvas test-tensorflow {} accepts a canvas-like element, numChannels=4',
   'fromPixels, mock canvas test-tensorflow {} accepts a canvas-like element'
 ];

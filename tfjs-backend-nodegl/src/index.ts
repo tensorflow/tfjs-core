@@ -35,10 +35,6 @@ tf.registerBackend('headless-nodegl', () => {
   return new tf.webgl.MathBackendWebGL(new tf.webgl.GPGPUContext(gl));
 }, 3 /* priority */);
 
-// tf.setBackend('headless-nodegl');
-
 export const gl = nodeGl;
 
 export * from '@tensorflow/tfjs-core';
-
-// TODO(kreeger): Handle nodeFileSystem/router APIs
