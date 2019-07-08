@@ -79,6 +79,7 @@ export class WebGPUBackend extends KernelBackend {
   compileOpts: shaderc.CompileOptions;
   commandQueue: GPUCommandEncoder[];
 
+  private commandQueueIds = new WeakSet<DataId>();
   private binaryCache: {[key: string]: WebGPUBinary};
   private fromPixels2DContext: CanvasRenderingContext2D;
   private bufferManager: BufferManager;
@@ -124,7 +125,11 @@ export class WebGPUBackend extends KernelBackend {
     }
 
     const info = this.tensorMap.get(dataId);
-    this.releaseBuffer(info.buffer, info.byteSize, info.usage);
+    if(this.commandQueueIds.has(dataId)) {
+      this.disposalQueue.push(info);
+    } else {
+      this.releaseBuffer(info.buffer, info.byteSize, info.usage);
+    }
 
     this.tensorMap.delete(dataId);
   }
@@ -179,6 +184,8 @@ export class WebGPUBackend extends KernelBackend {
   private submitQueue() {
     this.queue.submit(this.commandQueue.map(enc => enc.finish()));
     this.commandQueue = [];
+
+    this.commandQueueIds = new WeakSet<DataId>();
 
     this.flushDisposalQueue();
   }
@@ -348,6 +355,11 @@ export class WebGPUBackend extends KernelBackend {
         program.dispatch[0], program.dispatch[1], program.dispatch[2]);
     pass.endPass();
     this.commandQueue.push(encoder);
+    
+    inputs.forEach(input => {
+      this.commandQueueIds.add(input.dataId);
+    });
+    this.commandQueueIds.add(output.dataId);
 
     if (ENV.get('WEBGPU_IMMEDIATE_EXECUTION_ENABLED')) {
       this.submitQueue();
