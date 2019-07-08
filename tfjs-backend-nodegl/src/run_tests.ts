@@ -70,9 +70,7 @@ env.specFilter = spec => {
 };
 
 console.log(`Running tests with the following GL info`);
-console.log(`  GL_VERSION: ${
-    nodegl.context.gl.getParameter(nodegl.context.gl.VERSION)}`);
-console.log(`  GL_RENDERER: ${
-    nodegl.context.gl.getParameter(nodegl.context.gl.RENDERER)}`);
+console.log(`  GL_VERSION: ${nodegl.gl.getParameter(nodegl.gl.VERSION)}`);
+console.log(`  GL_RENDERER: ${nodegl.gl.getParameter(nodegl.gl.RENDERER)}`);
 
 runner.execute();
