@@ -74,15 +74,12 @@ class BundleResourceHandler implements io.IOHandler {
           'sharded weights (more than one weights file).');
     }
 
-    return {
-      modelTopology: modelJson.modelTopology,
-      // TODO add support for sharded models.
-      weightSpecs: modelJson.weightsManifest[0].weights,
-      format: modelJson.format,
-      generatedBy: modelJson.generatedBy,
-      convertedBy: modelJson.convertedBy,
-      weightData,
-    };
+    const modelArtifacts: io.ModelArtifacts = Object.assign({}, modelJson);
+    modelArtifacts.weightSpecs = modelJson.weightsManifest[0].weights;
+    //@ts-ignore
+    delete modelArtifacts.weightManifest;
+    modelArtifacts.weightData = weightData;
+    return modelArtifacts;
   }
 }
 
@@ -106,6 +103,17 @@ class BundleResourceHandler implements io.IOHandler {
  * @returns An instance of `IOHandler`
  */
 export function bundleResourceIO(
-    modelJson: io.ModelJSON, modelWeightsId: string|number): io.IOHandler {
+    modelJson: io.ModelJSON, modelWeightsId: number): io.IOHandler {
+  if (typeof modelWeightsId !== 'object') {
+    throw new Error(
+        'modelJson must be a JavaScript object (and not a string).\n' +
+        'Have you wrapped yor asset path in a require() statment?');
+  }
+
+  if (typeof modelWeightsId !== 'number') {
+    throw new Error(
+        'modelWeightsID must be a number.\n' +
+        'Have you wrapped yor asset path in a require() statment?');
+  }
   return new BundleResourceHandler(modelJson, modelWeightsId);
 }
