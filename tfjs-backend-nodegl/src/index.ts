@@ -15,33 +15,30 @@
  * =============================================================================
  */
 
-import * as tf from '@tensorflow/tfjs';
-import { MathBackendWebGL, GPGPUContext } from '@tensorflow/tfjs-core/dist/webgl';
-import { setWebGLContext} from '@tensorflow/tfjs-core/dist/backends/webgl/canvas_util';
-
+import * as tf from '@tensorflow/tfjs-core';
+// tslint:disable-next-line:no-require-imports
 const nodeGles = require('node-gles');
 
-const gl = nodeGles.binding.createWebGLRenderingContext();
+const nodeGl = nodeGles.binding.createWebGLRenderingContext();
 
-// TODO - actually set these from an interface.
-tf.ENV.set('WEBGL_VERSION', 2); 
+// TODO(kreeger): These are hard-coded GL integration flags. These need to be
+// updated to ensure they work on all systems with proper exception reporting.
+tf.ENV.set('WEBGL_VERSION', 2);
 tf.ENV.set('WEBGL_RENDER_FLOAT32_ENABLED', true);
 tf.ENV.set('WEBGL_DOWNLOAD_FLOAT_ENABLED', true);
 tf.ENV.set('WEBGL_FENCE_API_ENABLED', true);  // OpenGL ES 3.0 and higher..
-tf.ENV.set('WEBGL_MAX_TEXTURE_SIZE', 10000);
-
-setWebGLContext(2, gl);
+tf.ENV.set(
+    'WEBGL_MAX_TEXTURE_SIZE', nodeGl.getParameter(nodeGl.MAX_TEXTURE_SIZE));
+tf.webgl.setWebGLContext(2, nodeGl);
 
 tf.registerBackend('headless-nodegl', () => {
-  return new MathBackendWebGL(new GPGPUContext(gl))
+  return new tf.webgl.MathBackendWebGL(new tf.webgl.GPGPUContext(gl));
 }, 3 /* priority */);
 
-tf.setBackend('headless-nodegl');
+// tf.setBackend('headless-nodegl');
 
-export const context = {
-  gl
-};
+export const gl = nodeGl;
 
-export * from '@tensorflow/tfjs';
+export * from '@tensorflow/tfjs-core';
 
-// TODO - figure out nodeFileSystem router stuff?
+// TODO(kreeger): Handle nodeFileSystem/router APIs

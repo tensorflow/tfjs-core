@@ -81,9 +81,9 @@
   integrity sha512-tHq6qdbT9U1IRSGf14CL0pUlULksvY9OZ+5eEgl1N7t+OA3tGvNpxJCzuKQlsNgCVwbAs670L1vcVQi8j9HjnA==
 
 "@types/node-fetch@^2.1.2":
-  version "2.3.4"
-  resolved "https://registry.yarnpkg.com/@types/node-fetch/-/node-fetch-2.3.4.tgz#a46fc4fe9f94b491bf551b6bb7f0f493b9bacd1a"
-  integrity sha512-ZwGXz5osL88SF+jlbbz0WJlINlOZHoSWPrLytQRWRdB6j/KVLup1OoqIxnjO6q9ToqEEP3MZFzJCotgge+IiRw==
+  version "2.3.7"
+  resolved "https://registry.yarnpkg.com/@types/node-fetch/-/node-fetch-2.3.7.tgz#b7212e895100f8642dbdab698472bab5f3c1d2f1"
+  integrity sha512-+bKtuxhj/TYSSP1r4CZhfmyA0vm/aDRQNo7vbAgf6/cZajn0SAniGGST07yvI4Q+q169WTa2/x9gEHfJrkcALw==
   dependencies:
     "@types/node" "*"
 
@@ -452,20 +452,15 @@ ms@^2.1.1:
   resolved "https://registry.yarnpkg.com/ms/-/ms-2.1.1.tgz#30a5864eb3ebb0a66f2ebe6d727af06a09d86e0a"
   integrity sha512-tgp+dl5cGk28utYktBsrFqA7HKgrhgPsg6Z/EfhWI4gl1Hwq8B/GmY/0oXZ6nF8hDVesS/FpnYaD/kOWhYQvyg==
 
-node-fetch@^2.3.0:
-  version "2.6.0"
-  resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-2.6.0.tgz#e633456386d4aa55863f676a7ab0daa8fdecb0fd"
-  integrity sha512-8dG4H5ujfvFiqDmVu9fQ5bOHUC15JMjMY/Zumv26oOvvVJjM67KF8koCWIabKQ1GJIa9r2mMZscBq/TbdOcmNA==
-
 node-fetch@~2.1.2:
   version "2.1.2"
   resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-2.1.2.tgz#ab884e8e7e57e38a944753cec706f788d1768bb5"
   integrity sha1-q4hOjn5X44qUR1POxwb3iNF2i7U=
 
-node-gles@^0.0.12:
-  version "0.0.12"
-  resolved "https://registry.yarnpkg.com/node-gles/-/node-gles-0.0.12.tgz#25ee8ad8e525318119a1e428e761927ec6e4e146"
-  integrity sha512-HaKxV+c1sDj38q8vQuqWAtEzHssc6PW7ftuJYNRuSHlAMLEW8GHASCw0bHidFURpqxkGk9oOsWTSi8Zps5yFAA==
+node-gles@^0.0.13:
+  version "0.0.13"
+  resolved "https://registry.yarnpkg.com/node-gles/-/node-gles-0.0.13.tgz#55df9725b047355284d8343af058d428e05eeeac"
+  integrity sha512-dEqRhLf/ZYZCxZJ8qxLYSOYkXKNNJb+mQcpVSg5RuF8sXvxK/eEWIhZqDl8pcboaDuXNEyeeVvTD8cpYlkJNdw==
   dependencies:
     adm-zip "^0.4.13"
     bindings "^1.3.0"
@@ -473,11 +468,6 @@ node-gles@^0.0.12:
     progress "^2.0.3"
     rimraf "^2.6.2"
     tar "^4.4.8"
-
-node-simple-timer@^0.1.1:
-  version "0.1.1"
-  resolved "https://registry.yarnpkg.com/node-simple-timer/-/node-simple-timer-0.1.1.tgz#85f4313a878637f9edee6c57a143588556d8ca01"
-  integrity sha512-gDph1MlKIG816zkTd2nPMb4MPwi50AjY+JywlBg3Z0pcPzDDcf0yaxcXtkoHQzgwm2xYpcKYUHnc/ssGu/RfEg==
 
 once@^1.3.0:
   version "1.4.0"

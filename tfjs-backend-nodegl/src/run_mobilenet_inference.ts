@@ -16,17 +16,19 @@
  */
 
 // TODO(kreeger): Do not ship this file.
-import nodegl = require('./index');
-import {Timer} from 'node-simple-timer';
+
+import * as mobilenet from '@tensorflow-models/mobilenet';
+import * as tf from '@tensorflow/tfjs-core';
+// import {Timer} from 'node-simple-timer';
 import {readFileSync} from 'fs';
 import * as jpeg from 'jpeg-js';
-import * as mobilenet from '@tensorflow-models/mobilenet';
-import * as tf from '@tensorflow/tfjs';
+
+import * as backendNodeGL from './index';
 
 console.log(`  - gl.VERSION: ${
-    nodegl.context.gl.getParameter(nodegl.context.gl.VERSION)}`);
+    backendNodeGL.gl.getParameter(backendNodeGL.gl.VERSION)}`);
 console.log(`  - gl.RENDERER: ${
-    nodegl.context.gl.getParameter(nodegl.context.gl.RENDERER)}`);
+    backendNodeGL.gl.getParameter(backendNodeGL.gl.RENDERER)}`);
 
 const NUMBER_OF_CHANNELS = 3
 const PREPROCESS_DIVISOR = tf.scalar(255 / 2);
@@ -62,28 +64,27 @@ async function run(path: string) {
   const image = readImageAsJpeg(path);
   const input = imageToInput(image, NUMBER_OF_CHANNELS);
 
-  const timer = new Timer();
   console.log('  - Loading model...')
-  timer.start();
+  let start = tf.util.now();
   const model = await mobilenet.load();
-  timer.end();
-  console.log(`  - Mobilenet load: ${timer.milliseconds()}ms`);
+  let end = tf.util.now();
+  console.log(`  - Mobilenet load: ${end - start}ms`);
 
-  timer.start();
+  start = tf.util.now();
   console.log('  - Coldstarting model...')
       await model.classify(input as tf.Tensor3D)
-  timer.end();
-  console.log(`  - Mobilenet cold start: ${timer.milliseconds()}ms`);
+  end = tf.util.now();
+  console.log(`  - Mobilenet cold start: ${end - start}ms`);
 
   const times = 100;
   let totalMs = 0;
   console.log(`  - Running inference (${times}x) ...`);
   for (let i = 0; i < times; i++) {
-    timer.start();
+    start = tf.util.now();
     await model.classify(input as tf.Tensor3D);
-    timer.end();
+    end = tf.util.now();
 
-    totalMs += timer.milliseconds();
+    totalMs += end - start;
   }
 
   console.log(`  - Mobilenet inference: (${times}x) : ${(totalMs / times)}ms`);
