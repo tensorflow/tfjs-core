@@ -1541,10 +1541,10 @@ describeWithFlags('fromPixels', BROWSER_ENVS, () => {
 
     const pixels = await tf.browser.fromPixels(img, 4);
 
-    const canvas = document.createElement("canvas");
+    const canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext('2d');
     ctx.drawImage(img, 0, 0, size, size);
     const actual = ctx.getImageData(0, 0, size, size).data;
     const actualInt32 = Int32Array.from(actual);
