@@ -197,14 +197,16 @@ export class WebGPUBackend extends KernelBackend {
     encoder.copyBufferToBuffer(info.buffer, 0, staging, 0, info.byteSize);
     this.commandQueue.push(encoder);
     this.submitQueue();
-    const mapped: ArrayBuffer = await staging.mapReadAsync();
     
+    const mapped: ArrayBuffer = await staging.mapReadAsync();
+    const values = mapped.slice(0);
+
+    staging.unmap();
     this.releaseBuffer(
         staging, info.byteSize,
         GPUBufferUsage.TRANSFER_DST | GPUBufferUsage.MAP_READ);
 
-    staging.unmap();
-    return mapped.slice(0);
+    return values;
   }
 
   private convertAndCacheOnCPU(dataId: DataId, data: backend_util.TypedArray):
