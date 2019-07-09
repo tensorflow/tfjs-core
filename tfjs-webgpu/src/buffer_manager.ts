@@ -85,6 +85,13 @@ export class BufferManager {
     return this.numFreeBuffers;
   }
 
+  reset() {
+    this.freeBuffers = {};
+    this.usedBuffers = {};
+    this.numUsedBuffers = 0;
+    this.numFreeBuffers = 0;
+  }
+
   dispose() {
     if (this.freeBuffers == null) {
       return;
