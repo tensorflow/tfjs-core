@@ -35,18 +35,17 @@ export class BufferManager {
       this.usedBuffers[key] = [];
     }
 
+    this.numBytesUsed += byteSize;
+    this.numUsedBuffers++;
+
     if (this.freeBuffers[key].length > 0) {
       this.numFreeBuffers--;
-      this.numUsedBuffers++;
 
       const newBuffer = this.freeBuffers[key].shift();
       this.usedBuffers[key].push(newBuffer);
       return newBuffer;
     }
 
-    this.numUsedBuffers++;
-
-    this.numBytesUsed += byteSize;
     const newBuffer = this.device.createBuffer({size: byteSize, usage});
     this.usedBuffers[key].push(newBuffer);
 
