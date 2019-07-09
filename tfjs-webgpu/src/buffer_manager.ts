@@ -22,7 +22,6 @@ export class BufferManager {
   private usedBuffers: {[size: string]: GPUBuffer[]} = {};
 
   public numBytesUsed = 0;
-  public numBytesUsedIncludingCache = 0;
 
   constructor(private device: GPUDevice) {}
 
@@ -54,8 +53,7 @@ export class BufferManager {
     return newBuffer;
   }
 
-  releaseBuffer(
-      buffer: GPUBuffer, byteSize: number, usage: GPUBufferUsage) {
+  releaseBuffer(buffer: GPUBuffer, byteSize: number, usage: GPUBufferUsage) {
     if (this.freeBuffers == null) {
       return;
     }

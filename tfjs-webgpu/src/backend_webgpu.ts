@@ -125,7 +125,7 @@ export class WebGPUBackend extends KernelBackend {
     }
 
     const info = this.tensorMap.get(dataId);
-    if(this.commandQueueIds.has(dataId)) {
+    if (this.commandQueueIds.has(dataId)) {
       this.disposalQueue.push(info);
     } else {
       this.releaseBuffer(info.buffer, info.byteSize, info.usage);
@@ -197,7 +197,7 @@ export class WebGPUBackend extends KernelBackend {
     encoder.copyBufferToBuffer(info.buffer, 0, staging, 0, info.byteSize);
     this.commandQueue.push(encoder);
     this.submitQueue();
-    
+
     const mapped: ArrayBuffer = await staging.mapReadAsync();
     const values = mapped.slice(0);
 
@@ -358,7 +358,7 @@ export class WebGPUBackend extends KernelBackend {
         program.dispatch[0], program.dispatch[1], program.dispatch[2]);
     pass.endPass();
     this.commandQueue.push(encoder);
-    
+
     inputs.forEach(input => {
       this.commandQueueIds.add(input.dataId);
     });
@@ -367,6 +367,9 @@ export class WebGPUBackend extends KernelBackend {
     if (ENV.get('WEBGPU_IMMEDIATE_EXECUTION_ENABLED')) {
       this.submitQueue();
     }
+    this.releaseBuffer(
+        uniforms.resource.buffer, uniformData.byteLength,
+        GPUBufferUsage.TRANSFER_DST | GPUBufferUsage.UNIFORM);
     return output as {} as K;
   }
 
