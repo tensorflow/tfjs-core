@@ -12,18 +12,15 @@
   "author": "",
   "license": "Apache-2.0",
   "dependencies": {
-    "@tensorflow/tfjs": "^1.2.2",
+    "@tensorflow/tfjs-core": "^1.2.2",
     "node-gles": "^0.0.13"
   },
   "devDependencies": {
-    "@tensorflow-models/mobilenet": "^1.0.1",
     "@types/jasmine": "~2.8.6",
-    "@types/jpeg-js": "^0.3.0",
     "@types/node": "^10.5.1",
     "@types/rimraf": "~2.0.2",
     "clang-format": "^1.2.4",
     "jasmine": "~3.1.0",
-    "jpeg-js": "^0.3.4",
     "ts-node": "^8.1.0",
     "tslint": "~5.9.1",
     "typescript": "^3.4.5"

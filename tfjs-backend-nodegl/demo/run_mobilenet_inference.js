@@ -15,15 +15,12 @@
  * =============================================================================
  */
 
-// TODO(kreeger): Do not ship this file.
+const mobilenet = require('@tensorflow-models/mobilenet');
+const tf = require('@tensorflow/tfjs');
+const fs = require('fs');
+const jpeg = require('jpeg-js');
 
-import * as mobilenet from '@tensorflow-models/mobilenet';
-import * as tf from '@tensorflow/tfjs-core';
-// import {Timer} from 'node-simple-timer';
-import {readFileSync} from 'fs';
-import * as jpeg from 'jpeg-js';
-
-import * as backendNodeGL from './index';
+const backendNodeGL = require('./../dist/index');
 
 console.log(`  - gl.VERSION: ${
     backendNodeGL.gl.getParameter(backendNodeGL.gl.VERSION)}`);
@@ -33,12 +30,11 @@ console.log(`  - gl.RENDERER: ${
 const NUMBER_OF_CHANNELS = 3;
 const PREPROCESS_DIVISOR = tf.scalar(255 / 2);
 
-function readImageAsJpeg(path: string): jpeg.RawImageData<Uint8Array> {
-  return jpeg.decode(readFileSync(path), true);
+function readImageAsJpeg(path) {
+  return jpeg.decode(fs.readFileSync(path), true);
 }
 
-function imageByteArray(
-    image: jpeg.RawImageData<Uint8Array>, numChannels: number): Int32Array {
+function imageByteArray(image, numChannels) {
   const pixels = image.data;
   const numPixels = image.width * image.height;
   const values = new Int32Array(numPixels * numChannels);
@@ -50,17 +46,14 @@ function imageByteArray(
   return values;
 }
 
-function imageToInput(
-    image: jpeg.RawImageData<Uint8Array>, numChannels: number): tf.Tensor {
+function imageToInput(image, numChannels) {
   const values = imageByteArray(image, numChannels);
-  const outShape =
-      [1, image.height, image.width,
-       numChannels] as [number, number, number, number];
+  const outShape = [1, image.height, image.width, numChannels];
   const input = tf.tensor4d(values, outShape, 'float32');
   return tf.div(tf.sub(input, PREPROCESS_DIVISOR), PREPROCESS_DIVISOR);
 }
 
-async function run(path: string) {
+async function run(path) {
   const image = readImageAsJpeg(path);
   const input = imageToInput(image, NUMBER_OF_CHANNELS);
 
@@ -72,7 +65,7 @@ async function run(path: string) {
 
   start = tf.util.now();
   console.log('  - Coldstarting model...');
-  await model.classify(input as tf.Tensor3D);
+  await model.classify(input);
   end = tf.util.now();
   console.log(`  - Mobilenet cold start: ${end - start}ms`);
 
@@ -81,7 +74,7 @@ async function run(path: string) {
   console.log(`  - Running inference (${times}x) ...`);
   for (let i = 0; i < times; i++) {
     start = tf.util.now();
-    await model.classify(input as tf.Tensor3D);
+    await model.classify(input);
     end = tf.util.now();
 
     totalMs += end - start;

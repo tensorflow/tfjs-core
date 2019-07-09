@@ -16,6 +16,8 @@
  */
 
 import * as tf from '@tensorflow/tfjs-core';
+// TODO(kreeger): Fix binding definition in node-gles before switching to a
+// non-require import style.
 // tslint:disable-next-line:no-require-imports
 const nodeGles = require('node-gles');
 
@@ -36,5 +38,3 @@ tf.registerBackend('headless-nodegl', () => {
 }, 3 /* priority */);
 
 export const gl = nodeGl;
-
-export * from '@tensorflow/tfjs-core';
