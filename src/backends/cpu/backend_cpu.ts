@@ -72,7 +72,7 @@ function createCanvas() {
   } else if (typeof document !== 'undefined') {
     return document.createElement('canvas');
   }
-  return undefined;
+  return null;
 }
 
 export class MathBackendCPU implements KernelBackend {
@@ -86,7 +86,7 @@ export class MathBackendCPU implements KernelBackend {
   constructor() {
     if (ENV.get('IS_BROWSER')) {
       const canvas = createCanvas();
-      if (typeof canvas !== 'undefined') {
+      if (canvas !== null) {
         this.fromPixels2DContext =
             canvas.getContext('2d') as CanvasRenderingContext2D |
             OffscreenCanvasRenderingContext2D;
