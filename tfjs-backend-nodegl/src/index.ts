@@ -39,5 +39,3 @@ tf.registerBackend('headless-nodegl', () => {
   // https://github.com/tensorflow/tfjs/issues/1732
   return new tf.webgl.MathBackendWebGL(new tf.webgl.GPGPUContext(nodeGl));
 }, 3 /* priority */);
-
-export const gl = nodeGl;
