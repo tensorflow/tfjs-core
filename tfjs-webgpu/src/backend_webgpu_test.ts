@@ -79,7 +79,7 @@ describeWebGPU('backend webgpu', () => {
     tf.ENV.set('WEBGPU_IMMEDIATE_EXECUTION_ENABLED', savedFlag);
   });
 
-  it('should recycle buffers in immediate mode', async () => {
+  it('should recycle buffers in immediate mode', () => {
     const savedFlag = tf.ENV.get('WEBGPU_IMMEDIATE_EXECUTION_ENABLED');
     tf.ENV.set('WEBGPU_IMMEDIATE_EXECUTION_ENABLED', true);
     const backend = tf.backend() as WebGPUBackend;
@@ -120,7 +120,7 @@ describeWebGPU('backend webgpu', () => {
     tf.ENV.set('WEBGPU_IMMEDIATE_EXECUTION_ENABLED', savedFlag);
   });
 
-  it('should recycle buffers in delayed mode', async () => {
+  it('should recycle buffers in delayed mode', () => {
     const savedFlag = tf.ENV.get('WEBGPU_IMMEDIATE_EXECUTION_ENABLED');
     tf.ENV.set('WEBGPU_IMMEDIATE_EXECUTION_ENABLED', false);
     const backend = tf.backend() as WebGPUBackend;
