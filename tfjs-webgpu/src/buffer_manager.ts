@@ -116,9 +116,6 @@ export class BufferManager {
   }
 }
 
-function getBufferKey(
-    byteSize: number,
-    usage: GPUBufferUsage = GPUBufferUsage.STORAGE |
-        GPUBufferUsage.TRANSFER_SRC | GPUBufferUsage.TRANSFER_DST) {
+function getBufferKey(byteSize: number, usage: GPUBufferUsage) {
   return `${byteSize}_${usage}`;
 }
