@@ -33,7 +33,7 @@
     "karma-jasmine": "~1.1.0",
     "karma-typescript": "~4.0.0",
     "karma-verbose-reporter": "^0.0.6",
-    "react-native": "^0.59.9",
+    "react-native": "^0.60.0",
     "rimraf": "~2.6.2",
     "rollup": "^0.58.2",
     "rollup-plugin-commonjs": "9.1.3",
