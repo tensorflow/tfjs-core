@@ -18,8 +18,8 @@
 export class BufferManager {
   private numUsedBuffers = 0;
   private numFreeBuffers = 0;
-  private freeBuffers: {[size: string]: GPUBuffer[]} = {};
-  private usedBuffers: {[size: string]: GPUBuffer[]} = {};
+  private freeBuffers: Map<string, GPUBuffer[]> = new Map();
+  private usedBuffers: Map<string, GPUBuffer[]> = new Map();
 
   public numBytesUsed = 0;
 
@@ -27,27 +27,27 @@ export class BufferManager {
 
   acquireBuffer(byteSize: number, usage: GPUBufferUsage) {
     const key = getBufferKey(byteSize, usage);
-    if (!(key in this.freeBuffers)) {
-      this.freeBuffers[key] = [];
+    if (!this.freeBuffers.has(key)) {
+      this.freeBuffers.set(key, []);
     }
 
-    if (!(key in this.usedBuffers)) {
-      this.usedBuffers[key] = [];
+    if (!this.usedBuffers.has(key)) {
+      this.usedBuffers.set(key, []);
     }
 
     this.numBytesUsed += byteSize;
     this.numUsedBuffers++;
 
-    if (this.freeBuffers[key].length > 0) {
+    if (this.freeBuffers.get(key).length > 0) {
       this.numFreeBuffers--;
 
-      const newBuffer = this.freeBuffers[key].shift();
-      this.usedBuffers[key].push(newBuffer);
+      const newBuffer = this.freeBuffers.get(key).shift();
+      this.usedBuffers.get(key).push(newBuffer);
       return newBuffer;
     }
 
     const newBuffer = this.device.createBuffer({size: byteSize, usage});
-    this.usedBuffers[key].push(newBuffer);
+    this.usedBuffers.get(key).push(newBuffer);
 
     return newBuffer;
   }
@@ -58,15 +58,15 @@ export class BufferManager {
     }
 
     const key = getBufferKey(byteSize, usage);
-    if (!(key in this.freeBuffers)) {
-      this.freeBuffers[key] = [];
+    if (!this.freeBuffers.has(key)) {
+      this.freeBuffers.set(key, []);
     }
 
-    this.freeBuffers[key].push(buffer);
+    this.freeBuffers.get(key).push(buffer);
     this.numFreeBuffers++;
     this.numUsedBuffers--;
 
-    const bufferList = this.usedBuffers[key];
+    const bufferList = this.usedBuffers.get(key);
     const bufferIndex = bufferList.indexOf(buffer);
     if (bufferIndex < 0) {
       throw new Error(
@@ -86,8 +86,8 @@ export class BufferManager {
   }
 
   reset() {
-    this.freeBuffers = {};
-    this.usedBuffers = {};
+    this.freeBuffers = new Map();
+    this.usedBuffers = new Map();
     this.numUsedBuffers = 0;
     this.numFreeBuffers = 0;
   }
@@ -98,13 +98,13 @@ export class BufferManager {
     }
 
     for (const key in this.freeBuffers) {
-      this.freeBuffers[key].forEach(buff => {
+      this.freeBuffers.get(key).forEach(buff => {
         buff.destroy();
       });
     }
 
     for (const key in this.usedBuffers) {
-      this.usedBuffers[key].forEach(buff => {
+      this.usedBuffers.get(key).forEach(buff => {
         buff.destroy();
       });
     }
