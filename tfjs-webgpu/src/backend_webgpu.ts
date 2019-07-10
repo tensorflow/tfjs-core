@@ -58,12 +58,10 @@ type BufferInfo = {
 };
 
 type TensorInfo = {
-  byteSize: number,
   values: Float32Array|Int32Array|Uint8Array,
   id: number,
   dtype: DataType,
-  buffer: GPUBuffer,
-  usage: GPUBufferUsage
+  bufferInfo: BufferInfo
 };
 
 interface DataId {}
@@ -126,9 +124,11 @@ export class WebGPUBackend extends KernelBackend {
 
     const info = this.tensorMap.get(dataId);
     if (this.commandQueueIds.has(dataId)) {
-      this.disposalQueue.push(info);
+      this.disposalQueue.push(info.bufferInfo);
     } else {
-      this.releaseBuffer(info.buffer, info.byteSize, info.usage);
+      this.releaseBuffer(
+          info.bufferInfo.buffer, info.bufferInfo.byteSize,
+          info.bufferInfo.usage);
     }
 
     this.tensorMap.delete(dataId);
@@ -160,12 +160,10 @@ export class WebGPUBackend extends KernelBackend {
       const byteSize = util.sizeFromShape(shape) * util.bytesPerElement(dtype);
       const buffer = this.acquireBuffer(byteSize);
       this.tensorMap.set(dataId, {
-        byteSize,
         values: null,
         id: -1,
-        buffer,
         dtype,
-        usage: DEFAULT_GPUBUFFER_USAGE
+        bufferInfo: {byteSize, usage: DEFAULT_GPUBUFFER_USAGE, buffer}
       });
     }
   }
@@ -177,7 +175,7 @@ export class WebGPUBackend extends KernelBackend {
 
     const info = this.tensorMap.get(dataId);
     info.values = values;
-    info.buffer.setSubData(0, values);
+    info.bufferInfo.buffer.setSubData(0, values);
     this.tensorMap.set(dataId, info);
   }
 
@@ -192,9 +190,11 @@ export class WebGPUBackend extends KernelBackend {
 
   private async getBufferData(info: TensorInfo): Promise<ArrayBuffer> {
     const staging = this.acquireBuffer(
-        info.byteSize, GPUBufferUsage.TRANSFER_DST | GPUBufferUsage.MAP_READ);
+        info.bufferInfo.byteSize,
+        GPUBufferUsage.TRANSFER_DST | GPUBufferUsage.MAP_READ);
     const encoder = this.device.createCommandEncoder({});
-    encoder.copyBufferToBuffer(info.buffer, 0, staging, 0, info.byteSize);
+    encoder.copyBufferToBuffer(
+        info.bufferInfo.buffer, 0, staging, 0, info.bufferInfo.byteSize);
     this.commandQueue.push(encoder);
     this.submitQueue();
 
@@ -203,7 +203,7 @@ export class WebGPUBackend extends KernelBackend {
 
     staging.unmap();
     this.releaseBuffer(
-        staging, info.byteSize,
+        staging, info.bufferInfo.byteSize,
         GPUBufferUsage.TRANSFER_DST | GPUBufferUsage.MAP_READ);
 
     return values;
@@ -268,7 +268,7 @@ export class WebGPUBackend extends KernelBackend {
       resource: {
         offset: 0,
         size: tensor.size * util.bytesPerElement(tensor.dtype),
-        buffer: tensorData.buffer
+        buffer: tensorData.bufferInfo.buffer
       }
     };
   }
