@@ -35,3 +35,6 @@ npm-run-all -p -c --aggregate-output \
   "run-browserstack --browsers=bs_chrome_mac" \
   "run-browserstack --browsers=bs_chrome_mac --testEnv webgl2 --flags '{\"WEBGL_CPU_FORWARD\": true}'" \
   "run-browserstack --browsers=bs_chrome_mac --testEnv webgl2 --flags '{\"WEBGL_CPU_FORWARD\": false}'"
+
+# Run under webworker environment
+yarn test-webworker

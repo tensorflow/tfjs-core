@@ -57,6 +57,16 @@ const browserstackConfig = {
   hostname: 'bs-local.com',
 };
 
+const webworkerConfig = {
+	...browserstackConfig,
+	files: [
+		'dist/setup_test.js',
+		{pattern: 'dist/**/*_test.js'},
+		// Include tf-core into the static file
+		{pattern: 'dist/**/tf-core.js', included: false}
+	]
+};
+
 module.exports = function(config) {
   const args = [];
   // If no test environment is set unit tests will run against all registered
@@ -69,8 +79,19 @@ module.exports = function(config) {
   }
   if (config.flags) {
     args.push('--flags', config.flags);
-  }
-  const extraConfig = config.browserstack ? browserstackConfig : devConfig;
+	}
+
+
+	let extraConfig = null;
+
+	if (config.worker) {
+		extraConfig = webworkerConfig;
+	} else if (config.browserstack) {
+		extraConfig = browserstackConfig;
+	} else {
+		extraConfig = devConfig;
+	}
+
 
   config.set({
     ...extraConfig,
