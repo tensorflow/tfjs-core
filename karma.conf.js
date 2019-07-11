@@ -62,8 +62,8 @@ const webworkerConfig = {
 	files: [
 		'dist/setup_test.js',
 		{pattern: 'dist/**/*_test.js'},
-		{pattern: 'src/worker/*.js', included: false},
-		{pattern: 'dist/**/!(*_test).js', included: false}
+		// Include tf-core into the static file
+		{pattern: 'dist/**/tf-core.js', included: false}
 	]
 };
 
