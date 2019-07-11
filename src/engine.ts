@@ -22,7 +22,7 @@ import {backpropagateGradients, getFilteredNodesXToY, NamedGradientMap, TapeNode
 import {DataId, setTensorTracker, Tensor, Tensor3D, TensorTracker, Variable} from './tensor';
 import {GradSaveFunc, NamedTensorMap, NamedVariableMap, TensorContainer} from './tensor_types';
 import {getTensorsInContainer} from './tensor_util';
-import {DataType, DataValues, PixelData} from './types';
+import {BackendValues, DataType, PixelData} from './types';
 import * as util from './util';
 import {bytesFromStringArray, makeOnesTypedArray, now, sizeFromShape} from './util';
 
@@ -159,7 +159,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
       const backendName = sortedBackends[i];
       const success = await this.initializeBackend(backendName).success;
       if (success) {
-        this.setBackend(backendName);
+        await this.setBackend(backendName);
         return;
       }
     }
@@ -260,7 +260,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
    */
   private initializeBackend(backendName: string):
       {success: boolean|Promise<boolean>, asyncInit: boolean} {
-    const registryFactoryEntry = ENGINE.registryFactory[backendName];
+    const registryFactoryEntry = this.registryFactory[backendName];
     if (registryFactoryEntry == null) {
       throw new Error(
           `Cannot initialize backend ${backendName}, no registration found.`);
@@ -830,7 +830,8 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
   }
 
   // Forwarding to backend.
-  write(destBackend: KernelBackend, dataId: DataId, values: DataValues): void {
+  write(destBackend: KernelBackend, dataId: DataId, values: BackendValues):
+      void {
     const info = this.state.tensorInfo.get(dataId);
 
     const srcBackend = info.backend;
@@ -838,7 +839,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
 
     // Bytes for string tensors are counted when writing.
     if (info.dtype === 'string') {
-      const newBytes = bytesFromStringArray(values as string[]);
+      const newBytes = bytesFromStringArray(values as Uint8Array[]);
       this.state.numBytes += newBytes - info.bytes;
       info.bytes = newBytes;
     }
@@ -852,12 +853,12 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     }
     destBackend.write(dataId, values);
   }
-  readSync(dataId: DataId): DataValues {
+  readSync(dataId: DataId): BackendValues {
     // Route the read to the correct backend.
     const info = this.state.tensorInfo.get(dataId);
     return info.backend.readSync(dataId);
   }
-  read(dataId: DataId): Promise<DataValues> {
+  read(dataId: DataId): Promise<BackendValues> {
     // Route the read to the correct backend.
     const info = this.state.tensorInfo.get(dataId);
     return info.backend.read(dataId);
@@ -932,7 +933,7 @@ function getGlobalNamespace(): {_tfengine: Engine} {
       ns = global;
     } else if (typeof (process) !== 'undefined') {
       ns = process;
-    } else if (typeof (self) !== 'undefined' ) {
+    } else if (typeof (self) !== 'undefined') {
       ns = self;
     } else {
       throw new Error('Could not find a global object');
