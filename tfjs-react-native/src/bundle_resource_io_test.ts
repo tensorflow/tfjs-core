@@ -19,7 +19,7 @@ import './platform_react_native';
 import * as tf from '@tensorflow/tfjs-core';
 import {bundleResourceIO} from './bundle_resource_io';
 
-describe('BundleResourceIO', async () => {
+describe('BundleResourceIO', () => {
   // Test data.
   const modelTopology1: {} = {
     'class_name': 'Sequential',

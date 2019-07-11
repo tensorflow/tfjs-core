@@ -49,6 +49,8 @@ export class GPGPUContext {
   private textureConfig: TextureConfig;
 
   constructor(gl?: WebGLRenderingContext) {
+    // TODO this env check doesn't use the passed in context at all. It tries
+    // to create one. FIX.
     const glVersion = ENV.getNumber('WEBGL_VERSION');
     if (gl != null) {
       this.gl = gl;

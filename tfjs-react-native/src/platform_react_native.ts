@@ -17,6 +17,9 @@
 
 import * as tf from '@tensorflow/tfjs-core';
 import {Platform} from '@tensorflow/tfjs-core';
+import {Buffer} from 'buffer';
+import {GLView} from 'expo-gl';
+import {Platform as RNPlatform} from 'react-native';
 
 // See implemetation note on fetch
 // tslint:disable-next-line:max-line-length
@@ -119,9 +122,54 @@ export class PlatformReactNative implements Platform {
   }
 }
 
+function setupGlobals() {
+  global.Buffer = Buffer;
+}
+
+function registerWebGLBackend() {
+  try {
+    tf.registerBackend('rn-webgl', async () => {
+      const glContext = await GLView.createContextAsync();
+
+      // TODO Remove. TEMPORARY. Mock extension support for
+      // EXT_color_buffer_float and EXT_color_buffer_half_float
+      //@ts-ignore
+      const getExt = glContext.getExtension.bind(glContext);
+      // tslint:disable-next-line:only-arrow-functions
+      const shimGetExt = function(name: string) {
+        if (name === 'EXT_color_buffer_float') {
+          if (RNPlatform.OS === 'ios') {
+            return null;
+          } else {
+            return {};
+          }
+        }
+
+        if (name === 'EXT_color_buffer_half_float') {
+          return {};
+        }
+        return getExt(name);
+      };
+      //@ts-ignore
+      glContext.getExtension = shimGetExt.bind(glContext);
+
+      const context = new tf.webgl.GPGPUContext(glContext);
+      const backend = new tf.webgl.MathBackendWebGL(context);
+      backend.read = async (dataId) => {
+        return backend.readSync(dataId);
+      };
+      return backend;
+    }, 1);
+  } catch (e) {
+    throw (new Error('Failed to register Webgl backend: ' + e.message));
+  }
+}
+
 tf.ENV.registerFlag(
     'IS_REACT_NATIVE', () => navigator && navigator.product === 'ReactNative');
 
 if (tf.ENV.getBool('IS_REACT_NATIVE')) {
+  setupGlobals();
+  registerWebGLBackend();
   tf.setPlatform('react-native', new PlatformReactNative());
 }

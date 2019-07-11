@@ -15,17 +15,6 @@
  * =============================================================================
  */
 
-import * as tf from '@tensorflow/tfjs-core';
-import {PlatformReactNative} from './platform_react_native';
-
-describe('PlatformReactNative', () => {
-  it('tf.util.fetch calls platform.fetch', async () => {
-    const platform = new PlatformReactNative();
-    tf.setPlatform('rn-test-platform', platform);
-
-    spyOn(platform, 'fetch');
-
-    await tf.util.fetch('test/url', {method: 'GET'});
-    expect(platform.fetch).toHaveBeenCalledWith('test/url', {method: 'GET'});
-  });
-});
+// Mock gl-view to export nothing as we don't test it in unit tests.
+// tslint:disable-next-line
+export default {};
