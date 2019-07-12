@@ -63,7 +63,7 @@ const webworkerConfig = {
 	...browserstackConfig,
 	files: [
 		'dist/setup_test.js',
-		{pattern: 'dist/**/*_test.js'},
+		{pattern: 'dist/**/worker_test.js'},
 		// Include tf-core into the static file
 		{pattern: 'dist/tf-core.js', included: false}
   ],

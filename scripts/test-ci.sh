@@ -37,4 +37,12 @@ npm-run-all -p -c --aggregate-output \
   "run-browserstack --browsers=bs_chrome_mac --testEnv webgl2 --flags '{\"WEBGL_CPU_FORWARD\": false}'"
 
 # Run under webworker environment
-yarn test-webworker
+npm-run-all -p -c --aggregate-output \
+  "test-webworker --browsers=bs_safari_mac --flags '{\"HAS_WEBGL\": false}' --testEnv cpu" \
+  "test-webworker --browsers=win_10_chrome --testEnv webgl2 --flags '{\"WEBGL_CPU_FORWARD\": false, \"WEBGL_SIZE_UPLOAD_UNIFORM\": 0}'" \
+  "test-webworker --browsers=bs_ios_11 --testEnv webgl1 --flags '{\"WEBGL_CPU_FORWARD\": false, \"WEBGL_SIZE_UPLOAD_UNIFORM\": 0}'" \
+  "test-webworker --browsers=bs_ios_11 --flags '{\"HAS_WEBGL\": false}' --testEnv cpu" \
+  "test-webworker --browsers=bs_firefox_mac" \
+  "test-webworker --browsers=bs_chrome_mac" \
+  "test-webworker --browsers=bs_chrome_mac --testEnv webgl2 --flags '{\"WEBGL_CPU_FORWARD\": true}'" \
+  "test-webworker --browsers=bs_chrome_mac --testEnv webgl2 --flags '{\"WEBGL_CPU_FORWARD\": false}'"
