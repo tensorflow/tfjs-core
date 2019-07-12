@@ -4,7 +4,7 @@ import * as tf from './index';
 
 const workerTest = () => {
 	//@ts-ignore
-	importScripts('http://bs-local.com:9876/base/dist/tf-core.js');
+	importScripts('http://bs-local.com:12345/base/dist/tf-core.js');
 	let a = tf.tensor1d([1, 2, 3]);
 	const b = tf.tensor1d([3, 2, 1]);
 	a = a.add(b);

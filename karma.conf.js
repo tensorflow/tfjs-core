@@ -65,13 +65,13 @@ const webworkerConfig = {
 		'dist/setup_test.js',
 		{pattern: 'dist/**/worker_test.js'},
 		// Include tf-core into the static file
-		{pattern: 'dist/tf-core.js', included: false}
+		{pattern: 'dist/**/tf-core.js', included: false}
   ],
   exclude: [
     'dist/test_node.js',
     'dist/test_async_backends.js'
   ],
-  port: 9876
+  port: 12345
 };
 
 module.exports = function(config) {
