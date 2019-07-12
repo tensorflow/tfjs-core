@@ -36,5 +36,7 @@ npm-run-all -p -c --aggregate-output \
   "run-browserstack --browsers=bs_chrome_mac --testEnv webgl2 --flags '{\"WEBGL_CPU_FORWARD\": true}'" \
   "run-browserstack --browsers=bs_chrome_mac --testEnv webgl2 --flags '{\"WEBGL_CPU_FORWARD\": false}'"
 
+# Build tf-core for webworker using
+yarn build-npm
 # Run under webworker environment
 yarn test-webworker --browsers=bs_safari_mac --testEnv webgl1 --flags '{"WEBGL_CPU_FORWARD": false, "WEBGL_SIZE_UPLOAD_UNIFORM": 0}'
