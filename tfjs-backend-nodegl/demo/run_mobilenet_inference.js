@@ -27,7 +27,7 @@ console.log(`  - gl.VERSION: ${gl.getParameter(gl.VERSION)}`);
 console.log(`  - gl.RENDERER: ${gl.getParameter(gl.RENDERER)}`);
 
 const NUMBER_OF_CHANNELS = 3;
-const PREPROCESS_DIVISOR = tf.scalar(255 / 2);
+const PREPROCESS_DIVISOR = 255 / 2;
 
 function readImageAsJpeg(path) {
   return jpeg.decode(fs.readFileSync(path), true);
