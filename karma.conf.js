@@ -64,7 +64,8 @@ const webworkerConfig = {
 		{pattern: 'dist/**/*_test.js'},
 		// Include tf-core into the static file
 		{pattern: 'dist/**/tf-core.js', included: false}
-	]
+  ],
+  port: 9876
 };
 
 module.exports = function(config) {

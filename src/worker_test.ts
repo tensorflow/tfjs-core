@@ -4,7 +4,7 @@ import * as tf from './index';
 
 let workerTest = () => {
 	//@ts-ignore
-	importScripts('http://bs-local.com:9880/base/dist/tf-core.js')
+	importScripts('http://bs-local.com:9876/base/dist/tf-core.js')
 	let a = tf.tensor1d([1, 2, 3]);
 	let b = tf.tensor1d([3, 2, 1]);
 	a = a.add(b);
@@ -21,7 +21,6 @@ let fn2workerURL = (fn: Function): string => {
 describeWithFlags('computation in worker', ALL_ENVS, () => {
   it('tensor in worker', (done) => {
 		const worker = new Worker(fn2workerURL(workerTest));
-		console.log('start')
 		worker.onmessage = (msg) => {
 			const data = msg.data.data;
 			expectArraysClose(data, [4, 4, 4]);
