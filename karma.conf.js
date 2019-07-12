@@ -37,6 +37,7 @@ const devConfig = {
   exclude: [
     'src/test_node.ts',
     'src/test_async_backends.ts',
+    'src/worker_test.ts'
   ],
   preprocessors: {'**/*.ts': ['karma-typescript']},
   karmaTypescriptConfig,
@@ -49,6 +50,7 @@ const browserstackConfig = {
   exclude: [
     'dist/test_node.js',
     'dist/test_async_backends.js',
+    'dist/worker_test.js'
   ],
   preprocessors: {'dist/**/*_test.js': ['browserify']},
   browserify: {debug: false},
@@ -63,7 +65,11 @@ const webworkerConfig = {
 		'dist/setup_test.js',
 		{pattern: 'dist/**/*_test.js'},
 		// Include tf-core into the static file
-		{pattern: 'dist/**/tf-core.js', included: false}
+		{pattern: 'dist/tf-core.js', included: false}
+  ],
+  exclude: [
+    'dist/test_node.js',
+    'dist/test_async_backends.js'
   ],
   port: 9876
 };
