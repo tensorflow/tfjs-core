@@ -188,7 +188,7 @@ export class WebGPUBackend extends KernelBackend {
     this.flushDisposalQueue();
   }
 
-  private async getBufferData(info: TensorInfo): Promise<ArrayBuffer> {
+  private async getBufferData(info: TensorInfo): Promise<Float32Array> {
     const staging = this.acquireBuffer(
         info.bufferInfo.byteSize,
         GPUBufferUsage.TRANSFER_DST | GPUBufferUsage.MAP_READ);
@@ -199,14 +199,16 @@ export class WebGPUBackend extends KernelBackend {
     this.submitQueue();
 
     const mapped: ArrayBuffer = await staging.mapReadAsync();
-    const values = mapped.slice(0);
+    // const values = mapped.slice(0);
+    const values = mapped;
+    const test = new Float32Array(values);
 
     staging.unmap();
     this.releaseBuffer(
         staging, info.bufferInfo.byteSize,
         GPUBufferUsage.TRANSFER_DST | GPUBufferUsage.MAP_READ);
 
-    return values;
+    return test;
   }
 
   private convertAndCacheOnCPU(dataId: DataId, data: backend_util.TypedArray):
@@ -237,8 +239,10 @@ export class WebGPUBackend extends KernelBackend {
     const info = this.tensorMap.get(dataId);
     const data = await this.getBufferData(info);
 
-    const dataAsTypedArray =
-        info.dtype === 'int32' ? new Int32Array(data) : new Float32Array(data);
+    // const dataAsTypedArray =
+    //     info.dtype === 'int32' ? new Int32Array(data) : new
+    //     Float32Array(data);
+    const dataAsTypedArray = data;
     this.convertAndCacheOnCPU(dataId, dataAsTypedArray);
 
     return dataAsTypedArray;

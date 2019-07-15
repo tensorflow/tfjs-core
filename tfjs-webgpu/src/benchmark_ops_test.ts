@@ -131,4 +131,14 @@ describeWebGPU('Ops benchmarks', () => {
           await a.data();
         });
   }, 60000);
+
+  fit('A x B', async () => {
+    const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
+    const b = tf.tensor2d([0, 1, -3, 2, 2, 1], [3, 2]);
+
+    const c = tf.matMul(a, b);
+
+    expect(c.shape).toEqual([2, 2]);
+    tf.test_util.expectArraysClose(await c.data(), [0, 8, -3, 20]);
+  });
 });
