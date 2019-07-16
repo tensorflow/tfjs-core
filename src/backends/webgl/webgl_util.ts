@@ -536,7 +536,7 @@ export function getWebGLDisjointQueryTimerVersion(webGLVersion: number):
   return queryTimerVersion;
 }
 
-function hasExtension(gl: WebGLRenderingContext, extensionName: string) {
+export function hasExtension(gl: WebGLRenderingContext, extensionName: string) {
   const ext = gl.getExtension(extensionName);
   return ext != null;
 }

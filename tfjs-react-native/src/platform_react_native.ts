@@ -146,12 +146,17 @@ function registerWebGLBackend() {
         }
 
         if (name === 'EXT_color_buffer_half_float') {
+          tf.ENV.set('WEBGL_RENDER_FLOAT32_ENABLED', false);
+          tf.ENV.set('WEBGL_DOWNLOAD_FLOAT_ENABLED', true);
           return {};
         }
         return getExt(name);
       };
       //@ts-ignore
       glContext.getExtension = shimGetExt.bind(glContext);
+
+      // We always use WebGL2 in RN.
+      tf.ENV.set('WEBGL_VERSION', 2);
 
       const context = new tf.webgl.GPGPUContext(glContext);
       const backend = new tf.webgl.MathBackendWebGL(context);

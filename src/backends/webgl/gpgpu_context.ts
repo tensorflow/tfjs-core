@@ -49,8 +49,6 @@ export class GPGPUContext {
   private textureConfig: TextureConfig;
 
   constructor(gl?: WebGLRenderingContext) {
-    // TODO this env check doesn't use the passed in context at all. It tries
-    // to create one. FIX.
     const glVersion = ENV.getNumber('WEBGL_VERSION');
     if (gl != null) {
       this.gl = gl;
@@ -72,8 +70,16 @@ export class GPGPUContext {
             this.gl.getExtension('EXT_color_buffer_half_float');
       }
     } else {
-      this.colorBufferFloatExtension = webgl_util.getExtensionOrThrow(
-          this.gl, this.debug, 'EXT_color_buffer_float');
+      if (webgl_util.hasExtension(this.gl, 'EXT_color_buffer_float')) {
+        this.colorBufferFloatExtension = webgl_util.getExtensionOrThrow(
+            this.gl, this.debug, 'EXT_color_buffer_float');
+      } else if (webgl_util.hasExtension(
+                     this.gl, 'EXT_color_buffer_half_float')) {
+        this.colorBufferHalfFloatExtension =
+            this.gl.getExtension('EXT_color_buffer_half_float');
+      } else {
+        throw new Error('GL context does not support color renderable floats');
+      }
     }
 
     this.vertexBuffer = gpgpu_util.createVertexBuffer(this.gl, this.debug);
