@@ -146,7 +146,8 @@ function registerWebGLBackend() {
         }
 
         if (name === 'EXT_color_buffer_half_float') {
-          tf.ENV.set('WEBGL_RENDER_FLOAT32_ENABLED', false);
+          // WEBGL_DOWNLOAD_FLOAT_ENABLED is true for iOS via expo but not in
+          // Safari so we override the flag here
           tf.ENV.set('WEBGL_DOWNLOAD_FLOAT_ENABLED', true);
           return {};
         }
@@ -155,7 +156,9 @@ function registerWebGLBackend() {
       //@ts-ignore
       glContext.getExtension = shimGetExt.bind(glContext);
 
-      // We always use WebGL2 in RN.
+      // We always use WebGL2 in RN. Also we need to set this here
+      // because the flag check in GPGPUContext does not use the passed
+      // in context.
       tf.ENV.set('WEBGL_VERSION', 2);
 
       const context = new tf.webgl.GPGPUContext(glContext);
