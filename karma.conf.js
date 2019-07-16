@@ -37,6 +37,7 @@ const devConfig = {
   exclude: [
     'src/test_node.ts',
     'src/test_async_backends.ts',
+    'src/worker_test.ts'
   ],
   preprocessors: {'**/*.ts': ['karma-typescript']},
   karmaTypescriptConfig,
@@ -49,12 +50,28 @@ const browserstackConfig = {
   exclude: [
     'dist/test_node.js',
     'dist/test_async_backends.js',
+    'dist/worker_test.js'
   ],
   preprocessors: {'dist/**/*_test.js': ['browserify']},
   browserify: {debug: false},
   reporters: ['dots'],
   singleRun: true,
   hostname: 'bs-local.com',
+};
+
+const webworkerConfig = {
+	...browserstackConfig,
+	files: [
+		'dist/setup_test.js',
+		{pattern: 'dist/**/worker_test.js'},
+		// Include tf-core into the static file
+		{pattern: 'dist/**/tf-core.js', included: false}
+  ],
+  exclude: [
+    'dist/test_node.js',
+    'dist/test_async_backends.js'
+  ],
+  port: 12345
 };
 
 module.exports = function(config) {
@@ -69,8 +86,19 @@ module.exports = function(config) {
   }
   if (config.flags) {
     args.push('--flags', config.flags);
-  }
-  const extraConfig = config.browserstack ? browserstackConfig : devConfig;
+	}
+
+
+	let extraConfig = null;
+
+	if (config.worker) {
+		extraConfig = webworkerConfig;
+	} else if (config.browserstack) {
+		extraConfig = browserstackConfig;
+	} else {
+		extraConfig = devConfig;
+	}
+
 
   config.set({
     ...extraConfig,
