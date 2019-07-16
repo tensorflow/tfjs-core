@@ -17,7 +17,6 @@
 
 import {ENV} from './environment';
 import {DataType, DataTypeMap, FlatVector, NumericDataType, RecursiveArray, TensorLike, TypedArray} from './types';
-import { util } from '.';
 
 /**
  * Shuffles the array in-place using Fisher-Yates algorithm.
@@ -654,16 +653,7 @@ export function makeZerosTypedArray<D extends DataType>(
  */
 /** @doc {heading: 'Util', namespace: 'util'} */
 export function now(): number {
-  if (typeof performance !== 'undefined') {
-    return util.now();
-  } else if (typeof process !== 'undefined') {
-    const time = process.hrtime();
-    return time[0] * 1000 + time[1] / 1000000;
-  } else {
-    throw new Error(
-        'Cannot measure time in this environment. You should run tf.js ' +
-        'in the browser or in Node.js');
-  }
+  return ENV.platform.now();
 }
 
 export function assertNonNegativeIntegerDimensions(shape: number[]) {
