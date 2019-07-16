@@ -252,14 +252,14 @@ function logLoss_<T extends Tensor, O extends Tensor>(
   return computeWeightedLoss(losses, $weights, reduction);
 }
 
-function sigmoidCrossEntropyWithLogits_<T extends Tensor, O extends Tensor>(
+function sigmoidCrossentropyWithLogits_<T extends Tensor, O extends Tensor>(
     labels: T|TensorLike, logits: T|TensorLike): O {
   const $labels =
-      convertToTensor(labels, 'labels', 'sigmoidCrossEntropyWithLogits');
+      convertToTensor(labels, 'labels', 'sigmoidCrossentropyWithLogits');
   const $logits =
-      convertToTensor(logits, 'logits', 'sigmoidCrossEntropyWithLogits');
+      convertToTensor(logits, 'logits', 'sigmoidCrossentropyWithLogits');
   assertShapesMatch(
-      $labels.shape, $logits.shape, 'Error in sigmoidCrossEntropyWithLogits: ');
+      $labels.shape, $logits.shape, 'Error in sigmoidCrossentropyWithLogits: ');
 
   /**
    * Implementation Details:
@@ -308,19 +308,19 @@ function sigmoidCrossEntropyWithLogits_<T extends Tensor, O extends Tensor>(
  *    `Reduction`
  */
 /** @doc { heading: 'Training', subheading: 'Losses', namespace: 'losses' } */
-function sigmoidCrossEntropy_<T extends Tensor, O extends Tensor>(
+function sigmoidCrossentropy_<T extends Tensor, O extends Tensor>(
     multiClassLabels: T|TensorLike, logits: T|TensorLike,
     weights?: Tensor|TensorLike, labelSmoothing = 0,
     reduction = Reduction.SUM_BY_NONZERO_WEIGHTS): O {
   let $multiClassLabels = convertToTensor(
-      multiClassLabels, 'multiClassLabels', 'sigmoidCrossEntropy');
-  const $logits = convertToTensor(logits, 'logits', 'sigmoidCrossEntropy');
+      multiClassLabels, 'multiClassLabels', 'sigmoidCrossentropy');
+  const $logits = convertToTensor(logits, 'logits', 'sigmoidCrossentropy');
   let $weights: Tensor = null;
   if (weights != null) {
-    $weights = convertToTensor(weights, 'weights', 'sigmoidCrossEntropy');
+    $weights = convertToTensor(weights, 'weights', 'sigmoidCrossentropy');
   }
   assertShapesMatch(
-      $multiClassLabels.shape, $logits.shape, 'Error in sigmoidCrossEntropy: ');
+      $multiClassLabels.shape, $logits.shape, 'Error in sigmoidCrossentropy: ');
 
   if (labelSmoothing > 0) {
     const labelSmoothingScalar = scalar(labelSmoothing);
@@ -330,7 +330,7 @@ function sigmoidCrossEntropy_<T extends Tensor, O extends Tensor>(
     $multiClassLabels = $multiClassLabels.mul(one.sub(labelSmoothingScalar))
                             .add(half.mul(labelSmoothingScalar));
   }
-  const losses = sigmoidCrossEntropyWithLogits_($multiClassLabels, $logits);
+  const losses = sigmoidCrossentropyWithLogits_($multiClassLabels, $logits);
 
   return computeWeightedLoss(losses, $weights, reduction);
 }
@@ -396,7 +396,7 @@ function huberLoss_<T extends Tensor, O extends Tensor>(
  * @param dim The dimension softmax would be performed on. Defaults to `-1`
  *     which indicates the last dimension.
  */
-function softmaxCrossEntropyWithLogits_<T extends Tensor, O extends Tensor>(
+function softmaxCrossentropyWithLogits_<T extends Tensor, O extends Tensor>(
     labels: T, logits: T, dim = -1): O {
   if (dim === -1) {
     dim = logits.rank - 1;
@@ -454,21 +454,21 @@ function softmaxCrossEntropyWithLogits_<T extends Tensor, O extends Tensor>(
  *    `Reduction`
  */
 /** @doc { heading: 'Training', subheading: 'Losses', namespace: 'losses' } */
-function softmaxCrossEntropy_<T extends Tensor, O extends Tensor>(
+function softmaxCrossentropy_<T extends Tensor, O extends Tensor>(
     onehotLabels: T|TensorLike, logits: T|TensorLike,
     weights?: Tensor|TensorLike, labelSmoothing = 0,
     reduction = Reduction.SUM_BY_NONZERO_WEIGHTS): O {
   let $onehotLabels =
-      convertToTensor(onehotLabels, 'onehotLabels', 'softmaxCrossEntropy');
-  const $logits = convertToTensor(logits, 'logits', 'softmaxCrossEntropy');
+      convertToTensor(onehotLabels, 'onehotLabels', 'softmaxCrossentropy');
+  const $logits = convertToTensor(logits, 'logits', 'softmaxCrossentropy');
   let $weights: Tensor = null;
 
   if (weights != null) {
-    $weights = convertToTensor(weights, 'weights', 'softmaxCrossEntropy');
+    $weights = convertToTensor(weights, 'weights', 'softmaxCrossentropy');
   }
 
   assertShapesMatch(
-      $onehotLabels.shape, $logits.shape, 'Error in softmaxCrossEntropy: ');
+      $onehotLabels.shape, $logits.shape, 'Error in softmaxCrossentropy: ');
 
   if (labelSmoothing > 0) {
     const labelSmoothingScalar = scalar(labelSmoothing);
@@ -479,7 +479,7 @@ function softmaxCrossEntropy_<T extends Tensor, O extends Tensor>(
                         .add(labelSmoothingScalar.div(numClasses));
   }
 
-  const losses = softmaxCrossEntropyWithLogits_($onehotLabels, $logits);
+  const losses = softmaxCrossentropyWithLogits_($onehotLabels, $logits);
 
   return computeWeightedLoss(losses, $weights, reduction);
 }
@@ -491,5 +491,9 @@ export const hingeLoss = op({hingeLoss_});
 export const huberLoss = op({huberLoss_});
 export const logLoss = op({logLoss_});
 export const meanSquaredError = op({meanSquaredError_});
-export const sigmoidCrossEntropy = op({sigmoidCrossEntropy_});
-export const softmaxCrossEntropy = op({softmaxCrossEntropy_});
+export const sigmoidCrossentropy = op({sigmoidCrossentropy_});
+export const softmaxCrossentropy = op({softmaxCrossentropy_});
+// TODO(bileschi): These symbols were misspelled, but as they are part of the
+// public 1.x.x API they must remain until tfjs 2.0.0.
+export const sigmoidCrossEntropy = sigmoidCrossentropy;
+export const softmaxCrossEntropy = softmaxCrossentropy;

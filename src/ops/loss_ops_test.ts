@@ -1330,14 +1330,14 @@ describeWithFlags('huberLoss', ALL_ENVS, () => {
   });
 });
 
-describeWithFlags('sigmoidCrossEntropy', ALL_ENVS, () => {
+describeWithFlags('sigmoidCrossentropy', ALL_ENVS, () => {
   it('All wrong', async () => {
     const label = tf.tensor2d([[0, 0, 1], [1, 0, 0], [0, 1, 0]], [3, 3]);
     const predictions = tf.tensor2d(
         [[10.0, -10.0, -10.0], [-10.0, 10.0, -10.0], [-10.0, -10.0, 10.0]],
         [3, 3]);
 
-    const y = tf.losses.sigmoidCrossEntropy(label, predictions);
+    const y = tf.losses.sigmoidCrossentropy(label, predictions);
 
     expect(y.shape).toEqual([]);
     expectArraysClose(await y.data(), 6.6667123);
@@ -1349,7 +1349,7 @@ describeWithFlags('sigmoidCrossEntropy', ALL_ENVS, () => {
         [[10.0, -10.0, -10.0], [-10.0, 10.0, -10.0], [-10.0, -10.0, 10.0]],
         [3, 3]);
 
-    const y = tf.losses.sigmoidCrossEntropy(label, predictions);
+    const y = tf.losses.sigmoidCrossentropy(label, predictions);
 
     expect(y.shape).toEqual([]);
     expectArraysClose(await y.data(), 0);
@@ -1363,7 +1363,7 @@ describeWithFlags('sigmoidCrossEntropy', ALL_ENVS, () => {
 
     const weights = tf.tensor2d([[0.1, 0.2, 0.3]]);
 
-    const y = tf.losses.sigmoidCrossEntropy(label, predictions, weights);
+    const y = tf.losses.sigmoidCrossentropy(label, predictions, weights);
 
     expect(y.shape).toEqual([]);
     expectArraysClose(await y.data(), 1.3333424);
@@ -1376,7 +1376,7 @@ describeWithFlags('sigmoidCrossEntropy', ALL_ENVS, () => {
         [3, 3]);
     const weights = tf.tensor2d([[0.1, 0.2, 0.3]]);
 
-    const y = tf.losses.sigmoidCrossEntropy(
+    const y = tf.losses.sigmoidCrossentropy(
         label, predictions, weights, undefined, tf.Reduction.NONE);
 
     expect(y.shape).toEqual([3, 3]);
@@ -1392,7 +1392,7 @@ describeWithFlags('sigmoidCrossEntropy', ALL_ENVS, () => {
         [[10.0, -10.0, -10.0], [-10.0, 10.0, -10.0], [-10.0, -10.0, 10.0]],
         [3, 3]);
 
-    const y = tf.losses.sigmoidCrossEntropy(
+    const y = tf.losses.sigmoidCrossentropy(
         label, predictions, undefined, undefined, tf.Reduction.MEAN);
 
     expect(y.shape).toEqual([]);
@@ -1406,7 +1406,7 @@ describeWithFlags('sigmoidCrossEntropy', ALL_ENVS, () => {
         [3, 3]);
     const weights = tf.tensor2d([[0.1, 0.2, 0.3]]);
 
-    const y = tf.losses.sigmoidCrossEntropy(
+    const y = tf.losses.sigmoidCrossentropy(
         label, predictions, weights, undefined, tf.Reduction.MEAN);
 
     expect(y.shape).toEqual([]);
@@ -1424,7 +1424,7 @@ describeWithFlags('sigmoidCrossEntropy', ALL_ENVS, () => {
     const weights = tf.tensor2d([[0.1, 0.2, 0.3]]);
     const labelSmoothing = 0.3;
 
-    const y = tf.losses.sigmoidCrossEntropy(
+    const y = tf.losses.sigmoidCrossentropy(
         label, predictions, weights, labelSmoothing, tf.Reduction.MEAN);
 
     expect(y.shape).toEqual([]);
@@ -1437,8 +1437,8 @@ describeWithFlags('sigmoidCrossEntropy', ALL_ENVS, () => {
     const logits = tf.tensor2d([10, 10, 10, 10, 10, 10], [2, 3]);
 
     const e = new RegExp(
-        'Error in sigmoidCrossEntropy:  Shapes 3,3 and 2,3 must match');
-    expect(() => tf.losses.sigmoidCrossEntropy(multiClassLabels, logits))
+        'Error in sigmoidCrossentropy:  Shapes 3,3 and 2,3 must match');
+    expect(() => tf.losses.sigmoidCrossentropy(multiClassLabels, logits))
         .toThrowError(e);
   });
 
@@ -1449,11 +1449,11 @@ describeWithFlags('sigmoidCrossEntropy', ALL_ENVS, () => {
     const weights = tf.tensor2d([[0.1, 0.2, 0.3]]);
 
     const e = new RegExp(
-        'Argument \'multiClassLabels\' passed to \'sigmoidCrossEntropy\' ' +
+        'Argument \'multiClassLabels\' passed to \'sigmoidCrossentropy\' ' +
         'must be a Tensor');
 
     expect(
-        () => tf.losses.sigmoidCrossEntropy(
+        () => tf.losses.sigmoidCrossentropy(
             {} as tf.Tensor, predictions, weights, tf.Reduction.MEAN))
         .toThrowError(e);
   });
@@ -1463,10 +1463,10 @@ describeWithFlags('sigmoidCrossEntropy', ALL_ENVS, () => {
     const weights = tf.tensor2d([[0.1, 0.2, 0.3]]);
 
     const e = new RegExp(
-        'Argument \'logits\' passed to \'sigmoidCrossEntropy\' ' +
+        'Argument \'logits\' passed to \'sigmoidCrossentropy\' ' +
         'must be a Tensor');
     expect(
-        () => tf.losses.sigmoidCrossEntropy(
+        () => tf.losses.sigmoidCrossentropy(
             label, {} as tf.Tensor, weights, tf.Reduction.MEAN))
         .toThrowError(e);
   });
@@ -1478,22 +1478,22 @@ describeWithFlags('sigmoidCrossEntropy', ALL_ENVS, () => {
         [3, 3]);
 
     const e =
-        /Argument 'weights' passed to 'sigmoidCrossEntropy' must be a Tensor/;
+        /Argument 'weights' passed to 'sigmoidCrossentropy' must be a Tensor/;
     expect(
-        () => tf.losses.sigmoidCrossEntropy(
+        () => tf.losses.sigmoidCrossentropy(
             label, predictions, {} as tf.Tensor, tf.Reduction.MEAN))
         .toThrowError(e);
   });
 });
 
-describeWithFlags('softmaxCrossEntropy', ALL_ENVS, () => {
+describeWithFlags('softmaxCrossentropy', ALL_ENVS, () => {
   it('All wrong', async () => {
     const label = tf.tensor2d([[0, 0, 1], [1, 0, 0], [0, 1, 0]], [3, 3]);
     const predictions = tf.tensor2d(
         [[10.0, -10.0, -10.0], [-10.0, 10.0, -10.0], [-10.0, -10.0, 10.0]],
         [3, 3]);
 
-    const y = tf.losses.softmaxCrossEntropy(label, predictions);
+    const y = tf.losses.softmaxCrossentropy(label, predictions);
 
     expect(y.shape).toEqual([]);
     expectArraysClose(await y.data(), 20);
@@ -1505,7 +1505,7 @@ describeWithFlags('softmaxCrossEntropy', ALL_ENVS, () => {
         [[10.0, -10.0, -10.0], [-10.0, 10.0, -10.0], [-10.0, -10.0, 10.0]],
         [3, 3]);
 
-    const y = tf.losses.softmaxCrossEntropy(label, predictions);
+    const y = tf.losses.softmaxCrossentropy(label, predictions);
 
     expect(y.shape).toEqual([]);
     expectArraysClose(await y.data(), 0);
@@ -1520,7 +1520,7 @@ describeWithFlags('softmaxCrossEntropy', ALL_ENVS, () => {
     const weights =
         tf.tensor2d([[0.1, 0.2, 0.3], [0.1, 0.2, 0.3], [0.1, 0.2, 0.3]]);
 
-    const y = tf.losses.softmaxCrossEntropy(label, predictions, weights);
+    const y = tf.losses.softmaxCrossentropy(label, predictions, weights);
 
     expect(y.shape).toEqual([]);
     expectArraysClose(await y.data(), 4);
@@ -1533,7 +1533,7 @@ describeWithFlags('softmaxCrossEntropy', ALL_ENVS, () => {
         [3, 3]);
     const weights = tf.tensor1d([0.1, 0.2, 0.3]);
 
-    const y = tf.losses.softmaxCrossEntropy(
+    const y = tf.losses.softmaxCrossentropy(
         label, predictions, weights, undefined, tf.Reduction.NONE);
 
     expect(y.shape).toEqual([3]);
@@ -1546,7 +1546,7 @@ describeWithFlags('softmaxCrossEntropy', ALL_ENVS, () => {
         [[10.0, -10.0, -10.0], [-10.0, 10.0, -10.0], [-10.0, -10.0, 10.0]],
         [3, 3]);
 
-    const y = tf.losses.softmaxCrossEntropy(
+    const y = tf.losses.softmaxCrossentropy(
         label, predictions, undefined, undefined, tf.Reduction.MEAN);
 
     expect(y.shape).toEqual([]);
@@ -1560,7 +1560,7 @@ describeWithFlags('softmaxCrossEntropy', ALL_ENVS, () => {
         [3, 3]);
     const weights = tf.tensor1d([0.1, 0.2, 0.3]);
 
-    const y = tf.losses.softmaxCrossEntropy(
+    const y = tf.losses.softmaxCrossentropy(
         label, predictions, weights, undefined, tf.Reduction.MEAN);
 
     expect(y.shape).toEqual([]);
@@ -1578,7 +1578,7 @@ describeWithFlags('softmaxCrossEntropy', ALL_ENVS, () => {
     const weights = tf.tensor2d([[0.1, 0.2, 0.3]]);
     const labelSmoothing = 0.3;
 
-    const y = tf.losses.softmaxCrossEntropy(
+    const y = tf.losses.softmaxCrossentropy(
         label, predictions, weights, labelSmoothing, tf.Reduction.MEAN);
 
     expect(y.shape).toEqual([]);
@@ -1591,8 +1591,8 @@ describeWithFlags('softmaxCrossEntropy', ALL_ENVS, () => {
     const logits = tf.tensor2d([10, 10, 10, 10, 10, 10], [2, 3]);
 
     const e = new RegExp(
-        'Error in softmaxCrossEntropy:  Shapes 3,3 and 2,3 must match');
-    expect(() => tf.losses.softmaxCrossEntropy(multiClassLabels, logits))
+        'Error in softmaxCrossentropy:  Shapes 3,3 and 2,3 must match');
+    expect(() => tf.losses.softmaxCrossentropy(multiClassLabels, logits))
         .toThrowError(e);
   });
 
@@ -1603,11 +1603,11 @@ describeWithFlags('softmaxCrossEntropy', ALL_ENVS, () => {
     const weights = tf.tensor2d([[0.1, 0.2, 0.3]]);
 
     const e = new RegExp(
-        'Argument \'onehotLabels\' passed to \'softmaxCrossEntropy\' ' +
+        'Argument \'onehotLabels\' passed to \'softmaxCrossentropy\' ' +
         'must be a Tensor');
 
     expect(
-        () => tf.losses.softmaxCrossEntropy(
+        () => tf.losses.softmaxCrossentropy(
             {} as tf.Tensor, predictions, weights, tf.Reduction.MEAN))
         .toThrowError(e);
   });
@@ -1617,10 +1617,10 @@ describeWithFlags('softmaxCrossEntropy', ALL_ENVS, () => {
     const weights = tf.tensor2d([[0.1, 0.2, 0.3]]);
 
     const e = new RegExp(
-        'Argument \'logits\' passed to \'softmaxCrossEntropy\' ' +
+        'Argument \'logits\' passed to \'softmaxCrossentropy\' ' +
         'must be a Tensor');
     expect(
-        () => tf.losses.softmaxCrossEntropy(
+        () => tf.losses.softmaxCrossentropy(
             label, {} as tf.Tensor, weights, tf.Reduction.MEAN))
         .toThrowError(e);
   });
@@ -1632,9 +1632,9 @@ describeWithFlags('softmaxCrossEntropy', ALL_ENVS, () => {
         [3, 3]);
 
     const e =
-        /Argument 'weights' passed to 'softmaxCrossEntropy' must be a Tensor/;
+        /Argument 'weights' passed to 'softmaxCrossentropy' must be a Tensor/;
     expect(
-        () => tf.losses.softmaxCrossEntropy(
+        () => tf.losses.softmaxCrossentropy(
             label, predictions, {} as tf.Tensor, tf.Reduction.MEAN))
         .toThrowError(e);
   });
@@ -1644,7 +1644,7 @@ describeWithFlags('softmaxCrossEntropy', ALL_ENVS, () => {
     const predictions =
         [[10.0, -10.0, -10.0], [-10.0, 10.0, -10.0], [-10.0, -10.0, 10.0]];
 
-    const y = tf.losses.softmaxCrossEntropy(label, predictions);
+    const y = tf.losses.softmaxCrossentropy(label, predictions);
 
     expect(y.shape).toEqual([]);
     expectArraysClose(await y.data(), 20);
