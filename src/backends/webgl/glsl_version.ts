@@ -55,9 +55,7 @@ export function getGlslDifferences(): GLSL {
         return (val > 0. || val < 0. || val == 0.) ? false : true;
       }
     `;
-    defineSpecialInf = `
-      const float INFINITY = uintBitsToFloat(uint(0x7f800000));
-    `;
+    defineSpecialInf = ``;
     defineRound = `
       #define round(value) newRound(value)
       int newRound(float value) {
