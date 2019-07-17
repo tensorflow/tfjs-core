@@ -20,7 +20,7 @@
   },
   "devDependencies": {
     "@react-native-community/async-storage": "^1.4.2",
-    "@tensorflow/tfjs-core": "1.2.1",
+    "@tensorflow/tfjs-core": "1.2.3",
     "@types/base64-js": "^1.2.5",
     "@types/react-native": "^0.57.60",
     "clang-format": "~1.2.2",
@@ -52,7 +52,7 @@
   },
   "peerDependencies": {
     "@react-native-community/async-storage": "^1.4.2",
-    "@tensorflow/tfjs-core": ">=1.2.1",
+    "@tensorflow/tfjs-core": ">=1.2.3",
     "expo-gl": "^5.0.1",
     "react-native": ">=0.59.0"
   }

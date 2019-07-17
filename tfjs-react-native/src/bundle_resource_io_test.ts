@@ -104,4 +104,23 @@ describe('BundleResourceIO', () => {
     expect(loaded.weightSpecs).toEqual(weightSpecs1);
     expect(loaded.weightData).toEqual(weightData1);
   });
+
+  it('errors on string modelJSON', async () => {
+    const response = new Response(weightData1);
+    spyOn(tf.ENV.platform, 'fetch').and.returnValue(response);
+
+    const modelJson = `{
+      modelTopology: modelTopology1,
+      weightsManifest: [{
+        paths: [],
+        weights: weightSpecs1,
+      }]
+    }`;
+    const resourceId = 1;
+    //@ts-ignore
+    expect(() => bundleResourceIO(modelJson, resourceId))
+        .toThrow(new Error(
+            'modelJson must be a JavaScript object (and not a string).\n' +
+            'Have you wrapped yor asset path in a require() statment?'))
+  });
 });

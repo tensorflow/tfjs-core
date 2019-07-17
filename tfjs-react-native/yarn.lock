@@ -692,18 +692,17 @@
     xcode "^2.0.0"
     xmldoc "^0.4.0"
 
-"@tensorflow/tfjs-core@1.2.1":
-  version "1.2.1"
-  resolved "https://registry.yarnpkg.com/@tensorflow/tfjs-core/-/tfjs-core-1.2.1.tgz#0ff54aa7fd412b8c17e39f6ec5a97bf032e8f530"
-  integrity sha512-cpSHl+tP7cketq0cAyJPbIGxNlPV7mR6lkMLLDvZAmZUTBSyBufCdJg/KwgjHMZksE/KqjL4/RyccOGBAQcb7g==
+"@tensorflow/tfjs-core@1.2.3":
+  version "1.2.3"
+  resolved "https://registry.yarnpkg.com/@tensorflow/tfjs-core/-/tfjs-core-1.2.3.tgz#90cc7bb593ba67548d683ff045823872a05c43dc"
+  integrity sha512-jLYUJYzI/b+058yKz9SjX6KwTac4hKFRh1FMI8jQpN289z9MSfKBq8BzpKd7n7ml7b55ae157Qta5pFmLwRVZw==
   dependencies:
+    "@types/offscreencanvas" "~2019.3.0"
     "@types/seedrandom" "2.4.27"
     "@types/webgl-ext" "0.0.30"
     "@types/webgl2" "0.0.4"
     node-fetch "~2.1.2"
     seedrandom "2.4.3"
-  optionalDependencies:
-    rollup-plugin-visualizer "~1.1.1"
 
 "@types/base64-js@^1.2.5":
   version "1.2.5"
@@ -719,6 +718,11 @@
   version "12.0.4"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-12.0.4.tgz#46832183115c904410c275e34cf9403992999c32"
   integrity sha512-j8YL2C0fXq7IONwl/Ud5Kt0PeXw22zGERt+HSSnwbKOJVsAGkEz3sFCYwaF9IOuoG1HOtE0vKCj6sXF7Q0+Vaw==
+
+"@types/offscreencanvas@~2019.3.0":
+  version "2019.3.0"
+  resolved "https://registry.yarnpkg.com/@types/offscreencanvas/-/offscreencanvas-2019.3.0.tgz#3336428ec7e9180cf4566dfea5da04eb586a6553"
+  integrity sha512-esIJx9bQg+QYF0ra8GnvfianIY8qWB0GBx54PK5Eps6m+xTj86KLavHv6qDhzKcu5UUOgNfJ2pWaIIV7TRUd9Q==
 
 "@types/prop-types@*":
   version "15.7.1"
@@ -4515,13 +4519,6 @@ opn@^3.0.2:
   dependencies:
     object-assign "^4.0.1"
 
-opn@^5.4.0:
-  version "5.5.0"
-  resolved "https://registry.yarnpkg.com/opn/-/opn-5.5.0.tgz#fc7164fab56d235904c51c3b27da6758ca3b9bfc"
-  integrity sha512-PqHpggC9bLV0VeWcdKhkpxY+3JTzetLSqTCWL/z/tFIbI6G8JCjondXklT1JinczLz2Xib62sSp0T/gKT4KksA==
-  dependencies:
-    is-wsl "^1.1.0"
-
 optimist@^0.6.1:
   version "0.6.1"
   resolved "https://registry.yarnpkg.com/optimist/-/optimist-0.6.1.tgz#da3ea74686fa21a19a111c326e90eb15a0196686"
@@ -5390,16 +5387,6 @@ rollup-plugin-uglify@~3.0.0:
   dependencies:
     uglify-es "^3.3.7"
 
-rollup-plugin-visualizer@~1.1.1:
-  version "1.1.1"
-  resolved "https://registry.yarnpkg.com/rollup-plugin-visualizer/-/rollup-plugin-visualizer-1.1.1.tgz#454ae0aed23845407ebfb81cc52114af308d6d90"
-  integrity sha512-7xkSKp+dyJmSC7jg2LXqViaHuOnF1VvIFCnsZEKjrgT5ZVyiLLSbeszxFcQSfNJILphqgAEmWAUz0Z4xYScrRw==
-  dependencies:
-    mkdirp "^0.5.1"
-    opn "^5.4.0"
-    source-map "^0.7.3"
-    typeface-oswald "0.0.54"
-
 rollup-pluginutils@^2.0.1:
   version "2.8.0"
   resolved "https://registry.yarnpkg.com/rollup-pluginutils/-/rollup-pluginutils-2.8.0.tgz#d7ece1502958a35748a74080c7ac5e95681bcbe9"
@@ -6125,11 +6112,6 @@ typedarray@^0.0.6:
   version "0.0.6"
   resolved "https://registry.yarnpkg.com/typedarray/-/typedarray-0.0.6.tgz#867ac74e3864187b1d3d47d996a78ec5c8830777"
   integrity sha1-hnrHTjhkGHsdPUfZlqeOxciDB3c=
-
-typeface-oswald@0.0.54:
-  version "0.0.54"
-  resolved "https://registry.yarnpkg.com/typeface-oswald/-/typeface-oswald-0.0.54.tgz#1e253011622cdd50f580c04e7d625e7f449763d7"
-  integrity sha512-U1WMNp4qfy4/3khIfHMVAIKnNu941MXUfs3+H9R8PFgnoz42Hh9pboSFztWr86zut0eXC8byalmVhfkiKON/8Q==
 
 typescript@3.3.3333:
   version "3.3.3333"

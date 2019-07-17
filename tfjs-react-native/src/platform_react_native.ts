@@ -120,6 +120,15 @@ export class PlatformReactNative implements Platform {
   decode(bytes: Uint8Array, encoding: string): string {
     throw new Error('not yet implemented');
   }
+
+  now(): number {
+    //@ts-ignore
+    if (global.nativePerformanceNow) {
+      //@ts-ignore
+      return global.nativePerformanceNow()
+    }
+    return Date.now();
+  }
 }
 
 function setupGlobals() {
@@ -156,16 +165,11 @@ function registerWebGLBackend() {
       //@ts-ignore
       glContext.getExtension = shimGetExt.bind(glContext);
 
-      // We always use WebGL2 in RN. Also we need to set this here
-      // because the flag check in GPGPUContext does not use the passed
-      // in context.
-      tf.ENV.set('WEBGL_VERSION', 2);
+      // Set the WebGLContext before flag evaluation
+      tf.webgl.setWebGLContext(2, glContext);
 
       const context = new tf.webgl.GPGPUContext(glContext);
       const backend = new tf.webgl.MathBackendWebGL(context);
-      backend.read = async (dataId) => {
-        return backend.readSync(dataId);
-      };
       return backend;
     }, 1);
   } catch (e) {
