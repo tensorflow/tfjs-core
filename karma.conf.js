@@ -48,8 +48,6 @@ const browserstackConfig = {
   frameworks: ['browserify', 'jasmine'],
   files: ['dist/setup_test.js', {pattern: 'dist/**/*_test.js'}],
   exclude: [
-    'dist/test_node.js',
-    'dist/test_async_backends.js',
     'dist/worker_test.js'
   ],
   preprocessors: {'dist/**/*_test.js': ['browserify']},
@@ -60,17 +58,14 @@ const browserstackConfig = {
 };
 
 const webworkerConfig = {
-	...browserstackConfig,
-	files: [
-		'dist/setup_test.js',
-		{pattern: 'dist/**/worker_test.js'},
-		// Include tf-core into the static file
-		{pattern: 'dist/**/tf-core.js', included: false}
+  ...browserstackConfig,
+  files: [
+    'dist/setup_test.js',
+    {pattern: 'dist/worker_test.js'},
+    // Include tf-core into the static file
+    {pattern: 'dist/tf-core.js', included: false}
   ],
-  exclude: [
-    'dist/test_node.js',
-    'dist/test_async_backends.js'
-  ],
+  exclude: [],
   port: 12345
 };
 
@@ -86,18 +81,18 @@ module.exports = function(config) {
   }
   if (config.flags) {
     args.push('--flags', config.flags);
-	}
+  }
 
 
-	let extraConfig = null;
+  let extraConfig = null;
 
-	if (config.worker) {
-		extraConfig = webworkerConfig;
-	} else if (config.browserstack) {
-		extraConfig = browserstackConfig;
-	} else {
-		extraConfig = devConfig;
-	}
+  if (config.worker) {
+    extraConfig = webworkerConfig;
+  } else if (config.browserstack) {
+    extraConfig = browserstackConfig;
+  } else {
+    extraConfig = devConfig;
+  }
 
 
   config.set({

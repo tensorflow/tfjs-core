@@ -1,4 +1,4 @@
-import {ALL_ENVS, describeWithFlags} from './jasmine_util';
+import {HAS_WORKER, describeWithFlags} from './jasmine_util';
 import {expectArraysClose} from './test_util';
 import * as tf from './index';
 
@@ -18,7 +18,7 @@ const fn2workerURL = (fn: Function): string => {
   return URL.createObjectURL(blob);
 };
 
-describeWithFlags('computation in worker', ALL_ENVS, () => {
+describeWithFlags('computation in worker', HAS_WORKER, () => {
   it('tensor in worker', (done) => {
 		const worker = new Worker(fn2workerURL(workerTest));
 		worker.onmessage = (msg) => {
