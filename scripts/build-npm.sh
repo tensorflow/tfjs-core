@@ -22,4 +22,9 @@ yarn
 yarn build
 yarn build-test-snippets
 yarn rollup -c --visualize
+
+# Use minified files for miniprogram
+mkdir dist/miniprogram
+cp dist/tf-core.min.js* dist/miniprogram
+
 echo "Stored standalone library at dist/tf-core(.min).js"
