@@ -43,7 +43,8 @@ export async function loadWeightsAsArrayBuffer(
       loadOptions.fetchFunc == null ? util.fetch : loadOptions.fetchFunc;
 
   // Create the requests for all of the weights in parallel.
-  const requests = fetchURLs.map(fetchURL => fetchFunc(fetchURL, loadOptions));
+  const requests =
+      fetchURLs.map(fetchURL => fetchFunc(fetchURL, loadOptions.requestInit));
 
   const fetchStartFraction = 0;
   const fetchEndFraction = 0.5;
