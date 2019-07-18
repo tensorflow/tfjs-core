@@ -32,7 +32,7 @@ import * as ops from '../../ops/ops';
 import {buffer, scalar, tensor, tensor3d, tensor4d} from '../../ops/ops';
 import * as scatter_nd_util from '../../ops/scatter_nd_util';
 import * as selu_util from '../../ops/selu_util';
-import {computeFlatOffset, getStridedSlicedInfo, isSliceContinous} from '../../ops/slice_util';
+import {getStridedSlicedInfo} from '../../ops/slice_util';
 import {DataId, Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D, TensorBuffer} from '../../tensor';
 import {BackendValues, DataType, DataValues, NumericDataType, PixelData, Rank, ShapeMap, TypedArray, upcastType} from '../../types';
 import * as util from '../../util';
@@ -41,6 +41,7 @@ import {BackendTimingInfo, DataStorage, EPSILON_FLOAT32, KernelBackend} from '..
 import * as backend_util from '../backend_util';
 import * as complex_util from '../complex_util';
 import {nonMaxSuppressionImpl} from '../non_max_suppression_impl';
+import {slice} from '../slice_shared';
 import {split} from '../split_shared';
 import {tile} from '../tile_impl';
 import {topkImpl} from '../topk_impl';
@@ -79,8 +80,8 @@ export class MathBackendCPU implements KernelBackend {
   public blockSize = 48;
 
   private data: DataStorage<TensorData<DataType>>;
-  private fromPixels2DContext: CanvasRenderingContext2D
-      | OffscreenCanvasRenderingContext2D;
+  private fromPixels2DContext: CanvasRenderingContext2D|
+      OffscreenCanvasRenderingContext2D;
   private firstUse = true;
 
   constructor() {
@@ -134,12 +135,11 @@ export class MathBackendCPU implements KernelBackend {
 
     const isPixelData = (pixels as PixelData).data instanceof Uint8Array;
     const isImageData =
-        typeof(ImageData) !== 'undefined' && pixels instanceof ImageData;
-    const isVideo =
-        typeof(HTMLVideoElement) !== 'undefined'
-        && pixels instanceof HTMLVideoElement;
-    const isImage = typeof(HTMLImageElement) !== 'undefined'
-        && pixels instanceof HTMLImageElement;
+        typeof (ImageData) !== 'undefined' && pixels instanceof ImageData;
+    const isVideo = typeof (HTMLVideoElement) !== 'undefined' &&
+        pixels instanceof HTMLVideoElement;
+    const isImage = typeof (HTMLImageElement) !== 'undefined' &&
+        pixels instanceof HTMLImageElement;
 
     let vals: Uint8ClampedArray|Uint8Array;
     // tslint:disable-next-line:no-any
@@ -287,26 +287,7 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   slice<T extends Tensor>(x: T, begin: number[], size: number[]): T {
-    this.assertNotComplex(x, 'slice');
-
-    const isContinous = isSliceContinous(x.shape, begin, size);
-    if (isContinous) {
-      const flatOffset = computeFlatOffset(begin, x.strides);
-      const length = util.sizeFromShape(size);
-      const vals = this.readSync(x.dataId) as TypedArray;
-      return tensor(
-                 vals.subarray(flatOffset, flatOffset + length), size,
-                 x.dtype) as T;
-    }
-
-    const buffer = ops.buffer(size, x.dtype);
-    const xBuf = this.bufferSync(x);
-    for (let i = 0; i < buffer.size; ++i) {
-      const loc = buffer.indexToLoc(i);
-      const xLoc = loc.map((idx, j) => idx + begin[j]);
-      buffer.values[i] = xBuf.get(...xLoc);
-    }
-    return buffer.toTensor() as T;
+    return slice(this.readSync(x.dataId), x.shape, x.dtype, begin, size);
   }
 
   stridedSlice<T extends Tensor>(

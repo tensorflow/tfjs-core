@@ -44,6 +44,7 @@ import {DataStorage, EPSILON_FLOAT16, EPSILON_FLOAT32, KernelBackend} from '../b
 import * as backend_util from '../backend_util';
 import {mergeRealAndImagArrays} from '../complex_util';
 import {nonMaxSuppressionImpl} from '../non_max_suppression_impl';
+import {slice} from '../slice_shared';
 import {split} from '../split_shared';
 import {tile} from '../tile_impl';
 import {topkImpl} from '../topk_impl';
@@ -681,10 +682,12 @@ export class MathBackendWebGL implements KernelBackend {
    */
   private shouldExecuteOnCPU(
       inputs: Tensor[], sizeThreshold = CPU_HANDOFF_SIZE_THRESHOLD): boolean {
+    const hasStringInputs = inputs.some(t => t.dtype === 'string');
+    const allInputsAreSmallAndInCPUMemory = inputs.every(
+        input => this.texData.get(input.dataId).texture == null &&
+            input.size < sizeThreshold);
     return this.getCPUBackend() != null &&
-        inputs.every(
-            input => this.texData.get(input.dataId).texture == null &&
-                input.size < sizeThreshold);
+        (hasStringInputs || allInputsAreSmallAndInCPUMemory);
   }
 
   getGPGPUContext(): GPGPUContext {
@@ -716,6 +719,9 @@ export class MathBackendWebGL implements KernelBackend {
   slice<T extends Tensor>(x: T, begin: number[], size: number[]): T {
     if (this.shouldExecuteOnCPU([x])) {
       return this.cpuBackend.slice(x, begin, size);
+    }
+    if (x.dtype === 'string') {
+      return slice(this.readSync(x.dataId), x.shape, x.dtype, begin, size);
     }
     // Short-circuit computation if the slice is zero-sized.
     if (util.sizeFromShape(size) === 0) {

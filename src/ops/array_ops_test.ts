@@ -3337,6 +3337,17 @@ describeWithFlags('unstack', ALL_ENVS, () => {
     expectArraysClose(await res[1].data(), [5, 6, 7, 8]);
   });
 
+  // tslint:disable-next-line: ban
+  fit('unstack string tensors', async () => {
+    const a = [['a', 'b', 'c'], ['d', 'e', 'f']];
+    const res = tf.unstack(a);
+    expect(res.length).toBe(2);
+    expect(res[0].shape).toEqual([3]);
+    expectArraysEqual(await res[0].data(), ['a', 'b', 'c']);
+    expect(res[1].shape).toEqual([3]);
+    expectArraysEqual(await res[1].data(), ['d', 'e', 'f']);
+  });
+
   it('grad of unstack axis=0', async () => {
     const x = tf.tensor([[1, 2, 3], [4, 5, 6]]);
     const dx1 = tf.grad(x => tf.unstack(x)[0])(x);

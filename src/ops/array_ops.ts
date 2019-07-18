@@ -803,7 +803,7 @@ function spaceToBatchND_<T extends Tensor>(
 /** @doc {heading: 'Tensors', subheading: 'Slicing and Joining'} */
 function unstack_(x: Tensor|TensorLike, axis = 0): Tensor[] {
   axis = axis || 0;
-  const $x = convertToTensor(x, 'x', 'unstack');
+  const $x = convertToTensor(x, 'x', 'unstack', null);
   util.assert(
       axis >= -$x.shape.length && axis < $x.shape.length,
       () =>
