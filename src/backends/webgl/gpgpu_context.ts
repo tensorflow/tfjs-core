@@ -19,7 +19,7 @@ import {ENV} from '../../environment';
 import {PixelData, TypedArray} from '../../types';
 import * as util from '../../util';
 
-import {getWebGLContext, setWebGLContext} from './canvas_util';
+import {getWebGLContext} from './canvas_util';
 import * as gpgpu_util from './gpgpu_util';
 import {TextureConfig} from './gpgpu_util';
 import * as tex_util from './tex_util';
@@ -52,7 +52,6 @@ export class GPGPUContext {
     const glVersion = ENV.getNumber('WEBGL_VERSION');
     if (gl != null) {
       this.gl = gl;
-      setWebGLContext(glVersion, gl);
     } else {
       this.gl = getWebGLContext(glVersion);
     }
