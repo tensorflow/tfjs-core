@@ -542,6 +542,9 @@ function hasExtension(gl: WebGLRenderingContext, extensionName: string) {
 }
 
 export function isWebGLVersionEnabled(webGLVersion: 1|2) {
+  //
+  // TODO(kreeger): feature flag check here.
+  //
   try {
     const gl = getWebGLContext(webGLVersion);
     if (gl != null) {

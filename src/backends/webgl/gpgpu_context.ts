@@ -52,6 +52,7 @@ export class GPGPUContext {
     const glVersion = ENV.getNumber('WEBGL_VERSION');
     if (gl != null) {
       this.gl = gl;
+      // TODO - this sucks for the reference for everything using canvas_util.ts
     } else {
       this.gl = getWebGLContext(glVersion);
     }
