@@ -1,15 +1,10 @@
-import {HAS_WORKER, HAS_NODE_WORKER, describeWithFlags} from './jasmine_util';
+import {HAS_WORKER, describeWithFlags} from './jasmine_util';
 import {expectArraysClose} from './test_util';
 import * as tf from './index';
 
-const fn2String = (fn: Function): string => {
-  const funcStr = '('+fn.toString()+')()';
-  return funcStr;
-};
-
 const fn2workerURL = (fn: Function): string => {
   const blob =
-      new Blob([fn2String(fn)], {type: 'application/javascript'});
+      new Blob(['('+fn.toString()+')()'], {type: 'application/javascript'});
   return URL.createObjectURL(blob);
 };
 
@@ -31,30 +26,5 @@ describeWithFlags('computation in worker', HAS_WORKER, () => {
       expectArraysClose(data, [4, 4, 4]);
       done();
     };
-  });
-});
-
-const workerTestNode = () => {
-  const tf = require(`${process.cwd()}/dist/tf-core.js`);
-  // tslint:disable-next-line:no-require-imports
-  const {parentPort} = require('worker_threads');
-  let a = tf.tensor1d([1, 2, 3]);
-  const b = tf.tensor1d([3, 2, 1]);
-  a = a.add(b);
-  //@ts-ignore
-  parentPort.postMessage({data: a.dataSync()});
-};
-
-describeWithFlags('computation in worker (node env)', HAS_NODE_WORKER, () => {
-  it('tensor in worker', (done) => {
-    // tslint:disable-next-line:no-require-imports
-    const {Worker} = require('worker_threads');
-    const worker = new Worker(fn2String(workerTestNode), {eval: true});
-    // tslint:disable-next-line:no-any
-    worker.on('message', (msg: any) => {
-      const data = msg.data;
-      expectArraysClose(data, [4, 4, 4]);
-      done();
-    });
   });
 });

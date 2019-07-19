@@ -41,7 +41,6 @@ export const SYNC_BACKEND_ENVS: Constraints = {
 
 export const HAS_WORKER = {
   predicate: () => typeof(Worker) !== 'undefined'
-      && typeof(document) === 'undefined'
       && typeof(Blob) !== 'undefined' && typeof(URL) !== 'undefined'
 };
 

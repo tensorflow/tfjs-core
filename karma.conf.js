@@ -47,8 +47,8 @@ const browserstackConfig = {
   frameworks: ['browserify', 'jasmine'],
   files: ['dist/setup_test.js', {pattern: 'dist/**/*_test.js'}],
   exclude: [
-    'src/test_node.ts',
-    'src/test_async_backends.ts'
+    'dist/test_node.ts',
+    'dist/test_async_backends.ts'
   ],
   preprocessors: {'dist/**/*_test.js': ['browserify']},
   browserify: {debug: false},
@@ -65,7 +65,6 @@ const webworkerConfig = {
     // Include tf-core into the static file
     {pattern: 'dist/tf-core.js', included: false}
   ],
-  exclude: [],
   port: 12345
 };
 
