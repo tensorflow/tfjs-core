@@ -15,8 +15,6 @@
  * =============================================================================
  */
 
-const contexts: {[key: string]: WebGLRenderingContext} = {};
-
 const WEBGL_ATTRIBUTES: WebGLContextAttributes = {
   alpha: false,
   antialias: false,
@@ -27,35 +25,7 @@ const WEBGL_ATTRIBUTES: WebGLContextAttributes = {
   failIfMajorPerformanceCaveat: true
 };
 
-export function setWebGLContext(
-    webGLVersion: number, gl: WebGLRenderingContext) {
-  contexts[webGLVersion] = gl;
-}
-
-export function getWebGLContext(webGLVersion: number): WebGLRenderingContext {
-  if (!(webGLVersion in contexts)) {
-    contexts[webGLVersion] = getWebGLRenderingContext(webGLVersion);
-  }
-  const gl = contexts[webGLVersion];
-  if (gl.isContextLost()) {
-    delete contexts[webGLVersion];
-    return getWebGLContext(webGLVersion);
-  }
-
-  gl.disable(gl.DEPTH_TEST);
-  gl.disable(gl.STENCIL_TEST);
-  gl.disable(gl.BLEND);
-  gl.disable(gl.DITHER);
-  gl.disable(gl.POLYGON_OFFSET_FILL);
-  gl.disable(gl.SAMPLE_COVERAGE);
-  gl.enable(gl.SCISSOR_TEST);
-  gl.enable(gl.CULL_FACE);
-  gl.cullFace(gl.BACK);
-
-  return contexts[webGLVersion];
-}
-
-export function createCanvas(webGLVersion: number) {
+function createCanvas(webGLVersion: number) {
   if (typeof OffscreenCanvas !== 'undefined' && webGLVersion === 2) {
     return new OffscreenCanvas(300, 150);
   } else if (typeof document !== 'undefined') {
@@ -65,7 +35,8 @@ export function createCanvas(webGLVersion: number) {
   }
 }
 
-function getWebGLRenderingContext(webGLVersion: number): WebGLRenderingContext {
+export function createDOMCanvasWebGLRenderingContext(webGLVersion: number):
+    WebGLRenderingContext {
   if (webGLVersion !== 1 && webGLVersion !== 2) {
     throw new Error('Cannot get WebGL rendering context, WebGL is disabled.');
   }
@@ -73,7 +44,8 @@ function getWebGLRenderingContext(webGLVersion: number): WebGLRenderingContext {
 
   canvas.addEventListener('webglcontextlost', (ev: Event) => {
     ev.preventDefault();
-    delete contexts[webGLVersion];
+    // TODO(kreeger): callback to manager???
+    // delete contexts[webGLVersion];
   }, false);
   if (webGLVersion === 1) {
     return (canvas.getContext('webgl', WEBGL_ATTRIBUTES) ||

@@ -62,7 +62,6 @@ import * as binaryop_gpu from './binaryop_gpu';
 import {BinaryOpProgram} from './binaryop_gpu';
 import * as binaryop_packed_gpu from './binaryop_packed_gpu';
 import {BinaryOpPackedProgram} from './binaryop_packed_gpu';
-import {createCanvas, getWebGLContext} from './canvas_util';
 import {ClipProgram} from './clip_gpu';
 import {ClipPackedProgram} from './clip_packed_gpu';
 import {ComplexAbsProgram} from './complex_abs_gpu';
@@ -221,7 +220,6 @@ export class MathBackendWebGL implements KernelBackend {
   private dataRefCount = new WeakMap<DataId, number>();
   private numBytesInGPU = 0;
 
-  private canvas: HTMLCanvasElement;
   private fromPixels2DContext: CanvasRenderingContext2D|
       OffscreenCanvasRenderingContext2D;
 
@@ -248,15 +246,15 @@ export class MathBackendWebGL implements KernelBackend {
     }
 
     if (gpgpu == null) {
-      const gl = getWebGLContext(ENV.getNumber('WEBGL_VERSION'));
+      // TODO(kreeger): Fix this.
       this.binaryCache = getBinaryCache(ENV.getNumber('WEBGL_VERSION'));
-      this.gpgpu = new GPGPUContext(gl);
-      this.canvas = gl.canvas;
+      this.gpgpu = new GPGPUContext();
+      // this.canvas = gl.canvas;
       this.gpgpuCreatedLocally = true;
     } else {
       this.binaryCache = {};
       this.gpgpuCreatedLocally = false;
-      this.canvas = gpgpu.gl.canvas;
+      // this.canvas = gpgpu.gl.canvas;
     }
     this.textureManager = new TextureManager(this.gpgpu);
     this.numMBBeforeWarning = numMBBeforeWarning();
@@ -313,8 +311,9 @@ export class MathBackendWebGL implements KernelBackend {
               'on the document object');
         }
         //@ts-ignore
-        this.fromPixels2DContext =
-            createCanvas(ENV.getNumber('WEBGL_VERSION')).getContext('2d');
+        // TODO(kreeger): Fix this.
+        // this.fromPixels2DContext =
+        //     createCanvas(ENV.getNumber('WEBGL_VERSION')).getContext('2d');
       }
       this.fromPixels2DContext.canvas.width = pixels.width;
       this.fromPixels2DContext.canvas.height = pixels.height;
@@ -2500,11 +2499,15 @@ export class MathBackendWebGL implements KernelBackend {
       return;
     }
     this.textureManager.dispose();
-    if (this.canvas != null && this.canvas.remove != null) {
-      this.canvas.remove();
-    } else {
-      this.canvas = null;
-    }
+
+    // TODO(kreeger): This should be cleaned up in the WebGLContextManager
+    // right?
+    // if (this.canvas != null && this.canvas.remove != null) {
+    //   this.canvas.remove();
+    // } else {
+    //   this.canvas = null;
+    // }
+
     if (this.fromPixels2DContext != null &&
         //@ts-ignore
         this.fromPixels2DContext.canvas.remove) {

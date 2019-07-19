@@ -20,6 +20,7 @@ import {getChannels} from '../packing_util';
 import {GPGPUContext} from './gpgpu_context';
 import {GPGPUProgram} from './gpgpu_math';
 import {getCoordsDataType} from './shader_compiler';
+import {WebGLContextManager} from './webgl_context_manager';
 
 export class SlicePackedProgram implements GPGPUProgram {
   variableNames = ['source'];
@@ -73,7 +74,7 @@ export class SlicePackedProgram implements GPGPUProgram {
       void main() {
         ${dtype} coords = getOutputCoords();
         ${dtype} sourceLoc;
-        ${sourceLocSetup} 
+        ${sourceLocSetup}
         vec4 result = vec4(0.);
         ${upperRow}
         ${lowerRow}
@@ -97,7 +98,7 @@ export class SlicePackedProgram implements GPGPUProgram {
           return;
         }
       }
-      gpgpu.gl.uniform1iv(this.startLoc, start);
+      WebGLContextManager.getActiveContext().uniform1iv(this.startLoc, start);
     };
   }
 }

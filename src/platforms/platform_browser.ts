@@ -14,7 +14,10 @@
  * limitations under the License.
  * =============================================================================
  */
+import {createDOMCanvasWebGLRenderingContext} from '../backends/webgl/canvas_util';
+import {WebGLContextManager} from '../backends/webgl/webgl_context_manager';
 import {ENV} from '../environment';
+
 import {Platform} from './platform';
 
 export class PlatformBrowser implements Platform {
@@ -24,6 +27,10 @@ export class PlatformBrowser implements Platform {
     // According to the spec, the built-in encoder can do only UTF-8 encoding.
     // https://developer.mozilla.org/en-US/docs/Web/API/TextEncoder/TextEncoder
     this.textEncoder = new TextEncoder();
+
+    // Register default WebGL Context creation:
+    WebGLContextManager.getInstance().setContextFactory(
+        createDOMCanvasWebGLRenderingContext)
   }
 
   fetch(path: string, init?: RequestInit): Promise<Response> {
