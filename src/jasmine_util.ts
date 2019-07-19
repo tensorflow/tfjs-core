@@ -53,7 +53,7 @@ export const HAS_NODE_WORKER = {
     } catch {
       hasWorker = false;
     }
-    return typeof(process) !== 'undefined' && hasWorker
+    return typeof(process) !== 'undefined' && hasWorker;
   }
 };
 
