@@ -863,7 +863,7 @@ describeWithFlags('pow', ALL_ENVS, () => {
         await db.data(), [3.0 * Math.pow(4, 1.5) * Math.log(4.0)]);
   });
 
-  it('KREEGER gradients: Tensor ^ Tensor', async () => {
+  it('gradients: Tensor ^ Tensor', async () => {
     const a = tf.tensor1d([-1, .5, 2]);
     const b = tf.tensor1d([3, 2, -1], 'int32');
     const dy = tf.tensor1d([1, 5, 10]);
