@@ -29,5 +29,5 @@ setTestEnvs([{name: 'node', backendName: 'cpu'}]);
 
 const runner = new jasmine();
 // Exclude worker test in node ENV
-runner.loadConfig({spec_files: ['dist/**/!(worker)_test.js'], random: false});
+runner.loadConfig({spec_files: ['dist/**/**_test.js'], random: false});
 runner.execute();

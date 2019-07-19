@@ -75,5 +75,5 @@ setTestEnvs([{
 
 const runner = new jasmine();
 // exclude worker test
-runner.loadConfig({spec_files: ['dist/**/!(worker)_test.js'], random: false});
+runner.loadConfig({spec_files: ['dist/**/**_test.js'], random: false});
 runner.execute();

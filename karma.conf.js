@@ -36,8 +36,7 @@ const devConfig = {
   files: ['src/setup_test.ts', {pattern: 'src/**/*.ts'}],
   exclude: [
     'src/test_node.ts',
-    'src/test_async_backends.ts',
-    'src/worker_test.ts'
+    'src/test_async_backends.ts'
   ],
   preprocessors: {'**/*.ts': ['karma-typescript']},
   karmaTypescriptConfig,
@@ -48,7 +47,8 @@ const browserstackConfig = {
   frameworks: ['browserify', 'jasmine'],
   files: ['dist/setup_test.js', {pattern: 'dist/**/*_test.js'}],
   exclude: [
-    'dist/worker_test.js'
+    'src/test_node.ts',
+    'src/test_async_backends.ts'
   ],
   preprocessors: {'dist/**/*_test.js': ['browserify']},
   browserify: {debug: false},
@@ -61,7 +61,7 @@ const webworkerConfig = {
   ...browserstackConfig,
   files: [
     'dist/setup_test.js',
-    {pattern: 'dist/worker_test.js'},
+    'dist/worker_test.js',
     // Include tf-core into the static file
     {pattern: 'dist/tf-core.js', included: false}
   ],
