@@ -28,7 +28,5 @@ process.on('unhandledRejection', e => {
 setTestEnvs([{name: 'node', backendName: 'cpu'}]);
 
 const runner = new jasmine();
-// Exclude worker test in node ENV
-runner.loadConfig({spec_files: ['dist/**/**_test.js',
-    'dist/worker_test_node.js'], random: false});
+runner.loadConfig({spec_files: ['dist/**/**_test.js'], random: false});
 runner.execute();
