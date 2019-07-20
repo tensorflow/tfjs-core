@@ -36,6 +36,7 @@ const devConfig = {
   files: ['src/setup_test.ts', {pattern: 'src/**/*.ts'}],
   exclude: [
     'src/worker_node_test.ts',
+    'src/worker_test.ts',
     'src/test_node.ts',
     'src/test_async_backends.ts'
   ],
@@ -49,6 +50,7 @@ const browserstackConfig = {
   files: ['dist/setup_test.js', {pattern: 'dist/**/*_test.js'}],
   exclude: [
     'dist/worker_node_test.js',
+    'dist/worker_test.js',
     'dist/test_node.js',
     'dist/test_async_backends.js'
   ],
@@ -67,6 +69,7 @@ const webworkerConfig = {
     // Serve dist/tf-core.js as a static resource, but do not include in the test runner
     {pattern: 'dist/tf-core.js', included: false}
   ],
+  exclude: [],
   port: 12345
 };
 
