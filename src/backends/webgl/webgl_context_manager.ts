@@ -45,6 +45,9 @@ export class WebGLContextManager {
    */
   setContextFactory(factory: (version: number) => WebGLRenderingContext) {
     this.factory = factory;
+
+    // Clear out items (TODO kreeger): write a unit test for this?
+    this.contexts = {};
   }
 
   /**

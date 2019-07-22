@@ -196,14 +196,16 @@ describe('WEBGL_MAX_TEXTURE_SIZE', () => {
     ENV.reset();
     webgl_util.MAX_TEXTURE_SIZE = null;
 
-    spyOn(WebGLContextManager, 'getActiveContext').and.returnValue({
-      MAX_TEXTURE_SIZE: 101,
-      getParameter: (param: number) => {
-        if (param === 101) {
-          return 50;
+    WebGLContextManager.getInstance().setContextFactory((version: number) => {
+      return {
+        MAX_TEXTURE_SIZE: 101,
+        getParameter: (param: number) => {
+          if (param === 101) {
+            return 50;
+          }
+          throw new Error(`Got undefined param ${param}.`);
         }
-        throw new Error(`Got undefined param ${param}.`);
-      }
+      } as WebGLRenderingContext;
     });
   });
   afterAll(() => {
@@ -222,7 +224,7 @@ describe('WEBGL_MAX_TEXTURES_IN_SHADER', () => {
     ENV.reset();
     webgl_util.MAX_TEXTURES_IN_SHADER = null;
 
-    spyOn(WebGLContextManager, 'getActiveContext').and.callFake(() => {
+    WebGLContextManager.getInstance().setContextFactory((version: number) => {
       return {
         MAX_TEXTURE_IMAGE_UNITS: 101,
         getParameter: (param: number) => {
@@ -231,7 +233,7 @@ describe('WEBGL_MAX_TEXTURES_IN_SHADER', () => {
           }
           throw new Error(`Got undefined param ${param}.`);
         }
-      };
+      } as WebGLRenderingContext;
     });
   });
   afterAll(() => {
