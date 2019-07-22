@@ -62,6 +62,7 @@ import * as binaryop_gpu from './binaryop_gpu';
 import {BinaryOpProgram} from './binaryop_gpu';
 import * as binaryop_packed_gpu from './binaryop_packed_gpu';
 import {BinaryOpPackedProgram} from './binaryop_packed_gpu';
+import {createCanvas} from './canvas_util';
 import {ClipProgram} from './clip_gpu';
 import {ClipPackedProgram} from './clip_packed_gpu';
 import {ComplexAbsProgram} from './complex_abs_gpu';
@@ -311,9 +312,8 @@ export class MathBackendWebGL implements KernelBackend {
               'on the document object');
         }
         //@ts-ignore
-        // TODO(kreeger): Fix this.
-        // this.fromPixels2DContext =
-        //     createCanvas(ENV.getNumber('WEBGL_VERSION')).getContext('2d');
+        this.fromPixels2DContext =
+            createCanvas(ENV.getNumber('WEBGL_VERSION')).getContext('2d');
       }
       this.fromPixels2DContext.canvas.width = pixels.width;
       this.fromPixels2DContext.canvas.height = pixels.height;
