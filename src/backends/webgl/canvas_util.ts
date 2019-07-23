@@ -1,3 +1,5 @@
+import {disposeActiveContext} from './webgl_context_manager';
+
 /**
  * @license
  * Copyright 2018 Google LLC. All Rights Reserved.
@@ -48,7 +50,6 @@ export function cleanupDOMCanvasWebGLRenderingContext(
 
 export function createDOMCanvasWebGLRenderingContext(webGLVersion: number):
     WebGLRenderingContext {
-  console.log('$$$$ CREATING CANVAS: ' + webGLVersion);
   if (webGLVersion !== 1 && webGLVersion !== 2) {
     throw new Error('Cannot get WebGL rendering context, WebGL is disabled.');
   }
@@ -56,7 +57,7 @@ export function createDOMCanvasWebGLRenderingContext(webGLVersion: number):
 
   canvas.addEventListener('webglcontextlost', (ev: Event) => {
     ev.preventDefault();
-    // disposeActiveContext();
+    disposeActiveContext();
   }, false);
   if (webGLVersion === 1) {
     return (canvas.getContext('webgl', WEBGL_ATTRIBUTES) ||
