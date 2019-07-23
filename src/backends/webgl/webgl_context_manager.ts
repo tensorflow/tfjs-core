@@ -73,6 +73,9 @@ export function getContextByVersion(version: number): WebGLRenderingContext {
     disposeWebGLContext(version);
     return getContextByVersion(version);
   }
+  // if (version === 2) {
+  //   console.log('   getContextByVersion()');
+  // }
   return contexts[version];
 }
 
