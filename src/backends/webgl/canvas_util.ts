@@ -1,5 +1,3 @@
-import {disposeActiveContext} from './webgl_context_manager';
-
 /**
  * @license
  * Copyright 2018 Google LLC. All Rights Reserved.
@@ -16,6 +14,7 @@ import {disposeActiveContext} from './webgl_context_manager';
  * limitations under the License.
  * =============================================================================
  */
+import {disposeActiveContext} from './webgl_context_manager';
 
 const WEBGL_ATTRIBUTES: WebGLContextAttributes = {
   alpha: false,

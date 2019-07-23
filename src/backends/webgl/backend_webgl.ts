@@ -130,6 +130,7 @@ import {UnaryOpProgram} from './unaryop_gpu';
 import * as unary_packed_op from './unaryop_packed_gpu';
 import {UnaryOpPackedProgram} from './unaryop_packed_gpu';
 import {UnpackProgram} from './unpack_gpu';
+import {disposeActiveContext, getActiveContext} from './webgl_context_manager';
 import * as webgl_util from './webgl_util';
 
 type KernelInfo = {
@@ -247,15 +248,12 @@ export class MathBackendWebGL implements KernelBackend {
     }
 
     if (gpgpu == null) {
-      // TODO(kreeger): Fix this.
       this.binaryCache = getBinaryCache(ENV.getNumber('WEBGL_VERSION'));
       this.gpgpu = new GPGPUContext();
-      // this.canvas = gl.canvas;
       this.gpgpuCreatedLocally = true;
     } else {
       this.binaryCache = {};
       this.gpgpuCreatedLocally = false;
-      // this.canvas = gpgpu.gl.canvas;
     }
     this.textureManager = new TextureManager(this.gpgpu);
     this.numMBBeforeWarning = numMBBeforeWarning();
@@ -2510,6 +2508,12 @@ export class MathBackendWebGL implements KernelBackend {
       this.gpgpu.program = null;
       this.gpgpu.dispose();
     }
+
+    const gl = getActiveContext();
+    if (gl.canvas != null && gl.canvas.remove != null) {
+      gl.canvas.remove();
+    }
+    disposeActiveContext();
     this.disposed = true;
   }
 
