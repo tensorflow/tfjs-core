@@ -197,6 +197,7 @@ describe('WEBGL_MAX_TEXTURE_SIZE', () => {
     ENV.reset();
     webgl_util.MAX_TEXTURE_SIZE = null;
 
+    // TODO(kreeger): This spy doesn't work anymore
     spyOn(webgl_context_manager, 'getActiveContext').and.returnValue({
       MAX_TEXTURE_SIZE: 101,
       getParameter: (param: number) => {
@@ -223,6 +224,7 @@ describe('WEBGL_MAX_TEXTURES_IN_SHADER', () => {
     ENV.reset();
     webgl_util.MAX_TEXTURES_IN_SHADER = null;
 
+    // TODO(kreeger): This spy doesn't work anymore
     spyOn(webgl_context_manager, 'getActiveContext').and.callFake(() => {
       return {
         MAX_TEXTURE_IMAGE_UNITS: 101,

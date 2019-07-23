@@ -31,8 +31,16 @@ export interface FenceContext {
   isFencePassed(): boolean;
 }
 
+function checkGL(msg: string, gl: WebGLRenderingContext) {
+  const error = gl.getError();
+  if (error !== gl.NO_ERROR) {
+    console.log('>> ' + msg);
+    console.log('>> ERROR: ' + webgl_util.getWebGLErrorMessage(gl, error));
+    console.log('>> VERSION: ' + gl);
+  }
+}
+
 export class GPGPUContext {
-  // gl: WebGLRenderingContext;
   textureFloatExtension: {};
   textureHalfFloatExtension: {};
   colorBufferFloatExtension: {};
@@ -50,6 +58,9 @@ export class GPGPUContext {
 
   constructor() {
     const gl = getActiveContext();
+    // This causes an exception everytime on WebGL2 - need to figure out
+    // which test/check/call is setting the GL in a bad way.
+    checkGL('get active context', gl);
 
     // WebGL 2.0 enables texture floats without an extension.
     if (ENV.getNumber('WEBGL_VERSION') === 1) {
@@ -68,13 +79,18 @@ export class GPGPUContext {
       this.colorBufferFloatExtension = webgl_util.getExtensionOrThrow(
           gl, this.debug, 'EXT_color_buffer_float');
     }
+    checkGL('extension checks', gl);
 
     this.vertexBuffer = gpgpu_util.createVertexBuffer(gl, this.debug);
+    checkGL('vertex buffer', gl);
     this.indexBuffer = gpgpu_util.createIndexBuffer(gl, this.debug);
+    checkGL('index buffer', gl);
     this.framebuffer = webgl_util.createFramebuffer(gl, this.debug);
+    checkGL('frame buffer', gl);
 
     this.textureConfig =
         gpgpu_util.getTextureConfig(gl, this.textureHalfFloatExtension);
+    checkGL('texture config', gl);
   }
 
   private get debug(): boolean {
@@ -111,7 +127,6 @@ export class GPGPUContext {
     webgl_util.callAndCheck(
         gl, this.debug, () => gl.deleteBuffer(this.indexBuffer));
     this.disposed = true;
-    // disposeActiveContext();
   }
 
   public createFloat32MatrixTexture(rows: number, columns: number):

@@ -130,7 +130,7 @@ import {UnaryOpProgram} from './unaryop_gpu';
 import * as unary_packed_op from './unaryop_packed_gpu';
 import {UnaryOpPackedProgram} from './unaryop_packed_gpu';
 import {UnpackProgram} from './unpack_gpu';
-import {disposeActiveContext, getActiveContext} from './webgl_context_manager';
+import {getActiveContext} from './webgl_context_manager';
 import * as webgl_util from './webgl_util';
 
 type KernelInfo = {
@@ -2509,11 +2509,11 @@ export class MathBackendWebGL implements KernelBackend {
       this.gpgpu.dispose();
     }
 
+    // TODO(kreeger): Is this actually used?
     const gl = getActiveContext();
     if (gl.canvas != null && gl.canvas.remove != null) {
       gl.canvas.remove();
     }
-    disposeActiveContext();
     this.disposed = true;
   }
 
