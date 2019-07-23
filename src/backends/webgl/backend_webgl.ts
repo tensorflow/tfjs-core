@@ -130,6 +130,7 @@ import {UnaryOpProgram} from './unaryop_gpu';
 import * as unary_packed_op from './unaryop_packed_gpu';
 import {UnaryOpPackedProgram} from './unaryop_packed_gpu';
 import {UnpackProgram} from './unpack_gpu';
+import {getActiveContext} from './webgl_context_manager';
 import * as webgl_util from './webgl_util';
 
 type KernelInfo = {
@@ -2500,13 +2501,13 @@ export class MathBackendWebGL implements KernelBackend {
     }
     this.textureManager.dispose();
 
-    // TODO(kreeger): This should be cleaned up in the WebGLContextManager
-    // right?
-    // if (this.canvas != null && this.canvas.remove != null) {
-    //   this.canvas.remove();
-    // } else {
-    //   this.canvas = null;
-    // }
+    // TODO(kreeger): Should this be cleaned up somewhere else?
+    if (ENV.getBool('IS_BROWSER')) {
+      const canvas = getActiveContext().canvas;
+      if (canvas != null && canvas.remove != null) {
+        canvas.remove();
+      }
+    }
 
     if (this.fromPixels2DContext != null &&
         //@ts-ignore
