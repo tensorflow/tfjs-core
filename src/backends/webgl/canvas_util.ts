@@ -14,7 +14,6 @@
  * limitations under the License.
  * =============================================================================
  */
-import {disposeActiveContext} from './webgl_context_manager';
 
 const WEBGL_ATTRIBUTES: WebGLContextAttributes = {
   alpha: false,
@@ -56,7 +55,6 @@ export function createDOMCanvasWebGLRenderingContext(webGLVersion: number):
 
   canvas.addEventListener('webglcontextlost', (ev: Event) => {
     ev.preventDefault();
-    disposeActiveContext();
   }, false);
   if (webGLVersion === 1) {
     return (canvas.getContext('webgl', WEBGL_ATTRIBUTES) ||
