@@ -1,11 +1,13 @@
 #include <math.h>
 #include <emscripten.h>
 #include <string>
+#include <math.h>
 
 extern "C" {
   EMSCRIPTEN_KEEPALIVE
-  void int_sqrt(char* input) {
-    printf("%s\n", input);
+  float int_sqrt(int input) {
+    printf("%f\n", sqrt(input));
+    return sqrt(input);
   }
 
   EMSCRIPTEN_KEEPALIVE

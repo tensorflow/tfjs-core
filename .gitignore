@@ -14,4 +14,5 @@ yalc.lock
 .rpt2_cache/
 package/
 
-tfjs-backend-wasm/a.out.*
+tfjs-backend-wasm/dist
+tfjs-backend-wasm/wasm-out
