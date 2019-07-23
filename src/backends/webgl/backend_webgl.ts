@@ -2501,14 +2501,6 @@ export class MathBackendWebGL implements KernelBackend {
     }
     this.textureManager.dispose();
 
-    // TODO(kreeger): Should this be cleaned up somewhere else?
-    if (ENV.getBool('IS_BROWSER')) {
-      const canvas = getActiveContext().canvas;
-      if (canvas != null && canvas.remove != null) {
-        canvas.remove();
-      }
-    }
-
     if (this.fromPixels2DContext != null &&
         //@ts-ignore
         this.fromPixels2DContext.canvas.remove) {

@@ -15,10 +15,12 @@
  * =============================================================================
  */
 import {ENV} from '../../environment';
-import {createDOMCanvasWebGLRenderingContext} from './canvas_util';
+
+import {cleanupDOMCanvasWebGLRenderingContext, createDOMCanvasWebGLRenderingContext} from './canvas_util';
 
 let contexts: {[key: string]: WebGLRenderingContext} = {};
 let contextFactory: (version: number) => WebGLRenderingContext = null;
+let contextCleanup: (context: WebGLRenderingContext) => void = null;
 
 /**
  * Sets callback for creating new WebGLRenderingContext instances.
@@ -31,6 +33,15 @@ export function setContextFactory(
 
   // Clear out items (TODO kreeger): write a unit test for this?
   contexts = {};
+}
+
+/**
+ * TODO(kreeger): doc me.
+ * @param cleanup
+ */
+export function setContextCleanup(
+    cleanup: (context: WebGLRenderingContext) => void) {
+  contextCleanup = cleanup;
 }
 
 /**
@@ -48,6 +59,7 @@ export function getContextByVersion(version: number): WebGLRenderingContext {
   // Default to browser context creation is running in the browser.
   if (contextFactory == null) {
     if (ENV.getBool('IS_BROWSER')) {
+      // TODO - is there a better place to register this?
       contextFactory = createDOMCanvasWebGLRenderingContext;
     } else {
       throw new Error('Default WebGLRenderingContext factory was not set!');
@@ -70,7 +82,20 @@ export function getContextByVersion(version: number): WebGLRenderingContext {
  * TODO(kreeger): Doc me.
  */
 export function disposeActiveContext() {
-  delete contexts[ENV.getNumber('WEBGL_VERSION')];
+  disposeWebGLContext(ENV.getNumber('WEBGL_VERSION'));
+}
+
+function disposeWebGLContext(version: number) {
+  if (contextCleanup == null) {
+    if (ENV.getBool('IS_BROWSER')) {
+      // TODO - is there a better place to register this?
+      contextCleanup = cleanupDOMCanvasWebGLRenderingContext;
+    }
+  }
+  if (contextCleanup != null) {
+    contextCleanup(contexts[version]);
+  }
+  delete contexts[version];
 }
 
 function bootstrapWebGLContext(gl: WebGLRenderingContext) {

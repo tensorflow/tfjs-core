@@ -1,3 +1,5 @@
+import {disposeActiveContext} from './webgl_context_manager';
+
 /**
  * @license
  * Copyright 2018 Google LLC. All Rights Reserved.
@@ -35,6 +37,14 @@ export function createCanvas(webGLVersion: number) {
   }
 }
 
+export function cleanupDOMCanvasWebGLRenderingContext(
+    context: WebGLRenderingContext) {
+  const canvas = context.canvas;
+  if (canvas != null && canvas.remove != null) {
+    canvas.remove();
+  }
+}
+
 export function createDOMCanvasWebGLRenderingContext(webGLVersion: number):
     WebGLRenderingContext {
   if (webGLVersion !== 1 && webGLVersion !== 2) {
@@ -44,8 +54,7 @@ export function createDOMCanvasWebGLRenderingContext(webGLVersion: number):
 
   canvas.addEventListener('webglcontextlost', (ev: Event) => {
     ev.preventDefault();
-    // TODO(kreeger): callback to manager???
-    // delete contexts[webGLVersion];
+    disposeActiveContext();
   }, false);
   if (webGLVersion === 1) {
     return (canvas.getContext('webgl', WEBGL_ATTRIBUTES) ||
