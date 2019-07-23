@@ -130,7 +130,6 @@ import {UnaryOpProgram} from './unaryop_gpu';
 import * as unary_packed_op from './unaryop_packed_gpu';
 import {UnaryOpPackedProgram} from './unaryop_packed_gpu';
 import {UnpackProgram} from './unpack_gpu';
-import {getActiveContext} from './webgl_context_manager';
 import * as webgl_util from './webgl_util';
 
 type KernelInfo = {

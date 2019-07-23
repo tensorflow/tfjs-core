@@ -39,6 +39,9 @@ export function createCanvas(webGLVersion: number) {
 
 export function cleanupDOMCanvasWebGLRenderingContext(
     context: WebGLRenderingContext) {
+  if (context == null) {
+    throw new Error('Shold not hit this case');
+  }
   const canvas = context.canvas;
   if (canvas != null && canvas.remove != null) {
     canvas.remove();

@@ -32,6 +32,9 @@ export function setContextFactory(
   contextFactory = factory;
 
   // Clear out items (TODO kreeger): write a unit test for this?
+  for (const ctx in contexts) {
+    console.log('ctx: ' + ctx);
+  }
   contexts = {};
 }
 
@@ -72,7 +75,7 @@ export function getContextByVersion(version: number): WebGLRenderingContext {
   }
   const gl = contexts[version];
   if (gl.isContextLost()) {
-    delete contexts[version];
+    disposeWebGLContext(version);
     return getContextByVersion(version);
   }
   return contexts[version];
@@ -86,16 +89,18 @@ export function disposeActiveContext() {
 }
 
 function disposeWebGLContext(version: number) {
-  if (contextCleanup == null) {
-    if (ENV.getBool('IS_BROWSER')) {
-      // TODO - is there a better place to register this?
-      contextCleanup = cleanupDOMCanvasWebGLRenderingContext;
+  if ((version in contexts)) {
+    if (contextCleanup == null) {
+      if (ENV.getBool('IS_BROWSER')) {
+        // TODO - is there a better place to register this?
+        contextCleanup = cleanupDOMCanvasWebGLRenderingContext;
+      }
     }
+    if (contextCleanup != null) {
+      contextCleanup(contexts[version]);
+    }
+    delete contexts[version];
   }
-  if (contextCleanup != null) {
-    contextCleanup(contexts[version]);
-  }
-  delete contexts[version];
 }
 
 function bootstrapWebGLContext(gl: WebGLRenderingContext) {
