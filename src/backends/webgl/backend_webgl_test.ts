@@ -319,7 +319,7 @@ describeWithFlags('upload tensors as uniforms', FLOAT32_WEBGL_ENVS, () => {
     expect(m.numBytesInGPU).toBe(a.size * 4 * 2);
   });
 
-  it('download and re-upload an output of a shader', async () => {
+  it('download and re-upload an output of a shader KREEGER', async () => {
     const vals = new Float32Array(SIZE_UPLOAD_UNIFORM + 1);
     vals.fill(2);
     const a = tf.square(vals);
