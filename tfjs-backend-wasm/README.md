@@ -3,10 +3,16 @@
 Install emscripten [here](https://emscripten.org/docs/getting_started/downloads.html)
 
 
-# Running
+# Building
 
 ```sh
-./build.sh
+yarn build
 ```
 
-Then open index.html in a webserver.
+# Testing
+
+```sh
+yarn test
+```
+
+Make sure you run yarn build before testing.
