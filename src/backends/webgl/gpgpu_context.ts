@@ -22,7 +22,7 @@ import * as util from '../../util';
 import * as gpgpu_util from './gpgpu_util';
 import {TextureConfig} from './gpgpu_util';
 import * as tex_util from './tex_util';
-import {disposeActiveContext, getActiveContext} from './webgl_context_manager';
+import {getActiveContext} from './webgl_context_manager';
 import {WebGL1DisjointQueryTimerExtension, WebGL2DisjointQueryTimerExtension} from './webgl_types';
 import * as webgl_util from './webgl_util';
 
@@ -111,7 +111,7 @@ export class GPGPUContext {
     webgl_util.callAndCheck(
         gl, this.debug, () => gl.deleteBuffer(this.indexBuffer));
     this.disposed = true;
-    disposeActiveContext();
+    // disposeActiveContext();
   }
 
   public createFloat32MatrixTexture(rows: number, columns: number):

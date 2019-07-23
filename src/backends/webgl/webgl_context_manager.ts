@@ -18,7 +18,7 @@ import {ENV} from '../../environment';
 
 import {cleanupDOMCanvasWebGLRenderingContext, createDOMCanvasWebGLRenderingContext} from './canvas_util';
 
-let contexts: {[key: string]: WebGLRenderingContext} = {};
+const contexts: {[key: string]: WebGLRenderingContext} = {};
 let contextFactory: (version: number) => WebGLRenderingContext = null;
 let contextCleanup: (context: WebGLRenderingContext) => void = null;
 
@@ -30,12 +30,6 @@ let contextCleanup: (context: WebGLRenderingContext) => void = null;
 export function setContextFactory(
     factory: (version: number) => WebGLRenderingContext) {
   contextFactory = factory;
-
-  // Clear out items (TODO kreeger): write a unit test for this?
-  for (const ctx in contexts) {
-    console.log('ctx: ' + ctx);
-  }
-  contexts = {};
 }
 
 /**
