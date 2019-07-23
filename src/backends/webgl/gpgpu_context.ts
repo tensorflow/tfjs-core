@@ -22,7 +22,7 @@ import * as util from '../../util';
 import * as gpgpu_util from './gpgpu_util';
 import {TextureConfig} from './gpgpu_util';
 import * as tex_util from './tex_util';
-import {WebGLContextManager} from './webgl_context_manager';
+import {disposeActiveContext, getActiveContext} from './webgl_context_manager';
 import {WebGL1DisjointQueryTimerExtension, WebGL2DisjointQueryTimerExtension} from './webgl_types';
 import * as webgl_util from './webgl_util';
 
@@ -49,7 +49,7 @@ export class GPGPUContext {
   private textureConfig: TextureConfig;
 
   constructor() {
-    const gl = WebGLContextManager.getActiveContext();
+    const gl = getActiveContext();
 
     // WebGL 2.0 enables texture floats without an extension.
     if (ENV.getNumber('WEBGL_VERSION') === 1) {
@@ -98,7 +98,7 @@ export class GPGPUContext {
           'matrix texture with GPGPUContext.deleteMatrixTexture before ' +
           'disposing.');
     }
-    const gl = WebGLContextManager.getActiveContext();
+    const gl = getActiveContext();
     webgl_util.callAndCheck(gl, this.debug, () => gl.finish());
     webgl_util.callAndCheck(
         gl, this.debug, () => gl.bindFramebuffer(gl.FRAMEBUFFER, null));
@@ -111,30 +111,28 @@ export class GPGPUContext {
     webgl_util.callAndCheck(
         gl, this.debug, () => gl.deleteBuffer(this.indexBuffer));
     this.disposed = true;
+    disposeActiveContext();
   }
 
   public createFloat32MatrixTexture(rows: number, columns: number):
       WebGLTexture {
     this.throwIfDisposed();
     return gpgpu_util.createFloat32MatrixTexture(
-        WebGLContextManager.getActiveContext(), this.debug, rows, columns,
-        this.textureConfig);
+        getActiveContext(), this.debug, rows, columns, this.textureConfig);
   }
 
   public createFloat16MatrixTexture(rows: number, columns: number):
       WebGLTexture {
     this.throwIfDisposed();
     return gpgpu_util.createFloat16MatrixTexture(
-        WebGLContextManager.getActiveContext(), this.debug, rows, columns,
-        this.textureConfig);
+        getActiveContext(), this.debug, rows, columns, this.textureConfig);
   }
 
   public createUnsignedBytesMatrixTexture(rows: number, columns: number):
       WebGLTexture {
     this.throwIfDisposed();
     return gpgpu_util.createUnsignedBytesMatrixTexture(
-        WebGLContextManager.getActiveContext(), this.debug, rows, columns,
-        this.textureConfig);
+        getActiveContext(), this.debug, rows, columns, this.textureConfig);
   }
 
   public uploadPixelDataToTexture(
@@ -142,43 +140,41 @@ export class GPGPUContext {
       pixels: PixelData|ImageData|HTMLImageElement|HTMLCanvasElement) {
     this.throwIfDisposed();
     gpgpu_util.uploadPixelDataToTexture(
-        WebGLContextManager.getActiveContext(), this.debug, texture, pixels);
+        getActiveContext(), this.debug, texture, pixels);
   }
 
   public uploadDenseMatrixToTexture(
       texture: WebGLTexture, width: number, height: number, data: TypedArray) {
     this.throwIfDisposed();
     gpgpu_util.uploadDenseMatrixToTexture(
-        WebGLContextManager.getActiveContext(), this.debug, texture, width,
-        height, data, this.textureConfig);
+        getActiveContext(), this.debug, texture, width, height, data,
+        this.textureConfig);
   }
 
   public createFloat16PackedMatrixTexture(rows: number, columns: number):
       WebGLTexture {
     this.throwIfDisposed();
     return gpgpu_util.createFloat16PackedMatrixTexture(
-        WebGLContextManager.getActiveContext(), this.debug, rows, columns,
-        this.textureConfig);
+        getActiveContext(), this.debug, rows, columns, this.textureConfig);
   }
 
   public createPackedMatrixTexture(rows: number, columns: number):
       WebGLTexture {
     this.throwIfDisposed();
     return gpgpu_util.createPackedMatrixTexture(
-        WebGLContextManager.getActiveContext(), this.debug, rows, columns,
-        this.textureConfig);
+        getActiveContext(), this.debug, rows, columns, this.textureConfig);
   }
 
   public deleteMatrixTexture(texture: WebGLTexture) {
     this.throwIfDisposed();
     if (this.outputTexture === texture) {
       webgl_util.unbindColorTextureFromFramebuffer(
-          WebGLContextManager.getActiveContext(), this.debug, this.framebuffer);
+          getActiveContext(), this.debug, this.framebuffer);
       this.outputTexture = null;
     }
     webgl_util.callAndCheck(
-        WebGLContextManager.getActiveContext(), this.debug,
-        () => WebGLContextManager.getActiveContext().deleteTexture(texture));
+        getActiveContext(), this.debug,
+        () => getActiveContext().deleteTexture(texture));
   }
 
   public downloadByteEncodedFloatMatrixFromOutputTexture(
@@ -186,37 +182,35 @@ export class GPGPUContext {
     return this.downloadMatrixDriver(
         texture,
         () => gpgpu_util.downloadByteEncodedFloatMatrixFromOutputTexture(
-            WebGLContextManager.getActiveContext(), this.debug, rows, columns,
-            this.textureConfig));
+            getActiveContext(), this.debug, rows, columns, this.textureConfig));
   }
 
   public downloadPackedMatrixFromBuffer(
       buffer: WebGLBuffer, batch: number, rows: number, columns: number,
       physicalRows: number, physicalCols: number): Float32Array {
     return gpgpu_util.downloadPackedMatrixFromBuffer(
-        WebGLContextManager.getActiveContext(), buffer, batch, rows, columns,
-        physicalRows, physicalCols, this.textureConfig);
+        getActiveContext(), buffer, batch, rows, columns, physicalRows,
+        physicalCols, this.textureConfig);
   }
 
   public downloadFloat32MatrixFromBuffer(buffer: WebGLBuffer, size: number):
       Float32Array {
     return gpgpu_util.downloadFloat32MatrixFromBuffer(
-        WebGLContextManager.getActiveContext(), buffer, size);
+        getActiveContext(), buffer, size);
   }
 
   public createBufferFromTexture(
       texture: WebGLTexture, rows: number, columns: number): WebGLBuffer {
     this.bindTextureToFrameBuffer(texture);
     const result = gpgpu_util.createBufferFromOutputTexture(
-        WebGLContextManager.getActiveContext() as WebGL2RenderingContext,
-        this.debug, rows, columns, this.textureConfig);
+        getActiveContext() as WebGL2RenderingContext, this.debug, rows, columns,
+        this.textureConfig);
     this.unbindTextureToFrameBuffer();
     return result;
   }
 
   public createAndWaitForFence(): Promise<void> {
-    const fenceContext =
-        this.createFence(WebGLContextManager.getActiveContext());
+    const fenceContext = this.createFence(getActiveContext());
     return this.pollFence(fenceContext);
   }
 
@@ -260,15 +254,14 @@ export class GPGPUContext {
     return this.downloadMatrixDriver(
         texture,
         () => gpgpu_util.downloadMatrixFromPackedOutputTexture(
-            WebGLContextManager.getActiveContext(), this.debug, physicalRows,
-            physicalCols));
+            getActiveContext(), this.debug, physicalRows, physicalCols));
   }
 
   private vertexAttrsAreBound = false;
 
   public createProgram(fragmentShaderSource: string): WebGLProgram {
     this.throwIfDisposed();
-    const gl = WebGLContextManager.getActiveContext();
+    const gl = getActiveContext();
     const fragmentShader: WebGLShader =
         webgl_util.createFragmentShader(gl, this.debug, fragmentShaderSource);
     const vertexShader: WebGLShader =
@@ -300,10 +293,8 @@ export class GPGPUContext {
     }
     if (program != null) {
       webgl_util.callAndCheck(
-          WebGLContextManager.getActiveContext(), this.debug,
-          () => WebGLContextManager.getInstance()
-                    .getActiveContext()
-                    .deleteProgram(program));
+          getActiveContext(), this.debug,
+          () => getActiveContext().deleteProgram(program));
     }
   }
 
@@ -311,12 +302,11 @@ export class GPGPUContext {
     this.throwIfDisposed();
     this.program = program;
     if ((this.program != null) && this.debug) {
-      webgl_util.validateProgram(
-          WebGLContextManager.getActiveContext(), this.debug, this.program);
+      webgl_util.validateProgram(getActiveContext(), this.debug, this.program);
     }
     webgl_util.callAndCheck(
-        WebGLContextManager.getActiveContext(), this.debug,
-        () => WebGLContextManager.getActiveContext().useProgram(program));
+        getActiveContext(), this.debug,
+        () => getActiveContext().useProgram(program));
   }
 
   public getUniformLocation(
@@ -325,11 +315,10 @@ export class GPGPUContext {
     this.throwIfDisposed();
     if (shouldThrow) {
       return webgl_util.getProgramUniformLocationOrThrow(
-          WebGLContextManager.getActiveContext(), this.debug, program,
-          uniformName);
+          getActiveContext(), this.debug, program, uniformName);
     } else {
       return webgl_util.getProgramUniformLocation(
-          WebGLContextManager.getActiveContext(), program, uniformName);
+          getActiveContext(), program, uniformName);
     }
   }
 
@@ -337,18 +326,14 @@ export class GPGPUContext {
       number {
     this.throwIfDisposed();
     return webgl_util.callAndCheck(
-        WebGLContextManager.getActiveContext(), this.debug,
-        () => WebGLContextManager.getInstance()
-                  .getActiveContext()
-                  .getAttribLocation(program, attribute));
+        getActiveContext(), this.debug,
+        () => getActiveContext().getAttribLocation(program, attribute));
   }
 
   public getUniformLocationNoThrow(program: WebGLProgram, uniformName: string):
       WebGLUniformLocation {
     this.throwIfDisposed();
-    return WebGLContextManager.getInstance()
-        .getActiveContext()
-        .getUniformLocation(program, uniformName);
+    return getActiveContext().getUniformLocation(program, uniformName);
   }
 
   public setInputMatrixTexture(
@@ -357,8 +342,8 @@ export class GPGPUContext {
     this.throwIfDisposed();
     this.throwIfNoProgram();
     webgl_util.bindTextureToProgramUniformSampler(
-        WebGLContextManager.getActiveContext(), this.debug, this.program,
-        inputMatrixTexture, uniformLocation, textureUnit);
+        getActiveContext(), this.debug, this.program, inputMatrixTexture,
+        uniformLocation, textureUnit);
   }
 
   public setOutputMatrixTexture(
@@ -389,16 +374,15 @@ export class GPGPUContext {
 
   public debugValidate() {
     if (this.program != null) {
-      webgl_util.validateProgram(
-          WebGLContextManager.getActiveContext(), this.debug, this.program);
+      webgl_util.validateProgram(getActiveContext(), this.debug, this.program);
     }
-    webgl_util.validateFramebuffer(WebGLContextManager.getActiveContext());
+    webgl_util.validateFramebuffer(getActiveContext());
   }
 
   public executeProgram() {
     this.throwIfDisposed();
     this.throwIfNoProgram();
-    const gl = WebGLContextManager.getActiveContext();
+    const gl = getActiveContext();
     if (this.debug) {
       this.debugValidate();
     }
@@ -410,8 +394,7 @@ export class GPGPUContext {
   public blockUntilAllProgramsCompleted() {
     this.throwIfDisposed();
     webgl_util.callAndCheck(
-        WebGLContextManager.getActiveContext(), this.debug,
-        () => WebGLContextManager.getActiveContext().finish());
+        getActiveContext(), this.debug, () => getActiveContext().finish());
   }
 
   private getQueryTimerExtension(): WebGL1DisjointQueryTimerExtension
@@ -419,7 +402,7 @@ export class GPGPUContext {
     if (this.disjointQueryTimerExtension == null) {
       this.disjointQueryTimerExtension =
           webgl_util.getExtensionOrThrow(
-              WebGLContextManager.getActiveContext(), this.debug,
+              getActiveContext(), this.debug,
               ENV.getNumber('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') ===
                       2 ?
                   'EXT_disjoint_timer_query_webgl2' :
@@ -440,8 +423,7 @@ export class GPGPUContext {
 
   beginQuery(): WebGLQuery {
     if (ENV.getNumber('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') === 2) {
-      const gl2 =
-          WebGLContextManager.getActiveContext() as WebGL2RenderingContext;
+      const gl2 = getActiveContext() as WebGL2RenderingContext;
       const ext = this.getQueryTimerExtensionWebGL2();
 
       const query = gl2.createQuery();
@@ -456,8 +438,7 @@ export class GPGPUContext {
 
   endQuery() {
     if (ENV.getNumber('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') === 2) {
-      const gl2 =
-          WebGLContextManager.getActiveContext() as WebGL2RenderingContext;
+      const gl2 = getActiveContext() as WebGL2RenderingContext;
       const ext = this.getQueryTimerExtensionWebGL2();
       gl2.endQuery(ext.TIME_ELAPSED_EXT);
       return;
@@ -485,8 +466,7 @@ export class GPGPUContext {
     }
 
     if (queryTimerVersion === 2) {
-      const gl2 =
-          WebGLContextManager.getActiveContext() as WebGL2RenderingContext;
+      const gl2 = getActiveContext() as WebGL2RenderingContext;
 
       const timeElapsedNanos = gl2.getQueryParameter(query, gl2.QUERY_RESULT);
       // Return milliseconds.
@@ -508,15 +488,13 @@ export class GPGPUContext {
     }
 
     if (queryTimerVersion === 2) {
-      const gl2 =
-          WebGLContextManager.getActiveContext() as WebGL2RenderingContext;
+      const gl2 = getActiveContext() as WebGL2RenderingContext;
       const ext = this.getQueryTimerExtensionWebGL2();
 
       const available =
           gl2.getQueryParameter(query, gl2.QUERY_RESULT_AVAILABLE);
       if (this.disjoint == null) {
-        this.disjoint = WebGLContextManager.getActiveContext().getParameter(
-            ext.GPU_DISJOINT_EXT);
+        this.disjoint = getActiveContext().getParameter(ext.GPU_DISJOINT_EXT);
       }
 
       return available && !this.disjoint;
@@ -526,8 +504,7 @@ export class GPGPUContext {
       const available =
           ext.getQueryObjectEXT(query, ext.QUERY_RESULT_AVAILABLE_EXT);
       if (this.disjoint == null) {
-        this.disjoint = WebGLContextManager.getActiveContext().getParameter(
-            ext.GPU_DISJOINT_EXT);
+        this.disjoint = getActiveContext().getParameter(ext.GPU_DISJOINT_EXT);
       }
 
       return available && !this.disjoint;
@@ -569,24 +546,22 @@ export class GPGPUContext {
   private bindTextureToFrameBuffer(texture: WebGLTexture) {
     this.throwIfDisposed();
     webgl_util.bindColorTextureToFramebuffer(
-        WebGLContextManager.getActiveContext(), this.debug, texture,
-        this.framebuffer);
+        getActiveContext(), this.debug, texture, this.framebuffer);
     if (this.debug) {
-      webgl_util.validateFramebuffer(WebGLContextManager.getActiveContext());
+      webgl_util.validateFramebuffer(getActiveContext());
     }
   }
 
   private unbindTextureToFrameBuffer() {
     if (this.outputTexture != null) {
       webgl_util.bindColorTextureToFramebuffer(
-          WebGLContextManager.getActiveContext(), this.debug,
-          this.outputTexture, this.framebuffer);
+          getActiveContext(), this.debug, this.outputTexture, this.framebuffer);
       if (this.debug) {
-        webgl_util.validateFramebuffer(WebGLContextManager.getActiveContext());
+        webgl_util.validateFramebuffer(getActiveContext());
       }
     } else {
       webgl_util.unbindColorTextureFromFramebuffer(
-          WebGLContextManager.getActiveContext(), this.debug, this.framebuffer);
+          getActiveContext(), this.debug, this.framebuffer);
     }
   }
 
@@ -604,7 +579,7 @@ export class GPGPUContext {
       outputMatrixTextureMaybePacked: WebGLTexture, width: number,
       height: number) {
     this.throwIfDisposed();
-    const gl = WebGLContextManager.getActiveContext();
+    const gl = getActiveContext();
     webgl_util.bindColorTextureToFramebuffer(
         gl, this.debug, outputMatrixTextureMaybePacked, this.framebuffer);
     if (this.debug) {
@@ -621,9 +596,8 @@ export class GPGPUContext {
       x: number, y: number, width: number, height: number) {
     this.throwIfDisposed();
     webgl_util.callAndCheck(
-        WebGLContextManager.getActiveContext(), this.debug,
-        () => WebGLContextManager.getActiveContext().scissor(
-            x, y, width, height));
+        getActiveContext(), this.debug,
+        () => getActiveContext().scissor(x, y, width, height));
   }
 
   private throwIfDisposed() {

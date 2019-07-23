@@ -15,74 +15,72 @@
  * =============================================================================
  */
 import {ENV} from '../../environment';
+import {createDOMCanvasWebGLRenderingContext} from './canvas_util';
+
+let contexts: {[key: string]: WebGLRenderingContext} = {};
+let contextFactory: (version: number) => WebGLRenderingContext = null;
 
 /**
- * Manages global state of all WebGLRenderingContexts.
+ * Sets callback for creating new WebGLRenderingContext instances.
+ * @param factory The callback function that returns a WebGLRenderingContext
+ *     instance.
  */
-export class WebGLContextManager {
-  private static instance: WebGLContextManager;
+export function setContextFactory(
+    factory: (version: number) => WebGLRenderingContext) {
+  contextFactory = factory;
 
-  contexts: {[key: string]: WebGLRenderingContext} = {};
-  factory: (version: number) => WebGLRenderingContext;
+  // Clear out items (TODO kreeger): write a unit test for this?
+  contexts = {};
+}
 
-  private constructor() {}
+/**
+ * Returns the current WebGLContext
+ */
+export function getActiveContext(): WebGLRenderingContext {
+  return getContextByVersion(ENV.getNumber('WEBGL_VERSION'));
+}
 
-  static getInstance(): WebGLContextManager {
-    if (!WebGLContextManager.instance) {
-      WebGLContextManager.instance = new WebGLContextManager();
+/**
+ *  TODO(kreeger): Doc me.
+ * @param version The specific version of WebGL to request.
+ */
+export function getContextByVersion(version: number): WebGLRenderingContext {
+  // Default to browser context creation is running in the browser.
+  if (contextFactory == null) {
+    if (ENV.getBool('IS_BROWSER')) {
+      contextFactory = createDOMCanvasWebGLRenderingContext;
+    } else {
+      throw new Error('Default WebGLRenderingContext factory was not set!');
     }
-    return WebGLContextManager.instance;
   }
 
-  static getActiveContext(): WebGLRenderingContext {
-    return WebGLContextManager.getInstance().getActiveContext();
+  if (!(version in contexts)) {
+    contexts[version] = contextFactory(version);
+    bootstrapWebGLContext(contexts[version]);
   }
-
-  /**
-   * Sets callback for creating new WebGLRenderingContext instances.
-   * @param factory The callback function that returns a WebGLRenderingContext
-   *     instance.
-   */
-  setContextFactory(factory: (version: number) => WebGLRenderingContext) {
-    this.factory = factory;
-
-    // Clear out items (TODO kreeger): write a unit test for this?
-    this.contexts = {};
+  const gl = contexts[version];
+  if (gl.isContextLost()) {
+    delete contexts[version];
+    return getContextByVersion(version);
   }
+  return contexts[version];
+}
 
-  /**
-   * Returns the current WebGLContext
-   */
-  getActiveContext(): WebGLRenderingContext {
-    return this.getContextByVersion(ENV.getNumber('WEBGL_VERSION'));
-  }
+/**
+ * TODO(kreeger): Doc me.
+ */
+export function disposeActiveContext() {
+  delete contexts[ENV.getNumber('WEBGL_VERSION')];
+}
 
-  /**
-   *  TODO(kreeger): Doc me.
-   * @param version The specific version of WebGL to request.
-   */
-  getContextByVersion(version: number): WebGLRenderingContext {
-    if (!(version in this.contexts)) {
-      this.contexts[version] = this.factory(version);
-      this.bootstrapWebGLContext(this.contexts[version]);
-    }
-    const gl = this.contexts[version];
-    if (gl.isContextLost()) {
-      delete this.contexts[version];
-      return this.getContextByVersion(version);
-    }
-    return this.contexts[version];
-  }
-
-  private bootstrapWebGLContext(gl: WebGLRenderingContext) {
-    gl.disable(gl.DEPTH_TEST);
-    gl.disable(gl.STENCIL_TEST);
-    gl.disable(gl.BLEND);
-    gl.disable(gl.DITHER);
-    gl.disable(gl.POLYGON_OFFSET_FILL);
-    gl.disable(gl.SAMPLE_COVERAGE);
-    gl.enable(gl.SCISSOR_TEST);
-    gl.enable(gl.CULL_FACE);
-    gl.cullFace(gl.BACK);
-  }
+function bootstrapWebGLContext(gl: WebGLRenderingContext) {
+  gl.disable(gl.DEPTH_TEST);
+  gl.disable(gl.STENCIL_TEST);
+  gl.disable(gl.BLEND);
+  gl.disable(gl.DITHER);
+  gl.disable(gl.POLYGON_OFFSET_FILL);
+  gl.disable(gl.SAMPLE_COVERAGE);
+  gl.enable(gl.SCISSOR_TEST);
+  gl.enable(gl.CULL_FACE);
+  gl.cullFace(gl.BACK);
 }

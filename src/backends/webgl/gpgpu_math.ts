@@ -24,7 +24,7 @@ import {GPGPUContext} from './gpgpu_context';
 import * as shader_compiler from './shader_compiler';
 import {InputInfo, ShapeInfo} from './shader_compiler';
 import {TextureData} from './tex_util';
-import {WebGLContextManager} from './webgl_context_manager';
+import {getActiveContext} from './webgl_context_manager';
 
 export interface GPGPUProgram {
   variableNames: string[];
@@ -163,7 +163,7 @@ export function runProgram<T extends Tensor, K extends Tensor>(
   }
   gpgpu.setProgram(binary.webGLProgram);
 
-  const gl = WebGLContextManager.getActiveContext();
+  const gl = getActiveContext();
   // Set special uniforms (NAN, INFINITY)
   if (ENV.getNumber('WEBGL_VERSION') === 1) {
     if (binary.infLoc !== null) {

@@ -19,7 +19,7 @@ import {describeWithFlags} from '../../jasmine_util';
 import {WEBGL_ENVS} from './backend_webgl_test_registry';
 import {GPGPUContext} from './gpgpu_context';
 import * as gpgpu_util from './gpgpu_util';
-import {WebGLContextManager} from './webgl_context_manager';
+import {getActiveContext} from './webgl_context_manager';
 
 describeWithFlags('gpgpu_util createWebGLContext', WEBGL_ENVS, () => {
   let gpgpu: GPGPUContext;
@@ -27,7 +27,7 @@ describeWithFlags('gpgpu_util createWebGLContext', WEBGL_ENVS, () => {
 
   beforeEach(() => {
     gpgpu = new GPGPUContext();
-    gl = WebGLContextManager.getActiveContext();
+    gl = getActiveContext();
   });
 
   afterEach(() => {
@@ -62,7 +62,7 @@ describeWithFlags('gpgpu_util createWebGLContext', WEBGL_ENVS, () => {
 describeWithFlags('gpgpu_util createFloat32MatrixTexture', WEBGL_ENVS, () => {
   let gl: WebGLRenderingContext;
   beforeEach(() => {
-    gl = WebGLContextManager.getActiveContext();
+    gl = getActiveContext();
   });
 
   afterEach(() => {
@@ -105,7 +105,7 @@ describeWithFlags('gpgpu_util createFloat32MatrixTexture', WEBGL_ENVS, () => {
 describeWithFlags('gpgpu_util createPackedMatrixTexture', WEBGL_ENVS, () => {
   let gl: WebGLRenderingContext;
   beforeEach(() => {
-    gl = WebGLContextManager.getActiveContext();
+    gl = getActiveContext();
   });
 
   afterEach(() => {

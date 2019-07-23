@@ -17,7 +17,7 @@
 
 import {GPGPUContext} from './gpgpu_context';
 import {GPGPUProgram} from './gpgpu_math';
-import {WebGLContextManager} from './webgl_context_manager';
+import {getActiveContext} from './webgl_context_manager';
 
 export class MultinomialProgram implements GPGPUProgram {
   variableNames = ['probs'];
@@ -60,7 +60,7 @@ export class MultinomialProgram implements GPGPUProgram {
       if (this.seedLoc == null) {
         this.seedLoc = gpgpu.getUniformLocation(webGLProgram, 'seed');
       }
-      WebGLContextManager.getActiveContext().uniform1f(this.seedLoc, seed);
+      getActiveContext().uniform1f(this.seedLoc, seed);
     };
   }
 }

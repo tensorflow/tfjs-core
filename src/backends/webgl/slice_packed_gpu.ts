@@ -20,7 +20,7 @@ import {getChannels} from '../packing_util';
 import {GPGPUContext} from './gpgpu_context';
 import {GPGPUProgram} from './gpgpu_math';
 import {getCoordsDataType} from './shader_compiler';
-import {WebGLContextManager} from './webgl_context_manager';
+import {getActiveContext} from './webgl_context_manager';
 
 export class SlicePackedProgram implements GPGPUProgram {
   variableNames = ['source'];
@@ -98,7 +98,7 @@ export class SlicePackedProgram implements GPGPUProgram {
           return;
         }
       }
-      WebGLContextManager.getActiveContext().uniform1iv(this.startLoc, start);
+      getActiveContext().uniform1iv(this.startLoc, start);
     };
   }
 }

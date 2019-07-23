@@ -18,7 +18,7 @@
 import {GPGPUContext} from './gpgpu_context';
 import {GPGPUProgram} from './gpgpu_math';
 import {getCoordsDataType} from './shader_compiler';
-import {WebGLContextManager} from './webgl_context_manager';
+import {getActiveContext} from './webgl_context_manager';
 
 export class SliceProgram implements GPGPUProgram {
   variableNames = ['source'];
@@ -70,7 +70,7 @@ export class SliceProgram implements GPGPUProgram {
           return;
         }
       }
-      WebGLContextManager.getActiveContext().uniform1iv(this.startLoc, start);
+      getActiveContext().uniform1iv(this.startLoc, start);
     };
   }
 }

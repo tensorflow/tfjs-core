@@ -18,7 +18,8 @@
 import * as device_util from '../../device_util';
 import {ENV} from '../../environment';
 import {webgl_util} from '../../webgl';
-import {WebGLContextManager} from './webgl_context_manager';
+
+import * as webgl_context_manager from './webgl_context_manager';
 
 describe('HAS_WEBGL', () => {
   beforeEach(() => ENV.reset());
@@ -196,16 +197,14 @@ describe('WEBGL_MAX_TEXTURE_SIZE', () => {
     ENV.reset();
     webgl_util.MAX_TEXTURE_SIZE = null;
 
-    WebGLContextManager.getInstance().setContextFactory((version: number) => {
-      return {
-        MAX_TEXTURE_SIZE: 101,
-        getParameter: (param: number) => {
-          if (param === 101) {
-            return 50;
-          }
-          throw new Error(`Got undefined param ${param}.`);
+    spyOn(webgl_context_manager, 'getActiveContext').and.returnValue({
+      MAX_TEXTURE_SIZE: 101,
+      getParameter: (param: number) => {
+        if (param === 101) {
+          return 50;
         }
-      } as WebGLRenderingContext;
+        throw new Error(`Got undefined param ${param}.`);
+      }
     });
   });
   afterAll(() => {
@@ -224,7 +223,7 @@ describe('WEBGL_MAX_TEXTURES_IN_SHADER', () => {
     ENV.reset();
     webgl_util.MAX_TEXTURES_IN_SHADER = null;
 
-    WebGLContextManager.getInstance().setContextFactory((version: number) => {
+    spyOn(webgl_context_manager, 'getActiveContext').and.callFake(() => {
       return {
         MAX_TEXTURE_IMAGE_UNITS: 101,
         getParameter: (param: number) => {
@@ -233,7 +232,7 @@ describe('WEBGL_MAX_TEXTURES_IN_SHADER', () => {
           }
           throw new Error(`Got undefined param ${param}.`);
         }
-      } as WebGLRenderingContext;
+      };
     });
   });
   afterAll(() => {

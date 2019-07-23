@@ -17,8 +17,7 @@
 
 import {ENV} from '../../environment';
 import * as util from '../../util';
-import {WebGLContextManager} from './webgl_context_manager';
-// import {getWebGLContext} from './canvas_util';
+import {getContextByVersion} from './webgl_context_manager';
 
 export function callAndCheck<T>(
     gl: WebGLRenderingContext, debugMode: boolean, func: () => T): T {
@@ -502,8 +501,7 @@ export let MAX_TEXTURES_IN_SHADER: number;
 
 export function getWebGLMaxTextureSize(webGLVersion: number): number {
   if (MAX_TEXTURE_SIZE == null) {
-    const gl =
-        WebGLContextManager.getInstance().getContextByVersion(webGLVersion);
+    const gl = getContextByVersion(webGLVersion);
     MAX_TEXTURE_SIZE = gl.getParameter(gl.MAX_TEXTURE_SIZE);
   }
   return MAX_TEXTURE_SIZE;
@@ -511,8 +509,7 @@ export function getWebGLMaxTextureSize(webGLVersion: number): number {
 
 export function getMaxTexturesInShader(webGLVersion: number): number {
   if (MAX_TEXTURES_IN_SHADER == null) {
-    const gl =
-        WebGLContextManager.getInstance().getContextByVersion(webGLVersion);
+    const gl = getContextByVersion(webGLVersion);
     MAX_TEXTURES_IN_SHADER = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS);
   }
   // We cap at 16 to avoid spurious runtime "memory exhausted" error.
@@ -526,8 +523,7 @@ export function getWebGLDisjointQueryTimerVersion(webGLVersion: number):
   }
 
   let queryTimerVersion: number;
-  const gl =
-      WebGLContextManager.getInstance().getContextByVersion(webGLVersion);
+  const gl = getContextByVersion(webGLVersion);
 
   if (hasExtension(gl, 'EXT_disjoint_timer_query_webgl2') &&
       webGLVersion === 2) {
@@ -547,8 +543,7 @@ function hasExtension(gl: WebGLRenderingContext, extensionName: string) {
 
 export function isWebGLVersionEnabled(webGLVersion: 1|2) {
   try {
-    const gl =
-        WebGLContextManager.getInstance().getContextByVersion(webGLVersion);
+    const gl = getContextByVersion(webGLVersion);
     if (gl != null) {
       return true;
     }
@@ -563,8 +558,7 @@ export function isRenderToFloatTextureEnabled(webGLVersion: number): boolean {
     return false;
   }
 
-  const gl =
-      WebGLContextManager.getInstance().getContextByVersion(webGLVersion);
+  const gl = getContextByVersion(webGLVersion);
 
   if (webGLVersion === 1) {
     if (!hasExtension(gl, 'OES_texture_float')) {
@@ -586,8 +580,7 @@ export function isDownloadFloatTextureEnabled(webGLVersion: number): boolean {
     return false;
   }
 
-  const gl =
-      WebGLContextManager.getInstance().getContextByVersion(webGLVersion);
+  const gl = getContextByVersion(webGLVersion);
 
   if (webGLVersion === 1) {
     if (!hasExtension(gl, 'OES_texture_float')) {
@@ -638,8 +631,7 @@ export function isWebGLFenceEnabled(webGLVersion: number) {
   if (webGLVersion !== 2) {
     return false;
   }
-  const gl =
-      WebGLContextManager.getInstance().getContextByVersion(webGLVersion);
+  const gl = getContextByVersion(webGLVersion);
 
   // tslint:disable-next-line:no-any
   const isEnabled = (gl as any).fenceSync != null;

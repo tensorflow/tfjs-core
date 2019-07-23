@@ -17,7 +17,7 @@
 
 import {GPGPUContext} from './gpgpu_context';
 import {GPGPUProgram} from './gpgpu_math';
-import {WebGLContextManager} from './webgl_context_manager';
+import {getActiveContext} from './webgl_context_manager';
 
 export class FillProgram implements GPGPUProgram {
   variableNames: string[];
@@ -44,7 +44,7 @@ export class FillProgram implements GPGPUProgram {
       if (this.valueLoc == null) {
         this.valueLoc = gpgpu.getUniformLocationNoThrow(webGLProgram, 'value');
       }
-      WebGLContextManager.getActiveContext().uniform1f(this.valueLoc, value);
+      getActiveContext().uniform1f(this.valueLoc, value);
     };
   }
 }
