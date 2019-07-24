@@ -41,13 +41,12 @@ describeWithFlags(
         gpgpu.dispose();
       });
 
-      it('sets the output texture property to the output texture KREEGER',
-         () => {
-           const texture = gpgpu.createFloat32MatrixTexture(1, 1);
-           gpgpu.setOutputMatrixTexture(texture, 1, 1);
-           expect(gpgpu.outputTexture).toBe(texture);
-           gpgpu.deleteMatrixTexture(texture);
-         });
+      it('sets the output texture property to the output texture', () => {
+        const texture = gpgpu.createFloat32MatrixTexture(1, 1);
+        gpgpu.setOutputMatrixTexture(texture, 1, 1);
+        expect(gpgpu.outputTexture).toBe(texture);
+        gpgpu.deleteMatrixTexture(texture);
+      });
 
       it('sets the gl viewport to the output texture dimensions', () => {
         const columns = 456;

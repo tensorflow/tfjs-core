@@ -49,8 +49,6 @@ export class GPGPUContext {
 
   constructor() {
     const gl = getActiveContext();
-    // This causes an exception everytime on WebGL2 - need to figure out
-    // which test/check/call is setting the GL in a bad way.
 
     // WebGL 2.0 enables texture floats without an extension.
     if (ENV.getNumber('WEBGL_VERSION') === 1) {
