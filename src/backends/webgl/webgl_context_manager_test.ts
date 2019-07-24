@@ -38,6 +38,12 @@ describeWithFlags(
     });
 
 describe('webgl_context_manager create/cleanup', () => {
+  afterAll(() => {
+    // Reset global context creation and cleanup:
+    setContextCleanup(null);
+    setContextFactory(null);
+  });
+
   it('should call factory method to create WebGLRenderingContext', () => {
     let created = false;
     let cleanedup = false;
