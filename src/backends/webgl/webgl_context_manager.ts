@@ -23,9 +23,8 @@ let contextFactory: (version: number) => WebGLRenderingContext = null;
 let contextCleanup: (context: WebGLRenderingContext) => void = null;
 
 /**
- * Sets callback for creating new WebGLRenderingContext instances.
- * @param factory The callback function that returns a WebGLRenderingContext
- *     instance.
+ * Sets the callback for creating new WebGLRenderingContext instances.
+ * @param factory The callback function that returns a context instance.
  */
 export function setContextFactory(
     factory: (version: number) => WebGLRenderingContext) {
@@ -33,8 +32,9 @@ export function setContextFactory(
 }
 
 /**
- * TODO(kreeger): doc me.
- * @param cleanup
+ * Sets the callback for cleaning up WebGLRenderingContext instances.
+ * @param cleanup The callback function to cleanup the passed in context
+ *     instance.
  */
 export function setContextCleanup(
     cleanup: (context: WebGLRenderingContext) => void) {
@@ -42,21 +42,22 @@ export function setContextCleanup(
 }
 
 /**
- * Returns the current WebGLContext
+ * Returns the current WebGLRenderingContext based on the ENV flag for
+ * 'WEBGL_VERSION'.
  */
 export function getActiveContext(): WebGLRenderingContext {
   return getContextByVersion(ENV.getNumber('WEBGL_VERSION'));
 }
 
 /**
- *  TODO(kreeger): Doc me.
+ * Returns the WebGLRenderingContext for a given version number.
  * @param version The specific version of WebGL to request.
  */
 export function getContextByVersion(version: number): WebGLRenderingContext {
   // Default to browser context creation is running in the browser.
   if (contextFactory == null) {
     if (ENV.getBool('IS_BROWSER')) {
-      // TODO - is there a better place to register this?
+      // TODO(kreeger): Is there a better place to register this?
       contextFactory = createDOMCanvasWebGLRenderingContext;
     } else {
       throw new Error('Default WebGLRenderingContext factory was not set!');
@@ -75,18 +76,11 @@ export function getContextByVersion(version: number): WebGLRenderingContext {
   return contexts[version];
 }
 
-/**
- * TODO(kreeger): Doc me.
- */
-export function disposeActiveContext() {
-  disposeWebGLContext(ENV.getNumber('WEBGL_VERSION'));
-}
-
 function disposeWebGLContext(version: number) {
   if ((version in contexts)) {
     if (contextCleanup == null) {
       if (ENV.getBool('IS_BROWSER')) {
-        // TODO - is there a better place to register this?
+        // TODO(kreeger): Is there a better place to register this?
         contextCleanup = cleanupDOMCanvasWebGLRenderingContext;
       }
     }
