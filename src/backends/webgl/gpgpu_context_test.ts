@@ -44,6 +44,7 @@ describeWithFlags(
 
       afterEach(() => {
         gpgpu.deleteMatrixTexture(texture);
+        ENV.set('DEBUG', false);
         gpgpu.dispose();
       });
 
@@ -80,6 +81,7 @@ describeWithFlags(
         if (texture != null) {
           gpgpu.deleteMatrixTexture(texture);
         }
+        ENV.set('DEBUG', false);
         gpgpu.dispose();
       });
 
@@ -131,6 +133,7 @@ describeWithFlags(
       afterEach(() => {
         gpgpu.deleteMatrixTexture(output);
         gpgpu.deleteProgram(program);
+        ENV.set('DEBUG', false);
         gpgpu.dispose();
       });
 
@@ -156,6 +159,7 @@ describeWithFlags('GPGPUContext', DOWNLOAD_FLOAT_ENVS, () => {
   });
 
   afterEach(() => {
+    ENV.set('DEBUG', false);
     gpgpu.dispose();
   });
 

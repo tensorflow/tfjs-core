@@ -99,6 +99,8 @@ export class GPGPUContext {
     }
     const gl = getActiveContext();
     webgl_util.callAndCheck(gl, this.debug, () => gl.finish());
+    // TODO(kreeger): This bind framebuffer call can throw an INVALID_OPERATION
+    // error on WebGL2 - fix this.
     webgl_util.callAndCheck(
         gl, this.debug, () => gl.bindFramebuffer(gl.FRAMEBUFFER, null));
     webgl_util.callAndCheck(
