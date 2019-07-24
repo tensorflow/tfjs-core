@@ -39,4 +39,4 @@ npm-run-all -p -c --aggregate-output \
 # Build dist/tf-core.js which is used by the webworker test
 yarn build-npm
 # Run under webworker environment
-yarn test-webworker --browsers=bs_safari_mac --testEnv webgl1 --flags '{"WEBGL_CPU_FORWARD": false, "WEBGL_SIZE_UPLOAD_UNIFORM": 0}'
+yarn test-webworker --browsers=bs_safari_mac
