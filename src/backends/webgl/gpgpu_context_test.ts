@@ -32,20 +32,24 @@ const DOWNLOAD_FLOAT_ENVS = {
 describeWithFlags(
     'GPGPUContext setOutputMatrixTexture', DOWNLOAD_FLOAT_ENVS, () => {
       let gpgpu: GPGPUContext;
+      let texture: WebGLTexture;
 
       beforeEach(() => {
         gpgpu = new GPGPUContext();
+        // Silences debug warnings.
+        spyOn(console, 'warn');
+        ENV.set('DEBUG', true);
+        texture = gpgpu.createFloat32MatrixTexture(1, 1);
       });
 
       afterEach(() => {
+        gpgpu.deleteMatrixTexture(texture);
         gpgpu.dispose();
       });
 
       it('sets the output texture property to the output texture', () => {
-        const texture = gpgpu.createFloat32MatrixTexture(1, 1);
         gpgpu.setOutputMatrixTexture(texture, 1, 1);
         expect(gpgpu.outputTexture).toBe(texture);
-        gpgpu.deleteMatrixTexture(texture);
       });
 
       it('sets the gl viewport to the output texture dimensions', () => {
@@ -67,6 +71,9 @@ describeWithFlags(
 
       beforeEach(() => {
         gpgpu = new GPGPUContext();
+        // Silences debug warnings.
+        spyOn(console, 'warn');
+        ENV.set('DEBUG', true);
       });
 
       afterEach(() => {

@@ -2509,7 +2509,6 @@ export class MathBackendWebGL implements KernelBackend {
       this.gpgpu.dispose();
     }
 
-    // TODO(kreeger): Is this actually used?
     const gl = getActiveContext();
     if (gl.canvas != null && gl.canvas.remove != null) {
       gl.canvas.remove();
