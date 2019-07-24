@@ -15,7 +15,6 @@
  * =============================================================================
  */
 import {ENV} from '../../environment';
-import {webgl_util} from '../../webgl';
 
 import {cleanupDOMCanvasWebGLRenderingContext, createDOMCanvasWebGLRenderingContext} from './canvas_util';
 
@@ -73,9 +72,6 @@ export function getContextByVersion(version: number): WebGLRenderingContext {
     disposeWebGLContext(version);
     return getContextByVersion(version);
   }
-  // if (version === 2) {
-  //   console.log('   getContextByVersion()');
-  // }
   return contexts[version];
 }
 
@@ -101,33 +97,14 @@ function disposeWebGLContext(version: number) {
   }
 }
 
-function checkGL(msg: string, gl: WebGLRenderingContext) {
-  const error = gl.getError();
-  if (error !== gl.NO_ERROR) {
-    console.log('# ' + msg);
-    console.log('# ERROR: ' + webgl_util.getWebGLErrorMessage(gl, error));
-    console.log('# VERSION: ' + gl);
-  }
-}
-
 function bootstrapWebGLContext(gl: WebGLRenderingContext) {
-  // console.log(' --- bootstrap: ' + ENV.getNumber('WEBGL_VERSION'));
   gl.disable(gl.DEPTH_TEST);
-  checkGL('DEPTH_TEST', gl);
   gl.disable(gl.STENCIL_TEST);
-  checkGL('STENCIL_TEST', gl);
   gl.disable(gl.BLEND);
-  checkGL('BLEND', gl);
   gl.disable(gl.DITHER);
-  checkGL('DITHER', gl);
   gl.disable(gl.POLYGON_OFFSET_FILL);
-  checkGL('POLYGON_OFFSET_FILL', gl);
   gl.disable(gl.SAMPLE_COVERAGE);
-  checkGL('SAMPLE_COVERAGE1', gl);
   gl.enable(gl.SCISSOR_TEST);
-  checkGL('SCISSOR_TEST', gl);
   gl.enable(gl.CULL_FACE);
-  checkGL('CULL_FACE', gl);
   gl.cullFace(gl.BACK);
-  checkGL('BACK', gl);
 }
