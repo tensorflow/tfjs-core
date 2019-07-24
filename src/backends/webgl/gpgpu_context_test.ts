@@ -67,9 +67,6 @@ describeWithFlags(
 
       beforeEach(() => {
         gpgpu = new GPGPUContext();
-        // Silences debug warnings.
-        spyOn(console, 'warn');
-        ENV.set('DEBUG', true);
       });
 
       afterEach(() => {
