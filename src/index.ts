@@ -58,7 +58,6 @@ export {GradSaveFunc, NamedTensorMap, TensorContainer, TensorContainerArray, Ten
 export {BackendValues, DataType, DataTypeMap, DataValues, Rank, ShapeMap, TensorLike, upcastType} from './types';
 
 export * from './ops/ops';
-export {Conv2DInfo, Conv3DInfo} from './ops/conv_util';
 export {Activation} from './ops/fused_util';
 export {LSTMCellFunc} from './ops/lstm';
 export {Reduction} from './ops/loss_ops';
