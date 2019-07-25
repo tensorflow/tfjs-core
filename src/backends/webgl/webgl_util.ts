@@ -576,6 +576,14 @@ export function isRenderToFloatTextureEnabled(webGLVersion: number): boolean {
   return isFrameBufferComplete;
 }
 
+/**
+ * Check if we can download values from a float/half-float texture.
+ *
+ * Note that for performance reasons we use binding a texture to a framebuffer
+ * as a proxy for ability to download float values later using readPixels.
+ * If we are unable to bind some kind of float texture to the frameBuffer then
+ * we definitely will not be able to read float values from it.
+ */
 export function isDownloadFloatTextureEnabled(webGLVersion: number): boolean {
   if (webGLVersion === 0) {
     return false;
