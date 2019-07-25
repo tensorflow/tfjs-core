@@ -22,8 +22,6 @@ import * as tex_util from './tex_util';
 import {TextureConfig} from './tex_util';
 import * as webgl_util from './webgl_util';
 
-
-
 export function createVertexShader(
     gl: WebGLRenderingContext, debug: boolean): WebGLShader {
   const glsl = getGlslDifferences();

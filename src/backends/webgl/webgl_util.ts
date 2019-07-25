@@ -600,7 +600,7 @@ export function isDownloadFloatTextureEnabled(webGLVersion: number): boolean {
       const textureHalfFloatExtension =
           gl.getExtension(COLOR_BUFFER_HALF_FLOAT);
       return createHalfFloatTextureAndBindToFramebuffer(
-          gl, textureHalfFloatExtension)
+          gl, textureHalfFloatExtension);
     }
 
     return false;
