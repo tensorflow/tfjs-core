@@ -180,7 +180,7 @@ export function getTextureConfig(
     textureTypeHalfFloat = textureHalfFloatExtension != null ?
         textureHalfFloatExtension.HALF_FLOAT_OES :
         null;
-    textureTypeFloat = glany.FLOAT;
+    textureTypeFloat = gl.FLOAT;
   }
   downloadTextureFormat = gl.RGBA;
 
