@@ -29,10 +29,10 @@ const karmaTypescriptConfig = {
     // Mock react native functionality to enable unit tests in the browser.
     resolve: {
       alias: {
-        'react-native': './test/utils/react_native_mock.ts',
+        'react-native': './src/test_utils/react_native_mock.ts',
         '@react-native-community/async-storage':
-            './test/utils/async_storage_mock.ts',
-        'expo-gl': './test/utils/gl_view_mock.ts',
+            './src/test_utils/async_storage_mock.ts',
+        'expo-gl': './src/test_utils/gl_view_mock.ts',
       }
     }
   }

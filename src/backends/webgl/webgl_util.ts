@@ -17,7 +17,9 @@
 
 import {ENV} from '../../environment';
 import * as util from '../../util';
+
 import {getWebGLContext} from './canvas_util';
+import {getTextureConfig} from './tex_util';
 
 export function callAndCheck<T>(
     gl: WebGLRenderingContext, debugMode: boolean, func: () => T): T {
@@ -570,8 +572,7 @@ export function isRenderToFloatTextureEnabled(webGLVersion: number): boolean {
     }
   }
 
-  const isFrameBufferComplete =
-      createFloatTextureAndBindToFramebuffer(gl, webGLVersion);
+  const isFrameBufferComplete = createFloatTextureAndBindToFramebuffer(gl);
   return isFrameBufferComplete;
 }
 
@@ -590,28 +591,68 @@ export function isDownloadFloatTextureEnabled(webGLVersion: number): boolean {
       return false;
     }
   } else {
-    if (!hasExtension(gl, 'EXT_color_buffer_float')) {
-      return false;
+    if (hasExtension(gl, 'EXT_color_buffer_float')) {
+      return createFloatTextureAndBindToFramebuffer(gl);
     }
+
+    const COLOR_BUFFER_HALF_FLOAT = 'EXT_color_buffer_half_float';
+    if (hasExtension(gl, COLOR_BUFFER_HALF_FLOAT)) {
+      const textureHalfFloatExtension =
+          gl.getExtension(COLOR_BUFFER_HALF_FLOAT);
+      return createHalfFloatTextureAndBindToFramebuffer(
+          gl, textureHalfFloatExtension)
+    }
+
+    return false;
   }
 
-  const isFrameBufferComplete =
-      createFloatTextureAndBindToFramebuffer(gl, webGLVersion);
+  const isFrameBufferComplete = createFloatTextureAndBindToFramebuffer(gl);
   return isFrameBufferComplete;
 }
 
-function createFloatTextureAndBindToFramebuffer(
-    gl: WebGLRenderingContext, webGLVersion: number): boolean {
-  const frameBuffer = gl.createFramebuffer();
-  const texture = gl.createTexture();
+function createFloatTextureAndBindToFramebuffer(gl: WebGLRenderingContext):
+    boolean {
+  const texConfig = getTextureConfig(gl);
 
+  const texture = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, texture);
 
-  // tslint:disable-next-line:no-any
-  const internalFormat = webGLVersion === 2 ? (gl as any).RGBA32F : gl.RGBA;
+  const width = 1;
+  const height = 1;
   gl.texImage2D(
-      gl.TEXTURE_2D, 0, internalFormat, 1, 1, 0, gl.RGBA, gl.FLOAT, null);
+      gl.TEXTURE_2D, 0, texConfig.internalFormatFloat, width, height, 0,
+      texConfig.textureFormatFloat, texConfig.textureTypeFloat, null);
 
+  const frameBuffer = gl.createFramebuffer();
+  gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
+  gl.framebufferTexture2D(
+      gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+
+  const isFrameBufferComplete =
+      gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
+
+  gl.bindTexture(gl.TEXTURE_2D, null);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.deleteTexture(texture);
+  gl.deleteFramebuffer(frameBuffer);
+
+  return isFrameBufferComplete;
+}
+
+function createHalfFloatTextureAndBindToFramebuffer(
+    // tslint:disable-next-line:no-any
+    gl: WebGLRenderingContext, textureHalfFloatExtension: any): boolean {
+  const texConfig = getTextureConfig(gl, textureHalfFloatExtension);
+  const texture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+
+  const width = 1;
+  const height = 1;
+  gl.texImage2D(
+      gl.TEXTURE_2D, 0, texConfig.internalFormatHalfFloat, width, height, 0,
+      texConfig.textureFormatFloat, texConfig.textureTypeHalfFloat, null);
+
+  const frameBuffer = gl.createFramebuffer();
   gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
   gl.framebufferTexture2D(
       gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);

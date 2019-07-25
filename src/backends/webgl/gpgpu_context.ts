@@ -21,8 +21,8 @@ import * as util from '../../util';
 
 import {getWebGLContext, setWebGLContext} from './canvas_util';
 import * as gpgpu_util from './gpgpu_util';
-import {TextureConfig} from './gpgpu_util';
 import * as tex_util from './tex_util';
+import {TextureConfig} from './tex_util';
 import {WebGL1DisjointQueryTimerExtension, WebGL2DisjointQueryTimerExtension} from './webgl_types';
 import * as webgl_util from './webgl_util';
 
@@ -49,6 +49,12 @@ export class GPGPUContext {
   private textureConfig: TextureConfig;
 
   constructor(gl?: WebGLRenderingContext) {
+    if (gl != null) {
+      console.warn(
+          'Passing a gl context here is deprecated. ' +
+          'Use tf.webgl.setWebGLContext instead');
+    }
+
     const glVersion = ENV.getNumber('WEBGL_VERSION');
     if (gl != null) {
       this.gl = gl;
@@ -70,13 +76,14 @@ export class GPGPUContext {
             this.gl.getExtension('EXT_color_buffer_half_float');
       }
     } else {
-      if (webgl_util.hasExtension(this.gl, 'EXT_color_buffer_float')) {
+      const COLOR_BUFFER_FLOAT = 'EXT_color_buffer_float';
+      const COLOR_BUFFER_HALF_FLOAT = 'EXT_color_buffer_half_float';
+      if (webgl_util.hasExtension(this.gl, COLOR_BUFFER_FLOAT)) {
         this.colorBufferFloatExtension = webgl_util.getExtensionOrThrow(
-            this.gl, this.debug, 'EXT_color_buffer_float');
-      } else if (webgl_util.hasExtension(
-                     this.gl, 'EXT_color_buffer_half_float')) {
+            this.gl, this.debug, COLOR_BUFFER_FLOAT);
+      } else if (webgl_util.hasExtension(this.gl, COLOR_BUFFER_HALF_FLOAT)) {
         this.colorBufferHalfFloatExtension =
-            this.gl.getExtension('EXT_color_buffer_half_float');
+            this.gl.getExtension(COLOR_BUFFER_HALF_FLOAT);
       } else {
         throw new Error('GL context does not support color renderable floats');
       }
@@ -87,7 +94,7 @@ export class GPGPUContext {
     this.framebuffer = webgl_util.createFramebuffer(this.gl, this.debug);
 
     this.textureConfig =
-        gpgpu_util.getTextureConfig(this.gl, this.textureHalfFloatExtension);
+        tex_util.getTextureConfig(this.gl, this.textureHalfFloatExtension);
   }
 
   private get debug(): boolean {

@@ -137,17 +137,32 @@ function setupGlobals() {
 
 function registerWebGLBackend() {
   try {
+    const PRIORITY = 1;
     tf.registerBackend('rn-webgl', async () => {
       const glContext = await GLView.createContextAsync();
 
-      // TODO Remove. TEMPORARY. Mock extension support for
-      // EXT_color_buffer_float and EXT_color_buffer_half_float
+      //
+      // Mock extension support for EXT_color_buffer_float and
+      // EXT_color_buffer_half_float on the expo-gl context object.
+      // In react native we do not have to get a handle to the extension
+      // in order to use the functionality of that extension on the device.
+      //
+      // This code block makes iOS and Android devices pass the extension checks
+      // used in core. After those are done core will actually test whether
+      // we can render/download float or half float textures.
+      //
+      // We can remove this block once we upstream checking for these
+      // extensions in expo.
+      //
+      // TODO look into adding support for checking these extensions in expo-gl
+      //
       //@ts-ignore
       const getExt = glContext.getExtension.bind(glContext);
       // tslint:disable-next-line:only-arrow-functions
       const shimGetExt = function(name: string) {
         if (name === 'EXT_color_buffer_float') {
           if (RNPlatform.OS === 'ios') {
+            // iOS does not support EXT_color_buffer_float
             return null;
           } else {
             return {};
@@ -155,9 +170,6 @@ function registerWebGLBackend() {
         }
 
         if (name === 'EXT_color_buffer_half_float') {
-          // WEBGL_DOWNLOAD_FLOAT_ENABLED is true for iOS via expo but not in
-          // Safari so we override the flag here
-          tf.ENV.set('WEBGL_DOWNLOAD_FLOAT_ENABLED', true);
           return {};
         }
         return getExt(name);
@@ -167,11 +179,17 @@ function registerWebGLBackend() {
 
       // Set the WebGLContext before flag evaluation
       tf.webgl.setWebGLContext(2, glContext);
-
-      const context = new tf.webgl.GPGPUContext(glContext);
+      const context = new tf.webgl.GPGPUContext();
       const backend = new tf.webgl.MathBackendWebGL(context);
+      // Manually make 'read' synchronous. glContext has a defined gl.fenceSync
+      // function that throws a "Not implemented yet" exception so core
+      // cannot properly detect that it is not supported.
+      // TODO remove once fenceSync is implemented upstream.
+      backend.read = async (dataId) => {
+        return backend.readSync(dataId);
+      };
       return backend;
-    }, 1);
+    }, PRIORITY);
   } catch (e) {
     throw (new Error('Failed to register Webgl backend: ' + e.message));
   }
