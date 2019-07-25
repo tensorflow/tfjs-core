@@ -36,7 +36,10 @@ npm-run-all -p -c --aggregate-output \
   "run-browserstack --browsers=bs_chrome_mac --testEnv webgl2 --flags '{\"WEBGL_CPU_FORWARD\": true}'" \
   "run-browserstack --browsers=bs_chrome_mac --testEnv webgl2 --flags '{\"WEBGL_CPU_FORWARD\": false}'"
 
-# Build dist/tf-core.js which is used by the webworker test
-yarn build-npm
-# Run under webworker environment
-yarn test-webworker --browsers=bs_safari_mac
+### The next section tests TF.js in a webworker.
+# Make a dist/tf-core.min.js file to be imported by the web worker.
+yarn rollup -c --ci
+# Safari doesn't have offscreen canvas so test cpu in a webworker.
+yarn test-webworker --browsers=bs_safari_mac --testEnv cpu --flags '{"HAS_WEBGL": false}'
+# Chrome has offscreen canvas, so test webgl in a webworker.
+yarn test-webworker --browsers=bs_chrome_mac --testEnv webgl1 --flags '{"WEBGL_CPU_FORWARD": false, "WEBGL_SIZE_UPLOAD_UNIFORM": 0}'
