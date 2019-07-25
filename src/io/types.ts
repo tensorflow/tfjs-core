@@ -457,9 +457,9 @@ export interface LoadOptions {
 /**
  * Additional options for Platform.fetch
  */
-export interface FetchOptions {
+export interface RequestDetails {
   /**
    * Is this request for a binary file (as opposed to a json file)
    */
-  isBinary: true;
+  isBinary?: true;
 }

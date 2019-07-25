@@ -61,7 +61,7 @@ function parseHeaders(rawHeaders: string) {
  */
 export async function fetch(
     path: string, init?: RequestInit,
-    options?: tf.io.FetchOptions): Promise<Response> {
+    options?: tf.io.RequestDetails): Promise<Response> {
   return new Promise((resolve, reject) => {
     const request = new Request(path, init);
     const xhr = new XMLHttpRequest();
@@ -115,7 +115,8 @@ export class PlatformReactNative implements Platform {
    *
    * see @fetch docs above.
    */
-  async fetch(path: string, init?: RequestInit, options?: tf.io.FetchOptions) {
+  async fetch(
+      path: string, init?: RequestInit, options?: tf.io.RequestDetails) {
     return fetch(path, init, options)
   }
 

@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {FetchOptions} from '../io/types';
+import {RequestDetails} from '../io/types';
 
 /**
  * At any given time a single platform is active and represents and
@@ -29,7 +29,7 @@ export interface Platform {
    * @param init The request init. See init here:
    *     https://developer.mozilla.org/en-US/docs/Web/API/Request/Request
    */
-  fetch(path: string, requestInits?: RequestInit, options?: FetchOptions):
+  fetch(path: string, requestInits?: RequestInit, options?: RequestDetails):
       Promise<Response>;
 
   /**
