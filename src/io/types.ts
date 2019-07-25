@@ -453,3 +453,13 @@ export interface LoadOptions {
    */
   fromTFHub?: boolean;
 }
+
+/**
+ * Additional options for Platform.fetch
+ */
+export interface FetchOptions {
+  /**
+   * Is this request for a binary file (as opposed to a json file)
+   */
+  isBinary: true;
+}

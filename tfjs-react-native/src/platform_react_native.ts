@@ -40,73 +40,83 @@ function parseHeaders(rawHeaders: string) {
   return headers;
 }
 
-export class PlatformReactNative implements Platform {
-  // Implementation note: This is a patch of react-native's fetch implementation
-  // tslint:disable-next-line:max-line-length
-  // https://github.com/facebook/react-native/blob/0ee5f68929610106ee6864baa04ea90be0fc5160/Libraries/vendor/core/whatwg-fetch.js#L484
-  //
-  // The response object supplied by fetch does not implement arrayBuffer()
-  // FileReader.readAsArrayBuffer is not implemented.
-  // tslint:disable-next-line:max-line-length
-  // https://github.com/facebook/react-native/blob/d7a5e3e215eedb7377a86f172e0619403e20c2b8/Libraries/Blob/FileReader.js#L83
-  //
-  // However if one uses XMLHttpRequest directly and set the responseType
-  // correctly before making the request. The returned response object will have
-  // a working arrayBuffer method that can be used downstraeam.
+// Implementation note: This is a patch of react-native's fetch implementation
+// tslint:disable-next-line:max-line-length
+// https://github.com/facebook/react-native/blob/0ee5f68929610106ee6864baa04ea90be0fc5160/Libraries/vendor/core/whatwg-fetch.js#L484
+//
+// The response object supplied by fetch does not implement arrayBuffer()
+// FileReader.readAsArrayBuffer is not implemented.
+// tslint:disable-next-line:max-line-length
+// https://github.com/facebook/react-native/blob/d7a5e3e215eedb7377a86f172e0619403e20c2b8/Libraries/Blob/FileReader.js#L83
+//
+// However if one uses XMLHttpRequest directly and set the responseType
+// correctly before making the request. The returned response object will have
+// a working arrayBuffer method that can be used downstraeam.
 
+/**
+ * Makes an HTTP request.
+ * @param path The URL path to make a request to
+ * @param init The request init. See init here:
+ *     https://developer.mozilla.org/en-US/docs/Web/API/Request/Request
+ */
+export async function fetch(
+    path: string, init?: RequestInit,
+    options?: tf.io.FetchOptions): Promise<Response> {
+  return new Promise((resolve, reject) => {
+    const request = new Request(path, init);
+    const xhr = new XMLHttpRequest();
+
+    xhr.onload = () => {
+      const reqOptions = {
+        status: xhr.status,
+        statusText: xhr.statusText,
+        headers: parseHeaders(xhr.getAllResponseHeaders() || ''),
+        url: '',
+      };
+      reqOptions.url = 'responseURL' in xhr ?
+          xhr.responseURL :
+          reqOptions.headers.get('X-Request-URL');
+
+      //@ts-ignore — ts belives the latter case will never occur.
+      const body = 'response' in xhr ? xhr.response : xhr.responseText;
+
+      resolve(new Response(body, reqOptions));
+    };
+
+    xhr.onerror = () => reject(new TypeError('Network request failed'));
+    xhr.ontimeout = () => reject(new TypeError('Network request failed'));
+
+    xhr.open(request.method, request.url, true);
+
+    if (request.credentials === 'include') {
+      xhr.withCredentials = true;
+    } else if (request.credentials === 'omit') {
+      xhr.withCredentials = false;
+    }
+
+    if (options != null && options.isBinary) {
+      xhr.responseType = 'arraybuffer';
+    }
+
+    request.headers.forEach((value: string, name: string) => {
+      xhr.setRequestHeader(name, value);
+    });
+
+    xhr.send(
+        //@ts-ignore
+        typeof request._bodyInit === 'undefined' ? null : request._bodyInit,
+    );
+  });
+}
+
+export class PlatformReactNative implements Platform {
   /**
    * Makes an HTTP request.
-   * @param path The URL path to make a request to
-   * @param init The request init. See init here:
-   *     https://developer.mozilla.org/en-US/docs/Web/API/Request/Request
+   *
+   * see @fetch docs above.
    */
-  async fetch(path: string, init?: RequestInit): Promise<Response> {
-    return new Promise((resolve, reject) => {
-      const request = new Request(path, init);
-      const xhr = new XMLHttpRequest();
-
-      xhr.onload = () => {
-        const options = {
-          status: xhr.status,
-          statusText: xhr.statusText,
-          headers: parseHeaders(xhr.getAllResponseHeaders() || ''),
-          url: '',
-        };
-        options.url = 'responseURL' in xhr ?
-            xhr.responseURL :
-            options.headers.get('X-Request-URL');
-        //@ts-ignore — ts belives the latter case will never occur.
-        const body = 'response' in xhr ? xhr.response : xhr.responseText;
-        resolve(new Response(body, options));
-      };
-
-      xhr.onerror = () => reject(new TypeError('Network request failed'));
-      xhr.ontimeout = () => reject(new TypeError('Network request failed'));
-
-      xhr.open(request.method, request.url, true);
-
-      if (request.credentials === 'include') {
-        xhr.withCredentials = true;
-      } else if (request.credentials === 'omit') {
-        xhr.withCredentials = false;
-      }
-
-      // IO handlers are responsible for explicitly setting this header
-      // to 'arraybuffer' when loading binary files.
-      if (request.headers.get('responseType')) {
-        xhr.responseType =
-            request.headers.get('responseType') as XMLHttpRequestResponseType;
-      }
-
-      request.headers.forEach((value: string, name: string) => {
-        xhr.setRequestHeader(name, value);
-      });
-
-      xhr.send(
-          //@ts-ignore
-          typeof request._bodyInit === 'undefined' ? null : request._bodyInit,
-      );
-    });
+  async fetch(path: string, init?: RequestInit, options?: tf.io.FetchOptions) {
+    return fetch(path, init, options)
   }
 
   /**
