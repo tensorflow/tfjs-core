@@ -26,7 +26,8 @@ const fn2String = (fn: Function): string => {
 
 // The source code of a web worker.
 const workerTestNode = () => {
-  // Web workers in node are loader relative to the current working directory.
+  // Web worker scripts in node live relative to the CWD, not to the dir of the
+  // file that spawned them.
   const tf = require('./dist/index.js');
   const {parentPort} = require('worker_threads');
   let a = tf.tensor1d([1, 2, 3]);
