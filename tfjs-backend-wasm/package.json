@@ -10,7 +10,10 @@
   "scripts": {
     "build": "rimraf dist/ && ./build.sh && tsc",
     "lint": "tslint -p . -t verbose",
-    "test": "karma start"
+    "test": "yarn build && karma start"
+  },
+  "dependencies": {
+    "@tensorflow/tfjs-core": "~1.2.5"
   },
   "devDependencies": {
     "@types/emscripten": "~0.0.34",

@@ -1,6 +1,8 @@
 mkdir -p dist/
 
-emcc src/lib.cc -o wasm-out/tfjs-backend-wasm.js \
+emcc src/lib.cc \
+  -std=c++11 \
+  -o wasm-out/tfjs-backend-wasm.js \
   -s EXTRA_EXPORTED_RUNTIME_METHODS='["ccall", "cwrap"]' \
   -s EXPORT_ES6=1 \
   -s MODULARIZE=1 \
