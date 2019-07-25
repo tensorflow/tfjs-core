@@ -49,12 +49,6 @@ export class GPGPUContext {
   private textureConfig: TextureConfig;
 
   constructor(gl?: WebGLRenderingContext) {
-    if (gl != null) {
-      console.warn(
-          'Passing a gl context here is deprecated. ' +
-          'Use tf.webgl.setWebGLContext instead');
-    }
-
     const glVersion = ENV.getNumber('WEBGL_VERSION');
     if (gl != null) {
       this.gl = gl;
