@@ -17,6 +17,7 @@
 import {ENV} from '../../environment';
 
 import {cleanupDOMCanvasWebGLRenderingContext, createDOMCanvasWebGLRenderingContext} from './canvas_util';
+import {checkWebGLError} from './webgl_util';
 
 const contexts: {[key: string]: WebGLRenderingContext} = {};
 let contextFactory: (version: number) => WebGLRenderingContext = null;
@@ -68,6 +69,8 @@ export function getContextByVersion(version: number): WebGLRenderingContext {
     contexts[version] = contextFactory(version);
     bootstrapWebGLContext(contexts[version]);
   }
+
+  checkWebGLError(contexts[version]);
   const gl = contexts[version];
   if (gl.isContextLost()) {
     disposeWebGLContext(version);

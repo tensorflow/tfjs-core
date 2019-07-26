@@ -28,7 +28,7 @@ export function callAndCheck<T>(
   return returnValue;
 }
 
-function checkWebGLError(gl: WebGLRenderingContext) {
+export function checkWebGLError(gl: WebGLRenderingContext) {
   const error = gl.getError();
   if (error !== gl.NO_ERROR) {
     throw new Error('WebGL Error: ' + getWebGLErrorMessage(gl, error));
