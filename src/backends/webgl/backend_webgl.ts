@@ -1815,8 +1815,9 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [x]) as T;
   }
 
-  conv2dByMatMul(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
-      Tensor4D {
+  conv2dByMatMul(
+      x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo, bias?: Tensor4D,
+      activation?: Activation): Tensor4D {
     // Reshapes conv2D input to 2D tensors, uses matMul and then reshape the
     // result from 2D to 4D.
     const xShape = x.shape;
@@ -1844,7 +1845,8 @@ export class MathBackendWebGL implements KernelBackend {
               filter, [1, convInfo.inChannels, convInfo.outChannels]) as
           Tensor3D;
       return this.reshape<Rank.R4>(
-          this.batchMatMul(xReshaped, filterReshaped, false, false),
+          this.fusedBatchMatMul(
+              xReshaped, filterReshaped, false, false, bias, activation),
           convInfo.outShape);
     }
 
@@ -1880,8 +1882,8 @@ export class MathBackendWebGL implements KernelBackend {
         this.reshape(filter, [1, convInfo.inChannels, convInfo.outChannels]) as
         Tensor3D;
 
-    const pointwiseConv =
-        this.batchMatMul(xReshaped, filterReshaped, false, false);
+    const pointwiseConv = this.fusedBatchMatMul(
+        xReshaped, filterReshaped, false, false, bias, activation);
     const pointwiseConvTexData = this.texData.get(pointwiseConv.dataId);
     util.assert(
         pointwiseConvTexData.isPacked,
@@ -1896,8 +1898,9 @@ export class MathBackendWebGL implements KernelBackend {
                pointwiseConv.dtype, this) as Tensor4D;
   }
 
-  conv2dWithIm2Row(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
-      Tensor4D {
+  conv2dWithIm2Row(
+      x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo, bias?: Tensor4D,
+      activation?: Activation): Tensor4D {
     // Rearranges conv2d input so each block to be convolved over forms the
     // column of a new matrix with shape [filterWidth * filterHeight *
     // inChannels, outHeight * outWidth]. The filter is also rearranged so each
@@ -1927,11 +1930,31 @@ export class MathBackendWebGL implements KernelBackend {
         ]) as Tensor3D;
 
     const matmulProgram = new MatMulPackedProgram(
-        im2Col.shape, [1, numCols, convInfo.outChannels], true, false);
+        im2Col.shape, [1, numCols, convInfo.outChannels], true, false, !!bias,
+        activation ? mapActivationToShaderProgram(activation, true) : null);
     const product =
         this.compileAndRun<Tensor4D>(matmulProgram, [im2Col, w2Row]);
 
     return product.reshape([1, outHeight, outWidth, convInfo.outChannels]);
+  }
+
+  fusedConv2d(
+      x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo, bias?: Tensor4D,
+      activation?: Activation): Tensor4D {
+    if (convInfo.filterHeight === 1 && convInfo.filterWidth === 1 &&
+        convInfo.dilationHeight === 1 && convInfo.dilationWidth === 1 &&
+        convInfo.strideHeight === 1 && convInfo.strideWidth === 1 &&
+        (convInfo.padInfo.type === 'SAME' ||
+         convInfo.padInfo.type === 'VALID')) {
+      return this.conv2dByMatMul(x, filter, convInfo, bias, activation);
+    }
+    if (ENV.getBool('WEBGL_CONV_IM2COL') && x.shape[0] === 1) {
+      return this.conv2dWithIm2Row(x, filter, convInfo, bias, activation);
+    }
+    const program = new Conv2DProgram(
+        convInfo, !!bias,
+        activation ? mapActivationToShaderProgram(activation, true) : null);
+    return this.compileAndRun(program, [x, filter]);
   }
 
   conv2d(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
