@@ -290,11 +290,32 @@ function conv2d_<T extends Tensor3D|Tensor4D>(
         () => 'Error in gradient of conv2D: dilation rates greater than 1 ' +
             `are not yet supported in gradients. Got dilations '${dilations}'`);
 
-    return {
-      x: () => conv2dDerInput(x4D.shape, dyActivation, $filter, strides, pad),
-      $filter: () =>
-          conv2dDerFilter(x4D, dyActivation, $filter.shape, strides, pad)
-    };
+    let biasGradient = {};
+    if (bias != null) {
+      biasGradient = {
+        $bias: () => {
+          let res = dyActivation;
+          // Using dyActivation as reference shape because outputShape does not
+          // account for the fact that we temporarily reshape inputs to 3D as
+          // part of batched matMul.
+          const reduceAxes =
+              broadcast_util.getReductionAxes($bias.shape, dyActivation.shape);
+          if (reduceAxes.length > 0) {
+            res = res.sum(reduceAxes);
+          }
+          return res.reshape($bias.shape);
+        }
+      };
+    }
+
+    return Object.assign(
+        {
+          x: () =>
+              conv2dDerInput(x4D.shape, dyActivation, $filter, strides, pad),
+          $filter: () =>
+              conv2dDerFilter(x4D, dyActivation, $filter.shape, strides, pad)
+        },
+        biasGradient);
   };
 
   const res = ENGINE.runKernel((backend, save) => {
