@@ -7,14 +7,9 @@ import {BackendWasm} from './index';
 
 describe('wasm', () => {
   beforeAll(async () => {
-    tf.setBackend('wasm');
-    await tf.ready();
+    await tf.setBackend('wasm');
     console.log(tf.getBackend());
   });
-  // it('basic usage', async () => {
-  //   await tfBackendWasm.init();
-  //   expect(tfBackendWasm.intSqrt(25)).toBe(5);
-  // });
 
   it('write and read values', async () => {
     const x = tf.tensor1d([1, 2, 3]);
@@ -23,20 +18,15 @@ describe('wasm', () => {
 
   it('allocate repetitively and confirm reuse of heap space', () => {
     const backend = tf.backend() as BackendWasm;
-    const n = 10;
     const size = 100;
-    // Allocate for the first time and record the head of the heap.
-    const x = tf.zeros([size]);
-    x.dispose();
-    const headOfHeap = backend.headOfHeap();
+    // Allocate for the first time, record the memory offset and dispose.
+    const t1 = tf.zeros([size]);
+    const memOffset1 = backend.getMemoryOffset(t1.dataId);
+    t1.dispose();
 
-    // Allocate repetitively of the same size and confirm head of heap has not
-    // moved.
-    for (let i = 0; i < n; i++) {
-      const x = tf.zeros([size]);
-      x.dispose();
-    }
-    console.log(backend.headOfHeap() - headOfHeap);
-    expect(backend.headOfHeap()).toBe(headOfHeap);
+    // Allocate again and make sure the offset is the same (memory was reused).
+    const t2 = tf.zeros([size]);
+    const memOffset2 = backend.getMemoryOffset(t2.dataId);
+    expect(memOffset1).toBe(memOffset2);
   });
 });

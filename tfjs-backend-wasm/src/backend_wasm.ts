@@ -2,7 +2,6 @@ import {DataType, KernelBackend, registerBackend} from '@tensorflow/tfjs-core';
 import {DataId} from '@tensorflow/tfjs-core/dist/tensor';
 import {BackendValues} from '@tensorflow/tfjs-core/dist/types';
 import {sizeFromShape} from '@tensorflow/tfjs-core/dist/util';
-
 import wasmFactory from '../wasm-out/tfjs-backend-wasm';
 
 const WASM_PRIORITY = 2;
@@ -69,12 +68,8 @@ export class BackendWasm extends KernelBackend {
     return 32;
   }
 
-  /**
-   * Returns the memory address at the head of the heap. Useful for debugging
-   * and unit testing againts memory leaks.
-   */
-  headOfHeap() {
-    return wasm._malloc(0);
+  getMemoryOffset(dataId: DataId): number {
+    return this.dataIdMap.get(dataId).memoryOffset;
   }
 }
 

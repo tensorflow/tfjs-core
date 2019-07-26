@@ -1,4 +1,20 @@
-mkdir -p dist/
+#!/usr/bin/env bash
+# Copyright 2018 Google LLC. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# =============================================================================
+
+set -e
 
 emcc src/lib.cc \
   -std=c++11 \
@@ -6,8 +22,12 @@ emcc src/lib.cc \
   -s EXTRA_EXPORTED_RUNTIME_METHODS='["ccall", "cwrap"]' \
   -s EXPORT_ES6=1 \
   -s MODULARIZE=1 \
-  -s EXPORT_NAME=WasmBackendModule
+  -s EXPORT_NAME=WasmBackendModule \
+  -s MALLOC=emmalloc
 
 # Replace the _scriptDir with the karma base output. This will have to change
 # when we publish this outside of karma.
-sed -i 's/var _scriptDir = import.meta.url;/var _scriptDir = "\/base\/wasm-out\/";/g' wasm-out/tfjs-backend-wasm.js
+replace-in-file \
+  'var _scriptDir = import.meta.url;' \
+  'var _scriptDir = "/base/wasm-out/";' \
+  wasm-out/tfjs-backend-wasm.js

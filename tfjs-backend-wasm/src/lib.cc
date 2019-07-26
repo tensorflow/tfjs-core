@@ -52,7 +52,7 @@ void dispose_data(int data_id) {
   TensorInfo info = data.at(data_id);
   switch (info.dtype) {
     case DType::float32:
-      delete[] info.buf.f32;
+      free(info.buf.f32);
       break;
     default:
       printf("Dispose for tensor id %d failed. Unknown dtype %d\n", data_id,
