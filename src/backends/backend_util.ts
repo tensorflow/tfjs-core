@@ -23,8 +23,6 @@ import {hasEncodingLoss, makeZerosTypedArray} from '../util';
 
 import {KernelBackend} from './backend';
 
-export {EPSILON_FLOAT32} from './backend';
-
 // Utilities needed by backend consumers of tf-core.
 export * from '../ops/axis_util';
 export * from '../ops/broadcast_util';
