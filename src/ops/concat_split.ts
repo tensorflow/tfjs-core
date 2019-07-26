@@ -17,14 +17,13 @@
 
 import {ENGINE} from '../engine';
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
-import {convertToTensor, convertToTensorArray, isDtypeConsistent} from '../tensor_util_env';
+import {convertToTensor, convertToTensorArray} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import {assert, sizeFromShape} from '../util';
 import {parseAxisParam} from '../util';
 import {assertParamsConsistent, computeOutShape} from './concat_util';
 import {op} from './operation';
 import {tensor} from './tensor_ops';
-import {real, imag, complex} from './complex_ops';
 
 /**
  * Concatenates a list of`tf.Tensor1D`s along an axis. See `concat` for details.
@@ -164,10 +163,13 @@ function concat4d_(
 function concat_<T extends Tensor>(tensors: Array<T|TensorLike>, axis = 0): T {
   assert(tensors.length >= 1, () => 'Pass at least one tensor to concat');
   let $tensors = convertToTensorArray(tensors, 'tensors', 'concat');
-  if (isDtypeConsistent('complex64', $tensors)) {
-    const reals = $tensors.map((t) => real(t));
-    const imags = $tensors.map((t) => imag(t));
-    return complex(concat(reals, axis), concat(imags, axis));
+  if ($tensors[0].dtype === 'complex64') {
+    $tensors.forEach(tensor => {
+      if (tensor.dtype !== 'complex64') {
+        throw new Error(`Cannot concatenate complex64 tensors with a tensor
+          with dtype ${tensor.dtype}. `);
+      }
+    });
   }
 
   axis = parseAxisParam(axis, $tensors[0].shape)[0];
