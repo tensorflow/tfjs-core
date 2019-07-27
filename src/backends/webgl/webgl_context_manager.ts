@@ -17,7 +17,7 @@
 import {ENV} from '../../environment';
 
 import {cleanupDOMCanvasWebGLRenderingContext, createDOMCanvasWebGLRenderingContext} from './canvas_util';
-import {checkWebGLError} from './webgl_util';
+import {callAndCheck, checkWebGLError} from './webgl_util';
 
 const contexts: {[key: string]: WebGLRenderingContext} = {};
 let contextFactory: (version: number) => WebGLRenderingContext = null;
@@ -66,11 +66,11 @@ export function getContextByVersion(version: number): WebGLRenderingContext {
   }
 
   if (!(version in contexts)) {
-    contexts[version] = contextFactory(version);
+    contexts[version] = traceGLCalls(contextFactory(version));
     bootstrapWebGLContext(contexts[version]);
+    checkWebGLError(contexts[version]);
   }
 
-  checkWebGLError(contexts[version]);
   const gl = contexts[version];
   if (gl.isContextLost()) {
     disposeWebGLContext(version);
@@ -95,7 +95,9 @@ function disposeWebGLContext(version: number) {
 }
 
 function bootstrapWebGLContext(gl: WebGLRenderingContext) {
-  gl.disable(gl.DEPTH_TEST);
+  // TODO - check GL calls here too.
+  callAndCheck(gl, ENV.getBool('DEBUG'), () => gl.disable(gl.DEPTH_TEST));
+  // gl.disable(gl.DEPTH_TEST);
   gl.disable(gl.STENCIL_TEST);
   gl.disable(gl.BLEND);
   gl.disable(gl.DITHER);
@@ -104,4 +106,24 @@ function bootstrapWebGLContext(gl: WebGLRenderingContext) {
   gl.enable(gl.SCISSOR_TEST);
   gl.enable(gl.CULL_FACE);
   gl.cullFace(gl.BACK);
+}
+
+function traceGLCalls(ctx: WebGLRenderingContext) {
+  const handler = {
+    // tslint:disable-next-line:no-any
+    get(target: any, prop: PropertyKey, receiver: any): any {
+      const propValue = target[prop];
+
+      if (typeof (propValue) === 'function') {
+        console.log(
+            '    gl.' + prop.toString() + ' = ' + target.constructor.name);
+        // tslint:disable-next-line:only-arrow-functions
+        return function() {
+          return propValue.apply(target, arguments);
+        };
+      }
+      return propValue;
+    },
+  };
+  return new Proxy(ctx, handler);
 }

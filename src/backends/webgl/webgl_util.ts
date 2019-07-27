@@ -607,6 +607,13 @@ function createFloatTextureAndBindToFramebuffer(
 
   gl.bindTexture(gl.TEXTURE_2D, texture);
 
+  // TODO - fix this
+  // webgl_util.callAndCheck(
+  //   gl, debug,
+  //   () => gl.texImage2D(
+  //       tex2d, 0, internalFormat, width, height, 0, textureFormat,
+  //       textureType, null));
+
   // tslint:disable-next-line:no-any
   const internalFormat = webGLVersion === 2 ? (gl as any).RGBA32F : gl.RGBA;
   gl.texImage2D(
