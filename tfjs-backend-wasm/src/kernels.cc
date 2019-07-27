@@ -1,6 +1,4 @@
-/**
- * @license
- * Copyright 2019 Google Inc. All Rights Reserved.
+/* Copyright 2019 Google Inc. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,17 +10,16 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * =============================================================================
- */
+ * ===========================================================================*/
 
-declare var moduleFactory: () => EmscriptenModule & {
-  onRuntimeInitialized: () => void;
-  registerTensor(
-      tensorId: number, shape: Uint8Array, shapeLength: number, dtype: number,
-      memoryOffset: number): void;
-  disposeData(tensorId: number): void;
+#include <cstdio>
 
-  // Kernels.
-  add(aId: number, bId: number, outId: number): void;
-};
-export default moduleFactory;
+#include "kernels.h"
+
+namespace tfjs {
+void add_f32(float* a_buf, float* b_buf, float* out_buf, int size) {
+  for (int i = 0; i < size; ++i) {
+    out_buf[i] = a_buf[i] + b_buf[i];
+  }
+}
+}  // namespace tfjs

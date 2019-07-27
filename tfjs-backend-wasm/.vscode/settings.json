@@ -1,3 +1,4 @@
+// Place your settings in this file to overwrite default and user settings.
 {
   "search.exclude": {
     "**/node_modules": true,
@@ -10,7 +11,6 @@
   "tslint.configFile": "tslint.json",
   "files.trimTrailingWhitespace": true,
   "editor.tabSize": 2,
-  "editor.defaultFormatter": "xaver.clang-format",
   "editor.insertSpaces": true,
   "[typescript]": {
     "editor.formatOnSave": true
@@ -21,9 +21,7 @@
   "[cpp]": {
     "editor.formatOnSave": true
   },
-  "editor.rulers": [
-    80
-  ],
+  "editor.rulers": [80],
   "clang-format.style": "Google",
   "files.insertFinalNewline": true,
   "editor.detectIndentation": false,
@@ -31,6 +29,6 @@
   "typescript.tsdk": "./node_modules/typescript/lib",
   "clang-format.executable": "${workspaceRoot}/node_modules/.bin/clang-format",
   "files.associations": {
-    "iostream": "cpp"
+    "vector": "cpp"
   }
 }

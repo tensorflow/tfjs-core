@@ -16,8 +16,11 @@
 
 set -e
 
-emcc src/lib.cc \
+SRCS="src/lib.cc src/kernels.cc"
+
+emcc $SRCS \
   -std=c++11 \
+  -I. \
   -o wasm-out/tfjs-backend-wasm.js \
   -s EXTRA_EXPORTED_RUNTIME_METHODS='["ccall", "cwrap"]' \
   -s EXPORT_ES6=1 \
