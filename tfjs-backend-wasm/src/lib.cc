@@ -96,5 +96,8 @@ void add(int a_id, int b_id, int out_id) {
   }
 }
 
+EMSCRIPTEN_KEEPALIVE
+void dispose() { data.clear(); }
+
 }  // extern "C"
 }  // namespace tfjs

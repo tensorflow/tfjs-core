@@ -21,6 +21,11 @@ import {ALL_ENVS, describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_ut
 
 import {BackendWasm} from './index';
 
+/**
+ * Tests specific to the wasm backend. The name of these tests must start with
+ * 'wasm' so that they are always included in the test runner. See
+ * `env.specFilter` in `setup_test.ts` for details.
+ */
 describeWithFlags('wasm', ALL_ENVS, () => {
   it('write and read values', async () => {
     const x = tf.tensor1d([1, 2, 3]);
@@ -38,6 +43,7 @@ describeWithFlags('wasm', ALL_ENVS, () => {
     // Allocate again and make sure the offset is the same (memory was reused).
     const t2 = tf.zeros([size]);
     const memOffset2 = backend.getMemoryOffset(t2.dataId);
+    // This should fail in case of a memory leak.
     expect(memOffset1).toBe(memOffset2);
   });
 

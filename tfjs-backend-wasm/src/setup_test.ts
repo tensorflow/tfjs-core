@@ -23,3 +23,52 @@ setTestEnvs([{
   flags: {},
   isDataSync: true,
 }]);
+
+const env = jasmine.getEnv();
+
+/** Tests that have these substrings in their name will be included. */
+const INCLUDE_LIST: string[] = ['add '];
+/** Tests that have these substrings in their name will be excluded. */
+const EXCLUDE_LIST: string[] = [
+  'complex',   // Complex numbers not yet implemented.
+  'gradient',  // Gradient is missing.
+];
+
+/**
+ * Filter method that returns boolean, if a given test should run or be
+ * ignored based on its name. The exclude list has priority over the include
+ * list. Thus, if a test matches both the exclude and the include list, it
+ * will be exluded.
+ */
+env.specFilter = spec => {
+  const name = spec.getFullName();
+  // Return false (skip the test) if the test is in the exclude list.
+  for (let i = 0; i < EXCLUDE_LIST.length; ++i) {
+    if (name.indexOf(EXCLUDE_LIST[i]) > -1) {
+      return false;
+    }
+  }
+
+  // Include all regular describe() tests.
+  if (name.indexOf('test-wasm') < 0) {
+    return true;
+  }
+
+  // Include all of the wasm specific tests.
+  if (name.startsWith('wasm')) {
+    return true;
+  }
+
+  // Include a describeWithFlags() test from tfjs-core only if the test is in
+  // the include list.
+  for (let i = 0; i < INCLUDE_LIST.length; ++i) {
+    if (name.indexOf(INCLUDE_LIST[i]) > -1) {
+      return true;
+    }
+  }
+  // Otherwise ignore the test.
+  return false;
+};
+
+// Import and run all the tests from core.
+import '@tensorflow/tfjs-core/dist/tests';
