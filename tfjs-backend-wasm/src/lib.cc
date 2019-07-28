@@ -31,8 +31,9 @@ enum DType {
 
 // A union of pointers that points to memory for a given tensor.
 union DataPtrUnion {
-  // TODO(smilkov): Add other dtypes.
   float* f32;
+  int* i32;
+  bool* b;
 };
 
 // Holds information about a tensor such as dtype, shape and pointer to its data
@@ -50,7 +51,9 @@ struct TensorInfo {
 // entries.
 std::map<int, TensorInfo> data;
 
+// We use C-style API to interface with Javascript.
 extern "C" {
+
 EMSCRIPTEN_KEEPALIVE
 void register_tensor(int data_id, int* shape_ptr, int shape_length, DType dtype,
                      void* memory_offset) {
@@ -58,11 +61,24 @@ void register_tensor(int data_id, int* shape_ptr, int shape_length, DType dtype,
   auto size = util::size_from_shape(shape);
 
   TensorInfo info = {
-      .buf = {.f32 = (float*)memory_offset},
       .dtype = dtype,
       .shape = std::move(shape),
       .size = size,
   };
+  switch (dtype) {
+    case DType::float32:
+      info.buf.f32 = (float*)memory_offset;
+      break;
+    case DType::int32:
+      info.buf.i32 = (int*)memory_offset;
+      break;
+    case DType::boolean:
+      info.buf.b = (bool*)memory_offset;
+      break;
+    default:
+      printf("Failed to register tensor id %d failed. Unknown dtype %d\n",
+             data_id, dtype);
+  }
   // We move info to avoid a copy.
   data.insert(std::make_pair(data_id, std::move(info)));
 }
@@ -73,6 +89,12 @@ void dispose_data(int data_id) {
   switch (info.dtype) {
     case DType::float32:
       free(info.buf.f32);
+      break;
+    case DType::int32:
+      free(info.buf.i32);
+      break;
+    case DType::boolean:
+      free(info.buf.b);
       break;
     default:
       printf("Dispose for tensor id %d failed. Unknown dtype %d\n", data_id,
@@ -88,7 +110,16 @@ void add(int a_id, int b_id, int out_id) {
   const auto out_info = data.at(out_id);
   switch (a_info.dtype) {
     case DType::float32:
-      add_f32(a_info.buf.f32, b_info.buf.f32, out_info.buf.f32, a_info.size);
+      kernels::add(a_info.buf.f32, a_info.size, b_info.buf.f32, b_info.size,
+                   out_info.buf.f32);
+      break;
+    case DType::int32:
+      kernels::add(a_info.buf.i32, a_info.size, b_info.buf.i32, b_info.size,
+                   out_info.buf.i32);
+      break;
+    case DType::boolean:
+      kernels::add(a_info.buf.b, a_info.size, b_info.buf.b, b_info.size,
+                   out_info.buf.b);
       break;
     default:
       printf("Add for tensor ids %d and %d failed. Unknown dtype %d\n", a_id,

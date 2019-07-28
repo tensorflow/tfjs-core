@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {DataType, KernelBackend, Rank, registerBackend, ShapeMap, Tensor, util} from '@tensorflow/tfjs-core';
+import {backend_util, DataType, KernelBackend, Rank, registerBackend, ShapeMap, Tensor, util} from '@tensorflow/tfjs-core';
 import {BackendValues, TypedArray} from '@tensorflow/tfjs-core/dist/types';
 
 import wasmFactory from '../wasm-out/tfjs-backend-wasm';
@@ -49,7 +49,7 @@ export class BackendWasm extends KernelBackend {
         id, shapeBytes, shape.length, dtypeToEnumValue(dtype), memoryOffset);
   }
 
-  write(dataId: {}, values: Float32Array) {
+  write(dataId: {}, values: TypedArray) {
     const {memoryOffset} = this.dataIdMap.get(dataId);
     this.wasm.HEAPU8.set(new Uint8Array(values.buffer), memoryOffset);
   }
@@ -92,15 +92,57 @@ export class BackendWasm extends KernelBackend {
   add(a: Tensor, b: Tensor): Tensor {
     const aId = this.dataIdMap.get(a.dataId).id;
     const bId = this.dataIdMap.get(b.dataId).id;
-    const out = this.makeOutput(a.shape, a.dtype);
+
+    const newShape = backend_util.assertAndGetBroadcastShape(a.shape, b.shape);
+    const aBroadcastDims = backend_util.getBroadcastDims(a.shape, newShape);
+    const bBroadcastDims = backend_util.getBroadcastDims(b.shape, newShape);
+    const loopsOverAllOfA = aBroadcastDims.every((v, i) => v === i);
+    const loopsOverAllOfB = bBroadcastDims.every((v, i) => v === i);
+
+    const out = this.makeOutput(newShape, a.dtype);
     const outId = this.dataIdMap.get(out.dataId).id;
-    this.wasm.tfjs.add(aId, bId, outId);
-    return out;
+
+    // Short-circuit zero-sized tensors.
+    if (out.size === 0) {
+      return out;
+    }
+
+    if (loopsOverAllOfA && loopsOverAllOfB) {
+      this.wasm.tfjs.add(aId, bId, outId);
+      return out;
+    } else {
+      throw new Error('Broadcasting along inner dims is not yet supported');
+    }
   }
 
   reshape<T extends Tensor, R extends Rank>(x: T, newShape: ShapeMap[R]):
       Tensor<R> {
     return Tensor.make(newShape, {dataId: x.dataId}, x.dtype);
+  }
+
+  cast<T extends Tensor>(x: T, dtype: DataType): T {
+    const out = this.makeOutput(x.shape, dtype);
+    const {memoryOffset: inOffset} = this.dataIdMap.get(x.dataId);
+    const {memoryOffset: outOffset} = this.dataIdMap.get(out.dataId);
+    const inVals = this.typedArrayFromHeap(inOffset, x.dtype, x.size);
+    const outVals = this.typedArrayFromHeap(outOffset, dtype, out.size);
+    outVals.set(inVals);
+    return out as T;
+  }
+
+  private typedArrayFromHeap(offset: number, dtype: DataType, size: number):
+      TypedArray {
+    const buffer = this.wasm.HEAPU8.buffer;
+    switch (dtype) {
+      case 'float32':
+        return new Float32Array(buffer, offset, size);
+      case 'int32':
+        return new Int32Array(buffer, offset, size);
+      case 'bool':
+        return new Uint8Array(buffer, offset, size);
+      default:
+        throw new Error(`Uknown dtype ${dtype}`);
+    }
   }
 
   private makeOutput(shape: number[], dtype: DataType): Tensor {

@@ -12,14 +12,30 @@
  * limitations under the License.
  * ===========================================================================*/
 
-#include <cstdio>
-
 #include "kernels.h"
 
+#include <algorithm>
+
 namespace tfjs {
-void add_f32(float* a_buf, float* b_buf, float* out_buf, int size) {
+namespace kernels {
+
+// TODO(smilkov): Consider inlining small methods.
+
+template <class T>
+void add(T* a_buf, int a_size, T* b_buf, int b_size, T* out_buf) {
+  int size = std::max(a_size, b_size);
   for (int i = 0; i < size; ++i) {
-    out_buf[i] = a_buf[i] + b_buf[i];
+    out_buf[i] = a_buf[i % a_size] + b_buf[i % b_size];
   }
 }
+
+// Template functions need explicit instantiation when defined in a .cc file.
+template void add<float>(float* a_buf, int a_size, float* b_buf, int b_size,
+                         float* out_buf);
+template void add<int>(int* a_buf, int a_size, int* b_buf, int b_size,
+                       int* out_buf);
+template void add<bool>(bool* a_buf, int a_size, bool* b_buf, int b_size,
+                        bool* out_buf);
+
+}  // namespace kernels
 }  // namespace tfjs

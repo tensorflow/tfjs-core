@@ -29,6 +29,8 @@
   "typescript.tsdk": "./node_modules/typescript/lib",
   "clang-format.executable": "${workspaceRoot}/node_modules/.bin/clang-format",
   "files.associations": {
-    "vector": "cpp"
+    "vector": "cpp",
+    "map": "cpp",
+    "algorithm": "cpp"
   }
 }

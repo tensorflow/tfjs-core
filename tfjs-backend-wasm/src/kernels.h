@@ -14,10 +14,15 @@
 
 #ifndef TFJS_WASM_KERNELS_H_
 #define TFJS_WASM_KERNELS_H_
+
 namespace tfjs {
+namespace kernels {
 
+template <class T>
 // Element-wise add of two tensors.
-void add_f32(float* a_buf, float* b_buf, float* out_buf, int size);
+void add(T* a_buf, int a_size, T* b_buf, int b_size, T* out_buf);
 
+}  // namespace kernels
 }  // namespace tfjs
+
 #endif  // TFJS_WASM_KERNELS_H_

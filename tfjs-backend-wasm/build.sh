@@ -18,11 +18,14 @@ set -e
 
 SRCS="src/lib.cc src/kernels.cc"
 
+# Add these optimization flags in production: -g0 -O3 --llvm-lto 3
+
 emcc $SRCS \
   -std=c++11 \
   -fno-rtti \
+  -g \
   -fno-exceptions \
-  -I. \
+  -I./src/ \
   -o wasm-out/tfjs-backend-wasm.js \
   -s ALLOW_MEMORY_GROWTH=1 \
   -s DEFAULT_LIBRARY_FUNCS_TO_INCLUDE=[] \

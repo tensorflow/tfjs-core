@@ -30,8 +30,12 @@ const env = jasmine.getEnv();
 const INCLUDE_LIST: string[] = ['add '];
 /** Tests that have these substrings in their name will be excluded. */
 const EXCLUDE_LIST: string[] = [
-  'complex',   // Complex numbers not yet implemented.
-  'gradient',  // Gradient is missing.
+  'complex',                    // Complex numbers not yet implemented.
+  'gradient',                   // Gradient is missing.
+  'broadcast inner dim',        // Broadcast inner dim not yet supported.
+  'broadcast each with 1 dim',  // Same as above.
+  'broadcasting same rank Tensors different shape',  // Same as above.
+  'upcasts when dtypes dont match',  // Uses the 'complex' dtype.
 ];
 
 /**

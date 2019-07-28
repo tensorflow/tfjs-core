@@ -52,6 +52,6 @@ module.exports = function(config) {
     autoWatch: true,
     browsers: ['Chrome'],
     singleRun: false,
-    client: {jasmine: {random: false}, args: args, captureConsole: false}
+    client: {jasmine: {random: false}, args: args}
   })
 }
