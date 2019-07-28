@@ -36,6 +36,7 @@ module.exports = function(config) {
     basePath: '',
     frameworks: ['jasmine', 'karma-typescript'],
     files: [
+      'src/setup_test.ts',  // Setup the environment for the tests.
       {pattern: 'wasm-out/**/*.js', included: true},
       {pattern: 'wasm-out/**/*.wasm', included: false},
       {pattern: 'src/**/*.ts'},  // Import all tests.

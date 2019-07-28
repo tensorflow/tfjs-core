@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2019 Google Inc. All Rights Reserved.
+ * Copyright 2019 Google LLC. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,16 +15,11 @@
  * =============================================================================
  */
 
-export type BackendWasmModule = EmscriptenModule&{
-  onRuntimeInitialized: () => void;
-  tfjs_registerTensor(
-      tensorId: number, shape: Uint8Array, shapeLength: number, dtype: number,
-      memoryOffset: number): void;
-  tfjs_disposeData(tensorId: number): void;
+import {setTestEnvs} from '@tensorflow/tfjs-core/dist/jasmine_util';
 
-  // Kernels.
-  tfjs_add(aId: number, bId: number, outId: number): void;
-};
-
-declare var moduleFactory: () => BackendWasmModule;
-export default moduleFactory;
+setTestEnvs([{
+  name: 'test-wasm',
+  backendName: 'wasm',
+  flags: {},
+  isDataSync: true,
+}]);

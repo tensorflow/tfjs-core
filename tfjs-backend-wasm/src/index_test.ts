@@ -15,20 +15,16 @@
  * =============================================================================
  */
 
-import './index';
-
 import * as tf from '@tensorflow/tfjs-core';
-import {expectArraysClose} from '@tensorflow/tfjs-core/dist/test_util';
+import {test_util} from '@tensorflow/tfjs-core';
+import {ALL_ENVS, describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_util';
+
 import {BackendWasm} from './index';
 
-describe('wasm', () => {
-  beforeAll(async () => {
-    await tf.setBackend('wasm');
-  });
-
+describeWithFlags('wasm', ALL_ENVS, () => {
   it('write and read values', async () => {
     const x = tf.tensor1d([1, 2, 3]);
-    expectArraysClose([1, 2, 3], await x.data());
+    test_util.expectArraysClose([1, 2, 3], await x.data());
   });
 
   it('allocate repetitively and confirm reuse of heap space', () => {
@@ -49,6 +45,6 @@ describe('wasm', () => {
     const a = tf.tensor2d([1, 2, 3, 4], [2, 2]);
     const b = tf.tensor2d([0.1, 0.2, 0.3, 0.4], [2, 2]);
     const c = tf.add(a, b);
-    expectArraysClose(await c.data(), [1.1, 2.2, 3.3, 4.4]);
+    test_util.expectArraysClose(await c.data(), [1.1, 2.2, 3.3, 4.4]);
   });
 });

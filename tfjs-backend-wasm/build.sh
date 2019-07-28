@@ -20,9 +20,17 @@ SRCS="src/lib.cc src/kernels.cc"
 
 emcc $SRCS \
   -std=c++11 \
+  -fno-rtti \
+  -fno-exceptions \
   -I. \
   -o wasm-out/tfjs-backend-wasm.js \
-  -s EXTRA_EXPORTED_RUNTIME_METHODS='["ccall", "cwrap"]' \
+  -s ALLOW_MEMORY_GROWTH=1 \
+  -s DEFAULT_LIBRARY_FUNCS_TO_INCLUDE=[] \
+  -s DISABLE_EXCEPTION_CATCHING=1 \
+  -s FILESYSTEM=0 \
+  -s EXIT_RUNTIME=0 \
+  -s EXTRA_EXPORTED_RUNTIME_METHODS='["cwrap"]' \
+  -s ENVIRONMENT=web \
   -s EXPORT_ES6=1 \
   -s MODULARIZE=1 \
   -s EXPORT_NAME=WasmBackendModule \

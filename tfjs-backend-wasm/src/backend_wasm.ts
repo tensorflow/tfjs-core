@@ -18,27 +18,9 @@
 import {DataType, KernelBackend, registerBackend, Tensor, util} from '@tensorflow/tfjs-core';
 import {BackendValues, TypedArray} from '@tensorflow/tfjs-core/dist/types';
 import wasmFactory from '../wasm-out/tfjs-backend-wasm';
+import {BackendWasmModule} from '../wasm-out/tfjs-backend-wasm';
 
 const WASM_PRIORITY = 2;
-
-const wasm = wasmFactory();
-wasm.registerTensor = wasm.cwrap('register_tensor', null, [
-  'number',  // dataId
-  'array',   // shape[]
-  'number',  // shapeLength
-  'number',  // dtype
-  'number',  // memoryOffset
-]);
-wasm.disposeData = wasm.cwrap('dispose_data', null, ['number']);
-wasm.add = wasm.cwrap('add', null, ['number, number, number']);
-
-export async function init(): Promise<void> {
-  return new Promise<void>(resolve => {
-    wasm.onRuntimeInitialized = () => {
-      resolve();
-    };
-  });
-}
 
 interface TensorInfo {
   id: number;
@@ -51,25 +33,29 @@ export class BackendWasm extends KernelBackend {
   private dataIdNextNumber = 0;
   private dataIdMap: WeakMap<{}, TensorInfo> = new WeakMap();
 
+  constructor(private wasm: BackendWasmModule) {
+    super();
+  }
+
   register(dataId: {}, shape: number[], dtype: DataType) {
-    const memoryOffset =
-        wasm._malloc(util.sizeFromShape(shape) * util.bytesPerElement(dtype));
+    const memoryOffset = this.wasm._malloc(
+        util.sizeFromShape(shape) * util.bytesPerElement(dtype));
     const id = this.dataIdNextNumber++;
     this.dataIdMap.set(dataId, {id, memoryOffset, shape, dtype});
 
     const shapeBytes = new Uint8Array(new Int32Array(shape).buffer);
-    wasm.registerTensor(
+    this.wasm.tfjs_registerTensor(
         id, shapeBytes, shape.length, dtypeToEnumValue(dtype), memoryOffset);
   }
 
   write(dataId: {}, values: Float32Array) {
     const {memoryOffset} = this.dataIdMap.get(dataId);
-    wasm.HEAPU8.set(new Uint8Array(values.buffer), memoryOffset);
+    this.wasm.HEAPU8.set(new Uint8Array(values.buffer), memoryOffset);
   }
 
   async read(dataId: {}): Promise<BackendValues> {
     const {memoryOffset, dtype, shape} = this.dataIdMap.get(dataId);
-    const bytes = wasm.HEAPU8.slice(
+    const bytes = this.wasm.HEAPU8.slice(
         memoryOffset,
         memoryOffset + util.sizeFromShape(shape) * util.bytesPerElement(dtype));
     return typedArrayFromBuffer(bytes.buffer, dtype);
@@ -77,7 +63,7 @@ export class BackendWasm extends KernelBackend {
 
   disposeData(dataId: {}) {
     const data = this.dataIdMap.get(dataId);
-    wasm.disposeData(data.id);
+    this.wasm.tfjs_disposeData(data.id);
     this.dataIdMap.delete(dataId);
   }
 
@@ -91,12 +77,16 @@ export class BackendWasm extends KernelBackend {
     return this.dataIdMap.get(dataId).memoryOffset;
   }
 
+  dispose() {
+    this.wasm = null;
+  }
+
   add(a: Tensor, b: Tensor): Tensor {
     const aId = this.dataIdMap.get(a.dataId).id;
     const bId = this.dataIdMap.get(b.dataId).id;
     const out = this.makeOutput(a.shape, a.dtype);
     const outId = this.dataIdMap.get(out.dataId).id;
-    wasm.add(aId, bId, outId);
+    this.wasm.tfjs_add(aId, bId, outId);
     return out;
   }
 
@@ -106,9 +96,25 @@ export class BackendWasm extends KernelBackend {
 }
 
 registerBackend('wasm', async () => {
-  await init();
-  return new BackendWasm();
+  const {wasm} = await init();
+  return new BackendWasm(wasm);
 }, WASM_PRIORITY);
+
+async function init(): Promise<{wasm: BackendWasmModule}> {
+  return new Promise(resolve => {
+    const wasm = wasmFactory();
+    wasm.tfjs_registerTensor = wasm.cwrap('register_tensor', null, [
+      'number',  // dataId
+      'array',   // shape[]
+      'number',  // shapeLength
+      'number',  // dtype
+      'number',  // memoryOffset
+    ]);
+    wasm.tfjs_disposeData = wasm.cwrap('dispose_data', null, ['number']);
+    wasm.tfjs_add = wasm.cwrap('add', null, ['number, number, number']);
+    wasm.onRuntimeInitialized = () => resolve({wasm});
+  });
+}
 
 function dtypeToEnumValue(dtype: DataType): number {
   switch (dtype) {
