@@ -85,4 +85,20 @@ export interface InferenceModel {
    */
   execute(inputs: Tensor|Tensor[]|NamedTensorMap, outputs: string|string[]):
       Tensor|Tensor[];
+
+  /**
+   * Retrieve user-defined metadata for the model.
+   *
+   * If the user metadata has never been set (either by calling
+   * `setUserDefinedMetadata()` or provided during model loading),
+   * `undefined` will be returned.
+   */
+  getUserDefinedMetadata(): {};
+
+  /**
+   * Set user metadata.
+   *
+   * @param metadata Metadata set by client.
+   */
+  setUserDefinedMetadata(metadata: {}): void;
 }
