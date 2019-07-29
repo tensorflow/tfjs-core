@@ -57,23 +57,19 @@ extern "C" {
 EMSCRIPTEN_KEEPALIVE
 void register_tensor(int data_id, int* shape_ptr, int shape_length, DType dtype,
                      void* memory_offset) {
-  std::vector<int> shape(shape_ptr, shape_ptr + shape_length);
+  auto shape = std::vector<int>(shape_ptr, shape_ptr + shape_length);
   auto size = util::size_from_shape(shape);
 
-  TensorInfo info = {
-      .dtype = dtype,
-      .shape = std::move(shape),
-      .size = size,
-  };
+  TensorInfo info = {{}, dtype, std::move(shape), size};
   switch (dtype) {
     case DType::float32:
-      info.buf.f32 = (float*)memory_offset;
+      info.buf.f32 = static_cast<float*>(memory_offset);
       break;
     case DType::int32:
-      info.buf.i32 = (int*)memory_offset;
+      info.buf.i32 = static_cast<int*>(memory_offset);
       break;
     case DType::boolean:
-      info.buf.b = (bool*)memory_offset;
+      info.buf.b = static_cast<bool*>(memory_offset);
       break;
     default:
       printf("Failed to register tensor id %d failed. Unknown dtype %d\n",

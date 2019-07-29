@@ -32,16 +32,9 @@ emcc $SRCS \
   -s DISABLE_EXCEPTION_CATCHING=1 \
   -s FILESYSTEM=0 \
   -s EXIT_RUNTIME=0 \
+  -s EXPORTED_FUNCTIONS='["_malloc"]' \
   -s EXTRA_EXPORTED_RUNTIME_METHODS='["cwrap"]' \
   -s ENVIRONMENT=web \
-  -s EXPORT_ES6=1 \
   -s MODULARIZE=1 \
   -s EXPORT_NAME=WasmBackendModule \
   -s MALLOC=emmalloc
-
-# Replace the _scriptDir with the karma base output. This will have to change
-# when we publish this outside of karma.
-replace-in-file \
-  'var _scriptDir = import.meta.url;' \
-  'var _scriptDir = "/base/wasm-out/";' \
-  wasm-out/tfjs-backend-wasm.js

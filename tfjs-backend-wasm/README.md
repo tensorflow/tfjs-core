@@ -15,4 +15,8 @@ yarn build
 yarn test
 ```
 
-Make sure you run yarn build before testing.
+# Deployment
+```sh
+./scripts/build-npm.sh
+npm publish
+```

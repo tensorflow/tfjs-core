@@ -8,9 +8,9 @@
   "unpkg": "dist/tf-wasm.min.js",
   "jsdelivr": "dist/tf-wasm.min.js",
   "scripts": {
-    "build": "rimraf dist/ && ./build.sh && tsc",
+    "build": "rimraf dist/ && ./scripts/build-wasm.sh && tsc && cp wasm-out/*.wasm dist/",
     "lint": "tslint -p . -t verbose",
-    "test": "./build.sh && karma start"
+    "test": "./scripts/build-wasm.sh && karma start"
   },
   "peerDependencies": {
     "@tensorflow/tfjs-core": "~1.2.5"
@@ -26,8 +26,12 @@
     "karma-firefox-launcher": "~1.1.0",
     "karma-jasmine": "~1.1.1",
     "karma-typescript": "~4.0.0",
-    "replace-in-file": "^4.1.1",
     "rimraf": "~2.6.2",
+    "rollup": "^1.17.0",
+    "rollup-plugin-commonjs": "^10.0.1",
+    "rollup-plugin-node-resolve": "^5.2.0",
+    "rollup-plugin-terser": "^5.1.1",
+    "rollup-plugin-typescript2": "^0.22.1",
     "tslint": "~5.11.0",
     "tslint-no-circular-imports": "^0.5.0",
     "typescript": "3.3.3333",

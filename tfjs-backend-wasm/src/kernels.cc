@@ -29,7 +29,7 @@ void add(T* a_buf, int a_size, T* b_buf, int b_size, T* out_buf) {
   }
 }
 
-// Template functions need explicit instantiation when defined in a .cc file.
+// Templates need explicit instantiation when implemented in a .cc file.
 template void add<float>(float* a_buf, int a_size, float* b_buf, int b_size,
                          float* out_buf);
 template void add<int>(int* a_buf, int a_size, int* b_buf, int b_size,

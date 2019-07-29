@@ -17,7 +17,8 @@
 
 const karmaTypescriptConfig = {
   tsconfig: 'tsconfig.json',
-  compilerOptions: {allowJs: true},
+  compilerOptions: {allowJs: true, declaration: false},
+  bundlerOptions: {sourceMap: true},
   // Disable coverage reports and instrumentation by default for tests
   coverageOptions: {instrumentation: false},
   reports: {},
@@ -36,16 +37,25 @@ module.exports = function(config) {
     basePath: '',
     frameworks: ['jasmine', 'karma-typescript'],
     files: [
-      'src/setup_test.ts',  // Setup the environment for the tests.
-      {pattern: 'wasm-out/**/*.js', included: true},
+      // Setup the environment for the tests.
+      'src/setup_test.ts',
+      // Serve the wasm file as a static resource.
       {pattern: 'wasm-out/**/*.wasm', included: false},
-      {pattern: 'src/**/*.ts'},  // Import all tests.
+      // Import the generated js library from emscripten.
+      {pattern: 'wasm-out/**/*.js'},
+      // Import the rest of the sources.
+      {pattern: 'src/**/*.ts'},
     ],
     preprocessors: {
       'wasm-out/**/*.js': ['karma-typescript'],
       '**/*.ts': ['karma-typescript']
     },
     karmaTypescriptConfig,
+    // Redirect the request for the wasm file so karma can find it.
+    proxies: {
+      '/base/node_modules/karma-typescript/dist/client/tfjs-backend-wasm.wasm':
+          '/base/wasm-out/tfjs-backend-wasm.wasm',
+    },
     reporters: ['progress', 'karma-typescript'],
     port: 9876,
     colors: true,

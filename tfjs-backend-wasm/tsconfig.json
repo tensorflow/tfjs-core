@@ -1,31 +1,12 @@
 {
-  "compilerOptions": {
-    "module": "commonjs",
-    "moduleResolution": "node",
-    "noImplicitAny": true,
-    "sourceMap": true,
-    "removeComments": false,
-    "preserveConstEnums": true,
-    "target": "es5",
-    "lib": [
-      "es2015",
-      "dom"
-    ],
-    "noUnusedLocals": true,
-    "noImplicitReturns": true,
-    "noImplicitThis": true,
-    "alwaysStrict": true,
-    "noUnusedParameters": false,
-    "pretty": true,
-    "noFallthroughCasesInSwitch": true,
-    "allowUnreachableCode": false,
-    "outDir": "./dist",
-    "declaration": false
-  },
+  "extends": "../tsconfig",
   "include": [
     "src/"
   ],
   "exclude": [
     "node_modules/"
   ],
+  "compilerOptions": {
+    "outDir": "./dist"
+  }
 }
