@@ -28,8 +28,6 @@ import * as util from '../util';
 import * as broadcast_util from './broadcast_util';
 import {Activation} from './fused_util';
 
-
-
 /**
  * Computes the dot product of two matrices with optional activation and bias.
  *
