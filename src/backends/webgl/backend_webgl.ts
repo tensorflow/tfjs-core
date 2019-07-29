@@ -1932,8 +1932,11 @@ export class MathBackendWebGL implements KernelBackend {
     const matmulProgram = new MatMulPackedProgram(
         im2Col.shape, [1, numCols, convInfo.outChannels], true, false, !!bias,
         activation ? mapActivationToShaderProgram(activation, true) : null);
-    const product =
-        this.compileAndRun<Tensor4D>(matmulProgram, [im2Col, w2Row]);
+    const inputs: TensorHandle[] = [im2Col, w2Row];
+    if (bias) {
+      inputs.push(bias);
+    }
+    const product = this.compileAndRun<Tensor4D>(matmulProgram, inputs);
 
     return product.reshape([1, outHeight, outWidth, convInfo.outChannels]);
   }
@@ -1954,7 +1957,11 @@ export class MathBackendWebGL implements KernelBackend {
     const program = new Conv2DProgram(
         convInfo, !!bias,
         activation ? mapActivationToShaderProgram(activation, true) : null);
-    return this.compileAndRun(program, [x, filter]);
+    const inputs: TensorHandle[] = [x, filter];
+    if (bias) {
+      inputs.push(bias);
+    }
+    return this.compileAndRun(program, inputs);
   }
 
   conv2d(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D {

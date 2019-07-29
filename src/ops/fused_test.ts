@@ -274,4 +274,26 @@ describeWithFlags('fused conv2d', ALL_ENVS, () => {
     expectArraysClose(
         await result.data(), [10, 5, 10, 50, 25, 50, 0, 0, 0, 0, 0, 0]);
   });
+
+  fit('basic with bias and relu', async () => {
+    const inputDepth = 1;
+    const inputShape: [number, number, number] = [4, 4, inputDepth];
+    const outputDepth = 3;
+    const fSize = 1;
+    const pad = 'same';
+    const stride: [number, number] = [2, 2];
+
+    const x = tf.tensor3d(
+        [
+          10, 30, 50, 70, 20, 40, 60, 80, -10, -30, -50, -70, -20, -40, -60, -80
+        ],
+        inputShape);
+    const w = tf.tensor4d([1, 0.5, 1], [fSize, fSize, inputDepth, outputDepth]);
+
+    const result = tf.fused.conv2d(
+        x, w, stride, pad, 'NHWC', [1, 1], null, tf.scalar(5), 'relu');
+
+    expectArraysClose(
+        await result.data(), [15, 10, 15, 55, 30, 55, 0, 0, 0, 0, 0, 0]);
+  });
 });
