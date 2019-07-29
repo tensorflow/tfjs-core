@@ -232,6 +232,69 @@ describeWithFlags('fused matmul', ALL_ENVS, () => {
 
 describeWithFlags('fused conv2d', ALL_ENVS, () => {
   fit('basic', async () => {
+    const inputDepth = 2;
+    const inShape: [number, number, number, number] = [2, 2, 2, inputDepth];
+    const outputDepth = 2;
+    const fSize = 1;
+    const pad = 0;
+    const stride = 1;
+
+    const x = tf.tensor4d(
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], inShape);
+    const w =
+        tf.tensor4d([-1, 1, -2, 0.5], [fSize, fSize, inputDepth, outputDepth]);
+
+    const result = tf.fused.conv2d(x, w, stride, pad);
+    expect(result.shape).toEqual([2, 2, 2, 2]);
+    const expected =
+        [-5, 2, -11, 5, -17, 8, -23, 11, -29, 14, -35, 17, -41, 20, -47, 23];
+
+    expectArraysClose(await result.data(), expected);
+  });
+
+  fit('basic with relu', async () => {
+    const inputDepth = 2;
+    const inShape: [number, number, number, number] = [2, 2, 2, inputDepth];
+    const outputDepth = 2;
+    const fSize = 1;
+    const pad = 0;
+    const stride = 1;
+
+    const x = tf.tensor4d(
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], inShape);
+    const w =
+        tf.tensor4d([-1, 1, -2, 0.5], [fSize, fSize, inputDepth, outputDepth]);
+
+    const result =
+        tf.fused.conv2d(x, w, stride, pad, 'NHWC', [1, 1], null, null, 'relu');
+    expect(result.shape).toEqual([2, 2, 2, 2]);
+    const expected = [0, 2, 0, 5, 0, 8, 0, 11, 0, 14, 0, 17, 0, 20, 0, 23];
+
+    expectArraysClose(await result.data(), expected);
+  });
+
+  fit('basic with bias and relu', async () => {
+    const inputDepth = 2;
+    const inShape: [number, number, number, number] = [2, 2, 2, inputDepth];
+    const outputDepth = 2;
+    const fSize = 1;
+    const pad = 0;
+    const stride = 1;
+
+    const x = tf.tensor4d(
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], inShape);
+    const w =
+        tf.tensor4d([-1, 1, -2, 0.5], [fSize, fSize, inputDepth, outputDepth]);
+
+    const result = tf.fused.conv2d(
+        x, w, stride, pad, 'NHWC', [1, 1], null, tf.scalar(5), 'relu');
+    expect(result.shape).toEqual([2, 2, 2, 2]);
+    const expected = [0, 7, 0, 10, 0, 13, 0, 16, 0, 19, 0, 22, 0, 25, 0, 28];
+
+    expectArraysClose(await result.data(), expected);
+  });
+
+  it('im2row', async () => {
     const inputDepth = 1;
     const inputShape: [number, number, number] = [4, 4, inputDepth];
     const outputDepth = 3;
@@ -253,7 +316,7 @@ describeWithFlags('fused conv2d', ALL_ENVS, () => {
         [10, 5, 10, 50, 25, 50, -10, -5, -10, -50, -25, -50]);
   });
 
-  fit('basic with relu', async () => {
+  it('im2row with relu', async () => {
     const inputDepth = 1;
     const inputShape: [number, number, number] = [4, 4, inputDepth];
     const outputDepth = 3;
@@ -275,7 +338,7 @@ describeWithFlags('fused conv2d', ALL_ENVS, () => {
         await result.data(), [10, 5, 10, 50, 25, 50, 0, 0, 0, 0, 0, 0]);
   });
 
-  fit('basic with bias and relu', async () => {
+  it('im2row with bias and relu', async () => {
     const inputDepth = 1;
     const inputShape: [number, number, number] = [4, 4, inputDepth];
     const outputDepth = 3;
