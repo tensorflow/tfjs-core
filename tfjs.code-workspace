@@ -1,12 +1,12 @@
 {
-	"folders": [
-		{
+  "folders": [
+    {
       "name": "Core",
-			"path": "."
-		},
-		{
+      "path": "."
+    },
+    {
       "name": "Wasm",
-			"path": "tfjs-backend-wasm"
+      "path": "tfjs-backend-wasm"
     },
     {
       "name": "NodeGL",
@@ -20,7 +20,7 @@
       "name": "WebGPU",
       "path": "tfjs-webgpu"
     }
-	],
+  ],
   "settings": {
     "search.exclude": {
       "**/node_modules": true,
@@ -44,7 +44,9 @@
       "editor.formatOnSave": true
     },
     "editor.defaultFormatter": "xaver.clang-format",
-    "editor.rulers": [80],
+    "editor.rulers": [
+      80
+    ],
     "clang-format.style": "Google",
     "files.insertFinalNewline": true,
     "editor.detectIndentation": false,

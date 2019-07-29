@@ -594,6 +594,7 @@ export function isDownloadFloatTextureEnabled(webGLVersion: number): boolean {
       return false;
     }
   }
+
   const isFrameBufferComplete =
       createFloatTextureAndBindToFramebuffer(gl, webGLVersion);
   return isFrameBufferComplete;
