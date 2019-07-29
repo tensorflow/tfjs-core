@@ -124,7 +124,12 @@ void add(int a_id, int b_id, int out_id) {
 }
 
 EMSCRIPTEN_KEEPALIVE
-void dispose() { data.clear(); }
+void dispose() {
+  for (auto const &element : data) {
+    dispose_data(element.first);
+  }
+  data.clear();
+}
 
 }  // extern "C"
 }  // namespace tfjs
