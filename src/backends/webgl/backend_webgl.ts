@@ -174,6 +174,11 @@ function mapActivationToShaderProgram(
       return unary_packed_op.RELU;
     }
     return unary_op.RELU;
+  } else if (activation === 'relu') {
+    if (packed) {
+      return binaryop_packed_gpu.PRELU;
+    }
+    return binaryop_gpu.PRELU;
   }
   throw new Error(`Activation ${
       activation} has not been implemented for the WebGL backend.`);
