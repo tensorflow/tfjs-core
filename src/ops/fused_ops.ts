@@ -181,7 +181,8 @@ function matMul_<T extends Tensor>(
 }
 
 /**
- * Computes a 2D convolution over the input x.
+ * Computes a 2D convolution over the input x, optionally fused with adding a
+ * bias and applying an activation.
  *
  * @param x The input tensor, of rank 4 or rank 3, of shape
  *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is

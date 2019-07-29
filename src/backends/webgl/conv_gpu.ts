@@ -134,11 +134,8 @@ export class Conv2DProgram implements GPGPUProgram {
         }
 
         float result = dotProd;
-        
         ${addBiasSnippet}
-
         ${applyActivationSnippet}
-
         setOutput(result);
       }
     `;

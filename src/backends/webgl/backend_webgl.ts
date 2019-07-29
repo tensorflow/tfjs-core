@@ -873,10 +873,12 @@ export class MathBackendWebGL implements KernelBackend {
 
     const dtype = upcastType(a.dtype, b.dtype);
 
+    const hasBias = bias != null;
+    const fusedActivation =
+        activation ? mapActivationToShaderProgram(activation, true) : null;
     const program = new MatMulPackedProgram(
         a.shape, [batch, outerShapeA, outerShapeB], transposeA, transposeB,
-        !!bias,
-        activation ? mapActivationToShaderProgram(activation, true) : null);
+        hasBias, fusedActivation);
     const output =
         this.makePackedTensor(program.outputShape, dtype) as Tensor3D;
     const inputs: TensorHandle[] = [a, b];
@@ -1815,7 +1817,7 @@ export class MathBackendWebGL implements KernelBackend {
     return this.compileAndRun(program, [x]) as T;
   }
 
-  conv2dByMatMul(
+  private conv2dByMatMul(
       x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo, bias?: Tensor4D,
       activation?: Activation): Tensor4D {
     // Reshapes conv2D input to 2D tensors, uses matMul and then reshape the
@@ -1825,6 +1827,8 @@ export class MathBackendWebGL implements KernelBackend {
     const sharedMatMulDim = convInfo.inChannels;
     const outerShapeX = xShape[0] * xShape[1] * xShape[2];
     const outerShapeFilter = convInfo.outChannels;
+    const transposeA = false;
+    const transposeB = false;
 
     // TODO: Once reduction ops are packed, batchMatMul will always be packed
     // and we can remove this condition.
@@ -1844,9 +1848,11 @@ export class MathBackendWebGL implements KernelBackend {
           this.reshape(
               filter, [1, convInfo.inChannels, convInfo.outChannels]) as
           Tensor3D;
+
       return this.reshape<Rank.R4>(
           this.fusedBatchMatMul(
-              xReshaped, filterReshaped, false, false, bias, activation),
+              xReshaped, filterReshaped, transposeA, transposeB, bias,
+              activation),
           convInfo.outShape);
     }
 
@@ -1883,7 +1889,7 @@ export class MathBackendWebGL implements KernelBackend {
         Tensor3D;
 
     const pointwiseConv = this.fusedBatchMatMul(
-        xReshaped, filterReshaped, false, false, bias, activation);
+        xReshaped, filterReshaped, transposeA, transposeB, bias, activation);
     const pointwiseConvTexData = this.texData.get(pointwiseConv.dataId);
     util.assert(
         pointwiseConvTexData.isPacked,
@@ -1898,7 +1904,7 @@ export class MathBackendWebGL implements KernelBackend {
                pointwiseConv.dtype, this) as Tensor4D;
   }
 
-  conv2dWithIm2Row(
+  private conv2dWithIm2Row(
       x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo, bias?: Tensor4D,
       activation?: Activation): Tensor4D {
     // Rearranges conv2d input so each block to be convolved over forms the
@@ -1918,6 +1924,8 @@ export class MathBackendWebGL implements KernelBackend {
     const sharedDim = filterWidth * filterHeight * inChannels;
     const numCols = outHeight * outWidth;
     const x2ColShape = [sharedDim, numCols];
+    const transposeA = true;
+    const transposeB = false;
 
     const xSqueezed = x.squeeze([0]);
     const w2Row = filter.reshape([1, sharedDim, -1]) as Tensor3D;
@@ -1929,9 +1937,12 @@ export class MathBackendWebGL implements KernelBackend {
           1, x2ColShape[0], x2ColShape[1]
         ]) as Tensor3D;
 
+    const hasBias = bias != null;
+    const fusedActivation =
+        activation ? mapActivationToShaderProgram(activation, true) : null;
     const matmulProgram = new MatMulPackedProgram(
-        im2Col.shape, [1, numCols, convInfo.outChannels], true, false, !!bias,
-        activation ? mapActivationToShaderProgram(activation, true) : null);
+        im2Col.shape, [1, numCols, convInfo.outChannels], transposeA,
+        transposeB, hasBias, fusedActivation);
     const inputs: TensorHandle[] = [im2Col, w2Row];
     if (bias) {
       inputs.push(bias);
@@ -1954,9 +1965,11 @@ export class MathBackendWebGL implements KernelBackend {
     if (ENV.getBool('WEBGL_CONV_IM2COL') && x.shape[0] === 1) {
       return this.conv2dWithIm2Row(x, filter, convInfo, bias, activation);
     }
-    const program = new Conv2DProgram(
-        convInfo, !!bias,
-        activation ? mapActivationToShaderProgram(activation, false) : null);
+
+    const hasBias = bias != null;
+    const fusedActivation =
+        activation ? mapActivationToShaderProgram(activation, false) : null;
+    const program = new Conv2DProgram(convInfo, hasBias, fusedActivation);
     const inputs: TensorHandle[] = [x, filter];
     if (bias) {
       inputs.push(bias);
