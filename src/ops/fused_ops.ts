@@ -233,24 +233,17 @@ function conv2d_<T extends Tensor3D|Tensor4D>(
   }
   util.assert(
       x4D.rank === 4,
-      () => `Error in conv2d: input must be rank 4, but got rank ${x4D.rank}.`);
+      () => `Error in fused conv2d: input must be rank 4, but got rank ` +
+          `${x4D.rank}.`);
   util.assert(
       $filter.rank === 4,
-      () => `Error in conv2d: filter must be rank 4, but got rank ` +
+      () => `Error in fused conv2d: filter must be rank 4, but got rank ` +
           `${$filter.rank}.`);
   if (dimRoundingMode != null) {
     util.assert(
         util.isInt(pad as number),
-        () => `Error in conv2d: pad must be an integer when using, ` +
+        () => `Error in fused conv2d: pad must be an integer when using, ` +
             `dimRoundingMode ${dimRoundingMode} but got pad ${pad}.`);
-  }
-
-  let $bias: Tensor;
-  if (bias != null) {
-    $bias = convertToTensor(bias, 'bias', 'fused matMul');
-    [$bias] = makeTypesMatch($bias, $x);
-
-    broadcast_util.assertAndGetBroadcastShape(x4D.shape, $bias.shape);
   }
 
   util.assert(
@@ -269,6 +262,14 @@ function conv2d_<T extends Tensor3D|Tensor4D>(
   const convInfo = conv_util.computeConv2DInfo(
       x4D.shape, $filter.shape, strides, dilations, pad, dimRoundingMode);
 
+  let $bias: Tensor;
+  if (bias != null) {
+    $bias = convertToTensor(bias, 'bias', 'fused conv2d');
+    [$bias] = makeTypesMatch($bias, $x);
+
+    broadcast_util.assertAndGetBroadcastShape(convInfo.outShape, $bias.shape);
+  }
+
   const grad = (dy: Tensor4D, saved: Tensor[]) => {
     const [$filter, x4D, y] = saved as [Tensor4D, Tensor4D, Tensor4D];
 
@@ -285,7 +286,8 @@ function conv2d_<T extends Tensor3D|Tensor4D>(
 
     util.assert(
         conv_util.tupleValuesAreOne(dilations),
-        () => 'Error in gradient of conv2D: dilation rates greater than 1 ' +
+        () => 'Error in gradient of fused conv2D: ' +
+            `dilation rates greater than 1 ` +
             `are not yet supported in gradients. Got dilations '${dilations}'`);
 
     let biasGradient = {};
@@ -316,13 +318,19 @@ function conv2d_<T extends Tensor3D|Tensor4D>(
         biasGradient);
   };
 
+  const inputs: {x: Tensor, $filter: Tensor,
+                 $bias?: Tensor} = {x: x4D, $filter};
+  if (bias != null) {
+    inputs.$bias = $bias;
+  }
+
   const res = ENGINE.runKernel((backend, save) => {
     const res = backend.fusedConv2d(
         x4D, $filter, convInfo, $bias as Tensor4D, activation);
     save([$filter, x4D]);
 
     return res;
-  }, {x: x4D, $filter}, grad);
+  }, inputs, grad);
 
   if (reshapedTo4D) {
     return res.as3D(res.shape[1], res.shape[2], res.shape[3]) as T;
