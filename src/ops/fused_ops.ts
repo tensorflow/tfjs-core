@@ -295,9 +295,6 @@ function conv2d_<T extends Tensor3D|Tensor4D>(
       biasGradient = {
         $bias: () => {
           let res = dyActivation;
-          // Using dyActivation as reference shape because outputShape does not
-          // account for the fact that we temporarily reshape inputs to 3D as
-          // part of batched matMul.
           const reduceAxes =
               broadcast_util.getReductionAxes($bias.shape, dyActivation.shape);
           if (reduceAxes.length > 0) {
