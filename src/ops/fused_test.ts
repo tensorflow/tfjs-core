@@ -360,7 +360,7 @@ describeWithFlags('fused conv2d', ALL_ENVS, () => {
         await result.data(), [15, 10, 15, 55, 30, 55, 0, 0, 0, 0, 0, 0]);
   });
 
-  fit('gradient x=[2,3,3,1] f=[2,2,1,1] s=1 p=0', async () => {
+  it('gradient x=[2,3,3,1] f=[2,2,1,1] s=1 p=0', async () => {
     const inputDepth = 1;
     const outputDepth = 1;
     const inputShape: [number, number, number, number] = [2, 3, 3, inputDepth];
@@ -390,7 +390,7 @@ describeWithFlags('fused conv2d', ALL_ENVS, () => {
     expectArraysClose(await dfilter.data(), [26, 38, 62, 74]);
   });
 
-  fit('gradient x=[2,3,3,1] f=[2,2,1,1] s=1 p=0 with bias', async () => {
+  it('gradient x=[2,3,3,1] f=[2,2,1,1] s=1 p=0 with bias', async () => {
     const inputDepth = 1;
     const outputDepth = 1;
     const inputShape: [number, number, number, number] = [2, 3, 3, inputDepth];
@@ -425,40 +425,40 @@ describeWithFlags('fused conv2d', ALL_ENVS, () => {
     expectArraysClose(await dbiasFused.array(), await dbias.array());
   });
 
-  fit('gradient x=[2,3,3,1] f=[2,2,1,1] s=1 p=0 with bias and activation',
-      async () => {
-        const inputDepth = 1;
-        const outputDepth = 1;
-        const inputShape: [number, number, number, number] =
-            [2, 3, 3, inputDepth];
-        const filterSize = 2;
-        const stride = 1;
-        const pad = 0;
+  it('gradient x=[2,3,3,1] f=[2,2,1,1] s=1 p=0 with bias and activation',
+     async () => {
+       const inputDepth = 1;
+       const outputDepth = 1;
+       const inputShape: [number, number, number, number] =
+           [2, 3, 3, inputDepth];
+       const filterSize = 2;
+       const stride = 1;
+       const pad = 0;
 
-        const filterShape: [number, number, number, number] =
-            [filterSize, filterSize, inputDepth, outputDepth];
-        const filter = tf.tensor4d([-1, 1, -2, 0.5], filterShape);
-        const bias = tf.ones([2, 2, 2, 1]);
+       const filterShape: [number, number, number, number] =
+           [filterSize, filterSize, inputDepth, outputDepth];
+       const filter = tf.tensor4d([-1, 1, -2, 0.5], filterShape);
+       const bias = tf.ones([2, 2, 2, 1]);
 
-        const x = tf.tensor4d(
-            [1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9], inputShape);
-        const dy = tf.tensor4d([3, 1, 2, 0, 3, 1, 2, 0], [2, 2, 2, 1]);
+       const x = tf.tensor4d(
+           [1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9], inputShape);
+       const dy = tf.tensor4d([3, 1, 2, 0, 3, 1, 2, 0], [2, 2, 2, 1]);
 
-        const fusedGrads = tf.grads(
-            (x: tf.Tensor4D, w: tf.Tensor4D, b) => tf.fused.conv2d(
-                x, w, stride, pad, 'NHWC', [1, 1], null, b, 'relu'));
-        const [dxFused, dfilterFused, dbiasFused] =
-            fusedGrads([x, filter, bias], dy);
+       const fusedGrads = tf.grads(
+           (x: tf.Tensor4D, w: tf.Tensor4D, b) => tf.fused.conv2d(
+               x, w, stride, pad, 'NHWC', [1, 1], null, b, 'relu'));
+       const [dxFused, dfilterFused, dbiasFused] =
+           fusedGrads([x, filter, bias], dy);
 
-        const grads = tf.grads((x: tf.Tensor4D, filter: tf.Tensor4D, bias) => {
-          const conv = tf.conv2d(x, filter, stride, pad);
-          const sum = tf.add(conv, bias);
-          return tf.relu(sum);
-        });
-        const [dx, dfilter, dbias] = grads([x, filter, bias], dy);
+       const grads = tf.grads((x: tf.Tensor4D, filter: tf.Tensor4D, bias) => {
+         const conv = tf.conv2d(x, filter, stride, pad);
+         const sum = tf.add(conv, bias);
+         return tf.relu(sum);
+       });
+       const [dx, dfilter, dbias] = grads([x, filter, bias], dy);
 
-        expectArraysClose(await dxFused.array(), await dx.array());
-        expectArraysClose(await dfilterFused.array(), await dfilter.array());
-        expectArraysClose(await dbiasFused.array(), await dbias.array());
-      });
+       expectArraysClose(await dxFused.array(), await dx.array());
+       expectArraysClose(await dfilterFused.array(), await dfilter.array());
+       expectArraysClose(await dbiasFused.array(), await dbias.array());
+     });
 });
