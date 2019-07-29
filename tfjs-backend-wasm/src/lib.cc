@@ -31,9 +31,9 @@ enum DType {
 
 // A union of pointers that points to memory for a given tensor.
 union DataPtrUnion {
-  float* f32;
-  int* i32;
-  bool* b;
+  float *f32;
+  int *i32;
+  bool *b;
 };
 
 // Holds information about a tensor such as dtype, shape and pointer to its data
@@ -55,22 +55,21 @@ std::map<int, TensorInfo> data;
 extern "C" {
 
 EMSCRIPTEN_KEEPALIVE
-void register_tensor(int data_id, int* shape_ptr, int shape_length, DType dtype,
-                     void* memory_offset) {
-  util::warn("Let's see if this works %d %f", 4, 3.14);
+void register_tensor(int data_id, int *shape_ptr, int shape_length, DType dtype,
+                     void *memory_offset) {
   auto shape = std::vector<int>(shape_ptr, shape_ptr + shape_length);
   auto size = util::size_from_shape(shape);
 
   TensorInfo info = {{}, dtype, std::move(shape), size};
   switch (dtype) {
     case DType::float32:
-      info.buf.f32 = static_cast<float*>(memory_offset);
+      info.buf.f32 = static_cast<float *>(memory_offset);
       break;
     case DType::int32:
-      info.buf.i32 = static_cast<int*>(memory_offset);
+      info.buf.i32 = static_cast<int *>(memory_offset);
       break;
     case DType::boolean:
-      info.buf.b = static_cast<bool*>(memory_offset);
+      info.buf.b = static_cast<bool *>(memory_offset);
       break;
     default:
       util::warn("Failed to register tensor id %d failed. Unknown dtype %d",

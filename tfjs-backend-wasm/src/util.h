@@ -29,6 +29,12 @@ inline void print_log(const char* format, va_list args) {
   vfprintf(stdout, format, args);
 }
 
+inline void print_warn(const char* format, va_list args) {
+  // TODO(smilkov): Bind directly to `console.warn` instead of depending on
+  // stdio, to reduce wasm binary size.
+  vfprintf(stderr, format, args);
+}
+
 // Logs the message to the console without flushing.
 inline void print_log(const char* format, ...) {
   va_list args;
@@ -39,23 +45,22 @@ inline void print_log(const char* format, ...) {
 inline void print_warn(const char* format, ...) {
   va_list args;
   va_start(args, format);
-  // TODO(smilkov): Bind directly to `console.warn` instead of depending on
-  // stdio, to reduce wasm binary size.
-  vfprintf(stderr, format, args);
+  print_warn(format, args);
 }
 
 // Logs and flushes the message to the js console (console.log).
 inline void log(const char* format, ...) {
   va_list args;
   va_start(args, format);
-  print_log(format, args...);
+  print_log(format, args);
   print_log("\n");
 }
 
 // Logs and flushes the message to the js console (console.err).
-template <typename... Args>
-inline void warn(const char* format, Args... args) {
-  print_warn(format, args...);
+inline void warn(const char* format, ...) {
+  va_list args;
+  va_start(args, format);
+  print_warn(format, args);
   print_warn("\n");
 }
 
