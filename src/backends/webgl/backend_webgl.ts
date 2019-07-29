@@ -1956,7 +1956,7 @@ export class MathBackendWebGL implements KernelBackend {
     }
     const program = new Conv2DProgram(
         convInfo, !!bias,
-        activation ? mapActivationToShaderProgram(activation, true) : null);
+        activation ? mapActivationToShaderProgram(activation, false) : null);
     const inputs: TensorHandle[] = [x, filter];
     if (bias) {
       inputs.push(bias);
