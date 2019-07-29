@@ -49,6 +49,7 @@ export class GPGPUContext {
 
   constructor() {
     const gl = getActiveContext();
+    webgl_util.checkWebGLError(gl);
 
     // WebGL 2.0 enables texture floats without an extension.
     if (ENV.getNumber('WEBGL_VERSION') === 1) {
@@ -97,20 +98,21 @@ export class GPGPUContext {
           'matrix texture with GPGPUContext.deleteMatrixTexture before ' +
           'disposing.');
     }
+    const debug = true;
     const gl = getActiveContext();
-    webgl_util.callAndCheck(gl, this.debug, () => gl.finish());
+    webgl_util.checkWebGLError(gl);
+    webgl_util.callAndCheck(gl, debug, () => gl.finish());
     // TODO(kreeger): This bind framebuffer call can throw an INVALID_OPERATION
     // error on WebGL2 - fix this.
     webgl_util.callAndCheck(
-        gl, this.debug, () => gl.bindFramebuffer(gl.FRAMEBUFFER, null));
+        gl, debug, () => gl.bindFramebuffer(gl.FRAMEBUFFER, null));
     webgl_util.callAndCheck(
-        gl, this.debug, () => gl.deleteFramebuffer(this.framebuffer));
+        gl, debug, () => gl.deleteFramebuffer(this.framebuffer));
     webgl_util.callAndCheck(
-        gl, this.debug, () => gl.bindBuffer(gl.ARRAY_BUFFER, null));
+        gl, debug, () => gl.bindBuffer(gl.ARRAY_BUFFER, null));
     webgl_util.callAndCheck(
-        gl, this.debug, () => gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null));
-    webgl_util.callAndCheck(
-        gl, this.debug, () => gl.deleteBuffer(this.indexBuffer));
+        gl, debug, () => gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null));
+    webgl_util.callAndCheck(gl, debug, () => gl.deleteBuffer(this.indexBuffer));
     this.disposed = true;
   }
 
@@ -162,7 +164,7 @@ export class GPGPUContext {
       WebGLTexture {
     this.throwIfDisposed();
     return gpgpu_util.createPackedMatrixTexture(
-        getActiveContext(), this.debug, rows, columns, this.textureConfig);
+        getActiveContext(), true, rows, columns, this.textureConfig);
   }
 
   public deleteMatrixTexture(texture: WebGLTexture) {
@@ -172,8 +174,9 @@ export class GPGPUContext {
           getActiveContext(), this.debug, this.framebuffer);
       this.outputTexture = null;
     }
+    console.log('    texture: ' + texture);
     webgl_util.callAndCheck(
-        getActiveContext(), this.debug,
+        getActiveContext(), true,
         () => getActiveContext().deleteTexture(texture));
   }
 

@@ -17,6 +17,7 @@
 
 import {ENV} from '../../environment';
 import * as util from '../../util';
+
 import {getContextByVersion} from './webgl_context_manager';
 
 export function callAndCheck<T>(
@@ -219,8 +220,9 @@ export function validateTextureSize(width: number, height: number) {
 
 export function createFramebuffer(
     gl: WebGLRenderingContext, debug: boolean): WebGLFramebuffer {
+  console.log(' --- is debug: ' + debug);
   return throwIfNull<WebGLFramebuffer>(
-      gl, debug, () => gl.createFramebuffer(),
+      gl, true, () => gl.createFramebuffer(),
       'Unable to create WebGLFramebuffer.');
 }
 
@@ -538,6 +540,12 @@ export function getWebGLDisjointQueryTimerVersion(webGLVersion: number):
 
 function hasExtension(gl: WebGLRenderingContext, extensionName: string) {
   const ext = gl.getExtension(extensionName);
+  try {
+    checkWebGLError(gl);
+  } catch (e) {
+    console.log('exception getting: ' + extensionName);
+    throw e;
+  }
   return ext != null;
 }
 
@@ -602,34 +610,35 @@ export function isDownloadFloatTextureEnabled(webGLVersion: number): boolean {
 
 function createFloatTextureAndBindToFramebuffer(
     gl: WebGLRenderingContext, webGLVersion: number): boolean {
-  const frameBuffer = gl.createFramebuffer();
-  const texture = gl.createTexture();
+  const debug = ENV.getBool('DEBUG');
+  const frameBuffer = callAndCheck(gl, debug, () => gl.createFramebuffer());
+  const texture = callAndCheck(gl, debug, () => gl.createTexture());
 
-  gl.bindTexture(gl.TEXTURE_2D, texture);
-
-  // TODO - fix this
-  // webgl_util.callAndCheck(
-  //   gl, debug,
-  //   () => gl.texImage2D(
-  //       tex2d, 0, internalFormat, width, height, 0, textureFormat,
-  //       textureType, null));
+  callAndCheck(gl, debug, () => gl.bindTexture(gl.TEXTURE_2D, texture));
 
   // tslint:disable-next-line:no-any
   const internalFormat = webGLVersion === 2 ? (gl as any).RGBA32F : gl.RGBA;
-  gl.texImage2D(
-      gl.TEXTURE_2D, 0, internalFormat, 1, 1, 0, gl.RGBA, gl.FLOAT, null);
+  callAndCheck(
+      gl, debug,
+      () => gl.texImage2D(
+          gl.TEXTURE_2D, 0, internalFormat, 1, 1, 0, gl.RGBA, gl.FLOAT, null));
 
-  gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
-  gl.framebufferTexture2D(
-      gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+  callAndCheck(
+      gl, debug, () => gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer));
+  callAndCheck(
+      gl, debug,
+      () => gl.framebufferTexture2D(
+          gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0));
 
-  const isFrameBufferComplete =
-      gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
+  const isFrameBufferComplete = callAndCheck(
+      gl, debug,
+      () => gl.checkFramebufferStatus(gl.FRAMEBUFFER) ===
+          gl.FRAMEBUFFER_COMPLETE);
 
-  gl.bindTexture(gl.TEXTURE_2D, null);
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-  gl.deleteTexture(texture);
-  gl.deleteFramebuffer(frameBuffer);
+  callAndCheck(gl, debug, () => gl.bindTexture(gl.TEXTURE_2D, null));
+  callAndCheck(gl, debug, () => gl.bindFramebuffer(gl.FRAMEBUFFER, null));
+  callAndCheck(gl, debug, () => gl.deleteTexture(texture));
+  callAndCheck(gl, debug, () => gl.deleteFramebuffer(frameBuffer));
 
   return isFrameBufferComplete;
 }

@@ -19,6 +19,7 @@ import {ENV} from '../../environment';
 import {cleanupDOMCanvasWebGLRenderingContext, createDOMCanvasWebGLRenderingContext} from './canvas_util';
 import {callAndCheck, checkWebGLError} from './webgl_util';
 
+let count = 0;
 const contexts: {[key: string]: WebGLRenderingContext} = {};
 let contextFactory: (version: number) => WebGLRenderingContext = null;
 let contextCleanup: (context: WebGLRenderingContext) => void = null;
@@ -66,16 +67,18 @@ export function getContextByVersion(version: number): WebGLRenderingContext {
   }
 
   if (!(version in contexts)) {
-    contexts[version] = traceGLCalls(contextFactory(version));
+    contexts[version] = traceGLCalls(contextFactory(version), ++count);
     bootstrapWebGLContext(contexts[version]);
     checkWebGLError(contexts[version]);
   }
 
   const gl = contexts[version];
   if (gl.isContextLost()) {
+    checkWebGLError(contexts[version]);
     disposeWebGLContext(version);
     return getContextByVersion(version);
   }
+  checkWebGLError(contexts[version]);
   return contexts[version];
 }
 
@@ -108,7 +111,7 @@ function bootstrapWebGLContext(gl: WebGLRenderingContext) {
   gl.cullFace(gl.BACK);
 }
 
-function traceGLCalls(ctx: WebGLRenderingContext) {
+function traceGLCalls(ctx: WebGLRenderingContext, idx: number) {
   const handler = {
     // tslint:disable-next-line:no-any
     get(target: any, prop: PropertyKey, receiver: any): any {
@@ -116,7 +119,8 @@ function traceGLCalls(ctx: WebGLRenderingContext) {
 
       if (typeof (propValue) === 'function') {
         console.log(
-            '    gl.' + prop.toString() + ' = ' + target.constructor.name);
+            '    gl.' + prop.toString() + ' = ' + target.constructor.name +
+            ' ' + idx);
         // tslint:disable-next-line:only-arrow-functions
         return function() {
           return propValue.apply(target, arguments);

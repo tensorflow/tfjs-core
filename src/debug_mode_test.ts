@@ -22,10 +22,12 @@ import {expectArraysClose} from './test_util';
 
 describeWithFlags('debug on', SYNC_BACKEND_ENVS, () => {
   beforeAll(() => {
+    console.log('--- setting debug to TRUE');
     tf.ENV.set('DEBUG', true);
   });
 
   afterAll(() => {
+    console.log('--- setting debug to FALSE');
     tf.ENV.set('DEBUG', false);
   });
 
