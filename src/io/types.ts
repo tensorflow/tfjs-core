@@ -339,7 +339,7 @@ export declare interface ModelJSON {
   /**
    * User-defined metadata about the model.
    */
-  userDefinedMetadata: {};
+  userDefinedMetadata?: {};
 }
 
 /**
