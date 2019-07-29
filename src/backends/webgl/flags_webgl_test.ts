@@ -19,7 +19,7 @@ import * as device_util from '../../device_util';
 import {ENV} from '../../environment';
 import {webgl_util} from '../../webgl';
 
-import * as canvas_util from './canvas_util';
+import * as webgl_context_manager from './webgl_context_manager';
 
 describe('HAS_WEBGL', () => {
   beforeEach(() => ENV.reset());
@@ -197,7 +197,7 @@ describe('WEBGL_MAX_TEXTURE_SIZE', () => {
     ENV.reset();
     webgl_util.MAX_TEXTURE_SIZE = null;
 
-    spyOn(canvas_util, 'getWebGLContext').and.returnValue({
+    spyOn(webgl_context_manager, 'getContextByVersion').and.returnValue({
       MAX_TEXTURE_SIZE: 101,
       getParameter: (param: number) => {
         if (param === 101) {
@@ -223,7 +223,7 @@ describe('WEBGL_MAX_TEXTURES_IN_SHADER', () => {
     ENV.reset();
     webgl_util.MAX_TEXTURES_IN_SHADER = null;
 
-    spyOn(canvas_util, 'getWebGLContext').and.callFake(() => {
+    spyOn(webgl_context_manager, 'getContextByVersion').and.callFake(() => {
       return {
         MAX_TEXTURE_IMAGE_UNITS: 101,
         getParameter: (param: number) => {

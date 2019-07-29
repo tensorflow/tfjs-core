@@ -29,7 +29,7 @@ describeWithFlags('debug on', SYNC_BACKEND_ENVS, () => {
     tf.ENV.set('DEBUG', false);
   });
 
-  it('debug mode does not error when no nans', async () => {
+  it('KREEGER debug mode does not error when no nans', async () => {
     const a = tf.tensor1d([2, -1, 0, 3]);
     const res = tf.relu(a);
     expectArraysClose(await res.data(), [2, 0, 0, 3]);
