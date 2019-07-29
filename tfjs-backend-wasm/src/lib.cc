@@ -57,6 +57,7 @@ extern "C" {
 EMSCRIPTEN_KEEPALIVE
 void register_tensor(int data_id, int* shape_ptr, int shape_length, DType dtype,
                      void* memory_offset) {
+  util::warn("Let's see if this works %d %f", 4, 3.14);
   auto shape = std::vector<int>(shape_ptr, shape_ptr + shape_length);
   auto size = util::size_from_shape(shape);
 
@@ -72,11 +73,11 @@ void register_tensor(int data_id, int* shape_ptr, int shape_length, DType dtype,
       info.buf.b = static_cast<bool*>(memory_offset);
       break;
     default:
-      printf("Failed to register tensor id %d failed. Unknown dtype %d\n",
-             data_id, dtype);
+      util::warn("Failed to register tensor id %d failed. Unknown dtype %d",
+                 data_id, dtype);
   }
   // We move info to avoid a copy.
-  data.insert(std::make_pair(data_id, std::move(info)));
+  data.insert({data_id, std::move(info)});
 }
 
 EMSCRIPTEN_KEEPALIVE
@@ -93,8 +94,8 @@ void dispose_data(int data_id) {
       free(info.buf.b);
       break;
     default:
-      printf("Dispose for tensor id %d failed. Unknown dtype %d\n", data_id,
-             info.dtype);
+      util::warn("Dispose for tensor id %d failed. Unknown dtype %d", data_id,
+                 info.dtype);
   }
   data.erase(data_id);
 }
@@ -118,8 +119,8 @@ void add(int a_id, int b_id, int out_id) {
                    out_info.buf.b);
       break;
     default:
-      printf("Add for tensor ids %d and %d failed. Unknown dtype %d\n", a_id,
-             b_id, a_info.dtype);
+      util::warn("Add for tensor ids %d and %d failed. Unknown dtype %d", a_id,
+                 b_id, a_info.dtype);
   }
 }
 

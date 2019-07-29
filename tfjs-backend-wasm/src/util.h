@@ -15,19 +15,58 @@
 #ifndef TFJS_WASM_UTIL_H_
 #define TFJS_WASM_UTIL_H_
 
+#include <string.h>
+#include <cstdarg>
+#include <cstdio>
 #include <vector>
 
 namespace tfjs {
 namespace util {
 
+inline void print_log(const char* format, va_list args) {
+  // TODO(smilkov): Bind directly to `console.log` instead of depending on
+  // stdio, to reduce wasm binary size.
+  vfprintf(stdout, format, args);
+}
+
+// Logs the message to the console without flushing.
+inline void print_log(const char* format, ...) {
+  va_list args;
+  va_start(args, format);
+  print_log(format, args);
+}
+
+inline void print_warn(const char* format, ...) {
+  va_list args;
+  va_start(args, format);
+  // TODO(smilkov): Bind directly to `console.warn` instead of depending on
+  // stdio, to reduce wasm binary size.
+  vfprintf(stderr, format, args);
+}
+
+// Logs and flushes the message to the js console (console.log).
+inline void log(const char* format, ...) {
+  va_list args;
+  va_start(args, format);
+  print_log(format, args...);
+  print_log("\n");
+}
+
+// Logs and flushes the message to the js console (console.err).
+template <typename... Args>
+inline void warn(const char* format, Args... args) {
+  print_warn(format, args...);
+  print_warn("\n");
+}
+
 // Helper method to log values in a vector. Used for debugging.
 template <class T>
 inline void log_vector(const std::vector<T>& v) {
-  printf("[");
+  print_log("[", 0);
   for (auto const& value : v) {
-    printf("%d,", value);
+    print_log("%d,", value);
   }
-  printf("]\n");
+  print_log("]\n", 0);
 }
 
 // Returns the size of the vector, given its shape.
