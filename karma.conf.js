@@ -35,6 +35,7 @@ const devConfig = {
   frameworks: ['jasmine', 'karma-typescript'],
   files: ['src/setup_test.ts', {pattern: 'src/**/*.ts'}],
   exclude: [
+    'src/tests.ts',
     'src/worker_node_test.ts',
     'src/worker_test.ts',
     'src/test_node.ts',
@@ -66,8 +67,8 @@ const webworkerConfig = {
   files: [
     'dist/setup_test.js',
     'dist/worker_test.js',
-    // Serve dist/tf-core.min.js as a static resource, but do not include in the
-    // test runner
+    // Serve dist/tf-core.min.js as a static resource, but do not include in
+    // the test runner
     {pattern: 'dist/tf-core.min.js', included: false},
   ],
   exclude: [],
@@ -76,8 +77,8 @@ const webworkerConfig = {
 
 module.exports = function(config) {
   const args = [];
-  // If no test environment is set unit tests will run against all registered
-  // test environments.
+  // If no test environment is set unit tests will run against all
+  // registered test environments.
   if (config.testEnv) {
     args.push('--testEnv', config.testEnv);
   }
