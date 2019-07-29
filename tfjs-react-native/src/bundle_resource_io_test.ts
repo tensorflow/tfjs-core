@@ -122,6 +122,6 @@ describe('BundleResourceIO', () => {
             modelJson as unknown as tf.io.ModelJSON, resourceId))
         .toThrow(new Error(
             'modelJson must be a JavaScript object (and not a string).\n' +
-            'Have you wrapped yor asset path in a require() statment?'))
+            'Have you wrapped yor asset path in a require() statment?'));
   });
 });

@@ -19,4 +19,4 @@ import './platform_react_native';
 
 export {asyncStorageIO} from './async_storage_io';
 export {bundleResourceIO} from './bundle_resource_io';
-export {fetch} from './platform_react_native'
+export {fetch} from './platform_react_native';

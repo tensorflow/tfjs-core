@@ -120,7 +120,7 @@ export class PlatformReactNative implements Platform {
    */
   async fetch(
       path: string, init?: RequestInit, options?: tf.io.RequestDetails) {
-    return fetch(path, init, options)
+    return fetch(path, init, options);
   }
 
   /**
@@ -139,7 +139,7 @@ export class PlatformReactNative implements Platform {
     //@ts-ignore
     if (global.nativePerformanceNow) {
       //@ts-ignore
-      return global.nativePerformanceNow()
+      return global.nativePerformanceNow();
     }
     return Date.now();
   }
@@ -205,7 +205,7 @@ function registerWebGLBackend() {
       return backend;
     }, PRIORITY);
   } catch (e) {
-    throw (new Error('Failed to register Webgl backend: ' + e.message));
+    throw (new Error(`Failed to register Webgl backend: ${e.message}`));
   }
 }
 
