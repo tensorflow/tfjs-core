@@ -73,8 +73,8 @@ export class GPGPUContext {
       const COLOR_BUFFER_FLOAT = 'EXT_color_buffer_float';
       const COLOR_BUFFER_HALF_FLOAT = 'EXT_color_buffer_half_float';
       if (webgl_util.hasExtension(this.gl, COLOR_BUFFER_FLOAT)) {
-        this.colorBufferFloatExtension = webgl_util.getExtensionOrThrow(
-            this.gl, this.debug, COLOR_BUFFER_FLOAT);
+        this.colorBufferFloatExtension =
+            this.gl.getExtension(COLOR_BUFFER_FLOAT)
       } else if (webgl_util.hasExtension(this.gl, COLOR_BUFFER_HALF_FLOAT)) {
         this.colorBufferHalfFloatExtension =
             this.gl.getExtension(COLOR_BUFFER_HALF_FLOAT);

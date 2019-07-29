@@ -55,6 +55,8 @@ export function getGlslDifferences(): GLSL {
         return (val > 0. || val < 0. || val == 0.) ? false : true;
       }
     `;
+    // In webgl 2 we do not need to specify a custom isinf so there is no
+    // need for a special INFINITY constant.
     defineSpecialInf = ``;
     defineRound = `
       #define round(value) newRound(value)

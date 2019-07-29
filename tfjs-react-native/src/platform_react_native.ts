@@ -95,6 +95,9 @@ export async function fetch(
     }
 
     if (options != null && options.isBinary) {
+      // In react native We need to set the response type to arraybuffer when
+      // fetching binary resources in order for `.arrayBuffer` to work correctly
+      // on the response.
       xhr.responseType = 'arraybuffer';
     }
 

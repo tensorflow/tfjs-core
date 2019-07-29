@@ -581,7 +581,7 @@ export function isRenderToFloatTextureEnabled(webGLVersion: number): boolean {
  *
  * Note that for performance reasons we use binding a texture to a framebuffer
  * as a proxy for ability to download float values later using readPixels. The
- * texture params of this texture will not match those in readPxiels exactly
+ * texture params of this texture will not match those in readPixels exactly
  * but if we are unable to bind some kind of float texture to the frameBuffer
  * then we definitely will not be able to read float values from it.
  */
