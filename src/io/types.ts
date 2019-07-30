@@ -277,7 +277,7 @@ export declare interface ModelArtifacts {
   convertedBy?: string|null;
 
   /**
-   * User-defind metadata for the model.
+   * User-defined metadata about the model.
    */
   userDefinedMetadata?: {};
 }
