@@ -1824,7 +1824,7 @@ export class MathBackendWebGL implements KernelBackend {
 
   private conv2dByMatMul(
       x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo, bias?: Tensor4D,
-      activation?: Activation): Tensor4D {
+      activation?: Activation, preluActivationWeights?: Tensor): Tensor4D {
     // Reshapes conv2D input to 2D tensors, uses matMul and then reshape the
     // result from 2D to 4D.
     const xShape = x.shape;
@@ -1857,7 +1857,7 @@ export class MathBackendWebGL implements KernelBackend {
       return this.reshape<Rank.R4>(
           this.fusedBatchMatMul(
               xReshaped, filterReshaped, transposeA, transposeB, bias,
-              activation),
+              activation, preluActivationWeights),
           convInfo.outShape);
     }
 
@@ -1959,16 +1959,18 @@ export class MathBackendWebGL implements KernelBackend {
 
   fusedConv2d(
       x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo, bias?: Tensor4D,
-      activation?: Activation): Tensor4D {
+      activation?: Activation, preluActivationWeights?: Tensor): Tensor4D {
     if (convInfo.filterHeight === 1 && convInfo.filterWidth === 1 &&
         convInfo.dilationHeight === 1 && convInfo.dilationWidth === 1 &&
         convInfo.strideHeight === 1 && convInfo.strideWidth === 1 &&
         (convInfo.padInfo.type === 'SAME' ||
          convInfo.padInfo.type === 'VALID')) {
-      return this.conv2dByMatMul(x, filter, convInfo, bias, activation);
+      return this.conv2dByMatMul(
+          x, filter, convInfo, bias, activation, preluActivationWeights);
     }
     if (ENV.getBool('WEBGL_CONV_IM2COL') && x.shape[0] === 1) {
-      return this.conv2dWithIm2Row(x, filter, convInfo, bias, activation);
+      return this.conv2dWithIm2Row(
+          x, filter, convInfo, bias, activation, preluActivationWeights);
     }
 
     const hasBias = bias != null;
@@ -1978,6 +1980,9 @@ export class MathBackendWebGL implements KernelBackend {
     const inputs: TensorHandle[] = [x, filter];
     if (bias) {
       inputs.push(bias);
+    }
+    if (preluActivationWeights) {
+      inputs.push(preluActivationWeights);
     }
     return this.compileAndRun(program, inputs);
   }
