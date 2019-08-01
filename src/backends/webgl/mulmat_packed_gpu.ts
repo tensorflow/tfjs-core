@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {GPGPUProgram} from './gpgpu_math';
+import { GPGPUProgram } from './gpgpu_math';
 
 export class MatMulPackedProgram implements GPGPUProgram {
   variableNames = ['matrixA', 'matrixB'];
@@ -23,10 +23,11 @@ export class MatMulPackedProgram implements GPGPUProgram {
   outputShape: number[];
   userCode: string;
 
+  // activationWeights
   constructor(
-      aShape: [number, number, number], outputShape: [number, number, number],
-      transposeA = false, transposeB = false, addBias = false,
-      activation: string = null) {
+    aShape: [number, number, number], outputShape: [number, number, number],
+    transposeA = false, transposeB = false, addBias = false,
+    activation: string = null) {
     this.outputShape = outputShape;
 
     const sharedDim = transposeA ? aShape[1] : aShape[2];
