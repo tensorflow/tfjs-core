@@ -133,7 +133,8 @@ export class KernelBackend implements TensorStorage, Backend, BackendTimer {
 
   fusedBatchMatMul(
       a: Tensor3D, b: Tensor3D, transposeA: boolean, transposeB: boolean,
-      bias?: Tensor, activation?: Activation): Tensor3D {
+      bias?: Tensor, activation?: Activation,
+      preluActivationWeights?: Tensor): Tensor3D {
     throw new Error('Not yet implemented');
   }
 
@@ -413,7 +414,7 @@ export class KernelBackend implements TensorStorage, Backend, BackendTimer {
 
   fusedConv2d(
       x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo, bias?: Tensor4D,
-      activation?: Activation): Tensor4D {
+      activation?: Activation, preluActivationWeights?: Tensor): Tensor4D {
     throw new Error('Not yet implemented');
   }
 

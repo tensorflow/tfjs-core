@@ -47,11 +47,14 @@ import {topkImpl} from '../topk_impl';
 import {whereImpl} from '../where_impl';
 
 function mapActivation(
-    backend: MathBackendCPU, activation: Activation, x: Tensor): Tensor {
+    backend: MathBackendCPU, x: Tensor, activation: Activation,
+    preluActivationWeights?: Tensor): Tensor {
   if (activation === 'linear') {
     return backend.linear(x);
   } else if (activation === 'relu') {
     return backend.relu(x);
+  } else if (activation === 'prelu') {
+    return backend.prelu(x, preluActivationWeights);
   }
   throw new Error(
       `Activation ${activation} has not been implemented for the CPU backend.`);
@@ -529,7 +532,7 @@ export class MathBackendCPU implements KernelBackend {
       result = this.add(result, bias) as Tensor3D;
     }
     if (activation) {
-      result = mapActivation(this, activation, result) as Tensor3D;
+      result = mapActivation(this, result, activation) as Tensor3D;
     }
     return result;
   }
@@ -1522,7 +1525,7 @@ export class MathBackendCPU implements KernelBackend {
       result = this.add(result, bias) as Tensor4D;
     }
     if (activation) {
-      result = mapActivation(this, activation, result) as Tensor4D;
+      result = mapActivation(this, result, activation) as Tensor4D;
     }
     return result;
   }

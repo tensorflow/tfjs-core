@@ -221,7 +221,7 @@ function conv2d_<T extends Tensor3D|Tensor4D>(
     dataFormat: 'NHWC'|'NCHW' = 'NHWC',
     dilations: [number, number]|number = [1, 1],
     dimRoundingMode?: 'floor'|'round'|'ceil', bias?: Tensor|TensorLike,
-    activation: Activation = 'linear'): T {
+    activation: Activation = 'linear', preluActivationWeights?: Tensor): T {
   const $x = convertToTensor(x, 'x', 'conv2d');
   const $filter = convertToTensor(filter, 'filter', 'conv2d');
 
