@@ -15,4 +15,4 @@
  * =============================================================================
  */
 
-export type Activation = 'linear'|'relu';
+export type Activation = 'linear'|'relu'|'prelu';
