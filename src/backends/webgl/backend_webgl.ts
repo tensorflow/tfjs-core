@@ -174,7 +174,7 @@ function mapActivationToShaderProgram(
       return unary_packed_op.RELU;
     }
     return unary_op.RELU;
-  } else if (activation === 'relu') {
+  } else if (activation === 'prelu') {
     if (packed) {
       return binaryop_packed_gpu.PRELU;
     }
@@ -871,7 +871,8 @@ export class MathBackendWebGL implements KernelBackend {
 
   fusedBatchMatMul(
       a: Tensor3D, b: Tensor3D, transposeA: boolean, transposeB: boolean,
-      bias?: Tensor, activation?: Activation): Tensor3D {
+      bias?: Tensor, activation?: Activation,
+      preluActivationWeights?: Tensor): Tensor3D {
     const outerShapeA = transposeA ? a.shape[2] : a.shape[1];
     const outerShapeB = transposeB ? b.shape[1] : b.shape[2];
     const [batch, , ] = a.shape;
@@ -879,16 +880,20 @@ export class MathBackendWebGL implements KernelBackend {
     const dtype = upcastType(a.dtype, b.dtype);
 
     const hasBias = bias != null;
+    const hasPreluActivationWeights = preluActivationWeights != null;
     const fusedActivation =
         activation ? mapActivationToShaderProgram(activation, true) : null;
     const program = new MatMulPackedProgram(
         a.shape, [batch, outerShapeA, outerShapeB], transposeA, transposeB,
-        hasBias, fusedActivation);
+        hasBias, fusedActivation, hasPreluActivationWeights);
     const output =
         this.makePackedTensor(program.outputShape, dtype) as Tensor3D;
     const inputs: TensorHandle[] = [a, b];
     if (bias) {
       inputs.push(bias);
+    }
+    if (preluActivationWeights) {
+      inputs.push(preluActivationWeights);
     }
     return this.compileAndRun<Tensor3D>(program, inputs, output);
   }
@@ -1894,7 +1899,8 @@ export class MathBackendWebGL implements KernelBackend {
         Tensor3D;
 
     const pointwiseConv = this.fusedBatchMatMul(
-        xReshaped, filterReshaped, transposeA, transposeB, bias, activation);
+        xReshaped, filterReshaped, transposeA, transposeB, bias, activation,
+        preluActivationWeights);
     const pointwiseConvTexData = this.texData.get(pointwiseConv.dataId);
     util.assert(
         pointwiseConvTexData.isPacked,
@@ -1911,7 +1917,7 @@ export class MathBackendWebGL implements KernelBackend {
 
   private conv2dWithIm2Row(
       x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo, bias?: Tensor4D,
-      activation?: Activation): Tensor4D {
+      activation?: Activation, preluActivationWeights?: Tensor): Tensor4D {
     // Rearranges conv2d input so each block to be convolved over forms the
     // column of a new matrix with shape [filterWidth * filterHeight *
     // inChannels, outHeight * outWidth]. The filter is also rearranged so each
@@ -1943,14 +1949,18 @@ export class MathBackendWebGL implements KernelBackend {
         ]) as Tensor3D;
 
     const hasBias = bias != null;
+    const hasPreluActivationWeights = preluActivationWeights != null;
     const fusedActivation =
         activation ? mapActivationToShaderProgram(activation, true) : null;
     const matmulProgram = new MatMulPackedProgram(
         im2Col.shape, [1, numCols, convInfo.outChannels], transposeA,
-        transposeB, hasBias, fusedActivation);
+        transposeB, hasBias, fusedActivation, hasPreluActivationWeights);
     const inputs: TensorHandle[] = [im2Col, w2Row];
     if (bias) {
       inputs.push(bias);
+    }
+    if (hasPreluActivationWeights) {
+      inputs.push(preluActivationWeights);
     }
     const product = this.compileAndRun<Tensor4D>(matmulProgram, inputs);
 
@@ -1974,9 +1984,11 @@ export class MathBackendWebGL implements KernelBackend {
     }
 
     const hasBias = bias != null;
+    const hasPreluActivationWeights = preluActivationWeights != null;
     const fusedActivation =
         activation ? mapActivationToShaderProgram(activation, false) : null;
-    const program = new Conv2DProgram(convInfo, hasBias, fusedActivation);
+    const program = new Conv2DProgram(
+        convInfo, hasBias, fusedActivation, hasPreluActivationWeights);
     const inputs: TensorHandle[] = [x, filter];
     if (bias) {
       inputs.push(bias);

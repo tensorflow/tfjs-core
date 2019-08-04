@@ -526,13 +526,16 @@ export class MathBackendCPU implements KernelBackend {
 
   fusedBatchMatMul(
       a: Tensor3D, b: Tensor3D, transposeA: boolean, transposeB: boolean,
-      bias?: Tensor, activation?: Activation): Tensor3D {
+      bias?: Tensor, activation?: Activation,
+      preluActivationWeights?: Tensor): Tensor3D {
     let result = this.batchMatMul(a, b, transposeA, transposeB);
     if (bias) {
       result = this.add(result, bias) as Tensor3D;
     }
     if (activation) {
-      result = mapActivation(this, result, activation) as Tensor3D;
+      result =
+          mapActivation(this, result, activation, preluActivationWeights) as
+          Tensor3D;
     }
     return result;
   }
@@ -1518,14 +1521,16 @@ export class MathBackendCPU implements KernelBackend {
 
   fusedConv2d(
       x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo, bias?: Tensor4D,
-      activation?: Activation): Tensor4D {
+      activation?: Activation, preluActivationWeights?: Tensor): Tensor4D {
     let result = this.conv2d(x, filter, convInfo);
 
     if (bias) {
       result = this.add(result, bias) as Tensor4D;
     }
     if (activation) {
-      result = mapActivation(this, result, activation) as Tensor4D;
+      result =
+          mapActivation(this, result, activation, preluActivationWeights) as
+          Tensor4D;
     }
     return result;
   }
