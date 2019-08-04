@@ -221,7 +221,7 @@ function conv2d_<T extends Tensor3D|Tensor4D>(
     dataFormat: 'NHWC'|'NCHW' = 'NHWC',
     dilations: [number, number]|number = [1, 1],
     dimRoundingMode?: 'floor'|'round'|'ceil', bias?: Tensor|TensorLike,
-    activation: Activation = 'linear'): T {
+    activation: Activation = 'linear', preluActivationWeights?: Tensor): T {
   const $x = convertToTensor(x, 'x', 'conv2d');
   const $filter = convertToTensor(filter, 'filter', 'conv2d');
 
@@ -271,6 +271,12 @@ function conv2d_<T extends Tensor3D|Tensor4D>(
     broadcast_util.assertAndGetBroadcastShape(convInfo.outShape, $bias.shape);
   }
 
+  let $preluActivationWeights: Tensor;
+  if (preluActivationWeights != null) {
+    $preluActivationWeights = convertToTensor(
+        preluActivationWeights, 'prelu weights', 'fused conv2d');
+  }
+
   const grad = (dy: Tensor4D, saved: Tensor[]) => {
     const [$filter, x4D, y] = saved as [Tensor4D, Tensor4D, Tensor4D];
 
@@ -316,15 +322,23 @@ function conv2d_<T extends Tensor3D|Tensor4D>(
         biasGradient);
   };
 
-  const inputs: {x: Tensor, $filter: Tensor,
-                 $bias?: Tensor} = {x: x4D, $filter};
+  const inputs: {
+    x: Tensor,
+    $filter: Tensor,
+    $bias?: Tensor,
+    $preluActivationWeights?: Tensor
+  } = {x: x4D, $filter};
   if (bias != null) {
     inputs.$bias = $bias;
+  }
+  if (preluActivationWeights != null) {
+    inputs.$preluActivationWeights = $preluActivationWeights;
   }
 
   const res = ENGINE.runKernel((backend, save) => {
     const res = backend.fusedConv2d(
-        x4D, $filter, convInfo, $bias as Tensor4D, activation);
+        x4D, $filter, convInfo, $bias as Tensor4D, activation,
+        $preluActivationWeights);
     save([$filter, x4D, res]);
 
     return res;

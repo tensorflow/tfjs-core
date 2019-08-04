@@ -273,6 +273,31 @@ describeWithFlags('fused conv2d', ALL_ENVS, () => {
     expectArraysClose(await result.data(), expected);
   });
 
+  it('basic with prelu', async () => {
+    const inputDepth = 2;
+    const inShape: [number, number, number, number] = [2, 2, 2, inputDepth];
+    const outputDepth = 2;
+    const fSize = 1;
+    const pad = 0;
+    const stride = 1;
+
+    const x = tf.tensor4d(
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], inShape);
+    const alpha = tf.tensor3d([0.25, 0.75], [1, 1, 2]);
+    const w =
+        tf.tensor4d([-1, 1, -2, 0.5], [fSize, fSize, inputDepth, outputDepth]);
+
+    const result = tf.fused.conv2d(
+        x, w, stride, pad, 'NHWC', [1, 1], null, null, 'prelu', alpha);
+    expect(result.shape).toEqual([2, 2, 2, 2]);
+    const expected = [
+      -1.25, 2, -2.75, 5, -4.25, 8, -5.75, 11, -7.25, 14, -8.75, 17, -10.25, 20,
+      -11.75, 23
+    ];
+
+    expectArraysClose(await result.data(), expected);
+  });
+
   it('basic with bias and relu', async () => {
     const inputDepth = 2;
     const inShape: [number, number, number, number] = [2, 2, 2, inputDepth];
