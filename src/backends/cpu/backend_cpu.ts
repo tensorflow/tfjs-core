@@ -79,8 +79,8 @@ export class MathBackendCPU implements KernelBackend {
   public blockSize = 48;
 
   private data: DataStorage<TensorData<DataType>>;
-  private fromPixels2DContext: CanvasRenderingContext2D
-      | OffscreenCanvasRenderingContext2D;
+  private fromPixels2DContext: CanvasRenderingContext2D|
+      OffscreenCanvasRenderingContext2D;
   private firstUse = true;
 
   constructor() {
@@ -134,12 +134,11 @@ export class MathBackendCPU implements KernelBackend {
 
     const isPixelData = (pixels as PixelData).data instanceof Uint8Array;
     const isImageData =
-        typeof(ImageData) !== 'undefined' && pixels instanceof ImageData;
-    const isVideo =
-        typeof(HTMLVideoElement) !== 'undefined'
-        && pixels instanceof HTMLVideoElement;
-    const isImage = typeof(HTMLImageElement) !== 'undefined'
-        && pixels instanceof HTMLImageElement;
+        typeof (ImageData) !== 'undefined' && pixels instanceof ImageData;
+    const isVideo = typeof (HTMLVideoElement) !== 'undefined' &&
+        pixels instanceof HTMLVideoElement;
+    const isImage = typeof (HTMLImageElement) !== 'undefined' &&
+        pixels instanceof HTMLImageElement;
 
     let vals: Uint8ClampedArray|Uint8Array;
     // tslint:disable-next-line:no-any
@@ -1512,6 +1511,20 @@ export class MathBackendCPU implements KernelBackend {
       }
     }
     return Tensor.make(x.shape, {values: resultValues}) as T;
+  }
+
+  fusedConv2d(
+      x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo, bias?: Tensor4D,
+      activation?: Activation): Tensor4D {
+    let result = this.conv2d(x, filter, convInfo);
+
+    if (bias) {
+      result = this.add(result, bias) as Tensor4D;
+    }
+    if (activation) {
+      result = mapActivation(this, activation, result) as Tensor4D;
+    }
+    return result;
   }
 
   conv2d(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
