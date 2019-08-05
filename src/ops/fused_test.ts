@@ -42,6 +42,20 @@ describeWithFlags('fused matmul', ALL_ENVS, () => {
     expectArraysClose(await c.data(), [0, 8, 0, 20]);
   });
 
+  it('A x B with prelu', async () => {
+    const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
+    const b = tf.tensor2d([0, 1, -3, 2, 2, 1], [3, 2]);
+    const alpha = tf.tensor2d([0.5, 0.5], [1, 2]);
+    const transposeA = false;
+    const transposeB = false;
+
+    const c =
+        tf.fused.matMul(a, b, transposeA, transposeB, null, 'prelu', alpha);
+
+    expect(c.shape).toEqual([2, 2]);
+    expectArraysClose(await c.data(), [0, 8, -1.5, 20]);
+  });
+
   it('A x B with relu transpose', async () => {
     const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
     const b = tf.tensor2d([0, 1, -3, 2, 2, 1], [2, 3]);
@@ -361,6 +375,57 @@ describeWithFlags('fused conv2d', ALL_ENVS, () => {
 
     expectArraysClose(
         await result.data(), [10, 5, 10, 50, 25, 50, 0, 0, 0, 0, 0, 0]);
+  });
+
+  it('im2row with prelu', async () => {
+    const inputDepth = 1;
+    const inputShape: [number, number, number] = [4, 4, inputDepth];
+    const outputDepth = 3;
+    const fSize = 1;
+    const pad = 'same';
+    const stride: [number, number] = [2, 2];
+
+    const x = tf.tensor3d(
+        [
+          10, 30, 50, 70, 20, 40, 60, 80, -10, -30, -50, -70, -20, -40, -60, -80
+        ],
+        inputShape);
+    const w = tf.tensor4d([1, 0.5, 1], [fSize, fSize, inputDepth, outputDepth]);
+    const alpha = tf.tensor3d([0.5], [1, 1, inputDepth]);
+
+    const result = tf.fused.conv2d(
+        x, w, stride, pad, 'NHWC', [1, 1], null, null, 'prelu', alpha);
+
+    expectArraysClose(
+        await result.data(),
+        [10, 5, 10, 50, 25, 50, -5, -2.5, -5, -25, -12.5, -25]);
+  });
+
+  it('pointwise with prelu', async () => {
+    const inputDepth = 1;
+    const inputShape: [number, number, number] = [4, 4, inputDepth];
+    const outputDepth = 3;
+    const fSize = 1;
+    const pad = 'same';
+    const stride: [number, number] = [1, 1];
+
+    const x = tf.tensor3d(
+        [
+          10, 30, 50, 70, 20, 40, 60, 80, -10, -30, -50, -70, -20, -40, -60, -80
+        ],
+        inputShape);
+    const w = tf.tensor4d([1, 0.5, 1], [fSize, fSize, inputDepth, outputDepth]);
+    const alpha = tf.tensor3d([0.5], [1, 1, inputDepth]);
+
+    const result = tf.fused.conv2d(
+        x, w, stride, pad, 'NHWC', [1, 1], null, null, 'prelu', alpha);
+
+    expectArraysClose(await result.data(), [
+      10,  5,    10,  30,  15,   30,  50,  25,    50,  70,  35,    70,
+      20,  10,   20,  40,  20,   40,  60,  30,    60,  80,  40,    80,
+      -5,  -2.5, -5,  -15, -7.5, -15, -25, -12.5, -25, -35, -17.5, -35,
+      -10, -5,   -10, -20, -10,  -20, -30, -15,   -30, -40, -20,   -40
+    ]);
   });
 
   it('im2row with bias and relu', async () => {

@@ -45,11 +45,13 @@ import {Activation} from './fused_util';
  * @param transposeB If true, `b` is transposed before multiplication.
  * @param bias Matrix to be added to the result.
  * @param activation Name of activation kernel (defaults to `linear`).
+ * @param preluActivationWeights Tensor of prelu weights.
  */
 /** @doc {heading: 'Operations', subheading: 'Matrices', namespace: 'fused'} */
 function matMul_<T extends Tensor>(
     a: T|TensorLike, b: T|TensorLike, transposeA = false, transposeB = false,
-    bias?: Tensor|TensorLike, activation: Activation = 'linear'): T {
+    bias?: Tensor|TensorLike, activation: Activation = 'linear',
+    preluActivationWeights?: Tensor): T {
   let $a = convertToTensor(a, 'a', 'fused matMul');
   let $b = convertToTensor(b, 'b', 'fused matMul');
   [$a, $b] = makeTypesMatch($a, $b);
@@ -101,6 +103,12 @@ function matMul_<T extends Tensor>(
     [$bias] = makeTypesMatch($bias, $a);
 
     broadcast_util.assertAndGetBroadcastShape(outShape, $bias.shape);
+  }
+
+  let $preluActivationWeights: Tensor;
+  if (preluActivationWeights != null) {
+    $preluActivationWeights = convertToTensor(
+        preluActivationWeights, 'prelu weights', 'fused matMul');
   }
 
   const grad = (dy: Tensor3D, saved: Tensor[]) => {
@@ -166,14 +174,23 @@ function matMul_<T extends Tensor>(
     }
   };
 
-  const inputs: {$a: Tensor, $b: Tensor, $bias?: Tensor} = {$a: a3D, $b: b3D};
+  const inputs: {
+    $a: Tensor,
+    $b: Tensor,
+    $bias?: Tensor,
+    $preluActivationWeights?: Tensor
+  } = {$a: a3D, $b: b3D};
   if (bias != null) {
     inputs.$bias = $bias;
+  }
+  if (preluActivationWeights != null) {
+    inputs.$preluActivationWeights = $preluActivationWeights;
   }
 
   const res = ENGINE.runKernel((backend, save) => {
     const y = backend.fusedBatchMatMul(
-        a3D, b3D, transposeA, transposeB, $bias, activation);
+        a3D, b3D, transposeA, transposeB, $bias, activation,
+        $preluActivationWeights);
     save([a3D, b3D, y]);
     return y;
   }, inputs, grad);
@@ -213,6 +230,7 @@ function matMul_<T extends Tensor>(
  *     and error if the output is of fractional size.
  * @param bias Tensor to be added to the result.
  * @param activation Name of activation kernel (defaults to `linear`).
+ * @param preluActivationWeights Tensor of prelu weights.
  */
 /** @doc {heading: 'Operations', subheading: 'Convolution'} */
 function conv2d_<T extends Tensor3D|Tensor4D>(
