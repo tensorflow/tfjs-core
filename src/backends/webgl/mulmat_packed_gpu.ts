@@ -23,7 +23,6 @@ export class MatMulPackedProgram implements GPGPUProgram {
   outputShape: number[];
   userCode: string;
 
-  // activationWeights
   constructor(
       aShape: [number, number, number], outputShape: [number, number, number],
       transposeA = false, transposeB = false, addBias = false,

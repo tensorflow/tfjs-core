@@ -188,9 +188,15 @@ function matMul_<T extends Tensor>(
   }
 
   const res = ENGINE.runKernel((backend, save) => {
-    const y = backend.fusedBatchMatMul(
-        a3D, b3D, transposeA, transposeB, $bias, activation,
-        $preluActivationWeights);
+    const y = backend.fusedBatchMatMul({
+      a: a3D,
+      b: b3D,
+      transposeA,
+      transposeB,
+      bias: $bias,
+      activation,
+      preluActivationWeights: $preluActivationWeights
+    });
     save([a3D, b3D, y]);
     return y;
   }, inputs, grad);

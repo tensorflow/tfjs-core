@@ -28,7 +28,7 @@ import * as array_ops_util from '../../ops/array_ops_util';
 import * as axis_util from '../../ops/axis_util';
 import {computeOutShape} from '../../ops/concat_util';
 import {Conv2DInfo, Conv3DInfo} from '../../ops/conv_util';
-import {Activation} from '../../ops/fused_util';
+import {Activation, FusedBatchMatMulConfig} from '../../ops/fused_util';
 import * as gather_nd_util from '../../ops/gather_nd_util';
 import * as reduce_util from '../../ops/reduce_util';
 import * as scatter_nd_util from '../../ops/scatter_nd_util';
@@ -870,9 +870,8 @@ export class MathBackendWebGL implements KernelBackend {
   }
 
   fusedBatchMatMul(
-      a: Tensor3D, b: Tensor3D, transposeA: boolean, transposeB: boolean,
-      bias?: Tensor, activation?: Activation,
-      preluActivationWeights?: Tensor): Tensor3D {
+      {a, b, transposeA, transposeB, bias, activation, preluActivationWeights}:
+          FusedBatchMatMulConfig): Tensor3D {
     const outerShapeA = transposeA ? a.shape[2] : a.shape[1];
     const outerShapeB = transposeB ? b.shape[1] : b.shape[2];
     const [batch, , ] = a.shape;
@@ -1860,9 +1859,15 @@ export class MathBackendWebGL implements KernelBackend {
           Tensor3D;
 
       return this.reshape<Rank.R4>(
-          this.fusedBatchMatMul(
-              xReshaped, filterReshaped, transposeA, transposeB, bias,
-              activation, preluActivationWeights),
+          this.fusedBatchMatMul({
+            a: xReshaped,
+            b: filterReshaped,
+            transposeA,
+            transposeB,
+            bias,
+            activation,
+            preluActivationWeights
+          }),
           convInfo.outShape);
     }
 
@@ -1898,9 +1903,15 @@ export class MathBackendWebGL implements KernelBackend {
         this.reshape(filter, [1, convInfo.inChannels, convInfo.outChannels]) as
         Tensor3D;
 
-    const pointwiseConv = this.fusedBatchMatMul(
-        xReshaped, filterReshaped, transposeA, transposeB, bias, activation,
-        preluActivationWeights);
+    const pointwiseConv = this.fusedBatchMatMul({
+      a: xReshaped,
+      b: filterReshaped,
+      transposeA,
+      transposeB,
+      bias,
+      activation,
+      preluActivationWeights
+    });
     const pointwiseConvTexData = this.texData.get(pointwiseConv.dataId);
     util.assert(
         pointwiseConvTexData.isPacked,

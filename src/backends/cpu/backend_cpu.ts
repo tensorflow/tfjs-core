@@ -26,7 +26,7 @@ import * as broadcast_util from '../../ops/broadcast_util';
 import * as concat_util from '../../ops/concat_util';
 import {Conv2DInfo, Conv3DInfo} from '../../ops/conv_util';
 import * as erf_util from '../../ops/erf_util';
-import {Activation} from '../../ops/fused_util';
+import {Activation, FusedBatchMatMulConfig} from '../../ops/fused_util';
 import * as gather_nd_util from '../../ops/gather_nd_util';
 import * as ops from '../../ops/ops';
 import {buffer, scalar, tensor, tensor3d, tensor4d} from '../../ops/ops';
@@ -525,9 +525,8 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   fusedBatchMatMul(
-      a: Tensor3D, b: Tensor3D, transposeA: boolean, transposeB: boolean,
-      bias?: Tensor, activation?: Activation,
-      preluActivationWeights?: Tensor): Tensor3D {
+      {a, b, transposeA, transposeB, bias, activation, preluActivationWeights}:
+          FusedBatchMatMulConfig): Tensor3D {
     let result = this.batchMatMul(a, b, transposeA, transposeB);
     if (bias) {
       result = this.add(result, bias) as Tensor3D;
