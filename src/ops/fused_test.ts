@@ -282,7 +282,7 @@ describeWithFlags('fused conv2d', ALL_ENVS, () => {
     const w =
         tf.tensor4d([-1, 1, -2, 0.5], [fSize, fSize, inputDepth, outputDepth]);
 
-    const result = tf.fused.conv2d(x, w, stride, pad);
+    const result = tf.fused.conv2d({x, filter: w, strides: stride, pad});
     expect(result.shape).toEqual([2, 2, 2, 2]);
     const expected =
         [-5, 2, -11, 5, -17, 8, -23, 11, -29, 14, -35, 17, -41, 20, -47, 23];
@@ -303,8 +303,15 @@ describeWithFlags('fused conv2d', ALL_ENVS, () => {
     const w =
         tf.tensor4d([-1, 1, -2, 0.5], [fSize, fSize, inputDepth, outputDepth]);
 
-    const result =
-        tf.fused.conv2d(x, w, stride, pad, 'NHWC', [1, 1], null, null, 'relu');
+    const result = tf.fused.conv2d({
+      x,
+      filter: w,
+      strides: stride,
+      pad,
+      dataFormat: 'NHWC',
+      dilations: [1, 1],
+      activation: 'relu'
+    });
     expect(result.shape).toEqual([2, 2, 2, 2]);
     const expected = [0, 2, 0, 5, 0, 8, 0, 11, 0, 14, 0, 17, 0, 20, 0, 23];
 
@@ -325,8 +332,16 @@ describeWithFlags('fused conv2d', ALL_ENVS, () => {
     const w =
         tf.tensor4d([-1, 1, -2, 0.5], [fSize, fSize, inputDepth, outputDepth]);
 
-    const result = tf.fused.conv2d(
-        x, w, stride, pad, 'NHWC', [1, 1], null, null, 'prelu', alpha);
+    const result = tf.fused.conv2d({
+      x,
+      filter: w,
+      strides: stride,
+      pad,
+      dataFormat: 'NHWC',
+      dilations: [1, 1],
+      activation: 'prelu',
+      preluActivationWeights: alpha
+    });
     expect(result.shape).toEqual([2, 2, 2, 2]);
     const expected = [
       -1.25, 2, -2.75, 5, -4.25, 8, -5.75, 11, -7.25, 14, -8.75, 17, -10.25, 20,
@@ -349,8 +364,16 @@ describeWithFlags('fused conv2d', ALL_ENVS, () => {
     const w =
         tf.tensor4d([-1, 1, -2, 0.5], [fSize, fSize, inputDepth, outputDepth]);
 
-    const result = tf.fused.conv2d(
-        x, w, stride, pad, 'NHWC', [1, 1], null, tf.scalar(5), 'relu');
+    const result = tf.fused.conv2d({
+      x,
+      filter: w,
+      strides: stride,
+      pad,
+      dataFormat: 'NHWC',
+      dilations: [1, 1],
+      bias: tf.scalar(5),
+      activation: 'relu'
+    });
     expect(result.shape).toEqual([2, 2, 2, 2]);
     const expected = [0, 7, 0, 10, 0, 13, 0, 16, 0, 19, 0, 22, 0, 25, 0, 28];
 
@@ -363,7 +386,7 @@ describeWithFlags('fused conv2d', ALL_ENVS, () => {
     const outputDepth = 3;
     const fSize = 1;
     const pad = 'same';
-    const stride: [number, number] = [2, 2];
+    const strides: [number, number] = [2, 2];
 
     const x = tf.tensor3d(
         [
@@ -372,7 +395,7 @@ describeWithFlags('fused conv2d', ALL_ENVS, () => {
         inputShape);
     const w = tf.tensor4d([1, 0.5, 1], [fSize, fSize, inputDepth, outputDepth]);
 
-    const result = tf.fused.conv2d(x, w, stride, pad);
+    const result = tf.fused.conv2d({x, filter: w, strides, pad});
 
     expectArraysClose(
         await result.data(),
@@ -385,7 +408,7 @@ describeWithFlags('fused conv2d', ALL_ENVS, () => {
     const outputDepth = 3;
     const fSize = 1;
     const pad = 'same';
-    const stride: [number, number] = [2, 2];
+    const strides: [number, number] = [2, 2];
 
     const x = tf.tensor3d(
         [
@@ -394,8 +417,15 @@ describeWithFlags('fused conv2d', ALL_ENVS, () => {
         inputShape);
     const w = tf.tensor4d([1, 0.5, 1], [fSize, fSize, inputDepth, outputDepth]);
 
-    const result =
-        tf.fused.conv2d(x, w, stride, pad, 'NHWC', [1, 1], null, null, 'relu');
+    const result = tf.fused.conv2d({
+      x,
+      filter: w,
+      strides,
+      pad,
+      dataFormat: 'NHWC',
+      dilations: [1, 1],
+      activation: 'relu'
+    });
 
     expectArraysClose(
         await result.data(), [10, 5, 10, 50, 25, 50, 0, 0, 0, 0, 0, 0]);
@@ -407,7 +437,7 @@ describeWithFlags('fused conv2d', ALL_ENVS, () => {
     const outputDepth = 3;
     const fSize = 1;
     const pad = 'same';
-    const stride: [number, number] = [2, 2];
+    const strides: [number, number] = [2, 2];
 
     const x = tf.tensor3d(
         [
@@ -417,8 +447,16 @@ describeWithFlags('fused conv2d', ALL_ENVS, () => {
     const w = tf.tensor4d([1, 0.5, 1], [fSize, fSize, inputDepth, outputDepth]);
     const alpha = tf.tensor3d([0.5], [1, 1, inputDepth]);
 
-    const result = tf.fused.conv2d(
-        x, w, stride, pad, 'NHWC', [1, 1], null, null, 'prelu', alpha);
+    const result = tf.fused.conv2d({
+      x,
+      filter: w,
+      strides,
+      pad,
+      dataFormat: 'NHWC',
+      dilations: [1, 1],
+      activation: 'prelu',
+      preluActivationWeights: alpha
+    });
 
     expectArraysClose(
         await result.data(),
@@ -431,7 +469,7 @@ describeWithFlags('fused conv2d', ALL_ENVS, () => {
     const outputDepth = 3;
     const fSize = 1;
     const pad = 'same';
-    const stride: [number, number] = [1, 1];
+    const strides: [number, number] = [1, 1];
 
     const x = tf.tensor3d(
         [
@@ -441,8 +479,16 @@ describeWithFlags('fused conv2d', ALL_ENVS, () => {
     const w = tf.tensor4d([1, 0.5, 1], [fSize, fSize, inputDepth, outputDepth]);
     const alpha = tf.tensor3d([0.5], [1, 1, inputDepth]);
 
-    const result = tf.fused.conv2d(
-        x, w, stride, pad, 'NHWC', [1, 1], null, null, 'prelu', alpha);
+    const result = tf.fused.conv2d({
+      x,
+      filter: w,
+      strides,
+      pad,
+      dataFormat: 'NHWC',
+      dilations: [1, 1],
+      activation: 'prelu',
+      preluActivationWeights: alpha
+    });
 
     expectArraysClose(await result.data(), [
       10,  5,    10,  30,  15,   30,  50,  25,    50,  70,  35,    70,
@@ -458,7 +504,7 @@ describeWithFlags('fused conv2d', ALL_ENVS, () => {
     const outputDepth = 3;
     const fSize = 1;
     const pad = 'same';
-    const stride: [number, number] = [2, 2];
+    const strides: [number, number] = [2, 2];
 
     const x = tf.tensor3d(
         [
@@ -467,8 +513,16 @@ describeWithFlags('fused conv2d', ALL_ENVS, () => {
         inputShape);
     const w = tf.tensor4d([1, 0.5, 1], [fSize, fSize, inputDepth, outputDepth]);
 
-    const result = tf.fused.conv2d(
-        x, w, stride, pad, 'NHWC', [1, 1], null, tf.scalar(5), 'relu');
+    const result = tf.fused.conv2d({
+      x,
+      filter: w,
+      strides,
+      pad,
+      dataFormat: 'NHWC',
+      dilations: [1, 1],
+      bias: tf.scalar(5),
+      activation: 'relu'
+    });
 
     expectArraysClose(
         await result.data(), [15, 10, 15, 55, 30, 55, 0, 0, 0, 0, 0, 0]);
@@ -479,7 +533,7 @@ describeWithFlags('fused conv2d', ALL_ENVS, () => {
     const outputDepth = 1;
     const inputShape: [number, number, number, number] = [2, 3, 3, inputDepth];
     const filterSize = 2;
-    const stride = 1;
+    const strides = 1;
     const pad = 0;
 
     const filterShape: [number, number, number, number] =
@@ -492,7 +546,7 @@ describeWithFlags('fused conv2d', ALL_ENVS, () => {
 
     const grads = tf.grads(
         (x: tf.Tensor4D, filter: tf.Tensor4D) =>
-            tf.fused.conv2d(x, filter, stride, pad));
+            tf.fused.conv2d({x, filter, strides, pad}));
     const [dx, dfilter] = grads([x, filter], dy);
 
     expect(dx.shape).toEqual(x.shape);
@@ -509,7 +563,7 @@ describeWithFlags('fused conv2d', ALL_ENVS, () => {
     const outputDepth = 1;
     const inputShape: [number, number, number, number] = [2, 3, 3, inputDepth];
     const filterSize = 2;
-    const stride = 1;
+    const strides = 1;
     const pad = 0;
 
     const filterShape: [number, number, number, number] =
@@ -521,14 +575,21 @@ describeWithFlags('fused conv2d', ALL_ENVS, () => {
         [1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9], inputShape);
     const dy = tf.tensor4d([3, 1, 2, 0, 3, 1, 2, 0], [2, 2, 2, 1]);
 
-    const fusedGrads = tf.grads(
-        (x: tf.Tensor4D, w: tf.Tensor4D, b) =>
-            tf.fused.conv2d(x, w, stride, pad, 'NHWC', [1, 1], null, b));
+    const fusedGrads =
+        tf.grads((x: tf.Tensor4D, w: tf.Tensor4D, b) => tf.fused.conv2d({
+          x,
+          filter: w,
+          strides,
+          pad,
+          dataFormat: 'NHWC',
+          dilations: [1, 1],
+          bias: b
+        }));
     const [dxFused, dfilterFused, dbiasFused] =
         fusedGrads([x, filter, bias], dy);
 
     const grads = tf.grads((x: tf.Tensor4D, filter: tf.Tensor4D, bias) => {
-      const conv = tf.conv2d(x, filter, stride, pad);
+      const conv = tf.conv2d(x, filter, strides, pad);
       const sum = tf.add(conv, bias);
       return sum;
     });
@@ -546,7 +607,7 @@ describeWithFlags('fused conv2d', ALL_ENVS, () => {
        const inputShape: [number, number, number, number] =
            [2, 3, 3, inputDepth];
        const filterSize = 2;
-       const stride = 1;
+       const strides = 1;
        const pad = 0;
 
        const filterShape: [number, number, number, number] =
@@ -558,14 +619,22 @@ describeWithFlags('fused conv2d', ALL_ENVS, () => {
            [1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9], inputShape);
        const dy = tf.tensor4d([3, 1, 2, 0, 3, 1, 2, 0], [2, 2, 2, 1]);
 
-       const fusedGrads = tf.grads(
-           (x: tf.Tensor4D, w: tf.Tensor4D, b) => tf.fused.conv2d(
-               x, w, stride, pad, 'NHWC', [1, 1], null, b, 'relu'));
+       const fusedGrads =
+           tf.grads((x: tf.Tensor4D, w: tf.Tensor4D, b) => tf.fused.conv2d({
+             x,
+             filter: w,
+             strides,
+             pad,
+             dataFormat: 'NHWC',
+             dilations: [1, 1],
+             bias: b,
+             activation: 'relu'
+           }));
        const [dxFused, dfilterFused, dbiasFused] =
            fusedGrads([x, filter, bias], dy);
 
        const grads = tf.grads((x: tf.Tensor4D, filter: tf.Tensor4D, bias) => {
-         const conv = tf.conv2d(x, filter, stride, pad);
+         const conv = tf.conv2d(x, filter, strides, pad);
          const sum = tf.add(conv, bias);
          return tf.relu(sum);
        });

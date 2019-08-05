@@ -39,13 +39,14 @@ import {Activation} from './fused_util';
  * tf.fused.matMul(a, b, false, false, bias, 'relu').print();
  * ```
  *
- * @param a First matrix in dot product operation.
- * @param b Second matrix in dot product operation.
- * @param transposeA If true, `a` is transposed before multiplication.
- * @param transposeB If true, `b` is transposed before multiplication.
- * @param bias Matrix to be added to the result.
- * @param activation Name of activation kernel (defaults to `linear`).
- * @param preluActivationWeights Tensor of prelu weights.
+ * @param obj Configuration
+ *  a First matrix in dot product operation.
+ *  b Second matrix in dot product operation.
+ *  transposeA If true, `a` is transposed before multiplication.
+ *  transposeB If true, `b` is transposed before multiplication.
+ *  bias Matrix to be added to the result.
+ *  activation Name of activation kernel (defaults to `linear`).
+ *  preluActivationWeights Tensor of prelu weights.
  */
 /** @doc {heading: 'Operations', subheading: 'Matrices', namespace: 'fused'} */
 function matMul_<T extends Tensor>({
@@ -220,14 +221,15 @@ function matMul_<T extends Tensor>({
  * Computes a 2D convolution over the input x, optionally fused with adding a
  * bias and applying an activation.
  *
- * @param x The input tensor, of rank 4 or rank 3, of shape
+ * @param obj Configuration
+ *   x The input tensor, of rank 4 or rank 3, of shape
  *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is
  * assumed.
- * @param filter The filter, rank 4, of shape
+ *   filter The filter, rank 4, of shape
  *     `[filterHeight, filterWidth, inDepth, outDepth]`.
- * @param strides The strides of the convolution: `[strideHeight,
+ *   strides The strides of the convolution: `[strideHeight,
  * strideWidth]`.
- * @param pad The type of padding algorithm.
+ *   pad The type of padding algorithm.
  *    - `same` and stride 1: output will be of same size as input,
  *       regardless of filter size.
  *    - `valid`: output will be smaller than input if filter is larger
@@ -235,30 +237,46 @@ function matMul_<T extends Tensor>({
  *   - For more info, see this guide:
  *     [https://www.tensorflow.org/api_guides/python/nn#Convolution](
  *          https://www.tensorflow.org/api_guides/python/nn#Convolution)
- * @param dataFormat: An optional string from: "NHWC", "NCHW". Defaults to
+ *   dataFormat: An optional string from: "NHWC", "NCHW". Defaults to
  *     "NHWC". Specify the data format of the input and output data. With the
  *     default format "NHWC", the data is stored in the order of: [batch,
  *     height, width, channels]. Only "NHWC" is currently supported.
- * @param dilations The dilation rates: `[dilationHeight, dilationWidth]`
+ *   dilations The dilation rates: `[dilationHeight, dilationWidth]`
  *     in which we sample input values across the height and width dimensions
  *     in atrous convolution. Defaults to `[1, 1]`. If `dilations` is a single
  *     number, then `dilationHeight == dilationWidth`. If it is greater than
  *     1, then all values of `strides` must be 1.
- * @param dimRoundingMode The rounding mode used when computing output
+ *   dimRoundingMode The rounding mode used when computing output
  *     dimensions if pad is a number. If none is provided, it will not round
  *     and error if the output is of fractional size.
- * @param bias Tensor to be added to the result.
- * @param activation Name of activation kernel (defaults to `linear`).
- * @param preluActivationWeights Tensor of prelu weights.
+ *   bias Tensor to be added to the result.
+ *   activation Name of activation kernel (defaults to `linear`).
+ *   preluActivationWeights Tensor of prelu weights.
  */
 /** @doc {heading: 'Operations', subheading: 'Convolution'} */
-function conv2d_<T extends Tensor3D|Tensor4D>(
-    x: T|TensorLike, filter: Tensor4D|TensorLike,
-    strides: [number, number]|number, pad: 'valid'|'same'|number,
-    dataFormat: 'NHWC'|'NCHW' = 'NHWC',
-    dilations: [number, number]|number = [1, 1],
-    dimRoundingMode?: 'floor'|'round'|'ceil', bias?: Tensor|TensorLike,
-    activation: Activation = 'linear', preluActivationWeights?: Tensor): T {
+function conv2d_<T extends Tensor3D|Tensor4D>({
+  x,
+  filter,
+  strides,
+  pad,
+  dataFormat = 'NHWC',
+  dilations = [1, 1],
+  dimRoundingMode,
+  bias,
+  activation = 'linear',
+  preluActivationWeights
+}: {
+  x: T|TensorLike,
+  filter: Tensor4D|TensorLike,
+  strides: [number, number]|number,
+  pad: 'valid'|'same'|number,
+  dataFormat?: 'NHWC'|'NCHW',
+  dilations?: [number, number]|number,
+  dimRoundingMode?: 'floor'|'round'|'ceil',
+  bias?: Tensor|TensorLike,
+  activation?: Activation,
+  preluActivationWeights?: Tensor
+}): T {
   const $x = convertToTensor(x, 'x', 'conv2d');
   const $filter = convertToTensor(filter, 'filter', 'conv2d');
 
