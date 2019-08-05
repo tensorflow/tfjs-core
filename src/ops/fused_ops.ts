@@ -39,14 +39,14 @@ import {Activation} from './fused_util';
  * tf.fused.matMul(a, b, false, false, bias, 'relu').print();
  * ```
  *
- * @param obj Configuration
- *  a First matrix in dot product operation.
- *  b Second matrix in dot product operation.
- *  transposeA If true, `a` is transposed before multiplication.
- *  transposeB If true, `b` is transposed before multiplication.
- *  bias Matrix to be added to the result.
- *  activation Name of activation kernel (defaults to `linear`).
- *  preluActivationWeights Tensor of prelu weights.
+ * @param obj An object with the following properties:
+ * - `a` First matrix in dot product operation.
+ * - `b` Second matrix in dot product operation.
+ * - `transposeA` If true, `a` is transposed before multiplication.
+ * - `transposeB` If true, `b` is transposed before multiplication.
+ * - `bias` Matrix to be added to the result.
+ * - `activation` Name of activation kernel (defaults to `linear`).
+ * - `preluActivationWeights` Tensor of prelu weights.
  */
 /** @doc {heading: 'Operations', subheading: 'Matrices', namespace: 'fused'} */
 function matMul_<T extends Tensor>({
@@ -221,15 +221,15 @@ function matMul_<T extends Tensor>({
  * Computes a 2D convolution over the input x, optionally fused with adding a
  * bias and applying an activation.
  *
- * @param obj Configuration
- *   x The input tensor, of rank 4 or rank 3, of shape
+ * @param obj An object with the following properties:
+ * - `x` The input tensor, of rank 4 or rank 3, of shape
  *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is
  * assumed.
- *   filter The filter, rank 4, of shape
+ * - `filter` The filter, rank 4, of shape
  *     `[filterHeight, filterWidth, inDepth, outDepth]`.
- *   strides The strides of the convolution: `[strideHeight,
+ * - `strides` The strides of the convolution: `[strideHeight,
  * strideWidth]`.
- *   pad The type of padding algorithm.
+ * - `pad` The type of padding algorithm.
  *    - `same` and stride 1: output will be of same size as input,
  *       regardless of filter size.
  *    - `valid`: output will be smaller than input if filter is larger
@@ -237,21 +237,23 @@ function matMul_<T extends Tensor>({
  *   - For more info, see this guide:
  *     [https://www.tensorflow.org/api_guides/python/nn#Convolution](
  *          https://www.tensorflow.org/api_guides/python/nn#Convolution)
- *   dataFormat: An optional string from: "NHWC", "NCHW". Defaults to
+ * - `dataFormat` An optional string from: "NHWC", "NCHW". Defaults to
  *     "NHWC". Specify the data format of the input and output data. With the
  *     default format "NHWC", the data is stored in the order of: [batch,
  *     height, width, channels]. Only "NHWC" is currently supported.
- *   dilations The dilation rates: `[dilationHeight, dilationWidth]`
+ * - `dilations` The dilation rates: `[dilationHeight, dilationWidth]`
  *     in which we sample input values across the height and width dimensions
  *     in atrous convolution. Defaults to `[1, 1]`. If `dilations` is a single
  *     number, then `dilationHeight == dilationWidth`. If it is greater than
  *     1, then all values of `strides` must be 1.
- *   dimRoundingMode The rounding mode used when computing output
+ * - `dimRoundingMode` The rounding mode used when computing output
  *     dimensions if pad is a number. If none is provided, it will not round
  *     and error if the output is of fractional size.
- *   bias Tensor to be added to the result.
- *   activation Name of activation kernel (defaults to `linear`).
- *   preluActivationWeights Tensor of prelu weights.
+ * - `bias` Tensor to be added to the result.
+ * - `activation` Name of activation kernel (defaults to `linear`) to be applied
+ *      after biasAdd.
+ * - `preluActivationWeights` Tensor of prelu weights to be applied as part of a
+ *     `prelu` activation, typically the same shape as `x`.
  */
 /** @doc {heading: 'Operations', subheading: 'Convolution'} */
 function conv2d_<T extends Tensor3D|Tensor4D>({
