@@ -36,7 +36,7 @@ import {Activation} from './fused_util';
  * const b = tf.tensor2d([1, 2, 3, 4], [2, 2]);
  * const bias = tf.tensor2d([1, 2], [1, 2]);
  *
- * tf.fused.matMul(a, b, false, false, bias, 'relu').print();
+ * tf.fused.matMul({a, b, bias, activation: 'relu'}).print();
  * ```
  *
  * @param obj An object with the following properties:
@@ -220,6 +220,23 @@ function matMul_<T extends Tensor>({
 /**
  * Computes a 2D convolution over the input x, optionally fused with adding a
  * bias and applying an activation.
+ *
+ * ```js
+ * const inputDepth = 2;
+ * const inShape = [2, 2, 2, inputDepth];
+ * const outputDepth = 2;
+ * const fSize = 1;
+ * const pad = 0;
+ * const strides = 1;
+ *
+ * const x = tf.tensor4d( [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+ * 16], inShape);
+ * const w = tf.tensor4d([-1, 1, -2, 0.5], [fSize, fSize, inputDepth,
+ * outputDepth]);
+ *
+ * tf.fused.conv2d({ x, filter: w, strides, pad, dataFormat: 'NHWC',
+ * dilations: [1, 1], bias: tf.scalar(5), activation: 'relu' }).print();
+ * ```
  *
  * @param obj An object with the following properties:
  * - `x` The input tensor, of rank 4 or rank 3, of shape
