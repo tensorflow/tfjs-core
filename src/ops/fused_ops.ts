@@ -48,10 +48,23 @@ import {Activation} from './fused_util';
  * @param preluActivationWeights Tensor of prelu weights.
  */
 /** @doc {heading: 'Operations', subheading: 'Matrices', namespace: 'fused'} */
-function matMul_<T extends Tensor>(
-    a: T|TensorLike, b: T|TensorLike, transposeA = false, transposeB = false,
-    bias?: Tensor|TensorLike, activation: Activation = 'linear',
-    preluActivationWeights?: Tensor): T {
+function matMul_<T extends Tensor>({
+  a,
+  b,
+  transposeA = false,
+  transposeB = false,
+  bias,
+  activation = 'linear',
+  preluActivationWeights
+}: {
+  a: T|TensorLike,
+  b: T|TensorLike,
+  transposeA?: boolean,
+  transposeB?: boolean,
+  bias?: Tensor|TensorLike,
+  activation?: Activation,
+  preluActivationWeights?: Tensor
+}): T {
   let $a = convertToTensor(a, 'a', 'fused matMul');
   let $b = convertToTensor(b, 'b', 'fused matMul');
   [$a, $b] = makeTypesMatch($a, $b);

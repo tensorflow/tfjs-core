@@ -24,7 +24,7 @@ describeWithFlags('fused matmul', ALL_ENVS, () => {
     const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
     const b = tf.tensor2d([0, 1, -3, 2, 2, 1], [3, 2]);
 
-    const c = tf.fused.matMul(a, b);
+    const c = tf.fused.matMul({a, b});
 
     expect(c.shape).toEqual([2, 2]);
     expectArraysClose(await c.data(), [0, 8, -3, 20]);
@@ -36,7 +36,8 @@ describeWithFlags('fused matmul', ALL_ENVS, () => {
     const transposeA = false;
     const transposeB = false;
 
-    const c = tf.fused.matMul(a, b, transposeA, transposeB, null, 'relu');
+    const c = tf.fused.matMul(
+        {a, b, transposeA, transposeB, bias: null, activation: 'relu'});
 
     expect(c.shape).toEqual([2, 2]);
     expectArraysClose(await c.data(), [0, 8, 0, 20]);
@@ -49,8 +50,15 @@ describeWithFlags('fused matmul', ALL_ENVS, () => {
     const transposeA = false;
     const transposeB = false;
 
-    const c =
-        tf.fused.matMul(a, b, transposeA, transposeB, null, 'prelu', alpha);
+    const c = tf.fused.matMul({
+      a,
+      b,
+      transposeA,
+      transposeB,
+      bias: null,
+      activation: 'prelu',
+      preluActivationWeights: alpha
+    });
 
     expect(c.shape).toEqual([2, 2]);
     expectArraysClose(await c.data(), [0, 8, -1.5, 20]);
@@ -62,7 +70,8 @@ describeWithFlags('fused matmul', ALL_ENVS, () => {
     const transposeA = false;
     const transposeB = true;
 
-    const c = tf.fused.matMul(a, b, transposeA, transposeB, null, 'relu');
+    const c = tf.fused.matMul(
+        {a, b, transposeA, transposeB, bias: null, activation: 'relu'});
 
     expect(c.shape).toEqual([2, 2]);
     expectArraysClose(await c.data(), [0, 9, 0, 24]);
@@ -75,7 +84,8 @@ describeWithFlags('fused matmul', ALL_ENVS, () => {
     const transposeA = false;
     const transposeB = false;
 
-    const d = tf.fused.matMul(a, b, transposeA, transposeB, c, 'relu');
+    const d = tf.fused.matMul(
+        {a, b, transposeA, transposeB, bias: c, activation: 'relu'});
 
     expect(d.shape).toEqual([2, 2]);
     expectArraysClose(await d.data(), [1, 9, 0, 21]);
@@ -89,7 +99,8 @@ describeWithFlags('fused matmul', ALL_ENVS, () => {
     const transposeA = false;
     const transposeB = false;
 
-    const d = tf.fused.matMul(a, b, transposeA, transposeB, c, act);
+    const d = tf.fused.matMul(
+        {a, b, transposeA, transposeB, bias: c, activation: act});
 
     expect(d.shape).toEqual([2, 2]);
     expectArraysClose(await d.data(), [1, 9, 0, 21]);
@@ -103,7 +114,8 @@ describeWithFlags('fused matmul', ALL_ENVS, () => {
     const transposeA = false;
     const transposeB = false;
 
-    const d = tf.fused.matMul(a, b, transposeA, transposeB, c, act);
+    const d = tf.fused.matMul(
+        {a, b, transposeA, transposeB, bias: c, activation: act});
 
     expect(d.shape).toEqual([2, 2, 2]);
     expectArraysClose(await d.data(), [2, 6, 0, 18, 0, 30, 0, 42]);
@@ -116,7 +128,8 @@ describeWithFlags('fused matmul', ALL_ENVS, () => {
     const transposeA = false;
     const transposeB = false;
 
-    const d = tf.fused.matMul(a, b, transposeA, transposeB, c, 'linear');
+    const d = tf.fused.matMul(
+        {a, b, transposeA, transposeB, bias: c, activation: 'linear'});
 
     expect(d.shape).toEqual([2, 2]);
     expectArraysClose(await d.data(), [1, 9, -2, 21]);
@@ -135,7 +148,8 @@ describeWithFlags('fused matmul', ALL_ENVS, () => {
     });
 
     const fusedGrads = tf.grads((a, b) => {
-      return tf.fused.matMul(a, b, transposeA, transposeB, null, 'relu');
+      return tf.fused.matMul(
+          {a, b, transposeA, transposeB, bias: null, activation: 'relu'});
     });
 
     const [da, db] = grads([a, b], dy);
@@ -153,7 +167,14 @@ describeWithFlags('fused matmul', ALL_ENVS, () => {
 
     const fusedGrads = tf.grads((a, b) => {
       return tf.fused
-          .matMul(a.clone(), b.clone(), transposeA, transposeB, null, 'relu')
+          .matMul({
+            a: a.clone(),
+            b: b.clone(),
+            transposeA,
+            transposeB,
+            bias: null,
+            activation: 'relu'
+          })
           .clone();
     });
 
@@ -178,7 +199,8 @@ describeWithFlags('fused matmul', ALL_ENVS, () => {
     });
 
     const fusedGrads = tf.grads((a, b, c) => {
-      return tf.fused.matMul(a, b, transposeA, transposeB, c, 'relu');
+      return tf.fused.matMul(
+          {a, b, transposeA, transposeB, bias: c, activation: 'relu'});
     });
 
     const [da, db, dc] = grads([a, b, c], dy);
@@ -205,7 +227,8 @@ describeWithFlags('fused matmul', ALL_ENVS, () => {
     });
 
     const fusedGrads = tf.grads((a, b, c) => {
-      return tf.fused.matMul(a, b, transposeA, transposeB, c, 'relu');
+      return tf.fused.matMul(
+          {a, b, transposeA, transposeB, bias: c, activation: 'relu'});
     });
 
     const [da, db, dc] = grads([a, b, c], dy);
@@ -232,7 +255,8 @@ describeWithFlags('fused matmul', ALL_ENVS, () => {
     });
 
     const fusedGrads = tf.grads((a, b, c) => {
-      return tf.fused.matMul(a, b, transposeA, transposeB, c, 'relu');
+      return tf.fused.matMul(
+          {a, b, transposeA, transposeB, bias: c, activation: 'relu'});
     });
 
     const [da, db, dc] = grads([a, b, c], dy);
