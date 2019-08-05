@@ -335,3 +335,22 @@ export function getModelArtifactsInfoForJSON(modelArtifacts: ModelArtifacts):
         modelArtifacts.weightData.byteLength,
   };
 }
+
+/**
+ * Make Base64 string URL safe by replacing `+` with `-` and `/` with `_`.
+ *
+ * @param str Base64 string to make URL safe.
+ */
+export function urlSafeBase64(str: string): string {
+  return str.replace(/\+/g, '-').replace(/\//g, '_');
+}
+
+// revert Base64 URL safe replacement of + and /
+/**
+ * Revert Base64 URL safe changes by replacing `-` with `+` and `_` with `/`.
+ *
+ * @param str URL safe Base string to revert changes.
+ */
+export function urlUnsafeBase64(str: string): string {
+  return str.replace(/-/g, '+').replace(/_/g, '/');
+}

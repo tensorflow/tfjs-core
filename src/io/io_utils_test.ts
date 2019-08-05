@@ -22,6 +22,7 @@ import {NamedTensor, NamedTensorMap} from '../tensor_types';
 import {expectArraysEqual} from '../test_util';
 import {expectArraysClose} from '../test_util';
 import {encodeString} from '../util';
+
 import {arrayBufferToBase64String, base64StringToArrayBuffer, basename, concatenateArrayBuffers, concatenateTypedArrays, stringByteLength} from './io_utils';
 import {WeightsManifestEntry} from './types';
 
