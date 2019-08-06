@@ -344,7 +344,7 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   diag(x: Tensor): Tensor {
-    const xVals = x.dataSync();
+    const xVals = this.readSync(x.dataId) as TypedArray;
     const buffer = ops.buffer([x.size, x.size], x.dtype);
     const vals = buffer.values;
     for (let i = 0; i < xVals.length; i++) {
