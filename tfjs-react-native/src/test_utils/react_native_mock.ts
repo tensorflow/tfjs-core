@@ -15,16 +15,18 @@
  * =============================================================================
  */
 
-import {Tensor, Tensor3D} from '../tensor';
+// We mock this library as it cannot be loaded in a browser yet we do want
+// to do JS only unit tests.
 
-export type Activation = 'linear'|'relu'|'prelu';
+interface ImageResolvedAssetSource {
+  uri: string;
+}
 
-export type FusedBatchMatMulConfig = {
-  a: Tensor3D,
-  b: Tensor3D,
-  transposeA: boolean,
-  transposeB: boolean,
-  bias?: Tensor,
-  activation?: Activation,
-  preluActivationWeights?: Tensor
+// tslint:disable-next-line
+export const Image = {
+  resolveAssetSource: (resourceId: string|number): ImageResolvedAssetSource => {
+    return {
+      uri: `http://localhost/assets/${resourceId}`,
+    };
+  }
 };

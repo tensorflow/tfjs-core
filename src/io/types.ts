@@ -275,6 +275,11 @@ export declare interface ModelArtifacts {
    * `tf.LayersModel` instance.)
    */
   convertedBy?: string|null;
+
+  /**
+   * User-defined metadata about the model.
+   */
+  userDefinedMetadata?: {};
 }
 
 /**
@@ -330,6 +335,11 @@ export declare interface ModelJSON {
    * `tf.LayersModel` instance.)
    */
   convertedBy?: string|null;
+
+  /**
+   * User-defined metadata about the model.
+   */
+  userDefinedMetadata?: {};
 }
 
 /**
@@ -452,4 +462,14 @@ export interface LoadOptions {
    * Default: `false`.
    */
   fromTFHub?: boolean;
+}
+
+/**
+ * Additional options for Platform.fetch
+ */
+export interface RequestDetails {
+  /**
+   * Is this request for a binary file (as opposed to a json file)
+   */
+  isBinary?: boolean;
 }
