@@ -1,7 +1,6 @@
-import {ENV} from '../environment';
+import {ENGINE} from '../engine';
 import {Tensor} from '../tensor';
 import {convertToTensor} from '../tensor_util_env';
-
 import {op} from './operation';
 
 /**
@@ -28,8 +27,7 @@ import {op} from './operation';
 function diag_(x: Tensor): Tensor {
   const $x = convertToTensor(x, 'x', 'diag').flatten();
   const outShape = [...x.shape, ...x.shape];
-  return ENV.engine.runKernel(backend => backend.diag($x), {$x})
-      .reshape(outShape);
+  return ENGINE.runKernel(backend => backend.diag($x), {$x}).reshape(outShape);
 }
 
 export const diag = op({diag_});
