@@ -18,7 +18,12 @@
 const karmaTypescriptConfig = {
   tsconfig: 'tsconfig.json',
   compilerOptions: {allowJs: true, declaration: false},
-  bundlerOptions: {sourceMap: true},
+  bundlerOptions: {
+    sourceMap: true,
+    // Ignore the import of the `worker_threads` package used in a core test
+    // meant to run in node.
+    exclude: ['worker_threads']
+  },
   // Disable coverage reports and instrumentation by default for tests
   coverageOptions: {instrumentation: false},
   reports: {},
