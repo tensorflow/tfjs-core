@@ -13,10 +13,10 @@
     "test": "./scripts/build-wasm.sh && karma start"
   },
   "peerDependencies": {
-    "@tensorflow/tfjs-core": "~1.2.5"
+    "@tensorflow/tfjs-core": "~1.2.7"
   },
   "devDependencies": {
-    "@tensorflow/tfjs-core": "~1.2.5",
+    "@tensorflow/tfjs-core": "~1.2.7",
     "@types/emscripten": "~0.0.34",
     "clang-format": "^1.2.4",
     "jasmine-core": "~3.1.0",

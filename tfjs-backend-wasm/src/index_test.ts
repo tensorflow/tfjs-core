@@ -46,11 +46,4 @@ describeWithFlags('wasm', ALL_ENVS, () => {
     // This should fail in case of a memory leak.
     expect(memOffset1).toBe(memOffset2);
   });
-
-  it('element-wise add', async () => {
-    const a = tf.tensor2d([1, 2, 3, 4], [2, 2]);
-    const b = tf.tensor2d([0.1, 0.2, 0.3, 0.4], [2, 2]);
-    const c = tf.add(a, b);
-    test_util.expectArraysClose(await c.data(), [1.1, 2.2, 3.3, 4.4]);
-  });
 });

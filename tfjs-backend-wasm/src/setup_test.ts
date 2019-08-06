@@ -17,12 +17,7 @@
 
 import {setTestEnvs} from '@tensorflow/tfjs-core/dist/jasmine_util';
 
-setTestEnvs([{
-  name: 'test-wasm',
-  backendName: 'wasm',
-  flags: {},
-  isDataSync: true,
-}]);
+setTestEnvs([{name: 'test-wasm', backendName: 'wasm', isDataSync: true}]);
 
 const env = jasmine.getEnv();
 

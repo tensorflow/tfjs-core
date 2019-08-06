@@ -16,7 +16,6 @@
  */
 
 import {backend_util, DataType, KernelBackend, Rank, registerBackend, ShapeMap, Tensor, util} from '@tensorflow/tfjs-core';
-import {BackendValues, TypedArray} from '@tensorflow/tfjs-core/dist/types';
 
 import wasmFactory from '../wasm-out/tfjs-backend-wasm';
 import {BackendWasmModule} from '../wasm-out/tfjs-backend-wasm';
@@ -30,15 +29,17 @@ interface TensorInfo {
   dtype: DataType;
 }
 
+export type DataId = object;  // object instead of {} to force non-primitive.
+
 export class BackendWasm extends KernelBackend {
   private dataIdNextNumber = 0;
-  private dataIdMap: WeakMap<{}, TensorInfo> = new WeakMap();
+  private dataIdMap: WeakMap<DataId, TensorInfo> = new WeakMap();
 
   constructor(private wasm: BackendWasmModule) {
     super();
   }
 
-  register(dataId: {}, shape: number[], dtype: DataType) {
+  register(dataId: DataId, shape: number[], dtype: DataType) {
     const memoryOffset = this.wasm._malloc(
         util.sizeFromShape(shape) * util.bytesPerElement(dtype));
     const id = this.dataIdNextNumber++;
@@ -49,16 +50,16 @@ export class BackendWasm extends KernelBackend {
         id, shapeBytes, shape.length, dtypeToEnumValue(dtype), memoryOffset);
   }
 
-  write(dataId: {}, values: TypedArray) {
+  write(dataId: DataId, values: backend_util.TypedArray) {
     const {memoryOffset} = this.dataIdMap.get(dataId);
     this.wasm.HEAPU8.set(new Uint8Array(values.buffer), memoryOffset);
   }
 
-  async read(dataId: {}): Promise<BackendValues> {
+  async read(dataId: DataId): Promise<backend_util.BackendValues> {
     return this.readSync(dataId);
   }
 
-  readSync(dataId: {}): BackendValues {
+  readSync(dataId: DataId): backend_util.BackendValues {
     const {memoryOffset, dtype, shape} = this.dataIdMap.get(dataId);
     const bytes = this.wasm.HEAPU8.slice(
         memoryOffset,
@@ -66,7 +67,7 @@ export class BackendWasm extends KernelBackend {
     return typedArrayFromBuffer(bytes.buffer, dtype);
   }
 
-  disposeData(dataId: {}) {
+  disposeData(dataId: DataId) {
     const data = this.dataIdMap.get(dataId);
     this.wasm.tfjs.disposeData(data.id);
     this.dataIdMap.delete(dataId);
@@ -78,7 +79,7 @@ export class BackendWasm extends KernelBackend {
 
   // Returns the memory offset of a tensor. Useful for debugging and unit
   // testing.
-  getMemoryOffset(dataId: {}): number {
+  getMemoryOffset(dataId: DataId): number {
     return this.dataIdMap.get(dataId).memoryOffset;
   }
 
@@ -131,7 +132,7 @@ export class BackendWasm extends KernelBackend {
   }
 
   private typedArrayFromHeap(offset: number, dtype: DataType, size: number):
-      TypedArray {
+      backend_util.TypedArray {
     const buffer = this.wasm.HEAPU8.buffer;
     switch (dtype) {
       case 'float32':
@@ -155,10 +156,17 @@ registerBackend('wasm', async () => {
   return new BackendWasm(wasm);
 }, WASM_PRIORITY);
 
-/** Initializes the wasm module and creates the js <--> wasm bridge. */
+/**
+ * Initializes the wasm module and creates the js <--> wasm bridge.
+ *
+ * NOTE: We wrap the wasm module in a object with property 'wasm' instead of
+ * returning Promise<BackendWasmModule> to avoid freezing Chrome (last tested in
+ * Chrome 76).
+ */
 async function init(): Promise<{wasm: BackendWasmModule}> {
   return new Promise(resolve => {
     const wasm = wasmFactory();
+    const voidReturnType: string = null;
     // Using the tfjs namespace to avoid conflict with emscripten's API.
     wasm.tfjs = {
       registerTensor: wasm.cwrap(
@@ -170,9 +178,9 @@ async function init(): Promise<{wasm: BackendWasmModule}> {
             'number',  // dtype
             'number',  // memoryOffset
           ]),
-      disposeData: wasm.cwrap('dispose_data', null, ['number']),
-      dispose: wasm.cwrap('dispose', null, []),
-      add: wasm.cwrap('add', null, ['number, number, number']),
+      disposeData: wasm.cwrap('dispose_data', voidReturnType, ['number']),
+      dispose: wasm.cwrap('dispose', voidReturnType, []),
+      add: wasm.cwrap('add', voidReturnType, ['number, number, number']),
     };
     wasm.onRuntimeInitialized = () => resolve({wasm});
   });
@@ -192,7 +200,7 @@ function dtypeToEnumValue(dtype: DataType): number {
 }
 
 function typedArrayFromBuffer(
-    buffer: ArrayBuffer, dtype: DataType): TypedArray {
+    buffer: ArrayBuffer, dtype: DataType): backend_util.TypedArray {
   switch (dtype) {
     case 'float32':
       return new Float32Array(buffer);
