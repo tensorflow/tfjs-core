@@ -17,9 +17,46 @@
 import {ENV} from '../../environment';
 
 import {cleanupDOMCanvasWebGLRenderingContext, createDOMCanvasWebGLRenderingContext} from './canvas_util';
-import {callAndCheck, checkWebGLError} from './webgl_util';
 
-let count = 0;
+function callAndCheck<T>(
+    gl: WebGLRenderingContext, debugMode: boolean, func: () => T): T {
+  const returnValue = func();
+  if (debugMode) {
+    checkWebGLError(gl);
+  }
+  return returnValue;
+}
+
+function checkWebGLError(gl: WebGLRenderingContext) {
+  const error = gl.getError();
+  if (error !== gl.NO_ERROR) {
+    throw new Error('WebGL Error: ' + getWebGLErrorMessage(gl, error));
+  }
+}
+
+export function getWebGLErrorMessage(
+    gl: WebGLRenderingContext, status: number): string {
+  switch (status) {
+    case gl.NO_ERROR:
+      return 'NO_ERROR';
+    case gl.INVALID_ENUM:
+      return 'INVALID_ENUM';
+    case gl.INVALID_VALUE:
+      return 'INVALID_VALUE';
+    case gl.INVALID_OPERATION:
+      return 'INVALID_OPERATION';
+    case gl.INVALID_FRAMEBUFFER_OPERATION:
+      return 'INVALID_FRAMEBUFFER_OPERATION';
+    case gl.OUT_OF_MEMORY:
+      return 'OUT_OF_MEMORY';
+    case gl.CONTEXT_LOST_WEBGL:
+      return 'CONTEXT_LOST_WEBGL';
+    default:
+      return `Unknown error code ${status}`;
+  }
+}
+
+// let count = 0;
 const contexts: {[key: string]: WebGLRenderingContext} = {};
 let contextFactory: (version: number) => WebGLRenderingContext = null;
 let contextCleanup: (context: WebGLRenderingContext) => void = null;
@@ -67,7 +104,8 @@ export function getContextByVersion(version: number): WebGLRenderingContext {
   }
 
   if (!(version in contexts)) {
-    contexts[version] = traceGLCalls(contextFactory(version), ++count);
+    // contexts[version] = traceGLCalls(contextFactory(version), ++count);
+    contexts[version] = contextFactory(version);
     bootstrapWebGLContext(contexts[version]);
     checkWebGLError(contexts[version]);
   }
@@ -111,23 +149,20 @@ function bootstrapWebGLContext(gl: WebGLRenderingContext) {
   gl.cullFace(gl.BACK);
 }
 
-function traceGLCalls(ctx: WebGLRenderingContext, idx: number) {
-  const handler = {
-    // tslint:disable-next-line:no-any
-    get(target: any, prop: PropertyKey, receiver: any): any {
-      const propValue = target[prop];
+// function traceGLCalls(ctx: WebGLRenderingContext, idx: number) {
+//   const handler = {
+//     // tslint:disable-next-line:no-any
+//     get(target: any, prop: PropertyKey, receiver: any): any {
+//       const propValue = target[prop];
 
-      if (typeof (propValue) === 'function') {
-        console.log(
-            '    gl.' + prop.toString() + ' = ' + target.constructor.name +
-            ' ' + idx);
-        // tslint:disable-next-line:only-arrow-functions
-        return function() {
-          return propValue.apply(target, arguments);
-        };
-      }
-      return propValue;
-    },
-  };
-  return new Proxy(ctx, handler);
-}
+//       if (typeof (propValue) === 'function') {
+//         // tslint:disable-next-line:only-arrow-functions
+//         return function() {
+//           return propValue.apply(target, arguments);
+//         };
+//       }
+//       return propValue;
+//     },
+//   };
+//   return new Proxy(ctx, handler);
+// }

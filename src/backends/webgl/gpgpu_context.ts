@@ -20,8 +20,8 @@ import {PixelData, TypedArray} from '../../types';
 import * as util from '../../util';
 
 import * as gpgpu_util from './gpgpu_util';
-import {TextureConfig} from './gpgpu_util';
 import * as tex_util from './tex_util';
+import {TextureConfig} from './tex_util';
 import {getActiveContext} from './webgl_context_manager';
 import {WebGL1DisjointQueryTimerExtension, WebGL2DisjointQueryTimerExtension} from './webgl_types';
 import * as webgl_util from './webgl_util';
@@ -65,8 +65,16 @@ export class GPGPUContext {
             gl.getExtension('EXT_color_buffer_half_float');
       }
     } else {
-      this.colorBufferFloatExtension = webgl_util.getExtensionOrThrow(
-          gl, this.debug, 'EXT_color_buffer_float');
+      const COLOR_BUFFER_FLOAT = 'EXT_color_buffer_float';
+      const COLOR_BUFFER_HALF_FLOAT = 'EXT_color_buffer_half_float';
+      if (webgl_util.hasExtension(gl, COLOR_BUFFER_FLOAT)) {
+        this.colorBufferFloatExtension = gl.getExtension(COLOR_BUFFER_FLOAT);
+      } else if (webgl_util.hasExtension(gl, COLOR_BUFFER_HALF_FLOAT)) {
+        this.colorBufferHalfFloatExtension =
+            gl.getExtension(COLOR_BUFFER_HALF_FLOAT);
+      } else {
+        throw new Error('GL context does not support color renderable floats');
+      }
     }
 
     this.vertexBuffer = gpgpu_util.createVertexBuffer(gl, this.debug);
@@ -74,7 +82,7 @@ export class GPGPUContext {
     this.framebuffer = webgl_util.createFramebuffer(gl, this.debug);
 
     this.textureConfig =
-        gpgpu_util.getTextureConfig(gl, this.textureHalfFloatExtension);
+        tex_util.getTextureConfig(gl, this.textureHalfFloatExtension);
   }
 
   private get debug(): boolean {
@@ -174,7 +182,6 @@ export class GPGPUContext {
           getActiveContext(), this.debug, this.framebuffer);
       this.outputTexture = null;
     }
-    console.log('    texture: ' + texture);
     webgl_util.callAndCheck(
         getActiveContext(), true,
         () => getActiveContext().deleteTexture(texture));
