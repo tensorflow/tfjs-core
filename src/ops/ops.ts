@@ -45,6 +45,8 @@ export * from './spectral_ops';
 export * from './sparse_to_dense';
 export * from './gather_nd';
 export * from './diag';
+export * from './dropout';
+export * from './signal_ops';
 
 export {op} from './operation';
 
@@ -53,5 +55,7 @@ import * as losses from './loss_ops';
 import * as linalg from './linalg_ops';
 import * as image from './image_ops';
 import * as spectral from './spectral_ops';
+import * as fused from './fused_ops';
+import * as signal from './signal_ops';
 
-export {image, linalg, losses, spectral};
+export {image, linalg, losses, spectral, fused, signal};

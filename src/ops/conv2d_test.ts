@@ -16,140 +16,47 @@
  */
 
 import * as tf from '../index';
-import {describeWithFlags} from '../jasmine_util';
-import {ALL_ENVS, expectArraysClose, WEBGL_ENVS} from '../test_util';
+import {ALL_ENVS, describeWithFlags} from '../jasmine_util';
+import {expectArraysClose} from '../test_util';
 import {Rank} from '../types';
 
-describeWithFlags('conv im2row', WEBGL_ENVS, () => {
-  const webglConvIm2colSavedFlag = tf.ENV.get('WEBGL_CONV_IM2COL');
+function generateCaseInputs(totalSizeTensor: number, totalSizeFilter: number) {
+  const inp = new Array(totalSizeTensor);
+  const filt = new Array(totalSizeFilter);
 
-  beforeAll(() => {
-    tf.ENV.set('WEBGL_CONV_IM2COL', true);
-  });
+  for (let i = 0; i < totalSizeTensor; i++) {
+    inp[i] = i + 1;
+  }
+  for (let i = 0; i < totalSizeFilter; i++) {
+    filt[i] = i + 1;
+  }
 
-  afterAll(() => {
-    tf.ENV.set('WEBGL_CONV_IM2COL', webglConvIm2colSavedFlag);
-  });
-
-  it('should not leak memory', () => {
-    const inputDepth = 1;
-    const inputShape: [number, number, number] = [2, 2, inputDepth];
-    const outputDepth = 1;
-    const fSize = 2;
-    const pad = 0;
-    const stride = 1;
-    const dataFormat = 'NHWC';
-    const dilation = 1;
-
-    const x = tf.tensor3d([1, 2, 3, 4], inputShape);
-    const w =
-        tf.tensor4d([3, 1, 5, 0], [fSize, fSize, inputDepth, outputDepth]);
-
-    const startNumBytes = tf.memory().numBytes;
-    tf.conv2d(x, w, stride, pad, dataFormat, dilation);
-    const endNumBytes = tf.memory().numBytes;
-
-    expect(endNumBytes - startNumBytes).toEqual(4);
-  });
-
-  it('x=[3,3,1] f=[2,2,1,1] s=1 d=1 p=0', () => {
-    const inputDepth = 1;
-    const inputShape: [number, number, number] = [3, 3, inputDepth];
-    const outputDepth = 1;
-    const fSize = 2;
-    const pad = 0;
-    const stride = 1;
-    const dataFormat = 'NHWC';
-    const dilation = 1;
-
-    const x = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8, 9], inputShape);
-    const w =
-        tf.tensor4d([3, 1, 5, 0], [fSize, fSize, inputDepth, outputDepth]);
-
-    const result = tf.conv2d(x, w, stride, pad, dataFormat, dilation);
-    expectArraysClose(result, [25, 34, 52, 61]);
-  });
-
-  it('x=[2,2,1] f=[2,2,1,1] s=1 d=1 p=0', () => {
-    const inputDepth = 1;
-    const inputShape: [number, number, number] = [2, 2, inputDepth];
-    const outputDepth = 1;
-    const fSize = 2;
-    const pad = 0;
-    const stride = 1;
-    const dataFormat = 'NHWC';
-    const dilation = 1;
-
-    const x = tf.tensor3d([1, 2, 3, 4], inputShape);
-    const w =
-        tf.tensor4d([3, 1, 5, 0], [fSize, fSize, inputDepth, outputDepth]);
-
-    const result = tf.conv2d(x, w, stride, pad, dataFormat, dilation);
-    expectArraysClose(result, [20]);
-  });
-
-  it('should work when output texture shape does not equal logical shape',
-     () => {
-       const inputDepth = 3;
-       const inputSize = 300;
-       const filterSize = 3;
-       const outputDepth = 24;
-
-       const xData = new Float32Array(1 * inputSize * inputSize * inputDepth);
-       const wData =
-           new Float32Array(filterSize * filterSize * inputDepth * outputDepth);
-
-       xData[0] = 1;
-       xData[100] = 1;
-       wData[0] = 1;
-       wData[100] = 1;
-
-       const x = tf.tensor4d(xData, [1, inputSize, inputSize, inputDepth]);
-       const w = tf.tensor4d(
-           wData, [filterSize, filterSize, inputDepth, outputDepth]);
-
-       const result = tf.conv2d(x, w, 2, 'same');
-       const resultData = result.dataSync();
-
-       expect(resultData[0]).toEqual(1);
-       expect(resultData[388]).toEqual(1);
-     });
-
-  it('should work when input texture shapes do not equal logical shapes',
-     () => {
-       const webglMaxTextureSize = tf.ENV.get('WEBGL_MAX_TEXTURE_SIZE');
-       tf.ENV.set('WEBGL_MAX_TEXTURE_SIZE', 10);
-
-       const inputDepth = 1;
-       const inputSize = 5;
-       const filterSize = 2;
-       const outputDepth = 1;
-
-       const x = tf.tensor3d(
-           [
-             0.4,  0.75, 0.65, 0.98, 0.1,  0.41, 0.01, 0.46, 0.49,
-             0.4,  0.11, 0.76, 0.73, 0.86, 0.34, 0.34, 0.71, 0.68,
-             0.62, 0.87, 0.64, 0.38, 0.29, 0.55, 0.95
-           ],
-           [inputSize, inputSize, inputDepth]);
-       const w = tf.tensor4d(
-           [0.57, 0.64, 0.18, 0.18],
-           [filterSize, filterSize, inputDepth, outputDepth]);
-
-       const result = tf.conv2d(x, w, 1, 'same');
-
-       tf.ENV.set('WEBGL_MAX_TEXTURE_SIZE', webglMaxTextureSize);
-
-       expectArraysClose(result, [
-         0.7836, 0.9281, 1.1687, 0.7828, 0.129,  0.3967, 0.5683, 0.862,  0.7513,
-         0.2892, 0.7381, 1.1506, 1.2005, 0.976,  0.3504, 0.8318, 0.9605, 0.9356,
-         1.1802, 0.6669, 0.608,  0.4022, 0.5173, 0.9215, 0.5415
-       ]);
-     });
-});
+  return {input: inp, filter: filt};
+}
 
 describeWithFlags('conv2d', ALL_ENVS, () => {
-  it('x=[2,2,1] f=[1,1,1,2] s=1 d=1 p=0', () => {
+  it('x=[1,4,4,1] f=[1,1,1,3] s=2 d=1 p=same', async () => {
+    const inputDepth = 1;
+    const inputShape: [number, number, number] = [4, 4, inputDepth];
+    const outputDepth = 3;
+    const fSize = 1;
+    const pad = 'same';
+    const stride: [number, number] = [2, 2];
+
+    const x = tf.tensor3d(
+        [
+          10, 30, 50, 70, 20, 40, 60, 80, -10, -30, -50, -70, -20, -40, -60, -80
+        ],
+        inputShape);
+    const w = tf.tensor4d([1, 0.5, 1], [fSize, fSize, inputDepth, outputDepth]);
+
+    const result = tf.conv2d(x, w, stride, pad);
+
+    expectArraysClose(
+        await result.data(),
+        [10, 5, 10, 50, 25, 50, -10, -5, -10, -50, -25, -50]);
+  });
+  it('x=[2,2,1] f=[1,1,1,2] s=1 d=1 p=0', async () => {
     const inputDepth = 1;
     const inputShape: [number, number, number] = [2, 2, inputDepth];
     const outputDepth = 1;
@@ -162,10 +69,26 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
 
     const result = tf.conv2d(x, w, stride, pad);
 
-    expectArraysClose(result, [2, 4, 6, 8]);
+    expectArraysClose(await result.data(), [2, 4, 6, 8]);
   });
 
-  it('x=[2,2,2,1] f=[1,1,1,1] s=1 d=1 p=0', () => {
+  it('x=[3,3,2] f=[2,2,2,1] s=1 d=1 p=valid', async () => {
+    const pad = 'valid';
+    const stride = 1;
+
+    const x = tf.tensor3d(
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30, 40, 50, 60, 70, 80, 90],
+        [3, 3, 2]);
+    const w = tf.tensor4d([.1, .2, .3, .4, .5, .6, .7, .8], [2, 2, 2, 1]);
+
+    const result = tf.conv2d(x, w, stride, pad);
+
+    const resultData = await result.data();
+    expect(result.shape).toEqual([2, 2, 1]);
+    expectArraysClose(resultData, new Float32Array([25.6, 53.5, 157.0, 220.9]));
+  });
+
+  it('x=[2,2,2,1] f=[1,1,1,1] s=1 d=1 p=0', async () => {
     const inputDepth = 1;
     const inShape: [number, number, number, number] = [2, 2, 2, inputDepth];
     const outputDepth = 1;
@@ -180,10 +103,50 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
     expect(result.shape).toEqual([2, 2, 2, 1]);
     const expected = [2, 4, 6, 8, 10, 12, 14, 16];
 
-    expectArraysClose(result, expected);
+    expectArraysClose(await result.data(), expected);
   });
 
-  it('x=[2,2,1] f=[2,2,1,1] s=1 d=1 p=0', () => {
+  it('x=[4,2,1] f=[4,2,1,1] s=1 d=1 p=same', async () => {
+    const inputDepth = 1;
+    const outputDepth = 1;
+    const pad = 'same';
+    const stride = 1;
+    const dataFormat = 'NHWC';
+    const dilation = 1;
+
+    const x = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8], [4, 2, inputDepth]);
+    const w =
+        tf.tensor4d([3, 1, 5, 0, 2, 7, 8, 9], [4, 2, inputDepth, outputDepth]);
+
+    const result = tf.conv2d(x, w, stride, pad, dataFormat, dilation);
+
+    const resultData = await result.data();
+    expect(result.shape).toEqual([4, 2, 1]);
+    expectArraysClose(resultData, [133, 66, 200, 102, 108, 58, 56, 58]);
+  });
+
+  it('x=[2,2,1] f=[2,2,1,1] s=1 d=1 p=same', async () => {
+    const inputDepth = 1;
+    const inputShape: [number, number, number] = [2, 2, inputDepth];
+    const outputDepth = 1;
+    const fSize = 2;
+    const pad = 'same';
+    const stride = 1;
+    const dataFormat = 'NHWC';
+    const dilation = 1;
+
+    const x = tf.tensor3d([1, 2, 3, 4], inputShape);
+    const w =
+        tf.tensor4d([3, 1, 5, 0], [fSize, fSize, inputDepth, outputDepth]);
+
+    const result = tf.conv2d(x, w, stride, pad, dataFormat, dilation);
+
+    const resultData = await result.data();
+    expect(result.shape).toEqual([2, 2, 1]);
+    expectArraysClose(resultData, new Float32Array([20, 26, 13, 12]));
+  });
+
+  it('x=[2,2,1] f=[2,2,1,1] s=1 d=1 p=0', async () => {
     const inputDepth = 1;
     const inputShape: [number, number, number] = [2, 2, inputDepth];
     const outputDepth = 1;
@@ -198,10 +161,10 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
         tf.tensor4d([3, 1, 5, 0], [fSize, fSize, inputDepth, outputDepth]);
 
     const result = tf.conv2d(x, w, stride, pad, dataFormat, dilation);
-    expectArraysClose(result, [20]);
+    expectArraysClose(await result.data(), [20]);
   });
 
-  it('x=[4,4,1] f=[2,2,1,1] s=1 d=2 p=0', () => {
+  it('x=[4,4,1] f=[2,2,1,1] s=1 d=2 p=0', async () => {
     const inputDepth = 1;
     const inputShape: [number, number, number] = [4, 4, inputDepth];
     const outputDepth = 1;
@@ -228,7 +191,27 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
         tf.conv2d(x, wDilated, stride, pad, dataFormat, noDilation);
 
     expect(result.shape).toEqual(expectedResult.shape);
-    expectArraysClose(result, expectedResult);
+    expectArraysClose(await result.data(), await expectedResult.data());
+    expect(result.shape).toEqual(expectedResult.shape);
+    expect(result.dtype).toBe(expectedResult.dtype);
+  });
+
+  it('x=[1,3,6,1] f=[2,2,1,1] s=[1,2] d=1 p=valid', async () => {
+    const inputDepth = 1;
+    const inputShape: [number, number, number, number] = [1, 3, 6, inputDepth];
+    const outputDepth = 1;
+    const fSize = 2;
+    const pad = 'valid';
+    const stride: [number, number] = [1, 2];
+
+    const inputs = generateCaseInputs(1 * 3 * 6 * inputDepth, fSize * fSize);
+    const x = tf.tensor4d(inputs.input, inputShape);
+    const w =
+        tf.tensor4d(inputs.filter, [fSize, fSize, inputDepth, outputDepth]);
+
+    const result = tf.conv2d(x, w, stride, pad);
+    expectArraysClose(
+        await result.data(), [58.0, 78.0, 98.0, 118.0, 138.0, 158.0]);
   });
 
   it('throws when x is not rank 3', () => {
@@ -313,7 +296,7 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
         .toThrowError();
   });
 
-  it('gradient input=[3,3,1] f=[2,2,1,1] s=1 p=0', () => {
+  it('gradient with clones input=[3,3,1] f=[2,2,1,1] s=1 p=0', async () => {
     const inputDepth = 1;
     const outputDepth = 1;
     const inputShape: [number, number, number] = [3, 3, inputDepth];
@@ -329,17 +312,18 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
     const dy = tf.tensor3d([3, 1, 2, 0], [2, 2, 1]);
 
     const grads = tf.grads(
-        (x: tf.Tensor3D, filter: tf.Tensor4D) => x.conv2d(filter, stride, pad));
+        (x: tf.Tensor3D, filter: tf.Tensor4D) =>
+            x.clone().conv2d(filter.clone(), stride, pad).clone());
     const [dx, dfilter] = grads([x, filter], dy);
 
     expect(dx.shape).toEqual(x.shape);
-    expectArraysClose(dx, [3, 4, 1, 5, 6, 1, 2, 2, 0]);
+    expectArraysClose(await dx.data(), [3, 4, 1, 5, 6, 1, 2, 2, 0]);
 
     expect(dfilter.shape).toEqual(filterShape);
-    expectArraysClose(dfilter, [13, 19, 31, 37]);
+    expectArraysClose(await dfilter.data(), [13, 19, 31, 37]);
   });
 
-  it('gradient x=[2,3,3,1] f=[2,2,1,1] s=1 p=0', () => {
+  it('gradient x=[2,3,3,1] f=[2,2,1,1] s=1 p=0', async () => {
     const inputDepth = 1;
     const outputDepth = 1;
     const inputShape: [number, number, number, number] = [2, 3, 3, inputDepth];
@@ -361,10 +345,11 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
 
     expect(dx.shape).toEqual(x.shape);
     expectArraysClose(
-        dx, [3, 4, 1, 5, 6, 1, 2, 2, 0, 3, 4, 1, 5, 6, 1, 2, 2, 0]);
+        await dx.data(),
+        [3, 4, 1, 5, 6, 1, 2, 2, 0, 3, 4, 1, 5, 6, 1, 2, 2, 0]);
 
     expect(dfilter.shape).toEqual(filterShape);
-    expectArraysClose(dfilter, [13 * 2, 19 * 2, 31 * 2, 37 * 2]);
+    expectArraysClose(await dfilter.data(), [13 * 2, 19 * 2, 31 * 2, 37 * 2]);
   });
 
   it('throws when passed x as a non-tensor', () => {
@@ -392,13 +377,13 @@ describeWithFlags('conv2d', ALL_ENVS, () => {
         .toThrowError(/Argument 'filter' passed to 'conv2d' must be a Tensor/);
   });
 
-  it('accepts a tensor-like object', () => {
+  it('accepts a tensor-like object', async () => {
     const pad = 0;
     const stride = 1;
     const x = [[[1], [2]], [[3], [4]]];  // 2x2x1
     const w = [[[[2]]]];                 // 1x1x1x1
 
     const result = tf.conv2d(x, w, stride, pad);
-    expectArraysClose(result, [2, 4, 6, 8]);
+    expectArraysClose(await result.data(), [2, 4, 6, 8]);
   });
 });

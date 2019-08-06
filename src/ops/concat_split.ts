@@ -15,12 +15,12 @@
  * =============================================================================
  */
 
-import {ENV} from '../environment';
+import {ENGINE} from '../engine';
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import {convertToTensor, convertToTensorArray} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import {assert, sizeFromShape} from '../util';
-import {parseAxisParam} from './axis_util';
+import {parseAxisParam} from '../util';
 import {assertParamsConsistent, computeOutShape} from './concat_util';
 import {op} from './operation';
 import {tensor} from './tensor_ops';
@@ -63,7 +63,7 @@ function concat1d_(tensors: Array<Tensor1D|TensorLike>): Tensor1D {
  *                   | r2, g2, b2, r4, g4, b4 |
  *
  *
- * @param tensors A list of`tf.Tensor`s to concatenate.
+ * @param tensors A list of `tf.Tensor`s to concatenate.
  * @param axis The axis to concatenate along.
  * @return The concatenated array.
  */
@@ -73,7 +73,8 @@ function concat2d_(
 }
 
 /**
- * Concatenates a list of`tf.Tensor3D`s along an axis. See `concat` for details.
+ * Concatenates a list of `tf.Tensor3D`s along an axis.
+ * See `concat` for details.
  *
  * For example, if:
  * A: shape(2, 1, 3) = | r1, g1, b1 |
@@ -108,9 +109,10 @@ function concat3d_(
 }
 
 /**
- * Concatenates a list of`tf.Tensor4D`s along an axis. See `concat` for details.
+ * Concatenates a list of `tf.Tensor4D`s along an axis.
+ * See `concat` for details.
  *
- * @param tensors A list of`tf.Tensor`s to concatenate.
+ * @param tensors A list of `tf.Tensor`s to concatenate.
  * @param axis The axis to concate along.
  * @return The concatenated array.
  */
@@ -120,7 +122,7 @@ function concat4d_(
 }
 
 /**
- * Concatenates a list of`tf.Tensor`s along a given axis.
+ * Concatenates a list of `tf.Tensor`s along a given axis.
  *
  * The tensors ranks and types must match, and their sizes must match in all
  * dimensions except `axis`.
@@ -159,8 +161,17 @@ function concat4d_(
  */
 /** @doc {heading: 'Tensors', subheading: 'Slicing and Joining'} */
 function concat_<T extends Tensor>(tensors: Array<T|TensorLike>, axis = 0): T {
-  assert(tensors.length >= 1, 'Pass at least one tensor to concat');
+  assert(tensors.length >= 1, () => 'Pass at least one tensor to concat');
   let $tensors = convertToTensorArray(tensors, 'tensors', 'concat');
+  if ($tensors[0].dtype === 'complex64') {
+    $tensors.forEach(tensor => {
+      if (tensor.dtype !== 'complex64') {
+        throw new Error(`Cannot concatenate complex64 tensors with a tensor
+          with dtype ${tensor.dtype}. `);
+      }
+    });
+  }
+
   axis = parseAxisParam(axis, $tensors[0].shape)[0];
   const outShape = computeOutShape($tensors.map(t => t.shape), axis);
   if (sizeFromShape(outShape) === 0) {
@@ -180,19 +191,19 @@ function concat_<T extends Tensor>(tensors: Array<T|TensorLike>, axis = 0): T {
     return derTensors.map(t => () => t) as {};
   };
   const inputs = $tensors as {};
-  return ENV.engine.runKernel(
+  return ENGINE.runKernel(
       backend => backend.concat($tensors, axis) as T, inputs, der);
 }
 
 /**
- * Splits a`tf.Tensor` into sub tensors.
+ * Splits a `tf.Tensor` into sub tensors.
  *
  * If `numOrSizeSplits` is a number, splits `x` along dimension `axis`
  * into `numOrSizeSplits` smaller tensors.
  * Requires that `numOrSizeSplits` evenly divides `x.shape[axis]`.
  *
  * If `numOrSizeSplits` is a number array, splits `x` into
- * `(numOrSizeSplits.length` pieces. The shape of the `i`-th piece has the
+ * `numOrSizeSplits.length` pieces. The shape of the `i`-th piece has the
  * same size as `x` except along dimension `axis` where the size is
  * `numOrSizeSplits[i]`.
  *
@@ -226,16 +237,17 @@ function split_<T extends Tensor>(
   if (typeof (numOrSizeSplits) === 'number') {
     assert(
         $x.shape[axis] % numOrSizeSplits === 0,
-        'Number of splits must evenly divide the axis.');
-    splitSizes = Array(numOrSizeSplits).fill($x.shape[axis] / numOrSizeSplits);
+        () => 'Number of splits must evenly divide the axis.');
+    splitSizes =
+        new Array(numOrSizeSplits).fill($x.shape[axis] / numOrSizeSplits);
   } else {
     assert(
         $x.shape[axis] === numOrSizeSplits.reduce((a, b) => a + b),
-        'The sum of sizes must match the size of the axis dimension.');
+        () => 'The sum of sizes must match the size of the axis dimension.');
     splitSizes = numOrSizeSplits;
   }
   const der = (dy: T[]) => ({$x: () => concat(dy, axis)});
-  return ENV.engine.runKernel(
+  return ENGINE.runKernel(
       backend => backend.split($x, splitSizes, axis), {$x}, der);
 }
 

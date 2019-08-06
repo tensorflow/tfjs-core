@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {BackendTimer} from './kernels/backend';
+import {BackendTimer} from './backends/backend';
 import {Tensor} from './tensor';
 import {TypedArray} from './types';
 import * as util from './util';
@@ -39,7 +39,7 @@ export class Profiler {
         Array.isArray(result) ? result : [result] as Tensor[];
     results.forEach(r => {
       const vals = r.dataSync();
-      util.checkComputationForNaN(vals, r.dtype, name);
+      util.checkComputationForErrors(vals, r.dtype, name);
 
       timer.then(timing => {
         let extraInfo = '';

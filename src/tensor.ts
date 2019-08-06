@@ -16,13 +16,22 @@
  */
 
 import {tensorToString} from './tensor_format';
-import {DataType, DataTypeMap, DataValues, NumericDataType, Rank, ShapeMap, SingleValueMap, TensorLike, TensorLike1D, TensorLike3D, TensorLike4D, TypedArray} from './types';
+import {ArrayMap, BackendValues, DataType, DataTypeMap, NumericDataType, Rank, ShapeMap, SingleValueMap, TensorLike, TensorLike1D, TensorLike3D, TensorLike4D, TypedArray} from './types';
 import * as util from './util';
-import {computeStrides} from './util';
+import {computeStrides, toNestedArray} from './util';
 
 export interface TensorData<D extends DataType> {
   dataId?: DataId;
   values?: DataTypeMap[D];
+}
+
+// This interface mimics KernelBackend (in backend.ts), which would create a
+// circular dependency if imported.
+export interface Backend {
+  read(dataId: object): Promise<BackendValues>;
+  readSync(dataId: object): BackendValues;
+  disposeData(dataId: object): void;
+  write(dataId: object, values: BackendValues): void;
 }
 
 /**
@@ -39,14 +48,14 @@ export class TensorBuffer<R extends Rank, D extends DataType = 'float32'> {
   values: DataTypeMap[D];
 
   constructor(shape: ShapeMap[R], public dtype: D, values?: DataTypeMap[D]) {
-    this.shape = shape.slice();
+    this.shape = shape.slice() as ShapeMap[R];
     this.size = util.sizeFromShape(shape);
 
     if (values != null) {
       const n = values.length;
       util.assert(
           n === this.size,
-          `Length of values '${n}' does not match the size ` +
+          () => `Length of values '${n}' does not match the size ` +
               `inferred by the shape '${this.size}'.`);
     }
     if (dtype === 'complex64') {
@@ -55,8 +64,7 @@ export class TensorBuffer<R extends Rank, D extends DataType = 'float32'> {
           `a TensorBuffer for the real and imaginary parts separately and ` +
           `call tf.complex(real, imag).`);
     }
-    this.values =
-        values || util.getArrayFromDType(dtype, util.sizeFromShape(this.shape));
+    this.values = values || util.getArrayFromDType(dtype, this.size);
     this.strides = computeStrides(shape);
   }
 
@@ -73,7 +81,7 @@ export class TensorBuffer<R extends Rank, D extends DataType = 'float32'> {
     }
     util.assert(
         locs.length === this.rank,
-        `The number of provided coordinates (${locs.length}) must ` +
+        () => `The number of provided coordinates (${locs.length}) must ` +
             `match the rank (${this.rank})`);
 
     const index = this.locToIndex(locs);
@@ -90,11 +98,20 @@ export class TensorBuffer<R extends Rank, D extends DataType = 'float32'> {
     if (locs.length === 0) {
       locs = [0];
     }
+    let i = 0;
+    for (const loc of locs) {
+      if (loc < 0 || loc >= this.shape[i]) {
+        const msg = `Requested out of range element at ${locs}. ` +
+            `  Buffer shape=${this.shape}`;
+        throw new Error(msg);
+      }
+      i++;
+    }
     let index = locs[locs.length - 1];
     for (let i = 0; i < locs.length - 1; ++i) {
       index += this.strides[i] * locs[i];
     }
-    return this.values[index];
+    return this.values[index] as SingleValueMap[D];
   }
 
   locToIndex(locs: number[]): number {
@@ -139,11 +156,12 @@ export class TensorBuffer<R extends Rank, D extends DataType = 'float32'> {
 }
 
 export interface TensorTracker {
-  registerTensor(t: Tensor): void;
+  registerTensor(t: Tensor, backend?: Backend): void;
   disposeTensor(t: Tensor): void;
-  write(dataId: DataId, values: DataValues): void;
-  read(dataId: DataId): Promise<DataValues>;
-  readSync(dataId: DataId): DataValues;
+  disposeVariable(v: Variable): void;
+  write(backend: Backend, dataId: DataId, values: BackendValues): void;
+  read(dataId: DataId): Promise<BackendValues>;
+  readSync(dataId: DataId): BackendValues;
   registerVariable(v: Variable): void;
   nextTensorId(): number;
   nextVariableId(): number;
@@ -164,9 +182,11 @@ export interface OpHandler {
       x: Tensor, axis: number, exclusive: boolean, reverse: boolean): T;
   squeeze<T extends Tensor>(x: Tensor, axis?: number[]): T;
   clone<T extends Tensor>(x: T): T;
+  oneHot(
+      x: Tensor|TensorLike, depth: number, onValue?: number,
+      offValue?: number): Tensor;
   tile<T extends Tensor>(x: T, reps: number[]): T;
-  gather<T extends Tensor>(x: T, indices: Tensor1D|TensorLike1D, axis: number):
-      T;
+  gather<T extends Tensor>(x: T, indices: Tensor|TensorLike, axis: number): T;
   matMul<T extends Tensor>(
       a: T, b: T|TensorLike, transposeA: boolean, transposeB: boolean): T;
   dot(t1: Tensor, t2: Tensor|TensorLike): Tensor;
@@ -183,11 +203,12 @@ export interface OpHandler {
   unstack<T extends Tensor>(value: T, axis: number): Tensor[];
   pad<T extends Tensor>(
       x: T, paddings: Array<[number, number]>, constantValue: number): T;
-  batchNormalization<R extends Rank>(
+  batchNorm<R extends Rank>(
       x: Tensor<R>, mean: Tensor<R>|Tensor1D|TensorLike,
-      variance: Tensor<R>|Tensor1D|TensorLike, varianceEpsilon: number,
+      variance: Tensor<R>|Tensor1D|TensorLike,
+      offset?: Tensor<R>|Tensor1D|TensorLike,
       scale?: Tensor<R>|Tensor1D|TensorLike,
-      offset?: Tensor<R>|Tensor1D|TensorLike): Tensor<R>;
+      varianceEpsilon?: number): Tensor<R>;
   all<T extends Tensor>(x: Tensor, axis: number|number[], keepDims: boolean): T;
   any<T extends Tensor>(x: Tensor, axis: number|number[], keepDims: boolean): T;
   logSumExp<T extends Tensor>(
@@ -244,6 +265,9 @@ export interface OpHandler {
   ceil<T extends Tensor>(x: T): T;
   floor<T extends Tensor>(x: T): T;
   sign<T extends Tensor>(x: T): T;
+  isNaN<T extends Tensor>(x: T): T;
+  isInf<T extends Tensor>(x: T): T;
+  isFinite<T extends Tensor>(x: T): T;
   round<T extends Tensor>(x: T): T;
   exp<T extends Tensor>(x: T): T;
   expm1<T extends Tensor>(x: T): T;
@@ -334,17 +358,27 @@ export interface OpHandler {
       x: T, blockShape: number[], paddings: number[][]): T;
   topk<T extends Tensor>(x: T, k: number, sorted: boolean):
       {values: T, indices: T};
-  stridedSlice<T extends Tensor>(
-      x: T, begin: number[], end: number[], strides: number[],
-      beginMask: number, endMask: number): T;
+  stridedSlice(
+      x: Tensor, begin: number[], end: number[], strides: number[],
+      beginMask: number, endMask: number, ellipsisMask: number,
+      newAxisMask: number, shrinkAxisMask: number): Tensor;
   depthToSpace(x: Tensor4D, blockSize: number, dataFormat: string): Tensor4D;
-  spectral: {fft(x: Tensor): Tensor; ifft(x: Tensor): Tensor;};
+  spectral: {
+    fft(x: Tensor): Tensor; ifft(x: Tensor): Tensor; rfft(x: Tensor): Tensor;
+    irfft(x: Tensor): Tensor
+  };
 }
 
 // For tracking tensor creation and disposal.
 let trackerFn: () => TensorTracker = null;
 // Used by chaining methods to call into ops.
 let opHandler: OpHandler = null;
+// Used to warn about deprecated methods.
+let deprecationWarningFn: (msg: string) => void = null;
+// This here so that we can use this method on dev branches and keep the
+// functionality at master.
+// tslint:disable-next-line:no-unused-expression
+[deprecationWarningFn];
 
 /**
  * An external consumer can register itself as the tensor tracker. This way
@@ -361,6 +395,14 @@ export function setTensorTracker(fn: () => TensorTracker) {
  */
 export function setOpHandler(handler: OpHandler) {
   opHandler = handler;
+}
+
+/**
+ * Sets the deprecation warning function to be used by this file. This way the
+ * Tensor class can be a leaf but still use the environment.
+ */
+export function setDeprecationWarningFn(fn: (msg: string) => void) {
+  deprecationWarningFn = fn;
 }
 
 /**
@@ -397,6 +439,11 @@ export class Tensor<R extends Rank = Rank> {
   /** The rank type for the array (see `Rank` enum). */
   readonly rankType: R;
 
+  /** Whether this tensor has been globally kept. */
+  kept = false;
+  /** The id of the scope this tensor is being tracked in. */
+  scopeId: number;
+
   /**
    * Number of elements to skip in each dimension when indexing. See
    * https://docs.scipy.org/doc/numpy/reference/generated/\
@@ -405,26 +452,18 @@ export class Tensor<R extends Rank = Rank> {
   readonly strides: number[];
 
   protected constructor(
-      shape: ShapeMap[R], dtype: DataType, values?: DataValues,
-      dataId?: DataId) {
-    this.shape = shape.slice();
+      shape: ShapeMap[R], dtype: DataType, values?: BackendValues,
+      dataId?: DataId, backend?: Backend) {
+    this.shape = shape.slice() as ShapeMap[R];
     this.dtype = dtype || 'float32';
     this.size = util.sizeFromShape(shape);
-    if (values != null) {
-      util.assert(
-          this.size === values.length,
-          `Based on the provided shape, [${shape}], and dtype ` +
-              `${this.dtype}, the tensor should have ` +
-              `${this.size} values but has ${values.length}`);
-    }
-
     this.strides = computeStrides(shape);
     this.dataId = dataId != null ? dataId : {};
     this.id = trackerFn().nextTensorId();
     this.rankType = (this.rank < 5 ? this.rank.toString() : 'higher') as R;
-    trackerFn().registerTensor(this);
+    trackerFn().registerTensor(this, backend);
     if (values != null) {
-      trackerFn().write(this.dataId, values);
+      trackerFn().write(backend, this.dataId, values);
     }
   }
 
@@ -434,8 +473,14 @@ export class Tensor<R extends Rank = Rank> {
    */
   static make<T extends Tensor<R>, D extends DataType = 'float32',
                                              R extends Rank = Rank>(
-      shape: ShapeMap[R], data: TensorData<D>, dtype?: D): T {
-    return new Tensor(shape, dtype, data.values, data.dataId) as T;
+      shape: ShapeMap[R], data: TensorData<D>, dtype?: D,
+      backend?: Backend): T {
+    let backendVals = data.values as BackendValues;
+    if (data.values != null && dtype === 'string' &&
+        util.isString(data.values[0])) {
+      backendVals = (data.values as string[]).map(d => util.encodeString(d));
+    }
+    return new Tensor(shape, dtype, backendVals, data.dataId, backend) as T;
   }
 
   /** Flatten a Tensor to a 1D array. */
@@ -449,7 +494,7 @@ export class Tensor<R extends Rank = Rank> {
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
   asScalar(): Scalar {
     this.throwIfDisposed();
-    util.assert(this.size === 1, 'The array must have only 1 element.');
+    util.assert(this.size === 1, () => 'The array must have only 1 element.');
     return this.reshape<Rank.R0>([]);
   }
 
@@ -500,6 +545,23 @@ export class Tensor<R extends Rank = Rank> {
   }
 
   /**
+   * Converts a `tf.Tensor` to a `tf.Tensor5D`.
+   *
+   * @param rows Number of rows in `tf.Tensor5D`.
+   * @param columns Number of columns in `tf.Tensor5D`.
+   * @param depth Depth of `tf.Tensor5D`.
+   * @param depth2 4th dimension of `tf.Tensor5D`.
+   * @param depth3 5th dimension of 'tf.Tensor5D'
+   */
+  /** @doc {heading: 'Tensors', subheading: 'Classes'} */
+  as5D(
+      rows: number, columns: number, depth: number, depth2: number,
+      depth3: number): Tensor5D {
+    this.throwIfDisposed();
+    return this.reshape<Rank.R5>([rows, columns, depth, depth2, depth3]);
+  }
+
+  /**
    * Casts a `tf.Tensor` to a specified dtype.
    *
    * @param dtype Data-type to cast the tensor to.
@@ -514,35 +576,36 @@ export class Tensor<R extends Rank = Rank> {
     return this.shape.length;
   }
 
-  /**
-   * Returns the value in the tensor at the provided location.
-   * If using WebGL backend, this is a blocking call.
-   * Prefer calling the `async data()[flatIndex]` method instead.
-   *
-   * @param locs The location indices.
-   */
-  get(...locs: number[]) {
-    util.assert(
-        locs.length === this.rank,
-        'Number of coordinates in get() must match the rank of the tensor');
-    util.assert(
-        this.dtype !== 'complex64',
-        'Tensor.get() is not supported for complex64 tensors yet.');
-    this.throwIfDisposed();
-    if (locs.length === 0) {
-      locs = [0];
-    }
-    let index = locs[locs.length - 1];
-    for (let i = 0; i < locs.length - 1; ++i) {
-      index += this.strides[i] * locs[i];
-    }
-    return this.dataSync()[index];
+  /** Returns a promise of `tf.TensorBuffer` that holds the underlying data. */
+  /** @doc {heading: 'Tensors', subheading: 'Classes'} */
+  async buffer<D extends DataType = 'float32'>(): Promise<TensorBuffer<R, D>> {
+    const vals = await this.data<D>();
+    return opHandler.buffer(this.shape, this.dtype as D, vals);
   }
 
   /** Returns a `tf.TensorBuffer` that holds the underlying data. */
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
-  buffer<D extends DataType>(): TensorBuffer<R, D> {
+  bufferSync<D extends DataType = 'float32'>(): TensorBuffer<R, D> {
     return opHandler.buffer(this.shape, this.dtype as D, this.dataSync());
+  }
+
+  /**
+   * Returns the tensor data as a nested array. The transfer of data is done
+   * asynchronously.
+   */
+  /** @doc {heading: 'Tensors', subheading: 'Classes'} */
+  async array(): Promise<ArrayMap[R]> {
+    const vals = await this.data();
+    return toNestedArray(this.shape, vals) as ArrayMap[R];
+  }
+
+  /**
+   * Returns the tensor data as a nested array. The transfer of data is done
+   * synchronously.
+   */
+  /** @doc {heading: 'Tensors', subheading: 'Classes'} */
+  arraySync(): ArrayMap[R] {
+    return toNestedArray(this.shape, this.dataSync()) as ArrayMap[R];
   }
 
   /**
@@ -552,7 +615,18 @@ export class Tensor<R extends Rank = Rank> {
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
   async data<D extends DataType = NumericDataType>(): Promise<DataTypeMap[D]> {
     this.throwIfDisposed();
-    return trackerFn().read(this.dataId);
+    const data = trackerFn().read(this.dataId);
+    if (this.dtype === 'string') {
+      const bytes = await data as Uint8Array[];
+      try {
+        return bytes.map(b => util.decodeString(b));
+      } catch {
+        throw new Error(
+            'Failed to decode the string bytes into utf-8. ' +
+            'To get the original bytes, call tensor.bytes().');
+      }
+    }
+    return data as Promise<DataTypeMap[D]>;
   }
 
   /**
@@ -562,7 +636,28 @@ export class Tensor<R extends Rank = Rank> {
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
   dataSync<D extends DataType = NumericDataType>(): DataTypeMap[D] {
     this.throwIfDisposed();
-    return trackerFn().readSync(this.dataId);
+    const data = trackerFn().readSync(this.dataId);
+    if (this.dtype === 'string') {
+      try {
+        return (data as Uint8Array[]).map(b => util.decodeString(b));
+      } catch {
+        throw new Error(
+            'Failed to decode the string bytes into utf-8. ' +
+            'To get the original bytes, call tensor.bytes().');
+      }
+    }
+    return data as DataTypeMap[D];
+  }
+
+  /** Returns the underlying bytes of the tensor's data. */
+  async bytes(): Promise<Uint8Array[]|Uint8Array> {
+    this.throwIfDisposed();
+    const data = await trackerFn().read(this.dataId);
+    if (this.dtype === 'string') {
+      return data as Uint8Array[];
+    } else {
+      return new Uint8Array((data as TypedArray).buffer);
+    }
   }
 
   /**
@@ -577,7 +672,7 @@ export class Tensor<R extends Rank = Rank> {
     this.isDisposedInternal = true;
   }
 
-  private isDisposedInternal = false;
+  protected isDisposedInternal = false;
   get isDisposed(): boolean {
     return this.isDisposedInternal;
   }
@@ -689,6 +784,12 @@ export class Tensor<R extends Rank = Rank> {
     return opHandler.clone(this);
   }
 
+  oneHot(this: Tensor, depth: number, onValue?: number, offValue?: number):
+      Tensor {
+    this.throwIfDisposed();
+    return opHandler.oneHot(this, depth, onValue, offValue);
+  }
+
   /** Returns a human-readable description of the tensor. Useful for logging. */
   /** @doc {heading: 'Tensors', subheading: 'Classes'} */
   toString(verbose = false): string {
@@ -704,7 +805,7 @@ export class Tensor<R extends Rank = Rank> {
     return opHandler.tile(this, reps) as T;
   }
 
-  gather<T extends this>(this: T, indices: Tensor1D|TensorLike1D, axis = 0): T {
+  gather<T extends this>(this: T, indices: Tensor|TensorLike, axis = 0): T {
     this.throwIfDisposed();
     return opHandler.gather(this, indices, axis) as T;
   }
@@ -748,23 +849,40 @@ export class Tensor<R extends Rank = Rank> {
   stack(x: Tensor, axis = 0): Tensor {
     return opHandler.stack([this, x], axis);
   }
-  unstack(x: Tensor, axis = 0): Tensor[] {
+  unstack(axis = 0): Tensor[] {
     return opHandler.unstack(this, axis);
   }
   pad<T extends Tensor>(
       this: T, paddings: Array<[number, number]>, constantValue = 0): T {
     return opHandler.pad(this, paddings, constantValue);
   }
+  /**
+   * @deprecated Use `tf.batchNorm` instead, and note the positional argument
+   *     change of scale, offset, and varianceEpsilon.
+   */
   batchNormalization(
       mean: Tensor<R>|Tensor1D|TensorLike,
       variance: Tensor<R>|Tensor1D|TensorLike, varianceEpsilon = .001,
       scale?: Tensor<R>|Tensor1D|TensorLike,
       offset?: Tensor<R>|Tensor1D|TensorLike): Tensor<R> {
-    this.throwIfDisposed();
-    return opHandler.batchNormalization(
-        this, mean, variance, varianceEpsilon, scale, offset);
+    deprecationWarningFn(
+        'tf.batchNormalization() is going away. ' +
+        'Use tf.batchNorm() instead, and note the positional argument change ' +
+        'of scale, offset, and varianceEpsilon');
+    return this.batchNorm(mean, variance, offset, scale, varianceEpsilon);
   }
 
+  batchNorm(
+      mean: Tensor<R>|Tensor1D|TensorLike,
+      variance: Tensor<R>|Tensor1D|TensorLike,
+      offset?: Tensor<R>|Tensor1D|TensorLike,
+      scale?: Tensor<R>|Tensor1D|TensorLike,
+      varianceEpsilon = .001,
+      ): Tensor<R> {
+    this.throwIfDisposed();
+    return opHandler.batchNorm(
+        this, mean, variance, offset, scale, varianceEpsilon);
+  }
   // Reduction ops.
   all<T extends Tensor>(axis: number|number[] = null, keepDims = false): T {
     this.throwIfDisposed();
@@ -990,6 +1108,18 @@ export class Tensor<R extends Rank = Rank> {
   sign<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
     return opHandler.sign(this);
+  }
+  isNaN<T extends Tensor>(this: T): T {
+    this.throwIfDisposed();
+    return opHandler.isNaN(this);
+  }
+  isInf<T extends Tensor>(this: T): T {
+    this.throwIfDisposed();
+    return opHandler.isInf(this);
+  }
+  isFinite<T extends Tensor>(this: T): T {
+    this.throwIfDisposed();
+    return opHandler.isFinite(this);
   }
   exp<T extends Tensor>(this: T): T {
     this.throwIfDisposed();
@@ -1260,12 +1390,14 @@ export class Tensor<R extends Rank = Rank> {
     return opHandler.topk(this, k, sorted);
   }
 
-  stridedSlice<T extends Tensor>(
-      this: T, begin: number[], end: number[], strides: number[], beginMask = 0,
-      endMask = 0): T {
+  stridedSlice(
+      this: Tensor, begin: number[], end: number[], strides: number[],
+      beginMask = 0, endMask = 0, ellipsisMask = 0, newAxisMask = 0,
+      shrinkAxisMask = 0): Tensor {
     this.throwIfDisposed();
     return opHandler.stridedSlice(
-        this, begin, end, strides, beginMask, endMask);
+        this, begin, end, strides, beginMask, endMask, ellipsisMask,
+        newAxisMask, shrinkAxisMask);
   }
 
   depthToSpace(this: Tensor4D, blockSize: number, dataFormat: 'NHWC'|'NCHW'):
@@ -1283,23 +1415,34 @@ export class Tensor<R extends Rank = Rank> {
     this.throwIfDisposed();
     return opHandler.spectral.ifft(this);
   }
+
+  rfft(this: Tensor): Tensor {
+    this.throwIfDisposed();
+    return opHandler.spectral.rfft(this);
+  }
+
+  irfft(this: Tensor): Tensor {
+    this.throwIfDisposed();
+    return opHandler.spectral.irfft(this);
+  }
 }
 Object.defineProperty(Tensor, Symbol.hasInstance, {
   value: (instance: Tensor) => {
-    return !!instance && instance.shape != null && instance.dtype != null;
+    return !!instance && instance.dataId != null && instance.shape != null &&
+        instance.dtype != null;
   }
 });
 
 export interface NumericTensor<R extends Rank = Rank> extends Tensor<R> {
   dtype: NumericDataType;
-  data(): Promise<TypedArray>;
-  dataSync(): TypedArray;
+  dataSync<D extends DataType = NumericDataType>(): DataTypeMap[D];
+  data<D extends DataType = NumericDataType>(): Promise<DataTypeMap[D]>;
 }
 
 export interface StringTensor<R extends Rank = Rank> extends Tensor<R> {
   dtype: 'string';
-  dataSync(): string[];
-  data(): Promise<string[]>;
+  dataSync<D extends DataType = 'string'>(): DataTypeMap[D];
+  data<D extends DataType = 'string'>(): Promise<DataTypeMap[D]>;
 }
 
 /** @doclink Tensor */
@@ -1392,7 +1535,13 @@ export class Variable<R extends Rank = Rank> extends Tensor<R> {
     this.dataId = newValue.dataId;
     trackerFn().registerTensor(this);
   }
+
+  dispose(): void {
+    trackerFn().disposeVariable(this);
+    this.isDisposedInternal = true;
+  }
 }
+
 Object.defineProperty(Variable, Symbol.hasInstance, {
   value: (instance: Variable) => {
     return instance instanceof Tensor && instance.assign != null &&

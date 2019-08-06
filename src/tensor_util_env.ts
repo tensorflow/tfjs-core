@@ -20,22 +20,23 @@ import {Tensor} from './tensor';
 import {DataType, TensorLike, TypedArray} from './types';
 import {assert, flatten, inferDtype, isTypedArray, toTypedArray} from './util';
 
-export function inferShape(val: TensorLike): number[] {
+export function inferShape(val: TensorLike, dtype?: DataType): number[] {
   let firstElem: typeof val = val;
 
   if (isTypedArray(val)) {
-    return [(val as TypedArray).length];
+    return dtype === 'string' ? [] : [(val as TypedArray).length];
   }
   if (!Array.isArray(val)) {
     return [];  // Scalar.
   }
   const shape: number[] = [];
 
-  while (firstElem instanceof Array) {
+  while (Array.isArray(firstElem) ||
+         isTypedArray(firstElem) && dtype !== 'string') {
     shape.push(firstElem.length);
     firstElem = firstElem[0];
   }
-  if (val instanceof Array && ENV.get('TENSORLIKE_CHECK_SHAPE_CONSISTENCY')) {
+  if (Array.isArray(val) && ENV.getBool('TENSORLIKE_CHECK_SHAPE_CONSISTENCY')) {
     deepAssertShapeConsistency(val, shape, []);
   }
 
@@ -45,11 +46,11 @@ export function inferShape(val: TensorLike): number[] {
 function deepAssertShapeConsistency(
     val: TensorLike, shape: number[], indices: number[]) {
   indices = indices || [];
-  if (!(val instanceof Array)) {
+  if (!(Array.isArray(val)) && !isTypedArray(val)) {
     assert(
         shape.length === 0,
         () => `Element arr[${indices.join('][')}] is a primitive, ` +
-            `but should be an array of ${shape[0]} elements`);
+            `but should be an array/TypedArray of ${shape[0]} elements`);
     return;
   }
   assert(
@@ -96,24 +97,28 @@ export function convertToTensor<T extends Tensor>(
   }
   assertDtype(parseAsDtype, inferredDtype, argName, functionName);
 
-  if (!isTypedArray(x) && !Array.isArray(x) && typeof x !== 'number' &&
-      typeof x !== 'boolean' && typeof x !== 'string') {
+  if ((x == null) ||
+      (!isTypedArray(x) && !Array.isArray(x) && typeof x !== 'number' &&
+       typeof x !== 'boolean' && typeof x !== 'string')) {
+    const type = x == null ? 'null' : (x as {}).constructor.name;
     throw new Error(
         `Argument '${argName}' passed to '${functionName}' must be a ` +
-        `Tensor or TensorLike, but got '${x.constructor.name}'`);
+        `Tensor or TensorLike, but got '${type}'`);
   }
-  const inferredShape = inferShape(x);
+  const inferredShape = inferShape(x, inferredDtype);
   if (!isTypedArray(x) && !Array.isArray(x)) {
     x = [x] as number[];
   }
+  const skipTypedArray = true;
   const values = inferredDtype !== 'string' ?
-      toTypedArray(x, inferredDtype as DataType, ENV.get('DEBUG')) :
-      flatten(x) as string[];
+      toTypedArray(x, inferredDtype as DataType, ENV.getBool('DEBUG')) :
+      flatten(x as string[], [], skipTypedArray) as string[];
   return Tensor.make(inferredShape, {values}, inferredDtype);
 }
 
 export function convertToTensorArray<T extends Tensor>(
-    arg: Array<T|TensorLike>, argName: string, functionName: string): T[] {
+    arg: Array<T|TensorLike>, argName: string, functionName: string,
+    parseAsDtype: DataType|'numeric' = 'numeric'): T[] {
   if (!Array.isArray(arg)) {
     throw new Error(
         `Argument ${argName} passed to ${functionName} must be a ` +
@@ -121,5 +126,6 @@ export function convertToTensorArray<T extends Tensor>(
   }
   const tensors = arg as T[];
   return tensors.map(
-      (t, i) => convertToTensor(t, `${argName}[${i}]`, functionName));
+      (t, i) => convertToTensor(t, `${argName}[${i}]`, functionName),
+      parseAsDtype);
 }

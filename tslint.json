@@ -19,6 +19,7 @@
       ["Number", "Use 'number' instead."],
       ["Boolean", "Use 'boolean' instead."]
     ],
+    "no-return-await": true,
     "class-name": true,
     "curly": true,
     "interface-name": [true, "never-prefix"],
@@ -52,6 +53,7 @@
     "switch-default": true,
     "triple-equals": [true, "allow-null-check"],
     "use-isnan": true,
+    "use-default-type-parameter": true,
     "variable-name": [
       true,
       "check-format",

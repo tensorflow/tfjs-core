@@ -15,12 +15,12 @@
  * =============================================================================
  */
 
-import {ENV} from '../environment';
+import {ENGINE} from '../engine';
 import {complex, imag, real} from '../ops/complex_ops';
 import {op} from '../ops/operation';
 import {Tensor, Tensor2D} from '../tensor';
 import {assert} from '../util';
-import {scalar} from './tensor_ops';
+import {scalar, zeros} from './tensor_ops';
 
 /**
  * Fast Fourier transform.
@@ -43,7 +43,7 @@ import {scalar} from './tensor_ops';
 function fft_(input: Tensor): Tensor {
   assert(
       input.dtype === 'complex64',
-      `The dtype for tf.spectral.fft() must be complex64 ` +
+      () => `The dtype for tf.spectral.fft() must be complex64 ` +
           `but got ${input.dtype}.`);
 
   // Collapse all outer dimensions to a single batch dimension.
@@ -51,7 +51,7 @@ function fft_(input: Tensor): Tensor {
   const batch = input.size / innerDimensionSize;
   const input2D = input.as2D(batch, innerDimensionSize);
 
-  const ret = ENV.engine.runKernel(backend => backend.fft(input2D), {input});
+  const ret = ENGINE.runKernel(backend => backend.fft(input2D), {input});
 
   return ret.reshape(input.shape);
 }
@@ -77,7 +77,7 @@ function fft_(input: Tensor): Tensor {
 function ifft_(input: Tensor): Tensor {
   assert(
       input.dtype === 'complex64',
-      `The dtype for tf.spectral.ifft() must be complex64 ` +
+      () => `The dtype for tf.spectral.ifft() must be complex64 ` +
           `but got ${input.dtype}.`);
 
   // Collapse all outer dimensions to a single batch dimension.
@@ -85,7 +85,7 @@ function ifft_(input: Tensor): Tensor {
   const batch = input.size / innerDimensionSize;
   const input2D = input.as2D(batch, innerDimensionSize);
 
-  const ret = ENV.engine.runKernel(backend => backend.ifft(input2D), {input});
+  const ret = ENGINE.runKernel(backend => backend.ifft(input2D), {input});
 
   return ret.reshape(input.shape);
 }
@@ -99,23 +99,43 @@ function ifft_(input: Tensor): Tensor {
  * ```js
  * const real = tf.tensor1d([1, 2, 3]);
  *
- * x.rfft().print();
+ * real.rfft().print();
  * ```
  * @param input The real value input to compute an rfft over.
  */
 /**
  * @doc {heading: 'Operations', subheading: 'Spectral', namespace: 'spectral'}
  */
-function rfft_(input: Tensor): Tensor {
-  assert(input.dtype === 'float32', `The dtype for rfft() must be real value but
-    got ${input.dtype}`);
+function rfft_(input: Tensor, fftLength?: number): Tensor {
+  assert(
+      input.dtype === 'float32',
+      () => `The dtype for rfft() must be real value but got ${input.dtype}`);
 
-  const innerDimensionSize = input.shape[input.shape.length - 1];
+  let innerDimensionSize = input.shape[input.shape.length - 1];
   const batch = input.size / innerDimensionSize;
 
+  let adjustedInput: Tensor;
+  if (fftLength != null && fftLength < innerDimensionSize) {
+    // Need to crop
+    const begin = input.shape.map(v => 0);
+    const size = input.shape.map(v => v);
+    size[input.shape.length - 1] = fftLength;
+    adjustedInput = input.slice(begin, size);
+    innerDimensionSize = fftLength;
+  } else if (fftLength != null && fftLength > innerDimensionSize) {
+    // Need to pad with zeros
+    const zerosShape = input.shape.map(v => v);
+    zerosShape[input.shape.length - 1] = fftLength - innerDimensionSize;
+    adjustedInput = input.concat(zeros(zerosShape), input.shape.length - 1);
+    innerDimensionSize = fftLength;
+  } else {
+    adjustedInput = input;
+  }
+
   // Complement the input with zero imaginary numbers.
-  const zeros = input.zerosLike();
-  const complexInput = complex(input, zeros).as2D(batch, innerDimensionSize);
+  const zerosInput = adjustedInput.zerosLike();
+  const complexInput =
+      complex(adjustedInput, zerosInput).as2D(batch, innerDimensionSize);
 
   const ret = fft(complexInput);
 
@@ -128,8 +148,8 @@ function rfft_(input: Tensor): Tensor {
   const imagComplexConjugate = imagValues.split(
       [half, innerDimensionSize - half], imagValues.shape.length - 1);
 
-  const outputShape = input.shape.slice();
-  outputShape[input.shape.length - 1] = half;
+  const outputShape = adjustedInput.shape.slice();
+  outputShape[adjustedInput.shape.length - 1] = half;
 
   return complex(realComplexConjugate[0], imagComplexConjugate[0])
       .reshape(outputShape);
@@ -143,6 +163,8 @@ function rfft_(input: Tensor): Tensor {
  *
  * ```js
  * const real = tf.tensor1d([1, 2, 3]);
+ * const imag = tf.tensor1d([0, 0, 0]);
+ * const x = tf.complex(real, imag);
  *
  * x.irfft().print();
  * ```

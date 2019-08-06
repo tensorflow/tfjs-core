@@ -26,6 +26,17 @@ export interface ShapeMap {
   R6: [number, number, number, number, number, number];
 }
 
+/** @docalias number[] */
+export interface ArrayMap {
+  R0: number;
+  R1: number[];
+  R2: number[][];
+  R3: number[][][];
+  R4: number[][][][];
+  R5: number[][][][][];
+  R6: number[][][][][][];
+}
+
 export interface DataTypeMap {
   float32: Float32Array;
   int32: Int32Array;
@@ -46,7 +57,10 @@ export interface SingleValueMap {
 export type DataType = keyof DataTypeMap;
 export type NumericDataType = 'float32'|'int32'|'bool'|'complex64';
 export type TypedArray = Float32Array|Int32Array|Uint8Array;
+/** Tensor data used in tensor creation and user-facing API. */
 export type DataValues = DataTypeMap[DataType];
+/** The underlying tensor data that gets stored in a backend. */
+export type BackendValues = Float32Array|Int32Array|Uint8Array|Uint8Array[];
 
 export enum Rank {
   R0 = 'R0',
@@ -120,22 +134,33 @@ export function sumOutType(type: DataType): DataType {
 }
 
 /** @docalias TypedArray|Array */
-export type TensorLike = TypedArray|number|boolean|string|RegularArray<number>|
-    RegularArray<boolean>|RegularArray<string>;
+export type TensorLike =
+    TypedArray|number|boolean|string|RecursiveArray<number|number[]|TypedArray>|
+    RecursiveArray<boolean>|RecursiveArray<string>|Uint8Array[];
+export type ScalarLike = number|boolean|string|Uint8Array;
 /** @docalias TypedArray|Array */
-export type TensorLike1D = TypedArray|number[]|boolean[]|string[];
+export type TensorLike1D = TypedArray|number[]|boolean[]|string[]|Uint8Array[];
 /** @docalias TypedArray|Array */
-export type TensorLike2D =
-    TypedArray|number[]|number[][]|boolean[]|boolean[][]|string[]|string[][];
+export type TensorLike2D = TypedArray|number[]|number[][]|boolean[]|boolean[][]|
+    string[]|string[][]|Uint8Array[]|Uint8Array[][];
 /** @docalias TypedArray|Array */
 export type TensorLike3D = TypedArray|number[]|number[][][]|boolean[]|
-    boolean[][][]|string[]|string[][][];
+    boolean[][][]|string[]|string[][][]|Uint8Array[]|Uint8Array[][][];
 /** @docalias TypedArray|Array */
 export type TensorLike4D = TypedArray|number[]|number[][][][]|boolean[]|
-    boolean[][][][]|string[]|string[][][][];
+    boolean[][][][]|string[]|string[][][][]|Uint8Array[]|Uint8Array[][][][];
 /** @docalias TypedArray|Array */
-export type TensorLike5D = TypedArray|number[]|number[][][][][]|boolean[]|
-    boolean[][][][][]|string[]|string[][][][][];
+export type TensorLike5D =
+    TypedArray|number[]|number[][][][][]|boolean[]|boolean[][][][][]|string[]|
+    string[][][][][]|Uint8Array[]|Uint8Array[][][][][];
 /** @docalias TypedArray|Array */
-export type TensorLike6D = TypedArray|number[]|number[][][][][][]|boolean[]|
-    boolean[][][][][][]|string[]|string[][][][][][];
+export type TensorLike6D =
+    TypedArray|number[]|number[][][][][][]|boolean[]|boolean[][][][][][]|
+    string[]|string[][][][][][]|Uint8Array[]|Uint8Array[][][][][];
+
+/** Type for representing image dat in Uint8Array type. */
+export interface PixelData {
+  width: number;
+  height: number;
+  data: Uint8Array;
+}

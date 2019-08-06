@@ -21,20 +21,14 @@ import './indexed_db';
 import './local_storage';
 
 import {browserFiles} from './browser_files';
-import {browserHTTPRequest} from './browser_http';
+import {browserHTTPRequest, http, isHTTPScheme} from './http';
 import {concatenateArrayBuffers, decodeWeights, encodeWeights, getModelArtifactsInfoForJSON} from './io_utils';
 import {fromMemory, withSaveHandler} from './passthrough';
-import {IORouterRegistry} from './router_registry';
-import {IOHandler, LoadHandler, ModelArtifacts, ModelStoreManager, SaveConfig, SaveHandler, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
+import {getLoadHandlers, getSaveHandlers, registerLoadRouter, registerSaveRouter} from './router_registry';
+import {IOHandler, LoadHandler, LoadOptions, ModelArtifacts, ModelArtifactsInfo, ModelJSON, ModelStoreManager, OnProgressCallback, RequestDetails, SaveConfig, SaveHandler, SaveResult, WeightGroup, WeightsManifestConfig, WeightsManifestEntry} from './types';
 import {loadWeights, weightsLoaderFactory} from './weights_loader';
 
-const registerSaveRouter = IORouterRegistry.registerSaveRouter;
-const registerLoadRouter = IORouterRegistry.registerLoadRouter;
-const getSaveHandlers = IORouterRegistry.getSaveHandlers;
-const getLoadHandlers = IORouterRegistry.getLoadHandlers;
-
 export {copyModel, listModels, moveModel, removeModel} from './model_management';
-
 export {
   browserFiles,
   browserHTTPRequest,
@@ -45,18 +39,26 @@ export {
   getLoadHandlers,
   getModelArtifactsInfoForJSON,
   getSaveHandlers,
+  http,
   IOHandler,
+  isHTTPScheme,
   LoadHandler,
+  LoadOptions,
   loadWeights,
   ModelArtifacts,
+  ModelArtifactsInfo,
+  ModelJSON,
   ModelStoreManager,
+  OnProgressCallback,
   registerLoadRouter,
   registerSaveRouter,
+  RequestDetails,
   SaveConfig,
   SaveHandler,
   SaveResult,
+  WeightGroup,
+  weightsLoaderFactory,
   WeightsManifestConfig,
   WeightsManifestEntry,
-  weightsLoaderFactory,
   withSaveHandler
 };

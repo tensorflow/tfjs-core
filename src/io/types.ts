@@ -60,6 +60,13 @@ export declare interface WeightsManifestGroupConfig {
 }
 
 /**
+ * Group to which the weight belongs.
+ *
+ * - 'optimizer': Weight from a stateful optimizer.
+ */
+export type WeightGroup = 'model'|'optimizer';
+
+/**
  * An entry in the weight manifest.
  *
  * The entry contains specification of a weight.
@@ -78,7 +85,17 @@ export declare interface WeightsManifestEntry {
   /**
    * Data type of the weight.
    */
-  dtype: 'float32'|'int32'|'bool';
+  dtype: 'float32'|'int32'|'bool'|'string';
+
+  /**
+   * Type of the weight.
+   *
+   * Optional.
+   *
+   * The value 'optimizer' indicates the weight belongs to an optimizer
+   * (i.e., used only during model training and not during inference).
+   */
+  group?: WeightGroup;
 
   /**
    * Information for dequantization of the weight.
@@ -92,13 +109,21 @@ export declare interface WeightsManifestEntry {
 
 /**
  * Options for saving a model.
+ * @innamespace io
  */
 export interface SaveConfig {
   /**
    * Whether to save only the trainable weights of the model, ignoring the
-   * untrainable ones.
+   * non-trainable ones.
    */
   trainableOnly?: boolean;
+
+  /**
+   * Whether the optimizer will be saved (if exists).
+   *
+   * Default: `false`.
+   */
+  includeOptimizer?: boolean;
 }
 
 /**
@@ -129,6 +154,13 @@ export declare interface ModelArtifactsInfo {
   dateSaved: Date;
 
   /**
+   * TODO (cais,yassogba) consider removing GraphDef as GraphDefs now
+   * come in a JSON format and none of our IOHandlers support a non json
+   * format. We could conder replacing this with 'Binary' if we want to
+   * allow future handlers to save to non json formats (though they will
+   * probably want more information than 'Binary').
+   * Type of the model topology
+   *
    * Type of the model topology
    *
    * Possible values:
@@ -155,22 +187,56 @@ export declare interface ModelArtifactsInfo {
   weightDataBytes?: number;
 }
 
+/** Model training configuration. */
+export declare interface TrainingConfig {
+  // TODO(cais): Tighten the typing once keras spec is available to tfjs-core.
+  // See
+  // tslint:disable-next-line:max-line-length
+  // https://github.com/tensorflow/tfjs-layers/blob/master/src/keras_format/training_config.ts
+  /** Optimizer used for the model training. */
+  optimizer_config: {};
+
+  // TODO(cais): Tighten the typing once keras spec is available to tfjs-core.
+  /** Loss function(s) for the model's output(s). */
+  loss: string|string[]|{[key: string]: string};
+
+  // TODO(cais): Tighten the typing once keras spec is available to tfjs-core.
+  /** Metric function(s) for the model's output(s). */
+  metrics?: string[]|{[key: string]: string};
+
+  // TODO(cais): Tighten the typing once keras spec is available to tfjs-core.
+  weighted_metrics?: string[];
+
+  // TODO(cais): Tighten the typing once keras spec is available to tfjs-core.
+  sample_weight_mode?: string;
+
+  loss_weights?: number[]|{[key: string]: number};
+}
+
 /**
  * The serialized artifacts of a model, including topology and weights.
  *
- * The `modelTopology`, `weightSpecs` and `weightData` fields of this interface
- * are optional, in order to support topology- or weights-only saving and
- * loading.
+ * The `modelTopology`, `trainingConfig`, `weightSpecs` and `weightData` fields
+ * of this interface are optional, in order to support topology- or weights-only
+ * saving and loading.
+ *
+ * Note this interface is used internally in IOHandlers.  For the file format
+ * written to disk as `model.json`, see `ModelJSON`.
  */
 export declare interface ModelArtifacts {
   /**
    * Model topology.
    *
    * For Keras-style `tf.Model`s, this is a JSON object.
-   * For TensorFlow-style models (e.g., `FrozenModel`), this is a binary buffer
-   * carrying the `GraphDef` protocol buffer.
+   * For TensorFlow-style models (e.g., `SavedModel`), this is the JSON
+   * encoding of the `GraphDef` protocol buffer.
    */
   modelTopology?: {}|ArrayBuffer;
+
+  /**
+   * Serialized configuration for the model's training.
+   */
+  trainingConfig?: TrainingConfig;
 
   /**
    * Weight specifications.
@@ -184,6 +250,96 @@ export declare interface ModelArtifacts {
    * by `weightSpecs`.
    */
   weightData?: ArrayBuffer;
+
+  /**
+   * Hard-coded format name for models saved from TensorFlow.js or converted
+   * by TensorFlow.js Converter.
+   */
+  format?: string;
+
+  /**
+   * What library is responsible for originally generating this artifact.
+   *
+   * Used for debugging purposes. E.g., 'TensorFlow.js v1.0.0'.
+   */
+  generatedBy?: string;
+
+  /**
+   * What library or tool is responsible for converting the original model
+   * to this format, applicable only if the model is output by a converter.
+   *
+   * Used for debugging purposes.  E.g., 'TensorFlow.js Converter v1.0.0'.
+   *
+   * A value of `null` means the model artifacts are generated without any
+   * conversion process (e.g., saved directly from a TensorFlow.js
+   * `tf.LayersModel` instance.)
+   */
+  convertedBy?: string|null;
+
+  /**
+   * User-defined metadata about the model.
+   */
+  userDefinedMetadata?: {};
+}
+
+/**
+ * The on-disk format of the `model.json` file.
+ *
+ * TF.js 1.0 always populates the optional fields when writing model.json.
+ * Prior versions did not provide those fields.
+ */
+export declare interface ModelJSON {
+  /**
+   * Model topology.
+   *
+   * For Keras-style `tf.Model`s, this is a JSON object.
+   * For TensorFlow-style models (e.g., `SavedModel`), this is the JSON
+   * encoding of the `GraphDef` protocol buffer.
+   */
+  modelTopology: {};
+
+  /** Model training configuration. */
+  trainingConfig?: TrainingConfig;
+
+  /**
+   * Weights manifest.
+   *
+   * The weights manifest consists of an ordered list of weight-manifest
+   * groups. Each weight-manifest group consists of a number of weight values
+   * stored in a number of paths. See the documentation of
+   * `WeightsManifestConfig` for more details.
+   */
+  weightsManifest: WeightsManifestConfig;
+
+  /**
+   * Hard-coded format name for models saved from TensorFlow.js or converted
+   * by TensorFlow.js Converter.
+   */
+  format?: string;
+
+  /**
+   * What library is responsible for originally generating this artifact.
+   *
+   * Used for debugging purposes. E.g., 'TensorFlow.js v1.0.0'.
+   */
+  generatedBy?: string;
+
+  /**
+   * What library or tool is responsible for converting the original model
+   * to this format, applicable only if the model is output by a converter.
+   *
+   * Used for debugging purposes.  E.g., 'TensorFlow.js Converter v1.0.0'.
+   *
+   * A value of `null` means the model artifacts are generated without any
+   * conversion process (e.g., saved directly from a TensorFlow.js
+   * `tf.LayersModel` instance.)
+   */
+  convertedBy?: string|null;
+
+  /**
+   * User-defined metadata about the model.
+   */
+  userDefinedMetadata?: {};
 }
 
 /**
@@ -238,4 +394,82 @@ export interface ModelStoreManager {
    * @throws Error if deletion fails, e.g., if no model exists at `path`.
    */
   removeModel(path: string): Promise<ModelArtifactsInfo>;
+}
+
+/**
+ * Callback for the progress of a long-running action such as an HTTP
+ * request for a large binary object.
+ *
+ * `fraction` should be a number in the [0, 1] interval, indicating how
+ * much of the action has completed.
+ */
+export type OnProgressCallback = (fraction: number) => void;
+
+/** @innamespace io */
+export interface LoadOptions {
+  /**
+   * RequestInit (options) for HTTP requests.
+   *
+   * For detailed information on the supported fields, see
+   * [https://developer.mozilla.org/en-US/docs/Web/API/Request/Request](
+   *     https://developer.mozilla.org/en-US/docs/Web/API/Request/Request)
+   */
+  requestInit?: RequestInit;
+
+  /**
+   * Progress callback.
+   */
+  onProgress?: OnProgressCallback;
+
+  /**
+   * A function used to override the `window.fetch` function.
+   */
+  fetchFunc?: Function;
+
+  /**
+   * Strict loading model: whether extraneous weights or missing
+   * weights should trigger an `Error`.
+   *
+   * If `true`, require that the provided weights exactly match those
+   * required by the layers. `false` means that both extra weights
+   * and missing weights will be silently ignored.
+   *
+   * Default: `true`.
+   */
+  strict?: boolean;
+
+  /**
+   * Path prefix for weight files, by default this is calculated from the
+   * path of the model JSON file.
+   *
+   * For instance, if the path to the model JSON file is
+   * `http://localhost/foo/model.json`, then the default path prefix will be
+   * `http://localhost/foo/`. If a weight file has the path value
+   * `group1-shard1of2` in the weight manifest, then the weight file will be
+   * loaded from `http://localhost/foo/group1-shard1of2` by default. However,
+   * if you provide a `weightPathPrefix` value of
+   * `http://localhost/foo/alt-weights`, then the weight file will be loaded
+   * from the path `http://localhost/foo/alt-weights/group1-shard1of2` instead.
+   */
+  weightPathPrefix?: string;
+
+  /**
+   * Whether the module or model is to be loaded from TF Hub.
+   *
+   * Setting this to `true` allows passing a TF-Hub module URL, omitting the
+   * standard model file name and the query parameters.
+   *
+   * Default: `false`.
+   */
+  fromTFHub?: boolean;
+}
+
+/**
+ * Additional options for Platform.fetch
+ */
+export interface RequestDetails {
+  /**
+   * Is this request for a binary file (as opposed to a json file)
+   */
+  isBinary?: boolean;
 }
