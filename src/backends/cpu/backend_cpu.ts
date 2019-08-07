@@ -23,6 +23,7 @@ import {warn} from '../../log';
 import * as array_ops_util from '../../ops/array_ops_util';
 import * as axis_util from '../../ops/axis_util';
 import * as broadcast_util from '../../ops/broadcast_util';
+import {complex, imag, real} from '../../ops/complex_ops';
 import * as concat_util from '../../ops/concat_util';
 import {Conv2DInfo, Conv3DInfo} from '../../ops/conv_util';
 import * as erf_util from '../../ops/erf_util';
@@ -342,6 +343,16 @@ export class MathBackendCPU implements KernelBackend {
     return buffer.toTensor().reshape(shape) as T;
   }
 
+  diag(x: Tensor): Tensor {
+    const xVals = this.readSync(x.dataId) as TypedArray;
+    const buffer = ops.buffer([x.size, x.size], x.dtype);
+    const vals = buffer.values;
+    for (let i = 0; i < xVals.length; i++) {
+      vals[i * x.size + i] = xVals[i];
+    }
+    return buffer.toTensor();
+  }
+
   unstack(x: Tensor, axis: number): Tensor[] {
     const num = x.shape[axis];
     const outShape: number[] = new Array(x.rank - 1);
@@ -380,7 +391,11 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   concat(tensors: Tensor[], axis: number): Tensor {
-    this.assertNotComplex(tensors, 'concat');
+    if (tensors[0].dtype === 'complex64') {
+      const reals = tensors.map((t) => real(t));
+      const imags = tensors.map((t) => imag(t));
+      return complex(this.concat(reals, axis), this.concat(imags, axis));
+    }
     const tensors2D = tensors.map(t => {
       const innerSize = util.sizeFromShape(t.shape.slice(axis));
       return t.as2D(-1, innerSize);
