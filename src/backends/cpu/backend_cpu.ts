@@ -26,7 +26,7 @@ import * as broadcast_util from '../../ops/broadcast_util';
 import * as concat_util from '../../ops/concat_util';
 import {Conv2DInfo, Conv3DInfo} from '../../ops/conv_util';
 import * as erf_util from '../../ops/erf_util';
-import {Activation} from '../../ops/fused_util';
+import {Activation, FusedBatchMatMulConfig} from '../../ops/fused_util';
 import * as gather_nd_util from '../../ops/gather_nd_util';
 import * as ops from '../../ops/ops';
 import {buffer, scalar, tensor, tensor3d, tensor4d} from '../../ops/ops';
@@ -45,13 +45,17 @@ import {split} from '../split_shared';
 import {tile} from '../tile_impl';
 import {topkImpl} from '../topk_impl';
 import {whereImpl} from '../where_impl';
+import {real, imag, complex} from '../../ops/complex_ops';
 
 function mapActivation(
-    backend: MathBackendCPU, activation: Activation, x: Tensor): Tensor {
+    backend: MathBackendCPU, x: Tensor, activation: Activation,
+    preluActivationWeights?: Tensor): Tensor {
   if (activation === 'linear') {
     return backend.linear(x);
   } else if (activation === 'relu') {
     return backend.relu(x);
+  } else if (activation === 'prelu') {
+    return backend.prelu(x, preluActivationWeights);
   }
   throw new Error(
       `Activation ${activation} has not been implemented for the CPU backend.`);
@@ -71,25 +75,26 @@ function createCanvas() {
     return new OffscreenCanvas(300, 150);
   } else if (typeof document !== 'undefined') {
     return document.createElement('canvas');
-  } else {
-    throw new Error('Cannot create a canvas in this context');
   }
+  return null;
 }
 
 export class MathBackendCPU implements KernelBackend {
   public blockSize = 48;
 
   private data: DataStorage<TensorData<DataType>>;
-  private fromPixels2DContext: CanvasRenderingContext2D
-      | OffscreenCanvasRenderingContext2D;
+  private fromPixels2DContext: CanvasRenderingContext2D|
+      OffscreenCanvasRenderingContext2D;
   private firstUse = true;
 
   constructor() {
     if (ENV.get('IS_BROWSER')) {
       const canvas = createCanvas();
-      this.fromPixels2DContext =
-          canvas.getContext('2d') as CanvasRenderingContext2D |
-          OffscreenCanvasRenderingContext2D;
+      if (canvas !== null) {
+        this.fromPixels2DContext =
+            canvas.getContext('2d') as CanvasRenderingContext2D |
+            OffscreenCanvasRenderingContext2D;
+      }
     }
     this.data = new DataStorage(this, ENGINE);
   }
@@ -133,12 +138,11 @@ export class MathBackendCPU implements KernelBackend {
 
     const isPixelData = (pixels as PixelData).data instanceof Uint8Array;
     const isImageData =
-        typeof(ImageData) !== 'undefined' && pixels instanceof ImageData;
-    const isVideo =
-        typeof(HTMLVideoElement) !== 'undefined'
-        && pixels instanceof HTMLVideoElement;
-    const isImage = typeof(HTMLImageElement) !== 'undefined'
-        && pixels instanceof HTMLImageElement;
+        typeof (ImageData) !== 'undefined' && pixels instanceof ImageData;
+    const isVideo = typeof (HTMLVideoElement) !== 'undefined' &&
+        pixels instanceof HTMLVideoElement;
+    const isImage = typeof (HTMLImageElement) !== 'undefined' &&
+        pixels instanceof HTMLImageElement;
 
     let vals: Uint8ClampedArray|Uint8Array;
     // tslint:disable-next-line:no-any
@@ -377,7 +381,11 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   concat(tensors: Tensor[], axis: number): Tensor {
-    this.assertNotComplex(tensors, 'concat');
+    if (tensors[0].dtype === 'complex64') {
+      const reals = tensors.map((t) => real(t));
+      const imags = tensors.map((t) => imag(t));
+      return complex(this.concat(reals, axis), this.concat(imags, axis));
+    }
     const tensors2D = tensors.map(t => {
       const innerSize = util.sizeFromShape(t.shape.slice(axis));
       return t.as2D(-1, innerSize);
@@ -522,14 +530,16 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   fusedBatchMatMul(
-      a: Tensor3D, b: Tensor3D, transposeA: boolean, transposeB: boolean,
-      bias?: Tensor, activation?: Activation): Tensor3D {
+      {a, b, transposeA, transposeB, bias, activation, preluActivationWeights}:
+          FusedBatchMatMulConfig): Tensor3D {
     let result = this.batchMatMul(a, b, transposeA, transposeB);
     if (bias) {
       result = this.add(result, bias) as Tensor3D;
     }
     if (activation) {
-      result = mapActivation(this, activation, result) as Tensor3D;
+      result =
+          mapActivation(this, result, activation, preluActivationWeights) as
+          Tensor3D;
     }
     return result;
   }
@@ -1511,6 +1521,22 @@ export class MathBackendCPU implements KernelBackend {
       }
     }
     return Tensor.make(x.shape, {values: resultValues}) as T;
+  }
+
+  fusedConv2d(
+      x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo, bias?: Tensor4D,
+      activation?: Activation, preluActivationWeights?: Tensor): Tensor4D {
+    let result = this.conv2d(x, filter, convInfo);
+
+    if (bias) {
+      result = this.add(result, bias) as Tensor4D;
+    }
+    if (activation) {
+      result =
+          mapActivation(this, result, activation, preluActivationWeights) as
+          Tensor4D;
+    }
+    return result;
   }
 
   conv2d(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
