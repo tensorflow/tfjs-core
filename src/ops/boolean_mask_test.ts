@@ -17,7 +17,6 @@
 
 import * as tf from '../index';
 import {ALL_ENVS, describeWithFlags} from '../jasmine_util';
-import {Tensor} from '../tensor';
 import {expectArraysClose} from '../test_util';
 
 describeWithFlags('booleanMask', ALL_ENVS, () => {
@@ -72,13 +71,8 @@ describeWithFlags('booleanMask', ALL_ENVS, () => {
 
     const array = tf.tensor1d([1, 2, 3]);
     const mask = tf.tensor1d([1, 0, 1], 'bool');
-    let resultPromise: Promise<Tensor> = null;
 
-    tf.tidy(() => {
-      resultPromise = tf.booleanMask(array, mask);
-    });
-
-    const result = await resultPromise;
+    const result = await tf.booleanMask(array, mask);
     expect(result.shape).toEqual([2]);
     expect(result.dtype).toBe('float32');
     expectArraysClose(await result.data(), [1, 3]);
