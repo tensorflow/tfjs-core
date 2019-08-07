@@ -55,7 +55,7 @@ steps:
   id: 'test-webgpu'
   dir: 'tfjs-webgpu/'
   args: ['test-ci']
-  waitFor: ['-']  # The '-' indicates that this step begins immediately.
+  waitFor: ['-']  # begin step immediately.
 #
 # React-Native tests
 #
@@ -64,7 +64,7 @@ steps:
   id: 'test-react-native'
   dir: 'tfjs-react-native/'
   args: ['test-ci']
-  waitFor: ['-']  # The '-' indicates that this step begins immediately.
+  waitFor: ['-']  # begin step immediately.
 
 # General configuration
 secrets:

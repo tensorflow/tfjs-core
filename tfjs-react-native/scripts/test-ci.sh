@@ -18,5 +18,6 @@ set -e
 
 yarn
 yarn lint
-karma start --browserstack
+yarn build
+karma start --browserstack --browsers=bs_chrome_mac
 
