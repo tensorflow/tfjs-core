@@ -116,7 +116,7 @@ function frame_(
 function stft_(
     signal: Tensor1D, frameLength: number, frameStep: number,
     fftLength?: number,
-    windowFn: (length: number) => Tensor1D = hannWindow): Tensor[] {
+    windowFn: (length: number) => Tensor1D = hannWindow): Tensor {
   if (fftLength == null) {
     fftLength = frameLength;
   }
@@ -126,7 +126,7 @@ function stft_(
   for (let i = 0; i < framedSignal.shape[0]; i++) {
     output.push(rfft(windowedSignal.slice([i, 0], [1, fftLength]), fftLength));
   }
-  return output;
+  return concat(output);
 }
 
 function cosineWindow(windowLength: number, a: number, b: number): Tensor1D {
