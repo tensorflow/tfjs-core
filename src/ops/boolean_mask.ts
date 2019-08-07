@@ -29,7 +29,7 @@ import {gather} from './segment_ops';
  * ```js
  * const tensor = tf.tensor2d([1, 2, 3, 4, 5, 6], [3, 2]);
  * const mask = tf.tensor1d([1, 0, 1], 'bool');
- * const result = await tf.booleanMask(tensor, mask);
+ * const result = await tf.booleanMaskAsync(tensor, mask);
  * result.print();
  * ```
  *
