@@ -60,25 +60,29 @@ export class Im2ColPackedProgram implements GPGPUProgram {
             top};
             d0 = offsetY + ${dilationHeight} * (pos / ${itemsPerBlockRow});
 
-            if(d0 >= ${inputShape[rowDim]} || d0 < 0) continue;
+            if(d0 < ${inputShape[rowDim]} && d0 >= 0) {
 
-            offsetX = int(mod(float(blockIndex), ${outWidth}.) * ${
+              offsetX = int(mod(float(blockIndex), ${outWidth}.) * ${
             strideWidth}. - ${left}.);
-            d1 = offsetX + ${dilationWidth} * (int(mod(float(pos), ${
+              d1 = offsetX + ${dilationWidth} * (int(mod(float(pos), ${
             itemsPerBlockRow}.) / ${inChannels}.));
 
-            if(d1 >= ${inputShape[colDim]} || d1 < 0) continue;
+              if(d1 < ${inputShape[colDim]} && d1 >= 0) {
 
-            ch = int(mod(float(pos), ${inChannels}.));
+                ch = int(mod(float(pos), ${inChannels}.));
 
-            if (${isChannelsLast}) {
-              innerDims = vec2(d1, ch);
-              result[row * 2 + col] = getChannel(getA(d0, int(innerDims.x),
-                  int(innerDims.y)), innerDims);
-            } else {
-              innerDims = vec2(d0, d1);
-              result[row * 2 + col] = getChannel(getA(ch, int(innerDims.x),
-                  int(innerDims.y)), innerDims);
+                if (${isChannelsLast}) {
+                  innerDims = vec2(d1, ch);
+                  result[${row * 2 + col}] = getChannel(
+                    getA(d0, int(innerDims.x),
+                    int(innerDims.y)), innerDims);
+                } else {
+                  innerDims = vec2(d0, d1);
+                  result[${row * 2 + col}] = getChannel(
+                    getA(ch, int(innerDims.x),
+                    int(innerDims.y)), innerDims);
+                }
+              }
             }
           }
         `;
