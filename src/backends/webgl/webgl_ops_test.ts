@@ -432,7 +432,7 @@ describeWithFlags('conv to matmul', PACKED_ENVS, () => {
 // For operations on non-trivial matrix sizes, we skip the CPU-only ENV and use
 // only WebGL ENVs.
 describeWithFlags('gramSchmidt-non-tiny', WEBGL_ENVS, () => {
-  fit('8x16', async () => {
+  it('8x16', async () => {
     // Part of this test's point is that operation on a matrix of this size
     // can complete in the timeout limit of the unit test.
     const xs = tf.randomUniform([8, 16]) as Tensor2D;
