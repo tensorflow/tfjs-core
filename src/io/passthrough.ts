@@ -19,26 +19,13 @@
  * IOHandlers that pass through the in-memory ModelArtifacts format.
  */
 
-import {IOHandler, ModelArtifacts, SaveResult, WeightsManifestEntry} from './types';
+import {IOHandler, ModelArtifacts, SaveResult, TrainingConfig, WeightsManifestEntry} from './types';
 
 class PassthroughLoader implements IOHandler {
-  constructor(
-      private readonly modelTopology?: {}|ArrayBuffer,
-      private readonly weightSpecs?: WeightsManifestEntry[],
-      private readonly weightData?: ArrayBuffer) {}
+  constructor(private readonly modelArtifacts?: ModelArtifacts) {}
 
   async load(): Promise<ModelArtifacts> {
-    let result = {};
-    if (this.modelTopology != null) {
-      result = {modelTopology: this.modelTopology, ...result};
-    }
-    if (this.weightSpecs != null && this.weightSpecs.length > 0) {
-      result = {weightSpecs: this.weightSpecs, ...result};
-    }
-    if (this.weightData != null && this.weightData.byteLength > 0) {
-      result = {weightData: this.weightData, ...result};
-    }
-    return result;
+    return this.modelArtifacts;
   }
 }
 
@@ -55,27 +42,58 @@ class PassthroughSaver implements IOHandler {
 /**
  * Creates an IOHandler that loads model artifacts from memory.
  *
- * When used in conjunction with `tf.loadModel`, an instance of `tf.Model`
- * (Keras-style) can be constructed from the loaded artifacts.
+ * When used in conjunction with `tf.loadLayersModel`, an instance of
+ * `tf.LayersModel` (Keras-style) can be constructed from the loaded artifacts.
  *
  * ```js
- * const model = await tf.loadModel(tf.io.fromMemory(
+ * const model = await tf.loadLayersModel(tf.io.fromMemory(
  *     modelTopology, weightSpecs, weightData));
  * ```
  *
- * @param modelTopology a object containing model topology (i.e., parsed from
+ * @param modelArtifacts a object containing model topology (i.e., parsed from
  *   the JSON format).
  * @param weightSpecs An array of `WeightsManifestEntry` objects describing the
  *   names, shapes, types, and quantization of the weight data.
  * @param weightData A single `ArrayBuffer` containing the weight data,
  *   concatenated in the order described by the weightSpecs.
+ * @param trainingConfig Model training configuration. Optional.
  *
  * @returns A passthrough `IOHandler` that simply loads the provided data.
  */
 export function fromMemory(
-    modelTopology: {}, weightSpecs?: WeightsManifestEntry[],
-    weightData?: ArrayBuffer): IOHandler {
-  return new PassthroughLoader(modelTopology, weightSpecs, weightData);
+    modelArtifacts: {}|ModelArtifacts, weightSpecs?: WeightsManifestEntry[],
+    weightData?: ArrayBuffer, trainingConfig?: TrainingConfig): IOHandler {
+  if (arguments.length === 1) {
+    const isModelArtifacts =
+        (modelArtifacts as ModelArtifacts).modelTopology != null ||
+        (modelArtifacts as ModelArtifacts).weightSpecs != null;
+    if (isModelArtifacts) {
+      return new PassthroughLoader(modelArtifacts as ModelArtifacts);
+    } else {
+      // Legacy support: with only modelTopology.
+      // TODO(cais): Remove this deprecated API.
+      console.warn(
+          'Please call tf.io.fromMemory() with only one argument. ' +
+          'The argument should be of type ModelArtifacts. ' +
+          'The multi-argument signature of tf.io.fromMemory() has been ' +
+          'deprecated and will be removed in a future release.');
+      return new PassthroughLoader({modelTopology: modelArtifacts as {}});
+    }
+  } else {
+    // Legacy support.
+    // TODO(cais): Remove this deprecated API.
+    console.warn(
+        'Please call tf.io.fromMemory() with only one argument. ' +
+        'The argument should be of type ModelArtifacts. ' +
+        'The multi-argument signature of tf.io.fromMemory() has been ' +
+        'deprecated and will be removed in a future release.');
+    return new PassthroughLoader({
+      modelTopology: modelArtifacts as {},
+      weightSpecs,
+      weightData,
+      trainingConfig
+    });
+  }
 }
 
 /**

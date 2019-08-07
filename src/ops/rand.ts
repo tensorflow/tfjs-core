@@ -17,7 +17,7 @@
 
 import * as seedrandom from 'seedrandom';
 
-export interface RandGauss {
+export interface RandomBase {
   nextValue(): number;
 }
 
@@ -36,7 +36,7 @@ export interface RandGammaDataTypes {
 }
 
 // https://en.wikipedia.org/wiki/Marsaglia_polar_method
-export class MPRandGauss implements RandGauss {
+export class MPRandGauss implements RandomBase {
   private mean: number;
   private stdDev: number;
   private nextVal: number;
@@ -124,7 +124,7 @@ export class RandGamma implements RandomGamma {
       alpha: number, beta: number, dtype?: keyof RandGammaDataTypes,
       seed?: number) {
     this.alpha = alpha;
-    this.beta = 1 / beta; // convert rate to scale parameter
+    this.beta = 1 / beta;  // convert rate to scale parameter
     this.dtype = dtype;
 
     const seedValue = seed ? seed : Math.random();
@@ -142,7 +142,7 @@ export class RandGamma implements RandomGamma {
   /** Returns next sample from a gamma distribution. */
   public nextValue(): number {
     let x2: number, v0: number, v1: number, x: number, u: number, v: number;
-    while ( true ) {
+    while (true) {
       do {
         x = this.randn.nextValue();
         v = 1 + (this.c * x);
@@ -152,7 +152,7 @@ export class RandGamma implements RandomGamma {
       v0 = 1 - (0.331 * x2 * x2);
       v1 = (0.5 * x2) + (this.d * (1 - v + Math.log(v)));
       u = this.randu();
-      if (u < v0 || Math.log( u ) < v1) {
+      if (u < v0 || Math.log(u) < v1) {
         break;
       }
     }
@@ -162,12 +162,53 @@ export class RandGamma implements RandomGamma {
     }
     return this.convertValue(v);
   }
-
   /** Handles proper rounding for non-floating-point numbers. */
   private convertValue(value: number): number {
     if (this.dtype == null || this.dtype === 'float32') {
       return value;
     }
     return Math.round(value);
+  }
+}
+
+export class UniformRandom implements RandomBase {
+  private min: number;
+  private range: number;
+  private random: seedrandom.prng;
+  private dtype?: keyof RandNormalDataTypes;
+
+  constructor(
+      min = 0, max = 1, dtype?: keyof RandNormalDataTypes,
+      seed?: string|number) {
+    this.min = min;
+    this.range = max - min;
+    this.dtype = dtype;
+    if (seed == null) {
+      seed = Math.random();
+    }
+    if (typeof seed === 'number') {
+      seed = seed.toString();
+    }
+
+    if (!this.canReturnFloat() && this.range <= 1) {
+      throw new Error(
+          `The difference between ${min} - ${max} <= 1 and dtype is not float`);
+    }
+    this.random = seedrandom.alea(seed as string);
+  }
+
+  /** Handles proper rounding for non floating point numbers. */
+  private canReturnFloat = () =>
+      (this.dtype == null || this.dtype === 'float32');
+
+  private convertValue(value: number): number {
+    if (this.canReturnFloat()) {
+      return value;
+    }
+    return Math.round(value);
+  }
+
+  nextValue() {
+    return this.convertValue(this.min + this.range * this.random());
   }
 }

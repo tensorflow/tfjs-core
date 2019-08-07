@@ -15,9 +15,9 @@
  * =============================================================================
  */
 
-import {MPRandGauss, RandGamma} from './rand';
-import {expectArrayInMeanStdRange, jarqueBeraNormalityTest} from './rand_util';
 import {expectValuesInRange} from '../test_util';
+import {MPRandGauss, RandGamma, UniformRandom} from './rand';
+import {expectArrayInMeanStdRange, jarqueBeraNormalityTest} from './rand_util';
 
 function isFloat(n: number): boolean {
   return Number(n) === n && n % 1 !== 0;
@@ -62,12 +62,12 @@ describe('MPRandGauss', () => {
 
   it('Should not have a more than 2x std-d from mean for truncated values',
      () => {
-    const stdv = 1.5;
-    const rand = new MPRandGauss(0, stdv, 'float32', true /* truncated */);
-    for (let i = 0; i < 1000; i++) {
-      expect(Math.abs(rand.nextValue())).toBeLessThan(stdv * 2);
-    }
-  });
+       const stdv = 1.5;
+       const rand = new MPRandGauss(0, stdv, 'float32', true /* truncated */);
+       for (let i = 0; i < 1000; i++) {
+         expect(Math.abs(rand.nextValue())).toBeLessThan(stdv * 2);
+       }
+     });
 });
 
 describe('RandGamma', () => {
@@ -101,5 +101,75 @@ describe('RandGamma', () => {
       values.push(rand.nextValue());
     }
     expectValuesInRange(values, 0, 30);
+  });
+});
+
+describe('UniformRandom', () => {
+  it('float32, no seed', () => {
+    const min = 0.2;
+    const max = 0.24;
+    const dtype = 'float32';
+    const xs: number[] = [];
+    for (let i = 0; i < 10; ++i) {
+      const rand = new UniformRandom(min, max, dtype);
+      const x = rand.nextValue();
+      xs.push(x);
+    }
+    expect(Math.min(...xs)).toBeGreaterThanOrEqual(min);
+    expect(Math.max(...xs)).toBeLessThan(max);
+  });
+
+  it('int32, no seed', () => {
+    const min = 13;
+    const max = 37;
+    const dtype = 'int32';
+    const xs: number[] = [];
+    for (let i = 0; i < 10; ++i) {
+      const rand = new UniformRandom(min, max, dtype);
+      const x = rand.nextValue();
+      expect(Number.isInteger(x)).toEqual(true);
+      xs.push(x);
+    }
+    expect(Math.min(...xs)).toBeGreaterThanOrEqual(min);
+    expect(Math.max(...xs)).toBeLessThanOrEqual(max);
+  });
+
+  it('seed is number', () => {
+    const min = -1.2;
+    const max = -0.4;
+    const dtype = 'float32';
+    const seed = 1337;
+    const xs: number[] = [];
+    for (let i = 0; i < 10; ++i) {
+      const rand = new UniformRandom(min, max, dtype, seed);
+      const x = rand.nextValue();
+      expect(x).toBeGreaterThanOrEqual(min);
+      expect(x).toBeLessThan(max);
+      xs.push(x);
+    }
+    // Assert deterministic results.
+    expect(Math.min(...xs)).toEqual(Math.max(...xs));
+  });
+
+  it('seed === null', () => {
+    const min = 0;
+    const max = 1;
+    const dtype = 'float32';
+    const seed: number = null;
+    const rand = new UniformRandom(min, max, dtype, seed);
+    const x = rand.nextValue();
+    expect(x).toBeGreaterThanOrEqual(0);
+    expect(x).toBeLessThan(1);
+  });
+
+  it('seed === undefined', () => {
+    const min = 0;
+    const max = 1;
+    const dtype = 'float32';
+    const seed: number = undefined;
+    const rand = new UniformRandom(min, max, dtype, seed);
+    const x = rand.nextValue();
+    expect(x).toBeGreaterThanOrEqual(0);
+    expect(x).toBeLessThan(1);
   });
 });

@@ -57,15 +57,16 @@ export class ModelStoreManagerRegistry {
    * of `IOHandler` with the `save` method defined or `null`.
    */
   static registerManager(scheme: string, manager: ModelStoreManager) {
-    assert(scheme != null, 'scheme must not be undefined or null.');
+    assert(scheme != null, () => 'scheme must not be undefined or null.');
     if (scheme.endsWith(URL_SCHEME_SUFFIX)) {
       scheme = scheme.slice(0, scheme.indexOf(URL_SCHEME_SUFFIX));
     }
-    assert(scheme.length > 0, 'scheme must not be an empty string.');
+    assert(scheme.length > 0, () => 'scheme must not be an empty string.');
     const registry = ModelStoreManagerRegistry.getInstance();
     assert(
         registry.managers[scheme] == null,
-        `A model store manager is already registered for scheme '${scheme}'.`);
+        () => `A model store manager is already registered for scheme '${
+            scheme}'.`);
     registry.managers[scheme] = manager;
   }
 
@@ -108,27 +109,27 @@ async function cloneModelInternal(
     deleteSource = false): Promise<ModelArtifactsInfo> {
   assert(
       sourceURL !== destURL,
-      `Old path and new path are the same: '${sourceURL}'`);
+      () => `Old path and new path are the same: '${sourceURL}'`);
 
   const loadHandlers = IORouterRegistry.getLoadHandlers(sourceURL);
   assert(
       loadHandlers.length > 0,
-      `Copying failed because no load handler is found for source URL ${
+      () => `Copying failed because no load handler is found for source URL ${
           sourceURL}.`);
   assert(
       loadHandlers.length < 2,
-      `Copying failed because more than one (${loadHandlers.length}) ` +
+      () => `Copying failed because more than one (${loadHandlers.length}) ` +
           `load handlers for source URL ${sourceURL}.`);
   const loadHandler = loadHandlers[0];
 
   const saveHandlers = IORouterRegistry.getSaveHandlers(destURL);
   assert(
       saveHandlers.length > 0,
-      `Copying failed because no save handler is found for destination URL ` +
-          `${destURL}.`);
+      () => `Copying failed because no save handler is found for destination ` +
+          `URL ${destURL}.`);
   assert(
       saveHandlers.length < 2,
-      `Copying failed because more than one (${loadHandlers.length}) ` +
+      () => `Copying failed because more than one (${loadHandlers.length}) ` +
           `save handlers for destination URL ${destURL}.`);
   const saveHandler = saveHandlers[0];
 
@@ -187,7 +188,14 @@ async function cloneModelInternal(
  *   'indexeddb://my/model/1'. Model artifacts info include type of the
  * model's topology, byte sizes of the topology, weights, etc.
  */
-/** @doc {heading: 'Models', subheading: 'Management', namespace: 'io'} */
+/**
+ * @doc {
+ *   heading: 'Models',
+ *   subheading: 'Management',
+ *   namespace: 'io',
+ *   ignoreCI: true
+ * }
+ */
 async function listModels(): Promise<{[url: string]: ModelArtifactsInfo}> {
   const schemes = ModelStoreManagerRegistry.getSchemes();
   const out: {[url: string]: ModelArtifactsInfo} = {};
@@ -228,11 +236,18 @@ async function listModels(): Promise<{[url: string]: ModelArtifactsInfo}> {
  *   is successful).
  * @throws Error if deletion fails, e.g., if no model exists at `path`.
  */
-/** @doc {heading: 'Models', subheading: 'Management', namespace: 'io'} */
+/**
+ * @doc {
+ *   heading: 'Models',
+ *   subheading: 'Management',
+ *   namespace: 'io',
+ *   ignoreCI: true
+ * }
+ */
 async function removeModel(url: string): Promise<ModelArtifactsInfo> {
   const schemeAndPath = parseURL(url);
   const manager = ModelStoreManagerRegistry.getManager(schemeAndPath.scheme);
-  return await manager.removeModel(schemeAndPath.path);
+  return manager.removeModel(schemeAndPath.path);
 }
 
 /**
@@ -275,11 +290,18 @@ async function removeModel(url: string): Promise<ModelArtifactsInfo> {
  * @throws Error if copying fails, e.g., if no model exists at `sourceURL`, or
  *   if `oldPath` and `newPath` are identical.
  */
-/** @doc {heading: 'Models', subheading: 'Management', namespace: 'io'} */
+/**
+ * @doc {
+ *   heading: 'Models',
+ *   subheading: 'Management',
+ *   namespace: 'io',
+ *   ignoreCI: true
+ * }
+ */
 async function copyModel(
     sourceURL: string, destURL: string): Promise<ModelArtifactsInfo> {
   const deleteSource = false;
-  return await cloneModelInternal(sourceURL, destURL, deleteSource);
+  return cloneModelInternal(sourceURL, destURL, deleteSource);
 }
 
 /**
@@ -321,11 +343,18 @@ async function copyModel(
  * @throws Error if moving fails, e.g., if no model exists at `sourceURL`, or
  *   if `oldPath` and `newPath` are identical.
  */
-/** @doc {heading: 'Models', subheading: 'Management', namespace: 'io'} */
+/**
+ * @doc {
+ *   heading: 'Models',
+ *   subheading: 'Management',
+ *   namespace: 'io',
+ *   ignoreCI: true
+ * }
+ */
 async function moveModel(
     sourceURL: string, destURL: string): Promise<ModelArtifactsInfo> {
   const deleteSource = true;
-  return await cloneModelInternal(sourceURL, destURL, deleteSource);
+  return cloneModelInternal(sourceURL, destURL, deleteSource);
 }
 
 export {moveModel, copyModel, removeModel, listModels};

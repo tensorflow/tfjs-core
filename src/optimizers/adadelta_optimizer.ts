@@ -15,109 +15,128 @@
  * =============================================================================
  */
 
-import {ENV} from '../environment';
-import {keep, tidy} from '../globals';
-import {scalar, zerosLike} from '../ops/ops';
+import {ENGINE} from '../engine';
+import {dispose, tidy} from '../globals';
+import {zerosLike} from '../ops/ops';
 import {ConfigDict, registerClass, Serializable, SerializableConstructor} from '../serialization';
-import {Scalar} from '../tensor';
-import {NamedVariableMap} from '../tensor_types';
-import {Optimizer} from './optimizer';
+import {NamedTensor, NamedVariableMap} from '../tensor_types';
+import {Optimizer, OptimizerVariable} from './optimizer';
 
 /** @doclink Optimizer */
 export class AdadeltaOptimizer extends Optimizer {
   /** @nocollapse */
-  static className = 'AdadeltaOptimizer';
-  private c: Scalar;
-  private epsilonScalar: Scalar;
-  private rhoScalar: Scalar;
-  private oneMinusRho: Scalar;
-
-  private accumulatedGrads: NamedVariableMap = {};
-  private accumulatedUpdates: NamedVariableMap = {};
+  static className = 'Adadelta';  // Name matters for Python compatibility.
+  private accumulatedGrads: OptimizerVariable[] = [];
+  private accumulatedUpdates: OptimizerVariable[] = [];
 
   constructor(
       protected learningRate: number, protected rho: number,
       protected epsilon: number = null) {
     super();
 
-    this.c = keep(scalar(-learningRate));
-    this.rhoScalar = keep(scalar(rho));
-    this.oneMinusRho = keep(scalar(1 - rho));
-
-    if (epsilon === null) {
-      epsilon = ENV.get('EPSILON');
+    if (epsilon == null) {
+      this.epsilon = ENGINE.backend.epsilon();
     }
-
-    this.epsilonScalar = keep(scalar(epsilon));
   }
 
-  applyGradients(variableGradients: NamedVariableMap) {
-    for (const variableName in variableGradients) {
-      const value = ENV.engine.registeredVariables[variableName];
-      if (this.accumulatedGrads[variableName] == null) {
-        const trainable = false;
-        tidy(() => {
-          this.accumulatedGrads[variableName] =
-              zerosLike(value).variable(trainable);
-        });
+  applyGradients(variableGradients: NamedVariableMap|NamedTensor[]) {
+    const variableNames = Array.isArray(variableGradients) ?
+        variableGradients.map(item => item.name) :
+        Object.keys(variableGradients);
+
+    variableNames.forEach((name, i) => {
+      const value = ENGINE.registeredVariables[name];
+      const trainable = false;
+      if (this.accumulatedGrads[i] == null) {
+        this.accumulatedGrads[i] = {
+          originalName: `${name}/accum_grad`,
+          variable: tidy(() => zerosLike(value).variable(trainable))
+        };
       }
-      if (this.accumulatedUpdates[variableName] == null) {
-        const trainable = false;
-        tidy(() => {
-          this.accumulatedUpdates[variableName] =
-              zerosLike(value).variable(trainable);
-        });
+      if (this.accumulatedUpdates[i] == null) {
+        this.accumulatedUpdates[i] = {
+          originalName: `${name}/accum_var`,
+          variable: tidy(() => zerosLike(value).variable(trainable))
+        };
       }
 
-      const gradient = variableGradients[variableName];
-      const accumulatedGrad = this.accumulatedGrads[variableName];
-      const accumulatedUpdate = this.accumulatedUpdates[variableName];
+      const gradient = Array.isArray(variableGradients) ?
+          variableGradients[i].tensor :
+          variableGradients[name];
+      if (gradient == null) {
+        return;
+      }
+
+      const accumulatedGrad = this.accumulatedGrads[i].variable;
+      const accumulatedUpdate = this.accumulatedUpdates[i].variable;
 
       tidy(() => {
-        const newAccumulatedGrad =
-            this.rhoScalar.mul(accumulatedGrad)
-                .add(this.oneMinusRho.mul(gradient.square()));
+        const newAccumulatedGrad = accumulatedGrad.mul(this.rho).add(
+            gradient.square().mul(1 - this.rho));
 
-        const updates = accumulatedUpdate.add(this.epsilonScalar)
+        const updates = accumulatedUpdate.add(this.epsilon)
                             .sqrt()
-                            .div(accumulatedGrad.add(this.epsilonScalar).sqrt())
+                            .div(accumulatedGrad.add(this.epsilon).sqrt())
                             .mul(gradient);
 
-        const newAccumulatedUpdate =
-            this.rhoScalar.mul(accumulatedUpdate)
-                .add(this.oneMinusRho.mul(updates.square()));
+        const newAccumulatedUpdate = accumulatedUpdate.mul(this.rho).add(
+            updates.square().mul(1 - this.rho));
 
-        this.accumulatedGrads[variableName].assign(newAccumulatedGrad);
-        this.accumulatedUpdates[variableName].assign(newAccumulatedUpdate);
+        accumulatedGrad.assign(newAccumulatedGrad);
+        accumulatedUpdate.assign(newAccumulatedUpdate);
 
-        const newValue = this.c.mul(updates).add(value);
+        const newValue = updates.mul(-this.learningRate).add(value);
         value.assign(newValue);
       });
+    });
+    this.incrementIterations();
+  }
+
+  dispose(): void {
+    if (this.accumulatedUpdates != null) {
+      dispose(this.accumulatedGrads.map(v => v.variable));
+      dispose(this.accumulatedUpdates.map(v => v.variable));
     }
   }
 
-  dispose() {
-    this.c.dispose();
-    this.epsilonScalar.dispose();
-    this.rhoScalar.dispose();
-    this.oneMinusRho.dispose();
-    if (this.accumulatedUpdates != null) {
-      Object.keys(this.accumulatedUpdates)
-          .forEach(name => this.accumulatedUpdates[name].dispose());
-      Object.keys(this.accumulatedGrads)
-          .forEach(name => this.accumulatedGrads[name].dispose());
-    }
+  async getWeights(): Promise<NamedTensor[]> {
+    // Order matters for Python compatibility.
+    const variables: OptimizerVariable[] =
+        [...this.accumulatedGrads, ...this.accumulatedUpdates];
+    return [await this.saveIterations()].concat(
+        variables.map(v => ({name: v.originalName, tensor: v.variable})));
   }
+
+  async setWeights(weightValues: NamedTensor[]): Promise<void> {
+    weightValues = await this.extractIterations(weightValues);
+    const variableCount = weightValues.length / 2;
+    const trainable = false;
+    this.accumulatedGrads =
+        weightValues.slice(0, variableCount).map(v => ({
+                                                   originalName: v.name,
+                                                   variable: v.tensor.variable(
+                                                       trainable)
+                                                 }));
+    this.accumulatedUpdates =
+        weightValues.slice(variableCount, variableCount * 2)
+            .map(v => ({
+                   originalName: v.name,
+                   variable: v.tensor.variable(trainable)
+                 }));
+  }
+
   getConfig(): ConfigDict {
     return {
-      learningRate: this.learningRate,
-      rho: this.rho,
-      epsilon: this.epsilon
+      'learningRate': this.learningRate,
+      'rho': this.rho,
+      'epsilon': this.epsilon
     };
   }
+
+  /** @nocollapse */
   static fromConfig<T extends Serializable>(
       cls: SerializableConstructor<T>, config: ConfigDict): T {
-    return new cls(config.learningRate, config.rho, config.epsilon);
+    return new cls(config['learningRate'], config['rho'], config['epsilon']);
   }
 }
 registerClass(AdadeltaOptimizer);

@@ -15,9 +15,21 @@
  * =============================================================================
  */
 
+import {ENV} from './environment';
 import {DataType, DataTypeMap, FlatVector, NumericDataType, RecursiveArray, TensorLike, TypedArray} from './types';
 
-/** Shuffles the array using Fisher-Yates algorithm. */
+/**
+ * Shuffles the array in-place using Fisher-Yates algorithm.
+ *
+ * ```js
+ * const a = [1, 2, 3, 4, 5];
+ * tf.util.shuffle(a);
+ * console.log(a);
+ * ```
+ *
+ * @param array The array to shuffle in-place.
+ */
+/** @doc {heading: 'Util', namespace: 'util'} */
 // tslint:disable-next-line:no-any
 export function shuffle(array: any[]|Uint32Array|Int32Array|
                         Float32Array): void {
@@ -76,7 +88,21 @@ export function distSquared(a: FlatVector, b: FlatVector): number {
   return result;
 }
 
-export function assert(expr: boolean, msg: string|(() => string)) {
+/**
+ * Asserts that the expression is true. Otherwise throws an error with the
+ * provided message.
+ *
+ * ```js
+ * const x = 2;
+ * tf.util.assert(x === 2, 'x is not 2');
+ * ```
+ *
+ * @param expr The expression to assert (as a boolean).
+ * @param msg A function that returns the message to report when throwing an
+ *     error. We use a function for performance reasons.
+ */
+/** @doc {heading: 'Util', namespace: 'util'} */
+export function assert(expr: boolean, msg: () => string) {
   if (!expr) {
     throw new Error(typeof msg === 'string' ? msg : msg());
   }
@@ -86,31 +112,59 @@ export function assertShapesMatch(
     shapeA: number[], shapeB: number[], errorMessagePrefix = ''): void {
   assert(
       arraysEqual(shapeA, shapeB),
-      errorMessagePrefix + ` Shapes ${shapeA} and ${shapeB} must match`);
+      () => errorMessagePrefix + ` Shapes ${shapeA} and ${shapeB} must match`);
 }
 
 export function assertNonNull(a: TensorLike): void {
   assert(
       a != null,
-      `The input to the tensor constructor must be a non-null value.`);
+      () => `The input to the tensor constructor must be a non-null value.`);
 }
 
 // NOTE: We explicitly type out what T extends instead of any so that
 // util.flatten on a nested array of number doesn't try to infer T as a
 // number[][], causing us to explicitly type util.flatten<number>().
+/**
+ *  Flattens an arbitrarily nested array.
+ *
+ * ```js
+ * const a = [[1, 2], [3, 4], [5, [6, [7]]]];
+ * const flat = tf.util.flatten(a);
+ * console.log(flat);
+ * ```
+ *
+ *  @param arr The nested array to flatten.
+ *  @param result The destination array which holds the elements.
+ *  @param skipTypedArray If true, avoids flattening the typed arrays. Defaults
+ *      to false.
+ */
+/** @doc {heading: 'Util', namespace: 'util'} */
 export function
 flatten<T extends number|boolean|string|Promise<number>|TypedArray>(
-    arr: T|RecursiveArray<T>, ret: T[] = []): T[] {
-  if (Array.isArray(arr) || isTypedArray(arr)) {
+    arr: T|RecursiveArray<T>, result: T[] = [], skipTypedArray = false): T[] {
+  if (result == null) {
+    result = [];
+  }
+  if (Array.isArray(arr) || isTypedArray(arr) && !skipTypedArray) {
     for (let i = 0; i < arr.length; ++i) {
-      flatten(arr[i], ret);
+      flatten(arr[i], result, skipTypedArray);
     }
   } else {
-    ret.push(arr as T);
+    result.push(arr as T);
   }
-  return ret;
+  return result;
 }
 
+/**
+ * Returns the size (number of elements) of the tensor given its shape.
+ *
+ * ```js
+ * const shape = [3, 4, 2];
+ * const size = tf.util.sizeFromShape(shape);
+ * console.log(size);
+ * ```
+ */
+/** @doc {heading: 'Util', namespace: 'util'} */
 export function sizeFromShape(shape: number[]): number {
   if (shape.length === 0) {
     // Scalar.
@@ -167,12 +221,8 @@ export function tanh(x: number): number {
 }
 
 export function sizeToSquarishShape(size: number): [number, number] {
-  for (let a = Math.floor(Math.sqrt(size)); a > 1; --a) {
-    if (size % a === 0) {
-      return [a, size / a];
-    }
-  }
-  return [1, size];
+  const width = Math.ceil(Math.sqrt(size));
+  return [width, Math.ceil(size / width)];
 }
 
 export function createShuffledIndices(n: number): Uint32Array {
@@ -270,36 +320,48 @@ export function inferFromImplicitShape(
   return newShape;
 }
 
+export function parseAxisParam(
+    axis: number|number[], shape: number[]): number[] {
+  const rank = shape.length;
+
+  // Normalize input
+  axis = axis == null ? shape.map((s, i) => i) : [].concat(axis);
+
+  // Check for valid range
+  assert(
+      axis.every(ax => ax >= -rank && ax < rank),
+      () =>
+          `All values in axis param must be in range [-${rank}, ${rank}) but ` +
+          `got axis ${axis}`);
+
+  // Check for only integers
+  assert(
+      axis.every(ax => isInt(ax)),
+      () => `All values in axis param must be integers but ` +
+          `got axis ${axis}`);
+
+  // Handle negative axis.
+  return axis.map(a => a < 0 ? rank + a : a);
+}
+
 /** Reduces the shape by removing all dimensions of shape 1. */
 export function squeezeShape(shape: number[], axis?: number[]):
     {newShape: number[], keptDims: number[]} {
   const newShape: number[] = [];
   const keptDims: number[] = [];
-  if (axis != null) {
-    for (let i = 0; i < axis.length; ++i) {
-      if (axis[i] < -shape.length || axis[i] >= shape.length) {
-        throw new Error(
-          `Can't squeeze axis ${axis[i]} since its not in ` +
-          `[-${shape.length}, ${shape.length}) for shape ${shape}`);
-      } 
-      if (axis[i] < 0) {
-        axis[i] = shape.length + axis[i];
-      }
-    }
-    axis.sort();
-  }
+  const axes = axis == null ? null : parseAxisParam(axis, shape).sort();
   let j = 0;
   for (let i = 0; i < shape.length; ++i) {
-    if (axis != null) {
-      if (axis[j] === i && shape[i] !== 1) {
+    if (axes != null) {
+      if (axes[j] === i && shape[i] !== 1) {
         throw new Error(
             `Can't squeeze axis ${i} since its dim '${shape[i]}' is not 1`);
       }
-      if ((axis[j] == null || axis[j] > i) && shape[i] === 1) {
+      if ((axes[j] == null || axes[j] > i) && shape[i] === 1) {
         newShape.push(shape[i]);
         keptDims.push(i);
       }
-      if (axis[j] <= i) {
+      if (axes[j] <= i) {
         j++;
       }
     }
@@ -323,7 +385,7 @@ export function getTypedArrayFromDType<D extends NumericDataType>(
   } else {
     throw new Error(`Unknown data type ${dtype}`);
   }
-  return values;
+  return values as DataTypeMap[D];
 }
 
 export function getArrayFromDType<D extends DataType>(
@@ -340,34 +402,37 @@ export function getArrayFromDType<D extends DataType>(
   } else {
     throw new Error(`Unknown data type ${dtype}`);
   }
-  return values;
+  return values as DataTypeMap[D];
 }
 
-export function checkComputationForNaN<D extends DataType>(
+export function checkComputationForErrors<D extends DataType>(
     vals: DataTypeMap[D], dtype: D, name: string): void {
   if (dtype !== 'float32') {
     // Only floating point computations will generate NaN values
     return;
   }
   for (let i = 0; i < vals.length; i++) {
-    if (isNaN(vals[i] as number)) {
-      throw Error(`The result of the '${name}' has NaNs.`);
+    const num = vals[i] as number;
+    if (isNaN(num) || !isFinite(num)) {
+      throw Error(`The result of the '${name}' is ${num}.`);
     }
   }
 }
 
-export function checkConversionForNaN<D extends DataType>(
+export function checkConversionForErrors<D extends DataType>(
     vals: DataTypeMap[D]|number[], dtype: D): void {
-  if (dtype === 'float32') {
-    // NaN is valid for floating point conversions
-    return;
-  }
-
   for (let i = 0; i < vals.length; i++) {
-    if (isNaN(vals[i] as number)) {
-      throw Error(`NaN is not a valid value for dtype: '${dtype}'.`);
+    const num = vals[i] as number;
+    if (isNaN(num) || !isFinite(num)) {
+      throw Error(`A tensor of type ${dtype} being uploaded contains ${num}.`);
     }
   }
+}
+
+/** Returns true if the dtype is valid. */
+export function isValidDtype(dtype: DataType): boolean {
+  return dtype === 'bool' || dtype === 'complex64' || dtype === 'float32' ||
+      dtype === 'int32' || dtype === 'string';
 }
 
 /**
@@ -413,12 +478,12 @@ export function bytesPerElement(dtype: DataType): number {
  * not possible since it depends on the encoding of the html page that serves
  * the website.
  */
-export function bytesFromStringArray(arr: string[]): number {
+export function bytesFromStringArray(arr: Uint8Array[]): number {
   if (arr == null) {
     return 0;
   }
   let bytes = 0;
-  arr.forEach(x => bytes += x.length * 2);
+  arr.forEach(x => bytes += x.length);
   return bytes;
 }
 
@@ -436,7 +501,7 @@ export function isNumber(value: {}): boolean {
 }
 
 export function inferDtype(values: TensorLike): DataType {
-  if (values instanceof Array) {
+  if (Array.isArray(values)) {
     return inferDtype(values[0]);
   }
   if (values instanceof Float32Array) {
@@ -487,18 +552,18 @@ export function toTypedArray(
   if (dtype === 'string') {
     throw new Error('Cannot convert a string[] to a TypedArray');
   }
+  if (Array.isArray(a)) {
+    a = flatten(a);
+  }
+  if (debugMode) {
+    checkConversionForErrors(a as number[], dtype);
+  }
   if (noConversionNeeded(a, dtype)) {
     return a as TypedArray;
-  }
-  if (Array.isArray(a)) {
-    a = flatten(a as number[]);
   }
   if (dtype == null || dtype === 'float32' || dtype === 'complex64') {
     return new Float32Array(a as number[]);
   } else if (dtype === 'int32') {
-    if (debugMode) {
-      checkConversionForNaN(a as number[], dtype);
-    }
     return new Int32Array(a as number[]);
   } else if (dtype === 'bool') {
     const bool = new Uint8Array((a as number[]).length);
@@ -511,6 +576,42 @@ export function toTypedArray(
   } else {
     throw new Error(`Unknown data type ${dtype}`);
   }
+}
+
+function createNestedArray(offset: number, shape: number[], a: TypedArray) {
+  const ret = new Array();
+  if (shape.length === 1) {
+    const d = shape[0];
+    for (let i = 0; i < d; i++) {
+      ret[i] = a[offset + i];
+    }
+  } else {
+    const d = shape[0];
+    const rest = shape.slice(1);
+    const len = rest.reduce((acc, c) => acc * c);
+    for (let i = 0; i < d; i++) {
+      ret[i] = createNestedArray(offset + i * len, rest, a);
+    }
+  }
+  return ret;
+}
+
+// Provide a nested array of TypedArray in given shape.
+export function toNestedArray(shape: number[], a: TypedArray) {
+  if (shape.length === 0) {
+    // Scalar type should return a single number.
+    return a[0];
+  }
+  const size = shape.reduce((acc, c) => acc * c);
+  if (size === 0) {
+    // A tensor with shape zero should be turned into empty list.
+    return [];
+  }
+  if (size !== a.length) {
+    throw new Error(`[${shape}] does not match the input size.`);
+  }
+
+  return createNestedArray(0, shape, a);
 }
 
 function noConversionNeeded(a: TensorLike, dtype: DataType): boolean {
@@ -531,29 +632,81 @@ export function makeOnesTypedArray<D extends DataType>(
 export function makeZerosTypedArray<D extends DataType>(
     size: number, dtype: D): DataTypeMap[D] {
   if (dtype == null || dtype === 'float32' || dtype === 'complex64') {
-    return new Float32Array(size);
+    return new Float32Array(size) as DataTypeMap[D];
   } else if (dtype === 'int32') {
-    return new Int32Array(size);
+    return new Int32Array(size) as DataTypeMap[D];
   } else if (dtype === 'bool') {
-    return new Uint8Array(size);
+    return new Uint8Array(size) as DataTypeMap[D];
   } else {
     throw new Error(`Unknown data type ${dtype}`);
   }
 }
 
 /**
- * Returns the current high-resolution real time in milliseconds. It is
- * relative to an arbitrary time in the past.
+ * Returns the current high-resolution time in milliseconds relative to an
+ * arbitrary time in the past. It works across different platforms (node.js,
+ * browsers).
+ *
+ * ```js
+ * console.log(tf.util.now());
+ * ```
  */
+/** @doc {heading: 'Util', namespace: 'util'} */
 export function now(): number {
-  if (typeof performance !== 'undefined') {
-    return performance.now();
-  } else if (typeof process !== 'undefined') {
-    const time = process.hrtime();
-    return time[0] * 1000 + time[1] / 1000000;
-  } else {
-    throw new Error(
-        'Cannot measure time in this environment. You should run tf.js ' +
-        'in the browser or in Node.js');
-  }
+  return ENV.platform.now();
+}
+
+export function assertNonNegativeIntegerDimensions(shape: number[]) {
+  shape.forEach(dimSize => {
+    assert(
+        Number.isInteger(dimSize) && dimSize >= 0,
+        () =>
+            `Tensor must have a shape comprised of positive integers but got ` +
+            `shape [${shape}].`);
+  });
+}
+
+/**
+ * Returns a platform-specific implementation of
+ * [`fetch`](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API).
+ *
+ * If `fetch` is defined on the global object (`window`, `process`, etc.),
+ * `tf.util.fetch` returns that function.
+ *
+ * If not, `tf.util.fetch` returns a platform-specific solution.
+ *
+ * ```js
+ * const resource = await tf.util.fetch('https://unpkg.com/@tensorflow/tfjs');
+ * // handle response
+ * ```
+ */
+/** @doc {heading: 'Util'} */
+export function fetch(
+    path: string, requestInits?: RequestInit): Promise<Response> {
+  return ENV.platform.fetch(path, requestInits);
+}
+
+/**
+ * Encodes the provided string into bytes using the provided encoding scheme.
+ *
+ * @param s The string to encode.
+ * @param encoding The encoding scheme. Defaults to utf-8.
+ *
+ */
+/** @doc {heading: 'Util'} */
+export function encodeString(s: string, encoding = 'utf-8'): Uint8Array {
+  encoding = encoding || 'utf-8';
+  return ENV.platform.encode(s, encoding);
+}
+
+/**
+ * Decodes the provided bytes into a string using the provided encoding scheme.
+ * @param bytes The bytes to decode.
+ *
+ * @param encoding The encoding scheme. Defaults to utf-8.
+ */
+/** @doc {heading: 'Util'} */
+export function decodeString(bytes: Uint8Array, encoding = 'utf-8'): string {
+  encoding = encoding || 'utf-8';
+  return ENV.platform.decode(bytes, encoding);
 }

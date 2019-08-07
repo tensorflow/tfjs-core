@@ -254,10 +254,9 @@ export function computeConv3DInfo(
   };
 }
 
-function computeOutputShape3D(
-    inShape: [number, number, number], fieldSize: number, outDepth: number,
-    stride: number, zeroPad?: number,
-    roundingMode?: 'floor'|'round'|'ceil'): [number, number, number] {
+function computeOutputShape2D(
+    inShape: [number, number], fieldSize: number, stride: number,
+    zeroPad?: number, roundingMode?: 'floor'|'round'|'ceil'): [number, number] {
   if (zeroPad == null) {
     zeroPad = computeDefaultPad(inShape, fieldSize, stride);
   }
@@ -268,21 +267,21 @@ function computeOutputShape3D(
       (inputRows - fieldSize + 2 * zeroPad) / stride + 1, roundingMode);
   util.assert(
       util.isInt(outputRows),
-      `The output # of rows (${outputRows}) must be an integer. Change the ` +
-          `stride and/or zero pad parameters`);
+      () => `The output # of rows (${outputRows}) must be an integer. ` +
+          `Change the stride and/or zero pad parameters`);
 
   const outputCols = conditionalRound(
       (inputCols - fieldSize + 2 * zeroPad) / stride + 1, roundingMode);
   util.assert(
       util.isInt(outputCols),
-      `The output # of columns (${outputCols}) must be an integer. Change ` +
-          `the stride and/or zero pad parameters`);
+      () => `The output # of columns (${outputCols}) must be an integer. ` +
+          `Change the stride and/or zero pad parameters`);
 
-  return [outputRows, outputCols, outDepth];
+  return [outputRows, outputCols];
 }
 
 export function computeDefaultPad(
-    inputShape: [number, number, number], fieldSize: number, stride: number,
+    inputShape: [number, number], fieldSize: number, stride: number,
     dilation = 1): number {
   const effectiveFieldSize = getEffectiveFilterSize(fieldSize, dilation);
   return Math.floor(
@@ -329,17 +328,17 @@ function getPadAndOutInfo(
   if (typeof pad === 'number') {
     const padType = (pad === 0) ? 'VALID' : 'NUMBER';
     padInfo = {top: pad, bottom: pad, left: pad, right: pad, type: padType};
-    const outShape = computeOutputShape3D(
-        [inHeight, inWidth, 1], filterHeight, 1, strideHeight, pad,
-        roundingMode);
+    const outShape = computeOutputShape2D(
+        [inHeight, inWidth], filterHeight, strideHeight, pad, roundingMode);
     outHeight = outShape[0];
     outWidth = outShape[1];
   } else if (pad === 'same') {
     outHeight = Math.ceil(inHeight / strideHeight);
     outWidth = Math.ceil(inWidth / strideWidth);
     const padAlongHeight =
-        (outHeight - 1) * strideHeight + filterHeight - inHeight;
-    const padAlongWidth = (outWidth - 1) * strideWidth + filterWidth - inWidth;
+        Math.max(0, (outHeight - 1) * strideHeight + filterHeight - inHeight);
+    const padAlongWidth =
+        Math.max(0, (outWidth - 1) * strideWidth + filterWidth - inWidth);
     const top = Math.floor(padAlongHeight / 2);
     const bottom = padAlongHeight - top;
     const left = Math.floor(padAlongWidth / 2);

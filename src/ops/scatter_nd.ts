@@ -15,11 +15,10 @@
  * =============================================================================
  */
 
-import {ENV} from '../environment';
+import {ENGINE} from '../engine';
 import {Tensor} from '../tensor';
 import {convertToTensor} from '../tensor_util_env';
 import {Rank, ShapeMap, TensorLike} from '../types';
-
 import {op} from './operation';
 import * as scatter_nd_util from './scatter_nd_util';
 
@@ -30,10 +29,10 @@ import * as scatter_nd_util from './scatter_nd_util';
  * extracts values or slices from a given tensor.
  *
  * ```js
- * const indices = tf.tensor2d([[4], [3], [1], [7]]);
- * const updates = tf.tensor2d([9, 10, 11, 12]);
+ * const indices = tf.tensor2d([4, 3, 1, 7], [4, 1], 'int32');
+ * const updates = tf.tensor1d([9, 10, 11, 12]);
  * const shape = [8];
- * tf.scatterND(indices, updates, shape]).print() //[0, 11, 0, 10, 9, 0, 0, 12]
+ * tf.scatterND(indices, updates, shape).print() //[0, 11, 0, 10, 9, 0, 0, 12]
  * ```
  *
  * @param indices The tensor contains the indices into the output tensor.
@@ -48,7 +47,7 @@ function scatterND_<R extends Rank>(
   const $updates = convertToTensor(updates, 'updates', 'scatterND');
   scatter_nd_util.validateInput($updates, $indices, shape);
 
-  return ENV.engine.runKernel(
+  return ENGINE.runKernel(
              backend => backend.scatterND($indices, $updates, shape),
              {$indices, $updates}) as Tensor<R>;
 }

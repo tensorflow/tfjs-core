@@ -4,11 +4,14 @@
     "moduleResolution": "node",
     "noImplicitAny": true,
     "sourceMap": true,
-    "removeComments": true,
+    "removeComments": false,
     "preserveConstEnums": true,
     "declaration": true,
     "target": "es5",
-    "lib": ["es2015", "dom"],
+    "lib": [
+      "es2015",
+      "dom"
+    ],
     "outDir": "./dist",
     "noUnusedLocals": true,
     "noImplicitReturns": true,
@@ -21,5 +24,8 @@
   },
   "include": [
     "src/"
+  ],
+  "exclude": [
+    "node_modules/"
   ]
 }

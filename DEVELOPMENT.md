@@ -16,7 +16,7 @@ to keep the `yarn.lock` file up to date.
 #### Code editor
 We recommend using [Visual Studio Code](https://code.visualstudio.com/) for
 development. Make sure to install
-[TSLint VSCode extension](https://marketplace.visualstudio.com/items?itemName=eg2.tslint)
+[TSLint VSCode extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode.vscode-typescript-tslint-plugin)
 and the npm [clang-format](https://github.com/angular/clang-format) `1.2.2` or later
 with the
 [Clang-Format VSCode extension](https://marketplace.visualstudio.com/items?itemName=xaver.clang-format)
@@ -44,6 +44,14 @@ To run the tests once and exit the karma process (helpful on Windows):
 ```bash
 $ yarn test --single-run
 ```
+
+To run the tests in an environment that does not have GPU support (such as Chrome Remote Desktop):
+
+```bash
+$ yarn test --testEnv cpu
+```
+
+Available test environments: cpu, webgl1, webgl2.
 
 #### Packaging (browser and npm)
 

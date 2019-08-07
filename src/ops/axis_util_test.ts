@@ -16,8 +16,8 @@
  */
 
 import * as tf from '../index';
-import {describeWithFlags} from '../jasmine_util';
-import {ALL_ENVS, expectArraysClose} from '../test_util';
+import {ALL_ENVS, describeWithFlags} from '../jasmine_util';
+import {expectArraysClose} from '../test_util';
 
 import * as axis_util from './axis_util';
 
@@ -188,83 +188,6 @@ describe('axis_util getPermAxes', () => {
   });
 });
 
-describe('axis_util parseAxisParam', () => {
-  it('axis=null returns no axes for scalar', () => {
-    const axis: number = null;
-    const shape: number[] = [];
-    expect(axis_util.parseAxisParam(axis, shape)).toEqual([]);
-  });
-
-  it('axis=null returns 0 axis for Tensor1D', () => {
-    const axis: number = null;
-    const shape = [4];
-    expect(axis_util.parseAxisParam(axis, shape)).toEqual([0]);
-  });
-
-  it('axis=null returns all axes for Tensor3D', () => {
-    const axis: number[] = null;
-    const shape = [3, 1, 2];
-    expect(axis_util.parseAxisParam(axis, shape)).toEqual([0, 1, 2]);
-  });
-
-  it('axis as a single number', () => {
-    const axis = 1;
-    const shape = [3, 1, 2];
-    expect(axis_util.parseAxisParam(axis, shape)).toEqual([1]);
-  });
-
-  it('axis as single negative number', () => {
-    const axis = -1;
-    const shape = [3, 1, 2];
-    expect(axis_util.parseAxisParam(axis, shape)).toEqual([2]);
-
-    const axis2 = -2;
-    expect(axis_util.parseAxisParam(axis2, shape)).toEqual([1]);
-
-    const axis3 = -3;
-    expect(axis_util.parseAxisParam(axis3, shape)).toEqual([0]);
-  });
-
-  it('axis as list of negative numbers', () => {
-    const axis = [-1, -3];
-    const shape = [3, 1, 2];
-    expect(axis_util.parseAxisParam(axis, shape)).toEqual([2, 0]);
-  });
-
-  it('axis as list of positive numbers', () => {
-    const axis = [0, 2];
-    const shape = [3, 1, 2];
-    expect(axis_util.parseAxisParam(axis, shape)).toEqual([0, 2]);
-  });
-
-  it('axis as combo of positive and negative numbers', () => {
-    const axis = [0, -1];
-    const shape = [3, 1, 2];
-    expect(axis_util.parseAxisParam(axis, shape)).toEqual([0, 2]);
-  });
-
-  it('axis out of range throws error', () => {
-    const axis = -4;
-    const shape = [3, 1, 2];
-    expect(() => axis_util.parseAxisParam(axis, shape)).toThrowError();
-
-    const axis2 = 4;
-    expect(() => axis_util.parseAxisParam(axis2, shape)).toThrowError();
-  });
-
-  it('axis a list with one number out of range throws error', () => {
-    const axis = [0, 4];
-    const shape = [3, 1, 2];
-    expect(() => axis_util.parseAxisParam(axis, shape)).toThrowError();
-  });
-
-  it('axis with decimal value throws error', () => {
-    const axis = 0.5;
-    const shape = [3, 1, 2];
-    expect(() => axis_util.parseAxisParam(axis, shape)).toThrowError();
-  });
-});
-
 describeWithFlags('axis_util getUndoAxesPermutation', ALL_ENVS, () => {
   it('4d axes', () => {
     const axes = [2, 0, 1, 3];
@@ -281,13 +204,13 @@ describeWithFlags('axis_util getUndoAxesPermutation', ALL_ENVS, () => {
     expect(axis_util.getUndoAxesPermutation(axes)).toEqual([2, 1, 0]);
   });
 
-  it('4d array with values', () => {
+  it('4d array with values', async () => {
     const axes = [2, 0, 1, 3];
     const undoPermutation = axis_util.getUndoAxesPermutation(axes);
 
     const a = tf.randomNormal([2, 3, 4, 5]);
     const aT = tf.transpose(a, axes);
     const aTT = tf.transpose(aT, undoPermutation);
-    expectArraysClose(a, aTT);
+    expectArraysClose(await a.data(), await aTT.data());
   });
 });

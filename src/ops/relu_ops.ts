@@ -15,11 +15,12 @@
  * =============================================================================
  */
 
-import {ENV} from '../environment';
+import {ENGINE} from '../engine';
 import {Tensor} from '../tensor';
 import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import {maximum} from './binary_ops';
+import {getReductionAxes} from './broadcast_util';
 import {where} from './logical_ops';
 import {op} from './operation';
 import {SELU_SCALE, SELU_SCALEALPHA} from './selu_util';
@@ -43,11 +44,15 @@ function relu_<T extends Tensor>(x: T|TensorLike): T {
   if ($x.dtype === 'bool') {
     return $x.toInt();
   }
-  const grad = (dy: T) => {
-    const stepRes = $x.step();
-    return {$x: () => dy.mulStrict(stepRes.toFloat())};
+  const grad = (dy: T, saved: Tensor[]) => {
+    const [$x] = saved;
+    return {$x: () => dy.mulStrict($x.step().toFloat() as T)};
   };
-  return ENV.engine.runKernel(backend => backend.relu($x), {$x}, grad);
+  return ENGINE.runKernel((backend, save) => {
+    const res = backend.relu($x);
+    save([$x]);
+    return res;
+  }, {$x}, grad);
 }
 
 /**
@@ -67,12 +72,14 @@ function elu_<T extends Tensor>(x: T|TensorLike): T {
   const grad = (dy: T, saved: Tensor[]) => {
     const [y] = saved;
     return {
-      $x: () =>
-          ENV.engine.runKernel(backend => backend.eluDer(dy, y), {dy, y}) as T
+      $x: () => ENGINE.runKernel(backend => backend.eluDer(dy, y), {dy, y}) as T
     };
   };
-  return ENV.engine.runKernel(
-      (backend, save) => save(backend.elu($x)), {$x}, grad);
+  return ENGINE.runKernel((backend, save) => {
+    const y = backend.elu($x);
+    save([y]);
+    return y;
+  }, {$x}, grad);
 }
 
 /**
@@ -91,7 +98,8 @@ function elu_<T extends Tensor>(x: T|TensorLike): T {
 function selu_<T extends Tensor>(x: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'selu');
 
-  const grad = (dy: T) => {
+  const grad = (dy: T, saved: Tensor[]) => {
+    const [$x] = saved;
     return {
       $x: () => {
         const mask = $x.greater(scalar(0));
@@ -106,7 +114,11 @@ function selu_<T extends Tensor>(x: T|TensorLike): T {
       }
     };
   };
-  return ENV.engine.runKernel(backend => backend.selu($x), {$x}, grad);
+  return ENGINE.runKernel((backend, save) => {
+    const res = backend.selu($x);
+    save([$x]);
+    return res;
+  }, {$x}, grad);
 }
 
 /**
@@ -149,17 +161,28 @@ function prelu_<T extends Tensor>(x: T|TensorLike, alpha: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'prelu');
   const $alpha = convertToTensor(alpha, 'alpha', 'prelu');
 
-  const grad = (dy: Tensor) => {
+  const grad = (dy: Tensor, saved: Tensor[]) => {
+    const [$x, $alpha] = saved;
     const mask = $x.greater(0);
 
     return {
       $x: () => where(mask, dy, dy.mul($alpha)) as T,
-      $alpha: () => where(mask, zerosLike(dy), dy.mul($x)) as T
+      $alpha: () => {
+        let res = where(mask, zerosLike(dy), dy.mul($x));
+        const reduceAxes = getReductionAxes($alpha.shape, dy.shape);
+        if (reduceAxes.length > 0) {
+          res = res.sum(reduceAxes);
+        }
+        return res.reshape($alpha.shape) as T;
+      }
     };
   };
 
-  return ENV.engine.runKernel(
-             backend => backend.prelu($x, $alpha), {$x, $alpha}, grad) as T;
+  return ENGINE.runKernel((backend, save) => {
+    const res = backend.prelu($x, $alpha);
+    save([$x, $alpha]);
+    return res;
+  }, {$x, $alpha}, grad) as T;
 }
 
 export const elu = op({elu_});

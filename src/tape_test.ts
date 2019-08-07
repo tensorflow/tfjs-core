@@ -15,10 +15,11 @@
  * =============================================================================
  */
 
+import {ScopeFn} from './engine';
 import * as tf from './index';
-import {describeWithFlags} from './jasmine_util';
+import {ALL_ENVS, describeWithFlags} from './jasmine_util';
 import {backpropagateGradients, getFilteredNodesXToY, TapeNode} from './tape';
-import {ALL_ENVS, expectArraysClose} from './test_util';
+import {expectArraysClose} from './test_util';
 
 describeWithFlags('getFilteredNodesXToY', ALL_ENVS, () => {
   it('no paths from x to y', () => {
@@ -179,13 +180,9 @@ describeWithFlags('getFilteredNodesXToY', ALL_ENVS, () => {
     const orphan = tf.scalar(0);
     const y = tf.scalar(2);
 
-    const tape: TapeNode[] = [{
-      id: 0,
-      name: 'node0',
-      inputs: {x, orphan},
-      outputs: [y],
-      gradient: null
-    }];
+    const tape: TapeNode[] = [
+      {id: 0, name: 'node0', inputs: {x, orphan}, outputs: [y], gradient: null}
+    ];
 
     const filteredTapeNodes = getFilteredNodesXToY(tape, [x], y);
 
@@ -202,13 +199,9 @@ describeWithFlags('getFilteredNodesXToY', ALL_ENVS, () => {
     const y2 = tf.scalar(2);
     const y3 = tf.scalar(2);
 
-    const tape: TapeNode[] = [{
-      id: 0,
-      name: 'node0',
-      inputs: {x},
-      outputs: [y1, y2, y3],
-      gradient: null
-    }];
+    const tape: TapeNode[] = [
+      {id: 0, name: 'node0', inputs: {x}, outputs: [y1, y2, y3], gradient: null}
+    ];
 
     const filteredNodes1 = getFilteredNodesXToY(tape, [x], y1);
     expect(filteredNodes1.length).toBe(1);
@@ -237,11 +230,14 @@ describeWithFlags('backpropagateGradients', ALL_ENVS, () => {
     const tape: TapeNode[] =
         [{id: 0, name: 'node0', inputs: {x}, outputs: [y], gradient: null}];
 
-    expect(() => backpropagateGradients(accumulatedGradientsMap, tape))
+    expect(
+        () => backpropagateGradients(
+            accumulatedGradientsMap, tape,
+            f => tf.tidy(f as ScopeFn<tf.Tensor>)))
         .toThrowError();
   });
 
-  it('basic backprop with 1 node', () => {
+  it('basic backprop with 1 node', async () => {
     const x = tf.scalar(0);
     const y = tf.scalar(1);
 
@@ -260,12 +256,13 @@ describeWithFlags('backpropagateGradients', ALL_ENVS, () => {
       }
     }];
 
-    backpropagateGradients(accumulatedGradientsMap, tape);
+    backpropagateGradients(
+        accumulatedGradientsMap, tape, f => tf.tidy(f as ScopeFn<tf.Tensor>));
 
-    expectArraysClose(accumulatedGradientsMap[x.id], [2]);
+    expectArraysClose(await accumulatedGradientsMap[x.id].data(), [2]);
   });
 
-  it('basic backprop with 2 nodes', () => {
+  it('basic backprop with 2 nodes', async () => {
     const x = tf.scalar(0);
     const intermediate = tf.scalar(1);
     const y = tf.scalar(2);
@@ -296,13 +293,14 @@ describeWithFlags('backpropagateGradients', ALL_ENVS, () => {
       }
     ];
 
-    backpropagateGradients(accumulatedGradientsMap, tape);
+    backpropagateGradients(
+        accumulatedGradientsMap, tape, f => tf.tidy(f as ScopeFn<tf.Tensor>));
 
     // dx = dy + 1 + 1
-    expectArraysClose(accumulatedGradientsMap[x.id], [3]);
+    expectArraysClose(await accumulatedGradientsMap[x.id].data(), [3]);
   });
 
-  it('basic backprop with a split node accumulates gradients', () => {
+  it('basic backprop with a split node accumulates gradients', async () => {
     const x = tf.scalar(0);
     const intermediate1 = tf.scalar(1);
     const intermediate2 = tf.scalar(2);
@@ -346,39 +344,44 @@ describeWithFlags('backpropagateGradients', ALL_ENVS, () => {
       }
     ];
 
-    backpropagateGradients(accumulatedGradientsMap, tape);
+    backpropagateGradients(
+        accumulatedGradientsMap, tape, f => tf.tidy(f as ScopeFn<tf.Tensor>));
 
     // dx = dy + 1 + 1 + 1 + 1 + 1
-    expectArraysClose(accumulatedGradientsMap[x.id], [dy.dataSync()[0] + 5]);
+    expectArraysClose(
+        await accumulatedGradientsMap[x.id].data(), [(await dy.data())[0] + 5]);
   });
 
-  it('backprop over 1 node with 3 outputs, w.r.t to the 2nd output', () => {
-    const x = tf.tensor1d([1, 1, 1]);
-    const y1 = tf.scalar(1);
-    const y2 = tf.scalar(1);
-    const y3 = tf.scalar(1);
+  it('backprop over 1 node with 3 outputs, w.r.t to the 2nd output',
+     async () => {
+       const x = tf.tensor1d([1, 1, 1]);
+       const y1 = tf.scalar(1);
+       const y2 = tf.scalar(1);
+       const y3 = tf.scalar(1);
 
-    const accumulatedGradientsMap: {[tensorId: number]: tf.Tensor} = {};
-    // Backproping through the 2nd output.
-    const dy2 = tf.scalar(5);
-    accumulatedGradientsMap[y2.id] = dy2;
+       const accumulatedGradientsMap: {[tensorId: number]: tf.Tensor} = {};
+       // Backproping through the 2nd output.
+       const dy2 = tf.scalar(5);
+       accumulatedGradientsMap[y2.id] = dy2;
 
-    let dys: tf.Scalar[];
-    const tape: TapeNode[] = [{
-      id: 0,
-      name: 'node0',
-      inputs: {x},
-      outputs: [y1, y2, y3],
-      gradient: (dys_: tf.Scalar[]) => {
-        dys = dys_;
-        return {x: () => tf.stack(dys_)};
-      }
-    }];
+       let dys: tf.Scalar[];
+       const tape: TapeNode[] = [{
+         id: 0,
+         name: 'node0',
+         inputs: {x},
+         outputs: [y1, y2, y3],
+         gradient: (dys_: tf.Scalar[]) => {
+           dys = dys_;
+           return {x: () => tf.stack(dys_)};
+         }
+       }];
 
-    backpropagateGradients(accumulatedGradientsMap, tape);
-    expectArraysClose(accumulatedGradientsMap[x.id], [0, 5, 0]);
-    expectArraysClose(dys[0], [0]);
-    expectArraysClose(dys[1], [5]);
-    expectArraysClose(dys[2], [0]);
-  });
+       backpropagateGradients(
+           accumulatedGradientsMap, tape,
+           f => tf.tidy(f as ScopeFn<tf.Tensor>));
+       expectArraysClose(await accumulatedGradientsMap[x.id].data(), [0, 5, 0]);
+       expectArraysClose(await dys[0].data(), [0]);
+       expectArraysClose(await dys[1].data(), [5]);
+       expectArraysClose(await dys[2].data(), [0]);
+     });
 });

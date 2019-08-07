@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {ENV} from '../environment';
+import {ENGINE} from '../engine';
 import {Tensor} from '../tensor';
 import {makeTypesMatch} from '../tensor_util';
 import {convertToTensor} from '../tensor_util_env';
@@ -47,8 +47,7 @@ function notEqual_<T extends Tensor>(
   let $b = convertToTensor(b, 'b', 'notEqual');
   [$a, $b] = makeTypesMatch($a, $b);
   assertAndGetBroadcastShape($a.shape, $b.shape);
-  return ENV.engine.runKernel(backend => backend.notEqual($a, $b), {$a, $b}) as
-      T;
+  return ENGINE.runKernel(backend => backend.notEqual($a, $b), {$a, $b}) as T;
 }
 
 /**
@@ -90,7 +89,7 @@ function less_<T extends Tensor>(
   [$a, $b] = makeTypesMatch($a, $b);
   assertAndGetBroadcastShape($a.shape, $b.shape);
 
-  return ENV.engine.runKernel(backend => backend.less($a, $b), {$a, $b}) as T;
+  return ENGINE.runKernel(backend => backend.less($a, $b), {$a, $b}) as T;
 }
 
 /**
@@ -132,7 +131,7 @@ function equal_<T extends Tensor>(
   [$a, $b] = makeTypesMatch($a, $b);
   assertAndGetBroadcastShape($a.shape, $b.shape);
 
-  return ENV.engine.runKernel(backend => backend.equal($a, $b), {$a, $b}) as T;
+  return ENGINE.runKernel(backend => backend.equal($a, $b), {$a, $b}) as T;
 }
 
 function equalStrict_<T extends Tensor>(a: T|TensorLike, b: T|TensorLike): T {
@@ -166,8 +165,7 @@ function lessEqual_<T extends Tensor>(
   [$a, $b] = makeTypesMatch($a, $b);
   assertAndGetBroadcastShape($a.shape, $b.shape);
 
-  return ENV.engine.runKernel(backend => backend.lessEqual($a, $b), {$a, $b}) as
-      T;
+  return ENGINE.runKernel(backend => backend.lessEqual($a, $b), {$a, $b}) as T;
 }
 
 function lessEqualStrict_<T extends Tensor>(
@@ -202,8 +200,7 @@ function greater_<T extends Tensor>(
   [$a, $b] = makeTypesMatch($a, $b);
   assertAndGetBroadcastShape($a.shape, $b.shape);
 
-  return ENV.engine.runKernel(backend => backend.greater($a, $b), {$a, $b}) as
-      T;
+  return ENGINE.runKernel(backend => backend.greater($a, $b), {$a, $b}) as T;
 }
 
 function greaterStrict_<T extends Tensor>(a: T|TensorLike, b: T|TensorLike): T {
@@ -237,11 +234,15 @@ function greaterEqual_<T extends Tensor>(
   [$a, $b] = makeTypesMatch($a, $b);
   assertAndGetBroadcastShape($a.shape, $b.shape);
 
-  const grad = (dy: T) => {
+  const grad = (dy: T, saved: Tensor[]) => {
+    const [$a, $b] = saved;
     return {$a: () => zerosLike($a), $b: () => zerosLike($b)};
   };
-  return ENV.engine.runKernel(
-             backend => backend.greaterEqual($a, $b), {$a, $b}, grad) as T;
+  return ENGINE.runKernel((backend, save) => {
+    const res = backend.greaterEqual($a, $b);
+    save([$a, $b]);
+    return res;
+  }, {$a, $b}, grad) as T;
 }
 
 function greaterEqualStrict_<T extends Tensor>(
