@@ -55,7 +55,7 @@ steps:
   id: 'test-webgpu'
   dir: 'tfjs-webgpu/'
   args: ['test-ci']
-  waitFor: ['-']  # begin step immediately.
+  waitFor: ['yarn']
 #
 # React-Native tests
 #
