@@ -16,30 +16,29 @@
  */
 import * as tf from '../index';
 import {ALL_ENVS, describeWithFlags} from '../jasmine_util';
-import {expectArraysEqual} from '../test_util';
+import {expectArraysClose, expectArraysEqual} from '../test_util';
 
 describeWithFlags('diag', ALL_ENVS, () => {
   it('1d', async () => {
     const m = tf.tensor1d([5]);
     const diag = tf.diag(m);
-    expectArraysEqual(diag.shape, [1, 1]);
-    expectArraysEqual(await diag.data(), [5]);
+    expect(diag.shape).toEqual([1, 1]);
+    expectArraysClose(await diag.data(), [5]);
   });
   it('2d', async () => {
     const m = tf.tensor2d([8, 2, 3, 4, 5, 1], [3, 2]);
     const diag = tf.diag(m);
-    expectArraysEqual(diag.shape, [3, 2, 3, 2]);
-    expectArraysEqual(await diag.data(), [
+    expect(diag.shape).toEqual([3, 2, 3, 2]);
+    expectArraysClose(await diag.data(), [
       8, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0,
       0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 1
     ]);
-    expect(diag.shape).toEqual([3, 2, 3, 2]);
   });
   it('3d', async () => {
     const m = tf.tensor3d([8, 5, 5, 7, 9, 10, 15, 1, 2, 14, 12, 3], [2, 2, 3]);
     const diag = tf.diag(m);
-    expectArraysEqual(diag.shape, [2, 2, 3, 2, 2, 3]);
-    expectArraysEqual(await diag.data(), [
+    expect(diag.shape).toEqual([2, 2, 3, 2, 2, 3]);
+    expectArraysClose(await diag.data(), [
       8, 0, 0,  0, 0,  0, 0, 0, 0, 0, 0, 0, 0,  5, 0, 0,  0, 0, 0, 0, 0,
       0, 0, 0,  0, 0,  5, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0,  0, 0, 7, 0, 0,
       0, 0, 0,  0, 0,  0, 0, 0, 0, 0, 9, 0, 0,  0, 0, 0,  0, 0, 0, 0, 0,
@@ -48,7 +47,6 @@ describeWithFlags('diag', ALL_ENVS, () => {
       0, 0, 0,  0, 0,  0, 0, 0, 0, 0, 0, 0, 14, 0, 0, 0,  0, 0, 0, 0, 0,
       0, 0, 0,  0, 12, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0,  0, 3,
     ]);
-    expect(diag.shape).toEqual([2, 2, 3, 2, 2, 3]);
   });
   it('4d', async () => {
     const m = tf.tensor4d(
@@ -58,8 +56,8 @@ describeWithFlags('diag', ALL_ENVS, () => {
         ],
         [2, 2, 3, 2]);
     const diag = tf.diag(m);
-    expectArraysEqual(diag.shape, [2, 2, 3, 2, 2, 2, 3, 2]);
-    expectArraysEqual(await diag.data(), [
+    expect(diag.shape).toEqual([2, 2, 3, 2, 2, 2, 3, 2]);
+    expectArraysClose(await diag.data(), [
       8,  0, 0, 0, 0,  0,  0, 0,  0,  0, 0,  0, 0, 0, 0, 0,  0, 0, 0,  0,  0, 0,
       0,  0, 0, 5, 0,  0,  0, 0,  0,  0, 0,  0, 0, 0, 0, 0,  0, 0, 0,  0,  0, 0,
       0,  0, 0, 0, 0,  0,  5, 0,  0,  0, 0,  0, 0, 0, 0, 0,  0, 0, 0,  0,  0, 0,
@@ -88,23 +86,20 @@ describeWithFlags('diag', ALL_ENVS, () => {
       13, 0, 0, 0, 0,  0,  0, 0,  0,  0, 0,  0, 0, 0, 0, 0,  0, 0, 0,  0,  0, 0,
       0,  0, 0, 4
     ]);
-    expect(diag.shape).toEqual([2, 2, 3, 2, 2, 2, 3, 2]);
   });
   it('int32', async () => {
     const m = tf.tensor1d([5, 3], 'int32');
     const diag = tf.diag(m);
-    expectArraysEqual(diag.shape, [2, 2]);
+    expect(diag.shape).toEqual([2, 2]);
     expect(diag.dtype).toBe('int32');
     expectArraysEqual(await diag.data(), [5, 0, 0, 3]);
-    expect(diag.shape).toEqual([2, 2]);
   });
   it('bool', async () => {
     const m = tf.tensor1d([5, 3], 'bool');
     const diag = tf.diag(m);
-    expectArraysEqual(diag.shape, [2, 2]);
+    expect(diag.shape).toEqual([2, 2]);
     expect(diag.dtype).toBe('bool');
     expectArraysEqual(await diag.data(), [1, 0, 0, 1]);
-    expect(diag.shape).toEqual([2, 2]);
   });
   it('complex', () => {
     const real = tf.tensor1d([2.25]);
