@@ -55,7 +55,7 @@ steps:
   id: 'test-webgpu'
   dir: 'tfjs-webgpu/'
   args: ['test-ci']
-  waitFor: ['yarn']
+  waitFor: ['-']  # start step immediately
 #
 # React-Native tests
 #
@@ -64,7 +64,7 @@ steps:
   id: 'test-react-native'
   dir: 'tfjs-react-native/'
   args: ['test-ci']
-  waitFor: ['-']
+  waitFor: ['-']  # start step immediately
   env: ['BROWSERSTACK_USERNAME=deeplearnjs1']
   secretEnv: ['BROWSERSTACK_KEY']
 
