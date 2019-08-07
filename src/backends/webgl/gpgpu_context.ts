@@ -21,8 +21,8 @@ import * as util from '../../util';
 
 import {getWebGLContext, setWebGLContext} from './canvas_util';
 import * as gpgpu_util from './gpgpu_util';
-import {TextureConfig} from './gpgpu_util';
 import * as tex_util from './tex_util';
+import {TextureConfig} from './tex_util';
 import {WebGL1DisjointQueryTimerExtension, WebGL2DisjointQueryTimerExtension} from './webgl_types';
 import * as webgl_util from './webgl_util';
 
@@ -70,8 +70,17 @@ export class GPGPUContext {
             this.gl.getExtension('EXT_color_buffer_half_float');
       }
     } else {
-      this.colorBufferFloatExtension = webgl_util.getExtensionOrThrow(
-          this.gl, this.debug, 'EXT_color_buffer_float');
+      const COLOR_BUFFER_FLOAT = 'EXT_color_buffer_float';
+      const COLOR_BUFFER_HALF_FLOAT = 'EXT_color_buffer_half_float';
+      if (webgl_util.hasExtension(this.gl, COLOR_BUFFER_FLOAT)) {
+        this.colorBufferFloatExtension =
+            this.gl.getExtension(COLOR_BUFFER_FLOAT);
+      } else if (webgl_util.hasExtension(this.gl, COLOR_BUFFER_HALF_FLOAT)) {
+        this.colorBufferHalfFloatExtension =
+            this.gl.getExtension(COLOR_BUFFER_HALF_FLOAT);
+      } else {
+        throw new Error('GL context does not support color renderable floats');
+      }
     }
 
     this.vertexBuffer = gpgpu_util.createVertexBuffer(this.gl, this.debug);
@@ -79,7 +88,7 @@ export class GPGPUContext {
     this.framebuffer = webgl_util.createFramebuffer(this.gl, this.debug);
 
     this.textureConfig =
-        gpgpu_util.getTextureConfig(this.gl, this.textureHalfFloatExtension);
+        tex_util.getTextureConfig(this.gl, this.textureHalfFloatExtension);
   }
 
   private get debug(): boolean {
@@ -178,14 +187,6 @@ export class GPGPUContext {
         this.gl, this.debug, () => this.gl.deleteTexture(texture));
   }
 
-  public downloadFloat32MatrixFromOutputTexture(
-      texture: WebGLTexture, rows: number, columns: number): Float32Array {
-    return this.downloadMatrixDriver(
-        texture,
-        () => gpgpu_util.downloadFloat32MatrixFromOutputTexture(
-            this.gl, this.debug, rows, columns, this.textureConfig));
-  }
-
   public downloadByteEncodedFloatMatrixFromOutputTexture(
       texture: WebGLTexture, rows: number, columns: number): Float32Array {
     return this.downloadMatrixDriver(
@@ -202,10 +203,9 @@ export class GPGPUContext {
         this.textureConfig);
   }
 
-  public downloadFloat32MatrixFromBuffer(
-      buffer: WebGLBuffer, rows: number, columns: number): Float32Array {
-    return gpgpu_util.downloadFloat32MatrixFromBuffer(
-        this.gl, buffer, rows, columns, this.textureConfig);
+  public downloadFloat32MatrixFromBuffer(buffer: WebGLBuffer, size: number):
+      Float32Array {
+    return gpgpu_util.downloadFloat32MatrixFromBuffer(this.gl, buffer, size);
   }
 
   public createBufferFromTexture(
@@ -258,13 +258,12 @@ export class GPGPUContext {
   }
 
   public downloadMatrixFromPackedTexture(
-      texture: WebGLTexture, batch: number, rows: number, columns: number,
-      physicalRows: number, physicalCols: number): Float32Array {
+      texture: WebGLTexture, physicalRows: number,
+      physicalCols: number): Float32Array {
     return this.downloadMatrixDriver(
         texture,
         () => gpgpu_util.downloadMatrixFromPackedOutputTexture(
-            this.gl, this.debug, batch, rows, columns, physicalRows,
-            physicalCols, this.textureConfig));
+            this.gl, this.debug, physicalRows, physicalCols));
   }
 
   private vertexAttrsAreBound = false;

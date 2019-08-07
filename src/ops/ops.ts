@@ -16,6 +16,7 @@
  */
 
 export * from './batchnorm';
+export * from './boolean_mask';
 export * from './complex_ops';
 export * from './concat_split';
 export * from './conv';
@@ -44,6 +45,7 @@ export * from './scatter_nd';
 export * from './spectral_ops';
 export * from './sparse_to_dense';
 export * from './gather_nd';
+export * from './diag';
 export * from './dropout';
 export * from './signal_ops';
 

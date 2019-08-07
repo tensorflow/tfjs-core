@@ -15,21 +15,8 @@
  * =============================================================================
  */
 
-import * as tf from '@tensorflow/tfjs-core';
-import {describeWebGPU} from './test_util';
-
-describeWebGPU('backend webgpu', () => {
-  it('readSync should throw if tensors are on the GPU', async () => {
-    const a = tf.tensor2d([1, 2, 3, 4], [2, 2]);
-    const b = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
-
-    const c = tf.matMul(a, b);
-    expect(() => c.dataSync())
-        .toThrowError(
-            'WebGPU readSync is only available for CPU-resident tensors.');
-
-    await c.data();
-    // Now that data has been downloaded to the CPU, dataSync should work.
-    expect(() => c.dataSync()).not.toThrow();
-  });
-});
+// Mock gl-view to export nothing as we don't test it in unit tests.
+// We mock this library as it cannot be loaded in a browser yet we do want
+// to do JS only unit tests.
+// tslint:disable-next-line
+export default {};

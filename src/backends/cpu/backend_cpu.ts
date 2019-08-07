@@ -23,10 +23,11 @@ import {warn} from '../../log';
 import * as array_ops_util from '../../ops/array_ops_util';
 import * as axis_util from '../../ops/axis_util';
 import * as broadcast_util from '../../ops/broadcast_util';
+import {complex, imag, real} from '../../ops/complex_ops';
 import * as concat_util from '../../ops/concat_util';
 import {Conv2DInfo, Conv3DInfo} from '../../ops/conv_util';
 import * as erf_util from '../../ops/erf_util';
-import {Activation} from '../../ops/fused_util';
+import {Activation, FusedBatchMatMulConfig} from '../../ops/fused_util';
 import * as gather_nd_util from '../../ops/gather_nd_util';
 import * as ops from '../../ops/ops';
 import {buffer, scalar, tensor, tensor3d, tensor4d} from '../../ops/ops';
@@ -34,7 +35,7 @@ import * as scatter_nd_util from '../../ops/scatter_nd_util';
 import * as selu_util from '../../ops/selu_util';
 import {computeFlatOffset, getStridedSlicedInfo, isSliceContinous} from '../../ops/slice_util';
 import {DataId, Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D, TensorBuffer} from '../../tensor';
-import {DataType, DataTypeMap, DataValues, NumericDataType, PixelData, Rank, ShapeMap, TypedArray, upcastType} from '../../types';
+import {BackendValues, DataType, DataValues, NumericDataType, PixelData, Rank, ShapeMap, TypedArray, upcastType} from '../../types';
 import * as util from '../../util';
 import {getArrayFromDType, inferDtype, now, sizeFromShape} from '../../util';
 import {BackendTimingInfo, DataStorage, EPSILON_FLOAT32, KernelBackend} from '../backend';
@@ -42,22 +43,26 @@ import * as backend_util from '../backend_util';
 import * as complex_util from '../complex_util';
 import {nonMaxSuppressionImpl} from '../non_max_suppression_impl';
 import {split} from '../split_shared';
+import {tile} from '../tile_impl';
 import {topkImpl} from '../topk_impl';
 import {whereImpl} from '../where_impl';
 
 function mapActivation(
-    backend: MathBackendCPU, activation: Activation, x: Tensor): Tensor {
+    backend: MathBackendCPU, x: Tensor, activation: Activation,
+    preluActivationWeights?: Tensor): Tensor {
   if (activation === 'linear') {
     return backend.linear(x);
   } else if (activation === 'relu') {
     return backend.relu(x);
+  } else if (activation === 'prelu') {
+    return backend.prelu(x, preluActivationWeights);
   }
   throw new Error(
       `Activation ${activation} has not been implemented for the CPU backend.`);
 }
 
 interface TensorData<D extends DataType> {
-  values?: DataTypeMap[D];
+  values?: BackendValues;
   dtype: D;
   // For complex numbers, the real and imaginary parts are stored as their own
   // individual tensors, with a parent joining the two with the
@@ -66,28 +71,30 @@ interface TensorData<D extends DataType> {
 }
 
 function createCanvas() {
-  //@ts-ignore
-  if (typeof(OffscreenCanvas) !== 'undefined') {
-    //@ts-ignore
+  if (typeof OffscreenCanvas !== 'undefined') {
     return new OffscreenCanvas(300, 150);
-  } else if (typeof(document) !== 'undefined') {
+  } else if (typeof document !== 'undefined') {
     return document.createElement('canvas');
-  } else {
-    throw new Error('Cannot create a canvas in this context');
   }
+  return null;
 }
 
 export class MathBackendCPU implements KernelBackend {
   public blockSize = 48;
 
   private data: DataStorage<TensorData<DataType>>;
-  private fromPixels2DContext: CanvasRenderingContext2D;
+  private fromPixels2DContext: CanvasRenderingContext2D|
+      OffscreenCanvasRenderingContext2D;
   private firstUse = true;
 
   constructor() {
     if (ENV.get('IS_BROWSER')) {
       const canvas = createCanvas();
-      this.fromPixels2DContext = canvas.getContext('2d');
+      if (canvas !== null) {
+        this.fromPixels2DContext =
+            canvas.getContext('2d') as CanvasRenderingContext2D |
+            OffscreenCanvasRenderingContext2D;
+      }
     }
     this.data = new DataStorage(this, ENGINE);
   }
@@ -114,7 +121,7 @@ export class MathBackendCPU implements KernelBackend {
     }
     this.data.set(dataId, {dtype});
   }
-  write(dataId: DataId, values: DataValues): void {
+  write(dataId: DataId, values: BackendValues): void {
     if (values == null) {
       throw new Error('MathBackendCPU.write(): values can not be null');
     }
@@ -128,6 +135,15 @@ export class MathBackendCPU implements KernelBackend {
       throw new Error(
           'pixels passed to tf.browser.fromPixels() can not be null');
     }
+
+    const isPixelData = (pixels as PixelData).data instanceof Uint8Array;
+    const isImageData =
+        typeof (ImageData) !== 'undefined' && pixels instanceof ImageData;
+    const isVideo = typeof (HTMLVideoElement) !== 'undefined' &&
+        pixels instanceof HTMLVideoElement;
+    const isImage = typeof (HTMLImageElement) !== 'undefined' &&
+        pixels instanceof HTMLImageElement;
+
     let vals: Uint8ClampedArray|Uint8Array;
     // tslint:disable-next-line:no-any
     if (ENV.get('IS_NODE') && (pixels as any).getContext == null) {
@@ -142,13 +158,9 @@ export class MathBackendCPU implements KernelBackend {
                  .getContext('2d')
                  .getImageData(0, 0, pixels.width, pixels.height)
                  .data;
-    } else if (
-        pixels instanceof ImageData ||
-        (pixels as PixelData).data instanceof Uint8Array) {
+    } else if (isImageData || isPixelData) {
       vals = (pixels as PixelData | ImageData).data;
-    } else if (
-        pixels instanceof HTMLImageElement ||
-        pixels instanceof HTMLVideoElement) {
+    } else if (isImage || isVideo) {
       if (this.fromPixels2DContext == null) {
         throw new Error(
             'Can\'t read pixels from HTMLImageElement outside ' +
@@ -157,7 +169,7 @@ export class MathBackendCPU implements KernelBackend {
       this.fromPixels2DContext.canvas.width = pixels.width;
       this.fromPixels2DContext.canvas.height = pixels.height;
       this.fromPixels2DContext.drawImage(
-          pixels, 0, 0, pixels.width, pixels.height);
+          pixels as HTMLVideoElement, 0, 0, pixels.width, pixels.height);
       vals = this.fromPixels2DContext
                  .getImageData(0, 0, pixels.width, pixels.height)
                  .data;
@@ -184,10 +196,10 @@ export class MathBackendCPU implements KernelBackend {
         [pixels.height, pixels.width, numChannels];
     return tensor3d(values, outShape, 'int32');
   }
-  async read(dataId: DataId): Promise<DataValues> {
+  async read(dataId: DataId): Promise<BackendValues> {
     return this.readSync(dataId);
   }
-  readSync(dataId: DataId): DataValues {
+  readSync(dataId: DataId): BackendValues {
     const {dtype, complexTensors} = this.data.get(dataId);
     if (dtype === 'complex64') {
       const realValues =
@@ -200,7 +212,17 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   private bufferSync<R extends Rank>(t: Tensor<R>): TensorBuffer<R> {
-    return buffer(t.shape, t.dtype, this.readSync(t.dataId)) as TensorBuffer<R>;
+    const data = this.readSync(t.dataId);
+    let decodedData = data as DataValues;
+    if (t.dtype === 'string') {
+      try {
+        // Decode the bytes into string.
+        decodedData = (data as Uint8Array[]).map(d => util.decodeString(d));
+      } catch {
+        throw new Error('Failed to decode encoded string bytes into utf-8');
+      }
+    }
+    return buffer(t.shape, t.dtype, decodedData) as TensorBuffer<R>;
   }
 
   disposeData(dataId: DataId): void {
@@ -321,6 +343,16 @@ export class MathBackendCPU implements KernelBackend {
     return buffer.toTensor().reshape(shape) as T;
   }
 
+  diag(x: Tensor): Tensor {
+    const xVals = this.readSync(x.dataId) as TypedArray;
+    const buffer = ops.buffer([x.size, x.size], x.dtype);
+    const vals = buffer.values;
+    for (let i = 0; i < xVals.length; i++) {
+      vals[i * x.size + i] = xVals[i];
+    }
+    return buffer.toTensor();
+  }
+
   unstack(x: Tensor, axis: number): Tensor[] {
     const num = x.shape[axis];
     const outShape: number[] = new Array(x.rank - 1);
@@ -359,7 +391,11 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   concat(tensors: Tensor[], axis: number): Tensor {
-    this.assertNotComplex(tensors, 'concat');
+    if (tensors[0].dtype === 'complex64') {
+      const reals = tensors.map((t) => real(t));
+      const imags = tensors.map((t) => imag(t));
+      return complex(this.concat(reals, axis), this.concat(imags, axis));
+    }
     const tensors2D = tensors.map(t => {
       const innerSize = util.sizeFromShape(t.shape.slice(axis));
       return t.as2D(-1, innerSize);
@@ -504,14 +540,16 @@ export class MathBackendCPU implements KernelBackend {
   }
 
   fusedBatchMatMul(
-      a: Tensor3D, b: Tensor3D, transposeA: boolean, transposeB: boolean,
-      bias?: Tensor, activation?: Activation): Tensor3D {
+      {a, b, transposeA, transposeB, bias, activation, preluActivationWeights}:
+          FusedBatchMatMulConfig): Tensor3D {
     let result = this.batchMatMul(a, b, transposeA, transposeB);
     if (bias) {
       result = this.add(result, bias) as Tensor3D;
     }
     if (activation) {
-      result = mapActivation(this, activation, result) as Tensor3D;
+      result =
+          mapActivation(this, result, activation, preluActivationWeights) as
+          Tensor3D;
     }
     return result;
   }
@@ -1495,6 +1533,22 @@ export class MathBackendCPU implements KernelBackend {
     return Tensor.make(x.shape, {values: resultValues}) as T;
   }
 
+  fusedConv2d(
+      x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo, bias?: Tensor4D,
+      activation?: Activation, preluActivationWeights?: Tensor): Tensor4D {
+    let result = this.conv2d(x, filter, convInfo);
+
+    if (bias) {
+      result = this.add(result, bias) as Tensor4D;
+    }
+    if (activation) {
+      result =
+          mapActivation(this, result, activation, preluActivationWeights) as
+          Tensor4D;
+    }
+    return result;
+  }
+
   conv2d(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
     this.assertNotComplex([x, filter], 'conv2d');
 
@@ -2097,26 +2151,7 @@ export class MathBackendCPU implements KernelBackend {
 
   tile<T extends Tensor>(x: T, reps: number[]): T {
     this.assertNotComplex(x, 'tile');
-
-    const newShape: number[] = new Array(x.rank);
-    for (let i = 0; i < newShape.length; i++) {
-      newShape[i] = x.shape[i] * reps[i];
-    }
-    const result = ops.buffer(newShape, x.dtype);
-    const xBuf = this.bufferSync(x);
-    for (let i = 0; i < result.values.length; ++i) {
-      const newLoc = result.indexToLoc(i);
-
-      const originalLoc: number[] = new Array(x.rank);
-      for (let i = 0; i < originalLoc.length; i++) {
-        originalLoc[i] = newLoc[i] % x.shape[i];
-      }
-
-      const originalIndex = xBuf.locToIndex(originalLoc);
-
-      result.values[i] = xBuf.values[originalIndex];
-    }
-    return result.toTensor() as T;
+    return tile(this.bufferSync(x), reps) as T;
   }
 
   pad<T extends Tensor>(

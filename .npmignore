@@ -1,9 +1,13 @@
+# Ignore other packages in the mono-repo.
+tfjs-webgpu/
+tfjs-backend-nodegl/
+tfjs-react-native/
+
 .vscode/
 .rpt2_cache/
 src/**/*_test.ts
 integration_tests/
-src/backends/webgpu/
-dist/backends/webgpu/
+
 dist/backends/**/*_test.js
 models/
 coverage/
@@ -23,3 +27,5 @@ rollup.config.js
 tsconfig.json
 .yalc/
 yalc.lock
+tfjs-react-native/
+tfjs-backend-nodegl/

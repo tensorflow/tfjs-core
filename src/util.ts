@@ -135,17 +135,19 @@ export function assertNonNull(a: TensorLike): void {
  *
  *  @param arr The nested array to flatten.
  *  @param result The destination array which holds the elements.
+ *  @param skipTypedArray If true, avoids flattening the typed arrays. Defaults
+ *      to false.
  */
 /** @doc {heading: 'Util', namespace: 'util'} */
 export function
 flatten<T extends number|boolean|string|Promise<number>|TypedArray>(
-    arr: T|RecursiveArray<T>, result: T[] = []): T[] {
+    arr: T|RecursiveArray<T>, result: T[] = [], skipTypedArray = false): T[] {
   if (result == null) {
     result = [];
   }
-  if (Array.isArray(arr) || isTypedArray(arr)) {
+  if (Array.isArray(arr) || isTypedArray(arr) && !skipTypedArray) {
     for (let i = 0; i < arr.length; ++i) {
-      flatten(arr[i], result);
+      flatten(arr[i], result, skipTypedArray);
     }
   } else {
     result.push(arr as T);
@@ -383,7 +385,7 @@ export function getTypedArrayFromDType<D extends NumericDataType>(
   } else {
     throw new Error(`Unknown data type ${dtype}`);
   }
-  return values;
+  return values as DataTypeMap[D];
 }
 
 export function getArrayFromDType<D extends DataType>(
@@ -400,7 +402,7 @@ export function getArrayFromDType<D extends DataType>(
   } else {
     throw new Error(`Unknown data type ${dtype}`);
   }
-  return values;
+  return values as DataTypeMap[D];
 }
 
 export function checkComputationForErrors<D extends DataType>(
@@ -476,12 +478,12 @@ export function bytesPerElement(dtype: DataType): number {
  * not possible since it depends on the encoding of the html page that serves
  * the website.
  */
-export function bytesFromStringArray(arr: string[]): number {
+export function bytesFromStringArray(arr: Uint8Array[]): number {
   if (arr == null) {
     return 0;
   }
   let bytes = 0;
-  arr.forEach(x => bytes += x.length * 2);
+  arr.forEach(x => bytes += x.length);
   return bytes;
 }
 
@@ -551,7 +553,7 @@ export function toTypedArray(
     throw new Error('Cannot convert a string[] to a TypedArray');
   }
   if (Array.isArray(a)) {
-    a = flatten(a as number[]);
+    a = flatten(a);
   }
   if (debugMode) {
     checkConversionForErrors(a as number[], dtype);
@@ -630,11 +632,11 @@ export function makeOnesTypedArray<D extends DataType>(
 export function makeZerosTypedArray<D extends DataType>(
     size: number, dtype: D): DataTypeMap[D] {
   if (dtype == null || dtype === 'float32' || dtype === 'complex64') {
-    return new Float32Array(size);
+    return new Float32Array(size) as DataTypeMap[D];
   } else if (dtype === 'int32') {
-    return new Int32Array(size);
+    return new Int32Array(size) as DataTypeMap[D];
   } else if (dtype === 'bool') {
-    return new Uint8Array(size);
+    return new Uint8Array(size) as DataTypeMap[D];
   } else {
     throw new Error(`Unknown data type ${dtype}`);
   }
@@ -651,16 +653,7 @@ export function makeZerosTypedArray<D extends DataType>(
  */
 /** @doc {heading: 'Util', namespace: 'util'} */
 export function now(): number {
-  if (typeof performance !== 'undefined') {
-    return performance.now();
-  } else if (typeof process !== 'undefined') {
-    const time = process.hrtime();
-    return time[0] * 1000 + time[1] / 1000000;
-  } else {
-    throw new Error(
-        'Cannot measure time in this environment. You should run tf.js ' +
-        'in the browser or in Node.js');
-  }
+  return ENV.platform.now();
 }
 
 export function assertNonNegativeIntegerDimensions(shape: number[]) {
@@ -691,4 +684,29 @@ export function assertNonNegativeIntegerDimensions(shape: number[]) {
 export function fetch(
     path: string, requestInits?: RequestInit): Promise<Response> {
   return ENV.platform.fetch(path, requestInits);
+}
+
+/**
+ * Encodes the provided string into bytes using the provided encoding scheme.
+ *
+ * @param s The string to encode.
+ * @param encoding The encoding scheme. Defaults to utf-8.
+ *
+ */
+/** @doc {heading: 'Util'} */
+export function encodeString(s: string, encoding = 'utf-8'): Uint8Array {
+  encoding = encoding || 'utf-8';
+  return ENV.platform.encode(s, encoding);
+}
+
+/**
+ * Decodes the provided bytes into a string using the provided encoding scheme.
+ * @param bytes The bytes to decode.
+ *
+ * @param encoding The encoding scheme. Defaults to utf-8.
+ */
+/** @doc {heading: 'Util'} */
+export function decodeString(bytes: Uint8Array, encoding = 'utf-8'): string {
+  encoding = encoding || 'utf-8';
+  return ENV.platform.decode(bytes, encoding);
 }

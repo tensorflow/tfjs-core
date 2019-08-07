@@ -23,7 +23,9 @@ export class Conv2DProgram implements GPGPUProgram {
   outputShape: number[];
   userCode: string;
 
-  constructor(convInfo: Conv2DInfo) {
+  constructor(
+      convInfo: Conv2DInfo, addBias = false, activation: string = null,
+      hasPreluActivationWeights = false) {
     this.outputShape = convInfo.outShape;
     const padTop = convInfo.padInfo.top;
     const padLeft = convInfo.padInfo.left;
@@ -42,7 +44,36 @@ export class Conv2DProgram implements GPGPUProgram {
     const colDim = isChannelsLast ? 2 : 3;
     const channelDim = isChannelsLast ? 3 : 1;
 
+    let activationSnippet = '', applyActivationSnippet = '';
+    if (activation) {
+      if (hasPreluActivationWeights) {
+        activationSnippet = `float activation(float a) {
+          float b = getPreluActivationWeightsAtOutCoords();
+          ${activation}
+        }`;
+      } else {
+        activationSnippet = `
+          float activation(float x) {
+            ${activation}
+          }
+        `;
+      }
+
+      applyActivationSnippet = `result = activation(result);`;
+    }
+
+    const addBiasSnippet = addBias ? 'result += getBiasAtOutCoords();' : '';
+    if (addBias) {
+      this.variableNames.push('bias');
+    }
+
+    if (hasPreluActivationWeights) {
+      this.variableNames.push('preluActivationWeights');
+    }
+
     this.userCode = `
+      ${activationSnippet}
+
       const ivec2 strides = ivec2(${strideHeight}, ${strideWidth});
       const ivec2 pads = ivec2(${padTop}, ${padLeft});
 
@@ -158,7 +189,11 @@ export class Conv2DProgram implements GPGPUProgram {
             }
           }
         }
-        setOutput(dotProd);
+
+        float result = dotProd;
+        ${addBiasSnippet}
+        ${applyActivationSnippet}
+        setOutput(result);
       }
     `;
   }

@@ -26,7 +26,6 @@
     "src/"
   ],
   "exclude": [
-    "src/backends/webgpu/",
     "node_modules/"
   ]
 }
