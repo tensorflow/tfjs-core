@@ -121,7 +121,7 @@ export class RandGamma implements RandomGamma {
   private randn: MPRandGauss;
 
   constructor(
-      alpha: number, beta: number, dtype?: keyof RandGammaDataTypes,
+      alpha: number, beta: number, dtype: keyof RandGammaDataTypes,
       seed?: number) {
     this.alpha = alpha;
     this.beta = 1 / beta;  // convert rate to scale parameter
@@ -164,7 +164,7 @@ export class RandGamma implements RandomGamma {
   }
   /** Handles proper rounding for non-floating-point numbers. */
   private convertValue(value: number): number {
-    if (this.dtype == null || this.dtype === 'float32') {
+    if (this.dtype === 'float32') {
       return value;
     }
     return Math.round(value);

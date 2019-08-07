@@ -170,20 +170,27 @@ function truncatedNormal_<R extends Rank>(
  * Creates a `tf.Tensor` with values sampled from a gamma distribution.
  *
  * ```js
- * tf.randomGamma([2, 2]).print();
+ * tf.randomGamma([2, 2], 1).print();
  * ```
  *
  * @param shape An array of integers defining the output tensor shape.
  * @param alpha The shape parameter of the gamma distribution.
- * @param beta The inverse scale parameter of the gamma distribution.
- * @param dtype The data type of the output.
+ * @param beta The inverse scale parameter of the gamma distribution. Defaults
+ *     to 1.
+ * @param dtype The data type of the output. Defaults to float32.
  * @param seed The seed for the random number generator.
  */
 /** @doc {heading: 'Tensors', subheading: 'Random'} */
 function randomGamma_<R extends Rank>(
-    shape: ShapeMap[R], alpha: number, beta: number, dtype?: 'float32'|'int32',
-    seed?: number): Tensor<R> {
-  if (dtype != null && (dtype as DataType) === 'bool') {
+    shape: ShapeMap[R], alpha: number, beta = 1,
+    dtype: 'float32'|'int32' = 'float32', seed?: number): Tensor<R> {
+  if (beta == null) {
+    beta = 1;
+  }
+  if (dtype == null) {
+    dtype = 'float32';
+  }
+  if (dtype !== 'float32' && dtype !== 'int32') {
     throw new Error(`Unsupported data type ${dtype}`);
   }
   const rgamma = new RandGamma(alpha, beta, dtype, seed);
