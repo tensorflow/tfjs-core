@@ -74,7 +74,7 @@ describe('RandGamma', () => {
   const SEED = 2002;
 
   it('should default to float32 numbers', () => {
-    const rand = new RandGamma(2, 2);
+    const rand = new RandGamma(2, 2, 'float32');
     expect(isFloat(rand.nextValue())).toBe(true);
   });
 
