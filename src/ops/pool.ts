@@ -509,6 +509,13 @@ function withSpaceToBatchBasePaddings(
  *    - For more info, see this guide:
  *     [https://www.tensorflow.org/api_guides/python/nn#Convolution](
  *          https://www.tensorflow.org/api_guides/python/nn#Convolution)
+ * @param dilations The dilation rates:
+ *     `[dilationDepth, dilationHeight, dilationWidth]`
+ *     in which we sample input values across the depth, height and width
+ *     dimensions in dilated pooling.
+ *     Defaults to `[1, 1, 1]`. If `dilations` is a single number,
+ *     then `dilationDepth == dilationHeight == dilationWidth`.
+ *     If it is greater than 1, then all values of `strides` must be 1.
  * @param dimRoundingMode The rounding mode used when computing output
  *     dimensions if pad is a number. If none is provided, it will not round
  *     and error if the output is of fractional size.
@@ -521,52 +528,7 @@ function withSpaceToBatchBasePaddings(
 function avgPool3d_(
     x: Tensor5D|TensorLike, filterSize: [number, number, number]|number,
     strides: [number, number, number]|number, pad: 'valid'|'same'|number,
-    dimRoundingMode?: 'floor'|'round'|'ceil',
-    dataFormat: 'NDHWC'|'NCDHW' = 'NDHWC'): Tensor5D {
-  return avgPool3dImpl_(
-      x, filterSize, strides, 1, pad, dimRoundingMode, dataFormat);
-}
-
-/**
- * Computes the 3D average pooling.
- *
- * @param x The input tensor, of rank 5 of shape
- *     `[batch, depth, height, width, inChannels]`.
- * @param filterSize The filter size:
- *     `[filterDepth, filterHeight, filterWidth]`.
- *     If `filterSize` is a single number,
- *     then `filterDepth == filterHeight == filterWidth`.
- * @param strides The strides of the pooling:
- *     `[strideDepth, strideHeight, strideWidth]`.
- *     If `strides` is a single number,
- *     then `strideDepth == strideHeight == strideWidth`.
- * @param dilations The dilation rates:
- *     `[dilationDepth, dilationHeight, dilationWidth]`
- *     in which we sample input values across the depth, height and width
- *     dimensions in dilated pooling.
- *     Defaults to `[1, 1, 1]`. If `dilations` is a single number,
- *     then `dilationDepth == dilationHeight == dilationWidth`.
- *     If it is greater than 1, then all values of `strides` must be 1.
- * @param pad The type of padding algorithm.
- *    - `same` and stride 1: output will be of same size as input,
- *       regardless of filter size.
- *    - `valid`: output will be smaller than input if filter is larger
- *       than 1*1x1.
- *    - For more info, see this guide:
- *     [https://www.tensorflow.org/api_guides/python/nn#Convolution](
- *          https://www.tensorflow.org/api_guides/python/nn#Convolution)
- * @param dimRoundingMode The rounding mode used when computing output
- *     dimensions if pad is a number. If none is provided, it will not round
- *     and error if the output is of fractional size.
- * @param dataFormat An optional string from: "NDHWC", "NCDHW". Defaults to
- *     "NDHWC". Specify the data format of the input and output data. With the
- *     default format "NDHWC", the data is stored in the order of: [batch,
- *     depth, height, width, channels]. Only "NDHWC" is currently supported.
- */
-function avgPool3dImpl_(
-    x: Tensor5D|TensorLike, filterSize: [number, number, number]|number,
-    strides: [number, number, number]|number,
-    dilations: [number, number, number]|number, pad: 'valid'|'same'|number,
+    dilations: [number, number, number]|number,
     dimRoundingMode?: 'floor'|'round'|'ceil',
     dataFormat: 'NDHWC'|'NCDHW' = 'NDHWC'): Tensor5D {
   const $x = convertToTensor(x, 'x', 'avgPool3d', 'float32');
@@ -706,6 +668,13 @@ function avgPool3dBackprop(
  *    - For more info, see this guide:
  *     [https://www.tensorflow.org/api_guides/python/nn#Convolution](
  *          https://www.tensorflow.org/api_guides/python/nn#Convolution)
+ * @param dilations The dilation rates:
+ *     `[dilationDepth, dilationHeight, dilationWidth]`
+ *     in which we sample input values across the depth, height and width
+ *     dimensions in dilated pooling.
+ *     Defaults to `[1, 1, 1]`. If `dilations` is a single number,
+ *     then `dilationDepth == dilationHeight == dilationWidth`.
+ *     If it is greater than 1, then all values of `strides` must be 1.
  * @param dimRoundingMode The rounding mode used when computing output
  *     dimensions if pad is a number. If none is provided, it will not round
  *     and error if the output is of fractional size.
@@ -718,52 +687,7 @@ function avgPool3dBackprop(
 function maxPool3d_(
     x: Tensor5D|TensorLike, filterSize: [number, number, number]|number,
     strides: [number, number, number]|number, pad: 'valid'|'same'|number,
-    dimRoundingMode?: 'floor'|'round'|'ceil',
-    dataFormat: 'NDHWC'|'NCDHW' = 'NDHWC'): Tensor5D {
-  return maxPool3dImpl_(
-      x, filterSize, strides, 1, pad, dimRoundingMode, dataFormat);
-}
-
-/**
- * Computes the 3D max pooling.
- *
- * @param x The input tensor, of rank 5 of shape
- *     `[batch, depth, height, width, inChannels]`.
- * @param filterSize The filter size:
- *     `[filterDepth, filterHeight, filterWidth]`.
- *     If `filterSize` is a single number,
- *     then `filterDepth == filterHeight == filterWidth`.
- * @param strides The strides of the pooling:
- *     `[strideDepth, strideHeight, strideWidth]`.
- *     If `strides` is a single number,
- *     then `strideDepth == strideHeight == strideWidth`.
- * @param dilations The dilation rates:
- *     `[dilationDepth, dilationHeight, dilationWidth]`
- *     in which we sample input values across the depth, height and width
- *     dimensions in dilated pooling.
- *     Defaults to `[1, 1, 1]`. If `dilations` is a single number,
- *     then `dilationDepth == dilationHeight == dilationWidth`.
- *     If it is greater than 1, then all values of `strides` must be 1.
- * @param pad The type of padding algorithm.
- *    - `same` and stride 1: output will be of same size as input,
- *       regardless of filter size.
- *    - `valid`: output will be smaller than input if filter is larger
- *       than 1*1x1.
- *    - For more info, see this guide:
- *     [https://www.tensorflow.org/api_guides/python/nn#Convolution](
- *          https://www.tensorflow.org/api_guides/python/nn#Convolution)
- * @param dimRoundingMode The rounding mode used when computing output
- *     dimensions if pad is a number. If none is provided, it will not round
- *     and error if the output is of fractional size.
- * @param dataFormat An optional string from: "NDHWC", "NCDHW". Defaults to
- *     "NDHWC". Specify the data format of the input and output data. With the
- *     default format "NDHWC", the data is stored in the order of: [batch,
- *     depth, height, width, channels]. Only "NDHWC" is currently supported.
- */
-function maxPool3dImpl_(
-    x: Tensor5D|TensorLike, filterSize: [number, number, number]|number,
-    strides: [number, number, number]|number,
-    dilations: [number, number, number]|number, pad: 'valid'|'same'|number,
+    dilations: [number, number, number]|number,
     dimRoundingMode?: 'floor'|'round'|'ceil',
     dataFormat: 'NDHWC'|'NCDHW' = 'NDHWC'): Tensor5D {
   const $x = convertToTensor(x, 'x', 'maxPool3d');
