@@ -231,7 +231,7 @@ function avgPool_<T extends Tensor3D|Tensor4D>(
 }
 
 /**
- * Performs an 3D & 4D pooling operation
+ * Performs an N-D pooling operation
  *
  * @param input The input tensor, of rank 4 or rank 3 of shape
  *     `[batch, height, width, inChannels]`. If rank 3, batch of 1 is assumed.
