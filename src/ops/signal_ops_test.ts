@@ -196,7 +196,8 @@ describeWithFlags('stft', ALL_ENVS, () => {
     expect(output.shape).toEqual([1, 5]);
     expectArraysClose(
       await output.data(),
-      [6.0, 0.0, -3.7360673, -1.5388412, 0.7360677, 0.36327171]);
+      [6.0, 0.0, -0.70710677, -5.1213202, -3.0, 1.0,
+        0.70710677, 0.87867975, 0.0, 0.0]);
   });
 
   it('3 length with hamming window', async () => {
@@ -205,8 +206,8 @@ describeWithFlags('stft', ALL_ENVS, () => {
     const frameStep = 1;
     const fftLength = 3;
     const output = tf.signal.stft(input, frameLength, frameStep,
-      fftLength, tf.signal.hammingWindow);
-    expect(output.shape[0]).toEqual(3);
+      fftLength, (length) => tf.signal.hammingWindow(length));
+    expect(output.shape).toEqual([3, 2]);
     expectArraysClose(await output.data(), [
       1.16, 0.0, -0.46, -0.79674333,
       1.16, 0.0, -0.46, -0.79674333,
@@ -220,8 +221,8 @@ describeWithFlags('stft', ALL_ENVS, () => {
     const frameStep = 2;
     const fftLength = 3;
     const output = tf.signal.stft(input, frameLength, frameStep,
-      fftLength, tf.signal.hammingWindow);
-    expect(output.shape[0]).toEqual(2);
+      fftLength, (length) => tf.signal.hammingWindow(length));
+    expect(output.shape).toEqual([2, 2]);
     expectArraysClose(await output.data(), [
       1.16, 0.0, -0.46, -0.79674333,
       1.16, 0.0, -0.46, -0.79674333
@@ -234,8 +235,8 @@ describeWithFlags('stft', ALL_ENVS, () => {
     const frameStep = 1;
     const fftLength = 3;
     const output = tf.signal.stft(input, frameLength, frameStep,
-      fftLength, tf.signal.hammingWindow);
-    expect(output.shape[0]).toEqual(2);
+      fftLength, (length) => tf.signal.hammingWindow(length));
+    expect(output.shape).toEqual([2, 2]);
     expectArraysClose(await output.data(), [
       1.619999, 0.0, -0.69, 0.39837,
       1.619999, 0.0, -0.69, 0.39837
@@ -248,8 +249,8 @@ describeWithFlags('stft', ALL_ENVS, () => {
     const frameStep = 1;
     const fftLength = 5;
     const output = tf.signal.stft(input, frameLength, frameStep,
-      fftLength, tf.signal.hammingWindow);
-    expect(output.shape[0]).toEqual(1);
+      fftLength, (length) => tf.signal.hammingWindow(length));
+    expect(output.shape).toEqual([1, 3]);
     expectArraysClose(
       await output.data(),
       [6.72, 0.0, -3.6371822, -1.1404576, 0.4771822, 0.39919350]);
@@ -263,7 +264,7 @@ describeWithFlags('stft', ALL_ENVS, () => {
     const ident = (length: number) => tf.ones([length]).as1D();
     const output = tf.signal.stft(input, frameLength, frameStep,
       fftLength, ident);
-    expect(output.shape[0]).toEqual(3);
+    expect(output.shape).toEqual([3, 2]);
     expectArraysClose(await output.data(), [
       3.0, 0.0, 0.0, 0.0,
       3.0, 0.0, 0.0, 0.0,
@@ -279,7 +280,7 @@ describeWithFlags('stft', ALL_ENVS, () => {
     const ident = (length: number) => tf.ones([length]).as1D();
     const output = tf.signal.stft(input, frameLength, frameStep,
       fftLength, ident);
-    expect(output.shape[0]).toEqual(2);
+    expect(output.shape).toEqual([2, 2]);
     expectArraysClose(await output.data(), [
       3.0, 0.0, 0.0, 0.0,
       3.0, 0.0, 0.0, 0.0

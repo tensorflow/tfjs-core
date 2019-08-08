@@ -124,7 +124,8 @@ function stft_(
   const windowedSignal = mul(framedSignal, windowFn(frameLength));
   const output: Tensor[] = [];
   for (let i = 0; i < framedSignal.shape[0]; i++) {
-    output.push(rfft(windowedSignal.slice([i, 0], [1, frameLength]), fftLength));
+    output.push(rfft(windowedSignal.slice([i, 0], [1, frameLength]),
+      fftLength));
   }
   return concat(output);
 }
