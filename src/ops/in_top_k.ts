@@ -27,7 +27,7 @@ import {tensor} from './tensor_ops';
  * ```js
  * const predictions = tf.tensor2d([[20, 10, 40, 30], [30, 50, -20, 10]]);
  * const targets = tf.tensor1d([2, 0]);
- * const precision = tf.inTopK(predictions, targets);
+ * const precision = await tf.inTopKAsync(predictions, targets);
  * precision.print();
  * ```
  * @param predictions 2-D or higher `tf.Tensor` with last dimension being
