@@ -509,13 +509,6 @@ function withSpaceToBatchBasePaddings(
  *    - For more info, see this guide:
  *     [https://www.tensorflow.org/api_guides/python/nn#Convolution](
  *          https://www.tensorflow.org/api_guides/python/nn#Convolution)
- * @param dilations The dilation rates:
- *     `[dilationDepth, dilationHeight, dilationWidth]`
- *     in which we sample input values across the depth, height and width
- *     dimensions in dilated pooling.
- *     Defaults to `[1, 1, 1]`. If `dilations` is a single number,
- *     then `dilationDepth == dilationHeight == dilationWidth`.
- *     If it is greater than 1, then all values of `strides` must be 1.
  * @param dimRoundingMode The rounding mode used when computing output
  *     dimensions if pad is a number. If none is provided, it will not round
  *     and error if the output is of fractional size.
@@ -523,14 +516,21 @@ function withSpaceToBatchBasePaddings(
  *     "NDHWC". Specify the data format of the input and output data. With the
  *     default format "NDHWC", the data is stored in the order of: [batch,
  *     depth, height, width, channels]. Only "NDHWC" is currently supported.
+ * @param dilations The dilation rates:
+ *     `[dilationDepth, dilationHeight, dilationWidth]`
+ *     in which we sample input values across the depth, height and width
+ *     dimensions in dilated pooling.
+ *     Defaults to `[1, 1, 1]`. If `dilations` is a single number,
+ *     then `dilationDepth == dilationHeight == dilationWidth`.
+ *     If it is greater than 1, then all values of `strides` must be 1.
  */
 /** @doc {heading: 'Operations', subheading: 'Convolution'} */
 function avgPool3d_(
     x: Tensor5D|TensorLike, filterSize: [number, number, number]|number,
     strides: [number, number, number]|number, pad: 'valid'|'same'|number,
-    dilations: [number, number, number]|number,
     dimRoundingMode?: 'floor'|'round'|'ceil',
-    dataFormat: 'NDHWC'|'NCDHW' = 'NDHWC'): Tensor5D {
+    dataFormat: 'NDHWC'|'NCDHW' = 'NDHWC',
+    dilations?: [number, number, number]|number,): Tensor5D {
   const $x = convertToTensor(x, 'x', 'avgPool3d', 'float32');
 
   if (dilations == null) {
@@ -668,13 +668,6 @@ function avgPool3dBackprop(
  *    - For more info, see this guide:
  *     [https://www.tensorflow.org/api_guides/python/nn#Convolution](
  *          https://www.tensorflow.org/api_guides/python/nn#Convolution)
- * @param dilations The dilation rates:
- *     `[dilationDepth, dilationHeight, dilationWidth]`
- *     in which we sample input values across the depth, height and width
- *     dimensions in dilated pooling.
- *     Defaults to `[1, 1, 1]`. If `dilations` is a single number,
- *     then `dilationDepth == dilationHeight == dilationWidth`.
- *     If it is greater than 1, then all values of `strides` must be 1.
  * @param dimRoundingMode The rounding mode used when computing output
  *     dimensions if pad is a number. If none is provided, it will not round
  *     and error if the output is of fractional size.
@@ -682,14 +675,21 @@ function avgPool3dBackprop(
  *     "NDHWC". Specify the data format of the input and output data. With the
  *     default format "NDHWC", the data is stored in the order of: [batch,
  *     depth, height, width, channels]. Only "NDHWC" is currently supported.
+ * @param dilations The dilation rates:
+ *     `[dilationDepth, dilationHeight, dilationWidth]`
+ *     in which we sample input values across the depth, height and width
+ *     dimensions in dilated pooling.
+ *     Defaults to `[1, 1, 1]`. If `dilations` is a single number,
+ *     then `dilationDepth == dilationHeight == dilationWidth`.
+ *     If it is greater than 1, then all values of `strides` must be 1.
  */
 /** @doc {heading: 'Operations', subheading: 'Convolution'} */
 function maxPool3d_(
     x: Tensor5D|TensorLike, filterSize: [number, number, number]|number,
     strides: [number, number, number]|number, pad: 'valid'|'same'|number,
-    dilations: [number, number, number]|number,
     dimRoundingMode?: 'floor'|'round'|'ceil',
-    dataFormat: 'NDHWC'|'NCDHW' = 'NDHWC'): Tensor5D {
+    dataFormat: 'NDHWC'|'NCDHW' = 'NDHWC',
+    dilations?: [number, number, number]|number): Tensor5D {
   const $x = convertToTensor(x, 'x', 'maxPool3d');
 
   if (dilations == null) {

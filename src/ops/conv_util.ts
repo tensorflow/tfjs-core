@@ -363,15 +363,14 @@ export function computeDefaultPad(
 }
 
 function parseTupleParam(
-    param: number|[number, number]|[number, number, number]):
-    [number, number, number] {
+    param: number|number[]): [number, number, number] {
   if (typeof param === 'number') {
     return [param, param, param];
   }
   if (param.length === 2) {
     return [param[0], param[1], 1];
   }
-  return param;
+  return param as [number, number, number];
 }
 
 function parse3TupleParam(param: number|[number, number, number]):
