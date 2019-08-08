@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2018 Google LLC. All Rights Reserved.
+ * Copyright 2019 Google LLC. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -22,7 +22,7 @@ import {assert, assertShapesMatch, getTypedArrayFromDType} from '../util';
 import {tensor} from './tensor_ops';
 
 /**
- * Says whether the targets are in the top K predictions.
+ * Returns whether the targets are in the top K predictions.
  *
  * ```js
  * const predictions = tf.tensor2d([[20, 10, 40, 30], [30, 50, -20, 10]]);
