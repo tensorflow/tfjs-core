@@ -491,7 +491,7 @@ function withSpaceToBatchBasePaddings(
  * result.print();
  * ```
  *
- * @param x The input tensor, of rank 5 of shape
+ * @param x The input tensor, of rank 5 or rank 4 of shape
  *     `[batch, depth, height, width, inChannels]`.
  * @param filterSize The filter size:
  *     `[filterDepth, filterHeight, filterWidth]`.
@@ -525,20 +525,30 @@ function withSpaceToBatchBasePaddings(
  *     If it is greater than 1, then all values of `strides` must be 1.
  */
 /** @doc {heading: 'Operations', subheading: 'Convolution'} */
-function avgPool3d_(
-    x: Tensor5D|TensorLike, filterSize: [number, number, number]|number,
-    strides: [number, number, number]|number, pad: 'valid'|'same'|number,
+function avgPool3d_<T extends Tensor4D|Tensor5D>(
+    x: T|TensorLike,
+    filterSize: [number, number, number]|number,
+    strides: [number, number, number]|number,
+    pad: 'valid'|'same'|number,
     dimRoundingMode?: 'floor'|'round'|'ceil',
     dataFormat: 'NDHWC'|'NCDHW' = 'NDHWC',
-    dilations?: [number, number, number]|number,): Tensor5D {
+    dilations?: [number, number, number]|number,
+    ): T {
   const $x = convertToTensor(x, 'x', 'avgPool3d', 'float32');
+
+  let x5D = $x as Tensor5D;
+  let reshapedTo5D = false;
+  if ($x.rank === 4) {
+    reshapedTo5D = true;
+    x5D = $x.as5D(1, $x.shape[0], $x.shape[1], $x.shape[2], $x.shape[3]);
+  }
 
   if (dilations == null) {
     dilations = [1, 1, 1];
   }
   util.assert(
-      $x.rank === 5,
-      () => `Error in avgPool3d: x must be rank 5 but got rank ${$x.rank}.`);
+      x5D.rank === 5,
+      () => `Error in avgPool3d: x must be rank 5 but got rank ${x5D.rank}.`);
   util.assert(
       dataFormat === 'NDHWC',
       () => `Error in avgPool3d: Only NDHWC is currently supported, ` +
@@ -555,21 +565,25 @@ function avgPool3d_(
   }
 
   const convInfo = conv_util.computePool3DInfo(
-      $x.shape, filterSize, strides, dilations, pad, dimRoundingMode,
+      x5D.shape, filterSize, strides, dilations, pad, dimRoundingMode,
       dataFormat);
 
   const grad = (dy: Tensor5D) => {
     return {
       x: () => avgPool3dBackprop(
-          dy, $x, filterSize, strides, dilations, pad, dimRoundingMode)
+          dy, x5D, filterSize, strides, dilations, pad, dimRoundingMode)
     };
   };
 
   let res = ENGINE.runKernel(
-      backend => backend.avgPool3d($x, convInfo), {x: $x}, grad);
-  res = res.cast($x.dtype);
+      backend => backend.avgPool3d(x5D, convInfo), {x: x5D}, grad);
+  res = res.cast(x5D.dtype);
+  if (reshapedTo5D) {
+    return res.as4D(res.shape[1], res.shape[2], res.shape[3], res.shape[4]) as
+        T;
+  }
 
-  return res;
+  return res as T;
 }
 
 /**
@@ -578,7 +592,7 @@ function avgPool3d_(
  * @param dy The dy error, of rank 5 of shape
  *     [batchSize, depth, height, width, channels].
  * assumed.
- * @param input The original input image, of rank 5 of shape
+ * @param input The original input image, of rank 5 or rank4 of shape
  *     [batchSize, depth, height, width, channels].
  * @param filterSize The filter size:
  *     `[filterDepth, filterHeight, filterWidth]`.
@@ -601,23 +615,33 @@ function avgPool3d_(
  *     number. If none is provided, it will not round and error if the output
  *     is of fractional size.
  */
-function avgPool3dBackprop(
-    dy: Tensor5D|TensorLike, input: Tensor5D|TensorLike,
+function avgPool3dBackprop<T extends Tensor4D|Tensor5D>(
+    dy: T|TensorLike, input: T|TensorLike,
     filterSize: [number, number, number]|number,
     strides: [number, number, number]|number,
     dilations: [number, number, number]|number, pad: 'valid'|'same'|number,
-    dimRoundingMode?: 'floor'|'round'|'ceil'): Tensor5D {
+    dimRoundingMode?: 'floor'|'round'|'ceil'): T {
   const $dy = convertToTensor(dy, 'dy', 'avgPool3dBackprop');
   const $input = convertToTensor(input, 'input', 'avgPool3dBackprop');
 
+  let dy5D = $dy as Tensor5D;
+  let input5D = $input as Tensor5D;
+  let reshapedTo5D = false;
+  if ($input.rank === 4) {
+    reshapedTo5D = true;
+    dy5D = $dy.as5D(1, $dy.shape[0], $dy.shape[1], $dy.shape[2], $dy.shape[3]);
+    input5D = $input.as5D(
+        1, $input.shape[0], $input.shape[1], $input.shape[2], $input.shape[3]);
+  }
+
   util.assert(
-      $dy.rank === 5,
+      dy5D.rank === 5,
       () => `Error in avgPool3dBackprop: dy must be rank 5 but got rank ` +
-          `${$dy.rank}.`);
+          `${dy5D.rank}.`);
   util.assert(
-      $input.rank === 5,
+      input5D.rank === 5,
       () => `Error in avgPool3dBackprop: input must be rank 5 but got rank ` +
-          `${$input.rank}.`);
+          `${input5D.rank}.`);
   if (dilations == null) {
     dilations = [1, 1, 1];
   }
@@ -633,12 +657,16 @@ function avgPool3dBackprop(
   }
 
   const convInfo = conv_util.computePool3DInfo(
-      $input.shape, filterSize, strides, dilations, pad, dimRoundingMode);
+      input5D.shape, filterSize, strides, dilations, pad, dimRoundingMode);
   const res = ENGINE.runKernel(
-      backend => backend.avgPool3dBackprop($dy, $input, convInfo),
-      {$dy, $input});
+      backend => backend.avgPool3dBackprop(dy5D, input5D, convInfo),
+      {dy5D, input5D});
+  if (reshapedTo5D) {
+    return res.as4D(res.shape[1], res.shape[2], res.shape[3], res.shape[4]) as
+        T;
+  }
 
-  return res;
+  return res as T;
 }
 
 /**
@@ -650,7 +678,7 @@ function avgPool3dBackprop(
  * result.print();
  * ```
  *
- * @param x The input tensor, of rank 5 of shape
+ * @param x The input tensor, of rank 5 or rank 4 of shape
  *     `[batch, depth, height, width, inChannels]`.
  * @param filterSize The filter size:
  *     `[filterDepth, filterHeight, filterWidth]`.
@@ -684,20 +712,27 @@ function avgPool3dBackprop(
  *     If it is greater than 1, then all values of `strides` must be 1.
  */
 /** @doc {heading: 'Operations', subheading: 'Convolution'} */
-function maxPool3d_(
-    x: Tensor5D|TensorLike, filterSize: [number, number, number]|number,
+function maxPool3d_<T extends Tensor4D|Tensor5D>(
+    x: T|TensorLike, filterSize: [number, number, number]|number,
     strides: [number, number, number]|number, pad: 'valid'|'same'|number,
     dimRoundingMode?: 'floor'|'round'|'ceil',
     dataFormat: 'NDHWC'|'NCDHW' = 'NDHWC',
-    dilations?: [number, number, number]|number): Tensor5D {
+    dilations?: [number, number, number]|number): T {
   const $x = convertToTensor(x, 'x', 'maxPool3d');
+
+  let x5D = $x as Tensor5D;
+  let reshapedTo5D = false;
+  if ($x.rank === 4) {
+    reshapedTo5D = true;
+    x5D = $x.as5D(1, $x.shape[0], $x.shape[1], $x.shape[2], $x.shape[3]);
+  }
 
   if (dilations == null) {
     dilations = [1, 1, 1];
   }
   util.assert(
-      $x.rank === 5,
-      () => `Error in maxPool3d: x must be rank 5 but got rank ${$x.rank}.`);
+      x5D.rank === 5,
+      () => `Error in maxPool3d: x must be rank 5 but got rank ${x5D.rank}.`);
   util.assert(
       dataFormat === 'NDHWC',
       () => `Error in maxPool3d: Only NDHWC is currently supported, ` +
@@ -714,25 +749,29 @@ function maxPool3d_(
   }
 
   const convInfo = conv_util.computePool3DInfo(
-      $x.shape, filterSize, strides, dilations, pad, dimRoundingMode,
+      x5D.shape, filterSize, strides, dilations, pad, dimRoundingMode,
       dataFormat);
 
   const grad = (dy: Tensor5D, saved: Tensor[]) => {
-    const [$x, y] = saved;
+    const [x5D, y] = saved;
     return {
       x: () => maxPool3dBackprop(
-          dy, $x as Tensor5D, y as Tensor5D, filterSize, strides, dilations,
+          dy, x5D as Tensor5D, y as Tensor5D, filterSize, strides, dilations,
           pad, dimRoundingMode)
     };
   };
 
   const res = ENGINE.runKernel((backend, save) => {
-    const y = backend.maxPool3d($x, convInfo);
-    save([$x, y]);
+    const y = backend.maxPool3d(x5D, convInfo);
+    save([x5D, y]);
     return y;
-  }, {x: $x}, grad);
+  }, {x: x5D}, grad);
+  if (reshapedTo5D) {
+    return res.as4D(res.shape[1], res.shape[2], res.shape[3], res.shape[4]) as
+        T;
+  }
 
-  return res;
+  return res as T;
 }
 
 /**
@@ -741,7 +780,7 @@ function maxPool3d_(
  * @param dy The dy error, of rank 5 of shape
  *     [batchSize, depth, height, width, channels].
  * assumed.
- * @param input The original input image, of rank 5 of shape
+ * @param input The original input image, of rank 5 or rank 4 of shape
  *     [batchSize, depth, height, width, channels].
  * @param output The original output image, of rank 5 of shape
  *     [batchSize, outDepth, outHeight, outWidth, channels].
@@ -766,28 +805,42 @@ function maxPool3d_(
  *     number. If none is provided, it will not round and error if the output
  *     is of fractional size.
  */
-function maxPool3dBackprop(
-    dy: Tensor5D|TensorLike, input: Tensor5D|TensorLike,
-    output: Tensor5D|TensorLike, filterSize: [number, number, number]|number,
+function maxPool3dBackprop<T extends Tensor4D|Tensor5D>(
+    dy: T|TensorLike, input: T|TensorLike, output: T|TensorLike,
+    filterSize: [number, number, number]|number,
     strides: [number, number, number]|number,
     dilations: [number, number, number]|number, pad: 'valid'|'same'|number,
-    dimRoundingMode?: 'floor'|'round'|'ceil'): Tensor5D {
+    dimRoundingMode?: 'floor'|'round'|'ceil'): T {
   const $dy = convertToTensor(dy, 'dy', 'maxPool3dBackprop');
   const $input = convertToTensor(input, 'input', 'maxPool3dBackprop');
   const $output = convertToTensor(output, 'output', 'maxPool3dBackprop');
 
+  let dy5D = $dy as Tensor5D;
+  let input5D = $input as Tensor5D;
+  let output5D = $output as Tensor5D;
+  let reshapedTo5D = false;
+  if ($input.rank === 4) {
+    reshapedTo5D = true;
+    dy5D = $dy.as5D(1, $dy.shape[0], $dy.shape[1], $dy.shape[2], $dy.shape[3]);
+    input5D = $input.as5D(
+        1, $input.shape[0], $input.shape[1], $input.shape[2], $input.shape[3]);
+    output5D = $output.as5D(
+        1, $output.shape[0], $output.shape[1], $output.shape[2],
+        $output.shape[3]);
+  }
+
   util.assert(
-      $dy.rank === 5,
+      dy5D.rank === 5,
       () => `Error in maxPool3dBackprop: dy must be rank 5 but got rank ` +
-          `${$dy.rank}.`);
+          `${dy5D.rank}.`);
   util.assert(
-      $input.rank === 5,
+      input5D.rank === 5,
       () => `Error in maxPool3dBackprop: input must be rank 5 but got rank ` +
-          `${$input.rank}.`);
+          `${input5D.rank}.`);
   util.assert(
-      $output.rank === 5,
+      output5D.rank === 5,
       () => `Error in maxPool3dBackprop: output must be rank 5 but got rank ` +
-          `${$output.rank}.`);
+          `${output5D.rank}.`);
   if (dilations == null) {
     dilations = [1, 1, 1];
   }
@@ -803,11 +856,16 @@ function maxPool3dBackprop(
   }
 
   const convInfo = conv_util.computePool3DInfo(
-      $input.shape, filterSize, strides, dilations, pad, dimRoundingMode);
+      input5D.shape, filterSize, strides, dilations, pad, dimRoundingMode);
   const res = ENGINE.runKernel(
-      backend => backend.maxPool3dBackprop($dy, $input, $output, convInfo),
-      {$dy, $input});
-  return res;
+      backend => backend.maxPool3dBackprop(dy5D, input5D, output5D, convInfo),
+      {dy5D, input5D});
+  if (reshapedTo5D) {
+    return res.as4D(res.shape[1], res.shape[2], res.shape[3], res.shape[4]) as
+        T;
+  }
+
+  return res as T;
 }
 
 export const maxPool = op({maxPool_});

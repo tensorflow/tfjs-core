@@ -974,7 +974,7 @@ describe('conv_util computePool3dInfo', () => {
     expect(
         () => conv_util.computePool3DInfo(
             inShape, filterSize, stride, dilation, 1, 'floor', fakeDataFormat))
-    .toThrowError();
+        .toThrowError();
   });
 });
 

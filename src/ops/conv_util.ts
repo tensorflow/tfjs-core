@@ -362,8 +362,7 @@ export function computeDefaultPad(
       (inputShape[0] * (stride - 1) - stride + effectiveFieldSize) / 2);
 }
 
-function parseTupleParam(
-    param: number|number[]): [number, number, number] {
+function parseTupleParam(param: number|number[]): [number, number, number] {
   if (typeof param === 'number') {
     return [param, param, param];
   }
@@ -526,8 +525,7 @@ function conditionalRound(
   }
 }
 
-export function tupleValuesAreOne(
-    param: number|number[]): boolean {
+export function tupleValuesAreOne(param: number|number[]): boolean {
   const [dimA, dimB, dimC] = parseTupleParam(param);
   return dimA === 1 && dimB === 1 && dimC === 1;
 }

@@ -844,6 +844,15 @@ describeWithFlags('poolBackprop', ALL_ENVS, () => {
 });
 
 describeWithFlags('maxPool3d', ALL_ENVS, () => {
+  it('4D x=[2,2,2,1] f=[2,2,2] s=1 p=valid', async () => {
+    const x = tf.tensor4d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2, 1]);
+
+    const result = tf.maxPool3d(x, 2, 1, 'valid');
+
+    expect(result.shape).toEqual([1, 1, 1, 1]);
+    expectArraysClose(await result.data(), [8]);
+  });
+
   it('x=[1,1,1,1,1] f=[1,1,1] s=1 [0] => [0]', async () => {
     const x = tf.tensor5d([0], [1, 1, 1, 1, 1]);
 
@@ -990,6 +999,17 @@ describeWithFlags('maxPool3d', ALL_ENVS, () => {
 });
 
 describeWithFlags('maxPool3dBackprop', ALL_ENVS, () => {
+  it('gradient x=[2,2,2,1] f=[1,1,1] s=1', async () => {
+    const dy = tf.tensor4d([1, 2, 1, 2, 1, 2, 1, 2], [2, 2, 2, 1]);
+    const x = tf.tensor4d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2, 1]);
+    const expected = [1, 2, 1, 2, 1, 2, 1, 2];
+
+    const dx = tf.grad((x: tf.Tensor4D) => tf.maxPool3d(x, 1, 1, 0))(x, dy);
+
+    expect(dx.shape).toEqual(x.shape);
+    expectArraysClose(await dx.data(), expected);
+  });
+
   it('gradient x=[1,2,2,2,1] f=[1,1,1] s=1', async () => {
     const dy = tf.tensor5d([1, 2, 1, 2, 1, 2, 1, 2], [1, 2, 2, 2, 1]);
     const x = tf.tensor5d([1, 2, 3, 4, 5, 6, 7, 8], [1, 2, 2, 2, 1]);
@@ -1182,6 +1202,15 @@ describeWithFlags('maxPool3dBackprop', ALL_ENVS, () => {
 });
 
 describeWithFlags('avgPool3d', ALL_ENVS, () => {
+  it('x=[2,2,2,1] f=[2,2,2] s=1 p=valid', async () => {
+    const x = tf.tensor4d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2, 1]);
+
+    const result = tf.avgPool3d(x, 2, 1, 'valid');
+
+    expect(result.shape).toEqual([1, 1, 1, 1]);
+    expectArraysClose(await result.data(), [4.5]);
+  });
+
   it('x=[1,1,1,1,1] f=[1,1,1] s=1 [0] => [0]', async () => {
     const x = tf.tensor5d([0], [1, 1, 1, 1, 1]);
 
@@ -1336,6 +1365,17 @@ describeWithFlags('avgPool3d', ALL_ENVS, () => {
 });
 
 describeWithFlags('avgPool3dBackprop', ALL_ENVS, () => {
+  it('gradient x=[2,2,2,1] f=[1,1,1] s=1', async () => {
+    const dy = tf.tensor4d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2, 1]);
+    const x = tf.ones([2, 2, 2, 1]) as tf.Tensor4D;
+    const expected = [1, 2, 3, 4, 5, 6, 7, 8];
+
+    const dx = tf.grad((x: tf.Tensor4D) => tf.avgPool3d(x, 1, 1, 0))(x, dy);
+
+    expect(dx.shape).toEqual(x.shape);
+    expectArraysClose(await dx.data(), expected);
+  });
+
   it('gradient x=[1,2,2,2,1] f=[1,1,1] s=1', async () => {
     const dy = tf.tensor5d([1, 2, 3, 4, 5, 6, 7, 8], [1, 2, 2, 2, 1]);
     const x = tf.ones([1, 2, 2, 2, 1]) as tf.Tensor5D;
