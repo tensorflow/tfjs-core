@@ -528,7 +528,7 @@ function conditionalRound(
 }
 
 export function tupleValuesAreOne(
-    param: number|[number, number]|[number, number, number]): boolean {
+    param: number|number[]): boolean {
   const [dimA, dimB, dimC] = parseTupleParam(param);
   return dimA === 1 && dimB === 1 && dimC === 1;
 }
