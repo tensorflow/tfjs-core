@@ -25,7 +25,20 @@ export const getNodeFetch = {
 };
 
 export let systemFetch: (url: string, init?: RequestInit) => Promise<Response>;
+
 export class PlatformNode implements Platform {
+  private textEncoder: TextEncoder;
+  // tslint:disable-next-line:no-any
+  util: any;
+
+  constructor() {
+    // tslint:disable-next-line:no-require-imports
+    this.util = require('util');
+    // According to the spec, the built-in encoder can do only UTF-8 encoding.
+    // https://developer.mozilla.org/en-US/docs/Web/API/TextEncoder/TextEncoder
+    this.textEncoder = new this.util.TextEncoder();
+  }
+
   fetch(path: string, requestInits?: RequestInit): Promise<Response> {
     if (ENV.global.fetch != null) {
       return ENV.global.fetch(path, requestInits);
@@ -35,6 +48,25 @@ export class PlatformNode implements Platform {
       systemFetch = getNodeFetch.importFetch();
     }
     return systemFetch(path, requestInits);
+  }
+
+  now(): number {
+    const time = process.hrtime();
+    return time[0] * 1000 + time[1] / 1000000;
+  }
+
+  encode(text: string, encoding: string): Uint8Array {
+    if (encoding !== 'utf-8' && encoding !== 'utf8') {
+      throw new Error(
+          `Node built-in encoder only supports utf-8, but got ${encoding}`);
+    }
+    return this.textEncoder.encode(text);
+  }
+  decode(bytes: Uint8Array, encoding: string): string {
+    if (bytes.length === 0) {
+      return '';
+    }
+    return new this.util.TextDecoder(encoding).decode(bytes);
   }
 }
 
