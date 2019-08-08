@@ -241,7 +241,6 @@ export class KernelBackend implements TensorStorage, Backend, BackendTimer {
     throw new Error('Not yet implemented');
   }
 
-
   min(x: Tensor, axes: number[]): Tensor {
     throw new Error('Not yet implemented');
   }
