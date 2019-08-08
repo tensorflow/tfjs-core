@@ -534,8 +534,7 @@ export function tupleValuesAreOne(
 }
 
 export function eitherStridesOrDilationsAreOne(
-    strides: number|[number, number]|[number, number, number],
-    dilations: number|[number, number]|[number, number, number]): boolean {
+    strides: number|number[], dilations: number|number[]): boolean {
   return tupleValuesAreOne(strides) || tupleValuesAreOne(dilations);
 }
 
