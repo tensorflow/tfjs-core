@@ -131,11 +131,11 @@ describeWithFlags('stft', ALL_ENVS, () => {
     const frameLength = 3;
     const frameStep = 1;
     const output = tf.signal.stft(input, frameLength, frameStep);
-    expect(output.shape[0]).toEqual(3);
+    expect(output.shape).toEqual([3, 3]);
     expectArraysClose(await output.data(), [
-      1.0, 0.0, -0.5, -0.86602545,
-      1.0, 0.0, -0.5, -0.86602545,
-      1.0, 0.0, -0.5, -0.86602545
+      1.0, 0.0, 0.0, -1.0, -1.0, 0.0,
+      1.0, 0.0, 0.0, -1.0, -1.0, 0.0,
+      1.0, 0.0, 0.0, -1.0, -1.0, 0.0,
     ]);
   });
 
@@ -144,11 +144,11 @@ describeWithFlags('stft', ALL_ENVS, () => {
     const frameLength = 3;
     const frameStep = 1;
     const output = tf.signal.stft(input, frameLength, frameStep);
-    expect(output.shape[0]).toEqual(3);
+    expect(output.shape).toEqual([3, 3]);
     expectArraysClose(await output.data(), [
-      2.0, 0.0, -0.99999994, -1.7320509,
-      2.9999998, 0.0, -1.4999998, -2.5980759,
-      4.0, 0.0, -1.9999999, -3.4641018
+      2.0, 0.0, 0.0, -2.0, -2.0, 0.0,
+      3.0, 0.0, 0.0, -3.0, -3.0, 0.0,
+      4.0, 0.0, 0.0, -4.0, -4.0, 0.0
     ]);
   });
 
@@ -157,10 +157,10 @@ describeWithFlags('stft', ALL_ENVS, () => {
     const frameLength = 3;
     const frameStep = 2;
     const output = tf.signal.stft(input, frameLength, frameStep);
-    expect(output.shape[0]).toEqual(2);
+    expect(output.shape).toEqual([2, 3]);
     expectArraysClose(await output.data(), [
-      1.0, 0.0, -0.5, -0.86602545,
-      1.0, 0.0, -0.5, -0.86602545
+      1.0, 0.0, 0.0, -1.0, -1.0, 0.0,
+      1.0, 0.0, 0.0, -1.0, -1.0, 0.0
     ]);
   });
 
@@ -182,10 +182,10 @@ describeWithFlags('stft', ALL_ENVS, () => {
     const frameLength = 5;
     const frameStep = 1;
     const output = tf.signal.stft(input, frameLength, frameStep);
-    expect(output.shape[0]).toEqual(1);
+    expect(output.shape).toEqual([1, 5]);
     expectArraysClose(
       await output.data(),
-      [1.99999, 0.0, -1.059017, -0.76942056, 0.05901694, 0.18163569]);
+      [2.0, 0.0, 0.0, -1.7071068, -1.0, 0.0, 0.0, 0.29289323, 0.0, 0.0]);
   });
 
   it('5 length with hann window (sequential)', async () => {
@@ -193,7 +193,7 @@ describeWithFlags('stft', ALL_ENVS, () => {
     const frameLength = 5;
     const frameStep = 1;
     const output = tf.signal.stft(input, frameLength, frameStep);
-    expect(output.shape[0]).toEqual(1);
+    expect(output.shape).toEqual([1, 5]);
     expectArraysClose(
       await output.data(),
       [6.0, 0.0, -3.7360673, -1.5388412, 0.7360677, 0.36327171]);

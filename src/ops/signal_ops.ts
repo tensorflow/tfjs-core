@@ -118,15 +118,20 @@ function stft_(
     fftLength?: number,
     windowFn: (length: number) => Tensor1D = hannWindow): Tensor {
   if (fftLength == null) {
-    fftLength = frameLength;
+    fftLength = enclosingPowerOfTwo(frameLength);
   }
   const framedSignal = frame(signal, frameLength, frameStep);
   const windowedSignal = mul(framedSignal, windowFn(frameLength));
   const output: Tensor[] = [];
   for (let i = 0; i < framedSignal.shape[0]; i++) {
-    output.push(rfft(windowedSignal.slice([i, 0], [1, fftLength]), fftLength));
+    output.push(rfft(windowedSignal.slice([i, 0], [1, frameLength]), fftLength));
   }
   return concat(output);
+}
+
+function enclosingPowerOfTwo(value: number) {
+  // Return 2**N for integer N such that 2**N >= value.
+  return Math.floor(Math.pow(2, Math.ceil(Math.log(value) / Math.log(2.0))));
 }
 
 function cosineWindow(windowLength: number, a: number, b: number): Tensor1D {
