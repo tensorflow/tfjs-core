@@ -62,7 +62,7 @@ import './ops/dropout_util_test';
 import './ops/fused_test';
 import './ops/gather_nd_test';
 import './ops/image_ops_test';
-import './ops/inTopK_test';
+import './ops/in_top_k_test';
 import './ops/linalg_ops_test';
 import './ops/logical_ops_test';
 import './ops/loss_ops_test';

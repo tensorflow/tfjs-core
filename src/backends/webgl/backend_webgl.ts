@@ -44,7 +44,6 @@ import {getArrayFromDType, getTypedArrayFromDType, inferDtype, sizeFromShape} fr
 import {DataStorage, EPSILON_FLOAT16, EPSILON_FLOAT32, KernelBackend} from '../backend';
 import * as backend_util from '../backend_util';
 import {mergeRealAndImagArrays} from '../complex_util';
-import {inTopKImpl} from '../inTopK_impl';
 import {nonMaxSuppressionImpl} from '../non_max_suppression_impl';
 import {split} from '../split_shared';
 import {tile} from '../tile_impl';
@@ -55,7 +54,7 @@ import {AddNProgram} from './addn_gpu';
 import {AddNPackedProgram} from './addn_packed_gpu';
 import {ArgMinMaxProgram} from './argminmax_gpu';
 import {ArgMinMaxPackedProgram} from './argminmax_packed_gpu';
-import {AvgPool2DBackpropProgram} from './avg_pool_backprop_gpu';
+import {AvgPool2DBackpropProgram, AvgPool3DBackpropProgram} from './avg_pool_backprop_gpu';
 import {BatchNormProgram} from './batchnorm_gpu';
 import {BatchNormPackedProgram} from './batchnorm_packed_gpu';
 import * as binaryop_complex_gpu from './binaryop_complex_gpu';
@@ -99,14 +98,14 @@ import {Im2ColPackedProgram} from './im2col_packed_gpu';
 import {LRNProgram} from './lrn_gpu';
 import {LRNGradProgram} from './lrn_grad_gpu';
 import {LRNPackedProgram} from './lrn_packed_gpu';
-import {MaxPool2DBackpropProgram} from './max_pool_backprop_gpu';
+import {MaxPool2DBackpropProgram, MaxPool3DBackpropProgram} from './max_pool_backprop_gpu';
 import {MatMulPackedProgram} from './mulmat_packed_gpu';
 import {MultinomialProgram} from './multinomial_gpu';
 import {OneHotProgram} from './onehot_gpu';
 import {PackProgram} from './pack_gpu';
 import {PadProgram} from './pad_gpu';
 import {PadPackedProgram} from './pad_packed_gpu';
-import {Pool2DProgram} from './pool_gpu';
+import {Pool2DProgram, Pool3DProgram} from './pool_gpu';
 import {ReduceProgram} from './reduce_gpu';
 import {ReshapePackedProgram} from './reshape_packed_gpu';
 import {ResizeBilinearBackpropProgram} from './resize_bilinear_backprop_gpu';
@@ -1360,15 +1359,6 @@ export class MathBackendWebGL implements KernelBackend {
     return topkImpl(xVals, x.shape, x.dtype as NumericDataType, k, sorted);
   }
 
-  inTopK<T extends Tensor, U extends Tensor>(
-      predictions: T, targets: U, k: number): U {
-    const predictionsVals = predictions.dataSync();
-    const targetsVals = targets.dataSync();
-    return inTopKImpl(
-               predictionsVals, predictions.shape, targetsVals, targets.shape,
-               k) as U;
-  }
-
   min(x: Tensor, axes: number[]): Tensor {
     axis_util.assertAxesAreInnerMostDims('min', axes, x.rank);
     const [outShape, reduceShape] =
@@ -2166,6 +2156,42 @@ export class MathBackendWebGL implements KernelBackend {
       res[i] = this.slice(x, begin, size).reshape(outShape);
     }
     return res;
+  }
+
+  avgPool3d(x: Tensor5D, convInfo: Conv3DInfo): Tensor5D {
+    const program = new Pool3DProgram(convInfo, 'avg', false);
+    const output = this.makeOutputArray(program.outputShape, 'float32');
+    return this.compileAndRun(program, [x], output) as Tensor5D;
+  }
+
+  avgPool3dBackprop(dy: Tensor5D, x: Tensor5D, convInfo: Conv3DInfo): Tensor5D {
+    const avgPool3dBackpropProgram = new AvgPool3DBackpropProgram(convInfo);
+    const output =
+        this.makeOutputArray(avgPool3dBackpropProgram.outputShape, x.dtype);
+    return this.compileAndRun(avgPool3dBackpropProgram, [dy], output) as
+        Tensor5D;
+  }
+
+  maxPool3d(x: Tensor5D, convInfo: Conv3DInfo): Tensor5D {
+    const program = new Pool3DProgram(convInfo, 'max', false);
+    const output = this.makeOutputArray(program.outputShape, 'float32');
+    return this.compileAndRun(program, [x], output) as Tensor5D;
+  }
+
+  maxPool3dBackprop(
+      dy: Tensor5D, x: Tensor5D, y: Tensor5D, convInfo: Conv3DInfo): Tensor5D {
+    const getPositions = true;
+    const maxPool3dPositionsProgram =
+        new Pool3DProgram(convInfo, 'max', getPositions);
+    const maxPool3dPositions: Tensor5D =
+        this.compileAndRun(maxPool3dPositionsProgram, [x]);
+    const maxPool3dBackPropProgram = new MaxPool3DBackpropProgram(convInfo);
+    const output =
+        this.makeOutputArray(maxPool3dBackPropProgram.outputShape, x.dtype);
+    const result = this.compileAndRun(
+        maxPool3dBackPropProgram, [dy, maxPool3dPositions], output);
+    maxPool3dPositions.dispose();
+    return result as Tensor5D;
   }
 
   reshape<R extends Rank>(x: Tensor, shape: ShapeMap[R]): Tensor<R> {
