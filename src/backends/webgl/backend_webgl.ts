@@ -26,6 +26,7 @@ import {warn} from '../../log';
 import {buffer} from '../../ops/array_ops';
 import * as array_ops_util from '../../ops/array_ops_util';
 import * as axis_util from '../../ops/axis_util';
+import {complex, imag, real} from '../../ops/complex_ops';
 import {computeOutShape} from '../../ops/concat_util';
 import {Conv2DInfo, Conv3DInfo} from '../../ops/conv_util';
 import {Activation, FusedBatchMatMulConfig} from '../../ops/fused_util';
@@ -43,6 +44,7 @@ import {getArrayFromDType, getTypedArrayFromDType, inferDtype, sizeFromShape} fr
 import {DataStorage, EPSILON_FLOAT16, EPSILON_FLOAT32, KernelBackend} from '../backend';
 import * as backend_util from '../backend_util';
 import {mergeRealAndImagArrays} from '../complex_util';
+import {inTopKImpl} from '../inTopK_impl';
 import {nonMaxSuppressionImpl} from '../non_max_suppression_impl';
 import {split} from '../split_shared';
 import {tile} from '../tile_impl';
@@ -78,6 +80,7 @@ import {CumSumProgram} from './cumsum_gpu';
 import {DecodeMatrixProgram} from './decode_matrix_gpu';
 import {DecodeMatrixPackedProgram} from './decode_matrix_packed_gpu';
 import {DepthToSpaceProgram} from './depth_to_space_gpu';
+import {DiagProgram} from './diag_gpu';
 import {EncodeFloatProgram} from './encode_float_gpu';
 import {EncodeFloatPackedProgram} from './encode_float_packed_gpu';
 import {EncodeMatrixProgram} from './encode_matrix_gpu';
@@ -131,7 +134,6 @@ import * as unary_packed_op from './unaryop_packed_gpu';
 import {UnaryOpPackedProgram} from './unaryop_packed_gpu';
 import {UnpackProgram} from './unpack_gpu';
 import * as webgl_util from './webgl_util';
-import {real, imag, complex} from '../../ops/complex_ops';
 
 type KernelInfo = {
   name: string; query: Promise<number>;
@@ -1358,6 +1360,15 @@ export class MathBackendWebGL implements KernelBackend {
     return topkImpl(xVals, x.shape, x.dtype as NumericDataType, k, sorted);
   }
 
+  inTopK<T extends Tensor, U extends Tensor>(
+      predictions: T, targets: U, k: number): U {
+    const predictionsVals = predictions.dataSync();
+    const targetsVals = targets.dataSync();
+    return inTopKImpl(
+               predictionsVals, predictions.shape, targetsVals, targets.shape,
+               k) as U;
+  }
+
   min(x: Tensor, axes: number[]): Tensor {
     axis_util.assertAxesAreInnerMostDims('min', axes, x.rank);
     const [outShape, reduceShape] =
@@ -1842,6 +1853,7 @@ export class MathBackendWebGL implements KernelBackend {
     const sharedMatMulDim = convInfo.inChannels;
     const outerShapeX = xShape[0] * xShape[1] * xShape[2];
     const outerShapeFilter = convInfo.outChannels;
+    const isChannelsLast = convInfo.dataFormat === 'channelsLast';
     const transposeA = false;
     const transposeB = false;
 
@@ -1855,10 +1867,10 @@ export class MathBackendWebGL implements KernelBackend {
     if (batchMatMulWillBeUnpacked || !ENV.getBool('WEBGL_LAZILY_UNPACK') ||
         !ENV.getBool('WEBGL_PACK_BINARY_OPERATIONS') ||
         !reshapeWillBeExpensive) {
+      const targetShape = isChannelsLast ? xShape[0] * xShape[1] * xShape[2] :
+                                           xShape[0] * xShape[2] * xShape[3];
       const xReshaped =
-          this.reshape(
-              x, [1, xShape[0] * xShape[1] * xShape[2], convInfo.inChannels]) as
-          Tensor3D;
+          this.reshape(x, [1, targetShape, convInfo.inChannels]) as Tensor3D;
       const filterReshaped =
           this.reshape(
               filter, [1, convInfo.inChannels, convInfo.outChannels]) as
@@ -1878,17 +1890,19 @@ export class MathBackendWebGL implements KernelBackend {
     }
 
     // Following optimization is specific to packed |x| with odd row count
-    // ('row count' refers to x.shape[2]): we avoid expensive packed 2x2
-    // reshape by padding row count to next, even number. When x.shape[2] is
-    // odd, the result of packed batchMatMul is the same (has the same texture
-    // layout and and values in the texture) as it is for even x.shape[2] + 1.
-    // We make the odd-rows tensor to look like even-rows tensor before the
-    // operation and, after the batchMatMul, fix the even-rows result to have
-    // odd number of rows.
-    const xReshaped =
-        Tensor.make(
-            [1, xShape[0] * xShape[1] * (xShape[2] + 1), convInfo.inChannels],
-            {dataId: x.dataId}, x.dtype, this) as Tensor3D;
+    // (For example, in channelLast mode, 'row count' refers to x.shape[2]):
+    // we avoid expensive packed 2x2 reshape by padding row count to next,
+    // even number. When x.shape[2] is odd, the result of packed batchMatMul is
+    // the same (has the same texture layout and and values in the texture) as
+    // it is for even x.shape[2] + 1. We make the odd-rows tensor to look like
+    // even-rows tensor before the operation and, after the batchMatMul,
+    // fix the even-rows result to have odd number of rows.
+    const targetShape = isChannelsLast ?
+        xShape[0] * xShape[1] * (xShape[2] + 1) :
+        xShape[0] * xShape[2] * (xShape[3] + 1);
+    const xReshaped = Tensor.make(
+                          [1, targetShape, convInfo.inChannels],
+                          {dataId: x.dataId}, x.dtype, this) as Tensor3D;
 
     // xTexData.shape gets referenced from GPGPUBinary.inShapeInfos.
     // Decrementing row count, after batchMatMul->...->compileProgram leads to
@@ -1947,7 +1961,10 @@ export class MathBackendWebGL implements KernelBackend {
       inChannels,
       outWidth,
       outHeight,
+      dataFormat
     } = convInfo;
+
+    const isChannelsLast = dataFormat === 'channelsLast';
 
     const sharedDim = filterWidth * filterHeight * inChannels;
     const numCols = outHeight * outWidth;
@@ -1981,7 +1998,11 @@ export class MathBackendWebGL implements KernelBackend {
     }
     const product = this.compileAndRun<Tensor4D>(matmulProgram, inputs);
 
-    return product.reshape([1, outHeight, outWidth, convInfo.outChannels]);
+    if (isChannelsLast) {
+      return product.reshape([1, outHeight, outWidth, convInfo.outChannels]);
+    } else {
+      return product.reshape([1, convInfo.outChannels, outHeight, outWidth]);
+    }
   }
 
   fusedConv2d(
@@ -2206,6 +2227,11 @@ export class MathBackendWebGL implements KernelBackend {
       Tensor2D {
     const program = new OneHotProgram(indices.size, depth, onValue, offValue);
     return this.compileAndRun(program, [indices]);
+  }
+
+  diag(x: Tensor): Tensor {
+    const program = new DiagProgram(x.size);
+    return this.compileAndRun(program, [x]);
   }
 
   nonMaxSuppression(

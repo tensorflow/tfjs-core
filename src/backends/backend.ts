@@ -241,6 +241,11 @@ export class KernelBackend implements TensorStorage, Backend, BackendTimer {
     throw new Error('Not yet implemented');
   }
 
+  inTopK<T extends Tensor, U extends Tensor>(
+      predictions: T, targets: U, k: number): U {
+    throw new Error('Not yet implemented');
+  }
+
   min(x: Tensor, axes: number[]): Tensor {
     throw new Error('Not yet implemented');
   }
@@ -606,6 +611,10 @@ export class KernelBackend implements TensorStorage, Backend, BackendTimer {
   sparseToDense<R extends Rank>(
       sparseIndices: Tensor, sparseValues: Tensor, outputShape: ShapeMap[R],
       defaultValue: Scalar): Tensor<R> {
+    throw new Error('Not yet implemented');
+  }
+
+  diag(x: Tensor): Tensor {
     throw new Error('Not yet implemented');
   }
 
