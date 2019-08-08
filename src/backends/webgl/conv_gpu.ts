@@ -23,7 +23,9 @@ export class Conv2DProgram implements GPGPUProgram {
   outputShape: number[];
   userCode: string;
 
-  constructor(convInfo: Conv2DInfo) {
+  constructor(
+      convInfo: Conv2DInfo, addBias = false, activation: string = null,
+      hasPreluActivationWeights = false) {
     this.outputShape = convInfo.outShape;
     const padTop = convInfo.padInfo.top;
     const padLeft = convInfo.padInfo.left;
@@ -36,17 +38,52 @@ export class Conv2DProgram implements GPGPUProgram {
 
     const inputDepthNearestVec4 = Math.floor(convInfo.inChannels / 4) * 4;
     const inputDepthVec4Remainder = convInfo.inChannels % 4;
+    const isChannelsLast = convInfo.dataFormat === 'channelsLast';
+
+    const rowDim = isChannelsLast ? 1 : 2;
+    const colDim = isChannelsLast ? 2 : 3;
+    const channelDim = isChannelsLast ? 3 : 1;
+
+    let activationSnippet = '', applyActivationSnippet = '';
+    if (activation) {
+      if (hasPreluActivationWeights) {
+        activationSnippet = `float activation(float a) {
+          float b = getPreluActivationWeightsAtOutCoords();
+          ${activation}
+        }`;
+      } else {
+        activationSnippet = `
+          float activation(float x) {
+            ${activation}
+          }
+        `;
+      }
+
+      applyActivationSnippet = `result = activation(result);`;
+    }
+
+    const addBiasSnippet = addBias ? 'result += getBiasAtOutCoords();' : '';
+    if (addBias) {
+      this.variableNames.push('bias');
+    }
+
+    if (hasPreluActivationWeights) {
+      this.variableNames.push('preluActivationWeights');
+    }
 
     this.userCode = `
+      ${activationSnippet}
+
       const ivec2 strides = ivec2(${strideHeight}, ${strideWidth});
       const ivec2 pads = ivec2(${padTop}, ${padLeft});
 
       void main() {
         ivec4 coords = getOutputCoords();
         int batch = coords[0];
-        int d2 = coords[3];
+        int d2 = coords[${channelDim}];
 
-        ivec2 xRCCorner = coords.yz * strides - pads;
+        ivec2 xRCCorner =
+            ivec2(coords[${rowDim}], coords[${colDim}]) * strides - pads;
         int xRCorner = xRCCorner.x;
         int xCCorner = xRCCorner.y;
 
@@ -68,12 +105,6 @@ export class Conv2DProgram implements GPGPUProgram {
             }
 
             for (int d1 = 0; d1 < ${inputDepthNearestVec4}; d1 += 4) {
-              vec4 xValues = vec4(
-                getX(batch, xR, xC, d1),
-                getX(batch, xR, xC, d1 + 1),
-                getX(batch, xR, xC, d1 + 2),
-                getX(batch, xR, xC, d1 + 3)
-              );
               vec4 wValues = vec4(
                 getW(wR, wC, d1, d2),
                 getW(wR, wC, d1 + 1, d2),
@@ -81,39 +112,88 @@ export class Conv2DProgram implements GPGPUProgram {
                 getW(wR, wC, d1 + 3, d2)
               );
 
-              dotProd += dot(xValues, wValues);
+              if (${isChannelsLast}) {
+                vec4 xValues = vec4(
+                  getX(batch, xR, xC, d1),
+                  getX(batch, xR, xC, d1 + 1),
+                  getX(batch, xR, xC, d1 + 2),
+                  getX(batch, xR, xC, d1 + 3)
+                );
+                dotProd += dot(xValues, wValues);
+              } else {
+                vec4 xValues = vec4(
+                  getX(batch, d1, xR, xC),
+                  getX(batch, d1 + 1, xR, xC),
+                  getX(batch, d1 + 2, xR, xC),
+                  getX(batch, d1 + 3, xR, xC)
+                );
+                dotProd += dot(xValues, wValues);
+              }
             }
 
             if (${inputDepthVec4Remainder === 1}) {
-              dotProd +=
-                getX(batch, xR, xC, ${inputDepthNearestVec4}) *
-                getW(wR, wC, ${inputDepthNearestVec4}, d2);
+
+              if (${isChannelsLast}) {
+                dotProd +=
+                    getX(batch, xR, xC, ${inputDepthNearestVec4}) *
+                    getW(wR, wC, ${inputDepthNearestVec4}, d2);
+              } else {
+                dotProd +=
+                    getX(batch, ${inputDepthNearestVec4}, xR, xC) *
+                    getW(wR, wC, ${inputDepthNearestVec4}, d2);
+              }
+
             } else if (${inputDepthVec4Remainder === 2}) {
-              vec2 xValues = vec2(
-                getX(batch, xR, xC, ${inputDepthNearestVec4}),
-                getX(batch, xR, xC, ${inputDepthNearestVec4} + 1)
-              );
               vec2 wValues = vec2(
                 getW(wR, wC, ${inputDepthNearestVec4}, d2),
                 getW(wR, wC, ${inputDepthNearestVec4} + 1, d2)
               );
-              dotProd += dot(xValues, wValues);
+
+              if (${isChannelsLast}) {
+                vec2 xValues = vec2(
+                  getX(batch, xR, xC, ${inputDepthNearestVec4}),
+                  getX(batch, xR, xC, ${inputDepthNearestVec4} + 1)
+                );
+                dotProd += dot(xValues, wValues);
+              } else {
+                vec2 xValues = vec2(
+                  getX(batch, ${inputDepthNearestVec4}, xR, xC),
+                  getX(batch, ${inputDepthNearestVec4} + 1, xR, xC)
+                );
+                dotProd += dot(xValues, wValues);
+              }
+
             } else if (${inputDepthVec4Remainder === 3}) {
-              vec3 xValues = vec3(
-                getX(batch, xR, xC, ${inputDepthNearestVec4}),
-                getX(batch, xR, xC, ${inputDepthNearestVec4} + 1),
-                getX(batch, xR, xC, ${inputDepthNearestVec4} + 2)
-              );
               vec3 wValues = vec3(
                 getW(wR, wC, ${inputDepthNearestVec4}, d2),
                 getW(wR, wC, ${inputDepthNearestVec4} + 1, d2),
                 getW(wR, wC, ${inputDepthNearestVec4} + 2, d2)
               );
-              dotProd += dot(xValues, wValues);
+
+              if (${isChannelsLast}) {
+                vec3 xValues = vec3(
+                  getX(batch, xR, xC, ${inputDepthNearestVec4}),
+                  getX(batch, xR, xC, ${inputDepthNearestVec4} + 1),
+                  getX(batch, xR, xC, ${inputDepthNearestVec4} + 2)
+                );
+                dotProd += dot(xValues, wValues);
+              } else {
+                vec3 xValues = vec3(
+                  getX(batch, ${inputDepthNearestVec4}, xR, xC),
+                  getX(batch, ${inputDepthNearestVec4} + 1, xR, xC),
+                  getX(batch, ${inputDepthNearestVec4} + 2, xR, xC)
+                );
+                dotProd += dot(xValues, wValues);
+              }
+
             }
           }
         }
-        setOutput(dotProd);
+
+        float result = dotProd;
+        ${addBiasSnippet}
+        ${applyActivationSnippet}
+        setOutput(result);
       }
     `;
   }

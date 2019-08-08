@@ -293,10 +293,9 @@ export function computeConv3DInfo(
   };
 }
 
-function computeOutputShape3D(
-    inShape: [number, number, number], fieldSize: number, outDepth: number,
-    stride: number, zeroPad?: number,
-    roundingMode?: 'floor'|'round'|'ceil'): [number, number, number] {
+function computeOutputShape2D(
+    inShape: [number, number], fieldSize: number, stride: number,
+    zeroPad?: number, roundingMode?: 'floor'|'round'|'ceil'): [number, number] {
   if (zeroPad == null) {
     zeroPad = computeDefaultPad(inShape, fieldSize, stride);
   }
@@ -317,7 +316,7 @@ function computeOutputShape3D(
       () => `The output # of columns (${outputCols}) must be an integer. ` +
           `Change the stride and/or zero pad parameters`);
 
-  return [outputRows, outputCols, outDepth];
+  return [outputRows, outputCols];
 }
 
 function computeOutputShape4D(
@@ -356,7 +355,7 @@ function computeOutputShape4D(
 }
 
 export function computeDefaultPad(
-    inputShape: [number, number, number]|[number, number, number, number],
+    inputShape: [number, number]|[number, number, number, number],
     fieldSize: number, stride: number, dilation = 1): number {
   const effectiveFieldSize = getEffectiveFilterSize(fieldSize, dilation);
   return Math.floor(
@@ -411,9 +410,8 @@ function getPadAndOutInfo(
   if (typeof pad === 'number') {
     const padType = (pad === 0) ? 'VALID' : 'NUMBER';
     padInfo = {top: pad, bottom: pad, left: pad, right: pad, type: padType};
-    const outShape = computeOutputShape3D(
-        [inHeight, inWidth, 1], filterHeight, 1, strideHeight, pad,
-        roundingMode);
+    const outShape = computeOutputShape2D(
+        [inHeight, inWidth], filterHeight, strideHeight, pad, roundingMode);
     outHeight = outShape[0];
     outWidth = outShape[1];
   } else if (pad === 'same') {
@@ -539,4 +537,22 @@ export function eitherStridesOrDilationsAreOne(
     strides: number|[number, number]|[number, number, number],
     dilations: number|[number, number]|[number, number, number]): boolean {
   return tupleValuesAreOne(strides) || tupleValuesAreOne(dilations);
+}
+
+/**
+ * Convert Conv2D dataFormat from 'NHWC'|'NCHW' to
+ *    'channelsLast'|'channelsFirst'
+ * @param dataFormat in 'NHWC'|'NCHW' mode
+ * @return dataFormat in 'channelsLast'|'channelsFirst' mode
+ * @throws unknown dataFormat
+ */
+export function convertConv2DDataFormat(dataFormat: 'NHWC'|'NCHW'):
+    'channelsLast'|'channelsFirst' {
+  if (dataFormat === 'NHWC') {
+    return 'channelsLast';
+  } else if (dataFormat === 'NCHW') {
+    return 'channelsFirst';
+  } else {
+    throw new Error(`Unknown dataFormat ${dataFormat}`);
+  }
 }

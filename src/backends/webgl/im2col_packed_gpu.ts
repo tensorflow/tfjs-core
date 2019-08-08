@@ -37,11 +37,57 @@ export class Im2ColPackedProgram implements GPGPUProgram {
       padInfo,
       outWidth,
       dilationWidth,
-      dilationHeight
+      dilationHeight,
+      dataFormat
     } = convInfo;
     const {left, top} = padInfo;
     const itemsPerBlockRow = inChannels * filterWidth;
     const glsl = getGlslDifferences();
+    const isChannelsLast = dataFormat === 'channelsLast';
+    const rowDim = isChannelsLast ? 0 : 1;
+    const colDim = isChannelsLast ? 1 : 2;
+
+    let unrolled = ``;
+
+    for (let row = 0; row <= 1; row++) {
+      for (let col = 0; col <= 1; col++) {
+        unrolled += `
+          blockIndex = rc.y + ${col};
+          pos = rc.x + ${row};
+
+          if(blockIndex < ${outputShape[1]} && pos < ${outputShape[0]}) {
+            offsetY = int(blockIndex / (${outWidth})) * ${strideHeight} - ${
+            top};
+            d0 = offsetY + ${dilationHeight} * (pos / ${itemsPerBlockRow});
+
+            if(d0 < ${inputShape[rowDim]} && d0 >= 0) {
+
+              offsetX = int(mod(float(blockIndex), ${outWidth}.) * ${
+            strideWidth}. - ${left}.);
+              d1 = offsetX + ${dilationWidth} * (int(mod(float(pos), ${
+            itemsPerBlockRow}.) / ${inChannels}.));
+
+              if(d1 < ${inputShape[colDim]} && d1 >= 0) {
+
+                ch = int(mod(float(pos), ${inChannels}.));
+
+                if (${isChannelsLast}) {
+                  innerDims = vec2(d1, ch);
+                  result[${row * 2 + col}] = getChannel(
+                    getA(d0, int(innerDims.x),
+                    int(innerDims.y)), innerDims);
+                } else {
+                  innerDims = vec2(d0, d1);
+                  result[${row * 2 + col}] = getChannel(
+                    getA(ch, int(innerDims.x),
+                    int(innerDims.y)), innerDims);
+                }
+              }
+            }
+          }
+        `;
+      }
+    }
 
     this.userCode = `
       void main() {
@@ -49,32 +95,10 @@ export class Im2ColPackedProgram implements GPGPUProgram {
 
         vec4 result = vec4(0);
 
-        for(int row=0; row<=1; row++) {
-          for(int col=0; col<=1; col++) {
-            int blockIndex = rc.y + col;
-            int pos = rc.x + row;
+        int blockIndex, pos, offsetY, d0, offsetX, d1, ch;
+        vec2 innerDims;
 
-            if(blockIndex >= ${outputShape[1]} || pos >= ${
-        outputShape[0]}) continue;
-
-            int offsetY = int(blockIndex / (${outWidth})) * ${strideHeight} - ${
-        top};
-            int d0 = offsetY + ${dilationHeight} * (pos / ${itemsPerBlockRow});
-
-            if(d0 >= ${inputShape[0]} || d0 < 0) continue;
-
-            int offsetX = int(mod(float(blockIndex), ${outWidth}.) * ${
-        strideWidth}. - ${left}.);
-            int d1 = offsetX + ${dilationWidth} * (int(mod(float(pos), ${
-        itemsPerBlockRow}.) / ${inChannels}.));
-
-            if(d1 >= ${inputShape[1]} || d1 < 0) continue;
-
-            vec2 innerDims = vec2(d1, int(mod(float(pos), ${inChannels}.)));
-            result[row * 2 + col] = getChannel(getA(d0, int(innerDims.x),
-                                              int(innerDims.y)), innerDims);
-          }
-        }
+        ${unrolled}
 
         ${glsl.output} = result;
       }

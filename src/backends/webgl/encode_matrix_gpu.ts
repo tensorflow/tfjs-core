@@ -24,12 +24,17 @@ export class EncodeMatrixProgram implements GPGPUProgram {
   userCode: string;
   outputShape: number[];
 
-  constructor(outputShape: [number, number, number], texShape: [
-    number, number
-  ]) {
+  constructor(
+      outputShape: [number, number, number], texShape: [number, number],
+      inputIsUnsignedByte = false) {
     const glsl = getGlslDifferences();
     const [height, width] = texShape;
     this.outputShape = outputShape;
+
+    let output = `result`;
+    if (inputIsUnsignedByte) {
+      output = `floor(result * 255. + 0.5)`;
+    }
 
     this.userCode = `
       ${shader_util.getFlatIndexFrom3D(outputShape)}
@@ -40,7 +45,8 @@ export class EncodeMatrixProgram implements GPGPUProgram {
         int flatIndex = getFlatIndex(coords);
         int offset = imod(flatIndex, 4);
 
-        flatIndex /= 4;
+        flatIndex = idiv(flatIndex, 4, 1.);
+        
         int r = flatIndex / ${width};
         int c = imod(flatIndex, ${width});
         vec2 uv = (vec2(c, r) + halfCR) / vec2(${width}.0, ${height}.0);
@@ -58,7 +64,7 @@ export class EncodeMatrixProgram implements GPGPUProgram {
           result = values[3];
         }
 
-        ${glsl.output} = vec4(result, 0., 0., 0.);
+        ${glsl.output} = vec4(${output}, 0., 0., 0.);
       }
     `;
   }

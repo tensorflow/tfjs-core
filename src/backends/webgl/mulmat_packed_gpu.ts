@@ -25,8 +25,8 @@ export class MatMulPackedProgram implements GPGPUProgram {
 
   constructor(
       aShape: [number, number, number], outputShape: [number, number, number],
-      transposeA = false, transposeB = false,
-      addBias = false, activation: string = null) {
+      transposeA = false, transposeB = false, addBias = false,
+      activation: string = null, hasPreluActivation = false) {
     this.outputShape = outputShape;
 
     const sharedDim = transposeA ? aShape[1] : aShape[2];
@@ -39,9 +39,16 @@ export class MatMulPackedProgram implements GPGPUProgram {
 
     let activationSnippet = '', applyActivationSnippet = '';
     if (activation) {
-      activationSnippet = `vec4 activation(vec4 x) {
-        ${activation}
-      }`;
+      if (hasPreluActivation) {
+        activationSnippet = `vec4 activation(vec4 a) {
+          vec4 b = getPreluActivationWeightsAtOutCoords();
+          ${activation}
+        }`;
+      } else {
+        activationSnippet = `vec4 activation(vec4 x) {
+          ${activation}
+        }`;
+      }
 
       applyActivationSnippet = `result = activation(result);`;
     }
@@ -49,6 +56,10 @@ export class MatMulPackedProgram implements GPGPUProgram {
     const addBiasSnippet = addBias ? 'result += getBiasAtOutCoords();' : '';
     if (addBias) {
       this.variableNames.push('bias');
+    }
+
+    if (hasPreluActivation) {
+      this.variableNames.push('preluActivationWeights');
     }
 
     this.userCode = `
@@ -62,8 +73,10 @@ export class MatMulPackedProgram implements GPGPUProgram {
           vec4 a = getMatrixA(rc.x, ${aSample});
           vec4 b = getMatrixB(rc.x, ${bSample});
 
-          result += (${aSwizzle[0]} * ${bSwizzle[0]}) + (${aSwizzle[1]} * ${
-        bSwizzle[1]});
+          // These swizzled products need to be separately added.
+          // See: https://github.com/tensorflow/tfjs/issues/1735
+          result += (${aSwizzle[0]} * ${bSwizzle[0]});
+          result += (${aSwizzle[1]} * ${bSwizzle[1]});
         }
         return result;
       }

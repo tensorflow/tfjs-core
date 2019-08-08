@@ -40,14 +40,18 @@ export class EncodeMatrixPackedProgram implements GPGPUProgram {
   userCode: string;
   outputShape: number[];
 
-  constructor(outputShape: [number, number, number], texShape: [
-    number, number
-  ]) {
+  constructor(
+      outputShape: [number, number, number], texShape: [number, number],
+      inputIsUnsignedByte = false) {
     const glsl = getGlslDifferences();
     const [height, width] = texShape;
     this.outputShape = outputShape;
 
     let mainLoop = '';
+    let output = 'result';
+    if (inputIsUnsignedByte) {
+      output = 'floor(result * 255. + 0.5)';
+    }
 
     for (let row = 0; row <= 1; row++) {
       for (let col = 0; col <= 1; col++) {
@@ -63,7 +67,8 @@ export class EncodeMatrixPackedProgram implements GPGPUProgram {
               flatIndex = getFlatIndex(localCoords);
               offset = imod(flatIndex, 4);
     
-              flatIndex /= 4;
+              flatIndex = idiv(flatIndex, 4, 1.);
+
               r = flatIndex / ${width};
               c = imod(flatIndex, ${width});
               uv = (vec2(c, r) + halfCR) / vec2(${width}.0, ${height}.0);
@@ -98,7 +103,7 @@ export class EncodeMatrixPackedProgram implements GPGPUProgram {
         
         ${mainLoop}
 
-        ${glsl.output} = result;
+        ${glsl.output} = ${output};
       }
     `;
   }
