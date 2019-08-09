@@ -37,8 +37,10 @@ import {op} from './operation';
  * @param x A floating point Tensor or TensorLike.
  * @param rate A float in the range [0, 1). The probability that each element
  *   of x is discarded.
- * @param noiseShape A 1-D Tensor of type int32, representing the shape for
- *   randomly generated keep/drop flags. Optional.
+ * @param noiseShape An array of numbers of type int32, representing the
+ * shape for randomly generated keep/drop flags. If the noiseShape has null
+ * value, it will be automatically replaced with the x's relative dimension
+ * size. Optional.
  * @param seed Used to create random seeds. Optional.
  * @returns A Tensor of the same shape of x.
  */
