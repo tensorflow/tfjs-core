@@ -53,11 +53,4 @@ describeWithFlags('getNoiseShape', ALL_ENVS, () => {
     const shape = getNoiseShape(x, null);
     expect(shape).toEqual([2, 3]);
   });
-
-  it('x TensorLike object', async () => {
-    const x = [2, 3];
-    const noiseShape = [2, 3];
-    const shape = getNoiseShape(x, noiseShape);
-    expect(shape).toEqual([2, 3]);
-  });
 });

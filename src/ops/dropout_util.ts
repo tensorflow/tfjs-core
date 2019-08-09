@@ -16,8 +16,6 @@
  */
 
 import {Tensor} from '../tensor';
-import {convertToTensor} from '../tensor_util_env';
-import {TensorLike} from '../types';
 import * as util from '../util';
 
 /**
@@ -29,20 +27,19 @@ import * as util from '../util';
  * @returns Normalized noise shape.
  */
 export function getNoiseShape(
-    x: Tensor|TensorLike, noiseShape?: number[]): number[] {
-  const $x = convertToTensor(x, 'x', 'getNoiseShape');
+    x: Tensor, noiseShape?: number[]): number[] {
 
   if (noiseShape == null) {
-    return $x.shape.slice();
+    return x.shape.slice();
   }
-  if (util.arraysEqual($x.shape, noiseShape)) {
+  if (util.arraysEqual(x.shape, noiseShape)) {
     return noiseShape;
   }
-  if ($x.shape.length === noiseShape.length) {
+  if (x.shape.length === noiseShape.length) {
     const newDimension: number[] = [];
-    for (let i = 0; i < $x.shape.length; i++) {
-      if (noiseShape[i] == null && $x.shape[i] != null) {
-        newDimension.push($x.shape[i]);
+    for (let i = 0; i < x.shape.length; i++) {
+      if (noiseShape[i] == null && x.shape[i] != null) {
+        newDimension.push(x.shape[i]);
       } else {
         newDimension.push(noiseShape[i]);
       }
