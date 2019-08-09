@@ -241,11 +241,6 @@ export class KernelBackend implements TensorStorage, Backend, BackendTimer {
     throw new Error('Not yet implemented');
   }
 
-  inTopK<T extends Tensor, U extends Tensor>(
-      predictions: T, targets: U, k: number): U {
-    throw new Error('Not yet implemented');
-  }
-
   min(x: Tensor, axes: number[]): Tensor {
     throw new Error('Not yet implemented');
   }
@@ -466,6 +461,19 @@ export class KernelBackend implements TensorStorage, Backend, BackendTimer {
     throw new Error('Not yet implemented');
   }
   avgPoolBackprop(dy: Tensor4D, x: Tensor4D, convInfo: Conv2DInfo): Tensor4D {
+    throw new Error('Not yet implemented');
+  }
+  avgPool3d(x: Tensor5D, convInfo: Conv3DInfo): Tensor5D {
+    throw new Error('Not yet implemented');
+  }
+  avgPool3dBackprop(dy: Tensor5D, x: Tensor5D, convInfo: Conv3DInfo): Tensor5D {
+    throw new Error('Not yet implemented');
+  }
+  maxPool3d(x: Tensor5D, convInfo: Conv3DInfo): Tensor5D {
+    throw new Error('Not yet implemented');
+  }
+  maxPool3dBackprop(
+      dy: Tensor5D, x: Tensor5D, y: Tensor5D, convInfo: Conv3DInfo): Tensor5D {
     throw new Error('Not yet implemented');
   }
 
