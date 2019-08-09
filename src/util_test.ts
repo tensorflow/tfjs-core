@@ -16,7 +16,7 @@
  */
 
 import {ENV} from './environment';
-import {describeWithFlags, NODE_ENVS} from './jasmine_util';
+import {ALL_ENVS, describeWithFlags} from './jasmine_util';
 import {scalar, tensor2d} from './ops/ops';
 import {inferShape} from './tensor_util_env';
 import * as util from './util';
@@ -87,6 +87,27 @@ describe('Util', () => {
     const a = new Float32Array([1, 2, 3, 4, 5]);
     expect(inferShape(a)).toEqual([5]);
   });
+
+  it('infer shape of Uint8Array[], string tensor', () => {
+    const a = [new Uint8Array([1, 2]), new Uint8Array([3, 4])];
+    expect(inferShape(a, 'string')).toEqual([2]);
+  });
+
+  it('infer shape of Uint8Array[][], string tensor', () => {
+    const a = [
+      [new Uint8Array([1]), new Uint8Array([2])],
+      [new Uint8Array([1]), new Uint8Array([2])]
+    ];
+    expect(inferShape(a, 'string')).toEqual([2, 2]);
+  });
+
+  it('infer shape of Uint8Array[][][], string tensor', () => {
+    const a = [
+      [[new Uint8Array([1, 2])], [new Uint8Array([2, 1])]],
+      [[new Uint8Array([1, 2])], [new Uint8Array([2, 1])]]
+    ];
+    expect(inferShape(a, 'string')).toEqual([2, 2, 1]);
+  });
 });
 
 describe('util.flatten', () => {
@@ -112,13 +133,30 @@ describe('util.flatten', () => {
         [new Float32Array([1, 2]), 3, [4, 5, new Float32Array([6, 7])]];
     expect(util.flatten(data)).toEqual([1, 2, 3, 4, 5, 6, 7]);
   });
+
+  it('nested Uint8Arrays, skipTypedArray=true', () => {
+    const data = [
+      [new Uint8Array([1, 2]), new Uint8Array([3, 4])],
+      [new Uint8Array([5, 6]), new Uint8Array([7, 8])]
+    ];
+    expect(util.flatten(data, [], true)).toEqual([
+      new Uint8Array([1, 2]), new Uint8Array([3, 4]), new Uint8Array([5, 6]),
+      new Uint8Array([7, 8])
+    ]);
+  });
 });
 
+function encodeStrings(a: string[]): Uint8Array[] {
+  return a.map(s => util.encodeString(s));
+}
+
 describe('util.bytesFromStringArray', () => {
-  it('count each character as 2 bytes', () => {
-    expect(util.bytesFromStringArray(['a', 'bb', 'ccc'])).toBe(6 * 2);
-    expect(util.bytesFromStringArray(['a', 'bb', 'cccddd'])).toBe(9 * 2);
-    expect(util.bytesFromStringArray(['даниел'])).toBe(6 * 2);
+  it('count bytes after utf8 encoding', () => {
+    expect(util.bytesFromStringArray(encodeStrings(['a', 'bb', 'ccc'])))
+        .toBe(6);
+    expect(util.bytesFromStringArray(encodeStrings(['a', 'bb', 'cccddd'])))
+        .toBe(9);
+    expect(util.bytesFromStringArray(encodeStrings(['даниел']))).toBe(6 * 2);
   });
 });
 
@@ -457,7 +495,7 @@ describe('util.hasEncodingLoss', () => {
   });
 });
 
-describe('util.toNestedArray', () => {
+describeWithFlags('util.toNestedArray', ALL_ENVS, () => {
   it('2 dimensions', () => {
     const a = new Float32Array([1, 2, 3, 4, 5, 6]);
     expect(util.toNestedArray([2, 3], a)).toEqual([[1, 2, 3], [4, 5, 6]]);
@@ -482,14 +520,16 @@ describe('util.toNestedArray', () => {
     expect(() => util.toNestedArray([2, 2], a)).toThrowError();
   });
 
-  it('tensor to nested array', () => {
+  it('tensor to nested array', async () => {
     const x = tensor2d([1, 2, 3, 4], [2, 2]);
-    expect(util.toNestedArray(x.shape, x.dataSync())).toEqual([[1, 2], [3, 4]]);
+    expect(util.toNestedArray(x.shape, await x.data())).toEqual([
+      [1, 2], [3, 4]
+    ]);
   });
 
-  it('scalar to nested array', () => {
+  it('scalar to nested array', async () => {
     const x = scalar(1);
-    expect(util.toNestedArray(x.shape, x.dataSync())).toEqual(1);
+    expect(util.toNestedArray(x.shape, await x.data())).toEqual(1);
   });
 
   it('tensor with zero shape', () => {
@@ -499,35 +539,65 @@ describe('util.toNestedArray', () => {
 });
 
 describe('util.fetch', () => {
-  it('should allow overriding global fetch', () => {
-    const savedFetch = ENV.global.fetch;
-    ENV.global.fetch = () => {};
+  it('should call the platform fetch', () => {
+    spyOn(ENV.platform, 'fetch').and.callFake(() => {});
 
-    spyOn(ENV.global, 'fetch').and.callThrough();
+    util.fetch('test/path', {method: 'GET'});
 
-    util.fetch('');
-
-    expect(ENV.global.fetch).toHaveBeenCalled();
-    ENV.global.fetch = savedFetch;
+    expect(ENV.platform.fetch).toHaveBeenCalledWith('test/path', {
+      method: 'GET'
+    });
   });
 });
 
-describeWithFlags('util.fetch node', NODE_ENVS, () => {
-  it('should use node-fetch', () => {
-    const savedFetch = util.systemFetch;
-    const savedGlobalFetch = ENV.global.fetch;
-    // @ts-ignore
-    ENV.global.fetch = null;
-    // @ts-ignore
-    util.systemFetch = null;
-    spyOn(util.getNodeFetch, 'fetchImport').and.callFake(() => () => {});
+describe('util.encodeString', () => {
+  it('Encode an empty string, default encoding', () => {
+    const res = util.encodeString('');
+    expect(res).toEqual(new Uint8Array([]));
+  });
 
-    util.fetch('');
-    // tslint:disable-next-line:no-any
-    expect(util.getNodeFetch.fetchImport).toHaveBeenCalled();
-    // @ts-ignore
-    ENV.global.fetch = savedGlobalFetch;
-    // @ts-ignore
-    util.systemFetch = savedFetch;
+  it('Encode an empty string, utf-8 encoding', () => {
+    const res = util.encodeString('', 'utf-8');
+    expect(res).toEqual(new Uint8Array([]));
+  });
+
+  it('Encode an empty string, encoding must be utf-8', () => {
+    expect(() => util.encodeString('', 'utf-16'))
+        .toThrowError(/only supports utf-8, but got utf-16/);
+  });
+
+  it('Encode cyrillic letters', () => {
+    const res = util.encodeString('Kaкo стe');
+    expect(res).toEqual(
+        new Uint8Array([75, 97, 208, 186, 111, 32, 209, 129, 209, 130, 101]));
+  });
+
+  it('Encode ascii letters', () => {
+    const res = util.encodeString('hello');
+    expect(res).toEqual(new Uint8Array([104, 101, 108, 108, 111]));
+  });
+});
+
+describe('util.decodeString', () => {
+  it('decode an empty string', () => {
+    const s = util.decodeString(new Uint8Array([]));
+    expect(s).toEqual('');
+  });
+
+  it('decode ascii', () => {
+    const s = util.decodeString(new Uint8Array([104, 101, 108, 108, 111]));
+    expect(s).toEqual('hello');
+  });
+
+  it('decode cyrillic', () => {
+    const s = util.decodeString(
+        new Uint8Array([75, 97, 208, 186, 111, 32, 209, 129, 209, 130, 101]));
+    expect(s).toEqual('Kaкo стe');
+  });
+
+  it('decode utf-16', () => {
+    const s = util.decodeString(
+        new Uint8Array([255, 254, 237, 139, 0, 138, 4, 89, 6, 116]), 'utf-16');
+    expect(s).toEqual('语言处理');
   });
 });

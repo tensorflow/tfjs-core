@@ -18,8 +18,18 @@
 import * as tf from '../../index';
 import {describeWithFlags} from '../../jasmine_util';
 import {expectArraysClose, expectArraysEqual} from '../../test_util';
+import {decodeString, encodeString} from '../../util';
+
 import {MathBackendWebGL, WebGLMemoryInfo} from './backend_webgl';
 import {WEBGL_ENVS} from './backend_webgl_test_registry';
+
+function encodeStrings(a: string[]): Uint8Array[] {
+  return a.map(s => encodeString(s));
+}
+
+function decodeStrings(bytes: Uint8Array[]): string[] {
+  return bytes.map(b => decodeString(b));
+}
 
 describeWithFlags('lazy packing and unpacking', WEBGL_ENVS, () => {
   let webglLazilyUnpackFlagSaved: boolean;
@@ -92,10 +102,10 @@ describeWithFlags('lazy packing and unpacking', WEBGL_ENVS, () => {
 
   it('should work when the same input must be represented by' +
          'different textures',
-     () => {
+     async () => {
        const a = tf.tensor1d([1, 2]);
        const res = tf.dot(a, a);
-       expectArraysClose(res, [5]);
+       expectArraysClose(await res.data(), [5]);
      });
 });
 
@@ -126,8 +136,10 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
     tf.setBackend('test-storage');
 
     const t = tf.Tensor.make([3], {}, 'string');
-    backend.write(t.dataId, ['c', 'a', 'b']);
-    expectArraysEqual(backend.readSync(t.dataId), ['c', 'a', 'b']);
+    backend.write(t.dataId, encodeStrings(['c', 'a', 'b']));
+    expectArraysEqual(
+        decodeStrings(backend.readSync(t.dataId) as Uint8Array[]),
+        ['c', 'a', 'b']);
   });
 
   it('register string tensor with values', () => {
@@ -136,7 +148,9 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
     tf.setBackend('test-storage');
 
     const t = tf.Tensor.make([3], {values: ['a', 'b', 'c']}, 'string');
-    expectArraysEqual(backend.readSync(t.dataId), ['a', 'b', 'c']);
+    expectArraysEqual(
+        decodeStrings(backend.readSync(t.dataId) as Uint8Array[]),
+        ['a', 'b', 'c']);
   });
 
   it('register string tensor with values and overwrite', () => {
@@ -145,8 +159,10 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
     tf.setBackend('test-storage');
 
     const t = tf.Tensor.make([3], {values: ['a', 'b', 'c']}, 'string');
-    backend.write(t.dataId, ['c', 'a', 'b']);
-    expectArraysEqual(backend.readSync(t.dataId), ['c', 'a', 'b']);
+    backend.write(t.dataId, encodeStrings(['c', 'a', 'b']));
+    expectArraysEqual(
+        decodeStrings(backend.readSync(t.dataId) as Uint8Array[]),
+        ['c', 'a', 'b']);
   });
 
   it('register string tensor with values and wrong shape throws error', () => {
@@ -177,7 +193,7 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
     expect(texManager.getNumUsedTextures()).toBe(0);
   });
 
-  it('read packed and then use by an unpacked op', () => {
+  it('read packed and then use by an unpacked op', async () => {
     const backend = new MathBackendWebGL(null);
     tf.registerBackend('test-storage', () => backend);
     tf.setBackend('test-storage');
@@ -195,7 +211,7 @@ describeWithFlags('backendWebGL', WEBGL_ENVS, () => {
     const d = tf.add(c, 1);
     tf.ENV.set('WEBGL_PACK', webglPackFlagSaved);
     tf.ENV.set('WEBGL_SIZE_UPLOAD_UNIFORM', webglSizeUploadUniformSaved);
-    expectArraysClose(d, [2, 3]);
+    expectArraysClose(await d.data(), [2, 3]);
   });
 
   it('delayed storage, overwriting', () => {
@@ -263,13 +279,22 @@ describeWithFlags('Custom window size', WEBGL_ENVS, () => {
 const SIZE_UPLOAD_UNIFORM = 4;
 // Run only for environments that have 32bit floating point support.
 const FLOAT32_WEBGL_ENVS = {
-  flags: {
-    'WEBGL_RENDER_FLOAT32_ENABLED': true,
-    'WEBGL_SIZE_UPLOAD_UNIFORM': SIZE_UPLOAD_UNIFORM
-  },
-  activeBackend: WEBGL_ENVS.activeBackend
+  flags: {'WEBGL_RENDER_FLOAT32_ENABLED': true},
+  predicate: WEBGL_ENVS.predicate
 };
+
 describeWithFlags('upload tensors as uniforms', FLOAT32_WEBGL_ENVS, () => {
+  let savedUploadUniformValue: number;
+
+  beforeAll(() => {
+    savedUploadUniformValue = tf.ENV.get('WEBGL_SIZE_UPLOAD_UNIFORM') as number;
+    tf.ENV.set('WEBGL_SIZE_UPLOAD_UNIFORM', SIZE_UPLOAD_UNIFORM);
+  });
+
+  afterAll(() => {
+    tf.ENV.set('WEBGL_SIZE_UPLOAD_UNIFORM', savedUploadUniformValue);
+  });
+
   it('small tensor gets uploaded as scalar', () => {
     let m = tf.memory() as WebGLMemoryInfo;
     expect(m.numBytesInGPU).toBe(0);
@@ -294,7 +319,7 @@ describeWithFlags('upload tensors as uniforms', FLOAT32_WEBGL_ENVS, () => {
     expect(m.numBytesInGPU).toBe(a.size * 4 * 2);
   });
 
-  it('download and re-upload an output of a shader', () => {
+  it('download and re-upload an output of a shader', async () => {
     const vals = new Float32Array(SIZE_UPLOAD_UNIFORM + 1);
     vals.fill(2);
     const a = tf.square(vals);
@@ -303,12 +328,30 @@ describeWithFlags('upload tensors as uniforms', FLOAT32_WEBGL_ENVS, () => {
 
     const expected = new Float32Array(SIZE_UPLOAD_UNIFORM + 1);
     expected.fill(16);
-    expectArraysClose(res, expected);
+    expectArraysClose(await res.data(), expected);
+  });
+});
+
+describeWithFlags('indexing for large tensors', FLOAT32_WEBGL_ENVS, () => {
+  it('properly indexes large tensors', async () => {
+    const range = 3000 * 3000;
+    const aData = new Float32Array(range);
+    for (let i = 0; i < range; i++) {
+      aData[i] = i / range;
+    }
+
+    const a = tf.tensor1d(aData);
+    const aRelu = a.relu();
+
+    expectArraysClose(await a.data(), aData);
+    expectArraysClose(await aRelu.data(), aData);
   });
 });
 
 describeWithFlags('debug on webgl', WEBGL_ENVS, () => {
   beforeAll(() => {
+    // Silences debug warnings.
+    spyOn(console, 'warn');
     tf.ENV.set('DEBUG', true);
   });
 
@@ -367,13 +410,13 @@ describeWithFlags('backend without render float32 support', WEBGL_ENVS, () => {
     tf.ENV.set('WEBGL_RENDER_FLOAT32_ENABLED', savedRenderFloat32Flag);
   });
 
-  it('basic usage', () => {
+  it('basic usage', async () => {
     tf.setBackend('half-float-webgl');
 
     const a = tf.tensor2d([1, 2], [1, 2]);
     const b = tf.tensor2d([1, 2], [1, 2]);
     const c = tf.add(a, b);
-    expectArraysClose(c, [2, 4]);
+    expectArraysClose(await c.data(), [2, 4]);
   });
 
   it('disposing tensors should not cause errors', () => {
@@ -410,7 +453,7 @@ describeWithFlags('time webgl', WEBGL_ENVS, () => {
 
   it('upload + compute + data', async () => {
     const a = tf.zeros([10, 10]);
-    const time = await tf.time(async () => await a.square().data()) as
+    const time = await tf.time(async () => a.square().data()) as
         tf.webgl.WebGLTimingInfo;
     expect(time.uploadWaitMs > 0);
     expect(time.downloadWaitMs > 0);
@@ -428,5 +471,19 @@ describeWithFlags('time webgl', WEBGL_ENVS, () => {
     expect(time.downloadWaitMs === 0);
     expect(time.kernelMs > 0);
     expect(time.wallMs >= time.kernelMs);
+  });
+});
+
+describe('WebGL backend has sync init', () => {
+  it('can do matmul without waiting for ready', async () => {
+    tf.registerBackend('my-webgl', () => {
+      return new MathBackendWebGL();
+    });
+    const a = tf.tensor1d([5]);
+    const b = tf.tensor1d([3]);
+    const res = tf.dot(a, b);
+    expectArraysClose(await res.data(), 15);
+    tf.dispose([a, b, res]);
+    tf.removeBackend('my-webgl');
   });
 });

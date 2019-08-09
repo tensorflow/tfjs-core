@@ -1,8 +1,8 @@
 node_modules/
-scripts/**/*.js
 coverage/
 npm-debug.log
 yarn-error.log
+local.log
 .DS_Store
 dist/
 bazel-out/

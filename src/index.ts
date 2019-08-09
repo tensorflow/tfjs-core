@@ -26,6 +26,10 @@ import './flags';
 import './backends/webgl/backend_webgl';
 import './backends/cpu/backend_cpu';
 
+import './platforms/platform_browser';
+import './platforms/platform_node';
+
+import * as backend_util from './backends/backend_util';
 import * as environment from './environment';
 // Serialization.
 import * as io from './io/io';
@@ -49,7 +53,7 @@ export {MomentumOptimizer} from './optimizers/momentum_optimizer';
 export {Optimizer} from './optimizers/optimizer';
 export {RMSPropOptimizer} from './optimizers/rmsprop_optimizer';
 export {SGDOptimizer} from './optimizers/sgd_optimizer';
-export {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer, variable, Variable} from './tensor';
+export {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D, TensorBuffer, variable, Variable} from './tensor';
 export {GradSaveFunc, NamedTensorMap, TensorContainer, TensorContainerArray, TensorContainerObject} from './tensor_types';
 export {DataType, DataTypeMap, DataValues, Rank, ShapeMap, TensorLike} from './types';
 
@@ -63,6 +67,7 @@ export {customGrad, grad, grads, valueAndGrad, valueAndGrads, variableGrads} fro
 
 export {TimingInfo} from './engine';
 export {ENV, Environment} from './environment';
+export {Platform} from './platforms/platform';
 
 export {version as version_core};
 
@@ -78,6 +83,7 @@ export {
   serialization,
   test_util,
   util,
+  backend_util,
   webgl,
   tensor_util
 };

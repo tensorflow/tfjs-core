@@ -60,6 +60,13 @@ export declare interface WeightsManifestGroupConfig {
 }
 
 /**
+ * Group to which the weight belongs.
+ *
+ * - 'optimizer': Weight from a stateful optimizer.
+ */
+export type WeightGroup = 'model'|'optimizer';
+
+/**
  * An entry in the weight manifest.
  *
  * The entry contains specification of a weight.
@@ -78,7 +85,17 @@ export declare interface WeightsManifestEntry {
   /**
    * Data type of the weight.
    */
-  dtype: 'float32'|'int32'|'bool';
+  dtype: 'float32'|'int32'|'bool'|'string';
+
+  /**
+   * Type of the weight.
+   *
+   * Optional.
+   *
+   * The value 'optimizer' indicates the weight belongs to an optimizer
+   * (i.e., used only during model training and not during inference).
+   */
+  group?: WeightGroup;
 
   /**
    * Information for dequantization of the weight.
@@ -97,9 +114,16 @@ export declare interface WeightsManifestEntry {
 export interface SaveConfig {
   /**
    * Whether to save only the trainable weights of the model, ignoring the
-   * untrainable ones.
+   * non-trainable ones.
    */
   trainableOnly?: boolean;
+
+  /**
+   * Whether the optimizer will be saved (if exists).
+   *
+   * Default: `false`.
+   */
+  includeOptimizer?: boolean;
 }
 
 /**
@@ -130,6 +154,13 @@ export declare interface ModelArtifactsInfo {
   dateSaved: Date;
 
   /**
+   * TODO (cais,yassogba) consider removing GraphDef as GraphDefs now
+   * come in a JSON format and none of our IOHandlers support a non json
+   * format. We could conder replacing this with 'Binary' if we want to
+   * allow future handlers to save to non json formats (though they will
+   * probably want more information than 'Binary').
+   * Type of the model topology
+   *
    * Type of the model topology
    *
    * Possible values:
@@ -156,12 +187,38 @@ export declare interface ModelArtifactsInfo {
   weightDataBytes?: number;
 }
 
+/** Model training configuration. */
+export declare interface TrainingConfig {
+  // TODO(cais): Tighten the typing once keras spec is available to tfjs-core.
+  // See
+  // tslint:disable-next-line:max-line-length
+  // https://github.com/tensorflow/tfjs-layers/blob/master/src/keras_format/training_config.ts
+  /** Optimizer used for the model training. */
+  optimizer_config: {};
+
+  // TODO(cais): Tighten the typing once keras spec is available to tfjs-core.
+  /** Loss function(s) for the model's output(s). */
+  loss: string|string[]|{[key: string]: string};
+
+  // TODO(cais): Tighten the typing once keras spec is available to tfjs-core.
+  /** Metric function(s) for the model's output(s). */
+  metrics?: string[]|{[key: string]: string};
+
+  // TODO(cais): Tighten the typing once keras spec is available to tfjs-core.
+  weighted_metrics?: string[];
+
+  // TODO(cais): Tighten the typing once keras spec is available to tfjs-core.
+  sample_weight_mode?: string;
+
+  loss_weights?: number[]|{[key: string]: number};
+}
+
 /**
  * The serialized artifacts of a model, including topology and weights.
  *
- * The `modelTopology`, `weightSpecs` and `weightData` fields of this interface
- * are optional, in order to support topology- or weights-only saving and
- * loading.
+ * The `modelTopology`, `trainingConfig`, `weightSpecs` and `weightData` fields
+ * of this interface are optional, in order to support topology- or weights-only
+ * saving and loading.
  *
  * Note this interface is used internally in IOHandlers.  For the file format
  * written to disk as `model.json`, see `ModelJSON`.
@@ -175,6 +232,11 @@ export declare interface ModelArtifacts {
    * encoding of the `GraphDef` protocol buffer.
    */
   modelTopology?: {}|ArrayBuffer;
+
+  /**
+   * Serialized configuration for the model's training.
+   */
+  trainingConfig?: TrainingConfig;
 
   /**
    * Weight specifications.
@@ -213,6 +275,11 @@ export declare interface ModelArtifacts {
    * `tf.LayersModel` instance.)
    */
   convertedBy?: string|null;
+
+  /**
+   * User-defined metadata about the model.
+   */
+  userDefinedMetadata?: {};
 }
 
 /**
@@ -230,6 +297,9 @@ export declare interface ModelJSON {
    * encoding of the `GraphDef` protocol buffer.
    */
   modelTopology: {};
+
+  /** Model training configuration. */
+  trainingConfig?: TrainingConfig;
 
   /**
    * Weights manifest.
@@ -265,6 +335,11 @@ export declare interface ModelJSON {
    * `tf.LayersModel` instance.)
    */
   convertedBy?: string|null;
+
+  /**
+   * User-defined metadata about the model.
+   */
+  userDefinedMetadata?: {};
 }
 
 /**
@@ -387,4 +462,14 @@ export interface LoadOptions {
    * Default: `false`.
    */
   fromTFHub?: boolean;
+}
+
+/**
+ * Additional options for Platform.fetch
+ */
+export interface RequestDetails {
+  /**
+   * Is this request for a binary file (as opposed to a json file)
+   */
+  isBinary?: boolean;
 }

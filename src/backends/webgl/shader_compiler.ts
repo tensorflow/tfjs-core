@@ -363,7 +363,7 @@ function getOutputPacked1DCoords(
     int getOutputCoords() {
       ivec2 resTexRC = ivec2(resultUV.yx *
                              vec2(${packedTexShape[0]}, ${packedTexShape[1]}));
-      return resTexRC.x * ${packedTexShape[1]} + resTexRC.y;
+      return 2 * (resTexRC.x * ${packedTexShape[1]} + resTexRC.y);
     }
   `;
 }
@@ -1260,12 +1260,16 @@ function getPackedSamplerAtOutputCoords(
   }
 
   let output = `return outputValue;`;
+  const inSize = util.sizeFromShape(inputInfo.shapeInfo.logicalShape);
+  const isInputScalar = inSize === 1;
+  const outSize = util.sizeFromShape(outShapeInfo.logicalShape);
+  const isOutputScalar = outSize === 1;
 
-  if (inRank === 1 && outRank > 1) {
+  if (inRank === 1 && !isInputScalar && !isOutputScalar) {
     output = `
       return vec4(outputValue.xy, outputValue.xy);
     `;
-  } else if (inRank === 0 && outRank > 0) {
+  } else if (isInputScalar && !isOutputScalar) {
     if (outRank === 1) {
       output = `
         return vec4(outputValue.x, outputValue.x, 0., 0.);

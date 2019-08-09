@@ -16,23 +16,24 @@
 
 set -e
 
-yarn build
 yarn lint
 # Test in node (headless environment).
 yarn test-node-ci
 
 # Run the first karma separately so it can download the BrowserStack binary
 # without conflicting with others.
-yarn run-browserstack --browsers=bs_safari_mac --backend webgl --flags '{"WEBGL_CPU_FORWARD": false, "WEBGL_SIZE_UPLOAD_UNIFORM": 0}'
+yarn run-browserstack --browsers=bs_safari_mac,bs_ios_11 --testEnv webgl1 --flags '{"WEBGL_CPU_FORWARD": false, "WEBGL_SIZE_UPLOAD_UNIFORM": 0}'
 
 # Run the rest of the karma tests in parallel. These runs will reuse the
 # already downloaded binary.
 npm-run-all -p -c --aggregate-output \
-  "run-browserstack --browsers=bs_safari_mac --flags '{\"HAS_WEBGL\": false}' --backend cpu" \
-  "run-browserstack --browsers=win_10_chrome --backend webgl --flags '{\"WEBGL_CPU_FORWARD\": false, \"WEBGL_SIZE_UPLOAD_UNIFORM\": 0}'" \
-  "run-browserstack --browsers=bs_ios_11 --backend webgl --flags '{\"WEBGL_CPU_FORWARD\": false, \"WEBGL_SIZE_UPLOAD_UNIFORM\": 0}'" \
-  "run-browserstack --browsers=bs_ios_11 --flags '{\"HAS_WEBGL\": false}' --backend cpu" \
-  "run-browserstack --browsers=bs_firefox_mac" \
-  "run-browserstack --browsers=bs_chrome_mac" \
-  "run-browserstack --browsers=bs_chrome_mac --backend webgl --flags '{\"WEBGL_CPU_FORWARD\": true}'" \
-  "run-browserstack --browsers=bs_chrome_mac --backend webgl --flags '{\"WEBGL_CPU_FORWARD\": false}'"
+  "run-browserstack --browsers=bs_safari_mac,bs_ios_11 --flags '{\"HAS_WEBGL\": false}' --testEnv cpu" \
+  "run-browserstack --browsers=bs_firefox_mac,bs_chrome_mac" \
+  "run-browserstack --browsers=bs_chrome_mac,win_10_chrome --testEnv webgl2 --flags '{\"WEBGL_CPU_FORWARD\": false, \"WEBGL_SIZE_UPLOAD_UNIFORM\": 0}'"
+
+### The next section tests TF.js in a webworker.
+# Make a dist/tf-core.min.js file to be imported by the web worker.
+yarn rollup -c --ci
+# Safari doesn't have offscreen canvas so test cpu in a webworker.
+# Chrome has offscreen canvas, so test webgl in a webworker.
+yarn test-webworker --browsers=bs_safari_mac,bs_chrome_mac

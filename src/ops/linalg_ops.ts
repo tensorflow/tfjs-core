@@ -40,7 +40,8 @@ import {tensor2d} from './tensor_ops';
  * console.log('Othogonalized:');
  * y.dot(y.transpose()).print();  // should be nearly the identity matrix.
  * console.log('First row direction maintained:');
- * console.log(y.get(0, 1) / y.get(0, 0));  // should be nearly 2.
+ * const data = await y.array();
+ * console.log(data[0][1] / data[0][0]);  // should be nearly 2.
  * ```
  *
  * @param xs The vectors to be orthogonalized, in one of the two following
@@ -214,12 +215,10 @@ function qr2d(x: Tensor2D, fullMatrices = false): [Tensor2D, Tensor2D] {
         const rjEnd1 = r.slice([j, j], [m - j, 1]);
         const normX = rjEnd1.norm();
         const rjj = r.slice([j, j], [1, 1]);
-        
+
         // The sign() function returns 0 on 0, which causes division by zero.
-        const s = tensor2d([[-1]]).where(
-            rjj.greater(0),
-            tensor2d([[1]]));
-        
+        const s = tensor2d([[-1]]).where(rjj.greater(0), tensor2d([[1]]));
+
         const u1 = rjj.sub(s.mul(normX)) as Tensor2D;
         const wPre = rjEnd1.div(u1);
         if (wPre.shape[0] === 1) {

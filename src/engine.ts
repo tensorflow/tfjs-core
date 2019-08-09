@@ -22,7 +22,7 @@ import {backpropagateGradients, getFilteredNodesXToY, NamedGradientMap, TapeNode
 import {DataId, setTensorTracker, Tensor, Tensor3D, TensorTracker, Variable} from './tensor';
 import {GradSaveFunc, NamedTensorMap, NamedVariableMap, TensorContainer} from './tensor_types';
 import {getTensorsInContainer} from './tensor_util';
-import {DataType, DataValues} from './types';
+import {BackendValues, DataType, PixelData} from './types';
 import * as util from './util';
 import {bytesFromStringArray, makeOnesTypedArray, now, sizeFromShape} from './util';
 
@@ -128,23 +128,62 @@ class EngineState {
 
 export class Engine implements TensorManager, TensorTracker, DataMover {
   state: EngineState;
-
-  private backendInstance: KernelBackend;
   backendName: string;
   registry: {[id: string]: KernelBackend} = {};
-  registryFactory:
-      {[id: string]: {factory: () => KernelBackend, priority: number}} = {};
+  registryFactory: {
+    [id: string]: {
+      factory: () => KernelBackend | Promise<KernelBackend>,
+      priority: number
+    }
+  } = {};
 
   private profiler: Profiler;
+  private backendInstance: KernelBackend;
+  private pendingBackendInit: Promise<boolean>;
+  private pendingBackendInitId = 0;
 
   constructor(public ENV: Environment) {
     this.state = new EngineState();
   }
 
+  async ready(): Promise<void> {
+    if (this.pendingBackendInit != null) {
+      return this.pendingBackendInit.then(() => {});
+    }
+    if (this.backendInstance != null) {
+      return;
+    }
+    const sortedBackends = this.getSortedBackends();
+
+    for (let i = 0; i < sortedBackends.length; i++) {
+      const backendName = sortedBackends[i];
+      const success = await this.initializeBackend(backendName).success;
+      if (success) {
+        await this.setBackend(backendName);
+        return;
+      }
+    }
+
+    throw new Error(
+        `Could not initialize any backends, all backend initializations ` +
+        `failed.`);
+  }
+
   get backend(): KernelBackend {
+    if (this.pendingBackendInit != null) {
+      throw new Error(
+          `Backend '${this.backendName}' has not yet been initialized. Make ` +
+          `sure to await tf.ready() before calling other methods`);
+    }
     if (this.backendInstance == null) {
-      const bestBackendName = this.initializeBackendsAndReturnBest();
-      this.setBackend(bestBackendName);
+      const {name, asyncInit} = this.initializeBackendsAndReturnBest();
+      if (asyncInit) {
+        throw new Error(
+            `The highest priority backend '${name}' has not yet been ` +
+            `initialized. Make sure to await tf.ready() before calling ` +
+            `other methods`);
+      }
+      this.setBackend(name);
     }
     return this.backendInstance;
   }
@@ -158,7 +197,11 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
       // If the backend hasn't been initialized but we have a registry entry for
       // it, initialize it and return it.
       if (backendName in this.registryFactory) {
-        this.initializeBackend(backendName);
+        const {asyncInit} = this.initializeBackend(backendName);
+        if (asyncInit) {
+          // Backend is not ready yet.
+          return null;
+        }
       } else {
         return null;
       }
@@ -166,7 +209,8 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     return this.registry[backendName];
   }
 
-  findBackendFactory(backendName: string): () => KernelBackend {
+  findBackendFactory(backendName: string):
+      () => KernelBackend | Promise<KernelBackend> {
     if (!(backendName in this.registryFactory)) {
       return null;
     }
@@ -174,7 +218,8 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
   }
 
   registerBackend(
-      backendName: string, factory: () => KernelBackend,
+      backendName: string,
+      factory: () => KernelBackend | Promise<KernelBackend>,
       priority = 1): boolean {
     if (backendName in this.registryFactory) {
       console.warn(
@@ -186,18 +231,19 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     return true;
   }
 
-  setBackend(backendName: string): boolean {
+  async setBackend(backendName: string): Promise<boolean> {
     if (this.registryFactory[backendName] == null) {
       throw new Error(`Backend name '${backendName}' not found in registry`);
     }
+    this.backendName = backendName;
     if (this.registry[backendName] == null) {
-      const initialized = this.initializeBackend(backendName);
-      if (!initialized) {
+      this.backendInstance = null;
+      const {success, asyncInit} = this.initializeBackend(backendName);
+      const result = asyncInit ? await success : success;
+      if (!result) {
         return false;
       }
     }
-
-    this.backendName = backendName;
     this.backendInstance = this.registry[backendName];
 
     // Reset the profiler.
@@ -212,8 +258,9 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
    * whether the initialization of the backend suceeded. Throws an error if
    * there is no backend in the factory registry.
    */
-  private initializeBackend(backendName: string): boolean {
-    const registryFactoryEntry = ENGINE.registryFactory[backendName];
+  private initializeBackend(backendName: string):
+      {success: boolean|Promise<boolean>, asyncInit: boolean} {
+    const registryFactoryEntry = this.registryFactory[backendName];
     if (registryFactoryEntry == null) {
       throw new Error(
           `Cannot initialize backend ${backendName}, no registration found.`);
@@ -221,12 +268,41 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
 
     try {
       const backend = registryFactoryEntry.factory();
-      this.registry[backendName] = backend;
-      return true;
+      // Test if the factory returns a promise.
+      if (Promise.resolve(backend) === backend) {
+        const promiseId = ++this.pendingBackendInitId;
+        const success =
+            backend
+                .then(backendInstance => {
+                  // Outdated promise. Another backend was set in the meantime.
+                  if (promiseId < this.pendingBackendInitId) {
+                    return false;
+                  }
+                  this.registry[backendName] = backendInstance;
+                  this.pendingBackendInit = null;
+                  return true;
+                })
+                .catch(err => {
+                  // Outdated promise. Another backend was set in the meantime.
+                  if (promiseId < this.pendingBackendInitId) {
+                    return false;
+                  }
+                  this.pendingBackendInit = null;
+                  console.warn(
+                      `Initialization of backend ${backendName} failed`);
+                  console.warn(err.stack || err.message);
+                  return false;
+                });
+        this.pendingBackendInit = success;
+        return {success, asyncInit: true};
+      } else {
+        this.registry[backendName] = backend as KernelBackend;
+        return {success: true, asyncInit: false};
+      }
     } catch (err) {
       console.warn(`Initialization of backend ${backendName} failed`);
       console.warn(err.stack || err.message);
-      return false;
+      return {success: false, asyncInit: false};
     }
   }
 
@@ -234,40 +310,56 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     if (!(backendName in this.registryFactory)) {
       throw new Error(`${backendName} backend not found in registry`);
     }
+    if (this.backendName === backendName && this.pendingBackendInit != null) {
+      // There is a pending promise of the backend we want to remove. Make it
+      // obsolete.
+      this.pendingBackendInitId++;
+    }
+
     if (backendName in this.registry) {
       this.registry[backendName].dispose();
       delete this.registry[backendName];
     }
 
     delete this.registryFactory[backendName];
+
+    // Unset the backend if it is active.
+    if (this.backendName === backendName) {
+      this.pendingBackendInit = null;
+      this.backendName = null;
+      this.backendInstance = null;
+    }
   }
 
-  private initializeBackendsAndReturnBest(): string {
+  private getSortedBackends(): string[] {
     if (Object.keys(this.registryFactory).length === 0) {
       throw new Error('No backend found in registry.');
     }
-    const sortedBackends =
-        Object.keys(this.registryFactory).sort((a: string, b: string) => {
-          // Highest priority comes first.
-          return this.registryFactory[b].priority -
-              this.registryFactory[a].priority;
-        });
+    return Object.keys(this.registryFactory).sort((a: string, b: string) => {
+      // Highest priority comes first.
+      return this.registryFactory[b].priority -
+          this.registryFactory[a].priority;
+    });
+  }
+
+  private initializeBackendsAndReturnBest():
+      {name: string, asyncInit: boolean} {
+    const sortedBackends = this.getSortedBackends();
 
     for (let i = 0; i < sortedBackends.length; i++) {
-      const backend = sortedBackends[i];
-      const backendInitialized = this.initializeBackend(backend);
-      if (backendInitialized) {
-        return backend;
+      const backendName = sortedBackends[i];
+      const {success, asyncInit} = this.initializeBackend(backendName);
+      if (asyncInit || success) {
+        return {name: backendName, asyncInit};
       }
     }
-
     throw new Error(
         `Could not initialize any backends, all backend initializations ` +
         `failed.`);
   }
 
-  moveData(dataId: DataId) {
-    this.write(dataId, this.readSync(dataId));
+  moveData(destBackend: KernelBackend, dataId: DataId) {
+    this.write(destBackend, dataId, this.readSync(dataId));
   }
 
   tidy<T extends TensorContainer>(nameOrFn: string|ScopeFn<T>, fn?: ScopeFn<T>):
@@ -482,8 +574,14 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
   disposeVariables(): void {
     for (const varName in this.state.registeredVariables) {
       const v = this.state.registeredVariables[varName];
-      this.disposeTensor(v);
-      delete this.state.registeredVariables[varName];
+      this.disposeVariable(v);
+    }
+  }
+
+  disposeVariable(v: Variable): void {
+    this.disposeTensor(v);
+    if (this.state.registeredVariables[v.name] != null) {
+      delete this.state.registeredVariables[v.name];
     }
   }
 
@@ -732,36 +830,42 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
   }
 
   // Forwarding to backend.
-  write(dataId: DataId, values: DataValues): void {
+  write(destBackend: KernelBackend, dataId: DataId, values: BackendValues):
+      void {
     const info = this.state.tensorInfo.get(dataId);
+
+    const srcBackend = info.backend;
+    destBackend = destBackend || this.backend;
+
     // Bytes for string tensors are counted when writing.
     if (info.dtype === 'string') {
-      const newBytes = bytesFromStringArray(values as string[]);
+      const newBytes = bytesFromStringArray(values as Uint8Array[]);
       this.state.numBytes += newBytes - info.bytes;
       info.bytes = newBytes;
     }
 
-    if (this.backend !== info.backend) {
+    if (destBackend !== srcBackend) {
       // Delete the tensor from the old backend and move it to the new
       // backend.
-      info.backend.disposeData(dataId);
-      info.backend = this.backend;
-      this.backend.register(dataId, info.shape, info.dtype);
+      srcBackend.disposeData(dataId);
+      info.backend = destBackend;
+      destBackend.register(dataId, info.shape, info.dtype);
     }
-    this.backend.write(dataId, values);
+    destBackend.write(dataId, values);
   }
-  readSync(dataId: DataId): DataValues {
+  readSync(dataId: DataId): BackendValues {
     // Route the read to the correct backend.
     const info = this.state.tensorInfo.get(dataId);
     return info.backend.readSync(dataId);
   }
-  read(dataId: DataId): Promise<DataValues> {
+  read(dataId: DataId): Promise<BackendValues> {
     // Route the read to the correct backend.
     const info = this.state.tensorInfo.get(dataId);
     return info.backend.read(dataId);
   }
   fromPixels(
-      pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
+      pixels: PixelData|ImageData|HTMLImageElement|HTMLCanvasElement|
+      HTMLVideoElement,
       numChannels: number): Tensor3D {
     return this.backend.fromPixels(pixels, numChannels);
   }
@@ -795,7 +899,10 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
    * Resets the engine state. Removes all backends but does not remove
    * registered backend factories.
    */
-  reset() {
+  reset(): void {
+    // Make any pending promise obsolete.
+    this.pendingBackendInitId++;
+
     this.state.dispose();
     this.ENV.reset();
     this.state = new EngineState();
@@ -806,6 +913,7 @@ export class Engine implements TensorManager, TensorTracker, DataMover {
     }
     this.backendName = null;
     this.backendInstance = null;
+    this.pendingBackendInit = null;
   }
 }
 
@@ -825,6 +933,8 @@ function getGlobalNamespace(): {_tfengine: Engine} {
       ns = global;
     } else if (typeof (process) !== 'undefined') {
       ns = process;
+    } else if (typeof (self) !== 'undefined') {
+      ns = self;
     } else {
       throw new Error('Could not find a global object');
     }
@@ -838,8 +948,9 @@ function getOrMakeEngine(): Engine {
   if (ns._tfengine == null) {
     const environment = new Environment(ns);
     ns._tfengine = new Engine(environment);
-    setEnvironmentGlobal(environment);
   }
+  setEnvironmentGlobal(ns._tfengine.ENV);
+
   // Tell the current tensor interface that the global engine is responsible
   // for tracking.
   setTensorTracker(() => ns._tfengine);

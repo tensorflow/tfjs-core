@@ -21,7 +21,8 @@
  * Uses [`fetch`](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API).
  */
 
-import {assert, fetch} from '../util';
+import {ENV} from '../environment';
+import {assert} from '../util';
 import {concatenateArrayBuffers, getModelArtifactsInfoForJSON} from './io_utils';
 import {IORouter, IORouterRegistry} from './router_registry';
 import {IOHandler, LoadOptions, ModelArtifacts, ModelJSON, OnProgressCallback, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
@@ -29,7 +30,7 @@ import {loadWeightsAsArrayBuffer} from './weights_loader';
 
 const OCTET_STREAM_MIME_TYPE = 'application/octet-stream';
 const JSON_TYPE = 'application/json';
-export class BrowserHTTPRequest implements IOHandler {
+export class HTTPRequest implements IOHandler {
   protected readonly path: string;
   protected readonly requestInit: RequestInit;
 
@@ -57,19 +58,18 @@ export class BrowserHTTPRequest implements IOHandler {
               'https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)');
       this.fetch = loadOptions.fetchFunc;
     } else {
-      this.fetch = fetch;
+      this.fetch = ENV.platform.fetch;
     }
 
     assert(
         path != null && path.length > 0,
-        () =>
-            'URL path for browserHTTPRequest must not be null, undefined or ' +
+        () => 'URL path for http must not be null, undefined or ' +
             'empty.');
 
     if (Array.isArray(path)) {
       assert(
           path.length === 2,
-          () => 'URL paths for browserHTTPRequest must have a length of 2, ' +
+          () => 'URL paths for http must have a length of 2, ' +
               `(actual length is ${path.length}).`);
     }
     this.path = path;
@@ -135,7 +135,7 @@ export class BrowserHTTPRequest implements IOHandler {
   /**
    * Load model artifacts via HTTP request(s).
    *
-   * See the documentation to `browserHTTPRequest` for details on the saved
+   * See the documentation to `tf.io.http` for details on the saved
    * artifacts.
    *
    * @returns The loaded model artifacts (if loading succeeds).
@@ -236,14 +236,15 @@ export function parseUrl(url: string): [string, string] {
 }
 
 export function isHTTPScheme(url: string): boolean {
-  return url.match(BrowserHTTPRequest.URL_SCHEME_REGEX) != null;
+  return url.match(HTTPRequest.URL_SCHEME_REGEX) != null;
 }
 
-export const httpRequestRouter: IORouter =
+export const httpRouter: IORouter =
     (url: string, onProgress?: OnProgressCallback) => {
       if (typeof fetch === 'undefined') {
-        // browserHTTPRequest uses `fetch`, if one wants to use it in node.js
-        // they have to setup a global fetch polyfill.
+        // `http` uses `fetch` or `node-fetch`, if one wants to use it in
+        // an environment that is not the browser or node they have to setup a
+        // global fetch polyfill.
         return null;
       } else {
         let isHTTP = true;
@@ -253,13 +254,13 @@ export const httpRequestRouter: IORouter =
           isHTTP = isHTTPScheme(url);
         }
         if (isHTTP) {
-          return browserHTTPRequest(url, {onProgress});
+          return http(url, {onProgress});
         }
       }
       return null;
     };
-IORouterRegistry.registerSaveRouter(httpRequestRouter);
-IORouterRegistry.registerLoadRouter(httpRequestRouter);
+IORouterRegistry.registerSaveRouter(httpRouter);
+IORouterRegistry.registerLoadRouter(httpRouter);
 
 /**
  * Creates an IOHandler subtype that sends model artifacts to HTTP server.
@@ -281,7 +282,7 @@ IORouterRegistry.registerLoadRouter(httpRequestRouter);
  * model.add(
  *     tf.layers.dense({units: 1, inputShape: [100], activation: 'sigmoid'}));
  *
- * const saveResult = await model.save(tf.io.browserHTTPRequest(
+ * const saveResult = await model.save(tf.io.http(
  *     'http://model-server:5000/upload', {method: 'PUT'}));
  * console.log(saveResult);
  * ```
@@ -324,8 +325,24 @@ IORouterRegistry.registerLoadRouter(httpRequestRouter);
  *     before the load is completed.
  * @returns An instance of `IOHandler`.
  */
-/** @doc {heading: 'Models', subheading: 'Loading', namespace: 'io'} */
+/**
+ * @doc {
+ *   heading: 'Models',
+ *   subheading: 'Loading',
+ *   namespace: 'io',
+ *   ignoreCI: true
+ * }
+ */
+export function http(path: string, loadOptions?: LoadOptions): IOHandler {
+  return new HTTPRequest(path, loadOptions);
+}
+
+/**
+ * Deprecated. Use `tf.io.http`.
+ * @param path
+ * @param loadOptions
+ */
 export function browserHTTPRequest(
     path: string, loadOptions?: LoadOptions): IOHandler {
-  return new BrowserHTTPRequest(path, loadOptions);
+  return http(path, loadOptions);
 }

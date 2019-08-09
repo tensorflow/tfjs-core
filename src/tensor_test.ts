@@ -16,24 +16,38 @@
  */
 
 import * as tf from './index';
-import {ALL_ENVS, describeWithFlags} from './jasmine_util';
+import {ALL_ENVS, describeWithFlags, SYNC_BACKEND_ENVS} from './jasmine_util';
 import {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from './tensor';
 import {expectArraysClose, expectArraysEqual, expectNumbersClose} from './test_util';
-import {Rank} from './types';
+import {Rank, RecursiveArray, TensorLike1D, TensorLike2D, TensorLike3D, TensorLike4D, TypedArray} from './types';
+import {encodeString} from './util';
+
+/** Private method used by these tests. Encodes strings into utf-8 bytes. */
+function encodeStrings(a: RecursiveArray<{}>): RecursiveArray<Uint8Array> {
+  for (let i = 0; i < (a as Array<{}>).length; i++) {
+    const val = a[i];
+    if (Array.isArray(val)) {
+      encodeStrings(val);
+    } else {
+      a[i] = encodeString(val as string);
+    }
+  }
+  return a;
+}
 
 describeWithFlags('tensor', ALL_ENVS, () => {
-  it('Tensors of arbitrary size', () => {
+  it('Tensors of arbitrary size', async () => {
     // [1, 2, 3]
     let t: Tensor = tf.tensor1d([1, 2, 3]);
     expect(t.rank).toBe(1);
     expect(t.size).toBe(3);
-    expectArraysClose(t, [1, 2, 3]);
+    expectArraysClose(await t.data(), [1, 2, 3]);
 
     // [[1, 2, 3]]
     t = tf.tensor2d([1, 2, 3], [1, 3]);
     expect(t.rank).toBe(2);
     expect(t.size).toBe(3);
-    expectArraysClose(t, [1, 2, 3]);
+    expectArraysClose(await t.data(), [1, 2, 3]);
 
     // [[1, 2, 3],
     //  [4, 5, 6]]
@@ -41,13 +55,13 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     expect(t.rank).toBe(2);
     expect(t.size).toBe(6);
 
-    expectArraysClose(t, [1, 2, 3, 4, 5, 6]);
+    expectArraysClose(await t.data(), [1, 2, 3, 4, 5, 6]);
 
     // Shape mismatch with the values.
     expect(() => tf.tensor2d([1], [1, 2])).toThrowError();
   });
 
-  it('Tensors of explicit size', () => {
+  it('Tensors of explicit size', async () => {
     const t = tf.tensor1d([5, 3, 2]);
     expect(t.rank).toBe(1);
     expect(t.shape).toEqual([3]);
@@ -56,13 +70,13 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     expect(() => tf.tensor3d([1, 2], [1, 2, 3, 5] as any)).toThrowError();
 
     const t4 = tf.tensor4d([1, 2, 3, 4], [1, 2, 1, 2]);
-    expectArraysClose(t4, [1, 2, 3, 4]);
+    expectArraysClose(await t4.data(), [1, 2, 3, 4]);
 
     // Tensor of ones.
     const x = tf.ones<Rank.R3>([3, 4, 2]);
     expect(x.rank).toBe(3);
     expect(x.size).toBe(24);
-    expectArraysClose(x, [
+    expectArraysClose(await x.data(), [
       1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
     ]);
 
@@ -70,14 +84,14 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     const z = tf.zeros<Rank.R3>([3, 4, 2]);
     expect(z.rank).toBe(3);
     expect(z.size).toBe(24);
-    expectArraysClose(z, [
+    expectArraysClose(await z.data(), [
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ]);
   });
 
-  it('Tensor dataSync CPU --> GPU', () => {
+  it('Tensor dataSync CPU --> GPU', async () => {
     const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [3, 2]);
-    expectArraysClose(a.dataSync(), new Float32Array([1, 2, 3, 4, 5, 6]));
+    expectArraysClose(await a.data(), new Float32Array([1, 2, 3, 4, 5, 6]));
   });
 
   it('Tensor.data() CPU --> GPU', async () => {
@@ -91,9 +105,9 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     expectArraysClose(await a.data(), new Float32Array([1, 2, 3, 4, 5, 6]));
   });
 
-  it('Scalar basic methods', () => {
+  it('Scalar basic methods', async () => {
     const a = tf.scalar(5);
-    expectArraysClose(a, [5]);
+    expectArraysClose(await a.data(), [5]);
     expect(a.rank).toBe(0);
     expect(a.size).toBe(1);
     expect(a.shape).toEqual([]);
@@ -247,9 +261,9 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     expect(b4).toBeNull();
   });
 
-  it('tf.tensor1d() from number[]', () => {
+  it('tf.tensor1d() from number[]', async () => {
     const a = tf.tensor1d([1, 2, 3]);
-    expectArraysClose(a, [1, 2, 3]);
+    expectArraysClose(await a.data(), [1, 2, 3]);
   });
 
   it('tf.tensor1d() throw error with null input value', () => {
@@ -259,11 +273,31 @@ describeWithFlags('tensor', ALL_ENVS, () => {
             'must be a non-null value.');
   });
 
-  it('tf.tensor1d() from string[]', () => {
+  it('tf.tensor1d() from string[]', async () => {
     const a = tf.tensor1d(['aa', 'bb', 'cc']);
     expect(a.dtype).toBe('string');
     expect(a.shape).toEqual([3]);
-    expectArraysEqual(a, ['aa', 'bb', 'cc']);
+    expectArraysEqual(await a.data(), ['aa', 'bb', 'cc']);
+  });
+
+  it('tf.tensor1d() from encoded strings', async () => {
+    const bytes = encodeStrings(['aa', 'bb', 'cc']) as TensorLike1D;
+    const a = tf.tensor1d(bytes, 'string');
+    expect(a.dtype).toBe('string');
+    expect(a.shape).toEqual([3]);
+    expectArraysEqual(await a.data(), ['aa', 'bb', 'cc']);
+  });
+
+  it('tf.tensor1d() from encoded strings without dtype errors', async () => {
+    // We do not want to infer 'string' when the user passes Uint8Array in order
+    // to be forward compatible in the future when we add uint8 dtype.
+    const bytes = encodeStrings(['aa', 'bb', 'cc']) as TensorLike1D;
+    expect(() => tf.tensor1d(bytes)).toThrowError();
+  });
+
+  it('tf.tensor1d() from encoded strings, shape mismatch', () => {
+    const bytes = encodeStrings([['aa'], ['bb'], ['cc']]) as TensorLike1D;
+    expect(() => tf.tensor1d(bytes)).toThrowError();
   });
 
   it('tf.tensor1d() from number[][], shape mismatch', () => {
@@ -276,16 +310,36 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     expect(() => tf.tensor1d([['a'], ['b'], ['c']] as any)).toThrowError();
   });
 
-  it('tf.tensor2d() from number[][]', () => {
+  it('tf.tensor2d() from number[][]', async () => {
     const a = tf.tensor2d([[1, 2, 3], [4, 5, 6]], [2, 3]);
-    expectArraysClose(a, [1, 2, 3, 4, 5, 6]);
+    expectArraysClose(await a.data(), [1, 2, 3, 4, 5, 6]);
   });
 
-  it('tf.tensor2d() from string[][]', () => {
+  it('tf.tensor2d() from string[][]', async () => {
     const a = tf.tensor2d([['aa', 'bb'], ['cc', 'dd']]);
     expect(a.dtype).toBe('string');
     expect(a.shape).toEqual([2, 2]);
-    expectArraysEqual(a, ['aa', 'bb', 'cc', 'dd']);
+    expectArraysEqual(await a.data(), ['aa', 'bb', 'cc', 'dd']);
+  });
+
+  it('tf.tensor2d() from encoded strings', async () => {
+    const bytes = encodeStrings([['aa', 'bb'], ['cc', 'dd']]) as TensorLike2D;
+    const a = tf.tensor2d(bytes, [2, 2], 'string');
+    expect(a.dtype).toBe('string');
+    expect(a.shape).toEqual([2, 2]);
+    expectArraysEqual(await a.data(), ['aa', 'bb', 'cc', 'dd']);
+  });
+
+  it('tf.tensor2d() from encoded strings without dtype errors', async () => {
+    // We do not want to infer 'string' when the user passes Uint8Array in order
+    // to be forward compatible in the future when we add uint8 dtype.
+    const bytes = encodeStrings([['aa', 'bb'], ['cc', 'dd']]) as TensorLike2D;
+    expect(() => tf.tensor2d(bytes)).toThrowError();
+  });
+
+  it('tf.tensor2d() from encoded strings, shape mismatch', () => {
+    const bytes = encodeStrings([['aa', 'bb'], ['cc', 'dd']]) as TensorLike2D;
+    expect(() => tf.tensor2d(bytes, [3, 2], 'string')).toThrowError();
   });
 
   it('tf.tensor2d() requires shape to be of length 2', () => {
@@ -320,17 +374,39 @@ describeWithFlags('tensor', ALL_ENVS, () => {
             'must be a non-null value.');
   });
 
-  it('tensor3d() from number[][][]', () => {
+  it('tensor3d() from number[][][]', async () => {
     const a = tf.tensor3d([[[1], [2], [3]], [[4], [5], [6]]], [2, 3, 1]);
-    expectArraysClose(a, [1, 2, 3, 4, 5, 6]);
+    expectArraysClose(await a.data(), [1, 2, 3, 4, 5, 6]);
   });
 
-  it('tensor3d() from string[][][]', () => {
+  it('tensor3d() from string[][][]', async () => {
     const vals = [[['a'], ['b'], ['c']], [['d'], ['e'], ['f']]];
     const a = tf.tensor3d(vals, [2, 3, 1]);
     expect(a.dtype).toBe('string');
     expect(a.shape).toEqual([2, 3, 1]);
-    expectArraysEqual(a, ['a', 'b', 'c', 'd', 'e', 'f']);
+    expectArraysEqual(await a.data(), ['a', 'b', 'c', 'd', 'e', 'f']);
+  });
+
+  it('tf.tensor3d() from encoded strings', async () => {
+    const bytes = encodeStrings([[['a'], ['b'], ['c']], [['d'], ['e'], ['f']]]);
+    const a = tf.tensor3d(bytes as TensorLike3D, [2, 3, 1], 'string');
+    expect(a.dtype).toBe('string');
+    expect(a.shape).toEqual([2, 3, 1]);
+    expectArraysEqual(await a.data(), ['a', 'b', 'c', 'd', 'e', 'f']);
+  });
+
+  it('tf.tensor3d() from encoded strings without dtype errors', async () => {
+    // We do not want to infer 'string' when the user passes Uint8Array in order
+    // to be forward compatible in the future when we add uint8 dtype.
+    const bytes = encodeStrings([[['a'], ['b'], ['c']], [['d'], ['e'], ['f']]]);
+    expect(() => tf.tensor3d(bytes as TensorLike3D)).toThrowError();
+  });
+
+  it('tf.tensor3d() from encoded strings, shape mismatch', () => {
+    const bytes = encodeStrings([[['a'], ['b'], ['c']], [['d'], ['e'], ['f']]]);
+    // Actual shape is [2, 3, 1].
+    expect(() => tf.tensor3d(bytes as TensorLike3D, [3, 2, 1], 'string'))
+        .toThrowError();
   });
 
   it('tensor3d() from number[][][], but shape does not match', () => {
@@ -356,25 +432,47 @@ describeWithFlags('tensor', ALL_ENVS, () => {
             'must be a non-null value.');
   });
 
-  it('tensor4d() from number[][][][]', () => {
+  it('tensor4d() from number[][][][]', async () => {
     const a = tf.tensor4d([[[[1]], [[2]]], [[[4]], [[5]]]], [2, 2, 1, 1]);
-    expectArraysClose(a, [1, 2, 4, 5]);
+    expectArraysClose(await a.data(), [1, 2, 4, 5]);
   });
 
-  it('tensor4d() from string[][][][]', () => {
+  it('tensor4d() from string[][][][]', async () => {
     const vals = [[[['a']], [['b']]], [[['c']], [['d']]]];
     const a = tf.tensor4d(vals, [2, 2, 1, 1]);
     expect(a.dtype).toBe('string');
     expect(a.shape).toEqual([2, 2, 1, 1]);
-    expectArraysEqual(a, ['a', 'b', 'c', 'd']);
+    expectArraysEqual(await a.data(), ['a', 'b', 'c', 'd']);
   });
 
-  it('tensor4d() from string[][][][] infer shape', () => {
+  it('tf.tensor4d() from encoded strings', async () => {
+    const bytes = encodeStrings([[[['a']], [['b']]], [[['c']], [['d']]]]);
+    const a = tf.tensor4d(bytes as TensorLike4D, [2, 2, 1, 1], 'string');
+    expect(a.dtype).toBe('string');
+    expect(a.shape).toEqual([2, 2, 1, 1]);
+    expectArraysEqual(await a.data(), ['a', 'b', 'c', 'd']);
+  });
+
+  it('tf.tensor4d() from encoded strings without dtype errors', async () => {
+    // We do not want to infer 'string' when the user passes Uint8Array in order
+    // to be forward compatible in the future when we add uint8 dtype.
+    const bytes = encodeStrings([[[['a']], [['b']]], [[['c']], [['d']]]]);
+    expect(() => tf.tensor4d(bytes as TensorLike4D)).toThrowError();
+  });
+
+  it('tf.tensor4d() from encoded strings, shape mismatch', () => {
+    const bytes = encodeStrings([[[['a']], [['b']]], [[['c']], [['d']]]]);
+    // Actual shape is [2, 2, 1. 1].
+    expect(() => tf.tensor4d(bytes as TensorLike4D, [2, 1, 2, 1], 'string'))
+        .toThrowError();
+  });
+
+  it('tensor4d() from string[][][][] infer shape', async () => {
     const vals = [[[['a']], [['b']]], [[['c']], [['d']]]];
     const a = tf.tensor4d(vals);
     expect(a.dtype).toBe('string');
     expect(a.shape).toEqual([2, 2, 1, 1]);
-    expectArraysEqual(a, ['a', 'b', 'c', 'd']);
+    expectArraysEqual(await a.data(), ['a', 'b', 'c', 'd']);
   });
 
   it('tensor4d() from number[][][][], but shape does not match', () => {
@@ -416,166 +514,166 @@ describeWithFlags('tensor', ALL_ENVS, () => {
             'must be a non-null value.');
   });
 
-  it('default dtype', () => {
+  it('default dtype', async () => {
     const a = tf.scalar(3);
     expect(a.dtype).toBe('float32');
-    expectArraysClose(a, 3);
+    expectArraysClose(await a.data(), 3);
   });
 
-  it('float32 dtype', () => {
+  it('float32 dtype', async () => {
     const a = tf.scalar(3, 'float32');
     expect(a.dtype).toBe('float32');
-    expectArraysClose(a, 3);
+    expectArraysClose(await a.data(), 3);
   });
 
-  it('int32 dtype', () => {
+  it('int32 dtype', async () => {
     const a = tf.scalar(3, 'int32');
     expect(a.dtype).toBe('int32');
-    expectArraysEqual(a, 3);
+    expectArraysEqual(await a.data(), 3);
   });
 
-  it('int32 dtype, 3.9 => 3, like numpy', () => {
+  it('int32 dtype, 3.9 => 3, like numpy', async () => {
     const a = tf.scalar(3.9, 'int32');
     expect(a.dtype).toBe('int32');
-    expectArraysEqual(a, 3);
+    expectArraysEqual(await a.data(), 3);
   });
 
-  it('int32 dtype, -3.9 => -3, like numpy', () => {
+  it('int32 dtype, -3.9 => -3, like numpy', async () => {
     const a = tf.scalar(-3.9, 'int32');
     expect(a.dtype).toBe('int32');
-    expectArraysEqual(a, -3);
+    expectArraysEqual(await a.data(), -3);
   });
 
-  it('bool dtype, 3 => true, like numpy', () => {
+  it('bool dtype, 3 => true, like numpy', async () => {
     const a = tf.scalar(3, 'bool');
     expect(a.dtype).toBe('bool');
-    expectArraysEqual(a, 1);
+    expectArraysEqual(await a.data(), 1);
   });
 
-  it('bool dtype, -2 => true, like numpy', () => {
+  it('bool dtype, -2 => true, like numpy', async () => {
     const a = tf.scalar(-2, 'bool');
     expect(a.dtype).toBe('bool');
-    expectArraysEqual(a, 1);
+    expectArraysEqual(await a.data(), 1);
   });
 
-  it('bool dtype, 0 => false, like numpy', () => {
+  it('bool dtype, 0 => false, like numpy', async () => {
     const a = tf.scalar(0, 'bool');
     expect(a.dtype).toBe('bool');
-    expectArraysEqual(a, 0);
+    expectArraysEqual(await a.data(), 0);
   });
 
-  it('bool dtype from boolean', () => {
+  it('bool dtype from boolean', async () => {
     const a = tf.scalar(false, 'bool');
-    expectArraysEqual(a, 0);
+    expectArraysEqual(await a.data(), 0);
     expect(a.dtype).toBe('bool');
 
     const b = tf.scalar(true, 'bool');
-    expectArraysEqual(a, 0);
+    expectArraysEqual(await a.data(), 0);
     expect(b.dtype).toBe('bool');
   });
 
-  it('int32 dtype from boolean', () => {
+  it('int32 dtype from boolean', async () => {
     const a = tf.scalar(true, 'int32');
-    expectArraysEqual(a, 1);
+    expectArraysEqual(await a.data(), 1);
     expect(a.dtype).toBe('int32');
   });
 
-  it('default dtype from boolean', () => {
+  it('default dtype from boolean', async () => {
     const a = tf.scalar(false);
-    expectArraysEqual(a, 0);
+    expectArraysEqual(await a.data(), 0);
     expect(a.dtype).toBe('bool');
   });
 
-  it('default dtype', () => {
+  it('default dtype', async () => {
     const a = tf.tensor1d([1, 2, 3]);
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([3]);
-    expectArraysClose(a, [1, 2, 3]);
+    expectArraysClose(await a.data(), [1, 2, 3]);
   });
 
-  it('float32 dtype', () => {
+  it('float32 dtype', async () => {
     const a = tf.tensor1d([1, 2, 3], 'float32');
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([3]);
-    expectArraysClose(a, [1, 2, 3]);
+    expectArraysClose(await a.data(), [1, 2, 3]);
   });
 
-  it('int32 dtype', () => {
+  it('int32 dtype', async () => {
     const a = tf.tensor1d([1, 2, 3], 'int32');
     expect(a.dtype).toBe('int32');
     expect(a.shape).toEqual([3]);
-    expectArraysEqual(a, [1, 2, 3]);
+    expectArraysEqual(await a.data(), [1, 2, 3]);
   });
 
-  it('int32 dtype, non-ints get floored, like numpy', () => {
+  it('int32 dtype, non-ints get floored, like numpy', async () => {
     const a = tf.tensor1d([1.1, 2.5, 3.9], 'int32');
     expect(a.dtype).toBe('int32');
     expect(a.shape).toEqual([3]);
-    expectArraysEqual(a, [1, 2, 3]);
+    expectArraysEqual(await a.data(), [1, 2, 3]);
   });
 
-  it('int32 dtype, negative non-ints get ceiled, like numpy', () => {
+  it('int32 dtype, negative non-ints get ceiled, like numpy', async () => {
     const a = tf.tensor1d([-1.1, -2.5, -3.9], 'int32');
     expect(a.dtype).toBe('int32');
     expect(a.shape).toEqual([3]);
-    expectArraysEqual(a, [-1, -2, -3]);
+    expectArraysEqual(await a.data(), [-1, -2, -3]);
   });
 
-  it('bool dtype, !=0 is truthy, 0 is falsy, like numpy', () => {
+  it('bool dtype, !=0 is truthy, 0 is falsy, like numpy', async () => {
     const a = tf.tensor1d([1, -2, 0, 3], 'bool');
     expect(a.dtype).toBe('bool');
     expect(a.shape).toEqual([4]);
-    expectArraysEqual(a, [1, 1, 0, 1]);
+    expectArraysEqual(await a.data(), [1, 1, 0, 1]);
   });
 
-  it('default dtype from boolean[]', () => {
+  it('default dtype from boolean[]', async () => {
     const a = tf.tensor1d([false, false, true]);
     expect(a.dtype).toBe('bool');
-    expectArraysClose(a, [0, 0, 1]);
+    expectArraysClose(await a.data(), [0, 0, 1]);
   });
 
-  it('default dtype from UInt8Array', () => {
+  it('default dtype from UInt8Array', async () => {
     const a = tf.tensor1d(new Uint8Array([1, 5, 2]));
     expect(a.dtype).toBe('int32');
     expect(a.shape).toEqual([3]);
-    expectArraysClose(a, [1, 5, 2]);
+    expectArraysClose(await a.data(), [1, 5, 2]);
   });
 
-  it('default dtype from Int32Array', () => {
+  it('default dtype from Int32Array', async () => {
     const a = tf.tensor1d(new Int32Array([1, 5, 2]));
     expect(a.dtype).toBe('int32');
     expect(a.shape).toEqual([3]);
-    expectArraysClose(a, [1, 5, 2]);
+    expectArraysClose(await a.data(), [1, 5, 2]);
   });
 
-  it('tf.tensor() from Float32Array and number[]', () => {
+  it('tf.tensor() from Float32Array and number[]', async () => {
     const a = tf.tensor([
       new Float32Array([1, 2]), new Float32Array([3, 4]),
       new Float32Array([5, 6]), [7, 8]
     ]);
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([4, 2]);
-    expectArraysClose(a, [1, 2, 3, 4, 5, 6, 7, 8]);
+    expectArraysClose(await a.data(), [1, 2, 3, 4, 5, 6, 7, 8]);
   });
 
-  it('tf.tensor() from Int32Array and number[]', () => {
+  it('tf.tensor() from Int32Array and number[]', async () => {
     const a = tf.tensor([
       new Int32Array([1, 2]), new Int32Array([3, 4]), new Int32Array([5, 6]),
       [7, 8]
     ]);
     expect(a.dtype).toBe('int32');
     expect(a.shape).toEqual([4, 2]);
-    expectArraysClose(a, [1, 2, 3, 4, 5, 6, 7, 8]);
+    expectArraysClose(await a.data(), [1, 2, 3, 4, 5, 6, 7, 8]);
   });
 
-  it('tf.tensor() from mixed TypedArray', () => {
+  it('tf.tensor() from mixed TypedArray', async () => {
     const a = tf.tensor([
       new Float32Array([1, 2]), new Int32Array([3, 4]), new Uint8Array([5, 6]),
       [7, 8]
     ]);
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([4, 2]);
-    expectArraysClose(a, [1, 2, 3, 4, 5, 6, 7, 8]);
+    expectArraysClose(await a.data(), [1, 2, 3, 4, 5, 6, 7, 8]);
   });
 
   it('tf.tensor() from TypedArrays which are themselves 3D', () => {
@@ -587,290 +685,278 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     expect(t.shape).toEqual([2, 20, 20, 3]);
   });
 
-  it('tf.tensor() from TypeedArrays which are themselves 3D, wrong shape',
+  it('tf.tensor() from TypedArrays which are themselves 3D, wrong shape',
      () => {
        const img1 = new Float32Array(20 * 20 * 3);
        const img2 = new Float32Array(20 * 20 * 3);
        expect(() => tf.tensor([img1, img2], [3, 20, 20, 3])).toThrowError();
      });
 
-  it('tf.tensor() from TypedArray + number[] fails due to wrong shape', () => {
-    expect(() => tf.tensor([
-      new Float32Array([1, 2]),
-      new Float32Array([3, 4]),
-      new Float32Array([5, 6]),
-      // Should be of length 4
-      [7, 8, 9, 10],
-    ]))
-        .toThrowError(
-            /Element arr\[3\] should have 2 elements, but has 4 elements/);
-  });
-
-  it('default dtype from ascii string', () => {
+  it('default dtype from ascii string', async () => {
     const a = tf.tensor('hello');
     expect(a.dtype).toBe('string');
     expect(a.shape).toEqual([]);
-    expectArraysEqual(a, ['hello']);
+    expectArraysEqual(await a.data(), ['hello']);
   });
 
-  it('default dtype from utf-8 string', () => {
+  it('default dtype from utf-8 string', async () => {
     const a = tf.tensor('даниел');
     expect(a.dtype).toBe('string');
     expect(a.shape).toEqual([]);
-    expectArraysEqual(a, ['даниел']);
+    expectArraysEqual(await a.data(), ['даниел']);
   });
 
-  it('default dtype from empty string', () => {
+  it('default dtype from empty string', async () => {
     const a = tf.tensor('');
     expect(a.dtype).toBe('string');
     expect(a.shape).toEqual([]);
-    expectArraysEqual(a, ['']);
+    expectArraysEqual(await a.data(), ['']);
   });
 
-  it('default dtype from unicode escaped string', () => {
+  it('default dtype from unicode escaped string', async () => {
     const a = tf.tensor('\u0434\u0430\u043d\u0438\u0435\u043b');
     expect(a.dtype).toBe('string');
     expect(a.shape).toEqual([]);
-    expectArraysEqual(a, ['даниел']);
+    expectArraysEqual(await a.data(), ['даниел']);
   });
 
-  it('default dtype from string[]', () => {
+  it('default dtype from string[]', async () => {
     const a = tf.tensor(['a', 'b']);
     expect(a.dtype).toBe('string');
     expect(a.shape).toEqual([2]);
-    expectArraysEqual(a, ['a', 'b']);
+    expectArraysEqual(await a.data(), ['a', 'b']);
   });
 
-  it('float32 dtype from boolean[]', () => {
+  it('float32 dtype from boolean[]', async () => {
     const a = tf.tensor1d([false, false, true], 'float32');
     expect(a.dtype).toBe('float32');
-    expectArraysClose(a, [0, 0, 1]);
+    expectArraysClose(await a.data(), [0, 0, 1]);
   });
 
-  it('int32 dtype from boolean[]', () => {
+  it('int32 dtype from boolean[]', async () => {
     const a = tf.tensor1d([false, false, true], 'int32');
     expect(a.dtype).toBe('int32');
-    expectArraysEqual(a, [0, 0, 1]);
+    expectArraysEqual(await a.data(), [0, 0, 1]);
   });
 
-  it('bool dtype from boolean[]', () => {
+  it('bool dtype from boolean[]', async () => {
     const a = tf.tensor1d([false, false, true], 'bool');
     expect(a.dtype).toBe('bool');
-    expectArraysEqual(a, [0, 0, 1]);
+    expectArraysEqual(await a.data(), [0, 0, 1]);
   });
 
-  it('default dtype', () => {
+  it('default dtype', async () => {
     const a = tf.tensor2d([1, 2, 3, 4], [2, 2]);
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([2, 2]);
-    expectArraysClose(a, [1, 2, 3, 4]);
+    expectArraysClose(await a.data(), [1, 2, 3, 4]);
   });
 
-  it('float32 dtype', () => {
+  it('float32 dtype', async () => {
     const a = tf.tensor2d([1, 2, 3, 4], [2, 2], 'float32');
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([2, 2]);
-    expectArraysClose(a, [1, 2, 3, 4]);
+    expectArraysClose(await a.data(), [1, 2, 3, 4]);
   });
 
-  it('int32 dtype', () => {
+  it('int32 dtype', async () => {
     const a = tf.tensor2d([[1, 2], [3, 4]], [2, 2], 'int32');
     expect(a.dtype).toBe('int32');
     expect(a.shape).toEqual([2, 2]);
-    expectArraysEqual(a, [1, 2, 3, 4]);
+    expectArraysEqual(await a.data(), [1, 2, 3, 4]);
   });
 
-  it('int32 dtype, non-ints get floored, like numpy', () => {
+  it('int32 dtype, non-ints get floored, like numpy', async () => {
     const a = tf.tensor2d([1.1, 2.5, 3.9, 4.0], [2, 2], 'int32');
     expect(a.dtype).toBe('int32');
     expect(a.shape).toEqual([2, 2]);
-    expectArraysEqual(a, [1, 2, 3, 4]);
+    expectArraysEqual(await a.data(), [1, 2, 3, 4]);
   });
 
-  it('int32 dtype, negative non-ints get ceiled, like numpy', () => {
+  it('int32 dtype, negative non-ints get ceiled, like numpy', async () => {
     const a = tf.tensor2d([-1.1, -2.5, -3.9, -4.0], [2, 2], 'int32');
     expect(a.dtype).toBe('int32');
     expect(a.shape).toEqual([2, 2]);
-    expectArraysEqual(a, [-1, -2, -3, -4]);
+    expectArraysEqual(await a.data(), [-1, -2, -3, -4]);
   });
 
-  it('bool dtype, !=0 is truthy, 0 is falsy, like numpy', () => {
+  it('bool dtype, !=0 is truthy, 0 is falsy, like numpy', async () => {
     const a = tf.tensor2d([1, -2, 0, 3], [2, 2], 'bool');
     expect(a.dtype).toBe('bool');
     expect(a.shape).toEqual([2, 2]);
-    expectArraysEqual(a, [1, 1, 0, 1]);
+    expectArraysEqual(await a.data(), [1, 1, 0, 1]);
   });
 
-  it('default dtype from boolean[]', () => {
+  it('default dtype from boolean[]', async () => {
     const a = tf.tensor2d([[false, false], [true, false]], [2, 2]);
     expect(a.dtype).toBe('bool');
-    expectArraysClose(a, [0, 0, 1, 0]);
+    expectArraysClose(await a.data(), [0, 0, 1, 0]);
   });
 
-  it('float32 dtype from boolean[]', () => {
+  it('float32 dtype from boolean[]', async () => {
     const a = tf.tensor2d([[false, false], [true, false]], [2, 2], 'float32');
     expect(a.dtype).toBe('float32');
-    expectArraysEqual(a, [0, 0, 1, 0]);
+    expectArraysEqual(await a.data(), [0, 0, 1, 0]);
   });
 
-  it('int32 dtype from boolean[]', () => {
+  it('int32 dtype from boolean[]', async () => {
     const a = tf.tensor2d([[false, false], [true, false]], [2, 2], 'int32');
     expect(a.dtype).toBe('int32');
-    expectArraysEqual(a, [0, 0, 1, 0]);
+    expectArraysEqual(await a.data(), [0, 0, 1, 0]);
   });
 
-  it('bool dtype from boolean[]', () => {
+  it('bool dtype from boolean[]', async () => {
     const a = tf.tensor2d([[false, false], [true, false]], [2, 2], 'bool');
     expect(a.dtype).toBe('bool');
-    expectArraysEqual(a, [0, 0, 1, 0]);
+    expectArraysEqual(await a.data(), [0, 0, 1, 0]);
   });
 
-  it('default dtype', () => {
+  it('default dtype', async () => {
     const a = tf.tensor3d([1, 2, 3, 4], [2, 2, 1]);
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([2, 2, 1]);
-    expectArraysClose(a, [1, 2, 3, 4]);
+    expectArraysClose(await a.data(), [1, 2, 3, 4]);
   });
 
-  it('float32 dtype', () => {
+  it('float32 dtype', async () => {
     const a = tf.tensor3d([1, 2, 3, 4], [2, 2, 1], 'float32');
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([2, 2, 1]);
-    expectArraysClose(a, [1, 2, 3, 4]);
+    expectArraysClose(await a.data(), [1, 2, 3, 4]);
   });
 
-  it('int32 dtype', () => {
+  it('int32 dtype', async () => {
     const a = tf.tensor3d([[[1], [2]], [[3], [4]]], [2, 2, 1], 'int32');
     expect(a.dtype).toBe('int32');
     expect(a.shape).toEqual([2, 2, 1]);
-    expectArraysEqual(a, [1, 2, 3, 4]);
+    expectArraysEqual(await a.data(), [1, 2, 3, 4]);
   });
 
-  it('int32 dtype, non-ints get floored, like numpy', () => {
+  it('int32 dtype, non-ints get floored, like numpy', async () => {
     const a = tf.tensor3d([1.1, 2.5, 3.9, 4.0], [2, 2, 1], 'int32');
     expect(a.dtype).toBe('int32');
     expect(a.shape).toEqual([2, 2, 1]);
-    expectArraysEqual(a, [1, 2, 3, 4]);
+    expectArraysEqual(await a.data(), [1, 2, 3, 4]);
   });
 
-  it('int32 dtype, negative non-ints get ceiled, like numpy', () => {
+  it('int32 dtype, negative non-ints get ceiled, like numpy', async () => {
     const a = tf.tensor3d([-1.1, -2.5, -3.9, -4.0], [2, 2, 1], 'int32');
     expect(a.dtype).toBe('int32');
     expect(a.shape).toEqual([2, 2, 1]);
-    expectArraysEqual(a, [-1, -2, -3, -4]);
+    expectArraysEqual(await a.data(), [-1, -2, -3, -4]);
   });
 
-  it('bool dtype, !=0 is truthy, 0 is falsy, like numpy', () => {
+  it('bool dtype, !=0 is truthy, 0 is falsy, like numpy', async () => {
     const a = tf.tensor3d([1, -2, 0, 3], [2, 2, 1], 'bool');
     expect(a.dtype).toBe('bool');
     expect(a.shape).toEqual([2, 2, 1]);
-    expectArraysEqual(a, [1, 1, 0, 1]);
+    expectArraysEqual(await a.data(), [1, 1, 0, 1]);
   });
 
-  it('default dtype from boolean[]', () => {
+  it('default dtype from boolean[]', async () => {
     const a = tf.tensor3d([[[false], [false]], [[true], [false]]], [2, 2, 1]);
     expect(a.dtype).toBe('bool');
-    expectArraysClose(a, [0, 0, 1, 0]);
+    expectArraysClose(await a.data(), [0, 0, 1, 0]);
   });
 
-  it('float32 dtype from boolean[]', () => {
+  it('float32 dtype from boolean[]', async () => {
     const a = tf.tensor3d(
         [[[false], [false]], [[true], [false]]], [2, 2, 1], 'float32');
     expect(a.dtype).toBe('float32');
-    expectArraysClose(a, [0, 0, 1, 0]);
+    expectArraysClose(await a.data(), [0, 0, 1, 0]);
   });
 
-  it('int32 dtype from boolean[]', () => {
+  it('int32 dtype from boolean[]', async () => {
     const a = tf.tensor3d(
         [[[false], [false]], [[true], [false]]], [2, 2, 1], 'int32');
     expect(a.dtype).toBe('int32');
-    expectArraysEqual(a, [0, 0, 1, 0]);
+    expectArraysEqual(await a.data(), [0, 0, 1, 0]);
   });
 
-  it('bool dtype from boolean[]', () => {
+  it('bool dtype from boolean[]', async () => {
     const a =
         tf.tensor3d([[[false], [false]], [[true], [false]]], [2, 2, 1], 'bool');
     expect(a.dtype).toBe('bool');
-    expectArraysEqual(a, [0, 0, 1, 0]);
+    expectArraysEqual(await a.data(), [0, 0, 1, 0]);
   });
 
-  it('default dtype', () => {
+  it('default dtype', async () => {
     const a = tf.tensor4d([1, 2, 3, 4], [2, 2, 1, 1]);
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([2, 2, 1, 1]);
-    expectArraysClose(a, [1, 2, 3, 4]);
+    expectArraysClose(await a.data(), [1, 2, 3, 4]);
   });
 
-  it('float32 dtype', () => {
+  it('float32 dtype', async () => {
     const a = tf.tensor4d([1, 2, 3, 4], [2, 2, 1, 1], 'float32');
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([2, 2, 1, 1]);
-    expectArraysClose(a, [1, 2, 3, 4]);
+    expectArraysClose(await a.data(), [1, 2, 3, 4]);
   });
 
-  it('int32 dtype', () => {
+  it('int32 dtype', async () => {
     const a =
         tf.tensor4d([[[[1]], [[2]]], [[[3]], [[4]]]], [2, 2, 1, 1], 'int32');
     expect(a.dtype).toBe('int32');
     expect(a.shape).toEqual([2, 2, 1, 1]);
-    expectArraysEqual(a, [1, 2, 3, 4]);
+    expectArraysEqual(await a.data(), [1, 2, 3, 4]);
   });
 
-  it('int32 dtype, non-ints get floored, like numpy', () => {
+  it('int32 dtype, non-ints get floored, like numpy', async () => {
     const a = tf.tensor4d([1.1, 2.5, 3.9, 4.0], [2, 2, 1, 1], 'int32');
     expect(a.dtype).toBe('int32');
     expect(a.shape).toEqual([2, 2, 1, 1]);
-    expectArraysEqual(a, [1, 2, 3, 4]);
+    expectArraysEqual(await a.data(), [1, 2, 3, 4]);
   });
 
-  it('int32 dtype, negative non-ints get ceiled, like numpy', () => {
+  it('int32 dtype, negative non-ints get ceiled, like numpy', async () => {
     const a = tf.tensor4d([-1.1, -2.5, -3.9, -4.0], [2, 2, 1, 1], 'int32');
     expect(a.dtype).toBe('int32');
     expect(a.shape).toEqual([2, 2, 1, 1]);
-    expectArraysEqual(a, [-1, -2, -3, -4]);
+    expectArraysEqual(await a.data(), [-1, -2, -3, -4]);
   });
 
-  it('bool dtype, !=0 is truthy, 0 is falsy, like numpy', () => {
+  it('bool dtype, !=0 is truthy, 0 is falsy, like numpy', async () => {
     const a = tf.tensor4d([1, -2, 0, 3], [2, 2, 1, 1], 'bool');
     expect(a.dtype).toBe('bool');
     expect(a.shape).toEqual([2, 2, 1, 1]);
-    expectArraysEqual(a, [1, 1, 0, 1]);
+    expectArraysEqual(await a.data(), [1, 1, 0, 1]);
   });
 
-  it('default dtype from boolean[]', () => {
+  it('default dtype from boolean[]', async () => {
     const a =
         tf.tensor4d([[[[false], [false]], [[true], [false]]]], [1, 2, 2, 1]);
     expect(a.dtype).toBe('bool');
-    expectArraysClose(a, [0, 0, 1, 0]);
+    expectArraysClose(await a.data(), [0, 0, 1, 0]);
   });
 
-  it('float32 dtype from boolean[]', () => {
+  it('float32 dtype from boolean[]', async () => {
     const a = tf.tensor4d(
         [[[[false], [false]], [[true], [false]]]], [1, 2, 2, 1], 'float32');
     expect(a.dtype).toBe('float32');
-    expectArraysClose(a, [0, 0, 1, 0]);
+    expectArraysClose(await a.data(), [0, 0, 1, 0]);
   });
 
-  it('int32 dtype from boolean[]', () => {
+  it('int32 dtype from boolean[]', async () => {
     const a = tf.tensor4d(
         [[[[false], [false]], [[true], [false]]]], [1, 2, 2, 1], 'int32');
     expect(a.dtype).toBe('int32');
-    expectArraysEqual(a, [0, 0, 1, 0]);
+    expectArraysEqual(await a.data(), [0, 0, 1, 0]);
   });
 
-  it('bool dtype from boolean[]', () => {
+  it('bool dtype from boolean[]', async () => {
     const a = tf.tensor4d(
         [[[[false], [false]], [[true], [false]]]], [1, 2, 2, 1], 'bool');
     expect(a.dtype).toBe('bool');
-    expectArraysEqual(a, [0, 0, 1, 0]);
+    expectArraysEqual(await a.data(), [0, 0, 1, 0]);
   });
 
-  it('Scalar default dtype', () => {
+  it('Scalar default dtype', async () => {
     const a = tf.scalar(4);
     const b = a.reshape([1, 1]);
     expect(b.dtype).toBe('float32');
     expect(b.shape).toEqual([1, 1]);
-    expectArraysClose(a.dataSync(), b.dataSync());
+    expectArraysClose(await a.data(), await b.data());
   });
 
   it('Scalar float32 dtype', () => {
@@ -887,18 +973,36 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     expect(b.shape).toEqual([1, 1]);
   });
 
-  it('Scalar inferred dtype from bool', () => {
+  it('scalar from encoded string', async () => {
+    const a = tf.scalar(encodeString('hello'), 'string');
+    expect(a.dtype).toBe('string');
+    expect(a.shape).toEqual([]);
+    expectArraysEqual(await a.data(), ['hello']);
+  });
+
+  it('scalar from encoded string, but missing dtype', async () => {
+    // We do not want to infer 'string' when the user passes Uint8Array in order
+    // to be forward compatible in the future when we add uint8 dtype.
+    expect(() => tf.scalar(encodeString('hello'))).toThrowError();
+  });
+
+  it('scalar from encoded string, but value is not uint8array', async () => {
+    // tslint:disable-next-line:no-any
+    expect(() => tf.scalar(new Float32Array([1, 2, 3]) as any)).toThrowError();
+  });
+
+  it('Scalar inferred dtype from bool', async () => {
     const a = tf.scalar(true);
     expect(a.dtype).toBe('bool');
     expect(a.shape).toEqual([]);
-    expectArraysClose(a, [1]);
+    expectArraysClose(await a.data(), [1]);
   });
 
-  it('Scalar inferred dtype from string', () => {
+  it('Scalar inferred dtype from string', async () => {
     const a = tf.scalar('hello');
     expect(a.dtype).toBe('string');
     expect(a.shape).toEqual([]);
-    expectArraysEqual(a, ['hello']);
+    expectArraysEqual(await a.data(), ['hello']);
   });
 
   it('Scalar int32 dtype', () => {
@@ -908,43 +1012,43 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     expect(b.shape).toEqual([1, 1]);
   });
 
-  it('Scalar bool dtype', () => {
+  it('Scalar bool dtype', async () => {
     const a = tf.scalar(4, 'bool');
     const b = a.reshape([1, 1, 1]);
     expect(b.dtype).toBe('bool');
     expect(b.shape).toEqual([1, 1, 1]);
-    expectArraysClose(a.dataSync(), b.dataSync());
+    expectArraysClose(await a.data(), await b.data());
   });
 
-  it('Scalar complex64 dtype', () => {
+  it('Scalar complex64 dtype', async () => {
     const a = tf.complex(4, 5);
     const b = a.reshape([1, 1]);
-    expectArraysClose(a, [4, 5]);
+    expectArraysClose(await a.data(), [4, 5]);
     expect(b.dtype).toBe('complex64');
     expect(b.shape).toEqual([1, 1]);
-    expectArraysClose(a.dataSync(), b.dataSync());
+    expectArraysClose(await a.data(), await b.data());
   });
 
-  it('Tensor1D default dtype', () => {
+  it('Tensor1D default dtype', async () => {
     const a = tf.tensor1d([1, 2, 3, 4]);
     const b = a.reshape([2, 2]);
     expect(b.dtype).toBe('float32');
     expect(b.shape).toEqual([2, 2]);
-    expectArraysClose(a.dataSync(), b.dataSync());
+    expectArraysClose(await a.data(), await b.data());
   });
 
-  it('Tensor1D inferred dtype from bools', () => {
+  it('Tensor1D inferred dtype from bools', async () => {
     const a = tf.tensor1d([true, false, false, true]);
     expect(a.dtype).toBe('bool');
     expect(a.shape).toEqual([4]);
-    expectArraysClose(a, [1, 0, 0, 1]);
+    expectArraysClose(await a.data(), [1, 0, 0, 1]);
   });
 
-  it('Tensor1D inferred dtype from strings', () => {
+  it('Tensor1D inferred dtype from strings', async () => {
     const a = tf.tensor1d(['a', 'b', 'c']);
     expect(a.dtype).toBe('string');
     expect(a.shape).toEqual([3]);
-    expectArraysEqual(a, ['a', 'b', 'c']);
+    expectArraysEqual(await a.data(), ['a', 'b', 'c']);
   });
 
   it('Tensor1D float32 dtype', () => {
@@ -954,28 +1058,28 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     expect(b.shape).toEqual([2, 2]);
   });
 
-  it('Tensor1D int32 dtype', () => {
+  it('Tensor1D int32 dtype', async () => {
     const a = tf.tensor1d([1, 2, 3, 4], 'int32');
     const b = a.reshape([2, 2]);
     expect(b.dtype).toBe('int32');
     expect(b.shape).toEqual([2, 2]);
-    expectArraysClose(a.dataSync(), b.dataSync());
+    expectArraysClose(await a.data(), await b.data());
   });
 
-  it('Tensor1D complex64 dtype', () => {
+  it('Tensor1D complex64 dtype', async () => {
     const a = tf.complex([1, 3, 5, 7], [2, 4, 6, 8]);
     const b = a.reshape([2, 2]);
     expect(b.dtype).toBe('complex64');
     expect(b.shape).toEqual([2, 2]);
-    expectArraysClose(a.dataSync(), b.dataSync());
+    expectArraysClose(await a.data(), await b.data());
   });
 
-  it('Tensor2D default dtype', () => {
+  it('Tensor2D default dtype', async () => {
     const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
     const b = a.reshape([6]);
     expect(b.dtype).toBe('float32');
     expect(b.shape).toEqual([6]);
-    expectArraysClose(a.dataSync(), b.dataSync());
+    expectArraysClose(await a.data(), await b.data());
   });
 
   it('Tensor2D float32 dtype', () => {
@@ -992,28 +1096,28 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     expect(b.shape).toEqual([6]);
   });
 
-  it('Tensor2D bool dtype', () => {
+  it('Tensor2D bool dtype', async () => {
     const a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3], 'bool');
     const b = a.reshape([6]);
     expect(b.dtype).toBe('bool');
     expect(b.shape).toEqual([6]);
-    expectArraysClose(a.dataSync(), b.dataSync());
+    expectArraysClose(await a.data(), await b.data());
   });
 
-  it('Tensor2D complex64 dtype', () => {
+  it('Tensor2D complex64 dtype', async () => {
     const a = tf.complex([[1, 3, 5], [7, 9, 11]], [[2, 4, 6], [8, 10, 12]]);
     const b = a.reshape([6]);
     expect(b.dtype).toBe('complex64');
     expect(b.shape).toEqual([6]);
-    expectArraysClose(a.dataSync(), b.dataSync());
+    expectArraysClose(await a.data(), await b.data());
   });
 
-  it('Tensor3D default dtype', () => {
+  it('Tensor3D default dtype', async () => {
     const a = tf.tensor3d([1, 2, 3, 4, 5, 6], [2, 3, 1]);
     const b = a.reshape([6]);
     expect(b.dtype).toBe('float32');
     expect(b.shape).toEqual([6]);
-    expectArraysClose(a.dataSync(), b.dataSync());
+    expectArraysClose(await a.data(), await b.data());
   });
 
   it('Tensor3D float32 dtype', () => {
@@ -1030,30 +1134,30 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     expect(b.shape).toEqual([6]);
   });
 
-  it('Tensor3D bool dtype', () => {
+  it('Tensor3D bool dtype', async () => {
     const a = tf.tensor3d([1, 2, 3, 4, 5, 6], [2, 3, 1], 'bool');
     const b = a.reshape([6]);
     expect(b.dtype).toBe('bool');
     expect(b.shape).toEqual([6]);
-    expectArraysClose(a.dataSync(), b.dataSync());
+    expectArraysClose(await a.data(), await b.data());
   });
 
-  it('Tensor3D complex64 dtype', () => {
+  it('Tensor3D complex64 dtype', async () => {
     const a = tf.complex(
         [[[1], [3], [5]], [[7], [9], [11]]],
         [[[2], [4], [6]], [[8], [10], [12]]]);
     const b = a.reshape([6]);
     expect(b.dtype).toBe('complex64');
     expect(b.shape).toEqual([6]);
-    expectArraysClose(a.dataSync(), b.dataSync());
+    expectArraysClose(await a.data(), await b.data());
   });
 
-  it('Tensor4D default dtype', () => {
+  it('Tensor4D default dtype', async () => {
     const a = tf.tensor4d([1, 2, 3, 4, 5, 6], [2, 3, 1, 1]);
     const b = a.reshape([2, 3]);
     expect(b.dtype).toBe('float32');
     expect(b.shape).toEqual([2, 3]);
-    expectArraysClose(a.dataSync(), b.dataSync());
+    expectArraysClose(await a.data(), await b.data());
   });
 
   it('Tensor4D float32 dtype', () => {
@@ -1063,22 +1167,22 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     expect(b.shape).toEqual([2, 3]);
   });
 
-  it('Tensor4D int32 dtype', () => {
+  it('Tensor4D int32 dtype', async () => {
     const a = tf.tensor4d([1, 2, 3, 4, 5, 6], [2, 3, 1, 1], 'int32');
     const b = a.reshape([3, 2]);
     expect(b.dtype).toBe('int32');
     expect(b.shape).toEqual([3, 2]);
-    expectArraysClose(a.dataSync(), b.dataSync());
+    expectArraysClose(await a.data(), await b.data());
   });
 
-  it('Tensor4D complex64 dtype', () => {
+  it('Tensor4D complex64 dtype', async () => {
     const a = tf.complex(
         [[[[1]], [[3]], [[5]]], [[[7]], [[9]], [[11]]]],
         [[[[2]], [[4]], [[6]]], [[[8]], [[10]], [[12]]]]);
     const b = a.reshape([3, 2]);
     expect(b.dtype).toBe('complex64');
     expect(b.shape).toEqual([3, 2]);
-    expectArraysClose(a.dataSync(), b.dataSync());
+    expectArraysClose(await a.data(), await b.data());
   });
 
   it('Tensor4D bool dtype', () => {
@@ -1088,32 +1192,26 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     expect(b.shape).toEqual([3, 2]);
   });
 
-  it('.dataSync() with casting, string tensor', () => {
-    const a = tf.tensor(['a', 'b']);
-    const data: string[] = a.dataSync<'string'>();
-    expect(data).toEqual(['a', 'b']);
-  });
-
   it('.data() with casting, string tensor', async () => {
     const a = tf.tensor(['a', 'b']);
     const data: string[] = await a.data<'string'>();
     expect(data).toEqual(['a', 'b']);
   });
 
-  it('reshape is functional', () => {
+  it('reshape is functional', async () => {
     const a = tf.scalar(2.4);
     const b = a.reshape([]);
     expect(a.id).not.toBe(b.id);
     b.dispose();
-    expectArraysClose(a, [2.4]);
+    expectArraysClose(await a.data(), [2.4]);
   });
 
-  it('reshape a string tensor', () => {
+  it('reshape a string tensor', async () => {
     const a = tf.tensor(['a', 'b']);
     const b = a.reshape([2, 1, 1]);
     expect(b.dtype).toBe('string');
     expect(b.shape).toEqual([2, 1, 1]);
-    expectArraysEqual(b, ['a', 'b']);
+    expectArraysEqual(await b.data(), ['a', 'b']);
   });
 
   it('reshape throws when passed a non-tensor', () => {
@@ -1122,11 +1220,11 @@ describeWithFlags('tensor', ALL_ENVS, () => {
         .toThrowError(/Argument 'x' passed to 'reshape' must be a Tensor/);
   });
 
-  it('reshape accepts a tensor-like object', () => {
+  it('reshape accepts a tensor-like object', async () => {
     const res = tf.reshape([[1, 2, 3], [4, 5, 6]], [3, 2]);
     expect(res.dtype).toBe('float32');
     expect(res.shape).toEqual([3, 2]);
-    expectArraysClose(res, [1, 2, 3, 4, 5, 6]);
+    expectArraysClose(await res.data(), [1, 2, 3, 4, 5, 6]);
   });
 
   it('cast bool -> bool', () => {
@@ -1188,11 +1286,11 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     expect(second instanceof Int32Array).toEqual(true);
   });
 
-  it('cast float32 -> int32. sync download', () => {
+  it('cast float32 -> int32. sync download', async () => {
     const a = tf.tensor1d([1, 2]).cast('int32');
     expect(a.dtype).toEqual('int32');
 
-    const data = a.dataSync();
+    const data = await a.data();
     expect(data instanceof Int32Array).toEqual(true);
   });
 
@@ -1201,28 +1299,28 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     expect(a.cast('float32').dtype).toEqual('float32');
   });
 
-  it('cast complex64 -> float32', () => {
+  it('cast complex64 -> float32', async () => {
     const a = tf.complex([1.0, 2.0], [3.0, 4.0]);
     const result = a.cast('float32');
 
     expect(result.dtype).toEqual('float32');
-    expectArraysClose(result, [1.0, 2.0]);
+    expectArraysClose(await result.data(), [1.0, 2.0]);
   });
 
-  it('cast complex64 -> int32', () => {
+  it('cast complex64 -> int32', async () => {
     const a = tf.complex([1.0, 2.0], [3.0, 4.0]);
     const result = a.cast('int32');
 
     expect(result.dtype).toEqual('int32');
-    expectArraysEqual(result, [1, 2]);
+    expectArraysEqual(await result.data(), [1, 2]);
   });
 
-  it('cast complex64 -> bool', () => {
+  it('cast complex64 -> bool', async () => {
     const a = tf.complex([1.0, 0.0], [1.0, 1.0]);
     const result = a.cast('bool');
 
     expect(result.dtype).toEqual('bool');
-    expectArraysEqual(result, [true, false]);
+    expectArraysEqual(await result.data(), [true, false]);
   });
 
   it('cast throws when passed a non-tensor', () => {
@@ -1230,11 +1328,11 @@ describeWithFlags('tensor', ALL_ENVS, () => {
         .toThrowError(/Argument 'x' passed to 'cast' must be a Tensor/);
   });
 
-  it('cast accepts a tensor-like object', () => {
+  it('cast accepts a tensor-like object', async () => {
     const a = [1.0, 2.0];
     const res = tf.cast(a, 'int32');
     expect(res.dtype).toEqual('int32');
-    expectArraysClose(res, [1, 2]);
+    expectArraysClose(await res.data(), [1, 2]);
   });
 
   it('cast string -> !string throws error', () => {
@@ -1253,53 +1351,53 @@ describeWithFlags('tensor', ALL_ENVS, () => {
         .toThrowError();
   });
 
-  it('scalar bool -> int32', () => {
+  it('scalar bool -> int32', async () => {
     const a = tf.scalar(true, 'bool').toInt();
     expect(a.dtype).toBe('int32');
-    expectArraysEqual(a, 1);
+    expectArraysEqual(await a.data(), 1);
   });
 
-  it('Tensor1D float32 -> int32', () => {
+  it('Tensor1D float32 -> int32', async () => {
     const a = tf.tensor1d([1.1, 3.9, -2.9, 0]).toInt();
     expect(a.dtype).toBe('int32');
-    expectArraysEqual(a, [1, 3, -2, 0]);
+    expectArraysEqual(await a.data(), [1, 3, -2, 0]);
   });
 
-  it('Tensor2D float32 -> bool', () => {
+  it('Tensor2D float32 -> bool', async () => {
     const a = tf.tensor2d([1.1, 3.9, -2.9, 0], [2, 2]).asType('bool');
     expect(a.dtype).toBe('bool');
-    expectArraysEqual(a, [1, 1, 1, 0]);
+    expectArraysEqual(await a.data(), [1, 1, 1, 0]);
   });
 
-  it('Tensor2D int32 -> bool', () => {
+  it('Tensor2D int32 -> bool', async () => {
     const a = tf.tensor2d([1, 3, 0, -1], [2, 2], 'int32').toBool();
     expect(a.dtype).toBe('bool');
-    expectArraysEqual(a, [1, 1, 0, 1]);
+    expectArraysEqual(await a.data(), [1, 1, 0, 1]);
   });
 
-  it('Tensor3D bool -> float32', () => {
+  it('Tensor3D bool -> float32', async () => {
     const a =
         tf.tensor3d([true, false, false, true], [2, 2, 1], 'bool').toFloat();
     expect(a.dtype).toBe('float32');
-    expectArraysClose(a, [1, 0, 0, 1]);
+    expectArraysClose(await a.data(), [1, 0, 0, 1]);
   });
 
-  it('bool CPU -> GPU -> CPU', () => {
+  it('bool CPU -> GPU -> CPU', async () => {
     const a = tf.tensor1d([1, 2, 0, 0, 5], 'bool');
-    expectArraysEqual(a, [1, 1, 0, 0, 1]);
+    expectArraysEqual(await a.data(), [1, 1, 0, 0, 1]);
   });
 
-  it('int32 CPU -> GPU -> CPU', () => {
+  it('int32 CPU -> GPU -> CPU', async () => {
     const a = tf.tensor1d([1, 2, 0, 0, 5], 'int32');
-    expectArraysEqual(a, [1, 2, 0, 0, 5]);
+    expectArraysEqual(await a.data(), [1, 2, 0, 0, 5]);
   });
 
-  it('asType is functional', () => {
+  it('asType is functional', async () => {
     const a = tf.scalar(2.4, 'float32');
     const b = a.toFloat();
     expect(a.id).not.toBe(b.id);
     b.dispose();
-    expectArraysClose(a, [2.4]);
+    expectArraysClose(await a.data(), [2.4]);
   });
 
   it('squeeze no axis', () => {
@@ -1351,10 +1449,10 @@ describeWithFlags('tensor', ALL_ENVS, () => {
         .toThrowError(/Argument 'x' passed to 'squeeze' must be a Tensor/);
   });
 
-  it('squeeze accepts a tensor-like object', () => {
+  it('squeeze accepts a tensor-like object', async () => {
     const res = tf.squeeze([[[4]], [[2]], [[1]]] /* shape is [3, 1, 1] */);
     expect(res.shape).toEqual([3]);
-    expectArraysClose(res, [4, 2, 1]);
+    expectArraysClose(await res.data(), [4, 2, 1]);
   });
 
   it('squeeze a zero-sized tensor', () => {
@@ -1363,11 +1461,11 @@ describeWithFlags('tensor', ALL_ENVS, () => {
     expect(res.shape).toEqual([0, 0]);
   });
 
-  it('squeeze a complex64 tensor', () => {
+  it('squeeze a complex64 tensor', async () => {
     const a = tf.complex([[4], [1], [5]], [[2], [3], [6]]);
     const b = a.squeeze();
     expect(b.shape).toEqual([3]);
-    expectArraysClose(b, [4, 2, 1, 3, 5, 6]);
+    expectArraysClose(await b.data(), [4, 2, 1, 3, 5, 6]);
   });
 
   it('scalar -> 2d', () => {
@@ -1416,9 +1514,41 @@ describeWithFlags('tensor', ALL_ENVS, () => {
         'integers but got shape [2,-2].';
     expect(() => tf.tensor([1, 2, 3, 4], [2, -2])).toThrowError(msg);
   });
+
+  it('ones with complex type', async () => {
+    // Imaginary part should be zero.
+    const a = tf.ones([2, 2], 'complex64');
+    expectArraysClose(await a.data(), [1, 0, 1, 0, 1, 0, 1, 0]);
+  });
 });
 
-describe('tensor.toString', () => {
+describeWithFlags('tensor debug mode', ALL_ENVS, () => {
+  beforeAll(() => {
+    tf.ENV.set('DEBUG', true);
+  });
+
+  it('tf.tensor() from TypedArray + number[] fails due to wrong shape', () => {
+    expect(() => tf.tensor([
+      new Float32Array([1, 2]),
+      new Float32Array([3, 4]),
+      new Float32Array([5, 6]),
+      // Should be of length 4
+      [7, 8, 9, 10],
+    ]))
+        .toThrowError(
+            /Element arr\[3\] should have 2 elements, but has 4 elements/);
+  });
+});
+
+describeWithFlags('tensor dataSync', SYNC_BACKEND_ENVS, () => {
+  it('.dataSync() with casting, string tensor', () => {
+    const a = tf.tensor(['a', 'b']);
+    const data: string[] = a.dataSync<'string'>();
+    expect(data).toEqual(['a', 'b']);
+  });
+});
+
+describeWithFlags('tensor.toString', SYNC_BACKEND_ENVS, () => {
   it('scalar verbose', () => {
     const verbose = true;
     const str = tf.scalar(5).toString(verbose);
@@ -1956,7 +2086,7 @@ describe('tensor.toString', () => {
 });
 
 describeWithFlags('tensor grad', ALL_ENVS, () => {
-  it('grad with second derivative', () => {
+  it('grad with second derivative', async () => {
     // f(x) = x ^ 3
     const f = (x: Tensor) => x.pow(tf.scalar(3, 'int32'));
     // f'(x) = 3x ^ 2
@@ -1965,7 +2095,7 @@ describeWithFlags('tensor grad', ALL_ENVS, () => {
     const gg = tf.grad(g);
     const x = tf.tensor1d([2, 3]);
     const data = gg(x);
-    expectArraysClose(data, [12, 18]);
+    expectArraysClose(await data.data(), [12, 18]);
   });
 });
 
@@ -1974,13 +2104,13 @@ describeWithFlags('tensor.data', ALL_ENVS, () => {
     const a = tf.tensor1d([1, 2, 3]);
     const b = tf.tensor1d([4, 5, 6]);
 
-    const ra = a.square().data();
-    const rb = b.square().dataSync();
+    const ra = a.square();
+    const rb = b.square();
 
-    expectArraysClose(a, [1, 2, 3]);
-    expectArraysClose(b, [4, 5, 6]);
-    expectArraysClose(Array.from(rb), [16, 25, 36]);
-    expectArraysClose(Array.from(await ra), [1, 4, 9]);
+    expectArraysClose(await a.data(), [1, 2, 3]);
+    expectArraysClose(await b.data(), [4, 5, 6]);
+    expectArraysClose(await rb.data(), [16, 25, 36]);
+    expectArraysClose(await ra.data(), [1, 4, 9]);
   });
 
   it('.data() postpones disposal of tensor', done => {
@@ -2048,36 +2178,36 @@ describeWithFlags('x instanceof Tensor', ALL_ENVS, () => {
 });
 
 describeWithFlags('tensor with 0 in shape', ALL_ENVS, () => {
-  it('1d of shape [0]', () => {
+  it('1d of shape [0]', async () => {
     const a = tf.tensor1d([]);
     expect(a.dtype).toBe('float32');
     expect(a.rank).toBe(1);
     expect(a.shape).toEqual([0]);
-    expectArraysEqual(a, []);
+    expectArraysEqual(await a.data(), []);
   });
 
-  it('1d string tensor of shape [0]', () => {
+  it('1d string tensor of shape [0]', async () => {
     const a = tf.tensor1d([], 'string');
     expect(a.dtype).toBe('string');
     expect(a.rank).toBe(1);
     expect(a.shape).toEqual([0]);
-    expectArraysEqual(a, []);
+    expectArraysEqual(await a.data(), []);
   });
 
-  it('2d of shape [0, 5]', () => {
+  it('2d of shape [0, 5]', async () => {
     const a = tf.tensor2d([], [0, 5]);
     expect(a.dtype).toBe('float32');
     expect(a.rank).toBe(2);
     expect(a.shape).toEqual([0, 5]);
-    expectArraysEqual(a, []);
+    expectArraysEqual(await a.data(), []);
   });
 
-  it('2d string tensor of shape [0, 5]', () => {
+  it('2d string tensor of shape [0, 5]', async () => {
     const a = tf.tensor2d([], [0, 5], 'string');
     expect(a.dtype).toBe('string');
     expect(a.rank).toBe(2);
     expect(a.shape).toEqual([0, 5]);
-    expectArraysEqual(a, []);
+    expectArraysEqual(await a.data(), []);
   });
 
   it('2d throws when values are not empty', () => {
@@ -2088,12 +2218,12 @@ describeWithFlags('tensor with 0 in shape', ALL_ENVS, () => {
             'tensor should have 0 values but has 4');
   });
 
-  it('3d of shape [0, 3, 0]', () => {
+  it('3d of shape [0, 3, 0]', async () => {
     const a = tf.tensor3d([], [0, 3, 0]);
     expect(a.dtype).toBe('float32');
     expect(a.rank).toBe(3);
     expect(a.shape).toEqual([0, 3, 0]);
-    expectArraysEqual(a, []);
+    expectArraysEqual(await a.data(), []);
   });
 
   it('3d throws when values are not empty', () => {
@@ -2104,12 +2234,12 @@ describeWithFlags('tensor with 0 in shape', ALL_ENVS, () => {
             'tensor should have 0 values but has 3');
   });
 
-  it('4d of shape [1, 3, 0, 5]', () => {
+  it('4d of shape [1, 3, 0, 5]', async () => {
     const a = tf.tensor4d([], [1, 3, 0, 5]);
     expect(a.dtype).toBe('float32');
     expect(a.rank).toBe(4);
     expect(a.shape).toEqual([1, 3, 0, 5]);
-    expectArraysEqual(a, []);
+    expectArraysEqual(await a.data(), []);
   });
 
   it('4d throws when values are not empty', () => {
@@ -2120,13 +2250,50 @@ describeWithFlags('tensor with 0 in shape', ALL_ENVS, () => {
             'tensor should have 0 values but has 3');
   });
 
-  it('complex64 with 0 in shape', () => {
+  it('complex64 with 0 in shape', async () => {
     const areal = tf.tensor2d([], [0, 5]);
     const breal = tf.tensor2d([], [0, 5]);
     const a = tf.complex(areal, breal);
     expect(a.dtype).toBe('complex64');
     expect(a.rank).toBe(2);
     expect(a.shape).toEqual([0, 5]);
-    expectArraysEqual(a, []);
+    expectArraysEqual(await a.data(), []);
+  });
+});
+
+describeWithFlags('tensor.bytes()', ALL_ENVS, () => {
+  /** Helper method to get the bytes from a typed array. */
+  function getBytes(a: TypedArray): Uint8Array {
+    return new Uint8Array(a.buffer);
+  }
+
+  it('float32 tensor', async () => {
+    const a = tf.tensor([1.1, 3.2, 7], [3], 'float32');
+    expect(await a.bytes()).toEqual(getBytes(new Float32Array([1.1, 3.2, 7])));
+  });
+
+  it('int32 tensor', async () => {
+    const a = tf.tensor([1.1, 3.2, 7], [3], 'int32');
+    expect(await a.bytes()).toEqual(getBytes(new Int32Array([1, 3, 7])));
+  });
+
+  it('bool tensor', async () => {
+    const a = tf.tensor([true, true, false], [3], 'bool');
+    expect(await a.bytes()).toEqual(new Uint8Array([1, 1, 0]));
+  });
+
+  it('string tensor from native strings', async () => {
+    const a = tf.tensor(['hello', 'world'], [2], 'string');
+    expect(await a.bytes()).toEqual([
+      encodeString('hello'), encodeString('world')
+    ]);
+  });
+
+  it('string tensor from encoded bytes', async () => {
+    const a = tf.tensor(
+        [encodeString('hello'), encodeString('world')], [2], 'string');
+    expect(await a.bytes()).toEqual([
+      encodeString('hello'), encodeString('world')
+    ]);
   });
 });

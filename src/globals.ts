@@ -18,6 +18,7 @@
 import {KernelBackend} from './backends/backend';
 import {ENGINE, MemoryInfo, ProfileInfo, ScopeFn, TimingInfo} from './engine';
 import {ENV} from './environment';
+import {Platform} from './platforms/platform';
 import {setDeprecationWarningFn, Tensor} from './tensor';
 import {TensorContainer} from './tensor_types';
 import {getTensorsInContainer} from './tensor_util';
@@ -33,7 +34,7 @@ export function enableProdMode(): void {
 
 /**
  * Enables debug mode which will log information about all executed kernels:
- * the ellapsed time of the kernel execution, as well as the rank, shape, and
+ * the elapsed time of the kernel execution, as well as the rank, shape, and
  * size of the output tensor.
  *
  * Debug mode will significantly slow down your application as it will
@@ -133,8 +134,9 @@ export function profile(f: () => TensorContainer): Promise<ProfileInfo> {
  * Using this method helps avoid memory leaks. In general, wrap calls to
  * operations in `tf.tidy` for automatic memory cleanup.
  *
- * When in safe mode, you must enclose all `tf.Tensor` creation and ops
- * inside a `tf.tidy` to prevent memory leaks.
+ * NOTE: Variables do *not* get cleaned up when inside a tidy(). If you want to
+ * dispose variables, please use `tf.disposeVariables` or call dispose()
+ * directly on variables.
  *
  * ```js
  * // y = 2 ^ 2 + 1
@@ -245,8 +247,8 @@ export function time(f: () => void): Promise<TimingInfo> {
 
 /**
  * Sets the backend (cpu, webgl, etc) responsible for creating tensors and
- * executing operations on those tensors. Returns whether the setting of the
- * backend was successful.
+ * executing operations on those tensors. Returns a promise that resolves
+ * to a boolean if the backend initialization was successful.
  *
  * Note this disposes the current backend, if any, as well as any tensors
  * associated with it. A new backend is initialized, even if it is of the
@@ -257,8 +259,18 @@ export function time(f: () => void): Promise<TimingInfo> {
  *     (requires tfjs-node).
  */
 /** @doc {heading: 'Backends'} */
-export function setBackend(backendName: string): boolean {
+export function setBackend(backendName: string): Promise<boolean> {
   return ENGINE.setBackend(backendName);
+}
+
+/**
+ * Returns a promise that resolves when the currently selected backend (or the
+ * highest priority one) has initialized. Await this promise when you are using
+ * a backend that has async initialization.
+ */
+/** @doc {heading: 'Backends'} */
+export function ready(): Promise<void> {
+  return ENGINE.ready();
 }
 
 /**
@@ -280,7 +292,7 @@ export function removeBackend(name: string): void {
 
 /**
  * Finds the backend registered under the provided name. Returns null if the
- * name is not in the registry.
+ * name is not in the registry, or the registration hasn't finished yet.
  */
 export function findBackend(name: string): KernelBackend {
   return ENGINE.findBackend(name);
@@ -291,7 +303,8 @@ export function findBackend(name: string): KernelBackend {
  * function that produces a new backend when called. Returns null if the name
  * is not in the registry.
  */
-export function findBackendFactory(name: string): () => KernelBackend {
+export function findBackendFactory(name: string): () =>
+    KernelBackend | Promise<KernelBackend> {
   return ENGINE.findBackendFactory(name);
 }
 
@@ -301,7 +314,7 @@ export function findBackendFactory(name: string): () => KernelBackend {
  * modular builds (e.g. custom tfjs bundle with only webgl support).
  *
  * @param factory The backend factory function. When called, it should
- * return an instance of the backend.
+ * return a backend instance, or a promise of an instance.
  * @param priority The priority of the backend (higher = more important).
  *     In case multiple backends are registered, the priority is used to find
  *     the best backend. Defaults to 1.
@@ -310,15 +323,28 @@ export function findBackendFactory(name: string): () => KernelBackend {
  */
 /** @doc {heading: 'Backends'} */
 export function registerBackend(
-    name: string, factory: () => KernelBackend, priority = 1): boolean {
+    name: string, factory: () => KernelBackend | Promise<KernelBackend>,
+    priority = 1): boolean {
   return ENGINE.registerBackend(name, factory, priority);
 }
 
 /**
  * Gets the current backend. If no backends have been initialized, this will
- * initialize the best backend.
+ * attempt to initialize the best backend. Will throw an error if the highest
+ * priority backend has async initialization, in which case, you should call
+ * 'await tf.ready()' before running other code.
  */
 /** @doc {heading: 'Backends'} */
 export function backend(): KernelBackend {
   return ENGINE.backend;
+}
+
+/**
+ * Sets the global platform.
+ *
+ * @param platformName The name of this platform.
+ * @param platform A platform implementation.
+ */
+export function setPlatform(platformName: string, platform: Platform) {
+  ENV.setPlatform(platformName, platform);
 }

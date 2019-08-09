@@ -22,7 +22,7 @@ import {getTensorsInContainer, isTensorInList} from './tensor_util';
 import {convertToTensor} from './tensor_util_env';
 import {expectArraysClose, expectArraysEqual} from './test_util';
 
-describe('tensor_util.isTensorInList', () => {
+describeWithFlags('tensor_util.isTensorInList', ALL_ENVS, () => {
   it('not in list', () => {
     const a = tf.scalar(1);
     const list: Tensor[] = [tf.scalar(1), tf.tensor1d([1, 2, 3])];
@@ -38,7 +38,7 @@ describe('tensor_util.isTensorInList', () => {
   });
 });
 
-describe('getTensorsInContainer', () => {
+describeWithFlags('getTensorsInContainer', ALL_ENVS, () => {
   it('null input returns empty tensor', () => {
     const results = getTensorsInContainer(null);
 
@@ -80,80 +80,80 @@ describe('getTensorsInContainer', () => {
 });
 
 describeWithFlags('convertToTensor', ALL_ENVS, () => {
-  it('primitive integer, NaN converts to zero, no error thrown', () => {
+  it('primitive integer, NaN converts to zero, no error thrown', async () => {
     const a = () => convertToTensor(NaN, 'a', 'test', 'int32');
     expect(a).not.toThrowError();
 
     const b = convertToTensor(NaN, 'b', 'test', 'int32');
     expect(b.rank).toBe(0);
     expect(b.dtype).toBe('int32');
-    expectArraysClose(b, 0);
+    expectArraysClose(await b.data(), 0);
   });
 
-  it('primitive number', () => {
+  it('primitive number', async () => {
     const a = convertToTensor(3, 'a', 'test');
     expect(a.rank).toBe(0);
     expect(a.dtype).toBe('float32');
-    expectArraysClose(a, 3);
+    expectArraysClose(await a.data(), 3);
   });
 
-  it('primitive integer, NaN converts to zero', () => {
+  it('primitive integer, NaN converts to zero', async () => {
     const a = convertToTensor(NaN, 'a', 'test', 'int32');
     expect(a.rank).toBe(0);
     expect(a.dtype).toBe('int32');
-    expectArraysClose(a, 0);
+    expectArraysClose(await a.data(), 0);
   });
 
-  it('primitive boolean, parsed as bool tensor', () => {
+  it('primitive boolean, parsed as bool tensor', async () => {
     const a = convertToTensor(true, 'a', 'test');
     expect(a.rank).toBe(0);
     expect(a.dtype).toBe('bool');
-    expectArraysClose(a, 1);
+    expectArraysClose(await a.data(), 1);
   });
 
-  it('primitive boolean, forced to be parsed as bool tensor', () => {
+  it('primitive boolean, forced to be parsed as bool tensor', async () => {
     const a = convertToTensor(true, 'a', 'test', 'bool');
     expect(a.rank).toBe(0);
     expect(a.dtype).toBe('bool');
-    expectArraysEqual(a, 1);
+    expectArraysEqual(await a.data(), 1);
   });
 
-  it('array1d', () => {
+  it('array1d', async () => {
     const a = convertToTensor([1, 2, 3], 'a', 'test');
     expect(a.rank).toBe(1);
     expect(a.dtype).toBe('float32');
     expect(a.shape).toEqual([3]);
-    expectArraysClose(a, [1, 2, 3]);
+    expectArraysClose(await a.data(), [1, 2, 3]);
   });
 
-  it('array2d', () => {
+  it('array2d', async () => {
     const a = convertToTensor([[1], [2], [3]], 'a', 'test');
     expect(a.rank).toBe(2);
     expect(a.shape).toEqual([3, 1]);
     expect(a.dtype).toBe('float32');
-    expectArraysClose(a, [1, 2, 3]);
+    expectArraysClose(await a.data(), [1, 2, 3]);
   });
 
-  it('array3d', () => {
+  it('array3d', async () => {
     const a = convertToTensor([[[1], [2]], [[3], [4]]], 'a', 'test');
     expect(a.rank).toBe(3);
     expect(a.shape).toEqual([2, 2, 1]);
     expect(a.dtype).toBe('float32');
-    expectArraysClose(a, [1, 2, 3, 4]);
+    expectArraysClose(await a.data(), [1, 2, 3, 4]);
   });
 
-  it('array4d', () => {
+  it('array4d', async () => {
     const a = convertToTensor([[[[1]], [[2]]], [[[3]], [[4]]]], 'a', 'test');
     expect(a.rank).toBe(4);
     expect(a.shape).toEqual([2, 2, 1, 1]);
     expect(a.dtype).toBe('float32');
-    expectArraysClose(a, [1, 2, 3, 4]);
+    expectArraysClose(await a.data(), [1, 2, 3, 4]);
   });
 
   it('passing a tensor returns the tensor itself', () => {
     const s = tf.scalar(3);
     const res = convertToTensor(s, 'a', 'test');
-    expect(res).toBe(s);
+    expect(res === s).toBe(true);
   });
 
   it('passing a tensor with wrong type errors', () => {
@@ -206,6 +206,12 @@ describeWithFlags('convertToTensor', ALL_ENVS, () => {
         .toThrowError(
             'Argument \'a\' passed to \'test\' must be numeric tensor, ' +
             'but got string tensor');
+  });
+});
+
+describeWithFlags('convertToTensor debug mode', ALL_ENVS, () => {
+  beforeAll(() => {
+    tf.ENV.set('DEBUG', true);
   });
 
   it('fails to convert a non-valid shape array to tensor', () => {

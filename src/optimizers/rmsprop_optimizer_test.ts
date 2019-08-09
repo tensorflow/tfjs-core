@@ -20,7 +20,7 @@ import {ALL_ENVS, describeWithFlags} from '../jasmine_util';
 import {expectArraysClose} from '../test_util';
 
 describeWithFlags('RMSPropOptimizer', ALL_ENVS, () => {
-  it('basic', () => {
+  it('basic', async () => {
     const learningRate = 0.1;
     const moment = 0.1;
     const rho = 0.95;
@@ -51,7 +51,7 @@ describeWithFlags('RMSPropOptimizer', ALL_ENVS, () => {
     // accumulatedMoments = [0, 0]
     // newAccumulatedMoments = [0.44721, 0.44721]
     // x = [0.55279, 1.55279]
-    expectArraysClose(x, [0.55279, 1.55279]);
+    expectArraysClose(await x.data(), [0.55279, 1.55279]);
 
     cost.dispose();
     numTensors = tf.memory().numTensors;
@@ -67,7 +67,7 @@ describeWithFlags('RMSPropOptimizer', ALL_ENVS, () => {
     // x = [0.28745, 1.22943]
 
     // TODO: Fix numerical precision.
-    expectArraysClose(x, [0.28745, 1.222943], 1e-2);
+    expectArraysClose(await x.data(), [0.28745, 1.222943], 1e-2);
 
     // There should be no new additional Tensors.
     expect(tf.memory().numTensors).toBe(numTensors);
@@ -80,7 +80,7 @@ describeWithFlags('RMSPropOptimizer', ALL_ENVS, () => {
     expect(tf.memory().numTensors).toBe(1);
   });
 
-  it('gradient with centered momentum', () => {
+  it('gradient with centered momentum', async () => {
     const learningRate = 0.1;
     const moment = 0.1;
     const rho = 0.95;
@@ -117,7 +117,7 @@ describeWithFlags('RMSPropOptimizer', ALL_ENVS, () => {
     // accumulatedMoments = [0, 0]
     // newAccumulatedMoments = [0.45883, 0.458831]
     // x = [0.54117, 1.541169]
-    expectArraysClose(x, [0.54117, 1.541169]);
+    expectArraysClose(await x.data(), [0.54117, 1.541169]);
 
     cost.dispose();
     numTensors = tf.memory().numTensors;
@@ -135,7 +135,7 @@ describeWithFlags('RMSPropOptimizer', ALL_ENVS, () => {
     // x = [0.267785, 1.2035924]
 
     // TODO: Fix numerical precision.
-    expectArraysClose(x, [0.267785, 1.2035924], 1e-2);
+    expectArraysClose(await x.data(), [0.267785, 1.2035924], 1e-2);
 
     // There should be no new additional Tensors.
     expect(tf.memory().numTensors).toBe(numTensors);
@@ -147,6 +147,70 @@ describeWithFlags('RMSPropOptimizer', ALL_ENVS, () => {
     // The only tensor remaining is the argument to variable().
     expect(tf.memory().numTensors).toBe(1);
   });
+
+  it('Save and load weigths: centered = false', async () => {
+    const learningRate = 0.1;
+    const moment = 0.1;
+    const rho = 0.95;
+    const optimizer1 = tf.train.rmsprop(learningRate, rho, moment);
+
+    const x = tf.tensor1d([1, 2]).variable();
+    const f = () => x.square().sum() as tf.Scalar;
+
+    let cost = optimizer1.minimize(f, /* returnCost */ true);
+    expectArraysClose(await cost.data(), 5);
+    expectArraysClose(await x.data(), [0.5527865, 1.5527864]);
+
+    const weights = await optimizer1.getWeights();
+    // An iteration variable and two optimizer state variables.
+    expect(weights.length).toEqual(3);
+
+    const optimizer2 = tf.train.rmsprop(learningRate, rho, moment);
+    await optimizer2.setWeights(weights);
+
+    cost = optimizer2.minimize(f, /* returnCost */ true);
+    expectArraysClose(await cost.data(), 2.7167187);
+    expectArraysClose(await x.data(), [0.2874418, 1.2294267]);
+    expect(optimizer2.iterations).toEqual(2);
+  });
+
+  it('Save, load weigths and continue training: centered = true', async () => {
+    const learningRate = 0.1;
+    const moment = 0.1;
+    const rho = 0.95;
+    const epsilon: number = undefined;
+    const centered = true;
+    const optimizer1 =
+        tf.train.rmsprop(learningRate, rho, moment, epsilon, centered);
+
+    const x = tf.tensor1d([1, 2]).variable();
+    const f = () => x.square().sum() as tf.Scalar;
+
+    let cost = optimizer1.minimize(f, /* returnCost */ true);
+    expectArraysClose(await cost.data(), 5);
+    expectArraysClose(await x.data(), [0.5411684, 1.5411685]);
+
+    const weights = await optimizer1.getWeights();
+    // An iteration variable and three optimizer state variables.
+    expect(weights.length).toEqual(4);
+
+    const optimizer2 =
+        tf.train.rmsprop(learningRate, rho, moment, epsilon, centered);
+    await optimizer2.setWeights(weights);
+
+    cost = optimizer2.minimize(f, /* returnCost */ true);
+    expectArraysClose(await cost.data(), 2.668063);
+    expectArraysClose(await x.data(), [0.2677834, 1.2035918]);
+    expect(optimizer2.iterations).toEqual(2);
+
+    const optimizer3 =
+        tf.train.rmsprop(learningRate, rho, moment, epsilon, centered);
+    await optimizer3.setWeights(await optimizer2.getWeights());
+    cost = optimizer3.minimize(f, /* returnCost */ true);
+    expectArraysClose(await cost.data(), 1.520341);
+    expect(optimizer3.iterations).toEqual(3);
+  });
+
   it('serialization round-trip', () => {
     const originalOpt = tf.train.rmsprop(0.1, 0.5, 0.1, 1e-7, true);
     const reserialized = tf.RMSPropOptimizer.fromConfig(

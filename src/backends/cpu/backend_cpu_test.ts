@@ -18,10 +18,21 @@
 import * as tf from '../../index';
 import {describeWithFlags} from '../../jasmine_util';
 import {tensor2d} from '../../ops/ops';
-import {expectArraysEqual} from '../../test_util';
+import {expectArraysClose, expectArraysEqual} from '../../test_util';
+import {decodeString, encodeString} from '../../util';
 
 import {MathBackendCPU} from './backend_cpu';
 import {CPU_ENVS} from './backend_cpu_test_registry';
+
+/** Private test util for encoding array of strings in utf-8. */
+function encodeStrings(a: string[]): Uint8Array[] {
+  return a.map(s => encodeString(s));
+}
+
+/** Private test util for decoding array of strings in utf-8. */
+function decodeStrings(bytes: Uint8Array[]): string[] {
+  return bytes.map(b => decodeString(b));
+}
 
 describeWithFlags('backendCPU', CPU_ENVS, () => {
   let backend: MathBackendCPU;
@@ -36,19 +47,25 @@ describeWithFlags('backendCPU', CPU_ENVS, () => {
 
   it('register empty string tensor and write', () => {
     const t = tf.Tensor.make([3], {}, 'string');
-    backend.write(t.dataId, ['c', 'a', 'b']);
-    expectArraysEqual(backend.readSync(t.dataId), ['c', 'a', 'b']);
+    backend.write(t.dataId, encodeStrings(['c', 'a', 'b']));
+    expectArraysEqual(
+        decodeStrings(backend.readSync(t.dataId) as Uint8Array[]),
+        ['c', 'a', 'b']);
   });
 
   it('register string tensor with values', () => {
     const t = tf.Tensor.make([3], {values: ['a', 'b', 'c']}, 'string');
-    expectArraysEqual(backend.readSync(t.dataId), ['a', 'b', 'c']);
+    expectArraysEqual(
+        decodeStrings(backend.readSync(t.dataId) as Uint8Array[]),
+        ['a', 'b', 'c']);
   });
 
   it('register string tensor with values and overwrite', () => {
     const t = tf.Tensor.make([3], {values: ['a', 'b', 'c']}, 'string');
-    backend.write(t.dataId, ['c', 'a', 'b']);
-    expectArraysEqual(backend.readSync(t.dataId), ['c', 'a', 'b']);
+    backend.write(t.dataId, encodeStrings(['c', 'a', 'b']));
+    expectArraysEqual(
+        decodeStrings(backend.readSync(t.dataId) as Uint8Array[]),
+        ['c', 'a', 'b']);
   });
 
   it('register string tensor with values and mismatched shape', () => {
@@ -129,7 +146,7 @@ describeWithFlags('memory cpu', CPU_ENVS, () => {
     const mem = tf.memory();
     expect(mem.numTensors).toBe(2);
     expect(mem.numDataBuffers).toBe(2);
-    expect(mem.numBytes).toBe(6);
+    expect(mem.numBytes).toBe(5);
     expect(mem.unreliable).toBe(true);
 
     const expectedReasonGC =
@@ -140,5 +157,19 @@ describeWithFlags('memory cpu', CPU_ENVS, () => {
         'Memory usage by string tensors is approximate ' +
         '(2 bytes per character)';
     expect(mem.reasons.indexOf(expectedReasonString) >= 0).toBe(true);
+  });
+});
+
+describe('CPU backend has sync init', () => {
+  it('can do matmul without waiting for ready', async () => {
+    tf.registerBackend('my-cpu', () => {
+      return new MathBackendCPU();
+    });
+    const a = tf.tensor1d([5]);
+    const b = tf.tensor1d([3]);
+    const res = tf.dot(a, b);
+    expectArraysClose(await res.data(), 15);
+    tf.dispose([a, b, res]);
+    tf.removeBackend('my-cpu');
   });
 });

@@ -38,21 +38,24 @@ ENV.registerFlag('WEBGL_VERSION', () => {
   return 0;
 });
 
+ENV.registerFlag(
+    'WEBGL_BUFFER_SUPPORTED', () => ENV.get('WEBGL_VERSION') === 2);
+
 /** Whether the WebGL backend will sometimes forward ops to the CPU. */
-ENV.registerFlag('WEBGL_CPU_FORWARD', () => false);
+ENV.registerFlag('WEBGL_CPU_FORWARD', () => true);
 
 /** Whether to turn all packing related flags on. */
 ENV.registerFlag('WEBGL_PACK', () => ENV.getBool('HAS_WEBGL'));
 
 /** Whether we will pack the batchnormalization op. */
-ENV.registerFlag(
-    'WEBGL_PACK_BATCHNORMALIZATION', () => ENV.getBool('WEBGL_PACK'));
+ENV.registerFlag('WEBGL_PACK_NORMALIZATION', () => ENV.getBool('WEBGL_PACK'));
 
 /** Whether we will pack the clip op. */
 ENV.registerFlag('WEBGL_PACK_CLIP', () => ENV.getBool('WEBGL_PACK'));
 
 /** Whether we will pack the depthwise conv op. */
-ENV.registerFlag('WEBGL_PACK_DEPTHWISECONV', () => ENV.getBool('WEBGL_PACK'));
+// TODO: https://github.com/tensorflow/tfjs/issues/1679
+ENV.registerFlag('WEBGL_PACK_DEPTHWISECONV', () => false);
 
 /** Whether we will pack binary ops. */
 ENV.registerFlag(
