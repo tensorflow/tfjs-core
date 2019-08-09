@@ -57,7 +57,7 @@ function dropout_(
   util.assert(
       rate >= 0 && rate < 1,
       () => `rate must be a float in the range [0, 1), but got ${rate}.`);
-  
+
   if (rate === 0) {
     return x instanceof Tensor ? $x.clone() : $x;
   }

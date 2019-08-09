@@ -21,14 +21,12 @@ import * as util from '../util';
 /**
  * Normalize noise shape based on provided tensor and noise shape.
  *
- * @param x Tensor or TensorLike.
- * @param noiseShape A 1-D Tensor of type int32, representing the shape for
- *   randomly generated keep/drop flags. Optional.
+ * @param x Tensor.
+ * @param noiseShape The shape for the randomly generated keep/drop flags, as
+ *   an array of numbers. Optional.
  * @returns Normalized noise shape.
  */
-export function getNoiseShape(
-    x: Tensor, noiseShape?: number[]): number[] {
-
+export function getNoiseShape(x: Tensor, noiseShape?: number[]): number[] {
   if (noiseShape == null) {
     return x.shape.slice();
   }
