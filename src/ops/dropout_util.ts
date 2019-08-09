@@ -23,13 +23,6 @@ import * as util from '../util';
 /**
  * Normalize noise shape based on provided tensor and noise shape.
  *
- * ```js
- * const x = tf.ones([2, 3]);
- * const noiseShape = [2, 3];
- * const shape = getNoiseShape(x, noiseShape);
- * console.log(shape);
- * ```
- *
  * @param x Tensor or TensorLike.
  * @param noiseShape A 1-D Tensor of type int32, representing the shape for
  *   randomly generated keep/drop flags. Optional.
