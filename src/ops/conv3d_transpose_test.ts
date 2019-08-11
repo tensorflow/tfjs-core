@@ -16,8 +16,8 @@
  */
 
 import * as tf from '../index';
-import {describeWithFlags} from '../jasmine_util';
-import {ALL_ENVS, expectArraysClose} from '../test_util';
+import {ALL_ENVS, describeWithFlags} from '../jasmine_util';
+import {expectArraysClose} from '../test_util';
 
 describeWithFlags('conv3dTranspose', ALL_ENVS, () => {
   // Reference Python TensorFlow code
@@ -30,7 +30,7 @@ describeWithFlags('conv3dTranspose', ALL_ENVS, () => {
   //   1, 1)
   // tf.nn.conv3d_transpose(x, w, output_shape=[1, 2, 2, 2, 1], padding='VALID')
   // ```
-  it('input=2x2x2x1,d2=1,f=2,s=1,p=valid', () => {
+  it('input=2x2x2x1,d2=1,f=2,s=1,p=valid', async () => {
     const origInputDepth = 1;
     const origOutputDepth = 1;
     const inputShape: [number, number, number, number] =
@@ -48,7 +48,7 @@ describeWithFlags('conv3dTranspose', ALL_ENVS, () => {
     const expected = [10, 8, 16, 14, 2, 4, 12, 6];
 
     expect(result.shape).toEqual([2, 2, 2, 1]);
-    expectArraysClose(result, expected);
+    expectArraysClose(await result.data(), expected);
   });
 
   // Reference Python TensorFlow code
@@ -61,7 +61,7 @@ describeWithFlags('conv3dTranspose', ALL_ENVS, () => {
   //   2, 2, 1, 1)
   // tf.nn.conv3d_transpose(x, w, output_shape=[2, 2, 2, 2, 1], padding='VALID')
   // ```
-  it('input=2x2x2x1,d2=1,f=2,s=1,p=valid, batch=2', () => {
+  it('input=2x2x2x1,d2=1,f=2,s=1,p=valid, batch=2', async () => {
     const origInputDepth = 1;
     const origOutputDepth = 1;
     const inputShape: [number, number, number, number, number] =
@@ -80,6 +80,6 @@ describeWithFlags('conv3dTranspose', ALL_ENVS, () => {
     const expected = [10, 8, 16, 14, 2, 4, 12, 6, 15, 12, 24, 21, 3, 6, 18, 9];
 
     expect(result.shape).toEqual([2, 2, 2, 2, 1]);
-    expectArraysClose(result, expected);
+    expectArraysClose(await result.data(), expected);
   });
 });
