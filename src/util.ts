@@ -15,6 +15,7 @@
  * =============================================================================
  */
 
+import {ENV} from './environment';
 import {DataType, DataTypeMap, FlatVector, NumericDataType, RecursiveArray, TensorLike, TypedArray} from './types';
 
 /**
@@ -28,7 +29,7 @@ import {DataType, DataTypeMap, FlatVector, NumericDataType, RecursiveArray, Tens
  *
  * @param array The array to shuffle in-place.
  */
-/** @doc {heading: 'Util'} */
+/** @doc {heading: 'Util', namespace: 'util'} */
 // tslint:disable-next-line:no-any
 export function shuffle(array: any[]|Uint32Array|Int32Array|
                         Float32Array): void {
@@ -92,14 +93,15 @@ export function distSquared(a: FlatVector, b: FlatVector): number {
  * provided message.
  *
  * ```js
- * tf.util.assert(2 === 3, 'Two is not three');
+ * const x = 2;
+ * tf.util.assert(x === 2, 'x is not 2');
  * ```
  *
  * @param expr The expression to assert (as a boolean).
  * @param msg A function that returns the message to report when throwing an
  *     error. We use a function for performance reasons.
  */
-/** @doc {heading: 'Util'} */
+/** @doc {heading: 'Util', namespace: 'util'} */
 export function assert(expr: boolean, msg: () => string) {
   if (!expr) {
     throw new Error(typeof msg === 'string' ? msg : msg());
@@ -133,17 +135,19 @@ export function assertNonNull(a: TensorLike): void {
  *
  *  @param arr The nested array to flatten.
  *  @param result The destination array which holds the elements.
+ *  @param skipTypedArray If true, avoids flattening the typed arrays. Defaults
+ *      to false.
  */
-/** @doc {heading: 'Util'} */
+/** @doc {heading: 'Util', namespace: 'util'} */
 export function
 flatten<T extends number|boolean|string|Promise<number>|TypedArray>(
-    arr: T|RecursiveArray<T>, result: T[] = []): T[] {
+    arr: T|RecursiveArray<T>, result: T[] = [], skipTypedArray = false): T[] {
   if (result == null) {
     result = [];
   }
-  if (Array.isArray(arr) || isTypedArray(arr)) {
+  if (Array.isArray(arr) || isTypedArray(arr) && !skipTypedArray) {
     for (let i = 0; i < arr.length; ++i) {
-      flatten(arr[i], result);
+      flatten(arr[i], result, skipTypedArray);
     }
   } else {
     result.push(arr as T);
@@ -160,7 +164,7 @@ flatten<T extends number|boolean|string|Promise<number>|TypedArray>(
  * console.log(size);
  * ```
  */
-/** @doc {heading: 'Util'} */
+/** @doc {heading: 'Util', namespace: 'util'} */
 export function sizeFromShape(shape: number[]): number {
   if (shape.length === 0) {
     // Scalar.
@@ -381,7 +385,7 @@ export function getTypedArrayFromDType<D extends NumericDataType>(
   } else {
     throw new Error(`Unknown data type ${dtype}`);
   }
-  return values;
+  return values as DataTypeMap[D];
 }
 
 export function getArrayFromDType<D extends DataType>(
@@ -398,7 +402,7 @@ export function getArrayFromDType<D extends DataType>(
   } else {
     throw new Error(`Unknown data type ${dtype}`);
   }
-  return values;
+  return values as DataTypeMap[D];
 }
 
 export function checkComputationForErrors<D extends DataType>(
@@ -423,6 +427,12 @@ export function checkConversionForErrors<D extends DataType>(
       throw Error(`A tensor of type ${dtype} being uploaded contains ${num}.`);
     }
   }
+}
+
+/** Returns true if the dtype is valid. */
+export function isValidDtype(dtype: DataType): boolean {
+  return dtype === 'bool' || dtype === 'complex64' || dtype === 'float32' ||
+      dtype === 'int32' || dtype === 'string';
 }
 
 /**
@@ -468,12 +478,12 @@ export function bytesPerElement(dtype: DataType): number {
  * not possible since it depends on the encoding of the html page that serves
  * the website.
  */
-export function bytesFromStringArray(arr: string[]): number {
+export function bytesFromStringArray(arr: Uint8Array[]): number {
   if (arr == null) {
     return 0;
   }
   let bytes = 0;
-  arr.forEach(x => bytes += x.length * 2);
+  arr.forEach(x => bytes += x.length);
   return bytes;
 }
 
@@ -543,7 +553,7 @@ export function toTypedArray(
     throw new Error('Cannot convert a string[] to a TypedArray');
   }
   if (Array.isArray(a)) {
-    a = flatten(a as number[]);
+    a = flatten(a);
   }
   if (debugMode) {
     checkConversionForErrors(a as number[], dtype);
@@ -622,11 +632,11 @@ export function makeOnesTypedArray<D extends DataType>(
 export function makeZerosTypedArray<D extends DataType>(
     size: number, dtype: D): DataTypeMap[D] {
   if (dtype == null || dtype === 'float32' || dtype === 'complex64') {
-    return new Float32Array(size);
+    return new Float32Array(size) as DataTypeMap[D];
   } else if (dtype === 'int32') {
-    return new Int32Array(size);
+    return new Int32Array(size) as DataTypeMap[D];
   } else if (dtype === 'bool') {
-    return new Uint8Array(size);
+    return new Uint8Array(size) as DataTypeMap[D];
   } else {
     throw new Error(`Unknown data type ${dtype}`);
   }
@@ -641,18 +651,9 @@ export function makeZerosTypedArray<D extends DataType>(
  * console.log(tf.util.now());
  * ```
  */
-/** @doc {heading: 'Util'} */
+/** @doc {heading: 'Util', namespace: 'util'} */
 export function now(): number {
-  if (typeof performance !== 'undefined') {
-    return performance.now();
-  } else if (typeof process !== 'undefined') {
-    const time = process.hrtime();
-    return time[0] * 1000 + time[1] / 1000000;
-  } else {
-    throw new Error(
-        'Cannot measure time in this environment. You should run tf.js ' +
-        'in the browser or in Node.js');
-  }
+  return ENV.platform.now();
 }
 
 export function assertNonNegativeIntegerDimensions(shape: number[]) {
@@ -663,4 +664,49 @@ export function assertNonNegativeIntegerDimensions(shape: number[]) {
             `Tensor must have a shape comprised of positive integers but got ` +
             `shape [${shape}].`);
   });
+}
+
+/**
+ * Returns a platform-specific implementation of
+ * [`fetch`](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API).
+ *
+ * If `fetch` is defined on the global object (`window`, `process`, etc.),
+ * `tf.util.fetch` returns that function.
+ *
+ * If not, `tf.util.fetch` returns a platform-specific solution.
+ *
+ * ```js
+ * const resource = await tf.util.fetch('https://unpkg.com/@tensorflow/tfjs');
+ * // handle response
+ * ```
+ */
+/** @doc {heading: 'Util'} */
+export function fetch(
+    path: string, requestInits?: RequestInit): Promise<Response> {
+  return ENV.platform.fetch(path, requestInits);
+}
+
+/**
+ * Encodes the provided string into bytes using the provided encoding scheme.
+ *
+ * @param s The string to encode.
+ * @param encoding The encoding scheme. Defaults to utf-8.
+ *
+ */
+/** @doc {heading: 'Util'} */
+export function encodeString(s: string, encoding = 'utf-8'): Uint8Array {
+  encoding = encoding || 'utf-8';
+  return ENV.platform.encode(s, encoding);
+}
+
+/**
+ * Decodes the provided bytes into a string using the provided encoding scheme.
+ * @param bytes The bytes to decode.
+ *
+ * @param encoding The encoding scheme. Defaults to utf-8.
+ */
+/** @doc {heading: 'Util'} */
+export function decodeString(bytes: Uint8Array, encoding = 'utf-8'): string {
+  encoding = encoding || 'utf-8';
+  return ENV.platform.decode(bytes, encoding);
 }

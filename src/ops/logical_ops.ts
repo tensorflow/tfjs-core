@@ -15,10 +15,9 @@
  * =============================================================================
  */
 
-import {ENV} from '../environment';
-import {whereImpl} from '../kernels/where_impl';
+import {whereImpl} from '../backends/where_impl';
+import {ENGINE} from '../engine';
 import {Tensor, Tensor2D} from '../tensor';
-import {NamedTensorMap} from '../tensor_types';
 import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import {assert, assertShapesMatch} from '../util';
@@ -40,7 +39,7 @@ import {zerosLike} from './tensor_ops';
 /** @doc {heading: 'Operations', subheading: 'Logical'} */
 function logicalNot_<T extends Tensor>(x: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'logicalNot', 'bool');
-  return ENV.engine.runKernel(backend => backend.logicalNot($x), {$x});
+  return ENGINE.runKernel(backend => backend.logicalNot($x), {$x});
 }
 
 /**
@@ -63,8 +62,7 @@ function logicalAnd_<T extends Tensor>(
   const $b = convertToTensor(b, 'b', 'logicalAnd', 'bool');
   assertAndGetBroadcastShape($a.shape, $b.shape);
 
-  return ENV.engine.runKernel(
-             backend => backend.logicalAnd($a, $b), {$a, $b}) as T;
+  return ENGINE.runKernel(backend => backend.logicalAnd($a, $b), {$a, $b}) as T;
 }
 
 /**
@@ -86,8 +84,7 @@ function logicalOr_<T extends Tensor>(
   const $b = convertToTensor(b, 'b', 'logicalOr', 'bool');
   assertAndGetBroadcastShape($a.shape, $b.shape);
 
-  return ENV.engine.runKernel(backend => backend.logicalOr($a, $b), {$a, $b}) as
-      T;
+  return ENGINE.runKernel(backend => backend.logicalOr($a, $b), {$a, $b}) as T;
 }
 
 /**
@@ -154,8 +151,8 @@ function where_<T extends Tensor>(
 
   // TODO(julianoks): Return null for condition gradient
   // when backprop supports it.
-  const grad = (dy: T, saved: NamedTensorMap) => {
-    const {$condition} = saved;
+  const grad = (dy: T, saved: Tensor[]) => {
+    const [$condition] = saved;
     return {
       $condition: () => zerosLike($condition).toFloat(),
       $a: () => dy.mul($condition.cast(dy.dtype)) as T,
@@ -163,9 +160,9 @@ function where_<T extends Tensor>(
     };
   };
 
-  return ENV.engine.runKernel((backend, save) => {
+  return ENGINE.runKernel((backend, save) => {
     const res = backend.select($condition, $a, $b);
-    save({$condition});
+    save([$condition]);
     return res;
   }, {$condition, $a, $b}, grad) as T;
 }
@@ -184,7 +181,8 @@ function where_<T extends Tensor>(
  *
  * ```js
  * const cond = tf.tensor1d([false, false, true], 'bool');
- * tf.whereAsync(cond).then(result => result.print());
+ * const result = await tf.whereAsync(cond);
+ * result.print();
  * ```
  */
 /** @doc {heading: 'Operations', subheading: 'Logical'} */

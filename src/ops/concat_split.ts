@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {ENV} from '../environment';
+import {ENGINE} from '../engine';
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '../tensor';
 import {convertToTensor, convertToTensorArray} from '../tensor_util_env';
 import {TensorLike} from '../types';
@@ -163,6 +163,15 @@ function concat4d_(
 function concat_<T extends Tensor>(tensors: Array<T|TensorLike>, axis = 0): T {
   assert(tensors.length >= 1, () => 'Pass at least one tensor to concat');
   let $tensors = convertToTensorArray(tensors, 'tensors', 'concat');
+  if ($tensors[0].dtype === 'complex64') {
+    $tensors.forEach(tensor => {
+      if (tensor.dtype !== 'complex64') {
+        throw new Error(`Cannot concatenate complex64 tensors with a tensor
+          with dtype ${tensor.dtype}. `);
+      }
+    });
+  }
+
   axis = parseAxisParam(axis, $tensors[0].shape)[0];
   const outShape = computeOutShape($tensors.map(t => t.shape), axis);
   if (sizeFromShape(outShape) === 0) {
@@ -182,7 +191,7 @@ function concat_<T extends Tensor>(tensors: Array<T|TensorLike>, axis = 0): T {
     return derTensors.map(t => () => t) as {};
   };
   const inputs = $tensors as {};
-  return ENV.engine.runKernel(
+  return ENGINE.runKernel(
       backend => backend.concat($tensors, axis) as T, inputs, der);
 }
 
@@ -238,7 +247,7 @@ function split_<T extends Tensor>(
     splitSizes = numOrSizeSplits;
   }
   const der = (dy: T[]) => ({$x: () => concat(dy, axis)});
-  return ENV.engine.runKernel(
+  return ENGINE.runKernel(
       backend => backend.split($x, splitSizes, axis), {$x}, der);
 }
 

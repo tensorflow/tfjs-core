@@ -1,6 +1,7 @@
+#!/usr/bin/env node
 /**
  * @license
- * Copyright 2018 Google LLC. All Rights Reserved.
+ * Copyright 2019 Google LLC. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +17,7 @@
  */
 
 import {setTestEnvs} from './jasmine_util';
-import {MathBackendCPU} from './kernels/backend_cpu';
+
 // tslint:disable-next-line:no-require-imports
 const jasmine = require('jasmine');
 
@@ -24,8 +25,7 @@ process.on('unhandledRejection', e => {
   throw e;
 });
 
-setTestEnvs(
-    [{name: 'node', factory: () => new MathBackendCPU(), features: {}}]);
+setTestEnvs([{name: 'node', backendName: 'cpu'}]);
 
 const runner = new jasmine();
 runner.loadConfig({spec_files: ['dist/**/**_test.js'], random: false});

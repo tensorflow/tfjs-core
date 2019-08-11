@@ -15,16 +15,15 @@
  * =============================================================================
  */
 
-import {ENV} from '../environment';
+import {ENGINE} from '../engine';
 import {Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer} from '../tensor';
 import {convertToTensor, convertToTensorArray} from '../tensor_util_env';
 import {DataType, DataTypeMap, Rank, ShapeMap, TensorLike, TensorLike4D} from '../types';
 import * as util from '../util';
-
 import {getAxesPermutation, getInnerMostAxes} from './axis_util';
 import {concat} from './concat_split';
 import {op} from './operation';
-import {MPRandGauss} from './rand';
+import {MPRandGauss, RandGamma, UniformRandom} from './rand';
 import {zeros, zerosLike} from './tensor_ops';
 
 /**
@@ -46,7 +45,7 @@ function clone_<T extends Tensor>(x: T|TensorLike): T {
     return {$x: () => dy.toFloat()};
   };
 
-  return ENV.engine.runKernel(
+  return ENGINE.runKernel(
              backend =>
                  Tensor.make($x.shape, {dataId: $x.dataId}, $x.dtype) as T,
              {$x}, der) as T;
@@ -168,6 +167,41 @@ function truncatedNormal_<R extends Rank>(
 }
 
 /**
+ * Creates a `tf.Tensor` with values sampled from a gamma distribution.
+ *
+ * ```js
+ * tf.randomGamma([2, 2], 1).print();
+ * ```
+ *
+ * @param shape An array of integers defining the output tensor shape.
+ * @param alpha The shape parameter of the gamma distribution.
+ * @param beta The inverse scale parameter of the gamma distribution. Defaults
+ *     to 1.
+ * @param dtype The data type of the output. Defaults to float32.
+ * @param seed The seed for the random number generator.
+ */
+/** @doc {heading: 'Tensors', subheading: 'Random'} */
+function randomGamma_<R extends Rank>(
+    shape: ShapeMap[R], alpha: number, beta = 1,
+    dtype: 'float32'|'int32' = 'float32', seed?: number): Tensor<R> {
+  if (beta == null) {
+    beta = 1;
+  }
+  if (dtype == null) {
+    dtype = 'float32';
+  }
+  if (dtype !== 'float32' && dtype !== 'int32') {
+    throw new Error(`Unsupported data type ${dtype}`);
+  }
+  const rgamma = new RandGamma(alpha, beta, dtype, seed);
+  const res = buffer(shape, dtype);
+  for (let i = 0; i < res.values.length; i++) {
+    res.values[i] = rgamma.nextValue();
+  }
+  return res.toTensor();
+}
+
+/**
  * Creates a `tf.Tensor` with values sampled from a uniform distribution.
  *
  * The generated values follow a uniform distribution in the range [minval,
@@ -187,11 +221,12 @@ function truncatedNormal_<R extends Rank>(
  */
 /** @doc {heading: 'Tensors', subheading: 'Random'} */
 function randomUniform_<R extends Rank>(
-    shape: ShapeMap[R], minval = 0, maxval = 1,
-    dtype: DataType = 'float32'): Tensor<R> {
+    shape: ShapeMap[R], minval = 0, maxval = 1, dtype: DataType = 'float32',
+    seed?: number|string): Tensor<R> {
   const res = buffer(shape, dtype);
+  const random = new UniformRandom(minval, maxval, null, seed);
   for (let i = 0; i < res.values.length; i++) {
-    res.values[i] = util.randUniform(minval, maxval);
+    res.values[i] = random.nextValue();
   }
   return res.toTensor();
 }
@@ -262,7 +297,7 @@ function multinomial_(
   }
   seed = seed || Math.random();
   const logits2D = origRank === 1 ? $logits.as2D(1, -1) : $logits as Tensor2D;
-  const res = ENV.engine.runKernel(
+  const res = ENGINE.runKernel(
       backend => backend.multinomial(logits2D, normalized, numSamples, seed),
       {logits2D});
 
@@ -300,7 +335,7 @@ function oneHot_(
   const grad = (dy: Tensor2D) => {
     return {$indices: () => zeros($indices.shape, 'float32')};
   };
-  const result = ENV.engine.runKernel(
+  const result = ENGINE.runKernel(
       backend => backend.oneHot($indices as Tensor1D, depth, onValue, offValue),
       {$indices}, grad);
   return result.reshape(outShape);
@@ -334,7 +369,7 @@ function oneHot_(
 function reshape_<R2 extends Rank>(
     x: Tensor|TensorLike, shape: ShapeMap[R2]): Tensor<R2> {
   const $x = convertToTensor(x, 'x', 'reshape', null);
-  shape = util.inferFromImplicitShape(shape, $x.size);
+  shape = util.inferFromImplicitShape(shape, $x.size) as ShapeMap[R2];
   util.assert(
       $x.size === util.sizeFromShape(shape),
       () => 'new shape and old shape must have the same number of elements.');
@@ -342,8 +377,7 @@ function reshape_<R2 extends Rank>(
   const grad = (dy: Tensor<R2>) => {
     return {$x: () => dy.reshape($x.shape)};
   };
-  return ENV.engine.runKernel(
-      backend => backend.reshape($x, shape), {$x}, grad);
+  return ENGINE.runKernel(backend => backend.reshape($x, shape), {$x}, grad);
 }
 
 /**
@@ -379,11 +413,19 @@ function squeeze_<T extends Tensor>(x: Tensor|TensorLike, axis?: number[]): T {
 function cast_<T extends Tensor>(x: T|TensorLike, dtype: DataType): T {
   const $x = convertToTensor(x, 'x', 'cast');
 
+  // Sanity checks.
+  if (!util.isValidDtype(dtype)) {
+    throw new Error(`Failed to cast to unknown dtype ${dtype}`);
+  }
+  if (dtype === 'string' && $x.dtype !== 'string' ||
+      dtype !== 'string' && $x.dtype === 'string') {
+    throw new Error('Only strings can be casted to strings');
+  }
+
   const grad = (dy: T) => {
     return {$x: () => dy.clone()};
   };
-  return ENV.engine.runKernel(backend => backend.cast($x, dtype), {$x}, grad) as
-      T;
+  return ENGINE.runKernel(backend => backend.cast($x, dtype), {$x}, grad) as T;
 }
 
 /**
@@ -411,13 +453,15 @@ function cast_<T extends Tensor>(x: T|TensorLike, dtype: DataType): T {
  */
 /** @doc {heading: 'Tensors', subheading: 'Slicing and Joining'} */
 function tile_<T extends Tensor>(x: T|TensorLike, reps: number[]): T {
-  const $x = convertToTensor(x, 'x', 'tile');
+  const parseAs: DataType = null;
+  const $x = convertToTensor(x, 'x', 'tile', parseAs);
 
   util.assert(
       $x.rank === reps.length,
       () => `Error in transpose: rank of input ${$x.rank} ` +
           `must match length of reps ${reps}.`);
-  const grad = (dy: T) => {
+  const grad = (dy: T, saved: Tensor[]) => {
+    const [$x] = saved;
     const derX = () => {
       let xGrad = zerosLike($x);
       // TODO(cais): Maybe reduce memory footprint by avoiding repeated
@@ -464,11 +508,15 @@ function tile_<T extends Tensor>(x: T|TensorLike, reps: number[]): T {
             `Gradient for tile operation is not implemented for rank-` +
             `${$x.rank} tensors yet.`);
       }
-      return xGrad;
+      return xGrad as T;
     };
     return {$x: derX};
   };
-  return ENV.engine.runKernel(backend => backend.tile($x, reps), {$x}, grad);
+  return ENGINE.runKernel((backend, save) => {
+    const res = backend.tile($x, reps);
+    save([$x]);
+    return res;
+  }, {$x}, grad);
 }
 
 /**
@@ -564,7 +612,7 @@ function pad_<T extends Tensor>(
   const grad = (dy: T) => {
     return {$x: () => dy.slice(begin, $x.shape)};
   };
-  return ENV.engine.runKernel(
+  return ENGINE.runKernel(
              backend => backend.pad($x, paddings, constantValue), {$x}, grad) as
       T;
 }
@@ -686,7 +734,7 @@ function batchToSpaceND_<T extends Tensor>(
     return {$x: () => dy.spaceToBatchND(blockShape, crops)};
   };
 
-  return ENV.engine.runKernel(
+  return ENGINE.runKernel(
       backend => backend.batchToSpaceND($x, blockShape, crops), {$x}, grad);
 }
 
@@ -771,7 +819,7 @@ function spaceToBatchND_<T extends Tensor>(
     return {$x: () => dy.batchToSpaceND(blockShape, paddings)};
   };
 
-  return ENV.engine.runKernel(
+  return ENGINE.runKernel(
       backend => backend.spaceToBatchND($x, blockShape, paddings), {$x}, grad);
 }
 
@@ -801,7 +849,7 @@ function unstack_(x: Tensor|TensorLike, axis = 0): Tensor[] {
   const grad = (dy: Tensor[]) => {
     return {$x: () => stack(dy, axis)};
   };
-  return ENV.engine.runKernel(backend => backend.unstack($x, axis), {$x}, grad);
+  return ENGINE.runKernel(backend => backend.unstack($x, axis), {$x}, grad);
 }
 
 /**
@@ -841,7 +889,7 @@ function cumsum_<T extends Tensor>(
   const grad = (dy: T) => {
     return {permutedX: () => dy.cumsum(axis, exclusive, !reverse)};
   };
-  let value = ENV.engine.runKernel(
+  let value = ENGINE.runKernel(
                   backend => backend.cumsum(
                       permutedX, permutedAxis, exclusive, reverse),
                   {permutedX}, grad) as T;
@@ -869,7 +917,8 @@ function cumsum_<T extends Tensor>(
 /** @doc {heading: 'Tensors', subheading: 'Transformations'} */
 function expandDims_<R2 extends Rank>(
     x: Tensor|TensorLike, axis = 0): Tensor<R2> {
-  const $x = convertToTensor(x, 'x', 'expandDims');
+  const parseAs: DataType = null;
+  const $x = convertToTensor(x, 'x', 'expandDims', parseAs);
 
   util.assert(axis <= $x.rank, () => 'Axis must be <= rank of the tensor');
   const newShape = $x.shape.slice();
@@ -881,7 +930,7 @@ function expandDims_<R2 extends Rank>(
     axis = $x.rank + axis + 1;
   }
   newShape.splice(axis, 0, 1);
-  return reshape($x, newShape);
+  return reshape($x, newShape as ShapeMap[R2]);
 }
 
 /**
@@ -947,7 +996,7 @@ function depthToSpace_(
           blockSize * blockSize} but is ${
           inputDepth} for depthToSpace with input shape ${$x.shape}`);
 
-  return ENV.engine.runKernel(
+  return ENGINE.runKernel(
       backend => backend.depthToSpace($x, blockSize, dataFormat), {$x});
 }
 
@@ -1088,6 +1137,7 @@ export const pad3d = op({pad3d_});
 export const pad4d = op({pad4d_});
 export const rand = op({rand_});
 export const randomNormal = op({randomNormal_});
+export const randomGamma = op({randomGamma_});
 export const randomUniform = op({randomUniform_});
 export const reshape = op({reshape_});
 export const spaceToBatchND = op({spaceToBatchND_});

@@ -19,7 +19,7 @@
  * Linear algebra ops.
  */
 
-import {ENV} from '../environment';
+import {ENGINE} from '../engine';
 import {dispose} from '../globals';
 import {Tensor, Tensor1D, Tensor2D} from '../tensor';
 import {assert} from '../util';
@@ -40,7 +40,8 @@ import {tensor2d} from './tensor_ops';
  * console.log('Othogonalized:');
  * y.dot(y.transpose()).print();  // should be nearly the identity matrix.
  * console.log('First row direction maintained:');
- * console.log(y.get(0, 1) / y.get(0, 0));  // should be nearly 2.
+ * const data = await y.array();
+ * console.log(data[0][1] / data[0][0]);  // should be nearly 2.
  * ```
  *
  * @param xs The vectors to be orthogonalized, in one of the two following
@@ -90,7 +91,7 @@ function gramSchmidt_(xs: Tensor1D[]|Tensor2D): Tensor1D[]|Tensor2D {
   const ys: Tensor1D[] = [];
   const xs1d = xs as Tensor1D[];
   for (let i = 0; i < xs.length; ++i) {
-    ys.push(ENV.engine.tidy(() => {
+    ys.push(ENGINE.tidy(() => {
       let x = xs1d[i];
       if (i > 0) {
         for (let j = 0; j < i; ++j) {
@@ -187,7 +188,7 @@ function qr_(x: Tensor, fullMatrices = false): [Tensor, Tensor] {
 }
 
 function qr2d(x: Tensor2D, fullMatrices = false): [Tensor2D, Tensor2D] {
-  return ENV.engine.tidy(() => {
+  return ENGINE.tidy(() => {
     if (x.shape.length !== 2) {
       throw new Error(
           `qr2d() requires a 2D Tensor, but got a ${x.shape.length}D Tensor.`);
@@ -209,12 +210,15 @@ function qr2d(x: Tensor2D, fullMatrices = false): [Tensor2D, Tensor2D] {
       const rTemp = r;
       const wTemp = w;
       const qTemp = q;
-      [w, r, q] = ENV.engine.tidy((): [Tensor2D, Tensor2D, Tensor2D] => {
+      [w, r, q] = ENGINE.tidy((): [Tensor2D, Tensor2D, Tensor2D] => {
         // Find H = I - tau * w * w', to put zeros below R(j, j).
         const rjEnd1 = r.slice([j, j], [m - j, 1]);
         const normX = rjEnd1.norm();
         const rjj = r.slice([j, j], [1, 1]);
-        const s = rjj.sign().neg() as Tensor2D;
+
+        // The sign() function returns 0 on 0, which causes division by zero.
+        const s = tensor2d([[-1]]).where(rjj.greater(0), tensor2d([[1]]));
+
         const u1 = rjj.sub(s.mul(normX)) as Tensor2D;
         const wPre = rjEnd1.div(u1);
         if (wPre.shape[0] === 1) {

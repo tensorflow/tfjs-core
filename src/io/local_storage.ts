@@ -36,7 +36,8 @@ const MODEL_METADATA_SUFFIX = 'model_metadata';
  * @returns Paths of the models purged.
  */
 export function purgeLocalStorageArtifacts(): string[] {
-  if (!ENV.get('IS_BROWSER') || typeof window.localStorage === 'undefined') {
+  if (!ENV.getBool('IS_BROWSER') ||
+      typeof window.localStorage === 'undefined') {
     throw new Error(
         'purgeLocalStorageModels() cannot proceed because local storage is ' +
         'unavailable in the current environment.');
@@ -95,6 +96,14 @@ function maybeStripScheme(key: string) {
       key;
 }
 
+declare type LocalStorageKeys = {
+  info: string,
+  topology: string,
+  weightSpecs: string,
+  weightData: string,
+  modelMetadata: string
+};
+
 /**
  * IOHandler subclass: Browser Local Storage.
  *
@@ -103,12 +112,13 @@ function maybeStripScheme(key: string) {
 export class BrowserLocalStorage implements IOHandler {
   protected readonly LS: Storage;
   protected readonly modelPath: string;
-  protected readonly keys: {[key: string]: string};
+  protected readonly keys: LocalStorageKeys;
 
   static readonly URL_SCHEME = 'localstorage://';
 
   constructor(modelPath: string) {
-    if (!ENV.get('IS_BROWSER') || typeof window.localStorage === 'undefined') {
+    if (!ENV.getBool('IS_BROWSER') ||
+        typeof window.localStorage === 'undefined') {
       // TODO(cais): Add more info about what IOHandler subtypes are
       // available.
       //   Maybe point to a doc page on the web and/or automatically determine
@@ -163,9 +173,11 @@ export class BrowserLocalStorage implements IOHandler {
         return {modelArtifactsInfo};
       } catch (err) {
         // If saving failed, clean up all items saved so far.
-        for (const key in this.keys) {
-          this.LS.removeItem(this.keys[key]);
-        }
+        this.LS.removeItem(this.keys.info);
+        this.LS.removeItem(this.keys.topology);
+        this.LS.removeItem(this.keys.weightSpecs);
+        this.LS.removeItem(this.keys.weightData);
+        this.LS.removeItem(this.keys.modelMetadata);
 
         throw new Error(
             `Failed to save model '${this.modelPath}' to local storage: ` +
@@ -243,7 +255,7 @@ export class BrowserLocalStorage implements IOHandler {
 }
 
 export const localStorageRouter: IORouter = (url: string|string[]) => {
-  if (!ENV.get('IS_BROWSER')) {
+  if (!ENV.getBool('IS_BROWSER')) {
     return null;
   } else {
     if (!Array.isArray(url) && url.startsWith(BrowserLocalStorage.URL_SCHEME)) {
@@ -290,7 +302,7 @@ export class BrowserLocalStorageManager implements ModelStoreManager {
 
   constructor() {
     assert(
-        ENV.get('IS_BROWSER'),
+        ENV.getBool('IS_BROWSER'),
         () => 'Current environment is not a web browser');
     assert(
         typeof window.localStorage !== 'undefined',
@@ -328,7 +340,7 @@ export class BrowserLocalStorageManager implements ModelStoreManager {
   }
 }
 
-if (ENV.get('IS_BROWSER')) {
+if (ENV.getBool('IS_BROWSER')) {
   // Wrap the construction and registration, to guard against browsers that
   // don't support Local Storage.
   try {

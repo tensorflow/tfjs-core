@@ -15,10 +15,10 @@
  * =============================================================================
  */
 
-import {ENV} from '../environment';
+import {ENGINE} from '../engine';
 import {Tensor, Tensor2D, Tensor3D} from '../tensor';
 import {convertToTensor} from '../tensor_util_env';
-import {TensorLike} from '../types';
+import {PixelData, TensorLike} from '../types';
 
 import {op} from './operation';
 
@@ -36,20 +36,23 @@ import {op} from './operation';
  * ```
  *
  * @param pixels The input image to construct the tensor from. The
- * supported image types are all 4-channel.
+ * supported image types are all 4-channel. You can also pass in an image
+ * object with following attributes:
+ * `{data: Uint8Array; width: number; height: number}`
  * @param numChannels The number of channels of the output tensor. A
  * numChannels value less than 4 allows you to ignore channels. Defaults to
  * 3 (ignores alpha channel of input image).
  */
-/** @doc {heading: 'Browser', namespace: 'browser'} */
+/** @doc {heading: 'Browser', namespace: 'browser', ignoreCI: true} */
 function fromPixels_(
-    pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
+    pixels: PixelData|ImageData|HTMLImageElement|HTMLCanvasElement|
+    HTMLVideoElement,
     numChannels = 3): Tensor3D {
   if (numChannels > 4) {
     throw new Error(
         'Cannot construct Tensor with more than 4 channels from pixels.');
   }
-  return ENV.engine.fromPixels(pixels, numChannels);
+  return ENGINE.fromPixels(pixels, numChannels);
 }
 
 /**
@@ -91,10 +94,13 @@ export async function toPixels(
         `1, 3 or 4 but got ${depth}`);
   }
 
+  const data = await $img.data();
   const minTensor = $img.min();
   const maxTensor = $img.max();
-  const min = (await minTensor.data())[0];
-  const max = (await maxTensor.data())[0];
+  const [minVals, maxVals] =
+      await Promise.all([minTensor.data(), maxTensor.data()]);
+  const min = minVals[0];
+  const max = maxVals[0];
   minTensor.dispose();
   maxTensor.dispose();
   if ($img.dtype === 'float32') {
@@ -114,8 +120,6 @@ export async function toPixels(
         `Unsupported type for toPixels: ${$img.dtype}.` +
         ` Please use float32 or int32 tensors.`);
   }
-
-  const data = await $img.data();
   const multiplier = $img.dtype === 'float32' ? 255 : 1;
   const bytes = new Uint8ClampedArray(width * height * 4);
 

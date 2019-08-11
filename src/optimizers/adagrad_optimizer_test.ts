@@ -16,11 +16,11 @@
  */
 
 import * as tf from '../index';
-import {describeWithFlags} from '../jasmine_util';
-import {ALL_ENVS, expectArraysClose} from '../test_util';
+import {ALL_ENVS, describeWithFlags} from '../jasmine_util';
+import {expectArraysClose} from '../test_util';
 
 describeWithFlags('AdagradOptimizer', ALL_ENVS, () => {
-  it('basic', () => {
+  it('basic', async () => {
     const learningRate = .1;
     const initialAccumulatorValue = .1;
     const optimizer = tf.train.adagrad(learningRate, initialAccumulatorValue);
@@ -43,7 +43,7 @@ describeWithFlags('AdagradOptimizer', ALL_ENVS, () => {
     // accumulatedGrad = [0.1, 0.1]
     // newAccumulatedGrad = [4.1, 16.1]
     // x = [0.9012270405, 1.900311042]
-    expectArraysClose(x, [0.9012270405, 1.9003110428]);
+    expectArraysClose(await x.data(), [0.9012270405, 1.9003110428]);
 
     cost.dispose();
     numTensors = tf.memory().numTensors;
@@ -56,7 +56,7 @@ describeWithFlags('AdagradOptimizer', ALL_ENVS, () => {
     // x = [0.8347372764, 1.83015597828]
 
     // TODO: Fix numerical precision.
-    expectArraysClose(x, [0.8347372764, 1.83015597828], 1e-2);
+    expectArraysClose(await x.data(), [0.8347372764, 1.83015597828], 1e-2);
 
     // There should be no new additional Tensors.
     expect(tf.memory().numTensors).toBe(numTensors);
@@ -69,6 +69,30 @@ describeWithFlags('AdagradOptimizer', ALL_ENVS, () => {
     // The only tensor remaining is the argument to variable().
     expect(tf.memory().numTensors).toBe(1);
   });
+
+  it('Continue training after loading weights', async () => {
+    const learningRate = .1;
+    const initialAccumulatorValue = .1;
+    const optimizer1 = tf.train.adagrad(learningRate, initialAccumulatorValue);
+
+    const x = tf.tensor1d([2, 4]).variable();
+    const f = () => x.square().sum() as tf.Scalar;
+    let cost = optimizer1.minimize(f, /* returnCost */ true);
+    expectArraysClose(await cost.data(), 20);
+
+    const weights = await optimizer1.getWeights();
+    expect(weights.length).toEqual(2);
+    expect(weights[0].name).toEqual('iter');
+    expect(weights[1].name).toEqual(`${x.name}/accumulator`);
+
+    const optimizer2 = tf.train.adam(learningRate, initialAccumulatorValue);
+    await optimizer2.setWeights(weights);
+
+    cost = optimizer2.minimize(f, /* returnCost */ true);
+    expectArraysClose(await cost.data(), 18.82179);
+    expect(optimizer2.iterations).toEqual(2);
+  });
+
   it('serialization round-trip', () => {
     const originalOpt = tf.train.adagrad(0.1, 0.2);
     const reserialized = tf.AdagradOptimizer.fromConfig(

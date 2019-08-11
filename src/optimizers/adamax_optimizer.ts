@@ -15,135 +15,126 @@
  * =============================================================================
  */
 
-import {ENV} from '../environment';
-import {keep, tidy} from '../globals';
-import {scalar, zerosLike} from '../ops/ops';
+import {ENGINE} from '../engine';
+import {dispose, tidy} from '../globals';
+import {div, scalar, sub, zerosLike} from '../ops/ops';
 import {ConfigDict, registerClass, Serializable, SerializableConstructor} from '../serialization';
-import {Scalar, Variable} from '../tensor';
-import {NamedVariableMap} from '../tensor_types';
-import {Optimizer} from './optimizer';
+import {Variable} from '../tensor';
+import {NamedTensor, NamedVariableMap} from '../tensor_types';
+import {Optimizer, OptimizerVariable} from './optimizer';
 
 export class AdamaxOptimizer extends Optimizer {
   /** @nocollapse */
-  static className = 'AdamaxOptimizer';
-  private c: Scalar;
-  private epsScalar: Scalar;
+  static className = 'Adamax';  // Note: Name matters for Python compatbility.
   private accBeta1: Variable;
-  private beta1Scalar: Scalar;
-  private beta2Scalar: Scalar;
-  private decayScalar: Scalar;
-  private oneMinusBeta1: Scalar;
-  private one: Scalar;
   private iteration: Variable;
 
-  private accumulatedFirstMoment: NamedVariableMap = {};
-  private accumulatedWeightedInfNorm: NamedVariableMap = {};
+  private accumulatedFirstMoment: OptimizerVariable[] = [];
+  private accumulatedWeightedInfNorm: OptimizerVariable[] = [];
 
   constructor(
       protected learningRate: number, protected beta1: number,
       protected beta2: number, protected epsilon: number = null,
       protected decay = 0.0) {
     super();
-    this.c = keep(scalar(-learningRate));
-
-    // b1, b2 keep initial value of beta* hyperparameters.
-    this.beta1Scalar = keep(scalar(beta1));
-    this.beta2Scalar = keep(scalar(beta2));
-
-    this.decayScalar = keep(scalar(decay));
 
     tidy(() => {
       this.iteration = scalar(0).variable();
       this.accBeta1 = scalar(beta1).variable();
     });
 
-    this.oneMinusBeta1 = keep(scalar(1 - beta1));
-    this.one = keep(scalar(1));
-
-    if (epsilon === null) {
-      epsilon = ENV.get('EPSILON');
+    if (epsilon == null) {
+      this.epsilon = ENGINE.backend.epsilon();
     }
-
-    this.epsScalar = keep(scalar(epsilon));
   }
 
-  applyGradients(variableGradients: NamedVariableMap) {
+  applyGradients(variableGradients: NamedVariableMap|NamedTensor[]) {
+    const variableNames = Array.isArray(variableGradients) ?
+        variableGradients.map(item => item.name) :
+        Object.keys(variableGradients);
+
     tidy(() => {
-      const oneMinusAccBeta1 = this.one.sub(this.accBeta1);
-      const lr = this.c.div(this.one.add(this.decayScalar.mul(this.iteration)));
+      const oneMinusAccBeta1 = sub(1, this.accBeta1);
+      const lr = div(-this.learningRate, this.iteration.mul(this.decay).add(1));
 
-      for (const variableName in variableGradients) {
-        const value = ENV.engine.registeredVariables[variableName];
-        if (this.accumulatedFirstMoment[variableName] == null) {
-          const trainable = false;
-          this.accumulatedFirstMoment[variableName] =
-              zerosLike(value).variable(trainable);
+      variableNames.forEach((name, i) => {
+        const value = ENGINE.registeredVariables[name];
+        const trainable = false;
+        if (this.accumulatedFirstMoment[i] == null) {
+          this.accumulatedFirstMoment[i] = {
+            originalName: `${name}/m`,
+            variable: zerosLike(value).variable(trainable)
+          };
         }
-        if (this.accumulatedWeightedInfNorm[variableName] == null) {
-          const trainable = false;
-          this.accumulatedWeightedInfNorm[variableName] =
-              zerosLike(value).variable(trainable);
+        if (this.accumulatedWeightedInfNorm[i] == null) {
+          this.accumulatedWeightedInfNorm[i] = {
+            originalName: `${name}/v`,
+            variable: zerosLike(value).variable(trainable)
+          };
         }
 
-        const gradient = variableGradients[variableName];
-        const firstMoment = this.accumulatedFirstMoment[variableName];
-        const weightedInfNorm = this.accumulatedWeightedInfNorm[variableName];
+        const gradient = Array.isArray(variableGradients) ?
+            variableGradients[i].tensor :
+            variableGradients[name];
+        if (gradient == null) {
+          return;
+        }
 
-        const newFirstMoment = this.beta1Scalar.mul(firstMoment)
-                                   .add(this.oneMinusBeta1.mul(gradient));
+        const firstMoment = this.accumulatedFirstMoment[i].variable;
+        const weightedInfNorm = this.accumulatedWeightedInfNorm[i].variable;
 
-        const ut0 = this.beta2Scalar.mul(weightedInfNorm);
+        const newFirstMoment =
+            firstMoment.mul(this.beta1).add(gradient.mul(1 - this.beta1));
+
+        const ut0 = weightedInfNorm.mul(this.beta2);
         const ut1 = gradient.abs();
 
         const newWeightedInfNorm = ut0.maximum(ut1);
 
-        this.accumulatedFirstMoment[variableName].assign(newFirstMoment);
-        this.accumulatedWeightedInfNorm[variableName].assign(
-            newWeightedInfNorm);
+        firstMoment.assign(newFirstMoment);
+        weightedInfNorm.assign(newWeightedInfNorm);
 
         const newValue =
             lr.div(oneMinusAccBeta1)
-                .mul(newFirstMoment.div(this.epsScalar.add(newWeightedInfNorm)))
+                .mul(newFirstMoment.div(newWeightedInfNorm.add(this.epsilon)))
                 .add(value);
 
         value.assign(newValue);
-      }
+      });
 
-      this.iteration.assign(this.iteration.add(this.one));
-      this.accBeta1.assign(this.accBeta1.mul(this.beta1Scalar));
+      this.iteration.assign(this.iteration.add(1));
+      this.accBeta1.assign(this.accBeta1.mul(this.beta1));
     });
+    this.incrementIterations();
   }
 
   dispose(): void {
-    this.c.dispose();
-    this.epsScalar.dispose();
     this.accBeta1.dispose();
-    this.beta1Scalar.dispose();
-    this.beta2Scalar.dispose();
-    this.oneMinusBeta1.dispose();
-
-    this.decayScalar.dispose();
     this.iteration.dispose();
 
-    this.one.dispose();
-
     if (this.accumulatedFirstMoment != null) {
-      Object.keys(this.accumulatedFirstMoment)
-          .forEach(name => this.accumulatedFirstMoment[name].dispose());
+      dispose(this.accumulatedFirstMoment.map(v => v.variable));
     }
-
     if (this.accumulatedWeightedInfNorm != null) {
-      Object.keys(this.accumulatedWeightedInfNorm)
-          .forEach(name => this.accumulatedWeightedInfNorm[name].dispose());
+      dispose(this.accumulatedWeightedInfNorm.map(v => v.variable));
     }
   }
+
+  async getWeights(): Promise<NamedTensor[]> {
+    throw new Error('getWeights() is not implemented for Adamax yet.');
+  }
+
+  async setWeights(weightValues: NamedTensor[]): Promise<void> {
+    throw new Error('setWeights() is not implemented for Adamax yet.');
+  }
+
   getConfig(): ConfigDict {
     return {
-      learningRate: this.learningRate,
-      beta1: this.beta1,
-      beta2: this.beta2,
-      epsilon: this.epsilon,
-      decay: this.decay
+      'learningRate': this.learningRate,
+      'beta1': this.beta1,
+      'beta2': this.beta2,
+      'epsilon': this.epsilon,
+      'decay': this.decay
     };
   }
 
@@ -151,8 +142,8 @@ export class AdamaxOptimizer extends Optimizer {
   static fromConfig<T extends Serializable>(
       cls: SerializableConstructor<T>, config: ConfigDict): T {
     return new cls(
-        config.learningRate, config.beta1, config.beta2, config.epsilon,
-        config.decay);
+        config['learningRate'], config['beta1'], config['beta2'],
+        config['epsilon'], config['decay']);
   }
 }
 registerClass(AdamaxOptimizer);

@@ -15,9 +15,8 @@
  * =============================================================================
  */
 
-import {ENV} from '../environment';
+import {ENGINE} from '../engine';
 import {Tensor} from '../tensor';
-import {NamedTensorMap} from '../tensor_types';
 import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import * as util from '../util';
@@ -42,7 +41,7 @@ function neg_<T extends Tensor>(x: T|TensorLike): T {
   const grad = (dy: T) => {
     return {$x: () => dy.neg()};
   };
-  return ENV.engine.runKernel(backend => backend.neg($x), {$x}, grad);
+  return ENGINE.runKernel(backend => backend.neg($x), {$x}, grad);
 }
 
 /**
@@ -63,7 +62,7 @@ function ceil_<T extends Tensor>(x: T|TensorLike): T {
   const grad = (dy: T) => {
     return {$x: () => zerosLike(dy)};
   };
-  return ENV.engine.runKernel(backend => backend.ceil($x), {$x}, grad);
+  return ENGINE.runKernel(backend => backend.ceil($x), {$x}, grad);
 }
 
 /**
@@ -85,7 +84,7 @@ function floor_<T extends Tensor>(x: T|TensorLike): T {
   const grad = (dy: T) => {
     return {$x: () => zerosLike(dy)};
   };
-  return ENV.engine.runKernel(backend => backend.floor($x), {$x}, grad);
+  return ENGINE.runKernel(backend => backend.floor($x), {$x}, grad);
 }
 
 /**
@@ -105,7 +104,73 @@ function sign_<T extends Tensor>(x: T|TensorLike): T {
   const grad = (dy: T) => {
     return {$x: () => zerosLike(dy)};
   };
-  return ENV.engine.runKernel(backend => backend.sign($x), {$x}, grad);
+  return ENGINE.runKernel(backend => backend.sign($x), {$x}, grad);
+}
+
+/**
+ * RReturns which elements of x are NaN.
+ *
+ * ```js
+ * const x = tf.tensor1d([NaN, Infinity, -Infinity, 0, 1]);
+ *
+ * x.isNaN().print();  // or tf.isNaN(x)
+ * ```
+ * @param x The input Tensor.
+ */
+/** @doc {heading: 'Operations', subheading: 'Basic math'} */
+function isNaN_<T extends Tensor>(x: T|TensorLike): T {
+  const $x = convertToTensor(x, 'x', 'isNaN');
+
+  // TODO(nsthorat): Let gradients be null for cases where we want to stop
+  // backpropgation.
+  const grad = (dy: T) => {
+    return {$x: () => zerosLike(dy)};
+  };
+  return ENGINE.runKernel(backend => backend.isNaN($x), {$x}, grad);
+}
+
+/**
+ * Returns which elements of x are Infinity or -Infinity.
+ *
+ * ```js
+ * const x = tf.tensor1d([NaN, Infinity, -Infinity, 0, 1]);
+ *
+ * x.isInf().print();  // or tf.isNaN(x)
+ * ```
+ * @param x The input Tensor.
+ */
+/** @doc {heading: 'Operations', subheading: 'Basic math'} */
+function isInf_<T extends Tensor>(x: T|TensorLike): T {
+  const $x = convertToTensor(x, 'x', 'isInf');
+
+  // TODO(nsthorat): Let gradients be null for cases where we want to stop
+  // backpropgation.
+  const grad = (dy: T) => {
+    return {$x: () => zerosLike(dy)};
+  };
+  return ENGINE.runKernel(backend => backend.isInf($x), {$x}, grad);
+}
+
+/**
+ * Returns which elements of x are finite.
+ *
+ * ```js
+ * const x = tf.tensor1d([NaN, Infinity, -Infinity, 0, 1]);
+ *
+ * x.isFinite().print();  // or tf.isNaN(x)
+ * ```
+ * @param x The input Tensor.
+ */
+/** @doc {heading: 'Operations', subheading: 'Basic math'} */
+function isFinite_<T extends Tensor>(x: T|TensorLike): T {
+  const $x = convertToTensor(x, 'x', 'isFinite');
+
+  // TODO(nsthorat): Let gradients be null for cases where we want to stop
+  // backpropgation.
+  const grad = (dy: T) => {
+    return {$x: () => zerosLike(dy)};
+  };
+  return ENGINE.runKernel(backend => backend.isFinite($x), {$x}, grad);
 }
 
 /**
@@ -128,7 +193,7 @@ function round_<T extends Tensor>(x: T|TensorLike): T {
   const grad = (dy: T) => {
     return {$x: () => zerosLike(dy)};
   };
-  return ENV.engine.runKernel(backend => backend.round($x), {$x}, grad);
+  return ENGINE.runKernel(backend => backend.round($x), {$x}, grad);
 }
 
 /**
@@ -145,12 +210,12 @@ function round_<T extends Tensor>(x: T|TensorLike): T {
 function exp_<T extends Tensor>(x: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'exp');
 
-  const bck = (dy: T, saved: NamedTensorMap) => {
-    return {$x: () => dy.mulStrict(saved.y as T)};
+  const bck = (dy: T, saved: Tensor[]) => {
+    return {$x: () => dy.mulStrict(saved[0] as T)};
   };
-  return ENV.engine.runKernel((backend, save) => {
+  return ENGINE.runKernel((backend, save) => {
     const y = backend.exp($x);
-    save({y});
+    save([y]);
     return y;
   }, {$x}, bck);
 }
@@ -170,13 +235,13 @@ function exp_<T extends Tensor>(x: T|TensorLike): T {
 function expm1_<T extends Tensor>(x: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'expm1');
 
-  const grad = (dy: T, saved: NamedTensorMap) => {
-    const {$x} = saved;
+  const grad = (dy: T, saved: Tensor[]) => {
+    const [$x] = saved;
     return {$x: () => dy.mul($x.exp()) as T};
   };
-  return ENV.engine.runKernel((backend, save) => {
+  return ENGINE.runKernel((backend, save) => {
     const res = backend.expm1($x);
-    save({$x});
+    save([$x]);
     return res;
   }, {$x}, grad);
 }
@@ -195,13 +260,13 @@ function expm1_<T extends Tensor>(x: T|TensorLike): T {
 function log_<T extends Tensor>(x: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'log');
 
-  const grad = (dy: T, saved: NamedTensorMap) => {
-    const {$x} = saved;
+  const grad = (dy: T, saved: Tensor[]) => {
+    const [$x] = saved;
     return {$x: () => dy.div($x.toFloat()) as T};
   };
-  return ENV.engine.runKernel((backend, save) => {
+  return ENGINE.runKernel((backend, save) => {
     const res = backend.log($x);
-    save({$x});
+    save([$x]);
     return res;
   }, {$x}, grad);
 }
@@ -221,13 +286,13 @@ function log_<T extends Tensor>(x: T|TensorLike): T {
 function log1p_<T extends Tensor>(x: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'log1p');
 
-  const grad = (dy: T, saved: NamedTensorMap) => {
-    const {$x} = saved;
+  const grad = (dy: T, saved: Tensor[]) => {
+    const [$x] = saved;
     return {$x: () => dy.div($x.add(1)) as T};
   };
-  return ENV.engine.runKernel((backend, save) => {
+  return ENGINE.runKernel((backend, save) => {
     const res = backend.log1p($x);
-    save({$x});
+    save([$x]);
     return res;
   }, {$x}, grad);
 }
@@ -246,13 +311,13 @@ function log1p_<T extends Tensor>(x: T|TensorLike): T {
 function sqrt_<T extends Tensor>(x: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'sqrt');
 
-  const grad = (dy: T, saved: NamedTensorMap) => {
-    const {$x} = saved;
+  const grad = (dy: T, saved: Tensor[]) => {
+    const [$x] = saved;
     return {$x: () => dy.div($x.toFloat().sqrt().mul(2)) as T};
   };
-  return ENV.engine.runKernel((backend, save) => {
+  return ENGINE.runKernel((backend, save) => {
     const res = backend.sqrt($x);
-    save({$x});
+    save([$x]);
     return res;
   }, {$x}, grad);
 }
@@ -272,13 +337,13 @@ function sqrt_<T extends Tensor>(x: T|TensorLike): T {
 function rsqrt_<T extends Tensor>(x: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'rsqrt');
 
-  const grad = (dy: T, saved: NamedTensorMap) => {
-    const {$x} = saved;
+  const grad = (dy: T, saved: Tensor[]) => {
+    const [$x] = saved;
     return {$x: () => dy.div($x.pow(1.5).mul(2)).neg() as T};
   };
-  return ENV.engine.runKernel((backend, save) => {
+  return ENGINE.runKernel((backend, save) => {
     const res = backend.rsqrt($x);
-    save({$x});
+    save([$x]);
     return res;
   }, {$x}, grad);
 }
@@ -297,11 +362,12 @@ function rsqrt_<T extends Tensor>(x: T|TensorLike): T {
 function square_<T extends Tensor>(x: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'square');
 
-  const grad = (dy: T, saved: NamedTensorMap) => {
-    return {$x: () => dy.mul(saved.$x.toFloat().mul(2)) as T};
+  const grad = (dy: T, saved: Tensor[]) => {
+    const [$x] = saved;
+    return {$x: () => dy.mul($x.toFloat().mul(2)) as T};
   };
-  return ENV.engine.runKernel((backend, save) => {
-    save({$x});
+  return ENGINE.runKernel((backend, save) => {
+    save([$x]);
     return backend.square($x);
   }, {$x}, grad);
 }
@@ -320,13 +386,13 @@ function square_<T extends Tensor>(x: T|TensorLike): T {
 function reciprocal_<T extends Tensor>(x: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'reciprocal');
 
-  const grad = (dy: T, saved: NamedTensorMap) => {
-    const {$x} = saved;
+  const grad = (dy: T, saved: Tensor[]) => {
+    const [$x] = saved;
     return {$x: () => dy.div($x.square().neg()) as T};
   };
-  return ENV.engine.runKernel((backend, save) => {
+  return ENGINE.runKernel((backend, save) => {
     const res = backend.reciprocal($x);
-    save({$x});
+    save([$x]);
     return res;
   }, {$x}, grad);
 }
@@ -346,16 +412,16 @@ function abs_<T extends Tensor>(x: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'abs');
 
   if ($x.dtype === 'complex64') {
-    return ENV.engine.runKernel(backend => backend.complexAbs($x), {$x});
+    return ENGINE.runKernel(backend => backend.complexAbs($x), {$x});
   }
 
-  const grad = (dy: T, saved: NamedTensorMap) => {
-    const {$x} = saved;
+  const grad = (dy: T, saved: Tensor[]) => {
+    const [$x] = saved;
     return {$x: () => dy.mul($x.toFloat().step(-1)) as T};
   };
-  return ENV.engine.runKernel((backend, save) => {
+  return ENGINE.runKernel((backend, save) => {
     const res = backend.abs($x);
-    save({$x});
+    save([$x]);
     return res;
   }, {$x}, grad);
 }
@@ -381,8 +447,8 @@ function clipByValue_<T extends Tensor>(
       () => `Error in clip: min (${clipValueMin}) must be ` +
           `less than or equal to max (${clipValueMax}).`);
 
-  const grad = (dy: T, saved: NamedTensorMap) => {
-    const {$x} = saved;
+  const grad = (dy: T, saved: Tensor[]) => {
+    const [$x] = saved;
     return {
       $x: () => dy.where(
                     $x.greaterEqual(clipValueMin)
@@ -390,9 +456,9 @@ function clipByValue_<T extends Tensor>(
                     zerosLike(dy)) as T,
     };
   };
-  return ENV.engine.runKernel((backend, save) => {
+  return ENGINE.runKernel((backend, save) => {
     const res = backend.clip($x, clipValueMin, clipValueMax);
-    save({$x});
+    save([$x]);
     return res;
   }, {$x}, grad);
 }
@@ -411,13 +477,13 @@ function clipByValue_<T extends Tensor>(
 function sigmoid_<T extends Tensor>(x: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'sigmoid');
 
-  const grad = (dy: T, saved: NamedTensorMap) => {
-    const y = saved.y;
+  const grad = (dy: T, saved: Tensor[]) => {
+    const [y] = saved;
     return {$x: () => dy.mul(y.mul(scalar(1).sub(y))) as T};
   };
-  return ENV.engine.runKernel((backend, save) => {
+  return ENGINE.runKernel((backend, save) => {
     const y = backend.sigmoid($x);
-    save({y});
+    save([y]);
     return y;
   }, {$x}, grad);
 }
@@ -437,13 +503,13 @@ function sigmoid_<T extends Tensor>(x: T|TensorLike): T {
 function logSigmoid_<T extends Tensor>(x: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'logSigmoid');
 
-  const grad = (dy: T, saved: NamedTensorMap) => {
-    const {$x} = saved;
+  const grad = (dy: T, saved: Tensor[]) => {
+    const [$x] = saved;
     return {$x: () => dy.mul($x.neg().sigmoid()) as T};
   };
-  return ENV.engine.runKernel((backend, save) => {
+  return ENGINE.runKernel((backend, save) => {
     const res = backend.softplus($x.neg()).neg();
-    save({$x});
+    save([$x]);
     return res;
   }, {$x}, grad);
 }
@@ -462,13 +528,13 @@ function logSigmoid_<T extends Tensor>(x: T|TensorLike): T {
 function softplus_<T extends Tensor>(x: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'softplus');
 
-  const grad = (dy: T, saved: NamedTensorMap) => {
-    const {$x} = saved;
+  const grad = (dy: T, saved: Tensor[]) => {
+    const [$x] = saved;
     return {$x: () => dy.mul($x.sigmoid()) as T};
   };
-  return ENV.engine.runKernel((backend, save) => {
+  return ENGINE.runKernel((backend, save) => {
     const res = backend.softplus($x);
-    save({$x});
+    save([$x]);
     return res;
   }, {$x}, grad);
 }
@@ -487,13 +553,13 @@ function softplus_<T extends Tensor>(x: T|TensorLike): T {
 function sin_<T extends Tensor>(x: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'sin');
 
-  const grad = (dy: T, saved: NamedTensorMap) => {
-    const {$x} = saved;
+  const grad = (dy: T, saved: Tensor[]) => {
+    const [$x] = saved;
     return {$x: () => $x.toFloat().cos().mul(dy) as T};
   };
-  return ENV.engine.runKernel((backend, save) => {
+  return ENGINE.runKernel((backend, save) => {
     const res = backend.sin($x);
-    save({$x});
+    save([$x]);
     return res;
   }, {$x}, grad);
 }
@@ -512,13 +578,13 @@ function sin_<T extends Tensor>(x: T|TensorLike): T {
 function cos_<T extends Tensor>(x: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'cos');
 
-  const grad = (dy: T, saved: NamedTensorMap) => {
-    const {$x} = saved;
+  const grad = (dy: T, saved: Tensor[]) => {
+    const [$x] = saved;
     return {$x: () => $x.toFloat().sin().neg().mul(dy) as T};
   };
-  return ENV.engine.runKernel((backend, save) => {
+  return ENGINE.runKernel((backend, save) => {
     const res = backend.cos($x);
-    save({$x});
+    save([$x]);
     return res;
   }, {$x}, grad);
 }
@@ -537,13 +603,13 @@ function cos_<T extends Tensor>(x: T|TensorLike): T {
 function tan_<T extends Tensor>(x: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'tan');
 
-  const grad = (dy: T, saved: NamedTensorMap) => {
-    const {$x} = saved;
+  const grad = (dy: T, saved: Tensor[]) => {
+    const [$x] = saved;
     return {$x: () => dy.div($x.cos().square()) as T};
   };
-  return ENV.engine.runKernel((backend, save) => {
+  return ENGINE.runKernel((backend, save) => {
     const res = backend.tan($x);
-    save({$x});
+    save([$x]);
     return res;
   }, {$x}, grad);
 }
@@ -562,15 +628,15 @@ function tan_<T extends Tensor>(x: T|TensorLike): T {
 function asin_<T extends Tensor>(x: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'asin');
 
-  const grad = (dy: T, saved: NamedTensorMap) => {
-    const {$x} = saved;
+  const grad = (dy: T, saved: Tensor[]) => {
+    const [$x] = saved;
     return {
       $x: () => dy.divStrict(scalar(1).sub($x.toFloat().square()).sqrt() as T)
     };
   };
-  return ENV.engine.runKernel((backend, save) => {
+  return ENGINE.runKernel((backend, save) => {
     const res = backend.asin($x);
-    save({$x});
+    save([$x]);
     return res;
   }, {$x}, grad);
 }
@@ -589,16 +655,16 @@ function asin_<T extends Tensor>(x: T|TensorLike): T {
 function acos_<T extends Tensor>(x: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'acos');
 
-  const grad = (dy: T, saved: NamedTensorMap) => {
-    const {$x} = saved;
+  const grad = (dy: T, saved: Tensor[]) => {
+    const [$x] = saved;
     return {
       $x: () =>
           dy.divStrict(scalar(1).sub($x.toFloat().square()).sqrt() as T).neg()
     };
   };
-  return ENV.engine.runKernel((backend, save) => {
+  return ENGINE.runKernel((backend, save) => {
     const res = backend.acos($x);
-    save({$x});
+    save([$x]);
     return res;
   }, {$x}, grad);
 }
@@ -617,13 +683,13 @@ function acos_<T extends Tensor>(x: T|TensorLike): T {
 function atan_<T extends Tensor>(x: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'atan');
 
-  const grad = (dy: T, saved: NamedTensorMap) => {
-    const {$x} = saved;
+  const grad = (dy: T, saved: Tensor[]) => {
+    const [$x] = saved;
     return {$x: () => dy.div($x.toFloat().square().add(1)) as T};
   };
-  return ENV.engine.runKernel((backend, save) => {
+  return ENGINE.runKernel((backend, save) => {
     const res = backend.atan($x);
-    save({$x});
+    save([$x]);
     return res;
   }, {$x}, grad);
 }
@@ -642,13 +708,13 @@ function atan_<T extends Tensor>(x: T|TensorLike): T {
 function sinh_<T extends Tensor>(x: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'sinh');
 
-  const grad = (dy: T, saved: NamedTensorMap) => {
-    const {$x} = saved;
+  const grad = (dy: T, saved: Tensor[]) => {
+    const [$x] = saved;
     return {$x: () => $x.toFloat().cosh().mulStrict(dy) as T};
   };
-  return ENV.engine.runKernel((backend, save) => {
+  return ENGINE.runKernel((backend, save) => {
     const res = backend.sinh($x);
-    save({$x});
+    save([$x]);
     return res;
   }, {$x}, grad);
 }
@@ -667,13 +733,13 @@ function sinh_<T extends Tensor>(x: T|TensorLike): T {
 function cosh_<T extends Tensor>(x: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'cosh');
 
-  const grad = (dy: T, saved: NamedTensorMap) => {
-    const {$x} = saved;
+  const grad = (dy: T, saved: Tensor[]) => {
+    const [$x] = saved;
     return {$x: () => $x.toFloat().sinh().mulStrict(dy) as T};
   };
-  return ENV.engine.runKernel((backend, save) => {
+  return ENGINE.runKernel((backend, save) => {
     const res = backend.cosh($x);
-    save({$x});
+    save([$x]);
     return res;
   }, {$x}, grad);
 }
@@ -692,13 +758,13 @@ function cosh_<T extends Tensor>(x: T|TensorLike): T {
 function tanh_<T extends Tensor>(x: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'tanh');
 
-  const grad = (dy: T, saved: NamedTensorMap) => {
-    const y = saved.y;
+  const grad = (dy: T, saved: Tensor[]) => {
+    const [y] = saved;
     return {$x: () => scalar(1).sub(y.square()).mulStrict(dy) as T};
   };
-  return ENV.engine.runKernel((backend, save) => {
+  return ENGINE.runKernel((backend, save) => {
     const y = backend.tanh($x);
-    save({y});
+    save([y]);
     return y;
   }, {$x}, grad);
 }
@@ -718,15 +784,15 @@ function tanh_<T extends Tensor>(x: T|TensorLike): T {
 function asinh_<T extends Tensor>(x: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'asinh');
 
-  const grad = (dy: T, saved: NamedTensorMap) => {
-    const {$x} = saved;
+  const grad = (dy: T, saved: Tensor[]) => {
+    const [$x] = saved;
     return {
       $x: () => dy.divStrict(scalar(1).add($x.toFloat().square()).sqrt() as T)
     };
   };
-  return ENV.engine.runKernel((backend, save) => {
+  return ENGINE.runKernel((backend, save) => {
     const res = backend.asinh($x);
-    save({$x});
+    save([$x]);
     return res;
   }, {$x}, grad);
 }
@@ -746,13 +812,13 @@ function asinh_<T extends Tensor>(x: T|TensorLike): T {
 function acosh_<T extends Tensor>(x: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'acosh');
 
-  const grad = (dy: T, saved: NamedTensorMap) => {
-    const {$x} = saved;
+  const grad = (dy: T, saved: Tensor[]) => {
+    const [$x] = saved;
     return {$x: () => dy.divStrict($x.toFloat().square().sub(1).sqrt() as T)};
   };
-  return ENV.engine.runKernel((backend, save) => {
+  return ENGINE.runKernel((backend, save) => {
     const res = backend.acosh($x);
-    save({$x});
+    save([$x]);
     return res;
   }, {$x}, grad);
 }
@@ -772,13 +838,13 @@ function acosh_<T extends Tensor>(x: T|TensorLike): T {
 function atanh_<T extends Tensor>(x: T|TensorLike): T {
   const $x = convertToTensor(x, 'x', 'atanh');
 
-  const grad = (dy: T, saved: NamedTensorMap) => {
-    const {$x} = saved;
+  const grad = (dy: T, saved: Tensor[]) => {
+    const [$x] = saved;
     return {$x: () => dy.div(scalar(1).sub($x.toFloat().square())) as T};
   };
-  return ENV.engine.runKernel((backend, save) => {
+  return ENGINE.runKernel((backend, save) => {
     const res = backend.atanh($x);
-    save({$x});
+    save([$x]);
     return res;
   }, {$x}, grad);
 }
@@ -805,15 +871,15 @@ function erf_<T extends Tensor>(x: T|TensorLike): T {
     $x = $x.toFloat();
   }
 
-  const grad = (dy: T, saved: NamedTensorMap) => {
-    const {$x} = saved;
+  const grad = (dy: T, saved: Tensor[]) => {
+    const [$x] = saved;
     return {
       $x: () => dy.mul($x.square().neg().exp().mul(2 / Math.sqrt(Math.PI))) as T
     };
   };
-  return ENV.engine.runKernel((backend, save) => {
+  return ENGINE.runKernel((backend, save) => {
     const res = backend.erf($x);
-    save({$x});
+    save([$x]);
     return res;
   }, {$x}, grad);
 }
@@ -838,7 +904,7 @@ function step_<T extends Tensor>(x: T|TensorLike, alpha = 0.0): T {
   const grad = (dy: T) => {
     return {$x: () => zerosLike(dy)};
   };
-  return ENV.engine.runKernel(backend => backend.step($x, alpha), {$x}, grad);
+  return ENGINE.runKernel(backend => backend.step($x, alpha), {$x}, grad);
 }
 
 export const abs = op({abs_});
@@ -865,6 +931,9 @@ export const round = op({round_});
 export const rsqrt = op({rsqrt_});
 export const sigmoid = op({sigmoid_});
 export const sign = op({sign_});
+export const isNaN = op({isNaN_});
+export const isInf = op({isInf_});
+export const isFinite = op({isFinite_});
 export const sin = op({sin_});
 export const sinh = op({sinh_});
 export const softplus = op({softplus_});

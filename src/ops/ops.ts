@@ -16,6 +16,7 @@
  */
 
 export * from './batchnorm';
+export * from './boolean_mask';
 export * from './complex_ops';
 export * from './concat_split';
 export * from './conv';
@@ -44,6 +45,10 @@ export * from './scatter_nd';
 export * from './spectral_ops';
 export * from './sparse_to_dense';
 export * from './gather_nd';
+export * from './diag';
+export * from './dropout';
+export * from './signal_ops';
+export * from './in_top_k';
 
 export {op} from './operation';
 
@@ -53,5 +58,6 @@ import * as linalg from './linalg_ops';
 import * as image from './image_ops';
 import * as spectral from './spectral_ops';
 import * as fused from './fused_ops';
+import * as signal from './signal_ops';
 
-export {image, linalg, losses, spectral, fused};
+export {image, linalg, losses, spectral, fused, signal};

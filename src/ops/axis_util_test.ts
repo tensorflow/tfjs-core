@@ -16,8 +16,8 @@
  */
 
 import * as tf from '../index';
-import {describeWithFlags} from '../jasmine_util';
-import {ALL_ENVS, expectArraysClose} from '../test_util';
+import {ALL_ENVS, describeWithFlags} from '../jasmine_util';
+import {expectArraysClose} from '../test_util';
 
 import * as axis_util from './axis_util';
 
@@ -204,13 +204,13 @@ describeWithFlags('axis_util getUndoAxesPermutation', ALL_ENVS, () => {
     expect(axis_util.getUndoAxesPermutation(axes)).toEqual([2, 1, 0]);
   });
 
-  it('4d array with values', () => {
+  it('4d array with values', async () => {
     const axes = [2, 0, 1, 3];
     const undoPermutation = axis_util.getUndoAxesPermutation(axes);
 
     const a = tf.randomNormal([2, 3, 4, 5]);
     const aT = tf.transpose(a, axes);
     const aTT = tf.transpose(aT, undoPermutation);
-    expectArraysClose(a, aTT);
+    expectArraysClose(await a.data(), await aTT.data());
   });
 });

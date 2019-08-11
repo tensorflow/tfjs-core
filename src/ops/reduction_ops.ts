@@ -15,10 +15,9 @@
  * =============================================================================
  */
 
-import {ENV} from '../environment';
-import {customGrad} from '../globals';
+import {ENGINE} from '../engine';
+import {customGrad} from '../gradients';
 import {Tensor} from '../tensor';
-import {NamedTensorMap} from '../tensor_types';
 import {convertToTensor} from '../tensor_util_env';
 import {TensorLike} from '../types';
 import * as util from '../util';
@@ -121,7 +120,7 @@ function sum_<T extends Tensor>(
       permutedX = x.transpose(permutation);
       reductionAxes = axis_util.getInnerMostAxes(reductionAxes.length, x.rank);
     }
-    let value = ENV.engine.runKernel(
+    let value = ENGINE.runKernel(
         backend => backend.sum(permutedX, reductionAxes), {permutedX});
     if (keepDims) {
       const newShape = axis_util.expandShapeToKeepDim(value.shape, axes);
@@ -188,7 +187,7 @@ function prod_<T extends Tensor>(
     permutedX = $x.transpose(permutation);
     reductionAxes = axis_util.getInnerMostAxes(reductionAxes.length, $x.rank);
   }
-  let value = ENV.engine.runKernel(
+  let value = ENGINE.runKernel(
       backend => backend.prod(permutedX, reductionAxes), {permutedX});
   if (keepDims) {
     const newShape = axis_util.expandShapeToKeepDim(value.shape, axes);
@@ -319,11 +318,11 @@ function min_<T extends Tensor>(
     axes = axis_util.getInnerMostAxes(axes.length, $x.rank);
   }
 
-  const grad = (dy: T, saved: NamedTensorMap) =>
-      gradForMinAndMax(dy, saved.y, saved.xOrig, origAxes, permutedAxes);
-  let res = ENV.engine.runKernel((backend, save) => {
+  const grad = (dy: T, saved: Tensor[]) =>
+      gradForMinAndMax(dy, saved[1], saved[0], origAxes, permutedAxes);
+  let res = ENGINE.runKernel((backend, save) => {
     const y = backend.min($x, axes);
-    save({xOrig, y});
+    save([xOrig, y]);
     return y as T;
   }, {$x}, grad);
   if (keepDims) {
@@ -374,11 +373,11 @@ function max_<T extends Tensor>(
     axes = axis_util.getInnerMostAxes(axes.length, $x.rank);
   }
 
-  const grad = (dy: T, saved: NamedTensorMap) =>
-      gradForMinAndMax(dy, saved.y, saved.xOrig, origAxes, permutedAxes);
-  let res = ENV.engine.runKernel((backend, save) => {
+  const grad = (dy: T, saved: Tensor[]) =>
+      gradForMinAndMax(dy, saved[1], saved[0], origAxes, permutedAxes);
+  let res = ENGINE.runKernel((backend, save) => {
     const y = backend.max($x, axes);
-    save({xOrig, y});
+    save([xOrig, y]);
     return y;
   }, {$x}, grad);
   if (keepDims) {
@@ -424,11 +423,15 @@ function argMin_<T extends Tensor>(x: Tensor|TensorLike, axis = 0): T {
     $x = $x.transpose(permutedAxes);
     axes = axis_util.getInnerMostAxes(axes.length, $x.rank);
   }
-  const grad = (dy: T) => {
+  const grad = (dy: T, saved: Tensor[]) => {
+    const [$x] = saved;
     return {$x: () => zerosLike($x)};
   };
-  return ENV.engine.runKernel(
-             backend => backend.argMin($x, axes[0]), {$x}, grad) as T;
+  return ENGINE.runKernel((backend, save) => {
+    const res = backend.argMin($x, axes[0]);
+    save([$x]);
+    return res;
+  }, {$x}, grad) as T;
 }
 
 /**
@@ -466,11 +469,15 @@ function argMax_<T extends Tensor>(x: Tensor|TensorLike, axis = 0): T {
     $x = $x.transpose(permutedAxes);
     axes = axis_util.getInnerMostAxes(axes.length, $x.rank);
   }
-  const grad = (dy: T) => {
+  const grad = (dy: T, saved: Tensor[]) => {
+    const [$x] = saved;
     return {$x: () => zerosLike($x)};
   };
-  return ENV.engine.runKernel(
-             backend => backend.argMax($x, axes[0]), {$x}, grad) as T;
+  return ENGINE.runKernel((backend, save) => {
+    const res = backend.argMax($x, axes[0]);
+    save([$x]);
+    return res;
+  }, {$x}, grad) as T;
 }
 
 /**
@@ -512,7 +519,7 @@ function all_<T extends Tensor>(
     $x = $x.transpose(permutedAxes);
     axes = axis_util.getInnerMostAxes(axes.length, $x.rank);
   }
-  const res = ENV.engine.runKernel(backend => backend.all($x, axes), {$x});
+  const res = ENGINE.runKernel(backend => backend.all($x, axes), {$x});
   if (keepDims) {
     const newShape = axis_util.expandShapeToKeepDim(res.shape, origAxes);
     return res.reshape(newShape) as T;
@@ -559,7 +566,7 @@ function any_<T extends Tensor>(
     $x = $x.transpose(permutedAxes);
     axes = axis_util.getInnerMostAxes(axes.length, $x.rank);
   }
-  const res = ENV.engine.runKernel(backend => backend.any($x, axes), {$x});
+  const res = ENGINE.runKernel(backend => backend.any($x, axes), {$x});
   if (keepDims) {
     const newShape = axis_util.expandShapeToKeepDim(res.shape, origAxes);
     return res.reshape(newShape) as T;
