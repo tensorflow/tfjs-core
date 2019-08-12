@@ -1,21 +1,27 @@
 steps:
-#
-# Core tests
-#
-# install dependencies
+# Install common dependencies.
+- name: 'node:10'
+  id: 'yarn-common'
+  entrypoint: 'yarn'
+  args: ['install']
+
+# Install tfjs-core dependencies.
 - name: 'node:10'
   dir: 'tfjs-core'
   id: 'yarn'
   entrypoint: 'yarn'
   args: ['install']
-# build
+  waitFor: ['yarn-common']
+
+# Build
 - name: 'node:10'
   dir: 'tfjs-core'
   id: 'build'
   entrypoint: 'yarn'
   args: ['build-ci']
   waitFor: ['yarn']
-# run unit tests
+
+# Run unit tests.
 - name: 'node:10'
   dir: 'tfjs-core'
   id: 'test'
@@ -24,7 +30,8 @@ steps:
   waitFor: ['build']
   env: ['BROWSERSTACK_USERNAME=deeplearnjs1']
   secretEnv: ['BROWSERSTACK_KEY']
-# Run integration tests of other packages against core
+
+# Run integration tests of other packages against core.
 - name: 'node:10'
   dir: 'tfjs-core'
   id: 'test-integration'
@@ -33,6 +40,7 @@ steps:
   waitFor: ['build']
   env: ['BROWSERSTACK_USERNAME=deeplearnjs1', 'NIGHTLY=$_NIGHTLY']
   secretEnv: ['BROWSERSTACK_KEY']
+
 # bundle size check
 - name: 'node:10'
   dir: 'tfjs-core'
@@ -40,13 +48,15 @@ steps:
   entrypoint: 'yarn'
   args: ['test-bundle-size']
   waitFor: ['yarn']
+
 # test doc snippets
 - name: 'node:10'
   dir: 'tfjs-core'
   id: 'test-snippets'
   entrypoint: 'yarn'
-  args: ['test-snippets']`
+  args: ['test-snippets']
   waitFor: ['yarn']
+
 # test Async backends
 - name: 'node:10'
   dir: 'tfjs-core'
