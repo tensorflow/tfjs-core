@@ -8,6 +8,7 @@
     "tslint-no-circular-imports": "~0.5.0"
   },
   "scripts": {
+    "prep": "git clone --depth=1 --single-branch https://github.com/tensorflow/tfjs-core.git clone",
     "cloudbuild": "./scripts/cloudbuild.js"
   }
 }

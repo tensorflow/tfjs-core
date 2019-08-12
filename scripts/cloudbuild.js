@@ -15,9 +15,8 @@
 // =============================================================================
 
 const {exec} = require('./test-util');
-const rimraf = require('rimraf');
 
-const CLONE_PATH = 'tfjs-core-integration';
+const CLONE_PATH = 'clone';
 
 const dirName = process.argv[2];
 if (dirName == null || dirName == '') {
@@ -25,12 +24,6 @@ if (dirName == null || dirName == '') {
       'Please specify a top-level directory as the first argument: ' +
       './scripts/cloudbuild.js DIR_NAME');
 }
-
-rimraf.sync(CLONE_PATH);
-exec(
-    `git clone --depth=1 --single-branch ` +
-    `https://github.com/tensorflow/tfjs-core.git ${CLONE_PATH}`);
-
 
 const diffCmd = `git diff-files --name-only ${CLONE_PATH}/ ./${dirName}/`;
 const diffOutput = exec(diffCmd, {silent: true}, true);
