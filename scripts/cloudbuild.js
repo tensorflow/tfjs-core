@@ -25,12 +25,13 @@ if (dirName == null || dirName == '') {
       './scripts/cloudbuild.js DIR_NAME');
 }
 
-const diffCmd = `git diff-files --name-only ${CLONE_PATH}/ ./${dirName}/`;
-const diffOutput = exec(diffCmd, {silent: true}, true);
-let changedFiles = diffOutput.stdout.split('\n').filter(s => s !== '');
+const diffCmd = `diff -rq ${CLONE_PATH}/${dirName}/ ./${dirName}/`;
+const diffOutput = exec(diffCmd, {silent: true}, true).stdout.trim();
 
-if (changedFiles.length > 0) {
-  console.log(`${dirName} has modified files ${changedFiles}. Running CI...`);
+if (diffOutput !== '') {
+  console.log(`${dirName} has modified files.`);
+  console.log(diffOutput);
+  console.log('Running CI...');
   exec(`gcloud builds submit ${dirName} --config=${dirName}/cloudbuild.yml`);
 } else {
   console.log(`No modified files found in ${dirName}`);
