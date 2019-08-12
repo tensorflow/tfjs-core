@@ -1,0 +1,14 @@
+steps:
+- name: 'node:10'
+  entrypoint: 'yarn'
+  id: 'test-webgpu'
+  args: ['test-ci']
+
+# General configuration
+timeout: 1800s
+logsBucket: 'gs://tfjs-build-logs'
+substitutions:
+  _NIGHTLY: ''
+options:
+  logStreamingOption: 'STREAM_ON'
+  substitution_option: 'ALLOW_LOOSE'
