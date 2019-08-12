@@ -474,9 +474,12 @@
         numBytes.push(memInfo.numBytes);
       }
 
-      populateTrendline(document.querySelector("#perf-trendline-container"), times, true, printTime);
+      const forceInferenceTrendYMinToZero = true;
+      populateTrendline(document.querySelector("#perf-trendline-container"), times, forceInferenceTrendYMinToZero, printTime);
       populateTrendline(document.querySelector("#mem-trendline-container"), numTensors);
-      populateTrendline(document.querySelector("#bytes-trendline-container"), numBytes, false, d => `${(d / 1e6).toPrecision(3)}MB`);
+
+      const forceBytesTrendlineYMinToZero = false;
+      populateTrendline(document.querySelector("#bytes-trendline-container"), numBytes, forceBytesTrendlineYMinToZero, d => `${(d / 1e6).toPrecision(3)}MB`);
 
       await showMsg(null);
       const average = times.reduce((acc, curr) => acc + curr, 0) / times.length;
