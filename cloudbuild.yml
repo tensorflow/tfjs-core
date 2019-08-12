@@ -5,7 +5,7 @@ steps:
   id: 'yarn'
   args: ['install']
 
-# Prepare.
+# Run diff to find modified files in each folder.
 - name: 'node:10'
   entrypoint: 'yarn'
   id: 'diff'

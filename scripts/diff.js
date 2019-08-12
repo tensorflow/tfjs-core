@@ -15,8 +15,8 @@
 // =============================================================================
 
 const {exec} = require('./test-util');
-const {readdirSync, statSync, writeFileSync} = require('fs')
-const {join} = require('path')
+const {readdirSync, statSync, writeFileSync} = require('fs');
+const {join} = require('path');
 
 const CLONE_PATH = 'clone';
 

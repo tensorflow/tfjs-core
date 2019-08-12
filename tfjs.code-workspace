@@ -6,7 +6,7 @@
     },
     {
       "name": "Core",
-      "path": "core"
+      "path": "tfjs-core"
     },
     {
       "name": "Wasm",
