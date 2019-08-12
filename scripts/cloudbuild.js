@@ -30,8 +30,8 @@ const diffOutput = exec(diffCmd, {silent: true}, true);
 let changedFiles = diffOutput.stdout.split('\n').filter(s => s !== '');
 
 if (changedFiles.length > 0) {
-  console.log(`${dir} has modified files ${changedFiles}. Running CI...`);
+  console.log(`${dirName} has modified files ${changedFiles}. Running CI...`);
   exec(`gcloud builds submit ${dirName} --config=${dirName}/cloudbuild.yml`);
 } else {
-  console.log(`No modified files found in ${dir}`);
+  console.log(`No modified files found in ${dirName}`);
 }
