@@ -1,18 +1,36 @@
 steps:
-- name: 'gcr.io/cloud-builders/gcloud'
-  entrypoint: 'bash'
-  args:
-  - '-c'
-  - |
-    for d in */; do
-      config="${d}cloudbuild.yml"
-      if [[ ! -f "${config}" ]]; then
-        continue
-      fi
-
-      echo "Building $d ... "
-      (
-        gcloud builds submit $d --config=${config}
-      ) &
-    done
-    wait
+# install top-level monorepo dependencies
+- name: 'node:10'
+  entrypoint: 'yarn'
+  id: 'yarn'
+  args: ['install']
+# test Core
+- name: 'node:10'
+  entrypoint: 'yarn'
+  id: 'core'
+  args: ['cloudbuild', 'tfjs-core']
+  waitFor: ['yarn']
+# test Wasm
+- name: 'node:10'
+  entrypoint: 'yarn'
+  id: 'wasm'
+  args: ['cloudbuild', 'tfjs-backend-wasm']
+  waitFor: ['yarn']
+# test WebGPU
+- name: 'node:10'
+  entrypoint: 'yarn'
+  id: 'webgpu'
+  args: ['cloudbuild', 'tfjs-webgpu']
+  waitFor: ['yarn']
+# test React Native
+- name: 'node:10'
+  entrypoint: 'yarn'
+  id: 'react-native'
+  args: ['cloudbuild', 'tfjs-react-native']
+  waitFor: ['yarn']
+# test NodeGL
+- name: 'node:10'
+  entrypoint: 'yarn'
+  id: 'node-gl'
+  args: ['cloudbuild', 'tfjs-backend-nodegl']
+  waitFor: ['yarn']
