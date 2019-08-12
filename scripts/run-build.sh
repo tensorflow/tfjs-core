@@ -17,4 +17,6 @@
 set -e
 
 DIR=$1
-test -f $DIR/diff && gcloud builds submit $DIR --config=$DIR/cloudbuild.yml
+if test -f "$DIR/diff"; then
+  gcloud builds submit $DIR --config=$DIR/cloudbuild.yml
+fi
