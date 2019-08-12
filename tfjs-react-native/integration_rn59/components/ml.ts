@@ -19,16 +19,15 @@ import * as mobilenet from '@tensorflow-models/mobilenet';
 import * as tf from '@tensorflow/tfjs';
 import {asyncStorageIO, bundleResourceIO} from '@tensorflow/tfjs-react-native';
 
-
 /**
  * Run a simple operations
  */
 export async function simpleOpRunner() {
   return async () => {
-    const res = tf.tidy(() => tf.square(3));
-    const data = res.dataSync()[0];
+    const res = tf.square(3);
+    const data = (await res.data())[0];
     return JSON.stringify(data);
-  }
+  };
 }
 
 /**
@@ -37,11 +36,10 @@ export async function simpleOpRunner() {
 export async function precisionTestRunner() {
   return async () => {
     const res = tf.tidy(() => tf.scalar(2.4).square());
-    const data = res.dataSync()[0];
+    const data = (await res.data())[0];
     return JSON.stringify(data);
-  }
+  };
 }
-
 
 /**
  * Runner for a mobilenet model loaded over the network
@@ -52,19 +50,17 @@ export async function mobilenetRunner() {
   const input = tf.zeros([1, 224, 224, 3]);
   await model.classify(input);
 
-  // const pic = tf.tensor(coffeePicData, [1, 24, 24, 3]);
-
   return async () => {
     const pred = await model.classify(input);
     return JSON.stringify(pred);
-  }
+  };
 }
 
 /**
  * Runner for a model bundled into the app itself.
  */
-const modelJson = require('../assets/model/model.json');
-const modelWeights = require('../assets/model/weights.bin');
+const modelJson = require('../assets/model/bundleModelTest.json');
+const modelWeights = require('../assets/model/bundleModelTest_weights.bin');
 export async function localModelRunner() {
   const model =
       await tf.loadLayersModel(bundleResourceIO(modelJson, modelWeights));
@@ -73,9 +69,8 @@ export async function localModelRunner() {
     const res = model.predict(tf.randomNormal([1, 28, 28, 1])) as tf.Tensor;
     const data = await res.data();
     return JSON.stringify(data);
-  }
+  };
 }
-
 
 /**
  * Run a simple train loop
@@ -93,12 +88,10 @@ export async function trainModelRunner() {
 
   return async () => {
     // Train the model using the data.
-    const done = await model.fit(xs, ys, {
-      epochs: 20,
-    });
+    await model.fit(xs, ys, {epochs: 20});
 
     return 'done';
-  }
+  };
 }
 
 /**
@@ -116,5 +109,5 @@ export async function saveModelRunner() {
     await tf.loadLayersModel(asyncStorageIO('custom-model-test'));
 
     return 'done';
-  }
+  };
 }

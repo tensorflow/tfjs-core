@@ -15,24 +15,15 @@
  * =============================================================================
  */
 
-import React, { Fragment } from 'react';
-import {
-  Button,
-  SafeAreaView,
-  StyleSheet,
-  ScrollView,
-  View,
-  StatusBar,
-  Image,
-  Text,
-} from 'react-native';
+import React, { Fragment } from "react";
+import { Button, SafeAreaView, StyleSheet, ScrollView, View, StatusBar, Image, Text } from "react-native";
 
-import * as tf from '@tensorflow/tfjs';
-import { fetch } from '@tensorflow/tfjs-react-native';
-import * as mobilenet from '@tensorflow-models/mobilenet';
-import * as jpeg from 'jpeg-js';
+import * as tf from "@tensorflow/tfjs";
+import { fetch } from "@tensorflow/tfjs-react-native";
+import * as mobilenet from "@tensorflow-models/mobilenet";
+import * as jpeg from "jpeg-js";
 
-import { Run } from './Run';
+import { Run } from "./Run";
 
 interface ScreenProps {
   returnToMain: () => void;
@@ -40,17 +31,20 @@ interface ScreenProps {
 }
 
 interface ScreenState {
-  prediction: { className: string, probability: number }[];
+  prediction: { className: string; probability: number }[];
   predictionTime?: number;
   imageChecksum?: number;
 }
 
-export default class MobilenetDemo extends React.Component<ScreenProps, ScreenState> {
+export default class MobilenetDemo extends React.Component<
+  ScreenProps,
+  ScreenState
+  > {
   constructor(props: any) {
     super(props);
     this.state = {
-      prediction: [],
-    }
+      prediction: []
+    };
   }
 
   async componentDidMount() {
@@ -61,15 +55,14 @@ export default class MobilenetDemo extends React.Component<ScreenProps, ScreenSt
     await model.classify(tf.zeros([1, 224, 224, 3]));
 
     // Read the image into a tensor
-    const imageAssetPath =
-      Image.resolveAssetSource(this.props.image);
+    const imageAssetPath = Image.resolveAssetSource(this.props.image);
     const response = await fetch(imageAssetPath.uri, {}, { isBinary: true });
     const rawImageData = await response.arrayBuffer();
     const imageTensor = this.imageToTensor(rawImageData);
 
     // Compute a checksum for the image. Useful for debugging.
     const imageTensorSum = imageTensor.sum();
-    const imageChecksum = await imageTensorSum.dataSync()[0];
+    const imageChecksum = (await imageTensorSum.data())[0];
 
     // Classify the image.
     const start = Date.now();
@@ -80,16 +73,17 @@ export default class MobilenetDemo extends React.Component<ScreenProps, ScreenSt
     this.setState({
       prediction,
       predictionTime: end - start,
-      imageChecksum,
-    })
-    tf.dispose([imageTensor, imageTensorSum])
+      imageChecksum
+    });
+    tf.dispose([imageTensor, imageTensorSum]);
   }
 
-  imageToTensor(rawImageData: ArrayBuffer) {
-    const { width, height, data } = jpeg.decode(rawImageData, true);
+  imageToTensor(rawImageData: ArrayBuffer): tf.Tensor3D {
+    const TO_UINT8ARRAY = true;
+    const { width, height, data } = jpeg.decode(rawImageData, TO_UINT8ARRAY);
     // Drop the alpha channel info for mobilenet
     const buffer = new Uint8Array(width * height * 3);
-    let offset = 0; //offset into original data
+    let offset = 0; // offset into original data
     for (let i = 0; i < buffer.length; i += 3) {
       buffer[i] = data[offset];
       buffer[i + 1] = data[offset + 1];
@@ -112,14 +106,14 @@ export default class MobilenetDemo extends React.Component<ScreenProps, ScreenSt
               <Text style={styles.resultClass}>{pred.className}</Text>
               <Text style={styles.resultProb}>{pred.probability}</Text>
             </View>
-          )
+          );
         })}
         <View style={styles.sectionContainer}>
           <Run label="Prediction Time" result={`${predictionTime}`} />
           <Run label="Checksum" result={`${imageChecksum}`} />
         </View>
       </View>
-    )
+    );
   }
 
   render() {
@@ -132,14 +126,11 @@ export default class MobilenetDemo extends React.Component<ScreenProps, ScreenSt
         <SafeAreaView>
           <ScrollView
             contentInsetAdjustmentBehavior="automatic"
-            style={styles.scrollView}>
-
+            style={styles.scrollView}
+          >
             <View style={styles.body}>
               <View style={styles.sectionContainer}>
-                <Button
-                  onPress={this.props.returnToMain}
-                  title="Back"
-                />
+                <Button onPress={this.props.returnToMain} title="Back" />
               </View>
 
               <View style={styles.sectionContainer}>
@@ -151,10 +142,7 @@ export default class MobilenetDemo extends React.Component<ScreenProps, ScreenSt
                 </View>
                 {/* Image Area */}
                 <View style={styles.imageArea}>
-                  <Image
-                    style={{ width: 245, height: 166 }}
-                    source={image}>
-                  </Image>
+                  <Image style={{ width: 245, height: 166 }} source={image} />
                 </View>
                 {/* Result Area */}
                 <View style={styles.resultArea}>
@@ -171,55 +159,55 @@ export default class MobilenetDemo extends React.Component<ScreenProps, ScreenSt
 
 const styles = StyleSheet.create({
   scrollView: {
-    backgroundColor: 'white',
+    backgroundColor: "white"
   },
   body: {
-    backgroundColor: 'white',
-    marginBottom: 60,
+    backgroundColor: "white",
+    marginBottom: 60
   },
   sectionContainer: {
     marginTop: 32,
-    paddingHorizontal: 24,
+    paddingHorizontal: 24
   },
   sectionTitle: {
     fontSize: 24,
-    fontWeight: '600',
-    color: 'black',
-    marginBottom: 6,
+    fontWeight: "600",
+    color: "black",
+    marginBottom: 6
   },
   imageArea: {
     marginTop: 12,
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center',
-    alignItems: 'center',
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    alignItems: "center"
   },
   resultArea: {
     marginLeft: 5,
     paddingLeft: 5,
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center',
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center"
   },
   resultTextHeader: {
     fontSize: 21,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 12,
     marginTop: 12,
-    textAlign: 'center',
+    textAlign: "center"
   },
   prediction: {
-    display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    display: "flex",
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center"
   },
   resultClass: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold"
   },
   resultProb: {
     fontSize: 16,
-    marginLeft: 5,
+    marginLeft: 5
   }
 });

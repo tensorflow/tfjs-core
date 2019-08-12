@@ -65,5 +65,5 @@ For now take a look at `integration_rn59/App.tsx` for an example of what using t
 
 ### Optional Steps
 
-If you want use the AsyncStorageHandler to save and load models. Add [async-storage](https://github.com/react-native-community/async-storage) to your project
+If you want use the AsyncStorageHandler to save and load models. Add [async-storage](https://github.com/react-native-community/async-storage) to your project.
 
