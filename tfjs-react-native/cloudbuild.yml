@@ -1,5 +1,6 @@
 steps:
 - name: 'node:10'
+  dir: 'tfjs-react-native'
   entrypoint: 'yarn'
   id: 'test-react-native'
   args: ['test-ci']
