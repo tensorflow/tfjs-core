@@ -15,24 +15,28 @@
 // =============================================================================
 
 const {exec} = require('./test-util');
+const {readdirSync, statSync, writeFileSync} = require('fs')
+const {join} = require('path')
 
 const CLONE_PATH = 'clone';
 
-const dirName = process.argv[2];
-if (dirName == null || dirName == '') {
-  throw new Error(
-      'Please specify a top-level directory as the first argument: ' +
-      './scripts/cloudbuild.js DIR_NAME');
-}
+const dirs = readdirSync('.').filter(f => {
+  return f !== 'node_modules' && f !== '.git' && statSync(f).isDirectory();
+});
 
-const diffCmd = `diff -rq ${CLONE_PATH}/${dirName}/ ./${dirName}/`;
-const diffOutput = exec(diffCmd, {silent: true}, true).stdout.trim();
+exec(
+    `git clone --depth=1 --single-branch ` +
+    `https://github.com/tensorflow/tfjs-core.git ${CLONE_PATH}`);
 
-if (diffOutput !== '') {
-  console.log(`${dirName} has modified files.`);
-  console.log(diffOutput);
-  console.log('Running CI...');
-  exec(`gcloud builds submit ${dirName} --config=${dirName}/cloudbuild.yml`);
-} else {
-  console.log(`No modified files found in ${dirName}`);
-}
+
+dirs.forEach(dir => {
+  const diffCmd = `diff -rq ${CLONE_PATH}/${dir}/ ./${dir}/`;
+  const diffOutput = exec(diffCmd, {silent: true}, true).stdout.trim();
+
+  if (diffOutput !== '') {
+    console.log(`${dir} has modified files.`);
+    writeFileSync(join(dir, 'diff'), diffOutput);
+  } else {
+    console.log(`No modified files found in ${dir}`);
+  }
+});
