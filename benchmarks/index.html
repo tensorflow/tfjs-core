@@ -438,15 +438,15 @@
       node.querySelector("svg").setAttribute("width", chartWidth);
       node.querySelector("svg").setAttribute("height", chartHeight);
 
-      const max = Math.max(...data);
-      const xIncrement = chartWidth / (data.length - 1);
+      const yMax = Math.max(...data);
       const yMin = forceYMinToZero ? 0 : Math.min(...data);
 
       node.querySelector(".yMin").textContent = yFormatter(yMin);
+      node.querySelector(".yMax").textContent = yFormatter(yMax);
 
-      node.querySelector(".yMax").textContent = yFormatter(max);
+      const xIncrement = chartWidth / (data.length - 1);
       node.querySelector("path")
-        .setAttribute("d", `M${data.map((d, i) => `${i * xIncrement},${chartHeight - ((d - yMin) / (max - yMin)) * chartHeight}`).join('L')}`);
+        .setAttribute("d", `M${data.map((d, i) => `${i * xIncrement},${chartHeight - ((d - yMin) / (yMax - yMin)) * chartHeight}`).join('L')}`);
     }
 
     async function measureAveragePredictTime() {
