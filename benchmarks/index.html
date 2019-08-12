@@ -166,6 +166,16 @@
           </svg>
         </div>
       </div>
+      <div class="box" id="bytes-trendline-container">
+        <div class="label">Number of bytes used</div>
+        <div class="trendline">
+          <div class="yMax"></div>
+          <div class="yMin"></div>
+          <svg>
+            <path></path>
+          </svg>
+        </div>
+      </div>
     </div>
     <table class="table" id="kernels">
       <thead>
@@ -322,7 +332,7 @@
     };
 
     const state = {
-      numRuns: 5,
+      numRuns: 50,
       benchmark: 'mobilenet',
       run: (v) => {
         runBenchmark();
@@ -466,6 +476,7 @@
 
       populateTrendline(document.querySelector("#perf-trendline-container"), times, true, printTime);
       populateTrendline(document.querySelector("#mem-trendline-container"), numTensors);
+      populateTrendline(document.querySelector("#bytes-trendline-container"), numBytes, false, d => `${(d / 1e6).toPrecision(3)}MB`);
 
       await showMsg(null);
       const average = times.reduce((acc, curr) => acc + curr, 0) / times.length;
