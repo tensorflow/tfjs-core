@@ -13,21 +13,21 @@ steps:
   waitFor: ['yarn']
 
 # Core.
-- name: 'node:10'
+- name: 'gcr.io/cloud-builders/gcloud'
   entrypoint: 'yarn'
   id: 'core'
   args: ['cloudbuild', 'tfjs-core']
   waitFor: ['prep']
 
 # WebGPU.
-- name: 'node:10'
+- name: 'gcr.io/cloud-builders/gcloud'
   entrypoint: 'yarn'
   id: 'webgpu'
   args: ['cloudbuild', 'tfjs-webgpu']
   waitFor: ['prep']
 
 # React Native.
-- name: 'node:10'
+- name: 'gcr.io/cloud-builders/gcloud'
   entrypoint: 'yarn'
   id: 'react-native'
   args: ['cloudbuild', 'tfjs-react-native']
