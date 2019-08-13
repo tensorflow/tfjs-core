@@ -1,3 +1,1 @@
-To see the logs from the Cloud Build CI, please join either
-our [discussion](https://groups.google.com/a/tensorflow.org/forum/#!forum/tfjs)
-or [announcement](https://groups.google.com/a/tensorflow.org/forum/#!forum/tfjs-announce) mailing list.
+## This repository has been archived in favor of the monorepo at https://github.com/tensorflow/tfjs. Please send pull requests there.
