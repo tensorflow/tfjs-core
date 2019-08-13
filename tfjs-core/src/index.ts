@@ -20,12 +20,10 @@
 import './engine';
 // Register backend-agnostic flags.
 import './flags';
-
 // backend_cpu.ts and backend_webgl.ts are standalone files and should be
 // explicitly included here.
 import './backends/webgl/backend_webgl';
 import './backends/cpu/backend_cpu';
-
 import './platforms/platform_browser';
 import './platforms/platform_node';
 
@@ -55,7 +53,7 @@ export {RMSPropOptimizer} from './optimizers/rmsprop_optimizer';
 export {SGDOptimizer} from './optimizers/sgd_optimizer';
 export {Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D, TensorBuffer, variable, Variable} from './tensor';
 export {GradSaveFunc, NamedTensorMap, TensorContainer, TensorContainerArray, TensorContainerObject} from './tensor_types';
-export {DataType, DataTypeMap, DataValues, Rank, ShapeMap, TensorLike} from './types';
+export {DataType, DataTypeMap, DataValues, Rank, RecursiveArray, ShapeMap, TensorLike} from './types';
 
 export * from './ops/ops';
 export {LSTMCellFunc} from './ops/lstm';
@@ -65,7 +63,7 @@ export * from './train';
 export * from './globals';
 export {customGrad, grad, grads, valueAndGrad, valueAndGrads, variableGrads} from './gradients';
 
-export {TimingInfo} from './engine';
+export {TimingInfo, MemoryInfo} from './engine';
 export {ENV, Environment} from './environment';
 export {Platform} from './platforms/platform';
 
