@@ -1,1 +1,1 @@
-## This repository has been deprecated in favor of the monorepo at tensorflow/tfjs. Please send pull requests there.
+## This repository has been deprecated in favor of the monorepo at https://github.com/tensorflow/tfjs. Please send pull requests there.
