@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "start": "node node_modules/react-native/local-cli/cli.js start",
-    "test": "jest"
+    "test": "jest",
+    "lint": "tslint -p . -t verbose"
   },
   "dependencies": {
     "@react-native-community/async-storage": "^1.6.1",

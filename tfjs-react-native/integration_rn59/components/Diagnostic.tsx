@@ -16,49 +16,43 @@
  */
 
 import React, { Fragment } from 'react';
-import {
-  Button,
-  SafeAreaView,
-  StyleSheet,
-  ScrollView,
-  View,
-  StatusBar,
-} from 'react-native';
+import { Button, SafeAreaView, StyleSheet, ScrollView, View, StatusBar } from 'react-native';
 
 import * as tf from '@tensorflow/tfjs';
-import { Run } from './Run';
+import { Run } from './run';
 import { simpleOpRunner, precisionTestRunner, mobilenetRunner, localModelRunner, trainModelRunner } from './ml';
 
 interface ScreenProps {
   returnToMain: () => void;
 }
 
-export default class Diagnostic extends React.Component<ScreenProps, any> {
-  constructor(props: any) {
+export class Diagnostic extends React.Component<ScreenProps> {
+  constructor(props: ScreenProps) {
     super(props);
   }
 
   render() {
     return (
       <Fragment>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar barStyle='dark-content' />
         <SafeAreaView>
           <ScrollView
-            contentInsetAdjustmentBehavior="automatic"
+            contentInsetAdjustmentBehavior='automatic'
             style={styles.scrollView}>
 
             <View style={styles.body}>
               <View style={styles.sectionContainer}>
                 <Button
                   onPress={this.props.returnToMain}
-                  title="Back"
+                  title='Back'
                 />
               </View>
 
               <View style={styles.sectionContainer}>
                 <Run label='tf.getBackend()' result={`${tf.getBackend()}`}>
                 </Run>
-                <Run label='tf.version_core' result={`${tf.version_core}`}></Run>
+                <Run label='tf.version_core' result={`${tf.version_core}`}>
+                </Run>
                 <Run label='WEBGL_VERSION' result={`${
                   tf.ENV.getNumber('WEBGL_VERSION')}`}>
                 </Run>
@@ -71,11 +65,16 @@ export default class Diagnostic extends React.Component<ScreenProps, any> {
                 <Run label='WEBGL_BUFFER_SUPPORTED' result={`${
                   tf.ENV.getNumber('WEBGL_BUFFER_SUPPORTED')}`}>
                 </Run>
-                <Run label='SimpleOp tf.square(3)' getRunner={simpleOpRunner} numRuns={1}></Run>
-                <Run label='tf.scalar(2.4).square()' getRunner={precisionTestRunner} numRuns={1}></Run>
-                <Run label='mobilenet' getRunner={mobilenetRunner} numRuns={1}></Run>
-                <Run label='local model run' getRunner={localModelRunner} numRuns={1}></Run>
-                <Run label='train model' getRunner={trainModelRunner} numRuns={1}></Run>
+                <Run label='SimpleOp tf.square(3)'
+                  getRunner={simpleOpRunner} numRuns={1}></Run>
+                <Run label='tf.scalar(2.4).square()'
+                  getRunner={precisionTestRunner} numRuns={1}></Run>
+                <Run label='mobilenet'
+                  getRunner={mobilenetRunner} numRuns={1}></Run>
+                <Run label='local model run'
+                  getRunner={localModelRunner} numRuns={1}></Run>
+                <Run label='train model'
+                  getRunner={trainModelRunner} numRuns={1}></Run>
               </View>
             </View>
           </ScrollView>

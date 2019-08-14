@@ -48,7 +48,7 @@ export class Run extends Component<RunProps, RunState> {
     const { getRunner, numRuns } = this.props;
     let computedResult;
     let time;
-    let numberOfRuns = numRuns != null ? numRuns : 1;
+    const numberOfRuns = numRuns != null ? numRuns : 1;
     if (getRunner != null) {
       const runner = await getRunner();
       const start = new Date();
@@ -85,10 +85,14 @@ export class Run extends Component<RunProps, RunState> {
         <View style={styles.resultArea}>
           <View style={styles.row}>
             {lastPredictionTime != null ?
-              <Text style={styles.labelHeader}>Total Time: {lastPredictionTime}</Text>
+              <Text style={styles.labelHeader}>
+                Total Time: {lastPredictionTime}
+              </Text>
               : undefined}
             {numRuns != null ?
-              <Text style={styles.labelHeader}>Avg: {avgPredictionTime} ({numRuns})</Text>
+              <Text style={styles.labelHeader}>
+                Avg: {avgPredictionTime} ({numRuns})
+              </Text>
               : undefined}
           </View>
           <Text style={styles.resultText}>{JSON.stringify(res)}</Text>
@@ -108,7 +112,7 @@ const container: ViewStyle = {
 const containerMounted: ViewStyle = {
   ...container,
   backgroundColor: '#C8E6C9',
-}
+};
 const styles = StyleSheet.create({
   container,
   containerMounted,

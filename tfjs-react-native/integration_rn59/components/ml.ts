@@ -19,8 +19,12 @@ import * as mobilenet from '@tensorflow-models/mobilenet';
 import * as tf from '@tensorflow/tfjs';
 import {asyncStorageIO, bundleResourceIO} from '@tensorflow/tfjs-react-native';
 
+// All functions (i.e. 'runners") in this file are async
+// functions that return a function that can be invoked to
+// do some ML operation.
+
 /**
- * Run a simple operations
+ * A runner for a simple math op
  */
 export async function simpleOpRunner() {
   return async () => {
@@ -31,7 +35,7 @@ export async function simpleOpRunner() {
 }
 
 /**
- * Run a simple precision test runner.
+ * A runner that does a basic precision test.
  */
 export async function precisionTestRunner() {
   return async () => {
@@ -42,7 +46,7 @@ export async function precisionTestRunner() {
 }
 
 /**
- * Runner for a mobilenet model loaded over the network
+ * A runner that does a mobilenet prediction
  */
 export async function mobilenetRunner() {
   const model = await mobilenet.load();
@@ -57,10 +61,11 @@ export async function mobilenetRunner() {
 }
 
 /**
- * Runner for a model bundled into the app itself.
+ * A runner that loads a model bundled with the app and runs a prediction
+ * through it.
  */
-const modelJson = require('../assets/model/bundleModelTest.json');
-const modelWeights = require('../assets/model/bundleModelTest_weights.bin');
+const modelJson = require('../assets/model/bundle_model_test.json');
+const modelWeights = require('../assets/model/bundle_model_test_weights.bin');
 export async function localModelRunner() {
   const model =
       await tf.loadLayersModel(bundleResourceIO(modelJson, modelWeights));
@@ -73,7 +78,7 @@ export async function localModelRunner() {
 }
 
 /**
- * Run a simple train loop
+ * A runner that traines a model.
  */
 export async function trainModelRunner() {
   // Define a model for linear regression.
@@ -95,7 +100,7 @@ export async function trainModelRunner() {
 }
 
 /**
- * Save and load a model using AsyncStorage
+ * A runner that saves and loads a model to/from asyncStorage
  */
 export async function saveModelRunner() {
   // Define a model for linear regression.

@@ -1,46 +1,46 @@
 /**
  * @license
  * Copyright 2019 Google LLC. All Rights Reserved.
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Apache License, Version 2.0 (the 'License');
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
+ * distributed under the License is distributed on an 'AS IS' BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * =============================================================================
  */
 
-import React, { Fragment } from "react";
-import { Button, SafeAreaView, StyleSheet, ScrollView, View, StatusBar, Image, Text } from "react-native";
+import React, { Fragment } from 'react';
+import { Button, SafeAreaView, StyleSheet, ScrollView, View, StatusBar, Image, Text, ImageSourcePropType } from 'react-native';
 
-import * as tf from "@tensorflow/tfjs";
-import { fetch } from "@tensorflow/tfjs-react-native";
-import * as mobilenet from "@tensorflow-models/mobilenet";
-import * as jpeg from "jpeg-js";
+import * as tf from '@tensorflow/tfjs';
+import { fetch } from '@tensorflow/tfjs-react-native';
+import * as mobilenet from '@tensorflow-models/mobilenet';
+import * as jpeg from 'jpeg-js';
 
-import { Run } from "./Run";
+import { Run } from './run';
 
 interface ScreenProps {
   returnToMain: () => void;
-  image: any;
+  image: ImageSourcePropType;
 }
 
 interface ScreenState {
-  prediction: { className: string; probability: number }[];
+  prediction: Array<{ className: string; probability: number }>;
   predictionTime?: number;
   imageChecksum?: number;
 }
 
-export default class MobilenetDemo extends React.Component<
+export class MobilenetDemo extends React.Component<
   ScreenProps,
   ScreenState
   > {
-  constructor(props: any) {
+  constructor(props: ScreenProps) {
     super(props);
     this.state = {
       prediction: []
@@ -109,8 +109,8 @@ export default class MobilenetDemo extends React.Component<
           );
         })}
         <View style={styles.sectionContainer}>
-          <Run label="Prediction Time" result={`${predictionTime}`} />
-          <Run label="Checksum" result={`${imageChecksum}`} />
+          <Run label='Prediction Time' result={`${predictionTime}`} />
+          <Run label='Checksum' result={`${imageChecksum}`} />
         </View>
       </View>
     );
@@ -122,15 +122,15 @@ export default class MobilenetDemo extends React.Component<
 
     return (
       <Fragment>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar barStyle='dark-content' />
         <SafeAreaView>
           <ScrollView
-            contentInsetAdjustmentBehavior="automatic"
+            contentInsetAdjustmentBehavior='automatic'
             style={styles.scrollView}
           >
             <View style={styles.body}>
               <View style={styles.sectionContainer}>
-                <Button onPress={this.props.returnToMain} title="Back" />
+                <Button onPress={this.props.returnToMain} title='Back' />
               </View>
 
               <View style={styles.sectionContainer}>
@@ -159,10 +159,10 @@ export default class MobilenetDemo extends React.Component<
 
 const styles = StyleSheet.create({
   scrollView: {
-    backgroundColor: "white"
+    backgroundColor: 'white'
   },
   body: {
-    backgroundColor: "white",
+    backgroundColor: 'white',
     marginBottom: 60
   },
   sectionContainer: {
@@ -171,40 +171,40 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 24,
-    fontWeight: "600",
-    color: "black",
+    fontWeight: '600',
+    color: 'black',
     marginBottom: 6
   },
   imageArea: {
     marginTop: 12,
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "center"
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center'
   },
   resultArea: {
     marginLeft: 5,
     paddingLeft: 5,
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center"
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center'
   },
   resultTextHeader: {
     fontSize: 21,
-    fontWeight: "bold",
+    fontWeight: 'bold',
     marginBottom: 12,
     marginTop: 12,
-    textAlign: "center"
+    textAlign: 'center'
   },
   prediction: {
-    display: "flex",
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center"
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center'
   },
   resultClass: {
     fontSize: 16,
-    fontWeight: "bold"
+    fontWeight: 'bold'
   },
   resultProb: {
     fontSize: 16,

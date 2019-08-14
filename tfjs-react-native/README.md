@@ -12,18 +12,31 @@ These instructions assume that you are generally familiar with [react native](ht
 
 ### Step 1. Create your react native app.
 
-You can use the [React Native CLI or Expo](https://facebook.github.io/react-native/docs/getting-started). This library relies on a couple of dependencies from the Expo project so it may be convenient to use expo but is not mandatory. You will also need to use Cocoapods to install these dependencies.
+You can use the [React Native CLI](https://facebook.github.io/react-native/docs/getting-started) or [Expo](https://expo.io/). This library relies on a couple of dependencies from the Expo project so it may be convenient to use expo but is not mandatory. 
+
+On macOS (to develop iOS applications) You will also need to use Cocoapods to install these dependencies.
 
 ### Step 2: Install expo related libraries
+
+Depending on which workflow you used to set up your app you will need to install different dependencies.
+
+- React Native CLI App
+  - Install and configure [react-native-unimodules](https://github.com/unimodules/react-native-unimodules)
+  - Install and configure [expo-gl-cpp](https://github.com/expo/expo/tree/master/packages/expo-gl-cpp) and [expo-gl](https://github.com/expo/expo/tree/master/packages/expo-gl)
+- Expo Bare App
+  - Install and configure [expo-gl-cpp](https://github.com/expo/expo/tree/master/packages/expo-gl-cpp) and [expo-gl](https://github.com/expo/expo/tree/master/packages/expo-gl)
+- Expo Managed App
+  - Install and configure [expo-gl](https://github.com/expo/expo/tree/master/packages/expo-gl)
+
 
 Note if in a _managed_ expo application these libraries should be present and you should be able to skip this step.
 
 Install and configure [react-native-unimodules](https://github.com/unimodules/react-native-unimodules)
 Install and configure [expo-gl-cpp](https://github.com/expo/expo/tree/master/packages/expo-gl-cpp) and [expo-gl](https://github.com/expo/expo/tree/master/packages/expo-gl)
 
-> Note that after this point, if you are using XCode to build for ios, you should use a ‘.workspace’ file instead of the ‘.xcodeproj’
+> After this point, if you are using XCode to build for ios, you should use a ‘.workspace’ file instead of the ‘.xcodeproj’
 
-### Step 3: Configure Metro
+### Step 3: Configure [Metro](https://facebook.github.io/metro/en/)
 
 Edit your `metro.config.js` to look like the following. Changes are noted in
 the comments below.
@@ -65,5 +78,5 @@ For now take a look at `integration_rn59/App.tsx` for an example of what using t
 
 ### Optional Steps
 
-If you want use the AsyncStorageHandler to save and load models. Add [async-storage](https://github.com/react-native-community/async-storage) to your project.
+If you want use the `AsyncStorageHandler` to save and load models, add [async-storage](https://github.com/react-native-community/async-storage) to your project.
 

@@ -16,21 +16,13 @@
  */
 
 import React, { Fragment } from 'react';
-import {
-  Button,
-  SafeAreaView,
-  StyleSheet,
-  ScrollView,
-  View,
-  Text,
-  StatusBar,
-} from 'react-native';
+import { Button, SafeAreaView, StyleSheet, ScrollView, View, Text, StatusBar } from 'react-native';
 
 import * as tf from '@tensorflow/tfjs';
 import '@tensorflow/tfjs-react-native';
 
-import Diagnostic from './components/Diagnostic';
-import MobilenetDemo from './components/MobilenetDemo';
+import { Diagnostic } from './components/diagnostic';
+import { MobilenetDemo } from './components/mobilenet_demo';
 
 export type Screen = 'main' | 'diag' | 'demo';
 
@@ -39,13 +31,13 @@ interface AppState {
   currentScreen: Screen;
 }
 
-export default class App extends React.Component<any, AppState> {
-  constructor(props: any) {
+export class App extends React.Component<{}, AppState> {
+  constructor(props: {}) {
     super(props);
     this.state = {
       isTfReady: false,
       currentScreen: 'main'
-    }
+    };
 
     this.showDiagnosticScreen = this.showDiagnosticScreen.bind(this);
     this.showDemoScreen = this.showDemoScreen.bind(this);
@@ -78,14 +70,14 @@ export default class App extends React.Component<any, AppState> {
         <Text style={styles.sectionTitle}>Diagnostic</Text>
         <Button
           onPress={this.showDiagnosticScreen}
-          title="Show Diagnostic Screen"
+          title='Show Diagnostic Screen'
         />
       </View>
       <View style={styles.sectionContainer}>
         <Text style={styles.sectionTitle}>Demo</Text>
         <Button
           onPress={this.showDemoScreen}
-          title="Show Demo Screen"
+          title='Show Demo Screen'
         />
       </View>
     </Fragment>;
@@ -94,7 +86,7 @@ export default class App extends React.Component<any, AppState> {
   renderDiagnosticScreen() {
     return <Fragment>
       <Diagnostic returnToMain={this.showMainScreen} />
-    </Fragment>
+    </Fragment>;
   }
 
   renderDemoScreen() {
@@ -103,7 +95,7 @@ export default class App extends React.Component<any, AppState> {
       <MobilenetDemo
         image={image}
         returnToMain={this.showMainScreen} />
-    </Fragment>
+    </Fragment>;
   }
 
   renderLoadingTF() {
@@ -111,7 +103,7 @@ export default class App extends React.Component<any, AppState> {
       <View style={styles.sectionContainer}>
         <Text style={styles.sectionTitle}>Loading TF</Text>
       </View>
-    </Fragment>
+    </Fragment>;
   }
 
   renderContent() {
@@ -136,12 +128,11 @@ export default class App extends React.Component<any, AppState> {
   render() {
     return (
       <Fragment>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar barStyle='dark-content' />
         <SafeAreaView>
           <ScrollView
-            contentInsetAdjustmentBehavior="automatic"
+            contentInsetAdjustmentBehavior='automatic'
             style={styles.scrollView}>
-
             <View style={styles.body}>
               {this.renderContent()}
             </View>
